@@ -1,0 +1,125 @@
+<!-- ant build file for VirtualLabs -->
+
+<project name="VirtualLabs" default="web" basedir="." >
+
+	<!-- Properties -->
+
+	<property name="src" value="src"/>
+	<property name="build" value="build"/>
+	<property name="build.classes" value="${build}/classes"/>
+	<property name="build.applets" value="${build}/applets"/>
+	<property name="web" value="web"/>
+	<property name="product" value="product"/>
+
+	<property environment="env"/>
+
+	<!-- Targets -->
+
+	<!-- Prepare build directories -->
+	<target name="init">
+		<mkdir dir="${build}"/>
+		<mkdir dir="${build.classes}"/>
+		<mkdir dir="${build.applets}"/>
+		<mkdir dir="${product}"/>
+	</target>
+
+	<!-- Kill all the created directories -->
+	<target name="clean">
+		<delete dir="${build}"/>
+		<delete dir="${product}"/>
+	</target>
+
+	<!-- build all tutorials -->
+	<target name="web" depends="web-2x2,web-general">
+		<copy todir="${product}/images">
+			<fileset dir="${web}/images"/>
+		</copy>
+		<copy todir="${product}" file="${web}/favicon.ico"/>
+		<copy todir="${product}" file="${web}/index.html"/>
+	</target>
+
+	<!-- build general information section -->
+	<target name="web-general" depends="web-style">
+		<copy todir="${product}/General">
+			<fileset dir="${web}/General"/>
+		</copy>
+	</target>
+
+	<!-- build style section -->
+	<target name="web-style">
+		<copy todir="${product}/styles">
+			<fileset dir="${web}/styles"/>
+		</copy>
+	</target>
+
+	<!-- build 2x2 tutorial -->
+	<target name="web-2x2" depends="2x2,web-style">
+		<property name="tutorial" value="TwoByTwo"/>
+		<copy todir="${product}/${tutorial}">
+			<fileset dir="${web}/${tutorial}"/>
+		</copy>
+		<copy todir="${product}/${tutorial}" file="${build.applets}/TwoByTwo.jar"/>
+	</target>
+
+	<target name="2x2" depends="init">
+		<property name="applet" value="TwoByTwo"/>
+		<property name="builddir" value="${build.classes}/${applet}"/>
+		<ant antfile="core.xml" target="dapplet">
+			<property name="build.classes" value="${builddir}"/>
+		</ant>
+	</target>
+
+	<target name="clean2x2" depends="init">
+		<property name="builddir" value="${build.classes}/2x2"/>
+		<delete dir="${builddir}"/>
+		<delete file="${build.applets}/TwoByTwo.jar"/>
+	</target>
+
+	<!-- build Reward tutorial -->
+	<target name="web-Reward" depends="Reward,web-style">
+		<property name="tutorial" value="RewardAndPunishment"/>
+		<copy todir="${product}/${tutorial}">
+			<fileset dir="${web}/${tutorial}"/>
+		</copy>
+		<copy todir="${product}/${tutorial}" file="${build.applets}/Reward.jar"/>
+	</target>
+
+	<target name="Reward" depends="init">
+		<property name="applet" value="Reward"/>
+		<property name="builddir" value="${build.classes}/${applet}"/>
+		<ant antfile="core.xml" target="dapplet">
+			<property name="build.classes" value="${builddir}"/>
+		</ant>
+	</target>
+
+	<target name="cleanReward" depends="init">
+		<property name="builddir" value="${build.classes}/Reward"/>
+		<delete dir="${builddir}"/>
+		<delete file="${build.applets}/Reward.jar"/>
+	</target>
+
+	<!-- build continuous snwodrift tutorial -->
+	<target name="web-CSD" depends="CSD,web-style">
+		<property name="tutorial" value="Branching"/>
+		<copy todir="${product}/${tutorial}">
+			<fileset dir="${web}/${tutorial}"/>
+		</copy>
+		<copy todir="${product}/${tutorial}" file="${build.applets}/CSD.jar"/>
+	</target>
+
+	<target name="CSD" depends="init">
+		<property name="applet" value="CSD"/>
+		<property name="builddir" value="${build.classes}/${applet}"/>
+		<ant antfile="core.xml" target="capplet">
+			<property name="build.classes" value="${builddir}"/>
+		</ant>
+	</target>
+
+	<target name="cleanCSD" depends="init">
+		<property name="builddir" value="${build.classes}/CSD"/>
+		<delete dir="${builddir}"/>
+		<delete file="${build.applets}/CSD.jar"/>
+	</target>
+
+</project>
+
