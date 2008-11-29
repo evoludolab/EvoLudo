@@ -21,6 +21,9 @@
 		<mkdir dir="${build.classes}"/>
 		<mkdir dir="${build.applets}"/>
 		<mkdir dir="${product}"/>
+		<condition property="compilerargs" value="-Xlint:all,-serial">
+			<equals arg1="${env.DEBUG}" arg2="debug"/>
+		</condition>
 	</target>
 
 	<!-- Kill all the created directories -->
@@ -29,40 +32,25 @@
 		<delete dir="${product}"/>
 	</target>
 
-	<!-- build all tutorials -->
-	<target name="web" depends="web-2x2,web-general">
-		<copy todir="${product}/images">
-			<fileset dir="${web}/images"/>
-		</copy>
-		<copy todir="${product}" file="${web}/favicon.ico"/>
-		<copy todir="${product}" file="${web}/index.html"/>
+	<!-- Moran -->
+	<target name="Moran" depends="init">
+		<property name="applet" value="Moran"/>
+		<property name="builddir" value="${build.classes}/${applet}"/>
+		<ant antfile="core.xml" target="dapplet">
+			<property name="build.classes" value="${builddir}"/>
+		</ant>
 	</target>
 
-	<!-- build general information section -->
-	<target name="web-general" depends="web-style">
-		<copy todir="${product}/General">
-			<fileset dir="${web}/General"/>
-		</copy>
+	<target name="cleanMoran" depends="init">
+		<property name="applet" value="Moran"/>
+		<property name="builddir" value="${build.classes}/${applet}"/>
+		<delete dir="${builddir}"/>
+		<delete file="${build.applets}/${applet}.jar"/>
 	</target>
 
-	<!-- build style section -->
-	<target name="web-style">
-		<copy todir="${product}/styles">
-			<fileset dir="${web}/styles"/>
-		</copy>
-	</target>
-
-	<!-- build 2x2 tutorial -->
-	<target name="web-2x2" depends="2x2,web-style">
-		<property name="tutorial" value="TwoByTwo"/>
-		<copy todir="${product}/${tutorial}">
-			<fileset dir="${web}/${tutorial}"/>
-		</copy>
-		<copy todir="${product}/${tutorial}" file="${build.applets}/TwoByTwo.jar"/>
-	</target>
-
+	<!-- 2x2 -->
 	<target name="2x2" depends="init">
-		<property name="applet" value="TwoByTwo"/>
+		<property name="applet" value="2x2"/>
 		<property name="builddir" value="${build.classes}/${applet}"/>
 		<ant antfile="core.xml" target="dapplet">
 			<property name="build.classes" value="${builddir}"/>
@@ -70,20 +58,93 @@
 	</target>
 
 	<target name="clean2x2" depends="init">
-		<property name="builddir" value="${build.classes}/2x2"/>
+		<property name="applet" value="2x2"/>
+		<property name="builddir" value="${build.classes}/${applet}"/>
 		<delete dir="${builddir}"/>
-		<delete file="${build.applets}/TwoByTwo.jar"/>
+		<delete file="${build.applets}/${applet}.jar"/>
 	</target>
 
-	<!-- build Reward tutorial -->
-	<target name="web-Reward" depends="Reward,web-style">
-		<property name="tutorial" value="RewardAndPunishment"/>
-		<copy todir="${product}/${tutorial}">
-			<fileset dir="${web}/${tutorial}"/>
-		</copy>
-		<copy todir="${product}/${tutorial}" file="${build.applets}/Reward.jar"/>
+	<!-- public goods -->
+	<target name="PGG" depends="init">
+		<property name="applet" value="PublicGoods"/>
+		<property name="builddir" value="${build.classes}/${applet}"/>
+		<ant antfile="core.xml" target="dapplet">
+			<property name="build.classes" value="${builddir}"/>
+		</ant>
 	</target>
 
+	<target name="cleanPGG" depends="init">
+		<property name="applet" value="PublicGoods"/>
+		<property name="builddir" value="${build.classes}/${applet}"/>
+		<delete dir="${builddir}"/>
+		<delete file="${build.applets}/${applet}.jar"/>
+	</target>
+
+	<!-- voluntary public goods -->
+	<target name="CDL" depends="init">
+		<property name="applet" value="CDL"/>
+		<property name="builddir" value="${build.classes}/${applet}"/>
+		<ant antfile="core.xml" target="dapplet">
+			<property name="build.classes" value="${builddir}"/>
+		</ant>
+	</target>
+
+	<target name="cleanCDL" depends="init">
+		<property name="applet" value="CDL"/>
+		<property name="builddir" value="${build.classes}/${applet}"/>
+		<delete dir="${builddir}"/>
+		<delete file="${build.applets}/${applet}.jar"/>
+	</target>
+
+	<!-- voluntary public goods with punishment -->
+	<target name="CDLP" depends="init">
+		<property name="applet" value="CDLP"/>
+		<property name="builddir" value="${build.classes}/${applet}"/>
+		<ant antfile="core.xml" target="dapplet">
+			<property name="build.classes" value="${builddir}"/>
+		</ant>
+	</target>
+
+	<target name="cleanCDLP" depends="init">
+		<property name="applet" value="CDLP"/>
+		<property name="builddir" value="${build.classes}/${applet}"/>
+		<delete dir="${builddir}"/>
+		<delete file="${build.applets}/${applet}.jar"/>
+	</target>
+
+	<!-- ecological public goods -->
+	<target name="EcoPGG" depends="init">
+		<property name="applet" value="EcoPGG"/>
+		<property name="builddir" value="${build.classes}/${applet}"/>
+		<ant antfile="core.xml" target="dapplet">
+			<property name="build.classes" value="${builddir}"/>
+		</ant>
+	</target>
+
+	<target name="cleanEcoPGG" depends="init">
+		<property name="applet" value="EcoPGG"/>
+		<property name="builddir" value="${build.classes}/${applet}"/>
+		<delete dir="${builddir}"/>
+		<delete file="${build.applets}/${applet}.jar"/>
+	</target>
+
+	<!-- punishment & reputation -->
+	<target name="Punishment" depends="init">
+		<property name="applet" value="Punishment"/>
+		<property name="builddir" value="${build.classes}/${applet}"/>
+		<ant antfile="core.xml" target="dapplet">
+			<property name="build.classes" value="${builddir}"/>
+		</ant>
+	</target>
+
+	<target name="cleanPunishment" depends="init">
+		<property name="applet" value="Punishment"/>
+		<property name="builddir" value="${build.classes}/${applet}"/>
+		<delete dir="${builddir}"/>
+		<delete file="${build.applets}/${applet}.jar"/>
+	</target>
+
+	<!-- reward & reputation -->
 	<target name="Reward" depends="init">
 		<property name="applet" value="Reward"/>
 		<property name="builddir" value="${build.classes}/${applet}"/>
@@ -93,20 +154,13 @@
 	</target>
 
 	<target name="cleanReward" depends="init">
-		<property name="builddir" value="${build.classes}/Reward"/>
+		<property name="applet" value="Reward"/>
+		<property name="builddir" value="${build.classes}/${applet}"/>
 		<delete dir="${builddir}"/>
-		<delete file="${build.applets}/Reward.jar"/>
+		<delete file="${build.applets}/${applet}.jar"/>
 	</target>
 
-	<!-- build continuous snwodrift tutorial -->
-	<target name="web-CSD" depends="CSD,web-style">
-		<property name="tutorial" value="Branching"/>
-		<copy todir="${product}/${tutorial}">
-			<fileset dir="${web}/${tutorial}"/>
-		</copy>
-		<copy todir="${product}/${tutorial}" file="${build.applets}/CSD.jar"/>
-	</target>
-
+	<!-- continuous snowdrift -->
 	<target name="CSD" depends="init">
 		<property name="applet" value="CSD"/>
 		<property name="builddir" value="${build.classes}/${applet}"/>
@@ -116,9 +170,89 @@
 	</target>
 
 	<target name="cleanCSD" depends="init">
-		<property name="builddir" value="${build.classes}/CSD"/>
+		<property name="applet" value="CSD"/>
+		<property name="builddir" value="${build.classes}/${applet}"/>
 		<delete dir="${builddir}"/>
-		<delete file="${build.applets}/CSD.jar"/>
+		<delete file="${build.applets}/${applet}.jar"/>
+	</target>
+
+	<!-- build web tutorials -->
+	<target name="web" depends="web-2x2,web-PGG,web-CDL,web-CDLP,web-RePun,web-CSD,web-general">
+		<copy todir="${product}/images">
+			<fileset dir="${web}/images"/>
+		</copy>
+		<copy todir="${product}" file="${web}/favicon.ico"/>
+		<copy todir="${product}" file="${web}/index.html"/>
+	</target>
+
+	<target name="web-general" depends="web-style">
+		<copy todir="${product}/General">
+			<fileset dir="${web}/General"/>
+		</copy>
+	</target>
+
+	<target name="web-style">
+		<copy todir="${product}/styles">
+			<fileset dir="${web}/styles"/>
+		</copy>
+	</target>
+
+	<target name="web-Moran" depends="Moran,2x2,web-style">
+		<property name="tutorial" value="Moran"/>
+		<copy todir="${product}/${tutorial}">
+			<fileset dir="${web}/${tutorial}"/>
+		</copy>
+		<copy todir="${product}/${tutorial}" file="${build.applets}/Moran.jar"/>
+		<copy todir="${product}/${tutorial}" file="${build.applets}/2x2.jar"/>
+	</target>
+
+	<target name="web-2x2" depends="2x2,web-style">
+		<property name="tutorial" value="TwoByTwo"/>
+		<copy todir="${product}/${tutorial}">
+			<fileset dir="${web}/${tutorial}"/>
+		</copy>
+		<copy todir="${product}/${tutorial}" file="${build.applets}/2x2.jar"/>
+	</target>
+
+	<target name="web-PGG" depends="PGG,web-style">
+		<property name="tutorial" value="PublicGoods"/>
+		<copy todir="${product}/${tutorial}">
+			<fileset dir="${web}/${tutorial}"/>
+		</copy>
+		<copy todir="${product}/${tutorial}" file="${build.applets}/PublicGoods.jar"/>
+	</target>
+
+	<target name="web-CDL" depends="CDL,web-style">
+		<property name="tutorial" value="Volunteering"/>
+		<copy todir="${product}/${tutorial}">
+			<fileset dir="${web}/${tutorial}"/>
+		</copy>
+		<copy todir="${product}/${tutorial}" file="${build.applets}/CDL.jar"/>
+	</target>
+
+	<target name="web-CDLP" depends="CDLP,web-style">
+		<property name="tutorial" value="VolPun"/>
+		<copy todir="${product}/${tutorial}">
+			<fileset dir="${web}/${tutorial}"/>
+		</copy>
+		<copy todir="${product}/${tutorial}" file="${build.applets}/CDLP.jar"/>
+	</target>
+
+	<target name="web-RePun" depends="Reward,Punishment,web-style">
+		<property name="tutorial" value="RewardAndPunishment"/>
+		<copy todir="${product}/${tutorial}">
+			<fileset dir="${web}/${tutorial}"/>
+		</copy>
+		<copy todir="${product}/${tutorial}" file="${build.applets}/Reward.jar"/>
+		<copy todir="${product}/${tutorial}" file="${build.applets}/Punishment.jar"/>
+	</target>
+
+	<target name="web-CSD" depends="CSD,web-style">
+		<property name="tutorial" value="Branching"/>
+		<copy todir="${product}/${tutorial}">
+			<fileset dir="${web}/${tutorial}"/>
+		</copy>
+		<copy todir="${product}/${tutorial}" file="${build.applets}/CSD.jar"/>
 	</target>
 
 </project>

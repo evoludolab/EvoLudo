@@ -2,19 +2,27 @@
 
 <project name="core" default="all" basedir="." >
 
-  <property name="src" value="src"/>
-  <property name="build" value="build"/>
-  <property name="build.classes" value="${build}/classes"/>
+	<property name="src" value="src"/>
+	<property name="build" value="build"/>
+	<property name="build.classes" value="${build}/classes"/>
 
-	<property name="compilerargs" value="-Xlint:all,-serial"/>
+	<!-- default compiler args (optimize and maximize compatibility) -->
+	<property name="compilerargs" value="-g:none -O"/>
+	<property name="source" value="1.3"/>
+	<property name="target" value="1.2"/>
 
-   <!-- build discrete and continuous applets -->
+	<!-- build discrete and continuous applets -->
 	<target name="dapplet" depends="dinterface,applet"/>
 
 	<target name="capplet" depends="cinterface,applet"/>
 
 	<target name="applet">
-		<javac srcdir="${src}" destdir="${builddir}" debug="off" optimize="on" >
+		<javac srcdir="${src}" 
+			   destdir="${builddir}" 
+			   source="${source}" 
+			   target="${target}" 
+			   debug="off" 
+			   optimize="on" >
 			<include name="chh/virtuallabs/interface/labs/${applet}Lab.java"/>
 			<include name="chh/virtuallabs/core/labs/${applet}.java"/>
 			<compilerarg value="${compilerargs}"/>
@@ -30,7 +38,12 @@
 
    <!-- build discrete interface -->
   <target name="dinterface" depends="dcore">
-    <javac srcdir="${src}" destdir="${build.classes}" debug="off" optimize="on" >
+    <javac srcdir="${src}" 
+		   destdir="${build.classes}" 
+		   source="${source}" 
+		   target="${target}" 
+		   debug="off" 
+		   optimize="on" >
         <include name="chh/virtuallabs/interface/GenericLab.java"/>
         <include name="chh/virtuallabs/interface/PopulationLab.java"/>
         <include name="chh/virtuallabs/interface/DPopulationLab.java"/>
@@ -58,7 +71,12 @@
 
    <!-- build continuous interface -->
   <target name="cinterface" depends="ccore">
-    <javac srcdir="${src}" destdir="${build.classes}" debug="off" optimize="on" >
+    <javac srcdir="${src}" 
+		   destdir="${build.classes}" 
+		   source="${source}" 
+		   target="${target}" 
+		   debug="off" 
+		   optimize="on" >
         <include name="chh/virtuallabs/interface/GenericLab.java"/>
         <include name="chh/virtuallabs/interface/PopulationLab.java"/>
         <include name="chh/virtuallabs/interface/CXPopulationLab.java"/>
@@ -85,7 +103,12 @@
 
    <!-- build discrete engine -->
   <target name="dcore" depends="svn,getopt">
-    <javac srcdir="${src}" destdir="${build.classes}" debug="off" optimize="on" >
+    <javac srcdir="${src}" 
+		   destdir="${build.classes}" 
+		   source="${source}" 
+		   target="${target}" 
+		   debug="off" 
+		   optimize="on" >
         <include name="chh/virtuallabs/core/util/Analyze.java"/>
         <include name="chh/virtuallabs/core/Population.java"/>
         <include name="chh/virtuallabs/core/DPopulation.java"/>
@@ -104,7 +127,12 @@
 
    <!-- build continuous engine -->
   <target name="ccore" depends="svn,getopt">
-    <javac srcdir="${src}" destdir="${build.classes}" debug="off" optimize="on" >
+    <javac srcdir="${src}" 
+		   destdir="${build.classes}" 
+		   source="${source}" 
+		   target="${target}" 
+		   debug="off" 
+		   optimize="on" >
         <include name="chh/virtuallabs/core/util/Analyze.java"/>
         <include name="chh/virtuallabs/core/Population.java"/>
         <include name="chh/virtuallabs/core/CXPopulation.java"/>
@@ -131,7 +159,12 @@
 
   <!-- build getopt -->
   <target name="getopt" depends="init">
-    <javac srcdir="${src}" destdir="${build.classes}" debug="off" optimize="on" >
+    <javac srcdir="${src}" 
+		   destdir="${build.classes}" 
+		   debug="off" 
+		   source="${source}" 
+		   target="${target}" 
+		   optimize="on" >
         <include name="gnu/getopt/Getopt.java"/>
         <include name="gnu/getopt/LongOpt.java"/>
 		<compilerarg value="${compilerargs}"/>
