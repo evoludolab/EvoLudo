@@ -33,151 +33,165 @@
 	</target>
 
 	<!-- Moran -->
-	<target name="Moran" depends="init">
-		<property name="applet" value="Moran"/>
-		<property name="builddir" value="${build.classes}/${applet}"/>
-		<ant antfile="core.xml" target="dapplet">
-			<property name="build.classes" value="${builddir}"/>
-		</ant>
+	<target name="Moran">
+		<antcall target="-dapplet">
+			<param name="applet" value="Moran"/>
+		</antcall>
 	</target>
 
-	<target name="cleanMoran" depends="init">
-		<property name="applet" value="Moran"/>
-		<property name="builddir" value="${build.classes}/${applet}"/>
-		<delete dir="${builddir}"/>
-		<delete file="${build.applets}/${applet}.jar"/>
+	<target name="cleanMoran">
+		<antcall target="-clean">
+			<param name="applet" value="Moran"/>
+		</antcall>
 	</target>
 
 	<!-- 2x2 -->
-	<target name="2x2" depends="init">
-		<property name="applet" value="2x2"/>
-		<property name="builddir" value="${build.classes}/${applet}"/>
-		<ant antfile="core.xml" target="dapplet">
-			<property name="build.classes" value="${builddir}"/>
-		</ant>
+	<target name="2x2">
+		<antcall target="-dapplet">
+			<param name="applet" value="2x2"/>
+			<param name="main" value="TwoByTwo"/>
+		</antcall>
 	</target>
 
-	<target name="clean2x2" depends="init">
-		<property name="applet" value="2x2"/>
-		<property name="builddir" value="${build.classes}/${applet}"/>
-		<delete dir="${builddir}"/>
-		<delete file="${build.applets}/${applet}.jar"/>
+	<target name="clean2x2">
+		<antcall target="-clean">
+			<param name="applet" value="2x2"/>
+		</antcall>
 	</target>
 
 	<!-- public goods -->
-	<target name="PGG" depends="init">
-		<property name="applet" value="PublicGoods"/>
-		<property name="builddir" value="${build.classes}/${applet}"/>
-		<ant antfile="core.xml" target="dapplet">
-			<property name="build.classes" value="${builddir}"/>
-		</ant>
+	<target name="PGG">
+		<antcall target="-dapplet">
+			<param name="applet" value="PublicGoods"/>
+		</antcall>
 	</target>
 
-	<target name="cleanPGG" depends="init">
-		<property name="applet" value="PublicGoods"/>
-		<property name="builddir" value="${build.classes}/${applet}"/>
-		<delete dir="${builddir}"/>
-		<delete file="${build.applets}/${applet}.jar"/>
+	<target name="cleanPGG">
+		<antcall target="-clean">
+			<param name="applet" value="PublicGoods"/>
+		</antcall>
 	</target>
 
 	<!-- voluntary public goods -->
-	<target name="CDL" depends="init">
-		<property name="applet" value="CDL"/>
-		<property name="builddir" value="${build.classes}/${applet}"/>
-		<ant antfile="core.xml" target="dapplet">
-			<property name="build.classes" value="${builddir}"/>
-		</ant>
+	<target name="CDL">
+		<antcall target="-dapplet">
+			<param name="applet" value="CDL"/>
+		</antcall>
 	</target>
 
-	<target name="cleanCDL" depends="init">
-		<property name="applet" value="CDL"/>
-		<property name="builddir" value="${build.classes}/${applet}"/>
-		<delete dir="${builddir}"/>
-		<delete file="${build.applets}/${applet}.jar"/>
+	<target name="cleanCDL">
+		<antcall target="-clean">
+			<param name="applet" value="CDL"/>
+		</antcall>
 	</target>
 
 	<!-- voluntary public goods with punishment -->
-	<target name="CDLP" depends="init">
-		<property name="applet" value="CDLP"/>
-		<property name="builddir" value="${build.classes}/${applet}"/>
-		<ant antfile="core.xml" target="dapplet">
-			<property name="build.classes" value="${builddir}"/>
-		</ant>
+	<target name="CDLP">
+		<antcall target="-dapplet">
+			<param name="applet" value="CDLP"/>
+		</antcall>
 	</target>
 
-	<target name="cleanCDLP" depends="init">
-		<property name="applet" value="CDLP"/>
-		<property name="builddir" value="${build.classes}/${applet}"/>
-		<delete dir="${builddir}"/>
-		<delete file="${build.applets}/${applet}.jar"/>
+	<target name="cleanCDLP">
+		<antcall target="-clean">
+			<param name="applet" value="CDLP"/>
+		</antcall>
+	</target>
+
+	<!-- synergy & discounting -->
+	<target name="Discount">
+		<antcall target="-dapplet">
+			<param name="applet" value="Discount"/>
+		</antcall>
+	</target>
+
+	<target name="cleanDiscount">
+		<antcall target="-clean">
+			<param name="applet" value="Discount"/>
+		</antcall>
 	</target>
 
 	<!-- ecological public goods -->
-	<target name="EcoPGG" depends="init">
-		<property name="applet" value="EcoPGG"/>
-		<property name="builddir" value="${build.classes}/${applet}"/>
-		<ant antfile="core.xml" target="dapplet">
-			<property name="build.classes" value="${builddir}"/>
-		</ant>
+	<target name="EcoPGG">
+		<antcall target="-dapplet">
+			<param name="applet" value="EcoPGG"/>
+		</antcall>
 	</target>
 
-	<target name="cleanEcoPGG" depends="init">
-		<property name="applet" value="EcoPGG"/>
-		<property name="builddir" value="${build.classes}/${applet}"/>
-		<delete dir="${builddir}"/>
-		<delete file="${build.applets}/${applet}.jar"/>
+	<target name="cleanEcoPGG">
+		<antcall target="-clean">
+			<param name="applet" value="EcoPGG"/>
+		</antcall>
 	</target>
 
 	<!-- punishment & reputation -->
-	<target name="Punishment" depends="init">
-		<property name="applet" value="Punishment"/>
-		<property name="builddir" value="${build.classes}/${applet}"/>
-		<ant antfile="core.xml" target="dapplet">
-			<property name="build.classes" value="${builddir}"/>
-		</ant>
+	<target name="Punishment">
+		<antcall target="-dapplet">
+			<param name="applet" value="Punishment"/>
+		</antcall>
 	</target>
 
-	<target name="cleanPunishment" depends="init">
-		<property name="applet" value="Punishment"/>
-		<property name="builddir" value="${build.classes}/${applet}"/>
-		<delete dir="${builddir}"/>
-		<delete file="${build.applets}/${applet}.jar"/>
+	<target name="cleanPunishment">
+		<antcall target="-clean">
+			<param name="applet" value="Punishment"/>
+		</antcall>
 	</target>
 
 	<!-- reward & reputation -->
-	<target name="Reward" depends="init">
-		<property name="applet" value="Reward"/>
-		<property name="builddir" value="${build.classes}/${applet}"/>
-		<ant antfile="core.xml" target="dapplet">
-			<property name="build.classes" value="${builddir}"/>
-		</ant>
+	<target name="Reward">
+		<antcall target="-dapplet">
+			<param name="applet" value="Reward"/>
+		</antcall>
 	</target>
 
-	<target name="cleanReward" depends="init">
-		<property name="applet" value="Reward"/>
-		<property name="builddir" value="${build.classes}/${applet}"/>
-		<delete dir="${builddir}"/>
-		<delete file="${build.applets}/${applet}.jar"/>
+	<target name="cleanReward">
+		<antcall target="-clean">
+			<param name="applet" value="Reward"/>
+		</antcall>
+	</target>
+
+	<!-- rock, paper, scissors -->
+	<target name="RSP">
+		<antcall target="-dapplet">
+			<param name="applet" value="RSP"/>
+		</antcall>
+	</target>
+
+	<target name="cleanRSP">
+		<antcall target="-clean">
+			<param name="applet" value="RSP"/>
+		</antcall>
+	</target>
+
+	<!-- continuous 2x2 -->
+	<target name="C2x2">
+		<antcall target="-capplet">
+			<param name="applet" value="C2x2"/>
+			<param name="main" value="CTwoByTwo"/>
+		</antcall>
+	</target>
+
+	<target name="cleanC2x2">
+		<antcall target="-clean">
+			<param name="applet" value="C2x2"/>
+		</antcall>
 	</target>
 
 	<!-- continuous snowdrift -->
-	<target name="CSD" depends="init">
-		<property name="applet" value="CSD"/>
-		<property name="builddir" value="${build.classes}/${applet}"/>
-		<ant antfile="core.xml" target="capplet">
-			<property name="build.classes" value="${builddir}"/>
-		</ant>
+	<target name="CSD">
+		<antcall target="-capplet">
+			<param name="applet" value="CSD"/>
+		</antcall>
 	</target>
 
-	<target name="cleanCSD" depends="init">
-		<property name="applet" value="CSD"/>
-		<property name="builddir" value="${build.classes}/${applet}"/>
-		<delete dir="${builddir}"/>
-		<delete file="${build.applets}/${applet}.jar"/>
+	<target name="cleanCSD">
+		<antcall target="-clean">
+			<param name="applet" value="CSD"/>
+		</antcall>
 	</target>
 
 	<!-- build web tutorials -->
-	<target name="web" depends="web-2x2,web-PGG,web-CDL,web-CDLP,web-RePun,web-CSD,web-general">
+	<target name="web" depends="web-Intro,web-Moran,web-2x2,web-Snowdrift,web-PGG,web-CDL,web-CDLP,web-Discount,web-EcoPGG,web-RePun,web-CSD,web-general">
 		<copy todir="${product}/images">
 			<fileset dir="${web}/images"/>
 		</copy>
@@ -197,62 +211,111 @@
 		</copy>
 	</target>
 
-	<target name="web-Moran" depends="Moran,2x2,web-style">
-		<property name="tutorial" value="Moran"/>
-		<copy todir="${product}/${tutorial}">
-			<fileset dir="${web}/${tutorial}"/>
+	<target name="cleanweb" depends="clean">
+		<delete dir="${product}/styles"/>
+		<delete dir="${product}/General"/>
+		<delete file="${product}/favicon.ico"/>
+		<delete file="${product}/index.html"/>
+	</target>
+
+	<target name="web-Intro" depends="RSP,2x2,web-style">
+		<copy todir="${product}/Introduction">
+			<fileset dir="${web}/Introduction"/>
+			<fileset file="${build.applets}/RSP.jar"/>
+			<fileset file="${build.applets}/2x2.jar"/>
 		</copy>
-		<copy todir="${product}/${tutorial}" file="${build.applets}/Moran.jar"/>
-		<copy todir="${product}/${tutorial}" file="${build.applets}/2x2.jar"/>
+	</target>
+
+	<target name="web-Moran" depends="Moran,2x2,web-style">
+		<copy todir="${product}/Moran">
+			<fileset dir="${web}/Moran"/>
+			<fileset file="${build.applets}/Moran.jar"/>
+			<fileset file="${build.applets}/2x2.jar"/>
+		</copy>
 	</target>
 
 	<target name="web-2x2" depends="2x2,web-style">
-		<property name="tutorial" value="TwoByTwo"/>
-		<copy todir="${product}/${tutorial}">
-			<fileset dir="${web}/${tutorial}"/>
+		<copy todir="${product}/TwoByTwo">
+			<fileset dir="${web}/TwoByTwo"/>
+			<fileset file="${build.applets}/2x2.jar"/>
 		</copy>
-		<copy todir="${product}/${tutorial}" file="${build.applets}/2x2.jar"/>
+	</target>
+
+	<target name="web-Snowdrift" depends="2x2,C2x2,web-style">
+		<copy todir="${product}/Snowdrift">
+			<fileset dir="${web}/Snowdrift"/>
+			<fileset file="${build.applets}/2x2.jar"/>
+			<fileset file="${build.applets}/C2x2.jar"/>
+		</copy>
 	</target>
 
 	<target name="web-PGG" depends="PGG,web-style">
-		<property name="tutorial" value="PublicGoods"/>
-		<copy todir="${product}/${tutorial}">
-			<fileset dir="${web}/${tutorial}"/>
+		<copy todir="${product}/PublicGoods">
+			<fileset dir="${web}/PublicGoods"/>
+			<fileset file="${build.applets}/PublicGoods.jar"/>
 		</copy>
-		<copy todir="${product}/${tutorial}" file="${build.applets}/PublicGoods.jar"/>
 	</target>
 
 	<target name="web-CDL" depends="CDL,web-style">
-		<property name="tutorial" value="Volunteering"/>
-		<copy todir="${product}/${tutorial}">
-			<fileset dir="${web}/${tutorial}"/>
+		<copy todir="${product}/Volunteering">
+			<fileset dir="${web}/Volunteering"/>
+			<fileset file="${build.applets}/CDL.jar"/>
 		</copy>
-		<copy todir="${product}/${tutorial}" file="${build.applets}/CDL.jar"/>
 	</target>
 
 	<target name="web-CDLP" depends="CDLP,web-style">
-		<property name="tutorial" value="VolPun"/>
-		<copy todir="${product}/${tutorial}">
-			<fileset dir="${web}/${tutorial}"/>
+		<copy todir="${product}/VolPun">
+			<fileset dir="${web}/VolPun"/>
+			<fileset file="${build.applets}/CDLP.jar"/>
 		</copy>
-		<copy todir="${product}/${tutorial}" file="${build.applets}/CDLP.jar"/>
+	</target>
+
+	<target name="web-Discount" depends="Discount,web-style">
+		<copy todir="${product}/Discount">
+			<fileset dir="${web}/Discount"/>
+			<fileset file="${build.applets}/Discount.jar"/>
+		</copy>
+	</target>
+
+	<target name="web-EcoPGG" depends="EcoPGG,web-style">
+		<copy todir="${product}/Ecology">
+			<fileset dir="${web}/Ecology"/>
+			<fileset file="${build.applets}/EcoPGG.jar"/>
+		</copy>
 	</target>
 
 	<target name="web-RePun" depends="Reward,Punishment,web-style">
-		<property name="tutorial" value="RewardAndPunishment"/>
-		<copy todir="${product}/${tutorial}">
-			<fileset dir="${web}/${tutorial}"/>
+		<copy todir="${product}/RewardAndPunishment">
+			<fileset dir="${web}/RewardAndPunishment"/>
+			<fileset file="${build.applets}/Reward.jar"/>
+			<fileset file="${build.applets}/Punishment.jar"/>
 		</copy>
-		<copy todir="${product}/${tutorial}" file="${build.applets}/Reward.jar"/>
-		<copy todir="${product}/${tutorial}" file="${build.applets}/Punishment.jar"/>
 	</target>
 
 	<target name="web-CSD" depends="CSD,web-style">
-		<property name="tutorial" value="Branching"/>
-		<copy todir="${product}/${tutorial}">
-			<fileset dir="${web}/${tutorial}"/>
+		<copy todir="${product}/Branching">
+			<fileset dir="${web}/Branching"/>
+			<fileset file="${build.applets}/CSD.jar"/>
 		</copy>
-		<copy todir="${product}/${tutorial}" file="${build.applets}/CSD.jar"/>
+	</target>
+
+
+	<!-- helper targets - do not call directly -->
+	<target name="-clean">
+		<delete dir="${build.classes}/${applet}"/>
+		<delete file="${build.applets}/${applet}.jar"/>
+	</target>
+
+	<target name="-dapplet" depends="init">
+		<ant antfile="core.xml" target="dapplet">
+			<property name="build.classes" value="${build.classes}/${applet}"/>
+		</ant>
+	</target>
+
+	<target name="-capplet" depends="init">
+		<ant antfile="core.xml" target="capplet">
+			<property name="build.classes" value="${build.classes}/${applet}"/>
+		</ant>
 	</target>
 
 </project>

@@ -17,21 +17,22 @@
 	<target name="capplet" depends="cinterface,applet"/>
 
 	<target name="applet">
+		<property name="main" value="${applet}"/>
 		<javac srcdir="${src}" 
-			   destdir="${builddir}" 
+			   destdir="${build.classes}" 
 			   source="${source}" 
 			   target="${target}" 
 			   debug="off" 
 			   optimize="on" >
-			<include name="chh/virtuallabs/interface/labs/${applet}Lab.java"/>
-			<include name="chh/virtuallabs/core/labs/${applet}.java"/>
+			<include name="chh/virtuallabs/interface/labs/${main}Lab.java"/>
+			<include name="chh/virtuallabs/core/labs/${main}.java"/>
 			<compilerarg value="${compilerargs}"/>
 		</javac>
 
-		<jar destfile="${build.applets}/${applet}.jar" basedir="${builddir}" >
+		<jar destfile="${build.applets}/${applet}.jar" basedir="${build.classes}" >
 			<manifest>
 				<attribute name="Built-By" value="${user.name}"/>
-				<attribute name="Main-Class" value="chh.virtuallabs.${applet}Lab"/>
+				<attribute name="Main-Class" value="chh.virtuallabs.${main}Lab"/>
 			</manifest>
 		</jar>
 	</target>
