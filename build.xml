@@ -24,6 +24,15 @@
 		<condition property="compilerargs" value="-Xlint:all,-serial">
 			<equals arg1="${env.DEBUG}" arg2="debug"/>
 		</condition>
+		<condition property="debug" value="on">
+			<equals arg1="${env.DEBUG}" arg2="debug"/>
+		</condition>
+		<condition property="optimize" value="off">
+			<equals arg1="${env.DEBUG}" arg2="debug"/>
+		</condition>
+		<condition property="listfiles" value="on">
+			<equals arg1="${env.DEBUG}" arg2="debug"/>
+		</condition>
 	</target>
 
 	<!-- Kill all the created directories -->
@@ -115,6 +124,7 @@
 	<target name="EcoPGG">
 		<antcall target="-dapplet">
 			<param name="applet" value="EcoPGG"/>
+			<param name="main" value="EcoPublicGoods"/>
 		</antcall>
 	</target>
 
