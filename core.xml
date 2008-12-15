@@ -7,7 +7,7 @@
 	<property name="build.classes" value="${build}/classes"/>
 
 	<!-- default compiler args (optimize and maximize compatibility) -->
-	<property name="compilerargs" value=""/>
+	<property name="compilerargs" value="-nowarn"/>
 	<property name="source" value="1.3"/>
 	<property name="target" value="1.2"/>
 	<property name="debug" value="off"/>
