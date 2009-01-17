@@ -8,6 +8,7 @@
 	<property name="build" value="build"/>
 	<property name="build.classes" value="${build}/classes"/>
 	<property name="build.applets" value="${build}/applets"/>
+	<property name="build.simulations" value="${build}/simulations"/>
 	<property name="web" value="web"/>
 	<property name="product" value="product"/>
 
@@ -20,6 +21,7 @@
 		<mkdir dir="${build}"/>
 		<mkdir dir="${build.classes}"/>
 		<mkdir dir="${build.applets}"/>
+		<mkdir dir="${build.simulations}"/>
 		<mkdir dir="${product}"/>
 		<condition property="compilerargs" value="-Xlint:all,-serial">
 			<equals arg1="${env.DEBUG}" arg2="debug"/>
@@ -101,9 +103,36 @@
 		</antcall>
 	</target>
 
+	<target name="simCDLP">
+		<antcall target="-dsims">
+			<param name="core" value="CDLP"/>
+			<param name="sim" value="simCDLP"/>
+		</antcall>
+	</target>
+
 	<target name="cleanCDLP">
 		<antcall target="-clean">
 			<param name="applet" value="CDLP"/>
+		</antcall>
+	</target>
+
+	<!-- voluntary public goods with peer punishment & sanctioning -->
+	<target name="CDLPQ">
+		<antcall target="-dapplet">
+			<param name="applet" value="CDLPQ"/>
+		</antcall>
+	</target>
+
+	<target name="simCDLPQ">
+		<antcall target="-dsims">
+			<param name="core" value="CDLPQ"/>
+			<param name="sim" value="simCDLPQ"/>
+		</antcall>
+	</target>
+
+	<target name="cleanCDLPQ">
+		<antcall target="-clean">
+			<param name="applet" value="CDLPQ"/>
 		</antcall>
 	</target>
 
@@ -151,6 +180,13 @@
 	<target name="Reward">
 		<antcall target="-dapplet">
 			<param name="applet" value="Reward"/>
+		</antcall>
+	</target>
+
+	<target name="simReward">
+		<antcall target="-dsims">
+			<param name="core" value="Reward"/>
+			<param name="sim" value="simReward"/>
 		</antcall>
 	</target>
 
@@ -325,6 +361,18 @@
 	<target name="-capplet" depends="init">
 		<ant antfile="core.xml" target="capplet">
 			<property name="build.classes" value="${build.classes}/${applet}"/>
+		</ant>
+	</target>
+
+	<target name="-dsims" depends="init">
+		<ant antfile="core.xml" target="dsims">
+			<property name="build.classes" value="${build.classes}/${simulations}"/>
+		</ant>
+	</target>
+
+	<target name="-csims" depends="init">
+		<ant antfile="core.xml" target="csims">
+			<property name="build.classes" value="${build.classes}/${simulations}"/>
 		</ant>
 	</target>
 

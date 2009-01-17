@@ -23,6 +23,14 @@
 		<echo message="Compiling ${applet} with '${compilerargs}', optimize: ${optimize}, debug: ${debug}"/>
 	</target>
 
+	<target name="dsims" depends="dcore,sim">
+		<echo message="Compiling ${sim} with '${compilerargs}', optimize: ${optimize}, debug: ${debug}"/>
+	</target>
+
+	<target name="csims" depends="ccore,sim">
+		<echo message="Compiling ${sim} with '${compilerargs}', optimize: ${optimize}, debug: ${debug}"/>
+	</target>
+
 	<target name="applet">
 		<property name="main" value="${applet}"/>
 		<javac srcdir="${src}" 
@@ -41,6 +49,29 @@
 			<manifest>
 				<attribute name="Built-By" value="${user.name}"/>
 				<attribute name="Main-Class" value="chh.virtuallabs.${main}Lab"/>
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="sim">
+		<property name="game" value="${core}"/>
+		<property name="main" value="${sim}"/>
+		<javac srcdir="${src}" 
+			   destdir="${build.classes}" 
+			   source="${source}" 
+			   target="${target}" 
+			   listfiles="${listfiles}" 
+			   debug="${debug}" 
+			   optimize="${optimize}" >
+			<include name="chh/virtuallabs/core/labs/${game}.java"/>
+			<include name="chh/virtuallabs/simulation/${main}.java"/>
+			<compilerarg value="${compilerargs}"/>
+		</javac>
+
+		<jar destfile="${build.simulations}/${main}.jar" basedir="${build.classes}" >
+			<manifest>
+				<attribute name="Built-By" value="${user.name}"/>
+				<attribute name="Main-Class" value="chh.virtuallabs.${main}"/>
 			</manifest>
 		</jar>
 	</target>
