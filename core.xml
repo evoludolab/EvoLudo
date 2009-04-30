@@ -106,6 +106,17 @@
         <include name="chh/virtuallabs/interface/MVHistogramDConnectivity.java"/>
         <include name="chh/virtuallabs/interface/MVLog.java"/>
         <include name="chh/virtuallabs/interface/MVColorModel.java"/>
+
+        <include name="chh/virtuallabs/interface/MVDMean.java"/>
+        <include name="chh/virtuallabs/interface/MVDS3.java"/>
+        <include name="chh/graphics/AbstractGraph.java"/>
+        <include name="chh/graphics/LineGraph.java"/>
+        <include name="chh/graphics/S3Graph.java"/>
+        <include name="chh/graphics/CanvasLayer.java"/>
+        <include name="chh/graphics/FrameLayer.java"/>
+        <include name="chh/graphics/GlassLayer.java"/>
+        <include name="chh/graphics/GraphAxis.java"/>
+        <include name="chh/graphics/GraphListener.java"/>
 		<compilerarg value="${compilerargs}"/>
     </javac>
   </target>
