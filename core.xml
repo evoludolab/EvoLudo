@@ -3,6 +3,7 @@
 <project name="core" default="all" basedir="." >
 
 	<property name="src" value="src"/>
+	<property name="resources" value="resources"/>
 	<property name="build" value="build"/>
 	<property name="build.classes" value="${build}/classes"/>
 
@@ -107,6 +108,7 @@
         <include name="chh/virtuallabs/interface/MVLog.java"/>
         <include name="chh/virtuallabs/interface/MVColorModel.java"/>
 
+        <include name="chh/virtuallabs/interface/MVAbstract.java"/>
         <include name="chh/virtuallabs/interface/MVDMean.java"/>
         <include name="chh/virtuallabs/interface/MVDS3.java"/>
         <include name="chh/graphics/AbstractGraph.java"/>
@@ -114,11 +116,15 @@
         <include name="chh/graphics/S3Graph.java"/>
         <include name="chh/graphics/CanvasLayer.java"/>
         <include name="chh/graphics/FrameLayer.java"/>
+        <include name="chh/graphics/S3FrameLayer.java"/>
         <include name="chh/graphics/GlassLayer.java"/>
         <include name="chh/graphics/GraphAxis.java"/>
         <include name="chh/graphics/GraphListener.java"/>
 		<compilerarg value="${compilerargs}"/>
     </javac>
+    <copy todir="${build.classes}/${resources}">
+        <fileset dir="${resources}" includes="*"/>
+    </copy>
   </target>
 
    <!-- build continuous interface -->
@@ -152,6 +158,9 @@
         <include name="chh/virtuallabs/interface/MVColorModel.java"/>
 		<compilerarg value="${compilerargs}"/>
     </javac>
+    <copy todir="${build.classes}/${resources}">
+        <fileset dir="${resources}" includes="*"/>
+    </copy>
   </target>
 
    <!-- build discrete engine -->
