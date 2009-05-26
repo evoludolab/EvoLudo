@@ -104,14 +104,13 @@
         <include name="chh/graphics/LineGraph.java"/>
         <include name="chh/graphics/StateGraphListener.java"/>
         <include name="chh/graphics/StateData.java"/>
-        <include name="chh/graphics/S3Graph.java"/>
+		<include name="chh/graphics/S3Graph.java"/>
         <include name="chh/graphics/ParaGraph.java"/>
         <include name="chh/graphics/PopGraph.java"/>
         <include name="chh/graphics/PopData.java"/>
         <include name="chh/graphics/PopFrameLayer.java"/>
         <include name="chh/graphics/PopListener.java"/>
         <include name="chh/graphics/HistoGraphListener.java"/>
-        <include name="chh/graphics/CanvasLayer.java"/>
         <include name="chh/graphics/FrameLayer.java"/>
         <include name="chh/graphics/S3FrameLayer.java"/>
         <include name="chh/graphics/GlassLayer.java"/>
@@ -156,7 +155,6 @@
         <include name="chh/graphics/PopFrameLayer.java"/>
         <include name="chh/graphics/PopListener.java"/>
         <include name="chh/graphics/HistoGraphListener.java"/>
-        <include name="chh/graphics/CanvasLayer.java"/>
         <include name="chh/graphics/FrameLayer.java"/>
         <include name="chh/graphics/GlassLayer.java"/>
         <include name="chh/graphics/GraphAxis.java"/>

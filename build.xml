@@ -236,6 +236,19 @@
 		</antcall>
 	</target>
 
+	<!-- continuous labour -->
+	<target name="CLabour">
+		<antcall target="-capplet">
+			<param name="applet" value="CLabour"/>
+		</antcall>
+	</target>
+
+	<target name="cleanCLabour">
+		<antcall target="-clean">
+			<param name="applet" value="CLabour"/>
+		</antcall>
+	</target>
+
 	<!-- build web tutorials -->
 	<target name="web" depends="web-Intro,web-Moran,web-2x2,web-Snowdrift,web-PGG,web-CDL,web-CDLP,web-Discount,web-EcoPGG,web-RePun,web-CSD,web-general">
 		<copy todir="${product}/images">
