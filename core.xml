@@ -129,6 +129,7 @@
         <include name="chh/graphics/S3FrameLayer.java"/>
         <include name="chh/graphics/GlassLayer.java"/>
         <include name="chh/graphics/GraphAxis.java"/>
+        <include name="chh/graphics/GraphLabel.java"/>
         <include name="chh/graphics/GraphListener.java"/>
 		<compilerarg value="${compilerargs}"/>
     </javac>
@@ -172,6 +173,7 @@
         <include name="chh/graphics/FrameLayer.java"/>
         <include name="chh/graphics/GlassLayer.java"/>
         <include name="chh/graphics/GraphAxis.java"/>
+        <include name="chh/graphics/GraphLabel.java"/>
         <include name="chh/graphics/GraphListener.java"/>
 		<compilerarg value="${compilerargs}"/>
     </javac>
