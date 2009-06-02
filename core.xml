@@ -79,19 +79,6 @@
 
    <!-- build discrete interface -->
   <target name="dinterface" depends="dcore,freehep">
-<unjar dest="${build.classes}">
-	<fileset dir="lib">
-		<include name="freehep-graphics2d-2.1.1.jar"/>
-		<include name="freehep-util-2.0.2.jar"/>
-		<!-- xml is required for svg -->
-		<include name="freehep-xml-2.1.1.jar"/>
-		<include name="freehep-io-2.0.2.jar"/>
-		<include name="freehep-graphicsio-2.1.1.jar"/>
-		<!-- we could add further file formats here -->
-		<include name="freehep-graphicsio-pdf-2.1.1.jar"/>
-		<include name="freehep-graphicsio-svg-2.1.1.jar"/>
-	</fileset>
-</unjar>
     <javac srcdir="${src}" 
 		   destdir="${build.classes}" 
 		   source="${source}" 
