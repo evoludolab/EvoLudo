@@ -78,7 +78,7 @@
 	</target>
 
    <!-- build discrete interface -->
-  <target name="dinterface" depends="dcore">
+  <target name="dinterface" depends="dcore,freehep">
 <unjar dest="${build.classes}">
 	<fileset dir="lib">
 		<include name="freehep-graphics2d-2.1.1.jar"/>
@@ -139,7 +139,7 @@
   </target>
 
    <!-- build continuous interface -->
-  <target name="cinterface" depends="ccore">
+  <target name="cinterface" depends="ccore,freehep">
     <javac srcdir="${src}" 
 		   destdir="${build.classes}" 
 		   source="${source}" 
@@ -159,6 +159,7 @@
         <include name="chh/virtuallabs/interface/MVCMean.java"/>
         <include name="chh/virtuallabs/interface/MVCTraitHistogram.java"/>
         <include name="chh/virtuallabs/interface/MVCDistr.java"/>
+        <include name="chh/virtuallabs/interface/MVC2Distr.java"/>
         <include name="chh/virtuallabs/interface/MVFitness.java"/>
         <include name="chh/virtuallabs/interface/MVFitHistogram.java"/>
         <include name="chh/graphics/AbstractGraph.java"/>
@@ -180,6 +181,22 @@
     <copy todir="${build.classes}/${resources}">
         <fileset dir="${resources}" includes="*"/>
     </copy>
+  </target>
+
+  <target name="freehep">
+	<unjar dest="${build.classes}">
+		<fileset dir="lib">
+			<include name="freehep-graphics2d-2.1.1.jar"/>
+			<include name="freehep-util-2.0.2.jar"/>
+			<!-- xml is required for svg -->
+			<include name="freehep-xml-2.1.1.jar"/>
+			<include name="freehep-io-2.0.2.jar"/>
+			<include name="freehep-graphicsio-2.1.1.jar"/>
+			<!-- we could add further file formats here -->
+			<include name="freehep-graphicsio-pdf-2.1.1.jar"/>
+			<include name="freehep-graphicsio-svg-2.1.1.jar"/>
+		</fileset>
+	</unjar>
   </target>
 
    <!-- build discrete engine -->
