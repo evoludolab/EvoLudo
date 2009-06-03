@@ -182,6 +182,7 @@
 			<!-- we could add further file formats here -->
 			<include name="freehep-graphicsio-pdf-2.1.1.jar"/>
 			<include name="freehep-graphicsio-svg-2.1.1.jar"/>
+			<include name="freehep-graphicsio-ps-2.1.1.jar"/>
 		</fileset>
 	</unjar>
   </target>
