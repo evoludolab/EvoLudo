@@ -16,11 +16,11 @@
 	<property name="listfiles" value="no"/>
 
 	<!-- build discrete and continuous applets -->
-	<target name="dapplet" depends="dinterface,applet">
+	<target name="dapplet" depends="dinterface,applet,strip">
 		<echo message="Compiling ${applet} with '${compilerargs}', optimize: ${optimize}, debug: ${debug}"/>
 	</target>
 
-	<target name="capplet" depends="cinterface,applet">
+	<target name="capplet" depends="cinterface,applet,strip">
 		<echo message="Compiling ${applet} with '${compilerargs}', optimize: ${optimize}, debug: ${debug}"/>
 	</target>
 
@@ -78,7 +78,7 @@
 	</target>
 
    <!-- build discrete interface -->
-  <target name="dinterface" depends="dcore,freehep">
+  <target name="dinterface" depends="dcore,svg">
     <javac srcdir="${src}" 
 		   destdir="${build.classes}" 
 		   source="${source}" 
@@ -126,7 +126,7 @@
   </target>
 
    <!-- build continuous interface -->
-  <target name="cinterface" depends="ccore,freehep">
+  <target name="cinterface" depends="ccore,svg">
     <javac srcdir="${src}" 
 		   destdir="${build.classes}" 
 		   source="${source}" 
@@ -170,7 +170,10 @@
     </copy>
   </target>
 
-  <target name="freehep">
+  <!-- scalable vector graphics output -->
+  <target name="svg" depends="freehep,shadowsvg" />
+
+  <target name="freehep" unless="nosvg">
 	<unjar dest="${build.classes}">
 		<fileset dir="lib">
 			<include name="freehep-graphics2d-2.1.1.jar"/>
@@ -187,6 +190,51 @@
 	</unjar>
   </target>
 
+  <target name="shadowsvg" if="nosvg">
+    <javac srcdir="${src}" 
+		   destdir="${build.classes}" 
+		   source="${source}" 
+		   target="${target}" 
+		   listfiles="${listfiles}" 
+		   debug="${debug}" 
+		   optimize="${optimize}" >
+        <include name="chh/shadow/svg/VectorGraphics.java"/>
+        <include name="chh/shadow/svg/PSGraphics2D.java"/>
+        <include name="chh/shadow/svg/PDFGraphics2D.java"/>
+        <include name="chh/shadow/svg/SVGGraphics2D.java"/>
+        <include name="chh/shadow/svg/ShadowPackageOrgFreehepGraphics2d.java"/>
+        <include name="chh/shadow/svg/ShadowPackageOrgFreehepGraphicsioPs.java"/>
+        <include name="chh/shadow/svg/ShadowPackageOrgFreehepGraphicsioPdf.java"/>
+        <include name="chh/shadow/svg/ShadowPackageOrgFreehepGraphicsioSvg.java"/>
+		<compilerarg value="${compilerargs}"/>
+    </javac>
+  </target>
+
+  <!-- function parser for continuous games -->
+  <target name="parser" depends="jep,shadowjep" />
+
+  <target name="jep" unless="noparser">
+	<unjar dest="${build.classes}">
+		<fileset dir="lib">
+			<include name="jep-2.3.1.jar"/>
+		</fileset>
+	</unjar>
+  </target>
+
+  <target name="shadowjep" if="noparser">
+    <javac srcdir="${src}" 
+		   destdir="${build.classes}" 
+		   source="${source}" 
+		   target="${target}" 
+		   listfiles="${listfiles}" 
+		   debug="${debug}" 
+		   optimize="${optimize}" >
+        <include name="chh/shadow/jep/JEP.java"/>
+        <include name="chh/shadow/jep/ShadowPackageOrgNfunkJep.java"/>
+		<compilerarg value="${compilerargs}"/>
+    </javac>
+  </target>
+
    <!-- build discrete engine -->
   <target name="dcore" depends="svn,getopt">
     <javac srcdir="${src}" 
@@ -196,7 +244,7 @@
 		   listfiles="${listfiles}" 
 		   debug="${debug}" 
 		   optimize="${optimize}" >
-        <include name="chh/virtuallabs/core/util/Analyze.java"/>
+<!--        <include name="chh/virtuallabs/core/util/Analyze.java"/> -->
         <include name="chh/virtuallabs/core/Population.java"/>
         <include name="chh/virtuallabs/core/DPopulation.java"/>
         <include name="chh/virtuallabs/core/PopulationGeometry.java"/>
@@ -213,7 +261,7 @@
   </target>
 
    <!-- build continuous engine -->
-  <target name="ccore" depends="svn,getopt">
+  <target name="ccore" depends="svn,getopt,parser">
     <javac srcdir="${src}" 
 		   destdir="${build.classes}" 
 		   source="${source}" 
@@ -221,7 +269,7 @@
 		   listfiles="${listfiles}" 
 		   debug="${debug}" 
 		   optimize="${optimize}" >
-        <include name="chh/virtuallabs/core/util/Analyze.java"/>
+<!--        <include name="chh/virtuallabs/core/util/Analyze.java"/> -->
         <include name="chh/virtuallabs/core/Population.java"/>
         <include name="chh/virtuallabs/core/CXPopulation.java"/>
         <include name="chh/virtuallabs/core/CPopulation.java"/>
@@ -270,5 +318,36 @@
     <mkdir dir="${build.classes}"/>
   </target>
 
+  <target name="strip" if="strip">
+    <move file="${build.applets}/${applet}.jar" tofile="${build.applets}/${applet}_orig.jar" />
+<!--	<taskdef resource="/Users/hauert/Research/VirtualLabs/VirtualLabs/tools/proguard/ant/task.properties" classpath="tools/proguard/proguard.jar" /> -->
+	<taskdef name="proguard" classname="proguard.ant.ProGuardTask" classpath="tools/proguard/proguard.jar" />
+	<proguard>
+		-injars ${build.applets}/${applet}_orig.jar
+		-outjars ${build.applets}/${applet}.jar
+		-libraryjars ${java.home}/../Classes/classes.jar(java/**,javax/**,org/xml/**)
+		-ignorewarnings
+		-keep public class chh.virtuallabs.${main}Lab {
+			public static void main(java.lang.String[]);
+		}
+		-keep class chh.virtuallabs.GenericLab
+		-keep class * implements chh.virtuallabs.GenericLab
+		<!-- the following is needed for some service registration -->
+		-keep class org.freehep.graphicsio.raw.RawImageWriterSpi
+		-keep class org.freehep.graphicsio.gif.GIFImageWriterSpi
+		-keep class org.freehep.graphicsio.ppm.PPMImageWriterSpi
+	</proguard>
+  </target>
+
+<!-- in earlier experiments with (an earlier version) proguard i had additional instructions:
+		-libraryjars additions/lib/jdom-1.0.jar
+		-libraryjars additions/lib/junit-3.8.2.jar
+		-libraryjars additions/lib/openide-lookup-1.9-patched-1.0.jar
+		-libraryjars additions/lib/freehep-export-2.1.1.jar
+		-libraryjars additions/lib/freehep-swing-2.0.3.jar
+note that these jars are not needed in the end and all references will be stripped.
+maybe this also caused troubles with obfuscation.
+instead, -ignorewarnings seems to do the trick. ugly but efficient.
+-->
 </project>
 

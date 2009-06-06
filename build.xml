@@ -32,6 +32,9 @@
 		<condition property="optimize" value="off">
 			<equals arg1="${env.DEBUG}" arg2="debug"/>
 		</condition>
+		<condition property="nostrip">
+			<equals arg1="${env.DEBUG}" arg2="debug"/>
+		</condition>
 		<condition property="listfiles" value="on">
 			<equals arg1="${env.DEBUG}" arg2="debug"/>
 		</condition>
@@ -250,7 +253,15 @@
 	</target>
 
 	<!-- build web tutorials -->
-	<target name="web" depends="web-Intro,web-Moran,web-2x2,web-Snowdrift,web-PGG,web-CDL,web-CDLP,web-Discount,web-EcoPGG,web-RePun,web-CSD,web-general">
+	<target name="web">
+		<antcall target="-web">
+			<param name="nosvg" value="true"/>
+			<param name="noparser" value="true"/>
+			<param name="strip" value="true"/>
+		</antcall>
+	</target>
+
+	<target name="-web" depends="web-Intro,web-Moran,web-2x2,web-Snowdrift,web-PGG,web-CDL,web-CDLP,web-Discount,web-EcoPGG,web-RePun,web-CSD,web-general">
 		<copy todir="${product}/images">
 			<fileset dir="${web}/images"/>
 		</copy>
