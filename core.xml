@@ -99,6 +99,7 @@
         <include name="chh/virtuallabs/interface/MVDS4Manifold.java"/>
         <include name="chh/virtuallabs/interface/MVDPhase2D.java"/>
         <include name="chh/virtuallabs/interface/MVPop.java"/>
+		<include name="chh/virtuallabs/interface/MVPop3D.java"/>
         <include name="chh/virtuallabs/interface/MVFitness.java"/>
         <include name="chh/virtuallabs/interface/MVFitHistogram.java"/>
         <include name="chh/graphics/AbstractGraph.java"/>
@@ -108,6 +109,7 @@
 		<include name="chh/graphics/S3Graph.java"/>
         <include name="chh/graphics/ParaGraph.java"/>
         <include name="chh/graphics/PopGraph.java"/>
+		<include name="chh/graphics/PopGraph3D.java"/>
         <include name="chh/graphics/PopData.java"/>
         <include name="chh/graphics/PopFrameLayer.java"/>
         <include name="chh/graphics/PopListener.java"/>
