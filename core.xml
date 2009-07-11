@@ -145,6 +145,7 @@
         <include name="chh/virtuallabs/interface/MVColorModel.java"/>
         <include name="chh/virtuallabs/interface/MVAbstract.java"/>
         <include name="chh/virtuallabs/interface/MVPop.java"/>
+        <include name="chh/virtuallabs/interface/MVPop3D.java"/>
         <include name="chh/virtuallabs/interface/MVCMean.java"/>
         <include name="chh/virtuallabs/interface/MVCTraitHistogram.java"/>
         <include name="chh/virtuallabs/interface/MVCDistr.java"/>
@@ -328,6 +329,10 @@
 		-injars ${build.applets}/${applet}_orig.jar
 		-outjars ${build.applets}/${applet}.jar
 		-libraryjars ${java.home}/../Classes/classes.jar(java/**,javax/**,org/xml/**)
+		<!-- this is apple specific -->
+		-libraryjars /System/Library/Java/Extensions/j3dcore.jar
+		-libraryjars /System/Library/Java/Extensions/j3dutils.jar
+		-libraryjars /System/Library/Java/Extensions/vecmath.jar
 		-ignorewarnings
 		-keep public class chh.virtuallabs.${main}Lab {
 			public static void main(java.lang.String[]);
