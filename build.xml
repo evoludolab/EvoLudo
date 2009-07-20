@@ -199,6 +199,26 @@
 		</antcall>
 	</target>
 
+	<!-- reward & punishment -->
+	<target name="RePun">
+		<antcall target="-dapplet">
+			<param name="applet" value="RePun"/>
+		</antcall>
+	</target>
+
+	<target name="simRePun">
+		<antcall target="-dsims">
+			<param name="core" value="RePun"/>
+			<param name="sim" value="simRePun"/>
+		</antcall>
+	</target>
+
+	<target name="cleanRePun">
+		<antcall target="-clean">
+			<param name="applet" value="RePun"/>
+		</antcall>
+	</target>
+
 	<!-- rock, paper, scissors -->
 	<target name="RSP">
 		<antcall target="-dapplet">
@@ -390,13 +410,13 @@
 
 	<target name="-dsims" depends="init">
 		<ant antfile="core.xml" target="dsims">
-			<property name="build.classes" value="${build.classes}/${simulations}"/>
+			<property name="build.classes" value="${build.simulations}/${core}"/>
 		</ant>
 	</target>
 
 	<target name="-csims" depends="init">
 		<ant antfile="core.xml" target="csims">
-			<property name="build.classes" value="${build.classes}/${simulations}"/>
+			<property name="build.classes" value="${build.simulations}/${core}"/>
 		</ant>
 	</target>
 
