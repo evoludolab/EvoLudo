@@ -258,7 +258,7 @@
         <include name="chh/virtuallabs/interface/MVColorModel.java"/>
         <include name="chh/util/ChHMath.java"/>
         <include name="chh/util/ChHFormatter.java"/>
-        <include name="chh/util/MersenneTwister.java"/>
+        <include name="ec/util/MersenneTwister.java"/>
 		<compilerarg value="${compilerargs}"/>
     </javac>
   </target>
@@ -282,7 +282,7 @@
         <include name="chh/virtuallabs/interface/MVColorModel.java"/>
         <include name="chh/util/ChHMath.java"/>
         <include name="chh/util/ChHFormatter.java"/>
-        <include name="chh/util/MersenneTwister.java"/>
+        <include name="ec/util/MersenneTwister.java"/>
 		<compilerarg value="${compilerargs}"/>
     </javac>
   </target>

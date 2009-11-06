@@ -67,6 +67,13 @@
 		</antcall>
 	</target>
 
+	<target name="sim2x2Fix">
+		<antcall target="-dsims">
+			<param name="core" value="TwoByTwo"/>
+			<param name="sim" value="simTBTFix"/>
+		</antcall>
+	</target>
+
 	<target name="clean2x2">
 		<antcall target="-clean">
 			<param name="applet" value="2x2"/>
