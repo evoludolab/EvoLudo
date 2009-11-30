@@ -258,6 +258,8 @@
         <include name="chh/virtuallabs/interface/MVColorModel.java"/>
         <include name="chh/util/ChHMath.java"/>
         <include name="chh/util/ChHFormatter.java"/>
+        <include name="chh/util/PlistParserer.java"/>
+        <include name="chh/util/XMLCoder.java"/>
         <include name="ec/util/MersenneTwister.java"/>
 		<compilerarg value="${compilerargs}"/>
     </javac>
@@ -282,6 +284,8 @@
         <include name="chh/virtuallabs/interface/MVColorModel.java"/>
         <include name="chh/util/ChHMath.java"/>
         <include name="chh/util/ChHFormatter.java"/>
+        <include name="chh/util/PlistParserer.java"/>
+        <include name="chh/util/XMLCoder.java"/>
         <include name="ec/util/MersenneTwister.java"/>
 		<compilerarg value="${compilerargs}"/>
     </javac>
