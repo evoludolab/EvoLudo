@@ -239,7 +239,7 @@
   </target>
 
    <!-- build discrete engine -->
-  <target name="dcore" depends="svn,getopt">
+  <target name="dcore" depends="svn">
     <javac srcdir="${src}" 
 		   destdir="${build.classes}" 
 		   source="${source}" 
@@ -260,13 +260,15 @@
         <include name="chh/util/ChHFormatter.java"/>
         <include name="chh/util/PlistParserer.java"/>
         <include name="chh/util/XMLCoder.java"/>
+        <include name="chh/util/CLOParser.java"/>
+        <include name="chh/util/CLOProvider.java"/>
         <include name="ec/util/MersenneTwister.java"/>
 		<compilerarg value="${compilerargs}"/>
     </javac>
   </target>
 
    <!-- build continuous engine -->
-  <target name="ccore" depends="svn,getopt,parser">
+  <target name="ccore" depends="svn,parser">
     <javac srcdir="${src}" 
 		   destdir="${build.classes}" 
 		   source="${source}" 
@@ -286,6 +288,8 @@
         <include name="chh/util/ChHFormatter.java"/>
         <include name="chh/util/PlistParserer.java"/>
         <include name="chh/util/XMLCoder.java"/>
+        <include name="chh/util/CLOParser.java"/>
+        <include name="chh/util/CLOProvider.java"/>
         <include name="ec/util/MersenneTwister.java"/>
 		<compilerarg value="${compilerargs}"/>
     </javac>
@@ -298,25 +302,6 @@
         <arg value="-r"/>
         <arg value="HEAD"/>
     </exec>
-  </target>
-
-  <!-- build getopt -->
-  <target name="getopt" depends="init">
-    <javac srcdir="${src}" 
-		   destdir="${build.classes}" 
-		   source="${source}" 
-		   target="${target}" 
-		   listfiles="${listfiles}" 
-		   debug="${debug}" 
-		   optimize="${optimize}" >
-        <include name="gnu/getopt/Getopt.java"/>
-        <include name="gnu/getopt/LongOpt.java"/>
-		<compilerarg value="${compilerargs}"/>
-    </javac>
-
-    <copy todir="${build.classes}">
-        <fileset dir="${src}" includes="gnu/getopt/*.properties"/>
-    </copy>
   </target>
 
   <!-- Prepare build directories -->
