@@ -1,6 +1,29 @@
-<!-- ant build file for VirtualLabs -->
+<!--
+//
+//  EvoLudo Project
+//
+//  Copyright 2002-2010 Christoph Hauert
+//
+//  This work is licensed under the Creative Commons Attribution-Noncommercial 2.5 Canada License. 
+//  To view a copy of this license, visit http://creativecommons.org/licenses/by-nc/2.5/ca/ or send
+//  a letter to Creative Commons, 171 Second Street, Suite 300, San Francisco, California, 94105, USA.
+//
+//  According to the above license you may share, adapt and extend the project for your own purposes but
+//  you may not use it for commercial purposes and you are required to attribute the author and the origin 
+//  of the project as follows:
+//
+//  Hauert, Christoph (2010) EvoLudo Project, http://www.evoludo.org (svn: revision number)
+//  or
+//  Hauert, Christoph (2010) EvoLudo Project, http://www.evoludo.org (date of download)
+//
+//  with the date of the download or the svn revision number inserted as appropriate (the formatting may 
+//  be changed to comply with publisher requirements)
+//
+//  -->
 
-<project name="VirtualLabs" default="web" basedir="." >
+<!-- ant build file for EvoLudoLabs -->
+
+<project name="EvoLudoLabs" default="web" basedir="." >
 
 	<!-- Properties -->
 

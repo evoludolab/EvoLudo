@@ -1,4 +1,27 @@
-<!-- ant build file for core classes of VirtualLabs -->
+<!--
+//
+//  EvoLudo Project
+//
+//  Copyright 2002-2010 Christoph Hauert
+//
+//  This work is licensed under the Creative Commons Attribution-Noncommercial 2.5 Canada License. 
+//  To view a copy of this license, visit http://creativecommons.org/licenses/by-nc/2.5/ca/ or send
+//  a letter to Creative Commons, 171 Second Street, Suite 300, San Francisco, California, 94105, USA.
+//
+//  According to the above license you may share, adapt and extend the project for your own purposes but
+//  you may not use it for commercial purposes and you are required to attribute the author and the origin 
+//  of the project as follows:
+//
+//  Hauert, Christoph (2010) EvoLudo Project, http://www.evoludo.org (svn: revision number)
+//  or
+//  Hauert, Christoph (2010) EvoLudo Project, http://www.evoludo.org (date of download)
+//
+//  with the date of the download or the svn revision number inserted as appropriate (the formatting may 
+//  be changed to comply with publisher requirements)
+//
+//  -->
+
+<!-- ant build file for core classes of EvoLudoLabs -->
 
 <project name="core" default="all" basedir="." >
 
@@ -41,15 +64,15 @@
 			   listfiles="${listfiles}" 
 			   debug="${debug}" 
 			   optimize="${optimize}" >
-			<include name="chh/virtuallabs/interface/labs/${main}Lab.java"/>
-			<include name="chh/virtuallabs/core/labs/${main}.java"/>
+			<include name="org/evoludo/labs/interface/labs/${main}Lab.java"/>
+			<include name="org/evoludo/labs/core/labs/${main}.java"/>
 			<compilerarg value="${compilerargs}"/>
 		</javac>
 
 		<jar destfile="${build.applets}/${applet}.jar" basedir="${build.classes}" >
 			<manifest>
 				<attribute name="Built-By" value="${user.name}"/>
-				<attribute name="Main-Class" value="chh.virtuallabs.${main}Lab"/>
+				<attribute name="Main-Class" value="org.evoludo.labs.${main}Lab"/>
 			</manifest>
 		</jar>
 	</target>
@@ -64,15 +87,15 @@
 			   listfiles="${listfiles}" 
 			   debug="${debug}" 
 			   optimize="${optimize}" >
-			<include name="chh/virtuallabs/core/labs/${game}.java"/>
-			<include name="chh/virtuallabs/simulation/${main}.java"/>
+			<include name="org/evoludo/labs/core/labs/${game}.java"/>
+			<include name="org/evoludo/labs/simulation/${main}.java"/>
 			<compilerarg value="${compilerargs}"/>
 		</javac>
 
 		<jar destfile="${build.simulations}/${main}.jar" basedir="${build.classes}" >
 			<manifest>
 				<attribute name="Built-By" value="${user.name}"/>
-				<attribute name="Main-Class" value="chh.virtuallabs.${main}"/>
+				<attribute name="Main-Class" value="org.evoludo.labs.${main}"/>
 			</manifest>
 		</jar>
 	</target>
@@ -86,49 +109,51 @@
 		   listfiles="${listfiles}" 
 		   debug="${debug}" 
 		   optimize="${optimize}" >
-        <include name="chh/virtuallabs/interface/GenericLab.java"/>
-        <include name="chh/virtuallabs/interface/PopulationLab.java"/>
-        <include name="chh/virtuallabs/interface/DPopulationLab.java"/>
-        <include name="chh/virtuallabs/interface/ParamPanel.java"/>
-        <include name="chh/virtuallabs/interface/MultiView.java"/>
-        <include name="chh/virtuallabs/interface/MVLog.java"/>
-        <include name="chh/virtuallabs/interface/MVAbstract.java"/>
-        <include name="chh/virtuallabs/interface/MVDMean.java"/>
-        <include name="chh/virtuallabs/interface/MVDS3.java"/>
-        <include name="chh/virtuallabs/interface/MVDS4Manifold.java"/>
-        <include name="chh/virtuallabs/interface/MVDPhase2D.java"/>
-        <include name="chh/virtuallabs/interface/MVPop.java"/>
-		<include name="chh/virtuallabs/interface/MVPop3D.java"/>
-        <include name="chh/virtuallabs/interface/MVFitness.java"/>
-        <include name="chh/virtuallabs/interface/MVFitHistogram.java"/>
-        <include name="chh/graphics/AbstractGraph.java"/>
-        <include name="chh/graphics/ColorModel.java"/>
-        <include name="chh/graphics/LineGraph.java"/>
-        <include name="chh/graphics/StateGraphListener.java"/>
-        <include name="chh/graphics/StateData.java"/>
-		<include name="chh/graphics/S3Graph.java"/>
-        <include name="chh/graphics/ParaGraph.java"/>
-        <include name="chh/graphics/PopGraph.java"/>
-		<include name="chh/graphics/PopGraph3D.java"/>
-        <include name="chh/graphics/PopData.java"/>
-        <include name="chh/graphics/PopFrameLayer.java"/>
-        <include name="chh/graphics/PopListener.java"/>
-        <include name="chh/graphics/HistoGraphListener.java"/>
-        <include name="chh/graphics/FrameLayer.java"/>
-        <include name="chh/graphics/S3FrameLayer.java"/>
-        <include name="chh/graphics/GlassLayer.java"/>
-        <include name="chh/graphics/GraphAxis.java"/>
-        <include name="chh/graphics/GraphLabel.java"/>
-        <include name="chh/graphics/GraphListener.java"/>
+        <include name="org/evoludo/labs/interface/GenericLab.java"/>
+        <include name="org/evoludo/labs/interface/PopulationLab.java"/>
+        <include name="org/evoludo/labs/interface/DPopulationLab.java"/>
+        <include name="org/evoludo/labs/interface/ParamPanel.java"/>
+        <include name="org/evoludo/labs/interface/MultiView.java"/>
+        <include name="org/evoludo/labs/interface/MVLog.java"/>
+        <include name="org/evoludo/labs/interface/MVAbstractCore.java"/>
+        <include name="org/evoludo/labs/interface/MVAbstract.java"/>
+        <include name="org/evoludo/labs/interface/MVDMean.java"/>
+        <include name="org/evoludo/labs/interface/MVDS3.java"/>
+        <include name="org/evoludo/labs/interface/MVDS4Manifold.java"/>
+        <include name="org/evoludo/labs/interface/MVDPhase2D.java"/>
+        <include name="org/evoludo/labs/interface/MVPop.java"/>
+		<include name="org/evoludo/labs/interface/MVPop3D.java"/>
+        <include name="org/evoludo/labs/interface/MVFitness.java"/>
+        <include name="org/evoludo/labs/interface/MVFitHistogram.java"/>
+        <include name="org/evoludo/graphics/AbstractGraph.java"/>
+        <include name="org/evoludo/graphics/ColorModel.java"/>
+        <include name="org/evoludo/graphics/LineGraph.java"/>
+        <include name="org/evoludo/graphics/StateGraphListener.java"/>
+        <include name="org/evoludo/graphics/StateData.java"/>
+		<include name="org/evoludo/graphics/S3Graph.java"/>
+        <include name="org/evoludo/graphics/ParaGraph.java"/>
+        <include name="org/evoludo/graphics/PopGraph.java"/>
+		<include name="org/evoludo/graphics/PopGraph3D.java"/>
+        <include name="org/evoludo/graphics/PopData.java"/>
+        <include name="org/evoludo/graphics/PopFrameLayer.java"/>
+        <include name="org/evoludo/graphics/PopListener.java"/>
+        <include name="org/evoludo/graphics/HistoGraphListener.java"/>
+        <include name="org/evoludo/graphics/FrameLayer.java"/>
+        <include name="org/evoludo/graphics/S3FrameLayer.java"/>
+        <include name="org/evoludo/graphics/GlassLayer.java"/>
+        <include name="org/evoludo/graphics/GraphAxis.java"/>
+        <include name="org/evoludo/graphics/GraphLabel.java"/>
+        <include name="org/evoludo/graphics/GraphListener.java"/>
 		<compilerarg value="${compilerargs}"/>
     </javac>
     <copy todir="${build.classes}/${resources}">
         <fileset dir="${resources}" includes="*"/>
     </copy>
+	<delete file="${src}/org/evoludo/labs/interface/MVAbstract.java"/>
   </target>
 
    <!-- build continuous interface -->
-  <target name="cinterface" depends="ccore,svg">
+  <target name="cinterface" depends="ccore,svg,parser">
     <javac srcdir="${src}" 
 		   destdir="${build.classes}" 
 		   source="${source}" 
@@ -136,47 +161,53 @@
 		   listfiles="${listfiles}" 
 		   debug="${debug}" 
 		   optimize="${optimize}" >
-        <include name="chh/virtuallabs/interface/GenericLab.java"/>
-        <include name="chh/virtuallabs/interface/PopulationLab.java"/>
-        <include name="chh/virtuallabs/interface/CXPopulationLab.java"/>
-        <include name="chh/virtuallabs/interface/ParamPanel.java"/>
-        <include name="chh/virtuallabs/interface/MultiView.java"/>
-        <include name="chh/virtuallabs/interface/MVLog.java"/>
-        <include name="chh/virtuallabs/interface/MVAbstract.java"/>
-        <include name="chh/virtuallabs/interface/MVPop.java"/>
-        <include name="chh/virtuallabs/interface/MVPop3D.java"/>
-        <include name="chh/virtuallabs/interface/MVCMean.java"/>
-        <include name="chh/virtuallabs/interface/MVCTraitHistogram.java"/>
-        <include name="chh/virtuallabs/interface/MVCDistr.java"/>
-        <include name="chh/virtuallabs/interface/MVC2Distr.java"/>
-        <include name="chh/virtuallabs/interface/MVFitness.java"/>
-        <include name="chh/virtuallabs/interface/MVFitHistogram.java"/>
-        <include name="chh/graphics/AbstractGraph.java"/>
-        <include name="chh/graphics/ColorModel.java"/>
-        <include name="chh/graphics/LineGraph.java"/>
-        <include name="chh/graphics/StateGraphListener.java"/>
-        <include name="chh/graphics/StateData.java"/>
-        <include name="chh/graphics/PopGraph.java"/>
-        <include name="chh/graphics/PopData.java"/>
-        <include name="chh/graphics/PopFrameLayer.java"/>
-        <include name="chh/graphics/PopListener.java"/>
-        <include name="chh/graphics/HistoGraphListener.java"/>
-        <include name="chh/graphics/FrameLayer.java"/>
-        <include name="chh/graphics/GlassLayer.java"/>
-        <include name="chh/graphics/GraphAxis.java"/>
-        <include name="chh/graphics/GraphLabel.java"/>
-        <include name="chh/graphics/GraphListener.java"/>
+        <include name="org/evoludo/labs/interface/GenericLab.java"/>
+        <include name="org/evoludo/labs/interface/PopulationLab.java"/>
+        <include name="org/evoludo/labs/interface/CXPopulationLabCore.java"/>
+        <include name="org/evoludo/labs/interface/CXPopulationLab.java"/>
+        <include name="org/evoludo/labs/interface/ParamPanel.java"/>
+        <include name="org/evoludo/labs/interface/MultiView.java"/>
+        <include name="org/evoludo/labs/interface/MVLog.java"/>
+        <include name="org/evoludo/labs/interface/MVAbstractCore.java"/>
+        <include name="org/evoludo/labs/interface/MVAbstract.java"/>
+        <include name="org/evoludo/labs/interface/MVPop.java"/>
+        <include name="org/evoludo/labs/interface/MVPop3D.java"/>
+        <include name="org/evoludo/labs/interface/MVCMean.java"/>
+        <include name="org/evoludo/labs/interface/MVCTraitHistogram.java"/>
+        <include name="org/evoludo/labs/interface/MVCDistr.java"/>
+        <include name="org/evoludo/labs/interface/MVC2Distr.java"/>
+        <include name="org/evoludo/labs/interface/MVFitness.java"/>
+        <include name="org/evoludo/labs/interface/MVFitHistogram.java"/>
+        <include name="org/evoludo/graphics/AbstractGraph.java"/>
+        <include name="org/evoludo/graphics/ColorModel.java"/>
+        <include name="org/evoludo/graphics/LineGraph.java"/>
+        <include name="org/evoludo/graphics/StateGraphListener.java"/>
+        <include name="org/evoludo/graphics/StateData.java"/>
+        <include name="org/evoludo/graphics/PopGraph.java"/>
+        <include name="org/evoludo/graphics/PopData.java"/>
+        <include name="org/evoludo/graphics/PopFrameLayer.java"/>
+        <include name="org/evoludo/graphics/PopListener.java"/>
+        <include name="org/evoludo/graphics/HistoGraphListener.java"/>
+        <include name="org/evoludo/graphics/FrameLayer.java"/>
+        <include name="org/evoludo/graphics/GlassLayer.java"/>
+        <include name="org/evoludo/graphics/GraphAxis.java"/>
+        <include name="org/evoludo/graphics/GraphLabel.java"/>
+        <include name="org/evoludo/graphics/GraphListener.java"/>
 		<compilerarg value="${compilerargs}"/>
     </javac>
     <copy todir="${build.classes}/${resources}">
         <fileset dir="${resources}" includes="*"/>
     </copy>
+	<delete file="${src}/org/evoludo/labs/interface/MVAbstract.java"/>
+	<delete file="${src}/org/evoludo/labs/interface/CXPopulationLab.java"/>
   </target>
 
   <!-- scalable vector graphics output -->
-  <target name="svg" depends="freehep,shadowsvg" />
+  <target name="svg" depends="svgtrue,svgfalse"/>
 
-  <target name="freehep" unless="nosvg">
+  <target name="svgtrue" unless="nosvg">
+	<copy file="${src}/org/evoludo/labs/interface/MVAbstractSVG.java" 
+		  tofile="${src}/org/evoludo/labs/interface/MVAbstract.java" overwrite="true"/>
 	<unjar dest="${build.classes}">
 		<fileset dir="lib">
 			<include name="freehep-graphics2d-2.1.1.jar"/>
@@ -193,30 +224,17 @@
 	</unjar>
   </target>
 
-  <target name="shadowsvg" if="nosvg">
-    <javac srcdir="${src}" 
-		   destdir="${build.classes}" 
-		   source="${source}" 
-		   target="${target}" 
-		   listfiles="${listfiles}" 
-		   debug="${debug}" 
-		   optimize="${optimize}" >
-        <include name="chh/shadow/svg/VectorGraphics.java"/>
-        <include name="chh/shadow/svg/PSGraphics2D.java"/>
-        <include name="chh/shadow/svg/PDFGraphics2D.java"/>
-        <include name="chh/shadow/svg/SVGGraphics2D.java"/>
-        <include name="chh/shadow/svg/ShadowPackageOrgFreehepGraphics2d.java"/>
-        <include name="chh/shadow/svg/ShadowPackageOrgFreehepGraphicsioPs.java"/>
-        <include name="chh/shadow/svg/ShadowPackageOrgFreehepGraphicsioPdf.java"/>
-        <include name="chh/shadow/svg/ShadowPackageOrgFreehepGraphicsioSvg.java"/>
-		<compilerarg value="${compilerargs}"/>
-    </javac>
+  <target name="svgfalse" if="nosvg">
+	<copy file="${src}/org/evoludo/labs/interface/MVAbstractNoSVG.java" 
+		  tofile="${src}/org/evoludo/labs/interface/MVAbstract.java" overwrite="true"/>
   </target>
 
   <!-- function parser for continuous games -->
-  <target name="parser" depends="jep,shadowjep" />
+  <target name="parser" depends="jep,nojep"/>
 
   <target name="jep" unless="noparser">
+	<copy file="${src}/org/evoludo/labs/interface/CXPopulationLabJEP.java" 
+		  tofile="${src}/org/evoludo/labs/interface/CXPopulationLab.java" overwrite="true"/>
 	<unjar dest="${build.classes}">
 		<fileset dir="lib">
 			<include name="jep-2.3.1.jar"/>
@@ -224,18 +242,9 @@
 	</unjar>
   </target>
 
-  <target name="shadowjep" if="noparser">
-    <javac srcdir="${src}" 
-		   destdir="${build.classes}" 
-		   source="${source}" 
-		   target="${target}" 
-		   listfiles="${listfiles}" 
-		   debug="${debug}" 
-		   optimize="${optimize}" >
-        <include name="chh/shadow/jep/JEP.java"/>
-        <include name="chh/shadow/jep/ShadowPackageOrgNfunkJep.java"/>
-		<compilerarg value="${compilerargs}"/>
-    </javac>
+  <target name="nojep" if="noparser">
+	<copy file="${src}/org/evoludo/labs/interface/CXPopulationLabNoJEP.java" 
+		  tofile="${src}/org/evoludo/labs/interface/CXPopulationLab.java" overwrite="true"/>
   </target>
 
    <!-- build discrete engine -->
@@ -247,28 +256,28 @@
 		   listfiles="${listfiles}" 
 		   debug="${debug}" 
 		   optimize="${optimize}" >
-<!--        <include name="chh/virtuallabs/core/util/Analyze.java"/> -->
-        <include name="chh/virtuallabs/core/Population.java"/>
-        <include name="chh/virtuallabs/core/DPopulation.java"/>
-        <include name="chh/virtuallabs/core/PopulationGeometry.java"/>
-        <include name="chh/virtuallabs/core/PopulationParser.java"/>
-        <include name="chh/virtuallabs/core/EngineListener.java"/>
-        <include name="chh/virtuallabs/core/util/RungeKutta.java"/>
-        <include name="chh/virtuallabs/core/util/ReactionDiffusion.java"/>
-        <include name="chh/graphics/ColorModel.java"/>
-        <include name="chh/util/ChHMath.java"/>
-        <include name="chh/util/ChHFormatter.java"/>
-        <include name="chh/util/PlistParserer.java"/>
-        <include name="chh/util/XMLCoder.java"/>
-        <include name="chh/util/CLOParser.java"/>
-        <include name="chh/util/CLOProvider.java"/>
+<!--        <include name="org/evoludo/labs/core/util/Analyze.java"/> -->
+        <include name="org/evoludo/labs/core/Population.java"/>
+        <include name="org/evoludo/labs/core/DPopulation.java"/>
+        <include name="org/evoludo/labs/core/PopulationGeometry.java"/>
+        <include name="org/evoludo/labs/core/PopulationParser.java"/>
+        <include name="org/evoludo/labs/core/EngineListener.java"/>
+        <include name="org/evoludo/labs/core/util/RungeKutta.java"/>
+        <include name="org/evoludo/labs/core/util/ReactionDiffusion.java"/>
+        <include name="org/evoludo/graphics/ColorModel.java"/>
+        <include name="org/evoludo/util/ChHMath.java"/>
+        <include name="org/evoludo/util/ChHFormatter.java"/>
+        <include name="org/evoludo/util/PlistParserer.java"/>
+        <include name="org/evoludo/util/XMLCoder.java"/>
+        <include name="org/evoludo/util/CLOParser.java"/>
+        <include name="org/evoludo/util/CLOProvider.java"/>
         <include name="ec/util/MersenneTwister.java"/>
 		<compilerarg value="${compilerargs}"/>
     </javac>
   </target>
 
    <!-- build continuous engine -->
-  <target name="ccore" depends="svn,parser">
+  <target name="ccore" depends="svn">
     <javac srcdir="${src}" 
 		   destdir="${build.classes}" 
 		   source="${source}" 
@@ -276,20 +285,20 @@
 		   listfiles="${listfiles}" 
 		   debug="${debug}" 
 		   optimize="${optimize}" >
-<!--        <include name="chh/virtuallabs/core/util/Analyze.java"/> -->
-        <include name="chh/virtuallabs/core/Population.java"/>
-        <include name="chh/virtuallabs/core/CXPopulation.java"/>
-        <include name="chh/virtuallabs/core/CPopulation.java"/>
-        <include name="chh/virtuallabs/core/PopulationGeometry.java"/>
-        <include name="chh/virtuallabs/core/PopulationParser.java"/>
-        <include name="chh/virtuallabs/core/EngineListener.java"/>
-        <include name="chh/graphics/ColorModel.java"/>
-        <include name="chh/util/ChHMath.java"/>
-        <include name="chh/util/ChHFormatter.java"/>
-        <include name="chh/util/PlistParserer.java"/>
-        <include name="chh/util/XMLCoder.java"/>
-        <include name="chh/util/CLOParser.java"/>
-        <include name="chh/util/CLOProvider.java"/>
+<!--        <include name="org/evoludo/labs/core/util/Analyze.java"/> -->
+        <include name="org/evoludo/labs/core/Population.java"/>
+        <include name="org/evoludo/labs/core/CXPopulation.java"/>
+        <include name="org/evoludo/labs/core/CPopulation.java"/>
+        <include name="org/evoludo/labs/core/PopulationGeometry.java"/>
+        <include name="org/evoludo/labs/core/PopulationParser.java"/>
+        <include name="org/evoludo/labs/core/EngineListener.java"/>
+        <include name="org/evoludo/graphics/ColorModel.java"/>
+        <include name="org/evoludo/util/ChHMath.java"/>
+        <include name="org/evoludo/util/ChHFormatter.java"/>
+        <include name="org/evoludo/util/PlistParserer.java"/>
+        <include name="org/evoludo/util/XMLCoder.java"/>
+        <include name="org/evoludo/util/CLOParser.java"/>
+        <include name="org/evoludo/util/CLOProvider.java"/>
         <include name="ec/util/MersenneTwister.java"/>
 		<compilerarg value="${compilerargs}"/>
     </javac>
@@ -312,7 +321,6 @@
 
   <target name="strip" if="strip">
     <move file="${build.applets}/${applet}.jar" tofile="${build.applets}/${applet}_orig.jar" />
-<!--	<taskdef resource="/Users/hauert/Research/VirtualLabs/VirtualLabs/tools/proguard/ant/task.properties" classpath="tools/proguard/proguard.jar" /> -->
 	<taskdef name="proguard" classname="proguard.ant.ProGuardTask" classpath="tools/proguard/proguard.jar" />
 	<proguard>
 		-injars ${build.applets}/${applet}_orig.jar
@@ -322,28 +330,13 @@
 		-libraryjars /System/Library/Java/Extensions/j3dcore.jar
 		-libraryjars /System/Library/Java/Extensions/j3dutils.jar
 		-libraryjars /System/Library/Java/Extensions/vecmath.jar
-		-ignorewarnings
-		-keep public class chh.virtuallabs.${main}Lab {
+		-keep public class org.evoludo.labs.${main}Lab {
 			public static void main(java.lang.String[]);
 		}
-		-keep class chh.virtuallabs.GenericLab
-		-keep class * implements chh.virtuallabs.GenericLab
-		<!-- the following is needed for some service registration -->
-		-keep class org.freehep.graphicsio.raw.RawImageWriterSpi
-		-keep class org.freehep.graphicsio.gif.GIFImageWriterSpi
-		-keep class org.freehep.graphicsio.ppm.PPMImageWriterSpi
+		-keep class org.evoludo.labs.GenericLab
+		-keep class * implements org.evoludo.labs.GenericLab
+		-keep class * implements org.evoludo.labs.Population
 	</proguard>
   </target>
-
-<!-- in earlier experiments with (an earlier version) proguard i had additional instructions:
-		-libraryjars additions/lib/jdom-1.0.jar
-		-libraryjars additions/lib/junit-3.8.2.jar
-		-libraryjars additions/lib/openide-lookup-1.9-patched-1.0.jar
-		-libraryjars additions/lib/freehep-export-2.1.1.jar
-		-libraryjars additions/lib/freehep-swing-2.0.3.jar
-note that these jars are not needed in the end and all references will be stripped.
-maybe this also caused troubles with obfuscation.
-instead, -ignorewarnings seems to do the trick. ugly but efficient.
--->
 </project>
 
