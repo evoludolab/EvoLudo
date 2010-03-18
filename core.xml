@@ -292,6 +292,9 @@
         <include name="org/evoludo/labs/core/PopulationGeometry.java"/>
         <include name="org/evoludo/labs/core/PopulationParser.java"/>
         <include name="org/evoludo/labs/core/EngineListener.java"/>
+<!-- rungekutta and reactiondiffusion added -->
+		<include name="org/evoludo/labs/core/util/RungeKutta.java"/>
+        <include name="org/evoludo/labs/core/util/ReactionDiffusion.java"/>
         <include name="org/evoludo/graphics/ColorModel.java"/>
         <include name="org/evoludo/util/ChHMath.java"/>
         <include name="org/evoludo/util/ChHFormatter.java"/>
@@ -326,6 +329,7 @@
 		-injars ${build.applets}/${applet}_orig.jar
 		-outjars ${build.applets}/${applet}.jar
 		-libraryjars ${java.home}/../Classes/classes.jar(java/**,javax/**,org/xml/**)
+-dontskipnonpubliclibraryclasses
 		<!-- this is apple specific -->
 		-libraryjars /System/Library/Java/Extensions/j3dcore.jar
 		-libraryjars /System/Library/Java/Extensions/j3dutils.jar
