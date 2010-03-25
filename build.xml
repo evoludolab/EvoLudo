@@ -34,6 +34,7 @@
 	<property name="build.simulations" value="${build}/simulations"/>
 	<property name="web" value="web"/>
 	<property name="product" value="product"/>
+	<property name="ant.files" value="ant"/>
 
 	<property environment="env"/>
 
@@ -427,25 +428,25 @@
 	</target>
 
 	<target name="-dapplet" depends="init">
-		<ant antfile="core.xml" target="dapplet">
+		<ant antfile="${ant.files}/core.xml" target="dapplet">
 			<property name="build.classes" value="${build.classes}/${applet}"/>
 		</ant>
 	</target>
 
 	<target name="-capplet" depends="init">
-		<ant antfile="core.xml" target="capplet">
+		<ant antfile="${ant.files}/core.xml" target="capplet">
 			<property name="build.classes" value="${build.classes}/${applet}"/>
 		</ant>
 	</target>
 
 	<target name="-dsims" depends="init">
-		<ant antfile="core.xml" target="dsims">
+		<ant antfile="${ant.files}/core.xml" target="dsims">
 			<property name="build.classes" value="${build.simulations}/${core}"/>
 		</ant>
 	</target>
 
 	<target name="-csims" depends="init">
-		<ant antfile="core.xml" target="csims">
+		<ant antfile="${ant.files}/core.xml" target="csims">
 			<property name="build.classes" value="${build.simulations}/${core}"/>
 		</ant>
 	</target>
