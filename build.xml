@@ -98,6 +98,21 @@
 		</antcall>
 	</target>
 
+<!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
+	<target name="sim2x2" depends="-dinterface">
+		<antcall target="-dsims">
+			<param name="core" value="TwoByTwo"/>
+			<param name="sim" value="simTBT"/>
+		</antcall>
+	</target>
+
+	<target name="-dinterface" depends="init">
+		<ant antfile="${ant.files}/core.xml" target="dinterface">
+			<property name="build.classes" value="${build.simulations}/TwoByTwo"/>
+		</ant>
+	</target>
+<!-- end hackish... -->
+
 	<target name="clean2x2">
 		<antcall target="-clean">
 			<param name="applet" value="2x2"/>
