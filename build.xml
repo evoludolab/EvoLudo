@@ -100,17 +100,20 @@
 
 <!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
 	<target name="sim2x2" depends="-dinterface">
+		<antcall target="-dinterface">
+			<param name="core" value="TwoByTwo"/>
+		</antcall>
 		<antcall target="-dsims">
 			<param name="core" value="TwoByTwo"/>
 			<param name="sim" value="simTBT"/>
 		</antcall>
 	</target>
 
-	<target name="-dinterface" depends="init">
+<!--	<target name="-dinterface" depends="init">
 		<ant antfile="${ant.files}/core.xml" target="dinterface">
 			<property name="build.classes" value="${build.simulations}/TwoByTwo"/>
 		</ant>
-	</target>
+	</target>-->
 <!-- end hackish... -->
 
 	<target name="clean2x2">
@@ -211,6 +214,28 @@
 			<param name="applet" value="EcoPGG"/>
 		</antcall>
 	</target>
+
+<!-- this is a bit hackish - we need some classes from the interface to enable snapshots... 
+		<property name="core" value="EcoPublicGoods"/>
+
+	<target name="simEcoPGG" depends="-dinterface">
+-->
+	<target name="simEcoPGG">
+		<antcall target="-dinterface">
+			<param name="core" value="EcoPublicGoods"/>
+		</antcall>
+		<antcall target="-dsims">
+			<param name="core" value="EcoPublicGoods"/>
+			<param name="sim" value="simEcoPGG"/>
+		</antcall>
+	</target>
+
+	<target name="-dinterface" depends="init">
+		<ant antfile="${ant.files}/core.xml" target="dinterface">
+			<property name="build.classes" value="${build.simulations}/${core}"/>
+		</ant>
+	</target>
+<!-- end hackish... -->
 
 	<!-- punishment & reputation -->
 	<target name="Punishment">
