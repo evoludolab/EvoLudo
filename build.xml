@@ -122,6 +122,27 @@
 		</antcall>
 	</target>
 
+	<!-- 2x2 demes -->
+	<target name="demes2x2">
+		<antcall target="-dapplet">
+			<param name="applet" value="Demes2x2"/>
+			<param name="main" value="DemesTBT"/>
+		</antcall>
+	</target>
+
+	<target name="simDemes2x2">
+		<antcall target="-dsims">
+			<param name="core" value="DemesTBT"/>
+			<param name="sim" value="scanDemesTBT"/>
+		</antcall>
+	</target>
+
+	<target name="cleanDemes2x2">
+		<antcall target="-clean">
+			<param name="applet" value="Demes2x2"/>
+		</antcall>
+	</target>
+
 	<!-- public goods -->
 	<target name="PGG">
 		<antcall target="-dapplet">
