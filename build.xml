@@ -123,16 +123,18 @@
 	</target>
 
 	<!-- 2x2 demes -->
-	<target name="demes2x2">
+	<target name="Demes2x2">
 		<antcall target="-dapplet">
-			<param name="applet" value="Demes2x2"/>
 			<param name="main" value="DemesTBT"/>
+			<param name="super" value="TwoByTwo"/>
+			<param name="applet" value="Demes2x2"/>
 		</antcall>
 	</target>
 
 	<target name="simDemes2x2">
 		<antcall target="-dsims">
 			<param name="core" value="DemesTBT"/>
+			<param name="super" value="TwoByTwo"/>
 			<param name="sim" value="scanDemesTBT"/>
 		</antcall>
 	</target>
