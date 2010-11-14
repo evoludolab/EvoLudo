@@ -93,6 +93,7 @@
 
 	<target name="sim2x2Fix">
 		<antcall target="-dsims">
+			<param name="nosvg" value="true"/>
 			<param name="core" value="TwoByTwo"/>
 			<param name="sim" value="simTBTFix"/>
 		</antcall>
@@ -101,9 +102,11 @@
 <!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
 	<target name="sim2x2" depends="-dinterface">
 		<antcall target="-dinterface">
+			<param name="nosvg" value="true"/>
 			<param name="core" value="TwoByTwo"/>
 		</antcall>
 		<antcall target="-dsims">
+			<param name="nosvg" value="true"/>
 			<param name="core" value="TwoByTwo"/>
 			<param name="sim" value="simTBT"/>
 		</antcall>
@@ -133,6 +136,7 @@
 
 	<target name="simDemes2x2">
 		<antcall target="-dsims">
+			<param name="nosvg" value="true"/>
 			<param name="core" value="DemesTBT"/>
 			<param name="super" value="TwoByTwo"/>
 			<param name="sim" value="scanDemesTBT"/>
@@ -180,6 +184,7 @@
 
 	<target name="simCDLP">
 		<antcall target="-dsims">
+			<param name="nosvg" value="true"/>
 			<param name="core" value="CDLP"/>
 			<param name="sim" value="simCDLP"/>
 		</antcall>
@@ -200,6 +205,7 @@
 
 	<target name="simCDLPQ">
 		<antcall target="-dsims">
+			<param name="nosvg" value="true"/>
 			<param name="core" value="CDLPQ"/>
 			<param name="sim" value="simCDLPQ"/>
 		</antcall>
@@ -245,9 +251,11 @@
 -->
 	<target name="simEcoPGG">
 		<antcall target="-dinterface">
+			<param name="nosvg" value="true"/>
 			<param name="core" value="EcoPublicGoods"/>
 		</antcall>
 		<antcall target="-dsims">
+			<param name="nosvg" value="true"/>
 			<param name="core" value="EcoPublicGoods"/>
 			<param name="sim" value="simEcoPGG"/>
 		</antcall>
@@ -282,6 +290,7 @@
 
 	<target name="simReward">
 		<antcall target="-dsims">
+			<param name="nosvg" value="true"/>
 			<param name="core" value="Reward"/>
 			<param name="sim" value="simReward"/>
 		</antcall>
@@ -302,6 +311,7 @@
 
 	<target name="simRePun">
 		<antcall target="-dsims">
+			<param name="nosvg" value="true"/>
 			<param name="core" value="RePun"/>
 			<param name="sim" value="simRePun"/>
 		</antcall>
