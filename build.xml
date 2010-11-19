@@ -84,6 +84,20 @@
 	</target>
 
 	<!-- 2x2 -->
+	<target name="NetGames">
+		<antcall target="-dapplet">
+			<param name="applet" value="NetGames"/>
+			<param name="main" value="NetGames"/>
+		</antcall>
+	</target>
+
+	<target name="cleanNetGames">
+		<antcall target="-clean">
+			<param name="applet" value="NetGames"/>
+		</antcall>
+	</target>
+
+	<!-- 2x2 -->
 	<target name="2x2">
 		<antcall target="-dapplet">
 			<param name="applet" value="2x2"/>
