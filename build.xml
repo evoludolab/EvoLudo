@@ -217,13 +217,27 @@
 		</antcall>
 	</target>
 
-	<target name="simCDLPQ">
+<!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
+	<target name="simCDLPQ" depends="-dinterface">
+		<antcall target="-dinterface">
+			<param name="nosvg" value="true"/>
+			<param name="core" value="CDLPQ"/>
+		</antcall>
 		<antcall target="-dsims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="CDLPQ"/>
 			<param name="sim" value="simCDLPQ"/>
 		</antcall>
 	</target>
+<!-- end hackish... -->
+
+<!--	<target name="simCDLPQ">
+		<antcall target="-dsims">
+			<param name="nosvg" value="true"/>
+			<param name="core" value="CDLPQ"/>
+			<param name="sim" value="simCDLPQ"/>
+		</antcall>
+	</target> -->
 
 	<target name="cleanCDLPQ">
 		<antcall target="-clean">
