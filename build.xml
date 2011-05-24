@@ -70,6 +70,20 @@
 		<delete dir="${product}"/>
 	</target>
 
+	<!-- SpaceTime -->
+	<target name="SpaceTime">
+		<antcall target="-dapplet">
+			<param name="applet" value="SpaceTime"/>
+			<param name="main" value="SpaceTime"/>
+		</antcall>
+	</target>
+
+	<target name="cleanSpaceTime">
+		<antcall target="-clean">
+			<param name="applet" value="SpaceTime"/>
+		</antcall>
+	</target>
+
 	<!-- Moran -->
 	<target name="Moran">
 		<antcall target="-dapplet">
