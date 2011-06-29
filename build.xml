@@ -372,6 +372,14 @@
 		</antcall>
 	</target>
 
+	<target name="simRSP">
+		<antcall target="-dsims">
+			<param name="nosvg" value="true"/>
+			<param name="core" value="RSP"/>
+			<param name="sim" value="simRSP"/>
+		</antcall>
+	</target>
+
 	<target name="cleanRSP">
 		<antcall target="-clean">
 			<param name="applet" value="RSP"/>
