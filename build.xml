@@ -90,7 +90,15 @@
 			<param name="applet" value="Moran"/>
 		</antcall>
 	</target>
-
+	
+	<target name="simMoran">
+		<antcall target="-dsims">
+			<param name="nosvg" value="true"/>
+			<param name="core" value="Moran"/>
+			<param name="sim" value="simMoran"/>
+		</antcall>
+	</target>
+	
 	<target name="cleanMoran">
 		<antcall target="-clean">
 			<param name="applet" value="Moran"/>
@@ -367,6 +375,9 @@
 
 	<!-- rock, paper, scissors -->
 	<target name="RSP">
+<!-- <ant antfile="${ant.files}/core.xml" target="mtj">
+	<property name="build.classes" value="${build.classes}/RSP"/>
+</ant> -->
 		<antcall target="-dapplet">
 			<param name="applet" value="RSP"/>
 		</antcall>
@@ -386,6 +397,27 @@
 		</antcall>
 	</target>
 
+	<!-- n-traits -->
+	<target name="Traits">
+<!--		<ant antfile="${ant.files}/core.xml" target="mtj">
+			<property name="build.classes" value="${build.classes}/Traits"/>
+		</ant>-->
+		<antcall target="-dapplet">
+			<param name="applet" value="Traits"/>
+		</antcall>
+	</target>
+
+	<target name="simTraits">
+<!--		<ant antfile="${ant.files}/core.xml" target="mtj">
+			<property name="build.classes" value="${build.simulations}/Traits"/>
+		</ant>-->
+		<antcall target="-dsims">
+			<param name="nosvg" value="true"/>
+			<param name="core" value="Traits"/>
+			<param name="sim" value="simTraits"/>
+		</antcall>
+	</target>
+	
 	<!-- continuous 2x2 -->
 	<target name="C2x2">
 		<antcall target="-capplet">
