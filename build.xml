@@ -402,7 +402,7 @@
 <!--		<ant antfile="${ant.files}/core.xml" target="mtj">
 			<property name="build.classes" value="${build.classes}/Traits"/>
 		</ant>-->
-		<antcall target="-dapplet">
+		<antcall target="-dappletmtj">
 			<param name="applet" value="Traits"/>
 		</antcall>
 	</target>
@@ -415,6 +415,12 @@
 			<param name="nosvg" value="true"/>
 			<param name="core" value="Traits"/>
 			<param name="sim" value="simTraits"/>
+		</antcall>
+	</target>
+	
+	<target name="cleanTraits">
+		<antcall target="-clean">
+			<param name="applet" value="Traits"/>
 		</antcall>
 	</target>
 	
@@ -587,7 +593,15 @@
 			<property name="build.classes" value="${build.classes}/${applet}"/>
 		</ant>
 	</target>
-
+	
+	<target name="-dappletmtj">
+		<ant antfile="${ant.files}/core.xml" target="mtj">
+			<property name="build.classes" value="${build.classes}/${applet}"/>
+		</ant>
+		<!-- first needs to build mtj -->
+		<antcall target="-dapplet"/>
+	</target>
+	
 	<target name="-capplet" depends="init">
 		<ant antfile="${ant.files}/core.xml" target="capplet">
 			<property name="build.classes" value="${build.classes}/${applet}"/>
