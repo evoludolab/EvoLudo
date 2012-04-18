@@ -175,7 +175,7 @@
 			<param name="nosvg" value="true"/>
 			<param name="core" value="DemesTBT"/>
 			<param name="super" value="TwoByTwo"/>
-			<param name="sim" value="scanDemesTBT"/>
+			<param name="sim" value="simDemesTBT"/>
 		</antcall>
 	</target>
 
