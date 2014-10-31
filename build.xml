@@ -135,6 +135,14 @@
 		</antcall>
 	</target>
 
+	<target name="sim2x2Matching">
+		<antcall target="-dsims">
+			<param name="nosvg" value="true"/>
+			<param name="core" value="TwoByTwo"/>
+			<param name="sim" value="simTBTMatching"/>
+		</antcall>
+	</target>
+
 <!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
 	<target name="sim2x2" depends="-dinterface">
 		<antcall target="-dinterface">
