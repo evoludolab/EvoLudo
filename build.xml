@@ -84,6 +84,19 @@
 		</antcall>
 	</target>
 
+	<!-- Motility -->
+	<target name="Motility">
+		<antcall target="-dapplet">
+			<param name="applet" value="Motility"/>
+		</antcall>
+	</target>
+
+	<target name="cleanMotility">
+		<antcall target="-clean">
+			<param name="applet" value="Motility"/>
+		</antcall>
+	</target>
+
 	<!-- Moran -->
 	<target name="Moran">
 		<antcall target="-dapplet">
@@ -282,6 +295,13 @@
 			<param name="applet" value="CDLPQ"/>
 		</antcall>
 	</target>
+
+    <!-- institution -->
+    <target name="Institution">
+        <antcall target="-dapplet">
+            <param name="applet" value="Institution"/>
+        </antcall>
+    </target>
 
 	<!-- synergy & discounting -->
 	<target name="Discount">
