@@ -91,6 +91,14 @@
 		</antcall>
 	</target>
 
+	<target name="scanMoti">
+		<antcall target="-dsims">
+			<param name="nosvg" value="true"/>
+			<param name="core" value="Motility"/>
+			<param name="sim" value="scanMotility"/>
+		</antcall>
+	</target>
+
 	<target name="cleanMotility">
 		<antcall target="-clean">
 			<param name="applet" value="Motility"/>
