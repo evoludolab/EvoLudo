@@ -1,0 +1,4 @@
+eclipse.preferences.version=1
+jarsExcludedFromWebInfLib=/Local/Developer/parallax-1.6/parallax-1.6.jar|/Users/hauert/Research/Eclipse/EvoLudo/lib/freehep-graphics2d-2.1.1.jar|/Users/hauert/Research/Eclipse/EvoLudo/lib/freehep-graphicsio-2.1.1.jar|/Users/hauert/Research/Eclipse/EvoLudo/lib/freehep-graphicsio-pdf-2.1.1.jar|/Users/hauert/Research/Eclipse/EvoLudo/lib/freehep-graphicsio-ps-2.1.1.jar|/Users/hauert/Research/Eclipse/EvoLudo/lib/freehep-graphicsio-svg-2.1.1.jar|/Users/hauert/Research/Eclipse/EvoLudo/lib/freehep-io-2.0.2.jar|/Users/hauert/Research/Eclipse/EvoLudo/lib/freehep-util-2.0.2.jar|/Users/hauert/Research/Eclipse/EvoLudo/lib/freehep-xml-2.1.1.jar|/Users/hauert/Research/Eclipse/EvoLudo/lib/jep-2.3.1.jar|/Users/hauert/Research/Eclipse/EvoLudo/lib/mtj-0.9.14.jar
+warSrcDir=war
+warSrcDirIsOutput=true
