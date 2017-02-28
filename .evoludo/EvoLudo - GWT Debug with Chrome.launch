@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="com.github.sdbg.debug.core.chromeLaunchConfig">
+<stringAttribute key="applicationArguments" value=""/>
+<stringAttribute key="applicationName" value=""/>
+<booleanAttribute key="launchFile" value="false"/>
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+<listEntry value="/EvoLudo"/>
+</listAttribute>
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+<listEntry value="4"/>
+</listAttribute>
+<listAttribute key="org.eclipse.debug.ui.favoriteGroups">
+<listEntry value="org.eclipse.debug.ui.launchGroup.debug"/>
+</listAttribute>
+<stringAttribute key="projectName" value="EvoLudo"/>
+<booleanAttribute key="showLaunchOutput" value="false"/>
+<stringAttribute key="url" value="http://127.0.0.1:8888/EvoLudoWeb.html"/>
+<stringAttribute key="urlQueryParams" value=""/>
+</launchConfiguration>
