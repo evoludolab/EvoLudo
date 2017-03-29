@@ -70,17 +70,24 @@
 		<delete dir="${product}"/>
 	</target>
 
-	<!-- SpaceTime -->
-	<target name="SpaceTime">
-		<antcall target="-dapplet">
-			<param name="applet" value="SpaceTime"/>
-			<param name="main" value="SpaceTime"/>
+	<!-- Dialect -->
+	<target name="Dialect">
+		<antcall target="-capplet">
+			<param name="applet" value="Dialect"/>
 		</antcall>
 	</target>
 
-	<target name="cleanSpaceTime">
+	<target name="simDialect">
+		<antcall target="-csims">
+			<param name="nosvg" value="true"/>
+			<param name="core" value="Dialect"/>
+			<param name="sim" value="simDialect"/>
+		</antcall>
+	</target>
+
+	<target name="cleanDialect">
 		<antcall target="-clean">
-			<param name="applet" value="SpaceTime"/>
+			<param name="applet" value="Dialect"/>
 		</antcall>
 	</target>
 
