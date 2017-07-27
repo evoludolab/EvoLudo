@@ -14,6 +14,6 @@
 </listAttribute>
 <stringAttribute key="projectName" value="EvoLudo"/>
 <booleanAttribute key="showLaunchOutput" value="false"/>
-<stringAttribute key="url" value="http://127.0.0.1:8888/EvoLudoWeb.html"/>
+<stringAttribute key="url" value="http://127.0.0.1:8888/TestLabs.html"/>
 <stringAttribute key="urlQueryParams" value=""/>
 </launchConfiguration>
