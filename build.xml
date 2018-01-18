@@ -50,7 +50,7 @@
 		<mkdir dir="${build.applets}"/>
 		<mkdir dir="${build.simulations}"/>
 		<mkdir dir="${product}"/>
-		<condition property="compilerargs" value="-Xlint:all,-serial">
+		<condition property="compilerargs" value="-Xlint:all,-fallthrough">
 			<equals arg1="${env.DEBUG}" arg2="debug"/>
 		</condition>
 		<condition property="debug" value="on">
@@ -677,176 +677,20 @@
 	<!-- GWT compilation targets -->
 	<!-- Arguments to gwtc and devmode targets -->
 	<property name="gwt.args" value="" />
-	
-	<!-- Configure path to GWT SDK -->
-<!--	<property name="gwt.sdk" location="/Users/hauert/Research/Eclipse/Google/releases/gwt-2.8.2.XHTML" />-->
 
-
-<!--	<path id="project.class.path">-->
-<!--		<pathelement location="war/WEB-INF/classes"/>-->
-<!--		<pathelement location="${gwt.sdk}/gwt-user.jar"/>-->
-<!--		<pathelement location="${gwt.sdk}/gwt-dev.jar"/>-->
-<!--		<pathelement location="${gwt.sdk}/validation-api-1.0.0.GA.jar"/>-->
-<!--		<pathelement location="${gwt.sdk}/validation-api-1.0.0.GA-sources.jar"/>-->
-<!--		<fileset dir="war/WEB-INF/lib" includes="**/*.jar"/>-->
-		<!-- Add any additional non-server libs (such as JUnit) here -->
-<!--	</path>-->
-
-	<target name="libs" depends="gwt-init" description="Copy libs to WEB-INF/lib">
-		<mkdir dir="war/WEB-INF/lib" />
-		<copy todir="war/WEB-INF/lib" file="${gwt.sdk}/gwt-servlet.jar" />
-		<copy todir="war/WEB-INF/lib" file="${gwt.sdk}/gwt-servlet-deps.jar" />
-		<!-- Add any additional server libs that need to be copied -->
-	</target>
-	
-	<target name="javac" depends="libs" description="Compile java source to bytecode">
-		<mkdir dir="war/WEB-INF/classes"/>
-		<javac srcdir="src" includes="**" encoding="utf-8"
-			destdir="war/WEB-INF/classes"
-			source="1.7" target="1.7" nowarn="true"
-			debug="true" debuglevel="lines,vars,source">
-			<classpath refid="project.class.path"/>
-		</javac>
-		<copy todir="war/WEB-INF/classes">
-			<fileset dir="src" excludes="**/*.java"/>
-		</copy>
-	</target>
-	
-	<target name="gwtc" depends="javac" description="GWT compile to JavaScript (production mode)">
-		<java failonerror="true" fork="true" classname="com.google.gwt.dev.Compiler" maxmemory="512m">
-			<classpath>
-				<pathelement location="src"/>
-				<path refid="project.class.path"/>
-			</classpath>
-			<arg line="-war"/>
-			<arg value="war"/>
-			<!-- Additional arguments like -style PRETTY or -logLevel DEBUG -->
-			<arg line="${gwt.args}"/>
-			<arg value="org.evoludo.EvoLudoWeb"/>
-		</java>
-	</target>
-	
-	<target name="devmode" depends="javac" description="Run development mode (pass -Dgwt.args=-nosuperDevMode to fallback to classic DevMode)">
-		<java failonerror="true" fork="true" classname="com.google.gwt.dev.DevMode" maxmemory="1g">
-			<classpath>
-				<pathelement location="src"/>
-				<path refid="project.class.path"/>
-				<pathelement location="${gwt.sdk}/gwt-codeserver.jar"/>
-			</classpath>
-			<arg value="-startupUrl"/>
-			<arg value="EvoLudoWeb.html"/>
-			<arg line="-war"/>
-			<arg value="war"/>
-			<!-- Additional arguments like -style PRETTY, -logLevel DEBUG or -nosuperDevMode -->
-			<arg line="${gwt.args}"/>
-			<arg value="org.evoludo.EvoLudoWeb"/>
-			<arg value="org.evoludo.EvoLudoWeb"/>
-		</java>
-	</target>
-	
-	<target name="javac.tests" depends="javac" description="Compiles test code">
-		<javac srcdir="test" includes="**" encoding="utf-8"
-			source="1.7" target="1.7" nowarn="true"
-			destdir="war/WEB-INF/classes"
-			debug="true" debuglevel="lines,vars,source">
-			<classpath location="../Google/tools/lib/junit/junit-4.8.2.jar"/>
-			<classpath refid="project.class.path"/>
-		</javac>
-	</target>
-	
-	<target name="test.dev" depends="javac.tests" description="Run development mode tests">
-		<mkdir dir="reports/htmlunit.dev" />
-		<junit fork="yes" printsummary="yes" haltonfailure="yes" maxmemory="256m">
-			<sysproperty key="gwt.args" value="-devMode -logLevel WARN -war www-test" />
-			<sysproperty key="java.awt.headless" value="true" />
-			<classpath>
-				<pathelement location="src" />
-				<pathelement location="test" />
-				<path refid="project.class.path" />
-				<pathelement location="/Users/hauert/Research/Eclipse/Google/releases/gwt-2.8.2.XHTML/validation-api-1.0.0.GA.jar" />
-				<pathelement location="/Users/hauert/Research/Eclipse/Google/releases/gwt-2.8.2.XHTML/validation-api-1.0.0.GA-sources.jar" />
-				<pathelement location="../Google/tools/lib/junit/junit-4.8.2.jar" />
-			</classpath>
-			<batchtest todir="reports/htmlunit.dev" >
-				<fileset dir="test" >
-					<include name="**/*Suite.java" />
-				</fileset>
-			</batchtest>
-			<formatter type="plain" />
-			<formatter type="xml" />
-		</junit>
-	</target>
-	
-	<target name="test.prod" depends="javac.tests" description="Run production mode tests">
-		<mkdir dir="reports/htmlunit.prod" />
-		<junit fork="yes" printsummary="yes" haltonfailure="yes" maxmemory="256m">
-			<sysproperty key="gwt.args" value="-logLevel WARN -war www-test" />
-			<sysproperty key="java.awt.headless" value="true" />
-			<classpath>
-				<pathelement location="src" />
-				<pathelement location="test" />
-				<path refid="project.class.path" />
-				<pathelement location="/Users/hauert/Research/Eclipse/Google/releases/gwt-2.8.2.XHTML/validation-api-1.0.0.GA.jar" />
-				<pathelement location="/Users/hauert/Research/Eclipse/Google/releases/gwt-2.8.2.XHTML/validation-api-1.0.0.GA-sources.jar" />
-				<pathelement location="../Google/tools/lib/junit/junit-4.8.2.jar" />
-			</classpath>
-			<batchtest todir="reports/htmlunit.prod" >
-				<fileset dir="test" >
-					<include name="**/*Suite.java" />
-				</fileset>
-			</batchtest>
-			<formatter type="plain" />
-			<formatter type="xml" />
-		</junit>
-	</target>
-	
 	<target name="gwt-test" description="Run development and production mode tests">
-		<antcall target="test.dev" />
-		<antcall target="test.prod" />
+		<ant antfile="${ant.files}/core.xml" target="test.dev"/>
+		<ant antfile="${ant.files}/core.xml" target="test.prod"/>
 	</target>
 	
-	<target name="gwt-init" depends="platform" description="init GWT">
-		<property file="${ant.files}/${os.family}.properties"/>
-		<path id="project.class.path">
-			<pathelement location="war/WEB-INF/classes"/>
-			<pathelement location="${gwt.sdk}/gwt-user.jar"/>
-			<pathelement location="${gwt.sdk}/gwt-dev.jar"/>
-			<pathelement location="${gwt.sdk}/validation-api-1.0.0.GA.jar"/>
-			<pathelement location="${gwt.sdk}/validation-api-1.0.0.GA-sources.jar"/>
-			<fileset dir="war/WEB-INF/lib" includes="**/*.jar"/>
-			<!-- Add any additional non-server libs (such as JUnit) here -->
-			<pathelement location="lib/parallax-1.6.jar"/>
-		</path>
-	</target>
-		
-	<!-- copied from ant/core.xml -->
-	<target name="platform">
-		<condition property="os.family" value="windows">
-			<os family="windows"/>
-		</condition>
-		<condition property="os.family" value="unix">
-			<and>
-				<os family="unix"/>
-				<not>
-					<os family="mac"/>
-				</not>
-			</and>
-		</condition>
-		<condition property="os.family" value="macosx">
-			<and>
-				<os family="unix"/>
-				<os family="mac"/>
-			</and>
-		</condition>
-		<condition property="os.family" value="default">
-			<not>
-				<isset property="os.family"/>
-			</not>
-		</condition>
+	<target name="gwt-build">
+		<ant antfile="${ant.files}/core.xml" target="gwtc"/>
 	</target>
 
-	<target name="gwt-build" depends="gwtc" description="Build this project"/>
-	
+	<target name="gwt-dev">
+		<ant antfile="${ant.files}/core.xml" target="devmode"/>
+	</target>
+
 	<target name="gwt-war" depends="gwt-build" description="Create a war file">
 		<zip destfile="EvoLudoWeb.war" basedir="war"/>
 	</target>
