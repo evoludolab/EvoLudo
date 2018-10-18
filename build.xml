@@ -138,6 +138,13 @@
 		</antcall>
 	</target>
 
+    <!-- ecological Moran -->
+    <target name="eMoran">
+        <antcall target="-dapplet">
+            <param name="applet" value="EcoMoran"/>
+        </antcall>
+    </target>
+
 	<!-- NetGames -->
 	<target name="NetGames">
 		<antcall target="-dapplet">
