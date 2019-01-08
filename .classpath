@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry excluding="org/evoludo/emulategwt/" kind="src" path="src"/>
-	<classpathentry kind="lib" path="lib/freehep-graphics2d-2.1.1.jar"/>
-	<classpathentry kind="lib" path="lib/freehep-graphicsio-2.1.1.jar"/>
-	<classpathentry kind="lib" path="lib/freehep-graphicsio-pdf-2.1.1.jar"/>
-	<classpathentry kind="lib" path="lib/freehep-graphicsio-ps-2.1.1.jar"/>
-	<classpathentry kind="lib" path="lib/freehep-graphicsio-svg-2.1.1.jar"/>
-	<classpathentry kind="lib" path="lib/freehep-io-2.0.2.jar"/>
-	<classpathentry kind="lib" path="lib/freehep-util-2.0.2.jar"/>
-	<classpathentry kind="lib" path="lib/freehep-xml-2.1.1.jar"/>
 	<classpathentry kind="lib" path="lib/jep-2.3.1.jar"/>
 	<classpathentry kind="lib" path="lib/mtj-0.9.14.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="lib/parallax-1.6.jar"/>
 	<classpathentry kind="con" path="com.gwtplugins.gwt.eclipse.core.GWT_CONTAINER"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="lib/freehep-graphics2d-2.4.jar"/>
+	<classpathentry kind="lib" path="lib/freehep-graphicsbase-2.4.jar"/>
+	<classpathentry kind="lib" path="lib/freehep-graphicsio-2.4.jar"/>
+	<classpathentry kind="lib" path="lib/freehep-graphicsio-pdf-2.4.jar"/>
+	<classpathentry kind="lib" path="lib/freehep-graphicsio-ps-2.4.jar"/>
+	<classpathentry kind="lib" path="lib/freehep-graphicsio-svg-2.4.jar"/>
+	<classpathentry kind="lib" path="lib/freehep-graphicsio-tests-2.4.jar"/>
+	<classpathentry kind="lib" path="lib/freehep-io-2.2.2.jar"/>
 	<classpathentry kind="output" path="war/WEB-INF/classes"/>
 </classpath>

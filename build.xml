@@ -529,7 +529,6 @@
 
 	<target name="scanCSD">
 		<antcall target="-csims">
-			<param name="nosvg" value="true"/>
 			<param name="core" value="CSD"/>
 			<param name="sim" value="scanCSD"/>
 		</antcall>
