@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry excluding="org/evoludo/emulategwt/" kind="src" path="src"/>
+	<classpathentry excluding="org/evoludo/emulategwt/|org/evoludo/simulator/web/theme/svn.version" kind="src" path="src"/>
 	<classpathentry kind="lib" path="lib/jep-2.3.1.jar"/>
 	<classpathentry kind="lib" path="lib/mtj-0.9.14.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
