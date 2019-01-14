@@ -196,6 +196,19 @@
 		</antcall>
 	</target>
 
+	<!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
+	<target name="scanEco2x2">
+		<antcall target="-dinterface">
+			<param name="nosvg" value="true"/>
+			<param name="core" value="EcoTBT"/>
+		</antcall>
+		<antcall target="-dsims">
+			<param name="nosvg" value="true"/>
+			<param name="core" value="EcoTBT"/>
+			<param name="sim" value="scanEcoTBT"/>
+		</antcall>
+	</target>
+
 <!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
 	<target name="simMutual">
 		<antcall target="-dinterface">
