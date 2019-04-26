@@ -256,6 +256,27 @@
         </antcall>
     </target>
 
+	<!-- conservation game -->
+	<target name="CG">
+		<antcall target="-dapplet">
+			<param name="applet" value="CG"/>
+		</antcall>
+	</target>
+	
+	<target name="simCG">
+		<antcall target="-dsims">
+			<param name="nosvg" value="true"/>
+			<param name="core" value="CG"/>
+			<param name="sim" value="simCG"/>
+		</antcall>
+	</target>
+	
+	<target name="cleanCG">
+		<antcall target="-clean">
+			<param name="applet" value="CG"/>
+		</antcall>
+	</target>
+
 	<!-- 2x2 demes -->
 	<target name="Demes2x2">
 		<antcall target="-dapplet">
