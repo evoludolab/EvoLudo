@@ -721,6 +721,7 @@
 	<target name="-dapplet" depends="init">
 		<ant antfile="${ant.files}/core.xml" target="dapplet">
 			<property name="build.classes" value="${build.classes}/${applet}"/>
+			<property name="discrete" value="true"/>
 		</ant>
 	</target>
 	
@@ -735,6 +736,7 @@
 	<target name="-capplet" depends="init">
 		<ant antfile="${ant.files}/core.xml" target="capplet">
 			<property name="build.classes" value="${build.classes}/${applet}"/>
+			<property name="continuous" value="true"/>
 		</ant>
 	</target>
 
