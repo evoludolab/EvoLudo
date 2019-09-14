@@ -11,7 +11,7 @@
 			<arguments>
 				<dictionary>
 					<key>LaunchConfigHandle</key>
-					<value>&lt;project&gt;/.externalToolBuilders/net.sourceforge.texlipse.builder.TexlipseBuilder.launch</value>
+					<value>&lt;project&gt;/.externalToolBuilders/org.eclipse.texlipse.builder.TexlipseBuilder.launch</value>
 				</dictionary>
 			</arguments>
 		</buildCommand>
@@ -42,6 +42,7 @@
 		</buildCommand>
 	</buildSpec>
 	<natures>
+		<nature>org.eclipse.texlipse.builder.TexlipseNature</nature>
 		<nature>net.sourceforge.texlipse.builder.TexlipseNature</nature>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 		<nature>com.gwtplugins.gwt.eclipse.core.gwtNature</nature>
