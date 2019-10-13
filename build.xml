@@ -51,7 +51,6 @@
 		<mkdir dir="${build.classes}"/>
 		<mkdir dir="${build.applets}"/>
 		<mkdir dir="${build.simulations}"/>
-		<mkdir dir="${product}"/>
 		<condition property="compilerargs" value="-Xlint:all,-fallthrough">
 			<equals arg1="${env.DEBUG}" arg2="debug"/>
 		</condition>
@@ -596,6 +595,7 @@
 
 	<!-- build web tutorials -->
 	<target name="web">
+		<mkdir dir="${product}"/>
 		<antcall target="-web">
 			<param name="nosvg" value="true"/>
 			<param name="noparser" value="true"/>

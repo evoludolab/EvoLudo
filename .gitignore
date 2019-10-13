@@ -4,8 +4,13 @@
 # ignore class files
 *.class
 
-# ignore war/WEB-INF content
+# ignore build directories
+build/
+product/
+
+# ignore war build products
 war/WEB-INF/
+war/evoludoweb
 
 # ignore GWT cache
 gwt-unitCache/
