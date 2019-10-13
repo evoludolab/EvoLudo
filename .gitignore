@@ -1,0 +1,14 @@
+# ignore macOS .DS_Store
+.DS_Store
+
+# ignore class files
+*.class
+
+# ignore war/WEB-INF content
+war/WEB-INF/
+
+# ignore GWT cache
+gwt-unitCache/
+
+# ignore Xcode user settings
+xcuserdata/
