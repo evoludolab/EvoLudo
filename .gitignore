@@ -1,14 +1,15 @@
 # ignore macOS .DS_Store
 .DS_Store
 
+# ignore git version file
+src/org/evoludo/simulator/web/theme/git.version
+
 # ignore class files
 *.class
 
-# ignore build directories
+# ignore build/product directories
 build/
 product/
-
-# ignore war build products
 war/WEB-INF/
 war/evoludoweb
 
