@@ -1,7 +1,6 @@
 TODO:
 
 Save & restore state:
-- save RNG state
 - JRE: command line options for save/restore
 - JRE: adapt PlistParser, PlistReader to work again with file input/output
 - GWT: drop cursor does not show
@@ -9,3 +8,4 @@ Save & restore state:
 DONE:
 + save more state data (e.g. absorbed etc.) -> not more data needed but updating strategiesTypeCount/Mean
 + GWT: file chooser for save/restore -> ok for restore; impossible for save but now download is triggered, which works in most browsers
++ save/restore RNG state
