@@ -13,6 +13,9 @@ product/
 war/WEB-INF/
 war/evoludoweb
 
+# ignore scratch
+scratch/
+
 # ignore GWT cache
 gwt-unitCache/
 

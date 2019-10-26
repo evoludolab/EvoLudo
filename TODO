@@ -1,6 +1,7 @@
 TODO:
 
 Save & restore state:
+- save RNG state
 - JRE: command line options for save/restore
 - JRE: adapt PlistParser, PlistReader to work again with file input/output
 - GWT: file chooser for save/restore
