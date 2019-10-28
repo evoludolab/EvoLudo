@@ -1,11 +1,15 @@
 TODO:
 
 Save & restore state:
-- JRE: command line options for save/restore
-- JRE: adapt PlistParser, PlistReader to work again with file input/output
 - GWT: drop cursor does not show
+- align restored dynamics and original one (kaleidoscopes provide good starting point)
+- check if exchange of evoludo states between GWT and JRE is possible
 
 DONE:
++ JRE frequent concurrent modification error in FrameLayer.paintComponent when iterating through tickLabels... -> synchronization added (hackish...)
++ GWT chrome saves dataURL of svg's only up to first '#' character... -> needs to be escaped
++ JRE: command line options for save/restore
++ JRE: adapt PlistParser, PlistReader to work again with file input/output -> not needed, work with strings
 + save more state data (e.g. absorbed etc.) -> not more data needed but updating strategiesTypeCount/Mean
 + GWT: file chooser for save/restore -> ok for restore; impossible for save but now download is triggered, which works in most browsers
 + save/restore RNG state
