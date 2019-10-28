@@ -417,7 +417,7 @@
 	<target name="EcoPGG">
 		<antcall target="-dapplet">
 			<param name="applet" value="EcoPGG"/>
-			<param name="main" value="EcoPublicGoods"/>
+			<param name="main" value="EcoPGG"/>
 		</antcall>
 	</target>
 
@@ -428,25 +428,26 @@
 	</target>
 
 <!-- this is a bit hackish - we need some classes from the interface to enable snapshots... 
-		<property name="core" value="EcoPublicGoods"/>
+		<property name="core" value="EcoPGG"/>
 
 	<target name="simEcoPGG" depends="-dinterface">
 -->
 	<target name="simEcoPGG">
 		<antcall target="-dinterface">
 			<param name="nosvg" value="true"/>
-			<param name="core" value="EcoPublicGoods"/>
+			<param name="core" value="EcoPGG"/>
 		</antcall>
 		<antcall target="-dsims">
 			<param name="nosvg" value="true"/>
-			<param name="core" value="EcoPublicGoods"/>
+			<param name="core" value="EcoPGG"/>
 			<param name="sim" value="simEcoPGG"/>
 		</antcall>
 	</target>
 
 	<target name="-dinterface" depends="init">
-		<ant antfile="${ant.files}/core.xml" target="dinterface">
+		<ant antfile="${ant.files}/core.xml" target="interface">
 			<property name="build.classes" value="${build.simulations}/${core}"/>
+			<property name="discrete" value="true"/>
 		</ant>
 	</target>
 <!-- end hackish... -->
