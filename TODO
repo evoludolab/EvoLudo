@@ -2,10 +2,10 @@ TODO:
 
 Save & restore state:
 - GWT: drop cursor does not show
-- align restored dynamics and original one (kaleidoscopes provide good starting point)
-- check if exchange of evoludo states between GWT and JRE is possible
 
 DONE:
++ check if exchange of evoludo states between GWT and JRE is possible -> possible and works!
++ align restored dynamics and original one (kaleidoscopes provide good starting point) -> restoreFitness must set scores _and_ recalculate fitness
 + JRE frequent concurrent modification error in FrameLayer.paintComponent when iterating through tickLabels... -> synchronization added (hackish...)
 + GWT chrome saves dataURL of svg's only up to first '#' character... -> needs to be escaped
 + JRE: command line options for save/restore
