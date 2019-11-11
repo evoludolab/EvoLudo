@@ -1,7 +1,17 @@
 # **[EvoLudo](https://www.evoludo.org)**
 *Evolutionary Dynamics Simulation Toolkit*
 
-In order to see EvoLudo in action, visit the growing collection of interactive online tutorials at [www.evoludo.org](https://www.evoludo.org), which showcase the fascinating spatio-temporal dynamics arising from evolutionary processes.
+Visit the growing collection of interactive online tutorials at [www.evoludo.org](https://www.evoludo.org) to see EvoLudo in action and to explore game theory and the fascinating spatio-temporal dynamics arising from evolutionary processes.
+
+EvoLudo ([*ludo:*](http://en.wiktionary.org/wiki/ludo) Latin for "I play" or Italian for "game") is the engine behind numerous scientific research articles since 2001 (including in </span>*Nature*, *Science* and *Proc. Natl. Acad. Sci. USA* [selection with summaries](https://wiki.evoludo.org/index.php?title=Research), [complete list](https://www.math.ubc.ca/~hauert/)) and provides an interactive way to confirm the reported results and invites further explorations.
+
+### Acknowledgments
+EvoLudo relies on other open source projects:
+1. [MersenneTwister](http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html) and, more specifically, the *java* port of MersenneTwister by [Jean Luke](https://cs.gmu.edu/~sean/research/) with further adaptations to make it *GWT* compliant.
+2. [Parallax](https://thothbot.github.io) version 1.6 for the 3D rendering of population structures using WebGL. Moreover, dust off your red-cyan glasses to explore the structures in real 3D (see context menu).
+3. [Canvas2Svg.js](https://gliffy.github.io/canvas2svg/) to export and save EvoLudo graphics.
+
+A big thank you to the respective researchers and developers.
 
 ## Installation of the EvoLudo developer framework
 In order to set up the EvoLudo developer framework a number of steps are required (as detailed below). The proper setup is crucial but fortunately is required only once.
@@ -89,3 +99,6 @@ The GWT compiler converts the `java` source code into platform and browser indep
 1. Launch *eclipse*.
 2. Right-click on EvoLudo in `Project Explorer`, select the `GWT > Compile` menu and click `Compile`.
 3. The compiled JavaScript is located in `war/evoludoweb`. For examples on how to embed an interactive EvoLudo lab on a web page, see `war/TestEvoLudoLabs.html`.
+
+### Contribute to EvoLudo
+Pull requests by anyone are most welcome!
