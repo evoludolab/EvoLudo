@@ -1,9 +1,13 @@
 TODO:
 
 Save & restore state:
+- ODE/SDE/PDE states not (yet) saved/restored
 - GWT: drop cursor does not show
 
+
 DONE:
++ --mutation has issues at least with cSD (reverts param to -1 or claims --mutation is an unknown option)
++ --run ignored
 + check if exchange of evoludo states between GWT and JRE is possible -> possible and works!
 + align restored dynamics and original one (kaleidoscopes provide good starting point) -> restoreFitness must set scores _and_ recalculate fitness
 + JRE frequent concurrent modification error in FrameLayer.paintComponent when iterating through tickLabels... -> synchronization added (hackish...)
