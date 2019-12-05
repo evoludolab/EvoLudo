@@ -3,7 +3,7 @@ TODO:
 
 
 ePub:
-- highlighting does not work; seems related to the old issue with mouse/touch listeners
+- highlighting does not work; likely caused by TouchEvents (appears that touchmove and mousemove interfere; try to avoid loading of TouchEvents and replace by ibooks.js (see Fixed Layout example).)
 - logging in ePubs is painful - fails on any invalid character
 	- newlines are a challenge in MVConsole output
 	- new class ConsoleLogHandler encodes log messages to prevent crashes when logging to iBooks console. leads to some duplicate encodings; review with MVConsole log handlers in mind
@@ -14,10 +14,11 @@ ePub:
 
 Minor:
 - GWT: drop cursor does not show during drag'n'drop
-- MersenneTwister maintains (undesriable) dependency on EvoLudo for encoding state
+- MersenneTwister maintains (undesirable) dependency on EvoLudo for encoding state
 
 
 DONE:
++ ePubs no longer throw errors! macOS TouchEvents patched
 + setting of status after parsing errors works but immediately gets overridden.
 + provide logger to test routines in MersenneTwister; must not rely on EvoLudo stuff
 + restored ODE/SDE states won't run...
