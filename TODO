@@ -1,14 +1,24 @@
 TODO:
 
-
+- EvoLudo(Web).isEPub should not be static; add command line option to set features (would help with testing/debugging ePub features); e.g. --gui epub:nomouse:nokeys possible solution to override isEPub setting if lab is running in non-linear page.
 
 ePub:
+- labs in text flow:
+	- do not add wheel listeners to canvas (ignored by ibooks);
+	- ignore key events (except for 'alt' provided that ePubReaderTouchSupport); note: isShowing is not working in ePubs and hence key events are sent to all labs (at least in current chapter).
+	- ignore/reimagine context menu (set timer after touchstart etc.)
+	- ignore drag'n'drop 
+- labs on non-linear pages:
+	- same as web browser?
+	- check export
+	- touch events still require special attention
+	- include drag'n'drop if reader has mouse support
+- scrolling of MVConsole does not work (likely blocked by iBooks); cannot seem to force scrollbar visibility; context menu shows up but does not work (interferes with marking of text); remove MVConsole?
 - highlighting does not work; likely caused by TouchEvents (appears that touchmove and mousemove interfere; try to avoid loading of TouchEvents and replace by ibooks.js (see Fixed Layout example).)
 - logging in ePubs is painful - fails on any invalid character
 	- newlines are a challenge in MVConsole output
 	- new class ConsoleLogHandler encodes log messages to prevent crashes when logging to iBooks console. leads to some duplicate encodings; review with MVConsole log handlers in mind
 	- disable console logging in ePubs except for debugging?
-- scrolling of MVConsole does not work (probably blocked by iBooks); check if preventDefault helps or remove MVConsole?
 - zooming with mouse does not work (probably blocked by iBooks); check if preventDefault helps or remove listeners?
 - surprisingly drag'n'drop works even in ePubs; is this needed or confusing?
 
