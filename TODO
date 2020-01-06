@@ -1,5 +1,11 @@
 TODO:
 
+- tooltips, context menu and picking with multiple 3D views not working (best solution would be that all graphs are widgets with their own event handlers, canvas and tooltips).
+- 3D graphs not shown on view change (or on load) moving mouse over canvas triggers painting of scene. with multiple graphs this works only for last loaded graph (currently the only one with mouse listeners). after clicking reset all graphs are shown as expected.
+- prevent touch move from moving background behind overlay
+- restrict key events to visible/overlayed lab
+- increase z-index of overlay (currently 'structure' label of background lab floats above overlay)
+
 ePub:
 - touch events require special attention
 - highlighting does not work; likely caused by TouchEvents (appears that touchmove and mousemove interfere; try to avoid loading of TouchEvents and replace by ibooks.js (see Fixed Layout example).)
