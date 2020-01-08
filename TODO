@@ -1,10 +1,9 @@
 TODO:
 
-- tooltips, context menu and picking with multiple 3D views not working (best solution would be that all graphs are widgets with their own event handlers, canvas and tooltips).
-- 3D graphs not shown on view change (or on load) moving mouse over canvas triggers painting of scene. with multiple graphs this works only for last loaded graph (currently the only one with mouse listeners). after clicking reset all graphs are shown as expected.
+- 3D graphs not shown after view change (or on load), tooltips trigger display (safari only, works in Chrome, Firefox)
 - prevent touch move from moving background behind overlay
 - restrict key events to visible/overlayed lab
-- increase z-index of overlay (currently 'structure' label of background lab floats above overlay)
+- fullscreen not working (except in safari): canvas distorted, coordinates messed up (tooltips, context menu, changing strategies not working)
 
 ePub:
 - touch events require special attention
@@ -16,6 +15,10 @@ Minor:
 
 
 DONE:
++ evoludoViews refusing focus cause trouble in Firefox
++ multiple 3D graphs not shown on view change (or after load); last added graph shown when tooltips are triggered with mouse (currently the only one with mouse listeners). after clicking reset all graphs are shown as expected.
++ tooltips, context menu and picking with multiple 3D views not working (best solution would be that all graphs are widgets with their own event handlers, canvas and tooltips).
++ increase z-index of overlay (currently 'structure' label of background lab floats above overlay)
 + surprisingly drag'n'drop works even in ePubs; is this needed or confusing? disabled for labs in text flow but left enabled for standalone labs.
 + logging in ePubs is painful - fails on any invalid character
 	- newlines are a challenge in MVConsole output
