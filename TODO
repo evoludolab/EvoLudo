@@ -1,9 +1,16 @@
 TODO:
 
-- 3D graphs not shown after view change (or on load), tooltips trigger display (safari only, works in Chrome, Firefox)
-- prevent touch move from moving background behind overlay
-- restrict key events to visible/overlayed lab
-- fullscreen not working (except in safari): canvas distorted, coordinates messed up (tooltips, context menu, changing strategies not working)
+- export on iOS fails
+- tapping on another graph does not close tooltip (unless a node is hit)
+- tapping context menu does not close tooltip in another graph
+- pinch zoom does not work for LineGraph
+- add mouse drag and touch shift to view of LineGraph
+- switching between 3D views can clear the scene (or not show it)
+- tap moves background of popup labs (i.e. behind overlay)
+- touch context menu for MVConsole not working
+- fullscreen not working (except in safari): size of graphs not adjusted
+- shaking of 3D graphs with keys in overlay is passed to graphs below (ok for 2D graphs)
+- 3D graphs not shown after view change (or on load), tooltips trigger display (desktop safari only, works in Chrome, Firefox and Sarai for iOS)
 
 ePub:
 - touch events require special attention
