@@ -1,30 +1,30 @@
 TODO:
 
-- 3D models not shared between strategy and fitness views (only get out of sync if the camera type of one model was changed)
-- export on iOS fails
-- pinch zoom does not work for LineGraph
-- add mouse drag and touch shift to view of LineGraph
-- add double tap for setting initial frequencies in S3Graph and ParaGraph
-- switching between 3D views can clear the scene (or not show it)
+- export on iOS fails (disable or check if data url's work)
 - tap moves background of popup labs (i.e. behind overlay)
 - fullscreen not working (except in safari): size of graphs not adjusted
 - shaking of 3D graphs with keys in overlay is passed to graphs below (ok for 2D graphs)
-- 3D graphs not shown after view change (or on load), tooltips trigger display (desktop safari only, works in Chrome, Firefox and Sarai for iOS)
+- 3D graphs not shown after view change (or on load), tooltips trigger display (desktop Safari only, works in Chrome, Firefox and Safari for iOS)
 - tracer context menu for PDE's should go to PopGraph2D
+- 3D views should share/copy camera settings (only works for perspective camera; gets out of sync if camera type of one view is changed)
 
 ePub:
 - context menu not working (intentional?)
 - touch events require special attention
-- highlighting does not work; likely caused by TouchEvents (appears that touchmove and mousemove interfere; try to avoid loading of TouchEvents and replace by ibooks.js (see Fixed Layout example).)
+- highlighting does not work; likely caused by TouchEvents (appears that touchmove and mousemove interfere; try to avoid loading of TouchEvents and replace by ibooks.js (see Fixed Layout example, i.e. how does it prevent the loading of TouchEvents).)
 
 Minor:
 - GWT: drop cursor does not show during drag'n'drop
 - MersenneTwister maintains (undesirable) dependency on EvoLudo for encoding state
 
 CHECK:
+- add double tap for setting initial frequencies in S3Graph and ParaGraph
 
 
 DONE:
++ switching between 3D views can clear the scene (or not show it) - cannot reproduce...
++ pinch zoom does not work for LineGraph
++ add mouse drag and touch shift to view of LineGraph
 + touch context menu for MVConsole not working
 + tapping context menu does not close tooltip in another graph
 + tapping on another graph does not close tooltip (unless a node is hit)
