@@ -5,8 +5,6 @@ TODO:
 - fullscreen not working (except in safari): size of graphs not adjusted
 - shaking of 3D graphs with keys in overlay is passed to graphs below (ok for 2D graphs)
 - 3D graphs not shown after view change (or on load), tooltips trigger display (desktop Safari only, works in Chrome, Firefox and Safari for iOS)
-- tracer context menu for PDE's should go to PopGraph2D
-- 3D views should share/copy camera settings (only works for perspective camera; gets out of sync if camera type of one view is changed)
 
 ePub:
 - context menu not working (intentional?)
@@ -22,6 +20,8 @@ CHECK:
 
 
 DONE:
++ tracer context menu for PDE's should go to PopGraph2D
++ 3D views should share/copy camera settings (only works for perspective camera; gets out of sync if camera type of one view is changed)
 + switching between 3D views can clear the scene (or not show it) - cannot reproduce...
 + pinch zoom does not work for LineGraph
 + add mouse drag and touch shift to view of LineGraph
