@@ -2,8 +2,6 @@ TODO:
 
 - export on iOS fails (disable or check if data url's work)
 - tap moves background of popup labs (i.e. behind overlay)
-- fullscreen not working (except in safari): size of graphs not adjusted
-- shaking of 3D graphs with keys in overlay is passed to graphs below (ok for 2D graphs)
 - 3D graphs not shown after view change (or on load), tooltips trigger display (desktop Safari only, works in Chrome, Firefox and Safari for iOS)
 
 ePub:
@@ -20,6 +18,8 @@ CHECK:
 
 
 DONE:
++ shaking of 3D graphs with keys in overlay is passed to graphs below (ok for 2D graphs)
++ fullscreen not working (except in safari): size of graphs not adjusted - now working in Safari & Chrome; minor scaling issues in Firefox remain; Edge/IE untested
 + tracer context menu for PDE's should go to PopGraph2D
 + 3D views should share/copy camera settings (only works for perspective camera; gets out of sync if camera type of one view is changed)
 + switching between 3D views can clear the scene (or not show it) - cannot reproduce...
