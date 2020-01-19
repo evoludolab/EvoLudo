@@ -1,12 +1,13 @@
 TODO:
 
 - export on iOS fails (disable or check if data url's work)
-- tap moves background of popup labs (i.e. behind overlay)
 - 3D graphs not shown after view change (or on load), tooltips trigger display (desktop Safari only, works in Chrome, Firefox and Safari for iOS)
 
 ePub:
-- context menu not working (intentional?)
-- touch events require special attention
+- important: standalone pages report as ePub in iBooks desktop but false on iBooks on iPad (i.e. export menu is active but not working...)
+- touch events require special attention; work different from browser; restrict to mouse events? currently tooltips and context menu are interfering
+- pinch zoom has issues for LineGraph (work reasonably well e.g. for PopGraph2D and well for PopGraph3D, including shifting/rotating of view)
+- parameter textarea does not show parameters, possibly white on white, may need explicitly setting color of disabled text (iPad only; desktop ok and standalone on iPad ok as well)
 - highlighting does not work; likely caused by TouchEvents (appears that touchmove and mousemove interfere; try to avoid loading of TouchEvents and replace by ibooks.js (see Fixed Layout example, i.e. how does it prevent the loading of TouchEvents).)
 
 Minor:
@@ -14,10 +15,12 @@ Minor:
 - MersenneTwister maintains (undesirable) dependency on EvoLudo for encoding state
 
 CHECK:
-- add double tap for setting initial frequencies in S3Graph and ParaGraph
 
 
 DONE:
++ context menu not working (intentional?)
++ tap moves background of popup labs (i.e. behind overlay)
++ add double tap for setting initial frequencies in S3Graph and ParaGraph
 + shaking of 3D graphs with keys in overlay is passed to graphs below (ok for 2D graphs)
 + fullscreen not working (except in safari): size of graphs not adjusted - now working in Safari & Chrome; minor scaling issues in Firefox remain; Edge/IE untested
 + tracer context menu for PDE's should go to PopGraph2D
