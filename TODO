@@ -18,7 +18,8 @@ CHECK:
 
 
 DONE:
-+ context menu not working (intentional?)
++ ePub triggers should be typeset using html and css only - no need to get javascript involved!
++ ePub context menu not working (intentional?) - no!
 + tap moves background of popup labs (i.e. behind overlay)
 + add double tap for setting initial frequencies in S3Graph and ParaGraph
 + shaking of 3D graphs with keys in overlay is passed to graphs below (ok for 2D graphs)
