@@ -2,8 +2,18 @@ TODO:
 
 - export on iOS fails (disable or check if data url's work)
 - 3D graphs not shown after view change (or on load), tooltips trigger display (desktop Safari only, works in Chrome, Firefox and Safari for iOS)
+- center histograms
+- fixation probability does not seem to work if initfreqs is e.g. 1:1. this is not intuitive. either change the x-axis from node to something more meaningful and report results graphically or display a message.
+- check reference lines for fixation probabilities and times (seem to be off for Moran on test page and do not seem to get updated e.g. when changing population size).
+
+ibooks (desktop):
+- standalone: clo options textarea disabled/read-only (corresponding buttons ok)
+- standalone: cannot change view (eliminates all entries from view selector)
+- tooltips do not work towards left part of canvas (findNode seems to fail)
+- LinearGraph: shifting/zooming view does not work (shift sets x-axis [-1,0] to [0,1], zoom out changes to [0,0]...)
 
 ePub:
+- cannot seem to stop simulations on page flip; maybe at least prevent more than one from running?
 - important: standalone pages report as ePub in iBooks desktop but false on iBooks on iPad (i.e. export menu is active but not working...)
 - touch events require special attention; work different from browser; restrict to mouse events? currently tooltips and context menu are interfering
 - pinch zoom has issues for LineGraph (work reasonably well e.g. for PopGraph2D and well for PopGraph3D, including shifting/rotating of view)
