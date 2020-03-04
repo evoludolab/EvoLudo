@@ -331,6 +331,14 @@
 		</antcall>
 	</target>
 
+	<target name="simCDL">
+		<antcall target="-dsims">
+			<param name="nosvg" value="true"/>
+			<param name="core" value="CDL"/>
+			<param name="sim" value="simCDL"/>
+		</antcall>
+	</target>
+
 	<target name="cleanCDL">
 		<antcall target="-clean">
 			<param name="applet" value="CDL"/>
