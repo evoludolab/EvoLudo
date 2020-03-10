@@ -1,4 +1,5 @@
 TODO:
+- review groupScores: should return traitScores (just like avgScores and meanScores); delete 'me', should be included in group; group should be trait counts not indexes.
 
 - export on iOS fails (disable or check if data url's work)
 - 3D graphs not shown after view change (or on load), tooltips trigger display (desktop Safari only, works in Chrome, Firefox and Safari for iOS)
