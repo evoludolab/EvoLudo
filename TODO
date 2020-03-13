@@ -1,16 +1,14 @@
 TODO:
-- review groupScores: should return traitScores (just like avgScores and meanScores); delete 'me', should be included in group; group should be trait counts not indexes.
 
+- pinch zoom works on touch pad but zoom direction is flipped as compared to iPad (does this make sense...?)
 - export on iOS fails (disable or check if data url's work)
 - 3D graphs not shown after view change (or on load), tooltips trigger display (desktop Safari only, works in Chrome, Firefox and Safari for iOS)
-- center histograms
 - fixation probability does not seem to work if initfreqs is e.g. 1:1. this is not intuitive. either change the x-axis from node to something more meaningful and report results graphically or display a message.
 - check reference lines for fixation probabilities and times (seem to be off for Moran on test page and do not seem to get updated e.g. when changing population size).
 
 ibooks (desktop):
 - standalone: clo options textarea disabled/read-only (corresponding buttons ok)
 - standalone: cannot change view (eliminates all entries from view selector)
-- tooltips do not work towards left part of canvas (findNode seems to fail)
 - LinearGraph: shifting/zooming view does not work (shift sets x-axis [-1,0] to [0,1], zoom out changes to [0,0]...)
 
 ePub:
@@ -21,6 +19,7 @@ ePub:
 - highlighting does not work; likely caused by TouchEvents (appears that touchmove and mousemove interfere; try to avoid loading of TouchEvents and replace by ibooks.js (see Fixed Layout example, i.e. how does it prevent the loading of TouchEvents).)
 
 Minor:
+- center histograms
 - GWT: drop cursor does not show during drag'n'drop
 - MersenneTwister maintains (undesirable) dependency on EvoLudo for encoding state
 
@@ -28,6 +27,8 @@ CHECK:
 
 
 DONE:
++ tooltips do not work towards left part of canvas (findNode seems to fail)
++ review groupScores: should return traitScores (just like avgScores and meanScores); delete 'me', should be included in group; group should be trait counts not indexes.
 + cannot seem to stop simulations on page flip; maybe at least prevent more than one from running? (done but needs testing - ok)
 + ePub triggers should be typeset using html and css only - no need to get javascript involved!
 + ePub context menu not working (intentional?) - no!
