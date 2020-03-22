@@ -1,5 +1,6 @@
 TODO:
 
+- drag'n'drop restore does not work on popup labs
 - pinch zoom works on touch pad but zoom direction is flipped as compared to iPad (does this make sense...?)
 - export on iOS fails (disable or check if data url's work)
 - 3D graphs not shown after view change (or on load), tooltips trigger display (desktop Safari only, works in Chrome, Firefox and Safari for iOS)
