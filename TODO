@@ -1,6 +1,6 @@
 TODO:
 
-- move cloRun to EvoLudo (including isSuspended and potentially isRunning); now code duplication in EvoLudoLab and EvoLudoWeb
+- move control of model to engine (EvoLudoLab and EvoLudoWeb should only deal with gui stuff)
 - drag'n'drop restore does not work on popup labs
 - pinch zoom works on touch pad but zoom direction is flipped as compared to iPad (does this make sense...?)
 - export on iOS fails (disable or check if data url's work)
@@ -29,6 +29,7 @@ CHECK:
 
 
 DONE:
++ move cloRun to EvoLudo (including isSuspended and potentially isRunning); now code duplication in EvoLudoLab and EvoLudoWeb
 + tooltips do not work towards left part of canvas (findNode seems to fail)
 + review groupScores: should return traitScores (just like avgScores and meanScores); delete 'me', should be included in group; group should be trait counts not indexes.
 + cannot seem to stop simulations on page flip; maybe at least prevent more than one from running? (done but needs testing - ok)
