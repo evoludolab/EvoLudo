@@ -1,5 +1,6 @@
 TODO:
 
+- move cloRun to EvoLudo (including isSuspended and potentially isRunning); now code duplication in EvoLudoLab and EvoLudoWeb
 - drag'n'drop restore does not work on popup labs
 - pinch zoom works on touch pad but zoom direction is flipped as compared to iPad (does this make sense...?)
 - export on iOS fails (disable or check if data url's work)
