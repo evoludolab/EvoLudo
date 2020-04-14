@@ -2,7 +2,6 @@ TODO:
 
 - switching to --popupdate S with geometry != well-mixed should trigger warning and reset GUI (surprisingly challenging...); switching to --popupdate D works but existing structure/network is not updated in GUI. 
 - add (pseudo) game Test that sports only the console and runs various tests
-- move control of model to engine (EvoLudoLab and EvoLudoWeb should only deal with gui stuff)
 - drag'n'drop restore does not work on popup labs
 - pinch zoom works on touch pad but zoom direction is flipped as compared to iPad (does this make sense...?)
 - export on iOS fails (disable or check if data url's work)
