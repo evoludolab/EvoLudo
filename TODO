@@ -1,18 +1,27 @@
 TODO:
 
+- unify getMeanTraits and getMeanState in CXPopulation and DPopulation respectively; improve dealings with range of continuous traits
+- game implementations must advertise what kind of graphics views they support, for example by implementing particular interfaces; the current triage based on discrete/continuous strategies is too coarse and based on game classes is too narrow and inflexible.
+- implement custom color maps (NetGames is an example); this is tricky due to incompatibilities between JRE and GWT; one possibility is to add relevant code to EvoLudoJRE and EvoLudoGWT (inelegant because it requires synchronizing code across two not obviously related classes); another possibility is to add <lab>GWT and <lab>JRE classes to take care of the implementation specific components (much like the original <lab>Lab class setup); both are far from satisfactory or even elegant solutions...
 - switching to --popupdate S with geometry != well-mixed should trigger warning and reset GUI (surprisingly challenging...); switching to --popupdate D works but existing structure/network is not updated in GUI. 
 - add (pseudo) game Test that sports only the console and runs various tests
-- drag'n'drop restore does not work on popup labs
-- pinch zoom works on touch pad but zoom direction is flipped as compared to iPad (does this make sense...?)
-- export on iOS fails (disable or check if data url's work)
-- 3D graphs not shown after view change (or on load), tooltips trigger display (desktop Safari only, works in Chrome, Firefox and Safari for iOS)
 - fixation probability does not seem to work if initfreqs is e.g. 1:1. this is not intuitive. either change the x-axis from node to something more meaningful and report results graphically or display a message.
 - check reference lines for fixation probabilities and times (seem to be off for Moran on test page and do not seem to get updated e.g. when changing population size).
 
-ibooks (desktop):
+Browser:
+- 3D graphs not shown after view change (or on load), tooltips trigger display (desktop Safari only, works in Chrome, Firefox and Safari for iOS)
+- drag'n'drop restore does not work on popup labs
+
+iOS:
+- export on iOS fails (disable or check if data url's work)
+
+iBooks (desktop):
 - standalone: clo options textarea disabled/read-only (corresponding buttons ok)
 - standalone: cannot change view (eliminates all entries from view selector)
 - LinearGraph: shifting/zooming view does not work (shift sets x-axis [-1,0] to [0,1], zoom out changes to [0,0]...)
+
+touch:
+- pinch zoom works on touch pad but zoom direction is flipped as compared to iPad (does this make sense...?)
 
 ePub:
 - important: standalone pages report as ePub in iBooks desktop but false on iBooks on iPad (i.e. export menu is active but not working...)
@@ -25,6 +34,10 @@ Minor:
 - center histograms
 - GWT: drop cursor does not show during drag'n'drop
 - MersenneTwister maintains (undesirable) dependency on EvoLudo for encoding state
+
+Enhancements:
+- add pseudo-game Test to run various tests
+
 
 CHECK:
 
