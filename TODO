@@ -36,13 +36,14 @@ Minor:
 - MersenneTwister maintains (undesirable) dependency on EvoLudo for encoding state
 
 Enhancements:
-- add pseudo-game Test to run various tests
+- implement progress reporting for Test's
 
 
 CHECK:
 
 
 DONE:
++ add pseudo-game Test to run various tests
 + move control of model to engine (EvoLudoLab and EvoLudoWeb should only deal with gui stuff)
 + move cloRun to EvoLudo (including isSuspended and potentially isRunning); now code duplication in EvoLudoLab and EvoLudoWeb
 + tooltips do not work towards left part of canvas (findNode seems to fail)
