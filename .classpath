@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry excluding="org/evoludo/gwt/emulate/" kind="src" path="src"/>
-	<classpathentry kind="lib" path="lib/jep-2.3.1.jar"/>
 	<classpathentry kind="lib" path="lib/mtj-0.9.14.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="lib/parallax-1.6.jar"/>
