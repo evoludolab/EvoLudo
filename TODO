@@ -30,6 +30,7 @@ ePub:
 
 Minor:
 - center histograms
+- switch y-axis labels to left side of graphs? maybe with the exception of LineGraph? make it configurable.
 - GWT: drop cursor does not show during drag'n'drop
 - MersenneTwister maintains (undesirable) dependency on EvoLudo for encoding state
 
@@ -41,6 +42,7 @@ CHECK:
 
 
 DONE:
++ add --adjusted option to ODEEuler and PDEReactionDiffusion to switch to adjusted replicator dynamics. simply divide dy by avg. fitness in all update variants. must ensure positive payoffs.
 + switching to --popupdate S with geometry != well-mixed should trigger warning and reset GUI (surprisingly challenging...); switching to --popupdate D works but existing structure/network is not updated in GUI. 
 + add pseudo-game Test to run various tests
 + move control of model to engine (EvoLudoLab and EvoLudoWeb should only deal with gui stuff)
