@@ -37,7 +37,7 @@
 
 <!-- ant build file for EvoLudoLabs -->
 
-<project name="EvoLudoLabs" default="web" basedir="." >
+<project name="EvoLudoLabs" default="EvoLudo" basedir="." >
 
 	<!-- Properties -->
 
@@ -85,31 +85,17 @@
 		<delete dir="${product}"/>
 	</target>
 
-	<!-- Dialect -->
-	<target name="Dialect">
-		<antcall target="-capplet">
-			<param name="applet" value="Dialect"/>
-		</antcall>
+	<!-- EvoLudo -->
+	<target name="EvoLudo" depends="init">
+		<ant antfile="${ant.files}/core.xml" target="applet"/>
 	</target>
 
+	<!-- Simulations -->
 	<target name="simDialect">
 		<antcall target="-csims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="Dialect"/>
 			<param name="sim" value="simDialect"/>
-		</antcall>
-	</target>
-
-	<target name="cleanDialect">
-		<antcall target="-clean">
-			<param name="applet" value="Dialect"/>
-		</antcall>
-	</target>
-
-	<!-- Motility -->
-	<target name="Motility">
-		<antcall target="-dapplet">
-			<param name="applet" value="Motility"/>
 		</antcall>
 	</target>
 
@@ -121,19 +107,6 @@
 		</antcall>
 	</target>
 
-	<target name="cleanMotility">
-		<antcall target="-clean">
-			<param name="applet" value="Motility"/>
-		</antcall>
-	</target>
-
-	<!-- Moran -->
-	<target name="Moran">
-		<antcall target="-dapplet">
-			<param name="applet" value="Moran"/>
-		</antcall>
-	</target>
-	
 	<target name="simMoran">
 		<antcall target="-dsims">
 			<param name="nosvg" value="true"/>
@@ -142,19 +115,6 @@
 		</antcall>
 	</target>
 	
-	<target name="cleanMoran">
-		<antcall target="-clean">
-			<param name="applet" value="Moran"/>
-		</antcall>
-	</target>
-
-    <!-- ecological Moran -->
-    <target name="eMoran">
-        <antcall target="-dapplet">
-            <param name="applet" value="EcoMoran"/>
-        </antcall>
-    </target>
-
 	<!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
 	<target name="scanEcoMoran">
 <!--		<antcall target="-dinterface">
@@ -165,28 +125,6 @@
 			<param name="nosvg" value="true"/>
 			<param name="core" value="EcoMoran"/>
 			<param name="sim" value="scanEcoMoran"/>
-		</antcall>
-	</target>
-
-	<!-- NetGames -->
-	<target name="NetGames">
-		<antcall target="-dapplet">
-			<param name="applet" value="NetGames"/>
-			<param name="main" value="NetGames"/>
-		</antcall>
-	</target>
-
-	<target name="cleanNetGames">
-		<antcall target="-clean">
-			<param name="applet" value="NetGames"/>
-		</antcall>
-	</target>
-
-	<!-- 2x2 -->
-	<target name="2x2">
-		<antcall target="-dapplet">
-			<param name="applet" value="2x2"/>
-			<param name="main" value="TwoByTwo"/>
 		</antcall>
 	</target>
 
@@ -244,35 +182,8 @@
 			<param name="sim" value="simMutual"/>
 		</antcall>
 	</target>
-
-<!--	<target name="-dinterface" depends="init">
-		<ant antfile="${ant.files}/core.xml" target="dinterface">
-			<property name="build.classes" value="${build.simulations}/TwoByTwo"/>
-		</ant>
-	</target>-->
 <!-- end hackish... -->
 
-	<target name="clean2x2">
-		<antcall target="-clean">
-			<param name="applet" value="2x2"/>
-		</antcall>
-	</target>
-
-    <!-- asymmetric 2x2 -->
-    <target name="Asymmetric2x2">
-        <antcall target="-dapplet">
-            <param name="applet" value="Asymmetric2x2"/>
-            <param name="main" value="AsymmetricTBT"/>
-        </antcall>
-    </target>
-
-	<!-- conservation game -->
-	<target name="CG">
-		<antcall target="-dapplet">
-			<param name="applet" value="CG"/>
-		</antcall>
-	</target>
-	
 	<target name="simCG">
 		<antcall target="-dsims">
 			<param name="nosvg" value="true"/>
@@ -281,53 +192,12 @@
 		</antcall>
 	</target>
 	
-	<target name="cleanCG">
-		<antcall target="-clean">
-			<param name="applet" value="CG"/>
-		</antcall>
-	</target>
-
-	<!-- 2x2 demes -->
-	<target name="Demes2x2">
-		<antcall target="-dapplet">
-			<param name="main" value="DemesTBT"/>
-			<param name="super" value="TwoByTwo"/>
-			<param name="applet" value="Demes2x2"/>
-		</antcall>
-	</target>
-
 	<target name="simDemes2x2">
 		<antcall target="-dsims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="DemesTBT"/>
 			<param name="super" value="TwoByTwo"/>
 			<param name="sim" value="simDemesTBT"/>
-		</antcall>
-	</target>
-
-	<target name="cleanDemes2x2">
-		<antcall target="-clean">
-			<param name="applet" value="Demes2x2"/>
-		</antcall>
-	</target>
-
-	<!-- public goods -->
-	<target name="PGG">
-		<antcall target="-dapplet">
-			<param name="applet" value="PublicGoods"/>
-		</antcall>
-	</target>
-
-	<target name="cleanPGG">
-		<antcall target="-clean">
-			<param name="applet" value="PublicGoods"/>
-		</antcall>
-	</target>
-
-	<!-- voluntary public goods -->
-	<target name="CDL">
-		<antcall target="-dapplet">
-			<param name="applet" value="CDL"/>
 		</antcall>
 	</target>
 
@@ -339,37 +209,11 @@
 		</antcall>
 	</target>
 
-	<target name="cleanCDL">
-		<antcall target="-clean">
-			<param name="applet" value="CDL"/>
-		</antcall>
-	</target>
-
-	<!-- voluntary public goods with punishment -->
-	<target name="CDLP">
-		<antcall target="-dapplet">
-			<param name="applet" value="CDLP"/>
-		</antcall>
-	</target>
-
 	<target name="simCDLP">
 		<antcall target="-dsims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="CDLP"/>
 			<param name="sim" value="simCDLP"/>
-		</antcall>
-	</target>
-
-	<target name="cleanCDLP">
-		<antcall target="-clean">
-			<param name="applet" value="CDLP"/>
-		</antcall>
-	</target>
-
-	<!-- voluntary public goods with peer punishment & sanctioning -->
-	<target name="CDLPQ">
-		<antcall target="-dapplet">
-			<param name="applet" value="CDLPQ"/>
 		</antcall>
 	</target>
 
@@ -387,59 +231,6 @@
 	</target>
 <!-- end hackish... -->
 
-<!--	<target name="simCDLPQ">
-		<antcall target="-dsims">
-			<param name="nosvg" value="true"/>
-			<param name="core" value="CDLPQ"/>
-			<param name="sim" value="simCDLPQ"/>
-		</antcall>
-	</target> -->
-
-	<target name="cleanCDLPQ">
-		<antcall target="-clean">
-			<param name="applet" value="CDLPQ"/>
-		</antcall>
-	</target>
-
-    <!-- institution -->
-    <target name="Institution">
-        <antcall target="-dapplet">
-            <param name="applet" value="Institution"/>
-        </antcall>
-    </target>
-
-	<!-- synergy & discounting -->
-	<target name="Discount">
-		<antcall target="-dapplet">
-			<param name="applet" value="Discount"/>
-		</antcall>
-	</target>
-
-	<target name="cleanDiscount">
-		<antcall target="-clean">
-			<param name="applet" value="Discount"/>
-		</antcall>
-	</target>
-
-	<!-- ecological public goods -->
-	<target name="EcoPGG">
-		<antcall target="-dapplet">
-			<param name="applet" value="EcoPGG"/>
-			<param name="main" value="EcoPGG"/>
-		</antcall>
-	</target>
-
-	<target name="cleanEcoPGG">
-		<antcall target="-clean">
-			<param name="applet" value="EcoPGG"/>
-		</antcall>
-	</target>
-
-<!-- this is a bit hackish - we need some classes from the interface to enable snapshots... 
-		<property name="core" value="EcoPGG"/>
-
-	<target name="simEcoPGG" depends="-dinterface">
--->
 	<target name="simEcoPGG">
 		<antcall target="-dinterface">
 			<param name="nosvg" value="true"/>
@@ -460,71 +251,6 @@
 	</target>
 <!-- end hackish... -->
 
-	<!-- punishment & reputation -->
-	<target name="Punishment">
-		<antcall target="-dapplet">
-			<param name="applet" value="Punishment"/>
-		</antcall>
-	</target>
-
-	<target name="cleanPunishment">
-		<antcall target="-clean">
-			<param name="applet" value="Punishment"/>
-		</antcall>
-	</target>
-
-	<!-- reward & reputation -->
-	<target name="Reward">
-		<antcall target="-dapplet">
-			<param name="applet" value="Reward"/>
-		</antcall>
-	</target>
-
-	<target name="simReward">
-		<antcall target="-dsims">
-			<param name="nosvg" value="true"/>
-			<param name="core" value="Reward"/>
-			<param name="sim" value="simReward"/>
-		</antcall>
-	</target>
-
-	<target name="cleanReward">
-		<antcall target="-clean">
-			<param name="applet" value="Reward"/>
-		</antcall>
-	</target>
-
-	<!-- reward & punishment -->
-	<target name="RePun">
-		<antcall target="-dapplet">
-			<param name="applet" value="RePun"/>
-		</antcall>
-	</target>
-
-	<target name="simRePun">
-		<antcall target="-dsims">
-			<param name="nosvg" value="true"/>
-			<param name="core" value="RePun"/>
-			<param name="sim" value="simRePun"/>
-		</antcall>
-	</target>
-
-	<target name="cleanRePun">
-		<antcall target="-clean">
-			<param name="applet" value="RePun"/>
-		</antcall>
-	</target>
-
-	<!-- rock, paper, scissors -->
-	<target name="RSP">
-<!-- <ant antfile="${ant.files}/core.xml" target="mtj">
-	<property name="build.classes" value="${build.classes}/RSP"/>
-</ant> -->
-		<antcall target="-dapplet">
-			<param name="applet" value="RSP"/>
-		</antcall>
-	</target>
-
 	<target name="simRSP">
 		<antcall target="-dsims">
 			<param name="nosvg" value="true"/>
@@ -533,63 +259,24 @@
 		</antcall>
 	</target>
 
-	<target name="cleanRSP">
-		<antcall target="-clean">
-			<param name="applet" value="RSP"/>
-		</antcall>
-	</target>
-
 	<!-- n-traits -->
 	<target name="Traits">
-<!--		<ant antfile="${ant.files}/core.xml" target="mtj">
+		<!-- build mtj first -->
+		<ant antfile="${ant.files}/core.xml" target="mtj">
 			<property name="build.classes" value="${build.classes}/Traits"/>
-		</ant>-->
-		<antcall target="-dappletmtj">
-			<param name="applet" value="Traits"/>
-		</antcall>
+		</ant>
+		<ant antfile="${ant.files}/core.xml" target="applet"/>
 	</target>
 
 	<target name="simTraits">
-<!--		<ant antfile="${ant.files}/core.xml" target="mtj">
-			<property name="build.classes" value="${build.simulations}/Traits"/>
-		</ant>-->
+		<!-- build mtj first -->
+		<ant antfile="${ant.files}/core.xml" target="mtj">
+			<property name="build.classes" value="${build.classes}/Traits"/>
+		</ant>
 		<antcall target="-dsims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="Traits"/>
 			<param name="sim" value="simTraits"/>
-		</antcall>
-	</target>
-	
-	<target name="cleanTraits">
-		<antcall target="-clean">
-			<param name="applet" value="Traits"/>
-		</antcall>
-	</target>
-	
-	<!-- continuous 2x2 -->
-	<target name="C2x2">
-		<antcall target="-capplet">
-			<param name="applet" value="C2x2"/>
-			<param name="main" value="CTwoByTwo"/>
-		</antcall>
-	</target>
-
-	<target name="cleanC2x2">
-		<antcall target="-clean">
-			<param name="applet" value="C2x2"/>
-		</antcall>
-	</target>
-
-	<!-- continuous snowdrift -->
-	<target name="CSD">
-		<antcall target="-capplet">
-			<param name="applet" value="CSD"/>
-		</antcall>
-	</target>
-
-	<target name="cleanCSD">
-		<antcall target="-clean">
-			<param name="applet" value="CSD"/>
 		</antcall>
 	</target>
 
@@ -600,166 +287,7 @@
 		</antcall>
 	</target>
 
-	<!-- continuous labour -->
-	<target name="CLabour">
-		<antcall target="-capplet">
-			<param name="applet" value="CLabour"/>
-		</antcall>
-	</target>
-
-	<target name="cleanCLabour">
-		<antcall target="-clean">
-			<param name="applet" value="CLabour"/>
-		</antcall>
-	</target>
-
-	<!-- build web tutorials -->
-	<target name="web">
-		<mkdir dir="${product}"/>
-		<antcall target="-web">
-			<param name="nosvg" value="true"/>
-			<param name="noparser" value="true"/>
-			<param name="strip" value="true"/>
-		</antcall>
-	</target>
-
-	<target name="-web" depends="web-Intro,web-Moran,web-2x2,web-Snowdrift,web-PGG,web-CDL,web-CDLP,web-Discount,web-EcoPGG,web-RePun,web-CSD,web-general">
-		<copy todir="${product}/images">
-			<fileset dir="${web}/images"/>
-		</copy>
-		<copy todir="${product}" file="${web}/favicon.ico"/>
-		<copy todir="${product}" file="${web}/index.html"/>
-	</target>
-
-	<target name="web-general" depends="web-style">
-		<copy todir="${product}/General">
-			<fileset dir="${web}/General"/>
-		</copy>
-	</target>
-
-	<target name="web-style">
-		<copy todir="${product}/styles">
-			<fileset dir="${web}/styles"/>
-		</copy>
-	</target>
-
-	<target name="cleanweb" depends="clean">
-		<delete dir="${product}/styles"/>
-		<delete dir="${product}/General"/>
-		<delete file="${product}/favicon.ico"/>
-		<delete file="${product}/index.html"/>
-	</target>
-
-	<target name="web-Intro" depends="RSP,2x2,web-style">
-		<copy todir="${product}/Introduction">
-			<fileset dir="${web}/Introduction"/>
-			<fileset file="${build.applets}/RSP.jar"/>
-			<fileset file="${build.applets}/2x2.jar"/>
-		</copy>
-	</target>
-
-	<target name="web-Moran" depends="Moran,2x2,web-style">
-		<copy todir="${product}/Moran">
-			<fileset dir="${web}/Moran"/>
-			<fileset file="${build.applets}/Moran.jar"/>
-			<fileset file="${build.applets}/2x2.jar"/>
-		</copy>
-	</target>
-
-	<target name="web-2x2" depends="2x2,web-style">
-		<copy todir="${product}/TwoByTwo">
-			<fileset dir="${web}/TwoByTwo"/>
-			<fileset file="${build.applets}/2x2.jar"/>
-		</copy>
-	</target>
-
-	<target name="web-Snowdrift" depends="2x2,C2x2,web-style">
-		<copy todir="${product}/Snowdrift">
-			<fileset dir="${web}/Snowdrift"/>
-			<fileset file="${build.applets}/2x2.jar"/>
-			<fileset file="${build.applets}/C2x2.jar"/>
-		</copy>
-	</target>
-
-	<target name="web-PGG" depends="PGG,web-style">
-		<copy todir="${product}/PublicGoods">
-			<fileset dir="${web}/PublicGoods"/>
-			<fileset file="${build.applets}/PublicGoods.jar"/>
-		</copy>
-	</target>
-
-	<target name="web-CDL" depends="CDL,web-style">
-		<copy todir="${product}/Volunteering">
-			<fileset dir="${web}/Volunteering"/>
-			<fileset file="${build.applets}/CDL.jar"/>
-		</copy>
-	</target>
-
-	<target name="web-CDLP" depends="CDLP,web-style">
-		<copy todir="${product}/VolPun">
-			<fileset dir="${web}/VolPun"/>
-			<fileset file="${build.applets}/CDLP.jar"/>
-		</copy>
-	</target>
-
-	<target name="web-Discount" depends="Discount,web-style">
-		<copy todir="${product}/Discount">
-			<fileset dir="${web}/Discount"/>
-			<fileset file="${build.applets}/Discount.jar"/>
-		</copy>
-	</target>
-
-	<target name="web-EcoPGG" depends="EcoPGG,web-style">
-		<copy todir="${product}/Ecology">
-			<fileset dir="${web}/Ecology"/>
-			<fileset file="${build.applets}/EcoPGG.jar"/>
-		</copy>
-	</target>
-
-	<target name="web-RePun" depends="Reward,Punishment,web-style">
-		<copy todir="${product}/RewardAndPunishment">
-			<fileset dir="${web}/RewardAndPunishment"/>
-			<fileset file="${build.applets}/Reward.jar"/>
-			<fileset file="${build.applets}/Punishment.jar"/>
-		</copy>
-	</target>
-
-	<target name="web-CSD" depends="CSD,web-style">
-		<copy todir="${product}/Branching">
-			<fileset dir="${web}/Branching"/>
-			<fileset file="${build.applets}/CSD.jar"/>
-		</copy>
-	</target>
-
-
-	<!-- helper targets - do not call directly -->
-	<target name="-clean">
-		<delete dir="${build.classes}/${applet}"/>
-		<delete file="${build.applets}/${applet}.jar"/>
-	</target>
-
-	<target name="-dapplet" depends="init">
-		<ant antfile="${ant.files}/core.xml" target="dapplet">
-			<property name="build.classes" value="${build.classes}/${applet}"/>
-			<property name="discrete" value="true"/>
-		</ant>
-	</target>
-	
-	<target name="-dappletmtj">
-		<ant antfile="${ant.files}/core.xml" target="mtj">
-			<property name="build.classes" value="${build.classes}/${applet}"/>
-		</ant>
-		<!-- first needs to build mtj -->
-		<antcall target="-dapplet"/>
-	</target>
-	
-	<target name="-capplet" depends="init">
-		<ant antfile="${ant.files}/core.xml" target="capplet">
-			<property name="build.classes" value="${build.classes}/${applet}"/>
-			<property name="continuous" value="true"/>
-		</ant>
-	</target>
-
+	<!-- helper targets - do not call directly -->	
 	<target name="-dsims" depends="init">
 		<ant antfile="${ant.files}/core.xml" target="dsims">
 			<property name="build.classes" value="${build.simulations}/${core}"/>
