@@ -92,7 +92,7 @@
 
 	<!-- Simulations -->
 	<target name="simDialect">
-		<antcall target="-csims">
+		<antcall target="-sims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="Dialect"/>
 			<param name="sim" value="simDialect"/>
@@ -100,7 +100,7 @@
 	</target>
 
 	<target name="scanMoti">
-		<antcall target="-dsims">
+		<antcall target="-sims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="Motility"/>
 			<param name="sim" value="scanMotility"/>
@@ -108,7 +108,7 @@
 	</target>
 
 	<target name="simMoran">
-		<antcall target="-dsims">
+		<antcall target="-sims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="Moran"/>
 			<param name="sim" value="simMoran"/>
@@ -117,11 +117,11 @@
 	
 	<!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
 	<target name="scanEcoMoran">
-<!--		<antcall target="-dinterface">
+<!--		<antcall target="-interface">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="EcoTBT"/>
 		</antcall> -->
-		<antcall target="-dsims">
+		<antcall target="-sims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="EcoMoran"/>
 			<param name="sim" value="scanEcoMoran"/>
@@ -129,7 +129,7 @@
 	</target>
 
 	<target name="sim2x2Fix">
-		<antcall target="-dsims">
+		<antcall target="-sims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="TwoByTwo"/>
 			<param name="sim" value="simTBTFix"/>
@@ -137,20 +137,20 @@
 	</target>
 
 	<target name="sim2x2Matching">
-		<antcall target="-dsims">
+		<antcall target="-sims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="TwoByTwo"/>
 			<param name="sim" value="simTBTMatching"/>
 		</antcall>
 	</target>
 
-<!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
+	<!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
 	<target name="sim2x2">
-		<antcall target="-dinterface">
+		<antcall target="-interface">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="TwoByTwo"/>
 		</antcall>
-		<antcall target="-dsims">
+		<antcall target="-sims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="TwoByTwo"/>
 			<param name="sim" value="simTBT"/>
@@ -159,33 +159,32 @@
 
 	<!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
 	<target name="scanEco2x2">
-		<antcall target="-dinterface">
+		<antcall target="-interface">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="EcoTBT"/>
 		</antcall>
-		<antcall target="-dsims">
+		<antcall target="-sims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="EcoTBT"/>
 			<param name="sim" value="scanEcoTBT"/>
 		</antcall>
 	</target>
 
-<!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
+	<!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
 	<target name="simMutual">
-		<antcall target="-dinterface">
+		<antcall target="-interface">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="Mutualism"/>
 		</antcall>
-		<antcall target="-dsims">
+		<antcall target="-sims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="Mutualism"/>
 			<param name="sim" value="simMutual"/>
 		</antcall>
 	</target>
-<!-- end hackish... -->
 
 	<target name="simCG">
-		<antcall target="-dsims">
+		<antcall target="-sims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="CG"/>
 			<param name="sim" value="simCG"/>
@@ -193,7 +192,7 @@
 	</target>
 	
 	<target name="simDemes2x2">
-		<antcall target="-dsims">
+		<antcall target="-sims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="DemesTBT"/>
 			<param name="super" value="TwoByTwo"/>
@@ -202,7 +201,7 @@
 	</target>
 
 	<target name="simCDL">
-		<antcall target="-dsims">
+		<antcall target="-sims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="CDL"/>
 			<param name="sim" value="simCDL"/>
@@ -210,49 +209,40 @@
 	</target>
 
 	<target name="simCDLP">
-		<antcall target="-dsims">
+		<antcall target="-sims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="CDLP"/>
 			<param name="sim" value="simCDLP"/>
 		</antcall>
 	</target>
 
-<!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
-	<target name="simCDLPQ" depends="-dinterface">
-		<antcall target="-dinterface">
+	<!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
+	<target name="simCDLPQ">
+		<antcall target="-interface">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="CDLPQ"/>
 		</antcall>
-		<antcall target="-dsims">
+		<antcall target="-sims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="CDLPQ"/>
 			<param name="sim" value="simCDLPQ"/>
 		</antcall>
 	</target>
-<!-- end hackish... -->
 
 	<target name="simEcoPGG">
-		<antcall target="-dinterface">
+		<antcall target="-interface">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="EcoPGG"/>
 		</antcall>
-		<antcall target="-dsims">
+		<antcall target="-sims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="EcoPGG"/>
 			<param name="sim" value="simEcoPGG"/>
 		</antcall>
 	</target>
 
-	<target name="-dinterface" depends="init">
-		<ant antfile="${ant.files}/core.xml" target="interface">
-			<property name="build.classes" value="${build.simulations}/${core}"/>
-			<property name="discrete" value="true"/>
-		</ant>
-	</target>
-<!-- end hackish... -->
-
 	<target name="simRSP">
-		<antcall target="-dsims">
+		<antcall target="-sims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="RSP"/>
 			<param name="sim" value="simRSP"/>
@@ -273,7 +263,7 @@
 		<ant antfile="${ant.files}/core.xml" target="mtj">
 			<property name="build.classes" value="${build.classes}/Traits"/>
 		</ant>
-		<antcall target="-dsims">
+		<antcall target="-sims">
 			<param name="nosvg" value="true"/>
 			<param name="core" value="Traits"/>
 			<param name="sim" value="simTraits"/>
@@ -281,21 +271,21 @@
 	</target>
 
 	<target name="scanCSD">
-		<antcall target="-csims">
+		<antcall target="-sims">
 			<param name="core" value="CSD"/>
 			<param name="sim" value="scanCSD"/>
 		</antcall>
 	</target>
 
 	<!-- helper targets - do not call directly -->	
-	<target name="-dsims" depends="init">
-		<ant antfile="${ant.files}/core.xml" target="dsims">
+	<target name="-sims" depends="init">
+		<ant antfile="${ant.files}/core.xml" target="sims">
 			<property name="build.classes" value="${build.simulations}/${core}"/>
 		</ant>
 	</target>
 
-	<target name="-csims" depends="init">
-		<ant antfile="${ant.files}/core.xml" target="csims">
+	<target name="-interface" depends="init">
+		<ant antfile="${ant.files}/core.xml" target="interface">
 			<property name="build.classes" value="${build.simulations}/${core}"/>
 		</ant>
 	</target>
