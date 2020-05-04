@@ -115,14 +115,9 @@
 		</antcall>
 	</target>
 	
-	<!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
 	<target name="scanEcoMoran">
-<!--		<antcall target="-interface">
-			<param name="nosvg" value="true"/>
-			<param name="core" value="EcoTBT"/>
-		</antcall> -->
 		<antcall target="-sims">
-			<param name="nosvg" value="true"/>
+			<param name="nosvg" value="false"/>
 			<param name="core" value="EcoMoran"/>
 			<param name="sim" value="scanEcoMoran"/>
 		</antcall>
@@ -144,40 +139,28 @@
 		</antcall>
 	</target>
 
-	<!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
 	<target name="sim2x2">
-		<antcall target="-interface">
-			<param name="nosvg" value="true"/>
-			<param name="core" value="TwoByTwo"/>
-		</antcall>
 		<antcall target="-sims">
-			<param name="nosvg" value="true"/>
+			<!-- needs svg for snapshots -->
+			<param name="nosvg" value="false"/>
 			<param name="core" value="TwoByTwo"/>
 			<param name="sim" value="simTBT"/>
 		</antcall>
 	</target>
 
-	<!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
 	<target name="scanEco2x2">
-		<antcall target="-interface">
-			<param name="nosvg" value="true"/>
-			<param name="core" value="EcoTBT"/>
-		</antcall>
 		<antcall target="-sims">
-			<param name="nosvg" value="true"/>
+			<!-- needs svg for snapshots -->
+			<param name="nosvg" value="false"/>
 			<param name="core" value="EcoTBT"/>
 			<param name="sim" value="scanEcoTBT"/>
 		</antcall>
 	</target>
 
-	<!-- this is a bit hackish - we need some classes from the interface to enable snapshots... -->
 	<target name="simMutual">
-		<antcall target="-interface">
-			<param name="nosvg" value="true"/>
-			<param name="core" value="Mutualism"/>
-		</antcall>
 		<antcall target="-sims">
-			<param name="nosvg" value="true"/>
+			<!-- needs svg for snapshots -->
+			<param name="nosvg" value="false"/>
 			<param name="core" value="Mutualism"/>
 			<param name="sim" value="simMutual"/>
 		</antcall>
