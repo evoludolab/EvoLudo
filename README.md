@@ -17,7 +17,7 @@ A big thank you to the respective researchers and developers.
 In order to set up the EvoLudo developer framework a number of steps are required (as detailed below). The proper setup is crucial but fortunately is required only once.
 
 ### Requirements
-1. Java compiler: Install <i>[Java SDK8](http://www.oracle.com/technetwork/java/javase/downloads/index.html)</i> or better (Java SE 13 at the time of writing).
+1. Java compiler: Install <i>[Java SDK 8](http://www.oracle.com/technetwork/java/javase/downloads/index.html)</i> or better (Java SE 14 at the time of writing).
 2. Developer environment: Install <i>[eclipse](https://www.eclipse.org/downloads/eclipse-packages/)</i> IDE, Java EE edition recommended.
 3. JavaScript converter: Launch <i>eclipse</i> and open `Eclipse Marketplace...` in the Help-Menu. Search for `GWT` (<i>[Google Web Toolkit](http://www.gwtproject.org)</i>) and install `GWT Eclipse Plugin` (version 3.0.0 at time of writing).
 4. Version control system: Launch <i>eclipse</i> and open `Eclipse Marketplace...` in the Help-Menu. Search for `EGit` and install the `EGit - git Integration for Eclipse` (version 5.5.5 at time of writing, included with *eclipse* Java EE edition).
@@ -47,14 +47,16 @@ Import EvoLudo project into *eclipse*:
 Alternatively, either manually download the EvoLudo source code from [GitHub](https://github.com/evoludolab/EvoLudo) or use the `GitHub Desktop` application to download the EvoLudo source code and import the local copy of the repository into *eclipse*.
 
 ### Finishing touches
-1. Make sure `GWT 2.8.2` (or better) is the default version.<br/>
-Launch *eclipse*. Open `Eclipse > Preferences...` and search for `GWT`. Under `GWT Settings` check version 2.8.2 or higher. Note, currently the `GWT Eclipse Plugin` only includes `GWT 2.8.1`. In order to add a newer GWT version:
+1. Make sure `GWT 2.8.2` (or better) is the default version (`GWT 2.9.0` at the time of writing).<br/>
+Launch *eclipse*. Open `Eclipse > Preferences...` and search for `GWT`. Under `GWT Settings` check version 2.8.2 or higher.<br/>
+*Note:* currently the `GWT Eclipse Plugin` only includes `GWT 2.8.1`. In order to add a newer GWT version:
     1. Download the newest `GWT SDK` from the [GWT Project](http://www.gwtproject.org/download.html).
     2. Unzip the archive and copy the folder to a convenient location, e.g. the *eclipse* workspace.
     3. In the *eclipse* `GWT Settings` click `Add...` and choose the folder with the downloaded GWT version.
     4. Select `GWT 2.8.2` (or better) as the default.
-2. Make sure compiler compliance level is set to 1.8.<br/>
-Launch *eclipse*. Open `Eclipse > Preferences...` and search for `compiler compliance`. Under `Java Compiler` select compiler compliance level 1.8 (as of GWT version 2.8.2 newer levels cannot be handled) and rebuild the project.
+2. Make sure compiler compliance level is correctly set.<br/>
+*Important:* the compiler compliance level needs to be 1.8 for `GWT 2.8.x` and is supported up to level 10 for `GWT 2.9.0` (level 11 currently does not work with EvoLudo)<br/>
+Launch *eclipse*. Open `Eclipse > Preferences...` and search for `compiler compliance`. Under `Java Compiler` select compiler compliance level 1.8 (for `GWT 2.8.2` and below) or levels 1.8, 9, 10 (for `GWT 2.9.x`) and rebuild the project.
 3. Create an empty file at `src/org/evoludo/simulator/web/theme/git.version` (during the build process the git version is stored here).<br/>
 Open a terminal and change to the root directory of EvoLudo. On \*nix/macOS systems execute `touch src/org/evoludo/simulator/web/theme/git.version` and on Windows find another way to create the file at the above location.
 4. (Optional) Use *Google Chrome* as the default web browser for development (facilitates debugging). <br/>
