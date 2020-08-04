@@ -22,6 +22,7 @@
     <booleanAttribute key="org.eclipse.jdt.launching.ATTR_USE_START_ON_FIRST_THREAD" value="true"/>
     <stringAttribute key="org.eclipse.jdt.launching.CLASSPATH_PROVIDER" value="com.gwtplugins.gwt.eclipse.core.moduleClasspathProvider"/>
     <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="com.google.gwt.dev.DevMode"/>
+    <stringAttribute key="org.eclipse.jdt.launching.MODULE_NAME" value="EvoLudo"/>
     <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="-logLevel TRACE -bindAddress 0.0.0.0 -port 8888 -remoteUI &quot;${gwt_remote_ui_server_port}:${unique_id}&quot; -codeServerPort 9997 -style PRETTY -war /Users/hauert/Research/Code/EvoLudo/war org.evoludo.EvoLudoWeb"/>
     <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="EvoLudo"/>
     <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Xmx1g"/>
