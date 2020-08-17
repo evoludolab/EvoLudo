@@ -7,7 +7,6 @@ TODO:
 
 Browser:
 - 3D graphs not shown after view change (or on load), tooltips trigger display (desktop Safari only, works in Chrome, Firefox and Safari for iOS)
-- drag'n'drop restore does not work on popup labs
 
 iOS:
 - export on iOS fails (disable or check if data url's work)
@@ -41,6 +40,7 @@ CHECK:
 
 
 DONE:
++ drag'n'drop restore does not work on popup labs
 + game implementations must advertise what kind of graphics views they support, for example by implementing particular interfaces; the current triage based on discrete/continuous strategies is too coarse and based on game classes is too narrow and inflexible.
 + add --adjusted option to ODEEuler and PDEReactionDiffusion to switch to adjusted replicator dynamics. simply divide dy by avg. fitness in all update variants. must ensure positive payoffs.
 + switching to --popupdate S with geometry != well-mixed should trigger warning and reset GUI (surprisingly challenging...); switching to --popupdate D works but existing structure/network is not updated in GUI. 
