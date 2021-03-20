@@ -57,8 +57,8 @@ Launch *eclipse*. Open `Eclipse > Preferences...` and search for `GWT`. Under `G
 2. Make sure compiler compliance level is correctly set.<br/>
 *Important:* the compiler compliance level needs to be 1.8 for `GWT 2.8.x` and is supported up to level 10 for `GWT 2.9.0` (level 11 currently does not work with EvoLudo)<br/>
 Launch *eclipse*. Open `Eclipse > Preferences...` and search for `compiler compliance`. Under `Java Compiler` select compiler compliance level 1.8 (for `GWT 2.8.2` and below) or levels 1.8, 9, 10 (for `GWT 2.9.x`) and rebuild the project.
-3. Create an empty file at `src/org/evoludo/simulator/web/theme/git.version` (during the build process the git version is stored here).<br/>
-Open a terminal and change to the root directory of EvoLudo. On \*nix/macOS systems execute `touch src/org/evoludo/simulator/web/theme/git.version` and on Windows find another way to create the file at the above location.
+3. Create an empty file at `src/org/evoludo/simulator/git.version` (during the build process the git version is stored here).<br/>
+Open a terminal and change to the root directory of EvoLudo. On \*nix/macOS systems execute `touch src/org/evoludo/simulator/git.version` and on Windows find another way to create the file at the above location.
 4. (Optional) Use *Google Chrome* as the default web browser for development (facilitates debugging). <br/>
 If *Google Chrome* is not the default web browser of the system, open `Eclipse > Preferences...` and search for `web browser`. Under `Web Browser` select `Use external browser` and select *Google Chrome* in the list or click `New...` to add it to the list and select it.
 5. (Optional) Open EvoLudo properties (`Project > Properties`) and select `Builders` then select `Git version` and press `Edit...`. On the `Main` tab make sure the `Location` points to the `git` executable. The default is `/usr/bin/git`.

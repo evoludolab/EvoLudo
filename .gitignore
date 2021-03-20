@@ -2,7 +2,7 @@
 .DS_Store
 
 # ignore git version file
-src/org/evoludo/gwt/simulator/theme/git.version
+src/org/evoludo/simulator/git.version
 
 # ignore class files
 *.class
