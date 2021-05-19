@@ -24,14 +24,12 @@ ePub:
 - touch events require special attention; work different from browser; restrict to mouse events? currently tooltips and context menu are interfering
 - pinch zoom has issues for LineGraph (work reasonably well e.g. for PopGraph2D and well for PopGraph3D, including shifting/rotating of view)
 - parameter textarea does not show parameters, possibly white on white, may need explicitly setting color of disabled text (iPad only; desktop ok and standalone on iPad ok as well)
-- highlighting does not work; likely caused by TouchEvents (appears that touchmove and mousemove interfere; try to avoid loading of TouchEvents and replace by ibooks.js (see Fixed Layout example, i.e. how does it prevent the loading of TouchEvents).)
 
 Minor:
 - add color to Test output
 - center histograms
 - switch y-axis labels to left side of graphs? maybe with the exception of LineGraph? make it configurable.
 - GWT: drop cursor does not show during drag'n'drop
-- MersenneTwister maintains (undesirable) dependency on EvoLudo for encoding state
 
 Enhancements:
 - implement progress reporting for Test's
@@ -41,6 +39,8 @@ CHECK:
 
 
 DONE:
++ highlighting does not work; likely caused by TouchEvents (appears that touchmove and mousemove interfere; try to avoid loading of TouchEvents and replace by ibooks.js (see Fixed Layout example, i.e. how does it prevent the loading of TouchEvents).)
++ MersenneTwister maintains (undesirable) dependency on EvoLudo for encoding state
 + eliminate interactions-array if hasLookupTable (or adjustScores)
 + unify getMeanTraits and getMeanState in CXPopulation and DPopulation respectively; improve dealings with range of continuous traits
 + drag'n'drop restore does not work on popup labs
