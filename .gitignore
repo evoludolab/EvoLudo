@@ -22,5 +22,6 @@ gwt-unitCache/
 # ignore Xcode user settings
 xcuserdata/
 
-# ignore reference files for tests
+# ignore reference and report files for tests
 test/references/
+test/reports/
