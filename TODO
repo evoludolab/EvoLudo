@@ -1,6 +1,5 @@
 TODO:
 - check if interactions-array can be replaced by interaction.kout for adjustScores (but only if read-only access is ensured)!
-- streamline cloOptimize: defined both in IBS and IBSPopulation but set only in IBSDPopulation...
 - implement custom color maps (NetGames is an example); this is tricky due to incompatibilities between JRE and GWT; one possibility is to add relevant code to EvoLudoJRE and EvoLudoGWT (inelegant because it requires synchronizing code across two not obviously related classes); another possibility is to add <lab>GWT and <lab>JRE classes to take care of the implementation specific components (much like the original <lab>Lab class setup); both are far from satisfactory or even elegant solutions...
 - fixation probability does not seem to work if initfreqs is e.g. 1:1. this is not intuitive. either change the x-axis from node to something more meaningful and report results graphically or display a message.
 - check reference lines for fixation probabilities and times (seem to be off for Moran on test page and do not seem to get updated e.g. when changing population size).
@@ -39,6 +38,8 @@ CHECK:
 
 
 DONE:
++ debugging of single updates re-implemented; improved logging for debugging
++ streamline cloOptimize: defined both in IBS and IBSPopulation but set only in IBSDPopulation...
 + highlighting does not work; likely caused by TouchEvents (appears that touchmove and mousemove interfere; try to avoid loading of TouchEvents and replace by ibooks.js (see Fixed Layout example, i.e. how does it prevent the loading of TouchEvents).)
 + MersenneTwister maintains (undesirable) dependency on EvoLudo for encoding state
 + eliminate interactions-array if hasLookupTable (or adjustScores)
