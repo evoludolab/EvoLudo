@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE projectDescription>
 <projectDescription>
 	<name>EvoLudo</name>
 	<comment></comment>
@@ -32,7 +33,6 @@
 		</buildCommand>
 	</buildSpec>
 	<natures>
-		<nature>org.eclipse.texlipse.builder.TexlipseNature</nature>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 		<nature>com.gwtplugins.gwt.eclipse.core.gwtNature</nature>
 	</natures>
