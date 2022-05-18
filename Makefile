@@ -49,6 +49,7 @@ clean-doc :
 	rm -rf $(EVOLUDO_BUILD)/$(EVOLUDO_DOC)
 
 clean-test :
+	ant clean ;
 	rm -rf $(EVOLUDO_BUILD)/applets/TestEvoLudo.jar
 
 clean : clean-doc clean-test
