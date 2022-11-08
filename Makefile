@@ -15,24 +15,27 @@ EVOLUDO_DOC = $(EVOLUDO_BUILD)/docs
 # targets
 all:
 
-# note: to include all errors/warnings add: -Xmaxerrs 0 -Xmaxwarns 0
+# notes: 
+# - to include all errors/warnings add: -Xmaxerrs 0 -Xmaxwarns 0
+# - no whitespace allowed in list of subpackages
+# - in eclipse just run Project > Generate Javadoc... for entire EvoLudo project
 
 docs :
 	mkdir -p $(EVOLUDO_DOC) ;
 	javadoc -d $(EVOLUDO_DOC) -sourcepath $(EVOLUDO_SRC) \
 		-classpath ../Google/releases/gwt-2.10.0.XHTML/gwt-user.jar:./lib/parallax-1.6.jar:./lib/mtj-0.9.14.jar:./lib/freehep-graphicsio-svg-2.4.jar:./lib/freehep-graphics2d-2.4.jar:./lib/freehep-graphicsio-ps-2.4.jar:./lib/freehep-graphicsio-pdf-2.4.jar \
 		-Xmaxerrs 0 -Xmaxwarns 0 \
-		-subpackages org.evoludo.gwt.graphics:\
-					 org.evoludo.gwt.simulator:\
-					 org.evoludo.gwt.ui:\
-					 org.evoludo.jre:\
-					 org.evoludo.jre.graphics:\
-					 org.evoludo.jre.simulator:\
-					 org.evoludo.simulator:\
-					 org.evoludo.simulator.models:\
-					 org.evoludo.simulator.modules:\
-					 org.evoludo.simulator.views:\
-					 org.evoludo.util ;
+		--allow-script-in-comments \
+		-header "<script src='https://polyfill.io/v3/polyfill.min.js?features=es6'></script>" \
+		-header "<script id='MathJax-script' async src='https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'></script>" \
+		org.evoludo.geom\
+		org.evoludo.gwt.graphics\
+		org.evoludo.gwt.simulator\
+		org.evoludo.gwt.ui\
+		org.evoludo.jre.graphics\
+		org.evoludo.jre.simulator\
+		org.evoludo.simulator\
+		org.evoludo.util ;
 
 $(EVOLUDO_BUILD)/applets/TestEvoLudo.jar :
 	ant test
