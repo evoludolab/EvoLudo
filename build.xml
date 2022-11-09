@@ -278,6 +278,13 @@
 		</ant>
 	</target>
 
+	<!-- create javadoc documentation -->
+    <target name="docs">
+		<!-- read properties and start building -->
+		<ant antfile="${ant.files}/core.xml" target="-docs">
+		</ant>
+    </target>
+
 	<!-- GWT compilation targets -->
 	<!-- Arguments to gwtc and devmode targets -->
 	<property name="gwt.args" value="" />
