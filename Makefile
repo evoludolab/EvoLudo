@@ -9,10 +9,10 @@ JAVADOC = /Library/Java/JavaVirtualMachines/jdk-11.0.7.jdk/Contents/Home/bin/jav
 EVOLUDO_HOME = $(CURDIR)
 EVOLUDO_SRC = $(CURDIR)/src
 EVOLUDO_BUILD = $(CURDIR)/build
+EVOLUDO_DOC = $(CURDIR)/docs
 # at least for now, place docs in build directory. may graduate to a top level
 # location once EvoLudo is public and if documentation is served from github.
-#EVOLUDO_DOC = $(CURDIR)/docs
-EVOLUDO_DOC = $(EVOLUDO_BUILD)/docs
+#EVOLUDO_DOC = $(EVOLUDO_BUILD)/docs
 
 VERSION = $(shell cat $(EVOLUDO_SRC)/org/evoludo/simulator/git.version)
 
@@ -38,7 +38,7 @@ docs :
 		-link https://docs.oracle.com/en/java/javase/19/docs/api \
 		-link https://www.gwtproject.org/javadoc/latest \
 		-link https://thothbot.github.io/parallax/docs/1.6 \
-		-Xmaxerrs 100 -Xmaxwarns 500 \
+		-Xmaxerrs 100 -Xmaxwarns 0 \
 		--allow-script-in-comments \
 		-header "<script src='https://polyfill.io/v3/polyfill.min.js?features=es6'></script><script id='MathJax-script' async src='https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'></script>" \
 		-footer "<span style='display:inline-block; padding:14px 0;'>$(VERSION)</span>" \

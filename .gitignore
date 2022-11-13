@@ -10,6 +10,7 @@ src/org/evoludo/simulator/git.version
 # ignore build/product directories
 build/
 product/
+docs/
 war/WEB-INF/
 war/evoludoweb
 
