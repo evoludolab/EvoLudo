@@ -67,8 +67,8 @@ test-generate : build-test
 test : build-test
 	java -jar $(EVOLUDO_BUILD)/applets/TestEvoLudo.jar --tests $(EVOLUDO_HOME)/test/references/current --reports $(EVOLUDO_HOME)/test/reports
 
-clean-doc :
-	rm -rf $(EVOLUDO_BUILD)/$(EVOLUDO_DOC)
+clean-docs :
+	rm -rf $(EVOLUDO_DOC)
 
 clean-test :
 	ant clean ;
