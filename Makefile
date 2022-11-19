@@ -15,6 +15,7 @@ EVOLUDO_DOC = $(CURDIR)/docs
 #EVOLUDO_DOC = $(EVOLUDO_BUILD)/docs
 
 VERSION = $(shell cat $(EVOLUDO_SRC)/org/evoludo/simulator/git.version)
+DATE = $(shell date +'%B %d, %Y')
 
 .PHONY: all test clean
 
@@ -41,7 +42,7 @@ docs :
 		-Xmaxerrs 100 -Xmaxwarns 0 \
 		--allow-script-in-comments \
 		-header "<script src='https://polyfill.io/v3/polyfill.min.js?features=es6'></script><script id='MathJax-script' async src='https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'></script>" \
-		-footer "<span style='display:inline-block; padding:14px 0;'>$(VERSION)</span>" \
+		-footer "<span style='display:inline-block; padding:14px 0;'>$(DATE)&nbsp;$(VERSION)</span>" \
 		--frames \
 		org.evoludo.geom\
 		org.evoludo.gwt.graphics\
