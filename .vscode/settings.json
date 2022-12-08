@@ -1,0 +1,6 @@
+{
+    "java.project.referencedLibraries": [
+        "lib/**/*.jar",
+        "../Google/releases/gwt-2.10.0.XHTML/**/*.jar"
+    ]
+}
