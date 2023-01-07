@@ -1,14 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry excluding="org/evoludo/gwt/emulate/|org/evoludo/jre/simulator/run/" kind="src" path="src"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
-	<classpathentry kind="con" path="com.gwtplugins.gwt.eclipse.core.GWT_CONTAINER/GWT 2.10.0 XHTML"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
+	<classpathentry excluding="**/jre/**/*.java|**/gwt/emulate/**/*.java|**/models/SDEEulerN.java|**/modules/Traits.java" including="**/*.java" kind="src" output="target/classes" path="src">
 		<attributes>
-			<attribute name="module" value="true"/>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="../Google/releases/gwt-2.10.0.XHTML/gwt-user.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="../Google/releases/gwt-2.10.0.XHTML/gwt-user.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="https://www.gwtproject.org/javadoc/latest/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="../Google/releases/gwt-2.10.0.XHTML/gwt-dev.jar"/>
+	<classpathentry kind="lib" path="../Google/releases/gwt-2.10.0.XHTML/gwt-codeserver.jar"/>
+	<classpathentry kind="lib" path="../Google/releases/gwt-2.10.0.XHTML/validation-api-1.0.0.GA.jar"/>
+	<classpathentry kind="lib" path="../Google/releases/gwt-2.10.0.XHTML/validation-api-1.0.0.GA-sources.jar"/>
 	<classpathentry kind="lib" path="lib/parallax-1.6.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="https://thothbot.github.io/parallax/docs/1.6/"/>
@@ -23,5 +35,31 @@
 	<classpathentry kind="lib" path="lib/freehep-graphicsio-svg-2.4.jar"/>
 	<classpathentry kind="lib" path="lib/freehep-graphicsio-tests-2.4.jar"/>
 	<classpathentry kind="lib" path="lib/freehep-io-2.2.2.jar"/>
-	<classpathentry kind="output" path="war/WEB-INF/classes"/>
+	<classpathentry kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="target/generated-sources/annotations">
+		<attributes>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+			<attribute name="ignore_optional_problems" value="true"/>
+			<attribute name="m2e-apt" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry excluding="**" kind="src" output="target/classes" path="war">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" output="target/test-classes" path="target/generated-test-sources/test-annotations">
+		<attributes>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+			<attribute name="ignore_optional_problems" value="true"/>
+			<attribute name="m2e-apt" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="output" path="target/classes"/>
 </classpath>

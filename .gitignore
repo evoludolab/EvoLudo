@@ -26,3 +26,6 @@ xcuserdata/
 # ignore reference and report files for tests
 test/references/
 test/reports/
+
+# maven
+target

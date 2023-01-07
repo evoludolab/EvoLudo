@@ -1,0 +1,19 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+			"name": "TestEvoLudoLabs",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:8888/TestEvoLudoLabs.html",
+			"webRoot": "${workspaceRoot}/war",
+			"sourceMapPathOverrides": {
+				// "http://127.0.0.1:9876/sourcemaps/evoludoweb/*" : "${workspaceFolder}/src/*",
+				"http://127.0.0.1:9876/sourcemaps/evoludoweb/org/evoludo/*" : "${workspaceFolder}/src/org/evoludo/*",
+			}
+        }
+    ]
+}
