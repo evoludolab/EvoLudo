@@ -26,7 +26,7 @@
 			<attribute name="javadoc_location" value="https://thothbot.github.io/parallax/docs/1.6/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/mtj-0.9.14.jar"/>
+	<classpathentry kind="lib" path="lib/mtj-1.0.4.jar"/>
 	<classpathentry kind="lib" path="lib/freehep-graphics2d-2.4.jar"/>
 	<classpathentry kind="lib" path="lib/freehep-graphicsbase-2.4.jar"/>
 	<classpathentry kind="lib" path="lib/freehep-graphicsio-2.4.jar"/>

@@ -136,6 +136,7 @@
   </build>
 
   <dependencies>
+    <!-- only needed for GWT -->
     <dependency>
       <groupId>org.parallax3d.parallax</groupId>
       <artifactId>parallax-gwt</artifactId>
@@ -151,6 +152,13 @@
       <artifactId>gwt-dev</artifactId>
       <version>2.10.0</version>
     </dependency>
+    <dependency>
+      <groupId>org.dominokit</groupId>
+      <artifactId>gwt-validation-api</artifactId>
+      <version>1.0.0</version>
+      <type>gwt-lib</type>
+    </dependency>
+    <!-- only needed for JRE (graphics, linear algebra) -->
     <dependency>
       <groupId>org.freehep</groupId>
       <artifactId>freehep-graphics2d</artifactId>
@@ -190,6 +198,11 @@
       <groupId>com.googlecode.matrix-toolkits-java</groupId>
       <artifactId>mtj</artifactId>
       <version>1.0.4</version>
+    </dependency>
+    <dependency>
+      <groupId>com.googlecode.netlib-java</groupId>
+      <artifactId>netlib-java</artifactId>
+      <version>1.1</version>
     </dependency>
   </dependencies>
 </project>
