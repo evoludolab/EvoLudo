@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry excluding="**/jre/**/*.java|**/gwt/emulate/**/*.java|**/models/SDEEulerN.java|**/modules/Traits.java" including="**/*.java" kind="src" output="target/classes" path="src">
+	<classpathentry excluding="**/gwt/emulate/**/*.java|**/jre/simulator/run/**/*.java" including="**/*.java" kind="src" output="target/classes" path="src">
+	<!-- <classpathentry excluding="**/jre/**/*.java|**/gwt/emulate/**/*.java|**/models/SDEEulerN.java|**/modules/Traits.java" including="**/*.java" kind="src" output="target/classes" path="src"> -->
 		<attributes>
 			<attribute name="optional" value="true"/>
 			<attribute name="maven.pomderived" value="true"/>
