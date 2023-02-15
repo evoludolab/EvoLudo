@@ -10,6 +10,13 @@
 
   <dependencyManagement>
     <dependencies>
+
+      <dependency>
+        <groupId>com.github.fommil.netlib</groupId>
+        <artifactId>core</artifactId>
+        <version>1.1.2</version>
+      </dependency>
+
       <dependency>
         <groupId>org.gwtproject</groupId>
         <artifactId>gwt</artifactId>
@@ -17,6 +24,7 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+
       <dependency>
         <groupId>javax.servlet</groupId>
         <artifactId>javax.servlet-api</artifactId>
@@ -59,8 +67,10 @@
         <configuration>
           <generateGitPropertiesFile>true</generateGitPropertiesFile>
           <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+          <dateFormat>MMMM dd, yyyy @ HH:mm z</dateFormat>
           <includeOnlyProperties>
             <includeOnlyProperty>^git.commit.id.describe$</includeOnlyProperty>
+            <includeOnlyProperty>^git.build.time$</includeOnlyProperty>
           </includeOnlyProperties>
           <commitIdGenerationMode>full</commitIdGenerationMode>
           <gitDescribe>
@@ -68,6 +78,26 @@
           </gitDescribe>
         </configuration>
       </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>properties-maven-plugin</artifactId>
+        <version>1.1.0</version>
+        <executions>
+          <execution>
+            <phase>initialize</phase>
+            <goals>
+              <goal>read-project-properties</goal>
+            </goals>
+            <configuration>
+              <files>
+                <file>${project.build.outputDirectory}/git.properties</file>
+              </files>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.8.1</version>
@@ -81,6 +111,7 @@
           </excludes>
         </configuration>
       </plugin>
+
       <plugin>
         <groupId>net.ltgt.gwt.maven</groupId>
         <artifactId>gwt-maven-plugin</artifactId>
@@ -91,11 +122,13 @@
           <superSourceDirectory>src/org/evoludo/gwt/emulate</superSourceDirectory>
         </configuration>
       </plugin>
+
       <plugin>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>
           <version>9.4.46.v20220331</version>
       </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
@@ -109,7 +142,7 @@
             ]]>
           </header>
           <footer><![CDATA[
-            <span style='display:inline-block; padding:14px 0;'>(DATE)&nbsp;(VERSION)</span>
+            <span style='display:inline-block; padding:14px 0;'>${git.build.time}&nbsp;(revision ${git.commit.id.describe})</span>
             ]]>
           </footer>
           <!-- JDK 11 needed to generate docs with frames -->
@@ -118,7 +151,7 @@
           <nohelp>true</nohelp>
           <packages>org.evoludo.geom:org.evoludo.gwt.*:org.evoludo.jre:org.evoludo.simulator.*:org.evoludo.util</packages>
           <excludePackageNames>org.evoludo.jre.simulator.run</excludePackageNames>
-        <links>
+          <links>
             <link>https://docs.oracle.com/en/java/javase/19/docs/api/</link>
             <link>https://www.gwtproject.org/javadoc/latest/</link>
             <link>https://thothbot.github.io/parallax/docs/1.6</link>
