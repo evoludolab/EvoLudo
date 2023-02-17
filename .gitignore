@@ -1,8 +1,9 @@
 # ignore macOS .DS_Store
 .DS_Store
 
-# ignore git version file
-src/org/evoludo/simulator/git.version
+# ignore git properties file
+git.properties
+Git.properties
 
 # ignore class files
 *.class

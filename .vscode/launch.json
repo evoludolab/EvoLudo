@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-			"name": "TestEvoLudoLabs",
+			"name": "EvoLudo GWT",
             "type": "chrome",
             "request": "launch",
             "url": "http://localhost:8888/TestEvoLudoLabs.html",
@@ -14,6 +14,13 @@
 				// "http://127.0.0.1:9876/sourcemaps/evoludoweb/*" : "${workspaceFolder}/src/*",
 				"http://127.0.0.1:9876/sourcemaps/evoludoweb/org/evoludo/*" : "${workspaceFolder}/src/org/evoludo/*",
 			}
-        }
+        },
+        {
+            "name": "EvoLudo JRE",
+            "type": "java",
+            "request": "launch",
+            "mainClass": "${workspaceFolder}/src/org/evoludo/jre/simulator/EvoLudoLab.java",
+            "args": "--game Moran"
+        },
     ]
 }
