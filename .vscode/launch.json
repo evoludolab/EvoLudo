@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-			"name": "EvoLudo GWT",
+			"name": "GWT EvoLudo",
             "type": "chrome",
             "request": "launch",
             "url": "http://localhost:8888/TestEvoLudoLabs.html",
@@ -16,7 +16,7 @@
 			}
         },
         {
-            "name": "EvoLudo JRE",
+            "name": "JRE EvoLudo",
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/src/org/evoludo/jre/simulator/EvoLudoLab.java",

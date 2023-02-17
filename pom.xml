@@ -98,26 +98,24 @@
         </executions>
       </plugin>
 
-      <plugins>
-        <plugin>
-          <groupId>com.coderplus.maven.plugins</groupId>
-          <artifactId>copy-rename-maven-plugin</artifactId>
-          <version>1.0</version>
-          <executions>
-            <execution>
-              <id>copy-git-properties</id>
-              <phase>generate-sources</phase>
-              <goals>
-                  <goal>copy</goal>
-              </goals>
-              <configuration>
-                <sourceFile>${project.basedir}/src/org/evoludo/simulator/resources/git.properties</sourceFile>
-                <destinationFile>${project.basedir}/src/org/evoludo/gwt/simulator/resources/Git.properties</destinationFile>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
+      <plugin>
+        <groupId>com.coderplus.maven.plugins</groupId>
+        <artifactId>copy-rename-maven-plugin</artifactId>
+        <version>1.0</version>
+        <executions>
+          <execution>
+            <id>copy-git-properties</id>
+            <phase>generate-sources</phase>
+            <goals>
+                <goal>copy</goal>
+            </goals>
+            <configuration>
+              <sourceFile>${project.basedir}/src/org/evoludo/simulator/resources/git.properties</sourceFile>
+              <destinationFile>${project.basedir}/src/org/evoludo/gwt/simulator/resources/Git.properties</destinationFile>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
 
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
