@@ -16,11 +16,18 @@
 			}
         },
         {
-            "name": "JRE EvoLudo",
+            "name": "JRE Moran EvoLudo",
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/src/org/evoludo/jre/simulator/EvoLudoLab.java",
             "args": "--game Moran"
+        },
+        {
+            "name": "JRE ePGG EvoLudo",
+            "type": "java",
+            "request": "launch",
+            "mainClass": "${workspaceFolder}/src/org/evoludo/jre/simulator/EvoLudoLab.java",
+            "args": "--game ePGG --run --delay 100 --pdeN 61x --model PDE --geometry nf --colors red;green;black --reportfreq 1 --diffusion 2,1 --inittype circle --init 1,1,8 --fitnessmap static --basefit 1.0 --selection 1.0 --cost 1.0 --interest 2.34 --groupsize 8 --deathrate 1.2 --dt 0.1 --pdeL 200"
         },
     ]
 }
