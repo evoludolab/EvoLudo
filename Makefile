@@ -2,7 +2,7 @@
 # javadoc of active java installation
 #JAVADOC = $(shell which javadoc)
 # jdk-11 provides last javadoc that supports frames
-JAVADOC = /Library/Java/JavaVirtualMachines/jdk-11.0.7.jdk/Contents/Home/bin/javadoc
+JAVADOC = /Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/javadoc
 
 
 # top level directories of EvoLudo
@@ -35,7 +35,7 @@ docs :
 		-sourcepath $(EVOLUDO_SRC) \
 		-doctitle "EvoLudo: in silico evolution" \
 		-windowtitle "EvoLudo: in silico evolution" \
-		-classpath ../Google/releases/gwt-2.10.0.XHTML/gwt-user.jar:./lib/parallax-1.6.jar:./lib/mtj-1.0.4.jar:./lib/freehep-graphicsio-svg-2.4.jar:./lib/freehep-graphics2d-2.4.jar:./lib/freehep-graphicsio-ps-2.4.jar:./lib/freehep-graphicsio-pdf-2.4.jar \
+		-classpath ./lib/gwt-user-XHTML-2.10.0.jar:./lib/parallax-gwt-1.6.jar:./lib/mtj-1.0.4.jar:./lib/freehep-graphicsio-svg-2.4.jar:./lib/freehep-graphics2d-2.4.jar:./lib/freehep-graphicsio-ps-2.4.jar:./lib/freehep-graphicsio-pdf-2.4.jar \
 		-link https://docs.oracle.com/en/java/javase/19/docs/api \
 		-link https://www.gwtproject.org/javadoc/latest \
 		-link https://thothbot.github.io/parallax/docs/1.6 \

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry excluding="**/jre/simulator/lab/*.java|**/jre/simulator/run/*.java|**/gwt/emulate/**/*.java" including="**/*.java" kind="src" output="target/classes" path="src">
+	<classpathentry excluding="**/jre/**/*.java|**/gwt/emulate/**/*.java|**/models/SDEEulerN.java|**/modules/Traits.java" including="**/*.java" kind="src" output="target/classes" path="src">
 		<attributes>
 			<attribute name="optional" value="true"/>
 			<attribute name="maven.pomderived" value="true"/>
@@ -12,16 +12,16 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="../Google/releases/gwt-2.10.0.XHTML/gwt-user.jar">
+	<classpathentry kind="lib" path="../GWT/releases/gwt-2.10.0.XHTML/gwt-user.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="https://www.gwtproject.org/javadoc/latest/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="../Google/releases/gwt-2.10.0.XHTML/gwt-dev.jar"/>
-	<classpathentry kind="lib" path="../Google/releases/gwt-2.10.0.XHTML/gwt-codeserver.jar"/>
-	<classpathentry kind="lib" path="../Google/releases/gwt-2.10.0.XHTML/validation-api-1.0.0.GA.jar"/>
-	<classpathentry kind="lib" path="../Google/releases/gwt-2.10.0.XHTML/validation-api-1.0.0.GA-sources.jar"/>
-	<classpathentry kind="lib" path="lib/parallax-1.6.jar">
+	<classpathentry kind="lib" path="../GWT/releases/gwt-2.10.0.XHTML/gwt-dev.jar"/>
+	<classpathentry kind="lib" path="../GWT/releases/gwt-2.10.0.XHTML/gwt-codeserver.jar"/>
+	<classpathentry kind="lib" path="../GWT/releases/gwt-2.10.0.XHTML/validation-api-1.0.0.GA.jar"/>
+	<classpathentry kind="lib" path="../GWT/releases/gwt-2.10.0.XHTML/validation-api-1.0.0.GA-sources.jar"/>
+	<classpathentry kind="lib" path="lib/parallax-gwt-1.6.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="https://thothbot.github.io/parallax/docs/1.6/"/>
 		</attributes>
@@ -51,6 +51,7 @@
 	<classpathentry excluding="**" kind="src" output="target/classes" path="war">
 		<attributes>
 			<attribute name="maven.pomderived" value="true"/>
+			<attribute name="optional" value="true"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="src" output="target/test-classes" path="target/generated-test-sources/test-annotations">
