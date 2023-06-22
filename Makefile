@@ -14,8 +14,10 @@ EVOLUDO_DOC = $(CURDIR)/docs
 # location once EvoLudo is public and if documentation is served from github.
 #EVOLUDO_DOC = $(EVOLUDO_BUILD)/docs
 
-VERSION = $(shell cat $(EVOLUDO_SRC)/org/evoludo/simulator/git.version)
-DATE = $(shell date +'%B %d, %Y')
+GIT_COMMIT_ID = 'git.commit.id.describe'
+GIT_BUILD_TIME = 'git.build.time'
+VERSION = $(shell git describe --tags --dirty='*')
+DATE = $(shell git show -s --date='format:%B %d, %Y @ %H:%m %z' --format='%cd')
 
 .PHONY: all test clean
 
