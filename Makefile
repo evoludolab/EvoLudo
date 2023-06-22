@@ -43,6 +43,7 @@ docs :
 		--allow-script-in-comments \
 		-header "<script src='https://polyfill.io/v3/polyfill.min.js?features=es6'></script><script id='MathJax-script' async src='https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'></script>" \
 		-footer "<span style='display:inline-block; padding:14px 0;'>$(DATE)&nbsp;$(VERSION)</span>" \
+		-private \
 		--frames \
 		org.evoludo.geom\
 		org.evoludo.gwt.graphics\
