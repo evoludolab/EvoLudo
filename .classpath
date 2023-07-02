@@ -15,7 +15,7 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="../GWT/releases/gwt-2.10.0.XHTML/gwt-user.jar">
+	<classpathentry kind="lib" path="lib/gwt-2.10.0.XHTML/gwt-user.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="https://www.gwtproject.org/javadoc/latest/"/>
 		</attributes>
