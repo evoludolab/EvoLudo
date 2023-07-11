@@ -157,6 +157,10 @@
 				<configuration>
 					<moduleName>org.evoludo.EvoLudoWeb</moduleName>
 					<superSourceDirectory>src/org/evoludo/gwt/emulate</superSourceDirectory>
+					<devmodeArgs>
+					<arg>-bindAddress</arg><arg>10.0.0.87</arg>
+					</devmodeArgs>
+					<style>PRETTY</style>
 				</configuration>
 			</plugin>
 
