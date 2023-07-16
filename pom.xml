@@ -9,6 +9,10 @@
 	<description>Interactive in-silicio evolution</description>
 	<packaging>gwt-app</packaging>
 
+	<properties>
+        <gwt.server>localhost</gwt.server>
+    </properties>
+
 	<build>
 		<sourceDirectory>src</sourceDirectory>
 		<resources>
@@ -158,7 +162,7 @@
 					<moduleName>org.evoludo.EvoLudoWeb</moduleName>
 					<superSourceDirectory>src/org/evoludo/gwt/emulate</superSourceDirectory>
 					<devmodeArgs>
-					<arg>-bindAddress</arg><arg>10.0.0.87</arg>
+					<arg>-bindAddress</arg><arg>${gwt.server}</arg>
 					</devmodeArgs>
 					<style>PRETTY</style>
 				</configuration>
