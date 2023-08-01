@@ -18,6 +18,17 @@
 			}
         },
         {
+			"name": "GWT EvoLudo (localhost)",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:8888/TestEvoLudoLabs.html",
+			"webRoot": "${workspaceRoot}/war",
+			"sourceMapPathOverrides": {
+				// "http://127.0.0.1:9876/sourcemaps/evoludoweb/*" : "${workspaceFolder}/src/*",
+				"http://127.0.0.1:9876/sourcemaps/evoludoweb/org/evoludo/*" : "${workspaceFolder}/src/org/evoludo/*",
+			}
+        },
+        {
             "name": "JRE Moran EvoLudo",
             "type": "java",
             "request": "launch",
