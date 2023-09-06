@@ -5,12 +5,12 @@ TODO:
 - check reference lines for fixation probabilities and times (seem to be off for Moran on test page and do not seem to get updated e.g. when changing population size).
 
 Browser:
-- 3D graphs not shown after view change (or on load), tooltips trigger display (desktop Safari only, works in Chrome, Firefox and Safari for iOS)
 
 iOS:
 - export on iOS fails (disable or check if data url's work)
 
 iBooks (desktop):
+- standalone: tooltips fail to display colors of nodes in 2D/3D (both strategies and fitness)
 - standalone: clo options textarea disabled/read-only (corresponding buttons ok)
 - standalone: cannot change view (eliminates all entries from view selector)
 - LinearGraph: shifting/zooming view does not work (shift sets x-axis [-1,0] to [0,1], zoom out changes to [0,0]...)
@@ -38,6 +38,7 @@ CHECK:
 
 
 DONE:
++ Safari (desktop & iPadOS): 3D graphs not shown after view change (or on load) for dynamical layout; tooltips trigger display (works in Chrome, Firefox and Safari for iOS)
 + debugging of single updates re-implemented; improved logging for debugging
 + streamline cloOptimize: defined both in IBS and IBSPopulation but set only in IBSDPopulation...
 + highlighting does not work; likely caused by TouchEvents (appears that touchmove and mousemove interfere; try to avoid loading of TouchEvents and replace by ibooks.js (see Fixed Layout example, i.e. how does it prevent the loading of TouchEvents).)
