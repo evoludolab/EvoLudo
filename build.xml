@@ -90,6 +90,11 @@
 		<ant antfile="${ant.files}/core.xml" target="applet"/>
 	</target>
 
+	<!-- EvoLudo simulator -->
+	<target name="EvoLudoSim" depends="init">
+		<ant antfile="${ant.files}/core.xml" target="simulator"/>
+	</target>
+
 	<!-- Test suite -->
 	<target name="test" depends="init">
 		<ant antfile="${ant.files}/core.xml" target="test"/>
@@ -311,4 +316,3 @@
 		<delete dir="war/evoludoweb" failonerror="false" />
 	</target>
 </project>
-
