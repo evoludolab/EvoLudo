@@ -92,6 +92,7 @@
 
 	<!-- EvoLudo simulator -->
 	<target name="EvoLudoSim" depends="init">
+		<property name="sim" value="EvoLudoSim"/>
 		<ant antfile="${ant.files}/core.xml" target="simulator"/>
 	</target>
 
