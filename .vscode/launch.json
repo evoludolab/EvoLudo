@@ -39,11 +39,18 @@
             "args": "--game ePGG --run --delay 100 --pdeN 61x --model PDE --geometry nf --colors red;green;black --reportfreq 1 --pdeD 2,1 --inittype circle --init 1,1,8 --fitnessmap static --basefit 1.0 --selection 1.0 --cost 1.0 --interest 2.34 --groupsize 8 --deathrate 1.2 --dt 0.1 --pdeL 200"
         },
         {
-            "name": "JRE TestEvoludo",
+            "name": "JRE TestEvoludo (generate)",
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/src/org/evoludo/jre/simulator/exec/TestEvoludo.java",
             "args": "--tests ${workspaceFolder}/test/references --generate ${workspaceFolder}/test/generators --compress"
+        },
+        {
+            "name": "JRE TestEvoludo (test)",
+            "type": "java",
+            "request": "launch",
+            "mainClass": "${workspaceFolder}/src/org/evoludo/jre/simulator/exec/TestEvoludo.java",
+            "args": "--tests ${workspaceFolder}/test/references --reports ${workspaceFolder}/test/reports"
         },
     ]
 }
