@@ -77,6 +77,9 @@ test : build-test
 		--tests $(EVOLUDO_HOME)/test/references/current \
 		--reports $(EVOLUDO_HOME)/test/reports
 
+sims :
+	ant EvoLudoSim
+
 clean-docs :
 	rm -rf $(EVOLUDO_DOC)
 

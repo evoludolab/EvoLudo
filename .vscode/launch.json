@@ -52,5 +52,12 @@
             "mainClass": "${workspaceFolder}/src/org/evoludo/jre/simulator/exec/TestEvoludo.java",
             "args": "--tests ${workspaceFolder}/test/references --reports ${workspaceFolder}/test/reports"
         },
+        {
+        "name": "JRE EvoludoSim",
+        "type": "java",
+        "request": "launch",
+        "mainClass": "${workspaceFolder}/src/org/evoludo/jre/simulator/EvoludoJRE.java",
+        "args": "--game e2x2 --model PDE --reportfreq 1 --geometry n --deathrate 0.5 --init 1,8,1 --inittype random --mutation 0.02 --basefit 1.0 --selection 1.0 --paymatrix 0.25,1.25;0,1 --fitnessmap static --export gugus"
+        },
     ]
 }
