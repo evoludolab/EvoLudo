@@ -185,11 +185,11 @@
             <script src='https://polyfill.io/v3/polyfill.min.js?features=es6'></script>
             <script id='MathJax-script' async src='https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'></script>
             ]]>
-          </header>
+          			</header>
 					<footer><![CDATA[
             <span style='display:inline-block; padding:14px 0;'>${git.build.time}&nbsp;(revision ${git.commit.id.describe})</span>
             ]]>
-          </footer>
+					</footer>
 					<!-- JDK 11 needed to generate docs with frames -->
 					<javadocExecutable>
 						/Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/javadoc</javadocExecutable>

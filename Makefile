@@ -64,11 +64,18 @@ $(EVOLUDO_BUILD)/applets/TestEvoLudo.jar :
 
 build-test : $(EVOLUDO_BUILD)/applets/TestEvoLudo.jar
 
+# provide --reports option to store failed test reports
 test-generate : build-test
-	java -jar $(EVOLUDO_BUILD)/applets/TestEvoLudo.jar --tests $(EVOLUDO_HOME)/test/references --generate $(EVOLUDO_HOME)/test/generators --compress
+	java -jar $(EVOLUDO_BUILD)/applets/TestEvoLudo.jar \
+		--tests $(EVOLUDO_HOME)/test/references \
+		--generate $(EVOLUDO_HOME)/test/generators \
+		--reports $(EVOLUDO_HOME)/test/reports \
+		--compress
 
 test : build-test
-	java -jar $(EVOLUDO_BUILD)/applets/TestEvoLudo.jar --tests $(EVOLUDO_HOME)/test/references/current --reports $(EVOLUDO_HOME)/test/reports
+	java -jar $(EVOLUDO_BUILD)/applets/TestEvoLudo.jar \
+		--tests $(EVOLUDO_HOME)/test/references/current \
+		--reports $(EVOLUDO_HOME)/test/reports
 
 clean-docs :
 	rm -rf $(EVOLUDO_DOC)

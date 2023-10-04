@@ -43,7 +43,7 @@
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/src/org/evoludo/jre/simulator/exec/TestEvoludo.java",
-            "args": "--tests ${workspaceFolder}/test/references --generate ${workspaceFolder}/test/generators --compress"
+            "args": "--tests ${workspaceFolder}/test/references --generate ${workspaceFolder}/test/generators --reports ${workspaceFolder}/test/reports --compress"
         },
         {
             "name": "JRE TestEvoludo (test)",
