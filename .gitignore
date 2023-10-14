@@ -11,7 +11,7 @@ Git.properties
 # ignore build/product directories
 build/
 product/
-docs/
+docs/api/
 war/WEB-INF/
 war/evoludoweb
 
@@ -21,8 +21,8 @@ scratch/
 # ignore GWT cache
 gwt-unitCache/
 
-# ignore Xcode user settings
-xcuserdata/
+# ignore Xcode
+*.xcodeproj
 
 # ignore reference and report files for tests
 test/references/
