@@ -9,7 +9,7 @@ JAVADOC = /Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/jav
 EVOLUDO_HOME = $(CURDIR)
 EVOLUDO_SRC = $(CURDIR)/src
 EVOLUDO_BUILD = $(CURDIR)/build
-EVOLUDO_DOC = $(CURDIR)/docs
+EVOLUDO_DOC = $(CURDIR)/docs/api
 # at least for now, place docs in build directory. may graduate to a top level
 # location once EvoLudo is public and if documentation is served from github.
 #EVOLUDO_DOC = $(EVOLUDO_BUILD)/docs
@@ -19,7 +19,7 @@ GIT_BUILD_TIME = 'git.build.time'
 VERSION = $(shell git describe --tags --dirty='*')
 DATE = $(shell git show -s --date='format:%B %d, %Y @ %H:%m %z' --format='%cd')
 
-.PHONY: all test clean
+.PHONY: all test clean docs
 
 # targets
 all:
