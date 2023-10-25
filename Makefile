@@ -9,10 +9,8 @@ JAVADOC = /Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/jav
 EVOLUDO_HOME = $(CURDIR)
 EVOLUDO_SRC = $(CURDIR)/src
 EVOLUDO_BUILD = $(CURDIR)/build
+EVOLUDO_DIST = $(CURDIR)/dist
 EVOLUDO_DOC = $(CURDIR)/docs/api
-# at least for now, place docs in build directory. may graduate to a top level
-# location once EvoLudo is public and if documentation is served from github.
-#EVOLUDO_DOC = $(EVOLUDO_BUILD)/docs
 
 GIT_COMMIT_ID = 'git.commit.id.describe'
 GIT_BUILD_TIME = 'git.build.time'
@@ -59,32 +57,55 @@ docs :
 		org.evoludo.simulator.views\
 		org.evoludo.util ;
 
-$(EVOLUDO_BUILD)/applets/TestEvoLudo.jar :
+docs-clean :
+	rm -rf $(EVOLUDO_DOC)
+
+$(EVOLUDO_BUILD)/TestEvoLudo.jar :
 	ant test
 
-build-test : $(EVOLUDO_BUILD)/applets/TestEvoLudo.jar
+test-build : $(EVOLUDO_BUILD)/TestEvoLudo.jar
 
 # provide --reports option to store failed test reports
-test-generate : build-test
-	java -jar $(EVOLUDO_BUILD)/applets/TestEvoLudo.jar \
+test-generate : test-build
+	java -jar $(EVOLUDO_BUILD)/TestEvoLudo.jar \
 		--tests $(EVOLUDO_HOME)/test/references \
 		--generate $(EVOLUDO_HOME)/test/generators \
 		--reports $(EVOLUDO_HOME)/test/reports \
 		--compress
 
-test : build-test
-	java -jar $(EVOLUDO_BUILD)/applets/TestEvoLudo.jar \
+test : test-build
+	java -jar $(EVOLUDO_BUILD)/TestEvoLudo.jar \
 		--tests $(EVOLUDO_HOME)/test/references/current \
 		--reports $(EVOLUDO_HOME)/test/reports
 
-sims :
-	ant EvoLudoSim
-
-clean-docs :
-	rm -rf $(EVOLUDO_DOC)
-
-clean-test :
+test-clean :
 	ant clean ;
-	rm -rf $(EVOLUDO_BUILD)/applets/TestEvoLudo.jar
+	rm -rf $(EVOLUDO_BUILD)/TestEvoLudo.jar
 
-clean : clean-docs clean-test
+sims :
+	ant EvoLudo
+
+gwt :
+	ant gwt-build
+
+clean : docs-clean test-clean dist-clean
+
+dist-init :
+	mkdir -p $(EVOLUDO_DIST)/jar
+	mkdir -p $(EVOLUDO_DIST)/war
+	mkdir -p $(EVOLUDO_DIST)/doc
+	mkdir -p $(EVOLUDO_DIST)/reports
+
+dist-test : test-build
+	java -jar $(EVOLUDO_BUILD)/TestEvoLudo.jar \
+		--tests $(EVOLUDO_HOME)/test/references/current \
+		--reports $(EVOLUDO_DIST)/reports
+
+dist-clean :
+	rm -rf $(EVOLUDO_DIST)
+
+dist : clean dist-init docs gwt sims dist-test
+	mv $(EVOLUDO_DOC) $(EVOLUDO_DIST)/doc
+	mv $(EVOLUDO_BUILD)/*.jar $(EVOLUDO_DIST)/jar
+	mv $(EVOLUDO_HOME)/war/evoludoweb $(EVOLUDO_DIST)/war
+	cp -a $(EVOLUDO_HOME)/war/*.*html $(EVOLUDO_DIST)/war

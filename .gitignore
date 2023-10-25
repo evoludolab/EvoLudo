@@ -11,6 +11,7 @@ Git.properties
 # ignore build/product directories
 build/
 product/
+dist/
 docs/api/
 war/WEB-INF/
 war/evoludoweb

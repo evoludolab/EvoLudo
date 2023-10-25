@@ -44,8 +44,6 @@
 	<property name="src" value="src"/>
 	<property name="build" value="build"/>
 	<property name="build.classes" value="${build}/classes"/>
-	<property name="build.applets" value="${build}/applets"/>
-	<property name="build.simulations" value="${build}/simulations"/>
 	<property name="web" value="web"/>
 	<property name="product" value="product"/>
 	<property name="ant.files" value="ant"/>
@@ -60,8 +58,6 @@
 	<target name="init">
 		<mkdir dir="${build}"/>
 		<mkdir dir="${build.classes}"/>
-		<mkdir dir="${build.applets}"/>
-		<mkdir dir="${build.simulations}"/>
 		<condition property="compilerargs" value="-Xlint:all,-fallthrough">
 			<equals arg1="${env.DEBUG}" arg2="debug"/>
 		</condition>
@@ -88,12 +84,6 @@
 	<!-- EvoLudo -->
 	<target name="EvoLudo" depends="init">
 		<ant antfile="${ant.files}/core.xml" target="applet"/>
-	</target>
-
-	<!-- EvoLudo simulator -->
-	<target name="EvoLudoSim" depends="init">
-		<property name="sim" value="EvoLudoSim"/>
-		<ant antfile="${ant.files}/core.xml" target="simulator"/>
 	</target>
 
 	<!-- Test suite -->
@@ -274,13 +264,13 @@
 	<!-- helper targets - do not call directly -->	
 	<target name="-sims" depends="init">
 		<ant antfile="${ant.files}/core.xml" target="sims">
-			<property name="build.classes" value="${build.simulations}/${core}"/>
+			<property name="build.classes" value="${build}/${core}"/>
 		</ant>
 	</target>
 
 	<target name="-interface" depends="init">
 		<ant antfile="${ant.files}/core.xml" target="interface">
-			<property name="build.classes" value="${build.simulations}/${core}"/>
+			<property name="build.classes" value="${build}/${core}"/>
 		</ant>
 	</target>
 
