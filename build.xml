@@ -263,7 +263,7 @@
 
 	<!-- helper targets - do not call directly -->	
 	<target name="-sims" depends="init">
-		<ant antfile="${ant.files}/core.xml" target="sims">
+		<ant antfile="${ant.files}/core.xml" target="sim">
 			<property name="build.classes" value="${build}/${core}"/>
 		</ant>
 	</target>
