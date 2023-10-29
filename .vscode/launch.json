@@ -53,11 +53,11 @@
             "args": "--tests ${workspaceFolder}/test/references --reports ${workspaceFolder}/test/reports"
         },
         {
-        "name": "JRE EvoludoSim",
-        "type": "java",
-        "request": "launch",
-        "mainClass": "${workspaceFolder}/src/org/evoludo/jre/simulator/EvoludoLab.java",
-        "args": "--game 2x2 --model IBS --reportfreq 1 --geometry M --references r1 --popsize 500 --popupdate a --playerupdate t0.1 --init 0,1 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --paymatrix 0.25,1.25;0,1 --data traits"
+            "name": "JRE Evoludo",
+            "type": "java",
+            "request": "launch",
+            "mainClass": "${workspaceFolder}/src/org/evoludo/jre/simulator/EvoludoLab.java",
+            "args": "--game 2x2 --model IBS --reportfreq 1 --geometry M --references r1 --popsize 500 --popupdate a --playerupdate t0.1 --init 0,1 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --paymatrix 0.25,1.25;0,1 --data traits"
         },
     ]
 }
