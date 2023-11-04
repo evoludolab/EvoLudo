@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<!-- for GWT -->
+	<!-- for transition to maven; eventually .classpath should no longer be necessary -->
+	<classpathentry including="**/*.java" kind="src" output="target/classes" path="EvoLudoCore/src/main/java"/>
+	<classpathentry including="**/*.java" kind="src" output="target/classes" path="EvoLudoGWT/src/main/java"/>
+	<classpathentry including="**/*.java" kind="src" output="target/classes" path="EvoLudoJRE/src/main/java"/>
 	<!-- with the JRE classpath it seems that pom.xml has errors on the GWT dependencies, why? -->
-	<classpathentry excluding="**/jre/**/*.java|**/gwt/emulate/**/*.java|**/models/SDEEulerN.java|**/modules/Traits.java" including="**/*.java" kind="src" output="target/classes" path="src">
+	<classpathentry excluding="**/jre/**/*.java|**/models/SDEEulerN.java|**/modules/Traits.java" including="**/*.java" kind="src" output="target/classes" path="src">
 	<!-- for JRE -->
-	<!-- <classpathentry excluding="**/jre/**/run/*.java|**/gwt/emulate/**/*.java" including="**/*.java" kind="src" output="target/classes" path="src"> -->
+	<!-- <classpathentry excluding="**/jre/**/run/*.java" including="**/*.java" kind="src" output="target/classes" path="src"> -->
 		<attributes>
 			<attribute name="optional" value="true"/>
 			<attribute name="maven.pomderived" value="true"/>

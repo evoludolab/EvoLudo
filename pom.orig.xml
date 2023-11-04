@@ -1,0 +1,339 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.evoludo</groupId>
+	<artifactId>EvoLudo</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+
+	<name>EvoLudo</name>
+	<description>Interactive in-silicio evolution</description>
+    <url>https://www.evoludo.org</url>
+
+	<packaging>gwt-app</packaging>
+
+	<properties>
+        <gwt.server>localhost</gwt.server>
+    </properties>
+
+	<build>
+		<sourceDirectory>src</sourceDirectory>
+		<resources>
+			<resource>
+				<directory>src</directory>
+				<excludes>
+					<exclude>**/*.java</exclude>
+				</excludes>
+			</resource>
+			<resource>
+				<directory>war</directory>
+				<includes>
+					<include>**/*.html</include>
+				</includes>
+			</resource>
+		</resources>
+
+		<plugins>
+			<plugin>
+				<groupId>io.github.git-commit-id</groupId>
+				<artifactId>git-commit-id-maven-plugin</artifactId>
+				<version>5.0.0</version>
+				<executions>
+					<execution>
+						<id>get-git-version</id>
+						<goals>
+							<goal>revision</goal>
+						</goals>
+						<phase>initialize</phase>
+					</execution>
+				</executions>
+				<configuration>
+					<generateGitPropertiesFile>true</generateGitPropertiesFile>
+					<generateGitPropertiesFilename>
+						${project.basedir}/src/org/evoludo/simulator/resources/git.properties</generateGitPropertiesFilename>
+					<dateFormat>MMMM dd, yyyy @ HH:mm z</dateFormat>
+					<includeOnlyProperties>
+						<includeOnlyProperty>^git.commit.id.describe$</includeOnlyProperty>
+						<includeOnlyProperty>^git.build.time$</includeOnlyProperty>
+					</includeOnlyProperties>
+					<commitIdGenerationMode>full</commitIdGenerationMode>
+					<gitDescribe>
+						<dirty>*</dirty>
+					</gitDescribe>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>properties-maven-plugin</artifactId>
+				<version>1.1.0</version>
+				<executions>
+					<execution>
+						<phase>initialize</phase>
+						<goals>
+							<goal>read-project-properties</goal>
+						</goals>
+						<configuration>
+							<files>
+								<file>
+									${project.basedir}/src/org/evoludo/simulator/resources/git.properties</file>
+							</files>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>com.coderplus.maven.plugins</groupId>
+				<artifactId>copy-rename-maven-plugin</artifactId>
+				<version>1.0</version>
+				<executions>
+					<execution>
+						<id>copy-git-properties</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>copy</goal>
+						</goals>
+						<configuration>
+							<sourceFile>
+								${project.basedir}/src/org/evoludo/simulator/resources/git.properties</sourceFile>
+							<destinationFile>
+								${project.basedir}/src/org/evoludo/gwt/simulator/resources/Git.properties</destinationFile>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+            <!-- <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.4.0</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>emulate</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin> -->
+
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.8.1</version>
+				<configuration>
+					<release>11</release>
+					<excludes>
+						<exclude>**/jre/**/*.java</exclude>
+						<!-- <exclude>**/emulate/**/*.java</exclude> -->
+						<!-- <exclude>emulate/**/*.java</exclude> -->
+						<exclude>**/models/SDEEulerN.java</exclude>
+						<exclude>**/modules/Traits.java</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-install-plugin</artifactId>
+				<version>2.5.2</version>
+				<executions>
+					<execution>
+						<id>install-parallax</id>
+						<goals>
+							<goal>install-file</goal>
+						</goals>
+						<phase>clean</phase>
+						<configuration>
+							<file>${basedir}/lib/parallax-gwt-1.6.jar</file>
+							<groupId>org.parallax3d</groupId>
+							<artifactId>parallax-gwt</artifactId>
+							<version>1.6</version>
+							<packaging>jar</packaging>
+							<generatePom>true</generatePom>
+						</configuration>
+					</execution>
+					<execution>
+						<id>install-xhtml-gwt</id>
+						<goals>
+							<goal>install-file</goal>
+						</goals>
+						<phase>clean</phase>
+						<configuration>
+							<file>${basedir}/lib/gwt-user-XHTML-2.10.0.jar</file>
+							<groupId>org.evoludo</groupId>
+							<artifactId>gwt-user-XHTML</artifactId>
+							<version>2.10.0</version>
+							<packaging>jar</packaging>
+							<generatePom>true</generatePom>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>net.ltgt.gwt.maven</groupId>
+				<artifactId>gwt-maven-plugin</artifactId>
+				<version>1.0.1</version>
+				<extensions>true</extensions>
+				<configuration>
+					<moduleName>org.evoludo.EvoLudoWeb</moduleName>
+					<!-- <superSourceDirectory>emulate</superSourceDirectory> -->
+					<relocateSuperSource>true</relocateSuperSource>
+					<devmodeArgs>
+					<arg>-bindAddress</arg><arg>${gwt.server}</arg>
+					</devmodeArgs>
+					<style>PRETTY</style>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.eclipse.jetty</groupId>
+				<artifactId>jetty-maven-plugin</artifactId>
+				<version>9.4.46.v20220331</version>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.4.1</version>
+				<configuration>
+					<doctitle>EvoLudo: in silico evolution</doctitle>
+					<windowtitle>EvoLudo: in silico evolution</windowtitle>
+					<header><![CDATA[
+            <script src='https://polyfill.io/v3/polyfill.min.js?features=es6'></script>
+            <script id='MathJax-script' async src='https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'></script>
+            ]]>
+          			</header>
+					<footer><![CDATA[
+            <span style='display:inline-block; padding:14px 0;'>${git.build.time}&nbsp;(revision ${git.commit.id.describe})</span>
+            ]]>
+					</footer>
+					<!-- JDK 11 needed to generate docs with frames -->
+					<javadocExecutable>
+						/Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/javadoc</javadocExecutable>
+					<show>private</show>
+					<nohelp>true</nohelp>
+					<excludePackageNames>org.evoludo.jre.simulator.run</excludePackageNames>
+					<links>
+						<link>https://docs.oracle.com/en/java/javase/19/docs/api/</link>
+						<link>https://www.gwtproject.org/javadoc/latest/</link>
+						<link>https://thothbot.github.io/parallax/docs/1.6</link>
+					</links>
+					<sourceFileExcludes>
+						<sourceFileExclude>**/org/evoludo/emulate/**/*.java</sourceFileExclude>
+					</sourceFileExcludes>
+					<additionalJOptions>
+						<additionalJOption>--frames</additionalJOption>
+						<additionalJOption>--allow-script-in-comments</additionalJOption>
+					</additionalJOptions>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+	<dependencies>
+		<!-- only needed for GWT -->
+		<dependency>
+			<groupId>org.parallax3d</groupId>
+			<artifactId>parallax-gwt</artifactId>
+			<version>1.6</version>
+		</dependency>
+		<dependency>
+			<groupId>org.evoludo</groupId>
+			<artifactId>gwt-user-XHTML</artifactId>
+			<version>2.10.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.gwtproject</groupId>
+			<artifactId>gwt-user</artifactId>
+			<version>2.10.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.gwtproject</groupId>
+			<artifactId>gwt-dev</artifactId>
+			<version>2.10.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.dominokit</groupId>
+			<artifactId>gwt-validation-api</artifactId>
+			<version>1.0.0</version>
+			<type>gwt-lib</type>
+		</dependency>
+		<!-- only needed for JRE (graphics, linear algebra) -->
+		<dependency>
+			<groupId>org.freehep</groupId>
+			<artifactId>freehep-graphics2d</artifactId>
+			<version>2.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.freehep</groupId>
+			<artifactId>freehep-graphicsbase</artifactId>
+			<version>2.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.freehep</groupId>
+			<artifactId>freehep-graphicsio</artifactId>
+			<version>2.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.freehep</groupId>
+			<artifactId>freehep-graphicsio-pdf</artifactId>
+			<version>2.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.freehep</groupId>
+			<artifactId>freehep-graphicsio-ps</artifactId>
+			<version>2.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.freehep</groupId>
+			<artifactId>freehep-graphicsio-svg</artifactId>
+			<version>2.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.freehep</groupId>
+			<artifactId>freehep-graphicsio-tests</artifactId>
+			<version>2.4</version>
+		</dependency>
+		<dependency>
+			<groupId>com.googlecode.matrix-toolkits-java</groupId>
+			<artifactId>mtj</artifactId>
+			<version>1.0.4</version>
+		</dependency>
+		<dependency>
+			<groupId>com.googlecode.netlib-java</groupId>
+			<artifactId>netlib-java</artifactId>
+			<version>1.1</version>
+		</dependency>
+	</dependencies>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>com.github.fommil.netlib</groupId>
+				<artifactId>core</artifactId>
+				<version>1.1.2</version>
+			</dependency>
+			<dependency>
+				<groupId>org.gwtproject</groupId>
+				<artifactId>gwt</artifactId>
+				<version>2.10.0</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>javax.servlet</groupId>
+				<artifactId>javax.servlet-api</artifactId>
+				<version>3.1.0</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+</project>
