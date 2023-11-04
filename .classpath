@@ -5,6 +5,16 @@
 	<classpathentry including="**/*.java" kind="src" output="target/classes" path="EvoLudoCore/src/main/java"/>
 	<classpathentry including="**/*.java" kind="src" output="target/classes" path="EvoLudoGWT/src/main/java"/>
 	<classpathentry including="**/*.java" kind="src" output="target/classes" path="EvoLudoJRE/src/main/java"/>
+	<classpathentry kind="lib" path="EvoLudoGWT/lib/parallax-gwt-1.6.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="https://thothbot.github.io/parallax/docs/1.6/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="EvoLudoGWT/lib/gwt-user-XHTML-2.10.0.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="https://www.gwtproject.org/javadoc/latest/"/>
+		</attributes>
+	</classpathentry>
 	<!-- with the JRE classpath it seems that pom.xml has errors on the GWT dependencies, why? -->
 	<classpathentry excluding="**/jre/**/*.java|**/models/SDEEulerN.java|**/modules/Traits.java" including="**/*.java" kind="src" output="target/classes" path="src">
 	<!-- for JRE -->
@@ -20,20 +30,20 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/gwt-user-XHTML-2.10.0.jar">
+	<!-- <classpathentry kind="lib" path="lib/gwt-user-XHTML-2.10.0.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="https://www.gwtproject.org/javadoc/latest/"/>
 		</attributes>
-	</classpathentry>
+	</classpathentry> -->
 	<classpathentry kind="lib" path="../GWT/releases/gwt-2.10.0.XHTML/gwt-dev.jar"/>
 	<classpathentry kind="lib" path="../GWT/releases/gwt-2.10.0.XHTML/gwt-codeserver.jar"/>
 	<classpathentry kind="lib" path="../GWT/releases/gwt-2.10.0.XHTML/validation-api-1.0.0.GA.jar"/>
 	<classpathentry kind="lib" path="../GWT/releases/gwt-2.10.0.XHTML/validation-api-1.0.0.GA-sources.jar"/>
-	<classpathentry kind="lib" path="lib/parallax-gwt-1.6.jar">
+	<!-- <classpathentry kind="lib" path="lib/parallax-gwt-1.6.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="https://thothbot.github.io/parallax/docs/1.6/"/>
 		</attributes>
-	</classpathentry>
+	</classpathentry> -->
 	<classpathentry kind="lib" path="lib/mtj-1.0.4.jar"/>
 	<classpathentry kind="lib" path="lib/freehep-graphics2d-2.4.jar"/>
 	<classpathentry kind="lib" path="lib/freehep-graphicsbase-2.4.jar"/>
