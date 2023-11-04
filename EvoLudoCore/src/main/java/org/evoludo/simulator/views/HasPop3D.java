@@ -1,0 +1,78 @@
+//
+// EvoLudo Project
+//
+// Copyright 2020 Christoph Hauert
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// For publications in any form, you are kindly requested to attribute the
+// author and project as follows:
+//
+//	Hauert, Christoph (<year>) EvoLudo Project, http://www.evoludo.org
+//			(doi: <doi>[, <version>])
+//
+//	<doi>:	digital object identifier of the downloaded release (or the
+//			most recent release if downloaded from github.com),
+//	<year>:	year of release (or download), and
+//	[, <version>]: optional version number (as reported in output header
+//			or GUI console) to simplify replication of reported results.
+//
+// The formatting may be adjusted to comply with publisher requirements.
+//
+
+package org.evoludo.simulator.views;
+
+/**
+ * {@link org.evoludo.simulator.modules.Module Module}s that implement the
+ * {@code HasPop3D} interface include a graphical view that depicts a 3D
+ * representation of the geomtery of the population in their GUI:
+ * {@link org.evoludo.gwt.simulator.MVPop3D} for GWT and none for JRE
+ * ({@code java3d} has long been retired).
+ * <p>
+ * <strong>Important:</strong> Implementations have to be agnostic of the
+ * runtime environment (JRE vs GWT).
+ * 
+ * @author Christoph Hauert
+ */
+public abstract interface HasPop3D {
+
+	/**
+	 * {@link org.evoludo.simulator.modules.Module Module}s that implement the
+	 * {@code HasPop3D.Strategy} interface include 2D graphical visualizations of
+	 * the geometry of the population where nodes display the color coded strategy
+	 * of each individual. For discrete modules each trait has a distinct colour,
+	 * whereas
+	 * for continuous modules the traits are shown on a color gradient between the
+	 * minimum and maximum trait values.
+	 * 
+	 * @see org.evoludo.gwt.simulator.MVPop3D
+	 * 
+	 * @author Christoph Hauert
+	 */
+	public interface Strategy extends HasPop3D {
+	}
+
+	/**
+	 * {@link org.evoludo.simulator.modules.Module Module}s that implement the
+	 * {@code HasPop3D.Strategy} interface include 3D graphical visualizations of
+	 * the geometry of the population where nodes display the color coded fitness of
+	 * each individual. Fitness values are shown on a color gradient between the
+	 * minimum and maximum scores/payoffs/fitness.
+	 * 
+	 * @see org.evoludo.gwt.simulator.MVPop3D
+	 * 
+	 * @author Christoph Hauert
+	 */
+	public interface Fitness extends HasPop3D {
+	}
+}

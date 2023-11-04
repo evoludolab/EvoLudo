@@ -1,0 +1,4575 @@
+//
+// EvoLudo Project
+//
+// Copyright 2010 Christoph Hauert
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// For publications in any form, you are kindly requested to attribute the
+// author and project as follows:
+//
+//	Hauert, Christoph (<year>) EvoLudo Project, http://www.evoludo.org
+//			(doi: <doi>[, <version>])
+//
+//	<doi>:	digital object identifier of the downloaded release (or the
+//			most recent release if downloaded from github.com),
+//	<year>:	year of release (or download), and
+//	[, <version>]: optional version number (as reported in output header
+//			or GUI console) to simplify replication of reported results.
+//
+// The formatting may be adjusted to comply with publisher requirements.
+//
+
+package org.evoludo.simulator.models;
+
+import java.awt.Color;
+import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.evoludo.math.ArrayMath;
+import org.evoludo.math.Combinatorics;
+import org.evoludo.math.Functions;
+import org.evoludo.math.RNGDistribution;
+import org.evoludo.simulator.ColorMap;
+import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.models.IBS.MigrationType;
+import org.evoludo.simulator.models.IBS.PopulationUpdateType;
+import org.evoludo.simulator.models.Model.Mode;
+import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.modules.Module.Map2Fitness;
+import org.evoludo.simulator.modules.Module.PlayerUpdateType;
+import org.evoludo.util.CLOption;
+import org.evoludo.util.Formatter;
+import org.evoludo.util.Plist;
+
+/**
+ * The core class for individual based simulations. Manages the population,
+ * including keeping track of the payoffs and fitness of individuals.
+ * <p>
+ * <strong>Note:</strong> strategies/traits cannot be handled here because
+ * they are represented by {@code int}s in discrete models but {@code double}s
+ * in continuous models.
+ * 
+ * @author Christoph Hauert
+ * 
+ * @see IBSDPopulation
+ * @see IBSMCPopulation
+ * @see IBSCPopulation
+ */
+public abstract class IBSPopulation {
+
+	/**
+	 * The pacemaker of all models. Interface with the outside world.
+	 */
+	protected EvoLudo engine;
+
+	/**
+	 * The module associated with this model.
+	 */
+	protected Module module;
+
+	/**
+	 * Convenience field for static modules to avoid casts.
+	 */
+	protected Module.Static staticmodule;
+
+	/**
+	 * Associates a module with this population.
+	 * 
+	 * @param mod the module associated with this population
+	 */
+	public void setModule(Module mod) {
+		module = mod;
+	}
+
+	/**
+	 * Gets the module asociated with this population.
+	 * 
+	 * @return the module associated with this population
+	 */
+	public Module getModule() {
+		return module;
+	}
+
+	/**
+	 * The interaction partner/opponent of this population
+	 * {@code opponent.getModule()==getModule().getOpponent()}. In intra-species
+	 * interactions {@code opponent==this}. Convenience field.
+	 */
+	IBSPopulation opponent;
+
+	/**
+	 * Logger for keeping track of and reporting events and issues.
+	 */
+	protected Logger logger;
+
+	/**
+	 * The shared random number generator to ensure reproducibility of results.
+	 * 
+	 * @see EvoLudo#getRNG()
+	 */
+	protected RNGDistribution rng;
+
+	/**
+	 * Flag to indicate whether the model entertains multiple species, i.e.
+	 * {@code nSpecies&gt;1}. Convenience field. Reduces calls to {@link Module}.
+	 */
+	protected boolean isMultispecies = false;
+
+	/**
+	 * Creates a population of individuals for IBS simulations.
+	 * 
+	 * @param engine the pacemeaker for running the model
+	 */
+	protected IBSPopulation(EvoLudo engine) {
+		this.engine = engine;
+		logger = engine.getLogger();
+		opponent = this;
+	}
+
+	/**
+	 * Load/prepare the IBS population. This is triggered by the milestone event for
+	 * loading the IBS model.
+	 * 
+	 * @see IBS#load()
+	 */
+	public void load() {
+		// initialize helper variables
+		nTraits = module.getNTraits();
+		VACANT = module.getVacant();
+
+		// get shared random number generator
+		rng = engine.getRNG();
+		isMultispecies = (module.getNSpecies() > 1);
+
+		interactionGroup = new IBSGroup(rng);
+		referenceGroup = new IBSGroup(rng);
+	}
+
+	/**
+	 * Unload the IBS population and free resources. This is triggered by the
+	 * milestone event for unloading the IBS model.
+	 * 
+	 * @see IBS#unload()
+	 */
+	public void unload() {
+		// free resources
+		interaction = null;
+		reproduction = null;
+		interactionGroup = null;
+		referenceGroup = null;
+		cProbs = null;
+		groupScores = null;
+		smallScores = null;
+		scores = null;
+		fitness = null;
+		tags = null;
+		interactions = null;
+	}
+
+	/**
+	 * Type of initial configuration (depends on implementation).
+	 * <p>
+	 * <strong>NOTE:</strong> uses same init type for multi-species.
+	 * 
+	 * @see EvoLudo#cloInitType
+	 */
+	protected CLOption.Key initType = null;
+
+	/**
+	 * Sets the type of initial configuration (depends on implementation).
+	 * 
+	 * @param type the type of initialization
+	 * 
+	 * @see EvoLudo#cloInitType
+	 */
+	public void setInitType(CLOption.Key type) {
+		initType = type;
+	}
+
+	/**
+	 * Gets the status of the as a formatted string. This is typically used in the
+	 * GUI to summarize the progress of the model.
+	 * 
+	 * @return the status of the population
+	 */
+	public abstract String getStatus();
+
+	/**
+	 * Mutate strategy of individual at <code>index</code>. If
+	 * <code>changed==true</code> then
+	 * check {@link IBSDPopulation#strategiesScratch} or
+	 * {@link IBSMCPopulation#strategiesScratch},
+	 * respectively, for current strategy; otherwise check
+	 * {@link IBSDPopulation#strategies} or
+	 * {@link IBSMCPopulation#strategies}, respectively.
+	 *
+	 * @param index   of individual that mutates its strategy
+	 * @param changed <code>true</code> if individual updated/changed strategy
+	 *                (prior to
+	 *                mutating)
+	 */
+	public abstract void mutateStrategyAt(int index, boolean changed);
+
+	/**
+	 * Prior to a synchronous update step the current state must be duplicated in
+	 * preparation for processing the next step.
+	 * 
+	 * @see #commitStrategies()
+	 */
+	public abstract void prepareStrategies();
+
+	/**
+	 * After a synchronous update step the new state must be copied back to become
+	 * the current state.
+	 * 
+	 * @see #prepareStrategies()
+	 */
+	public abstract void commitStrategies();
+
+	/**
+	 * The change of a strategy of the player at {@code index} is stored in a
+	 * temporary variable and must be committed before proceeding.
+	 * 
+	 * @param index the index of the player that needs to have its new strategy
+	 *              committed
+	 */
+	public abstract void commitStrategyAt(int index);
+
+	/**
+	 * Check if individuals with index <code>a</code> and index <code>b</code> have
+	 * the same strategies.
+	 *
+	 * @param a the index of first individual
+	 * @param b the index of second individual
+	 * @return <code>true</code> if the two individuals have the same strategies
+	 */
+	public abstract boolean haveSameStrategy(int a, int b);
+
+	/**
+	 * Check if individual with index <code>a</code> has switched strategies.
+	 * <p>
+	 * <strong>Note:</strong> this test is only meaningful before strategy gets
+	 * committed.
+	 * 
+	 * @param a index of individual
+	 * @return <code>true</code> if strategy remained the same
+	 * 
+	 * @see #commitStrategyAt(int)
+	 */
+	public abstract boolean isSameStrategy(int a);
+
+	/**
+	 * Swap strategies of individuals with index <code>a</code> and index
+	 * <code>b</code>.
+	 * <p>
+	 * <strong>Note:</strong> the strategies still need to be committed.
+	 *
+	 * @param a the index of first individual
+	 * @param b the index of second individual
+	 * 
+	 * @see #commitStrategyAt(int)
+	 */
+	public abstract void swapStrategies(int a, int b);
+
+	/**
+	 * Play a pairwise interaction with the individuals in {@code group}.
+	 * 
+	 * @param group the group of individuals interacting in pairs
+	 */
+	public abstract void playPairGameAt(IBSGroup group);
+
+	/**
+	 * Play a group interaction with the individuals in {@code group}.
+	 * 
+	 * @param group the group of interacting individuals
+	 */
+	public abstract void playGroupGameAt(IBSGroup group);
+
+	/**
+	 * Adjusts scores of focal individual with index <code>me</code> and its
+	 * neighbors after <code>me</code> changed strategy. Only works if
+	 * <code>adjustScores==true</code>.
+	 * <p>
+	 * <strong>Important:</strong> new strategy must not yet have been committed.
+	 *
+	 * @param me the index of the focal individual
+	 */
+	public abstract void adjustPairGameScoresAt(int me);
+
+	/**
+	 * Counterpart of {@link #playGroupGameAt(IBSGroup)}, {@link #playGameAt(int)}
+	 * and/or {@link #playGameSyncAt(int)}. Removes the payoffs of group
+	 * interactions.
+	 *
+	 * @param group the interaction group
+	 */
+	public abstract void yalpGroupGameAt(IBSGroup group);
+
+	/**
+	 * Adjust score of individual with index {@code index} from {@code before} to
+	 * {@code after} and update all applicable helper variables, e.g.
+	 * {@code sumFitness}.
+	 * <p>
+	 * <strong>Important:</strong> Use only to adjust scores of individuals that did
+	 * <em>not</em> change strategy.
+	 * 
+	 * @param index  the index of the individual
+	 * @param before the score before adjustments
+	 * @param after  the score after adjustments
+	 */
+	public abstract void adjustScoreAt(int index, double before, double after);
+
+	/**
+	 * Adjust score of individual with index {@code index} by {@code adjust} and
+	 * update all applicable helper variables, e.g. {@code sumFitness}.
+	 * 
+	 * @param index  the index of the individual
+	 * @param adjust the score adjustment
+	 */
+	public abstract void adjustScoreAt(int index, double adjust);
+
+	/**
+	 * Best-response update.
+	 * 
+	 * <h3>Important:</h3>
+	 * <ol>
+	 * <li>The array <code>group</code> is untouchable because it may refer to the
+	 * population structure. Any change would also permanently change the structure.
+	 * <li>The best-response update must be implemented in subclasses that override
+	 * this method. By default throws an error.
+	 * <li>Instead of overriding the method, subclasses may remove
+	 * {@link PlayerUpdateType#BEST_RESPONSE} from
+	 * {@link org.evoludo.simulator.modules.Module#cloPlayerUpdate
+	 * Module.cloPlayerUpdate}.
+	 * </ol>
+	 * 
+	 * @param me    the index of individual to update
+	 * @param group the array with indices of reference group
+	 * @param size  the size of the reference group
+	 * @return <code>true</code> if strategy changed (signaling score needs to be
+	 *         reset)
+	 */
+	public boolean updatePlayerBestResponse(int me, int[] group, int size) {
+		throw new Error("Best-response dynamics ill defined!");
+	}
+
+	/**
+	 * For deterministic updating with multiple strategies (more than two), it must
+	 * be specified which strategy is the preferred one.
+	 * <p>
+	 * <strong>Summary:</strong> does 'me' prefer 'sample' over 'best'?
+	 *
+	 * @param me     the index of the focal individual
+	 * @param best   the index of the best performing individual
+	 * @param sample the index of the sample type
+	 * @return <code>true</code> if <code>sample</code> is preferred over
+	 *         <code>best</code>
+	 */
+	public abstract boolean preferredPlayerBest(int me, int best, int sample);
+
+	/**
+	 * Check if site with index <code>index</code> is occupied by an individual or
+	 * vacant.
+	 * <p>
+	 * <strong>Note:</strong> Assumes that strategies are committed.
+	 * 
+	 * @param index the index of the individual/site to check
+	 * @return <code>true</code> if site <code>index</code> is vacant
+	 */
+	public boolean isVacantAt(int index) {
+		return false;
+	}
+
+	/**
+	 * Check if site with index <code>index</code> will become vacant in this time
+	 * step.
+	 * <p>
+	 * <strong>Note:</strong> Assumes that strategies are not committed.
+	 *
+	 * @param index the index of the individual/site to check
+	 * @return <code>true</code> if site <code>index</code> will become vacant
+	 */
+	public boolean becomesVacantAt(int index) {
+		return false;
+	}
+
+	/**
+	 * Check if population is monomorphic.
+	 * <p>
+	 * <strong>Note:</strong> In models that admit vacant sites this does not imply
+	 * a homogeneous (or absorbing) state of the population. Without vacant sites
+	 * monomorphic states are absorbing, at least in the absence of mutations.
+	 * 
+	 * @return {@code true} if population is monomorphic
+	 * 
+	 * @see org.evoludo.simulator.modules.Discrete#cloMonoStop Discrete.cloMonoStop
+	 */
+	public boolean isMonomorphic() {
+		return false;
+	}
+
+	/**
+	 * Check if population has converged. By default {@code true} if population is
+	 * monomorphic and no (zero) mutations. However, different implementations may
+	 * have different criteria for convergence.
+	 * <p>
+	 * <strong>Note:</strong> This tends to be less restrictive than reaching an
+	 * absorbing state. Typically convergence is used as a criterion to abort
+	 * simulations.
+	 *
+	 * @return {@code true} if converged.
+	 */
+	public boolean checkConvergence() {
+		return isMonomorphic() && (module.getMutationProb() <= 0.0);
+	}
+
+	/**
+	 * Check if model implementation supports mode {@code testmode}.
+	 * 
+	 * @param testmode the mode to test
+	 * @return {@code true} if {@code testmode} is supported
+	 */
+	public boolean permitsMode(Mode testmode) {
+		if (testmode == Mode.STATISTICS) {
+			if (module.getMutationProb() > 0.0) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * The index of vacant sites or {@code -1} if module does not support vacancies.
+	 * Convenience field.
+	 * 
+	 * @see Module#getVacant()
+	 */
+	protected int VACANT = -1;
+
+	/**
+	 * The number of traits in module. Convenience field.
+	 * 
+	 * @see Module#getNTraits()
+	 */
+	protected int nTraits = -1;
+
+	/**
+	 * Gets the formatted name of the trait of the individual at site {@code index}.
+	 * 
+	 * @param index the index of the
+	 * @return the string describing the trait
+	 */
+	public abstract String getTraitNameAt(int index);
+
+	/**
+	 * The geometry of the interaction graph.
+	 */
+	protected Geometry interaction;
+
+	/**
+	 * Reference to the interaction group.
+	 */
+	protected IBSGroup interactionGroup;
+
+	/**
+	 * Gets the interaction group.
+	 * 
+	 * @return the interaction group
+	 */
+	public IBSGroup getInteractionGroup() {
+		return interactionGroup;
+	}
+
+	/**
+	 * The number of interactions of the focal individual.
+	 * 
+	 * @see IBS#cloInteractionCount
+	 */
+	protected int nInteractions = 1;
+
+	/**
+	 * The geometry of the reproduction graph.
+	 */
+	protected Geometry reproduction;
+
+	/**
+	 * Reference to the reference/model group.
+	 */
+	protected IBSGroup referenceGroup;
+
+	/**
+	 * Gets the reference/model group.
+	 * 
+	 * @return the reference/model group
+	 */
+	public IBSGroup getReferenceGroup() {
+		return referenceGroup;
+	}
+
+	/**
+	 * Flag to indicate whether player scores are averaged (default) or accumulated.
+	 * 
+	 * @see IBS#cloAccumulatedScores
+	 */
+	protected boolean playerScoreAveraged = true;
+
+	/**
+	 * Flag to indicate whether scores are reset whenever a player adopts the
+	 * strategy of another (default) or only if an actual strategy change occurred.
+	 * 
+	 * @see IBS#cloResetScoresOnChange
+	 */
+	protected boolean playerScoreResetAlways = true;
+
+	/**
+	 * The type of migration.
+	 */
+	protected MigrationType migrationType = MigrationType.NONE;
+
+	/**
+	 * The probability of migration.
+	 */
+	protected double pMigration = 0.0;
+
+	/**
+	 * The distribution to determine the number of migrants.
+	 */
+	protected RNGDistribution.Geometric distrMigrants;
+
+	/**
+	 * Conveninece variable to store cumulative probability distributions for
+	 * replicator updating.
+	 * 
+	 * @see #updatePlayerAt(int)
+	 */
+	private double[] cProbs;
+
+	/**
+	 * The array of individual fitness values.
+	 * 
+	 * @see #scores
+	 * @see Module.Map2Fitness
+	 */
+	protected double[] fitness;
+
+	/**
+	 * The absolute minimum fitness in the population. Convenience field used for
+	 * fitness based picking of focal individuals or for the GUI for scaling graphs.
+	 */
+	protected double minFitness = Double.MAX_VALUE;
+
+	/**
+	 * The absolute maximum fitness in the population. Convenience field used for
+	 * fitness based picking of focal individuals or for the GUI for scaling graphs.
+	 */
+	protected double maxFitness = -Double.MAX_VALUE;
+
+	/**
+	 * The total fitness of the population. Convenience field used for fitness
+	 * based picking of focal individuals or for the GUI for scaling graphs.
+	 */
+	protected double sumFitness = -1.0;
+
+	/**
+	 * Gets the total fitness of the population.
+	 * 
+	 * @return the total fitness
+	 */
+	public double getTotalFitness() {
+		return sumFitness;
+	}
+
+	/**
+	 * The array of individual scores.
+	 * 
+	 * @see #fitness
+	 * @see Module.Map2Fitness
+	 */
+	protected double[] scores;
+
+	/**
+	 * The absolute minimum score in the population. Even though largely replaced by
+	 * {@link #minFitness} in simulations it remains a useful and often more
+	 * intuitive quantity than fitness when visualizing results in the GUI.
+	 * Convenience field.
+	 */
+	protected double minScore = Double.MAX_VALUE;
+
+	/**
+	 * The absolute maximum score in the population. Even though largely replaced by
+	 * {@link #maxFitness} in simulations it remains a useful and often more
+	 * intuitive quantity than fitness when visualizing results in the GUI.
+	 * Convenience field.
+	 */
+	protected double maxScore = -Double.MAX_VALUE;
+
+	/**
+	 * Array to hold scores of individuals during payoff calculations.
+	 */
+	protected double[] groupScores;
+
+	/**
+	 * Array to hold scores of individuals during payoff calculations for small
+	 * groups (not all neighbours).
+	 */
+	protected double[] smallScores;
+
+	/**
+	 * The array of individual interaction counts.
+	 */
+	protected int[] interactions;
+
+	/**
+	 * The array of individual tags counts. This can be used to trace ancestry.
+	 */
+	protected double[] tags;
+
+	/**
+	 * Optimization: Number of interactions in well-mixed populations for update
+	 * rules that take advantage of {@link IBSDPopulation#updateMixedMeanScores()}.
+	 * {@code nMixedInter} is calculated ahead of time in {@link #check()}.
+	 */
+	protected int nMixedInter = -1;
+
+	/**
+	 * Optimization: the lookup table for scores in well-mixed populations.
+	 */
+	protected double[] typeScores;
+
+	/**
+	 * Optimization: the lookup table for fitness in well-mixed populations.
+	 */
+	protected double[] typeFitness;
+
+	/**
+	 * The size of the population. Convenience field to reduce calls to module.
+	 */
+	protected int nPopulation = 1000;
+
+	/**
+	 * The map converting scores to fitness and vice versa. Convenience field to
+	 * reduce calls to module.
+	 */
+	protected Map2Fitness map2fit;
+
+	/**
+	 * Optimization: Flag to indicate whether adjusting instead of recalculating
+	 * scores is possible.
+	 * 
+	 * <h3>Notes:</h3>
+	 * <ol>
+	 * <li>If {@link IBSGroup#SAMPLING_ALL}, and not
+	 * {@link Geometry.Type#MEANFIELD}, i.e. if the interaction
+	 * group includes all neighbors but not all other members of the population, it
+	 * is possible to adjust the payoffs of the relevant players after a strategy
+	 * change occurred.
+	 * <li>This nice approach is not possible if interacting with randomly chosen
+	 * neighbors or random individuals from the population because in those cases,
+	 * the payoffs of all players in the reference neighborhood are determined by
+	 * playing {@link #nInteractions} games. If reference and interaction
+	 * neighborhoods overlap, the final payoff may be derived from several
+	 * interactions and is averaged or accumulated accordingly.
+	 * </ol>
+	 */
+	protected boolean adjustScores;
+
+	/**
+	 * Optimization: Flag to indicate whether lookup tables can be used.
+	 */
+	protected boolean hasLookupTable;
+
+	/**
+	 * Flag to indicate whether dynamic is neutral, i.e. no selection acting on the
+	 * different traits. The dynamic is considered neutral if
+	 * <code>{@link #maxScore}-{@link #minScore}&lt;1e-8</code>.
+	 */
+	protected boolean isNeutral;
+
+	/**
+	 * Optimization: The index of the individual that currently holds the maximum
+	 * score. This allows more efficient fitness based picking.
+	 * 
+	 * @see #pickFitFocalIndividual()
+	 * @see #pickFitFocalIndividual(int)
+	 */
+	protected int maxEffScoreIdx = -1;
+
+	/**
+	 * The time increment for ecological updates.
+	 */
+	protected double realtimeIncr = -Double.MAX_VALUE;
+
+	/**
+	 * Perform synchronous migration.
+	 * 
+	 * @return the number of migrants
+	 */
+	public int doSyncMigration() {
+		// number of migratory events
+		int nMigrants = 0;
+		switch (migrationType) {
+			case NONE:
+				break;
+			case BIRTH_DEATH:
+				nMigrants = nextBinomial(1.0 - pMigration, nPopulation);
+				for (int n = 0; n < nMigrants; n++)
+					doBirthDeathMigration();
+				break;
+			case DEATH_BIRTH:
+				nMigrants = nextBinomial(1.0 - pMigration, nPopulation);
+				for (int n = 0; n < nMigrants; n++)
+					doDeathBirthMigration();
+				break;
+			case DIFFUSION:
+				nMigrants = nextBinomial(1.0 - pMigration, nPopulation);
+				for (int n = 0; n < nMigrants; n++)
+					doDiffusionMigration();
+				break;
+			default: // should never get here
+				throw new Error("Unknown migration type (" + migrationType + ")");
+		}
+		return nMigrants;
+	}
+
+	/**
+	 * Perform asynchronous migration.
+	 */
+	public void doMigration() {
+		switch (migrationType) {
+			case NONE:
+				break;
+			case BIRTH_DEATH:
+				doBirthDeathMigration();
+				break;
+			case DEATH_BIRTH:
+				doDeathBirthMigration();
+				break;
+			case DIFFUSION:
+				doDiffusionMigration();
+				break;
+			default: // should never get here
+				throw new Error("Unknown migration type (" + migrationType + ")");
+		}
+	}
+
+	/**
+	 * Perform diffusion migration, which is implemented as two players swap their
+	 * locations while leaving their respective neighbourhood structure untouched.
+	 */
+	public void doDiffusionMigration() {
+		int migrant = random0n(nPopulation);
+		// migrant swaps places with random neighbor
+		int[] myNeighs = interaction.out[migrant];
+		int aNeigh = myNeighs[random0n(interaction.kout[migrant])];
+		updatePlayerSwap(migrant, aNeigh);
+	}
+
+	/**
+	 * Swap players in locations {@code a} and {@code b}.
+	 *
+	 * @param a the index of the first individual
+	 * @param b the index of the second individual
+	 */
+	public void updatePlayerSwap(int a, int b) {
+		swapStrategies(a, b); // strategy change still needs to be committed
+		// fitness accounting:
+		// synchronous: no need to worry about fitness - this is determined afterwards
+		// asynchronous:
+		// - if interactions are random (payoffs are accumulated), simply take the
+		// scores along
+		// - if interactions are with all neighbors (payoffs are adjusted) we need to
+		// recalculate the payoffs
+		if (populationUpdateType.isSynchronous()) {
+			// NOTE: this is not efficient because it deals unnecessarily with types and
+			// scores; enough to only copy from scratch to strategies.
+			commitStrategyAt(a);
+			commitStrategyAt(b);
+			return;
+		}
+		if (adjustScores) {
+			if (haveSameStrategy(a, b))
+				return; // nothing to do
+			adjustGameScoresAt(a);
+			adjustGameScoresAt(b);
+			return;
+		}
+		// NOTE: again, commitStrategy is overkill because the composition of the
+		// population has not changed; what about interaction counts?
+		commitStrategyAt(a);
+		commitStrategyAt(b);
+		// shouldn't we re-calculate the scores of the two individuals in their new
+		// location?
+		swapScoresAt(a, b);
+	}
+
+	/**
+	 * Perform a birth-death migration, where a focal individual (selected
+	 * proportional to fitness) produces a migrant offspring, which replaces another
+	 * member of the population uniformly at random.
+	 * <p>
+	 * <strong>Note:</strong> This is almost identical to Moran (birth-death)
+	 * updating in well-mixed populations (only victim and migrant always different)
+	 */
+	public void doBirthDeathMigration() {
+		int migrant = pickFitFocalIndividual();
+		int vacant = random0n(nPopulation - 1);
+		if (vacant >= migrant)
+			vacant++;
+		// NOTE: updatePlayerMoran does mutations - this may not be what we want...
+		updatePlayerMoran(migrant, vacant);
+	}
+
+	/**
+	 * Perform a death-birth migration, where a member of the population (selected
+	 * uniformly at random) dies and the remaining individuals compete to repopulate
+	 * the vacant site. One competitor succeeds with a probability proportional
+	 * proportional to fitness.
+	 * <p>
+	 * <strong>Note:</strong> This is almost identical to Moran (birth-death)
+	 * updating in well-mixed populations
+	 */
+	public void doDeathBirthMigration() {
+		int vacant = random0n(nPopulation);
+		int migrant = pickFitFocalIndividual(vacant);
+		// NOTE: updatePlayerMoran does mutations - this may not be what we want...
+		updatePlayerMoran(migrant, vacant);
+	}
+
+	/**
+	 * Draws the index of a member of the population uniformly at random.
+	 * <p>
+	 * <strong>Important:</strong> This method is highly time sensitive. Any
+	 * optimization effort is worth making.
+	 * 
+	 * <h3>Discussions/extensions:</h3>
+	 * <ol>
+	 * <li>Should picking include vacant sites, or not, or selectable?
+	 * <li>Currently vacant sites are excluded for fitness based picking but not for
+	 * random picking.
+	 * </ol>
+	 *
+	 * @return the index of the picked member
+	 */
+	public int pickFocalSite() {
+		// if( VACANT<0 )
+		return random0n(nPopulation);
+
+		// // vacancies require more attention
+		// int nTot = getPopulationSize();
+		// int pick = random0n(nTot);
+		// int found = 0;
+		// if (pick + pick > nTot) {
+		// // start search at back
+		// pick = nTot - pick;
+		// for (int n=nPopulation-1; n>=0; n--) {
+		// if (isVacantAt(n))
+		// continue;
+		// if (++found > pick)
+		// return n;
+		// }
+		// } else {
+		// // start search at front
+		// for (int n=0; n<nPopulation; n++) {
+		// if (isVacantAt(n))
+		// continue;
+		// if (++found > pick)
+		// return n;
+		// }
+		// }
+		// logger.severe("pickRandomFocalIndividual() failed to pick individual...");
+		// throw new Error("pickRandomFocalIndividual() failed to pick individual...");
+	}
+
+	/**
+	 * Draws the index of a member of the population uniformly at random but
+	 * excluding the individual with index <code>excl</code>.
+	 * <p>
+	 * <strong>Important:</strong> This method is highly time sensitive. Any
+	 * optimization effort is worth making.
+	 * 
+	 * <h3>Discussions/extensions:</h3>
+	 * <ol>
+	 * <li>Should picking include vacant sites, or not, or selectable?
+	 * <li>Currently vacant sites are excluded for fitness based picking but not for
+	 * random picking.
+	 * </ol>
+	 *
+	 * @param excl the index of the member that should be excluded from picking
+	 * @return the index of the picked member
+	 */
+	public int pickFocalSite(int excl) {
+		if (excl < 0 || excl > nPopulation)
+			return pickFocalSite();
+
+		// if( VACANT<0 ) {
+		int rand = random0n(nPopulation - 1);
+		if (rand >= excl)
+			return rand + 1;
+		return rand;
+		// }
+		//
+		// // vacancies require more attention
+		// int nTot = getPopulationSize()-1;
+		// int pick = random0n(nTot);
+		// int found = 0;
+		// if (pick + pick > nTot) {
+		// // start search at back
+		// pick = nTot - pick;
+		// for (int n=nPopulation-1; n>=0; n--) {
+		// if (isVacantAt(n) || n == excl)
+		// continue;
+		// if (++found > pick)
+		// return n;
+		// }
+		// } else {
+		// // start search at front
+		// for (int n=0; n<nPopulation; n++) {
+		// if (isVacantAt(n) || n == excl)
+		// continue;
+		// if (++found > pick)
+		// return n;
+		// }
+		// }
+		// logger.severe("pickRandomFocalIndividual(int) failed to pick individual...");
+		// throw new Error("pickRandomFocalIndividual(int) failed to pick
+		// individual...");
+	}
+
+	/**
+	 * Draws the index of a member of the population with a probability proportional
+	 * to fitness.
+	 * <p>
+	 * <strong>Note:</strong> scores must be <code>&ge;0</code>
+	 * <p>
+	 * <strong>Important:</strong> This method is highly time sensitive. Any
+	 * optimization effort is worth making.
+	 * 
+	 * <h3>Discussions/extensions:</h3>
+	 * <ol>
+	 * <li>Should picking include vacant sites, or not, or selectable?
+	 * <li>Currently vacant sites are excluded for fitness based picking but not for
+	 * random picking.
+	 * <li>Perform more systematic analysis regarding the threshold population size
+	 * (currently {@code nPopulation &geq; 100}) for the two Gillespie methods
+	 * sometimes {@code 4*nPopulation} trials are needed, which seems too much...
+	 * </ol>
+	 *
+	 * @return the index of the picked member
+	 */
+	public int pickFitFocalIndividual() {
+		// differences in scores too small, pick random individual
+		if (isNeutral)
+			return pickFocalSite();
+
+		if (VACANT < 0) {
+			if (nPopulation >= 100) {
+				// optimization of gillespie algorithm to prevent bookkeeping (at the expense of
+				// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
+				double mScore;
+				// note: for constant selection maxEffScoreIdx is never set; using the
+				// effective current maximum score makes this optimization more efficient
+				if (maxEffScoreIdx < 0)
+					mScore = maxFitness;
+				else
+					mScore = getFitnessAt(maxEffScoreIdx);
+				int aRand = -1;
+				do {
+					aRand = random0n(nPopulation);
+				} while (random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
+				return aRand;
+			}
+			// standard, non-optimized version
+			double hit = random01() * sumFitness;
+			for (int n = 0; n < nPopulation; n++) {
+				hit -= getFitnessAt(n);
+				if (hit < 0.0)
+					return n;
+			}
+			if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
+				return nPopulation - 1;
+			debugScores(hit);
+			logger.severe("pickFitFocalIndividual(int) failed to pick individual...");
+			throw new Error("pickFitFocalIndividual(int) failed to pick individual...");
+		}
+
+		// vacancies require some extra care
+		if (nPopulation >= 100) {
+			// optimization of gillespie algorithm to prevent bookkeeping (at the expense of
+			// drawing more random numbers)
+			// see e.g. http://arxiv.org/pdf/1109.3627.pdf
+			double mScore;
+			// note: for constant selection maxEffScoreIdx is never set
+			// using the effective current maximum score makes this optimization more
+			// efficient
+			if (maxEffScoreIdx < 0)
+				mScore = maxFitness;
+			else
+				mScore = getFitnessAt(maxEffScoreIdx);
+			int aRand = -1;
+			do {
+				aRand = random0n(nPopulation);
+			} while (isVacantAt(aRand) || random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
+			return aRand;
+		}
+
+		// standard, non-optimized version
+		double hit = random01() * sumFitness;
+		for (int n = 0; n < nPopulation; n++) {
+			if (isVacantAt(n))
+				continue;
+			hit -= getFitnessAt(n);
+			if (hit <= 0.0)
+				return n;
+		}
+		debugScores(hit);
+		logger.severe("pickFitFocalIndividual(int) failed to pick individual...");
+		throw new Error("pickFitFocalIndividual(int) failed to pick individual...");
+	}
+
+	/**
+	 * Draws the index of a member of the population with a probability proportional
+	 * to fitness but excluding the individual with the index {@code excl}.
+	 * <p>
+	 * <strong>Note:</strong> scores must be <code>&ge;0</code>
+	 * <p>
+	 * <strong>Important:</strong> This method is highly time sensitive. Any
+	 * optimization effort is worth making.
+	 *
+	 * @param excl the index of the member that should be excluded from picking
+	 * @return the index of the picked member
+	 */
+	public int pickFitFocalIndividual(int excl) {
+		if (excl < 0 || excl > nPopulation)
+			return pickFitFocalIndividual();
+
+		// differences in scores too small, pick random individual
+		if (isNeutral)
+			return pickFocalSite(excl);
+
+		if (VACANT < 0) {
+			// note: review threshold for optimizations (see pickFitFocalIndividual above)
+			if (nPopulation >= 100) {
+				// optimization of gillespie algorithm to prevent bookkeeping (at the expense of
+				// drawing more random numbers)
+				// see e.g. http://arxiv.org/pdf/1109.3627.pdf
+				if (excl == maxEffScoreIdx) {
+					// excluding the maximum score can cause issues if it is much larger than the
+					// rest;
+					// need to find the second largest fitness value (note using
+					// mapToFitness(maxScore)
+					// may be even worse because most candidates are rejected
+					double mScore = map2fit.map(second(maxEffScoreIdx));
+					int aRand = -1;
+					do {
+						aRand = random0n(nPopulation - 1);
+						if (aRand >= excl)
+							aRand++;
+					} while (random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
+					return aRand;
+				}
+
+				double mScore;
+				// note: for constant selection maxEffScoreIdx is never set
+				// using the effective current maximum score makes this optimization more
+				// efficient
+				if (maxEffScoreIdx < 0)
+					mScore = maxFitness;
+				else
+					mScore = getFitnessAt(maxEffScoreIdx);
+				int aRand = -1;
+				do {
+					aRand = random0n(nPopulation - 1);
+					if (aRand >= excl)
+						aRand++;
+				} while (random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
+				return aRand;
+			}
+			double hit = random01() * (sumFitness - getFitnessAt(excl));
+			// two loops prevent repeated checks concerning excl
+			for (int n = 0; n < excl; n++) {
+				hit -= getFitnessAt(n);
+				if (hit < 0.0)
+					return n;
+			}
+			for (int n = excl + 1; n < nPopulation; n++) {
+				hit -= getFitnessAt(n);
+				if (hit < 0.0)
+					return n;
+			}
+			// last resort...
+			if (excl == nPopulation - 1)
+				if (hit < 1e-6 && getFitnessAt(nPopulation - 2) > 1e-6)
+					return nPopulation - 2;
+				else if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
+					return nPopulation - 1;
+			debugScores(hit);
+			logger.severe("pickFitFocalIndividual(int) failed to pick individual.");
+			throw new Error("pickFitFocalIndividual(int) failed to pick individual.");
+		}
+
+		// vacancies require some extra care
+		if (nPopulation >= 100) {
+			// optimization of gillespie algorithm to prevent bookkeeping (at the expense of
+			// drawing more random numbers)
+			// see e.g. http://arxiv.org/pdf/1109.3627.pdf
+			if (excl == maxEffScoreIdx) {
+				// excluding the maximum score can cause issues if it is much larger than the
+				// rest;
+				// need to find the second largest fitness value (note using
+				// mapToFitness(maxScore)
+				// may be even worse because most candidates are rejected
+				double mScore = map2fit.map(second(maxEffScoreIdx));
+				int aRand = -1;
+				do {
+					aRand = random0n(nPopulation - 1);
+					if (aRand >= excl)
+						aRand++;
+				} while (isVacantAt(aRand) || random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is
+																							// ok
+				return aRand;
+			}
+
+			double mScore;
+			// note: for constant selection maxEffScoreIdx is never set
+			// using the effective current maximum score makes this optimization more
+			// efficient
+			if (maxEffScoreIdx < 0)
+				mScore = maxFitness;
+			else
+				mScore = getFitnessAt(maxEffScoreIdx);
+			int aRand = -1;
+			do {
+				aRand = random0n(nPopulation - 1);
+				if (aRand >= excl)
+					aRand++;
+			} while (random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
+			return aRand;
+		}
+		double hit = random01() * (sumFitness - getFitnessAt(excl));
+		// two loops prevent repeated checks concerning excl
+		for (int n = 0; n < excl; n++) {
+			if (isVacantAt(n))
+				continue;
+			hit -= getFitnessAt(n);
+			if (hit <= 0.0)
+				return n;
+		}
+		for (int n = excl + 1; n < nPopulation; n++) {
+			if (isVacantAt(n))
+				continue;
+			hit -= getFitnessAt(n);
+			if (hit <= 0.0)
+				return n;
+		}
+		debugScores(hit);
+		logger.severe("pickFitFocalIndividual(int) failed to pick individual.");
+		throw new Error("pickFitFocalIndividual(int) failed to pick individual.");
+	}
+
+	/**
+	 * Find the second highest score.
+	 * 
+	 * @param excl the index of the member that should be excluded from picking
+	 * @return the second highest score
+	 */
+	private double second(int excl) {
+		double max = getScoreAt(maxEffScoreIdx);
+		double second = -Double.MAX_VALUE;
+		for (int n = 0; n < excl; n++) {
+			second = Math.max(second, getScoreAt(n));
+			// if a second individual has maximum score, no need to look further
+			if (Math.abs(second - max) < 1e-8)
+				return second;
+		}
+		for (int n = excl + 1; n < nPopulation; n++) {
+			second = Math.max(second, getScoreAt(n));
+			// if a second individual has maximum score, no need to look further
+			if (Math.abs(second - max) < 1e-8)
+				return second;
+		}
+		return second;
+	}
+
+	/**
+	 * Log report if picking failed to shed better light on what might be the root
+	 * cause for the failure.
+	 * 
+	 * @param hit the 'left-over fitness' from picking
+	 */
+	protected void debugScores(double hit) {
+		logger.fine("aborted in generation: " + Formatter.format(engine.getModel().getTime(), 2) + "\nscore dump:");
+		double sum = 0.0;
+		for (int n = 0; n < nPopulation; n++) {
+			double fn = getFitnessAt(n);
+			logger.fine("score[" + n + "]=" + Formatter.format(scores[n], 6) + " -> " + Formatter.format(fn, 6)
+					+ ", interactions[" + n + "]=" + interactions[n] +
+					", base=" + map2fit.getBaseline() + ", selection=" + map2fit.getSelection());
+			sum += fn;
+		}
+		logger.fine("Failed to pick parent... hit: " + hit + ", sumScores: " + Formatter.format(sumFitness, 6)
+				+ " (should be " + Formatter.format(sum, 6) + ")");
+	}
+
+	/**
+	 * Pick a neighbour of the focal individual {@code me} with probability
+	 * proportional to their fitness.
+	 * 
+	 * @param me the index of the focal individual
+	 * @return the index of a neighbour
+	 */
+	protected int pickFitNeighborAt(int me) {
+		return pickFitNeighborAt(me, false);
+	}
+
+	/**
+	 * Pick a neighbour of the focal individual {@code me} with probability
+	 * proportional to their fitness. If the flag {@code withSelf==true} then the
+	 * focal individual is included in the picking.
+	 *
+	 * @param me       the index of the focal individual
+	 * @param withSelf the flag whether to include self
+	 * @return the index of a neighbour
+	 */
+	protected int pickFitNeighborAt(int me, boolean withSelf) {
+		if (isNeutral)
+			return pickNeutralNeighbourAt(me, withSelf);
+
+		// mean-field
+		if (reproduction.isType(Geometry.Type.MEANFIELD)) {
+			if (withSelf)
+				return pickFitFocalIndividual();
+			return pickFitFocalIndividual(me);
+		}
+
+		if (VACANT < 0) {
+			// structured population
+			int[] neighs = reproduction.in[me];
+			int len = reproduction.kin[me];
+			double totFitness = 0.0;
+			double myFit = 0.0;
+			if (withSelf) {
+				if (len == 0)
+					return me;
+				myFit = getFitnessAt(me);
+				totFitness = myFit;
+			} else {
+				switch (len) {
+					case 0:
+						// no upstream neighbour
+						return -1;
+					case 1:
+						return neighs[0];
+					default:
+				}
+			}
+			for (int n = 0; n < len; n++)
+				totFitness += getFitnessAt(neighs[n]);
+
+			// negligible fitness, pick uniformly at random; same as neutral above
+			if (totFitness <= 1e-8)
+				return pickNeutralNeighbourAt(me, withSelf);
+
+			double hit = random01() * totFitness - myFit;
+			if (hit < 0.0)
+				return me;
+			for (int n = 0; n < len; n++) {
+				hit -= getFitnessAt(neighs[n]);
+				if (hit < 0.0)
+					return neighs[n];
+			}
+			// should not get here
+			debugScores(hit);
+			throw new Error(
+					"drawFitNeighborAt(int) failed to pick neighbour... (" + hit + ", sum: " + totFitness + ")");
+		}
+
+		// vacancies require some extra care
+		int[] neighs = reproduction.in[me];
+		int len = reproduction.kin[me];
+		double totFitness = 0.0;
+		double myFit = 0.0;
+		if (withSelf && !isVacantAt(me)) {
+			if (len == 0)
+				return me;
+			myFit = getFitnessAt(me);
+			totFitness = myFit;
+		} else {
+			switch (len) {
+				case 0:
+					return -1;
+				case 1:
+					int neigh = neighs[0];
+					if (isVacantAt(neigh))
+						return -1;
+					return neigh;
+				default:
+			}
+		}
+		for (int n = 0; n < len; n++) {
+			int neigh = neighs[n];
+			if (isVacantAt(neigh))
+				continue;
+			totFitness += getFitnessAt(neigh);
+		}
+
+		// negligible fitness, pick uniformly at random; same as neutral above
+		if (totFitness <= 1e-8)
+			return pickNeutralNeighbourAt(me, withSelf);
+
+		double hit = random01() * totFitness - myFit;
+		if (hit < 0.0)
+			return me;
+		for (int n = 0; n < len; n++) {
+			int neigh = neighs[n];
+			if (isVacantAt(neigh))
+				continue;
+			hit -= getFitnessAt(neigh);
+			if (hit < 0.0)
+				return neigh;
+		}
+		// should not get here
+		debugScores(hit);
+		throw new Error("drawFitNeighborAt(int) failed to pick neighbour... (" + hit + ", sum: " + totFitness + ")");
+	}
+
+	/**
+	 * Helper method to do picking under neutral conditions (no or negligible
+	 * fitness differences). In well-mixed populations the picking includes the
+	 * focal individual if {@code withSelf==true}. Otherwise picking never includes
+	 * {@code me}.
+	 * 
+	 * @param me       the index of the focal individual
+	 * @param withSelf the flag whether to include self
+	 * @return the index of a neighbour
+	 */
+	private int pickNeutralNeighbourAt(int me, boolean withSelf) {
+		if (reproduction.isType(Geometry.Type.MEANFIELD)) {
+			if (withSelf)
+				return pickFocalSite();
+			return pickFocalSite(me);
+		}
+		return pickNeighborSiteAt(me);
+	}
+
+	/**
+	 * Picks a neighbouring site of the focal individual {@code me} uniformly at
+	 * random. This is where the focal individual places its offspring in the Moran
+	 * process under Birth-death updating. The original Moran process refers to
+	 * well-mixed (or mean-field) populations where the offspring can replace its
+	 * parent (albeit with a small probability of \(o(1/N)\), where \(N\) is the
+	 * population size). In contrast in the spatial Moran process the offspring
+	 * replaces a <em>neighbour</em> of the parent.
+	 * 
+	 * <h3>Notes:</h3>
+	 * <ol>
+	 * <li>The parent is never picked.
+	 * <li>Vacant sites are picked with the same probability as occupied ones.
+	 * </ol>
+	 *
+	 * @param me the index of the focal individual
+	 * @return the index of a neighbour
+	 * 
+	 * @see #pickFitNeighborAt(int)
+	 * @see #updatePlayerMoranBirthDeath()
+	 */
+	protected int pickNeighborSiteAt(int me) {
+		// mean-field
+		if (reproduction.isType(Geometry.Type.MEANFIELD))
+			return pickFocalSite(me);
+
+		int[] neighs = reproduction.out[me];
+		int len = reproduction.kout[me];
+		switch (len) {
+			case 0:
+				// no downstream neighbour? no place to put offspring
+				return -1;
+			case 1:
+				// place offspring in single downstream node
+				return neighs[0];
+			default:
+				return neighs[random0n(len)];
+		}
+	}
+
+	/**
+	 * Update individual with index {@code me} and adopt the strategy of individual
+	 * with index {@code you}.
+	 * <p>
+	 * <strong>Note:</strong> method must be subclassed to deal with different data
+	 * types of strategies but should also include a call to super.
+	 *
+	 * @param me  the index of the focal individual
+	 * @param you the index of the model individual to adopt strategy from
+	 * 
+	 * @see IBSDPopulation#updateFromModelAt(int, int)
+	 * @see IBSMCPopulation#updateFromModelAt(int, int)
+	 */
+	public void updateFromModelAt(int me, int you) {
+		tags[me] = tags[you];
+		// <jf
+		// if (verbose)
+		logger.fine("update: node " + me + " adopts strategy at node " + you);
+		// jf>
+	}
+
+	/**
+	 * Update the score of individual {@code me}.
+	 * <p>
+	 * After initialization and for synchronized population updating this method is
+	 * invoked (rather than {@link #playGameAt(int)}). The synchronous flag simply
+	 * indicates that all players are going to be updated. For directed graphs this
+	 * implies that incoming and outgoing links do not need to be treated separately
+	 * because every outgoing link corresponds to an incoming link of another node.
+	 *
+	 * @param me the index of the focal individual
+	 */
+	public void playGameSyncAt(int me) {
+		if (module.isStatic()) {
+			logger.severe("playGameSyncAt(int) should not be called for constant selection!");
+			throw new Error("playGameSyncAt(int) should not be called for constant selection!");
+		}
+		// during initialization, pretend we are doing this synchronously - just in case
+		// someone's interested.
+		PopulationUpdateType put = populationUpdateType;
+		setPopulationUpdateType(PopulationUpdateType.SYNC);
+		if (module.isPairwise()) {
+			for (int i = 0; i < nInteractions; i++) {
+				interactionGroup.pickAt(me, interaction, true);
+				playPairGameAt(interactionGroup);
+			}
+		} else {
+			for (int i = 0; i < nInteractions; i++) {
+				interactionGroup.pickAt(me, interaction, true);
+				playGroupGameAt(interactionGroup);
+			}
+		}
+		setPopulationUpdateType(put);
+	}
+
+	/**
+	 * Update the score of individual {@code me}. This method is called if adjusting
+	 * scores is not an option.
+	 *
+	 * @param me the index of the focal individual
+	 * 
+	 * @see #adjustGameScoresAt(int)
+	 * @see #adjustPairGameScoresAt(int)
+	 */
+	public void playGameAt(int me) {
+		if (module.isStatic()) {
+			logger.severe("playGameAt(int) should not be called for constant selection!");
+			throw new Error("playGameAt(int) should not be called for constant selection!");
+		}
+		// any graph - interact with out-neighbors
+		// same as earlier approach to undirected graphs
+		if (adjustScores) {
+			throw new Error("ERROR: playGameAt(int idx) and adjustScores are incompatible!");
+		}
+		if (module.isPairwise()) {
+			for (int i = 0; i < nInteractions; i++) {
+				interactionGroup.pickAt(me, interaction, true);
+				playPairGameAt(interactionGroup);
+			}
+			// if undirected, we are done
+			if (interaction.isUndirected)
+				return;
+
+			// directed graph - additionally/separately interact with in-neighbors
+			for (int i = 0; i < nInteractions; i++) {
+				interactionGroup.pickAt(me, interaction, false);
+				playPairGameAt(interactionGroup);
+			}
+		} else {
+			for (int i = 0; i < nInteractions; i++) {
+				interactionGroup.pickAt(me, interaction, true);
+				playGroupGameAt(interactionGroup);
+			}
+			// if undirected, we are done
+			if (interaction.isUndirected)
+				return;
+			// directed graph - additionally/separately interact with in-neighbors
+			for (int i = 0; i < nInteractions; i++) {
+				interactionGroup.pickAt(me, interaction, false);
+				playGroupGameAt(interactionGroup);
+			}
+		}
+	}
+
+	/**
+	 * Adjust scores of focal player {@code me} and its neighbours (interaction
+	 * partners).
+	 * 
+	 * <h3>Requirements/notes:</h3>
+	 * <ol>
+	 * <li>This optimized method is only applicable if {@link IBSGroup#SAMPLING_ALL}
+	 * is true and not {@link Geometry.Type#MEANFIELD}, i.e. if the interaction
+	 * group includes all neighbors but not all other members of the population.
+	 * <li>For pairwise interactions more efficient approaches are possible but
+	 * those require direct access to the stratgies and are hence delegated to
+	 * subclasses.
+	 * </ol>
+	 * 
+	 * @param me the index of the focal individual
+	 * 
+	 * @see #adjustPairGameScoresAt(int)
+	 */
+	public void adjustGameScoresAt(int me) {
+		// check first whether an actual strategy change has occurred
+		if (isSameStrategy(me)) {
+			commitStrategyAt(me);
+			return;
+		}
+		// constant selection does not require involved score adjustments;
+		// called only under special circumstances, e.g. with optimizeHomo set;
+		// after committing make sure fitness is updated
+		if (module.isStatic()) {
+			commitStrategyAt(me);
+			updateScores();
+			return;
+		}
+		if (module.isPairwise()) {
+			// scores of pairwise interactions can be adjusted more efficiently
+			// but this requires access to the actual strategies.
+			adjustPairGameScoresAt(me);
+			return;
+		}
+		// any graph - interact with out-neighbors
+		// same as earlier approach to undirected graphs
+		if (interaction.isUndirected) {
+			// undirected graph - same as earlier approach
+			// remove old scores
+			int[] neigh = interaction.out[me];
+			int nNeigh = reproduction.kout[me];
+			interactionGroup.setGroupAt(me, neigh, nNeigh);
+			yalpGroupGameAt(interactionGroup);
+			for (int i = 0; i < nNeigh; i++) {
+				int you = neigh[i];
+				interactionGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
+				yalpGroupGameAt(interactionGroup);
+			}
+			commitStrategyAt(me);
+			// add new scores
+			interactionGroup.setGroupAt(me, neigh, nNeigh);
+			playGroupGameAt(interactionGroup);
+			for (int i = 0; i < nNeigh; i++) {
+				int you = neigh[i];
+				interactionGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
+				playGroupGameAt(interactionGroup);
+			}
+			return;
+		}
+
+		// directed graph - separately interact with in- and out-neighbors
+		// remove old scores
+		int[] neigh = interaction.out[me];
+		int nNeigh = interaction.kout[me];
+		interactionGroup.setGroupAt(me, neigh, nNeigh);
+		yalpGroupGameAt(interactionGroup);
+		for (int i = 0; i < nNeigh; i++) {
+			int you = neigh[i];
+			interactionGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
+			yalpGroupGameAt(interactionGroup);
+		}
+		neigh = interaction.in[me];
+		nNeigh = interaction.kin[me];
+		interactionGroup.setGroupAt(me, neigh, nNeigh);
+		yalpGroupGameAt(interactionGroup);
+		for (int i = 0; i < nNeigh; i++) {
+			int you = neigh[i];
+			interactionGroup.setGroupAt(you, interaction.in[you], interaction.kin[you]);
+			yalpGroupGameAt(interactionGroup);
+		}
+		commitStrategyAt(me);
+		// add new scores
+		neigh = interaction.out[me];
+		nNeigh = interaction.kout[me];
+		interactionGroup.setGroupAt(me, neigh, nNeigh);
+		playGroupGameAt(interactionGroup);
+		for (int i = 0; i < nNeigh; i++) {
+			int you = neigh[i];
+			interactionGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
+			playGroupGameAt(interactionGroup);
+		}
+		neigh = interaction.in[me];
+		nNeigh = interaction.kin[me];
+		interactionGroup.setGroupAt(me, neigh, nNeigh);
+		playGroupGameAt(interactionGroup);
+		for (int i = 0; i < nNeigh; i++) {
+			int you = neigh[i];
+			interactionGroup.setGroupAt(you, interaction.in[you], interaction.kin[you]);
+			playGroupGameAt(interactionGroup);
+		}
+	}
+
+	/**
+	 * Update the score of the individual with index {@code index} by adding
+	 * {@code newscore} from single interaction.
+	 * 
+	 * @param index    the index of the individual
+	 * @param newscore the new score of the individual
+	 */
+	public void updateScoreAt(int index, double newscore) {
+		updateScoreAt(index, newscore, 1);
+	}
+
+	/**
+	 * Update the score of the individual with index {@code index} by adding
+	 * ({@code incr &gt; 0} or removing, {@code incr &lt; 0}) {@code newscore} as
+	 * the result of {@code incr} interactions.
+	 * 
+	 * <h3>Important:</h3>
+	 * <ol>
+	 * <li>Strategies are already committed when adding scores
+	 * (<code>incr&gt;0</code>).
+	 * <li>Strategies are <em>not</em> committed when removing scores
+	 * (<code>incr&lt;0</code>).
+	 * <li>This routine is never called for the focal site (i.e. the one that may
+	 * have changed strategy and hence where it matters whether strategies are
+	 * committed).
+	 * <li>{@link #resetScoreAt(int)} deals with the focal site.
+	 * </ol>
+	 * 
+	 * @param index    the index of the individual
+	 * @param newscore score/payoff to add (<code>incr&gt;0</code>) or subtract
+	 *                 (<code>incr&lt;0</code>)
+	 * @param incr     number of interactions
+	 */
+	public void updateScoreAt(int index, double newscore, int incr) {
+		double before = scores[index];
+		// note: incr == 0 doesn't make sense (except possibly for isolated individuals)
+		if (incr < 0)
+			newscore = -newscore;
+		if (playerScoreAveraged) {
+			int count = interactions[index];
+			scores[index] = (before * count + newscore) / Math.max(1, count + incr);
+		} else {
+			scores[index] += newscore;
+		}
+		interactions[index] += incr;
+		updateEffScoreRange(index, before, scores[index]);
+		updateFitnessAt(index);
+	}
+
+	/**
+	 * Update the fitness of the individual with index {@code idx} by mapping its
+	 * current score. Keeps track of {@code sumFitness}.
+	 * <p>
+	 * <strong>Note:</strong> If {@code sumFitness} decreases dramatically rounding
+	 * errors become an issue. More specifically, if {@code sumFitness} is reduced
+	 * to half or less, recalculate from scratch.
+	 * 
+	 * @param idx the index of the individual
+	 */
+	public void updateFitnessAt(int idx) {
+		double after = map2fit.map(scores[idx]);
+		double diff = after - (isVacantAt(idx) ? 0.0 : fitness[idx]);
+		fitness[idx] = after;
+		sumFitness += diff;
+		// whenever sumFitness decreases dramatically rounding errors become an issue
+		// if update reduces sumFitness by half or more, recalculate from scratch
+		if (-diff > sumFitness)
+			sumFitness = ArrayMath.norm(fitness);
+	}
+
+	/**
+	 * Sets the score of individual with index {@code index} to {@code newscore} as
+	 * the result of {@code inter} interactions. Also derives the corresponding
+	 * fitness and adjusts {@code sumFitness}.
+	 * <p>
+	 * <strong>Note:</strong> Assumes that {@link #resetScores()} was called earlier
+	 * (or at least {@link #resetScoreAt(int)} for those sites that
+	 * {@code setScoreAt(int)} is used for updating their score).
+	 *
+	 * @param index    the index of the individual
+	 * @param newscore new score to set
+	 * @param inter    number of interactions
+	 */
+	public void setScoreAt(int index, double newscore, int inter) {
+		interactions[index] = inter;
+		scores[index] = (playerScoreAveraged ? newscore : newscore * inter);
+		double fit = map2fit.map(scores[index]);
+		fitness[index] = fit;
+		sumFitness += fit;
+	}
+
+	/**
+	 * Removes the score {@code nilscore} based on a single interaction from the
+	 * individual with index {@code index}.
+	 * 
+	 * @param index    the index of the individual
+	 * @param nilscore the score to remove
+	 * 
+	 * @see #updateScoreAt(int, double, int)
+	 */
+	public void removeScoreAt(int index, double nilscore) {
+		updateScoreAt(index, nilscore, -1);
+	}
+
+	/**
+	 * Removes the score {@code nilscore} based on {@code incr} interactions from
+	 * the individual with index {@code index}.
+	 *
+	 * @param index    the index of the individual
+	 * @param nilscore the score to remove
+	 * @param incr     the number of interactions to remove
+	 * 
+	 * @see #updateScoreAt(int, double, int)
+	 */
+	public void removeScoreAt(int index, double nilscore, int incr) {
+		updateScoreAt(index, nilscore, -incr);
+	}
+
+	/**
+	 * Reset score of individual at index <code>index</code>.
+	 * <p>
+	 * <strong>Important:</strong> Strategies not committed at this point.
+	 * 
+	 * <h3>Discussions/extensions:</h3>
+	 * Revise the entire strategy updating procedure: it's inefficient to first
+	 * reset scores then update strategies then update score...
+	 * 
+	 * @param index the index of the individual
+	 */
+	public void resetScoreAt(int index) {
+		double before = scores[index];
+		scores[index] = 0.0;
+		interactions[index] = 0;
+		updateEffScoreRange(index, before, 0.0);
+		sumFitness -= fitness[index];
+		fitness[index] = 0.0;
+	}
+
+	/**
+	 * Swap the scores (and fitness) of individuals with indices {@code idxa} and
+	 * {@code idxb}.
+	 * 
+	 * @param idxa the index of the first individual
+	 * @param idxb the index of the second individual
+	 */
+	public void swapScoresAt(int idxa, int idxb) {
+		double myScore = scores[idxa];
+		scores[idxa] = scores[idxb];
+		scores[idxb] = myScore;
+		myScore = fitness[idxa];
+		fitness[idxa] = fitness[idxb];
+		fitness[idxb] = myScore;
+		int myInteractions = interactions[idxa];
+		interactions[idxa] = interactions[idxb];
+		interactions[idxb] = myInteractions;
+		if (maxEffScoreIdx == idxa)
+			maxEffScoreIdx = idxb;
+		else if (maxEffScoreIdx == idxb)
+			maxEffScoreIdx = idxa;
+	}
+
+	/**
+	 * Reset scores and fitness of all individuals to zero.
+	 */
+	public void resetScores() {
+		// well-mixed populations use lookup table for scores and fitness
+		if (scores != null)
+			Arrays.fill(scores, 0.0);
+		if (fitness != null)
+			Arrays.fill(fitness, 0.0);
+		if (interactions != null)
+			Arrays.fill(interactions, 0);
+		sumFitness = 0.0;
+		if (VACANT < 0 || getPopulationSize() == 0) {
+			// no vacancies or no population
+			maxEffScoreIdx = 0;
+			return;
+		}
+		int start = -1;
+		// find first non-vacant site
+		while (isVacantAt(++start))
+			;
+		maxEffScoreIdx = start;
+	}
+
+	/**
+	 * Reset scores and fitness of all individuals in a homogeneous population to
+	 * {@code homoScore}. This excludes a homogeneous population of vacant sites.
+	 *
+	 * @param homoScore the homogeneous score
+	 */
+	public void resetScores(double homoScore) {
+		double fit = 0.0;
+		double score = 0.0;
+		int inter = 0;
+		int mIdx = -1;
+		if (!isVacantAt(0)) {
+			// homogeneous population is not vacant
+			score = playerScoreAveraged ? homoScore : nInteractions * homoScore;
+			fit = map2fit.map(score);
+			inter = nInteractions;
+			mIdx = 0;
+		}
+		Arrays.fill(scores, score);
+		Arrays.fill(fitness, fit);
+		Arrays.fill(interactions, inter);
+		// getPopulationSize() accounts for potential vacancies
+		sumFitness = getPopulationSize() * fit;
+		maxEffScoreIdx = mIdx;
+	}
+
+	/**
+	 * Update the scores of all individuals in the population.
+	 */
+	public void updateScores() {
+		for (int n = 0; n < nPopulation; n++) {
+			// since everybody's score is updated there is no need to treat in- and
+			// out-going links differently - after all, each outgoing link is an incoming
+			// link for another node...
+			playGameSyncAt(n);
+			updateFitnessAt(n);
+		}
+		setMaxEffScoreIdx();
+	}
+
+	/**
+	 * Gets the score of the individual with index {@code idx}.
+	 *
+	 * @param idx the index of the individual
+	 * @return the score of the individual
+	 */
+	public double getScoreAt(int idx) {
+		return scores[idx];
+	}
+
+	/**
+	 * Gets the fitness of the individual with index {@code idx}.
+	 *
+	 * @param idx the index of the individual
+	 * @return the fitness of the individual
+	 */
+	public double getFitnessAt(int idx) {
+		return fitness[idx];
+	}
+
+	/**
+	 * Keep track of highest score through a reference to the corresponding
+	 * individual.
+	 * 
+	 * <h3>Discussions/extensions:</h3>
+	 * <ol>
+	 * <li>Keeping track of the lowest performing individual is very costly because
+	 * the poor performers are much more likely to get updated. In contrast, the
+	 * maximum performer is least likely to get replaced. For example, in
+	 * <code>cSD</code> with a well-mixed population of <code>10'000</code> spends
+	 * <code>&gt;80%</code> of CPU time hunting down the least performing
+	 * individual! Besides, the minimum score is never used. The maximum score is
+	 * only used for global, fitness based selection such as the Birth-death
+	 * process. (room for optimization?)
+	 * <li>For synchronous updates this method is not only wasteful but problematic
+	 * because sites that are later updated experience different conditions.
+	 * <li>For constant fitness ({@code maxEffScoreIdx &lt; 0}) tracking the maximum
+	 * is not needed.
+	 * <li><code>if (isVacantAt(index)) {...}</code> is only executed if
+	 * {@code after == before}, i.e. the code is almost dead... suspicious or
+	 * ingenious?!
+	 * </ol>
+	 * 
+	 * @param index  the index of the individual
+	 * @param before the score before the update
+	 * @param after  the score after the update
+	 * @return <code>true</code> if effective range of payoffs has changed (or, more
+	 *         precisely, if the reference individual has changed);
+	 *         <code>false</code> otherwise.
+	 */
+	protected boolean updateEffScoreRange(int index, double before, double after) {
+		if (populationUpdateType.isSynchronous() || maxEffScoreIdx < 0)
+			return false;
+
+		if (after > before) {
+			// score increased
+			if (index == maxEffScoreIdx)
+				return false;
+			if (after <= scores[maxEffScoreIdx])
+				return false;
+			maxEffScoreIdx = index;
+			return true;
+		}
+		// score decreased
+		if (after < before) {
+			if (index == maxEffScoreIdx) {
+				// maximum score decreased - find new maximum
+				setMaxEffScoreIdx();
+				return true;
+			}
+			return false;
+		}
+		// site became VACANT
+		if (isVacantAt(index)) {
+			if (index == maxEffScoreIdx) {
+				setMaxEffScoreIdx();
+				return true;
+			}
+			return false;
+		}
+		// score unchanged
+		return false;
+	}
+
+	/**
+	 * Find the index of the individual with the highest score.
+	 */
+	protected void setMaxEffScoreIdx() {
+		if (maxEffScoreIdx < 0)
+			return;
+		maxEffScoreIdx = ArrayMath.maxIndex(scores);
+	}
+
+	/**
+	 * Perform a single IBS step, i.e. update one individual for asynchronous
+	 * updates or once the entire population for synchronous updates.
+	 * 
+	 * <h3>Discussions/extensions</h3>
+	 * <ol>
+	 * <li>Review migration. Exclusively used in Demes2x2. Should probably be
+	 * treated as an independent event, in particular independent of population or
+	 * player updates
+	 * <li>Implement Wright-Fisher update.
+	 * <li>How to scale realtime with multiple populations? How to define a
+	 * generation if population sizes can vary?
+	 * <li>{@link #updatePlayerEcology()} returns time increment in realtime units.
+	 * Everyone else does fine without...
+	 * </ol>
+	 * 
+	 * @return the elapsed time in realtime units
+	 */
+	public double step() {
+		double rincr;
+		double uRate = module.getSpeciesUpdateRate();
+		if (pMigration > 0.0 && random01() < pMigration) {
+			// migration event
+			rincr = 1.0 / (sumFitness * uRate);
+			doMigration();
+			return rincr;
+		}
+		// real time increment based on current fitness
+		switch (populationUpdateType) {
+			case SYNC: // synchronous updates (do not commit strategies)
+				prepareStrategies();
+				for (int n = 0; n < nPopulation; n++)
+					updatePlayerAt(n);
+				rincr = nPopulation / (sumFitness * uRate);
+				return rincr;
+
+			// case WRIGHT_FISHER:
+			// return rincr;
+
+			case ASYNC: // exclusively the current payoff matters
+				rincr = 1.0 / (sumFitness * uRate);
+				updatePlayerAsync();
+				return rincr;
+
+			case MORAN_BIRTHDEATH: // moran process - birth-death
+				rincr = 1.0 / (sumFitness * uRate);
+				updatePlayerMoranBirthDeath();
+				return rincr;
+
+			case MORAN_DEATHBIRTH: // moran process - death-birth
+				rincr = 1.0 / (sumFitness * uRate);
+				updatePlayerMoranDeathBirth();
+				return rincr;
+
+			case MORAN_IMITATE: // moran process - imitate
+				rincr = 1.0 / (sumFitness * uRate);
+				updatePlayerMoranImitate();
+				return rincr;
+
+			case ECOLOGY: // ecological updating - varying population sizes
+				return updatePlayerEcology() / uRate;
+
+			default:
+				logger.warning("unknown population update type (" + populationUpdateType.getKey() + ").");
+				return 0.0;
+		}
+	}
+
+	/**
+	 * Update focal individual with index {@code focal} for debugging.
+	 * 
+	 * <h3>Notes:</h3>
+	 * <ul>
+	 * <li>Must remain in sync with population updates in IBS and step().</li>
+	 * <li>For debugging only; time not advanced.</li>
+	 * </ul>
+	 *
+	 * @param focal the index of the individual to update
+	 */
+	public void debugUpdatePopulationAt(int focal) {
+		resetStrategies();
+		debugFocal = focal;
+		switch (populationUpdateType) {
+			case ASYNC: // exclusively the current payoff matters
+				updatePlayerAsyncAt(focal);
+				break;
+
+			case MORAN_BIRTHDEATH: // moran process - birth-death
+				debugNModels = 0;
+				updatePlayerMoranBirthDeathAt(focal);
+				break;
+
+			case MORAN_DEATHBIRTH: // moran process - death-birth
+				debugNModels = 0;
+				updatePlayerMoranDeathBirthAt(focal);
+				break;
+
+			case ECOLOGY: // ecological updating - varying population sizes
+				debugNModels = 0;
+				updatePlayerEcologyAt(focal);
+				break;
+
+			case SYNC: // synchronous updating - gets here only in debugging mode
+				if (updatePlayerAt(focal))
+					adjustGameScoresAt(focal);
+				break;
+
+			default:
+				logger.warning("unknown population update type (" + populationUpdateType.getKey() + ").");
+				return;
+		}
+		debugMarkChange();
+		engine.fireModelChanged();
+	}
+
+	/**
+	 * Helper variable to store index of focal individual (birth) that got
+	 * updated during debug step.
+	 */
+	protected int debugFocal = -1;
+
+	/**
+	 * Helper variable to store index of target individual (death) that got
+	 * updated during debug step.
+	 */
+	protected int debugTarget = -1;
+
+	/**
+	 * Helper variable to store array of indices of individual that served as models
+	 * during debug step.
+	 */
+	protected int[] debugModels = null;
+
+	/**
+	 * Helper variable to number of individual that served as models during debug
+	 * step.
+	 */
+	protected int debugNModels = -1;
+
+	/**
+	 * Override in subclass for example to mark those individuals in the GUI that
+	 * were involved in the debug step.
+	 */
+	protected void debugMarkChange() {
+		if (logger.isLoggable(Level.FINE)) {
+			String msg = "";
+			if (debugFocal >= 0)
+				msg += "focal: " + debugFocal;
+			if (debugFocal >= 0 && (debugTarget >= 0 || debugNModels >= 0))
+				msg += ", ";
+			if (debugTarget >= 0)
+				msg += "target: " + debugTarget;
+			if (debugNModels > 0) {
+				msg += "model(s): ";
+				for (int n = 0; n < debugNModels - 1; n++)
+					msg += debugModels[n] + ", ";
+				msg += debugModels[debugNModels - 1];
+			}
+			logger.fine(msg);
+		}
+	}
+
+	/**
+	 * Perform a single, asynchronous update of the strategy of a randomly selected
+	 * individual.
+	 */
+	protected void updatePlayerAsync() {
+		updatePlayerAsyncAt(pickFocalSite());
+	}
+
+	/**
+	 * Update the strategy of the focal individual with index {@code me}.
+	 * 
+	 * @param me the index of the focal individual
+	 */
+	public void updatePlayerAsyncAt(int me) {
+		if (adjustScores) {
+			if (!updatePlayerAt(me))
+				return;
+			/* player switched strategy - adjust scores, commit strategy */
+			adjustGameScoresAt(me);
+			return;
+		}
+
+		// alternative approach - update random player and play one game
+		if (updatePlayerAt(me)) {
+			resetScoreAt(me);
+			commitStrategyAt(me);
+		}
+		playGameAt(me);
+	}
+
+	/**
+	 * Perform a single, Moran (Birth-death) update for a random individual selected
+	 * with a probability proportional to fitness. This is the original Moran
+	 * process where the offspring can replace the parent in well-mixed populations.
+	 * For structured populations this corresponds to the spatial Moran process with
+	 * <em>Bd</em> updating in Ohtsuki et al. Nature 2005.
+	 * 
+	 * @see <a href="http://dx.doi.org/10.1038/nature04605">Ohtsuki, H., Hauert,
+	 *      C., Lieberman, E. &amp; Nowak, M. (2006) A simple rule for the evolution
+	 *      of cooperation on graphs, Nature 441, 502-505</a>
+	 */
+	public void updatePlayerMoranBirthDeath() {
+		updatePlayerMoranBirthDeathAt(pickFitFocalIndividual());
+	}
+
+	/**
+	 * Perform a Moran (Birth-death) update for the focal individual with index
+	 * {@code parent} to produce a clonal offspring and replace one of the parent's
+	 * neighbours selected uniformly at random. This is the original Moran process
+	 * where the offspring can replace the parent in well-mixed populations.
+	 * 
+	 * @param parent the index of the parent
+	 */
+	protected void updatePlayerMoranBirthDeathAt(int parent) {
+		if (reproduction.isType(Geometry.Type.MEANFIELD))
+			debugTarget = pickFocalSite();
+		else
+			debugTarget = pickNeighborSiteAt(parent);
+		if (debugTarget < 0)
+			return; // parent has no outgoing-neighbors (sink)
+		// note: do not return prematurely if <code>debugTarget==parent</code> because
+		// this would preclude mutations and fail to reset scores.
+		updatePlayerMoran(parent, debugTarget);
+	}
+
+	/**
+	 * Perform a single Moran (death-Birth) update for a site selected uniformly at
+	 * random. This corresponds to the spatial Moran process with <em>dB</em>
+	 * updating in Ohtsuki et al. Nature 2005.
+	 * 
+	 * @see <a href="http://dx.doi.org/10.1038/nature04605">Ohtsuki, H., Hauert,
+	 *      C., Lieberman, E. &amp; Nowak, M. (2006) A simple rule for the evolution
+	 *      of cooperation on graphs, Nature 441, 502-505</a>
+	 */
+	public void updatePlayerMoranDeathBirth() {
+		updatePlayerMoranDeathBirthAt(pickFocalSite());
+	}
+
+	/**
+	 * Perform a single Moran (death-Birth) update for the focal site with index
+	 * {@code vacant}. One of its (incoming) neighbours succeeds, with a probability
+	 * proportional to its fitness, in producing a clonal offspring and placing it
+	 * at site {@code vacant}.
+	 * 
+	 * @param vacant the index of the vacant site
+	 */
+	protected void updatePlayerMoranDeathBirthAt(int vacant) {
+		debugTarget = pickFitNeighborAt(vacant);
+		if (debugTarget < 0)
+			return; // vacant has no incoming-neighbors (source)
+		updatePlayerMoran(debugTarget, vacant);
+	}
+
+	/**
+	 * Perform a single, Moran (imitate) update for a site selected uniformly at
+	 * random. This corresponds to the <em>imitate</em> strategy in Ohtsuki et al.
+	 * Nature 2005.
+	 * 
+	 * @see <a href="http://dx.doi.org/10.1038/nature04605">Ohtsuki, H., Hauert,
+	 *      C., Lieberman, E. &amp; Nowak, M. (2006) A simple rule for the evolution
+	 *      of cooperation on graphs, Nature 441, 502-505</a>
+	 */
+	public void updatePlayerMoranImitate() {
+		updatePlayerMoranImitateAt(pickFocalSite());
+	}
+
+	/**
+	 * Update the focal individual with index {@code imitator} by comparing its own
+	 * payoff and those of its neighbors. The focal individual imitates the strategy
+	 * of a neighbour (or keeps its own) with a probability proportional to the
+	 * corresponding individual's fitness (including its own).
+	 *
+	 * @param imitator the index of the individual that reassesses its strategy
+	 */
+	protected void updatePlayerMoranImitateAt(int imitator) {
+		debugTarget = pickFitNeighborAt(imitator, true);
+		if (debugTarget < 0)
+			return; // vacant has no incoming-neighbors (source)
+		updatePlayerMoran(debugTarget, imitator);
+	}
+
+	/**
+	 * Perform a single Moran update for the reproducing node with index
+	 * {@code source} and the node that gets replaced with index {@code dest}. The
+	 * three Moran variants (death-Birth, Birth-death and imitate) differ only in
+	 * their selection of the individuals {@code source} and {@code dest} and then
+	 * call this method, {@code updatePlayerMoran(int, int)}.
+	 * <p>
+	 * <strong>Note:</strong> Moran optimizations for discrete strategies require
+	 * access to this method.
+	 *
+	 * @param source the index of the parent node
+	 * @param dest   the index of the node where the offspring is placed
+	 * 
+	 * @see IBSDPopulation
+	 */
+	protected void updatePlayerMoran(int source, int dest) {
+		double pMutation = module.getMutationProb();
+		if (adjustScores) {
+			// allow for mutations
+			if (pMutation >= 1.0 || (pMutation > 0.0 && random01() < pMutation)) {
+				updateFromModelAt(dest, source);
+				mutateStrategyAt(dest, true);
+				adjustGameScoresAt(dest);
+				return;
+			}
+			if (haveSameStrategy(source, dest))
+				return;
+			updateFromModelAt(dest, source);
+			adjustGameScoresAt(dest);
+			return;
+		}
+
+		// allow for mutations
+		if (pMutation >= 1.0 || (pMutation > 0.0 && random01() < pMutation)) {
+			updateFromModelAt(dest, source);
+			mutateStrategyAt(dest, true);
+			resetScoreAt(dest);
+			commitStrategyAt(dest);
+			playGameAt(dest);
+			return;
+		}
+		if (!haveSameStrategy(source, dest)) {
+			// replace 'vacant'
+			updateFromModelAt(dest, source);
+			resetScoreAt(dest);
+			commitStrategyAt(dest);
+			playGameAt(dest);
+			return;
+		}
+		// no actual strategy change occurred - reset score always (default) or only on
+		// actual change?
+		if (playerScoreResetAlways)
+			resetScoreAt(dest);
+		playGameAt(dest);
+	}
+
+	/**
+	 * Perform a single ecological update of a site selected uniformly at random.
+	 * 
+	 * @return real-time increment
+	 */
+	public double updatePlayerEcology() {
+		return updatePlayerEcologyAt(pickFocalSite());
+	}
+
+	/**
+	 * Perform a single ecological update of the site with index {@code index}.
+	 * <p>
+	 * <strong>Important:</strong> No default implementation is possible. Modules
+	 * with ecological updates need to subclass {@code IBSPopulation} and provide
+	 * their own implementations.
+	 *
+	 * @param index the index of the focal site
+	 * @return real-time increment
+	 */
+	protected double updatePlayerEcologyAt(int index) {
+		throw new Error("updatePlayerEcologyAt not implemented.");
+	}
+
+	/**
+	 * Perform a single update of the individual with index {@code me}. Returns
+	 * {@code true} if the individual changed its strategy to signal that the
+	 * focal individual's score will need to be reset.
+	 *
+	 * @param me the index of the focal individual
+	 * @return {@code true} if strategy changed
+	 * 
+	 * @see #resetScoreAt(int)
+	 */
+	public boolean updatePlayerAt(int me) {
+		// note: choose random neighbor among in-neighbors (those are upstream to serve
+		// as models; this is the opposite for birth-death scenarios)
+		referenceGroup.pickAt(me, reproduction, false);
+		return updatePlayerAt(me, referenceGroup.group, referenceGroup.size);
+	}
+
+	/**
+	 * Perform a single update of the individual with index {@code me} using the
+	 * {@code rGroupSize} models in the array {@code refGroup}. Returns
+	 * {@code true} if the individual changed its strategy to signal that the
+	 * focal individual's score will need to be reset.
+	 * 
+	 * @param me         the index of the focal individual
+	 * @param refGroup   the group of reference individuals
+	 * @param rGroupSize the number of reference individuals
+	 * @return {@code true} if strategy changed
+	 * 
+	 * @see #resetScoreAt(int)
+	 */
+	private boolean updatePlayerAt(int me, int[] refGroup, int rGroupSize) {
+		debugTarget = -1;
+		debugNModels = rGroupSize;
+		if (rGroupSize <= 0)
+			return false;
+
+		debugModels = refGroup;
+		boolean switched;
+		PlayerUpdateType playerUpdateType = module.getPlayerUpdateType();
+		switch (playerUpdateType) {
+			case BEST_RESPONSE: // best-response update
+				// this makes little sense for continuous strategies - should not happen...
+				// takes entire population (mean-field) or entire neighborhood into account.
+				// for details check updatePlayerBestReply() in DPopulation.java
+				switched = updatePlayerBestResponse(me, refGroup, rGroupSize);
+				break;
+
+			case BEST: // best update
+				switched = updatePlayerBest(me, refGroup, rGroupSize);
+				break;
+
+			case BEST_RANDOM: // best update - equal payoffs 50% chance to switch
+				switched = updatePlayerBestHalf(me, refGroup, rGroupSize);
+				break;
+
+			case PROPORTIONAL: // proportional update
+				switched = updateProportionalAbs(me, refGroup, rGroupSize);
+				break;
+
+			case IMITATE_BETTER: // imitation update (better strategies only)
+				switched = updateReplicatorPlus(me, refGroup, rGroupSize);
+				break;
+
+			case IMITATE: // imitation update
+				switched = updateReplicatorHalf(me, refGroup, rGroupSize);
+				break;
+
+			case THERMAL: // fermi update
+				switched = updateThermal(me, refGroup, rGroupSize);
+				break;
+
+			default:
+				throw new Error("Unknown update method for players (" + playerUpdateType + ")");
+		}
+		double pMutation = module.getMutationProb();
+		if (pMutation >= 1.0 || (pMutation > 0.0 && random01() < pMutation)) {
+			mutateStrategyAt(me, switched);
+			return true; // if mutated always indicate change
+		}
+		if (playerScoreResetAlways)
+			return switched;
+		// signal change only if actual change of strategy occurred
+		return !isSameStrategy(me);
+	}
+
+	/**
+	 * Updates the focal individual with index {@code me} by adopting the strategy
+	 * of the best performing reference individual among the {@code rGroupSize}
+	 * models in the array {@code refGroup}. Returns {@code true} if the individual
+	 * changed its strategy to signal that the focal individual's score will need to
+	 * be reset.
+	 * 
+	 * <h3>Notes:</h3>
+	 * <ol>
+	 * <li>If the scores of two reference individuals tie but exceed the focal
+	 * individual's score, expert advice is needed.
+	 * <li>If the focal individual's score is highest but ties with one or more
+	 * reference individuals the focal individual keeps its strategy.
+	 * <li>For the best update it does not matter whether scores are averaged or
+	 * accumulated.
+	 * </ol>
+	 * 
+	 * @param me         the index of the focal individual
+	 * @param refGroup   the group of reference individuals
+	 * @param rGroupSize the number of reference individuals
+	 * @return {@code true} if strategy changed
+	 * 
+	 * @see #preferredPlayerBest(int, int, int)
+	 * @see #resetScoreAt(int)
+	 */
+	protected boolean updatePlayerBest(int me, int[] refGroup, int rGroupSize) {
+
+		// neutral case: no one is better -> nothing happens
+		if (isNeutral)
+			return false;
+
+		int bestPlayer = me;
+		// if the individual's score is highest but ties with a reference, the
+		// individual sticks to it's strategy.
+		double bestScore = getFitnessAt(me) + 1e-8;
+		boolean switched = false;
+
+		for (int i = 0; i < rGroupSize; i++) {
+			int aPlayer = refGroup[i];
+			double aScore = getFitnessAt(aPlayer);
+			double bScore = aScore;
+			if (Math.abs(bestScore - bScore) < 1e-8) {
+				// we need some expert advice on which strategy is the preferred one
+				// does 'me' prefer 'aPlayer' over 'bestPlayer'?
+				if (preferredPlayerBest(me, bestPlayer, aPlayer))
+					bScore += 1e-8;
+				else
+					bScore -= 1e-8;
+			}
+			if (bestScore > bScore)
+				continue;
+			bestScore = aScore;
+			bestPlayer = aPlayer;
+			switched = true;
+		}
+		if (!switched)
+			return false;
+		updateFromModelAt(me, bestPlayer);
+		return true;
+	}
+
+	/**
+	 * Updates the focal individual with index {@code me} by adopting the strategy
+	 * of the best performing reference individual among the the {@code rGroupSize}
+	 * models in the array {@code refGroup}. If the scores of two (or more)
+	 * references or the score of the focal individual and one (or more)
+	 * reference(s) tie, then a coin toss decides which strategy to keep/adopt.
+	 * Returns {@code true} if the individual changed its strategy to signal that
+	 * the focal individual's score will need to be reset.
+	 * 
+	 * <h3>Notes:</h3>
+	 * For the best update it does not matter whether scores
+	 * are averaged or accumulated
+	 * 
+	 * @param me         the index of the focal individual
+	 * @param refGroup   the group of reference individuals
+	 * @param rGroupSize the number of reference individuals
+	 * @return {@code true} if strategy changed
+	 * 
+	 * @see #resetScoreAt(int)
+	 */
+	protected boolean updatePlayerBestHalf(int me, int[] refGroup, int rGroupSize) {
+		int bestPlayer = me;
+		double bestScore = getFitnessAt(me);
+		boolean switched = false;
+
+		for (int i = 0; i < rGroupSize; i++) {
+			int aPlayer = refGroup[i];
+			double aScore = getFitnessAt(aPlayer);
+			if (aScore > bestScore) {
+				bestScore = aScore;
+				bestPlayer = aPlayer;
+				switched = true;
+				continue;
+			}
+			if (Math.abs(aScore - bestScore) < 1e-8) {
+				// equal scores - switch with probability 50%
+				if (random01() < 0.5) {
+					bestPlayer = aPlayer;
+					switched = true;
+				}
+			}
+		}
+		if (!switched)
+			return false;
+		updateFromModelAt(me, bestPlayer);
+		return true;
+	}
+
+	/**
+	 * Updates the focal individual with index {@code me} by adopting the strategy
+	 * of one reference individual (including itself) among the the
+	 * {@code rGroupSize} models in the array {@code refGroup} with a probability
+	 * proportional to their scores. Returns {@code true} if the individual changed
+	 * its strategy to signal that the focal individual's score will need to be
+	 * reset.
+	 *
+	 * @param me         the index of the focal individual
+	 * @param refGroup   the group of reference individuals
+	 * @param rGroupSize the number of reference individuals
+	 * @return {@code true} if strategy changed
+	 * 
+	 * @see #resetScoreAt(int)
+	 */
+	protected boolean updateProportionalAbs(int me, int[] refGroup, int rGroupSize) {
+		// neutral case: choose random neighbor or individual itself
+		if (isNeutral) {
+			int hit = random0n(rGroupSize + 1);
+			if (hit == rGroupSize)
+				return false;
+			updateFromModelAt(me, refGroup[hit]);
+			return true;
+		}
+
+		double myFitness = getFitnessAt(me) - minFitness;
+		double totFitness = myFitness;
+		for (int i = 0; i < rGroupSize; i++) {
+			double aScore = getFitnessAt(refGroup[i]) - minFitness;
+			groupScores[i] = aScore;
+			totFitness += aScore;
+		}
+		if (totFitness <= 0.0) { // everybody has the minimal score - pick at random
+			int hit = random0n(rGroupSize + 1);
+			if (hit == rGroupSize)
+				return false;
+			updateFromModelAt(me, refGroup[hit]);
+			return true;
+		}
+
+		double choice = random01() * totFitness;
+		double bin = myFitness;
+		if (choice <= bin)
+			return false; // individual keeps its place
+
+		choice -= bin;
+		for (int i = 0; i < rGroupSize; i++) {
+			bin = groupScores[i];
+			if (choice <= bin) {
+				updateFromModelAt(me, refGroup[i]);
+				return true;
+			}
+			choice -= bin;
+		}
+		// should not get here!
+		throw new Error("Problem in updateProportionalAbs()...");
+	}
+
+	/**
+	 * Updates the focal individual with index {@code me} by adopting the strategy
+	 * of one reference individual among the the {@code rGroupSize} models in the
+	 * array {@code refGroup}. The focal individual \(i\) imitates the strategy of a
+	 * <em>better</em> performing reference individual \(j\) with a probability
+	 * proportional to the difference in fitness:
+	 * \[p_{i\to j} = \frac{(f_i-f_j)_+}\alpha,\]
+	 * where \(\alpha\) denotes a normalization factor to ensure \(p_{i\to
+	 * j}\in[0,1]\). Returns {@code true} if the individual changed its strategy to
+	 * signal that the focal individual's score will need to be reset.
+	 * 
+	 * @param me         the index of the focal individual
+	 * @param refGroup   the group of reference individuals
+	 * @param rGroupSize the number of reference individuals
+	 * @return {@code true} if strategy changed
+	 * 
+	 * @see #resetScoreAt(int)
+	 */
+	protected boolean updateReplicatorPlus(int me, int[] refGroup, int rGroupSize) {
+		return updateReplicator(me, refGroup, rGroupSize, true);
+	}
+
+	/**
+	 * Updates the focal individual with index {@code me} by adopting the strategy
+	 * of one reference individual among the the {@code rGroupSize} models in the
+	 * array {@code refGroup}. The focal individual \(i\) imitates the strategy of a
+	 * reference individual \(j\) with a probability proportional to the difference
+	 * in fitness:
+	 * \[p_{i\to j} = \frac{f_i-f_j}\alpha\]
+	 * where \(\alpha\) denotes a normalization factor to ensure \(p_{i\to
+	 * j}\in[0,1]\). This corresponds to the microscopic updating which recovers the
+	 * standard replicator equation in the continuum limit. Returns {@code true} if
+	 * the individual changed its strategy to signal that the focal individual's
+	 * score will need to be reset.
+	 * 
+	 * @param me         the index of the focal individual
+	 * @param refGroup   the group of reference individuals
+	 * @param rGroupSize the number of reference individuals
+	 * @return {@code true} if strategy changed
+	 * 
+	 * @see #resetScoreAt(int)
+	 */
+	protected boolean updateReplicatorHalf(int me, int[] refGroup, int rGroupSize) {
+		return updateReplicator(me, refGroup, rGroupSize, false);
+	}
+
+	/**
+	 * Helper method for replicator type updates. Returns {@code true} if
+	 * the individual changed its strategy to signal that the focal individual's
+	 * score will need to be reset.
+	 * 
+	 * @param me         the index of the focal individual
+	 * @param refGroup   the group of reference individuals
+	 * @param rGroupSize the number of reference individuals
+	 * @param betterOnly the flag to indicate whether only better performing
+	 *                   reference individuals are considered
+	 * @return {@code true} if strategy changed
+	 * 
+	 * @see #updateReplicatorPlus(int, int[], int)
+	 * @see #updateReplicatorHalf(int, int[], int)
+	 */
+	private boolean updateReplicator(int me, int[] refGroup, int rGroupSize, boolean betterOnly) {
+		// neutral case
+		if (isNeutral) {
+			// return if betterOnly because no one is better
+			if (betterOnly)
+				return false;
+			// choose random neighbor or individual itself
+			int hit = random0n(rGroupSize + 1);
+			if (hit == rGroupSize)
+				return false;
+			updateFromModelAt(me, refGroup[hit]);
+			return true;
+		}
+
+		double myFitness = getFitnessAt(me);
+		double aProb, nProb, norm;
+		double equalProb = betterOnly ? playerError : 0.5;
+		double invThermalNoise = 1.0 / module.getPlayerUpdateNoise();
+		if (invThermalNoise <= 0.0) {
+			// zero noise
+			// generalize update to competition among arbitrary numbers of players
+			double aDiff = getFitnessAt(refGroup[0]) - myFitness;
+			if (aDiff > 0.0)
+				aProb = 1.0 - playerError;
+			else
+				aProb = (aDiff < 0.0 ? playerError : equalProb);
+			norm = aProb;
+			nProb = 1.0 - aProb;
+			if (rGroupSize > 1) {
+				cProbs[0] = aProb;
+				for (int i = 1; i < rGroupSize; i++) {
+					aDiff = getFitnessAt(refGroup[i]) - myFitness;
+					if (aDiff > 0.0)
+						aProb = 1.0 - playerError;
+					else
+						aProb = (aDiff < 0.0 ? playerError : equalProb);
+					cProbs[i] = cProbs[i - 1] + aProb;
+					nProb *= 1.0 - aProb;
+					norm += aProb;
+				}
+			}
+		} else {
+			double inoise = invThermalNoise;
+			double shift = 0.0;
+			if (!betterOnly) {
+				inoise = 0.5 * invThermalNoise;
+				shift = 0.5;
+			}
+			if (playerScoreAveraged) {
+				double scale = inoise / (maxFitness - minFitness);
+				// generalize update to competition among arbitrary numbers of players
+				aProb = Math.min(1.0 - playerError,
+						Math.max(playerError, (getFitnessAt(refGroup[0]) - myFitness) * scale + shift));
+				norm = aProb;
+				nProb = 1.0 - aProb;
+				if (rGroupSize > 1) {
+					cProbs[0] = aProb;
+					for (int i = 1; i < rGroupSize; i++) {
+						aProb = Math.min(1.0 - playerError,
+								Math.max(playerError, (getFitnessAt(refGroup[i]) - myFitness) * scale + shift));
+						cProbs[i] = cProbs[i - 1] + aProb;
+						nProb *= 1.0 - aProb;
+						norm += aProb;
+					}
+				}
+			} else {
+				if (adjustScores) {
+					inoise /= (maxFitness - minFitness);
+					// generalize update to competition among arbitrary numbers of players
+					int you = refGroup[0];
+					aProb = Math.min(1.0 - playerError,
+							Math.max(playerError, (getFitnessAt(you) - myFitness) * inoise + shift));
+					norm = aProb;
+					nProb = 1.0 - aProb;
+					if (rGroupSize > 1) {
+						cProbs[0] = aProb;
+						for (int i = 1; i < rGroupSize; i++) {
+							you = refGroup[i];
+							aProb = Math.min(1.0 - playerError,
+									Math.max(playerError, (getFitnessAt(you) - myFitness) * inoise + shift));
+							cProbs[i] = cProbs[i - 1] + aProb;
+							nProb *= 1.0 - aProb;
+							norm += aProb;
+						}
+					}
+
+				}
+				// not ready for unbounded accumulated payoffs... check() should catch this
+				throw new Error(
+						"cannot handle accumulated scores with random interactions (unbounded payoffs, in principle)");
+			}
+		}
+		if (norm <= 0.0)
+			return false;
+
+		double choice = random01();
+		if (choice >= 1.0 - nProb)
+			return false;
+
+		// optimization
+		if (rGroupSize == 1) {
+			updateFromModelAt(me, refGroup[0]);
+			return true;
+		}
+
+		norm = (1.0 - nProb) / norm;
+		for (int i = 0; i < rGroupSize; i++)
+			cProbs[i] *= norm;
+
+		for (int i = 0; i < rGroupSize; i++) {
+			if (choice < cProbs[i]) {
+				updateFromModelAt(me, refGroup[i]);
+				return true;
+			}
+		}
+		/* should not get here! */
+		throw new Error("Problem in " + (betterOnly ? "updateReplicatorPlus()..." : "updateReplicatorHalf()..."));
+	}
+
+	/**
+	 * Updates the focal individual with index {@code me} by adopting the strategy
+	 * of one reference individual among the the {@code rGroupSize} models in the
+	 * array {@code refGroup}. The focal individual \(i\) imitates the strategy of a
+	 * reference individual \(j\) with a probability proportional to the difference
+	 * in fitness:
+	 * \[p_{i\to j} = \frac1{1+\exp(-(f_i-f_j)/T)}\]
+	 * where \(T\) denotes the temperature (or noise) in adopting a strategy. In the
+	 * limit \(T\to\infty\) imitation reduces to a coin toss, \(p_{i\to j}=1/2\). In
+	 * contrast, for \(T\to 0\) it converges to the step-function, with
+	 * \(\Theta(x)=1\) for positive \(x\), \(\Theta(x)=0\) for \(x\) negative and
+	 * \(\Theta(0)=1/2\). Returns {@code true} if the individual changed its
+	 * strategy to signal that the focal individual's score will need to be reset.
+	 *
+	 * @param me         the index of the focal individual
+	 * @param refGroup   the group of reference individuals
+	 * @param rGroupSize the number of reference individuals
+	 * @return {@code true} if strategy changed
+	 * 
+	 * @see #resetScoreAt(int)
+	 */
+	protected boolean updateThermal(int me, int[] refGroup, int rGroupSize) {
+		// neutral case: choose random neighbor or individual itself
+		if (isNeutral) {
+			int hit = random0n(rGroupSize + 1);
+			if (hit == rGroupSize)
+				return false;
+			updateFromModelAt(me, refGroup[hit]);
+			return true;
+		}
+
+		double myFitness = getFitnessAt(me);
+		double norm, nProb;
+		// generalize update to competition among arbitrary numbers of players
+		// treat case of zero noise separately
+		double invThermalNoise = 1.0 / module.getPlayerUpdateNoise();
+		if (invThermalNoise <= 0.0) { // zero noise
+			double aProb;
+			double aDiff = getFitnessAt(refGroup[0]) - myFitness;
+			if (aDiff > 0.0)
+				aProb = 1.0 - playerError;
+			else
+				aProb = (aDiff < 0.0 ? playerError : 0.5);
+			norm = aProb;
+			nProb = 1.0 - aProb;
+			if (rGroupSize > 1) {
+				cProbs[0] = aProb;
+				for (int i = 1; i < rGroupSize; i++) {
+					aDiff = getFitnessAt(refGroup[i]) - myFitness;
+					if (aDiff > 0)
+						aProb = 1.0 - playerError;
+					else
+						aProb = (aDiff < 0.0 ? playerError : 0.5);
+					cProbs[i] = cProbs[i - 1] + aProb;
+					nProb *= 1.0 - aProb;
+					norm += aProb;
+				}
+			}
+		} else {
+			// some noise
+			double aProb = Math.min(1.0 - playerError, Math.max(playerError,
+					1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[0]) - myFitness) * invThermalNoise))));
+			norm = aProb;
+			nProb = 1.0 - aProb;
+			if (rGroupSize > 1) {
+				cProbs[0] = aProb;
+				for (int i = 1; i < rGroupSize; i++) {
+					aProb = Math.min(1.0 - playerError, Math.max(playerError,
+							1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[i]) - myFitness) * invThermalNoise))));
+					cProbs[i] = cProbs[i - 1] + aProb;
+					nProb *= 1.0 - aProb;
+					norm += aProb;
+				}
+			}
+		}
+		if (norm <= 0.0)
+			return false;
+		double choice = random01();
+		if (choice >= 1.0 - nProb)
+			return false;
+
+		// optimization
+		if (rGroupSize == 1) {
+			updateFromModelAt(me, refGroup[0]);
+			return true;
+		}
+
+		norm = (1.0 - nProb) / norm;
+		for (int i = 0; i < rGroupSize; i++)
+			cProbs[i] *= norm;
+
+		for (int i = 0; i < rGroupSize; i++) {
+			if (choice < cProbs[i]) {
+				updateFromModelAt(me, refGroup[i]);
+				return true;
+			}
+		}
+		// should not get here!
+		String msg = "Report: myScore=" + myFitness + ", nProb=" + nProb + ", norm=" + norm + ", choice=" + choice
+				+ "\nCumulative probabilities: ";
+		for (int i = 0; i < rGroupSize; i++)
+			msg += cProbs[i] + "\t";
+		logger.fine(msg);
+		throw new Error("Problem in updateThermal()...");
+	}
+
+	/**
+	 * Process the payoff/score of individuals in a monomorphic population with
+	 * trait/strategy <code>mono</code> (see
+	 * {@link org.evoludo.simulator.modules.Discrete#getMonoGameScore(int)
+	 * Discrete.getMonoGameScore(int)}). Primarily deals with payoff accounting
+	 * (averaged versus accumulated).
+	 *
+	 * @param mono type trait/strategy
+	 * @return payoff/score in monomorphic population with trait/strategy
+	 *         <code>mono</code>. Returns <code>NaN</code> if scores are ill
+	 *         defined.
+	 */
+	public double processMonoScore(double mono) {
+		// mono scores work for averaged payoffs (with or without VACANCY)
+		if (playerScoreAveraged)
+			return mono;
+		// for accumulated payoffs this makes only sense with adjustScores, without
+		// VACANT and for regular interaction geometries otherwise individuals may
+		// have different scores even in homogeneous populations
+		if (VACANT >= 0 || !interaction.isRegular)
+			return Double.NaN;
+		if (adjustScores)
+			return mono * interaction.connectivity;
+		return Double.NaN;
+	}
+
+	/**
+	 * Process the minimum score {@code min} in this population, taking the
+	 * population structure into account.
+	 * 
+	 * @param min the minimum score
+	 * @return the processed minimum score
+	 */
+	public double processMinScore(double min) {
+		return processMinMaxScore(min, true);
+	}
+
+	/**
+	 * Process the maximum score {@code max} in this population, taking the
+	 * population structure into account.
+	 * 
+	 * @param max the maximum score
+	 * @return the processed maximum score
+	 */
+	public double processMaxScore(double max) {
+		return processMinMaxScore(max, false);
+	}
+
+	/**
+	 * Process the extremal score {@code minmax} in this population, taking the
+	 * population structure into account.
+	 * 
+	 * @param minmax the minimum or maximum score
+	 * @param isMin  the flag indicating whether {@code minmax} is a minimum or a
+	 *               maximum
+	 * @return the processed extremal score
+	 */
+	protected double processMinMaxScore(double minmax, boolean isMin) {
+		// assumes averaged or adjustable payoffs
+		if (playerScoreAveraged)
+			return minmax;
+		if (adjustScores) {
+			// for accumulated scores minimum may depend on geometry both in terms of game
+			// payoffs as well as
+			// interaction count. however, getMinGameScore must deal with structure and
+			// games
+			if (module.isPairwise()) {
+				if (interaction.minOut + interaction.maxOut > 0) {
+					// geometry initialized and not well-mixed
+					if (isMin)
+						return (minmax < 0 ? interaction.maxOut : interaction.minOut) * (2 * nInteractions) * minmax;
+					return (minmax > 0 ? interaction.maxOut : interaction.minOut) * (2 * nInteractions) * minmax;
+				}
+				// well-mixed, with vacancies, at most nPopulation-1 interactions
+				return (2 * nInteractions) * (nPopulation - 1) * minmax;
+			}
+			// each individual participates in at most nGroup interactions
+			return nInteractions * module.getNGroup() * minmax;
+		}
+		// not ready for unbounded accumulated payoffs... check() should catch this
+		throw new Error("cannot handle accumulated scores with random interactions (unbounded payoffs, in principle)");
+	}
+
+	/**
+	 * Retrieve and store extremal scores and fitnesses to reduce calls to
+	 * {@link Module}.
+	 */
+	public void updateMinMaxScores() {
+		minScore = module.getMinScore();
+		maxScore = module.getMaxScore();
+		isNeutral = module.isNeutral();
+		minFitness = map2fit.map(minScore);
+		maxFitness = map2fit.map(maxScore);
+	}
+
+	/**
+	 * Check all model parameters for consistency and adjust if necessary (and
+	 * feasible). Returns {@code true} if adjustments require a reset.
+	 * 
+	 * @return {@code true} if reset is required
+	 * 
+	 * @see Model#check()
+	 * @see Model#reset()
+	 * @see #reset()
+	 */
+	public boolean check() {
+		staticmodule = module.isStatic() ? (Module.Static) module : null;
+		int ot = nTraits;
+		nTraits = module.getNTraits();
+		boolean doReset = (ot != nTraits);
+		nPopulation = module.getNPopulation();
+		map2fit = module.getMapToFitness();
+
+		// check population geometry - for this we need to know the model (see reset)
+		if (nPopulation < 1) {
+			logger.warning("population size " + nPopulation + " is not admissible - set to 100!");
+			module.setNPopulation(100);
+			nPopulation = 100; // keep local copy in sync
+			doReset = true;
+		}
+
+		// check geometries: --geometry set structure, --geominter set interaction and
+		// --geomrepro set reproduction.
+		// now it is time to amalgamate. the more specific options --geominter,
+		// --geomrepro take precedence. structure
+		// is always available from parsing the default of cloGeometry. hence first
+		// check --geominter, --geomrepro.
+		IBS master = (IBS) engine.getModel();
+		Geometry structure = module.getGeometry();
+		if (interaction != null) {
+			if (reproduction != null) {
+				// NOTE: this is hackish because every population has its own cloGeometry
+				// parsers but only one will actually do the parsing...
+				if (structure != null) {
+					// --geometry was provided on command line
+					if (!interaction.equals(structure) && !master.cloGeometryInteraction.isSet()) {
+						interaction = structure;
+						doReset = true;
+					}
+					if (!reproduction.equals(structure) && !master.cloGeometryReproduction.isSet()) {
+						reproduction = structure;
+						doReset = true;
+					}
+					interaction.interReproSame = reproduction.interReproSame = interaction.equals(reproduction);
+				}
+				// both geometries set on command line OR parameters manually changed and
+				// applied - check if can be collapsed
+				// NOTE: assumes that same arguments imply same geometries. this precludes that
+				// interaction and reproduction are both random
+				// structures with otherwise identical parameters (e.g. random regular graphs of
+				// same degree but different realizations)
+				if (!interaction.isValid || !reproduction.isValid) {
+					interaction.interReproSame = reproduction.interReproSame = master.cloGeometryInteraction.getArg()
+							.equals(master.cloGeometryReproduction.getArg());
+				}
+			} else {
+				// reproduction not set - use --geometry (or its default for reproduction)
+				interaction.interReproSame = master.cloGeometryInteraction.getArg().equals(module.cloGeometry.getArg());
+				if (!interaction.interReproSame) {
+					reproduction = structure;
+					reproduction.interReproSame = false;
+				}
+			}
+		} else {
+			// interaction not set
+			if (reproduction != null) {
+				// reproduction set - use --geometry (or its default for interaction)
+				// NOTE: this is slightly different from above because reproduction knows
+				// nothing about potentially different opponents in
+				// inter-species interactions.
+				interaction = structure;
+				interaction.interReproSame = master.cloGeometryReproduction.getArg()
+						.equals(module.cloGeometry.getArg());
+			} else {
+				// neither geometry is set - e.g. initial launch with --geometry specified (or
+				// no geometry specifications at all)
+				interaction = structure;
+				interaction.interReproSame = true;
+			}
+		}
+		// set adding of links to geometries
+		if (pAddwire != null) {
+			double prev = interaction.pAddwire;
+			interaction.pAddwire = pAddwire[0];
+			doReset |= (Math.abs(prev - interaction.pAddwire) > 1e-8);
+			if (reproduction != null) {
+				prev = reproduction.pAddwire;
+				reproduction.pAddwire = pAddwire[1];
+				doReset |= (Math.abs(prev - reproduction.pAddwire) > 1e-8);
+			}
+		}
+		// set rewiring of links in geometries
+		if (pRewire != null) {
+			double prev = interaction.pRewire;
+			interaction.pRewire = pRewire[0];
+			doReset |= (Math.abs(prev - interaction.pRewire) > 1e-8);
+			if (reproduction != null) {
+				prev = reproduction.pRewire;
+				reproduction.pRewire = pRewire[1];
+				doReset |= (Math.abs(prev - reproduction.pRewire) > 1e-8);
+			}
+		}
+		// set names of geometries
+		String name = module.getName();
+		if (interaction.interReproSame) {
+			if (name.isEmpty())
+				interaction.name = "Structure";
+			else
+				interaction.name = name + ": Structure";
+		} else {
+			if (Geometry.displayUniqueGeometry(interaction, reproduction)) {
+				if (name.isEmpty())
+					interaction.name = reproduction.name = "Structure";
+				else
+					interaction.name = reproduction.name = name + ": Structure";
+			} else {
+				if (name.isEmpty()) {
+					interaction.name = "Interaction";
+					reproduction.name = "Reproduction";
+				} else {
+					interaction.name = name + ": Interaction";
+					reproduction.name = name + ": Reproduction";
+				}
+			}
+		}
+		// Note: now that interaction and reproduction are set, we still cannot set
+		// structure to null because of subsequent CLO parsing
+
+		// check geometries
+		// Warning: there is a small chance that the interaction and reproduction
+		// geometries require different population sizes, which does not make sense 
+		// and would most likely result in a never ending initialization loop...
+		interaction.size = nPopulation;
+		doReset |= interaction.check();
+		if (reproduction != null) {
+			reproduction.size = interaction.size;
+			doReset |= reproduction.check();
+		}
+		// population structure may require special population sizes
+		module.setNPopulation(interaction.size);
+		nPopulation = interaction.size; // keep local copy in sync
+
+		// check sampling in special geometries
+		int nGroup = module.getNGroup();
+		if (interaction.isType(Geometry.Type.SQUARE) && interaction.isRegular && interaction.connectivity > 8 &&
+				getInteractionSamplingType() == IBSGroup.SAMPLING_ALL && nGroup > 2 && nGroup < 9) {
+			// if count > 8 then the interaction pattern Group.SAMPLING_ALL with a group
+			// size between 2 and 8
+			// (excluding boundaries is not allowed because this pattern requires a
+			// particular (internal)
+			// arrangement of the neighbors.
+			setInteractionSamplingType(IBSGroup.SAMPLING_COUNT);
+			logger.warning("square " + name + " geometry has incompatible interaction pattern and neighborhood size" +
+					" - using random sampling of interaction partners!");
+		}
+		if (interaction.isType(Geometry.Type.CUBE) && getInteractionSamplingType() == IBSGroup.SAMPLING_ALL &&
+				nGroup > 2 && nGroup <= interaction.connectivity) {
+			// Group.SAMPLING_ALL only works with pairwise interactions or all neighbors;
+			// restrictions do not apply for PDE's
+			setInteractionSamplingType(IBSGroup.SAMPLING_COUNT);
+			logger.warning("cubic " + name + " geometry has incompatible interaction pattern and neighborhood size" +
+					" - using random sampling of interaction partners!");
+		}
+
+		// check reproduction geometry (reproduction may still be undefined at this
+		// point)
+		Geometry reprogeom = (reproduction != null ? reproduction : interaction);
+		if (!populationUpdateType.isMoran() && !populationUpdateType.equals(PopulationUpdateType.ECOLOGY)) {
+			// Moran type updates ignore playerUpdateType
+			if (reprogeom.isType(Geometry.Type.MEANFIELD) && referenceGroup.samplingType == IBSGroup.SAMPLING_ALL) {
+				// 010320 using everyone as a reference in mean-field simulations is not
+				// feasible - except for best-response
+				// ecological updates are based on births and deaths rather than references
+				if (module.getPlayerUpdateType() != PlayerUpdateType.BEST_RESPONSE) {
+					logger.warning("reference type (" + getReferenceSamplingType()
+							+ ") unfeasible in well-mixed populations!");
+					setReferenceSamplingType(IBSGroup.SAMPLING_COUNT);
+				}
+			}
+			// best-response in well-mixed populations should skip sampling of references
+			if (reprogeom.isType(Geometry.Type.MEANFIELD) && module.getPlayerUpdateType() == PlayerUpdateType.BEST_RESPONSE) {
+				setReferenceSamplingType(IBSGroup.SAMPLING_NONE);
+			}
+		}
+
+		// currently: if pop has interaction structure different from MEANFIELD its
+		// opponent population needs to be of the same size
+		if (module.getNPopulation() != opponent.getModule().getNPopulation()
+				&& opponent.getInteractionGeometry() != null // opponent geometry may not yet be initialized
+																// check will be repeated for opponent
+				&& (!getInteractionGeometry().isType(Geometry.Type.MEANFIELD)
+						|| !opponent.getInteractionGeometry().isType(Geometry.Type.MEANFIELD))) {
+			// at least for now, both populations need to be of the same size - except for
+			// well-mixed populations
+			logger.warning(
+					"inter-species interactions with populations of different size limited to well-mixed structures"
+							+ " - well-mixed structure forced!");
+			getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
+			opponent.getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
+			doReset = true;
+		}
+		// combinations of unstructured and structured populations in inter-species
+		// interactions
+		// require more attention. exclude for now.
+		if (getInteractionGeometry().isInterspecies() && opponent.getInteractionGeometry() != null) {
+			// opponent not yet ready; check will be repeated for opponent
+			if ((!getInteractionGeometry().isType(opponent.getInteractionGeometry().getType())) &&
+					(getInteractionGeometry().isType(Geometry.Type.MEANFIELD) ||
+							opponent.getInteractionGeometry().isType(Geometry.Type.MEANFIELD))) {
+				logger.warning(
+						"interspecies interactions combining well-mixed and structured populations not (yet) tested"
+								+ " - well-mixed structure forced!");
+				getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
+				opponent.getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
+				doReset = true;
+			}
+		}
+
+		if (pMigration < 1e-10)
+			setMigrationType(MigrationType.NONE);
+		if (migrationType != MigrationType.NONE && pMigration > 0.0) {
+			if (!interaction.isUndirected) {
+				logger.warning("no migration on directed graphs!");
+				setMigrationType(MigrationType.NONE);
+			} else if (!interaction.interReproSame) {
+				logger.warning("no migration on graphs with different interaction and reproduction neighborhoods!");
+				setMigrationType(MigrationType.NONE);
+			} else if (interaction.isType(Geometry.Type.MEANFIELD)) {
+				logger.warning("no migration in well-mixed populations!");
+				setMigrationType(MigrationType.NONE);
+			}
+		}
+		if (migrationType == MigrationType.NONE)
+			setMigrationProb(0.0);
+		else {
+			// need to get new instance to make sure potential changes in pMigration are
+			// reflected
+			distrMigrants = new RNGDistribution.Geometric(rng.getRNG(), 1.0 - pMigration);
+		}
+
+		// check if adjustScores can be used - subclasses may have different opinions
+		adjustScores = doAdjustScores();
+
+		// accumulated scores and random sampling of interaction partners has, in
+		// principle, unbounded payoffs...
+		// avoid this can of worms...
+		if (!adjustScores && !playerScoreAveraged) {
+			setPlayerScoreAveraged(true);
+			logger.warning("random sampling of interaction partners is incompatible with accumulated payoffs\n" +
+					"because of unbounded fitness range and challenges to convert to probabilities.\n" +
+					"switching to averaged scores.");
+			adjustScores = doAdjustScores(); // should now be true
+		}
+
+		nMixedInter = -1;
+		hasLookupTable = module.isStatic() || (adjustScores && interaction.isType(Geometry.Type.MEANFIELD));
+		if (hasLookupTable) {
+			// allocate memory for fitness lookup table
+			if (typeFitness == null || typeFitness.length != nTraits)
+				typeFitness = new double[nTraits];
+			if (module.isStatic()) {
+				// initialize lookup table for static modules
+				typeScores = staticmodule.getStaticScores();
+				for (int n = 0; n < nTraits; n++)
+					typeFitness[n] = map2fit.map(typeScores[n]);
+				maxEffScoreIdx = -1;
+			} else {
+				// allocate memory for score lookup table
+				if (typeScores == null || typeScores.length != nTraits)
+					typeScores = new double[nTraits];
+				// determine number of interactions in well-mixed populations with adjustScores
+				int oPop = opponent.getModule().getNPopulation();
+				if (interaction.isInterspecies()) {
+					// XXX check how to count the number of interactions for inter-species group
+					// interactions only max. population size is known at this point (if sizes can
+					// vary)
+					nMixedInter = oPop * nGroup;
+				} else {
+					// this can easily exceed the range of int's... would cause issues with
+					// accumulated payoffs; excluded in check()
+					// should not affect averaged payoffs. catch exception and set to MAX_VALUE
+					try {
+						nMixedInter = Combinatorics.combinations(oPop - 1, nGroup - 1);
+					} catch (ArithmeticException ae) {
+						// note: nMixedInter < 0 means no interactions (static modules)
+						nMixedInter = Integer.MAX_VALUE;
+					}
+				}
+			}
+		}
+		// number of interactions can also be determined in structured populations with
+		// well-mixed demes
+		if (adjustScores && interaction.isType(Geometry.Type.HIERARCHY)
+				&& interaction.subgeometry.equals(Geometry.Type.MEANFIELD)) {
+			nMixedInter = interaction.hierarchy[interaction.hierarchy.length - 1]
+					- (interaction.isInterspecies() ? 0 : 1);
+		}
+
+		// min and max scores potentially unbounded for accumulated scores with random
+		// interactions (no adjustable)
+		updateMinMaxScores();
+
+		// check for specific population update types
+		switch (populationUpdateType) {
+			case MORAN_BIRTHDEATH: // moran process - birth-death
+			case MORAN_DEATHBIRTH: // moran process - death-birth
+				// avoid negative fitness for Moran type updates
+				if (minFitness < 0.0) {
+					logger.warning("Moran updates require fitness>=0 (score range [" + Formatter.format(minScore, 6)
+							+ ", " + Formatter.format(maxScore, 6) + "]; " + "fitness range ["
+							+ Formatter.format(minFitness, 6) + ", " + Formatter.format(maxFitness, 6) + "]).\n"
+							+ "Changed baseline fitness to " + map2fit.getBaseline()
+							+ (!map2fit.isMap(Map2Fitness.Maps.STATIC) ? " with static payoff-to-fitness map" : ""));
+					// just change to something meaningful
+					map2fit.setMap(Map2Fitness.Maps.STATIC);
+					map2fit.setBaseline(-minFitness);
+					updateMinMaxScores();
+					if (minFitness < 0.0) {
+						throw new Error("Adjustment of selection failed... (minimal fitness: "
+								+ Formatter.format(minScore, 6) + " should be positive)");
+					}
+				}
+				// use referenceGroup for picking random neighbour in Moran process
+				// (birth-death)
+				// reason: referenceGroup properly deals with hierarchies
+				// future: pick parent to populate vacated site (death-birth, fitness dependent)
+				setReferenceSamplingType(IBSGroup.SAMPLING_COUNT);
+				setRGroupSize(1);
+				break;
+			default: // all other update rules can handle this
+		}
+		// avoid numerical overflow for strong selection (mainly applies to exponential
+		// payoff-to-fitness mapping)
+		if (maxFitness * nPopulation > Double.MAX_VALUE) {
+			double mScore = map2fit.invmap(Double.MAX_VALUE / nPopulation) * 0.99; // only go to 99% of maximum, just in
+																					// case
+			map2fit.setSelection(Functions.round(mScore / maxScore * map2fit.getSelection()));
+			// note: the maximum selection strength may be significantly higher if
+			// populations,
+			// on average, are unable to achieve the highest individual payoffs
+			logger.warning("selection strength too strong (numerical overflow) - reduced to (conservative) maximum of "
+					+ Formatter.format(map2fit.getSelection(), 4));
+			updateMinMaxScores();
+		}
+		realtimeIncr = 1.0 / Math.max(maxFitness, module.getDeathRate());
+
+		// check for scenarios that are untested or work in progress
+		if (!interaction.isUndirected && !module.isStatic())
+			logger.warning("interactions on directed graphs have received very limited testing...");
+
+		if (interaction.isInterspecies() && module.isContinuous())
+			logger.warning("multi-species interactions with continuous traits have NOT been tested...");
+
+		if (module.isContinuous() && nGroup > 2)
+			logger.warning("group interactions with continuous traits have NOT been tested...");
+
+		if (VACANT >= 0 && nGroup > 2)
+			logger.warning("group interactions with vacant sites have NOT been tested...");
+
+		return doReset;
+	}
+
+	/**
+	 * The array containing the probabilities for rewiring links of the interaction
+	 * and reproduction graphs.
+	 * 
+	 * @see Geometry#rewire()
+	 */
+	protected double[] pRewire;
+
+	/**
+	 * Set the probabilities for rewiring links of the interaction
+	 * and reproduction graphs.
+	 * 
+	 * @param rewire the array
+	 *               <code>double[] {&lt;interaction&gt;, &lt;reproduction&gt;}</code>
+	 */
+	public void setRewire(double[] rewire) {
+		if (pRewire == null)
+			pRewire = new double[2];
+		if (rewire == null || rewire.length < 1) {
+			Arrays.fill(pRewire, 0.0);
+			return;
+		}
+		pRewire[0] = Math.max(Math.min(rewire[0], 1.0), 0.0);
+		if (rewire.length == 1 ){
+			pRewire[1] = pRewire[0];
+			return;
+		}
+		pRewire[1] = Math.max(Math.min(rewire[1], 1.0), 0.0);
+	}
+
+	/**
+	 * The array containing the probabilities for adding links to the interaction
+	 * and reproduction graphs.
+	 * 
+	 * @see Geometry#rewire()
+	 */
+	protected double[] pAddwire;
+
+	/**
+	 * Set the probabilities for adding links to the interaction
+	 * and reproduction graphs.
+	 * 
+	 * @param addwire the array
+	 *               <code>double[] {&lt;interaction&gt;, &lt;reproduction&gt;}</code>
+	 */
+	public void setAddwire(double[] addwire) {
+		if (pAddwire == null)
+			pAddwire = new double[2];
+		if (addwire == null || addwire.length < 1) {
+			Arrays.fill(pAddwire, 0.0);
+			return;
+		}
+		pAddwire[0] = Math.max(Math.min(addwire[0], 1.0), 0.0);
+		if (addwire.length == 1 ){
+			pAddwire[1] = pAddwire[0];
+			return;
+		}
+		pAddwire[1] = Math.max(Math.min(addwire[1], 1.0), 0.0);
+	}
+
+	/**
+	 * Check if scores can be adjusted rather than recalculated after an individual
+	 * changed its strategy. This requires that individuals interact with all their
+	 * neighbours and that the structure of the population is not well-mixed. Some
+	 * implementations may be able to extend adjustments to other structures. For
+	 * example, adjusting scores is feasible in well-mixed populations for discrete
+	 * traits/strategies.
+	 * 
+	 * <h3>Requirements:</h3>
+	 * <dl>
+	 * <dt>Group.SAMPLING_ALL</dt>
+	 * <dd>individuals need to be interacting with all their neighbours (not just a
+	 * randomly selected subset).</dd>
+	 * <dt>Geometry.MEANFIELD</dt>
+	 * <dd>interactions with everyone are not feasible (impossible to model
+	 * efficiently),
+	 * in general, for unstructured populations (subclasses can do better, e.g. for
+	 * discrete strategies it is
+	 * possible, see {@link IBSDPopulation#doAdjustScores()}).</dd>
+	 * <dt>playerScoreResetAlways</dt>
+	 * <dd>if scores are reset whenever an individual adopts the strategy of another
+	 * (regardless of whether an actual strategy change occurred) then the expected
+	 * number of interactions of each individual remains constant over time (even
+	 * though the interaction count may differ for individuals on heterogeneous
+	 * structures).
+	 * </dd>
+	 * </dl>
+	 *
+	 * @return <code>true</code> if adjusting scores is feasible
+	 * 
+	 * @see IBSDPopulation
+	 */
+	protected boolean doAdjustScores() {
+		return !(interaction.isType(Geometry.Type.MEANFIELD) || //
+				(interaction.isType(Geometry.Type.HIERARCHY) && interaction.subgeometry == Geometry.Type.MEANFIELD) || //
+				interactionGroup.samplingType != IBSGroup.SAMPLING_ALL || //
+				!playerScoreResetAlways);
+	}
+
+	/**
+	 * Reset the model. All parameters must be consistent at this point. Allocate
+	 * memory and initialize the interaction and reproduction structures. If
+	 * structures include random elements, e.g. random regular graphs, a new
+	 * structure is generated. Generate initial configuration. Subclasses must
+	 * override this method to allocate memory for the strategies and call super.
+	 * 
+	 * @see #check()
+	 * @see Model#reset()
+	 */
+	public synchronized void reset() {
+		interaction.init();
+		interaction.rewire();
+		interaction.evaluate();
+
+		// for accumulated scores the final minimum and maximum scores may be known only
+		// now because it depends on min/max connectivity of nodes
+		double mScore = module.getMinScore();
+		if (Math.abs(minScore - mScore) > 1e-8) {
+			// minimum score has changed... now what?
+			logger.info("minimum score has changed to " + Formatter.format(mScore, 6) + ", was "
+					+ Formatter.format(minScore, 6));
+			minScore = mScore;
+			minFitness = map2fit.map(minScore);
+		}
+		mScore = module.getMaxScore();
+		if (Math.abs(maxScore - mScore) > 1e-8) {
+			// maximum score has changed... now what?
+			logger.info("maximum score has changed to " + Formatter.format(mScore, 6) + ", was "
+					+ Formatter.format(maxScore, 6));
+			maxScore = mScore;
+			maxFitness = map2fit.map(maxScore);
+		}
+		isNeutral = module.isNeutral();
+		if (interaction.interReproSame) {
+			reproduction = interaction.deriveReproductionGeometry();
+		} else {
+			reproduction.init();
+			reproduction.rewire();
+			reproduction.evaluate();
+		}
+		module.setGeometries(interaction, reproduction);
+		if (hasLookupTable) {
+			// modules/settings that admit lookup tables don't need scores, fitness or
+			// interactions
+			if (typeScores == null || typeScores.length != nTraits)
+				typeScores = new double[nTraits];
+			if (typeFitness == null || typeFitness.length != nTraits)
+				typeFitness = new double[nTraits];
+			// free scores, fitness, interactions memory
+			scores = null;
+			fitness = null;
+			interactions = null;
+		} else {
+			if (scores == null || scores.length != nPopulation)
+				scores = new double[nPopulation];
+			if (fitness == null || fitness.length != nPopulation)
+				fitness = new double[nPopulation];
+			if (interactions == null || interactions.length != nPopulation)
+				interactions = new int[nPopulation];
+			// free lookup tables
+			typeScores = null;
+			typeFitness = null;
+		}
+		if (tags == null || tags.length != nPopulation)
+			tags = new double[nPopulation];
+		// determine maximum reasonable group size
+		int maxGroup = Math.max(Math.max(interaction.maxIn, interaction.maxOut),
+				Math.max(reproduction.maxIn, reproduction.maxOut));
+		maxGroup = Math.max(maxGroup, module.getNGroup()) + 1; // add 1 if focal should be part of group
+		if (groupScores == null || groupScores.length != maxGroup)
+			groupScores = new double[maxGroup]; // can hold scores for any group size!
+		if (smallScores == null || smallScores.length != maxGroup)
+			smallScores = new double[maxGroup]; // can hold scores for any group size!
+		interactionGroup.alloc(maxGroup);
+		referenceGroup.alloc(maxGroup);
+		if (cProbs == null || cProbs.length != maxGroup)
+			cProbs = new double[maxGroup]; // can hold groups of any size!
+		// if( VACANT>=0 && (picking == null || picking.length!=maxGroup))
+		// picking = new int[maxGroup];
+		// else
+		// picking = null;
+	}
+
+	/**
+	 * Initialize the model. All parameters must be consistent. Subclasses must
+	 * override this method to generate the initial strategy configuration and call
+	 * super.
+	 * <p>
+	 * <strong>Note:</strong> Initialization leaves the interaction and reproduction
+	 * structures untouched
+	 * 
+	 * @see #check()
+	 * @see Model#init()
+	 */
+	public void init() {
+		// initialize tags
+		if (tags != null)
+			for (int n = 0; n < nPopulation; n++)
+				tags[n] = n;
+		// if flagged as inconsistent, no (further) checks are performed
+		isConsistent = consistencyCheckRequested;
+	}
+
+	/**
+	 * The flag to indicate whether the state of the IBS model is consistent.
+	 * 
+	 * @see #isConsistent()
+	 */
+	boolean isConsistent;
+
+	/**
+	 * The flag to indicate whether consistency checks on the state of the IBS model
+	 * are requested.
+	 * 
+	 * @see #isConsistent()
+	 */
+	boolean consistencyCheckRequested;
+
+	/**
+	 * Enable consistency checks of the state of the IBS model. Never use in
+	 * production.
+	 * 
+	 * @param check {@code true} to request consistency checks
+	 */
+	public void setConsistencyCheck(boolean check) {
+		consistencyCheckRequested = check;
+	}
+
+	/**
+	 * Convenience method during development to perform a number of consistency
+	 * checks of the current state. Once an inconsistency is found there is no need
+	 * to keep looking and no further checks are performed.
+	 * <p>
+	 * Execution time is of little concern here. Never use in the final simulation
+	 * code.
+	 */
+	public void isConsistent() {
+		if (!isConsistent)
+			return;
+		// universal consistency checks
+		for (int n = 0; n < nPopulation; n++) {
+			double scoren = getScoreAt(n);
+			if (Double.isNaN(scoren)) {
+				logger.warning("scoring issue @ " + n + ": score=" + scoren + " is NaN...");
+				isConsistent = false;
+				continue;
+			}
+			int interactionsn = getInteractionsAt(n);
+			if (isVacantAt(n)) {
+				if (scoren > 1e-12) {
+					logger.warning("scoring issue @ " + n + ": score=" + scoren + " of vacant site should be zero");
+					isConsistent = false;
+				}
+				if (interactionsn != -1) {
+					// vacant sites and static modules have an interaction count of -1
+					logger.warning("interactions issue @ " + n + ": interactions=" + interactionsn
+							+ " of vacant site should be -1");
+					isConsistent = false;
+				}
+				continue;
+			}
+			if (interactionsn == 0) {
+				if (scoren > 1e-12) {
+					logger.warning("scoring issue @ " + n + ": score=" + scoren + " of isolated site should be zero");
+					isConsistent = false;
+				}
+				continue;
+			}
+			if (scoren + 1e-12 < minScore || scoren - 1e-12 > maxScore) {
+				logger.warning(
+						"scoring issue @ " + n + ": score=" + scoren + " not in [" + minScore + ", " + maxScore + "]");
+				isConsistent = false;
+			}
+			double fitn = getFitnessAt(n);
+			if (fitn + 1e-12 < minFitness || fitn - 1e-12 > maxFitness) {
+				logger.warning(
+						"scoring issue @ " + n + ": fitness=" + fitn + " not in [" + minFitness + ", " + maxFitness + "]");
+				isConsistent = false;
+			}
+		}
+		if (adjustScores) {
+			// recalculate scores/fitness
+			if (hasLookupTable) {
+				double[] typeScoresStore = ArrayMath.clone(typeScores);
+				Arrays.fill(typeScores, Double.MAX_VALUE);
+				double[] typeFitnessStore = ArrayMath.clone(typeFitness);
+				Arrays.fill(typeFitness, Double.MAX_VALUE);
+				double sumFitnessStore = sumFitness;
+				sumFitness = 0.0;
+				engine.getModel().update();	// initialize typeScores/typeFitness
+				for (int n = 0; n < nTraits; n++) {
+					if (n == VACANT && typeScores[n] != typeScoresStore[n]) {
+						logger.warning("scoring issue for vacant trait " + n + ": score=" + typeScoresStore[n] + " instead of " + typeScores[n] + " (NaN)");
+						isConsistent = false;
+					}
+					if (Math.abs(typeScores[n] - typeScoresStore[n]) > 1e-12) {
+						logger.warning("scoring issue for trait " + n + ": score=" + typeScoresStore[n] + " instead of " + typeScores[n]);
+						isConsistent = false;
+					}
+					if (Math.abs(typeFitness[n] - typeFitnessStore[n]) > 1e-12) {
+						logger.warning(
+								"fitness issue for trait " + n + ": fitness=" + typeFitnessStore[n] + " instead of " + typeFitness[n]);
+						isConsistent = false;
+					}
+				}
+				if (Math.abs(sumFitness - sumFitnessStore) > 1e-12) {
+					logger.warning("accounting issue: sum of fitness is " + sumFitnessStore
+							+ " instead of recalculated fitness " + sumFitness);
+					isConsistent = false;
+				}
+				double checkFitness = 0.0;
+				for (int n = 0; n < nPopulation; n++)
+					checkFitness += getFitnessAt(n);
+				if (Math.abs(sumFitness - checkFitness) > Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness))) {
+					logger.warning(
+							"accounting issue: sum of fitness is " + checkFitness + " instead of sumFitness=" + sumFitness + 
+								"(delta="+ Math.abs(sumFitness - checkFitness) +", max="+Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness))+")");
+					isConsistent = false;
+				}
+				// restore data
+				typeScores = typeScoresStore;
+				typeFitness = typeFitnessStore;
+				sumFitness = sumFitnessStore;
+			}
+			else {
+				// no lookup tables
+				double[] scoresStore = scores;
+				scores = new double[nPopulation];
+				double[] fitnessStore = fitness;
+				fitness = new double[nPopulation];
+				double sumFitnessStore = sumFitness;
+				engine.getModel().update();
+				for (int n = 0; n < nPopulation; n++) {
+					if (Math.abs(scores[n] - scoresStore[n]) > 1e-12) {
+						logger.warning("scoring issue @ " + n + ": score=" + scoresStore[n] + " instead of " + scores[n]);
+						isConsistent = false;
+					}
+					if (Math.abs(fitness[n] - fitnessStore[n]) > 1e-12) {
+						logger.warning(
+								"fitness issue @ " + n + ": fitness=" + fitnessStore[n] + " instead of " + fitness[n]);
+						isConsistent = false;
+					}
+				}
+				if (Math.abs(sumFitness - sumFitnessStore) > 1e-12) {
+					logger.warning("accounting issue: sum of fitness is " + sumFitnessStore
+							+ " instead of recalculated fitness " + sumFitness);
+					isConsistent = false;
+				}
+				double checkFitness = ArrayMath.norm(fitness);
+				if (Math.abs(sumFitness - checkFitness) > 1e-12) {
+					logger.warning(
+							"accounting issue: sum of fitness is " + checkFitness + " instead of sumFitness=" + sumFitness);
+					isConsistent = false;
+				}
+				// restore data
+				scores = scoresStore;
+				fitness = fitnessStore;
+				sumFitness = sumFitnessStore;
+			}
+		}
+		else {
+			// no adjust scores
+			double checkFitness = 0.0;
+			// fitness array may not exist
+			for (int n = 0; n < nPopulation; n++)
+				checkFitness += getFitnessAt(n);
+			if (Math.abs(checkFitness - sumFitness) > 1e-8) {
+				logger.warning("accounting issue: sum of fitness is " + checkFitness + " but sumFitness=" + sumFitness);
+				isConsistent = false;
+			}
+		}
+		if (!isConsistent)
+			logger.warning("inconsistency found @ " + engine.getModel().getTime());
+	}
+
+	/**
+	 * Reset all strategies in preparation of the next update step. Simply an
+	 * opportunity for customizations in subclasses.
+	 */
+	public void resetStrategies() {
+	}
+
+	/**
+	 * Returns the mean trait(s) of this population in the array {@code mean}. Used
+	 * by GUI to visualize the current state of this IBS model. Returns {@code true}
+	 * if data point belongs to the same time series and {@code false} if a new
+	 * series was started through {@link #init()} or {@link #reset()}.
+	 * 
+	 * @param mean the array for returning the trait values
+	 * @return <code>true</code> if this and the previous data point should be
+	 *         connected, i.e. no reset had been requested in the mean time.
+	 * 
+	 * @see Model#getMeanTrait(int, double[])
+	 */
+	public abstract boolean getMeanTrait(double[] mean);
+
+	/**
+	 * Returns the traits of all individuals in this population coded as colors in
+	 * the array {@code colors} using the map {@code colorMap}. Used by GUI to
+	 * visualize the current state of this IBS model. Colors are coded in different
+	 * data types {@code <T>} depending on the runtime environment (GWT or JRE) as
+	 * well as the graph (e.g. {@link org.evoludo.gwt.graphics.PopGraph2D
+	 * PopGraph2D} or {@link org.evoludo.gwt.graphics.PopGraph3D PopGraph3D}).
+	 * 
+	 * @param <T>      the type of color data ({@link String} or
+	 *                 {@link thothbot.parallax.core.shared.materials.MeshLambertMaterial
+	 *                 MeshLambertMaterial} for GWT and {@link Color} for JRE).
+	 * @param colors   the array where the colors of all nodes are stored
+	 * @param colorMap the map that converts traits into colors
+	 */
+	public abstract <T> void getTraitData(T[] colors, ColorMap<T> colorMap);
+
+	/**
+	 * Returns the mean fitness of this population in the array {@code mean}. Used
+	 * by GUI to visualize the current state of this IBS model. Returns {@code true}
+	 * if data point belongs to the same time series and {@code false} if a new
+	 * series was started through {@link #init()} or {@link #reset()}.
+	 * 
+	 * @param mean the array for storing the mean fitness values
+	 * @return {@code true} if this and the previous data point should be connected
+	 * 
+	 * @see Model#getMeanFitness(int, double[])
+	 */
+	public abstract boolean getMeanFitness(double[] mean);
+
+	/**
+	 * Returns the fitness of all individuals in this population coded as colors in
+	 * the array {@code colors} using the map {@code colorMap}. Used by GUI to
+	 * visualize the current state of this IBS model. Colors are coded in different
+	 * data types {@code <T>} depending on the runtime environment (GWT or JRE) as
+	 * well as the graph (e.g. {@link org.evoludo.gwt.graphics.PopGraph2D
+	 * PopGraph2D} or {@link org.evoludo.gwt.graphics.PopGraph3D PopGraph3D}).
+	 * 
+	 * @param <T>      the type of color data ({@link String} or
+	 *                 {@link thothbot.parallax.core.shared.materials.MeshLambertMaterial
+	 *                 MeshLambertMaterial} for GWT and {@link Color} for JRE).
+	 * @param colors   the array where the colors of all nodes are stored
+	 * @param colorMap the map that converts traits into colors
+	 */
+	public <T> void getFitnessData(T[] colors, ColorMap.Gradient1D<T> colorMap) {
+		if (hasLookupTable) {
+			if (VACANT < 0) {
+				for (int n = 0; n < nPopulation; n++)
+					colors[n] = colorMap.translate(getFitnessAt(n));
+				return;
+			}
+			T vacant = colorMap.color2Color(Color.WHITE);
+			for (int n = 0; n < nPopulation; n++) {
+				if (isVacantAt(n)) {
+					// how to color vacant sites?
+					colors[n] = vacant;
+					continue;
+				}
+				colors[n] = colorMap.translate(getFitnessAt(n));
+			}
+			return;
+		}
+		if (VACANT < 0) {
+			colorMap.translate(fitness, colors);
+			return;
+		}
+		T vacant = colorMap.color2Color(Color.WHITE);
+		for (int n = 0; n < nPopulation; n++) {
+			if (isVacantAt(n)) {
+				// how to color vacant sites?
+				colors[n] = vacant;
+				continue;
+			}
+			colors[n] = colorMap.translate(getFitnessAt(n));
+		}
+	}
+
+	/**
+	 * Generates a histogram of the fitness distribution in this population. The
+	 * result is returned in the array {@code bins}.
+	 * 
+	 * <h3>Notes:</h3>
+	 * <ol>
+	 * <li>{@code bins} is a 2D array because discrete models generate histograms
+	 * for each trait separately.
+	 * <li>By default generate a histogram of the scores in {@code bins[0]}.
+	 * <li>Consider moving to {@link IBSDPopulation} and {@link IBSCPopulation} with
+	 * arguments {@code bins[][]} and {@code bins[]}, respectively.
+	 * </ol>
+	 *
+	 * @param bins the 2D array to store the histogram(s)
+	 */
+	public void getFitnessHistogramData(double[][] bins) {
+		// clear bins
+		Arrays.fill(bins[0], 0.0);
+		int nBins = bins[0].length;
+		// for neutral selection maxScore==minScore!
+		// in that case assume range [score-1, score+1]
+		// needs to be synchronized with GUI (e.g. MVFitness, MVFitHistogram, ...)
+		double map, min = minScore;
+		if (isNeutral) {
+			map = nBins * 0.5;
+			min--;
+		} else
+			map = nBins / (maxScore - minScore);
+
+		// fill bins
+		int max = nBins - 1;
+		for (int n = 0; n < nPopulation; n++) {
+			if (isVacantAt(n))
+				continue;
+			int bin = (int) ((scores[n] - min) * map);
+			bin = Math.max(0, Math.min(max, bin));
+			bins[0][bin]++;
+		}
+		ArrayMath.multiply(bins[0], 1.0 / nPopulation);
+	}
+
+	/**
+	 * Gets the scores of all individuals with precision {@code digits}. Scores of
+	 * vacant sites are reported as {@value Double#NaN}.
+	 * 
+	 * @param digits the number of digits for the scores
+	 * @return the formatted scores
+	 */
+	public String getScores(int digits) {
+		if (hasLookupTable) {
+			StringBuffer buf = new StringBuffer();
+			buf.append(Formatter.format(getScoreAt(0), digits));
+			for (int n=1; n<nPopulation; n++)
+				buf.append(Formatter.VECTOR_DELIMITER + " " + Formatter.format(getScoreAt(n), digits));
+			return buf.toString();
+		}
+		return Formatter.format(scores, digits);
+	}
+
+	/**
+	 * Gets the formatted score of the individual with index {@code idx}.
+	 * 
+	 * @param idx the index of the individual
+	 * @return the formatted score
+	 */
+	public String getScoreNameAt(int idx) {
+		if (isVacantAt(idx))
+			return "-";
+		return Formatter.format(getScoreAt(idx), 4);
+	}
+
+	/**
+	 * Gets the fitness of all individuals with precision {@code digits}. Fitness of
+	 * vacant sites are reported as {@value Double#NaN}.
+	 * 
+	 * @param digits the number of digits for the scores
+	 * @return the formatted fitness
+	 */
+	public String getFitness(int digits) {
+		if (hasLookupTable) {
+			StringBuffer buf = new StringBuffer();
+			buf.append(Formatter.format(getFitnessAt(0), digits));
+			for (int n=1; n<nPopulation; n++)
+				buf.append(Formatter.VECTOR_DELIMITER + " " + Formatter.format(getFitnessAt(n), digits));
+			return buf.toString();
+		}
+		return Formatter.format(fitness, digits);
+	}
+
+	/**
+	 * Gets the formatted fitness of the individual with index {@code idx} as a
+	 * string. If the flag {@code pretty} is set the formatting is prettyfied by
+	 * replacing the exponent {@code E} in scientific notation to a power of
+	 * {@code 10}.
+	 *
+	 * @param idx    the index of the individual
+	 * @param pretty flag to prettify formatting
+	 * @return the formatted fitness
+	 */
+	public String getFitnessNameAt(int idx, boolean pretty) {
+		if (isVacantAt(idx))
+			return "-";
+		// for strong selection fitness can be huge - use scientific notation if >10^7
+		double fiti = getFitnessAt(idx);
+		return fiti > 1e7
+				? (pretty ? (Formatter.formatSci(fiti, 4).replace("E", "⋅10<sup>") + "</sup>")
+						: Formatter.formatSci(fiti, 4))
+				: Formatter.format(fiti, 4);
+	}
+
+	/**
+	 * Gets the formatted and prettyfied fitness of the individual with index
+	 * {@code idx} as a string.
+	 *
+	 * @param idx the index of the individual
+	 * @return the formatted fitness
+	 */
+	public String getFitnessNameAt(int idx) {
+		return getFitnessNameAt(idx, true);
+	}
+
+	/**
+	 * Gets the number of interactions of the individual with index {@code idx}.
+	 * Returns {@code -1} if site {@code idx} is vacant or fitness is static, i.e.
+	 * not based on interactions.
+	 * 
+	 * @param idx the index of the individual
+	 * @return the number of interactions
+	 */
+	public int getInteractionsAt(int idx) {
+		if (isVacantAt(idx))
+			return -1;
+		if (hasLookupTable) {
+			if (module.isStatic())
+				return -1;
+			return nMixedInter;
+		}
+		return interactions[idx];
+	}
+
+	/**
+	 * Copies the tags of all individuals in the population and returns them in the
+	 * array {@code mem}.
+	 * 
+	 * @param mem the array to copy the tags into
+	 * @return the array of tags
+	 */
+	public double[] getTags(double[] mem) {
+		System.arraycopy(tags, 0, mem, 0, nPopulation);
+		return mem;
+	}
+
+	/**
+	 * Returns the tags of all individuals in this population coded as colors in
+	 * the array {@code colors} using the map {@code colorMap}. Used by GUI to
+	 * visualize the current state of this IBS model. Colors are coded in different
+	 * data types {@code <T>} depending on the runtime environment (GWT or JRE) as
+	 * well as the graph (e.g. {@link org.evoludo.gwt.graphics.PopGraph2D
+	 * PopGraph2D} or {@link org.evoludo.gwt.graphics.PopGraph3D PopGraph3D}).
+	 * 
+	 * @param <T>      the type of color data ({@link String} or
+	 *                 {@link thothbot.parallax.core.shared.materials.MeshLambertMaterial
+	 *                 MeshLambertMaterial} for GWT and {@link Color} for JRE).
+	 * @param colors   the array where the colors of all nodes are stored
+	 * @param colorMap the map that converts tags into colors
+	 */
+	public <T> void getTagData(T[] colors, ColorMap<T> colorMap) {
+		colorMap.translate(tags, colors);
+	}
+
+	/**
+	 * Gets the tag of the individual with index {@code idx}.
+	 *
+	 * @param idx the index of the individual
+	 * @return the tag number
+	 */
+	public double getTagAt(int idx) {
+		return tags[idx];
+	}
+
+	/**
+	 * Gets the formatted tag of the individual with index {@code idx} as string.
+	 *
+	 * @param idx the index of the individual
+	 * @return the tag as a string
+	 */
+	public String getTagNameAt(int idx) {
+		return Formatter.format(tags[idx], 4);
+	}
+
+	/**
+	 * Sets the tag of the individual with index {@code idx}.
+	 *
+	 * @param idx the index of the individual
+	 * @param tag the new tag of the individual
+	 * @return {@code true} if the tag changed
+	 */
+	public boolean setTagAt(int idx, double tag) {
+		double old = tags[idx];
+		tags[idx] = tag;
+		return (Math.abs(tag - old) < 1e-8);
+	}
+
+	/**
+	 * Gets current population size. For most models with fixed population sizes
+	 * this simply returns nPopulation. Ecological models with variable population
+	 * sizes must override this method to return the actual population size.
+	 *
+	 * @return current population size
+	 */
+	public int getPopulationSize() {
+		return nPopulation;
+	}
+
+	/**
+	 * Sets the sampling type for interaction partners in this population to
+	 * {@code ninter}.
+	 *
+	 * @param inter the sampling type for interactions
+	 * 
+	 * @see IBSGroup
+	 */
+	public void setInteractionSamplingType(int inter) {
+		interactionGroup.setSampling(inter);
+	}
+
+	/**
+	 * Gets the sampling type for interaction partners in this population.
+	 *
+	 * @return the sampling type for interactions
+	 * 
+	 * @see IBSGroup
+	 */
+	public int getInteractionSamplingType() {
+		return interactionGroup.samplingType;
+	}
+
+	/**
+	 * Sets the number of interactions of focal individuals to {@code ninter}.
+	 * 
+	 * @param ninter the number of interactions
+	 */
+	public void setNInteractions(int ninter) {
+		if (ninter != nInteractions) {
+			nInteractions = Math.max(1, ninter);
+		}
+	}
+
+	/**
+	 * Gets the number of interactions of focal individuals.
+	 * 
+	 * @return the number of interactions
+	 */
+	public int getNInteractions() {
+		return nInteractions;
+	}
+
+	/**
+	 * Sets the sampling type for references/models in this population to
+	 * {@code ref}.
+	 *
+	 * @param ref the sampling type for references/models
+	 * 
+	 * @see IBSGroup
+	 */
+	public void setReferenceSamplingType(int ref) {
+		referenceGroup.setSampling(ref);
+	}
+
+	/**
+	 * Gets the sampling type for references/models in this population.
+	 *
+	 * @return the sampling type for references/models
+	 * 
+	 * @see IBSGroup
+	 */
+	public int getReferenceSamplingType() {
+		return referenceGroup.samplingType;
+	}
+
+	/**
+	 * Sets the number of individuals in the group of references/models to
+	 * {@code size}.
+	 *
+	 * @param size the number of individuals in the group of references/models
+	 */
+	public synchronized void setRGroupSize(int size) {
+		referenceGroup.setSize(Math.max(1, size));
+	}
+
+	/**
+	 * Gets the number of individuals in the group of references/models.
+	 * 
+	 * @return the number of individuals in the group of references/models
+	 */
+	public int getRGroupSize() {
+		return referenceGroup.size;
+	}
+
+	/**
+	 * The population update type.
+	 */
+	protected PopulationUpdateType populationUpdateType = PopulationUpdateType.ASYNC;
+
+	/**
+	 * Sets the population update type to {@code type}.
+	 * 
+	 * @param type the new population update type
+	 */
+	public void setPopulationUpdateType(PopulationUpdateType type) {
+		populationUpdateType = type;
+	}
+
+	/**
+	 * Gets the population update type.
+	 * 
+	 * @return the population update type
+	 */
+	public PopulationUpdateType getPopulationUpdateType() {
+		return populationUpdateType;
+	}
+
+	/**
+	 * The error probability of players when imitating strategies of other players.
+	 * No errors if {@code playerError < 0}.
+	 */
+	protected double playerError = -1.0;
+
+	/**
+	 * Gets the error probability of players when imitating strategies of other
+	 * players.
+	 * 
+	 * @return the error probability
+	 */
+	public double getPlayerError() {
+		return playerError;
+	}
+
+	/**
+	 * Sets the error probability of players when imitating strategies of other
+	 * players to {@code aValue}.
+	 *
+	 * @param aValue the new error probability
+	 */
+	public void setPlayerError(double aValue) {
+		playerError = aValue;
+	}
+
+	/**
+	 * Sets the type of migrations to {@code type}.
+	 * 
+	 * @param type the new type of migrations
+	 */
+	public void setMigrationType(MigrationType type) {
+		migrationType = type == null ? MigrationType.NONE : type;
+	}
+
+	/**
+	 * Gets the type of migrations.
+	 * 
+	 * @return the type of migrations
+	 */
+	public MigrationType getMigrationType() {
+		return migrationType;
+	}
+
+	/**
+	 * Sets the migration probability to {@code aValue}.
+	 * 
+	 * @param aValue the new migration probability
+	 */
+	public void setMigrationProb(double aValue) {
+		pMigration = aValue;
+	}
+
+	/**
+	 * Gets the migration probability.
+	 * 
+	 * @return the migration probability
+	 */
+	public double getMigrationProb() {
+		return pMigration;
+	}
+
+	/**
+	 * Gets the structure of interactions.
+	 * 
+	 * @return the interaction structure
+	 */
+	public Geometry getInteractionGeometry() {
+		return interaction;
+	}
+
+	/**
+	 * Creates a new instance of the interaction structure, if needed.
+	 * 
+	 * @return the interaction structure
+	 */
+	public Geometry createInteractionGeometry() {
+		if (interaction == null || interaction == module.getGeometry())
+			interaction = new Geometry(engine, module, opponent.getModule());
+		return interaction;
+	}
+
+	/**
+	 * Gets the structure of reproductions or imitations.
+	 * 
+	 * @return the reproduction structure
+	 */
+	public Geometry getReproductionGeometry() {
+		return reproduction;
+	}
+
+	/**
+	 * Creates a new instance of the reproduction or imitation structure, if needed.
+	 * 
+	 * @return the reproduction structure
+	 */
+	public Geometry createReproductionGeometry() {
+		if (reproduction == null || reproduction == module.getGeometry())
+			reproduction = new Geometry(engine, module);
+		return reproduction;
+	}
+
+	/**
+	 * Sets whether scores of individuals are always reset after adopting the
+	 * strategy of a neighbour or only if it resulted in an actual <em>change</em>
+	 * of strategy.
+	 * 
+	 * @param reset the flag to indicate whether scores are always reset
+	 * 
+	 * @see #playerScoreResetAlways
+	 */
+	public void setPlayerScoreResetAlways(boolean reset) {
+		playerScoreResetAlways = reset;
+	}
+
+	/**
+	 * Gets whether scores of individuals are always reset after adopting the
+	 * strategy of a neighbour or only if it resulted in an actual <em>change</em>
+	 * of strategy.
+	 * 
+	 * @return {@code true} if scores are always reset
+	 * 
+	 * @see #playerScoreResetAlways
+	 */
+	public boolean getPlayerScoreResetAlways() {
+		return playerScoreResetAlways;
+	}
+
+	/**
+	 * Sets whether scores of individuals are averaged over multiple interactions or
+	 * accumulated.
+	 * 
+	 * @param aver the flag to indicate whether scores are averaged
+	 */
+	public void setPlayerScoreAveraged(boolean aver) {
+		playerScoreAveraged = aver;
+	}
+
+	/**
+	 * Gets whether player scores are averaged (as opposed to accumulated).
+	 *
+	 * @return {@code true} if player scores are averaged.
+	 */
+	public boolean getPlayerScoreAveraged() {
+		return playerScoreAveraged;
+	}
+
+	/**
+	 * Provide opportunity/hook for subclasses to introduce new geometries.
+	 * 
+	 * @param geom the current empty/uninitialized geometry
+	 * @param arg  the commandline argument
+	 * @return {@code true} if parsing was successful
+	 * 
+	 * @see Geometry#parse(String)
+	 */
+	public boolean parseGeometry(Geometry geom, String arg) {
+		return false;
+	}
+
+	/**
+	 * Provide opportunity/hook for subclasses to introduce new geometries.
+	 * 
+	 * @param geom the geometry to check
+	 * @return {@code true} if checks were successful
+	 * 
+	 * @see Geometry#check()
+	 */
+	public boolean checkGeometry(Geometry geom) {
+		return false;
+	}
+
+	/**
+	 * Provide opportunity/hook for subclasses to introduce new geometries.
+	 * 
+	 * @param geom the geometry to initialize
+	 * @return {@code true} if generation of structure was successful
+	 * 
+	 * @see Geometry#init()
+	 */
+	public boolean generateGeometry(Geometry geom) {
+		return false;
+	}
+
+	// private long linkCount(Geometry geom) {
+	// long outcount = 0, incount = 0;
+	// for( int n=0; n<nPopulation; n++ ) {
+	// outcount += geom.kout[n];
+	// incount += geom.kin[n];
+	// }
+	// if( outcount != incount ) {
+	// logger.severe("ALARM: some links point to nirvana!? ("+incount+",
+	// "+outcount+")");
+	// }
+	// return outcount;
+	// }
+
+	/**
+	 * Called from GUI if node/individual with index {@code idx} received a mouse
+	 * click or tap.
+	 *
+	 * @param hit the index of the node
+	 * @return {@code false} if no actions taken
+	 */
+	public boolean mouseHitNode(int hit) {
+		return mouseHitNode(hit, false);
+	}
+
+	// allows drawing of initial configurations - feature got retired; revive?
+	// /**
+	// *
+	// * @param hit
+	// * @param ref
+	// * @return
+	// */
+	// public boolean mouseHitNode(int hit, int ref) {
+	// return false;
+	// }
+
+	/**
+	 * Called from GUI if node/individual with index {@code idx} received a mouse
+	 * click or tap and indicates whether the {@code alt}-key had been pressed.
+	 *
+	 * @param hit the index of the node
+	 * @param alt {@code true} if the {@code alt}-key was pressed
+	 * @return {@code false} if no actions taken
+	 */
+	public boolean mouseHitNode(int hit, boolean alt) {
+		return false;
+	}
+
+	/**
+	 * Encode the fitness of all individuals in the IBS model in a
+	 * <code>plist</code> inspired <code>XML</code> string.
+	 * 
+	 * @param plist the {@link java.lang.StringBuilder StringBuilder} to write the
+	 *              encoded state to
+	 * 
+	 * @see Model#encodeState(StringBuilder)
+	 */
+	public void encodeFitness(StringBuilder plist) {
+		if (!hasLookupTable)
+			plist.append(Plist.encodeKey("Fitness", scores));
+	}
+
+	/**
+	 * Restore the fitness of all individuals encoded in the <code>plist</code>
+	 * inspired <code>map</code> of {@code key, value}-pairs.
+	 * 
+	 * @param plist the map of {@code key, value}-pairs
+	 * @return <code>true</code> if successful
+	 * 
+	 * @see Model#restoreState(Plist)
+	 */
+	public boolean restoreFitness(Plist plist) {
+		if (!hasLookupTable) {
+			@SuppressWarnings("unchecked")
+			List<Double> fit = (List<Double>) plist.get("Fitness");
+			if (fit == null || fit.size() != nPopulation)
+				return false;
+			sumFitness = 0.0;
+			for (int n = 0; n < nPopulation; n++) {
+				double nscore = fit.get(n);
+				scores[n] = nscore;
+				double nfit = map2fit.map(nscore);
+				fitness[n] = nfit;
+				sumFitness += nfit;
+			}
+			setMaxEffScoreIdx();
+		}
+		return true;
+	}
+
+	/**
+	 * Encode the interactions of all individuals in the IBS model in a
+	 * <code>plist</code> inspired <code>XML</code> string.
+	 * 
+	 * @param plist the {@link java.lang.StringBuilder StringBuilder} to write the
+	 *              encoded state to
+	 * 
+	 * @see Model#encodeState(StringBuilder)
+	 */
+	public void encodeInteractions(StringBuilder plist) {
+		if (!hasLookupTable)
+			plist.append(Plist.encodeKey("Interactions", interactions));
+	}
+
+	/**
+	 * Restore the interactions of all individuals encoded in the <code>plist</code>
+	 * inspired <code>map</code> of {@code key, value}-pairs.
+	 * 
+	 * @param plist the map of {@code key, value}-pairs
+	 * @return <code>true</code> if successful
+	 * 
+	 * @see Model#restoreState(Plist)
+	 */
+	public boolean restoreInteractions(Plist plist) {
+		if (!hasLookupTable) {
+			@SuppressWarnings("unchecked")
+			List<Integer> inter = (List<Integer>) plist.get("Interactions");
+			if (inter == null || inter.size() != nPopulation)
+				return false;
+			for (int n = 0; n < nPopulation; n++)
+				interactions[n] = inter.get(n);
+		}
+		return true;
+	}
+
+	/**
+	 * Encode the strategies of all individuals in the IBS model in a
+	 * <code>plist</code> inspired <code>XML</code> string.
+	 * 
+	 * @param plist the {@link java.lang.StringBuilder StringBuilder} to write the
+	 *              encoded state to
+	 * 
+	 * @see Model#encodeState(StringBuilder)
+	 */
+	public abstract void encodeStrategies(StringBuilder plist);
+
+	/**
+	 * Restore the strategies of all individuals encoded in the <code>plist</code>
+	 * inspired <code>map</code> of {@code key, value}-pairs.
+	 * 
+	 * @param plist the map of {@code key, value}-pairs
+	 * @return <code>true</code> if successful
+	 * 
+	 * @see Model#restoreState(Plist)
+	 */
+	public abstract boolean restoreStrategies(Plist plist);
+
+	/**
+	 * Encode the interaction and reproduction structures of the IBS model in a
+	 * <code>plist</code> inspired <code>XML</code> string.
+	 * 
+	 * @param plist the {@link java.lang.StringBuilder StringBuilder} to write the
+	 *              encoded state to
+	 * 
+	 * @see Model#encodeState(StringBuilder)
+	 */
+	public void encodeGeometry(StringBuilder plist) {
+		plist.append(
+				"<key>" + interaction.name + "</key>\n" +
+						"<dict>\n");
+		plist.append(interaction.encodeGeometry());
+		plist.append("</dict>\n");
+		if (interaction.interReproSame)
+			return;
+		plist.append(
+				"<key>" + reproduction.name + "</key>\n" +
+						"<dict>\n");
+		plist.append(reproduction.encodeGeometry());
+		plist.append("</dict>\n");
+	}
+
+	/**
+	 * Restore the interaction and reproduction structures encoded in the
+	 * <code>plist</code> inspired <code>map</code> of {@code key, value}-pairs.
+	 * 
+	 * @param plist the map of {@code key, value}-pairs
+	 * @return <code>true</code> if successful
+	 * 
+	 * @see Model#restoreState(Plist)
+	 */
+	public boolean restoreGeometry(Plist plist) {
+		Plist igeo = (Plist) plist.get(interaction.name);
+		if (igeo == null)
+			return false;
+		interaction.decodeGeometry(igeo);
+		if (interaction.interReproSame) {
+			reproduction = interaction.deriveReproductionGeometry();
+			return true;
+		}
+		Plist rgeo = (Plist) plist.get(reproduction.name);
+		if (rgeo == null)
+			return false;
+		reproduction.decodeGeometry(rgeo);
+		return true;
+	}
+
+	/**
+	 * Set the seed of the random number generator for reproducible simulation runs.
+	 *
+	 * @param s the seed for random number generator
+	 */
+	public void srandom(long s) {
+		rng.setRNGSeed(s);
+	}
+
+	/**
+	 * Draw a uniformly distributed random integer number from the closed interval
+	 * {@code [0, n]}.
+	 *
+	 * @param n the upper limit of interval (inclusive)
+	 * @return the random integer number in <code>[0, n]</code>.
+	 */
+	public int random0N(int n) {
+		return rng.random0N(n);
+	}
+
+	/**
+	 * Draw a uniformly distributed random integer number from the semi-closed
+	 * interval {@code [0, n)}.
+	 *
+	 * @param n the upper limit of interval (exclusive)
+	 * @return the random integer number in <code>[0, n)</code>.
+	 */
+	public int random0n(int n) {
+		return rng.random0n(n);
+	}
+
+	/**
+	 * Draw a uniformly distributed random {@code double} from the semi-closed
+	 * interval {@code [0, 1)} with 32bit resolution. This is the default.
+	 *
+	 * @return the random number in <code>[0, 1)</code>.
+	 */
+	public double random01() {
+		return rng.random01();
+	}
+
+	/**
+	 * Draw a uniformly distributed random {@code double} from the semi-closed
+	 * interval {@code [0, 1)} with maximal 53bit resolution.
+	 * <p>
+	 * <strong>Note:</strong> takes twice as long as regular precision.
+	 *
+	 * @return the random number in <code>[0, 1)</code>.
+	 */
+	public double random01d() {
+		return rng.random01d();
+	}
+
+	/**
+	 * Draw a Gaussian (normal) distributed random {@code double}.
+	 *
+	 * @param mean the mean of the Gaussian distribution
+	 * @param sdev the standard deviation of the Gaussian distribution
+	 * @return the Gaussian random number
+	 */
+	public double randomGaussian(double mean, double sdev) {
+		return mean + sdev * rng.nextGaussian();
+	}
+
+	/**
+	 * Draw a binomially distributed random integer.
+	 *
+	 * @param p the probability of success
+	 * @param n the number of trials
+	 * @return the number of successes
+	 */
+	public int nextBinomial(double p, int n) {
+		if (n == 0)
+			return 0;
+		if (p > 1.0 - 1e-8)
+			return 0;
+
+		// check if gaussian approximation is suitable
+		double np = n * p;
+		if (np / (1.0 - p) > 9.0 && n * (1.0 - p) / p > 9.0)
+			return (int) Math.floor(randomGaussian(np + 0.5, Math.sqrt(np * (1.0 - p))));
+
+		double uRand = random01();
+		double pi = Combinatorics.pow(1.0 - p, n);
+		double f = p / (1.0 - p);
+		double sum = 0.0;
+
+		for (int i = 0; i <= n; i++) {
+			sum += pi * Combinatorics.combinations(n, i);
+			if (uRand <= sum)
+				return i;
+			pi *= f;
+		}
+		logger.warning(
+				"What the heck are you doing here!!! (rand: " + uRand + ", p: " + p + ", n: " + n + " -> " + sum + ")");
+		return -1;
+	}
+
+	/**
+	 * Entry point for JRE simulations. Must be overridden in simulation subclasses.
+	 */
+	public void exec() {
+		throw new Error("Executable not implemented!");
+	}
+}
