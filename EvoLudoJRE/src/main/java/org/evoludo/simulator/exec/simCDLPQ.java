@@ -56,7 +56,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class simCDLPQ extends CDLPQ implements Model.ChangeListener, Runnable {
+public class simCDLPQ extends CDLPQ implements Model.ChangeListener {
 
 	// snapshots
 	long snapinterval = 1;

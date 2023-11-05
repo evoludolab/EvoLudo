@@ -55,7 +55,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class simEcoPGG extends EcoPGG implements Model.ChangeListener, Runnable {
+public class simEcoPGG extends EcoPGG implements Model.ChangeListener {
 
 	// additional parameters - defaults are set in cloXYZ routines below
 	int snapinterval;

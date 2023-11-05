@@ -56,7 +56,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class simTBT extends TBT implements Model.ChangeListener, Runnable {
+public class simTBT extends TBT implements Model.ChangeListener {
 
 	// additional parameters
 	boolean progress = false;

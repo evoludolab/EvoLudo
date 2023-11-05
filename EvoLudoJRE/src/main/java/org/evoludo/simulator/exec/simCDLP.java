@@ -50,7 +50,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class simCDLP extends CDLP implements Model.ChangeListener, Runnable {
+public class simCDLP extends CDLP implements Model.ChangeListener {
 
 	/* additional parameters */
 	int threshold = -1;

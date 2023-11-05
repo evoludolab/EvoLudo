@@ -74,7 +74,6 @@ import javax.swing.event.ChangeListener;
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.ToggleAntiAliasingAction;
-import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.HasConsole;

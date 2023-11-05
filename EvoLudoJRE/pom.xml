@@ -12,6 +12,17 @@
   <packaging>war</packaging>
 
   <dependencies>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>EvoLudoCore</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>EvoLudoCore</artifactId>
+      <version>${project.version}</version>
+      <classifier>sources</classifier>
+    </dependency>
 		<dependency>
 			<groupId>com.googlecode.matrix-toolkits-java</groupId>
 			<artifactId>mtj</artifactId>

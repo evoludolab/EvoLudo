@@ -50,7 +50,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class simCDL extends CDL implements Model.ChangeListener, Runnable {
+public class simCDL extends CDL implements Model.ChangeListener {
 
 	/* additional parameters */
 	boolean progress = false;

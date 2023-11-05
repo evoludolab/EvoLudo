@@ -61,7 +61,6 @@ import org.evoludo.graphics.GraphListener;
 import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.HistoFrameLayer;
 import org.evoludo.graphics.PopGraph2D;
-import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
