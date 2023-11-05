@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -23,45 +25,40 @@
       <version>${project.version}</version>
       <classifier>sources</classifier>
     </dependency>
-		<dependency>
-			<groupId>com.googlecode.matrix-toolkits-java</groupId>
-			<artifactId>mtj</artifactId>
-			<version>1.0.4</version>
-		</dependency>
-		<dependency>
-			<groupId>org.freehep</groupId>
-			<artifactId>freehep-graphics2d</artifactId>
-			<version>2.4</version>
-		</dependency>
-		<dependency>
-			<groupId>org.freehep</groupId>
-			<artifactId>freehep-graphicsbase</artifactId>
-			<version>2.4</version>
-		</dependency>
-		<dependency>
-			<groupId>org.freehep</groupId>
-			<artifactId>freehep-graphicsio</artifactId>
-			<version>2.4</version>
-		</dependency>
-		<dependency>
-			<groupId>org.freehep</groupId>
-			<artifactId>freehep-graphicsio-pdf</artifactId>
-			<version>2.4</version>
-		</dependency>
-		<dependency>
-			<groupId>org.freehep</groupId>
-			<artifactId>freehep-graphicsio-ps</artifactId>
-			<version>2.4</version>
-		</dependency>
-		<dependency>
-			<groupId>org.freehep</groupId>
-			<artifactId>freehep-graphicsio-svg</artifactId>
-			<version>2.4</version>
-		</dependency>
     <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>EvoLudoCore</artifactId>
-      <version>${project.version}</version>
+      <groupId>com.googlecode.matrix-toolkits-java</groupId>
+      <artifactId>mtj</artifactId>
+      <version>1.0.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.freehep</groupId>
+      <artifactId>freehep-graphics2d</artifactId>
+      <version>2.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.freehep</groupId>
+      <artifactId>freehep-graphicsbase</artifactId>
+      <version>2.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.freehep</groupId>
+      <artifactId>freehep-graphicsio</artifactId>
+      <version>2.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.freehep</groupId>
+      <artifactId>freehep-graphicsio-pdf</artifactId>
+      <version>2.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.freehep</groupId>
+      <artifactId>freehep-graphicsio-ps</artifactId>
+      <version>2.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.freehep</groupId>
+      <artifactId>freehep-graphicsio-svg</artifactId>
+      <version>2.4</version>
     </dependency>
     <dependency>
       <groupId>org.gwtproject</groupId>
@@ -113,7 +110,8 @@
 
   <profiles>
     <profile>
-      <!-- XXX: We want to exclude EvoLudoGWT from 'env-dev' profile, Maven forces us to make a 'env-prod' profile -->
+      <!-- XXX: We want to exclude EvoLudoGWT from 'env-dev' profile, Maven forces us to make a
+      'env-prod' profile -->
       <id>env-prod</id>
       <activation>
         <activeByDefault>true</activeByDefault>

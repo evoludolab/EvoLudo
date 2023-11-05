@@ -1,0 +1,172 @@
+<!doctype html>
+<!--
+//
+// EvoLudo Project
+//
+// Copyright 2010 Christoph Hauert
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// For publications in any form, you are kindly requested to attribute the
+// author and project as follows:
+//
+//	Hauert, Christoph (<year>) EvoLudo Project, http://www.evoludo.org
+//			(doi: <doi>[, <version>])
+//
+//	<doi>:	digital object identifier of the downloaded release (or the
+//			most recent release if downloaded from github.com),
+//	<year>:	year of release (or download), and
+//	[, <version>]: optional version number (as reported in output header
+//			or GUI console) to simplify replication of reported results.
+//
+// The formatting may be adjusted to comply with publisher requirements.
+//
+-->
+<!-- The DOCTYPE declaration above will set the     -->
+<!-- browser's rendering engine into                -->
+<!-- "Standards Mode". Replacing this declaration   -->
+<!-- with a "Quirks Mode" doctype is not supported. -->
+
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+    <!--                                           -->
+    <!-- Any title is fine                         -->
+    <!--                                           -->
+    <title>EvoLudo Developer</title>
+<style>
+	body	{ margin-left: 24pt; margin-right: 24pt;}
+h1, h2, h3, dt	{font-family: sans-serif;}
+h2	{border-bottom: solid black thin;}
+dt	{font-weight: bold;}
+dd	{margin-bottom: 1em;}
+.evoludo	{font-variant: small-caps; font-family: Times;}
+.tt	{font-family:'Lucida Console', monospace; font-size: smaller;}
+</style>
+
+  </head>
+
+  <!--                                           -->
+  <!-- The body can have arbitrary html, or      -->
+  <!-- you can leave the body empty if you want  -->
+  <!-- to create a completely dynamic UI.        -->
+  <!--                                           -->
+  <body>
+
+    <h1>Installation of the <span class="evoludo">EvoLudo</span> developer framework</h1>
+
+<h2>Preparation</h2>
+<dl>
+<dt>Java compiler:</dt>
+<dd>Install <i>Java SDK8</i> (<a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">http://www.oracle.com/technetwork/java/javase/downloads/index.html</a>) or better.</dd>
+
+<dt>Developer environment:</dt>
+<dd>Install <i>eclipse</i> <a href="https://www.eclipse.org/downloads/eclipse-packages/">https://www.eclipse.org/downloads/eclipse-packages/</a>, Java EE version recommended.</dd>
+
+<dt>JavaScript converter:</dt>
+<dd>Launch <i>eclipse</i> and open 'Eclipse Marketplace...' in the Help-Menu. Search for 'GWT' (<i>Google Web Toolkit</i>) and install
+'GWT Eclipse Plugin' (version 3.0.0 at time of writing). Make sure that the installation includes GWT 2.8.0 or better.
+
+<dt>Version control system:</dt>
+<dd>Launch <i>eclipse</i> and open 'Eclipse Marketplace...' in the Help-Menu. Search for 'subclipse' and install the subversion plugin
+for <i>eclipse</i> (version 1.10.13 at time of writing).
+
+<p><i>Note:</i>
+<ol>
+<li>On Mac and Unix systems, subclipse requires that javaHL libraries are installed separately, see 
+<a href="http://subclipse.tigris.org/wiki/JavaHL">http://subclipse.tigris.org/wiki/JavaHL</a>. Alternatively, the SVNKit client can be selected in the <i>eclipse</i> preferences on the SVN pane.
+</li>
+<li>In order to retrieve the <i>svn</i> version information and to embed it into the GUI as well as the simulation data, the helper program <i>svnversion</i> must be installed as well (highly recommended).
+</ol>
+</dd>
+</dl>
+<p>
+
+<h2>Installation</h2>
+<dl>
+<dt>Download <span class="evoludo">EvoLudo</span> source code:</dt>
+<dd>
+<ol style="margin-top:2pt">
+<li>Launch <i>eclipse</i>.
+<li>Create new project (<i>File &gt; New &gt; Other...</i>).
+<li>Search for <i>svn</i> and select <i>'Checkout Projects from SVN'</i>
+<li>Select <i>'Create a new repository location'</i> and enter the URL <span class="tt">'https://guest@lorax.math.ubc.ca/svn/EvoLudo'</span> (without quotes).
+<li>Accept self-signed security certificate for <span class="tt">lorax.math.ubc.ca</span> to enable encrypted connections (recommended to accept permanently).
+<li>Enter name and password. The name is <i>guest</i> and contact <a href="mailto:hauert@math.ubc.ca">me</a> to obtain a password.
+<li>Select the <span class="tt">trunk</span> folder and click <i>'Finish'</i> to download a local working copy of the
+<span class="evoludo">EvoLudo</span> source code (you may need to enter the	name and password a few more times).
+</ol>
+
+<dt>Finishing touches:</dt>
+<dd>
+<ol style="margin-top:2pt">
+<li>Make sure GWT 2.8.0 (or better) is the default version.<br/>
+Launch <i>eclipse</i>. Open <i>Eclipse &gt; Preferences...</i> and search
+for 'GWT'. Under 'GWT Settings' check version 2.8.0 or higher.
+</li>
+<li>Make sure compiler compliance level is set to 1.8.<br/>
+Launch <i>eclipse</i>. Open <i>Eclipse &gt; Preferences...</i> and search
+for 'compiler compliance'. Under 'Java Compiler' select compiler compliance level 1.8 (GWT version 2.8.2 cannot handle newer levels).
+</li>
+<li>Open <span class="evoludo">EvoLudo</span> properties (<i>Project &gt; Properties</i>) and select <i>Builders</i> then select <i>SVN version</i> and press <i>Edit...</i>. On the <i>Main</i> tab make sure the <i>Location</i> points to the <i>svnversion</i> executable. The default is <i>/usr/bin/svnversion</i>.</li>
+<li>Open a Terminal and change to the root directory of <span class="evoludo">EvoLudo</span> source code (by default this is the <span class="tt">EvoLudo</span> directory in your <i>eclipse</i> workspace). On *nix/macOS systems execute <span class="tt">'touch src/org/evoludo/simulator/web/theme/svn.version'</span> (no quotes) and on Windows find another way to simply create an empty file at the above location.
+</li>
+<li>Make sure that the paths in the configuration file <span class="tt">ant/&lt;OS name&gt;.properties</span> are correctly set. 
+<ol style="margin-top:2pt" type="a">
+<li><span class="tt">svn.exe</span> needs to point to the <i>svnversion</i> helper program.<br>
+(Alternatively <span class="tt">svn info -r HEAD</span> can be used but this requires that the system is online as well as some further parsing of the output (not recommended). As a consequence, requires changes in the build file <span class="tt">ant/core.xml</span> and/or the source code <span class="tt">org/evoludo/simulator/web/theme/Resources.java</span> for use in GWT and <span class="tt">org/evoludo/simulator/EvoLudoJRE.java</span> for use in <i>java</i>).</li>
+<li><span class="tt">java.runtime</span> must point to the <i>java</i> runtime library <i>rt.jar</i>.<br>
+<i>Note:</i> this is only important for compiling the <span class="evoludo">EvoLudo</span> source into a <i>java</i> application, both for running simulations or building the GUI but is not needed for GWT development.</li>
+</ol>
+</ol>
+</dd>
+
+<dt>Debugging:</dt>
+<dd>For newer versions of java the communication between <i>Google Chrome</i> and <i>eclipse</i> is unfortunately broken (see <a href="https://github.com/sdbg/sdbg/issues/161">sdbg issues</a>). Fortunately a workaround exists adapted from the aforementioned source:
+<ol style="margin-top:2pt">
+<li>Download the archive <a href="com.github.sdbg.releng.p2-1.0.10.qualifier.zip">com.github.sdbg.releng.p2-1.0.10.qualifier.zip</a>, which was built according to the workaround (the download is only intended to avoid having to compile the entire sdbg sources). <i>Note:</i> make sure the browser does not unzip the archive after downloading.
+</li>
+<li>Install the archive in <i>eclipse</i>.<br/>
+Open <i>Help &gt; Install New Software...</i>, click <i>Add...</i> then <i>Archive...</i> and select the above archive. Name it something like 'SDBG (java 9+)', click <i>Add</i>, check <i>Source Map Debugger</i> and click <i>Finish</i>.
+</li>
+</ol>
+</dd>
+</dl>
+
+
+<h2>Development</h2>
+<dl>
+<dt>Compile project:</dt>
+<dd>
+<ol style="margin-top:2pt">
+<li>Launch <i>eclipse</i>.
+<li>From the Debug or Run configurations select 'EvoLudo - GWT Development WebServer' to compile the project and launch the development web server.
+<li>Open a browser and point it to <a href="http://127.0.0.1:8888/TestEvoLudoLabs.html"><span class="tt">http://127.0.0.1:8888/TestEvoLudoLabs.html</span></a> to launch 
+the web interface of <span class="evoludo">EvoLudo</span>.
+<li>After making changes to the code in <i>eclipse</i>, simply reload the browser page to recompile <span class="evoludo">EvoLudo</span>. Note that due to the 
+size of the project the first compilation takes fairly long but subsequent recompiles are significantly faster.
+</ol>
+</dd>
+
+<dt>Update source code:</dt>
+<dd>
+<ol style="margin-top:2pt">
+<li>Launch <i>eclipse</i>.
+<li>Right-click <span class="evoludo">EvoLudo</span> in the 'Project Explorer' and select 'Team > Update to HEAD' from context menu.
+</ol>
+</dd>
+</dl>
+
+</body>
+</html>

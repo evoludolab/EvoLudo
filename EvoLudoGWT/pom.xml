@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -10,6 +12,10 @@
 
   <artifactId>EvoLudoGWT</artifactId>
   <packaging>gwt-app</packaging>
+
+  <properties>
+    <gwt.server>localhost</gwt.server>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -23,16 +29,16 @@
       <version>${project.version}</version>
       <classifier>sources</classifier>
     </dependency>
-		<dependency>
-			<groupId>org.parallax3d</groupId>
-			<artifactId>parallax-gwt</artifactId>
-			<version>1.6</version>
-		</dependency>
-		<dependency>
-			<groupId>org.evoludo</groupId>
-			<artifactId>gwt-user-XHTML</artifactId>
-			<version>2.10.0</version>
-		</dependency>
+    <dependency>
+      <groupId>org.parallax3d</groupId>
+      <artifactId>parallax-gwt</artifactId>
+      <version>1.6</version>
+    </dependency>
+    <dependency>
+      <groupId>org.evoludo</groupId>
+      <artifactId>gwt-user-XHTML</artifactId>
+      <version>2.10.0</version>
+    </dependency>
     <dependency>
       <groupId>org.gwtproject</groupId>
       <artifactId>gwt-user</artifactId>
@@ -45,51 +51,57 @@
 
   <build>
     <plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-install-plugin</artifactId>
-				<version>2.5.2</version>
-				<executions>
-					<execution>
-						<id>install-parallax</id>
-						<goals>
-							<goal>install-file</goal>
-						</goals>
-						<phase>clean</phase>
-						<configuration>
-							<file>${basedir}/lib/parallax-gwt-1.6.jar</file>
-							<groupId>org.parallax3d</groupId>
-							<artifactId>parallax-gwt</artifactId>
-							<version>1.6</version>
-							<packaging>jar</packaging>
-							<generatePom>true</generatePom>
-						</configuration>
-					</execution>
-					<execution>
-						<id>install-xhtml-gwt</id>
-						<goals>
-							<goal>install-file</goal>
-						</goals>
-						<phase>clean</phase>
-						<configuration>
-							<file>${basedir}/lib/gwt-user-XHTML-2.10.0.jar</file>
-							<groupId>org.evoludo</groupId>
-							<artifactId>gwt-user-XHTML</artifactId>
-							<version>2.10.0</version>
-							<packaging>jar</packaging>
-							<generatePom>true</generatePom>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-install-plugin</artifactId>
+        <version>2.5.2</version>
+        <executions>
+          <execution>
+            <id>install-parallax</id>
+            <goals>
+              <goal>install-file</goal>
+            </goals>
+            <phase>clean</phase>
+            <configuration>
+              <file>${basedir}/lib/parallax-gwt-1.6.jar</file>
+              <groupId>org.parallax3d</groupId>
+              <artifactId>parallax-gwt</artifactId>
+              <version>1.6</version>
+              <packaging>jar</packaging>
+              <generatePom>true</generatePom>
+            </configuration>
+          </execution>
+          <execution>
+            <id>install-xhtml-gwt</id>
+            <goals>
+              <goal>install-file</goal>
+            </goals>
+            <phase>clean</phase>
+            <configuration>
+              <file>${basedir}/lib/gwt-user-XHTML-2.10.0.jar</file>
+              <groupId>org.evoludo</groupId>
+              <artifactId>gwt-user-XHTML</artifactId>
+              <version>2.10.0</version>
+              <packaging>jar</packaging>
+              <generatePom>true</generatePom>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
 
       <plugin>
         <groupId>net.ltgt.gwt.maven</groupId>
         <artifactId>gwt-maven-plugin</artifactId>
         <configuration>
           <moduleName>org.evoludo.EvoLudoWeb</moduleName>
-          <moduleShortName>${module.toLowerCase()}</moduleShortName>
+          <!-- <moduleShortName>${module.toLowerCase()}</moduleShortName> -->
+          <moduleShortName>evoludoweb</moduleShortName>
           <relocateSuperSource>true</relocateSuperSource>
+          <devmodeArgs>
+            <arg>-bindAddress</arg>
+            <arg>${gwt.server}</arg>
+          </devmodeArgs>
+          <style>PRETTY</style>
         </configuration>
       </plugin>
     </plugins>
