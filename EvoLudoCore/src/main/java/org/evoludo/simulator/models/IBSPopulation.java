@@ -3696,8 +3696,8 @@ public abstract class IBSPopulation {
 	 * the array {@code colors} using the map {@code colorMap}. Used by GUI to
 	 * visualize the current state of this IBS model. Colors are coded in different
 	 * data types {@code <T>} depending on the runtime environment (GWT or JRE) as
-	 * well as the graph (e.g. {@link org.evoludo.gwt.graphics.PopGraph2D
-	 * PopGraph2D} or {@link org.evoludo.gwt.graphics.PopGraph3D PopGraph3D}).
+	 * well as the graph (e.g. {@link org.evoludo.graphics.PopGraph2D
+	 * PopGraph2D} or {@link org.evoludo.graphics.PopGraph3D PopGraph3D}).
 	 * 
 	 * @param <T>      the type of color data ({@link String} or
 	 *                 {@link thothbot.parallax.core.shared.materials.MeshLambertMaterial
@@ -3725,8 +3725,8 @@ public abstract class IBSPopulation {
 	 * the array {@code colors} using the map {@code colorMap}. Used by GUI to
 	 * visualize the current state of this IBS model. Colors are coded in different
 	 * data types {@code <T>} depending on the runtime environment (GWT or JRE) as
-	 * well as the graph (e.g. {@link org.evoludo.gwt.graphics.PopGraph2D
-	 * PopGraph2D} or {@link org.evoludo.gwt.graphics.PopGraph3D PopGraph3D}).
+	 * well as the graph (e.g. {@link org.evoludo.graphics.PopGraph2D
+	 * PopGraph2D} or {@link org.evoludo.graphics.PopGraph3D PopGraph3D}).
 	 * 
 	 * @param <T>      the type of color data ({@link String} or
 	 *                 {@link thothbot.parallax.core.shared.materials.MeshLambertMaterial
@@ -3924,8 +3924,8 @@ public abstract class IBSPopulation {
 	 * the array {@code colors} using the map {@code colorMap}. Used by GUI to
 	 * visualize the current state of this IBS model. Colors are coded in different
 	 * data types {@code <T>} depending on the runtime environment (GWT or JRE) as
-	 * well as the graph (e.g. {@link org.evoludo.gwt.graphics.PopGraph2D
-	 * PopGraph2D} or {@link org.evoludo.gwt.graphics.PopGraph3D PopGraph3D}).
+	 * well as the graph (e.g. {@link org.evoludo.graphics.PopGraph2D
+	 * PopGraph2D} or {@link org.evoludo.graphics.PopGraph3D PopGraph3D}).
 	 * 
 	 * @param <T>      the type of color data ({@link String} or
 	 *                 {@link thothbot.parallax.core.shared.materials.MeshLambertMaterial

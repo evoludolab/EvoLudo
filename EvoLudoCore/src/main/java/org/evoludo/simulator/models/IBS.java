@@ -408,7 +408,7 @@ public abstract class IBS implements Model.IBS {
 	 * do not touch the current state of the IBS population(s).
 	 * <p>
 	 * <strong>Note:</strong> Method must be {@code public} because of subclasses in
-	 * {@code org.evoludo.jre.simulator}.
+	 * {@code org.evoludo.simulator}.
 	 * 
 	 * @param soft the flag to indicate whether this should be a {@code soft}
 	 *             initialization.

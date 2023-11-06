@@ -36,7 +36,7 @@ package org.evoludo.simulator.views;
  * {@link org.evoludo.simulator.modules.Module Module}s that implement the
  * {@code HasPop3D} interface include a graphical view that depicts a 3D
  * representation of the geomtery of the population in their GUI:
- * {@link org.evoludo.gwt.simulator.MVPop3D} for GWT and none for JRE
+ * {@link org.evoludo.simulator.MVPop3D} for GWT and none for JRE
  * ({@code java3d} has long been retired).
  * <p>
  * <strong>Important:</strong> Implementations have to be agnostic of the
@@ -55,7 +55,7 @@ public abstract interface HasPop3D {
 	 * for continuous modules the traits are shown on a color gradient between the
 	 * minimum and maximum trait values.
 	 * 
-	 * @see org.evoludo.gwt.simulator.MVPop3D
+	 * @see org.evoludo.simulator.MVPop3D
 	 * 
 	 * @author Christoph Hauert
 	 */
@@ -69,7 +69,7 @@ public abstract interface HasPop3D {
 	 * each individual. Fitness values are shown on a color gradient between the
 	 * minimum and maximum scores/payoffs/fitness.
 	 * 
-	 * @see org.evoludo.gwt.simulator.MVPop3D
+	 * @see org.evoludo.simulator.MVPop3D
 	 * 
 	 * @author Christoph Hauert
 	 */

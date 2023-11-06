@@ -391,7 +391,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * <p>
 	 * Default run-loop for modules. Opportunity to override in subclasses for
 	 * running customized simulations. Currently only called from
-	 * {@link org.evoludo.jre.simulator.EvoLudoJRE#simulation(String[])} if custom
+	 * {@link org.evoludo.simulator.EvoLudoJRE#simulation(String[])} if custom
 	 * simulation class is specified in {@code jar} file.
 	 */
 	@Override
@@ -649,7 +649,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * <dd>the colors of individuals that switched strategy since the last update
 	 * <dt>continuous
 	 * <dd>the colors for the mean &#177; standard deviation, see e.g.
-	 * {@link org.evoludo.gwt.simulator.MVMean}.
+	 * {@link org.evoludo.simulator.MVMean}.
 	 * </dl>
 	 * Specifying the second set of colors is optional. By default they are
 	 * automatically generated as lighter versions of the base colors.
@@ -771,8 +771,8 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 
 	/**
 	 * Opportunity for modules to make adjustments to the color map in graphs such
-	 * as {@link org.evoludo.gwt.simulator.MVPop2D} or
-	 * {@link org.evoludo.gwt.simulator.MVPop3D}. By default no changes are made.
+	 * as {@link org.evoludo.simulator.MVPop2D} or
+	 * {@link org.evoludo.simulator.MVPop3D}. By default no changes are made.
 	 * 
 	 * @param <T>      the type of the color map
 	 * @param colorMap the color map
@@ -2756,7 +2756,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		/**
 		 * Key of data types. Used when parsing command line options.
 		 * 
-		 * @see org.evoludo.jre.simulator.EvoLudoJRE#cloData
+		 * @see org.evoludo.simulator.EvoLudoJRE#cloData
 		 */
 		String key;
 
@@ -2799,7 +2799,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 *
 	 * @return the array of data types that can be reported by this module
 	 * 
-	 * @see org.evoludo.gwt.simulator.EvoLudoWeb#updateViews
+	 * @see org.evoludo.simulator.EvoLudoWeb#updateViews
 	 */
 	public DataTypes[] getAvailableDataTypes() {
 		ArrayList<DataTypes> dataOutputs = new ArrayList<>();

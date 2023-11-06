@@ -36,9 +36,9 @@ package org.evoludo.simulator.views;
  * {@link org.evoludo.simulator.modules.Module Module}s that implement the
  * {@code HasMean} interface include a graphical view that depicts the
  *  mean state of the population as a function of time in their GUI:
- * {@link org.evoludo.gwt.simulator.MVMean} for GWT and
- * {@link org.evoludo.jre.simulator.MVDMean},
- * {@link org.evoludo.jre.simulator.MVCMean} for JRE.
+ * {@link org.evoludo.simulator.MVMean} for GWT and
+ * {@link org.evoludo.simulator.MVDMean},
+ * {@link org.evoludo.simulator.MVCMean} for JRE.
  * <p>
  * <strong>Important:</strong> Implementations have to be agnostic of the
  * runtime environment (JRE vs GWT).
@@ -49,7 +49,7 @@ public abstract interface HasMean {
 
 	/**
 	 * {@link org.evoludo.simulator.modules.Module Module}s that implement this
-	 * interface request a {@link org.evoludo.gwt.graphics.LineGraph LineGraph}
+	 * interface request a {@link org.evoludo.graphics.LineGraph LineGraph}
 	 * that depicts the mean strategies of the population. For discrete modules with
 	 * \(d\) traits the frequency/density of all traits is shown in a single panel.
 	 * In contrast, for continuous modules with \(d\) traits, \(d\) panels are shown
@@ -68,7 +68,7 @@ public abstract interface HasMean {
 
 	/**
 	 * {@link org.evoludo.simulator.modules.Module Module}s that implement this
-	 * interface request a {@link org.evoludo.gwt.graphics.LineGraph LineGraph}
+	 * interface request a {@link org.evoludo.graphics.LineGraph LineGraph}
 	 * that depicts the mean fitness of the population. For discrete modules the
 	 * mean fitness of each trait is shown together with the overall mean fitness of
 	 * the population. For continuous modules the mean overall fitness of the

@@ -67,9 +67,9 @@ import org.evoludo.simulator.models.PDERD;
  *            MeshLambertMaterial} for GWT and
  *            {@link Color} for JRE
  * 
- * @see org.evoludo.gwt.simulator.ColorMapCSS ColorMapCSS
- * @see org.evoludo.gwt.simulator.ColorMap3D ColorMap3D
- * @see "Also consult GWT emulation of Color in org.evoludo.gwt.emulate.java.awt.Color"
+ * @see org.evoludo.simulator.ColorMapCSS ColorMapCSS
+ * @see org.evoludo.simulator.ColorMap3D ColorMap3D
+ * @see "Also consult GWT emulation of Color in org.evoludo.emulate.java.awt.Color"
  */
 public abstract class ColorMap<T extends Object> {
 
@@ -277,9 +277,9 @@ public abstract class ColorMap<T extends Object> {
 	 *            MeshLambertMaterial} for GWT and
 	 *            {@link Color} for JRE
 	 * 
-	 * @see org.evoludo.gwt.simulator.ColorMapCSS ColorMapCSS
-	 * @see org.evoludo.gwt.simulator.ColorMap3D ColorMap3D
-	 * @see "Also consult GWT emulation of Color in org.evoludo.gwt.emulate.java.awt.Color"
+	 * @see org.evoludo.simulator.ColorMapCSS ColorMapCSS
+	 * @see org.evoludo.simulator.ColorMap3D ColorMap3D
+	 * @see "Also consult GWT emulation of Color in org.evoludo.emulate.java.awt.Color"
 	 */
 	public abstract static class Index<T> extends ColorMap<T> {
 
@@ -366,9 +366,9 @@ public abstract class ColorMap<T extends Object> {
 	 *            {@link thothbot.parallax.core.shared.materials.MeshLambertMaterial
 	 *            MeshLambertMaterial} for GWT and {@link Color} for JRE
 	 * 
-	 * @see org.evoludo.gwt.simulator.ColorMapCSS ColorMapCSS
-	 * @see org.evoludo.gwt.simulator.ColorMap3D ColorMap3D
-	 * @see "Also consult GWT emulation of Color in org.evoludo.gwt.emulate.java.awt.Color"
+	 * @see org.evoludo.simulator.ColorMapCSS ColorMapCSS
+	 * @see org.evoludo.simulator.ColorMap3D ColorMap3D
+	 * @see "Also consult GWT emulation of Color in org.evoludo.emulate.java.awt.Color"
 	 */
 	public static abstract class Gradient<T> extends ColorMap<T> {
 
@@ -423,9 +423,9 @@ public abstract class ColorMap<T extends Object> {
 	 *            MeshLambertMaterial} for GWT and
 	 *            {@link Color} for JRE
 	 * 
-	 * @see org.evoludo.gwt.simulator.ColorMapCSS
-	 * @see org.evoludo.gwt.simulator.ColorMap3D
-	 * @see "Also consult GWT emulation of Color in org.evoludo.gwt.emulate.java.awt.Color"
+	 * @see org.evoludo.simulator.ColorMapCSS
+	 * @see org.evoludo.simulator.ColorMap3D
+	 * @see "Also consult GWT emulation of Color in org.evoludo.emulate.java.awt.Color"
 	 */
 	public static abstract class Hue<T> extends Gradient1D<T> {
 
@@ -504,9 +504,9 @@ public abstract class ColorMap<T extends Object> {
 	 *            {@link thothbot.parallax.core.shared.materials.MeshLambertMaterial
 	 *            MeshLambertMaterial} for GWT and {@link Color} for JRE
 	 * 
-	 * @see org.evoludo.gwt.simulator.ColorMapCSS ColorMapCSS
-	 * @see org.evoludo.gwt.simulator.ColorMap3D ColorMap3D
-	 * @see "Also consult GWT emulation of Color in org.evoludo.gwt.emulate.java.awt.Color"
+	 * @see org.evoludo.simulator.ColorMapCSS ColorMapCSS
+	 * @see org.evoludo.simulator.ColorMap3D ColorMap3D
+	 * @see "Also consult GWT emulation of Color in org.evoludo.emulate.java.awt.Color"
 	 */
 	public static abstract class Gradient1D<T> extends Gradient<T> {
 
@@ -736,9 +736,9 @@ public abstract class ColorMap<T extends Object> {
 	 *            MeshLambertMaterial} for GWT and
 	 *            {@link Color} for JRE
 	 * 
-	 * @see org.evoludo.gwt.simulator.ColorMapCSS ColorMapCSS
-	 * @see org.evoludo.gwt.simulator.ColorMap3D ColorMap3D
-	 * @see "Also consult GWT emulation of Color in org.evoludo.gwt.emulate.java.awt.Color"
+	 * @see org.evoludo.simulator.ColorMapCSS ColorMapCSS
+	 * @see org.evoludo.simulator.ColorMap3D ColorMap3D
+	 * @see "Also consult GWT emulation of Color in org.evoludo.emulate.java.awt.Color"
 	 */
 	public static abstract class Gradient2D<T> extends Gradient<T> {
 
@@ -1054,9 +1054,9 @@ public abstract class ColorMap<T extends Object> {
 	 *            MeshLambertMaterial} for GWT and
 	 *            {@link Color} for JRE
 	 * 
-	 * @see org.evoludo.gwt.simulator.ColorMapCSS ColorMapCSS
-	 * @see org.evoludo.gwt.simulator.ColorMap3D ColorMap3D
-	 * @see "Also consult GWT emulation of Color in org.evoludo.gwt.emulate.java.awt.Color"
+	 * @see org.evoludo.simulator.ColorMapCSS ColorMapCSS
+	 * @see org.evoludo.simulator.ColorMap3D ColorMap3D
+	 * @see "Also consult GWT emulation of Color in org.evoludo.emulate.java.awt.Color"
 	 */
 	public abstract static class GradientND<T> extends ColorMap.Gradient2D<T> {
 

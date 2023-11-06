@@ -104,8 +104,8 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	 * implementations. In particular, JRE allows for parallel execution of certain
 	 * steps, while GWT uses a scheduling mechanism.
 	 * 
-	 * @see org.evoludo.jre.simulator.PDESupervisorJRE
-	 * @see org.evoludo.gwt.simulator.PDESupervisorGWT
+	 * @see org.evoludo.simulator.PDESupervisorJRE
+	 * @see org.evoludo.simulator.PDESupervisorGWT
 	 */
 	protected PDESupervisor supervisor;
 
@@ -305,8 +305,8 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	 * @param module the module to numerically integrate
 	 * 
 	 * @see EvoLudo#getRNG()
-	 * @see org.evoludo.gwt.simulator.PDESupervisorGWT PDESupervisorGWT
-	 * @see org.evoludo.jre.simulator.PDESupervisorJRE PDESupervisorJRE
+	 * @see org.evoludo.simulator.PDESupervisorGWT PDESupervisorGWT
+	 * @see org.evoludo.simulator.PDESupervisorJRE PDESupervisorJRE
 	 */
 	public PDERD(EvoLudo engine, Module module) {
 		super(engine, module);

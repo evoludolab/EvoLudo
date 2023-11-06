@@ -45,12 +45,12 @@ docs :
 		-footer "<span style='display:inline-block; padding:14px 0;'>$(DATE)&nbsp;$(VERSION)</span>" \
 		--frames \
 		org.evoludo.geom\
-		org.evoludo.gwt.graphics\
-		org.evoludo.gwt.simulator\
-		org.evoludo.gwt.ui\
-		org.evoludo.jre.graphics\
-		org.evoludo.jre.simulator\
-		org.evoludo.jre.simulator.exec\
+		org.evoludo.graphics\
+		org.evoludo.simulator\
+		org.evoludo.ui\
+		org.evoludo.graphics\
+		org.evoludo.simulator\
+		org.evoludo.simulator.exec\
 		org.evoludo.simulator\
 		org.evoludo.simulator.models\
 		org.evoludo.simulator.modules\

@@ -396,8 +396,8 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	 * 
 	 * @param nll the layout listener
 	 * 
-	 * @see org.evoludo.gwt.graphics.Network2DGWT#doLayout(LayoutListener nll)
-	 * @see org.evoludo.gwt.graphics.Network3DGWT#doLayout(LayoutListener nll)
+	 * @see org.evoludo.graphics.Network2DGWT#doLayout(LayoutListener nll)
+	 * @see org.evoludo.graphics.Network3DGWT#doLayout(LayoutListener nll)
 	 */
 	public abstract void doLayout(LayoutListener nll);
 

@@ -97,9 +97,9 @@ import org.evoludo.util.Plist;
  * Interface with the outside world. Deals with command line options, help,
  * encoding/restoring state, logging, printing of result, etc. GWT/JRE neutral
  * abstract implementation of interface between EvoLudo core and GUI interface.
- * JRE specific code relegated to {@link org.evoludo.jre.simulator.EvoLudoJRE
+ * JRE specific code relegated to {@link org.evoludo.simulator.EvoLudoJRE
  * EvoLudoJRE} and GWT specific code to
- * {@link org.evoludo.gwt.simulator.EvoLudoGWT EvoLudoGWT}. Two distinct
+ * {@link org.evoludo.simulator.EvoLudoGWT EvoLudoGWT}. Two distinct
  * implementations are required e.g. because of significant differences in
  * input/output routines.
  * 
@@ -174,7 +174,7 @@ public abstract class EvoLudo
 	 * <p>
 	 * <strong>Note:</strong> cannot be <code>static</code> or <code>final</code> to
 	 * allow disabling touch events for debugging (see
-	 * {@link org.evoludo.gwt.simulator.EvoLudoGWT#cloGUIFeatures
+	 * {@link org.evoludo.simulator.EvoLudoGWT#cloGUIFeatures
 	 * EvoLudoGWT.cloGUIFeatures}).
 	 */
 	public boolean hasTouch = false;
@@ -200,8 +200,8 @@ public abstract class EvoLudo
 
 	/**
 	 * Utility method to log progress of simulations. For implementation details see
-	 * {@link org.evoludo.jre.simulator.EvoLudoJRE EvoLudoJRE} and
-	 * {@link org.evoludo.gwt.simulator.EvoLudoGWT EvoLudoGWT}
+	 * {@link org.evoludo.simulator.EvoLudoJRE EvoLudoJRE} and
+	 * {@link org.evoludo.simulator.EvoLudoGWT EvoLudoGWT}
 	 *
 	 * @param msg progress message
 	 */
@@ -826,24 +826,24 @@ public abstract class EvoLudo
 
 	/**
 	 * Minimum delay between subsequent updates for speed slider
-	 * {@link org.evoludo.gwt.ui.Slider}
+	 * {@link org.evoludo.ui.Slider}
 	 */
 	public static final double DELAY_MIN = 1.0;
 
 	/**
 	 * Maximum delay between subsequent updates for speed slider
-	 * {@link org.evoludo.gwt.ui.Slider}
+	 * {@link org.evoludo.ui.Slider}
 	 */
 	public static final double DELAY_MAX = 10000.0;
 
 	/**
 	 * Initial delay between subsequent updates for speed slider
-	 * {@link org.evoludo.gwt.ui.Slider}
+	 * {@link org.evoludo.ui.Slider}
 	 */
 	public static final double DELAY_INIT = 100.0;
 
 	/**
-	 * Delay decrement for speed slider {@link org.evoludo.gwt.ui.Slider}
+	 * Delay decrement for speed slider {@link org.evoludo.ui.Slider}
 	 */
 	private static final double DELAY_INCR = 1.2;
 
@@ -927,7 +927,7 @@ public abstract class EvoLudo
 	 * <h3>Implementation note:</h3>
 	 * Called from {@link loadModule} to first unload the active module
 	 * or triggered by GWT's
-	 * {@link org.evoludo.gwt.simulator.EvoLudoWeb#onUnload()}, i.e. when unloading
+	 * {@link org.evoludo.simulator.EvoLudoWeb#onUnload()}, i.e. when unloading
 	 * the GWT application. In both cases the model has stopped running (either
 	 * through {@link PendingAction#APPLY} or {@link PendingAction#UNLOAD}) and
 	 * hence no need to issue further requests.
@@ -1075,7 +1075,7 @@ public abstract class EvoLudo
 	 * 
 	 * @param args the {@code String} array of command line arguments
 	 * 
-	 * @see org.evoludo.jre.simulator.EvoLudoJRE#simulation(String[])
+	 * @see org.evoludo.simulator.EvoLudoJRE#simulation(String[])
 	 */
 	public void simulation(String[] args) {
 	}
@@ -1204,7 +1204,7 @@ public abstract class EvoLudo
 	 * drag'n'drop with the GWT GUI or through the <code>--restore</code> command
 	 * line argument. Notifies all registered {@link Model.MilestoneListener}s.
 	 *
-	 * @see org.evoludo.gwt.simulator.EvoLudoWeb#restoreFromFile(String, String)
+	 * @see org.evoludo.simulator.EvoLudoWeb#restoreFromFile(String, String)
 	 *      EvoLudoWeb.restoreFromFile(String, String)
 	 * @see EvoLudo#restoreState(Plist)
 	 */
@@ -1470,13 +1470,13 @@ public abstract class EvoLudo
 	 * @param charge the PDE model to supervise
 	 * @return supervisor for coordinating PDE calculations
 	 * 
-	 * @see org.evoludo.gwt.simulator.EvoLudoGWT#hirePDESupervisor(org.evoludo.simulator.models.Model.PDE)
+	 * @see org.evoludo.simulator.EvoLudoGWT#hirePDESupervisor(org.evoludo.simulator.models.Model.PDE)
 	 *      EvoLudoGWT#hirePDESupervisor(org.evoludo.simulator.models.Model.PDE)
-	 * @see org.evoludo.jre.simulator.EvoLudoJRE#hirePDESupervisor(org.evoludo.simulator.models.Model.PDE)
+	 * @see org.evoludo.simulator.EvoLudoJRE#hirePDESupervisor(org.evoludo.simulator.models.Model.PDE)
 	 *      EvoLudoJRE#hirePDESupervisor(org.evoludo.simulator.models.Model.PDE)
 	 * @see org.evoludo.simulator.models.PDESupervisor
-	 * @see org.evoludo.gwt.simulator.PDESupervisorGWT
-	 * @see org.evoludo.jre.simulator.PDESupervisorJRE
+	 * @see org.evoludo.simulator.PDESupervisorGWT
+	 * @see org.evoludo.simulator.PDESupervisorJRE
 	 */
 	public abstract PDESupervisor hirePDESupervisor(Model.PDE charge);
 
@@ -1485,9 +1485,9 @@ public abstract class EvoLudo
 	 * <p>
 	 * Hide GWT/JRE differences in measuring execution time.
 	 * 
-	 * @see org.evoludo.gwt.simulator.EvoLudoGWT#elapsedTimeMsec
+	 * @see org.evoludo.simulator.EvoLudoGWT#elapsedTimeMsec
 	 *      EvoLudoGWT.elapsedTimeMsec
-	 * @see org.evoludo.jre.simulator.EvoLudoJRE#elapsedTimeMsec
+	 * @see org.evoludo.simulator.EvoLudoJRE#elapsedTimeMsec
 	 *      EvoLudoJRE.elapsedTimeMsec
 	 */
 	@Override
@@ -1678,9 +1678,9 @@ public abstract class EvoLudo
 	 * @param cloarray array of command line arguments
 	 * @return pre-processed array of command line options
 	 * 
-	 * @see org.evoludo.jre.simulator.EvoLudoJRE#preprocessCLO(String[])
+	 * @see org.evoludo.simulator.EvoLudoJRE#preprocessCLO(String[])
 	 *      EvoLudoJRE#preprocessCLO(String[])
-	 * @see org.evoludo.gwt.simulator.EvoLudoGWT#preprocessCLO(String[])
+	 * @see org.evoludo.simulator.EvoLudoGWT#preprocessCLO(String[])
 	 *      EvoLudoGWT#preprocessCLO(String[])
 	 */
 	protected String[] preprocessCLO(String[] cloarray) {
@@ -2026,10 +2026,10 @@ public abstract class EvoLudo
 
 	/**
 	 * Command line option to set the color for trajectories. For example, this
-	 * affects the display in {@link org.evoludo.gwt.simulator.MVS3} (and
-	 * {@link org.evoludo.gwt.graphics.S3Graph}) or
-	 * {@link org.evoludo.gwt.simulator.MVPhase2D} (and
-	 * {@link org.evoludo.gwt.graphics.ParaGraph}).
+	 * affects the display in {@link org.evoludo.simulator.MVS3} (and
+	 * {@link org.evoludo.graphics.S3Graph}) or
+	 * {@link org.evoludo.simulator.MVPhase2D} (and
+	 * {@link org.evoludo.graphics.ParaGraph}).
 	 */
 	// note: cannot import org.evoludo.gwt classes in header (otherwise compilation
 	// of java port fails).

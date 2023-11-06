@@ -39,8 +39,8 @@ import org.evoludo.util.RingBuffer;
  * {@link org.evoludo.simulator.modules.Module Module}s that implement the
  * {@code HasPhase2D} interface include a graphical view that depicts the
  * mean state of the population in a 2D (projection) of the phase plane as a
- * function of time in their GUI: {@link org.evoludo.gwt.simulator.MVPhase2D}
- * for GWT and {@link org.evoludo.jre.simulator.MVDPhase2D} for JRE. The mapping
+ * function of time in their GUI: {@link org.evoludo.simulator.MVPhase2D}
+ * for GWT and {@link org.evoludo.simulator.MVDPhase2D} for JRE. The mapping
  * of the data can be customized through the {@link Data2Phase} interface.
  * <p>
  * <strong>Important:</strong> Implementations have to be agnostic of the

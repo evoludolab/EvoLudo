@@ -258,7 +258,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 * state of such a file in the browser through drag'n'drop. Here we simply check
 	 * if {@code --export} was provided on the command line and discard it if found.
 	 * 
-	 * @see org.evoludo.jre.simulator.EvoLudoJRE#cloExport
+	 * @see org.evoludo.simulator.EvoLudoJRE#cloExport
 	 */
 	@Override
 	protected String[] preprocessCLO(String[] args) {

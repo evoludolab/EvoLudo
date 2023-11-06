@@ -36,8 +36,8 @@ package org.evoludo.simulator.views;
  * {@link org.evoludo.simulator.modules.Module Module}s that implement the
  * {@code HasS3} interface include a graphical view that depicts the
  * mean state of the population in the simplex \(S_3\) as a
- * function of time in their GUI: {@link org.evoludo.gwt.simulator.MVS3}
- * for GWT and {@link org.evoludo.jre.simulator.MVDS3} for JRE.
+ * function of time in their GUI: {@link org.evoludo.simulator.MVS3}
+ * for GWT and {@link org.evoludo.simulator.MVDS3} for JRE.
  * <p>
  * <strong>Important:</strong> Implementations have to be agnostic of the
  * runtime environment (JRE vs GWT).

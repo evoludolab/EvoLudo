@@ -831,8 +831,8 @@ public class NetDyn extends Discrete implements HasIBS,
 		 * {@inheritDoc}
 		 * <p>
 		 * <strong>Note:</strong> with the help of <code>engine</code> (see
-		 * {@link org.evoludo.gwt.simulator.EvoLudoGWT} and
-		 * {@link org.evoludo.jre.simulator.EvoLudoJRE}) the color specifics of GWT and
+		 * {@link org.evoludo.simulator.EvoLudoGWT} and
+		 * {@link org.evoludo.simulator.EvoLudoJRE}) the color specifics of GWT and
 		 * JRE are shielded from interfering with shared code. Some careful checks and
 		 * casts are needed to ensure the correct color map is used while preventing
 		 * re-allocation of the custom color gradients.

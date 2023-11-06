@@ -98,8 +98,8 @@ public class PDERDA extends PDERD {
 	 * @param module     the module to numerically integrate
 	 *
 	 * @see EvoLudo#getRNG()
-	 * @see org.evoludo.gwt.simulator.PDESupervisorGWT PDESupervisorGWT
-	 * @see org.evoludo.jre.simulator.PDESupervisorJRE PDESupervisorJRE
+	 * @see org.evoludo.simulator.PDESupervisorGWT PDESupervisorGWT
+	 * @see org.evoludo.simulator.PDESupervisorJRE PDESupervisorJRE
 	 */
 	public PDERDA(EvoLudo engine, Module module) {
 		super(engine, module);

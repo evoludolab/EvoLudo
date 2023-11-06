@@ -40,9 +40,9 @@ import org.evoludo.simulator.models.Model;
  * {@link org.evoludo.simulator.modules.Module Module}s that implement the
  * {@code HasHistogram} interface include a graphical view that depicts a
  * histogram of data in their GUI:
- * {@link org.evoludo.gwt.simulator.MVHistogram} in GWT and
- * {@link org.evoludo.jre.simulator.MVCTraitHistogram},
- * {@link org.evoludo.jre.simulator.MVFitHistogram} in JRE for a single
+ * {@link org.evoludo.simulator.MVHistogram} in GWT and
+ * {@link org.evoludo.simulator.MVCTraitHistogram},
+ * {@link org.evoludo.simulator.MVFitHistogram} in JRE for a single
  * continuous trait or the fitness distribution, respectively.
  * <p>
  * <strong>Important:</strong> Implementations have to be agnostic of the
@@ -90,8 +90,8 @@ public abstract interface HasHistogram {
 	 * {@code HasHistogram.Strategy} interface include histograms of strategy
 	 * distributions. Currently this only applies to continuous modules.
 	 * 
-	 * @see org.evoludo.gwt.simulator.MVHistogram
-	 * @see org.evoludo.jre.simulator.MVCTraitHistogram
+	 * @see org.evoludo.simulator.MVHistogram
+	 * @see org.evoludo.simulator.MVCTraitHistogram
 	 * 
 	 * @author Christoph Hauert
 	 */
@@ -104,8 +104,8 @@ public abstract interface HasHistogram {
 	 * distributions. For discrete modules the distribution is show for each trait
 	 * separately.
 	 * 
-	 * @see org.evoludo.gwt.simulator.MVHistogram
-	 * @see org.evoludo.jre.simulator.MVFitHistogram
+	 * @see org.evoludo.simulator.MVHistogram
+	 * @see org.evoludo.simulator.MVFitHistogram
 	 * 
 	 * @author Christoph Hauert
 	 */
@@ -119,7 +119,7 @@ public abstract interface HasHistogram {
 	 * separately for interaction and reference graphs, as well as for incoming and
 	 * outgoing links (for directed graphs).
 	 * 
-	 * @see org.evoludo.gwt.simulator.MVHistogram
+	 * @see org.evoludo.simulator.MVHistogram
 	 * 
 	 * @author Christoph Hauert
 	 */
@@ -132,7 +132,7 @@ public abstract interface HasHistogram {
 	 * running statistics over multiple runs and include histograms of fixation
 	 * probabilities.
 	 * 
-	 * @see org.evoludo.gwt.simulator.MVHistogram
+	 * @see org.evoludo.simulator.MVHistogram
 	 * 
 	 * @author Christoph Hauert
 	 */
@@ -144,7 +144,7 @@ public abstract interface HasHistogram {
 	 * {@code HasHistogram.StatisticsTime} interface must be capable of running
 	 * statistics over multiple runs and include histograms of fixation times.
 	 * 
-	 * @see org.evoludo.gwt.simulator.MVHistogram
+	 * @see org.evoludo.simulator.MVHistogram
 	 * 
 	 * @author Christoph Hauert
 	 */

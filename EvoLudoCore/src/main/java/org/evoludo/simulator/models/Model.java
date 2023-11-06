@@ -358,8 +358,8 @@ public abstract interface Model extends CLOProvider {
 		 * increment <code>dt</code>.
 		 * <p>
 		 * <strong>Note:</strong> This method needs to be public to permit access by
-		 * {@link org.evoludo.gwt.simulator.PDESupervisorGWT} and
-		 * {@link org.evoludo.jre.simulator.PDESupervisorJRE}
+		 * {@link org.evoludo.simulator.PDESupervisorGWT} and
+		 * {@link org.evoludo.simulator.PDESupervisorJRE}
 		 * 
 		 * @param dt the time increment for diffusion
 		 */
@@ -554,8 +554,8 @@ public abstract interface Model extends CLOProvider {
 		 * for traits <code>trait1</code> and <code>trait2</code>. The histogram is
 		 * returned in the linear array <code>bins</code> and arranged in a way that is
 		 * compatible with square lattice geometries for visualization by
-		 * {@link org.evoludo.gwt.simulator.MVDistribution} and
-		 * {@link org.evoludo.gwt.graphics.PopGraph2D} (GWT only). For modules with a
+		 * {@link org.evoludo.simulator.MVDistribution} and
+		 * {@link org.evoludo.graphics.PopGraph2D} (GWT only). For modules with a
 		 * single trait only, <code>trait1</code> and <code>trait2</code> are ignored.
 		 *
 		 * @param id     the id of the population for multi-species models
@@ -1098,11 +1098,11 @@ public abstract interface Model extends CLOProvider {
 	 * of the model.
 	 * 
 	 * @param <T>      color data type. {@link Color} for
-	 *                 {@link org.evoludo.gwt.graphics.PopGraph2D} and
-	 *                 {@link org.evoludo.jre.graphics.PopGraph2D} as well as
+	 *                 {@link org.evoludo.graphics.PopGraph2D} and
+	 *                 {@link org.evoludo.graphics.PopGraph2D} as well as
 	 *                 {@link thothbot.parallax.core.shared.materials.MeshLambertMaterial
 	 *                 MeshLambertMaterial} for
-	 *                 {@link org.evoludo.gwt.graphics.PopGraph3D}
+	 *                 {@link org.evoludo.graphics.PopGraph3D}
 	 * @param id       the species identifier
 	 * @param colors   the array for storing the colors for individuals
 	 * @param colorMap the map for translating individual traits into colors
@@ -1190,11 +1190,11 @@ public abstract interface Model extends CLOProvider {
 	 * Used by GUI to visualize current state of model.
 	 * 
 	 * @param <T>      color data type. {@link Color} for
-	 *                 {@link org.evoludo.gwt.graphics.PopGraph2D} and
-	 *                 {@link org.evoludo.jre.graphics.PopGraph2D} as well as
+	 *                 {@link org.evoludo.graphics.PopGraph2D} and
+	 *                 {@link org.evoludo.graphics.PopGraph2D} as well as
 	 *                 {@link thothbot.parallax.core.shared.materials.MeshLambertMaterial
 	 *                 MeshLambertMaterial} for
-	 *                 {@link org.evoludo.gwt.graphics.PopGraph3D}
+	 *                 {@link org.evoludo.graphics.PopGraph3D}
 	 * @param id       the species identifier
 	 * @param colors   the array for storing color values
 	 * @param colorMap the map to use for translating traits to colors
