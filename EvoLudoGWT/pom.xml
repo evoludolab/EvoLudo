@@ -95,13 +95,14 @@
         <configuration>
           <moduleName>org.evoludo.EvoLudoWeb</moduleName>
           <!-- <moduleShortName>${module.toLowerCase()}</moduleShortName> -->
-          <moduleShortName>evoludoweb</moduleShortName>
+          <!-- <moduleShortName>evoludoweb</moduleShortName> -->
           <relocateSuperSource>true</relocateSuperSource>
           <devmodeArgs>
             <arg>-bindAddress</arg>
             <arg>${gwt.server}</arg>
           </devmodeArgs>
           <style>PRETTY</style>
+          <skipModule>true</skipModule>
         </configuration>
       </plugin>
     </plugins>
