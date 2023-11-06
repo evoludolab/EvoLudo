@@ -4,6 +4,10 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <name>EvoLudo</name>
+  <description>Interactive in-silicio evolution</description>
+  <url>https://www.evoludo.org</url>
+
   <groupId>org.evoludo</groupId>
   <artifactId>EvoLudo</artifactId>
   <version>1.0-SNAPSHOT</version>
@@ -11,6 +15,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <javadoc.exe>/Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/javadoc</javadoc.exe>
   </properties>
 
   <dependencyManagement>
@@ -33,6 +38,32 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>io.github.git-commit-id</groupId>
+        <artifactId>git-commit-id-maven-plugin</artifactId>
+        <version>5.0.0</version>
+        <executions>
+          <execution>
+            <id>get-git-version</id>
+            <goals>
+              <goal>revision</goal>
+            </goals>
+            <phase>initialize</phase>
+          </execution>
+        </executions>
+        <configuration>
+          <dateFormat>MMMM dd, yyyy @ HH:mm z</dateFormat>
+          <includeOnlyProperties>
+            <includeOnlyProperty>^git.commit.id.describe$</includeOnlyProperty>
+            <includeOnlyProperty>^git.build.time$</includeOnlyProperty>
+          </includeOnlyProperties>
+          <commitIdGenerationMode>full</commitIdGenerationMode>
+          <gitDescribe>
+            <dirty>*</dirty>
+          </gitDescribe>
+        </configuration>
+      </plugin>
+
+      <plugin>
         <groupId>net.ltgt.gwt.maven</groupId>
         <artifactId>gwt-maven-plugin</artifactId>
         <inherited>false</inherited>
@@ -40,7 +71,105 @@
           <launcherDir>${project.build.directory}/gwt/launcherDir</launcherDir>
         </configuration>
       </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.6.2</version>
+        <inherited>false</inherited>
+        <configuration>
+          <doctitle>EvoLudo: in silico evolution</doctitle>
+          <windowtitle>EvoLudo: in silico evolution</windowtitle>
+          <header><![CDATA[
+          <script src='https://polyfill.io/v3/polyfill.min.js?features=es6'></script>
+          <script id='MathJax-script' async src='https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'></script>
+          ]]>
+          </header>
+          <footer><![CDATA[
+          <span style='display:inline-block; padding:14px 0;'>${git.build.time}&nbsp;(revision ${git.commit.id.describe})</span>
+          ]]>
+          </footer>
+          <!-- JDK 11 needed to generate docs with frames -->
+          <javadocExecutable>${javadoc.exe}</javadocExecutable>
+          <!-- too many problems in javadoc for EvoLudoJRE - exclude for now -->
+          <skippedModules>EvoLudoJRE</skippedModules>
+          <doclint>all,-reference</doclint>
+          <show>private</show>
+          <nohelp>true</nohelp>
+          <excludePackageNames>org.evoludo.simulator.run</excludePackageNames>
+          <links>
+            <link>https://docs.oracle.com/en/java/javase/19/docs/api/</link>
+            <link>https://www.gwtproject.org/javadoc/latest/</link>
+            <link>https://thothbot.github.io/parallax/docs/1.6</link>
+          </links>
+          <sourceFileExcludes>
+            <sourceFileExclude>**/main/super/**/*.java</sourceFileExclude>
+          </sourceFileExcludes>
+          <additionalJOptions>
+            <additionalJOption>--frames</additionalJOption>
+            <additionalJOption>--allow-script-in-comments</additionalJOption>
+          </additionalJOptions>
+          <additionalDependencies>
+            <!-- Additional dependencies from GWT -->
+            <additionalDependency>
+              <groupId>org.parallax3d</groupId>
+              <artifactId>parallax-gwt</artifactId>
+              <version>1.6</version>
+            </additionalDependency>
+            <additionalDependency>
+              <groupId>org.evoludo</groupId>
+              <artifactId>gwt-user-XHTML</artifactId>
+              <version>2.10.0</version>
+            </additionalDependency>
+            <!-- Additional dependencies from JRE -->
+            <additionalDependency>
+              <groupId>org.freehep</groupId>
+              <artifactId>freehep-graphics2d</artifactId>
+              <version>2.4</version>
+            </additionalDependency>
+            <additionalDependency>
+              <groupId>org.freehep</groupId>
+              <artifactId>freehep-graphicsio-pdf</artifactId>
+              <version>2.4</version>
+            </additionalDependency>
+            <additionalDependency>
+              <groupId>org.freehep</groupId>
+              <artifactId>freehep-graphicsio-ps</artifactId>
+              <version>2.4</version>
+            </additionalDependency>
+            <additionalDependency>
+              <groupId>org.freehep</groupId>
+              <artifactId>freehep-graphicsio-svg</artifactId>
+              <version>2.4</version>
+            </additionalDependency>
+            <additionalDependency>
+              <groupId>com.googlecode.matrix-toolkits-java</groupId>
+              <artifactId>mtj</artifactId>
+              <version>1.0.4</version>
+            </additionalDependency>
+          </additionalDependencies>
+        </configuration>
+        <executions>
+          <execution>
+            <id>aggregate</id>
+            <goals>
+              <goal>aggregate</goal>
+            </goals>
+            <phase>site</phase>
+            <configuration>
+              <!-- Specific configuration for the aggregate report -->
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <version>3.4.5</version>
+      </plugin>
     </plugins>
+
     <pluginManagement>
       <plugins>
         <plugin>
@@ -88,6 +217,7 @@
       </plugins>
     </pluginManagement>
   </build>
+
   <modules>
     <module>EvoLudoGWT</module>
     <module>EvoLudoCore</module>
