@@ -59,7 +59,7 @@ public interface Resources extends ClientBundle {
 	 * 
 	 * @return the CSS resource
 	 */
-	@Source("../../../../resources/EvoLudo.gss")
+	@Source("resources/EvoLudo.gss")
 	@CssResource.NotStrict
 	public CssResource css();
 
@@ -68,7 +68,7 @@ public interface Resources extends ClientBundle {
 	 * 
 	 * @return the JavaScript file
 	 */
-	@Source("../../../../resources/Canvas2SVG.js")
+	@Source("resources/Canvas2SVG.js")
 	public TextResource canvas2SVG();
 
 	/**
@@ -76,7 +76,7 @@ public interface Resources extends ClientBundle {
 	 * 
 	 * @return the JavaScript file
 	 */
-	@Source("../../../../resources/TouchEventsGWT.js")
+	@Source("resources/TouchEventsGWT.js")
 	public TextResource touchEventsGWTHandler();
 
 	/**
@@ -84,7 +84,7 @@ public interface Resources extends ClientBundle {
 	 * 
 	 * @return the JavaScript file
 	 */
-	@Source("../../../../resources/jszip.js")
+	@Source("resources/jszip.js")
 	public TextResource zip();
 
 	/**
@@ -92,7 +92,7 @@ public interface Resources extends ClientBundle {
 	 * 
 	 * @return the image resource
 	 */
-	@Source("../../../../resources/images/logo.small.png")
+	@Source("resources/logo.small.png")
 	@ImageOptions(repeatStyle = RepeatStyle.None)
 	ImageResource logoSmall();
 
@@ -101,7 +101,7 @@ public interface Resources extends ClientBundle {
 	 * 
 	 * @return the image resource
 	 */
-	@Source("../../../../resources/images/cursorRotate.svg")
+	@Source("resources/cursorRotate.svg")
 	@MimeType("image/svg+xml")
 	DataResource cursorRotate();
 
@@ -110,7 +110,7 @@ public interface Resources extends ClientBundle {
 	 * 
 	 * @return the image resource
 	 */
-	@Source("../../../../resources/images/hborder.png")
+	@Source("resources/hborder.png")
 	@ImageOptions(repeatStyle = RepeatStyle.Horizontal)
 	ImageResource hBorder();
 
@@ -119,7 +119,7 @@ public interface Resources extends ClientBundle {
 	 * 
 	 * @return the image resource
 	 */
-	@Source("../../../../resources/images/vborder.png")
+	@Source("resources/vborder.png")
 	@ImageOptions(repeatStyle = RepeatStyle.Vertical)
 	ImageResource vBorder();
 
@@ -128,7 +128,7 @@ public interface Resources extends ClientBundle {
 	 * 
 	 * @return the image resource
 	 */
-	@Source("../../../../resources/images/circles.png")
+	@Source("resources/circles.png")
 	@ImageOptions(repeatStyle = RepeatStyle.None)
 	ImageResource circles();
 
@@ -137,7 +137,7 @@ public interface Resources extends ClientBundle {
 	 * 
 	 * @return the image resource
 	 */
-	@Source("../../../../resources/images/corner.png")
+	@Source("resources/corner.png")
 	@ImageOptions(repeatStyle = RepeatStyle.None)
 	ImageResource corner();
 
@@ -146,7 +146,7 @@ public interface Resources extends ClientBundle {
 	 * 
 	 * @return the image resource
 	 */
-	@Source("../../../../resources/images/thumb_horz.png")
+	@Source("resources/thumb_horz.png")
 	@ImageOptions(repeatStyle = RepeatStyle.None)
 	ImageResource thumbHorizontal();
 
@@ -155,7 +155,7 @@ public interface Resources extends ClientBundle {
 	 * 
 	 * @return the image resource
 	 */
-	@Source("../../../../resources/images/thumb_vertical.png")
+	@Source("resources/thumb_vertical.png")
 	@ImageOptions(repeatStyle = RepeatStyle.None)
 	ImageResource thumbVertical();
 }
