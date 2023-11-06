@@ -14,7 +14,7 @@ XHTML (&nbsp;, &eacirc;, etc.) rather than having to use numeric character refer
 		  the future
 		- reference	one of the files from the W3C instead
 		- reference all 3 files from the W3C with a "proper" DOCTYPE (see above) -->
-<!-- <!DOCTYPE ui:UiBinder [
+<!DOCTYPE ui:UiBinder [
 
 <!ENTITY % HTMLlat1 SYSTEM "https://www.w3.org/TR/xhtml1/DTD/xhtml-lat1.ent">
 %HTMLlat1;
@@ -24,7 +24,7 @@ XHTML (&nbsp;, &eacirc;, etc.) rather than having to use numeric character refer
 
 <!ENTITY % HTMLspecial SYSTEM "https://www.w3.org/TR/xhtml1/DTD/xhtml-special.ent">
 %HTMLspecial;
-]> -->
+]>
 <!-- The "proper" doctype above unfortunately results in terribly slow compilation
 times. Since the XHTML entities do not appear to be used the doctype is simply
 removed. -->
@@ -63,7 +63,7 @@ removed. -->
 -->
 <ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
 	xmlns:g="urn:import:com.google.gwt.user.client.ui"
-	xmlns:e="urn:import:org.evoludo.gwt.ui">
+	xmlns:e="urn:import:org.evoludo.ui">
 	<ui:style gss="true">
 	.right {
 		display: inline-block;

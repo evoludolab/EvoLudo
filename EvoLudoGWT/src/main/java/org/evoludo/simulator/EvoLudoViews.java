@@ -71,7 +71,7 @@ public interface EvoLudoViews extends RequiresResize, IsWidget, FullscreenChange
 
 	public String getStatus(boolean force);
 
-	public void activate(MVCallback callback);
+	public void activate(MVAbstract.Callback callback);
 
 	public void deactivate();
 

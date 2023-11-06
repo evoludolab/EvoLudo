@@ -64,43 +64,6 @@ import com.google.gwt.user.client.ui.ProvidesResize;
  *
  * @author Christoph Hauert
  */
-interface MVCallback {
-
-	/**
-	 * Callback routine to notify recipient that the view has finished activation
-	 * and is ready to receive/display data.
-	 *
-	 * @param activeView view that finished its activation.
-	 */
-	public void viewActivated(EvoLudoViews activeView);
-
-	/**
-	 * Notify callback that layout has completed. For example, this signals that a network
-	 * is ready for taking a snapshot.
-	 */
-	public void layoutComplete();
-
-	/**
-	 * Enables interactive data views to check whether EvoLudo model is running. For
-	 * example, mouse clicks that would change the strategy of an individual in
-	 * {@link MVPop2D} or {@link MVPop3D} are ignored if model is running.
-	 *
-	 * @return <code>true</code> if model is running.
-	 */
-	public boolean isRunning();
-
-	/**
-	 * Request EvoLudo model to restore a previously saved state of the model. This
-	 * method is called by the context menu (see
-	 * {@link MVAbstract#populateContextMenu(ContextMenu)}).
-	 */
-	public void restoreFromFile();
-}
-
-/**
- *
- * @author Christoph Hauert
- */
 public abstract class MVAbstract extends Composite implements EvoLudoViews, ProvidesResize,
 		AbstractGraph.Controller, HasFullscreenChangeHandlers {
 
@@ -167,10 +130,10 @@ public abstract class MVAbstract extends Composite implements EvoLudoViews, Prov
 		return logger;
 	}
 
-	protected MVCallback callback;
+	protected Callback callback;
 
 	@Override
-	public void activate(MVCallback callme) {
+	public void activate(Callback callme) {
 		callback = callme;
 		activate();
 	}
@@ -701,5 +664,42 @@ public abstract class MVAbstract extends Composite implements EvoLudoViews, Prov
 		public void execute() {
 			export(exportType);
 		}
+	}
+
+	/**
+	 *
+	 * @author Christoph Hauert
+	 */
+	public interface Callback {
+
+		/**
+		 * Callback routine to notify recipient that the view has finished activation
+		 * and is ready to receive/display data.
+		 *
+		 * @param activeView view that finished its activation.
+		 */
+		public void viewActivated(EvoLudoViews activeView);
+
+		/**
+		 * Notify callback that layout has completed. For example, this signals that a network
+		 * is ready for taking a snapshot.
+		 */
+		public void layoutComplete();
+
+		/**
+		 * Enables interactive data views to check whether EvoLudo model is running. For
+		 * example, mouse clicks that would change the strategy of an individual in
+		 * {@link MVPop2D} or {@link MVPop3D} are ignored if model is running.
+		 *
+		 * @return <code>true</code> if model is running.
+		 */
+		public boolean isRunning();
+
+		/**
+		 * Request EvoLudo model to restore a previously saved state of the model. This
+		 * method is called by the context menu (see
+		 * {@link MVAbstract#populateContextMenu(ContextMenu)}).
+		 */
+		public void restoreFromFile();
 	}
 }

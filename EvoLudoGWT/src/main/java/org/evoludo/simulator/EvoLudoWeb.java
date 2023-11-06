@@ -113,7 +113,7 @@ import com.google.gwt.user.client.ui.Widget;
  * @author Christoph Hauert
  */
 public class EvoLudoWeb extends Composite
-		implements Model.MilestoneListener, Model.ChangeListener, CLOProvider, EntryPoint, MVCallback {
+		implements Model.MilestoneListener, Model.ChangeListener, CLOProvider, EntryPoint, MVAbstract.Callback {
 
 	/**
 	 * <strong>Apple Books (iBook) notes:</strong>
