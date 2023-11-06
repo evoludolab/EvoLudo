@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import org.evoludo.EvoLudoWeb;
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.MyContext2d;
 import org.evoludo.ui.ContextMenu;
@@ -649,7 +650,7 @@ public abstract class MVAbstract extends Composite implements EvoLudoViews, Prov
 	}-*/;
 
 	protected static native void _exportSVG(Context2d ctx) /*-{
-		@org.evoludo.simulator.EvoLudoWeb::_export(Ljava/lang/String;Ljava/lang/String;)("data:image/svg+xml;charset=utf-8,"+
+		@org.evoludo.EvoLudoWeb::_export(Ljava/lang/String;Ljava/lang/String;)("data:image/svg+xml;charset=utf-8,"+
 			ctx.getSerializedSvg(true), "evoludo.svg");
 	}-*/;
 

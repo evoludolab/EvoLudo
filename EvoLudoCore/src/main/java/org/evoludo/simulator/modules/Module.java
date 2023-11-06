@@ -2799,7 +2799,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 *
 	 * @return the array of data types that can be reported by this module
 	 * 
-	 * @see org.evoludo.simulator.EvoLudoWeb#updateViews
+	 * @see org.evoludo.EvoLudoWeb#updateViews
 	 */
 	public DataTypes[] getAvailableDataTypes() {
 		ArrayList<DataTypes> dataOutputs = new ArrayList<>();

@@ -282,7 +282,7 @@ public class EvoLudoWeb extends Composite
 	 *              {@link #onModuleLoad()}.
 	 * @param popup semi-transparent overlay
 	 */
-	protected EvoLudoWeb(String id, EvoLudoTrigger.LightboxPanel popup) {
+	public EvoLudoWeb(String id, EvoLudoTrigger.LightboxPanel popup) {
 		this(id, (String) null);
 		this.popup = popup;
 		keyListener = this;

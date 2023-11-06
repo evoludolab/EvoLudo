@@ -32,6 +32,7 @@
 
 package org.evoludo.simulator;
 
+import org.evoludo.EvoLudoWeb;
 import org.evoludo.graphics.Network2DGWT;
 import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.ui.ContextMenu;

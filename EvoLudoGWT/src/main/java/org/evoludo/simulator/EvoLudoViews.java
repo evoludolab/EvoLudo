@@ -82,7 +82,7 @@ public interface EvoLudoViews extends RequiresResize, IsWidget, FullscreenChange
 	 * @param key the code of the released key
 	 * @return {@code true} if the key was handled
 	 * 
-	 * @see org.evoludo.simulator.EvoLudoWeb#keyUpHandler(String)
+	 * @see org.evoludo.EvoLudoWeb#keyUpHandler(String)
 	 */
 	public default boolean keyUpHandler(String key) {
 		return false;
@@ -95,7 +95,7 @@ public interface EvoLudoViews extends RequiresResize, IsWidget, FullscreenChange
 	 * @param key the code of the pressed key
 	 * @return {@code true} if the key was handled
 	 * 
-	 * @see org.evoludo.simulator.EvoLudoWeb#keyDownHandler(String)
+	 * @see org.evoludo.EvoLudoWeb#keyDownHandler(String)
 	 */
 	public default boolean keyDownHandler(String key) {
 		return false;

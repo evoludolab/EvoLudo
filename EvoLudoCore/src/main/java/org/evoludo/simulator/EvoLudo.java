@@ -927,7 +927,7 @@ public abstract class EvoLudo
 	 * <h3>Implementation note:</h3>
 	 * Called from {@link loadModule} to first unload the active module
 	 * or triggered by GWT's
-	 * {@link org.evoludo.simulator.EvoLudoWeb#onUnload()}, i.e. when unloading
+	 * {@link org.evoludo.EvoLudoWeb#onUnload()}, i.e. when unloading
 	 * the GWT application. In both cases the model has stopped running (either
 	 * through {@link PendingAction#APPLY} or {@link PendingAction#UNLOAD}) and
 	 * hence no need to issue further requests.
@@ -1204,7 +1204,7 @@ public abstract class EvoLudo
 	 * drag'n'drop with the GWT GUI or through the <code>--restore</code> command
 	 * line argument. Notifies all registered {@link Model.MilestoneListener}s.
 	 *
-	 * @see org.evoludo.simulator.EvoLudoWeb#restoreFromFile(String, String)
+	 * @see org.evoludo.EvoLudoWeb#restoreFromFile(String, String)
 	 *      EvoLudoWeb.restoreFromFile(String, String)
 	 * @see EvoLudo#restoreState(Plist)
 	 */
