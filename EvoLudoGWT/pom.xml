@@ -13,10 +13,6 @@
   <artifactId>EvoLudoGWT</artifactId>
   <packaging>gwt-app</packaging>
 
-  <properties>
-    <gwt.server>localhost</gwt.server>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -123,14 +119,8 @@
         <artifactId>gwt-maven-plugin</artifactId>
         <configuration>
           <moduleName>org.evoludo.EvoLudoWeb</moduleName>
-          <!-- <moduleShortName>${module.toLowerCase()}</moduleShortName> -->
-          <!-- <moduleShortName>evoludoweb</moduleShortName> -->
           <relocateSuperSource>true</relocateSuperSource>
-          <devmodeArgs>
-            <arg>-bindAddress</arg>
-            <arg>${gwt.server}</arg>
-          </devmodeArgs>
-          <style>PRETTY</style>
+          <style>OBFUSCATED</style>
           <skipModule>true</skipModule>
         </configuration>
       </plugin>

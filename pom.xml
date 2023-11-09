@@ -16,7 +16,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javadoc.exe>/Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/javadoc</javadoc.exe>
-    <gwt.server>localhost</gwt.server>
+    <evoludo.server>localhost</evoludo.server>
+    <evoludo.startup>TestEvoLudoLabs.html</evoludo.startup>
   </properties>
 
   <dependencyManagement>
@@ -71,7 +72,9 @@
         <configuration>
           <devmodeArgs>
             <arg>-bindAddress</arg>
-            <arg>${gwt.server}</arg>
+            <arg>${evoludo.server}</arg>
+            <arg>-startupUrl</arg>
+            <arg>${evoludo.startup}</arg>
           </devmodeArgs>
           <style>PRETTY</style>
           <launcherDir>${basedir}/EvoLudoDev/target/EvoLudoDev-${project.version}</launcherDir>
