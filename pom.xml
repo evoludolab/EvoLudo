@@ -16,6 +16,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javadoc.exe>/Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/javadoc</javadoc.exe>
+    <gwt.server>localhost</gwt.server>
   </properties>
 
   <dependencyManagement>
@@ -68,7 +69,14 @@
         <artifactId>gwt-maven-plugin</artifactId>
         <inherited>false</inherited>
         <configuration>
-          <launcherDir>${project.build.directory}/gwt/launcherDir</launcherDir>
+          <devmodeArgs>
+            <arg>-bindAddress</arg>
+            <arg>${gwt.server}</arg>
+          </devmodeArgs>
+          <style>PRETTY</style>
+          <launcherDir>${basedir}/EvoLudoDev/target/EvoLudoDev-${project.version}</launcherDir>
+          <devmodeWorkDir>${basedir}/EvoLudoDev/target/gwt/devmode/work</devmodeWorkDir>
+          <warDir>${basedir}/EvoLudoDev/target/EvoLudoDev-${project.version}</warDir>
         </configuration>
       </plugin>
 
@@ -214,8 +222,9 @@
   </build>
 
   <modules>
-    <module>EvoLudoGWT</module>
     <module>EvoLudoCore</module>
     <module>EvoLudoJRE</module>
+    <module>EvoLudoGWT</module>
+    <module>EvoLudoDev</module>
   </modules>
 </project>
