@@ -78,7 +78,8 @@ public class MultiView extends JPanel implements ItemListener {
 			cards = new JPanel(dealer);
 			cards.setOpaque(false);
 			add(cards, BorderLayout.CENTER);
-			cards.add(new JLabel(new ImageIcon(MultiView.class.getResource("/org/evoludo/simulator/resources/EvoLudo.png"))), "EvoLudo");	// splash card
+			// cards.add(new JLabel(new ImageIcon(MultiView.class.getResource("/org/evoludo/simulator/resources/EvoLudo.png"))), "EvoLudo");	// splash card
+			cards.add(new JLabel(new ImageIcon(MultiView.class.getResource("/images/EvoLudo.png"))), "EvoLudo");	// splash card
 		}
 		else
 			cards.removeAll();

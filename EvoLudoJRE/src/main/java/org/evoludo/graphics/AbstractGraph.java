@@ -772,15 +772,15 @@ g2.setPaint(Color.black);
 			Toolkit tk = Toolkit.getDefaultToolkit();
 			// need to use getResource() to prevent security exceptions in applets
 			moveCursor = tk.createCustomCursor(
-				new ImageIcon(AbstractGraph.class.getResource("/org/evoludo/simulator/resources/HandCursor.png")).getImage(), new Point(0, 0), "Move");
+				new ImageIcon(AbstractGraph.class.getResource("/images/cursorMove.png")).getImage(), new Point(0, 0), "Move");
 			grabCursor = tk.createCustomCursor(
-					new ImageIcon(AbstractGraph.class.getResource("/org/evoludo/simulator/resources/GrabCursor.png")).getImage(), new Point(7, 0), "Grab");
+					new ImageIcon(AbstractGraph.class.getResource("/images/cursorGrab.png")).getImage(), new Point(7, 0), "Grab");
 			zoomInCursor = tk.createCustomCursor(
-					new ImageIcon(AbstractGraph.class.getResource("/org/evoludo/simulator/resources/ZoomInCursor.png")).getImage(), new Point(2, 2), "Zoom");
+					new ImageIcon(AbstractGraph.class.getResource("/images/cursorZoomIn.png")).getImage(), new Point(2, 2), "Zoom");
 			zoomOutCursor = tk.createCustomCursor(
-					new ImageIcon(AbstractGraph.class.getResource("/org/evoludo/simulator/resources/ZoomOutCursor.png")).getImage(), new Point(2, 2), "Zoom");
+					new ImageIcon(AbstractGraph.class.getResource("/images/cursorZoomOut.png")).getImage(), new Point(2, 2), "Zoom");
 			drawCursor = tk.createCustomCursor(
-					new ImageIcon(AbstractGraph.class.getResource("/org/evoludo/simulator/resources/DrawCursor.png")).getImage(), new Point(0, 14), "Draw");
+					new ImageIcon(AbstractGraph.class.getResource("/images/cursorDraw.png")).getImage(), new Point(0, 14), "Draw");
 		}
 	}
 

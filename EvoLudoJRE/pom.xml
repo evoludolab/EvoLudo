@@ -11,7 +11,7 @@
   </parent>
 
   <artifactId>EvoLudoJRE</artifactId>
-  <packaging>war</packaging>
+  <packaging>jar</packaging>
 
   <dependencies>
     <dependency>
@@ -23,8 +23,13 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>EvoLudoCore</artifactId>
       <version>${project.version}</version>
+      <!-- do not include sources in final jar -->
+      <scope>provided</scope>
       <classifier>sources</classifier>
     </dependency>
+    <!-- note: the dependency on com.googlecode.matrix-toolkits-java is only required
+    for SDE models with >2 independent traits but pulls in all the native netlib
+    libraries, weighing in at a total of ~40MB (or ~15MB to final .jar). -->
     <dependency>
       <groupId>com.googlecode.matrix-toolkits-java</groupId>
       <artifactId>mtj</artifactId>
@@ -60,29 +65,61 @@
       <artifactId>freehep-graphicsio-svg</artifactId>
       <version>2.4</version>
     </dependency>
-    <dependency>
-      <groupId>org.gwtproject</groupId>
-      <artifactId>gwt-servlet</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
-      <scope>provided</scope>
-    </dependency>
   </dependencies>
 
   <build>
+    <plugins>
+      <plugin>
+        <groupId>io.github.git-commit-id</groupId>
+        <artifactId>git-commit-id-maven-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>**/run/*.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <finalName>EvoLudo.${git.commit.id.describe}</finalName>
+          <formats>
+            <format>jar</format>
+            <!-- <format>dir</format> -->
+          </formats>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+          <appendAssemblyId>false</appendAssemblyId>
+          <archive>
+            <manifest>
+              <mainClass>org.evoludo.simulator.EvoLudoLab</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+        <executions>
+          <execution>
+            <id>make-assembly</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+
     <pluginManagement>
       <plugins>
         <plugin>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.1</version>
-          <configuration>
-            <release>11</release>
-            <excludes>
-              <exclude>**/run/*.java</exclude>
-            </excludes>
-          </configuration>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>3.6.0</version>
         </plugin>
       </plugins>
     </pluginManagement>

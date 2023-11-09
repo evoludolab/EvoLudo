@@ -42,27 +42,6 @@
       <plugin>
         <groupId>io.github.git-commit-id</groupId>
         <artifactId>git-commit-id-maven-plugin</artifactId>
-        <version>5.0.0</version>
-        <executions>
-          <execution>
-            <id>get-git-version</id>
-            <goals>
-              <goal>revision</goal>
-            </goals>
-            <phase>initialize</phase>
-          </execution>
-        </executions>
-        <configuration>
-          <dateFormat>MMMM dd, yyyy @ HH:mm z</dateFormat>
-          <includeOnlyProperties>
-            <includeOnlyProperty>^git.commit.id.describe$</includeOnlyProperty>
-            <includeOnlyProperty>^git.build.time$</includeOnlyProperty>
-          </includeOnlyProperties>
-          <commitIdGenerationMode>full</commitIdGenerationMode>
-          <gitDescribe>
-            <dirty>*</dirty>
-          </gitDescribe>
-        </configuration>
       </plugin>
 
       <plugin>
@@ -86,7 +65,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>3.6.2</version>
         <inherited>false</inherited>
         <configuration>
           <doctitle>EvoLudo: in silico evolution</doctitle>
@@ -184,6 +162,32 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <groupId>io.github.git-commit-id</groupId>
+          <artifactId>git-commit-id-maven-plugin</artifactId>
+          <version>5.0.0</version>
+          <executions>
+            <execution>
+              <id>get-git-version</id>
+              <goals>
+                <goal>revision</goal>
+              </goals>
+              <phase>initialize</phase>
+            </execution>
+          </executions>
+          <configuration>
+            <dateFormat>MMMM dd, yyyy @ HH:mm z</dateFormat>
+            <includeOnlyProperties>
+              <includeOnlyProperty>^git.commit.id.describe$</includeOnlyProperty>
+              <includeOnlyProperty>^git.build.time$</includeOnlyProperty>
+            </includeOnlyProperties>
+            <commitIdGenerationMode>full</commitIdGenerationMode>
+            <gitDescribe>
+              <dirty>*</dirty>
+            </gitDescribe>
+          </configuration>
+        </plugin>
+
+        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.11.0</version>
@@ -191,11 +195,19 @@
             <release>11</release>
           </configuration>
         </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>3.3.1</version>
+        </plugin>
+
         <plugin>
           <groupId>org.eclipse.jetty</groupId>
           <artifactId>jetty-maven-plugin</artifactId>
           <version>9.4.51.v20230217</version>
         </plugin>
+
         <plugin>
           <groupId>net.ltgt.gwt.maven</groupId>
           <artifactId>gwt-maven-plugin</artifactId>
@@ -206,6 +218,7 @@
             <failOnError>true</failOnError>
           </configuration>
         </plugin>
+
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-source-plugin</artifactId>
@@ -219,6 +232,12 @@
               </goals>
             </execution>
           </executions>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>3.6.2</version>
         </plugin>
       </plugins>
     </pluginManagement>

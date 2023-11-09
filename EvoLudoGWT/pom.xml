@@ -50,30 +50,6 @@
       <plugin>
         <groupId>io.github.git-commit-id</groupId>
         <artifactId>git-commit-id-maven-plugin</artifactId>
-        <version>5.0.0</version>
-        <executions>
-          <execution>
-            <id>get-git-version</id>
-            <goals>
-              <goal>revision</goal>
-            </goals>
-            <phase>initialize</phase>
-          </execution>
-        </executions>
-        <configuration>
-          <generateGitPropertiesFile>true</generateGitPropertiesFile>
-          <generateGitPropertiesFilename>
-            ${project.basedir}/src/main/java/org/evoludo/simulator/Git.properties</generateGitPropertiesFilename>
-          <dateFormat>MMMM dd, yyyy @ HH:mm z</dateFormat>
-          <includeOnlyProperties>
-            <includeOnlyProperty>^git.commit.id.describe$</includeOnlyProperty>
-            <includeOnlyProperty>^git.build.time$</includeOnlyProperty>
-          </includeOnlyProperties>
-          <commitIdGenerationMode>full</commitIdGenerationMode>
-          <gitDescribe>
-            <dirty>*</dirty>
-          </gitDescribe>
-        </configuration>
       </plugin>
 
       <plugin>

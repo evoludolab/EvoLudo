@@ -831,7 +831,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	/**
 	 * Name of file that stores current git version in jar archive.
 	 */
-	protected static final String GIT_PROPERTIES_FILE = "/org/evoludo/simulator/resources/git.properties";
+	protected static final String GIT_PROPERTIES_FILE = "/git.properties";
 
 	/**
 	 * Properties of GIT_PROPERTIES_FILE are stored here.

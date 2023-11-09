@@ -921,7 +921,7 @@ public class EvoLudoLab extends JFrame
 				activeViews.setContextMenuEnabled(true);
 			}
 		});
-		setIconImage(new ImageIcon(EvoLudoLab.class.getResource("/org/evoludo/jre/simulator/resources/DocIcon.png")).getImage());
+		setIconImage(new ImageIcon(EvoLudoLab.class.getResource("/images/DocIcon.png")).getImage());
 
 		// set default values for all parameters and parse command line options
 		init();
