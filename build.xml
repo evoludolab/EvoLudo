@@ -41,7 +41,7 @@
 
 	<!-- Properties -->
 
-	<property name="src" value="src"/>
+	<property name="src" value="."/>
 	<property name="build" value="build"/>
 	<property name="build.classes" value="${build}/classes"/>
 	<property name="web" value="web"/>
