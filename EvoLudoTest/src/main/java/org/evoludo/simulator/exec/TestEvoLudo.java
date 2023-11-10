@@ -388,6 +388,8 @@ public class TestEvoLudo implements Model.MilestoneListener {
 					+ " tests successfully passed.");
 		if (nTestFailures > 0 || nTestMinor > 0 || nTestWarnings > 0)
 			logTitle("Review issues carefully!");
+		// remove reports directory if empty
+		reportsDir.delete();
 	}
 
 	public void parse(String[] args) {

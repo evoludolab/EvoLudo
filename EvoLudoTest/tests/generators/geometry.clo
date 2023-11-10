@@ -1,0 +1,65 @@
+#
+# master file to generate reference scenarios against which to test future versions of EvoLudo
+#
+
+# test geometries (does not depend on game, Moran is simplest)
+# well-mixed
+--game Moran --geometry M --popsize 1024 --generations 0 --references r1 --export wellmixed.plist
+
+# complete graph
+--game Moran --geometry c --popsize 1024 --generations 0 --export complete.plist
+
+# lattices
+--game Moran --geometry n --popsize 1024 --generations 0 --export lattice.square.k4.plist
+--game Moran --geometry m --popsize 1024 --generations 0 --export lattice.square.k8.plist
+--game Moran --geometry N24 --popsize 1024 --generations 0 --export lattice.square.k24.plist
+--game Moran --geometry t --popsize 1024 --generations 0 --export lattice.triangular.k3.plist
+--game Moran --geometry h --popsize 1024 --generations 0 --export lattice.hexagonal.k6.plist
+--game Moran --geometry l2 --popsize 1024 --generations 0 --export lattice.linear.k2.plist
+--game Moran --geometry l12 --popsize 1024 --generations 0 --export lattice.linear.k12.plist
+--game Moran --geometry l2:11 --popsize 1024 --generations 0 --export lattice.linear.k2-11.plist
+--game Moran --geometry C6 --popsize 1728 --generations 0 --export lattice.cubic.k6.plist
+--game Moran --geometry C26 --popsize 1728 --generations 0 --export lattice.cubic.k26.plist
+--game Moran --geometry C124 --popsize 1728 --generations 0 --export lattice.cubic.k124.plist
+
+# special, named graphs
+--game Moran --geometry 0 --generations 0 --export frucht.N12k3.plist
+--game Moran --geometry 1 --generations 0 --export tietze.N12k3.plist
+--game Moran --geometry 2 --generations 0 --export franklin.N12k3.plist
+--game Moran --geometry 3 --generations 0 --export heawood.N14k3.plist
+--game Moran --geometry 4 --generations 0 --export icosahedron.N12k5.plist
+--game Moran --geometry 5 --generations 0 --export dodekahedron.N20k3.plist
+--game Moran --geometry 6 --generations 0 --export desargues.N20k3.plist
+
+# star-like graphs
+--game Moran --geometry s --popsize 1024 --generations 0 --export star.plist
+--game Moran --geometry w --popsize 1024 --generations 0 --export wheel.plist
+--game Moran --geometry S2,11 --popsize 1023 --generations 0 --export superstar.p2k11.plist
+--game Moran --geometry S7,3 --popsize 1023 --generations 0 --export superstar.p7k3.plist
+--game Moran --geometry S5,5 --popsize 1021 --generations 0 --export superstar.p5k5.plist
+
+# strong undirected amplifiers/suppressors
+--game Moran --geometry + --popsize 1160 --generations 0 --export amplifier.plist
+--game Moran --geometry - --popsize 1548 --generations 0 --export suppressor.plist
+
+# random regular graphs
+--game Moran --geometry r4 --popsize 1024 --generations 0 --export rrg.k4.plist
+--game Moran --geometry r11 --popsize 1024 --generations 0 --export rrg.k11.plist
+
+# random graphs
+--game Moran --geometry R4 --popsize 1024 --generations 0 --export rg.k4.plist
+--game Moran --geometry R11 --popsize 1024 --generations 0 --export rg.k11.plist
+
+# scale-free graphs
+--game Moran --geometry f2 --popsize 1024 --generations 0 --export sf.ba2.plist
+--game Moran --geometry f3 --popsize 1024 --generations 0 --export sf.ba3.plist
+--game Moran --geometry f7 --popsize 1024 --generations 0 --export sf.ba7.plist
+--game Moran --geometry F2 --popsize 1024 --generations 0 --export sf.ke2.plist
+--game Moran --geometry F2,0.5 --popsize 1024 --generations 0 --export sf.ke2-5.plist
+--game Moran --geometry F7,0.05 --popsize 1024 --generations 0 --export sf.ke2-05.plist
+# has some issues during generation but result is reproducible
+--game Moran --geometry p4,-1 --popsize 1024 --generations 0 --export sf.k4-1.plist
+# fails to generate network - keeps trying and failing; exclude for now
+#--game Moran --geometry p7,-2 --popsize 1024 --generations 0 --export sf.k7-2.plist
+#--game Moran --geometry p11,-3 --popsize 1024 --generations 0 --export sf.k11-3.plist
+

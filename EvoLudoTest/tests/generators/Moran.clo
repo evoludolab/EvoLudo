@@ -1,0 +1,78 @@
+# testing original Moran process (fixed fitness, fixed population size)
+
+# ODE
+# base scenario
+--game Moran --model ODE --reportfreq 1 --playerupdate t0.1 --init 999,1 --inittype frequency --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+# population updates
+--game Moran --model ODE --reportfreq 1 --playerupdate t0.1 --adjusted --init 999,1 --inittype frequency --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+# player updates
+--game Moran --model ODE --reportfreq 1 --playerupdate i0.1 --init 999,1 --inittype frequency --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+--game Moran --model ODE --reportfreq 1 --playerupdate best --init 999,1 --inittype frequency --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+--game Moran --model ODE --reportfreq 1 --playerupdate best-response --init 999,1 --inittype frequency --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+# mutation
+--game Moran --model ODE --reportfreq 1 --playerupdate t0.1 --init 999,1 --inittype frequency --mutation 0.02 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+# fitness map and selection
+--game Moran --model ODE --reportfreq 1 --playerupdate t0.1 --init 999,1 --inittype frequency --mutation 0.02 --basefit 1.0 --selection 0.1 --fitness 1,1.1 --fitnessmap exp
+--game Moran --model ODE --reportfreq 1 --playerupdate t0.1 --init 999,1 --inittype frequency --mutation 0.02 --basefit 1.0 --selection 10.0 --fitness 1,1.1 --fitnessmap exp
+
+# SDE
+# base scenario
+--game Moran --model SDE --reportfreq 1 --popsize 200 --playerupdate t0.1 --init 99,1 --inittype frequency --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+# population updates
+# adjusted not yet implemented
+#--game Moran --model SDE --reportfreq 1 --popsize 200 --playerupdate t0.1 --adjusted --init 99,1 --inittype frequency --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+# player updates
+--game Moran --model SDE --reportfreq 1 --popsize 200 --playerupdate i0.1 --init 99,1 --inittype frequency --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+--game Moran --model SDE --reportfreq 1 --popsize 200 --playerupdate best --init 99,1 --inittype frequency --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+--game Moran --model SDE --reportfreq 1 --popsize 200 --playerupdate best-response --init 99,1 --inittype frequency --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+# mutation
+--game Moran --model SDE --reportfreq 1 --popsize 200 --playerupdate t0.1 --init 99,1 --inittype frequency --mutation 0.02 --basefit 1.0 --selection 1.0 --fitness 1,1.1 --generations 1000
+# fitness map and selection
+--game Moran --model SDE --reportfreq 1 --popsize 200 --playerupdate t0.1 --init 99,1 --inittype frequency --mutation 0.02 --basefit 1.0 --selection 0.1 --fitness 1,1.1 --fitnessmap exp --generations 1000
+--game Moran --model SDE --reportfreq 1 --popsize 200 --playerupdate t0.1 --init 99,1 --inittype frequency --mutation 0.02 --basefit 1.0 --selection 10.0 --fitness 1,1.1 --fitnessmap exp --generations 1000
+
+# PDE
+# base scenario
+--game Moran --model PDE --reportfreq 1 --geometry n --playerupdate t0.1 --init 99,1 --inittype random --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+# population updates
+--game Moran --model PDE --reportfreq 1 --geometry n --playerupdate t0.1 --adjusted --init 99,1 --inittype random --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+# player updates
+--game Moran --model PDE --reportfreq 1 --geometry n --playerupdate i0.1 --init 99,1 --inittype random --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+--game Moran --model PDE --reportfreq 1 --geometry n --playerupdate best --init 99,1 --inittype random --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+--game Moran --model PDE --reportfreq 1 --geometry n --playerupdate best-response --init 99,1 --inittype random --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+# mutation
+--game Moran --model PDE --reportfreq 1 --geometry n --playerupdate t0.1 --init 99,1 --inittype random --mutation 0.02 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+# fitness map and selection
+--game Moran --model PDE --reportfreq 1 --geometry n --playerupdate t0.1 --init 99,1 --inittype random --mutation 0.02 --basefit 1.0 --selection 0.1 --fitness 1,1.1
+--game Moran --model PDE --reportfreq 1 --geometry n --playerupdate t0.1 --init 99,1 --inittype random --mutation 0.02 --basefit 1.0 --selection 10.0 --fitness 1,1.1
+
+# IBS
+# base scenario
+--game Moran --model IBS --reportfreq 1 --geometry M --references r1 --popsize 500 --popupdate a --playerupdate t0.1 --init 1,0 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+# population/player updates
+--game Moran --model IBS --reportfreq 1 --geometry M --references r1 --popsize 500 --popupdate a --playerupdate i0.1 --init 1,0 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+--game Moran --model IBS --reportfreq 1 --geometry M --references r1 --popsize 500 --popupdate a --playerupdate best --init 1,0 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+--game Moran --model IBS --reportfreq 1 --geometry M --references r1 --popsize 500 --popupdate a --playerupdate best-response --init 1,0 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+--game Moran --model IBS --reportfreq 1 --geometry M --references r1 --popsize 500 --popupdate B --init 1,0 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+--game Moran --model IBS --reportfreq 1 --geometry M --references r1 --popsize 500 --popupdate d --init 1,0 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+# population/player updates - structured
+--game Moran --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate a --playerupdate t0.1 --init 1,0 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+--game Moran --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate a --playerupdate i0.1 --init 1,0 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+--game Moran --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate a --playerupdate best --init 1,0 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+--game Moran --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate a --playerupdate best-response --init 1,0 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+--game Moran --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate B --init 1,0 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+--game Moran --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate d --init 1,0 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+# geometries
+--game Moran --model IBS --reportfreq 1 --geometry n --popsize 50x --popupdate B --init 1,0 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.1
+--game Moran --model IBS --reportfreq 1 --geometry s --popsize 200 --popupdate B --init 1,0 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.5
+--game Moran --model IBS --reportfreq 1 --geometry S5,5 --popsize 196 --popupdate B --init 1,0 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.2
+--game Moran --model IBS --reportfreq 1 --geometry f4 --popsize 500 --popupdate B --init 1,0 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --fitness 1,1.25
+# mutation
+--game Moran --model IBS --reportfreq 1 --geometry M --references r1 --popsize 500 --playerupdate t0.1 --init 1,0 --inittype mutant --mutation 0.05 --basefit 1.0 --selection 1.0 --fitness 1,1.1 --generations 1000
+# fitness map and selection
+--game Moran --model IBS --reportfreq 1 --geometry M --references r1 --popsize 500 --popupdate a --playerupdate t0.1 --init 1,0 --inittype mutant --mutation 0.05 --basefit 1.0 --selection 0.1 --fitness 1,1.1 --fitnessmap exp --generations 1000
+--game Moran --model IBS --reportfreq 1 --geometry M --references r1 --popsize 500 --popupdate a --playerupdate t0.1 --init 1,0 --inittype mutant --mutation 0.05 --basefit 1.0 --selection 10.0 --fitness 1,1.1 --fitnessmap exp --generations 1000
+--game Moran --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate B --init 1,0 --inittype mutant --mutation 0.05 --basefit 1.0 --selection 0.1 --fitness 1,1.1 --fitnessmap exp --generations 1000
+--game Moran --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate B --init 1,0 --inittype mutant --mutation 0.05 --basefit 1.0 --selection 10.0 --fitness 1,1.1 --fitnessmap exp --generations 1000
+--game Moran --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate d --init 1,0 --inittype mutant --mutation 0.05 --basefit 1.0 --selection 0.1 --fitness 1,1.1 --fitnessmap exp --generations 1000
+--game Moran --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate d --init 1,0 --inittype mutant --mutation 0.05 --basefit 1.0 --selection 10.0 --fitness 1,1.1 --fitnessmap exp --generations 1000
