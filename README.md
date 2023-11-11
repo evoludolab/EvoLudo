@@ -26,7 +26,7 @@ Start exploring the fascinating world of evolutionary dynamics and spatio-tempor
 2. Execute `mvn gwt:devmode` to launch a local [*Jetty*](https://github.com/jetty) webserver.
 
    > [!NOTE]
-   > All warnings that are displayed in the terminal are issued by *Jetty* and can be savely ignored but should exclusively be used for development and never for deployment.
+   > All warnings that are displayed in the terminal are issued by *Jetty*. They can be savely ignored. However, *Jetty* should exclusively be used for development and never for deployment.
 4. Click *Launch Default Browser* and try out the different *EvoLudo* modules.
 
 
@@ -35,7 +35,7 @@ With the [Quick start](#quick-start) steps everything is already setup for devel
 
 1. The configuration files in the *EvoLudo* repository are designed to support development using [*VSCode*](https://code.visualstudio.com) but should be easy to adjust to your favourite IDE.
 
-2. Step 2. in the [Quick start](#quick-start) above translates the java code into *JavaScript* using the [GWT](https://www.gwtproject.org) toolkit. Step 3. launches a development server at *localhost*. Unsurprisingly *localhost* is only reachable from the local machine. If, instead, you would like to test the *EvoLudo* web application on another device (for example to test touch features on a tablet), add the option `-Dgwt.server=<server>` to the command line where `<server>` is the DNS name or IP address of the machine that runs the development server. Now the server is reachable from the outside world at `http://<server>:8888/<yourfile>.html`. On port *9876* listens the source map provider linking the compiled and obfuscated `JavaScript` code to the actual source code files.
+2. Step 2. in the [Quick start](#quick-start) above translates the java code into *JavaScript* using the [GWT](https://www.gwtproject.org) toolkit. Step 3. launches a development server at *localhost*. Unsurprisingly *localhost* is only reachable from the local machine. If, instead, you would like to test the *EvoLudo* web application on another device (for example to test touch features on a tablet), add the option `-Dgwt.server=<server>` to the command line where `<server>` is the DNS name or IP address of the machine that runs the development server. Now the server is reachable from the outside world at `http://<server>:8888/<yourfile>.html`. On port *9876* listens the source map provider linking the compiled and obfuscated *JavaScript* code to the actual source code files.
 
 3. For development three modes are available:
    
@@ -43,14 +43,14 @@ With the [Quick start](#quick-start) steps everything is already setup for devel
 
      2. Provide some feedback: Add `GWT.log(String)` lines to the code to print out whatever is of interest. The output is displayed in the console of the browser (cmd-alt-c on the Mac).
 
-     3. Step-by-step debugging (for *VSCode*): Open the *Run and debug* tab and launch the *GWT EvoLudo (localhost)* configuration. This will launch the selected startup URL in the Google Chrome browser (this configuration can be changed in going to *Add configuration...*). Using `GWT.log(String)` continues to work but the result is also shown in the console of VSCode. Moreover, in VSCode you can set breakpoints and do all the step-by-step fun stuff of debugging. This is actually all quite amazing (and simple) considering that in the background JavaScript is running in the browser but the breakpoints and step-by-step execution is in the java source file. Almost magically this even works for obfuscated JavaScript code that is completely unreadable by itself. If you make changes to the code, just reload the web page and there they are.
+     3. Step-by-step debugging (for *VSCode*): Open the *Run and debug* tab and launch the *GWT EvoLudo (localhost)* configuration. This will launch the selected startup URL in the Google Chrome browser (this configuration can be changed in going to *Add configuration...*). Using `GWT.log(String)` continues to work but the result is also shown in the console of *VSCode*. Moreover, in *VSCode* you can set breakpoints and do all the step-by-step fun stuff of debugging. This is actually all quite amazing (and simple) considering that in the background *JavaScript* is running in the browser but the breakpoints and step-by-step execution is in the java source file. Almost magically this even works for obfuscated *JavaScript* code that is completely unreadable by itself. If you make changes to the code, just reload the web page and there they are.
 
 5. The debug targets in *VSCode* not only support step-by-step debugging of *GWT* code but also of traditional *java* code. Most notably the *java* code is multi-threaded preventing the GUI from potentially becoming unresponsive and is leveraged for a tremendous speed increase for PDE models.  For example, the configuration *JRE EvoLudo* launches the `EvoLudo.jar` with a set of options specified in `launch.json`.
 
 6. It is recommended to use the web interface as much as possible during development because of the rapid workflow. 
 
     > [!IMPORTANT]
-    > Always keep in mind that the shared *java* code in the `EvoLudoCore` module *must* be agnostic to special features of the * GWT* or of *JRE*. *GWT* specific code resides in the `EvoLudoGWT` module while *JRE* specific variants are in the `EvoLudoJRE` module
+    > Always keep in mind that the shared *java* code in the `EvoLudoCore` module *must* be agnostic to special features of the *GWT* or of *JRE*. *GWT* specific code resides in the `EvoLudoGWT` module while *JRE* specific variants are in the `EvoLudoJRE` module
 
 7. The API documentation for the *EvoLudo* simulation toolkit is automatically generated from the source files by executing `mvn javadoc:aggregate` and placed in `docs/api`.
 
@@ -58,7 +58,7 @@ With the [Quick start](#quick-start) steps everything is already setup for devel
    > 1. The javadoc generation is configured to use *Java SDK 11*, which is the last version to support frames when generating the documentation. You may need to adjust the `<javadocExecutable>` in the `pom.xml` to fit your development setup and `java` version and possibly remove the `--frames` option from the `<additionalJOption>`. 
    > 2. Documentation of the latest tagged version is available at https://www.evoludo.org/docs/api. 
 
-8. A number of useful shell scripts are located in the `script` folder. Most notably, `builddist.sh` builds all modules, runs consistency tests and if they all pass assembles all parts of the *EvoLudo* toolkit in the `dist` folder (including the API documentation).
+8. A number of useful shell scripts are located in the `script` folder. Most notably, `builddist.sh` builds all *maven* modules, runs consistency tests and if they all pass assembles all parts of the *EvoLudo* toolkit in the `dist` folder (including the API documentation).
 
 ### Contribute to *EvoLudo*
 Pull requests by anyone are most welcome!
@@ -67,27 +67,29 @@ Pull requests by anyone are most welcome!
 ## *EvoLudo* modules overview
 The *EvoLudo* project consists of six modules:
 1. ***EvoLudoCore:***<br>
-The core *java* code of *EvoLudo* shared by *GWT* as well as *JRE*. This is the backend that deals with the numerical integration of differential equations (ordinary, stochastic, or partial) as well as individual based simulation and must be agnostic of  *GWT* or *JRE* specifics.
+The core *java* code of *EvoLudo* shared by *GWT* as well as *JRE*. This is the backend that deals with the numerical integration of differential equations (ordinary, stochastic, or partial) as well as individual based simulation and *must* be agnostic of  *GWT* or *JRE* specifics.
 
 2. ***EvoLudoGWT:***<br>
 The *GWT* specific code of *EvoLudo*. Most notably this includes all the GUI components for visualizations in the web browser as well as handling the asynchronous scheduling of tasks in the browser.
 
 3. ***EvoLudoDev:***<br>
-Handles the *Jetty* server for development using a web browser and keeps the `(x)html` files for loading the *GWT* application.
+Handles the *Jetty* server for development using a web browser and keeps the `.(x)html` files for loading the *GWT* application.
 
 4. ***EvoLudoJRE:***<br>
-The *JRE* specific code of *EvoLudo*. This provides the basis for generic as well as customized *java* simulations. In addition it also includes all the GUI components when running as an old fashioned *java* application. <br>
+The *JRE* specific code of *EvoLudo*. This provides the basis for generic as well as customized *java* simulations. More specifically, it handles multiple threads, which provides a significant performance boost for PDE models and maintains a responsive GUI. In addition, this module also includes all the GUI components when running as an old fashioned *java* application. <br>
 
    > [!NOTE]
-   > at this point the GUI components are maintained but not further developed in favour of the GWT counterpart, which is also significantly richer in features. 
-
-   For examples of customized simulations, see module `EvoLudoSims`.
+   > at this point the *java* GUI components are maintained but not further developed in favour of the GWT counterpart, which is also significantly richer in features. 
 
 5. ***EvoLudoSims:***<br>
-Handles customized *java* simulations. The simulations are kept in `EvoLudoJRE/src/main/org/evoludo/simulator/exec/`. By default the `simTBT.jar` executable is generated. Other executable can be generated using the option `-Devoludo.sim=<simulation>` where `<simulation>` denotes the class name of the simulation.
+Handles customized *java* simulations. The simulations are kept in `EvoLudoSims/src/main/org/evoludo/simulator/exec/`. By default the `simTBT.jar` executable is generated. Other executable can be generated using the option `-Devoludo.sim=<simulation>` where `<simulation>` denotes the class name of the simulation.
 
 6. ***EvoLudoTest:***<br>
-Test suite for the different *EvoLudo* modules in `EvoLudoCore/src/main/java/org/evoludo/simulator/modules` (not to be confused with the *maven* modules). All tests must always pass. There are two main reasons that test may legitimately fail: first, if the names or parsing of command line options changed, one or several module tests may fail; second, after fundamental changes (extensions or bugfixes) to the *EvoLudo* models the tests of those models likely fail. In either case the changes must be carefully checked and once approved a new set of tests needs to be generated.
+Test suite for the different *EvoLudo* modules in `EvoLudoCore/src/main/java/org/evoludo/simulator/modules` (not to be confused with the *maven* modules). All tests must always pass. There are two main reasons that tests may legitimately fail: 
+   1. If the names or parsing of command line options changed, one or several module tests may fail; 
+   2. Fundamental changes (extensions or bugfixes) to the *EvoLudo* models may cause the tests of those models to fail.
+
+   In either case the changes must be carefully checked and, once verified and approved, a new set of tests needs to be generated.
 
 
 ## *EvoLudo* features
@@ -95,14 +97,14 @@ Test suite for the different *EvoLudo* modules in `EvoLudoCore/src/main/java/org
 2. The *GWT* application produces *identical* output as the *java* simulations. In fact, the state of any *EvoLudo* module/model can be exported in one framework and continued in the other again with *identical* results.
 
 > [!WARNING]
-> Incomplete.
+> Draft - incomplete.
 
 
 ## Research
-Explorations in the web browser are very useful but have significant limitations. Most importantly execution speed is of the essence for running simulations but also access to data. The *EvoLudo* project overs different modes for running simulations depending on how the <tt>build/EvoLudo.jar</tt> is launched.
+Explorations in the web browser are very useful but have significant limitations. Most importantly execution speed is of the essence for running simulations but also access to data. The *EvoLudo* project overs different modes for running simulations depending on how the `EvoLudo.jar` is launched.
 
 > [!WARNING]
-> Incomplete.
+> Draft - incomplete.
 
 <!-- ## History
 Unmaintained instructions for developing *EvoLudo* using the [*eclipse* IDE](docs/installation/ECLIPSE.md) are available for reference.-->

@@ -21,7 +21,7 @@
     <evoludo.build default-value="">${git.build.time}</evoludo.build>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javadoc.exe>/Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/javadoc</javadoc.exe>
-</properties>
+  </properties>
 
   <dependencyManagement>
     <dependencies>
@@ -199,6 +199,9 @@
           <version>3.11.0</version>
           <configuration>
             <release>11</release>
+            <compilerArgument>-Xlint:all</compilerArgument>
+            <showWarnings>true</showWarnings>
+            <showDeprecation>true</showDeprecation>
           </configuration>
         </plugin>
 
@@ -206,6 +209,12 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
           <version>3.3.1</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>3.6.0</version>
         </plugin>
 
         <plugin>
