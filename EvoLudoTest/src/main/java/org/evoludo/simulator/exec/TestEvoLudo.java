@@ -364,7 +364,12 @@ public class TestEvoLudo implements Model.MilestoneListener {
 			generateDone();
 	}
 
-	public void run() {
+	/**
+	 * Generate or run all tests.
+	 * 
+	 * @return {@code true} if successful
+	 */
+	public boolean run() {
 		nTests = 0;
 		nTestFailures = 0;
 		nTestMinor = 0;
@@ -390,6 +395,7 @@ public class TestEvoLudo implements Model.MilestoneListener {
 			logTitle("Review issues carefully!");
 		// remove reports directory if empty
 		reportsDir.delete();
+		return (nTestFailures == 0);
 	}
 
 	public void parse(String[] args) {
@@ -540,7 +546,7 @@ public class TestEvoLudo implements Model.MilestoneListener {
 	}
 
 	public void help() {
-		System.out.println("Usage: java -jar ./build/TestEvoLudo.jar \n" + //
+		System.out.println("Usage: java -jar TestEvoLudo.jar with options\n" + //
 				"       --generate <directory|file>: generate test files from option sets\n" + //
 				"       --tests <directory>: directory for storing/retrieving test cases\n" + //
 				"       --reports  <directory>: directory to store reports of failed tests" + //
@@ -559,8 +565,8 @@ public class TestEvoLudo implements Model.MilestoneListener {
 	public static void main(final String[] args) {
 		TestEvoLudo testSuite = new TestEvoLudo();
 		testSuite.parse(args);
-		testSuite.run();
-		testSuite.engine.exit(0);
+		boolean success = testSuite.run();
+		testSuite.engine.exit(success ? 0 : 2);
 	}
 
 	public void logMessage(String msg) {

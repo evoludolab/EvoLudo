@@ -83,6 +83,8 @@
           <javadocExecutable>${javadoc.exe}</javadocExecutable>
           <!-- too many problems in javadoc for EvoLudoJRE - exclude for now -->
           <skippedModules>EvoLudoJRE</skippedModules>
+          <reportOutputDirectory>docs</reportOutputDirectory>
+          <destDir>api</destDir>
           <doclint>all,-reference</doclint>
           <show>private</show>
           <nohelp>true</nohelp>

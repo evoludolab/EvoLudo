@@ -13,6 +13,9 @@ target/
 dist/
 docs/api/
 
+# ignore test reports
+EvoLudoTest/tests/reports
+
 # ignore scratch
 scratch/
 
