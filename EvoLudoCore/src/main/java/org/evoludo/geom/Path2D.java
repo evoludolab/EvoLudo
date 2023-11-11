@@ -1,3 +1,28 @@
+/*
+ * Copyright (c) 2006, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.  Oracle designates this
+ * particular file as subject to the "Classpath" exception as provided
+ * by Oracle in the LICENSE file that accompanied this code.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
+ */
+
 //
 // EvoLudo Project
 //
@@ -443,8 +468,21 @@ public class Path2D {
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * Returns a high precision and more accurate bounding box of
+	 * the <code>Shape</code> than the <code>getBounds</code> method.
+	 * Note that there is no guarantee that the returned
+	 * {@link Rectangle2D} is the smallest bounding box that encloses
+	 * the <code>Shape</code>, only that the <code>Shape</code> lies
+	 * entirely within the indicated <code>Rectangle2D</code>. The
+	 * bounding box returned by this method is usually tighter than that
+	 * returned by the <code>getBounds</code> method and never fails due
+	 * to overflow problems since the return value can be an instance of
+	 * the <code>Rectangle2D</code> that uses double precision values to
+	 * store the dimensions.
 	 * 
+	 * @return an instance of <code>Rectangle2D</code> that is a
+	 *         high-precision bounding box of the <code>Shape</code>.
+	 * @see #getBounds
 	 * @since 1.6
 	 */
 	public final synchronized Rectangle2D getBounds2D() {
@@ -472,7 +510,16 @@ public class Path2D {
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * Returns an iterator object that iterates along this path.
+	 * boundary and provides access to a flattened view of the
+	 * <code>Shape</code> outline geometry.
+	 * <p>
+	 * Only SEG_MOVETO, SEG_LINETO, and SEG_CLOSE point types are
+	 * returned by the iterator.
+	 * <p>
+	 * Each call to this method returns a fresh <code>PathIterator</code>
+	 * object that traverses the path independently from any other
+	 * <code>PathIterator</code> objects in use at the same time.
 	 * <p>
 	 * The iterator for this class is not multi-threaded safe,
 	 * which means that the {@code Path2D} class does not
@@ -480,9 +527,7 @@ public class Path2D {
 	 * {@code Path2D} object do not affect any iterations of
 	 * that geometry that are already in process.
 	 *
-	 * @return a new {@code PathIterator} that iterates along the boundary
-	 *         of this {@code Shape} and provides access to the geometry
-	 *         of this {@code Shape}'s outline
+	 * @return a new {@code PathIterator} that iterates along the path
 	 * @since 1.6
 	 */
 	public final Iterator getPathIterator() {
@@ -691,37 +736,6 @@ public class Path2D {
 	public boolean isEmpty() {
 		return (numTypes == 0);
 	}
-
-	// /**
-	// * Returns a new {@code Shape} representing a transformed version
-	// * of this {@code Path2D}.
-	// * Note that the exact type and coordinate precision of the return
-	// * value is not specified for this method.
-	// * The method will return a Shape that contains no less precision
-	// * for the transformed geometry than this {@code Path2D} currently
-	// * maintains, but it may contain no more precision either.
-	// * If the tradeoff of precision vs. storage size in the result is
-	// * important then the convenience constructors in the
-	// * {@link Path2D.Float#Path2D.Float(Shape, AffineTransform) Path2D.Float}
-	// * and
-	// * {@link Path2D.Double#Path2D.Double(Shape, AffineTransform) Path2D.Double}
-	// * subclasses should be used to make the choice explicit.
-	// *
-	// * @param at the {@code AffineTransform} used to transform a
-	// * new {@code Shape}.
-	// * @return a new {@code Shape}, transformed with the specified
-	// * {@code AffineTransform}.
-	// * @since 1.6
-	// */
-	//// GWT public final synchronized Shape createTransformedShape(AffineTransform
-	// at) {
-	// public final synchronized Path2D createTransformedShape(AffineTransform at) {
-	// Path2D p2d = (Path2D) clone();
-	// if (at != null) {
-	// p2d.transform(at);
-	// }
-	// return p2d;
-	// }
 
 	@Override
 	public String toString() {
