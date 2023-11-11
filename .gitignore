@@ -9,25 +9,15 @@ Git.properties
 *.class
 
 # ignore build/product directories
-build/
-product/
+target/
 dist/
 docs/api/
-war/WEB-INF/
-war/evoludoweb
 
 # ignore scratch
 scratch/
-
-# ignore GWT cache
-gwt-unitCache/
 
 # ignore Xcode
 *.xcodeproj
 
 # ignore reference and report files for tests
-test/references/
 test/reports/
-
-# maven
-target
