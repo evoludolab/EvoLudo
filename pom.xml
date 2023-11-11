@@ -17,8 +17,8 @@
     <evoludo.server>localhost</evoludo.server>
     <evoludo.startup>TestEvoLudoLabs.html</evoludo.startup>
     <evoludo.sim>simTBT</evoludo.sim>
-    <git.commit.id.describe>unknown</git.commit.id.describe>
-    <git.build.time></git.build.time>
+    <evoludo.commit default-value="unknown">${git.commit.id.describe}</evoludo.commit>
+    <evoludo.build default-value="">${git.build.time}</evoludo.build>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javadoc.exe>/Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/javadoc</javadoc.exe>
 </properties>
@@ -78,7 +78,7 @@
           ]]>
           </header>
           <footer><![CDATA[
-          <span style='display:inline-block; padding:14px 0;'>${git.build.time}&nbsp;(revision ${git.commit.id.describe})</span>
+          <span style='display:inline-block; padding:14px 0;'>${evoludo.build}&nbsp;(revision ${evoludo.commit})</span>
           ]]>
           </footer>
           <!-- JDK 11 needed to generate docs with frames -->

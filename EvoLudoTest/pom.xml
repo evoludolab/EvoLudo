@@ -54,7 +54,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
-          <finalName>EvoLudoTest.${git.commit.id.describe}</finalName>
+          <finalName>EvoLudoTest.${evoludo.commit}</finalName>
           <formats>
             <format>jar</format>
             <!-- <format>dir</format> -->
