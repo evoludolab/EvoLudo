@@ -18,6 +18,7 @@
     <javadoc.exe>/Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/javadoc</javadoc.exe>
     <evoludo.server>localhost</evoludo.server>
     <evoludo.startup>TestEvoLudoLabs.html</evoludo.startup>
+    <evoludo.sim>simTBT</evoludo.sim>
   </properties>
 
   <dependencyManagement>
@@ -249,5 +250,6 @@
     <module>EvoLudoGWT</module>
     <module>EvoLudoDev</module>
     <module>EvoLudoTest</module>
+    <module>EvoLudoSims</module>
   </modules>
 </project>
