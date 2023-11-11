@@ -53,6 +53,7 @@ public interface Git extends Constants {
 	 * @return the time of the last git commit
 	 */
 	@Key("git.build.time")
+	@DefaultStringValue("")
 	String gitDate();
 
 	/**
@@ -62,5 +63,6 @@ public interface Git extends Constants {
 	 * @return the id of the last git commit
 	 */
 	@Key("git.commit.id.describe")
+	@DefaultStringValue("unknown")
 	String gitVersion();
 }

@@ -1505,9 +1505,13 @@ public abstract class EvoLudo
 	 * @return version string
 	 */
 	public String getVersion() {
-		if (activeModule == null)
-			return COPYRIGHT + ", EvoLudo Engine: " + getGit();
-		return COPYRIGHT + ", " + activeModule.getVersion() + " (EvoLudo Engine: " + getGit() + ")";
+		String version = COPYRIGHT;
+		String git = getGit();
+		if (activeModule != null)
+			version += ", " + activeModule.getVersion();
+		if ("unknown".equals(git))
+			return version;
+		return version + " (EvoLudo Engine: " + git + ")";
 	}
 
 	/**
