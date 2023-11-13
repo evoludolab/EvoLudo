@@ -169,6 +169,7 @@ public class MVConsole extends MVAbstract implements ContextMenu.Provider {
 					break;
 				clearLog();
 				return true;
+			default:
 		}
 		return super.keyUpHandler(key);
 	}

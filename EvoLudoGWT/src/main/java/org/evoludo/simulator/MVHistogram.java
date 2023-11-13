@@ -599,6 +599,7 @@ public class MVHistogram extends MVAbstract implements HistoGraph.HistoGraphCont
 							inter = module.getInteractionGeometry();
 							repro = module.getReproductionGeometry();
 							break;
+						default: // unreachable
 					}
 					if (!degreeProcessed || (inter != null && inter.isDynamic) || (repro != null && repro.isDynamic)) {
 						double[][] graphdata = graph.getData();

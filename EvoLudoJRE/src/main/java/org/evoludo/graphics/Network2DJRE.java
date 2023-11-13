@@ -170,7 +170,8 @@ public class Network2DJRE extends Network2D implements Runnable {
 		public synchronized void run() {
 			while (true) {
 				switch (task) {
-					case NL_TASK_IDLE:
+					// case NL_TASK_IDLE:
+					default:
 						try {
 							wait();
 						} catch (InterruptedException e) {

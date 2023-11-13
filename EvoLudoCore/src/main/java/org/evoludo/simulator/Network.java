@@ -250,11 +250,10 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 					return true;
 				case OFF:
 					return false;
-				case DEFAULT:
+				default:
 					return (geometry.size <= MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT
 							&& (int) (geometry.avgTot * geometry.size) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
 			}
-			return false;
 		}
 	}
 

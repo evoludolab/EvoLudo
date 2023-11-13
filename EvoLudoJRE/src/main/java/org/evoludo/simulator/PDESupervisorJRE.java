@@ -297,7 +297,8 @@ public class PDESupervisorJRE extends PDESupervisor {
 		public synchronized void run() {
 			while (true) {
 				switch (task) {
-					case IDLE:
+					// case IDLE:
+					default:
 						try {
 							wait();
 						} catch (InterruptedException e) {

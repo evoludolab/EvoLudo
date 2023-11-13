@@ -499,7 +499,8 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 		menu.add(swapOrderMenu);
 
 		switch( closestEdge(x, y) ) {
-			case 0:
+			// case 0:
+			default:
 				swapOrderMenu.setText("Swap "+names[order[0]]+" \u2194 "+names[order[1]]);
 				break;
 			case 1:

@@ -831,7 +831,7 @@ public class EvoLudoLab extends JFrame
 		String[] args = arg.split(":");
 		String name = fallback.getFamily();
 		int	type = fallback.getStyle();
-		int	size = fallback.getSize();
+		int	size;
 		switch( args.length ) {
 			case 3:
 				name = args[0];
@@ -844,6 +844,9 @@ public class EvoLudoLab extends JFrame
 				break;
 			case 1:
 				size = Integer.parseInt(args[0]);
+				break;
+			default:
+				size = fallback.getSize();
 		}
 		return new Font(name, type, size);
 	}

@@ -318,7 +318,8 @@ if( data.logy && data.ymin<=0.0 ) data.ymin = 1.0/accuBin;
 				geometry = module.getGeometry();
 
 			switch( tag ) {
-				case K_OUT:
+				// case K_OUT:
+				default:
 					changed = process(data, geometry.kout, geometry.maxOut);
 					break;
 

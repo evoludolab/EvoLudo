@@ -685,8 +685,9 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 						isMouseDrawing = false;
 						refnode = -1;
 						return true;
+					default:
+						return false;
 				}
-				return false;
 
 			default:
 				return false;

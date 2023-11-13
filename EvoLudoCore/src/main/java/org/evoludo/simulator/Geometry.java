@@ -106,10 +106,11 @@ public class Geometry {
 		logger = engine.getLogger();
 		Model model = engine.getModel();
 		switch (model.getModelType()) {
-			case ODE:
-			case SDE:
-				// should not get here (geometries meaningless)
-			case PDE:
+			// case ODE:
+			// case SDE:
+			// 	// should not get here (geometries meaningless)
+			// case PDE:
+			default:
 				return;
 			case IBS:
 				IBS ibs = (IBS) model;
@@ -1439,6 +1440,7 @@ public class Geometry {
 					logger.warning("consider higher connectivity for rewiring (should be >3 instead of "
 							+ Formatter.format(connectivity, 2) + ")");
 					break;
+				default: // cross fingers
 			}
 			if (connectivity > size - 2) {
 				logger.severe("complete graph, rewiring impossible - ignored");

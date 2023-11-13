@@ -343,7 +343,8 @@ public class CLOParser {
 			cmd.append(" --");
 			cmd.append(clo.getName());
 			switch (clo.getType()) {
-				case NONE:
+				// case NONE:
+				default:
 					continue;
 				case OPTIONAL:
 					if (!clo.isSet())

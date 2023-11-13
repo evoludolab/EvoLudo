@@ -1538,7 +1538,7 @@ public class AffineTransform {
 	 */
 	public void quadrantRotate(int numquadrants) {
 		switch (numquadrants & 3) {
-		case 0:
+		default:
 			break;
 		case 1:
 			rotate90();
@@ -1572,7 +1572,7 @@ public class AffineTransform {
 							   double anchorx, double anchory)
 	{
 		switch (numquadrants & 3) {
-		case 0:
+		default:
 			return;
 		case 1:
 			m02 += anchorx * (m00 - m01) + anchory * (m01 + m00);
@@ -1964,6 +1964,7 @@ public class AffineTransform {
 	 */
 	public void setToQuadrantRotation(int numquadrants) {
 		switch (numquadrants & 3) {
+		default:
 		case 0:
 			m00 =  1.0;
 			m10 =  0.0;
@@ -2027,6 +2028,7 @@ public class AffineTransform {
 									  double anchorx, double anchory)
 	{
 		switch (numquadrants & 3) {
+		default:
 		case 0:
 			m00 =  1.0;
 			m10 =  0.0;
@@ -2325,6 +2327,7 @@ public class AffineTransform {
 			state = APPLY_TRANSLATE | APPLY_SHEAR;
 			type = TYPE_UNKNOWN;
 			return;
+		default:
 		}
 		// If Tx has more than one attribute, it is not worth optimizing
 		// all of those cases...
@@ -2516,6 +2519,7 @@ public class AffineTransform {
 			m12 = M0 * T10;
 			type = TYPE_UNKNOWN;
 			return;
+		default:
 		}
 		// If Tx has more than one attribute, it is not worth optimizing
 		// all of those cases...

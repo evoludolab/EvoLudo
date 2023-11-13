@@ -103,6 +103,7 @@ public class ParamPanel implements ActionListener {
 			case 8:		// OK
 				panel.setVisible(false);
 				//$FALL-THROUGH$
+			default:
 			case 24:	// Apply
 				controller.applyCLO(inputCLO.getText());
 				break;

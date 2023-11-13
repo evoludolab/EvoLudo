@@ -87,7 +87,8 @@ public class S3Graph extends AbstractGraph {
 		if( hasMessage() ) 
 			return;	// don't show popup menu
 		switch( ((S3FrameLayer)frame).closestEdge(mouse) ) {
-			case 0:
+			// case 0:
+			default:
 				menuSwapOrder.setText("Swap "+names[order[0]]+" \u2194 "+names[order[1]]);
 				break;
 			case 1:

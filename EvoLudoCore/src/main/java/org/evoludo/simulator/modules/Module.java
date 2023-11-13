@@ -416,8 +416,9 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 				return this instanceof HasPDE;
 			case IBS:
 				return this instanceof HasIBS;
+			default: // unreachable
+				return false;
 		}
-		return false;
 	}
 
 	/**
@@ -2248,6 +2249,9 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 										else
 											// frequency based models (dep >= 0 must hold)
 											smk = ArrayMath.insert(smk, 1.0 - ArrayMath.norm(smk), dep);
+										break;
+									default:	// unreachable
+										break;
 								}
 							}
 							// now smk.length == nt holds

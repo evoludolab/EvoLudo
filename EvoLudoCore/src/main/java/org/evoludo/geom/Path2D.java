@@ -433,6 +433,8 @@ public class Path2D {
 				case SEG_CLOSE:
 					closePath();
 					break;
+				default:
+					/* NOTREACHED */
 			}
 			pi.next();
 			connect = false;
@@ -716,6 +718,8 @@ public class Path2D {
 						break;
 					case SEG_CLOSE:
 						break;
+					default:
+						/* NOTREACHED */
 				}
 			}
 		}
@@ -761,6 +765,8 @@ public class Path2D {
 				case SEG_CLOSE:
 					msg += ": ";
 					break;
+				default:
+					/* NOTREACHED */
 			}
 		}
 		if (npoints < numTypes)

@@ -282,9 +282,7 @@ public abstract class EvoLudo
 	 */
 	public Model.ODE createODE(Module module) {
 		if (module instanceof HasODE) {
-			Model.ODE model = null;
-			if (module != null)
-				model = ((HasODE) module).createODE();
+			Model.ODE model = ((HasODE) module).createODE();
 			if (model != null)
 				return model;
 		}
@@ -302,9 +300,7 @@ public abstract class EvoLudo
 	 */
 	public Model.SDE createSDE(Module module) {
 		if (module instanceof HasSDE) {
-			Model.SDE model = null;
-			if (module != null)
-				model = ((HasSDE) module).createSDE();
+			Model.SDE model = ((HasSDE) module).createSDE();
 			if (model != null)
 				return model;
 		}
@@ -322,9 +318,7 @@ public abstract class EvoLudo
 	 */
 	public Model.PDE createPDE(Module module) {
 		if (module instanceof HasPDE) {
-			Model.PDE model = null;
-			if (module != null)
-				model = ((HasPDE) module).createPDE();
+			Model.PDE model = ((HasPDE) module).createPDE();
 			if (model != null)
 				return model;
 		}
@@ -343,9 +337,7 @@ public abstract class EvoLudo
 	 */
 	public Model.IBS createIBS(Module module) {
 		if (module instanceof HasIBS) {
-			Model.IBS model = null;
-			if (module != null)
-				model = ((HasIBS) module).createIBS();
+			Model.IBS model = ((HasIBS) module).createIBS();
 			if (model != null)
 				return model;
 		}
@@ -1193,8 +1185,9 @@ public abstract class EvoLudo
 				for (Model.ChangeListener i : changeListeners)
 					i.modelChanged(pendingAction);
 				break;
+			default:
 			// note: CLO re-parsing requests are handled separately, see parseCLO()
-			case CLO:
+			// case CLO:
 		}
 		pendingAction = PendingAction.NONE;
 	}
