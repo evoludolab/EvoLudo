@@ -218,7 +218,7 @@ import org.evoludo.util.Plist;
 // - logging in tests adapted to work both with JRE/GWT
 //-- Christoph Hauert
 
-public strictfp class MersenneTwister {
+public class MersenneTwister {
 
 	// Period parameters
 	private static final int N = 624;

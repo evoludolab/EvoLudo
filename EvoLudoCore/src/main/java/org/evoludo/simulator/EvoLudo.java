@@ -867,7 +867,7 @@ public abstract class EvoLudo
 	 */
 	public void increaseDelay() {
 		int newdelay = delay;
-		newdelay *= DELAY_INCR;
+		newdelay = (int) (newdelay * DELAY_INCR);
 		if (newdelay == delay)
 			newdelay++;
 		setDelay(Math.min(newdelay, (int) DELAY_MAX));
@@ -878,7 +878,7 @@ public abstract class EvoLudo
 	 */
 	public void decreaseDelay() {
 		int newdelay = delay;
-		newdelay /= DELAY_INCR;
+		newdelay = (int) (newdelay / DELAY_INCR);
 		setDelay(Math.max(newdelay, (int) DELAY_MIN));
 	}
 

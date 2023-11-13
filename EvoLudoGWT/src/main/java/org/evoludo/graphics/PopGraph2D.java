@@ -872,8 +872,8 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 
 			case TRIANGULAR:
 				// some heuristic adjustments... cause remains mysterious
-				x -= style.frameWidth * zoomFactor + 0.5;
-				y -= style.frameWidth * zoomFactor - 0.5;
+				x = x - (int) (style.frameWidth * zoomFactor + 0.5);
+				y = y - (int) (style.frameWidth * zoomFactor - 0.5);
 				if (!bounds.contains(x, y))
 					return FINDNODEAT_OUT_OF_BOUNDS;
 
@@ -894,8 +894,8 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 
 			case HONEYCOMB:
 				// some heuristic adjustments... cause remains mysterious
-				x -= style.frameWidth * zoomFactor + 0.5;
-				y -= style.frameWidth * zoomFactor - 0.5;
+				x = x - (int) (style.frameWidth * zoomFactor + 0.5);
+				y = y - (int) (style.frameWidth * zoomFactor - 0.5);
 				if (!bounds.contains(x, y))
 					return FINDNODEAT_OUT_OF_BOUNDS;
 
@@ -931,8 +931,8 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 
 			case SQUARE:
 				// some heuristic adjustments... cause remains mysterious
-				x -= style.frameWidth * zoomFactor + 0.5;
-				y -= style.frameWidth * zoomFactor - 0.5;
+				x = x - (int) (style.frameWidth * zoomFactor + 0.5);
+				y = y - (int) (style.frameWidth * zoomFactor - 0.5);
 				if (!bounds.contains(x, y))
 					return FINDNODEAT_OUT_OF_BOUNDS;
 

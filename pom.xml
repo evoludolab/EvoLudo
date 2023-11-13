@@ -199,7 +199,7 @@
           <version>3.11.0</version>
           <configuration>
             <release>11</release>
-            <compilerArgument>-Xlint:all</compilerArgument>
+            <!-- <compilerArgument>-Xlint:all,-fallthrough,-serial</compilerArgument> -->
             <showWarnings>true</showWarnings>
             <showDeprecation>true</showDeprecation>
           </configuration>

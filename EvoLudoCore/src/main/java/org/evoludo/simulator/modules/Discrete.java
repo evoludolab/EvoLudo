@@ -38,7 +38,6 @@ import java.util.Arrays;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBSMCPopulation;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODEEuler;
 import org.evoludo.util.CLOParser;
@@ -104,7 +103,8 @@ public abstract class Discrete extends Module {
 		 * <strong>Note:</strong> If explicit calculations of the well-mixed scores are
 		 * not available, interactions with everyone in well-mixed populations should
 		 * checked for and excluded with a warning in {@link #check()} (see
-		 * {@link IBSMCPopulation#check() CXPopulation} for an example).
+		 * {@link org.evoludo.simulator.models.IBSMCPopulation#check() CXPopulation} for
+		 * an example).
 		 * 
 		 * @param count       number of individuals for each trait/strategy
 		 * @param traitScores array for returning the payoffs/scores of each
@@ -171,7 +171,8 @@ public abstract class Discrete extends Module {
 		 * If explicit calculations of the well-mixed scores are not available,
 		 * interactions with everyone in well-mixed populations should be checked for
 		 * and excluded with a warning in {@link #check()} (see
-		 * {@link IBSMCPopulation#check() IBSMCPopulation} for an example).
+		 * {@link org.evoludo.simulator.models.IBSMCPopulation#check() IBSMCPopulation}
+		 * for an example).
 		 * 
 		 * <h3>Important:</h3>
 		 * Must be overridden and implemented in subclasses that define game

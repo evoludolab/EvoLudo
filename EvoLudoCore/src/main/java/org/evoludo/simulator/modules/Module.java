@@ -65,73 +65,11 @@ import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.Formatter;
 
 /**
- * Interface to query features of the Module.
- * 
- * @author Christoph Hauert
- */
-interface Features {
-
-	/**
-	 * Returns whether payoffs/fitness are static ({@code false} by default).
-	 * 
-	 * @return {@code true} if static
-	 */
-	public default boolean isStatic() {
-		return false;
-	}
-
-	/**
-	 * Returns whether interactions are restricted to pairs ({@code false} by
-	 * default). For modules that allow interactions in larger groups this returns
-	 * {@code true} only if the group size parameter is set to {@code 2}.
-	 * 
-	 * @return {@code true} if pairwise interactions
-	 * 
-	 * @see Module#setNGroup(int)
-	 */
-	public default boolean isPairwise() {
-		return false;
-	}
-
-	/**
-	 * Returns whether traits are continuous or discrete ({@code false} by
-	 * default).
-	 * 
-	 * @return {@code true} if traits are continuous
-	 */
-	public default boolean isContinuous() {
-		return false;
-	}
-}
-
-/**
  * Parent class of all EvoLudo modules.
  * 
  * @author Christoph Hauert
  */
 public abstract class Module implements Features, Model.MilestoneListener, CLOProvider, Runnable {
-
-	/**
-	 * Interface that all modules with static fitness/payoffs should implement. The
-	 * original Moran process is an example, see
-	 * {@link org.evoludo.simulator.modules.Moran}.
-	 * 
-	 * @author Christoph Hauert
-	 */
-	public interface Static extends Features {
-
-		@Override
-		public default boolean isStatic() {
-			return true;
-		}
-
-		/**
-		 * Gets the static scores for the different types.
-		 * 
-		 * @return the array with the static scores
-		 */
-		public double[] getStaticScores();
-	}
 
 	/**
 	 * The name of the species. Mainly used in multi-species modules.
