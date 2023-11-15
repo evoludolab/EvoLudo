@@ -109,7 +109,7 @@
         <configuration>
           <moduleName>org.evoludo.EvoLudoWeb</moduleName>
           <relocateSuperSource>true</relocateSuperSource>
-          <style>OBFUSCATED</style>
+          <style>${gwt.style}</style>
           <skipModule>true</skipModule>
         </configuration>
       </plugin>

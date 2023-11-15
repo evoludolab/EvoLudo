@@ -21,6 +21,7 @@
     <evoludo.build default-value="">${git.build.time}</evoludo.build>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javadoc.exe>/Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/javadoc</javadoc.exe>
+    <gwt.style>OBFUSCATED</gwt.style>
   </properties>
 
   <dependencyManagement>
