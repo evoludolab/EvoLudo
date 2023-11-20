@@ -546,10 +546,12 @@ public class TestEvoLudo implements Model.MilestoneListener {
 	}
 
 	public void help() {
-		System.out.println("Usage: java -jar TestEvoLudo.jar with options\n" + //
+		System.out.println(
+				"EvoLudo tests: " + engine.getVersion() + //
+				"\nUsage: java -jar TestEvoLudo.jar with options\n" + //
 				"       --generate <directory|file>: generate test files from option sets\n" + //
 				"       --tests <directory>: directory for storing/retrieving test cases\n" + //
-				"       --reports  <directory>: directory to store reports of failed tests" + //
+				"       --reports  <directory>: directory to store reports of failed tests\n" + //
 				"       --compress: compress generated test files\n" + //
 				"       --minor: dump differences for minor failures\n" + //
 				"       --verb: verbose mode\n" + //

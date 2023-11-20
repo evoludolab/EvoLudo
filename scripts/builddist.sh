@@ -18,7 +18,8 @@ java -jar "$EVOLUDO_TEST_HOME"/target/EvoLudoTest.*.jar \
 passed=$? ;
 
 if [ $passed -ne 0 ]
-    then "EvoLudo test\(s\) failed - aborting!" ;
+    then 
+    echo "EvoLudo test\(s\) failed - aborting!" ;
     exit $passed ;
 fi
 
