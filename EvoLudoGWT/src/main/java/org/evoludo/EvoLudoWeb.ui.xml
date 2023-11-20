@@ -75,19 +75,21 @@ removed. -->
 		width: 100%;
 	}
 	
+	.threequarter, .half, .quarter {
+		display: inline-block;
+		margin: 2px;
+	}
+	
 	.threequarter {
 		width: calc(75% - 16px);
 	}
 	
 	.half {
 		width: calc(50% - 4px);
-		display: inline-block;
-		margin: 2px;
 	}
-	
+
 	.quarter {
 		width: calc(25% - 3px);
-		margin: 2px;
 	}
 	
 	.quarter:first-of-type, .half:first-of-type {
