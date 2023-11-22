@@ -252,8 +252,7 @@ public class CG extends ATBT implements Module.Static {
 	@Override
 	public void adjustCLO(CLOParser parser) {
 		super.adjustCLO(parser);
-		parser.removeCLO(new String[] { "asymmetry", "environment", "payoffs", "intertype", "numinter", "resetonchange",
-				"accuscores", "geominter", "geomrepro", "popupdate", "playerupdate", "references" });
+		parser.removeCLO(new String[] { "asymmetry", "environment", "payoffs", "popupdate", "playerupdate", "references" });
 	}
 
 	@Override

@@ -1699,23 +1699,19 @@ public abstract class IBS implements Model.IBS {
 			parser.addCLO(cloSpeciesUpdateType);
 		}
 		parser.addCLO(cloPopulationUpdate);
-		parser.addCLO(cloAccumulatedScores);
-		parser.addCLO(cloResetScoresOnChange);
-		parser.addCLO(cloInteractionType);
-		parser.addCLO(cloInteractionCount);
 		parser.addCLO(cloMigration);
-		parser.addCLO(cloGeometryInteraction);
-		parser.addCLO(cloGeometryReproduction);
 		parser.addCLO(cloGeometryRewire);
 		parser.addCLO(cloGeometryAddwire);
 		parser.addCLO(cloConsistency);
 
 		boolean anyVacant = false;
 		boolean anyNonVacant = false;
+		boolean allStatic = true;
 		for (IBSPopulation pop : species) {
 			int vacant = pop.getModule().getVacant();
 			anyVacant |= vacant >= 0;
 			anyNonVacant |= vacant < 0;
+			allStatic &= pop.getModule().isStatic();
 		}
 		if (anyNonVacant) {
 			// additional options that only make sense without vacant sites
@@ -1727,6 +1723,16 @@ public abstract class IBS implements Model.IBS {
 			cloPopulationUpdate.clearKeys();
 			cloPopulationUpdate.addKey(PopulationUpdateType.ECOLOGY);
 			cloPopulationUpdate.setDefault(PopulationUpdateType.ECOLOGY.getKey());
+		}
+		if (!allStatic) {
+			// options that are only meaningful if at least some populations do not 
+			// have static fitness
+			parser.addCLO(cloAccumulatedScores);
+			parser.addCLO(cloResetScoresOnChange);
+			parser.addCLO(cloInteractionType);
+			parser.addCLO(cloInteractionCount);
+			parser.addCLO(cloGeometryInteraction);
+			parser.addCLO(cloGeometryReproduction);
 		}
 	}
 

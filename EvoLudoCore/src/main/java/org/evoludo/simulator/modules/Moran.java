@@ -347,12 +347,6 @@ public class Moran extends Discrete implements Module.Static,
 		parser.addCLO(cloFitness);
 	}
 
-	@Override
-	public void adjustCLO(CLOParser parser) {
-		parser.removeCLO(
-				new String[] { "intertype", "numinter", "resetonchange", "accuscores", "geominter", "geomrepro" });
-	}
-
 	// ANALYTICAL CALCULATIONS OF FIXATION PROBABILITIES AND TIMES
 
 	/**
