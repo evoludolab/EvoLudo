@@ -2625,10 +2625,9 @@ public abstract class IBSPopulation {
 		double myFitness = getFitnessAt(me);
 		double aProb, nProb, norm;
 		double equalProb = betterOnly ? playerError : 0.5;
-		double invThermalNoise = 1.0 / module.getPlayerUpdateNoise();
-		if (invThermalNoise <= 0.0) {
-			// zero noise
-			// generalize update to competition among arbitrary numbers of players
+		// generalize update to competition among arbitrary numbers of players
+		double noise = module.getPlayerUpdateNoise();
+		if (noise <= 0.0) { // zero noise
 			double aDiff = getFitnessAt(refGroup[0]) - myFitness;
 			if (aDiff > 0.0)
 				aProb = 1.0 - playerError;
@@ -2650,10 +2649,10 @@ public abstract class IBSPopulation {
 				}
 			}
 		} else {
-			double inoise = invThermalNoise;
+			double inoise = 1.0 / noise;
 			double shift = 0.0;
 			if (!betterOnly) {
-				inoise = 0.5 * invThermalNoise;
+				inoise *= 0.5;
 				shift = 0.5;
 			}
 			if (playerScoreAveraged) {
@@ -2761,9 +2760,8 @@ public abstract class IBSPopulation {
 		double myFitness = getFitnessAt(me);
 		double norm, nProb;
 		// generalize update to competition among arbitrary numbers of players
-		// treat case of zero noise separately
-		double invThermalNoise = 1.0 / module.getPlayerUpdateNoise();
-		if (invThermalNoise <= 0.0) { // zero noise
+		double noise = module.getPlayerUpdateNoise();
+		if (noise <= 0.0) { // zero noise
 			double aProb;
 			double aDiff = getFitnessAt(refGroup[0]) - myFitness;
 			if (aDiff > 0.0)
@@ -2785,17 +2783,17 @@ public abstract class IBSPopulation {
 					norm += aProb;
 				}
 			}
-		} else {
-			// some noise
+		} else { // some noise
+			double inoise = 1.0 / noise;
 			double aProb = Math.min(1.0 - playerError, Math.max(playerError,
-					1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[0]) - myFitness) * invThermalNoise))));
+					1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[0]) - myFitness) * inoise))));
 			norm = aProb;
 			nProb = 1.0 - aProb;
 			if (rGroupSize > 1) {
 				cProbs[0] = aProb;
 				for (int i = 1; i < rGroupSize; i++) {
 					aProb = Math.min(1.0 - playerError, Math.max(playerError,
-							1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[i]) - myFitness) * invThermalNoise))));
+							1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[i]) - myFitness) * inoise))));
 					cProbs[i] = cProbs[i - 1] + aProb;
 					nProb *= 1.0 - aProb;
 					norm += aProb;
