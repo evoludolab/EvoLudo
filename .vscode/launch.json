@@ -61,36 +61,36 @@
             "name": "JRE Moran EvoLudo",
             "type": "java",
             "request": "launch",
-            "mainClass": "${workspaceFolder}/src/org/evoludo/jre/simulator/EvoLudoLab.java",
-            "args": "--game Moran"
+            "mainClass": "${workspaceFolder}/EvoLudoJRE/src/main/java/org/evoludo/simulator/EvoLudoLab.java",
+            "args": "--module Moran"
+        },
+        {
+            "name": "JRE 2x2 Evoludo",
+            "type": "java",
+            "request": "launch",
+            "mainClass": "${workspaceFolder}/EvoLudoJRE/src/main/java/org/evoludo/simulator/EvoLudoLab.java",
+            "args": "--module 2x2 --model IBS --reportfreq 1 --geometry M --references r1 --popsize 500 --popupdate a --playerupdate t0.1 --init 0,1 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --paymatrix 0.25,1.25;0,1 --data traits"
         },
         {
             "name": "JRE ePGG EvoLudo",
             "type": "java",
             "request": "launch",
-            "mainClass": "${workspaceFolder}/src/org/evoludo/jre/simulator/EvoLudoLab.java",
-            "args": "--game ePGG --run --delay 100 --pdeN 61x --model PDE --geometry nf --colors red;green;black --reportfreq 1 --pdeD 2,1 --inittype circle --init 1,1,8 --fitnessmap static --basefit 1.0 --selection 1.0 --cost 1.0 --interest 2.34 --groupsize 8 --deathrate 1.2 --dt 0.1 --pdeL 200"
+            "mainClass": "${workspaceFolder}/EvoLudoJRE/src/main/java/org/evoludo/simulator/EvoLudoLab.java",
+            "args": "--module ePGG --run --delay 100 --pdeN 61x --model PDE --geometry nf --colors red;green;black --reportfreq 1 --pdeD 2,1 --inittype circle --init 1,1,8 --fitnessmap static --basefit 1.0 --selection 1.0 --cost 1.0 --interest 2.34 --groupsize 8 --deathrate 1.2 --dt 0.1 --pdeL 200"
         },
         {
             "name": "JRE TestEvoludo (generate)",
             "type": "java",
             "request": "launch",
-            "mainClass": "${workspaceFolder}/src/org/evoludo/jre/simulator/exec/TestEvoludo.java",
-            "args": "--tests ${workspaceFolder}/test/references --generate ${workspaceFolder}/test/generators --reports ${workspaceFolder}/test/reports --compress"
+            "mainClass": "${workspaceFolder}/EvoLudoTest/src/main/java/org/evoludo/simulator/exec/TestEvoludo.java",
+            "args": "--tests ${workspaceFolder}/EvoLudoTest/tests/references --generate ${workspaceFolder}/EvoLudoTest/tests/generators --reports ${workspaceFolder}/EvoLudoTest/tests/reports --compress"
         },
         {
             "name": "JRE TestEvoludo (test)",
             "type": "java",
             "request": "launch",
-            "mainClass": "${workspaceFolder}/src/org/evoludo/jre/simulator/exec/TestEvoludo.java",
-            "args": "--tests ${workspaceFolder}/test/references --reports ${workspaceFolder}/test/reports"
-        },
-        {
-            "name": "JRE Evoludo",
-            "type": "java",
-            "request": "launch",
-            "mainClass": "${workspaceFolder}/src/org/evoludo/jre/simulator/EvoludoLab.java",
-            "args": "--game 2x2 --model IBS --reportfreq 1 --geometry M --references r1 --popsize 500 --popupdate a --playerupdate t0.1 --init 0,1 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --paymatrix 0.25,1.25;0,1 --data traits"
+            "mainClass": "${workspaceFolder}/EvoLudoTest/src/main/java/org/evoludo/simulator/exec/TestEvoludo.java",
+            "args": "--tests ${workspaceFolder}/EvoLudoTest/tests/references --reports ${workspaceFolder}/EvoLudoTest/tests/reports"
         },
     ]
 }
