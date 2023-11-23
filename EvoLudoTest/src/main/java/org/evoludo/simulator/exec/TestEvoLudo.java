@@ -429,12 +429,12 @@ public class TestEvoLudo implements Model.MilestoneListener {
 				}
 				// ask for confirmation to proceed
 				Scanner scanner = new Scanner(System.in);
-				System.out.print("Do you really want to generate new reference data (yes/no): ");
-				String confirmation = scanner.next();
+				System.out.print("Do you really want to generate new reference data (yes/No): ");
+				String confirmation = scanner.nextLine();
 				scanner.close();
 				if (!confirmation.toLowerCase().equals("yes")) {
 					logError("Generation of reference data aborted.");
-					engine.exit(0);
+					engine.exit(-1);
 				}
 				// open file or directory
 				arg = args[++i];
