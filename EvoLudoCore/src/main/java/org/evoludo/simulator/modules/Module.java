@@ -1156,9 +1156,10 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	}
 
 	/**
-	 * Inverse of thermal noise, {@code 1/T}.
+	 * Noise when player reassesses its strategy. Inverse of temperature in
+	 * Fermi-update.
 	 */
-	protected double invPlayerNoise = 10.0;
+	protected double playerUpdateNoise = 0.1;
 
 	/**
 	 * Sets the noise for player updating. For example, this corresponds to the
@@ -1168,20 +1169,18 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * refers to the difference in fitness between the focal and the model
 	 * individual. {@code temp &lt; 0} disables noise.
 	 * <p>
-	 * <strong>Note:</strong> For tiny temperatures, {@code temp &lt; 1e-8},
-	 * noise is disabled to prevent numerical issues.
+	 * <strong>Note:</strong> For tiny temperatures, {@code temp &lt; 1e-6},
+	 * noise is disabled to reduce risk of numerical issues.
 	 * 
 	 * @param temp the noise in player updating
 	 * @return {@code true} if the noise changed
 	 */
 	public boolean setPlayerUpdateNoise(double temp) {
-		double itemp = 1.0 / Math.abs(temp);
-		boolean changed = (Math.abs(invPlayerNoise - itemp) > 1e-7);
-		if (itemp > 1e8)
-			invPlayerNoise = -1.0;
-		else
-			invPlayerNoise = itemp;
-		return changed;
+		temp = Math.max(0.0, temp < 1e-6 ? 0.0 : temp);
+		if (Math.abs(playerUpdateNoise - temp) < 1e-8)
+			return false;
+		playerUpdateNoise = temp;
+		return true;
 	}
 
 	/**
@@ -1190,9 +1189,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * @return the noise in player updating
 	 */
 	public double getPlayerUpdateNoise() {
-		if (invPlayerNoise <= 0.0)
-			return 0.0;
-		return 1.0 / invPlayerNoise;
+		return playerUpdateNoise;
 	}
 
 	/**

@@ -1044,19 +1044,36 @@ public class ODEEuler implements Model.ODE {
 		}
 
 		double err = 0.0;
-		double noise;
+		double noise, inoise;
 		PlayerUpdateType put = mod.getPlayerUpdateType();
 		switch (put) {
 			case THERMAL: // fermi update
 				// factor 2 enters - see e.g. Sigmund et al. Dyn Games & Appl. 2011
 				// no scaling seems required for comparisons with simulations
-				noise = 0.5 / mod.getPlayerUpdateNoise();
+				noise = mod.getPlayerUpdateNoise();
+				if (noise <= 0.0) {
+					// no noise
+					for (int n = skip; n < end; n++) {
+						double dyn = 0.0, ftn = fit[n];
+						for (int i = skip; i < end; i++) {
+							if (i == n)
+								continue;
+							dyn += state[i] * Math.signum(ftn - fit[i]);
+						}
+						dyn *= state[n];
+						change[n] = dyn;
+						err += dyn;
+					}
+					break;
+				}
+				// some noise
+				inoise = 0.5 / noise;
 				for (int n = skip; n < end; n++) {
 					double dyn = 0.0, ftn = fit[n];
 					for (int i = skip; i < end; i++) {
 						if (i == n)
 							continue;
-						dyn += state[i] * Functions.tanh((ftn - fit[i]) * noise);
+						dyn += state[i] * Functions.tanh((ftn - fit[i]) * inoise);
 					}
 					dyn *= state[n];
 					change[n] = dyn;
@@ -1097,20 +1114,19 @@ public class ODEEuler implements Model.ODE {
 			case IMITATE_BETTER: // replicator update
 			case IMITATE:
 				// if noise becomes very small, this should recover PLAYER_UPDATE_BEST
-				noise = invFitRange[idx];
-				double thermal = mod.getPlayerUpdateNoise();
-				if (thermal > 0.0)
-					noise /= thermal;
+				inoise = invFitRange[idx];
+				noise = mod.getPlayerUpdateNoise();
+				if (noise > 0.0)
+					inoise /= noise;
 				for (int n = skip; n < end; n++) {
 					double dyn = 0.0, ftn = fit[n];
 					for (int i = skip; i < end; i++) {
-						// note float resolution is 1.1920929E-7
+						// lowering the threshold to 1e-8 results in one failing test (CDL-18-PDE.plist)
 						if (i == n || Math.abs(ftn - fit[i]) < 1e-6)
 							continue;
 						// note: cannot use mean payoff as the transition probabilities must lie in
-						// [0,1] - otherwise
-						// the timescale gets messed up.
-						dyn += state[i] * Math.min(1.0, Math.max(-1.0, (ftn - fit[i]) * noise));
+						// [0,1] - otherwise the timescale gets messed up.
+						dyn += state[i] * Math.min(1.0, Math.max(-1.0, (ftn - fit[i]) * inoise));
 					}
 					dyn *= state[n];
 					change[n] = dyn;
