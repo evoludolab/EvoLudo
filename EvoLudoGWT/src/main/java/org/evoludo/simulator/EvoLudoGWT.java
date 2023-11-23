@@ -263,7 +263,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 */
 	@Override
 	protected String[] preprocessCLO(String[] args) {
-		// once game is loaded pre-processing of command line arguments can proceed
+		// once module is loaded pre-processing of command line arguments can proceed
 		args = super.preprocessCLO(args);
 		if (args == null)
 			return null;

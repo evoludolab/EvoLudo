@@ -950,10 +950,10 @@ public class EvoLudoLab extends JFrame
 	 * Generic entry point for java. Triage three scenarios:
 	 * <ol>
 	 * <li>if {@code EvoLudoJRE.getAttribute("Engine-Class")} returns not
-	 * {@code null} a customised simulation is set up. Any {@code --game},
+	 * {@code null} a customised simulation is set up. Any {@code --module},
 	 * {@code --data} or {@code --export} options are ignored.
 	 * <li>if options {@code --data} or {@code --export} are present a generic
-	 * simulation for the module specified by {@code --game} is set up.
+	 * simulation for the module specified by {@code --module} is set up.
 	 * <li>otherwise the java GUI is launched.
 	 * </ol>
 	 * In all cases the command line options are used to configure and initialize

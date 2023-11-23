@@ -183,7 +183,7 @@ public class ODEEuler implements Model.ODE {
 	/**
 	 * List with all species in model including this one. List should be shared with
 	 * other populations (to simplify bookkeeping) but the species list CANNOT be
-	 * static! Otherwise it is impossible to run multiple instances of models/games
+	 * static! Otherwise it is impossible to run multiple instances of modules/models
 	 * concurrently.
 	 */
 	protected ArrayList<? extends Module> species;
@@ -1006,7 +1006,7 @@ public class ODEEuler implements Model.ODE {
 	 *                population
 	 * @param scratch array to store intermediate calculations (for PDEs this must
 	 *                be thread safe)
-	 * @param mod     pointer to the current game module
+	 * @param mod     pointer to the current module
 	 * @param idx     the index of the module <code>mod</code> in multi-species
 	 *                modules
 	 * @return the array with the changes
@@ -1137,7 +1137,7 @@ public class ODEEuler implements Model.ODE {
 	/**
 	 * ugly helper method to retrieve fitnesses...
 	 *
-	 * @param mod     the pointer to the current game module
+	 * @param mod     the pointer to the current module
 	 * @param state   the array of frequencies/densities denoting the state
 	 *                population
 	 * @param fit     the array of fitness values of types in population
@@ -1167,7 +1167,7 @@ public class ODEEuler implements Model.ODE {
 	 * <strong>IMPORTANT:</strong> needs to be thread safe (must supply memory for
 	 * calculations and results)
 	 *
-	 * @param mod      the reference to the current game module
+	 * @param mod      the reference to the current module
 	 * @param freqs    the frequency/density of each trait/strategy
 	 * @param fit      the array for storing the average payoffs/scores for each
 	 *                 strategic type

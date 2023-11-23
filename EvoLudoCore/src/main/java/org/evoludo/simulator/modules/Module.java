@@ -117,7 +117,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * <h3>Important:</h3>
 	 * List should be shared with other populations (to simplify bookkeeping) but
 	 * the species list <em>CANNOT</em> be static! Otherwise it is impossible to run
-	 * multiple instances of models/games concurrently!
+	 * multiple instances of modules/models concurrently!
 	 */
 	ArrayList<? extends Module> species;
 
@@ -203,7 +203,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	/**
 	 * Returns identifier of the active module, e.g. 2x2 games in
 	 * {@link org.evoludo.simulator.modules.TBT} return "2x2". This corresponds to
-	 * the argument for the {@code --game} option to load a particular module.
+	 * the argument for the {@code --module} option to load a particular module.
 	 * 
 	 * @return the identifying key of this module
 	 */

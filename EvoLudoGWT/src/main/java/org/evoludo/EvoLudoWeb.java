@@ -468,9 +468,8 @@ public class EvoLudoWeb extends Composite
 	 * <p>
 	 * <strong>Important:</strong> ensure that no errors/exceptions are thrown here!
 	 * All errors/exceptions are caught and ignored, which results in incomplete
-	 * unloading and most likely subsequent re-loading of game will fail. A good
-	 * indicator is if the info message "Game XYZ unloaded" appears in log.
-	 * </p>
+	 * unloading and most likely subsequent re-loading of module will fail. A good
+	 * indicator is if the info message "Module XYZ unloaded" appears in log.
 	 */
 	@Override
 	public void onUnload() {

@@ -170,7 +170,7 @@ public abstract class IBS implements Model.IBS {
 	 * List with the populations of all species in model including this one. List
 	 * should be shared with other populations (to simplify bookkeeping) but the
 	 * species list CANNOT be static! Otherwise it is impossible to run multiple
-	 * instances of models/games concurrently in a single browser window using GWT.
+	 * instances of modules/models concurrently in a single browser window using GWT.
 	 */
 	protected ArrayList<IBSPopulation> species;
 

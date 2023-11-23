@@ -334,10 +334,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				// code never gets here but prevents null-pointer warnings.
 				return;
 			}
-			// prepend --game option (any additional --game options are ignored)
+			// prepend --module option (any additional --module options are ignored)
 			args = Arrays.copyOf(args, args.length + 2);
 			System.arraycopy(args, 0, args, 2, args.length - 2);
-			args[0] = "--" + cloGame.getName();
+			args[0] = "--" + cloModule.getName();
 			String key = module.getKey();
 			args[1] = key;
 			addModule(module);
@@ -356,22 +356,22 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				out.close();
 			exit(0);
 		}
-		// ensure that --game option is specified
-		String gameOption = "--" + cloGame.getName();
-		String gameName = null;
+		// ensure that --module option is specified
+		String moduleOption = "--" + cloModule.getName();
+		String moduleName = null;
 		int nArgs = args.length;
-		// no need to check last argument if it's --game then the game key is missing and still no use
+		// no need to check last argument if it's --module then the module key is missing and still no use
 		for (int i = 0; i < nArgs - 1; i++) {
-			if (gameOption.equals(args[i])) {
-				gameName = args[i + 1];
+			if (moduleOption.equals(args[i])) {
+				moduleName = args[i + 1];
 				break;
 			}
 		}
-		if (gameName == null || modules.get(gameName) == null) {
+		if (moduleName == null || modules.get(moduleName) == null) {
 			// no module requested - show help
-			logError(gameOption + " " + (gameName == null ? "option missing!" : gameName + " module not found!"));
+			logError(moduleOption + " " + (moduleName == null ? "option missing!" : moduleName + " module not found!"));
 			parser.clearCLO();
-			parser.addCLO(cloGame);
+			parser.addCLO(cloModule);
 			output.println("List of available modules:\n" + parser.helpCLO(false));
 			exit(0);
 		}
@@ -1021,7 +1021,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 */
 	@Override
 	protected String[] preprocessCLO(String[] args) {
-		// once game is loaded pre-processing of command line arguments can proceed
+		// once module is loaded pre-processing of command line arguments can proceed
 		args = super.preprocessCLO(args);
 		if (args == null)
 			return null;
@@ -1061,18 +1061,18 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						continue;
 					}
 					String[] clos = restoreOptions.split("\\s+");
-					String gameName = "--" + cloGame.getName();
-					String gameKey = activeModule.getKey();
+					String moduleName = "--" + cloModule.getName();
+					String moduleKey = activeModule.getKey();
 					int rArgs = clos.length;
 					for (int j = 0; j < rArgs; j++) {
-						if (clos[j].startsWith(gameName)) {
-							if (!clos[j + 1].equals(gameKey)) {
-								logger.warning("state in '" + plistname + "' refers to game '" + clos[j + 1]
-										+ "' but expected '" + gameKey + "' - ignored.");
+						if (clos[j].startsWith(moduleName)) {
+							if (!clos[j + 1].equals(moduleKey)) {
+								logger.warning("state in '" + plistname + "' refers to module '" + clos[j + 1]
+										+ "' but expected '" + moduleKey + "' - ignored.");
 								plist = null;
 								break;
 							}
-							// merge options and remove --game from clos
+							// merge options and remove --module from clos
 							rArgs -= 2;
 							sargs = new String[nArgs + rArgs];
 							System.arraycopy(args, 0, sargs, 0, nArgs);

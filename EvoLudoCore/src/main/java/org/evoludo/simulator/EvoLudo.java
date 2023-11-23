@@ -124,7 +124,7 @@ public abstract class EvoLudo
 
 	/**
 	 * Create an instance of the EvoLudo controller. EvoLudo manages different
-	 * model/game implementations and the connection between simulations/numerical
+	 * module/model implementations and the connection between simulations/numerical
 	 * calculations and the GUI interface as well as the execution environment. This
 	 * includes logging (verbosity and output channels), restoring previously saved
 	 * engine states as well saving the current state of the engine, export its data
@@ -883,17 +883,17 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Load new module/game with key <code>newModuleKey</code>. If necessary first
-	 * unload current module/game.
+	 * Load new module with key <code>newModuleKey</code>. If necessary first
+	 * unload current module.
 	 *
-	 * @param newModuleKey the key of the module/game to load
-	 * @return <code>true</code> if new module/game was loaded
+	 * @param newModuleKey the key of the module to load
+	 * @return <code>true</code> if new module was loaded
 	 */
 	public Module loadModule(String newModuleKey) {
 		Module newModule = modules.get(newModuleKey);
 		if (newModule == null) {
 			if (activeModule != null) {
-				logger.warning("game key '" + newModuleKey + "' not found - keeping '" + activeModule.getKey() + "'.");
+				logger.warning("module '" + newModuleKey + "' not found - keeping '" + activeModule.getKey() + "'.");
 				return activeModule; // leave as is
 			}
 			return null;
@@ -914,7 +914,7 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Unload current model/game to free up resources.
+	 * Unload current module to free up resources.
 	 * 
 	 * <h3>Implementation note:</h3>
 	 * Called from {@link loadModule} to first unload the active module
@@ -965,7 +965,7 @@ public abstract class EvoLudo
 	public void addModule(Module module) {
 		String key = module.getKey();
 		modules.put(key, module);
-		cloGame.addKey(key, module.getTitle());
+		cloModule.addKey(key, module.getTitle());
 	}
 
 	/**
@@ -1662,11 +1662,11 @@ public abstract class EvoLudo
 
 	/**
 	 * Pre-process array of command line arguments. Some arguments need priority
-	 * treatment. Examples include the options <code>--game</code>,
+	 * treatment. Examples include the options <code>--module</code>,
 	 * <code>--verbosity</code> or <code>--restore</code>.
 	 * <dl>
-	 * <dt>{@code --game}</dt>
-	 * <dd>load game/module and remove option</dd>
+	 * <dt>{@code --module}</dt>
+	 * <dd>load module and remove option</dd>
 	 * <dt>{@code --verbose}</dt>
 	 * <dd>set verbosity level effective immediately. This ensures that issues when
 	 * parsing the remaining command line options are already properly reported</dd>
@@ -1683,8 +1683,8 @@ public abstract class EvoLudo
 	protected String[] preprocessCLO(String[] cloarray) {
 		if (cloarray == null)
 			return null;
-		// first deal with --game option
-		String moduleName = "--" + cloGame.getName();
+		// first deal with --module option
+		String moduleName = "--" + cloModule.getName();
 		String newModuleKey = null;
 		int nArgs = cloarray.length;
 		for (int i = 0; i < nArgs; i++) {
@@ -1693,7 +1693,7 @@ public abstract class EvoLudo
 				continue;
 			if (arg.startsWith(moduleName)) {
 				if (i + 1 == nArgs) {
-					logger.warning("game key missing");
+					logger.warning("module key missing");
 					return null;
 				}
 				newModuleKey = cloarray[i + 1];
@@ -1807,8 +1807,8 @@ public abstract class EvoLudo
 		cloarray = preprocessCLO(cloarray);
 		if (cloarray == null) {
 			parser.clearCLO();
-			parser.addCLO(cloGame);
-			logger.warning("Mandatory option --" + cloGame.getName() + " not found!");
+			parser.addCLO(cloModule);
+			logger.warning("Mandatory option --" + cloModule.getName() + " not found!");
 			logger.info("<pre>List of available modules:\n" + parser.helpCLO(false) + "</pre>");
 			return false;
 		}
@@ -1854,10 +1854,10 @@ public abstract class EvoLudo
 	public static final CLOption.Category catGUI = new CLOption.Category("User interface specific options:", 10);
 
 	/**
-	 * Command line option to set game/module.
+	 * Command line option to set module.
 	 */
-	public final CLOption cloGame = new CLOption("game", null, catGlobal,
-			"--game <g>      select module from:", new CLODelegate() {
+	public final CLOption cloModule = new CLOption("module", null, catGlobal,
+			"--module <m>    select module from:", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					// option gets special treatment
@@ -2187,7 +2187,7 @@ public abstract class EvoLudo
 		if (!EvoLudo.isGWT)
 			// default verbosity if running as java application is warning
 			cloVerbose.setDefault("warning");
-		parser.addCLO(cloGame);
+		parser.addCLO(cloModule);
 		parser.addCLO(cloModel);
 		parser.addCLO(cloSeed);
 		parser.addCLO(cloRun);
