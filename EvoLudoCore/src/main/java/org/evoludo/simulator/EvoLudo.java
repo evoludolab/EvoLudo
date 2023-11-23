@@ -1808,7 +1808,7 @@ public abstract class EvoLudo
 		if (cloarray == null) {
 			parser.clearCLO();
 			parser.addCLO(cloModule);
-			logger.warning("Mandatory option --" + cloModule.getName() + " not found!");
+			logger.severe("Mandatory option --" + cloModule.getName() + " not found!");
 			logger.info("<pre>List of available modules:\n" + parser.helpCLO(false) + "</pre>");
 			return false;
 		}
