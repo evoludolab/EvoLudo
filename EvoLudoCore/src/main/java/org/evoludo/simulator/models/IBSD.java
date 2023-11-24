@@ -142,8 +142,6 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		CLOption cloInitType = engine.cloInitType;
 		cloInitType.clearKeys();
 		cloInitType.addKeys(InitType.values());
-		cloInitType.removeKey(InitType.DEFAULT);
-		cloInitType.removeKey(InitType.STATISTICS);
 		// kaleidoscopes are not standard and must be requested/enabled by modules and
 		// their IBSDPopulation implementations.
 		cloInitType.removeKey(InitType.KALEIDOSCOPE);

@@ -654,17 +654,44 @@ public class CLOption implements Comparable<CLOption> {
 		return delegate.parse(getDefault());
 	}
 
+	/**
+	 * Add all {@link Key}s in the array {@code chain} to this option. Note, this
+	 * ignores keys starting with '-', except if '-' is the key. If needed, those 
+	 * keys can still be added by calling {@code addKey(Key)} or 
+	 * {@code #addKey(String, String)}.
+	 * 
+	 * @param chain the array of {@link Key}s to be added
+	 * 
+	 * @see #addKey(Key)
+	 * @see #addKey(String, String)
+	 */
 	public void addKeys(Key[] chain) {
-		for (Key key : chain)
+		for (Key key : chain) {
+			String keyname = key.getKey();
+			if (keyname.length() > 1 && keyname.startsWith("-"))
+				continue;
 			addKey(key);
+		}
 	}
 
+	/**
+	 * Add a {@link Key} to option with name {@code key} and description
+	 * {@code title}.
+	 * 
+	 * @param key   the name of the key
+	 * @param title the description of the key
+	 */
 	public Key addKey(String key, String title) {
 		if (keys == null)
 			keys = new HashMap<String, Key>();
 		return keys.put(key, new SimpleKey(key, title));
 	}
 
+	/**
+	 * Add {@link Key} {@code key} to option.
+	 * 
+	 * @param key the {@link Key} to be added
+	 */
 	public Key addKey(Key key) {
 		if (keys == null)
 			keys = new HashMap<String, Key>();

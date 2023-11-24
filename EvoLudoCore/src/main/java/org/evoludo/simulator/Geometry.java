@@ -5155,47 +5155,6 @@ public class Geometry {
 	}
 
 	/**
-	 * Initialize available geometries for command line options.
-	 * 
-	 * @param clo the command line option to specify the geometry
-	 */
-	public static void load(CLOption clo) {
-		clo.addKey(Type.MEANFIELD);
-		clo.addKey(Type.COMPLETE);
-		clo.addKey(Type.HIERARCHY);
-		// lattices
-		clo.addKey(Type.LINEAR);
-		clo.addKey(Type.SQUARE_NEUMANN);
-		clo.addKey(Type.SQUARE_MOORE);
-		clo.addKey(Type.SQUARE);
-		clo.addKey(Type.CUBE);
-		clo.addKey(Type.HONEYCOMB);
-		clo.addKey(Type.TRIANGULAR);
-		// named graphs
-		clo.addKey(Type.FRUCHT);
-		clo.addKey(Type.TIETZE);
-		clo.addKey(Type.FRANKLIN);
-		clo.addKey(Type.HEAWOOD);
-		clo.addKey(Type.ICOSAHEDRON);
-		clo.addKey(Type.DODEKAHEDRON);
-		clo.addKey(Type.DESARGUES);
-		// amplifiers
-		clo.addKey(Type.STAR);
-		clo.addKey(Type.SUPER_STAR);
-		clo.addKey(Type.WHEEL);
-		clo.addKey(Type.STRONG_AMPLIFIER);
-		// suppressors
-		clo.addKey(Type.STRONG_SUPPRESSOR);
-		// random graphs
-		clo.addKey(Type.RANDOM_REGULAR_GRAPH);
-		clo.addKey(Type.RANDOM_GRAPH);
-		clo.addKey(Type.RANDOM_GRAPH_DIRECTED);
-		clo.addKey(Type.SCALEFREE);
-		clo.addKey(Type.SCALEFREE_KLEMM);
-		clo.addKey(Type.SCALEFREE_BA);
-	}
-
-	/**
 	 * Clone geometry.
 	 * 
 	 * <h3>Requirements/notes:</h3>
