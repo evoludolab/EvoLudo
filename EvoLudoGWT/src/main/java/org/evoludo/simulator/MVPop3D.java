@@ -39,7 +39,7 @@ import java.util.Set;
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.PopGraph3D;
 import org.evoludo.math.ArrayMath;
-import org.evoludo.simulator.EvoLudo.COLOR_MODEL_TYPE;
+import org.evoludo.simulator.EvoLudo.ColorModelType;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODEEuler.HasDE;
@@ -290,9 +290,9 @@ public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphContro
 			switch( type ) {
 				case STRATEGY:
 					if( module.isContinuous() ) {
-						COLOR_MODEL_TYPE cmt = engine.getColorModelType();
+						ColorModelType cmt = engine.getColorModelType();
 						int nTraits = module.getNTraits();
-						if( cmt==COLOR_MODEL_TYPE.DISTANCE ) {
+						if( cmt==ColorModelType.DISTANCE ) {
 							cMap = new ColorMap3D.Gradient1D(new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
 							break;
 						}
@@ -306,20 +306,20 @@ public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphContro
 								cMap = new ColorMap3D.Gradient2D(tColors[0], tColors[1], Color.BLACK, 50);
 								break;
 							default:
-								if( cmt==COLOR_MODEL_TYPE.DISTANCE ) {
+								if( cmt==ColorModelType.DISTANCE ) {
 									cMap = new ColorMap3D.Gradient1D(new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
 									break;
 								}
 								Color[] primaries = new Color[nTraits];
 								System.arraycopy(module.getTraitColors(), 0, primaries, 0, nTraits);
 								cMap = new ColorMap3D.GradientND(primaries);
-								if( cmt!=COLOR_MODEL_TYPE.DISTANCE ) {
+								if( cmt!=ColorModelType.DISTANCE ) {
 									// log warning only once in case there are multiple species
 									if( noWarnings ) {
 										noWarnings = false;
 										logger.warning("display of >2 continuous traits not (yet) implemented - coloring trait distance");
 									}
-									engine.setColorModelType(COLOR_MODEL_TYPE.DISTANCE);
+									engine.setColorModelType(ColorModelType.DISTANCE);
 								}
 								break;
 						}

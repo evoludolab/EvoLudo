@@ -39,7 +39,7 @@ import java.util.Arrays;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.EvoLudo.COLOR_MODEL_TYPE;
+import org.evoludo.simulator.EvoLudo.ColorModelType;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSMCPopulation;
@@ -145,7 +145,7 @@ public class Dialect extends Continuous implements Module.Static, HasIBS, //
 			((ColorMap.Hue<T>) colorMap).setHueRange(0.0, 1.0);
 			return colorMap;
 		}
-		if (engine.getColorModelType() == COLOR_MODEL_TYPE.DISTANCE || nTraits > 3) {
+		if (engine.getColorModelType() == ColorModelType.DISTANCE || nTraits > 3) {
 			// allocate color map for distance
 			ColorMap.Gradient1D<T> cMap1D = ((ColorMap.GradientND<T>) colorMap).toGradient1D(500);
 			cMap1D.setGradient(
@@ -738,7 +738,7 @@ public class Dialect extends Continuous implements Module.Static, HasIBS, //
 				cMap.translate(data, colors);
 				return;
 			}
-			if (engine.getColorModelType() != COLOR_MODEL_TYPE.DISTANCE && nTraits <= 3) {
+			if (engine.getColorModelType() != ColorModelType.DISTANCE && nTraits <= 3) {
 				// use default color model
 				super.getTraitData(colors, cMap);
 				return;

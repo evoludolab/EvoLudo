@@ -84,6 +84,8 @@ import org.evoludo.simulator.modules.RSP;
 import org.evoludo.simulator.modules.TBT;
 import org.evoludo.simulator.modules.Test;
 import org.evoludo.simulator.views.HasPhase2D;
+import org.evoludo.simulator.views.HasPop2D;
+import org.evoludo.simulator.views.HasPop3D;
 import org.evoludo.simulator.views.HasS3;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
@@ -2047,17 +2049,14 @@ public abstract class EvoLudo
 	/**
 	 * Command line option to set color scheme for coloring continuous traits.
 	 * 
-	 * @see COLOR_MODEL_TYPE
+	 * @see ColorModelType
 	 */
 	public final CLOption cloTraitColorScheme = new CLOption("traitcolorscheme", "traits", catGUI,
-			"--traitcolorscheme <m>  color scheme for traits:\n" //
-			+ "        traits: hue or rgb-intensity\n" //
-			+ "      distance: from reference as gradient",
-//XXX this should not be hardcoded...
+			"--traitcolorscheme <m>  color scheme for traits:", //
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					setColorModelType((COLOR_MODEL_TYPE) cloTraitColorScheme.match(arg));
+					setColorModelType((ColorModelType) cloTraitColorScheme.match(arg));
 					return true;
 				}
 			});
@@ -2196,7 +2195,13 @@ public abstract class EvoLudo
 		parser.addCLO(cloRelaxation);
 		parser.addCLO(cloReportInterval);
 		parser.addCLO(cloRNG);
-		parser.addCLO(cloTraitColorScheme);
+		// option for trait color schemes only makes sense for modules with multiple
+		// continuous traits that have 2D/3D visualizations
+		if (activeModule.isContinuous() && activeModule.getNTraits() > 1 && //
+			(activeModule instanceof HasPop2D || activeModule instanceof HasPop3D)) {
+			parser.addCLO(cloTraitColorScheme);
+			cloTraitColorScheme.addKeys(ColorModelType.values());
+		}
 		parser.addCLO(cloInitType);
 
 		// trajectory color settings used by phase plane and simplex plots
@@ -2207,7 +2212,7 @@ public abstract class EvoLudo
 	/**
 	 * The coloring method type.
 	 */
-	protected COLOR_MODEL_TYPE colorModelType = COLOR_MODEL_TYPE.DEFAULT;
+	protected ColorModelType colorModelType = ColorModelType.DEFAULT;
 
 	/**
 	 * Coloring method types for continuous traits. Enum on steroids. Currently
@@ -2230,7 +2235,7 @@ public abstract class EvoLudo
 	 * 
 	 * @see #cloTraitColorScheme
 	 */
-	public static enum COLOR_MODEL_TYPE implements CLOption.Key {
+	public static enum ColorModelType implements CLOption.Key {
 
 		/**
 		 * Each trait refers to a color channel. At most three traits for
@@ -2269,7 +2274,7 @@ public abstract class EvoLudo
 		 * 
 		 * @see #cloTraitColorScheme
 		 */
-		COLOR_MODEL_TYPE(String key, String title) {
+		ColorModelType(String key, String title) {
 			this.key = key;
 			this.title = title;
 		}
@@ -2297,7 +2302,7 @@ public abstract class EvoLudo
 	 * 
 	 * @see #cloTraitColorScheme
 	 */
-	public COLOR_MODEL_TYPE getColorModelType() {
+	public ColorModelType getColorModelType() {
 		return colorModelType;
 	}
 
@@ -2309,7 +2314,7 @@ public abstract class EvoLudo
 	 * 
 	 * @see #cloTraitColorScheme
 	 */
-	public void setColorModelType(COLOR_MODEL_TYPE colorModelType) {
+	public void setColorModelType(ColorModelType colorModelType) {
 		if (colorModelType == null)
 			return;
 		this.colorModelType = colorModelType;

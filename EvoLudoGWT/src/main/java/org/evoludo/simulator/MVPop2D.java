@@ -39,7 +39,7 @@ import java.util.Set;
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.math.ArrayMath;
-import org.evoludo.simulator.EvoLudo.COLOR_MODEL_TYPE;
+import org.evoludo.simulator.EvoLudo.ColorModelType;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
@@ -295,9 +295,9 @@ public class MVPop2D extends MVAbstract implements AbstractGraph.NodeGraphContro
 			switch( type ) {
 				case STRATEGY:
 					if( pop.isContinuous() ) {
-						COLOR_MODEL_TYPE cmt = engine.getColorModelType();
+						ColorModelType cmt = engine.getColorModelType();
 						int nTraits = pop.getNTraits();
-						if( cmt==COLOR_MODEL_TYPE.DISTANCE ) {
+						if( cmt==ColorModelType.DISTANCE ) {
 							cMap = new ColorMapCSS.Gradient1D(new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
 							break;
 						}
