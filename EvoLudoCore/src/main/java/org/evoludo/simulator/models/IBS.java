@@ -10,7 +10,6 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.models.IBSD.InitType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -105,7 +104,14 @@ public abstract class IBS implements Model.IBS {
 
 	@Override
 	public void setInitType(CLOption.Key type) {
-		initType = (type == null ? InitType.DEFAULT : type);
+		if (type == null) {
+			// set default
+			if (this instanceof IBSD)
+				type = org.evoludo.simulator.models.IBSD.InitType.DEFAULT;
+			if (this instanceof IBSC)
+				type = org.evoludo.simulator.models.IBSC.InitType.DEFAULT;
+		}
+		initType = type;
 		// needs to pass the initialization type to all populations
 		for (IBSPopulation pop : species)
 			pop.setInitType(initType);
