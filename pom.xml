@@ -200,8 +200,7 @@
           <version>3.11.0</version>
           <configuration>
             <release>11</release>
-            <!-- <compilerArgument>-Xlint:all,-fallthrough,-serial</compilerArgument> -->
-            <showWarnings>true</showWarnings>
+            <compilerArgument>-Xlint:all,-serial,-fallthrough,-this-escape</compilerArgument>
             <showDeprecation>true</showDeprecation>
           </configuration>
         </plugin>
