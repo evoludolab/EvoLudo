@@ -2016,6 +2016,11 @@ public abstract class IBSPopulation {
 		resetStrategies();
 		debugFocal = focal;
 		switch (populationUpdateType) {
+			case SYNC: // synchronous updating - gets here only in debugging mode
+				if (updatePlayerAt(focal))
+					adjustGameScoresAt(focal);
+				break;
+
 			case ASYNC: // exclusively the current payoff matters
 				updatePlayerAsyncAt(focal);
 				break;
@@ -2030,14 +2035,14 @@ public abstract class IBSPopulation {
 				updatePlayerMoranDeathBirthAt(focal);
 				break;
 
+			case MORAN_IMITATE: // moran process - imitate
+				debugNModels = 0;
+				updatePlayerMoranImitateAt(focal);
+				break;
+
 			case ECOLOGY: // ecological updating - varying population sizes
 				debugNModels = 0;
 				updatePlayerEcologyAt(focal);
-				break;
-
-			case SYNC: // synchronous updating - gets here only in debugging mode
-				if (updatePlayerAt(focal))
-					adjustGameScoresAt(focal);
 				break;
 
 			default:
