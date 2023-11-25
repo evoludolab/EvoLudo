@@ -1830,6 +1830,12 @@ public abstract class IBS implements Model.IBS {
 		ASYNC("asynchronous", "asynchronous population updates"),
 
 		/**
+		 * Every individual updates exactly once per generation. In contrast for
+		 * {@code ASYNC} every individual updates once <strong>on average</strong>.
+		 */
+		ONCE("once", "everyone updates once (asynchronous)"),
+
+		/**
 		 * Moran process (birth-death, asynchronous).
 		 */
 		MORAN_BIRTHDEATH("Bd", "Moran process (birth-death, asynchronous)"),
