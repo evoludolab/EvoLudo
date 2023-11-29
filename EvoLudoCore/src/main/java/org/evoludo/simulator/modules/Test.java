@@ -119,10 +119,10 @@ public class Test extends Module implements HasIBS, HasConsole {
 	// subclasses must make sure that they include a call to super
 	@Override
 	public void collectCLO(CLOParser parser) {
-		CLOption optGame = parser.getCLO("game");
+		CLOption optModule = parser.getCLO(engine.cloModule.getName());
 		// remove all options
 		parser.clearCLO();
-		parser.addCLO(optGame);
+		parser.addCLO(optModule);
 		// parser.addCLO(cloRNG);
 	}
 
