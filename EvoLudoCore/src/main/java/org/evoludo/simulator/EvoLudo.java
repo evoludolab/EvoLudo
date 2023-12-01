@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.evoludo.math.ArrayMath;
 import org.evoludo.math.MersenneTwister;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.models.IBS.HasIBS;
@@ -1686,20 +1687,21 @@ public abstract class EvoLudo
 		if (cloarray == null)
 			return null;
 		// first deal with --module option
-		String moduleName = "--" + cloModule.getName();
+		String moduleName = cloModule.getName();
 		String newModuleKey = null;
-		int nArgs = cloarray.length;
-		for (int i = 0; i < nArgs; i++) {
-			String arg = cloarray[i];
-			if (!arg.startsWith("--"))
-				continue;
-			if (arg.startsWith(moduleName)) {
-				if (i + 1 == nArgs) {
+		int nParams = cloarray.length;
+		for (int i = 0; i < nParams; i++) {
+			String param = cloarray[i];
+			if (param.startsWith(moduleName)) {
+				newModuleKey = CLOption.stripKey(moduleName, param).trim();
+				if (param.length() == 0) {
 					logger.warning("module key missing");
 					return null;
 				}
-				newModuleKey = cloarray[i + 1];
-				continue;
+				// module key found; no need to continue
+				cloarray = ArrayMath.drop(cloarray, i--);
+				nParams--;
+				break;
 			}
 		}
 		if (loadModule(newModuleKey) == null)
@@ -1718,34 +1720,34 @@ public abstract class EvoLudo
 		if (activeModule instanceof HasPDE && activeModule.hasSupport(Type.PDE))
 			cloModel.addKey(Type.PDE);
 		// third deal with --model option
-		String modelName = "--" + cloModel.getName();
+		String modelName = cloModel.getName();
 		// if IBS is not an option, pick first available model as default (which one
 		// remains unspecified)
 		Collection<Key> keys = cloModel.getKeys();
 		if (defaulttype == null)
 			defaulttype = Model.Type.parse(keys.iterator().next().getKey());
 		Model.Type type = null;
-		nArgs = cloarray.length;
-		for (int i = 0; i < nArgs; i++) {
-			String arg = cloarray[i];
-			if (arg.startsWith(modelName)) {
-				if (i + 1 == nArgs) {
+		nParams = cloarray.length;
+		for (int i = 0; i < nParams; i++) {
+			String param = cloarray[i];
+			if (param.startsWith(modelName)) {
+				String newModel = CLOption.stripKey(modelName, param).trim();
+				// remove model option
+				cloarray = ArrayMath.drop(cloarray, i--);
+				nParams--;
+				if (newModel.length() == 0) {
 					logger.warning("model key missing - use " + defaulttype.getKey() + " as default.");
 					type = defaulttype;
-					// remove model option
-					String[] args = new String[nArgs - 1];
-					System.arraycopy(cloarray, 0, args, 0, nArgs - 1);
-					cloarray = args;
-					nArgs--;
-					// must have been the last entry
+					// model key found; no need to continue
 					break;
 				}
-				type = Model.Type.parse(cloarray[i + 1]);
+				type = Model.Type.parse(newModel);
 				if (type == null || !activeModule.hasSupport(type)) {
-					logger.warning("invalid model type " + cloarray[i + 1] + " - use " + defaulttype.getKey()
+					logger.warning("invalid model type " + newModel + " - use " + defaulttype.getKey()
 							+ " as default.");
 					type = defaulttype;
 				}
+				// model key found; no need to continue
 				break;
 			}
 		}
@@ -1758,24 +1760,24 @@ public abstract class EvoLudo
 		// NOTE: currently models cannot be mix'n'matched between species
 		loadModel(type);
 		// check if cloOptions contain --verbose
-		String verboseName = "--" + cloVerbose.getName();
-		for (int i = 0; i < nArgs; i++) {
-			String arg = cloarray[i];
-			if (arg.startsWith(verboseName)) {
-				if (i + 1 == nArgs) {
+		String verboseName = cloVerbose.getName();
+		for (int i = 0; i < nParams; i++) {
+			String param = cloarray[i];
+			if (param.startsWith(verboseName)) {
+				String verbosity = CLOption.stripKey(verboseName, param).trim();
+				if (verbosity.length() == 0) {
 					logger.warning("verbose level missing - ignored.");
 					// remove verbose option
-					String[] args = new String[nArgs - 1];
-					System.arraycopy(cloarray, 0, args, 0, nArgs - 1);
-					cloarray = args;
-					// must have been the last entry
+					cloarray = ArrayMath.drop(cloarray, i--);
+					nParams--;
+					// verbosity key found; no need to continue
 					break;
 				}
-				// parse --verbose first in order to set logging level already for processing of
-				// command line arguments; gets processed again with all others but there is no
-				// harm in it
-				cloVerbose.processOption(arg, Arrays.asList(new String[] { cloarray[i + 1] }).listIterator());
+				// parse --verbose first to set logging level already for processing of command
+				// line arguments; gets processed again with all others but no harm in it
+				cloVerbose.processOption(param, Arrays.asList(new String[] { verbosity }).listIterator());
 				cloVerbose.parse();
+				// verbosity key found; no need to continue
 				break;
 			}
 		}
@@ -1791,7 +1793,7 @@ public abstract class EvoLudo
 	 * @see #parseCLO(String[])
 	 */
 	public boolean parseCLO() {
-		return parseCLO(clo.trim().split("\\s+"));
+		return parseCLO(clo.trim().split("--"));
 	}
 
 	/**

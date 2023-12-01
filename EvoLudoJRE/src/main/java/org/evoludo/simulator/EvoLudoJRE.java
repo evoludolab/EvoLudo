@@ -1020,36 +1020,31 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * </dl>
 	 */
 	@Override
-	protected String[] preprocessCLO(String[] args) {
+	protected String[] preprocessCLO(String[] cloarray) {
 		// once module is loaded pre-processing of command line arguments can proceed
-		args = super.preprocessCLO(args);
-		if (args == null)
+		cloarray = super.preprocessCLO(cloarray);
+		if (cloarray == null)
 			return null;
 		// check if --help or --restore requested
-		String helpName = "--" + cloHelp.getName();
-		String restoreName = "--" + cloRestore.getName();
-		int nArgs = args.length;
-		for (int i = 0; i < nArgs; i++) {
-			String arg = args[i];
-			if (arg.startsWith(helpName)) {
+		String helpName = cloHelp.getName();
+		String restoreName = cloRestore.getName();
+		int nParams = cloarray.length;
+		for (int i = 0; i < nParams; i++) {
+			String param = cloarray[i];
+			if (param.startsWith(helpName)) {
 				// discard/ignore all other options
 				return new String[] { helpName };
 			}
-			if (arg.startsWith(restoreName)) {
-				if (i == nArgs - 1) {
-					String[] sargs = new String[i];
-					System.arraycopy(args, 0, sargs, 0, i);
-					args = sargs;
+			if (param.startsWith(restoreName)) {
+				plistname = CLOption.stripKey(restoreName, param).trim();
+				cloarray = ArrayMath.drop(cloarray, i--);
+				nParams--;
+				if (plistname.length() == 0) {
+					plistname = null;
 					logger.warning("file name to restore state missing - ignored.");
 					break;
 				}
 				// ignore if already restoring; strip restore option and argument
-				plistname = args[i + 1];
-				nArgs -= 2;
-				String[] sargs = new String[nArgs];
-				System.arraycopy(args, 0, sargs, 0, i);
-				System.arraycopy(args, i + 2, sargs, i, nArgs - i);
-				args = sargs;
 				if (!doRestore) {
 					plist = readPlist(plistname);
 					if (plist == null)
@@ -1060,24 +1055,26 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						plist = null;
 						continue;
 					}
-					String[] clos = restoreOptions.split("\\s+");
-					String moduleName = "--" + cloModule.getName();
+					String[] clos = restoreOptions.split("--");
+					String moduleName = cloModule.getName();
 					String moduleKey = activeModule.getKey();
-					int rArgs = clos.length;
-					for (int j = 0; j < rArgs; j++) {
-						if (clos[j].startsWith(moduleName)) {
-							if (!clos[j + 1].equals(moduleKey)) {
-								logger.warning("state in '" + plistname + "' refers to module '" + clos[j + 1]
-										+ "' but expected '" + moduleKey + "' - ignored.");
+					int rParams = clos.length;
+					for (int j = 0; j < rParams; j++) {
+						String rParam = clos[j];
+						if (rParam.startsWith(moduleName)) {
+							String rModule = CLOption.stripKey(moduleName, param).trim();
+							if (!rModule.equals(moduleKey)) {
+								logger.warning("state in '" + plistname + "' refers to module '" + rModule
+										+ "' but expected '" + moduleKey + "' - skipping restore.");
 								plist = null;
 								break;
 							}
 							// merge options and remove --module from clos
-							rArgs -= 2;
-							sargs = new String[nArgs + rArgs];
-							System.arraycopy(args, 0, sargs, 0, nArgs);
-							System.arraycopy(clos, 0, sargs, nArgs, j);
-							System.arraycopy(clos, j + 2, sargs, nArgs + j, rArgs - j);
+							clos = ArrayMath.drop(clos, j--);
+							rParams--;
+							String[] sargs = new String[nParams + rParams];
+							System.arraycopy(cloarray, 0, sargs, 0, nParams);
+							System.arraycopy(clos, 0, sargs, nParams, rParams);
 							doRestore = true;
 							// restart preprocessing with extended command line arguments
 							// note: if the same option is listed multiple times the last one overwrites
@@ -1089,7 +1086,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				}
 			}
 		}
-		return args;
+		return cloarray;
 	}
 
 	public boolean parseCLO(boolean testing) {

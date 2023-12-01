@@ -262,25 +262,25 @@ public class EvoLudoGWT extends EvoLudo {
 	 * @see org.evoludo.simulator.EvoLudoJRE#cloExport
 	 */
 	@Override
-	protected String[] preprocessCLO(String[] args) {
+	protected String[] preprocessCLO(String[] cloarray) {
 		// once module is loaded pre-processing of command line arguments can proceed
-		args = super.preprocessCLO(args);
-		if (args == null)
+		cloarray = super.preprocessCLO(cloarray);
+		if (cloarray == null)
 			return null;
 		// check if --export requested
-		String exportName = "--export";
-		int nArgs = args.length;
-		for (int i = 0; i < nArgs; i++) {
-			String arg = args[i];
-			if (!doRestore && arg.startsWith(exportName)) {
+		String exportName = "export";
+		int nParams = cloarray.length;
+		for (int i = 0; i < nParams; i++) {
+			String param = cloarray[i];
+			if (!doRestore && param.startsWith(exportName)) {
 				// see --export option in EvoLudoJRE.java
 				// remove --export option and file name
-				args = ArrayMath.drop(args, i, i + 2);
-				nArgs -= 2;
+				cloarray = ArrayMath.drop(cloarray, i--);
+				nParams--;
 				continue;
 			}
 		}
-		return args;
+		return cloarray;
 	}
 
 	@Override

@@ -187,58 +187,30 @@ public class CLOParser {
 
 	/**
 	 * Parses String array of command line arguments in two stages. In the first
-	 * stage the array is checked for arguments to short options as well as
-	 * (optional) arguments to long options separated by '='. In both cases the
-	 * option and argument are split into separate entries. In the second stage the
+	 * stage all entries in the array are split into the option name and its
+	 * (potential) arguments, separated by ' ' or '='. In the second stage the
 	 * current list of <code>options</code> is consulted and if the name of an
-	 * option matches parsed accordingly. For unknown options a warning is logged
-	 * and the option is ignored.
+	 * option matches, the option is parsed accordingly. For unknown options a
+	 * warning is logged and the option is ignored.
 	 * <p>
-	 * <strong>Note:</strong> if an entry starts with a single '-' and parses as a
-	 * number, vector or array, it is assumed to be just that. Otherwise it is
-	 * assumed to be a short option and checked whether an argument follows.
-	 * </p>
+	 * <strong>Note:</strong> the option identifier (such as '--') must already be
+	 * stripped such that each entry starts with the name of the option.
 	 * 
-	 * @param cloargs array of String with command line options
+	 * @param cloargs the String array with command line options
 	 * @return <code>true</code> if parsing successful and <code>false</code> if
 	 *         problems occurred
 	 */
 	public boolean parseCLO(String[] cloargs) {
-		// prepare options: process short options and split their (potential) argument
-		// check if (optional) arguments are separated with '=' and split if needed
-		for (String arg : Arrays.asList(cloargs)) {
-			if (arg.charAt(0) != '-' || (arg.charAt(0) == '-' && arg.length() == 1)) {
-				// arg is argument, not an option
-				// note: a single '-' is a valid option for --geometry (strong suppressor)
-				parameters.add(arg);
-				continue;
-			}
-			if (arg.charAt(1) != '-') {
-				// short option, number, array or matrix; if parses as matrix, assume it is one
-				// note: parseMatrix returns null if problems parsing arg arise
-				if (CLOParser.parseMatrix(arg) != null) {
+		// the entries in cloargs start with the name of the option followed by its argument(s)
+		// which can be separated by ' ' or '='
+		for (String opt : Arrays.asList(cloargs)) {
+			String name = opt.split("[ =]")[0].trim();
+			if (name.length() > 0) {
+				parameters.add(name);
+				String arg = CLOption.stripKey(name, opt).trim();
+				if (arg.length() > 0)
 					parameters.add(arg);
-					continue;
-				}
-				// doesn't look like a number; treat as short option
-				parameters.add(arg.substring(0, 2));
-				// no argument or separated by whitespace (already taken care of by split)
-				if (arg.length() == 2)
-					continue;
-				// rest is argument potentially separated by '='
-				if (arg.charAt(2) == '=')
-					parameters.add(arg.substring(3));
-				else
-					parameters.add(arg.substring(2));
-				continue;
 			}
-			// long option
-			int eqls = arg.indexOf('=');
-			if (eqls >= 0) {
-				parameters.add(arg.substring(0, eqls));
-				parameters.add(arg.substring(eqls + 1));
-			} else
-				parameters.add(arg);
 		}
 		// parse options
 		boolean success = true;

@@ -540,11 +540,10 @@ public class CLOption implements Comparable<CLOption> {
 		// simply skip over
 		if (option == null)
 			return 0;
-		String opt = "--" + name;
 		// check if name of option (must be perfect match because option names
 		// have to be followed by either ' ' or '=' and the latter has already
 		// been taken care of, see CLOParser.parseCLO)
-		if (option.equals(opt))
+		if (option.equals(name))
 			return processOptionArg(options) ? 0 : 1;
 		return -1;
 	}
