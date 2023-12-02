@@ -1959,6 +1959,7 @@ public abstract class IBSPopulation {
 	 * @return the elapsed time in realtime units
 	 */
 	public double step() {
+		int[] remain;
 		double rincr;
 		double uRate = module.getSpeciesUpdateRate();
 		if (pMigration > 0.0 && random01() < pMigration) {
@@ -1971,9 +1972,25 @@ public abstract class IBSPopulation {
 		switch (populationUpdateType) {
 			case SYNC: // synchronous updates (do not commit strategies)
 				prepareStrategies();
+				if (syncFraction >= 1.0) {
+					// no noise, update everyone
+					for (int n = 0; n < nPopulation; n++)
+						updatePlayerAt(n);
+					rincr = nPopulation / (sumFitness * uRate);
+					return rincr;
+				}
+				// update only fraction of individuals (at least one but at most once)
+				int nSamples = Math.max(1, (int) (syncFraction * nPopulation + 0.5));
+				remain = new int[nPopulation];
 				for (int n = 0; n < nPopulation; n++)
-					updatePlayerAt(n);
-				rincr = nPopulation / (sumFitness * uRate);
+					remain[n] = n;
+				for (int n = nPopulation - 1; n >= nPopulation - nSamples; n--) {
+					int idx = random0n(n);
+					int focal = remain[idx];
+					remain[idx] = remain[n];
+					updatePlayerAt(focal);
+				}
+				rincr = nSamples / (sumFitness * uRate);
 				return rincr;
 
 			// case WRIGHT_FISHER:
@@ -4099,6 +4116,32 @@ public abstract class IBSPopulation {
 	 */
 	public PopulationUpdateType getPopulationUpdateType() {
 		return populationUpdateType;
+	}
+
+	/**
+	 * The fraction of the population that gets updated in synchronous updates.
+	 */
+	double syncFraction = 1.0;
+
+	/**
+	 * Set the fraction of the population that gets updated in synchronous updates.
+	 * 
+	 * @param sync the fraction that gets updated
+	 * @return {@code true} if the fraction changed
+	 */
+	public void setSyncFraction(double sync) {
+		if (sync <= 0.0 || sync > 1.0 || Math.abs(syncFraction-sync)<1e-8)
+			return;
+		syncFraction = sync;
+	}
+
+	/**
+	 * Get the fraction of the population that gets updated in synchronous updates.
+	 * 
+	 * @return the fraction that gets updated
+	 */
+	public double getSyncFraction() {
+		return syncFraction;
 	}
 
 	/**

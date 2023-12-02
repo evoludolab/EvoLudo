@@ -376,12 +376,13 @@ public abstract class IBS implements Model.IBS {
 	/**
 	 * Flag to indicate whether the population updates are synchronous. In
 	 * multi-species models this requires that all species are updated
-	 * synchronously.
+	 * synchronously. Helper variable for {@code ibsStep(double)}.
 	 * 
 	 * @see #cloPopulationUpdate
 	 * @see #check()
+	 * @see #ibsStep(double)
 	 */
-	protected boolean isSynchronous;
+	boolean isSynchronous;
 
 	@Override
 	public boolean check() {
@@ -629,7 +630,8 @@ public abstract class IBS implements Model.IBS {
 		}
 
 		// asynchronous population update - update one individual at a time
-		double wPopTot = 0.0, wScoreTot = 0.0;
+		double wPopTot = 0.0;
+		double wScoreTot = 0.0;
 		// reset strategies (colors)
 		for (IBSPopulation pop : species) {
 			pop.resetStrategies();
@@ -1019,7 +1021,8 @@ public abstract class IBS implements Model.IBS {
 	 * @see PopulationUpdateType
 	 */
 	public final CLOption cloPopulationUpdate = new CLOption("popupdate", PopulationUpdateType.ASYNC.getKey(), EvoLudo.catModel, 
-			"--popupdate <u>  population update type:", new CLODelegate() {
+			"--popupdate <u> [<p>]  population update type; fraction p\n" + //
+			"                for synchronous updates (1=all):", new CLODelegate() {
 
 				/**
 				 * {@inheritDoc}
@@ -1050,6 +1053,12 @@ public abstract class IBS implements Model.IBS {
 							continue;
 						}
 						pop.setPopulationUpdateType(put);
+						// parse p, if present
+						String[] args = updt.split("[ =,]");
+						double sync = 1.0;
+						if (args.length > 1)
+							sync = CLOParser.parseDouble(args[1]);
+						pop.setSyncFraction(sync);
 					}
 					return success;
 				}
@@ -1774,11 +1783,15 @@ public abstract class IBS implements Model.IBS {
 	 * Types of species updates (only relevant for multi-species models):
 	 * <dl>
 	 * <dt>synchronous</dt>
-	 * <dd>synchronized population updates</dd>
+	 * <dd>Synchronized population updates. The number of individuals that reassess
+	 * their strategy is determined by the player update noise,
+	 * {@link Module#cloPlayerUpdateNoise}. Without noise all individuals update
+	 * their strategy, while with high noise levels only a few update (but at least
+	 * one individual and each at most once).</dd>
 	 * <dt>Wright-Fisher</dt>
 	 * <dd>Wright-Fisher process (synchronous)</dd>
 	 * <dt>asynchronous</dt>
-	 * <dd>asynchronized population updates (default).</dd>
+	 * <dd>Asynchronous population updates (default).</dd>
 	 * <dt>Bd</dt>
 	 * <dd>Moran process (birth-death, asynchronous).</dd>
 	 * <dt>dB</dt>
@@ -1786,18 +1799,23 @@ public abstract class IBS implements Model.IBS {
 	 * <dt>imitate</dt>
 	 * <dd>Moran process (imitate, asynchronous).</dd>
 	 * <dt>ecology</dt>
-	 * <dd>asynchronized updates (non-constant population size).</dd>
+	 * <dd>Asynchronous updates (non-constant population size).</dd>
 	 * </dl>
 	 * For <b>size</b> and <b>fitness</b> selection is also proportional to the
 	 * update rate of each species.
 	 * 
 	 * @see org.evoludo.simulator.models.IBS#cloPopulationUpdate
 	 *      IBS.cloPopulationUpdate
+	 * @see Module#cloPlayerUpdateNoise
 	 */
 	public static enum PopulationUpdateType implements CLOption.Key {
 
 		/**
-		 * Synchronized population updates.
+		 * Synchronized population updates. The number of individuals that reassess
+		 * their strategy is determined by the player update noise,
+		 * {@link Module#cloPlayerUpdateNoise}. Without noise all individuals update
+		 * their strategy, while with high noise levels only a few update (but at least
+		 * one individual and each at most once).
 		 */
 		SYNC("synchronous", "synchronized population updates"),
 

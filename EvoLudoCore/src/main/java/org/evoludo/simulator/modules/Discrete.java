@@ -531,7 +531,7 @@ public abstract class Discrete extends Module {
 					String descr = "--init ";
 					if (species.size() > 1) {
 						// multi-species
-						descr += "<>       initial frequencies/densities of strategies; frequencies\n" + //
+						descr += "<>       initial frequencies/densities of strategies\n" + //
 								"                separated by '" + CLOParser.VECTOR_DELIMITER + "' " + //
 								"and species by '" + CLOParser.SPECIES_DELIMITER + "' with";
 						int idx = 0;
