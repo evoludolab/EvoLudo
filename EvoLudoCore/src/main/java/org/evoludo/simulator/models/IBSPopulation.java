@@ -453,6 +453,13 @@ public abstract class IBSPopulation {
 	}
 
 	/**
+	 * The update type of players. Convenience field.
+	 * 
+	 * @see Module#getPlayerUpdateType()
+	 */
+	PlayerUpdateType playerUpdateType;
+
+	/**
 	 * The index of vacant sites or {@code -1} if module does not support vacancies.
 	 * Convenience field.
 	 * 
@@ -2338,7 +2345,6 @@ public abstract class IBSPopulation {
 
 		debugModels = refGroup;
 		boolean switched;
-		PlayerUpdateType playerUpdateType = module.getPlayerUpdateType();
 		switch (playerUpdateType) {
 			case BEST_RESPONSE: // best-response update
 				// this makes little sense for continuous strategies - should not happen...
@@ -2629,15 +2635,16 @@ public abstract class IBSPopulation {
 
 		double myFitness = getFitnessAt(me);
 		double aProb, nProb, norm;
-		double equalProb = betterOnly ? playerError : 0.5;
+		double noise = playerUpdateType.getNoise();
+		double error = playerUpdateType.getError();
+		double equalProb = betterOnly ? error : 0.5;
 		// generalize update to competition among arbitrary numbers of players
-		double noise = module.getPlayerUpdateNoise();
 		if (noise <= 0.0) { // zero noise
 			double aDiff = getFitnessAt(refGroup[0]) - myFitness;
 			if (aDiff > 0.0)
-				aProb = 1.0 - playerError;
+				aProb = 1.0 - error;
 			else
-				aProb = (aDiff < 0.0 ? playerError : equalProb);
+				aProb = (aDiff < 0.0 ? error : equalProb);
 			norm = aProb;
 			nProb = 1.0 - aProb;
 			if (rGroupSize > 1) {
@@ -2645,9 +2652,9 @@ public abstract class IBSPopulation {
 				for (int i = 1; i < rGroupSize; i++) {
 					aDiff = getFitnessAt(refGroup[i]) - myFitness;
 					if (aDiff > 0.0)
-						aProb = 1.0 - playerError;
+						aProb = 1.0 - error;
 					else
-						aProb = (aDiff < 0.0 ? playerError : equalProb);
+						aProb = (aDiff < 0.0 ? error : equalProb);
 					cProbs[i] = cProbs[i - 1] + aProb;
 					nProb *= 1.0 - aProb;
 					norm += aProb;
@@ -2663,15 +2670,15 @@ public abstract class IBSPopulation {
 			if (playerScoreAveraged) {
 				double scale = inoise / (maxFitness - minFitness);
 				// generalize update to competition among arbitrary numbers of players
-				aProb = Math.min(1.0 - playerError,
-						Math.max(playerError, (getFitnessAt(refGroup[0]) - myFitness) * scale + shift));
+				aProb = Math.min(1.0 - error,
+						Math.max(error, (getFitnessAt(refGroup[0]) - myFitness) * scale + shift));
 				norm = aProb;
 				nProb = 1.0 - aProb;
 				if (rGroupSize > 1) {
 					cProbs[0] = aProb;
 					for (int i = 1; i < rGroupSize; i++) {
-						aProb = Math.min(1.0 - playerError,
-								Math.max(playerError, (getFitnessAt(refGroup[i]) - myFitness) * scale + shift));
+						aProb = Math.min(1.0 - error,
+								Math.max(error, (getFitnessAt(refGroup[i]) - myFitness) * scale + shift));
 						cProbs[i] = cProbs[i - 1] + aProb;
 						nProb *= 1.0 - aProb;
 						norm += aProb;
@@ -2682,16 +2689,16 @@ public abstract class IBSPopulation {
 					inoise /= (maxFitness - minFitness);
 					// generalize update to competition among arbitrary numbers of players
 					int you = refGroup[0];
-					aProb = Math.min(1.0 - playerError,
-							Math.max(playerError, (getFitnessAt(you) - myFitness) * inoise + shift));
+					aProb = Math.min(1.0 - error,
+							Math.max(error, (getFitnessAt(you) - myFitness) * inoise + shift));
 					norm = aProb;
 					nProb = 1.0 - aProb;
 					if (rGroupSize > 1) {
 						cProbs[0] = aProb;
 						for (int i = 1; i < rGroupSize; i++) {
 							you = refGroup[i];
-							aProb = Math.min(1.0 - playerError,
-									Math.max(playerError, (getFitnessAt(you) - myFitness) * inoise + shift));
+							aProb = Math.min(1.0 - error,
+									Math.max(error, (getFitnessAt(you) - myFitness) * inoise + shift));
 							cProbs[i] = cProbs[i - 1] + aProb;
 							nProb *= 1.0 - aProb;
 							norm += aProb;
@@ -2764,15 +2771,16 @@ public abstract class IBSPopulation {
 
 		double myFitness = getFitnessAt(me);
 		double norm, nProb;
+		double noise = playerUpdateType.getNoise();
+		double error = playerUpdateType.getError();
 		// generalize update to competition among arbitrary numbers of players
-		double noise = module.getPlayerUpdateNoise();
 		if (noise <= 0.0) { // zero noise
 			double aProb;
 			double aDiff = getFitnessAt(refGroup[0]) - myFitness;
 			if (aDiff > 0.0)
-				aProb = 1.0 - playerError;
+				aProb = 1.0 - error;
 			else
-				aProb = (aDiff < 0.0 ? playerError : 0.5);
+				aProb = (aDiff < 0.0 ? error : 0.5);
 			norm = aProb;
 			nProb = 1.0 - aProb;
 			if (rGroupSize > 1) {
@@ -2780,9 +2788,9 @@ public abstract class IBSPopulation {
 				for (int i = 1; i < rGroupSize; i++) {
 					aDiff = getFitnessAt(refGroup[i]) - myFitness;
 					if (aDiff > 0)
-						aProb = 1.0 - playerError;
+						aProb = 1.0 - error;
 					else
-						aProb = (aDiff < 0.0 ? playerError : 0.5);
+						aProb = (aDiff < 0.0 ? error : 0.5);
 					cProbs[i] = cProbs[i - 1] + aProb;
 					nProb *= 1.0 - aProb;
 					norm += aProb;
@@ -2790,14 +2798,14 @@ public abstract class IBSPopulation {
 			}
 		} else { // some noise
 			double inoise = 1.0 / noise;
-			double aProb = Math.min(1.0 - playerError, Math.max(playerError,
+			double aProb = Math.min(1.0 - error, Math.max(error,
 					1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[0]) - myFitness) * inoise))));
 			norm = aProb;
 			nProb = 1.0 - aProb;
 			if (rGroupSize > 1) {
 				cProbs[0] = aProb;
 				for (int i = 1; i < rGroupSize; i++) {
-					aProb = Math.min(1.0 - playerError, Math.max(playerError,
+					aProb = Math.min(1.0 - error, Math.max(error,
 							1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[i]) - myFitness) * inoise))));
 					cProbs[i] = cProbs[i - 1] + aProb;
 					nProb *= 1.0 - aProb;
@@ -2948,6 +2956,7 @@ public abstract class IBSPopulation {
 		boolean doReset = (ot != nTraits);
 		nPopulation = module.getNPopulation();
 		map2fit = module.getMapToFitness();
+		playerUpdateType = module.getPlayerUpdateType();
 
 		// check population geometry - for this we need to know the model (see reset)
 		if (nPopulation < 1) {
@@ -4090,32 +4099,6 @@ public abstract class IBSPopulation {
 	 */
 	public PopulationUpdateType getPopulationUpdateType() {
 		return populationUpdateType;
-	}
-
-	/**
-	 * The error probability of players when imitating strategies of other players.
-	 * No errors if {@code playerError < 0}.
-	 */
-	protected double playerError = -1.0;
-
-	/**
-	 * Gets the error probability of players when imitating strategies of other
-	 * players.
-	 * 
-	 * @return the error probability
-	 */
-	public double getPlayerError() {
-		return playerError;
-	}
-
-	/**
-	 * Sets the error probability of players when imitating strategies of other
-	 * players to {@code aValue}.
-	 *
-	 * @param aValue the new error probability
-	 */
-	public void setPlayerError(double aValue) {
-		playerError = aValue;
 	}
 
 	/**

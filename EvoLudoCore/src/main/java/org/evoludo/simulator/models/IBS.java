@@ -1067,60 +1067,6 @@ public abstract class IBS implements Model.IBS {
 			});
 
 	/**
-	 * Command line option to set the error probability of players when imitating
-	 * strategies.
-	 * <p>
-	 * <strong>Note:</strong> This is different from the noise/error term in the
-	 * updating mechanism.
-	 * 
-	 * @see Module#cloPlayerUpdateNoise
-	 */
-	public final CLOption cloPlayerError = new CLOption("playererror", "0", EvoLudo.catModel, 
-			"--playererror <e>  error rate for adopting strategies",
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse player error probabilities for a single or multiple
-				 * populations/species. <code>arg</code> can be a single value or an array of
-				 * values with the separator {@value CLOParser#SPECIES_DELIMITER}. The parser
-				 * cycles through <code>arg</code> until all populations/species have the player
-				 * error probabilities set.
-				 * 
-				 * @param arg the (array of) error probability(ies)
-				 */
-				@Override
-				public boolean parse(String arg) {
-					String[] playererror = arg.split(CLOParser.SPECIES_DELIMITER);
-					int n = 0;
-					for (IBSPopulation pop : species) {
-						pop.setPlayerError(CLOParser.parseDouble(playererror[n++ % playererror.length]));
-					}
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (IBSPopulation pop : species) {
-						switch (pop.getModule().getPlayerUpdateType()) {
-							case THERMAL:
-							case IMITATE:
-							case IMITATE_BETTER:
-								if (cloPlayerError.isSet())
-									output.println(
-											"# playerupdateerror:    " + Formatter.formatSci(pop.getPlayerError(), 6)
-													+ (isMultispecies ? " (" + pop.getModule().getName() + ")" : ""));
-								break;
-							default:
-								// XXX check if no other updates implement player errors
-								break;
-						}
-					}
-				}
-			});
-
-	/**
 	 * Command line option to set whether player scores from interactions are
 	 * accumulated or averaged (default).
 	 * <p>
@@ -1721,7 +1667,6 @@ public abstract class IBS implements Model.IBS {
 		}
 		if (anyNonVacant) {
 			// additional options that only make sense without vacant sites
-			parser.addCLO(cloPlayerError);
 			parser.addCLO(cloReferenceType);
 		}
 		if (anyVacant) {

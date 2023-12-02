@@ -1156,43 +1156,6 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	}
 
 	/**
-	 * Noise when player reassesses its strategy. Inverse of temperature in
-	 * Fermi-update.
-	 */
-	protected double playerUpdateNoise = 0.1;
-
-	/**
-	 * Sets the noise for player updating. For example, this corresponds to the
-	 * temperature {@code temp} in {@link PlayerUpdateType#THERMAL} with
-	 * imitation
-	 * probabilities given by {@code 1/(1+exp(-z/T))} where {@code z}
-	 * refers to the difference in fitness between the focal and the model
-	 * individual. {@code temp &lt; 0} disables noise.
-	 * <p>
-	 * <strong>Note:</strong> For tiny temperatures, {@code temp &lt; 1e-6},
-	 * noise is disabled to reduce risk of numerical issues.
-	 * 
-	 * @param temp the noise in player updating
-	 * @return {@code true} if the noise changed
-	 */
-	public boolean setPlayerUpdateNoise(double temp) {
-		temp = Math.max(0.0, temp < 1e-6 ? 0.0 : temp);
-		if (Math.abs(playerUpdateNoise - temp) < 1e-8)
-			return false;
-		playerUpdateNoise = temp;
-		return true;
-	}
-
-	/**
-	 * Gets the noise in player updating.
-	 * 
-	 * @return the noise in player updating
-	 */
-	public double getPlayerUpdateNoise() {
-		return playerUpdateNoise;
-	}
-
-	/**
 	 * Interaction group size.
 	 */
 	protected int nGroup = 2;
@@ -1684,7 +1647,9 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * Command line option to set the type of player updates.
 	 */
 	public final CLOption cloPlayerUpdate = new CLOption("playerupdate", PlayerUpdateType.IMITATE.getKey(),
-			EvoLudo.catModule, "--playerupdate <u>  player update type:",
+			EvoLudo.catModule, 
+			"--playerupdate <u> [<n>[,<e>]] set player update type with\n" +//
+			"                noise n (neutral=1) and error probability e (0):",
 			new CLODelegate() {
 
 				/**
@@ -1716,17 +1681,21 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 							continue;
 						}
 						pop.setPlayerUpdateType(put);
-						// NOTE: for backwards compatibility a trailing number is accepted as the noise
-						// term preferably use the option --playerupdatenoise
-						String keyarg = CLOption.stripKey(put, updt);
-						if (keyarg.length() > 0) {
-							try {
-								pop.setPlayerUpdateNoise(CLOParser.parseDouble(keyarg));
-							} catch (Exception e) {
-								// updt wasn't a perfect match, keyarg contains the remainder and
-								// may not be a valid double. ignore any potential exceptions
-							}
+						// parse n, e, if present
+						String[] args = updt.split("[ =,]");
+						double noise = 1.0;
+						double error = 0.0;
+						switch (args.length) {
+							case 3:
+								error = CLOParser.parseDouble(args[2]);
+							// $FALL-THROUGH$
+							case 2:
+								noise = CLOParser.parseDouble(args[1]);
+								break;
+							default:
 						}
+						put.setNoise(noise);
+						put.setError(error);
 					}
 					return success;
 				}
@@ -1737,73 +1706,27 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 					for (Module pop : species) {
 						if (isIBS) {
 							IBSPopulation ibspop = ((IBS) model).getSpecies(pop);
-							if (ibspop.getPopulationUpdateType().isMoran()) {
-								output.println("# playerupdate:         ignored/static"
-										+ (species.size() > 1 ? " (" + pop.getName() + ")" : ""));
+							// skip populations with Moran updates
+							if (ibspop.getPopulationUpdateType().isMoran())
 								continue;
-							}
 						}
 						PlayerUpdateType put = pop.getPlayerUpdateType();
 						output.println("# playerupdate:         " + put
 								+ (species.size() > 1 ? " (" + pop.getName() + ")" : ""));
-					}
-				}
-			});
-
-	/**
-	 * Command line option to set the type of player updates.
-	 */
-	public final CLOption cloPlayerUpdateNoise = new CLOption("playerupdatenoise", "0.1", EvoLudo.catModule,
-			"--playerupdatenoise <n>  noise in player updates\n" +
-					"      (if applicable)",
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse player update noise for a single or multiple populations/species.
-				 * {@code arg} can be a single value or an array of values with the
-				 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
-				 * {@code arg} until all populations/species have the player update type
-				 * set.
-				 * 
-				 * @param arg (array of) noise terms
-				 */
-				@Override
-				public boolean parse(String arg) {
-					boolean success = true;
-					String[] playernoises = arg.split(CLOParser.SPECIES_DELIMITER);
-					int n = 0;
-					for (Module pop : species)
-						pop.setPlayerUpdateNoise(CLOParser.parseDouble(playernoises[n++ % playernoises.length]));
-					return success;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					boolean isIBS = model.isModelType(Model.Type.IBS);
-					for (Module pop : species) {
-						if (isIBS) {
-							IBSPopulation ibspop = ((IBS) model).getSpecies(pop);
-							if (ibspop.getPopulationUpdateType().isMoran()) {
-								output.println("# playerupdatenoise:    ignored"
-										+ (species.size() > 1 ? " (" + pop.getName() + ")" : ""));
-								continue;
-							}
-						}
-						switch (pop.getPlayerUpdateType()) {
+						switch (put) {
 							case THERMAL: // fermi update
 							case IMITATE: // imitation update
 							case IMITATE_BETTER: // imitation update (better strategies only)
 								output.println(
-										"# playerupdatenoise:    " + Formatter.formatSci(pop.getPlayerUpdateNoise(), 6)
-												+ (species.size() > 1 ? " (" + pop.getName() + ")" : ""));
+										"# playerupdatenoise:    " + Formatter.formatSci(put.getNoise(), 6));
+//XXX errors could probably be added to PROPORTIONAL as well as DE models
+								if (isIBS) {
+									output.println(
+										"# playerupdateerror:    " + Formatter.formatSci(put.getError(), 6));
+								}
 								break;
 							default:
-								// so far other PlayerUpdateType's do not seem to implement noise (see
-								// updatePlayerAt in IBSPopulation)
-								output.println("# playerupdatenoise:    ignored"
-										+ (species.size() > 1 ? " (" + pop.getName() + ")" : ""));
+								// no other PlayerUpdateType's seem to implement noise
 								break;
 						}
 					}
@@ -2201,7 +2124,6 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 			// additional options that only make sense without vacant sites
 			cloPlayerUpdate.addKeys(PlayerUpdateType.values());
 			parser.addCLO(cloPlayerUpdate);
-			parser.addCLO(cloPlayerUpdateNoise);
 		}
 		if (anyVacant) {
 			parser.addCLO(cloDeathRate);
@@ -2553,6 +2475,16 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		String title;
 
 		/**
+		 * The probability of an error during the updating of the strategy.
+		 */
+		double error = 1.0;
+
+		/**
+		 * The noise of the updating process.
+		 */
+		double noise = 1.0;
+
+		/**
 		 * Instantiates a new type of player update type.
 		 * 
 		 * @param key   the identifier for parsing of command line option
@@ -2576,6 +2508,54 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		@Override
 		public String getTitle() {
 			return title;
+		}
+	
+		/**
+		 * Set the noise of the updating process. With less noise chances are higher to
+		 * adopt the strategy of individuals even if they perform only marginally
+		 * better. Conversely for large noise payoff differences matter less and the
+		 * updating process is more random. For {@code noise==1} the process is neutral.
+		 * 
+		 * @param noise the noise when updating the trait
+		 */
+		public void setNoise(double noise) {
+			this.noise = Math.max(0.0, noise);
+		}
+
+		/**
+		 * Get the noise of the updating process.
+		 * 
+		 * @return the noise when updating the trait
+		 * 
+		 * @see #setNoise(double)
+		 */
+		public double getNoise() {
+			return noise;
+		}
+
+		/**
+		 * Set the error of the updating process. With probability {@code error} an
+		 * individual fails to adopt a better performing strategy or adopts an worse
+		 * performing one. More specifically the range of updating probabilities is
+		 * restricted to {@code [error, 1-error]} such that always a chance remains that
+		 * the strategy of a better performing individual is not adopted or the one of a
+		 * worse performing one is adopted.
+		 * 
+		 * @param error the error when adopting the trait
+		 */
+		public void setError(double error) {
+			this.error = Math.max(0.0, error);
+		}
+
+		/**
+		 * Get the error of the updating process.
+		 * 
+		 * @return the error when adopting the trait
+		 * 
+		 * @see #setError(double)
+		 */
+		public double getError() {
+			return error;
 		}
 	}
 
