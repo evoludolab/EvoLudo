@@ -69,21 +69,21 @@
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/EvoLudoJRE/src/main/java/org/evoludo/simulator/EvoLudoLab.java",
-            "args": "--module 2x2 --model IBS --reportfreq 1 --geometry M --references r1 --popsize 500 --popupdate a --playerupdate t0.1 --init 0,1 --inittype mutant --mutation 0.0 --basefit 1.0 --selection 1.0 --paymatrix 0.25,1.25;0,1 --data traits"
+            "args": "--module 2x2 --model IBS --reportfreq 1 --geometry M --references r1 --popsize 500 --popupdate a --playerupdate t0.1 --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1 --data traits"
         },
         {
             "name": "JRE ePGG EvoLudo",
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/EvoLudoJRE/src/main/java/org/evoludo/simulator/EvoLudoLab.java",
-            "args": "--module ePGG --run --delay 100 --pdeN 61x --model PDE --geometry nf --colors red;green;black --reportfreq 1 --pdeD 2,1 --inittype circle --init 1,1,8 --fitnessmap static --basefit 1.0 --selection 1.0 --cost 1.0 --interest 2.34 --groupsize 8 --deathrate 1.2 --dt 0.1 --pdeL 200"
+            "args": "--module ePGG --run --delay 100 --pdeN 61x --model PDE --geometry nf --colors red;green;black --reportfreq 1 --pdeD 2,1 --inittype circle --init 1,1,8 --fitnessmap static --cost 1.0 --interest 2.34 --groupsize 8 --deathrate 1.2 --dt 0.1 --pdeL 200"
         },
         {
             "name": "JRE cSD EvoLudo",
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/EvoLudoJRE/src/main/java/org/evoludo/simulator/EvoLudoLab.java",
-            "args": "--module cSD --basefit 1.0 --benefitfcn 11 --benefitparams 6,-1.4 --costfcn 1 --costparams 4.56,-1.6 --delay 0 --export cSD-1.plist --generations 1000 --geometry M --init 0.05,0.01 --intertype r1 --model IBS --mutation 0.1 --mutationsdev 0.01 --mutationtype g --playerupdate t0.1 --popsize 1000 --popupdate a --references r1 --reportfreq 1 --seed 0 --selection 1.0"
+            "args": "--module cSD --benefitfcn 11 --benefitparams 6,-1.4 --costfcn 1 --costparams 4.56,-1.6 --delay 0 --export cSD-1.plist --generations 1000 --geometry M --init 0.05,0.01 --intertype r1 --model IBS --mutation 0.1 --mutationsdev 0.01 --mutationtype g --playerupdate t0.1 --popsize 1000 --popupdate a --references r1 --reportfreq 1 --seed 0"
         },
         {
             "name": "JRE TestEvoludo (generate)",

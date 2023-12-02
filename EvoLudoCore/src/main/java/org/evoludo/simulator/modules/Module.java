@@ -1612,85 +1612,11 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 			});
 
 	/**
-	 * Command line option to set the baseline fitness for population(s)/species.
-	 */
-	public final CLOption cloBaselineFitness = new CLOption("basefit", "1", EvoLudo.catModule,
-			"--basefit <b>   baseline fitness",
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse baseline fitness(es) for a single or multiple populations/species.
-				 * {@code arg} can be a single value or an array of values with the
-				 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
-				 * {@code arg} until all populations/species have the baseline fitness set.
-				 * 
-				 * @param arg (array of) baseline fitness(es)
-				 */
-				@Override
-				public boolean parse(String arg) {
-					String[] basefitspecies = arg.split(CLOParser.SPECIES_DELIMITER);
-					int n = 0;
-					for (Module pop : species) {
-						pop.getMapToFitness()
-								.setBaseline(CLOParser.parseDouble(basefitspecies[n++ % basefitspecies.length]));
-					}
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (Module pop : species)
-						output.println("# baselinefitness:      "
-								+ Formatter.format(pop.getMapToFitness().getBaseline(), 4) + (species.size() > 1 ? " ("
-										+ pop.getName() + ")" : ""));
-				}
-			});
-
-	/**
-	 * Command line option to set the selection strength for population(s)/species.
-	 */
-	public final CLOption cloSelection = new CLOption("selection", "1", EvoLudo.catModule,
-			"--selection <s>  selection pressure",
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse selection strength(s) for a single or multiple populations/species.
-				 * {@code arg} can be a single value or an array of values with the
-				 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
-				 * {@code arg} until all populations/species have the selection strength
-				 * set.
-				 * 
-				 * @param arg (array of) selection strength(s)
-				 */
-				@Override
-				public boolean parse(String arg) {
-					String[] selectionspecies = arg.split(CLOParser.SPECIES_DELIMITER);
-					int n = 0;
-					for (Module pop : species) {
-						pop.getMapToFitness()
-								.setSelection(CLOParser.parseDouble(selectionspecies[n++ % selectionspecies.length]));
-					}
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (Module pop : species)
-						output.println("# selection:            "
-								+ Formatter.format(pop.getMapToFitness().getSelection(), 4) + (species.size() > 1 ? " ("
-										+ pop.getName() + ")" : ""));
-				}
-			});
-
-	/**
 	 * Command line option to set the payoff/score to fitness map.
 	 */
 	public final CLOption cloFitnessMap = new CLOption("fitnessmap", "none", EvoLudo.catModule,
-			"--fitnessmap <m>  select map with --baseline b and --selection w:",
+			"--fitnessmap <m> [<b>[,<w>]]  select map with baseline fitness b (1)\n" + //
+			"                and selection strength w (1):",
 			new CLODelegate() {
 
 				/**
@@ -1711,26 +1637,46 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 					int n = 0;
 					for (Module pop : species) {
 						String map = map2fitnessspecies[n++ % map2fitnessspecies.length];
-						Map2Fitness.Maps m2f = (Map2Fitness.Maps) cloFitnessMap.match(map);
-						if (m2f == null) {
+						Map2Fitness.Maps m2fm = (Map2Fitness.Maps) cloFitnessMap.match(map);
+						Map2Fitness m2f = pop.getMapToFitness();
+						if (m2fm == null) {
 							logger.warning(
 									(species.size() > 1 ? pop.getName() + ": " : "") +
 											"fitness map '" + map + "' unknown - using '"
-											+ pop.getMapToFitness().getName() + "'");
+											+ m2f.getName() + "'");
 							success = false;
 							continue;
 						}
-						pop.getMapToFitness().setMap(m2f);
+						m2f.setMap(m2fm);
+						// parse b and w, if present
+						String[] args = map.split("[ =,]");
+						double b = 1.0;
+						double w = 1.0;
+						switch (args.length) {
+							case 3:
+								w = CLOParser.parseDouble(args[2]);
+							// $FALL-THROUGH$
+							case 2:
+								b = CLOParser.parseDouble(args[1]);
+								break;
+							default:
+						}						
+						m2f.setBaseline(b);
+						m2f.setSelection(w);
 					}
 					return success;
 				}
 
 				@Override
 				public void report(PrintStream output) {
-					for (Module pop : species)
-						output.println("# fitnessmap:           " + pop.getMapToFitness().getTitle()
+					for (Module pop : species) {
+						Map2Fitness m2f = pop.getMapToFitness();
+						output.println("# fitnessmap:           " + m2f.getTitle()
 								+ (species.size() > 1 ? " ("
 										+ pop.getName() + ")" : ""));
+						output.println("# basefit:              " + Formatter.format(m2f.getBaseline(), 4));
+						output.println("# selection:            " + Formatter.format(m2f.getSelection(), 4));
+					}
 				}
 			});
 
@@ -2219,8 +2165,6 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	@Override
 	public void collectCLO(CLOParser parser) {
 		// prepare command line options
-		parser.addCLO(cloBaselineFitness);
-		parser.addCLO(cloSelection);
 		cloFitnessMap.addKeys(Map2Fitness.Maps.values());
 		parser.addCLO(cloFitnessMap);
 		parser.addCLO(cloMutation);
