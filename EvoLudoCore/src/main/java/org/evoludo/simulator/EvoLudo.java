@@ -1820,7 +1820,7 @@ public abstract class EvoLudo
 		// preprocessing removed (and possibly altered) --module and --model options
 		// add current settings back to cloarray
 		cloarray = ArrayMath.append(cloarray, cloModule.getName() + " " + activeModule.getKey());
-		cloarray = ArrayMath.append(cloarray, cloModel.getName() + " " + activeModel.getModelType());
+		cloarray = ArrayMath.append(cloarray, cloModel.getName() + " " + activeModel.getModelType().getKey());
 		boolean success = parser.parseCLO(cloarray);
 		if (pendingAction.equals(PendingAction.CLO)) {
 			// start again from scratch

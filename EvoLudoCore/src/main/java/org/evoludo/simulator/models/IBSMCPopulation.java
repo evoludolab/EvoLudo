@@ -763,8 +763,9 @@ public class IBSMCPopulation extends IBSPopulation {
 		// initialize each trait
 		double[][] init = module.getInit();
 		// currently all traits use same initialization
-		switch ((IBSC.InitType) initType) {
+		IBSC.InitType myType = (IBSC.InitType) module.getInitType();
 
+		switch (myType) {
 			default:
 			case UNIFORM:
 				for (int s = 0; s < nTraits; s++)

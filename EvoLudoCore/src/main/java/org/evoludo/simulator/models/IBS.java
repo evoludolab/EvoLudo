@@ -86,43 +86,6 @@ public abstract class IBS implements Model.IBS {
 	}
 
 	/**
-	 * Type of initial configuration (dependent on implementation).
-	 * 
-	 * <h3>Notes:</h3>
-	 * <ol>
-	 * <li>uses same init type for all species in multi-species modules.
-	 * <li>subclasses {@link IBSD} and {@code IBSC} use a different set of
-	 * {@code InitType}s. Consequently {@code initType} cannot be restricted to a
-	 * particular set.
-	 * </ol>
-	 * 
-	 * @see EvoLudo#cloInitType
-	 * @see IBSD.InitType
-	 * @see IBSC.InitType
-	 */
-	protected CLOption.Key initType = null;
-
-	@Override
-	public void setInitType(CLOption.Key type) {
-		if (type == null) {
-			// set default
-			if (this instanceof IBSD)
-				type = org.evoludo.simulator.models.IBSD.InitType.DEFAULT;
-			if (this instanceof IBSC)
-				type = org.evoludo.simulator.models.IBSC.InitType.DEFAULT;
-		}
-		initType = type;
-		// needs to pass the initialization type to all populations
-		for (IBSPopulation pop : species)
-			pop.setInitType(initType);
-	}
-
-	@Override
-	public CLOption.Key getInitType() {
-		return initType;
-	}
-
-	/**
 	 * <code>true</code> if new sample for statistics should be started
 	 * ({@link EvoLudo#modelInit()} will be called on next update).
 	 */

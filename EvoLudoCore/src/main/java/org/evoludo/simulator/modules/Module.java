@@ -45,11 +45,15 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBS.HasIBS;
+import org.evoludo.simulator.models.IBSC;
+import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.Model.Type;
+import org.evoludo.simulator.models.ODEEuler;
 import org.evoludo.simulator.models.Model.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
+import org.evoludo.simulator.models.PDERD;
 import org.evoludo.simulator.models.PDERD.HasPDE;
 import org.evoludo.simulator.models.SDEEuler.HasSDE;
 import org.evoludo.simulator.views.HasDistribution;
@@ -1038,6 +1042,67 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	}
 
 	/**
+	 * Type of initial configuration.
+	 * 
+	 * <h3>Note:</h3>
+	 * Different models may use different {@code InitType}s. Consequently this
+	 * method cannot accept a particular set of initialization types.
+	 * 
+	 * @see #cloInitType
+	 */
+	protected CLOption.Key initType;
+
+	/**
+	 * Sets the type of the initial configuration.
+	 * 
+	 * <h3>Note:</h3>
+	 * Different models may use different {@code InitType}s. Consequently this
+	 * method cannot accept a particular set of initialization types.
+	 *
+	 * @param type the type of the initial configuration
+	 * 
+	 * @see IBSD.InitType
+	 * @see IBSC.InitType
+	 * @see ODEEuler.InitType
+	 * @see PDERD.InitType
+	 */
+	public void setInitType(CLOption.Key type) {
+		if (type == null)
+			type = getInitType();
+		initType = type;
+	}
+
+	/**
+	 * Gets the type of the initial configuration.
+	 * 
+	 * <h3>Note:</h3>
+	 * Different models may use different {@code InitType}s. Consequently this
+	 * method cannot return a particular set of initialization types.
+	 *
+	 * @return the type of the initial configuration
+	 * 
+	 * @see IBSD.InitType
+	 * @see IBSC.InitType
+	 * @see ODEEuler.InitType
+	 * @see PDERD.InitType
+	 */
+	public CLOption.Key getInitType() {
+		if (initType != null) 
+			return initType;
+		// return proper default
+		if (model instanceof IBSD)
+			return org.evoludo.simulator.models.IBSD.InitType.DEFAULT;
+		if (model instanceof IBSC)
+			return org.evoludo.simulator.models.IBSC.InitType.DEFAULT;
+		if (model instanceof Model.PDE)	// check for PDEs first
+			return org.evoludo.simulator.models.PDERD.InitType.DEFAULT;
+		if (model instanceof Model.ODE)	// this holds for PDEs too
+			return org.evoludo.simulator.models.ODEEuler.InitType.DEFAULT;
+		// unreachable
+		throw new Error("unknown model type!");
+	}
+
+	/**
 	 * Death rate for ecological population updates.
 	 */
 	protected double deathRate = 1.0;
@@ -1461,13 +1526,34 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 			"--inittype <t>  type of initial configuration", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					engine.getModel().setInitType(cloInitType.match(arg));
-					return true;
+					if (!cloInitType.isSet())
+						return true;
+					boolean success = true;
+					String[] inittypes = arg.split(CLOParser.SPECIES_DELIMITER);
+					int n = 0;
+					for (Module pop : species) {
+						String type = inittypes[n++ % inittypes.length];
+						CLOption.Key key = cloInitType.match(type);
+						if (key == null) {
+							logger.warning(
+									(species.size() > 1 ? pop.getName() + ": " : "") +
+											"inittype '" + type + "' unknown - using '"
+											+ pop.getInitType().getKey() + "'");
+							success = false;
+							continue;
+						}
+						pop.setInitType(key);
+					}
+					return success;
 				}
 
 				@Override
 				public void report(PrintStream output) {
-					output.println("# inittype:             " + engine.getModel().getInitType());
+					for (Module pop : species) {
+						output.println(
+								"# inittype:             " + pop.getInitType() + (species.size() > 1 ? " ("
+										+ pop.getName() + ")" : ""));
+					}
 				}
 			});
 

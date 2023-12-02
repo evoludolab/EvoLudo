@@ -1861,7 +1861,7 @@ public class IBSDPopulation extends IBSPopulation {
 	public void init() {
 		super.init();
 		Model model = engine.getModel();
-		IBSD.InitType myType = (IBSD.InitType) initType;
+		IBSD.InitType myType = (IBSD.InitType) module.getInitType();
 		if (model.isMode(Mode.STATISTICS))
 			myType = IBSD.InitType.STATISTICS;
 

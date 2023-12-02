@@ -51,7 +51,6 @@ import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Module.Map2Fitness;
 import org.evoludo.simulator.modules.Module.PlayerUpdateType;
-import org.evoludo.util.CLOption;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -178,26 +177,6 @@ public abstract class IBSPopulation {
 		fitness = null;
 		tags = null;
 		interactions = null;
-	}
-
-	/**
-	 * Type of initial configuration (depends on implementation).
-	 * <p>
-	 * <strong>NOTE:</strong> uses same init type for multi-species.
-	 * 
-	 * @see EvoLudo#cloInitType
-	 */
-	protected CLOption.Key initType = null;
-
-	/**
-	 * Sets the type of initial configuration (depends on implementation).
-	 * 
-	 * @param type the type of initialization
-	 * 
-	 * @see EvoLudo#cloInitType
-	 */
-	public void setInitType(CLOption.Key type) {
-		initType = type;
 	}
 
 	/**

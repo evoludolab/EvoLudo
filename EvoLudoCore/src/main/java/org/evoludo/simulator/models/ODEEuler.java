@@ -248,18 +248,6 @@ public class ODEEuler implements Model.ODE {
 	int nDim = -1;
 
 	/**
-	 * The initial frequencies/densities of ODE. In multi-species modules the
-	 * initial state of each species is concatenated into a single array. The
-	 * initial frequencies/densities of the first species are stored in
-	 * <code>y0[0]</code> through <code>y0[n1]</code> where <code>n1</code> denotes
-	 * the number of traits in the first species. The initial frequencies/densities
-	 * of the second species are stored in <code>y0[n1+1]</code> through
-	 * <code>y0[n1+n2]</code> where <code>n2</code> denotes the number of traits in
-	 * the second species, etc.
-	 */
-	double[] y0;
-
-	/**
 	 * The current frequencies/densities of the ODE. In multi-species modules the
 	 * current states of each species are concatenated into this single array. The
 	 * current frequencies/densities of the first species are stored in
@@ -484,7 +472,9 @@ public class ODEEuler implements Model.ODE {
 	public void load() {
 		species = module.getSpecies();
 		module = (species.size() == 1 ? species.get(0) : null);
-		CLOption type = engine.getModule().cloInitType;
+		// retrieve option for first species; parser will process and set
+		// InitType for all species 
+		CLOption type = species.get(0).cloInitType;
 		type.clearKeys();
 		type.addKeys(InitType.values());
 		if (isDensity()) {
@@ -495,7 +485,6 @@ public class ODEEuler implements Model.ODE {
 		else {
 			type.removeKey(InitType.DENSITY);
 		}
-		initType = InitType.DEFAULT;
 	}
 
 	@Override
@@ -513,7 +502,6 @@ public class ODEEuler implements Model.ODE {
 			ft = new double[nDim];
 			dyt = new double[nDim];
 			yout = new double[nDim];
-			y0 = new double[nDim];
 			tmp = new double[nDim];
 			names = new String[nDim];
 			int skip = 0;
@@ -1291,101 +1279,76 @@ public class ODEEuler implements Model.ODE {
 		update();
 	}
 
-	/**
-	 * Type of initial configuration (density distribution).
-	 * 
-	 * <h3>Note:</h3>
-	 * The subclass {@link PDERD} uses a different set of {@code InitType}s.
-	 * Consequently {@code initType} cannot be restricted to a particular set.
-	 * 
-	 * @see EvoLudo#cloInitType
-	 */
-	protected CLOption.Key initType;
-
-	@Override
-	public void setInitType(CLOption.Key type) {
-		if (type == null)
-			return;
-		initType = type;
-	}
-
-	@Override
-	public CLOption.Key getInitType() {
-		return initType;
-	}
-
 	@Override
 	public void init() {
-		int from = 0;
-		for (Module pop : species) {
-			if (!(pop instanceof org.evoludo.simulator.modules.Discrete))
-				continue;
-			int dim = pop.getNTraits();
-			System.arraycopy(((org.evoludo.simulator.modules.Discrete) pop).getInit(), 0, y0, from, dim);
-			from += dim;
-		}
-		normalizeState(y0);
 		t = 0.0;
 		dtTry = dt;
 		connect = false;
 		converged = false;
+		// PDE models have their own initialization types
 		if (isModelType(Type.PDE))
 			return;
-		// PDE models have their own initialization types
-		switch ((InitType) initType) {
-			default:
-			case DENSITY:
-			case FREQUENCY:
-				System.arraycopy(y0, 0, yt, 0, nDim);
-				break;
+		int from = 0;
+		for (Module pop : species) {
+			if (!(pop instanceof org.evoludo.simulator.modules.Discrete))
+				continue;
+			org.evoludo.simulator.modules.Discrete dpop = (org.evoludo.simulator.modules.Discrete) pop;
+			int dim = pop.getNTraits();
+			double[] init = dpop.getInit();
+			switch ((InitType) pop.getInitType()) {
+				default:
+				case DENSITY:
+				case FREQUENCY:
+					System.arraycopy(init, 0, yt, from, dim);
+					break;
 
-			case UNIFORM:
-				Arrays.fill(yt, 1.0);
-				normalizeState(yt);
-				break;
+				case UNIFORM:
+					Arrays.fill(yt, from, from + dim, 1.0);
+					break;
 
-			case MONO:
-				Arrays.fill(yt, 0.0);
-				int trait = ArrayMath.maxIndex(y0);
-				yt[trait] = 1.0;
-				break;
+				case MONO:
+					Arrays.fill(yt, 0.0);
+					int trait = ArrayMath.maxIndex(init);
+					yt[trait] = 1.0;
+					break;
 
-			case RANDOM:
-				// retrieve the shared RNG to ensure reproducibility of results
-				RNGDistribution rng = engine.getRNG();
-				int idx = 0;
-				for (Module pop : species) {
-					int nTraits = pop.getNTraits();
-					for (int n = 0; n < nTraits; n++)
-						yt[idx++] = rng.random0n(nTraits);
-				}
-				normalizeState(yt);
-				break;
+				case RANDOM:
+					// retrieve the shared RNG to ensure reproducibility of results
+					RNGDistribution rng = engine.getRNG();
+					for (int n = 0; n < dim; n++)
+						yt[from + n] = rng.random0n(1000);
+					break;
+			}
+			from += dim;
 		}
+		normalizeState(yt);
 	}
 
 	/**
 	 * Types of initial configurations. Currently this model supports the following
 	 * density distributions:
 	 * <dl>
-	 * <dt>FREQUENCY
-	 * <dd>Initial frequencies/densities as specified in
+	 * <dt>DENSITY
+	 * <dd>Initial densities as specified in
 	 * {@link org.evoludo.simulator.modules.Discrete#cloInit
-	 * modules.Discrete.cloInit} (default).
+	 * modules.Discrete.cloInit} (default for density modules).
+	 * <dt>FREQUENCY
+	 * <dd>Initial frequencies as specified in
+	 * {@link org.evoludo.simulator.modules.Discrete#cloInit
+	 * modules.Discrete.cloInit} (default for frequency modules).
 	 * <dt>UNIFORM
 	 * <dd>Uniform/homogeneous frequencies of traits. <strong>Note:</strong> Not
 	 * available for density based models.
 	 * <dt>MONO
 	 * <dd>Monomorphic initialization of the population. The monomorphic trait is
-	 * given
-	 * by the highest frequency in
+	 * given by the highest frequency in
 	 * {@link org.evoludo.simulator.modules.Discrete#cloInit
 	 * modules.Discrete.cloInit}.
 	 * <dt>RANDOM
 	 * <dd>Random initial trait frequencies. <strong>Note:</strong> Not available
 	 * for density based models.
 	 * <dt>DEFAULT
-	 * <dd>Default initialization (FREQUENCY)
+	 * <dd>Default initialization (FREQUENCY or DENSITY)
 	 * </dl>
 	 * 
 	 * @author Christoph Hauert

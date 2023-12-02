@@ -816,38 +816,6 @@ public abstract interface Model extends CLOProvider {
 	}
 
 	/**
-	 * Sets the type of the initial configuration.
-	 * 
-	 * <h3>Note:</h3>
-	 * Different models may use different {@code InitType}s. Consequently this
-	 * method cannot accept a particular set of initialization types.
-	 *
-	 * @param type the type of the initial configuration
-	 * 
-	 * @see IBSD.InitType
-	 * @see IBSC.InitType
-	 * @see ODEEuler.InitType
-	 * @see PDERD.InitType
-	 */
-	public abstract void setInitType(CLOption.Key type);
-
-	/**
-	 * Gets the type of the initial configuration.
-	 * 
-	 * <h3>Note:</h3>
-	 * Different models may use different {@code InitType}s. Consequently this
-	 * method cannot return a particular set of initialization types.
-	 *
-	 * @return the type of the initial configuration
-	 * 
-	 * @see IBSD.InitType
-	 * @see IBSC.InitType
-	 * @see ODEEuler.InitType
-	 * @see PDERD.InitType
-	 */
-	public abstract CLOption.Key getInitType();
-
-	/**
 	 * Milestone: Load this model and allocate resources (if applicable).
 	 * 
 	 * @see MilestoneListener#modelLoaded()
