@@ -110,7 +110,7 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		super.load();
 		// initialize mutation types
 		cloMutationType.addKeys(MutationType.values());
-		engine.cloInitType.addKeys(InitType.values());
+		engine.getModule().cloInitType.addKeys(InitType.values());
 		// interacting with all members of the population is not feasible for continuous
 		// traits; use single interaction with random neighbour as default
 		cloInteractionType.setDefault("r1");
@@ -124,7 +124,7 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		// free resources
 		super.unload();
 		cloMutationType.clearKeys();
-		engine.cloInitType.clearKeys();
+		engine.getModule().cloInitType.clearKeys();
 	}
 
 	@Override

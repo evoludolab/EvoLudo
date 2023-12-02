@@ -344,8 +344,9 @@ public class PDERD extends ODEEuler implements Model.PDE {
 			}
 		};
 		// ODEEuler loaded its own keys already - clear and reload ours.
-		engine.cloInitType.clearKeys();
-		engine.cloInitType.addKeys(InitType.values());
+		CLOption type = engine.getModule().cloInitType;
+		type.clearKeys();
+		type.addKeys(InitType.values());
 	}
 
 	@Override

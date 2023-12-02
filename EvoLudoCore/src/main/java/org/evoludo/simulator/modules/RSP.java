@@ -129,7 +129,7 @@ public class RSP extends Discrete implements Pairs,
 	public void modelLoaded() {
 		super.modelLoaded();
 		if (model.isModelType(Type.IBS))
-			engine.cloInitType.addKey(InitType.KALEIDOSCOPE);
+			cloInitType.addKey(InitType.KALEIDOSCOPE);
 	}
 
 	@Override

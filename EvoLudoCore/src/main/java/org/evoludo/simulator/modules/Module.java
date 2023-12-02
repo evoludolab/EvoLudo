@@ -1446,6 +1446,32 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 			});
 
 	/**
+	 * Command line option to set the type of initial configuration.
+	 * <p>
+	 * <strong>Note:</strong> option not automatically added. Models that implement
+	 * different initialization types should load it in
+	 * {@link #collectCLO(CLOParser)}.
+	 * 
+	 * @see org.evoludo.simulator.models.IBSD.InitType
+	 * @see org.evoludo.simulator.models.IBSC.InitType
+	 * @see org.evoludo.simulator.models.ODEEuler.InitType
+	 * @see org.evoludo.simulator.models.PDERD.InitType
+	 */
+	public final CLOption cloInitType = new CLOption("inittype", "-default", EvoLudo.catModule,
+			"--inittype <t>  type of initial configuration", new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
+					engine.getModel().setInitType(cloInitType.match(arg));
+					return true;
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					output.println("# inittype:             " + engine.getModel().getInitType());
+				}
+			});
+
+	/**
 	 * Command line option to set death rate for ecological population updates.
 	 */
 	public final CLOption cloDeathRate = new CLOption("deathrate", "0.5", EvoLudo.catModule,
@@ -2091,6 +2117,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		cloFitnessMap.addKeys(Map2Fitness.Maps.values());
 		parser.addCLO(cloFitnessMap);
 		parser.addCLO(cloMutation);
+		parser.addCLO(cloInitType);
 
 		if (this instanceof Discrete.Groups ||
 				this instanceof Continuous.Groups ||

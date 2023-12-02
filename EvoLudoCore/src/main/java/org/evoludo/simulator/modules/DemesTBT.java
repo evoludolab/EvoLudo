@@ -71,7 +71,7 @@ public class DemesTBT extends TBT {
 		super.modelLoaded();
 		// TBT added kaleidoscopes but demes cannot deal with them
 		if (model.isModelType(Type.IBS))
-			engine.cloInitType.removeKey(InitType.KALEIDOSCOPE);
+			cloInitType.removeKey(InitType.KALEIDOSCOPE);
 	}
 
 	/**

@@ -2068,32 +2068,6 @@ public abstract class EvoLudo
 			});
 
 	/**
-	 * Command line option to set the type of initial configuration.
-	 * <p>
-	 * <strong>Note:</strong> option not automatically added. Models that implement
-	 * different initialization types should load it in
-	 * {@link #collectCLO(CLOParser)}.
-	 * 
-	 * @see org.evoludo.simulator.models.IBSD.InitType
-	 * @see org.evoludo.simulator.models.IBSC.InitType
-	 * @see org.evoludo.simulator.models.ODEEuler.InitType
-	 * @see org.evoludo.simulator.models.PDERD.InitType
-	 */
-	public final CLOption cloInitType = new CLOption("inittype", "-default", catModel,
-			"--inittype <t>  type of initial configuration", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					activeModel.setInitType(cloInitType.match(arg));
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# inittype:             " + activeModel.getInitType());
-				}
-			});
-
-	/**
 	 * Command line option to perform test of random number generator on launch.
 	 * This takes approximately 10-20 seconds. The test reports (1) whether the
 	 * generated sequence of random numbers is consistent with the reference
@@ -2208,7 +2182,6 @@ public abstract class EvoLudo
 			parser.addCLO(cloTraitColorScheme);
 			cloTraitColorScheme.addKeys(ColorModelType.values());
 		}
-		parser.addCLO(cloInitType);
 
 		// trajectory color settings used by phase plane and simplex plots
 		if (activeModule instanceof HasS3 || activeModule instanceof HasPhase2D)

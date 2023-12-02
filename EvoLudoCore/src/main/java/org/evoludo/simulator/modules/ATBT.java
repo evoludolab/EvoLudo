@@ -195,7 +195,7 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 	public void modelLoaded() {
 		super.modelLoaded();
 		if (model.isModelType(Type.IBS))
-			engine.cloInitType.addKey(InitType.KALEIDOSCOPE);
+			cloInitType.addKey(InitType.KALEIDOSCOPE);
 	}
 
 	@Override

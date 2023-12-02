@@ -484,15 +484,16 @@ public class ODEEuler implements Model.ODE {
 	public void load() {
 		species = module.getSpecies();
 		module = (species.size() == 1 ? species.get(0) : null);
-		engine.cloInitType.clearKeys();
-		engine.cloInitType.addKeys(InitType.values());
+		CLOption type = engine.getModule().cloInitType;
+		type.clearKeys();
+		type.addKeys(InitType.values());
 		if (isDensity()) {
-			engine.cloInitType.removeKey(InitType.UNIFORM);
-			engine.cloInitType.removeKey(InitType.RANDOM);
-			engine.cloInitType.removeKey(InitType.FREQUENCY);
+			type.removeKey(InitType.UNIFORM);
+			type.removeKey(InitType.RANDOM);
+			type.removeKey(InitType.FREQUENCY);
 		}
 		else {
-			engine.cloInitType.removeKey(InitType.DENSITY);
+			type.removeKey(InitType.DENSITY);
 		}
 		initType = InitType.DEFAULT;
 	}

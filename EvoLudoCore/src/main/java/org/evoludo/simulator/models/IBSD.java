@@ -8,6 +8,7 @@ import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Key;
 import org.evoludo.util.Formatter;
 
 /**
@@ -139,7 +140,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	public void load() {
 		super.load();
 		cloOptimize.addKeys(OptimizationType.values());
-		CLOption cloInitType = engine.cloInitType;
+		CLOption cloInitType = engine.getModule().cloInitType;
 		cloInitType.clearKeys();
 		cloInitType.addKeys(InitType.values());
 		// kaleidoscopes are not standard and must be requested/enabled by modules and
@@ -151,7 +152,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	public void unload() {
 		super.unload();
 		cloOptimize.clearKeys();
-		engine.cloInitType.clearKeys();
+		engine.getModule().cloInitType.clearKeys();
 	}
 
 	@Override
