@@ -489,6 +489,10 @@ public class ODEEuler implements Model.ODE {
 		if (isDensity()) {
 			engine.cloInitType.removeKey(InitType.UNIFORM);
 			engine.cloInitType.removeKey(InitType.RANDOM);
+			engine.cloInitType.removeKey(InitType.FREQUENCY);
+		}
+		else {
+			engine.cloInitType.removeKey(InitType.DENSITY);
 		}
 		initType = InitType.DEFAULT;
 	}
@@ -1329,6 +1333,7 @@ public class ODEEuler implements Model.ODE {
 		// PDE models have their own initialization types
 		switch ((InitType) initType) {
 			default:
+			case DENSITY:
 			case FREQUENCY:
 				System.arraycopy(y0, 0, yt, 0, nDim);
 				break;
@@ -1391,13 +1396,22 @@ public class ODEEuler implements Model.ODE {
 	public enum InitType implements CLOption.Key {
 
 		/**
-		 * Initial frequencies/densities as specified in
+		 * Initial densities as specified in
 		 * {@link org.evoludo.simulator.modules.Discrete#cloInit
-		 * modules.Discrete.cloInit} (default).
+		 * modules.Discrete.cloInit}. Mutually exclusive with {@link #FREQUENCY}.
 		 * 
 		 * @see org.evoludo.simulator.modules.Discrete#cloInit modules.Discrete.cloInit
 		 */
-		FREQUENCY("frequency", "random distribution with given frequency"),
+		DENSITY("density", "initial trait densities"),
+
+		/**
+		 * Initial frequencies as specified in
+		 * {@link org.evoludo.simulator.modules.Discrete#cloInit
+		 * modules.Discrete.cloInit}. Mutually exclusive with {@link #DENSITY}.
+		 * 
+		 * @see org.evoludo.simulator.modules.Discrete#cloInit modules.Discrete.cloInit
+		 */
+		FREQUENCY("frequency", "initial trait frequencies"),
 
 		/**
 		 * Uniform initial frequencies of traits.
