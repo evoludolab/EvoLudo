@@ -1817,6 +1817,10 @@ public abstract class EvoLudo
 			return false;
 		}
 		parser.initCLO();
+		// preprocessing removed (and possibly altered) --module and --model options
+		// add current settings back to cloarray
+		cloarray = ArrayMath.append(cloarray, cloModule.getName() + " " + activeModule.getKey());
+		cloarray = ArrayMath.append(cloarray, cloModel.getName() + " " + activeModel.getModelType());
 		boolean success = parser.parseCLO(cloarray);
 		if (pendingAction.equals(PendingAction.CLO)) {
 			// start again from scratch
