@@ -166,7 +166,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 
 	@Override
 	public void playPairGameAt(IBSGroup group) {
-		int size = group.size;
+		int size = group.nSampled;
 		if (size <= 0) {
 			updateScoreAt(group.focal, 0.0);
 			return;
@@ -230,7 +230,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 
 	@Override
 	public void playGroupGameAt(IBSGroup group) {
-		int size = group.size;
+		int size = group.nSampled;
 		if (size <= 0) {
 			updateScoreAt(group.focal, 0.0);
 			return;
@@ -243,72 +243,72 @@ public class IBSCPopulation extends IBSMCPopulation {
 
 		switch (group.samplingType) {
 			// interact with all neighbors - interact repeatedly if nGroup<groupSize+1
-			case IBSGroup.SAMPLING_ALL:
+			case ALL:
 				int nGroup = module.getNGroup();
-				if (nGroup < group.size + 1) {
+				if (nGroup < group.nSampled + 1) {
 					// interact with part of group sequentially
 					double myScore = 0.0;
-					Arrays.fill(smallScores, 0, group.size, 0.0);
-					for (int n = 0; n < group.size; n++) {
+					Arrays.fill(smallScores, 0, group.nSampled, 0.0);
+					for (int n = 0; n < group.nSampled; n++) {
 						for (int i = 0; i < nGroup - 1; i++)
-							smallStrat[i] = groupStrat[(n + i) % group.size];
+							smallStrat[i] = groupStrat[(n + i) % group.nSampled];
 						myScore += groupmodule.groupScores(myStrat, smallStrat, nGroup - 1, groupScores);
 						for (int i = 0; i < nGroup - 1; i++)
-							smallScores[(n + i) % group.size] += groupScores[i];
+							smallScores[(n + i) % group.nSampled] += groupScores[i];
 					}
-					updateScoreAt(me, myScore, group.size);
-					for (int i = 0; i < group.size; i++)
+					updateScoreAt(me, myScore, group.nSampled);
+					for (int i = 0; i < group.nSampled; i++)
 						opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
 					return;
 				}
 				// interact with full group (random graphs, all neighbors)
 
 				//$FALL-THROUGH$
-			case IBSGroup.SAMPLING_COUNT:
+			case RANDOM:
 				// interact with sampled neighbors
-				double myScore = groupmodule.groupScores(myStrat, groupStrat, group.size, groupScores);
+				double myScore = groupmodule.groupScores(myStrat, groupStrat, group.nSampled, groupScores);
 				updateScoreAt(me, myScore);
-				for (int i = 0; i < group.size; i++)
+				for (int i = 0; i < group.nSampled; i++)
 					opponent.updateScoreAt(group.group[i], groupScores[i]);
 				return;
 
 			default:
-				throw new Error("Unknown interaction type (" + getInteractionSamplingType() + ")");
+				throw new Error("Unknown interaction type (" + interactionGroup.getSampling() + ")");
 		}
 	}
 
 	@Override
 	public void yalpGroupGameAt(IBSGroup group) {
-		if (group.size <= 0)
+		if (group.nSampled <= 0)
 			return;
 
 		double myScore;
 		double myStrat = strategies[group.focal];
 		double[] oppstrategies = opponent.strategies;
-		for (int i = 0; i < group.size; i++)
+		for (int i = 0; i < group.nSampled; i++)
 			groupStrat[i] = oppstrategies[group.group[i]];
 
 		int nGroup = module.getNGroup();
-		if (nGroup < group.size + 1) { // interact with part of group sequentially
+		if (nGroup < group.nSampled + 1) { // interact with part of group sequentially
 			myScore = 0.0;
-			Arrays.fill(smallScores, 0, group.size, 0.0);
-			for (int n = 0; n < group.size; n++) {
+			Arrays.fill(smallScores, 0, group.nSampled, 0.0);
+			for (int n = 0; n < group.nSampled; n++) {
 				for (int i = 0; i < nGroup - 1; i++)
-					smallStrat[i] = groupStrat[(n + i) % group.size];
+					smallStrat[i] = groupStrat[(n + i) % group.nSampled];
 				myScore += groupmodule.groupScores(myStrat, smallStrat, nGroup - 1, groupScores);
 				for (int i = 0; i < nGroup - 1; i++)
-					smallScores[(n + i) % group.size] += groupScores[i];
+					smallScores[(n + i) % group.nSampled] += groupScores[i];
 			}
-			removeScoreAt(group.focal, myScore, group.size);
-			for (int i = 0; i < group.size; i++)
+			removeScoreAt(group.focal, myScore, group.nSampled);
+			for (int i = 0; i < group.nSampled; i++)
 				opponent.removeScoreAt(group.group[i], smallScores[i], nGroup - 1);
 			return;
 		}
 		// interact with full group (random graphs)
-		myScore = groupmodule.groupScores(myStrat, groupStrat, group.size, groupScores);
+		myScore = groupmodule.groupScores(myStrat, groupStrat, group.nSampled, groupScores);
 		removeScoreAt(group.focal, myScore);
 
-		for (int i = 0; i < group.size; i++)
+		for (int i = 0; i < group.nSampled; i++)
 			opponent.removeScoreAt(group.group[i], groupScores[i]);
 	}
 

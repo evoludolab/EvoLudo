@@ -33,7 +33,9 @@
 package org.evoludo.simulator.models;
 
 import org.evoludo.math.RNGDistribution;
+import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.util.CLOption;
 
 /**
  * Interaction and reference groups in IBS models.
@@ -41,24 +43,6 @@ import org.evoludo.simulator.Geometry;
  * @author Christoph Hauert
  */
 public class IBSGroup {
-
-	/**
-	 * The sampling method for forming groups: no sampling.
-	 */
-	public static final int SAMPLING_NONE = -1;
-
-	/**
-	 * The sampling method for forming groups: all neighbours.
-	 */
-	public static final int SAMPLING_ALL = 0;
-
-	/**
-	 * The sampling method for forming groups: randomly picked neighbours.
-	 * 
-	 * @see #defaultsize
-	 * @see #size
-	 */
-	public static final int SAMPLING_COUNT = 1;
 
 	/**
 	 * The empty neighbourhood of a lone individual.
@@ -79,30 +63,6 @@ public class IBSGroup {
 	 * The index of the focal individual.
 	 */
 	int focal;
-
-	/**
-	 * The size of the requested interaction or reference group. In structured
-	 * populations (some) individuals may have fewer than {@code defaultsize}
-	 * neighbours. Then all neighbours are in the group and the actual group size is
-	 * returned in {@code size}.
-	 * 
-	 * @see #SAMPLING_COUNT
-	 * @see #size
-	 */
-	int defaultsize;
-
-	/**
-	 * The actual size of the interaction or reference group. This may be different
-	 * from the requested size {@code defaultsize} due to constraints by the
-	 * population structure.
-	 */
-	int size;
-
-	/**
-	 * The current sampling type for the formation of interaction or reference
-	 * groups.
-	 */
-	int samplingType = SAMPLING_ALL;
 
 	/**
 	 * The shared random number generator to ensure reproducibility of results.
@@ -139,37 +99,21 @@ public class IBSGroup {
 		if (mem == null || mem.length != maxsize) {
 			mem = new int[maxsize];
 			group = mem;
-			// defaults are from earlier times
-			defaultsize = 1;
-			size = 1;
 		}
 	}
 
 	/**
-	 * Sets the size of the requested interaction/reference group.
-	 * 
-	 * @param size the size of the group
+	 * The current sampling type for the formation of interaction or reference
+	 * groups.
 	 */
-	public void setSize(int size) {
-		defaultsize = size;
-		this.size = size;
-	}
-
-	/**
-	 * Gets the requested size for interaction/reference groups.
-	 * 
-	 * @return the requested group size
-	 */
-	public int getSize() {
-		return size;
-	}
+	SamplingType samplingType = SamplingType.ALL;
 
 	/**
 	 * Sets the type of sampling of interaction/reference groups to {@code type}.
 	 * 
 	 * @param type the type of sampling
 	 */
-	public void setSampling(int type) {
+	public void setSampling(SamplingType type) {
 		samplingType = type;
 	}
 
@@ -178,8 +122,39 @@ public class IBSGroup {
 	 * 
 	 * @return the type of sampling
 	 */
-	public int getSampling() {
+	public SamplingType getSampling() {
 		return samplingType;
+	}
+
+	/**
+	 * The sample size requested. Default is a single sample for RANDOM sampling.
+	 */
+	int nSamples = 1;
+
+	/**
+	 * The effective sample size. {@code nSampled &lt; nSamples} may hold depending
+	 * on the population structure.
+	 */
+	int nSampled = 1;
+
+	/**
+	 * Get the number of interactions with random neighbours.
+	 * 
+	 * @return the number of interactions
+	 */
+	public double getNSamples() {
+		return nSamples;
+	}
+
+	/**
+	 * Set the number of interactions with random neighbours.
+	 * 
+	 * @param nSamples the number of interactions
+	 */
+	public void setNSamples(int nSamples) {
+		if (nSamples <= 0)
+			return;
+		this.nSamples = nSamples;
 	}
 
 	/**
@@ -189,8 +164,17 @@ public class IBSGroup {
 	 * @param type the sampling type to check
 	 * @return {@code true} if the type of sampling is {@code type}
 	 */
-	public boolean isSampling(int type) {
+	public boolean isSampling(SamplingType type) {
 		return (type == samplingType);
+	}
+
+	/**
+	 * Get the number of interactions with random neighbours.
+	 * 
+	 * @return the number of interactions
+	 */
+	public double getNSampled() {
+		return nSampled;
 	}
 
 	/**
@@ -205,11 +189,11 @@ public class IBSGroup {
 		this.focal = focal;
 		if (group == null) {
 			this.group = loner;
-			this.size = 0;
+			nSampled = 0;
 			return;
 		}
 		this.group = group;
-		this.size = size;
+		nSampled = size;
 	}
 
 	/**
@@ -254,35 +238,36 @@ public class IBSGroup {
 	public int[] pickAt(int me, Geometry geom, boolean out) {
 		focal = me;
 		switch (samplingType) {
-			case SAMPLING_NONE: // speeds things up e.g. for best-response in well-mixed populations
+			case NONE: // speeds things up e.g. for best-response in well-mixed populations
 				// size = 0;
 				// if size==0 then updatePlayerAt aborts because no references found... pretend
 				// we have one.
-				size = 1;
+// size = 1;
+				nSampled = 0;
 				return null;
 
-			case SAMPLING_ALL:
+			case ALL:
 				if (out) {
 					group = geom.out[focal];
-					size = geom.kout[focal];
+					nSampled = geom.kout[focal];
 					return group;
 				}
 				group = geom.in[focal];
-				size = geom.kin[focal];
+				nSampled = geom.kin[focal];
 				return group;
 
-			case SAMPLING_COUNT:
+			case RANDOM:
 				switch (geom.getType()) {
 					case MEANFIELD:
 						pickRandom(geom.size);
 						return group;
 
 					case HIERARCHY:
-						if (defaultsize != 1) {
+						if (nSamples != 1) {
 							throw new Error(
 									"sampling of groups (≥2) in hierarchical structures not (yet) implemented!");
 						}
-						size = 1;
+						nSampled = 1;
 
 						int level = 0;
 						int maxLevel = geom.hierarchy.length - 1;
@@ -376,28 +361,34 @@ public class IBSGroup {
 					default:
 						int[] src = (out ? geom.out[focal] : geom.in[focal]);
 						int len = (out ? geom.kout[focal] : geom.kin[focal]);
-						if (len <= defaultsize) {
+						if (len <= nSamples) {
+							nSampled = len;
 							group = src;
-							size = len;
 							return group;
 						}
+						// if (len <= defaultsize) {
+						// 	group = src;
+						// 	size = len;
+						// 	return group;
+						// }
 						group = mem;
-						size = defaultsize;
-						if (size == 1) {
+						// size = defaultsize;
+						nSampled = nSamples;
+						if (nSamples == 1) {
 							// optimization: single reference is commonly used and saves copying of all
 							// neighbors.
 							group[0] = src[rng.random0n(len)];
 							return group;
 						}
 						System.arraycopy(src, 0, group, 0, len);
-						if (size > len / 2) {
-							for (int n = 0; n < len - size; n++) {
+						if (nSamples > len / 2) {
+							for (int n = 0; n < len - nSamples; n++) {
 								int aRand = rng.random0n(len - n);
 								group[aRand] = group[len - n - 1];
 							}
 							return group;
 						}
-						for (int n = 0; n < size; n++) {
+						for (int n = 0; n < nSamples; n++) {
 							int aRand = rng.random0n(len - n) + n;
 							int swap = group[n];
 							group[n] = group[aRand];
@@ -418,20 +409,93 @@ public class IBSGroup {
 	 */
 	private void pickRandom(int max) {
 		group = mem;
-		size = defaultsize;
+		nSampled = nSamples;
 
-		if (size == 1) {
+		if (nSamples == 1) {
 			group[0] = rng.random0n(max);
 			return;
 		}
 
 		int n = 0;
-		nextpick: while (n < size) {
+		nextpick: while (n < nSamples) {
 			int aPick = rng.random0n(max);
+			// sample without replacement
 			for (int i = 0; i < n; i++)
 				if (group[i] == aPick)
 					continue nextpick;
 			group[n++] = aPick;
+		}
+	}
+
+	/**
+	 * Types of sampling of groups for interactions or references:
+	 * <dl>
+	 * <dt>none</dt>
+	 * <dd>no interactions</dd>
+	 * <dt>all</dt>
+	 * <dd>interact with all neighbours</dd>
+	 * <dt>random</dt>
+	 * <dd>interact with n random neighbours</dd>
+	 * </dl>
+	 * 
+	 * @see org.evoludo.simulator.models.IBS#cloInteractions
+	 * @see org.evoludo.simulator.models.IBS#cloReferenceType
+	 */
+	public static enum SamplingType implements CLOption.Key {
+		/**
+		 * No interactions.
+		 */
+		NONE("none", "no interactions"),
+
+		/**
+		 * Interact with all neighbours.
+		 */
+		ALL("all", "interact with all neighbours"),
+
+		/**
+		 * Interact with random neighbours.
+		 */
+		RANDOM("random", "interact with n random neighbours");
+
+		/**
+		 * Key of interaction type. Used for parsing command line options.
+		 * 
+		 * @see org.evoludo.simulator.models.IBS#cloInteractions
+		 *      IBS.cloInteractions
+		 */
+		String key;
+
+		/**
+		 * Brief description of interaction type for GUI and help display.
+		 * 
+		 * @see EvoLudo#helpCLO()
+		 */
+		String title;
+
+		/**
+		 * Instantiate new type of interactions.
+		 * 
+		 * @param key   identifier for parsing of command line option
+		 * @param title the summary of interactions for GUI and help display
+		 */
+		SamplingType(String key, String title) {
+			this.key = key;
+			this.title = title;
+		}
+
+		@Override
+		public String getKey() {
+			return key;
+		}
+
+		@Override
+		public String getTitle() {
+			return title;
+		}
+
+		@Override
+		public String toString() {
+			return key + ": " + title;
 		}
 	}
 

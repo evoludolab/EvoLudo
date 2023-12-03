@@ -354,7 +354,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	private void gatherPlayers(IBSGroup group) {
 		double[] oppstrategies = opponent.strategies;
 		int oppntraits = opponent.nTraits;
-		for (int i = 0; i < group.size; i++)
+		for (int i = 0; i < group.nSampled; i++)
 			System.arraycopy(oppstrategies, group.group[i] * oppntraits, groupStrat, i * oppntraits, oppntraits);
 		System.arraycopy(strategies, group.focal * nTraits, myTrait, 0, nTraits);
 	}
@@ -377,15 +377,15 @@ public class IBSMCPopulation extends IBSPopulation {
 
 	@Override
 	public void playPairGameAt(IBSGroup group) {
-		if (group.size <= 0) {
+		if (group.nSampled <= 0) {
 			updateScoreAt(group.focal, 0.0);
 			return;
 		}
 		gatherPlayers(group);
-		double myScore = pairmodule.pairScores(myTrait, groupStrat, group.size,
+		double myScore = pairmodule.pairScores(myTrait, groupStrat, group.nSampled,
 				groupScores);
-		updateScoreAt(group.focal, myScore, group.size);
-		for (int i = 0; i < group.size; i++)
+		updateScoreAt(group.focal, myScore, group.nSampled);
+		for (int i = 0; i < group.nSampled; i++)
 			opponent.updateScoreAt(group.group[i], groupScores[i]);
 	}
 
@@ -442,7 +442,7 @@ public class IBSMCPopulation extends IBSPopulation {
 
 	@Override
 	public void playGroupGameAt(IBSGroup group) {
-		if (group.size <= 0) {
+		if (group.nSampled <= 0) {
 			updateScoreAt(group.focal, 0.0);
 			return;
 		}
@@ -450,39 +450,39 @@ public class IBSMCPopulation extends IBSPopulation {
 		gatherPlayers(group);
 
 		switch (group.samplingType) {
-			case IBSGroup.SAMPLING_ALL:
+			case ALL:
 				// interact with all neighbors
 				int nGroup = module.getNGroup();
-				if (nGroup < group.size + 1) {
+				if (nGroup < group.nSampled + 1) {
 					// interact with part of group sequentially
 					double myScore = 0.0;
-					Arrays.fill(smallScores, 0, group.size, 0.0);
-					for (int n = 0; n < group.size; n++) {
+					Arrays.fill(smallScores, 0, group.nSampled, 0.0);
+					for (int n = 0; n < group.nSampled; n++) {
 						for (int i = 0; i < nGroup - 1; i++)
-							System.arraycopy(groupStrat, ((n + i) % group.size) * nTraits, smallStrat, i * nTraits,
+							System.arraycopy(groupStrat, ((n + i) % group.nSampled) * nTraits, smallStrat, i * nTraits,
 									nTraits);
 						myScore += groupmodule.groupScores(myTrait, smallStrat, nGroup - 1, groupScores);
 						for (int i = 0; i < nGroup - 1; i++)
-							smallScores[(n + i) % group.size] += groupScores[i];
+							smallScores[(n + i) % group.nSampled] += groupScores[i];
 					}
-					updateScoreAt(me, myScore, group.size);
-					for (int i = 0; i < group.size; i++)
+					updateScoreAt(me, myScore, group.nSampled);
+					for (int i = 0; i < group.nSampled; i++)
 						opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
 					return;
 				}
 				// interact with full group (random graphs, all neighbors)
 
 				//$FALL-THROUGH$
-			case IBSGroup.SAMPLING_COUNT:
+			case RANDOM:
 				// interact with sampled neighbors
-				double myScore = groupmodule.groupScores(myTrait, groupStrat, group.size, groupScores);
+				double myScore = groupmodule.groupScores(myTrait, groupStrat, group.nSampled, groupScores);
 				updateScoreAt(me, myScore);
-				for (int i = 0; i < group.size; i++)
+				for (int i = 0; i < group.nSampled; i++)
 					opponent.updateScoreAt(group.group[i], groupScores[i]);
 				return;
 
 			default:
-				throw new Error("Unknown interaction type (" + getInteractionSamplingType() + ")");
+				throw new Error("Unknown interaction type (" + interactionGroup.getSampling() + ")");
 		}
 	}
 
@@ -492,25 +492,25 @@ public class IBSMCPopulation extends IBSPopulation {
 		gatherPlayers(group);
 
 		int nGroup = module.getNGroup();
-		if (nGroup < group.size + 1) { // interact with part of group sequentially
+		if (nGroup < group.nSampled + 1) { // interact with part of group sequentially
 			myScore = 0.0;
-			Arrays.fill(smallScores, 0, group.size, 0.0);
-			for (int n = 0; n < group.size; n++) {
+			Arrays.fill(smallScores, 0, group.nSampled, 0.0);
+			for (int n = 0; n < group.nSampled; n++) {
 				for (int i = 0; i < nGroup - 1; i++)
-					System.arraycopy(groupStrat, ((n + i) % group.size) * nTraits, smallStrat, i * nTraits, nTraits);
+					System.arraycopy(groupStrat, ((n + i) % group.nSampled) * nTraits, smallStrat, i * nTraits, nTraits);
 				myScore += groupmodule.groupScores(myTrait, smallStrat, nGroup - 1, groupScores);
 				for (int i = 0; i < nGroup - 1; i++)
-					smallScores[(n + i) % group.size] += groupScores[i];
+					smallScores[(n + i) % group.nSampled] += groupScores[i];
 			}
-			removeScoreAt(group.focal, myScore, group.size);
-			for (int i = 0; i < group.size; i++)
+			removeScoreAt(group.focal, myScore, group.nSampled);
+			for (int i = 0; i < group.nSampled; i++)
 				opponent.removeScoreAt(group.group[i], smallScores[i], nGroup - 1);
 			return;
 		}
 		// interact with full group (random graphs)
-		myScore = groupmodule.groupScores(myTrait, groupStrat, group.size, groupScores);
+		myScore = groupmodule.groupScores(myTrait, groupStrat, group.nSampled, groupScores);
 		removeScoreAt(group.focal, myScore);
-		for (int i = 0; i < group.size; i++)
+		for (int i = 0; i < group.nSampled; i++)
 			opponent.removeScoreAt(group.group[i], groupScores[i]);
 	}
 
@@ -719,12 +719,12 @@ public class IBSMCPopulation extends IBSPopulation {
 			mutSdev[n] /= (traitMax[n] - traitMin[n]);
 
 		// check interaction geometry
-		if (interaction.isType(Geometry.Type.MEANFIELD) && interactionGroup.samplingType == IBSGroup.SAMPLING_ALL) {
+		if (interaction.isType(Geometry.Type.MEANFIELD) && interactionGroup.isSampling(IBSGroup.SamplingType.ALL)) {
 			// interacting with everyone in mean-field simulations is not feasible - except
 			// for discrete strategies
 			logger.warning(
-					"interaction type (" + getInteractionSamplingType() + ") unfeasible in well-mixed populations!");
-			setInteractionSamplingType(IBSGroup.SAMPLING_COUNT);
+					"interaction type (" + interactionGroup.getSampling() + ") unfeasible in well-mixed populations!");
+			interactionGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 			// change of sampling may affect whether scores can be adjusted
 			adjustScores = doAdjustScores();
 		}

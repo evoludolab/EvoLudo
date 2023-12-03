@@ -1077,7 +1077,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * @param gIdxs  the array of indices of the individuals in the group
 	 */
 	protected void stripGroupVacancies(IBSGroup group, int[] gStrat, int[] gIdxs) {
-		group.size = stripVacancies(group.group, group.size, gStrat, gIdxs);
+		group.nSampled = stripVacancies(group.group, group.nSampled, gStrat, gIdxs);
 		if (VACANT < 0)
 			return;
 		group.group = gIdxs;
@@ -1122,8 +1122,8 @@ public class IBSDPopulation extends IBSPopulation {
 			return;
 		stripGroupVacancies(group, groupStrat, groupIdxs);
 		double myScore;
-		countTraits(traitCount, groupStrat, 0, group.size);
-		if (group.size <= 0) {
+		countTraits(traitCount, groupStrat, 0, group.nSampled);
+		if (group.nSampled <= 0) {
 			// isolated individual (note the bookkeeping above is overkill and can be
 			// optimized)
 			myScore = pairmodule.pairScores(myType, traitCount, traitScore);
@@ -1132,8 +1132,8 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 
 		myScore = pairmodule.pairScores(myType, traitCount, traitScore);
-		updateScoreAt(me, myScore, group.size);
-		for (int i = 0; i < group.size; i++)
+		updateScoreAt(me, myScore, group.nSampled);
+		for (int i = 0; i < group.nSampled; i++)
 			opponent.updateScoreAt(group.group[i], traitScore[groupStrat[i]]);
 	}
 
@@ -1281,8 +1281,8 @@ public class IBSDPopulation extends IBSPopulation {
 		if (myType == VACANT)
 			return;
 		stripGroupVacancies(group, groupStrat, groupIdxs);
-		countTraits(traitCount, groupStrat, 0, group.size);
-		if (group.size <= 0) {
+		countTraits(traitCount, groupStrat, 0, group.nSampled);
+		if (group.nSampled <= 0) {
 			// isolated individual (note the bookkeeping above is overkill and can be
 			// optimized)
 			traitCount[myType]++;
@@ -1292,44 +1292,44 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 
 		switch (group.samplingType) {
-			case IBSGroup.SAMPLING_ALL:
+			case ALL:
 				// interact with all neighbors
 				int nGroup = module.getNGroup();
-				if (nGroup < group.size + 1) {
+				if (nGroup < group.nSampled + 1) {
 					// interact with part of group sequentially
 					double myScore = 0.0;
-					Arrays.fill(smallScores, 0, group.size, 0.0);
-					for (int n = 0; n < group.size; n++) {
+					Arrays.fill(smallScores, 0, group.nSampled, 0.0);
+					for (int n = 0; n < group.nSampled; n++) {
 						Arrays.fill(traitCount, 0);
 						for (int i = 0; i < nGroup - 1; i++)
-							traitCount[groupStrat[(n + i) % group.size]]++;
+							traitCount[groupStrat[(n + i) % group.nSampled]]++;
 						traitCount[myType]++;
 						groupmodule.groupScores(traitCount, traitScore);
 						myScore += traitScore[myType];
 						for (int i = 0; i < nGroup - 1; i++) {
-							int idx = (n + i) % group.size;
+							int idx = (n + i) % group.nSampled;
 							smallScores[idx] += traitScore[groupStrat[idx]];
 						}
 					}
-					updateScoreAt(me, myScore, group.size);
-					for (int i = 0; i < group.size; i++)
+					updateScoreAt(me, myScore, group.nSampled);
+					for (int i = 0; i < group.nSampled; i++)
 						opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
 					return;
 				}
 				// interact with full group (random graphs or all neighbors)
 
 				//$FALL-THROUGH$
-			case IBSGroup.SAMPLING_COUNT:
+			case RANDOM:
 				// interact with sampled neighbors
 				traitCount[myType]++;
 				groupmodule.groupScores(traitCount, traitScore);
 				updateScoreAt(me, traitScore[myType]);
-				for (int i = 0; i < group.size; i++)
+				for (int i = 0; i < group.nSampled; i++)
 					opponent.updateScoreAt(group.group[i], traitScore[groupStrat[i]]);
 				return;
 
 			default:
-				throw new Error("Unknown interaction type (" + getInteractionSamplingType() + ")");
+				throw new Error("Unknown interaction type (" + interactionGroup.getSampling() + ")");
 		}
 	}
 
@@ -1337,14 +1337,14 @@ public class IBSDPopulation extends IBSPopulation {
 	public void yalpGroupGameAt(IBSGroup group) {
 		int me = group.focal;
 		int newtype = strategiesScratch[me] % nTraits;
-		if (newtype == VACANT || group.size <= 0) {
+		if (newtype == VACANT || group.nSampled <= 0) {
 			// isolated individual (no connections to other sites) - still need to reset its
 			// score
 			resetScoreAt(group.focal);
 			return;
 		}
 		stripGroupVacancies(group, groupStrat, groupIdxs);
-		if (group.size <= 0) {
+		if (group.nSampled <= 0) {
 			// isolated individual (surrounded by vacant sites) - still need to reset its
 			// score
 			resetScoreAt(group.focal);
@@ -1353,32 +1353,32 @@ public class IBSDPopulation extends IBSPopulation {
 
 		int oldtype = strategies[me] % nTraits;
 		int nGroup = module.getNGroup();
-		if (nGroup < group.size + 1) { // interact with part of group sequentially
+		if (nGroup < group.nSampled + 1) { // interact with part of group sequentially
 			double myScore = 0.0;
-			Arrays.fill(smallScores, 0, group.size, 0.0);
-			for (int n = 0; n < group.size; n++) {
+			Arrays.fill(smallScores, 0, group.nSampled, 0.0);
+			for (int n = 0; n < group.nSampled; n++) {
 				Arrays.fill(traitCount, 0);
 				for (int i = 0; i < nGroup - 1; i++)
-					traitCount[groupStrat[(n + i) % group.size]]++;
+					traitCount[groupStrat[(n + i) % group.nSampled]]++;
 				traitCount[oldtype]++;
 				groupmodule.groupScores(traitCount, traitScore);
 				myScore += traitScore[oldtype];
 				for (int i = 0; i < nGroup - 1; i++) {
-					int idx = (n + i) % group.size;
+					int idx = (n + i) % group.nSampled;
 					smallScores[idx] += traitScore[groupStrat[idx]];
 				}
 			}
-			removeScoreAt(me, myScore, group.size);
-			for (int i = 0; i < group.size; i++)
+			removeScoreAt(me, myScore, group.nSampled);
+			for (int i = 0; i < group.nSampled; i++)
 				opponent.removeScoreAt(group.group[i], smallScores[i], nGroup - 1);
 			return;
 		}
 		// interact with full group (random graphs)
-		countTraits(traitCount, groupStrat, 0, group.size);
+		countTraits(traitCount, groupStrat, 0, group.nSampled);
 		traitCount[oldtype]++;
 		groupmodule.groupScores(traitCount, traitScore);
 		removeScoreAt(me, traitScore[oldtype]);
-		for (int i = 0; i < group.size; i++)
+		for (int i = 0; i < group.nSampled; i++)
 			opponent.removeScoreAt(group.group[i], traitScore[groupStrat[i]]);
 	}
 
@@ -1853,7 +1853,7 @@ public class IBSDPopulation extends IBSPopulation {
 	protected boolean doAdjustScores() {
 		// relaxed conditions for adjusting scores: for discrete strategies unstructured
 		// populations are feasible.
-		return !(interactionGroup.samplingType != IBSGroup.SAMPLING_ALL ||
+		return !(!interactionGroup.isSampling(IBSGroup.SamplingType.ALL) ||
 				!playerScoreResetAlways);
 	}
 

@@ -2335,7 +2335,7 @@ public abstract class IBSPopulation {
 		// note: choose random neighbor among in-neighbors (those are upstream to serve
 		// as models; this is the opposite for birth-death scenarios)
 		referenceGroup.pickAt(me, reproduction, false);
-		return updatePlayerAt(me, referenceGroup.group, referenceGroup.size);
+		return updatePlayerAt(me, referenceGroup.group, referenceGroup.nSampled);
 	}
 
 	/**
@@ -3104,21 +3104,21 @@ public abstract class IBSPopulation {
 		// check sampling in special geometries
 		int nGroup = module.getNGroup();
 		if (interaction.isType(Geometry.Type.SQUARE) && interaction.isRegular && interaction.connectivity > 8 &&
-				getInteractionSamplingType() == IBSGroup.SAMPLING_ALL && nGroup > 2 && nGroup < 9) {
+				interactionGroup.isSampling(IBSGroup.SamplingType.ALL) && nGroup > 2 && nGroup < 9) {
 			// if count > 8 then the interaction pattern Group.SAMPLING_ALL with a group
 			// size between 2 and 8
 			// (excluding boundaries is not allowed because this pattern requires a
 			// particular (internal)
 			// arrangement of the neighbors.
-			setInteractionSamplingType(IBSGroup.SAMPLING_COUNT);
+			interactionGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 			logger.warning("square " + name + " geometry has incompatible interaction pattern and neighborhood size" +
 					" - using random sampling of interaction partners!");
 		}
-		if (interaction.isType(Geometry.Type.CUBE) && getInteractionSamplingType() == IBSGroup.SAMPLING_ALL &&
+		if (interaction.isType(Geometry.Type.CUBE) && interactionGroup.isSampling(IBSGroup.SamplingType.ALL) &&
 				nGroup > 2 && nGroup <= interaction.connectivity) {
 			// Group.SAMPLING_ALL only works with pairwise interactions or all neighbors;
 			// restrictions do not apply for PDE's
-			setInteractionSamplingType(IBSGroup.SAMPLING_COUNT);
+			interactionGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 			logger.warning("cubic " + name + " geometry has incompatible interaction pattern and neighborhood size" +
 					" - using random sampling of interaction partners!");
 		}
@@ -3128,19 +3128,19 @@ public abstract class IBSPopulation {
 		Geometry reprogeom = (reproduction != null ? reproduction : interaction);
 		if (!populationUpdateType.isMoran() && !populationUpdateType.equals(PopulationUpdateType.ECOLOGY)) {
 			// Moran type updates ignore playerUpdateType
-			if (reprogeom.isType(Geometry.Type.MEANFIELD) && referenceGroup.samplingType == IBSGroup.SAMPLING_ALL) {
+			if (reprogeom.isType(Geometry.Type.MEANFIELD) && referenceGroup.isSampling(IBSGroup.SamplingType.ALL)) {
 				// 010320 using everyone as a reference in mean-field simulations is not
 				// feasible - except for best-response
 				// ecological updates are based on births and deaths rather than references
 				if (module.getPlayerUpdateType() != PlayerUpdateType.BEST_RESPONSE) {
-					logger.warning("reference type (" + getReferenceSamplingType()
+					logger.warning("reference type (" + referenceGroup.getSampling()
 							+ ") unfeasible in well-mixed populations!");
-					setReferenceSamplingType(IBSGroup.SAMPLING_COUNT);
+					referenceGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 				}
 			}
 			// best-response in well-mixed populations should skip sampling of references
 			if (reprogeom.isType(Geometry.Type.MEANFIELD) && module.getPlayerUpdateType() == PlayerUpdateType.BEST_RESPONSE) {
-				setReferenceSamplingType(IBSGroup.SAMPLING_NONE);
+				referenceGroup.setSampling(IBSGroup.SamplingType.NONE);
 			}
 		}
 
@@ -3285,8 +3285,8 @@ public abstract class IBSPopulation {
 				// (birth-death)
 				// reason: referenceGroup properly deals with hierarchies
 				// future: pick parent to populate vacated site (death-birth, fitness dependent)
-				setReferenceSamplingType(IBSGroup.SAMPLING_COUNT);
-				setRGroupSize(1);
+				referenceGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+				referenceGroup.setNSamples(1);
 				break;
 			default: // all other update rules can handle this
 		}
@@ -3416,7 +3416,7 @@ public abstract class IBSPopulation {
 	protected boolean doAdjustScores() {
 		return !(interaction.isType(Geometry.Type.MEANFIELD) || //
 				(interaction.isType(Geometry.Type.HIERARCHY) && interaction.subgeometry == Geometry.Type.MEANFIELD) || //
-				interactionGroup.samplingType != IBSGroup.SAMPLING_ALL || //
+				!interactionGroup.isSampling(IBSGroup.SamplingType.ALL) || //
 				!playerScoreResetAlways);
 	}
 
@@ -4008,29 +4008,6 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Sets the sampling type for interaction partners in this population to
-	 * {@code ninter}.
-	 *
-	 * @param inter the sampling type for interactions
-	 * 
-	 * @see IBSGroup
-	 */
-	public void setInteractionSamplingType(int inter) {
-		interactionGroup.setSampling(inter);
-	}
-
-	/**
-	 * Gets the sampling type for interaction partners in this population.
-	 *
-	 * @return the sampling type for interactions
-	 * 
-	 * @see IBSGroup
-	 */
-	public int getInteractionSamplingType() {
-		return interactionGroup.samplingType;
-	}
-
-	/**
 	 * Sets the number of interactions of focal individuals to {@code ninter}.
 	 * 
 	 * @param ninter the number of interactions
@@ -4048,48 +4025,6 @@ public abstract class IBSPopulation {
 	 */
 	public int getNInteractions() {
 		return nInteractions;
-	}
-
-	/**
-	 * Sets the sampling type for references/models in this population to
-	 * {@code ref}.
-	 *
-	 * @param ref the sampling type for references/models
-	 * 
-	 * @see IBSGroup
-	 */
-	public void setReferenceSamplingType(int ref) {
-		referenceGroup.setSampling(ref);
-	}
-
-	/**
-	 * Gets the sampling type for references/models in this population.
-	 *
-	 * @return the sampling type for references/models
-	 * 
-	 * @see IBSGroup
-	 */
-	public int getReferenceSamplingType() {
-		return referenceGroup.samplingType;
-	}
-
-	/**
-	 * Sets the number of individuals in the group of references/models to
-	 * {@code size}.
-	 *
-	 * @param size the number of individuals in the group of references/models
-	 */
-	public synchronized void setRGroupSize(int size) {
-		referenceGroup.setSize(Math.max(1, size));
-	}
-
-	/**
-	 * Gets the number of individuals in the group of references/models.
-	 * 
-	 * @return the number of individuals in the group of references/models
-	 */
-	public int getRGroupSize() {
-		return referenceGroup.size;
 	}
 
 	/**

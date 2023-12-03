@@ -1151,20 +1151,19 @@ public abstract class IBS implements Model.IBS {
 						if (type != 'a' && type != 'r') {
 							logger.warning((isMultispecies ? pop.getModule().getName() + ":" : "")
 									+ "interaction type '" + (char) type + "' not recognized - using '"
-									+ (char) pop.getInteractionSamplingType() + "'");
+									+ pop.interactionGroup.getSampling() + "'");
 							success = false;
 							continue;
 						}
-						pop.setInteractionSamplingType(type == 'a' ? IBSGroup.SAMPLING_ALL : IBSGroup.SAMPLING_COUNT);
+						pop.interactionGroup.setSampling(type == 'a' ? IBSGroup.SamplingType.ALL : IBSGroup.SamplingType.RANDOM);
 					}
 					return success;
 				}
 
 				@Override
 				public void report(PrintStream output) {
-					String[] interactionname = new String[] { "all", "random" };
 					for (IBSPopulation pop : species)
-						output.println("# interactions:         " + interactionname[pop.getInteractionSamplingType()]
+						output.println("# interactions:         " + pop.interactionGroup.getSampling()
 								+ (isMultispecies ? " ("
 										+ pop.getModule().getName() + ")" : ""));
 				}
@@ -1239,35 +1238,33 @@ public abstract class IBS implements Model.IBS {
 						int type = referencetypes[idx].charAt(0);
 						if (type != 'a' && type != 'r') {
 							logger.warning("reference type '" + (char) type + "' not recognized - using '"
-									+ (char) pop.getReferenceSamplingType() + "'");
+									+ pop.referenceGroup.getSampling() + "'");
 							success = false;
 							continue;
 						}
 						if (type == 'a') {
-							pop.setReferenceSamplingType(IBSGroup.SAMPLING_ALL);
-							pop.setRGroupSize(-1);
+							pop.referenceGroup.setSampling(IBSGroup.SamplingType.ALL);
 							continue;
 						}
-						pop.setReferenceSamplingType(IBSGroup.SAMPLING_COUNT);
+						pop.referenceGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 						if (referencetypes[idx].length() <= 1) {
-							pop.setRGroupSize(1);
+							pop.referenceGroup.setNSamples(1);
 							continue;
 						}
-						pop.setRGroupSize(CLOParser.parseInteger(referencetypes[idx].substring(1)));
+						pop.referenceGroup.setNSamples(CLOParser.parseInteger(referencetypes[idx].substring(1)));
 					}
 					return success;
 				}
 
 				@Override
 				public void report(PrintStream output) {
-					String[] referencename = new String[] { "default", "count" };
 					for (IBSPopulation pop : species) {
 						boolean isMoran = pop.getPopulationUpdateType().isMoran();
 						output.println("# references:           "
-								+ (isMoran ? "ignored" : referencename[pop.getReferenceSamplingType()])
+								+ (isMoran ? "ignored" : pop.referenceGroup.getSampling())
 								+ (isMultispecies ? " ("
 										+ pop.getModule().getName() + ")" : "")
-								+ "\n# referencesize:        " + (isMoran ? "ignored" : ("" + pop.getRGroupSize())));
+								+ "\n# referencesize:        " + (isMoran ? "ignored" : ("" + pop.referenceGroup.getNSamples())));
 					}
 				}
 			});
