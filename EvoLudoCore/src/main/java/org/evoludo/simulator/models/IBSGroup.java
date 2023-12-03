@@ -439,7 +439,7 @@ public class IBSGroup {
 	 * </dl>
 	 * 
 	 * @see org.evoludo.simulator.models.IBS#cloInteractions
-	 * @see org.evoludo.simulator.models.IBS#cloReferenceType
+	 * @see org.evoludo.simulator.models.IBS#cloReferences
 	 */
 	public static enum SamplingType implements CLOption.Key {
 		/**

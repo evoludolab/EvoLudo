@@ -113,10 +113,10 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		engine.getModule().cloInitType.addKeys(InitType.values());
 		// interacting with all members of the population is not feasible for continuous
 		// traits; use single interaction with random neighbour as default
-		cloInteractionType.setDefault("r1");
+		cloInteractions.setDefault("random 1");
 		// comparing scores with all members of the population is not feasible for
 		// continuous traits; use single, random neighbour as default
-		cloReferenceType.setDefault("r1");
+		cloReferences.setDefault("random 1");
 	}
 
 	@Override
