@@ -142,7 +142,7 @@ public class IBSGroup {
 	 * 
 	 * @return the number of interactions
 	 */
-	public double getNSamples() {
+	public int getNSamples() {
 		return nSamples;
 	}
 
@@ -173,7 +173,7 @@ public class IBSGroup {
 	 * 
 	 * @return the number of interactions
 	 */
-	public double getNSampled() {
+	public int getNSampled() {
 		return nSampled;
 	}
 

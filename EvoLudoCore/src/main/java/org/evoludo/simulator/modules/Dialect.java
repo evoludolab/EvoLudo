@@ -403,7 +403,7 @@ public class Dialect extends Continuous implements Module.Static, HasIBS, //
 	@Override
 	public void adjustCLO(CLOParser parser) {
 		// remove options that do not make sense in present context
-		parser.removeCLO(new String[] { "numinter", "popupdate", "playerupdate", "costparams", "costfcn",
+		parser.removeCLO(new String[] { "popupdate", "playerupdate", "costparams", "costfcn",
 				"benefitparams", "benefitfcn", "fitnessmap" });
 	}
 

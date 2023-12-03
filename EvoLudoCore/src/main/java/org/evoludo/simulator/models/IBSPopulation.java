@@ -481,13 +481,6 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * The number of interactions of the focal individual.
-	 * 
-	 * @see IBS#cloInteractionCount
-	 */
-	protected int nInteractions = 1;
-
-	/**
 	 * The geometry of the reproduction graph.
 	 */
 	protected Geometry reproduction;
@@ -1433,15 +1426,11 @@ public abstract class IBSPopulation {
 		PopulationUpdateType put = populationUpdateType;
 		setPopulationUpdateType(PopulationUpdateType.SYNC);
 		if (module.isPairwise()) {
-			for (int i = 0; i < nInteractions; i++) {
-				interactionGroup.pickAt(me, interaction, true);
-				playPairGameAt(interactionGroup);
-			}
+			interactionGroup.pickAt(me, interaction, true);
+			playPairGameAt(interactionGroup);
 		} else {
-			for (int i = 0; i < nInteractions; i++) {
-				interactionGroup.pickAt(me, interaction, true);
-				playGroupGameAt(interactionGroup);
-			}
+			interactionGroup.pickAt(me, interaction, true);
+			playGroupGameAt(interactionGroup);
 		}
 		setPopulationUpdateType(put);
 	}
@@ -1466,32 +1455,24 @@ public abstract class IBSPopulation {
 			throw new Error("ERROR: playGameAt(int idx) and adjustScores are incompatible!");
 		}
 		if (module.isPairwise()) {
-			for (int i = 0; i < nInteractions; i++) {
-				interactionGroup.pickAt(me, interaction, true);
-				playPairGameAt(interactionGroup);
-			}
+			interactionGroup.pickAt(me, interaction, true);
+			playPairGameAt(interactionGroup);
 			// if undirected, we are done
 			if (interaction.isUndirected)
 				return;
 
 			// directed graph - additionally/separately interact with in-neighbors
-			for (int i = 0; i < nInteractions; i++) {
-				interactionGroup.pickAt(me, interaction, false);
-				playPairGameAt(interactionGroup);
-			}
+			interactionGroup.pickAt(me, interaction, false);
+			playPairGameAt(interactionGroup);
 		} else {
-			for (int i = 0; i < nInteractions; i++) {
-				interactionGroup.pickAt(me, interaction, true);
-				playGroupGameAt(interactionGroup);
-			}
+			interactionGroup.pickAt(me, interaction, true);
+			playGroupGameAt(interactionGroup);
 			// if undirected, we are done
 			if (interaction.isUndirected)
 				return;
 			// directed graph - additionally/separately interact with in-neighbors
-			for (int i = 0; i < nInteractions; i++) {
-				interactionGroup.pickAt(me, interaction, false);
-				playGroupGameAt(interactionGroup);
-			}
+			interactionGroup.pickAt(me, interaction, false);
+			playGroupGameAt(interactionGroup);
 		}
 	}
 
@@ -1798,11 +1779,29 @@ public abstract class IBSPopulation {
 		int inter = 0;
 		int mIdx = -1;
 		if (!isVacantAt(0)) {
-			// homogeneous population is not vacant
-			score = playerScoreAveraged ? homoScore : nInteractions * homoScore;
+			// homogeneous population but not vacant
+			score = homoScore;
 			fit = map2fit.map(score);
-			inter = nInteractions;
 			mIdx = 0;
+			Geometry geom = getInteractionGeometry();
+			// population may be homogeneous but include vacant sites
+			if (getPopulationSize() != nPopulation) {
+				// ok for well mixed populations
+				if (!geom.isType(Geometry.Type.MEANFIELD)) {
+					// no homogeneous score; number of interactions depends
+					// on number of vacant sites in neighbourhood
+					logger.severe("homogeneous population includes vacant sites - cannot assign score.");
+					throw new Error("homogeneous population includes vacant sites - cannot assign score.");
+				}
+			}
+			// no homogeneous score exists for heterogeneous graphs with accumulated scores
+			if (!playerScoreAveraged && !geom.isRegular) {
+				// no homogeneous score on heterogenous graphs and 
+				// accumulated payoffs
+				logger.severe("heterogeneous graph with accumulated scores - cannot assign uniform score.");
+				throw new Error("heterogeneous graph with accumulated scores - cannot assign uniform score.");
+			}
+			inter = interactionGroup.getNSamples();
 		}
 		Arrays.fill(scores, score);
 		Arrays.fill(fitness, fit);
@@ -2921,21 +2920,20 @@ public abstract class IBSPopulation {
 			return minmax;
 		if (adjustScores) {
 			// for accumulated scores minimum may depend on geometry both in terms of game
-			// payoffs as well as
-			// interaction count. however, getMinGameScore must deal with structure and
-			// games
+			// payoffs as well as interaction count. however, getMinGameScore must deal with 
+			// structure and games
 			if (module.isPairwise()) {
 				if (interaction.minOut + interaction.maxOut > 0) {
 					// geometry initialized and not well-mixed
 					if (isMin)
-						return (minmax < 0 ? interaction.maxOut : interaction.minOut) * (2 * nInteractions) * minmax;
-					return (minmax > 0 ? interaction.maxOut : interaction.minOut) * (2 * nInteractions) * minmax;
+						return (minmax < 0 ? interaction.maxOut : interaction.minOut) * 2 * minmax;
+					return (minmax > 0 ? interaction.maxOut : interaction.minOut) * 2 * minmax;
 				}
 				// well-mixed, with vacancies, at most nPopulation-1 interactions
-				return (2 * nInteractions) * (nPopulation - 1) * minmax;
+				return 2 * (nPopulation - 1) * minmax;
 			}
 			// each individual participates in at most nGroup interactions
-			return nInteractions * module.getNGroup() * minmax;
+			return module.getNGroup() * minmax;
 		}
 		// not ready for unbounded accumulated payoffs... check() should catch this
 		throw new Error("cannot handle accumulated scores with random interactions (unbounded payoffs, in principle)");
@@ -4005,26 +4003,6 @@ public abstract class IBSPopulation {
 	 */
 	public int getPopulationSize() {
 		return nPopulation;
-	}
-
-	/**
-	 * Sets the number of interactions of focal individuals to {@code ninter}.
-	 * 
-	 * @param ninter the number of interactions
-	 */
-	public void setNInteractions(int ninter) {
-		if (ninter != nInteractions) {
-			nInteractions = Math.max(1, ninter);
-		}
-	}
-
-	/**
-	 * Gets the number of interactions of focal individuals.
-	 * 
-	 * @return the number of interactions
-	 */
-	public int getNInteractions() {
-		return nInteractions;
 	}
 
 	/**

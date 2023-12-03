@@ -1124,10 +1124,8 @@ public abstract class IBS implements Model.IBS {
 	 * Command line option to set whether players interact with all their neighbours
 	 * or a random subsample.
 	 */
-	public final CLOption cloInteractionType = new CLOption("intertype", "a", EvoLudo.catModel,
-			"--intertype <o[n]> interaction/opponents (o type, n number)\n" +
-					"             a: all neighbors\n" +
-					"          r<n>: random sample of n neighbors",
+	public final CLOption cloInteractions = new CLOption("interactions", "a", EvoLudo.catModel,
+			"--interactions <a|r[n]> interactions:\n",
 			new CLODelegate() {
 
 				/**
@@ -1147,62 +1145,40 @@ public abstract class IBS implements Model.IBS {
 					String[] interactiontypes = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
 					for (IBSPopulation pop : species) {
-						int type = interactiontypes[n++ % interactiontypes.length].charAt(0);
-						if (type != 'a' && type != 'r') {
-							logger.warning((isMultispecies ? pop.getModule().getName() + ":" : "")
-									+ "interaction type '" + (char) type + "' not recognized - using '"
-									+ pop.interactionGroup.getSampling() + "'");
+						String intertype = interactiontypes[n++ % interactiontypes.length];
+						IBSGroup.SamplingType intt = (IBSGroup.SamplingType) cloInteractions.match(intertype);
+						IBSGroup group =  pop.getInteractionGroup();
+						if (intt == null) {
+							if (success) {
+								IBSGroup.SamplingType st = group.getSampling();
+								logger.warning((isMultispecies ? pop.getModule().getName() + ": " : "") + //
+										"interaction type '" + intt + //
+										"' unknown - using '" + st + //
+										(st == IBSGroup.SamplingType.RANDOM ? group.getNSamples() : "") + "'");
+							}
 							success = false;
 							continue;
 						}
-						pop.interactionGroup.setSampling(type == 'a' ? IBSGroup.SamplingType.ALL : IBSGroup.SamplingType.RANDOM);
+						pop.getInteractionGroup().setSampling(intt);
+						// parse n, if present
+						String[] args = intertype.split("[ =]");
+						int nInter = 1;
+						if (args.length > 1)
+							nInter = CLOParser.parseInteger(args[1]);
+						group.setNSamples(nInter);
 					}
 					return success;
 				}
 
 				@Override
 				public void report(PrintStream output) {
-					for (IBSPopulation pop : species)
-						output.println("# interactions:         " + pop.interactionGroup.getSampling()
-								+ (isMultispecies ? " ("
-										+ pop.getModule().getName() + ")" : ""));
-				}
-			});
-
-	/**
-	 * Command line option to set the number of interactions of players with their
-	 * neighbours.
-	 */
-	public final CLOption cloInteractionCount = new CLOption("numinter", "1", EvoLudo.catModel,
-			"--numinter <n>  number of interactions is n",
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse number of interactions of players with their neighbours in a single or
-				 * multiple populations/species. <code>arg</code> can be a single value or an
-				 * array of values with the separator {@value CLOParser#SPECIES_DELIMITER}. The
-				 * parser cycles through <code>arg</code> until all populations/species have the
-				 * number of interactions set.
-				 * 
-				 * @param arg the (array of) interaction count(s)
-				 */
-				@Override
-				public boolean parse(String arg) {
-					String[] interactioncount = arg.split(CLOParser.SPECIES_DELIMITER);
-					int n = 0;
 					for (IBSPopulation pop : species) {
-						pop.setNInteractions(Integer.parseInt(interactioncount[n++ % interactioncount.length]));
+						IBSGroup group =  pop.getInteractionGroup();
+						IBSGroup.SamplingType st = pop.getInteractionGroup().getSampling();
+						output.println("# interactions:         " + st + //
+							(st == IBSGroup.SamplingType.RANDOM ? group.getNSamples() : "") + //
+							(isMultispecies ? " (" + pop.getModule().getName() + ")" : ""));
 					}
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (IBSPopulation pop : species)
-						output.println("# interactioncount:     " + pop.getNInteractions() + (isMultispecies ? " ("
-								+ pop.getModule().getName() + ")" : ""));
 				}
 			});
 
@@ -1649,8 +1625,7 @@ public abstract class IBS implements Model.IBS {
 			// have static fitness
 			parser.addCLO(cloAccumulatedScores);
 			parser.addCLO(cloResetScoresOnChange);
-			parser.addCLO(cloInteractionType);
-			parser.addCLO(cloInteractionCount);
+			parser.addCLO(cloInteractions);
 			parser.addCLO(cloGeometryInteraction);
 			parser.addCLO(cloGeometryReproduction);
 		}

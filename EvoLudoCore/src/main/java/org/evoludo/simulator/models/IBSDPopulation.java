@@ -774,7 +774,7 @@ public class IBSDPopulation extends IBSPopulation {
 	@Override
 	public void resetScores(double homoScore) {
 		if (module.isStatic())
-			throw new Error("resetScores(double) with constant selection doesn't seem tomake sense...");
+			throw new Error("resetScores(double) with constant selection doesn't seem to make sense...");
 
 		super.resetScores(homoScore);
 		// population is homogeneous - determine score
