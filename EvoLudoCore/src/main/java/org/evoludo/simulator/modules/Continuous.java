@@ -651,16 +651,16 @@ public abstract class Continuous extends Module {
 
 				@Override
 				public String getDescription() {
-					String descr = "--init, -I";
+					String descr;
 					switch (nTraits) {
 						case 2:
-							descr += "<0>,<1>  initial frequencies of strategies, with";
+							descr = "--init <0>,<1>  initial frequencies of strategies, with";
 							break;
 						case 3:
-							descr += "<0>,<1>,<2>  initial frequencies of strategies, with";
+							descr = "--init <0>,<1>,<2>  initial frequencies of strategies, with";
 							break;
 						default:
-							descr += "<0>,...,<" + (nTraits - 1)
+							descr = "--init <0>,...,<" + (nTraits - 1)
 									+ ">  initial frequencies of strategies, with";
 					}
 					for (int n = 0; n < nTraits; n++) {

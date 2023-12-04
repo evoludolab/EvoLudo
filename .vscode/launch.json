@@ -69,7 +69,7 @@
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/EvoLudoJRE/src/main/java/org/evoludo/simulator/EvoLudoLab.java",
-            "args": "--module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --popupdate a --playerupdate thermal 0.1 --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1 --data traits"
+            "args": "--module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1 --data traits"
         },
         {
             "name": "JRE ePGG EvoLudo",
@@ -83,7 +83,7 @@
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/EvoLudoJRE/src/main/java/org/evoludo/simulator/EvoLudoLab.java",
-            "args": "--module cSD --benefitfcn 11 --benefitparams 6,-1.4 --costfcn 1 --costparams 4.56,-1.6 --delay 0 --export cSD-1.plist --generations 1000 --geometry M --init 0.05,0.01 --interactions random 1 --model IBS --mutation 0.1 --mutationsdev 0.01 --mutationtype g --playerupdate thermal 0.1 --popsize 1000 --popupdate a --references random 1 --reportfreq 1 --seed 0"
+            "args": "--module cSD --benefitfcn 11 --benefitparams 6,-1.4 --costfcn 1 --costparams 4.56,-1.6 --delay 0 --export cSD-1.plist --generations 1000 --geometry M --init 0.05,0.01 --interactions random 1 --model IBS --mutation 0.1 --mutationsdev 0.01 --mutationtype g --playerupdate thermal 0.1 --popsize 1000 --popupdate async --references random 1 --reportfreq 1 --seed 0"
         },
         {
             "name": "JRE TestEvoludo (generate)",

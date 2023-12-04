@@ -445,17 +445,17 @@ public class IBSGroup {
 		/**
 		 * No sampling. Not user selectable.
 		 */
-		NONE("-none", "no interactions"),
+		NONE("-none", "no samples"),
 
 		/**
 		 * Sample all neighbours.
 		 */
-		ALL("all", "interact with all neighbours"),
+		ALL("all", "all neighbours"),
 
 		/**
 		 * Sample some random neighbours.
 		 */
-		RANDOM("random", "interact with n random neighbours");
+		RANDOM("random", "sample n random neighbours");
 
 		/**
 		 * Key of interaction type. Used for parsing command line options.

@@ -1817,9 +1817,9 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	/**
 	 * Command line option to set the type of player updates.
 	 */
-	public final CLOption cloPlayerUpdate = new CLOption("playerupdate", PlayerUpdateType.IMITATE.getKey(),
+	public final CLOption cloPlayerUpdate = new CLOption("playerupdate", PlayerUpdateType.IMITATE.getKey() + " 1,0",
 			EvoLudo.catModule, 
-			"--playerupdate <u> [<n>[,<e>]] set player update type with\n" +//
+			"--playerupdate <u> [<n>[,<e>]] set player update type with\n" + //
 			"                noise n (neutral=1) and error probability e (0):",
 			new CLODelegate() {
 

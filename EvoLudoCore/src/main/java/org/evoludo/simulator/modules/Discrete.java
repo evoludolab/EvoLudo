@@ -528,10 +528,10 @@ public abstract class Discrete extends Module {
 
 				@Override
 				public String getDescription() {
-					String descr = "--init ";
+					String descr;
 					if (species.size() > 1) {
 						// multi-species
-						descr += "<>       initial frequencies/densities of strategies\n" + //
+						descr = "--init <>       initial frequencies/densities of strategies\n" + //
 								"                separated by '" + CLOParser.VECTOR_DELIMITER + "' " + //
 								"and species by '" + CLOParser.SPECIES_DELIMITER + "' with";
 						int idx = 0;
@@ -549,13 +549,13 @@ public abstract class Discrete extends Module {
 					// single species
 					switch (nTraits) {
 						case 2:
-							descr += "<0>,<1>  initial frequencies/densities, with";
+							descr = "--init <0>,<1>  initial frequencies/densities, with";
 							break;
 						case 3:
-							descr += "<0>,<1>,<2>  initial frequencies/densities, with";
+							descr = "--init <0>,<1>,<2>  initial frequencies/densities, with";
 							break;
 						default:
-							descr += "<0>,...,<" + (nTraits - 1) + ">  initial frequencies/densities, with";
+							descr = "--init <0>,...,<" + (nTraits - 1) + ">  initial frequencies/densities, with";
 					}
 					for (int n = 0; n < nTraits; n++) {
 						String aTrait = "              " + n + ": ";
