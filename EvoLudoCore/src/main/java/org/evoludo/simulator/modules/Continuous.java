@@ -556,36 +556,12 @@ public abstract class Continuous extends Module {
 	}
 
 	/**
-	 * Set minima for each trait.
-	 *
-	 * @param min the array with trait minima
-	 */
-	public void setTraitMin(double[] min) {
-		if (min.length != nTraits)
-			return; // invalid argument, ignore
-		traitMin = min;
-		extremalScoresSet = false; // update extremal scores
-	}
-
-	/**
 	 * Get the maxima for all traits.
 	 *
 	 * @return the array with the trait maxima
 	 */
 	public double[] getTraitMax() {
 		return traitMax;
-	}
-
-	/**
-	 * Set maxima for each trait.
-	 *
-	 * @param max the array with trait maxima
-	 */
-	public void setTraitMax(double[] max) {
-		if (max.length != nTraits)
-			return; // invalid argument, ignore
-		traitMax = max;
-		extremalScoresSet = false; // update extremal scores
 	}
 
 	/**
@@ -596,6 +572,16 @@ public abstract class Continuous extends Module {
 	 * @param trait the index of the trait
 	 */
 	public void setTraitRange(double min, double max, int trait) {
+		if (traitMin == null || traitMin.length != nTraits) {
+			traitMin = new double[nTraits];
+			Arrays.fill(traitMin, 0.0);
+		}
+		if (traitMax == null || traitMax.length != nTraits) {
+			traitMax = new double[nTraits];
+			Arrays.fill(traitMax, 0.0);
+		}
+		if (trait < 0 || trait >= nTraits || min >= max)
+			return;
 		traitMax[trait] = max;
 		traitMin[trait] = min;
 		extremalScoresSet = false; // update extremal scores
@@ -689,7 +675,7 @@ public abstract class Continuous extends Module {
 	/**
 	 * Command line option to set the minimum value of each trait.
 	 */
-	public final CLOption cloTraitMin = new CLOption("traitmin", "0", EvoLudo.catModel, null,
+	public final CLOption cloTraitRange = new CLOption("traitrange", "0,1", EvoLudo.catModel, null,
 			new CLODelegate() {
 
 				/**
@@ -704,29 +690,41 @@ public abstract class Continuous extends Module {
 				@Override
 				public boolean parse(String arg) {
 					// getting ready for multiple species - way ahead of its time...
-					String[] traitmins = arg.split(CLOParser.SPECIES_DELIMITER);
-					if (traitmins == null) {
-						logger.warning("traitmin specification '" + arg + "' not recognized - ignored!");
+					String[] speciestraits = arg.split(CLOParser.SPECIES_DELIMITER);
+					if (speciestraits == null) {
+						logger.warning("traitrange specification '" + arg + "' not recognized - ignored!");
 						return false;
 					}
 					int n = 0;
 					for (Continuous cpop : species) {
-						String[] mins = traitmins[n++ % traitmins.length].split(CLOParser.VECTOR_DELIMITER);
-						int nt = cpop.getNTraits();
-						double[] min = new double[nt];
-						for (int i = 0; i < nt; i++)
-							min[i] = CLOParser.parseDouble(mins[i % mins.length]);
-						cpop.setTraitMin(min);
+						String[] traitranges = speciestraits[n++ % speciestraits.length].split(CLOParser.TRAIT_DELIMITER);
+						for (int i = 0; i < nTraits; i++) {
+						String trange = traitranges[i % traitranges.length];
+						double[] range = CLOParser.parseVector(trange);
+						if (range==null || range.length<2 || range[0] > range[1]) {
+							logger.warning("invalid traitrange '" + trange + "' - using [0,1]!");
+							cpop.setTraitRange(0.0, 1.0, i);
+							continue;
+						}
+						cpop.setTraitRange(range[0], range[1], i);
+					}
 					}
 					return true;
 				}
 
 				@Override
 				public void report(PrintStream output) {
-					double[] fvec = getTraitMin();
-					String msg = "# traitmin:             " + Formatter.format(fvec[0], 4);
-					for (int n = 1; n < nTraits; n++)
-						msg += ":" + Formatter.format(fvec[n], 4);
+					String msg = "";
+					for (Continuous cpop : species) {
+						double[] mins = cpop.getTraitMin();
+						double[] maxs = cpop.getTraitMax();
+						String[] names = cpop.getTraitNames();
+						for (int n = 0; n < nTraits; n++) {
+							msg = "# traitrange:           " + Formatter.format(mins[n], 4) + "-"
+									+ Formatter.format(maxs[n], 4) + //
+									" " + names[n] + (species.size() > 1 && n == 0 ? " (" + cpop.getName() + ")" : "");
+						}
+					}
 					output.println(msg);
 				}
 
@@ -734,82 +732,17 @@ public abstract class Continuous extends Module {
 				public String getDescription() {
 					switch (nTraits) {
 						case 1:
-							return "--traitmin <m>  minimum of trait " + traitName[0];
+							return "--traitrange <min" + CLOParser.VECTOR_DELIMITER + "max>  range of trait " + traitName[0];
 						case 2:
-							return "--traitmin <m0>" + CLOParser.VECTOR_DELIMITER + "<m1>  minimum of each trait, with\n"
+							return "--traitrange <min0" + CLOParser.VECTOR_DELIMITER + "max0" + //
+										CLOParser.TRAIT_DELIMITER + "min1" + CLOParser.VECTOR_DELIMITER + "max1]>" + //
+										CLOParser.VECTOR_DELIMITER + "  range of traits, with\n"
 									+ "             0: " + traitName[0] + "\n" //
 									+ "             1: " + traitName[1];
 						default:
-							String descr = "--traitmin <m0>" + CLOParser.VECTOR_DELIMITER + "..."
-									+ CLOParser.VECTOR_DELIMITER + "<m" + (nTraits - 1)
-									+ ">  minimum of each trait, with";
-							for (int n = 0; n < nTraits; n++) {
-								String aTrait = "              " + n + ": ";
-								int traitlen = aTrait.length();
-								descr += "\n" + aTrait.substring(traitlen - 16, traitlen) + traitName[n];
-							}
-							return descr;
-					}
-				}
-			});
-
-	/**
-	 * Command line option to set the maximum value of each trait.
-	 */
-	public final CLOption cloTraitMax = new CLOption("traitmax", "1", EvoLudo.catModel, null,
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse the maximum value of each trait. {@code arg} can be a single value or
-				 * an array with the separator {@value CLOParser#MATRIX_DELIMITER}. The parser
-				 * cycles through {@code arg} until the maximum value of each trait is set.
-				 * 
-				 * @param arg the (array of) of maximum trait values
-				 */
-				@Override
-				public boolean parse(String arg) {
-					// getting ready for multiple species - way ahead of its time...
-					String[] traitmaxs = arg.split(CLOParser.SPECIES_DELIMITER);
-					if (traitmaxs == null) {
-						logger.warning("traitmax specification '" + arg + "' not recognized - ignored!");
-						return false;
-					}
-					int n = 0;
-					for (Continuous cpop : species) {
-						String[] maxs = traitmaxs[n++ % traitmaxs.length].split(CLOParser.VECTOR_DELIMITER);
-						int nt = cpop.getNTraits();
-						double[] max = new double[nt];
-						for (int i = 0; i < nt; i++)
-							max[i] = CLOParser.parseDouble(maxs[i % maxs.length]);
-						cpop.setTraitMax(max);
-					}
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					double[] fvec = getTraitMax();
-					String msg = "# traitmax:             " + Formatter.format(fvec[0], 4);
-					for (int n = 1; n < nTraits; n++)
-						msg += ":" + Formatter.format(fvec[n], 4);
-					output.println(msg);
-				}
-
-				@Override
-				public String getDescription() {
-					switch (nTraits) {
-						case 1:
-							return "--traitmax <m>  maximum of trait " + traitName[0];
-						case 2:
-							return "--traitmax <m0>" + CLOParser.VECTOR_DELIMITER + "<m1>  maximum of each trait, with\n"
-									+ "             0: " + traitName[0] + "\n" //
-									+ "             1: " + traitName[1];
-						default:
-							String descr = "--traitmax <m0>" + CLOParser.VECTOR_DELIMITER + "..."
-									+ CLOParser.VECTOR_DELIMITER + "<m" + (nTraits - 1)
-									+ ">  maximum of each trait, with";
+							String descr = "--traitrange <min0,max0[" + CLOParser.VECTOR_DELIMITER + "..."
+									+ CLOParser.VECTOR_DELIMITER + "min" + (nTraits - 1)
+									+ ",max" + (nTraits - 1) + "]>  range of traits, with";
 							for (int n = 0; n < nTraits; n++) {
 								String aTrait = "              " + n + ": ";
 								int traitlen = aTrait.length();
@@ -1139,8 +1072,7 @@ public abstract class Continuous extends Module {
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
 		parser.addCLO(cloMutationSdev);
-		parser.addCLO(cloTraitMin);
-		parser.addCLO(cloTraitMax);
+		parser.addCLO(cloTraitRange);
 		parser.addCLO(cloInit);
 		cloCostFunction.addKeys(Traits2Payoff.Costs.values());
 		parser.addCLO(cloCostFunction);

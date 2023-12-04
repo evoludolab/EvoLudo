@@ -58,7 +58,7 @@
 <!-- <div class="evoludo-simulation" style="margin:1em auto" data-clo="--module Dialect --reportfreq 1 --popsize 71x --geometry n --phenodim 1 --phenoupdate EW --inittype constant --init 0"></div> -->
 <!-- <div class="evoludo-simulation" style="margin:1em auto" data-clo="--module ePGG --pdeA 0,10;0,10 --pdeN 61x --pdeL 200 --pdeD 0,0 --interest 2.4 --cost 1.0 --deathrate 1.2 --init 8,1,1 --inittype ring --model ODE --popupdate a --reportfreq 1 --dt 0.1 --groupsize 8 --geometry nf --interactions all --colors black;red;green"></div>
  -->
-<!-- <div class="evoludo-simulation" style="margin:1em auto" data-clo="--module cLabour --view Strategies_-_Distribution --delay 50 --reportfreq 20 --popsize 5000 --mutationtype g --mutationsdev 0.01 --traitmin 0 --traitmax 1 --init 0.1,0.02 --costfcn 1 --costparams -1.6,4.56 --benefitfcn 11 --benefitparams -1.4,6 --popupdate a --mutation 0.01 --geometry M --playerupdate i --interactions random 1 --references random 1"></div> -->
+<!-- <div class="evoludo-simulation" style="margin:1em auto" data-clo="--module cLabour --view Strategies_-_Distribution --delay 50 --reportfreq 20 --popsize 5000 --mutationtype g --mutationsdev 0.01 --traitrange 0,1 --init 0.1,0.02 --costfcn 1 --costparams -1.6,4.56 --benefitfcn 11 --benefitparams -1.4,6 --popupdate a --mutation 0.01 --geometry M --playerupdate i --interactions random 1 --references random 1"></div> -->
 <!-- <div class="evoludo-simulation" style="margin:1em auto" data-clo="--module eMoran --view Strategies_-_Structure --delay 50 --reportfreq 1 --popsize 500 --popupdate B --mutation 0 --geometry M --playerupdate i --references random 1"></div> -->
 <!-- <div class="evoludo-simulation" style="margin:1em auto" data-clo="--module e2x2 --accuscores --geometry n --paymatrix 1,1;2,2 --popsize 5x --seed=0"></div> -->
 <!-- <div class="evoludo-simulation" style="margin:1em auto" data-clo="--module CG --fitness 3,0,4,1 --popsize 5x --seed=0"></div> -->
@@ -121,7 +121,7 @@
 	data-clo="--module cSD --run --view Strategies_-_Distribution --delay 200 --reportfreq 20 --popsize 500 --popupdate a --playerupdate i --geometry M --interactions all --references all --benefitfcn 11 --benefitparams 6,-1.4 --costfcn 1 --costparams 4.56,-1.6 --init 0.2,0.05 --inittype gaussian --mutation 0.01 --mutationtype g --mutationsdev 0.01"></div>
 </tr>
 <tr><th>Division of Labour</th><td><div class="evoludo-trigger-html"
-	data-clo="--module cLabour --run --view Strategies_-_Distribution --delay 200 --reportfreq 20 --popsize 5000 --mutationtype g --mutationsdev 0.01 --traitmin 0 --traitmax 1 --init 0.1,0.01;0.9,0.01 --inittype gaussian --costfcn 1 --costparams 4.56,-1.6 --benefitfcn 11 --benefitparams 6,-1.4 --popupdate a --mutation 0.01 --geometry M --playerupdate i --interactions random 1 --references random 1"></div>
+	data-clo="--module cLabour --run --view Strategies_-_Distribution --delay 200 --reportfreq 20 --popsize 5000 --mutationtype g --mutationsdev 0.01 --traitrange 0,1 --init 0.1,0.01;0.9,0.01 --inittype gaussian --costfcn 1 --costparams 4.56,-1.6 --benefitfcn 11 --benefitparams 6,-1.4 --popupdate a --mutation 0.01 --geometry M --playerupdate i --interactions random 1 --references random 1"></div>
 </tr>
 <tr><th>Dynamical Networks</th><td><div class="evoludo-trigger-html"
 	data-clo="--module Net --ratio 0.5 --fitnessmap static 0,2"></div>

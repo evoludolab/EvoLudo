@@ -519,8 +519,29 @@ public class CLOParser {
 
 	// UTILITY methods - for parsing command line arguments
 
+	/**
+	 * The delimiter for separating options in multi-species models.
+	 */
 	public static final String SPECIES_DELIMITER = ":";
+
+	/**
+	 * The delimiter for separating options in continuous models with multiple
+	 * traits.
+	 * <p>
+	 * <strong>Note:</strong> same as {@code MATRIX_DELIMITER} {@value MATRIX_DELIMITER}.
+	 */
+	public static final String TRAIT_DELIMITER = ";";
+
+	/**
+	 * The delimiter for separating rows when passing a matrix as an option.
+	 * <p>
+	 * <strong>Note:</strong> same as {@code TRAIT_DELIMITER} {@value TRAIT_DELIMITER}.
+	 */
 	public static final String MATRIX_DELIMITER = ";";
+
+	/**
+	 * The delimiter for separating entries when passing a vector as an option.
+	 */
 	public static final String VECTOR_DELIMITER = ",";
 
 	/**
