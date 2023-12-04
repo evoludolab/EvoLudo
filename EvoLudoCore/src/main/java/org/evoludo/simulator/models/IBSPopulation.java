@@ -2648,8 +2648,8 @@ public abstract class IBSPopulation {
 
 		double myFitness = getFitnessAt(me);
 		double aProb, nProb, norm;
-		double noise = playerUpdateType.getNoise();
-		double error = playerUpdateType.getError();
+		double noise = module.getPlayerUpdateNoise();
+		double error = module.getPlayerUpdateError();
 		double equalProb = betterOnly ? error : 0.5;
 		// generalize update to competition among arbitrary numbers of players
 		if (noise <= 0.0) { // zero noise
@@ -2784,8 +2784,8 @@ public abstract class IBSPopulation {
 
 		double myFitness = getFitnessAt(me);
 		double norm, nProb;
-		double noise = playerUpdateType.getNoise();
-		double error = playerUpdateType.getError();
+		double noise = module.getPlayerUpdateNoise();
+		double error = module.getPlayerUpdateError();
 		// generalize update to competition among arbitrary numbers of players
 		if (noise <= 0.0) { // zero noise
 			double aProb;

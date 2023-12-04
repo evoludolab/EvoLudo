@@ -1043,7 +1043,7 @@ public class ODEEuler implements Model.ODE {
 			case THERMAL: // fermi update
 				// factor 2 enters - see e.g. Sigmund et al. Dyn Games & Appl. 2011
 				// no scaling seems required for comparisons with simulations
-				noise = put.getNoise();
+				noise = mod.getPlayerUpdateNoise();
 				if (noise <= 0.0) {
 					// no noise
 					for (int n = skip; n < end; n++) {
@@ -1108,7 +1108,7 @@ public class ODEEuler implements Model.ODE {
 			case IMITATE:
 				// if noise becomes very small, this should recover PLAYER_UPDATE_BEST
 				inoise = invFitRange[idx];
-				noise = put.getNoise();
+				noise = mod.getPlayerUpdateNoise();
 				if (noise > 0.0)
 					inoise /= noise;
 				for (int n = skip; n < end; n++) {

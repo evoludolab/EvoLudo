@@ -1221,7 +1221,65 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	}
 
 	/**
-	 * Interaction group size.
+	 * The noise of the updating process of players.
+	 */
+	double playerUpdateNoise;
+
+	/**
+	 * Set the noise of the updating process of players. With less noise chances are
+	 * higher to adopt the strategy of individuals even if they perform only
+	 * marginally better. Conversely for large noise payoff differences matter less
+	 * and the updating process is more random. For {@code noise==1} the process is
+	 * neutral.
+	 * 
+	 * @param noise the noise when updating the trait
+	 */
+	public void setPlayerUpdateNoise(double noise) {
+		playerUpdateNoise = Math.max(0.0, noise);
+	}
+
+	/**
+	 * Get the noise of the updating process.
+	 * 
+	 * @return the noise when updating the trait
+	 * 
+	 * @see #setPlayerUpdateNoise(double)
+	 */
+	public double getPlayerUpdateNoise() {
+		return playerUpdateNoise;
+	}
+
+	/**
+	 * The probability of an error during the updating of the trait.
+	 */
+	double playerUpdateError;
+
+	/**
+	 * Set the error of the updating process. With probability {@code error} an
+	 * individual fails to adopt a better performing trait or adopts an worse
+	 * performing one. More specifically the range of updating probabilities is
+	 * restricted to {@code [error, 1-error]} such that always a chance remains that
+	 * the trait of a better performing individual is not adopted or the one of a
+	 * worse performing one is adopted.
+	 * 
+	 * @param error the error when adopting the trait
+	 */
+	public void setPlayerUpdateError(double error) {
+		playerUpdateError = Math.max(0.0, error);
+	}
+
+	/**
+	 * Get the error of the updating process.
+	 * 
+	 * @return the error when adopting the trait
+	 * 
+	 * @see #setError(double)
+	 */
+	public double getPlayerUpdateError() {
+		return playerUpdateError;
+	}
+	/**
+	 * The interaction group size.
 	 */
 	protected int nGroup = 2;
 
@@ -1808,8 +1866,8 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 								break;
 							default:
 						}
-						put.setNoise(noise);
-						put.setError(error);
+						pop.setPlayerUpdateNoise(noise);
+						pop.setPlayerUpdateError(error);
 					}
 					return success;
 				}
@@ -1832,11 +1890,11 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 							case IMITATE: // imitation update
 							case IMITATE_BETTER: // imitation update (better strategies only)
 								output.println(
-										"# playerupdatenoise:    " + Formatter.formatSci(put.getNoise(), 6));
+										"# playerupdatenoise:    " + Formatter.formatSci(pop.getPlayerUpdateNoise(), 6));
 //XXX errors could probably be added to PROPORTIONAL as well as DE models
 								if (isIBS) {
 									output.println(
-										"# playerupdateerror:    " + Formatter.formatSci(put.getError(), 6));
+										"# playerupdateerror:    " + Formatter.formatSci(pop.getPlayerUpdateError(), 6));
 								}
 								break;
 							default:
@@ -2590,16 +2648,6 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		String title;
 
 		/**
-		 * The probability of an error during the updating of the strategy.
-		 */
-		double error = 1.0;
-
-		/**
-		 * The noise of the updating process.
-		 */
-		double noise = 1.0;
-
-		/**
 		 * Instantiates a new type of player update type.
 		 * 
 		 * @param key   the identifier for parsing of command line option
@@ -2623,54 +2671,6 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		@Override
 		public String getTitle() {
 			return title;
-		}
-	
-		/**
-		 * Set the noise of the updating process. With less noise chances are higher to
-		 * adopt the strategy of individuals even if they perform only marginally
-		 * better. Conversely for large noise payoff differences matter less and the
-		 * updating process is more random. For {@code noise==1} the process is neutral.
-		 * 
-		 * @param noise the noise when updating the trait
-		 */
-		public void setNoise(double noise) {
-			this.noise = Math.max(0.0, noise);
-		}
-
-		/**
-		 * Get the noise of the updating process.
-		 * 
-		 * @return the noise when updating the trait
-		 * 
-		 * @see #setNoise(double)
-		 */
-		public double getNoise() {
-			return noise;
-		}
-
-		/**
-		 * Set the error of the updating process. With probability {@code error} an
-		 * individual fails to adopt a better performing strategy or adopts an worse
-		 * performing one. More specifically the range of updating probabilities is
-		 * restricted to {@code [error, 1-error]} such that always a chance remains that
-		 * the strategy of a better performing individual is not adopted or the one of a
-		 * worse performing one is adopted.
-		 * 
-		 * @param error the error when adopting the trait
-		 */
-		public void setError(double error) {
-			this.error = Math.max(0.0, error);
-		}
-
-		/**
-		 * Get the error of the updating process.
-		 * 
-		 * @return the error when adopting the trait
-		 * 
-		 * @see #setError(double)
-		 */
-		public double getError() {
-			return error;
 		}
 	}
 
