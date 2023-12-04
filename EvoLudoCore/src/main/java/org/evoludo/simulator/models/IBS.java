@@ -1016,8 +1016,9 @@ public abstract class IBS implements Model.IBS {
 							continue;
 						}
 						pop.setPopulationUpdateType(put);
+						updt = CLOption.stripKey(put, updt);
 						// parse p, if present
-						String[] args = updt.split("[ =,]");
+						String[] args = updt.split("[ =]");
 						double sync = 1.0;
 						if (args.length > 1)
 							sync = CLOParser.parseDouble(args[1]);
@@ -1124,8 +1125,8 @@ public abstract class IBS implements Model.IBS {
 	 * Command line option to set whether players interact with all their neighbours
 	 * or a random subsample.
 	 */
-	public final CLOption cloInteractions = new CLOption("interactions", "a", EvoLudo.catModel,
-			"--interactions <t [n]> select interaction type t:\n",
+	public final CLOption cloInteractions = new CLOption("interactions", IBSGroup.SamplingType.ALL.getKey(), EvoLudo.catModel,
+			"--interactions <t [n]> select interaction type t:",
 			new CLODelegate() {
 
 				/**
@@ -1152,14 +1153,15 @@ public abstract class IBS implements Model.IBS {
 							if (success) {
 								IBSGroup.SamplingType st = group.getSampling();
 								logger.warning((isMultispecies ? pop.getModule().getName() + ": " : "") + //
-										"interaction type '" + intt + //
+										"interaction type '" + intertype + //
 										"' unknown - using '" + st + //
-										(st == IBSGroup.SamplingType.RANDOM ? group.getNSamples() : "") + "'");
+										(st == IBSGroup.SamplingType.RANDOM ? " " + group.getNSamples() : "") + "'");
 							}
 							success = false;
 							continue;
 						}
 						group.setSampling(intt);
+						intertype = CLOption.stripKey(intt, intertype);
 						// parse n, if present
 						String[] args = intertype.split("[ =]");
 						int nInter = 1;
@@ -1186,8 +1188,8 @@ public abstract class IBS implements Model.IBS {
 	 * Command line option to set the method for choosing references/models among
 	 * the neighbours of a player for updating their strategy.
 	 */
-	public final CLOption cloReferences = new CLOption("references", "a", EvoLudo.catModel,
-			"--references <t [n]> select reference type t:\n",
+	public final CLOption cloReferences = new CLOption("references", IBSGroup.SamplingType.RANDOM.getKey() + " 1", EvoLudo.catModel,
+			"--references <t [n]> select reference type t:",
 			new CLODelegate() {
 
 				/**
@@ -1215,14 +1217,15 @@ public abstract class IBS implements Model.IBS {
 							if (success) {
 								IBSGroup.SamplingType st = group.getSampling();
 								logger.warning((isMultispecies ? pop.getModule().getName() + ": " : "") + //
-										"reference type '" + reft + //
+										"reference type '" + reftype + //
 										"' unknown - using '" + st + //
-										(st == IBSGroup.SamplingType.RANDOM ? group.getNSamples() : "") + "'");
+										(st == IBSGroup.SamplingType.RANDOM ? " " + group.getNSamples() : "") + "'");
 							}
 							success = false;
 							continue;
 						}
 						group.setSampling(reft);
+						reftype = CLOption.stripKey(reft, reftype);
 						// parse n, if present
 						String[] args = reftype.split("[ =]");
 						int nInter = 1;
@@ -1615,6 +1618,8 @@ public abstract class IBS implements Model.IBS {
 		if (anyNonVacant) {
 			// additional options that only make sense without vacant sites
 			parser.addCLO(cloReferences);
+			cloReferences.clearKeys();
+			cloReferences.addKeys(IBSGroup.SamplingType.values());
 		}
 		if (anyVacant) {
 			// restrict population updates to those compatible with ecological models
@@ -1628,6 +1633,8 @@ public abstract class IBS implements Model.IBS {
 			parser.addCLO(cloAccumulatedScores);
 			parser.addCLO(cloResetScoresOnChange);
 			parser.addCLO(cloInteractions);
+			cloInteractions.clearKeys();
+			cloInteractions.addKeys(IBSGroup.SamplingType.values());
 			parser.addCLO(cloGeometryInteraction);
 			parser.addCLO(cloGeometryReproduction);
 		}

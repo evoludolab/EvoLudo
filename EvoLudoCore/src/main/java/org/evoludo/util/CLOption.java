@@ -919,7 +919,7 @@ public class CLOption implements Comparable<CLOption> {
 			for (int n = 0; n < args.length; n++) {
 				String key = match(args[n]).getKey();
 				String keyarg = stripKey(key, args[n]);
-				argkeys += key + keyarg + (n == args.length - 1 ? "" : CLOParser.SPECIES_DELIMITER);
+				argkeys += key + (keyarg.length() > 0 ? " " + keyarg : "") + (n == args.length - 1 ? "" : CLOParser.SPECIES_DELIMITER);
 			}
 			return myDescr + "\n      (current: " + argkeys + ", default: " + defaultArg + ")";
 		}

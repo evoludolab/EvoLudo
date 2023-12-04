@@ -443,17 +443,17 @@ public class IBSGroup {
 	 */
 	public static enum SamplingType implements CLOption.Key {
 		/**
-		 * No interactions.
+		 * No sampling. Not user selectable.
 		 */
-		NONE("none", "no interactions"),
+		NONE("-none", "no interactions"),
 
 		/**
-		 * Interact with all neighbours.
+		 * Sample all neighbours.
 		 */
 		ALL("all", "interact with all neighbours"),
 
 		/**
-		 * Interact with random neighbours.
+		 * Sample some random neighbours.
 		 */
 		RANDOM("random", "interact with n random neighbours");
 
