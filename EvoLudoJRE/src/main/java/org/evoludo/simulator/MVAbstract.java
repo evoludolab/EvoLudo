@@ -426,7 +426,7 @@ public abstract class MVAbstract extends JComponent
      */
     @Override
 	public void exportState() {
-		engine.exportState();
+		engine.exportState(null);
 	}
 
 	private ExportVectorGraphics evg = null;

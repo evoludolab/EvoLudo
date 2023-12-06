@@ -335,6 +335,7 @@ else {
 			out.println("# generations @ end: "+Formatter.formatSci(generation, 6));
 		}
 		engine.dumpEnd();
+		engine.exportState();
 //		output.flush();
 	}
 

@@ -287,6 +287,7 @@ public class scanCSD extends CSD {
 			b1 = (b1Log?b1*b1Incr:b1+b1Incr);
 		}
 		engine.dumpEnd();
+		engine.exportState();
 	}
 
 	public void printState(double[] statistics, double[] lowstatistics) {

@@ -226,11 +226,8 @@ public class IBSGroup {
 		focal = me;
 		switch (samplingType) {
 			case NONE: // speeds things up e.g. for best-response in well-mixed populations
-				// size = 0;
-				// if size==0 then updatePlayerAt aborts because no references found... pretend
-				// we have one.
-// size = 1;
-				nSampled = 0;
+				//XXX if nSampled == 0 updatePlayerAt aborts if no references found... pretend...
+				nSampled = 1;
 				return null;
 
 			case ALL:

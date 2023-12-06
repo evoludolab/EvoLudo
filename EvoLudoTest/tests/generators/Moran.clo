@@ -28,7 +28,7 @@
 # mutation
 --module Moran --model SDE --reportfreq 1 --popsize 200 --playerupdate thermal 0.1 --init 99,1 --inittype frequency --mutation 0.02 --fitness 1,1.1 --generations 1000
 # fitness map and selection
---module Moran --model SDE --reportfreq 1 --popsize 200 --playerupdate thermal 0.1 --init 99,1 --inittype frequency --mutation 0.02 --fitness 1,1.1 --fitnessmap exp 1.0.0.1 --generations 1000
+--module Moran --model SDE --reportfreq 1 --popsize 200 --playerupdate thermal 0.1 --init 99,1 --inittype frequency --mutation 0.02 --fitness 1,1.1 --fitnessmap exp 1.0,0.1 --generations 1000
 --module Moran --model SDE --reportfreq 1 --popsize 200 --playerupdate thermal 0.1 --init 99,1 --inittype frequency --mutation 0.02 --fitness 1,1.1 --fitnessmap exp 1.0,10.0 --generations 1000
 
 # PDE

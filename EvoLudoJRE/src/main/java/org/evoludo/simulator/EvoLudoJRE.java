@@ -998,9 +998,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		DecimalFormat twodigits = new DecimalFormat("00");
 		output.println("# runningtime:          " + deltahour + ":" + twodigits.format(deltamin) + ":"
 				+ twodigits.format(deltasec) + "." + twodigits.format(deltamilli % 1000));
-		if (exportname == null)
-			return;
-		exportState(exportname);
 	}
 
 	/**
@@ -1462,11 +1459,15 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				ext = template.length();
 			template = template.substring(0, ext) + "." + extension;
 		}
-		// create full path; defaults to current directory
-		String dir = getExportDir();
-		if (!dir.endsWith(File.separator))
-			dir += File.separator;
-		template = dir + template;
+		// if template starts with '/' it's and absolute path
+		// otherwise set path relative to export directory
+		if (!template.startsWith(File.separator)) {
+			// create full path; defaults to current directory
+			String dir = getExportDir();
+			if (!dir.endsWith(File.separator))
+				dir += File.separator;
+			template = dir + template;
+		}
 		if (template.contains("%d"))
 			template = String.format(template, (int) activeModel.getTime());
 		File unique = new File(template);
@@ -1520,11 +1521,22 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 
 	@Override
 	public void exportState() {
+		if (exportname == null)
+			return;
 		exportState(exportname);
 	}
 
+	/**
+	 * Export state of module to {@code filename}. If {@code filename == null} try
+	 * {@code exportname}. If {@code exportname == null} too then create new unique
+	 * filename.
+	 * 
+	 * @param filename the filename for exporting the state
+	 */
 	public void exportState(String filename) {
 		File export;
+		if (filename == null)
+			filename = exportname;
 		if (filename == null)
 			export = openSnapshot("plist");
 		else

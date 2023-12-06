@@ -105,6 +105,7 @@ public class simRSP extends RSP {
 		out.println("abs. times: " + Formatter.format(time, 4));
 		out.println("abs. sdevs: " + Formatter.format(time2, 4));
 		engine.dumpEnd();
+		engine.exportState();
 		((EvoLudoJRE) engine).exit(0);
 // END TESTING
 		// calculate fixation probabilities for different initial configurations
@@ -152,6 +153,7 @@ public class simRSP extends RSP {
 			}
 		}
 		engine.dumpEnd();
+		engine.exportState();
 	}
 
 	/*

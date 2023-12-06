@@ -1548,13 +1548,13 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Report all parameter settings to <code>output</code> (JRE only).
+	 * Report all parameter settings to <code>output</code> (currently JRE only).
 	 */
 	public void dumpParameters() {
 	}
 
 	/**
-	 * Concluding words for report (JRE only).
+	 * Concluding words for report (currently JRE only).
 	 */
 	public void dumpEnd() {
 	}

@@ -6,7 +6,7 @@ EVOLUDO_TEST_TEST="$EVOLUDO_TEST_HOME/tests" ;
 nreportsbefore=$((`ls | wc -l`)) ;
 
 java -jar "$EVOLUDO_TEST_HOME"/target/EvoLudoTest.*.jar \
-		--tests "$EVOLUDO_TEST_TEST/references" \
+		--references "$EVOLUDO_TEST_TEST/references" \
 		--generate "$EVOLUDO_TEST_TEST/generators" \
 		--reports "$EVOLUDO_TEST_TEST/reports" \
 		--compress ;

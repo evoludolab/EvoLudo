@@ -33,7 +33,7 @@
 package org.evoludo.simulator.exec;
 
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -71,11 +71,10 @@ public class TestEvoLudo implements Model.MilestoneListener {
 
 	File testsDir; // directory to containing test or to store generated tests
 	File reportsDir; // directory to store reports of failed tests
-	File testFile; // test file
+	File referencesDir; // directory with reference results
 	File generator; // directory with generator scripts
-	File exportDir; // (sub)directory for exporting generated reference files
 	boolean performTest;
-	boolean testRunning;
+	boolean isRunning;
 	boolean useCompression = false;
 	boolean dumpMinor = false;
 	boolean verbose = false;
@@ -106,12 +105,11 @@ public class TestEvoLudo implements Model.MilestoneListener {
 
 	protected void generate(File clo) {
 		String filename = clo.getName();
-		exportDir = new File(testsDir.getPath() + File.separator + filename.substring(0, filename.lastIndexOf(".clo")));
+		File exportDir = new File(referencesDir.getPath() + File.separator + filename.substring(0, filename.lastIndexOf(".clo")));
 		if (!exportDir.exists() && !exportDir.mkdir()) {
 			logWarning("Generating: failed to make directory '" + exportDir.getPath() + "' - skipped.");
 			return;
 		}
-		engine.setExportDir(exportDir);
 		String list;
 		try {
 			list = new String(Files.readAllBytes(clo.toPath()));
@@ -125,169 +123,130 @@ public class TestEvoLudo implements Model.MilestoneListener {
 			// skip empty lines or comments (lines starting with '#')
 			if (test.strip().length() < 1 || test.startsWith("#"))
 				continue;
-			// check if test result file already exists
-			String export;
-			int exportIdx = test.indexOf("--export");
-			if (exportIdx < 0) {
-				export = exportDir.getName() + "-" + (++nTest) + ".plist";
-				test = test + " --export " + export;
-			} else {
-				exportIdx += "--export".length();
-				int exportEnd = test.indexOf("--", exportIdx);
-				if (exportEnd < 0)
-					exportEnd = test.length();
-				export = test.substring(exportIdx, exportEnd).strip();
-			}
-			if (new File(exportDir.getPath() + File.separator + export).exists()
-					|| new File(exportDir.getPath() + File.separator + export + ".zip").exists()) {
-				logWarning("Generating: reference file '" + export + "' exists - skipping!");
+			if (!runModule("Generating", test))
 				continue;
-			}
-			engine.unloadModule();
-			// set command line options of test to generate
-			// prepend --seed 0 to ensure fixed seed; append --delay 0 to run at full speed.
-			// note, later instances of repeated options take precedence.
-			engine.setCLO("--seed 0 " + test + " --delay 0");
-			System.out.println("Generating: '" + export + "'...");
-			if (!engine.parseCLO()) {
-				logWarning("Generating: parsing issues of command line arguments - review!");
-				nTestWarnings++;
-			}
-			engine.setSuspended(true);
-			engine.modelReset();
-			// if --generation 0 then reset cleared the --run flag, i.e. engine
-			// no longer in suspended mode and needs no nudge to run.
-			testRunning = engine.isSuspended();
-			if (!testRunning) {
-				// still need to export current state
-				engine.exportState();
-			}
-			else {
-				// wait for test case generation to finish
-				while (testRunning) {
-					synchronized (this) {
-						engine.run();
-//						System.out.println("Generating: engine running, waiting to finish...");
-						try {
-							wait();
-						} catch (InterruptedException e) {
-							logMessage("Generating: resuming.");
-							break;
-						}
-					}
-				}
-			}
-			// compress output
-			String input = exportDir.getPath() + File.separator + export;
+			// read result
+			String result = engine.encodeState();
+			// export result
+			String export = generateExportFilename(test, nTest++);
 			if (useCompression) {
+				// with compression
+				export += ".zip";
 				try {
-					FileInputStream fis = new FileInputStream(input);
-					try {
-						ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(input + ".zip"));
-						zos.putNextEntry(new ZipEntry(export));
-						int length;
-						byte[] buffer = new byte[1024];
-						while ((length = fis.read(buffer)) > 0) {
-							zos.write(buffer, 0, length);
-						}
-						zos.finish();
-						zos.close();
-						// delete uncompressed file
-						new File(input).delete();
-					} catch (Exception e) {
-						logError("failed to compress to " + input + ".zip.");
-						nTestFailures++;
-					} finally {
-						fis.close();
-					}
-				} catch (Exception e) {
-					logError("failed to open input " + input + ".");
+					ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(export));
+					zos.putNextEntry(new ZipEntry(export));
+					zos.write(result.getBytes());
+					zos.finish();
+					zos.close();
+				} catch (FileNotFoundException e) {
+					logError("failed to open '" + export + "' for writing.");
+					nTestFailures++;
+				} catch (IOException e) {
+					logError("failed to write to '" + export + "'.");
 					nTestFailures++;
 				}
-				input += ".zip";
 			}
-			// rename export file to include model name for easier access of reports
-			Path source = new File(input).toPath();
-			String destname = source.getFileName().toString();
-			int ext = destname.lastIndexOf(".plist");
-			// if export file name doesn't have '.plist' extension simply append model name
-			Path dest;
-			if (ext < 0)
-				dest = source.resolveSibling(destname + "-" + engine.getModel().getModelType().getKey());
-			else
-				dest = source.resolveSibling(
-						destname.substring(0, ext) + "-" + engine.getModel().getModelType().getKey()
-								+ destname.substring(ext));
-			try {
-				Files.move(source, dest);
-			} catch (IOException e) {
-				logError("failed to rename " + input + " to " + dest);
-				nTestFailures++;
+			else {
+				// no compression
+				try {
+					FileOutputStream fos = new FileOutputStream(export);
+					fos.write(result.getBytes());
+					fos.close();
+				} catch (FileNotFoundException e) {
+					logError("failed to open '" + export + "' for writing.");
+					nTestFailures++;
+				} catch (IOException e) {
+					logError("failed to write to '" + export + "'.");
+					nTestFailures++;
+				}
 			}
 			// check test
-			test(dest.toFile());
-			// need to reset export directory in case a test failed and a report was written
-			engine.setExportDir(exportDir);
+			test(new File(export));
 		}
 	}
 
-	public synchronized void generateDone() {
-//		System.out.println("Engine finished.");
-		engine.dumpEnd();
-		testRunning = false;
-		notify();
+	private String generateExportFilename(String clo, int idx) {
+		String module = engine.getModule().getKey();
+		String model = engine.getModel().getModelType().getKey();
+		int exportIdx = clo.indexOf("--export");
+		if (exportIdx < 0)
+			return module + "-" + idx + "-" + model + ".plist";
+
+		exportIdx += "--export".length();
+		int exportEnd = clo.indexOf("--", exportIdx);
+		if (exportEnd < 0)
+			exportEnd = clo.length();
+		return clo.substring(exportIdx, exportEnd).strip();
 	}
 
-	int nTests, nTestFailures, nTestMinor, nTestWarnings;
-
-	public void test(File dir) {
-		if (dir.isDirectory()) {
-			File[] tests = dir.listFiles();
-			Arrays.sort(tests);
-			for (File test : tests)
-				test(test);
-			return;
+	private String stripExport(String clo) {
+		int expidx;
+		while ((expidx = clo.indexOf("--export")) >= 0) {
+			String stripped = clo.substring(0, expidx).trim();
+			int expendidx = clo.indexOf("--", expidx + "--export".length());
+			if (expendidx >= 0)
+				stripped += " " + clo.substring(expendidx);
+			clo = stripped;
 		}
-		// arg is file
-		String parent = (dir.getParentFile() != null ? dir.getParentFile().getName() + File.separator : "");
-		System.out.println("Testing: '" + parent + dir.getName() + "'...");
-		Plist reference = engine.readPlist(dir.getAbsolutePath());
-		if (reference == null)
-			return;
+		return clo;
+	}
+
+	/**
+	 * Load and run module with parameters {@code clo}. The options {@code --seed 0}
+	 * is prepended and {@code --delay 0} is appended to {@code clo}. Because for
+	 * options that are specified multiple times the latter takes precedence, this
+	 * ensures that the results are reproducible with potentially custom seeds and
+	 * also run at full speed. Returns {@code false} if the module didn't run and
+	 * hence no export was generated, even if requested with the {@code --export}
+	 * option. This happens for example with {@code --generations 0}.
+	 * 
+	 * @param task the task that is running (generating or testing)
+	 * @param clo  the command line options for running the module
+	 * @return {@code true} if the module ran successfully
+	 */
+	private boolean runModule(String task, String clo) {
 		engine.unloadModule();
-		String clo = (String) reference.get("CLO");
-		engine.setCLO(clo);
-		if (!engine.parseCLO(true)) {
-			logError("Testing: parsing issues of command line arguments - skipping!");
+		// set command line options of test to generate
+		// prepend --seed 0 to ensure fixed seed; append --delay 0 to run at full speed.
+		// note, later instances of repeated options take precedence.
+		engine.setCLO("--seed 0 " + stripExport(clo) + " --delay 0");
+		if (!engine.parseCLO()) {
+			logWarning(task + ": parsing issues of command line arguments - review!");
 			nTestFailures++;
 			nTests++;
-			return;
+			return false;
 		}
 		engine.setSuspended(true);
+		// reset/run module
 		engine.modelReset();
 		// if --generation 0 then reset cleared the --run flag, i.e. engine
-		// no longer in suspended mode and needs no nudge to run.
-		testRunning = engine.isSuspended();
+		// no longer in suspended mode and needs no nudge to save state.
+		isRunning = engine.isSuspended();
 		// wait for test case generation to finish
-		while (testRunning) {
+		while (isRunning) {
 			synchronized (this) {
 				engine.run();
-//				System.out.println("Testing: engine running, waiting to finish...");
+//				System.out.println(task + ": engine running, waiting to finish...");
 				try {
 					wait();
 				} catch (InterruptedException e) {
+					logMessage(task + ": resuming.");
 					break;
 				}
 			}
 		}
+		engine.dumpEnd();
+		return true;
+	}
+
+	private void compareRuns(File refname, Plist reference, Plist replicate) {
 		nTests++;
 		System.out.println("Testing: analyzing differences...");
 		// create 'plist' of current state and compare to 'reference'
 		if (verbose)
 			reference.verbose();
-		Plist replicate = PlistParser.parse(engine.encodeState());
 		// ignore some plist entries
-		int nIssues = reference.diff(replicate, Arrays.asList("Export date", "Version", "CLO"));
+		int nIssues = reference.diff(replicate, Arrays.asList("Export date", "Version", "JavaVersion", "CLO"));
 		// check option strings only if some tests failed
 		if (reference.getNMajor() > 0) {
 			String rclo = (String) reference.get("CLO");
@@ -311,14 +270,14 @@ public class TestEvoLudo implements Model.MilestoneListener {
 				color = ConsoleColors.YELLOW;
 			} else {
 				// at least some serious diffs found
-				msg = "found " + nIssues + " differences for options '" + clo + "'";
+				msg = "found " + nIssues + " differences for options '" + replicate.get("CLO") + "'";
 				if (nMinor > 0)
 					msg += " (with " + nMinor + " minor numerical)";
 				msg += " - review!";
 				color = ConsoleColors.RED;
 			}
 		}
-		msg = color + "Testing " + parent + dir.getName() + " " + msg + ConsoleColors.RESET;
+		msg = color + "Testing " + refname.getName() + " " + msg + ConsoleColors.RESET;
 		switch(color) {
 			case GREEN:
 				logOk(msg);
@@ -333,35 +292,106 @@ public class TestEvoLudo implements Model.MilestoneListener {
 				logMessage(msg);
 		}
 		if (nIssues > 0) {
-			engine.setExportDir(reportsDir);
+			String javaref = (String) reference.get("JavaVersion");
+			String javarep = (String) replicate.get("JavaVersion");
+			if (javaref != null && !javaref.equals(javarep))
+				logMessage(ConsoleColors.YELLOW + "JRE versions differ (me: " + javarep + ", ref: " + javaref +")" + ConsoleColors.RESET);
+			String ext;
+			String report = reportsDir.getAbsolutePath() + File.separator + refname.getName();
 			if (nIssues == nMinor) {
 				nTestMinor++;
-				if (dumpMinor) {
-					String path = dir.getName();
-					// replace .plist or .plist.zip extension
-					engine.exportState(path.substring(0, path.lastIndexOf(".plist")) + "-minor.plist");
-				}
+				if (!dumpMinor) 
+					return;
+				ext = "-minor.plist";
 			} else {
 				nTestFailures++;
-				String path = dir.getName();
-				engine.exportState(path.substring(0, path.lastIndexOf(".plist")) + "-failed.plist");
+				ext = "-failed.plist";
 			}
+			engine.exportState(report.substring(0, report.lastIndexOf(".plist")) + ext);
 		}
 	}
 
-	public synchronized void testDone() {
-//		System.out.println("Engine finished.");
-		testRunning = false;
-		notify();
+	int nTests, nTestFailures, nTestMinor, nTestWarnings;
+
+	public void test(File dir) {
+		if (dir.isDirectory()) {
+			File[] tests = dir.listFiles();
+			Arrays.sort(tests);
+			for (File test : tests)
+				test(test);
+			return;
+		}
+		// dir is file
+		String parent = (dir.getParentFile() != null ? dir.getParentFile().getName() + File.separator : "");
+		// test plist or clo files
+		String filename = dir.getName();
+		String ext = filename.substring(filename.lastIndexOf('.'));
+		if (ext.equals(".plist") || ext.equals(".zip")) {
+			System.out.println("Testing: '" + parent + dir.getName() + "'...");
+			Plist reference = engine.readPlist(dir.getAbsolutePath());
+			if (reference == null)
+				return;
+			String clo = (String) reference.get("CLO");
+			// run module
+			if (runModule("Testing", clo)) {
+				Plist result = PlistParser.parse(engine.encodeState());
+				compareRuns(dir, reference, result);
+			}
+		}
+		else if (ext.equals(".clo")) {
+			// derive reference from clo string
+			int nTest = 0;
+			try {
+				Scanner scanner = new Scanner(dir);
+				while (scanner.hasNextLine()) {
+					String clo = scanner.nextLine().trim();
+					// skip comments and empty lines
+					if (clo.length() < 1 || clo.startsWith("#"))
+						continue;
+					// run module
+					if (!runModule("Testing", clo))
+						continue;
+					// convert result to plist
+					Plist result = PlistParser.parse(engine.encodeState());
+					String refname = generateExportFilename(clo, ++nTest);
+					File ref = search(referencesDir, refname);
+					if (ref == null) {
+						ref = search(referencesDir, refname + ".zip");
+						if (ref == null) {
+							logWarning("reference file '" + refname + "' not found - generate references first!");
+							continue;
+						}
+					}
+					Plist reference = engine.readPlist(ref.getAbsolutePath());
+					compareRuns(ref, reference, result);
+				}
+				scanner.close();
+			} catch (FileNotFoundException fnfe) {
+				logWarning("file '" + dir + "' not found!");
+			}
+		}
+		else {
+			// unknown extension
+		}
+	}
+
+	private static File search(File file, String search) {
+		if (file.isDirectory()) {
+			for (File f : file.listFiles()) {
+				File hit = search(f, search);
+				if (hit != null)
+					return hit;
+			}
+		}
+		if (search.equals(file.getName()))
+			return file;
+		return null;
 	}
 
 	@Override
 	public synchronized void modelStopped() {
-		// generation or testing finished
-		if (performTest)
-			testDone();
-		else
-			generateDone();
+		isRunning = false;
+		notify();
 	}
 
 	/**
@@ -446,6 +476,22 @@ public class TestEvoLudo implements Model.MilestoneListener {
 				}
 				continue;
 			}
+			// directory for retrieving references
+			if (arg.startsWith("--ref")) {
+				if (i + 1 == nArgs) {
+					logError("references: references file/directory name missing.");
+					engine.exit(1);
+				}
+				// check directory
+				arg = args[++i];
+				Path refs = FileSystems.getDefault().getPath(arg);
+				if (!refs.toFile().exists()) {
+					logError("references: file/directory '" + arg + "' not found.");
+					engine.exit(1);
+				}
+				referencesDir = refs.toFile();
+				continue;
+			}
 			// directory for storing/retrieving tests
 			if (arg.startsWith("--test")) {
 				if (i + 1 == nArgs) {
@@ -485,6 +531,8 @@ public class TestEvoLudo implements Model.MilestoneListener {
 				continue;
 			}
 		}
+		if (testsDir == null)
+			testsDir = referencesDir;
 		if (reportsDir == null) {
 			if (testsDir.isDirectory()) {
 				reportsDir = new File(testsDir.getPath() + File.separator + engine.getGit());
@@ -496,38 +544,41 @@ public class TestEvoLudo implements Model.MilestoneListener {
 				reportsDir = new File(".");
 		}
 		if (generator != null) {
-			// for generating tests, generator file/directory must be readable and the tests
-			// directory must exist and must be writable
+			// for generating reference tests, generator file/directory must be readable and
+			// the reference directory must exist and must be writable
 			if (generator != null && !generator.canRead()) {
 				logError("directory with generator scripts is not readable.");
 				engine.exit(1);
 			}
-			if (testsDir == null) {
-				logError("directory for generated tests missing - use --tests <directory>.");
+			if (referencesDir == null) {
+				logError("directory for generated references missing - use --references <directory>.");
 				engine.exit(1);
 			}
-			if (!testsDir.canWrite()) {
-				logError("directory for generated tests is not writable.");
+			if (!referencesDir.canWrite()) {
+				logError("directory for generated references is not writable.");
 				engine.exit(1);
 			}
-			testsDir = new File(testsDir.getPath() + File.separator + engine.getGit());
-			if (!testsDir.exists() && !testsDir.mkdir()) {
-				logError("failed to create directory '" + testsDir.getPath() + "' for tests.");
+			referencesDir = new File(referencesDir.getPath() + File.separator + engine.getGit());
+			if (!referencesDir.exists() && !referencesDir.mkdir()) {
+				logError("failed to create directory '" + referencesDir.getPath() + "' for references.");
 				engine.exit(1);
 			}
 		} else {
-			// for performing test(s) either test directory must exist and must be readable
-			// or test file must be provided and must be readable
-			if (testFile != null && testsDir != null) {
-				logError("specify either --test <file> or <dir>.");
+			// for testing the directory to the reference files must exist and be readable
+			if (referencesDir == null) {
+				logError("no references found. use --references <file|dir>.");
 				engine.exit(1);
 			}
-			if (testFile != null && !testFile.canRead()) {
-				logError("test file '" + testFile.getPath() + "' not readable.");
+			if (!referencesDir.canRead()) {
+				logError("reference directory '" + referencesDir.getPath() + "' not readable.");
 				engine.exit(1);
 			}
-			if (testsDir != null && !testsDir.canRead()) {
-				logError("test directory '" + testsDir.getPath() + "' not readable.");
+			if (testsDir == null) {
+				logError("no tests found. use --tests <file|dir> or --references <file|dir>.");
+				engine.exit(1);
+			}
+			if (!testsDir.canRead()) {
+				logError("test/reference directory '" + testsDir.getPath() + "' not readable.");
 				engine.exit(1);
 			}
 		}
@@ -550,7 +601,8 @@ public class TestEvoLudo implements Model.MilestoneListener {
 				"EvoLudo tests: " + engine.getVersion() + //
 				"\nUsage: java -jar TestEvoLudo.jar with options\n" + //
 				"       --generate <directory|file>: generate test files from option sets\n" + //
-				"       --tests <directory>: directory for storing/retrieving test cases\n" + //
+				"       --tests <directory|file>: test files (defaults to references)\n" + //
+				"       --references <directory>: directory for storing/retrieving test cases\n" + //
 				"       --reports  <directory>: directory to store reports of failed tests\n" + //
 				"       --compress: compress generated test files\n" + //
 				"       --minor: dump differences for minor failures\n" + //

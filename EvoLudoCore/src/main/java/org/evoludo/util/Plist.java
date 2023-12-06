@@ -109,7 +109,7 @@ public class Plist extends HashMap<String, Object> {
 	private void diffDict(Plist reference, Plist plist) {
 		// step 1: check if dict reference contains all keys of plist
 		for (String key : plist.keySet()) {
-			if (reference.containsKey(key))
+			if (skip.contains(key) || reference.containsKey(key))
 				continue;
 			processDiff("key '" + key + "' missing in reference.");
 		}

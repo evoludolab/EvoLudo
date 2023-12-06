@@ -156,7 +156,7 @@ public class simMoran extends Moran {
 				Formatter.formatFix(meanAbsTime*nPopulation, 8)+" ± "+
 				Formatter.formatFix(Math.sqrt(sumSquaresAbs/(nSamples-1))*nPopulation, 8)+"\t"+Formatter.formatFix(t1(rhoA1, nPopulation), 8));
 		engine.dumpEnd();
-//		output.flush();
+		engine.exportState();
 	}
 
 	private String msecToSring(long msec) {

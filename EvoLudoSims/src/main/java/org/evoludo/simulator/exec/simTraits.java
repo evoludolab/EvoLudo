@@ -137,6 +137,7 @@ public class simTraits extends Traits {
 					"\t"+Formatter.formatSci((double)(cpuSims*mcSDE)/(double)(cpuSDE*mcSims), 6));
 		}
 		engine.dumpEnd();
+		engine.exportState();
 	}
 
 	/*

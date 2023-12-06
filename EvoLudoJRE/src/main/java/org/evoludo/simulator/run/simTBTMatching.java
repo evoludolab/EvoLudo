@@ -154,6 +154,7 @@ if( isHomoInit ) out.println("# homo init - half of runs with homogeneous A, oth
 		}
 		out.println("# generations @ end: "+Formatter.formatSci(generation, 6));
 		engine.dumpEnd();
+		engine.exportState();
 	}
 
 	double[] mean, var, state, meanmean, meanvar;

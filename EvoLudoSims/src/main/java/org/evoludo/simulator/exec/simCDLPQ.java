@@ -127,6 +127,7 @@ public class simCDLPQ extends CDLPQ implements Model.ChangeListener {
 
 		out.println("# generations @ end: " + Formatter.formatSci(generation, 6));
 		engine.dumpEnd();
+		engine.exportState();
 	}
 
 	double[] mean, var, state;

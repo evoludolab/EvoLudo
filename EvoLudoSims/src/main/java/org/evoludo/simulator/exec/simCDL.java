@@ -116,6 +116,7 @@ public class simCDL extends CDL implements Model.ChangeListener {
 //		output.println("abs. times: "+ChHFormatter.format(time, 4));
 //		output.println("abs. sdevs: "+ChHFormatter.format(time2, 4));
 //		engine.dumpEnd();
+//		engine.exportState();
 //		((EvoLudoJRE) engine).exit(0);
 // END TESTING
 		// calculate fixation probabilities for different initial configurations
@@ -205,6 +206,7 @@ public class simCDL extends CDL implements Model.ChangeListener {
 				}
 			}
 			engine.dumpEnd();
+			engine.exportState();
 			((EvoLudoJRE) engine).exit(0);
 		}
 		if (scanNL != null) {
@@ -246,6 +248,7 @@ public class simCDL extends CDL implements Model.ChangeListener {
 				a += scanNL[2];
 			}
 			engine.dumpEnd();
+			engine.exportState();
 			((EvoLudoJRE) engine).exit(0);
 		}
 	}

@@ -243,6 +243,7 @@ public class simMutual extends Mutualism implements Model.ChangeListener {
 			}
 			out.println("# generations @ end: "+Formatter.formatSci(ibs.getTime(), 6));
 			engine.dumpEnd();
+			engine.exportState();
 			return;
 		}
 
@@ -329,6 +330,7 @@ public class simMutual extends Mutualism implements Model.ChangeListener {
 			}
 			out.println("# generations @ end: "+Formatter.formatSci(ibs.getTime(), 6));
 			engine.dumpEnd();
+			engine.exportState();
 			return;
 		}
 
@@ -394,6 +396,7 @@ public class simMutual extends Mutualism implements Model.ChangeListener {
 			}
 			out.println("# generations @ end: "+Formatter.formatSci(ibs.getTime(), 6));
 			engine.dumpEnd();
+			engine.exportState();
 			return;
 		}
 
@@ -462,6 +465,7 @@ public class simMutual extends Mutualism implements Model.ChangeListener {
 		out.println("# covariance: "+Formatter.format(covariance(), 6));
 		out.println("# generations @ end: "+Formatter.formatSci(ibs.getTime(), 6));
 		engine.dumpEnd();
+		engine.exportState();
 	}
 
 	private double covariance() {

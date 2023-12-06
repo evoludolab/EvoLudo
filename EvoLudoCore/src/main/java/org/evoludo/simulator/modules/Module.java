@@ -1564,7 +1564,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 					}
 					for (int i = 0; i < nSpecies; i++)
 						descr += "            n" + i + ": " + species.get(i).getName() + "\n";
-					descr += "(or nixni, niXni e.g. for lattices)";
+					descr += "                (or nixni, niXni e.g. for lattices)";
 					return descr;
 				}
 			});

@@ -144,6 +144,7 @@ public class simTBT extends TBT implements Model.ChangeListener {
 			}
 			out.println("# generations @ end: " + Formatter.formatSci(ibs.getTime(), 6));
 			engine.dumpEnd();
+			engine.exportState();
 			return;
 		}
 
@@ -193,6 +194,7 @@ public class simTBT extends TBT implements Model.ChangeListener {
 			}
 			out.println("# generations @ end: " + Formatter.formatSci(ibs.getTime(), 6));
 			engine.dumpEnd();
+			engine.exportState();
 			return;
 		}
 
@@ -239,6 +241,7 @@ public class simTBT extends TBT implements Model.ChangeListener {
 //		System.out.println("");
 //		System.out.println("# generations @ end: "+ChHFormatter.formatSci(generation,6)); 
 //		dumpEnd(); 
+//		engine.exportState();
 //		System.out.flush();
 
 		String msg = "# average and sdev frequencies\n# ";
@@ -251,7 +254,7 @@ public class simTBT extends TBT implements Model.ChangeListener {
 		out.println(msg);
 		out.println("# generations @ end: " + Formatter.formatSci(ibs.getTime(), 6));
 		engine.dumpEnd();
-
+		engine.exportState();
 	}
 
 	double[] mean, var, state, meanmean, meanvar;
