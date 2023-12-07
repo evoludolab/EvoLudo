@@ -1389,6 +1389,11 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		}
 	}
 
+	@Override
+	public String getJavaVersion() {
+		return System.getProperty("java.version");
+	}
+
 	public Plist readPlist(String name) {
 		if (name.endsWith(".zip")) {
 			// assume compressed file

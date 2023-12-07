@@ -43,11 +43,12 @@
 
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
-        <!-- <configuration>
-          <excludes>
+        <configuration>
+          <release>21</release>
+          <!-- <excludes>
             <exclude>**/run/*.java</exclude>
-          </excludes>
-        </configuration> -->
+          </excludes> -->
+        </configuration>
       </plugin>
 
       <plugin>

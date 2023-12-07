@@ -90,7 +90,7 @@
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/EvoLudoTest/src/main/java/org/evoludo/simulator/exec/TestEvoludo.java",
-            "args": "--tests ${workspaceFolder}/EvoLudoTest/tests/references --generate ${workspaceFolder}/EvoLudoTest/tests/generators --reports ${workspaceFolder}/EvoLudoTest/tests/reports --compress"
+            "args": "--references ${workspaceFolder}/EvoLudoTest/tests/references --generate ${workspaceFolder}/EvoLudoTest/tests/generators --reports ${workspaceFolder}/EvoLudoTest/tests/reports --compress"
         },
         {
             "name": "JRE TestEvoludo (test)",

@@ -1511,6 +1511,15 @@ public abstract class EvoLudo
 	}
 
 	/**
+	 * Get version of JRE (if not running in browser).
+	 * 
+	 * @return the java version string
+	 */
+	public String getJavaVersion() {
+		return null;
+	}
+
+	/**
 	 * Gets current git version of code base.
 	 * 
 	 * @return the git version string
@@ -1568,6 +1577,9 @@ public abstract class EvoLudo
 		plist.append(Plist.encodeKey("Export date", new Date().toString()));
 		plist.append(Plist.encodeKey("Title", activeModule.getTitle()));
 		plist.append(Plist.encodeKey("Version", getVersion()));
+		String java = getJavaVersion();
+		if (java != null)
+			plist.append(Plist.encodeKey("JavaVersion", java));
 		plist.append(Plist.encodeKey("CLO", parser.getCLO()));
 		activeModel.encodeState(plist);
 		// the mersenne twister state is pretty long (and uninteresting) keep at end
