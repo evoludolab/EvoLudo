@@ -275,6 +275,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		map2fitness = null;
 		cloFitnessMap.clearKeys();
 		cloPlayerUpdate.clearKeys();
+		initType = null;
 		opponent = this;
 		engine.removeMilestoneListener(this);
 		if (this instanceof Model.ChangeListener)
