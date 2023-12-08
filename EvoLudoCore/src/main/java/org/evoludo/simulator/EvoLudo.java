@@ -1699,24 +1699,25 @@ public abstract class EvoLudo
 		if (cloarray == null)
 			return null;
 		// first deal with --module option
-		String moduleName = cloModule.getName();
-		String newModuleKey = null;
+		String moduleParam = cloModule.getName();
+		CLOption.Key moduleKey = null;
 		int nParams = cloarray.length;
 		for (int i = 0; i < nParams; i++) {
 			String param = cloarray[i];
-			if (param.startsWith(moduleName)) {
-				newModuleKey = CLOption.stripKey(moduleName, param).trim();
-				if (param.length() == 0) {
+			if (param.startsWith(moduleParam)) {
+				String[] moduleName = param.split("[\\s=]");
+				if (moduleName == null || moduleName.length < 2) {
 					logger.warning("module key missing");
-					return null;
+					return null;				
 				}
+				moduleKey = cloModule.match(moduleName[1]);
 				// module key found; no need to continue
 				cloarray = ArrayMath.drop(cloarray, i--);
 				nParams--;
 				break;
 			}
 		}
-		if (loadModule(newModuleKey) == null)
+		if (loadModule(moduleKey.getKey()) == null)
 			return null;
 		// second determine feasible --model options for given module
 		cloModel.clearKeys();

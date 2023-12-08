@@ -227,7 +227,7 @@ public class Mutualism extends Discrete implements Pairs,
 
 	@Override
 	public String getKey() {
-		return "Mut";
+		return "Mutual";
 	}
 
 	@Override
