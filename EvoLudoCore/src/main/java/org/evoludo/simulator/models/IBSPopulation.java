@@ -3492,8 +3492,6 @@ public abstract class IBSPopulation {
 			groupScores = new double[maxGroup]; // can hold scores for any group size!
 		if (smallScores == null || smallScores.length != maxGroup)
 			smallScores = new double[maxGroup]; // can hold scores for any group size!
-		interactionGroup.alloc(maxGroup);
-		referenceGroup.alloc(maxGroup);
 		if (cProbs == null || cProbs.length != maxGroup)
 			cProbs = new double[maxGroup]; // can hold groups of any size!
 		// if( VACANT>=0 && (picking == null || picking.length!=maxGroup))

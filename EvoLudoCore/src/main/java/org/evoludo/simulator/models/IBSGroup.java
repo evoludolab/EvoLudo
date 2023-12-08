@@ -88,21 +88,6 @@ public class IBSGroup {
 	}
 
 	/**
-	 * Allocate memory that is sufficient to accomodate groups of a maximum size
-	 * {@code maxsize}.
-	 * 
-	 * @param maxsize the maximum group size
-	 * 
-	 * @see IBSPopulation#check()
-	 */
-	public void alloc(int maxsize) {
-		if (mem == null || mem.length != maxsize) {
-			mem = new int[maxsize];
-			group = mem;
-		}
-	}
-
-	/**
 	 * The current sampling type for the formation of interaction or reference
 	 * groups.
 	 */
@@ -155,6 +140,8 @@ public class IBSGroup {
 		if (nSamples <= 0)
 			return;
 		this.nSamples = nSamples;
+		if (mem == null || mem.length < nSamples)
+			mem = new int[nSamples];
 	}
 
 	/**
