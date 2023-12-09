@@ -47,6 +47,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBS.MigrationType;
 import org.evoludo.simulator.models.IBS.PopulationUpdateType;
+import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Module.Map2Fitness;
@@ -510,9 +511,9 @@ public abstract class IBSPopulation {
 	 * Flag to indicate whether scores are reset whenever a player adopts the
 	 * strategy of another (default) or only if an actual strategy change occurred.
 	 * 
-	 * @see IBS#cloResetScoresOnChange
+	 * @see IBS#cloScoringType
 	 */
-	protected boolean playerScoreResetAlways = true;
+	protected ScoringType playerScoreReset;
 
 	/**
 	 * The type of migration.
@@ -2248,7 +2249,7 @@ public abstract class IBSPopulation {
 		}
 		// no actual strategy change occurred - reset score always (default) or only on
 		// actual change?
-		if (playerScoreResetAlways)
+		if (playerScoreReset.equals(ScoringType.RESET_ALWAYS))
 			resetScoreAt(dest);
 		playGameAt(dest);
 	}
@@ -2278,11 +2279,12 @@ public abstract class IBSPopulation {
 
 	/**
 	 * Perform a single update of the individual with index {@code me}. Returns
-	 * {@code true} if the individual changed its strategy to signal that the
-	 * focal individual's score will need to be reset.
+	 * {@code true} if the individual adopted the trait of the reference individual.
+	 * Does not imply that the trait changed in discrete modules. Whether the
+	 * individuals score is reset depends on {@link #playerScoreReset}
 	 *
 	 * @param me the index of the focal individual
-	 * @return {@code true} if strategy changed
+	 * @return {@code true} if trait of reference adopted
 	 * 
 	 * @see #resetScoreAt(int)
 	 */
@@ -2302,7 +2304,7 @@ public abstract class IBSPopulation {
 	 * @param me         the index of the focal individual
 	 * @param refGroup   the group of reference individuals
 	 * @param rGroupSize the number of reference individuals
-	 * @return {@code true} if strategy changed
+	 * @return {@code true} if trait of reference adopted
 	 * 
 	 * @see #resetScoreAt(int)
 	 */
@@ -2354,7 +2356,7 @@ public abstract class IBSPopulation {
 			mutateStrategyAt(me, switched);
 			return true; // if mutated always indicate change
 		}
-		if (playerScoreResetAlways)
+		if (playerScoreReset.equals(ScoringType.RESET_ALWAYS))
 			return switched;
 		// signal change only if actual change of strategy occurred
 		return !isSameStrategy(me);
@@ -2364,8 +2366,9 @@ public abstract class IBSPopulation {
 	 * Updates the focal individual with index {@code me} by adopting the strategy
 	 * of the best performing reference individual among the {@code rGroupSize}
 	 * models in the array {@code refGroup}. Returns {@code true} if the individual
-	 * changed its strategy to signal that the focal individual's score will need to
-	 * be reset.
+	 * adopted the trait of the reference individual. Does not imply that the trait
+	 * changed in discrete modules. Whether the individuals score is reset depends
+	 * on {@link #playerScoreReset}.
 	 * 
 	 * <h3>Notes:</h3>
 	 * <ol>
@@ -2380,7 +2383,7 @@ public abstract class IBSPopulation {
 	 * @param me         the index of the focal individual
 	 * @param refGroup   the group of reference individuals
 	 * @param rGroupSize the number of reference individuals
-	 * @return {@code true} if strategy changed
+	 * @return {@code true} if trait of reference adopted
 	 * 
 	 * @see #preferredPlayerBest(int, int, int)
 	 * @see #resetScoreAt(int)
@@ -2427,17 +2430,19 @@ public abstract class IBSPopulation {
 	 * models in the array {@code refGroup}. If the scores of two (or more)
 	 * references or the score of the focal individual and one (or more)
 	 * reference(s) tie, then a coin toss decides which strategy to keep/adopt.
-	 * Returns {@code true} if the individual changed its strategy to signal that
-	 * the focal individual's score will need to be reset.
+	 * Returns {@code true} if the individual adopted the trait of the reference
+	 * individual. Does not imply that the trait changed in discrete modules.
+	 * Whether the individuals score is reset depends on
+	 * {@link #playerScoreReset}.
 	 * 
 	 * <h3>Notes:</h3>
-	 * For the best update it does not matter whether scores
-	 * are averaged or accumulated
+	 * For the best update it does not matter whether scores are averaged or
+	 * accumulated.
 	 * 
 	 * @param me         the index of the focal individual
 	 * @param refGroup   the group of reference individuals
 	 * @param rGroupSize the number of reference individuals
-	 * @return {@code true} if strategy changed
+	 * @return {@code true} if trait of reference adopted
 	 * 
 	 * @see #resetScoreAt(int)
 	 */
@@ -2473,14 +2478,15 @@ public abstract class IBSPopulation {
 	 * Updates the focal individual with index {@code me} by adopting the strategy
 	 * of one reference individual (including itself) among the the
 	 * {@code rGroupSize} models in the array {@code refGroup} with a probability
-	 * proportional to their scores. Returns {@code true} if the individual changed
-	 * its strategy to signal that the focal individual's score will need to be
-	 * reset.
+	 * proportional to their scores. Returns {@code true} if the individual adopted
+	 * the trait of the reference individual. Does not imply that the trait changed
+	 * in discrete modules. Whether the individuals score is reset depends on
+	 * {@link #playerScoreReset}.
 	 *
 	 * @param me         the index of the focal individual
 	 * @param refGroup   the group of reference individuals
 	 * @param rGroupSize the number of reference individuals
-	 * @return {@code true} if strategy changed
+	 * @return {@code true} if trait of reference adopted
 	 * 
 	 * @see #resetScoreAt(int)
 	 */
@@ -2535,13 +2541,15 @@ public abstract class IBSPopulation {
 	 * proportional to the difference in fitness:
 	 * \[p_{i\to j} = \frac{(f_i-f_j)_+}\alpha,\]
 	 * where \(\alpha\) denotes a normalization factor to ensure \(p_{i\to
-	 * j}\in[0,1]\). Returns {@code true} if the individual changed its strategy to
-	 * signal that the focal individual's score will need to be reset.
+	 * j}\in[0,1]\). Returns {@code true} if the individual adopted the trait
+	 * of the reference individual. Does not imply that the trait changed in
+	 * discrete modules. Whether the individuals score is reset depends on
+	 * {@link #playerScoreReset}.
 	 * 
 	 * @param me         the index of the focal individual
 	 * @param refGroup   the group of reference individuals
 	 * @param rGroupSize the number of reference individuals
-	 * @return {@code true} if strategy changed
+	 * @return {@code true} if trait of reference adopted
 	 * 
 	 * @see #resetScoreAt(int)
 	 */
@@ -2559,13 +2567,14 @@ public abstract class IBSPopulation {
 	 * where \(\alpha\) denotes a normalization factor to ensure \(p_{i\to
 	 * j}\in[0,1]\). This corresponds to the microscopic updating which recovers the
 	 * standard replicator equation in the continuum limit. Returns {@code true} if
-	 * the individual changed its strategy to signal that the focal individual's
-	 * score will need to be reset.
+	 * the individual adopted the trait of the reference individual. Does not imply
+	 * that the trait changed in discrete modules. Whether the individuals score is
+	 * reset depends on {@link #playerScoreReset}.
 	 * 
 	 * @param me         the index of the focal individual
 	 * @param refGroup   the group of reference individuals
 	 * @param rGroupSize the number of reference individuals
-	 * @return {@code true} if strategy changed
+	 * @return {@code true} if trait of reference adopted
 	 * 
 	 * @see #resetScoreAt(int)
 	 */
@@ -2574,16 +2583,17 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Helper method for replicator type updates. Returns {@code true} if
-	 * the individual changed its strategy to signal that the focal individual's
-	 * score will need to be reset.
+	 * Helper method for replicator type updates. Returns {@code true} if the
+	 * individual adopted the trait of the reference individual. Does not imply that
+	 * the trait changed in discrete modules. Whether the individuals score is reset
+	 * depends on {@link #playerScoreReset}.
 	 * 
 	 * @param me         the index of the focal individual
 	 * @param refGroup   the group of reference individuals
 	 * @param rGroupSize the number of reference individuals
 	 * @param betterOnly the flag to indicate whether only better performing
 	 *                   reference individuals are considered
-	 * @return {@code true} if strategy changed
+	 * @return {@code true} if trait of reference adopted
 	 * 
 	 * @see #updateReplicatorPlus(int, int[], int)
 	 * @see #updateReplicatorHalf(int, int[], int)
@@ -2718,13 +2728,15 @@ public abstract class IBSPopulation {
 	 * limit \(T\to\infty\) imitation reduces to a coin toss, \(p_{i\to j}=1/2\). In
 	 * contrast, for \(T\to 0\) it converges to the step-function, with
 	 * \(\Theta(x)=1\) for positive \(x\), \(\Theta(x)=0\) for \(x\) negative and
-	 * \(\Theta(0)=1/2\). Returns {@code true} if the individual changed its
-	 * strategy to signal that the focal individual's score will need to be reset.
+	 * \(\Theta(0)=1/2\). Returns {@code true} if the individual adopted the trait
+	 * of the reference individual. Does not imply that the trait changed in
+	 * discrete modules. Whether the individuals score is reset depends on
+	 * {@link #playerScoreReset}.
 	 *
 	 * @param me         the index of the focal individual
 	 * @param refGroup   the group of reference individuals
 	 * @param rGroupSize the number of reference individuals
-	 * @return {@code true} if strategy changed
+	 * @return {@code true} if trait of reference adopted
 	 * 
 	 * @see #resetScoreAt(int)
 	 */
@@ -3354,7 +3366,7 @@ public abstract class IBSPopulation {
 	 * in general, for unstructured populations (subclasses can do better, e.g. for
 	 * discrete strategies it is
 	 * possible, see {@link IBSDPopulation#doAdjustScores()}).</dd>
-	 * <dt>playerScoreResetAlways</dt>
+	 * <dt>playerScoreReset</dt>
 	 * <dd>if scores are reset whenever an individual adopts the strategy of another
 	 * (regardless of whether an actual strategy change occurred) then the expected
 	 * number of interactions of each individual remains constant over time (even
@@ -3365,13 +3377,14 @@ public abstract class IBSPopulation {
 	 *
 	 * @return <code>true</code> if adjusting scores is feasible
 	 * 
+	 * @see ScoringType
 	 * @see IBSDPopulation
 	 */
 	protected boolean doAdjustScores() {
 		return !(interaction.isType(Geometry.Type.MEANFIELD) || //
 				(interaction.isType(Geometry.Type.HIERARCHY) && interaction.subgeometry == Geometry.Type.MEANFIELD) || //
 				!interactionGroup.isSampling(IBSGroup.SamplingType.ALL) || //
-				!playerScoreResetAlways);
+				!playerScoreReset.equals(ScoringType.RESET_ALWAYS));
 	}
 
 	/**
@@ -4091,10 +4104,10 @@ public abstract class IBSPopulation {
 	 * 
 	 * @param reset the flag to indicate whether scores are always reset
 	 * 
-	 * @see #playerScoreResetAlways
+	 * @see #playerScoreReset
 	 */
-	public void setPlayerScoreResetAlways(boolean reset) {
-		playerScoreResetAlways = reset;
+	public void setPlayerScoreReset(ScoringType type) {
+		playerScoreReset = type;
 	}
 
 	/**
@@ -4104,10 +4117,10 @@ public abstract class IBSPopulation {
 	 * 
 	 * @return {@code true} if scores are always reset
 	 * 
-	 * @see #playerScoreResetAlways
+	 * @see #playerScoreReset
 	 */
-	public boolean getPlayerScoreResetAlways() {
-		return playerScoreResetAlways;
+	public ScoringType getPlayerScoreReset() {
+		return playerScoreReset;
 	}
 
 	/**

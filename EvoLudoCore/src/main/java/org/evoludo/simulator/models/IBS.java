@@ -1073,52 +1073,56 @@ public abstract class IBS implements Model.IBS {
 				@Override
 				public void report(PrintStream output) {
 					for (IBSPopulation pop : species)
-						output.println("# scoring:              "
-								+ (pop.getPlayerScoreAveraged() ? "averaged" : "accumulated") +
-								(pop.getPlayerScoreResetAlways() ? " (reset on change only)" : "") + (isMultispecies
-										? " ("
-												+ pop.getModule().getName() + ")"
-										: ""));
-				}
+					output.println("# scoring:              " + //
+						(pop.getPlayerScoreAveraged() ? "averaged" : "accumulated") + //
+						(isMultispecies	? " (" + pop.getModule().getName() + ")" : ""));
+	}
 			});
 
 	/**
-	 * Command line option to set whether when the scores of players are reset
-	 * <ol>
-	 * <li>only when a player adopts a <em>different</em> strategy,
-	 * <li>every time a player adopts a strategy (regardless of whether it resulted
-	 * in an actual change).
-	 * </ol>
-	 * <p>
-	 * <strong>Note:</strong> For accumulated scores the differences can be quite
-	 * significant because players can potentially accumulate scores from many more
-	 * interactions. This setting also impacts regular structures.
+	 * Command line option to set method for resetting the scores of individuals.
 	 * 
-	 * @see #cloAccumulatedScores
+	 * @see ScoringType
 	 */
-	public final CLOption cloResetScoresOnChange = new CLOption("resetonchange", "always", CLOption.Argument.NONE, EvoLudo.catModel, 
-			"--resetonchange  reset scores only on actual strategy change\n" +
-					"                (instead of on every strategy update)",
+	public final CLOption cloScoringType = new CLOption("resetscores", ScoringType.RESET_ALWAYS.getKey(), CLOption.Argument.REQUIRED, EvoLudo.catModel, 
+			"--resetscores <t>  type for restting scores t:",
 			new CLODelegate() {
 
 				/**
 				 * {@inheritDoc}
 				 * <p>
-				 * Parse method for resetting scores of players in a single or multiple
-				 * populations/species. {@code arg} is ignored. If commandline option is present
-				 * the players in <em>all</em> population/species reset scores only after an
-				 * actual strategy change.
+				 * Parse method for restting the scores of individuals.
 				 * 
-				 * @param arg ignored
+				 * @param arg the method for resetting the scores.
 				 */
 				@Override
 				public boolean parse(String arg) {
-					// default is to reset score always (not only on actual strategy change)
-					for (IBSPopulation pop : species)
-						pop.setPlayerScoreResetAlways(!cloResetScoresOnChange.isSet());
-					return true;
+					String[] playerresets = arg.split(CLOParser.SPECIES_DELIMITER);
+					int n = 0;
+					boolean success = true;
+					for (IBSPopulation pop : species) {
+						String rest = playerresets[n++ % playerresets.length];
+						ScoringType st = (ScoringType) cloScoringType.match(rest);
+						if (st == null) {
+							if (success)
+								logger.warning((species.size() > 1 ? pop.getModule().getName() + ": " : "") + //
+										"method to reset scores '" + rest + "' not recognized - using '"
+										+ pop.getPlayerScoreReset()
+										+ "'");
+							success = false;
+							continue;
+						}
+						pop.setPlayerScoreReset(st);
+					}
+					return success;
 				}
-				// cloAccumulatedScores takes care of report (see above)
+
+				@Override
+				public void report(PrintStream output) {
+					for (IBSPopulation pop : species)
+						output.println("# resetscores:          " + pop.getPlayerScoreReset() + //
+							(isMultispecies	? " (" + pop.getModule().getName() + ")" : ""));
+				}
 			});
 
 	/**
@@ -1631,7 +1635,9 @@ public abstract class IBS implements Model.IBS {
 			// options that are only meaningful if at least some populations do not 
 			// have static fitness
 			parser.addCLO(cloAccumulatedScores);
-			parser.addCLO(cloResetScoresOnChange);
+			parser.addCLO(cloScoringType);
+			cloScoringType.clearKeys();
+			cloScoringType.addKeys(ScoringType.values());
 			parser.addCLO(cloInteractions);
 			cloInteractions.clearKeys();
 			cloInteractions.addKeys(IBSGroup.SamplingType.values());
@@ -1847,6 +1853,83 @@ public abstract class IBS implements Model.IBS {
 		}
 
 		@Override
+		public String getKey() {
+			return key;
+		}
+
+		@Override
+		public String getTitle() {
+			return title;
+		}
+
+		@Override
+		public String toString() {
+			return key + ": " + title;
+		}
+	}
+
+	/**
+	 * Schedules for resetting individual payoffs/fitness:
+	 * <dl>
+	 * <dt>onchange</dt>
+	 * <dd>Reset when changing trait (only after updating from reference model with
+	 * a different trait)</dd>
+	 * <dt>onupdate</dt>
+	 * <dd>Reset when updating from reference individual (not necessarily a change
+	 * in trait)</dd>
+	 * <dt>ephemeral</dt>
+	 * <dd>Determine payoffs/fitness calculated only for updating</dd>
+	 * </dl>
+	 * 
+	 * @see org.evoludo.simulator.modules.Module#speciesUpdateRate
+	 */
+	public static enum ScoringType implements CLOption.Key {
+
+		/**
+		 * Reset when <em>changing</em> trait (only after updating from reference model
+		 * with a different trait).
+		 */
+		RESET_ON_CHANGE("onchange", "when changing trait"),
+
+		/**
+		 * Reset when <em>updating</em> from reference individual (not necessarily a
+		 * change in trait).
+		 */
+		RESET_ALWAYS("onupdate", "when updating trait"),
+
+		/**
+		 * Determine payoffs/fitness calculated only for updating.
+		 */
+		EPHEMERAL("ephemeral", "payoffs for updating only");
+
+		/**
+		 * Key of population update type. Used for parsing command line options.
+		 * 
+		 * @see org.evoludo.simulator.models.IBS#cloPopulationUpdate
+		 *      IBS.cloPopulationUpdate
+		 */
+		String key;
+
+		/**
+		 * Brief description of population update type for GUI and help display.
+		 * 
+		 * @see EvoLudo#helpCLO()
+		 */
+		String title;
+
+		/**
+		 * Instantiate new type of population update.
+		 * 
+		 * @param key   identifier for parsing of command line option
+		 * @param title the summary of geometry for GUI and help display
+		 */
+		ScoringType(String key, String title) {
+			this.key = key;
+			this.title = title;
+		}
+
+		@Override
+
 		public String getKey() {
 			return key;
 		}

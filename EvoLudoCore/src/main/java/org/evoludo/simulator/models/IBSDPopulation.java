@@ -40,6 +40,7 @@ import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSD.FixationData;
 import org.evoludo.simulator.models.IBSD.InitType;
 import org.evoludo.simulator.models.Model.Mode;
@@ -1841,7 +1842,7 @@ public class IBSDPopulation extends IBSPopulation {
 		// relaxed conditions for adjusting scores: for discrete strategies unstructured
 		// populations are feasible.
 		return !(!interactionGroup.isSampling(IBSGroup.SamplingType.ALL) ||
-				!playerScoreResetAlways);
+				!playerScoreReset.equals(ScoringType.RESET_ALWAYS));
 	}
 
 	@Override

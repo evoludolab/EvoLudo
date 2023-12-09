@@ -38,6 +38,7 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBS.MigrationType;
+import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSD.InitType;
 import org.evoludo.simulator.models.Model.Type;
 import org.evoludo.simulator.models.IBSD;
@@ -354,7 +355,7 @@ public class DemesTBT extends TBT {
 			}
 			// no actual strategy change occurred - reset score always (default) or only on
 			// actual change?
-			if (playerScoreResetAlways)
+			if (playerScoreReset.equals(ScoringType.RESET_ALWAYS))
 				resetScoreAt(vacant);
 			playGameAt(vacant);
 		}
