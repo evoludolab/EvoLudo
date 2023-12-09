@@ -105,7 +105,8 @@ public class TestEvoLudo implements Model.MilestoneListener {
 
 	protected void generate(File clo) {
 		String filename = clo.getName();
-		File exportDir = new File(referencesDir.getPath() + File.separator + filename.substring(0, filename.lastIndexOf(".clo")));
+		File exportDir = new File(
+				referencesDir.getPath() + File.separator + filename.substring(0, filename.lastIndexOf(".clo")));
 		if (!exportDir.exists() && !exportDir.mkdir()) {
 			logWarning("Generating: failed to make directory '" + exportDir.getPath() + "' - skipped.");
 			return;
@@ -135,7 +136,8 @@ public class TestEvoLudo implements Model.MilestoneListener {
 			File ref = checkReference(current, plist, export);
 			if (ref != null && ref != current) {
 				// check passed; create link to reference
-				if (ref.getName().substring(filename.lastIndexOf(".") + 1).equals("zip"))
+				String refname = ref.getName();
+				if (refname.substring(refname.lastIndexOf(".") + 1).equals("zip"))
 					export += ".zip";
 				try {
 					Files.createSymbolicLink(exportDir.toPath().resolve(export), ref.toPath().toRealPath());
@@ -151,7 +153,7 @@ public class TestEvoLudo implements Model.MilestoneListener {
 				ref = exportDir.toPath().resolve(export + ".zip").toFile();
 				try {
 					ZipOutputStream zos = new ZipOutputStream(
-						new FileOutputStream(ref));
+							new FileOutputStream(ref));
 					zos.putNextEntry(new ZipEntry(export));
 					zos.write(result.getBytes());
 					zos.finish();
@@ -163,8 +165,7 @@ public class TestEvoLudo implements Model.MilestoneListener {
 					logError("failed to write to '" + export + "'.");
 					nTestFailures++;
 				}
-			}
-			else {
+			} else {
 				// no compression
 				ref = referencesDir.toPath().resolve(export + ".zip").toFile();
 				try {
@@ -245,7 +246,7 @@ public class TestEvoLudo implements Model.MilestoneListener {
 		while (isRunning) {
 			synchronized (this) {
 				engine.run();
-//				System.out.println(task + ": engine running, waiting to finish...");
+				// System.out.println(task + ": engine running, waiting to finish...");
 				try {
 					wait();
 				} catch (InterruptedException e) {
@@ -299,7 +300,7 @@ public class TestEvoLudo implements Model.MilestoneListener {
 			}
 		}
 		msg = color + "Testing " + refname.getName() + " " + msg;
-		switch(color) {
+		switch (color) {
 			case GREEN:
 				logOk(msg);
 				break;
@@ -316,12 +317,12 @@ public class TestEvoLudo implements Model.MilestoneListener {
 			String javaref = (String) reference.get("JavaVersion");
 			String javarep = (String) replicate.get("JavaVersion");
 			if (javaref != null && !javaref.equals(javarep))
-				logWarning("JRE versions differ (me: " + javarep + ", ref: " + javaref +")");
+				logWarning("JRE versions differ (me: " + javarep + ", ref: " + javaref + ")");
 			String ext;
 			String report = reportsDir.getAbsolutePath() + File.separator + refname.getName();
 			if (nIssues == nMinor) {
 				nTestMinor++;
-				if (!dumpMinor) 
+				if (!dumpMinor)
 					return false;
 				ext = "-minor.plist";
 			} else {
@@ -360,8 +361,7 @@ public class TestEvoLudo implements Model.MilestoneListener {
 				Plist result = PlistParser.parse(engine.encodeState());
 				compareRuns(dir, reference, result);
 			}
-		}
-		else if (ext.equals(".clo")) {
+		} else if (ext.equals(".clo")) {
 			// derive reference from clo string
 			int nTest = 0;
 			try {
@@ -384,8 +384,7 @@ public class TestEvoLudo implements Model.MilestoneListener {
 			} catch (FileNotFoundException fnfe) {
 				logWarning("file '" + dir + "' not found!");
 			}
-		}
-		else {
+		} else {
 			// unknown extension
 		}
 	}
@@ -621,7 +620,8 @@ public class TestEvoLudo implements Model.MilestoneListener {
 				engine.exit(1);
 			}
 		}
-		// for generating and testing, the directory for reports must exist and be writeable
+		// for generating and testing, the directory for reports must exist and be
+		// writeable
 		if (reportsDir != null && !reportsDir.exists()) {
 			if (!reportsDir.mkdirs()) {
 				logError("failed to create directory '" + reportsDir.getPath() + "' for reports.");
@@ -638,15 +638,15 @@ public class TestEvoLudo implements Model.MilestoneListener {
 	public void help() {
 		System.out.println(
 				"EvoLudo tests: " + engine.getVersion() + //
-				"\nUsage: java -jar TestEvoLudo.jar with options\n" + //
-				"       --generate <directory|file>: generate test files from option sets\n" + //
-				"       --tests <directory|file>: test files (defaults to references)\n" + //
-				"       --references <directory>: directory for storing/retrieving test cases\n" + //
-				"       --reports  <directory>: directory to store reports of failed tests\n" + //
-				"       --compress: compress generated test files\n" + //
-				"       --minor: dump differences for minor failures\n" + //
-				"       --verb: verbose mode\n" + //
-				"       --help, -h or no arguments: this help screen");
+						"\nUsage: java -jar TestEvoLudo.jar with options\n" + //
+						"       --generate <directory|file>: generate test files from option sets\n" + //
+						"       --tests <directory|file>: test files (defaults to references)\n" + //
+						"       --references <directory>: directory for storing/retrieving test cases\n" + //
+						"       --reports  <directory>: directory to store reports of failed tests\n" + //
+						"       --compress: compress generated test files\n" + //
+						"       --minor: dump differences for minor failures\n" + //
+						"       --verb: verbose mode\n" + //
+						"       --help, -h or no arguments: this help screen");
 		engine.exit(0);
 	}
 
@@ -663,35 +663,35 @@ public class TestEvoLudo implements Model.MilestoneListener {
 	}
 
 	public void logMessage(String msg) {
-		if(logger.isLoggable(Level.INFO))
+		if (logger.isLoggable(Level.INFO))
 			logger.info(msg);
 		else
 			System.out.println(msg);
 	}
 
 	public void logTitle(String msg) {
-		if(logger.isLoggable(Level.INFO))
+		if (logger.isLoggable(Level.INFO))
 			logger.info(ConsoleColors.BLACK_BOLD + msg + ConsoleColors.RESET);
 		else
 			System.out.println(ConsoleColors.BLACK_BOLD + msg + ConsoleColors.RESET);
 	}
 
 	public void logOk(String msg) {
-		if(logger.isLoggable(Level.INFO))
+		if (logger.isLoggable(Level.INFO))
 			logger.info(ConsoleColors.GREEN + msg + ConsoleColors.RESET);
 		else
 			System.out.println(ConsoleColors.GREEN + msg + ConsoleColors.RESET);
 	}
 
 	public void logWarning(String msg) {
-		if(logger.isLoggable(Level.WARNING))
+		if (logger.isLoggable(Level.WARNING))
 			logger.warning(ConsoleColors.YELLOW + msg + ConsoleColors.RESET);
 		else
 			System.out.println(ConsoleColors.YELLOW + "WARNING: " + msg + ConsoleColors.RESET);
 	}
 
 	public void logError(String msg) {
-		if(logger.isLoggable(Level.SEVERE))
+		if (logger.isLoggable(Level.SEVERE))
 			logger.severe(ConsoleColors.RED + msg + ConsoleColors.RESET);
 		else
 			System.out.println(ConsoleColors.RED + "ERROR: " + msg + ConsoleColors.RESET);

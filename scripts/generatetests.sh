@@ -11,10 +11,13 @@ java -jar "$EVOLUDO_TEST_HOME"/target/EvoLudoTest.*.jar \
 		--reports "$EVOLUDO_TEST_TEST/reports" \
 		--compress ;
 
+passed=$? ;
+
 # System.exit(-1) in java translates to 255
-if (( $? == 255 ))
+if [ $passed -ne 0 ]
 	then
-		exit ;
+    echo "EvoLudo test generation failed - aborting!" ;
+	exit ;
 fi
 
 nreportsafter=$((`ls | wc -l`)) ;
