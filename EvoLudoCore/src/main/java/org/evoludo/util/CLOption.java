@@ -655,8 +655,8 @@ public class CLOption implements Comparable<CLOption> {
 
 	/**
 	 * Add all {@link Key}s in the array {@code chain} to this option. Note, this
-	 * ignores keys starting with '-', except if '-' is the key. If needed, those 
-	 * keys can still be added by calling {@code addKey(Key)} or 
+	 * ignores keys starting with '-', except if '-' is the key. If needed, those
+	 * keys can still be added by calling {@code addKey(Key)} or
 	 * {@code #addKey(String, String)}.
 	 * 
 	 * @param chain the array of {@link Key}s to be added
@@ -679,6 +679,10 @@ public class CLOption implements Comparable<CLOption> {
 	 * 
 	 * @param key   the name of the key
 	 * @param title the description of the key
+	 * @return the previous value associated with {@code key}, or {@code null} if
+	 *         there was no mapping for {@code key}. (A {@code null} return can also
+	 *         indicate that the map previously associated {@code null} with
+	 *         {@code key}.)
 	 */
 	public Key addKey(String key, String title) {
 		if (keys == null)
@@ -690,6 +694,10 @@ public class CLOption implements Comparable<CLOption> {
 	 * Add {@link Key} {@code key} to option.
 	 * 
 	 * @param key the {@link Key} to be added
+	 * @return the previous value associated with {@code key}, or {@code null} if
+	 *         there was no mapping for {@code key}. (A {@code null} return can also
+	 *         indicate that the map previously associated {@code null} with
+	 *         {@code key}.)
 	 */
 	public Key addKey(Key key) {
 		if (keys == null)
@@ -919,7 +927,8 @@ public class CLOption implements Comparable<CLOption> {
 			for (int n = 0; n < args.length; n++) {
 				String key = match(args[n]).getKey();
 				String keyarg = stripKey(key, args[n]);
-				argkeys += key + (keyarg.length() > 0 ? " " + keyarg : "") + (n == args.length - 1 ? "" : CLOParser.SPECIES_DELIMITER);
+				argkeys += key + (keyarg.length() > 0 ? " " + keyarg : "")
+						+ (n == args.length - 1 ? "" : CLOParser.SPECIES_DELIMITER);
 			}
 			return myDescr + "\n      (current: " + argkeys + ", default: " + defaultArg + ")";
 		}
