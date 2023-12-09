@@ -48,6 +48,7 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBS.MigrationType;
 import org.evoludo.simulator.models.IBS.PopulationUpdateType;
 import org.evoludo.simulator.models.IBS.ScoringType;
+import org.evoludo.simulator.models.IBSGroup.SamplingType;
 import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Module.Map2Fitness;
@@ -178,6 +179,8 @@ public abstract class IBSPopulation {
 		fitness = null;
 		tags = null;
 		interactions = null;
+		typeScores = null;
+		typeFitness = null;
 	}
 
 	/**
@@ -3186,7 +3189,11 @@ public abstract class IBSPopulation {
 		}
 
 		nMixedInter = -1;
-		hasLookupTable = module.isStatic() || (adjustScores && interaction.isType(Geometry.Type.MEANFIELD));
+		hasLookupTable = module.isStatic() || //
+				(adjustScores && interaction.isType(Geometry.Type.MEANFIELD)) || //
+				(playerScoreReset.equals(ScoringType.EPHEMERAL) 
+					&& interaction.isType(Geometry.Type.MEANFIELD) //
+					&& interactionGroup.isSampling(SamplingType.ALL));
 		if (hasLookupTable) {
 			// allocate memory for fitness lookup table
 			if (typeFitness == null || typeFitness.length != nTraits)
@@ -3225,6 +3232,7 @@ public abstract class IBSPopulation {
 		// well-mixed demes
 		if (adjustScores && interaction.isType(Geometry.Type.HIERARCHY)
 				&& interaction.subgeometry.equals(Geometry.Type.MEANFIELD)) {
+//XXX determine number of interactions for emphemeral scores
 			nMixedInter = interaction.hierarchy[interaction.hierarchy.length - 1]
 					- (interaction.isInterspecies() ? 0 : 1);
 		}
@@ -3436,26 +3444,29 @@ public abstract class IBSPopulation {
 		}
 		module.setGeometries(interaction, reproduction);
 		if (hasLookupTable) {
-			// modules/settings that admit lookup tables don't need scores, fitness or
-			// interactions
+			// allocate lookup tables
 			if (typeScores == null || typeScores.length != nTraits)
 				typeScores = new double[nTraits];
 			if (typeFitness == null || typeFitness.length != nTraits)
 				typeFitness = new double[nTraits];
-			// free scores, fitness, interactions memory
+		} else {
+			// free lookup tables
+			typeScores = null;
+			typeFitness = null;
+		}
+		if (hasLookupTable && !playerScoreReset.equals(ScoringType.EPHEMERAL)) {
+			// lookup tables don't need scores, fitness or interactions
 			scores = null;
 			fitness = null;
 			interactions = null;
 		} else {
+			// emphemeral scores need both 
 			if (scores == null || scores.length != nPopulation)
 				scores = new double[nPopulation];
 			if (fitness == null || fitness.length != nPopulation)
 				fitness = new double[nPopulation];
 			if (interactions == null || interactions.length != nPopulation)
 				interactions = new int[nPopulation];
-			// free lookup tables
-			typeScores = null;
-			typeFitness = null;
 		}
 		if (tags == null || tags.length != nPopulation)
 			tags = new double[nPopulation];

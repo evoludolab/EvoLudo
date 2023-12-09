@@ -378,17 +378,25 @@ public class IBSMCPopulation extends IBSPopulation {
 
 	@Override
 	public void playPairGameAt(IBSGroup group) {
+		// for ephemeral scores calculate score of focal only
+		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
+			if (ephemeralScores) {
+				setScoreAt(group.focal, 0.0, 1);
+				return;
+			}
 			updateScoreAt(group.focal, 0.0);
 			return;
 		}
 		gatherPlayers(group);
 		double myScore = pairmodule.pairScores(myTrait, groupStrat, group.nSampled,
 				groupScores);
-		updateScoreAt(group.focal, myScore, group.nSampled);
-		if (playerScoreReset.equals(ScoringType.EPHEMERAL))
+		if (ephemeralScores) {
 			// no need to update scores of everyone else
+			setScoreAt(group.focal, myScore, group.nSampled);
 			return;
+		}
+		updateScoreAt(group.focal, myScore, group.nSampled);
 		for (int i = 0; i < group.nSampled; i++)
 			opponent.updateScoreAt(group.group[i], groupScores[i]);
 	}
@@ -446,15 +454,19 @@ public class IBSMCPopulation extends IBSPopulation {
 
 	@Override
 	public void playGroupGameAt(IBSGroup group) {
+		// for ephemeral scores calculate score of focal only
+		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
+			if (ephemeralScores) {
+				setScoreAt(group.focal, 0.0, 1);
+				return;
+			}
 			updateScoreAt(group.focal, 0.0);
 			return;
 		}
 		int me = group.focal;
 		gatherPlayers(group);
 
-		// for ephemeral scores calculate score of focal only
-		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
 		switch (group.samplingType) {
 			case ALL:
 				// interact with all neighbors
@@ -473,9 +485,11 @@ public class IBSMCPopulation extends IBSPopulation {
 						for (int i = 0; i < nGroup - 1; i++)
 							smallScores[(n + i) % group.nSampled] += groupScores[i];
 					}
-					updateScoreAt(me, myScore, group.nSampled);
-					if (ephemeralScores)
+					if (ephemeralScores) {
+						setScoreAt(me, myScore, group.nSampled);
 						return;
+					}
+					updateScoreAt(me, myScore, group.nSampled);
 					for (int i = 0; i < group.nSampled; i++)
 						opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
 					return;
@@ -486,9 +500,11 @@ public class IBSMCPopulation extends IBSPopulation {
 			case RANDOM:
 				// interact with sampled neighbors
 				double myScore = groupmodule.groupScores(myTrait, groupStrat, group.nSampled, groupScores);
-				updateScoreAt(me, myScore);
-				if (ephemeralScores)
+				if (ephemeralScores) {
+					setScoreAt(me, myScore, 1);
 					return;
+				}
+				updateScoreAt(me, myScore);
 				for (int i = 0; i < group.nSampled; i++)
 					opponent.updateScoreAt(group.group[i], groupScores[i]);
 				return;

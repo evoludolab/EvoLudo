@@ -168,7 +168,13 @@ public class IBSCPopulation extends IBSMCPopulation {
 	@Override
 	public void playPairGameAt(IBSGroup group) {
 		int size = group.nSampled;
+		// for ephemeral scores calculate score of focal only
+		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
 		if (size <= 0) {
+			if (ephemeralScores) {
+				setScoreAt(group.focal, 0.0, 1);
+				return;
+			}
 			updateScoreAt(group.focal, 0.0);
 			return;
 		}
@@ -177,10 +183,12 @@ public class IBSCPopulation extends IBSMCPopulation {
 			groupStrat[i] = oppstrategies[group.group[i]];
 		int me = group.focal;
 		double myScore = pairmodule.pairScores(strategies[me], groupStrat, size, groupScores);
-		updateScoreAt(me, myScore, size);
-		if (playerScoreReset.equals(ScoringType.EPHEMERAL))
+		if (ephemeralScores) {
 			// no need to update scores of everyone else
+			setScoreAt(me, myScore, size);
 			return;
+		}
+		updateScoreAt(me, myScore, size);
 		for (int i = 0; i < size; i++)
 			opponent.updateScoreAt(group.group[i], groupScores[i]);
 	}
@@ -264,9 +272,11 @@ public class IBSCPopulation extends IBSMCPopulation {
 						for (int i = 0; i < nGroup - 1; i++)
 							smallScores[(n + i) % group.nSampled] += groupScores[i];
 					}
-					updateScoreAt(me, myScore, group.nSampled);
-					if (ephemeralScores)
+					if (ephemeralScores) {
+						setScoreAt(me, myScore, group.nSampled);
 						return;
+					}
+					updateScoreAt(me, myScore, group.nSampled);
 					for (int i = 0; i < group.nSampled; i++)
 						opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
 					return;
@@ -277,9 +287,11 @@ public class IBSCPopulation extends IBSMCPopulation {
 			case RANDOM:
 				// interact with sampled neighbors
 				double myScore = groupmodule.groupScores(myStrat, groupStrat, group.nSampled, groupScores);
-				updateScoreAt(me, myScore);
-				if (ephemeralScores)
+				if (ephemeralScores) {
+					setScoreAt(me, myScore, 1);
 					return;
+				}
+				updateScoreAt(me, myScore);
 				for (int i = 0; i < group.nSampled; i++)
 					opponent.updateScoreAt(group.group[i], groupScores[i]);
 				return;

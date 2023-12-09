@@ -667,6 +667,11 @@ public abstract class IBS implements Model.IBS {
 				return -stepDone;
 			dUpdates = (stepDt - stepDone) / gincr;
 		}
+		for (IBSPopulation pop : species) {
+			if (!pop.playerScoreReset.equals(ScoringType.EPHEMERAL))
+				continue;
+			pop.updateScores();
+		}
 		return stepDt;
 	}
 

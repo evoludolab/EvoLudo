@@ -798,7 +798,8 @@ public class IBSDPopulation extends IBSPopulation {
 		// similarly, payoffs can be calculated more efficiently in deme structured
 		// populations as long as demes are well-mixed (although lookup tables are
 		// possible but not (yet) implemented.
-		if (hasLookupTable || (adjustScores && interaction.isType(Geometry.Type.HIERARCHY)
+		if (hasLookupTable || //
+			(adjustScores && interaction.isType(Geometry.Type.HIERARCHY) //
 				&& interaction.subgeometry == Geometry.Type.MEANFIELD)) {
 			updateMixedMeanScores();
 			return;
@@ -1111,19 +1112,28 @@ public class IBSDPopulation extends IBSPopulation {
 		stripGroupVacancies(group, groupStrat, groupIdxs);
 		double myScore;
 		countTraits(traitCount, groupStrat, 0, group.nSampled);
+		// for ephemeral scores calculate score of focal only
+		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
 			// isolated individual (note the bookkeeping above is overkill and can be
 			// optimized)
 			myScore = pairmodule.pairScores(myType, traitCount, traitScore);
+			if (ephemeralScores) {
+				// no need to update scores of everyone else
+				setScoreAt(me, myScore, 0);
+				return;
+			}
 			updateScoreAt(me, myScore, 0);
 			return;
 		}
 
 		myScore = pairmodule.pairScores(myType, traitCount, traitScore);
-		updateScoreAt(me, myScore, group.nSampled);
-		if (playerScoreReset.equals(ScoringType.EPHEMERAL))
+		if (ephemeralScores) {
 			// no need to update scores of everyone else
+			setScoreAt(me, myScore, group.nSampled);
 			return;
+		}
+		updateScoreAt(me, myScore, group.nSampled);
 		for (int i = 0; i < group.nSampled; i++)
 			opponent.updateScoreAt(group.group[i], traitScore[groupStrat[i]]);
 	}
@@ -1273,17 +1283,21 @@ public class IBSDPopulation extends IBSPopulation {
 			return;
 		stripGroupVacancies(group, groupStrat, groupIdxs);
 		countTraits(traitCount, groupStrat, 0, group.nSampled);
+		// for ephemeral scores calculate score of focal only
+		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
 			// isolated individual (note the bookkeeping above is overkill and can be
 			// optimized)
 			traitCount[myType]++;
 			groupmodule.groupScores(traitCount, traitScore);
+			if (ephemeralScores) {
+				setScoreAt(me, traitScore[myType], 0);
+				return;
+			}
 			updateScoreAt(me, traitScore[myType], 0);
 			return;
 		}
 
-		// for ephemeral scores calculate score of focal only
-		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
 		switch (group.samplingType) {
 			case ALL:
 				// interact with all neighbors
@@ -1306,9 +1320,11 @@ public class IBSDPopulation extends IBSPopulation {
 							smallScores[idx] += traitScore[groupStrat[idx]];
 						}
 					}
-					updateScoreAt(me, myScore, group.nSampled);
-					if (ephemeralScores)
+					if (ephemeralScores) {
+						setScoreAt(me, myScore, group.nSampled);
 						return;
+					}
+					updateScoreAt(me, myScore, group.nSampled);
 					for (int i = 0; i < group.nSampled; i++)
 						opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
 					return;
@@ -1320,9 +1336,11 @@ public class IBSDPopulation extends IBSPopulation {
 				// interact with sampled neighbors
 				traitCount[myType]++;
 				groupmodule.groupScores(traitCount, traitScore);
-				updateScoreAt(me, traitScore[myType]);
-				if (ephemeralScores)
+				if (ephemeralScores) {
+					setScoreAt(me, traitScore[myType], 1);
 					return;
+				}
+				updateScoreAt(me, traitScore[myType]);
 				for (int i = 0; i < group.nSampled; i++)
 					opponent.updateScoreAt(group.group[i], traitScore[groupStrat[i]]);
 				return;
