@@ -2094,7 +2094,7 @@ public abstract class IBSPopulation {
 		if (adjustScores) {
 			if (!updatePlayerAt(me))
 				return;
-			/* player switched strategy - adjust scores, commit strategy */
+			// player switched strategy - adjust scores, commit strategy
 			adjustGameScoresAt(me);
 			return;
 		}
@@ -2292,6 +2292,12 @@ public abstract class IBSPopulation {
 		// note: choose random neighbor among in-neighbors (those are upstream to serve
 		// as models; this is the opposite for birth-death scenarios)
 		referenceGroup.pickAt(me, reproduction, false);
+		if (playerScoreReset.equals(ScoringType.EPHEMERAL)) {
+			// calculate scores of all individual involved in updating
+			playGameAt(me);
+			for (int i = 0; i < referenceGroup.nSampled; i++)
+				playGameAt(referenceGroup.group[i]);
+		}
 		return updatePlayerAt(me, referenceGroup.group, referenceGroup.nSampled);
 	}
 

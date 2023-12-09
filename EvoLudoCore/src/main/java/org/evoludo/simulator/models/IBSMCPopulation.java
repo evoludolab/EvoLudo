@@ -38,6 +38,7 @@ import java.util.List;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSC.MutationType;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.util.Formatter;
@@ -385,6 +386,9 @@ public class IBSMCPopulation extends IBSPopulation {
 		double myScore = pairmodule.pairScores(myTrait, groupStrat, group.nSampled,
 				groupScores);
 		updateScoreAt(group.focal, myScore, group.nSampled);
+		if (playerScoreReset.equals(ScoringType.EPHEMERAL))
+			// no need to update scores of everyone else
+			return;
 		for (int i = 0; i < group.nSampled; i++)
 			opponent.updateScoreAt(group.group[i], groupScores[i]);
 	}
@@ -449,6 +453,8 @@ public class IBSMCPopulation extends IBSPopulation {
 		int me = group.focal;
 		gatherPlayers(group);
 
+		// for ephemeral scores calculate score of focal only
+		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
 		switch (group.samplingType) {
 			case ALL:
 				// interact with all neighbors
@@ -462,10 +468,14 @@ public class IBSMCPopulation extends IBSPopulation {
 							System.arraycopy(groupStrat, ((n + i) % group.nSampled) * nTraits, smallStrat, i * nTraits,
 									nTraits);
 						myScore += groupmodule.groupScores(myTrait, smallStrat, nGroup - 1, groupScores);
+						if (ephemeralScores)
+							continue;
 						for (int i = 0; i < nGroup - 1; i++)
 							smallScores[(n + i) % group.nSampled] += groupScores[i];
 					}
 					updateScoreAt(me, myScore, group.nSampled);
+					if (ephemeralScores)
+						return;
 					for (int i = 0; i < group.nSampled; i++)
 						opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
 					return;
@@ -477,6 +487,8 @@ public class IBSMCPopulation extends IBSPopulation {
 				// interact with sampled neighbors
 				double myScore = groupmodule.groupScores(myTrait, groupStrat, group.nSampled, groupScores);
 				updateScoreAt(me, myScore);
+				if (ephemeralScores)
+					return;
 				for (int i = 0; i < group.nSampled; i++)
 					opponent.updateScoreAt(group.group[i], groupScores[i]);
 				return;

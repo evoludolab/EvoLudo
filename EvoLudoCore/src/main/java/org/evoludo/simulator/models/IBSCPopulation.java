@@ -35,6 +35,7 @@ package org.evoludo.simulator.models;
 import java.util.Arrays;
 
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.modules.Continuous;
 
 /**
@@ -177,6 +178,9 @@ public class IBSCPopulation extends IBSMCPopulation {
 		int me = group.focal;
 		double myScore = pairmodule.pairScores(strategies[me], groupStrat, size, groupScores);
 		updateScoreAt(me, myScore, size);
+		if (playerScoreReset.equals(ScoringType.EPHEMERAL))
+			// no need to update scores of everyone else
+			return;
 		for (int i = 0; i < size; i++)
 			opponent.updateScoreAt(group.group[i], groupScores[i]);
 	}
@@ -240,6 +244,8 @@ public class IBSCPopulation extends IBSMCPopulation {
 			groupStrat[i] = oppstrategies[group.group[i]];
 		int me = group.focal;
 		double myStrat = strategies[me];
+		// for ephemeral scores calculate score of focal only
+		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
 
 		switch (group.samplingType) {
 			// interact with all neighbors - interact repeatedly if nGroup<groupSize+1
@@ -253,10 +259,14 @@ public class IBSCPopulation extends IBSMCPopulation {
 						for (int i = 0; i < nGroup - 1; i++)
 							smallStrat[i] = groupStrat[(n + i) % group.nSampled];
 						myScore += groupmodule.groupScores(myStrat, smallStrat, nGroup - 1, groupScores);
+						if (ephemeralScores)
+							continue;
 						for (int i = 0; i < nGroup - 1; i++)
 							smallScores[(n + i) % group.nSampled] += groupScores[i];
 					}
 					updateScoreAt(me, myScore, group.nSampled);
+					if (ephemeralScores)
+						return;
 					for (int i = 0; i < group.nSampled; i++)
 						opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
 					return;
@@ -268,6 +278,8 @@ public class IBSCPopulation extends IBSMCPopulation {
 				// interact with sampled neighbors
 				double myScore = groupmodule.groupScores(myStrat, groupStrat, group.nSampled, groupScores);
 				updateScoreAt(me, myScore);
+				if (ephemeralScores)
+					return;
 				for (int i = 0; i < group.nSampled; i++)
 					opponent.updateScoreAt(group.group[i], groupScores[i]);
 				return;
