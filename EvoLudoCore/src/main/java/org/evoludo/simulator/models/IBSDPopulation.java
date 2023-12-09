@@ -771,19 +771,6 @@ public class IBSDPopulation extends IBSPopulation {
 			accuTypeScores[VACANT] = Double.NaN;
 	}
 
-	@Override
-	public void resetScores(double homoScore) {
-		if (module.isStatic())
-			throw new Error("resetScores(double) with constant selection doesn't seem to make sense...");
-
-		super.resetScores(homoScore);
-		// population is homogeneous - determine score
-		Arrays.fill(accuTypeScores, 0.0);
-		accuTypeScores[strategies[0] % nTraits] = getPopulationSize() * getScoreAt(0);
-		if (VACANT >= 0)
-			accuTypeScores[VACANT] = Double.NaN;
-	}
-
 	/**
 	 * {@inheritDoc}
 	 * <p>

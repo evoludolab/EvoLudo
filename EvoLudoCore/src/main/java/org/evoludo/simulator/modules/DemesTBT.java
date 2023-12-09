@@ -186,7 +186,7 @@ public class DemesTBT extends TBT {
 					&& interaction.subgeometry == Geometry.Type.MEANFIELD && interaction.hierarchy.length == 2))) {
 				// the only acceptable geometries are well-mixed and hierarchical structures
 				// with two levels of well-mixed demes
-				logger.warning("invalid geometry - forcing well-mixed population (single deme)!");
+				logger.severe("invalid geometry - forcing well-mixed population (single deme)!");
 				interaction.setType(Geometry.Type.MEANFIELD);
 				doReset = true;
 			}
@@ -204,6 +204,11 @@ public class DemesTBT extends TBT {
 				migrationType = MigrationType.NONE;
 				pMigration = 0.0;
 				optimizeMigration = false;
+			}
+			if (nDemes > 1 && !adjustScores) {
+				logger.severe("invalid sampling - forcing well-mixed population (single deme)!");
+				interaction.setType(Geometry.Type.MEANFIELD);
+				doReset = true;
 			}
 			if (optimizeMigration) {
 				// need to get new instances to make sure potential changes in pMigration,
@@ -262,19 +267,9 @@ public class DemesTBT extends TBT {
 				} else {
 					// do mutation; pick individual proportional to fitness and determine its deme
 					int hit = pickFitFocalIndividual();
-					int homoType = strategies[hit] % nTraits;
 					mutateStrategyAt(hit, false);
-					if (adjustScores) {
-						adjustGameScoresAt(hit);
-					} else {
-						// make sure everybody has the homogeneous payoff prior to introducing the
-						// mutant
-						// ATTENTION: this assumes small mutation rates - should we check?
-						resetScores(module.getMonoGameScore(homoType));
-						resetScoreAt(hit);
-						commitStrategyAt(hit);
-						playGameAt(hit);
-					}
+					// only updates that permit adjustScores acceptable, see check()
+					adjustGameScoresAt(hit);
 				}
 				// XXX model.advanceTime(1.0/(double)nPopulation);
 				engine.fireModelChanged();

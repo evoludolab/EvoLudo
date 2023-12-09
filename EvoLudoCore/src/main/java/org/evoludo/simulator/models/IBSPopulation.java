@@ -1768,50 +1768,6 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Reset scores and fitness of all individuals in a homogeneous population to
-	 * {@code homoScore}. This excludes a homogeneous population of vacant sites.
-	 *
-	 * @param homoScore the homogeneous score
-	 */
-	public void resetScores(double homoScore) {
-		double fit = 0.0;
-		double score = 0.0;
-		int inter = 0;
-		int mIdx = -1;
-		if (!isVacantAt(0)) {
-			// homogeneous population but not vacant
-			score = homoScore;
-			fit = map2fit.map(score);
-			mIdx = 0;
-			Geometry geom = getInteractionGeometry();
-			// population may be homogeneous but include vacant sites
-			if (getPopulationSize() != nPopulation) {
-				// ok for well mixed populations
-				if (!geom.isType(Geometry.Type.MEANFIELD)) {
-					// no homogeneous score; number of interactions depends
-					// on number of vacant sites in neighbourhood
-					logger.severe("homogeneous population includes vacant sites - cannot assign score.");
-					throw new Error("homogeneous population includes vacant sites - cannot assign score.");
-				}
-			}
-			// no homogeneous score exists for heterogeneous graphs with accumulated scores
-			if (!playerScoreAveraged && !geom.isRegular) {
-				// no homogeneous score on heterogenous graphs and 
-				// accumulated payoffs
-				logger.severe("heterogeneous graph with accumulated scores - cannot assign uniform score.");
-				throw new Error("heterogeneous graph with accumulated scores - cannot assign uniform score.");
-			}
-			inter = interactionGroup.getNSamples();
-		}
-		Arrays.fill(scores, score);
-		Arrays.fill(fitness, fit);
-		Arrays.fill(interactions, inter);
-		// getPopulationSize() accounts for potential vacancies
-		sumFitness = getPopulationSize() * fit;
-		maxEffScoreIdx = mIdx;
-	}
-
-	/**
 	 * Update the scores of all individuals in the population.
 	 */
 	public void updateScores() {
