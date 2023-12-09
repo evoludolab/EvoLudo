@@ -58,6 +58,8 @@ public class Plist extends HashMap<String, Object> {
 
 	Collection<String> skip;
 
+	boolean failFast = false;
+
 	public Plist() {
 		nRepeat = 3;
 		repeat = 0;
@@ -69,6 +71,15 @@ public class Plist extends HashMap<String, Object> {
 
 	public void quiet() {
 		nRepeat = 0;
+	}
+
+	public boolean failfast() {
+		return failFast;
+	}
+
+	public void failfast(boolean failfast) {
+		failFast = failfast;
+		nRepeat = failFast ? 0 : 3;
 	}
 
 	public int getNIssues() {
@@ -112,6 +123,8 @@ public class Plist extends HashMap<String, Object> {
 			if (skip.contains(key) || reference.containsKey(key))
 				continue;
 			processDiff("key '" + key + "' missing in reference.");
+			if (failFast)
+				return;
 		}
 		// step 2: check if dict plist contains all keys of reference
 		for (String key : reference.keySet()) {
@@ -121,6 +134,8 @@ public class Plist extends HashMap<String, Object> {
 				if (reference == this)
 					continue;
 				processDiff("key '" + key + "' missing in plist.");
+				if (failFast)
+					return;
 				continue;
 			}
 			// step 3: compare entries this
@@ -129,6 +144,8 @@ public class Plist extends HashMap<String, Object> {
 			if (val.getClass() != pval.getClass()) {
 				processDiff("key '" + key + "' values class differs\n(me: " + pval.getClass()
 						+ ", ref: " + val.getClass() + ")");
+				if (failFast)
+					return;
 				continue;
 			}
 			if (val instanceof Plist) {
@@ -138,6 +155,8 @@ public class Plist extends HashMap<String, Object> {
 				if (before == nIssues)
 					continue;
 				reportDiff("key '" + key + "' dicts differ.");
+				if (failFast)
+					return;
 				continue;
 			}
 			if (val instanceof List) {
@@ -151,18 +170,24 @@ public class Plist extends HashMap<String, Object> {
 				if (before == nIssues)
 					continue;
 				reportDiff("key '" + key + "' arrays differ.");
+				if (failFast)
+					return;
 				continue;
 			}
 			if (val instanceof String) {
 				if (((String) val).equals(pval))
 					continue;
 				processDiff("key '" + key + "' strings differ\n(me: " + pval + ", ref: " + val + ")");
+				if (failFast)
+					return;
 				continue;
 			}
 			if (val instanceof Integer) {
 				if (((Integer) val).equals(pval))
 					continue;
 				processDiff("key '" + key + "' integers differ\n(me: " + pval + ", ref: " + val + ")");
+				if (failFast)
+					return;
 				continue;
 			}
 			if (val instanceof Double) {
@@ -171,15 +196,21 @@ public class Plist extends HashMap<String, Object> {
 				checkRounding((Double) val, (Double) pval);
 				processDiff("key '" + key + "' reals differ\n(me: " + pval + ", ref: " + val + ", Δ: "
 						+ ((Double) pval - (Double) val) + ")");
+				if (failFast)
+					return;
 				continue;
 			}
 			if (val instanceof Boolean) {
 				if (((Boolean) val).equals(pval))
 					continue;
 				processDiff("key '" + key + "' booleans differ\n(me: " + pval + ", ref: " + val + ")");
+				if (failFast)
+					return;
 				continue;
 			}
 			processDiff("key '" + key + "' unknown value type (class: " + val.getClass() + ")");
+			if (failFast)
+				return;
 		}
 	}
 
@@ -187,6 +218,8 @@ public class Plist extends HashMap<String, Object> {
 		if (reference.size() != array.size()) {
 			processDiff(
 					"arrays differ in size\n(me: " + array.size() + ", ref: " + reference.size() + ")");
+			if (failFast)
+				return;
 			return;
 		}
 		int i = -1;
@@ -195,6 +228,8 @@ public class Plist extends HashMap<String, Object> {
 			if (ele.getClass() != pele.getClass()) {
 				processDiff(
 						"array classes differ\n(me: " + pele.getClass() + ", ref: " + ele.getClass() + ")");
+				if (failFast)
+					return;
 				continue;
 			}
 			if (ele instanceof Plist) {
@@ -216,6 +251,8 @@ public class Plist extends HashMap<String, Object> {
 					continue;
 				processDiff(
 						"array string[" + i + "] differs\n(me: " + pele + ", ref: " + ele + ")");
+				if (failFast)
+					return;
 				continue;
 			}
 			if (ele instanceof Integer) {
@@ -223,6 +260,8 @@ public class Plist extends HashMap<String, Object> {
 					continue;
 				processDiff(
 						"array integer[" + i + "] differs\n(me: " + pele + ", ref: " + ele + ")");
+				if (failFast)
+					return;
 				continue;
 			}
 			if (ele instanceof Double) {
@@ -231,6 +270,8 @@ public class Plist extends HashMap<String, Object> {
 				checkRounding((Double) ele, (Double) pele);
 				processDiff("array real[" + i + "] differs\n(me: " + pele + ", ref: " + ele + ", Δ: "
 						+ ((Double) pele - (Double) ele) + ")");
+				if (failFast)
+					return;
 				continue;
 			}
 			if (ele instanceof Boolean) {
@@ -238,9 +279,13 @@ public class Plist extends HashMap<String, Object> {
 					continue;
 				processDiff(
 						"array boolean[" + i + "] differs\n(me: " + pele + ", ref: " + ele + ")");
+				if (failFast)
+					return;
 				continue;
 			}
 			processDiff("array of unknown type (class: " + ele.getClass() + ")");
+			if (failFast)
+				return;
 		}
 	}
 
@@ -281,7 +326,8 @@ public class Plist extends HashMap<String, Object> {
 			if (repeat++ > nRepeat)
 				return;
 		}
-		System.err.println((new Date().toString()) + " - Plist.diff: " + msg);
+		if (nRepeat > 0)
+			System.err.println((new Date().toString()) + " - Plist.diff: " + msg);
 	}
 
 	/**

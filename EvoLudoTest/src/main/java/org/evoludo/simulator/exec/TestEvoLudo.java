@@ -127,13 +127,31 @@ public class TestEvoLudo implements Model.MilestoneListener {
 				continue;
 			// read result
 			String result = engine.encodeState();
-			// export result
-			String export = generateExportFilename(test, nTest++);
+			Plist plist = PlistParser.parse(result);
+			plist.failfast(true);
+			String export = generateExportFilename(test, ++nTest);
+			// check result against references
+			File current = referencesDir.toPath().getParent().resolve("current").toFile();
+			File ref = checkReference(current, plist, export);
+			if (ref != null && ref != current) {
+				// check passed; create link to reference
+				if (ref.getName().substring(filename.lastIndexOf(".") + 1).equals("zip"))
+					export += ".zip";
+				try {
+					Files.createSymbolicLink(exportDir.toPath().resolve(export), ref.toPath().toRealPath());
+				} catch (IOException e) {
+					logError("failed to create link from '" + export + "' to '" + ref.getName() + "'.");
+				}
+				logOk("check passed - link to '" + ref.getName() + "' created.");
+				continue;
+			}
+
 			if (useCompression) {
 				// with compression
-				export += ".zip";
+				ref = exportDir.toPath().resolve(export + ".zip").toFile();
 				try {
-					ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(export));
+					ZipOutputStream zos = new ZipOutputStream(
+						new FileOutputStream(ref));
 					zos.putNextEntry(new ZipEntry(export));
 					zos.write(result.getBytes());
 					zos.finish();
@@ -148,8 +166,9 @@ public class TestEvoLudo implements Model.MilestoneListener {
 			}
 			else {
 				// no compression
+				ref = referencesDir.toPath().resolve(export + ".zip").toFile();
 				try {
-					FileOutputStream fos = new FileOutputStream(export);
+					FileOutputStream fos = new FileOutputStream(ref);
 					fos.write(result.getBytes());
 					fos.close();
 				} catch (FileNotFoundException e) {
@@ -161,7 +180,7 @@ public class TestEvoLudo implements Model.MilestoneListener {
 				}
 			}
 			// check test
-			test(new File(export));
+			test(ref);
 		}
 	}
 
@@ -239,16 +258,18 @@ public class TestEvoLudo implements Model.MilestoneListener {
 		return true;
 	}
 
-	private void compareRuns(File refname, Plist reference, Plist replicate) {
+	private boolean compareRuns(File refname, Plist reference, Plist replicate) {
 		nTests++;
 		System.out.println("Testing: analyzing differences...");
 		// create 'plist' of current state and compare to 'reference'
 		if (verbose)
-			reference.verbose();
+			replicate.verbose();
 		// ignore some plist entries
-		int nIssues = reference.diff(replicate, Arrays.asList("Export date", "Version", "JavaVersion", "CLO"));
+		int nIssues = replicate.diff(reference, Arrays.asList("Export date", "Version", "JavaVersion", "CLO"));
 		// check option strings only if some tests failed
-		if (reference.getNMajor() > 0) {
+		if (replicate.failfast())
+			return (nIssues == 0);
+		if (replicate.getNMajor() > 0) {
 			String rclo = (String) reference.get("CLO");
 			String mclo = (String) replicate.get("CLO");
 			if (!rclo.equals(mclo)) {
@@ -256,7 +277,7 @@ public class TestEvoLudo implements Model.MilestoneListener {
 				nTestWarnings++;
 			}
 		}
-		int nMinor = reference.getNMinor();
+		int nMinor = replicate.getNMinor();
 		String msg;
 		ConsoleColors color;
 		if (nIssues == 0) {
@@ -277,7 +298,7 @@ public class TestEvoLudo implements Model.MilestoneListener {
 				color = ConsoleColors.RED;
 			}
 		}
-		msg = color + "Testing " + refname.getName() + " " + msg + ConsoleColors.RESET;
+		msg = color + "Testing " + refname.getName() + " " + msg;
 		switch(color) {
 			case GREEN:
 				logOk(msg);
@@ -295,20 +316,22 @@ public class TestEvoLudo implements Model.MilestoneListener {
 			String javaref = (String) reference.get("JavaVersion");
 			String javarep = (String) replicate.get("JavaVersion");
 			if (javaref != null && !javaref.equals(javarep))
-				logMessage(ConsoleColors.YELLOW + "JRE versions differ (me: " + javarep + ", ref: " + javaref +")" + ConsoleColors.RESET);
+				logWarning("JRE versions differ (me: " + javarep + ", ref: " + javaref +")");
 			String ext;
 			String report = reportsDir.getAbsolutePath() + File.separator + refname.getName();
 			if (nIssues == nMinor) {
 				nTestMinor++;
 				if (!dumpMinor) 
-					return;
+					return false;
 				ext = "-minor.plist";
 			} else {
 				nTestFailures++;
 				ext = "-failed.plist";
 			}
 			engine.exportState(report.substring(0, report.lastIndexOf(".plist")) + ext);
+			return false;
 		}
+		return true;
 	}
 
 	int nTests, nTestFailures, nTestMinor, nTestWarnings;
@@ -351,19 +374,11 @@ public class TestEvoLudo implements Model.MilestoneListener {
 					// run module
 					if (!runModule("Testing", clo))
 						continue;
-					// convert result to plist
+					// check result against references
 					Plist result = PlistParser.parse(engine.encodeState());
 					String refname = generateExportFilename(clo, ++nTest);
-					File ref = search(referencesDir, refname);
-					if (ref == null) {
-						ref = search(referencesDir, refname + ".zip");
-						if (ref == null) {
-							logWarning("reference file '" + refname + "' not found - generate references first!");
-							continue;
-						}
-					}
-					Plist reference = engine.readPlist(ref.getAbsolutePath());
-					compareRuns(ref, reference, result);
+					if (checkReference(referencesDir, result, refname) == referencesDir)
+						logWarning("reference file '" + refname + "' not found - generate references first!");
 				}
 				scanner.close();
 			} catch (FileNotFoundException fnfe) {
@@ -373,6 +388,30 @@ public class TestEvoLudo implements Model.MilestoneListener {
 		else {
 			// unknown extension
 		}
+	}
+
+	/**
+	 * Search for reference file {@code refname} in directory {@code references}. If
+	 * {@code refname} is found verify the results in the plist {@code result}.
+	 * 
+	 * @param references the directory with reference files
+	 * @param result     the {@code Plist} with the results
+	 * @param refname    the name of the reference file (if it exists)
+	 * @return if verification successful return {@code File} pointing to reference;
+	 *         if unsuccesssful return {@code null}; and if reference file not found
+	 *         return {@code references}
+	 */
+	private File checkReference(File references, Plist result, String refname) {
+		File ref = search(references, refname);
+		if (ref == null) {
+			ref = search(references, refname + ".zip");
+			if (ref == null)
+				return references;
+		}
+		Plist reference = engine.readPlist(ref.getAbsolutePath());
+		if (compareRuns(ref, reference, result))
+			return ref;
+		return null;
 	}
 
 	private static File search(File file, String search) {
