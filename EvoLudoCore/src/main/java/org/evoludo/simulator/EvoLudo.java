@@ -414,6 +414,7 @@ public abstract class EvoLudo
 				activeModel = createIBS(activeModule);
 		}
 		addCLOProvider(activeModel);
+		activeModule.setModel(activeModel); 
 		activeModel.load();
 		if (changed)
 			fireModelLoaded();

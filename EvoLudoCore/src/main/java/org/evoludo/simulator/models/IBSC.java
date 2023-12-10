@@ -110,7 +110,7 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		super.load();
 		// initialize mutation types
 		cloMutationType.addKeys(MutationType.values());
-		engine.getModule().cloInitType.addKeys(InitType.values());
+		cloInitType.addKeys(InitType.values());
 		// interacting with all members of the population is not feasible for continuous
 		// traits; use single interaction with random neighbour as default
 		cloInteractions.setDefault("random 1");
@@ -124,7 +124,7 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		// free resources
 		super.unload();
 		cloMutationType.clearKeys();
-		engine.getModule().cloInitType.clearKeys();
+		cloInitType.clearKeys();
 	}
 
 	@Override
@@ -238,6 +238,52 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	}
 
 	/**
+	 * Command line option to set the type of initial configuration.
+	 * <p>
+	 * <strong>Note:</strong> option not automatically added. Models that implement
+	 * different initialization types should load it in
+	 * {@link #collectCLO(CLOParser)}.
+	 * 
+	 * @see InitType
+	 */
+	public final CLOption cloInitType = new CLOption("inittype", "-default", EvoLudo.catModule,
+			"--inittype <t>  type of initial configuration", new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
+					if (!cloInitType.isSet())
+						return true;
+					boolean success = true;
+					String[] inittypes = arg.split(CLOParser.SPECIES_DELIMITER);
+					int n = 0;
+					for (IBSPopulation pop : species) {
+						IBSMCPopulation cpop = (IBSMCPopulation) pop;
+						String type = inittypes[n++ % inittypes.length];
+						InitType key = (InitType) cloInitType.match(type);
+						if (key == null) {
+							logger.warning(
+									(species.size() > 1 ? pop.getModule().getName() + ": " : "") +
+											"inittype '" + type + "' unknown - using '"
+											+ cpop.getInitType().getKey() + "'");
+							success = false;
+							continue;
+						}
+						cpop.setInitType(key);
+					}
+					return success;
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					for (IBSPopulation pop : species) {
+						IBSMCPopulation cpop = (IBSMCPopulation) pop;
+						output.println(
+								"# inittype:             " + cpop.getInitType() + (species.size() > 1 ? " ("
+										+ pop.getModule().getName() + ")" : ""));
+					}
+				}
+			});
+
+	/**
 	 * Command line option to set the mutation type.
 	 */
 	public final CLOption cloMutationType = new CLOption("mutationtype", "gaussian", EvoLudo.catModel,
@@ -280,5 +326,6 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
 		parser.addCLO(cloMutationType);
+		parser.addCLO(cloInitType);
 	}
 }

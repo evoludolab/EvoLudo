@@ -157,6 +157,20 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	protected double[][] fitness;
 
 	/**
+	 * Type of initial configuration for each species.
+	 * <p>
+	 * <strong>Note:</strong> this variable is deliberately hiding a field from
+	 * {@link ODEEuler} because PDE models have their own initialization types. Make
+	 * sure {@code initType} is not accessed through calls to {@code super}. Since
+	 * PDE's currently support only single species models {@code initType} is a
+	 * scalar field.
+	 * 
+	 * @see #cloInitType
+	 */
+	@SuppressWarnings("hiding")
+	protected InitType initType;
+
+	/**
 	 * Discretization of space as the total number of spatial units. For example,
 	 * for a square lattice the dimensions are
 	 * <code>sqrt(discretization)×sqrt(discretization)</code>.
@@ -234,7 +248,8 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	 * The array containing the minimum fitness of each trait. Used to set the color
 	 * range when retrieving the density data.
 	 * 
-	 * @see #getFitnessData(int, Object[], org.evoludo.simulator.ColorMap.Gradient1D)
+	 * @see #getFitnessData(int, Object[],
+	 *      org.evoludo.simulator.ColorMap.Gradient1D)
 	 */
 	protected double[] minFitness;
 
@@ -242,7 +257,8 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	 * The array containing the maximum fitness of each trait. Used to set the color
 	 * range when retrieving the density data.
 	 * 
-	 * @see #getFitnessData(int, Object[], org.evoludo.simulator.ColorMap.Gradient1D)
+	 * @see #getFitnessData(int, Object[],
+	 *      org.evoludo.simulator.ColorMap.Gradient1D)
 	 */
 	protected double[] maxFitness;
 
@@ -344,9 +360,8 @@ public class PDERD extends ODEEuler implements Model.PDE {
 			}
 		};
 		// ODEEuler loaded its own keys already - clear and reload ours.
-		CLOption type = module.cloInitType;
-		type.clearKeys();
-		type.addKeys(InitType.values());
+		cloInitType.clearKeys();
+		cloInitType.addKeys(InitType.values());
 	}
 
 	@Override
@@ -675,7 +690,8 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		// double[] max = pmodel.getMaxScale();
 		if (dependent >= 0 && nDim == 2) {
 			int n = (dependent + 1) % nDim;
-			// cast should be ok because Gradient1D color map (nDim == 2 with dependent trait)
+			// cast should be ok because Gradient1D color map (nDim == 2 with dependent
+			// trait)
 			ColorMap.Gradient1D<T> cMap = (ColorMap.Gradient1D<T>) colorMap;
 			// if( autoScale[idx] )
 			cMap.setRange(minDensity[n], maxDensity[n]);
@@ -683,11 +699,12 @@ public class PDERD extends ODEEuler implements Model.PDE {
 			// cMap.setRange(min[n], max[n]);
 			colorMap.translate(density, colors);
 			return;
-		} 
+		}
 		for (int n = 0; n < nDim; n++) {
 			if (n == dependent)
 				continue;
-			// cast should be ok because Gradient2D color map (nDim == 2 without dependent trait 
+			// cast should be ok because Gradient2D color map (nDim == 2 without dependent
+			// trait
 			// or nDim > 2 with/out depenent trait). GradientND is subclass of Gradient2D
 			ColorMap.Gradient2D<T> cMap = (ColorMap.Gradient2D<T>) colorMap;
 			// if( autoScale[idx] )
@@ -1014,7 +1031,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	public void init() {
 		super.init();
 		// RD_INIT_SQUARE and RD_INIT_CIRCLE only available on lattices
-		InitType type = (InitType) module.getInitType();
+		InitType type = initType;
 		if (!space.isLattice()) {
 			// some initialization types make only sense on lattices
 			if (type == InitType.CIRCLE || type == InitType.SQUARE || type == InitType.GAUSSIAN
@@ -1293,63 +1310,43 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	public enum InitType implements CLOption.Key {
 
 		/**
-		 * Uniform/homogeneous distribution of trait densities given by
-		 * {@link ODEEuler#y0}.
-		 * 
-		 * @see ODEEuler#y0
+		 * Uniform/homogeneous distribution of trait densities.
 		 */
-		UNIFORM("uniform", "uniform distribution"),
+		UNIFORM("uniform", "uniform densities <d1,...,dn>"),
 
 		/**
-		 * Random trait densities, uniformly distributed between zero and the densities
-		 * given by {@link ODEEuler#y0}.
+		 * Random trait frequencies.
 		 */
-		RANDOM("random", "random distribution"),
+		RANDOM("random", "random densities"),
 
 		/**
-		 * Square in the center with uniform densities given by {@link ODEEuler#y0}.
-		 * 
-		 * @see ODEEuler#y0
+		 * Square in the center with uniform trait densities.
 		 */
-		SQUARE("square", "square in center"),
+		SQUARE("square", "square in center <d1,...,dn>"),
 
 		/**
-		 * Circle in the center with uniform densities given by {@link ODEEuler#y0}.
-		 * 
-		 * @see ODEEuler#y0
+		 * Circle in the center with uniform densities.
 		 */
-		CIRCLE("circle", "circle in center"),
+		CIRCLE("circle", "circle in center <d1,...,dn>"),
 
 		/**
-		 * Spatially homogeneous distribution given by {@link ODEEuler#y0}. Perturbation
-		 * in the center cell with densities {@code 1.2*y0} (for frequency based models
-		 * the perturbation is normalized).
-		 * 
-		 * @see ODEEuler#y0
+		 * Spatially homogeneous distribution. Perturbation in the center with increased
+		 * densities by a factor {@code 1.2} in independent traits.
 		 */
-		DISTURBANCE("perturbation", "perturbation in center"),
+		DISTURBANCE("perturbation", "perturbation in center <d1,...,dn>"),
 
 		/**
 		 * Gaussian density distribution in the center. In 2D lattices this generates a
-		 * sombrero-like distribution. Maximum density is given by {@link ODEEuler#y0}.
-		 * 
-		 * @see ODEEuler#y0
+		 * sombrero-like distribution. Maximum density is given as specified.
 		 */
-		GAUSSIAN("sombrero", "sombrero-like distribution"),
+		GAUSSIAN("sombrero", "sombrero-like distribution <d1,...,dn>"),
 
 		/**
 		 * Ring distribution in the center with Gaussian distributed densities along the
 		 * radius. In 2D lattices this generates a donut-like distribution. Maximum
-		 * density is given by {@link ODEEuler#y0}.
-		 * 
-		 * @see ODEEuler#y0
+		 * density as specified.
 		 */
-		RING("ring", "donut-like distribution"),
-
-		/**
-		 * Default initialization type. Not user selectable.
-		 */
-		DEFAULT("-default", "default initialization");
+		RING("ring", "donut-like distribution <d1,...,dn>");
 
 		/**
 		 * Key of initialization type. Used when parsing command line options.
@@ -1385,6 +1382,40 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		public String getTitle() {
 			return title;
 		}
+	}
+
+	/**
+	 * Parse initializer string {@code arg}. Determine type of initialization and
+	 * process its arguments as appropriate.
+	 * <p>
+	 * <strong>Note:</strong> Not possible to perform parsing in {@code CLODelegate}
+	 * of {@link #cloInitType} because PDE model provide their own
+	 * {@link PDERD.InitType}s.
+	 * 
+	 * @param arg the arguments to parse
+	 * @return {@code true} if parsing successful
+	 * 
+	 * @see InitType
+	 * @see PDERD.InitType
+	 */
+	@Override
+	public boolean parse(String arg) {
+		// this is just for a single species - as everything else in PDE models
+		initType = (InitType) cloInitType.match(arg);
+		String[] typeargs = arg.split("[\\s=]");
+		double[] init = null;
+		if (typeargs.length > 1)
+			init = CLOParser.parseVector(typeargs[1]);
+		int nt = module.getNTraits();
+		y0 = new double[nt];
+		if (!initType.equals(InitType.RANDOM) && (init == null || init.length != nt)) {
+			initType = InitType.RANDOM;
+			engine.getLogger().warning("parsing of initype(s) '" + arg + //
+					"' failed - using default " + InitType.RANDOM + "'.");
+			return false;
+		}
+		System.arraycopy(init, 0, y0, 0, nt);
+		return true;
 	}
 
 	@Override
@@ -1592,7 +1623,8 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	 * 
 	 * @see #setSymmetric(boolean)
 	 */
-	public final CLOption cloPdeSymmetric = new CLOption("pdeSymmetry", "nosymmetry", CLOption.Argument.NONE, EvoLudo.catModel,
+	public final CLOption cloPdeSymmetric = new CLOption("pdeSymmetry", "nosymmetry", CLOption.Argument.NONE,
+			EvoLudo.catModel,
 			"--pdeSymmetry        request symmetric diffusion of PDE", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1610,7 +1642,8 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	// /**
 	// *
 	// */
-	// public final CLOption cloPdeColorRange = new CLOption("pdecolorrange", EvoLudo.catGUI,
+	// public final CLOption cloPdeColorRange = new CLOption("pdecolorrange",
+	// EvoLudo.catGUI,
 	// "auto", null,
 	// new CLODelegate() {
 	// @Override

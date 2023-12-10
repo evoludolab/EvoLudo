@@ -140,7 +140,6 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	public void load() {
 		super.load();
 		cloOptimize.addKeys(OptimizationType.values());
-		CLOption cloInitType = engine.getModule().cloInitType;
 		cloInitType.clearKeys();
 		cloInitType.addKeys(InitType.values());
 		// kaleidoscopes are not standard and must be requested/enabled by modules and
@@ -152,7 +151,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	public void unload() {
 		super.unload();
 		cloOptimize.clearKeys();
-		engine.getModule().cloInitType.clearKeys();
+		cloInitType.clearKeys();
 	}
 
 	@Override
@@ -403,6 +402,52 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	}
 
 	/**
+	 * Command line option to set the type of initial configuration.
+	 * <p>
+	 * <strong>Note:</strong> option not automatically added. Models that implement
+	 * different initialization types should load it in
+	 * {@link #collectCLO(CLOParser)}.
+	 * 
+	 * @see InitType
+	 */
+	public final CLOption cloInitType = new CLOption("inittype", "-default", EvoLudo.catModule,
+			"--inittype <t>  type of initial configuration", new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
+					if (!cloInitType.isSet())
+						return true;
+					boolean success = true;
+					String[] inittypes = arg.split(CLOParser.SPECIES_DELIMITER);
+					int n = 0;
+					for (IBSPopulation pop : species) {
+						IBSDPopulation dpop = (IBSDPopulation) pop;
+						String type = inittypes[n++ % inittypes.length];
+						InitType key = (InitType) cloInitType.match(type);
+						if (key == null) {
+							logger.warning(
+									(species.size() > 1 ? pop.getModule().getName() + ": " : "") +
+											"inittype '" + type + "' unknown - using '"
+											+ dpop.getInitType().getKey() + "'");
+							success = false;
+							continue;
+						}
+						dpop.setInitType(key);
+					}
+					return success;
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					for (IBSPopulation pop : species) {
+						IBSDPopulation dpop = (IBSDPopulation) pop;
+						output.println(
+								"# inittype:             " + dpop.getInitType() + (species.size() > 1 ? " ("
+										+ pop.getModule().getName() + ")" : ""));
+					}
+				}
+			});
+
+	/**
 	 * Command line option to request optimizations.
 	 */
 	public final CLOption cloOptimize = new CLOption("optimize", "none", EvoLudo.catModel,
@@ -482,5 +527,6 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
 		parser.addCLO(cloOptimize);
+		parser.addCLO(cloInitType);
 	}
 }

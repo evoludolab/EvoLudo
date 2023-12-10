@@ -45,15 +45,11 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBS.HasIBS;
-import org.evoludo.simulator.models.IBSC;
-import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.Model.Type;
-import org.evoludo.simulator.models.ODEEuler;
 import org.evoludo.simulator.models.Model.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
-import org.evoludo.simulator.models.PDERD;
 import org.evoludo.simulator.models.PDERD.HasPDE;
 import org.evoludo.simulator.models.SDEEuler.HasSDE;
 import org.evoludo.simulator.views.HasDistribution;
@@ -169,9 +165,14 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		partner.opponent = this;
 	}
 
-	@Override
-	public void modelLoaded() {
-		model = engine.getModel();
+	/**
+	 * Set the current model. This is available before the model get loaded. Useful
+	 * for custom implementations of models.
+	 * 
+	 * @param model the current model
+	 */
+	public void setModel(Model model) {
+		this.model = model;
 	}
 
 	/**
@@ -275,7 +276,6 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		map2fitness = null;
 		cloFitnessMap.clearKeys();
 		cloPlayerUpdate.clearKeys();
-		initType = null;
 		opponent = this;
 		engine.removeMilestoneListener(this);
 		if (this instanceof Model.ChangeListener)
@@ -1043,67 +1043,6 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	}
 
 	/**
-	 * Type of initial configuration.
-	 * 
-	 * <h3>Note:</h3>
-	 * Different models may use different {@code InitType}s. Consequently this
-	 * method cannot accept a particular set of initialization types.
-	 * 
-	 * @see #cloInitType
-	 */
-	protected CLOption.Key initType;
-
-	/**
-	 * Sets the type of the initial configuration.
-	 * 
-	 * <h3>Note:</h3>
-	 * Different models may use different {@code InitType}s. Consequently this
-	 * method cannot accept a particular set of initialization types.
-	 *
-	 * @param type the type of the initial configuration
-	 * 
-	 * @see IBSD.InitType
-	 * @see IBSC.InitType
-	 * @see ODEEuler.InitType
-	 * @see PDERD.InitType
-	 */
-	public void setInitType(CLOption.Key type) {
-		if (type == null)
-			type = getInitType();
-		initType = type;
-	}
-
-	/**
-	 * Gets the type of the initial configuration.
-	 * 
-	 * <h3>Note:</h3>
-	 * Different models may use different {@code InitType}s. Consequently this
-	 * method cannot return a particular set of initialization types.
-	 *
-	 * @return the type of the initial configuration
-	 * 
-	 * @see IBSD.InitType
-	 * @see IBSC.InitType
-	 * @see ODEEuler.InitType
-	 * @see PDERD.InitType
-	 */
-	public CLOption.Key getInitType() {
-		if (initType != null) 
-			return initType;
-		// return proper default
-		if (model instanceof IBSD)
-			return org.evoludo.simulator.models.IBSD.InitType.DEFAULT;
-		if (model instanceof IBSC)
-			return org.evoludo.simulator.models.IBSC.InitType.DEFAULT;
-		if (model instanceof Model.PDE)	// check for PDEs first
-			return org.evoludo.simulator.models.PDERD.InitType.DEFAULT;
-		if (model instanceof Model.ODE)	// this holds for PDEs too
-			return org.evoludo.simulator.models.ODEEuler.InitType.DEFAULT;
-		// unreachable
-		throw new Error("unknown model type!");
-	}
-
-	/**
 	 * Death rate for ecological population updates.
 	 */
 	protected double deathRate = 1.0;
@@ -1279,6 +1218,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	public double getPlayerUpdateError() {
 		return playerUpdateError;
 	}
+
 	/**
 	 * The interaction group size.
 	 */
@@ -1324,15 +1264,15 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * <code>aMark[n1+1]</code> through <code>aMark[n1+n2]</code> where
 	 * <code>n2</code> denotes the number of traits in the second species, etc.
 	 * 
-	 * @param aMark the marker to add
-	 * @param filled the flag to indicate whether the marker should be filled 
+	 * @param aMark  the marker to add
+	 * @param filled the flag to indicate whether the marker should be filled
 	 * @return {@code true} if successfull
 	 * 
 	 * @see org.evoludo.simulator.models.ODEEuler#yt
 	 */
 	public boolean addMarker(double[] aMark, boolean filled) {
 		int nt = nTraits;
-		if (species.size()>1){
+		if (species.size() > 1) {
 			nt = 0;
 			for (Module pop : species)
 				nt += pop.getNTraits();
@@ -1570,53 +1510,6 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 			});
 
 	/**
-	 * Command line option to set the type of initial configuration.
-	 * <p>
-	 * <strong>Note:</strong> option not automatically added. Models that implement
-	 * different initialization types should load it in
-	 * {@link #collectCLO(CLOParser)}.
-	 * 
-	 * @see org.evoludo.simulator.models.IBSD.InitType
-	 * @see org.evoludo.simulator.models.IBSC.InitType
-	 * @see org.evoludo.simulator.models.ODEEuler.InitType
-	 * @see org.evoludo.simulator.models.PDERD.InitType
-	 */
-	public final CLOption cloInitType = new CLOption("inittype", "-default", EvoLudo.catModule,
-			"--inittype <t>  type of initial configuration", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					if (!cloInitType.isSet())
-						return true;
-					boolean success = true;
-					String[] inittypes = arg.split(CLOParser.SPECIES_DELIMITER);
-					int n = 0;
-					for (Module pop : species) {
-						String type = inittypes[n++ % inittypes.length];
-						CLOption.Key key = cloInitType.match(type);
-						if (key == null) {
-							logger.warning(
-									(species.size() > 1 ? pop.getName() + ": " : "") +
-											"inittype '" + type + "' unknown - using '"
-											+ pop.getInitType().getKey() + "'");
-							success = false;
-							continue;
-						}
-						pop.setInitType(key);
-					}
-					return success;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (Module pop : species) {
-						output.println(
-								"# inittype:             " + pop.getInitType() + (species.size() > 1 ? " ("
-										+ pop.getName() + ")" : ""));
-					}
-				}
-			});
-
-	/**
 	 * Command line option to set death rate for ecological population updates.
 	 */
 	public final CLOption cloDeathRate = new CLOption("deathrate", "0.5", EvoLudo.catModule,
@@ -1750,7 +1643,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 */
 	public final CLOption cloFitnessMap = new CLOption("fitnessmap", "none", EvoLudo.catModule,
 			"--fitnessmap <m> [<b>[,<w>]]  select map with baseline fitness b (1)\n" + //
-			"                and selection strength w (1):",
+					"                and selection strength w (1):",
 			new CLODelegate() {
 
 				/**
@@ -1790,12 +1683,12 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 						switch (args.length) {
 							case 3:
 								w = CLOParser.parseDouble(args[2]);
-							// $FALL-THROUGH$
+								// $FALL-THROUGH$
 							case 2:
 								b = CLOParser.parseDouble(args[1]);
 								break;
 							default:
-						}						
+						}
 						m2f.setBaseline(b);
 						m2f.setSelection(w);
 					}
@@ -1819,9 +1712,9 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * Command line option to set the type of player updates.
 	 */
 	public final CLOption cloPlayerUpdate = new CLOption("playerupdate", PlayerUpdateType.IMITATE.getKey() + " 1,0",
-			EvoLudo.catModule, 
+			EvoLudo.catModule,
 			"--playerupdate <u> [<n>[,<e>]] set player update type with\n" + //
-			"                noise n (neutral=1) and error probability e (0):",
+					"                noise n (neutral=1) and error probability e (0):",
 			new CLODelegate() {
 
 				/**
@@ -1861,7 +1754,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 						switch (args.length) {
 							case 3:
 								error = CLOParser.parseDouble(args[2]);
-							// $FALL-THROUGH$
+								// $FALL-THROUGH$
 							case 2:
 								noise = CLOParser.parseDouble(args[1]);
 								break;
@@ -1891,11 +1784,13 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 							case IMITATE: // imitation update
 							case IMITATE_BETTER: // imitation update (better strategies only)
 								output.println(
-										"# playerupdatenoise:    " + Formatter.formatSci(pop.getPlayerUpdateNoise(), 6));
-//XXX errors could probably be added to PROPORTIONAL as well as DE models
+										"# playerupdatenoise:    "
+												+ Formatter.formatSci(pop.getPlayerUpdateNoise(), 6));
+								// XXX errors could probably be added to PROPORTIONAL as well as DE models
 								if (isIBS) {
 									output.println(
-										"# playerupdateerror:    " + Formatter.formatSci(pop.getPlayerUpdateError(), 6));
+											"# playerupdateerror:    "
+													+ Formatter.formatSci(pop.getPlayerUpdateError(), 6));
 								}
 								break;
 							default:
@@ -2042,7 +1937,8 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 						for (int n = 0; n < nt; n++) {
 							String aTrait = "              " + (idx++) + ": ";
 							int traitlen = aTrait.length();
-							descr += "\n" + aTrait.substring(traitlen - 16, traitlen) + (species.size() > 1 ? pop.getName() + "." : "") + pop.getTraitName(n);
+							descr += "\n" + aTrait.substring(traitlen - 16, traitlen)
+									+ (species.size() > 1 ? pop.getName() + "." : "") + pop.getTraitName(n);
 						}
 					}
 					if (species.size() > 1)
@@ -2135,7 +2031,8 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 						logger.warning("problem parsing '" + arg + "' - ignored!");
 						return false;
 					}
-					// cast check should be unnecessary. --phase2daxis should only be available if module 
+					// cast check should be unnecessary. --phase2daxis should only be available if
+					// module
 					// implements at least HasPhase2D (plus some other conditions).
 					if (Module.this instanceof HasPhase2D)
 						((HasPhase2D) Module.this).setPhase2DTraits(phase2daxis[0], phase2daxis[1]);
@@ -2146,19 +2043,20 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 				public String getDescription() {
 					String descr = "--phase2daxis <t>  indices of traits shown on phase plane axis\n" + //
 							"        format: <i0>,<i1>,..." + CLOParser.MATRIX_DELIMITER + //
-									"<j0>,<j1>... with \n" + //
+							"<j0>,<j1>... with \n" + //
 							"                <in>, <jn> indices of traits on x-/y-axis";
 					if (species.size() > 1) {
 						// multi-species module
 						descr += "\n      (for second, third etc. species add the total" + //
-								 "\n       number of previous traits)";
+								"\n       number of previous traits)";
 					}
 					return descr;
 				}
 			});
 
 	/**
-	 * Command line option to mark points on graphs (ParaGraph, S3Graph, LineGraph and HistoGraph). Very convenient to indicate fixed points
+	 * Command line option to mark points on graphs (ParaGraph, S3Graph, LineGraph
+	 * and HistoGraph). Very convenient to indicate fixed points
 	 */
 	public final CLOption cloPoints = new CLOption("points", "-none", EvoLudo.catGUI, null,
 			new CLODelegate() {
@@ -2199,7 +2097,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 						int idx = 0;
 						for (Module pop : species) {
 							double[] smk = CLOParser.parseVector(mk[n++]);
-							if (ArrayMath.min(smk)<0.0) {
+							if (ArrayMath.min(smk) < 0.0) {
 								filled = false;
 								ArrayMath.abs(smk);
 							}
@@ -2227,7 +2125,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 											// frequency based models (dep >= 0 must hold)
 											smk = ArrayMath.insert(smk, 1.0 - ArrayMath.norm(smk), dep);
 										break;
-									default:	// unreachable
+									default: // unreachable
 										break;
 								}
 							}
@@ -2249,10 +2147,11 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 				@Override
 				public String getDescription() {
 					String multi = "";
-					if (species.size() > 1) 
-						multi = "["+CLOParser.SPECIES_DELIMITER+"<j0>,...]";
+					if (species.size() > 1)
+						multi = "[" + CLOParser.SPECIES_DELIMITER + "<j0>,...]";
 					String descr = "--points <p>    values of fixed points\n" + //
-							"        format: <i0>,<i1>,..."+multi+"["+CLOParser.MATRIX_DELIMITER+"<k0>,<k1>...] with \n" + //
+							"        format: <i0>,<i1>,..." + multi + "[" + CLOParser.MATRIX_DELIMITER
+							+ "<k0>,<k1>...] with \n" + //
 							"                <nm> values of fixed point(s)";
 					return descr;
 				}
@@ -2264,7 +2163,6 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		cloFitnessMap.addKeys(Map2Fitness.Maps.values());
 		parser.addCLO(cloFitnessMap);
 		parser.addCLO(cloMutation);
-		parser.addCLO(cloInitType);
 
 		if (this instanceof Discrete.Groups ||
 				this instanceof Continuous.Groups ||
@@ -2773,8 +2671,9 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		}
 	}
 
-    /**
-	 * Determine and return data types that module can report derived from the data visualizations that are available for the current module.
+	/**
+	 * Determine and return data types that module can report derived from the data
+	 * visualizations that are available for the current module.
 	 *
 	 * @return the array of data types that can be reported by this module
 	 * 

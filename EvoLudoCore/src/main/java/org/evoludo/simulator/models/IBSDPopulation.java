@@ -1848,9 +1848,9 @@ public class IBSDPopulation extends IBSPopulation {
 	public void init() {
 		super.init();
 		Model model = engine.getModel();
-		IBSD.InitType myType = (IBSD.InitType) module.getInitType();
+		InitType myType = initType;
 		if (model.isMode(Mode.STATISTICS))
-			myType = IBSD.InitType.STATISTICS;
+			myType = InitType.STATISTICS;
 
 		switch (myType) {
 			case STRIPES:
@@ -1887,7 +1887,7 @@ public class IBSDPopulation extends IBSPopulation {
 	/**
 	 * Initial configuration with uniform strategy frequencies.
 	 * 
-	 * @see IBSD.InitType#UNIFORM
+	 * @see InitType#UNIFORM
 	 */
 	protected void initUniform() {
 		Arrays.fill(strategiesTypeCount, 0);
@@ -1901,7 +1901,7 @@ public class IBSDPopulation extends IBSPopulation {
 	/**
 	 * Initial configuration with strategy frequencies as specified in options.
 	 * 
-	 * @see IBSD.InitType#FREQUENCY
+	 * @see InitType#FREQUENCY
 	 * @see Discrete#cloInit
 	 */
 	protected void initFrequency() {
@@ -1939,7 +1939,7 @@ public class IBSDPopulation extends IBSPopulation {
 	/**
 	 * Monomorphic initial configuration.
 	 * 
-	 * @see IBSD.InitType#MONO
+	 * @see InitType#MONO
 	 * @see Discrete#cloInit
 	 */
 	protected void initMono() {
@@ -1970,7 +1970,7 @@ public class IBSDPopulation extends IBSPopulation {
 	/**
 	 * Initial configuration for generating a statistics sample.
 	 * 
-	 * @see IBSD.InitType#STATISTICS
+	 * @see InitType#STATISTICS
 	 */
 	protected void initStatistics() {
 		FixationData fix = ((IBSD) engine.getModel()).getFixationData();
@@ -1983,7 +1983,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * 
 	 * @return the location of the mutant
 	 * 
-	 * @see IBSD.InitType#MUTANT
+	 * @see InitType#MUTANT
 	 * @see Discrete#cloInit
 	 */
 	protected int initMutant() {
@@ -2043,13 +2043,13 @@ public class IBSDPopulation extends IBSPopulation {
 	 * 
 	 * <pre>
 	 * if (model.isModelType(Type.IBS))
-	 * 	engine.cloInitType.addKey(InitType.KALEIDOSCOPE);
+	 * 	IBSD.cloInitType.addKey(InitType.KALEIDOSCOPE);
 	 * </pre>
 	 * 
 	 * to
 	 * {@code org.evoludo.simulator.modules.Module#modelLoaded() Module#modelLoaded()}.
 	 * 
-	 * @see IBSD.InitType#KALEIDOSCOPE
+	 * @see InitType#KALEIDOSCOPE
 	 */
 	protected void initKaleidoscope() {
 	}
@@ -2058,6 +2058,8 @@ public class IBSDPopulation extends IBSPopulation {
 	 * Initial configuration with monomorphic stripes of each type to investigate
 	 * invasion properties of one strategy into another with at least one instance
 	 * of all possible pairings.
+	 * 
+	 * @see InitType#STRIPES
 	 */
 	protected void initStripes() {
 		// only makes sense for 2D lattices at this point. if not, defaults to uniform
@@ -2153,6 +2155,39 @@ public class IBSDPopulation extends IBSPopulation {
 		for (int n = start; n <= end; n++)
 			sum += n;
 		return sum;
+	}
+
+	/**
+	 * Type of initial configuration.
+	 * 
+	 * @see #cloInitType
+	 */
+	protected InitType initType;
+
+	/**
+	 * Sets the type of the initial configuration.
+	 *
+	 * @param type the type of the initial configuration
+	 * 
+	 * @see InitType
+	 */
+	public void setInitType(InitType type) {
+		if (type == null)
+			type = getInitType();
+		initType = type;
+	}
+
+	/**
+	 * Gets the type of the initial configuration.
+	 *
+	 * @return the type of the initial configuration
+	 * 
+	 * @see InitType
+	 */
+	public InitType getInitType() {
+		if (initType != null) 
+			return initType;
+		return InitType.DEFAULT;
 	}
 
 	@Override

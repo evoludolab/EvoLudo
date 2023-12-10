@@ -41,8 +41,8 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
+import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.InitType;
-import org.evoludo.simulator.models.Model.Type;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
@@ -189,13 +189,6 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 		environment = null;
 		feedback = null;
 		payoffMatrix = null;
-	}
-
-	@Override
-	public void modelLoaded() {
-		super.modelLoaded();
-		if (model.isModelType(Type.IBS))
-			cloInitType.addKey(InitType.KALEIDOSCOPE);
 	}
 
 	@Override
@@ -767,6 +760,13 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 		 */
 		protected IBS(EvoLudo engine) {
 			(new TBT(engine)).super(engine);
+		}
+
+		@Override
+		public void load() {
+			super.load();
+			// cast is safe because wouldn't be here otherwise
+			((IBSD) model).cloInitType.addKey(InitType.KALEIDOSCOPE);
 		}
 
 		@Override

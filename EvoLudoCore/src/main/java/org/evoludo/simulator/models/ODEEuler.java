@@ -42,6 +42,7 @@ import org.evoludo.math.Functions;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Module.Map2Fitness;
 import org.evoludo.simulator.modules.Module.PlayerUpdateType;
@@ -183,7 +184,8 @@ public class ODEEuler implements Model.ODE {
 	/**
 	 * List with all species in model including this one. List should be shared with
 	 * other populations (to simplify bookkeeping) but the species list CANNOT be
-	 * static! Otherwise it is impossible to run multiple instances of modules/models
+	 * static! Otherwise it is impossible to run multiple instances of
+	 * modules/models
 	 * concurrently.
 	 */
 	protected ArrayList<? extends Module> species;
@@ -246,6 +248,18 @@ public class ODEEuler implements Model.ODE {
 	 * Total number of traits (dynamical variables) in the ODE.
 	 */
 	int nDim = -1;
+
+	/**
+	 * The initial frequencies/densities of the ODE. In multi-species modules the
+	 * initial states of each species are concatenated into this single array. The
+	 * initial frequencies/densities of the first species are stored in
+	 * <code>yt[0]</code> through <code>yt[n1]</code> where <code>n1</code> denotes
+	 * the number of traits in the first species. The initial frequencies/densities
+	 * of the second species are stored in <code>yt[n1+1]</code> through
+	 * <code>yt[n1+n2]</code> where <code>n2</code> denotes the number of traits in
+	 * the second species, etc.
+	 */
+	double[] y0;
 
 	/**
 	 * The current frequencies/densities of the ODE. In multi-species modules the
@@ -326,6 +340,13 @@ public class ODEEuler implements Model.ODE {
 	 * fitness.
 	 */
 	double[] staticfit;
+
+	/**
+	 * Type of initial configuration for each species.
+	 * 
+	 * @see #cloInitType
+	 */
+	protected InitType initType[];
 
 	/**
 	 * Array containing indices that delimit individual species in the ODE state
@@ -471,19 +492,19 @@ public class ODEEuler implements Model.ODE {
 	@Override
 	public void load() {
 		species = module.getSpecies();
-		module = (species.size() == 1 ? species.get(0) : null);
+		int nSpecies = species.size();
+		module = (nSpecies == 1 ? species.get(0) : null);
+		initType = new InitType[nSpecies];
 		// retrieve option for first species; parser will process and set
-		// InitType for all species 
-		CLOption type = species.get(0).cloInitType;
-		type.clearKeys();
-		type.addKeys(InitType.values());
+		// InitType for all species
+		cloInitType.clearKeys();
+		cloInitType.addKeys(InitType.values());
 		if (isDensity()) {
-			type.removeKey(InitType.UNIFORM);
-			type.removeKey(InitType.RANDOM);
-			type.removeKey(InitType.FREQUENCY);
-		}
-		else {
-			type.removeKey(InitType.DENSITY);
+			cloInitType.removeKey(InitType.UNIFORM);
+			cloInitType.removeKey(InitType.RANDOM);
+			cloInitType.removeKey(InitType.FREQUENCY);
+		} else {
+			cloInitType.removeKey(InitType.DENSITY);
 		}
 	}
 
@@ -492,26 +513,21 @@ public class ODEEuler implements Model.ODE {
 		yt = ft = dyt = yout = tmp = null;
 		staticfit = null;
 		names = null;
+		initType = null;
+		cloInitType.clearKeys();
 	}
 
 	@Override
 	public void reset() {
 		t = 0.0;
-		if (yt == null || yt.length != nDim) {
-			yt = new double[nDim];
-			ft = new double[nDim];
-			dyt = new double[nDim];
-			yout = new double[nDim];
-			tmp = new double[nDim];
-			names = new String[nDim];
-			int skip = 0;
-			for (Module pop : species) {
-				int nTraits = pop.getNTraits();
-				System.arraycopy(pop.getTraitNames(), 0, names, skip, nTraits);
-				skip += nTraits;
-			}
-		}
 		int skip = 0;
+		for (Module pop : species) {
+			int nTraits = pop.getNTraits();
+			System.arraycopy(pop.getTraitNames(), 0, names, skip, nTraits);
+			skip += nTraits;
+		}
+
+		skip = 0;
 		staticfit = null;
 		for (Module pop : species) {
 			if (!pop.isStatic())
@@ -520,19 +536,20 @@ public class ODEEuler implements Model.ODE {
 			if (staticfit == null || staticfit.length != nDim)
 				staticfit = new double[nDim];
 			int nTraits = pop.getNTraits();
-			System.arraycopy(((org.evoludo.simulator.modules.Module.Static) pop).getStaticScores(), 0, staticfit, skip,
+			System.arraycopy(((Module.Static) pop).getStaticScores(), 0, staticfit, skip,
 					nTraits);
 			Map2Fitness map2fit = pop.getMapToFitness();
 			for (int n = 0; n < nTraits; n++)
 				staticfit[skip + n] = map2fit.map(staticfit[skip + n]);
 			skip += nTraits;
 		}
+		normalizeState(y0);
 		// check if stop is requested if population becomes monomorphic
 		// for multi-species models only first species checked
 		// note: module undefined for isMultispecies==true
 		monoStop = false;
 		if (!species.get(0).isContinuous())
-			monoStop = ((org.evoludo.simulator.modules.Discrete) species.get(0)).getMonoStop();
+			monoStop = ((Discrete) species.get(0)).getMonoStop();
 	}
 
 	@Override
@@ -566,6 +583,14 @@ public class ODEEuler implements Model.ODE {
 			nDim += nTraits;
 		}
 		idxSpecies[nSpecies] = nDim;
+		if (yt == null || yt.length != nDim) {
+			yt = new double[nDim];
+			ft = new double[nDim];
+			dyt = new double[nDim];
+			yout = new double[nDim];
+			tmp = new double[nDim];
+			names = new String[nDim];
+		}
 
 		if (isAdjustedDynamics && minFit <= 0.0) {
 			// fitness is not guaranteed to be positive
@@ -1279,6 +1304,28 @@ public class ODEEuler implements Model.ODE {
 		update();
 	}
 
+	/**
+	 * Sets whether adjusted dynamics is requested. It may not be possible to honour
+	 * the request, e.g. if payoffs can be negative.
+	 * 
+	 * @param adjusted if <code>true</code> requests adjusted dynamics
+	 */
+	public void setAdjustedDynamics(boolean adjusted) {
+		isAdjustedDynamics = adjusted;
+	}
+
+	@Override
+	public void setAccuracy(double acc) {
+		if (acc <= 0.0)
+			return;
+		accuracy = acc;
+	}
+
+	@Override
+	public double getAccuracy() {
+		return accuracy;
+	}
+
 	@Override
 	public void init() {
 		t = 0.0;
@@ -1288,38 +1335,17 @@ public class ODEEuler implements Model.ODE {
 		// PDE models have their own initialization types
 		if (isModelType(Type.PDE))
 			return;
-		int from = 0;
+		int idx = -1;
+		System.arraycopy(y0, 0, yt, 0, nDim);
+		// y0 is initialized except for species with random initial frequencies
 		for (Module pop : species) {
-			if (!(pop instanceof org.evoludo.simulator.modules.Discrete))
+			if (!initType[++idx].equals(InitType.RANDOM))
 				continue;
-			org.evoludo.simulator.modules.Discrete dpop = (org.evoludo.simulator.modules.Discrete) pop;
 			int dim = pop.getNTraits();
-			double[] init = dpop.getInit();
-			switch ((InitType) pop.getInitType()) {
-				default:
-				case DENSITY:
-				case FREQUENCY:
-					System.arraycopy(init, 0, yt, from, dim);
-					break;
-
-				case UNIFORM:
-					Arrays.fill(yt, from, from + dim, 1.0);
-					break;
-
-				case MONO:
-					Arrays.fill(yt, 0.0);
-					int trait = ArrayMath.maxIndex(init);
-					yt[trait] = 1.0;
-					break;
-
-				case RANDOM:
-					// retrieve the shared RNG to ensure reproducibility of results
-					RNGDistribution rng = engine.getRNG();
-					for (int n = 0; n < dim; n++)
-						yt[from + n] = rng.random0n(1000);
-					break;
-			}
-			from += dim;
+			RNGDistribution rng = engine.getRNG();
+			int from = idxSpecies[idx];
+			for (int n = 0; n < dim; n++)
+				yt[from + n] = rng.random01();
 		}
 		normalizeState(yt);
 	}
@@ -1337,18 +1363,11 @@ public class ODEEuler implements Model.ODE {
 	 * {@link org.evoludo.simulator.modules.Discrete#cloInit
 	 * modules.Discrete.cloInit} (default for frequency modules).
 	 * <dt>UNIFORM
-	 * <dd>Uniform/homogeneous frequencies of traits. <strong>Note:</strong> Not
-	 * available for density based models.
-	 * <dt>MONO
-	 * <dd>Monomorphic initialization of the population. The monomorphic trait is
-	 * given by the highest frequency in
-	 * {@link org.evoludo.simulator.modules.Discrete#cloInit
-	 * modules.Discrete.cloInit}.
+	 * <dd>Uniform frequencies of traits. <strong>Note:</strong> Not available for
+	 * density based models.
 	 * <dt>RANDOM
 	 * <dd>Random initial trait frequencies. <strong>Note:</strong> Not available
 	 * for density based models.
-	 * <dt>DEFAULT
-	 * <dd>Default initialization (FREQUENCY or DENSITY)
 	 * </dl>
 	 * 
 	 * @author Christoph Hauert
@@ -1360,22 +1379,16 @@ public class ODEEuler implements Model.ODE {
 	public enum InitType implements CLOption.Key {
 
 		/**
-		 * Initial densities as specified in
-		 * {@link org.evoludo.simulator.modules.Discrete#cloInit
-		 * modules.Discrete.cloInit}. Mutually exclusive with {@link #FREQUENCY}.
-		 * 
-		 * @see org.evoludo.simulator.modules.Discrete#cloInit modules.Discrete.cloInit
+		 * Initial densities as specified.
 		 */
-		DENSITY("density", "initial trait densities"),
+		DENSITY("density", "initial trait densities <d1,...,dn>"),
 
 		/**
-		 * Initial frequencies as specified in
-		 * {@link org.evoludo.simulator.modules.Discrete#cloInit
-		 * modules.Discrete.cloInit}. Mutually exclusive with {@link #DENSITY}.
-		 * 
-		 * @see org.evoludo.simulator.modules.Discrete#cloInit modules.Discrete.cloInit
+		 * Initial frequencies as specified.
+		 * <p>
+		 * <strong>Note:</strong> Not available for density based models.
 		 */
-		FREQUENCY("frequency", "initial trait frequencies"),
+		FREQUENCY("frequency", "initial trait frequencies <f1,...,fn>"),
 
 		/**
 		 * Uniform initial frequencies of traits.
@@ -1385,24 +1398,11 @@ public class ODEEuler implements Model.ODE {
 		UNIFORM("uniform", "uniform initial frequencies"),
 
 		/**
-		 * Monomorphic initialization of the population. The monomorphic trait is given
-		 * by the highest frequency in
-		 * {@link org.evoludo.simulator.modules.Discrete#cloInit
-		 * modules.Discrete.cloInit}
-		 */
-		MONO("monomorphic", "monomorphic initialization"),
-
-		/**
 		 * Random initial trait frequencies.
 		 * <p>
 		 * <strong>Note:</strong> Not available for density based models.
 		 */
-		RANDOM("random", "random distribution"),
-
-		/**
-		 * Default initialization type. Not user selectable.
-		 */
-		DEFAULT("-default", "default initialization");
+		RANDOM("random", "random initial frequencies");
 
 		/**
 		 * Key of initialization type. Used when parsing command line options.
@@ -1441,25 +1441,66 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	/**
-	 * Sets whether adjusted dynamics is requested. It may not be possible to honour
-	 * the request, e.g. if payoffs can be negative.
+	 * Parse initializer string {@code arg}. Determine type of initialization and
+	 * process its arguments as appropriate.
+	 * <p>
+	 * <strong>Note:</strong> Not possible to perform parsing in {@code CLODelegate}
+	 * of {@link #cloInitType} because PDE model provide their own
+	 * {@link PDERD.InitType}s.
 	 * 
-	 * @param adjusted if <code>true</code> requests adjusted dynamics
+	 * @param arg the arguments to parse
+	 * @return {@code true} if parsing successful
+	 * 
+	 * @see InitType
 	 */
-	public void setAdjustedDynamics(boolean adjusted) {
-		isAdjustedDynamics = adjusted;
-	}
-
-	@Override
-	public void setAccuracy(double acc) {
-		if (acc <= 0.0)
-			return;
-		accuracy = acc;
-	}
-
-	@Override
-	public double getAccuracy() {
-		return accuracy;
+	public boolean parse(String arg) {
+		// nDim and idxSpecies not yet initialized
+		int dim = 0;
+		for (Module pop : species)
+			dim += pop.getNTraits();
+		if (y0 == null || y0.length != dim)
+			y0 = new double[dim];
+		Arrays.fill(y0, 0.0);
+		String[] inittypes = arg.split(CLOParser.SPECIES_DELIMITER);
+		int idx = 0;
+		int start = 0;
+		boolean parseOk = true;
+		for (Module pop : species) {
+			String inittype = inittypes[idx % inittypes.length];
+			initType[idx] = (InitType) cloInitType.match(inittype);
+			String[] typeargs = inittype.split("[\\s=]");
+			double[] initargs = null;
+			if (typeargs.length > 1)
+				initargs = CLOParser.parseVector(typeargs[1]);
+			int nTraits = pop.getNTraits();
+			boolean success = false;
+			switch (initType[idx]) {
+				case DENSITY:
+				case FREQUENCY:
+					if (initargs == null || initargs.length != nTraits)
+						break;
+					System.arraycopy(initargs, 0, y0, start, nTraits);
+					success = true;
+					break;
+				case RANDOM:
+				case UNIFORM:
+				default:
+					Arrays.fill(y0, start, start + nTraits, 1.0);
+					success = true;
+					break;
+			}
+			if (!success) {
+				initType[idx] = InitType.UNIFORM;
+				parseOk = false;
+			}
+			idx++;
+			start += nTraits;
+		}
+		if (!parseOk) {
+			engine.getLogger().warning("parsing of initype(s) '" + arg + "' failed.");
+			return false;
+		}
+		return true;
 	}
 
 	/**
@@ -1487,13 +1528,50 @@ public class ODEEuler implements Model.ODE {
 			});
 
 	/**
+	 * Command line option to set the initial configuration in ODE/SDE models.
+	 * <p>
+	 * <strong>Note:</strong> PDE models use their own set of initial
+	 * configurations.
+	 * 
+	 * @see InitType
+	 * @see PDERD.InitType
+	 */
+	public final CLOption cloInitType = new CLOption("inittype", InitType.UNIFORM.getKey(), EvoLudo.catModule,
+			"--inittype <t>  type of initial configuration", new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
+					// parsing must be 'outsourced' to ODEEuler class to enable
+					// PDE models to override it and do their own initialization.
+					return ODEEuler.this.parse(arg);
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					int idx = 0;
+					for (Module pop : species) {
+						InitType type = initType[idx++];
+						String msg = "# inittype:             " + type;
+						if (type.equals(InitType.DENSITY) || type.equals(InitType.FREQUENCY)) {
+							int from = idxSpecies[idx];
+							msg += Formatter.format(Arrays.copyOfRange(y0, from, from + pop.getNTraits()), 4);
+							Arrays.copyOfRange(y0, idxSpecies[idx], pop.getNTraits());
+						}
+						if (species.size() > 1)
+							msg += " (" + pop.getName() + ")";
+						output.println(msg);
+					}
+				}
+			});
+
+	/**
 	 * Command line option to activate adjusted replicator dynamics (if possible) in
 	 * ODE models.
 	 * 
 	 * @see #isAdjustedDynamics
 	 * @see #setAdjustedDynamics(boolean)
 	 */
-	public final CLOption cloAdjustedDynamics = new CLOption("adjusted", "standard", CLOption.Argument.NONE, EvoLudo.catModel,
+	public final CLOption cloAdjustedDynamics = new CLOption("adjusted", "standard", CLOption.Argument.NONE,
+			EvoLudo.catModel,
 			"--adjusted      adjusted replicator dynamics", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1554,6 +1632,7 @@ public class ODEEuler implements Model.ODE {
 		parser.addCLO(cloAdjustedDynamics);
 		parser.addCLO(cloDEAccuracy);
 		parser.addCLO(cloDEdt);
+		parser.addCLO(cloInitType);
 		if (permitsTimeReversal())
 			parser.addCLO(cloTimeReversed);
 	}

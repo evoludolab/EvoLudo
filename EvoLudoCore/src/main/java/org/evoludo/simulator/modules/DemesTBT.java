@@ -38,9 +38,7 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBS.MigrationType;
-import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSD.InitType;
-import org.evoludo.simulator.models.Model.Type;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.util.CLOParser;
@@ -65,14 +63,6 @@ public class DemesTBT extends TBT {
 
 	public DemesTBT(EvoLudo engine) {
 		super(engine);
-	}
-
-	@Override
-	public void modelLoaded() {
-		super.modelLoaded();
-		// TBT added kaleidoscopes but demes cannot deal with them
-		if (model.isModelType(Type.IBS))
-			cloInitType.removeKey(InitType.KALEIDOSCOPE);
 	}
 
 	/**
@@ -163,6 +153,13 @@ public class DemesTBT extends TBT {
 
 		protected IBS(EvoLudo engine, Discrete module) {
 			super(engine);
+		}
+
+		@Override
+		public void load() {
+			super.load();
+			// TBT added kaleidoscopes but demes cannot deal with them
+			((IBSD) model).cloInitType.removeKey(InitType.KALEIDOSCOPE);
 		}
 
 		@Override
@@ -355,7 +352,7 @@ public class DemesTBT extends TBT {
 			}
 			// no actual strategy change occurred - reset score always (default) or only on
 			// actual change?
-			if (playerScoreReset.equals(ScoringType.RESET_ALWAYS))
+			if (playerScoreResetAlways)
 				resetScoreAt(vacant);
 			playGameAt(vacant);
 		}

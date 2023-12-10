@@ -40,8 +40,8 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
+import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.InitType;
-import org.evoludo.simulator.models.Model.Type;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.PDERD.HasPDE;
@@ -171,13 +171,6 @@ public class CDL extends Discrete implements Groups, HasIBS, HasODE, HasSDE, Has
 	public void unload() {
 		super.unload();
 		ninterest = null;
-	}
-
-	@Override
-	public void modelLoaded() {
-		super.modelLoaded();
-		if (model.isModelType(Type.IBS))
-			cloInitType.addKey(InitType.KALEIDOSCOPE);
 	}
 
 	@Override
@@ -974,6 +967,13 @@ public class CDL extends Discrete implements Groups, HasIBS, HasODE, HasSDE, Has
 		 */
 		protected IBS(EvoLudo engine) {
 			super(engine);
+		}
+
+		@Override
+		public void load() {
+			super.load();
+			// cast is safe because wouldn't be here otherwise
+			((IBSD) model).cloInitType.addKey(InitType.KALEIDOSCOPE);
 		}
 
 		@Override
