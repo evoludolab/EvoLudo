@@ -40,7 +40,6 @@ import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSD.FixationData;
 import org.evoludo.simulator.models.IBSD.InitType;
 import org.evoludo.simulator.models.Model.Mode;
@@ -798,8 +797,7 @@ public class IBSDPopulation extends IBSPopulation {
 		// similarly, payoffs can be calculated more efficiently in deme structured
 		// populations as long as demes are well-mixed (although lookup tables are
 		// possible but not (yet) implemented.
-		if (hasLookupTable || //
-			(adjustScores && interaction.isType(Geometry.Type.HIERARCHY) //
+		if (hasLookupTable || (adjustScores && interaction.isType(Geometry.Type.HIERARCHY)
 				&& interaction.subgeometry == Geometry.Type.MEANFIELD)) {
 			updateMixedMeanScores();
 			return;
@@ -1112,27 +1110,15 @@ public class IBSDPopulation extends IBSPopulation {
 		stripGroupVacancies(group, groupStrat, groupIdxs);
 		double myScore;
 		countTraits(traitCount, groupStrat, 0, group.nSampled);
-		// for ephemeral scores calculate score of focal only
-		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
 			// isolated individual (note the bookkeeping above is overkill and can be
 			// optimized)
 			myScore = pairmodule.pairScores(myType, traitCount, traitScore);
-			if (ephemeralScores) {
-				// no need to update scores of everyone else
-				setScoreAt(me, myScore, 0);
-				return;
-			}
 			updateScoreAt(me, myScore, 0);
 			return;
 		}
 
 		myScore = pairmodule.pairScores(myType, traitCount, traitScore);
-		if (ephemeralScores) {
-			// no need to update scores of everyone else
-			setScoreAt(me, myScore / group.nSampled, group.nSampled);
-			return;
-		}
 		updateScoreAt(me, myScore, group.nSampled);
 		for (int i = 0; i < group.nSampled; i++)
 			opponent.updateScoreAt(group.group[i], traitScore[groupStrat[i]]);
@@ -1283,17 +1269,11 @@ public class IBSDPopulation extends IBSPopulation {
 			return;
 		stripGroupVacancies(group, groupStrat, groupIdxs);
 		countTraits(traitCount, groupStrat, 0, group.nSampled);
-		// for ephemeral scores calculate score of focal only
-		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
 			// isolated individual (note the bookkeeping above is overkill and can be
 			// optimized)
 			traitCount[myType]++;
 			groupmodule.groupScores(traitCount, traitScore);
-			if (ephemeralScores) {
-				setScoreAt(me, traitScore[myType], 0);
-				return;
-			}
 			updateScoreAt(me, traitScore[myType], 0);
 			return;
 		}
@@ -1313,16 +1293,10 @@ public class IBSDPopulation extends IBSPopulation {
 						traitCount[myType]++;
 						groupmodule.groupScores(traitCount, traitScore);
 						myScore += traitScore[myType];
-						if (ephemeralScores)
-							continue;
 						for (int i = 0; i < nGroup - 1; i++) {
 							int idx = (n + i) % group.nSampled;
 							smallScores[idx] += traitScore[groupStrat[idx]];
 						}
-					}
-					if (ephemeralScores) {
-						setScoreAt(me, myScore / group.nSampled, group.nSampled);
-						return;
 					}
 					updateScoreAt(me, myScore, group.nSampled);
 					for (int i = 0; i < group.nSampled; i++)
@@ -1336,10 +1310,6 @@ public class IBSDPopulation extends IBSPopulation {
 				// interact with sampled neighbors
 				traitCount[myType]++;
 				groupmodule.groupScores(traitCount, traitScore);
-				if (ephemeralScores) {
-					setScoreAt(me, traitScore[myType], 1);
-					return;
-				}
 				updateScoreAt(me, traitScore[myType]);
 				for (int i = 0; i < group.nSampled; i++)
 					opponent.updateScoreAt(group.group[i], traitScore[groupStrat[i]]);
@@ -1871,7 +1841,7 @@ public class IBSDPopulation extends IBSPopulation {
 		// relaxed conditions for adjusting scores: for discrete strategies unstructured
 		// populations are feasible.
 		return !(!interactionGroup.isSampling(IBSGroup.SamplingType.ALL) ||
-				!playerScoreReset.equals(ScoringType.RESET_ALWAYS));
+				!playerScoreResetAlways);
 	}
 
 	@Override
@@ -2097,10 +2067,19 @@ public class IBSDPopulation extends IBSPopulation {
 				interaction.isType(Geometry.Type.SQUARE_MOORE) ||
 				interaction.isType(Geometry.Type.LINEAR))) {
 			Arrays.fill(strategiesTypeCount, 0);
+			boolean act[] = module.getActiveTraits();
+			int nActive = module.getNActive();
+			int[] active = new int[nActive];
+			int idx = 0;
+			for (int n = 0; n < nTraits; n++) {
+				if (!act[n])
+					continue;
+				active[idx++] = n;
+			}
 			// note: shift first strip by half a width to avoid having a boundary at the
 			// edge. also prevents losing one trait interface with fixed boundary
 			// conditions. procedure tested for 2, 3, 4, 5 traits
-			int nStripes = nTraits + 2 * sum(2, nTraits - 2);
+			int nStripes = nActive + 2 * sum(2, nActive - 2);
 			int size = (interaction.isType(Geometry.Type.LINEAR) ? nPopulation
 					: (int) Math.sqrt(nPopulation));
 			int width = size / nStripes;
@@ -2112,24 +2091,27 @@ public class IBSDPopulation extends IBSPopulation {
 			strategiesTypeCount[0] += width * size;
 			offset = width2;
 			// first all individual traits
-			for (int n = 1; n < nTraits; n++) {
-				fillStripe(offset, width, n);
+			for (int n = 1; n < nActive; n++) {
+				fillStripe(offset, width, active[n]);
 				offset += width;
 			}
 			// second all trait pairs
-			int nPasses = Math.max(nTraits - 2, 1);
+			int nPasses = Math.max(nActive - 2, 1);
 			int incr = 2;
 			while (incr <= nPasses) {
 				int trait1 = 0;
 				int trait2 = incr;
-				while (trait2 < nTraits) {
-					fillStripe(offset, width, trait1++);
+				while (trait2 < nActive) {
+					fillStripe(offset, width, active[trait1++]);
 					offset += width;
-					fillStripe(offset, width, trait2++);
+					fillStripe(offset, width, active[trait2++]);
 					offset += width;
 				}
 				incr++;
 			}
+			Arrays.fill(strategiesTypeCount, 0);
+			for (int n = 0; n < nPopulation; n++)
+				strategiesTypeCount[strategies[n] % nTraits]++;
 			return;
 		}
 		logger.warning("inittype 'stripes': 2D lattice structures required - using 'uniform'.");
