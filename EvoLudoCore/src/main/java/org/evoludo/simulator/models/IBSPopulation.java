@@ -3189,10 +3189,10 @@ public abstract class IBSPopulation {
 		}
 
 		nMixedInter = -1;
+		boolean isEphemeral = playerScoreReset.equals(ScoringType.EPHEMERAL);
 		hasLookupTable = module.isStatic() || //
 				(adjustScores && interaction.isType(Geometry.Type.MEANFIELD)) || //
-				(playerScoreReset.equals(ScoringType.EPHEMERAL) 
-					&& interaction.isType(Geometry.Type.MEANFIELD) //
+				(isEphemeral && interaction.isType(Geometry.Type.MEANFIELD) //
 					&& interactionGroup.isSampling(SamplingType.ALL));
 		if (hasLookupTable) {
 			// allocate memory for fitness lookup table
@@ -3229,10 +3229,12 @@ public abstract class IBSPopulation {
 			}
 		}
 		// number of interactions can also be determined in structured populations with
-		// well-mixed demes
-		if (adjustScores && interaction.isType(Geometry.Type.HIERARCHY)
-				&& interaction.subgeometry.equals(Geometry.Type.MEANFIELD)) {
-//XXX determine number of interactions for emphemeral scores
+		// well-mixed demes or in any structure with ephemeral payoffs
+		if (isEphemeral) {
+			nMixedInter = Combinatorics.combinations(interactionGroup.nSamples, nGroup - 1);
+		}
+		else if (adjustScores && interaction.isType(Geometry.Type.HIERARCHY) && //
+				interaction.subgeometry.equals(Geometry.Type.MEANFIELD)) {
 			nMixedInter = interaction.hierarchy[interaction.hierarchy.length - 1]
 					- (interaction.isInterspecies() ? 0 : 1);
 		}

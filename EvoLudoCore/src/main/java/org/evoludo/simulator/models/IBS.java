@@ -128,6 +128,15 @@ public abstract class IBS implements Model.IBS {
 	protected RNGDistribution rng;
 
 	/**
+	 * The random number generator to display states with ephemeral payoffs. In
+	 * order to ensure reproducibility of results this cannot be the same random
+	 * number generator as for running the simulations.
+	 * 
+	 * @see EvoLudo#getRNG()
+	 */
+	protected RNGDistribution ephrng;
+
+	/**
 	 * Geometric (exponential) waiting time distribution for optimizations of
 	 * homogeneous populations.
 	 * 
@@ -325,6 +334,7 @@ public abstract class IBS implements Model.IBS {
 	@Override
 	public void unload() {
 		rng = null;
+		ephrng = null;
 		logger = null;
 		cloGeometryInteraction.clearKeys();
 		cloGeometryReproduction.clearKeys();
@@ -415,6 +425,14 @@ public abstract class IBS implements Model.IBS {
 				distrMutation = new RNGDistribution.Geometric(rng.getRNG(), pMutation);
 			else
 				distrMutation.setProbability(pMutation);
+		}
+		// if any population uses ephemeral payoffs a dummy random number
+		// generator is needed for the display
+		for (IBSPopulation pop : species) {
+			if (pop.getPlayerScoreReset().equals(ScoringType.EPHEMERAL)) {
+				ephrng = rng.clone();
+				break;
+			}
 		}
 		nextSpeciesIdx = -1;
 		for (IBSPopulation pop : species)
@@ -628,8 +646,8 @@ public abstract class IBS implements Model.IBS {
 		double dUpdates = Math.max(1.0, Math.ceil(stepDt / gincr - 1e-8));
 		double stepDone = 0.0;
 		double gStart = generation;
+		boolean hasConverged = false;
 		while (dUpdates >= 1.0) {
-			boolean hasConverged = false;
 			double stepSize = 0.0;
 			int nUpdates = Math.min((int) dUpdates, 1000000000); // 1e9 about half of Integer.MAX_VALUE (2.1e9)
 			for (int n = 0; n < nUpdates; n++) {
@@ -664,14 +682,24 @@ public abstract class IBS implements Model.IBS {
 			stepDone += Math.abs(stepSize);
 			generation = gStart + Math.abs(stepDone);
 			if (hasConverged)
-				return -stepDone;
+				// cannot return just yet; still need to update ephemeral scores
+				break;
 			dUpdates = (stepDt - stepDone) / gincr;
 		}
 		for (IBSPopulation pop : species) {
 			if (!pop.playerScoreReset.equals(ScoringType.EPHEMERAL))
 				continue;
+			// recalculate scores of entire population for display
+			// these scores are just an example and are not used for
+			// any calculations; use independent random number generator!
+			RNGDistribution freeze = rng;
+			rng = ephrng;
+			pop.resetScores();
 			pop.updateScores();
+			rng = freeze;
 		}
+		if (hasConverged)
+			return -stepDone;
 		return stepDt;
 	}
 

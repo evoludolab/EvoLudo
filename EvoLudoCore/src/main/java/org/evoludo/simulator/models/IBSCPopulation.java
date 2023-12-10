@@ -167,29 +167,28 @@ public class IBSCPopulation extends IBSMCPopulation {
 
 	@Override
 	public void playPairGameAt(IBSGroup group) {
-		int size = group.nSampled;
 		// for ephemeral scores calculate score of focal only
 		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
-		if (size <= 0) {
+		if (group.nSampled <= 0) {
 			if (ephemeralScores) {
-				setScoreAt(group.focal, 0.0, 1);
+				setScoreAt(group.focal, 0.0, 0);
 				return;
 			}
 			updateScoreAt(group.focal, 0.0);
 			return;
 		}
 		double[] oppstrategies = opponent.strategies;
-		for (int i = 0; i < size; i++)
+		for (int i = 0; i < group.nSampled; i++)
 			groupStrat[i] = oppstrategies[group.group[i]];
 		int me = group.focal;
-		double myScore = pairmodule.pairScores(strategies[me], groupStrat, size, groupScores);
+		double myScore = pairmodule.pairScores(strategies[me], groupStrat, group.nSampled, groupScores);
 		if (ephemeralScores) {
 			// no need to update scores of everyone else
-			setScoreAt(me, myScore, size);
+			setScoreAt(me, myScore / group.nSampled, group.nSampled);
 			return;
 		}
-		updateScoreAt(me, myScore, size);
-		for (int i = 0; i < size; i++)
+		updateScoreAt(me, myScore, group.nSampled);
+		for (int i = 0; i < group.nSampled; i++)
 			opponent.updateScoreAt(group.group[i], groupScores[i]);
 	}
 
@@ -273,7 +272,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 							smallScores[(n + i) % group.nSampled] += groupScores[i];
 					}
 					if (ephemeralScores) {
-						setScoreAt(me, myScore, group.nSampled);
+						setScoreAt(me, myScore / group.nSampled, group.nSampled);
 						return;
 					}
 					updateScoreAt(me, myScore, group.nSampled);

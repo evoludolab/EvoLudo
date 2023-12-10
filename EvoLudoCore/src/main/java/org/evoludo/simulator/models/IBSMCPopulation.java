@@ -382,7 +382,7 @@ public class IBSMCPopulation extends IBSPopulation {
 		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
 			if (ephemeralScores) {
-				setScoreAt(group.focal, 0.0, 1);
+				setScoreAt(group.focal, 0.0, 0);
 				return;
 			}
 			updateScoreAt(group.focal, 0.0);
@@ -393,7 +393,7 @@ public class IBSMCPopulation extends IBSPopulation {
 				groupScores);
 		if (ephemeralScores) {
 			// no need to update scores of everyone else
-			setScoreAt(group.focal, myScore, group.nSampled);
+			setScoreAt(group.focal, myScore / group.nSampled, group.nSampled);
 			return;
 		}
 		updateScoreAt(group.focal, myScore, group.nSampled);
@@ -458,7 +458,7 @@ public class IBSMCPopulation extends IBSPopulation {
 		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
 			if (ephemeralScores) {
-				setScoreAt(group.focal, 0.0, 1);
+				setScoreAt(group.focal, 0.0, 0);
 				return;
 			}
 			updateScoreAt(group.focal, 0.0);
@@ -486,7 +486,7 @@ public class IBSMCPopulation extends IBSPopulation {
 							smallScores[(n + i) % group.nSampled] += groupScores[i];
 					}
 					if (ephemeralScores) {
-						setScoreAt(me, myScore, group.nSampled);
+						setScoreAt(me, myScore / group.nSampled, group.nSampled);
 						return;
 					}
 					updateScoreAt(me, myScore, group.nSampled);

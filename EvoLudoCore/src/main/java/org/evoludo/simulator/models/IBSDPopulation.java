@@ -1130,7 +1130,7 @@ public class IBSDPopulation extends IBSPopulation {
 		myScore = pairmodule.pairScores(myType, traitCount, traitScore);
 		if (ephemeralScores) {
 			// no need to update scores of everyone else
-			setScoreAt(me, myScore, group.nSampled);
+			setScoreAt(me, myScore / group.nSampled, group.nSampled);
 			return;
 		}
 		updateScoreAt(me, myScore, group.nSampled);
@@ -1321,7 +1321,7 @@ public class IBSDPopulation extends IBSPopulation {
 						}
 					}
 					if (ephemeralScores) {
-						setScoreAt(me, myScore, group.nSampled);
+						setScoreAt(me, myScore / group.nSampled, group.nSampled);
 						return;
 					}
 					updateScoreAt(me, myScore, group.nSampled);
