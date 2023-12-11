@@ -476,12 +476,7 @@ public class MVHistogram extends MVAbstract implements HistoGraph.HistoGraphCont
 						style.label = "Absorbtion";
 						style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
 					}
-					// determine if initial configuration is homogeneous
-					boolean monoInit = true;
-					if( pop instanceof Discrete ) {
-						monoInit = ((Discrete)pop).isMonoInit()>=0;
-					}
-					if( !monoInit || nPop>FIXATION_NODES ) {
+					if( nPop>FIXATION_NODES ) {
 						if( newPop )
 							data = new double[nTraits][HistoGraph.MAX_BINS];
 						graph.setNormalized(false);
@@ -758,12 +753,8 @@ public class MVHistogram extends MVAbstract implements HistoGraph.HistoGraphCont
 					int tag = graph.getTag();
 					nTraits = pop.getNTraits();
 					status += (isMultispecies?pop.getName()+".":"")+(tag==nTraits?"Absorption":pop.getTraitName(tag))+": ";
-					boolean monoInit = true;
-					if( pop instanceof Discrete ) {
-						monoInit = ((Discrete)pop).isMonoInit()>=0;
-					}
 					int nPop = pop.getNPopulation();
-					if( !monoInit || nPop>FIXATION_NODES ) {
+					if( nPop>FIXATION_NODES ) {
 						double mean = Distributions.distrMean(data[tag]);
 						double sdev = Distributions.distrStdev(data[tag], mean);
 						GraphStyle style = graph.getStyle();
@@ -980,13 +971,9 @@ public class MVHistogram extends MVAbstract implements HistoGraph.HistoGraphCont
 			case STATISTICS_FIXATION_TIME:
 				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>"+
 						"<tr><td><i>"+style.xLabel+":</i></td><td>");
-				boolean monoInit = false;
 				Module module = graph.getModule();
-				if( module instanceof Discrete ) {
-					monoInit = ((Discrete)module).isMonoInit()>=0;
-				}
 				int nPop = module.getNPopulation();
-				if( !monoInit || nPop>FIXATION_NODES ) {
+				if( nPop>FIXATION_NODES ) {
 					tip.append("["+Formatter.format(style.xMin+(double)bar/nBins*(style.xMax-style.xMin), 2)+"-"+
 							Formatter.format(style.xMin+(double)(bar+1)/nBins*(style.xMax-style.xMin), 2)+")");
 				}

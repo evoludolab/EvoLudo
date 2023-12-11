@@ -425,29 +425,6 @@ public abstract class Discrete extends Module {
 	}
 
 	/**
-	 * Check if initial configuration is monomorphic (regardless of whether
-	 * {@code VACANT} sites are permitted).
-	 *
-	 * @return the index of the monomorphic trait or {@code &lt;0} if initial state
-	 *         is mixed
-	 */
-	public int isMonoInit() {
-		int monoType = -1;
-		for (int i = 0; i < nTraits; i++) {
-			if (i == VACANT || init[i] < 1e-8)
-				continue;
-			if (monoType < 0) {
-				monoType = i;
-				continue;
-			}
-			return -1;
-		}
-		if (monoType < 0)
-			return VACANT;
-		return monoType;
-	}
-
-	/**
 	 * Command line option to set the initial configuration.
 	 * 
 	 * @see org.evoludo.simulator.models.IBSD.InitType models.IBSD.InitType

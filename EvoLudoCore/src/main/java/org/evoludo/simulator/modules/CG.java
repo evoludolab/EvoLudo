@@ -139,20 +139,6 @@ public class CG extends ATBT implements Module.Static {
 		return typeScores;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * For the conservation game the environment does not count for heterogeneity.
-	 */
-	@Override
-	public int isMonoInit() {
-		if (init[COOPERATE_RICH] + init[COOPERATE_POOR] > 1.0 - 1e-8)
-			return COOPERATE;
-		if (init[DEFECT_RICH] + init[DEFECT_POOR] > 1.0 - 1e-8)
-			return DEFECT;
-		return -1;
-	}
-
 	@Override
 	public void avgScores(double[] density, int n, double[] avgscores) {
 		System.arraycopy(typeScores, 0, avgscores, 0, nTraits);

@@ -1905,35 +1905,30 @@ public class IBSDPopulation extends IBSPopulation {
 	 * @see Discrete#cloInit
 	 */
 	protected void initFrequency() {
-		if (module.isMonoInit() < 0) {
-			Arrays.fill(strategiesTypeCount, 0);
-			double[] init = module.getInit();
-			// different traits active
-			double[] cumFreqs = new double[nTraits];
-			cumFreqs[0] = init[0];
-			for (int i = 1; i < nTraits; i++)
-				cumFreqs[i] = cumFreqs[i - 1] + init[i];
-			double norm = 1.0 / cumFreqs[nTraits - 1];
-			for (int i = 0; i < nTraits; i++)
-				cumFreqs[i] *= norm;
-			double aRand;
-			int aStrat = -1;
+		Arrays.fill(strategiesTypeCount, 0);
+		double[] init = module.getInit();
+		// different traits active
+		double[] cumFreqs = new double[nTraits];
+		cumFreqs[0] = init[0];
+		for (int i = 1; i < nTraits; i++)
+			cumFreqs[i] = cumFreqs[i - 1] + init[i];
+		double norm = 1.0 / cumFreqs[nTraits - 1];
+		for (int i = 0; i < nTraits; i++)
+			cumFreqs[i] *= norm;
+		double aRand;
+		int aStrat = -1;
 
-			for (int n = 0; n < nPopulation; n++) {
-				aRand = random01();
-				for (int i = 0; i < nTraits; i++) {
-					if (aRand < cumFreqs[i]) {
-						aStrat = i;
-						break;
-					}
+		for (int n = 0; n < nPopulation; n++) {
+			aRand = random01();
+			for (int i = 0; i < nTraits; i++) {
+				if (aRand < cumFreqs[i]) {
+					aStrat = i;
+					break;
 				}
-				strategies[n] = aStrat;
-				strategiesTypeCount[aStrat]++;
 			}
-			return;
+			strategies[n] = aStrat;
+			strategiesTypeCount[aStrat]++;
 		}
-		// initial frequencies represent monomorphic initial state
-		initMono();
 	}
 
 	/**
