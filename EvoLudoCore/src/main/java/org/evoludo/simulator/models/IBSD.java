@@ -137,17 +137,6 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	}
 
 	@Override
-	public void load() {
-		super.load();
-		cloOptimize.addKeys(OptimizationType.values());
-		cloInitType.clearKeys();
-		cloInitType.addKeys(InitType.values());
-		// kaleidoscopes are not standard and must be requested/enabled by modules and
-		// their IBSDPopulation implementations.
-		cloInitType.removeKey(InitType.KALEIDOSCOPE);
-	}
-
-	@Override
 	public void unload() {
 		super.unload();
 		cloOptimize.clearKeys();
@@ -402,22 +391,29 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 				public boolean parse(String arg) {
 					boolean success = true;
 					String[] inittypes = arg.split(CLOParser.SPECIES_DELIMITER);
-					int n = 0;
+					int idx = 0;
+					InitType prevtype = null;
 					for (IBSPopulation pop : species) {
 						IBSDPopulation dpop = (IBSDPopulation) pop;
-						String type = inittypes[n++ % inittypes.length];
-						InitType key = (InitType) cloInitType.match(type);
-						String[] typeargs = type.split("[\\s=]");
-						if (key == null || (!key.equals(InitType.UNIFORM) && (typeargs == null || typeargs.length == 1))) {
-							dpop.setInitType(InitType.UNIFORM, null);
+						String inittype = inittypes[idx++ % inittypes.length];
+						double[] initargs = null;
+						String[] typeargs = inittype.split("[\\s=]");
+						InitType type = (InitType) cloInitType.match(inittype);
+						if (type == null && prevtype != null) {
+							type = prevtype;
+							initargs = CLOParser.parseVector(typeargs[0]);
+						} else if (typeargs.length > 1)
+							initargs = CLOParser.parseVector(typeargs[1]);
+						// only uniform initialization does not require additional arguments
+						if (type == null || (!type.equals(InitType.UNIFORM) && initargs == null)) {
 							logger.warning(
 									(species.size() > 1 ? pop.getModule().getName() + ": " : "") +
-											"inittype '" + type + "' unknown - using '"
-											+ dpop.getInitType() + "'");
+											"inittype '" + inittype + "' unknown!");
+							type = InitType.UNIFORM;
 							success = false;
-							continue;
 						}
-						dpop.setInitType(key, CLOParser.parseVector(typeargs[1]));
+						dpop.setInitType(type, initargs);
+						prevtype = type;
 					}
 					return success;
 				}
@@ -513,6 +509,12 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
 		parser.addCLO(cloOptimize);
+		cloOptimize.addKeys(OptimizationType.values());
 		parser.addCLO(cloInitType);
+		cloInitType.clearKeys();
+		cloInitType.addKeys(InitType.values());
+		// kaleidoscopes are not standard and must be requested/enabled by modules and
+		// their IBSDPopulation implementations.
+		cloInitType.removeKey(InitType.KALEIDOSCOPE);
 	}
 }

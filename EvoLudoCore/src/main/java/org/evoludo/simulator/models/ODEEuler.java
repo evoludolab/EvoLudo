@@ -495,17 +495,6 @@ public class ODEEuler implements Model.ODE {
 		int nSpecies = species.size();
 		module = (nSpecies == 1 ? species.get(0) : null);
 		initType = new InitType[nSpecies];
-		// retrieve option for first species; parser will process and set
-		// InitType for all species
-		cloInitType.clearKeys();
-		cloInitType.addKeys(InitType.values());
-		if (isDensity()) {
-			cloInitType.removeKey(InitType.UNIFORM);
-			cloInitType.removeKey(InitType.RANDOM);
-			cloInitType.removeKey(InitType.FREQUENCY);
-		} else {
-			cloInitType.removeKey(InitType.DENSITY);
-		}
 	}
 
 	@Override
@@ -1357,14 +1346,14 @@ public class ODEEuler implements Model.ODE {
 	 * <dt>DENSITY
 	 * <dd>Initial densities as specified in
 	 * {@link org.evoludo.simulator.modules.Discrete#cloInit
-	 * modules.Discrete.cloInit} (default for density modules).
+	 * modules.Discrete.cloInit} (density modules).
 	 * <dt>FREQUENCY
 	 * <dd>Initial frequencies as specified in
 	 * {@link org.evoludo.simulator.modules.Discrete#cloInit
-	 * modules.Discrete.cloInit} (default for frequency modules).
+	 * modules.Discrete.cloInit} (frequency modules).
 	 * <dt>UNIFORM
-	 * <dd>Uniform frequencies of traits. <strong>Note:</strong> Not available for
-	 * density based models.
+	 * <dd>Uniform frequencies of traits (default; in density modules all desnities
+	 * are set to zero).
 	 * <dt>RANDOM
 	 * <dd>Random initial trait frequencies. <strong>Note:</strong> Not available
 	 * for density based models.
@@ -1380,6 +1369,8 @@ public class ODEEuler implements Model.ODE {
 
 		/**
 		 * Initial densities as specified.
+		 * <p>
+		 * <strong>Note:</strong> Not available for frequency based models.
 		 */
 		DENSITY("density", "initial trait densities <d1,...,dn>"),
 
@@ -1391,9 +1382,8 @@ public class ODEEuler implements Model.ODE {
 		FREQUENCY("frequency", "initial trait frequencies <f1,...,fn>"),
 
 		/**
-		 * Uniform initial frequencies of traits.
-		 * <p>
-		 * <strong>Note:</strong> Not available for density based models.
+		 * Uniform initial frequencies of traits (default; in density modules all
+		 * desnities are set to zero).
 		 */
 		UNIFORM("uniform", "uniform initial frequencies"),
 
@@ -1467,14 +1457,19 @@ public class ODEEuler implements Model.ODE {
 		boolean parseOk = true;
 		for (Module pop : species) {
 			String inittype = inittypes[idx % inittypes.length];
-			initType[idx] = (InitType) cloInitType.match(inittype);
-			String[] typeargs = inittype.split("[\\s=]");
 			double[] initargs = null;
-			if (typeargs.length > 1)
+			String[] typeargs = inittype.split("[\\s=]");
+			InitType type = (InitType) cloInitType.match(inittype);
+			// if matching of inittype failed assume it was omitted; use previous type
+			if (type == null && idx > 0) {
+				type = initType[idx - 1];
+				initargs = CLOParser.parseVector(typeargs[0]);
+			}
+			else if (typeargs.length > 1)
 				initargs = CLOParser.parseVector(typeargs[1]);
 			int nTraits = pop.getNTraits();
 			boolean success = false;
-			switch (initType[idx]) {
+			switch (type) {
 				case DENSITY:
 				case FREQUENCY:
 					if (initargs == null || initargs.length != nTraits)
@@ -1485,14 +1480,16 @@ public class ODEEuler implements Model.ODE {
 				case RANDOM:
 				case UNIFORM:
 				default:
-					Arrays.fill(y0, start, start + nTraits, 1.0);
+					// uniform distribution is the default. for densities set all to zero.
+					Arrays.fill(y0, start, start + nTraits, isDensity() ? 0.0 : 1.0);
 					success = true;
 					break;
 			}
 			if (!success) {
-				initType[idx] = InitType.UNIFORM;
+				type = InitType.UNIFORM;
 				parseOk = false;
 			}
+			initType[idx] = type;
 			idx++;
 			start += nTraits;
 		}
@@ -1633,6 +1630,14 @@ public class ODEEuler implements Model.ODE {
 		parser.addCLO(cloDEAccuracy);
 		parser.addCLO(cloDEdt);
 		parser.addCLO(cloInitType);
+		cloInitType.clearKeys();
+		cloInitType.addKeys(InitType.values());
+		if (isDensity()) {
+			cloInitType.removeKey(InitType.RANDOM);
+			cloInitType.removeKey(InitType.FREQUENCY);
+		} else {
+			cloInitType.removeKey(InitType.DENSITY);
+		}
 		if (permitsTimeReversal())
 			parser.addCLO(cloTimeReversed);
 	}

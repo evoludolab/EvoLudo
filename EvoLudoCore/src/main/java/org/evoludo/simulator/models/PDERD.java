@@ -358,9 +358,6 @@ public class PDERD extends ODEEuler implements Model.PDE {
 				return (int) Math.signum(o1[0] - o2[0]);
 			}
 		};
-		// ODEEuler loaded its own keys already - clear and reload ours.
-		cloInitType.clearKeys();
-		cloInitType.addKeys(InitType.values());
 	}
 
 	@Override
@@ -1655,12 +1652,15 @@ public class PDERD extends ODEEuler implements Model.PDE {
 
 	@Override
 	public void collectCLO(CLOParser parser) {
+		super.collectCLO(parser);
 		parser.addCLO(cloPdeN);
 		parser.addCLO(cloPdeL);
 		parser.addCLO(cloPdeDiffusion);
 		parser.addCLO(cloPdeSymmetric);
 		// parser.addCLO(cloPdeColorRange);
-		super.collectCLO(parser);
+		// ODEEuler loaded its own keys already - clear and reload ours.
+		cloInitType.clearKeys();
+		cloInitType.addKeys(InitType.values());
 	}
 
 	// /**

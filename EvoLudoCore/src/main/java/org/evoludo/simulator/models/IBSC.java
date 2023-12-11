@@ -107,20 +107,6 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	}
 
 	@Override
-	public void load() {
-		super.load();
-		// initialize mutation types
-		cloMutationType.addKeys(MutationType.values());
-		cloInitType.addKeys(InitType.values());
-		// interacting with all members of the population is not feasible for continuous
-		// traits; use single interaction with random neighbour as default
-		cloInteractions.setDefault("random 1");
-		// comparing scores with all members of the population is not feasible for
-		// continuous traits; use single, random neighbour as default
-		cloReferences.setDefault("random 1");
-	}
-
-	@Override
 	public void unload() {
 		// free resources
 		super.unload();
@@ -289,8 +275,8 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	/**
 	 * Command line option to set the mutation type.
 	 */
-	public final CLOption cloMutationType = new CLOption("mutationtype", "gaussian", EvoLudo.catModel,
-			"--mutationtype <t>   mutation type (none, uniform, gaussian)", new CLODelegate() {
+	public final CLOption cloMutationType = new CLOption("mutationtype", MutationType.UNIFORM.getKey(), EvoLudo.catModel,
+			"--mutationtype <t>   mutation type:", new CLODelegate() {
 
 				/**
 				 * {@inheritDoc}
@@ -327,7 +313,16 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
+		// initialize mutation types
 		parser.addCLO(cloMutationType);
+		cloMutationType.addKeys(MutationType.values());
 		parser.addCLO(cloInitType);
+		cloInitType.addKeys(InitType.values());
+		// interacting with all members of the population is not feasible for continuous
+		// traits; use single interaction with random neighbour as default
+		cloInteractions.setDefault("random 1");
+		// comparing scores with all members of the population is not feasible for
+		// continuous traits; use single, random neighbour as default
+		cloReferences.setDefault("random 1");
 	}
 }
