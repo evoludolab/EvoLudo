@@ -172,7 +172,8 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * @param model the current model
 	 */
 	public void setModel(Model model) {
-		this.model = model;
+		for (Module pop : species)
+			pop.model = model;
 	}
 
 	/**
