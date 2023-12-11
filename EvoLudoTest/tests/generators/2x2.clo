@@ -2,79 +2,79 @@
 
 # ODE
 # base scenario
---module 2x2 --model ODE --reportfreq 1 --playerupdate thermal 0.1 --init 1,999 --inittype frequency --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model ODE --reportfreq 1 --playerupdate thermal 0.1 --inittype frequency 1,999 --mutation 0.0 --paymatrix 0.25,1.25;0,1
 # population updates
---module 2x2 --model ODE --reportfreq 1 --playerupdate thermal 0.1 --adjusted --init 1,999 --inittype frequency --mutation 0.0 --paymatrix 0.25,1.25;0,1 --fitnessmap static
+--module 2x2 --model ODE --reportfreq 1 --playerupdate thermal 0.1 --adjusted --inittype frequency 1,999 --mutation 0.0 --paymatrix 0.25,1.25;0,1 --fitnessmap static
 # player updates
---module 2x2 --model ODE --reportfreq 1 --playerupdate imitate 0.1 --init 1,999 --inittype frequency --mutation 0.0 --paymatrix 0.25,1.25;0,1
---module 2x2 --model ODE --reportfreq 1 --playerupdate best --init 1,999 --inittype frequency --mutation 0.0 --paymatrix 0.25,1.25;0,1
---module 2x2 --model ODE --reportfreq 1 --playerupdate best-response --init 1,999 --inittype frequency --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model ODE --reportfreq 1 --playerupdate imitate 0.1 --inittype frequency 1,999 --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model ODE --reportfreq 1 --playerupdate best --inittype frequency 1,999 --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model ODE --reportfreq 1 --playerupdate best-response --inittype frequency 1,999 --mutation 0.0 --paymatrix 0.25,1.25;0,1
 # mutation
---module 2x2 --model ODE --reportfreq 1 --playerupdate thermal 0.1 --init 1,999 --inittype frequency --mutation 0.02 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model ODE --reportfreq 1 --playerupdate thermal 0.1 --inittype frequency 1,999 --mutation 0.02 --paymatrix 0.25,1.25;0,1
 # fitness map and selection
---module 2x2 --model ODE --reportfreq 1 --playerupdate thermal 0.1 --init 1,999 --inittype frequency --mutation 0.02 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,0.1
---module 2x2 --model ODE --reportfreq 1 --playerupdate thermal 0.1 --init 1,999 --inittype frequency --mutation 0.02 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,10.0
+--module 2x2 --model ODE --reportfreq 1 --playerupdate thermal 0.1 --inittype frequency 1,999 --mutation 0.02 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,0.1
+--module 2x2 --model ODE --reportfreq 1 --playerupdate thermal 0.1 --inittype frequency 1,999 --mutation 0.02 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,10.0
 
 # SDE
 # base scenario
---module 2x2 --model SDE --reportfreq 1 --popsize 200 --playerupdate thermal 0.1 --init 1,99 --inittype frequency --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model SDE --reportfreq 1 --popsize 200 --playerupdate thermal 0.1 --inittype frequency 1,99 --mutation 0.0 --paymatrix 0.25,1.25;0,1
 # population updates
 # adjusted not yet implemented
-#--module 2x2 --model SDE --reportfreq 1 --popsize 200 --playerupdate thermal 0.1 --adjusted --init 1,99 --inittype frequency --mutation 0.0 --paymatrix 0.25,1.25;0,1 --fitnessmap static
+#--module 2x2 --model SDE --reportfreq 1 --popsize 200 --playerupdate thermal 0.1 --adjusted --inittype frequency 1,99 --mutation 0.0 --paymatrix 0.25,1.25;0,1 --fitnessmap static
 # player updates
---module 2x2 --model SDE --reportfreq 1 --popsize 200 --playerupdate imitate 0.1 --init 1,99 --inittype frequency --mutation 0.0 --paymatrix 0.25,1.25;0,1
---module 2x2 --model SDE --reportfreq 1 --popsize 200 --playerupdate best --init 1,99 --inittype frequency --mutation 0.0 --paymatrix 0.25,1.25;0,1
---module 2x2 --model SDE --reportfreq 1 --popsize 200 --playerupdate best-response --init 1,99 --inittype frequency --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model SDE --reportfreq 1 --popsize 200 --playerupdate imitate 0.1 --inittype frequency 1,99 --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model SDE --reportfreq 1 --popsize 200 --playerupdate best --inittype frequency 1,99 --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model SDE --reportfreq 1 --popsize 200 --playerupdate best-response --inittype frequency 1,99 --mutation 0.0 --paymatrix 0.25,1.25;0,1
 # mutation
---module 2x2 --model SDE --reportfreq 1 --popsize 200 --playerupdate thermal 0.1 --init 1,99 --inittype frequency --mutation 0.02 --paymatrix 0.25,1.25;0,1 --generations 1000
+--module 2x2 --model SDE --reportfreq 1 --popsize 200 --playerupdate thermal 0.1 --inittype frequency 1,99 --mutation 0.02 --paymatrix 0.25,1.25;0,1 --generations 1000
 # fitness map and selection
---module 2x2 --model SDE --reportfreq 1 --popsize 200 --playerupdate thermal 0.1 --init 1,99 --inittype frequency --mutation 0.02 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,0.1 --generations 1000
---module 2x2 --model SDE --reportfreq 1 --popsize 200 --playerupdate thermal 0.1 --init 1,99 --inittype frequency --mutation 0.02 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,10.0 --generations 1000
+--module 2x2 --model SDE --reportfreq 1 --popsize 200 --playerupdate thermal 0.1 --inittype frequency 1,99 --mutation 0.02 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,0.1 --generations 1000
+--module 2x2 --model SDE --reportfreq 1 --popsize 200 --playerupdate thermal 0.1 --inittype frequency 1,99 --mutation 0.02 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,10.0 --generations 1000
 
 # PDE
 # base scenario
---module 2x2 --model PDE --reportfreq 1 --geometry n --playerupdate thermal 0.1 --init 1,99 --inittype random --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model PDE --reportfreq 1 --geometry n --playerupdate thermal 0.1 --inittype random 1,99 --mutation 0.0 --paymatrix 0.25,1.25;0,1
 # population updates
---module 2x2 --model PDE --reportfreq 1 --geometry n --playerupdate thermal 0.1 --adjusted --init 1,99 --inittype random --mutation 0.0 --paymatrix 0.25,1.25;0,1 --fitnessmap static
+--module 2x2 --model PDE --reportfreq 1 --geometry n --playerupdate thermal 0.1 --adjusted --inittype random 1,99 --mutation 0.0 --paymatrix 0.25,1.25;0,1 --fitnessmap static
 # player updates
---module 2x2 --model PDE --reportfreq 1 --geometry n --playerupdate imitate 0.1 --init 1,99 --inittype random --mutation 0.0 --paymatrix 0.25,1.25;0,1
---module 2x2 --model PDE --reportfreq 1 --geometry n --playerupdate best --init 1,99 --inittype random --mutation 0.0 --paymatrix 0.25,1.25;0,1
---module 2x2 --model PDE --reportfreq 1 --geometry n --playerupdate best-response --init 1,99 --inittype random --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model PDE --reportfreq 1 --geometry n --playerupdate imitate 0.1 --inittype random 1,99 --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model PDE --reportfreq 1 --geometry n --playerupdate best --inittype random 1,99 --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model PDE --reportfreq 1 --geometry n --playerupdate best-response --inittype random 1,99 --mutation 0.0 --paymatrix 0.25,1.25;0,1
 # mutation
---module 2x2 --model PDE --reportfreq 1 --geometry n --playerupdate thermal 0.1 --init 1,99 --inittype random --mutation 0.02 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model PDE --reportfreq 1 --geometry n --playerupdate thermal 0.1 --inittype random 1,99 --mutation 0.02 --paymatrix 0.25,1.25;0,1
 # fitness map and selection
---module 2x2 --model PDE --reportfreq 1 --geometry n --playerupdate thermal 0.1 --init 1,99 --inittype random --mutation 0.02 --fitnessmap exp 1.0,0.1 --paymatrix 0.25,1.25;0,1
---module 2x2 --model PDE --reportfreq 1 --geometry n --playerupdate thermal 0.1 --init 1,99 --inittype random --mutation 0.02 --fitnessmap exp 1.0,10.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model PDE --reportfreq 1 --geometry n --playerupdate thermal 0.1 --inittype random 1,99 --mutation 0.02 --fitnessmap exp 1.0,0.1 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model PDE --reportfreq 1 --geometry n --playerupdate thermal 0.1 --inittype random 1,99 --mutation 0.02 --fitnessmap exp 1.0,10.0 --paymatrix 0.25,1.25;0,1
 
 # IBS
 # base scenario
---module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --inittype mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1
 # population/player updates
---module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate imitate 0.1 --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1
---module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate best --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1
---module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate best-response --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1
---module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --popupdate B --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1
---module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --popupdate d --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate imitate 0.1 --inittype mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate best --inittype mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate best-response --inittype mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --popupdate B --inittype mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --popupdate d --inittype mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1
 # population/player updates - structured
---module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1
---module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate async --playerupdate imitate 0.1 --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1
---module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate async --playerupdate best --init 1,9 --inittype frequency --mutation 0.0 --paymatrix 0.25,1.25;0,1 --generations 1000
---module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate async --playerupdate best-random --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1 --generations 1000
---module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate async --playerupdate best-response --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1
---module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate B --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1
---module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate d --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate async --playerupdate thermal 0.1 --inittype mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate async --playerupdate imitate 0.1 --inittype mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate async --playerupdate best --inittype frequency 1,9 --mutation 0.0 --paymatrix 0.25,1.25;0,1 --generations 1000
+--module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate async --playerupdate best-random --inittype mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1 --generations 1000
+--module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate async --playerupdate best-response --inittype mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate B --inittype mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate d --inittype mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1
 # geometries
---module 2x2 --model IBS --reportfreq 1 --geometry n --popsize 50x --popupdate B --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1
---module 2x2 --model IBS --reportfreq 1 --geometry s --popsize 200 --popupdate B --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model IBS --reportfreq 1 --geometry n --popsize 50x --popupdate B --inittype mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model IBS --reportfreq 1 --geometry s --popsize 200 --popupdate B --inittype mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1
 #NOTE games on directed graphs are largely untested... proceed with caution!
---module 2x2 --model IBS --reportfreq 1 --geometry S5,5 --popsize 196 --popupdate B --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1
---module 2x2 --model IBS --reportfreq 1 --geometry f4 --popsize 500 --popupdate B --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model IBS --reportfreq 1 --geometry S5,5 --popsize 196 --popupdate B --inittype mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1
+--module 2x2 --model IBS --reportfreq 1 --geometry f4 --popsize 500 --popupdate B --inittype mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1
 # mutation
---module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --playerupdate thermal 0.1 --init 0,1 --inittype mutant --mutation 0.05 --paymatrix 0.25,1.25;0,1 --generations 1000
+--module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --playerupdate thermal 0.1 --inittype mutant 0,1 --mutation 0.05 --paymatrix 0.25,1.25;0,1 --generations 1000
 # fitness map and selection
---module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init 0,1 --inittype mutant --mutation 0.05 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,0.1 --generations 1000
---module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init 0,1 --inittype mutant --mutation 0.05 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,10.0 --generations 1000
---module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate B --init 0,1 --inittype mutant --mutation 0.05 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,0.1 --generations 1000
---module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate B --init 0,1 --inittype mutant --mutation 0.05 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,10.0 --generations 1000
---module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate d --init 0,1 --inittype mutant --mutation 0.05 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,0.1 --generations 1000
---module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate d --init 0,1 --inittype mutant --mutation 0.05 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,10.0 --generations 1000
+--module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --inittype mutant 0,1 --mutation 0.05 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,0.1 --generations 1000
+--module 2x2 --model IBS --reportfreq 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --inittype mutant 0,1 --mutation 0.05 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,10.0 --generations 1000
+--module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate B --inittype mutant 0,1 --mutation 0.05 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,0.1 --generations 1000
+--module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate B --inittype mutant 0,1 --mutation 0.05 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,10.0 --generations 1000
+--module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate d --inittype mutant 0,1 --mutation 0.05 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,0.1 --generations 1000
+--module 2x2 --model IBS --reportfreq 1 --geometry r4 --popsize 500 --popupdate d --inittype mutant 0,1 --mutation 0.05 --paymatrix 0.25,1.25;0,1 --fitnessmap exp 1.0,10.0 --generations 1000
