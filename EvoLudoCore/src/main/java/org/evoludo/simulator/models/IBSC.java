@@ -4,7 +4,6 @@ import java.io.PrintStream;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBSD.OptimizationType;
-import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -225,57 +224,53 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 			"--inittype <t>  type of initial configuration", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					String[] inittypes = arg.split(CLOParser.TRAIT_DELIMITER);
-					int n = 0;
-					String type = inittypes[n++ % inittypes.length];
-					InitType key = (InitType) cloInitType.match(type);
-					String[] typeargs = type.split("[\\s=]");
+					boolean success = true;
 					IBSMCPopulation cpop = (IBSMCPopulation) population;
-					Module mod = cpop.getModule();
-					if (key == null
-							|| (!key.equals(InitType.UNIFORM) && (typeargs == null || typeargs.length < key.nParams))) {
-						cpop.setInitType(InitType.UNIFORM, null);
-						logger.warning(
-								(species.size() > 1 ? mod.getName() + ": " : "") +
-										"inittype '" + type + "' unknown - using '"
-										+ cpop.getInitType() + "'");
-						return false;
-					}
-					int nt = mod.getNTraits();
-					double[][] pargs = null;
-					if (key.nParams > 0) {
-						double[][] args = CLOParser.parseMatrix(typeargs[1]);
-						if (args == null || args.length < key.nParams || args[0].length < 1) {
-							cpop.setInitType(InitType.UNIFORM, null);
+					String[] inittypes = arg.split(CLOParser.TRAIT_DELIMITER);
+					int nt = cpop.getModule().getNTraits();
+					InitType prevtype = null;
+					for (int n = 0; n < nt; n++) {
+						String inittype = inittypes[n % inittypes.length];
+						double[] initargs = null;
+						String[] typeargs = inittype.split("[\\s=]");
+						InitType type = (InitType) cloInitType.match(inittype);
+						if (type == null && prevtype != null) {
+							type = prevtype;
+							initargs = CLOParser.parseVector(typeargs[0]);
+						} else if (typeargs.length > 1)
+							initargs = CLOParser.parseVector(typeargs[1]);
+						boolean argsOk = (initargs != null && initargs.length >= type.nParams);
+						// only uniform initialization does not require additional arguments
+						if (type == null || (!type.equals(InitType.UNIFORM) && !argsOk)) {
 							logger.warning(
-									(species.size() > 1 ? mod.getName() + ": " : "") +
-											"inittype '" + type + "' unknown - using '"
-											+ cpop.getInitType() + "'");
-							return false;
+									(species.size() > 1 ? cpop.getModule().getName() + ": " : "") +
+											"inittype '" + inittype + "' unknown!");
+							type = InitType.UNIFORM;
+							success = false;
 						}
-						pargs = new double[key.nParams][nt];
-						// process arguments further
-						for (int i = 0; i < key.nParams; i++)
-							for (int j = 0; j < nt; j++)
-								pargs[i][j] = args[i][j % args[i].length];
+						cpop.setInitType(type, initargs, n);
+						prevtype = type;
 					}
-					cpop.setInitType(key, pargs);
-					return true;
+					return success;
 				}
 
 				@Override
 				public void report(PrintStream output) {
 					IBSMCPopulation cpop = (IBSMCPopulation) population;
-					output.println(
-							"# inittype:             " + cpop.getInitType() + (species.size() > 1 ? " ("
-									+ population.getModule().getName() + ")" : ""));
+					int nt = cpop.getModule().getNTraits();
+					for (int n = 0; n < nt; n++) {
+						output.println(
+								"# inittype:             " + cpop.getInitType(n) + (species.size() > 1 ? " ("
+										+ population.getModule().getName() + ")" : ""));
+					}
 				}
 			});
 
 	/**
 	 * Command line option to set the mutation type.
 	 */
-	public final CLOption cloMutationType = new CLOption("mutationtype", MutationType.UNIFORM.getKey(), EvoLudo.catModel,
+	public final CLOption cloMutationType = new CLOption("mutationtype", MutationType.UNIFORM.getKey(),
+			EvoLudo.catModel,
 			"--mutationtype <t>   mutation type:", new CLODelegate() {
 
 				/**

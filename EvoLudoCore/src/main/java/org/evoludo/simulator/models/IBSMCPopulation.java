@@ -127,6 +127,7 @@ public class IBSMCPopulation extends IBSPopulation {
 		smallStrat = null;
 		meantrait = null;
 		oldScores = null;
+		initType = null;
 	}
 
 	@Override
@@ -760,11 +761,11 @@ public class IBSMCPopulation extends IBSPopulation {
 	}
 
 	/**
-	 * Type of initial configuration.
+	 * Type of initial configuration for each trait.
 	 * 
 	 * @see #cloInitType
 	 */
-	protected InitType initType;
+	protected InitType[] initType;
 
 	/**
 	 * The array with arguments for the initialization. Their detailed meaning
@@ -781,11 +782,17 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * 
 	 * @see InitType
 	 */
-	public void setInitType(InitType type, double[][] args) {
+	public void setInitType(InitType type, double[] args, int trait) {
+		if (trait <0 || trait > nTraits)
+			return;
+		if (initType == null || initType.length != nTraits)
+			initType = new InitType[nTraits];
+		if (initArgs == null || initArgs.length != nTraits)
+			initArgs = new double[nTraits][];
 		if (type != null)
-			initType = type;
+			initType[trait] = type;
 		if (args != null)
-			initArgs = args;
+			initArgs[trait] = args;
 	}
 
 	/**
@@ -796,56 +803,51 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * 
 	 * @see InitType
 	 */
-	public String getInitType() {
-		return initType.getKey() + " " + Formatter.format(initArgs, 2);
+	public String getInitType(int trait) {
+		return initType[trait].getKey() + " " + Formatter.format(initArgs[trait], 2);
 	}
 
 	@Override
 	public void init() {
 		super.init();
 
-		switch (initType) {
-			default:
-			case UNIFORM:
-				for (int s = 0; s < nTraits; s++)
+		int mutidx = -1;
+		for (int s = 0; s < nTraits; s++) {
+			switch (initType[s]) {
+				default:
+				case UNIFORM:
 					for (int n = s; n < nPopulation * nTraits; n += nTraits)
 						strategies[n] = random01();
-				break;
+					break;
 
-			case MONO:
-				// initArgs contains monomorphic trait
-				for (int s = 0; s < nTraits; s++) {
-					double mono = Math.min(Math.max(initArgs[0][s], traitMax[s]), traitMin[s]);
+				case MONO:
+					// initArgs contains monomorphic trait
+					double mono = Math.min(Math.max(initArgs[s][0], traitMin[s]), traitMax[s]);
 					double scaledmono = (mono - traitMin[s]) / (traitMax[s] - traitMin[s]);
 					for (int n = s; n < nPopulation * nTraits; n += nTraits)
 						strategies[n] = scaledmono;
-				}
-				break;
+					break;
 
-			case GAUSSIAN:
-				for (int s = 0; s < nTraits; s++) {
-					double mean = Math.min(Math.max(initArgs[0][s], traitMax[s]), traitMin[s]);
-					double sdev = Math.min(Math.max(initArgs[1][s], traitMax[s]), traitMin[s]);
+				case GAUSSIAN:
+					double mean = Math.min(Math.max(initArgs[s][0], traitMin[s]), traitMax[s]);
+					double sdev = Math.min(Math.max(initArgs[s][1], traitMin[s]), traitMax[s]);
 					double scaledmean = (mean - traitMin[s]) / (traitMax[s] - traitMin[s]);
 					double scaledsdev = sdev / (traitMax[s] - traitMin[s]);
 					for (int n = s; n < nPopulation * nTraits; n += nTraits)
 						strategies[n] = Math.min(1.0, Math.max(0.0, randomGaussian(scaledmean, scaledsdev)));
-				}
-				break;
+					break;
 
-			case MUTANT:
-				for (int s = 0; s < nTraits; s++) {
-					double mono = Math.min(Math.max(initArgs[0][s], traitMax[s]), traitMin[s]);
-					double scaledmono = (mono - traitMin[s]) / (traitMax[s] - traitMin[s]);
+				case MUTANT:
+					double resident = Math.min(Math.max(initArgs[s][0], traitMin[s]), traitMax[s]);
+					double scaledresident = (resident - traitMin[s]) / (traitMax[s] - traitMin[s]);
 					for (int n = s; n < nPopulation * nTraits; n += nTraits)
-						strategies[n] = scaledmono;
-				}
-				int mutidx = random0n(nPopulation);
-				for (int s = 0; s < nTraits; s++) {
-					double mut = Math.min(Math.max(initArgs[1][s], traitMax[s]), traitMin[s]);
+						strategies[n] = scaledresident;
+					if (mutidx < 0)
+						mutidx = random0n(nPopulation);
+					double mut = Math.min(Math.max(initArgs[s][1], traitMin[s]), traitMax[s]);
 					strategies[mutidx] = (mut - traitMin[s]) / (traitMax[s] - traitMin[s]);
-				}
-				break;
+					break;
+			}
 		}
 	}
 

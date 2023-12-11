@@ -128,15 +128,6 @@ public abstract class IBS implements Model.IBS {
 	protected RNGDistribution rng;
 
 	/**
-	 * The random number generator to display states with ephemeral payoffs. In
-	 * order to ensure reproducibility of results this cannot be the same random
-	 * number generator as for running the simulations.
-	 * 
-	 * @see EvoLudo#getRNG()
-	 */
-	protected RNGDistribution ephrng;
-
-	/**
 	 * Geometric (exponential) waiting time distribution for optimizations of
 	 * homogeneous populations.
 	 * 
@@ -334,7 +325,6 @@ public abstract class IBS implements Model.IBS {
 	@Override
 	public void unload() {
 		rng = null;
-		ephrng = null;
 		logger = null;
 		cloGeometryInteraction.clearKeys();
 		cloGeometryReproduction.clearKeys();
@@ -425,14 +415,6 @@ public abstract class IBS implements Model.IBS {
 				distrMutation = new RNGDistribution.Geometric(rng.getRNG(), pMutation);
 			else
 				distrMutation.setProbability(pMutation);
-		}
-		// if any population uses ephemeral payoffs a dummy random number
-		// generator is needed for the display
-		for (IBSPopulation pop : species) {
-			if (pop.getPlayerScoreReset().equals(ScoringType.EPHEMERAL)) {
-				ephrng = rng.clone();
-				break;
-			}
 		}
 		nextSpeciesIdx = -1;
 		for (IBSPopulation pop : species)
@@ -646,8 +628,8 @@ public abstract class IBS implements Model.IBS {
 		double dUpdates = Math.max(1.0, Math.ceil(stepDt / gincr - 1e-8));
 		double stepDone = 0.0;
 		double gStart = generation;
-		boolean hasConverged = false;
 		while (dUpdates >= 1.0) {
+			boolean hasConverged = false;
 			double stepSize = 0.0;
 			int nUpdates = Math.min((int) dUpdates, 1000000000); // 1e9 about half of Integer.MAX_VALUE (2.1e9)
 			for (int n = 0; n < nUpdates; n++) {
@@ -682,24 +664,9 @@ public abstract class IBS implements Model.IBS {
 			stepDone += Math.abs(stepSize);
 			generation = gStart + Math.abs(stepDone);
 			if (hasConverged)
-				// cannot return just yet; still need to update ephemeral scores
-				break;
+				return -stepDone;
 			dUpdates = (stepDt - stepDone) / gincr;
 		}
-		for (IBSPopulation pop : species) {
-			if (!pop.playerScoreReset.equals(ScoringType.EPHEMERAL))
-				continue;
-			// recalculate scores of entire population for display
-			// these scores are just an example and are not used for
-			// any calculations; use independent random number generator!
-			RNGDistribution freeze = rng;
-			rng = ephrng;
-			pop.resetScores();
-			pop.updateScores();
-			rng = freeze;
-		}
-		if (hasConverged)
-			return -stepDone;
 		return stepDt;
 	}
 
@@ -1106,56 +1073,52 @@ public abstract class IBS implements Model.IBS {
 				@Override
 				public void report(PrintStream output) {
 					for (IBSPopulation pop : species)
-					output.println("# scoring:              " + //
-						(pop.getPlayerScoreAveraged() ? "averaged" : "accumulated") + //
-						(isMultispecies	? " (" + pop.getModule().getName() + ")" : ""));
-	}
+						output.println("# scoring:              "
+								+ (pop.getPlayerScoreAveraged() ? "averaged" : "accumulated") +
+								(pop.getPlayerScoreResetAlways() ? " (reset on change only)" : "") + (isMultispecies
+										? " ("
+												+ pop.getModule().getName() + ")"
+										: ""));
+				}
 			});
 
 	/**
-	 * Command line option to set method for resetting the scores of individuals.
+	 * Command line option to set whether when the scores of players are reset
+	 * <ol>
+	 * <li>only when a player adopts a <em>different</em> strategy,
+	 * <li>every time a player adopts a strategy (regardless of whether it resulted
+	 * in an actual change).
+	 * </ol>
+	 * <p>
+	 * <strong>Note:</strong> For accumulated scores the differences can be quite
+	 * significant because players can potentially accumulate scores from many more
+	 * interactions. This setting also impacts regular structures.
 	 * 
-	 * @see ScoringType
+	 * @see #cloAccumulatedScores
 	 */
-	public final CLOption cloScoringType = new CLOption("resetscores", ScoringType.RESET_ALWAYS.getKey(), CLOption.Argument.REQUIRED, EvoLudo.catModel, 
-			"--resetscores <t>  type for restting scores t:",
+	public final CLOption cloResetScoresOnChange = new CLOption("resetonchange", "always", CLOption.Argument.NONE, EvoLudo.catModel, 
+			"--resetonchange  reset scores only on actual strategy change\n" +
+					"                (instead of on every strategy update)",
 			new CLODelegate() {
 
 				/**
 				 * {@inheritDoc}
 				 * <p>
-				 * Parse method for restting the scores of individuals.
+				 * Parse method for resetting scores of players in a single or multiple
+				 * populations/species. {@code arg} is ignored. If commandline option is present
+				 * the players in <em>all</em> population/species reset scores only after an
+				 * actual strategy change.
 				 * 
-				 * @param arg the method for resetting the scores.
+				 * @param arg ignored
 				 */
 				@Override
 				public boolean parse(String arg) {
-					String[] playerresets = arg.split(CLOParser.SPECIES_DELIMITER);
-					int n = 0;
-					boolean success = true;
-					for (IBSPopulation pop : species) {
-						String rest = playerresets[n++ % playerresets.length];
-						ScoringType st = (ScoringType) cloScoringType.match(rest);
-						if (st == null) {
-							if (success)
-								logger.warning((species.size() > 1 ? pop.getModule().getName() + ": " : "") + //
-										"method to reset scores '" + rest + "' not recognized - using '"
-										+ pop.getPlayerScoreReset()
-										+ "'");
-							success = false;
-							continue;
-						}
-						pop.setPlayerScoreReset(st);
-					}
-					return success;
-				}
-
-				@Override
-				public void report(PrintStream output) {
+					// default is to reset score always (not only on actual strategy change)
 					for (IBSPopulation pop : species)
-						output.println("# resetscores:          " + pop.getPlayerScoreReset() + //
-							(isMultispecies	? " (" + pop.getModule().getName() + ")" : ""));
+						pop.setPlayerScoreResetAlways(!cloResetScoresOnChange.isSet());
+					return true;
 				}
+				// cloAccumulatedScores takes care of report (see above)
 			});
 
 	/**
@@ -1198,7 +1161,7 @@ public abstract class IBS implements Model.IBS {
 							continue;
 						}
 						group.setSampling(intt);
-						intertype = CLOption.stripKey(intt, intertype);
+						intertype = CLOption.stripKey(intt, intertype).trim();
 						// parse n, if present
 						String[] args = intertype.split("[ =]");
 						int nInter = 1;
@@ -1668,9 +1631,7 @@ public abstract class IBS implements Model.IBS {
 			// options that are only meaningful if at least some populations do not 
 			// have static fitness
 			parser.addCLO(cloAccumulatedScores);
-			parser.addCLO(cloScoringType);
-			cloScoringType.clearKeys();
-			cloScoringType.addKeys(ScoringType.values());
+			parser.addCLO(cloResetScoresOnChange);
 			parser.addCLO(cloInteractions);
 			cloInteractions.clearKeys();
 			cloInteractions.addKeys(IBSGroup.SamplingType.values());
@@ -1886,83 +1847,6 @@ public abstract class IBS implements Model.IBS {
 		}
 
 		@Override
-		public String getKey() {
-			return key;
-		}
-
-		@Override
-		public String getTitle() {
-			return title;
-		}
-
-		@Override
-		public String toString() {
-			return key + ": " + title;
-		}
-	}
-
-	/**
-	 * Schedules for resetting individual payoffs/fitness:
-	 * <dl>
-	 * <dt>onchange</dt>
-	 * <dd>Reset when changing trait (only after updating from reference model with
-	 * a different trait)</dd>
-	 * <dt>onupdate</dt>
-	 * <dd>Reset when updating from reference individual (not necessarily a change
-	 * in trait)</dd>
-	 * <dt>ephemeral</dt>
-	 * <dd>Determine payoffs/fitness calculated only for updating</dd>
-	 * </dl>
-	 * 
-	 * @see org.evoludo.simulator.modules.Module#speciesUpdateRate
-	 */
-	public static enum ScoringType implements CLOption.Key {
-
-		/**
-		 * Reset when <em>changing</em> trait (only after updating from reference model
-		 * with a different trait).
-		 */
-		RESET_ON_CHANGE("onchange", "when changing trait"),
-
-		/**
-		 * Reset when <em>updating</em> from reference individual (not necessarily a
-		 * change in trait).
-		 */
-		RESET_ALWAYS("onupdate", "when updating trait"),
-
-		/**
-		 * Determine payoffs/fitness calculated only for updating.
-		 */
-		EPHEMERAL("ephemeral", "payoffs for updating only");
-
-		/**
-		 * Key of population update type. Used for parsing command line options.
-		 * 
-		 * @see org.evoludo.simulator.models.IBS#cloPopulationUpdate
-		 *      IBS.cloPopulationUpdate
-		 */
-		String key;
-
-		/**
-		 * Brief description of population update type for GUI and help display.
-		 * 
-		 * @see EvoLudo#helpCLO()
-		 */
-		String title;
-
-		/**
-		 * Instantiate new type of population update.
-		 * 
-		 * @param key   identifier for parsing of command line option
-		 * @param title the summary of geometry for GUI and help display
-		 */
-		ScoringType(String key, String title) {
-			this.key = key;
-			this.title = title;
-		}
-
-		@Override
-
 		public String getKey() {
 			return key;
 		}
