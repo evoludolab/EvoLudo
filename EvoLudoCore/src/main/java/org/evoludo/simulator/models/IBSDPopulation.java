@@ -162,7 +162,7 @@ public class IBSDPopulation extends IBSPopulation {
 		super.load();
 		// deal with module cast - pairmodule and groupmodule have to wait because
 		// nGroup requires parsing of command line options (see check())
-		// important: cannot deal with casting shadowed opponent here because for 
+		// important: cannot deal with casting shadowed opponent here because for
 		// mutli-species modules all species need to be loaded first.
 		module = (Discrete) super.module;
 	}
@@ -1794,7 +1794,7 @@ public class IBSDPopulation extends IBSPopulation {
 				doReset = true;
 			} else // no need to report both warnings
 					// optimized Moran type processes are incompatible with well mixed populations!
-				if (interaction.isType(Geometry.Type.MEANFIELD) ||
+			if (interaction.isType(Geometry.Type.MEANFIELD) ||
 					(interaction.isType(Geometry.Type.HIERARCHY) &&
 							interaction.subgeometry == Geometry.Type.MEANFIELD)) {
 				optimizeMoran = false;
@@ -1885,41 +1885,47 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	/**
-	 * Initial configuration with uniform strategy frequencies.
+	 * Initial configuration with uniform strategy frequencies of all
+	 * <em>active</em> strategies.
 	 * 
 	 * @see InitType#UNIFORM
 	 */
 	protected void initUniform() {
 		Arrays.fill(strategiesTypeCount, 0);
+		int nActive = module.getNActive();
+		int[] active = new int[nActive];
+		boolean[] act = module.getActiveTraits();
+		int idx = 0;
+		for (int n = 0; n < nTraits; n++) {
+			if (!act[n])
+				continue;
+			active[idx++] = n;
+		}
 		for (int n = 0; n < nPopulation; n++) {
-			int aStrat = random0n(nTraits);
+			int aStrat = active[random0n(nActive)];
 			strategies[n] = aStrat;
 			strategiesTypeCount[aStrat]++;
 		}
 	}
 
 	/**
-	 * Initial configuration with strategy frequencies as specified in options.
+	 * Initial configuration with strategy frequencies as specified in arguments.
 	 * 
 	 * @see InitType#FREQUENCY
-	 * @see Discrete#cloInit
 	 */
 	protected void initFrequency() {
 		Arrays.fill(strategiesTypeCount, 0);
-		double[] init = module.getInit();
 		// different traits active
 		double[] cumFreqs = new double[nTraits];
-		cumFreqs[0] = init[0];
+		cumFreqs[0] = initArgs[0];
 		for (int i = 1; i < nTraits; i++)
-			cumFreqs[i] = cumFreqs[i - 1] + init[i];
-		double norm = 1.0 / cumFreqs[nTraits - 1];
-		for (int i = 0; i < nTraits; i++)
-			cumFreqs[i] *= norm;
-		double aRand;
-		int aStrat = -1;
+			cumFreqs[i] = cumFreqs[i - 1] + initArgs[i];
+		double inorm = 1.0 / cumFreqs[nTraits - 1];
+		ArrayMath.multiply(cumFreqs, inorm);
 
 		for (int n = 0; n < nPopulation; n++) {
-			aRand = random01();
+			int aStrat = -1;
+			double aRand = random01();
 			for (int i = 0; i < nTraits; i++) {
 				if (aRand < cumFreqs[i]) {
 					aStrat = i;
@@ -1932,22 +1938,29 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	/**
-	 * Monomorphic initial configuration.
+	 * Monomorphic initial configuration with specified trait (and frequency in
+	 * modules that allow empty sites).
 	 * 
 	 * @see InitType#MONO
-	 * @see Discrete#cloInit
 	 */
 	protected void initMono() {
-		double[] init = module.getInit();
-		int monoType = ArrayMath.maxIndex(init);
-		Arrays.fill(strategiesTypeCount, 0);
-		// marginal efficiency gain for all site equal (including VACANT)
-		if (init[monoType] > 1.0 - 1e-8) {
+		// initArgs contains the index of the monomorphic trait
+		int monoType = (int) initArgs[0];
+		double monoFreq = 1.0;
+		if (VACANT >= 0) {
+			// the second argument indicates the frequency of vacant sites
+			if (initArgs.length < 2)
+				monoFreq = Math.max(0.0, 1.0 - initArgs[1]);
+		}
+		initMono(monoType, monoFreq);
+	}
+
+	private void initMono(int monoType, double monoFreq) {
+		if (monoFreq > 1.0 - 1e-8) {
 			Arrays.fill(strategies, monoType);
 			strategiesTypeCount[monoType] = nPopulation;
 		} else {
 			// monomorphic population with VACANT sites
-			double monoFreq = init[monoType];
 			int nMono = 0;
 			for (int n = 0; n < nPopulation; n++) {
 				if (random01() < monoFreq) {
@@ -1982,48 +1995,32 @@ public class IBSDPopulation extends IBSPopulation {
 	 * @see Discrete#cloInit
 	 */
 	protected int initMutant() {
-		double[] init = module.getInit();
-		int restrait = ArrayMath.maxIndex(init);
-		int muttrait = -1;
-		Arrays.fill(strategiesTypeCount, 0);
-		if (VACANT < 0) {
-			// no vacant sites
-			Arrays.fill(strategies, restrait);
-			strategiesTypeCount[restrait] = nPopulation;
-			// place a single individual with the opposite strategy
-			muttrait = random0n(nTraits - 1);
-			if (muttrait >= restrait)
-				muttrait++;
-		} else {
-			// with vacant sites
-			if (restrait == VACANT) {
-				double max = -Double.MAX_VALUE;
-				for (int n = 0; n < nTraits; n++) {
-					if (n == VACANT || init[n] <= max)
-						continue;
-					restrait = n;
-					max = init[n];
-				}
-			}
-			double vfreq = init[VACANT];
-			for (int n = 0; n < nPopulation; n++) {
-				int type = random01() > vfreq ? restrait : VACANT;
-				strategies[n] = type;
-				strategiesTypeCount[type]++;
-			}
-			muttrait = VACANT;
-			while (muttrait == VACANT) {
-				// place a single individual with the opposite strategy
-				muttrait = random0n(nTraits - 1);
-				if (muttrait >= restrait)
-					muttrait++;
+		// initArgs contains the index of the resident and mutant traits
+		int mutantType = (int) initArgs[0];
+		int residentType;
+		if (initArgs.length >= 2)
+			residentType = (int) initArgs[1];
+		else
+			residentType = (mutantType + 1) % nTraits;
+		double monoFreq = 1.0;
+		if (VACANT >= 0) {
+			// the second argument indicates the frequency of vacant sites
+			if (initArgs.length < 3)
+				monoFreq = Math.max(0.0, 1.0 - initArgs[2]);
+			if (residentType == VACANT && monoFreq < 1.0 - 1e-8) {
+				// problem encountered
+				initType = InitType.UNIFORM;
+				logger.warning("review --init settings! - using '" + initType.getKey()+"'.");
+				initUniform();
+				return -1;
 			}
 		}
+		initMono(residentType, monoFreq);
 		// place a single individual with a random but different strategy
 		int loc = random0n(nPopulation);
 		strategiesTypeCount[strategies[loc]]--;
-		strategies[loc] = muttrait;
-		strategiesTypeCount[muttrait]++;
+		strategies[loc] = mutantType;
+		strategiesTypeCount[mutantType]++;
 		return loc;
 	}
 
@@ -2160,29 +2157,37 @@ public class IBSDPopulation extends IBSPopulation {
 	protected InitType initType;
 
 	/**
-	 * Sets the type of the initial configuration.
+	 * The array with arguments for the initialization. Their detailed meaning
+	 * depends on the type of initialization.
+	 * 
+	 * @see InitType
+	 */
+	double[] initArgs;
+
+	/**
+	 * Sets the type of the initial configuration and any accompanying arguments.
 	 *
 	 * @param type the type of the initial configuration
 	 * 
 	 * @see InitType
 	 */
-	public void setInitType(InitType type) {
-		if (type == null)
-			type = getInitType();
-		initType = type;
+	public void setInitType(InitType type, double[] args) {
+		if (type != null)
+			initType = type;
+		if (args != null)
+			initArgs = args;
 	}
 
 	/**
-	 * Gets the type of the initial configuration.
+	 * Gets the type of the initial configuration and its arguments as formatted a
+	 * String.
 	 *
-	 * @return the type of the initial configuration
+	 * @return the type and arguments of the initial configuration
 	 * 
 	 * @see InitType
 	 */
-	public InitType getInitType() {
-		if (initType != null) 
-			return initType;
-		return InitType.DEFAULT;
+	public String getInitType() {
+		return initType.getKey() + " " + Formatter.format(initArgs, 2);
 	}
 
 	@Override

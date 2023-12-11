@@ -42,7 +42,6 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Module.Map2Fitness;
 import org.evoludo.util.CLOParser;
@@ -1040,22 +1039,20 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		}
 
 		boolean isCircular = false;
-		double[] init = ((Discrete) module).getInit();
-
 		switch (type) {
 			default:
 			case UNIFORM:
 				for (int n = 0; n < space.size; n++)
-					System.arraycopy(init, 0, density[n], 0, nDim);
+					System.arraycopy(y0, 0, density[n], 0, nDim);
 				break;
 
 			case DISTURBANCE:
 				for (int n = 0; n < space.size; n++)
-					System.arraycopy(init, 0, density[n], 0, nDim);
+					System.arraycopy(y0, 0, density[n], 0, nDim);
 				double[] disturb = new double[nDim];
-				ArrayMath.multiply(init, 1.2, disturb);
+				ArrayMath.multiply(y0, 1.2, disturb);
 				for (int n = 0; n < nDim; n++)
-					disturb[n] = 1.2 * init[n];
+					disturb[n] = 1.2 * y0[n];
 				if (dependent >= 0)
 					ArrayMath.normalize(disturb);
 				System.arraycopy(disturb, 0, density[space.size / 2], 0, nDim);
@@ -1069,7 +1066,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 						for (int i = 0; i < nDim; i++) {
 							if (i == dependent)
 								continue;
-							double dsi = rng.random01() * init[i];
+							double dsi = rng.random01() * y0[i];
 							ds[i] = dsi;
 							norm -= dsi;
 						}
@@ -1080,7 +1077,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 				for (int n = 0; n < space.size; n++) {
 					double[] ds = density[n]; // ds is only a short-cut - data written to ds is stored in density[]
 					for (int i = 0; i < nDim; i++) {
-						ds[i] = rng.random01() * init[i];
+						ds[i] = rng.random01() * y0[i];
 					}
 				}
 				break;
@@ -1120,7 +1117,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 								for (int x = -r; x <= r; x++) {
 									if (isCircular && x * x + y * y + z * z >= r2)
 										continue;
-									System.arraycopy(init, 0, density[(mz + z) * l2 + (m + y) * l + m + x], 0, nDim);
+									System.arraycopy(y0, 0, density[(mz + z) * l2 + (m + y) * l + m + x], 0, nDim);
 								}
 						break;
 
@@ -1129,7 +1126,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 						dd -= space.size % 2 - dd % 2;
 						m = (space.size - dd) / 2;
 						for (int n = m; n < m + dd; n++)
-							System.arraycopy(init, 0, density[n], 0, nDim);
+							System.arraycopy(y0, 0, density[n], 0, nDim);
 						break;
 
 					default: // for square, triangular and hexagonal lattices
@@ -1142,7 +1139,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 							for (int x = -r; x <= r; x++) {
 								if (isCircular && x * x + y * y >= r2)
 									continue;
-								System.arraycopy(init, 0, density[(m + y) * l + m + x], 0, nDim);
+								System.arraycopy(y0, 0, density[(m + y) * l + m + x], 0, nDim);
 							}
 				}
 				break;
@@ -1169,7 +1166,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 								double y2 = (y - m) * (y - m);
 								for (int x = 0; x < l; x++) {
 									double dens = Math.exp(-((x - m) * (x - m) + y2 + z2) * norm);
-									ArrayMath.multiply(init, dens, density[z * l2 + y * l + x]);
+									ArrayMath.multiply(y0, dens, density[z * l2 + y * l + x]);
 								}
 							}
 						}
@@ -1181,7 +1178,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 						norm = 1.0 / l;
 						for (int x = 0; x < l; x++) {
 							double dens = Math.exp(-(x - m) * (x - m) * norm);
-							ArrayMath.multiply(init, dens, density[x]);
+							ArrayMath.multiply(y0, dens, density[x]);
 						}
 						break;
 
@@ -1193,7 +1190,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 							double y2 = (y - m) * (y - m);
 							for (int x = 0; x < l; x++) {
 								double dens = Math.exp(-((x - m) * (x - m) + y2) * norm);
-								ArrayMath.multiply(init, dens, density[y * l + x]);
+								ArrayMath.multiply(y0, dens, density[y * l + x]);
 							}
 						}
 				}
@@ -1223,7 +1220,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 								for (int x = 0; x < l; x++) {
 									double r = Math.pow((x - m) * (x - m) + y2 + z2, 1.0 / 3.0);
 									double dens = Math.exp(-(r - m3) * (r - m3) * norm);
-									ArrayMath.multiply(init, dens, density[z * l2 + y * l + x]);
+									ArrayMath.multiply(y0, dens, density[z * l2 + y * l + x]);
 								}
 							}
 						}
@@ -1237,7 +1234,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 						for (int x = 0; x < l; x++) {
 							double r = Math.abs(x - m);
 							double dens = Math.exp(-(r - m3) * (r - m3) * norm);
-							ArrayMath.multiply(init, dens, density[x]);
+							ArrayMath.multiply(y0, dens, density[x]);
 						}
 						break;
 
@@ -1251,7 +1248,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 							for (int x = 0; x < l; x++) {
 								double r = Math.sqrt((x - m) * (x - m) + y2);
 								double dens = Math.exp(-(r - m3) * (r - m3) * norm);
-								ArrayMath.multiply(init, dens, density[y * l + x]);
+								ArrayMath.multiply(y0, dens, density[y * l + x]);
 							}
 						}
 				}

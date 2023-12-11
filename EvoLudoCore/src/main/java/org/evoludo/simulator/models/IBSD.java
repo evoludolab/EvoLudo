@@ -197,31 +197,27 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	/**
 	 * Type of initial density distribution. Currently this model supports:
 	 * <dl>
-	 * <dt>frequency
-	 * <dd>Random distribution of traits with given frequencies
-	 * {@link org.evoludo.simulator.modules.Discrete#cloInit
-	 * modules.Discrete.cloInit} (default).
+	 * <dt>frequency <f1,..,fn>
+	 * <dd>Random distribution of traits with given frequencies {@code <f1,..,fd>}
+	 * for traits {@code 1,...,d} (default).
 	 * <dt>uniform
 	 * <dd>Uniform random distribution of traits.
-	 * <dt>monomorphic
-	 * <dd>Monomorphic trait initialization.
+	 * <dt>monomorphic <t[,v]>
+	 * <dd>Monomorphic initialization of trait {@code t}. For modules that admit
+	 * vacant sites, their frequency is {@code v}.
 	 * <dt>kaleidoscope
 	 * <dd>Symmetric initial distribution, possibly generating evolutionary
 	 * kaleidoscopes for deterministic synchronous updates.
-	 * <dt>mutant
-	 * <dd>Single mutant trait in random location otherwise homogeneous population.
-	 * The monomorphic trait is given by the highest frequency in
-	 * {@link org.evoludo.simulator.modules.Discrete#cloInit
-	 * modules.Discrete.cloInit} and the mutant by the lowest frequency. For modules
-	 * that admit vacant sites, their frequency is given by {@code init[VACANT]}.
-	 * Vacant traits are ignored when determining the resident or the mutant.
-	 * <dt>stripes
-	 * <dd>Stripes of different traits. Requires square lattice geometry.
+	 * <dt>mutant <m,r[,v]>
+	 * <dd>Single mutant with trait {@code m} in random location of otherwise
+	 * homogeneous population with trait {@code r}. For modules that admit vacant
+	 * sites, their frequency is {@code v}.
+	 * <dt>stripes <t1,...,td>
+	 * <dd>Stripes of different traits. Ensures that at least one interface between
+	 * any two traits exists. Requires square lattice geometry.
 	 * <dt>STATISTICS
 	 * <dd>Initialization for statistics. Same as {@link #MUTANT} plus bookkeeping
 	 * for statistics. Convenience type for statistics mode. Not user selectable.
-	 * <dt>DEFAULT
-	 * <dd>Default initialization type. Not user selectable.
 	 * </dl>
 	 * 
 	 * @author Christoph Hauert
@@ -234,11 +230,9 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	public enum InitType implements CLOption.Key {
 
 		/**
-		 * Random distribution of traits with given frequencies (default).
-		 * 
-		 * @see org.evoludo.simulator.modules.Discrete#cloInit modules.Discrete.cloInit
+		 * Random distribution of traits with frequencies {@code <f1,..,fd>} (default).
 		 */
-		FREQUENCY("frequency", "random distribution with given frequency"),
+		FREQUENCY("frequency", "random distribution with frequency <f1,..,fd>"),
 
 		/**
 		 * Uniform random distribution of traits.
@@ -246,22 +240,19 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		UNIFORM("uniform", "uniform random distribution"),
 
 		/**
-		 * Monomorphic initialization of the population. The monomorphic trait is given
-		 * by the highest frequency in
-		 * {@link org.evoludo.simulator.modules.Discrete#cloInit
-		 * modules.Discrete.cloInit}
+		 * Monomorphic initialization of the population with the specified trait. For
+		 * modules that admit vacant sites, their frequency is {@code v}. The parameters
+		 * are specified through the argument of the format {@code t[,v]}.
 		 */
-		MONO("monomorphic", "monomorphic initialization"),
+		MONO("monomorphic", "monomorphic initialization with trait <t[,v]>"),
 
 		/**
-		 * Single mutant trait in random location otherwise homogeneous population. The
-		 * monomorphic trait is given by the highest frequency in
-		 * {@link org.evoludo.simulator.modules.Discrete#cloInit
-		 * modules.Discrete.cloInit} and the mutant by the lowest frequency. For modules
-		 * that admit vacant sites, their frequency is given by {@code init[VACANT]}.
-		 * Vacant traits are ignored when determining the resident or the mutant.
+		 * Single mutant trait {@code m} in random location of otherwise homogeneous
+		 * population with trait {@code r}. For modules that admit vacant sites, their
+		 * frequency is {@code v}. The parameters are specified through the argument of
+		 * the format {@code m,r[,v]}.
 		 */
-		MUTANT("mutant", "mutant in homogeneous population"),
+		MUTANT("mutant", "mutant in homogeneous population <m,r[,v]>"),
 
 		/**
 		 * Symmetric initial distribution, possibly generating evolutionary
@@ -280,12 +271,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		 * 
 		 * @see #MUTANT
 		 */
-		STATISTICS("-stat", "convenience type for statistics mode"),
-
-		/**
-		 * Default initialization type. Not user selectable.
-		 */
-		DEFAULT("-default", "default initialization");
+		STATISTICS("-stat", "convenience type for statistics mode");
 
 		/**
 		 * Key of initialization type. Used when parsing command line options.
@@ -410,12 +396,10 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	 * 
 	 * @see InitType
 	 */
-	public final CLOption cloInitType = new CLOption("inittype", "-default", EvoLudo.catModule,
+	public final CLOption cloInitType = new CLOption("inittype", InitType.UNIFORM.getKey(), EvoLudo.catModule,
 			"--inittype <t>  type of initial configuration", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					if (!cloInitType.isSet())
-						return true;
 					boolean success = true;
 					String[] inittypes = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
@@ -423,15 +407,17 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 						IBSDPopulation dpop = (IBSDPopulation) pop;
 						String type = inittypes[n++ % inittypes.length];
 						InitType key = (InitType) cloInitType.match(type);
-						if (key == null) {
+						String[] typeargs = type.split("[\\s=]");
+						if (key == null || (!key.equals(InitType.UNIFORM) && (typeargs == null || typeargs.length == 1))) {
+							dpop.setInitType(InitType.UNIFORM, null);
 							logger.warning(
 									(species.size() > 1 ? pop.getModule().getName() + ": " : "") +
 											"inittype '" + type + "' unknown - using '"
-											+ dpop.getInitType().getKey() + "'");
+											+ dpop.getInitType() + "'");
 							success = false;
 							continue;
 						}
-						dpop.setInitType(key);
+						dpop.setInitType(key, CLOParser.parseVector(typeargs[1]));
 					}
 					return success;
 				}
