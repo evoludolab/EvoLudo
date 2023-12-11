@@ -273,27 +273,6 @@ public abstract class Continuous extends Module {
 	protected boolean extremalScoresSet = false;
 
 	/**
-	 * The index for storing the trait mean in an array.
-	 */
-	public final static int TRAIT_MEAN = 0;
-
-	/**
-	 * The index for storing the standard deviation of a trait in an array.
-	 */
-	public final static int TRAIT_SDEV = 1;
-
-	/**
-	 * Mean and sdev of initial trait distribution. The mean for trait {@code i} is
-	 * stored in position {@code init[i][TRAIT_MEAN]} and the corresponding standard
-	 * deviation in {@code init[i][TRAIT_SDEV]}.
-	 * <p>
-	 * <strong>Note:</strong> internally traits are always in \([0,1]\).
-	 * {@code traitMin} and {@code traitMax} are used to transform traits
-	 * appropriately for results.
-	 */
-	protected double[][] init;
-
-	/**
 	 * The trait minima.
 	 * <p>
 	 * <strong>Note:</strong> internally traits are always in \([0,1]\).
@@ -429,13 +408,6 @@ public abstract class Continuous extends Module {
 				setTraitRange(0.0, 1.0, s);
 				doReset = true;
 			}
-			if (init[s][TRAIT_MEAN] > traitMax[s] || init[s][TRAIT_MEAN] < traitMin[s]) {
-				double newmean = Math.min(traitMax[s], Math.max(init[s][TRAIT_MEAN], traitMin[s]));
-				logger.warning("initial mean (" + Formatter.format(init[s][TRAIT_MEAN], 4) + ") not in trait range ["
-						+ Formatter.format(traitMin[s], 4) + ", " + Formatter.format(traitMax[s], 4) + "] for trait "
-						+ s + " - changed to " + Formatter.format(newmean, 4) + "!");
-				init[s][TRAIT_MEAN] = newmean;
-			}
 		}
 		return doReset;
 	}
@@ -443,59 +415,6 @@ public abstract class Continuous extends Module {
 	@Override
 	public boolean isContinuous() {
 		return true;
-	}
-
-	/**
-	 * Set the mean and standard deviation of the initial trait distribution.
-	 * 
-	 * @param init the mean and standard deviation
-	 * 
-	 * @see #init
-	 */
-	public void setInit(double[][] init) {
-		if (init == null || init.length != nTraits || init[0].length != 2)
-			return;
-		this.init = ArrayMath.clone(init);
-	}
-
-	/**
-	 * Get the mean and standard deviation of the initial trait distribution.
-	 * 
-	 * @return the mean and standard deviation
-	 */
-	public double[][] getInit() {
-		if (init == null) {
-			init = new double[nTraits][];
-			for (int n = 0; n < nTraits; n++)
-				init[n] = new double[] { 0.5, 0.1 };
-		}
-		return ArrayMath.clone(init);
-	}
-
-	/**
-	 * Set the mean and standard deviation of the initial distribution of trait
-	 * {@code trait}.
-	 * 
-	 * @param init  the mean and standard deviation
-	 * @param trait the index of the trait
-	 */
-	public void setInit(double[] init, int trait) {
-		if (init == null || init.length != 2)
-			return;
-		if (this.init == null || this.init.length != nTraits || this.init[0].length != 2)
-			this.init = new double[nTraits][2];
-		System.arraycopy(init, 0, this.init[trait], 0, 2);
-	}
-
-	/**
-	 * Get the mean and standard deviation of the initial distribution of trait
-	 * {@code trait}.
-	 * 
-	 * @param trait the index of the trait
-	 * @return the mean and standard deviation
-	 */
-	public double[] getInit(int trait) {
-		return ArrayMath.clone(init[trait]);
 	}
 
 	/**
@@ -606,71 +525,6 @@ public abstract class Continuous extends Module {
 	public double[] getMutationSdev() {
 		return ArrayMath.clone(mutSdev);
 	}
-
-	/**
-	 * Command line option to set the parameters of the initial trait distribution.
-	 * For example, mean and standard deviation for a Gaussian distribution of
-	 * traits.
-	 * 
-	 * @see org.evoludo.simulator.models.IBSC.InitType models.IBSC.InitType
-	 * @see EvoLudo#cloInitType
-	 */
-	public final CLOption cloInit = new CLOption("init", "0.2,0.02", EvoLudo.catModel, null,
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse initial trait distribution of each trait. {@code arg} can be a single
-				 * {@code(mean, sdev)} pair or an array of pairs with the separator
-				 * {@value CLOParser#MATRIX_DELIMITER}. The parser cycles through {@code arg}
-				 * until the initial configuration of each trait is set.
-				 * 
-				 * @param arg the (array of) of initial configurations
-				 */
-				@Override
-				public boolean parse(String arg) {
-					// if parsing of a double throws an exception this returns null
-					double[][] msinit = CLOParser.parseMatrix(arg);
-					if (msinit == null || msinit.length == 0 || msinit[0].length < 2) {
-						logger.warning("failed to parse initialization parameters '" + arg + "' - ignored.");
-						return false;
-					}
-					for (int n = 0; n < nTraits; n++)
-						population.setInit(msinit[n % msinit.length], n);
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (int n = 0; n < nTraits; n++)
-						output.println(
-								"# init (mean&plusmn;sdev):                 " + Formatter.format(init[n][0], 6)
-										+ " &plusmn; " + Formatter.format(init[n][1], 6) + "\t" + traitName[n]);
-				}
-
-				@Override
-				public String getDescription() {
-					String descr;
-					switch (nTraits) {
-						case 2:
-							descr = "--init <0>,<1>  initial frequencies of strategies, with";
-							break;
-						case 3:
-							descr = "--init <0>,<1>,<2>  initial frequencies of strategies, with";
-							break;
-						default:
-							descr = "--init <0>,...,<" + (nTraits - 1)
-									+ ">  initial frequencies of strategies, with";
-					}
-					for (int n = 0; n < nTraits; n++) {
-						String aTrait = "              " + n + ": ";
-						int traitlen = aTrait.length();
-						descr += "\n" + aTrait.substring(traitlen - 16, traitlen) + traitName[n];
-					}
-					return descr;
-				}
-			});
 
 	/**
 	 * Command line option to set the minimum value of each trait.
@@ -1073,7 +927,6 @@ public abstract class Continuous extends Module {
 		super.collectCLO(parser);
 		parser.addCLO(cloMutationSdev);
 		parser.addCLO(cloTraitRange);
-		parser.addCLO(cloInit);
 		cloCostFunction.addKeys(Traits2Payoff.Costs.values());
 		parser.addCLO(cloCostFunction);
 		parser.addCLO(cloCostParams);

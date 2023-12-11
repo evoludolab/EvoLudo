@@ -667,8 +667,8 @@ public class IBSMCPopulation extends IBSPopulation {
 			avg += delta / (n + 1);
 			var += delta * (aScore - avg);
 		}
-		mean[Continuous.TRAIT_MEAN] = avg;
-		mean[Continuous.TRAIT_SDEV] = Math.sqrt(var / (nPopulation - 1));
+		mean[0] = avg;
+		mean[1] = Math.sqrt(var / (nPopulation - 1));
 		return true;
 	}
 
