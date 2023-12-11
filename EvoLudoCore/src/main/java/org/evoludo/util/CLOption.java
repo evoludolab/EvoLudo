@@ -579,15 +579,6 @@ public class CLOption implements Comparable<CLOption> {
 		}
 		// read argument
 		String arg = options.next();
-		// argument should not start with '--', must be subsequent option
-		if (arg.startsWith("--")) {
-			options.previous();
-			if (type == Argument.REQUIRED)
-				return false;
-			// optional argument
-			isSet = true;
-			return true;
-		}
 		if (type == Argument.REQUIRED) {
 			// argument could still start with '-' indicating negative number [in array], be
 			// greedy and assume this is the argument; check if first char of argument is
