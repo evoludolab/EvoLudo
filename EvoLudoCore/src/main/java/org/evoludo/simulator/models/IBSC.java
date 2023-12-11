@@ -4,6 +4,7 @@ import java.io.PrintStream;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBSD.OptimizationType;
+import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -57,7 +58,7 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		/**
 		 * Key of mutation type. Used when parsing command line options.
 		 * 
-		 * @see EvoLudo#cloInitType
+		 * @see EvoLudo#cloMutationType
 		 */
 		String key;
 
@@ -140,21 +141,17 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	/**
 	 * Type of initial density distribution. Currently this model supports:
 	 * <dl>
-	 * <dt>UNIFORM
-	 * Uniform random distribution of traits covering entire trait interval.
-	 * <dt>MONO
-	 * <dd>Monomorphic population with trait
-	 * {@link org.evoludo.simulator.modules.Continuous#cloInit mono}.
-	 * <dt>GAUSSIAN
-	 * <dd>Gaussian trait distribution with
-	 * {@link org.evoludo.simulator.modules.Continuous#cloInit mean} and
-	 * {@link org.evoludo.simulator.modules.Continuous#cloInit standard deviation}.
-	 * <dt>DELTA
-	 * Delta distribution of traits with
-	 * {@link org.evoludo.simulator.modules.Continuous#cloInit resident} trait and
-	 * {@link org.evoludo.simulator.modules.Continuous#cloInit mutant} trait.
-	 * <dt>DEFAULT
-	 * <dd>Default initialization (Uniform). Not user selectable.
+	 * <dt>uniform
+	 * Uniform distribution of traits covering entire trait interval (default).
+	 * <dt>mono <x>
+	 * <dd>Monomorphic population with trait {@code xi}.
+	 * <dt>gaussian <m,s>
+	 * <dd>Gaussian distribution of traits with mean {@code mi} and standard
+	 * deviation
+	 * {@code si}.
+	 * <dt>mutant <r,m>
+	 * <dd>Monomorphic resident population with trait {@code r} and single mutant
+	 * with trait {@code m}.
 	 * </dl>
 	 * 
 	 * @author Christoph Hauert
@@ -165,34 +162,26 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	public enum InitType implements CLOption.Key {
 
 		/**
-		 * Uniform random distribution of traits covering entire trait interval.
+		 * Uniform distribution of traits covering entire trait interval (default).
 		 */
 		UNIFORM("uniform", "uniform trait distribution", 0),
 
 		/**
-		 * Monomorphic population with trait
-		 * {@link org.evoludo.simulator.modules.Continuous#cloInit mono}.
+		 * Monomorphic population with trait(s) {@code xi}.
 		 */
-		MONO("mono", "monomorphic trait distribution", 1),
+		MONO("mono", "monomorphic trait <x1,...,xd>", 1),
 
 		/**
-		 * Gaussian trait distribution with
-		 * {@link org.evoludo.simulator.modules.Continuous#cloInit mean} and
-		 * {@link org.evoludo.simulator.modules.Continuous#cloInit standard deviation}.
+		 * Gaussian distribution of traits with mean {@code mi} and standard deviation
+		 * {@code si}.
 		 */
-		GAUSSIAN("gaussian", "Gaussian trait distribution", 2),
+		GAUSSIAN("gaussian", "Gaussian traits <m1,...,md;s1,...,sd>", 2),
 
 		/**
-		 * Delta distribution of traits with
-		 * {@link org.evoludo.simulator.modules.Continuous#cloInit resident} trait and
-		 * {@link org.evoludo.simulator.modules.Continuous#cloInit mutant} trait.
+		 * Monomorphic resident population with trait {@code ri} and single mutant with
+		 * trait {@code mi}.
 		 */
-		DELTA("delta", "mutant in monomorphic population", 2),
-
-		/**
-		 * Default initialization type. Not user selectable.
-		 */
-		DEFAULT("-default", "default initialization", 0);
+		MUTANT("mutant", "mutant in monomorphic resident <m1,...,md;r1,...,rd>", 2);
 
 		/**
 		 * Key of initialization type. Used when parsing command line options.
@@ -216,8 +205,8 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		/**
 		 * Instantiate new initialization type.
 		 * 
-		 * @param key   identifier for parsing of command line option
-		 * @param title summary of geometry
+		 * @param key     identifier for parsing of command line option
+		 * @param title   summary of geometry
 		 * @param nParams the number of parameters
 		 */
 		InitType(String key, String title, int nParams) {
@@ -246,40 +235,54 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	 * 
 	 * @see InitType
 	 */
-	public final CLOption cloInitType = new CLOption("inittype", "-default", EvoLudo.catModule,
+	public final CLOption cloInitType = new CLOption("inittype", InitType.UNIFORM.getKey(), EvoLudo.catModule,
 			"--inittype <t>  type of initial configuration", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					if (!cloInitType.isSet())
-						return true;
-					boolean success = true;
-					String[] inittypes = arg.split(CLOParser.SPECIES_DELIMITER);
+					String[] inittypes = arg.split(CLOParser.TRAIT_DELIMITER);
 					int n = 0;
-					for (IBSPopulation pop : species) {
-						IBSMCPopulation cpop = (IBSMCPopulation) pop;
-						String type = inittypes[n++ % inittypes.length];
-						InitType key = (InitType) cloInitType.match(type);
-						if (key == null) {
-							logger.warning(
-									(species.size() > 1 ? pop.getModule().getName() + ": " : "") +
-											"inittype '" + type + "' unknown - using '"
-											+ cpop.getInitType().getKey() + "'");
-							success = false;
-							continue;
-						}
-						cpop.setInitType(key);
+					String type = inittypes[n++ % inittypes.length];
+					InitType key = (InitType) cloInitType.match(type);
+					String[] typeargs = type.split("[\\s=]");
+					IBSMCPopulation cpop = (IBSMCPopulation) population;
+					Module mod = cpop.getModule();
+					if (key == null
+							|| (!key.equals(InitType.UNIFORM) && (typeargs == null || typeargs.length < key.nParams))) {
+						cpop.setInitType(InitType.UNIFORM, null);
+						logger.warning(
+								(species.size() > 1 ? mod.getName() + ": " : "") +
+										"inittype '" + type + "' unknown - using '"
+										+ cpop.getInitType() + "'");
+						return false;
 					}
-					return success;
+					int nt = mod.getNTraits();
+					double[][] pargs = null;
+					if (key.nParams > 0) {
+						double[][] args = CLOParser.parseMatrix(typeargs[1]);
+						if (args == null || args.length < key.nParams || args[0].length < 1) {
+							cpop.setInitType(InitType.UNIFORM, null);
+							logger.warning(
+									(species.size() > 1 ? mod.getName() + ": " : "") +
+											"inittype '" + type + "' unknown - using '"
+											+ cpop.getInitType() + "'");
+							return false;
+						}
+						pargs = new double[key.nParams][nt];
+						// process arguments further
+						for (int i = 0; i < key.nParams; i++)
+							for (int j = 0; j < nt; j++)
+								pargs[i][j] = args[i][j % args[i].length];
+					}
+					cpop.setInitType(key, pargs);
+					return true;
 				}
 
 				@Override
 				public void report(PrintStream output) {
-					for (IBSPopulation pop : species) {
-						IBSMCPopulation cpop = (IBSMCPopulation) pop;
-						output.println(
-								"# inittype:             " + cpop.getInitType() + (species.size() > 1 ? " ("
-										+ pop.getModule().getName() + ")" : ""));
-					}
+					IBSMCPopulation cpop = (IBSMCPopulation) population;
+					output.println(
+							"# inittype:             " + cpop.getInitType() + (species.size() > 1 ? " ("
+									+ population.getModule().getName() + ")" : ""));
 				}
 			});
 
@@ -287,8 +290,7 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	 * Command line option to set the mutation type.
 	 */
 	public final CLOption cloMutationType = new CLOption("mutationtype", "gaussian", EvoLudo.catModel,
-			"--mutationtype <t>   mutation type (none, uniform, gaussian)",
-			new CLODelegate() {
+			"--mutationtype <t>   mutation type (none, uniform, gaussian)", new CLODelegate() {
 
 				/**
 				 * {@inheritDoc}
@@ -304,11 +306,11 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 				 */
 				@Override
 				public boolean parse(String arg) {
-					MutationType mt = (MutationType)cloMutationType.match(arg);
+					MutationType mt = (MutationType) cloMutationType.match(arg);
 					if (mt == null) {
 						logger.warning((isMultispecies ? population.getModule().getName() + ": " : "")
-								+ "mutation type '" + arg
-								+ "' unknown - using '" + ((IBSMCPopulation) population).getMutationType() + "'");
+								+ "mutation type '" + arg + "' unknown - using '"
+								+ ((IBSMCPopulation) population).getMutationType() + "'");
 						return false;
 					}
 					((IBSMCPopulation) population).setMutationType(mt);
@@ -317,8 +319,8 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 
 				@Override
 				public void report(PrintStream output) {
-					output.println("# mutationtype:         "
-							+ ((IBSMCPopulation) population).getMutationType().getTitle());
+					output.println(
+							"# mutationtype:         " + ((IBSMCPopulation) population).getMutationType().getTitle());
 				}
 			});
 

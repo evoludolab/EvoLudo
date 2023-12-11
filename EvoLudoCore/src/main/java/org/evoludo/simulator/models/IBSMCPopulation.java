@@ -498,7 +498,8 @@ public class IBSMCPopulation extends IBSPopulation {
 			Arrays.fill(smallScores, 0, group.nSampled, 0.0);
 			for (int n = 0; n < group.nSampled; n++) {
 				for (int i = 0; i < nGroup - 1; i++)
-					System.arraycopy(groupStrat, ((n + i) % group.nSampled) * nTraits, smallStrat, i * nTraits, nTraits);
+					System.arraycopy(groupStrat, ((n + i) % group.nSampled) * nTraits, smallStrat, i * nTraits,
+							nTraits);
 				myScore += groupmodule.groupScores(myTrait, smallStrat, nGroup - 1, groupScores);
 				for (int i = 0; i < nGroup - 1; i++)
 					smallScores[(n + i) % group.nSampled] += groupScores[i];
@@ -766,36 +767,42 @@ public class IBSMCPopulation extends IBSPopulation {
 	protected InitType initType;
 
 	/**
-	 * Sets the type of the initial configuration.
+	 * The array with arguments for the initialization. Their detailed meaning
+	 * depends on the type of initialization.
+	 * 
+	 * @see InitType
+	 */
+	double[][] initArgs;
+
+	/**
+	 * Sets the type of the initial configuration and any accompanying arguments.
 	 *
 	 * @param type the type of the initial configuration
 	 * 
 	 * @see InitType
 	 */
-	public void setInitType(InitType type) {
-		if (type == null)
-			type = getInitType();
-		initType = type;
+	public void setInitType(InitType type, double[][] args) {
+		if (type != null)
+			initType = type;
+		if (args != null)
+			initArgs = args;
 	}
 
 	/**
-	 * Gets the type of the initial configuration.
+	 * Gets the type of the initial configuration and its arguments as formatted a
+	 * String.
 	 *
-	 * @return the type of the initial configuration
+	 * @return the type and arguments of the initial configuration
 	 * 
 	 * @see InitType
 	 */
-	public InitType getInitType() {
-		if (initType != null) 
-			return initType;
-		return InitType.DEFAULT;
+	public String getInitType() {
+		return initType.getKey() + " " + Formatter.format(initArgs, 2);
 	}
 
 	@Override
 	public void init() {
 		super.init();
-		// initialize each trait
-		double[][] init = module.getInit();
 
 		switch (initType) {
 			default:
@@ -806,8 +813,10 @@ public class IBSMCPopulation extends IBSPopulation {
 				break;
 
 			case MONO:
+				// initArgs contains monomorphic trait
 				for (int s = 0; s < nTraits; s++) {
-					double scaledmono = (init[s][0] - traitMin[s]) / (traitMax[s] - traitMin[s]);
+					double mono = Math.min(Math.max(initArgs[0][s], traitMax[s]), traitMin[s]);
+					double scaledmono = (mono - traitMin[s]) / (traitMax[s] - traitMin[s]);
 					for (int n = s; n < nPopulation * nTraits; n += nTraits)
 						strategies[n] = scaledmono;
 				}
@@ -815,22 +824,27 @@ public class IBSMCPopulation extends IBSPopulation {
 
 			case GAUSSIAN:
 				for (int s = 0; s < nTraits; s++) {
-					double scaledmean = (init[s][Continuous.TRAIT_MEAN] - traitMin[s]) / (traitMax[s] - traitMin[s]);
-					double scaledsdev = init[s][Continuous.TRAIT_SDEV] / (traitMax[s] - traitMin[s]);
+					double mean = Math.min(Math.max(initArgs[0][s], traitMax[s]), traitMin[s]);
+					double sdev = Math.min(Math.max(initArgs[1][s], traitMax[s]), traitMin[s]);
+					double scaledmean = (mean - traitMin[s]) / (traitMax[s] - traitMin[s]);
+					double scaledsdev = sdev / (traitMax[s] - traitMin[s]);
 					for (int n = s; n < nPopulation * nTraits; n += nTraits)
 						strategies[n] = Math.min(1.0, Math.max(0.0, randomGaussian(scaledmean, scaledsdev)));
 				}
 				break;
 
-			case DELTA:
+			case MUTANT:
 				for (int s = 0; s < nTraits; s++) {
-					double scaledmono = (init[s][0] - traitMin[s]) / (traitMax[s] - traitMin[s]);
+					double mono = Math.min(Math.max(initArgs[0][s], traitMax[s]), traitMin[s]);
+					double scaledmono = (mono - traitMin[s]) / (traitMax[s] - traitMin[s]);
 					for (int n = s; n < nPopulation * nTraits; n += nTraits)
 						strategies[n] = scaledmono;
 				}
 				int mutidx = random0n(nPopulation);
-				for (int s = 0; s < nTraits; s++) 
-					strategies[mutidx] = (init[s][1] - traitMin[s]) / (traitMax[s] - traitMin[s]);
+				for (int s = 0; s < nTraits; s++) {
+					double mut = Math.min(Math.max(initArgs[1][s], traitMax[s]), traitMin[s]);
+					strategies[mutidx] = (mut - traitMin[s]) / (traitMax[s] - traitMin[s]);
+				}
 				break;
 		}
 	}
