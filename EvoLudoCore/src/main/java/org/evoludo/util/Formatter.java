@@ -121,6 +121,8 @@ public class Formatter {
 	 * @return the formatted String vector
 	 */
 	public static String format(String[] aVector, String delimiter) {
+		if (aVector == null)
+			return "";
 		int len = aVector.length;
 		if (len == 0)
 			return "";
@@ -148,6 +150,8 @@ public class Formatter {
 	 * @return formatted <code>int[]</code> as String
 	 */
 	public static String format(int[] aVector) {
+		if (aVector == null)
+			return "";
 		int len = aVector.length;
 		if (len == 0)
 			return "";
@@ -166,6 +170,8 @@ public class Formatter {
 	 * @return formatted <code>int[][]</code> as String
 	 */
 	public static String format(int[][] aMatrix) {
+		if (aMatrix == null)
+			return "";
 		int len = aMatrix.length;
 		if (len == 0)
 			return "";
@@ -199,6 +205,8 @@ public class Formatter {
 	 * @return formatted <code>double[]</code> as String
 	 */
 	public static String format(double[] aVector, int digits) {
+		if (aVector == null)
+			return "";
 		int len = aVector.length;
 		if (len == 0)
 			return "";
@@ -220,6 +228,8 @@ public class Formatter {
 	 * @return formatted <code>double[][]</code> as String
 	 */
 	public static String format(double[][] aMatrix, int digits) {
+		if (aMatrix == null)
+			return "";
 		int len = aMatrix.length;
 		if (len == 0)
 			return "";
@@ -239,6 +249,8 @@ public class Formatter {
 	 * @return formatted <code>float[]</code> as String
 	 */
 	public static String format(float[] aVector, int digits) {
+		if (aVector == null)
+			return "";
 		int len = aVector.length;
 		if (len == 0)
 			return "";
@@ -260,6 +272,8 @@ public class Formatter {
 	 * @return formatted <code>float[][]</code> as String
 	 */
 	public static String format(float[][] aMatrix, int digits) {
+		if (aMatrix == null)
+			return "";
 		int len = aMatrix.length;
 		if (len == 0)
 			return "";
@@ -293,6 +307,8 @@ public class Formatter {
 	 * @return formatted <code>double[]</code> as String
 	 */
 	public static String formatFix(double[] aVector, int digits) {
+		if (aVector == null)
+			return "";
 		int len = aVector.length;
 		if (len == 0)
 			return "";
@@ -314,6 +330,8 @@ public class Formatter {
 	 * @return formatted <code>double[][]</code> as String
 	 */
 	public static String formatFix(double[][] aMatrix, int digits) {
+		if (aMatrix == null)
+			return "";
 		int len = aMatrix.length;
 		if (len == 0)
 			return "";
@@ -349,6 +367,8 @@ public class Formatter {
 	 * @return formatted <code>double[]</code> as String
 	 */
 	public static String formatSci(double[] aVector, int digits) {
+		if (aVector == null)
+			return "";
 		int len = aVector.length;
 		if (len == 0)
 			return "";
@@ -371,6 +391,8 @@ public class Formatter {
 	 * @return formatted <code>double[][]</code> as String
 	 */
 	public static String formatSci(double[][] aMatrix, int digits) {
+		if (aMatrix == null)
+			return "";
 		int len = aMatrix.length;
 		if (len == 0)
 			return "";
@@ -417,6 +439,8 @@ public class Formatter {
 	 * @return formatted <code>double[]</code> as HTML string
 	 */
 	public static String pretty(double[] aVector, int digits) {
+		if (aVector == null)
+			return "";
 		int len = aVector.length;
 		if (len == 0)
 			return "";
@@ -436,6 +460,8 @@ public class Formatter {
 	 * @return formatted <code>double[][]</code> as HTML string
 	 */
 	public static String pretty(double[][] aMatrix, int digits) {
+		if (aMatrix == null)
+			return "";
 		int len = aMatrix.length;
 		if (len == 0)
 			return "";
