@@ -245,6 +245,11 @@ public class Mutualism extends Discrete implements Pairs,
 		return "v1.0 March 2021";
 	}
 
+	@Override
+	public int getDependent() {
+		return DEFECT;
+	}
+
 	Data2Phase map;
 
 	@Override
