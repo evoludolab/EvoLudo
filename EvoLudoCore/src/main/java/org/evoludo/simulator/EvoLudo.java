@@ -1703,10 +1703,14 @@ public abstract class EvoLudo
 		String moduleParam = cloModule.getName();
 		CLOption.Key moduleKey = null;
 		int nParams = cloarray.length;
+		// first option requires special treatment: strip leading '--' if any.
+		int idx = cloarray[0].indexOf("--");
+		if (idx >= 0)
+			cloarray[0] = cloarray[0].substring(idx + "--".length());
 		for (int i = 0; i < nParams; i++) {
 			String param = cloarray[i];
 			if (param.startsWith(moduleParam)) {
-				String[] moduleName = param.split("[\\s=]");
+				String[] moduleName = param.split("[\\s+,=]");
 				if (moduleName == null || moduleName.length < 2) {
 					logger.warning("module key missing");
 					return null;				
@@ -1807,7 +1811,9 @@ public abstract class EvoLudo
 	 * @see #parseCLO(String[])
 	 */
 	public boolean parseCLO() {
-		return parseCLO(clo.trim().split("--"));
+		// options are identified by '--' characters
+		// require one or more spaces between options
+		return parseCLO(clo.split("\\s+--"));
 	}
 
 	/**

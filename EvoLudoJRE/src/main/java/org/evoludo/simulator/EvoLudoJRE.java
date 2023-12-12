@@ -1103,8 +1103,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 */
 	@Override
 	public boolean parseCLO(String[] cloarray) {
-		clo = Formatter.format(cloarray, " ");
 		boolean success = super.parseCLO(cloarray);
+		clo = Formatter.format(cloarray, " --");
 		if (!doRestore)
 			return success;
 		// parseCLO does not reset model - do it now to be ready for restore
