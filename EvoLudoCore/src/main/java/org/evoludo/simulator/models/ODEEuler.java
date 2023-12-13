@@ -184,8 +184,7 @@ public class ODEEuler implements Model.ODE {
 	/**
 	 * List with all species in model including this one. List should be shared with
 	 * other populations (to simplify bookkeeping) but the species list CANNOT be
-	 * static! Otherwise it is impossible to run multiple instances of
-	 * modules/models
+	 * static! Otherwise it is impossible to run multiple instances of modules/models
 	 * concurrently.
 	 */
 	protected ArrayList<? extends Module> species;
@@ -515,7 +514,6 @@ public class ODEEuler implements Model.ODE {
 			System.arraycopy(pop.getTraitNames(), 0, names, skip, nTraits);
 			skip += nTraits;
 		}
-
 		skip = 0;
 		staticfit = null;
 		for (Module pop : species) {
@@ -1352,7 +1350,7 @@ public class ODEEuler implements Model.ODE {
 	 * {@link org.evoludo.simulator.modules.Discrete#cloInit
 	 * modules.Discrete.cloInit} (frequency modules).
 	 * <dt>UNIFORM
-	 * <dd>Uniform frequencies of traits (default; in density modules all desnities
+	 * <dd>Uniform frequencies of traits (default; in density modules all densities
 	 * are set to zero).
 	 * <dt>RANDOM
 	 * <dd>Random initial trait frequencies. <strong>Note:</strong> Not available
