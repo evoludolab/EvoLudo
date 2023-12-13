@@ -167,7 +167,7 @@ public class TestEvoLudo implements Model.MilestoneListener {
 				}
 			} else {
 				// no compression
-				ref = referencesDir.toPath().resolve(export + ".zip").toFile();
+				ref = exportDir.toPath().resolve(export).toFile();
 				try {
 					FileOutputStream fos = new FileOutputStream(ref);
 					fos.write(result.getBytes());
@@ -571,6 +571,8 @@ public class TestEvoLudo implements Model.MilestoneListener {
 		}
 		if (testsDir == null)
 			testsDir = referencesDir;
+		if (referencesDir == null)
+			referencesDir = testsDir;
 		if (reportsDir == null) {
 			if (testsDir.isDirectory()) {
 				reportsDir = new File(testsDir.getPath() + File.separator + engine.getGit());
