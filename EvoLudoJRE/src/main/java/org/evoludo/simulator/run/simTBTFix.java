@@ -453,30 +453,6 @@ tFix += generation;
 					output.println("# init:                 leaves");
 	    	}
 	    });
-	public final CLOption cloInitFreqs = new CLOption("initfreqs", 'I', EvoLudo.catSimulation, "uniform", null,
-		new CLODelegate() {
-	    	@Override
-	    	public boolean parse(String arg) {
-	    		if( cloInitFreqs.isDefault() ) {
-	    			setInitFreqs(null);
-	    			return true;
-	    		}
-// note: somewhat hackish/ad hoc solution to place initial mutant in particular node...
-				if( arg.charAt(0)=='x' || arg.charAt(0)=='X' ) {
-					initNode = Integer.parseInt(arg.substring(1));
-					return true;
-				}
-	    		parseInitFrequencies(arg);
-				return true;
-	    	}
-	    	@Override
-	    	public void report(PrintStream output) {
-	    		String[] names = module.getTraitNames();
-				for( int n=0; n<nTraits; n++ )
-					output.println("# initfreqs:            "+Formatter.format(initFreqs[n], 6)+"\t"+
-							names[n]+(traitActive[n]?" (active)":" (disabled)"));
-	    	}
-	    });
 
 	@Override
 	public void collectCLO(CLOParser parser) {
@@ -490,7 +466,6 @@ tFix += generation;
 		parser.addCLO(cloResetFreq);
 		parser.addCLO(cloHub);
 		parser.addCLO(cloNoHub);
-		parser.addCLO(cloInitFreqs);
 
 		super.collectCLO(parser);
 		parser.removeCLO("generations");

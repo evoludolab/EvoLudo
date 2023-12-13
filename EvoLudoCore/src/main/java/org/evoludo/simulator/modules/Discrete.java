@@ -32,7 +32,6 @@
 
 package org.evoludo.simulator.modules;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -43,7 +42,6 @@ import org.evoludo.simulator.models.ODEEuler;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.Formatter;
 
 /**
  * Parent class of all EvoLudo modules with discrete strategy sets.
@@ -425,126 +423,6 @@ public abstract class Discrete extends Module {
 	}
 
 	/**
-	 * Command line option to set the initial configuration.
-	 * 
-	 * @see org.evoludo.simulator.models.IBSD.InitType models.IBSD.InitType
-	 * @see EvoLudo#cloInitType
-	 */
-	public final CLOption cloInit = new CLOption("init", "uniform", EvoLudo.catModel, null,
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse initial frequencies or densities of each trait. {@code arg} can be a
-				 * single value or an array with the separator
-				 * {@value CLOParser#MATRIX_DELIMITER}. The parser cycles through {@code arg}
-				 * until the initial configuration is set.
-				 * <p>
-				 * For frequency based modules the initial values do not need to be normalized.
-				 * Specifying a dash, "-", instead of a number, disables the corresponding
-				 * strategy/trait.
-				 * 
-				 * @param arg the (array of) of initial frequencies or densities
-				 * 
-				 * @see Discrete#setInit(double[])
-				 * @see Discrete#setActiveTraits(boolean[])
-				 */
-				@Override
-				public boolean parse(String arg) {
-					if (arg == null || !cloInit.isSet()) {
-						for (Discrete dpop : species) {
-							dpop.setInit(null);
-							dpop.setActiveTraits(null);
-						}
-						// could return false to signal parsing problems
-						return true;
-					}
-
-					String[] initstates = arg.split(CLOParser.SPECIES_DELIMITER);
-					int n = 0;
-					for (Discrete dpop : species) {
-						String[] initstate = initstates[n++ % initstates.length].split(CLOParser.VECTOR_DELIMITER);
-						int len = initstate.length;
-						int nt = dpop.getNTraits();
-						double[] state = new double[nt];
-						boolean[] act = new boolean[nt];
-						int vacant = dpop.getVacant();
-						for (int i = 0; i < nt; i++) {
-							String ei = initstate[i % len].trim();
-							if (ei.equals("-")) {
-								state[i] = 0.0;
-								if (i != vacant) {
-									act[i] = false;
-									continue;
-								}
-								logger.warning("Vacant sites cannot be deactivated - ignored.");
-								act[i] = true;
-								continue;
-							}
-							state[i] = CLOParser.parseDouble(ei);
-							act[i] = true;
-						}
-						dpop.setInit(state);
-						dpop.setActiveTraits(act);
-					}
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (Discrete dpop : species) {
-						double[] ifreqs = dpop.getInit();
-						boolean[] act = dpop.getActiveTraits();
-						for (int n = 0; n < dpop.getNTraits(); n++)
-							output.println("# init:                 " + Formatter.format(ifreqs[n], 6) + "\t"
-									+ (species.size() > 1 ? " " + dpop.getName() + "." : "") + dpop.getTraitName(n)
-									+ (act[n] ? " (active)" : " (disabled)"));
-					}
-				}
-
-				@Override
-				public String getDescription() {
-					String descr;
-					if (species.size() > 1) {
-						// multi-species
-						descr = "--init <>       initial frequencies/densities of strategies\n" + //
-								"                separated by '" + CLOParser.VECTOR_DELIMITER + "' " + //
-								"and species by '" + CLOParser.SPECIES_DELIMITER + "' with";
-						int idx = 0;
-						for (Discrete dpop : species) {
-							int nt = dpop.getNTraits();
-							for (int n = 0; n < nt; n++) {
-								String aTrait = "              " + (idx++) + ": ";
-								int traitlen = aTrait.length();
-								descr += "\n" + aTrait.substring(traitlen - 16, traitlen) + dpop.getName() + "." + dpop.getTraitName(n);
-							}
-						}
-						descr += "\n             -: disables the respective strategy";
-						return descr;
-					}
-					// single species
-					switch (nTraits) {
-						case 2:
-							descr = "--init <0>,<1>  initial frequencies/densities, with";
-							break;
-						case 3:
-							descr = "--init <0>,<1>,<2>  initial frequencies/densities, with";
-							break;
-						default:
-							descr = "--init <0>,...,<" + (nTraits - 1) + ">  initial frequencies/densities, with";
-					}
-					for (int n = 0; n < nTraits; n++) {
-						String aTrait = "              " + n + ": ";
-						int traitlen = aTrait.length();
-						descr += "\n" + aTrait.substring(traitlen - 16, traitlen) + traitName[n];
-					}
-					descr += "\n             -: disables the respective strategy";
-					return descr;
-				}
-			});
-
-	/**
 	 * Command line option to request that models stop execution when reaching
 	 * monomorphic population states.
 	 */
@@ -577,8 +455,5 @@ public abstract class Discrete extends Module {
 		int nt = 0;
 		for (Discrete dpop : species)
 			nt = Math.max(nt, dpop.getNTraits());
-		if (nt > 1) {
-			parser.addCLO(cloInit);
-		}
 	}
 }

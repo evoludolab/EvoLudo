@@ -297,6 +297,8 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * @see EvoLudo#paramsDidChange()
 	 */
 	public boolean check() {
+//XXX activate all traits; but better implement option to (de)activate traits!
+		setActiveTraits(null);
 		return false;
 	}
 
@@ -462,6 +464,8 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 */
 	public void setActiveTraits(boolean[] active) {
 		if (active == null) {
+			this.active = new boolean[nTraits];
+			Arrays.fill(this.active, true);
 			nActive = nTraits;
 			return;
 		}
