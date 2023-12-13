@@ -62,7 +62,6 @@ import javax.swing.Timer;
 import org.evoludo.graphics.Network2DJRE;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.modules.Module;
-import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSC;
 import org.evoludo.simulator.models.IBSD;
@@ -481,24 +480,27 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				// break;
 				case STAT_PROB:
 					// casts are safe because otherwise STAT_PROB not available
-					muttrait = ((IBSD) getModel()).getFixationData().mutantTrait;
-					restrait = ArrayMath.maxIndex(((Discrete) module).getInit());
+					FixationData fix = ((IBSD) getModel()).getFixationData();
+					muttrait = fix.mutantTrait;
+					restrait = fix.residentTrait;
 					nTraits = module.getNTraits();
 					nPopulation = module.getNPopulation();
 					fixProb = new double[nPopulation][nTraits + 1];
 					break;
 				case STAT_UPDATES:
 					// casts are safe because otherwise STAT_UPDATES not available
-					muttrait = ((IBSD) getModel()).getFixationData().mutantTrait;
-					restrait = ArrayMath.maxIndex(((Discrete) module).getInit());
+					fix = ((IBSD) getModel()).getFixationData();
+					muttrait = fix.mutantTrait;
+					restrait = fix.residentTrait;
 					nTraits = module.getNTraits();
 					nPopulation = module.getNPopulation();
 					fixUpdate = new double[nPopulation][9];
 					break;
 				case STAT_TIMES:
 					// casts are safe because otherwise STAT_TIMES not available
-					muttrait = ((IBSD) getModel()).getFixationData().mutantTrait;
-					restrait = ArrayMath.maxIndex(((Discrete) module).getInit());
+					fix = ((IBSD) getModel()).getFixationData();
+					muttrait = fix.mutantTrait;
+					restrait = fix.residentTrait;
 					nTraits = module.getNTraits();
 					nPopulation = module.getNPopulation();
 					fixTime = new double[nPopulation][9];

@@ -1984,6 +1984,8 @@ public class IBSDPopulation extends IBSPopulation {
 		FixationData fix = ((IBSD) engine.getModel()).getFixationData();
 		fix.mutantNode = initMutant();
 		fix.mutantTrait = strategies[fix.mutantNode];
+		// this assumes InitType.MUTANT
+		fix.residentTrait = (int) initArgs[1];
 	}
 
 	/**

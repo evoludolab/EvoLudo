@@ -51,6 +51,11 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		public int mutantTrait = -1;
 
 		/**
+		 * The strategy type of the resident.
+		 */
+		public int residentTrait = -1;
+
+		/**
 		 * The strategy type that reached fixation.
 		 */
 		public int typeFixed = -1;
@@ -81,6 +86,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		public void reset() {
 			mutantNode = -1;
 			mutantTrait = -1;
+			residentTrait = -1;
 			probRead = true;
 			timeRead = true;
 		}
@@ -88,7 +94,8 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		@Override
 		public String toString() {
 			return "{ mutantNode -> " + mutantNode + //
-					", mutantTrait -> " + mutantTrait + // "
+					", mutantTrait -> " + mutantTrait + //
+					", residentTrait -> " + residentTrait + //
 					", typeFixed -> " + typeFixed + //
 					", updatesFixed -> " + Formatter.format(updatesFixed, 6) + //
 					", timeFixed -> " + Formatter.format(timeFixed, 6) + //
