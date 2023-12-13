@@ -1004,12 +1004,30 @@ public abstract interface Model extends CLOProvider {
 	}
 
 	/**
+	 * Collect and return initial trait values for all species.
+	 * <p>
+	 * <strong>NOTE:</strong> this is a convenience method for multi-species modules
+	 * to retrieve states efficiently for further processing or visualization.
+	 *
+	 * @param init the array for storing the initial trait values
+	 */
+	public abstract void getInitialTraits(double[] init);
+
+	/**
+	 * Return initial trait values for species with ID <code>id</code>.
+	 *
+	 * @param id   the species identifier
+	 * @param init the array for storing the initial trait values
+	 */
+	public abstract void getInitialTraits(int id, double[] init);
+	
+	/**
 	 * Collect and return mean trait values for all species.
 	 * <p>
 	 * <strong>NOTE:</strong> this is a convenience method for multi-species modules
 	 * to retrieve states efficiently for further processing or visualization.
 	 *
-	 * @param mean the array for storing mean frequencies/densities of types
+	 * @param mean the array for storing the mean trait values
 	 * @return <code>true</code> if this and previous data point should be
 	 *         connected, i.e. no reset had been requested in the mean time.
 	 */

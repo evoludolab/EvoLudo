@@ -606,6 +606,17 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	@Override
+	public void getInitialTraits(double[] init) {
+		System.arraycopy(y0, 0, init, 0, nDim);
+	}
+
+	@Override
+	public void getInitialTraits(int id, double[] init) {
+		int start = idxSpecies[id];
+		System.arraycopy(y0, start, init, 0, idxSpecies[id + 1] - start);
+	}
+
+	@Override
 	public boolean getMeanTrait(int id, double[] mean) {
 		double[] state = (dstate == null ? yt : dstate);
 		int start = idxSpecies[id];
@@ -1323,7 +1334,6 @@ public class ODEEuler implements Model.ODE {
 		if (isModelType(Type.PDE))
 			return;
 		int idx = -1;
-		System.arraycopy(y0, 0, yt, 0, nDim);
 		// y0 is initialized except for species with random initial frequencies
 		for (Module pop : species) {
 			if (!initType[++idx].equals(InitType.RANDOM))
@@ -1332,8 +1342,9 @@ public class ODEEuler implements Model.ODE {
 			RNGDistribution rng = engine.getRNG();
 			int from = idxSpecies[idx];
 			for (int n = 0; n < dim; n++)
-				yt[from + n] = rng.random01();
+				y0[from + n] = rng.random01();
 		}
+		System.arraycopy(y0, 0, yt, 0, nDim);
 		normalizeState(yt);
 	}
 

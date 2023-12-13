@@ -725,16 +725,36 @@ public abstract class IBS implements Model.IBS {
 	}
 
 	@Override
+	public void getInitialTraits(double[] mean) {
+		if (isMultispecies) {
+			int skip = 0;
+			double[] tmp = new double[mean.length];
+			for (IBSPopulation pop : species) {
+				pop.getMeanTrait(tmp);
+				System.arraycopy(tmp, 0, mean, skip, pop.nTraits);
+				skip += pop.nTraits;
+			}
+		} else
+			population.getMeanTrait(mean);
+	}
+
+	@Override
+	public void getInitialTraits(int id, double[] mean) {
+		if (isMultispecies)
+			species.get(id).getMeanTrait(mean);
+		else
+			population.getMeanTrait(mean);
+	}
+
+	@Override
 	public boolean getMeanTraits(double[] mean) {
 		if (isMultispecies) {
 			int skip = 0;
 			double[] tmp = new double[mean.length];
 			for (IBSPopulation pop : species) {
-				Module mod = pop.getModule();
 				pop.getMeanTrait(tmp);
-				int nt = mod.getNTraits();
-				System.arraycopy(tmp, 0, mean, skip, nt);
-				skip += nt;
+				System.arraycopy(tmp, 0, mean, skip, pop.nTraits);
+				skip += pop.nTraits;
 			}
 		} else
 			population.getMeanTrait(mean);
