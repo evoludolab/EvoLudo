@@ -1887,6 +1887,7 @@ public class IBSDPopulation extends IBSPopulation {
 		if (model.isMode(Mode.STATISTICS))
 			myType = InitType.STATISTICS;
 
+		Arrays.fill(strategiesTypeCount, 0);
 		switch (myType) {
 			case STRIPES:
 				initStripes();
@@ -1917,6 +1918,8 @@ public class IBSDPopulation extends IBSPopulation {
 				initKaleidoscope();
 				break;
 		}
+		if (ArrayMath.norm(strategiesTypeCount) != nPopulation)
+			logger.warning("accounting problem (sum of traits "+ArrayMath.norm(strategiesTypeCount)+"!="+nPopulation+").");
 	}
 
 	/**
