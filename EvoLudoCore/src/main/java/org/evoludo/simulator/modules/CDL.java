@@ -525,6 +525,7 @@ public class CDL extends Discrete implements Groups, HasIBS, HasODE, HasSDE, Has
 
 	@Override
 	public boolean check() {
+		super.check();
 		if (!cloLoneCooperator.isSet())
 			setPayLoneCoop(getPayLoner());
 		if (!cloLoneDefector.isSet())
