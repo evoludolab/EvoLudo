@@ -1705,7 +1705,7 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	@Override
-	public boolean getMeanTrait(double[] mean) {
+	public boolean getMeanTraits(double[] mean) {
 		double iPop = 1.0 / nPopulation;
 		for (int n = 0; n < nTraits; n++)
 			mean[n] = strategiesTypeCount[n] * iPop;

@@ -87,7 +87,7 @@ public class simRSP extends RSP {
 			engine.modelReset();
 			while (engine.modelNext())
 				;
-			model.getMeanTrait(getID(), mean);
+			model.getMeanTraits(getID(), mean);
 			int winIdx = ArrayMath.maxIndex(mean);
 			prob[winIdx]++;
 			// running average and variance of absorption time
@@ -128,7 +128,7 @@ public class simRSP extends RSP {
 					engine.modelReset();
 					while (engine.modelNext())
 						;
-					model.getMeanTrait(getID(), mean);
+					model.getMeanTraits(getID(), mean);
 					int winIdx = ArrayMath.maxIndex(mean);
 					fixprob[c][d][winIdx]++;
 					// running average of absorption time

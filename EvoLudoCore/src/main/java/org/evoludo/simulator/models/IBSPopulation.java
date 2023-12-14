@@ -3667,9 +3667,9 @@ public abstract class IBSPopulation {
 	 * @return <code>true</code> if this and the previous data point should be
 	 *         connected, i.e. no reset had been requested in the mean time.
 	 * 
-	 * @see Model#getMeanTrait(int, double[])
+	 * @see Model#getMeanTraits(int, double[])
 	 */
-	public abstract boolean getMeanTrait(double[] mean);
+	public abstract boolean getMeanTraits(double[] mean);
 
 	/**
 	 * Returns the traits of all individuals in this population coded as colors in

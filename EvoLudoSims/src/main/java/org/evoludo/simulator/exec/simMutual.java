@@ -217,8 +217,8 @@ public class simMutual extends Mutualism implements Model.ChangeListener {
 					prevsample = ibs.getTime();
 					if( converged) {
 						// simulations converged already - mean is current state and sdev is zero
-						model.getMeanTrait(myId, mean[myId]);
-						model.getMeanTrait(oppId, mean[oppId]);
+						model.getMeanTraits(myId, mean[myId]);
+						model.getMeanTraits(oppId, mean[oppId]);
 					}
 					else {
 						while (engine.modelNext());
@@ -300,8 +300,8 @@ public class simMutual extends Mutualism implements Model.ChangeListener {
 				double relax;
 				if (converged) {
 					// simulations converged already - mean is current state and sdev is zero
-					model.getMeanTrait(myId, mean[myId]);
-					model.getMeanTrait(oppId, mean[oppId]);
+					model.getMeanTraits(myId, mean[myId]);
+					model.getMeanTraits(oppId, mean[oppId]);
 					relax = model.getTime();
 				}
 				else {
@@ -367,8 +367,8 @@ public class simMutual extends Mutualism implements Model.ChangeListener {
 					double relax;
 					if( converged) {
 						// simulations converged already - mean is current state and sdev is zero
-						model.getMeanTrait(myId, mean[myId]);
-						model.getMeanTrait(oppId, mean[oppId]);
+						model.getMeanTraits(myId, mean[myId]);
+						model.getMeanTraits(oppId, mean[oppId]);
 						relax = model.getTime();
 					}
 					else {
@@ -417,8 +417,8 @@ public class simMutual extends Mutualism implements Model.ChangeListener {
 			double nGenerations = engine.getNGenerations();
 			if (converged) {
 				// simulations converged already - mean is current state and sdev is zero
-				model.getMeanTrait(myId, mean[myId]);
-				model.getMeanTrait(oppId, mean[oppId]);
+				model.getMeanTraits(myId, mean[myId]);
+				model.getMeanTraits(oppId, mean[oppId]);
 			}
 			else {
 //XXX modelNext stops after nGenerations... use setReportFreq(snapinterval) etc.
@@ -488,8 +488,8 @@ public class simMutual extends Mutualism implements Model.ChangeListener {
 		if( model.relaxing() || prevsample>=generation ) {
 			return;
 		}
-		model.getMeanTrait(myId, state[myId]);
-		model.getMeanTrait(oppId, state[oppId]);
+		model.getMeanTraits(myId, state[myId]);
+		model.getMeanTraits(oppId, state[oppId]);
 		// calculate weighted mean and sdev - see wikipedia
         double w = generation-prevsample;
         double wn = w/(generation-engine.getNRelaxation());
@@ -512,8 +512,8 @@ public class simMutual extends Mutualism implements Model.ChangeListener {
 			return;
 		}
 		// absorbing state reached
-		model.getMeanTrait(myId, state[myId]);
-		model.getMeanTrait(oppId, state[oppId]);
+		model.getMeanTraits(myId, state[myId]);
+		model.getMeanTraits(oppId, state[oppId]);
 //System.err.println("stop - before: generation="+generation+", prevsample="+prevsample+", state="+ChHFormatter.format(state,4)+
 //	", mean="+ChHFormatter.format(mean,4)+", var="+ChHFormatter.format(var,4));
 //logMessage("test: mean[0].old="+mean[0]+" -> "+((mean[0]*(prevsample-relaxation)+state[0]*(generations-(prevsample-relaxation)))/generations));

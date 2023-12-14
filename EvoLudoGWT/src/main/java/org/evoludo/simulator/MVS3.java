@@ -96,7 +96,7 @@ public class MVS3 extends MVAbstract implements AbstractGraph.InitController {
 		Model model = engine.getModel();
 		double newtime = model.getTime();
 		if( Math.abs(timestamp-newtime)>1e-8 ) {
-			model.getMeanTrait(graph.getTag(), state);
+			model.getMeanTraits(graph.getTag(), state);
 			double[] s3 = state;
 			if( nActive!=nState ) {
 				s3 = new double[3];

@@ -246,7 +246,7 @@ public class MVMean extends MVAbstract implements LineGraph.LineGraphController{
 					case STRATEGY:
 						if( module != newMod ) {
 							module = newMod;
-							model.getMeanTrait(graph.getTag(), mean);
+							model.getMeanTraits(graph.getTag(), mean);
 							nTraits = module.getNTraits();
 						}
 						// module cannot be null here but make compiler happy

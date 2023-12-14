@@ -129,7 +129,7 @@ public class simEcoPGG extends EcoPGG implements Model.ChangeListener {
 	protected void updateStatistics(double time) {
 		if (prevsample>=time)
 			return;
-		model.getMeanTrait(getID(), state);
+		model.getMeanTraits(getID(), state);
 		// calculate weighted mean and sdev - see wikipedia
         double w = time-prevsample;
         double wn = w/(time);

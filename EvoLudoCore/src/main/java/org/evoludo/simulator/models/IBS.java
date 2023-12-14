@@ -730,20 +730,20 @@ public abstract class IBS implements Model.IBS {
 			int skip = 0;
 			double[] tmp = new double[mean.length];
 			for (IBSPopulation pop : species) {
-				pop.getMeanTrait(tmp);
+				pop.getMeanTraits(tmp);
 				System.arraycopy(tmp, 0, mean, skip, pop.nTraits);
 				skip += pop.nTraits;
 			}
 		} else
-			population.getMeanTrait(mean);
+			population.getMeanTraits(mean);
 	}
 
 	@Override
 	public void getInitialTraits(int id, double[] mean) {
 		if (isMultispecies)
-			species.get(id).getMeanTrait(mean);
+			species.get(id).getMeanTraits(mean);
 		else
-			population.getMeanTrait(mean);
+			population.getMeanTraits(mean);
 	}
 
 	@Override
@@ -752,21 +752,21 @@ public abstract class IBS implements Model.IBS {
 			int skip = 0;
 			double[] tmp = new double[mean.length];
 			for (IBSPopulation pop : species) {
-				pop.getMeanTrait(tmp);
+				pop.getMeanTraits(tmp);
 				System.arraycopy(tmp, 0, mean, skip, pop.nTraits);
 				skip += pop.nTraits;
 			}
 		} else
-			population.getMeanTrait(mean);
+			population.getMeanTraits(mean);
 		return connect;
 	}
 
 	@Override
-	public boolean getMeanTrait(int id, double[] mean) {
+	public boolean getMeanTraits(int id, double[] mean) {
 		if (isMultispecies)
-			species.get(id).getMeanTrait(mean);
+			species.get(id).getMeanTraits(mean);
 		else
-			population.getMeanTrait(mean);
+			population.getMeanTraits(mean);
 		return connect;
 	}
 

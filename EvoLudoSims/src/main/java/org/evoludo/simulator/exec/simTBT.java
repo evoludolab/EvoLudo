@@ -126,7 +126,7 @@ public class simTBT extends TBT implements Model.ChangeListener {
 				prevsample = ibs.getTime();
 				if (converged) {
 					// simulations converged already - mean is current state and sdev is zero
-					model.getMeanTrait(getID(), mean);
+					model.getMeanTraits(getID(), mean);
 				} else {
 					while ((converged = !engine.modelNext()))
 						;
@@ -169,7 +169,7 @@ public class simTBT extends TBT implements Model.ChangeListener {
 					prevsample = ibs.getTime();
 					if (converged) {
 						// simulations converged already - mean is current state and sdev is zero
-						model.getMeanTrait(getID(), mean);
+						model.getMeanTraits(getID(), mean);
 					} else {
 						while (engine.modelNext())
 							;
@@ -213,7 +213,7 @@ public class simTBT extends TBT implements Model.ChangeListener {
 			double nGenerations = engine.getNGenerations();
 			if (converged) {
 				// simulations converged already - mean is current state and sdev is zero
-				model.getMeanTrait(getID(), mean);
+				model.getMeanTraits(getID(), mean);
 			} else {
 				for (long g = 1; g <= nGenerations; g++) {
 					if (snapinterval > 0 && g % snapinterval == 0) {
@@ -266,7 +266,7 @@ public class simTBT extends TBT implements Model.ChangeListener {
 		if (model.relaxing() || prevsample >= generation) {
 			return;
 		}
-		model.getMeanTrait(getID(), state);
+		model.getMeanTraits(getID(), state);
 		// calculate weighted mean and sdev - see wikipedia
 		double w = generation - prevsample;
 		double wn = w / (generation - engine.getNRelaxation());
@@ -285,7 +285,7 @@ public class simTBT extends TBT implements Model.ChangeListener {
 			return;
 		}
 		// absorbing state reached
-		model.getMeanTrait(getID(), state);
+		model.getMeanTraits(getID(), state);
 //output.println("stop - before: generations="+generations+", prevsample="+prevsample+", state="+ChHFormatter.format(state,4)+
 //	", mean="+ChHFormatter.format(mean,4)+", var="+ChHFormatter.format(var,4));
 //output.println("test: mean[0].old="+mean[0]+" -> "+((mean[0]*(prevsample-relaxation)+state[0]*(generations-(prevsample-relaxation)))/generations));

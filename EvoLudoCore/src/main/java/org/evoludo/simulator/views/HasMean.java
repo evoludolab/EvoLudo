@@ -58,8 +58,8 @@ public abstract interface HasMean {
 	 * <p>
 	 * <strong> Note:</strong> this requires that the
 	 * {@link org.evoludo.simulator.models.Model Model} implements the
-	 * method {@link org.evoludo.simulator.models.Model#getMeanTrait(int, double[])
-	 * Model.getMeanTrait(int, double[])}.
+	 * method {@link org.evoludo.simulator.models.Model#getMeanTraits(int, double[])
+	 * Model.getMeanTraits(int, double[])}.
 	 * 
 	 * @author Christoph Hauert
 	 */

@@ -633,7 +633,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * standard deviation.
 	 */
 	@Override
-	public boolean getMeanTrait(double[] mean) {
+	public boolean getMeanTraits(double[] mean) {
 		for (int i = 0; i < nTraits; i++) {
 			int idx = i;
 			double avg = 0.0, var = 0.0;
@@ -681,7 +681,7 @@ public class IBSMCPopulation extends IBSPopulation {
 
 	@Override
 	public String getStatus() {
-		getMeanTrait(meantrait);
+		getMeanTraits(meantrait);
 		String[] names = module.getTraitNames();
 		String status = names[0] + " mean: " + Formatter.formatFix(meantrait[0], 3) + " ± "
 				+ Formatter.formatFix(meantrait[nTraits], 3);

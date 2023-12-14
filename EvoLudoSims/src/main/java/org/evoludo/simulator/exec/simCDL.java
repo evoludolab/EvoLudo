@@ -161,7 +161,7 @@ public class simCDL extends CDL implements Model.ChangeListener {
 						// if nGenerations was reached, ODE, SDE or simulations may not yet have been
 						// absorbed
 						// in particular if interior fixed point is attractor
-						model.getMeanTrait(getID(), state);
+						model.getMeanTraits(getID(), state);
 						int winIdx = ArrayMath.maxIndex(state);
 						if (state[winIdx] > 0.999)
 							// homogeneous state
@@ -232,7 +232,7 @@ public class simCDL extends CDL implements Model.ChangeListener {
 				}
 				if (model.hasConverged()) {
 					// model converged (ODE only with mu>0) - mean is current state and sdev is zero
-					model.getMeanTrait(getID(), mean);
+					model.getMeanTraits(getID(), mean);
 					Arrays.fill(var, 0.0);
 				}
 				String msg = Formatter.format(a, 4) + "\t" + Formatter.format(r, 4);
@@ -285,7 +285,7 @@ public class simCDL extends CDL implements Model.ChangeListener {
 	protected void updateStatistics(double time) {
 		if (prevsample >= time)
 			return;
-		model.getMeanTrait(getID(), state);
+		model.getMeanTraits(getID(), state);
 		// calculate weighted mean and sdev - see wikipedia
 		double w = time - prevsample;
 		double wn = w / (time - engine.getNRelaxation());

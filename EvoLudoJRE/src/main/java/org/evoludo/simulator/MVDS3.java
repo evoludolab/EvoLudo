@@ -93,7 +93,7 @@ public class MVDS3 extends MVAbstract implements StateGraphListener {
 			data.connect = model.isConnected();
 		}
 		else
-			data.connect = model.getMeanTrait(tag, data.state);
+			data.connect = model.getMeanTraits(tag, data.state);
 		if( active!=null ) {
 			int n = 0, i = 0;
 			while( n<Math.min(3, module.getNActive()) ) {

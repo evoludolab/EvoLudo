@@ -317,7 +317,7 @@ public class ODEEuler implements Model.ODE {
 	 * Pointer to temporarily store a reference to the current state
 	 * <code>yt</code>. This affects only multi-species modules because fitness
 	 * calculations for the derivatives may need access to the state of the other
-	 * populations. To allow this {@link #getMeanTrait(int, double[])} uses
+	 * populations. To allow this {@link #getMeanTraits(int, double[])} uses
 	 * <code>dstate</code> while the derivative calculations are in progress
 	 * (<code>dstate != null</code>). Otherwise <code>yt</code> is used.
 	 */
@@ -617,7 +617,7 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	@Override
-	public boolean getMeanTrait(int id, double[] mean) {
+	public boolean getMeanTraits(int id, double[] mean) {
 		double[] state = (dstate == null ? yt : dstate);
 		int start = idxSpecies[id];
 		System.arraycopy(state, start, mean, 0, idxSpecies[id + 1] - start);

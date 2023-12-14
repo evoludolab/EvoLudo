@@ -1041,7 +1041,7 @@ public abstract interface Model extends CLOProvider {
 	 * @return <code>true</code> if this and the previous data point should be
 	 *         connected, i.e. no reset had been requested in the mean time.
 	 */
-	public abstract boolean getMeanTrait(int id, double[] mean);
+	public abstract boolean getMeanTraits(int id, double[] mean);
 
 	/**
 	 * Return mean trait values at location <code>idx</code> for species with ID

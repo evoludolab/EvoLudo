@@ -193,7 +193,7 @@ public class NetDyn extends Discrete implements HasIBS,
 	}
 
 	// @Override
-	// public boolean getMeanTrait(double[] mean) {
+	// public boolean getMeanTraits(double[] mean) {
 	// interaction.evaluate();
 	// mean[0] = interaction.avgTot; // avg. activity
 	// mean[1] = interaction.avgOut; // avg. cooperativity
@@ -656,7 +656,7 @@ public class NetDyn extends Discrete implements HasIBS,
 		}
 
 		@Override
-		public boolean getMeanTrait(double[] mean) {
+		public boolean getMeanTraits(double[] mean) {
 			interaction.evaluate();
 			mean[0] = interaction.avgTot; // avg. activity
 			mean[1] = interaction.avgOut; // avg. cooperativity

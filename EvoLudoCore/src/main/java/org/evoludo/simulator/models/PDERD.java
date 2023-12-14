@@ -239,7 +239,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	/**
 	 * The array containing the mean densities of each trait.
 	 * 
-	 * @see #getMeanTrait(int, double[])
+	 * @see #getMeanTraits(int, double[])
 	 */
 	protected double[] meanDensity;
 
@@ -662,7 +662,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	}
 
 	@Override
-	public boolean getMeanTrait(int id, double[] mean) {
+	public boolean getMeanTraits(int id, double[] mean) {
 		System.arraycopy(meanDensity, 0, mean, 0, nDim);
 		return connect;
 	}

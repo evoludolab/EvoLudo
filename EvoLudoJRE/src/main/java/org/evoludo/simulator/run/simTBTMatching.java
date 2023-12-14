@@ -106,7 +106,7 @@ public class simTBTMatching extends TBT implements Model.ChangeListener {
 			prevsample = generation;
 			if (converged) {
 				// simulations converged already - mean is current state and sdev is zero
-				getMeanTrait(mean);
+				getMeanTraits(mean);
 			}
 			else {
 				for( int g=1; g<=nGenerations; g++ ) {
@@ -165,7 +165,7 @@ if( isHomoInit ) out.println("# homo init - half of runs with homogeneous A, oth
 		if( model.relaxing() || prevsample>=generation ) {
 			return;
 		}
-		getMeanTrait(state);
+		getMeanTraits(state);
 		// calculate mean and sdev based on an algorithm by D. Knuth - see wikipedia
         double w = generation-prevsample;
         double wn = w/(generation-engine.getNRelaxation());
@@ -184,7 +184,7 @@ if( isHomoInit ) out.println("# homo init - half of runs with homogeneous A, oth
 		}
 //NOTE: this now also fires when reaching nGenerations. is this a problem? i don't think so.
 		// absorbing state reached
-		getMeanTrait(state);
+		getMeanTraits(state);
 		// calculate weighted mean and sdev - see wikipedia
 		double nRelaxation = engine.getNRelaxation();
         double w = nGenerations-(prevsample-nRelaxation);

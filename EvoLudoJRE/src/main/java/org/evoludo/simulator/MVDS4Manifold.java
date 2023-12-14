@@ -104,7 +104,7 @@ public class MVDS4Manifold extends MVAbstract implements StateGraphListener {
 			data.connect = model.isConnected();			
 		}
 		else
-			data.connect = model.getMeanTrait(tag, data.state);
+			data.connect = model.getMeanTraits(tag, data.state);
 		state2coord(data.state, data.now);
 		wk = S4Wk(data.state);
 	}
