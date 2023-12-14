@@ -76,7 +76,11 @@ public abstract class IBS implements Model.IBS {
 	public boolean setMode(Mode mode) {
 		if (!permitsMode(mode))
 			return false;
+		if (this.mode == mode)
+			return true;
 		this.mode = mode;
+		if (mode == Mode.STATISTICS)
+			init();
 		return true;
 	}
 

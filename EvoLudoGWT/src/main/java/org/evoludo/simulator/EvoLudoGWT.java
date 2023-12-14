@@ -214,11 +214,20 @@ public class EvoLudoGWT extends EvoLudo {
 			public boolean execute() {
 				// in unfortunate cases even a single sample can take exceedingly long
 				// times. stop/init/reset need to be able to interrupt.
-				if (!pendingAction.equals(PendingAction.NONE) && !pendingAction.equals(PendingAction.STATISTIC)) {
-//XXX this is abusing modelStopped; should be modelInterrupted or something
-// stopped indicates convergence; add/rename milestones
-					fireModelStopped();
-					return false;
+				switch (pendingAction) {
+					case NONE:
+					case STATISTIC:
+					case STOP:	// finish sample
+						break;
+					default:
+					case APPLY:
+					case CLO:
+					case INIT:
+					case RESET:
+					case SNAPSHOT:
+					case UNLOAD:
+						fireModelStopped();
+						return false;				
 				}
 				return modelNext();
 			}
