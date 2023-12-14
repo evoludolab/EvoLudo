@@ -3176,18 +3176,23 @@ public abstract class IBSPopulation {
 			distrMigrants = new RNGDistribution.Geometric(rng.getRNG(), 1.0 - pMigration);
 		}
 
-		// check if adjustScores can be used - subclasses may have different opinions
-		adjustScores = doAdjustScores();
+		if (module.isStatic()) {
+			adjustScores = true;
+			playerScoreReset = ScoringType.RESET_ALWAYS;
+		} else {
+			// check if adjustScores can be used - subclasses may have different opinions
+			adjustScores = doAdjustScores();
 
-		// accumulated scores and random sampling of interaction partners has, in
-		// principle, unbounded payoffs...
-		// avoid this can of worms...
-		if (!adjustScores && !playerScoreAveraged) {
-			setPlayerScoreAveraged(true);
-			logger.warning("random sampling of interaction partners is incompatible with accumulated payoffs\n" +
-					"because of unbounded fitness range and challenges to convert to probabilities.\n" +
-					"switching to averaged scores.");
-			adjustScores = doAdjustScores(); // should now be true
+			// accumulated scores and random sampling of interaction partners has, in
+			// principle, unbounded payoffs...
+			// avoid this can of worms...
+			if (!adjustScores && !playerScoreAveraged) {
+				setPlayerScoreAveraged(true);
+				logger.warning("random sampling of interaction partners is incompatible with accumulated payoffs\n" +
+						"because of unbounded fitness range and challenges to convert to probabilities.\n" +
+						"switching to averaged scores.");
+				adjustScores = doAdjustScores(); // should now be true
+			}
 		}
 
 		nMixedInter = -1;
