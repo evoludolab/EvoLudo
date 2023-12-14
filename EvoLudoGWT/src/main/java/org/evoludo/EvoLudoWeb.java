@@ -1108,7 +1108,8 @@ public class EvoLudoWeb extends Composite
 		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
 			@Override
 			public void execute() {
-				applyCLO(evoludoCLO.getText());
+				// convert any nbsp's to regular spaces
+				applyCLO(evoludoCLO.getText().replace((char)160, ' '));
 			}
 		});
 	}
