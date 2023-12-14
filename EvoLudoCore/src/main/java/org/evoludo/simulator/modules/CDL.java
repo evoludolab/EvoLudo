@@ -36,7 +36,6 @@ import java.awt.Color;
 import java.io.PrintStream;
 import java.util.Arrays;
 
-import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
@@ -999,43 +998,38 @@ public class CDL extends Discrete implements Groups, HasIBS, HasODE, HasSDE, Has
 					}
 					int l2 = l * l;
 					int m = l / 2;
-					switch (ArrayMath.maxIndex(init)) {
-						default:
-						case CDL.COOPERATE:
-							Arrays.fill(strategies, CDL.COOPERATE);
-							Arrays.fill(strategiesTypeCount, 0);
-							strategiesTypeCount[CDL.COOPERATE] = nPopulation;
-							if (l % 2 == 0) { // even number of sites
-								// since NOVA has even numbers of pixels along each side, place a 4x4x4 cube of
-								// D's in the center
-								// and a 2x2x2 cube of loners within
-								for (int z = mz - 2; z < mz + 2; z++)
-									for (int y = m - 2; y < m + 2; y++)
-										for (int x = m - 2; x < m + 2; x++)
-											strategies[z * l2 + y * l + x] = CDL.DEFECT;
-								for (int z = mz - 1; z < mz + 1; z++)
-									for (int y = m - 1; y < m + 1; y++)
-										for (int x = m - 1; x < m + 1; x++)
-											strategies[z * l2 + y * l + x] = CDL.LONER;
-								strategiesTypeCount[CDL.LONER] += 2 * 2 * 2;
-								strategiesTypeCount[CDL.DEFECT] += 4 * 4 * 4 - 2 * 2 * 2;
-								strategiesTypeCount[CDL.COOPERATE] -= 4 * 4 * 4;
-								break;
-							}
-							// odd number of sites - place 5x5x5 cube of D's in the center and a 3x3x3 cube
-							// of loners within
-							for (int z = mz - 2; z < mz + 3; z++)
-								for (int y = m - 2; y < m + 3; y++)
-									for (int x = m - 2; x < m + 3; x++)
-										strategies[z * l2 + y * l + x] = CDL.DEFECT;
-							for (int z = mz - 1; z < mz + 2; z++)
-								for (int y = m - 1; y < m + 2; y++)
-									for (int x = m - 1; x < m + 2; x++)
-										strategies[z * l2 + y * l + x] = CDL.LONER;
-							strategiesTypeCount[CDL.LONER] += 3 * 3 * 3;
-							strategiesTypeCount[CDL.DEFECT] += 5 * 5 * 5 - 3 * 3 * 3;
-							strategiesTypeCount[CDL.COOPERATE] -= 5 * 5 * 5;
-							break;
+					Arrays.fill(strategies, CDL.COOPERATE);
+					Arrays.fill(strategiesTypeCount, 0);
+					strategiesTypeCount[CDL.COOPERATE] = nPopulation;
+					if (l % 2 == 0) { // even number of sites
+						// since NOVA has even numbers of pixels along each side, place a 4x4x4 cube of
+						// D's in the center
+						// and a 2x2x2 cube of loners within
+						for (int z = mz - 2; z < mz + 2; z++)
+							for (int y = m - 2; y < m + 2; y++)
+								for (int x = m - 2; x < m + 2; x++)
+									strategies[z * l2 + y * l + x] = CDL.DEFECT;
+						for (int z = mz - 1; z < mz + 1; z++)
+							for (int y = m - 1; y < m + 1; y++)
+								for (int x = m - 1; x < m + 1; x++)
+									strategies[z * l2 + y * l + x] = CDL.LONER;
+						strategiesTypeCount[CDL.LONER] += 2 * 2 * 2;
+						strategiesTypeCount[CDL.DEFECT] += 4 * 4 * 4 - 2 * 2 * 2;
+						strategiesTypeCount[CDL.COOPERATE] -= 4 * 4 * 4;
+					} else {
+						// odd number of sites - place 5x5x5 cube of D's in the center and a 3x3x3 cube
+						// of loners within
+						for (int z = mz - 2; z < mz + 3; z++)
+							for (int y = m - 2; y < m + 3; y++)
+								for (int x = m - 2; x < m + 3; x++)
+									strategies[z * l2 + y * l + x] = CDL.DEFECT;
+						for (int z = mz - 1; z < mz + 2; z++)
+							for (int y = m - 1; y < m + 2; y++)
+								for (int x = m - 1; x < m + 2; x++)
+									strategies[z * l2 + y * l + x] = CDL.LONER;
+						strategiesTypeCount[CDL.LONER] += 3 * 3 * 3;
+						strategiesTypeCount[CDL.DEFECT] += 5 * 5 * 5 - 3 * 3 * 3;
+						strategiesTypeCount[CDL.COOPERATE] -= 5 * 5 * 5;
 					}
 					break;
 

@@ -209,15 +209,6 @@ public class NetDyn extends Discrete implements HasIBS,
 	// return true;
 	// }
 
-	@Override
-	public void setInit(double[] init) {
-	}
-
-	@Override
-	public double[] getInit() {
-		return null;
-	}
-
 	/**
 	 * Set the cost-to-benefit ratio of cooperation.
 	 * 

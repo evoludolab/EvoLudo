@@ -36,7 +36,6 @@ import java.awt.Color;
 import java.io.PrintStream;
 import java.util.Arrays;
 
-import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSD;
@@ -532,9 +531,10 @@ public class TBT extends Discrete implements Pairs,
 					}
 					int l2 = l * l;
 					int m = l / 2;
-					switch (ArrayMath.maxIndex(init)) {
+					int type = ((initArgs != null && initArgs.length > 0) ? (int)initArgs[0] : 0);
+					switch (type) {
 						default:
-						case TBT.COOPERATE:
+						case 0:
 							if (l % 2 == 1) {
 								// odd dimensions (this excludes NOVA, hence mz=m)
 								// place single TBT.DEFECT in center
@@ -552,7 +552,7 @@ public class TBT extends Discrete implements Pairs,
 								strategiesTypeCount[TBT.DEFECT] += 2 * 2 * 2;
 							}
 							break;
-						case TBT.DEFECT:
+						case 1:
 							if (l % 2 == 1) {
 								// odd dimensions - place 3x3x3 cube of cooperators in center
 								for (int z = mz - 1; z <= mz + 1; z++)
@@ -585,7 +585,7 @@ public class TBT extends Discrete implements Pairs,
 				case LINEAR:
 					if (mid < 0)
 						mid = nPopulation / 2;
-					int restrait = ArrayMath.maxIndex(init);
+					int restrait = TBT.COOPERATE;
 					Arrays.fill(strategies, restrait);
 					int muttrait = (restrait + 1) % nTraits;
 					strategies[mid] = muttrait;

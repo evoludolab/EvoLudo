@@ -40,7 +40,6 @@ import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSD.FixationData;
 import org.evoludo.simulator.models.IBSD.InitType;
 import org.evoludo.simulator.models.Model.Mode;
@@ -798,8 +797,7 @@ public class IBSDPopulation extends IBSPopulation {
 		// similarly, payoffs can be calculated more efficiently in deme structured
 		// populations as long as demes are well-mixed (although lookup tables are
 		// possible but not (yet) implemented.
-		if (hasLookupTable || //
-			(adjustScores && interaction.isType(Geometry.Type.HIERARCHY) //
+		if (hasLookupTable || (adjustScores && interaction.isType(Geometry.Type.HIERARCHY)
 				&& interaction.subgeometry == Geometry.Type.MEANFIELD)) {
 			updateMixedMeanScores();
 			return;
@@ -1112,27 +1110,15 @@ public class IBSDPopulation extends IBSPopulation {
 		stripGroupVacancies(group, groupStrat, groupIdxs);
 		double myScore;
 		countTraits(traitCount, groupStrat, 0, group.nSampled);
-		// for ephemeral scores calculate score of focal only
-		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
 			// isolated individual (note the bookkeeping above is overkill and can be
 			// optimized)
 			myScore = pairmodule.pairScores(myType, traitCount, traitScore);
-			if (ephemeralScores) {
-				// no need to update scores of everyone else
-				setScoreAt(me, myScore, 0);
-				return;
-			}
 			updateScoreAt(me, myScore, 0);
 			return;
 		}
 
 		myScore = pairmodule.pairScores(myType, traitCount, traitScore);
-		if (ephemeralScores) {
-			// no need to update scores of everyone else
-			setScoreAt(me, myScore / group.nSampled, group.nSampled);
-			return;
-		}
 		updateScoreAt(me, myScore, group.nSampled);
 		for (int i = 0; i < group.nSampled; i++)
 			opponent.updateScoreAt(group.group[i], traitScore[groupStrat[i]]);
@@ -1283,17 +1269,11 @@ public class IBSDPopulation extends IBSPopulation {
 			return;
 		stripGroupVacancies(group, groupStrat, groupIdxs);
 		countTraits(traitCount, groupStrat, 0, group.nSampled);
-		// for ephemeral scores calculate score of focal only
-		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
 			// isolated individual (note the bookkeeping above is overkill and can be
 			// optimized)
 			traitCount[myType]++;
 			groupmodule.groupScores(traitCount, traitScore);
-			if (ephemeralScores) {
-				setScoreAt(me, traitScore[myType], 0);
-				return;
-			}
 			updateScoreAt(me, traitScore[myType], 0);
 			return;
 		}
@@ -1313,16 +1293,10 @@ public class IBSDPopulation extends IBSPopulation {
 						traitCount[myType]++;
 						groupmodule.groupScores(traitCount, traitScore);
 						myScore += traitScore[myType];
-						if (ephemeralScores)
-							continue;
 						for (int i = 0; i < nGroup - 1; i++) {
 							int idx = (n + i) % group.nSampled;
 							smallScores[idx] += traitScore[groupStrat[idx]];
 						}
-					}
-					if (ephemeralScores) {
-						setScoreAt(me, myScore / group.nSampled, group.nSampled);
-						return;
 					}
 					updateScoreAt(me, myScore, group.nSampled);
 					for (int i = 0; i < group.nSampled; i++)
@@ -1336,10 +1310,6 @@ public class IBSDPopulation extends IBSPopulation {
 				// interact with sampled neighbors
 				traitCount[myType]++;
 				groupmodule.groupScores(traitCount, traitScore);
-				if (ephemeralScores) {
-					setScoreAt(me, traitScore[myType], 1);
-					return;
-				}
 				updateScoreAt(me, traitScore[myType]);
 				for (int i = 0; i < group.nSampled; i++)
 					opponent.updateScoreAt(group.group[i], traitScore[groupStrat[i]]);
@@ -1871,7 +1841,7 @@ public class IBSDPopulation extends IBSPopulation {
 		// relaxed conditions for adjusting scores: for discrete strategies unstructured
 		// populations are feasible.
 		return !(!interactionGroup.isSampling(IBSGroup.SamplingType.ALL) ||
-				!playerScoreReset.equals(ScoringType.RESET_ALWAYS));
+				!playerScoreResetAlways);
 	}
 
 	@Override
@@ -2194,7 +2164,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * 
 	 * @see InitType
 	 */
-	double[] initArgs;
+	protected double[] initArgs;
 
 	/**
 	 * Sets the type of the initial configuration and any accompanying arguments.

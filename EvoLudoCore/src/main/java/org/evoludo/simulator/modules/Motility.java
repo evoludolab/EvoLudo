@@ -245,7 +245,8 @@ public class Motility extends EcoMoran {
 
 			FixationData fix = ((IBSD) engine.getModel()).getFixationData();
 			// place a single resident in an empty network
-			if (Math.abs(init[VACANT] - 1.0) < 1e-8) {
+			// if population extinct, place a single resident in center
+			if (strategiesTypeCount[VACANT] == nPopulation) {
 				Arrays.fill(strategies, VACANT);
 				Arrays.fill(strategiesTypeCount, 0);
 				strategiesTypeCount[VACANT] = nPopulation;

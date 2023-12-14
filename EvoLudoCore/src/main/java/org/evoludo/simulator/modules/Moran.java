@@ -273,6 +273,8 @@ public class Moran extends Discrete implements Module.Static,
 		if (statRefProb == null || statRefProb.length != nTraits)
 			statRefProb = new double[nTraits][];
 		if (statRefProb[trait] == null) {
+			double[] init = new double[nTraits];
+			model.getInitialTraits(init);
 			int m = (int) (init[MUTANT] * nPopulation);
 			m = Math.min(Math.max(m, 1), nPopulation - 1);
 			double rho = rhoA(m, nPopulation);
@@ -299,6 +301,8 @@ public class Moran extends Discrete implements Module.Static,
 			statRefTime = new double[nTraits + 1][];
 		if (statRefTime[trait] == null) {
 			double rho = getReferenceProb(MUTANT)[0];
+			double[] init = new double[nTraits];
+			model.getInitialTraits(init);
 			int m = (int) (init[MUTANT] * nPopulation);
 			m = Math.min(Math.max(m, 1), nPopulation - 1);
 			double tai = tAi(m, nPopulation, rho, tA1(nPopulation)) / nPopulation;

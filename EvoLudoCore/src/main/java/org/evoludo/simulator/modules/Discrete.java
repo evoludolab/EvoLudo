@@ -33,12 +33,7 @@
 package org.evoludo.simulator.modules;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-
-import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.ODEEuler;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -350,76 +345,8 @@ public abstract class Discrete extends Module {
 		return monoStop;
 	}
 
-	/**
-	 * Initial frequencies or densities for each strategy/trait.
-	 */
-	protected double[] init;
-
-	/**
-	 * Set initial frequencies or densities of traits to {@code init}. If argument
-	 * is {@code null} in frequency based models uniform frequencies are set.
-	 * Allocates memory as necessary.
-	 * 
-	 * @param init the initial frequencies or densities of strategies/traits
-	 */
-	//TODO more testing required for multiple species
-	@SuppressWarnings("null")
+	@Deprecated
 	public void setInit(double[] init) {
-		boolean isDensity = (model instanceof Model.DE && ((Model.DE) model).isDensity());
-		if (this.init == null || this.init.length != nTraits)
-			this.init = new double[nTraits];
-		if (init == null || init.length != nTraits) {
-			// this.init.length == nTraits != init.length always true if called from 
-			// setInitXY e.g. in ParaGraph for multi-species modules
-			if (!isDensity) {
-				// reset strategy frequencies to uniform distribution
-				// always signals change
-				Arrays.fill(this.init, 1.0 / nTraits);
-				return;
-			}
-			// check if there are vacant traits (check length of names in ODEEuler, which
-			// includes vacants, which is a bit hackish...)
-			boolean fullInit = (init != null && ((ODEEuler) model).getTraitNames().length == init.length);
-			if (!fullInit) {
-				engine.logWarning("no default initial state for density models... setting all to zero.");
-				Arrays.fill(this.init, 0.0);
-				return;
-			}
-			// apparently there are vacant traits that we are not interested in...
-			// would be much easier to simply set y0 in ODEEuler but then
-			// the model and the modules get out of sync...
-			int idx = 0;
-			for (Discrete pop : species) {
-				int vacant = pop.getVacant();
-				double[] popinit = new double[pop.getNTraits()];
-				for (int n = 0; n < pop.getNTraits(); n++) {
-					if (n == vacant) {
-						popinit[n] = 0.0;
-						if (fullInit)
-							idx++;
-						continue;
-					}
-					// note: init must be non-null but code checker is confused by fullInit above
-					popinit[n] = init[idx++];
-				}
-				pop.setInit(popinit);
-			}
-			return;
-		}
-		System.arraycopy(init, 0, this.init, 0, nTraits);
-		if (!isDensity) {
-			// normalize frequencies
-			ArrayMath.normalize(this.init);
-		}
-	}
-
-	/**
-	 * Get the initial frequencies or densities of all traits.
-	 * 
-	 * @return the initial frequencies or densities
-	 */
-	public double[] getInit() {
-		return init;
 	}
 
 	/**

@@ -36,7 +36,6 @@ import java.awt.Color;
 import java.io.PrintStream;
 import java.util.Arrays;
 
-import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSDPopulation;
@@ -519,9 +518,9 @@ public class Mutualism extends Discrete implements Pairs,
 					}
 					int l2 = l * l;
 					int m = l / 2;
-					switch (ArrayMath.maxIndex(init)) {
+					switch ((int)initArgs[0]) {
 						default:
-						case Mutualism.COOPERATE:
+						case 0:
 							if (l % 2 == 1) {
 								// odd dimensions (this excludes NOVA, hence mz=m)
 								// place single Mutualism.DEFECT in center
@@ -539,7 +538,7 @@ public class Mutualism extends Discrete implements Pairs,
 								strategiesTypeCount[Mutualism.DEFECT] += 2 * 2 * 2;
 							}
 							break;
-						case Mutualism.DEFECT:
+						case 1:
 							if (l % 2 == 1) {
 								// odd dimensions - place 3x3x3 cube of cooperators in center
 								for (int z = mz - 1; z <= mz + 1; z++)
@@ -572,7 +571,7 @@ public class Mutualism extends Discrete implements Pairs,
 				case LINEAR:
 					if (mid < 0)
 						mid = nPopulation / 2;
-					int restrait = ArrayMath.maxIndex(init);
+					int restrait = Mutualism.COOPERATE;
 					Arrays.fill(strategies, restrait);
 					int muttrait = (restrait + 1) % nTraits;
 					strategies[mid] = muttrait;

@@ -33,8 +33,6 @@
 package org.evoludo.simulator.modules;
 
 import java.io.PrintStream;
-import java.util.Arrays;
-
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Model;
@@ -307,52 +305,53 @@ public class CG extends ATBT implements Module.Static {
 			(new TBT(engine)).super(engine);
 		}
 
-		@Override
-		protected int initMutant() {
-			if (strategiesTypeCount[CG.DEFECT_RICH] == 0 && strategiesTypeCount[CG.DEFECT_POOR] == 0) {
-				// no defectors in population - randomly place one
-				int mutant = random0n(nPopulation);
-				int oldtype = strategies[mutant] % nTraits;
-				int env = oldtype / 2;
-				// only set strategy, do not change environment
-				int newtype = env + env + (oldtype + 1) % 2;
-				strategies[mutant] = newtype;
-				strategiesTypeCount[newtype] = 1;
-				strategiesTypeCount[oldtype]--;
-				return mutant;
-			}
-			if (strategiesTypeCount[CG.COOPERATE_RICH] == 0 && strategiesTypeCount[CG.COOPERATE_POOR] == 0) {
-				// no cooperators in population - randomly place one
-				int mutant = random0n(nPopulation);
-				int oldtype = strategies[mutant] % nTraits;
-				int env = oldtype / 2;
-				// only set strategy, do not change environment
-				int newtype = env + env + (oldtype + 1) % 2;
-				strategies[mutant] = newtype;
-				strategiesTypeCount[newtype] = 1;
-				strategiesTypeCount[oldtype]--;
-				return mutant;
-			}
-			// not absorbed - initialize environment according to frequencies in init
-			// the maximum frequency determines the resident trait
-			int restrait = ArrayMath.maxIndex(init) % 2;
-			int muttrait = (restrait + 1) % 2;
-			Arrays.fill(strategiesTypeCount, 0);
-			Arrays.fill(strategies, restrait);
-			double rich = init[CG.COOPERATE_RICH] + init[CG.DEFECT_RICH];
-			for (int n = 0; n < nPopulation; n++) {
-				// rich types: 0, 1; poor types: 2, 3
-				int type = restrait + (random01() > rich ? 0 : 2);
-				strategies[n] = type;
-				strategiesTypeCount[type]++;
-			}
-			// add mutant
-			int loc = random0n(nPopulation);
-			strategiesTypeCount[strategies[loc]]--;
-			strategies[loc] = muttrait;
-			strategiesTypeCount[muttrait]++;
-			return loc;
-		}
+//XXX this is a mixture of initFrequencies and initMutant - review/resolve
+// 		@Override
+// 		protected int initMutant() {
+// 			if (strategiesTypeCount[CG.DEFECT_RICH] == 0 && strategiesTypeCount[CG.DEFECT_POOR] == 0) {
+// 				// no defectors in population - randomly place one
+// 				int mutant = random0n(nPopulation);
+// 				int oldtype = strategies[mutant] % nTraits;
+// 				int env = oldtype / 2;
+// 				// only set strategy, do not change environment
+// 				int newtype = env + env + (oldtype + 1) % 2;
+// 				strategies[mutant] = newtype;
+// 				strategiesTypeCount[newtype] = 1;
+// 				strategiesTypeCount[oldtype]--;
+// 				return mutant;
+// 			}
+// 			if (strategiesTypeCount[CG.COOPERATE_RICH] == 0 && strategiesTypeCount[CG.COOPERATE_POOR] == 0) {
+// 				// no cooperators in population - randomly place one
+// 				int mutant = random0n(nPopulation);
+// 				int oldtype = strategies[mutant] % nTraits;
+// 				int env = oldtype / 2;
+// 				// only set strategy, do not change environment
+// 				int newtype = env + env + (oldtype + 1) % 2;
+// 				strategies[mutant] = newtype;
+// 				strategiesTypeCount[newtype] = 1;
+// 				strategiesTypeCount[oldtype]--;
+// 				return mutant;
+// 			}
+// 			// not absorbed - initialize environment according to frequencies in init
+// 			// the maximum frequency determines the resident trait
+// 			int restrait = ArrayMath.maxIndex(init) % 2;
+// 			int muttrait = (restrait + 1) % 2;
+// 			Arrays.fill(strategiesTypeCount, 0);
+// 			Arrays.fill(strategies, restrait);
+// 			double rich = init[CG.COOPERATE_RICH] + init[CG.DEFECT_RICH];
+// 			for (int n = 0; n < nPopulation; n++) {
+// 				// rich types: 0, 1; poor types: 2, 3
+// 				int type = restrait + (random01() > rich ? 0 : 2);
+// 				strategies[n] = type;
+// 				strategiesTypeCount[type]++;
+// 			}
+// 			// add mutant
+// 			int loc = random0n(nPopulation);
+// 			strategiesTypeCount[strategies[loc]]--;
+// 			strategies[loc] = muttrait;
+// 			strategiesTypeCount[muttrait]++;
+// 			return loc;
+// 		}
 
 		@Override
 		public boolean updatePlayerAt(int me) {
