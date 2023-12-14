@@ -1851,6 +1851,78 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 			});
 
 	/**
+	 * Command line option to disable individual traits. Any module offering this
+	 * capability needs to add cloTrai to the set of available options. By default
+	 * all traits are activated.
+	 */
+	public final CLOption cloTraitDisable = new CLOption("disable", "none", EvoLudo.catModule,
+			"--disable <d[" + CLOParser.VECTOR_DELIMITER + "d...[" + CLOParser.SPECIES_DELIMITER + "d["
+					+ CLOParser.VECTOR_DELIMITER + "d...]]]  indices of disabled traits.",
+			new CLODelegate() {
+
+				/**
+				 * {@inheritDoc}
+				 * <p>
+				 * Parse disabled traits for a single or multiple populations/species.
+				 * {@code arg} can be a single value or an array of values with the
+				 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
+				 * {@code arg} until all populations/species have the trait(s) disabled. The
+				 * indices of the traits are given by an array of values with the separator
+				 * {@value CLOParser#VECTOR_DELIMITER}.
+				 * 
+				 * @param arg (array of) array of trait name(s)
+				 */
+				@Override
+				public boolean parse(String arg) {
+					// activate all traits
+					for (Module pop : species)
+						pop.setActiveTraits(null);
+					if (!cloTraitDisable.isSet())
+						return true;
+				boolean success = true;
+					String[] disabledtraits = arg.split(CLOParser.SPECIES_DELIMITER);
+					int n = 0;
+					for (Module pop : species) {
+						int[] dtraits = CLOParser.parseIntVector(disabledtraits[n++ % disabledtraits.length]);
+						int dist = dtraits.length;
+						int mint = pop.isContinuous() ? 1 : 2;
+						if (pop.nTraits - mint < dist) {
+							logger.warning("at least '" + mint + "' enabled traits required - enabling all.");
+							success = false;
+							continue;
+						}
+						for (int t : dtraits) {
+							if (t < 0 || t >= pop.nTraits) {
+								logger.warning("invalid trait index '" + t + "' - ignored.");
+								success = false;
+								continue;
+							}
+							pop.active[t] = false;
+							pop.nActive--;
+						}
+					}
+					return success;
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					String msg = "";
+					for (Module pop : species) {
+						int count = 0;
+						for (int n = 0; n < pop.nTraits; n++) {
+							if (!pop.active[n])
+								continue;
+							msg += pop.traitName[n];
+							count++;
+							if (count < pop.nActive)
+								msg += ", ";
+						}
+					}
+					output.println("# disabled traits:      " + (msg.length() > 0 ? msg : "none"));
+				}
+			});
+
+	/**
 	 * Command line option to set the color of traits.
 	 */
 	public final CLOption cloTraitColors = new CLOption("colors", "default", EvoLudo.catGUI, null,
@@ -2195,7 +2267,8 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 			boolean hasVacant = (pop.getVacant() >= 0);
 			anyVacant |= hasVacant;
 			anyNonVacant |= !hasVacant;
-			anyContinuous |= pop.isContinuous();
+			boolean cont = pop.isContinuous();
+			anyContinuous |= cont;
 		}
 		if (anyNonVacant) {
 			// additional options that only make sense without vacant sites
