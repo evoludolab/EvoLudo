@@ -66,7 +66,7 @@
 <!-- <div class="evoludo-simulation" style="margin:1em auto" data-clo="--module asym2x2 --view 2 --init 1,1 --initrich 0.8    --geometry M --popsize 500 --model ODE --popupdate async --playerupdate r --payoffs -0.5,-0.5;0,0 --feedback 0.1,0.1 --environment 1,0"></div> -->
 <!-- <div class="evoludo-simulation" style="margin:1em auto" data-clo="--module Moran --delay 50 --fitness 1,2 --geometry r4 --init 1,0 --mutation 0.0 --popsize 20 --popupdate B --reportfreq 1 --references random 1"></div> -->
 <!-- <div class="evoludo-simulation" style="margin:1em auto" data-clo="--module eMut --deathrate 10.0 --birthrate 26.0 --comprate 0.1 --single 0.1 --double 0.01 --kappa 1 --lambda 1 --payvirus 0.16,1.16;0,1 --init 48,3.8,11.7,72.5,0:21.2,3.8,0 --delay 50 --model ODE --mutation 0.0 --reportfreq 0.05 --view Strategies_-_2D_Phase_Plane"></div> -->
-<div class="evoludo-simulation" style="margin:1em auto" data-clo="--module 2x2 --delay 50 --reportfreq 1 --geometry M --popsize 100 --popupdate async --interactions random 1 --references random 1 --playerupdate best --init 0,1 --inittype mutant --mutation 0.0 --paymatrix 0.25,1.25;0,1 --resetscores ephemeral"></div>
+<div class="evoludo-simulation" style="margin:1em auto" data-clo="--module 2x2 --delay 50 --reportfreq 1 --geometry M --popsize 100 --popupdate async --interactions random 1 --references random 1 --playerupdate best --inittype mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1 --resetscores ephemeral"></div>
 
 <table>
 <tbody>
@@ -89,14 +89,14 @@
 	data-clo="--module 2x2 --delay 50 --view Statistics_-_Fixation_probability --reportfreq 1 --geometry n --popsize 10x --popupdate d --interactions all --references random 1 --inittype mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1"></div></td>
 </tr>
 <tr><th>Ecological 2x2 Games</th><td><div class="evoludo-trigger-html"
-	data-clo="--module e2x2 --delay 50 --reportfreq 1 --geometry n --popsize 10x --popupdate e --interactions all --references random 1 --inittype frequency uniform --mutation 0.0 --paymatrix 0.1,1.1;0,1 --deathrate 0.5"></div></td>
+	data-clo="--module e2x2 --delay 50 --reportfreq 1 --geometry n --popsize 10x --popupdate e --interactions all --inittype uniform --mutation 0.0 --paymatrix 0.1,1.1;0,1 --deathrate 0.5"></div></td>
 <th>Ecological 2x2 Games (statistics)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module e2x2 --delay 50 --view Statistics_-_Fixation_probability --reportfreq 1 --geometry n --popsize 10x --popupdate e --interactions all --references random 1 --inittype mutant 1,0,0.0 --mutation 0.0 --paymatrix 0.1,1.1;0,1 --deathrate 0.5"></div></td>
+	data-clo="--module e2x2 --delay 50 --view Statistics_-_Fixation_probability --reportfreq 1 --geometry n --popsize 10x --popupdate e --interactions all --inittype mutant 1,0,0.0 --mutation 0.0 --paymatrix 0.1,1.1;0,1 --deathrate 0.5"></div></td>
 </tr>
 <tr><th>CDL</th><td><div class="evoludo-trigger-html"
-	data-clo="--module CDL --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --delay 50 --view Strategies_-_Simplex_S3 --reportfreq 1 --popsize 10000 --model IBS --popupdate async --playerupdate imitate-better 1 --geometry M --interactions all --references random 1 --inittype frequency 20,20,60--mutation 0.0"></div>
+	data-clo="--module CDL --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --delay 50 --view Strategies_-_Simplex_S3 --reportfreq 1 --popsize 10000 --model IBS --popupdate async --playerupdate imitate-better 1 --geometry M --interactions all --references random 1 --inittype frequency 20,20,60 --mutation 0.0"></div>
 <th>CDL (SDE)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module CDL --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --delay 50 --view Strategies_-_Simplex_S3 --reportfreq 1 --popsize 10000 --model SDE --popupdate async --playerupdate imitate-better 1 --geometry M --interactions all --references random 1 --inittype frequency 20,20,60 --mutation 0.0"></div>
+	data-clo="--module CDL --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --delay 50 --view Strategies_-_Simplex_S3 --reportfreq 1 --popsize 10000 --model SDE --playerupdate imitate-better 1 --inittype frequency 20,20,60 --mutation 0.0"></div>
 </tr>
 <tr><th>Rock-Paper-Scissors (ODE)</th><td><div class="evoludo-trigger-html"
 	data-clo="--module RSP --run --delay 50 --trajcolor (255,0,0,25) --points 0.5,0.333,0.167 --view Strategies_-_Simplex_S3 --reportfreq 0.1 --popsize 1000 --model ODE --popupdate async --playerupdate imitate 0.1 --geometry M --interactions all --references random 1 --inittype frequency 20,20,60 --mutation 0.0 --paymatrix 0,0.7,-1;-1,0,3.4;0.8,-1,0"></div>
@@ -128,7 +128,7 @@
 	data-clo="--module Net --ratio 0.5 --fitnessmap static 0,2"></div>
 </tr>
 <tr><th>Motility</th><td><div class="evoludo-trigger-html"
-	data-clo="--module Motility --reportfreq 1 --popsize 101x --geometry n --inittype mutant 0,0,1 --mutation 0.01 --fitness 1,1 --rates 0,0.01 --steps 0,2"></div>
+	data-clo="--module Motility --reportfreq 1 --popsize 101x --geometry n --inittype mutant 0,2 --mutation 0.01 --fitness 1,1 --rates 0,0.01 --steps 0,2"></div>
 </tr>
 <tr><th>Dialect</th><td><div class="evoludo-trigger-html"
 	data-clo="--module Dialect --reportfreq 1 --popsize 71x --geometry n --phenodim 1 --phenoupdate adjust --phenoadj 0.1 --phenoadjtype 0 --phenomaxadj 0.05 --phenorandinter 0.05 --phenorandadj 0.1 --phenomaxrandrepel 0.05 --mutationsdev 0.01 --inittype uniform"></div></td>
@@ -136,12 +136,12 @@
 	data-clo="--module Dialect --seed 0 --phenodim 2 --phenoupdate adjust --phenoadj 0.1 --phenoadjtype 0 --phenomaxadj 0.05 --inittype gaussian --phenorandinter 0.1 --phenorandadj 0.1 --phenomaxrandrepel 0.05 --mutationsdev 0.01 --inittype gaussian 0.5,0.02 --reportfreq 1 --popsize 144 --geometry Hnf4,4"></div></td>
 </tr>
 <tr><th>Mutualisms</th><td><div class="evoludo-trigger-html"
-	data-clo="--module Mut --geometry n --popsize 5x --inittype mutant 1,0 --popupdate s --playerupdate b --payhost 0,1.7;0,1 --paymutualist 0,1.7;0,1"></div></td>
+	data-clo="--module Mut --geometry n --popsize 5x --inittype mutant 0,1 --popupdate s --playerupdate b --payhost 0,1.7;0,1 --paymutualist 0,1.7;0,1"></div></td>
 <th>Mutualisms (ODE)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module Mut --geometry M --view Strategies_-_2D_Phase_Plane --inittype frequency 1,1 --payhost 0,1.4;0.6,1 --paymutualist 0,0.4;-0.4,1 --playerupdate imitate 0.1 --popsize 100 --model ODE --popupdate a"></div></td>
+	data-clo="--module Mut --view Strategies_-_2D_Phase_Plane --inittype frequency 1,1 --payhost 0,1.4;0.6,1 --paymutualist 0,0.4;-0.4,1 --playerupdate imitate 0.1 --model ODE"></div></td>
 </tr>
 <tr><th>Mutualisms (inter/repro)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module Mut --geominter R3 --geomrepro m --popsize 5x --inittype mutant 1,0 --popupdate s --playerupdate b --payhost 0,1.7;0,1 --paymutualist 0,1.7;0,1"></div></td>
+	data-clo="--module Mut --geominter R3 --geomrepro m --popsize 5x --inittype mutant 0,1 --popupdate s --playerupdate b --payhost 0,1.7;0,1 --paymutualist 0,1.7;0,1"></div></td>
 <th>Mutualisms (IBS)</th><td><div class="evoludo-trigger-html"
 	data-clo="--module Mut --geometry M --view Strategies_-_2D_Phase_Plane --inittype frequency 1,1 --payhost 0,1.4;0.6,1 --paymutualist 0,0.4;-0.4,1 --playerupdate imitate 0.1 --popsize 10000 --model IBS --popupdate a"></div></td>
 </tr>
