@@ -1198,6 +1198,8 @@ public abstract class IBSPopulation {
 	 * @param hit the 'left-over fitness' from picking
 	 */
 	protected void debugScores(double hit) {
+		if (!logger.isLoggable(Level.FINE))
+			return;
 		logger.fine("aborted in generation: " + Formatter.format(engine.getModel().getTime(), 2) + "\nscore dump:");
 		double sum = 0.0;
 		for (int n = 0; n < nPopulation; n++) {
@@ -3595,17 +3597,27 @@ public abstract class IBSPopulation {
 						"scoring issue @ " + n + ": fitness=" + fitn + " not in [" + minFitness + ", " + maxFitness + "]");
 				isConsistent = false;
 			}
+			if (Math.abs(map2fit.map(scoren) - fitn) > 1e-12) {
+				logger.warning(
+						"scoring issue @ " + n + ": score=" + scoren + " maps to " + map2fit.map(scoren)
+								+ " instead of fitness=" + fitn);
+				isConsistent = false;
+			}
 		}
 		if (adjustScores) {
 			// recalculate scores/fitness
 			if (hasLookupTable) {
-				double[] typeScoresStore = ArrayMath.clone(typeScores);
-				Arrays.fill(typeScores, Double.MAX_VALUE);
+				double[] typeScoresStore = typeScores;
 				double[] typeFitnessStore = ArrayMath.clone(typeFitness);
 				Arrays.fill(typeFitness, Double.MAX_VALUE);
 				double sumFitnessStore = sumFitness;
-				sumFitness = 0.0;
-				engine.getModel().update();	// initialize typeScores/typeFitness
+				if (!module.isStatic()) {
+					// don't destroy static scores
+					typeScoresStore = ArrayMath.clone(typeScores);
+					Arrays.fill(typeScores, Double.MAX_VALUE);
+					sumFitness = 0.0;
+					engine.getModel().update();	// initialize typeScores/typeFitness
+				}
 				for (int n = 0; n < nTraits; n++) {
 					if (n == VACANT && typeScores[n] != typeScoresStore[n]) {
 						logger.warning("scoring issue for vacant trait " + n + ": score=" + typeScoresStore[n] + " instead of " + typeScores[n] + " (NaN)");
@@ -3615,9 +3627,16 @@ public abstract class IBSPopulation {
 						logger.warning("scoring issue for trait " + n + ": score=" + typeScoresStore[n] + " instead of " + typeScores[n]);
 						isConsistent = false;
 					}
+					typeFitness[n] = map2fit.map(typeScores[n]);
 					if (Math.abs(typeFitness[n] - typeFitnessStore[n]) > 1e-12) {
 						logger.warning(
 								"fitness issue for trait " + n + ": fitness=" + typeFitnessStore[n] + " instead of " + typeFitness[n]);
+						isConsistent = false;
+					}
+					if (Math.abs(map2fit.map(typeScores[n]) - typeFitness[n]) > 1e-12) {
+						logger.warning(
+								"scoring issue for trait " + n + ": score=" + typeScores[n] + " maps to " + map2fit.map(typeScores[n])
+										+ " instead of fitness=" + typeFitness[n]);
 						isConsistent = false;
 					}
 				}
@@ -3631,8 +3650,8 @@ public abstract class IBSPopulation {
 					checkFitness += getFitnessAt(n);
 				if (Math.abs(sumFitness - checkFitness) > Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness))) {
 					logger.warning(
-							"accounting issue: sum of fitness is " + checkFitness + " instead of sumFitness=" + sumFitness + 
-								"(delta="+ Math.abs(sumFitness - checkFitness) +", max="+Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness))+")");
+							"accounting issue: fitness sums to " + checkFitness + " instead of sumFitness=" + sumFitness + 
+								" (delta="+ Math.abs(sumFitness - checkFitness) +", max="+Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness))+")");
 					isConsistent = false;
 				}
 				// restore data
@@ -3656,6 +3675,12 @@ public abstract class IBSPopulation {
 					if (Math.abs(fitness[n] - fitnessStore[n]) > 1e-12) {
 						logger.warning(
 								"fitness issue @ " + n + ": fitness=" + fitnessStore[n] + " instead of " + fitness[n]);
+						isConsistent = false;
+					}
+					if (Math.abs(map2fit.map(scores[n]) - fitness[n]) > 1e-12) {
+						logger.warning(
+								"scoring issue @ " + n + ": score=" + scores[n] + " maps to " + map2fit.map(scores[n])
+										+ " instead of fitness=" + fitness[n]);
 						isConsistent = false;
 					}
 				}

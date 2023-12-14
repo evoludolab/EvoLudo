@@ -1615,26 +1615,31 @@ public class IBSDPopulation extends IBSPopulation {
 			checkScores += scoren;
 			checkAccuTypeScores[stratn] += scoren;
 		}
+		int accStrat = 0;
 		double accScores = 0.0;
 		for (int n = 0; n < nTraits; n++) {
 			if (checkStrategiesTypeCount[n] != strategiesTypeCount[n]) {
 				logger.warning("accounting issue: strategy count of trait " + module.getTraitName(n) + " is "
-						+ checkStrategiesTypeCount[n] + " but strategiesTypeCount[" + n + "]=" + strategiesTypeCount[n]
-						+ ")");
+						+ checkStrategiesTypeCount[n] + " but strategiesTypeCount[" + n + "]=" + strategiesTypeCount[n]);
 				isConsistent = false;
 			}
 			if (Math.abs(checkAccuTypeScores[n] - accuTypeScores[n]) > 1e-8) {
 				logger.warning("accounting issue: accumulated scores of trait " + module.getTraitName(n) + " is "
-						+ checkAccuTypeScores[n] + " but accuTypeScores[" + n + "]=" + accuTypeScores[n] + ")");
+						+ checkAccuTypeScores[n] + " but accuTypeScores[" + n + "]=" + accuTypeScores[n]);
 				isConsistent = false;
 			}
+			accStrat += strategiesTypeCount[n];
 			if (n == VACANT)
 				continue;
 			accScores += accuTypeScores[n];
 		}
+		if (nPopulation != accStrat) {
+			logger.warning("accounting issue: sum of trait types is " + accStrat + " but nPopulation=" + nPopulation);
+			isConsistent = false;
+		}
 		if (Math.abs(checkScores - accScores) > 1e-8) {
 			logger.warning("accounting issue: sum of scores is " + checkScores + " but accuTypeScores add up to "
-					+ accScores + " (" + accuTypeScores + ")");
+					+ accScores + " (" + Formatter.format(accuTypeScores, 8) + ")");
 			isConsistent = false;
 		}
 	}
@@ -2024,7 +2029,6 @@ public class IBSDPopulation extends IBSPopulation {
 	 * @return the location of the mutant
 	 * 
 	 * @see InitType#MUTANT
-	 * @see Discrete#cloInit
 	 */
 	protected int initMutant() {
 		// initArgs contains the index of the resident and mutant traits
@@ -2042,7 +2046,8 @@ public class IBSDPopulation extends IBSPopulation {
 			if (residentType == VACANT && monoFreq < 1.0 - 1e-8) {
 				// problem encountered
 				initType = InitType.UNIFORM;
-				logger.warning("review --init settings! - using '" + initType.getKey()+"'.");
+				logger.warning("review " + ((IBSD) engine.getModel()).cloInitType.getName() + //
+						" settings! - using '" + initType.getKey() + "'.");
 				initUniform();
 				return -1;
 			}
