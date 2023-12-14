@@ -1672,29 +1672,13 @@ public class ODEEuler implements Model.ODE {
 		isAdjustedDynamics = (Boolean) plist.get("AdjustedDynamics");
 		accuracy = (Double) plist.get("Accuracy");
 		connect = false;
-		if (species.size() > 1) {
-			for (Module pop : species) {
-				Plist pplist = (Plist) plist.get(pop.getName());
-				if (!restoreStrategies(pplist)) {
-					engine.getLogger().warning(
-							"restore strategies in " + getModelType() + "-model failed (" + pop.getName() + ").");
-					success = false;
-				}
-				if (!restoreFitness(pplist)) {
-					engine.getLogger()
-							.warning("restore fitness in " + getModelType() + "-model failed (" + pop.getName() + ").");
-					success = false;
-				}
-			}
-		} else {
-			if (!restoreStrategies(plist)) {
-				engine.getLogger().warning("restore strategies in " + getModelType() + "-model failed.");
-				success = false;
-			}
-			if (!restoreFitness(plist)) {
-				engine.getLogger().warning("restore fitness in " + getModelType() + "-model failed.");
-				success = false;
-			}
+		if (!restoreStrategies(plist)) {
+			engine.getLogger().warning("restore strategies in " + getModelType() + "-model failed.");
+			success = false;
+		}
+		if (!restoreFitness(plist)) {
+			engine.getLogger().warning("restore fitness in " + getModelType() + "-model failed.");
+			success = false;
 		}
 		return success;
 	}
