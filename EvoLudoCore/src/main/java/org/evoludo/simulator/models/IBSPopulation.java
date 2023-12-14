@@ -873,8 +873,9 @@ public abstract class IBSPopulation {
 		// return n;
 		// }
 		// }
-		// logger.severe("pickRandomFocalIndividual() failed to pick individual...");
-		// throw new Error("pickRandomFocalIndividual() failed to pick individual...");
+		// engine.fatal("pickRandomFocalIndividual() failed to pick individual...");
+		// fatal does not return control
+		// return -1;
 	}
 
 	/**
@@ -927,9 +928,9 @@ public abstract class IBSPopulation {
 		// return n;
 		// }
 		// }
-		// logger.severe("pickRandomFocalIndividual(int) failed to pick individual...");
-		// throw new Error("pickRandomFocalIndividual(int) failed to pick
-		// individual...");
+		// engine.fatal("pickRandomFocalIndividual(int) failed to pick individual...");
+		// fatal does not return control
+		// return -1;
 	}
 
 	/**
@@ -985,8 +986,9 @@ public abstract class IBSPopulation {
 			if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
 				return nPopulation - 1;
 			debugScores(hit);
-			logger.severe("pickFitFocalIndividual(int) failed to pick individual...");
-			throw new Error("pickFitFocalIndividual(int) failed to pick individual...");
+			engine.fatal("pickFitFocalIndividual() failed to pick individual...");
+			// fatal does not return control
+			return -1;
 		}
 
 		// vacancies require some extra care
@@ -995,9 +997,8 @@ public abstract class IBSPopulation {
 			// drawing more random numbers)
 			// see e.g. http://arxiv.org/pdf/1109.3627.pdf
 			double mScore;
-			// note: for constant selection maxEffScoreIdx is never set
-			// using the effective current maximum score makes this optimization more
-			// efficient
+			// note: for constant selection maxEffScoreIdx is never set using the effective
+			// current maximum score makes this optimization more efficient
 			if (maxEffScoreIdx < 0)
 				mScore = maxFitness;
 			else
@@ -1019,8 +1020,9 @@ public abstract class IBSPopulation {
 				return n;
 		}
 		debugScores(hit);
-		logger.severe("pickFitFocalIndividual(int) failed to pick individual...");
-		throw new Error("pickFitFocalIndividual(int) failed to pick individual...");
+		engine.fatal("pickFitFocalIndividual() failed to pick individual...");
+		// fatal does not return control
+		return -1;
 	}
 
 	/**
@@ -1100,8 +1102,9 @@ public abstract class IBSPopulation {
 				else if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
 					return nPopulation - 1;
 			debugScores(hit);
-			logger.severe("pickFitFocalIndividual(int) failed to pick individual.");
-			throw new Error("pickFitFocalIndividual(int) failed to pick individual.");
+			engine.fatal("pickFitFocalIndividual(int) failed to pick individual...");
+			// fatal does not return control
+			return -1;
 		}
 
 		// vacancies require some extra care
@@ -1159,8 +1162,9 @@ public abstract class IBSPopulation {
 				return n;
 		}
 		debugScores(hit);
-		logger.severe("pickFitFocalIndividual(int) failed to pick individual.");
-		throw new Error("pickFitFocalIndividual(int) failed to pick individual.");
+		engine.fatal("pickFitFocalIndividual(int) failed to pick individual...");
+		// fatal does not return control
+		return -1;
 	}
 
 	/**
@@ -1424,8 +1428,8 @@ public abstract class IBSPopulation {
 	 */
 	public void playGameSyncAt(int me) {
 		if (module.isStatic()) {
-			logger.severe("playGameSyncAt(int) should not be called for constant selection!");
-			throw new Error("playGameSyncAt(int) should not be called for constant selection!");
+			engine.fatal("playGameSyncAt(int) should not be called for constant selection!");
+			// fatal does not return control
 		}
 		// during initialization, pretend we are doing this synchronously - just in case
 		// someone's interested.
@@ -1452,8 +1456,8 @@ public abstract class IBSPopulation {
 	 */
 	public void playGameAt(int me) {
 		if (module.isStatic()) {
-			logger.severe("playGameAt(int) should not be called for constant selection!");
-			throw new Error("playGameAt(int) should not be called for constant selection!");
+			engine.fatal("playGameAt(int) should not be called for constant selection!");
+			// fatal does not return control
 		}
 		// any graph - interact with out-neighbors
 		// same as earlier approach to undirected graphs

@@ -309,8 +309,8 @@ public abstract class IBS implements Model.IBS {
 				} else if (mod instanceof org.evoludo.simulator.modules.Continuous) {
 					pop = new IBSCPopulation(engine);
 				} else {
-					logger.severe("unknown module type '" + mod + "'... fix me!");
-					throw new Error("unknown module type '" + mod + "'... fix me!");
+					engine.fatal("unknown module type '" + mod + "'... fix me!");
+					// fatal does not return control
 				}
 			}
 			addSpecies(mod, pop);

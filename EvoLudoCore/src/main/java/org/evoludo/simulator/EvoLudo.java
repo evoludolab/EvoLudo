@@ -2318,4 +2318,22 @@ public abstract class EvoLudo
 			return;
 		this.colorModelType = colorModelType;
 	}
+
+    /**
+	 * Report error and stop model execution, if running.
+	 * 
+	 * @param msg the error message
+	 */
+	public void fatal(String msg) {
+		// stops any ongoing calculations as soon as possible
+		pendingAction = PendingAction.STOP;
+		if (isRunning) {
+			// calling stop() doesn't work because PendingAction.STOP
+			// is never processed; do it manually
+			fireModelStopped();
+			pendingAction = PendingAction.NONE;
+		}
+		logger.severe(msg);
+		throw new Error(msg);
+    }
 }
