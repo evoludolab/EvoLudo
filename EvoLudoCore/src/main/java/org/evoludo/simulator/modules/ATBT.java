@@ -298,6 +298,7 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 
 	@Override
 	public boolean check() {
+		super.check();
 		// build payoff matrix (for all models) - if necessary
 		if (!init4x4) {
 			payoffMatrix[COOPERATE_RICH][COOPERATE_RICH] = payoffMatrix[COOPERATE_RICH][COOPERATE_POOR] //
@@ -731,6 +732,13 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 		parser.addCLO(cloFeedback);
 	}
 
+	@Override
+	public void adjustCLO(CLOParser parser) {
+		super.adjustCLO(parser);
+		if (model instanceof IBSD)
+			((IBSD) model).cloInitType.addKey(InitType.KALEIDOSCOPE);
+	}
+
 	/**
 	 * {@inheritDoc}
 	 * <p>
@@ -760,13 +768,6 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 		 */
 		protected IBS(EvoLudo engine) {
 			(new TBT(engine)).super(engine);
-		}
-
-		@Override
-		public void load() {
-			super.load();
-			// cast is safe because wouldn't be here otherwise
-			((IBSD) model).cloInitType.addKey(InitType.KALEIDOSCOPE);
 		}
 
 		@Override

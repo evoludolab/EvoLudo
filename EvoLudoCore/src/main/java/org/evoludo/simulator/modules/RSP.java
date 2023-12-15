@@ -280,6 +280,13 @@ public class RSP extends Discrete implements Pairs,
 	}
 
 	@Override
+	public void adjustCLO(CLOParser parser) {
+		super.adjustCLO(parser);
+		if (model instanceof IBSD)
+			((IBSD) model).cloInitType.addKey(InitType.KALEIDOSCOPE);
+	}
+
+	@Override
 	public RSP.IBS createIBSPop() {
 		return new RSP.IBS(engine);
 	}
@@ -300,13 +307,6 @@ public class RSP extends Discrete implements Pairs,
 		 */
 		protected IBS(EvoLudo engine) {
 			super(engine);
-		}
-
-		@Override
-		public void load() {
-			super.load();
-			// cast is safe because wouldn't be here otherwise
-			((IBSD) model).cloInitType.addKey(InitType.KALEIDOSCOPE);
 		}
 
 		@Override

@@ -946,6 +946,13 @@ public class CDL extends Discrete implements Groups, HasIBS, HasODE, HasSDE, Has
 	}
 
 	@Override
+	public void adjustCLO(CLOParser parser) {
+		super.adjustCLO(parser);
+		if (model instanceof IBSD)
+			((IBSD) model).cloInitType.addKey(InitType.KALEIDOSCOPE);
+	}
+
+	@Override
 	public CDL.IBS createIBSPop() {
 		return new CDL.IBS(engine);
 	}
@@ -967,13 +974,6 @@ public class CDL extends Discrete implements Groups, HasIBS, HasODE, HasSDE, Has
 		 */
 		protected IBS(EvoLudo engine) {
 			super(engine);
-		}
-
-		@Override
-		public void load() {
-			super.load();
-			// cast is safe because wouldn't be here otherwise
-			((IBSD) model).cloInitType.addKey(InitType.KALEIDOSCOPE);
 		}
 
 		@Override
