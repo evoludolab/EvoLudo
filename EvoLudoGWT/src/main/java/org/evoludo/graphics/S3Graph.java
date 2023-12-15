@@ -397,9 +397,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 
 	@Override
 	public void onDoubleClick(DoubleClickEvent event) {
-		double[] s3 = new double[3];
-		cartesianToS3(event.getX(), event.getY(), s3);
-		((InitController)controller).setInit(s3);
+		processInitXY(event.getX(), event.getY());
 	}
 
 	@Override
@@ -410,11 +408,19 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 			// single tap or multiple touches
 			return;
 
-		double[] s3 = new double[3];
 		Touch touch = touches.get(0);
-		cartesianToS3(touch.getRelativeX(getElement()), touch.getRelativeY(getElement()), s3);
-		((InitController)controller).setInit(s3);
+		processInitXY(touch.getRelativeX(getElement()), touch.getRelativeY(getElement()));
 		event.preventDefault();
+	}
+
+	private void processInitXY(int x, int y) {
+		double[] s3 = new double[3];
+		cartesianToS3(x, y, s3);
+		if (((InitController) controller).setInit(s3)) {
+			addData(0.0, s3, true);
+			init = prependTime2Data(0.0, s3);
+			paint();
+		}
 	}
 
 	protected double[] tip = new double[3];

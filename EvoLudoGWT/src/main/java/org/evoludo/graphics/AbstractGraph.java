@@ -234,7 +234,7 @@ public abstract class AbstractGraph extends FocusPanel
 		 * 
 		 * @param init the new initial configuration
 		 */
-		public void setInit(double[] init);
+		public boolean setInit(double[] init);
 	}
 
 	/**

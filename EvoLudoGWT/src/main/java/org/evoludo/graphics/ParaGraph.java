@@ -303,10 +303,10 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, //
 	public void onDoubleClick(DoubleClickEvent event) {
 		double x = event.getX() - style.frameWidth;
 		double y = event.getY();
-		setInitXY(x, y);
+		processInitXY(x, y);
 	}
 
-	private void setInitXY(double x, double y) {
+	private void processInitXY(double x, double y) {
 		int sx = (int) ((viewCorner.x + x - bounds.getX()) / zoomFactor + 0.5);
 		int sy = (int) ((viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5);
 		if( !inside(sx, sy) )
@@ -316,7 +316,11 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, //
 		double[] state = new double[nStates];
 		System.arraycopy(buffer.last(), 1, state, 0, nStates);
 		map.phase2Data(new Point2D(ux, uy), state);
-		((InitController)controller).setInit(state);
+		if (((InitController) controller).setInit(state)) {
+			addData(0.0, state, true);
+			init = prependTime2Data(0.0, state);
+			paint();
+		}
 	}
 
 //CHECK!
@@ -329,7 +333,7 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, //
 			return;
 
 		Touch touch = touches.get(0);
-		setInitXY(touch.getRelativeX(element), touch.getRelativeY(element));
+		processInitXY(touch.getRelativeX(element), touch.getRelativeY(element));
 		event.preventDefault();
 	}
 

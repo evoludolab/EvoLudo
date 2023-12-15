@@ -194,15 +194,14 @@ public class MVPhase2D extends MVAbstract implements AbstractGraph.InitControlle
 	}
 
 	@Override
-	public void setInit(double[] init) {
+	public boolean setInit(double[] init) {
 		// no further processing should be needed - just forward to module and engine
 		Module module = engine.getModule();
 		if (module instanceof Discrete) {
-			// note: setInit requires different arguments for discrete and continuous modules
-			((Discrete) module).setInit(init);
-			engine.modelCheck();
-			engine.modelReinit();
+			// note: setInitialTraits requires different arguments for discrete and continuous modules
+			return engine.getModel().setInitialTraits(init);
 		}
+		return false;
 	}
 
 	ContextMenu currentMenu;

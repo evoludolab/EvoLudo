@@ -180,7 +180,7 @@ public class MVS3 extends MVAbstract implements AbstractGraph.InitController {
 	}
 
 	@Override
-	public void setInit(double[] init) {
+	public boolean setInit(double[] init) {
 		if( nActive!=nState ) {
 			double[] s = new double[nState];
 			int n = 0;
@@ -192,12 +192,10 @@ public class MVS3 extends MVAbstract implements AbstractGraph.InitController {
 		}
 		Module module = engine.getModule();
 		if (module instanceof Discrete) {
-			// note: setInit requires different arguments for discrete and continuous modules
-			((Discrete) module).setInit(init);
-			// check passes init frequencies to current model, if needed
-			engine.modelCheck();
-			engine.modelReinit();
+			// note: setInitialTraits requires different arguments for discrete and continuous modules
+			return engine.getModel().setInitialTraits(init);
 		}
+		return false;
 	}
 
 	@Override
