@@ -1004,6 +1004,19 @@ public abstract interface Model extends CLOProvider {
 	}
 
 	/**
+	 * Set initial traits in one or all species.
+	 * <p>
+	 * <strong>NOTE:</strong> this is a convenience method for multi-species modules
+	 * to set inital states efficiently for interactions with GUI.
+	 *
+	 * @param init the array with the initial trait values
+	 * @return {@code true} if initial traits successfully set
+	 */
+	public default boolean setInitialTraits(double[] init) {
+		return false;
+	}
+
+	/**
 	 * Collect and return initial trait values for all species.
 	 * <p>
 	 * <strong>NOTE:</strong> this is a convenience method for multi-species modules
@@ -1012,6 +1025,17 @@ public abstract interface Model extends CLOProvider {
 	 * @param init the array for storing the initial trait values
 	 */
 	public abstract void getInitialTraits(double[] init);
+
+	/**
+	 * Set initial trait values for species with ID <code>id</code>.
+	 *
+	 * @param id   the species identifier
+	 * @param init the array with the initial trait values
+	 * @return {@code true} if initial traits successfully set
+	 */
+	public default boolean setInitialTraits(int id, double[] init) {
+		return false;
+	}
 
 	/**
 	 * Return initial trait values for species with ID <code>id</code>.

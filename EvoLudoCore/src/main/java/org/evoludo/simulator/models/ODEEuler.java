@@ -606,8 +606,27 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	@Override
+	public boolean setInitialTraits(double[] init) {
+		if (init.length != nDim)
+			return false;
+		System.arraycopy(init, 0, y0, 0, nDim);
+		init(false);
+		return true;
+	}
+
+	@Override
 	public void getInitialTraits(double[] init) {
 		System.arraycopy(y0, 0, init, 0, nDim);
+	}
+
+	@Override
+	public boolean setInitialTraits(int id, double[] init) {
+		int start = idxSpecies[id];
+		if (init.length != idxSpecies[id + 1] - start)
+			return false;
+		System.arraycopy(init, start, y0, 0, idxSpecies[id + 1] - start);
+		init(false);
+		return true;
 	}
 
 	@Override
@@ -1326,6 +1345,10 @@ public class ODEEuler implements Model.ODE {
 
 	@Override
 	public void init() {
+		init(true);
+	}
+
+	private void init(boolean doRandom) {
 		t = 0.0;
 		dtTry = dt;
 		connect = false;
@@ -1335,14 +1358,16 @@ public class ODEEuler implements Model.ODE {
 			return;
 		int idx = -1;
 		// y0 is initialized except for species with random initial frequencies
-		for (Module pop : species) {
-			if (!initType[++idx].equals(InitType.RANDOM))
-				continue;
-			int dim = pop.getNTraits();
-			RNGDistribution rng = engine.getRNG();
-			int from = idxSpecies[idx];
-			for (int n = 0; n < dim; n++)
-				y0[from + n] = rng.random01();
+		if (doRandom) {
+			for (Module pop : species) {
+				if (!initType[++idx].equals(InitType.RANDOM))
+					continue;
+				int dim = pop.getNTraits();
+				RNGDistribution rng = engine.getRNG();
+				int from = idxSpecies[idx];
+				for (int n = 0; n < dim; n++)
+					y0[from + n] = rng.random01();
+			}
 		}
 		System.arraycopy(y0, 0, yt, 0, nDim);
 		normalizeState(yt);
