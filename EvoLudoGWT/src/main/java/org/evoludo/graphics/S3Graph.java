@@ -136,18 +136,24 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 		if (buffer.isEmpty()) {
 			buffer.add(prependTime2Data(t, data));
 			System.arraycopy(buffer.last(), 1, init, 1, 3);
-		}
-		else {
+		} else {
 			double[] last = buffer.last();
-			if (Math.abs(t - last[0]) < 1e-8) {
+			double lastt = last[0];
+			if (Math.abs(t - lastt) < 1e-8) {
 				buffer.replace(prependTime2Data(t, data));
 				System.arraycopy(last, 1, init, 1, 3);
-			}
-			else {
+			} else {
+				if (Double.isNaN(t)) {
+					// new starting point
+					if (Double.isNaN(lastt))
+						buffer.replace(prependTime2Data(t, data));
+					else
+						buffer.add(prependTime2Data(t, data));
+					System.arraycopy(last, 1, init, 1, 3);
+					return;
+				}
 				if (force || distSq(data, last) > bufferThreshold)
 					buffer.add(prependTime2Data(t, data));
-				if (t < last[0])
-					System.arraycopy(buffer.last(), 1, init, 1, 3);
 			}
 		}
 	}
@@ -182,31 +188,20 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 		String tC = style.trajColor;
 		g.setStrokeStyle(tC);
 		// increase line width for trajectories with transparency
-		g.setLineWidth((tC.startsWith("rgba")?1.25*style.lineWidth:style.lineWidth));
+		g.setLineWidth((tC.startsWith("rgba") ? 1.25 * style.lineWidth : style.lineWidth));
 		Iterator<double[]> i = buffer.iterator();
-		if( i.hasNext() ) {
+		if (i.hasNext()) {
 			double[] current = i.next();
+			double ct = current[0];
 			S3ToCartesian(current, currPt);
-			boolean forward = false;
-			boolean newtraj = true;
-			while( i.hasNext() ) {
+			while (i.hasNext()) {
 				double[] prev = i.next();
+				double pt = prev[0];
 				S3ToCartesian(prev, prevPt);
-				if (newtraj) {
-					newtraj = false;
-					forward = current[0]>prev[0];
-				}
-				boolean switched = ((forward && current[0]<prev[0]) || (!forward && current[0]>prev[0]));
-				if( switched ) {
-					current = prev;
-					Point2D swap = currPt;
-					currPt = prevPt;
-					prevPt = swap;
-					newtraj = true;
-					continue;
-				}
-				strokeLine(prevPt.x, prevPt.y, currPt.x, currPt.y);
+				if (!Double.isNaN(ct))
+					strokeLine(prevPt.x, prevPt.y, currPt.x, currPt.y);
 				current = prev;
+				ct = pt;
 				Point2D swap = currPt;
 				currPt = prevPt;
 				prevPt = swap;
@@ -417,8 +412,8 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 		double[] s3 = new double[3];
 		cartesianToS3(x, y, s3);
 		if (((InitController) controller).setInit(s3)) {
-			addData(0.0, s3, true);
-			init = prependTime2Data(0.0, s3);
+			addData(Double.NaN, s3, true);
+			init = ArrayMath.clone(buffer.last());
 			paint();
 		}
 	}

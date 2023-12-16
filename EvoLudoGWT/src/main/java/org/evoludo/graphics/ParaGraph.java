@@ -39,6 +39,7 @@ import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
+import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
 import org.evoludo.util.RingBuffer;
@@ -115,15 +116,22 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, //
 		}
 		else {
 			double[] last = buffer.last();
-			if (Math.abs(t - last[0]) < 1e-8) {
+			double lastt = last[0];
+			if (Math.abs(t - lastt) < 1e-8) {
 				buffer.replace(prependTime2Data(t, data));
 				System.arraycopy(data, 0, init, 1, nStates);
-			}
-			else {
+			} else {
+				if (Double.isNaN(t)) {
+					// new starting point
+					if (Double.isNaN(lastt))
+						buffer.replace(prependTime2Data(t, data));
+					else
+						buffer.add(prependTime2Data(t, data));
+					System.arraycopy(last, 1, init, 1, 3);
+					return;
+				}
 				if (force || distSq(data, last) > bufferThreshold)
 					buffer.add(prependTime2Data(t, data));
-				if (t < last[0])
-					System.arraycopy(buffer.last(), 1, init, 1, nStates);
 			}
 		}
 		if( !isActive )
@@ -190,28 +198,17 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, //
 		Iterator<double[]> i = buffer.iterator();
 		if( i.hasNext() ) {
 			double[] current = i.next();
+			double ct = current[0];
 			map.data2Phase(current, currPt);
-			boolean forward = false;
-			boolean newtraj = true;
 			while( i.hasNext() ) {
 				double[] prev = i.next();
+				double pt = prev[0];
 				map.data2Phase(prev, nextPt);
-				if (newtraj) {
-					newtraj = false;
-					forward = current[0]>prev[0];
-				}
-				boolean switched = ((forward && current[0]<prev[0]) || (!forward && current[0]>prev[0]));
-				if( switched ) {
-					current = prev;
-					Point2D swap = currPt;
-					currPt = nextPt;
-					nextPt = swap;
-					newtraj = true;
-					continue;
-				}
-				strokeLine((nextPt.x - style.xMin) * xScale, (nextPt.y - style.yMin) * yScale, //
+				if (!Double.isNaN(ct))
+					strokeLine((nextPt.x - style.xMin) * xScale, (nextPt.y - style.yMin) * yScale, //
 						(currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale);
 				current = prev;
+				ct = pt;
 				Point2D swap = currPt;
 				currPt = nextPt;
 				nextPt = swap;
@@ -317,8 +314,8 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, //
 		System.arraycopy(buffer.last(), 1, state, 0, nStates);
 		map.phase2Data(new Point2D(ux, uy), state);
 		if (((InitController) controller).setInit(state)) {
-			addData(0.0, state, true);
-			init = prependTime2Data(0.0, state);
+			addData(Double.NaN, state, true);
+			init = ArrayMath.clone(buffer.last());
 			paint();
 		}
 	}
