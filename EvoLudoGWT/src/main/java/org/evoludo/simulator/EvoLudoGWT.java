@@ -508,7 +508,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 * of of the layouting procedure for taking snapshots, e.g. with
 	 * <code>capture-website</code>.
 	 */
-	public final CLOption cloSnap = new CLOption("snap", catGUI,
+	public final CLOption cloSnap = new CLOption("snap", "nosnap", CLOption.Argument.OPTIONAL, catGUI,
 			"--snap [<s>[,<n>]]  snapshot utility (see capture-website)\n"
 					+ "      (add '<div id=\"snapshot-ready\"></div>' to <body> upon\n"
 					+ "       completion of layout or after max <s> sec and after\n"

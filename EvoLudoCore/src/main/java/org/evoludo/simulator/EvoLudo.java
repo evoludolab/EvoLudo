@@ -35,7 +35,6 @@ package org.evoludo.simulator;
 import java.awt.Color;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -1793,7 +1792,7 @@ public abstract class EvoLudo
 				}
 				// parse --verbose first to set logging level already for processing of command
 				// line arguments; gets processed again with all others but no harm in it
-				cloVerbose.processOption(param, Arrays.asList(new String[] { verbosity }).listIterator());
+				cloVerbose.setArg(verbosity);
 				cloVerbose.parse();
 				// verbosity key found; no need to continue
 				break;

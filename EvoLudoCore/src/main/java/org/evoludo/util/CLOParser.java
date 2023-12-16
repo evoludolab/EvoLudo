@@ -35,16 +35,16 @@ package org.evoludo.util;
 import java.awt.Color;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
+
+import org.evoludo.math.ArrayMath;
 
 /**
  * Parser for command line options. Inspired by UNIX style command line options.
@@ -201,68 +201,43 @@ public class CLOParser {
 	 *         problems occurred
 	 */
 	public boolean parseCLO(String[] cloargs) {
-		// the entries in cloargs start with the name of the option followed by its argument(s)
-		// which can be separated by ' ' or '='
-		for (String opt : Arrays.asList(cloargs)) {
-			String name = opt.split("[ =]")[0].trim();
-			if (name.length() > 0) {
-				parameters.add(name);
-				String arg = CLOption.stripKey(name, opt).trim();
-				if (arg.length() > 0)
-					parameters.add(arg);
-			}
-		}
-		// parse options
+		// the entries in cloargs start with the name of the option followed by its
+		// argument(s) which can be separated by ' ' or '='
 		boolean success = true;
-		ListIterator<String> parse = parameters.listIterator();
-		initnext: while (parse.hasNext()) {
-			String optionName = parse.next();
-			for (CLOption option : options) {
-				switch (option.processOption(optionName, parse)) {
-					case 2: // short option found but parsing of concatenated argument failed
-						success = false;
-						logWarning("parsing argument '" + optionName + "' failed - using '--" + option.getName() + " "
-								+ option.getArg() + "'.");
-						// skip unknown argument
-						parse.next();
-						continue initnext;
-					case 1: // option found but parsing of argument failed
-						if (!parse.hasNext()) {
+		nextclo: for (String clo : cloargs) {
+			// find matching option
+			for (CLOption opt : options) {
+				if (!clo.startsWith(opt.getName()))
+					continue;
+				// option found
+				String[] args = clo.split("[\\s*=]");
+				String arg = Formatter.format(ArrayMath.drop(args, 0), " ");
+				switch (opt.getType()) {
+					case REQUIRED:
+						if (args.length < 1) {
 							success = false;
-							logWarning("argument for " + optionName + " missing - using '" + option.getArg() + "'.");
-							continue initnext;
+							logWarning("option '--" + clo + "' is missing a required argument - ignored.");
+							break;
 						}
-						String arg = parse.next();
-						parse.previous();
-						if (arg.startsWith("--")) {
-							success = false;
-							logWarning("argument for " + optionName + " missing - using '" + option.getArg() + "'.");
-							continue initnext;
-						}
-						success = false;
-						logWarning("parsing argument '" + arg + "' for " + optionName + " failed - using '"
-								+ option.getArg() + "'.");
-						// skip unknown argument
-						parse.next();
-						continue initnext;
-					case 0: // success
+						opt.setArg(arg);
+						break;
+					case OPTIONAL:
+						opt.setArg(arg.length() > 0 ? arg : null);
+						break;
 					default:
-						continue initnext;
-					case -1: // no match
+					case NONE:
+						if (arg.length() > 0) {
+							success = false;
+							logWarning("option '--" + clo + "' does not accept an argument - ignored.");
+							break;
+						}
+						opt.setArg(null);
+						break;
 				}
-			}
-			// check if unknown option is followed by argument
-			if (parse.hasNext()) {
-				String arg = parse.next();
-				if (arg.startsWith("-"))
-					// assume it's an option
-					parse.previous();
-				else
-					// skip argument
-					optionName += " " + arg;
+				continue nextclo;
 			}
 			success = false;
-			logWarning("option '" + optionName + "' unknown - ignored.");
+			logWarning("option '--" + clo + "' unknown - ignored.");
 		}
 		// apply all options (including default values)
 		// note: options sorted alphabetically; not processed in order provided on
@@ -513,8 +488,8 @@ public class CLOParser {
 	}
 
 	// private void logDebug(String msg) {
-	// 	if (logger != null)
-	// 		logger.fine(msg);
+	// if (logger != null)
+	// logger.fine(msg);
 	// }
 
 	// UTILITY methods - for parsing command line arguments
@@ -528,14 +503,16 @@ public class CLOParser {
 	 * The delimiter for separating options in continuous models with multiple
 	 * traits.
 	 * <p>
-	 * <strong>Note:</strong> same as {@code MATRIX_DELIMITER} {@value MATRIX_DELIMITER}.
+	 * <strong>Note:</strong> same as {@code MATRIX_DELIMITER}
+	 * {@value MATRIX_DELIMITER}.
 	 */
 	public static final String TRAIT_DELIMITER = ";";
 
 	/**
 	 * The delimiter for separating rows when passing a matrix as an option.
 	 * <p>
-	 * <strong>Note:</strong> same as {@code TRAIT_DELIMITER} {@value TRAIT_DELIMITER}.
+	 * <strong>Note:</strong> same as {@code TRAIT_DELIMITER}
+	 * {@value TRAIT_DELIMITER}.
 	 */
 	public static final String MATRIX_DELIMITER = ";";
 

@@ -35,7 +35,6 @@ package org.evoludo.util;
 import java.io.PrintStream;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.ListIterator;
 
 /**
  * Command line option and argument.
@@ -521,101 +520,10 @@ public class CLOption implements Comparable<CLOption> {
 		return defaultArg;
 	}
 
-	/**
-	 * Process command line option and argument. If <code>option</code> matches the
-	 * name of this option then the option <code>isSet</code> and, depending on the
-	 * option <code>type</code> the next entry in <code>options</code> is processed
-	 * as the option argument, as appropriate. Returns <code>0</code> on successful
-	 * processing of option and possible arguments. Returns <code>-1</code> if
-	 * <code>option</code> matches the name and <code>1</code> if processing of
-	 * argument fails for other reasons.
-	 * 
-	 * @param option  the name of option to parse
-	 * @param options the list of options and arguments provided on command line
-	 * @return <code>-1</code> if no match, <code>0</code> on success,
-	 *         <code>1</code> if parsing of argument failed
-	 */
-	public int processOption(String option, ListIterator<String> options) {
-		// if an option has been removed in some preliminary screening option==null;
-		// simply skip over
-		if (option == null)
-			return 0;
-		// check if name of option (must be perfect match because option names
-		// have to be followed by either ' ' or '=' and the latter has already
-		// been taken care of, see CLOParser.parseCLO)
-		if (option.equals(name))
-			return processOptionArg(options) ? 0 : 1;
-		return -1;
-	}
-
-	/**
-	 * For options with {@link Argument#OPTIONAL} or {@link Argument#REQUIRED}
-	 * checks next entry on command line and processes arguments as appropriate.
-	 * <p>
-	 * <strong>Note:</strong> legitimate arguments can start with <code>'-'</code>,
-	 * e.g. negative numbers, vectors or matrices. If next entry starts with
-	 * <code>'-'</code> but parses as a number or matrix, assume it is an argument.
-	 * If, for example, <code>-1</code> is a valid short option then specifying
-	 * <code>-1</code> after an option with optional argument processes
-	 * <code>-1</code> as the optional argument and <em>not</em> as the next option.
-	 * 
-	 * @param options list of options and arguments provided on command line
-	 * @return <code>true</code> on success
-	 */
-	private boolean processOptionArg(ListIterator<String> options) {
-		optionArg = null;
-		isSet = false;
-		if (type == Argument.NONE) {
-			isSet = true;
-			return true;
-		}
-		if (!options.hasNext()) {
-			// last option, no argument
-			if (type == Argument.REQUIRED)
-				return false;
-			// last option had optional argument
-			isSet = true;
-			return true;
-		}
-		// read argument
-		String arg = options.next();
-		if (type == Argument.REQUIRED) {
-			// argument could still start with '-' indicating negative number [in array], be
-			// greedy and assume this is the argument; check if first char of argument is
-			// valid key (or options has no keys).
-			if (!isValidKey(arg)) {
-				options.previous();
-				return false;
-			}
-			setOptionArg(arg);
-			return true;
-		}
-		// argument is optional; could still be a short option (only start with '--'
-		// has been ruled out)
-		if (arg.charAt(0) == '-') {
-			// short option or negative number - try to parse as matrix
-			try {
-				if (CLOParser.parseMatrix(arg).length > 0) {
-					// option is number, treat it as argument
-					setOptionArg(arg);
-				}
-			} catch (Exception e) {
-				// doesn't look like a number; rewind options
-				options.previous();
-				if (type == Argument.REQUIRED)
-					return false;
-				// argument optional
-				isSet = true;
-			}
-			return true;
-		}
-		// in the most complex valid case it is a matrix
-		setOptionArg(arg);
-		return true;
-	}
-
-	private void setOptionArg(String arg) {
-		optionArg = arg.trim();
+	public void setArg(String arg) {
+		if (arg != null)
+			arg = arg.trim();
+		optionArg = arg;
 		isSet = true;
 	}
 
