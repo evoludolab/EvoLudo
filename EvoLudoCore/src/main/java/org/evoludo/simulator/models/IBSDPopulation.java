@@ -1747,6 +1747,19 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 	}
 
+	public boolean setInitialTraits(double[] init) {
+		if (init==null || init.length != nTraits)
+			return false;
+		InitType type = getInitType();
+		double[] args = type.getArgs();
+		// temporarily change initialization type
+		setInitType(InitType.FREQUENCY, init);
+		init();
+		// restore initialization type
+		setInitType(type, args);
+		return true;
+	}
+
 	@Override
 	public void getInitialTraits(double[] init) {
 		double iPop = 1.0 / nPopulation;

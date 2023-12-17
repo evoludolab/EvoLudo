@@ -190,6 +190,31 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 			fixData.reset();
 	}
 
+	@Override
+	public boolean setInitialTraits(double[] init) {
+		if (!isMultispecies)
+			return ((IBSDPopulation) population).setInitialTraits(init);
+
+		int skip = 0;
+		boolean success = true;
+		for (IBSPopulation pop : species) {
+			IBSDPopulation dpop = (IBSDPopulation) pop;
+			double[] tmp = new double[pop.nTraits];
+			System.arraycopy(init, skip, tmp, 0, pop.nTraits);
+			success &= dpop.setInitialTraits(tmp);
+			skip += pop.nTraits;
+		}			
+		return success;
+	}
+
+	@Override
+	public boolean setInitialTraits(int id, double[] init) {
+		if (!isMultispecies)
+			return ((IBSDPopulation) population).setInitialTraits(init);
+
+		return ((IBSDPopulation) species.get(id)).setInitialTraits(init);
+	}
+
 	/**
 	 * Type of initial density distribution. Currently this model supports:
 	 * <dl>
