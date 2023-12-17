@@ -116,13 +116,14 @@ public class simRSP extends RSP {
 		fixprob = new double[dim + 1][dim + 1][nTraits];
 		abstime = new double[dim + 1][dim + 1];
 		int tot = (dim + 1) * (dim + 2) / 2, progress = 0;
+		double[] dinit = new double[nTraits];
 		for (int c = dim; c >= 0; c--) {
 			for (int d = dim - c; d >= 0; d--) {
 				initcount[ROCK] = (int) (c * incr + 0.5);
 				initcount[PAPER] = (int) (d * incr + 0.5);
 				initcount[SCISSORS] = nPopulation - initcount[ROCK] - initcount[PAPER];
-				ArrayMath.copy(initcount, init);
-				ArrayMath.normalize(init);
+				ArrayMath.copy(initcount, dinit);
+				model.setInitialTraits(dinit);
 //logger.info("init="+ChHFormatter.format(initcount)+", maxidx="+ChHMath.maxIndex(strategiesTypeCount)+", maxcount="+ChHMath.max(strategiesTypeCount));
 				for (int s = 1; s <= nSamples; s++) {
 					engine.modelReset();

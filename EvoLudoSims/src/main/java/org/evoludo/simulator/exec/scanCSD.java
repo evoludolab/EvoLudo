@@ -43,8 +43,9 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Distributions;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.models.IBS;
+import org.evoludo.simulator.models.IBSC;
 import org.evoludo.simulator.models.IBSCPopulation;
+import org.evoludo.simulator.models.IBSC.InitType;
 import org.evoludo.simulator.modules.CSD;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -72,23 +73,29 @@ public class scanCSD extends CSD {
 	boolean	printDistr = false;
 	int snapinterval = 0;
 	boolean	progress = false;
-	IBSCPopulation pop;
+	IBSCPopulation cpop;
 	PrintStream out;
 
 	public scanCSD(EvoLudo engine) {
 		super(engine);
 	}
-	
+
+	public final int TRAIT_MEAN = 0;
+	public final int TRAIT_SDEV = 1;
+
 	@Override
 	public void run() {
 		out = ((EvoLudoJRE)engine).getOutput();		
 		// assumes IBS simulations
-		pop = (IBSCPopulation) ((IBS) engine.getModel()).getSpecies(this);
+		IBSC cmod = (IBSC) engine.getModel();
+		cpop = (IBSCPopulation) cmod.getSpecies(this);
 		double[] bparams = traits2payoff.getBenefitParameters()[0];
 		double[] cparams = traits2payoff.getCostParameters()[0];
 
 		// initialize
-		double iMean = getInit()[0][TRAIT_MEAN];
+		double[] dinit = new double[nTraits];
+		model.getInitialTraits(dinit);
+		double iMean = dinit[TRAIT_MEAN];
 		boolean initHigh = false;
 
 		// print header
@@ -124,12 +131,14 @@ public class scanCSD extends CSD {
 						traits2payoff.setBenefitParameters(bparams);
 						traits2payoff.setCostParameters(cparams);
 						// initialize population
-						double[] myinit = getInit(0);
+						InitType type = cpop.getInitType();
+						double[] myinit = type.getArgs();
 						if( initHigh )
 							myinit[TRAIT_MEAN] = getTraitMax()[0]-iMean;
 						else
 							myinit[TRAIT_MEAN] = iMean;
-						setInit(myinit, 0);
+						cpop.setInitType(type, myinit, 0);
+
 						engine.modelReset();
 
 						// evolve population
@@ -151,12 +160,12 @@ public class scanCSD extends CSD {
 							// to speed things up, check every 1000 generations whether trait minimum or maximum has been reached
 							// more precisely, whether mean trait <lowMonoThreshold or >highMonoThreshold
 							if( g%1000==0 ) {
-								double mean = Distributions.mean(pop.strategies);
+								double mean = Distributions.mean(cpop.strategies);
 								double tmin = getTraitMin()[0];
 								double tmax = getTraitMax()[0];
-								if( mean<lowMonoThreshold && ArrayMath.max(pop.strategies)<tmin+0.1*(tmax-tmin) )
+								if( mean<lowMonoThreshold && ArrayMath.max(cpop.strategies)<tmin+0.1*(tmax-tmin) )
 									break;
-								if( mean>highMonoThreshold && ArrayMath.min(pop.strategies)<tmax-0.1*(tmax-tmin) )
+								if( mean>highMonoThreshold && ArrayMath.min(cpop.strategies)<tmax-0.1*(tmax-tmin) )
 									break;
 							}
 						}
@@ -165,10 +174,10 @@ public class scanCSD extends CSD {
 						// - create histogram (potentially after averaging over several generations)
 						// - calculate statistical quantities (potentially over several generations)
 						double[] statistics = new double[SAMPLES*nPopulation];
-						System.arraycopy(pop.strategies, 0, statistics, 0, nPopulation);
+						System.arraycopy(cpop.strategies, 0, statistics, 0, nPopulation);
 						for( int n=1; n<SAMPLES; n++ ) {
 							engine.modelNext();
-							System.arraycopy(pop.strategies, 0, statistics, n*nPopulation, nPopulation);
+							System.arraycopy(cpop.strategies, 0, statistics, n*nPopulation, nPopulation);
 						}
 						double mean = Distributions.mean(statistics);
 						double stdev = Distributions.stdev(statistics, mean);

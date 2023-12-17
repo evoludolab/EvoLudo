@@ -39,8 +39,9 @@ import java.lang.management.ManagementFactory;
 import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.IBS;
+import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBS.PopulationUpdateType;
+import org.evoludo.simulator.models.IBSD.InitType;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.modules.Traits;
 import org.evoludo.util.CLOParser;
@@ -59,7 +60,7 @@ public class simTraits extends Traits {
 	long mintime = 60000000000L;	// one minute in nanoseconds
 	boolean progress = false;
 	int[] popsizes = { 100 };
-	IBS ibs;
+	IBSD ibs;
 	IBSDPopulation pop;
 	PrintStream out;
 
@@ -71,7 +72,7 @@ public class simTraits extends Traits {
 	public void run() {
 		out = ((EvoLudoJRE) engine).getOutput();
 		// for IBS simulations
-		ibs = (IBS) engine.getModel();
+		ibs = (IBSD) engine.getModel();
 		pop = (IBSDPopulation) ibs.getSpecies(this);
 		engine.cloRelaxation.setDefault("10000");
 
@@ -87,7 +88,7 @@ public class simTraits extends Traits {
 		}
 
 		engine.setReportInterval(1.0);
-		setInit(null);
+		pop.setInitType(InitType.UNIFORM, null);
 		setPlayerUpdateType(PlayerUpdateType.IMITATE);
 		setPlayerUpdateNoise(1.0);
 		engine.modelReset();

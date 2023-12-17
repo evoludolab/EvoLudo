@@ -46,6 +46,7 @@
         <configuration>
           <includes>
             <include>**/org/evoludo/simulator/exec/${evoludo.sim}.java</include>
+            <include>**/org/evoludo/simulator/exec/*.java</include>
           </includes>
         </configuration>
       </plugin>

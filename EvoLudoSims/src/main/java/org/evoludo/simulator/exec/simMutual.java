@@ -559,8 +559,11 @@ public class simMutual extends Mutualism implements Model.ChangeListener {
 		grng.setRNGSeed();
 		// recreate initial configuration and compare to EvoLudo
 		// first sanity check for RNG...
-		double myDInit = this.getInit()[DEFECT];
-		double oppDInit = opp.getInit()[DEFECT];
+		double[] dinit = new double[nTraits];
+		model.getInitialTraits(0, dinit);
+		double myDInit = dinit[DEFECT];
+		model.getInitialTraits(1, dinit);
+		double oppDInit = dinit[DEFECT];
 		// two separate loops are required to preserve state of RNG
 		for (int n=0; n<nPopulation; n++) {
 			int x = n % nSize;

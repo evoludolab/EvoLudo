@@ -139,9 +139,11 @@ public class simCDL extends CDL implements Model.ChangeListener {
 			resetStatistics();
 			for (int c = dim; c >= 0; c--) {
 				for (int d = dim - c; d >= 0; d--) {
+					double[] dinit = new double[nTraits];
+					model.getInitialTraits(dinit);
 					if (dim == 0) {
-						initcount[COOPERATE] = (int) (init[COOPERATE] * nPopulation + 0.5);
-						initcount[DEFECT] = (int) (init[DEFECT] * nPopulation + 0.5);
+						initcount[COOPERATE] = (int) (dinit[COOPERATE] * nPopulation + 0.5);
+						initcount[DEFECT] = (int) (dinit[DEFECT] * nPopulation + 0.5);
 					} else {
 						initcount[COOPERATE] = (int) (c * incr + 0.5);
 						initcount[DEFECT] = (int) (d * incr + 0.5);
@@ -152,8 +154,8 @@ public class simCDL extends CDL implements Model.ChangeListener {
 						initcount[LONER] = 0;
 						initcount[(LONER + 1) % nTraits]--;
 					}
-					ArrayMath.copy(initcount, init);
-					ArrayMath.normalize(init);
+					ArrayMath.copy(initcount, dinit);
+					model.setInitialTraits(dinit);
 					for (int s = 1; s <= nSamples; s++) {
 						engine.modelReset();
 						while (engine.modelNext())
@@ -188,9 +190,11 @@ public class simCDL extends CDL implements Model.ChangeListener {
 			for (int c = dim; c >= 0; c--) {
 				for (int d = dim - c; d >= 0; d--) {
 					double[] loc = fixprob[c][d];
+					double[] dinit = new double[nTraits];
+					model.getInitialTraits(dinit);
 					if (dim == 0) {
-						count[COOPERATE] = (int) (init[COOPERATE] * nPopulation + 0.5);
-						count[DEFECT] = (int) (init[DEFECT] * nPopulation + 0.5);
+						count[COOPERATE] = (int) (dinit[COOPERATE] * nPopulation + 0.5);
+						count[DEFECT] = (int) (dinit[DEFECT] * nPopulation + 0.5);
 					} else {
 						count[COOPERATE] = (int) (c * incr + 0.5);
 						count[DEFECT] = (int) (d * incr + 0.5);

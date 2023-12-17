@@ -76,7 +76,7 @@ public class simCDLP extends CDLP implements Model.ChangeListener {
 
 		boolean[] active = getActiveTraits();
 		if (isLinearPGG && initInQ && !active[PUNISH])
-			setInit(findQ(nGroup, getInterest(), getPayLoner()));
+			model.setInitialTraits(findQ(nGroup, getInterest(), getPayLoner()));
 
 		double[][][] location = null;
 		double[] corner = new double[nTraits];
@@ -99,20 +99,21 @@ public class simCDLP extends CDLP implements Model.ChangeListener {
 		// do statistics starting from random initial configurations and determine the
 		// probablility to end in each of the four corners
 		if (getMutationProb() < 1e-10) {
+			double[] dinit = new double[nTraits];
 			// form random initial configuration of population - restrict to interior
 			int[] types = new int[] { COOPERATE, DEFECT, LONER, PUNISH };
 			if (!active[LONER] && !active[PUNISH]) {
 				types = new int[] { COOPERATE, DEFECT };
-				init[LONER] = 0;
-				init[PUNISH] = 0;
+				dinit[LONER] = 0;
+				dinit[PUNISH] = 0;
 				doBasin = false;
 			} else if (!active[LONER]) {
 				types = new int[] { COOPERATE, DEFECT, PUNISH };
-				init[LONER] = 0;
+				dinit[LONER] = 0;
 				doBasin = false;
 			} else if (!active[PUNISH]) {
 				types = new int[] { COOPERATE, DEFECT, LONER };
-				init[PUNISH] = 0;
+				dinit[PUNISH] = 0;
 				doBasin = false;
 			}
 			double[] basin = new double[nTraits];
@@ -130,11 +131,11 @@ public class simCDLP extends CDLP implements Model.ChangeListener {
 					int idx = rng.random0n(len - n);
 					int atype = typ[idx];
 					typ[idx] = typ[len - 1 - n];
-					init[atype] = acount + 1;
+					dinit[atype] = acount + 1;
 					remaining -= acount;
 				}
-				init[typ[0]] = remaining + 1;
-				setInit(init);
+				dinit[typ[0]] = remaining + 1;
+				model.setInitialTraits(dinit);
 				engine.modelReinit();
 				do {
 					engine.modelNext();
