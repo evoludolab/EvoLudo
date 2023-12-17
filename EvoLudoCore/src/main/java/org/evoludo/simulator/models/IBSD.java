@@ -284,6 +284,12 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		String title;
 
 		/**
+		 * The arguments for the initialization. Convenience field, meaningful only
+		 * immediately after calls to {@link IBSDPopulation#getInitType()}.
+		 */
+		double[] args;
+
+		/**
 		 * Instantiate new initialization type.
 		 * 
 		 * @param key   identifier for parsing of command line option
@@ -302,6 +308,17 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		@Override
 		public String getTitle() {
 			return title;
+		}
+
+		/**
+		 * Get the arguments of this initialization type. Convenience field.
+		 * 
+		 * @return the arguments associated with this initialization type
+		 * 
+		 * @see #args
+		 */
+		public double[] getArgs() {
+			return args;
 		}
 	}
 
@@ -429,8 +446,9 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 				public void report(PrintStream output) {
 					for (IBSPopulation pop : species) {
 						IBSDPopulation dpop = (IBSDPopulation) pop;
-						output.println(
-								"# inittype:             " + dpop.getInitType() + (species.size() > 1 ? " ("
+						InitType type = dpop.getInitType();
+						output.println("# inittype:             " + type.getKey() + " " + //
+								Formatter.format(type.args, 2) + (species.size() > 1 ? " ("
 										+ pop.getModule().getName() + ")" : ""));
 					}
 				}

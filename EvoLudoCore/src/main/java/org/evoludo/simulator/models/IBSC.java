@@ -8,6 +8,7 @@ import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.CLOption.Key;
+import org.evoludo.util.Formatter;
 
 /**
  * Base class for individual based simulation models, IBS, with a single or
@@ -188,6 +189,13 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		int nParams;
 
 		/**
+		 * The arguments for the initialization. Convenience field, meaningful only
+		 * immediately after calls to {@link IBSMCPopulation#getInitType(int)} or
+		 * {@link IBSCPopulation#getInitType()}.
+		 */
+		double[] args;
+
+		/**
 		 * Instantiate new initialization type.
 		 * 
 		 * @param key     identifier for parsing of command line option
@@ -208,6 +216,17 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		@Override
 		public String getTitle() {
 			return title;
+		}
+
+		/**
+		 * Get the arguments of this initialization type. Convenience field.
+		 * 
+		 * @return the arguments associated with this initialization type
+		 * 
+		 * @see #args
+		 */
+		public double[] getArgs() {
+			return args;
 		}
 	}
 
@@ -259,8 +278,9 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 					IBSMCPopulation cpop = (IBSMCPopulation) population;
 					int nt = cpop.getModule().getNTraits();
 					for (int n = 0; n < nt; n++) {
-						output.println(
-								"# inittype:             " + cpop.getInitType(n) + (species.size() > 1 ? " ("
+						InitType type = cpop.getInitType(n);
+						output.println("# inittype:             " + type.getKey() + " " + //
+								Formatter.format(type.args, 2) + (species.size() > 1 ? " ("
 										+ population.getModule().getName() + ")" : ""));
 					}
 				}

@@ -36,6 +36,7 @@ import java.util.Arrays;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.ScoringType;
+import org.evoludo.simulator.models.IBSC.InitType;
 import org.evoludo.simulator.modules.Continuous;
 
 /**
@@ -148,6 +149,18 @@ public class IBSCPopulation extends IBSMCPopulation {
 	 */
 	@SuppressWarnings("hiding")
 	double mutSdev = -1.0; // defined as double[] in CXPopulation
+
+	/**
+	 * Gets the type of the initial configuration and its arguments.
+	 *
+	 * @param trait the index of the trait 
+	 * @return the type and arguments of the initial configuration
+	 * 
+	 * @see InitType
+	 */
+	public InitType getInitType() {
+		return getInitType(0);
+	}
 
 	@Override
 	public boolean haveSameStrategy(int a, int b) {

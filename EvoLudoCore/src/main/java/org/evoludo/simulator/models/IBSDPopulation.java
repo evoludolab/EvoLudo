@@ -172,6 +172,7 @@ public class IBSDPopulation extends IBSPopulation {
 	public void unload() {
 		super.unload();
 		accuTypeScores = null;
+		initTypeCount = null;
 		strategiesTypeCount = null;
 		activeLinks = null;
 		strategies = null;
@@ -215,6 +216,11 @@ public class IBSDPopulation extends IBSPopulation {
 	 * The array with the total number of individuals of each trait/strategic type.
 	 */
 	public int[] strategiesTypeCount;
+
+	/**
+	 * The array with the initial number of individuals of each trait/strategic type.
+	 */
+	public int[] initTypeCount;
 
 	@Override
 	public int getPopulationSize() {
@@ -274,6 +280,8 @@ public class IBSDPopulation extends IBSPopulation {
 			traitScore = new double[nTraits];
 		if (accuTypeScores == null || accuTypeScores.length != nTraits)
 			accuTypeScores = new double[nTraits];
+		if (initTypeCount == null || initTypeCount.length != nTraits)
+			initTypeCount = new int[nTraits];
 		if (strategiesTypeCount == null || strategiesTypeCount.length != nTraits)
 			strategiesTypeCount = new int[nTraits];
 		// best-response may require temporary memory - this is peanuts, just reserve it
@@ -1740,6 +1748,13 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	@Override
+	public void getInitialTraits(double[] init) {
+		double iPop = 1.0 / nPopulation;
+		for (int n = 0; n < nTraits; n++)
+			init[n] = initTypeCount[n] * iPop;
+	}
+
+	@Override
 	public boolean getMeanTraits(double[] mean) {
 		double iPop = 1.0 / nPopulation;
 		for (int n = 0; n < nTraits; n++)
@@ -1919,7 +1934,9 @@ public class IBSDPopulation extends IBSPopulation {
 				break;
 		}
 		if (ArrayMath.norm(strategiesTypeCount) != nPopulation)
-			logger.warning("accounting problem (sum of traits "+ArrayMath.norm(strategiesTypeCount)+"!="+nPopulation+").");
+			// fatal does not return control
+			engine.fatal("accounting problem (sum of traits "+ArrayMath.norm(strategiesTypeCount)+"!="+nPopulation+").");
+		System.arraycopy(strategiesTypeCount, 0, initTypeCount, 0, nTraits);
 	}
 
 	/**
@@ -2219,15 +2236,15 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	/**
-	 * Gets the type of the initial configuration and its arguments as formatted a
-	 * String.
+	 * Gets the type of the initial configuration and its arguments.
 	 *
 	 * @return the type and arguments of the initial configuration
 	 * 
 	 * @see InitType
 	 */
-	public String getInitType() {
-		return initType.getKey() + " " + Formatter.format(initArgs, 2);
+	public InitType getInitType() {
+		initType.args = ArrayMath.clone(initArgs);
+		return initType;
 	}
 
 	@Override

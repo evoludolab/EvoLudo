@@ -3724,6 +3724,16 @@ public abstract class IBSPopulation {
 	}
 
 	/**
+	 * Returns the initial trait(s) of this population in the array {@code init}. Used
+	 * by GUI to visualize the initial state of this IBS model.
+	 * 
+	 * @param init the array for returning the initial trait values
+	 * 
+	 * @see Model#getInitialTraits(int, double[])
+	 */
+	public abstract void getInitialTraits(double[] init);
+
+	/**
 	 * Returns the mean trait(s) of this population in the array {@code mean}. Used
 	 * by GUI to visualize the current state of this IBS model. Returns {@code true}
 	 * if data point belongs to the same time series and {@code false} if a new

@@ -35,6 +35,7 @@ package org.evoludo.simulator.models;
 import java.util.Arrays;
 import java.util.List;
 
+import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
@@ -129,6 +130,7 @@ public class IBSMCPopulation extends IBSPopulation {
 		meantrait = null;
 		oldScores = null;
 		initType = null;
+		initTraits = null;
 	}
 
 	@Override
@@ -656,6 +658,24 @@ public class IBSMCPopulation extends IBSPopulation {
 	/**
 	 * {@inheritDoc}
 	 * <p>
+	 * <strong>Note:</strong> For continuous modules the IBS model returns the concatenated mean and stdev of each trait in {@code init}.
+	 */
+	@Override
+	public void getInitialTraits(double[] init) {
+		if (init==null || init.length < 2*nTraits)
+			return;
+		int idx = 0;
+		for (int n = 0; n < nTraits; n++) {
+			double shift = traitMin[n];
+			double range = traitMax[n] - shift;
+			init[idx++] = shift + initTraits[n][0] * range;
+			init[idx++] = initTraits[n][1] * range;
+		}
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * <p>
 	 * For continuous traits/strategies the first {@code nTraits} entries represent
 	 * the mean of each trait and the second {@code nTraits} entries denote the
 	 * standard deviation.
@@ -804,6 +824,11 @@ public class IBSMCPopulation extends IBSPopulation {
 	double[][] initArgs;
 
 	/**
+	 * The array with mean and sdev of initial configuration.
+	 */
+	double[][] initTraits;
+
+	/**
 	 * Sets the type of the initial configuration and any accompanying arguments.
 	 *
 	 * @param type the type of the initial configuration
@@ -824,21 +849,24 @@ public class IBSMCPopulation extends IBSPopulation {
 	}
 
 	/**
-	 * Gets the type of the initial configuration and its arguments as formatted a
-	 * String.
+	 * Gets the type of the initial configuration and its arguments.
 	 *
+	 * @param trait the index of the trait 
 	 * @return the type and arguments of the initial configuration
 	 * 
 	 * @see InitType
 	 */
-	public String getInitType(int trait) {
-		return initType[trait].getKey() + " " + Formatter.format(initArgs[trait], 2);
+	public InitType getInitType(int trait) {
+		initType[trait].args = ArrayMath.clone(initArgs[trait]);
+		return initType[trait];
 	}
 
 	@Override
 	public void init() {
 		super.init();
 
+		if (initTraits == null || initTraits.length != nTraits)
+			initTraits = new double[nTraits][2];
 		int mutidx = -1;
 		for (int s = 0; s < nTraits; s++) {
 			switch (initType[s]) {
@@ -876,6 +904,18 @@ public class IBSMCPopulation extends IBSPopulation {
 					strategies[mutidx] = (mut - traitMin[s]) / (traitMax[s] - traitMin[s]);
 					break;
 			}
+			// calculate mean and stdev of initial configuration
+			// see Distributions.variance
+			double mean = strategies[s];
+			double sum2 = 0.0;
+			for (int n = s + nTraits; n < nPopulation * nTraits; n += nTraits) {
+				double xn = strategies[n];
+				double dx = xn - mean;
+				mean += dx / (n + 1);
+				sum2 += dx * (xn - mean);	
+			}
+			initTraits[s][0] = mean;
+			initTraits[s][1] = Math.sqrt(sum2 / (nPopulation - 1));
 		}
 	}
 
