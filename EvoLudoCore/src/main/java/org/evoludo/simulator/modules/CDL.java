@@ -262,36 +262,36 @@ public class CDL extends Discrete implements Groups, HasIBS, HasODE, HasSDE, Has
 	}
 
 	@Override
-	public double pairScores(int me, int[] tCount, double[] tScore) {
-		int x = tCount[COOPERATE];
-		int y = tCount[DEFECT];
-		int z = tCount[LONER];
+	public double pairScores(int me, int[] traitCount, double[] traitScore) {
+		int x = traitCount[COOPERATE];
+		int y = traitCount[DEFECT];
+		int z = traitCount[LONER];
 		int n = x + y + z;
 
-		tScore[LONER] = payLoner;
+		traitScore[LONER] = payLoner;
 		switch (me) {
 			case LONER:
-				tScore[COOPERATE] = payLoneCoop;
-				tScore[DEFECT] = payLoneDefect;
+				traitScore[COOPERATE] = payLoneCoop;
+				traitScore[DEFECT] = payLoneDefect;
 				return n * payLoner;
 
 			case COOPERATE:
 				if (othersOnly) {
-					tScore[COOPERATE] = (r1 - 1.0) * costCoop;
-					tScore[DEFECT] = r1 * costCoop;
-					return x * tScore[COOPERATE] - y * costCoop + z * payLoneCoop;
+					traitScore[COOPERATE] = (r1 - 1.0) * costCoop;
+					traitScore[DEFECT] = r1 * costCoop;
+					return x * traitScore[COOPERATE] - y * costCoop + z * payLoneCoop;
 				}
-				tScore[COOPERATE] = (interest(2) - 1.0) * costCoop;
-				tScore[DEFECT] = r1 * 0.5 * costCoop;
-				return x * tScore[COOPERATE] + y * (tScore[DEFECT] - costCoop) + z * payLoneCoop;
+				traitScore[COOPERATE] = (interest(2) - 1.0) * costCoop;
+				traitScore[DEFECT] = r1 * 0.5 * costCoop;
+				return x * traitScore[COOPERATE] + y * (traitScore[DEFECT] - costCoop) + z * payLoneCoop;
 
 			case DEFECT:
-				tScore[DEFECT] = 0.0;
+				traitScore[DEFECT] = 0.0;
 				if (othersOnly) {
-					tScore[COOPERATE] = -costCoop;
+					traitScore[COOPERATE] = -costCoop;
 					return x * r1 * costCoop /* + y * 0.0 */ + z * payLoneDefect;
 				}
-				tScore[COOPERATE] = (r1 * 0.5 - 1.0) * costCoop;
+				traitScore[COOPERATE] = (r1 * 0.5 - 1.0) * costCoop;
 				return x * r1 * 0.5 * costCoop + /* + y * 0.0 */ +z * payLoneDefect;
 
 			default: // should not end here
@@ -300,29 +300,29 @@ public class CDL extends Discrete implements Groups, HasIBS, HasODE, HasSDE, Has
 	}
 
 	@Override
-	public void groupScores(int[] tCount, double[] tScore) {
-		int x = tCount[COOPERATE];
-		int y = tCount[DEFECT];
+	public void groupScores(int[] traitCount, double[] traitScore) {
+		int x = traitCount[COOPERATE];
+		int y = traitCount[DEFECT];
 		// int z = count[LONER];
 		int n = x + y;
 
-		tScore[LONER] = payLoner;
+		traitScore[LONER] = payLoner;
 		if (n < 2) {
 			// note: initInterest took care of adjusting payLoneXXX if public good is produced
 			// by a single individual
-			tScore[COOPERATE] = payLoneCoop;
-			tScore[DEFECT] = payLoneDefect;
+			traitScore[COOPERATE] = payLoneCoop;
+			traitScore[DEFECT] = payLoneDefect;
 			return;
 		}
 		if (othersOnly) {
 			int k = Math.max(0, x - 1);
-			tScore[COOPERATE] = (k * interest(k) / (n - 1) - 1.0) * costCoop;
-			tScore[DEFECT] = x * interest(x) / (n - 1) * costCoop;
+			traitScore[COOPERATE] = (k * interest(k) / (n - 1) - 1.0) * costCoop;
+			traitScore[DEFECT] = x * interest(x) / (n - 1) * costCoop;
 			return;
 		}
 		double b = x * costCoop * interest(x) / n;
-		tScore[COOPERATE] = b - costCoop;
-		tScore[DEFECT] = b;
+		traitScore[COOPERATE] = b - costCoop;
+		traitScore[DEFECT] = b;
 	}
 
 	/**

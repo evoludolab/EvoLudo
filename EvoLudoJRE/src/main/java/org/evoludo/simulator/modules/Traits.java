@@ -139,11 +139,11 @@ public class Traits extends Discrete implements Pairs,
 	}
 
 	@Override
-	public double pairScores(int me, int[] tCount, double[] tScore) {
+	public double pairScores(int me, int[] traitCount, double[] traitScore) {
 		double myScore = 0.0;
 		for (int i = 0; i < nTraits; i++) {
-			tScore[i] = payoff[i][me];
-			myScore += tCount[i] * payoff[me][i];
+			traitScore[i] = payoff[i][me];
+			myScore += traitCount[i] * payoff[me][i];
 		}
 		return myScore;
 	}
@@ -156,17 +156,17 @@ public class Traits extends Discrete implements Pairs,
 	}
 
 	@Override
-	public void mixedScores(int[] count, double[] traitScores) {
+	public void mixedScores(int[] traitCount, double[] traitScore) {
 		int m1 = -1;
 		for (int i = 0; i < nTraits; i++) {
-			m1 += count[i];
-			traitScores[i] = -payoff[i][i];
+			m1 += traitCount[i];
+			traitScore[i] = -payoff[i][i];
 			for (int j = 0; j < nTraits; j++)
-				traitScores[i] += count[j] * payoff[i][j];
+				traitScore[i] += traitCount[j] * payoff[i][j];
 		}
 		double im1 = 1.0 / m1;
 		for (int i = 0; i < nTraits; i++)
-			traitScores[i] *= im1;
+			traitScore[i] *= im1;
 	}
 
 	@Override

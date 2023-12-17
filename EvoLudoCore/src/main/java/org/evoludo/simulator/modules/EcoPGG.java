@@ -199,17 +199,17 @@ public class EcoPGG extends Discrete implements Groups,
 	 * \end{align*}
 	 */
 	@Override
-	public void mixedScores(int[] count, int n, double[] traitScores) {
-		int x = count[COOPERATE];
-		int y = count[DEFECT];
-		int z = count[VACANT];
+	public void mixedScores(int[] traitCount, int n, double[] traitScore) {
+		int x = traitCount[COOPERATE];
+		int y = traitCount[DEFECT];
+		int z = traitCount[VACANT];
 		int m = x + y + z;
 		int m1 = m - 1;
 		// if all or all but one are empty, payoffs are trivial
 		if (z >= m1) {
-			traitScores[COOPERATE] = payLoneCoop;
-			traitScores[DEFECT] = payLoneDefect;
-			traitScores[VACANT] = Double.NaN;
+			traitScore[COOPERATE] = payLoneCoop;
+			traitScore[DEFECT] = payLoneDefect;
+			traitScore[VACANT] = Double.NaN;
 			return;
 		}
 		// payoffs from public goods interactions
@@ -225,9 +225,9 @@ public class EcoPGG extends Discrete implements Groups,
 		double fz = 1.0 - interest * (m - n) * imz1 / n
 				+ zn1 * interest * imz1 * (m1 - (double) (n - 1) * (double) (z + 1) / n) - zn1;
 
-		traitScores[VACANT] = Double.NaN;
-		traitScores[DEFECT] = zn1 * payLoneDefect + b * cost;
-		traitScores[COOPERATE] = zn1 * payLoneCoop + (b - fz) * cost;
+		traitScore[VACANT] = Double.NaN;
+		traitScore[DEFECT] = zn1 * payLoneDefect + b * cost;
+		traitScore[COOPERATE] = zn1 * payLoneCoop + (b - fz) * cost;
 	}
 
 	@Override
@@ -244,26 +244,26 @@ public class EcoPGG extends Discrete implements Groups,
 	}
 
 	@Override
-	public double pairScores(int me, int[] tCount, double[] tScore) {
-		tScore[VACANT] = Double.NaN;
+	public double pairScores(int me, int[] traitCount, double[] traitScore) {
+		traitScore[VACANT] = Double.NaN;
 		if (me == VACANT) {
-			tScore[COOPERATE] = payLoneCoop;
-			tScore[DEFECT] = payLoneDefect;
+			traitScore[COOPERATE] = payLoneCoop;
+			traitScore[DEFECT] = payLoneDefect;
 			return Double.NaN;
 		}
 		switch (me) {
 			case COOPERATE:
-				tScore[COOPERATE] = (interest - 1.0) * cost;
-				tScore[DEFECT] = (interest / 2.0) * cost;
-				return tCount[COOPERATE] * (interest - 1.0) * cost + tCount[DEFECT] * (interest / 2.0 - 1.0) * cost
-						+ tCount[VACANT] * payLoneCoop;
+				traitScore[COOPERATE] = (interest - 1.0) * cost;
+				traitScore[DEFECT] = (interest / 2.0) * cost;
+				return traitCount[COOPERATE] * (interest - 1.0) * cost + traitCount[DEFECT] * (interest / 2.0 - 1.0) * cost
+						+ traitCount[VACANT] * payLoneCoop;
 
 			case DEFECT:
-				tScore[COOPERATE] = (interest / 2.0 - 1.0) * cost;
-				tScore[DEFECT] = 0.0;
-				return tCount[COOPERATE] * interest / 2.0 * cost +
+				traitScore[COOPERATE] = (interest / 2.0 - 1.0) * cost;
+				traitScore[DEFECT] = 0.0;
+				return traitCount[COOPERATE] * interest / 2.0 * cost +
 				// count[DEFECT]*0.0+
-						tCount[VACANT] * payLoneDefect;
+						traitCount[VACANT] * payLoneDefect;
 
 			default: // should not end here
 				throw new Error("Unknown strategy (" + me + ")");
@@ -271,18 +271,18 @@ public class EcoPGG extends Discrete implements Groups,
 	}
 
 	@Override
-	public void groupScores(int[] tCount, double[] tScore) {
-		int x = tCount[COOPERATE];
-		int n = x + tCount[DEFECT];
+	public void groupScores(int[] traitCount, double[] traitScore) {
+		int x = traitCount[COOPERATE];
+		int n = x + traitCount[DEFECT];
 
-		tScore[VACANT] = Double.NaN;
+		traitScore[VACANT] = Double.NaN;
 		if (n < 2) {
-			tScore[COOPERATE] = payLoneCoop;
-			tScore[DEFECT] = payLoneDefect;
+			traitScore[COOPERATE] = payLoneCoop;
+			traitScore[DEFECT] = payLoneDefect;
 			return;
 		}
-		tScore[DEFECT] = x * interest * cost / n;
-		tScore[COOPERATE] = tScore[DEFECT] - cost;
+		traitScore[DEFECT] = x * interest * cost / n;
+		traitScore[COOPERATE] = traitScore[DEFECT] - cost;
 	}
 
 	/**

@@ -156,25 +156,25 @@ public class CDLPQ extends CDLP {
 	}
 
 	@Override
-	public double pairScores(int me, int[] tCount, double[] tScore) {
-		double mypayoff = super.pairScores(me == PUNISH || me == SANCTIONING ? COOPERATE : me, tCount, tScore);
-		int v = tCount[SANCTIONING];
-		tScore[SANCTIONING] = tScore[COOPERATE] - costPoolPunish;
+	public double pairScores(int me, int[] traitCount, double[] traitScore) {
+		double mypayoff = super.pairScores(me == PUNISH || me == SANCTIONING ? COOPERATE : me, traitCount, traitScore);
+		int v = traitCount[SANCTIONING];
+		traitScore[SANCTIONING] = traitScore[COOPERATE] - costPoolPunish;
 		switch (me) {
 			case LONER:
 				return mypayoff + v * (payLoner - leniencyLoner * finePoolPunish);
 
 			case COOPERATE:
-				return mypayoff + v * tScore[COOPERATE];
+				return mypayoff + v * traitScore[COOPERATE];
 
 			case DEFECT:
-				return mypayoff + v * (tScore[DEFECT] - finePoolPunish);
+				return mypayoff + v * (traitScore[DEFECT] - finePoolPunish);
 
 			case PUNISH:
-				return mypayoff + v * tScore[PUNISH];
+				return mypayoff + v * traitScore[PUNISH];
 
 			case SANCTIONING:
-				return mypayoff + v * tScore[SANCTIONING];
+				return mypayoff + v * traitScore[SANCTIONING];
 
 			default: // should not end here
 				throw new Error("Unknown strategy (" + me + ")");
@@ -182,21 +182,21 @@ public class CDLPQ extends CDLP {
 	}
 
 	@Override
-	public void groupScores(int[] tCount, double[] tScores) {
-		int x = tCount[COOPERATE];
-		int y = tCount[DEFECT];
-		int z = tCount[LONER];
-		int w = tCount[PUNISH];
-		int v = tCount[SANCTIONING];
+	public void groupScores(int[] traitCount, double[] traitScore) {
+		int x = traitCount[COOPERATE];
+		int y = traitCount[DEFECT];
+		int z = traitCount[LONER];
+		int w = traitCount[PUNISH];
+		int v = traitCount[SANCTIONING];
 		int n = x + y + w + v;
 
-		tScores[LONER] = payLoner;
+		traitScore[LONER] = payLoner;
 		if (n < 2) {
-			tScores[COOPERATE] = payLoneCoop;
-			tScores[DEFECT] = payLoneDefect;
-			tScores[PUNISH] = payLoneCoop - z * leniencyLoner * costPeerPunish;
-			tScores[SANCTIONING] = payLoneCoop - costPoolPunish;
-			tScores[LONER] -= leniencyLoner * (w * finePeerPunish + v * finePoolPunish);
+			traitScore[COOPERATE] = payLoneCoop;
+			traitScore[DEFECT] = payLoneDefect;
+			traitScore[PUNISH] = payLoneCoop - z * leniencyLoner * costPeerPunish;
+			traitScore[SANCTIONING] = payLoneCoop - costPoolPunish;
+			traitScore[LONER] -= leniencyLoner * (w * finePeerPunish + v * finePoolPunish);
 			return;
 		}
 
@@ -210,19 +210,19 @@ public class CDLPQ extends CDLP {
 			shareC = (x + w + v) * costCoop * interest(x + w + v) / n;
 			shareD = shareC;
 		}
-		tScores[COOPERATE] = shareC - costCoop;
-		tScores[DEFECT] = shareD;
-		tScores[PUNISH] = tScores[COOPERATE];
-		tScores[SANCTIONING] = tScores[COOPERATE];
+		traitScore[COOPERATE] = shareC - costCoop;
+		traitScore[DEFECT] = shareD;
+		traitScore[PUNISH] = traitScore[COOPERATE];
+		traitScore[SANCTIONING] = traitScore[COOPERATE];
 
 		// peer-punishment
-		tScores[DEFECT] -= w * finePeerPunish;
-		tScores[PUNISH] -= y * costPeerPunish;
+		traitScore[DEFECT] -= w * finePeerPunish;
+		traitScore[PUNISH] -= y * costPeerPunish;
 		if (y > 0) {
 			// second-order free-riders are revealed by the presence of defectors and face
 			// the wrath of peer-punishers
-			tScores[COOPERATE] -= w * leniencyCoop * finePeerPunish;
-			tScores[PUNISH] -= x * leniencyCoop * costPeerPunish;
+			traitScore[COOPERATE] -= w * leniencyCoop * finePeerPunish;
+			traitScore[PUNISH] -= x * leniencyCoop * costPeerPunish;
 		}
 
 		// sanctioning: cooperators and peer-punishers fully count but punishment less
@@ -239,11 +239,11 @@ public class CDLPQ extends CDLP {
 		 * 		groupTypeScores[PUNISH] -= punit*leniencyCoop;
 		 * }
 		 */
-		tScores[LONER] -= v * leniencyLoner * finePoolPunish;
-		tScores[DEFECT] -= v * finePoolPunish;
-		tScores[COOPERATE] -= v * leniencyCoop * finePoolPunish;
-		tScores[PUNISH] -= v * leniencyCoop * finePoolPunish;
-		tScores[SANCTIONING] -= costPoolPunish;
+		traitScore[LONER] -= v * leniencyLoner * finePoolPunish;
+		traitScore[DEFECT] -= v * finePoolPunish;
+		traitScore[COOPERATE] -= v * leniencyCoop * finePoolPunish;
+		traitScore[PUNISH] -= v * leniencyCoop * finePoolPunish;
+		traitScore[SANCTIONING] -= costPoolPunish;
 	}
 
 	@Override

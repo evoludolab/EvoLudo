@@ -233,40 +233,39 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 	}
 
 	@Override
-	public double pairScores(int me, int[] tCount, double[] tScore) {
-		double[] traitCount = new double[nTraits];
+	public double pairScores(int me, int[] traitCount, double[] traitScore) {
+		double[] tCount = new double[nTraits];
 		// need trait counts as double array for dot-product
-		for (int n = 0; n < nTraits; n++)
-			traitCount[n] = tCount[n];
+		ArrayMath.copy(traitScore, tCount);
 
 		switch (me) {
 			case COOPERATE_RICH:
-				tScore[COOPERATE_RICH] = payoffMatrix[COOPERATE_RICH][COOPERATE_RICH];
-				tScore[DEFECT_RICH] = payoffMatrix[DEFECT_RICH][COOPERATE_RICH];
-				tScore[COOPERATE_POOR] = payoffMatrix[COOPERATE_POOR][COOPERATE_RICH];
-				tScore[DEFECT_POOR] = payoffMatrix[DEFECT_POOR][COOPERATE_RICH];
-				return ArrayMath.dot(payoffMatrix[COOPERATE_RICH], traitCount);
+				traitScore[COOPERATE_RICH] = payoffMatrix[COOPERATE_RICH][COOPERATE_RICH];
+				traitScore[DEFECT_RICH] = payoffMatrix[DEFECT_RICH][COOPERATE_RICH];
+				traitScore[COOPERATE_POOR] = payoffMatrix[COOPERATE_POOR][COOPERATE_RICH];
+				traitScore[DEFECT_POOR] = payoffMatrix[DEFECT_POOR][COOPERATE_RICH];
+				return ArrayMath.dot(payoffMatrix[COOPERATE_RICH], tCount);
 
 			case DEFECT_RICH:
-				tScore[COOPERATE_RICH] = payoffMatrix[COOPERATE_RICH][DEFECT_RICH];
-				tScore[DEFECT_RICH] = payoffMatrix[DEFECT_RICH][DEFECT_RICH];
-				tScore[COOPERATE_POOR] = payoffMatrix[COOPERATE_POOR][DEFECT_RICH];
-				tScore[DEFECT_POOR] = payoffMatrix[DEFECT_POOR][DEFECT_RICH];
-				return ArrayMath.dot(payoffMatrix[DEFECT_RICH], traitCount);
+				traitScore[COOPERATE_RICH] = payoffMatrix[COOPERATE_RICH][DEFECT_RICH];
+				traitScore[DEFECT_RICH] = payoffMatrix[DEFECT_RICH][DEFECT_RICH];
+				traitScore[COOPERATE_POOR] = payoffMatrix[COOPERATE_POOR][DEFECT_RICH];
+				traitScore[DEFECT_POOR] = payoffMatrix[DEFECT_POOR][DEFECT_RICH];
+				return ArrayMath.dot(payoffMatrix[DEFECT_RICH], tCount);
 
 			case COOPERATE_POOR:
-				tScore[COOPERATE_RICH] = payoffMatrix[COOPERATE_RICH][COOPERATE_POOR];
-				tScore[DEFECT_RICH] = payoffMatrix[DEFECT_RICH][COOPERATE_POOR];
-				tScore[COOPERATE_POOR] = payoffMatrix[COOPERATE_POOR][COOPERATE_POOR];
-				tScore[DEFECT_POOR] = payoffMatrix[DEFECT_POOR][COOPERATE_POOR];
-				return ArrayMath.dot(payoffMatrix[COOPERATE_POOR], traitCount);
+				traitScore[COOPERATE_RICH] = payoffMatrix[COOPERATE_RICH][COOPERATE_POOR];
+				traitScore[DEFECT_RICH] = payoffMatrix[DEFECT_RICH][COOPERATE_POOR];
+				traitScore[COOPERATE_POOR] = payoffMatrix[COOPERATE_POOR][COOPERATE_POOR];
+				traitScore[DEFECT_POOR] = payoffMatrix[DEFECT_POOR][COOPERATE_POOR];
+				return ArrayMath.dot(payoffMatrix[COOPERATE_POOR], tCount);
 
 			case DEFECT_POOR:
-				tScore[COOPERATE_RICH] = payoffMatrix[COOPERATE_RICH][DEFECT_POOR];
-				tScore[DEFECT_RICH] = payoffMatrix[DEFECT_RICH][DEFECT_POOR];
-				tScore[COOPERATE_POOR] = payoffMatrix[COOPERATE_POOR][DEFECT_POOR];
-				tScore[DEFECT_POOR] = payoffMatrix[DEFECT_POOR][DEFECT_POOR];
-				return ArrayMath.dot(payoffMatrix[DEFECT_POOR], traitCount);
+				traitScore[COOPERATE_RICH] = payoffMatrix[COOPERATE_RICH][DEFECT_POOR];
+				traitScore[DEFECT_RICH] = payoffMatrix[DEFECT_RICH][DEFECT_POOR];
+				traitScore[COOPERATE_POOR] = payoffMatrix[COOPERATE_POOR][DEFECT_POOR];
+				traitScore[DEFECT_POOR] = payoffMatrix[DEFECT_POOR][DEFECT_POOR];
+				return ArrayMath.dot(payoffMatrix[DEFECT_POOR], tCount);
 
 			default: // should not end here
 				throw new Error("Unknown strategy (" + me + ")");

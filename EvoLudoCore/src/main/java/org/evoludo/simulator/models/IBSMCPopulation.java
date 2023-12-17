@@ -383,7 +383,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	@Override
 	public void playPairGameAt(IBSGroup group) {
 		// for ephemeral scores calculate score of focal only
-		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
+		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
 			if (ephemeralScores) {
 				setScoreAt(group.focal, 0.0, 0);
@@ -459,7 +459,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	@Override
 	public void playGroupGameAt(IBSGroup group) {
 		// for ephemeral scores calculate score of focal only
-		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
+		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
 			if (ephemeralScores) {
 				setScoreAt(group.focal, 0.0, 0);

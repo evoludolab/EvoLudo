@@ -433,7 +433,7 @@ public abstract class IBS implements Model.IBS {
 		// if any population uses ephemeral payoffs a dummy random number
 		// generator is needed for the display
 		for (IBSPopulation pop : species) {
-			if (pop.getPlayerScoreReset().equals(ScoringType.EPHEMERAL)) {
+			if (pop.getPlayerScoring().equals(ScoringType.EPHEMERAL)) {
 				ephrng = rng.clone();
 				break;
 			}
@@ -691,7 +691,7 @@ public abstract class IBS implements Model.IBS {
 			dUpdates = (stepDt - stepDone) / gincr;
 		}
 		for (IBSPopulation pop : species) {
-			if (!pop.playerScoreReset.equals(ScoringType.EPHEMERAL))
+			if (!pop.playerScoring.equals(ScoringType.EPHEMERAL))
 				continue;
 			// recalculate scores of entire population for display
 			// these scores are just an example and are not used for
@@ -1164,12 +1164,12 @@ public abstract class IBS implements Model.IBS {
 							if (success)
 								logger.warning((species.size() > 1 ? pop.getModule().getName() + ": " : "") + //
 										"method to reset scores '" + rest + "' not recognized - using '"
-										+ pop.getPlayerScoreReset()
+										+ pop.getPlayerScoring()
 										+ "'");
 							success = false;
 							continue;
 						}
-						pop.setPlayerScoreReset(st);
+						pop.setPlayerScoring(st);
 					}
 					return success;
 				}
@@ -1177,7 +1177,7 @@ public abstract class IBS implements Model.IBS {
 				@Override
 				public void report(PrintStream output) {
 					for (IBSPopulation pop : species)
-						output.println("# resetscores:          " + pop.getPlayerScoreReset() + //
+						output.println("# resetscores:          " + pop.getPlayerScoring() + //
 							(isMultispecies	? " (" + pop.getModule().getName() + ")" : ""));
 				}
 			});

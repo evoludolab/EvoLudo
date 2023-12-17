@@ -166,28 +166,28 @@ public class RSP extends Discrete implements Pairs,
 	}
 
 	@Override
-	public double pairScores(int me, int[] tCount, double[] tScore) {
+	public double pairScores(int me, int[] traitCount, double[] traitScore) {
 		switch (me) {
 			case ROCK:
-				tScore[ROCK] = payoff[ROCK][ROCK];
-				tScore[SCISSORS] = payoff[SCISSORS][ROCK];
-				tScore[PAPER] = payoff[PAPER][ROCK];
-				return tCount[ROCK] * payoff[ROCK][ROCK] + tCount[SCISSORS] * payoff[ROCK][SCISSORS]
-						+ tCount[PAPER] * payoff[ROCK][PAPER];
+				traitScore[ROCK] = payoff[ROCK][ROCK];
+				traitScore[SCISSORS] = payoff[SCISSORS][ROCK];
+				traitScore[PAPER] = payoff[PAPER][ROCK];
+				return traitCount[ROCK] * payoff[ROCK][ROCK] + traitCount[SCISSORS] * payoff[ROCK][SCISSORS]
+						+ traitCount[PAPER] * payoff[ROCK][PAPER];
 
 			case SCISSORS:
-				tScore[ROCK] = payoff[ROCK][SCISSORS];
-				tScore[SCISSORS] = payoff[SCISSORS][SCISSORS];
-				tScore[PAPER] = payoff[PAPER][SCISSORS];
-				return tCount[ROCK] * payoff[SCISSORS][ROCK] + tCount[SCISSORS] * payoff[SCISSORS][SCISSORS]
-						+ tCount[PAPER] * payoff[SCISSORS][PAPER];
+				traitScore[ROCK] = payoff[ROCK][SCISSORS];
+				traitScore[SCISSORS] = payoff[SCISSORS][SCISSORS];
+				traitScore[PAPER] = payoff[PAPER][SCISSORS];
+				return traitCount[ROCK] * payoff[SCISSORS][ROCK] + traitCount[SCISSORS] * payoff[SCISSORS][SCISSORS]
+						+ traitCount[PAPER] * payoff[SCISSORS][PAPER];
 
 			case PAPER:
-				tScore[ROCK] = payoff[ROCK][PAPER];
-				tScore[SCISSORS] = payoff[SCISSORS][PAPER];
-				tScore[PAPER] = payoff[PAPER][PAPER];
-				return tCount[ROCK] * payoff[PAPER][ROCK] + tCount[SCISSORS] * payoff[PAPER][SCISSORS]
-						+ tCount[PAPER] * payoff[PAPER][PAPER];
+				traitScore[ROCK] = payoff[ROCK][PAPER];
+				traitScore[SCISSORS] = payoff[SCISSORS][PAPER];
+				traitScore[PAPER] = payoff[PAPER][PAPER];
+				return traitCount[ROCK] * payoff[PAPER][ROCK] + traitCount[SCISSORS] * payoff[PAPER][SCISSORS]
+						+ traitCount[PAPER] * payoff[PAPER][PAPER];
 
 			default: // should not end here
 				throw new Error("Unknown strategy (" + me + ")");
@@ -205,15 +205,15 @@ public class RSP extends Discrete implements Pairs,
 	}
 
 	@Override
-	public void mixedScores(int[] count, double[] traitScores) {
-		int r = count[ROCK];
-		int s = count[SCISSORS];
-		int p = count[PAPER];
+	public void mixedScores(int[] traitCount, double[] traitScore) {
+		int r = traitCount[ROCK];
+		int s = traitCount[SCISSORS];
+		int p = traitCount[PAPER];
 		double im1 = 1.0 / (r + s + p - 1);
-		traitScores[ROCK] = ((r - 1) * payoff[ROCK][ROCK] + s * payoff[ROCK][SCISSORS] + p * payoff[ROCK][PAPER]) * im1;
-		traitScores[SCISSORS] = (r * payoff[SCISSORS][ROCK] + (s - 1) * payoff[SCISSORS][SCISSORS]
+		traitScore[ROCK] = ((r - 1) * payoff[ROCK][ROCK] + s * payoff[ROCK][SCISSORS] + p * payoff[ROCK][PAPER]) * im1;
+		traitScore[SCISSORS] = (r * payoff[SCISSORS][ROCK] + (s - 1) * payoff[SCISSORS][SCISSORS]
 				+ p * payoff[SCISSORS][PAPER]) * im1;
-		traitScores[PAPER] = (r * payoff[PAPER][ROCK] + s * payoff[PAPER][SCISSORS] + (p - 1) * payoff[PAPER][PAPER])
+		traitScore[PAPER] = (r * payoff[PAPER][ROCK] + s * payoff[PAPER][SCISSORS] + (p - 1) * payoff[PAPER][PAPER])
 				* im1;
 	}
 

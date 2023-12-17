@@ -134,14 +134,14 @@ public class CSD extends Continuous implements Pairs, HasIBS, HasPop2D.Strategy,
 	}
 
 	@Override
-	public double pairScores(double me, double[] group, int len, double[] payoffs) {
+	public double pairScores(double me, double[] groupTraits, int len, double[] groupPayoffs) {
 		double yourInvest;
 		double myScore = 0.0;
 
 		for (int n = 0; n < len; n++) {
-			yourInvest = group[n];
+			yourInvest = groupTraits[n];
 			myScore += traits2payoff.payoff(me, yourInvest);
-			payoffs[n] = traits2payoff.payoff(yourInvest, me);
+			groupPayoffs[n] = traits2payoff.payoff(yourInvest, me);
 		}
 		return myScore;
 	}

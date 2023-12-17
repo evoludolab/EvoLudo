@@ -87,14 +87,14 @@ public abstract class Continuous extends Module {
 		 * ({@code nGroup=2}, {@code pairwise=true}), otherwise see
 		 * {@link Groups#groupScores(double, double[], int, double[])}.
 		 * 
-		 * @param me      the trait of the focal individual
-		 * @param group   the traits of the group members
-		 * @param len     the number of memebrs in the group
-		 * @param payoffs the array for returning the payoffs/scores for each group
-		 *                member
+		 * @param me          the trait of the focal individual
+		 * @param groupTraits the traits of the group members
+		 * @param len         the number of memebrs in the group
+		 * @param groupPayoffs     the array for returning the payoffs/scores for each group
+		 *                    member
 		 * @return the total (accumulated) payoff/score for the focal individual
 		 */
-		public double pairScores(double me, double[] group, int len, double[] payoffs);
+		public double pairScores(double me, double[] groupTraits, int len, double[] groupPayoffs);
 	}
 
 	/**
@@ -134,14 +134,14 @@ public abstract class Continuous extends Module {
 		 * traits (for groups with sizes {@code nGroup&gt;2}, otherwise see
 		 * {@link #pairScores(double, double[], int, double[])}).
 		 * 
-		 * @param me      the trait of the focal individual
-		 * @param group   the traits of the group members
-		 * @param len     the number of members in the group
-		 * @param payoffs the array for returning the payoffs/scores for each group
-		 *                member
+		 * @param me           the trait of the focal individual
+		 * @param groupTraits  the traits of the group members
+		 * @param len          the number of members in the group
+		 * @param groupPayoffs the array for returning the payoffs/scores for each group
+		 *                     member
 		 * @return the payoff/score for the focal individual
 		 */
-		public double groupScores(double me, double[] group, int len, double[] payoffs);
+		public double groupScores(double me, double[] groupTraits, int len, double[] groupPayoffs);
 	}
 
 	/**
@@ -183,14 +183,14 @@ public abstract class Continuous extends Module {
 		 * ({@code nGroup=2}, {@code pairwise=true}), otherwise see
 		 * {@link Groups#groupScores(double, double[], int, double[])}.
 		 * 
-		 * @param me      the trait of the focal individual
-		 * @param group   the traits of the group members
-		 * @param len     the number of memebrs in the group
-		 * @param payoffs the array for returning the payoffs/scores for each group
-		 *                member
+		 * @param me          the trait of the focal individual
+		 * @param groupTraits the traits of the group members
+		 * @param len         the number of memebrs in the group
+		 * @param groupPayoffs     the array for returning the payoffs/scores for each group
+		 *                    member
 		 * @return the total (accumulated) payoff/score for the focal individual
 		 */
-		public double pairScores(double me[], double[] group, int len, double[] payoffs);
+		public double pairScores(double me[], double[] groupTraits, int len, double[] groupPayoffs);
 	}
 
 	/**

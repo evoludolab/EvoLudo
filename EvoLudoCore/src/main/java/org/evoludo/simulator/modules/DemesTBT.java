@@ -353,7 +353,7 @@ public class DemesTBT extends TBT {
 			}
 			// no actual strategy change occurred - reset score always (default) or only on
 			// actual change?
-			if (playerScoreReset.equals(ScoringType.RESET_ALWAYS))
+			if (playerScoring.equals(ScoringType.RESET_ALWAYS))
 				resetScoreAt(vacant);
 			playGameAt(vacant);
 		}

@@ -516,7 +516,7 @@ public abstract class IBSPopulation {
 	 * 
 	 * @see IBS#cloScoringType
 	 */
-	protected ScoringType playerScoreReset;
+	protected ScoringType playerScoring;
 
 	/**
 	 * The type of migration.
@@ -2260,7 +2260,7 @@ public abstract class IBSPopulation {
 		}
 		// no actual strategy change occurred - reset score always (default) or only on
 		// actual change?
-		if (playerScoreReset.equals(ScoringType.RESET_ALWAYS))
+		if (playerScoring.equals(ScoringType.RESET_ALWAYS))
 			resetScoreAt(dest);
 		playGameAt(dest);
 	}
@@ -2292,7 +2292,7 @@ public abstract class IBSPopulation {
 	 * Perform a single update of the individual with index {@code me}. Returns
 	 * {@code true} if the individual adopted the trait of the reference individual.
 	 * Does not imply that the trait changed in discrete modules. Whether the
-	 * individuals score is reset depends on {@link #playerScoreReset}
+	 * individuals score is reset depends on {@link #playerScoring}
 	 *
 	 * @param me the index of the focal individual
 	 * @return {@code true} if trait of reference adopted
@@ -2303,7 +2303,7 @@ public abstract class IBSPopulation {
 		// note: choose random neighbor among in-neighbors (those are upstream to serve
 		// as models; this is the opposite for birth-death scenarios)
 		referenceGroup.pickAt(me, reproduction, false);
-		if (playerScoreReset.equals(ScoringType.EPHEMERAL)) {
+		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
 			// calculate scores of all individual involved in updating
 			playGameAt(me);
 			for (int i = 0; i < referenceGroup.nSampled; i++)
@@ -2373,7 +2373,7 @@ public abstract class IBSPopulation {
 			mutateStrategyAt(me, switched);
 			return true; // if mutated always indicate change
 		}
-		if (playerScoreReset.equals(ScoringType.RESET_ALWAYS))
+		if (playerScoring.equals(ScoringType.RESET_ALWAYS))
 			return switched;
 		// signal change only if actual change of strategy occurred
 		return !isSameStrategy(me);
@@ -2385,7 +2385,7 @@ public abstract class IBSPopulation {
 	 * models in the array {@code refGroup}. Returns {@code true} if the individual
 	 * adopted the trait of the reference individual. Does not imply that the trait
 	 * changed in discrete modules. Whether the individuals score is reset depends
-	 * on {@link #playerScoreReset}.
+	 * on {@link #playerScoring}.
 	 * 
 	 * <h3>Notes:</h3>
 	 * <ol>
@@ -2450,7 +2450,7 @@ public abstract class IBSPopulation {
 	 * Returns {@code true} if the individual adopted the trait of the reference
 	 * individual. Does not imply that the trait changed in discrete modules.
 	 * Whether the individuals score is reset depends on
-	 * {@link #playerScoreReset}.
+	 * {@link #playerScoring}.
 	 * 
 	 * <h3>Notes:</h3>
 	 * For the best update it does not matter whether scores are averaged or
@@ -2498,7 +2498,7 @@ public abstract class IBSPopulation {
 	 * proportional to their scores. Returns {@code true} if the individual adopted
 	 * the trait of the reference individual. Does not imply that the trait changed
 	 * in discrete modules. Whether the individuals score is reset depends on
-	 * {@link #playerScoreReset}.
+	 * {@link #playerScoring}.
 	 *
 	 * @param me         the index of the focal individual
 	 * @param refGroup   the group of reference individuals
@@ -2561,7 +2561,7 @@ public abstract class IBSPopulation {
 	 * j}\in[0,1]\). Returns {@code true} if the individual adopted the trait
 	 * of the reference individual. Does not imply that the trait changed in
 	 * discrete modules. Whether the individuals score is reset depends on
-	 * {@link #playerScoreReset}.
+	 * {@link #playerScoring}.
 	 * 
 	 * @param me         the index of the focal individual
 	 * @param refGroup   the group of reference individuals
@@ -2586,7 +2586,7 @@ public abstract class IBSPopulation {
 	 * standard replicator equation in the continuum limit. Returns {@code true} if
 	 * the individual adopted the trait of the reference individual. Does not imply
 	 * that the trait changed in discrete modules. Whether the individuals score is
-	 * reset depends on {@link #playerScoreReset}.
+	 * reset depends on {@link #playerScoring}.
 	 * 
 	 * @param me         the index of the focal individual
 	 * @param refGroup   the group of reference individuals
@@ -2603,7 +2603,7 @@ public abstract class IBSPopulation {
 	 * Helper method for replicator type updates. Returns {@code true} if the
 	 * individual adopted the trait of the reference individual. Does not imply that
 	 * the trait changed in discrete modules. Whether the individuals score is reset
-	 * depends on {@link #playerScoreReset}.
+	 * depends on {@link #playerScoring}.
 	 * 
 	 * @param me         the index of the focal individual
 	 * @param refGroup   the group of reference individuals
@@ -2748,7 +2748,7 @@ public abstract class IBSPopulation {
 	 * \(\Theta(0)=1/2\). Returns {@code true} if the individual adopted the trait
 	 * of the reference individual. Does not imply that the trait changed in
 	 * discrete modules. Whether the individuals score is reset depends on
-	 * {@link #playerScoreReset}.
+	 * {@link #playerScoring}.
 	 *
 	 * @param me         the index of the focal individual
 	 * @param refGroup   the group of reference individuals
@@ -3184,7 +3184,7 @@ public abstract class IBSPopulation {
 
 		if (module.isStatic()) {
 			adjustScores = true;
-			playerScoreReset = ScoringType.RESET_ALWAYS;
+			playerScoring = ScoringType.RESET_ALWAYS;
 		} else {
 			// check if adjustScores can be used - subclasses may have different opinions
 			adjustScores = doAdjustScores();
@@ -3202,7 +3202,7 @@ public abstract class IBSPopulation {
 		}
 
 		nMixedInter = -1;
-		boolean isEphemeral = playerScoreReset.equals(ScoringType.EPHEMERAL);
+		boolean isEphemeral = playerScoring.equals(ScoringType.EPHEMERAL);
 		hasLookupTable = module.isStatic() || //
 				(adjustScores && interaction.isType(Geometry.Type.MEANFIELD)) || //
 				(isEphemeral && interaction.isType(Geometry.Type.MEANFIELD) //
@@ -3413,7 +3413,7 @@ public abstract class IBSPopulation {
 		return !(interaction.isType(Geometry.Type.MEANFIELD) || //
 				(interaction.isType(Geometry.Type.HIERARCHY) && interaction.subgeometry == Geometry.Type.MEANFIELD) || //
 				!interactionGroup.isSampling(IBSGroup.SamplingType.ALL) || //
-				!playerScoreReset.equals(ScoringType.RESET_ALWAYS));
+				!playerScoring.equals(ScoringType.RESET_ALWAYS));
 	}
 
 	/**
@@ -3469,7 +3469,7 @@ public abstract class IBSPopulation {
 			typeScores = null;
 			typeFitness = null;
 		}
-		if (hasLookupTable && !playerScoreReset.equals(ScoringType.EPHEMERAL)) {
+		if (hasLookupTable && !playerScoring.equals(ScoringType.EPHEMERAL)) {
 			// lookup tables don't need scores, fitness or interactions
 			scores = null;
 			fitness = null;
@@ -4169,10 +4169,10 @@ public abstract class IBSPopulation {
 	 * 
 	 * @param reset the flag to indicate whether scores are always reset
 	 * 
-	 * @see #playerScoreReset
+	 * @see #playerScoring
 	 */
-	public void setPlayerScoreReset(ScoringType type) {
-		playerScoreReset = type;
+	public void setPlayerScoring(ScoringType type) {
+		playerScoring = type;
 	}
 
 	/**
@@ -4182,10 +4182,10 @@ public abstract class IBSPopulation {
 	 * 
 	 * @return {@code true} if scores are always reset
 	 * 
-	 * @see #playerScoreReset
+	 * @see #playerScoring
 	 */
-	public ScoringType getPlayerScoreReset() {
-		return playerScoreReset;
+	public ScoringType getPlayerScoring() {
+		return playerScoring;
 	}
 
 	/**

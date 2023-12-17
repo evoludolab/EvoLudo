@@ -300,28 +300,28 @@ public class Mutualism extends Discrete implements Pairs,
 	 * different species)
 	 */
 	@Override
-	public void mixedScores(int[] count, double[] traitScores) {
+	public void mixedScores(int[] traitCount, double[] traitScore) {
 		// avoid self interactions in intra-species interactions
 		int selfi = getInteractionGeometry().isInterspecies() ? 0 : 1;
-		int x = count[COOPERATE];
-		int y = count[DEFECT];
+		int x = traitCount[COOPERATE];
+		int y = traitCount[DEFECT];
 		double in = 1.0 / (x + y - selfi);
-		traitScores[COOPERATE] = ((x - selfi) * alpha + y * beta) * in;
-		traitScores[DEFECT] = (x * gamma + (y - selfi) * delta) * in;
+		traitScore[COOPERATE] = ((x - selfi) * alpha + y * beta) * in;
+		traitScore[DEFECT] = (x * gamma + (y - selfi) * delta) * in;
 	}
 
 	@Override
-	public double pairScores(int me, int[] tCount, double[] tScore) {
+	public double pairScores(int me, int[] traitCount, double[] traitScore) {
 		switch (me) {
 			case COOPERATE:
-				tScore[COOPERATE] = partner.alpha;
-				tScore[DEFECT] = partner.gamma;
-				return tCount[COOPERATE] * alpha + tCount[DEFECT] * beta;
+				traitScore[COOPERATE] = partner.alpha;
+				traitScore[DEFECT] = partner.gamma;
+				return traitCount[COOPERATE] * alpha + traitCount[DEFECT] * beta;
 
 			case DEFECT:
-				tScore[COOPERATE] = partner.beta;
-				tScore[DEFECT] = partner.delta;
-				return tCount[COOPERATE] * gamma + tCount[DEFECT] * delta;
+				traitScore[COOPERATE] = partner.beta;
+				traitScore[DEFECT] = partner.delta;
+				return traitCount[COOPERATE] * gamma + traitCount[DEFECT] * delta;
 
 			default: // should not end here
 				throw new Error("Unknown strategy (" + me + ")");

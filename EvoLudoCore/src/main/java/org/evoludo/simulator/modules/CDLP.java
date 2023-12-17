@@ -196,31 +196,31 @@ public class CDLP extends CDL {
 	 * (second-order free riding) and in turn may get punished by the punisher.
 	 */
 	@Override
-	public double pairScores(int me, int[] tCount, double[] tScore) {
-		double mypayoff = super.pairScores(me == PUNISH ? COOPERATE : me, tCount, tScore);
-		int w = tCount[PUNISH];
-		tScore[PUNISH] = tScore[COOPERATE];
+	public double pairScores(int me, int[] traitCount, double[] traitScore) {
+		double mypayoff = super.pairScores(me == PUNISH ? COOPERATE : me, traitCount, traitScore);
+		int w = traitCount[PUNISH];
+		traitScore[PUNISH] = traitScore[COOPERATE];
 
 		switch (me) {
 			case LONER:
-				tScore[PUNISH] -= leniencyLoner * costPeerPunish;
+				traitScore[PUNISH] -= leniencyLoner * costPeerPunish;
 				return mypayoff + w * (payLoner - leniencyLoner * finePeerPunish);
 
 			case COOPERATE:
-				return mypayoff + w * tScore[COOPERATE];
+				return mypayoff + w * traitScore[COOPERATE];
 
 			case DEFECT:
-				tScore[PUNISH] -= costPeerPunish;
-				return mypayoff + w * (tScore[DEFECT] - finePeerPunish);
+				traitScore[PUNISH] -= costPeerPunish;
+				return mypayoff + w * (traitScore[DEFECT] - finePeerPunish);
 
 			case PUNISH:
-				tScore[LONER] -= leniencyLoner * finePeerPunish;
-				tScore[DEFECT] -= finePeerPunish;
+				traitScore[LONER] -= leniencyLoner * finePeerPunish;
+				traitScore[DEFECT] -= finePeerPunish;
 				// in pairwise interactions cooperators never get fined because their
 				// failure to punish never gets revealed.
-				tScore[PUNISH] -= leniencyLoner * costPeerPunish;
-				return mypayoff + w * tScore[PUNISH]
-						- (tCount[LONER] * leniencyLoner + tCount[DEFECT]) * costPeerPunish;
+				traitScore[PUNISH] -= leniencyLoner * costPeerPunish;
+				return mypayoff + w * traitScore[PUNISH]
+						- (traitCount[LONER] * leniencyLoner + traitCount[DEFECT]) * costPeerPunish;
 
 			default: // should not end here
 				throw new Error("Unknown strategy (" + me + ")");
@@ -228,19 +228,19 @@ public class CDLP extends CDL {
 	}
 
 	@Override
-	public void groupScores(int[] tCount, double[] tScores) {
-		int x = tCount[COOPERATE];
-		int y = tCount[DEFECT];
-		int z = tCount[LONER];
-		int w = tCount[PUNISH];
+	public void groupScores(int[] traitCount, double[] traitScore) {
+		int x = traitCount[COOPERATE];
+		int y = traitCount[DEFECT];
+		int z = traitCount[LONER];
+		int w = traitCount[PUNISH];
 		int n = x + y + w;
 
-		tScores[LONER] = payLoner;
+		traitScore[LONER] = payLoner;
 		if (n < 2) {
-			tScores[COOPERATE] = payLoneCoop;
-			tScores[DEFECT] = payLoneDefect;
-			tScores[PUNISH] = payLoneCoop - z * leniencyLoner * costPeerPunish;
-			tScores[LONER] -= w * leniencyLoner * finePeerPunish;
+			traitScore[COOPERATE] = payLoneCoop;
+			traitScore[DEFECT] = payLoneDefect;
+			traitScore[PUNISH] = payLoneCoop - z * leniencyLoner * costPeerPunish;
+			traitScore[LONER] -= w * leniencyLoner * finePeerPunish;
 			return;
 		}
 
@@ -254,14 +254,14 @@ public class CDLP extends CDL {
 			shareC = (x + w) * costCoop * interest(x + w) / n;
 			shareD = shareC;
 		}
-		tScores[COOPERATE] = shareC - costCoop;
-		tScores[DEFECT] = shareD - w * finePeerPunish;
-		tScores[PUNISH] = tScores[COOPERATE] - z * leniencyLoner * costPeerPunish;
+		traitScore[COOPERATE] = shareC - costCoop;
+		traitScore[DEFECT] = shareD - w * finePeerPunish;
+		traitScore[PUNISH] = traitScore[COOPERATE] - z * leniencyLoner * costPeerPunish;
 		if (y > 0) {
 			// note: non-punishing cooperators reveal themselves only in the
 			// presence of defectors
-			tScores[COOPERATE] -= w * leniencyCoop * finePeerPunish;
-			tScores[PUNISH] -= (y + x * leniencyCoop) * costPeerPunish;
+			traitScore[COOPERATE] -= w * leniencyCoop * finePeerPunish;
+			traitScore[PUNISH] -= (y + x * leniencyCoop) * costPeerPunish;
 		}
 	}
 

@@ -106,11 +106,11 @@ public class EcoTBT extends TBT implements HasS3, HasPhase2D {
 	}
 
 	@Override
-	public double pairScores(int me, int[] tCount, double[] tScore) {
+	public double pairScores(int me, int[] traitCount, double[] traitScore) {
 		if (me != VACANT)
-			return super.pairScores(me, tCount, tScore);
+			return super.pairScores(me, traitCount, traitScore);
 		// site is vacant
-		Arrays.fill(tScore, 0.0);
+		Arrays.fill(traitScore, 0.0);
 		return Double.NaN;
 	}
 
@@ -119,15 +119,15 @@ public class EcoTBT extends TBT implements HasS3, HasPhase2D {
 	 * a single individual and hence no interactions.
 	 */
 	@Override
-	public void mixedScores(int[] count, double[] traitScores) {
+	public void mixedScores(int[] traitCount, double[] traitScore) {
 		// note: cannot simply check getPopulationSize because this also needs to work
 		// for well-mixed demes
-		if (count[COOPERATE] + count[DEFECT] <= 1) {
+		if (traitCount[COOPERATE] + traitCount[DEFECT] <= 1) {
 			// only single individual left - no interactions
-			traitScores[COOPERATE] = traitScores[DEFECT] = 0.0;
+			traitScore[COOPERATE] = traitScore[DEFECT] = 0.0;
 			return;
 		}
-		super.mixedScores(count, traitScores);
+		super.mixedScores(traitCount, traitScore);
 	}
 
 	EcoTBTMap map;

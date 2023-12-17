@@ -181,7 +181,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 	@Override
 	public void playPairGameAt(IBSGroup group) {
 		// for ephemeral scores calculate score of focal only
-		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
+		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
 			if (ephemeralScores) {
 				setScoreAt(group.focal, 0.0, 0);
@@ -265,7 +265,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 		int me = group.focal;
 		double myStrat = strategies[me];
 		// for ephemeral scores calculate score of focal only
-		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
+		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 
 		switch (group.samplingType) {
 			// interact with all neighbors - interact repeatedly if nGroup<groupSize+1

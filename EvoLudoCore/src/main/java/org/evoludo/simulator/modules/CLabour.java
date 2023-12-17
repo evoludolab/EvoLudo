@@ -103,13 +103,13 @@ public class CLabour extends Continuous implements MultiPairs, HasIBS, HasPop2D.
 	}
 
 	@Override
-	public double pairScores(double[] me, double[] group, int len, double[] payoffs) {
+	public double pairScores(double[] me, double[] groupTraits, int len, double[] groupPayoffs) {
 		double myScore = 0.0;
 
 		for (int n = 0; n < len; n++) {
-			System.arraycopy(group, n * nTraits, you, 0, nTraits);
+			System.arraycopy(groupTraits, n * nTraits, you, 0, nTraits);
 			myScore += traits2payoff.payoff(me, you);
-			payoffs[n] = traits2payoff.payoff(you, me);
+			groupPayoffs[n] = traits2payoff.payoff(you, me);
 		}
 		return myScore;
 	}

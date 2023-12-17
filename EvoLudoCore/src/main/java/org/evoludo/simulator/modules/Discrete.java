@@ -74,12 +74,12 @@ public abstract class Discrete extends Module {
 		 * {@link Groups#groupScores(int[], double[])}.
 		 * 
 		 * @param me     the trait index of the focal individual
-		 * @param tCount number of opponents with each trait/strategy
-		 * @param tScore array for returning the scores of each opponent trait/strategy
+		 * @param traitCount number of opponents with each trait/strategy
+		 * @param traitScore array for returning the scores of each opponent trait/strategy
 		 * @return score of focal individual {@code me} accumulated over all
 		 *         interactions
 		 */
-		public double pairScores(int me, int[] tCount, double[] tScore);
+		public double pairScores(int me, int[] traitCount, double[] traitScore);
 
 		/**
 		 * Calculate the average payoff/score in a finite population with the number of
@@ -99,11 +99,11 @@ public abstract class Discrete extends Module {
 		 * {@link org.evoludo.simulator.models.IBSMCPopulation#check() CXPopulation} for
 		 * an example).
 		 * 
-		 * @param count       number of individuals for each trait/strategy
-		 * @param traitScores array for returning the payoffs/scores of each
+		 * @param traitCount       number of individuals for each trait/strategy
+		 * @param traitScore array for returning the payoffs/scores of each
 		 *                    trait/strategy
 		 */
-		public void mixedScores(int[] count, double[] traitScores);
+		public void mixedScores(int[] traitCount, double[] traitScore);
 	}
 
 	/**
@@ -140,11 +140,12 @@ public abstract class Discrete extends Module {
 		 * sizes {@code nGroup&gt;2}, otherwise see
 		 * {@link #pairScores(int, int[], double[])}).
 		 * 
-		 * @param tCount group composition given by the number of individuals with each
-		 *               trait/strategy
-		 * @param tScore array for returning the payoffs/scores of each trait/strategy
+		 * @param traitCount group composition given by the number of individuals with
+		 *                   each trait/strategy
+		 * @param traitScore array for returning the payoffs/scores of each
+		 *                   trait/strategy
 		 */
-		public void groupScores(int[] tCount, double[] tScore);
+		public void groupScores(int[] traitCount, double[] traitScore);
 
 		/**
 		 * Calculate the average payoff/score in a finite population with the number of
@@ -174,16 +175,16 @@ public abstract class Discrete extends Module {
 		 * {@link #pairScores(int, int[], double[])} or
 		 * {@link #groupScores(int[], double[])}, respectively.
 		 * 
-		 * @param count       number of individuals for each trait/strategy
+		 * @param traitCount       number of individuals for each trait/strategy
 		 * @param n           interaction group size
-		 * @param traitScores array for returning the payoffs/scores of each
+		 * @param traitScore array for returning the payoffs/scores of each
 		 *                    trait/strategy
 		 */
-		public void mixedScores(int[] count, int n, double[] traitScores);
+		public void mixedScores(int[] traitCount, int n, double[] traitScore);
 
 		@Override
-		public default void mixedScores(int[] count, double[] traitScores) {
-			mixedScores(count, 2, traitScores);
+		public default void mixedScores(int[] traitCount, double[] traitScore) {
+			mixedScores(traitCount, 2, traitScore);
 		}
 	}
 

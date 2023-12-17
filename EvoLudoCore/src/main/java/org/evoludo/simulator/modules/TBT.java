@@ -206,17 +206,17 @@ public class TBT extends Discrete implements Pairs,
 	}
 
 	@Override
-	public double pairScores(int me, int[] tCount, double[] tScore) {
+	public double pairScores(int me, int[] traitCount, double[] traitScore) {
 		switch (me) {
 			case COOPERATE:
-				tScore[COOPERATE] = reward;
-				tScore[DEFECT] = temptation;
-				return tCount[COOPERATE] * reward + tCount[DEFECT] * sucker;
+				traitScore[COOPERATE] = reward;
+				traitScore[DEFECT] = temptation;
+				return traitCount[COOPERATE] * reward + traitCount[DEFECT] * sucker;
 
 			case DEFECT:
-				tScore[COOPERATE] = sucker;
-				tScore[DEFECT] = punishment;
-				return tCount[COOPERATE] * temptation + tCount[DEFECT] * punishment;
+				traitScore[COOPERATE] = sucker;
+				traitScore[DEFECT] = punishment;
+				return traitCount[COOPERATE] * temptation + traitCount[DEFECT] * punishment;
 
 			default: // should not end here
 				throw new Error("Unknown strategy (" + me + ")");
@@ -230,12 +230,12 @@ public class TBT extends Discrete implements Pairs,
 	}
 
 	@Override
-	public void mixedScores(int[] count, double[] traitScores) {
-		int x = count[COOPERATE];
-		int y = count[DEFECT];
+	public void mixedScores(int[] traitCount, double[] traitScore) {
+		int x = traitCount[COOPERATE];
+		int y = traitCount[DEFECT];
 		double in = 1.0 / (x + y - 1);
-		traitScores[COOPERATE] = ((x - 1) * reward + y * sucker) * in;
-		traitScores[DEFECT] = (x * temptation + (y - 1) * punishment) * in;
+		traitScore[COOPERATE] = ((x - 1) * reward + y * sucker) * in;
+		traitScore[DEFECT] = (x * temptation + (y - 1) * punishment) * in;
 	}
 
 	/**

@@ -1121,7 +1121,7 @@ public class IBSDPopulation extends IBSPopulation {
 		double myScore;
 		countTraits(traitCount, groupStrat, 0, group.nSampled);
 		// for ephemeral scores calculate score of focal only
-		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
+		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
 			// isolated individual (note the bookkeeping above is overkill and can be
 			// optimized)
@@ -1292,7 +1292,7 @@ public class IBSDPopulation extends IBSPopulation {
 		stripGroupVacancies(group, groupStrat, groupIdxs);
 		countTraits(traitCount, groupStrat, 0, group.nSampled);
 		// for ephemeral scores calculate score of focal only
-		boolean ephemeralScores = playerScoreReset.equals(ScoringType.EPHEMERAL);
+		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
 			// isolated individual (note the bookkeeping above is overkill and can be
 			// optimized)
@@ -1891,7 +1891,7 @@ public class IBSDPopulation extends IBSPopulation {
 		// relaxed conditions for adjusting scores: for discrete strategies unstructured
 		// populations are feasible.
 		return !(!interactionGroup.isSampling(IBSGroup.SamplingType.ALL) ||
-				!playerScoreReset.equals(ScoringType.RESET_ALWAYS));
+				!playerScoring.equals(ScoringType.RESET_ALWAYS));
 	}
 
 	@Override
