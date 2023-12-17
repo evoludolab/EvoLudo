@@ -37,7 +37,6 @@ import java.util.Arrays;
 import java.util.Set;
 
 import org.evoludo.geom.Point2D;
-import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
 import org.evoludo.graphics.ParaGraph;
 import org.evoludo.ui.ContextMenu;
@@ -60,7 +59,7 @@ import com.google.gwt.user.client.Command;
  *
  * @author Christoph Hauert
  */
-public class MVPhase2D extends MVAbstract implements AbstractGraph.InitController {
+public class MVPhase2D extends MVAbstract {
 
 	@SuppressWarnings("hiding")
 	protected Set<ParaGraph> graphs;
@@ -194,7 +193,7 @@ public class MVPhase2D extends MVAbstract implements AbstractGraph.InitControlle
 	}
 
 	@Override
-	public boolean setInit(double[] init) {
+	public boolean setInitialState(double[] init) {
 		// no further processing should be needed - just forward to module and engine
 		Module module = engine.getModule();
 		if (module instanceof Discrete) {

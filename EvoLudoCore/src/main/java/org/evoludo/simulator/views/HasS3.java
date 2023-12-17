@@ -46,12 +46,4 @@ package org.evoludo.simulator.views;
  */
 
 public interface HasS3 {
-
-	/**
-	 * Set the initial configuration of the model according to the point clicked or
-	 * tapped on the \(S_3\) of the GUI.
-	 * 
-	 * @param init the frequencies of the point clicked or tapped on the \(S_3\)
-	 */
-	public void setInit(double[] init);
 }

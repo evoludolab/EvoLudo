@@ -35,7 +35,6 @@ package org.evoludo.simulator;
 import java.awt.Color;
 import java.util.Set;
 
-import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
 import org.evoludo.graphics.S3Graph;
 import org.evoludo.simulator.models.Model;
@@ -46,7 +45,7 @@ import org.evoludo.simulator.modules.Module;
  *
  * @author Christoph Hauert
  */
-public class MVS3 extends MVAbstract implements AbstractGraph.InitController {
+public class MVS3 extends MVAbstract {
 
 	@SuppressWarnings("hiding")
 	protected Set<S3Graph> graphs;
@@ -180,7 +179,7 @@ public class MVS3 extends MVAbstract implements AbstractGraph.InitController {
 	}
 
 	@Override
-	public boolean setInit(double[] init) {
+	public boolean setInitialState(double[] init) {
 		if( nActive!=nState ) {
 			double[] s = new double[nState];
 			int n = 0;

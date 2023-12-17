@@ -41,7 +41,6 @@ import org.evoludo.graphics.GraphAxis;
 import org.evoludo.graphics.S3Graph;
 import org.evoludo.graphics.StateData;
 import org.evoludo.graphics.StateGraphListener;
-import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.models.Model;
 
 public class MVDS3 extends MVAbstract implements StateGraphListener {
@@ -104,11 +103,12 @@ public class MVDS3 extends MVAbstract implements StateGraphListener {
 		}
 	}
 
-	@Override
-	public void setState(double[] state, int tag) {
-		((Discrete)module).setInit(state);
-		engine.modelReinit();
-	}
+// retire setting of initial state in S3 (outdated JRE)
+	// @Override
+	// public void setState(double[] state, int tag) {
+	// 	((Discrete)module).setInit(state);
+	// 	engine.modelReinit();
+	// }
 
 	@Override
 	protected String getFilePrefix() {

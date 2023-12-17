@@ -131,6 +131,17 @@ public abstract class AbstractGraph extends FocusPanel
 		 */
 		public default void populateContextMenu(ContextMenu menu) {
 		}
+
+		/**
+		 * Notifies the controller that the user requested setting a new initial
+		 * configuration {@code init} (optional implementation).
+		 * 
+		 * @param init the new initial configuration
+		 * @return {@code true} if the request was honoured
+		 */
+		public default boolean setInitialState(double[] init) {
+			return false;
+		}
 	}
 
 	/**
@@ -218,24 +229,6 @@ public abstract class AbstractGraph extends FocusPanel
 		 */
 		public default void populateContextMenuAt(ContextMenu menu, int node) {
 		}
-	}
-
-	/**
-	 * The interface for communicating with graphs that allow to alter the initial
-	 * configuration of the backing model.
-	 * 
-	 * @author Christoph Hauert
-	 */
-	public interface InitController extends Controller {
-
-		/**
-		 * Notifies the controller that the user requested setting a new initial
-		 * configuration {@code init}.
-		 * 
-		 * @param init the new initial configuration
-		 * @return {@code true} if the request was honoured
-		 */
-		public boolean setInit(double[] init);
 	}
 
 	/**

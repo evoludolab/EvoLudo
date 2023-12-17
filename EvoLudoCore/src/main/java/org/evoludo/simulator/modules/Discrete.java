@@ -351,10 +351,6 @@ public abstract class Discrete extends Module {
 		return monoStop;
 	}
 
-	@Deprecated
-	public void setInit(double[] init) {
-	}
-
 	/**
 	 * Command line option to request that models stop execution when reaching
 	 * monomorphic population states.

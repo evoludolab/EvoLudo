@@ -64,7 +64,7 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, //
 	protected double[] init;
 	protected Data2Phase map;
 
-	public ParaGraph(InitController controller, int nStates, int tag) {
+	public ParaGraph(Controller controller, int nStates, int tag) {
 		super(controller, tag);
 		this.nStates = nStates;
 		setStylePrimaryName("evoludo-ParaGraph");
@@ -313,7 +313,7 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, //
 		double[] state = new double[nStates];
 		System.arraycopy(buffer.last(), 1, state, 0, nStates);
 		map.phase2Data(new Point2D(ux, uy), state);
-		if (((InitController) controller).setInit(state)) {
+		if (controller.setInitialState(state)) {
 			addData(Double.NaN, state, true);
 			init = ArrayMath.clone(buffer.last());
 			paint();

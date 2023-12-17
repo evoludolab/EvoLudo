@@ -70,7 +70,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 	protected Point2D e2 = new Point2D();
 	protected Path2D outline = new Path2D();
 
-	public S3Graph(InitController controller, int tag) {
+	public S3Graph(Controller controller, int tag) {
 		super(controller, tag);
 		setStylePrimaryName("evoludo-S3Graph");
 	}
@@ -411,7 +411,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 	private void processInitXY(int x, int y) {
 		double[] s3 = new double[3];
 		cartesianToS3(x, y, s3);
-		if (((InitController) controller).setInit(s3)) {
+		if (controller.setInitialState(s3)) {
 			addData(Double.NaN, s3, true);
 			init = ArrayMath.clone(buffer.last());
 			paint();

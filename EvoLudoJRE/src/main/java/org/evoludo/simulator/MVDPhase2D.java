@@ -44,7 +44,6 @@ import org.evoludo.graphics.GraphAxis;
 import org.evoludo.graphics.ParaGraph;
 import org.evoludo.graphics.StateData;
 import org.evoludo.graphics.StateGraphListener;
-import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.HasPhase2D;
@@ -128,19 +127,20 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 		data.now.setLocation(now.x, 1.0-now.y);
 	}
 
-	@Override
-	public void setState(double[] loc, int tag) {
-		Point2D xy = new Point2D(loc[0], 1.0 - loc[1]);
-		int totTraits = 0;
-		for (Module mod : module.getSpecies()) 
-			totTraits += mod.getNTraits();
-		double[] init = new double[totTraits];
-		map.phase2Data(xy, init);
-		((Discrete)module).setInit(init);
-		// check required to transfer initial frequencies to ODE/SDE/PDE
-		engine.modelCheck();
-		engine.modelReinit();
-	}
+// retire setting of initial state in phase planes (outdated JRE)
+	// @Override
+	// public void setState(double[] loc, int tag) {
+	// 	Point2D xy = new Point2D(loc[0], 1.0 - loc[1]);
+	// 	int totTraits = 0;
+	// 	for (Module mod : module.getSpecies()) 
+	// 		totTraits += mod.getNTraits();
+	// 	double[] init = new double[totTraits];
+	// 	map.phase2Data(xy, init);
+	// 	((Discrete)module).setInit(init);
+	// 	// check required to transfer initial frequencies to ODE/SDE/PDE
+	// 	engine.modelCheck();
+	// 	engine.modelReinit();
+	// }
 
 	@Override
 	public String getToolTipText(Point2D loc, int tag) {
