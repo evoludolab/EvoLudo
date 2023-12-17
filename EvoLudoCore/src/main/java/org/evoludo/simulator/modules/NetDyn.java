@@ -187,11 +187,6 @@ public class NetDyn extends Discrete implements HasIBS,
 		return max;
 	}
 
-	@Override
-	public double getMonoGameScore(int type) {
-		return Double.NaN;
-	}
-
 	// @Override
 	// public boolean getMeanTraits(double[] mean) {
 	// interaction.evaluate();

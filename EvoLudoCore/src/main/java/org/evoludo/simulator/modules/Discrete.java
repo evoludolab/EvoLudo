@@ -276,12 +276,17 @@ public abstract class Discrete extends Module {
 	/**
 	 * Calculate and return the payoff/score of individuals in monomorphic
 	 * populations with trait/strategy {@code type}.
+	 * <p>
+	 * <strong>Note:</strong> Optional implementation. Returns {@code Double#NaN} 
+	 * if not defined or not implemented.
 	 * 
 	 * @param type trait/strategy
 	 * @return payoff/score in monomorphic population with trait/strategy
 	 *         {@code type}
 	 */
-	public abstract double getMonoGameScore(int type);
+	public double getMonoGameScore(int type) {
+		return Double.NaN;
+	}
 
 	/**
 	 * Calculate and return the payoff/score of individuals in monomorphic
