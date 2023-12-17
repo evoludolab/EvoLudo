@@ -829,9 +829,13 @@ public class IBSMCPopulation extends IBSPopulation {
 	double[][] initTraits;
 
 	/**
-	 * Sets the type of the initial configuration and any accompanying arguments.
+	 * Sets the type of the initial configuration and any accompanying arguments. If
+	 * {@code trait} is invalid no change is made. If {@code type==null} and
+	 * {@code args != null} only the arguments of the initialization are changed.
 	 *
-	 * @param type the type of the initial configuration
+	 * @param type  the type of the initial configuration
+	 * @param args  the array of arguments for the initialization
+	 * @param trait the index of the trait 
 	 * 
 	 * @see InitType
 	 */

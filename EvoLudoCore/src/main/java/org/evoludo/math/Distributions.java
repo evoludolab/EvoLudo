@@ -47,20 +47,20 @@ public class Distributions {
 	}
 
 	/**
-		 * Sample variance of data points <code>x[i]</code> stored in double vector
-		 * <code>x</code> using one-pass algorithm based on Welford's algorithm.
-		 * <p>
-		 * Note: if the mean is known/needed, it's more efficient to use
-		 * {@link #variance(double[], double)} instead.
-		 * </p>
-		 * 
-		 * @param x data vector
-		 * @return sample variance of <code>x</code>
-		 * @see <a href=
-		 *      "https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm">Wikipedia:
-		 *      Algorithms for calculating variance</a>
-		 */
-		public static double variance(double[] x) {
+	 * Sample variance of data points <code>x[i]</code> stored in double vector
+	 * <code>x</code> using one-pass algorithm based on Welford's algorithm.
+	 * <p>
+	 * Note: if the mean is known/needed, it's more efficient to use
+	 * {@link #variance(double[], double)} instead.
+	 * </p>
+	 * 
+	 * @param x data vector
+	 * @return sample variance of <code>x</code>
+	 * @see <a href=
+	 *      "https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm">Wikipedia:
+	 *      Algorithms for calculating variance</a>
+	 */
+	public static double variance(double[] x) {
 	// two pass calculation
 	//		return variance(x, mean(x));
 	// one-pass online calculation

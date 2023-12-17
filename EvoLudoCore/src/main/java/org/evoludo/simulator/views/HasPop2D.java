@@ -64,7 +64,7 @@ public abstract interface HasPop2D {
 
 	/**
 	 * {@link org.evoludo.simulator.modules.Module Module}s that implement the
-	 * {@code HasPop2D.Strategy} interface include 2D graphical visualizations of
+	 * {@code HasPop2D.Fitness} interface include 2D graphical visualizations of
 	 * the geometry of the population where nodes display the color coded fitness of
 	 * each individual. Fitness values are shown on a color gradient between the
 	 * minimum and maximum scores/payoffs/fitness.

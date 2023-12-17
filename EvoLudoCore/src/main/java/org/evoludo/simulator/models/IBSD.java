@@ -193,22 +193,22 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	/**
 	 * Type of initial density distribution. Currently this model supports:
 	 * <dl>
-	 * <dt>frequency <f1,..,fn>
-	 * <dd>Random distribution of traits with given frequencies {@code <f1,..,fd>}
+	 * <dt>frequency &lt;f1,..,fn&gt;
+	 * <dd>Random distribution of traits with given frequencies {@code &lt;f1,..,fd&gt;}
 	 * for traits {@code 1,...,d} (default).
 	 * <dt>uniform
 	 * <dd>Uniform random distribution of traits.
-	 * <dt>monomorphic <t[,v]>
+	 * <dt>monomorphic &lt;t[,v]&gt;
 	 * <dd>Monomorphic initialization of trait {@code t}. For modules that admit
 	 * vacant sites, their frequency is {@code v}.
 	 * <dt>kaleidoscope
 	 * <dd>Symmetric initial distribution, possibly generating evolutionary
 	 * kaleidoscopes for deterministic synchronous updates.
-	 * <dt>mutant <m,r[,v]>
+	 * <dt>mutant &lt;m,r[,v]&gt;
 	 * <dd>Single mutant with trait {@code m} in random location of otherwise
 	 * homogeneous population with trait {@code r}. For modules that admit vacant
 	 * sites, their frequency is {@code v}.
-	 * <dt>stripes <t1,...,td>
+	 * <dt>stripes &lt;t1,...,td&gt;
 	 * <dd>Stripes of different traits. Ensures that at least one interface between
 	 * any two traits exists. Requires square lattice geometry.
 	 * <dt>STATISTICS
@@ -226,7 +226,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	public enum InitType implements CLOption.Key {
 
 		/**
-		 * Random distribution of traits with frequencies {@code <f1,..,fd>} (default).
+		 * Random distribution of traits with frequencies {@code &lt;f1,..,fd&gt;} (default).
 		 */
 		FREQUENCY("frequency", "random distribution with frequency <f1,..,fd>"),
 

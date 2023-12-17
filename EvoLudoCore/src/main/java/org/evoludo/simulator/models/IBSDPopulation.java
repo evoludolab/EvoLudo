@@ -2222,9 +2222,12 @@ public class IBSDPopulation extends IBSPopulation {
 	protected double[] initArgs;
 
 	/**
-	 * Sets the type of the initial configuration and any accompanying arguments.
+	 * Sets the type of the initial configuration and any accompanying arguments. If
+	 * either {@code type} or {@code args} are {@code null} the respective current
+	 * setting is preserved.
 	 *
 	 * @param type the type of the initial configuration
+	 * @param args the arguments accompanying {@code type}
 	 * 
 	 * @see InitType
 	 */

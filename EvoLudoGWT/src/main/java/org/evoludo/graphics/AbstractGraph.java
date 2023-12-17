@@ -233,6 +233,7 @@ public abstract class AbstractGraph extends FocusPanel
 		 * configuration {@code init}.
 		 * 
 		 * @param init the new initial configuration
+		 * @return {@code true} if the request was honoured
 		 */
 		public boolean setInit(double[] init);
 	}

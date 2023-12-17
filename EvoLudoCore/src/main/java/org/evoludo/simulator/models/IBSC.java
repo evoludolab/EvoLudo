@@ -129,13 +129,13 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	 * <dl>
 	 * <dt>uniform
 	 * Uniform distribution of traits covering entire trait interval (default).
-	 * <dt>mono <x>
+	 * <dt>mono &lt;x&gt;
 	 * <dd>Monomorphic population with trait {@code xi}.
-	 * <dt>gaussian <m,s>
+	 * <dt>gaussian &lt;m,s&gt;
 	 * <dd>Gaussian distribution of traits with mean {@code mi} and standard
 	 * deviation
 	 * {@code si}.
-	 * <dt>mutant <r,m>
+	 * <dt>mutant &lt;r,m&gt;
 	 * <dd>Monomorphic resident population with trait {@code r} and single mutant
 	 * with trait {@code m}.
 	 * </dl>

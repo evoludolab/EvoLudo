@@ -4163,26 +4163,22 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Sets whether scores of individuals are always reset after adopting the
-	 * strategy of a neighbour or only if it resulted in an actual <em>change</em>
-	 * of strategy.
+	 * Sets the type for managing scores of individuals.
 	 * 
-	 * @param reset the flag to indicate whether scores are always reset
+	 * @param type the type for managing scores
 	 * 
-	 * @see #playerScoring
+	 * @see ScoringType
 	 */
 	public void setPlayerScoring(ScoringType type) {
 		playerScoring = type;
 	}
 
 	/**
-	 * Gets whether scores of individuals are always reset after adopting the
-	 * strategy of a neighbour or only if it resulted in an actual <em>change</em>
-	 * of strategy.
+	 * Gets the type for managing scores of individuals.
 	 * 
 	 * @return {@code true} if scores are always reset
 	 * 
-	 * @see #playerScoring
+	 * @see ScoringType
 	 */
 	public ScoringType getPlayerScoring() {
 		return playerScoring;
