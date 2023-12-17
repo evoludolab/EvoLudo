@@ -189,7 +189,7 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 			for (double[] mark : markers) {
 				g.setLineDash(mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
 				for (int n = 0; n < nLines; n++) {
-					double mn = mark[n + 1] * yScale;
+					double mn = (mark[n + 1] - style.yMin) * yScale;
 					g.setStrokeStyle(markerColors[n % markerColors.length]);
 					strokeLine(-w, mn, 0.0, mn);
 				}

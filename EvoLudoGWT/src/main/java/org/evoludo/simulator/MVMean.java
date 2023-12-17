@@ -43,6 +43,7 @@ import org.evoludo.graphics.AbstractGraph.GraphStyle;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.Data;
 import org.evoludo.simulator.modules.Continuous;
+import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.RingBuffer;
@@ -214,6 +215,21 @@ public class MVMean extends MVAbstract implements LineGraph.LineGraphController{
 					if( nSpecies>1 )
 						style.label = module.getName();
 					style.yLabel = "payoffs";
+					if (module instanceof Discrete) {
+						Discrete dmod = (Discrete) module;
+					double[] monoScores = new double[nTraits+1];
+					// the first entry is for dashed (>0) and dotted (<0) lines
+					monoScores[0] = 1.0;
+					for (int n=0;n<nTraits;n++)
+						monoScores[n+1] = dmod.getMonoScore(n);
+					String[] monoColors = new String[colors.length];
+					int n = 0;
+					for (Color color : colors)
+						monoColors[n++] = ColorMapCSS.Color2Css(ColorMapCSS.addAlpha(color, 100));
+					ArrayList<double[]> marker = new ArrayList<>();
+					marker.add(monoScores);
+					graph.setMarkers(marker, monoColors);
+				}
 					break;
 			}
 			if( nSpecies>1 ) 
