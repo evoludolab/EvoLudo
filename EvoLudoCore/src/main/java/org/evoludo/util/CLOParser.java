@@ -207,10 +207,10 @@ public class CLOParser {
 		nextclo: for (String clo : cloargs) {
 			// find matching option
 			for (CLOption opt : options) {
-				if (!clo.startsWith(opt.getName()))
+				String[] args = clo.split("[\\s*=]");
+				if (!args[0].equals(opt.getName()))
 					continue;
 				// option found
-				String[] args = clo.split("[\\s*=]");
 				String arg = Formatter.format(ArrayMath.drop(args, 0), " ");
 				switch (opt.getType()) {
 					case REQUIRED:
