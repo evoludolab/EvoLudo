@@ -153,6 +153,7 @@ public class MVPhase2D extends MVAbstract {
 		// reset min/max
 		Arrays.fill(minstate, Double.MAX_VALUE);
 		Arrays.fill(maxstate, -Double.MAX_VALUE);
+		updateMinMaxState();
 		if( !soft ) {
 			graph.reset();
 			update();

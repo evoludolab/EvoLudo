@@ -36,6 +36,7 @@ import java.awt.Color;
 import java.io.PrintStream;
 import java.util.Arrays;
 
+import org.evoludo.geom.Point2D;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSDPopulation;
@@ -249,21 +250,6 @@ public class Mutualism extends Discrete implements Pairs,
 		return DEFECT;
 	}
 
-	Data2Phase map;
-
-	@Override
-	public boolean setPhase2DTraits(int[] x, int[] y) {
-		if (x != null && y != null)
-			map.setTraits(x, y);
-		return true;
-	}
-
-	@Override
-	public void setPhase2DMap(Data2Phase map) {
-		this.map = map;
-		map.setTraits(new int[] { COOPERATE }, new int[] { nTraits + COOPERATE });
-	}
-
 	@Override
 	public double getMinGameScore() {
 		return Math.min(alpha, Math.min(beta, Math.min(gamma, delta)));
@@ -397,6 +383,64 @@ public class Mutualism extends Discrete implements Pairs,
 		if (you == DEFECT)
 			return delta;
 		return gamma;
+	}
+
+	/**
+	 * The map for translating the model data into 2D phase plane representation.
+	 */
+	MutualismMap map;
+
+	@Override
+	public Data2Phase getMap() {
+		map = new MutualismMap();
+		return map;
+	}
+
+	/**
+	 * The map for translating the data of the ecological public goods game models into 2D phase plane representation.
+	 */
+	public class MutualismMap implements Data2Phase {
+
+		@Override
+		public boolean data2Phase(double[] data, Point2D point) {
+			// NOTE: data[0] is time!
+			point.x = data[COOPERATE + 1];
+			point.y = data[nTraits + COOPERATE + 1];
+			return true;
+		}
+
+		@Override
+		public boolean phase2Data(Point2D point, double[] data) {
+			data[COOPERATE] = point.x;
+			data[DEFECT] = 1.0 - point.x;
+			data[nTraits + COOPERATE] = point.y;
+			data[nTraits + DEFECT] = 1.0 - point.y;
+			return true;
+		}
+
+		@Override
+		public String getXAxisLabel() {
+			return getName() + ": " + getTraitName(COOPERATE);
+		}
+
+		@Override
+		public String getYAxisLabel() {
+			return partner.getName() + ": " + partner.getTraitName(COOPERATE);
+		}
+
+		@Override
+		public String getTooltipAt(double x, double y) {
+			String tip = "<table><tr><td style='text-align:right'><i>" + getName() + ": " + getTraitName(COOPERATE) + ":</i></td><td>"
+					+ Formatter.formatPercent(x, 2) + "</td></tr>";
+			tip += "<tr><td style='text-align:right'><i>" + getName() + ": " + getTraitName(DEFECT) + ":</i></td><td>"
+					+ Formatter.formatPercent(1.0 - x, 2) + "</td></tr>";
+			tip += "<tr><td style='text-align:right'><i>" + partner.getName() + ": " + partner.getTraitName(COOPERATE) + ":</i></td><td>"
+					+ Formatter.formatPercent(y, 2) + "</td></tr>";
+			tip += "<tr><td style='text-align:right'><i>" + partner.getName() + ": " + partner.getTraitName(DEFECT) + ":</i></td><td>"
+					+ Formatter.formatPercent(1.0 - y, 2) + "</td></tr>";
+			tip += "</table>";
+			return tip;
+		}
 	}
 
 	/**
