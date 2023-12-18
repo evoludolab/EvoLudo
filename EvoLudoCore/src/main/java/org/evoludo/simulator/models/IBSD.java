@@ -244,7 +244,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	 * @author Christoph Hauert
 	 * 
 	 * @see #setInitType(Key)
-	 * @see EvoLudo#cloInitType
+	 * @see IBSD#cloInitType
 	 * @see org.evoludo.simulator.modules.Discrete#cloInit
 	 *      modules.Discrete.cloInit
 	 */
@@ -297,7 +297,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		/**
 		 * Key of initialization type. Used when parsing command line options.
 		 * 
-		 * @see EvoLudo#cloInitType
+		 * @see IBSD#cloInitType
 		 */
 		String key;
 
@@ -387,7 +387,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		/**
 		 * Key of optimization type. Used when parsing command line options.
 		 * 
-		 * @see EvoLudo#cloInitType
+		 * @see IBSD#cloInitType
 		 */
 		String key;
 

@@ -383,7 +383,7 @@ public abstract class Continuous extends Module {
 	@Override
 	public void load() {
 		super.load();
-		traits2payoff = new Traits2Payoff(this);
+		traits2payoff = new Traits2Payoff();
 	}
 
 	@Override
@@ -397,7 +397,6 @@ public abstract class Continuous extends Module {
 	@Override
 	public boolean check() {
 		boolean doReset = super.check();
-		doReset |= traits2payoff.check();
 		setExtremalScores();
 		// verify trait minima and maxima
 		for (int s = 0; s < nTraits; s++) {
@@ -527,569 +526,12 @@ public abstract class Continuous extends Module {
 	}
 
 	/**
-	 * Command line option to set the minimum value of each trait.
-	 */
-	public final CLOption cloTraitRange = new CLOption("traitrange", "0,1", EvoLudo.catModel, null,
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse the minimum value of each trait. {@code arg} can be a single value or
-				 * an array with the separator {@value CLOParser#MATRIX_DELIMITER}. The parser
-				 * cycles through {@code arg} until the minimum value of each trait is set.
-				 * 
-				 * @param arg the (array of) of minimum trait values
-				 */
-				@Override
-				public boolean parse(String arg) {
-					// getting ready for multiple species - way ahead of its time...
-					String[] speciestraits = arg.split(CLOParser.SPECIES_DELIMITER);
-					if (speciestraits == null) {
-						logger.warning("traitrange specification '" + arg + "' not recognized - ignored!");
-						return false;
-					}
-					int n = 0;
-					for (Continuous cpop : species) {
-						String[] traitranges = speciestraits[n++ % speciestraits.length].split(CLOParser.TRAIT_DELIMITER);
-						for (int i = 0; i < nTraits; i++) {
-						String trange = traitranges[i % traitranges.length];
-						double[] range = CLOParser.parseVector(trange);
-						if (range==null || range.length<2 || range[0] > range[1]) {
-							logger.warning("invalid traitrange '" + trange + "' - using [0,1]!");
-							cpop.setTraitRange(0.0, 1.0, i);
-							continue;
-						}
-						cpop.setTraitRange(range[0], range[1], i);
-					}
-					}
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					String msg = "";
-					for (Continuous cpop : species) {
-						double[] mins = cpop.getTraitMin();
-						double[] maxs = cpop.getTraitMax();
-						String[] names = cpop.getTraitNames();
-						for (int n = 0; n < nTraits; n++) {
-							msg = "# traitrange:           " + Formatter.format(mins[n], 4) + "-"
-									+ Formatter.format(maxs[n], 4) + //
-									" " + names[n] + (species.size() > 1 && n == 0 ? " (" + cpop.getName() + ")" : "");
-						}
-					}
-					output.println(msg);
-				}
-
-				@Override
-				public String getDescription() {
-					switch (nTraits) {
-						case 1:
-							return "--traitrange <min" + CLOParser.VECTOR_DELIMITER + "max>  range of trait " + traitName[0];
-						case 2:
-							return "--traitrange <min0" + CLOParser.VECTOR_DELIMITER + "max0" + //
-										CLOParser.TRAIT_DELIMITER + "min1" + CLOParser.VECTOR_DELIMITER + "max1]>" + //
-										CLOParser.VECTOR_DELIMITER + "  range of traits, with\n"
-									+ "             0: " + traitName[0] + "\n" //
-									+ "             1: " + traitName[1];
-						default:
-							String descr = "--traitrange <min0,max0[" + CLOParser.VECTOR_DELIMITER + "..."
-									+ CLOParser.VECTOR_DELIMITER + "min" + (nTraits - 1)
-									+ ",max" + (nTraits - 1) + "]>  range of traits, with";
-							for (int n = 0; n < nTraits; n++) {
-								String aTrait = "              " + n + ": ";
-								int traitlen = aTrait.length();
-								descr += "\n" + aTrait.substring(traitlen - 16, traitlen) + traitName[n];
-							}
-							return descr;
-					}
-				}
-			});
-
-	/**
-	 * Command line option to set the standard deviation of mutations in each trait.
-	 */
-	public final CLOption cloMutationSdev = new CLOption("mutationsdev", "0.01", EvoLudo.catModel, null,
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse the standard deviation of mutations in each trait. {@code arg} can be a
-				 * single value or an array with the separator
-				 * {@value CLOParser#MATRIX_DELIMITER}. The parser cycles through {@code arg}
-				 * until the standard deviation of mutations in each trait is set.
-				 * 
-				 * @param arg the (array of) of standard deviation of mutations
-				 */
-				@Override
-				public boolean parse(String arg) {
-					// getting ready for multiple species - way ahead of its time...
-					String[] traitsdevs = arg.split(CLOParser.SPECIES_DELIMITER);
-					if (traitsdevs == null) {
-						logger.warning("mutationsdev specification '" + arg + "' not recognized - ignored!");
-						return false;
-					}
-					int n = 0;
-					for (Continuous cpop : species) {
-						String[] sdevs = traitsdevs[n++ % traitsdevs.length].split(CLOParser.VECTOR_DELIMITER);
-						int nt = cpop.getNTraits();
-						double[] sdev = new double[nt];
-						for (int i = 0; i < nt; i++)
-							sdev[i] = CLOParser.parseDouble(sdevs[i % sdevs.length]);
-						cpop.setMutationSdev(sdev);
-					}
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					double[] fvec = getMutationSdev();
-					String msg = "# mutationsdev:         " + Formatter.format(fvec[0], 4);
-					for (int n = 1; n < nTraits; n++)
-						msg += ":" + Formatter.format(fvec[n], 4);
-					output.println(msg);
-				}
-
-				@Override
-				public String getDescription() {
-					switch (nTraits) {
-						case 1:
-							return "--mutationsdev <s>  sdev of mutations in trait " + traitName[0];
-						case 2:
-							return "--mutationsdev <s0>" + CLOParser.VECTOR_DELIMITER
-									+ "<s1> sdev of mutations in each trait, with\n" //
-									+ "             0: " + traitName[0] + "\n" //
-									+ "             1: " + traitName[1];
-						default:
-							String descr = "--mutationsdev <s0>" + CLOParser.VECTOR_DELIMITER + "..."
-									+ CLOParser.VECTOR_DELIMITER + "<s" + (nTraits - 1)
-									+ ">  sdev of mutations in each trait, with";
-							for (int n = 0; n < nTraits; n++) {
-								String aTrait = "              " + n + ": ";
-								int traitlen = aTrait.length();
-								descr += "\n" + aTrait.substring(traitlen - 16, traitlen) + traitName[n];
-							}
-							return descr;
-					}
-				}
-			});
-
-	/**
-	 * Command line option to set the cost function(s) for continuous traits.
-	 * 
-	 * @see Traits2Payoff.Costs
-	 */
-	public final CLOption cloCostFunction = new CLOption("costfcn", "1", EvoLudo.catModel, null,
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse cost functions for each trait. {@code arg} can be a single value or an
-				 * array of values with the separator {@value CLOParser#VECTOR_DELIMITER}. The
-				 * parser cycles through {@code arg} until all cost functions are set.
-				 * 
-				 * @param arg the (array of) cost function codes
-				 */
-				@Override
-				public boolean parse(String arg) {
-					String[] cstf = arg.split(CLOParser.VECTOR_DELIMITER);
-					int ncstf = cstf.length;
-					if (ncstf < 1) {
-						logger.warning("failed to parse cost function type '" + arg + "' - ignored.");
-						return false;
-					}
-					boolean success = true;
-					for (int s = 0; s < nTraits; s++) {
-						String type = cstf[s % ncstf];
-						Traits2Payoff.Costs cft = (Traits2Payoff.Costs) cloCostFunction.match(type);
-						if (cft == null) {
-							logger.warning("cost function type '" + type + "' unknown - using '"
-									+ traits2payoff.getCostFunctions()[s].getTitle() + "'");
-							success = false;
-							continue;
-						}
-						traits2payoff.setCostFunctions(cft, s);
-					}
-					return success;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					Traits2Payoff.Costs[] cfunc = traits2payoff.getCostFunctions();
-					String msg = "# costfunction:         " + cfunc[0];
-					for (int n = 1; n < nTraits; n++)
-						msg += ":" + cfunc[n];
-					output.println(msg);
-				}
-
-				@Override
-				public String getDescription() {
-					switch (nTraits) {
-						case 1:
-							return "--costfcn <s>   cost function of trait " + traitName[0] + "\n" //
-									+ "                cost functions: <s>\n" + cloCostFunction.getDescriptionKey();
-						case 2:
-							return "--costfcn <s0>" + CLOParser.VECTOR_DELIMITER + "<s1>  cost function of traits\n" //
-									+ "             0: " + traitName[0] + "\n" //
-									+ "             1: " + traitName[1] + "\n" //
-									+ "                cost functions: <s>\n" + cloCostFunction.getDescriptionKey();
-						default:
-							String descr = "--costfcn <s0>" + CLOParser.VECTOR_DELIMITER + "..."
-									+ CLOParser.VECTOR_DELIMITER + "<s" + (nTraits - 1)
-									+ ">  cost function of traits";
-							for (int n = 0; n < nTraits; n++) {
-								String aTrait = "              " + n + ": ";
-								int traitlen = aTrait.length();
-								descr += "\n" + aTrait.substring(traitlen - 16, traitlen) + traitName[n];
-							}
-							descr += "\n                cost functions: <s>\n" + cloCostFunction.getDescriptionKey();
-							return descr;
-					}
-				}
-			});
-
-	/**
-	 * Command line option to set the parameters of the cost function for continuous
-	 * traits.
-	 * 
-	 * @see Traits2Payoff.Costs
-	 */
-	public final CLOption cloCostParams = new CLOption("costparams", "0", EvoLudo.catModel,
-			"--costparams <c0>" + CLOParser.VECTOR_DELIMITER //
-					+ "<c1>" + CLOParser.VECTOR_DELIMITER + "..." + CLOParser.VECTOR_DELIMITER //
-					+ "<cn>  parameters for cost function" //
-					+ (nTraits > 1 ? "\n         different traits separated by '" + CLOParser.MATRIX_DELIMITER + "'"
-							: ""),
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse cost function parameters for each trait. {@code arg} can be a single
-				 * value or an array of values. Parameters are separated by
-				 * {@value CLOParser#VECTOR_DELIMITER} and traits by
-				 * {@value CLOParser#MATRIX_DELIMITER}. The parser cycles through {@code arg}
-				 * until all parameters of every trait are set.
-				 * 
-				 * @param arg the (array of) cost function parameters
-				 */
-				@Override
-				public boolean parse(String arg) {
-					double[][] cparams = CLOParser.parseMatrix(arg);
-					int len = cparams.length;
-					if (len == 0) {
-						logger.warning("failed to parse cost parameters '" + arg + "' - ignored.");
-						return false;
-					}
-					for (int n = 0; n < nTraits; n++)
-						traits2payoff.setCostParameters(cparams[n % cparams.length], n);
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					double[][] dvec = traits2payoff.getCostParameters();
-					String msg = "# costparams:           " + Formatter.format(dvec[0], 6);
-					for (int n = 1; n < nTraits; n++)
-						msg += ";" + Formatter.format(dvec[n], 6);
-					output.println(msg);
-				}
-			});
-
-	/**
-	 * Command line option to set the benefit function(s) for continuous traits.
-	 * 
-	 * @see Traits2Payoff.Benefits
-	 */
-	public final CLOption cloBenefitFunction = new CLOption("benefitfcn", "11", EvoLudo.catModel, null,
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse benefit functions for each trait. {@code arg} can be a single value or
-				 * an array of values with the separator {@value CLOParser#VECTOR_DELIMITER}.
-				 * The parser cycles through {@code arg} until all cbenefitst functions are set.
-				 * 
-				 * @param arg the (array of) benefit function codes
-				 */
-				@Override
-				public boolean parse(String arg) {
-					String[] bftf = arg.split(CLOParser.VECTOR_DELIMITER);
-					int nbftf = bftf.length;
-					if (nbftf < 1) {
-						logger.warning("failed to parse benefit function type '" + arg + "' - ignored.");
-						return false;
-					}
-					boolean success = true;
-					for (int s = 0; s < nTraits; s++) {
-						String type = bftf[s % nbftf];
-						Traits2Payoff.Benefits bft = (Traits2Payoff.Benefits) cloBenefitFunction.match(type);
-						if (bft == null) {
-							logger.warning("benefit function type '" + type + "' unknown - using '"
-									+ traits2payoff.getBenefitFunctions()[s].getTitle() + "'");
-							success = false;
-							continue;
-						}
-						traits2payoff.setBenefitFunctions(bft, s);
-					}
-					return success;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					Traits2Payoff.Benefits[] bfunc = traits2payoff.getBenefitFunctions();
-					String msg = "# benefitfunction:      " + bfunc[0];
-					for (int n = 1; n < nTraits; n++)
-						msg += ":" + bfunc[n];
-					output.println(msg);
-				}
-
-				@Override
-				public String getDescription() {
-					switch (nTraits) {
-						case 1:
-							return "--benefitfcn <s>  benefit function of trait " + traitName[0] + "\n" //
-									+ "                benefit functions: <s>\n" + cloBenefitFunction.getDescriptionKey();
-						case 2:
-							return "--benefitfcn <s0>" + CLOParser.VECTOR_DELIMITER //
-									+ "<s1> benefit function of traits\n" //
-									+ "             0: " + traitName[0] + "\n" //
-									+ "             1: " + traitName[1] + "\n" //
-									+ "                benefit functions: <s>\n" + cloBenefitFunction.getDescriptionKey();
-						default:
-							String descr = "--benefitfcn <s0>" + CLOParser.VECTOR_DELIMITER + "..." //
-									+ CLOParser.VECTOR_DELIMITER + "<s" + (nTraits - 1) //
-									+ ">  benefit function of traits";
-							for (int n = 0; n < nTraits; n++) {
-								String aTrait = "              " + n + ": ";
-								int traitlen = aTrait.length();
-								descr += "\n" + aTrait.substring(traitlen - 16, traitlen) + traitName[n];
-							}
-							descr += "\n                benefit functions: <s>\n" + cloBenefitFunction.getDescriptionKey();
-							return descr;
-					}
-				}
-			});
-
-	/**
-	 * Command line option to set the parameters of the benefit function(s) for
-	 * continuous traits.
-	 * 
-	 * @see Traits2Payoff.Benefits
-	 */
-	public final CLOption cloBenefitParams = new CLOption("benefitparams", "0", EvoLudo.catModel,
-			"--benefitparams <b0>,<b1>" + CLOParser.VECTOR_DELIMITER + "..." + CLOParser.VECTOR_DELIMITER //
-					+ "<bn> parameters for benefit function" //
-					+ (nTraits > 1 ? "\n                different traits separated by '" + CLOParser.MATRIX_DELIMITER + "'"
-							: ""),
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse benefit function parameters for each trait. {@code arg} can be a single
-				 * value or an array of values. Parameters are separated by
-				 * {@value CLOParser#VECTOR_DELIMITER} and traits by
-				 * {@value CLOParser#MATRIX_DELIMITER}. The parser cycles through {@code arg}
-				 * until all parameters of every trait are set.
-				 * 
-				 * @param arg the (array of) benefit function parameters
-				 */
-				@Override
-				public boolean parse(String arg) {
-					double[][] bparams = CLOParser.parseMatrix(arg);
-					int len = bparams.length;
-					if (len == 0) {
-						logger.warning("failed to parse benefit parameters '" + arg + "' - ignored.");
-						return false;
-					}
-					for (int n = 0; n < nTraits; n++)
-						traits2payoff.setBenefitParameters(bparams[n % bparams.length], n);
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					double[][] dvec = traits2payoff.getBenefitParameters();
-					String msg = "# benefitparams:        " + Formatter.format(dvec[0], 6);
-					for (int n = 1; n < nTraits; n++)
-						msg += ";" + Formatter.format(dvec[n], 6);
-					output.println(msg);
-				}
-			});
-
-	@Override
-	public void collectCLO(CLOParser parser) {
-		super.collectCLO(parser);
-		parser.addCLO(cloMutationSdev);
-		parser.addCLO(cloTraitRange);
-		cloCostFunction.addKeys(Traits2Payoff.Costs.values());
-		parser.addCLO(cloCostFunction);
-		parser.addCLO(cloCostParams);
-		cloBenefitFunction.addKeys(Traits2Payoff.Benefits.values());
-		parser.addCLO(cloBenefitFunction);
-		parser.addCLO(cloBenefitParams);
-		// best-response is not an acceptable update rule for continuous strategies -
-		// exclude Population.PLAYER_UPDATE_BEST_RESPONSE
-		cloPlayerUpdate.removeKey(PlayerUpdateType.BEST_RESPONSE);
-	}
-
-	/**
 	 * Translate continuous traits into payoffs based on configurable cost and
 	 * benefit functions.
 	 * 
 	 * @author Christoph Hauert
 	 */
-	public static class Traits2Payoff {
-
-		/**
-		 * Selected cost functions to translate continuous traits into payoffs. Enum on
-		 * steroids. Currently available cost functions are:
-		 * <dl>
-		 * <dt>0
-		 * <dd>Linear cost function (independent of opponent): \(C(x,y)=c_0\,x\).
-		 * <dt>1
-		 * <dd>Quadratic cost function (independent of opponent):
-		 * \(C(x,y)=c_0\,x+c_1\,x^2\).
-		 * <dt>2
-		 * <dd>Square root cost function (independent of opponent): \(C(x,y)=c_0
-		 * \sqrt{x}\).
-		 * <dt>3
-		 * <dd>Logarithmic cost function (independent of opponent): \(C(x,y)=c_0
-		 * \ln(c_1\,x+1)\).
-		 * <dt>4
-		 * <dd>Exponential cost function (independent of opponent): \(C(x,y)=c_0
-		 * (1-\exp(-c_1\,x))\).
-		 * <dt>10
-		 * <dd>Linear cost function (sum of focal, \(x\), and opponent, \(y\), traits):
-		 * \(C(x,y)=c_0 (x+y)\).
-		 * <dt>11
-		 * <dd>Quadratic cost function (sum of focal, \(x\), and opponent, \(y\),
-		 * traits): \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2\).
-		 * <dt>12
-		 * <dd>Cubic cost function (sum of focal, \(x\), and opponent, \(y\), traits):
-		 * \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2+c_2 (x+y)^3\).
-		 * <dt>13
-		 * <dd>Quartic cost function (sum of focal, \(x\), and opponent, \(y\), traits):
-		 * \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2+c_2 (x+y)^3+c_3 (x+y)^4\).
-		 * <dt>20
-		 * <dd>Linear cost function (cross terms of focal, \(x\), and opponent, \(y\),
-		 * traits): \(C(x,y)=c_0\,x+c_1\,y+c_2\,x\,y\).
-		 * </dl>
-		 */
-		public enum Costs implements CLOption.Key {
-
-			/**
-			 * Linear cost function (independent of opponent): \(C(x,y)=c_0\,x\).
-			 */
-			PAYOFF_COST_ME_LINEAR("0", "C(x,y)=c0*x", 1), //
-
-			/**
-			 * Quadratic cost function (independent of opponent):
-			 * \(C(x,y)=c_0\,x+c_1\,x^2\).
-			 */
-			PAYOFF_COST_ME_QUAD("1", "C(x,y)=c0*x+c1*x^2", 2), //
-
-			/**
-			 * Square root cost function (independent of opponent): \(C(x,y)=c_0 \sqrt{x}\).
-			 */
-			PAYOFF_COST_ME_SQRT("2", "C(x,y)=c0*sqrt(x)", 1), //
-
-			/**
-			 * Logarithmic cost function (independent of opponent): \(C(x,y)=c_0
-			 * \ln(c_1\,x+1)\).
-			 */
-			PAYOFF_COST_ME_LOG("3", "C(x,y)=c0*ln(c1*x+1)", 2), //
-
-			/**
-			 * Exponential cost function (independent of opponent): \(C(x,y)=c_0
-			 * (1-\exp(-c_1\,x))\).
-			 */
-			PAYOFF_COST_ME_EXP("4", "C(x,y)=c0*(1-exp(-c1*x))", 2), //
-
-			/**
-			 * Linear cost function (sum of focal, \(x\), and opponent, \(y\), traits):
-			 * \(C(x,y)=c_0 (x+y)\).
-			 */
-			PAYOFF_COST_WE_LINEAR("10", "C(x,y)=c0*(x+y)", 1), //
-
-			/**
-			 * Quadratic cost function (sum of focal, \(x\), and opponent, \(y\), traits):
-			 * \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2\).
-			 */
-			PAYOFF_COST_WE_QUAD("11", "C(x,y)=c0*(x+y)+c1*(x+y)^2", 2), //
-
-			/**
-			 * Cubic cost function (sum of focal, \(x\), and opponent, \(y\), traits):
-			 * \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2+c_2 (x+y)^3\).
-			 */
-			PAYOFF_COST_WE_QUBIC("12", "C(x,y)=c0*(x+y)+c1*(x+y)^2+c2*(x+y)^3", 3), //
-
-			/**
-			 * Quartic cost function (sum of focal, \(x\), and opponent, \(y\), traits):
-			 * \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2+c_2 (x+y)^3+c_3 (x+y)^4\).
-			 */
-			PAYOFF_COST_WE_QUARTIC("13", "C(x,y)=c0*(x+y)+c1*(x+y)^2+c2*(x+y)^3+c3*(x+y)^4", 4), //
-
-			/**
-			 * Linear cost function (cross terms of focal, \(x\), and opponent, \(y\),
-			 * traits): \(C(x,y)=c_0\,x+c_1\,y+c_2\,x\,y\).
-			 */
-			PAYOFF_COST_MEYOU_LINEAR("20", "C(x,y)=c0*x+c1*y+c2*x*y", 3);
-
-			/**
-			 * The key of the cost function. Used when parsing command line options.
-			 * 
-			 * @see Continuous#cloCostFunction
-			 * @see Continuous#cloCostParams
-			 */
-			String key;
-
-			/**
-			 * The brief description of the cost function for the help display.
-			 * 
-			 * @see EvoLudo#helpCLO()
-			 */
-			String title;
-
-			/**
-			 * The number of parameters of the cost function.
-			 */
-			int nParams;
-
-			/**
-			 * Create a new type of cost function with key {@code key} and description
-			 * {@code title} as well as {@code nParams} parameters.
-			 * 
-			 * @param key     the identifier for parsing of command line option
-			 * @param title   the summary of the cost function
-			 * @param nParams the number of parameters
-			 */
-			Costs(String key, String title, int nParams) {
-				this.key = key;
-				this.title = title;
-				this.nParams = nParams;
-			}
-
-			@Override
-			public String toString() {
-				return key + ": " + title;
-			}
-
-			@Override
-			public String getKey() {
-				return key;
-			}
-
-			@Override
-			public String getTitle() {
-				return title;
-			}
-		}
+	class Traits2Payoff {
 
 		/**
 		 * The array of cost functions, one for each trait.
@@ -1132,8 +574,6 @@ public abstract class Continuous extends Module {
 		 * @param index   the index of the trait
 		 */
 		public void setCostFunctions(Costs costfcn, int index) {
-			// need to explicitly read nTraits; check() has not yet been called
-			nTraits = module.getNTraits();
 			if (costs == null || costs.length != nTraits)
 				costs = new Costs[nTraits];
 			costs[index] = costfcn;
@@ -1191,187 +631,6 @@ public abstract class Continuous extends Module {
 		}
 
 		/**
-		 * Selected benefit functions to translate continuous traits into payoffs. Enum
-		 * on steroids. Currently available benefit functions are:
-		 * <dl>
-		 * <dt>0
-		 * <dd>Linear benefit function (independent of focal): \(B(x,y)=b_0\,y\).
-		 * <dt>1
-		 * <dd>Quadratic benefit function (independent of focal):
-		 * \(B(x,y)=b_0\,y+\b_1\,y^2\).
-		 * <dt>2
-		 * <dd>Saturating benefit function following a square root (independent of
-		 * focal): \(B(x,y)=b_0\sqrt{y}\).
-		 * <dt>3
-		 * <dd>Saturating benefit function following a logarithm (independent of focal):
-		 * \(B(x,y)=b_0\log{b_1\,y+1}\).
-		 * <dt>4
-		 * <dd>Saturating benefit function following an exponential (independent of
-		 * focal): \(B(x,y)=b_0 \left(1-e^{-b_1\,y}\right)\).
-		 * <dt>10
-		 * <dd>Linear benefit function (sum of focal, \(x\), and opponent, \(y\),
-		 * traits): \(B(x,y)=b_0\,(x+y)\).
-		 * <dt>11
-		 * <dd>Quadratic benefit function (sum of focal, \(x\), and opponent, \(y\),
-		 * traits): \(B(x,y)=b_0\,(x+y)+\b_1\,(x+y)^2\).
-		 * <dt>12
-		 * <dd>Saturating benefit function following a square root (sum of focal, \(x\),
-		 * and opponent, \(y\), traits): \(B(x,y)=b_0\sqrt{x+y}\).
-		 * <dt>13
-		 * <dd>Saturating benefit function following a logarithm (sum of focal, \(x\),
-		 * and opponent, \(y\), traits): \(B(x,y)=b_0\log{b_1\,(x+y)+1}\).
-		 * <dt>14
-		 * <dd>Saturating benefit function following an exponential (sum of focal,
-		 * \(x\), and opponent, \(y\), traits): \(B(x,y)=b_0
-		 * \left(1-e^{-b_1\,(x+y)}\right)\).
-		 * <dt>20
-		 * <dd>Linear benefit function (with interaction term):
-		 * \(B(x,y)=b_0\,x=b_1\,y+\b_2\,x\,y\).
-		 * <dt>30
-		 * <dd>Linear benefit function (independent of opponent): \(B(x,y)=b_0\,x\).
-		 * <dt>31
-		 * <dd>Quadratic benefit function (independent of opponent):
-		 * \(B(x,y)=b_0\,x+b_1\,x^2\).
-		 * <dt>32
-		 * <dd>Cubic benefit function (independent of opponent):
-		 * \(B(x,y)=b_0\,x+b_1\,x^2+b_2\,x^3\).
-		 * </dl>
-		 */
-		public enum Benefits implements CLOption.Key {
-
-			/**
-			 * Linear benefit function (independent of focal): \(B(x,y)=b_0\,y\).
-			 */
-			PAYOFF_BENEFIT_YOU_LINEAR("0", "B(x,y)=b0*y", 1), //
-
-			/**
-			 * Quadratic benefit function (independent of focal):
-			 * \(B(x,y)=b_0\,y+\b_1\,y^2\).
-			 */
-			PAYOFF_BENEFIT_YOU_QUADR("1", "B(x,y)=b0*y+b1*y^2", 2), //
-
-			/**
-			 * Saturating benefit function following a square root (independent of focal):
-			 * \(B(x,y)=b_0\sqrt{y}\).
-			 */
-			PAYOFF_BENEFIT_YOU_SQRT("2", "B(x,y)=b0*sqrt(y)", 1), //
-
-			/**
-			 * Saturating benefit function following a logarithm (independent of focal):
-			 * \(B(x,y)=b_0\log{b_1\,y+1}\).
-			 */
-			PAYOFF_BENEFIT_YOU_LOG("3", "B(x,y)=b0*ln(b1*y+1)", 2), //
-
-			/**
-			 * Saturating benefit function following an exponential (independent of focal):
-			 * \(B(x,y)=b_0 \left(1-e^{-b_1\,y}\right)\).
-			 */
-			PAYOFF_BENEFIT_YOU_EXP("4", "B(x,y)=b0*(1-exp(-b1*y))", 2), //
-
-			/**
-			 * Linear benefit function (sum of focal, \(x\), and opponent, \(y\), traits):
-			 * \(B(x,y)=b_0\,(x+y)\).
-			 */
-			PAYOFF_BENEFIT_WE_LINEAR("10", "B(x,y)=b0*(x+y)", 1), //
-
-			/**
-			 * Quadratic benefit function (sum of focal, \(x\), and opponent, \(y\),
-			 * traits): \(B(x,y)=b_0\,(x+y)+\b_1\,(x+y)^2\).
-			 */
-			PAYOFF_BENEFIT_WE_QUAD("11", "B(x,y)=b0*(x+y)+b1*(x+y)^2", 2), // default
-
-			/**
-			 * Saturating benefit function following a square root (sum of focal, \(x\), and
-			 * opponent, \(y\), traits): \(B(x,y)=b_0\sqrt{x+y}\).
-			 */
-			PAYOFF_BENEFIT_WE_SQRT("12", "B(x,y)=b0*sqrt(x+y)", 1), //
-
-			/**
-			 * Saturating benefit function following a logarithm (sum of focal, \(x\), and
-			 * opponent, \(y\), traits): \(B(x,y)=b_0\log{b_1\,(x+y)+1}\).
-			 */
-			PAYOFF_BENEFIT_WE_LOG("13", "B(x,y)=b0*ln(b1*(x+y)+1)", 2), //
-
-			/**
-			 * Saturating benefit function following an exponential (sum of focal, \(x\),
-			 * and opponent, \(y\), traits): \(B(x,y)=b_0 \left(1-e^{-b_1\,(x+y)}\right)\).
-			 */
-			PAYOFF_BENEFIT_WE_EXP("14", "B(x,y)=b0*(1-exp(-b1*(x+y)))", 2), //
-
-			/**
-			 * Linear benefit function (with interaction term):
-			 * \(B(x,y)=b_0\,x=b_1\,y+\b_2\,x\,y\).
-			 */
-			PAYOFF_BENEFIT_MEYOU_LINEAR("20", "B(x,y)=b0*x+b1*y+b2*x*y", 3), //
-
-			/**
-			 * Linear benefit function (independent of opponent): \(B(x,y)=b_0\,x\).
-			 */
-			PAYOFF_BENEFIT_ME_LINEAR("30", "B(x,y)=b0*x", 1), //
-
-			/**
-			 * Quadratic benefit function (independent of opponent):
-			 * \(B(x,y)=b_0\,x+b_1\,x^2\).
-			 */
-			PAYOFF_BENEFIT_ME_QUADR("31", "B(x,y)=b0*x+b1*x^2", 2), //
-
-			/**
-			 * Cubic benefit function (independent of opponent):
-			 * \(B(x,y)=b_0\,x+b_1\,x^2+b_2\,x^3\).
-			 */
-			PAYOFF_BENEFIT_ME_QUBIC("32", "B(x,y)=b0*x+b1*x^2+b2*x^3", 3);
-
-			/**
-			 * The key of the benefit function. Used when parsing command line options.
-			 * 
-			 * @see Continuous#cloBenefitFunction
-			 * @see Continuous#cloBenefitParams
-			 */
-			String key;
-
-			/**
-			 * The brief description of the benefit function for the help display.
-			 * 
-			 * @see EvoLudo#helpCLO()
-			 */
-			String title;
-
-			/**
-			 * The number of parameters of the benefit function.
-			 */
-			int nParams;
-
-			/**
-			 * Create a new type of benefit function with key {@code key} and description
-			 * {@code title} as well as {@code nParams} parameters.
-			 * 
-			 * @param key     the identifier for parsing of command line option
-			 * @param title   the summary of the benefit function
-			 * @param nParams the number of parameters
-			 */
-			Benefits(String key, String title, int nParams) {
-				this.key = key;
-				this.title = title;
-				this.nParams = nParams;
-			}
-
-			@Override
-			public String toString() {
-				return key + ": " + title;
-			}
-
-			@Override
-			public String getKey() {
-				return key;
-			}
-
-			@Override
-			public String getTitle() {
-				return title;
-			}
-		}
-
-		/**
 		 * The array of benefit functions, one for each trait.
 		 */
 		Benefits[] benefits;
@@ -1412,8 +671,6 @@ public abstract class Continuous extends Module {
 		 * @param index      the index of the trait
 		 */
 		public void setBenefitFunctions(Benefits benefitfcn, int index) {
-			// need to explicitly read nTraits; check() has not yet been called
-			nTraits = module.getNTraits();
 			if (benefits == null || benefits.length != nTraits)
 				benefits = new Benefits[nTraits];
 			benefits[index] = benefitfcn;
@@ -1472,47 +729,6 @@ public abstract class Continuous extends Module {
 		 */
 		public double[][] getBenefitParameters() {
 			return bi;
-		}
-
-		/**
-		 * Reference to the backing module.
-		 */
-		Continuous module;
-
-		/**
-		 * Helper variable: the number of traits in {@code module}.
-		 */
-		int nTraits;
-
-		/**
-		 * Helper variable: the array of trait minima in {@code module}.
-		 */
-		double[] traitMin;
-
-		/**
-		 * Helper variable: the array of trait maxima in {@code module}.
-		 */
-		double[] traitMax;
-
-		/**
-		 * Create a new trait-to-payoff mapping for the backing module {@code module}.
-		 * 
-		 * @param module the backing module
-		 */
-		public Traits2Payoff(Continuous module) {
-			this.module = module;
-		}
-
-		/**
-		 * Checks the trait-to-payoff mapping.
-		 * 
-		 * @return {@code true} if reset of module required
-		 */
-		public boolean check() {
-			nTraits = module.getNTraits();
-			traitMin = module.getTraitMin();
-			traitMax = module.getTraitMax();
-			return false;
 		}
 
 		/**
@@ -1640,7 +856,7 @@ public abstract class Continuous extends Module {
 				// benefit depending solely on the 'me' investment
 				case PAYOFF_BENEFIT_ME_LINEAR:
 					return b[0] * myinv;
-				case PAYOFF_BENEFIT_ME_QUADR:
+				case PAYOFF_BENEFIT_ME_QUAD:
 					return (b[1] * myinv + b[0]) * myinv;
 				case PAYOFF_BENEFIT_ME_QUBIC:
 					return ((b[2] * myinv + b[1]) * myinv + b[0]) * myinv;
@@ -1648,7 +864,7 @@ public abstract class Continuous extends Module {
 				// benefit depending solely on the 'you' investment
 				case PAYOFF_BENEFIT_YOU_LINEAR:
 					return b[0] * yourinv;
-				case PAYOFF_BENEFIT_YOU_QUADR:
+				case PAYOFF_BENEFIT_YOU_QUAD:
 					return (b[1] * yourinv + b[0]) * yourinv;
 				case PAYOFF_BENEFIT_YOU_SQRT:
 					return b[0] * Math.sqrt(yourinv);
@@ -1679,6 +895,750 @@ public abstract class Continuous extends Module {
 		}
 	}
 
+	/**
+	 * Selected cost functions to translate continuous traits into payoffs. Enum on
+	 * steroids. Currently available cost functions are:
+	 * <dl>
+	 * <dt>0
+	 * <dd>Linear cost function (independent of opponent): \(C(x,y)=c_0\,x\).
+	 * <dt>1
+	 * <dd>Quadratic cost function (independent of opponent):
+	 * \(C(x,y)=c_0\,x+c_1\,x^2\).
+	 * <dt>2
+	 * <dd>Square root cost function (independent of opponent): \(C(x,y)=c_0
+	 * \sqrt{x}\).
+	 * <dt>3
+	 * <dd>Logarithmic cost function (independent of opponent): \(C(x,y)=c_0
+	 * \ln(c_1\,x+1)\).
+	 * <dt>4
+	 * <dd>Exponential cost function (independent of opponent): \(C(x,y)=c_0
+	 * (1-\exp(-c_1\,x))\).
+	 * <dt>10
+	 * <dd>Linear cost function (sum of focal, \(x\), and opponent, \(y\), traits):
+	 * \(C(x,y)=c_0 (x+y)\).
+	 * <dt>11
+	 * <dd>Quadratic cost function (sum of focal, \(x\), and opponent, \(y\),
+	 * traits): \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2\).
+	 * <dt>12
+	 * <dd>Cubic cost function (sum of focal, \(x\), and opponent, \(y\), traits):
+	 * \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2+c_2 (x+y)^3\).
+	 * <dt>13
+	 * <dd>Quartic cost function (sum of focal, \(x\), and opponent, \(y\), traits):
+	 * \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2+c_2 (x+y)^3+c_3 (x+y)^4\).
+	 * <dt>20
+	 * <dd>Linear cost function (cross terms of focal, \(x\), and opponent, \(y\),
+	 * traits): \(C(x,y)=c_0\,x+c_1\,y+c_2\,x\,y\).
+	 * </dl>
+	 */
+	public enum Costs implements CLOption.Key {
+
+		/**
+		 * Linear cost function (independent of opponent): \(C(x,y)=c_0\,x\).
+		 */
+		PAYOFF_COST_ME_LINEAR("0", "C(x,y)=c0*x", 1), //
+
+		/**
+		 * Quadratic cost function (independent of opponent):
+		 * \(C(x,y)=c_0\,x+c_1\,x^2\).
+		 */
+		PAYOFF_COST_ME_QUAD("1", "C(x,y)=c0*x+c1*x^2", 2), //
+
+		/**
+		 * Square root cost function (independent of opponent): \(C(x,y)=c_0 \sqrt{x}\).
+		 */
+		PAYOFF_COST_ME_SQRT("2", "C(x,y)=c0*sqrt(x)", 1), //
+
+		/**
+		 * Logarithmic cost function (independent of opponent): \(C(x,y)=c_0
+		 * \ln(c_1\,x+1)\).
+		 */
+		PAYOFF_COST_ME_LOG("3", "C(x,y)=c0*ln(c1*x+1)", 2), //
+
+		/**
+		 * Exponential cost function (independent of opponent): \(C(x,y)=c_0
+		 * (1-\exp(-c_1\,x))\).
+		 */
+		PAYOFF_COST_ME_EXP("4", "C(x,y)=c0*(1-exp(-c1*x))", 2), //
+
+		/**
+		 * Linear cost function (sum of focal, \(x\), and opponent, \(y\), traits):
+		 * \(C(x,y)=c_0 (x+y)\).
+		 */
+		PAYOFF_COST_WE_LINEAR("10", "C(x,y)=c0*(x+y)", 1), //
+
+		/**
+		 * Quadratic cost function (sum of focal, \(x\), and opponent, \(y\), traits):
+		 * \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2\).
+		 */
+		PAYOFF_COST_WE_QUAD("11", "C(x,y)=c0*(x+y)+c1*(x+y)^2", 2), //
+
+		/**
+		 * Cubic cost function (sum of focal, \(x\), and opponent, \(y\), traits):
+		 * \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2+c_2 (x+y)^3\).
+		 */
+		PAYOFF_COST_WE_QUBIC("12", "C(x,y)=c0*(x+y)+c1*(x+y)^2+c2*(x+y)^3", 3), //
+
+		/**
+		 * Quartic cost function (sum of focal, \(x\), and opponent, \(y\), traits):
+		 * \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2+c_2 (x+y)^3+c_3 (x+y)^4\).
+		 */
+		PAYOFF_COST_WE_QUARTIC("13", "C(x,y)=c0*(x+y)+c1*(x+y)^2+c2*(x+y)^3+c3*(x+y)^4", 4), //
+
+		/**
+		 * Linear cost function (cross terms of focal, \(x\), and opponent, \(y\),
+		 * traits): \(C(x,y)=c_0\,x+c_1\,y+c_2\,x\,y\).
+		 */
+		PAYOFF_COST_MEYOU_LINEAR("20", "C(x,y)=c0*x+c1*y+c2*x*y", 3);
+
+		/**
+		 * The key of the cost function. Used when parsing command line options.
+		 * 
+		 * @see Continuous#cloCostFunction
+		 * @see Continuous#cloCostParams
+		 */
+		String key;
+
+		/**
+		 * The brief description of the cost function for the help display.
+		 * 
+		 * @see EvoLudo#helpCLO()
+		 */
+		String title;
+
+		/**
+		 * The number of parameters of the cost function.
+		 */
+		int nParams;
+
+		/**
+		 * Create a new type of cost function with key {@code key} and description
+		 * {@code title} as well as {@code nParams} parameters.
+		 * 
+		 * @param key     the identifier for parsing of command line option
+		 * @param title   the summary of the cost function
+		 * @param nParams the number of parameters
+		 */
+		Costs(String key, String title, int nParams) {
+			this.key = key;
+			this.title = title;
+			this.nParams = nParams;
+		}
+
+		@Override
+		public String toString() {
+			return key + ": " + title;
+		}
+
+		@Override
+		public String getKey() {
+			return key;
+		}
+
+		@Override
+		public String getTitle() {
+			return title;
+		}
+	}
+	
+	/**
+	 * Selected benefit functions to translate continuous traits into payoffs. Enum
+	 * on steroids. Currently available benefit functions are:
+	 * <dl>
+	 * <dt>0
+	 * <dd>Linear benefit function (independent of focal): \(B(x,y)=b_0\,y\).
+	 * <dt>1
+	 * <dd>Quadratic benefit function (independent of focal):
+	 * \(B(x,y)=b_0\,y+\b_1\,y^2\).
+	 * <dt>2
+	 * <dd>Saturating benefit function following a square root (independent of
+	 * focal): \(B(x,y)=b_0\sqrt{y}\).
+	 * <dt>3
+	 * <dd>Saturating benefit function following a logarithm (independent of focal):
+	 * \(B(x,y)=b_0\log{b_1\,y+1}\).
+	 * <dt>4
+	 * <dd>Saturating benefit function following an exponential (independent of
+	 * focal): \(B(x,y)=b_0 \left(1-e^{-b_1\,y}\right)\).
+	 * <dt>10
+	 * <dd>Linear benefit function (sum of focal, \(x\), and opponent, \(y\),
+	 * traits): \(B(x,y)=b_0\,(x+y)\).
+	 * <dt>11
+	 * <dd>Quadratic benefit function (sum of focal, \(x\), and opponent, \(y\),
+	 * traits): \(B(x,y)=b_0\,(x+y)+\b_1\,(x+y)^2\).
+	 * <dt>12
+	 * <dd>Saturating benefit function following a square root (sum of focal, \(x\),
+	 * and opponent, \(y\), traits): \(B(x,y)=b_0\sqrt{x+y}\).
+	 * <dt>13
+	 * <dd>Saturating benefit function following a logarithm (sum of focal, \(x\),
+	 * and opponent, \(y\), traits): \(B(x,y)=b_0\log{b_1\,(x+y)+1}\).
+	 * <dt>14
+	 * <dd>Saturating benefit function following an exponential (sum of focal,
+	 * \(x\), and opponent, \(y\), traits): \(B(x,y)=b_0
+	 * \left(1-e^{-b_1\,(x+y)}\right)\).
+	 * <dt>20
+	 * <dd>Linear benefit function (with interaction term):
+	 * \(B(x,y)=b_0\,x=b_1\,y+\b_2\,x\,y\).
+	 * <dt>30
+	 * <dd>Linear benefit function (independent of opponent): \(B(x,y)=b_0\,x\).
+	 * <dt>31
+	 * <dd>Quadratic benefit function (independent of opponent):
+	 * \(B(x,y)=b_0\,x+b_1\,x^2\).
+	 * <dt>32
+	 * <dd>Cubic benefit function (independent of opponent):
+	 * \(B(x,y)=b_0\,x+b_1\,x^2+b_2\,x^3\).
+	 * </dl>
+	 */
+	public enum Benefits implements CLOption.Key {
+
+		/**
+		 * Linear benefit function (independent of focal): \(B(x,y)=b_0\,y\).
+		 */
+		PAYOFF_BENEFIT_YOU_LINEAR("0", "B(x,y)=b0*y", 1), //
+
+		/**
+		 * Quadratic benefit function (independent of focal):
+		 * \(B(x,y)=b_0\,y+\b_1\,y^2\).
+		 */
+		PAYOFF_BENEFIT_YOU_QUAD("1", "B(x,y)=b0*y+b1*y^2", 2), //
+
+		/**
+		 * Saturating benefit function following a square root (independent of focal):
+		 * \(B(x,y)=b_0\sqrt{y}\).
+		 */
+		PAYOFF_BENEFIT_YOU_SQRT("2", "B(x,y)=b0*sqrt(y)", 1), //
+
+		/**
+		 * Saturating benefit function following a logarithm (independent of focal):
+		 * \(B(x,y)=b_0\log{b_1\,y+1}\).
+		 */
+		PAYOFF_BENEFIT_YOU_LOG("3", "B(x,y)=b0*ln(b1*y+1)", 2), //
+
+		/**
+		 * Saturating benefit function following an exponential (independent of focal):
+		 * \(B(x,y)=b_0 \left(1-e^{-b_1\,y}\right)\).
+		 */
+		PAYOFF_BENEFIT_YOU_EXP("4", "B(x,y)=b0*(1-exp(-b1*y))", 2), //
+
+		/**
+		 * Linear benefit function (sum of focal, \(x\), and opponent, \(y\), traits):
+		 * \(B(x,y)=b_0\,(x+y)\).
+		 */
+		PAYOFF_BENEFIT_WE_LINEAR("10", "B(x,y)=b0*(x+y)", 1), //
+
+		/**
+		 * Quadratic benefit function (sum of focal, \(x\), and opponent, \(y\),
+		 * traits): \(B(x,y)=b_0\,(x+y)+\b_1\,(x+y)^2\).
+		 */
+		PAYOFF_BENEFIT_WE_QUAD("11", "B(x,y)=b0*(x+y)+b1*(x+y)^2", 2), // default
+
+		/**
+		 * Saturating benefit function following a square root (sum of focal, \(x\), and
+		 * opponent, \(y\), traits): \(B(x,y)=b_0\sqrt{x+y}\).
+		 */
+		PAYOFF_BENEFIT_WE_SQRT("12", "B(x,y)=b0*sqrt(x+y)", 1), //
+
+		/**
+		 * Saturating benefit function following a logarithm (sum of focal, \(x\), and
+		 * opponent, \(y\), traits): \(B(x,y)=b_0\log{b_1\,(x+y)+1}\).
+		 */
+		PAYOFF_BENEFIT_WE_LOG("13", "B(x,y)=b0*ln(b1*(x+y)+1)", 2), //
+
+		/**
+		 * Saturating benefit function following an exponential (sum of focal, \(x\),
+		 * and opponent, \(y\), traits): \(B(x,y)=b_0 \left(1-e^{-b_1\,(x+y)}\right)\).
+		 */
+		PAYOFF_BENEFIT_WE_EXP("14", "B(x,y)=b0*(1-exp(-b1*(x+y)))", 2), //
+
+		/**
+		 * Linear benefit function (with interaction term):
+		 * \(B(x,y)=b_0\,x=b_1\,y+\b_2\,x\,y\).
+		 */
+		PAYOFF_BENEFIT_MEYOU_LINEAR("20", "B(x,y)=b0*x+b1*y+b2*x*y", 3), //
+
+		/**
+		 * Linear benefit function (independent of opponent): \(B(x,y)=b_0\,x\).
+		 */
+		PAYOFF_BENEFIT_ME_LINEAR("30", "B(x,y)=b0*x", 1), //
+
+		/**
+		 * Quadratic benefit function (independent of opponent):
+		 * \(B(x,y)=b_0\,x+b_1\,x^2\).
+		 */
+		PAYOFF_BENEFIT_ME_QUAD("31", "B(x,y)=b0*x+b1*x^2", 2), //
+
+		/**
+		 * Cubic benefit function (independent of opponent):
+		 * \(B(x,y)=b_0\,x+b_1\,x^2+b_2\,x^3\).
+		 */
+		PAYOFF_BENEFIT_ME_QUBIC("32", "B(x,y)=b0*x+b1*x^2+b2*x^3", 3);
+
+		/**
+		 * The key of the benefit function. Used when parsing command line options.
+		 * 
+		 * @see Continuous#cloBenefitFunction
+		 * @see Continuous#cloBenefitParams
+		 */
+		String key;
+
+		/**
+		 * The brief description of the benefit function for the help display.
+		 * 
+		 * @see EvoLudo#helpCLO()
+		 */
+		String title;
+
+		/**
+		 * The number of parameters of the benefit function.
+		 */
+		int nParams;
+
+		/**
+		 * Create a new type of benefit function with key {@code key} and description
+		 * {@code title} as well as {@code nParams} parameters.
+		 * 
+		 * @param key     the identifier for parsing of command line option
+		 * @param title   the summary of the benefit function
+		 * @param nParams the number of parameters
+		 */
+		Benefits(String key, String title, int nParams) {
+			this.key = key;
+			this.title = title;
+			this.nParams = nParams;
+		}
+
+		@Override
+		public String toString() {
+			return key + ": " + title;
+		}
+
+		@Override
+		public String getKey() {
+			return key;
+		}
+
+		@Override
+		public String getTitle() {
+			return title;
+		}
+	}
+	
+	/**
+	 * Command line option to set the minimum value of each trait.
+	 */
+	public final CLOption cloTraitRange = new CLOption("traitrange", "0,1", EvoLudo.catModel, null,
+			new CLODelegate() {
+
+				/**
+				 * {@inheritDoc}
+				 * <p>
+				 * Parse the minimum value of each trait. {@code arg} can be a single value or
+				 * an array with the separator {@value CLOParser#MATRIX_DELIMITER}. The parser
+				 * cycles through {@code arg} until the minimum value of each trait is set.
+				 * 
+				 * @param arg the (array of) of minimum trait values
+				 */
+				@Override
+				public boolean parse(String arg) {
+					// getting ready for multiple species - way ahead of its time...
+					String[] speciestraits = arg.split(CLOParser.SPECIES_DELIMITER);
+					if (speciestraits == null) {
+						logger.warning("traitrange specification '" + arg + "' not recognized - ignored!");
+						return false;
+					}
+					int n = 0;
+					for (Continuous cpop : species) {
+						String[] traitranges = speciestraits[n++ % speciestraits.length]
+								.split(CLOParser.TRAIT_DELIMITER);
+						for (int i = 0; i < nTraits; i++) {
+							String trange = traitranges[i % traitranges.length];
+							double[] range = CLOParser.parseVector(trange);
+							if (range == null || range.length < 2 || range[0] > range[1]) {
+								logger.warning("invalid traitrange '" + trange + "' - using [0,1]!");
+								cpop.setTraitRange(0.0, 1.0, i);
+								continue;
+							}
+							cpop.setTraitRange(range[0], range[1], i);
+						}
+					}
+					return true;
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					String msg = "";
+					for (Continuous cpop : species) {
+						double[] mins = cpop.getTraitMin();
+						double[] maxs = cpop.getTraitMax();
+						String[] names = cpop.getTraitNames();
+						for (int n = 0; n < nTraits; n++) {
+							msg = "# traitrange:           " + Formatter.format(mins[n], 4) + "-"
+									+ Formatter.format(maxs[n], 4) + //
+									" " + names[n] + (species.size() > 1 && n == 0 ? " (" + cpop.getName() + ")" : "");
+						}
+					}
+					output.println(msg);
+				}
+
+				@Override
+				public String getDescription() {
+					switch (nTraits) {
+						case 1:
+							return "--traitrange <min" + CLOParser.VECTOR_DELIMITER + "max>  range of trait "
+									+ traitName[0];
+						case 2:
+							return "--traitrange <min0" + CLOParser.VECTOR_DELIMITER + "max0" + //
+									CLOParser.TRAIT_DELIMITER + "min1" + CLOParser.VECTOR_DELIMITER + "max1]>" + //
+									CLOParser.VECTOR_DELIMITER + "  range of traits, with\n"
+									+ "             0: " + traitName[0] + "\n" //
+									+ "             1: " + traitName[1];
+						default:
+							String descr = "--traitrange <min0,max0[" + CLOParser.VECTOR_DELIMITER + "..."
+									+ CLOParser.VECTOR_DELIMITER + "min" + (nTraits - 1)
+									+ ",max" + (nTraits - 1) + "]>  range of traits, with";
+							for (int n = 0; n < nTraits; n++) {
+								String aTrait = "              " + n + ": ";
+								int traitlen = aTrait.length();
+								descr += "\n" + aTrait.substring(traitlen - 16, traitlen) + traitName[n];
+							}
+							return descr;
+					}
+				}
+			});
+
+	/**
+	 * Command line option to set the standard deviation of mutations in each trait.
+	 */
+	public final CLOption cloMutationSdev = new CLOption("mutationsdev", "0.01", EvoLudo.catModel, null,
+			new CLODelegate() {
+
+				/**
+				 * {@inheritDoc}
+				 * <p>
+				 * Parse the standard deviation of mutations in each trait. {@code arg} can be a
+				 * single value or an array with the separator
+				 * {@value CLOParser#MATRIX_DELIMITER}. The parser cycles through {@code arg}
+				 * until the standard deviation of mutations in each trait is set.
+				 * 
+				 * @param arg the (array of) of standard deviation of mutations
+				 */
+				@Override
+				public boolean parse(String arg) {
+					// getting ready for multiple species - way ahead of its time...
+					String[] traitsdevs = arg.split(CLOParser.SPECIES_DELIMITER);
+					if (traitsdevs == null) {
+						logger.warning("mutationsdev specification '" + arg + "' not recognized - ignored!");
+						return false;
+					}
+					int n = 0;
+					for (Continuous cpop : species) {
+						String[] sdevs = traitsdevs[n++ % traitsdevs.length].split(CLOParser.VECTOR_DELIMITER);
+						int nt = cpop.getNTraits();
+						double[] sdev = new double[nt];
+						for (int i = 0; i < nt; i++)
+							sdev[i] = CLOParser.parseDouble(sdevs[i % sdevs.length]);
+						cpop.setMutationSdev(sdev);
+					}
+					return true;
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					double[] fvec = getMutationSdev();
+					String msg = "# mutationsdev:         " + Formatter.format(fvec[0], 4);
+					for (int n = 1; n < nTraits; n++)
+						msg += ":" + Formatter.format(fvec[n], 4);
+					output.println(msg);
+				}
+
+				@Override
+				public String getDescription() {
+					switch (nTraits) {
+						case 1:
+							return "--mutationsdev <s>  sdev of mutations in trait " + traitName[0];
+						case 2:
+							return "--mutationsdev <s0>" + CLOParser.VECTOR_DELIMITER
+									+ "<s1> sdev of mutations in each trait, with\n" //
+									+ "             0: " + traitName[0] + "\n" //
+									+ "             1: " + traitName[1];
+						default:
+							String descr = "--mutationsdev <s0>" + CLOParser.VECTOR_DELIMITER + "..."
+									+ CLOParser.VECTOR_DELIMITER + "<s" + (nTraits - 1)
+									+ ">  sdev of mutations in each trait, with";
+							for (int n = 0; n < nTraits; n++) {
+								String aTrait = "              " + n + ": ";
+								int traitlen = aTrait.length();
+								descr += "\n" + aTrait.substring(traitlen - 16, traitlen) + traitName[n];
+							}
+							return descr;
+					}
+				}
+			});
+
+	/**
+	 * Command line option to set the cost function(s) for continuous traits.
+	 * 
+	 * @see Traits2Payoff.Costs
+	 */
+	public final CLOption cloCostFunction = new CLOption("costfcn", "1", EvoLudo.catModel, null,
+			new CLODelegate() {
+
+				/**
+				 * {@inheritDoc}
+				 * <p>
+				 * Parse cost functions for each trait. {@code arg} can be a single value or an
+				 * array of values with the separator {@value CLOParser#VECTOR_DELIMITER}. The
+				 * parser cycles through {@code arg} until all cost functions are set.
+				 * 
+				 * @param arg the (array of) cost function codes
+				 */
+				@Override
+				public boolean parse(String arg) {
+					String[] cstf = arg.split(CLOParser.VECTOR_DELIMITER);
+					int ncstf = cstf.length;
+					if (ncstf < 1) {
+						logger.warning("failed to parse cost function type '" + arg + "' - ignored.");
+						return false;
+					}
+					boolean success = true;
+					for (int s = 0; s < nTraits; s++) {
+						String type = cstf[s % ncstf];
+						Costs cft = (Costs) cloCostFunction.match(type);
+						if (cft == null) {
+							logger.warning("cost function type '" + type + "' unknown - using '"
+									+ traits2payoff.getCostFunctions()[s].getTitle() + "'");
+							success = false;
+							continue;
+						}
+						traits2payoff.setCostFunctions(cft, s);
+					}
+					return success;
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					Costs[] cfunc = traits2payoff.getCostFunctions();
+					String msg = "# costfunction:         " + cfunc[0];
+					for (int n = 1; n < nTraits; n++)
+						msg += ":" + cfunc[n];
+					output.println(msg);
+				}
+
+				@Override
+				public String getDescription() {
+					switch (nTraits) {
+						case 1:
+							return "--costfcn <s>   cost function of trait " + traitName[0] + "\n" //
+									+ "                cost functions: <s>\n" + cloCostFunction.getDescriptionKey();
+						case 2:
+							return "--costfcn <s0>" + CLOParser.VECTOR_DELIMITER + "<s1>  cost function of traits\n" //
+									+ "             0: " + traitName[0] + "\n" //
+									+ "             1: " + traitName[1] + "\n" //
+									+ "                cost functions: <s>\n" + cloCostFunction.getDescriptionKey();
+						default:
+							String descr = "--costfcn <s0>" + CLOParser.VECTOR_DELIMITER + "..."
+									+ CLOParser.VECTOR_DELIMITER + "<s" + (nTraits - 1)
+									+ ">  cost function of traits";
+							for (int n = 0; n < nTraits; n++) {
+								String aTrait = "              " + n + ": ";
+								int traitlen = aTrait.length();
+								descr += "\n" + aTrait.substring(traitlen - 16, traitlen) + traitName[n];
+							}
+							descr += "\n                cost functions: <s>\n" + cloCostFunction.getDescriptionKey();
+							return descr;
+					}
+				}
+			});
+
+	/**
+	 * Command line option to set the parameters of the cost function for continuous
+	 * traits.
+	 * 
+	 * @see Traits2Payoff.Costs
+	 */
+	public final CLOption cloCostParams = new CLOption("costparams", "0", EvoLudo.catModel,
+			"--costparams <c0>" + CLOParser.VECTOR_DELIMITER //
+					+ "<c1>" + CLOParser.VECTOR_DELIMITER + "..." + CLOParser.VECTOR_DELIMITER //
+					+ "<cn>  parameters for cost function" //
+					+ (nTraits > 1 ? "\n         different traits separated by '" + CLOParser.MATRIX_DELIMITER + "'"
+							: ""),
+			new CLODelegate() {
+
+				/**
+				 * {@inheritDoc}
+				 * <p>
+				 * Parse cost function parameters for each trait. {@code arg} can be a single
+				 * value or an array of values. Parameters are separated by
+				 * {@value CLOParser#VECTOR_DELIMITER} and traits by
+				 * {@value CLOParser#MATRIX_DELIMITER}. The parser cycles through {@code arg}
+				 * until all parameters of every trait are set.
+				 * 
+				 * @param arg the (array of) cost function parameters
+				 */
+				@Override
+				public boolean parse(String arg) {
+					double[][] cparams = CLOParser.parseMatrix(arg);
+					int len = cparams.length;
+					if (len == 0) {
+						logger.warning("failed to parse cost parameters '" + arg + "' - ignored.");
+						return false;
+					}
+					for (int n = 0; n < nTraits; n++)
+						traits2payoff.setCostParameters(cparams[n % cparams.length], n);
+					return true;
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					double[][] dvec = traits2payoff.getCostParameters();
+					String msg = "# costparams:           " + Formatter.format(dvec[0], 6);
+					for (int n = 1; n < nTraits; n++)
+						msg += ";" + Formatter.format(dvec[n], 6);
+					output.println(msg);
+				}
+			});
+
+	/**
+	 * Command line option to set the benefit function(s) for continuous traits.
+	 * 
+	 * @see Traits2Payoff.Benefits
+	 */
+	public final CLOption cloBenefitFunction = new CLOption("benefitfcn", Benefits.PAYOFF_BENEFIT_WE_QUAD.getKey(), EvoLudo.catModel, null,
+			new CLODelegate() {
+
+				/**
+				 * {@inheritDoc}
+				 * <p>
+				 * Parse benefit functions for each trait. {@code arg} can be a single value or
+				 * an array of values with the separator {@value CLOParser#VECTOR_DELIMITER}.
+				 * The parser cycles through {@code arg} until all cbenefitst functions are set.
+				 * 
+				 * @param arg the (array of) benefit function codes
+				 */
+				@Override
+				public boolean parse(String arg) {
+					String[] bftf = arg.split(CLOParser.VECTOR_DELIMITER);
+					int nbftf = bftf.length;
+					if (nbftf < 1) {
+						logger.warning("failed to parse benefit function type '" + arg + "' - ignored.");
+						return false;
+					}
+					boolean success = true;
+					for (int s = 0; s < nTraits; s++) {
+						String type = bftf[s % nbftf];
+						Benefits bft = (Benefits) cloBenefitFunction.match(type);
+						if (bft == null) {
+							logger.warning("benefit function type '" + type + "' unknown - using '"
+									+ traits2payoff.getBenefitFunctions()[s].getTitle() + "'");
+							success = false;
+							continue;
+						}
+						traits2payoff.setBenefitFunctions(bft, s);
+					}
+					return success;
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					Benefits[] bfunc = traits2payoff.getBenefitFunctions();
+					String msg = "# benefitfunction:      " + bfunc[0];
+					for (int n = 1; n < nTraits; n++)
+						msg += ":" + bfunc[n];
+					output.println(msg);
+				}
+
+				@Override
+				public String getDescription() {
+					switch (nTraits) {
+						case 1:
+							return "--benefitfcn <s>  benefit function of trait " + traitName[0] + "\n" //
+									+ "                benefit functions: <s>\n"
+									+ cloBenefitFunction.getDescriptionKey();
+						case 2:
+							return "--benefitfcn <s0>" + CLOParser.VECTOR_DELIMITER //
+									+ "<s1> benefit function of traits\n" //
+									+ "             0: " + traitName[0] + "\n" //
+									+ "             1: " + traitName[1] + "\n" //
+									+ "                benefit functions: <s>\n"
+									+ cloBenefitFunction.getDescriptionKey();
+						default:
+							String descr = "--benefitfcn <s0>" + CLOParser.VECTOR_DELIMITER + "..." //
+									+ CLOParser.VECTOR_DELIMITER + "<s" + (nTraits - 1) //
+									+ ">  benefit function of traits";
+							for (int n = 0; n < nTraits; n++) {
+								String aTrait = "              " + n + ": ";
+								int traitlen = aTrait.length();
+								descr += "\n" + aTrait.substring(traitlen - 16, traitlen) + traitName[n];
+							}
+							descr += "\n                benefit functions: <s>\n"
+									+ cloBenefitFunction.getDescriptionKey();
+							return descr;
+					}
+				}
+			});
+
+	/**
+	 * Command line option to set the parameters of the benefit function(s) for
+	 * continuous traits.
+	 * 
+	 * @see Traits2Payoff.Benefits
+	 */
+	public final CLOption cloBenefitParams = new CLOption("benefitparams", "0", EvoLudo.catModel,
+			"--benefitparams <b0>,<b1>" + CLOParser.VECTOR_DELIMITER + "..." + CLOParser.VECTOR_DELIMITER //
+					+ "<bn> parameters for benefit function" //
+					+ (nTraits > 1
+							? "\n                different traits separated by '" + CLOParser.MATRIX_DELIMITER + "'"
+							: ""),
+			new CLODelegate() {
+
+				/**
+				 * {@inheritDoc}
+				 * <p>
+				 * Parse benefit function parameters for each trait. {@code arg} can be a single
+				 * value or an array of values. Parameters are separated by
+				 * {@value CLOParser#VECTOR_DELIMITER} and traits by
+				 * {@value CLOParser#MATRIX_DELIMITER}. The parser cycles through {@code arg}
+				 * until all parameters of every trait are set.
+				 * 
+				 * @param arg the (array of) benefit function parameters
+				 */
+				@Override
+				public boolean parse(String arg) {
+					double[][] bparams = CLOParser.parseMatrix(arg);
+					int len = bparams.length;
+					if (len == 0) {
+						logger.warning("failed to parse benefit parameters '" + arg + "' - ignored.");
+						return false;
+					}
+					for (int n = 0; n < nTraits; n++)
+						traits2payoff.setBenefitParameters(bparams[n % bparams.length], n);
+					return true;
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					double[][] dvec = traits2payoff.getBenefitParameters();
+					String msg = "# benefitparams:        " + Formatter.format(dvec[0], 6);
+					for (int n = 1; n < nTraits; n++)
+						msg += ";" + Formatter.format(dvec[n], 6);
+					output.println(msg);
+				}
+			});
+
+	@Override
+	public void collectCLO(CLOParser parser) {
+		super.collectCLO(parser);
+		parser.addCLO(cloMutationSdev);
+		parser.addCLO(cloTraitRange);
+		cloCostFunction.addKeys(Costs.values());
+		parser.addCLO(cloCostFunction);
+		parser.addCLO(cloCostParams);
+		cloBenefitFunction.addKeys(Benefits.values());
+		parser.addCLO(cloBenefitFunction);
+		parser.addCLO(cloBenefitParams);
+		// best-response is not an acceptable update rule for continuous strategies -
+		// exclude Population.PLAYER_UPDATE_BEST_RESPONSE
+		cloPlayerUpdate.removeKey(PlayerUpdateType.BEST_RESPONSE);
+	}
+	
 	/**
 	 * The absolute minimum score.
 	 */

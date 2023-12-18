@@ -1,8 +1,5 @@
 TASKS:
 - javadoc for EvoLudoJRE module
-- reconfigure maven with 'webapp' and 'jettyconf' folders in EvoLudoGWT instead of EvoLudoJRE
-- maven plugin to assemble html files and compiled evoludoweb JavaScript for debugging and deploying
-- maven plugin to run tests
 - convince maven to read resource files from src/main/resources rather than src/main/java/org/evoludo/simulator/resources
 - refactor EvoLudo/GWT/JRE: should not deal with GUI related code (--delay, --run); move all methods related to delay and isSuspended (except delay variable) to superclass of EvoLudoWeb and EvoLudoLab
 
@@ -48,6 +45,9 @@ CHECK:
 
 
 DONE:
++ maven plugin to assemble html files and compiled evoludoweb JavaScript for debugging and deploying -> EvoLudoDev module
++ maven plugin to run tests -> EvoLudoTest module
++ reconfigure maven with 'webapp' and 'jettyconf' folders in EvoLudoGWT instead of EvoLudoJRE -> EvoLudoDev module
 + Safari (desktop & iPadOS): 3D graphs not shown after view change (or on load) for dynamical layout; tooltips trigger display (works in Chrome, Firefox and Safari for iOS)
 + debugging of single updates re-implemented; improved logging for debugging
 + streamline cloOptimize: defined both in IBS and IBSPopulation but set only in IBSDPopulation...
