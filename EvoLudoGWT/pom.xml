@@ -53,6 +53,9 @@
         <configuration>
           <generateGitPropertiesFile>true</generateGitPropertiesFile>
           <generateGitPropertiesFilename>${project.basedir}/src/main/java/org/evoludo/simulator/Git.properties</generateGitPropertiesFilename>
+          <gitDescribe>
+            <dirty>*</dirty>
+          </gitDescribe>
         </configuration>
       </plugin>
 

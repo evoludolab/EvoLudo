@@ -46,6 +46,11 @@
       <plugin>
         <groupId>io.github.git-commit-id</groupId>
         <artifactId>git-commit-id-maven-plugin</artifactId>
+        <configuration>
+          <gitDescribe>
+            <dirty>X</dirty>
+          </gitDescribe>
+        </configuration>
       </plugin>
 
       <plugin>
