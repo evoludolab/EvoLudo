@@ -672,65 +672,62 @@ public abstract class Continuous extends Module {
 		 * @param benefitfcn the benefit function
 		 * @param index      the index of the trait
 		 */
-		public void setBenefitFunctions(Benefits benefitfcn, int index) {
+		public void setBenefitFunction(Benefits benefitfcn, double[] bparams, int index) {
 			if (benefits == null || benefits.length != nTraits)
 				benefits = new Benefits[nTraits];
 			benefits[index] = benefitfcn;
-			if (bi == null || bi.length != nTraits)
-				bi = new double[nTraits][];
-			if (bi[index] == null || bi[index].length != benefitfcn.nParams)
-				bi[index] = new double[benefitfcn.nParams];
+			setBenefitParameters(bparams, index);
 		}
 
 		/**
-		 * Set the benefit parameters for each trait as specified in the 2D array
-		 * {@code bparams}. The rows refer to the different traits and the columns to
-		 * their benefit parameters. {@code bparams} is not necessarily a square array
-		 * because the each trait may have different numbers of parameters.
+		 * Set the array of benefit function parameters for trait with index {@code idx} to
+		 * array {@code params}.
 		 * 
-		 * @param bparams the 2D array of benefit parameters
-		 */
-		public void setBenefitParameters(double[][] bparams) {
-			for (int n = 0; n < nTraits; n++)
-				setBenefitParameters(bparams[n], n);
-		}
-
-		/**
-		 * Set the benefit parameters of the trait {@code index} to the array
-		 * {@code bparams}.
+		 * @param params the array of benefit function parameters
+		 * @param index  the index of the trait
 		 * 
-		 * @param bparams the array of benefit function parameters
-		 * @param index   the index of the trait
+		 * @see #bi
 		 */
 		public void setBenefitParameters(double[] bparams, int index) {
-			for (int n = 0; n < nTraits; n++) {
-				double[] bin = bi[n];
-				for (int i = 0; i < bin.length; i++)
-					bin[i] = bparams[i % bparams.length];
-			}
+			if (bi == null || bi.length != nTraits)
+				bi = new double[nTraits][];
+			int nParams = benefits[index].nParams;
+			if (bi[index] == null || bi[index].length != nParams)
+				bi[index] = new double[nParams];
+			System.arraycopy(bparams, 0, bi[index], 0, nParams);
 		}
 
 		/**
-		 * Set the benefit parameters for single trait modules to the array
-		 * {@code bparams}.
+		 * Get the array of benefit function parameters for trait with index {@code idx}.
 		 * 
-		 * @param bparams the array of benefit function parameters
+		 * @return the array of benefit function parameters
+		 * 
+		 * @see #bi
 		 */
-		public void setBenefitParameters(double[] bparams) {
-			setBenefitParameters(bparams, 0);
+		public double[] getBenefitParameters(int idx) {
+			return bi[idx];
 		}
 
 		/**
-		 * Get the 2D array of benefit function parameters. The rows refer to the
-		 * different
-		 * traits and the columns to their benefit parameters. The array is not
-		 * necessarily
-		 * square because the each trait may have different numbers of parameters.
+		 * Get the 2D array of benefit function parameters.
 		 * 
 		 * @return the 2D array of benefit function parameters
+		 * 
+		 * @see #bi
 		 */
 		public double[][] getBenefitParameters() {
 			return bi;
+		}
+
+		/**
+		 * Return formatted string of the benefit function of trait index {@code idx}.
+		 * 
+		 * @param idx the index of the trait
+		 * @return the formatted string
+		 */
+		public String formatBenefits(int idx) {
+			Benefits benefit = benefits[idx];
+			return traitName[idx] + ": " + benefit.key + " " + benefit.title + " " + Formatter.format(bi[idx], 4);
 		}
 
 		/**
@@ -856,39 +853,39 @@ public abstract class Continuous extends Module {
 
 			switch (benefits[trait]) {
 				// benefit depending solely on the 'me' investment
-				case PAYOFF_BENEFIT_ME_LINEAR:
+				case ME_LINEAR:
 					return b[0] * myinv;
-				case PAYOFF_BENEFIT_ME_QUAD:
+				case ME_QUAD:
 					return (b[1] * myinv + b[0]) * myinv;
-				case PAYOFF_BENEFIT_ME_QUBIC:
+				case ME_QUBIC:
 					return ((b[2] * myinv + b[1]) * myinv + b[0]) * myinv;
 
 				// benefit depending solely on the 'you' investment
-				case PAYOFF_BENEFIT_YOU_LINEAR:
+				case YOU_LINEAR:
 					return b[0] * yourinv;
-				case PAYOFF_BENEFIT_YOU_QUAD:
+				case YOU_QUAD:
 					return (b[1] * yourinv + b[0]) * yourinv;
-				case PAYOFF_BENEFIT_YOU_SQRT:
+				case YOU_SQRT:
 					return b[0] * Math.sqrt(yourinv);
-				case PAYOFF_BENEFIT_YOU_LOG:
+				case YOU_LOG:
 					return b[0] * Math.log(b[1] * yourinv + 1.0);
-				case PAYOFF_BENEFIT_YOU_EXP:
+				case YOU_EXP:
 					return b[0] * (1.0 - Math.exp(-b[1] * yourinv));
 
 				// benefit depending on the sum of 'me' and 'you' investments
-				case PAYOFF_BENEFIT_WE_LINEAR: // was 2
+				case WE_LINEAR: // was 2
 					return b[0] * ourinv;
-				case PAYOFF_BENEFIT_WE_QUAD: // default
+				case WE_QUAD: // default
 					return (b[1] * ourinv + b[0]) * ourinv;
-				case PAYOFF_BENEFIT_WE_SQRT:
+				case WE_SQRT:
 					return b[0] * Math.sqrt(ourinv);
-				case PAYOFF_BENEFIT_WE_LOG:
+				case WE_LOG:
 					return b[0] * Math.log(b[1] * ourinv + 1.0);
-				case PAYOFF_BENEFIT_WE_EXP:
+				case WE_EXP:
 					return b[0] * (1.0 - Math.exp(-b[1] * ourinv));
 
 				// benefit depending on 'me' and 'you' investments individually
-				case PAYOFF_BENEFIT_MEYOU_LINEAR:
+				case MEYOU_LINEAR:
 					return b[0] * myinv + b[1] * yourinv + b[2] * myinv * yourinv;
 
 				default: // this is bad
@@ -1094,89 +1091,89 @@ public abstract class Continuous extends Module {
 		/**
 		 * Linear benefit function (independent of focal): \(B(x,y)=b_0\,y\).
 		 */
-		PAYOFF_BENEFIT_YOU_LINEAR("0", "B(x,y)=b0*y", 1), //
+		YOU_LINEAR("0", "B(x,y)=b0*y", 1), //
 
 		/**
 		 * Quadratic benefit function (independent of focal):
 		 * \(B(x,y)=b_0\,y+\b_1\,y^2\).
 		 */
-		PAYOFF_BENEFIT_YOU_QUAD("1", "B(x,y)=b0*y+b1*y^2", 2), //
+		YOU_QUAD("1", "B(x,y)=b0*y+b1*y^2", 2), //
 
 		/**
 		 * Saturating benefit function following a square root (independent of focal):
 		 * \(B(x,y)=b_0\sqrt{y}\).
 		 */
-		PAYOFF_BENEFIT_YOU_SQRT("2", "B(x,y)=b0*sqrt(y)", 1), //
+		YOU_SQRT("2", "B(x,y)=b0*sqrt(y)", 1), //
 
 		/**
 		 * Saturating benefit function following a logarithm (independent of focal):
 		 * \(B(x,y)=b_0\log{b_1\,y+1}\).
 		 */
-		PAYOFF_BENEFIT_YOU_LOG("3", "B(x,y)=b0*ln(b1*y+1)", 2), //
+		YOU_LOG("3", "B(x,y)=b0*ln(b1*y+1)", 2), //
 
 		/**
 		 * Saturating benefit function following an exponential (independent of focal):
 		 * \(B(x,y)=b_0 \left(1-e^{-b_1\,y}\right)\).
 		 */
-		PAYOFF_BENEFIT_YOU_EXP("4", "B(x,y)=b0*(1-exp(-b1*y))", 2), //
+		YOU_EXP("4", "B(x,y)=b0*(1-exp(-b1*y))", 2), //
 
 		/**
 		 * Linear benefit function (sum of focal, \(x\), and opponent, \(y\), traits):
 		 * \(B(x,y)=b_0\,(x+y)\).
 		 */
-		PAYOFF_BENEFIT_WE_LINEAR("10", "B(x,y)=b0*(x+y)", 1), //
+		WE_LINEAR("10", "B(x,y)=b0*(x+y)", 1), //
 
 		/**
 		 * Quadratic benefit function (sum of focal, \(x\), and opponent, \(y\),
 		 * traits): \(B(x,y)=b_0\,(x+y)+\b_1\,(x+y)^2\).
 		 */
-		PAYOFF_BENEFIT_WE_QUAD("11", "B(x,y)=b0*(x+y)+b1*(x+y)^2", 2), // default
+		WE_QUAD("11", "B(x,y)=b0*(x+y)+b1*(x+y)^2", 2), // default
 
 		/**
 		 * Saturating benefit function following a square root (sum of focal, \(x\), and
 		 * opponent, \(y\), traits): \(B(x,y)=b_0\sqrt{x+y}\).
 		 */
-		PAYOFF_BENEFIT_WE_SQRT("12", "B(x,y)=b0*sqrt(x+y)", 1), //
+		WE_SQRT("12", "B(x,y)=b0*sqrt(x+y)", 1), //
 
 		/**
 		 * Saturating benefit function following a logarithm (sum of focal, \(x\), and
 		 * opponent, \(y\), traits): \(B(x,y)=b_0\log{b_1\,(x+y)+1}\).
 		 */
-		PAYOFF_BENEFIT_WE_LOG("13", "B(x,y)=b0*ln(b1*(x+y)+1)", 2), //
+		WE_LOG("13", "B(x,y)=b0*ln(b1*(x+y)+1)", 2), //
 
 		/**
 		 * Saturating benefit function following an exponential (sum of focal, \(x\),
 		 * and opponent, \(y\), traits): \(B(x,y)=b_0 \left(1-e^{-b_1\,(x+y)}\right)\).
 		 */
-		PAYOFF_BENEFIT_WE_EXP("14", "B(x,y)=b0*(1-exp(-b1*(x+y)))", 2), //
+		WE_EXP("14", "B(x,y)=b0*(1-exp(-b1*(x+y)))", 2), //
 
 		/**
 		 * Linear benefit function (with interaction term):
 		 * \(B(x,y)=b_0\,x=b_1\,y+\b_2\,x\,y\).
 		 */
-		PAYOFF_BENEFIT_MEYOU_LINEAR("20", "B(x,y)=b0*x+b1*y+b2*x*y", 3), //
+		MEYOU_LINEAR("20", "B(x,y)=b0*x+b1*y+b2*x*y", 3), //
 
 		/**
 		 * Linear benefit function (independent of opponent): \(B(x,y)=b_0\,x\).
 		 */
-		PAYOFF_BENEFIT_ME_LINEAR("30", "B(x,y)=b0*x", 1), //
+		ME_LINEAR("30", "B(x,y)=b0*x", 1), //
 
 		/**
 		 * Quadratic benefit function (independent of opponent):
 		 * \(B(x,y)=b_0\,x+b_1\,x^2\).
 		 */
-		PAYOFF_BENEFIT_ME_QUAD("31", "B(x,y)=b0*x+b1*x^2", 2), //
+		ME_QUAD("31", "B(x,y)=b0*x+b1*x^2", 2), //
 
 		/**
 		 * Cubic benefit function (independent of opponent):
 		 * \(B(x,y)=b_0\,x+b_1\,x^2+b_2\,x^3\).
 		 */
-		PAYOFF_BENEFIT_ME_QUBIC("32", "B(x,y)=b0*x+b1*x^2+b2*x^3", 3);
+		ME_QUBIC("32", "B(x,y)=b0*x+b1*x^2+b2*x^3", 3);
 
 		/**
 		 * The key of the benefit function. Used when parsing command line options.
 		 * 
-		 * @see Continuous#cloBenefitFunction
+		 * @see Continuous#cloBenefits
 		 * @see Continuous#cloBenefitParams
 		 */
 		String key;
@@ -1442,7 +1439,11 @@ public abstract class Continuous extends Module {
 	 * 
 	 * @see Traits2Payoff.Benefits
 	 */
-	public final CLOption cloBenefitFunction = new CLOption("benefitfcn", Benefits.PAYOFF_BENEFIT_WE_QUAD.getKey(), EvoLudo.catModel, null,
+	public final CLOption cloBenefits = new CLOption("benefits",
+			Benefits.WE_LINEAR.getKey() + " 3",
+			EvoLudo.catModel,
+			"--benefits <s0 b00[" + CLOParser.VECTOR_DELIMITER + "b01...[" + CLOParser.TRAIT_DELIMITER + //
+					"s1 b10[" + CLOParser.VECTOR_DELIMITER + "b11...]]]>  benefit function <si>:",
 			new CLODelegate() {
 
 				/**
@@ -1456,110 +1457,43 @@ public abstract class Continuous extends Module {
 				 */
 				@Override
 				public boolean parse(String arg) {
-					String[] bftf = arg.split(CLOParser.VECTOR_DELIMITER);
-					int nbftf = bftf.length;
-					if (nbftf < 1) {
-						logger.warning("failed to parse benefit function type '" + arg + "' - ignored.");
-						return false;
-					}
-					boolean success = true;
-					for (int s = 0; s < nTraits; s++) {
-						String type = bftf[s % nbftf];
-						Benefits bft = (Benefits) cloBenefitFunction.match(type);
-						if (bft == null) {
-							logger.warning("benefit function type '" + type + "' unknown - using '"
-									+ traits2payoff.getBenefitFunctions()[s].getTitle() + "'");
-							success = false;
-							continue;
-						}
-						traits2payoff.setBenefitFunctions(bft, s);
-					}
-					return success;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					Benefits[] bfunc = traits2payoff.getBenefitFunctions();
-					String msg = "# benefitfunction:      " + bfunc[0];
-					for (int n = 1; n < nTraits; n++)
-						msg += ":" + bfunc[n];
-					output.println(msg);
-				}
-
-				@Override
-				public String getDescription() {
-					switch (nTraits) {
-						case 1:
-							return "--benefitfcn <s>  benefit function of trait " + traitName[0] + "\n" //
-									+ "                benefit functions: <s>\n"
-									+ cloBenefitFunction.getDescriptionKey();
-						case 2:
-							return "--benefitfcn <s0>" + CLOParser.VECTOR_DELIMITER //
-									+ "<s1> benefit function of traits\n" //
-									+ "             0: " + traitName[0] + "\n" //
-									+ "             1: " + traitName[1] + "\n" //
-									+ "                benefit functions: <s>\n"
-									+ cloBenefitFunction.getDescriptionKey();
-						default:
-							String descr = "--benefitfcn <s0>" + CLOParser.VECTOR_DELIMITER + "..." //
-									+ CLOParser.VECTOR_DELIMITER + "<s" + (nTraits - 1) //
-									+ ">  benefit function of traits";
-							for (int n = 0; n < nTraits; n++) {
-								String aTrait = "              " + n + ": ";
-								int traitlen = aTrait.length();
-								descr += "\n" + aTrait.substring(traitlen - 16, traitlen) + traitName[n];
+					String[] bftfs = arg.split(CLOParser.TRAIT_DELIMITER);
+					Benefits prevtype = null;
+					for (int n = 0; n < nTraits; n++) {
+						String bftf = bftfs[n % bftfs.length];
+						Benefits type = (Benefits) cloBenefits.match(bftf);
+						String[] bftfargs = bftf.split("[\\s=]");
+						double[] args;
+						if (type == null) {
+							if (prevtype == null) {
+								logger.warning("benefits function type missing!");
+								return false;
 							}
-							descr += "\n                benefit functions: <s>\n"
-									+ cloBenefitFunction.getDescriptionKey();
-							return descr;
+							type = prevtype;
+							args = CLOParser.parseVector(bftfargs[0]);
+						} else if (type.nParams > 0 && bftfargs.length < 2) {
+							logger.warning(
+									"benefits function type '" + type + " requires " + type.nParams + " arguments!");
+							return false;
+						} else
+							args = CLOParser.parseVector(bftfargs[1]);
+						prevtype = type;
+						if (args.length != type.nParams) {
+							logger.warning("benefits function type '" + type + " requires " + type.nParams
+									+ " arguments but found '" + Formatter.format(args, 2) + "'!");
+							if (args.length < type.nParams)
+								return false;
+						}
+						traits2payoff.setBenefitFunction(type, args, n);
 					}
-				}
-			});
-
-	/**
-	 * Command line option to set the parameters of the benefit function(s) for
-	 * continuous traits.
-	 * 
-	 * @see Traits2Payoff.Benefits
-	 */
-	public final CLOption cloBenefitParams = new CLOption("benefitparams", "0", EvoLudo.catModel,
-			"--benefitparams <b0>,<b1>" + CLOParser.VECTOR_DELIMITER + "..." + CLOParser.VECTOR_DELIMITER //
-					+ "<bn> parameters for benefit function" //
-					+ (nTraits > 1
-							? "\n                different traits separated by '" + CLOParser.MATRIX_DELIMITER + "'"
-							: ""),
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse benefit function parameters for each trait. {@code arg} can be a single
-				 * value or an array of values. Parameters are separated by
-				 * {@value CLOParser#VECTOR_DELIMITER} and traits by
-				 * {@value CLOParser#MATRIX_DELIMITER}. The parser cycles through {@code arg}
-				 * until all parameters of every trait are set.
-				 * 
-				 * @param arg the (array of) benefit function parameters
-				 */
-				@Override
-				public boolean parse(String arg) {
-					double[][] bparams = CLOParser.parseMatrix(arg);
-					int len = bparams.length;
-					if (len == 0) {
-						logger.warning("failed to parse benefit parameters '" + arg + "' - ignored.");
-						return false;
-					}
-					for (int n = 0; n < nTraits; n++)
-						traits2payoff.setBenefitParameters(bparams[n % bparams.length], n);
 					return true;
 				}
 
 				@Override
 				public void report(PrintStream output) {
-					double[][] dvec = traits2payoff.getBenefitParameters();
-					String msg = "# benefitparams:        " + Formatter.format(dvec[0], 6);
+					String msg = "# benefitfunction:      " + traits2payoff.formatBenefits(0);
 					for (int n = 1; n < nTraits; n++)
-						msg += ";" + Formatter.format(dvec[n], 6);
+						msg += "\n                        " + traits2payoff.formatBenefits(n);
 					output.println(msg);
 				}
 			});
