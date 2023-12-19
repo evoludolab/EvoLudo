@@ -101,56 +101,6 @@ public class IBSCPopulation extends IBSMCPopulation {
 	}
 
 	/**
-	 * NOTE: this hides vector-valued variables of the same name in Population
-	 * and CXPopulation. This allows to deal with a single trait more efficiently.
-	 */
-	/**
-	 * The minimal trait/strategy value. Convenience variable.
-	 * <p>
-	 * <strong>Notes:</strong>
-	 * <ol>
-	 * <li>Internally traits are always scaled to <code>[0, 1]</code>.
-	 * <li>This deliberately hides the array {@link IBSMCPopulation#traitMin} as a
-	 * shortcut to {@code traitMin[0]} for more efficient calculations.
-	 * </ol>
-	 * 
-	 * @see Continuous#getTraitMin()
-	 */
-	@SuppressWarnings("hiding")
-	double traitMin = -1.0; // defined as double[] in CXPopulation
-
-	/**
-	 * The maximal trait/strategy value. Convenience variable.
-	 * <p>
-	 * <strong>Notes:</strong>
-	 * <ol>
-	 * <li>Internally traits are always scaled to <code>[0, 1]</code>.
-	 * <li>This deliberately hides the array {@link IBSMCPopulation#traitMax} as a
-	 * shortcut to {@code traitMax[0]} for more efficient calculations.
-	 * </ol>
-	 * 
-	 * @see Continuous#getTraitMax()
-	 */
-	@SuppressWarnings("hiding")
-	double traitMax = -1.0; // defined as double[] in CXPopulation
-
-	/**
-	 * The standard deviation Gaussian mutations in the trait/strategy value.
-	 * Convenience variable.
-	 * <p>
-	 * <strong>Notes:</strong>
-	 * <ol>
-	 * <li>Internally traits are always scaled to <code>[0, 1]</code>.
-	 * <li>This deliberately hides the array {@link IBSMCPopulation#mutSdev} as a
-	 * shortcut to {@code mutSdev[0]} for more efficient calculations.
-	 * </ol>
-	 * 
-	 * @see Continuous#getTraitMin()
-	 */
-	@SuppressWarnings("hiding")
-	double mutSdev = -1.0; // defined as double[] in CXPopulation
-
-	/**
 	 * Gets the type of the initial configuration and its arguments.
 	 *
 	 * @param trait the index of the trait 
@@ -362,9 +312,6 @@ public class IBSCPopulation extends IBSMCPopulation {
 		// IBSCPopulation opponent shadows IBSMCPopulation/IBSPopulation opponent to
 		// save casts
 		opponent = (IBSCPopulation) super.opponent;
-		traitMax = super.traitMax[0];
-		traitMin = super.traitMin[0];
-		mutSdev = module.getMutationSdev()[0];
 		return doReset;
 	}
 
