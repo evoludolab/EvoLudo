@@ -121,6 +121,7 @@ public class IBSMCPopulation extends IBSPopulation {
 		traitMin = null;
 		traitMax = null;
 		mutSdev = null;
+		mutSdevScaled = null;
 		strategies = null;
 		strategiesScratch = null;
 		myTrait = null;
@@ -145,7 +146,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * @see #setMutationType(MutationType)
 	 * @see MutationType
 	 */
-	protected MutationType mutationType = MutationType.GAUSSIAN;
+	protected MutationType[] mutationType;
 
 	/**
 	 * The array with the minimal values for each trait/strategy. Convenience
@@ -170,15 +171,17 @@ public class IBSMCPopulation extends IBSPopulation {
 	protected double[] traitMax;
 
 	/**
-	 * The array with the scaled standard deviations for Gaussian mutations in each
-	 * trait/strategy. Convenience variable.
-	 * <p>
-	 * <strong>Note:</strong> Internally traits are always scaled to
-	 * <code>[0, 1]</code>.
-	 * 
-	 * @see Continuous#getMutationSdev()
+	 * Standard deviation of mutations.
 	 */
 	protected double[] mutSdev;
+
+	/**
+	 * Scaled standard deviation of mutations. Convenience variable.
+	 * <p>
+	 * <strong>Note:</strong> Internally traits are always scaled to
+	 * <code>[0, 1]</code>
+	 */
+	protected double[] mutSdevScaled;
 
 	/**
 	 * The array of individual traits/strategies. The traits of individual {@code i}
@@ -285,13 +288,13 @@ public class IBSMCPopulation extends IBSPopulation {
 			if (!changed)
 				System.arraycopy(strategies, idx, strategiesScratch, idx, nTraits);
 		}
-		switch (mutationType) {
+		switch (mutationType[loc]) {
 			case UNIFORM:
 				strategiesScratch[idx + loc] = random01();
 				return;
 			case GAUSSIAN:
 				double mean = changed ? strategiesScratch[idx + loc] : strategies[idx + loc];
-				double sdev = mutSdev[loc];
+				double sdev = mutSdevScaled[loc];
 				// draw mutants until we find viable one...
 				// not very elegant but avoids emphasis of interval boundaries.
 				double mut;
@@ -764,10 +767,10 @@ public class IBSMCPopulation extends IBSPopulation {
 
 		traitMin = module.getTraitMin();
 		traitMax = module.getTraitMax();
-		mutSdev = module.getMutationSdev();
+		mutSdevScaled = ArrayMath.clone(mutSdev);
 		// note: traits are normalized to [0, 1]; scale sdev of mutations accordingly
 		for (int n = 0; n < nTraits; n++)
-			mutSdev[n] /= (traitMax[n] - traitMin[n]);
+			mutSdevScaled[n] /= (traitMax[n] - traitMin[n]);
 
 		// check interaction geometry
 		if (interaction.isType(Geometry.Type.MEANFIELD) && interactionGroup.isSampling(IBSGroup.SamplingType.ALL)) {
@@ -783,29 +786,70 @@ public class IBSMCPopulation extends IBSPopulation {
 	}
 
 	/**
-	 * Sets the type of mutations to {@code type}.
+	 * Sets the type of mutations to {@code type} with arguments {@code params} for
+	 * trait with {@code index}.
 	 * <p>
 	 * <strong>Note:</strong> The mutation type is the same for all
 	 * traits/strategies.
 	 * 
-	 * @param type the mutation type
+	 * @param type   the mutation type
+	 * @param params the array with arguments
+	 * @param index  the index of the trait
 	 */
-	public void setMutationType(MutationType type) {
-		if (type == mutationType)
+	public void setMutationType(MutationType type, double[] params, int index) {
+		if(index<0||index>=nTraits)
 			return;
-		mutationType = type;
+		if (mutationType==null || mutationType.length!=nTraits)
+			mutationType = new MutationType[nTraits];
+		if (mutSdev == null || mutSdev.length != nTraits)
+			mutSdev = new double[nTraits];
+		mutationType[index] = type;
+		switch(type) {
+			case GAUSSIAN:
+			case UNIFORM:
+				if (params != null && params.length > 0) {
+					mutSdev[index] = params[0];
+					return;
+				}
+				break;
+			case NONE:
+			default:
+				break;			
+		}
 	}
 
 	/**
-	 * Returns the type of mutations.
-	 * <p>
-	 * <strong>Note:</strong> The mutation type is the same for all
-	 * traits/strategies.
+	 * Returns the type of mutations for trait {@code trait}.
 	 * 
 	 * @return mutation type
 	 */
-	public MutationType getMutationType() {
+	public MutationType getMutationType(int trait) {
+		MutationType type = mutationType[trait];
+		type.args = new double[] { mutSdev[trait] };
+		return type;
+	}
+
+	/**
+	 * Returns the type of mutations for all traits.
+	 * 
+	 * @return mutation types
+	 */
+	public MutationType[] getMutationTypes() {
+		int idx = 0;
+		for (MutationType mut : mutationType)
+			mut.args = new double[] { mutSdev[idx++] }; 
 		return mutationType;
+	}
+
+	/**
+	 * Return formatted string of the mutation type of trait with index {@code idx}.
+	 * 
+	 * @param idx the index of the trait
+	 * @return the formatted string
+	 */
+	public String formatMutationType(int idx) {
+		MutationType type = mutationType[idx];
+			return module.getTraitName(idx) + ": " + type.key + " " + type.title + " " + Formatter.format(mutSdev[idx], 4);
 	}
 
 	/**

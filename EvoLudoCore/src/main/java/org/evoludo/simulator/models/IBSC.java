@@ -43,22 +43,20 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		/**
 		 * No mutations (default).
 		 */
-		NONE("none", "no mutations"),
+		NONE("none", "no mutations", 0),
 
 		/**
 		 * Mutations distributed uniformly at random.
 		 */
-		UNIFORM("uniform", "uniform mutations"),
+		UNIFORM("uniform", "uniform mutations", 0),
 
 		/**
 		 * Mutations are Gaussian distributed around parental trait/strategy.
 		 */
-		GAUSSIAN("gaussian", "Gaussian mutations around parental trait");
+		GAUSSIAN("gaussian", "mutate parental trait, <sdev>", 1);
 
 		/**
 		 * Key of mutation type. Used when parsing command line options.
-		 * 
-		 * @see EvoLudo#cloMutationType
 		 */
 		String key;
 
@@ -70,12 +68,24 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		String title;
 
 		/**
+		 * The number of parameters of the mutation function.
+		 */
+		int nParams;
+
+		/**
+		 * The arguments for the initialization. Convenience field, meaningful only
+		 * immediately after calls to {@link IBSDPopulation#getInitType()}.
+		 */
+		double[] args;
+
+		/**
 		 * Instantiate new mutation type.
 		 * 
-		 * @param key   identifier for parsing of command line option
-		 * @param title summary of mutation type
+		 * @param key     identifier for parsing of command line option
+		 * @param title   summary of mutation type
+		 * @param nParams the number of parameters
 		 */
-		MutationType(String key, String title) {
+		MutationType(String key, String title, int nParams) {
 			this.key = key;
 			this.title = title;
 		}
@@ -93,6 +103,17 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		@Override
 		public String toString() {
 			return key + ": " + title;
+		}
+
+		/**
+		 * Get the arguments of this mutation type. Convenience field.
+		 * 
+		 * @return the arguments associated with this mutation type
+		 * 
+		 * @see #args
+		 */
+		public double[] getArgs() {
+			return args;
 		}
 	}
 
@@ -125,7 +146,7 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	}
 
 	/**
-	 * Type of initial density distribution. Currently this model supports:
+	 * Type of initial density distribution of traits. Currently this model supports:
 	 * <dl>
 	 * <dt>uniform
 	 * Uniform distribution of traits covering entire trait interval (default).
@@ -289,9 +310,9 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	/**
 	 * Command line option to set the mutation type.
 	 */
-	public final CLOption cloMutationType = new CLOption("mutationtype", MutationType.UNIFORM.getKey(),
+	public final CLOption cloMutationType = new CLOption("mutations", MutationType.UNIFORM.getKey(),
 			EvoLudo.catModel,
-			"--mutationtype <t>   mutation type:", new CLODelegate() {
+			"--mutations <t["+CLOParser.TRAIT_DELIMITER+"t1...]>  mutation type:", new CLODelegate() {
 
 				/**
 				 * {@inheritDoc}
@@ -307,21 +328,42 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 				 */
 				@Override
 				public boolean parse(String arg) {
-					MutationType mt = (MutationType) cloMutationType.match(arg);
-					if (mt == null) {
-						logger.warning((isMultispecies ? population.getModule().getName() + ": " : "")
-								+ "mutation type '" + arg + "' unknown - using '"
-								+ ((IBSMCPopulation) population).getMutationType() + "'");
-						return false;
+					IBSMCPopulation cpop = (IBSMCPopulation) population;
+					String[] muttypes = arg.split(CLOParser.TRAIT_DELIMITER);
+					int nt = cpop.getModule().getNTraits();
+					MutationType prevtype = null;
+					for (int n = 0; n < nt; n++) {
+						String muttype = muttypes[n % muttypes.length];
+						double[] mutargs = null;
+						String[] typeargs = muttype.split("[\\s=]");
+						MutationType type = (MutationType) cloMutationType.match(muttype);
+						if (type == null && prevtype != null) {
+							type = prevtype;
+							mutargs = CLOParser.parseVector(typeargs[0]);
+						} else if (typeargs.length > 1)
+							mutargs = CLOParser.parseVector(typeargs[1]);
+						boolean argsOk = ((mutargs != null && mutargs.length >= type.nParams) || 
+								(mutargs == null && type != null && type.equals(MutationType.UNIFORM)));
+						if (type == null || !argsOk) {
+							logger.warning(
+									(species.size() > 1 ? cpop.getModule().getName() + ": " : "") +
+											"muttype '" + muttype + "' unknown!");
+							return false;
+						}
+						cpop.setMutationType(type, mutargs, n);
+						prevtype = type;
 					}
-					((IBSMCPopulation) population).setMutationType(mt);
 					return true;
 				}
 
 				@Override
 				public void report(PrintStream output) {
-					output.println(
-							"# mutationtype:         " + ((IBSMCPopulation) population).getMutationType().getTitle());
+					IBSMCPopulation cpop = (IBSMCPopulation) population;
+					int nt = cpop.getModule().getNTraits();
+					String msg = "# mutationtype:         " + cpop.formatMutationType(0);
+					for (int n = 1; n < nt; n++)
+						msg += "\n                        " + cpop.formatMutationType(n);
+					output.println(msg);
 				}
 			});
 

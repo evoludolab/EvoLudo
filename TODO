@@ -1,3 +1,6 @@
+EXTENSIONS:
+- implement different types of mutations for discrete modules: random (cosmic rays) or errors in reproduction (temperature).
+
 TASKS:
 - javadoc for EvoLudoJRE module
 - convince maven to read resource files from src/main/resources rather than src/main/java/org/evoludo/simulator/resources

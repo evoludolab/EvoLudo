@@ -36,7 +36,6 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -291,14 +290,6 @@ public abstract class Continuous extends Module {
 	protected double[] traitMax;
 
 	/**
-	 * Standard deviation of mutations.
-	 * <p>
-	 * <strong>Note:</strong> scaled in accordance to to the trait range given by
-	 * {@code traitMin} and {@code traitMax}.
-	 */
-	protected double[] mutSdev;
-
-	/**
 	 * Create new module with continuous traits.
 	 * 
 	 * @param engine the pacemeaker for running the model
@@ -503,26 +494,6 @@ public abstract class Continuous extends Module {
 		traitMax[trait] = max;
 		traitMin[trait] = min;
 		extremalScoresSet = false; // update extremal scores
-	}
-
-	/**
-	 * Set the standard deviation of Gaussian mutations in each trait.
-	 *
-	 * @param sdev the array specifying standard deviation of mutations
-	 */
-	public void setMutationSdev(double[] sdev) {
-		if (sdev == null || sdev.length != nTraits)
-			return; // invalid argument, ignore
-		mutSdev = sdev;
-	}
-
-	/**
-	 * Get the standard deviation of Gaussian mutations in each trait.
-	 *
-	 * @return the standard deviation of Gaussian mutations
-	 */
-	public double[] getMutationSdev() {
-		return ArrayMath.clone(mutSdev);
 	}
 
 	/**
@@ -1303,74 +1274,6 @@ public abstract class Continuous extends Module {
 				}
 			});
 
-	/**
-	 * Command line option to set the standard deviation of mutations in each trait.
-	 */
-	public final CLOption cloMutationSdev = new CLOption("mutationsdev", "0.01", EvoLudo.catModel, null,
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse the standard deviation of mutations in each trait. {@code arg} can be a
-				 * single value or an array with the separator
-				 * {@value CLOParser#MATRIX_DELIMITER}. The parser cycles through {@code arg}
-				 * until the standard deviation of mutations in each trait is set.
-				 * 
-				 * @param arg the (array of) of standard deviation of mutations
-				 */
-				@Override
-				public boolean parse(String arg) {
-					// getting ready for multiple species - way ahead of its time...
-					String[] traitsdevs = arg.split(CLOParser.SPECIES_DELIMITER);
-					if (traitsdevs == null) {
-						logger.warning("mutationsdev specification '" + arg + "' not recognized - ignored!");
-						return false;
-					}
-					int n = 0;
-					for (Continuous cpop : species) {
-						String[] sdevs = traitsdevs[n++ % traitsdevs.length].split(CLOParser.VECTOR_DELIMITER);
-						int nt = cpop.getNTraits();
-						double[] sdev = new double[nt];
-						for (int i = 0; i < nt; i++)
-							sdev[i] = CLOParser.parseDouble(sdevs[i % sdevs.length]);
-						cpop.setMutationSdev(sdev);
-					}
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					double[] fvec = getMutationSdev();
-					String msg = "# mutationsdev:         " + Formatter.format(fvec[0], 4);
-					for (int n = 1; n < nTraits; n++)
-						msg += ":" + Formatter.format(fvec[n], 4);
-					output.println(msg);
-				}
-
-				@Override
-				public String getDescription() {
-					switch (nTraits) {
-						case 1:
-							return "--mutationsdev <s>  sdev of mutations in trait " + traitName[0];
-						case 2:
-							return "--mutationsdev <s0>" + CLOParser.VECTOR_DELIMITER
-									+ "<s1> sdev of mutations in each trait, with\n" //
-									+ "             0: " + traitName[0] + "\n" //
-									+ "             1: " + traitName[1];
-						default:
-							String descr = "--mutationsdev <s0>" + CLOParser.VECTOR_DELIMITER + "..."
-									+ CLOParser.VECTOR_DELIMITER + "<s" + (nTraits - 1)
-									+ ">  sdev of mutations in each trait, with";
-							for (int n = 0; n < nTraits; n++) {
-								String aTrait = "              " + n + ": ";
-								int traitlen = aTrait.length();
-								descr += "\n" + aTrait.substring(traitlen - 16, traitlen) + traitName[n];
-							}
-							return descr;
-					}
-				}
-			});
 
 	/**
 	 * Command line option to set the cost function(s) for continuous traits.
@@ -1501,7 +1404,6 @@ public abstract class Continuous extends Module {
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
-		parser.addCLO(cloMutationSdev);
 		parser.addCLO(cloTraitRange);
 		cloCosts.addKeys(Costs.values());
 		parser.addCLO(cloCosts);
