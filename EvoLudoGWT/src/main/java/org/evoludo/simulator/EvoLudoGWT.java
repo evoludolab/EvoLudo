@@ -42,6 +42,7 @@ import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.Model.Mode;
+import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -455,6 +456,21 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public void helpCLO() {
+		// list trait indices and names
+		String msg = "";
+		for (Module mod : activeModule.getSpecies()) {
+			String name = mod.getName();
+			int namelen = name.length();
+			if (namelen > 0) {
+				name = "      Species: " + name;
+				namelen = name.length();
+				msg += "\n" + name.substring(namelen - 16, namelen);
+			}
+			int nt = mod.getNTraits();
+			for (int n = 0; n < nt; n++)
+				msg += "\n             " + n + ": " + mod.getTraitName(n);
+			catModule.setHeader("Module specific options with trait names and indices:" + msg);
+		}
 		logger.info("<pre>EvoLudoWeb\nList of command line options for module '" + activeModule.getKey() + "':\n"
 				+ parser.helpCLO(true) + "</pre>");
 	}

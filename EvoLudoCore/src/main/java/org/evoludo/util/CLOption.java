@@ -205,7 +205,8 @@ public class CLOption implements Comparable<CLOption> {
 		}
 
 		/**
-		 * Get the priority.
+		 * Get the priority of this category. Parameters are grouped by priority in help
+		 * display.
 		 * 
 		 * @return the priority
 		 */
@@ -214,7 +215,16 @@ public class CLOption implements Comparable<CLOption> {
 		}
 
 		/**
-		 * Get the header.
+		 * Set the header of category for help display.
+		 * 
+		 * @header the header
+		 */
+		public void setHeader(String header) {
+			this.header = header;
+		}
+
+		/**
+		 * Get the header of category for help display.
 		 * 
 		 * @return the header
 		 */
