@@ -128,8 +128,8 @@ public class scanCSD extends CSD {
 						bparams[1] = b2;
 						cparams[0] = c1;
 						cparams[1] = c2;
-						traits2payoff.setBenefitParameters(bparams);
-						traits2payoff.setCostParameters(cparams);
+						traits2payoff.setBenefitParameters(bparams, 0);
+						traits2payoff.setCostParameters(cparams, 0);
 						// initialize population
 						InitType type = cpop.getInitType();
 						double[] myinit = type.getArgs();
@@ -637,12 +637,6 @@ public class scanCSD extends CSD {
 		engine.cloGenerations.setDefault("10000");
 
 		super.collectCLO(parser);
-	}
-
-	@Override
-	public void adjustCLO(CLOParser parser) {
-		// remove options that do not make sense in present context
-		parser.removeCLO(new String[] { "costparams", "benefitparams" });
 	}
 
 	public void saveSnapshot() {

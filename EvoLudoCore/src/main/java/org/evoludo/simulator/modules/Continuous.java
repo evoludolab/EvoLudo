@@ -531,7 +531,7 @@ public abstract class Continuous extends Module {
 	 * 
 	 * @author Christoph Hauert
 	 */
-	class Traits2Payoff {
+	public class Traits2Payoff {
 
 		/**
 		 * The array of cost functions, one for each trait.
@@ -568,55 +568,46 @@ public abstract class Continuous extends Module {
 		}
 
 		/**
-		 * Set the cost function of the trait {@code index} to {@code costfcn}.
+		 * Set the cost function of the trait {@code index} to {@code costfcn} with
+		 * parameters in the array {@code cparams}.
 		 * 
 		 * @param costfcn the cost function
 		 * @param index   the index of the trait
 		 */
-		public void setCostFunctions(Costs costfcn, int index) {
+		public void setCostFunction(Costs costfcn, double[] cparams, int index) {
 			if (costs == null || costs.length != nTraits)
 				costs = new Costs[nTraits];
 			costs[index] = costfcn;
-			if (ci == null || ci.length != nTraits)
-				ci = new double[nTraits][];
-			if (ci[index] == null || ci[index].length != costfcn.nParams)
-				ci[index] = new double[costfcn.nParams];
+			setCostParameters(cparams, index);
 		}
 
 		/**
-		 * Set the cost parameters for each trait as specified in the 2D array
-		 * {@code cparams}.
+		 * Set the array of cost function parameters for trait with index {@code idx} to
+		 * array {@code params}.
 		 * 
-		 * @param cparams the 2D array of cost parameters
+		 * @param params the array of cost function parameters
+		 * @param index  the index of the trait
 		 * 
 		 * @see #ci
 		 */
-		public void setCostParameters(double[][] cparams) {
-			for (int n = 0; n < nTraits; n++)
-				setCostParameters(cparams[n], n);
-		}
-
-		/**
-		 * Set the cost parameters of the trait {@code index} to the array
-		 * {@code cparams}.
-		 * 
-		 * @param cparams the array of cost function parameters
-		 * @param index   the index of the trait
-		 */
 		public void setCostParameters(double[] cparams, int index) {
-			double[] cin = ci[index];
-			for (int i = 0; i < cin.length; i++)
-				cin[i] = cparams[i % cparams.length];
+			if (ci == null || ci.length != nTraits)
+				ci = new double[nTraits][];
+			int nParams = costs[index].nParams;
+			if (ci[index] == null || ci[index].length != nParams)
+				ci[index] = new double[nParams];
+			System.arraycopy(cparams, 0, ci[index], 0, nParams);
 		}
 
 		/**
-		 * Set the cost parameters for single trait modules to the array
-		 * {@code cparams}.
+		 * Get the array of cost function parameters for trait with index {@code idx}.
 		 * 
-		 * @param cparams the array of cost function parameters
+		 * @return the array of cost function parameters
+		 * 
+		 * @see #ci
 		 */
-		public void setCostParameters(double[] cparams) {
-			setCostParameters(cparams, 0);
+		public double[] getCostParameters(int idx) {
+			return ci[idx];
 		}
 
 		/**
@@ -628,6 +619,17 @@ public abstract class Continuous extends Module {
 		 */
 		public double[][] getCostParameters() {
 			return ci;
+		}
+
+		/**
+		 * Return formatted string of the cost function of trait index {@code idx}.
+		 * 
+		 * @param idx the index of the trait
+		 * @return the formatted string
+		 */
+		public String formatCosts(int idx) {
+			Costs cost = costs[idx];
+			return traitName[idx] + ": " + cost.key + ": " + cost.title + " " + Formatter.format(ci[idx], 4);
 		}
 
 		/**
@@ -791,27 +793,27 @@ public abstract class Continuous extends Module {
 			double[] c = ci[trait];
 
 			switch (costs[trait]) {
-				case PAYOFF_COST_ME_LINEAR:
+				case ME_LINEAR:
 					return c[0] * myinv;
-				case PAYOFF_COST_ME_QUAD: // default
+				case ME_QUAD: // default
 					return myinv * (c[1] * myinv + c[0]);
-				case PAYOFF_COST_ME_SQRT:
+				case ME_SQRT:
 					return c[0] * Math.sqrt(myinv);
-				case PAYOFF_COST_ME_LOG:
+				case ME_LOG:
 					return c[0] * Math.log(c[1] * myinv + 1.0);
-				case PAYOFF_COST_ME_EXP:
+				case ME_EXP:
 					return c[0] * (1.0 - Math.exp(-c[1] * myinv));
 
-				case PAYOFF_COST_WE_LINEAR:
+				case WE_LINEAR:
 					return c[0] * ourinv;
-				case PAYOFF_COST_WE_QUAD:
+				case WE_QUAD:
 					return (c[1] * ourinv + c[0]) * ourinv;
-				case PAYOFF_COST_WE_QUBIC:
+				case WE_QUBIC:
 					return ((c[2] * ourinv + c[1]) * ourinv + c[0]) * ourinv;
-				case PAYOFF_COST_WE_QUARTIC:
+				case WE_QUARTIC:
 					return (((c[3] * ourinv + c[2]) * ourinv + c[1]) * ourinv + c[0]) * ourinv;
 
-				case PAYOFF_COST_MEYOU_LINEAR:
+				case MEYOU_LINEAR:
 					return c[0] * myinv + c[1] * yourinv + c[2] * myinv * yourinv;
 
 				default: // this is bad
@@ -935,65 +937,65 @@ public abstract class Continuous extends Module {
 		/**
 		 * Linear cost function (independent of opponent): \(C(x,y)=c_0\,x\).
 		 */
-		PAYOFF_COST_ME_LINEAR("0", "C(x,y)=c0*x", 1), //
+		ME_LINEAR("0", "C(x,y)=c0*x", 1), //
 
 		/**
 		 * Quadratic cost function (independent of opponent):
 		 * \(C(x,y)=c_0\,x+c_1\,x^2\).
 		 */
-		PAYOFF_COST_ME_QUAD("1", "C(x,y)=c0*x+c1*x^2", 2), //
+		ME_QUAD("1", "C(x,y)=c0*x+c1*x^2", 2), //
 
 		/**
 		 * Square root cost function (independent of opponent): \(C(x,y)=c_0 \sqrt{x}\).
 		 */
-		PAYOFF_COST_ME_SQRT("2", "C(x,y)=c0*sqrt(x)", 1), //
+		ME_SQRT("2", "C(x,y)=c0*sqrt(x)", 1), //
 
 		/**
 		 * Logarithmic cost function (independent of opponent): \(C(x,y)=c_0
 		 * \ln(c_1\,x+1)\).
 		 */
-		PAYOFF_COST_ME_LOG("3", "C(x,y)=c0*ln(c1*x+1)", 2), //
+		ME_LOG("3", "C(x,y)=c0*ln(c1*x+1)", 2), //
 
 		/**
 		 * Exponential cost function (independent of opponent): \(C(x,y)=c_0
 		 * (1-\exp(-c_1\,x))\).
 		 */
-		PAYOFF_COST_ME_EXP("4", "C(x,y)=c0*(1-exp(-c1*x))", 2), //
+		ME_EXP("4", "C(x,y)=c0*(1-exp(-c1*x))", 2), //
 
 		/**
 		 * Linear cost function (sum of focal, \(x\), and opponent, \(y\), traits):
 		 * \(C(x,y)=c_0 (x+y)\).
 		 */
-		PAYOFF_COST_WE_LINEAR("10", "C(x,y)=c0*(x+y)", 1), //
+		WE_LINEAR("10", "C(x,y)=c0*(x+y)", 1), //
 
 		/**
 		 * Quadratic cost function (sum of focal, \(x\), and opponent, \(y\), traits):
 		 * \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2\).
 		 */
-		PAYOFF_COST_WE_QUAD("11", "C(x,y)=c0*(x+y)+c1*(x+y)^2", 2), //
+		WE_QUAD("11", "C(x,y)=c0*(x+y)+c1*(x+y)^2", 2), //
 
 		/**
 		 * Cubic cost function (sum of focal, \(x\), and opponent, \(y\), traits):
 		 * \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2+c_2 (x+y)^3\).
 		 */
-		PAYOFF_COST_WE_QUBIC("12", "C(x,y)=c0*(x+y)+c1*(x+y)^2+c2*(x+y)^3", 3), //
+		WE_QUBIC("12", "C(x,y)=c0*(x+y)+c1*(x+y)^2+c2*(x+y)^3", 3), //
 
 		/**
 		 * Quartic cost function (sum of focal, \(x\), and opponent, \(y\), traits):
 		 * \(C(x,y)=c_0 (x+y)+c_1 (x+y)^2+c_2 (x+y)^3+c_3 (x+y)^4\).
 		 */
-		PAYOFF_COST_WE_QUARTIC("13", "C(x,y)=c0*(x+y)+c1*(x+y)^2+c2*(x+y)^3+c3*(x+y)^4", 4), //
+		WE_QUARTIC("13", "C(x,y)=c0*(x+y)+c1*(x+y)^2+c2*(x+y)^3+c3*(x+y)^4", 4), //
 
 		/**
 		 * Linear cost function (cross terms of focal, \(x\), and opponent, \(y\),
 		 * traits): \(C(x,y)=c_0\,x+c_1\,y+c_2\,x\,y\).
 		 */
-		PAYOFF_COST_MEYOU_LINEAR("20", "C(x,y)=c0*x+c1*y+c2*x*y", 3);
+		MEYOU_LINEAR("20", "C(x,y)=c0*x+c1*y+c2*x*y", 3);
 
 		/**
 		 * The key of the cost function. Used when parsing command line options.
 		 * 
-		 * @see Continuous#cloCostFunction
+		 * @see Continuous#cloCosts
 		 * @see Continuous#cloCostParams
 		 */
 		String key;
@@ -1378,7 +1380,9 @@ public abstract class Continuous extends Module {
 	 * 
 	 * @see Traits2Payoff.Costs
 	 */
-	public final CLOption cloCostFunction = new CLOption("costfcn", "1", EvoLudo.catModel, null,
+	public final CLOption cloCosts = new CLOption("costs", Costs.ME_LINEAR.getKey() + " 1", EvoLudo.catModel, 
+			"--costs <s0 b00[" + CLOParser.VECTOR_DELIMITER + "b01...[" + CLOParser.TRAIT_DELIMITER + //
+			"s1 b10[" + CLOParser.VECTOR_DELIMITER + "b11...]]]>  cost function <si>:",
 			new CLODelegate() {
 
 				/**
@@ -1392,106 +1396,43 @@ public abstract class Continuous extends Module {
 				 */
 				@Override
 				public boolean parse(String arg) {
-					String[] cstf = arg.split(CLOParser.VECTOR_DELIMITER);
-					int ncstf = cstf.length;
-					if (ncstf < 1) {
-						logger.warning("failed to parse cost function type '" + arg + "' - ignored.");
-						return false;
-					}
-					boolean success = true;
-					for (int s = 0; s < nTraits; s++) {
-						String type = cstf[s % ncstf];
-						Costs cft = (Costs) cloCostFunction.match(type);
-						if (cft == null) {
-							logger.warning("cost function type '" + type + "' unknown - using '"
-									+ traits2payoff.getCostFunctions()[s].getTitle() + "'");
-							success = false;
-							continue;
-						}
-						traits2payoff.setCostFunctions(cft, s);
-					}
-					return success;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					Costs[] cfunc = traits2payoff.getCostFunctions();
-					String msg = "# costfunction:         " + cfunc[0];
-					for (int n = 1; n < nTraits; n++)
-						msg += ":" + cfunc[n];
-					output.println(msg);
-				}
-
-				@Override
-				public String getDescription() {
-					switch (nTraits) {
-						case 1:
-							return "--costfcn <s>   cost function of trait " + traitName[0] + "\n" //
-									+ "                cost functions: <s>\n" + cloCostFunction.getDescriptionKey();
-						case 2:
-							return "--costfcn <s0>" + CLOParser.VECTOR_DELIMITER + "<s1>  cost function of traits\n" //
-									+ "             0: " + traitName[0] + "\n" //
-									+ "             1: " + traitName[1] + "\n" //
-									+ "                cost functions: <s>\n" + cloCostFunction.getDescriptionKey();
-						default:
-							String descr = "--costfcn <s0>" + CLOParser.VECTOR_DELIMITER + "..."
-									+ CLOParser.VECTOR_DELIMITER + "<s" + (nTraits - 1)
-									+ ">  cost function of traits";
-							for (int n = 0; n < nTraits; n++) {
-								String aTrait = "              " + n + ": ";
-								int traitlen = aTrait.length();
-								descr += "\n" + aTrait.substring(traitlen - 16, traitlen) + traitName[n];
+					String[] cstfs = arg.split(CLOParser.TRAIT_DELIMITER);
+					Costs prevtype = null;
+					for (int n = 0; n < nTraits; n++) {
+						String cstf = cstfs[n % cstfs.length];
+						Costs type = (Costs) cloCosts.match(cstf);
+						String[] cstfargs = cstf.split("[\\s=]");
+						double[] args;
+						if (type == null) {
+							if (prevtype == null) {
+								logger.warning("costs function type missing!");
+								return false;
 							}
-							descr += "\n                cost functions: <s>\n" + cloCostFunction.getDescriptionKey();
-							return descr;
+							type = prevtype;
+							args = CLOParser.parseVector(cstfargs[0]);
+						} else if (type.nParams > 0 && cstfargs.length < 2) {
+							logger.warning(
+									"costs function type '" + type + " requires " + type.nParams + " arguments!");
+							return false;
+						} else
+							args = CLOParser.parseVector(cstfargs[1]);
+						prevtype = type;
+						if (args.length != type.nParams) {
+							logger.warning("costs function type '" + type + " requires " + type.nParams
+									+ " costs but found '" + Formatter.format(args, 2) + "'!");
+							if (args.length < type.nParams)
+								return false;
+						}
+						traits2payoff.setCostFunction(type, args, n);
 					}
-				}
-			});
-
-	/**
-	 * Command line option to set the parameters of the cost function for continuous
-	 * traits.
-	 * 
-	 * @see Traits2Payoff.Costs
-	 */
-	public final CLOption cloCostParams = new CLOption("costparams", "0", EvoLudo.catModel,
-			"--costparams <c0>" + CLOParser.VECTOR_DELIMITER //
-					+ "<c1>" + CLOParser.VECTOR_DELIMITER + "..." + CLOParser.VECTOR_DELIMITER //
-					+ "<cn>  parameters for cost function" //
-					+ (nTraits > 1 ? "\n         different traits separated by '" + CLOParser.MATRIX_DELIMITER + "'"
-							: ""),
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse cost function parameters for each trait. {@code arg} can be a single
-				 * value or an array of values. Parameters are separated by
-				 * {@value CLOParser#VECTOR_DELIMITER} and traits by
-				 * {@value CLOParser#MATRIX_DELIMITER}. The parser cycles through {@code arg}
-				 * until all parameters of every trait are set.
-				 * 
-				 * @param arg the (array of) cost function parameters
-				 */
-				@Override
-				public boolean parse(String arg) {
-					double[][] cparams = CLOParser.parseMatrix(arg);
-					int len = cparams.length;
-					if (len == 0) {
-						logger.warning("failed to parse cost parameters '" + arg + "' - ignored.");
-						return false;
-					}
-					for (int n = 0; n < nTraits; n++)
-						traits2payoff.setCostParameters(cparams[n % cparams.length], n);
 					return true;
 				}
 
 				@Override
 				public void report(PrintStream output) {
-					double[][] dvec = traits2payoff.getCostParameters();
-					String msg = "# costparams:           " + Formatter.format(dvec[0], 6);
+					String msg = "# costfunction:         " + traits2payoff.formatCosts(0);
 					for (int n = 1; n < nTraits; n++)
-						msg += ";" + Formatter.format(dvec[n], 6);
+						msg += "\n                        " + traits2payoff.formatCosts(n);
 					output.println(msg);
 				}
 			});
@@ -1628,12 +1569,10 @@ public abstract class Continuous extends Module {
 		super.collectCLO(parser);
 		parser.addCLO(cloMutationSdev);
 		parser.addCLO(cloTraitRange);
-		cloCostFunction.addKeys(Costs.values());
-		parser.addCLO(cloCostFunction);
-		parser.addCLO(cloCostParams);
-		cloBenefitFunction.addKeys(Benefits.values());
-		parser.addCLO(cloBenefitFunction);
-		parser.addCLO(cloBenefitParams);
+		cloCosts.addKeys(Costs.values());
+		parser.addCLO(cloCosts);
+		cloBenefits.addKeys(Benefits.values());
+		parser.addCLO(cloBenefits);
 		// best-response is not an acceptable update rule for continuous strategies -
 		// exclude Population.PLAYER_UPDATE_BEST_RESPONSE
 		cloPlayerUpdate.removeKey(PlayerUpdateType.BEST_RESPONSE);
