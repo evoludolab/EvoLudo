@@ -48,7 +48,7 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		/**
 		 * Mutations distributed uniformly at random.
 		 */
-		UNIFORM("uniform", "uniform mutations", 0),
+		UNIFORM("uniform", "uniform mutations, [<range>]", 0),
 
 		/**
 		 * Mutations are Gaussian distributed around parental trait/strategy.

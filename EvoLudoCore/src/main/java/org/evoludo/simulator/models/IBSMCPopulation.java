@@ -290,7 +290,12 @@ public class IBSMCPopulation extends IBSPopulation {
 		}
 		switch (mutationType[loc]) {
 			case UNIFORM:
-				strategiesScratch[idx + loc] = random01();
+				double range = mutRangeScaled[loc];
+				if (range > 0.0) {
+					double trait = changed ? strategiesScratch[idx + loc] : strategies[idx + loc];
+					strategiesScratch[idx + loc] = Math.max(Math.min(trait + random01() * range, 1.0), 0.0);
+				} else
+					strategiesScratch[idx + loc] = random01();
 				return;
 			case GAUSSIAN:
 				double mean = changed ? strategiesScratch[idx + loc] : strategies[idx + loc];
