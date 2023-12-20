@@ -89,7 +89,9 @@ Test suite for the different *EvoLudo* modules in `EvoLudoCore/src/main/java/org
    1. If the names or parsing of command line options changed, one or several module tests may fail; 
    2. Fundamental changes (extensions or bugfixes) to the *EvoLudo* models may cause the tests of those models to fail.
 
-   In either case the changes must be carefully checked and, once verified and approved, a new set of tests needs to be generated.
+In either case the changes must be carefully checked and, once verified and approved, a new set of tests needs to be generated.
+
+> [!WARNING] Unfortunately tests may also fail when comparing the *java* output between architectures. Figuring out the root cause is an ongoing investigation, see [README](EvoLudoTest/README.md) for more details.
 
 
 ## *EvoLudo* features
