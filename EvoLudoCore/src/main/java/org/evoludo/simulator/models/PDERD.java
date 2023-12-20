@@ -1396,7 +1396,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	public boolean parse(String arg) {
 		// this is just for a single species - as everything else in PDE models
 		initType = (InitType) cloInitType.match(arg);
-		String[] typeargs = arg.split("[\\s=]");
+		String[] typeargs = arg.split("\\s+|=");
 		double[] init = null;
 		if (typeargs.length > 1)
 			init = CLOParser.parseVector(typeargs[1]);

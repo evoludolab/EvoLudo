@@ -1491,7 +1491,7 @@ public class ODEEuler implements Model.ODE {
 		for (Module pop : species) {
 			String inittype = inittypes[idx % inittypes.length];
 			double[] initargs = null;
-			String[] typeargs = inittype.split("[\\s=]");
+			String[] typeargs = inittype.split("\\s+|=");
 			InitType type = (InitType) cloInitType.match(inittype);
 			// if matching of inittype failed assume it was omitted; use previous type
 			if (type == null && idx > 0) {

@@ -1306,7 +1306,7 @@ public abstract class Continuous extends Module {
 					for (int n = 0; n < nTraits; n++) {
 						String cstf = cstfs[n % cstfs.length];
 						Costs type = (Costs) cloCosts.match(cstf);
-						String[] cstfargs = cstf.split("[\\s=]");
+						String[] cstfargs = cstf.split("\\s+|=");
 						double[] args;
 						if (type == null) {
 							if (prevtype == null) {
@@ -1370,7 +1370,7 @@ public abstract class Continuous extends Module {
 					for (int n = 0; n < nTraits; n++) {
 						String bftf = bftfs[n % bftfs.length];
 						Benefits type = (Benefits) cloBenefits.match(bftf);
-						String[] bftfargs = bftf.split("[\\s=]");
+						String[] bftfargs = bftf.split("\\s+|=");
 						double[] args;
 						if (type == null) {
 							if (prevtype == null) {

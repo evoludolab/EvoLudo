@@ -446,7 +446,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 						IBSDPopulation dpop = (IBSDPopulation) pop;
 						String inittype = inittypes[idx++ % inittypes.length];
 						double[] initargs = null;
-						String[] typeargs = inittype.split("[\\s=]");
+						String[] typeargs = inittype.split("\\s+|=");
 						InitType type = (InitType) cloInitType.match(inittype);
 						if (type == null && prevtype != null) {
 							type = prevtype;

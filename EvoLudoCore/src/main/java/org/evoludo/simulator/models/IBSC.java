@@ -272,7 +272,7 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 					for (int n = 0; n < nt; n++) {
 						String inittype = inittypes[n % inittypes.length];
 						double[] initargs = null;
-						String[] typeargs = inittype.split("[\\s=]");
+						String[] typeargs = inittype.split("\\s+|=");
 						InitType type = (InitType) cloInitType.match(inittype);
 						if (type == null && prevtype != null) {
 							type = prevtype;

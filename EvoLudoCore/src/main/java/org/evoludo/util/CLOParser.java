@@ -207,7 +207,7 @@ public class CLOParser {
 		nextclo: for (String clo : cloargs) {
 			// find matching option
 			for (CLOption opt : options) {
-				String[] args = clo.split("[\\s*=]");
+				String[] args = clo.split("\\s+|=");
 				if (!args[0].equals(opt.getName()))
 					continue;
 				// option found
