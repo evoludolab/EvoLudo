@@ -166,7 +166,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 				doReset = true;
 			}
 			Module module = population.getModule();
-			double pMutation = module.getMutationProb();
+			double pMutation = population.getMutationProb();
 			if (pMutation <= 0.0) {
 				optimizeHomo = false;
 				logger.warning("optimizations for homogeneous states disabled (small mutations required).");
@@ -480,6 +480,66 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 			});
 
 	/**
+	 * Command line option to set the probability of mutations for
+	 * population(s)/species.
+	 */
+	public final CLOption cloMutation = new CLOption("mutations", "-1", EvoLudo.catModel,
+			"--mutations <m["+CLOParser.TRAIT_DELIMITER+"m1,...]> mutation probability",
+			new CLODelegate() {
+
+				/**
+				 * {@inheritDoc}
+				 * <p>
+				 * Parse mutation probability(ies) for a single or multiple populations/species.
+				 * {@code arg} can be a single value or an array of values with the
+				 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
+				 * {@code arg} until all populations/species have mutation probabilities
+				 * rate set.
+				 * <p>
+				 * <strong>Note:</strong> Negative rates or invalid numbers (such as '-')
+				 * disable mutations.
+				 * 
+				 * @param arg (array of) mutation probability(ies)
+				 */
+				@Override
+				public boolean parse(String arg) {
+					String[] mutations = arg.split(CLOParser.SPECIES_DELIMITER);
+					int n = 0;
+					for (IBSPopulation pop : species) {
+						double pMut = -1.0;
+						try {
+							pMut = Double.parseDouble(mutations[n++ % mutations.length]);
+						} catch (NumberFormatException nfe) {
+							logger.warning("mutation probabilities '" + arg + "' invalid - disabling mutations.");
+							return false;
+						}
+						pop.setMutationProb(pMut);
+					}
+					return true;
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					for (IBSPopulation pop : species) {
+						IBSDPopulation dpop = (IBSDPopulation) pop;
+						String speciesName = (isMultispecies ? " (" +pop.getModule().getName() +")" : "");
+						double mut = dpop.getMutationProb();
+						if (mut > 0.0) {
+							output.println("# mutation:             " + Formatter.formatSci(mut, 8)
+									+ speciesName);
+							continue;
+						}
+						if (mut < 0.0) {
+							output.println("# mutation:             none" + speciesName);
+							continue;
+						}
+						output.println("# mutation:             0 (restricted to homogeneous populations)"
+								+ speciesName);
+					}
+				}
+			});
+
+	/**
 	 * Command line option to request optimizations.
 	 */
 	public final CLOption cloOptimize = new CLOption("optimize", "none", EvoLudo.catModel,
@@ -558,13 +618,14 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
-		parser.addCLO(cloOptimize);
-		cloOptimize.addKeys(OptimizationType.values());
+		parser.addCLO(cloMutation);
 		parser.addCLO(cloInitType);
 		cloInitType.clearKeys();
 		cloInitType.addKeys(InitType.values());
 		// kaleidoscopes are not standard and must be requested/enabled by modules and
 		// their IBSDPopulation implementations.
 		cloInitType.removeKey(InitType.KALEIDOSCOPE);
+		parser.addCLO(cloOptimize);
+		cloOptimize.addKeys(OptimizationType.values());
 	}
 }

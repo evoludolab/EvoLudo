@@ -417,7 +417,7 @@ public abstract class IBSPopulation {
 	 * @return {@code true} if converged.
 	 */
 	public boolean checkConvergence() {
-		return isMonomorphic() && (module.getMutationProb() <= 0.0);
+		return isMonomorphic() && (pMutation <= 0.0);
 	}
 
 	/**
@@ -428,7 +428,7 @@ public abstract class IBSPopulation {
 	 */
 	public boolean permitsMode(Mode testmode) {
 		if (testmode == Mode.STATISTICS) {
-			if (module.getMutationProb() > 0.0) {
+			if (pMutation > 0.0) {
 				return false;
 			}
 		}
@@ -517,6 +517,11 @@ public abstract class IBSPopulation {
 	 * @see IBS#cloScoringType
 	 */
 	protected ScoringType playerScoring;
+
+	/**
+	 * Probability of mutations, i.e. spontaneous changes of type/strategy.
+	 */
+	protected double pMutation = -1.0;
 
 	/**
 	 * The type of migration.
@@ -2225,7 +2230,6 @@ public abstract class IBSPopulation {
 	 * @see IBSDPopulation
 	 */
 	protected void updatePlayerMoran(int source, int dest) {
-		double pMutation = module.getMutationProb();
 		if (adjustScores) {
 			// allow for mutations
 			if (pMutation >= 1.0 || (pMutation > 0.0 && random01() < pMutation)) {
@@ -2368,7 +2372,6 @@ public abstract class IBSPopulation {
 			default:
 				throw new Error("Unknown update method for players (" + playerUpdateType + ")");
 		}
-		double pMutation = module.getMutationProb();
 		if (pMutation >= 1.0 || (pMutation > 0.0 && random01() < pMutation)) {
 			mutateStrategyAt(me, switched);
 			return true; // if mutated always indicate change
@@ -4086,6 +4089,49 @@ public abstract class IBSPopulation {
 		return syncFraction;
 	}
 
+	/**
+	 * Sets the mutation probability in one update to {@code aValue}. Mutations
+	 * are disabled for negative values.
+	 * <p>
+	 * <strong>Note:</strong> During a reproduction event, or when attempting to
+	 * imitate the type/strategy of another individual, mutations or random
+	 * exploration may affect the outcome. The implementation of mutations depends
+	 * on the model type. In particular whether types/strategies are discrete or
+	 * continuous.
+	 * 
+	 * @param aValue the probability of a mutation.
+	 * @return {@code true} if the mutation probability changed
+	 */
+	public boolean setMutationProb(double aValue) {
+		if (aValue < 0.0) {
+			// disable mutations
+			if (pMutation < 0.0)
+				return false;
+			pMutation = -1.0;
+			return true;
+		}
+		// enable mutations
+		double newvalue = Math.min(aValue, 1.0);
+		boolean changed = (Math.abs(newvalue - pMutation) > 1e-7);
+		pMutation = newvalue;
+		return changed;
+	}
+
+	/**
+	 * Gets the probability of mutations.
+	 * <p>
+	 * <strong>Note:</strong> During a reproduction event or when attempting to
+	 * imitate the type/strategy of another individual mutations or random
+	 * exploration may affect the outcome. The implementation of mutations depends
+	 * on the model type. In particular whether types/strategies are discrete or
+	 * continuous.
+	 * 
+	 * @return the mutation probability
+	 */
+	public double getMutationProb() {
+		return pMutation;
+	}
+	
 	/**
 	 * Sets the type of migrations to {@code type}.
 	 * 

@@ -1075,54 +1075,6 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	}
 
 	/**
-	 * Probability of mutations, i.e. spontaneous changes of type/strategy.
-	 */
-	protected double pMutation = -1.0;
-
-	/**
-	 * Sets the mutation probability in one update to {@code aValue}. Mutations
-	 * are disabled for negative values.
-	 * <p>
-	 * <strong>Note:</strong> During a reproduction event, or when attempting to
-	 * imitate the type/strategy of another individual, mutations or random
-	 * exploration may affect the outcome. The implementation of mutations depends
-	 * on the model type. In particular whether types/strategies are discrete or
-	 * continuous.
-	 * 
-	 * @param aValue the probability of a mutation.
-	 * @return {@code true} if the mutation probability changed
-	 */
-	public boolean setMutationProb(double aValue) {
-		if (aValue < 0.0) {
-			// disable mutations
-			if (pMutation < 0.0)
-				return false;
-			pMutation = -1.0;
-			return true;
-		}
-		// enable mutations
-		double newvalue = Math.min(aValue, 1.0);
-		boolean changed = (Math.abs(newvalue - pMutation) > 1e-7);
-		pMutation = newvalue;
-		return changed;
-	}
-
-	/**
-	 * Gets the probability of mutations.
-	 * <p>
-	 * <strong>Note:</strong> During a reproduction event or when attempting to
-	 * imitate the type/strategy of another individual mutations or random
-	 * exploration may affect the outcome. The implementation of mutations depends
-	 * on the model type. In particular whether types/strategies are discrete or
-	 * continuous.
-	 * 
-	 * @return the mutation probability
-	 */
-	public double getMutationProb() {
-		return pMutation;
-	}
-
-	/**
 	 * Map to convert score/payoff to fitness
 	 */
 	protected Map2Fitness map2fitness;
@@ -1557,89 +1509,6 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 								"# deathrate:   " + Formatter.format(pop.getDeathRate(), 4) + (species.size() > 1 ? " ("
 										+ pop.getName() + ")" : ""));
 					}
-				}
-			});
-
-	/**
-	 * Command line option to set the probability of mutations for
-	 * population(s)/species.
-	 */
-	public final CLOption cloMutation = new CLOption("mutation", "-1", EvoLudo.catModule, null,
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse mutation probability(ies) for a single or multiple populations/species.
-				 * {@code arg} can be a single value or an array of values with the
-				 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
-				 * {@code arg} until all populations/species have mutation probabilities
-				 * rate set.
-				 * <p>
-				 * <strong>Note:</strong> Negative rates or invalid numbers (such as '-')
-				 * disable mutations.
-				 * 
-				 * @param arg (array of) mutation probability(ies)
-				 */
-				@Override
-				public boolean parse(String arg) {
-					String[] mutations = arg.split(CLOParser.SPECIES_DELIMITER);
-					int n = 0;
-					try {
-						for (Module pop : species) {
-							double pMut = Double.parseDouble(mutations[n++ % mutations.length]);
-							pop.setMutationProb(pMut);
-						}
-					} catch (NumberFormatException nfe) {
-						for (Module pop : species)
-							pop.setMutationProb(-1.0);
-						logger.warning("mutation probabilities '" + arg + "' invalid - disabling mutations.");
-						return false;
-					}
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					boolean isMultispecies = species.size() > 1;
-					for (Module pop : species) {
-						double mut = pop.getMutationProb();
-						if (mut > 0.0) {
-							output.println("# mutation:             " + Formatter.formatSci(mut, 8)
-									+ (isMultispecies ? " (" + pop.getName() + ")" : ""));
-							continue;
-						}
-						if (mut < 0.0) {
-							output.println("# mutation:             none"
-									+ (isMultispecies ? " (" + pop.getName() + ")" : ""));
-							continue;
-						}
-						output.println("# mutation:             0 (restricted to homogeneous populations)"
-								+ (isMultispecies ? " (" + pop.getName() + ")" : ""));
-					}
-				}
-
-				@Override
-				public String getDescription() {
-					String descr = "";
-					int nSpecies = species.size();
-					switch (nSpecies) {
-						case 1:
-							return "--mutation <m>  mutation probability";
-						case 2:
-							descr = "--mutation <m0:m1>  mutation probability of population i, with\n";
-							break;
-						case 3:
-							descr = "--mutation <m0:m1:m2>  mutation probability of population i, with\n";
-							break;
-						default:
-							descr = "--mutation <m0:...:m" + nSpecies
-									+ ">  mutation probability of population i, with\n";
-					}
-					for (int i = 0; i < nSpecies; i++)
-						descr += "            n" + i + ": " + species.get(i).getName() + "\n";
-					descr += "      (loops through mutation rates)";
-					return descr;
 				}
 			});
 
@@ -2239,7 +2108,6 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		// prepare command line options
 		cloFitnessMap.addKeys(Map2Fitness.Maps.values());
 		parser.addCLO(cloFitnessMap);
-		parser.addCLO(cloMutation);
 
 		if (this instanceof Discrete.Groups ||
 				this instanceof Continuous.Groups ||

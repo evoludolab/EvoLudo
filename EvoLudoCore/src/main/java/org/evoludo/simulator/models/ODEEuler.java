@@ -494,11 +494,13 @@ public class ODEEuler implements Model.ODE {
 		int nSpecies = species.size();
 		module = (nSpecies == 1 ? species.get(0) : null);
 		initType = new InitType[nSpecies];
+		mus = new double[nSpecies];
 	}
 
 	@Override
 	public void unload() {
 		yt = ft = dyt = yout = tmp = null;
+		mus = null;
 		staticfit = null;
 		names = null;
 		initType = null;
@@ -547,7 +549,6 @@ public class ODEEuler implements Model.ODE {
 		double minFit = Double.MAX_VALUE;
 		double maxFit = -Double.MAX_VALUE;
 		dependents = new int[nSpecies];
-		mus = new double[nSpecies];
 		rates = new double[nSpecies];
 		invFitRange = new double[nSpecies];
 		Arrays.fill(invFitRange, 1.0);
@@ -560,8 +561,6 @@ public class ODEEuler implements Model.ODE {
 			int nTraits = pop.getNTraits();
 			idxSpecies[idx] = nDim;
 			rates[idx] = pop.getSpeciesUpdateRate();
-			// getMutationProb() returns <0 if mutations are disabled
-			mus[idx] = Math.max(0.0, pop.getMutationProb());
 			minFit = pop.getMinFitness();
 			maxFit = pop.getMaxFitness();
 			if (maxFit > minFit)
@@ -1658,6 +1657,63 @@ public class ODEEuler implements Model.ODE {
 				}
 			});
 
+	/**
+	 * Command line option to set the probability of mutations for
+	 * population(s)/species.
+	 */
+	public final CLOption cloMutation = new CLOption("mutations", "-1", 
+		EvoLudo.catModel, "--mutations <m[,m1,...]>  mutation probabilities",
+			new CLODelegate() {
+
+				/**
+				 * {@inheritDoc}
+				 * <p>
+				 * Parse mutation probability(ies) for a single or multiple populations/species.
+				 * {@code arg} can be a single value or an array of values with the
+				 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
+				 * {@code arg} until all populations/species have mutation probabilities
+				 * rate set.
+				 * <p>
+				 * <strong>Note:</strong> Negative rates or invalid numbers (such as '-')
+				 * disable mutations.
+				 * 
+				 * @param arg (array of) mutation probability(ies)
+				 */
+				@Override
+				public boolean parse(String arg) {
+					String[] mutations = arg.split(CLOParser.SPECIES_DELIMITER);
+					String marg;
+					for (int n = 0; n < species.size(); n++) {
+						marg = mutations[n % mutations.length];
+						try {
+							mus[n] = Math.max(0.0, Double.parseDouble(marg));
+						} catch (NumberFormatException nfe) {
+							mus[n] = 0.0;
+							engine.getLogger()
+									.warning("mutation probabilities '" + marg + "' for trait "+n+" invalid - disabled.");
+							return false;
+						}
+					}
+					return true;
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					boolean isMultispecies = species.size() > 1;
+					int idx = 0;
+					for (Module pop : species) {
+						double mut = mus[idx++];
+						if (mut > 0.0) {
+							output.println("# mutation:             " + Formatter.formatSci(mut, 8)
+									+ (isMultispecies ? " (" + pop.getName() + ")" : ""));
+							continue;
+						}
+						output.println("# mutation:             none"
+								+ (isMultispecies ? " (" + pop.getName() + ")" : ""));
+					}
+				}
+			});
+
 	@Override
 	public void collectCLO(CLOParser parser) {
 		parser.addCLO(cloAdjustedDynamics);
@@ -1674,6 +1730,7 @@ public class ODEEuler implements Model.ODE {
 		}
 		if (permitsTimeReversal())
 			parser.addCLO(cloTimeReversed);
+		parser.addCLO(cloMutation);
 	}
 
 	@Override

@@ -215,7 +215,7 @@ public class DemesTBT extends TBT {
 				// to ensure reproducibility of results
 				distrMigration = new RNGDistribution.Geometric(rng.getRNG(), pMigration);
 				distrMutationMigration = new RNGDistribution.Geometric(rng.getRNG(),
-						pMigration + module.getMutationProb());
+						pMigration + pMutation);
 			}
 			return doReset;
 		}

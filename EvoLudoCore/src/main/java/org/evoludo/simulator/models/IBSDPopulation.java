@@ -497,7 +497,6 @@ public class IBSDPopulation extends IBSPopulation {
 				// produce offspring
 				updateStrategyAt(me, nStrat);
 				// check for mutations
-				double pMutation = module.getMutationProb();
 				if (pMutation > 0.0 && random01() < pMutation)
 					mutateStrategyAt(me, true);
 				if (module.isStatic()) {
@@ -1851,7 +1850,7 @@ public class IBSDPopulation extends IBSPopulation {
 				optimizeMoran = false;
 				logger.warning("optimizations require Moran-type updates - disabled.");
 				doReset = true;
-			} else if (module.getMutationProb() > 0.0) {
+			} else if (pMutation > 0.0) {
 				optimizeMoran = false;
 				logger.warning("optimized Moran-type updates are incompatible with mutations - disabled.");
 				doReset = true;

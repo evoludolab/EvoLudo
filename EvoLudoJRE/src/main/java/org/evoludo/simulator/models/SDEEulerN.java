@@ -171,11 +171,10 @@ public class SDEEulerN extends SDEEuler {
 		// XXX super may change the model to ODE - what happens then when the call gets
 		// back here?
 		boolean doReset = super.check();
-		double mu = module.getMutationProb();
-		if (mu <= 0.0 && nDim > 3) {
-			module.setMutationProb(1.0 / module.getNPopulation());
+		if (mus[0] <= 0.0 && nDim > 3) {
+			mus[0] = 1.0 / module.getNPopulation();
 			engine.getLogger().warning("non-zero mutation rate required for n>3 traits, changed to "
-					+ Formatter.formatSci(module.getMutationProb(), 2) + ".");
+					+ Formatter.formatSci(mus[0], 2) + ".");
 		}
 		return doReset;
 	}
@@ -205,7 +204,8 @@ public class SDEEulerN extends SDEEuler {
 				return 0.0;
 			effnoise /= (1.0 - ytv);
 		}
-		double mu = module.getMutationProb();
+		// SDE's only support single species at this time
+		double mu = mus[0];
 		// NOTE: if not replicator equation some adjustments are required (references to
 		// e.g. yt[2] would fail)
 		int d1 = nDim - 1;

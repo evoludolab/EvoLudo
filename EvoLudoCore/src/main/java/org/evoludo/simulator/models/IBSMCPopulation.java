@@ -120,8 +120,8 @@ public class IBSMCPopulation extends IBSPopulation {
 		super.unload();
 		traitMin = null;
 		traitMax = null;
-		mutSdev = null;
-		mutSdevScaled = null;
+		mutRange = null;
+		mutRangeScaled = null;
 		strategies = null;
 		strategiesScratch = null;
 		myTrait = null;
@@ -173,7 +173,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	/**
 	 * Standard deviation of mutations.
 	 */
-	protected double[] mutSdev;
+	protected double[] mutRange;
 
 	/**
 	 * Scaled standard deviation of mutations. Convenience variable.
@@ -181,7 +181,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * <strong>Note:</strong> Internally traits are always scaled to
 	 * <code>[0, 1]</code>
 	 */
-	protected double[] mutSdevScaled;
+	protected double[] mutRangeScaled;
 
 	/**
 	 * The array of individual traits/strategies. The traits of individual {@code i}
@@ -294,7 +294,7 @@ public class IBSMCPopulation extends IBSPopulation {
 				return;
 			case GAUSSIAN:
 				double mean = changed ? strategiesScratch[idx + loc] : strategies[idx + loc];
-				double sdev = mutSdevScaled[loc];
+				double sdev = mutRangeScaled[loc];
 				// draw mutants until we find viable one...
 				// not very elegant but avoids emphasis of interval boundaries.
 				double mut;
@@ -304,7 +304,7 @@ public class IBSMCPopulation extends IBSPopulation {
 				// alternative approach - use reflective boundaries (John Fairfield)
 				// note: this is much more elegant than the above - is there a biological
 				// motivation for 'reflective mutations'? is such a justification necessary?
-				// double mut = randomGaussian(orig, mutSdev[loc]);
+				// double mut = randomGaussian(orig, mutRange[loc]);
 				// mut = Math.abs(mut);
 				// if( mut>1.0 ) mut = 2-mut;
 
@@ -767,10 +767,10 @@ public class IBSMCPopulation extends IBSPopulation {
 
 		traitMin = module.getTraitMin();
 		traitMax = module.getTraitMax();
-		mutSdevScaled = ArrayMath.clone(mutSdev);
+		mutRangeScaled = ArrayMath.clone(mutRange);
 		// note: traits are normalized to [0, 1]; scale sdev of mutations accordingly
 		for (int n = 0; n < nTraits; n++)
-			mutSdevScaled[n] /= (traitMax[n] - traitMin[n]);
+			mutRangeScaled[n] /= (traitMax[n] - traitMin[n]);
 
 		// check interaction geometry
 		if (interaction.isType(Geometry.Type.MEANFIELD) && interactionGroup.isSampling(IBSGroup.SamplingType.ALL)) {
@@ -793,24 +793,21 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * traits/strategies.
 	 * 
 	 * @param type   the mutation type
-	 * @param params the array with arguments
+	 * @param range the range of mutations
 	 * @param index  the index of the trait
 	 */
-	public void setMutationType(MutationType type, double[] params, int index) {
+	public void setMutationType(MutationType type, double range, int index) {
 		if(index<0||index>=nTraits)
 			return;
 		if (mutationType==null || mutationType.length!=nTraits)
 			mutationType = new MutationType[nTraits];
-		if (mutSdev == null || mutSdev.length != nTraits)
-			mutSdev = new double[nTraits];
+		if (mutRange == null || mutRange.length != nTraits)
+			mutRange = new double[nTraits];
 		mutationType[index] = type;
 		switch(type) {
-			case GAUSSIAN:
 			case UNIFORM:
-				if (params != null && params.length > 0) {
-					mutSdev[index] = params[0];
-					return;
-				}
+			case GAUSSIAN:
+				mutRange[index] = range;
 				break;
 			case NONE:
 			default:
@@ -825,7 +822,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	 */
 	public MutationType getMutationType(int trait) {
 		MutationType type = mutationType[trait];
-		type.args = new double[] { mutSdev[trait] };
+		type.args = new double[] { mutRange[trait] };
 		return type;
 	}
 
@@ -837,7 +834,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	public MutationType[] getMutationTypes() {
 		int idx = 0;
 		for (MutationType mut : mutationType)
-			mut.args = new double[] { mutSdev[idx++] }; 
+			mut.args = new double[] { mutRange[idx++] }; 
 		return mutationType;
 	}
 
@@ -849,7 +846,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	 */
 	public String formatMutationType(int idx) {
 		MutationType type = mutationType[idx];
-			return module.getTraitName(idx) + ": " + type.key + " " + type.title + " " + Formatter.format(mutSdev[idx], 4);
+			return module.getTraitName(idx) + ": " + type.key + " " + type.title + " " + Formatter.format(mutRange[idx], 4);
 	}
 
 	/**

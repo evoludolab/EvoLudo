@@ -424,7 +424,7 @@ public abstract class IBS implements Model.IBS {
 		// currently only relevant for discrete strategies, see IBSD
 		if (optimizeHomo) {
 			// NOTE: optimizeHomo == false if pMutation <= 0.0 or isMultispecies == true
-			double pMutation = population.getModule().getMutationProb();
+			double pMutation = population.getMutationProb();
 			if (distrMutation == null)
 				distrMutation = new RNGDistribution.Geometric(rng.getRNG(), pMutation);
 			else

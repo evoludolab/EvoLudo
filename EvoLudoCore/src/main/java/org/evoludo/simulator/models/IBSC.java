@@ -35,8 +35,8 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	 * @see #cloMutationType
 	 * @see org.evoludo.simulator.models.IBSMCPopulation#setMutationType(MutationType)
 	 *      IBSMCPopulation.setMutationType(MutationType)
-	 * @see org.evoludo.simulator.modules.Module#setMutationProb(double)
-	 *      Module.setMutationProb(double)
+	 * @see org.evoludo.simulator.models.IBSMCPopulation#setMutationProb(double)
+	 *      IBSMCPopulation.setMutationProb(double)
 	 */
 	public static enum MutationType implements CLOption.Key {
 
@@ -312,7 +312,11 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	 */
 	public final CLOption cloMutationType = new CLOption("mutations", MutationType.UNIFORM.getKey(),
 			EvoLudo.catModel,
-			"--mutations <t["+CLOParser.TRAIT_DELIMITER+"t1...]>  mutation type:", new CLODelegate() {
+			"--mutations <p t [a]["+CLOParser.TRAIT_DELIMITER+"p1 t1...]>  with\n" +
+			"             p: mutation probability\n" + //
+			"             a: mutation range\n" + //
+			"             t: mutation type:", //
+			new CLODelegate() {
 
 				/**
 				 * {@inheritDoc}
@@ -328,32 +332,34 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 				 */
 				@Override
 				public boolean parse(String arg) {
+					boolean success = true;
 					IBSMCPopulation cpop = (IBSMCPopulation) population;
 					String[] muttypes = arg.split(CLOParser.TRAIT_DELIMITER);
 					int nt = cpop.getModule().getNTraits();
-					MutationType prevtype = null;
 					for (int n = 0; n < nt; n++) {
 						String muttype = muttypes[n % muttypes.length];
-						double[] mutargs = null;
-						String[] typeargs = muttype.split("[\\s=]");
-						MutationType type = (MutationType) cloMutationType.match(muttype);
-						if (type == null && prevtype != null) {
-							type = prevtype;
-							mutargs = CLOParser.parseVector(typeargs[0]);
-						} else if (typeargs.length > 1)
-							mutargs = CLOParser.parseVector(typeargs[1]);
-						boolean argsOk = ((mutargs != null && mutargs.length >= type.nParams) || 
-								(mutargs == null && type != null && type.equals(MutationType.UNIFORM)));
-						if (type == null || !argsOk) {
-							logger.warning(
-									(species.size() > 1 ? cpop.getModule().getName() + ": " : "") +
-											"muttype '" + muttype + "' unknown!");
-							return false;
+						String[] typeargs = muttype.split("\\s+|=");
+						// two or three entries expected: double String [double]
+						double range = -1.0;
+						switch (typeargs.length) {
+							case 3:
+								range = CLOParser.parseDouble(typeargs[2]);
+								//$FALL-THROUGH$
+							case 2:
+								cpop.setMutationType((MutationType) cloMutationType.match(typeargs[1]), range, n);
+								cpop.setMutationProb(CLOParser.parseDouble(typeargs[0]));
+								break;
+							case 1:
+							default:
+								// report warning only once
+								if (!success)
+									continue;
+								logger.warning("check arguments to "+cloMutationType.getName()+" - failed to parse '"+muttype+"'!");
+								success = false;
+								continue;
 						}
-						cpop.setMutationType(type, mutargs, n);
-						prevtype = type;
 					}
-					return true;
+					return success;
 				}
 
 				@Override
