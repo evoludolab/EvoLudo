@@ -217,7 +217,7 @@ public class CLOption implements Comparable<CLOption> {
 		/**
 		 * Set the header of category for help display.
 		 * 
-		 * @header the header
+		 * @param header the header
 		 */
 		public void setHeader(String header) {
 			this.header = header;

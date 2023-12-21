@@ -797,9 +797,9 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * <strong>Note:</strong> The mutation type is the same for all
 	 * traits/strategies.
 	 * 
-	 * @param type   the mutation type
+	 * @param type  the mutation type
 	 * @param range the range of mutations
-	 * @param index  the index of the trait
+	 * @param index the index of the trait
 	 */
 	public void setMutationType(MutationType type, double range, int index) {
 		if(index<0||index>=nTraits)
@@ -823,6 +823,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	/**
 	 * Returns the type of mutations for trait {@code trait}.
 	 * 
+	 * @param index the index of the trait
 	 * @return mutation type
 	 */
 	public MutationType getMutationType(int trait) {
@@ -834,7 +835,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	/**
 	 * Returns the type of mutations for all traits.
 	 * 
-	 * @return mutation types
+	 * @return the array of mutation types
 	 */
 	public MutationType[] getMutationTypes() {
 		int idx = 0;

@@ -543,6 +543,7 @@ public abstract class Continuous extends Module {
 		 * parameters in the array {@code cparams}.
 		 * 
 		 * @param costfcn the cost function
+		 * @param cparams the array of parameters for {@code costfcn}
 		 * @param index   the index of the trait
 		 */
 		public void setCostFunction(Costs costfcn, double[] cparams, int index) {
@@ -556,7 +557,7 @@ public abstract class Continuous extends Module {
 		 * Set the array of cost function parameters for trait with index {@code idx} to
 		 * array {@code params}.
 		 * 
-		 * @param params the array of cost function parameters
+		 * @param cparams the array of cost function parameters
 		 * @param index  the index of the trait
 		 * 
 		 * @see #ci
@@ -573,12 +574,13 @@ public abstract class Continuous extends Module {
 		/**
 		 * Get the array of cost function parameters for trait with index {@code idx}.
 		 * 
+		 * @param index the index of the trait
 		 * @return the array of cost function parameters
 		 * 
 		 * @see #ci
 		 */
-		public double[] getCostParameters(int idx) {
-			return ci[idx];
+		public double[] getCostParameters(int index) {
+			return ci[index];
 		}
 
 		/**
@@ -641,6 +643,7 @@ public abstract class Continuous extends Module {
 		 * Set the benefit function of the trait {@code index} to {@code benefitfcn}.
 		 * 
 		 * @param benefitfcn the benefit function
+		 * @param bparams    the array of benefit function parameters
 		 * @param index      the index of the trait
 		 */
 		public void setBenefitFunction(Benefits benefitfcn, double[] bparams, int index) {
@@ -651,11 +654,11 @@ public abstract class Continuous extends Module {
 		}
 
 		/**
-		 * Set the array of benefit function parameters for trait with index {@code idx} to
-		 * array {@code params}.
+		 * Set the array of benefit function parameters for trait with index {@code idx}
+		 * to array {@code params}.
 		 * 
-		 * @param params the array of benefit function parameters
-		 * @param index  the index of the trait
+		 * @param bparams the array of benefit function parameters
+		 * @param index   the index of the trait
 		 * 
 		 * @see #bi
 		 */
@@ -669,14 +672,16 @@ public abstract class Continuous extends Module {
 		}
 
 		/**
-		 * Get the array of benefit function parameters for trait with index {@code idx}.
+		 * Get the array of benefit function parameters for trait with index
+		 * {@code idx}.
 		 * 
+		 * @param index the index of the trait
 		 * @return the array of benefit function parameters
 		 * 
 		 * @see #bi
 		 */
-		public double[] getBenefitParameters(int idx) {
-			return bi[idx];
+		public double[] getBenefitParameters(int index) {
+			return bi[index];
 		}
 
 		/**
