@@ -205,10 +205,11 @@ public class CLOParser {
 		// argument(s) which can be separated by ' ' or '='
 		boolean success = true;
 		nextclo: for (String clo : cloargs) {
+			String[] args = clo.split("\\s+|=");
+			String name = args[0];
 			// find matching option
 			for (CLOption opt : options) {
-				String[] args = clo.split("\\s+|=");
-				if (!args[0].equals(opt.getName()))
+				if (!name.equals(opt.getName()))
 					continue;
 				// option found
 				String arg = Formatter.format(ArrayMath.drop(args, 0), " ");

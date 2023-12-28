@@ -117,16 +117,16 @@ public class PlistParser {
 	 * <dt>&lt;string&gt;</dt>
 	 * <dd>UTF-8 encoded string.</dd>
 	 * <dt>&lt;real&gt;</dt>
-	 * <dd>Floating point number: any string that {@link Double#parseDouble(String)}
-	 * can process (includes infinity and NaN). <br>
-	 * <strong>Important:</strong> Strings starting with <code>0x</code> indicate
-	 * that floating point number is encoded as hexadecimal. Decoding happens in two
-	 * stages: first, the hexadecimal is processed as a <code>long</code> using
-	 * {@link Long#parseLong(String, int)} and then converted to <code>double</code>
-	 * with {@link Double#longBitsToDouble(long)}. Hexadecimal encoding of floating
-	 * point numbers is not part of the <code>plist</code> specification. However,
-	 * only bitwise encoding can guarantee faithful writing and restoring of
-	 * floating point numbers.</dd>
+	 * <dd>Floating point number: if the string ends with '{@code L}' it is assumed
+	 * to be a double encoded as a long. <br>
+	 * <strong>Important:</strong>
+	 * <ul>
+	 * <li>using long to encode floating point numbers is not part of the
+	 * <code>plist</code> specification. However, only bitwise encoding can
+	 * guarantee faithful writing and restoring of floating point numbers.
+	 * <li>cannot use {@link Double#valueOf(String)} because not implemented by GWT.
+	 * </ul>
+	 * </dd>
 	 * <dt>&lt;integer&gt;</dt>
 	 * <dd>Integer number: any string that {@link Integer#parseInt(String)} can
 	 * process, i.e. limited to 32bits.</dd>
@@ -257,8 +257,9 @@ public class PlistParser {
 							+ ": no key found for <real> '" + real + "' - ignored.");
 					continue;
 				}
-				if (real.startsWith("0x"))
-					dict.put(key, Double.longBitsToDouble(Long.parseLong(real.substring(2), 16)));
+				// dict.put(key, Double.valueOf(real));
+				if (real.endsWith("L"))
+					dict.put(key, Double.longBitsToDouble(Long.valueOf(real.substring(0, real.length() - 1))));
 				else
 					dict.put(key, Double.parseDouble(real));
 				key = null;
@@ -338,11 +339,12 @@ public class PlistParser {
 				continue;
 			}
 			if (tag.equals("real")) {
+				// array.add(Double.valueOf(tag.getValue()));
 				String real = tag.getValue();
-				if (real.startsWith("0x"))
-					array.add(Double.longBitsToDouble(Long.parseLong(real.substring(2), 16)));
+				if (real.endsWith("L"))
+					array.add(Double.longBitsToDouble(Long.valueOf(real.substring(0, real.length() - 1))));
 				else
-					array.add(Double.parseDouble(tag.getValue()));
+					array.add(Double.parseDouble(real));
 				continue;
 			}
 			if (tag.equals("true")) {

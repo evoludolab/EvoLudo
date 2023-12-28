@@ -7,7 +7,6 @@ TASKS:
 - refactor EvoLudo/GWT/JRE: should not deal with GUI related code (--delay, --run); move all methods related to delay and isSuspended (except delay variable) to superclass of EvoLudoWeb and EvoLudoLab
 
 TODO:
-- more streamlining of clo parameters (merge --costfcn and --costparams into --costs; merge --benefitfcn and --benefitparams into --benefits; absorb --mutationtype and --mutationsdev in --mutation; absorb --init in --inittype and rename --inittype to --init)
 - check if interactions-array can be replaced by interaction.kout for adjustScores (but only if read-only access is ensured)!
 - merge options cloSamples and cloRuns?
 - implement custom color maps (NetGames is an example); this is tricky due to incompatibilities between JRE and GWT; one possibility is to add relevant code to EvoLudoJRE and EvoLudoGWT (inelegant because it requires synchronizing code across two not obviously related classes); another possibility is to add <lab>GWT and <lab>JRE classes to take care of the implementation specific components (much like the original <lab>Lab class setup); both are far from satisfactory or even elegant solutions...
@@ -48,6 +47,7 @@ CHECK:
 
 
 DONE:
++ more streamlining of clo parameters (merge --costfcn and --costparams into --costs; merge --benefitfcn and --benefitparams into --benefits; absorb --mutationtype and --mutationsdev in --mutation; absorb --init in --inittype and rename --inittype to --init)
 + maven plugin to assemble html files and compiled evoludoweb JavaScript for debugging and deploying -> EvoLudoDev module
 + maven plugin to run tests -> EvoLudoTest module
 + reconfigure maven with 'webapp' and 'jettyconf' folders in EvoLudoGWT instead of EvoLudoJRE -> EvoLudoDev module

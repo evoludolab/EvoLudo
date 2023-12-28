@@ -355,16 +355,21 @@ public class Plist extends HashMap<String, Object> {
 	/**
 	 * Utility method to encode <code>double</code> with tag <code>key</code>.
 	 * <p>
-	 * <strong>Note:</strong> floating point values are saved as bit strings to
-	 * avoid rounding errors when saving/restoring the state of the model.
+	 * <strong>Notes:</strong>
+	 * <ul>
+	 * <li>floating point values are saved as {@code long}'s (bit strings) to avoid
+	 * rounding errors when saving/restoring the state of the model.
+	 * <li>cannot use {@code Double.toHexString(real)} because GWT does not
+	 * implement it.
+	 * </ul>
 	 * 
 	 * @param key  tag name
 	 * @param real <code>double</code> value
 	 * @return encoded String
 	 */
 	public static String encodeKey(String key, double real) {
-		return "<key>" + key + "</key>\n<real>0x" + (real > 0.0 ? "" : "-")
-				+ Long.toHexString(Double.doubleToLongBits(Math.abs(real))) + "</real>\n";
+		// return "<key>" + key + "</key>\n<real>" + Double.toHexString(real) + "</real>\n";
+		return "<key>" + key + "</key>\n<real>" + Long.toString(Double.doubleToLongBits(real)) + "L</real>\n";
 	}
 
 	/**
@@ -511,8 +516,7 @@ public class Plist extends HashMap<String, Object> {
 	private static String encodeArray(double[] array) {
 		StringBuilder plist = new StringBuilder("<array>\n");
 		for (double a : array)
-			plist.append("<real>0x" + (a > 0.0 ? "" : "-") + Long.toHexString(Double.doubleToLongBits(Math.abs(a)))
-					+ "</real>\n");
+			plist.append("<real>" + Long.toString(Double.doubleToLongBits(a)) + "L</real>\n");
 		return plist.append("</array>\n").toString();
 	}
 
@@ -530,8 +534,7 @@ public class Plist extends HashMap<String, Object> {
 	private static String encodeArray(double[] array, int len) {
 		StringBuilder plist = new StringBuilder("<array>\n");
 		for (int n = 0; n < len; n++)
-			plist.append("<real>0x" + (array[n] > 0.0 ? "" : "-")
-					+ Long.toHexString(Double.doubleToLongBits(Math.abs(array[n]))) + "</real>\n");
+			plist.append("<real>" + Long.toString(Double.doubleToLongBits(array[n])) + "L</real>\n");
 		return plist.append("</array>\n").toString();
 	}
 

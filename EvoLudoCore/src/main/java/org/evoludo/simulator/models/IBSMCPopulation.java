@@ -823,7 +823,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	/**
 	 * Returns the type of mutations for trait {@code trait}.
 	 * 
-	 * @param index the index of the trait
+	 * @param trait the index of the trait
 	 * @return mutation type
 	 */
 	public MutationType getMutationType(int trait) {
