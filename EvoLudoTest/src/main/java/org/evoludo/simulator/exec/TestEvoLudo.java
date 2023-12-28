@@ -408,9 +408,13 @@ public class TestEvoLudo implements Model.MilestoneListener {
 			if (ref == null)
 				return references;
 		}
-		Plist reference = engine.readPlist(ref.getAbsolutePath());
-		if (compareRuns(ref, reference, result))
-			return ref;
+		try {
+			Plist reference = engine.readPlist(ref.getAbsolutePath());
+			if (compareRuns(ref, reference, result))
+				return ref;
+		} catch (Exception e) {
+			// ignore - comparison failed
+		}
 		return null;
 	}
 
