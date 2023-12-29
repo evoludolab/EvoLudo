@@ -1812,7 +1812,7 @@ public abstract class EvoLudo
 	public boolean parseCLO() {
 		// options are identified by '--' characters
 		// require one or more spaces between options
-		return parseCLO(clo.split("\\s+--"));
+		return parseCLO(clo.trim().split("\\s+--"));
 	}
 
 	/**
