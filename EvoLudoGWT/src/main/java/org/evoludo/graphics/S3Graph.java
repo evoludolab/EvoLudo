@@ -54,6 +54,7 @@ import com.google.gwt.event.dom.client.DoubleClickEvent;
 import com.google.gwt.event.dom.client.DoubleClickHandler;
 import com.google.gwt.event.dom.client.TouchStartEvent;
 import com.google.gwt.user.client.Command;
+import com.google.gwt.user.client.ui.Widget;
 
 /**
  *
@@ -62,6 +63,7 @@ import com.google.gwt.user.client.Command;
 public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 	DoubleClickHandler {
 
+	protected int nStates;
 	private String[] names;
 	private int[] order = new int[] { 0, 1, 2 };
 	protected double[] init = new double[4];
@@ -71,7 +73,12 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 	protected Path2D outline = new Path2D();
 
 	public S3Graph(Controller controller, int tag) {
+		this(controller, 3, tag);
+	}
+
+	public S3Graph(Controller controller, int nStates, int tag) {
 		super(controller, tag);
+		this.nStates = nStates;
 		setStylePrimaryName("evoludo-S3Graph");
 	}
 
@@ -84,7 +91,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 	@Override
 	public void alloc() {
 		super.alloc();
-		// buffer length is 3 + 1 for time
+		// buffer length is nStates + 1 for time
 		if (buffer == null || buffer.capacity() < MIN_BUFFER_SIZE) {
 			buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
 		}
@@ -124,6 +131,10 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 		return changed;
 	}
 
+	public void setOrder(int[] order) {
+		System.arraycopy(order, 0, this.order, 0, this.order.length);
+	}
+
 	@Override
 	public void reset() {
 		super.reset();
@@ -135,13 +146,13 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 	public void addData(double t, double[] data, boolean force) {
 		if (buffer.isEmpty()) {
 			buffer.add(prependTime2Data(t, data));
-			System.arraycopy(buffer.last(), 1, init, 1, 3);
+			System.arraycopy(buffer.last(), 1, init, 1, nStates);
 		} else {
 			double[] last = buffer.last();
 			double lastt = last[0];
 			if (Math.abs(t - lastt) < 1e-8) {
 				buffer.replace(prependTime2Data(t, data));
-				System.arraycopy(last, 1, init, 1, 3);
+				System.arraycopy(last, 1, init, 1, nStates);
 			} else {
 				if (Double.isNaN(t)) {
 					// new starting point
@@ -149,7 +160,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 						buffer.replace(prependTime2Data(t, data));
 					else
 						buffer.add(prependTime2Data(t, data));
-					System.arraycopy(last, 1, init, 1, 3);
+					System.arraycopy(last, 1, init, 1, nStates);
 					return;
 				}
 				if (force || distSq(data, last) > bufferThreshold)
@@ -455,6 +466,8 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 	}
 
 	private ContextMenuItem swapOrderMenu, clearMenu;
+	private ContextMenu setTraitMenu;
+	private int cornerIdx= -1;
 
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
@@ -498,36 +511,88 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 			});
 		}
 		menu.add(swapOrderMenu);
-
 		switch( closestEdge(x, y) ) {
-			// case 0:
-			default:
+			case EDGE_LEFT:
 				swapOrderMenu.setText("Swap "+names[order[0]]+" \u2194 "+names[order[1]]);
 				break;
-			case 1:
+			case EDGE_RIGHT:
 				swapOrderMenu.setText("Swap "+names[order[1]]+" \u2194 "+names[order[2]]);
 				break;
-			case 2:
+			// case EDGE_BOTTOM:
+			default:
 				swapOrderMenu.setText("Swap "+names[order[2]]+" \u2194 "+names[order[0]]);
 				break;
 		}
+
+		// process set strategy context menu
+		if (nStates > 3) {
+			if (setTraitMenu == null) {
+				setTraitMenu = new ContextMenu(menu);
+				for (String name : names)
+					setTraitMenu.add(new ContextMenuItem(name, new Command() {
+						@Override
+						public void execute() {
+							Iterator<Widget> items = setTraitMenu.iterator();
+							int idx = 0;
+							while (items.hasNext()) {
+								ContextMenuItem item = (ContextMenuItem) items.next();
+								if (item.getText().equals(name)) {
+									order[cornerIdx] = idx;
+									break;
+								}
+								idx++;
+							}
+							paint();
+						}
+					}));
+			}
+			menu.add("Set trait...", setTraitMenu);
+			cornerIdx = closestCorner(x, y);
+			// disable already visible traits
+			for (int t : order)
+				((ContextMenuItem) setTraitMenu.getWidget(t)).setEnabled(false);
+		}
+
 		super.populateContextMenuAt(menu, x, y);
 	}
 
 	// COORDINATE CONVERSION UTILITIES
 
+	/**
+	 * Convert coordinates in simplex \(S_3\) to cartesian coordinates.
+	 * <p>
+	 * <strong>Note:</strong> The first entry {@code s3[0]} refers to the time!
+	 * 
+	 * @param s3 the array with the simplex coordinates
+	 * @param p  the point in cartesian coordinates
+	 * @return the point in cartesian coordinates {@code p}
+	 */
 	private Point2D S3ToCartesian(double[] s3, Point2D p) {
 		// NOTE: s3[0] is time!
-		// c: s3[2], d: s3[1], l: s3[0]
-		p.x = (s3[order[1]+1]-s3[order[0]+1]+1.0)*0.5*bounds.getWidth();
-		p.y = (1.0-s3[order[2]+1])*bounds.getHeight();
-		return p;
+		// c: s3[3], d: s3[2], l: s3[1]
+		return S3ToCartesian(s3[order[0] + 1], s3[order[1] + 1], s3[order[2] + 1], p);
 	}
 
+	/**
+	 * Convert coordinates in simplex \(S_3\) to cartesian coordinates.
+	 * <p>
+	 * <strong>Note:</strong> In order to deal with projections onto \(S_3\)
+	 * subspaces the coordinates {@code s1}, {@code s2}, {@code s3}, do not need to
+	 * sum up to {@code 1.0}.
+	 * 
+	 * @param s1 the value of the first trait (lower left corner by default)
+	 * @param s2 the value of the second trait (lower right corner by default)
+	 * @param s3 the value of the third trait (top corner by default)
+	 * @param p  the point in cartesian coordinates
+	 * @return the point in cartesian coordinates {@code p}
+	 */
 	private Point2D S3ToCartesian(double s1, double s2, double s3, Point2D p) {
-		// c: s3[2], d: s3[1], l: s3[0]
-		p.x = (s2-s1+1.0)*0.5*bounds.getWidth();
-		p.y = (1.0-s3)*bounds.getHeight();
+		// c: s3, d: s2, l: s1
+		p.x = s2 - s1;	// [-1, 1]
+		p.y = (s3 - s2 - s1 + 1.0) * 0.5 - 1.0 / 3.0;	// [-1/3, 2/3]
+		p.scale(s1 + s2 + s3);
+		p.x = (p.x + 1.0) * 0.5 * bounds.getWidth();
+		p.y = (2.0 / 3.0 - p.y) * bounds.getHeight();
 		return p;
 	}
 
@@ -548,16 +613,41 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 		return s;
 	}
 
+	protected final int CORNER_LEFT = 0;
+	protected final int CORNER_RIGHT = 1;
+	protected final int CORNER_TOP = 2;
+
+	protected int closestCorner(double x, double y) {
+		Point2D p = new Point2D(x - bounds.getX(), y - bounds.getY());
+		double d0 = p.distance2(e0);
+		double d1 = p.distance2(e1);
+		double d2 = p.distance2(e2);
+		if (d0 < d1) {
+			if (d0 < d2)
+				return CORNER_LEFT;
+			return CORNER_TOP;
+		}
+		if (d1 < d2)
+			return CORNER_RIGHT;
+		return CORNER_TOP;
+	}
+
+	protected final int EDGE_LEFT = 0;
+	protected final int EDGE_RIGHT = 1;
+	protected final int EDGE_BOTTOM = 2;
+
 	protected int closestEdge(double x, double y) {
 		Point2D p = new Point2D(x - bounds.getX(), y - bounds.getY());
 		double d0 = Segment2D.distance2(e0, e1, p);
 		double d1 = Segment2D.distance2(e1, e2, p);
 		double d2 = Segment2D.distance2(e2, e0, p);
-		if( d0>d1 ) {
-			if( d1>d2 ) return 2;
+		if (d0 > d1) {
+			if (d1 > d2)
+				return 2;
 			return 1;
 		}
-		if( d0>d2 ) return 2;
+		if (d0 > d2)
+			return 2;
 		return 0;
 	}
 }

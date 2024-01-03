@@ -17,7 +17,7 @@ As a specific example, consider `x=-0x1.4000000000002p1`, which is approximately
 | Intel (hex) | **`0x1.50385c094f41fp`** | `0x1.50385c094f42p` |
 | Intel (dec) | **`0.08208499862389872`** | `0.08208499862389873` |
 | Apple (long) | `4590579268170609696` | `4590579268170609696` |
-| Apple (hex)| `0x1.50385c094f42p` | `0x1.50385c094f42p` |
+| Apple (hex) | `0x1.50385c094f42p` | `0x1.50385c094f42p` |
 | Apple (dec) | `0.08208499862389873` | `0.08208499862389873` |
 
 At least in this example Apple Silicon returns the same result regardless of using `Math` or `StrictMath`, while the Intel results differ by one `ulp`.
