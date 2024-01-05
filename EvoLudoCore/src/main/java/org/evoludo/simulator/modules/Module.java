@@ -430,6 +430,17 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	}
 
 	/**
+	 * Gets the numberof roles that an individual can adopt. For example the role of
+	 * a proposer or a responder in the Ultimatum game or the first or second movers
+	 * in the Centipede game.
+	 * 
+	 * @return the number of roles of an individual
+	 */
+	public int getNRoles() {
+		return 1;
+	}
+
+	/**
 	 * Sets the number of traits in this Module.
 	 * 
 	 * <h3>Note:</h3>

@@ -49,13 +49,8 @@ public class MVS3 extends MVAbstract {
 
 	@SuppressWarnings("hiding")
 	protected Set<S3Graph> graphs;
-// short-cut as long as only a single S3 graph is acceptable
-	protected S3Graph graph;
 	protected double[] state, init;
-	protected int nState, nActive;
-	protected boolean[] active;
-
-	protected boolean isEnabled = true;
+	protected int nState;
 
 	/**
 	 * @param engine the pacemeaker for running the model
@@ -76,38 +71,28 @@ public class MVS3 extends MVAbstract {
 		super.unload();
 		state = null;
 		init = null;
-		active = null;
 	}
 
 	@Override
 	public void clear() {
 		super.clear();
-		graph.clearGraph();
+		for( S3Graph graph : graphs )
+			graph.clearGraph();
 		update();
 	}
 
 	@Override
 	public void update(boolean force) {
-		if( !isEnabled ) {
-			graph.displayMessage("Simplex S3 view requires exactly 3 active traits!");
-			return;
-		}
 		Model model = engine.getModel();
 		double newtime = model.getTime();
-		if( Math.abs(timestamp-newtime)>1e-8 ) {
-			model.getMeanTraits(graph.getTag(), state);
-			double[] s3 = state;
-			if( nActive!=nState ) {
-				s3 = new double[3];
-				int n = 0;
-				for( int i=0; i<nState; i++ ) {
-					if( active[i] )
-						s3[n++] = state[i];
-				}
+		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
+		for (S3Graph graph : graphs) {
+			if(isNext) {
+				model.getMeanTraits(graph.getTag(), state);
+				graph.addData(newtime, state, force);
 			}
-			graph.addData(newtime, state, force);
+			graph.paint();
 		}
-		graph.paint();
 		timestamp = newtime;
 	}
 
@@ -115,80 +100,69 @@ public class MVS3 extends MVAbstract {
 	public void reset(boolean soft) {
 		super.reset(soft);
 		Module module = engine.getModule();
-		if( graphs.size()!=1 ) {
+		int nRoles = module.getNRoles();
+		if (graphs.size() != nRoles) {
 			soft = false;
-			graph = new S3Graph(this, module.getID());
-			wrapper.add(graph);
-			graphs2mods.put(graph, module);
-			GraphStyle style = graph.getStyle();
-			style.showLabel = true;
-			style.showXTicks = true;
-			style.showXTickLabels = true;
-			style.showXLevels = true;
-			style.showXLabel = true;
-			style.showYTicks = style.showXTicks;
-			style.showYTickLabels = false;
-			style.showYLabel = false;
-			style.showYLevels = false;
-			// arrange graphs (currently only one)
+			destroyGraphs();
+			int[] order = new int[3];
+			for (int role = 0; role < nRoles; role++) {
+				S3Graph graph = new S3Graph(this, role);
+				wrapper.add(graph);
+				graphs2mods.put(graph, module);
+				GraphStyle style = graph.getStyle();
+				style.showLabel = true;
+				style.showXTicks = true;
+				style.showXTickLabels = true;
+				style.showXLevels = true;
+				style.showXLabel = true;
+				style.showYTicks = style.showXTicks;
+				style.showYTickLabels = false;
+				style.showYLabel = false;
+				style.showYLevels = false;
+				// show first three active traits
+				boolean[] active = module.getActiveTraits();
+				int idx = 0;
+				for (int n = 0; n < active.length; n++) {
+					if (!active[n])
+						continue;
+					order[idx++] = n;
+					if (idx == 3)
+						break;
+				}
+				if (idx != 3)
+					// less than 3 active traits
+					graph.displayMessage("Simplex S3 view requires at least 3 active traits!");
+				else
+					graph.setOrder(order);
+			}
+			// arrange graphs horizontally
 			gRows = 1;
-			gCols = 1;
-			int width = 100/gCols;
-			int height = 100/gRows;
-			graph.setSize(width+"%", height+"%");
+			gCols = nRoles;
+			int width = 100 / gCols;
+			int height = 100 / gRows;
+			for (S3Graph graph : graphs)
+				graph.setSize(width + "%", height + "%");
 		}
 		Color[] colors = module.getTraitColors();
 		String[] names = module.getTraitNames();
-		nActive = module.getNActive();
-		if( nActive!=3 ) {
-			// now we have a problem... what to do?
-			graph.setNames(names);
-			graph.setColors(colors);
-			isEnabled = false;
-			update();
-			return;
-		}
-		graph.setMarkers(module.getMarkers());
 		nState = module.getNTraits();
 		if (state == null || state.length != nState)
 			state = new double[nState];
 		if (init == null || init.length != nState)
 			init = new double[nState];
-		graph.getStyle().trajColor = ColorMapCSS.Color2Css(module.getTrajectoryColor());
-		if (nActive != nState) {
-			active = module.getActiveTraits();
-			String[] aNames = new String[nActive];
-			Color[] aColors = new Color[nActive];
-			int n = 0;
-			for (int i=0; i<nState; i++) {
-				if (active == null || active[i]) {
-					aNames[n] = names[i];
-					aColors[n] = colors[i];
-					n++;
-				}
-			}
-			names = aNames;
-			colors = aColors;
+		for (S3Graph graph : graphs) {
+			graph.setMarkers(module.getMarkers());
+			graph.getStyle().trajColor = ColorMapCSS.Color2Css(module.getTrajectoryColor());
+			soft &= !graph.setNames(names);
+			soft &= !graph.setColors(colors);
+			if (!soft)
+				graph.reset();
 		}
-		isEnabled = true;
-		soft &= !graph.setNames(names);
-		soft &= !graph.setColors(colors);
-		if( !soft )
-			graph.reset();
 		update();
 	}
 
 	@Override
 	public boolean setInitialState(double[] init) {
-		if( nActive!=nState ) {
-			double[] s = new double[nState];
-			int n = 0;
-			for( int i=0; i<nState; i++ ) {
-				if( active[i] )
-					s[i] = init[n++];
-			}
-			init = s;
-		}
 		Module module = engine.getModule();
 		if (module instanceof Discrete) {
 			// note: setInitialTraits requires different arguments for discrete and continuous modules

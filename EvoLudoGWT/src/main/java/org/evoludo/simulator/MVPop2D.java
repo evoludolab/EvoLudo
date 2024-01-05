@@ -117,6 +117,7 @@ public class MVPop2D extends MVAbstract implements AbstractGraph.NodeGraphContro
 
 	@Override
 	public void clear() {
+		super.clear();
 		for( PopGraph2D graph : graphs )
 			graph.clearGraph();
 	}
