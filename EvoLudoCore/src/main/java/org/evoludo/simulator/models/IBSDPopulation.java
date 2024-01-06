@@ -1749,13 +1749,9 @@ public class IBSDPopulation extends IBSPopulation {
 	public boolean setInitialTraits(double[] init) {
 		if (init==null || init.length != nTraits)
 			return false;
-		InitType type = getInitType();
-		double[] args = type.getArgs();
-		// temporarily change initialization type
+		// switch initialization type to frequencies
+		// IBSD calls routine only if frequency is valid key
 		setInitType(InitType.FREQUENCY, init);
-		init();
-		// restore initialization type
-		setInitType(type, args);
 		return true;
 	}
 

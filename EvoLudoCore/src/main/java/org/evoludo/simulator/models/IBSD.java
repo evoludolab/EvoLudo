@@ -192,6 +192,9 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 
 	@Override
 	public boolean setInitialTraits(double[] init) {
+		if (!cloInitType.isValidKey(InitType.FREQUENCY))
+			return false;
+
 		if (!isMultispecies)
 			return ((IBSDPopulation) population).setInitialTraits(init);
 
