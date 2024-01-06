@@ -160,7 +160,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 						buffer.replace(prependTime2Data(t, data));
 					else
 						buffer.add(prependTime2Data(t, data));
-					System.arraycopy(last, 1, init, 1, nStates);
+					System.arraycopy(buffer.last(), 1, init, 1, nStates);
 					return;
 				}
 				if (force || distSq(data, last) > bufferThreshold)
@@ -422,11 +422,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 	private void processInitXY(int x, int y) {
 		double[] s3 = new double[3];
 		cartesianToS3(x, y, s3);
-		if (controller.setInitialState(s3)) {
-			addData(Double.NaN, s3, true);
-			init = ArrayMath.clone(buffer.last());
-			paint();
-		}
+		controller.setInitialState(s3);
 	}
 
 	protected double[] tip = new double[3];

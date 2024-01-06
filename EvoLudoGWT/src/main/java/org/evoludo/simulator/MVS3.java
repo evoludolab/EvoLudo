@@ -82,21 +82,6 @@ public class MVS3 extends MVAbstract {
 	}
 
 	@Override
-	public void update(boolean force) {
-		Model model = engine.getModel();
-		double newtime = model.getTime();
-		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
-		for (S3Graph graph : graphs) {
-			if(isNext) {
-				model.getMeanTraits(graph.getTag(), state);
-				graph.addData(newtime, state, force);
-			}
-			graph.paint();
-		}
-		timestamp = newtime;
-	}
-
-	@Override
 	public void reset(boolean soft) {
 		super.reset(soft);
 		Module module = engine.getModule();
@@ -162,11 +147,40 @@ public class MVS3 extends MVAbstract {
 	}
 
 	@Override
+	public void init() {
+		super.init();
+		Model model = engine.getModel();
+		for (S3Graph graph : graphs) {
+			model.getMeanTraits(graph.getTag(), state);
+			graph.addData(Double.NaN, state, true);
+		}
+	}
+
+	@Override
+	public void update(boolean force) {
+		Model model = engine.getModel();
+		double newtime = model.getTime();
+		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
+		for (S3Graph graph : graphs) {
+			if(isNext) {
+				model.getMeanTraits(graph.getTag(), state);
+				graph.addData(newtime, state, force);
+			}
+			graph.paint();
+		}
+		timestamp = newtime;
+	}
+
+	@Override
 	public boolean setInitialState(double[] init) {
 		Module module = engine.getModule();
 		if (module instanceof Discrete) {
-			// note: setInitialTraits requires different arguments for discrete and continuous modules
-			return engine.getModel().setInitialTraits(init);
+			// note: setInitialTraits requires different arguments for discrete and
+			// continuous modules
+			if (engine.getModel().setInitialTraits(init)) {
+				engine.modelReinit();
+				return true;
+			}
 		}
 		return false;
 	}
