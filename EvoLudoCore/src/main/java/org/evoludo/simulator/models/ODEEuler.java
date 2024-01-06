@@ -609,7 +609,6 @@ public class ODEEuler implements Model.ODE {
 		if (init.length != nDim)
 			return false;
 		System.arraycopy(init, 0, y0, 0, nDim);
-		init(false);
 		return true;
 	}
 

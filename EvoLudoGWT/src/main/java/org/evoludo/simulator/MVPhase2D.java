@@ -162,6 +162,15 @@ public class MVPhase2D extends MVAbstract {
 	}
 
 	@Override
+	public void init() {
+		super.init();
+		Model model = engine.getModel();
+		model.getMeanTraits(state);
+		updateMinMaxState();
+		graph.addData(Double.NaN, state, true);
+	}
+
+	@Override
 	public void update(boolean force) {
 		Model model = engine.getModel();
 		double newtime = model.getTime();
@@ -198,8 +207,12 @@ public class MVPhase2D extends MVAbstract {
 		// no further processing should be needed - just forward to module and engine
 		Module module = engine.getModule();
 		if (module instanceof Discrete) {
-			// note: setInitialTraits requires different arguments for discrete and continuous modules
-			return engine.getModel().setInitialTraits(init);
+			// note: setInitialTraits requires different arguments for discrete and
+			// continuous modules
+			if (engine.getModel().setInitialTraits(init)) {
+				engine.modelReinit();
+				return true;
+			}
 		}
 		return false;
 	}

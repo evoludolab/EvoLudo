@@ -39,7 +39,6 @@ import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
-import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
 import org.evoludo.util.RingBuffer;
@@ -127,7 +126,7 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, //
 						buffer.replace(prependTime2Data(t, data));
 					else
 						buffer.add(prependTime2Data(t, data));
-					System.arraycopy(last, 1, init, 1, 3);
+					System.arraycopy(buffer.last(), 1, init, 1, nStates);
 					return;
 				}
 				if (force || distSq(data, last) > bufferThreshold)
@@ -313,11 +312,7 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, //
 		double[] state = new double[nStates];
 		System.arraycopy(buffer.last(), 1, state, 0, nStates);
 		map.phase2Data(new Point2D(ux, uy), state);
-		if (controller.setInitialState(state)) {
-			addData(Double.NaN, state, true);
-			init = ArrayMath.clone(buffer.last());
-			paint();
-		}
+		controller.setInitialState(state);
 	}
 
 //CHECK!
