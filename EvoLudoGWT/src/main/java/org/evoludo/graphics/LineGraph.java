@@ -325,7 +325,8 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 		double sx = (x-bounds.getX()-0.5)/bounds.getWidth();
 		if( sx<0.0 || sx>1.0 )
 			return null;
-		double sy = (y-bounds.getY()-0.5)/bounds.getHeight();
+		double height = bounds.getHeight();
+		double sy = (height - (y - bounds.getY() + 0.5)) / height;
 		if( sy<0.0 || sy>1.0 )
 			return null;
 		return ((LineGraphController)controller).getTooltipAt(this, sx, sy);
