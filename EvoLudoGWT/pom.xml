@@ -32,8 +32,8 @@
     </dependency>
     <dependency>
       <groupId>org.evoludo</groupId>
-      <artifactId>gwt-user-XHTML</artifactId>
-      <version>2.10.0</version>
+      <artifactId>gwt-user-epub</artifactId>
+      <version>2.11.0</version>
     </dependency>
     <dependency>
       <groupId>org.gwtproject</groupId>
@@ -80,16 +80,16 @@
             </configuration>
           </execution>
           <execution>
-            <id>install-xhtml-gwt</id>
+            <id>install-epub-gwt</id>
             <goals>
               <goal>install-file</goal>
             </goals>
             <phase>clean</phase>
             <configuration>
-              <file>${basedir}/lib/gwt-user-XHTML-2.10.0.jar</file>
+              <file>${basedir}/lib/gwt-user-ePub-2.11.0.jar</file>
               <groupId>org.evoludo</groupId>
-              <artifactId>gwt-user-XHTML</artifactId>
-              <version>2.10.0</version>
+              <artifactId>gwt-user-epub</artifactId>
+              <version>2.11.0</version>
               <packaging>jar</packaging>
               <generatePom>true</generatePom>
             </configuration>
