@@ -642,7 +642,7 @@ public class EvoLudoWeb extends Composite
 	@Override
 	public void viewActivated(EvoLudoViews aView) {
 		activeView = aView;
-		update(true);
+		update(engine.getModel() != null);
 	}
 
 	@Override

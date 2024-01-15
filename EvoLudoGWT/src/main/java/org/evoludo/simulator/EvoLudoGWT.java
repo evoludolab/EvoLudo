@@ -95,7 +95,7 @@ public class EvoLudoGWT extends EvoLudo {
 	/**
 	 * generation at which to request snapshot
 	 */
-	protected double snapshotAt;
+	protected double snapshotAt = -Double.MAX_VALUE;
 
 	/**
 	 * Create timer to measure execution times since instantiation.

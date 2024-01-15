@@ -1721,7 +1721,7 @@ public abstract class EvoLudo
 				break;
 			}
 		}
-		if (loadModule(moduleKey.getKey()) == null)
+		if (moduleKey == null || loadModule(moduleKey.getKey()) == null)
 			return null;
 		// second determine feasible --model options for given module
 		cloModel.clearKeys();
