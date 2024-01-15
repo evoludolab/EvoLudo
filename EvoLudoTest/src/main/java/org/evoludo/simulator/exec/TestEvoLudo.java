@@ -140,7 +140,7 @@ public class TestEvoLudo implements Model.MilestoneListener {
 				if (refname.substring(refname.lastIndexOf(".") + 1).equals("zip"))
 					export += ".zip";
 				try {
-					Path exportPath = exportDir.toPath();
+					Path exportPath = exportDir.toPath().toRealPath();
 					Files.createSymbolicLink(exportPath.resolve(export), exportPath.relativize(ref.toPath().toRealPath()));
 				} catch (IOException e) {
 					logError("failed to create link from '" + export + "' to '" + ref.getName() + "'.");
