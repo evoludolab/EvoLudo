@@ -458,19 +458,18 @@ public class EvoLudoGWT extends EvoLudo {
 	public void helpCLO() {
 		// list trait indices and names
 		String msg = "";
+		int idx = 0;
 		for (Module mod : activeModule.getSpecies()) {
 			String name = mod.getName();
 			int namelen = name.length();
-			if (namelen > 0) {
-				name = "      Species: " + name;
-				namelen = name.length();
-				msg += "\n" + name.substring(namelen - 16, namelen);
-			}
+			if (namelen > 0)
+				msg += "\n       Species: " + name;
 			int nt = mod.getNTraits();
 			for (int n = 0; n < nt; n++)
-				msg += "\n             " + n + ": " + mod.getTraitName(n);
-			catModule.setHeader("Module specific options with trait names and indices:" + msg);
+				msg += "\n             " + (idx + n) + ": " + mod.getTraitName(n);
+			idx += nt;
 		}
+		catModule.setHeader("Module specific options with trait names and indices:" + msg);
 		logger.info("<pre>EvoLudoWeb\nList of command line options for module '" + activeModule.getKey() + "':\n"
 				+ parser.helpCLO(true) + "</pre>");
 	}
@@ -482,7 +481,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 * production
 	 */
 	public final CLOption cloGUIFeatures = new CLOption("gui", "auto", catGUI,
-			"--gui <f1[:f2[:...]]> list of GUI features (debug only):\n"
+			"--gui <f1[,f2[...]]> list of GUI features (debug only):\n"
 					+ "          epub: enable ePub mode\n"
 					+ "    standalone: standalone ePub mode\n"
 					+ "        nokeys: disable key events (if available)\n"
