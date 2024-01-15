@@ -7,6 +7,7 @@ TASKS:
 - refactor EvoLudo/GWT/JRE: should not deal with GUI related code (--delay, --run); move all methods related to delay and isSuspended (except delay variable) to superclass of EvoLudoWeb and EvoLudoLab
 
 TODO:
+- check --accuscores flag (for regular networks this should merely result in a change of selection strength but seems to change more...)
 - check if interactions-array can be replaced by interaction.kout for adjustScores (but only if read-only access is ensured)!
 - merge options cloSamples and cloRuns?
 - implement custom color maps (NetGames is an example); this is tricky due to incompatibilities between JRE and GWT; one possibility is to add relevant code to EvoLudoJRE and EvoLudoGWT (inelegant because it requires synchronizing code across two not obviously related classes); another possibility is to add <lab>GWT and <lab>JRE classes to take care of the implementation specific components (much like the original <lab>Lab class setup); both are far from satisfactory or even elegant solutions...
