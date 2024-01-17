@@ -1408,7 +1408,11 @@ public class PDERD extends ODEEuler implements Model.PDE {
 					"' failed - using default " + InitType.RANDOM + "'.");
 			return false;
 		}
-		System.arraycopy(init, 0, y0, 0, nt);
+		// init can be null for RANDOM initializations
+		if (init == null)
+			Arrays.fill(y0, 1.0);
+		else
+			System.arraycopy(init, 0, y0, 0, nt);
 		return true;
 	}
 
@@ -1661,6 +1665,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		// ODEEuler loaded its own keys already - clear and reload ours.
 		cloInitType.clearKeys();
 		cloInitType.addKeys(InitType.values());
+		cloInitType.setDefault(InitType.RANDOM.getKey());
 	}
 
 	// /**

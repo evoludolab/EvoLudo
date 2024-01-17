@@ -44,10 +44,8 @@ import java.util.logging.Logger;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JMenuItem;
-import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 import javax.swing.JTextPane;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
@@ -60,13 +58,7 @@ public class MVConsole extends JComponent implements MultiViewPanel {
 	private static final long serialVersionUID = 20110423L;
 
 	EvoLudoLab  lab;
-
-	/**
-	 * The module associated with this graph.
-	 */
-	protected org.evoludo.simulator.modules.Module module;
 	Logger		logger;
-	JTextArea info;
 	private final JTextPane	text;
 	private final JPopupMenu menu = new JPopupMenu();
 	private static final Color transparent = new Color(0, 0, 0, 0);
@@ -94,7 +86,7 @@ public class MVConsole extends JComponent implements MultiViewPanel {
 		setOpaque(false);
 		text = new JTextPane();
 		text.setMargin(new Insets(4, 6, 4, 6));
-text.setFont(menuFont);
+		text.setFont(menuFont);
 		JScrollPane scroll = new JScrollPane(text, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		scroll.setBorder(
 			BorderFactory.createCompoundBorder(
@@ -107,37 +99,12 @@ text.setFont(menuFont);
 		JMenuItem menuItem = new JMenuItem("Clear");
 		menuItem.setActionCommand(MENU_CLEAR);
 		menuItem.addActionListener(handler);
-//      menuItem.setFont(style.menuFont);
 		menuItem.setFont(menuFont);
 		menu.add(menuItem);
 		text.setComponentPopupMenu(menu);
 		add(scroll, BorderLayout.CENTER);
-
-		JPanel contact = new JPanel(new BorderLayout());
-		contact.setOpaque(false);
-		info = new JTextArea("Gugus!");
-		info.setEditable(false);
-		info.setOpaque(false);
-		info.setLineWrap(true);
-		info.setWrapStyleWord(true);
-		info.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
-		contact.add(info, BorderLayout.CENTER);
-		contact.setBorder(
-			BorderFactory.createCompoundBorder(
-				BorderFactory.createMatteBorder(6, 6, 6, 6, transparent),
-				BorderFactory.createTitledBorder(BorderFactory.createMatteBorder(1, 1, 1, 1, Color.gray), "Info")
-			)
-		);
-		add(contact, BorderLayout.SOUTH);
 		clear();
 		setToolTipText(null);	// no tooltips - individual components may have their own.
-	}
-
-	@Override
-	public void setModule(org.evoludo.simulator.modules.Module module) {
-		this.module = module;
-		info.selectAll();
-		info.replaceSelection(module.getInfo());
 	}
 
 	public class ActionHandler implements ActionListener {
@@ -155,8 +122,7 @@ text.setFont(menuFont);
 	protected void clear() {
 		text.setEditable(true);
 		text.selectAll();
-//		text.replaceSelection(population.getTitle()+"\n"+population.getVersion());
-		text.replaceSelection("");
+		text.replaceSelection(lab.engine.getModule().getInfo() + "\n" + lab.engine.getVersion());
 		text.setEditable(false);
 	}
 

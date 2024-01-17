@@ -776,6 +776,23 @@ public abstract class EvoLudo
 	}
 
 	/**
+	 * Get the command line options split into an array with option names followed
+	 * by their arguments (if applicable).
+	 * 
+	 * @return array command line options and arguments
+	 */
+	public String[] getSplitCLO() {
+		if (clo == null)
+			return null;
+		// strip all whitespace at start and end
+		String[] args = clo.trim().split("\\s+--");
+		// strip '--' from first argument
+		if (args[0].startsWith("--"))
+			args[0] = args[0].substring(2);
+		return args;
+	}
+
+	/**
 	 * Set the raw command line options, as shown e.g. in the settings TextArea.
 	 * 
 	 * @param clo the new command line option string
@@ -1065,14 +1082,13 @@ public abstract class EvoLudo
 
 	/**
 	 * Run simulation. Currently only implemented by EvoLudoJRE. Returns control to
-	 * caller only if the arguments {@code args} do not match requirements for
+	 * caller only if the arguments in {@code clo} do not match requirements for
 	 * running a simulation.
 	 * 
-	 * @param args the {@code String} array of command line arguments
-	 * 
-	 * @see org.evoludo.simulator.EvoLudoJRE#simulation(String[])
+	 * @see #setCLO(String)
+	 * @see org.evoludo.simulator.EvoLudoJRE#simulation()
 	 */
-	public void simulation(String[] args) {
+	public void simulation() {
 	}
 
 	/**
@@ -1678,7 +1694,7 @@ public abstract class EvoLudo
 	/**
 	 * Pre-process array of command line arguments. Some arguments need priority
 	 * treatment. Examples include the options <code>--module</code>,
-	 * <code>--verbosity</code> or <code>--restore</code>.
+	 * <code>--verbose</code> or <code>--restore</code>.
 	 * <dl>
 	 * <dt>{@code --module}</dt>
 	 * <dd>load module and remove option</dd>
@@ -1702,10 +1718,6 @@ public abstract class EvoLudo
 		String moduleParam = cloModule.getName();
 		CLOption.Key moduleKey = null;
 		int nParams = cloarray.length;
-		// first option requires special treatment: strip leading '--' if any.
-		int idx = cloarray[0].indexOf("--");
-		if (idx >= 0)
-			cloarray[0] = cloarray[0].substring(idx + "--".length());
 		for (int i = 0; i < nParams; i++) {
 			String param = cloarray[i];
 			if (param.startsWith(moduleParam)) {
@@ -1810,9 +1822,7 @@ public abstract class EvoLudo
 	 * @see #parseCLO(String[])
 	 */
 	public boolean parseCLO() {
-		// options are identified by '--' characters
-		// require one or more spaces between options
-		return parseCLO(clo.trim().split("\\s+--"));
+		return parseCLO(getSplitCLO());
 	}
 
 	/**
@@ -1825,7 +1835,7 @@ public abstract class EvoLudo
 	 * @see #preprocessCLO(String[])
 	 * @see CLOParser#parseCLO(String[])
 	 */
-	public boolean parseCLO(String[] cloarray) {
+	protected boolean parseCLO(String[] cloarray) {
 		parser.setLogger(logger);
 		cloarray = preprocessCLO(cloarray);
 		if (cloarray == null) {

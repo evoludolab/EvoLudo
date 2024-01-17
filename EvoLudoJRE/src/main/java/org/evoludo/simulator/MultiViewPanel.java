@@ -44,7 +44,7 @@ public interface MultiViewPanel {
 	
 	public boolean	isActive();
 
-	public void		setModule(Module module);
+	public default void	setModule(Module module) { };
 
 	public void		reset(boolean clear);
 	

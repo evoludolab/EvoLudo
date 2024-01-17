@@ -297,7 +297,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * Run simulations. This handles the following scenarios:
+	 * This handles the following scenarios:
 	 * <ol>
 	 * <li>If the manifest file in the jar includes the {@code Engine-Class}
 	 * attribute, the methods attempts to dynamically allocate the specified class
@@ -317,7 +317,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * @see #cloData
 	 */
 	@Override
-	public void simulation(String[] args) {
+	public void simulation() {
+		String[] args = getSplitCLO();
 		String main = EvoLudoJRE.getAttribute("Engine-Class");
 		if (main != null) {
 			Module module;
@@ -334,11 +335,14 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				return;
 			}
 			// prepend --module option (any additional --module options are ignored)
-			args = Arrays.copyOf(args, args.length + 2);
-			System.arraycopy(args, 0, args, 2, args.length - 2);
-			args[0] = "--" + cloModule.getName();
-			String key = module.getKey();
-			args[1] = key;
+			if (args == null) {
+				args = new String[2];
+			} else {
+				args = Arrays.copyOf(args, args.length + 2);
+				System.arraycopy(args, 0, args, 2, args.length - 2);
+			}
+			args[0] = cloModule.getName();
+			args[1] = module.getKey();
 			addModule(module);
 			addCLOProvider(module);
 			// parse options
@@ -355,25 +359,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				out.close();
 			exit(0);
 		}
-		// ensure that --module option is specified
-		String moduleOption = "--" + cloModule.getName();
-		String moduleName = null;
-		int nArgs = args.length;
-		// no need to check last argument if it's --module then the module key is missing and still no use
-		for (int i = 0; i < nArgs - 1; i++) {
-			if (moduleOption.equals(args[i])) {
-				moduleName = args[i + 1];
-				break;
-			}
-		}
-		if (moduleName == null || modules.get(moduleName) == null) {
-			// no module requested - show help
-			logError(moduleOption + " " + (moduleName == null ? "option missing!" : moduleName + " module not found!"));
-			parser.clearCLO();
-			parser.addCLO(cloModule);
-			output.println("List of available modules:\n" + parser.helpCLO(false));
-			exit(0);
-		}
 		// parse options
 		parseCLO(args);
 		if (cloExport.isSet()) {
@@ -381,19 +366,18 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			setDelay(1);
 			setSuspended(true);
 			modelReset();
-			if (isSuspended) {
-				simulationRunning = true;
-				while (simulationRunning) {
-					synchronized (this) {
-						run();
-						try {
-							wait();
-						} catch (InterruptedException e) {
-							break;
-						}
+			simulationRunning = true;
+			while (simulationRunning) {
+				synchronized (this) {
+					run();
+					try {
+						wait();
+					} catch (InterruptedException e) {
+						break;
 					}
 				}
 			}
+			exportState();
 			dumpEnd();
 			exit(0);
 		}
@@ -1104,9 +1088,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * </p>
 	 */
 	@Override
-	public boolean parseCLO(String[] cloarray) {
-		boolean success = super.parseCLO(cloarray);
-		clo = Formatter.format(cloarray, " --");
+	public boolean parseCLO() {
+		boolean success = super.parseCLO();
 		if (!doRestore)
 			return success;
 		// parseCLO does not reset model - do it now to be ready for restore

@@ -86,6 +86,7 @@ import org.evoludo.simulator.views.HasS3;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
+import org.evoludo.util.Formatter;
 import org.evoludo.util.CLOption.CLODelegate;
 
 public class EvoLudoLab extends JFrame
@@ -114,6 +115,24 @@ public class EvoLudoLab extends JFrame
 		// instantiate engine
 		this.engine = engine;
 		logger = engine.getLogger();
+		// allocate console early to catch all log messages
+		console = new MVConsole(this);
+		logger.addHandler(new Handler() {
+			@Override
+			public void publish(LogRecord record) {
+				console.log(record.getLevel(), record.getMessage());
+			}
+
+			@Override
+			public void flush() {
+				// ignore - nothing to flush
+			}
+
+			@Override
+			public void close() throws SecurityException {
+				// ignore - nothing to close
+			}
+		});
 		engine.addCLOProvider(this);
 		engine.addMilestoneListener(this);
 		engine.addChangeListener(this);
@@ -432,22 +451,6 @@ public class EvoLudoLab extends JFrame
 				engine.setDelay(lin2log(evoludoSlider.getValue()));
 			}
 		});
-    	// allocate console early to catch all log messages
-    	console = new MVConsole(this);
-    	logger.addHandler(new Handler() {
-			@Override
-			public void publish(LogRecord record) {
-				console.log(record.getLevel(), record.getMessage());
-			}
-			@Override
-			public void flush() {
-				// ignore - nothing to flush
-			}
-			@Override
-			public void close() throws SecurityException {
-				// ignore - nothing to close
-			}
-    	});
     }
 
 	/**
@@ -457,8 +460,6 @@ public class EvoLudoLab extends JFrame
 	MVConsole console;
 
 	protected void applyCLO() {
-		String clo = engine.getCLO();
-		String[] args = (clo != null ? clo.split(" ") : null);
 		int idx = activeViews.getActiveIndex();
 		if( idx<0 || cloView.isSet() )
 			idx = Integer.parseInt(appView);
@@ -468,13 +469,13 @@ public class EvoLudoLab extends JFrame
 		Model oldModel = engine.getModel();
 		Model.Type oldModelType = oldModel != null ? oldModel.getModelType() : null;
 		Module oldModule = engine.getModule();
-		boolean parsingSuccess = engine.parseCLO(args);
+		boolean parsingSuccess = engine.parseCLO();
 		Module module = engine.getModule();
 		setTitle(module.getTitle());
 		// reset is required if module and/or model changed
-		if (module != oldModule || !engine.getModel().isModelType(oldModelType))
+		if (module != oldModule || !engine.getModel().isModelType(oldModelType)) {
 			engine.modelReset();
-		else {
+		} else {
 			if (engine.paramsDidChange()) {
 				// show version information in status line (set level to replace info messages
 				// but not warnings and errors)
@@ -928,9 +929,6 @@ public class EvoLudoLab extends JFrame
 
 		// set default values for all parameters and parse command line options
 		init();
-
-		// String clo = engine.getCLO();
-		// apply(clo != null ? clo.split(" ") : null);
 		applyCLO();
 		pack();
 		setBounds(posX, posY, appWidth, appHeight);
@@ -963,19 +961,17 @@ public class EvoLudoLab extends JFrame
 	 * @see EvoLudoJRE#simulation(String[])
 	 */
 	public static void main(String[] args) {
-		if (args.length == 1)
-			// chances are that all arguments where wrapped in quotes to protect them from
-			// expansion by the shell (e.g. ';' causes headaches).
-			args = args[0].replace("'", "").replace("\"","").split(" ");
 		EvoLudoJRE engine = new EvoLudoJRE();
 		System.setProperty("java.awt.headless", "true");
 		engine.isApplication = false;
-		engine.simulation(args);
-		// last resort: launch GUI if call to simulation(args) returns control
+		// EvoLudo has its own parser for command line options and expects a single string
+		engine.setCLO(Formatter.format(args, " "));
+		engine.simulation();
+		// last resort: launch GUI if call to simulation() returns control here
 		System.setProperty("java.awt.headless", "false");
 		engine.isApplication = true;
-		// parse options (again) to include application sppecific ones
-		if (!engine.parseCLO(args))
+		// parse options (again) to include application specific ones
+		if (!engine.parseCLO())
 			engine.getLogger().warning("Parsing issues of command line arguments.");
 
 		javax.swing.SwingUtilities.invokeLater(new Runnable() {
