@@ -310,12 +310,12 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	/**
 	 * Command line option to set the mutation type.
 	 */
-	public final CLOption cloMutationType = new CLOption("mutations", MutationType.UNIFORM.getKey(),
+	public final CLOption cloMutationType = new CLOption("mutations", "0.01 " + MutationType.UNIFORM.getKey(),
 			EvoLudo.catModel,
 			"--mutations <p t [a]["+CLOParser.TRAIT_DELIMITER+"p1 t1...]>  with\n" +
 			"             p: mutation probability\n" + //
-			"             a: mutation range\n" + //
-			"             t: mutation type:", //
+			"             t: mutation type\n" + //
+			"             a: mutation range:", //
 			new CLODelegate() {
 
 				/**

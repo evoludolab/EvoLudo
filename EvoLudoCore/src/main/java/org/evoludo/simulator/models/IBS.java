@@ -1075,7 +1075,7 @@ public abstract class IBS implements Model.IBS {
 						pop.setPopulationUpdateType(put);
 						updt = CLOption.stripKey(put, updt);
 						// parse p, if present
-						String[] args = updt.split("[ =]");
+						String[] args = updt.split("\\s+|=");
 						double sync = 1.0;
 						if (args.length > 1)
 							sync = CLOParser.parseDouble(args[1]);
@@ -1224,7 +1224,7 @@ public abstract class IBS implements Model.IBS {
 						group.setSampling(intt);
 						intertype = CLOption.stripKey(intt, intertype).trim();
 						// parse n, if present
-						String[] args = intertype.split("[ =]");
+						String[] args = intertype.split("\\s+|=");
 						int nInter = 1;
 						if (args.length > 1)
 							nInter = CLOParser.parseInteger(args[1]);
@@ -1288,7 +1288,7 @@ public abstract class IBS implements Model.IBS {
 						group.setSampling(reft);
 						reftype = CLOption.stripKey(reft, reftype);
 						// parse n, if present
-						String[] args = reftype.split("[ =]");
+						String[] args = reftype.split("\\s+|=");
 						int nInter = 1;
 						if (args.length > 1)
 							nInter = CLOParser.parseInteger(args[1]);

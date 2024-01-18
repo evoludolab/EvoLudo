@@ -1562,7 +1562,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 						m2f.setMap(m2fm);
 						map = CLOption.stripKey(m2fm, map);
 						// parse b and w, if present
-						String[] args = map.split("[ =,]");
+						String[] args = map.split("\\s+|=|,");
 						double b = 1.0;
 						double w = 1.0;
 						switch (args.length) {
@@ -1633,7 +1633,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 						pop.setPlayerUpdateType(put);
 						updt = CLOption.stripKey(put, updt);
 						// parse n, e, if present
-						String[] args = updt.split("[ =,]");
+						String[] args = updt.split("\\s+|=|,");
 						double noise = 1.0;
 						double error = 0.0;
 						switch (args.length) {
