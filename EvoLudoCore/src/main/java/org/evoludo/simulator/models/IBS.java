@@ -709,23 +709,20 @@ public abstract class IBS implements Model.IBS {
 
 	@Override
 	public double processMonoScore(int id, double score) {
-		if (isMultispecies)
-			return species.get(id).processMonoScore(score);
-		return population.processMonoScore(score);
+		IBSPopulation pop = (isMultispecies ? species.get(id) : population);
+		return pop.processMonoScore(score);
 	}
 
 	@Override
 	public double processMinScore(int id, double min) {
-		if (isMultispecies)
-			return species.get(id).processMinScore(min);
-		return population.processMinScore(min);
+		IBSPopulation pop = (isMultispecies ? species.get(id) : population);
+		return pop.processMinScore(min);
 	}
 
 	@Override
 	public double processMaxScore(int id, double max) {
-		if (isMultispecies)
-			return species.get(id).processMaxScore(max);
-		return population.processMaxScore(max);
+		IBSPopulation pop = (isMultispecies ? species.get(id) : population);
+		return pop.processMaxScore(max);
 	}
 
 	@Override
@@ -1073,7 +1070,6 @@ public abstract class IBS implements Model.IBS {
 							continue;
 						}
 						pop.setPopulationUpdateType(put);
-						updt = CLOption.stripKey(put, updt);
 						// parse p, if present
 						String[] args = updt.split("\\s+|=");
 						double sync = 1.0;
@@ -1222,7 +1218,6 @@ public abstract class IBS implements Model.IBS {
 							continue;
 						}
 						group.setSampling(intt);
-						intertype = CLOption.stripKey(intt, intertype).trim();
 						// parse n, if present
 						String[] args = intertype.split("\\s+|=");
 						int nInter = 1;
@@ -1286,7 +1281,6 @@ public abstract class IBS implements Model.IBS {
 							continue;
 						}
 						group.setSampling(reft);
-						reftype = CLOption.stripKey(reft, reftype);
 						// parse n, if present
 						String[] args = reftype.split("\\s+|=");
 						int nInter = 1;

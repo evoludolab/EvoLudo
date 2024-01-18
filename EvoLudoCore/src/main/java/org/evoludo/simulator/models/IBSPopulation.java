@@ -2866,9 +2866,21 @@ public abstract class IBSPopulation {
 		// have different scores even in homogeneous populations
 		if (VACANT >= 0 || !interaction.isRegular)
 			return Double.NaN;
-		if (adjustScores)
-			return mono * interaction.connectivity;
-		return Double.NaN;
+		// regular and no vacant sites
+		int nConn = (int)(interaction.connectivity + 0.5);
+		if (module.isPairwise()) {
+			if (interactionGroup.samplingType == SamplingType.RANDOM)
+				return interactionGroup.nSamples * mono;
+			// interacting with all neighbours
+			if (interaction.isType(Geometry.Type.MEANFIELD))
+				return (nPopulation - 1) * mono;
+			return nConn * mono;
+		}
+		// group interactions
+		if (module.getNGroup() < nConn)
+			return nConn * mono;
+		// each individual participates in a single group interaction
+		return mono;
 	}
 
 	/**
@@ -2879,7 +2891,10 @@ public abstract class IBSPopulation {
 	 * @return the processed minimum score
 	 */
 	public double processMinScore(double min) {
-		return processMinMaxScore(min, true);
+		if (playerScoreAveraged)
+			return min;
+		int count = (min < 0.0 ? interaction.maxOut : interaction.minOut);
+		return processScore(min, count);
 	}
 
 	/**
@@ -2890,38 +2905,44 @@ public abstract class IBSPopulation {
 	 * @return the processed maximum score
 	 */
 	public double processMaxScore(double max) {
-		return processMinMaxScore(max, false);
+		if (playerScoreAveraged)
+			return max;
+		int count = (max < 0.0 ? interaction.maxOut : interaction.minOut);
+		return processScore(max, count);
 	}
 
 	/**
-	 * Process the extremal score {@code minmax} in this population, taking the
-	 * population structure into account.
+	 * Process the accumulated {@code score} in this population, taking the 
+	 * updating into account.
 	 * 
-	 * @param minmax the minimum or maximum score
-	 * @param isMin  the flag indicating whether {@code minmax} is a minimum or a
-	 *               maximum
+	 * @param score the minimum or maximum score
+	 * @param count the minimum/maximum number of interactions
 	 * @return the processed extremal score
 	 */
-	protected double processMinMaxScore(double minmax, boolean isMin) {
-		// assumes averaged or adjustable payoffs
-		if (playerScoreAveraged)
-			return minmax;
+	protected double processScore(double score, int count) {
+		// accumulated payoffs
 		if (adjustScores) {
-			// for accumulated scores minimum may depend on geometry both in terms of game
-			// payoffs as well as interaction count. however, getMinGameScore must deal with 
-			// structure and games
+			// getMinGameScore in module must deal with structure and games
 			if (module.isPairwise()) {
-				if (interaction.minOut + interaction.maxOut > 0) {
-					// geometry initialized and not well-mixed
-					if (isMin)
-						return (minmax < 0 ? interaction.maxOut : interaction.minOut) * 2 * minmax;
-					return (minmax > 0 ? interaction.maxOut : interaction.minOut) * 2 * minmax;
-				}
-				// well-mixed, with vacancies, at most nPopulation-1 interactions
-				return 2 * (nPopulation - 1) * minmax;
+				// count == 0 for well-mixed populations, with vacancies, at most 
+				// nPopulation-1 interactions
+				if (count == 0)
+					return 2 * (nPopulation - 1) * score;
+				return 2 * count * score;
 			}
 			// each individual participates in at most nGroup interactions
-			return module.getNGroup() * minmax;
+			return module.getNGroup() * score;
+		}
+		if (playerScoring == ScoringType.EPHEMERAL) {
+			if (module.isPairwise()) {
+				if (interactionGroup.samplingType == SamplingType.RANDOM)
+					return interactionGroup.nSamples * score;
+				if (count == 0)
+					return (nPopulation - 1) * score;
+				return count * score;
+			}
+			// each individual participates in a single group interaction
+			return score;
 		}
 		// not ready for unbounded accumulated payoffs... check() should catch this
 		throw new Error("cannot handle accumulated scores with random interactions (unbounded payoffs, in principle)");
@@ -3147,8 +3168,7 @@ public abstract class IBSPopulation {
 			doReset = true;
 		}
 		// combinations of unstructured and structured populations in inter-species
-		// interactions
-		// require more attention. exclude for now.
+		// interactions require more attention. exclude for now.
 		if (getInteractionGeometry().isInterspecies() && opponent.getInteractionGeometry() != null) {
 			// opponent not yet ready; check will be repeated for opponent
 			if ((!getInteractionGeometry().isType(opponent.getInteractionGeometry().getType())) &&
@@ -3185,27 +3205,29 @@ public abstract class IBSPopulation {
 			distrMigrants = new RNGDistribution.Geometric(rng.getRNG(), 1.0 - pMigration);
 		}
 
+		boolean isEphemeral;
 		if (module.isStatic()) {
 			adjustScores = true;
 			playerScoring = ScoringType.RESET_ALWAYS;
+			isEphemeral = false;
 		} else {
 			// check if adjustScores can be used - subclasses may have different opinions
 			adjustScores = doAdjustScores();
+			isEphemeral = playerScoring.equals(ScoringType.EPHEMERAL);
 
 			// accumulated scores and random sampling of interaction partners has, in
-			// principle, unbounded payoffs...
-			// avoid this can of worms...
-			if (!adjustScores && !playerScoreAveraged) {
+			// principle, unbounded payoffs... avoid this can of worms...
+			// ephemeral scores work for accumulated or averaged score accounting
+			if (!adjustScores && !playerScoreAveraged && !isEphemeral) {
 				setPlayerScoreAveraged(true);
-				logger.warning("random sampling of interaction partners is incompatible with accumulated payoffs\n" +
-						"because of unbounded fitness range and challenges to convert to probabilities.\n" +
+				logger.warning("random sampling of interaction partners is incompatible with accumulated\n" +
+						"payoffs due to unbounded fitness and challenges to convert to probabilities.\n" +
 						"switching to averaged scores.");
 				adjustScores = doAdjustScores(); // should now be true
 			}
 		}
 
 		nMixedInter = -1;
-		boolean isEphemeral = playerScoring.equals(ScoringType.EPHEMERAL);
 		hasLookupTable = module.isStatic() || //
 				(adjustScores && interaction.isType(Geometry.Type.MEANFIELD)) || //
 				(isEphemeral && interaction.isType(Geometry.Type.MEANFIELD) //
@@ -3245,11 +3267,8 @@ public abstract class IBSPopulation {
 			}
 		}
 		// number of interactions can also be determined in structured populations with
-		// well-mixed demes or in any structure with ephemeral payoffs
-		if (isEphemeral) {
-			nMixedInter = Combinatorics.combinations(interactionGroup.nSamples, nGroup - 1);
-		}
-		else if (adjustScores && interaction.isType(Geometry.Type.HIERARCHY) && //
+		// well-mixed demes
+		if (adjustScores && interaction.isType(Geometry.Type.HIERARCHY) && //
 				interaction.subgeometry.equals(Geometry.Type.MEANFIELD)) {
 			nMixedInter = interaction.hierarchy[interaction.hierarchy.length - 1]
 					- (interaction.isInterspecies() ? 0 : 1);
@@ -3260,33 +3279,29 @@ public abstract class IBSPopulation {
 		updateMinMaxScores();
 
 		// check for specific population update types
-		switch (populationUpdateType) {
-			case MORAN_BIRTHDEATH: // moran process - birth-death
-			case MORAN_DEATHBIRTH: // moran process - death-birth
-				// avoid negative fitness for Moran type updates
+		if (populationUpdateType.isMoran()) {
+			// avoid negative fitness for Moran type updates
+			if (minFitness < 0.0) {
+				logger.warning("Moran updates require fitness>=0 (score range [" + Formatter.format(minScore, 6)
+						+ ", " + Formatter.format(maxScore, 6) + "]; " + "fitness range ["
+						+ Formatter.format(minFitness, 6) + ", " + Formatter.format(maxFitness, 6) + "]).\n"
+						+ "Changed baseline fitness to " + map2fit.getBaseline()
+						+ (!map2fit.isMap(Map2Fitness.Maps.STATIC) ? " with static payoff-to-fitness map" : ""));
+				// just change to something meaningful
+				map2fit.setMap(Map2Fitness.Maps.STATIC);
+				map2fit.setBaseline(-minFitness);
+				updateMinMaxScores();
 				if (minFitness < 0.0) {
-					logger.warning("Moran updates require fitness>=0 (score range [" + Formatter.format(minScore, 6)
-							+ ", " + Formatter.format(maxScore, 6) + "]; " + "fitness range ["
-							+ Formatter.format(minFitness, 6) + ", " + Formatter.format(maxFitness, 6) + "]).\n"
-							+ "Changed baseline fitness to " + map2fit.getBaseline()
-							+ (!map2fit.isMap(Map2Fitness.Maps.STATIC) ? " with static payoff-to-fitness map" : ""));
-					// just change to something meaningful
-					map2fit.setMap(Map2Fitness.Maps.STATIC);
-					map2fit.setBaseline(-minFitness);
-					updateMinMaxScores();
-					if (minFitness < 0.0) {
-						throw new Error("Adjustment of selection failed... (minimal fitness: "
-								+ Formatter.format(minScore, 6) + " should be positive)");
-					}
+					throw new Error("Adjustment of selection failed... (minimal fitness: "
+							+ Formatter.format(minScore, 6) + " should be positive)");
 				}
-				// use referenceGroup for picking random neighbour in Moran process
-				// (birth-death)
-				// reason: referenceGroup properly deals with hierarchies
-				// future: pick parent to populate vacated site (death-birth, fitness dependent)
-				referenceGroup.setSampling(IBSGroup.SamplingType.RANDOM);
-				referenceGroup.setNSamples(1);
-				break;
-			default: // all other update rules can handle this
+			}
+			// use referenceGroup for picking random neighbour in Moran process
+			// (birth-death)
+			// reason: referenceGroup properly deals with hierarchies
+			// future: pick parent to populate vacated site (death-birth, fitness dependent)
+			referenceGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+			referenceGroup.setNSamples(1);
 		}
 		// avoid numerical overflow for strong selection (mainly applies to exponential
 		// payoff-to-fitness mapping)
@@ -3394,10 +3409,9 @@ public abstract class IBSPopulation {
 	 * randomly selected subset).</dd>
 	 * <dt>Geometry.MEANFIELD</dt>
 	 * <dd>interactions with everyone are not feasible (impossible to model
-	 * efficiently),
-	 * in general, for unstructured populations (subclasses can do better, e.g. for
-	 * discrete strategies it is
-	 * possible, see {@link IBSDPopulation#doAdjustScores()}).</dd>
+	 * efficiently), in general, for unstructured populations (subclasses can do
+	 * better, e.g. for discrete strategies it is possible, see
+	 * {@link IBSDPopulation#doAdjustScores()}).</dd>
 	 * <dt>playerScoreReset</dt>
 	 * <dd>if scores are reset whenever an individual adopts the strategy of another
 	 * (regardless of whether an actual strategy change occurred) then the expected
@@ -3412,12 +3426,7 @@ public abstract class IBSPopulation {
 	 * @see ScoringType
 	 * @see IBSDPopulation
 	 */
-	protected boolean doAdjustScores() {
-		return !(interaction.isType(Geometry.Type.MEANFIELD) || //
-				(interaction.isType(Geometry.Type.HIERARCHY) && interaction.subgeometry == Geometry.Type.MEANFIELD) || //
-				!interactionGroup.isSampling(IBSGroup.SamplingType.ALL) || //
-				!playerScoring.equals(ScoringType.RESET_ALWAYS));
-	}
+	protected abstract boolean doAdjustScores();
 
 	/**
 	 * Reset the model. All parameters must be consistent at this point. Allocate
@@ -3472,7 +3481,8 @@ public abstract class IBSPopulation {
 			typeScores = null;
 			typeFitness = null;
 		}
-		if (hasLookupTable && !playerScoring.equals(ScoringType.EPHEMERAL)) {
+		boolean isEphemeral = playerScoring.equals(ScoringType.EPHEMERAL);
+		if (hasLookupTable && !isEphemeral) {
 			// lookup tables don't need scores, fitness or interactions
 			scores = null;
 			fitness = null;
@@ -3491,17 +3501,33 @@ public abstract class IBSPopulation {
 		// determine maximum reasonable group size
 		int maxGroup = Math.max(Math.max(interaction.maxIn, interaction.maxOut),
 				Math.max(reproduction.maxIn, reproduction.maxOut));
-		maxGroup = Math.max(maxGroup, module.getNGroup()) + 1; // add 1 if focal should be part of group
+		int nGroup = module.getNGroup();
+		maxGroup = Math.max(maxGroup, nGroup) + 1; // add 1 if focal should be part of group
 		if (groupScores == null || groupScores.length != maxGroup)
 			groupScores = new double[maxGroup]; // can hold scores for any group size!
 		if (smallScores == null || smallScores.length != maxGroup)
 			smallScores = new double[maxGroup]; // can hold scores for any group size!
 		if (cProbs == null || cProbs.length != maxGroup)
 			cProbs = new double[maxGroup]; // can hold groups of any size!
-		// if( VACANT>=0 && (picking == null || picking.length!=maxGroup))
-		// picking = new int[maxGroup];
-		// else
-		// picking = null;
+
+		// number of interactions can be determined for ephemeral payoffs
+		// store in interactions array
+		if (isEphemeral) {
+			if (interactionGroup.isSampling(SamplingType.ALL)) {
+				if (nGroup > 2) {
+					// single interaction with all members in neighbourhood
+					Arrays.fill(interactions, 1);
+				} else {
+					// pairwise interactions
+					if (interaction.isRegular)
+						Arrays.fill(interactions, (int)(interaction.connectivity + 0.5));
+					else
+						System.arraycopy(interaction.kin, 0, interactions, 0, interactions.length);
+				}
+			} else {
+				Arrays.fill(interactions, Combinatorics.combinations(interactionGroup.nSamples, nGroup - 1));
+			}
+		}
 	}
 
 	/**

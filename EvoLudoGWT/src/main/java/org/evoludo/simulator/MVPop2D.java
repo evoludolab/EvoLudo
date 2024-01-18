@@ -347,11 +347,15 @@ public class MVPop2D extends MVAbstract implements AbstractGraph.NodeGraphContro
 							// mark homogeneous fitness values by pale color
 							Color[] pure = pop.getTraitColors();
 							int nMono = pop.getNTraits();
-							for( int n=0; n<nMono; n++ )
-								cMap1D.setColor(map2fit.map(((Discrete)pop).getMonoScore(n)),
+							for( int n=0; n<nMono; n++ ) {
+								double mono = ((Discrete)pop).getMonoScore(n);
+								if (Double.isNaN(mono))
+									continue;
+								cMap1D.setColor(map2fit.map(mono),
 										new Color(Math.max(pure[n].getRed(), 127),
 												Math.max(pure[n].getGreen(), 127),
 												Math.max(pure[n].getBlue(), 127), 220));
+							}
 							break;
 						}
 						if( pop instanceof Continuous ) {

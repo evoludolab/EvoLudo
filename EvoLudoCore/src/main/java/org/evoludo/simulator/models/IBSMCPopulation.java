@@ -373,6 +373,28 @@ public class IBSMCPopulation extends IBSPopulation {
 	}
 
 	@Override
+	protected boolean doAdjustScores() {
+		switch (playerScoring) {
+			case EPHEMERAL:
+				// for ephemeral scoring, scores are never adjusted
+				return false;
+			case RESET_ALWAYS:
+			default:
+				// if resetting scores after every update, scores can be adjusted
+				// when interacting all neighbours but not in well-mixed populations
+				if (interaction.isType(Geometry.Type.MEANFIELD) || //
+						(interaction.isType(Geometry.Type.HIERARCHY) && //
+								interaction.subgeometry == Geometry.Type.MEANFIELD))
+					return false;
+				return interactionGroup.isSampling(IBSGroup.SamplingType.ALL);
+			case RESET_ON_CHANGE:
+				// if scores are reset only on an actual strategy change, scores
+				// can never be adjusted
+				return false;
+		}
+	}
+
+	@Override
 	public void adjustScoreAt(int index, double before, double after) {
 		scores[index] = after;
 		updateEffScoreRange(index, before, after);

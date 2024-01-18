@@ -1602,7 +1602,7 @@ public class Geometry {
 	public void initGeometryMeanField() {
 		isRewired = false;
 		isUndirected = true;
-		isRegular = false;
+		isRegular = true;
 		// allocate minimal memory - just in case
 		alloc();
 	}

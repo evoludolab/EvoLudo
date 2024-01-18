@@ -662,7 +662,10 @@ public class IBSDPopulation extends IBSPopulation {
 	@Override
 	public double getScoreAt(int idx) {
 		if (hasLookupTable) {
-			return typeScores[strategies[idx] % nTraits];
+			double score = typeScores[strategies[idx] % nTraits];
+			if (playerScoreAveraged)
+				return score;
+			return score * interactions[idx];
 		}
 		return scores[idx];
 	}
@@ -670,7 +673,10 @@ public class IBSDPopulation extends IBSPopulation {
 	@Override
 	public double getFitnessAt(int idx) {
 		if (hasLookupTable) {
-			return typeFitness[strategies[idx] % nTraits];
+			double fit = typeFitness[strategies[idx] % nTraits];
+			if (playerScoreAveraged)
+				return fit;
+			return fit * interactions[idx];
 		}
 		return fitness[idx];
 	}
@@ -1465,10 +1471,9 @@ public class IBSDPopulation extends IBSPopulation {
 	protected void updateMixedMeanScores() {
 		// note that in well-mixed populations the distinction between accumulated and
 		// averaged payoffs is impossible (unless interactions are not with all other
-		// members)
-		// the following is strictly based on averaged payoffs as it is difficult to
-		// determine
-		// the number of interactions in the case of accumulated payoffs
+		// members) the following is strictly based on averaged payoffs as it is
+		// difficult to determine the number of interactions in the case of accumulated
+		// payoffs
 		switch (interaction.getType()) {
 			case HIERARCHY:
 				// XXX needs more attention for inter-species interactions
@@ -1896,10 +1901,20 @@ public class IBSDPopulation extends IBSPopulation {
 
 	@Override
 	protected boolean doAdjustScores() {
-		// relaxed conditions for adjusting scores: for discrete strategies unstructured
-		// populations are feasible.
-		return !(!interactionGroup.isSampling(IBSGroup.SamplingType.ALL) ||
-				!playerScoring.equals(ScoringType.RESET_ALWAYS));
+		switch(playerScoring){
+			case EPHEMERAL:
+				// for ephemeral scoring, scores are never adjusted
+				return false;
+			case RESET_ALWAYS:
+			default:
+				// if resetting scores after every update, scores can be adjusted 
+				// when interacting all neighbours
+				return interactionGroup.isSampling(IBSGroup.SamplingType.ALL);
+			case RESET_ON_CHANGE:
+				// if scores are reset only on an actual strategy change, scores 
+				// can never be adjusted
+				return false;
+		}
 	}
 
 	@Override

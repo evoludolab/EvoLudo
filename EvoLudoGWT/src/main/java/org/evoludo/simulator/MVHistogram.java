@@ -401,10 +401,13 @@ public class MVHistogram extends MVAbstract implements HistoGraph.HistoGraphCont
 						Discrete dmod = (Discrete)pop;
 						style.label = (isMultispecies?pop.getName() + ": " : "") + pop.getTraitName(tag);
 						Color tColor = colors[tag];
-						graph.addMarker(dmod.getMonoScore(tag),
+						style.graphColor = ColorMapCSS.Color2Css(tColor);
+						double mono = dmod.getMonoScore(tag);
+						if (Double.isNaN(mono))
+							continue;
+						graph.addMarker(mono,
 								ColorMapCSS.Color2Css(ColorMap.blendColors(tColor, Color.WHITE, 0.5)),
 								"monomorphic payoff");
-						style.graphColor = ColorMapCSS.Color2Css(tColor);
 						break;
 					}
 					if( pop instanceof Continuous ) {
