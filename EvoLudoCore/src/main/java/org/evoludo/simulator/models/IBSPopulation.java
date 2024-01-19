@@ -2724,11 +2724,9 @@ public abstract class IBSPopulation {
 		}
 
 		norm = (1.0 - nProb) / norm;
-		for (int i = 0; i < rGroupSize; i++)
-			cProbs[i] *= norm;
-
 		for (int i = 0; i < rGroupSize; i++) {
-			if (choice < cProbs[i]) {
+			// normalize cumulative probabilities only if and when needed
+			if (choice < cProbs[i] * norm) {
 				updateFromModelAt(me, refGroup[i]);
 				return true;
 			}
@@ -2827,11 +2825,9 @@ public abstract class IBSPopulation {
 		}
 
 		norm = (1.0 - nProb) / norm;
-		for (int i = 0; i < rGroupSize; i++)
-			cProbs[i] *= norm;
-
 		for (int i = 0; i < rGroupSize; i++) {
-			if (choice < cProbs[i]) {
+			// normalize cumulative probabilities only if and when needed
+			if (choice < cProbs[i] * norm) {
 				updateFromModelAt(me, refGroup[i]);
 				return true;
 			}
