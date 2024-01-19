@@ -354,9 +354,9 @@ public class IBSDPopulation extends IBSPopulation {
 			for (int i = 0; i < nact; i++) {
 				hit -= activeLinks[i].fitness;
 				if (hit <= 0.0) {
-					debugFocal = activeLinks[i].destination;
-					debugTarget = activeLinks[i].source;
-					updatePlayerMoran(debugTarget, debugFocal);
+					debugModel = activeLinks[i].destination;
+					debugFocal = activeLinks[i].source;
+					updatePlayerMoran(debugFocal, debugModel);
 					break;
 				}
 			}
@@ -391,9 +391,9 @@ public class IBSDPopulation extends IBSPopulation {
 		for (int i = 0; i < nact; i++) {
 			hit -= activeLinks[i].fitness;
 			if (hit <= 0.0) {
-				debugFocal = activeLinks[i].destination;
-				debugTarget = activeLinks[i].source;
-				updatePlayerMoran(debugTarget, debugFocal);
+				debugModel = activeLinks[i].destination;
+				debugFocal = activeLinks[i].source;
+				updatePlayerMoran(debugFocal, debugModel);
 				break;
 			}
 		}
@@ -462,9 +462,9 @@ public class IBSDPopulation extends IBSPopulation {
 		for (int i = 0; i < nact; i++) {
 			hit -= activeLinks[i].fitness;
 			if (hit <= 0.0) {
-				debugFocal = activeLinks[i].source;
-				debugTarget = activeLinks[i].destination;
-				updatePlayerMoran(debugFocal, debugTarget);
+				debugModel = activeLinks[i].source;
+				debugFocal = activeLinks[i].destination;
+				updatePlayerMoran(debugModel, debugFocal);
 				break;
 			}
 		}
@@ -483,17 +483,18 @@ public class IBSDPopulation extends IBSPopulation {
 	 */
 	@Override
 	protected double updatePlayerEcologyAt(int me) {
+		debugFocal = me;
 		// NOTE: review real time increments - now that the process is adapted to rates
 		// (instead of probabilities)
 		if (isVacantAt(me)) {
 			// 'me' is vacant
-			debugTarget = pickNeighborSiteAt(me);
-			int nStrat = strategies[debugTarget] % nTraits;
+			debugModel = pickNeighborSiteAt(me);
+			int nStrat = strategies[debugModel] % nTraits;
 			if (nStrat == VACANT)
 				return realtimeIncr;
 			// neighbour is occupied - check if focal remains vacant; compare score against
 			// average population score
-			if (random01() < getFitnessAt(debugTarget) * realtimeIncr) {
+			if (random01() < getFitnessAt(debugModel) * realtimeIncr) {
 				// produce offspring
 				updateStrategyAt(me, nStrat);
 				// check for mutations
@@ -515,7 +516,7 @@ public class IBSDPopulation extends IBSPopulation {
 			return realtimeIncr;
 		}
 		// 'me' is occupied - vacate site with fixed probability
-		debugTarget = -1;
+		debugModel = -1;
 		if (random01() < module.getDeathRate() * realtimeIncr) {
 			// vacate focal site
 			updateStrategyAt(me, VACANT);
@@ -599,8 +600,8 @@ public class IBSDPopulation extends IBSPopulation {
 		super.debugMarkChange(); // for logging of update
 		if (debugFocal >= 0)
 			strategies[debugFocal] = (strategies[debugFocal] % nTraits) + nTraits;
-		if (debugTarget >= 0)
-			strategies[debugTarget] = (strategies[debugTarget] % nTraits) + nTraits;
+		if (debugModel >= 0)
+			strategies[debugModel] = (strategies[debugModel] % nTraits) + nTraits;
 		if (debugNModels > 0) {
 			for (int n = 0; n < debugNModels; n++) {
 				int idx = debugModels[n];
@@ -1705,7 +1706,8 @@ public class IBSDPopulation extends IBSPopulation {
 		int newtype = newstrat % nTraits;
 		int oldtype = strategies[me] % nTraits;
 		strategies[me] = newstrat; // the type may be the same but nevertheless it could have changed
-		if (oldtype == newtype)
+		debugSame = (oldtype == newtype);
+		if (debugSame)
 			return;
 		strategiesTypeCount[oldtype]--;
 		strategiesTypeCount[newtype]++;

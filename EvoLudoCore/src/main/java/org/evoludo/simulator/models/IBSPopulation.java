@@ -1246,6 +1246,7 @@ public abstract class IBSPopulation {
 
 		// mean-field
 		if (reproduction.isType(Geometry.Type.MEANFIELD)) {
+			debugNModels = 0;
 			if (withSelf)
 				return pickFitFocalIndividual();
 			return pickFitFocalIndividual(me);
@@ -1253,27 +1254,27 @@ public abstract class IBSPopulation {
 
 		if (VACANT < 0) {
 			// structured population
-			int[] neighs = reproduction.in[me];
-			int len = reproduction.kin[me];
+			debugModels = reproduction.in[me];
+			debugNModels = reproduction.kin[me];
 			double totFitness = 0.0;
 			double myFit = 0.0;
 			if (withSelf) {
-				if (len == 0)
+				if (debugNModels == 0)
 					return me;
 				myFit = getFitnessAt(me);
 				totFitness = myFit;
 			} else {
-				switch (len) {
+				switch (debugNModels) {
 					case 0:
 						// no upstream neighbour
 						return -1;
 					case 1:
-						return neighs[0];
+						return debugModels[0];
 					default:
 				}
 			}
-			for (int n = 0; n < len; n++)
-				totFitness += getFitnessAt(neighs[n]);
+			for (int n = 0; n < debugNModels; n++)
+				totFitness += getFitnessAt(debugModels[n]);
 
 			// negligible fitness, pick uniformly at random; same as neutral above
 			if (totFitness <= 1e-8)
@@ -1282,10 +1283,10 @@ public abstract class IBSPopulation {
 			double hit = random01() * totFitness - myFit;
 			if (hit < 0.0)
 				return me;
-			for (int n = 0; n < len; n++) {
-				hit -= getFitnessAt(neighs[n]);
+			for (int n = 0; n < debugNModels; n++) {
+				hit -= getFitnessAt(debugModels[n]);
 				if (hit < 0.0)
-					return neighs[n];
+					return debugModels[n];
 			}
 			// should not get here
 			debugScores(hit);
@@ -1294,29 +1295,29 @@ public abstract class IBSPopulation {
 		}
 
 		// vacancies require some extra care
-		int[] neighs = reproduction.in[me];
-		int len = reproduction.kin[me];
+		debugModels = reproduction.in[me];
+		debugNModels = reproduction.kin[me];
 		double totFitness = 0.0;
 		double myFit = 0.0;
 		if (withSelf && !isVacantAt(me)) {
-			if (len == 0)
+			if (debugNModels == 0)
 				return me;
 			myFit = getFitnessAt(me);
 			totFitness = myFit;
 		} else {
-			switch (len) {
+			switch (debugNModels) {
 				case 0:
 					return -1;
 				case 1:
-					int neigh = neighs[0];
+					int neigh = debugModels[0];
 					if (isVacantAt(neigh))
 						return -1;
 					return neigh;
 				default:
 			}
 		}
-		for (int n = 0; n < len; n++) {
-			int neigh = neighs[n];
+		for (int n = 0; n < debugNModels; n++) {
+			int neigh = debugModels[n];
 			if (isVacantAt(neigh))
 				continue;
 			totFitness += getFitnessAt(neigh);
@@ -1329,8 +1330,8 @@ public abstract class IBSPopulation {
 		double hit = random01() * totFitness - myFit;
 		if (hit < 0.0)
 			return me;
-		for (int n = 0; n < len; n++) {
-			int neigh = neighs[n];
+		for (int n = 0; n < debugNModels; n++) {
+			int neigh = debugModels[n];
 			if (isVacantAt(neigh))
 				continue;
 			hit -= getFitnessAt(neigh);
@@ -1354,6 +1355,7 @@ public abstract class IBSPopulation {
 	 */
 	private int pickNeutralNeighbourAt(int me, boolean withSelf) {
 		if (reproduction.isType(Geometry.Type.MEANFIELD)) {
+			debugNModels = 0;
 			if (withSelf)
 				return pickFocalSite();
 			return pickFocalSite(me);
@@ -1387,17 +1389,17 @@ public abstract class IBSPopulation {
 		if (reproduction.isType(Geometry.Type.MEANFIELD))
 			return pickFocalSite(me);
 
-		int[] neighs = reproduction.out[me];
-		int len = reproduction.kout[me];
-		switch (len) {
+		debugModels = reproduction.out[me];
+		debugNModels = reproduction.kout[me];
+		switch (debugNModels) {
 			case 0:
 				// no downstream neighbour? no place to put offspring
 				return -1;
 			case 1:
 				// place offspring in single downstream node
-				return neighs[0];
+				return debugModels[0];
 			default:
-				return neighs[random0n(len)];
+				return debugModels[random0n(debugNModels)];
 		}
 	}
 
@@ -1416,10 +1418,7 @@ public abstract class IBSPopulation {
 	 */
 	public void updateFromModelAt(int me, int you) {
 		tags[me] = tags[you];
-		// <jf
-		// if (verbose)
-		logger.fine("update: node " + me + " adopts strategy at node " + you);
-		// jf>
+		debugModel = you;
 	}
 
 	/**
@@ -2006,9 +2005,9 @@ public abstract class IBSPopulation {
 	 */
 	public void debugUpdatePopulationAt(int focal) {
 		resetStrategies();
-		debugFocal = focal;
 		switch (populationUpdateType) {
 			case SYNC: // synchronous updating - gets here only in debugging mode
+				debugFocal = focal;
 				if (updatePlayerAt(focal))
 					adjustGameScoresAt(focal);
 				break;
@@ -2019,7 +2018,6 @@ public abstract class IBSPopulation {
 				break;
 
 			case MORAN_BIRTHDEATH: // moran process - birth-death
-				debugNModels = 0;
 				updatePlayerMoranBirthDeathAt(focal);
 				break;
 
@@ -2053,10 +2051,15 @@ public abstract class IBSPopulation {
 	protected int debugFocal = -1;
 
 	/**
+	 * Helper flag to indicate an actual trait change during debug step.
+	 */
+	protected boolean debugSame = true;
+
+	/**
 	 * Helper variable to store index of target individual (death) that got
 	 * updated during debug step.
 	 */
-	protected int debugTarget = -1;
+	protected int debugModel = -1;
 
 	/**
 	 * Helper variable to store array of indices of individual that served as models
@@ -2075,22 +2078,38 @@ public abstract class IBSPopulation {
 	 * were involved in the debug step.
 	 */
 	protected void debugMarkChange() {
-		if (logger.isLoggable(Level.FINE)) {
-			String msg = "";
-			if (debugFocal >= 0)
-				msg += "focal: " + debugFocal;
-			if (debugFocal >= 0 && (debugTarget >= 0 || debugNModels >= 0))
-				msg += ", ";
-			if (debugTarget >= 0)
-				msg += "target: " + debugTarget;
-			if (debugNModels > 0) {
-				msg += "model(s): ";
-				for (int n = 0; n < debugNModels - 1; n++)
-					msg += debugModels[n] + ", ";
-				msg += debugModels[debugNModels - 1];
+		// // <jf
+		// logger.fine("update: " + getTraitNameAt(me) + " " + me + " (" + getScoreAt(me) + ") adopts "
+		// + getTraitNameAt(you) + " " + you + " (" + getScoreAt(you) + ")");
+		// // jf>
+		if (logger.isLoggable(Level.FINE) && debugFocal >= 0) {
+			String msg = "focal:" + formatInfoAt(debugFocal, -1) + ", ";
+			switch (debugNModels) {
+				case -1:
+				case 0:
+					if (debugModel >= 0)
+						msg += "target:" + formatInfoAt(debugModel, -1);
+					break;
+				case 1:
+					int idx = debugModels[0];
+					msg += "model:" + formatInfoAt(idx, debugModel);
+					break;
+				default:
+					msg += "models:";
+					for (int n = 0; n < debugNModels - 1; n++) {
+						idx = debugModels[n];
+						msg += formatInfoAt(idx, debugModel) + ",";
+					}
+					msg += formatInfoAt(debugModels[debugNModels - 1], debugModel);
 			}
+			if (!debugSame)
+				msg += " changed";
 			logger.fine(msg);
 		}
+	}
+
+	private String formatInfoAt(int idx, int ref) {
+		return " " + idx + (idx == ref ? "* (" : " (") + getTraitNameAt(idx) + ", " + getScoreAt(idx) + ")";
 	}
 
 	/**
@@ -2147,15 +2166,17 @@ public abstract class IBSPopulation {
 	 * @param parent the index of the parent
 	 */
 	protected void updatePlayerMoranBirthDeathAt(int parent) {
-		if (reproduction.isType(Geometry.Type.MEANFIELD))
-			debugTarget = pickFocalSite();
-		else
-			debugTarget = pickNeighborSiteAt(parent);
-		if (debugTarget < 0)
+		debugFocal = parent;
+		if (reproduction.isType(Geometry.Type.MEANFIELD)) {
+			debugModel = pickFocalSite();
+			debugNModels = 0;
+		} else
+			debugModel = pickNeighborSiteAt(parent);
+		if (debugModel < 0)
 			return; // parent has no outgoing-neighbors (sink)
-		// note: do not return prematurely if <code>debugTarget==parent</code> because
+		// note: do not return prematurely if <code>debugModel==debugFocal</code> because
 		// this would preclude mutations and fail to reset scores.
-		updatePlayerMoran(parent, debugTarget);
+		updatePlayerMoran(debugFocal, debugModel);
 	}
 
 	/**
@@ -2180,10 +2201,11 @@ public abstract class IBSPopulation {
 	 * @param vacant the index of the vacant site
 	 */
 	protected void updatePlayerMoranDeathBirthAt(int vacant) {
-		debugTarget = pickFitNeighborAt(vacant);
-		if (debugTarget < 0)
+		debugFocal = vacant;
+		debugModel = pickFitNeighborAt(vacant);
+		if (debugModel < 0)
 			return; // vacant has no incoming-neighbors (source)
-		updatePlayerMoran(debugTarget, vacant);
+		updatePlayerMoran(debugModel, debugFocal);
 	}
 
 	/**
@@ -2208,10 +2230,11 @@ public abstract class IBSPopulation {
 	 * @param imitator the index of the individual that reassesses its strategy
 	 */
 	protected void updatePlayerMoranImitateAt(int imitator) {
-		debugTarget = pickFitNeighborAt(imitator, true);
-		if (debugTarget < 0)
+		debugFocal = imitator;
+		debugModel = pickFitNeighborAt(imitator, true);
+		if (debugModel < 0)
 			return; // vacant has no incoming-neighbors (source)
-		updatePlayerMoran(debugTarget, imitator);
+		updatePlayerMoran(debugModel, debugFocal);
 	}
 
 	/**
@@ -2304,16 +2327,20 @@ public abstract class IBSPopulation {
 	 * @see #resetScoreAt(int)
 	 */
 	public boolean updatePlayerAt(int me) {
+		debugFocal = me;
 		// note: choose random neighbor among in-neighbors (those are upstream to serve
 		// as models; this is the opposite for birth-death scenarios)
 		referenceGroup.pickAt(me, reproduction, false);
+		debugNModels = referenceGroup.nSampled;
+		debugModels = referenceGroup.group;
+		debugModel = -1;
 		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
 			// calculate scores of all individual involved in updating
 			playGameAt(me);
-			for (int i = 0; i < referenceGroup.nSampled; i++)
-				playGameAt(referenceGroup.group[i]);
+			for (int i = 0; i < debugNModels; i++)
+				playGameAt(debugModels[i]);
 		}
-		return updatePlayerAt(me, referenceGroup.group, referenceGroup.nSampled);
+		return updatePlayerAt(me, debugModels, debugNModels);
 	}
 
 	/**
@@ -2330,12 +2357,9 @@ public abstract class IBSPopulation {
 	 * @see #resetScoreAt(int)
 	 */
 	private boolean updatePlayerAt(int me, int[] refGroup, int rGroupSize) {
-		debugTarget = -1;
-		debugNModels = rGroupSize;
 		if (rGroupSize <= 0)
 			return false;
 
-		debugModels = refGroup;
 		boolean switched;
 		switch (playerUpdateType) {
 			case BEST_RESPONSE: // best-response update

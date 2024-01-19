@@ -1018,7 +1018,7 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoStep")
 	public void onStepClick(ClickEvent event) {
-		prevNext();
+		prevNextDebug();
 	}
 
 	/**
@@ -1042,15 +1042,24 @@ public class EvoLudoWeb extends Composite
 	@UiHandler("evoludoStep")
 	public void onStepTouchEnd(TouchEndEvent event) {
 		showAltTouchTimer.cancel();
-		prevNext();
+		prevNextDebug();
 		showAltKeys(false);
 	}
 
-	void prevNext() {
-		if (evoludoStep.getText().equals("Step"))
-			engine.next();
-		else
-			engine.prev();
+	private void prevNextDebug() {
+		String label = evoludoStep.getText();
+		switch (label) {
+			case "Step":
+				engine.next();
+				return;
+			case "Prev":
+				engine.prev();
+				return;
+			case "Debug":
+				engine.debug();
+				return;
+			default:
+		}
 	}
 
 	/**
@@ -1624,6 +1633,10 @@ public class EvoLudoWeb extends Composite
 				// backtrack single step (if model allows it)
 				engine.prev();
 				break;
+			case "D":
+				// perform single, verbose debug step
+				engine.debug();
+				break;
 			case "+":
 			case "=":
 				// increase speed
@@ -1655,6 +1668,8 @@ public class EvoLudoWeb extends Composite
 			evoludoInitReset.setText("Reset");
 			if (engine.getModel().permitsTimeReversal())
 				evoludoStep.setText("Previous");
+			if (engine.getModel().permitsDebugStep())
+				evoludoStep.setText("Debug");
 			return;
 		}
 		evoludoInitReset.setText("Init");

@@ -1041,7 +1041,7 @@ public abstract class EvoLudo
 	public abstract void run();
 
 	/**
-	 * Advances the EvoLudo model by a single step. Called when pressing the 'Next'
+	 * Advances the EvoLudo model by a single step. Called when pressing the 'Step'
 	 * button, the 'n' or 'right-arrow' key.
 	 */
 	public abstract void next();
@@ -1063,6 +1063,20 @@ public abstract class EvoLudo
 		doPrev = true;
 		// next may return immediately - must reverse time again in modelNextDone()!
 		next();
+	}
+
+	/**
+	 * Advances the EvoLudo model by a single debugging step. Called when pressing
+	 * the 'Debug' button or 'D' key.
+	 */
+	public void debug() {
+		if (!activeModel.permitsDebugStep())
+			return;
+		// temporarily change to finer logging level for debugging 
+		Level logLevel = logger.getLevel();
+		logger.setLevel(Level.ALL);
+		activeModel.debugStep();
+		logger.setLevel(logLevel);
 	}
 
 	@Override

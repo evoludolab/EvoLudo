@@ -380,19 +380,18 @@ public class IBSGroup {
 							group = src;
 							return group;
 						}
-						// if (len <= defaultsize) {
-						// 	group = src;
-						// 	size = len;
-						// 	return group;
-						// }
 						group = mem;
-						// size = defaultsize;
 						nSampled = nSamples;
 						if (nSamples == 1) {
 							// optimization: single reference is commonly used and saves copying of all
 							// neighbors.
 							group[0] = src[rng.random0n(len)];
 							return group;
+						}
+						// make sure memory is sufficient for picking
+						if (group.length < len) {
+							mem = new int[len];
+							group = mem;
 						}
 						System.arraycopy(src, 0, group, 0, len);
 						if (nSamples > len / 2) {

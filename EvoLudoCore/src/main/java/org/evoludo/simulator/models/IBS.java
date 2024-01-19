@@ -555,6 +555,11 @@ public abstract class IBS implements Model.IBS {
 	}
 
 	/**
+	 * Pointer to focal species for debugging.
+	 */
+	IBSPopulation debugFocalSpecies;
+
+	/**
 	 * Advances the IBS model by a step of size {@code stepDt}. The actual time
 	 * increment may be shorter, e.g. upon reaching an absorbing state or
 	 * homogeneous state, if requested.
@@ -659,8 +664,8 @@ public abstract class IBS implements Model.IBS {
 				double rincr = (wScoreTot < 0.0 ? 0.0 : 1.0 / (wScoreTot * wScoreTot));
 				// advance time
 				generation += gincr;
-				IBSPopulation focal = pickFocalSpecies();
-				realtime += rincr / focal.step();
+				debugFocalSpecies = pickFocalSpecies();
+				realtime += rincr / debugFocalSpecies.step();
 				realtime = wScoreTot < 0.0 ? Double.POSITIVE_INFINITY : realtime;
 				wPopTot = wScoreTot = 0.0;
 				hasConverged = true;
@@ -705,6 +710,18 @@ public abstract class IBS implements Model.IBS {
 		if (hasConverged)
 			return -stepDone;
 		return stepDt;
+	}
+
+	@Override
+	public boolean permitsDebugStep() {
+		return true;
+	}
+
+	@Override
+	public void debugStep() {
+		ibsStep(0.0);
+		debugFocalSpecies.debugMarkChange();
+		engine.fireModelChanged();
 	}
 
 	@Override

@@ -1284,6 +1284,22 @@ public abstract interface Model extends CLOProvider {
 	}
 
 	/**
+	 * Checks if debugging single steps is supported. By default returns <code>false</code>.
+	 * Only few models support debugging of single update steps.
+	 *
+	 * @return <code>true</code> if stepwise debuggin is permissible.
+	 */
+	public default boolean permitsDebugStep() {
+		return false;
+	}
+
+	/**
+	 * Perform single debug step in models that allow it.
+	 */
+	public default void debugStep() {
+	}
+
+	/**
 	 * Check if current model implements mode <code>test</code>; by default only
 	 * {@link Mode#DYNAMICS} is permitted.
 	 *
