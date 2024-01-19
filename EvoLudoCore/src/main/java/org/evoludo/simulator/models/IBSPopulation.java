@@ -3130,8 +3130,7 @@ public abstract class IBSPopulation {
 					" - using random sampling of interaction partners!");
 		}
 
-		// check reproduction geometry (reproduction may still be undefined at this
-		// point)
+		// check reproduction geometry (may still be undefined at this point)
 		Geometry reprogeom = (reproduction != null ? reproduction : interaction);
 		if (!populationUpdateType.isMoran() && !populationUpdateType.equals(PopulationUpdateType.ECOLOGY)) {
 			// Moran type updates ignore playerUpdateType
@@ -3150,6 +3149,8 @@ public abstract class IBSPopulation {
 				referenceGroup.setSampling(IBSGroup.SamplingType.NONE);
 			}
 		}
+		// in the original Moran process offspring can replace the parent
+		referenceGroup.setSelf(populationUpdateType.isMoran() && reprogeom.isType(Geometry.Type.MEANFIELD));
 
 		// currently: if pop has interaction structure different from MEANFIELD its
 		// opponent population needs to be of the same size

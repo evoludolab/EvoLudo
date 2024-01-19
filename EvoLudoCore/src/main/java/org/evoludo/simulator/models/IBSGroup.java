@@ -85,6 +85,7 @@ public class IBSGroup {
 	 */
 	public IBSGroup(RNGDistribution rng) {
 		this.rng = rng;
+		self = false;
 	}
 
 	/**
@@ -162,6 +163,35 @@ public class IBSGroup {
 	 */
 	public int getNSampled() {
 		return nSampled;
+	}
+
+	/**
+	 * The flag indicating whether to include the focal individual when sampling.
+	 * 
+	 * <h3>Notes</h3>
+	 * In the original Moran process the offspring can replace the parent. Hence,
+	 * for reference groups in well-mixed populations it makes sense to include 
+	 * the focal individual. In contrast, self-interactions may simplify some
+	 * analytical considerations but in IBS never make sense.
+	 */
+	boolean self;
+
+	/**
+	 * Sets whether random sampling should include the focal individual or not.
+	 * 
+	 * @param self {@code true} if sampling includes focal
+	 */
+	public void setSelf(boolean self) {
+		this.self = self;
+	}
+
+	/**
+	 * Gets whether random sampling includes the focal individual or not.
+	 * 
+	 * @return {@code true} if sampling includes focal
+	 */
+	public boolean getSelf() {
+		return self;
 	}
 
 	/**
@@ -386,23 +416,45 @@ public class IBSGroup {
 	}
 
 	/**
-	 * Pick group of {@code size} random individual with index <code>0</code>
-	 * through <code>max-1</code> including focal individual.
+	 * Pick group of {@code nSamples} random individual with indices
+	 * {@code 0 - (size-1)}. The focal individual is included if {@code self==true}.
 	 * 
-	 * @param max the maximum index to pick
+	 * @param size the maximum index to pick
 	 */
-	private void pickRandom(int max) {
+	private void pickRandom(int size) {
 		group = mem;
-		nSampled = nSamples;
+		nSampled = Math.min(nSamples, size);
 
-		if (nSamples == 1) {
-			group[0] = rng.random0n(max);
+		if (nSampled == 1) {
+			if (self) {
+				group[0] = rng.random0n(size);
+				return;
+			}
+			int aPick = rng.random0n(size - 1);
+			if (aPick >= focal)
+				aPick++;
+			group[0] = rng.random0n(size);
 			return;
 		}
 
 		int n = 0;
-		nextpick: while (n < nSamples) {
-			int aPick = rng.random0n(max);
+		if (self) {
+			nextpick: while (n < nSampled) {
+				int aPick = rng.random0n(size);
+				// sample without replacement
+				for (int i = 0; i < n; i++)
+					if (group[i] == aPick)
+						continue nextpick;
+				group[n++] = aPick;
+			}
+			return;
+		}
+		// exclude focal
+		int max1 = size - 1;
+		nextpick: while (n < nSampled) {
+			int aPick = rng.random0n(max1);
+			if (!self && aPick >= focal)
+				aPick++;
 			// sample without replacement
 			for (int i = 0; i < n; i++)
 				if (group[i] == aPick)
