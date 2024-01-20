@@ -1194,17 +1194,19 @@ public class IBSDPopulation extends IBSPopulation {
 			for (int n = 0; n < nIn; n++)
 				traitCount[opponent.strategies[in[n]] % nTraits]++;
 		}
-		int nInter = (VACANT < 0 ? nIn + nOut : nIn + nOut - traitCount[VACANT]);
+		int nInter = nIn + nOut - (VACANT < 0 ? 0 : traitCount[VACANT]);
 		// my type has changed otherwise we wouldn't get here
 		// old/newScore are the total accumulated scores
 		double oldScore = u2 * pairmodule.pairScores(oldType, traitCount, traitTempScore);
 		double newScore = u2 * pairmodule.pairScores(newType, traitCount, traitScore);
 		if (newType == VACANT) {
-			// oldScore == scores[me] should hold
-			// XXX resetScoreAt assumes pre-committed strategy
-			// resetScoreAt(me);
-			accuTypeScores[oldType] -= scores[me];
-			super.resetScoreAt(me);
+			double myScore = scores[me];
+			accuTypeScores[oldType] -= myScore;
+			scores[me] = 0.0;
+			interactions[me] = 0;
+			updateEffScoreRange(me, myScore, 0.0);
+			sumFitness -= fitness[me];
+			fitness[me] = 0.0;
 			// neighbors lost one interaction partner - adjust (outgoing) opponent's score
 			for (int n = 0; n < nOut; n++) {
 				int you = out[n];
@@ -1260,11 +1262,11 @@ public class IBSDPopulation extends IBSPopulation {
 					newScore = traitScore[type];
 					oldScore = traitTempScore[type];
 					if (playerScoreAveraged) {
-						double iInter = u2 / ((double) interactions[you]);
+						double iInter = 1.0 / interactions[you];
 						newScore *= iInter;
 						oldScore *= iInter;
 					}
-					opponent.adjustScoreAt(you, newScore - oldScore);
+					opponent.adjustScoreAt(you, u2 * (newScore - oldScore));
 				}
 				// same as !interaction.isUndirected because in != null implies directed graph
 				// (see above)
@@ -1278,10 +1280,11 @@ public class IBSDPopulation extends IBSPopulation {
 						newScore = traitScore[type];
 						oldScore = traitTempScore[type];
 						if (playerScoreAveraged) {
-							double iInter = u2 / ((double) interactions[you]);
+							double iInter = 1.0 / interactions[you];
 							newScore *= iInter;
 							oldScore *= iInter;
 						}
+						// u2 = 1 for directed structures
 						opponent.adjustScoreAt(you, newScore - oldScore);
 					}
 				}

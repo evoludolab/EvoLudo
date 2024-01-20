@@ -1719,7 +1719,7 @@ public abstract class IBSPopulation {
 	/**
 	 * Reset score of individual at index <code>index</code>.
 	 * <p>
-	 * <strong>Important:</strong> Strategies not committed at this point.
+	 * <strong>Important:</strong> Strategies must not yet have been committed.
 	 * 
 	 * <h3>Discussions/extensions:</h3>
 	 * Revise the entire strategy updating procedure: it's inefficient to first
@@ -2683,52 +2683,31 @@ public abstract class IBSPopulation {
 					norm += aProb;
 				}
 			}
-		} else {
+		} else { // some noise
 			double inoise = 1.0 / noise;
 			double shift = 0.0;
 			if (!betterOnly) {
 				inoise *= 0.5;
 				shift = 0.5;
 			}
-			if (playerScoreAveraged) {
-				double scale = inoise / (maxFitness - minFitness);
+			if (playerScoreAveraged || adjustScores || playerScoring.equals(ScoringType.EPHEMERAL)) {
+				inoise /= (maxFitness - minFitness);
 				// generalize update to competition among arbitrary numbers of players
 				aProb = Math.min(1.0 - error,
-						Math.max(error, (getFitnessAt(refGroup[0]) - myFitness) * scale + shift));
+						Math.max(error, (getFitnessAt(refGroup[0]) - myFitness) * inoise + shift));
 				norm = aProb;
 				nProb = 1.0 - aProb;
 				if (rGroupSize > 1) {
 					cProbs[0] = aProb;
 					for (int i = 1; i < rGroupSize; i++) {
 						aProb = Math.min(1.0 - error,
-								Math.max(error, (getFitnessAt(refGroup[i]) - myFitness) * scale + shift));
+								Math.max(error, (getFitnessAt(refGroup[i]) - myFitness) * inoise + shift));
 						cProbs[i] = cProbs[i - 1] + aProb;
 						nProb *= 1.0 - aProb;
 						norm += aProb;
 					}
 				}
 			} else {
-				if (adjustScores) {
-					inoise /= (maxFitness - minFitness);
-					// generalize update to competition among arbitrary numbers of players
-					int you = refGroup[0];
-					aProb = Math.min(1.0 - error,
-							Math.max(error, (getFitnessAt(you) - myFitness) * inoise + shift));
-					norm = aProb;
-					nProb = 1.0 - aProb;
-					if (rGroupSize > 1) {
-						cProbs[0] = aProb;
-						for (int i = 1; i < rGroupSize; i++) {
-							you = refGroup[i];
-							aProb = Math.min(1.0 - error,
-									Math.max(error, (getFitnessAt(you) - myFitness) * inoise + shift));
-							cProbs[i] = cProbs[i - 1] + aProb;
-							nProb *= 1.0 - aProb;
-							norm += aProb;
-						}
-					}
-
-				}
 				// not ready for unbounded accumulated payoffs... check() should catch this
 				throw new Error(
 						"cannot handle accumulated scores with random interactions (unbounded payoffs, in principle)");
@@ -2793,12 +2772,11 @@ public abstract class IBSPopulation {
 		}
 
 		double myFitness = getFitnessAt(me);
-		double norm, nProb;
+		double aProb, nProb, norm;
 		double noise = module.getPlayerUpdateNoise();
 		double error = module.getPlayerUpdateError();
 		// generalize update to competition among arbitrary numbers of players
 		if (noise <= 0.0) { // zero noise
-			double aProb;
 			double aDiff = getFitnessAt(refGroup[0]) - myFitness;
 			if (aDiff > 0.0)
 				aProb = 1.0 - error;
@@ -2821,7 +2799,10 @@ public abstract class IBSPopulation {
 			}
 		} else { // some noise
 			double inoise = 1.0 / noise;
-			double aProb = Math.min(1.0 - error, Math.max(error,
+			// the increased accuracy of {@code Math.expm1(x)} for {@code x} near {@code 0} is not so
+			// important but hopefully this also means the accuracy is more symmetrical for {@code x} 
+			// and {@code 1/x}
+			aProb = Math.min(1.0 - error, Math.max(error,
 					1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[0]) - myFitness) * inoise))));
 			norm = aProb;
 			nProb = 1.0 - aProb;
@@ -2838,6 +2819,7 @@ public abstract class IBSPopulation {
 		}
 		if (norm <= 0.0)
 			return false;
+
 		double choice = random01();
 		if (choice >= 1.0 - nProb)
 			return false;
@@ -3295,50 +3277,6 @@ public abstract class IBSPopulation {
 					- (interaction.isInterspecies() ? 0 : 1);
 		}
 
-		// min and max scores potentially unbounded for accumulated scores with random
-		// interactions (no adjustable)
-		updateMinMaxScores();
-
-		// check for specific population update types
-		if (populationUpdateType.isMoran()) {
-			// avoid negative fitness for Moran type updates
-			if (minFitness < 0.0) {
-				logger.warning("Moran updates require fitness>=0 (score range [" + Formatter.format(minScore, 6)
-						+ ", " + Formatter.format(maxScore, 6) + "]; " + "fitness range ["
-						+ Formatter.format(minFitness, 6) + ", " + Formatter.format(maxFitness, 6) + "]).\n"
-						+ "Changed baseline fitness to " + map2fit.getBaseline()
-						+ (!map2fit.isMap(Map2Fitness.Maps.STATIC) ? " with static payoff-to-fitness map" : ""));
-				// just change to something meaningful
-				map2fit.setMap(Map2Fitness.Maps.STATIC);
-				map2fit.setBaseline(-minFitness);
-				updateMinMaxScores();
-				if (minFitness < 0.0) {
-					throw new Error("Adjustment of selection failed... (minimal fitness: "
-							+ Formatter.format(minScore, 6) + " should be positive)");
-				}
-			}
-			// use referenceGroup for picking random neighbour in Moran process
-			// (birth-death)
-			// reason: referenceGroup properly deals with hierarchies
-			// future: pick parent to populate vacated site (death-birth, fitness dependent)
-			referenceGroup.setSampling(IBSGroup.SamplingType.RANDOM);
-			referenceGroup.setNSamples(1);
-		}
-		// avoid numerical overflow for strong selection (mainly applies to exponential
-		// payoff-to-fitness mapping)
-		if (maxFitness * nPopulation > Double.MAX_VALUE) {
-			double mScore = map2fit.invmap(Double.MAX_VALUE / nPopulation) * 0.99; // only go to 99% of maximum, just in
-																					// case
-			map2fit.setSelection(Functions.round(mScore / maxScore * map2fit.getSelection()));
-			// note: the maximum selection strength may be significantly higher if
-			// populations,
-			// on average, are unable to achieve the highest individual payoffs
-			logger.warning("selection strength too strong (numerical overflow) - reduced to (conservative) maximum of "
-					+ Formatter.format(map2fit.getSelection(), 4));
-			updateMinMaxScores();
-		}
-		realtimeIncr = 1.0 / Math.max(maxFitness, module.getDeathRate());
-
 		// check for scenarios that are untested or work in progress
 		if (!interaction.isUndirected && !module.isStatic())
 			logger.warning("interactions on directed graphs have received very limited testing...");
@@ -3464,24 +3402,51 @@ public abstract class IBSPopulation {
 		interaction.rewire();
 		interaction.evaluate();
 
-		// for accumulated scores the final minimum and maximum scores may be known only
-		// now because it depends on min/max connectivity of nodes
-		double mScore = module.getMinScore();
-		if (Math.abs(minScore - mScore) > 1e-8) {
-			// minimum score has changed... now what?
-			logger.info("minimum score has changed to " + Formatter.format(mScore, 6) + ", was "
-					+ Formatter.format(minScore, 6));
-			minScore = mScore;
-			minFitness = map2fit.map(minScore);
+		// for accumulated payoffs the min and max scores can only be determined 
+		// after the structure of the population is known. note scores are potentially
+		// unbounded for accumulated scores with random interactions (not adjustable)
+		updateMinMaxScores();
+
+		// check for specific population update types
+		if (populationUpdateType.isMoran()) {
+			// avoid negative fitness for Moran type updates
+			if (minFitness < 0.0) {
+				logger.warning("Moran updates require fitness>=0 (score range [" + Formatter.format(minScore, 6)
+						+ ", " + Formatter.format(maxScore, 6) + "]; " + "fitness range ["
+						+ Formatter.format(minFitness, 6) + ", " + Formatter.format(maxFitness, 6) + "]).\n"
+						+ "Changed baseline fitness to " + map2fit.getBaseline()
+						+ (!map2fit.isMap(Map2Fitness.Maps.STATIC) ? " with static payoff-to-fitness map" : ""));
+				// just change to something meaningful
+				map2fit.setMap(Map2Fitness.Maps.STATIC);
+				map2fit.setBaseline(-minFitness);
+				updateMinMaxScores();
+				if (minFitness < 0.0) {
+					throw new Error("Adjustment of selection failed... (minimal fitness: "
+							+ Formatter.format(minScore, 6) + " should be positive)");
+				}
+			}
+			// use referenceGroup for picking random neighbour in Moran process
+			// (birth-death)
+			// reason: referenceGroup properly deals with hierarchies
+			// future: pick parent to populate vacated site (death-birth, fitness dependent)
+			referenceGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+			referenceGroup.setNSamples(1);
 		}
-		mScore = module.getMaxScore();
-		if (Math.abs(maxScore - mScore) > 1e-8) {
-			// maximum score has changed... now what?
-			logger.info("maximum score has changed to " + Formatter.format(mScore, 6) + ", was "
-					+ Formatter.format(maxScore, 6));
-			maxScore = mScore;
-			maxFitness = map2fit.map(maxScore);
+		// avoid numerical overflow for strong selection (mainly applies to exponential
+		// payoff-to-fitness mapping)
+		if (maxFitness * nPopulation > Double.MAX_VALUE) {
+			double mScore = map2fit.invmap(Double.MAX_VALUE / nPopulation) * 0.99; // only go to 99% of maximum, just in
+																					// case
+			map2fit.setSelection(Functions.round(mScore / maxScore * map2fit.getSelection()));
+			// note: the maximum selection strength may be significantly higher if
+			// populations,
+			// on average, are unable to achieve the highest individual payoffs
+			logger.warning("selection strength too strong (numerical overflow) - reduced to (conservative) maximum of "
+					+ Formatter.format(map2fit.getSelection(), 4));
+			updateMinMaxScores();
 		}
+		realtimeIncr = 1.0 / Math.max(maxFitness, module.getDeathRate());
+
 		isNeutral = module.isNeutral();
 		if (interaction.interReproSame) {
 			reproduction = interaction.deriveReproductionGeometry();
