@@ -4221,8 +4221,8 @@ public class Geometry {
 	 *
 	 * <h3>Requirements/notes:</h3>
 	 * <ol>
-	 * <li>For {@link Type#MEANFIELD} geometries all quantities are set to zero..
-	 * <li>Dynamic graphs cannot be evaluated as all quantities are ephemeral.
+	 * <li>For {@link Type#MEANFIELD} geometries all quantities are set to zero.
+	 * <li>Dynamic graphs are always evaluated because all quantities are ephemeral.
 	 * </ol>
 	 */
 	public void evaluate() {
