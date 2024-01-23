@@ -1757,7 +1757,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 						pop.setActiveTraits(null);
 					if (!cloTraitDisable.isSet())
 						return true;
-				boolean success = true;
+					boolean success = true;
 					String[] disabledtraits = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
 					for (Module pop : species) {
@@ -2140,12 +2140,17 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		boolean anyVacant = false;
 		boolean anyNonVacant = false;
 		boolean anyContinuous = false;
+		int minTraits = Integer.MAX_VALUE;
+		int maxTraits = -Integer.MAX_VALUE;
 		for (Module pop : species) {
 			boolean hasVacant = (pop.getVacant() >= 0);
 			anyVacant |= hasVacant;
 			anyNonVacant |= !hasVacant;
 			boolean cont = pop.isContinuous();
 			anyContinuous |= cont;
+			int nt = pop.getNTraits();
+			minTraits = Math.min(minTraits, nt);
+			maxTraits = Math.min(maxTraits, nt);
 		}
 		if (anyNonVacant) {
 			// additional options that only make sense without vacant sites
@@ -2160,6 +2165,10 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		if (anyContinuous) {
 			cloPlayerUpdate.removeKey(PlayerUpdateType.BEST_RESPONSE);
 		}
+		// add option to disable traits if >=3 traits, except >=2 traits for  
+		// continuous modules with no vacancies (cannot disable vacancies)
+		if (minTraits > 2 || (anyContinuous && anyNonVacant && minTraits > 1))
+			parser.addCLO(cloTraitDisable);
 
 		// population size option only acceptable for IBS and SDE models
 		if (model.isModelType(Model.Type.IBS) || model.isModelType(Model.Type.SDE)) {
