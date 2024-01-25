@@ -177,11 +177,6 @@ public class ODEEuler implements Model.ODE {
 	protected EvoLudo engine;
 
 	/**
-	 * The module associated with this model.
-	 */
-	protected Module module;
-
-	/**
 	 * List with all species in model including this one. List should be shared with
 	 * other populations (to simplify bookkeeping) but the species list CANNOT be
 	 * static! Otherwise it is impossible to run multiple instances of modules/models
@@ -477,16 +472,14 @@ public class ODEEuler implements Model.ODE {
 	 * @param engine the pacemeaker for running the model
 	 * @param module the module to numerically integrate
 	 */
-	public ODEEuler(EvoLudo engine, Module module) {
+	public ODEEuler(EvoLudo engine) {
 		this.engine = engine;
-		this.module = module;
 	}
 
 	@Override
 	public void load() {
-		species = module.getSpecies();
+		species = engine.getModule().getSpecies();
 		int nSpecies = species.size();
-		module = (nSpecies == 1 ? species.get(0) : null);
 		initType = new InitType[nSpecies];
 		mus = new double[nSpecies];
 	}
@@ -1041,90 +1034,36 @@ public class ODEEuler implements Model.ODE {
 	protected double[] getDerivatives(double time, double[] state, double[] fit, double[] change,
 			Module mod, int idx) {
 		int nGroup = mod.getNGroup();
-		int skip = idxSpecies[idx];
-		avgScores(mod, state, fit, nGroup, skip);
-
 		int nTraits = mod.getNTraits();
-		int end = skip + nTraits;
-		int vacant = mod.getVacant();
-		if (vacant >= 0) {
-			// XXX what happens if one strategy is deactivated!?
-			double z = state[vacant];
-			double dz = 0.0;
-			double drate = mod.getDeathRate();
-			for (int n = skip; n < end; n++) {
-				if (n == vacant) {
-					fit[n] = 0.0;
-					continue;
-				}
-				double dyn = state[n] * (z * fit[n] - drate);
-				change[n] = dyn;
-				dz -= dyn;
-			}
-			change[vacant] = dz;
+		int skip = idxSpecies[idx];
+		if (mod.isStatic()) {
+			System.arraycopy(staticfit, skip, fit, skip, nTraits);
+		} else {
+			((HasODE) mod).avgScores(state, nGroup, fit, skip);
+			Map2Fitness map2fit = mod.getMapToFitness();
+			for (int n = skip; n < skip + nTraits; n++)
+				fit[n] = map2fit.map(fit[n]);
+		}
+
+		if (mod.getVacant() >= 0) {
+			updateEcology(mod, state, fit, nGroup, idx, change);
 			return change;
 		}
 
 		double err = 0.0;
-		double noise, inoise;
 		PlayerUpdateType put = mod.getPlayerUpdateType();
 		switch (put) {
 			case THERMAL: // fermi update
-				// factor 2 enters - see e.g. Sigmund et al. Dyn Games & Appl. 2011
-				// no scaling seems required for comparisons with simulations
-				noise = mod.getPlayerUpdateNoise();
-				if (noise <= 0.0) {
-					// no noise
-					for (int n = skip; n < end; n++) {
-						double dyn = 0.0, ftn = fit[n];
-						for (int i = skip; i < end; i++) {
-							if (i == n)
-								continue;
-							dyn += state[i] * Math.signum(ftn - fit[i]);
-						}
-						dyn *= state[n];
-						change[n] = dyn;
-						err += dyn;
-					}
-					break;
-				}
-				// some noise
-				inoise = 0.5 / noise;
-				for (int n = skip; n < end; n++) {
-					double dyn = 0.0, ftn = fit[n];
-					for (int i = skip; i < end; i++) {
-						if (i == n)
-							continue;
-						dyn += state[i] * Functions.tanh((ftn - fit[i]) * inoise);
-					}
-					dyn *= state[n];
-					change[n] = dyn;
-					err += dyn;
-				}
+				err = updateThermal(mod, state, fit, nGroup, idx, change);
 				break;
 
 			case BEST_RESPONSE: // best-response update
-				bestResponse(mod, state, fit, nGroup, skip, change);
-				for (int n = skip; n < end; n++) {
-					double dyn = change[n] - state[n];
-					change[n] = dyn;
-					err += dyn;
-				}
+				err = updateBestResponse(mod, state, fit, nGroup, idx, change);
 				break;
 
 			case BEST: // imitate the better
-			case BEST_RANDOM:
-				for (int n = skip; n < end; n++) {
-					double dyn = 0.0, ftn = fit[n];
-					for (int i = skip; i < end; i++) {
-						if (i == n || Math.abs(ftn - fit[i]) < 1e-8)
-							continue;
-						dyn += (ftn > fit[i] ? state[i] : -state[i]);
-					}
-					dyn *= state[n];
-					change[n] = dyn;
-					err += dyn;
-				}
+			case BEST_RANDOM: // same as BEST in continuum limit
+				err = updateBest(mod, state, fit, nGroup, idx, change);
 				break;
 
 			// XXX 100531 implement! - defaults to replicator
@@ -1134,26 +1073,9 @@ public class ODEEuler implements Model.ODE {
 				// - all rates are scaled by the maximum fitness difference among all species
 				// to preserve their relative time scales.
 			case IMITATE_BETTER: // replicator update
-			case IMITATE:
-				// if noise becomes very small, this should recover PLAYER_UPDATE_BEST
-				inoise = invFitRange[idx];
-				noise = mod.getPlayerUpdateNoise();
-				if (noise > 0.0)
-					inoise /= noise;
-				for (int n = skip; n < end; n++) {
-					double dyn = 0.0, ftn = fit[n];
-					for (int i = skip; i < end; i++) {
-						// lowering the threshold to 1e-8 results in one failing test (CDL-18-PDE.plist)
-						if (i == n || Math.abs(ftn - fit[i]) < 1e-6)
-							continue;
-						// note: cannot use mean payoff as the transition probabilities must lie in
-						// [0,1] - otherwise the timescale gets messed up.
-						dyn += state[i] * Math.min(1.0, Math.max(-1.0, (ftn - fit[i]) * inoise));
-					}
-					dyn *= state[n];
-					change[n] = dyn;
-					err += dyn;
-				}
+			case IMITATE: // same as IMITATE_BETTER in continuum limit
+			//TODO check if factor 2 involved
+				err = updateImitate(mod, state, fit, nGroup, idx, change);
 				break;
 
 			default:
@@ -1161,9 +1083,8 @@ public class ODEEuler implements Model.ODE {
 		}
 
 		// restrict to active strategies
-		err /= mod.getNActive();
 		// note float resolution is 1.1920929E-7
-		if (Math.abs(err) > 1e-7) {
+		if (Math.abs(err) > 1e-7 * mod.getNActive()) {
 			boolean[] active = mod.getActiveTraits();
 			for (int n = 0; n < nTraits; n++)
 				if (active[n])
@@ -1173,25 +1094,125 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	/**
-	 * ugly helper method to retrieve fitnesses...
-	 *
-	 * @param mod     the pointer to the current module
-	 * @param state   the array of frequencies/densities denoting the state
-	 *                population
-	 * @param fit     the array of fitness values of types in population
-	 * @param nGroup  the size of interaction group
-	 * @param skip    the index of first entry for this population in arrays above
+	 * Determine the derivatives for {@code state} with {@code fitness} based on interactions with a group size {@code nGroup} for species with {@code index} and corresponding {@code module}
+	 * @param mod
+	 * @param state
+	 * @param fit
+	 * @param nGroup
+	 * @param idx
+	 * @param change
+	 * @return
 	 */
-	private void avgScores(Module mod, double[] state, double[] fit, int nGroup, int skip) {
-		int nTraits = mod.getNTraits();
-		if (mod.isStatic()) {
-			System.arraycopy(staticfit, skip, fit, skip, nTraits);
-			return;
+	protected double updateEcology(Module mod, double[] state, double[] fit, int nGroup, int idx, double[] change) {
+		// XXX what happens if one strategy is deactivated!?
+		int vacant = mod.getVacant();
+		double err = 0.0;
+		int skip = idxSpecies[idx];
+		int end = skip + mod.getNTraits();
+		double z = state[vacant];
+		double dz = 0.0;
+		double drate = mod.getDeathRate();
+		for (int n = skip; n < end; n++) {
+			if (n == vacant) {
+				fit[n] = 0.0;
+				continue;
+			}
+			double dyn = state[n] * (z * fit[n] - drate);
+			change[n] = dyn;
+			dz -= dyn;
+			err += dyn;
 		}
-		((HasODE) mod).avgScores(state, nGroup, fit, skip);
-		Map2Fitness map2fit = mod.getMapToFitness();
-		for (int n = skip; n < skip + nTraits; n++)
-			fit[n] = map2fit.map(fit[n]);
+		change[vacant] = dz;
+		err += dz;
+		return err;
+	}
+
+	protected double updateThermal(Module mod, double[] state, double[] fit, int nGroup, int idx, double[] change) {
+		// factor 2 enters - see e.g. Sigmund et al. Dyn Games & Appl. 2011
+		// no scaling seems required for comparisons with simulations
+		double noise = mod.getPlayerUpdateNoise();
+		if (noise <= 0.0) 
+			return zeroNoiseUpdate(mod, state, fit, nGroup, idx, change);
+		// some noise
+		double inoise = 0.5 / noise;
+		double err = 0.0;
+		int skip = idxSpecies[idx];
+		int end = skip + mod.getNTraits();
+		for (int n = skip; n < end; n++) {
+			double dyn = 0.0, ftn = fit[n];
+			for (int i = skip; i < end; i++) {
+				if (i == n)
+					continue;
+				dyn += state[i] * Functions.tanh((ftn - fit[i]) * inoise);
+			}
+			dyn *= state[n];
+			change[n] = dyn;
+			err += dyn;
+		}
+		return err;
+	}
+
+	protected double zeroNoiseUpdate(Module mod, double[] state, double[] fit, int nGroup, int idx, double[] change) {
+		// no noise
+		int skip = idxSpecies[idx];
+		int end = skip + mod.getNTraits();
+		double err = 0.0;
+		for (int n = skip; n < end; n++) {
+			double dyn = 0.0, ftn = fit[n];
+			for (int i = skip; i < end; i++) {
+				if (i == n)
+					continue;
+				dyn += state[i] * Math.signum(ftn - fit[i]);
+			}
+			dyn *= state[n];
+			change[n] = dyn;
+			err += dyn;
+		}
+		return err;
+	}
+
+	protected double updateBest(Module mod, double[] state, double[] fit, int nGroup, int idx, double[] change) {
+		int skip = idxSpecies[idx];
+		int end = skip + mod.getNTraits();
+		double err = 0.0;
+		for (int n = skip; n < end; n++) {
+			double dyn = 0.0, ftn = fit[n];
+			for (int i = skip; i < end; i++) {
+				if (i == n || Math.abs(ftn - fit[i]) < 1e-8)
+					continue;
+				dyn += (ftn > fit[i] ? state[i] : -state[i]);
+			}
+			dyn *= state[n];
+			change[n] = dyn;
+			err += dyn;
+		}
+		return err;
+	}
+
+	protected double updateImitate(Module mod, double[] state, double[] fit, int nGroup, int idx, double[] change) {
+		// if noise becomes very small, this should recover PLAYER_UPDATE_BEST
+		double inoise = invFitRange[idx];
+		double noise = mod.getPlayerUpdateNoise();
+		if (noise > 0.0)
+			inoise /= noise;
+		int skip = idxSpecies[idx];
+		int end = skip + mod.getNTraits();
+		double err = 0.0;
+		for (int n = skip; n < end; n++) {
+			double dyn = 0.0, ftn = fit[n];
+			for (int i = skip; i < end; i++) {
+				// lowering the threshold to 1e-8 results in one failing test (CDL-18-PDE.plist)
+				if (i == n || Math.abs(ftn - fit[i]) < 1e-6)
+					continue;
+				// note: cannot use mean payoff as the transition probabilities must lie in
+				// [0,1] - otherwise the timescale gets messed up.
+				dyn += state[i] * Math.min(1.0, Math.max(-1.0, (ftn - fit[i]) * inoise));
+			}
+			dyn *= state[n];
+			change[n] = dyn;
+			err += dyn;
+		}
+		return err;
 	}
 
 	/**
@@ -1204,17 +1225,19 @@ public class ODEEuler implements Model.ODE {
 	 * calculations and results)
 	 *
 	 * @param mod      the reference to the current module
-	 * @param freqs    the frequency/density of each trait/strategy
+	 * @param state    the frequency/density of each trait/strategy
 	 * @param fit      the array for storing the average payoffs/scores for each
 	 *                 strategic type
 	 * @param nGroup   the size of interaction group
-	 * @param skip     the entries to skip in arrays <code>freqs</code> and
+	 * @param skip     the entries to skip in arrays <code>state</code> and
 	 *                 <code>fit</code>
 	 * @param response the best-response(s)
+	 * @return the total error (sum of differences; should be zero)
 	 */
-	protected void bestResponse(Module mod, double[] freqs, double[] fit, int nGroup, int skip,
+	protected double updateBestResponse(Module mod, double[] state, double[] fit, int nGroup, int idx,
 			double[] response) {
 		int nTraits = mod.getNTraits();
+		int skip = idxSpecies[idx];
 		int end = skip + nTraits;
 		double min = Double.MAX_VALUE;
 		double max = -Double.MAX_VALUE;
@@ -1251,14 +1274,21 @@ public class ODEEuler implements Model.ODE {
 		// - the second condition already triggers early on whenever approaching
 		// points where another strategy becomes the best response.
 		if (diff < 1e-3 && diff * dtTry < accuracy) {
-			System.arraycopy(freqs, skip, response, skip, nTraits);
-			return;
+			System.arraycopy(state, skip, response, skip, nTraits);
+		} else {
+			if (nMax > 1) {
+				double norm = 1.0 / nMax;
+				for (int i = skip; i < end; i++)
+					response[i] *= norm;
+			}
 		}
-		if (nMax > 1) {
-			double norm = 1.0 / nMax;
-			for (int i = skip; i < end; i++)
-				response[i] *= norm;
+		double err = 0.0;
+		for (int n = skip; n < end; n++) {
+			double dyn = response[n] - state[n];
+			response[n] = dyn;
+			err += dyn;
 		}
+		return err;
 	}
 
 	@Override

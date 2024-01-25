@@ -95,14 +95,13 @@ public class PDERDA extends PDERD {
 	 * scheduling.
 	 *
 	 * @param engine     the pacemeaker for running the model
-	 * @param module     the module to numerically integrate
 	 *
 	 * @see EvoLudo#getRNG()
 	 * @see org.evoludo.simulator.PDESupervisorGWT PDESupervisorGWT
 	 * @see org.evoludo.simulator.PDESupervisorJRE PDESupervisorJRE
 	 */
-	public PDERDA(EvoLudo engine, Module module) {
-		super(engine, module);
+	public PDERDA(EvoLudo engine) {
+		super(engine);
 	}
 
 // DEBUG - uncomment to disable reactions.

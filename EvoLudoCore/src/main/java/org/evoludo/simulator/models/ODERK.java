@@ -83,8 +83,8 @@ public class ODERK extends ODEEuler {
 	 * @param engine the pacemeaker for running the model
 	 * @param module the module to numerically integrate
 	 */
-	public ODERK(EvoLudo engine, Module module) {
-		super(engine, module);
+	public ODERK(EvoLudo engine) {
+		super(engine);
 	}
 
 	@Override

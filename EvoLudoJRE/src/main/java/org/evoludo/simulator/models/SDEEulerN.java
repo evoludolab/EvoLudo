@@ -120,12 +120,12 @@ public class SDEEulerN extends SDEEuler {
 	 * @see SDEEuler
 	 * @see EvoLudo#getRNG()
 	 */
-	public SDEEulerN(EvoLudo engine, Module module) {
-		super(engine, module);
+	public SDEEulerN(EvoLudo engine) {
+		super(engine);
 	}
 
 	@Override
-	public void unload() {
+	public synchronized void unload() {
 		destroy();
 		super.unload();
 	}

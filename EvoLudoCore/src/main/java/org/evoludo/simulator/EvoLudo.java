@@ -288,7 +288,7 @@ public abstract class EvoLudo
 			if (model != null)
 				return model;
 		}
-		return new ODERK(this, module);
+		return new ODERK(this);
 	}
 
 	/**
@@ -306,7 +306,7 @@ public abstract class EvoLudo
 			if (model != null)
 				return model;
 		}
-		return new SDEEuler(this, module);
+		return new SDEEuler(this);
 	}
 
 	/**
@@ -324,7 +324,7 @@ public abstract class EvoLudo
 			if (model != null)
 				return model;
 		}
-		return new PDERD(this, module);
+		return new PDERD(this);
 	}
 
 	/**

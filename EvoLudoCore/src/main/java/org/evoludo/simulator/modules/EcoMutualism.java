@@ -891,7 +891,7 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 		double alpha, beta, gamma, delta;
 
 		protected ODE(EvoLudo engine) {
-			super(engine, engine.getModule());
+			super(engine);
 		}
 
 		/**

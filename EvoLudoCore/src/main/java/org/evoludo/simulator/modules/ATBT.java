@@ -751,7 +751,7 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 
 	@Override
 	public Model.ODE createODE() {
-		return new ATBT.ODE(engine, this);
+		return new ATBT.ODE(engine);
 	}
 
 	/**
@@ -833,14 +833,21 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 	public class ODE extends ODERK {
 
 		/**
+		 * Convenience variable: module associated with this model (useful for single
+		 * species).
+		 */
+		protected Module module;
+
+		/**
 		 * Constructs a new ODE solver taylored for the integration of asymmetric
 		 * {@code 2×2} games with environmental feedback.
 		 * 
 		 * @param engine the pacemeaker for running the model
 		 * @param module the module to numerically integrate
 		 */
-		protected ODE(EvoLudo engine, Module module) {
-			super(engine, module);
+		protected ODE(EvoLudo engine) {
+			super(engine);
+			module = engine.getModule();
 		}
 
 		/**

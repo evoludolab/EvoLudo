@@ -66,6 +66,12 @@ public class SDEEuler extends ODEEuler implements Model.SDE {
 	}
 
 	/**
+	 * Convenience variable: module associated with this model (useful as long as
+	 * SDE models are restricted to single species).
+	 */
+	protected Module module;
+
+	/**
 	 * The shared random number generator to ensure reproducibility of results.
 	 * 
 	 * @see EvoLudo#getRNG()
@@ -83,19 +89,25 @@ public class SDEEuler extends ODEEuler implements Model.SDE {
 	 * generator should be used.
 	 * 
 	 * @param engine the pacemeaker for running the model
-	 * @param module the module to numerically integrate
 	 * 
 	 * @see EvoLudo#getRNG()
 	 */
-	public SDEEuler(EvoLudo engine, Module module) {
-		super(engine, module);
+	public SDEEuler(EvoLudo engine) {
+		super(engine);
+	}
+
+	@Override
+	public void load() {
+		super.load();
+		module = engine.getModule();
 		rng = engine.getRNG();
-		// the only potentially absorbing states for SDE's are homogeneous
-		// states of the population in the absence of mutations (this
-		// includes possible extinction, which remains absorbing even in
-		// the presence of mutations).
-		converged = false;
-		connect = true;
+	}
+
+	@Override
+	public synchronized void unload() {
+		super.unload();
+		rng = null;
+		module = null;
 	}
 
 	@Override
@@ -131,6 +143,17 @@ public class SDEEuler extends ODEEuler implements Model.SDE {
 			isAdjustedDynamics = false;
 		}
 		return doReset;
+	}
+
+	@Override
+	public void reset() {
+		super.reset();
+		// the only potentially absorbing states for SDE's are homogeneous
+		// states of the population in the absence of mutations (this
+		// includes possible extinction, which remains absorbing even in
+		// the presence of mutations).
+		converged = false;
+		connect = true;
 	}
 
 	/**

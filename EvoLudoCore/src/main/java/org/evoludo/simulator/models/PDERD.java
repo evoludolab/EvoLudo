@@ -99,6 +99,12 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	}
 
 	/**
+	 * Convenience variable: module associated with this model (useful as long as
+	 * PDE models are restricted to single species).
+	 */
+	protected Module module;
+
+	/**
 	 * The supervisor for the integration of the reaction-diffusion process. This
 	 * abstraction is required due to incompatibilities between JRE and GWT
 	 * implementations. In particular, JRE allows for parallel execution of certain
@@ -318,14 +324,13 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	 * scheduling.
 	 * 
 	 * @param engine the pacemeaker for running the model
-	 * @param module the module to numerically integrate
 	 * 
 	 * @see EvoLudo#getRNG()
 	 * @see org.evoludo.simulator.PDESupervisorGWT PDESupervisorGWT
 	 * @see org.evoludo.simulator.PDESupervisorJRE PDESupervisorJRE
 	 */
-	public PDERD(EvoLudo engine, Module module) {
-		super(engine, module);
+	public PDERD(EvoLudo engine) {
+		super(engine);
 	}
 
 	/**
@@ -343,6 +348,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		super.load();
 		if (supervisor == null)
 			supervisor = engine.hirePDESupervisor(this);
+		module = engine.getModule();
 		space = module.createGeometry();
 		rng = engine.getRNG();
 		sorting = new Comparator<double[]>() {
@@ -371,6 +377,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		fitness = null;
 		rng = null;
 		sorting = null;
+		module = null;
 	}
 
 	@Override

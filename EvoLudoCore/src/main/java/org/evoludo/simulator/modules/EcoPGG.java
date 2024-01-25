@@ -181,7 +181,7 @@ public class EcoPGG extends Discrete implements Groups,
 
 	@Override
 	public Model.PDE createPDE() {
-		return new PDERDA(engine, this);
+		return new PDERDA(engine);
 	}
 
 	/**

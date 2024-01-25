@@ -246,7 +246,7 @@ public class CG extends ATBT implements Module.Static {
 
 	@Override
 	public Model.ODE createODE() {
-		return new CG.ODE(engine, this);
+		return new CG.ODE(engine);
 	}
 
 	// // ANALYTICAL CALCULATIONS OF FIXATION PROBABILITIES AND TIMES
@@ -441,8 +441,8 @@ public class CG extends ATBT implements Module.Static {
 		 * @param engine the pacemeaker for running the model
 		 * @param module the module to numerically integrate
 		 */
-		public ODE(EvoLudo engine, Module module) {
-			super(engine, module);
+		public ODE(EvoLudo engine) {
+			super(engine);
 		}
 
 		/**
