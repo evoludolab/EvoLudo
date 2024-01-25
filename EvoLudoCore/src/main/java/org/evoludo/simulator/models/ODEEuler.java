@@ -308,12 +308,6 @@ public class ODEEuler implements Model.ODE {
 	double[] yout;
 
 	/**
-	 * Storage for intermediate results. This array has the same size as e.g.
-	 * {@link #yt}.
-	 */
-	double[] tmp;
-
-	/**
 	 * Pointer to temporarily store a reference to the current state
 	 * <code>yt</code>. This affects only multi-species modules because fitness
 	 * calculations for the derivatives may need access to the state of the other
@@ -499,7 +493,7 @@ public class ODEEuler implements Model.ODE {
 
 	@Override
 	public void unload() {
-		yt = ft = dyt = yout = tmp = null;
+		yt = ft = dyt = yout = null;
 		mus = null;
 		staticfit = null;
 		names = null;
@@ -574,7 +568,6 @@ public class ODEEuler implements Model.ODE {
 			ft = new double[nDim];
 			dyt = new double[nDim];
 			yout = new double[nDim];
-			tmp = new double[nDim];
 			names = new String[nDim];
 		}
 
@@ -891,7 +884,7 @@ public class ODEEuler implements Model.ODE {
 		yt = yout;
 		yout = swap;
 		// determine fitness of new state
-		getDerivatives(t, yt, ft, dyt, tmp);
+		getDerivatives(t, yt, ft, dyt);
 		t += step;
 		dtTaken = Math.abs(step);
 		return ArrayMath.distSq(yout, yt);
@@ -937,15 +930,13 @@ public class ODEEuler implements Model.ODE {
 	 * @param fit     the array of fitness values of types in population
 	 * @param change  the array to return the rate of change of each type in the
 	 *                population
-	 * @param scratch the array to store intermediate calculations (for PDEs this
-	 *                must be thread safe)
 	 * @return the array with the changes
 	 */
-	protected double[] getDerivatives(double time, double[] state, double[] fit, double[] change, double[] scratch) {
+	protected double[] getDerivatives(double time, double[] state, double[] fit, double[] change) {
 		dstate = state;
 		int idx = 0;
 		for (Module pop : species)
-			getDerivatives(time, state, fit, change, scratch, pop, idx++);
+			getDerivatives(time, state, fit, change, pop, idx++);
 		dstate = null;
 		idx = 0;
 		int from = 0;
@@ -1037,8 +1028,6 @@ public class ODEEuler implements Model.ODE {
 	 * @param fit     array of fitness values of types in population
 	 * @param change  array to return the rate of change of each type in the
 	 *                population
-	 * @param scratch array to store intermediate calculations (for PDEs this must
-	 *                be thread safe)
 	 * @param mod     pointer to the current module
 	 * @param idx     the index of the module <code>mod</code> in multi-species
 	 *                modules
@@ -1049,11 +1038,11 @@ public class ODEEuler implements Model.ODE {
 	 *      the social contract: the emergence of sanctioning systems for collective
 	 *      action, Dyn. Games &amp; Appl. 1, 149-171</a>
 	 */
-	protected double[] getDerivatives(double time, double[] state, double[] fit, double[] change, double[] scratch,
+	protected double[] getDerivatives(double time, double[] state, double[] fit, double[] change,
 			Module mod, int idx) {
 		int nGroup = mod.getNGroup();
 		int skip = idxSpecies[idx];
-		avgScores(mod, state, fit, nGroup, scratch, skip);
+		avgScores(mod, state, fit, nGroup, skip);
 
 		int nTraits = mod.getNTraits();
 		int end = skip + nTraits;
@@ -1115,7 +1104,7 @@ public class ODEEuler implements Model.ODE {
 				break;
 
 			case BEST_RESPONSE: // best-response update
-				bestResponse(mod, state, fit, nGroup, scratch, skip, change);
+				bestResponse(mod, state, fit, nGroup, skip, change);
 				for (int n = skip; n < end; n++) {
 					double dyn = change[n] - state[n];
 					change[n] = dyn;
@@ -1191,20 +1180,18 @@ public class ODEEuler implements Model.ODE {
 	 *                population
 	 * @param fit     the array of fitness values of types in population
 	 * @param nGroup  the size of interaction group
-	 * @param scratch the array to store intermediate calculations (for PDEs this
-	 *                must be thread safe)
 	 * @param skip    the index of first entry for this population in arrays above
 	 */
-	private void avgScores(Module mod, double[] state, double[] fit, int nGroup, double[] scratch, int skip) {
+	private void avgScores(Module mod, double[] state, double[] fit, int nGroup, int skip) {
 		int nTraits = mod.getNTraits();
 		if (mod.isStatic()) {
 			System.arraycopy(staticfit, skip, fit, skip, nTraits);
 			return;
 		}
-		((HasODE) mod).avgScores(state, nGroup, scratch, skip);
+		((HasODE) mod).avgScores(state, nGroup, fit, skip);
 		Map2Fitness map2fit = mod.getMapToFitness();
 		for (int n = skip; n < skip + nTraits; n++)
-			fit[n] = map2fit.map(scratch[n]);
+			fit[n] = map2fit.map(fit[n]);
 	}
 
 	/**
@@ -1221,13 +1208,11 @@ public class ODEEuler implements Model.ODE {
 	 * @param fit      the array for storing the average payoffs/scores for each
 	 *                 strategic type
 	 * @param nGroup   the size of interaction group
-	 * @param scratch  the array for storing intermediate results (for thread
-	 *                 safety)
 	 * @param skip     the entries to skip in arrays <code>freqs</code> and
 	 *                 <code>fit</code>
 	 * @param response the best-response(s)
 	 */
-	protected void bestResponse(Module mod, double[] freqs, double[] fit, int nGroup, double[] scratch, int skip,
+	protected void bestResponse(Module mod, double[] freqs, double[] fit, int nGroup, int skip,
 			double[] response) {
 		int nTraits = mod.getNTraits();
 		int end = skip + nTraits;
@@ -1278,7 +1263,7 @@ public class ODEEuler implements Model.ODE {
 
 	@Override
 	public void update() {
-		getDerivatives(t, yt, ft, dyt, tmp);
+		getDerivatives(t, yt, ft, dyt);
 	}
 
 	@Override

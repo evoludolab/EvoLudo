@@ -478,7 +478,6 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		Arrays.fill(maxFit, -Double.MAX_VALUE);
 		double[] meanFit = new double[nDim];
 		double[] dy = new double[nDim];
-		double[] scores = new double[nDim];
 		double change = 0.0;
 
 		if (dependent < 0) {
@@ -486,7 +485,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 				double[] ds = density[n];
 				double[] s = next[n]; // s is only a short-cut - data written to s is stored in next[]
 				double[] f = fitness[n];
-				getDerivatives(t, ds, f, dy, scores);
+				getDerivatives(t, ds, f, dy);
 				for (int i = 0; i < nDim; i++) {
 					double dyidt = dy[i] * dt;
 					s[i] = ds[i] + dyidt;
@@ -508,7 +507,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 			double[] ds = density[n];
 			double[] s = next[n]; // s is only a short-cut - data written to s is stored in next[]
 			double[] f = fitness[n];
-			getDerivatives(t, ds, f, dy, scores);
+			getDerivatives(t, ds, f, dy);
 			for (int i = 0; i < nDim; i++) {
 				double dyidt = dy[i] * dt;
 				s[i] = ds[i] + dyidt;

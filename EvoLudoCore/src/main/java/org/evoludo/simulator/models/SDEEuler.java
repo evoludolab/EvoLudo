@@ -333,7 +333,7 @@ public class SDEEuler extends ODEEuler implements Model.SDE {
 		yt = yout;
 		yout = swap;
 		// determine fitness of new state
-		getDerivatives(t, yt, ft, dyt, tmp);
+		getDerivatives(t, yt, ft, dyt);
 		t += step;
 		dtTaken = Math.abs(step);
 		return ArrayMath.distSq(yout, yt);

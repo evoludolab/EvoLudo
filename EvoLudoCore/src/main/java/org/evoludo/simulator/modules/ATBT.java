@@ -854,7 +854,7 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 		}
 
 		@Override
-		protected double[] getDerivatives(double time, double[] state, double[] fit, double[] change, double[] scratch,
+		protected double[] getDerivatives(double time, double[] state, double[] fit, double[] change,
 				Module mod, int skip) {
 			// Note: skip == 0 and mod == module always hold because of single species
 			double err = 0.0;
@@ -864,14 +864,14 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 			// case IMITATE_BETTER: // replicator update
 			// case IMITATE:
 			// if noise becomes very small, this should recover PLAYER_UPDATE_BEST
-			avgScores(state, 2, scratch);
+			avgScores(state, 2, fit);
 			double xr = state[ATBT.COOPERATE_RICH];
 			double xp = state[ATBT.COOPERATE_POOR];
 			double yr = state[ATBT.DEFECT_RICH];
 			double yp = state[ATBT.DEFECT_POOR];
 			Map2Fitness map2fit = module.getMapToFitness();
 			for (int n = 0; n < nTraits; n++)
-				fit[n] = map2fit.map(scratch[n]);
+				fit[n] = map2fit.map(fit[n]);
 			double fC = xr * fit[ATBT.COOPERATE_RICH] + xp * fit[ATBT.COOPERATE_POOR];
 			double fD = yr * fit[ATBT.DEFECT_RICH] + yp * fit[ATBT.DEFECT_POOR];
 			double dyn;

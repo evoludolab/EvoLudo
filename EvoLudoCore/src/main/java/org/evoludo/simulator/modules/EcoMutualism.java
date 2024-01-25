@@ -925,8 +925,7 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 		}
 
 		@Override
-		protected double[] getDerivatives(double time, double[] state, double[] fit, double[] change,
-				double[] scratch) {
+		protected double[] getDerivatives(double time, double[] state, double[] fit, double[] change) {
 			double hu = state[EcoMutualism.HOST_NONE];
 			double hc = state[EcoMutualism.HOST_COOPERATE];
 			double hd = state[EcoMutualism.HOST_DEFECT];

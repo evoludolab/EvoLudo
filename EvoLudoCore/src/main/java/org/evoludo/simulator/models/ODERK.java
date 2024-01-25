@@ -261,7 +261,7 @@ public class ODERK extends ODEEuler {
 		yt = yout;
 		yout = swap;
 		// determine fitness of new state
-		getDerivatives(t, yt, ft, dyt, tmp);
+		getDerivatives(t, yt, ft, dyt);
 		return ArrayMath.distSq(yout, yt);
 	}
 
@@ -319,7 +319,7 @@ public class ODERK extends ODEEuler {
 		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(t + a2 * h, ytmp, ftmp, ak2, tmp);	// second step.
+		getDerivatives(t + a2 * h, ytmp, ftmp, ak2);	// second step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) {
@@ -331,7 +331,7 @@ public class ODERK extends ODEEuler {
 		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(t + a3 * h, ytmp, ftmp, ak3, tmp);	// third step.
+		getDerivatives(t + a3 * h, ytmp, ftmp, ak3);	// third step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) {
@@ -343,7 +343,7 @@ public class ODERK extends ODEEuler {
 		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(t + a4 * h, ytmp, ftmp, ak4, tmp);	// fourth step.
+		getDerivatives(t + a4 * h, ytmp, ftmp, ak4);	// fourth step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) {
@@ -355,7 +355,7 @@ public class ODERK extends ODEEuler {
 		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(t + a5 * h, ytmp, ftmp, ak5, tmp);	// fifth step.
+		getDerivatives(t + a5 * h, ytmp, ftmp, ak5);	// fifth step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) {
@@ -367,7 +367,7 @@ public class ODERK extends ODEEuler {
 		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(t + a6 * h, ytmp, ftmp, ak6, tmp);	// sixth step.
+		getDerivatives(t + a6 * h, ytmp, ftmp, ak6);	// sixth step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) { // accumulate increments with proper weights.
