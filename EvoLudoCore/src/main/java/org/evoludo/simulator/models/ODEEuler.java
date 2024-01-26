@@ -977,8 +977,10 @@ public class ODEEuler implements Model.ODE {
 					// - all rates are scaled by the maximum fitness difference among all species
 					// to preserve their relative time scales.
 				case IMITATE_BETTER: // replicator update
+					err = updateImitateBetter(mod, state, fitness, nGroup, index, change);
+					break;
+
 				case IMITATE: // same as IMITATE_BETTER in continuum limit
-					// TODO check if factor 2 involved
 					err = updateImitate(mod, state, fitness, nGroup, index, change);
 					break;
 
@@ -1195,28 +1197,49 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	/**
-	 * Implementation of the player update {@link PlayerUpdateType#IMITATE} and
-	 * {@link PlayerUpdateType#IMITATE_BETTER}. This calculates the rates of change
-	 * for each type in species <code>mod</code> for the popular choice for
-	 * 'pairwise comparisons' where the focal player \(i\) and one of its neighbours
-	 * \(j\) are randomly chosen. For {@code PlayerUpdateType#IMITATE}, the focal
-	 * player \(i\) adopts the strategy of \(j\) with a probability proportional to
-	 * the payoff difference \(f_j - f_i\):
+	 * Implementation of the player update {@link PlayerUpdateType#IMITATE}. This
+	 * calculates the rates of change for each type in species <code>mod</code> for
+	 * the popular choice for 'pairwise comparisons' where the focal player \(i\)
+	 * and one of its neighbours \(j\) are randomly chosen. The focal player \(i\)
+	 * adopts the strategy of \(j\) with a probability proportional to the payoff
+	 * difference \(f_j - f_i\):
 	 * \[p_{i\to j}=1/2|left(1 + (f_j-f_i)/(f_j+f_i)\right),\]
 	 * where \(f_i,f_j\) denote the fitness of players \(i\) and \(j\),
 	 * respectively. The resulting dynamics for the frequencies of the different
-	 * strategic types is then given by the standard replicator equation
-	 * \[
+	 * strategic types is then given by the standard replicator equation \[
 	 * \begin{align}
 	 * \dot x_i =&amp; x_i (f_i-\bar f)
 	 * \end{align}
 	 * \]
 	 * where \(\bar f\) denotes the the average population payoff.
-	 * <p>
-	 * Similarly, for the {@code PlayerUpdateType#IMITATE_BETTER} update, the focal
-	 * player \(i\) adopts the
-	 * strategy of a <em>better performing</em> player \(j\) with a probability
-	 * proportional to the payoff difference \(f_j - f_i\):
+	 * 
+	 * @param mod     the module representing the current species
+	 * @param state   array of frequencies/densities denoting the state population
+	 * @param fitness array of fitness values of types in population
+	 * @param nGroup  the interaction group size
+	 * @param index   the index of the module <code>mod</code> in multi-species
+	 *                modules
+	 * @param change  array to return the rate of change of each type in the
+	 *                population
+	 * @return the total change (should be zero in theory)
+	 * 
+	 * @see <a href="http://dx.doi.org/10.1007/s13235-010-0001-4">Sigmund, K.,
+	 *      Hauert, C., Traulsen, A. &amp; De Silva, H. (2011) Social control and
+	 *      the social contract: the emergence of sanctioning systems for collective
+	 *      action, Dyn. Games &amp; Appl. 1, 149-171</a>
+	 */
+	protected double updateImitate(Module mod, double[] state, double[] fitness, int nGroup, int index,
+			double[] change) {
+		return updateReplicate(mod, state, fitness, nGroup, index, change, mod.getPlayerUpdateNoise());
+	}
+
+	/**
+	 * Implementation of the player update {@link PlayerUpdateType#IMITATE_BETTER}.
+	 * This calculates the rates of change for each type in species <code>mod</code>
+	 * for the popular choice for 'pairwise comparisons' where the focal player
+	 * \(i\) and one of its neighbours \(j\) are randomly chosen. The focal player
+	 * \(i\) adopts the strategy of a <em>better performing</em> player \(j\) with a
+	 * probability proportional to the payoff difference \(f_j - f_i\):
 	 * \[
 	 * \begin{align}
 	 * \dot x_i =&amp; \sum_{j=1}^n x_i x_j (f_i-f_j)_+ =
@@ -1244,10 +1267,35 @@ public class ODEEuler implements Model.ODE {
 	 *      the social contract: the emergence of sanctioning systems for collective
 	 *      action, Dyn. Games &amp; Appl. 1, 149-171</a>
 	 */
-	protected double updateImitate(Module mod, double[] state, double[] fitness, int nGroup, int index,
+	protected double updateImitateBetter(Module mod, double[] state, double[] fitness, int nGroup, int index,
 			double[] change) {
+		return updateReplicate(mod, state, fitness, nGroup, index, change, 0.5 * mod.getPlayerUpdateNoise());
+	}
+
+	/**
+	 * Helper method to calculate the rate of change for the standard replicator
+	 * dynamics with different amounts of noise arising from the microscopic update
+	 * rule. In the microscopic implementation of the replicator dynamics the noise
+	 * arises from focal individuals \(i\) that adopt the strategy of a neighbour
+	 * \(j\) with a probability proportional to the payoff difference \(f_j-f_i\),
+	 * where \(f_i, f_j\) refer to the respective payoffs of \(i\) and \(j\).
+	 * However, the noise is cut in half if the focal imitates only better
+	 * performing neighbours, i.e. proportional to \((f_j-f_i)_+\).
+	 * 
+	 * @param mod     the module representing the current species
+	 * @param state   array of frequencies/densities denoting the state population
+	 * @param fitness array of fitness values of types in population
+	 * @param nGroup  the interaction group size
+	 * @param index   the index of the module <code>mod</code> in multi-species
+	 *                modules
+	 * @param change  array to return the rate of change of each type in the
+	 *                population
+	 * @param noise   the noise arising from probabilistical updates
+	 * @return the total change (should be zero in theory)
+	 */
+	private double updateReplicate(Module mod, double[] state, double[] fitness, int nGroup, int index,
+			double[] change, double noise) {
 		// if noise becomes very small, this should recover PLAYER_UPDATE_BEST
-		double noise = mod.getPlayerUpdateNoise();
 		if (noise <= 0.0)
 			return updateBest(mod, state, fitness, nGroup, index, change);
 		double inoise = invFitRange[index] / noise;
@@ -1257,8 +1305,7 @@ public class ODEEuler implements Model.ODE {
 		for (int n = skip; n < end; n++) {
 			double dyn = 0.0, ftn = fitness[n];
 			for (int i = skip; i < end; i++) {
-				// lowering the threshold to 1e-8 results in one failing test (CDL-18-PDE.plist)
-				if (i == n || Math.abs(ftn - fitness[i]) < 1e-6)
+				if (i == n)
 					continue;
 				// note: cannot use mean payoff as the transition probabilities must lie in
 				// [0,1] - otherwise the timescale gets messed up.
