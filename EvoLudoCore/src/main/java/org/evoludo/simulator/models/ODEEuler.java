@@ -960,9 +960,6 @@ public class ODEEuler implements Model.ODE {
 					err = updateThermal(mod, state, fitness, nGroup, index, change);
 					break;
 
-				// XXX 100531 implement! - defaults to replicator
-				case PROPORTIONAL: // proportional update
-
 				case IMITATE: // same as IMITATE_BETTER in continuum limit
 					err = updateImitate(mod, state, fitness, nGroup, index, change);
 					break;
@@ -978,6 +975,10 @@ public class ODEEuler implements Model.ODE {
 
 				case BEST_RESPONSE: // best-response update
 					err = updateBestResponse(mod, state, fitness, nGroup, index, change);
+					break;
+
+				case PROPORTIONAL: // proportional update
+					err = updateProportional(mod, state, fitness, nGroup, index, change);
 					break;
 
 				default:
@@ -1194,7 +1195,7 @@ public class ODEEuler implements Model.ODE {
 	 * and one of its neighbours \(j\) are randomly chosen. The focal player \(i\)
 	 * adopts the strategy of \(j\) with a probability proportional to the payoff
 	 * difference \(f_j - f_i\):
-	 * \[p_{i\to j}=1/2|left(1 + (f_j-f_i)/(f_j+f_i)\right),\]
+	 * \[p_{i\to j}=1/2 \left(1 + (f_j-f_i)/(f_j+f_i)\right),\]
 	 * where \(f_i,f_j\) denote the fitness of players \(i\) and \(j\),
 	 * respectively. The resulting dynamics for the frequencies of the different
 	 * strategic types is then given by the standard replicator equation \[
@@ -1300,6 +1301,51 @@ public class ODEEuler implements Model.ODE {
 				// note: cannot use mean payoff as the transition probabilities must lie in
 				// [0,1] - otherwise the timescale gets messed up.
 				dyn += state[i] * Math.min(1.0, Math.max(-1.0, (ftn - fitness[i]) * inoise));
+			}
+			dyn *= state[n];
+			change[n] = dyn;
+			err += dyn;
+		}
+		return err;
+	}
+
+	/**
+	 * Implementation of the player update {@link PlayerUpdateType#PROPORTIONAL}.
+	 * This calculates the rates of change for each type in species <code>mod</code>
+	 * for a 'pairwise comparison' where the focal player
+	 * \(i\) and one of its neighbours \(j\) are randomly chosen. The focal player
+	 * \(i\) adopts the strategy of a player \(j\) with probability:
+	 * \[p_{i\to j}=f_j/(f_i+f_j),\]
+	 * where \(f_i, f_j\) refer to the respective payoffs of \(i\) and \(j\). In the continuum limit this yields
+	 * \[
+	 * \begin{align}
+	 * \dot x_i =&amp; x_i \sum_{j=1}^n x_j \frac{f_i-f_j}{f_i+f_j}.
+	 * \end{align}
+	 * \]
+	 * 
+	 * @param mod     the module representing the current species
+	 * @param state   array of frequencies/densities denoting the state population
+	 * @param fitness array of fitness values of types in population
+	 * @param nGroup  the interaction group size
+	 * @param index   the index of the module <code>mod</code> in multi-species
+	 *                modules
+	 * @param change  array to return the rate of change of each type in the
+	 *                population
+	 * @return the total change (should be zero in theory)
+	 */
+	protected double updateProportional(Module mod, double[] state, double[] fitness, int nGroup, int index,
+			double[] change) {
+		int skip = idxSpecies[index];
+		int end = skip + mod.getNTraits();
+		double err = 0.0;
+		for (int n = skip; n < end; n++) {
+			double dyn = 0.0;
+			double ftn = fitness[n];
+			for (int i = skip; i < end; i++) {
+				if (i == n)
+					continue;
+				double fiti = fitness[i];
+				dyn += state[i] * (ftn - fiti) / (ftn + fiti);
 			}
 			dyn *= state[n];
 			change[n] = dyn;
