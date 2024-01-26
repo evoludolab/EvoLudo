@@ -861,29 +861,20 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 		}
 
 		@Override
-		protected double[] getDerivatives(double time, double[] state, double[] fit, double[] change,
-				Module mod, int skip) {
-			// Note: skip == 0 and mod == module always hold because of single species
-			double err = 0.0;
-
-			// PlayerUpdateType put = pop.getPlayerUpdateType();
-			// switch( put ) {
-			// case IMITATE_BETTER: // replicator update
-			// case IMITATE:
-			// if noise becomes very small, this should recover PLAYER_UPDATE_BEST
-			avgScores(state, 2, fit);
+		protected void getDerivatives(double time, double[] state, double[] fitness, double[] change) {
+			avgScores(state, 2, fitness);
 			double xr = state[ATBT.COOPERATE_RICH];
 			double xp = state[ATBT.COOPERATE_POOR];
 			double yr = state[ATBT.DEFECT_RICH];
 			double yp = state[ATBT.DEFECT_POOR];
 			Map2Fitness map2fit = module.getMapToFitness();
 			for (int n = 0; n < nTraits; n++)
-				fit[n] = map2fit.map(fit[n]);
-			double fC = xr * fit[ATBT.COOPERATE_RICH] + xp * fit[ATBT.COOPERATE_POOR];
-			double fD = yr * fit[ATBT.DEFECT_RICH] + yp * fit[ATBT.DEFECT_POOR];
+				fitness[n] = map2fit.map(fitness[n]);
+			double fC = xr * fitness[ATBT.COOPERATE_RICH] + xp * fitness[ATBT.COOPERATE_POOR];
+			double fD = yr * fitness[ATBT.DEFECT_RICH] + yp * fitness[ATBT.DEFECT_POOR];
 			double dyn;
 			dyn = fC * yr - fD * xr + xp * feedback[ATBT.COOPERATE_POOR] - xr * feedback[ATBT.COOPERATE_RICH];
-			err += dyn;
+			double err = dyn;
 			change[ATBT.COOPERATE_RICH] = dyn;
 			dyn = fC * yp - fD * xp - xp * feedback[ATBT.COOPERATE_POOR] + xr * feedback[ATBT.COOPERATE_RICH];
 			err += dyn;
@@ -904,47 +895,20 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 			// yp'[t] == (yr[t] ft[[3]] + yp[t] ft[[4]]) xp[t] - (xr[t] ft[[1]] + xp[t]
 			// ft[[2]]) yp[t] - lambda rho yp[t]}
 
-			// for( int n=0; n<nTraits; n++ )
-			// ft[n] = playerEffBaseFit+playerSelection*avgscrs[n];
-			// noise = 1.0/(maxScore-minScore);
-			// if( invThermalNoise>0.0 ) noise *= invThermalNoise;
-			// for( int n=0; n<nTraits; n++ ) {
-			// double dyn = 0.0, ftn = ft[n];
-			// for( int i=0; i<nTraits; i++ ) {
-			// // note float resolution is 1.1920929E-7
-			// if( i==n || Math.abs(ftn-ft[i])<1e-6 ) continue;
-			// // note: cannot use mean payoff as the transition probabilities must lie in
-			// [0,1] - otherwise
-			// // the timescale gets messed up.
-			// dyn += yt[i]*Math.min(1.0, Math.max(-1.0, (ftn-ft[i])*noise));
-			// }
-			// dyn *= yt[n];
-			// dy[n] = dyn;
-			// err += dyn;
-			// }
-
-			// break;
-			//
-			// default:
-			// throw new Error("Unknown/unimplemented update method for players ("+put+")");
-			// }
-
 			// restrict to active strategies
-			err /= nActive;
 			// note float resolution is 1.1920929E-7
-			if (Math.abs(err) > 1e-7) {
+			if (Math.abs(err) > 1e-7 * nActive) {
 				if (active == null) {
 					// assume all active
 					for (int n = 0; n < nTraits; n++)
 						change[n] -= err;
-					return change;
+					return;
 				}
 				for (int n = 0; n < nTraits; n++) {
 					if (active[n])
 						change[n] -= err;
 				}
 			}
-			return change;
 		}
 	}
 }

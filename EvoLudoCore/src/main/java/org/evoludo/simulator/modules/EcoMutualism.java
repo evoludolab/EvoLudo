@@ -925,7 +925,7 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 		}
 
 		@Override
-		protected double[] getDerivatives(double time, double[] state, double[] fit, double[] change) {
+		protected void getDerivatives(double time, double[] state, double[] fit, double[] change) {
 			double hu = state[EcoMutualism.HOST_NONE];
 			double hc = state[EcoMutualism.HOST_COOPERATE];
 			double hd = state[EcoMutualism.HOST_DEFECT];
@@ -939,8 +939,6 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 			change[EcoMutualism.HOST_MIXED] = hu * mu2 * ec * ed * 2 - d * hm;
 			change[5 + EcoMutualism.VIRUS_COOPERATE] = lambda * d * (alpha * hc + beta * hm) - kappa * d * ec;
 			change[5 + EcoMutualism.VIRUS_DEFECT] = lambda * d * (gamma * hm + delta * hd) - kappa * d * ed;
-
-			return change;
 		}
 	}
 }
