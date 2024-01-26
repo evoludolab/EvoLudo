@@ -522,7 +522,6 @@ public class ODEEuler implements Model.ODE {
 		normalizeState(y0);
 		// check if stop is requested if population becomes monomorphic
 		// for multi-species models only first species checked
-		// note: module undefined for isMultispecies==true
 		monoStop = false;
 		if (!species.get(0).isContinuous())
 			monoStop = ((Discrete) species.get(0)).getMonoStop();
@@ -961,8 +960,15 @@ public class ODEEuler implements Model.ODE {
 					err = updateThermal(mod, state, fitness, nGroup, index, change);
 					break;
 
-				case BEST_RESPONSE: // best-response update
-					err = updateBestResponse(mod, state, fitness, nGroup, index, change);
+				// XXX 100531 implement! - defaults to replicator
+				case PROPORTIONAL: // proportional update
+
+				case IMITATE: // same as IMITATE_BETTER in continuum limit
+					err = updateImitate(mod, state, fitness, nGroup, index, change);
+					break;
+
+				case IMITATE_BETTER: // replicator update
+					err = updateImitateBetter(mod, state, fitness, nGroup, index, change);
 					break;
 
 				case BEST: // imitate the better
@@ -970,18 +976,8 @@ public class ODEEuler implements Model.ODE {
 					err = updateBest(mod, state, fitness, nGroup, index, change);
 					break;
 
-				// XXX 100531 implement! - defaults to replicator
-				case PROPORTIONAL: // proportional update
-
-					// NOTES:
-					// - all rates are scaled by the maximum fitness difference among all species
-					// to preserve their relative time scales.
-				case IMITATE_BETTER: // replicator update
-					err = updateImitateBetter(mod, state, fitness, nGroup, index, change);
-					break;
-
-				case IMITATE: // same as IMITATE_BETTER in continuum limit
-					err = updateImitate(mod, state, fitness, nGroup, index, change);
+				case BEST_RESPONSE: // best-response update
+					err = updateBestResponse(mod, state, fitness, nGroup, index, change);
 					break;
 
 				default:
@@ -1107,18 +1103,18 @@ public class ODEEuler implements Model.ODE {
 	 */
 	protected double updateThermal(Module mod, double[] state, double[] fitness, int nGroup, int index,
 			double[] change) {
-		// factor 2 enters - see e.g. Sigmund et al. Dyn Games & Appl. 2011
 		// no scaling seems required for comparisons with simulations
 		double noise = mod.getPlayerUpdateNoise();
 		if (noise <= 0.0)
 			return updateBest(mod, state, fitness, nGroup, index, change);
-		// some noise
+		// some noise; factor 2 enters - see e.g. Sigmund et al. Dyn Games & Appl. 2011
 		double inoise = 0.5 / noise;
 		double err = 0.0;
 		int skip = idxSpecies[index];
 		int end = skip + mod.getNTraits();
 		for (int n = skip; n < end; n++) {
-			double dyn = 0.0, ftn = fitness[n];
+			double dyn = 0.0;
+			double ftn = fitness[n];
 			for (int i = skip; i < end; i++) {
 				if (i == n)
 					continue;
@@ -1171,11 +1167,6 @@ public class ODEEuler implements Model.ODE {
 	 * @param change  array to return the rate of change of each type in the
 	 *                population
 	 * @return the total change (should be zero in theory)
-	 * 
-	 * @see <a href="http://dx.doi.org/10.1007/s13235-010-0001-4">Sigmund, K.,
-	 *      Hauert, C., Traulsen, A. &amp; De Silva, H. (2011) Social control and
-	 *      the social contract: the emergence of sanctioning systems for collective
-	 *      action, Dyn. Games &amp; Appl. 1, 149-171</a>
 	 */
 	protected double updateBest(Module mod, double[] state, double[] fitness, int nGroup, int index, double[] change) {
 		int skip = idxSpecies[index];
@@ -1212,6 +1203,10 @@ public class ODEEuler implements Model.ODE {
 	 * \end{align}
 	 * \]
 	 * where \(\bar f\) denotes the the average population payoff.
+	 * <p>
+	 * <strong>Note:</strong> in multi-species models all rates of change are scaled
+	 * by the maximum fitness difference for <em>all</em> species to preserve their
+	 * relative time scales.
 	 * 
 	 * @param mod     the module representing the current species
 	 * @param state   array of frequencies/densities denoting the state population
@@ -1222,11 +1217,6 @@ public class ODEEuler implements Model.ODE {
 	 * @param change  array to return the rate of change of each type in the
 	 *                population
 	 * @return the total change (should be zero in theory)
-	 * 
-	 * @see <a href="http://dx.doi.org/10.1007/s13235-010-0001-4">Sigmund, K.,
-	 *      Hauert, C., Traulsen, A. &amp; De Silva, H. (2011) Social control and
-	 *      the social contract: the emergence of sanctioning systems for collective
-	 *      action, Dyn. Games &amp; Appl. 1, 149-171</a>
 	 */
 	protected double updateImitate(Module mod, double[] state, double[] fitness, int nGroup, int index,
 			double[] change) {
@@ -1251,6 +1241,10 @@ public class ODEEuler implements Model.ODE {
 	 * standard replicator dynamics albeit with a constant rescaling of time such
 	 * that the rate of change are half of the standard replicator equation obtained
 	 * from {@code PlayerUpdateType#IMITATE}.
+	 * <p>
+	 * <strong>Note:</strong> in multi-species models all rates of change are scaled
+	 * by the maximum fitness difference for <em>all</em> species to preserve their
+	 * relative time scales.
 	 * 
 	 * @param mod     the module representing the current species
 	 * @param state   array of frequencies/densities denoting the state population
@@ -1261,11 +1255,6 @@ public class ODEEuler implements Model.ODE {
 	 * @param change  array to return the rate of change of each type in the
 	 *                population
 	 * @return the total change (should be zero in theory)
-	 * 
-	 * @see <a href="http://dx.doi.org/10.1007/s13235-010-0001-4">Sigmund, K.,
-	 *      Hauert, C., Traulsen, A. &amp; De Silva, H. (2011) Social control and
-	 *      the social contract: the emergence of sanctioning systems for collective
-	 *      action, Dyn. Games &amp; Appl. 1, 149-171</a>
 	 */
 	protected double updateImitateBetter(Module mod, double[] state, double[] fitness, int nGroup, int index,
 			double[] change) {
@@ -1298,12 +1287,13 @@ public class ODEEuler implements Model.ODE {
 		// if noise becomes very small, this should recover PLAYER_UPDATE_BEST
 		if (noise <= 0.0)
 			return updateBest(mod, state, fitness, nGroup, index, change);
-		double inoise = invFitRange[index] / noise;
+		double inoise = ArrayMath.min(invFitRange) / noise;
 		int skip = idxSpecies[index];
 		int end = skip + mod.getNTraits();
 		double err = 0.0;
 		for (int n = skip; n < end; n++) {
-			double dyn = 0.0, ftn = fitness[n];
+			double dyn = 0.0;
+			double ftn = fitness[n];
 			for (int i = skip; i < end; i++) {
 				if (i == n)
 					continue;
