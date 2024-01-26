@@ -179,8 +179,8 @@ public class ODEEuler implements Model.ODE {
 	/**
 	 * List with all species in model including this one. List should be shared with
 	 * other populations (to simplify bookkeeping) but the species list CANNOT be
-	 * static! Otherwise it is impossible to run multiple instances of modules/models
-	 * concurrently.
+	 * static! Otherwise it is impossible to run multiple instances of
+	 * modules/models concurrently.
 	 */
 	protected ArrayList<? extends Module> species;
 
@@ -903,84 +903,14 @@ public class ODEEuler implements Model.ODE {
 		}
 	}
 
-	/*
-	 * Calculate the rates of change for each type in species <code>mod</code>.
-	 * <p>
-	 * For replicator models the dynamics depends on the selected type of player
-	 * updating, see {@link PlayerUpdateType}:
-	 * <dl>
-	 * <dt>{@link PlayerUpdateType#THERMAL}:
-	 * <dd>A popular choice for the so called 'pairwise comparison' approach is to
-	 * assume that players \(i\) and \(j\) are randomly chosen and player \(i\)
-	 * adopts the strategy of player \(j\) with a probability
-	 * \[p_{i\to j}=\frac1{1+\exp[w(f_i-f_j)]},\]
-	 * where \(w\geq 0\) denotes the strength of selection and \(f_i, f_j\) the
-	 * payoffs of individuals \(i\) and \(j\), respectively. The resulting dynamics
-	 * for the frequencies of the different strategic types is then given by
-	 * \[
-	 * \begin{align}
-	 * \dot x_i =&amp; \sum_{j=1}^n x_i x_j \left(\frac1{1+\exp[w(f_i-f_j)]} -
-	 * \frac1{1+\exp[w(f_j-f_i)]}\right) \\
-	 * =&amp; x_i \sum_{j=1}^n \tanh[w(f_i-f_j)/2]
-	 * \end{align}
-	 * \]
-	 * <dt>{@link PlayerUpdateType#BEST_RESPONSE}:
-	 * <dd>\[\dot x_i = x_i (TODO)\]
-	 * <dt>{@link PlayerUpdateType#BEST}:
-	 * <dd>\[\dot x_i = x_i (TODO)\]
-	 * <dt>{@link PlayerUpdateType#BEST_RANDOM}:
-	 * <dd>same as {@link PlayerUpdateType#BEST}.
-	 * <dt>{@link PlayerUpdateType#PROPORTIONAL}:
-	 * <dd>\[\dot x_i = x_i (TODO)\]
-	 * <dt>{@link PlayerUpdateType#IMITATE}:
-	 * <dd>Imitate strategies of other players at a rate proportional to the
-	 * difference in payoffs:
-	 * \[\dot x_i = x_i (f_i-\bar f),\]
-	 * where \(\bar f\) denotes the the average population payoff with
-	 * \(f_i=\sum_{j=1}^n x_j a_{ij}\) denoting the average payoff of type \(i\)
-	 * with \(n\) strategy types and \(a_{ij}\) the payoff of a type \(i\)
-	 * individual interacting with a type \(j\). This represents the standard
-	 * replicator dynamics.
-	 * <dt>{@link PlayerUpdateType#IMITATE_BETTER}:
-	 * <dd>Imitate strategies of <em>better</em> performing players at a rate
-	 * proportional to the difference in payoffs:
-	 * \[
-	 * \begin{align}
-	 * \dot x_i =&amp; \sum_{j=1}^n x_i x_j (f_i-f_j)_+ =
-	 * \sum_{j=1}^n x_i x_j (f_i-f_j) - \sum_{j=1}^n x_i x_j (f_i-f_j)_- \\
-	 * =&amp; \sum_{j=1}^n x_i x_j (f_i-f_j)/2 = x_i (f_i-\bar f)/2.
-	 * \end{align}
-	 * \]
-	 * Incidentally and somewhat surprisingly this update also reduces to the
-	 * standard replicator dynamics albeit with a constant rescaling of time.
-	 * </dl>
-	 * For ecological models, i.e. with vacancies, calculatee the rates of change.
-	 * The default is given by
-	 * \[\dot x = x_i (z\cdot f_i - d)\]
-	 * where \(z\) denotes vacant space, \(f_i\) the fitness of type \(i\) and \(d\)
-	 * is the death rate. This works nicely for replicator type equations but may
-	 * not fit more general dynamical equations.
-	 *
-	 * @param time    current time
-	 * @param state   array of frequencies/densities denoting the state population
-	 * @param fit     array of fitness values of types in population
-	 * @param change  array to return the rate of change of each type in the
-	 *                population
-	 * @param mod     pointer to the current module
-	 * @param idx     the index of the module <code>mod</code> in multi-species
-	 *                modules
-	 * @return the array with the changes
-	 * 
-	 * @see <a href="http://dx.doi.org/10.1007/s13235-010-0001-4">Sigmund, K.,
-	 *      Hauert, C., Traulsen, A. &amp; De Silva, H. (2011) Social control and
-	 *      the social contract: the emergence of sanctioning systems for collective
-	 *      action, Dyn. Games &amp; Appl. 1, 149-171</a>
-	 */
 	/**
-	 * Calculate the rates of change for all species in <code>state</code> at
-	 * <code>time</code> given the fitness <code>fit</code>. The result is returned
-	 * in <code>change</code>. <code>scratch</code> is an array for storing
-	 * intermediate results.
+	 * Calculate the rates of change for all species in {@code state} at
+	 * {@code time} given the fitness {@code fitness} and returned in
+	 * {@code change}. For replicator models the dynamics depends on the selected
+	 * type of player updating, see {@link PlayerUpdateType}, while for modules with
+	 * variable population sizes (density based or with vaccant 'space'
+	 * (reproductive opportunities)) the fitness denotes the rate of reproduction
+	 * moderated by the available 'space'.
 	 * <p>
 	 * <strong>IMPORTANT:</strong> parallel processing for PDE's in JRE requires
 	 * this method to be thread safe.
@@ -993,10 +923,16 @@ public class ODEEuler implements Model.ODE {
 	 * @param time    the current time
 	 * @param state   the array of frequencies/densities denoting the state
 	 *                population
-	 * @param fitness     the array of fitness values of types in population
+	 * @param fitness the array of fitness values of types in population
 	 * @param change  the array to return the rate of change of each type in the
 	 *                population
-	 * @return the array with the changes
+	 * 
+	 * @see #updateBest(Module, double[], double[], int, int, double[])
+	 * @see #updateBestResponse(Module, double[], double[], int, int, double[])
+	 * @see #updateEcology(Module, double[], double[], int, int, double[])
+	 * @see #updateImitate(Module, double[], double[], int, int, double[])
+	 * @see #updateThermal(Module, double[], double[], int, int, double[])
+	 * @see #updateZeroNoise(Module, double[], double[], int, int, double[])
 	 */
 	protected void getDerivatives(double time, double[] state, double[] fitness, double[] change) {
 		dstate = state;
@@ -1013,7 +949,6 @@ public class ODEEuler implements Model.ODE {
 				for (int n = skip; n < skip + nTraits; n++)
 					fitness[n] = map2fit.map(fitness[n]);
 			}
-
 			if (mod.getVacant() >= 0) {
 				updateEcology(mod, state, fitness, nGroup, index, change);
 				continue;
@@ -1089,19 +1024,29 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	/**
-	 * Determine the derivatives for {@code state} with {@code fitness} based on
-	 * interactions with a group size {@code nGroup} for species with {@code index}
-	 * and corresponding {@code module}
+	 * Implementation of the player updates for modules with populations of variable
+	 * size (density based or with vacant 'space', i.e.
+	 * reproductive opportunities). In models with varying reproductive
+	 * opportunities the rate of reproduction is given by the product of the
+	 * individual's fitness moderated by the available 'space'.
+	 * This results in the dynamical equation given by
+	 * \[\dot x = x_i (z\cdot f_i - d)\]
+	 * where \(z\) denotes vacant space, \(f_i\) the fitness of type \(i\) and \(d\)
+	 * is the death rate. This works nicely for replicator type equations but may
+	 * not fit more general dynamical equations.
 	 * 
-	 * @param mod
-	 * @param state
-	 * @param fitness
-	 * @param nGroup
-	 * @param index
-	 * @param change
-	 * @return
+	 * @param mod     the module representing the current species
+	 * @param state   array of frequencies/densities denoting the state population
+	 * @param fitness array of fitness values of types in population
+	 * @param nGroup  the interaction group size
+	 * @param index   the index of the module <code>mod</code> in multi-species
+	 *                modules
+	 * @param change  array to return the rate of change of each type in the
+	 *                population
+	 * @return the total change (should be zero in theory)
 	 */
-	protected double updateEcology(Module mod, double[] state, double[] fitness, int nGroup, int index, double[] change) {
+	protected double updateEcology(Module mod, double[] state, double[] fitness, int nGroup, int index,
+			double[] change) {
 		// XXX what happens if one strategy is deactivated!?
 		int vacant = mod.getVacant();
 		double err = 0.0;
@@ -1125,11 +1070,45 @@ public class ODEEuler implements Model.ODE {
 		return err;
 	}
 
-	protected double updateThermal(Module mod, double[] state, double[] fitness, int nGroup, int index, double[] change) {
+	/**
+	 * Implementation of the player update {@link PlayerUpdateType#THERMAL}. This
+	 * calculates the rates of change for each type in species <code>mod</code> for
+	 * the popular choice for 'pairwise comparisons' where the focal player \(i\)
+	 * and one of its neighbours \(j\) are randomly chosen. The focal player \(i\)
+	 * adopts the strategy of player \(j\) with a probability
+	 * \[p_{i\to j}=\frac1{1+\exp[w(f_i-f_j)]},\]
+	 * where \(w\geq 0\) denotes the selection strength and \(f_i, f_j\) the
+	 * payoffs of individuals \(i\) and \(j\), respectively. The resulting dynamics
+	 * for the frequencies of the different strategic types is then given by
+	 * \[
+	 * \begin{align}
+	 * \dot x_i =&amp; \sum_{j=1}^n x_i x_j \left(\frac1{1+\exp[w(f_i-f_j)]} -
+	 * \frac1{1+\exp[w(f_j-f_i)]}\right) \\
+	 * =&amp; x_i \sum_{j=1}^n \tanh[w(f_i-f_j)/2].
+	 * \end{align}
+	 * \]
+	 *
+	 * @param mod     the module representing the current species
+	 * @param state   array of frequencies/densities denoting the state population
+	 * @param fitness array of fitness values of types in population
+	 * @param nGroup  the interaction group size
+	 * @param index   the index of the module <code>mod</code> in multi-species
+	 *                modules
+	 * @param change  array to return the rate of change of each type in the
+	 *                population
+	 * @return the total change (should be zero in theory)
+	 * 
+	 * @see <a href="http://dx.doi.org/10.1007/s13235-010-0001-4">Sigmund, K.,
+	 *      Hauert, C., Traulsen, A. &amp; De Silva, H. (2011) Social control and
+	 *      the social contract: the emergence of sanctioning systems for collective
+	 *      action, Dyn. Games &amp; Appl. 1, 149-171</a>
+	 */
+	protected double updateThermal(Module mod, double[] state, double[] fitness, int nGroup, int index,
+			double[] change) {
 		// factor 2 enters - see e.g. Sigmund et al. Dyn Games & Appl. 2011
 		// no scaling seems required for comparisons with simulations
 		double noise = mod.getPlayerUpdateNoise();
-		if (noise <= 0.0) 
+		if (noise <= 0.0)
 			return updateBest(mod, state, fitness, nGroup, index, change);
 		// some noise
 		double inoise = 0.5 / noise;
@@ -1150,6 +1129,52 @@ public class ODEEuler implements Model.ODE {
 		return err;
 	}
 
+	/**
+	 * Implementation of player update {@link PlayerUpdateType#BEST}. This
+	 * calculates the rate of change individuals adopt the strategy of better
+	 * performing individuals with certainty (and never those of worse performing
+	 * individuals). This calculates the rates of change for each type in species
+	 * <code>mod</code> for the popular choice for 'pairwise comparisons' where the
+	 * focal player \(i\) and one of its neighbours \(j\) are randomly chosen. The
+	 * focal player \(i\) adopts the strategy of player \(j\) if \(f_j>f_i\) but
+	 * never adopts those of a player \(j\) with \(f_j<f_i\), where \(f_i,f_j\)
+	 * denote the fitness of players \(i\) and \(j\), respectively. In case of a tie
+	 * \(f_j=f_i\) the individual sticks to its strategy. More specifically, the
+	 * probability to adopt the strategy of \(j\) is given by
+	 * \[p_{i\to j}=\theta(f_j-f_i),\]
+	 * where \(\theta(x)\) denotes the Heaviside step function with
+	 * \(\theta(x)=0\) for \(x<0\), \(\theta(x)=1\) for \(x>0\). In principle
+	 * \(\theta(0)=1/2\) but assuming that players need at least a marginal
+	 * incentive
+	 * to switch strategies we set \(\theta(0)=0\). In most cases this choice is
+	 * inconsequential. The resulting dynamics for the frequencies of the different
+	 * strategic types is then given by
+	 * \[
+	 * \begin{align}
+	 * \dot x_i =&amp; \sum_{j=1}^n x_i x_j \theta[f_j-f_i)].
+	 * \end{align}
+	 * \]
+	 * <p>
+	 * <strong>Note:</strong>In the limit of vanishing noise the updates
+	 * {@link #updateThermal(Module, double[], double[], int, int, double[])} and
+	 * {@link #updateImitate(Module, double[], double[], int, int, double[])}
+	 * recover the {@link PlayerUpdateType#BEST} updating type as well.
+	 * 
+	 * @param mod     the module representing the current species
+	 * @param state   array of frequencies/densities denoting the state population
+	 * @param fitness array of fitness values of types in population
+	 * @param nGroup  the interaction group size
+	 * @param index   the index of the module <code>mod</code> in multi-species
+	 *                modules
+	 * @param change  array to return the rate of change of each type in the
+	 *                population
+	 * @return the total change (should be zero in theory)
+	 * 
+	 * @see <a href="http://dx.doi.org/10.1007/s13235-010-0001-4">Sigmund, K.,
+	 *      Hauert, C., Traulsen, A. &amp; De Silva, H. (2011) Social control and
+	 *      the social contract: the emergence of sanctioning systems for collective
+	 *      action, Dyn. Games &amp; Appl. 1, 149-171</a>
+	 */
 	protected double updateBest(Module mod, double[] state, double[] fitness, int nGroup, int index, double[] change) {
 		int skip = idxSpecies[index];
 		int end = skip + mod.getNTraits();
@@ -1160,7 +1185,7 @@ public class ODEEuler implements Model.ODE {
 			for (int i = skip; i < end; i++) {
 				if (i == n)
 					continue;
-	 			dyn += (ftn > fitness[i] ? state[i] : -state[i]);
+				dyn += (ftn > fitness[i] ? state[i] : -state[i]);
 			}
 			dyn *= state[n];
 			change[n] = dyn;
@@ -1169,10 +1194,61 @@ public class ODEEuler implements Model.ODE {
 		return err;
 	}
 
-	protected double updateImitate(Module mod, double[] state, double[] fitness, int nGroup, int index, double[] change) {
+	/**
+	 * Implementation of the player update {@link PlayerUpdateType#IMITATE} and
+	 * {@link PlayerUpdateType#IMITATE_BETTER}. This calculates the rates of change
+	 * for each type in species <code>mod</code> for the popular choice for
+	 * 'pairwise comparisons' where the focal player \(i\) and one of its neighbours
+	 * \(j\) are randomly chosen. For {@code PlayerUpdateType#IMITATE}, the focal
+	 * player \(i\) adopts the strategy of \(j\) with a probability proportional to
+	 * the payoff difference \(f_j - f_i\):
+	 * \[p_{i\to j}=1/2|left(1 + (f_j-f_i)/(f_j+f_i)\right),\]
+	 * where \(f_i,f_j\) denote the fitness of players \(i\) and \(j\),
+	 * respectively. The resulting dynamics for the frequencies of the different
+	 * strategic types is then given by the standard replicator equation
+	 * \[
+	 * \begin{align}
+	 * \dot x_i =&amp; x_i (f_i-\bar f)
+	 * \end{align}
+	 * \]
+	 * where \(\bar f\) denotes the the average population payoff.
+	 * <p>
+	 * Similarly, for the {@code PlayerUpdateType#IMITATE_BETTER} update, the focal
+	 * player \(i\) adopts the
+	 * strategy of a <em>better performing</em> player \(j\) with a probability
+	 * proportional to the payoff difference \(f_j - f_i\):
+	 * \[
+	 * \begin{align}
+	 * \dot x_i =&amp; \sum_{j=1}^n x_i x_j (f_i-f_j)_+ =
+	 * \sum_{j=1}^n x_i x_j (f_i-f_j) - \sum_{j=1}^n x_i x_j (f_i-f_j)_- \\
+	 * =&amp; \sum_{j=1}^n x_i x_j (f_i-f_j)/2 = x_i (f_i-\bar f)/2.
+	 * \end{align}
+	 * \]
+	 * Incidentally and somewhat surprisingly this update also reduces to the
+	 * standard replicator dynamics albeit with a constant rescaling of time such
+	 * that the rate of change are half of the standard replicator equation obtained
+	 * from {@code PlayerUpdateType#IMITATE}.
+	 * 
+	 * @param mod     the module representing the current species
+	 * @param state   array of frequencies/densities denoting the state population
+	 * @param fitness array of fitness values of types in population
+	 * @param nGroup  the interaction group size
+	 * @param index   the index of the module <code>mod</code> in multi-species
+	 *                modules
+	 * @param change  array to return the rate of change of each type in the
+	 *                population
+	 * @return the total change (should be zero in theory)
+	 * 
+	 * @see <a href="http://dx.doi.org/10.1007/s13235-010-0001-4">Sigmund, K.,
+	 *      Hauert, C., Traulsen, A. &amp; De Silva, H. (2011) Social control and
+	 *      the social contract: the emergence of sanctioning systems for collective
+	 *      action, Dyn. Games &amp; Appl. 1, 149-171</a>
+	 */
+	protected double updateImitate(Module mod, double[] state, double[] fitness, int nGroup, int index,
+			double[] change) {
 		// if noise becomes very small, this should recover PLAYER_UPDATE_BEST
 		double noise = mod.getPlayerUpdateNoise();
-		if (noise <= 0.0) 
+		if (noise <= 0.0)
 			return updateBest(mod, state, fitness, nGroup, index, change);
 		double inoise = invFitRange[index] / noise;
 		int skip = idxSpecies[index];
@@ -1196,23 +1272,31 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	/**
-	 * Implementation of best-response dynamics (for frequencies)
+	 * Implementation of the player update {@link PlayerUpdateType#BEST_RESPONSE}.
+	 * This calculates the rates of change for each type in species <code>mod</code>
+	 * for the best-response dynamic where the focal player \(i\) switches to the
+	 * strategy \(j\) that has the highest payoff given the current state of the
+	 * population. Note, in contrast to other player updates, such as
+	 * {@link PlayerUpdateType#THERMAL} or {@link PlayerUpdateType#IMITATE} the
+	 * best-response is an innovative update rule, which means that strategic types
+	 * that are currently not present in the population can get introduced.
+	 * Consequently, homogeneous states may not be absorbing.
 	 * <p>
 	 * <strong>Note:</strong> inactive strategies are excluded and do not qualify as
 	 * a best response.
 	 * <p>
 	 * <strong>IMPORTANT:</strong> needs to be thread safe (must supply memory for
 	 * calculations and results)
-	 *
-	 * @param mod      the reference to the current module
-	 * @param state    the frequency/density of each trait/strategy
-	 * @param fitness      the array for storing the average payoffs/scores for each
-	 *                 strategic type
-	 * @param nGroup   the size of interaction group
-	 * @param skip     the entries to skip in arrays <code>state</code> and
-	 *                 <code>fit</code>
-	 * @param change the best-response(s)
-	 * @return the total error (sum of differences; should be zero)
+	 * 
+	 * @param mod     the module representing the current species
+	 * @param state   array of frequencies/densities denoting the state population
+	 * @param fitness array of fitness values of types in population
+	 * @param nGroup  the interaction group size
+	 * @param index   the index of the module <code>mod</code> in multi-species
+	 *                modules
+	 * @param change  array to return the rate of change of each type in the
+	 *                population
+	 * @return the total change (should be zero in theory)
 	 */
 	protected double updateBestResponse(Module mod, double[] state, double[] fitness, int nGroup, int index,
 			double[] change) {
@@ -1491,8 +1575,7 @@ public class ODEEuler implements Model.ODE {
 			if (type == null && idx > 0) {
 				type = initType[idx - 1];
 				initargs = CLOParser.parseVector(typeargs[0]);
-			}
-			else if (typeargs.length > 1)
+			} else if (typeargs.length > 1)
 				initargs = CLOParser.parseVector(typeargs[1]);
 			int nTraits = pop.getNTraits();
 			boolean success = false;
@@ -1655,8 +1738,8 @@ public class ODEEuler implements Model.ODE {
 	 * Command line option to set the probability of mutations for
 	 * population(s)/species.
 	 */
-	public final CLOption cloMutation = new CLOption("mutations", "-1", 
-		EvoLudo.catModel, "--mutations <m[,m1,...]>  mutation probabilities",
+	public final CLOption cloMutation = new CLOption("mutations", "-1",
+			EvoLudo.catModel, "--mutations <m[,m1,...]>  mutation probabilities",
 			new CLODelegate() {
 
 				/**
@@ -1684,7 +1767,8 @@ public class ODEEuler implements Model.ODE {
 						} catch (NumberFormatException nfe) {
 							mus[n] = 0.0;
 							engine.getLogger()
-									.warning("mutation probabilities '" + marg + "' for trait "+n+" invalid - disabled.");
+									.warning("mutation probabilities '" + marg + "' for trait " + n
+											+ " invalid - disabled.");
 							return false;
 						}
 					}
