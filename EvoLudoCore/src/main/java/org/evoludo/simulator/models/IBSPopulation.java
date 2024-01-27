@@ -50,8 +50,8 @@ import org.evoludo.simulator.models.IBS.PopulationUpdateType;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSGroup.SamplingType;
 import org.evoludo.simulator.models.Model.Mode;
+import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
-import org.evoludo.simulator.modules.Module.Map2Fitness;
 import org.evoludo.simulator.modules.Module.PlayerUpdateType;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
@@ -550,7 +550,7 @@ public abstract class IBSPopulation {
 	 * The array of individual fitness values.
 	 * 
 	 * @see #scores
-	 * @see Module.Map2Fitness
+	 * @see Map2Fitness
 	 */
 	protected double[] fitness;
 
@@ -585,7 +585,7 @@ public abstract class IBSPopulation {
 	 * The array of individual scores.
 	 * 
 	 * @see #fitness
-	 * @see Module.Map2Fitness
+	 * @see Map2Fitness
 	 */
 	protected double[] scores;
 

@@ -48,8 +48,8 @@ import org.evoludo.simulator.models.Model.Type;
 import org.evoludo.simulator.models.ODEEuler.HasDE;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
+import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
-import org.evoludo.simulator.modules.Module.Map2Fitness;
 import org.evoludo.util.Formatter;
 
 /**

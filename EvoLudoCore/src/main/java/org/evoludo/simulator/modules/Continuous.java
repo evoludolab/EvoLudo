@@ -381,7 +381,6 @@ public abstract class Continuous extends Module {
 	public void unload() {
 		super.unload();
 		traits2payoff = null;
-		cloFitnessMap.clearKeys();
 		cloPlayerUpdate.clearKeys();
 	}
 
