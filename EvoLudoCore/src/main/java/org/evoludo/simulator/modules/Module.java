@@ -255,7 +255,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * @see Model.MilestoneListener#modelLoaded()
 	 */
 	public void load() {
-		map2fitness = new Map2Fitness(Map2Fitness.Maps.NONE);
+		map2fitness = new Map2Fitness(Map2Fitness.Map.NONE);
 		// currently only the Test module uses neither Discrete nor Continuous classes.
 		if (species == null)
 			species = new ArrayList<Module>();
@@ -1549,7 +1549,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 					int n = 0;
 					for (Module pop : species) {
 						String map = map2fitnessspecies[n++ % map2fitnessspecies.length];
-						Map2Fitness.Maps m2fm = (Map2Fitness.Maps) cloFitnessMap.match(map);
+						Map2Fitness.Map m2fm = (Map2Fitness.Map) cloFitnessMap.match(map);
 						Map2Fitness m2f = pop.getMapToFitness();
 						if (m2fm == null) {
 							logger.warning(
@@ -2115,7 +2115,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	@Override
 	public void collectCLO(CLOParser parser) {
 		// prepare command line options
-		cloFitnessMap.addKeys(Map2Fitness.Maps.values());
+		cloFitnessMap.addKeys(Map2Fitness.Map.values());
 		parser.addCLO(cloFitnessMap);
 
 		if (this instanceof Discrete.Groups ||
@@ -2230,7 +2230,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		 * 
 		 * @author Christoph Hauert
 		 */
-		public enum Maps implements CLOption.Key {
+		public enum Map implements CLOption.Key {
 
 			/**
 			 * no mapping, scores/payoffs equal fitness, \(fit = score\)
@@ -2272,7 +2272,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 			 * @param key   identifier for parsing of command line option
 			 * @param title summary of map
 			 */
-			Maps(String key, String title) {
+			Map(String key, String title) {
 				this.key = key;
 				this.title = title;
 			}
@@ -2304,16 +2304,16 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		double selection = 1.0;
 
 		/**
-		 * Map type. Defaults to {@link Maps#NONE}.
+		 * Map type. Defaults to {@link Map#NONE}.
 		 */
-		Maps map = Maps.NONE;
+		Map map = Map.NONE;
 
 		/**
 		 * Instantiate new map of type {@code map}.
 		 * 
 		 * @param map the map to use as template
 		 */
-		public Map2Fitness(Maps map) {
+		public Map2Fitness(Map map) {
 			this.map = map;
 		}
 
@@ -2367,7 +2367,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		 * @param aMap the map to compare to
 		 * @return {@code true} if map is of type {@code aMap}.
 		 */
-		public boolean isMap(Maps aMap) {
+		public boolean isMap(Map aMap) {
 			return map.equals(aMap);
 		}
 
@@ -2376,7 +2376,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		 * 
 		 * @param map the type of the map
 		 */
-		public void setMap(Maps map) {
+		public void setMap(Map map) {
 			if (map == null)
 				return;
 			this.map = map;

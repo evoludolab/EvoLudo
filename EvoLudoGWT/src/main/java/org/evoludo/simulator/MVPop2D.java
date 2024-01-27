@@ -515,7 +515,7 @@ public class MVPop2D extends MVAbstract implements AbstractGraph.NodeGraphContro
 				}
 				tip.append("<tr><td><i>Tag:</i></td><td>"+ibs.getTagNameAt(id, node)+"</td></tr>");
 				// with payoff-to-fitness report score first, then fitness (see below)
-				boolean noFitMap = pop.getMapToFitness().isMap(Map2Fitness.Maps.NONE);
+				boolean noFitMap = pop.getMapToFitness().isMap(Map2Fitness.Map.NONE);
 				String label = (noFitMap?"Fitness":"Score");
 				if( type==Model.Data.FITNESS ) {
 					// fitness: use color-data to color strategy

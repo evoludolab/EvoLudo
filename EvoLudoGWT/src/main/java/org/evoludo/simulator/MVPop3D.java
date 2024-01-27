@@ -487,7 +487,7 @@ public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphContro
 					tip.append("<tr><td><i>Strategy:</i></td><td>"+model.getTraitNameAt(id, node)+"</td></tr>");
 				}
 				tip.append("<tr><td><i>Tag:</i></td><td>"+ibs.getTagNameAt(id, node)+"</td></tr>");
-				boolean noFitMap = pop.getMapToFitness().isMap(Map2Fitness.Maps.NONE);
+				boolean noFitMap = pop.getMapToFitness().isMap(Map2Fitness.Map.NONE);
 				String label = (noFitMap?"Fitness":"Score");
 				if( type==Model.Data.FITNESS ) {
 					// fitness: use color-data to color fitness

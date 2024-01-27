@@ -3415,9 +3415,9 @@ public abstract class IBSPopulation {
 						+ ", " + Formatter.format(maxScore, 6) + "]; " + "fitness range ["
 						+ Formatter.format(minFitness, 6) + ", " + Formatter.format(maxFitness, 6) + "]).\n"
 						+ "Changed baseline fitness to " + map2fit.getBaseline()
-						+ (!map2fit.isMap(Map2Fitness.Maps.STATIC) ? " with static payoff-to-fitness map" : ""));
+						+ (!map2fit.isMap(Map2Fitness.Map.STATIC) ? " with static payoff-to-fitness map" : ""));
 				// just change to something meaningful
-				map2fit.setMap(Map2Fitness.Maps.STATIC);
+				map2fit.setMap(Map2Fitness.Map.STATIC);
 				map2fit.setBaseline(-minFitness);
 				updateMinMaxScores();
 				if (minFitness < 0.0) {
