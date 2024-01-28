@@ -74,6 +74,7 @@ import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.IBSD.FixationData;
 import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.modules.Traits;
+import org.evoludo.simulator.views.EvoLudoView;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.Formatter;
@@ -429,7 +430,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		modelReset();
 		// print data legend (for dynamical reports) and initialize variables (for
 		// statistics reports)
-		for (Module.DataTypes data : dataTypes) {
+		for (EvoLudoView.DataTypes data : dataTypes) {
 			switch (data) {
 				case MEAN:
 					output.println("# time,\t" + data.getKey() + ",\t" + Formatter.format(traitNames)
@@ -501,7 +502,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			while (true) {
 				String time = Formatter.format(model.getTime(), dataDigits);
 				// report dynamical data
-				for (Module.DataTypes data : dataTypes) {
+				for (EvoLudoView.DataTypes data : dataTypes) {
 					switch (data) {
 						case MEAN:
 							model.getMeanTraits(meantrait);
@@ -599,7 +600,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				// read and process sample
 				samples++;
 				FixationData fixData = ((IBSD) model).getFixationData();
-				for (Module.DataTypes data : dataTypes) {
+				for (EvoLudoView.DataTypes data : dataTypes) {
 					switch (data) {
 						case STAT_PROB:
 							double[] node = fixProb[fixData.mutantNode];
@@ -626,7 +627,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				modelReset();
 			}
 			// report statistics
-			for (Module.DataTypes data : dataTypes) {
+			for (EvoLudoView.DataTypes data : dataTypes) {
 				switch (data) {
 					case STAT_PROB:
 						output.println("# index,\t" + data.getKey() + (module.getNSpecies() > 1 ? "\tSpecies" : "")
@@ -1090,10 +1091,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	@Override
 	public boolean parseCLO() {
 		boolean success = super.parseCLO();
-		if (activeModule == null) {
-			// this is fatal - exit
-			fatal("--module missing - exiting!");
-		}
 		if (!doRestore)
 			return success;
 		// parseCLO does not reset model - do it now to be ready for restore
@@ -1242,7 +1239,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * 
 	 * @see #simulation(String[])
 	 */
-	ArrayList<Module.DataTypes> dataTypes;
+	ArrayList<EvoLudoView.DataTypes> dataTypes;
 
 	/**
 	 * The field to specify the accurracy of data reported in simulations.
@@ -1258,8 +1255,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * @param type the data type to check
 	 * @return {@code true} if {@code Mode#DYNAMICS}
 	 */
-	private boolean isDynamicsDataType(Module.DataTypes type) {
-		return !(type == Module.DataTypes.STAT_PROB || type == Module.DataTypes.STAT_UPDATES || type == Module.DataTypes.STAT_TIMES);
+	private boolean isDynamicsDataType(EvoLudoView.DataTypes type) {
+		return !(type == EvoLudoView.DataTypes.STAT_PROB || type == EvoLudoView.DataTypes.STAT_UPDATES || type == EvoLudoView.DataTypes.STAT_TIMES);
 	}
 
 	/**
@@ -1276,7 +1273,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 					String[] dataOutput = arg.split(CLOParser.VECTOR_DELIMITER);
 					dataTypes = new ArrayList<>();
 					for (String type : dataOutput) {
-						Module.DataTypes data = (Module.DataTypes) cloData.match(type);
+						EvoLudoView.DataTypes data = (EvoLudoView.DataTypes) cloData.match(type);
 						if (data == null) {
 							logger.warning(
 									"Data type '" + type + "' not supported by module '" + getModule().getName() + "'");
@@ -1295,9 +1292,9 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 					}
 					// cannot mix dynamics and statistics modes
 					boolean isDynamic = isDynamicsDataType(dataTypes.get(0));
-					Iterator<Module.DataTypes> i = dataTypes.iterator();
+					Iterator<EvoLudoView.DataTypes> i = dataTypes.iterator();
 					while (i.hasNext()) {
-						Module.DataTypes type = i.next();
+						EvoLudoView.DataTypes type = i.next();
 						if (isDynamicsDataType(type) != isDynamic) {
 							logger.warning(
 									"Cannot mix data from dynamics and statistics - ignoring '" + type.getKey() + "'");
@@ -1362,7 +1359,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			if (getModel().permitsMode(Mode.STATISTICS))
 				prsr.addCLO(cloNSamples);
 			cloData.clearKeys();
-			cloData.addKeys(getModule().getAvailableDataTypes());
+			cloData.addKeys(EvoLudoView.getAvailableDataTypes(activeModule, activeModel));
 			prsr.addCLO(cloDigits);
 		}
 		prsr.addCLO(cloRestore);
