@@ -52,7 +52,7 @@ import org.evoludo.simulator.models.IBSGroup.SamplingType;
 import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
-import org.evoludo.simulator.modules.Module.PlayerUpdateType;
+import org.evoludo.simulator.modules.PlayerUpdate;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -335,7 +335,7 @@ public abstract class IBSPopulation {
 	 * <li>The best-response update must be implemented in subclasses that override
 	 * this method. By default throws an error.
 	 * <li>Instead of overriding the method, subclasses may remove
-	 * {@link PlayerUpdateType#BEST_RESPONSE} from
+	 * {@link Type#BEST_RESPONSE} from
 	 * {@link org.evoludo.simulator.modules.Module#cloPlayerUpdate
 	 * Module.cloPlayerUpdate}.
 	 * </ol>
@@ -440,7 +440,7 @@ public abstract class IBSPopulation {
 	 * 
 	 * @see Module#getPlayerUpdateType()
 	 */
-	PlayerUpdateType playerUpdateType;
+	PlayerUpdate playerUpdate;
 
 	/**
 	 * The index of vacant sites or {@code -1} if module does not support vacancies.
@@ -2361,7 +2361,7 @@ public abstract class IBSPopulation {
 			return false;
 
 		boolean switched;
-		switch (playerUpdateType) {
+		switch (playerUpdate.getType()) {
 			case BEST_RESPONSE: // best-response update
 				// this makes little sense for continuous strategies - should not happen...
 				// takes entire population (mean-field) or entire neighborhood into account.
@@ -2394,7 +2394,7 @@ public abstract class IBSPopulation {
 				break;
 
 			default:
-				throw new Error("Unknown update method for players (" + playerUpdateType + ")");
+				throw new Error("Unknown update method for players (" + playerUpdate + ")");
 		}
 		if (pMutation >= 1.0 || (pMutation > 0.0 && random01() < pMutation)) {
 			mutateStrategyAt(me, switched);
@@ -2658,8 +2658,8 @@ public abstract class IBSPopulation {
 
 		double myFitness = getFitnessAt(me);
 		double aProb, nProb, norm;
-		double noise = module.getPlayerUpdateNoise();
-		double error = module.getPlayerUpdateError();
+		double noise = playerUpdate.getNoise();
+		double error = playerUpdate.getError();
 		double equalProb = betterOnly ? error : 0.5;
 		// generalize update to competition among arbitrary numbers of players
 		if (noise <= 0.0) { // zero noise
@@ -2773,8 +2773,8 @@ public abstract class IBSPopulation {
 
 		double myFitness = getFitnessAt(me);
 		double aProb, nProb, norm;
-		double noise = module.getPlayerUpdateNoise();
-		double error = module.getPlayerUpdateError();
+		double noise = playerUpdate.getNoise();
+		double error = playerUpdate.getError();
 		// generalize update to competition among arbitrary numbers of players
 		if (noise <= 0.0) { // zero noise
 			double aDiff = getFitnessAt(refGroup[0]) - myFitness;
@@ -2979,7 +2979,7 @@ public abstract class IBSPopulation {
 		boolean doReset = (ot != nTraits);
 		nPopulation = module.getNPopulation();
 		map2fit = module.getMapToFitness();
-		playerUpdateType = module.getPlayerUpdateType();
+		playerUpdate = module.getPlayerUpdate();
 
 		// check population geometry - for this we need to know the model (see reset)
 		if (nPopulation < 1) {
@@ -3140,14 +3140,14 @@ public abstract class IBSPopulation {
 				// 010320 using everyone as a reference in mean-field simulations is not
 				// feasible - except for best-response
 				// ecological updates are based on births and deaths rather than references
-				if (module.getPlayerUpdateType() != PlayerUpdateType.BEST_RESPONSE) {
+				if (playerUpdate.getType() != PlayerUpdate.Type.BEST_RESPONSE) {
 					logger.warning("reference type (" + referenceGroup.getSampling()
 							+ ") unfeasible in well-mixed populations!");
 					referenceGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 				}
 			}
 			// best-response in well-mixed populations should skip sampling of references
-			if (reprogeom.isType(Geometry.Type.MEANFIELD) && module.getPlayerUpdateType() == PlayerUpdateType.BEST_RESPONSE) {
+			if (reprogeom.isType(Geometry.Type.MEANFIELD) && playerUpdate.getType() == PlayerUpdate.Type.BEST_RESPONSE) {
 				referenceGroup.setSampling(IBSGroup.SamplingType.NONE);
 			}
 		}

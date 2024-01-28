@@ -668,7 +668,7 @@ public class scanCSD extends CSD {
 		Geometry geom = getGeometry();
 		// use name of out file as prefix for snapshot - not easily accessible, postponed
 		String pre = "snap-g"+geom.getType().getKey()+(int)(geom.connectivity)+"-t"+Formatter.format(engine.getModel().getTime(), 2)+
-					 "-n"+Formatter.format(getPlayerUpdateNoise(), 3);
+					 "-n"+Formatter.format(playerUpdate.getNoise(), 3);
 		File snapfile = new File(pre+"."+ext);
 		int counter = 0;
 		while( snapfile.exists() )

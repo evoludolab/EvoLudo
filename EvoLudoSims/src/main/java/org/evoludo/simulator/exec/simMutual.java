@@ -552,7 +552,7 @@ public class simMutual extends Mutualism implements Model.ChangeListener {
 		nSize = (int)(Math.sqrt(nPopulation) + 0.5);
 		player_s = new int[2][nSize][nSize];
 		// EvoLudo uses averaged payoffs and smaller temperature
-		temperature = 5.0*getPlayerUpdateNoise();
+		temperature = 5.0*playerUpdate.getNoise();
 	}
 
 	public void gyuriInit() {

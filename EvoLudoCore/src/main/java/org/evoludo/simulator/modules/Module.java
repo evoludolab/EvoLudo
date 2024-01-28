@@ -256,6 +256,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 */
 	public void load() {
 		map2fitness = new Map2Fitness(this, Map2Fitness.Map.NONE);
+		playerUpdate = new PlayerUpdate(this);
 		// currently only the Test module uses neither Discrete nor Continuous classes.
 		if (species == null)
 			species = new ArrayList<Module>();
@@ -275,7 +276,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		traitColor = null;
 		trajectoryColor = null;
 		map2fitness = null;
-		cloPlayerUpdate.clearKeys();
+		playerUpdate = null;
 		opponent = this;
 		engine.removeMilestoneListener(this);
 		if (this instanceof Model.ChangeListener)
@@ -1098,91 +1099,17 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	}
 
 	/**
-	 * Player update type.
-	 * 
-	 * @see #cloPlayerUpdate
+	 * Map to convert score/payoff to fitness
 	 */
-	protected PlayerUpdateType playerUpdateType = PlayerUpdateType.IMITATE;
+	protected PlayerUpdate playerUpdate;
 
 	/**
-	 * Sets the player update type.
+	 * Gets the score/payoff to fitness map.
 	 * 
-	 * @param type the updating type for players
-	 * @return {@code true} if player update type changed
+	 * @return the score-to-fitness map
 	 */
-	public boolean setPlayerUpdateType(PlayerUpdateType type) {
-		if (type == null || type == playerUpdateType)
-			return false;
-		playerUpdateType = type;
-		return true;
-	}
-
-	/**
-	 * Gets the player update type.
-	 * 
-	 * @return the player update type
-	 */
-	public PlayerUpdateType getPlayerUpdateType() {
-		return playerUpdateType;
-	}
-
-	/**
-	 * The noise of the updating process of players.
-	 */
-	double playerUpdateNoise;
-
-	/**
-	 * Set the noise of the updating process of players. With less noise chances are
-	 * higher to adopt the strategy of individuals even if they perform only
-	 * marginally better. Conversely for large noise payoff differences matter less
-	 * and the updating process is more random. For {@code noise==1} the process is
-	 * neutral.
-	 * 
-	 * @param noise the noise when updating the trait
-	 */
-	public void setPlayerUpdateNoise(double noise) {
-		playerUpdateNoise = Math.max(0.0, noise);
-	}
-
-	/**
-	 * Get the noise of the updating process.
-	 * 
-	 * @return the noise when updating the trait
-	 * 
-	 * @see #setPlayerUpdateNoise(double)
-	 */
-	public double getPlayerUpdateNoise() {
-		return playerUpdateNoise;
-	}
-
-	/**
-	 * The probability of an error during the updating of the trait.
-	 */
-	double playerUpdateError;
-
-	/**
-	 * Set the error of the updating process. With probability {@code error} an
-	 * individual fails to adopt a better performing trait or adopts an worse
-	 * performing one. More specifically the range of updating probabilities is
-	 * restricted to {@code [error, 1-error]} such that always a chance remains that
-	 * the trait of a better performing individual is not adopted or the one of a
-	 * worse performing one is adopted.
-	 * 
-	 * @param error the error when adopting the trait
-	 */
-	public void setPlayerUpdateError(double error) {
-		playerUpdateError = Math.max(0.0, error);
-	}
-
-	/**
-	 * Get the error of the updating process.
-	 * 
-	 * @return the error when adopting the trait
-	 * 
-	 * @see #setError(double)
-	 */
-	public double getPlayerUpdateError() {
-		return playerUpdateError;
+	public PlayerUpdate getPlayerUpdate() {
+		return playerUpdate;
 	}
 
 	/**
@@ -1517,98 +1444,6 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 						output.println(
 								"# deathrate:   " + Formatter.format(pop.getDeathRate(), 4) + (species.size() > 1 ? " ("
 										+ pop.getName() + ")" : ""));
-					}
-				}
-			});
-
-	/**
-	 * Command line option to set the type of player updates.
-	 */
-	public final CLOption cloPlayerUpdate = new CLOption("playerupdate", PlayerUpdateType.IMITATE.getKey() + " 1,0",
-			EvoLudo.catModule,
-			"--playerupdate <u> [<n>[,<e>]] set player update type with\n" + //
-					"                noise n (neutral=1) and error probability e (0):",
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse player update type(s) for a single or multiple populations/species.
-				 * {@code arg} can be a single value or an array of values with the
-				 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
-				 * {@code arg} until all populations/species have the player update type
-				 * set.
-				 * 
-				 * @param arg the (array of) map name(s)
-				 */
-				@Override
-				public boolean parse(String arg) {
-					boolean success = true;
-					String[] playerupdates = arg.split(CLOParser.SPECIES_DELIMITER);
-					int n = 0;
-					for (Module pop : species) {
-						String updt = playerupdates[n++ % playerupdates.length];
-						PlayerUpdateType put = (PlayerUpdateType) cloPlayerUpdate.match(updt);
-						if (put == null) {
-							if (success)
-								logger.warning((species.size() > 1 ? pop.getName() + ": " : "") + //
-										"player update '" + updt + "' not recognized - using '"
-										+ pop.getPlayerUpdateType()
-										+ "'");
-							success = false;
-							continue;
-						}
-						pop.setPlayerUpdateType(put);
-						// parse n, e, if present
-						String[] args = updt.split("\\s+|=|,");
-						double noise = 1.0;
-						double error = 0.0;
-						switch (args.length) {
-							case 3:
-								error = CLOParser.parseDouble(args[2]);
-								// $FALL-THROUGH$
-							case 2:
-								noise = CLOParser.parseDouble(args[1]);
-								break;
-							default:
-						}
-						pop.setPlayerUpdateNoise(noise);
-						pop.setPlayerUpdateError(error);
-					}
-					return success;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					boolean isIBS = model.isModelType(Model.Type.IBS);
-					for (Module pop : species) {
-						if (isIBS) {
-							IBSPopulation ibspop = ((IBS) model).getSpecies(pop);
-							// skip populations with Moran updates
-							if (ibspop.getPopulationUpdateType().isMoran())
-								continue;
-						}
-						PlayerUpdateType put = pop.getPlayerUpdateType();
-						output.println("# playerupdate:         " + put
-								+ (species.size() > 1 ? " (" + pop.getName() + ")" : ""));
-						switch (put) {
-							case THERMAL: // fermi update
-							case IMITATE: // imitation update
-							case IMITATE_BETTER: // imitation update (better strategies only)
-								output.println(
-										"# playerupdatenoise:    "
-												+ Formatter.formatSci(pop.getPlayerUpdateNoise(), 6));
-								// XXX errors could probably be added to PROPORTIONAL as well as DE models
-								if (isIBS) {
-									output.println(
-											"# playerupdateerror:    "
-													+ Formatter.formatSci(pop.getPlayerUpdateError(), 6));
-								}
-								break;
-							default:
-								// no other PlayerUpdateType's seem to implement noise
-								break;
-						}
 					}
 				}
 			});
@@ -2083,8 +1918,8 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		}
 		if (anyNonVacant) {
 			// additional options that only make sense without vacant sites
-			cloPlayerUpdate.addKeys(PlayerUpdateType.values());
-			parser.addCLO(cloPlayerUpdate);
+			playerUpdate.cloPlayerUpdate.addKeys(PlayerUpdate.Type.values());
+			parser.addCLO(playerUpdate.cloPlayerUpdate);
 		}
 		if (anyVacant) {
 			parser.addCLO(cloDeathRate);
@@ -2092,7 +1927,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		// best-response is not an acceptable update rule for continuous strategies -
 		// exclude Population.PLAYER_UPDATE_BEST_RESPONSE
 		if (anyContinuous) {
-			cloPlayerUpdate.removeKey(PlayerUpdateType.BEST_RESPONSE);
+			playerUpdate.cloPlayerUpdate.removeKey(PlayerUpdate.Type.BEST_RESPONSE);
 		}
 		// add option to disable traits if >=3 traits, except >=2 traits for  
 		// continuous modules with no vacancies (cannot disable vacancies)
@@ -2112,104 +1947,6 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 
 		// add markers, fixed points in particular
 		parser.addCLO(cloPoints);
-	}
-
-	/**
-	 * Player update types. Enum on steroids. Currently available player update
-	 * types are:
-	 * <dl>
-	 * <dt>best
-	 * <dd>best wins (equal - stay)
-	 * <dt>best-random
-	 * <dd>best wins (equal - random)
-	 * <dt>best-response
-	 * <dd>best-response dynamics
-	 * <dt>imitate
-	 * <dd>imitate/replicate (linear)
-	 * <dt>imitate-better
-	 * <dd>imitate/replicate (better only)
-	 * <dt>proportional
-	 * <dd>proportional to payoff
-	 * <dt>thermal
-	 * <dd>Fermi/thermal update
-	 * </dl>
-	 */
-	public static enum PlayerUpdateType implements CLOption.Key {
-
-		/**
-		 * best wins (equal - stay)
-		 */
-		BEST("best", "best wins (equal - stay)"),
-
-		/**
-		 * best wins (equal - random)
-		 */
-		BEST_RANDOM("best-random", "best wins (equal - random)"),
-
-		/**
-		 * best-response
-		 */
-		BEST_RESPONSE("best-response", "best-response"),
-
-		/**
-		 * imitate/replicate (linear)
-		 */
-		IMITATE("imitate", "imitate/replicate (linear)"),
-
-		/**
-		 * imitate/replicate (better only)
-		 */
-		IMITATE_BETTER("imitate-better", "imitate/replicate (better only)"),
-
-		/**
-		 * proportional to payoff
-		 */
-		PROPORTIONAL("proportional", "proportional to payoff"),
-
-		/**
-		 * Fermi/thermal update
-		 */
-		THERMAL("thermal", "Fermi/thermal update");
-
-		/**
-		 * Key of player update. Used when parsing command line options.
-		 * 
-		 * @see Module#cloPlayerUpdate
-		 */
-		String key;
-
-		/**
-		 * Brief description of player update for help display.
-		 * 
-		 * @see EvoLudo#helpCLO()
-		 */
-		String title;
-
-		/**
-		 * Instantiates a new type of player update type.
-		 * 
-		 * @param key   the identifier for parsing of command line option
-		 * @param title the summary of the player update
-		 */
-		PlayerUpdateType(String key, String title) {
-			this.key = key;
-			this.title = title;
-		}
-
-		@Override
-		public String toString() {
-			return key + ": " + title;
-		}
-
-		@Override
-		public String getKey() {
-			return key;
-		}
-
-		@Override
-		public String getTitle() {
-			return title;
-		}
 	}
 
 	public enum DataTypes implements CLOption.Key {

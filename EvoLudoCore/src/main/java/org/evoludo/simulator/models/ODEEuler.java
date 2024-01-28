@@ -45,7 +45,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
-import org.evoludo.simulator.modules.Module.PlayerUpdateType;
+import org.evoludo.simulator.modules.PlayerUpdate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -385,7 +385,7 @@ public class ODEEuler implements Model.ODE {
 	 * <code>1.0/(maxFitness - minFitness)</code> for each species. This is used to
 	 * normalize imitation rules of players.
 	 * 
-	 * @see Module.PlayerUpdateType#IMITATE
+	 * @see Module.Type#IMITATE
 	 */
 	double[] invFitRange;
 
@@ -906,7 +906,7 @@ public class ODEEuler implements Model.ODE {
 	 * Calculate the rates of change for all species in {@code state} at
 	 * {@code time} given the fitness {@code fitness} and returned in
 	 * {@code change}. For replicator models the dynamics depends on the selected
-	 * type of player updating, see {@link PlayerUpdateType}, while for modules with
+	 * type of player updating, see {@link PlayerUpdate.Type}, while for modules with
 	 * variable population sizes (density based or with vaccant 'space'
 	 * (reproductive opportunities)) the fitness denotes the rate of reproduction
 	 * moderated by the available 'space'.
@@ -954,7 +954,7 @@ public class ODEEuler implements Model.ODE {
 			}
 
 			double err = 0.0;
-			PlayerUpdateType put = mod.getPlayerUpdateType();
+			PlayerUpdate.Type put = mod.getPlayerUpdate().getType();
 			switch (put) {
 				case THERMAL: // fermi update
 					err = updateThermal(mod, state, fitness, nGroup, index, change);
@@ -1070,7 +1070,7 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	/**
-	 * Implementation of the player update {@link PlayerUpdateType#THERMAL}. This
+	 * Implementation of the player update {@link Type#THERMAL}. This
 	 * calculates the rates of change for each type in species <code>mod</code> for
 	 * the popular choice for 'pairwise comparisons' where the focal player \(i\)
 	 * and one of its neighbours \(j\) are randomly chosen. The focal player \(i\)
@@ -1105,7 +1105,7 @@ public class ODEEuler implements Model.ODE {
 	protected double updateThermal(Module mod, double[] state, double[] fitness, int nGroup, int index,
 			double[] change) {
 		// no scaling seems required for comparisons with simulations
-		double noise = mod.getPlayerUpdateNoise();
+		double noise = mod.getPlayerUpdate().getNoise();
 		if (noise <= 0.0)
 			return updateBest(mod, state, fitness, nGroup, index, change);
 		// some noise; factor 2 enters - see e.g. Sigmund et al. Dyn Games & Appl. 2011
@@ -1129,7 +1129,7 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	/**
-	 * Implementation of player update {@link PlayerUpdateType#BEST}. This
+	 * Implementation of player update {@link Type#BEST}. This
 	 * calculates the rate of change individuals adopt the strategy of better
 	 * performing individuals with certainty (and never those of worse performing
 	 * individuals). This calculates the rates of change for each type in species
@@ -1157,7 +1157,7 @@ public class ODEEuler implements Model.ODE {
 	 * <strong>Note:</strong>In the limit of vanishing noise the updates
 	 * {@link #updateThermal(Module, double[], double[], int, int, double[])} and
 	 * {@link #updateImitate(Module, double[], double[], int, int, double[])}
-	 * recover the {@link PlayerUpdateType#BEST} updating type as well.
+	 * recover the {@link Type#BEST} updating type as well.
 	 * 
 	 * @param mod     the module representing the current species
 	 * @param state   array of frequencies/densities denoting the state population
@@ -1189,7 +1189,7 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	/**
-	 * Implementation of the player update {@link PlayerUpdateType#IMITATE}. This
+	 * Implementation of the player update {@link Type#IMITATE}. This
 	 * calculates the rates of change for each type in species <code>mod</code> for
 	 * the popular choice for 'pairwise comparisons' where the focal player \(i\)
 	 * and one of its neighbours \(j\) are randomly chosen. The focal player \(i\)
@@ -1221,11 +1221,11 @@ public class ODEEuler implements Model.ODE {
 	 */
 	protected double updateImitate(Module mod, double[] state, double[] fitness, int nGroup, int index,
 			double[] change) {
-		return updateReplicate(mod, state, fitness, nGroup, index, change, mod.getPlayerUpdateNoise());
+		return updateReplicate(mod, state, fitness, nGroup, index, change, mod.getPlayerUpdate().getNoise());
 	}
 
 	/**
-	 * Implementation of the player update {@link PlayerUpdateType#IMITATE_BETTER}.
+	 * Implementation of the player update {@link Type#IMITATE_BETTER}.
 	 * This calculates the rates of change for each type in species <code>mod</code>
 	 * for the popular choice for 'pairwise comparisons' where the focal player
 	 * \(i\) and one of its neighbours \(j\) are randomly chosen. The focal player
@@ -1259,7 +1259,7 @@ public class ODEEuler implements Model.ODE {
 	 */
 	protected double updateImitateBetter(Module mod, double[] state, double[] fitness, int nGroup, int index,
 			double[] change) {
-		return updateReplicate(mod, state, fitness, nGroup, index, change, 0.5 * mod.getPlayerUpdateNoise());
+		return updateReplicate(mod, state, fitness, nGroup, index, change, 0.5 * mod.getPlayerUpdate().getNoise());
 	}
 
 	/**
@@ -1310,7 +1310,7 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	/**
-	 * Implementation of the player update {@link PlayerUpdateType#PROPORTIONAL}.
+	 * Implementation of the player update {@link Type#PROPORTIONAL}.
 	 * This calculates the rates of change for each type in species <code>mod</code>
 	 * for a 'pairwise comparison' where the focal player
 	 * \(i\) and one of its neighbours \(j\) are randomly chosen. The focal player
@@ -1355,12 +1355,12 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	/**
-	 * Implementation of the player update {@link PlayerUpdateType#BEST_RESPONSE}.
+	 * Implementation of the player update {@link Type#BEST_RESPONSE}.
 	 * This calculates the rates of change for each type in species <code>mod</code>
 	 * for the best-response dynamic where the focal player \(i\) switches to the
 	 * strategy \(j\) that has the highest payoff given the current state of the
 	 * population. Note, in contrast to other player updates, such as
-	 * {@link PlayerUpdateType#THERMAL} or {@link PlayerUpdateType#IMITATE} the
+	 * {@link Type#THERMAL} or {@link Type#IMITATE} the
 	 * best-response is an innovative update rule, which means that strategic types
 	 * that are currently not present in the population can get introduced.
 	 * Consequently, homogeneous states may not be absorbing.

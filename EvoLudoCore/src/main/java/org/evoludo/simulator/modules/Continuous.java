@@ -381,7 +381,6 @@ public abstract class Continuous extends Module {
 	public void unload() {
 		super.unload();
 		traits2payoff = null;
-		cloPlayerUpdate.clearKeys();
 	}
 
 	@Override
@@ -1415,7 +1414,7 @@ public abstract class Continuous extends Module {
 		parser.addCLO(cloBenefits);
 		// best-response is not an acceptable update rule for continuous strategies -
 		// exclude Population.PLAYER_UPDATE_BEST_RESPONSE
-		cloPlayerUpdate.removeKey(PlayerUpdateType.BEST_RESPONSE);
+		playerUpdate.cloPlayerUpdate.removeKey(PlayerUpdate.Type.BEST_RESPONSE);
 	}
 	
 	/**

@@ -67,14 +67,14 @@ public class Map2Fitness {
 	/**
 	 * Map type. Defaults to {@link Map#NONE}.
 	 */
-	Map2Fitness.Map map = Map.NONE;
+	Map map = Map.NONE;
 
 	/**
 	 * Instantiate new map of type {@code map}.
 	 * 
 	 * @param map the map to use as template
 	 */
-	public Map2Fitness(Module module, Map2Fitness.Map map) {
+	public Map2Fitness(Module module, Map map) {
 		this.module = module;
 		this.map = map;
 	}
