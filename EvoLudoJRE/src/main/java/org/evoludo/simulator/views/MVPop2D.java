@@ -30,7 +30,7 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.simulator;
+package org.evoludo.simulator.views;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -58,6 +58,12 @@ import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.graphics.PopListener;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Map2Fitness;
+import org.evoludo.simulator.ColorMap;
+import org.evoludo.simulator.ColorMapJRE;
+import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.EvoLudoLab;
+import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.models.ODEEuler.HasDE;

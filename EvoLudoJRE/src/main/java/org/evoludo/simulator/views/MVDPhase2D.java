@@ -30,7 +30,7 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.simulator;
+package org.evoludo.simulator.views;
 
 import java.util.ArrayList;
 
@@ -44,9 +44,9 @@ import org.evoludo.graphics.GraphAxis;
 import org.evoludo.graphics.ParaGraph;
 import org.evoludo.graphics.StateData;
 import org.evoludo.graphics.StateGraphListener;
+import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
-import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
 import org.evoludo.util.Formatter;
 

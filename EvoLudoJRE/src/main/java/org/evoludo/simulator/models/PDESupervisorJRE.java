@@ -30,15 +30,14 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.simulator;
+package org.evoludo.simulator.models;
 
 import java.awt.GraphicsEnvironment;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 
-import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.PDESupervisor;
+import org.evoludo.simulator.EvoLudo;
 
 /**
  * Supervisor of reaction-diffusion processes. Coordinates calculations of the

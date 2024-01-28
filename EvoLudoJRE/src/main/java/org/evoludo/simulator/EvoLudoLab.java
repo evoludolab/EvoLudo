@@ -83,6 +83,19 @@ import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasS3;
+import org.evoludo.simulator.views.MVC2Distr;
+import org.evoludo.simulator.views.MVCDistr;
+import org.evoludo.simulator.views.MVCMean;
+import org.evoludo.simulator.views.MVCTraitHistogram;
+import org.evoludo.simulator.views.MVConsole;
+import org.evoludo.simulator.views.MVDMean;
+import org.evoludo.simulator.views.MVDPhase2D;
+import org.evoludo.simulator.views.MVDS3;
+import org.evoludo.simulator.views.MVDegree;
+import org.evoludo.simulator.views.MVFitHistogram;
+import org.evoludo.simulator.views.MVFitness;
+import org.evoludo.simulator.views.MVPop2D;
+import org.evoludo.simulator.views.MultiView;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
@@ -98,7 +111,7 @@ public class EvoLudoLab extends JFrame
 	ParamPanel params;
 	JSlider evoludoSlider;
 	JButton runStop, resetButton;
-	private final MultiView	activeViews;
+	private final EvoLudoPanel	activeViews;
 	JLabel status, counter;
 	private final Action resetAction, runStopAction, stepAction;
 
@@ -149,7 +162,7 @@ public class EvoLudoLab extends JFrame
 		status.setToolTipText("Summary of current status");
 		status.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, 4));
 
-		activeViews = new MultiView();
+		activeViews = new EvoLudoPanel();
 		JPanel panelA = new JPanel(new GridLayout(1, 2));
 		panelA.setOpaque(false);
 		panelA.add(counter);
@@ -194,6 +207,10 @@ public class EvoLudoLab extends JFrame
 		JRootPane root = getRootPane();
 		addKeyControls(root);
 		new ContainerHandler().addKeyListenerRecursively(root);
+	}
+
+	public EvoLudoJRE getEngine() {
+		return engine;
 	}
 
 	/**
@@ -495,11 +512,11 @@ public class EvoLudoLab extends JFrame
 			displayStatus("Problems parsing arguments - check log for details.", Level.WARNING.intValue() + 1);
     }
 
-    public void addMultiView(MultiViewPanel view) {
+    public void addMultiView(MultiView view) {
 		activeViews.addView(view);
 	}
 
-	public List<MultiViewPanel> getMultiViews() {
+	public List<MultiView> getMultiViews() {
 		return activeViews.getViews();
 	}
 
@@ -550,7 +567,7 @@ public class EvoLudoLab extends JFrame
 		// note: console may be removed for (simulated) ePub modes
 		if( module instanceof HasConsole )
 			addMultiView(console);
-		for (MultiViewPanel mvp : activeViews.getViews()) {
+		for (MultiView mvp : activeViews.getViews()) {
 			mvp.setModule(module);
 			mvp.reset(true);
 		}
@@ -640,7 +657,7 @@ public class EvoLudoLab extends JFrame
 	 * @param updateGUI <code>true</code> to force GUI update
 	 */
 	private void update(boolean updateGUI) {
-		for (MultiViewPanel mvp : activeViews.getViews())
+		for (MultiView mvp : activeViews.getViews())
 			mvp.update(updateGUI);
 		if (updateGUI) {
 			updateLabels();
@@ -675,7 +692,7 @@ public class EvoLudoLab extends JFrame
 
 	@Override
 	public synchronized void modelStopped() {
-		for (MultiViewPanel mvp : activeViews.getViews())
+		for (MultiView mvp : activeViews.getViews())
 			mvp.end();
 		update(true);
 		runStopAction.putValue(Action.NAME, "Run");
@@ -683,7 +700,7 @@ public class EvoLudoLab extends JFrame
 
 	@Override
 	public synchronized void modelDidReinit() {
-		for (MultiViewPanel mvp : activeViews.getViews())
+		for (MultiView mvp : activeViews.getViews())
 			mvp.init();
 		updateLabels();
 	}

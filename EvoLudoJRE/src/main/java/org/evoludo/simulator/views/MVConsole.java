@@ -30,7 +30,7 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.simulator;
+package org.evoludo.simulator.views;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -53,7 +53,10 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
 
-public class MVConsole extends JComponent implements MultiViewPanel {
+import org.evoludo.simulator.EvoLudoJRE;
+import org.evoludo.simulator.EvoLudoLab;
+
+public class MVConsole extends JComponent implements MultiView {
 
 	private static final long serialVersionUID = 20110423L;
 
@@ -81,7 +84,7 @@ public class MVConsole extends JComponent implements MultiViewPanel {
 
 	public MVConsole(EvoLudoLab lab) {
 		this.lab = lab;
-		logger = lab.logger;
+		logger = lab.getEngine().getLogger();
 		setLayout(new BorderLayout());
 		setOpaque(false);
 		text = new JTextPane();
@@ -122,7 +125,8 @@ public class MVConsole extends JComponent implements MultiViewPanel {
 	protected void clear() {
 		text.setEditable(true);
 		text.selectAll();
-		text.replaceSelection(lab.engine.getModule().getInfo() + "\n" + lab.engine.getVersion());
+		EvoLudoJRE engine = lab.getEngine();
+		text.replaceSelection(engine.getModule().getInfo() + "\n" + engine.getVersion());
 		text.setEditable(false);
 	}
 

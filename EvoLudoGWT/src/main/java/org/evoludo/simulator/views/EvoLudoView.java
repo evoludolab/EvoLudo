@@ -30,7 +30,7 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.simulator;
+package org.evoludo.simulator.views;
 
 import org.evoludo.ui.FullscreenChangeHandler;
 
@@ -41,7 +41,7 @@ import com.google.gwt.user.client.ui.RequiresResize;
  *
  * @author Christoph Hauert
  */
-public interface EvoLudoViews extends RequiresResize, IsWidget, FullscreenChangeHandler {
+public interface EvoLudoView extends RequiresResize, IsWidget, FullscreenChangeHandler {
 
 	public String getName();
 

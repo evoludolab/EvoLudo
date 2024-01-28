@@ -30,50 +30,58 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.simulator;
+package org.evoludo.simulator.views;
 
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Set;
 
 import org.evoludo.graphics.AbstractGraph;
-import org.evoludo.graphics.PopGraph3D;
+import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.math.ArrayMath;
+import org.evoludo.simulator.ColorMap;
+import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudo.ColorModelType;
+import org.evoludo.simulator.EvoLudoGWT;
+import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
+import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.models.IBS;
+import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Model.Type;
 import org.evoludo.simulator.models.ODEEuler.HasDE;
+import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
 
-import thothbot.parallax.core.shared.materials.MeshLambertMaterial;
-
 /**
  *
  * @author Christoph Hauert
  */
-public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphController {
+public class MVPop2D extends MVAbstract implements AbstractGraph.NodeGraphController {
 
 	@SuppressWarnings("hiding")
-	private Set<PopGraph3D> graphs;
+	private Set<PopGraph2D> graphs;
+
 	protected int hitNode = -1;
-	protected PopGraph3D hitGraph = null;
 
 	@SuppressWarnings("unchecked")
-	public MVPop3D(EvoLudoGWT engine, Model.Data type) {
+	public MVPop2D(EvoLudoGWT engine, Model.Data type) {
 		super(engine, type);
-		graphs = (Set<PopGraph3D>) super.graphs;
+		graphs = (Set<PopGraph2D>) super.graphs;
 	}
 
 	@Override
 	public String getName() {
 		switch( type ) {
 			case STRATEGY:
-				return "Strategies - 3D Structure";
+				return "Strategies - Structure";
 			case FITNESS:
-				return "Fitness - 3D Structure";
+				return "Fitness - Structure";
 			default:
 				return null;
 		}
@@ -87,14 +95,6 @@ public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphContro
 	}
 
 	@Override
-	public void activate() {
-		if( isActive )
-			return;
-		prepare();
-		super.activate();
-	}
-
-	@Override
 	public void layoutComplete() {
 		checkLayout();
 		update();
@@ -105,9 +105,9 @@ public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphContro
 		if( callback!=null && isActive ) {
 			// check if all graphs have layout
 			boolean layouting = false;
-			for( PopGraph3D graph : graphs ) {
+			for( PopGraph2D graph : graphs ) {
 				// graph may not have a network (e.g. for ODE/SDE models)
-				Network3D net = graph.getNetwork();
+				Network2D net = graph.getNetwork();
 				if( net==null )
 					continue;
 				Status status = net.getStatus();
@@ -122,87 +122,76 @@ public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphContro
 	}
 
 	@Override
+	public void clear() {
+		super.clear();
+		for( PopGraph2D graph : graphs )
+			graph.clearGraph();
+	}
+
+	@Override
 	protected void destroyGraphs() {
 		// super takes care of removing graphs, just deal with networks here
-		for( PopGraph3D graph : graphs ) {
-			Network3D net = graph.getNetwork();
+		for( PopGraph2D graph : graphs ) {
+			Network2D net = graph.getNetwork();
 			if( net!=null )
 				net.cancelLayout();
-			graph.invalidate();
 		}
 		super.destroyGraphs();
 	}
 
 	@Override
-	public void reset(boolean soft) {
-		super.reset(soft);
-		if( !isActive ) {
-			for( PopGraph3D graph : graphs)
-				graph.invalidate();
-			return;
-		}
-		// prepare initializes or starts suspended animation
-		soft &= prepare();
-		if (!soft) {
-			for( PopGraph3D graph : graphs)
-				graph.reset();
-		}
-		update();
-	}
-
-	@Override
-	public void init() {
-		super.init();
-		update();
-	}
-
-	@Override
 	public void update(boolean force) {
-		// so far, no 3D graphs have histories implemented; safely ignore force
-		if (!isActive)
-			return;
-
 		Model model = engine.getModel();
 		switch( model.getModelType() ) {
 			case ODE:
-				// there is only a single graph but whatever...
-				for (PopGraph3D graph : graphs)
+				for( PopGraph2D graph : graphs )
 					graph.displayMessage("No view available (ODE Solver)");
 				break;
 			case SDE:
-				// there is only a single graph but whatever...
-				for (PopGraph3D graph : graphs)
+				for( PopGraph2D graph : graphs )
 					graph.displayMessage("No view available (SDE Solver)");
 				break;
+			case PDE:
 			default:
+				// always read data - some nodes may have changed due to user actions
 				double newtime = model.getTime();
 				boolean isNext = (Math.abs(timestamp-newtime)>1e-8);
 				timestamp = newtime;
-				for( PopGraph3D graph : graphs) {
+				for( PopGraph2D graph : graphs ) {
+					boolean doUpdate = isActive || graph.hasHistory();
+					// if graph is neither active nor has history, force can be safely ignored
+					// otherwise may lead to problems if graph has never been activated
+					if (!doUpdate)
+						continue;
 					switch( type ) {
 						case STRATEGY:
-							model.getTraitData(graph.getTag(), graph.getData(), graph.getColorModel());
+							model.getTraitData(graph.getTag(), graph.getData(), graph.getColorMap());
 							break;
 						case FITNESS:
-							model.getFitnessData(graph.getTag(), graph.getData(), //
-								(ColorMap.Gradient1D<MeshLambertMaterial>)graph.getColorModel());
+							// cast should be safe for fitness data
+							model.getFitnessData(graph.getTag(), graph.getData(), (ColorMap.Gradient1D<String>) graph.getColorMap());
 							break;
 						default:
 							break;
 					}
-					graph.update(isNext);
+					graph.addData(isNext);
+					graph.paint();
 				}
 		}
 	}
 
-	private boolean prepare() {
-		boolean soft = true;
+	@Override
+	public void reset(boolean soft) {
+		super.reset(soft);
+		// how to deal with distinct interaction/reproduction geometries?
+		// - currently two separate graphs are shown one for the interaction and the other for the reproduction geometry
+		// - alternatively links could be drawn in different colors (would need to revise network layout routines)
+		// - another alternative is to add context menu to toggle between the different link sets (could be difficult if one is a lattice...)
 		int nGraphs = 0;
 		Geometry geoDE = null;
-		Model model = engine.getModel();
-		switch( model.getModelType() ) {
+		switch( engine.getModel().getModelType() ) {
 			case PDE:
-				geoDE = ((Model.PDE)model).getGeometry();
+				geoDE = ((Model.PDE)engine.getModel()).getGeometry();
 				//$FALL-THROUGH$
 			case ODE:
 			case SDE:
@@ -211,22 +200,17 @@ public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphContro
 					soft = false;
 					destroyGraphs();
 					Module module = engine.getModule();
-					PopGraph3D graph = new PopGraph3D(this, module.getID());
+					PopGraph2D graph = new PopGraph2D(this, module.getID());
 					// debugging not available for DE's
 					graph.setDebugEnabled(false);
 					wrapper.add(graph);
 					graphs2mods.put(graph, module);
-					gCols = nGraphs;
 				}
 				// there is only a single graph for now but whatever...
-				for (PopGraph3D graph : graphs)
+				for (PopGraph2D graph : graphs)
 					graph.setGeometry(geoDE);
 				break;
 			case IBS:
-				// how to deal with distinct interaction/reproduction geometries?
-				// - currently two separate graphs are shown one for the interaction and the other for the reproduction geometry
-				// - alternatively links could be drawn in different colors (would need to revise network layout routines)
-				// - another alternative is to add context menu to toggle between the different link sets (could be difficult if one is a lattice...)
 				ArrayList<? extends Module> species = engine.getModule().getSpecies();
 				for( Module module : species )
 					nGraphs += Geometry.displayUniqueGeometry(module)?1:2;
@@ -235,11 +219,11 @@ public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphContro
 					soft = false;
 					destroyGraphs();
 					for( Module module : species ) {
-						PopGraph3D graph = new PopGraph3D(this, module.getID());
+						PopGraph2D graph = new PopGraph2D(this, module.getID());
 						wrapper.add(graph);
 						graphs2mods.put(graph, module);
 						if( !Geometry.displayUniqueGeometry(module) ) {
-							graph = new PopGraph3D(this, module.getID());
+							graph = new PopGraph2D(this, module.getID());
 							wrapper.add(graph);
 							graphs2mods.put(graph, module);
 							// arrange graphs horizontally
@@ -254,17 +238,12 @@ public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphContro
 					}
 					int width = 100/gCols;
 					int height = 100/gRows;
-					for( PopGraph3D graph : graphs )
+					for( PopGraph2D graph : graphs )
 						graph.setSize(width+"%", height+"%");
 				}
-				else {
-					// start animation in preparation of activation
-					for (PopGraph3D graph : graphs)
-						graph.animate();
-				}
-				// update geometries associated with graphs
+				// even if nGraphs did not change, the geometries associated with the graphs still need to be updated
 				boolean inter = true;
-				for (PopGraph3D graph : graphs) {
+				for (PopGraph2D graph : graphs) {
 					Module module = graphs2mods.get(graph);
 					Geometry geo = inter ? module.getInteractionGeometry() : module.getReproductionGeometry();
 					graph.setGeometry(geo);
@@ -275,109 +254,149 @@ public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphContro
 				break;
 			default:
 		}
-		boolean noWarnings = true;
-		// IMPORTANT: to avoid problems with WebGL and 3D rendering, each graph needs to have its own color map
-		Model.Type mt = engine.getModel().getModelType();
-		if( mt.equals(Model.Type.ODE) || mt.equals(Model.Type.SDE) ) {
-			// ODE or SDE model (no geometry and thus no population)
-			for( PopGraph3D graph : graphs )
-				graph.displayMessage("No view available ("+mt.toString()+" solver)");
-			return soft;
-		}
-		for( PopGraph3D graph : graphs ) {
-			ColorMap<MeshLambertMaterial> cMap = null;
-			Module module = graphs2mods.get(graph);
+
+		for( PopGraph2D graph : graphs ) {
+			Geometry geometry = graph.getGeometry();
+			if( geometry==null ) {
+				graph.reset();
+				continue;
+			}
+			Module pop = graphs2mods.get(graph);
+			PopGraph2D.GraphStyle style = graph.getStyle();
+			if( geometry.isType(Geometry.Type.LINEAR) ) {
+				// frame, ticks, labels needed
+				style.xLabel = "nodes";
+				style.showXLabel = true;
+				style.showXTickLabels = true;
+				style.xMin = 0;
+				style.xMax = geometry.size;
+				style.yLabel = "time";
+				double rFreq = -engine.getReportInterval();
+				// if report frequency did not change, we're done
+				if( Math.abs(style.yIncr-rFreq)>1e-8 ) {
+					style.yIncr = -rFreq;
+					soft = false;
+				}
+				style.yMax = 0.0;
+				style.showYLabel = true;
+				style.showYTickLabels = true;
+				style.showXTicks = true;
+				style.showYTicks = true;
+				style.showYLevels = true;
+			}
+			else {
+				// border is all we want
+				style.showXLabel = false;
+				style.showYLabel = false;
+				style.showYTickLabels = false;
+				style.showXTickLabels = false;
+				style.showXTicks = false;
+				style.showYTicks = false;
+			}
+//			style.label = geometry.name;
+//			style.showLabel = !style.label.isEmpty();
+			style.percentY = false;
+			style.showXLevels = false;
+
+			ColorMap<String> cMap = null;
 			switch( type ) {
 				case STRATEGY:
-					if( module.isContinuous() ) {
+					if( pop.isContinuous() ) {
 						ColorModelType cmt = engine.getColorModelType();
-						int nTraits = module.getNTraits();
+						int nTraits = pop.getNTraits();
 						if( cmt==ColorModelType.DISTANCE ) {
-							cMap = new ColorMap3D.Gradient1D(new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
+							cMap = new ColorMapCSS.Gradient1D(new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
 							break;
 						}
 						switch( nTraits ) {
 							case 1:
 								// set hue range: min = red, max = blue
-								cMap = new ColorMap3D.Hue(0.0, 2.0/3.0, 500);
+								cMap = new ColorMapCSS.Hue(0.0, 2.0/3.0, 500);
 								break;
 							case 2:
-								Color[] tColors = module.getTraitColors();
-								cMap = new ColorMap3D.Gradient2D(tColors[0], tColors[1], Color.BLACK, 50);
+								Color[] traitcolors = pop.getTraitColors();
+								cMap = new ColorMapCSS.Gradient2D(traitcolors[0], traitcolors[1], Color.BLACK, 50);
 								break;
 							default:
-								if( cmt==ColorModelType.DISTANCE ) {
-									cMap = new ColorMap3D.Gradient1D(new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
-									break;
-								}
 								Color[] primaries = new Color[nTraits];
-								System.arraycopy(module.getTraitColors(), 0, primaries, 0, nTraits);
-								cMap = new ColorMap3D.GradientND(primaries);
-								if( cmt!=ColorModelType.DISTANCE ) {
-									// log warning only once in case there are multiple species
-									if( noWarnings ) {
-										noWarnings = false;
-										logger.warning("display of >2 continuous traits not (yet) implemented - coloring trait distance");
-									}
-									engine.setColorModelType(ColorModelType.DISTANCE);
-								}
+								System.arraycopy(pop.getTraitColors(), 0, primaries, 0, nTraits);
+								cMap = new ColorMapCSS.GradientND(primaries);
 								break;
 						}
 					}
 					else {
 						if( engine.isModelType(Model.Type.PDE) ) {
-							int nTraits = module.getNTraits();
-							Color[] colors = module.getTraitColors();
-							int dep = ((HasDE)module).getDependent();
-							if (nTraits == 2 && dep >= 0)
-								cMap = new ColorMap3D.Gradient1D(colors[dep], colors[(dep + 1) % nTraits], 100);
+							int nTraits = pop.getNTraits();
+							Color[] colors = pop.getTraitColors();
+							int dep = ((HasDE)pop).getDependent();
+							if (nTraits == 2 && dep >= 0) {
+								int trait = (dep + 1) % nTraits;
+								cMap = new ColorMapCSS.Gradient1D(colors[dep], colors[trait], trait, 100);
+							}
 							else
-								cMap = new ColorMap3D.Gradient2D(colors, dep, 100);
+								cMap = new ColorMapCSS.Gradient2D(colors, dep, 100);
 						}
 						else
-							cMap = new ColorMap3D.Index(module.getTraitColors(), (int)(0.75 * 255));
+							cMap = new ColorMapCSS.Index(pop.getTraitColors(), 220);
 					}
 					break;
 				case FITNESS:
-					ColorMap.Gradient1D<MeshLambertMaterial> cMap1D = new ColorMap3D.Gradient1D(
-						new Color[] { ColorMap.addAlpha(Color.BLACK, 220), ColorMap.addAlpha(Color.GRAY, 220),
-								ColorMap.addAlpha(Color.YELLOW, 220), ColorMap.addAlpha(Color.RED, 220) },
-						500);
+					ColorMap.Gradient1D<String> cMap1D = new ColorMapCSS.Gradient1D(
+							new Color[] { ColorMap.addAlpha(Color.BLACK, 220), ColorMap.addAlpha(Color.GRAY, 220),
+									ColorMap.addAlpha(Color.YELLOW, 220), ColorMap.addAlpha(Color.RED, 220) },
+							500);
 					cMap = cMap1D;
-					cMap1D.setRange(module.getMinFitness(), module.getMaxFitness());
-					if( engine.isModelType(Model.Type.IBS) ) {
-						Map2Fitness map2fit = module.getMapToFitness();
-						if( module.isContinuous() ) {
-// hardcoded colors for min/max mono scores
-							cMap1D.setColor(map2fit.map(module.getMinMonoScore()), ColorMap.addAlpha(Color.BLUE.darker(), 220));
-							cMap1D.setColor(map2fit.map(module.getMaxMonoScore()), ColorMap.addAlpha(Color.BLUE.brighter(), 220));
-						}
-						else {
+					cMap1D.setRange(pop.getMinFitness(), pop.getMaxFitness());
+					if (engine.isModelType(Model.Type.IBS)) {
+						Map2Fitness map2fit = pop.getMapToFitness();
+						if (pop instanceof Discrete) {
 							// mark homogeneous fitness values by pale color
-							Color[] pure = module.getTraitColors();
-							int nMono = module.getNTraits();
-							for( int n=0; n<nMono; n++ ) 
-								cMap1D.setColor(map2fit.map(((Discrete)module).getMonoScore(n)), 
-										new Color(Math.max(pure[n].getRed(), 127), 
-												Math.max(pure[n].getGreen(), 127), 
+							Color[] pure = pop.getTraitColors();
+							int nMono = pop.getNTraits();
+							for( int n=0; n<nMono; n++ ) {
+								double mono = ((Discrete)pop).getMonoScore(n);
+								if (Double.isNaN(mono))
+									continue;
+								cMap1D.setColor(map2fit.map(mono),
+										new Color(Math.max(pure[n].getRed(), 127),
+												Math.max(pure[n].getGreen(), 127),
 												Math.max(pure[n].getBlue(), 127), 220));
+							}
+							break;
 						}
+						if( pop instanceof Continuous ) {
+// hardcoded colors for min/max mono scores
+							cMap1D.setColor(map2fit.map(pop.getMinMonoScore()), ColorMap.addAlpha(Color.BLUE.darker(), 220));
+							cMap1D.setColor(map2fit.map(pop.getMaxMonoScore()), ColorMap.addAlpha(Color.BLUE.brighter(), 220));
+							break;
+						}
+						// unknown type of population - no fitness values marked
 					}
 					break;
 				default:
 					break;
 			}
 			if( cMap==null )
-				throw new Error("MVPop3D: ColorMap not initialized - needs attention!");
-			graph.setColorMap(module.processColorMap(cMap));
+				throw new Error("MVPop2D: ColorMap not initialized - needs attention!");
+			graph.setColorMap(pop.processColorMap(cMap));
+			if( !soft )
+				graph.reset();
 		}
-		return soft;
+		update();
+	}
+
+	@Override
+	public void init() {
+		super.init();
+		for( PopGraph2D graph : graphs)
+			graph.init();
+		update();
 	}
 
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * List of additional shortcuts provided by {@code MVPop3D} for the following
+	 * List of additional shortcuts provided by {@code MVPop2D} for the following
 	 * keys:
 	 * <dl>
 	 * <dt>{@code s}</dt>
@@ -391,7 +410,7 @@ public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphContro
 	public boolean keyDownHandler(String key) {
 		switch( key ) {
 			case "s":
-				for( PopGraph3D graph : graphs)
+				for( PopGraph2D graph : graphs)
 					graph.getNetwork().shake(graph, 0.05);
 				return true;
 			default:
@@ -400,14 +419,12 @@ public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphContro
 	}
 
 	@Override
-	public boolean isFullscreenSupported() {
-		if( !super.isFullscreenSupported() )
-			return false;
-		// fullscreen must be supported by all graphs
-		for( PopGraph3D graph : graphs )
-			if( !graph.isFullscreenSupported() ) 
-				return false;
-		return true;
+	public void updateNodeAt(AbstractGraph graph, int node) {
+		Model model = engine.getModel();
+		if (!model.isModelType(Type.IBS))
+			return;
+		IBSPopulation pop = ((IBS) model).getSpecies(graphs2mods.get(graph));
+		pop.debugUpdatePopulationAt(node);
 	}
 
 	@Override
@@ -419,26 +436,31 @@ public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphContro
 
 	@Override
 	public String getTooltipAt(AbstractGraph agraph, int node) {
-		PopGraph3D graph = (PopGraph3D)agraph;
+		PopGraph2D graph = (PopGraph2D)agraph;
 		Geometry geometry = graph.getGeometry();
 		int nNodes = geometry.size;
 		Module pop = graphs2mods.get(graph);
 		Model model = engine.getModel();
 		int id;
-		MeshLambertMaterial[] data = graph.getData();
-
+		String[] data = graph.getData();
 		StringBuilder tip = new StringBuilder("<table style='border-collapse:collapse;border-spacing:0;'>");
 		if (pop.getNSpecies() > 1)
 			tip.append("<tr><td><i>Species:</i></td><td>"+pop.getName()+"</td></tr>");
 
-			switch( model.getModelType() ) {
+		switch( model.getModelType() ) {
 			case ODE:
 				return null;	// no further information available
+
 			case PDE:
 				if( node>=nNodes ) {
 					// this can only happen for Geometry.LINEAR
-					// but linear geometries are not allowed in 3D
-					return "Ceci n'est pas une erreur!";
+					int idx = node/nNodes;
+					node %= nNodes;
+					double t = idx*engine.getReportInterval();
+					tip.append("<tr><td><i>Node:</i></td><td>"+node+"</td></tr>"+
+							"<tr><td><i>Time:</i></td><td>"+Formatter.format(-t, 2)+"</td></tr>");
+					return tip+"</table>";
+//NOTE: reverse engineer color data from RingBuffer? - see below
 				}
 				String[] s = pop.getTraitNames();
 				Color[] c = pop.getTraitColors();
@@ -451,13 +473,13 @@ public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphContro
 				names += "</td></tr>";
 				String density = "";
 				if( type==Model.Data.STRATEGY )
-					density = "<tr><td><i>Densities:</i></td><td><span style='color:#"+data[node].getColor().getHexString()+
+					density = "<tr><td><i>Densities:</i></td><td><span style='color:"+data[node]+
 					"; font-size:175%; line-height:0.57;'>&#x25A0;</span> "+model.getTraitNameAt(id, node)+"</td></tr>";
 				else
 					density = "<tr><td><i>Densities:</i></td><td>"+model.getTraitNameAt(id, node)+"</td></tr>";
 				String fitness = "";
 				if( type==Model.Data.FITNESS )
-					fitness = "<tr><td><i>Fitness:</i></td><td><span style='color:#"+data[node].getColor().getHexString()+
+					fitness = "<tr><td><i>Fitness:</i></td><td><span style='color:"+data[node]+
 					"; font-size:175%; line-height:0.57;'>&#x25A0;</span> "+model.getFitnessNameAt(id, node);
 				else
 					fitness = "<tr><td><i>Fitness:</i></td><td>"+model.getFitnessNameAt(id, node);
@@ -469,33 +491,45 @@ public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphContro
 					tip.append("<tr><td><i>Links to:</i></td><td>"+formatOutStructureAt(node, geometry)+"</td></tr>"+
 							"<tr><td><i>Link here:</i></td><td>"+formatInStructureAt(node, geometry)+"</td></tr>");
 				return tip.append("</table>").toString();
+
 			case IBS:
 				if( node>=nNodes ) {
 					// this can only happen for Geometry.LINEAR
-					// but linear geometries are not allowed in 3D
-					return "Ceci n'est pas une erreur!";
+					int idx = node/nNodes;
+					node %= nNodes;
+					double t = idx*engine.getReportInterval();
+					tip.append("<tr><td><i>Node:</i></td><td>"+node+"</td></tr>"+
+							"<tr><td><i>Time:</i></td><td>"+Formatter.format(-t, 2)+"</td></tr>");
+					return tip+"</table>";
+//NOTE: RingBuffer contains color-strings; requires reverse engineering to determine strategies...
+//					RingBuffer.Array<String> buffer = graph.getBuffer();
+//					if( idx>=buffer.size() ) return tip+"</table>";
+//					String[] colors = graph.getBuffer().get(idx);
+//					return tip+"<tr><td colspan='2'><hr/></td></tr><tr><td><i>Strategy:</i></td><td style='color:"+colors[node]+";'>"+
+//							population.getTraitNameAt(node)+"</td></tr></table>";
 				}
 				Model.IBS ibs = (Model.IBS)model;
 				id = pop.getID();
 				tip.append("<tr><td><i>Node:</i></td><td>"+node+"</td></tr>");
 				if( type==Model.Data.STRATEGY ) {
 					// strategy: use color-data to color strategy
-					tip.append("<tr><td><i>Strategy:</i></td><td><span style='color:#"+data[node].getColor().getHexString()+
+					tip.append("<tr><td><i>Strategy:</i></td><td><span style='color:"+data[node]+
 							"; font-size:175%; line-height:0.57;'>&#x25A0;</span> "+model.getTraitNameAt(id, node)+"</td></tr>");
 				}
 				else {
 					tip.append("<tr><td><i>Strategy:</i></td><td>"+model.getTraitNameAt(id, node)+"</td></tr>");
 				}
 				tip.append("<tr><td><i>Tag:</i></td><td>"+ibs.getTagNameAt(id, node)+"</td></tr>");
+				// with payoff-to-fitness report score first, then fitness (see below)
 				boolean noFitMap = pop.getMapToFitness().isMap(Map2Fitness.Map.NONE);
 				String label = (noFitMap?"Fitness":"Score");
 				if( type==Model.Data.FITNESS ) {
-					// fitness: use color-data to color fitness
-					tip.append("<tr><td><i>"+label+":</i></td><td><span style='color:#"+data[node].getColor().getHexString()+
-							"; font-size:175%; line-height:0.57;'>&#x25A0;</span> "+model.getFitnessNameAt(id, node)+"</td></tr>");
+					// fitness: use color-data to color strategy
+					tip.append("<tr><td><i>"+label+":</i></td><td><span style='color:"+data[node]+
+							"; font-size:175%; line-height:0.57;'>&#x25A0;</span> "+model.getScoreNameAt(id, node)+"</td></tr>");
 				}
 				else {
-					tip.append("<tr><td><i>"+label+":</i></td><td>"+model.getFitnessNameAt(id, node)+"</td></tr>");
+					tip.append("<tr><td><i>"+label+":</i></td><td>"+model.getScoreNameAt(id, node)+"</td></tr>");
 				}
 				if( !noFitMap )
 					tip.append("<tr><td><i>Fitness:</i></td><td>"+model.getFitnessNameAt(id, node)+"</td></tr>");
@@ -525,34 +559,35 @@ public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphContro
 								"<tr><td><i>Compete here:</i></td><td>"+formatInStructureAt(node, reproduction)+"</td></tr>");
 				}
 				return tip.append("</table>").toString();
+
 			default:
 				return null;
 		}
 	}
 
-	// NOTE: same as in MVPop2D - not enough to warrant a common abstract class MVPop
+	// NOTE: same as in MVPop3D - not enough to warrant a common abstract class MVPop
 //XXX this is not a unique mapping... each module may entertain several graphs (e.g. for interaction and reproduction graphs)
-	private PopGraph3D getGraphFor(Module module) {
+	private PopGraph2D getGraphFor(Module module) {
 		if( graphs==null || module==null )
 			return null;
-		for( PopGraph3D graph : graphs)
+		for( PopGraph2D graph : graphs)
 			if( module==graphs2mods.get(graph) )
 				return graph;
 		return null;
 	}
 
-	private static String formatStrategiesAt(int node, Geometry geom, PopGraph3D graph) {
+	private static String formatStrategiesAt(int node, Geometry geom, PopGraph2D graph) {
 		return formatStrategiesAt(geom.out[node], geom.kout[node], geom.getType(), graph.getGeometry().getName(), graph.getData());
 	}
 
-	private static String formatStrategiesAt(int[] links, int k, Geometry.Type type, String name, MeshLambertMaterial[] data) {
+	private static String formatStrategiesAt(int[] links, int k, Geometry.Type type, String name, String[] data) {
 		if( type==Geometry.Type.MEANFIELD || k==0 )
 			return "";
 		String msg = "<tr><td><i style='padding-left:2em'>"+name+":</i></td>"+
-				"<td>[<span style='color:#"+data[links[0]].getColor().getHexString()+"; font-size:175%; line-height:0.57;'>&#x25A0;</span>";
+				"<td>[<span style='color:"+data[links[0]]+"; font-size:175%; line-height:0.57;'>&#x25A0;</span>";
 		int disp = Math.min(k, 10);
 		for( int n=1; n<disp; n++ )
-			msg += "<span style='color:#"+data[links[n]].getColor().getHexString()+"; font-size:175%; line-height:0.57;'>&nbsp;&#x25A0;</span>";
+			msg += "<span style='color:"+data[links[n]]+"; font-size:175%; line-height:0.57;'>&nbsp;&#x25A0;</span>";
 		if( disp<k )
 			msg += " ...";
 		return msg+"]</td></tr>";
@@ -577,7 +612,7 @@ public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphContro
 		switch( k ) {
 			case 0:
 				return "none";
-			case 1: 
+			case 1:
 				return "1 ["+links[0]+"]";
 			default:
 				msg = k+" ["+links[0];
@@ -591,7 +626,6 @@ public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphContro
 
 	@Override
 	protected int[] exportTypes() {
-		return new int[] { EXPORT_PNG };
-//		return new int[] { EXPORT_SVG, EXPORT_PNG };
+		return new int[] { EXPORT_SVG, EXPORT_PNG };
 	}
 }

@@ -30,7 +30,7 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.simulator;
+package org.evoludo.simulator.views;
 
 import java.util.HashMap;
 import java.util.Set;
@@ -45,6 +45,8 @@ import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.ui.FullscreenChangeEvent;
 import org.evoludo.ui.FullscreenChangeHandler;
 import org.evoludo.ui.HasFullscreenChangeHandlers;
+import org.evoludo.simulator.EvoLudoGWT;
+import org.evoludo.simulator.Resources;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 
@@ -65,7 +67,7 @@ import com.google.gwt.user.client.ui.ProvidesResize;
  *
  * @author Christoph Hauert
  */
-public abstract class MVAbstract extends Composite implements EvoLudoViews, ProvidesResize,
+public abstract class MVAbstract extends Composite implements EvoLudoView, ProvidesResize,
 		AbstractGraph.Controller, HasFullscreenChangeHandlers {
 
 	protected HandlerRegistration fullscreenHandler;
@@ -679,7 +681,7 @@ public abstract class MVAbstract extends Composite implements EvoLudoViews, Prov
 		 *
 		 * @param activeView view that finished its activation.
 		 */
-		public void viewActivated(EvoLudoViews activeView);
+		public void viewActivated(EvoLudoView activeView);
 
 		/**
 		 * Notify callback that layout has completed. For example, this signals that a network

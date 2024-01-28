@@ -30,7 +30,7 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.simulator;
+package org.evoludo.simulator.views;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -49,6 +49,8 @@ import org.evoludo.graphics.HistoGraph;
 import org.evoludo.graphics.HistoGraphListener;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
+import org.evoludo.simulator.EvoLudoLab;
+import org.evoludo.simulator.Geometry;
 
 public class MVDegree extends MVAbstract implements HistoGraphListener {
 

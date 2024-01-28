@@ -30,10 +30,9 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.simulator;
+package org.evoludo.simulator.models;
 
-import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.PDESupervisor;
+import org.evoludo.simulator.EvoLudo;
 
 import com.google.gwt.core.client.Scheduler;
 

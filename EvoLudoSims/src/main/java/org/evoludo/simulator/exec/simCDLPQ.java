@@ -42,11 +42,11 @@ import javax.imageio.ImageIO;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.simulator.EvoLudoJRE;
-import org.evoludo.simulator.MVPop2D;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.modules.CDLPQ;
+import org.evoludo.simulator.views.MVPop2D;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;

@@ -30,7 +30,7 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.simulator;
+package org.evoludo.simulator.views;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -61,6 +61,9 @@ import org.evoludo.graphics.GraphListener;
 import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.HistoFrameLayer;
 import org.evoludo.graphics.PopGraph2D;
+import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.EvoLudoJRE;
+import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
@@ -70,7 +73,7 @@ import org.freehep.graphicsio.ps.PSGraphics2D;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 
 public abstract class MVAbstract extends JComponent
-		implements MultiViewPanel, GraphListener, ActionListener {
+		implements MultiView, GraphListener, ActionListener {
 	
 	private static final long serialVersionUID = 20110423L;
 	
@@ -113,7 +116,7 @@ public abstract class MVAbstract extends JComponent
 	
 	public MVAbstract(EvoLudoLab lab) {
 		this.lab  = lab;
-		engine = lab.engine;
+		engine = lab.getEngine();
 		logger = engine.getLogger();
 
 		// check if freehep graphics libraries are available

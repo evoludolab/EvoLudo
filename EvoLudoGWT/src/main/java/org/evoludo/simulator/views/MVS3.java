@@ -30,13 +30,15 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.simulator;
+package org.evoludo.simulator.views;
 
 import java.awt.Color;
 import java.util.Set;
 
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
 import org.evoludo.graphics.S3Graph;
+import org.evoludo.simulator.ColorMapCSS;
+import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;

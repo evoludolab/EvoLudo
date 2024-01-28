@@ -47,18 +47,20 @@ import javax.swing.JPanel;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.EmptyBorder;
 
-public class MultiView extends JPanel implements ItemListener {
+import org.evoludo.simulator.views.MultiView;
+
+public class EvoLudoPanel extends JPanel implements ItemListener {
 
 	private static final long serialVersionUID = 20110423L;
 
-	ArrayList<MultiViewPanel>	views;
-	MultiViewPanel	activeView;
+	ArrayList<MultiView>	views;
+	MultiView	activeView;
 	int			count, active = -1;
 	JComboBox<String>	viewChoice;
 	CardLayout dealer;
 	JPanel cards;
 
-	public MultiView() {
+	public EvoLudoPanel() {
 		dealer = new CardLayout();
 //		cards = new JPanel(dealer);
 //		views = new ArrayList<MultiViewPanel>();
@@ -79,11 +81,11 @@ public class MultiView extends JPanel implements ItemListener {
 			cards.setOpaque(false);
 			add(cards, BorderLayout.CENTER);
 			// cards.add(new JLabel(new ImageIcon(MultiView.class.getResource("/org/evoludo/simulator/resources/EvoLudo.png"))), "EvoLudo");	// splash card
-			cards.add(new JLabel(new ImageIcon(MultiView.class.getResource("/images/EvoLudo.png"))), "EvoLudo");	// splash card
+			cards.add(new JLabel(new ImageIcon(EvoLudoPanel.class.getResource("/images/EvoLudo.png"))), "EvoLudo");	// splash card
 		}
 		else
 			cards.removeAll();
-		if( views==null ) views = new ArrayList<MultiViewPanel>();
+		if( views==null ) views = new ArrayList<MultiView>();
 		else views.clear();
 		if( viewChoice==null ) {
 			viewChoice = new JComboBox<String>();
@@ -111,11 +113,11 @@ activeView = null;
 		repaint();
 	}
 
-	public void addView(MultiViewPanel view) {
+	public void addView(MultiView view) {
 		addView(view, -1);
 	}
 	
-	public void addView(MultiViewPanel view, int pos) {
+	public void addView(MultiView view, int pos) {
 viewChoice.removeItemListener(this);
 		String name = view.getName();
 		if( pos<0 ) {
@@ -133,7 +135,7 @@ viewChoice.removeItemListener(this);
 viewChoice.addItemListener(this);
 	}
 	
-	public void removeView(MultiViewPanel view) {
+	public void removeView(MultiView view) {
 viewChoice.removeItemListener(this);
 		cards.remove((JComponent)view);
 		viewChoice.removeItem(view.getName());
@@ -173,7 +175,7 @@ viewChoice.addItemListener(this);
 		dealer.show(cards, activeView.getName());
 	}
 	
-	public ArrayList<MultiViewPanel> getViews() {
+	public ArrayList<MultiView> getViews() {
 		return views;
 	}
 
@@ -203,7 +205,7 @@ viewChoice.addItemListener(this);
 		setView(idx);
 	}
 
-	public MultiViewPanel getActiveView() {
+	public MultiView getActiveView() {
 		return activeView;
 	}
 

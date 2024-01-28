@@ -30,7 +30,7 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.simulator;
+package org.evoludo.simulator.views;
 
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -41,6 +41,7 @@ import org.evoludo.graphics.GraphAxis;
 import org.evoludo.graphics.S3Graph;
 import org.evoludo.graphics.StateData;
 import org.evoludo.graphics.StateGraphListener;
+import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.models.Model;
 
 public class MVDS3 extends MVAbstract implements StateGraphListener {

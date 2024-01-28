@@ -30,7 +30,7 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.simulator;
+package org.evoludo.simulator.views;
 
 import java.util.ArrayList;
 
@@ -39,7 +39,7 @@ import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOption;
 
-public interface MultiViewPanel {
+public interface MultiView {
 
 	public String	getName();
 

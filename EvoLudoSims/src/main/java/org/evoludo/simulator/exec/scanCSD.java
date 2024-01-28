@@ -38,7 +38,6 @@ import java.util.Arrays;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.simulator.EvoLudoJRE;
-import org.evoludo.simulator.MVPop2D;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Distributions;
 import org.evoludo.simulator.EvoLudo;
@@ -48,6 +47,7 @@ import org.evoludo.simulator.models.IBSCPopulation;
 import org.evoludo.simulator.models.IBSC.InitType;
 import org.evoludo.simulator.models.IBSC.MutationType;
 import org.evoludo.simulator.modules.CSD;
+import org.evoludo.simulator.views.MVPop2D;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;

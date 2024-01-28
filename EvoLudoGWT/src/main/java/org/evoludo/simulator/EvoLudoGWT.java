@@ -41,6 +41,7 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.PDESupervisor;
+import org.evoludo.simulator.models.PDESupervisorGWT;
 import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;

@@ -30,7 +30,7 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.simulator;
+package org.evoludo.simulator.views;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -40,6 +40,8 @@ import java.util.Set;
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.LineGraph;
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
+import org.evoludo.simulator.ColorMapCSS;
+import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.Data;
 import org.evoludo.simulator.modules.Continuous;

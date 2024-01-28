@@ -30,7 +30,7 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.simulator;
+package org.evoludo.simulator.views;
 
 import java.awt.Component;
 
@@ -46,6 +46,7 @@ import org.evoludo.graphics.LineGraph;
 import org.evoludo.graphics.StateData;
 import org.evoludo.graphics.StateGraphListener;
 import org.evoludo.simulator.modules.Continuous;
+import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.models.Model;
 
 public class MVCMean extends MVAbstract implements StateGraphListener {

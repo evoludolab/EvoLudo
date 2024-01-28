@@ -30,7 +30,7 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.simulator;
+package org.evoludo.simulator.views;
 
 import java.awt.Color;
 import java.text.DecimalFormat;
@@ -44,8 +44,13 @@ import org.evoludo.graphics.GraphAxis;
 import org.evoludo.graphics.HistoGraph;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.graphics.PopListener;
-import org.evoludo.simulator.modules.Continuous;
+import org.evoludo.simulator.ColorMap;
+import org.evoludo.simulator.ColorMapJRE;
+import org.evoludo.simulator.EvoLudoLab;
+import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.modules.Continuous;
 
 /**
  *

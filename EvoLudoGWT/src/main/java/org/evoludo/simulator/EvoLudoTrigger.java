@@ -33,6 +33,7 @@
 package org.evoludo.simulator;
 
 import org.evoludo.EvoLudoWeb;
+import org.evoludo.simulator.views.MVAbstract;
 import org.evoludo.ui.ContextMenu;
 
 import com.google.gwt.dom.client.NativeEvent;

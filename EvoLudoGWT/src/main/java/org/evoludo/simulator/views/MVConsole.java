@@ -30,12 +30,13 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.simulator;
+package org.evoludo.simulator.views;
 
 import java.util.logging.Level;
 
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
+import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Model;
 
 import com.google.gwt.dom.client.Element;

@@ -30,7 +30,7 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.simulator;
+package org.evoludo.simulator.views;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -42,6 +42,7 @@ import org.evoludo.graphics.GraphAxis;
 import org.evoludo.graphics.HistoData;
 import org.evoludo.graphics.HistoGraph;
 import org.evoludo.graphics.HistoGraphListener;
+import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Continuous;
 

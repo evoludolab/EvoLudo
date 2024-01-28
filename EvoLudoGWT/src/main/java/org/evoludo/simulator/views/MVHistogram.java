@@ -30,7 +30,7 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.simulator;
+package org.evoludo.simulator.views;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -40,19 +40,22 @@ import java.util.Set;
 import org.evoludo.EvoLudoWeb;
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
+import org.evoludo.graphics.HistoGraph;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.math.Distributions;
 import org.evoludo.math.Functions;
-import org.evoludo.graphics.HistoGraph;
+import org.evoludo.simulator.ColorMap;
+import org.evoludo.simulator.ColorMapCSS;
+import org.evoludo.simulator.EvoLudoGWT;
+import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBSD;
-import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.IBSD.FixationData;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
-import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.util.Formatter;
 
 import com.google.gwt.core.client.Duration;
