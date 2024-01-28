@@ -39,9 +39,10 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBS.MigrationType;
 import org.evoludo.simulator.models.IBS.ScoringType;
-import org.evoludo.simulator.models.IBSD.InitType;
 import org.evoludo.simulator.models.IBSD;
+import org.evoludo.simulator.models.IBSD.InitType;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Model.Type;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.Formatter;
@@ -69,11 +70,11 @@ public class DemesTBT extends TBT {
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * Currently only IBS models are supported.
+	 * Currently only IBS models are supported even though super supports more.
 	 */
 	@Override
-	public boolean hasSupport(Model.Type type) {
-		return type == Model.Type.IBS;
+	public Model.Type[] getModelTypes() {
+		return new Model.Type[] { Type.IBS };
 	}
 
 	@Override
@@ -131,7 +132,7 @@ public class DemesTBT extends TBT {
 
 		// PLAYER_UPDATE_BEST_REPLY requires avgScores which is not (yet? how?)
 		// implemented for demes
-		playerUpdate.clo.removeKey(PlayerUpdate.Type.BEST_RESPONSE);
+		cloPlayerUpdate.removeKey(PlayerUpdateType.BEST_RESPONSE);
 
 		CLOption option = ((org.evoludo.simulator.models.IBS) engine.getModel()).cloMigration;
 		option.clearKeys();

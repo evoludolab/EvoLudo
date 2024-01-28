@@ -1728,7 +1728,7 @@ public abstract class EvoLudo
 	protected String[] preprocessCLO(String[] cloarray) {
 		if (cloarray == null)
 			return null;
-		// first deal with --module option
+		// first, deal with --module option
 		String moduleParam = cloModule.getName();
 		CLOption.Key moduleKey = null;
 		int nParams = cloarray.length;
@@ -1749,26 +1749,15 @@ public abstract class EvoLudo
 		}
 		if (moduleKey == null || loadModule(moduleKey.getKey()) == null)
 			return null;
-		// second determine feasible --model options for given module
+		// second, determine feasible --model options for given module
 		cloModel.clearKeys();
-		Model.Type defaulttype = null;
-		if (activeModule instanceof HasIBS && activeModule.hasSupport(Type.IBS)) {
-			cloModel.addKey(Type.IBS);
-			defaulttype = Type.IBS;
-		}
-		if (activeModule instanceof HasODE && activeModule.hasSupport(Type.ODE))
-			cloModel.addKey(Type.ODE);
-		if (activeModule instanceof HasSDE && activeModule.hasSupport(Type.SDE))
-			cloModel.addKey(Type.SDE);
-		if (activeModule instanceof HasPDE && activeModule.hasSupport(Type.PDE))
-			cloModel.addKey(Type.PDE);
-		// third deal with --model option
+		cloModel.addKeys(activeModule.getModelTypes());
+		// third, deal with --model option
 		String modelName = cloModel.getName();
 		// if IBS is not an option, pick first available model as default (which one
 		// remains unspecified)
 		Collection<Key> keys = cloModel.getKeys();
-		if (defaulttype == null)
-			defaulttype = Model.Type.parse(keys.iterator().next().getKey());
+		Model.Type defaulttype = Model.Type.parse(keys.iterator().next().getKey());
 		Model.Type type = null;
 		nParams = cloarray.length;
 		for (int i = 0; i < nParams; i++) {
@@ -1785,7 +1774,7 @@ public abstract class EvoLudo
 					break;
 				}
 				type = Model.Type.parse(newModel);
-				if (type == null || !activeModule.hasSupport(type)) {
+				if (type == null) {
 					logger.warning("invalid model type " + newModel + " - use " + defaulttype.getKey()
 							+ " as default.");
 					type = defaulttype;

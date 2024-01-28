@@ -255,8 +255,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * @see Model.MilestoneListener#modelLoaded()
 	 */
 	public void load() {
-		map2fitness = new Map2Fitness(this, Map2Fitness.Map.NONE);
-		playerUpdate = new PlayerUpdate(this);
+		map2fitness = new Map2Fitness(Map2Fitness.Maps.NONE);
 		// currently only the Test module uses neither Discrete nor Continuous classes.
 		if (species == null)
 			species = new ArrayList<Module>();
@@ -276,7 +275,8 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		traitColor = null;
 		trajectoryColor = null;
 		map2fitness = null;
-		playerUpdate = null;
+		cloFitnessMap.clearKeys();
+		cloPlayerUpdate.clearKeys();
 		opponent = this;
 		engine.removeMilestoneListener(this);
 		if (this instanceof Model.ChangeListener)
@@ -297,6 +297,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * @see EvoLudo#paramsDidChange()
 	 */
 	public boolean check() {
+//XXX activate all traits; but better implement option to (de)activate traits!
 		setActiveTraits(null);
 		return false;
 	}
@@ -344,26 +345,21 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	}
 
 	/**
-	 * Determine whether this module supports the Model type {@code type}.
+	 * Return array of Model types that this Module supports.
 	 * 
-	 * @param type the model type to check
-	 * @return {@code true} if Model type {@code type} is supported.
-	 * 
-	 * @see Model.Type
+	 * @return the array of supported Model types
 	 */
-	public boolean hasSupport(Model.Type type) {
-		switch (type) {
-			case ODE:
-				return this instanceof HasODE;
-			case SDE:
-				return this instanceof HasSDE;
-			case PDE:
-				return this instanceof HasPDE;
-			case IBS:
-				return this instanceof HasIBS;
-			default: // unreachable
-				return false;
-		}
+	public Model.Type[] getModelTypes() {
+		ArrayList<Model.Type> types = new ArrayList<>();
+		if (this instanceof HasIBS)
+			types.add(Type.IBS);
+		if (this instanceof HasODE)
+			types.add(Type.ODE);
+		if (this instanceof HasSDE)
+			types.add(Type.SDE);
+		if (this instanceof HasPDE)
+			types.add(Type.PDE);
+		return types.toArray(new Model.Type[0]);
 	}
 
 	/**
@@ -1099,17 +1095,91 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	}
 
 	/**
-	 * Map to convert score/payoff to fitness
+	 * Player update type.
+	 * 
+	 * @see #cloPlayerUpdate
 	 */
-	protected PlayerUpdate playerUpdate;
+	protected PlayerUpdateType playerUpdateType = PlayerUpdateType.IMITATE;
 
 	/**
-	 * Gets the score/payoff to fitness map.
+	 * Sets the player update type.
 	 * 
-	 * @return the score-to-fitness map
+	 * @param type the updating type for players
+	 * @return {@code true} if player update type changed
 	 */
-	public PlayerUpdate getPlayerUpdate() {
-		return playerUpdate;
+	public boolean setPlayerUpdateType(PlayerUpdateType type) {
+		if (type == null || type == playerUpdateType)
+			return false;
+		playerUpdateType = type;
+		return true;
+	}
+
+	/**
+	 * Gets the player update type.
+	 * 
+	 * @return the player update type
+	 */
+	public PlayerUpdateType getPlayerUpdateType() {
+		return playerUpdateType;
+	}
+
+	/**
+	 * The noise of the updating process of players.
+	 */
+	double playerUpdateNoise;
+
+	/**
+	 * Set the noise of the updating process of players. With less noise chances are
+	 * higher to adopt the strategy of individuals even if they perform only
+	 * marginally better. Conversely for large noise payoff differences matter less
+	 * and the updating process is more random. For {@code noise==1} the process is
+	 * neutral.
+	 * 
+	 * @param noise the noise when updating the trait
+	 */
+	public void setPlayerUpdateNoise(double noise) {
+		playerUpdateNoise = Math.max(0.0, noise);
+	}
+
+	/**
+	 * Get the noise of the updating process.
+	 * 
+	 * @return the noise when updating the trait
+	 * 
+	 * @see #setPlayerUpdateNoise(double)
+	 */
+	public double getPlayerUpdateNoise() {
+		return playerUpdateNoise;
+	}
+
+	/**
+	 * The probability of an error during the updating of the trait.
+	 */
+	double playerUpdateError;
+
+	/**
+	 * Set the error of the updating process. With probability {@code error} an
+	 * individual fails to adopt a better performing trait or adopts an worse
+	 * performing one. More specifically the range of updating probabilities is
+	 * restricted to {@code [error, 1-error]} such that always a chance remains that
+	 * the trait of a better performing individual is not adopted or the one of a
+	 * worse performing one is adopted.
+	 * 
+	 * @param error the error when adopting the trait
+	 */
+	public void setPlayerUpdateError(double error) {
+		playerUpdateError = Math.max(0.0, error);
+	}
+
+	/**
+	 * Get the error of the updating process.
+	 * 
+	 * @return the error when adopting the trait
+	 * 
+	 * @see #setError(double)
+	 */
+	public double getPlayerUpdateError() {
+		return playerUpdateError;
 	}
 
 	/**
@@ -1444,6 +1514,167 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 						output.println(
 								"# deathrate:   " + Formatter.format(pop.getDeathRate(), 4) + (species.size() > 1 ? " ("
 										+ pop.getName() + ")" : ""));
+					}
+				}
+			});
+
+	/**
+	 * Command line option to set the payoff/score to fitness map.
+	 */
+	public final CLOption cloFitnessMap = new CLOption("fitnessmap", "none", EvoLudo.catModule,
+			"--fitnessmap <m> [<b>[,<w>]]  select map with baseline fitness b (1)\n" + //
+					"                and selection strength w (1):",
+			new CLODelegate() {
+
+				/**
+				 * {@inheritDoc}
+				 * <p>
+				 * Parse payoff/score to fitness map(s) for a single or multiple
+				 * populations/species. {@code arg} can be a single value or an array of
+				 * values with the separator {@value CLOParser#SPECIES_DELIMITER}. The parser
+				 * cycles through {@code arg} until all populations/species have the the
+				 * fitness map set.
+				 * 
+				 * @param arg the (array of) map name(s)
+				 */
+				@Override
+				public boolean parse(String arg) {
+					boolean success = true;
+					String[] map2fitnessspecies = arg.split(CLOParser.SPECIES_DELIMITER);
+					int n = 0;
+					for (Module pop : species) {
+						String map = map2fitnessspecies[n++ % map2fitnessspecies.length];
+						Map2Fitness.Maps m2fm = (Map2Fitness.Maps) cloFitnessMap.match(map);
+						Map2Fitness m2f = pop.getMapToFitness();
+						if (m2fm == null) {
+							logger.warning(
+									(species.size() > 1 ? pop.getName() + ": " : "") +
+											"fitness map '" + map + "' unknown - using '"
+											+ m2f.getName() + "'");
+							success = false;
+							continue;
+						}
+						m2f.setMap(m2fm);
+						// parse b and w, if present
+						String[] args = map.split("\\s+|=|,");
+						double b = 1.0;
+						double w = 1.0;
+						switch (args.length) {
+							case 3:
+								w = CLOParser.parseDouble(args[2]);
+								// $FALL-THROUGH$
+							case 2:
+								b = CLOParser.parseDouble(args[1]);
+								break;
+							default:
+						}
+						m2f.setBaseline(b);
+						m2f.setSelection(w);
+					}
+					return success;
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					for (Module pop : species) {
+						Map2Fitness m2f = pop.getMapToFitness();
+						output.println("# fitnessmap:           " + m2f.getTitle()
+								+ (species.size() > 1 ? " ("
+										+ pop.getName() + ")" : ""));
+						output.println("# basefit:              " + Formatter.format(m2f.getBaseline(), 4));
+						output.println("# selection:            " + Formatter.format(m2f.getSelection(), 4));
+					}
+				}
+			});
+
+	/**
+	 * Command line option to set the type of player updates.
+	 */
+	public final CLOption cloPlayerUpdate = new CLOption("playerupdate", PlayerUpdateType.IMITATE.getKey() + " 1,0",
+			EvoLudo.catModule,
+			"--playerupdate <u> [<n>[,<e>]] set player update type with\n" + //
+					"                noise n (neutral=1) and error probability e (0):",
+			new CLODelegate() {
+
+				/**
+				 * {@inheritDoc}
+				 * <p>
+				 * Parse player update type(s) for a single or multiple populations/species.
+				 * {@code arg} can be a single value or an array of values with the
+				 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
+				 * {@code arg} until all populations/species have the player update type
+				 * set.
+				 * 
+				 * @param arg the (array of) map name(s)
+				 */
+				@Override
+				public boolean parse(String arg) {
+					boolean success = true;
+					String[] playerupdates = arg.split(CLOParser.SPECIES_DELIMITER);
+					int n = 0;
+					for (Module pop : species) {
+						String updt = playerupdates[n++ % playerupdates.length];
+						PlayerUpdateType put = (PlayerUpdateType) cloPlayerUpdate.match(updt);
+						if (put == null) {
+							if (success)
+								logger.warning((species.size() > 1 ? pop.getName() + ": " : "") + //
+										"player update '" + updt + "' not recognized - using '"
+										+ pop.getPlayerUpdateType()
+										+ "'");
+							success = false;
+							continue;
+						}
+						pop.setPlayerUpdateType(put);
+						// parse n, e, if present
+						String[] args = updt.split("\\s+|=|,");
+						double noise = 1.0;
+						double error = 0.0;
+						switch (args.length) {
+							case 3:
+								error = CLOParser.parseDouble(args[2]);
+								// $FALL-THROUGH$
+							case 2:
+								noise = CLOParser.parseDouble(args[1]);
+								break;
+							default:
+						}
+						pop.setPlayerUpdateNoise(noise);
+						pop.setPlayerUpdateError(error);
+					}
+					return success;
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					boolean isIBS = model.isModelType(Model.Type.IBS);
+					for (Module pop : species) {
+						if (isIBS) {
+							IBSPopulation ibspop = ((IBS) model).getSpecies(pop);
+							// skip populations with Moran updates
+							if (ibspop.getPopulationUpdateType().isMoran())
+								continue;
+						}
+						PlayerUpdateType put = pop.getPlayerUpdateType();
+						output.println("# playerupdate:         " + put
+								+ (species.size() > 1 ? " (" + pop.getName() + ")" : ""));
+						switch (put) {
+							case THERMAL: // fermi update
+							case IMITATE: // imitation update
+							case IMITATE_BETTER: // imitation update (better strategies only)
+								output.println(
+										"# playerupdatenoise:    "
+												+ Formatter.formatSci(pop.getPlayerUpdateNoise(), 6));
+								// XXX errors could probably be added to PROPORTIONAL as well as DE models
+								if (isIBS) {
+									output.println(
+											"# playerupdateerror:    "
+													+ Formatter.formatSci(pop.getPlayerUpdateError(), 6));
+								}
+								break;
+							default:
+								// no other PlayerUpdateType's seem to implement noise
+								break;
+						}
 					}
 				}
 			});
@@ -1879,8 +2110,8 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	@Override
 	public void collectCLO(CLOParser parser) {
 		// prepare command line options
-		map2fitness.clo.addKeys(Map2Fitness.Map.values());
-		parser.addCLO(map2fitness.clo);
+		cloFitnessMap.addKeys(Map2Fitness.Maps.values());
+		parser.addCLO(cloFitnessMap);
 
 		if (this instanceof Discrete.Groups ||
 				this instanceof Continuous.Groups ||
@@ -1918,8 +2149,8 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		}
 		if (anyNonVacant) {
 			// additional options that only make sense without vacant sites
-			playerUpdate.clo.addKeys(PlayerUpdate.Type.values());
-			parser.addCLO(playerUpdate.clo);
+			cloPlayerUpdate.addKeys(PlayerUpdateType.values());
+			parser.addCLO(cloPlayerUpdate);
 		}
 		if (anyVacant) {
 			parser.addCLO(cloDeathRate);
@@ -1927,7 +2158,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		// best-response is not an acceptable update rule for continuous strategies -
 		// exclude Population.PLAYER_UPDATE_BEST_RESPONSE
 		if (anyContinuous) {
-			playerUpdate.clo.removeKey(PlayerUpdate.Type.BEST_RESPONSE);
+			cloPlayerUpdate.removeKey(PlayerUpdateType.BEST_RESPONSE);
 		}
 		// add option to disable traits if >=3 traits, except >=2 traits for  
 		// continuous modules with no vacancies (cannot disable vacancies)
@@ -1947,6 +2178,358 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 
 		// add markers, fixed points in particular
 		parser.addCLO(cloPoints);
+	}
+
+	/**
+	 * Map scores/payoffs to fitness and vice versa. Enum on steroids. Currently
+	 * available maps are:
+	 * <dl>
+	 * <dt>none</dt>
+	 * <dd>no mapping, scores/payoffs equal fitness</dd>
+	 * <dt>static</dt>
+	 * <dd>static baseline fitness, {@code b+w*score}</dd>
+	 * <dt>convex</dt>
+	 * <dd>convex combination of baseline fitness and scores,
+	 * {@code b(1-w)+w*scores}</dd>
+	 * <dt>exponential</dt>
+	 * <dd>exponential mapping, {@code b*exp(w*score)}</dd>
+	 * </dl>
+	 * Note that exponential payoff-to-fitness may easily be the most convincing
+	 * because it can be easily and uniquely derived from a set of five natural
+	 * assumptions on the fitness function \(F(u\):
+	 * <ol>
+	 * <li>\(F(u)\geq 0\) for every \(u\in\mathbb{R}\)
+	 * <li>\(F(u)\) is non-decreasing
+	 * <li>\(F(u)\) is continuous
+	 * <li>Selection strength \(w\) scales payoffs, i.e. the fitness associated with
+	 * payoff \(u\) at selection strength \(w\geq 0\) is \(F(w u)\)
+	 * <li>The probability that an individual is chosen for reproduction is
+	 * invariant under adding a constant \(K\) to the payoffs of all competing
+	 * individuals. That is, if \(u_i\) and \(F_i(u_i)\) are the payoff and
+	 * fecundity of individual \(i\), then
+	 * \[\frac{F_i(u_i)}{\dsum_j F_j(u_j)} = \frac{F_i(u_i+K)}{\dsum_j F_j(u_j+K)}\]
+	 * </ol>
+	 * Up to a rescaling of the selection strength, these assumptions lead to a
+	 * unique payoff-to-fecundity map, \(F(u)=e^{w u}\). The {@code static} mapping
+	 * then immediately follows as an approximation for weak selection.
+	 * 
+	 * @see <a href="https://doi.org/10.1371/journal.pcbi.1009611">McAvoy, A., Rao,
+	 *      A. &amp; Hauert, C. (2021) Intriguing effects of selection intensity on
+	 *      the evolution of prosocial behaviors PLoS Comp. Biol. 17 (11)
+	 *      e1009611</a>
+	 */
+	public static class Map2Fitness {
+
+		/**
+		 * Enum representing the different types of payoff/score to fitness maps
+		 * 
+		 * @author Christoph Hauert
+		 */
+		public enum Maps implements CLOption.Key {
+
+			/**
+			 * no mapping, scores/payoffs equal fitness, \(fit = score\)
+			 */
+			NONE("none", "no mapping"),
+
+			/**
+			 * static baseline fitness, \(fit = b+w*score\)
+			 */
+			STATIC("static", "b+w*score"),
+
+			/**
+			 * convex combination of baseline fitness and scores, \(fit = b(1-w)+w*score\)
+			 */
+			CONVEX("convex", "b*(1-w)+w*score"),
+
+			/**
+			 * exponential mapping of scores to fitness, \(fit = b*\exp(w*score)\)
+			 */
+			EXPONENTIAL("exponential", "b*exp(w*score)");
+
+			/**
+			 * Key of map. Used when parsing command line options.
+			 * 
+			 * @see Module#cloFitnessMap
+			 */
+			String key;
+
+			/**
+			 * Brief description of map for help display.
+			 * 
+			 * @see EvoLudo#helpCLO()
+			 */
+			String title;
+
+			/**
+			 * Instantiate new type of map.
+			 * 
+			 * @param key   identifier for parsing of command line option
+			 * @param title summary of map
+			 */
+			Maps(String key, String title) {
+				this.key = key;
+				this.title = title;
+			}
+
+			@Override
+			public String toString() {
+				return key + ": " + title;
+			}
+
+			@Override
+			public String getKey() {
+				return key;
+			}
+
+			@Override
+			public String getTitle() {
+				return title;
+			}
+		}
+
+		/**
+		 * Baseline fitness for map.
+		 */
+		double baseline = 1.0;
+
+		/**
+		 * Selection strength for map.
+		 */
+		double selection = 1.0;
+
+		/**
+		 * Map type. Defaults to {@link Maps#NONE}.
+		 */
+		Maps map = Maps.NONE;
+
+		/**
+		 * Instantiate new map of type {@code map}.
+		 * 
+		 * @param map the map to use as template
+		 */
+		public Map2Fitness(Maps map) {
+			this.map = map;
+		}
+
+		/**
+		 * Map {@code score} to fitness, based on currently selected type
+		 * {@code map}.
+		 * 
+		 * @param score the payoff/score to convert to fitness
+		 * @return the corresponding fitness
+		 * 
+		 * @see Map2Fitness#invmap
+		 */
+		public double map(double score) {
+			switch (map) {
+				case STATIC:
+					return baseline + selection * score; // fitness = b + w score
+				case CONVEX:
+					return baseline + selection * (score - baseline); // fitness = b (1 - w) + w score
+				case EXPONENTIAL:
+					return baseline * Math.exp(selection * score); // fitness = b exp( w score)
+				case NONE:
+				default:
+					return score;
+			}
+		}
+
+		/**
+		 * Map {@code fitness} to payoff/score, based on currently selected type
+		 * {@code map}.
+		 * 
+		 * @param fitness the fitness to convert to payoff/score
+		 * @return the corresponding payoff/score
+		 */
+		public double invmap(double fitness) {
+			switch (map) {
+				case STATIC:
+					return (fitness - baseline) / selection; // fitness = b + w score
+				case CONVEX:
+					return (fitness - baseline * (1.0 - selection)) / selection; // fitness = b (1 - w) + w score
+				case EXPONENTIAL:
+					return Math.log(fitness / baseline) / selection; // fitness = b exp( w score)
+				case NONE:
+				default:
+					return fitness;
+			}
+		}
+
+		/**
+		 * Checks if this map is of type {@code aMap}.
+		 * 
+		 * @param aMap the map to compare to
+		 * @return {@code true} if map is of type {@code aMap}.
+		 */
+		public boolean isMap(Maps aMap) {
+			return map.equals(aMap);
+		}
+
+		/**
+		 * Sets type of map to {@code map}.
+		 * 
+		 * @param map the type of the map
+		 */
+		public void setMap(Maps map) {
+			if (map == null)
+				return;
+			this.map = map;
+		}
+
+		/**
+		 * Sets the baseline fitness of the map.
+		 * 
+		 * @param baseline the baseline fitness of the map
+		 */
+		public void setBaseline(double baseline) {
+			this.baseline = baseline;
+		}
+
+		/**
+		 * Gets the baseline fitness of the map.
+		 * 
+		 * @return the baseline fitness of the map
+		 */
+		public double getBaseline() {
+			return baseline;
+		}
+
+		/**
+		 * Sets the selection strength of the map. Must be positive, ignored otherwise.
+		 * 
+		 * @param selection the strength of selection of the map
+		 */
+		public void setSelection(double selection) {
+			if (selection <= 0.0)
+				return;
+			this.selection = selection;
+		}
+
+		/**
+		 * Gets the selection strength of the map.
+		 * 
+		 * @return the selection strength of the map
+		 */
+		public double getSelection() {
+			return selection;
+		}
+
+		/**
+		 * Gets the name/key of the current map.
+		 * 
+		 * @return the map key
+		 */
+		public String getName() {
+			return map.getKey();
+		}
+
+		/**
+		 * Gets the brief description of the current map.
+		 * 
+		 * @return the map summary
+		 */
+		public String getTitle() {
+			return map.getTitle();
+		}
+	}
+
+	/**
+	 * Player update types. Enum on steroids. Currently available player update
+	 * types are:
+	 * <dl>
+	 * <dt>best
+	 * <dd>best wins (equal - stay)
+	 * <dt>best-random
+	 * <dd>best wins (equal - random)
+	 * <dt>best-response
+	 * <dd>best-response dynamics
+	 * <dt>imitate
+	 * <dd>imitate/replicate (linear)
+	 * <dt>imitate-better
+	 * <dd>imitate/replicate (better only)
+	 * <dt>proportional
+	 * <dd>proportional to payoff
+	 * <dt>thermal
+	 * <dd>Fermi/thermal update
+	 * </dl>
+	 */
+	public static enum PlayerUpdateType implements CLOption.Key {
+
+		/**
+		 * best wins (equal - stay)
+		 */
+		BEST("best", "best wins (equal - stay)"),
+
+		/**
+		 * best wins (equal - random)
+		 */
+		BEST_RANDOM("best-random", "best wins (equal - random)"),
+
+		/**
+		 * best-response
+		 */
+		BEST_RESPONSE("best-response", "best-response"),
+
+		/**
+		 * imitate/replicate (linear)
+		 */
+		IMITATE("imitate", "imitate/replicate (linear)"),
+
+		/**
+		 * imitate/replicate (better only)
+		 */
+		IMITATE_BETTER("imitate-better", "imitate/replicate (better only)"),
+
+		/**
+		 * proportional to payoff
+		 */
+		PROPORTIONAL("proportional", "proportional to payoff"),
+
+		/**
+		 * Fermi/thermal update
+		 */
+		THERMAL("thermal", "Fermi/thermal update");
+
+		/**
+		 * Key of player update. Used when parsing command line options.
+		 * 
+		 * @see Module#cloPlayerUpdate
+		 */
+		String key;
+
+		/**
+		 * Brief description of player update for help display.
+		 * 
+		 * @see EvoLudo#helpCLO()
+		 */
+		String title;
+
+		/**
+		 * Instantiates a new type of player update type.
+		 * 
+		 * @param key   the identifier for parsing of command line option
+		 * @param title the summary of the player update
+		 */
+		PlayerUpdateType(String key, String title) {
+			this.key = key;
+			this.title = title;
+		}
+
+		@Override
+		public String toString() {
+			return key + ": " + title;
+		}
+
+		@Override
+		public String getKey() {
+			return key;
+		}
+
+		@Override
+		public String getTitle() {
+			return title;
+		}
 	}
 
 	public enum DataTypes implements CLOption.Key {
