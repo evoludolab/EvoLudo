@@ -132,7 +132,7 @@ public class DemesTBT extends TBT {
 
 		// PLAYER_UPDATE_BEST_REPLY requires avgScores which is not (yet? how?)
 		// implemented for demes
-		cloPlayerUpdate.removeKey(PlayerUpdateType.BEST_RESPONSE);
+		playerUpdate.clo.removeKey(PlayerUpdate.Type.BEST_RESPONSE);
 
 		CLOption option = ((org.evoludo.simulator.models.IBS) engine.getModel()).cloMigration;
 		option.clearKeys();

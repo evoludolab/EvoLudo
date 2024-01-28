@@ -1092,6 +1092,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	@Override
 	public boolean parseCLO() {
 		boolean success = super.parseCLO();
+		if (activeModule == null) {
+			// this is fatal - exit
+			fatal("--module missing - exiting!");
+		}
 		if (!doRestore)
 			return success;
 		// parseCLO does not reset model - do it now to be ready for restore

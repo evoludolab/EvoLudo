@@ -339,26 +339,21 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	}
 
 	/**
-	 * Determine whether this module supports the Model type {@code type}.
+	 * Return array of Model types that this Module supports.
 	 * 
-	 * @param type the model type to check
-	 * @return {@code true} if Model type {@code type} is supported.
-	 * 
-	 * @see Model.Type
+	 * @return the array of supported Model types
 	 */
-	public boolean hasSupport(Model.Type type) {
-		switch (type) {
-			case ODE:
-				return this instanceof HasODE;
-			case SDE:
-				return this instanceof HasSDE;
-			case PDE:
-				return this instanceof HasPDE;
-			case IBS:
-				return this instanceof HasIBS;
-			default: // unreachable
-				return false;
-		}
+	public Model.Type[] getModelTypes() {
+		ArrayList<Model.Type> types = new ArrayList<>();
+		if (this instanceof HasIBS)
+			types.add(Type.IBS);
+		if (this instanceof HasODE)
+			types.add(Type.ODE);
+		if (this instanceof HasSDE)
+			types.add(Type.SDE);
+		if (this instanceof HasPDE)
+			types.add(Type.PDE);
+		return types.toArray(new Model.Type[0]);
 	}
 
 	/**
