@@ -336,7 +336,7 @@ public abstract class IBSPopulation {
 	 * this method. By default throws an error.
 	 * <li>Instead of overriding the method, subclasses may remove
 	 * {@link Type#BEST_RESPONSE} from
-	 * {@link org.evoludo.simulator.modules.Module#cloPlayerUpdate
+	 * {@link org.evoludo.simulator.modules.Module#clo
 	 * Module.cloPlayerUpdate}.
 	 * </ol>
 	 * 

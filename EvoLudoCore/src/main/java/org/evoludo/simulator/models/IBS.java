@@ -1803,9 +1803,9 @@ public abstract class IBS implements Model.IBS {
 	 * <dt>synchronous</dt>
 	 * <dd>Synchronized population updates. The number of individuals that reassess
 	 * their strategy is determined by the player update noise,
-	 * {@link Module#cloPlayerUpdateNoise}. Without noise all individuals update
-	 * their strategy, while with high noise levels only a few update (but at least
-	 * one individual and each at most once).</dd>
+	 * {@link org.evoludo.simulator.modules.PlayerUpdate#getNoise()}. Without noise
+	 * all individuals update their strategy, while with high noise levels only a 
+	 * few update (but at least one individual and each at most once).</dd>
 	 * <dt>Wright-Fisher</dt>
 	 * <dd>Wright-Fisher process (synchronous)</dd>
 	 * <dt>asynchronous</dt>
@@ -1824,7 +1824,7 @@ public abstract class IBS implements Model.IBS {
 	 * 
 	 * @see org.evoludo.simulator.models.IBS#cloPopulationUpdate
 	 *      IBS.cloPopulationUpdate
-	 * @see Module#cloPlayerUpdateNoise
+	 * @see org.evoludo.simulator.modules.PlayerUpdate#clo
 	 */
 	public static enum PopulationUpdateType implements CLOption.Key {
 
@@ -1914,7 +1914,7 @@ public abstract class IBS implements Model.IBS {
 		 * 
 		 * @return {@code true} if update is Moran
 		 * 
-		 * @see Module#cloPlayerUpdate
+		 * @see Module#clo
 		 */
 		public boolean isMoran() {
 			return (equals(MORAN_BIRTHDEATH) || equals(MORAN_DEATHBIRTH) || equals(MORAN_IMITATE));

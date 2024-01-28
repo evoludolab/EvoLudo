@@ -1879,8 +1879,8 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	@Override
 	public void collectCLO(CLOParser parser) {
 		// prepare command line options
-		map2fitness.cloFitnessMap.addKeys(Map2Fitness.Map.values());
-		parser.addCLO(map2fitness.cloFitnessMap);
+		map2fitness.clo.addKeys(Map2Fitness.Map.values());
+		parser.addCLO(map2fitness.clo);
 
 		if (this instanceof Discrete.Groups ||
 				this instanceof Continuous.Groups ||
@@ -1918,8 +1918,8 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		}
 		if (anyNonVacant) {
 			// additional options that only make sense without vacant sites
-			playerUpdate.cloPlayerUpdate.addKeys(PlayerUpdate.Type.values());
-			parser.addCLO(playerUpdate.cloPlayerUpdate);
+			playerUpdate.clo.addKeys(PlayerUpdate.Type.values());
+			parser.addCLO(playerUpdate.clo);
 		}
 		if (anyVacant) {
 			parser.addCLO(cloDeathRate);
@@ -1927,7 +1927,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		// best-response is not an acceptable update rule for continuous strategies -
 		// exclude Population.PLAYER_UPDATE_BEST_RESPONSE
 		if (anyContinuous) {
-			playerUpdate.cloPlayerUpdate.removeKey(PlayerUpdate.Type.BEST_RESPONSE);
+			playerUpdate.clo.removeKey(PlayerUpdate.Type.BEST_RESPONSE);
 		}
 		// add option to disable traits if >=3 traits, except >=2 traits for  
 		// continuous modules with no vacancies (cannot disable vacancies)

@@ -203,7 +203,7 @@ public class Map2Fitness {
 	/**
 	 * Command line option to set the payoff/score to fitness map.
 	 */
-	public final CLOption cloFitnessMap = new CLOption("fitnessmap", "none", EvoLudo.catModule,
+	public final CLOption clo = new CLOption("fitnessmap", "none", EvoLudo.catModule,
 			"--fitnessmap <m> [<b>[,<w>]]  select map with baseline fitness b (1)\n" + //
 					"                and selection strength w (1):",
 			new CLODelegate() {
@@ -227,7 +227,7 @@ public class Map2Fitness {
 					ArrayList<? extends Module> species = module.getSpecies(); 
 					for (Module mod : species) {
 						String m = map2fitnessspecies[n++ % map2fitnessspecies.length];
-						Map2Fitness.Map m2fm = (Map2Fitness.Map) cloFitnessMap.match(m);
+						Map2Fitness.Map m2fm = (Map2Fitness.Map) clo.match(m);
 						Map2Fitness m2f = mod.getMapToFitness();
 						if (m2fm == null) {
 							module.logger.warning(
@@ -301,7 +301,7 @@ public class Map2Fitness {
 		/**
 		 * Key of map. Used when parsing command line options.
 		 * 
-		 * @see Module#cloFitnessMap
+		 * @see Module#clo
 		 */
 		String key;
 

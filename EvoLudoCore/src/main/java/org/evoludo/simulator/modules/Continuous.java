@@ -1414,7 +1414,7 @@ public abstract class Continuous extends Module {
 		parser.addCLO(cloBenefits);
 		// best-response is not an acceptable update rule for continuous strategies -
 		// exclude Population.PLAYER_UPDATE_BEST_RESPONSE
-		playerUpdate.cloPlayerUpdate.removeKey(PlayerUpdate.Type.BEST_RESPONSE);
+		playerUpdate.clo.removeKey(PlayerUpdate.Type.BEST_RESPONSE);
 	}
 	
 	/**

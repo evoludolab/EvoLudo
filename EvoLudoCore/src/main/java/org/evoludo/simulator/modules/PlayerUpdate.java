@@ -31,7 +31,7 @@ public class PlayerUpdate {
 	/**
 	 * Player update type.
 	 * 
-	 * @see #cloPlayerUpdate
+	 * @see #clo
 	 */
 	protected PlayerUpdate.Type type = Type.IMITATE;
 
@@ -119,7 +119,7 @@ public class PlayerUpdate {
 	/**
 	 * Command line option to set the type of player updates.
 	 */
-	public final CLOption cloPlayerUpdate = new CLOption("playerupdate",
+	public final CLOption clo = new CLOption("playerupdate",
 			PlayerUpdate.Type.IMITATE.getKey() + " 1,0",
 			EvoLudo.catModule,
 			"--playerupdate <u> [<n>[,<e>]] set player update type with\n" + //
@@ -145,7 +145,7 @@ public class PlayerUpdate {
 					ArrayList<? extends Module> species = module.getSpecies();
 					for (Module mod : species) {
 						String updt = playerupdates[n++ % playerupdates.length];
-						PlayerUpdate.Type put = (PlayerUpdate.Type) cloPlayerUpdate.match(updt);
+						PlayerUpdate.Type put = (PlayerUpdate.Type) clo.match(updt);
 						PlayerUpdate pu = mod.getPlayerUpdate();
 						if (put == null) {
 							if (success)
@@ -273,7 +273,7 @@ public class PlayerUpdate {
 		/**
 		 * Key of player update. Used when parsing command line options.
 		 * 
-		 * @see Module#cloPlayerUpdate
+		 * @see Module#clo
 		 */
 		String key;
 
