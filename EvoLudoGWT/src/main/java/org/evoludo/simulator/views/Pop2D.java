@@ -62,7 +62,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class MVPop2D extends MVAbstract implements AbstractGraph.NodeGraphController {
+public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphController {
 
 	@SuppressWarnings("hiding")
 	private Set<PopGraph2D> graphs;
@@ -70,7 +70,7 @@ public class MVPop2D extends MVAbstract implements AbstractGraph.NodeGraphContro
 	protected int hitNode = -1;
 
 	@SuppressWarnings("unchecked")
-	public MVPop2D(EvoLudoGWT engine, Model.Data type) {
+	public Pop2D(EvoLudoGWT engine, Model.Data type) {
 		super(engine, type);
 		graphs = (Set<PopGraph2D>) super.graphs;
 	}

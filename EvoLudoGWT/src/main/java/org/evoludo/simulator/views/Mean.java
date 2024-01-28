@@ -54,7 +54,7 @@ import org.evoludo.util.RingBuffer;
  *
  * @author Christoph Hauert
  */
-public class MVMean extends MVAbstract implements LineGraph.LineGraphController{
+public class Mean extends AbstractView implements LineGraph.LineGraphController{
 
 	// NOTE: this is a bit of a hack that allows us to use graphs as Set<LineGraph> here
 	//		 but as Set<AbstractGraph> in super classes. Saves a lot of ugly casting
@@ -64,7 +64,7 @@ public class MVMean extends MVAbstract implements LineGraph.LineGraphController{
 	double[] state, mean;
 
 	@SuppressWarnings("unchecked")
-	public MVMean(EvoLudoGWT engine, Model.Data type) {
+	public Mean(EvoLudoGWT engine, Model.Data type) {
 		super(engine, type);
 		graphs = (Set<LineGraph>) super.graphs;
 	}

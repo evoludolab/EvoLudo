@@ -33,7 +33,7 @@
 package org.evoludo.simulator;
 
 import org.evoludo.EvoLudoWeb;
-import org.evoludo.simulator.views.MVAbstract;
+import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.ui.ContextMenu;
 
 import com.google.gwt.dom.client.NativeEvent;
@@ -135,7 +135,7 @@ public class EvoLudoTrigger extends PushButton {
 					// - any other than the left mouse button pressed
 					// - context menu is visible (only close context menu)
 					// - showing in fullscreen
-					if( mouseOverLab || event.getNativeButton()!=NativeEvent.BUTTON_LEFT || ContextMenu.isShowing() || MVAbstract.isFullscreen())
+					if( mouseOverLab || event.getNativeButton()!=NativeEvent.BUTTON_LEFT || ContextMenu.isShowing() || AbstractView.isFullscreen())
 						return;
 					close();
 				}

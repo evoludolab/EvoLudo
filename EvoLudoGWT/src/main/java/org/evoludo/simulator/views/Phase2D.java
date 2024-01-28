@@ -60,7 +60,7 @@ import com.google.gwt.user.client.Command;
  *
  * @author Christoph Hauert
  */
-public class MVPhase2D extends MVAbstract {
+public class Phase2D extends AbstractView {
 
 	@SuppressWarnings("hiding")
 	protected Set<ParaGraph> graphs;
@@ -76,7 +76,7 @@ public class MVPhase2D extends MVAbstract {
 	 * @param engine the pacemeaker for running the model
 	 */
 	@SuppressWarnings("unchecked")
-	public MVPhase2D(EvoLudoGWT engine) {
+	public Phase2D(EvoLudoGWT engine) {
 		super(engine, Model.Data.UNDEFINED);
 		graphs = (Set<ParaGraph>) super.graphs;
 	}

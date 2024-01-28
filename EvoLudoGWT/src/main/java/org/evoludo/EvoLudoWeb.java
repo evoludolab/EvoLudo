@@ -67,15 +67,15 @@ import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
 import org.evoludo.simulator.views.HasS3;
-import org.evoludo.simulator.views.MVAbstract;
-import org.evoludo.simulator.views.MVConsole;
-import org.evoludo.simulator.views.MVDistribution;
-import org.evoludo.simulator.views.MVHistogram;
-import org.evoludo.simulator.views.MVMean;
-import org.evoludo.simulator.views.MVPhase2D;
-import org.evoludo.simulator.views.MVPop2D;
-import org.evoludo.simulator.views.MVPop3D;
-import org.evoludo.simulator.views.MVS3;
+import org.evoludo.simulator.views.AbstractView;
+import org.evoludo.simulator.views.Console;
+import org.evoludo.simulator.views.Distribution;
+import org.evoludo.simulator.views.Histogram;
+import org.evoludo.simulator.views.Mean;
+import org.evoludo.simulator.views.Phase2D;
+import org.evoludo.simulator.views.Pop2D;
+import org.evoludo.simulator.views.Pop3D;
+import org.evoludo.simulator.views.S3;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.InputEvent;
 import org.evoludo.ui.Slider;
@@ -92,7 +92,7 @@ import org.evoludo.util.XMLCoder;
  * Entry point classes define <code>onModuleLoad()</code>.
  */
 public class EvoLudoWeb extends Composite 
-	implements Model.MilestoneListener, Model.ChangeListener, MVAbstract.Callback, CLOProvider, EntryPoint {
+	implements Model.MilestoneListener, Model.ChangeListener, AbstractView.Callback, CLOProvider, EntryPoint {
 
 	/**
 	 * <strong>Apple Books (iBook) notes:</strong>
@@ -247,7 +247,7 @@ public class EvoLudoWeb extends Composite
 	 * Console view requires slightly special treatment to ensure results of early
 	 * feature detection get reported.
 	 */
-	MVConsole viewConsole;
+	Console viewConsole;
 
 	/**
 	 * Early initializations.
@@ -355,7 +355,7 @@ public class EvoLudoWeb extends Composite
 		// note: the {}-place holders interfere with UiBinder...
 		evoludoSlider.setTitle("Set delay between updates ({max} - {min}msec); now at {value}msec");
 
-		viewConsole = new MVConsole(engine);
+		viewConsole = new Console(engine);
 		logEvoHandler = new EvoLogHandler(viewConsole);
 		logger.addHandler(logEvoHandler);
 		logger.setLevel(Level.INFO);
@@ -1726,36 +1726,36 @@ public class EvoLudoWeb extends Composite
 		Model model = engine.getModel();
 		boolean isODESDE = model.isModelType(Model.Type.ODE) || model.isModelType(Model.Type.SDE);
 		if (module instanceof HasPop2D.Strategy && !isODESDE)
-			addView(new MVPop2D(engine, Model.Data.STRATEGY));
+			addView(new Pop2D(engine, Model.Data.STRATEGY));
 		if (isWebGLSupported && module instanceof HasPop3D.Strategy && !isODESDE)
-			addView(new MVPop3D(engine, Model.Data.STRATEGY));
+			addView(new Pop3D(engine, Model.Data.STRATEGY));
 		if (module instanceof HasMean.Strategy)
-			addView(new MVMean(engine, Model.Data.STRATEGY));
+			addView(new Mean(engine, Model.Data.STRATEGY));
 		if (module instanceof HasPhase2D)
-			addView(new MVPhase2D(engine));
+			addView(new Phase2D(engine));
 		if (module instanceof HasS3)
-			addView(new MVS3(engine));
+			addView(new S3(engine));
 		if (module instanceof HasHistogram.Strategy)
-			addView(new MVHistogram(engine, Model.Data.STRATEGY));
+			addView(new Histogram(engine, Model.Data.STRATEGY));
 		if (module instanceof HasDistribution.Strategy)
-			addView(new MVDistribution(engine, Model.Data.STRATEGY));
+			addView(new Distribution(engine, Model.Data.STRATEGY));
 		// fitness related views
 		if (module instanceof HasPop2D.Fitness && !isODESDE)
-			addView(new MVPop2D(engine, Model.Data.FITNESS));
+			addView(new Pop2D(engine, Model.Data.FITNESS));
 		if (isWebGLSupported && module instanceof HasPop3D.Fitness && !isODESDE)
-			addView(new MVPop3D(engine, Model.Data.FITNESS));
+			addView(new Pop3D(engine, Model.Data.FITNESS));
 		if (module instanceof HasMean.Fitness)
-			addView(new MVMean(engine, Model.Data.FITNESS));
+			addView(new Mean(engine, Model.Data.FITNESS));
 		if (module instanceof HasHistogram.Fitness)
-			addView(new MVHistogram(engine, Model.Data.FITNESS));
+			addView(new Histogram(engine, Model.Data.FITNESS));
 		// structure related views
 		if (module instanceof HasHistogram.Degree && !isODESDE)
-			addView(new MVHistogram(engine, Model.Data.DEGREE));
+			addView(new Histogram(engine, Model.Data.DEGREE));
 		// statistics related views
 		if (module instanceof HasHistogram.StatisticsProbability)
-			addView(new MVHistogram(engine, Model.Data.STATISTICS_FIXATION_PROBABILITY));
+			addView(new Histogram(engine, Model.Data.STATISTICS_FIXATION_PROBABILITY));
 		if (module instanceof HasHistogram.StatisticsTime)
-			addView(new MVHistogram(engine, Model.Data.STATISTICS_FIXATION_TIME));
+			addView(new Histogram(engine, Model.Data.STATISTICS_FIXATION_TIME));
 		// miscellaneous views
 		// note: console may be removed for (simulated) ePub modes
 		if (module instanceof HasConsole)
@@ -1783,7 +1783,7 @@ public class EvoLudoWeb extends Composite
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * Called by <code>Restore...</code> context menu in {@link MVAbstract}.
+	 * Called by <code>Restore...</code> context menu in {@link AbstractView}.
 	 */
 	@Override
 	public void restoreFromFile() {
@@ -2489,7 +2489,7 @@ public class EvoLudoWeb extends Composite
 		/**
 		 * The GUI console (or null).
 		 */
-		MVConsole console;
+		Console console;
 
 		/**
 		 * Construct new log handler that reports to the EvoLudo console (if one is
@@ -2497,10 +2497,10 @@ public class EvoLudoWeb extends Composite
 		 * 
 		 * @param console for reporting log records
 		 * 
-		 * @see MVConsole
+		 * @see Console
 		 * @see EvoLudoWeb#displayStatus(String, int)
 		 */
-		public EvoLogHandler(MVConsole console) {
+		public EvoLogHandler(Console console) {
 			this.console = console;
 		}
 

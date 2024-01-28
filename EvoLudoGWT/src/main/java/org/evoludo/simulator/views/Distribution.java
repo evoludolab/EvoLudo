@@ -58,7 +58,7 @@ import com.google.gwt.user.client.Command;
  *
  * @author Christoph Hauert
  */
-public class MVDistribution extends MVAbstract implements AbstractGraph.NodeGraphController {
+public class Distribution extends AbstractView implements AbstractGraph.NodeGraphController {
 
 	@SuppressWarnings("hiding")
 	protected Set<PopGraph2D> graphs;
@@ -66,7 +66,7 @@ public class MVDistribution extends MVAbstract implements AbstractGraph.NodeGrap
 	int			traitXIdx = 0, traitYIdx = 1;
 
 	@SuppressWarnings("unchecked")
-	public MVDistribution(EvoLudoGWT engine, Model.Data type) {
+	public Distribution(EvoLudoGWT engine, Model.Data type) {
 		super(engine, type);
 		graphs = (Set<PopGraph2D>) super.graphs;
 	}

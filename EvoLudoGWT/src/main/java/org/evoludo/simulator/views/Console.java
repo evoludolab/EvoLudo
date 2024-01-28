@@ -50,19 +50,19 @@ import com.google.gwt.user.client.ui.HTML;
  *
  * @author Christoph Hauert
  */
-public class MVConsole extends MVAbstract implements ContextMenu.Provider {
+public class Console extends AbstractView implements ContextMenu.Provider {
 
-	public static class Console extends HTML implements ContextMenu.Listener {
+	public static class Log extends HTML implements ContextMenu.Listener {
 		@Override
 		public HandlerRegistration addContextMenuHandler(ContextMenuHandler handler) {
 			return addDomHandler(handler, ContextMenuEvent.getType());
 		}
 	}
 
-	protected Console log;
+	protected Log log;
 	protected ContextMenu contextMenu;
 
-	public MVConsole(EvoLudoGWT engine) {
+	public Console(EvoLudoGWT engine) {
 		super(engine, Model.Data.UNDEFINED);
 	}
 
@@ -74,7 +74,7 @@ public class MVConsole extends MVAbstract implements ContextMenu.Provider {
 	@Override
 	public void createWidget() {
 		super.createWidget();
-		log = new Console();
+		log = new Log();
 		log.setStylePrimaryName("evoludo-Log");
 		wrapper.add(log);
 		contextMenu = ContextMenu.sharedContextMenu();

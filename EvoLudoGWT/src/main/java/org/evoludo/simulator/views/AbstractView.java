@@ -67,7 +67,7 @@ import com.google.gwt.user.client.ui.ProvidesResize;
  *
  * @author Christoph Hauert
  */
-public abstract class MVAbstract extends Composite implements EvoLudoView, ProvidesResize,
+public abstract class AbstractView extends Composite implements EvoLudoView, ProvidesResize,
 		AbstractGraph.Controller, HasFullscreenChangeHandlers {
 
 	protected HandlerRegistration fullscreenHandler;
@@ -89,7 +89,7 @@ public abstract class MVAbstract extends Composite implements EvoLudoView, Provi
 	// widget elements
 	ComplexPanel wrapper;
 
-	public MVAbstract(EvoLudoGWT engine, Model.Data type) {
+	public AbstractView(EvoLudoGWT engine, Model.Data type) {
 		this.engine = engine;
 		this.type = type;
 		logger = engine.getLogger();
@@ -692,7 +692,7 @@ public abstract class MVAbstract extends Composite implements EvoLudoView, Provi
 		/**
 		 * Enables interactive data views to check whether EvoLudo model is running. For
 		 * example, mouse clicks that would change the strategy of an individual in
-		 * {@link MVPop2D} or {@link MVPop3D} are ignored if model is running.
+		 * {@link Pop2D} or {@link Pop3D} are ignored if model is running.
 		 *
 		 * @return <code>true</code> if model is running.
 		 */
@@ -701,7 +701,7 @@ public abstract class MVAbstract extends Composite implements EvoLudoView, Provi
 		/**
 		 * Request EvoLudo model to restore a previously saved state of the model. This
 		 * method is called by the context menu (see
-		 * {@link MVAbstract#populateContextMenu(ContextMenu)}).
+		 * {@link AbstractView#populateContextMenu(ContextMenu)}).
 		 */
 		public void restoreFromFile();
 	}

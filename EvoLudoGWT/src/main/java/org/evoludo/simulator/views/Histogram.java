@@ -64,7 +64,7 @@ import com.google.gwt.core.client.Duration;
  *
  * @author Christoph Hauert
  */
-public class MVHistogram extends MVAbstract implements HistoGraph.HistoGraphController {
+public class Histogram extends AbstractView implements HistoGraph.HistoGraphController {
 
 	// NOTE: this is a bit of a hack that allows us to use graphs as Set<HistoGraph> here
 	//		 but as Set<AbstractGraph> in super classes. saves a lot of ugly casting
@@ -82,7 +82,7 @@ public class MVHistogram extends MVAbstract implements HistoGraph.HistoGraphCont
 	protected boolean degreeProcessed;
 
 	@SuppressWarnings("unchecked")
-	public MVHistogram(EvoLudoGWT engine, Model.Data type) {
+	public Histogram(EvoLudoGWT engine, Model.Data type) {
 		super(engine, type);
 		graphs = (Set<HistoGraph>) super.graphs;
 	}

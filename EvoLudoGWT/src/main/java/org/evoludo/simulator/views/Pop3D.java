@@ -61,7 +61,7 @@ import thothbot.parallax.core.shared.materials.MeshLambertMaterial;
  *
  * @author Christoph Hauert
  */
-public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphController {
+public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphController {
 
 	@SuppressWarnings("hiding")
 	private Set<PopGraph3D> graphs;
@@ -69,7 +69,7 @@ public class MVPop3D extends MVAbstract implements AbstractGraph.NodeGraphContro
 	protected PopGraph3D hitGraph = null;
 
 	@SuppressWarnings("unchecked")
-	public MVPop3D(EvoLudoGWT engine, Model.Data type) {
+	public Pop3D(EvoLudoGWT engine, Model.Data type) {
 		super(engine, type);
 		graphs = (Set<PopGraph3D>) super.graphs;
 	}

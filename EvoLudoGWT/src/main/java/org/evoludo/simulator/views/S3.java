@@ -47,7 +47,7 @@ import org.evoludo.simulator.modules.Module;
  *
  * @author Christoph Hauert
  */
-public class MVS3 extends MVAbstract {
+public class S3 extends AbstractView {
 
 	@SuppressWarnings("hiding")
 	protected Set<S3Graph> graphs;
@@ -58,7 +58,7 @@ public class MVS3 extends MVAbstract {
 	 * @param engine the pacemeaker for running the model
 	 */
 	@SuppressWarnings("unchecked")
-	public MVS3(EvoLudoGWT engine) {
+	public S3(EvoLudoGWT engine) {
 		super(engine, Model.Data.STRATEGY);
 		graphs = (Set<S3Graph>) super.graphs;
 	}
