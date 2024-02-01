@@ -1129,12 +1129,12 @@ public class IBSDPopulation extends IBSPopulation {
 		// for ephemeral scores calculate score of focal only
 		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
-			// isolated individual (note the bookkeeping above is overkill and can be
-			// optimized)
+			// isolated individual (note the bookkeeping can be optimized)
 			myScore = pairmodule.pairScores(myType, traitCount, traitScore);
 			if (ephemeralScores) {
 				// no need to update scores of everyone else
-				setScoreAt(me, myScore, 0);
+				resetScoreAt(me);
+				updateScoreAt(me, myScore, 0);
 				return;
 			}
 			updateScoreAt(me, myScore, 0);
@@ -1144,6 +1144,7 @@ public class IBSDPopulation extends IBSPopulation {
 		myScore = pairmodule.pairScores(myType, traitCount, traitScore);
 		if (ephemeralScores) {
 			// no need to update scores of everyone else
+			resetScoreAt(me);
 			setScoreAt(me, myScore / group.nSampled, group.nSampled);
 			return;
 		}

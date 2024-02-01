@@ -2132,6 +2132,11 @@ public abstract class IBSPopulation {
 			adjustGameScoresAt(me);
 			return;
 		}
+		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
+			if (updatePlayerAt(me))
+				commitStrategyAt(me);
+			return;
+		}
 
 		// alternative approach - update random player and play one game
 		if (updatePlayerAt(me)) {
