@@ -1951,16 +1951,15 @@ public abstract class IBSPopulation {
 				remain = new int[nRemain];
 				for (int n = 0; n < nRemain; n++)
 					remain[n] = n;
-				rincr = 1.0 / (sumFitness * uRate);
 				while (nRemain > 0) {
 					int idx = random0n(nRemain);
 					int focal = remain[idx];
 					remain[idx] = remain[--nRemain];
 					updatePlayerAsyncAt(focal);
-					rincr += 1.0 / (sumFitness * uRate);
 				}
 				// last to update
 				updatePlayerAsyncAt(remain[0]);
+				rincr = nPopulation / (sumFitness * uRate);
 				return rincr;
 
 			case ASYNC: // exclusively the current payoff matters

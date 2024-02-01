@@ -578,19 +578,21 @@ public abstract class IBS implements Model.IBS {
 			double incr = 0.0;
 			int nPopTot = 0;
 			double scoreTot = 0.0;
+			double popFrac = 1.0;
 			// reset strategies (colors)
 			for (IBSPopulation pop : species) {
 				pop.resetStrategies();
+				popFrac *= pop.getSyncFraction();
 				nPopTot += pop.getPopulationSize();
 				scoreTot += pop.getTotalFitness();
 			}
 			// nUpdates measured in generations
 			int nUpdates = Math.max(1, (int) Math.floor(stepDt));
 			for (int f = 0; f < nUpdates; f++) {
-				// advance time and update strategies
-				double realtimeIncr = (scoreTot <= 1e-8 ? Double.POSITIVE_INFINITY : nPopTot / scoreTot);
-				realtime += realtimeIncr;
-				generation++;
+				// advance time and real time (if possible)
+				realtime = (scoreTot <= 1e-8 ? Double.POSITIVE_INFINITY : realtime + nPopTot * popFrac / scoreTot);
+				generation += popFrac;
+				// update populations
 				for (IBSPopulation pop : species) {
 					pop.prepareStrategies();
 					incr += pop.step();
@@ -661,20 +663,28 @@ public abstract class IBS implements Model.IBS {
 			int nUpdates = Math.min((int) dUpdates, 1000000000); // 1e9 about half of Integer.MAX_VALUE (2.1e9)
 			for (int n = 0; n < nUpdates; n++) {
 				// update event
-				double rincr = (wScoreTot < 0.0 ? 0.0 : 1.0 / (wScoreTot * wScoreTot));
-				// advance time
-				generation += gincr;
 				debugFocalSpecies = pickFocalSpecies();
-				realtime += rincr / debugFocalSpecies.step();
-				realtime = wScoreTot < 0.0 ? Double.POSITIVE_INFINITY : realtime;
-				wPopTot = wScoreTot = 0.0;
+				double dt = debugFocalSpecies.step();
+				// advance time and real time (if possible)
+				if (debugFocalSpecies.getPopulationUpdateType() == PopulationUpdateType.ONCE) {
+					generation++;
+					realtime = (wScoreTot < 0.0 ? Double.POSITIVE_INFINITY : realtime + 1.0 / wScoreTot);
+					n += debugFocalSpecies.getModule().getNPopulation();
+				} else {
+					generation += gincr;
+					realtime = (wScoreTot < 0.0 ? Double.POSITIVE_INFINITY : realtime + 1.0 / (wScoreTot * wScoreTot * dt));
+				}
+				// if wPopTot is based on maximum population size it is a constant
+				// wPopTot = 0.0;
+				wScoreTot = 0.0;
 				hasConverged = true;
 				for (IBSPopulation pop : species) {
 					pop.isConsistent();
 					hasConverged &= pop.checkConvergence();
 					// update generation time and real time increments
 					double rate = pop.getModule().getSpeciesUpdateRate();
-					wPopTot += pop.getPopulationSize() * rate;
+					// if wPopTot is based on maximum population size it is a constant
+					// wPopTot += pop.getPopulationSize() * rate;
 					double sum = pop.getTotalFitness();
 					if (wScoreTot >= 0.0 && sum <= 1e-8) {
 						wScoreTot = -1.0;
