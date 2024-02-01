@@ -2399,10 +2399,10 @@ public abstract class IBSPopulation {
 			mutateStrategyAt(me, switched);
 			return true; // if mutated always indicate change
 		}
-		if (playerScoring.equals(ScoringType.RESET_ALWAYS))
-			return switched;
-		// signal change only if actual change of strategy occurred
-		return !isSameStrategy(me);
+		if (playerScoring.equals(ScoringType.RESET_ON_CHANGE))
+			// signal change only if actual change of strategy occurred
+			return !isSameStrategy(me);
+		return switched;
 	}
 
 	/**
