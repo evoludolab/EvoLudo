@@ -14,25 +14,25 @@ import org.evoludo.util.Formatter;
 public class PlayerUpdate {
 
 	/**
-	 * The module that is using this fitness mapping.
+	 * The module that is using this player update.
 	 */
 	Module module;
 
 	/**
-	 * Instantiate new map of type {@code map}.
+	 * Instantiate new player update for use in {@code module}.
 	 * 
-	 * @param module the map to use as template
+	 * @param module the module using this player update
 	 */
 	public PlayerUpdate(Module module) {
 		this.module = module;
 	}
 
 	/**
-	 * Player update type.
+	 * The player update type.
 	 * 
 	 * @see #clo
 	 */
-	protected PlayerUpdate.Type type = Type.IMITATE;
+	protected Type type = Type.IMITATE;
 
 	/**
 	 * Sets the player update type.
@@ -40,7 +40,7 @@ public class PlayerUpdate {
 	 * @param type the updating type for players
 	 * @return {@code true} if player update type changed
 	 */
-	public boolean setType(PlayerUpdate.Type type) {
+	public boolean setType(Type type) {
 		if (type == null || type == this.type)
 			return false;
 		this.type = type;
@@ -52,7 +52,7 @@ public class PlayerUpdate {
 	 * 
 	 * @return the player update type
 	 */
-	public PlayerUpdate.Type getType() {
+	public Type getType() {
 		return type;
 	}
 
@@ -183,7 +183,7 @@ public class PlayerUpdate {
 						if (isIBS) {
 							IBSPopulation ibspop = mod.getIBSPopulation();
 							// skip populations with Moran updates
-							if (ibspop.getPopulationUpdateType().isMoran())
+							if (ibspop.getPopulationUpdate().isMoran())
 								continue;
 						}
 						PlayerUpdate pu = mod.getPlayerUpdate();

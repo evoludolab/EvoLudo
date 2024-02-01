@@ -265,16 +265,17 @@ public abstract class IBS implements Model.IBS {
 			pop.opponent = mod.getOpponent().getIBSPopulation();
 		}
 		isMultispecies = (species.size() > 1);
+		IBSPopulation pop = species.get(0).getIBSPopulation();
 		// set shortcut for single species modules
-		population = isMultispecies ? null : species.get(0).getIBSPopulation();
-		Module mod = species.get(0);
-		cloGeometryInteraction.inheritKeysFrom(mod.cloGeometry);
-		cloGeometryReproduction.inheritKeysFrom(mod.cloGeometry);
-		cloPopulationUpdate.addKeys(PopulationUpdateType.values());
-		// ToDo: further updates to implement or make standard
-		cloPopulationUpdate.removeKey(PopulationUpdateType.WRIGHT_FISHER);
-		cloPopulationUpdate.removeKey(PopulationUpdateType.ECOLOGY);
+		population = isMultispecies ? null : pop;
+		cloGeometryInteraction.inheritKeysFrom(pop.getModule().cloGeometry);
+		cloGeometryReproduction.inheritKeysFrom(pop.getModule().cloGeometry);
 		cloMigration.addKeys(MigrationType.values());
+		PopulationUpdate pup = pop.getPopulationUpdate();
+		pup.clo.addKeys(PopulationUpdate.Type.values());
+		// ToDo: further updates to implement or make standard
+		pup.clo.removeKey(PopulationUpdate.Type.WRIGHT_FISHER);
+		pup.clo.removeKey(PopulationUpdate.Type.ECOLOGY);
 	}
 
 	@Override
@@ -284,7 +285,6 @@ public abstract class IBS implements Model.IBS {
 		logger = null;
 		cloGeometryInteraction.clearKeys();
 		cloGeometryReproduction.clearKeys();
-		cloPopulationUpdate.clearKeys();
 		cloMigration.clearKeys();
 		for (Module mod : species) {
 			IBSPopulation pop = mod.getIBSPopulation();
@@ -302,7 +302,7 @@ public abstract class IBS implements Model.IBS {
 	 * multi-species models this requires that all species are updated
 	 * synchronously. Helper variable for {@code ibsStep(double)}.
 	 * 
-	 * @see #cloPopulationUpdate
+	 * @see #clo
 	 * @see #check()
 	 * @see #ibsStep(double)
 	 */
@@ -315,16 +315,16 @@ public abstract class IBS implements Model.IBS {
 		for (Module mod : species) {
 			IBSPopulation pop = mod.getIBSPopulation();
 			doReset |= pop.check();
-			boolean sync = pop.getPopulationUpdateType().isSynchronous();
+			boolean sync = pop.getPopulationUpdate().isSynchronous();
 			allSync &= sync;
 			allAsync &= !sync;
 		}
 		isSynchronous = !allAsync;
 		if (isSynchronous && !allSync) {
 			logger.warning("cannot (yet) mix synchronous and asynchronous population updates - forcing '"
-					+ PopulationUpdateType.SYNC + "'");
+					+ PopulationUpdate.Type.SYNC + "'");
 			for (Module mod : species)
-				mod.getIBSPopulation().setPopulationUpdateType(PopulationUpdateType.SYNC);
+				mod.getIBSPopulation().getPopulationUpdate().setType(PopulationUpdate.Type.SYNC);
 			doReset = true;
 		}
 		return doReset;
@@ -627,7 +627,7 @@ public abstract class IBS implements Model.IBS {
 				debugFocalSpecies = pickFocalSpecies();
 				double dt = debugFocalSpecies.step();
 				// advance time and real time (if possible)
-				if (debugFocalSpecies.getPopulationUpdateType() == PopulationUpdateType.ONCE) {
+				if (debugFocalSpecies.getPopulationUpdate().getType() == PopulationUpdate.Type.ONCE) {
 					generation++;
 					realtime = (wScoreTot < 0.0 ? Double.POSITIVE_INFINITY : realtime + 1.0 / wScoreTot);
 					n += debugFocalSpecies.getModule().getNPopulation();
@@ -1015,68 +1015,6 @@ public abstract class IBS implements Model.IBS {
 	}
 
 	/**
-	 * Command line option to set the method for updating the population(s).
-	 * 
-	 * @see PopulationUpdateType
-	 */
-	public final CLOption cloPopulationUpdate = new CLOption("popupdate", PopulationUpdateType.ASYNC.getKey(), EvoLudo.catModel, 
-			"--popupdate <u> [<p>]  population update type; fraction p\n" + //
-			"                for synchronous updates (1=all):", new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse population update types for a single or multiple populations/species.
-				 * <code>arg</code> can be a single value or an array of values with the
-				 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
-				 * <code>arg</code> until all populations/species have the population update
-				 * type set.
-				 * 
-				 * @param arg the (array of) update types
-				 */
-				@Override
-				public boolean parse(String arg) {
-					String[] popupdates = arg.split(CLOParser.SPECIES_DELIMITER);
-					int n = 0;
-					boolean success = true;
-					for (Module mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
-						String updt = popupdates[n++ % popupdates.length];
-						PopulationUpdateType put = (PopulationUpdateType) cloPopulationUpdate.match(updt);
-						if (put == null) {
-							if (success)
-								logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
-										"population update '" + updt + "' not recognized - using '"
-										+ pop.getPopulationUpdateType()
-										+ "'");
-							success = false;
-							continue;
-						}
-						pop.setPopulationUpdateType(put);
-						// parse p, if present
-						String[] args = updt.split("\\s+|=");
-						double sync = 1.0;
-						if (args.length > 1)
-							sync = CLOParser.parseDouble(args[1]);
-						pop.setSyncFraction(sync);
-					}
-					return success;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (Module mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
-						String opt = (pop instanceof IBSDPopulation && ((IBSDPopulation) pop).optimizeMoran
-								? " (optimized)"
-								: "");
-						output.println("# populationupdate:     " + pop.getPopulationUpdateType() + opt
-								+ (isMultispecies ? " (" + mod.getName() + ")" : ""));
-					}
-				}
-			});
-
-	/**
 	 * Command line option to set whether player scores from interactions are
 	 * accumulated or averaged (default).
 	 * <p>
@@ -1289,7 +1227,7 @@ public abstract class IBS implements Model.IBS {
 				public void report(PrintStream output) {
 					for (Module mod : species) {
 						IBSPopulation pop = mod.getIBSPopulation();
-						if (pop.getPopulationUpdateType().isMoran())
+						if (pop.getPopulationUpdate().isMoran())
 							continue;
 						IBSGroup group = pop.getReferenceGroup();
 						IBSGroup.SamplingType st = group.getSampling();
@@ -1662,7 +1600,8 @@ public abstract class IBS implements Model.IBS {
 			cloSpeciesUpdateType.addKeys(SpeciesUpdateType.values());
 			parser.addCLO(cloSpeciesUpdateType);
 		}
-		parser.addCLO(cloPopulationUpdate);
+		PopulationUpdate pup = species.get(0).getIBSPopulation().getPopulationUpdate();
+		parser.addCLO(pup.clo);
 		parser.addCLO(cloMigration);
 		parser.addCLO(cloGeometryRewire);
 		parser.addCLO(cloGeometryAddwire);
@@ -1685,9 +1624,9 @@ public abstract class IBS implements Model.IBS {
 		}
 		if (anyVacant) {
 			// restrict population updates to those compatible with ecological models
-			cloPopulationUpdate.clearKeys();
-			cloPopulationUpdate.addKey(PopulationUpdateType.ECOLOGY);
-			cloPopulationUpdate.setDefault(PopulationUpdateType.ECOLOGY.getKey());
+			pup.clo.clearKeys();
+			pup.clo.addKey(PopulationUpdate.Type.ECOLOGY);
+			pup.clo.setDefault(PopulationUpdate.Type.ECOLOGY.getKey());
 		}
 		if (!allStatic) {
 			// options that are only meaningful if at least some populations do not 
@@ -1788,145 +1727,6 @@ public abstract class IBS implements Model.IBS {
 	}
 
 	/**
-	 * Types of species updates (only relevant for multi-species models):
-	 * <dl>
-	 * <dt>synchronous</dt>
-	 * <dd>Synchronized population updates. The number of individuals that reassess
-	 * their strategy is determined by the player update noise,
-	 * {@link org.evoludo.simulator.modules.PlayerUpdate#getNoise()}. Without noise
-	 * all individuals update their strategy, while with high noise levels only a 
-	 * few update (but at least one individual and each at most once).</dd>
-	 * <dt>Wright-Fisher</dt>
-	 * <dd>Wright-Fisher process (synchronous)</dd>
-	 * <dt>asynchronous</dt>
-	 * <dd>Asynchronous population updates (default).</dd>
-	 * <dt>Bd</dt>
-	 * <dd>Moran process (birth-death, asynchronous).</dd>
-	 * <dt>dB</dt>
-	 * <dd>Moran process (death-birth, asynchronous).</dd>
-	 * <dt>imitate</dt>
-	 * <dd>Moran process (imitate, asynchronous).</dd>
-	 * <dt>ecology</dt>
-	 * <dd>Asynchronous updates (non-constant population size).</dd>
-	 * </dl>
-	 * For <b>size</b> and <b>fitness</b> selection is also proportional to the
-	 * update rate of each species.
-	 * 
-	 * @see org.evoludo.simulator.models.IBS#cloPopulationUpdate
-	 *      IBS.cloPopulationUpdate
-	 * @see org.evoludo.simulator.modules.PlayerUpdate#clo
-	 */
-	public static enum PopulationUpdateType implements CLOption.Key {
-
-		/**
-		 * Synchronized population updates. The number of individuals that reassess
-		 * their strategy is determined by the player update noise,
-		 * {@link Module#cloPlayerUpdateNoise}. Without noise all individuals update
-		 * their strategy, while with high noise levels only a few update (but at least
-		 * one individual and each at most once).
-		 */
-		SYNC("synchronous", "synchronized population updates"),
-
-		/**
-		 * Wright-Fisher process (synchronous). (not yet implemented!)
-		 */
-		WRIGHT_FISHER("Wright-Fisher", "Wright-Fisher process (synchronous)"),
-
-		/**
-		 * Asynchronous population updates.
-		 */
-		ASYNC("asynchronous", "asynchronous population updates"),
-
-		/**
-		 * Every individual updates exactly once per generation. In contrast for
-		 * {@code ASYNC} every individual updates once <strong>on average</strong>.
-		 */
-		ONCE("once", "everyone updates once (asynchronous)"),
-
-		/**
-		 * Moran process (birth-death, asynchronous).
-		 */
-		MORAN_BIRTHDEATH("Bd", "Moran process (birth-death, asynchronous)"),
-
-		/**
-		 * Moran process (death-birth, asynchronous).
-		 */
-		MORAN_DEATHBIRTH("dB", "Moran process (death-birth, asynchronous)"),
-
-		/**
-		 * Moran process (imitate, asynchronous).
-		 */
-		MORAN_IMITATE("imitate", "Moran process (imitate, asynchronous)"),
-
-		/**
-		 * Asynchronous updates (non-constant population size).
-		 */
-		ECOLOGY("ecology", "asynchronous updates (non-constant population size)");
-
-		/**
-		 * Key of population update type. Used for parsing command line options.
-		 * 
-		 * @see org.evoludo.simulator.models.IBS#cloPopulationUpdate
-		 *      IBS.cloPopulationUpdate
-		 */
-		String key;
-
-		/**
-		 * Brief description of population update type for GUI and help display.
-		 * 
-		 * @see EvoLudo#helpCLO()
-		 */
-		String title;
-
-		/**
-		 * Instantiate new type of population update.
-		 * 
-		 * @param key   identifier for parsing of command line option
-		 * @param title the summary of geometry for GUI and help display
-		 */
-		PopulationUpdateType(String key, String title) {
-			this.key = key;
-			this.title = title;
-		}
-
-		/**
-		 * Determine whether population update is synchronous.
-		 * 
-		 * @return {@code true} if update is synchronous
-		 */
-		public boolean isSynchronous() {
-			return (equals(SYNC) || equals(WRIGHT_FISHER));
-		}
-
-		/**
-		 * Determine whether population update is a variant of Moran updates. Moran type
-		 * updates do not require specifying a player update type separately.
-		 * 
-		 * @return {@code true} if update is Moran
-		 * 
-		 * @see Module#clo
-		 */
-		public boolean isMoran() {
-			return (equals(MORAN_BIRTHDEATH) || equals(MORAN_DEATHBIRTH) || equals(MORAN_IMITATE));
-		}
-
-		@Override
-		public String getKey() {
-			return key;
-		}
-
-		@Override
-		public String getTitle() {
-			return title;
-		}
-
-		@Override
-		public String toString() {
-			return key + ": " + title;
-		}
-	}
-
-	/**
 	 * Schedules for resetting individual payoffs/fitness:
 	 * <dl>
 	 * <dt>onchange</dt>
@@ -1963,8 +1763,7 @@ public abstract class IBS implements Model.IBS {
 		/**
 		 * Key of population update type. Used for parsing command line options.
 		 * 
-		 * @see org.evoludo.simulator.models.IBS#cloPopulationUpdate
-		 *      IBS.cloPopulationUpdate
+		 * @see org.evoludo.simulator.models.IBS#cloScoringType
 		 */
 		String key;
 
@@ -2043,8 +1842,7 @@ public abstract class IBS implements Model.IBS {
 		/**
 		 * Key of migration type. Used for parsing command line options.
 		 * 
-		 * @see org.evoludo.simulator.models.IBS#cloPopulationUpdate
-		 *      IBS.cloPopulationUpdate
+		 * @see org.evoludo.simulator.models.IBS#cloMigration
 		 */
 		String key;
 

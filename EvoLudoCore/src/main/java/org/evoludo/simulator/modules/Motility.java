@@ -36,10 +36,10 @@ import java.io.PrintStream;
 import java.util.Arrays;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBS.PopulationUpdateType;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.FixationData;
 import org.evoludo.simulator.models.IBSDPopulation;
+import org.evoludo.simulator.models.PopulationUpdate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -208,9 +208,9 @@ public class Motility extends EcoMoran {
 			// implemented - switching to "+POPULATION_UPDATE_ASYNC_REPLICATE+".");
 			// setPopulationUpdateType(POPULATION_UPDATE_ASYNC_REPLICATE);
 			// }
-			if (populationUpdateType != PopulationUpdateType.MORAN_BIRTHDEATH) {
+			if (getPopulationUpdate().getType() != PopulationUpdate.Type.MORAN_BIRTHDEATH) {
 				logger.warning("currently only birth-death updating supported!");
-				setPopulationUpdateType(PopulationUpdateType.MORAN_BIRTHDEATH);
+				getPopulationUpdate().setType(PopulationUpdate.Type.MORAN_BIRTHDEATH);
 				doReset = true;
 			}
 

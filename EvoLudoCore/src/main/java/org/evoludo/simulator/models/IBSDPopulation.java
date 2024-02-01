@@ -251,7 +251,7 @@ public class IBSDPopulation extends IBSPopulation {
 	@Override
 	public synchronized void reset() {
 		super.reset();
-		if (optimizeMoran && populationUpdateType.isMoran()) {
+		if (optimizeMoran && populationUpdate.isMoran()) {
 			int nLinks = (int) (reproduction.avgOut * nPopulation + 0.5);
 			if (activeLinks == null || activeLinks.length != nLinks) {
 				activeLinks = new link[nLinks];
@@ -1853,7 +1853,7 @@ public class IBSDPopulation extends IBSPopulation {
 
 		if (optimizeMoran) {
 			// optimized Moran type processes are incompatible with mutations!
-			if (!populationUpdateType.isMoran()) {
+			if (!populationUpdate.isMoran()) {
 				optimizeMoran = false;
 				logger.warning("optimizations require Moran-type updates - disabled.");
 				doReset = true;

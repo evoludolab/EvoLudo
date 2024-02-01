@@ -46,7 +46,6 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBS.MigrationType;
-import org.evoludo.simulator.models.IBS.PopulationUpdateType;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSGroup.SamplingType;
 import org.evoludo.simulator.models.Model.Mode;
@@ -131,6 +130,11 @@ public abstract class IBSPopulation {
 	protected boolean isMultispecies = false;
 
 	/**
+	 * The population update.
+	 */
+	PopulationUpdate populationUpdate;
+
+	/**
 	 * Creates a population of individuals for IBS simulations.
 	 * 
 	 * @param engine the pacemeaker for running the model
@@ -158,6 +162,8 @@ public abstract class IBSPopulation {
 
 		interactionGroup = new IBSGroup(rng);
 		referenceGroup = new IBSGroup(rng);
+
+		populationUpdate = new PopulationUpdate((IBS) engine.getModel());
 	}
 
 	/**
@@ -181,6 +187,7 @@ public abstract class IBSPopulation {
 		interactions = null;
 		typeScores = null;
 		typeFitness = null;
+		populationUpdate = null;
 	}
 
 	/**
@@ -504,6 +511,24 @@ public abstract class IBSPopulation {
 	}
 
 	/**
+	 * Gets the population update.
+	 * 
+	 * @return the population update
+	 */
+	public PopulationUpdate getPopulationUpdate() {
+		return populationUpdate;
+	}
+
+	/**
+	 * Sets the population update.
+	 * 
+	 * @param populationUpdate the population update
+	 */
+	public void setPopulationUpdate(PopulationUpdate populationUpdate) {
+		this.populationUpdate = populationUpdate;
+	}
+
+	/**
 	 * Flag to indicate whether player scores are averaged (default) or accumulated.
 	 * 
 	 * @see IBS#cloAccumulatedScores
@@ -781,7 +806,7 @@ public abstract class IBSPopulation {
 		// scores along
 		// - if interactions are with all neighbors (payoffs are adjusted) we need to
 		// recalculate the payoffs
-		if (populationUpdateType.isSynchronous()) {
+		if (populationUpdate.isSynchronous()) {
 			// NOTE: this is not efficient because it deals unnecessarily with types and
 			// scores; enough to only copy from scratch to strategies.
 			commitStrategyAt(a);
@@ -1439,8 +1464,8 @@ public abstract class IBSPopulation {
 		}
 		// during initialization, pretend we are doing this synchronously - just in case
 		// someone's interested.
-		PopulationUpdateType put = populationUpdateType;
-		setPopulationUpdateType(PopulationUpdateType.SYNC);
+		PopulationUpdate.Type put = populationUpdate.getType();
+		populationUpdate.setType(PopulationUpdate.Type.SYNC);
 		if (module.isPairwise()) {
 			interactionGroup.pickAt(me, interaction, true);
 			playPairGameAt(interactionGroup);
@@ -1448,7 +1473,7 @@ public abstract class IBSPopulation {
 			interactionGroup.pickAt(me, interaction, true);
 			playGroupGameAt(interactionGroup);
 		}
-		setPopulationUpdateType(put);
+		populationUpdate.setType(put);
 	}
 
 	/**
@@ -1848,7 +1873,7 @@ public abstract class IBSPopulation {
 	 *         <code>false</code> otherwise.
 	 */
 	protected boolean updateEffScoreRange(int index, double before, double after) {
-		if (populationUpdateType.isSynchronous() || maxEffScoreIdx < 0)
+		if (populationUpdate.isSynchronous() || maxEffScoreIdx < 0)
 			return false;
 
 		if (after > before) {
@@ -1919,7 +1944,7 @@ public abstract class IBSPopulation {
 			return rincr;
 		}
 		// real time increment based on current fitness
-		switch (populationUpdateType) {
+		switch (populationUpdate.getType()) {
 			case SYNC: // synchronous updates (do not commit strategies)
 				prepareStrategies();
 				if (syncFraction >= 1.0) {
@@ -1986,7 +2011,7 @@ public abstract class IBSPopulation {
 				return updatePlayerEcology() / uRate;
 
 			default:
-				logger.warning("unknown population update type (" + populationUpdateType.getKey() + ").");
+				logger.warning("unknown population update type (" + populationUpdate.getType().getKey() + ").");
 				return 0.0;
 		}
 	}
@@ -2004,7 +2029,7 @@ public abstract class IBSPopulation {
 	 */
 	public void debugUpdatePopulationAt(int focal) {
 		resetStrategies();
-		switch (populationUpdateType) {
+		switch (populationUpdate.getType()) {
 			case SYNC: // synchronous updating - gets here only in debugging mode
 				debugFocal = focal;
 				if (updatePlayerAt(focal))
@@ -2036,7 +2061,7 @@ public abstract class IBSPopulation {
 				break;
 
 			default:
-				logger.warning("unknown population update type (" + populationUpdateType.getKey() + ").");
+				logger.warning("unknown population update type (" + populationUpdate.getType().getKey() + ").");
 				return;
 		}
 		debugMarkChange();
@@ -3137,7 +3162,7 @@ public abstract class IBSPopulation {
 
 		// check reproduction geometry (may still be undefined at this point)
 		Geometry reprogeom = (reproduction != null ? reproduction : interaction);
-		if (!populationUpdateType.isMoran() && !populationUpdateType.equals(PopulationUpdateType.ECOLOGY)) {
+		if (!populationUpdate.isMoran() && !populationUpdate.getType().equals(PopulationUpdate.Type.ECOLOGY)) {
 			// Moran type updates ignore playerUpdateType
 			if (reprogeom.isType(Geometry.Type.MEANFIELD) && referenceGroup.isSampling(IBSGroup.SamplingType.ALL)) {
 				// 010320 using everyone as a reference in mean-field simulations is not
@@ -3155,7 +3180,7 @@ public abstract class IBSPopulation {
 			}
 		}
 		// in the original Moran process offspring can replace the parent
-		referenceGroup.setSelf(populationUpdateType.isMoran() && reprogeom.isType(Geometry.Type.MEANFIELD));
+		referenceGroup.setSelf(populationUpdate.isMoran() && reprogeom.isType(Geometry.Type.MEANFIELD));
 
 		// currently: if pop has interaction structure different from MEANFIELD its
 		// opponent population needs to be of the same size
@@ -3406,7 +3431,7 @@ public abstract class IBSPopulation {
 		updateMinMaxScores();
 
 		// check for specific population update types
-		if (populationUpdateType.isMoran()) {
+		if (populationUpdate.isMoran()) {
 			// avoid negative fitness for Moran type updates
 			if (minFitness < 0.0) {
 				logger.warning("Moran updates require fitness>=0 (score range [" + Formatter.format(minScore, 6)
@@ -4048,29 +4073,6 @@ public abstract class IBSPopulation {
 	 */
 	public int getPopulationSize() {
 		return nPopulation;
-	}
-
-	/**
-	 * The population update type.
-	 */
-	protected PopulationUpdateType populationUpdateType = PopulationUpdateType.ASYNC;
-
-	/**
-	 * Sets the population update type to {@code type}.
-	 * 
-	 * @param type the new population update type
-	 */
-	public void setPopulationUpdateType(PopulationUpdateType type) {
-		populationUpdateType = type;
-	}
-
-	/**
-	 * Gets the population update type.
-	 * 
-	 * @return the population update type
-	 */
-	public PopulationUpdateType getPopulationUpdateType() {
-		return populationUpdateType;
 	}
 
 	/**

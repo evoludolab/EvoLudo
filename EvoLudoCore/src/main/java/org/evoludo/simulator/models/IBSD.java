@@ -159,7 +159,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 			fixData = null;
 		// NOTE: optimizeHomo is disabled for multi-species (see cloOptimize)
 		if (optimizeHomo) {
-			if (population.populationUpdateType == PopulationUpdateType.ECOLOGY) {
+			if (population.populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY) {
 				optimizeHomo = false;
 				logger.warning(
 						"optimizations for homogeneous states disabled (incompatible with variable population sizes).");

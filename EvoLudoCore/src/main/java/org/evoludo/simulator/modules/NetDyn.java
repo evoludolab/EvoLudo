@@ -414,9 +414,9 @@ public class NetDyn extends Discrete implements HasIBS,
 		cloGeometry.parse();
 
 		// only graph dynamics allowed
-		org.evoludo.simulator.models.IBS mibs = (org.evoludo.simulator.models.IBS) engine.getModel();
-		mibs.cloPopulationUpdate.clearKeys();
-		mibs.cloPopulationUpdate.addKey("individual", "individual learning - link to random members");
+		CLOption popt = getIBSPopulation().getPopulationUpdate().clo;
+		popt.clearKeys();
+		popt.addKey("individual", "individual learning - link to random members");
 	}
 
 	@Override

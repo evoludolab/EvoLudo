@@ -39,8 +39,8 @@ import java.lang.management.ManagementFactory;
 import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.PopulationUpdate;
 import org.evoludo.simulator.models.IBSD;
-import org.evoludo.simulator.models.IBS.PopulationUpdateType;
 import org.evoludo.simulator.models.IBSD.InitType;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.modules.PlayerUpdate;
@@ -98,7 +98,7 @@ public class simTraits extends Traits {
 		// dry-run to give the JIT a chance to compile the relevant parts
 		setNPopulation(100);
 		pop.setMutationProb(0.01);
-		pop.setPopulationUpdateType(PopulationUpdateType.ASYNC);
+		pop.getPopulationUpdate().setType(PopulationUpdate.Type.ASYNC);
 		engine.loadModel(Model.Type.IBS);
 		engine.modelReset();
 		engine.modelRelax();
@@ -113,8 +113,8 @@ public class simTraits extends Traits {
 			pop.setMutationProb(1.0/popsizes[n]);
 
 			// individual based simulations
-			pop.setPopulationUpdateType(PopulationUpdateType.ASYNC);
 			engine.loadModel(Model.Type.IBS);
+			pop.getPopulationUpdate().setType(PopulationUpdate.Type.ASYNC);
 			engine.modelReset();
 			long cpuBefore = osMBean.getProcessCpuTime();	// time in nanoseconds
 			long cpuSims, mcSims = 0;

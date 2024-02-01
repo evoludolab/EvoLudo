@@ -2,12 +2,12 @@ EXTENSIONS:
 - implement different types of mutations for discrete modules: random (cosmic rays) or errors in reproduction (temperature).
 
 TASKS:
-- check ephemeral scoring (should yield qualitatively the same results as the detailled accounting)
 - javadoc for EvoLudoJRE module
 - convince maven to read resource files from src/main/resources rather than src/main/java/org/evoludo/simulator/resources
 - refactor EvoLudo/GWT/JRE: should not deal with GUI related code (--delay, --run); move all methods related to delay and isSuspended (except delay variable) to superclass of EvoLudoWeb and EvoLudoLab
 
 TODO:
+- ephemeral scoring is too slow (about half the speed of adjusting scores; should be faster, though)
 - check if interactions-array can be replaced by interaction.kout for adjustScores (but only if read-only access is ensured)!
 - merge options cloSamples and cloRuns?
 - implement custom color maps (NetGames is an example); this is tricky due to incompatibilities between JRE and GWT; one possibility is to add relevant code to EvoLudoJRE and EvoLudoGWT (inelegant because it requires synchronizing code across two not obviously related classes); another possibility is to add <lab>GWT and <lab>JRE classes to take care of the implementation specific components (much like the original <lab>Lab class setup); both are far from satisfactory or even elegant solutions...
@@ -48,6 +48,7 @@ CHECK:
 
 
 DONE:
++ check ephemeral scoring (should yield qualitatively the same results as the detailled accounting)
 + check --accuscores flag (for regular networks this should merely result in a change of selection strength but seems to change more...)
 + more streamlining of clo parameters (merge --costfcn and --costparams into --costs; merge --benefitfcn and --benefitparams into --benefits; absorb --mutationtype and --mutationsdev in --mutation; absorb --init in --inittype and rename --inittype to --init)
 + maven plugin to assemble html files and compiled evoludoweb JavaScript for debugging and deploying -> EvoLudoDev module
