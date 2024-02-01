@@ -831,13 +831,18 @@ public class CLOption implements Comparable<CLOption> {
 		if (!isSet() || isDefault() || arg.equals(defaultArg))
 			return myDescr + (defaultArg != null ? "\n      (default: " + defaultArg + ")" : "");
 		if (keys != null) {
+			Key prev = null;
 			String[] args = arg.split(CLOParser.SPECIES_DELIMITER);
 			String argkeys = "";
 			for (int n = 0; n < args.length; n++) {
-				String key = match(args[n]).getKey();
-				String keyarg = stripKey(key, args[n]);
-				argkeys += key + (keyarg.length() > 0 ? " " + keyarg : "")
+				Key key = match(args[n]);
+				if (key == null && prev != null)
+					key = prev;
+				String skey = key.getKey();
+				String keyarg = stripKey(skey, args[n]).trim();
+				argkeys += skey + (keyarg.length() > 0 ? " " + keyarg : "")
 						+ (n == args.length - 1 ? "" : CLOParser.SPECIES_DELIMITER);
+				prev = key;
 			}
 			return myDescr + "\n      (current: " + argkeys + ", default: " + defaultArg + ")";
 		}
