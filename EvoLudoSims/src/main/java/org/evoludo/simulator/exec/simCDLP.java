@@ -71,7 +71,7 @@ public class simCDLP extends CDLP implements Model.ChangeListener {
 			return;
 		}
 		org.evoludo.simulator.models.IBS ibs = (org.evoludo.simulator.models.IBS) model;
-		IBSDPopulation pop = (IBSDPopulation) ibs.getSpecies(this);
+		IBSDPopulation pop = (IBSDPopulation) getIBSPopulation();
 		out = ((EvoLudoJRE) engine).getOutput();
 
 		boolean[] active = getActiveTraits();

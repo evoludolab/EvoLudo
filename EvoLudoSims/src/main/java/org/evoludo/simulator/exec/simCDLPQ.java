@@ -73,7 +73,7 @@ public class simCDLPQ extends CDLPQ implements Model.ChangeListener {
 			return;
 		}
 		org.evoludo.simulator.models.IBS ibs = (org.evoludo.simulator.models.IBS) model;
-		IBSDPopulation pop = (IBSDPopulation) ibs.getSpecies(this);
+		IBSDPopulation pop = (IBSDPopulation) getIBSPopulation();
 		out = ((EvoLudoJRE) engine).getOutput();
 		int[][] fix = new int[nTraits][nTraits];
 		int lastfix = -1;

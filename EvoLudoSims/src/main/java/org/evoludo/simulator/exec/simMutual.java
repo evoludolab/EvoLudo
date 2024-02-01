@@ -115,8 +115,8 @@ public class simMutual extends Mutualism implements Model.ChangeListener {
 		double nRelaxation = engine.getNRelaxation();
 		engine.setNGenerations(engine.getNGenerations() + nRelaxation);
 
-		mypop = (IBSDPopulation) ibs.getSpecies(this);
-		opppop = (IBSDPopulation) ibs.getSpecies(opp);
+		mypop = (IBSDPopulation) getIBSPopulation();
+		opppop = (IBSDPopulation) opp.getIBSPopulation();
 		myId = getID();
 		oppId = opp.getID();
 

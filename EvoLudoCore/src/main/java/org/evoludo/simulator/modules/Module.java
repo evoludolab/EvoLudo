@@ -276,6 +276,9 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		engine.removeMilestoneListener(this);
 		if (this instanceof Model.ChangeListener)
 			engine.removeChangeListener((Model.ChangeListener) this);
+		if (ibs != null)
+			ibs.unload();
+		ibs = null;
 	}
 
 	/**
@@ -354,6 +357,32 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		if (this instanceof HasPDE)
 			types.add(Type.PDE);
 		return types.toArray(new Model.Type[0]);
+	}
+
+	/**
+	 * The field point to the IBSPopulation that represents this module in
+	 * individual based simulations. {@code null} for all other model types.
+	 */
+	IBSPopulation ibs;
+
+	/**
+	 * Sets the reference to the IBSPopulation that represents this module in
+	 * individual based simulations.
+	 * 
+	 * @param ibs the individual based population
+	 */
+	public void setIBSPopulation(IBSPopulation ibs) {
+		this.ibs = ibs;
+	}
+
+	/**
+	 * Gets the IBSPopulation that represents this module in individual based
+	 * simulations or {@code null} for all other types of models.
+	 * 
+	 * @return the IBSPopulation that represents this module or {@code null}
+	 */
+	public IBSPopulation getIBSPopulation() {
+		return ibs;
 	}
 
 	/**

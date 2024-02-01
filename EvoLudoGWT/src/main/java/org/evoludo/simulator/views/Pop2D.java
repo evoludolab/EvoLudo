@@ -47,7 +47,6 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network2D;
-import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.Type;
@@ -423,7 +422,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 		Model model = engine.getModel();
 		if (!model.isModelType(Type.IBS))
 			return;
-		IBSPopulation pop = ((IBS) model).getSpecies(graphs2mods.get(graph));
+		IBSPopulation pop = graphs2mods.get(graph).getIBSPopulation();
 		pop.debugUpdatePopulationAt(node);
 	}
 

@@ -518,20 +518,20 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						case TRAITS:
 							if (model instanceof IBSD) {
 								boolean isMultispecies = (module.getNSpecies() > 1);
-								for (Module specie : module.getSpecies()) {
-									IBSDPopulation pop = (IBSDPopulation) ((IBS) model).getSpecies(specie);
+								for (Module mod : module.getSpecies()) {
+									IBSDPopulation pop = (IBSDPopulation) mod.getIBSPopulation();
 									output.println(time + ",\t" + data.getKey()
-											+ (isMultispecies ? "\t" + specie.getName() : "") + ",\t"
+											+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
 											+ pop.getTraits());
 								}
 								break;
 							}
 							if (model instanceof IBSC) {
 								boolean isMultispecies = (module.getNSpecies() > 1);
-								for (Module specie : module.getSpecies()) {
-									IBSMCPopulation pop = (IBSMCPopulation) ((IBS) model).getSpecies(specie);
+								for (Module mod : module.getSpecies()) {
+									IBSMCPopulation pop = (IBSMCPopulation) mod.getIBSPopulation();
 									output.println(time + ",\t" + data.getKey()
-											+ (isMultispecies ? "\t" + specie.getName() : "") + ",\t"
+											+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
 											+ pop.getTraits(dataDigits));
 								}
 								break;
@@ -544,10 +544,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						case SCORES:
 							if (model instanceof IBS) {
 								boolean isMultispecies = (module.getNSpecies() > 1);
-								for (Module specie : module.getSpecies()) {
-									IBSPopulation pop = ((IBS) model).getSpecies(specie);
+								for (Module mod : module.getSpecies()) {
+									IBSPopulation pop = mod.getIBSPopulation();
 									output.println(time + ",\t" + data.getKey()
-											+ (isMultispecies ? "\t" + specie.getName() : "") + ",\t"
+											+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
 											+ pop.getScores(dataDigits));
 								}
 								break;
@@ -560,10 +560,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						case FITNESS:
 							if (model instanceof IBS) {
 								boolean isMultispecies = (module.getNSpecies() > 1);
-								for (Module specie : module.getSpecies()) {
-									IBSPopulation pop = ((IBS) model).getSpecies(specie);
+								for (Module mod : module.getSpecies()) {
+									IBSPopulation pop = mod.getIBSPopulation();
 									output.println(time + ",\t" + data.getKey()
-											+ (isMultispecies ? "\t" + specie.getName() : "") + ",\t"
+											+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
 											+ pop.getFitness(dataDigits));
 								}
 								break;

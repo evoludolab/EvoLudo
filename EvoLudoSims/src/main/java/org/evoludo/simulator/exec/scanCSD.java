@@ -37,15 +37,14 @@ import java.io.PrintStream;
 import java.util.Arrays;
 
 import org.evoludo.graphics.AbstractGraph;
-import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Distributions;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.models.IBSC;
-import org.evoludo.simulator.models.IBSCPopulation;
 import org.evoludo.simulator.models.IBSC.InitType;
 import org.evoludo.simulator.models.IBSC.MutationType;
+import org.evoludo.simulator.models.IBSCPopulation;
 import org.evoludo.simulator.modules.CSD;
 import org.evoludo.simulator.views.MVPop2D;
 import org.evoludo.util.CLOParser;
@@ -88,8 +87,7 @@ public class scanCSD extends CSD {
 	public void run() {
 		out = ((EvoLudoJRE)engine).getOutput();		
 		// assumes IBS simulations
-		IBSC cmod = (IBSC) engine.getModel();
-		cpop = (IBSCPopulation) cmod.getSpecies(this);
+		cpop = (IBSCPopulation) getIBSPopulation();
 		double[] bparams = traits2payoff.getBenefitParameters()[0];
 		double[] cparams = traits2payoff.getCostParameters()[0];
 

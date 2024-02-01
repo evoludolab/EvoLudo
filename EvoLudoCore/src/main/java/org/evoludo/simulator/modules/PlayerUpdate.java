@@ -4,13 +4,12 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.Formatter;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.Formatter;
 
 public class PlayerUpdate {
 
@@ -182,7 +181,7 @@ public class PlayerUpdate {
 					boolean isIBS = module.model.isModelType(Model.Type.IBS);
 					for (Module mod : species) {
 						if (isIBS) {
-							IBSPopulation ibspop = ((IBS) module.model).getSpecies(mod);
+							IBSPopulation ibspop = mod.getIBSPopulation();
 							// skip populations with Moran updates
 							if (ibspop.getPopulationUpdateType().isMoran())
 								continue;

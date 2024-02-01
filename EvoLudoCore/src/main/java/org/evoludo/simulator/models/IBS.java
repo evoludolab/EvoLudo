@@ -2,7 +2,6 @@ package org.evoludo.simulator.models;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.logging.Logger;
 
 import org.evoludo.math.Combinatorics;
@@ -57,7 +56,7 @@ public abstract class IBS implements Model.IBS {
 	protected Mode mode = Mode.DYNAMICS;
 
 	/**
-	 * Checks whether the mode {code test} is supported by this model.
+	 * Checks whether the mode {@code test} is supported by this model.
 	 * 
 	 * @param test the mode to test
 	 * @return {@code true} if mode is supported
@@ -65,7 +64,8 @@ public abstract class IBS implements Model.IBS {
 	 */
 	@Override
 	public boolean permitsMode(Mode test) {
-		for (IBSPopulation pop : species) {
+		for (Module mod : species) {
+			IBSPopulation pop = mod.getIBSPopulation();
 			if (!pop.permitsMode(test))
 				return false;
 		}
@@ -149,40 +149,15 @@ public abstract class IBS implements Model.IBS {
 	protected RNGDistribution.Geometric distrMutation;
 
 	/**
-	 * List with the populations of all species in model including this one. List
-	 * should be shared with other populations (to simplify bookkeeping) but the
-	 * species list CANNOT be static! Otherwise it is impossible to run multiple
-	 * instances of modules/models concurrently in a single browser window using GWT.
+	 * Short-cut to the list of species modules. Convenience field.
 	 */
-	protected ArrayList<IBSPopulation> species;
+	protected ArrayList<? extends Module> species;
 
 	/**
-	 * Gets the list of species (populations) in the IBS model.
-	 * <p>
-	 * <strong>Note:</strong> This is different from {@link Module#getSpecies()}!
-	 * which returns a list of {@link Module}s that characterize the features of the
-	 * different species.
-	 * 
-	 * @return the list of populations
-	 * 
-	 * @see Module#getSpecies()
+	 * Short-cut to {@code species.get(0).getIBSPopulation()} for single species
+	 * models; {@code null} in multi-species models. Convenience field.
 	 */
-	public ArrayList<IBSPopulation> getSpecies() {
-		return species;
-	}
-
-	/**
-	 * Gets the species (population) in the IBS model, which is associated with
-	 * {@code module}.
-	 * 
-	 * @param module the module for which to retrieve the associated IBS population
-	 * @return the IBS population associated with {@code module}
-	 * 
-	 * @see #getSpecies()
-	 */
-	public IBSPopulation getSpecies(Module module) {
-		return mod2pop.get(module);
-	}
+	protected IBSPopulation population;
 
 	/**
 	 * The number of species in multi-species models.
@@ -194,43 +169,6 @@ public abstract class IBS implements Model.IBS {
 	 * {@code nSpecies&gt;1}. Convenience field.
 	 */
 	protected boolean isMultispecies;
-
-	/**
-	 * Map to link {@link Module}s with {@link IBSPopulation}s.
-	 */
-	protected HashMap<Module, IBSPopulation> mod2pop;
-
-	/**
-	 * Add {@link IBSPopulation} to list of species and map to {@link Module}.
-	 * Duplicate entries are ignored. Allocate new list if necessary.
-	 *
-	 * @param mod the module governing the interactions in the population
-	 * @param pop the population to add to species list.
-	 * @return <code>true</code> if {@code pop} is successfully added;
-	 *         <code>false</code> if {@code pop} is already included in list.
-	 */
-	public boolean addSpecies(Module mod, IBSPopulation pop) {
-		// do not add duplicates
-		if (species.contains(pop))
-			return false;
-		if (!species.add(pop))
-			return false;
-		mod2pop.put(mod, pop);
-		pop.setModule(mod);
-		nSpecies = species.size();
-		if (nSpecies == 1) {
-			isMultispecies = false;
-			return true;
-		}
-		isMultispecies = true;
-		return true;
-	}
-
-	/**
-	 * Short-cut to <code>species.get(0)</code> for single species models;
-	 * <code>null</code> in multi-species models. Convenience field.
-	 */
-	protected IBSPopulation population;
 
 	/**
 	 * Keeps track of the number of generations (or Monte-Carlo steps) that have
@@ -299,9 +237,8 @@ public abstract class IBS implements Model.IBS {
 	public void load() {
 		logger = engine.getLogger();
 		rng = engine.getRNG();
-		species = new ArrayList<IBSPopulation>();
-		mod2pop = new HashMap<Module, IBSPopulation>();
-		for (Module mod : engine.getModule().getSpecies()) {
+		species = engine.getModule().getSpecies();
+		for (Module mod : species) {
 			IBSPopulation pop = mod.createIBSPop();
 			if (pop == null) {
 				if (mod instanceof org.evoludo.simulator.modules.Discrete) {
@@ -317,17 +254,22 @@ public abstract class IBS implements Model.IBS {
 					// fatal does not return control
 				}
 			}
-			addSpecies(mod, pop);
+			mod.setIBSPopulation(pop);
+			pop.setModule(mod);
 			pop.load();
 		}
+		// now that all populations are instantiated, we can assign opponents
+		for (Module mod : species) {
+			IBSPopulation pop = mod.getIBSPopulation();
+			// set opponents
+			pop.opponent = mod.getOpponent().getIBSPopulation();
+		}
+		isMultispecies = (species.size() > 1);
 		// set shortcut for single species modules
-		population = isMultispecies ? null : species.get(0);
-		// IBSPopulation(s) created, now set their opponents
-		for (IBSPopulation pop : species)
-			pop.opponent = mod2pop.get(pop.getModule().getOpponent());
-		IBSPopulation pop = species.get(0);
-		cloGeometryInteraction.inheritKeysFrom(pop.getModule().cloGeometry);
-		cloGeometryReproduction.inheritKeysFrom(pop.getModule().cloGeometry);
+		population = isMultispecies ? null : species.get(0).getIBSPopulation();
+		Module mod = species.get(0);
+		cloGeometryInteraction.inheritKeysFrom(mod.cloGeometry);
+		cloGeometryReproduction.inheritKeysFrom(mod.cloGeometry);
 		cloPopulationUpdate.addKeys(PopulationUpdateType.values());
 		// ToDo: further updates to implement or make standard
 		cloPopulationUpdate.removeKey(PopulationUpdateType.WRIGHT_FISHER);
@@ -344,10 +286,15 @@ public abstract class IBS implements Model.IBS {
 		cloGeometryReproduction.clearKeys();
 		cloPopulationUpdate.clearKeys();
 		cloMigration.clearKeys();
-		for (IBSPopulation pop : species)
+		for (Module mod : species) {
+			IBSPopulation pop = mod.getIBSPopulation();
+			// may already have been unloaded with module
+			if (pop == null)
+				continue;
 			pop.unload();
+			mod.setIBSPopulation(null);
+		}
 		species = null;
-		mod2pop = null;
 	}
 
 	/**
@@ -365,7 +312,8 @@ public abstract class IBS implements Model.IBS {
 	public boolean check() {
 		boolean doReset = false;
 		boolean allSync = true, allAsync = true;
-		for (IBSPopulation pop : species) {
+		for (Module mod : species) {
+			IBSPopulation pop = mod.getIBSPopulation();
 			doReset |= pop.check();
 			boolean sync = pop.getPopulationUpdateType().isSynchronous();
 			allSync &= sync;
@@ -375,8 +323,8 @@ public abstract class IBS implements Model.IBS {
 		if (isSynchronous && !allSync) {
 			logger.warning("cannot (yet) mix synchronous and asynchronous population updates - forcing '"
 					+ PopulationUpdateType.SYNC + "'");
-			for (IBSPopulation pop : species)
-				pop.setPopulationUpdateType(PopulationUpdateType.SYNC);
+			for (Module mod : species)
+				mod.getIBSPopulation().setPopulationUpdateType(PopulationUpdateType.SYNC);
 			doReset = true;
 		}
 		return doReset;
@@ -410,7 +358,8 @@ public abstract class IBS implements Model.IBS {
 			return;
 		}
 		converged = true;
-		for (IBSPopulation pop : species) {
+		for (Module mod : species) {
+			IBSPopulation pop = mod.getIBSPopulation();
 			pop.init();
 			converged &= pop.checkConvergence();
 		}
@@ -432,25 +381,32 @@ public abstract class IBS implements Model.IBS {
 		}
 		// if any population uses ephemeral payoffs a dummy random number
 		// generator is needed for the display
-		for (IBSPopulation pop : species) {
+		for (Module mod : species) {
+			IBSPopulation pop = mod.getIBSPopulation();
 			if (pop.getPlayerScoring().equals(ScoringType.EPHEMERAL)) {
 				ephrng = rng.clone();
 				break;
 			}
 		}
 		nextSpeciesIdx = -1;
-		for (IBSPopulation pop : species)
+		for (Module mod : species) {
+			IBSPopulation pop = mod.getIBSPopulation();
 			pop.reset();
+		}
 	}
 
 	@Override
 	public void update() {
 		// all populations need to be updated/reset before scores can be calculated for
 		// inter-species interactions
-		for (IBSPopulation pop : species)
+		for (Module mod : species) {
+			IBSPopulation pop = mod.getIBSPopulation();
 			pop.resetScores();
-		for (IBSPopulation pop : species)
+		}
+		for (Module mod : species) {
+			IBSPopulation pop = mod.getIBSPopulation();
 			pop.updateScores();
+		}
 	}
 
 	/**
@@ -527,7 +483,7 @@ public abstract class IBS implements Model.IBS {
 		// an approximation but hopefully good enough. deviations expected in
 		// multi-species modules with different population sizes or different 
 		// update rates.
-		double minIncr = 1.0 / species.get(0).nPopulation;
+		double minIncr = 1.0 / species.get(0).getNPopulation();
 		return (Math.abs(nextHalt - generation) >= minIncr);
 	}
 
@@ -580,7 +536,8 @@ public abstract class IBS implements Model.IBS {
 			double scoreTot = 0.0;
 			double popFrac = 1.0;
 			// reset strategies (colors)
-			for (IBSPopulation pop : species) {
+			for (Module mod : species) {
+				IBSPopulation pop = mod.getIBSPopulation();
 				pop.resetStrategies();
 				popFrac *= pop.getSyncFraction();
 				nPopTot += pop.getPopulationSize();
@@ -593,13 +550,15 @@ public abstract class IBS implements Model.IBS {
 				realtime = (scoreTot <= 1e-8 ? Double.POSITIVE_INFINITY : realtime + nPopTot * popFrac / scoreTot);
 				generation += popFrac;
 				// update populations
-				for (IBSPopulation pop : species) {
+				for (Module mod : species) {
+					IBSPopulation pop = mod.getIBSPopulation();
 					pop.prepareStrategies();
 					incr += pop.step();
 					pop.isConsistent();
 				}
 				// commit strategies and reset scores
-				for (IBSPopulation pop : species) {
+				for (Module mod : species) {
+					IBSPopulation pop = mod.getIBSPopulation();
 					pop.commitStrategies(); // also check homogeneity
 					// TODO: review migration - should be an independent event, independent of
 					// population update
@@ -610,7 +569,8 @@ public abstract class IBS implements Model.IBS {
 				}
 				// calculate new scores (requires that all strategies are committed and reset)
 				boolean hasConverged = true;
-				for (IBSPopulation pop : species) {
+				for (Module mod : species) {
+					IBSPopulation pop = mod.getIBSPopulation();
 					pop.updateScores();
 					hasConverged &= pop.checkConvergence();
 					scoreTot += pop.getTotalFitness();
@@ -625,7 +585,8 @@ public abstract class IBS implements Model.IBS {
 		double wPopTot = 0.0;
 		double wScoreTot = 0.0;
 		// reset strategies (colors)
-		for (IBSPopulation pop : species) {
+		for (Module mod : species) {
+			IBSPopulation pop = mod.getIBSPopulation();
 			pop.resetStrategies();
 			Module module = pop.getModule();
 			double rate = module.getSpeciesUpdateRate();
@@ -678,7 +639,8 @@ public abstract class IBS implements Model.IBS {
 				// wPopTot = 0.0;
 				wScoreTot = 0.0;
 				hasConverged = true;
-				for (IBSPopulation pop : species) {
+				for (Module mod : species) {
+					IBSPopulation pop = mod.getIBSPopulation();
 					pop.isConsistent();
 					hasConverged &= pop.checkConvergence();
 					// update generation time and real time increments
@@ -705,7 +667,8 @@ public abstract class IBS implements Model.IBS {
 				break;
 			dUpdates = (stepDt - stepDone) / gincr;
 		}
-		for (IBSPopulation pop : species) {
+		for (Module mod : species) {
+			IBSPopulation pop = mod.getIBSPopulation();
 			if (!pop.playerScoring.equals(ScoringType.EPHEMERAL))
 				continue;
 			// recalculate scores of entire population for display
@@ -736,29 +699,28 @@ public abstract class IBS implements Model.IBS {
 
 	@Override
 	public double processMonoScore(int id, double score) {
-		IBSPopulation pop = (isMultispecies ? species.get(id) : population);
-		return pop.processMonoScore(score);
+		return getIBSPopulation(id).processMonoScore(score);
 	}
 
 	@Override
 	public double processMinScore(int id, double min) {
-		IBSPopulation pop = (isMultispecies ? species.get(id) : population);
-		return pop.processMinScore(min);
+		return getIBSPopulation(id).processMinScore(min);
 	}
 
 	@Override
 	public double processMaxScore(int id, double max) {
-		IBSPopulation pop = (isMultispecies ? species.get(id) : population);
-		return pop.processMaxScore(max);
+		return getIBSPopulation(id).processMaxScore(max);
 	}
 
 	@Override
 	public String getStatus() {
 		if (isMultispecies) {
 			String status = "";
-			for (IBSPopulation pop : species)
-				status += (status.length() > 0 ? "<br/><i>" : "<i>") + pop.getModule().getName() + ":</i> "
+			for (Module mod : species) {
+				IBSPopulation pop = mod.getIBSPopulation();
+				status += (status.length() > 0 ? "<br/><i>" : "<i>") + mod.getName() + ":</i> "
 						+ pop.getStatus();
+			}
 			return status;
 		}
 		return population.getStatus();
@@ -785,12 +747,24 @@ public abstract class IBS implements Model.IBS {
 		return converged;
 	}
 
+	/**
+	 * Helper routine to retrieve the {@link IBSPopulation} associated with module
+	 * with {@code id}.
+	 * 
+	 * @param id the {@code id} of the module
+	 * @return the {@code IBSPopulation}
+	 */
+	IBSPopulation getIBSPopulation(int id) {
+		return (isMultispecies ? species.get(id).getIBSPopulation() : population);
+	}
+
 	@Override
 	public void getInitialTraits(double[] init) {
 		if (isMultispecies) {
 			int skip = 0;
 			double[] tmp = new double[init.length];
-			for (IBSPopulation pop : species) {
+			for (Module mod : species) {
+				IBSPopulation pop = mod.getIBSPopulation();
 				pop.getInitialTraits(tmp);
 				System.arraycopy(tmp, 0, init, skip, pop.nTraits);
 				skip += pop.nTraits;
@@ -801,10 +775,7 @@ public abstract class IBS implements Model.IBS {
 
 	@Override
 	public void getInitialTraits(int id, double[] init) {
-		if (isMultispecies)
-			species.get(id).getInitialTraits(init);
-		else
-			population.getInitialTraits(init);
+		getIBSPopulation(id).getInitialTraits(init);
 	}
 
 	@Override
@@ -812,7 +783,8 @@ public abstract class IBS implements Model.IBS {
 		if (isMultispecies) {
 			int skip = 0;
 			double[] tmp = new double[mean.length];
-			for (IBSPopulation pop : species) {
+			for (Module mod : species) {
+				IBSPopulation pop = mod.getIBSPopulation();
 				pop.getMeanTraits(tmp);
 				System.arraycopy(tmp, 0, mean, skip, pop.nTraits);
 				skip += pop.nTraits;
@@ -824,26 +796,18 @@ public abstract class IBS implements Model.IBS {
 
 	@Override
 	public boolean getMeanTraits(int id, double[] mean) {
-		if (isMultispecies)
-			species.get(id).getMeanTraits(mean);
-		else
-			population.getMeanTraits(mean);
+		getIBSPopulation(id).getMeanTraits(mean);
 		return connect;
 	}
 
 	@Override
 	public String getTraitNameAt(int id, int idx) {
-		if (isMultispecies)
-			return species.get(id).getTraitNameAt(idx);
-		return population.getTraitNameAt(idx);
+		return getIBSPopulation(id).getTraitNameAt(idx);
 	}
 
 	@Override
 	public <T> void getTraitData(int id, T[] colors, ColorMap<T> colorMap) {
-		if (isMultispecies)
-			species.get(id).getTraitData(colors, colorMap);
-		else
-			population.getTraitData(colors, colorMap);
+		getIBSPopulation(id).getTraitData(colors, colorMap);
 	}
 
 	@Override
@@ -851,8 +815,8 @@ public abstract class IBS implements Model.IBS {
 		if (isMultispecies) {
 			int skip = 0;
 			double[] tmp = new double[mean.length];
-			for (IBSPopulation pop : species) {
-				Module mod = pop.getModule();
+			for (Module mod : species) {
+				IBSPopulation pop = mod.getIBSPopulation();
 				pop.getMeanFitness(tmp);
 				int nt = mod.getNTraits();
 				System.arraycopy(tmp, 0, mean, skip, nt);
@@ -865,66 +829,51 @@ public abstract class IBS implements Model.IBS {
 
 	@Override
 	public boolean getMeanFitness(int id, double[] mean) {
-		if (isMultispecies)
-			species.get(id).getMeanFitness(mean);
-		else
-			population.getMeanFitness(mean);
+		getIBSPopulation(id).getMeanFitness(mean);
 		return connect;
 	}
 
 	@Override
 	public String getFitnessNameAt(int id, int idx) {
-		if (isMultispecies)
-			return species.get(id).getFitnessNameAt(idx);
-		return population.getFitnessNameAt(idx);
+		return getIBSPopulation(id).getFitnessNameAt(idx);
 	}
 
 	@Override
 	public String getScoreNameAt(int id, int idx) {
-		if (isMultispecies)
-			return species.get(id).getScoreNameAt(idx);
-		return population.getScoreNameAt(idx);
+		return getIBSPopulation(id).getScoreNameAt(idx);
 	}
 
 	@Override
 	public <T> void getFitnessData(int id, T[] colors, ColorMap.Gradient1D<T> colorMap) {
-		if (isMultispecies)
-			species.get(id).getFitnessData(colors, colorMap);
-		else
-			population.getFitnessData(colors, colorMap);
+		getIBSPopulation(id).getFitnessData(colors, colorMap);
 	}
 
 	@Override
 	public void getFitnessHistogramData(int id, double[][] bins) {
-		if (isMultispecies)
-			species.get(id).getFitnessHistogramData(bins);
-		else
-			population.getFitnessHistogramData(bins);
+		getIBSPopulation(id).getFitnessHistogramData(bins);
 	}
 
 	@Override
 	public String getTagNameAt(int id, int idx) {
-		if (isMultispecies)
-			return species.get(id).getTagNameAt(idx);
-		return population.getTagNameAt(idx);
+		return getIBSPopulation(id).getTagNameAt(idx);
 	}
 
 	@Override
 	public int getInteractionsAt(int id, int idx) {
-		if (isMultispecies)
-			return species.get(id).getInteractionsAt(idx);
-		return population.getInteractionsAt(idx);
+		return getIBSPopulation(id).getInteractionsAt(idx);
 	}
 
 	@Override
 	public boolean mouseHitNode(int id, int hit, boolean alt) {
-		if (!(isMultispecies ? species.get(id).mouseHitNode(hit, alt) : population.mouseHitNode(hit, alt))) {
+		IBSPopulation pop = getIBSPopulation(id);
+		if (!pop.mouseHitNode(hit, alt)) {
 			// nothing changed
 			return false;
 		}
 		// update converged
 		converged = true;
-		for (IBSPopulation pop : species) {
+		for (Module mod : species) {
+			pop = mod.getIBSPopulation();
 			converged &= pop.checkConvergence();
 		}
 		return true;
@@ -977,13 +926,17 @@ public abstract class IBS implements Model.IBS {
 		switch (speciesUpdateType) {
 			case FITNESS:
 				double wScoreTot = 0.0;
-				for (IBSPopulation pop : species)
-					wScoreTot += pop.getTotalFitness() * pop.getModule().getSpeciesUpdateRate();
+				for (Module mod : species) {
+					IBSPopulation pop = mod.getIBSPopulation();
+					wScoreTot += pop.getTotalFitness() * mod.getSpeciesUpdateRate();
+				}
 				return pickFocalSpeciesFitness(wScoreTot);
 			case SIZE:
 				double wPopTot = 0.0;
-				for (IBSPopulation pop : species)
-					wPopTot += pop.getPopulationSize() * pop.getModule().getSpeciesUpdateRate();
+				for (Module mod : species) {
+					IBSPopulation pop = mod.getIBSPopulation();
+					wPopTot += pop.getPopulationSize() * mod.getSpeciesUpdateRate();
+				}
 				return pickFocalSpeciesSize(wPopTot);
 			case TURNS:
 				// case SYNC:
@@ -1007,8 +960,9 @@ public abstract class IBS implements Model.IBS {
 		if (!isMultispecies)
 			return population;
 		double rand = random01() * wPopTot;
-		for (IBSPopulation pop : species) {
-			rand -= pop.getPopulationSize() * pop.getModule().getSpeciesUpdateRate();
+		for (Module mod : species) {
+			IBSPopulation pop = mod.getIBSPopulation();
+			rand -= pop.getPopulationSize() * mod.getSpeciesUpdateRate();
 			if (rand < 0.0)
 				return pop;
 		}
@@ -1031,8 +985,9 @@ public abstract class IBS implements Model.IBS {
 		if (!isMultispecies)
 			return population;
 		double rand = random01() * wScoreTot;
-		for (IBSPopulation pop : species) {
-			rand -= pop.getTotalFitness() * pop.getModule().getSpeciesUpdateRate();
+		for (Module mod : species) {
+			IBSPopulation pop = mod.getIBSPopulation();
+			rand -= pop.getTotalFitness() * mod.getSpeciesUpdateRate();
 			if (rand < 0.0)
 				return pop;
 		}
@@ -1056,7 +1011,7 @@ public abstract class IBS implements Model.IBS {
 		if (!isMultispecies)
 			return population;
 		nextSpeciesIdx = (nextSpeciesIdx + 1) % nSpecies;
-		return species.get(nextSpeciesIdx);
+		return species.get(nextSpeciesIdx).getIBSPopulation();
 	}
 
 	/**
@@ -1084,12 +1039,13 @@ public abstract class IBS implements Model.IBS {
 					String[] popupdates = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
 					boolean success = true;
-					for (IBSPopulation pop : species) {
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						String updt = popupdates[n++ % popupdates.length];
 						PopulationUpdateType put = (PopulationUpdateType) cloPopulationUpdate.match(updt);
 						if (put == null) {
 							if (success)
-								logger.warning((species.size() > 1 ? pop.getModule().getName() + ": " : "") + //
+								logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
 										"population update '" + updt + "' not recognized - using '"
 										+ pop.getPopulationUpdateType()
 										+ "'");
@@ -1109,12 +1065,13 @@ public abstract class IBS implements Model.IBS {
 
 				@Override
 				public void report(PrintStream output) {
-					for (IBSPopulation pop : species) {
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						String opt = (pop instanceof IBSDPopulation && ((IBSDPopulation) pop).optimizeMoran
 								? " (optimized)"
 								: "");
 						output.println("# populationupdate:     " + pop.getPopulationUpdateType() + opt
-								+ (isMultispecies ? " (" + pop.getModule().getName() + ")" : ""));
+								+ (isMultispecies ? " (" + mod.getName() + ")" : ""));
 					}
 				}
 			});
@@ -1145,18 +1102,22 @@ public abstract class IBS implements Model.IBS {
 				@Override
 				public boolean parse(String arg) {
 					// default is to average scores
-					for (IBSPopulation pop : species)
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						pop.setPlayerScoreAveraged(!cloAccumulatedScores.isSet());
+					}
 					return true;
 				}
 
 				@Override
 				public void report(PrintStream output) {
-					for (IBSPopulation pop : species)
-					output.println("# scoring:              " + //
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
+						output.println("# scoring:              " + //
 						(pop.getPlayerScoreAveraged() ? "averaged" : "accumulated") + //
-						(isMultispecies	? " (" + pop.getModule().getName() + ")" : ""));
-	}
+						(isMultispecies	? " (" + mod.getName() + ")" : ""));
+					}
+				}
 			});
 
 	/**
@@ -1180,12 +1141,13 @@ public abstract class IBS implements Model.IBS {
 					String[] playerresets = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
 					boolean success = true;
-					for (IBSPopulation pop : species) {
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						String rest = playerresets[n++ % playerresets.length];
 						ScoringType st = (ScoringType) cloScoringType.match(rest);
 						if (st == null) {
 							if (success)
-								logger.warning((species.size() > 1 ? pop.getModule().getName() + ": " : "") + //
+								logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
 										"method to reset scores '" + rest + "' not recognized - using '"
 										+ pop.getPlayerScoring()
 										+ "'");
@@ -1199,9 +1161,11 @@ public abstract class IBS implements Model.IBS {
 
 				@Override
 				public void report(PrintStream output) {
-					for (IBSPopulation pop : species)
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						output.println("# resetscores:          " + pop.getPlayerScoring() + //
-							(isMultispecies	? " (" + pop.getModule().getName() + ")" : ""));
+							(isMultispecies	? " (" + mod.getName() + ")" : ""));
+					}
 				}
 			});
 
@@ -1229,14 +1193,15 @@ public abstract class IBS implements Model.IBS {
 					boolean success = true;
 					String[] interactiontypes = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
-					for (IBSPopulation pop : species) {
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						String intertype = interactiontypes[n++ % interactiontypes.length];
 						IBSGroup.SamplingType intt = (IBSGroup.SamplingType) cloInteractions.match(intertype);
 						IBSGroup group = pop.getInteractionGroup();
 						if (intt == null) {
 							if (success) {
 								IBSGroup.SamplingType st = group.getSampling();
-								logger.warning((isMultispecies ? pop.getModule().getName() + ": " : "") + //
+								logger.warning((isMultispecies ? mod.getName() + ": " : "") + //
 										"interaction type '" + intertype + //
 										"' unknown - using '" + st + //
 										(st == IBSGroup.SamplingType.RANDOM ? " " + group.getNSamples() : "") + "'");
@@ -1257,12 +1222,13 @@ public abstract class IBS implements Model.IBS {
 
 				@Override
 				public void report(PrintStream output) {
-					for (IBSPopulation pop : species) {
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						IBSGroup group = pop.getInteractionGroup();
 						IBSGroup.SamplingType st = group.getSampling();
 						output.println("# interactions:         " + st + //
 							(st == IBSGroup.SamplingType.RANDOM ? " " + group.getNSamples() : "") + //
-							(isMultispecies ? " (" + pop.getModule().getName() + ")" : ""));
+							(isMultispecies ? " (" + mod.getName() + ")" : ""));
 					}
 				}
 			});
@@ -1292,14 +1258,15 @@ public abstract class IBS implements Model.IBS {
 					boolean success = true;
 					String[] referencetypes = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
-					for (IBSPopulation pop : species) {
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						String reftype = referencetypes[n++ % referencetypes.length];
 						IBSGroup.SamplingType reft = (IBSGroup.SamplingType) cloReferences.match(reftype);
 						IBSGroup group = pop.getReferenceGroup();
 						if (reft == null) {
 							if (success) {
 								IBSGroup.SamplingType st = group.getSampling();
-								logger.warning((isMultispecies ? pop.getModule().getName() + ": " : "") + //
+								logger.warning((isMultispecies ? mod.getName() + ": " : "") + //
 										"reference type '" + reftype + //
 										"' unknown - using '" + st + //
 										(st == IBSGroup.SamplingType.RANDOM ? " " + group.getNSamples() : "") + "'");
@@ -1320,14 +1287,15 @@ public abstract class IBS implements Model.IBS {
 
 				@Override
 				public void report(PrintStream output) {
-					for (IBSPopulation pop : species) {
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						if (pop.getPopulationUpdateType().isMoran())
 							continue;
 						IBSGroup group = pop.getReferenceGroup();
 						IBSGroup.SamplingType st = group.getSampling();
 						output.println("# references:           " + st + //
 							(st == IBSGroup.SamplingType.RANDOM ? " " + group.getNSamples() : "") + //
-							(isMultispecies ? " (" + pop.getModule().getName() + ")" : ""));
+							(isMultispecies ? " (" + mod.getName() + ")" : ""));
 					}
 				}
 			});
@@ -1355,12 +1323,13 @@ public abstract class IBS implements Model.IBS {
 					boolean success = true;
 					String[] migrationtypes = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
-					for (IBSPopulation pop : species) {
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						String migt = migrationtypes[n++ % migrationtypes.length];
 						MigrationType mt = (MigrationType) cloMigration.match(migt);
 						if (mt == null) {
 							if (success)
-								logger.warning((isMultispecies ? pop.getModule().getName() + ": " : "")
+								logger.warning((isMultispecies ? mod.getName() + ": " : "")
 										+ "migration type '" + migt
 										+ "' unknown - using '" + pop.getMigrationType() + "'");
 							success = false;
@@ -1376,7 +1345,7 @@ public abstract class IBS implements Model.IBS {
 							pop.setMigrationProb(CLOParser.parseDouble(keyarg));
 							double mig = pop.getMigrationProb();
 							if (mig < 1e-8) {
-								logger.warning((isMultispecies ? pop.getModule().getName() + ": " : "")
+								logger.warning((isMultispecies ? mod.getName() + ": " : "")
 										+ "migration rate too small (" + Formatter.formatSci(mig, 4)
 										+ ") - reverting to no migration");
 								success = false;
@@ -1385,7 +1354,7 @@ public abstract class IBS implements Model.IBS {
 							}
 							continue;
 						}
-						logger.warning((isMultispecies ? pop.getModule().getName() + ": " : "")
+						logger.warning((isMultispecies ? mod.getName() + ": " : "")
 								+ "no migration rate specified - reverting to no migration");
 						success = false;
 						pop.setMigrationType(MigrationType.NONE);
@@ -1396,14 +1365,15 @@ public abstract class IBS implements Model.IBS {
 
 				@Override
 				public void report(PrintStream output) {
-					for (IBSPopulation pop : species) {
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						MigrationType mig = pop.getMigrationType();
 						output.println("# migration:            " + mig + (isMultispecies ? " ("
-								+ pop.getModule().getName() + ")" : ""));
+								+ mod.getName() + ")" : ""));
 						if (mig != MigrationType.NONE)
 							output.println("# migrationrate:        " + Formatter.formatSci(pop.getMigrationProb(), 8)
 									+ (isMultispecies ? " ("
-											+ pop.getModule().getName() + ")" : ""));
+											+ mod.getName() + ")" : ""));
 					}
 				}
 			});
@@ -1440,7 +1410,8 @@ public abstract class IBS implements Model.IBS {
 					String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
 					boolean doReset = false;
 					int n = 0;
-					for (IBSPopulation pop : species) {
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						// creates new interaction geometry if null or equal to getGeometry()
 						Geometry geom = pop.createInteractionGeometry();
 						doReset |= geom.parse(geomargs[n++ % geomargs.length]);
@@ -1451,13 +1422,14 @@ public abstract class IBS implements Model.IBS {
 
 				@Override
 				public void report(PrintStream output) {
-					for (IBSPopulation pop : species) {
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						Geometry intergeo = pop.getInteractionGeometry();
 						// interaction geometry can be null for pde models
 						if (intergeo == null || intergeo.interReproSame)
 							continue;
 						output.println("# interactiongeometry:  " + intergeo.getType().getTitle() +
-								(isMultispecies ? " (" + pop.getModule().getName() + ")" : ""));
+								(isMultispecies ? " (" + mod.getName() + ")" : ""));
 						intergeo.printParams(output);
 					}
 				}
@@ -1495,7 +1467,8 @@ public abstract class IBS implements Model.IBS {
 					String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
 					boolean doReset = false;
 					int n = 0;
-					for (IBSPopulation pop : species) {
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						// creates new reproduction geometry if null or equal to getGeometry()
 						Geometry geom = pop.createReproductionGeometry();
 						doReset |= geom.parse(geomargs[n++ % geomargs.length]);
@@ -1506,13 +1479,14 @@ public abstract class IBS implements Model.IBS {
 
 				@Override
 				public void report(PrintStream output) {
-					for (IBSPopulation pop : species) {
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						Geometry reprogeo = pop.getReproductionGeometry();
 						// reproduction geometry can be null for pde models
 						if (reprogeo == null || reprogeo.interReproSame)
 							continue;
 						output.println("# reproductiongeometry: " + reprogeo.getType().getTitle() +
-								(isMultispecies ? " (" + pop.getModule().getName() + ")" : ""));
+								(isMultispecies ? " (" + mod.getName() + ")" : ""));
 						reprogeo.printParams(output);
 					}
 				}
@@ -1544,7 +1518,8 @@ public abstract class IBS implements Model.IBS {
 				public boolean parse(String arg) {
 					String[] rewireargs = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
-					for (IBSPopulation pop : species) {
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						double[] rewire = CLOParser.parseVector(rewireargs[n++ % rewireargs.length]);
 						pop.setRewire(rewire);
 					}
@@ -1553,16 +1528,17 @@ public abstract class IBS implements Model.IBS {
 
 				@Override
 				public void report(PrintStream output) {
-					for (IBSPopulation pop : species) {
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						Geometry intergeo = pop.getReproductionGeometry();
 						output.println("# inter-rewiring: " + Formatter.format(intergeo.pRewire, 4) +
-								(isMultispecies ? " (" + pop.getModule().getName() + ")" : ""));
+								(isMultispecies ? " (" + mod.getName() + ")" : ""));
 						Geometry reprogeo = pop.getReproductionGeometry();
 						// reproduction geometry can be null for pde models
 						if (reprogeo == null)
 							continue;
 						output.println("# repro-rewiring: " + Formatter.format(reprogeo.pRewire, 4) +
-								(isMultispecies ? " (" + pop.getModule().getName() + ")" : ""));
+								(isMultispecies ? " (" + mod.getName() + ")" : ""));
 						reprogeo.printParams(output);
 					}
 				}
@@ -1593,7 +1569,8 @@ public abstract class IBS implements Model.IBS {
 				public boolean parse(String arg) {
 					String[] addargs = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
-					for (IBSPopulation pop : species) {
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						double[] add = CLOParser.parseVector(addargs[n++ % addargs.length]);
 						pop.setAddwire(add);
 					}
@@ -1602,16 +1579,17 @@ public abstract class IBS implements Model.IBS {
 
 				@Override
 				public void report(PrintStream output) {
-					for (IBSPopulation pop : species) {
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						Geometry intergeo = pop.getReproductionGeometry();
 						output.println("# inter-add: " + Formatter.format(intergeo.pRewire, 4) +
-								(isMultispecies ? " (" + pop.getModule().getName() + ")" : ""));
+								(isMultispecies ? " (" + mod.getName() + ")" : ""));
 						Geometry reprogeo = pop.getReproductionGeometry();
 						// reproduction geometry can be null for pde models
 						if (reprogeo == null)
 							continue;
 						output.println("# repro-add: " + Formatter.format(reprogeo.pRewire, 4) +
-								(isMultispecies ? " (" + pop.getModule().getName() + ")" : ""));
+								(isMultispecies ? " (" + mod.getName() + ")" : ""));
 						reprogeo.printParams(output);
 					}
 				}
@@ -1670,8 +1648,10 @@ public abstract class IBS implements Model.IBS {
 				 */
 				@Override
 				public boolean parse(String arg) {
-					for (IBSPopulation pop : species)
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						pop.setConsistencyCheck(cloConsistency.isSet());
+					}
 					return true;
 				}
 			});
@@ -1691,11 +1671,11 @@ public abstract class IBS implements Model.IBS {
 		boolean anyVacant = false;
 		boolean anyNonVacant = false;
 		boolean allStatic = true;
-		for (IBSPopulation pop : species) {
-			int vacant = pop.getModule().getVacant();
+		for (Module mod : species) {
+			int vacant = mod.getVacant();
 			anyVacant |= vacant >= 0;
 			anyNonVacant |= vacant < 0;
-			allStatic &= pop.getModule().isStatic();
+			allStatic &= mod.isStatic();
 		}
 		if (anyNonVacant) {
 			// additional options that only make sense without vacant sites
@@ -2108,9 +2088,10 @@ public abstract class IBS implements Model.IBS {
 		plist.append(Plist.encodeKey("Realtime", getRealtime()));
 		plist.append(Plist.encodeKey("Model", getModelType().toString()));
 		boolean isMultiSpecies = (species.size() > 1);
-		for (IBSPopulation pop : species) {
+		for (Module mod : species) {
+			IBSPopulation pop = mod.getIBSPopulation();
 			if (isMultiSpecies)
-				plist.append("<key>" + pop.getModule().getName() + "</key>\n" + "<dict>\n");
+				plist.append("<key>" + mod.getName() + "</key>\n" + "<dict>\n");
 			pop.encodeGeometry(plist);
 			pop.encodeStrategies(plist);
 			pop.encodeFitness(plist);
@@ -2127,12 +2108,12 @@ public abstract class IBS implements Model.IBS {
 		connect = false;
 		boolean success = true;
 		if (species.size() > 1) {
-			for (IBSPopulation pop : species) {
-				Module module = pop.getModule();
-				String name = module.getName();
+			for (Module mod : species) {
+				IBSPopulation pop = mod.getIBSPopulation();
+				String name = mod.getName();
 				Plist pplist = (Plist) plist.get(name);
 				if (!pop.restoreGeometry(pplist)) {
-					logger.warning("restore geometry failed (" + module.getName() + ").");
+					logger.warning("restore geometry failed (" + name + ").");
 					success = false;
 				}
 				if (!pop.restoreInteractions(pplist)) {
@@ -2150,20 +2131,19 @@ public abstract class IBS implements Model.IBS {
 			}
 			return success;
 		}
-		IBSPopulation pop = species.get(0);
-		if (!pop.restoreGeometry(plist)) {
+		if (!population.restoreGeometry(plist)) {
 			logger.warning("restore geometry failed.");
 			success = false;
 		}
-		if (!pop.restoreInteractions(plist)) {
+		if (!population.restoreInteractions(plist)) {
 			logger.warning("restore interactions in " + getModelType() + "-model failed.");
 			success = false;
 		}
-		if (!pop.restoreStrategies(plist)) {
+		if (!population.restoreStrategies(plist)) {
 			logger.warning("restore strategies in " + getModelType() + "-model failed.");
 			success = false;
 		}
-		if (!pop.restoreFitness(plist)) {
+		if (!population.restoreFitness(plist)) {
 			logger.warning("restore fitness in " + getModelType() + "-model failed.");
 			success = false;
 		}

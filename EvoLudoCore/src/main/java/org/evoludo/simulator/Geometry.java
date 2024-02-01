@@ -113,9 +113,8 @@ public class Geometry {
 			default:
 				return;
 			case IBS:
-				IBS ibs = (IBS) model;
-				population = ibs.getSpecies(popModule);
-				opponent = ibs.getSpecies(oppModule);
+				population = popModule.getIBSPopulation();
+				opponent = oppModule.getIBSPopulation();
 		}
 	}
 

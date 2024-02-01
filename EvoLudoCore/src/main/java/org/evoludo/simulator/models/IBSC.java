@@ -4,6 +4,7 @@ import java.io.PrintStream;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBSD.OptimizationType;
+import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -267,7 +268,8 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 					boolean success = true;
 					IBSMCPopulation cpop = (IBSMCPopulation) population;
 					String[] inittypes = arg.split(CLOParser.TRAIT_DELIMITER);
-					int nt = cpop.getModule().getNTraits();
+					Module mod = cpop.getModule();
+					int nt = mod.getNTraits();
 					InitType prevtype = null;
 					for (int n = 0; n < nt; n++) {
 						String inittype = inittypes[n % inittypes.length];
@@ -283,7 +285,7 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 						// only uniform initialization does not require additional arguments
 						if (type == null || (!type.equals(InitType.UNIFORM) && !argsOk)) {
 							logger.warning(
-									(species.size() > 1 ? cpop.getModule().getName() + ": " : "") +
+									(species.size() > 1 ? mod.getName() + ": " : "") +
 											"inittype '" + inittype + "' unknown!");
 							type = InitType.UNIFORM;
 							success = false;
@@ -297,12 +299,13 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 				@Override
 				public void report(PrintStream output) {
 					IBSMCPopulation cpop = (IBSMCPopulation) population;
-					int nt = cpop.getModule().getNTraits();
+					Module mod = cpop.getModule();
+					int nt = mod.getNTraits();
 					for (int n = 0; n < nt; n++) {
 						InitType type = cpop.getInitType(n);
 						output.println("# inittype:             " + type.getKey() + " " + //
 								Formatter.format(type.args, 2) + (species.size() > 1 ? " ("
-										+ population.getModule().getName() + ")" : ""));
+										+ mod.getName() + ")" : ""));
 					}
 				}
 			});

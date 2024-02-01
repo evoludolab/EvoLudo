@@ -121,9 +121,9 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 			return;
 
 		// collect new statistics sample
-		IBSDPopulation dpop = (IBSDPopulation) species.get(0);
+		IBSDPopulation dpop = (IBSDPopulation) population;
 		fixData.typeFixed = ArrayMath.maxIndex(dpop.strategiesTypeCount);
-		Module module = dpop.getModule();
+		Module module = species.get(0);
 		int vacant = module.getVacant();
 		if (fixData.typeFixed == vacant) {
 			// closer look is needed - look for what other strategy survived (if any)
@@ -200,22 +200,30 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 
 		int skip = 0;
 		boolean success = true;
-		for (IBSPopulation pop : species) {
-			IBSDPopulation dpop = (IBSDPopulation) pop;
-			double[] tmp = new double[pop.nTraits];
-			System.arraycopy(init, skip, tmp, 0, pop.nTraits);
+		for (Module mod : species) {
+			IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
+			double[] tmp = new double[dpop.nTraits];
+			System.arraycopy(init, skip, tmp, 0, dpop.nTraits);
 			success &= dpop.setInitialTraits(tmp);
-			skip += pop.nTraits;
+			skip += dpop.nTraits;
 		}			
 		return success;
 	}
 
+	/**
+	 * Helper routine to retrieve the {@link IBSDPopulation} associated with module
+	 * with {@code id}.
+	 * 
+	 * @param id the {@code id} of the module
+	 * @return the {@code IBSDPopulation}
+	 */
+	IBSDPopulation getIBSDPopulation(int id) {
+		return (IBSDPopulation) getIBSPopulation(id);
+	}
+
 	@Override
 	public boolean setInitialTraits(int id, double[] init) {
-		if (!isMultispecies)
-			return ((IBSDPopulation) population).setInitialTraits(init);
-
-		return ((IBSDPopulation) species.get(id)).setInitialTraits(init);
+		return getIBSDPopulation(id).setInitialTraits(init);
 	}
 
 	/**
@@ -445,8 +453,8 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 					String[] inittypes = arg.split(CLOParser.SPECIES_DELIMITER);
 					int idx = 0;
 					InitType prevtype = null;
-					for (IBSPopulation pop : species) {
-						IBSDPopulation dpop = (IBSDPopulation) pop;
+					for (Module mod : species) {
+						IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
 						String inittype = inittypes[idx++ % inittypes.length];
 						double[] initargs = null;
 						String[] typeargs = inittype.split("\\s+|=");
@@ -459,7 +467,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 						// only uniform initialization does not require additional arguments
 						if (type == null || (!type.equals(InitType.UNIFORM) && initargs == null)) {
 							logger.warning(
-									(species.size() > 1 ? pop.getModule().getName() + ": " : "") +
+									(species.size() > 1 ? mod.getName() + ": " : "") +
 											"inittype '" + inittype + "' unknown!");
 							type = InitType.UNIFORM;
 							success = false;
@@ -472,12 +480,12 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 
 				@Override
 				public void report(PrintStream output) {
-					for (IBSPopulation pop : species) {
-						IBSDPopulation dpop = (IBSDPopulation) pop;
+					for (Module mod : species) {
+						IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
 						InitType type = dpop.getInitType();
 						output.println("# inittype:             " + type.getKey() + " " + //
 								Formatter.format(type.args, 2) + (species.size() > 1 ? " ("
-										+ pop.getModule().getName() + ")" : ""));
+										+ mod.getName() + ")" : ""));
 					}
 				}
 			});
@@ -508,7 +516,8 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 				public boolean parse(String arg) {
 					String[] mutations = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
-					for (IBSPopulation pop : species) {
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
 						double pMut = -1.0;
 						try {
 							pMut = Double.parseDouble(mutations[n++ % mutations.length]);
@@ -523,10 +532,10 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 
 				@Override
 				public void report(PrintStream output) {
-					for (IBSPopulation pop : species) {
-						IBSDPopulation dpop = (IBSDPopulation) pop;
-						String speciesName = (isMultispecies ? " (" +pop.getModule().getName() +")" : "");
-						double mut = dpop.getMutationProb();
+					for (Module mod : species) {
+						IBSPopulation pop = mod.getIBSPopulation();
+						String speciesName = (isMultispecies ? " (" +mod.getName() +")" : "");
+						double mut = pop.getMutationProb();
 						if (mut > 0.0) {
 							output.println("# mutation:             " + Formatter.formatSci(mut, 8)
 									+ speciesName);
@@ -566,8 +575,10 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 					boolean success = true;
 					// reset all optimizations
 					optimizeHomo = false;
-					for (IBSPopulation pop : species)
-						((IBSDPopulation) pop).optimizeMoran = false;
+					for (Module mod : species) {
+						IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
+						dpop.optimizeMoran = false;
+					}
 					// process requested optimizations
 					String[] optis = arg.split(CLOParser.VECTOR_DELIMITER);
 					for (int n = 0; n < optis.length; n++) {
@@ -585,13 +596,17 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 								optimizeHomo = true;
 								break;
 							case MORAN:
-								for (IBSPopulation pop : species)
-									((IBSDPopulation) pop).optimizeMoran = true;
+								for (Module mod : species) {
+									IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
+									dpop.optimizeMoran = true;
+								}
 								break;
 							case NONE:
 								optimizeHomo = false;
-								for (IBSPopulation pop : species)
-									((IBSDPopulation) pop).optimizeMoran = false;
+								for (Module mod : species) {
+									IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
+									dpop.optimizeMoran = false;
+								}
 								break;
 							default:
 								break;
@@ -605,9 +620,10 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 					// moran optimization also reported through IBS.cloPopulationUpdate
 					String moran = "";
 					String homo = "";
-					for (IBSPopulation pop : species) {
-						if (((IBSDPopulation) pop).optimizeMoran)
-							moran += (moran.length() > 0 ? ", " : "") + pop.getModule().getName();
+					for (Module mod : species) {
+						IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
+						if (dpop.optimizeMoran)
+							moran += (moran.length() > 0 ? ", " : "") + mod.getName();
 					}
 					if (optimizeHomo) {
 						homo = "homo" + (moran.length() > 0 ? ", " : "");

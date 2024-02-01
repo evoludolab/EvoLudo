@@ -74,7 +74,7 @@ public class simTraits extends Traits {
 		out = ((EvoLudoJRE) engine).getOutput();
 		// for IBS simulations
 		ibs = (IBSD) engine.getModel();
-		pop = (IBSDPopulation) ibs.getSpecies(this);
+		pop = (IBSDPopulation) getIBSPopulation();
 		engine.cloRelaxation.setDefault("10000");
 
 		// initialize timing

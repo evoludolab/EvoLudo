@@ -64,7 +64,7 @@ public class simMoran extends Moran {
 	public void run() {
 		out = ((EvoLudoJRE)engine).getOutput();		
 		// assumes IBS simulations
-		IBSDPopulation pop = (IBSDPopulation) ((IBS) engine.getModel()).getSpecies(this);
+		IBSDPopulation pop = (IBSDPopulation) getIBSPopulation();
 		long nFix = 0;
 		long nextReport = -1;
 		long msecStart = System.currentTimeMillis();
