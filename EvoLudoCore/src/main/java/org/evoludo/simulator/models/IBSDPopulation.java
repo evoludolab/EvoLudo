@@ -1906,17 +1906,16 @@ public class IBSDPopulation extends IBSPopulation {
 
 	@Override
 	protected boolean doAdjustScores() {
-		switch(playerScoring){
-			case EPHEMERAL:
-				// for ephemeral scoring, scores are never adjusted
-				return false;
+		switch (playerScoring) {
 			case RESET_ALWAYS:
 			default:
-				// if resetting scores after every update, scores can be adjusted 
+				// if resetting scores after every update, scores can be adjusted
 				// when interacting all neighbours
 				return interactionGroup.isSampling(IBSGroup.SamplingType.ALL);
+			case EPHEMERAL:
+				// for ephemeral scoring, scores are never adjusted
 			case RESET_ON_CHANGE:
-				// if scores are reset only on an actual strategy change, scores 
+				// if scores are reset only on an actual strategy change, scores
 				// can never be adjusted
 				return false;
 		}

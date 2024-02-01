@@ -2708,8 +2708,7 @@ public abstract class IBSPopulation {
 				}
 			} else {
 				// not ready for unbounded accumulated payoffs... check() should catch this
-				throw new Error(
-						"cannot handle accumulated scores with random interactions (unbounded payoffs, in principle)");
+				throw new Error("cannot handle unbounded accumulated scores");
 			}
 		}
 		if (norm <= 0.0)
@@ -2946,7 +2945,7 @@ public abstract class IBSPopulation {
 			return score;
 		}
 		// not ready for unbounded accumulated payoffs... check() should catch this
-		throw new Error("cannot handle accumulated scores with random interactions (unbounded payoffs, in principle)");
+		throw new Error("cannot handle unbounded accumulated scores");
 	}
 
 	/**
@@ -3216,15 +3215,10 @@ public abstract class IBSPopulation {
 			// check if adjustScores can be used - subclasses may have different opinions
 			adjustScores = doAdjustScores();
 			isEphemeral = playerScoring.equals(ScoringType.EPHEMERAL);
-
-			// accumulated scores and random sampling of interaction partners has, in
-			// principle, unbounded payoffs... avoid this can of worms...
-			// ephemeral scores work for accumulated or averaged score accounting
 			if (!adjustScores && !playerScoreAveraged && !isEphemeral) {
+				// non-adjustable and accumulated scores result in potentially unbounded payoffs - revert to averaged scores
 				setPlayerScoreAveraged(true);
-				logger.warning("random sampling of interaction partners is incompatible with accumulated\n" +
-						"payoffs due to unbounded fitness and challenges to convert to probabilities.\n" +
-						"switching to averaged scores.");
+				logger.warning("accumulated scores may result in unbounded fitness - forcing averaged scores.");
 				adjustScores = doAdjustScores(); // should now be true
 			}
 		}
