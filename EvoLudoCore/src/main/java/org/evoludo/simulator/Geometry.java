@@ -532,15 +532,18 @@ public class Geometry {
 		 * 
 		 * @see Geometry#initGeometryScaleFree()
 		 */
-		SCALEFREE("p", "scale-free graph", "p<e> scale-free graph (e exponent [-2]"),
+		SCALEFREE("p", "scale-free graph", "p<e> scale-free graph following\n" +
+				"                degree distribution with exponent e [-2]"),
 
 		/**
-		 * Scale-free network. {@code F<n[,p]>} scale-free network with degree {@code n} and a fraction of {@code p} random links.
+		 * Scale-free network. {@code F<n[,p]>} scale-free network with degree {@code n}
+		 * and a fraction of {@code p} random links.
 		 * 
 		 * @see Geometry#initGeometryScaleFreeKlemm()
 		 */
-		SCALEFREE_KLEMM("F", "scale-free graph (Klemm & Eguiluz)",
-				"F<n[,p]> scale-free graph (n degree, p random links)"),
+		SCALEFREE_KLEMM("F", "scale-free, small world graph (Klemm & Eguiluz)",
+				"F<n[,p]> scale-free, small world graph\n" + //
+						"                (Klemm & Eguiluz) with avg. degree n, p random links"),
 
 		/**
 		 * Scale-free network. {@code f<d>} scale-free network with degree {@code d}.
@@ -548,7 +551,8 @@ public class Geometry {
 		 * @see Geometry#initGeometryScaleFreeBA()
 		 */
 		SCALEFREE_BA("f", "scale-free graph (Barabasi & Albert)",
-				"F<n> scale-free graph (n avg. degree)"),
+				"f<n> scale-free graph with avg. degree n\n" +//
+				"                (Barabasi & Albert)"),
 
 		/**
 		 * Dynamically changeing network structure.
@@ -1871,8 +1875,7 @@ public class Geometry {
 	 * 
 	 * @see <a href="http://dx.doi.org/10.1038/nature03204">Lieberman, E., Hauert,
 	 *      Ch. &amp; Nowak, M. A. (2005) Evolutionary dynamics on graphs, Nature
-	 *      433
-	 *      312-316.</a>
+	 *      433 312-316.</a>
 	 */
 	public void initGeometrySuperstar() {
 		isRewired = false;

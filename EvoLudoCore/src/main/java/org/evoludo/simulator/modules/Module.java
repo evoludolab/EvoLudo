@@ -1961,6 +1961,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		// geometry option only acceptable for IBS and PDE models
 		if (model.isModelType(Model.Type.IBS) || model.isModelType(Model.Type.PDE)) {
 			cloGeometry.addKeys(Geometry.Type.values());
+			cloGeometry.removeKey(Geometry.Type.DYNAMIC);
 			parser.addCLO(cloGeometry);
 		}
 
