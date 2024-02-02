@@ -838,11 +838,15 @@ public class CLOption implements Comparable<CLOption> {
 				Key key = match(args[n]);
 				if (key == null && prev != null)
 					key = prev;
-				String skey = key.getKey();
-				String keyarg = stripKey(skey, args[n]).trim();
-				argkeys += skey + (keyarg.length() > 0 ? " " + keyarg : "")
-						+ (n == args.length - 1 ? "" : CLOParser.SPECIES_DELIMITER);
-				prev = key;
+				if (key == null) {
+					argkeys += "INVALID '" + args[n].trim() + "'";
+				} else {
+					String skey = key.getKey();
+					String keyarg = stripKey(skey, args[n]).trim();
+					argkeys += skey + (keyarg.length() > 0 ? " " + keyarg : "")
+							+ (n == args.length - 1 ? "" : CLOParser.SPECIES_DELIMITER);
+				}
+				prev = (key == null ? prev : key);
 			}
 			return myDescr + "\n      (current: " + argkeys + ", default: " + defaultArg + ")";
 		}
