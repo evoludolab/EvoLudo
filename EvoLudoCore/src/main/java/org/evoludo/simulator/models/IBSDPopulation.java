@@ -1309,6 +1309,7 @@ public class IBSDPopulation extends IBSPopulation {
 			traitCount[myType]++;
 			groupmodule.groupScores(traitCount, traitScore);
 			if (ephemeralScores) {
+				resetScoreAt(me);
 				setScoreAt(me, traitScore[myType], 0);
 				return;
 			}
@@ -1339,6 +1340,7 @@ public class IBSDPopulation extends IBSPopulation {
 						}
 					}
 					if (ephemeralScores) {
+						resetScoreAt(me);
 						setScoreAt(me, myScore / group.nSampled, group.nSampled);
 						return;
 					}
@@ -1355,6 +1357,7 @@ public class IBSDPopulation extends IBSPopulation {
 				traitCount[myType]++;
 				groupmodule.groupScores(traitCount, traitScore);
 				if (ephemeralScores) {
+					resetScoreAt(me);
 					setScoreAt(me, traitScore[myType], 1);
 					return;
 				}
@@ -1373,16 +1376,14 @@ public class IBSDPopulation extends IBSPopulation {
 		int me = group.focal;
 		int newtype = strategiesScratch[me] % nTraits;
 		if (newtype == VACANT || group.nSampled <= 0) {
-			// isolated individual (no connections to other sites) - still need to reset its
-			// score
-			resetScoreAt(group.focal);
+			// isolated individual or vacant site - reset score
+			resetScoreAt(me);
 			return;
 		}
 		stripGroupVacancies(group, groupStrat, groupIdxs);
 		if (group.nSampled <= 0) {
-			// isolated individual (surrounded by vacant sites) - still need to reset its
-			// score
-			resetScoreAt(group.focal);
+			// isolated individual (surrounded by vacant sites) - reset score
+			resetScoreAt(me);
 			return;
 		}
 
@@ -1452,7 +1453,7 @@ public class IBSDPopulation extends IBSPopulation {
 				// attention
 				int newstrat = strategies[me] % nTraits;
 				if (newstrat == VACANT) {
-					setScoreAt(me, 0.0, 0);
+					resetScoreAt(me);
 				} else {
 					// update score of 'me' based on opponent population
 					// store scores for each type in traitScores (including 0.0 for VACANT)

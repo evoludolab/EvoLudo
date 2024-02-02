@@ -3236,16 +3236,16 @@ public abstract class IBSPopulation {
 			distrMigrants = new RNGDistribution.Geometric(rng.getRNG(), 1.0 - pMigration);
 		}
 
-		boolean isEphemeral;
+		boolean ephemeralScores;
 		if (module.isStatic()) {
 			adjustScores = true;
 			playerScoring = ScoringType.RESET_ALWAYS;
-			isEphemeral = false;
+			ephemeralScores = false;
 		} else {
 			// check if adjustScores can be used - subclasses may have different opinions
 			adjustScores = doAdjustScores();
-			isEphemeral = playerScoring.equals(ScoringType.EPHEMERAL);
-			if (!adjustScores && !playerScoreAveraged && !isEphemeral) {
+			ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
+			if (!adjustScores && !playerScoreAveraged && !ephemeralScores) {
 				// non-adjustable and accumulated scores result in potentially unbounded payoffs - revert to averaged scores
 				setPlayerScoreAveraged(true);
 				logger.warning("accumulated scores may result in unbounded fitness - forcing averaged scores.");
@@ -3256,7 +3256,7 @@ public abstract class IBSPopulation {
 		nMixedInter = -1;
 		hasLookupTable = module.isStatic() || //
 				(adjustScores && interaction.isType(Geometry.Type.MEANFIELD)) || //
-				(isEphemeral && interaction.isType(Geometry.Type.MEANFIELD) //
+				(ephemeralScores && interaction.isType(Geometry.Type.MEANFIELD) //
 					&& interactionGroup.isSampling(SamplingType.ALL));
 		if (hasLookupTable) {
 			// allocate memory for fitness lookup table
@@ -3490,8 +3490,8 @@ public abstract class IBSPopulation {
 			typeScores = null;
 			typeFitness = null;
 		}
-		boolean isEphemeral = playerScoring.equals(ScoringType.EPHEMERAL);
-		if (hasLookupTable && !isEphemeral) {
+		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
+		if (hasLookupTable && !ephemeralScores) {
 			// lookup tables don't need scores, fitness or interactions
 			scores = null;
 			fitness = null;
@@ -3521,7 +3521,7 @@ public abstract class IBSPopulation {
 
 		// number of interactions can be determined for ephemeral payoffs
 		// store in interactions array
-		if (isEphemeral) {
+		if (ephemeralScores) {
 			if (interactionGroup.isSampling(SamplingType.ALL)) {
 				if (nGroup > 2) {
 					// single interaction with all members in neighbourhood
