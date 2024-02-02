@@ -831,6 +831,14 @@ public class Geometry {
 	public double sfExponent = -2.0;
 
 	/**
+	 * The probability for adding links adjust small-world properties of
+	 * Klemm-Eguiluz scale-free networks.
+	 * 
+	 * @see #initGeometryScaleFreeKlemm()
+	 */
+	public double pKlemm = -2.0;
+
+	/**
 	 * The difference between the number of neighbours on the left and the right in
 	 * linear, 1D lattices.
 	 */
@@ -1432,7 +1440,7 @@ public class Geometry {
 				if (!population.checkGeometry(this))
 					throw new Error("Unknown geometry");
 		}
-		if (pRewire > 0.0 && geometry != Type.SCALEFREE_KLEMM) {
+		if (pRewire > 0.0) {
 			switch ((int) (connectivity + 1e-6)) {
 				case 1: // k=1-2 don't even try
 					logger.severe("rewiring needs higher connectivity (should be >3 instead of "
@@ -3856,7 +3864,7 @@ public class Geometry {
 
 		nextnode: for (int n = nStart; n < size; n++) {
 
-			if (pRewire < 1e-8) {
+			if (pKlemm < 1e-8) {
 				// connect to active node
 				for (int i = 0; i < nActive; i++) {
 					addLinkAt(n, active[i]);
@@ -3864,7 +3872,7 @@ public class Geometry {
 				}
 			} else {
 				for (int i = 0; i < nActive; i++) {
-					if (pRewire > (1.0 - 1e-8) || rng.random01() < pRewire) {
+					if (pKlemm > (1.0 - 1e-8) || rng.random01() < pKlemm) {
 						// linear preferential attachment - count links
 						int randnode;
 						int links = 0;
@@ -3919,6 +3927,7 @@ public class Geometry {
 			// we should not arrive here - scream!
 			throw new Error("Emergency in scale-free network creation...");
 		}
+		rewireUndirected(pKlemm);
 	}
 
 	/**
@@ -3933,10 +3942,7 @@ public class Geometry {
 	public void rewire() {
 
 		if (isUndirected) {
-			if (pRewire > 0.0) {
-				rewireUndirected();
-				isRewired = true;
-			}
+			isRewired = rewireUndirected(pRewire);
 			if (pAddwire > 0.0) {
 				addUndirected();
 				isRegular = false;
@@ -3969,11 +3975,14 @@ public class Geometry {
 	 * links in the graph. Thus, at most an expected fraction of \(1-1/e\) (or
 	 * \(~63%\)) of original links get rewired.
 	 * </ol>
+	 * 
+	 * @param prob the probability of rewiring an undirected link
+	 * @return {@code true} if geometry rewired
 	 */
-	public void rewireUndirected() {
+	public boolean rewireUndirected(double prob) {
 		// is rewiring possible?
-		if (!isUndirected)
-			return;
+		if (!isUndirected || prob <= 0.0)
+			return false;
 
 		// retrieve the shared RNG to ensure reproducibility of results
 		RNGDistribution rng = engine.getRNG();
@@ -3981,7 +3990,7 @@ public class Geometry {
 		// rewire at most the number of links present in the system (corresponds to a
 		// fraction of 1-1/e (~63%) of links rewired)
 		long nLinks = (long) Math
-				.floor((int) (avgOut * size + 0.5) / 2.0 * Math.min(1.0, -Math.log(1.0 - pRewire)) + 0.5);
+				.floor((int) (avgOut * size + 0.5) / 2.0 * Math.min(1.0, -Math.log(1.0 - prob)) + 0.5);
 		long done = 0;
 		int first, firstneigh, second, secondneigh, len;
 		while (done < nLinks) {
@@ -4013,6 +4022,7 @@ public class Geometry {
 			}
 			done += 2;
 		}
+		return true;
 	}
 
 	/**
@@ -5080,20 +5090,25 @@ public class Geometry {
 				// known geometries but no further settings required
 				break;
 			case SCALEFREE_BA: // scale-free network - barabasi & albert
+				double oldConn = connectivity;
 				connectivity = Math.max(2, Integer.parseInt(sub));
+				doReset = (Math.abs(oldConn - connectivity) > 1e-8);
 				break;
 			case SCALEFREE_KLEMM: // scale-free network - klemm
-				double oldPRewire = pRewire;
-				double oldPAddwire = pAddwire;
-				if (pRewire > 0.0 || pAddwire > 0.0)
+				if (pRewire > 0.0 || pAddwire > 0.0) {
 					logger.warning("adding or rewiring links not supported for '" + geometry + "' - ignored!");
+					doReset = true;
+				}
 				pRewire = 0.0;
 				pAddwire = 0.0;
+				double oldKlemm = pKlemm;
+				pKlemm = 0.0;
 				dvec = CLOParser.parseVector(sub);
 				switch (dvec.length) {
 					default:
 					case 2:
-						pRewire = dvec[1];
+						pKlemm = Math.min(Math.max(dvec[1], 0.0), 1.0);
+						doReset = (Math.abs(oldKlemm - pKlemm) > 1e-8);
 						//$FALL-THROUGH$
 					case 1:
 						connectivity = Math.max(2, (int) dvec[0]);
@@ -5101,8 +5116,6 @@ public class Geometry {
 					case 0:
 						geometry = Type.INVALID; // too few parameters, change to default geometry
 				}
-				doReset |= (oldPRewire != pRewire);
-				doReset |= (oldPAddwire != pAddwire);
 				break;
 			case SCALEFREE: // scale-free network - uncorrelated, from degree distribution
 				double oldSfExponent = sfExponent;
