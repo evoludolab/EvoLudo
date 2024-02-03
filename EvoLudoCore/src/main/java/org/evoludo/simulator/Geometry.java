@@ -1179,7 +1179,7 @@ public class Geometry {
 							+ connectivity + "!");
 					doReset = true;
 				}
-				if (pRewire > 0.0) {
+				if (pRewire > 0.0 && connectivity < 2.0 + 1.0 / size) {
 					logger.warning("cannot rewire links for '" + geometry + "' - ignored!");
 					pRewire = 0.0;
 				}
