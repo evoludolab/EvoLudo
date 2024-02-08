@@ -1757,7 +1757,8 @@ public abstract class EvoLudo
 		// if IBS is not an option, pick first available model as default (which one
 		// remains unspecified)
 		Collection<Key> keys = cloModel.getKeys();
-		Model.Type defaulttype = Model.Type.parse(keys.iterator().next().getKey());
+		// if IBS not an option, pick first model type as default
+		Model.Type defaulttype = (keys.contains(Model.Type.IBS) ? Model.Type.IBS : Model.Type.values()[0]);
 		Model.Type type = null;
 		nParams = cloarray.length;
 		for (int i = 0; i < nParams; i++) {
