@@ -464,11 +464,12 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 							initargs = CLOParser.parseVector(typeargs[0]);
 						} else if (typeargs.length > 1)
 							initargs = CLOParser.parseVector(typeargs[1]);
-						// only uniform initialization does not require additional arguments
-						if (type == null || (!type.equals(InitType.UNIFORM) && initargs == null)) {
+						// only uniform or kaleidoscope initializations do not require additional arguments
+						if (type == null || (initargs == null && !(type.equals(InitType.UNIFORM) || type.equals(InitType.KALEIDOSCOPE)))) {
 							logger.warning(
 									(species.size() > 1 ? mod.getName() + ": " : "") +
 											"inittype '" + inittype + "' unknown!");
+							// default to uniform
 							type = InitType.UNIFORM;
 							success = false;
 						}
