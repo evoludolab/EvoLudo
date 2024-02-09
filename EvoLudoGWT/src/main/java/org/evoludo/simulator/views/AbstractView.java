@@ -342,7 +342,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 
 		// process fullscreen context menu
 		if (fullscreenMenu == null && isFullscreenSupported()) {
-			fullscreenMenu = new ContextMenuCheckBoxItem("Fullscreen", new Command() {
+			fullscreenMenu = new ContextMenuCheckBoxItem("Full screen", new Command() {
 				@Override
 				public void execute() {
 					setFullscreen(!isFullscreen());
