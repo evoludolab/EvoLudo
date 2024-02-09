@@ -137,13 +137,24 @@ public class TestEvoLudo implements Model.MilestoneListener {
 			if (ref != null && ref != current) {
 				// check passed; create link to reference
 				String refname = ref.getName();
+				Path exportPath = null;
 				if (refname.substring(refname.lastIndexOf(".") + 1).equals("zip"))
 					export += ".zip";
 				try {
-					Path exportPath = exportDir.toPath().toRealPath();
-					Files.createSymbolicLink(exportPath.resolve(export), exportPath.relativize(ref.toPath().toRealPath()));
+					exportPath = exportDir.toPath().toRealPath();
 				} catch (IOException e) {
-					logError("failed to create link from '" + export + "' to '" + ref.getName() + "'.");
+					logError("check passed but failed to resolve '" + exportDir.toPath() + "' to real path.");
+					continue;
+				}
+				Path lnkSrc = null;
+				Path lnkDst = null;
+				try {
+					lnkSrc = exportPath.resolve(export);
+					lnkDst = exportPath.relativize(ref.toPath().toRealPath());
+					Files.createSymbolicLink(lnkSrc, lnkDst);
+				} catch (IOException e) {
+					logError("check passed but failed to create link from '" + lnkSrc + "' to '" + lnkDst + "'.");
+					continue;
 				}
 				logOk("check passed - link to '" + ref.getName() + "' created.");
 				continue;
