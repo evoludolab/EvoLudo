@@ -97,7 +97,7 @@ public class Geometry {
 	 * opponent {@code oppModule} with pacemaker {@code engine}. For intra-species
 	 * interactions {@code population==opponent} holds.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine    the pacemeaker for running the model
 	 * @param popModule the module with interaction parameters
 	 * @param oppModule the module of the opponent
 	 */
@@ -108,7 +108,7 @@ public class Geometry {
 		switch (model.getModelType()) {
 			// case ODE:
 			// case SDE:
-			// 	// should not get here (geometries meaningless)
+			// should not get here (geometries meaningless)
 			// case PDE:
 			default:
 				return;
@@ -368,7 +368,8 @@ public class Geometry {
 				+ "                if r!=l asymmetric neighbourhood)"),
 
 		/**
-		 * Square lattice (von Neumann neighbourhood). Four nearest neighbours (north, east, south, west).
+		 * Square lattice (von Neumann neighbourhood). Four nearest neighbours (north,
+		 * east, south, west).
 		 * 
 		 * @see Geometry#initGeometrySquare()
 		 * @see Geometry#initGeometrySquareVonNeumann(int, int, int)
@@ -376,7 +377,8 @@ public class Geometry {
 		SQUARE_NEUMANN("n", "square lattice (von Neumann)"),
 
 		/**
-		 * Square lattice (Moore neighbourhood). Eight nearest neighbours (chess kings moves).
+		 * Square lattice (Moore neighbourhood). Eight nearest neighbours (chess kings
+		 * moves).
 		 * 
 		 * @see Geometry#initGeometrySquare()
 		 * @see Geometry#initGeometrySquareMoore(int, int, int)
@@ -384,7 +386,8 @@ public class Geometry {
 		SQUARE_MOORE("m", "square lattice (Moore)"),
 
 		/**
-		 * Square lattice, 2D. {@code N<n>} specifies a square lattice with {@code n} neighbours, where {@code n} is {@code 3x3, 5x5...}.
+		 * Square lattice, 2D. {@code N<n>} specifies a square lattice with {@code n}
+		 * neighbours, where {@code n} is {@code 3x3, 5x5...}.
 		 * 
 		 * @see Geometry#initGeometrySquare()
 		 * @see Geometry#initGeometrySquare(int, int, int)
@@ -392,7 +395,8 @@ public class Geometry {
 		SQUARE("N", "square lattice, 2D", "N<k> square lattice (k=3x3, 5x5...)"),
 
 		/**
-		 * Cubic lattice, 3D. {@code C<n>} cubic lattice with {@code n} neighbours, where {@code n} is {@code 2+2+2, 3x3x3, 5x5x5...}.
+		 * Cubic lattice, 3D. {@code C<n>} cubic lattice with {@code n} neighbours,
+		 * where {@code n} is {@code 2+2+2, 3x3x3, 5x5x5...}.
 		 * 
 		 * @see Geometry#initGeometryCube()
 		 */
@@ -469,7 +473,8 @@ public class Geometry {
 		STAR("s", "star (single hub)"),
 
 		/**
-		 * Superstar graph (single hub, petals). {@code S<p[,k]>} superstar graph with {@code p} petals and amplification {@code k}.
+		 * Superstar graph (single hub, petals). {@code S<p[,k]>} superstar graph with
+		 * {@code p} petals and amplification {@code k}.
 		 * 
 		 * @see Geometry#initGeometrySuperstar()
 		 */
@@ -551,8 +556,8 @@ public class Geometry {
 		 * @see Geometry#initGeometryScaleFreeBA()
 		 */
 		SCALEFREE_BA("f", "scale-free graph (Barabasi & Albert)",
-				"f<n> scale-free graph with avg. degree n\n" +//
-				"                (Barabasi & Albert)"),
+				"f<n> scale-free graph with avg. degree n\n" + //
+						"                (Barabasi & Albert)"),
 
 		/**
 		 * Dynamically changeing network structure.
@@ -562,17 +567,17 @@ public class Geometry {
 		DYNAMIC("*", "dynamic geometry"),
 
 		/**
-		 * Placeholder for empty geometry. Not user selectable. 
+		 * Placeholder for empty geometry. Not user selectable.
 		 */
 		VOID("-1", "void geometry"),
 
 		/**
-		 * Placeholder for generic geometry. Not user selectable. 
+		 * Placeholder for generic geometry. Not user selectable.
 		 */
 		GENERIC("-2", "generic geometry"),
 
 		/**
-		 * Placeholder for invalid geometry. Not user selectable. 
+		 * Placeholder for invalid geometry. Not user selectable.
 		 */
 		INVALID("-3", "invalid geometry");
 
@@ -948,7 +953,7 @@ public class Geometry {
 	 * interaction and reproduction graphs.
 	 * 
 	 * @param module the population whose interaction and reproduction structures to
-	 *            check
+	 *               check
 	 * @return {@code true} if a single graphical representation suffices
 	 * 
 	 * @see #displayUniqueGeometry(Geometry, Geometry)
@@ -1163,17 +1168,19 @@ public class Geometry {
 				if (setSize(prod * nIndiv)) {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
-						logger.warning("hierarchical " + name + " geometry with levels " + Formatter.format(hierarchy)
-							+ " requires population size of " + size + "!");
+						logger.warning("hierarchical " + name //
+								+ " geometry with levels " + Formatter.format(hierarchy)
+								+ " requires population size of " + size + "!");
 					doReset = true;
 				}
 				break;
 			case LINEAR:
 				// check connectivity
 				connectivity = Math.max(1, Math.rint(connectivity));
-				// connectivity of one is only allowed with asymmteric interactions or for inter-species modules
+				// connectivity of one is only allowed with asymmteric interactions or for
+				// inter-species modules
 				if ((Math.abs(1.0 - connectivity) < 1e-8 && (isInterspecies() || linearAsymmetry == 0)) //
-						|| ((int)(connectivity + 0.5) % 2 == 1 && linearAsymmetry == 0) || connectivity >= size) {
+						|| ((int) (connectivity + 0.5) % 2 == 1 && linearAsymmetry == 0) || connectivity >= size) {
 					connectivity = Math.min(Math.max(2, connectivity + 1), size - 1 - (size - 1) % 2);
 					logger.warning("linear " + name + " geometry requires even integer number of neighbors - using "
 							+ connectivity + "!");
@@ -1198,8 +1205,8 @@ public class Geometry {
 			case SUPER_STAR:
 				if (petalsamplification < 3) {
 					petalsamplification = 3;
-					logger.warning("super-star " + name + " geometry requires amplification of >=3 - using "
-							+ petalsamplification + "!");
+					logger.warning("super-star " + name + //
+							" geometry requires amplification of >=3 - using " + petalsamplification + "!");
 				}
 				// check population size
 				int pnodes = petalscount * (petalsamplification - 2);
@@ -1218,8 +1225,8 @@ public class Geometry {
 				if (setSize(unit * unit * (1 + unit * (1 + unit)))) {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
-						logger.warning(
-							"strong suppressor " + name + " geometry requires special size - using " + size + "!");
+						logger.warning("strong suppressor " + name //
+								+ " geometry requires special size - using " + size + "!");
 					doReset = true;
 				}
 				break;
@@ -1234,8 +1241,8 @@ public class Geometry {
 				if (setSize((int) (unit + (1 + alpha) * unit23 + 0.5))) {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
-						logger.warning(
-							"strong amplifier " + name + " geometry requires special size - using " + size + "!");
+						logger.warning("strong amplifier " + name //
+								+ " geometry requires special size - using " + size + "!");
 					doReset = true;
 				}
 				break;
@@ -1253,7 +1260,8 @@ public class Geometry {
 				if (setSize(side2)) {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
-						logger.warning("square " + name + " geometry requires integer square size - using " + size + "!");
+						logger.warning("square " + name //
+								+ " geometry requires integer square size - using " + size + "!");
 					doReset = true;
 				}
 				// check connectivity - must be 1, 4 or 3x3, 5x5, 7x7 etc.
@@ -1265,8 +1273,8 @@ public class Geometry {
 					connectivity = count;
 					if (connectivity >= size)
 						connectivity = 4; // simply reset to von Neumann
-					logger.warning(
-							"square " + name + " geometry has invalid connectivity - using " + connectivity + "!");
+					logger.warning("square " + name //
+							+ " geometry has invalid connectivity - using " + connectivity + "!");
 					doReset = true;
 				}
 				break;
@@ -1278,7 +1286,8 @@ public class Geometry {
 					if (setSize(side3)) {
 						// show size-change-warning only if an explicit population size was requested
 						if (!engine.getModule().cloNPopulation.isDefault())
-							logger.warning("cubic " + name + " geometry requires integer cube size - using " + size + "!");
+							logger.warning("cubic " + name //
+									+ " geometry requires integer cube size - using " + size + "!");
 						doReset = true;
 					}
 					// check connectivity - must be 6 or 3x3x3, 5x5x5, 7x7x6 etc.
@@ -1292,8 +1301,8 @@ public class Geometry {
 					connectivity = count;
 					if (connectivity >= size)
 						connectivity = 6; // simply reset to minimum
-					logger.warning(
-							"cubic " + name + " geometry has invalid connectivity - using " + connectivity + "!");
+					logger.warning("cubic " + name //
+							+ " geometry has invalid connectivity - using " + connectivity + "!");
 					doReset = true;
 				}
 				break;
@@ -1307,8 +1316,9 @@ public class Geometry {
 					if (setSize(side2)) {
 						// show size-change-warning only if an explicit population size was requested
 						if (!engine.getModule().cloNPopulation.isDefault())
-							logger.warning(
-								"hexagonal " + name + " geometry requires even integer square size - using " + size + "!");
+							logger.warning("hexagonal " + name //
+									+ " geometry requires even integer square size - using " + size
+									+ "!");
 						doReset = true;
 					}
 				}
@@ -1328,8 +1338,9 @@ public class Geometry {
 					if (setSize(side2)) {
 						// show size-change-warning only if an explicit population size was requested
 						if (!engine.getModule().cloNPopulation.isDefault())
-							logger.warning(
-								"triangular " + name + " geometry requires even integer square size - using " + size + "!");
+							logger.warning("triangular " + name //
+									+ " geometry requires even integer square size - using " + size
+									+ "!");
 						doReset = true;
 					}
 				}
@@ -1348,8 +1359,9 @@ public class Geometry {
 					if (setSize(size + 1)) {
 						// show size-change-warning only if an explicit population size was requested
 						if (!engine.getModule().cloNPopulation.isDefault())
-							logger.warning("RRG " + name + " geometry requires even (directed) link count - set size to " + size
-								+ "!");
+							logger.warning("RRG " + name //
+									+ " geometry requires even (directed) link count - set size to " + size
+									+ "!");
 						doReset = true;
 					}
 				}
@@ -1456,8 +1468,7 @@ public class Geometry {
 			if (connectivity > size - 2) {
 				logger.severe("complete graph, rewiring impossible - ignored");
 				pRewire = 0.0;
-			}
-			else if (connectivity > size / 2) {
+			} else if (connectivity > size / 2) {
 				logger.warning("consider lower connectivity for rewiring (" + Formatter.format(connectivity, 2) + ")");
 			}
 		}
@@ -3200,7 +3211,7 @@ public class Geometry {
 	public void initGeometryRandomGraph() {
 		int parent, parentIdx, child, childIdx;
 		int todo, done;
-	
+
 		// retrieve the shared RNG to ensure reproducibility of results
 		RNGDistribution rng = engine.getRNG();
 
@@ -3279,7 +3290,7 @@ public class Geometry {
 	public void initGeometryRandomGraphDirected() {
 		int parent, parentIdx, child, childIdx;
 		int todo, done;
-	
+
 		// retrieve the shared RNG to ensure reproducibility of results
 		RNGDistribution rng = engine.getRNG();
 
@@ -3636,7 +3647,7 @@ public class Geometry {
 			int idxa = rng.random0n(todo);
 			active[0] = core[idxa];
 			core[idxa] = core[--todo];
-			// DEBUG 
+			// DEBUG
 			// core[todo] = -1;
 			int nActive = 1;
 			while (todo > 0) {
@@ -3705,8 +3716,7 @@ public class Geometry {
 					removeEdgeAt(nodec, noded);
 					addEdgeAt(nodea, noded);
 					addEdgeAt(nodeb, nodec);
-				}
-				else
+				} else
 					success = false;
 			} else {
 				addEdgeAt(nodea, nodeb);
@@ -3895,7 +3905,6 @@ public class Geometry {
 						// test relies on bi-directionality of graph
 						// new node n may not have a neighbor yet - treat carefully!
 						while (isNeighborOf(n, randnode));
-
 						addLinkAt(n, randnode);
 						addLinkAt(randnode, n);
 					} else { // connect to active node
@@ -3987,10 +3996,9 @@ public class Geometry {
 		// retrieve the shared RNG to ensure reproducibility of results
 		RNGDistribution rng = engine.getRNG();
 
-		// rewire at most the number of links present in the system (corresponds to a
-		// fraction of 1-1/e (~63%) of links rewired)
-		long nLinks = (long) Math
-				.floor((int) (avgOut * size + 0.5) / 2.0 * Math.min(1.0, -Math.log(1.0 - prob)) + 0.5);
+		// rewire at most the total number of links present in the system (corresponds
+		// to a fraction of 1-1/e (~63%) of links rewired)
+		int nLinks = (int) Math.floor(ArrayMath.norm(kout) / 2 * Math.min(1.0, -Math.log(1.0 - prob)) + 0.5);
 		long done = 0;
 		int first, firstneigh, second, secondneigh, len;
 		while (done < nLinks) {
@@ -4943,8 +4951,7 @@ public class Geometry {
 			if (first == 'f' || first == 'F') {
 				fixedBoundary = true;
 				sub = sub.substring(1);
-			}
-			else {
+			} else {
 				char last = sub.charAt(len - 1);
 				if (last == 'f' || last == 'F') {
 					fixedBoundary = true;

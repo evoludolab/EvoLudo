@@ -56,7 +56,7 @@
 --module Moran --model IBS --geometry f7 --popsize 1024 --generations 0 --export sf.ba7.plist
 --module Moran --model IBS --geometry F2 --popsize 1024 --generations 0 --export sf.ke2.plist
 --module Moran --model IBS --geometry F2,0.5 --popsize 1024 --generations 0 --export sf.ke2-5.plist
---module Moran --model IBS --geometry F7,0.05 --popsize 1024 --generations 0 --export sf.ke2-05.plist
+--module Moran --model IBS --geometry F7,0.05 --popsize 1024 --generations 0 --export sf.ke7-05.plist
 # has some issues during generation but result is reproducible
 --module Moran --model IBS --geometry p4,-1 --popsize 1024 --generations 0 --export sf.k4-1.plist
 # fails to generate network - keeps trying and failing; exclude for now

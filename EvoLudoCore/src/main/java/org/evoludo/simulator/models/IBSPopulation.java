@@ -3470,7 +3470,6 @@ public abstract class IBSPopulation {
 		}
 		realtimeIncr = 1.0 / Math.max(maxFitness, module.getDeathRate());
 
-		isNeutral = module.isNeutral();
 		if (interaction.interReproSame) {
 			reproduction = interaction.deriveReproductionGeometry();
 		} else {
