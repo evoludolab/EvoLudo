@@ -46,4 +46,12 @@ cp -a "$EVOLUDO_JRE_HOME"/target/EvoLudo.*.jar dist/ ;
 echo "Copying EvoLudo API documentation..." ;
 cp -a docs/api dist/
 
+if [ -f .settings/gitexporter.json ]; then
+    # updating public repository
+    echo "Updating public repository..." ;
+    npx gitexporter .settings/gitexporter.json
+    # delete all empty directories - name of public repo must match settings in gitexporter.json
+    find ../EvoLudoTrial -type d -not \( -path "*/.git/*" -o -path "*/target/*" \) -empty -delete
+fi
+
 echo "Building EvoLudo distribution done!" ;
