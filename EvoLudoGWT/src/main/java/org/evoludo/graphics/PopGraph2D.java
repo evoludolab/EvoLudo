@@ -526,6 +526,9 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 				g.restore();
 				break;
 
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
 			case SQUARE:
 				if (dw < 1) {
 					// too small
@@ -681,7 +684,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 		isHierarchy = (type == Geometry.Type.HIERARCHY);
 		if (isHierarchy)
 			type = geometry.subgeometry;
-		if (!isHierarchy || type != Geometry.Type.SQUARE)
+		if (!isHierarchy || !type.isSquareLattice())
 			hPeriods = null;
 		// geometries that have special/fixed layout
 		switch (type) {
@@ -726,6 +729,9 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 				style.showFrame = false;
 				break;
 
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
 			case SQUARE:
 				// note: a bit hackish to allow drawing frame for lattices but axes for 2D
 				// distributions
@@ -929,6 +935,9 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 					return FINDNODEAT_OUT_OF_BOUNDS;
 				return r * side + c;
 
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
 			case SQUARE:
 				// some heuristic adjustments... cause remains mysterious
 				x = x - (int) (style.frameWidth * zoomFactor + 0.5);
@@ -1260,10 +1269,13 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 		Geometry.Type type = geometry.getType();
 		switch (type) {
 			case HIERARCHY:
-				shakeMenu.setEnabled(geometry.subgeometry != Geometry.Type.SQUARE);
+				shakeMenu.setEnabled(!geometry.subgeometry.isLattice());
 				break;
 			// list of graphs that have static layout and hence do not permit shaking
 			case LINEAR:
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
 			case SQUARE:
 			case CUBE:
 			case HONEYCOMB:

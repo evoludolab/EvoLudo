@@ -273,9 +273,13 @@ public class Geometry {
 	 * <dt>LINEAR</dt>
 	 * <dd>linear lattice, 1D</dd>
 	 * <dt>SQUARE_NEUMANN</dt>
-	 * <dd>square lattice, 2D (von neumann neighbourhood, connectivity \(k=4\))</dd>
+	 * <dd>square lattice, 2D (von neumann neighbourhood, nearest neighbours,
+	 * connectivity \(k=4\))</dd>
+	 * <dt>SQUARE_NEUMANN_2ND</dt>
+	 * <dd>square lattice, 2D (second nearest neighbours, connectivity \(k=4\))</dd>
 	 * <dt>SQUARE_MOORE</dt>
-	 * <dd>square lattice, 2D (moore neighbourhood, connectivity \(k=8\))</dd>
+	 * <dd>square lattice, 2D (moore neighbourhood, first and second nearest
+	 * neighbours, connectivity \(k=8\))</dd>
 	 * <dt>SQUARE</dt>
 	 * <dd>square lattice, 2D</dd>
 	 * <dt>CUBE</dt>
@@ -375,6 +379,14 @@ public class Geometry {
 		 * @see Geometry#initGeometrySquareVonNeumann(int, int, int)
 		 */
 		SQUARE_NEUMANN("n", "square lattice (von Neumann)"),
+
+		/**
+		 * Square lattice. Four second-nearest neighbours (north-east, north-west, south-west, south-east).
+		 * 
+		 * @see Geometry#initGeometrySquare()
+		 * @see Geometry#initGeometrySquareVonNeumann2nd(int, int, int)
+		 */
+		SQUARE_NEUMANN_2ND("n2", "square lattice (von Neumann)"),
 
 		/**
 		 * Square lattice (Moore neighbourhood). Eight nearest neighbours (chess kings
@@ -640,6 +652,44 @@ public class Geometry {
 		@Override
 		public String getDescription() {
 			return (description == null ? title : description);
+		}
+
+		/**
+		 * Check if the geometry is a square lattice.
+		 * 
+		 * @return {@code true} if the geometry is a square lattice
+		 */
+		public boolean isSquareLattice() {
+			switch (this) {
+				case SQUARE:
+				case SQUARE_MOORE:
+				case SQUARE_NEUMANN:
+				case SQUARE_NEUMANN_2ND:
+					return true;
+				default:
+					return false;
+			}
+		}
+
+		/**
+		 * Check if the geometry is a lattice.
+		 * 
+		 * @return {@code true} if the geometry is a lattice
+		 */
+		public boolean isLattice() {
+			switch (this) {
+				case LINEAR:
+				case SQUARE:
+				case SQUARE_MOORE:
+				case SQUARE_NEUMANN:
+				case SQUARE_NEUMANN_2ND:
+				case HONEYCOMB:
+				case TRIANGULAR:
+				case CUBE:
+					return true;
+				default:
+					return false;
+			}
 		}
 
 		@Override
@@ -937,12 +987,14 @@ public class Geometry {
 	 */
 	public static boolean displayUniqueGeometry(Geometry inter, Geometry repro) {
 		Type geometry = inter.geometry;
-		if (geometry == Type.LINEAR || geometry == Type.SQUARE || geometry == Type.CUBE
-				|| geometry == Type.HONEYCOMB || geometry == Type.TRIANGULAR) {
+		if (inter.isLattice()) {
 			// lattice interaction geometry - return true if reproduction geometry is the
 			// same (regardless of connectivity)
 			if (repro == null)
 				return inter.interReproSame;
+			// if both are square lattices a unique geometry is good enough
+			if (geometry.isSquareLattice() && repro.geometry.isSquareLattice())
+				return true;
 			return (repro.geometry == geometry);
 		}
 		return inter.interReproSame;
@@ -1128,9 +1180,9 @@ public class Geometry {
 					case SQUARE_MOORE:
 						connectivity = 8;
 						//$FALL-THROUGH$
+					case SQUARE_NEUMANN_2ND:
 					case SQUARE_NEUMANN:
 						connectivity = Math.max(connectivity, 4); // keep 8 if we fell through
-						subgeometry = Type.SQUARE;
 						//$FALL-THROUGH$
 					case SQUARE:
 						if (nHierarchy != 1 || hierarchy[0] != 1) {
@@ -1154,7 +1206,7 @@ public class Geometry {
 						doReset = true;
 						//$FALL-THROUGH$
 					case COMPLETE:
-						// avoid distinctions between MEANFIELD and COMPLETE graphs
+						// avoid distinctions between MEANFIELD and COMPLETE graphs for subgeometries
 						subgeometry = Type.MEANFIELD;
 						//$FALL-THROUGH$
 					case MEANFIELD:
@@ -1250,8 +1302,8 @@ public class Geometry {
 				connectivity = 8;
 				//$FALL-THROUGH$
 			case SQUARE_NEUMANN: // von neumann
+			case SQUARE_NEUMANN_2ND:
 				connectivity = Math.max(connectivity, 4); // keep 8 if we fell through
-				geometry = Type.SQUARE; // no longer distinguish variants of square lattices
 				//$FALL-THROUGH$
 			case SQUARE:
 				// check population size
@@ -1512,6 +1564,9 @@ public class Geometry {
 			case STRONG_SUPPRESSOR:
 				initGeometrySuppressor();
 				break;
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
 			case SQUARE:
 				initGeometrySquare();
 				break;
@@ -1596,6 +1651,9 @@ public class Geometry {
 			case COMPLETE:
 			case STAR:
 			case WHEEL:
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
 			case SQUARE:
 			case CUBE:
 			case HONEYCOMB:
@@ -1699,8 +1757,11 @@ public class Geometry {
 			int nIndiv = hierarchy[level];
 			int end = start + nIndiv;
 			switch (subgeometry) {
+				case SQUARE_NEUMANN:
+				case SQUARE_NEUMANN_2ND:
+				case SQUARE_MOORE:
 				case SQUARE:
-					initGeometryHierarchySquare((int) Math.rint(connectivity), start, end);
+					initGeometryHierarchySquare(start, end);
 					return;
 				case MEANFIELD:
 				case COMPLETE:
@@ -1711,6 +1772,9 @@ public class Geometry {
 		}
 		// recursion
 		switch (subgeometry) {
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
 			case SQUARE:
 				int side = (int) Math.sqrt(size);
 				int hskip = 1;
@@ -1779,17 +1843,21 @@ public class Geometry {
 	 * @param end    the index of the last node to process
 	 * @return the number of nodes processed
 	 */
-	private int initGeometryHierarchySquare(int degree, int start, int end) {
+	private int initGeometryHierarchySquare(int start, int end) {
 		int nIndiv = end - start;
 		int dside = (int) Math.sqrt(nIndiv);
 		int side = (int) Math.sqrt(size);
-		switch (degree) {
-			case 4: // von Neumann
+		switch (geometry) {
+			case SQUARE_NEUMANN: // von Neumann
 				initGeometrySquareVonNeumann(dside, side, start);
 				break;
-			case 8:
+			case SQUARE_NEUMANN_2ND: // von Neumann
+				initGeometrySquareVonNeumann2nd(dside, side, start);
+				break;
+			case SQUARE_MOORE: // Moore
 				initGeometrySquareMoore(dside, side, start);
 				break;
+			case SQUARE: // square lattice
 			default:
 				initGeometrySquare(dside, side, start);
 				break;
@@ -2111,6 +2179,14 @@ public class Geometry {
 	 * <li>For inter-species interactions connectivities are \(+1\) and a
 	 * connectivity of \(1\) is admissible.
 	 * <li>Boundaries are periodic by default.
+	 * <li>For {@code SQUARE_MOORE} interactions with {@code Group.SAMPLING_ALL} and
+	 * group sizes between {@code 2} and {@code 8} (excluding boundaries) relies on
+	 * a particular arrangement of the neighbors, see
+	 * {@link org.evoludo.simulator.models.IBSDPopulation#playGroupGameAt(org.evoludo.simulator.models.IBSGroup)
+	 * IBSDPopulation.playGroupGameAt(IBSGroup)}
+	 * and
+	 * {@link org.evoludo.simulator.models.IBSCPopulation#playGroupGameAt(org.evoludo.simulator.models.IBSGroup)
+	 * IBSCPopulation.playGroupGameAt(IBSGroup)}.
 	 * </ol>
 	 * 
 	 * @see <a href=
@@ -2126,28 +2202,22 @@ public class Geometry {
 		alloc();
 
 		int side = (int) Math.floor(Math.sqrt(size) + 0.5);
-		switch ((int) Math.rint(connectivity)) {
-			case 1: // self - makes sense only for inter-species interactions
-				initGeometrySquareSelf(side, side, 0);
-				break;
-
-			case 4: // von Neumann
+		switch (geometry) {
+			case SQUARE_NEUMANN:
 				initGeometrySquareVonNeumann(side, side, 0);
 				break;
-
-			// moore neighborhood is treated separately because the interaction pattern
-			// Group.SAMPLING_ALL with
-			// a group size between 2 and 8 (excluding boundaries) relies on a particular
-			// arrangement of the
-			// neighbors. Population.java must make sure that this interaction pattern is
-			// not selected for
-			// larger neighborhood sizes.
-			case 8: // Moore 3x3
+			case SQUARE_NEUMANN_2ND:
+				initGeometrySquareVonNeumann2nd(side, side, 0);
+				break;
+			case SQUARE_MOORE:
 				initGeometrySquareMoore(side, side, 0);
 				break;
-
-			default: // XxX neighborhood - validity of range was checked in Population.java
-				initGeometrySquare(side, side, 0);
+			case SQUARE:
+			default:
+				if ((int) Math.rint(connectivity) == 1)
+					initGeometrySquareSelf(side, side, 0);
+				else
+					initGeometrySquare(side, side, 0);
 		}
 	}
 
@@ -2276,6 +2346,99 @@ public class Geometry {
 				addLinkAt(aPlayer, aPlayer - 1);
 				addLinkAt(aPlayer, aPlayer - fullside);
 				addLinkAt(aPlayer, aPlayer + fullside);
+			}
+			isRegular = false;
+		}
+	}
+
+	/**
+	 * Utility method to generate a square lattice with von Neumann neighbourhood.
+	 *
+	 * <h3>Requirements/notes:</h3>
+	 * <ol>
+	 * <li>Inter-species interactions include 'self'-connections.
+	 * <li>Hierarchical structures may call this method recursively.
+	 * <li>Neighbourhood corresponds to a \(3\times 3\), \(5\times 5\), \(7\times
+	 * 7\), etc. area.
+	 * <li>Boundaries fixed or periodic (default).
+	 * </ol>
+	 * 
+	 * @param side     the side length of the (sub) lattice
+	 * @param fullside the full side length of the entire lattice
+	 * @param offset   the offset to the sub-lattice
+	 */
+	private void initGeometrySquareVonNeumann2nd(int side, int fullside, int offset) {
+		int aPlayer;
+		boolean isInterspecies = isInterspecies();
+
+		for (int i = 0; i < side; i++) {
+			int x = i * fullside;
+			int u = ((i - 1 + side) % side) * fullside;
+			int d = ((i + 1) % side) * fullside;
+			for (int j = 0; j < side; j++) {
+				int r = (j + 1) % side;
+				int l = (j - 1 + side) % side;
+				aPlayer = offset + x + j;
+				if (isInterspecies)
+					addLinkAt(aPlayer, aPlayer);
+				addLinkAt(aPlayer, offset + u + l);
+				addLinkAt(aPlayer, offset + u + r);
+				addLinkAt(aPlayer, offset + d + l);
+				addLinkAt(aPlayer, offset + d + r);
+			}
+		}
+		if (fixedBoundary) {
+			// corners
+			aPlayer = offset;
+			clearLinksFrom(aPlayer); // upper-left corner
+			if (isInterspecies)
+				addLinkAt(aPlayer, aPlayer);
+			addLinkAt(aPlayer, aPlayer + fullside + 1); // right, down
+			aPlayer = offset + side - 1;
+			clearLinksFrom(aPlayer); // upper-right corner
+			if (isInterspecies)
+				addLinkAt(aPlayer, aPlayer);
+			addLinkAt(aPlayer, aPlayer + fullside - 1); // left, down
+			aPlayer = offset + (side - 1) * fullside;
+			clearLinksFrom(aPlayer); // lower-left corner
+			if (isInterspecies)
+				addLinkAt(aPlayer, aPlayer);
+			addLinkAt(aPlayer, aPlayer - fullside + 1); // right, up
+			aPlayer = offset + (side - 1) * (fullside + 1);
+			clearLinksFrom(aPlayer); // lower-right corner
+			if (isInterspecies)
+				addLinkAt(aPlayer, aPlayer);
+			addLinkAt(aPlayer, aPlayer - fullside - 1); // left, up
+			// edges
+			for (int i = 1; i < (side - 1); i++) {
+				// top
+				aPlayer = offset + i;
+				clearLinksFrom(aPlayer);
+				if (isInterspecies)
+					addLinkAt(aPlayer, aPlayer);
+				addLinkAt(aPlayer, aPlayer + fullside - 1);
+				addLinkAt(aPlayer, aPlayer + fullside + 1);
+				// bottom
+				aPlayer = offset + (side - 1) * fullside + i;
+				clearLinksFrom(aPlayer);
+				if (isInterspecies)
+					addLinkAt(aPlayer, aPlayer);
+				addLinkAt(aPlayer, aPlayer - fullside - 1);
+				addLinkAt(aPlayer, aPlayer - fullside + 1);
+				// left
+				aPlayer = offset + fullside * i;
+				clearLinksFrom(aPlayer);
+				if (isInterspecies)
+					addLinkAt(aPlayer, aPlayer);
+				addLinkAt(aPlayer, aPlayer - fullside + 1);
+				addLinkAt(aPlayer, aPlayer + fullside + 1);
+				// right
+				aPlayer = offset + fullside * i + side - 1;
+				clearLinksFrom(aPlayer);
+				if (isInterspecies)
+					addLinkAt(aPlayer, aPlayer);
+				addLinkAt(aPlayer, aPlayer - fullside - 1);
+				addLinkAt(aPlayer, aPlayer + fullside - 1);
 			}
 			isRegular = false;
 		}
@@ -4303,19 +4466,7 @@ public class Geometry {
 	public boolean isLattice() {
 		if (isRewired)
 			return false;
-		switch (geometry) {
-			case LINEAR:
-			case SQUARE:
-			case SQUARE_MOORE:
-			case SQUARE_NEUMANN:
-			case HONEYCOMB:
-			case TRIANGULAR:
-			case CUBE:
-			case COMPLETE:
-				return true;
-			default:
-				return false;
-		}
+		return geometry.isLattice();
 	}
 
 	/**
@@ -5025,13 +5176,12 @@ public class Geometry {
 						linearAsymmetry = 0;
 				}
 				break;
+			case SQUARE_NEUMANN_2ND: // four second neighbours
 			case SQUARE_NEUMANN: // von neumann
 				connectivity = 4;
-				geometry = Type.SQUARE;
 				break;
 			case SQUARE_MOORE: // moore
 				connectivity = 8;
-				geometry = Type.SQUARE;
 				break;
 			case SQUARE: // square, larger neighborhood
 				if (sub.length() < 1)
@@ -5087,7 +5237,7 @@ public class Geometry {
 						petalscount = ivec[0];
 						break;
 					case 0:
-						geometry = Type.STAR; // too few parameters, change to star geometry
+						geometry = Type.INVALID; // too few parameters, change to default geometry
 				}
 				doReset |= (oldPetalsAmplification != petalsamplification);
 				doReset |= (oldPetalsCount != petalscount);
