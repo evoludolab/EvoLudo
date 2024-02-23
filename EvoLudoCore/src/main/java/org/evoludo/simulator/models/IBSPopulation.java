@@ -3777,12 +3777,10 @@ public abstract class IBSPopulation {
 	 * series was started through {@link #init()} or {@link #reset()}.
 	 * 
 	 * @param mean the array for returning the trait values
-	 * @return <code>true</code> if this and the previous data point should be
-	 *         connected, i.e. no reset had been requested in the mean time.
 	 * 
 	 * @see Model#getMeanTraits(int, double[])
 	 */
-	public abstract boolean getMeanTraits(double[] mean);
+	public abstract void getMeanTraits(double[] mean);
 
 	/**
 	 * Returns the traits of all individuals in this population coded as colors in
@@ -3807,11 +3805,10 @@ public abstract class IBSPopulation {
 	 * series was started through {@link #init()} or {@link #reset()}.
 	 * 
 	 * @param mean the array for storing the mean fitness values
-	 * @return {@code true} if this and the previous data point should be connected
 	 * 
 	 * @see Model#getMeanFitness(int, double[])
 	 */
-	public abstract boolean getMeanFitness(double[] mean);
+	public abstract void getMeanFitness(double[] mean);
 
 	/**
 	 * Returns the fitness of all individuals in this population coded as colors in

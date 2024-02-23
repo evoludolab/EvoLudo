@@ -717,7 +717,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * standard deviation.
 	 */
 	@Override
-	public boolean getMeanTraits(double[] mean) {
+	public void getMeanTraits(double[] mean) {
 		for (int i = 0; i < nTraits; i++) {
 			int idx = i;
 			double avg = 0.0, var = 0.0;
@@ -733,7 +733,6 @@ public class IBSMCPopulation extends IBSPopulation {
 			mean[i] = avg * scale + shift;
 			mean[i + nTraits] = Math.sqrt(var / (nPopulation - 1)) * scale;
 		}
-		return true;
 	}
 
 	/**
@@ -744,7 +743,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * their standard deviation.
 	 */
 	@Override
-	public boolean getMeanFitness(double[] mean) {
+	public void getMeanFitness(double[] mean) {
 		double avg = 0.0, var = 0.0;
 		for (int n = 0; n < nPopulation; n++) {
 			double aScore = scores[n];
@@ -754,7 +753,6 @@ public class IBSMCPopulation extends IBSPopulation {
 		}
 		mean[0] = avg;
 		mean[1] = Math.sqrt(var / (nPopulation - 1));
-		return true;
 	}
 
 	/**
