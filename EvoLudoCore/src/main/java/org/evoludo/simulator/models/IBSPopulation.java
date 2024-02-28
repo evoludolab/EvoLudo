@@ -3771,6 +3771,17 @@ public abstract class IBSPopulation {
 	public abstract void getInitialTraits(double[] init);
 
 	/**
+	 * Return the number of mean values for this population (for traits or fitness).
+	 *
+	 * @return the number of mean values
+	 * 
+	 * @see IBS#getNMean()
+	 */
+	public int getNMean() {
+		return nTraits;
+	}
+
+	/**
 	 * Returns the mean trait(s) of this population in the array {@code mean}. Used
 	 * by GUI to visualize the current state of this IBS model. Returns {@code true}
 	 * if data point belongs to the same time series and {@code false} if a new

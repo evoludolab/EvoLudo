@@ -779,6 +779,17 @@ public abstract class IBS implements Model.IBS {
 	}
 
 	@Override
+	public int getNMean() {
+		if (isMultispecies) {
+			int nTraits = 0;
+			for (Module mod : species)
+			nTraits += mod.getIBSPopulation().getNMean();
+			return nTraits;
+		}
+		return population.getNMean();
+	}
+
+	@Override
 	public boolean getMeanTraits(double[] mean) {
 		if (isMultispecies) {
 			int skip = 0;

@@ -1046,6 +1046,15 @@ public abstract interface Model extends CLOProvider {
 	public abstract void getInitialTraits(int id, double[] init);
 	
 	/**
+	 * Return the number of mean values for this model including all species (for
+	 * traits or fitness). By default this returns the number of traits in the module.
+	 * Models that report a different number of mean traits must override this method
+	 *
+	 * @return the number of mean values for all species
+	 */
+	public abstract int getNMean();
+
+	/**
 	 * Collect and return mean trait values for all species.
 	 * <p>
 	 * <strong>NOTE:</strong> this is a convenience method for multi-species modules

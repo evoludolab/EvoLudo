@@ -36,7 +36,9 @@ import java.awt.Color;
 import java.io.PrintStream;
 import java.util.Arrays;
 
+import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.InitType;
@@ -507,6 +509,32 @@ public class TBT extends Discrete implements Pairs,
 		 */
 		protected IBS(EvoLudo engine) {
 			super(engine);
+		}
+
+		@Override
+		public int getNMean() {
+			// SQUARE_NEUMANN_2ND geometry for reproduction results in two disjoint 
+			// sublattices; report strategy frequencies in each sublattice separately
+			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
+				return 2 * nTraits;
+			return super.getNMean();
+		}
+
+		@Override
+		public void getMeanTraits(double[] mean) {
+			// SQUARE_NEUMANN_2ND geometry for reproduction results in two disjoint 
+			// sublattices; report strategy frequencies in each sublattice separately
+			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND)) {
+				int n = 0;
+				Arrays.fill(mean, 0);
+				while (n<nPopulation) {
+					mean[strategies[n++] % nTraits]++;
+					mean[nTraits + (strategies[n++] % nTraits)]++;
+				}
+				ArrayMath.multiply(mean, 1.0 / nPopulation);
+				return;
+			}
+			super.getMeanTraits(mean);
 		}
 
 		@Override

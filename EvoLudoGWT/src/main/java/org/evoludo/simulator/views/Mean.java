@@ -131,12 +131,12 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 			AbstractGraph.GraphStyle style = graph.getStyle();
 			Module module = graphs2mods.get(graph);
 			Color[] colors = module.getTraitColors();
-			int nTraits = module.getNTraits();
 
 			switch( type ) {
 				default:
 				case STRATEGY:
 					if( module.isContinuous() ) {
+						int nTraits = module.getNTraits();
 						// this is the ID of the species associated with this graph
 						int tag = graph.getTag();
 						style.yLabel = module.getTraitName(tag);
@@ -156,11 +156,11 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 							mean = new double[nState];	// mean/sdev
 					}
 					else {
-						int nState = nTraits;
+						Model model = engine.getModel();
+						int nState = model.getNMean();
 						if( state==null || state.length<nState )
 							state = new double[nState];
 						mean = state;
-						Model model = engine.getModel();
 						if (model instanceof Model.DE && ((Model.DE) model).isDensity()) {
 							style.yLabel = "density";
 							style.percentY = false;
@@ -182,19 +182,20 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 					}
 					break;
 				case FITNESS:
+					int nTraits = module.getNTraits();
 					if( module.isContinuous() ) {
-						int nState = nTraits;
-						if( state==null || state.length<nState )
-							state = new double[nState];
+						if( state==null || state.length<nTraits )
+							state = new double[nTraits];
 						// only 2 entries needed for mean and sdev payoff
 						if( mean==null || mean.length<2 )
-							mean = new double[nState];	// mean/sdev
+							mean = new double[2];	// mean/sdev
 						// hardcoded color: black for mean, light gray for mean +/- sdev
 						colors = new Color[] {Color.BLACK, Color.LIGHT_GRAY, Color.LIGHT_GRAY};
 					}
 					else {
+						Model model = engine.getModel();
 						// one 'state' more for the average fitness
-						int nState = nTraits+1;
+						int nState = model.getNMean() + 1;
 						if( state==null || state.length<nState )
 							state = new double[nState];
 						mean = state;
