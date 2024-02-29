@@ -156,7 +156,6 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 							mean = new double[nState];	// mean/sdev
 					}
 					else {
-						Model model = engine.getModel();
 						int nState = model.getNMean();
 						if( state==null || state.length<nState )
 							state = new double[nState];
@@ -193,7 +192,6 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 						colors = new Color[] {Color.BLACK, Color.LIGHT_GRAY, Color.LIGHT_GRAY};
 					}
 					else {
-						Model model = engine.getModel();
 						// one 'state' more for the average fitness
 						int nState = model.getNMean() + 1;
 						if( state==null || state.length<nState )
@@ -254,7 +252,6 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 
 	@Override
 	public void update(boolean force) {
-		Model model = engine.getModel();
 		double newtime = model.getTime();
 		Module module = null;
 		int nTraits = -1;

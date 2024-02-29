@@ -140,7 +140,6 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 
 	@Override
 	public void update(boolean force) {
-		Model model = engine.getModel();
 		switch( model.getModelType() ) {
 			case ODE:
 				for( PopGraph2D graph : graphs )
@@ -188,9 +187,9 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 		// - another alternative is to add context menu to toggle between the different link sets (could be difficult if one is a lattice...)
 		int nGraphs = 0;
 		Geometry geoDE = null;
-		switch( engine.getModel().getModelType() ) {
+		switch( model.getModelType() ) {
 			case PDE:
-				geoDE = ((Model.PDE)engine.getModel()).getGeometry();
+				geoDE = ((Model.PDE) model).getGeometry();
 				//$FALL-THROUGH$
 			case ODE:
 			case SDE:
@@ -419,7 +418,6 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 
 	@Override
 	public void updateNodeAt(AbstractGraph graph, int node) {
-		Model model = engine.getModel();
 		if (!model.isModelType(Type.IBS))
 			return;
 		IBSPopulation pop = graphs2mods.get(graph).getIBSPopulation();
@@ -428,7 +426,6 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 
 	@Override
 	public void mouseHitNode(int id, int node, boolean alt) {
-		Model model = engine.getModel();
 		if (model.isModelType(Model.Type.IBS))
 			((Model.IBS) model).mouseHitNode(id, node, alt);
 	}
@@ -439,7 +436,6 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 		Geometry geometry = graph.getGeometry();
 		int nNodes = geometry.size;
 		Module pop = graphs2mods.get(graph);
-		Model model = engine.getModel();
 		int id;
 		String[] data = graph.getData();
 		StringBuilder tip = new StringBuilder("<table style='border-collapse:collapse;border-spacing:0;'>");

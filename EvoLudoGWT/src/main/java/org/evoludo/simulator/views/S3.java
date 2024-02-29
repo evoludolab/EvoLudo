@@ -151,7 +151,6 @@ public class S3 extends AbstractView {
 	@Override
 	public void init() {
 		super.init();
-		Model model = engine.getModel();
 		for (S3Graph graph : graphs) {
 			model.getMeanTraits(graph.getTag(), state);
 			graph.addData(Double.NaN, state, true);
@@ -160,7 +159,6 @@ public class S3 extends AbstractView {
 
 	@Override
 	public void update(boolean force) {
-		Model model = engine.getModel();
 		double newtime = model.getTime();
 		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
 		for (S3Graph graph : graphs) {
@@ -179,7 +177,7 @@ public class S3 extends AbstractView {
 		if (module instanceof Discrete) {
 			// note: setInitialTraits requires different arguments for discrete and
 			// continuous modules
-			if (engine.getModel().setInitialTraits(init)) {
+			if (model.setInitialTraits(init)) {
 				engine.modelReinit();
 				return true;
 			}

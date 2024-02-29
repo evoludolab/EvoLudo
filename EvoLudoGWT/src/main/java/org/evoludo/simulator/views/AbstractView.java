@@ -75,10 +75,19 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	protected EvoLudoGWT engine;
 
 	/**
+	 * The reference to the model that supplies the data for this graph.
+	 */
+	Model model; 
+
+	/**
+	 * The type of data shown in this graph.
+	 */
+	Model.Data type;
+
+	/**
 	 * Logger for keeping track of and reporting events and issues.
 	 */
 	protected Logger logger;
-	protected Model.Data type;
 	protected HashMap<AbstractGraph, Module> graphs2mods = new HashMap<AbstractGraph, Module>();
 	protected Set<? extends AbstractGraph> graphs = graphs2mods.keySet();
 	protected int gRows = 1, gCols = 1;
@@ -92,6 +101,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	public AbstractView(EvoLudoGWT engine, Model.Data type) {
 		this.engine = engine;
 		this.type = type;
+		model = engine.getModel();
 		logger = engine.getLogger();
 		createWidget();
 		initWidget(wrapper);
@@ -323,10 +333,6 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 			if (graph.contains(x, y))
 				return graph;
 		return null;
-	}
-
-	public boolean isModelType(Model.Type mtype) {
-		return engine.getModel().isModelType(mtype);
 	}
 
 	protected ContextMenu exportSubmenu;

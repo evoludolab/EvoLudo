@@ -107,14 +107,14 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 
 	@Override
 	public void activate() {
-		engine.getModel().setMode(type.getMode());
+		model.setMode(type.getMode());
 		super.activate();
 	}
 
 	@Override
 	public void deactivate() {
 		// revert to default of dynamics mode
-		engine.getModel().setMode(Mode.DYNAMICS);
+		model.setMode(Mode.DYNAMICS);
 		super.deactivate();
 	}
 
@@ -188,7 +188,6 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						break;
 
 					case FITNESS:
-						Model model = engine.getModel();
 						nTraits = (module.isContinuous()?1:nTraits);
 						int vacant = module.getVacant();
 						int paneIdx = 0;
@@ -235,7 +234,6 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						break;
 
 					case DEGREE:
-						model = engine.getModel();
 						Model.Type mType = model.getModelType();
 						if( mType==Model.Type.ODE || mType==Model.Type.SDE ) {
 							// happens for ODE/SDE/PDE - do not show distribution
@@ -343,7 +341,6 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 		Module pop = null;
 		boolean newPop = false;
 		double[][] data = null;
-		Model model = engine.getModel();
 		for( HistoGraph graph : graphs) {
 			AbstractGraph.GraphStyle style = graph.getStyle();
 			Module oldpop = pop;
@@ -535,13 +532,12 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 		if( !isActive && !doStatistics )
 			return;
 
-		double newtime = engine.getModel().getTime();
+		double newtime = model.getTime();
 		if( Math.abs(timestamp-newtime)<1e-8 ) {
 			for( HistoGraph graph : graphs)
 				graph.paint();
 			return;
 		}
-		Model model = engine.getModel();
 		switch( type ) {
 			case STRATEGY:
 				double[][] data = null;
@@ -718,7 +714,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 
 	@Override
 	public String getCounter() {
-		if( engine.getModel().isMode(Mode.STATISTICS) ) {
+		if( model.isMode(Mode.STATISTICS) ) {
 			return "samples: "+nSamples;
 		}
 		return super.getCounter();

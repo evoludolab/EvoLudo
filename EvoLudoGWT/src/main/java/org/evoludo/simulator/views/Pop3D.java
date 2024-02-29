@@ -169,7 +169,6 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 		if (!isActive)
 			return;
 
-		Model model = engine.getModel();
 		switch( model.getModelType() ) {
 			case ODE:
 				// there is only a single graph but whatever...
@@ -206,7 +205,6 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 		boolean soft = true;
 		int nGraphs = 0;
 		Geometry geoDE = null;
-		Model model = engine.getModel();
 		switch( model.getModelType() ) {
 			case PDE:
 				geoDE = ((Model.PDE)model).getGeometry();
@@ -284,7 +282,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 		}
 		boolean noWarnings = true;
 		// IMPORTANT: to avoid problems with WebGL and 3D rendering, each graph needs to have its own color map
-		Model.Type mt = engine.getModel().getModelType();
+		Model.Type mt = model.getModelType();
 		if( mt.equals(Model.Type.ODE) || mt.equals(Model.Type.SDE) ) {
 			// ODE or SDE model (no geometry and thus no population)
 			for( PopGraph3D graph : graphs )
@@ -419,7 +417,6 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 
 	@Override
 	public void mouseHitNode(int id, int node, boolean alt) {
-		Model model = engine.getModel();
 		if (model.isModelType(Model.Type.IBS))
 			((Model.IBS) model).mouseHitNode(id, node, alt);
 	}
@@ -430,7 +427,6 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 		Geometry geometry = graph.getGeometry();
 		int nNodes = geometry.size;
 		Module pop = graphs2mods.get(graph);
-		Model model = engine.getModel();
 		int id;
 		MeshLambertMaterial[] data = graph.getData();
 

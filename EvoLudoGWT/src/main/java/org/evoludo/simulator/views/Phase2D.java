@@ -134,7 +134,6 @@ public class Phase2D extends AbstractView {
 			graph.setMap(map);
 		}
 		// set axis labels and range
-		Model model = engine.getModel();
 		style = graph.getStyle();
 		if (model instanceof Model.DE && ((Model.DE) model).isDensity()) {
 			// density model
@@ -165,7 +164,6 @@ public class Phase2D extends AbstractView {
 	@Override
 	public void init() {
 		super.init();
-		Model model = engine.getModel();
 		model.getMeanTraits(state);
 		updateMinMaxState();
 		graph.addData(Double.NaN, state, true);
@@ -173,7 +171,6 @@ public class Phase2D extends AbstractView {
 
 	@Override
 	public void update(boolean force) {
-		Model model = engine.getModel();
 		double newtime = model.getTime();
 		if( Math.abs(timestamp-newtime)>1e-8 ) {
 			model.getMeanTraits(state);
@@ -210,7 +207,7 @@ public class Phase2D extends AbstractView {
 		if (module instanceof Discrete) {
 			// note: setInitialTraits requires different arguments for discrete and
 			// continuous modules
-			if (engine.getModel().setInitialTraits(init)) {
+			if (model.setInitialTraits(init)) {
 				engine.modelReinit();
 				return true;
 			}
@@ -358,7 +355,6 @@ public class Phase2D extends AbstractView {
 		@Override
 		public String getTooltipAt(double x, double y) {
 			GraphStyle style = graph.getStyle();
-			Model model = engine.getModel();
 			boolean isDensity = (model instanceof ODEEuler && ((Model.DE) model).isDensity());
 			String tip = "<table><tr><td style='text-align:right'><i>" + style.xLabel //
 					+ ":</i></td><td>" + (isDensity ? Formatter.format(x, 2) : Formatter.formatPercent(x, 2)) + "</td></tr>";
@@ -395,7 +391,6 @@ public class Phase2D extends AbstractView {
 
 		@Override
 		public void populateContextMenu() {
-			Model model = engine.getModel();
 			boolean isDensity = (model instanceof ODEEuler && ((Model.DE) model).isDensity());
 			Module module = engine.getModule();
 			ArrayList<? extends Module> species = module.getSpecies();
