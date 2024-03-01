@@ -82,6 +82,18 @@ public class Geometry {
 	Logger logger;
 
 	/**
+	 * Instantiates a new geometry for data visualization with pacemaker {@code engine}.
+	 * 
+	 * @param engine the pacemeaker for running the model
+	 * 
+	 * @see org.evoludo.simulator.views.Distribution#createGeometry(int)
+	 */
+	public Geometry(EvoLudo engine) {
+		this.engine = engine;
+		logger = engine.getLogger();
+	}
+
+	/**
 	 * Instantiates a new geometry for intra-species module {@code module} with
 	 * pacemaker {@code engine}.
 	 * 
@@ -102,8 +114,7 @@ public class Geometry {
 	 * @param oppModule the module of the opponent
 	 */
 	public Geometry(EvoLudo engine, Module popModule, Module oppModule) {
-		this.engine = engine;
-		logger = engine.getLogger();
+		this(engine);
 		Model model = engine.getModel();
 		switch (model.getModelType()) {
 			// case ODE:

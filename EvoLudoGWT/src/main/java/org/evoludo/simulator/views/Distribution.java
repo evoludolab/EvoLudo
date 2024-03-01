@@ -89,6 +89,7 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 
 	@Override
 	public void update(boolean force) {
+		Model model = engine.getModel();
 		// always read data - some nodes may have changed due to user actions
 		double newtime = model.getTime();
 		boolean isNext = (Math.abs(timestamp-newtime)>1e-8);
@@ -226,7 +227,7 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 	}
 
 	private Geometry createGeometry(int nTraits) {
-		Geometry geometry = new Geometry(engine, null);
+		Geometry geometry = new Geometry(engine);
 // adding a geometry name will display a label on the graph - not sure whether we really want this
 //		geometry.name = module.getTraitName(n);
 		if( nTraits==1 ) {
