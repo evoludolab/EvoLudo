@@ -171,6 +171,11 @@ public class ODEEuler implements Model.ODE {
 		}
 	}
 
+	@Override
+	public boolean isContinuous() {
+		return false;
+	}
+
 	/**
 	 * The pacemaker of all models. Interface with the outside world.
 	 */
@@ -522,9 +527,8 @@ public class ODEEuler implements Model.ODE {
 		normalizeState(y0);
 		// check if stop is requested if population becomes monomorphic
 		// for multi-species models only first species checked
-		monoStop = false;
-		if (!species.get(0).isContinuous())
-			monoStop = ((Discrete) species.get(0)).getMonoStop();
+		// cast is safe because ODEs only avaliable for Discrete modules
+		monoStop = ((Discrete) species.get(0)).getMonoStop();
 	}
 
 	@Override

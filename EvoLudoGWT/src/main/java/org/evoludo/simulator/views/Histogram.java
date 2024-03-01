@@ -126,7 +126,6 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 		degreeProcessed = false;
 		int nGraphs = 0;
 		nSamples = 0;
-		// multiple line graphs for multi-species interactions and in case of multiple traits for continuous strategies
 		for( Module pop : species ) {
 			int nTraits = pop.getNTraits();
 			switch( type ) {
@@ -135,7 +134,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					nGraphs += nTraits;
 					break;
 				case FITNESS:
-					if( pop.isContinuous() )
+					if( model.isContinuous() )
 						nGraphs++;
 					else {
 						nGraphs += nTraits;
@@ -188,7 +187,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						break;
 
 					case FITNESS:
-						nTraits = (module.isContinuous()?1:nTraits);
+						nTraits = (model.isContinuous()?1:nTraits);
 						int vacant = module.getVacant();
 						int paneIdx = 0;
 						int bottomPaneIdx = nTraits-1;
@@ -224,7 +223,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 							style.xLabel = "payoffs";
 							style.showXLabel = bottomPane;	// show only on bottom panel
 							style.showXTickLabels = bottomPane;
-							if( module.isContinuous() )
+							if( model.isContinuous() )
 								style.showLabel = isMultispecies;
 							else
 								style.showLabel = true;
@@ -382,7 +381,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 
 				case FITNESS:
 					graph.clearMarkers();
-					nTraits = (pop.isContinuous()?1:nTraits);
+					nTraits = (model.isContinuous()?1:nTraits);
 					if( vacant>=0 )
 						nTraits--;
 					if( newPop || data==null || data.length!=nTraits || data[0].length!=HistoGraph.MAX_BINS ) 

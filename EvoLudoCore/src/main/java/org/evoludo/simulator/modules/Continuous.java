@@ -59,11 +59,6 @@ public abstract class Continuous extends Module {
 	public interface Pairs extends Features {
 
 		@Override
-		public default boolean isContinuous() {
-			return true;
-		}
-
-		@Override
 		public default boolean isPairwise() {
 			return true;
 		}
@@ -151,11 +146,6 @@ public abstract class Continuous extends Module {
 	 * @author Christoph Hauert
 	 */
 	public interface MultiPairs extends Features {
-
-		@Override
-		public default boolean isContinuous() {
-			return true;
-		}
 
 		@Override
 		public default boolean isPairwise() {
@@ -398,11 +388,6 @@ public abstract class Continuous extends Module {
 			}
 		}
 		return doReset;
-	}
-
-	@Override
-	public boolean isContinuous() {
-		return true;
 	}
 
 	/**
@@ -1415,6 +1400,9 @@ public abstract class Continuous extends Module {
 		// best-response is not an acceptable update rule for continuous strategies -
 		// exclude Population.PLAYER_UPDATE_BEST_RESPONSE
 		playerUpdate.clo.removeKey(PlayerUpdate.Type.BEST_RESPONSE);
+		// add option to disable traits if >=2 traits
+		if (nTraits > 1)
+			parser.addCLO(cloTraitDisable);
 	}
 	
 	/**

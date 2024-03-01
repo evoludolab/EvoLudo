@@ -99,7 +99,7 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 
 	@Override
 	public void reset(boolean clear) {
-		nData = module.isContinuous()?1:module.getNTraits();
+		nData = engine.getModel().isContinuous()?1:module.getNTraits();
 		int nGraphs = graphs.size();
 		int vacant = module.getVacant();
 		if (vacant >= 0)
@@ -156,7 +156,7 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 	@Override
 	public boolean	verifyMarkedBins(HistoFrameLayer frame, int tag) {
 		Color[] colors = getColors(tag);
-		if( module.isContinuous() ) {
+		if( engine.getModel().isContinuous() ) {
 			Color tcolor = module.getTraitColors()[tag];
 			// for continuous strategies we have a single histogram and may want to mark several bins
 			boolean changed = frame.updateMarkedBin(0, module.getMinMonoScore(), tcolor.darker());
@@ -207,7 +207,7 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 	// no need to display info
 	@Override
 	public String getName(int tag) {
-		if( module.isContinuous() )
+		if( engine.getModel().isContinuous() )
 			return null;
 		return super.getName(tag);
 	}
@@ -215,7 +215,7 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 	// use default color
 	@Override
 	public Color getColor(int tag) {
-		if( module.isContinuous() )
+		if( engine.getModel().isContinuous() )
 			return null;
 		return super.getColor(tag);
 	}

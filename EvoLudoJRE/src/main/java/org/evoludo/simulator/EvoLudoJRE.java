@@ -398,11 +398,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		Model model = getModel();
 		// allocate storage and initialize helper variables
 		int totTraits = 0;
-		boolean isContinuous = false;
+		boolean isContinuous = model.isContinuous();
 		for (Module specie : module.getSpecies()) {
 			int nt = specie.getNTraits();
 			totTraits += nt;
-			isContinuous |= specie.isContinuous();
 		}
 		double[] meantrait = isContinuous ? new double[2 * totTraits] : new double[totTraits];
 		double[] meanfit = isContinuous ? new double[2 * totTraits] : new double[totTraits + 1];

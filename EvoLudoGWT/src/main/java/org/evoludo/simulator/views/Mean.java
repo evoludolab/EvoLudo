@@ -94,8 +94,9 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 		int nSpecies = species.size();
 		int nGraphs = 0;
 		// multiple line graphs for multi-species interactions and in case of multiple traits for continuous strategies
+		boolean cmodel = model.isContinuous();
 		for( Module pop : species ) {
-			if( pop.isContinuous() && type==Model.Data.STRATEGY )
+			if( cmodel && type==Model.Data.STRATEGY )
 				nGraphs += pop.getNTraits();
 			else
 				nGraphs++;
@@ -106,7 +107,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 			destroyGraphs();
 			for( Module pop : species ) {
 				int nTraits = pop.getNTraits();
-				if( pop.isContinuous() && type==Model.Data.STRATEGY ) {
+				if( cmodel && type==Model.Data.STRATEGY ) {
 					for( int n=0; n<nTraits; n++ ) {
 						// in continuous models each trait has its own panel with 3 lines: mean +/- sdev
 						LineGraph graph = new LineGraph(this, 3, n, species.lastIndexOf(pop) == nTraits - 1);
@@ -135,7 +136,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 			switch( type ) {
 				default:
 				case STRATEGY:
-					if( module.isContinuous() ) {
+					if( cmodel ) {
 						int nTraits = module.getNTraits();
 						// this is the ID of the species associated with this graph
 						int tag = graph.getTag();
@@ -182,7 +183,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 					break;
 				case FITNESS:
 					int nTraits = module.getNTraits();
-					if( module.isContinuous() ) {
+					if( cmodel ) {
 						if( state==null || state.length<nTraits )
 							state = new double[nTraits];
 						// only 2 entries needed for mean and sdev payoff
@@ -255,6 +256,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 		double newtime = model.getTime();
 		Module module = null;
 		int nTraits = -1;
+		boolean cmodel = model.isContinuous();
 		if( Math.abs(timestamp-newtime)>1e-8 ) {
 			for( LineGraph graph : graphs ) {
 				Module newMod = graphs2mods.get(graph);
@@ -266,7 +268,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 							nTraits = module.getNTraits();
 						}
 						// module cannot be null here but make compiler happy
-						if (module != null && module.isContinuous()) {
+						if (module != null && cmodel) {
 							int idx = graph.getTag();
 							double m = mean[idx];
 							double s = mean[idx+nTraits];
@@ -284,7 +286,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 							model.getMeanFitness(graph.getTag(), mean);
 						}
 						// module cannot be null here but make compiler happy
-						if (module != null && module.isContinuous()) {
+						if (module != null && cmodel) {
 							// fitness graph has only a single panel
 							double m = mean[0];
 							double s = mean[1];
@@ -336,7 +338,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 				double fx = 1.0-(mouset-buffert)/dt;
 				tip += "<tr><td colspan='2'><hr/></td></tr><tr><td style='text-align:right'><i>"+style.xLabel+
 					   ":</i></td><td>"+Formatter.format(current[0]-fx*dt, 2)+"</td></tr>";
-				if( module.isContinuous() ) {
+				if( model.isContinuous() ) {
 					double inter = interpolate(current[1], prev[1], fx);
 					tip += "<tr><td style='text-align:right'><i style='color:"+ColorMapCSS.Color2Css(module.getTraitColor(0))+";'>mean:</i></td><td>"+
 							(style.percentY?Formatter.formatPercent(inter, 2):Formatter.format(inter, 2));

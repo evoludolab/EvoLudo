@@ -3304,12 +3304,6 @@ public abstract class IBSPopulation {
 		if (!interaction.isUndirected && !module.isStatic())
 			logger.warning("interactions on directed graphs have received very limited testing...");
 
-		if (interaction.isInterspecies() && module.isContinuous())
-			logger.warning("multi-species interactions with continuous traits have NOT been tested...");
-
-		if (module.isContinuous() && nGroup > 2)
-			logger.warning("group interactions with continuous traits have NOT been tested...");
-
 		if (VACANT >= 0 && nGroup > 2)
 			logger.warning("group interactions with vacant sites have NOT been tested...");
 

@@ -289,12 +289,13 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 				graph.displayMessage("No view available ("+mt.toString()+" solver)");
 			return soft;
 		}
+		boolean cmodel = model.isContinuous();
 		for( PopGraph3D graph : graphs ) {
 			ColorMap<MeshLambertMaterial> cMap = null;
 			Module module = graphs2mods.get(graph);
 			switch( type ) {
 				case STRATEGY:
-					if( module.isContinuous() ) {
+					if( cmodel ) {
 						ColorModelType cmt = engine.getColorModelType();
 						int nTraits = module.getNTraits();
 						if( cmt==ColorModelType.DISTANCE ) {
@@ -352,7 +353,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 					cMap1D.setRange(module.getMinFitness(), module.getMaxFitness());
 					if( engine.isModelType(Model.Type.IBS) ) {
 						Map2Fitness map2fit = module.getMapToFitness();
-						if( module.isContinuous() ) {
+						if( cmodel ) {
 // hardcoded colors for min/max mono scores
 							cMap1D.setColor(map2fit.map(module.getMinMonoScore()), ColorMap.addAlpha(Color.BLUE.darker(), 220));
 							cMap1D.setColor(map2fit.map(module.getMaxMonoScore()), ColorMap.addAlpha(Color.BLUE.brighter(), 220));

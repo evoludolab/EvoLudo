@@ -525,6 +525,11 @@ public abstract interface Model extends CLOProvider {
 	 * @author Christoph Hauert
 	 */
 	public interface DiscreteIBS extends IBS {
+
+		@Override
+		public default boolean isContinuous() {
+			return false;
+		}
 	}
 
 	/**
@@ -533,6 +538,11 @@ public abstract interface Model extends CLOProvider {
 	 * @author Christoph Hauert
 	 */
 	public interface ContinuousIBS extends IBS {
+
+		@Override
+		public default boolean isContinuous() {
+			return true;
+		}
 
 		/**
 		 * Gets the histogram of the trait distributions and returns the data in an
@@ -659,6 +669,13 @@ public abstract interface Model extends CLOProvider {
 			return title;
 		}
 	}
+
+	/**
+	 * Checks if model deals with continuous traits.
+	 * 
+	 * @return <code>true</code> if traits are continuous
+	 */
+	public boolean isContinuous();
 
 	/**
 	 * Gets the type of this model.

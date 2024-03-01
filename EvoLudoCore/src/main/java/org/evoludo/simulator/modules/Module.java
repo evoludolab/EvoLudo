@@ -1546,7 +1546,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 					for (Module pop : species) {
 						int[] dtraits = CLOParser.parseIntVector(disabledtraits[n++ % disabledtraits.length]);
 						int dist = dtraits.length;
-						int mint = pop.isContinuous() ? 1 : 2;
+						int mint = model.isContinuous() ? 1 : 2;
 						if (pop.nTraits - mint < dist) {
 							logger.warning("at least '" + mint + "' enabled traits required - enabling all.");
 							success = false;
@@ -1922,15 +1922,12 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 
 		boolean anyVacant = false;
 		boolean anyNonVacant = false;
-		boolean anyContinuous = false;
 		int minTraits = Integer.MAX_VALUE;
 		int maxTraits = -Integer.MAX_VALUE;
 		for (Module pop : species) {
 			boolean hasVacant = (pop.getVacant() >= 0);
 			anyVacant |= hasVacant;
 			anyNonVacant |= !hasVacant;
-			boolean cont = pop.isContinuous();
-			anyContinuous |= cont;
 			int nt = pop.getNTraits();
 			minTraits = Math.min(minTraits, nt);
 			maxTraits = Math.min(maxTraits, nt);
@@ -1943,14 +1940,9 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 		if (anyVacant) {
 			parser.addCLO(cloDeathRate);
 		}
-		// best-response is not an acceptable update rule for continuous strategies -
-		// exclude Population.PLAYER_UPDATE_BEST_RESPONSE
-		if (anyContinuous) {
-			playerUpdate.clo.removeKey(PlayerUpdate.Type.BEST_RESPONSE);
-		}
 		// add option to disable traits if >=3 traits, except >=2 traits for  
 		// continuous modules with no vacancies (cannot disable vacancies)
-		if (minTraits > 2 || (anyContinuous && anyNonVacant && minTraits > 1))
+		if (minTraits > 2 || (anyNonVacant && minTraits > 1))
 			parser.addCLO(cloTraitDisable);
 
 		// population size option only acceptable for IBS and SDE models

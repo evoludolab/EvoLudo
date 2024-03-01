@@ -299,7 +299,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 			ColorMap<String> cMap = null;
 			switch( type ) {
 				case STRATEGY:
-					if( pop.isContinuous() ) {
+					if( model.isContinuous() ) {
 						ColorModelType cmt = engine.getColorModelType();
 						int nTraits = pop.getNTraits();
 						if( cmt==ColorModelType.DISTANCE ) {

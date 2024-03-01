@@ -83,7 +83,7 @@ public class MVFitness extends MVAbstract implements StateGraphListener {
 	@Override
 	public int getNData(int tag) {
 		// continuous strategies require 3 (for min, mean and max of fitness)
-		if( module.isContinuous() )
+		if( engine.getModel().isContinuous() )
 			return 3;
 		// discrete strategies require nTraits+1 (for each strategy and population mean)
 		return super.getNData(tag)+1;
@@ -103,7 +103,7 @@ public class MVFitness extends MVAbstract implements StateGraphListener {
 	@Override
 	public boolean	verifyYThresholds(FrameLayer frame, int tag) {
 		// no y-thresholds for continuous traits
-		if( module.isContinuous() )
+		if( engine.getModel().isContinuous() )
 			return false;
 		Color[] colors = getColors(tag);
 		boolean changed = false;

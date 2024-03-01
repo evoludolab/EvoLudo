@@ -343,7 +343,7 @@ public abstract class EvoLudo
 			if (model != null)
 				return model;
 		}
-		if (module.isContinuous())
+		if (module instanceof Continuous)
 			return new IBSC(this);
 		return new IBSD(this);
 	}
@@ -2210,7 +2210,7 @@ public abstract class EvoLudo
 		parser.addCLO(cloRNG);
 		// option for trait color schemes only makes sense for modules with multiple
 		// continuous traits that have 2D/3D visualizations
-		if (activeModule.isContinuous() && activeModule.getNTraits() > 1 && //
+		if (activeModel.isContinuous() && activeModule.getNTraits() > 1 && //
 			(activeModule instanceof HasPop2D || activeModule instanceof HasPop3D)) {
 			parser.addCLO(cloTraitColorScheme);
 			cloTraitColorScheme.addKeys(ColorModelType.values());

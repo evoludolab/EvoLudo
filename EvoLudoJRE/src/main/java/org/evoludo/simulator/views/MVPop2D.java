@@ -219,7 +219,7 @@ removeAll();
 //DEBUG
 				if( engine.isModelType(Model.Type.IBS) ) {
 					Map2Fitness map2fit = module.getMapToFitness();
-					if( module.isContinuous() ) {
+					if( engine.getModel().isContinuous() ) {
 //hardcoded colors for min/max mono scores
 						cMap1D.setColor(map2fit.map(module.getMinMonoScore()), Color.BLUE.darker());
 						cMap1D.setColor(map2fit.map(module.getMaxMonoScore()), Color.BLUE.brighter());
@@ -462,7 +462,7 @@ removeAll();
 	public static BufferedImage getSnapshot(EvoLudo engine, Module module, int width, int height) {
 		BufferedImage snapimage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g2 = snapimage.createGraphics();
-		MVPop2D mvpop = new MVPop2D(null, module.isContinuous()?Data.CSTRAT:Data.DSTRAT);
+		MVPop2D mvpop = new MVPop2D(null, engine.getModel().isContinuous()?Data.CSTRAT:Data.DSTRAT);
 		mvpop.setModule(module);
 		mvpop.reset(true);
 		PopGraph2D snapgraph = (PopGraph2D)mvpop.getGraphs().get(0);
@@ -483,7 +483,7 @@ removeAll();
 	public static void exportSnapshotPNG(EvoLudo engine, Module module, int width, int height, File snapfile) {
 		BufferedImage snapimage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g2 = snapimage.createGraphics();
-		MVPop2D mvpop = new MVPop2D(null, module.isContinuous()?Data.CSTRAT:Data.DSTRAT);
+		MVPop2D mvpop = new MVPop2D(null, engine.getModel().isContinuous()?Data.CSTRAT:Data.DSTRAT);
 		mvpop.setModule(module);
 		mvpop.reset(true);
 		PopGraph2D snapgraph = (PopGraph2D)mvpop.getGraphs().get(0);
@@ -512,7 +512,7 @@ removeAll();
 	 */
 	public static void exportSnapshotSVG(EvoLudo engine, Module module, int width, int height, File snapfile, boolean compressed) {
 		Properties props = new Properties();
-		MVPop2D mvpop = new MVPop2D(null, module.isContinuous()?Data.CSTRAT:Data.DSTRAT);
+		MVPop2D mvpop = new MVPop2D(null, engine.getModel().isContinuous()?Data.CSTRAT:Data.DSTRAT);
 		mvpop.setModule(module);
 		mvpop.reset(true);
 		PopGraph2D snapgraph = (PopGraph2D)mvpop.getGraphs().get(0);

@@ -62,16 +62,6 @@ interface Features {
 	}
 
 	/**
-	 * Returns whether traits are continuous or discrete ({@code false} by
-	 * default).
-	 * 
-	 * @return {@code true} if traits are continuous
-	 */
-	public default boolean isContinuous() {
-		return false;
-	}
-
-	/**
 	 * Interface that all modules with static fitness/payoffs should implement. The
 	 * original Moran process is an example, see
 	 * {@link org.evoludo.simulator.modules.Moran}.

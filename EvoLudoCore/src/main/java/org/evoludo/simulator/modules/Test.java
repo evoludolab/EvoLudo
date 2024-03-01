@@ -36,6 +36,7 @@ import org.evoludo.math.MersenneTwister;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudo.Directive;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.util.CLOParser;
@@ -131,7 +132,7 @@ public class Test extends Module implements HasIBS, HasConsole {
 		return new Test.IBS(engine);
 	}
 
-	public class IBS extends org.evoludo.simulator.models.IBS {
+	public class IBS extends org.evoludo.simulator.models.IBS implements Model.DiscreteIBS {
 
 		Test module;
 		int test;

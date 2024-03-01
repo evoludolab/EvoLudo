@@ -813,6 +813,13 @@ public class IBSMCPopulation extends IBSPopulation {
 			// change of sampling may affect whether scores can be adjusted
 			adjustScores = doAdjustScores();
 		}
+
+		if (interaction.isInterspecies())
+			logger.warning("multi-species interactions with continuous traits have NOT been tested...");
+
+		if (module.getNGroup() > 2)
+			logger.warning("group interactions with continuous traits have NOT been tested...");
+
 		return doReset;
 	}
 
