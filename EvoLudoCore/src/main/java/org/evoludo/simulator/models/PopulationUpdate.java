@@ -31,7 +31,7 @@ public class PopulationUpdate {
 	 * 
 	 * @see #clo
 	 */
-	PopulationUpdate.Type type;
+	PopulationUpdate.Type type = PopulationUpdate.Type.UNDEFINED;
 
 	/**
 	 * Sets the population update type.
@@ -213,7 +213,12 @@ public class PopulationUpdate {
 		/**
 		 * Asynchronous updates (non-constant population size).
 		 */
-		ECOLOGY("ecology", "asynchronous updates (non-constant population size)");
+		ECOLOGY("ecology", "asynchronous updates (non-constant population size)"),
+
+		/**
+		 * No population update selected.
+		 */
+		UNDEFINED("-undefined", "no population update selected");
 
 		/**
 		 * Key of population update type. Used for parsing command line options.
