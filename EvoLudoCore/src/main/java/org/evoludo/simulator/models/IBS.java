@@ -781,12 +781,17 @@ public abstract class IBS implements Model.IBS {
 	@Override
 	public int getNMean() {
 		if (isMultispecies) {
-			int nTraits = 0;
+			int nMean = 0;
 			for (Module mod : species)
-			nTraits += mod.getIBSPopulation().getNMean();
-			return nTraits;
+				nMean += mod.getIBSPopulation().getNMean();
+			return nMean;
 		}
 		return population.getNMean();
+	}
+
+	@Override
+	public int getNMean(int id) {
+		return getIBSPopulation(id).getNMean();
 	}
 
 	@Override

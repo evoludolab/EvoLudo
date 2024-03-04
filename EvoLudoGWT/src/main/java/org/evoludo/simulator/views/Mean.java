@@ -43,7 +43,6 @@ import org.evoludo.graphics.AbstractGraph.GraphStyle;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.Model.Data;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
@@ -110,13 +109,13 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 				if( cmodel && type==Model.Data.STRATEGY ) {
 					for( int n=0; n<nTraits; n++ ) {
 						// in continuous models each trait has its own panel with 3 lines: mean +/- sdev
-						LineGraph graph = new LineGraph(this, 3, n, species.lastIndexOf(pop) == nTraits - 1);
+						LineGraph graph = new LineGraph(this, n, species.lastIndexOf(pop) == nTraits - 1);
 						wrapper.add(graph);
 						graphs2mods.put(graph, pop);
 					}
 					continue;
 				}
-				LineGraph graph = new LineGraph(this, type == Data.STRATEGY ? nTraits : nTraits + 1, pop.getID());
+				LineGraph graph = new LineGraph(this, pop.getID());
 				wrapper.add(graph);
 				graphs2mods.put(graph, pop);
 			}
@@ -132,14 +131,14 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 			AbstractGraph.GraphStyle style = graph.getStyle();
 			Module module = graphs2mods.get(graph);
 			Color[] colors = module.getTraitColors();
+			// tag is index of species in discrete modules and index of trait in continuous modules
+			int tag = graph.getTag();
 
 			switch( type ) {
 				default:
 				case STRATEGY:
 					if( cmodel ) {
 						int nTraits = module.getNTraits();
-						// this is the ID of the species associated with this graph
-						int tag = graph.getTag();
 						style.yLabel = module.getTraitName(tag);
 						style.percentY = false;
 						Continuous cmod = (Continuous) module;
@@ -155,9 +154,10 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 						int nState = 2*nTraits;
 						if( mean==null || mean.length<nState )
 							mean = new double[nState];	// mean/sdev
+						graph.setNLines(3);
 					}
 					else {
-						int nState = model.getNMean();
+						int nState = model.getNMean(tag);
 						if( state==null || state.length<nState )
 							state = new double[nState];
 						mean = state;
@@ -179,6 +179,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 						for (Color color : colors)
 							mcolors[n++] = ColorMapCSS.Color2Css(ColorMapCSS.addAlpha(color, 100));
 						graph.setMarkers(module.getMarkers(), mcolors);
+						graph.setNLines(nState);
 					}
 					break;
 				case FITNESS:
@@ -191,16 +192,18 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 							mean = new double[2];	// mean/sdev
 						// hardcoded color: black for mean, light gray for mean +/- sdev
 						colors = new Color[] {Color.BLACK, Color.LIGHT_GRAY, Color.LIGHT_GRAY};
+						graph.setNLines(3);
 					}
 					else {
 						// one 'state' more for the average fitness
-						int nState = model.getNMean() + 1;
+						int nState = model.getNMean(tag) + 1;
 						if( state==null || state.length<nState )
 							state = new double[nState];
 						mean = state;
 						colors = new Color[nState];
 						System.arraycopy(module.getTraitColors(), 0, colors, 0, nState-1);
 						colors[nState-1] = Color.BLACK;
+						graph.setNLines(nState);
 					}
 					graph.setColors(ColorMapCSS.Color2Css(colors));
 					double min = module.getMinScore();
@@ -255,23 +258,23 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 	public void update(boolean force) {
 		double newtime = model.getTime();
 		Module module = null;
-		int nTraits = -1;
+		int nState = -1;
 		boolean cmodel = model.isContinuous();
 		if( Math.abs(timestamp-newtime)>1e-8 ) {
 			for( LineGraph graph : graphs ) {
 				Module newMod = graphs2mods.get(graph);
 				switch( type ) {
 					case STRATEGY:
+					int tag = graph.getTag();
 						if( module != newMod ) {
 							module = newMod;
 							model.getMeanTraits(graph.getTag(), mean);
-							nTraits = module.getNTraits();
+							nState = model.getNMean(tag);
 						}
 						// module cannot be null here but make compiler happy
 						if (module != null && cmodel) {
-							int idx = graph.getTag();
-							double m = mean[idx];
-							double s = mean[idx+nTraits];
+							double m = mean[tag];
+							double s = mean[tag+nState];
 							state[0] = m;
 							state[1] = m-s;
 							state[2] = m+s;

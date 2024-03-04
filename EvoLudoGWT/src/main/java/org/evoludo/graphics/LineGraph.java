@@ -59,7 +59,28 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 	/**
 	 * The number of lines shown on this graph.
 	 */
-	protected int nLines = -1;
+	int nLines = -1;
+
+	/**
+	 * Set the number of lines shown on this graph.
+	 * 
+	 * @param nLines the number of lines shown
+	 */
+	public void setNLines(int nLines) {
+		if (nLines != this.nLines)
+			buffer = null;
+		this.nLines = nLines;
+	}
+
+	/**
+	 * Get the number of lines shown on this graph.
+	 * 
+	 * @return the number of lines shown
+	 
+	 */
+	public int getNLines() {
+		return nLines;
+	}
 
 	/**
 	 * The default number of (time) steps shown on this graph.
@@ -67,44 +88,31 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 	protected double steps = DEFAULT_STEPS;
 
 	/**
-	 * Create new line graph for {@code controller} showing {@code nLines}. The
-	 * {@code id} is used to distinguish different graphs of the same module to
-	 * visualize different components of the data and represents the index of the
-	 * data column.
+	 * Create new line graph for {@code controller}. The {@code id} is used to
+	 * distinguish different graphs of the same module to visualize different
+	 * components of the data and represents the index of the data column.
 	 * 
 	 * @param controller the controller of this graph
-	 * @param nLines     the number of lines shown
 	 * @param id         the id of the graph
 	 */
-	public LineGraph(Controller controller, int nLines, int id) {
-		this(controller, nLines, id, true);
+	public LineGraph(Controller controller, int id) {
+		this(controller, id, true);
 	}
 
 	/**
-	 * Create new line graph for {@code controller} showing {@code nLines}. The
-	 * {@code x}-axis label suppressed if {@code showXLabel==false}. The {@code id}
-	 * is used to distinguish different graphs of the same module to visualize
-	 * different components of the data and represents the index of the data column.
+	 * Create new line graph for {@code controller}. The {@code x}-axis label
+	 * suppressed if {@code showXLabel==false}. The {@code id} is used to
+	 * distinguish different graphs of the same module to visualize different
+	 * components of the data and represents the index of the data column.
 	 * 
 	 * @param controller the controller of this graph
-	 * @param nLines     the number of lines shown
 	 * @param id         the id of the graph
 	 * @param showXLabel {@code true} if this is the bottom panel
 	 */
-	public LineGraph(Controller controller, int nLines, int id, boolean showXLabel) {
+	public LineGraph(Controller controller, int id, boolean showXLabel) {
 		super(controller, id);
-		this.nLines = nLines;
 		setStylePrimaryName("evoludo-LineGraph");
 		style.showXLabel = showXLabel;
-	}
-
-	@Override
-	public void alloc() {
-		super.alloc();
-		// buffer length is nLines + 1 for time
-		if (buffer == null || buffer.capacity() < MIN_BUFFER_SIZE) {
-			buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
-		}
 	}
 
 	// note: labels, yMin and yMax etc. must be set at this point to calculate bounds
@@ -116,8 +124,10 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 			style.xMin = style.xMax-1.0;
 		super.reset();
 		calcBounds();
-		setSteps(steps*(style.xMax-style.xMin)/(style.xMax-oldMin));
+		if (buffer == null || buffer.capacity() < MIN_BUFFER_SIZE)
+			buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
 		buffer.clear();
+		setSteps(steps*(style.xMax-style.xMin)/(style.xMax-oldMin));
 	}
 
 	public void addData(double x, double[] data, boolean force) {

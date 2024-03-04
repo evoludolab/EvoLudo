@@ -628,6 +628,11 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	@Override
+	public int getNMean(int id) {
+		return idxSpecies[id + 1] - idxSpecies[id];
+	}
+
+	@Override
 	public boolean getMeanTraits(int id, double[] mean) {
 		double[] state = (dstate == null ? yt : dstate);
 		int start = idxSpecies[id];
