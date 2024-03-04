@@ -191,6 +191,11 @@ public class ODEEuler implements Model.ODE {
 	protected ArrayList<? extends Module> species;
 
 	/**
+	 * The number of species in the model.
+	 */
+	protected int nSpecies;
+
+	/**
 	 * The current time. May be negative when integrating backwards.
 	 * 
 	 * @see #forward
@@ -485,7 +490,7 @@ public class ODEEuler implements Model.ODE {
 	@Override
 	public void load() {
 		species = engine.getModule().getSpecies();
-		int nSpecies = species.size();
+		nSpecies = species.size();
 		initType = new InitType[nSpecies];
 		mus = new double[nSpecies];
 	}
@@ -535,7 +540,6 @@ public class ODEEuler implements Model.ODE {
 	@Override
 	public boolean check() {
 		boolean doReset = false;
-		int nSpecies = species.size();
 		dstate = null;
 		double minFit = Double.MAX_VALUE;
 		double maxFit = -Double.MAX_VALUE;
@@ -621,6 +625,11 @@ public class ODEEuler implements Model.ODE {
 	public void getInitialTraits(int id, double[] init) {
 		int start = idxSpecies[id];
 		System.arraycopy(y0, start, init, 0, idxSpecies[id + 1] - start);
+	}
+
+	@Override
+	public int getNSpecies() {
+		return nSpecies;
 	}
 
 	@Override

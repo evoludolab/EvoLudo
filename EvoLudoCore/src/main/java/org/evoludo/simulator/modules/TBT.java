@@ -565,6 +565,26 @@ public class TBT extends Discrete implements Pairs,
 		}
 
 		@Override
+		public void getMeanFitness(double[] mean) {
+			// SQUARE_NEUMANN_2ND geometry for reproduction results in two disjoint 
+			// sublattices; report strategy frequencies in each sublattice separately
+			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND)) {
+				int n = 0;
+				Arrays.fill(mean, 0);
+				while (n<nPopulation) {
+					mean[strategies[n] % nTraits] += getFitnessAt(n++);
+					mean[nTraits + (strategies[n] % nTraits)] += getFitnessAt(n++);
+				}
+				// total payoff in last entry
+				mean[2 * nTraits] = sumFitness * 0.25;
+				// averages for each sublattice
+				ArrayMath.multiply(mean, 2.0 / nPopulation);
+				return;
+			}
+			super.getMeanFitness(mean);
+		}
+
+		@Override
 		protected void initKaleidoscope() {
 			// kaleidoscopes only available for lattice geometries
 			if (!interaction.isLattice()) {

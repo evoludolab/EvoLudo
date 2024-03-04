@@ -96,23 +96,8 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 	 * @param id         the id of the graph
 	 */
 	public LineGraph(Controller controller, int id) {
-		this(controller, id, true);
-	}
-
-	/**
-	 * Create new line graph for {@code controller}. The {@code x}-axis label
-	 * suppressed if {@code showXLabel==false}. The {@code id} is used to
-	 * distinguish different graphs of the same module to visualize different
-	 * components of the data and represents the index of the data column.
-	 * 
-	 * @param controller the controller of this graph
-	 * @param id         the id of the graph
-	 * @param showXLabel {@code true} if this is the bottom panel
-	 */
-	public LineGraph(Controller controller, int id, boolean showXLabel) {
 		super(controller, id);
 		setStylePrimaryName("evoludo-LineGraph");
-		style.showXLabel = showXLabel;
 	}
 
 	// note: labels, yMin and yMax etc. must be set at this point to calculate bounds

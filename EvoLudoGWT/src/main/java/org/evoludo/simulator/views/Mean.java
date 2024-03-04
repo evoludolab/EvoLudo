@@ -84,34 +84,23 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 	public void reset(boolean soft) {
 		super.reset(soft);
 		ArrayList<? extends Module> species = engine.getModule().getSpecies();
-		int nSpecies = species.size();
-		int nGraphs = 0;
+		int nSpecies = model.getNSpecies();
 		// multiple line graphs for multi-species interactions and in case of multiple traits for continuous strategies
 		boolean cmodel = model.isContinuous();
-		for( Module pop : species ) {
-			if( cmodel && type==Model.Data.STRATEGY )
-				nGraphs += pop.getNTraits();
-			else
-				nGraphs++;
-		}
-
+		int nMean = model.getNMean();
+		int nGraphs = (cmodel && type==Model.Data.STRATEGY ? nMean : nSpecies);
+		// if the number of graphs has changed, destroy and recreate them
 		if( graphs.size()!=nGraphs ) {
 			soft = false;
 			destroyGraphs();
-			for( Module pop : species ) {
-				int nTraits = pop.getNTraits();
-				if( cmodel && type==Model.Data.STRATEGY ) {
-					for( int n=0; n<nTraits; n++ ) {
-						// in continuous models each trait has its own panel with 3 lines: mean +/- sdev
-						LineGraph graph = new LineGraph(this, n, species.lastIndexOf(pop) == nTraits - 1);
-						wrapper.add(graph);
-						graphs2mods.put(graph, pop);
-					}
-					continue;
-				}
-				LineGraph graph = new LineGraph(this, pop.getID());
+			for( int n=0; n<nGraphs; n++ ) {
+				// in discrete models each species has its own panel with all traits
+				// in continuous models each trait has its own panel with 3 lines: mean +/- sdev
+				LineGraph graph = new LineGraph(this, n);
+//				graphs.add(graph);
 				wrapper.add(graph);
-				graphs2mods.put(graph, pop);
+graphs2mods.put(graph, species.get(n));
+				graph.getStyle().showXLabel = (n==nGraphs-1);
 			}
 			// arrange graphs vertically
 			gRows = nGraphs;
@@ -124,15 +113,14 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 		for( LineGraph graph : graphs ) {
 			AbstractGraph.GraphStyle style = graph.getStyle();
 			Module module = graphs2mods.get(graph);
-			Color[] colors = module.getTraitColors();
-			// tag is index of species in discrete modules and index of trait in continuous modules
+			Color[] colors = model.getMeanColors();
+			// tag is index of species in discrete models and index of trait in continuous models
 			int tag = graph.getTag();
 
 			switch( type ) {
 				default:
 				case STRATEGY:
 					if( cmodel ) {
-						int nTraits = module.getNTraits();
 						style.yLabel = module.getTraitName(tag);
 						style.percentY = false;
 						Continuous cmod = (Continuous) module;
@@ -140,12 +128,12 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 						style.yMax = cmod.getTraitMax()[tag];
 						String[] traitcolors = new String[3];
 						traitcolors[0] = ColorMapCSS.Color2Css(colors[tag]);					// mean
-						traitcolors[1] = ColorMapCSS.Color2Css(colors[tag+nTraits]);			// min
-						traitcolors[2] = ColorMapCSS.Color2Css(colors[tag+nTraits+nTraits]);	// max
+						traitcolors[1] = ColorMapCSS.Color2Css(colors[tag+nMean]);			// min
+						traitcolors[2] = ColorMapCSS.Color2Css(colors[tag+nMean+nMean]);	// max
 						graph.setColors(traitcolors);
 						if( state==null || state.length<3 )
 							state = new double[3];	// mean/min/max
-						int nState = 2*nTraits;
+						int nState = 2*nMean;
 						if( mean==null || mean.length<nState )
 							mean = new double[nState];	// mean/sdev
 						graph.setNLines(3);
@@ -178,10 +166,9 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 					}
 					break;
 				case FITNESS:
-					int nTraits = module.getNTraits();
 					if( cmodel ) {
-						if( state==null || state.length<nTraits )
-							state = new double[nTraits];
+						if( state==null || state.length<nMean )
+							state = new double[nMean];
 						// only 2 entries needed for mean and sdev payoff
 						if( mean==null || mean.length<2 )
 							mean = new double[2];	// mean/sdev
@@ -191,7 +178,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 					}
 					else {
 						// one 'state' more for the average fitness
-						int nState = model.getNMean(tag) + 1;
+						int nState = nMean + 1;
 						if( state==null || state.length<nState )
 							state = new double[nState];
 						mean = state;
@@ -217,18 +204,18 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 					style.yLabel = "payoffs";
 					if (module instanceof Discrete) {
 						Discrete dmod = (Discrete) module;
-					double[] monoScores = new double[nTraits+1];
-					// the first entry is for dashed (>0) and dotted (<0) lines
-					monoScores[0] = 1.0;
-					for (int n=0;n<nTraits;n++)
-						monoScores[n+1] = dmod.getMonoScore(n);
-					String[] monoColors = new String[colors.length];
-					int n = 0;
-					for (Color color : colors)
-						monoColors[n++] = ColorMapCSS.Color2Css(ColorMapCSS.addAlpha(color, 100));
-					ArrayList<double[]> marker = new ArrayList<>();
-					marker.add(monoScores);
-					graph.setMarkers(marker, monoColors);
+						double[] monoScores = new double[nMean+1];
+						// the first entry is for dashed (>0) and dotted (<0) lines
+						monoScores[0] = 1.0;
+						for (int n=0;n<nMean;n++)
+							monoScores[n+1] = dmod.getMonoScore(n);
+						String[] monoColors = new String[colors.length];
+						int n = 0;
+						for (Color color : colors)
+							monoColors[n++] = ColorMapCSS.Color2Css(ColorMapCSS.addAlpha(color, 100));
+						ArrayList<double[]> marker = new ArrayList<>();
+						marker.add(monoScores);
+						graph.setMarkers(marker, monoColors);
 					}
 					break;
 			}
@@ -260,7 +247,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 				Module newMod = graphs2mods.get(graph);
 				switch( type ) {
 					case STRATEGY:
-					int tag = graph.getTag();
+						int tag = graph.getTag();
 						if( module != newMod ) {
 							module = newMod;
 							model.getMeanTraits(graph.getTag(), mean);

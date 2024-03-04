@@ -239,6 +239,8 @@ public abstract class IBS implements Model.IBS {
 		logger = engine.getLogger();
 		rng = engine.getRNG();
 		species = engine.getModule().getSpecies();
+		nSpecies = species.size();
+		isMultispecies = (nSpecies > 1);
 		for (Module mod : species) {
 			IBSPopulation pop = mod.createIBSPop();
 			if (pop == null) {
@@ -265,7 +267,6 @@ public abstract class IBS implements Model.IBS {
 			// set opponents
 			pop.opponent = mod.getOpponent().getIBSPopulation();
 		}
-		isMultispecies = (species.size() > 1);
 		IBSPopulation pop = species.get(0).getIBSPopulation();
 		// set shortcut for single species modules
 		population = isMultispecies ? null : pop;
@@ -698,6 +699,18 @@ public abstract class IBS implements Model.IBS {
 		engine.fireModelChanged();
 	}
 
+	/**
+	 * Helper routine to retrieve the {@link IBSPopulation} associated with module
+	 * with {@code id}.
+	 * 
+	 * @param id the {@code id} of the module
+	 * 
+	 * @return the {@code IBSPopulation}
+	 */
+	IBSPopulation getIBSPopulation(int id) {
+		return (isMultispecies ? species.get(id).getIBSPopulation() : population);
+	}
+
 	@Override
 	public double processMonoScore(int id, double score) {
 		return getIBSPopulation(id).processMonoScore(score);
@@ -748,15 +761,9 @@ public abstract class IBS implements Model.IBS {
 		return converged;
 	}
 
-	/**
-	 * Helper routine to retrieve the {@link IBSPopulation} associated with module
-	 * with {@code id}.
-	 * 
-	 * @param id the {@code id} of the module
-	 * @return the {@code IBSPopulation}
-	 */
-	IBSPopulation getIBSPopulation(int id) {
-		return (isMultispecies ? species.get(id).getIBSPopulation() : population);
+	@Override
+	public int getNSpecies() {
+		return nSpecies;
 	}
 
 	@Override
