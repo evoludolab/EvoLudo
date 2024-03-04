@@ -489,8 +489,35 @@ public class TBT extends Discrete implements Pairs,
 	}
 
 	@Override
+	public TBTIBS createIBS() {
+		return new TBT.TBTIBS(engine);
+	}
+
+	public class TBTIBS extends IBSD {
+
+		public TBTIBS(EvoLudo engine) {
+			super(engine);
+		}
+
+		@Override
+		public Color[] getMeanColors() {
+			Color[] colors = super.getMeanColors();
+			if (!reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
+				return colors;
+			int nMean = getNMean();
+			Color[] color2nd = new Color[nMean];
+			System.arraycopy(colors, 0, color2nd, 0, nTraits);
+			for (int n = 0; n < nTraits; n++) {
+				color2nd[n] = colors[n];
+				color2nd[nTraits + n] = colors[n].darker();
+			}
+			return color2nd;
+		}
+	}
+
+	@Override
 	public IBSDPopulation createIBSPop() {
-		return new TBT.IBS(engine);
+		return new TBT.TBTPop(engine);
 	}
 
 	/**
@@ -500,14 +527,14 @@ public class TBT extends Discrete implements Pairs,
 	 *
 	 * @author Christoph Hauert
 	 */
-	public class IBS extends IBSDPopulation {
+	public class TBTPop extends IBSDPopulation {
 
 		/**
 		 * Create a new instance of the IBS model for {@code 2×2} games.
 		 * 
 		 * @param engine the pacemeaker for running the model
 		 */
-		protected IBS(EvoLudo engine) {
+		protected TBTPop(EvoLudo engine) {
 			super(engine);
 		}
 

@@ -1,5 +1,6 @@
 package org.evoludo.simulator.models;
 
+import java.awt.Color;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.logging.Logger;
@@ -792,6 +793,16 @@ public abstract class IBS implements Model.IBS {
 	@Override
 	public int getNMean(int id) {
 		return getIBSPopulation(id).getNMean();
+	}
+
+	@Override
+	public Color[] getMeanColors() {
+		int nMean = getNMean();
+		Color[] colors = new Color[nMean];
+		int skip = 0;
+		for (Module mod : species)
+			System.arraycopy(mod.getTraitColors(), 0, colors, skip, mod.getNTraits());
+		return colors;
 	}
 
 	@Override

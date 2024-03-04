@@ -32,6 +32,7 @@
 
 package org.evoludo.simulator.models;
 
+import java.awt.Color;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -630,6 +631,17 @@ public class ODEEuler implements Model.ODE {
 	@Override
 	public int getNMean(int id) {
 		return idxSpecies[id + 1] - idxSpecies[id];
+	}
+
+	@Override
+	public Color[] getMeanColors() {
+		Color[] colors = new Color[nDim];
+		int idx = 0;
+		for (Module mod : species) {
+			int start = idxSpecies[idx];
+			System.arraycopy(mod.getTraitColors(), 0, colors, start, idxSpecies[idx + 1] - start);
+		}
+		return colors;
 	}
 
 	@Override

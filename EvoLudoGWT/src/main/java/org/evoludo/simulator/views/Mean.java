@@ -75,12 +75,6 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 				return "Strategies - Mean";
 			case FITNESS:
 				return "Fitness - Mean";
-//			case DEGREE:
-//				return "Structure - Degree";
-//			case STATISTICS_FIXATION_PROBABILITY:
-//				return "Statistics - Fixation probability";
-//			case STATISTICS_FIXATION_TIME:
-//				return "Statistics - Fixation time";
 			default:
 				return null;
 		}
@@ -173,6 +167,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 							style.yMin = 0.0;
 							style.yMax = 1.0;
 						}
+						colors = model.getMeanColors();
 						graph.setColors(ColorMapCSS.Color2Css(colors));
 						String[] mcolors = new String[colors.length];
 						int n = 0;
@@ -201,7 +196,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 							state = new double[nState];
 						mean = state;
 						colors = new Color[nState];
-						System.arraycopy(module.getTraitColors(), 0, colors, 0, nState-1);
+						System.arraycopy(model.getMeanColors(), 0, colors, 0, nState-1);
 						colors[nState-1] = Color.BLACK;
 						graph.setNLines(nState);
 					}
@@ -234,7 +229,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 					ArrayList<double[]> marker = new ArrayList<>();
 					marker.add(monoScores);
 					graph.setMarkers(marker, monoColors);
-				}
+					}
 					break;
 			}
 			if( nSpecies>1 ) 
@@ -350,6 +345,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 				}
 				else {
 					boolean[] active = module.getActiveTraits();
+					Color[] colors = model.getMeanColors();
 					for( int n=1; n<len; n++ ) {
 						if( !active[n-1] )
 							continue;
@@ -358,7 +354,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 							name = "average";
 						else
 							name = module.getTraitName(n-1);
-						tip += "<tr><td style='text-align:right'><i style='color:"+ColorMapCSS.Color2Css(module.getTraitColor(n-1))+";'>"+name+":</i></td><td>";
+						tip += "<tr><td style='text-align:right'><i style='color:"+ColorMapCSS.Color2Css(colors[n-1])+";'>"+name+":</i></td><td>";
 						// deal with NaN's
 						if( prev[n]==prev[n] && current[n]==current[n] ) {
 							tip += (style.percentY?Formatter.formatPercent(interpolate(current[n], prev[n], fx), 2):

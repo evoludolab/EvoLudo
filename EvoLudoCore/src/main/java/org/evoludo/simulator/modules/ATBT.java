@@ -757,7 +757,7 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 	/**
 	 * Extends TBT.IBS to take advantage of kaleidoscope initializations.
 	 */
-	public class IBS extends TBT.IBS {
+	public class IBS extends TBT.TBTPop {
 
 		/**
 		 * Create a new instance of the IBS model for asymmteric {@code 2×2}

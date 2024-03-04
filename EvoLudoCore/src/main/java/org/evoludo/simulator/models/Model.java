@@ -1081,6 +1081,13 @@ public abstract interface Model extends CLOProvider {
 	public abstract int getNMean(int id);
 
 	/**
+	 * Return the colors for the mean traits of this model.
+	 *
+	 * @return the color array for the mean values
+	 */
+	public abstract Color[] getMeanColors();
+
+	/**
 	 * Collect and return mean trait values for all species.
 	 * <p>
 	 * <strong>NOTE:</strong> this is a convenience method for multi-species modules

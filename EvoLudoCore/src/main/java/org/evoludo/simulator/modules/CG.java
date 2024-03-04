@@ -294,7 +294,7 @@ public class CG extends ATBT implements Module.Static {
 	/**
 	 * Extends TBTIBS to take advantage of kaleidoscope initializations.
 	 */
-	class IBS extends TBT.IBS {
+	class IBS extends TBT.TBTPop {
 
 		/**
 		 * Create a new instance of the IBS model for the conservation game.

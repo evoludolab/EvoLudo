@@ -145,7 +145,7 @@ public class DemesTBT extends TBT {
 		return new DemesTBT.IBS(engine, this);
 	}
 
-	public class IBS extends TBT.IBS implements Model.MilestoneListener, Model.ChangeListener {
+	public class IBS extends TBT.TBTPop implements Model.MilestoneListener, Model.ChangeListener {
 
 		// IBSDPopulation pop;
 		protected RNGDistribution.Geometric distrMigration, distrMutationMigration;
