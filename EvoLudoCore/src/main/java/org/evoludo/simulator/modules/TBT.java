@@ -554,11 +554,20 @@ public class TBT extends Discrete implements Pairs,
 			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND)) {
 				int n = 0;
 				Arrays.fill(mean, 0);
-				while (n<nPopulation) {
-					mean[strategies[n++] % nTraits]++;
-					mean[nTraits + (strategies[n++] % nTraits)]++;
+				int side = (int) Math.sqrt(nPopulation);
+				int offset1, offset2;
+				while (n < nPopulation) {
+					if ((n / side) % 2 == 0) {
+						offset1 = 0;
+						offset2 = nTraits;
+					} else {
+						offset1 = nTraits;
+						offset2 = 0;
+					}
+					mean[offset1 + strategies[n++] % nTraits]++;
+					mean[offset2 + (strategies[n++] % nTraits)]++;
 				}
-				ArrayMath.multiply(mean, 1.0 / nPopulation);
+				ArrayMath.multiply(mean, 2.0 / nPopulation);
 				return;
 			}
 			super.getMeanTraits(mean);
@@ -571,12 +580,21 @@ public class TBT extends Discrete implements Pairs,
 			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND)) {
 				int n = 0;
 				Arrays.fill(mean, 0);
+				int side = (int) Math.sqrt(nPopulation);
+				int offset1, offset2;
 				while (n<nPopulation) {
-					mean[strategies[n] % nTraits] += getFitnessAt(n++);
-					mean[nTraits + (strategies[n] % nTraits)] += getFitnessAt(n++);
+					if ((n / side) % 2 == 0) {
+						offset1 = 0;
+						offset2 = nTraits;
+					} else {
+						offset1 = nTraits;
+						offset2 = 0;
+					}
+					mean[offset1 + strategies[n] % nTraits] += getFitnessAt(n++);
+					mean[offset2 + (strategies[n] % nTraits)] += getFitnessAt(n++);
 				}
 				// total payoff in last entry
-				mean[2 * nTraits] = sumFitness * 0.25;
+				mean[2 * nTraits] = sumFitness * 0.5;
 				// averages for each sublattice
 				ArrayMath.multiply(mean, 2.0 / nPopulation);
 				return;
