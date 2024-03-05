@@ -488,6 +488,9 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 					posk += incr;
 				}
 				break;
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
 			case SQUARE:
 				side = (int) Math.sqrt(geometry.size); // data.size does not seem to be set at this point
 				incr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
@@ -959,6 +962,9 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 				break;
 			// list of graphs that have static layout and hence do not permit shaking
 			case LINEAR:
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
 			case SQUARE:
 			case CUBE:
 			case HONEYCOMB:
