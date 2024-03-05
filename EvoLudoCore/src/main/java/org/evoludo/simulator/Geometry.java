@@ -1319,6 +1319,8 @@ public class Geometry {
 			case SQUARE:
 				// check population size
 				side = (int) Math.floor(Math.sqrt(size) + 0.5);
+				if (geometry == Type.SQUARE_NEUMANN_2ND)
+					side = (side + 1) / 2 * 2; // make sure side is even
 				side2 = side * side;
 				if (setSize(side2)) {
 					// show size-change-warning only if an explicit population size was requested
