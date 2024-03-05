@@ -803,6 +803,20 @@ public abstract class IBS implements Model.IBS {
 	}
 
 	@Override
+	public String getMeanName(int index) {
+		for (Module mod : species) {
+			int nt = mod.getNTraits();
+			if (index < nt) {
+				if (mod.getActiveTraits()[index])
+					return mod.getTraitName(index);
+				return null;
+			}
+			index -= nt;
+		}
+		return null;
+	}
+
+	@Override
 	public Color[] getMeanColors() {
 		int nMean = getNMean();
 		Color[] colors = new Color[nMean];

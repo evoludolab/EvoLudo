@@ -121,15 +121,16 @@ graphs2mods.put(graph, species.get(n));
 				default:
 				case STRATEGY:
 					if( cmodel ) {
-						style.yLabel = module.getTraitName(tag);
+						style.yLabel = model.getMeanName(tag);
 						style.percentY = false;
 						Continuous cmod = (Continuous) module;
 						style.yMin = cmod.getTraitMin()[tag];
 						style.yMax = cmod.getTraitMax()[tag];
+						Color color = colors[tag];
 						String[] traitcolors = new String[3];
-						traitcolors[0] = ColorMapCSS.Color2Css(colors[tag]);					// mean
-						traitcolors[1] = ColorMapCSS.Color2Css(colors[tag+nMean]);			// min
-						traitcolors[2] = ColorMapCSS.Color2Css(colors[tag+nMean+nMean]);	// max
+						traitcolors[0] = ColorMapCSS.Color2Css(color);			// mean
+						traitcolors[1] = ColorMapCSS.Color2Css(color == Color.BLACK ? Color.LIGHT_GRAY : color.darker());	// min
+						traitcolors[2] = traitcolors[1];						// max
 						graph.setColors(traitcolors);
 						if( state==null || state.length<3 )
 							state = new double[3];	// mean/min/max
@@ -300,61 +301,67 @@ graphs2mods.put(graph, species.get(n));
 		GraphStyle style = graph.getStyle();
 		RingBuffer<double[]> buffer = graph.getBuffer();
 		double buffert = 0.0;
-		double mouset = style.xMin+sx*(style.xMax-style.xMin);
-		Module module = graphs2mods.get(graph);
+		double mouset = style.xMin + sx * (style.xMax - style.xMin);
 		Iterator<double[]> i = buffer.iterator();
-		String tip = "<table style='border-collapse:collapse;border-spacing:0;'>"+
-				"<tr><td style='text-align:right'><i>"+style.xLabel+":</i></td><td>"+
-					Formatter.format(mouset, 2)+"</td></tr>"+
-				"<tr><td style='text-align:right'><i>"+style.yLabel+":</i></td><td>"+
-					(style.percentY?Formatter.formatPercent(style.yMin+sy*(style.yMax-style.yMin), 1):
-					Formatter.format(style.yMin+sy*(style.yMax-style.yMin), 2))+"</td></tr>";
-		if( i.hasNext() ) {
+		String tip = "<table style='border-collapse:collapse;border-spacing:0;'>" +
+				"<tr><td style='text-align:right'><i>" + style.xLabel + ":</i></td><td>" +
+				Formatter.format(mouset, 2) + "</td></tr>" +
+				"<tr><td style='text-align:right'><i>" + style.yLabel + ":</i></td><td>" +
+				(style.percentY ? Formatter.formatPercent(style.yMin + sy * (style.yMax - style.yMin), 1)
+						: Formatter.format(style.yMin + sy * (style.yMax - style.yMin), 2))
+				+ "</td></tr>";
+		if (i.hasNext()) {
 			double[] current = i.next();
 			int len = current.length;
-			while( i.hasNext() ) {
+			while (i.hasNext()) {
 				double[] prev = i.next();
-				double dt = current[0]-prev[0];
+				double dt = current[0] - prev[0];
 				buffert -= Math.max(0.0, dt);
-				if( buffert>mouset ) {
+				if (buffert > mouset) {
 					current = prev;
 					continue;
 				}
-				double fx = 1.0-(mouset-buffert)/dt;
-				tip += "<tr><td colspan='2'><hr/></td></tr><tr><td style='text-align:right'><i>"+style.xLabel+
-					   ":</i></td><td>"+Formatter.format(current[0]-fx*dt, 2)+"</td></tr>";
-				if( model.isContinuous() ) {
+				double fx = 1.0 - (mouset - buffert) / dt;
+				tip += "<tr><td colspan='2'><hr/></td></tr><tr><td style='text-align:right'><i>" + style.xLabel +
+						":</i></td><td>" + Formatter.format(current[0] - fx * dt, 2) + "</td></tr>";
+				Color[] colors = model.getMeanColors();
+				if (model.isContinuous()) {
 					double inter = interpolate(current[1], prev[1], fx);
-					tip += "<tr><td style='text-align:right'><i style='color:"+ColorMapCSS.Color2Css(module.getTraitColor(0))+";'>mean:</i></td><td>"+
-							(style.percentY?Formatter.formatPercent(inter, 2):Formatter.format(inter, 2));
-					double sdev = inter-interpolate(current[2], prev[2], fx); // data: mean, mean-sdev, mean+sdev
-					tip += " ± "+(style.percentY?Formatter.formatPercent(sdev, 2):Formatter.format(sdev, 2))+"</td></tr>";
-				}
-				else {
-					boolean[] active = module.getActiveTraits();
-					Color[] colors = model.getMeanColors();
-					for( int n=1; n<len; n++ ) {
-						if( !active[n-1] )
-							continue;
+					tip += "<tr><td style='text-align:right'><i style='color:"
+							+ ColorMapCSS.Color2Css(colors[0]) + ";'>mean:</i></td><td>" +
+							(style.percentY ? Formatter.formatPercent(inter, 2) : Formatter.format(inter, 2));
+					double sdev = inter - interpolate(current[2], prev[2], fx); // data: mean, mean-sdev, mean+sdev
+					tip += " ± " + (style.percentY ? Formatter.formatPercent(sdev, 2) : Formatter.format(sdev, 2))
+							+ "</td></tr>";
+				} else {
+					// len includes time
+					for (int n = 0; n < len - 1; n++) {
 						String name;
-						if( n==len-1 && type==Model.Data.FITNESS )
+						Color color;
+						int n1 = n + 1;
+						if (n1 == len - 1 && type == Model.Data.FITNESS) {
 							name = "average";
-						else
-							name = module.getTraitName(n-1);
-						tip += "<tr><td style='text-align:right'><i style='color:"+ColorMapCSS.Color2Css(colors[n-1])+";'>"+name+":</i></td><td>";
-						// deal with NaN's
-						if( prev[n]==prev[n] && current[n]==current[n] ) {
-							tip += (style.percentY?Formatter.formatPercent(interpolate(current[n], prev[n], fx), 2):
-								Formatter.format(interpolate(current[n], prev[n], fx), 2))+"</td></tr>";
+							color = Color.BLACK;
+						} else {
+							name = model.getMeanName(n);
+							color = colors[n];
 						}
-						else
+						if (name == null)
+							continue;
+						tip += "<tr><td style='text-align:right'><i style='color:" + ColorMapCSS.Color2Css(color)
+								+ ";'>" + name + ":</i></td><td>";
+						// deal with NaN's
+						if (prev[n1] == prev[n1] && current[n1] == current[n1]) {
+							tip += (style.percentY ? Formatter.formatPercent(interpolate(current[n1], prev[n1], fx), 2)
+									: Formatter.format(interpolate(current[n1], prev[n1], fx), 2)) + "</td></tr>";
+						} else
 							tip += "-</td></tr>";
 					}
 				}
 				break;
 			}
 		}
-		return tip+"</table>";
+		return tip + "</table>";
 	}
 
 	private double interpolate(double current, double prev, double x) {

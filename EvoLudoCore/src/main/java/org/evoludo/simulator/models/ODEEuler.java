@@ -643,6 +643,20 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	@Override
+	public String getMeanName(int index) {
+		for (Module mod : species) {
+			int nt = mod.getNTraits();
+			if (index < nt) {
+				if (mod.getActiveTraits()[index])
+					return mod.getTraitName(index);
+				return null;
+			}
+			index -= nt;
+		}
+		return null;
+	}
+
+	@Override
 	public Color[] getMeanColors() {
 		Color[] colors = new Color[nDim];
 		int idx = 0;

@@ -500,6 +500,30 @@ public class TBT extends Discrete implements Pairs,
 		}
 
 		@Override
+		public int getNMean() {
+			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
+				return 2 * nTraits;
+			return super.getNMean();
+		}
+
+		@Override
+		public int getNMean(int id) {
+			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
+				return 2 * nTraits;
+			return super.getNMean(id);
+		}
+
+		@Override
+		public String getMeanName(int index) {
+			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND)) {
+				if (index < nTraits)
+					return super.getMeanName(index) + " (1st)";
+				return super.getMeanName(index % nTraits) + " (2nd)";				
+			}
+			return super.getMeanName(index);
+		}
+
+		@Override
 		public Color[] getMeanColors() {
 			Color[] colors = super.getMeanColors();
 			if (!reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
@@ -536,15 +560,6 @@ public class TBT extends Discrete implements Pairs,
 		 */
 		protected TBTPop(EvoLudo engine) {
 			super(engine);
-		}
-
-		@Override
-		public int getNMean() {
-			// SQUARE_NEUMANN_2ND geometry for reproduction results in two disjoint 
-			// sublattices; report strategy frequencies in each sublattice separately
-			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
-				return 2 * nTraits;
-			return super.getNMean();
 		}
 
 		@Override

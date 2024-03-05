@@ -1088,6 +1088,16 @@ public abstract interface Model extends CLOProvider {
 	public abstract int getNMean(int id);
 
 	/**
+	 * Return the name of the mean trait with index {@code index} or {@code null} if
+	 * index is invalid.
+	 *
+	 * @param index the index of the mean trait
+	 *
+	 * @return the name of mean trait with index {@code index}
+	 */
+	public abstract String getMeanName(int index);
+
+	/**
 	 * Return the colors for the mean traits of this model.
 	 *
 	 * @return the color array for the mean values
