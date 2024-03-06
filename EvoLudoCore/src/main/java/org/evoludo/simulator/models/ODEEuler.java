@@ -668,6 +668,15 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	@Override
+	public Color[] getMeanColors(int id) {
+		Module mod = species.get(id);
+		int nt = mod.getNTraits();
+		Color[] colors = new Color[nt];
+		System.arraycopy(mod.getTraitColors(), 0, colors, 0, nt);
+		return colors;
+	}
+
+	@Override
 	public boolean getMeanTraits(int id, double[] mean) {
 		double[] state = (dstate == null ? yt : dstate);
 		int start = idxSpecies[id];

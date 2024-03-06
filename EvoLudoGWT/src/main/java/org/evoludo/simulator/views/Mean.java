@@ -99,7 +99,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 				LineGraph graph = new LineGraph(this, n);
 //				graphs.add(graph);
 				wrapper.add(graph);
-graphs2mods.put(graph, species.get(n));
+graphs2mods.put(graph, species.get(cmodel!=null ? 0 : n));
 				graph.getStyle().showXLabel = (n==nGraphs-1);
 			}
 			// arrange graphs vertically
@@ -113,7 +113,6 @@ graphs2mods.put(graph, species.get(n));
 		for( LineGraph graph : graphs ) {
 			AbstractGraph.GraphStyle style = graph.getStyle();
 			Module module = graphs2mods.get(graph);
-			Color[] colors = model.getMeanColors();
 			// tag is index of species in discrete models and index of trait in continuous models
 			int tag = graph.getTag();
 
@@ -125,7 +124,7 @@ graphs2mods.put(graph, species.get(n));
 						style.percentY = false;
 						style.yMin = cmodel.getTraitMin(0)[tag];
 						style.yMin = cmodel.getTraitMax(0)[tag];
-						Color color = colors[tag];
+						Color color = model.getMeanColors()[tag];
 						String[] traitcolors = new String[3];
 						traitcolors[0] = ColorMapCSS.Color2Css(color);			// mean
 						traitcolors[1] = ColorMapCSS.Color2Css(color == Color.BLACK ? Color.LIGHT_GRAY : color.darker());	// min
@@ -155,7 +154,7 @@ graphs2mods.put(graph, species.get(n));
 							style.yMin = 0.0;
 							style.yMax = 1.0;
 						}
-						colors = model.getMeanColors();
+						Color[] colors = model.getMeanColors(tag);
 						graph.setColors(ColorMapCSS.Color2Css(colors));
 						String[] mcolors = new String[colors.length];
 						int n = 0;
@@ -166,6 +165,7 @@ graphs2mods.put(graph, species.get(n));
 					}
 					break;
 				case FITNESS:
+					Color[] fitcolors;
 					if (cmodel != null) {
 						if( state==null || state.length<nMean )
 							state = new double[nMean];
@@ -173,21 +173,21 @@ graphs2mods.put(graph, species.get(n));
 						if( mean==null || mean.length<2 )
 							mean = new double[2];	// mean/sdev
 						// hardcoded color: black for mean, light gray for mean +/- sdev
-						colors = new Color[] {Color.BLACK, Color.LIGHT_GRAY, Color.LIGHT_GRAY};
+						fitcolors = new Color[] {Color.BLACK, Color.LIGHT_GRAY, Color.LIGHT_GRAY};
 						graph.setNLines(3);
 					}
 					else {
 						// one 'state' more for the average fitness
-						int nState = nMean + 1;
+						int nState = model.getNMean(tag) + 1;
 						if( state==null || state.length<nState )
 							state = new double[nState];
 						mean = state;
-						colors = new Color[nState];
-						System.arraycopy(model.getMeanColors(), 0, colors, 0, nState-1);
-						colors[nState-1] = Color.BLACK;
+						fitcolors = new Color[nState];
+						System.arraycopy(model.getMeanColors(tag), 0, fitcolors, 0, nState-1);
+						fitcolors[nState-1] = Color.BLACK;
 						graph.setNLines(nState);
 					}
-					graph.setColors(ColorMapCSS.Color2Css(colors));
+					graph.setColors(ColorMapCSS.Color2Css(fitcolors));
 					double min = module.getMinScore();
 					double max = module.getMaxScore();
 					if( max-min<1e-8 ) {
@@ -209,9 +209,9 @@ graphs2mods.put(graph, species.get(n));
 						monoScores[0] = 1.0;
 						for (int n=0;n<nMean;n++)
 							monoScores[n+1] = dmod.getMonoScore(n);
-						String[] monoColors = new String[colors.length];
+						String[] monoColors = new String[fitcolors.length];
 						int n = 0;
-						for (Color color : colors)
+						for (Color color : fitcolors)
 							monoColors[n++] = ColorMapCSS.Color2Css(ColorMapCSS.addAlpha(color, 100));
 						ArrayList<double[]> marker = new ArrayList<>();
 						marker.add(monoScores);

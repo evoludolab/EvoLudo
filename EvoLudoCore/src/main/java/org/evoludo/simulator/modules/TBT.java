@@ -500,20 +500,6 @@ public class TBT extends Discrete implements Pairs,
 		}
 
 		@Override
-		public int getNMean() {
-			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
-				return 2 * nTraits;
-			return super.getNMean();
-		}
-
-		@Override
-		public int getNMean(int id) {
-			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
-				return 2 * nTraits;
-			return super.getNMean(id);
-		}
-
-		@Override
 		public String getMeanName(int index) {
 			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND)) {
 				if (index < nTraits)
@@ -563,6 +549,13 @@ public class TBT extends Discrete implements Pairs,
 		}
 
 		@Override
+		public int getNMean() {
+			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
+				return 2 * nTraits;
+			return super.getNMean();
+		}
+
+		@Override
 		public void getMeanTraits(double[] mean) {
 			// SQUARE_NEUMANN_2ND geometry for reproduction results in two disjoint 
 			// sublattices; report strategy frequencies in each sublattice separately
@@ -609,7 +602,7 @@ public class TBT extends Discrete implements Pairs,
 					mean[offset2 + (strategies[n] % nTraits)] += getFitnessAt(n++);
 				}
 				// total payoff in last entry
-				mean[2 * nTraits] = sumFitness * 0.5;
+				mean[2 * nTraits] = sumFitness * 0.25;
 				// averages for each sublattice
 				ArrayMath.multiply(mean, 2.0 / nPopulation);
 				return;

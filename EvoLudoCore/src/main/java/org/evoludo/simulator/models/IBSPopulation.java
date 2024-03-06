@@ -3777,9 +3777,7 @@ public abstract class IBSPopulation {
 
 	/**
 	 * Returns the mean trait(s) of this population in the array {@code mean}. Used
-	 * by GUI to visualize the current state of this IBS model. Returns {@code true}
-	 * if data point belongs to the same time series and {@code false} if a new
-	 * series was started through {@link #init()} or {@link #reset()}.
+	 * by GUI to visualize the current state of this IBS model.
 	 * 
 	 * @param mean the array for returning the trait values
 	 * 

@@ -1076,7 +1076,9 @@ public abstract interface Model extends CLOProvider {
 	 * @param id   the species identifier
 	 * @param init the array for storing the initial trait values
 	 */
-	public abstract void getInitialTraits(int id, double[] init);
+	public default void getInitialTraits(int id, double[] init) {
+		getInitialTraits(init);
+	}
 
 	/**
 	 * Return the number of species in this model.
@@ -1101,7 +1103,9 @@ public abstract interface Model extends CLOProvider {
 	 *
 	 * @return the number of mean values for species {@code id}
 	 */
-	public abstract int getNMean(int id);
+	public default int getNMean(int id) {
+		return getNMean();
+	}
 
 	/**
 	 * Return the name of the mean trait with index {@code index} or {@code null} if
@@ -1119,6 +1123,15 @@ public abstract interface Model extends CLOProvider {
 	 * @return the color array for the mean values
 	 */
 	public abstract Color[] getMeanColors();
+
+	/**
+	 * Return the colors for the mean traits for species with ID {@code id}.
+	 *
+	 * @return the color array for the mean values
+	 */
+	public default Color[] getMeanColors(int id) {
+		return getMeanColors();
+	}
 
 	/**
 	 * Collect and return mean trait values for all species.
@@ -1140,7 +1153,9 @@ public abstract interface Model extends CLOProvider {
 	 * @return <code>true</code> if this and the previous data point should be
 	 *         connected, i.e. no reset had been requested in the mean time.
 	 */
-	public abstract boolean getMeanTraits(int id, double[] mean);
+	public default boolean getMeanTraits(int id, double[] mean) {
+		return getMeanTraits(mean);
+	}
 
 	/**
 	 * Return mean trait values at location <code>idx</code> for species with ID
