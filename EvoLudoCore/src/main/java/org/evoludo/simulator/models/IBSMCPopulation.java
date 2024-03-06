@@ -160,6 +160,15 @@ public class IBSMCPopulation extends IBSPopulation {
 	protected double[] traitMin;
 
 	/**
+	 * Get the minima for all traits.
+	 *
+	 * @return the array with the trait minima
+	 */
+	public double[] getTraitMin() {
+		return traitMin;
+	}
+
+	/**
 	 * The array with the maximal values for each trait/strategy. Convenience
 	 * variable.
 	 * <p>
@@ -169,6 +178,15 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * @see Continuous#getTraitMin()
 	 */
 	protected double[] traitMax;
+
+	/**
+	 * Get the maxima for all traits.
+	 *
+	 * @return the array with the trait maxima
+	 */
+	public double[] getTraitMax() {
+		return traitMax;
+	}
 
 	/**
 	 * Standard deviation of mutations.

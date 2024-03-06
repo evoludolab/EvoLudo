@@ -545,6 +545,22 @@ public abstract interface Model extends CLOProvider {
 		}
 
 		/**
+		 * Gets the minimum trait values in this module.
+		 * 
+		 * @param id   the id of the population for multi-species models
+		 * @return the array with the minimum trait values
+		 */
+		public double[] getTraitMin(int id);
+
+		/**
+		 * Gets the maximum trait values in this module.
+		 * 
+		 * @param id   the id of the population for multi-species models
+		 * @return the array with the maximum trait values
+		 */
+		public double[] getTraitMax(int id);
+
+		/**
 		 * Gets the histogram of the trait distributions and returns the data in an
 		 * array <code>bins</code>, where the first index denotes the trait (in case
 		 * there are multiple) and the second index refers to the bins in the histogram.
@@ -1063,7 +1079,7 @@ public abstract interface Model extends CLOProvider {
 	public abstract void getInitialTraits(int id, double[] init);
 
 	/**
-	 * Return the number of species in this model including.
+	 * Return the number of species in this model.
 	 *
 	 * @return the number of species
 	 */

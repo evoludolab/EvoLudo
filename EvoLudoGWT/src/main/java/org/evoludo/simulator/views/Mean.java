@@ -38,12 +38,12 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.evoludo.graphics.AbstractGraph;
-import org.evoludo.graphics.LineGraph;
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
+import org.evoludo.graphics.LineGraph;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
+import org.evoludo.simulator.models.IBSC;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
@@ -86,9 +86,9 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 		ArrayList<? extends Module> species = engine.getModule().getSpecies();
 		int nSpecies = model.getNSpecies();
 		// multiple line graphs for multi-species interactions and in case of multiple traits for continuous strategies
-		boolean cmodel = model.isContinuous();
+		IBSC cmodel = model.isContinuous() ? (IBSC) model : null;
 		int nMean = model.getNMean();
-		int nGraphs = (cmodel && type==Model.Data.STRATEGY ? nMean : nSpecies);
+		int nGraphs = (cmodel!=null && type==Model.Data.STRATEGY ? nMean : nSpecies);
 		// if the number of graphs has changed, destroy and recreate them
 		if( graphs.size()!=nGraphs ) {
 			soft = false;
@@ -120,12 +120,11 @@ graphs2mods.put(graph, species.get(n));
 			switch( type ) {
 				default:
 				case STRATEGY:
-					if( cmodel ) {
+					if (cmodel != null) {
 						style.yLabel = model.getMeanName(tag);
 						style.percentY = false;
-						Continuous cmod = (Continuous) module;
-						style.yMin = cmod.getTraitMin()[tag];
-						style.yMax = cmod.getTraitMax()[tag];
+						style.yMin = cmodel.getTraitMin(0)[tag];
+						style.yMin = cmodel.getTraitMax(0)[tag];
 						Color color = colors[tag];
 						String[] traitcolors = new String[3];
 						traitcolors[0] = ColorMapCSS.Color2Css(color);			// mean
@@ -167,7 +166,7 @@ graphs2mods.put(graph, species.get(n));
 					}
 					break;
 				case FITNESS:
-					if( cmodel ) {
+					if (cmodel != null) {
 						if( state==null || state.length<nMean )
 							state = new double[nMean];
 						// only 2 entries needed for mean and sdev payoff

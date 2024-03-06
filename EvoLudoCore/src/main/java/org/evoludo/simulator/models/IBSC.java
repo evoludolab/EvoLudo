@@ -136,14 +136,36 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		cloInitType.clearKeys();
 	}
 
+	/**
+	 * Helper routine to retrieve the {@link IBSPopulation} associated with module
+	 * with {@code id}.
+	 * 
+	 * @param id the {@code id} of the module
+	 * 
+	 * @return the {@code IBSPopulation}
+	 */
+	IBSMCPopulation getIBSMCPopulation(int id) {
+		return (IBSMCPopulation) (isMultispecies ? species.get(id).getIBSPopulation() : population);
+	}
+
+	@Override
+	public double[] getTraitMin(int id) {
+		return getIBSMCPopulation(id).getTraitMin();
+	}
+
+	@Override
+	public double[] getTraitMax(int id) {
+		return getIBSMCPopulation(id).getTraitMax();
+	}
+
 	@Override
 	public void getTraitHistogramData(int id, double[][] bins) {
-		((IBSMCPopulation) population).getTraitHistogramData(bins);
+		getIBSMCPopulation(id).getTraitHistogramData(bins);
 	}
 
 	@Override
 	public void getTraitHistogramData(int id, double[] bins, int trait1, int trait2) {
-		((IBSMCPopulation) population).getTraitHistogramData(bins, trait1, trait2);
+		getIBSMCPopulation(id).getTraitHistogramData(bins, trait1, trait2);
 	}
 
 	/**
