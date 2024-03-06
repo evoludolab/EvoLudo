@@ -549,67 +549,106 @@ public class TBT extends Discrete implements Pairs,
 		}
 
 		@Override
+		public boolean check() {
+			boolean doReset = super.check();
+			if (reproduction!= null && reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
+				tsTraits = new double[2 * nTraits];
+			else
+				tsTraits = null;
+			tsMean = -1.0;
+			return doReset;
+		}
+		
+		@Override
 		public int getNMean() {
 			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
 				return 2 * nTraits;
 			return super.getNMean();
 		}
 
+		double tsMean = -1.0;
+		double[] tsTraits;
+
 		@Override
 		public void getMeanTraits(double[] mean) {
 			// SQUARE_NEUMANN_2ND geometry for reproduction results in two disjoint 
 			// sublattices; report strategy frequencies in each sublattice separately
-			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND)) {
-				int n = 0;
-				Arrays.fill(mean, 0);
-				int side = (int) Math.sqrt(nPopulation);
-				int offset1, offset2;
-				while (n < nPopulation) {
-					if ((n / side) % 2 == 0) {
-						offset1 = 0;
-						offset2 = nTraits;
-					} else {
-						offset1 = nTraits;
-						offset2 = 0;
-					}
-					mean[offset1 + strategies[n++] % nTraits]++;
-					mean[offset2 + (strategies[n++] % nTraits)]++;
-				}
-				ArrayMath.multiply(mean, 2.0 / nPopulation);
+			if (!reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND)) {
+				super.getMeanFitness(mean);
 				return;
 			}
-			super.getMeanTraits(mean);
+
+			double newtime = model.getTime();
+			if(Math.abs(tsMean - newtime) < engine.getReportInterval()) {
+				System.arraycopy(tsTraits, 0, mean, 0, mean.length);
+				return;
+			}
+			int n = 0;
+			Arrays.fill(mean, 0);
+			int side = (int) Math.sqrt(nPopulation);
+			int offset1, offset2;
+			while (n < nPopulation) {
+				if ((n / side) % 2 == 0) {
+					offset1 = 0;
+					offset2 = nTraits;
+				} else {
+					offset1 = nTraits;
+					offset2 = 0;
+				}
+				mean[offset1 + strategies[n++] % nTraits]++;
+				mean[offset2 + (strategies[n++] % nTraits)]++;
+			}
+			ArrayMath.multiply(mean, 2.0 / nPopulation);
+			System.arraycopy(mean, 0, tsTraits, 0, mean.length);
+			tsMean = newtime;
 		}
 
 		@Override
 		public void getMeanFitness(double[] mean) {
 			// SQUARE_NEUMANN_2ND geometry for reproduction results in two disjoint 
 			// sublattices; report strategy frequencies in each sublattice separately
-			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND)) {
-				int n = 0;
-				Arrays.fill(mean, 0);
-				int side = (int) Math.sqrt(nPopulation);
-				int offset1, offset2;
-				while (n<nPopulation) {
-					if ((n / side) % 2 == 0) {
-						offset1 = 0;
-						offset2 = nTraits;
-					} else {
-						offset1 = nTraits;
-						offset2 = 0;
-					}
-					mean[offset1 + strategies[n] % nTraits] += getFitnessAt(n++);
-					mean[offset2 + (strategies[n] % nTraits)] += getFitnessAt(n++);
-				}
-				// total payoff in last entry
-				mean[2 * nTraits] = sumFitness * 0.25;
-				// averages for each sublattice
-				ArrayMath.multiply(mean, 2.0 / nPopulation);
+			if (!reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND)) {
+				super.getMeanFitness(mean);
 				return;
 			}
-			super.getMeanFitness(mean);
+
+			int n = 0;
+			Arrays.fill(mean, 0);
+			int side = (int) Math.sqrt(nPopulation);
+			int offset1, offset2;
+			while (n<nPopulation) {
+				if ((n / side) % 2 == 0) {
+					offset1 = 0;
+					offset2 = nTraits;
+				} else {
+					offset1 = nTraits;
+					offset2 = 0;
+				}
+				mean[offset1 + strategies[n] % nTraits] += getFitnessAt(n++);
+				mean[offset2 + (strategies[n] % nTraits)] += getFitnessAt(n++);
+			}
+			// total payoff in last entry
+			mean[2 * nTraits] = sumFitness * 0.25;
+			// averages for each sublattice
+			ArrayMath.multiply(mean, 2.0 / nPopulation);
 		}
 
+		@Override
+		public String getStatus() {
+			if (!reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
+				return super.getStatus();
+
+			double newtime = model.getTime();
+			if(Math.abs(tsMean - newtime) < engine.getReportInterval())
+				getMeanTraits(tsTraits);
+			String status = "";
+			for (int i = 0; i < 2 * nTraits; i++) {
+				status += (status.length() > 0 ? ", " : "") + model.getMeanName(i) + ": "
+						+ Formatter.formatPercent(tsTraits[i], 1);
+			}
+			return status;
+		}
+	
 		@Override
 		protected void initKaleidoscope() {
 			// kaleidoscopes only available for lattice geometries
