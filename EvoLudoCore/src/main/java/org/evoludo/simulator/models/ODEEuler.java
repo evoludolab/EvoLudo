@@ -550,14 +550,15 @@ public class ODEEuler implements Model.ODE {
 		idxSpecies = new int[nSpecies + 1];
 		nDim = 0;
 		int idx = 0;
-		for (Module pop : species) {
-			doReset |= pop.check();
-			dependents[idx] = pop.getDependent();
-			int nTraits = pop.getNTraits();
+		for (Module mod : species) {
+			doReset |= mod.check();
+			dependents[idx] = mod.getDependent();
+			int nTraits = mod.getNTraits();
 			idxSpecies[idx] = nDim;
-			rates[idx] = pop.getSpeciesUpdateRate();
-			minFit = pop.getMinFitness();
-			maxFit = pop.getMaxFitness();
+			rates[idx] = mod.getSpeciesUpdateRate();
+			Map2Fitness map2fit = mod.getMapToFitness();
+			minFit = map2fit.map(mod.getMinGameScore());
+			maxFit = map2fit.map(mod.getMaxGameScore());
 			if (maxFit > minFit)
 				invFitRange[idx] = 1.0 / (maxFit - minFit);
 			idx++;
@@ -756,18 +757,19 @@ public class ODEEuler implements Model.ODE {
 		int maxBin = nBins - 1;
 		// for neutral selection maxScore==minScore! assume range [score-1, score+1]
 		// needs to be synchronized with GUI (e.g. MVFitness, MVFitHistogram, ...)
-		Module pop = species.get(id);
-		double min = pop.getMinFitness();
-		double max = pop.getMaxFitness();
+		Module mod = species.get(id);
+		Map2Fitness map2fit = mod.getMapToFitness();
+		double minFit = map2fit.map(mod.getMinGameScore());
+		double maxFit = map2fit.map(mod.getMaxGameScore());
 		double map;
-		if (max - min < 1e-8) {
+		if (maxFit - minFit < 1e-8) {
 			// close enough to neutral
 			map = nBins * 0.5;
-			min--;
+			minFit--;
 		} else
-			map = nBins / (max - min);
+			map = nBins / (maxFit - minFit);
 		int idx = 0;
-		int vacant = pop.getVacant();
+		int vacant = mod.getVacant();
 		// fill bins
 		int offset = idxSpecies[id];
 		int dim = idxSpecies[id + 1] - offset;
@@ -775,7 +777,7 @@ public class ODEEuler implements Model.ODE {
 			if (n == vacant)
 				continue;
 			Arrays.fill(bins[idx], 0.0);
-			int bin = (int) ((ft[offset + idx] - min) * map);
+			int bin = (int) ((ft[offset + idx] - minFit) * map);
 			bin = Math.max(0, Math.min(maxBin, bin));
 			bins[idx][bin] = yt[offset + idx];
 			idx++;

@@ -350,7 +350,9 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 								ColorMap.addAlpha(Color.YELLOW, 220), ColorMap.addAlpha(Color.RED, 220) },
 						500);
 					cMap = cMap1D;
-					cMap1D.setRange(module.getMinFitness(), module.getMaxFitness());
+					// cMap1D.setRange(module.getMinFitness(), module.getMaxFitness());
+					int tag = graph.getTag();
+					cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
 					if( engine.isModelType(Model.Type.IBS) ) {
 						Map2Fitness map2fit = module.getMapToFitness();
 						if( cmodel ) {

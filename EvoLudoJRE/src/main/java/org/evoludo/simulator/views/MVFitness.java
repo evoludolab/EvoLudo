@@ -134,12 +134,13 @@ public class MVFitness extends MVAbstract implements StateGraphListener {
 	@Override
 	public boolean	verifyYAxis(GraphAxis y, int tag) {
 		boolean changed = false;
-		double min = module.getMinScore();
+		Model model = engine.getModel();
+		double min = model.getMinScore(tag);
 		if( Math.abs(y.min-min)>1e-8 ) {
 			y.min = min;
 			changed = true;
 		}
-		double max = module.getMaxScore();
+		double max = model.getMaxScore(tag);
 		if( Math.abs(y.max-max)>1e-8 ) {
 			y.max = max;
 			changed = true;

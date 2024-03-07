@@ -215,7 +215,9 @@ removeAll();
 			case FITNESS:
 				ColorMap.Gradient1D<Color> cMap1D = new ColorMapJRE.Gradient1D(new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
 				colorMap = cMap1D;
-				cMap1D.setRange(module.getMinFitness(), module.getMaxFitness());
+				// cMap1D.setRange(module.getMinFitness(), module.getMaxFitness());
+				Model model = engine.getModel();
+				cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
 //DEBUG
 				if( engine.isModelType(Model.Type.IBS) ) {
 					Map2Fitness map2fit = module.getMapToFitness();

@@ -49,6 +49,7 @@ import org.evoludo.graphics.HistoGraph;
 import org.evoludo.graphics.HistoGraphListener;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudoLab;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Discrete;
 
 public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
@@ -135,12 +136,13 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 	@Override
 	public boolean	verifyXAxis(GraphAxis x, int tag) {
 		boolean changed = false;
-		double min = module.getMinScore();
+		Model model = engine.getModel();
+		double min = model.getMinScore(tag);
 		if( Math.abs(x.min-min)>1e-8 ) {
 			x.min = min;
 			changed = true;
 		}
-		double m = module.getMaxScore();
+		double m = model.getMaxScore(tag);
 		if( Math.abs(x.max-m)>1e-8 ) {
 			x.max = m;
 			changed = true;

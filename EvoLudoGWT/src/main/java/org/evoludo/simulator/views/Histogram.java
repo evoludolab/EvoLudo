@@ -387,8 +387,8 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					if( newPop || data==null || data.length!=nTraits || data[0].length!=HistoGraph.MAX_BINS ) 
 						data = new double[nTraits][HistoGraph.MAX_BINS];
 					graph.setData(data);
-					min = pop.getMinScore();
-					max = pop.getMaxScore();
+					min = model.getMinScore(pop.getID());
+					max = model.getMaxScore(pop.getID());
 					if( Math.abs(min-style.xMin)>1e-6 || Math.abs(max-style.xMax)>1e-6 ) {
 						style.xMin = min;
 						style.xMax = max;
@@ -546,6 +546,8 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					double[][] graphdata = graph.getData();
 					if( data!=graphdata ) {
 						data = graphdata;
+//XXX tag refers to trait id - insufficient to identify traits in multi-species modules
+// replace tag with traitID and speciesID?
 						cmodel.getTraitHistogramData(graph.getTag(), data);
 					}
 					graph.paint();
@@ -559,6 +561,8 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					double[][] graphdata = graph.getData();
 					if( data!=graphdata ) {
 						data = graphdata;
+//XXX tag refers to trait id - insufficient to identify traits in multi-species modules
+// replace tag with traitID and speciesID?
 						model.getFitnessHistogramData(graph.getTag(), data);
 					}
 					graph.paint();

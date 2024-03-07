@@ -3013,8 +3013,8 @@ public abstract class IBSPopulation {
 	 * {@link Module}.
 	 */
 	public void updateMinMaxScores() {
-		minScore = module.getMinScore();
-		maxScore = module.getMaxScore();
+		minScore = getMinScore();
+		maxScore = getMaxScore();
 		isNeutral = module.isNeutral();
 		minFitness = map2fit.map(minScore);
 		maxFitness = map2fit.map(maxScore);
