@@ -814,6 +814,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * 
 	 * @see Model#processMinScore(int, double)
 	 */
+	@Deprecated
 	public double getMinScore() {
 		return model.processMinScore(ID, getMinGameScore());
 	}
@@ -828,6 +829,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * 
 	 * @return the maximum score
 	 */
+	@Deprecated
 	public double getMaxScore() {
 		return model.processMaxScore(ID, getMaxGameScore());
 	}
@@ -881,6 +883,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * 
 	 * @see #getMinScore()
 	 */
+	@Deprecated
 	public double getMinFitness() {
 		return map2fitness.map(getMinScore());
 	}
@@ -898,6 +901,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * 
 	 * @see #getMaxScore()
 	 */
+	@Deprecated
 	public double getMaxFitness() {
 		return map2fitness.map(getMaxScore());
 	}

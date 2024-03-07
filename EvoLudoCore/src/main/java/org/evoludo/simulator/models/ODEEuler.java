@@ -710,8 +710,18 @@ public class ODEEuler implements Model.ODE {
 	 * Unused interface method.
 	 */
 	@Override
-	public <T> void getTraitData(int ID, T[] colors, ColorMap<T> colorMap) {
+	public <T> void getTraitData(int id, T[] colors, ColorMap<T> colorMap) {
 		// not applicable
+	}
+
+	@Override
+	public double getMinScore(int id) {
+		return species.get(id).getMinGameScore();
+	}
+
+	@Override
+	public double getMaxScore(int id) {
+		return species.get(id).getMaxGameScore();
 	}
 
 	@Override
@@ -735,7 +745,7 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	@Override
-	public <T> void getFitnessData(int ID, T[] colors, ColorMap.Gradient1D<T> colorMap) {
+	public <T> void getFitnessData(int id, T[] colors, ColorMap.Gradient1D<T> colorMap) {
 		// not applicable
 	}
 

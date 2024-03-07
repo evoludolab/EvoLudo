@@ -722,6 +722,16 @@ public abstract class IBS implements Model.IBS {
 	}
 
 	@Override
+	public double getMinScore(int id) {
+		return getIBSPopulation(id).getMinScore();
+	}
+
+	@Override
+	public double getMaxScore(int id) {
+		return getIBSPopulation(id).getMaxScore();
+	}
+
+	@Override
 	public double processMaxScore(int id, double max) {
 		return getIBSPopulation(id).processMaxScore(max);
 	}

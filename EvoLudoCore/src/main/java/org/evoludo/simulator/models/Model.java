@@ -967,9 +967,32 @@ public abstract interface Model extends CLOProvider {
 	 * @param min the minimum score for further processing
 	 * @return processed minimum score, <code>min</code> by default
 	 */
+	@Deprecated
 	public default double processMinScore(int id, double min) {
 		return min;
 	}
+
+	/**
+	 * Returns the minimum score that individuals of species with ID <code>id</code>
+	 * can achieve in this model. Takes into account potential adjustments due to
+	 * population structure and payoff accounting.
+	 * 
+	 * @return the minimum score
+	 * 
+	 * @see Module#getMinGameScore()
+	 */
+	public double getMinScore(int id);
+
+	/**
+	 * Returns the maximum score that individuals of species with ID <code>id</code>
+	 * can achieve in this model. Takes into account potential adjustments due to
+	 * population structure and payoff accounting.
+	 * 
+	 * @return the maximum score
+	 * 
+	 * @see Module#getMaxGameScore()
+	 */
+	public double getMaxScore(int id);
 
 	/**
 	 * Opportunity for further processing of maximal score. For example, individual
@@ -981,6 +1004,7 @@ public abstract interface Model extends CLOProvider {
 	 * @param max the maximum score for further processing
 	 * @return processed maximum score, <code>max</code> by default
 	 */
+	@Deprecated
 	public default double processMaxScore(int id, double max) {
 		return max;
 	}
@@ -1076,9 +1100,7 @@ public abstract interface Model extends CLOProvider {
 	 * @param id   the species identifier
 	 * @param init the array for storing the initial trait values
 	 */
-	public default void getInitialTraits(int id, double[] init) {
-		getInitialTraits(init);
-	}
+	public abstract void getInitialTraits(int id, double[] init);
 
 	/**
 	 * Return the number of species in this model.
@@ -1103,9 +1125,7 @@ public abstract interface Model extends CLOProvider {
 	 *
 	 * @return the number of mean values for species {@code id}
 	 */
-	public default int getNMean(int id) {
-		return getNMean();
-	}
+	public abstract int getNMean(int id);
 
 	/**
 	 * Return the name of the mean trait with index {@code index} or {@code null} if
@@ -1129,9 +1149,7 @@ public abstract interface Model extends CLOProvider {
 	 *
 	 * @return the color array for the mean values
 	 */
-	public default Color[] getMeanColors(int id) {
-		return getMeanColors();
-	}
+	public abstract Color[] getMeanColors(int id);
 
 	/**
 	 * Collect and return mean trait values for all species.
@@ -1153,9 +1171,7 @@ public abstract interface Model extends CLOProvider {
 	 * @return <code>true</code> if this and the previous data point should be
 	 *         connected, i.e. no reset had been requested in the mean time.
 	 */
-	public default boolean getMeanTraits(int id, double[] mean) {
-		return getMeanTraits(mean);
-	}
+	public abstract boolean getMeanTraits(int id, double[] mean);
 
 	/**
 	 * Return mean trait values at location <code>idx</code> for species with ID

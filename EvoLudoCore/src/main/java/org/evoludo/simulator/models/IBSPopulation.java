@@ -2920,11 +2920,40 @@ public abstract class IBSPopulation {
 	 * @param min the minimum score
 	 * @return the processed minimum score
 	 */
+	@Deprecated
 	public double processMinScore(double min) {
 		if (playerScoreAveraged)
 			return min;
 		int count = (min < 0.0 ? interaction.maxOut : interaction.minOut);
 		return processScore(min, count);
+	}
+
+	/**
+	 * Returns the minimum score {@code min} in this population, taking the
+	 * population structure and payoff accounting into account.
+	 * 
+	 * @return the processed minimum score
+	 */
+	public double getMinScore() {
+		double min = module.getMinGameScore();
+		if (playerScoreAveraged)
+			return min;
+		int count = (min < 0.0 ? interaction.maxOut : interaction.minOut);
+		return processScore(min, count);
+	}
+
+	/**
+	 * Returns the maximum score {@code min} in this population, taking the
+	 * population structure and payoff accounting into account.
+	 * 
+	 * @return the processed maximum score
+	 */
+	public double getMaxScore() {
+		double max = module.getMaxGameScore();
+		if (playerScoreAveraged)
+			return max;
+		int count = (max < 0.0 ? interaction.maxOut : interaction.minOut);
+		return processScore(max, count);
 	}
 
 	/**
@@ -2934,6 +2963,7 @@ public abstract class IBSPopulation {
 	 * @param max the maximum score
 	 * @return the processed maximum score
 	 */
+	@Deprecated
 	public double processMaxScore(double max) {
 		if (playerScoreAveraged)
 			return max;

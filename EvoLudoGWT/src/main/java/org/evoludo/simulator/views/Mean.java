@@ -188,8 +188,8 @@ graphs2mods.put(graph, species.get(cmodel!=null ? 0 : n));
 						graph.setNLines(nState);
 					}
 					graph.setColors(ColorMapCSS.Color2Css(fitcolors));
-					double min = module.getMinScore();
-					double max = module.getMaxScore();
+					double min = model.getMinScore(tag);
+					double max = model.getMaxScore(tag);
 					if( max-min<1e-8 ) {
 						min -= 1.0;
 						max += 1.0;
