@@ -726,6 +726,20 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	@Override
+	public double getMinFitness(int id) {
+		Module mod = species.get(id);
+		Map2Fitness map2fit = mod.getMapToFitness();
+		return map2fit.map(mod.getMinGameScore());
+	}
+
+	@Override
+	public double getMaxFitness(int id) {
+		Module mod = species.get(id);
+		Map2Fitness map2fit = mod.getMapToFitness();
+		return map2fit.map(mod.getMaxGameScore());
+	}
+
+	@Override
 	public boolean getMeanFitness(int id, double[] mean) {
 		double sum = 0.0;
 		int start = idxSpecies[id];

@@ -803,38 +803,6 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	public abstract double getMaxMonoGameScore();
 
 	/**
-	 * Similar to {@link #getMinGameScore()} but takes into account potential
-	 * adjustments due to population structure or payoff accounting. This depends on
-	 * the payoff accounting (averaged versus accumulated) as well as the
-	 * {@link Geometry}. Since modules are agnostic of runtime details, the request
-	 * is simply forwarded to the current {@link Model} together with the species ID
-	 * for multi-species modules.
-	 * 
-	 * @return the minimum score
-	 * 
-	 * @see Model#processMinScore(int, double)
-	 */
-	@Deprecated
-	public double getMinScore() {
-		return model.processMinScore(ID, getMinGameScore());
-	}
-
-	/**
-	 * Similar to {@link #getMaxGameScore()} but takes into account potential
-	 * adjustments due to population structure or payoff accounting. This depends on
-	 * the payoff accounting (averaged versus accumulated) as well as the
-	 * {@link Geometry}. Since modules are agnostic of runtime details, the request
-	 * is simply forwarded to the current {@link Model} together with the species ID
-	 * for multi-species modules.
-	 * 
-	 * @return the maximum score
-	 */
-	@Deprecated
-	public double getMaxScore() {
-		return model.processMaxScore(ID, getMaxGameScore());
-	}
-
-	/**
 	 * Checks whether dynamic is neutral, i.e. no selection acting on the different
 	 * traits.
 	 * 
@@ -868,42 +836,6 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 */
 	public double getMaxMonoScore() {
 		return model.processMaxScore(ID, getMaxMonoGameScore());
-	}
-
-	/**
-	 * Calculates and returns the absolute fitness minimum. This is important to
-	 * <ol>
-	 * <li>determine probabilities or rates for adopting the strategy of another
-	 * player,
-	 * <li>optimize fitness based picking of individuals, and
-	 * <li>scaling graphical output.
-	 * </ol>
-	 *
-	 * @return the minimum fitness
-	 * 
-	 * @see #getMinScore()
-	 */
-	@Deprecated
-	public double getMinFitness() {
-		return map2fitness.map(getMinScore());
-	}
-
-	/**
-	 * Calculates and returns the absolute fitness maximum. This is important to
-	 * <ol>
-	 * <li>determine probabilities or rates for adopting the strategy of another
-	 * player,
-	 * <li>optimize fitness based picking of individuals, and
-	 * <li>scaling graphical output.
-	 * </ol>
-	 *
-	 * @return the maximum fitness
-	 * 
-	 * @see #getMaxScore()
-	 */
-	@Deprecated
-	public double getMaxFitness() {
-		return map2fitness.map(getMaxScore());
 	}
 
 	/**

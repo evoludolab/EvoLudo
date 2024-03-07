@@ -10,6 +10,7 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -717,11 +718,6 @@ public abstract class IBS implements Model.IBS {
 	}
 
 	@Override
-	public double processMinScore(int id, double min) {
-		return getIBSPopulation(id).processMinScore(min);
-	}
-
-	@Override
 	public double getMinScore(int id) {
 		return getIBSPopulation(id).getMinScore();
 	}
@@ -732,8 +728,17 @@ public abstract class IBS implements Model.IBS {
 	}
 
 	@Override
-	public double processMaxScore(int id, double max) {
-		return getIBSPopulation(id).processMaxScore(max);
+	public double getMinFitness(int id) {
+		Module mod = species.get(id);
+		Map2Fitness map2fit = mod.getMapToFitness();
+		return map2fit.map(mod.getMinGameScore());
+	}
+
+	@Override
+	public double getMaxFitness(int id) {
+		Module mod = species.get(id);
+		Map2Fitness map2fit = mod.getMapToFitness();
+		return map2fit.map(mod.getMaxGameScore());
 	}
 
 	@Override

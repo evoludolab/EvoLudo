@@ -995,6 +995,36 @@ public abstract interface Model extends CLOProvider {
 	public double getMaxScore(int id);
 
 	/**
+	 * Calculates and returns the absolute fitness minimum. This is important to
+	 * <ol>
+	 * <li>determine probabilities or rates for adopting the strategy of another
+	 * player,
+	 * <li>optimize fitness based picking of individuals, and
+	 * <li>scaling graphical output.
+	 * </ol>
+	 *
+	 * @return the minimum fitness
+	 * 
+	 * @see #getMinScore(int id)
+	 */
+	public double getMinFitness(int id);
+
+	/**
+	 * Calculates and returns the absolute fitness maximum. This is important to
+	 * <ol>
+	 * <li>determine probabilities or rates for adopting the strategy of another
+	 * player,
+	 * <li>optimize fitness based picking of individuals, and
+	 * <li>scaling graphical output.
+	 * </ol>
+	 *
+	 * @return the maximum fitness
+	 * 
+	 * @see #getMaxScore(int id)
+	 */
+	public double getMaxFitness(int id);
+
+	/**
 	 * Opportunity for further processing of maximal score. For example, individual
 	 * based simulations in structured populations take into account minimum/maximum
 	 * number of interaction partners based on the current structure. In contrast,
