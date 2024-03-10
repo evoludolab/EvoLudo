@@ -46,6 +46,7 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSPopulation;
+import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.Model.Type;
@@ -64,7 +65,7 @@ import org.evoludo.util.Formatter;
  * 
  * @author Christoph Hauert
  */
-public abstract class Module implements Features, Model.MilestoneListener, CLOProvider, Runnable {
+public abstract class Module implements Features, MilestoneListener, CLOProvider, Runnable {
 
 	/**
 	 * The name of the species. Mainly used in multi-species modules.
@@ -247,7 +248,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * Load new module and perform basic initializations.
 	 * 
 	 * @see EvoLudo#loadModule(String)
-	 * @see Model.MilestoneListener#modelLoaded()
+	 * @see MilestoneListener#modelLoaded()
 	 */
 	public void load() {
 		map2fitness = new Map2Fitness(this, Map2Fitness.Map.NONE);
@@ -264,7 +265,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * Unload module and free all resources.
 	 * 
 	 * @see EvoLudo#unloadModule()
-	 * @see Model.MilestoneListener#modelUnloaded()
+	 * @see MilestoneListener#modelUnloaded()
 	 */
 	public void unload() {
 		traitName = null;
@@ -308,7 +309,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * untouched and only initializes the strategies.
 	 * 
 	 * @see EvoLudo#modelInit()
-	 * @see Model.MilestoneListener#modelDidReinit()
+	 * @see MilestoneListener#modelDidReinit()
 	 */
 	public void init() {
 	}
@@ -322,7 +323,7 @@ public abstract class Module implements Features, Model.MilestoneListener, CLOPr
 	 * untouched and only initializes the strategies.
 	 * 
 	 * @see EvoLudo#modelReset()
-	 * @see Model.MilestoneListener#modelDidReset()
+	 * @see MilestoneListener#modelDidReset()
 	 */
 	public void reset() {
 		interaction = null;

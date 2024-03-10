@@ -56,6 +56,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.EvoLudoTrigger;
 import org.evoludo.simulator.Resources;
+import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.EvoLudoView;
@@ -92,7 +93,7 @@ import org.evoludo.util.XMLCoder;
  * Entry point classes define <code>onModuleLoad()</code>.
  */
 public class EvoLudoWeb extends Composite 
-	implements Model.MilestoneListener, Model.ChangeListener, AbstractView.Callback, CLOProvider, EntryPoint {
+	implements MilestoneListener, Model.ChangeListener, AbstractView.Callback, CLOProvider, EntryPoint {
 
 	/**
 	 * <strong>Apple Books (iBook) notes:</strong>

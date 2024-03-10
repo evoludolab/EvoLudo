@@ -48,7 +48,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.evoludo.simulator.EvoLudoJRE;
-import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.util.Plist;
 import org.evoludo.util.PlistParser;
 
@@ -56,7 +56,7 @@ import org.evoludo.util.PlistParser;
  *
  * @author Christoph Hauert
  */
-public class TestEvoLudo implements Model.MilestoneListener {
+public class TestEvoLudo implements MilestoneListener {
 
 	/**
 	 * Pointer to engine. Engine has EvoLudoJRE class but do not rely on JRE

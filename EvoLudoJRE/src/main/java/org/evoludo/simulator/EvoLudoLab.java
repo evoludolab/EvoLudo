@@ -74,6 +74,7 @@ import javax.swing.event.ChangeListener;
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.ToggleAntiAliasingAction;
+import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.HasConsole;
@@ -103,7 +104,7 @@ import org.evoludo.util.Formatter;
 import org.evoludo.util.CLOption.CLODelegate;
 
 public class EvoLudoLab extends JFrame
-	implements Model.MilestoneListener, Model.ChangeListener, CLOProvider {
+	implements MilestoneListener, Model.ChangeListener, CLOProvider {
 
 	private static final long serialVersionUID = 20110423L;
 
