@@ -55,11 +55,57 @@ import org.evoludo.util.Plist;
 public abstract interface Model extends CLOProvider {
 
 	/**
-	 * Common interface for all differential equations models.
+	 * Common interface for all models with discrete strategy sets.
 	 *
 	 * @author Christoph Hauert
 	 */
-	public abstract interface DE extends Model {
+	public interface Discrete extends Model {
+
+		@Override
+		public default boolean isContinuous() {
+			return false;
+		}
+	}
+
+	/**
+	 * Common interface for all models with continuous strategy sets.
+	 *
+	 * @author Christoph Hauert
+	 */
+	public interface Continuous extends Model {
+
+		@Override
+		public default boolean isContinuous() {
+			return true;
+		}
+
+		/**
+		 * Gets the minimum trait values in this module.
+		 * 
+		 * @param id   the id of the population for multi-species models
+		 * @return the array with the minimum trait values
+		 */
+		public double[] getTraitMin(int id);
+
+		/**
+		 * Gets the maximum trait values in this module.
+		 * 
+		 * @param id   the id of the population for multi-species models
+		 * @return the array with the maximum trait values
+		 */
+		public double[] getTraitMax(int id);
+
+	}
+	
+	/**
+	 * Common interface for all differential equations models.
+	 * <p>
+	 * <strong>Note:</strong> Currently differential equation models are restricted
+	 * to discrete strategy sets.
+	 *
+	 * @author Christoph Hauert
+	 */
+	public abstract interface DE extends Discrete {
 
 		/**
 		 * Return whether this DE model tracks frequencies or densities. Returns
@@ -370,12 +416,7 @@ public abstract interface Model extends CLOProvider {
 	 *
 	 * @author Christoph Hauert
 	 */
-	public interface DiscreteIBS extends IBS {
-
-		@Override
-		public default boolean isContinuous() {
-			return false;
-		}
+	public interface DiscreteIBS extends Discrete, IBS {
 	}
 
 	/**
@@ -383,28 +424,7 @@ public abstract interface Model extends CLOProvider {
 	 *
 	 * @author Christoph Hauert
 	 */
-	public interface ContinuousIBS extends IBS {
-
-		@Override
-		public default boolean isContinuous() {
-			return true;
-		}
-
-		/**
-		 * Gets the minimum trait values in this module.
-		 * 
-		 * @param id   the id of the population for multi-species models
-		 * @return the array with the minimum trait values
-		 */
-		public double[] getTraitMin(int id);
-
-		/**
-		 * Gets the maximum trait values in this module.
-		 * 
-		 * @param id   the id of the population for multi-species models
-		 * @return the array with the maximum trait values
-		 */
-		public double[] getTraitMax(int id);
+	public interface ContinuousIBS extends Continuous, IBS {
 
 		/**
 		 * Gets the histogram of the trait distributions and returns the data in an
@@ -799,6 +819,7 @@ public abstract interface Model extends CLOProvider {
 	 * @return processed monomorphic score, <code>mono</code> by default or
 	 *         <code>NaN</code> if not applicable/ill defined
 	 */
+	@Deprecated
 	public default double processMonoScore(int id, double mono) {
 		return mono;
 	}

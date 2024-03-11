@@ -43,7 +43,6 @@ import org.evoludo.math.Functions;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.PlayerUpdate;
@@ -534,7 +533,7 @@ public class ODEEuler implements Model.ODE {
 		// check if stop is requested if population becomes monomorphic
 		// for multi-species models only first species checked
 		// cast is safe because ODEs only avaliable for Discrete modules
-		monoStop = ((Discrete) species.get(0)).getMonoStop();
+		monoStop = ((org.evoludo.simulator.modules.Discrete) species.get(0)).getMonoStop();
 	}
 
 	@Override
