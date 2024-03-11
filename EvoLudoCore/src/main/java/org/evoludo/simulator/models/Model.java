@@ -65,6 +65,20 @@ public abstract interface Model extends CLOProvider {
 		public default boolean isContinuous() {
 			return false;
 		}
+
+		/**
+		 * Calculate and return the payoff/score of individuals in monomorphic
+		 * populations with trait/strategy {@code type} (see
+		 * {@link #getMonoGameScore(int)}) but also deals with payoff accounting
+		 * (averaged versus accumulated).
+		 *
+		 * @param type trait/strategy
+		 * @return payoff/score in monomorphic population with trait/strategy
+		 *         {@code type}. Returns {@code NaN} if scores ill defined..
+		 */
+		public default double getMonoScore(int id, int type) {
+			return Double.NaN;
+		}
 	}
 
 	/**

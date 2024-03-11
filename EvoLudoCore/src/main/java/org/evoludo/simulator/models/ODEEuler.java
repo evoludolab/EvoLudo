@@ -628,6 +628,11 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	@Override
+	public double getMonoScore(int id, int type) {
+		return ((org.evoludo.simulator.modules.Discrete) species.get(id)).getMonoGameScore(type);
+	}
+
+	@Override
 	public int getNSpecies() {
 		return nSpecies;
 	}

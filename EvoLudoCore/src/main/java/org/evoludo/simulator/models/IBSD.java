@@ -190,6 +190,17 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 			fixData.reset();
 	}
 
+	/**
+	 * Helper routine to retrieve the {@link IBSDPopulation} associated with module
+	 * with {@code id}.
+	 * 
+	 * @param id the {@code id} of the module
+	 * @return the {@code IBSDPopulation}
+	 */
+	IBSDPopulation getIBSDPopulation(int id) {
+		return (IBSDPopulation) getIBSPopulation(id);
+	}
+
 	@Override
 	public boolean setInitialTraits(double[] init) {
 		if (!cloInitType.isValidKey(InitType.FREQUENCY))
@@ -210,22 +221,16 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		return success;
 	}
 
-	/**
-	 * Helper routine to retrieve the {@link IBSDPopulation} associated with module
-	 * with {@code id}.
-	 * 
-	 * @param id the {@code id} of the module
-	 * @return the {@code IBSDPopulation}
-	 */
-	IBSDPopulation getIBSDPopulation(int id) {
-		return (IBSDPopulation) getIBSPopulation(id);
-	}
-
 	@Override
 	public boolean setInitialTraits(int id, double[] init) {
 		return getIBSDPopulation(id).setInitialTraits(init);
 	}
-
+	
+	@Override
+	public double getMonoScore(int id, int type) {
+		return getIBSDPopulation(id).getMonoScore(type);
+	}
+	
 	/**
 	 * Type of initial density distribution. Currently this model supports:
 	 * <dl>

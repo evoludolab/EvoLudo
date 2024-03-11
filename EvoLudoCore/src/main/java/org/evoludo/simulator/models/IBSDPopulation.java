@@ -1718,6 +1718,21 @@ public class IBSDPopulation extends IBSPopulation {
 		strategiesTypeCount[newtype]++;
 	}
 
+	public double getMonoScore(int type) {
+		// for accumulated payoffs this makes only sense with adjustScores, without
+		// VACANT and for regular interaction geometries otherwise individuals may
+		// have different scores even in homogeneous populations
+		if (!playerScoreAveraged && (VACANT >= 0 || !interaction.isRegular))
+			return Double.NaN;
+		// averaged scores or regular interaction geometries without vacant sites
+		double mono = module.getMonoGameScore(type);
+		if (playerScoreAveraged)
+			return mono;
+		// accumulated scores
+		int count = (mono < 0.0 ? interaction.maxOut : interaction.minOut);
+		return processScore(mono, count);
+	}
+
 	@Override
 	public void getFitnessHistogramData(double[][] bins) {
 		int nBins = bins[0].length;
