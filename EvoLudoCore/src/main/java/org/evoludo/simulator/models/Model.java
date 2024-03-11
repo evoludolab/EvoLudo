@@ -109,6 +109,27 @@ public abstract interface Model extends CLOProvider {
 		 */
 		public double[] getTraitMax(int id);
 
+		/**
+		 * Calculates and returns minimum score in monomorphic population. This depends
+		 * on the payoff accounting (averaged versus accumulated) as well as the
+		 * {@link Geometry}. Since modules are agnostic of runtime details, the request
+		 * is simply forwarded to the current {@link Model} together with the species ID
+		 * for multi-species modules.
+		 * 
+		 * @return the minimum monomorphic score
+		 */
+		public double getMinMonoScore(int id);
+
+		/**
+		 * Calculates and returns maximum score in monomorphic population. This depends
+		 * on the payoff accounting (averaged versus accumulated) as well as the
+		 * {@link Geometry}. Since modules are agnostic of runtime details, the request
+		 * is simply forwarded to the current {@link Model} together with the species ID
+		 * for multi-species modules.
+		 * 
+		 * @return the maximum monomorphic score
+		 */
+		public double getMaxMonoScore(int id);
 	}
 	
 	/**

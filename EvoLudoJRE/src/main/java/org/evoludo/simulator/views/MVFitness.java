@@ -39,7 +39,6 @@ import org.evoludo.graphics.GraphAxis;
 import org.evoludo.graphics.LineGraph;
 import org.evoludo.graphics.StateData;
 import org.evoludo.graphics.StateGraphListener;
-import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.models.Model;
 
@@ -102,15 +101,18 @@ public class MVFitness extends MVAbstract implements StateGraphListener {
 //101118 this is problematic - here we assume a 1:1 mapping between traits and mono scores... needs careful redesign! at least we now check the monoscorescount.
 	@Override
 	public boolean	verifyYThresholds(FrameLayer frame, int tag) {
+		Model model = engine.getModel();
 		// no y-thresholds for continuous traits
-		if( engine.getModel().isContinuous() )
+		if( model.isContinuous() )
 			return false;
 		Color[] colors = getColors(tag);
 		boolean changed = false;
 		int n = module.getNTraits();
+		// cast is save because pop is not Continuous
+		org.evoludo.simulator.models.Model.Discrete dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
 		for( int i=0; i<n; i++ ) {
 			changed |= frame.updateYThreshold(i, 
-				((Discrete)module).getMonoScore(i), 
+				dmodel.getMonoScore(module.getID(), i), 
 				new Color(Math.max(colors[i].getRed(), 127), 
 						Math.max(colors[i].getGreen(), 127), 
 						Math.max(colors[i].getBlue(), 127)));

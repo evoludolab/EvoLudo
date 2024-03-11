@@ -203,12 +203,13 @@ graphs2mods.put(graph, species.get(cmodel!=null ? 0 : n));
 						style.label = module.getName();
 					style.yLabel = "payoffs";
 					if (module instanceof Discrete) {
-						Discrete dmod = (Discrete) module;
+						// cast is save because module is Discrete
+						org.evoludo.simulator.models.Model.Discrete dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
 						double[] monoScores = new double[nMean+1];
 						// the first entry is for dashed (>0) and dotted (<0) lines
 						monoScores[0] = 1.0;
 						for (int n=0;n<nMean;n++)
-							monoScores[n+1] = dmod.getMonoScore(n);
+							monoScores[n+1] = dmodel.getMonoScore(module.getID(), n);
 						String[] monoColors = new String[fitcolors.length];
 						int n = 0;
 						for (Color color : fitcolors)

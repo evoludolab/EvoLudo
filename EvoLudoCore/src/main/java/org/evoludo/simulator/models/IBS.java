@@ -713,11 +713,6 @@ public abstract class IBS implements Model.IBS {
 	}
 
 	@Override
-	public double processMonoScore(int id, double score) {
-		return getIBSPopulation(id).processMonoScore(score);
-	}
-
-	@Override
 	public double getMinScore(int id) {
 		return getIBSPopulation(id).getMinScore();
 	}

@@ -397,11 +397,12 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					style.yMin = 0.0;
 					style.yMax = 1.0;
 					if( pop instanceof Discrete ) {
-						Discrete dmod = (Discrete)pop;
+						// cast is save because pop is Discrete
+						org.evoludo.simulator.models.Model.Discrete dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
 						style.label = (isMultispecies?pop.getName() + ": " : "") + pop.getTraitName(tag);
 						Color tColor = colors[tag];
 						style.graphColor = ColorMapCSS.Color2Css(tColor);
-						double mono = dmod.getMonoScore(tag);
+						double mono = dmodel.getMonoScore(pop.getID(), tag);
 						if (Double.isNaN(mono))
 							continue;
 						graph.addMarker(mono,
@@ -410,11 +411,13 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						break;
 					}
 					if( pop instanceof Continuous ) {
+						// cast is save because pop is Continuous
+						org.evoludo.simulator.models.Model.Continuous cmodel = (org.evoludo.simulator.models.Model.Continuous) model;
 						Color tcolor = colors[tag];
-						graph.addMarker(pop.getMinMonoScore(),
+						graph.addMarker(cmodel.getMinMonoScore(pop.getID()),
 								ColorMapCSS.Color2Css(ColorMap.blendColors(tcolor, Color.BLACK, 0.5)),
 								"minimum monomorphic payoff");
-						graph.addMarker(pop.getMaxMonoScore(),
+						graph.addMarker(cmodel.getMaxMonoScore(pop.getID()),
 								ColorMapCSS.Color2Css(ColorMap.blendColors(tcolor, Color.WHITE, 0.5)),
 								"maximum monomorphic payoff");
 						style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);

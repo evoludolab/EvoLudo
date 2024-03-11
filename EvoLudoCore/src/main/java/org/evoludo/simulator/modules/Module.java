@@ -815,32 +815,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * Calculates and returns minimum score in monomorphic population. This depends
-	 * on the payoff accounting (averaged versus accumulated) as well as the
-	 * {@link Geometry}. Since modules are agnostic of runtime details, the request
-	 * is simply forwarded to the current {@link Model} together with the species ID
-	 * for multi-species modules.
-	 * 
-	 * @return the minimum monomorphic score
-	 */
-	public double getMinMonoScore() {
-		return model.processMinScore(ID, getMinMonoGameScore());
-	}
-
-	/**
-	 * Calculates and returns maximum score in monomorphic population. This depends
-	 * on the payoff accounting (averaged versus accumulated) as well as the
-	 * {@link Geometry}. Since modules are agnostic of runtime details, the request
-	 * is simply forwarded to the current {@link Model} together with the species ID
-	 * for multi-species modules.
-	 * 
-	 * @return the maximum monomorphic score
-	 */
-	public double getMaxMonoScore() {
-		return model.processMaxScore(ID, getMaxMonoGameScore());
-	}
-
-	/**
 	 * Reference to Module of opponent. For Modules referring to intra-species
 	 * interactions {@code opponent == this} must hold.
 	 */

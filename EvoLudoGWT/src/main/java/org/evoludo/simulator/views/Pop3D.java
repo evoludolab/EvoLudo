@@ -50,7 +50,6 @@ import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network3D;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODEEuler.HasDE;
-import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
@@ -289,13 +288,19 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 				graph.displayMessage("No view available ("+mt.toString()+" solver)");
 			return soft;
 		}
-		boolean cmodel = model.isContinuous();
+		org.evoludo.simulator.models.Model.Continuous cmodel = null;
+		org.evoludo.simulator.models.Model.Discrete dmodel = null;
+		if (model.isContinuous())
+			dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
+		else
+			cmodel = (org.evoludo.simulator.models.Model.Continuous) model;
+
 		for( PopGraph3D graph : graphs ) {
 			ColorMap<MeshLambertMaterial> cMap = null;
 			Module module = graphs2mods.get(graph);
 			switch( type ) {
 				case STRATEGY:
-					if( cmodel ) {
+					if (cmodel != null) {
 						ColorModelType cmt = engine.getColorModelType();
 						int nTraits = module.getNTraits();
 						if( cmt==ColorModelType.DISTANCE ) {
@@ -355,17 +360,18 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 					cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
 					if( engine.isModelType(Model.Type.IBS) ) {
 						Map2Fitness map2fit = module.getMapToFitness();
-						if( cmodel ) {
+						if (cmodel != null) {
 // hardcoded colors for min/max mono scores
-							cMap1D.setColor(map2fit.map(module.getMinMonoScore()), ColorMap.addAlpha(Color.BLUE.darker(), 220));
-							cMap1D.setColor(map2fit.map(module.getMaxMonoScore()), ColorMap.addAlpha(Color.BLUE.brighter(), 220));
+							cMap1D.setColor(map2fit.map(cmodel.getMinMonoScore(tag)), ColorMap.addAlpha(Color.BLUE.darker(), 220));
+							cMap1D.setColor(map2fit.map(cmodel.getMaxMonoScore(tag)), ColorMap.addAlpha(Color.BLUE.brighter(), 220));
 						}
-						else {
+						else if (dmodel != null) {
 							// mark homogeneous fitness values by pale color
 							Color[] pure = module.getTraitColors();
 							int nMono = module.getNTraits();
+							assert dmodel != null;
 							for( int n=0; n<nMono; n++ ) 
-								cMap1D.setColor(map2fit.map(((Discrete)module).getMonoScore(n)), 
+								cMap1D.setColor(map2fit.map(dmodel.getMonoScore(tag, n)), 
 										new Color(Math.max(pure[n].getRed(), 127), 
 												Math.max(pure[n].getGreen(), 127), 
 												Math.max(pure[n].getBlue(), 127), 220));

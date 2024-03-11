@@ -159,6 +159,18 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	}
 
 	@Override
+	public double getMinMonoScore(int id) {
+//XXX move getMinMonoGameScore to Model.Continuous
+		return species.get(id).getMinMonoGameScore();
+	}
+	
+	@Override
+	public double getMaxMonoScore(int id) {
+//XXX move getMaxMonoGameScore to Model.Continuous
+		return species.get(id).getMaxMonoGameScore();
+	}
+	
+	@Override
 	public void getTraitHistogramData(int id, double[][] bins) {
 		getIBSMCPopulation(id).getTraitHistogramData(bins);
 	}

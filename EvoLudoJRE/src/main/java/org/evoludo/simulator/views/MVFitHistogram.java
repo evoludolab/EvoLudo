@@ -50,7 +50,6 @@ import org.evoludo.graphics.HistoGraphListener;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.modules.Discrete;
 
 public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 
@@ -158,16 +157,21 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 	@Override
 	public boolean	verifyMarkedBins(HistoFrameLayer frame, int tag) {
 		Color[] colors = getColors(tag);
-		if( engine.getModel().isContinuous() ) {
+		Model model = engine.getModel();
+		if( model.isContinuous() ) {
 			Color tcolor = module.getTraitColors()[tag];
+			// cast is save because pop is Continuous
+			org.evoludo.simulator.models.Model.Continuous cmodel = (org.evoludo.simulator.models.Model.Continuous) model;
 			// for continuous strategies we have a single histogram and may want to mark several bins
-			boolean changed = frame.updateMarkedBin(0, module.getMinMonoScore(), tcolor.darker());
-			changed |= frame.updateMarkedBin(1, module.getMaxMonoScore(), tcolor.brighter());
+			boolean changed = frame.updateMarkedBin(0, cmodel.getMinMonoScore(module.getID()), tcolor.darker());
+			changed |= frame.updateMarkedBin(1, cmodel.getMaxMonoScore(module.getID()), tcolor.brighter());
 			return changed;
 		}
+		// cast is save because pop is not Continuous
+		org.evoludo.simulator.models.Model.Discrete dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
 		// for discrete strategies we have different histograms and mark only a single bin
 		return frame.updateMarkedBin(0, 
-				((Discrete)module).getMonoScore(tag), 
+				dmodel.getMonoScore(module.getID(), tag), 
 				new Color(Math.max(colors[tag].getRed(), 127), 
 						Math.max(colors[tag].getGreen(), 127), 
 						Math.max(colors[tag].getBlue(), 127)));

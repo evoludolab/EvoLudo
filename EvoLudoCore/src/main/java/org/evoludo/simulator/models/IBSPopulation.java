@@ -2887,6 +2887,7 @@ public abstract class IBSPopulation {
 	 *         <code>mono</code>. Returns <code>NaN</code> if scores are ill
 	 *         defined.
 	 */
+	@Deprecated
 	public double processMonoScore(double mono) {
 		// mono scores work for averaged payoffs (with or without VACANCY)
 		if (playerScoreAveraged)
@@ -2922,10 +2923,7 @@ public abstract class IBSPopulation {
 	 */
 	@Deprecated
 	public double processMinScore(double min) {
-		if (playerScoreAveraged)
-			return min;
-		int count = (min < 0.0 ? interaction.maxOut : interaction.minOut);
-		return processScore(min, count);
+		return processScore(min, false);
 	}
 
 	/**
@@ -2935,11 +2933,7 @@ public abstract class IBSPopulation {
 	 * @return the processed minimum score
 	 */
 	public double getMinScore() {
-		double min = module.getMinGameScore();
-		if (playerScoreAveraged)
-			return min;
-		int count = (min < 0.0 ? interaction.maxOut : interaction.minOut);
-		return processScore(min, count);
+		return processScore(module.getMinGameScore(), true);
 	}
 
 	/**
@@ -2949,11 +2943,7 @@ public abstract class IBSPopulation {
 	 * @return the processed maximum score
 	 */
 	public double getMaxScore() {
-		double max = module.getMaxGameScore();
-		if (playerScoreAveraged)
-			return max;
-		int count = (max < 0.0 ? interaction.maxOut : interaction.minOut);
-		return processScore(max, count);
+		return processScore(module.getMaxGameScore(), true);
 	}
 
 	/**
@@ -2965,10 +2955,7 @@ public abstract class IBSPopulation {
 	 */
 	@Deprecated
 	public double processMaxScore(double max) {
-		if (playerScoreAveraged)
-			return max;
-		int count = (max < 0.0 ? interaction.maxOut : interaction.minOut);
-		return processScore(max, count);
+		return processScore(max, true);
 	}
 
 	/**
@@ -2976,11 +2963,15 @@ public abstract class IBSPopulation {
 	 * updating into account.
 	 * 
 	 * @param score the minimum or maximum score
-	 * @param count the minimum/maximum number of interactions
+	 * @param max {@code true} if score is maximum
 	 * @return the processed extremal score
 	 */
-	protected double processScore(double score, int count) {
+	protected double processScore(double score, boolean max) {
+		if (playerScoreAveraged)
+			return score;
 		// accumulated payoffs
+		int count = (score < 0.0 ? (max ? interaction.minOut : interaction.maxOut) :
+									(max ? interaction.maxOut : interaction.minOut));
 		if (adjustScores) {
 			// getMinGameScore in module must deal with structure and games
 			if (module.isPairwise()) {

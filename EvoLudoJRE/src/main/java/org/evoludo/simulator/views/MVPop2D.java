@@ -56,8 +56,6 @@ import org.evoludo.graphics.GraphAxis;
 import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.graphics.PopListener;
-import org.evoludo.simulator.modules.Discrete;
-import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapJRE;
 import org.evoludo.simulator.EvoLudo;
@@ -65,8 +63,9 @@ import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.models.ODEEuler.HasDE;
+import org.evoludo.simulator.modules.Map2Fitness;
+import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
 import org.freehep.graphics2d.VectorGraphics;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
@@ -221,16 +220,20 @@ removeAll();
 //DEBUG
 				if( engine.isModelType(Model.Type.IBS) ) {
 					Map2Fitness map2fit = module.getMapToFitness();
-					if( engine.getModel().isContinuous() ) {
+					if( model.isContinuous() ) {
+						// cast is save because pop is Continuous
+						org.evoludo.simulator.models.Model.Continuous cmodel = (org.evoludo.simulator.models.Model.Continuous) model;
 //hardcoded colors for min/max mono scores
-						cMap1D.setColor(map2fit.map(module.getMinMonoScore()), Color.BLUE.darker());
-						cMap1D.setColor(map2fit.map(module.getMaxMonoScore()), Color.BLUE.brighter());
+						cMap1D.setColor(map2fit.map(cmodel.getMinMonoScore(tag)), Color.BLUE.darker());
+						cMap1D.setColor(map2fit.map(cmodel.getMaxMonoScore(tag)), Color.BLUE.brighter());
 					}
 					else {
+						// cast is save because pop is Discrete
+						org.evoludo.simulator.models.Model.Discrete dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
 						// mark homogeneous fitness values by pale color
 						int nMono = module.getNTraits();
 						for( int n=0; n<nMono; n++ ) 
-							cMap1D.setColor(map2fit.map(((Discrete)module).getMonoScore(n)), 
+							cMap1D.setColor(map2fit.map(dmodel.getMonoScore(tag, n)), 
 									new Color(Math.max(tColors[n].getRed(), 127), 
 											Math.max(tColors[n].getGreen(), 127), 
 											Math.max(tColors[n].getBlue(), 127)));

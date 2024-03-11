@@ -354,7 +354,9 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 							Color[] pure = pop.getTraitColors();
 							int nMono = pop.getNTraits();
 							for( int n=0; n<nMono; n++ ) {
-								double mono = ((Discrete)pop).getMonoScore(n);
+								// cast is save because pop is Discrete
+								org.evoludo.simulator.models.Model.Discrete dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
+								double mono = dmodel.getMonoScore(pop.getID(), n);
 								if (Double.isNaN(mono))
 									continue;
 								cMap1D.setColor(map2fit.map(mono),
@@ -365,9 +367,11 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 							break;
 						}
 						if( pop instanceof Continuous ) {
+							// cast is save because pop is Continuous
+							org.evoludo.simulator.models.Model.Continuous cmodel = (org.evoludo.simulator.models.Model.Continuous) model;
 // hardcoded colors for min/max mono scores
-							cMap1D.setColor(map2fit.map(pop.getMinMonoScore()), ColorMap.addAlpha(Color.BLUE.darker(), 220));
-							cMap1D.setColor(map2fit.map(pop.getMaxMonoScore()), ColorMap.addAlpha(Color.BLUE.brighter(), 220));
+							cMap1D.setColor(map2fit.map(cmodel.getMinMonoScore(pop.getID())), ColorMap.addAlpha(Color.BLUE.darker(), 220));
+							cMap1D.setColor(map2fit.map(cmodel.getMaxMonoScore(pop.getID())), ColorMap.addAlpha(Color.BLUE.brighter(), 220));
 							break;
 						}
 						// unknown type of population - no fitness values marked

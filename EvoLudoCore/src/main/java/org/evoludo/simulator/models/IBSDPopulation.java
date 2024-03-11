@@ -1725,12 +1725,8 @@ public class IBSDPopulation extends IBSPopulation {
 		if (!playerScoreAveraged && (VACANT >= 0 || !interaction.isRegular))
 			return Double.NaN;
 		// averaged scores or regular interaction geometries without vacant sites
-		double mono = module.getMonoGameScore(type);
-		if (playerScoreAveraged)
-			return mono;
-		// accumulated scores
-		int count = (mono < 0.0 ? interaction.maxOut : interaction.minOut);
-		return processScore(mono, count);
+		// max/min doesn't matter; graph must be regular for accumulated scores
+		return processScore(module.getMonoGameScore(type), true);
 	}
 
 	@Override

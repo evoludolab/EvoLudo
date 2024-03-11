@@ -289,21 +289,6 @@ public abstract class Discrete extends Module {
 		return Double.NaN;
 	}
 
-	/**
-	 * Calculate and return the payoff/score of individuals in monomorphic
-	 * populations with trait/strategy {@code type} (see
-	 * {@link #getMonoGameScore(int)}) but also deals with payoff accounting
-	 * (averaged versus accumulated).
-	 *
-	 * @param type trait/strategy
-	 * @return payoff/score in monomorphic population with trait/strategy
-	 *         {@code type}.
-	 *         Returns {@code NaN} if scores ill defined (potentially unbounded).
-	 */
-	public double getMonoScore(int type) {
-		return model.processMonoScore(ID, getMonoGameScore(type));
-	}
-
 	@Override
 	public double getMinMonoGameScore() {
 		double min = Double.MAX_VALUE;
