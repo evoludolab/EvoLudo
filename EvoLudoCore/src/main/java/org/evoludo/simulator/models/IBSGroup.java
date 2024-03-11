@@ -332,6 +332,9 @@ public class IBSGroup {
 								group[0] = model;
 								return group;
 
+							case SQUARE_NEUMANN:
+							case SQUARE_NEUMANN_2ND:
+							case SQUARE_MOORE:
 							case SQUARE:
 								if (level == 0) {
 									// pick random neighbour

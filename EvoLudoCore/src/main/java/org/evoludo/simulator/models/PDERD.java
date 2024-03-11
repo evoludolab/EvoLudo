@@ -1493,6 +1493,9 @@ public class PDERD extends ODEEuler implements Model.PDE {
 				return Math.pow(space.size, 1.0 / 3.0) / linext;
 			case LINEAR:
 				return space.size / linext;
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
 			case SQUARE:
 			case TRIANGULAR:
 			case HONEYCOMB:

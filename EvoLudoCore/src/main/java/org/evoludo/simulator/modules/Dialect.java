@@ -646,6 +646,9 @@ public class Dialect extends Continuous implements Module.Static, HasIBS, //
 								mdl += unitSize;
 							return mdl;
 
+						case SQUARE_NEUMANN:
+						case SQUARE_NEUMANN_2ND:
+						case SQUARE_MOORE:
 						case SQUARE:
 							// determine location of focal unit relative to desired level
 							int unitSide = (int) Math.sqrt(unitSize);

@@ -323,6 +323,9 @@ public class RSP extends Discrete implements Pairs,
 			strategiesTypeCount[RSP.ROCK] = nPopulation;
 			int mid, size;
 			switch (interaction.getType()) {
+				case SQUARE_NEUMANN:
+				case SQUARE_NEUMANN_2ND:
+				case SQUARE_MOORE:
 				case SQUARE:
 					size = (int) Math.floor(Math.sqrt(nPopulation) + 0.5);
 					mid = size / 2;

@@ -219,26 +219,29 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		super.reset(clear || hasHistory);
         // enable/disable context menu items
 		animateMenu.setState(network.doAnimateLayout());
-        switch( geometry.getType() ) {
-            case VOID:
-            case TRIANGULAR:
-            case HONEYCOMB:
-            case SQUARE:
-            case CUBE:
-            case LINEAR:
-                animateMenu.setEnabled(false);
-                shakeMenu.setEnabled(false);
-                linkMenu.setEnabled(false);
-                break;
-                
-            // case GENERIC:
-            // case DYNAMIC:
+		switch (geometry.getType()) {
+			case VOID:
+			case TRIANGULAR:
+			case HONEYCOMB:
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
+			case SQUARE:
+			case CUBE:
+			case LINEAR:
+				animateMenu.setEnabled(false);
+				shakeMenu.setEnabled(false);
+				linkMenu.setEnabled(false);
+				break;
+
+			// case GENERIC:
+			// case DYNAMIC:
 			// and many more...
-            default:
-                animateMenu.setEnabled(true);
-                shakeMenu.setEnabled(true);
-                linkMenu.setEnabled(true);
-        }
+			default:
+				animateMenu.setEnabled(true);
+				shakeMenu.setEnabled(true);
+				linkMenu.setEnabled(true);
+		}
         if( hasHistory && plot!=null ) {
         	forceRepaint = true;
         	plot(plot);
@@ -455,6 +458,9 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 				// cannot deal with 3D structures
 				break;
 
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
 			case SQUARE:
 				side = (int)(Math.sqrt(geometry.size)+0.5);
 				// for hierarchical structures add gap between units
@@ -705,6 +711,9 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 
 			case TRIANGULAR:
 			case HONEYCOMB:
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
 			case SQUARE:
 			case CUBE:
 			case LINEAR:
@@ -841,6 +850,9 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 				else hex.translate(-dw2, -dh*side);
 				break;
 
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
 			case SQUARE:
                 side = (int)(Math.sqrt(nNodes)+0.5);
                 // keep sites square
@@ -1074,6 +1086,9 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 				r = (y-1)/dh;
 				return r*nNodes+c;
 
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
 			case SQUARE:
 				side = (int)(Math.sqrt(nNodes)+0.5);
 				// keep sites square

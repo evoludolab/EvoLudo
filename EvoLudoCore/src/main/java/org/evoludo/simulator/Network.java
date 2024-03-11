@@ -369,6 +369,9 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 		// geometries that have special/fixed layout
 		switch (type) {
 			case CUBE:
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
 			case SQUARE:
 			case LINEAR:
 			case HONEYCOMB:

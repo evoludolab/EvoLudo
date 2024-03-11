@@ -1033,6 +1033,9 @@ public class CDL extends Discrete implements Groups, HasIBS, HasODE, HasSDE, Has
 					}
 					break;
 
+				case SQUARE_NEUMANN:
+				case SQUARE_NEUMANN_2ND:
+				case SQUARE_MOORE:
 				case SQUARE:
 					Arrays.fill(strategies, CDL.COOPERATE);
 					Arrays.fill(strategiesTypeCount, 0);
