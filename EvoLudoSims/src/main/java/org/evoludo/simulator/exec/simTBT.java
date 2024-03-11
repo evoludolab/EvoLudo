@@ -44,6 +44,7 @@ import javax.imageio.ImageIO;
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.TBT;
 import org.evoludo.simulator.views.MVPop2D;
@@ -56,7 +57,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class simTBT extends TBT implements Model.ChangeListener {
+public class simTBT extends TBT implements ChangeListener {
 
 	// additional parameters
 	boolean progress = false;

@@ -49,6 +49,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.modules.Mutualism;
@@ -62,7 +63,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class simMutual extends Mutualism implements Model.ChangeListener {
+public class simMutual extends Mutualism implements ChangeListener {
 
 	PrintStream out;
 	org.evoludo.simulator.models.IBS ibs;

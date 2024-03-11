@@ -44,6 +44,7 @@ import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.modules.CDLPQ;
 import org.evoludo.simulator.views.MVPop2D;
@@ -56,7 +57,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class simCDLPQ extends CDLPQ implements Model.ChangeListener {
+public class simCDLPQ extends CDLPQ implements ChangeListener {
 
 	// snapshots
 	long snapinterval = 1;

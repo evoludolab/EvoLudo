@@ -46,14 +46,15 @@ import java.util.logging.Logger;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.MersenneTwister;
 import org.evoludo.math.RNGDistribution;
+import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBS.HasIBS;
-import org.evoludo.simulator.models.Model.Mode;
-import org.evoludo.simulator.models.Model.Type;
 import org.evoludo.simulator.models.IBSC;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Model.Mode;
+import org.evoludo.simulator.models.Model.Type;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.ODERK;
 import org.evoludo.simulator.models.PDERD;
@@ -109,7 +110,7 @@ import org.evoludo.util.Plist;
  * @author Christoph Hauert
  */
 public abstract class EvoLudo
-		implements MilestoneListener, Model.ChangeListener, CLOProvider, MersenneTwister.Chronometer {
+		implements MilestoneListener, ChangeListener, CLOProvider, MersenneTwister.Chronometer {
 
 	/**
 	 * The interface to execute commands in a manner that is agnostic to the
@@ -518,7 +519,7 @@ public abstract class EvoLudo
 	 * 
 	 * @see Model.ChangeListener
 	 */
-	protected List<Model.ChangeListener> changeListeners = new ArrayList<Model.ChangeListener>();
+	protected List<ChangeListener> changeListeners = new ArrayList<ChangeListener>();
 
 	/**
 	 * Add a change listener to the list of listeners that get notified when the
@@ -526,7 +527,7 @@ public abstract class EvoLudo
 	 * 
 	 * @param newListener the new change listener
 	 */
-	public void addChangeListener(Model.ChangeListener newListener) {
+	public void addChangeListener(ChangeListener newListener) {
 		changeListeners.add(newListener);
 	}
 
@@ -537,7 +538,7 @@ public abstract class EvoLudo
 	 * @param obsoleteListener the listener to remove from the list of change
 	 *                         listeners
 	 */
-	public void removeChangeListener(Model.ChangeListener obsoleteListener) {
+	public void removeChangeListener(ChangeListener obsoleteListener) {
 		changeListeners.remove(obsoleteListener);
 	}
 
@@ -1216,7 +1217,7 @@ public abstract class EvoLudo
 			case APPLY:
 			case SNAPSHOT:
 			case STATISTIC:
-				for (Model.ChangeListener i : changeListeners)
+				for (ChangeListener i : changeListeners)
 					i.modelChanged(pendingAction);
 				break;
 			default:

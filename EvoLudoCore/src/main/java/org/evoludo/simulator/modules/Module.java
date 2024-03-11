@@ -43,12 +43,13 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.Model.ChangeListener.PendingAction;
+import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.Model.Type;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.PDERD.HasPDE;
@@ -257,8 +258,8 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		if (species == null)
 			species = new ArrayList<Module>();
 		engine.addMilestoneListener(this);
-		if (this instanceof Model.ChangeListener)
-			engine.addChangeListener((Model.ChangeListener) this);
+		if (this instanceof ChangeListener)
+			engine.addChangeListener((ChangeListener) this);
 	}
 
 	/**
@@ -275,8 +276,8 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		playerUpdate = null;
 		opponent = this;
 		engine.removeMilestoneListener(this);
-		if (this instanceof Model.ChangeListener)
-			engine.removeChangeListener((Model.ChangeListener) this);
+		if (this instanceof ChangeListener)
+			engine.removeChangeListener((ChangeListener) this);
 		if (ibs != null)
 			ibs.unload();
 		ibs = null;

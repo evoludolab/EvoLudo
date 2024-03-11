@@ -39,6 +39,7 @@ import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.modules.CDLP;
 import org.evoludo.util.CLOParser;
@@ -50,7 +51,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class simCDLP extends CDLP implements Model.ChangeListener {
+public class simCDLP extends CDLP implements ChangeListener {
 
 	/* additional parameters */
 	int threshold = -1;

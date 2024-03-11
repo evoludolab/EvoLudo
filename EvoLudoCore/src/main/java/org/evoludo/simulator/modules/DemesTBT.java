@@ -39,6 +39,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBS.MigrationType;
 import org.evoludo.simulator.models.IBS.ScoringType;
+import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.InitType;
 import org.evoludo.simulator.models.MilestoneListener;
@@ -146,7 +147,7 @@ public class DemesTBT extends TBT {
 		return new DemesTBT.IBS(engine, this);
 	}
 
-	public class IBS extends TBT.TBTPop implements MilestoneListener, Model.ChangeListener {
+	public class IBS extends TBT.TBTPop implements MilestoneListener, ChangeListener {
 
 		// IBSDPopulation pop;
 		protected RNGDistribution.Geometric distrMigration, distrMutationMigration;

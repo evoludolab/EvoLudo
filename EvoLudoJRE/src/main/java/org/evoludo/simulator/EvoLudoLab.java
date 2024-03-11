@@ -69,11 +69,11 @@ import javax.swing.JRootPane;
 import javax.swing.JSlider;
 import javax.swing.KeyStroke;
 import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.ToggleAntiAliasingAction;
+import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
@@ -100,11 +100,11 @@ import org.evoludo.simulator.views.MultiView;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.Formatter;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.Formatter;
 
 public class EvoLudoLab extends JFrame
-	implements MilestoneListener, Model.ChangeListener, CLOProvider {
+	implements MilestoneListener, ChangeListener, CLOProvider {
 
 	private static final long serialVersionUID = 20110423L;
 
@@ -463,7 +463,7 @@ public class EvoLudoLab extends JFrame
      * application: this init() is called from exec() passing the command line options
 	 */
 	protected synchronized void init() {
-		evoludoSlider.addChangeListener(new ChangeListener() {
+		evoludoSlider.addChangeListener(new javax.swing.event.ChangeListener() {
 			@Override
 			public void stateChanged(ChangeEvent e) {
 				engine.setDelay(lin2log(evoludoSlider.getValue()));
@@ -688,7 +688,7 @@ public class EvoLudoLab extends JFrame
 	}
 
 	@Override
-	public synchronized void modelChanged(PendingAction action) {
+	public synchronized void modelChanged(PendingAction action) { // Fix the method signature
 		update();
 	}
 

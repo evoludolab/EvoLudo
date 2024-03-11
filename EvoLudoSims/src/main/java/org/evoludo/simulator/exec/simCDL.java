@@ -39,6 +39,7 @@ import java.util.logging.Level;
 import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.CDL;
 import org.evoludo.util.CLOParser;
@@ -50,7 +51,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class simCDL extends CDL implements Model.ChangeListener {
+public class simCDL extends CDL implements ChangeListener {
 
 	/* additional parameters */
 	boolean progress = false;
