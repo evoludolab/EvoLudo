@@ -844,37 +844,6 @@ public abstract interface Model extends CLOProvider {
 	}
 
 	/**
-	 * Opportunity for further processing of monomorphic scores. For example, in
-	 * individual based simulations individuals may have different scores even in
-	 * homogeneous populations provided that payoffs are not averaged or population
-	 * structures are not regular.
-	 *
-	 * @param id   the id of the population for multi-species models
-	 * @param mono the monomorphic score for further processing
-	 * @return processed monomorphic score, <code>mono</code> by default or
-	 *         <code>NaN</code> if not applicable/ill defined
-	 */
-	@Deprecated
-	public default double processMonoScore(int id, double mono) {
-		return mono;
-	}
-
-	/**
-	 * Opportunity for further processing of minimal score. For example, individual
-	 * based simulations in structured populations take into account minimum/maximum
-	 * number of interaction partners based on the current structure. In contrast,
-	 * differential equation models leave the minimum score untouched by default.
-	 *
-	 * @param id  the id of the population for multi-species models
-	 * @param min the minimum score for further processing
-	 * @return processed minimum score, <code>min</code> by default
-	 */
-	@Deprecated
-	public default double processMinScore(int id, double min) {
-		return min;
-	}
-
-	/**
 	 * Returns the minimum score that individuals of species with ID <code>id</code>
 	 * can achieve in this model. Takes into account potential adjustments due to
 	 * population structure and payoff accounting.
@@ -925,21 +894,6 @@ public abstract interface Model extends CLOProvider {
 	 * @see #getMaxScore(int id)
 	 */
 	public double getMaxFitness(int id);
-
-	/**
-	 * Opportunity for further processing of maximal score. For example, individual
-	 * based simulations in structured populations take into account minimum/maximum
-	 * number of interaction partners based on the current structure. In contrast,
-	 * differential equation models leave the maximum score untouched by default.
-	 *
-	 * @param id  the id of the population for multi-species models
-	 * @param max the maximum score for further processing
-	 * @return processed maximum score, <code>max</code> by default
-	 */
-	@Deprecated
-	public default double processMaxScore(int id, double max) {
-		return max;
-	}
 
 	/**
 	 * Returns status message from model. Typically this is a string summarizing the

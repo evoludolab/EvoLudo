@@ -2876,57 +2876,6 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Process the payoff/score of individuals in a monomorphic population with
-	 * trait/strategy <code>mono</code> (see
-	 * {@link org.evoludo.simulator.modules.Discrete#getMonoGameScore(int)
-	 * Discrete.getMonoGameScore(int)}). Primarily deals with payoff accounting
-	 * (averaged versus accumulated).
-	 *
-	 * @param mono type trait/strategy
-	 * @return payoff/score in monomorphic population with trait/strategy
-	 *         <code>mono</code>. Returns <code>NaN</code> if scores are ill
-	 *         defined.
-	 */
-	@Deprecated
-	public double processMonoScore(double mono) {
-		// mono scores work for averaged payoffs (with or without VACANCY)
-		if (playerScoreAveraged)
-			return mono;
-		// for accumulated payoffs this makes only sense with adjustScores, without
-		// VACANT and for regular interaction geometries otherwise individuals may
-		// have different scores even in homogeneous populations
-		if (VACANT >= 0 || !interaction.isRegular)
-			return Double.NaN;
-		// regular and no vacant sites
-		int nConn = (int)(interaction.connectivity + 0.5);
-		if (module.isPairwise()) {
-			if (interactionGroup.samplingType == SamplingType.RANDOM)
-				return interactionGroup.nSamples * mono;
-			// interacting with all neighbours
-			if (interaction.isType(Geometry.Type.MEANFIELD))
-				return (nPopulation - 1) * mono;
-			return nConn * mono;
-		}
-		// group interactions
-		if (module.getNGroup() < nConn)
-			return nConn * mono;
-		// each individual participates in a single group interaction
-		return mono;
-	}
-
-	/**
-	 * Process the minimum score {@code min} in this population, taking the
-	 * population structure into account.
-	 * 
-	 * @param min the minimum score
-	 * @return the processed minimum score
-	 */
-	@Deprecated
-	public double processMinScore(double min) {
-		return processScore(min, false);
-	}
-
-	/**
 	 * Returns the minimum score {@code min} in this population, taking the
 	 * population structure and payoff accounting into account.
 	 * 
@@ -2944,18 +2893,6 @@ public abstract class IBSPopulation {
 	 */
 	public double getMaxScore() {
 		return processScore(module.getMaxGameScore(), true);
-	}
-
-	/**
-	 * Process the maximum score {@code max} in this population, taking the
-	 * population structure into account.
-	 * 
-	 * @param max the maximum score
-	 * @return the processed maximum score
-	 */
-	@Deprecated
-	public double processMaxScore(double max) {
-		return processScore(max, true);
 	}
 
 	/**
