@@ -37,6 +37,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Logger;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
@@ -180,6 +181,16 @@ public class ODEEuler implements Model.ODE {
 	 * The pacemaker of all models. Interface with the outside world.
 	 */
 	protected EvoLudo engine;
+
+	/**
+	 * Logger for keeping track of and reporting events and issues.
+	 */
+	protected Logger logger;
+
+	@Override 
+	public Logger getLogger() {
+		return logger;
+	}
 
 	/**
 	 * List with all species in model including this one. List should be shared with
@@ -488,6 +499,7 @@ public class ODEEuler implements Model.ODE {
 
 	@Override
 	public void load() {
+		logger = engine.getLogger();
 		species = engine.getModule().getSpecies();
 		nSpecies = species.size();
 		initType = new InitType[nSpecies];
@@ -496,6 +508,8 @@ public class ODEEuler implements Model.ODE {
 
 	@Override
 	public void unload() {
+		logger = null;
+		species = null;
 		yt = ft = dyt = yout = null;
 		mus = null;
 		staticfit = null;
@@ -574,7 +588,7 @@ public class ODEEuler implements Model.ODE {
 
 		if (isAdjustedDynamics && minFit <= 0.0) {
 			// fitness is not guaranteed to be positive
-			engine.getLogger().warning(getClass().getSimpleName()
+			logger.warning(getClass().getSimpleName()
 					+ " - fitness >0 must hold for adjusted dynamics (revert to standard dynamics).");
 			isAdjustedDynamics = false;
 		}
@@ -585,8 +599,7 @@ public class ODEEuler implements Model.ODE {
 	public void setDt(double deltat) {
 		deltat = Math.max(0.0, deltat);
 		if (deltat == 0.0) {
-			engine.getLogger()
-					.warning(getClass().getSimpleName() + " - time step must be >0 (dt=" + Formatter.formatSci(dt, 5)
+			logger.warning(getClass().getSimpleName() + " - time step must be >0 (dt=" + Formatter.formatSci(dt, 5)
 							+ " kept; requested dt=" + Formatter.formatSci(deltat, 5) + " ignored).");
 			return;
 		}
@@ -630,6 +643,11 @@ public class ODEEuler implements Model.ODE {
 	@Override
 	public double getMonoScore(int id, int type) {
 		return ((org.evoludo.simulator.modules.Discrete) species.get(id)).getMonoGameScore(type);
+	}
+
+	@Override
+	public Module getSpecies(int id) {
+		return species.get(id);
 	}
 
 	@Override
@@ -1775,7 +1793,7 @@ public class ODEEuler implements Model.ODE {
 			start += nTraits;
 		}
 		if (!parseOk) {
-			engine.getLogger().warning("parsing of initype(s) '" + arg + "' failed.");
+			logger.warning("parsing of initype(s) '" + arg + "' failed.");
 			return false;
 		}
 		return true;
@@ -1937,8 +1955,7 @@ public class ODEEuler implements Model.ODE {
 							mus[n] = Math.max(0.0, Double.parseDouble(marg));
 						} catch (NumberFormatException nfe) {
 							mus[n] = 0.0;
-							engine.getLogger()
-									.warning("mutation probabilities '" + marg + "' for trait " + n
+							logger.warning("mutation probabilities '" + marg + "' for trait " + n
 											+ " invalid - disabled.");
 							return false;
 						}
@@ -2004,11 +2021,11 @@ public class ODEEuler implements Model.ODE {
 		accuracy = (Double) plist.get("Accuracy");
 		connect = false;
 		if (!restoreStrategies(plist)) {
-			engine.getLogger().warning("restore strategies in " + getModelType() + "-model failed.");
+			logger.warning("restore strategies in " + getModelType() + "-model failed.");
 			success = false;
 		}
 		if (!restoreFitness(plist)) {
-			engine.getLogger().warning("restore fitness in " + getModelType() + "-model failed.");
+			logger.warning("restore fitness in " + getModelType() + "-model failed.");
 			success = false;
 		}
 		return success;

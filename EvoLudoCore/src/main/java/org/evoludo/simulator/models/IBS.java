@@ -126,6 +126,11 @@ public abstract class IBS implements Model.IBS {
 	 */
 	protected Logger logger;
 
+	@Override 
+	public Logger getLogger() {
+		return logger;
+	}
+
 	/**
 	 * The shared random number generator to ensure reproducibility of results.
 	 * 
@@ -700,6 +705,12 @@ public abstract class IBS implements Model.IBS {
 		engine.fireModelChanged();
 	}
 
+	
+	@Override 
+	public Module getSpecies(int id) {
+		return species.get(id);
+	}
+
 	/**
 	 * Helper routine to retrieve the {@link IBSPopulation} associated with module
 	 * with {@code id}.
@@ -709,7 +720,7 @@ public abstract class IBS implements Model.IBS {
 	 * @return the {@code IBSPopulation}
 	 */
 	IBSPopulation getIBSPopulation(int id) {
-		return (isMultispecies ? species.get(id).getIBSPopulation() : population);
+		return getSpecies(id).getIBSPopulation();
 	}
 
 	@Override

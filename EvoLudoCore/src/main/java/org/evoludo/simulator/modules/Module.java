@@ -1682,8 +1682,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 						return false;
 					}
 					// cast check should be unnecessary. --phase2daxis should only be available if
-					// module
-					// implements at least HasPhase2D (plus some other conditions).
+					// module implements at least HasPhase2D (plus some other conditions).
 					if (Module.this instanceof HasPhase2D)
 						((HasPhase2D) Module.this).setPhase2DTraits(phase2daxis[0], phase2daxis[1]);
 					return true;

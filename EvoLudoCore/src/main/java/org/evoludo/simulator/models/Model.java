@@ -34,6 +34,7 @@ package org.evoludo.simulator.models;
 
 import java.awt.Color;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
@@ -844,6 +845,13 @@ public abstract interface Model extends CLOProvider {
 	}
 
 	/**
+	 * Return the logger for reporting information.
+	 *
+	 * @return the logger
+	 */
+	public abstract Logger getLogger();
+
+	/**
 	 * Returns the minimum score that individuals of species with ID <code>id</code>
 	 * can achieve in this model. Takes into account potential adjustments due to
 	 * population structure and payoff accounting.
@@ -994,6 +1002,14 @@ public abstract interface Model extends CLOProvider {
 	 * @return the number of species
 	 */
 	public abstract int getNSpecies();
+
+	/**
+	 * Return the species with ID <code>id</code>.
+	 *
+	 * @param id   the species identifier
+	 * @return the species
+	 */
+	public abstract Module getSpecies(int id);
 
 	/**
 	 * Return the number of mean values for this model including all species (for
