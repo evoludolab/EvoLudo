@@ -94,6 +94,24 @@ public class ArrayMath {
 	}
 
 	/**
+	 * Append {@code double} array {@code elements} to {@code double} array
+	 * {@code array}. The length of the returned array is
+	 * {@code array.length + elements.length}. {@code array} and {@code elements}
+	 * remain unchanged.
+	 * 
+	 * @param array   the array
+	 * @param element the array to append
+	 * @return the new (longer) array
+	 */
+	public static double[] append(double[] array, double[] elements) {
+		int alen = array.length;
+		int elen = elements.length;
+		double[] newarray = Arrays.copyOf(array, alen + elen);
+		System.arraycopy(elements, 0, newarray, alen, elen);
+		return newarray;
+	}
+
+	/**
 	 * Append {@code element} of type {@code T} to array {@code array} of the same
 	 * type. The length of the returned array is {@code array.length +1}.
 	 * 

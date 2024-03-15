@@ -19,7 +19,7 @@ public class Markers {
 	/**
 	 * The list of markers on graphs. For example to mark fixed points.
 	 */
-	ArrayList<double[]> markers;
+	ArrayList<double[]> markers = new ArrayList<>(5);
 
 	/**
 	 * Instantiate new population update for use in IBS {@code model}s.
@@ -95,27 +95,26 @@ public class Markers {
 					if (!clo.isSet())
 						return true;
 					boolean success = true;
-					int nMean = model.getNMean();
 					String[] myMarkers = arg.split(CLOParser.MATRIX_DELIMITER);
 					if (markers != null)
 						markers.clear();
+					// model loaded but not yet initialized; getNMean() etc not yet available
+					int nSpecies = model.getNSpecies();
+					double[] dmk = new double[0];
 					for (String aMarker : myMarkers) {
-						double[] dmk = new double[nMean];
 						String[] mk = aMarker.split(CLOParser.SPECIES_DELIMITER);
 						boolean mksuccess = true;
 						boolean filled = true;
-						int nSpecies = model.getNSpecies();
-						int skip = 0;
 						for (int n = 0; n < nSpecies; n++) {
 							double[] smk = CLOParser.parseVector(mk[n]);
 							if (ArrayMath.min(smk) < 0.0) {
 								filled = false;
 								ArrayMath.abs(smk);
 							}
-							int nt = model.getNMean(n);
+							Module module = model.getSpecies(n);
+							int nt = module.getNTraits();
 							if (smk.length != nt) {
 								// ok for frequency based modules or with vacant sites
-								Module module = model.getSpecies(n);
 								int vac = module.getVacant();
 								int dep = module.getDependent();
 								if (!(smk.length == nt - 1 && (vac >= 0 || dep >= 0))) {
@@ -142,8 +141,7 @@ public class Markers {
 								}
 							}
 							// now smk.length == nt holds
-							System.arraycopy(smk, 0, dmk, skip, nt);
-							skip += nt;
+							dmk = ArrayMath.append(dmk, smk);
 						}
 						if (!mksuccess) {
 							model.getLogger().warning("failed to set marker '" + aMarker + "' - ignored.");

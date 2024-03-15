@@ -38,18 +38,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.logging.Logger;
 
-import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.ChangeListener;
+import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSPopulation;
+import org.evoludo.simulator.models.Markers;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.Model.Type;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.PDERD.HasPDE;
@@ -135,9 +135,19 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * The list of markers on graphs. For example to mark fixed points.
+	 * Markers for annotating graphical represenations of the state of the model.
 	 */
-	ArrayList<double[]> markers;
+	protected Markers markers;
+
+	/**
+	 * Get the list of markers. This serves to mark special values in different
+	 * kinds of graphs.
+	 * 
+	 * @return the list of markers
+	 */
+	 public ArrayList<double[]> getMarkers() {
+		return markers.getMarkers();
+	}
 
 	/**
 	 * Instantiate a new Module with {@code engine} and {@code partner}.
@@ -169,8 +179,11 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @param model the current model
 	 */
 	public void setModel(Model model) {
-		for (Module pop : species)
+		markers = new Markers(model);		
+		for (Module pop : species) {
 			pop.model = model;
+			pop.markers = markers;
+		}
 	}
 
 	/**
@@ -1072,57 +1085,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		return nGroup;
 	}
 
-	public boolean addMarker(double[] aMark) {
-		return addMarker(aMark, true);
-	}
-
-	/**
-	 * Add marker to list of markers. Markers are provided as {@code double[]}
-	 * arrays to indicate special frequencies/densities.
-	 * <p>
-	 * In multi-species modules the markers for each species are concatenated into a
-	 * single array. The frequencies/densities of the marker for the first species
-	 * are stored in <code>aMark[0]</code> through <code>aMark[n1]</code> where
-	 * <code>n1</code> denotes the number of traits in the first species. The
-	 * current frequencies/densities of the second species are stored in
-	 * <code>aMark[n1+1]</code> through <code>aMark[n1+n2]</code> where
-	 * <code>n2</code> denotes the number of traits in the second species, etc.
-	 * 
-	 * @param aMark  the marker to add
-	 * @param filled the flag to indicate whether the marker should be filled
-	 * @return {@code true} if successfull
-	 * 
-	 * @see org.evoludo.simulator.models.ODEEuler#yt
-	 */
-	public boolean addMarker(double[] aMark, boolean filled) {
-		int nt = nTraits;
-		if (species.size() > 1) {
-			nt = 0;
-			for (Module pop : species)
-				nt += pop.getNTraits();
-		}
-		if (aMark.length != nt)
-			return false;
-		if (markers == null) {
-			markers = new ArrayList<>(5);
-			// share marker array with other modules in multi-species
-			for (Module pop : species)
-				pop.markers = markers;
-		}
-		// important: data buffers for ParaGraph & co store time in first element
-		return markers.add(ArrayMath.insert(aMark, filled ? 1.0 : -1.0, 0));
-	}
-
-	/**
-	 * Get the list of markers. This serves to mark special values in different
-	 * kinds of graphs.
-	 * 
-	 * @return the list of markers
-	 */
-	public ArrayList<double[]> getMarkers() {
-		return markers;
-	}
-
 	/**
 	 * Command line option to set the relative rate for updating each
 	 * population/species. Only relevant for multi-species interactions.
@@ -1703,109 +1665,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				}
 			});
 
-	/**
-	 * Command line option to mark points on graphs (ParaGraph, S3Graph, LineGraph
-	 * and HistoGraph). Very convenient to indicate fixed points
-	 */
-	public final CLOption cloPoints = new CLOption("points", "-none", EvoLudo.catGUI, null,
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse point markers for a single or multiple populations/species. These
-				 * translate to markers added to different graphs as appropriate. {@code arg}
-				 * can be a single value or an array of values with the separator
-				 * {@value CLOParser#MATRIX_DELIMITER} for multiple markers. For multiple
-				 * species, the separator is {@value CLOParser#SPECIES_DELIMITER}. The the
-				 * values of each fixed point is given by an array with the separator
-				 * {@value CLOParser#VECTOR_DELIMITER}.
-				 * <p>
-				 * <strong>Note:</strong>If one or more entries of the marker are negative
-				 * an open marker is drawn otherwise the point is filled.
-				 * 
-				 * @param arg (array of) array of fixed point value(s)
-				 */
-				@Override
-				public boolean parse(String arg) {
-					if (!cloPoints.isSet())
-						return true;
-					boolean success = true;
-					int totTraits = 0;
-					for (Module pop : species)
-						totTraits += pop.getNTraits();
-					String[] myMarkers = arg.split(CLOParser.MATRIX_DELIMITER);
-					if (markers != null)
-						markers.clear();
-					for (String aMarker : myMarkers) {
-						double[] dmk = new double[totTraits];
-						String[] mk = aMarker.split(CLOParser.SPECIES_DELIMITER);
-						boolean mksuccess = true;
-						boolean filled = true;
-						int n = 0;
-						int idx = 0;
-						for (Module pop : species) {
-							double[] smk = CLOParser.parseVector(mk[n++]);
-							if (ArrayMath.min(smk) < 0.0) {
-								filled = false;
-								ArrayMath.abs(smk);
-							}
-							int nt = pop.getNTraits();
-							if (smk.length != nt) {
-								// ok for frequency based modules or with vacant sites
-								int vac = pop.getVacant();
-								int dep = pop.getDependent();
-								if (!(smk.length == nt - 1 && (vac >= 0 || dep >= 0))) {
-									mksuccess = false;
-									break;
-								}
-								switch (model.getModelType()) {
-									case IBS:
-										smk = ArrayMath.insert(smk, 1.0 - ArrayMath.norm(smk),
-												dep >= 0 ? dep : vac);
-										break;
-									case ODE:
-									case SDE:
-									case PDE:
-										if (((Model.DE) model).isDensity())
-											// no dependent traits for density based model (vac >= 0 must hold)
-											smk = ArrayMath.insert(smk, 0.0, vac);
-										else
-											// frequency based models (dep >= 0 must hold)
-											smk = ArrayMath.insert(smk, 1.0 - ArrayMath.norm(smk), dep);
-										break;
-									default: // unreachable
-										break;
-								}
-							}
-							// now smk.length == nt holds
-							System.arraycopy(smk, 0, dmk, idx, nt);
-							idx += nt;
-						}
-						if (!mksuccess) {
-							logger.warning(
-									"failed to set marker '" + aMarker + "' - ignored.");
-							success = false;
-							continue;
-						}
-						addMarker(dmk, filled);
-					}
-					return success;
-				}
-
-				@Override
-				public String getDescription() {
-					String multi = "";
-					if (species.size() > 1)
-						multi = "[" + CLOParser.SPECIES_DELIMITER + "<j0>,...]";
-					String descr = "--points <p>    values of fixed points\n" + //
-							"        format: <i0>,<i1>,..." + multi + "[" + CLOParser.MATRIX_DELIMITER
-							+ "<k0>,<k1>...] with \n" + //
-							"                <nm> values of fixed point(s)";
-					return descr;
-				}
-			});
-
 	@Override
 	public void collectCLO(CLOParser parser) {
 		// prepare command line options
@@ -1869,6 +1728,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		}
 
 		// add markers, fixed points in particular
-		parser.addCLO(cloPoints);
+		parser.addCLO(markers.clo);
 	}
 }
