@@ -342,7 +342,7 @@ public abstract class IBSPopulation {
 	 * <li>The best-response update must be implemented in subclasses that override
 	 * this method. By default throws an error.
 	 * <li>Instead of overriding the method, subclasses may remove
-	 * {@link Type#BEST_RESPONSE} from
+	 * {@link PlayerUpdate.Type#BEST_RESPONSE} from
 	 * {@link org.evoludo.simulator.modules.Module#clo
 	 * Module.cloPlayerUpdate}.
 	 * </ol>
@@ -2876,23 +2876,69 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Returns the minimum score {@code min} in this population, taking the
-	 * population structure and payoff accounting into account.
-	 * 
-	 * @return the processed minimum score
+	 * Process the payoff/score of individuals in a monomorphic population with
+	 * trait/strategy <code>mono</code> (see
+	 * {@link org.evoludo.simulator.modules.Discrete#getMonoGameScore(int)
+	 * Discrete.getMonoGameScore(int)}). Primarily deals with payoff accounting
+	 * (averaged versus accumulated).
+	 *
+	 * @param mono type trait/strategy
+	 * @return payoff/score in monomorphic population with trait/strategy
+	 *         <code>mono</code>. Returns <code>NaN</code> if scores are ill
+	 *         defined.
 	 */
-	public double getMinScore() {
-		return processScore(module.getMinGameScore(), true);
+	public double processMonoScore(double mono) {
+		// mono scores work for averaged payoffs (with or without VACANCY)
+		if (playerScoreAveraged)
+			return mono;
+		// for accumulated payoffs this makes only sense with adjustScores, without
+		// VACANT and for regular interaction geometries otherwise individuals may
+		// have different scores even in homogeneous populations
+		if (VACANT >= 0 || !interaction.isRegular)
+			return Double.NaN;
+		// regular and no vacant sites
+		int nConn = (int)(interaction.connectivity + 0.5);
+		if (module.isPairwise()) {
+			if (interactionGroup.samplingType == SamplingType.RANDOM)
+				return interactionGroup.nSamples * mono;
+			// interacting with all neighbours
+			if (interaction.isType(Geometry.Type.MEANFIELD))
+				return (nPopulation - 1) * mono;
+			return nConn * mono;
+		}
+		// group interactions
+		if (module.getNGroup() < nConn)
+			return nConn * mono;
+		// each individual participates in a single group interaction
+		return mono;
 	}
 
 	/**
-	 * Returns the maximum score {@code min} in this population, taking the
-	 * population structure and payoff accounting into account.
+	 * Process the minimum score {@code min} in this population, taking the
+	 * population structure into account.
 	 * 
+	 * @param min the minimum score
+	 * @return the processed minimum score
+	 */
+	public double processMinScore(double min) {
+		if (playerScoreAveraged)
+			return min;
+		int count = (min < 0.0 ? interaction.maxOut : interaction.minOut);
+		return processScore(min, count);
+	}
+
+	/**
+	 * Process the maximum score {@code max} in this population, taking the
+	 * population structure into account.
+	 * 
+	 * @param max the maximum score
 	 * @return the processed maximum score
 	 */
-	public double getMaxScore() {
-		return processScore(module.getMaxGameScore(), true);
+	public double processMaxScore(double max) {
+		if (playerScoreAveraged)
+			return max;
+		int count = (max < 0.0 ? interaction.maxOut : interaction.minOut);
+		return processScore(max, count);
 	}
 
 	/**
@@ -2900,15 +2946,11 @@ public abstract class IBSPopulation {
 	 * updating into account.
 	 * 
 	 * @param score the minimum or maximum score
-	 * @param max {@code true} if score is maximum
+	 * @param count the minimum/maximum number of interactions
 	 * @return the processed extremal score
 	 */
-	protected double processScore(double score, boolean max) {
-		if (playerScoreAveraged)
-			return score;
+	protected double processScore(double score, int count) {
 		// accumulated payoffs
-		int count = (score < 0.0 ? (max ? interaction.minOut : interaction.maxOut) :
-									(max ? interaction.maxOut : interaction.minOut));
 		if (adjustScores) {
 			// getMinGameScore in module must deal with structure and games
 			if (module.isPairwise()) {
@@ -2941,8 +2983,8 @@ public abstract class IBSPopulation {
 	 * {@link Module}.
 	 */
 	public void updateMinMaxScores() {
-		minScore = getMinScore();
-		maxScore = getMaxScore();
+		minScore = module.getMinScore();
+		maxScore = module.getMaxScore();
 		isNeutral = module.isNeutral();
 		minFitness = map2fit.map(minScore);
 		maxFitness = map2fit.map(maxScore);
@@ -3261,6 +3303,12 @@ public abstract class IBSPopulation {
 		// check for scenarios that are untested or work in progress
 		if (!interaction.isUndirected && !module.isStatic())
 			logger.warning("interactions on directed graphs have received very limited testing...");
+
+		if (interaction.isInterspecies() && module.isContinuous())
+			logger.warning("multi-species interactions with continuous traits have NOT been tested...");
+
+		if (module.isContinuous() && nGroup > 2)
+			logger.warning("group interactions with continuous traits have NOT been tested...");
 
 		if (VACANT >= 0 && nGroup > 2)
 			logger.warning("group interactions with vacant sites have NOT been tested...");
@@ -3723,25 +3771,18 @@ public abstract class IBSPopulation {
 	public abstract void getInitialTraits(double[] init);
 
 	/**
-	 * Return the number of mean values for this population (for traits or fitness).
-	 *
-	 * @return the number of mean values
-	 * 
-	 * @see IBS#getNMean()
-	 */
-	public int getNMean() {
-		return nTraits;
-	}
-
-	/**
 	 * Returns the mean trait(s) of this population in the array {@code mean}. Used
-	 * by GUI to visualize the current state of this IBS model.
+	 * by GUI to visualize the current state of this IBS model. Returns {@code true}
+	 * if data point belongs to the same time series and {@code false} if a new
+	 * series was started through {@link #init()} or {@link #reset()}.
 	 * 
 	 * @param mean the array for returning the trait values
+	 * @return <code>true</code> if this and the previous data point should be
+	 *         connected, i.e. no reset had been requested in the mean time.
 	 * 
 	 * @see Model#getMeanTraits(int, double[])
 	 */
-	public abstract void getMeanTraits(double[] mean);
+	public abstract boolean getMeanTraits(double[] mean);
 
 	/**
 	 * Returns the traits of all individuals in this population coded as colors in
@@ -3766,10 +3807,11 @@ public abstract class IBSPopulation {
 	 * series was started through {@link #init()} or {@link #reset()}.
 	 * 
 	 * @param mean the array for storing the mean fitness values
+	 * @return {@code true} if this and the previous data point should be connected
 	 * 
 	 * @see Model#getMeanFitness(int, double[])
 	 */
-	public abstract void getMeanFitness(double[] mean);
+	public abstract boolean getMeanFitness(double[] mean);
 
 	/**
 	 * Returns the fitness of all individuals in this population coded as colors in

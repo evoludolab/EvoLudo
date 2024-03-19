@@ -192,7 +192,7 @@ public class IBSDPopulation extends IBSPopulation {
 	public boolean permitsMode(Mode testmode) {
 		boolean modeOK = super.permitsMode(testmode);
 		if (modeOK && (module instanceof HasHistogram.StatisticsProbability
-				|| module instanceof HasHistogram.StatisticsTime))
+				|| module instanceof HasHistogram.StatisticsTime) && initType == InitType.MUTANT)
 			return true;
 		return false;
 	}
@@ -1718,17 +1718,6 @@ public class IBSDPopulation extends IBSPopulation {
 		strategiesTypeCount[newtype]++;
 	}
 
-	public double getMonoScore(int type) {
-		// for accumulated payoffs this makes only sense with adjustScores, without
-		// VACANT and for regular interaction geometries otherwise individuals may
-		// have different scores even in homogeneous populations
-		if (!playerScoreAveraged && (VACANT >= 0 || !interaction.isRegular))
-			return Double.NaN;
-		// averaged scores or regular interaction geometries without vacant sites
-		// max/min doesn't matter; graph must be regular for accumulated scores
-		return processScore(module.getMonoGameScore(type), true);
-	}
-
 	@Override
 	public void getFitnessHistogramData(double[][] bins) {
 		int nBins = bins[0].length;
@@ -1786,10 +1775,11 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	@Override
-	public void getMeanTraits(double[] mean) {
+	public boolean getMeanTraits(double[] mean) {
 		double iPop = 1.0 / nPopulation;
 		for (int n = 0; n < nTraits; n++)
 			mean[n] = strategiesTypeCount[n] * iPop;
+		return true;
 	}
 
 	@Override
@@ -1798,7 +1788,7 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	@Override
-	public void getMeanFitness(double[] mean) {
+	public boolean getMeanFitness(double[] mean) {
 		double sum = 0.0;
 		for (int n = 0; n < nTraits; n++) {
 			if (n == VACANT)
@@ -1812,6 +1802,7 @@ public class IBSDPopulation extends IBSPopulation {
 			mean[n] = count == 0 ? Double.NaN : accuTypeScores[n] / count;
 		}
 		mean[nTraits] = sum / getPopulationSize();
+		return true;
 	}
 
 	/**
