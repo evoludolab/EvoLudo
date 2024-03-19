@@ -562,7 +562,9 @@ public class Mutualism extends Discrete implements Pairs,
 					}
 					int l2 = l * l;
 					int m = l / 2;
-					switch ((int)initArgs[0]) {
+					double[] args = initType.getArgs();
+					int type = ((args != null && args.length > 0) ? (int)args[0] : 0);
+					switch (type) {
 						default:
 						case 0:
 							if (l % 2 == 1) {
@@ -604,9 +606,6 @@ public class Mutualism extends Discrete implements Pairs,
 					}
 					break;
 
-				case SQUARE_NEUMANN:
-				case SQUARE_NEUMANN_2ND:
-				case SQUARE_MOORE:
 				case SQUARE:
 				case HONEYCOMB:
 				case TRIANGULAR:

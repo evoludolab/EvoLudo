@@ -2001,9 +2001,9 @@ public class IBSDPopulation extends IBSPopulation {
 		Arrays.fill(strategiesTypeCount, 0);
 		// different traits active
 		double[] cumFreqs = new double[nTraits];
-		cumFreqs[0] = initArgs[0];
+		cumFreqs[0] = initType.args[0];
 		for (int i = 1; i < nTraits; i++)
-			cumFreqs[i] = cumFreqs[i - 1] + initArgs[i];
+			cumFreqs[i] = cumFreqs[i - 1] + initType.args[i];
 		double inorm = 1.0 / cumFreqs[nTraits - 1];
 		ArrayMath.multiply(cumFreqs, inorm);
 
@@ -2029,12 +2029,12 @@ public class IBSDPopulation extends IBSPopulation {
 	 */
 	protected void initMono() {
 		// initArgs contains the index of the monomorphic trait
-		int monoType = (int) initArgs[0];
+		int monoType = (int) initType.args[0];
 		double monoFreq = 1.0;
 		if (VACANT >= 0) {
 			// the second argument indicates the frequency of vacant sites
-			if (initArgs.length < 2)
-				monoFreq = Math.max(0.0, 1.0 - initArgs[1]);
+			if (initType.args.length < 2)
+				monoFreq = Math.max(0.0, 1.0 - initType.args[1]);
 		}
 		initMono(monoType, monoFreq);
 	}
@@ -2069,7 +2069,7 @@ public class IBSDPopulation extends IBSPopulation {
 		fix.mutantNode = initMutant();
 		fix.mutantTrait = strategies[fix.mutantNode];
 		// this assumes InitType.MUTANT
-		fix.residentTrait = (int) initArgs[1];
+		fix.residentTrait = (int) initType.args[1];
 	}
 
 	/**
@@ -2081,17 +2081,18 @@ public class IBSDPopulation extends IBSPopulation {
 	 */
 	protected int initMutant() {
 		// initArgs contains the index of the resident and mutant traits
-		int mutantType = (int) initArgs[0];
+		int mutantType = (int) initType.args[0];
+		int len = initType.args.length;
 		int residentType;
-		if (initArgs.length >= 2)
-			residentType = (int) initArgs[1];
+		if (len > 1)
+			residentType = (int) initType.args[1];
 		else
 			residentType = (mutantType + 1) % nTraits;
 		double monoFreq = 1.0;
 		if (VACANT >= 0) {
 			// the second argument indicates the frequency of vacant sites
-			if (initArgs.length < 3)
-				monoFreq = Math.max(0.0, 1.0 - initArgs[2]);
+			if (len < 3)
+				monoFreq = Math.max(0.0, 1.0 - initType.args[2]);
 			if (residentType == VACANT && monoFreq < 1.0 - 1e-8) {
 				// problem encountered
 				initType = InitType.UNIFORM;
@@ -2243,14 +2244,6 @@ public class IBSDPopulation extends IBSPopulation {
 	protected InitType initType;
 
 	/**
-	 * The array with arguments for the initialization. Their detailed meaning
-	 * depends on the type of initialization.
-	 * 
-	 * @see InitType
-	 */
-	protected double[] initArgs;
-
-	/**
 	 * Sets the type of the initial configuration and any accompanying arguments. If
 	 * either {@code type} or {@code args} are {@code null} the respective current
 	 * setting is preserved.
@@ -2261,10 +2254,8 @@ public class IBSDPopulation extends IBSPopulation {
 	 * @see InitType
 	 */
 	public void setInitType(InitType type, double[] args) {
-		if (type != null)
-			initType = type;
-		if (args != null)
-			initArgs = args;
+		initType = type;
+		initType.args = args;
 	}
 
 	/**
@@ -2275,7 +2266,6 @@ public class IBSDPopulation extends IBSPopulation {
 	 * @see InitType
 	 */
 	public InitType getInitType() {
-		initType.args = ArrayMath.clone(initArgs);
 		return initType;
 	}
 
@@ -2286,23 +2276,6 @@ public class IBSDPopulation extends IBSPopulation {
 		int newtype = strategies[hit] % nTraits + nTraits + (alt ? -1 : 1);
 		return mouseSetHit(hit, newtype % nTraits);
 	}
-
-	// allows drawing of initial configurations - feature got retired; revive?
-	// /**
-	// * set type of hit node to that of reference node
-	// *
-	// * @param hit
-	// * @param ref
-	// * @return
-	// */
-	// @Override
-	// public boolean mouseHitNode(int hit, int ref) {
-	// if( hit<0 || hit>=nPopulation )
-	// return false; // invalid argument
-	// if( ref<0 || ref>=nPopulation )
-	// return false; // invalid argument
-	// return mouseSetHit(hit, strategies[ref]);
-	// }
 
 	/**
 	 * Process event from GUI: individual with index {@code hit} was hit by mouse
