@@ -650,6 +650,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 							continue;
 						}
 					}
+					graph.clearMessage();
 					if( fixData != null && !fixData.probRead ) {
 						if( graph.getTag()==fixData.typeFixed ) {
 							graph.addData(fixData.mutantNode);
@@ -688,6 +689,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						nPop = pop.getNPopulation();
 						nTrait = pop.getNTraits();
 					}
+					graph.clearMessage();
 					if( fixData != null && !fixData.timeRead ) {
 						int iNode = fixData.mutantNode;
 						if( graph.getTag()==fixData.typeFixed ) {
