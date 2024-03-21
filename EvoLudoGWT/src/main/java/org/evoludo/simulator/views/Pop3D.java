@@ -291,9 +291,9 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 		org.evoludo.simulator.models.Model.Continuous cmodel = null;
 		org.evoludo.simulator.models.Model.Discrete dmodel = null;
 		if (model.isContinuous())
-			dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
-		else
 			cmodel = (org.evoludo.simulator.models.Model.Continuous) model;
+		else
+			dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
 
 		for( PopGraph3D graph : graphs ) {
 			ColorMap<MeshLambertMaterial> cMap = null;
