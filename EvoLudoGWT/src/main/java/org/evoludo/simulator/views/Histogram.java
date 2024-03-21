@@ -107,14 +107,14 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 
 	@Override
 	public void activate() {
-		engine.getModel().setMode(type.getMode());
+		model.setMode(type.getMode());
 		super.activate();
 	}
 
 	@Override
 	public void deactivate() {
 		// revert to default of dynamics mode
-		engine.getModel().setMode(Mode.DYNAMICS);
+		model.setMode(Mode.DYNAMICS);
 		super.deactivate();
 	}
 
@@ -126,7 +126,6 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 		degreeProcessed = false;
 		int nGraphs = 0;
 		nSamples = 0;
-		// multiple line graphs for multi-species interactions and in case of multiple traits for continuous strategies
 		for( Module pop : species ) {
 			int nTraits = pop.getNTraits();
 			switch( type ) {
@@ -135,7 +134,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					nGraphs += nTraits;
 					break;
 				case FITNESS:
-					if( pop.isContinuous() )
+					if( model.isContinuous() )
 						nGraphs++;
 					else {
 						nGraphs += nTraits;
@@ -188,8 +187,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						break;
 
 					case FITNESS:
-						Model model = engine.getModel();
-						nTraits = (module.isContinuous()?1:nTraits);
+						nTraits = (model.isContinuous()?1:nTraits);
 						int vacant = module.getVacant();
 						int paneIdx = 0;
 						int bottomPaneIdx = nTraits-1;
@@ -225,7 +223,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 							style.xLabel = "payoffs";
 							style.showXLabel = bottomPane;	// show only on bottom panel
 							style.showXTickLabels = bottomPane;
-							if( module.isContinuous() )
+							if( model.isContinuous() )
 								style.showLabel = isMultispecies;
 							else
 								style.showLabel = true;
@@ -235,7 +233,6 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						break;
 
 					case DEGREE:
-						model = engine.getModel();
 						Model.Type mType = model.getModelType();
 						if( mType==Model.Type.ODE || mType==Model.Type.SDE ) {
 							// happens for ODE/SDE/PDE - do not show distribution
@@ -343,7 +340,6 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 		Module pop = null;
 		boolean newPop = false;
 		double[][] data = null;
-		Model model = engine.getModel();
 		for( HistoGraph graph : graphs) {
 			AbstractGraph.GraphStyle style = graph.getStyle();
 			Module oldpop = pop;
@@ -385,14 +381,14 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 
 				case FITNESS:
 					graph.clearMarkers();
-					nTraits = (pop.isContinuous()?1:nTraits);
+					nTraits = (model.isContinuous()?1:nTraits);
 					if( vacant>=0 )
 						nTraits--;
 					if( newPop || data==null || data.length!=nTraits || data[0].length!=HistoGraph.MAX_BINS ) 
 						data = new double[nTraits][HistoGraph.MAX_BINS];
 					graph.setData(data);
-					min = pop.getMinScore();
-					max = pop.getMaxScore();
+					min = model.getMinScore(pop.getID());
+					max = model.getMaxScore(pop.getID());
 					if( Math.abs(min-style.xMin)>1e-6 || Math.abs(max-style.xMax)>1e-6 ) {
 						style.xMin = min;
 						style.xMax = max;
@@ -401,11 +397,12 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					style.yMin = 0.0;
 					style.yMax = 1.0;
 					if( pop instanceof Discrete ) {
-						Discrete dmod = (Discrete)pop;
+						// cast is save because pop is Discrete
+						org.evoludo.simulator.models.Model.Discrete dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
 						style.label = (isMultispecies?pop.getName() + ": " : "") + pop.getTraitName(tag);
 						Color tColor = colors[tag];
 						style.graphColor = ColorMapCSS.Color2Css(tColor);
-						double mono = dmod.getMonoScore(tag);
+						double mono = dmodel.getMonoScore(pop.getID(), tag);
 						if (Double.isNaN(mono))
 							continue;
 						graph.addMarker(mono,
@@ -414,11 +411,13 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						break;
 					}
 					if( pop instanceof Continuous ) {
+						// cast is save because pop is Continuous
+						org.evoludo.simulator.models.Model.Continuous cmodel = (org.evoludo.simulator.models.Model.Continuous) model;
 						Color tcolor = colors[tag];
-						graph.addMarker(pop.getMinMonoScore(),
+						graph.addMarker(cmodel.getMinMonoScore(pop.getID()),
 								ColorMapCSS.Color2Css(ColorMap.blendColors(tcolor, Color.BLACK, 0.5)),
 								"minimum monomorphic payoff");
-						graph.addMarker(pop.getMaxMonoScore(),
+						graph.addMarker(cmodel.getMaxMonoScore(pop.getID()),
 								ColorMapCSS.Color2Css(ColorMap.blendColors(tcolor, Color.WHITE, 0.5)),
 								"maximum monomorphic payoff");
 						style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
@@ -535,13 +534,12 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 		if( !isActive && !doStatistics )
 			return;
 
-		double newtime = engine.getModel().getTime();
+		double newtime = model.getTime();
 		if( Math.abs(timestamp-newtime)<1e-8 ) {
 			for( HistoGraph graph : graphs)
 				graph.paint();
 			return;
 		}
-		Model model = engine.getModel();
 		switch( type ) {
 			case STRATEGY:
 				double[][] data = null;
@@ -551,6 +549,8 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					double[][] graphdata = graph.getData();
 					if( data!=graphdata ) {
 						data = graphdata;
+//XXX tag refers to trait id - insufficient to identify traits in multi-species modules
+// replace tag with traitID and speciesID?
 						cmodel.getTraitHistogramData(graph.getTag(), data);
 					}
 					graph.paint();
@@ -564,6 +564,8 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					double[][] graphdata = graph.getData();
 					if( data!=graphdata ) {
 						data = graphdata;
+//XXX tag refers to trait id - insufficient to identify traits in multi-species modules
+// replace tag with traitID and speciesID?
 						model.getFitnessHistogramData(graph.getTag(), data);
 					}
 					graph.paint();
@@ -720,7 +722,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 
 	@Override
 	public String getCounter() {
-		if( engine.getModel().isMode(Mode.STATISTICS) ) {
+		if( model.isMode(Mode.STATISTICS) ) {
 			return "samples: "+nSamples;
 		}
 		return super.getCounter();

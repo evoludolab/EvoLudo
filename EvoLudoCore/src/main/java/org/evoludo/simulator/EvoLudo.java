@@ -46,13 +46,15 @@ import java.util.logging.Logger;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.MersenneTwister;
 import org.evoludo.math.RNGDistribution;
+import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBS.HasIBS;
-import org.evoludo.simulator.models.Model.Mode;
-import org.evoludo.simulator.models.Model.Type;
 import org.evoludo.simulator.models.IBSC;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSPopulation;
+import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Model.Mode;
+import org.evoludo.simulator.models.Model.Type;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.ODERK;
 import org.evoludo.simulator.models.PDERD;
@@ -108,7 +110,7 @@ import org.evoludo.util.Plist;
  * @author Christoph Hauert
  */
 public abstract class EvoLudo
-		implements Model.MilestoneListener, Model.ChangeListener, CLOProvider, MersenneTwister.Chronometer {
+		implements MilestoneListener, ChangeListener, CLOProvider, MersenneTwister.Chronometer {
 
 	/**
 	 * The interface to execute commands in a manner that is agnostic to the
@@ -343,7 +345,7 @@ public abstract class EvoLudo
 			if (model != null)
 				return model;
 		}
-		if (module.isContinuous())
+		if (module instanceof Continuous)
 			return new IBSC(this);
 		return new IBSD(this);
 	}
@@ -383,7 +385,7 @@ public abstract class EvoLudo
 	/**
 	 * Set model type and loads the corresponding frameworks for individual based
 	 * simulations or numerical integration of ODE/SDE/PDE models. Notifies all
-	 * registered {@link Model.MilestoneListener}'s of any changes.
+	 * registered {@link MilestoneListener}'s of any changes.
 	 *
 	 * @param type the type of {@link Model} to load
 	 * @return <code>true</code> if model type changed
@@ -487,9 +489,9 @@ public abstract class EvoLudo
 	 * List of engine listeners that get notified when the state of the population
 	 * changed, for example after population reset or completed an update step.
 	 * 
-	 * @see Model.MilestoneListener
+	 * @see MilestoneListener
 	 */
-	protected List<Model.MilestoneListener> milestoneListeners = new ArrayList<Model.MilestoneListener>();
+	protected List<MilestoneListener> milestoneListeners = new ArrayList<MilestoneListener>();
 
 	/**
 	 * Add a milestone listener to the list of listeners that get notified when the
@@ -497,7 +499,7 @@ public abstract class EvoLudo
 	 * 
 	 * @param newListener the new milestone listener
 	 */
-	public void addMilestoneListener(Model.MilestoneListener newListener) {
+	public void addMilestoneListener(MilestoneListener newListener) {
 		milestoneListeners.add(newListener);
 	}
 
@@ -508,7 +510,7 @@ public abstract class EvoLudo
 	 * @param obsoleteListener the listener to remove from list of milestone
 	 *                         listeners
 	 */
-	public void removeMilestoneListener(Model.MilestoneListener obsoleteListener) {
+	public void removeMilestoneListener(MilestoneListener obsoleteListener) {
 		milestoneListeners.remove(obsoleteListener);
 	}
 
@@ -517,7 +519,7 @@ public abstract class EvoLudo
 	 * 
 	 * @see Model.ChangeListener
 	 */
-	protected List<Model.ChangeListener> changeListeners = new ArrayList<Model.ChangeListener>();
+	protected List<ChangeListener> changeListeners = new ArrayList<ChangeListener>();
 
 	/**
 	 * Add a change listener to the list of listeners that get notified when the
@@ -525,7 +527,7 @@ public abstract class EvoLudo
 	 * 
 	 * @param newListener the new change listener
 	 */
-	public void addChangeListener(Model.ChangeListener newListener) {
+	public void addChangeListener(ChangeListener newListener) {
 		changeListeners.add(newListener);
 	}
 
@@ -536,13 +538,13 @@ public abstract class EvoLudo
 	 * @param obsoleteListener the listener to remove from the list of change
 	 *                         listeners
 	 */
-	public void removeChangeListener(Model.ChangeListener obsoleteListener) {
+	public void removeChangeListener(ChangeListener obsoleteListener) {
 		changeListeners.remove(obsoleteListener);
 	}
 
 	/**
 	 * Unload model framework. Notifies all registered
-	 * {@link Model.MilestoneListener}'s.
+	 * {@link MilestoneListener}'s.
 	 */
 	public void modelUnload() {
 		if (activeModel == null)
@@ -1128,12 +1130,12 @@ public abstract class EvoLudo
 
 	/**
 	 * Called whenever a new model has finished loading. Notifies all registered
-	 * {@link Model.MilestoneListener}s.
+	 * {@link MilestoneListener}s.
 	 */
 	public synchronized void fireModelLoaded() {
 		runFired = false;
 		pendingAction = PendingAction.NONE;
-		for (Model.MilestoneListener i : milestoneListeners)
+		for (MilestoneListener i : milestoneListeners)
 			i.modelLoaded();
 		logger.info(
 				"Module '" + activeModule.getTitle() + "' loaded\n" + activeModule.getInfo() + "\nVersion: "
@@ -1142,11 +1144,11 @@ public abstract class EvoLudo
 
 	/**
 	 * Called whenever the current model has finished unloading. Notifies all
-	 * registered {@link Model.MilestoneListener}s.
+	 * registered {@link MilestoneListener}s.
 	 */
 	public synchronized void fireModelUnloaded() {
 		runFired = false;
-		for (Model.MilestoneListener i : milestoneListeners)
+		for (MilestoneListener i : milestoneListeners)
 			i.modelUnloaded();
 		logger.info("Module '" + activeModule.getTitle() + "' unloaded");
 	}
@@ -1161,12 +1163,12 @@ public abstract class EvoLudo
 
 	/**
 	 * Called whenever the model starts its calculations. Fires only when starting
-	 * to run. Notifies all registered {@link Model.MilestoneListener}s.
+	 * to run. Notifies all registered {@link MilestoneListener}s.
 	 */
 	public synchronized void fireModelRunning() {
 		if (runFired)
 			return;
-		for (Model.MilestoneListener i : milestoneListeners)
+		for (MilestoneListener i : milestoneListeners)
 			i.modelRunning();
 		runFired = isRunning();
 	}
@@ -1176,7 +1178,7 @@ public abstract class EvoLudo
 	 * trigger the update of the state displayed in the GUI. Processes pending
 	 * actions and notifies all registered {@code Model.MilestoneListener}s.
 	 * 
-	 * @see Model.MilestoneListener
+	 * @see MilestoneListener
 	 * @see PendingAction
 	 */
 	public synchronized void fireModelChanged() {
@@ -1192,7 +1194,7 @@ public abstract class EvoLudo
 	 * Helper method for handling model changed events and processes pending
 	 * actions.
 	 * 
-	 * @see Model.MilestoneListener
+	 * @see MilestoneListener
 	 * @see PendingAction
 	 */
 	private void _fireModelChanged() {
@@ -1210,14 +1212,14 @@ public abstract class EvoLudo
 			case STOP:
 				// stop requested (as opposed to simulations that stopped)
 				runFired = false;
-				for (Model.MilestoneListener i : milestoneListeners)
+				for (MilestoneListener i : milestoneListeners)
 					i.modelStopped();
 				break;
 			case NONE:
 			case APPLY:
 			case SNAPSHOT:
 			case STATISTIC:
-				for (Model.ChangeListener i : changeListeners)
+				for (ChangeListener i : changeListeners)
 					i.modelChanged(pendingAction);
 				break;
 			default:
@@ -1230,7 +1232,7 @@ public abstract class EvoLudo
 	/**
 	 * Called after the state of the model has been restored either through
 	 * drag'n'drop with the GWT GUI or through the <code>--restore</code> command
-	 * line argument. Notifies all registered {@link Model.MilestoneListener}s.
+	 * line argument. Notifies all registered {@link MilestoneListener}s.
 	 *
 	 * @see org.evoludo.EvoLudoWeb#restoreFromFile(String, String)
 	 *      EvoLudoWeb.restoreFromFile(String, String)
@@ -1238,19 +1240,19 @@ public abstract class EvoLudo
 	 */
 	public synchronized void fireModelRestored() {
 		runFired = false;
-		for (Model.MilestoneListener i : milestoneListeners)
+		for (MilestoneListener i : milestoneListeners)
 			i.modelRestored();
 		logger.info("Engine restored.");
 	}
 
 	/**
 	 * Called after the model has been re-initialized. Notifies all registered
-	 * {@link Model.MilestoneListener}s.
+	 * {@link MilestoneListener}s.
 	 */
 	public synchronized void fireModelReinit() {
 		if (activeModel.isMode(Mode.DYNAMICS) || !isRunning) {
 			runFired = false;
-			for (Model.MilestoneListener i : milestoneListeners)
+			for (MilestoneListener i : milestoneListeners)
 				i.modelDidReinit();
 			logger.info("Engine init.");
 		}
@@ -1258,22 +1260,22 @@ public abstract class EvoLudo
 
 	/**
 	 * Called after the model has been reset. Notifies all registered
-	 * {@link Model.MilestoneListener}s.
+	 * {@link MilestoneListener}s.
 	 */
 	public synchronized void fireModelReset() {
 		runFired = false;
-		for (Model.MilestoneListener i : milestoneListeners)
+		for (MilestoneListener i : milestoneListeners)
 			i.modelDidReset();
 		logger.info("Engine reset.");
 	}
 
 	/**
 	 * Called after the model completed its relaxation. Notifies all registered
-	 * {@link Model.MilestoneListener}s.
+	 * {@link MilestoneListener}s.
 	 */
 	public synchronized void fireModelRelaxed() {
 		runFired = false;
-		for (Model.MilestoneListener i : milestoneListeners)
+		for (MilestoneListener i : milestoneListeners)
 			i.modelRelaxed();
 		logger.info("Engine relaxed.");
 	}
@@ -1281,7 +1283,7 @@ public abstract class EvoLudo
 	/**
 	 * Called after the population has reached an absorbing state (or has converged
 	 * to an equilibrium state). Notifies all registered
-	 * {@link Model.MilestoneListener}s.
+	 * {@link MilestoneListener}s.
 	 */
 	public synchronized void fireModelStopped() {
 		// check if new sample completed
@@ -1289,7 +1291,7 @@ public abstract class EvoLudo
 		if (activeModel.isMode(Mode.DYNAMICS)) {
 			// MODE_DYNAMICS
 			runFired = false;
-			for (Model.MilestoneListener i : milestoneListeners)
+			for (MilestoneListener i : milestoneListeners)
 				i.modelStopped();
 		} else {
 			// MODE_STATISTICS
@@ -2212,7 +2214,7 @@ public abstract class EvoLudo
 		parser.addCLO(cloRNG);
 		// option for trait color schemes only makes sense for modules with multiple
 		// continuous traits that have 2D/3D visualizations
-		if (activeModule.isContinuous() && activeModule.getNTraits() > 1 && //
+		if (activeModel.isContinuous() && activeModule.getNTraits() > 1 && //
 			(activeModule instanceof HasPop2D || activeModule instanceof HasPop3D)) {
 			parser.addCLO(cloTraitColorScheme);
 			cloTraitColorScheme.addKeys(ColorModelType.values());

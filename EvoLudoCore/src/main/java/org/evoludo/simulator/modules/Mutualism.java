@@ -606,6 +606,9 @@ public class Mutualism extends Discrete implements Pairs,
 					}
 					break;
 
+				case SQUARE_NEUMANN:
+				case SQUARE_NEUMANN_2ND:
+				case SQUARE_MOORE:
 				case SQUARE:
 				case HONEYCOMB:
 				case TRIANGULAR:

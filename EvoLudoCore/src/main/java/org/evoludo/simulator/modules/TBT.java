@@ -36,7 +36,9 @@ import java.awt.Color;
 import java.io.PrintStream;
 import java.util.Arrays;
 
+import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.InitType;
@@ -487,8 +489,45 @@ public class TBT extends Discrete implements Pairs,
 	}
 
 	@Override
+	public TBTIBS createIBS() {
+		return new TBT.TBTIBS(engine);
+	}
+
+	public class TBTIBS extends IBSD {
+
+		public TBTIBS(EvoLudo engine) {
+			super(engine);
+		}
+
+		@Override
+		public String getMeanName(int index) {
+			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND)) {
+				if (index < nTraits)
+					return super.getMeanName(index) + " (1st)";
+				return super.getMeanName(index % nTraits) + " (2nd)";				
+			}
+			return super.getMeanName(index);
+		}
+
+		@Override
+		public Color[] getMeanColors() {
+			Color[] colors = super.getMeanColors();
+			if (!reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
+				return colors;
+			int nMean = getNMean();
+			Color[] color2nd = new Color[nMean];
+			System.arraycopy(colors, 0, color2nd, 0, nTraits);
+			for (int n = 0; n < nTraits; n++) {
+				color2nd[n] = colors[n];
+				color2nd[nTraits + n] = colors[n].darker();
+			}
+			return color2nd;
+		}
+	}
+
+	@Override
 	public IBSDPopulation createIBSPop() {
-		return new TBT.IBS(engine);
+		return new TBT.TBTPop(engine);
 	}
 
 	/**
@@ -498,17 +537,118 @@ public class TBT extends Discrete implements Pairs,
 	 *
 	 * @author Christoph Hauert
 	 */
-	public class IBS extends IBSDPopulation {
+	public class TBTPop extends IBSDPopulation {
 
 		/**
 		 * Create a new instance of the IBS model for {@code 2×2} games.
 		 * 
 		 * @param engine the pacemeaker for running the model
 		 */
-		protected IBS(EvoLudo engine) {
+		protected TBTPop(EvoLudo engine) {
 			super(engine);
 		}
 
+		@Override
+		public boolean check() {
+			boolean doReset = super.check();
+			if (reproduction!= null && reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
+				tsTraits = new double[2 * nTraits];
+			else
+				tsTraits = null;
+			tsMean = -1.0;
+			return doReset;
+		}
+		
+		@Override
+		public int getNMean() {
+			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
+				return 2 * nTraits;
+			return super.getNMean();
+		}
+
+		double tsMean = -1.0;
+		double[] tsTraits;
+
+		@Override
+		public void getMeanTraits(double[] mean) {
+			// SQUARE_NEUMANN_2ND geometry for reproduction results in two disjoint 
+			// sublattices; report strategy frequencies in each sublattice separately
+			if (!reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND)) {
+				super.getMeanFitness(mean);
+				return;
+			}
+
+			double newtime = model.getTime();
+			if(Math.abs(tsMean - newtime) < engine.getReportInterval()) {
+				System.arraycopy(tsTraits, 0, mean, 0, mean.length);
+				return;
+			}
+			int n = 0;
+			Arrays.fill(mean, 0);
+			int side = (int) Math.sqrt(nPopulation);
+			int offset1, offset2;
+			while (n < nPopulation) {
+				if ((n / side) % 2 == 0) {
+					offset1 = 0;
+					offset2 = nTraits;
+				} else {
+					offset1 = nTraits;
+					offset2 = 0;
+				}
+				mean[offset1 + strategies[n++] % nTraits]++;
+				mean[offset2 + (strategies[n++] % nTraits)]++;
+			}
+			ArrayMath.multiply(mean, 2.0 / nPopulation);
+			System.arraycopy(mean, 0, tsTraits, 0, mean.length);
+			tsMean = newtime;
+		}
+
+		@Override
+		public void getMeanFitness(double[] mean) {
+			// SQUARE_NEUMANN_2ND geometry for reproduction results in two disjoint 
+			// sublattices; report strategy frequencies in each sublattice separately
+			if (!reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND)) {
+				super.getMeanFitness(mean);
+				return;
+			}
+
+			int n = 0;
+			Arrays.fill(mean, 0);
+			int side = (int) Math.sqrt(nPopulation);
+			int offset1, offset2;
+			while (n<nPopulation) {
+				if ((n / side) % 2 == 0) {
+					offset1 = 0;
+					offset2 = nTraits;
+				} else {
+					offset1 = nTraits;
+					offset2 = 0;
+				}
+				mean[offset1 + strategies[n] % nTraits] += getFitnessAt(n++);
+				mean[offset2 + (strategies[n] % nTraits)] += getFitnessAt(n++);
+			}
+			// total payoff in last entry
+			mean[2 * nTraits] = sumFitness * 0.25;
+			// averages for each sublattice
+			ArrayMath.multiply(mean, 2.0 / nPopulation);
+		}
+
+		@Override
+		public String getStatus() {
+			if (!reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
+				return super.getStatus();
+
+			double newtime = model.getTime();
+			if(Math.abs(tsMean - newtime) < engine.getReportInterval())
+				getMeanTraits(tsTraits);
+			String status = "";
+			for (int i = 0; i < 2 * nTraits; i++) {
+				status += (status.length() > 0 ? ", " : "") + model.getMeanName(i) + ": "
+						+ Formatter.formatPercent(tsTraits[i], 1);
+			}
+			return status;
+		}
+	
 		@Override
 		protected void initKaleidoscope() {
 			// kaleidoscopes only available for lattice geometries
@@ -575,6 +715,9 @@ public class TBT extends Discrete implements Pairs,
 					}
 					break;
 
+				case SQUARE_NEUMANN:
+				case SQUARE_NEUMANN_2ND:
+				case SQUARE_MOORE:
 				case SQUARE:
 				case HONEYCOMB:
 				case TRIANGULAR:
