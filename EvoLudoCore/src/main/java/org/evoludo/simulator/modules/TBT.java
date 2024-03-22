@@ -574,7 +574,7 @@ public class TBT extends Discrete implements Pairs,
 			// SQUARE_NEUMANN_2ND geometry for reproduction results in two disjoint 
 			// sublattices; report strategy frequencies in each sublattice separately
 			if (!reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND)) {
-				super.getMeanFitness(mean);
+				super.getMeanTraits(mean);
 				return;
 			}
 
