@@ -70,9 +70,10 @@ public class Map2Fitness {
 	Map map = Map.NONE;
 
 	/**
-	 * Instantiate new map of type {@code map}.
+	 * Instantiate new map of type {@code map} for {@code module}.
 	 * 
-	 * @param map the map to use as template
+	 * @param module the module using this mapping
+	 * @param map    the map to use as template
 	 */
 	public Map2Fitness(Module module, Map map) {
 		this.module = module;
@@ -224,7 +225,7 @@ public class Map2Fitness {
 					boolean success = true;
 					String[] map2fitnessspecies = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
-					ArrayList<? extends Module> species = module.getSpecies(); 
+					ArrayList<? extends Module> species = module.getSpecies();
 					for (Module mod : species) {
 						String m = map2fitnessspecies[n++ % map2fitnessspecies.length];
 						Map2Fitness.Map m2fm = (Map2Fitness.Map) clo.match(m);
@@ -259,7 +260,7 @@ public class Map2Fitness {
 
 				@Override
 				public void report(PrintStream output) {
-					ArrayList<? extends Module> species = module.getSpecies(); 
+					ArrayList<? extends Module> species = module.getSpecies();
 					for (Module mod : species) {
 						Map2Fitness m2f = mod.getMapToFitness();
 						output.println("# fitnessmap:           " + m2f.getTitle()

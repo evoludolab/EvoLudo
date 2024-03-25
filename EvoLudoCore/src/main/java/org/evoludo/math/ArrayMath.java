@@ -99,8 +99,8 @@ public class ArrayMath {
 	 * {@code array.length + elements.length}. {@code array} and {@code elements}
 	 * remain unchanged.
 	 * 
-	 * @param array   the array
-	 * @param element the array to append
+	 * @param array    the array
+	 * @param elements the array to append
 	 * @return the new (longer) array
 	 */
 	public static double[] append(double[] array, double[] elements) {

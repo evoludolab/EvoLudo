@@ -69,13 +69,15 @@ public abstract interface Model extends CLOProvider {
 
 		/**
 		 * Calculate and return the payoff/score of individuals in monomorphic
-		 * populations with trait/strategy {@code type} (see
-		 * {@link #getMonoGameScore(int)}) but also deals with payoff accounting
-		 * (averaged versus accumulated).
+		 * populations with trait/strategy {@code type} but also deals with payoff
+		 * accounting (averaged versus accumulated).
 		 *
+		 * @param id   the id of the population for multi-species models
 		 * @param type trait/strategy
 		 * @return payoff/score in monomorphic population with trait/strategy
-		 *         {@code type}. Returns {@code NaN} if scores ill defined..
+		 *         {@code type}. Returns {@code NaN} if scores ill defined
+		 * 
+		 * @see org.evoludo.simulator.modules.Discrete#getMonoGameScore(int)
 		 */
 		public default double getMonoScore(int id, int type) {
 			return Double.NaN;
@@ -97,7 +99,7 @@ public abstract interface Model extends CLOProvider {
 		/**
 		 * Gets the minimum trait values in this module.
 		 * 
-		 * @param id   the id of the population for multi-species models
+		 * @param id the id of the population for multi-species models
 		 * @return the array with the minimum trait values
 		 */
 		public double[] getTraitMin(int id);
@@ -105,7 +107,7 @@ public abstract interface Model extends CLOProvider {
 		/**
 		 * Gets the maximum trait values in this module.
 		 * 
-		 * @param id   the id of the population for multi-species models
+		 * @param id the id of the population for multi-species models
 		 * @return the array with the maximum trait values
 		 */
 		public double[] getTraitMax(int id);
@@ -117,6 +119,7 @@ public abstract interface Model extends CLOProvider {
 		 * is simply forwarded to the current {@link Model} together with the species ID
 		 * for multi-species modules.
 		 * 
+		 * @param id the id of the population for multi-species models
 		 * @return the minimum monomorphic score
 		 */
 		public double getMinMonoScore(int id);
@@ -128,11 +131,12 @@ public abstract interface Model extends CLOProvider {
 		 * is simply forwarded to the current {@link Model} together with the species ID
 		 * for multi-species modules.
 		 * 
+		 * @param id the id of the population for multi-species models
 		 * @return the maximum monomorphic score
 		 */
 		public double getMaxMonoScore(int id);
 	}
-	
+
 	/**
 	 * Common interface for all differential equations models.
 	 * <p>
@@ -856,6 +860,7 @@ public abstract interface Model extends CLOProvider {
 	 * can achieve in this model. Takes into account potential adjustments due to
 	 * population structure and payoff accounting.
 	 * 
+	 * @param id the id of the population for multi-species models
 	 * @return the minimum score
 	 * 
 	 * @see Module#getMinGameScore()
@@ -867,6 +872,7 @@ public abstract interface Model extends CLOProvider {
 	 * can achieve in this model. Takes into account potential adjustments due to
 	 * population structure and payoff accounting.
 	 * 
+	 * @param id the id of the population for multi-species models
 	 * @return the maximum score
 	 * 
 	 * @see Module#getMaxGameScore()
@@ -882,6 +888,7 @@ public abstract interface Model extends CLOProvider {
 	 * <li>scaling graphical output.
 	 * </ol>
 	 *
+	 * @param id the id of the population for multi-species models
 	 * @return the minimum fitness
 	 * 
 	 * @see #getMinScore(int id)
@@ -897,6 +904,7 @@ public abstract interface Model extends CLOProvider {
 	 * <li>scaling graphical output.
 	 * </ol>
 	 *
+	 * @param id the id of the population for multi-species models
 	 * @return the maximum fitness
 	 * 
 	 * @see #getMaxScore(int id)
@@ -1006,15 +1014,16 @@ public abstract interface Model extends CLOProvider {
 	/**
 	 * Return the species with ID <code>id</code>.
 	 *
-	 * @param id   the species identifier
+	 * @param id the species identifier
 	 * @return the species
 	 */
 	public abstract Module getSpecies(int id);
 
 	/**
 	 * Return the number of mean values for this model including all species (for
-	 * traits or fitness). By default this returns the number of traits in the module.
-	 * Models that report a different number of mean traits must override this method
+	 * traits or fitness). By default this returns the number of traits in the
+	 * module. Models that report a different number of mean traits must override
+	 * this method
 	 *
 	 * @return the number of mean values for all species
 	 */
@@ -1023,8 +1032,7 @@ public abstract interface Model extends CLOProvider {
 	/**
 	 * Return the number of mean trait values for species with ID <code>id</code>.
 	 *
-	 * @param id   the species identifier
-	 *
+	 * @param id the species identifier
 	 * @return the number of mean values for species {@code id}
 	 */
 	public abstract int getNMean(int id);
@@ -1034,7 +1042,6 @@ public abstract interface Model extends CLOProvider {
 	 * index is invalid.
 	 *
 	 * @param index the index of the mean trait
-	 *
 	 * @return the name of mean trait with index {@code index}
 	 */
 	public abstract String getMeanName(int index);
@@ -1049,6 +1056,7 @@ public abstract interface Model extends CLOProvider {
 	/**
 	 * Return the colors for the mean traits for species with ID {@code id}.
 	 *
+	 * @param id the index of the mean trait
 	 * @return the color array for the mean values
 	 */
 	public abstract Color[] getMeanColors(int id);
@@ -1292,7 +1300,8 @@ public abstract interface Model extends CLOProvider {
 	}
 
 	/**
-	 * Checks if debugging single steps is supported. By default returns <code>false</code>.
+	 * Checks if debugging single steps is supported. By default returns
+	 * <code>false</code>.
 	 * Only few models support debugging of single update steps.
 	 *
 	 * @return <code>true</code> if stepwise debuggin is permissible.

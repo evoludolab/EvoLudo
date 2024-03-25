@@ -187,7 +187,7 @@ public class ODEEuler implements Model.ODE {
 	 */
 	protected Logger logger;
 
-	@Override 
+	@Override
 	public Logger getLogger() {
 		return logger;
 	}
@@ -600,7 +600,7 @@ public class ODEEuler implements Model.ODE {
 		deltat = Math.max(0.0, deltat);
 		if (deltat == 0.0) {
 			logger.warning(getClass().getSimpleName() + " - time step must be >0 (dt=" + Formatter.formatSci(dt, 5)
-							+ " kept; requested dt=" + Formatter.formatSci(deltat, 5) + " ignored).");
+					+ " kept; requested dt=" + Formatter.formatSci(deltat, 5) + " ignored).");
 			return;
 		}
 		dt = deltat;
@@ -1012,8 +1012,8 @@ public class ODEEuler implements Model.ODE {
 	 * Calculate the rates of change for all species in {@code state} at
 	 * {@code time} given the fitness {@code fitness} and returned in
 	 * {@code change}. For replicator models the dynamics depends on the selected
-	 * type of player updating, see {@link PlayerUpdate.Type}, while for modules with
-	 * variable population sizes (density based or with vaccant 'space'
+	 * type of player updating, see {@link PlayerUpdate.Type}, while for modules
+	 * with variable population sizes (density based or with vaccant 'space'
 	 * (reproductive opportunities)) the fitness denotes the rate of reproduction
 	 * moderated by the available 'space'.
 	 * <p>
@@ -1241,19 +1241,18 @@ public class ODEEuler implements Model.ODE {
 	 * individuals). This calculates the rates of change for each type in species
 	 * <code>mod</code> for the popular choice for 'pairwise comparisons' where the
 	 * focal player \(i\) and one of its neighbours \(j\) are randomly chosen. The
-	 * focal player \(i\) adopts the strategy of player \(j\) if \(f_j>f_i\) but
-	 * never adopts those of a player \(j\) with \(f_j<f_i\), where \(f_i,f_j\)
+	 * focal player \(i\) adopts the strategy of player \(j\) if \(f_j&gt;f_i\) but
+	 * never adopts those of a player \(j\) with \(f_j&lt;f_i\), where \(f_i,f_j\)
 	 * denote the fitness of players \(i\) and \(j\), respectively. In case of a tie
 	 * \(f_j=f_i\) the individual sticks to its strategy. More specifically, the
 	 * probability to adopt the strategy of \(j\) is given by
 	 * \[p_{i\to j}=\theta(f_j-f_i),\]
 	 * where \(\theta(x)\) denotes the Heaviside step function with
-	 * \(\theta(x)=0\) for \(x<0\), \(\theta(x)=1\) for \(x>0\). In principle
+	 * \(\theta(x)=0\) for \(x&lt;0\), \(\theta(x)=1\) for \(x&gt;0\). In principle
 	 * \(\theta(0)=1/2\) but assuming that players need at least a marginal
-	 * incentive
-	 * to switch strategies we set \(\theta(0)=0\). In most cases this choice is
-	 * inconsequential. The resulting dynamics for the frequencies of the different
-	 * strategic types is then given by
+	 * incentive to switch strategies we set \(\theta(0)=0\). In most cases this
+	 * choice is inconsequential. The resulting dynamics for the frequencies of the
+	 * different strategic types is then given by
 	 * \[
 	 * \begin{align}
 	 * \dot x_i =&amp; \sum_{j=1}^n x_i x_j \theta[f_j-f_i)].
@@ -1422,7 +1421,8 @@ public class ODEEuler implements Model.ODE {
 	 * \(i\) and one of its neighbours \(j\) are randomly chosen. The focal player
 	 * \(i\) adopts the strategy of a player \(j\) with probability:
 	 * \[p_{i\to j}=f_j/(f_i+f_j),\]
-	 * where \(f_i, f_j\) refer to the respective payoffs of \(i\) and \(j\). In the continuum limit this yields
+	 * where \(f_i, f_j\) refer to the respective payoffs of \(i\) and \(j\). In the
+	 * continuum limit this yields
 	 * \[
 	 * \begin{align}
 	 * \dot x_i =&amp; x_i \sum_{j=1}^n x_j \frac{f_i-f_j}{f_i+f_j}.
@@ -1956,7 +1956,7 @@ public class ODEEuler implements Model.ODE {
 						} catch (NumberFormatException nfe) {
 							mus[n] = 0.0;
 							logger.warning("mutation probabilities '" + marg + "' for trait " + n
-											+ " invalid - disabled.");
+									+ " invalid - disabled.");
 							return false;
 						}
 					}
