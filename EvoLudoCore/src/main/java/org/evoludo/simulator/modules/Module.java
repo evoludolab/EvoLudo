@@ -1029,6 +1029,13 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
+	 * Gets the mutation type.
+	 * 
+	 * @return the mutation type
+	 */
+	public abstract Mutation getMutation();
+
+	/**
 	 * Map to convert score/payoff to fitness
 	 */
 	protected Map2Fitness map2fitness;

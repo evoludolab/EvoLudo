@@ -274,6 +274,25 @@ public abstract class Discrete extends Module {
 		return true;
 	}
 
+	@Override
+	public void load() {
+		super.load();
+		mutation = new Mutation.Discrete(this);
+	}
+
+	@Override
+	public void unload() {
+		super.unload();
+		mutation = null;
+	}
+
+	protected Mutation.Discrete mutation = null;
+
+	@Override
+	public Mutation.Discrete getMutation() {
+		return mutation;
+	}
+
 	/**
 	 * Calculate and return the payoff/score of individuals in monomorphic
 	 * populations with trait/strategy {@code type}.

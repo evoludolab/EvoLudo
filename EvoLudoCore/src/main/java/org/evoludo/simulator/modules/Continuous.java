@@ -356,8 +356,15 @@ public abstract class Continuous extends Module {
 		return true;
 	}
 
+	protected Mutation.Continuous mutation = null;
+
+	@Override
+	public Mutation.Continuous getMutation() {
+		return mutation;
+	}
+
 	/**
-	 * The map to translate traitsof interacting individuals into payoffs.
+	 * The map to translate traits of interacting individuals into payoffs.
 	 */
 	protected Traits2Payoff traits2payoff;
 
@@ -365,12 +372,14 @@ public abstract class Continuous extends Module {
 	public void load() {
 		super.load();
 		traits2payoff = new Traits2Payoff();
+		mutation = new Mutation.Continuous(this);
 	}
 
 	@Override
 	public void unload() {
 		super.unload();
 		traits2payoff = null;
+		mutation = null;
 	}
 
 	@Override

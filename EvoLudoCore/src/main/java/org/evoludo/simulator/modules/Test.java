@@ -100,6 +100,16 @@ public class Test extends Module implements HasIBS, HasConsole {
 		return 0;
 	}
 
+	/**	
+	 * No mutations.
+	 * 
+	 * @return returns {@code null}
+	 */
+	@Override
+	public Mutation getMutation() {
+		return null;
+	}
+
 	/**
 	 * Command line option to perform test of random number generator on launch.
 	 * This takes approximately 10-20 seconds. The test reports (1) whether the
@@ -288,6 +298,7 @@ public class Test extends Module implements HasIBS, HasConsole {
 				logger.info("All tests done.");
 			engine.modelNextDone(!done);
 		}
+
 		/**
 		 * No command line options provided by module Test.
 		 */
