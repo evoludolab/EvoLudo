@@ -96,19 +96,66 @@ public abstract class Mutation {
 		 * @see Discrete.Type
 		 */
 		public int mutate(int trait) {
+			if (type == Type.NONE)
+				// no mutations
+				return trait;
+			int vacant = module.getVacant();
+			if (trait == vacant)
+				// vacant trait cannot mutate
+				return trait;
+			int nActive = module.getNActive();
+			if (nActive <= 1)
+				// no mutations if only one trait is active
+				return trait;
+			int nTraits = module.getNTraits();
+			if (nActive == nTraits) {
+				// all traits are active
+				switch ((Type) type) {
+					case ALL:
+						trait = rng.random0n(nTraits);
+						break;
+					case OTHER:
+						trait = (trait + rng.random0n(nTraits - 1) + 1) % nTraits;
+						break;
+					case RANGE:
+						int irange = (int) range;
+						trait = (trait + rng.random0n(irange * 2 + 1) - irange + nTraits) % nTraits;
+						break;
+					default:
+						return trait;
+				}
+				if (trait == vacant)
+					trait = (trait + 1) % nTraits;
+				return trait;
+			}
+			// some traits are inactive
+			boolean[] active = module.getActiveTraits();
+			int idx = -1;
+			int mut = trait;
 			switch ((Type) type) {
 				case ALL:
-					return rng.random0n(module.getNTraits());
+					idx = rng.random0n(nActive);
+					mut = -1;
+					while (idx >= 0) {
+						if (idx != vacant && active[idx--])
+							mut++;
+					}
+					break;
 				case OTHER:
-					int mut = rng.random0n(module.getNTraits() - 1);
-					return mut >= trait ? mut + 1 : mut;
+					idx = rng.random0n(nActive - 1);
+					mut = -1;
+					while (idx >= 0) {
+						if (idx != trait && idx != vacant && active[idx--])
+							mut++;
+					}
+					break;
 				case RANGE:
 					int irange = (int) range;
-					int nt = module.getNTraits();
-					return (trait + rng.random0n(irange * 2 + 1) - irange + nt) % nt;
+					mut = (trait + rng.random0n(irange * 2 + 1) - irange + nTraits) % nTraits;
+					break;
 				default:
-					return trait;
 			}
+			return mut;
 		}
 
 		/**
