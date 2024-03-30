@@ -2016,6 +2016,12 @@ public abstract class IBSPopulation {
 		}
 	}
 
+	public double mutate() {
+		return mutateAt(pickFocalSite());
+	}
+
+	public abstract double mutateAt(int focal);
+
 	/**
 	 * Update focal individual with index {@code focal} for debugging.
 	 * 
@@ -2150,21 +2156,24 @@ public abstract class IBSPopulation {
 	 * @param me the index of the focal individual
 	 */
 	public void updatePlayerAsyncAt(int me) {
+		updateScoreAt(me, updatePlayerAt(me));
+	}
+
+	protected void updateScoreAt(int me, boolean switched) {
 		if (adjustScores) {
-			if (!updatePlayerAt(me))
+			if (!switched)
 				return;
 			// player switched strategy - adjust scores, commit strategy
 			adjustGameScoresAt(me);
 			return;
 		}
 		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
-			if (updatePlayerAt(me))
+			if (switched)
 				commitStrategyAt(me);
 			return;
 		}
-
 		// alternative approach - update random player and play one game
-		if (updatePlayerAt(me)) {
+		if (switched) {
 			resetScoreAt(me);
 			commitStrategyAt(me);
 		}

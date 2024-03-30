@@ -45,6 +45,7 @@ import org.evoludo.simulator.models.IBSD.FixationData;
 import org.evoludo.simulator.models.IBSD.InitType;
 import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.modules.Discrete;
+import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
@@ -593,6 +594,20 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 		updateStrategyAt(index, aStrat);
 		return;
+	}
+
+	@Override
+	public double mutateAt(int focal) {
+		Mutation.Discrete mutation = module.getMutation();
+		int fstrat = strategies[focal] % nTraits;
+		int nstrat = mutation.mutate(fstrat);
+		boolean switched = fstrat != nstrat;
+		if (switched) {
+			nstrat += nTraits;
+			strategiesScratch[focal] = nstrat;
+		}
+		updateScoreAt(focal, switched);
+		return 1.0 / (nPopulation * module.getSpeciesUpdateRate());
 	}
 
 	@Override

@@ -43,6 +43,7 @@ import org.evoludo.simulator.models.IBSC.InitType;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSC.MutationType;
 import org.evoludo.simulator.modules.Continuous;
+import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -338,6 +339,16 @@ public class IBSMCPopulation extends IBSPopulation {
 			default:
 				throw new Error("Unknown mutation type (" + mutationType + ")");
 		}
+	}
+
+	@Override
+	public double mutateAt(int focal) {
+		Mutation.Continuous mutation = module.getMutation();
+		int start = focal * nTraits;
+		for (int i=0; i<nTraits; i++)
+			strategiesScratch[start+i] = mutation.mutate(strategies[start+i], i);
+		updateScoreAt(focal, true);
+		return 1.0 / (nPopulation * module.getSpeciesUpdateRate());
 	}
 
 	/**

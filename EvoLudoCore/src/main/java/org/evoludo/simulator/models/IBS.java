@@ -12,6 +12,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -632,8 +633,26 @@ public abstract class IBS implements Model.IBS {
 			int nUpdates = Math.min((int) dUpdates, 1000000000); // 1e9 about half of Integer.MAX_VALUE (2.1e9)
 			for (int n = 0; n < nUpdates; n++) {
 				// update event
+				double dt = 0.0;
 				debugFocalSpecies = pickFocalSpecies();
-				double dt = debugFocalSpecies.step();
+				switch (pickEvent(debugFocalSpecies)) {
+					// standard replication event
+					case REPLICATION:
+						dt = debugFocalSpecies.step();
+						break;
+					// uniform mutation event (temperature based mutations
+					// are part of replication events)
+					case MUTATION:
+						dt = debugFocalSpecies.mutate();
+						break;
+					// uniform migration events (temperature based migrations
+					// are part of replication events)
+					// case MIGRATION:
+					// 	dt = debugFocalSpecies.migrate();
+					// 	break;
+					default:
+						engine.fatal("unknown event type...");
+				}
 				// advance time and real time (if possible)
 				if (debugFocalSpecies.getPopulationUpdate().getType() == PopulationUpdate.Type.ONCE) {
 					generation++;
@@ -1092,6 +1111,27 @@ public abstract class IBS implements Model.IBS {
 			return population;
 		nextSpeciesIdx = (nextSpeciesIdx + 1) % nSpecies;
 		return species.get(nextSpeciesIdx).getIBSPopulation();
+	}
+
+	/**
+	 * Pick type of next event in focal population.
+	 * 
+	 * @param pop the focal population
+	 * @return the next event
+	 */
+	protected Event pickEvent(IBSPopulation pop) {
+		Mutation mu = pop.module.getMutation();
+		if (!mu.uniform || mu.probability <= 0.0 || random01() > mu.probability)
+			return Event.REPLICATION;
+		return Event.MUTATION;
+	}
+
+	/**
+	 * Enumeration of possible events in focal population.
+	 */
+	public enum Event {
+		MUTATION,
+		REPLICATION
 	}
 
 	/**
