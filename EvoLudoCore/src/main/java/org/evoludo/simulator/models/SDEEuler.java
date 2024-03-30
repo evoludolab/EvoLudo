@@ -36,6 +36,8 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.modules.Mutation;
+import org.evoludo.util.CLOParser;
 
 /**
  * Integrator for stochastic differential equations (SDE) based on Euler's
@@ -167,7 +169,7 @@ public class SDEEuler extends ODEEuler implements Model.SDE {
 	public boolean checkConvergence(double dist2) {
 		if (converged)
 			return true;
-		if (mus[0] > 0.0) {
+		if (mutation[0].probability > 0.0) {
 			int vacant = module.getVacant();
 			// extinction is absorbing even with mutations
 			converged = (vacant < 0 ? false : (yt[vacant] > 1.0 - accuracy));
@@ -206,7 +208,7 @@ public class SDEEuler extends ODEEuler implements Model.SDE {
 				return 0.0;
 			effnoise /= (1.0 - ytv);
 		}
-		double mu = mus[0];
+		double mu = mutation[0].probability;
 		switch (nDim) {
 			case 2: // two strategies
 				x = yt[0];
@@ -336,7 +338,7 @@ public class SDEEuler extends ODEEuler implements Model.SDE {
 				break;
 
 			default: // any number of strategies
-				throw new Error("SDEEuler dimension d>2 not implemented (use SDEEulerN)!");
+				throw new Error("SDEEuler dimension d>3 not implemented (use SDEEulerN)!");
 		}
 		// polish result
 		idx = ArrayMath.minIndex(yout);
@@ -360,5 +362,16 @@ public class SDEEuler extends ODEEuler implements Model.SDE {
 		t += step;
 		dtTaken = Math.abs(step);
 		return ArrayMath.distSq(yout, yt);
+	}
+
+	@Override
+	public void collectCLO(CLOParser parser) {
+		super.collectCLO(parser);
+		// SDE's currently are restricted to single species modules
+		// and implement mutation to other types only (including ALL 
+		// as well should be fairly straight forward, though). 
+		mutation[0].clo.clearKeys();
+		mutation[0].clo.addKey(Mutation.Discrete.Type.NONE);
+		mutation[0].clo.addKey(Mutation.Discrete.Type.OTHER);
 	}
 }

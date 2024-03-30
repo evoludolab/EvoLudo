@@ -35,6 +35,8 @@ package org.evoludo.simulator.models;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.modules.Mutation;
+import org.evoludo.util.CLOParser;
 import org.evoludo.util.Formatter;
 
 import no.uib.cipr.matrix.DenseMatrix;
@@ -168,13 +170,15 @@ public class SDEEulerN extends SDEEuler {
 	 */
 	@Override
 	public boolean check() {
-		// XXX super may change the model to ODE - what happens then when the call gets
-		// back here?
 		boolean doReset = super.check();
-		if (mus[0] <= 0.0 && nDim > 3) {
-			mus[0] = 1.0 / module.getNPopulation();
+		// super may change the model to ODE
+		if (engine.getModel() != this)
+			return doReset;
+		if (!mutation[0].doMutate() && nDim > 3) {
+			mutation[0].type = Mutation.Discrete.Type.OTHER;
+			mutation[0].probability = 1.0 / module.getNPopulation();
 			engine.getLogger().warning("non-zero mutation rate required for n>3 traits, changed to "
-					+ Formatter.formatSci(mus[0], 2) + ".");
+					+ Formatter.formatSci(mutation[0].probability, 2) + ".");
 		}
 		return doReset;
 	}
@@ -205,7 +209,7 @@ public class SDEEulerN extends SDEEuler {
 			effnoise /= (1.0 - ytv);
 		}
 		// SDE's only support single species at this time
-		double mu = mus[0];
+		double mu = mutation[0].probability;
 		// NOTE: if not replicator equation some adjustments are required (references to
 		// e.g. yt[2] would fail)
 		int d1 = nDim - 1;
@@ -289,5 +293,15 @@ public class SDEEulerN extends SDEEuler {
 		getDerivatives(t, yt, ft, dyt);
 		t += step;
 		return ArrayMath.distSq(yout, yt);
+	}
+
+	@Override
+	public void collectCLO(CLOParser parser) {
+		super.collectCLO(parser);
+		// SDE's with d>3 traits currently require mutations.
+		if (module.getNActive() > 3) {
+			mutation[0].clo.removeKey(Mutation.Discrete.Type.NONE);
+			mutation[0].clo.setDefault("other 0.01");
+		}
 	}
 }

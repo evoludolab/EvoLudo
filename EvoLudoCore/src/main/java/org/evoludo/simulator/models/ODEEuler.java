@@ -46,6 +46,7 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.modules.PlayerUpdate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -387,9 +388,9 @@ public class ODEEuler implements Model.ODE {
 	/**
 	 * Array containing the mutation rates/probabilities for each species.
 	 * 
-	 * @see Module#getMutationProb()
+	 * @see Module#getMutation()
 	 */
-	double[] mus;
+	Mutation.Discrete[] mutation;
 
 	/**
 	 * Array containing the indices of the dependent trait in each species.
@@ -503,7 +504,10 @@ public class ODEEuler implements Model.ODE {
 		species = engine.getModule().getSpecies();
 		nSpecies = species.size();
 		initType = new InitType[nSpecies];
-		mus = new double[nSpecies];
+		mutation = new Mutation.Discrete[nSpecies];
+		int idx = 0;
+		for (Module pop : species)
+			mutation[idx++] = (Mutation.Discrete) pop.getMutation();
 	}
 
 	@Override
@@ -511,7 +515,7 @@ public class ODEEuler implements Model.ODE {
 		logger = null;
 		species = null;
 		yt = ft = dyt = yout = null;
-		mus = null;
+		mutation = null;
 		staticfit = null;
 		names = null;
 		initType = null;
@@ -1116,13 +1120,7 @@ public class ODEEuler implements Model.ODE {
 			}
 			for (int i = from; i < to; i++)
 				change[i] *= rate;
-			double m = mus[index];
-			if (m > 0.0) {
-				double mud = m / (dim - 1);
-				// mutations to any of the _other_ strategies
-				for (int i = from; i < to; i++)
-					change[i] = change[i] * (1.0 - m) + mud * (1.0 - dim * state[i]);
-			}
+			mutation[index].mutate(state, change, from, to);
 			from = to;
 			index++;
 		}
@@ -1923,63 +1921,6 @@ public class ODEEuler implements Model.ODE {
 				}
 			});
 
-	/**
-	 * Command line option to set the probability of mutations for
-	 * population(s)/species.
-	 */
-	public final CLOption cloMutation = new CLOption("mutations", "-1",
-			EvoLudo.catModel, "--mutations <m[,m1,...]>  mutation probabilities",
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse mutation probability(ies) for a single or multiple populations/species.
-				 * {@code arg} can be a single value or an array of values with the
-				 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
-				 * {@code arg} until all populations/species have mutation probabilities
-				 * rate set.
-				 * <p>
-				 * <strong>Note:</strong> Negative rates or invalid numbers (such as '-')
-				 * disable mutations.
-				 * 
-				 * @param arg (array of) mutation probability(ies)
-				 */
-				@Override
-				public boolean parse(String arg) {
-					String[] mutations = arg.split(CLOParser.SPECIES_DELIMITER);
-					String marg;
-					for (int n = 0; n < species.size(); n++) {
-						marg = mutations[n % mutations.length];
-						try {
-							mus[n] = Math.max(0.0, Double.parseDouble(marg));
-						} catch (NumberFormatException nfe) {
-							mus[n] = 0.0;
-							logger.warning("mutation probabilities '" + marg + "' for trait " + n
-									+ " invalid - disabled.");
-							return false;
-						}
-					}
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					boolean isMultispecies = species.size() > 1;
-					int idx = 0;
-					for (Module pop : species) {
-						double mut = mus[idx++];
-						if (mut > 0.0) {
-							output.println("# mutation:             " + Formatter.formatSci(mut, 8)
-									+ (isMultispecies ? " (" + pop.getName() + ")" : ""));
-							continue;
-						}
-						output.println("# mutation:             none"
-								+ (isMultispecies ? " (" + pop.getName() + ")" : ""));
-					}
-				}
-			});
-
 	@Override
 	public void collectCLO(CLOParser parser) {
 		parser.addCLO(cloAdjustedDynamics);
@@ -1996,7 +1937,8 @@ public class ODEEuler implements Model.ODE {
 		}
 		if (permitsTimeReversal())
 			parser.addCLO(cloTimeReversed);
-		parser.addCLO(cloMutation);
+//XXX move to Discrete
+		parser.addCLO(mutation[0].clo);
 	}
 
 	@Override

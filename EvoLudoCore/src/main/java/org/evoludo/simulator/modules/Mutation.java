@@ -39,23 +39,23 @@ public abstract class Mutation {
 	 * 
 	 * @see #clo
 	 */
-	protected CLOption.Key type;
+	public CLOption.Key type;
 
 	/**
 	 * The probability of mutations.
 	 */
-	double probability;
+	public double probability;
 
 	/**
 	 * The range of mutations.
 	 */
-	double range = 0.0;
+	public double range = 0.0;
 
 	/**
 	 * The flag to indicate whether mutations arise uniformly distributed (cosmic
 	 * rays) or are tied to reproduction events (thermal mutations).
 	 */
-	boolean uniform = true;
+	public boolean uniform = true;
 
 	/**
 	 * Returns the flag indicating whether mutations are uniformly distributed
@@ -88,7 +88,7 @@ public abstract class Mutation {
 		}
 
 		/**
-		 * Mutate trait {@code trait} according to the type of mutation.
+		 * Mutate trait {@code trait} in IBS models according to the type of mutation.
 		 * 
 		 * @param trait the trait to mutate
 		 * @return the mutated trait
@@ -108,6 +108,68 @@ public abstract class Mutation {
 					return (trait + rng.random0n(irange * 2 + 1) - irange + nt) % nt;
 				default:
 					return trait;
+			}
+		}
+
+		/**
+		 * Mutate traits in DE models according to the type of mutation. Adjust the
+		 * change of the state in {@code change} accordinlgy. In multi-species modules
+		 * the indices referring to the current species run from {@code from} to
+		 * {@code to}.
+		 * 
+		 * @param state  the state to mutate
+		 * @param change the change of the state
+		 * @param from   the start index of the traits to mutate
+		 * @param to     the end index of the traits to mutate
+		 * @return the mutated trait
+		 * 
+		 * @see Discrete.Type
+		 */
+		public void mutate(double[] state, double[] change, int from, int to) {
+			int dim;
+			double mu1;
+			switch ((Type) type) {
+				case ALL:
+					// mutations to any strategy
+					dim = to - from;
+					mu1 = 1.0 - probability;
+					double muid = probability / dim;
+					// any mutates to i: mu / dim
+					// i mutates to any other: mu * state[i]
+					for (int i = from; i < to; i++)
+						change[i] = change[i] * mu1 + muid * (1.0 - dim * state[i]);
+					break;
+				case OTHER:
+					// mutations to any of the _other_ strategies
+					dim = to - from;
+					mu1 = 1.0 - probability;
+					double muid1 = probability / (dim - 1);
+					// any other mutates to i: mu / (dim - 1) * (1 - state[i])
+					// i mutates to any other: mu * state[i]
+					for (int i = from; i < to; i++)
+						change[i] = change[i] * mu1 + muid1 * (1.0 - dim * state[i]);
+					break;
+				case RANGE:
+					// mutations to any of the _other_ strategies at most range traits away
+					dim = to - from;
+					int irange = (int) range;
+					mu1 = 1.0 - probability;
+					for (int i = from; i < to; i++) {
+						double x = 0.0;
+						// the range may depend on the current trait i; cannot fall outside 
+						// interval [from, to]
+						int low = Math.max(from, i - irange);
+						int high = Math.min(to, i + irange);
+						// any other mutates to i: mu / (high - low) (\sum_{j=i-r}^{i+r} state[j] - state[i])
+						// i mutates to any other: mu * state[i]
+						for (int j = low; j <= high; j++) {
+							if (j != i)
+								x += state[j];
+						}
+						change[i] = change[i] * mu1 + probability * (x / (high - low) - state[i]);						
+					}
+					break;
+				default:
 			}
 		}
 
