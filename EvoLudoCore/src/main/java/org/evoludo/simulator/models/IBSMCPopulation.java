@@ -343,11 +343,21 @@ public class IBSMCPopulation extends IBSPopulation {
 
 	@Override
 	public double mutateAt(int focal) {
-		Mutation.Continuous mutation = module.getMutation();
-		int start = focal * nTraits;
-		for (int i=0; i<nTraits; i++)
-			strategiesScratch[start+i] = mutation.mutate(strategies[start+i], i);
-		updateScoreAt(focal, true);
+		return mutateAt(focal, true);
+	}
+
+	public double maybeMutateAt(int focal) {
+		return mutateAt(focal, module.getMutation().doMutate());
+	}
+
+	private double mutateAt(int focal, boolean mutate) {
+		if (mutate) {
+			Mutation.Continuous mutation = module.getMutation();
+			int start = focal * nTraits;
+			for (int i=0; i<nTraits; i++)
+				strategiesScratch[start+i] = mutation.mutate(strategies[start+i]);
+		}
+		updateScoreAt(focal, mutate);
 		return 1.0 / (nPopulation * module.getSpeciesUpdateRate());
 	}
 

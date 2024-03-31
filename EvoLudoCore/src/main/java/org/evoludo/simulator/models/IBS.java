@@ -462,15 +462,8 @@ public abstract class IBS implements Model.IBS {
 //XXX this can easily skip past requested stops - ignore? does not make much sense anyways.
 			realtime += realnorm;
 			generation += norm;
-			int rand = random0n(nPop);
-			population.mutateStrategyAt(rand, false);
-			if (population.adjustScores)
-				population.adjustGameScoresAt(rand);
-			else {
-				population.resetScoreAt(rand);
-				population.commitStrategyAt(rand);
-				population.playGameAt(rand);
-			}
+			// introduce mutation uniformly at random
+			population.mutateAt(random0n(nPop));
 			return true;
 		}
 		double nextHalt = engine.getNextHalt();

@@ -495,25 +495,8 @@ public class IBSDPopulation extends IBSPopulation {
 				return realtimeIncr;
 			// neighbour is occupied - check if focal remains vacant; compare score against
 			// average population score
-			if (random01() < getFitnessAt(debugModel) * realtimeIncr) {
-				// produce offspring
-				updateStrategyAt(me, nStrat);
-				// check for mutations
-				if (pMutation > 0.0 && random01() < pMutation)
-					mutateStrategyAt(me, true);
-				if (module.isStatic()) {
-					commitStrategyAt(me);
-					return realtimeIncr;
-				}
-				if (adjustScores) {
-					// strategies must not be committed for adjust-routines
-					adjustGameScoresAt(me);
-					return realtimeIncr;
-				}
-				resetScoreAt(me);
-				commitStrategyAt(me);
-				playGameAt(me);
-			}
+			if (random01() < getFitnessAt(debugModel) * realtimeIncr)
+				maybeMutateAt(me, nStrat);
 			return realtimeIncr;
 		}
 		// 'me' is occupied - vacate site with fixed probability
@@ -521,17 +504,7 @@ public class IBSDPopulation extends IBSPopulation {
 		if (random01() < module.getDeathRate() * realtimeIncr) {
 			// vacate focal site
 			updateStrategyAt(me, VACANT);
-			if (module.isStatic()) {
-				commitStrategyAt(me);
-				return realtimeIncr;
-			}
-			if (adjustScores) {
-				// strategies must not be committed for adjust-routines
-				adjustGameScoresAt(me);
-				return realtimeIncr;
-			}
-			resetScoreAt(me);
-			commitStrategyAt(me);
+			updateScoreAt(me, true);
 		}
 		return realtimeIncr;
 	}
@@ -598,14 +571,17 @@ public class IBSDPopulation extends IBSPopulation {
 
 	@Override
 	public double mutateAt(int focal) {
+		return mutateAt(focal, strategies[focal] % nTraits, true);
+	}
+
+	public double maybeMutateAt(int focal, int strat) {
 		Mutation.Discrete mutation = module.getMutation();
-		int fstrat = strategies[focal] % nTraits;
-		int nstrat = mutation.mutate(fstrat);
-		boolean switched = fstrat != nstrat;
-		if (switched) {
-			nstrat += nTraits;
-			strategiesScratch[focal] = nstrat;
-		}
+		return mutateAt(focal, strat % nTraits, mutation.doMutate());
+	}
+
+	private double mutateAt(int focal, int strat, boolean mutate) {
+		int nstrat = (mutate ? module.getMutation().mutate(strat) : strat);
+		boolean switched = updateStrategyAt(focal, nstrat);
 		updateScoreAt(focal, switched);
 		return 1.0 / (nPopulation * module.getSpeciesUpdateRate());
 	}
@@ -631,12 +607,15 @@ public class IBSDPopulation extends IBSPopulation {
 	 * 
 	 * @param index    the index of the individual
 	 * @param newstrat the new trait/strategy of the individual
+	 * @return {@code true} if the strategy has changed
 	 */
-	protected void updateStrategyAt(int index, int newstrat) {
+	protected boolean updateStrategyAt(int index, int newstrat) {
 		int oldstrat = strategies[index] % nTraits;
-		if (newstrat != oldstrat)
+		boolean changed = (oldstrat != newstrat);
+		if (changed)
 			newstrat += nTraits;
 		strategiesScratch[index] = newstrat;
+		return changed;
 	}
 
 	@Override

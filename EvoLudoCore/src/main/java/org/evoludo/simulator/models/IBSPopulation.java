@@ -51,6 +51,7 @@ import org.evoludo.simulator.models.IBSGroup.SamplingType;
 import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.modules.PlayerUpdate;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
@@ -1478,7 +1479,7 @@ public abstract class IBSPopulation {
 
 	/**
 	 * Update the score of individual {@code me}. This method is called if adjusting
-	 * scores is not an option.
+	 * scores is not an option. If site {@code me} is vacant do nothing.
 	 *
 	 * @param me the index of the focal individual
 	 * 
@@ -1486,6 +1487,8 @@ public abstract class IBSPopulation {
 	 * @see #adjustPairGameScoresAt(int)
 	 */
 	public void playGameAt(int me) {
+		if (isVacantAt(me))
+			return;
 		if (module.isStatic()) {
 			engine.fatal("playGameAt(int) should not be called for constant selection!");
 			// fatal does not return control
@@ -2159,12 +2162,17 @@ public abstract class IBSPopulation {
 		updateScoreAt(me, updatePlayerAt(me));
 	}
 
+	/**
+	 * Update the scores of the focal individual with index {@code me}.
+	 * 
+	 * @param me the index of the focal individual
+	 * @param switched {@code true} if the focal switched strategy
+	 */
 	protected void updateScoreAt(int me, boolean switched) {
 		if (adjustScores) {
-			if (!switched)
-				return;
 			// player switched strategy - adjust scores, commit strategy
-			adjustGameScoresAt(me);
+			if (switched)
+				adjustGameScoresAt(me);
 			return;
 		}
 		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
@@ -2291,9 +2299,11 @@ public abstract class IBSPopulation {
 	 * @see IBSDPopulation
 	 */
 	protected void updatePlayerMoran(int source, int dest) {
+		Mutation mutation = module.getMutation();
+		boolean mutate = mutation.doMutate();
 		if (adjustScores) {
 			// allow for mutations
-			if (pMutation >= 1.0 || (pMutation > 0.0 && random01() < pMutation)) {
+			if (mutate) {
 				updateFromModelAt(dest, source);
 				mutateStrategyAt(dest, true);
 				adjustGameScoresAt(dest);
@@ -2307,7 +2317,7 @@ public abstract class IBSPopulation {
 		}
 
 		// allow for mutations
-		if (pMutation >= 1.0 || (pMutation > 0.0 && random01() < pMutation)) {
+		if (mutate) {
 			updateFromModelAt(dest, source);
 			mutateStrategyAt(dest, true);
 			resetScoreAt(dest);
@@ -2434,7 +2444,9 @@ public abstract class IBSPopulation {
 			default:
 				throw new Error("Unknown update method for players (" + playerUpdate + ")");
 		}
-		if (pMutation >= 1.0 || (pMutation > 0.0 && random01() < pMutation)) {
+		Mutation mutation = module.getMutation();
+		boolean mutate = mutation.doMutate();
+		if (mutate) {
 			mutateStrategyAt(me, switched);
 			return true; // if mutated always indicate change
 		}

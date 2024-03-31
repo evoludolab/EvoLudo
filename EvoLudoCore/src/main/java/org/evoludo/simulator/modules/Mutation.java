@@ -5,6 +5,7 @@ import java.util.ArrayList;
 
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -55,7 +56,7 @@ public abstract class Mutation {
 	 * The flag to indicate whether mutations arise uniformly distributed (cosmic
 	 * rays) or are tied to reproduction events (thermal mutations).
 	 */
-	public boolean uniform = true;
+	public boolean uniform = false;
 
 	/**
 	 * Returns the flag indicating whether mutations are uniformly distributed
@@ -68,6 +69,37 @@ public abstract class Mutation {
 		return uniform;
 	}
 
+	/**
+	 * Check if a mutation arises.
+	 * 
+	 * @return {@code true} if a mutation should be performed
+	 */
+	public abstract boolean doMutate();
+
+	/**
+	 * Mutate trait {@code trait} in IBS models according to the type of mutation.
+	 * 
+	 * @param trait the trait to mutate
+	 * @return the mutated trait
+	 * 
+	 * @see Discrete.Type
+	 */
+	public int mutate(int trait) {
+		throw new UnsupportedOperationException("Not implemented");
+	}
+
+	/**
+	 * Mutate trait {@code trait} in IBS models according to the type of mutation.
+	 * 
+	 * @param trait the trait to mutate
+	 * @return the mutated trait
+	 * 
+	 * @see Continuous.Type
+	 */
+	public double mutate(double trait) {
+		throw new UnsupportedOperationException("Not implemented");
+	}
+
 	public static class Discrete extends Mutation {
 
 		public Discrete(Module module) {
@@ -78,23 +110,16 @@ public abstract class Mutation {
 			type = Type.NONE;
 		}
 
-		/**
-		 * Check if a mutation arises.
-		 * 
-		 * @return {@code true} if a mutation should be performed
-		 */
+		@Override
 		public boolean doMutate() {
-			return type != Type.NONE && rng.random01() < probability;
+			if (type == Type.NONE || uniform)
+				return false;
+			if (probability >= 1.0)
+				return true;
+			return rng.random01() < probability;
 		}
 
-		/**
-		 * Mutate trait {@code trait} in IBS models according to the type of mutation.
-		 * 
-		 * @param trait the trait to mutate
-		 * @return the mutated trait
-		 * 
-		 * @see Discrete.Type
-		 */
+		@Override
 		public int mutate(int trait) {
 			if (type == Type.NONE)
 				// no mutations
@@ -103,19 +128,21 @@ public abstract class Mutation {
 			if (trait == vacant)
 				// vacant trait cannot mutate
 				return trait;
+			// number of active traits (including vacancies)
 			int nActive = module.getNActive();
-			if (nActive <= 1)
+			if (nActive <= (vacant < 0? 1 : 2))
 				// no mutations if only one trait is active
 				return trait;
 			int nTraits = module.getNTraits();
 			if (nActive == nTraits) {
 				// all traits are active
+				int nt = (vacant < 0? nTraits : nTraits - 1);
 				switch ((Type) type) {
 					case ALL:
-						trait = rng.random0n(nTraits);
+						trait = rng.random0n(nt);
 						break;
 					case OTHER:
-						trait = (trait + rng.random0n(nTraits - 1) + 1) % nTraits;
+						trait = (trait + rng.random0n(nt - 1) + 1) % nTraits;
 						break;
 					case RANGE:
 						int irange = (int) range;
@@ -124,7 +151,7 @@ public abstract class Mutation {
 					default:
 						return trait;
 				}
-				if (trait == vacant)
+				if (vacant >= 0 && trait >= vacant)
 					trait = (trait + 1) % nTraits;
 				return trait;
 			}
@@ -290,6 +317,10 @@ public abstract class Mutation {
 								default:
 									// no arguments, stick to defaults
 							}
+//XXX during transition to Mutation
+IBSPopulation pop = mod.getIBSPopulation();
+if (pop != null)
+	pop.setMutationProb(mut.probability);
 						}
 						return success;
 					}
@@ -408,24 +439,17 @@ public abstract class Mutation {
 			type = Type.NONE;
 		}
 
-		/**
-		 * Check if a mutation arises.
-		 * 
-		 * @return {@code true} if a mutation should be performed
-		 */
+		@Override
 		public boolean doMutate() {
-			return type != Type.NONE && rng.random01() < probability;
+			if (type == Type.NONE || uniform)
+				return false;
+			if (probability >= 1.0)
+				return true;
+			return rng.random01() < probability;
 		}
 
-		/**
-		 * Mutate trait {@code trait} according to the type of mutation.
-		 * 
-		 * @param trait the trait to mutate
-		 * @return the mutated trait
-		 * 
-		 * @see Continuous.Type
-		 */
-		public double mutate(double trait, int idx) {
+		@Override
+		public double mutate(double trait) {
 			double mut;
 			switch ((Type) type) {
 				case ALL:

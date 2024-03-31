@@ -5,6 +5,7 @@ import java.io.PrintStream;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -497,67 +498,6 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 			});
 
 	/**
-	 * Command line option to set the probability of mutations for
-	 * population(s)/species.
-	 */
-	public final CLOption cloMutation = new CLOption("mutations", "-1", EvoLudo.catModel,
-			"--mutations <m["+CLOParser.TRAIT_DELIMITER+"m1,...]> mutation probability",
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse mutation probability(ies) for a single or multiple populations/species.
-				 * {@code arg} can be a single value or an array of values with the
-				 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
-				 * {@code arg} until all populations/species have mutation probabilities
-				 * rate set.
-				 * <p>
-				 * <strong>Note:</strong> Negative rates or invalid numbers (such as '-')
-				 * disable mutations.
-				 * 
-				 * @param arg (array of) mutation probability(ies)
-				 */
-				@Override
-				public boolean parse(String arg) {
-					String[] mutations = arg.split(CLOParser.SPECIES_DELIMITER);
-					int n = 0;
-					for (Module mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
-						double pMut = -1.0;
-						try {
-							pMut = Double.parseDouble(mutations[n++ % mutations.length]);
-						} catch (NumberFormatException nfe) {
-							logger.warning("mutation probabilities '" + arg + "' invalid - disabling mutations.");
-							return false;
-						}
-						pop.setMutationProb(pMut);
-					}
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (Module mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
-						String speciesName = (isMultispecies ? " (" +mod.getName() +")" : "");
-						double mut = pop.getMutationProb();
-						if (mut > 0.0) {
-							output.println("# mutation:             " + Formatter.formatSci(mut, 8)
-									+ speciesName);
-							continue;
-						}
-						if (mut < 0.0) {
-							output.println("# mutation:             none" + speciesName);
-							continue;
-						}
-						output.println("# mutation:             0 (restricted to homogeneous populations)"
-								+ speciesName);
-					}
-				}
-			});
-
-	/**
 	 * Command line option to request optimizations.
 	 */
 	public final CLOption cloOptimize = new CLOption("optimize", "none", EvoLudo.catModel,
@@ -643,7 +583,8 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
-		parser.addCLO(cloMutation);
+//XXX move to Discrete
+parser.addCLO(((Mutation.Discrete) species.get(0).getMutation()).clo);
 		parser.addCLO(cloInitType);
 		cloInitType.clearKeys();
 		cloInitType.addKeys(InitType.values());

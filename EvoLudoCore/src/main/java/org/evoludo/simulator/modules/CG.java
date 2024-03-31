@@ -392,7 +392,7 @@ public class CG extends ATBT implements Module.Static {
 		}
 
 		@Override
-		protected void updateStrategyAt(int index, int newtype) {
+		protected boolean updateStrategyAt(int index, int newtype) {
 			int oldtype = strategies[index] % nTraits;
 			// make sure patch type is preserved
 			int oldpatch = oldtype % 2;
@@ -400,6 +400,7 @@ public class CG extends ATBT implements Module.Static {
 			int newstrat = newtype / 2;
 			boolean changed = (oldtype / 2 != newstrat);
 			strategiesScratch[index] = oldpatch + newstrat + newstrat + (changed ? nTraits : 0);
+			return changed;
 		}
 
 		@Override

@@ -174,7 +174,7 @@ public class SDEEulerN extends SDEEuler {
 		// super may change the model to ODE
 		if (engine.getModel() != this)
 			return doReset;
-		if (!mutation[0].doMutate() && nDim > 3) {
+		if (nDim > 3 && (mutation[0].type == Mutation.Discrete.Type.NONE || mutation[0].probability <= 0.0)) {
 			mutation[0].type = Mutation.Discrete.Type.OTHER;
 			mutation[0].probability = 1.0 / module.getNPopulation();
 			engine.getLogger().warning("non-zero mutation rate required for n>3 traits, changed to "
