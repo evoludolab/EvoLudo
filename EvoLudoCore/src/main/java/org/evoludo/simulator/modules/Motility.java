@@ -292,7 +292,7 @@ public class Motility extends EcoMoran {
 			}
 			if (destination < 0 || strategies[destination] != VACANT)
 				return;
-			updatePlayerMoran(parent, destination);
+			maybeMutateMoran(parent, destination);
 		}
 
 		@Override

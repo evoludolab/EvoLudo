@@ -2025,6 +2025,8 @@ public abstract class IBSPopulation {
 
 	public abstract double mutateAt(int focal);
 
+	protected abstract void maybeMutateMoran(int source, int dest);
+
 	/**
 	 * Update focal individual with index {@code focal} for debugging.
 	 * 
@@ -2222,7 +2224,7 @@ public abstract class IBSPopulation {
 			return; // parent has no outgoing-neighbors (sink)
 		// note: do not return prematurely if <code>debugModel==debugFocal</code> because
 		// this would preclude mutations and fail to reset scores.
-		updatePlayerMoran(debugFocal, debugModel);
+		maybeMutateMoran(debugFocal, debugModel);
 	}
 
 	/**
@@ -2251,7 +2253,7 @@ public abstract class IBSPopulation {
 		debugModel = pickFitNeighborAt(vacant);
 		if (debugModel < 0)
 			return; // vacant has no incoming-neighbors (source)
-		updatePlayerMoran(debugModel, debugFocal);
+		maybeMutateMoran(debugModel, debugFocal);
 	}
 
 	/**
@@ -2280,7 +2282,7 @@ public abstract class IBSPopulation {
 		debugModel = pickFitNeighborAt(imitator, true);
 		if (debugModel < 0)
 			return; // vacant has no incoming-neighbors (source)
-		updatePlayerMoran(debugModel, debugFocal);
+		maybeMutateMoran(debugModel, debugFocal);
 	}
 
 	/**
@@ -2452,7 +2454,7 @@ public abstract class IBSPopulation {
 		}
 		if (playerScoring.equals(ScoringType.RESET_ON_CHANGE))
 			// signal change only if actual change of strategy occurred
-			return !isSameStrategy(me);
+			return switched && !isSameStrategy(me);
 		return switched;
 	}
 

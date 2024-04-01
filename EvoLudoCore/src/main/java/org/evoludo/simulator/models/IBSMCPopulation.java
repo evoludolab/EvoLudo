@@ -346,6 +346,12 @@ public class IBSMCPopulation extends IBSPopulation {
 		return mutateAt(focal, true);
 	}
 
+	@Override
+	protected void maybeMutateMoran(int source, int dest) {
+//XXX		maybeMutateAt(dest, strategies[source]);
+		maybeMutateAt(dest);
+	}
+
 	public double maybeMutateAt(int focal) {
 		return mutateAt(focal, module.getMutation().doMutate());
 	}

@@ -145,7 +145,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * <li>Currently restricted to discrete strategies and structured populations,
 	 * where Moran type processes can be optimized by skipping events involving
 	 * individuals of the same type (see
-	 * {@link IBSDPopulation#updatePlayerMoran(int, int)}).
+	 * {@link IBSDPopulation#maybeMutateMoran(int, int)}).
 	 * </ol>
 	 */
 	protected boolean optimizeMoran = false;
@@ -357,7 +357,7 @@ public class IBSDPopulation extends IBSPopulation {
 				if (hit <= 0.0) {
 					debugModel = activeLinks[i].destination;
 					debugFocal = activeLinks[i].source;
-					updatePlayerMoran(debugFocal, debugModel);
+					maybeMutateMoran(debugFocal, debugModel);
 					break;
 				}
 			}
@@ -394,7 +394,7 @@ public class IBSDPopulation extends IBSPopulation {
 			if (hit <= 0.0) {
 				debugModel = activeLinks[i].destination;
 				debugFocal = activeLinks[i].source;
-				updatePlayerMoran(debugFocal, debugModel);
+				maybeMutateMoran(debugFocal, debugModel);
 				break;
 			}
 		}
@@ -465,7 +465,7 @@ public class IBSDPopulation extends IBSPopulation {
 			if (hit <= 0.0) {
 				debugModel = activeLinks[i].source;
 				debugFocal = activeLinks[i].destination;
-				updatePlayerMoran(debugModel, debugFocal);
+				maybeMutateMoran(debugModel, debugFocal);
 				break;
 			}
 		}
@@ -507,6 +507,11 @@ public class IBSDPopulation extends IBSPopulation {
 			updateScoreAt(me, true);
 		}
 		return realtimeIncr;
+	}
+
+	@Override
+	protected void updatePlayerMoran(int source, int dest) {
+		throw new UnsupportedOperationException("No longer supported.");
 	}
 
 	@Override
@@ -571,15 +576,21 @@ public class IBSDPopulation extends IBSPopulation {
 
 	@Override
 	public double mutateAt(int focal) {
-		return mutateAt(focal, strategies[focal] % nTraits, true);
+		return mutateAt(focal, strategies[focal], true);
+	}
+
+	@Override
+	protected void maybeMutateMoran(int source, int dest) {
+		maybeMutateAt(dest, strategies[source]);
 	}
 
 	public double maybeMutateAt(int focal, int strat) {
 		Mutation.Discrete mutation = module.getMutation();
-		return mutateAt(focal, strat % nTraits, mutation.doMutate());
+		return mutateAt(focal, strat, mutation.doMutate());
 	}
 
 	private double mutateAt(int focal, int strat, boolean mutate) {
+		strat %= nTraits;
 		int nstrat = (mutate ? module.getMutation().mutate(strat) : strat);
 		boolean switched = updateStrategyAt(focal, nstrat);
 		updateScoreAt(focal, switched);

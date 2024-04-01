@@ -420,7 +420,7 @@ public class DemesTBT extends TBT {
 			// replace random member of that deme - in particular, this includes parent
 			int expired = myDeme * sizeDemes + random0n(sizeDemes);
 			// proceed as before
-			updatePlayerMoran(parent, expired);
+			maybeMutateMoran(parent, expired);
 		}
 
 		@Override

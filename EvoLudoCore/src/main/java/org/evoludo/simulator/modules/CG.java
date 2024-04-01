@@ -372,7 +372,7 @@ public class CG extends ATBT implements Module.Static {
 					return changed;
 				// for reproduction we can use the back-end of Moran updating and only need to
 				// adjust updateStrategyAt to deal with strategy versus environment
-				updatePlayerMoran(me, group[0]);
+				maybeMutateMoran(me, group[0]);
 				return changed;
 			}
 			// environment changes - change type of node
