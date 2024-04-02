@@ -510,11 +510,6 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	@Override
-	protected void updatePlayerMoran(int source, int dest) {
-		throw new UnsupportedOperationException("No longer supported.");
-	}
-
-	@Override
 	public void updateFromModelAt(int index, int modelPlayer) {
 		super.updateFromModelAt(index, modelPlayer); // deal with tags
 		int newstrat = strategies[modelPlayer] % nTraits;

@@ -51,7 +51,6 @@ import org.evoludo.simulator.models.IBSGroup.SamplingType;
 import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
-import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.modules.PlayerUpdate;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
@@ -843,8 +842,7 @@ public abstract class IBSPopulation {
 		int vacant = random0n(nPopulation - 1);
 		if (vacant >= migrant)
 			vacant++;
-		// NOTE: updatePlayerMoran does mutations - this may not be what we want...
-		updatePlayerMoran(migrant, vacant);
+		migrateMoran(migrant, vacant);
 	}
 
 	/**
@@ -859,8 +857,7 @@ public abstract class IBSPopulation {
 	public void doDeathBirthMigration() {
 		int vacant = random0n(nPopulation);
 		int migrant = pickFitFocalIndividual(vacant);
-		// NOTE: updatePlayerMoran does mutations - this may not be what we want...
-		updatePlayerMoran(migrant, vacant);
+		migrateMoran(migrant, vacant);
 	}
 
 	/**
@@ -2315,7 +2312,7 @@ public abstract class IBSPopulation {
 	 * {@code source} and the node that gets replaced with index {@code dest}. The
 	 * three Moran variants (death-Birth, Birth-death and imitate) differ only in
 	 * their selection of the individuals {@code source} and {@code dest} and then
-	 * call this method, {@code updatePlayerMoran(int, int)}.
+	 * call this method, {@code migrateMoran(int, int)}.
 	 * <p>
 	 * <strong>Note:</strong> Moran optimizations for discrete strategies require
 	 * access to this method.
@@ -2325,31 +2322,12 @@ public abstract class IBSPopulation {
 	 * 
 	 * @see IBSDPopulation
 	 */
-	protected void updatePlayerMoran(int source, int dest) {
-		Mutation mutation = module.getMutation();
-		boolean mutate = mutation.doMutate();
+	protected void migrateMoran(int source, int dest) {
 		if (adjustScores) {
-			// allow for mutations
-			if (mutate) {
-				updateFromModelAt(dest, source);
-				mutateStrategyAt(dest, true);
-				adjustGameScoresAt(dest);
-				return;
-			}
 			if (haveSameStrategy(source, dest))
 				return;
 			updateFromModelAt(dest, source);
 			adjustGameScoresAt(dest);
-			return;
-		}
-
-		// allow for mutations
-		if (mutate) {
-			updateFromModelAt(dest, source);
-			mutateStrategyAt(dest, true);
-			resetScoreAt(dest);
-			commitStrategyAt(dest);
-			playGameAt(dest);
 			return;
 		}
 		if (!haveSameStrategy(source, dest)) {

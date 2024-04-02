@@ -37,9 +37,8 @@ import java.util.Arrays;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.models.IBS.MigrationType;
-import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.ChangeListener;
+import org.evoludo.simulator.models.IBS.MigrationType;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.InitType;
 import org.evoludo.simulator.models.MilestoneListener;
@@ -323,46 +322,6 @@ public class DemesTBT extends TBT {
 
 		/**
 		 * {@inheritDoc}
-		 * <p>
-		 * <strong>Notes:</strong>
-		 * <ol>
-		 * <li>Override IBSPopulation.doBirthDeathMigration() to take demes into
-		 * account.
-		 * <li>Almost identical (victim and migrant always different) to Moran
-		 * (birth-death) updating in well-mixed population.
-		 * </ol>
-		 */
-		@Override
-		public void doBirthDeathMigration() {
-			int migrant = pickFitFocalIndividual();
-			// migrants may end up in parental deme and even replace the parent
-			int vacant = random0n(nPopulation);
-			// NOTE: updatePlayerMoran mutates offspring... undesirable!
-			// copied from Population and removed mutations
-			if (adjustScores) {
-				if (haveSameStrategy(migrant, vacant))
-					return;
-				updateFromModelAt(vacant, migrant);
-				adjustGameScoresAt(vacant);
-				return;
-			}
-			if (!haveSameStrategy(migrant, vacant)) {
-				// replace 'vaccant'
-				updateFromModelAt(vacant, migrant);
-				resetScoreAt(vacant);
-				commitStrategyAt(vacant);
-				playGameAt(vacant);
-				return;
-			}
-			// no actual strategy change occurred - reset score always (default) or only on
-			// actual change?
-			if (playerScoring.equals(ScoringType.RESET_ALWAYS))
-				resetScoreAt(vacant);
-			playGameAt(vacant);
-		}
-
-		/**
-		 * {@inheritDoc}
 		 * <ol>
 		 * <li>Override IBSPopulation.doDeathBirthMigration() to take demes into
 		 * account.
@@ -378,17 +337,14 @@ public class DemesTBT extends TBT {
 			// check if population is homogeneous or only the deme with a vacancy is
 			// heterogeneous.
 			// in that case all other individual are of the same type, i.e. a random
-			// individual can
-			// be drawn - no need to check fitness.
+			// individual can be drawn - no need to check fitness.
 			int ccount = strategiesTypeCount[DemesTBT.COOPERATE];
 			if (ccount == 0 || ccount == nPopulation || ccount == demeTypeCount[vacantDeme][DemesTBT.COOPERATE]
 					|| nPopulation - ccount == demeTypeCount[vacantDeme][DemesTBT.DEFECT]) {
 				int migrant = random0n(nPopulation - sizeDemes);
 				if (migrant >= start)
 					migrant += sizeDemes;
-				// XXX NOTE: updatePlayerMoran checks for mutations - this may not be what we
-				// want...
-				updatePlayerMoran(migrant, vacant);
+				migrateMoran(migrant, vacant);
 				return;
 			}
 			// migrate - repopulate vacant site with random individual from another deme
@@ -403,9 +359,7 @@ public class DemesTBT extends TBT {
 					n += sizeDemes;
 				hit -= getFitnessAt(n);
 				if (hit < 0.0) {
-					// XXX NOTE: updatePlayerMoran checks for mutations - this may not be what we
-					// want...
-					updatePlayerMoran(n, vacant);
+					migrateMoran(n, vacant);
 					return;
 				}
 			}
