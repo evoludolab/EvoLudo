@@ -284,63 +284,6 @@ public class IBSMCPopulation extends IBSPopulation {
 		System.arraycopy(strategies, idxa, strategiesScratch, idxb, nTraits);
 	}
 
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * Mutate strategy of individual with index {@code index} according to the
-	 * selected mutation type.
-	 * <p>
-	 * <strong>Note:</strong> Inernally traits are always scaled to
-	 * <code>[0, 1]</code>.
-	 * 
-	 * @see MutationType
-	 */
-	@Override
-	public void mutateStrategyAt(int index, boolean changed) {
-		int idx = index;
-		int loc = 0;
-		if (nTraits > 1) {
-			idx *= nTraits;
-			loc = random0n(nTraits);
-			// if strategy has not yet been updated, all traits need to be copied to
-			// strategiesScratch otherwise commitStrategy commits the wrong unmutated traits
-			if (!changed)
-				System.arraycopy(strategies, idx, strategiesScratch, idx, nTraits);
-		}
-		switch (mutationType[loc]) {
-			case UNIFORM:
-				double range = mutRangeScaled[loc];
-				if (range > 0.0) {
-					double trait = changed ? strategiesScratch[idx + loc] : strategies[idx + loc];
-					strategiesScratch[idx + loc] = Math.max(Math.min(trait + random01() * range, 1.0), 0.0);
-				} else
-					strategiesScratch[idx + loc] = random01();
-				return;
-			case GAUSSIAN:
-				double mean = changed ? strategiesScratch[idx + loc] : strategies[idx + loc];
-				double sdev = mutRangeScaled[loc];
-				// draw mutants until we find viable one...
-				// not very elegant but avoids emphasis of interval boundaries.
-				double mut;
-				do {
-					mut = randomGaussian(mean, sdev);
-				} while (mut < 0.0 || mut > 1.0);
-				// alternative approach - use reflective boundaries (John Fairfield)
-				// note: this is much more elegant than the above - is there a biological
-				// motivation for 'reflective mutations'? is such a justification necessary?
-				// double mut = randomGaussian(orig, mutRange[loc]);
-				// mut = Math.abs(mut);
-				// if( mut>1.0 ) mut = 2-mut;
-
-				strategiesScratch[idx + loc] = mut;
-				return;
-			case NONE:
-				return;
-			default:
-				throw new Error("Unknown mutation type (" + mutationType + ")");
-		}
-	}
-
 	@Override
 	public double mutateAt(int focal) {
 		return mutateAt(focal, true);

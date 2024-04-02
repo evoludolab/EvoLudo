@@ -517,59 +517,6 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	@Override
-	public void mutateStrategyAt(int index, boolean changed) {
-		int aStrat = (changed ? strategiesScratch[index] : strategies[index]) % nTraits;
-		if (aStrat == VACANT)
-			return;
-		int nActive = module.getNActive();
-		if (nActive == nTraits) {
-			if (VACANT < 0) {
-				aStrat = (aStrat + random0n(nTraits - 1) + 1) % nTraits;
-				updateStrategyAt(index, aStrat);
-				return;
-			}
-			aStrat = (aStrat + random0n(nTraits - 2) + 1) % nTraits;
-			if (aStrat == VACANT)
-				aStrat = (aStrat + 1) % nTraits;
-			updateStrategyAt(index, aStrat);
-			return;
-		}
-		if (nActive <= 1)
-			return; // nothing to mutate
-		boolean[] active = module.getActiveTraits();
-		if (VACANT < 0) {
-			int rand = random0n(nActive - 1);
-			aStrat = (aStrat + rand + 1) % nTraits;
-			int idx = 0;
-			while (idx <= rand) {
-				int type = (aStrat + idx) % nTraits;
-				if (active != null && !active[type]) {
-					aStrat = (aStrat + 1) % nTraits;
-					continue;
-				}
-				idx++;
-			}
-			updateStrategyAt(index, aStrat);
-			return;
-		}
-		if (nActive <= 2)
-			return; // nothing to mutate
-		int rand = random0n(nActive - 2);
-		aStrat = (aStrat + rand + 1) % nTraits;
-		int idx = 0;
-		while (idx <= rand) {
-			int type = (aStrat + idx) % nTraits;
-			if ((active != null && !active[type]) || type == VACANT) {
-				aStrat = (aStrat + 1) % nTraits;
-				continue;
-			}
-			idx++;
-		}
-		updateStrategyAt(index, aStrat);
-		return;
-	}
-
-	@Override
 	public double mutateAt(int focal) {
 		mutateAt(focal, strategies[focal], true);
 		return 1.0 / (nPopulation * module.getSpeciesUpdateRate());

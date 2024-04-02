@@ -262,16 +262,12 @@ public class DemesTBT extends TBT {
 				double timehomo = distrMutationMigration.next() / (double) nPopulation;
 				updateStatistics(timehomo);
 				// determine WHAT event happens (sequence of this is of crucial importance!)
-				if (random01() * (pMutation + pMigration) < pMigration) {
+				if (random01() * (pMutation + pMigration) < pMigration)
 					// do migration
 					doMigration();
-				} else {
+				else
 					// do mutation; pick individual proportional to fitness and determine its deme
-					int hit = pickFitFocalIndividual();
-					mutateStrategyAt(hit, false);
-					// only updates that permit adjustScores acceptable, see check()
-					adjustGameScoresAt(hit);
-				}
+					mutateAt(pickFitFocalIndividual());
 				// XXX model.advanceTime(1.0/(double)nPopulation);
 				engine.fireModelChanged();
 				return false; // not absorbed

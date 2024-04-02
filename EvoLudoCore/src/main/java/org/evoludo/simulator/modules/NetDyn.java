@@ -746,11 +746,6 @@ public class NetDyn extends Discrete implements HasIBS,
 		}
 
 		@Override
-		public void mutateStrategyAt(int index, boolean changed) {
-			throw new Error("mutateStrategyAt() should not get called!");
-		}
-
-		@Override
 		public void resetStrategies() {
 		}
 

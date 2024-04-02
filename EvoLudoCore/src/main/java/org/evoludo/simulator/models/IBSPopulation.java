@@ -199,22 +199,6 @@ public abstract class IBSPopulation {
 	public abstract String getStatus();
 
 	/**
-	 * Mutate strategy of individual at <code>index</code>. If
-	 * <code>changed==true</code> then
-	 * check {@link IBSDPopulation#strategiesScratch} or
-	 * {@link IBSMCPopulation#strategiesScratch},
-	 * respectively, for current strategy; otherwise check
-	 * {@link IBSDPopulation#strategies} or
-	 * {@link IBSMCPopulation#strategies}, respectively.
-	 *
-	 * @param index   of individual that mutates its strategy
-	 * @param changed <code>true</code> if individual updated/changed strategy
-	 *                (prior to
-	 *                mutating)
-	 */
-	public abstract void mutateStrategyAt(int index, boolean changed);
-
-	/**
 	 * Prior to a synchronous update step the current state must be duplicated in
 	 * preparation for processing the next step.
 	 * 
