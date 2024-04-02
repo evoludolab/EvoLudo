@@ -5,7 +5,6 @@ import java.util.ArrayList;
 
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -252,8 +251,8 @@ public abstract class Mutation {
 		 */
 		public final CLOption clo = new CLOption("mutations", "0.0",
 				EvoLudo.catModule,
-				"--mutations <p> [<t>[ thermal|uniform [<r>]]] set probability p,\n" + //
-						"                type t, process and range r:",
+				"--mutations <p> [<t> [<r> [thermal|uniform]] set probability p,\n" + //
+						"                type t, range r and process:",
 				new CLODelegate() {
 
 					/**
@@ -284,18 +283,18 @@ public abstract class Mutation {
 							mut.type = Type.NONE;
 							switch (args.length) {
 								case 4:
-									mut.range = CLOParser.parseDouble(args[3]);
+									mut.uniform = args[3].toLowerCase().startsWith("u");
+									//$FALL-THROUGH$
+								case 3:
+									mut.range = CLOParser.parseDouble(args[2]);
 									if (mut.range < 1.0) {
 										mut.type = Type.NONE;
 										module.logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
-												"mutation range '" + args[3] + "' invalid - using '"
+												"mutation range '" + args[2] + "' invalid - using '"
 												+ mut.type + "'");
 										success = false;
 										continue;
 									}
-									//$FALL-THROUGH$
-								case 3:
-									mut.uniform = args[2].toLowerCase().startsWith("u");
 									//$FALL-THROUGH$
 								case 2:
 									Type mutt = (Type) clo.match(args[1]);
@@ -317,10 +316,6 @@ public abstract class Mutation {
 								default:
 									// no arguments, stick to defaults
 							}
-//XXX during transition to Mutation
-IBSPopulation pop = mod.getIBSPopulation();
-if (pop != null)
-	pop.setMutationProb(mut.probability);
 						}
 						return success;
 					}
@@ -470,8 +465,8 @@ if (pop != null)
 		 */
 		public final CLOption clo = new CLOption("mutations", "none",
 				EvoLudo.catModule,
-				"--mutations <t> [<p>[ thermal|uniform [<r>]]] set mutation type t with\n" + //
-						"                probability p, range/sdev r as well as process:",
+				"--mutations <p> [<t> [<r> [thermal|uniform]]] set probability p,\n" + //
+						"                type t, range r and process:",
 				new CLODelegate() {
 
 					/**
@@ -493,40 +488,47 @@ if (pop != null)
 						ArrayList<? extends Module> species = module.getSpecies();
 						for (Module mod : species) {
 							String mutts = mutations[n++ % mutations.length];
-							Type mutt = (Type) clo.match(mutts);
-							Mutation mut = mod.getMutation();
-							if (mutt == null) {
-								module.logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
-										"mutation '" + mutts + "' not recognized - using '"
-										+ mut.type + "'");
-								success = false;
-								continue;
-							}
-							mut.type = mutt;
-							// parse <p>[ thermal|uniform] if present
 							String[] args = mutts.split("\\s+|=|,");
+							Mutation mut = mod.getMutation();
 							// set defaults
 							mut.probability = 0.0;
-							mut.uniform = true;
+							mut.uniform = false;
+							mut.range = 0.0;
+							mut.type = Type.NONE;
 							switch (args.length) {
 								case 4:
-									mut.range = CLOParser.parseDouble(args[3]);
-									// $FALL-THROUGH$
+									mut.uniform = args[3].toLowerCase().startsWith("u");
+									//$FALL-THROUGH$
 								case 3:
-									mut.uniform = args[2].toLowerCase().startsWith("u");
-									// $FALL-THROUGH$
-								case 2:
-									mut.probability = CLOParser.parseDouble(args[1]);
-									if (mut.probability <= 0.0) {
+									mut.range = CLOParser.parseDouble(args[2]);
+									if (mut.range <= 0.0) {
 										mut.type = Type.NONE;
 										module.logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
-												"mutation probability '" + mutts + "' invalid - using '"
+												"mutation range '" + args[2] + "' invalid - using '"
 												+ mut.type + "'");
 										success = false;
 										continue;
 									}
+									//$FALL-THROUGH$
+								case 2:
+									Type mutt = (Type) clo.match(args[1]);
+									if (mutt == null) {
+										module.logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
+												"mutation type '" + args[1] + "' not recognized - using '"
+												+ mut.type + "'");
+										success = false;
+										continue;
+									}
+									mut.type = mutt;
+									//$FALL-THROUGH$
+								case 1:
+									mut.probability = Math.max(0.0, CLOParser.parseDouble(args[0]));
+									if (mut.probability <= 0.0)
+										mut.type = Type.NONE;
 									break;
+								case 0:
 								default:
+									// no arguments, stick to defaults
 							}
 						}
 						return success;

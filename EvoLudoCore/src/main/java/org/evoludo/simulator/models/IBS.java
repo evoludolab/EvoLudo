@@ -58,19 +58,13 @@ public abstract class IBS implements Model.IBS {
 	 */
 	protected Mode mode = Mode.DYNAMICS;
 
-	/**
-	 * Checks whether the mode {@code test} is supported by this model.
-	 * 
-	 * @param test the mode to test
-	 * @return {@code true} if mode is supported
-	 * 
-	 */
 	@Override
 	public boolean permitsMode(Mode test) {
-		for (Module mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
-			if (!pop.permitsMode(test))
-				return false;
+		if (test == Mode.STATISTICS) {
+			for (Module mod : species) {
+				if (mod.getMutation().probability > 0.0)
+					return false;
+			}
 		}
 		return true;
 	}
@@ -381,8 +375,8 @@ public abstract class IBS implements Model.IBS {
 		// with optimization, homogeneous populations do not wait for next mutation
 		// currently only relevant for discrete strategies, see IBSD
 		if (optimizeHomo) {
-			// NOTE: optimizeHomo == false if pMutation <= 0.0 or isMultispecies == true
-			double pMutation = population.getMutationProb();
+			// NOTE: optimizeHomo == false if no mutations or isMultispecies == true
+			double pMutation = species.get(0).getMutation().probability;
 			if (distrMutation == null)
 				distrMutation = new RNGDistribution.Geometric(rng.getRNG(), pMutation);
 			else
@@ -433,7 +427,7 @@ public abstract class IBS implements Model.IBS {
 			// debugCheck("next (new sample)");
 			return true;
 		}
-		// convergence only signaled if pMutation <= 0
+		// convergence only signaled without mutations
 		if (converged && !optimizeHomo) {
 			engine.fireModelStopped();
 			return false;
@@ -444,10 +438,11 @@ public abstract class IBS implements Model.IBS {
 			engine.fireModelRunning();
 			// optimize waiting time in homogeneous states by advancing time and
 			// deterministically introduce new mutant (currently single species only)
-			// optimizeHomo also requires that pMutation is small (otherwise this
-			// optimization is pointless); more specifically pMutation<0.1/nPopulation
-			// such that mutations occur less than every 10 generations and hence
-			// scores can be assumed to be homogeneous when the mutant arises.
+			// optimizeHomo also requires that mutations are rare (otherwise this
+			// optimization is pointless); more specifically mutation rates 
+			// <0.1/nPopulation such that mutations occur less than every 10 
+			// generations and hence scores can be assumed to be homogeneous when 
+			// the mutant arises.
 			Module module = population.getModule();
 			double realnorm = 1.0 / (population.getTotalFitness() * module.getSpeciesUpdateRate());
 			int nPop = module.getNPopulation();

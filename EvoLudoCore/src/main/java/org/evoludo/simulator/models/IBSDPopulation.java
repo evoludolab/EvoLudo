@@ -46,7 +46,6 @@ import org.evoludo.simulator.models.IBSD.InitType;
 import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Mutation;
-import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -151,6 +150,11 @@ public class IBSDPopulation extends IBSPopulation {
 	protected boolean optimizeMoran = false;
 
 	/**
+	 * The mutation parameters.
+	 */
+	protected Mutation.Discrete mutation;
+
+	/**
 	 * Creates a population of individuals with discrete traits for IBS simulations.
 	 * 
 	 * @param engine the pacemeaker for running the model
@@ -167,6 +171,7 @@ public class IBSDPopulation extends IBSPopulation {
 		// important: cannot deal with casting shadowed opponent here because for
 		// mutli-species modules all species need to be loaded first.
 		module = (Discrete) super.module;
+		mutation = module.getMutation();
 	}
 
 	@Override
@@ -187,15 +192,7 @@ public class IBSDPopulation extends IBSPopulation {
 		module = null;
 		pairmodule = null;
 		groupmodule = null;
-	}
-
-	@Override
-	public boolean permitsMode(Mode testmode) {
-		boolean modeOK = super.permitsMode(testmode);
-		if (modeOK && (module instanceof HasHistogram.StatisticsProbability
-				|| module instanceof HasHistogram.StatisticsTime) && initType == InitType.MUTANT)
-			return true;
-		return false;
+		mutation = null;
 	}
 
 	/**
@@ -524,7 +521,6 @@ public class IBSDPopulation extends IBSPopulation {
 
 	@Override
 	protected boolean maybeMutateAt(int focal, boolean switched) {
-		Mutation.Discrete mutation = module.getMutation();
 		return mutateAt(focal, switched ? strategiesScratch[focal] : strategies[focal], mutation.doMutate());
 	}
 
@@ -534,7 +530,6 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	public boolean maybeMutateAt(int focal, int strat) {
-		Mutation.Discrete mutation = module.getMutation();
 		return mutateAt(focal, strat, mutation.doMutate());
 	}
 
@@ -1639,7 +1634,7 @@ public class IBSDPopulation extends IBSPopulation {
 		// consulted
 		if (getPopulationSize() == 0)
 			return true;
-		boolean absorbed = super.checkConvergence();
+		boolean absorbed = isMonomorphic() && (mutation.probability <= 0.0);
 		// has absorbed if monomorphic and no vacant sites or if stop requested on
 		// monomorphic states
 		return (absorbed && (VACANT < 0 || module.getMonoStop()));
@@ -1821,7 +1816,7 @@ public class IBSDPopulation extends IBSPopulation {
 				optimizeMoran = false;
 				logger.warning("optimizations require Moran-type updates - disabled.");
 				doReset = true;
-			} else if (pMutation > 0.0) {
+			} else if (mutation.probability > 0.0) {
 				optimizeMoran = false;
 				logger.warning("optimized Moran-type updates are incompatible with mutations - disabled.");
 				doReset = true;

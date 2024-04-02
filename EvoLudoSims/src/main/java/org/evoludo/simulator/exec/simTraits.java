@@ -97,7 +97,7 @@ public class simTraits extends Traits {
 
 		// dry-run to give the JIT a chance to compile the relevant parts
 		setNPopulation(100);
-		pop.setMutationProb(0.01);
+		mutation.probability = 0.01;
 		pop.getPopulationUpdate().setType(PopulationUpdate.Type.ASYNC);
 		engine.loadModel(Model.Type.IBS);
 		engine.modelReset();
@@ -110,7 +110,7 @@ public class simTraits extends Traits {
 		out.println("# traits, size,\tmcSims [1k MC],\tcpuSims [msec/1k MC],\tmcSDE [1k MC],\tcpuSDE [msec/1k MC],\tratio");
 		for( int n=0; n<popsizes.length; n++ ) {
 			setNPopulation(popsizes[n]);
-			pop.setMutationProb(1.0/popsizes[n]);
+			mutation.probability = 1.0/popsizes[n];
 
 			// individual based simulations
 			engine.loadModel(Model.Type.IBS);

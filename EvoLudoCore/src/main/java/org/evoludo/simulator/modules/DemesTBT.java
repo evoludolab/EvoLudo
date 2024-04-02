@@ -213,11 +213,11 @@ public class DemesTBT extends TBT {
 			}
 			if (optimizeMigration) {
 				// need to get new instances to make sure potential changes in pMigration,
-				// pMutation are reflected. must be based on same RNG as the rest of simulations
-				// to ensure reproducibility of results
+				// mutation probabilities are reflected. must be based on same RNG as the 
+				// rest of simulations to ensure reproducibility of results
 				distrMigration = new RNGDistribution.Geometric(rng.getRNG(), pMigration);
 				distrMutationMigration = new RNGDistribution.Geometric(rng.getRNG(),
-						pMigration + pMutation);
+						pMigration + mutation.probability);
 			}
 			return doReset;
 		}
@@ -252,7 +252,7 @@ public class DemesTBT extends TBT {
 			if (nA > 0 && nA < nDemes) {
 				// homogeneous demes but not homogeneous population; only mutants or migrants
 				// change the state.
-				if (pMutation <= 0.0 && !optimizeMigration)
+				if (mutation.probability <= 0.0 && !optimizeMigration)
 					// pMigration=0: absorbed (heterogeneous population but homogeneous demes)
 					// pMigration>0: waiting for migration to happen
 					return (pMigration <= 0.0);
@@ -262,7 +262,7 @@ public class DemesTBT extends TBT {
 				double timehomo = distrMutationMigration.next() / (double) nPopulation;
 				updateStatistics(timehomo);
 				// determine WHAT event happens (sequence of this is of crucial importance!)
-				if (random01() * (pMutation + pMigration) < pMigration)
+				if (random01() * (mutation.probability + pMigration) < pMigration)
 					// do migration
 					doMigration();
 				else

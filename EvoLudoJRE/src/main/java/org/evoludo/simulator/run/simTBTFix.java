@@ -74,9 +74,10 @@ public class simTBTFix extends TBT {
 
 	@Override
 	public void exec() {
-		if( pMutation>0.0 ) {
+		if( mutation.probability>0.0 ) {
 			logger.warning("cannot have non-zero mutation rate for fixation - reset.");
-			pMutation = 0.0;
+			mutation.type = MutationType.NONE;
+			mutation.probability = 0.0;
 			optimizeHomo = false;
 		}
 //		modelReset();

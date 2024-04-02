@@ -1412,6 +1412,7 @@ public abstract class Continuous extends Module {
 		// add option to disable traits if >=2 traits
 		if (nTraits > 1)
 			parser.addCLO(cloTraitDisable);
+		parser.addCLO(mutation.clo);
 	}
 	
 	/**

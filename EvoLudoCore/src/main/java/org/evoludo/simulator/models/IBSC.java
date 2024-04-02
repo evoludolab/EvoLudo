@@ -3,7 +3,6 @@ package org.evoludo.simulator.models;
 import java.io.PrintStream;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBSD.OptimizationType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -132,7 +131,6 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	public void unload() {
 		// free resources
 		super.unload();
-		cloMutationType.clearKeys();
 		cloInitType.clearKeys();
 	}
 
@@ -342,78 +340,9 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 				}
 			});
 
-	/**
-	 * Command line option to set the mutation type.
-	 */
-	public final CLOption cloMutationType = new CLOption("mutations", "0.01 " + MutationType.UNIFORM.getKey(),
-			EvoLudo.catModel,
-			"--mutations <p t [a]["+CLOParser.TRAIT_DELIMITER+"p1 t1...]>  with\n" +
-			"             p: mutation probability\n" + //
-			"             t: mutation type\n" + //
-			"             a: mutation range:", //
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse method for choosing mutation types when updating individuals with one
-				 * or mutliple traits/strategies. Only intra-species interactions (single
-				 * species modules) are currently supported and only the same mutation type in
-				 * all traits/strategies.
-				 * 
-				 * @param arg the mutation type
-				 * 
-				 * @see OptimizationType
-				 */
-				@Override
-				public boolean parse(String arg) {
-					boolean success = true;
-					IBSMCPopulation cpop = (IBSMCPopulation) population;
-					String[] muttypes = arg.split(CLOParser.TRAIT_DELIMITER);
-					int nt = cpop.getModule().getNTraits();
-					for (int n = 0; n < nt; n++) {
-						String muttype = muttypes[n % muttypes.length];
-						String[] typeargs = muttype.split("\\s+|=");
-						// two or three entries expected: double String [double]
-						double range = -1.0;
-						switch (typeargs.length) {
-							case 3:
-								range = CLOParser.parseDouble(typeargs[2]);
-								//$FALL-THROUGH$
-							case 2:
-								cpop.setMutationType((MutationType) cloMutationType.match(typeargs[1]), range, n);
-								cpop.setMutationProb(CLOParser.parseDouble(typeargs[0]));
-								break;
-							case 1:
-							default:
-								// report warning only once
-								if (!success)
-									continue;
-								logger.warning("check arguments to "+cloMutationType.getName()+" - failed to parse '"+muttype+"'!");
-								success = false;
-								continue;
-						}
-					}
-					return success;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					IBSMCPopulation cpop = (IBSMCPopulation) population;
-					int nt = cpop.getModule().getNTraits();
-					String msg = "# mutationtype:         " + cpop.formatMutationType(0);
-					for (int n = 1; n < nt; n++)
-						msg += "\n                        " + cpop.formatMutationType(n);
-					output.println(msg);
-				}
-			});
-
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
-		// initialize mutation types
-		parser.addCLO(cloMutationType);
-		cloMutationType.addKeys(MutationType.values());
 		parser.addCLO(cloInitType);
 		cloInitType.addKeys(InitType.values());
 		// interacting with all members of the population is not feasible for continuous

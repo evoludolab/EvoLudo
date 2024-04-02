@@ -5,6 +5,7 @@ import java.io.PrintStream;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -144,6 +145,22 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	}
 
 	@Override
+	public boolean permitsMode(Mode test) {
+		boolean modeOK = super.permitsMode(test);
+		if (!modeOK)
+			return false;
+		if (test == Mode.STATISTICS) {
+			for (Module mod : species) {
+				if (!(mod instanceof HasHistogram.StatisticsProbability || mod instanceof HasHistogram.StatisticsTime))
+					return false;
+				if (((IBSDPopulation) mod.getIBSPopulation()).getInitType() != InitType.MUTANT)
+					return false;
+			}
+		}
+		return true;
+	}
+
+	@Override
 	public void unload() {
 		super.unload();
 		cloOptimize.clearKeys();
@@ -166,7 +183,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 				doReset = true;
 			}
 			Module module = population.getModule();
-			double pMutation = population.getMutationProb();
+			double pMutation = module.getMutation().probability;
 			if (pMutation <= 0.0) {
 				optimizeHomo = false;
 				logger.warning("optimizations for homogeneous states disabled (small mutations required).");

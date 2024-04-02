@@ -1317,11 +1317,11 @@ public abstract interface Model extends CLOProvider {
 	}
 
 	/**
-	 * Check if current model implements mode <code>test</code>; by default only
+	 * Check if current model implements mode {@code test}; by default only
 	 * {@link Mode#DYNAMICS} is permitted.
 	 *
 	 * @param test the mode to test
-	 * @return <code>true</code> if <code>test</code> is available in current model
+	 * @return {@code true} if {@code test} is available in current model
 	 */
 	public default boolean permitsMode(Mode test) {
 		return (test == Mode.DYNAMICS);
