@@ -5,7 +5,6 @@ import java.io.PrintStream;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
-import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -583,8 +582,6 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
-//XXX move to Discrete
-parser.addCLO(((Mutation.Discrete) species.get(0).getMutation()).clo);
 		parser.addCLO(cloInitType);
 		cloInitType.clearKeys();
 		cloInitType.addKeys(InitType.values());

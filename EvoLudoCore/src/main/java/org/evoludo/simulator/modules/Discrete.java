@@ -385,8 +385,6 @@ public abstract class Discrete extends Module {
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
 		parser.addCLO(cloMonoStop);
-		int nt = 0;
-		for (Discrete dpop : species)
-			nt = Math.max(nt, dpop.getNTraits());
+		parser.addCLO(mutation.clo);
 	}
 }
