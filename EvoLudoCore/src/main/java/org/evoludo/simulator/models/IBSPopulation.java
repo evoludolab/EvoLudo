@@ -2023,9 +2023,34 @@ public abstract class IBSPopulation {
 		return mutateAt(pickFocalSite());
 	}
 
+	/**
+	 * Mutate the strategy of the focal individual with index {@code focal}.
+	 * 
+	 * @param focal the index of the focal individual
+	 * @return the elapsed time in realtime units
+	 */
 	public abstract double mutateAt(int focal);
 
-	protected abstract void maybeMutateMoran(int source, int dest);
+	/**
+	 * Consider mutating the trait of the focal individual with index {@code focal}.
+	 * The strategy of the focal individual is stored in the array
+	 * {@code strategies} unless the focal individual switched strategy. In that
+	 * case the current strategy is stored in the array {@code strategyScratch}.
+	 * 
+	 * @param focal    the index of the focal individual
+	 * @param switched {@code true} if the focal individual switched strategy
+	 * @return {@code true} if mutation occurred
+	 */
+	protected abstract boolean maybeMutateAt(int focal, boolean switched);
+
+	/**
+	 * Consider mutating the trait of the parent individual with index {@code source}.
+	 * 
+	 * @param source the index of the parent individual
+	 * @param dest  the index of the location for the offspring placement
+	 * @return {@code true} if mutation occurred
+	 */
+	protected abstract boolean maybeMutateMoran(int source, int dest);
 
 	/**
 	 * Update focal individual with index {@code focal} for debugging.
@@ -2446,12 +2471,8 @@ public abstract class IBSPopulation {
 			default:
 				throw new Error("Unknown update method for players (" + playerUpdate + ")");
 		}
-		Mutation mutation = module.getMutation();
-		boolean mutate = mutation.doMutate();
-		if (mutate) {
-			mutateStrategyAt(me, switched);
-			return true; // if mutated always indicate change
-		}
+		if (maybeMutateAt(me, switched))
+			return true;
 		if (playerScoring.equals(ScoringType.RESET_ON_CHANGE))
 			// signal change only if actual change of strategy occurred
 			return switched && !isSameStrategy(me);

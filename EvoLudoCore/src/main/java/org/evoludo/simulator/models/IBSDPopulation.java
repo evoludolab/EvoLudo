@@ -576,25 +576,32 @@ public class IBSDPopulation extends IBSPopulation {
 
 	@Override
 	public double mutateAt(int focal) {
-		return mutateAt(focal, strategies[focal], true);
+		mutateAt(focal, strategies[focal], true);
+		return 1.0 / (nPopulation * module.getSpeciesUpdateRate());
 	}
 
 	@Override
-	protected void maybeMutateMoran(int source, int dest) {
-		maybeMutateAt(dest, strategies[source]);
+	protected boolean maybeMutateAt(int focal, boolean switched) {
+		Mutation.Discrete mutation = module.getMutation();
+		return mutateAt(focal, switched ? strategiesScratch[focal] : strategies[focal], mutation.doMutate());
 	}
 
-	public double maybeMutateAt(int focal, int strat) {
+	@Override
+	protected boolean maybeMutateMoran(int source, int dest) {
+		return maybeMutateAt(dest, strategies[source]);
+	}
+
+	public boolean maybeMutateAt(int focal, int strat) {
 		Mutation.Discrete mutation = module.getMutation();
 		return mutateAt(focal, strat, mutation.doMutate());
 	}
 
-	private double mutateAt(int focal, int strat, boolean mutate) {
+	private boolean mutateAt(int focal, int strat, boolean mutate) {
 		strat %= nTraits;
 		int nstrat = (mutate ? module.getMutation().mutate(strat) : strat);
 		boolean switched = updateStrategyAt(focal, nstrat);
 		updateScoreAt(focal, switched);
-		return 1.0 / (nPopulation * module.getSpeciesUpdateRate());
+		return mutate;
 	}
 
 	@Override
