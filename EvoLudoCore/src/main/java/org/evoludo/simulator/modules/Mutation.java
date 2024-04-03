@@ -455,9 +455,23 @@ public abstract class Mutation {
 				case ALL:
 					return rng.random01();
 				case GAUSSIAN:
-					mut = trait + rng.nextGaussian() * range;
-					return Math.max(Math.min(mut, 1.0), 0.0);
-				case RANGE:
+					// draw mutants until we find viable one...
+					// not very elegant but avoids emphasis of interval boundaries.
+					do {
+						mut = trait + rng.nextGaussian() * range;
+					} while (mut < 0.0 || mut > 1.0);
+					// alternative approach - use reflective boundaries (John Fairfield)
+					// note: this is much more elegant than the above - is there a biological
+					// motivation for 'reflective mutations'? is such a justification necessary?
+					// double mut = randomGaussian(orig, mutRange[loc]);
+					// mut = Math.abs(mut);
+					// if( mut>1.0 ) mut = 2-mut;
+					return mut;
+
+					// just truncate to [0,1]
+					// mut = trait + rng.nextGaussian() * range;
+					// return Math.max(Math.min(mut, 1.0), 0.0);
+				case UNIFORM:
 					mut = trait + rng.random01() * range * 2 - range;
 					return Math.max(Math.min(mut, 1.0), 0.0);
 				default:
@@ -527,6 +541,10 @@ public abstract class Mutation {
 										success = false;
 										continue;
 									}
+									if (mutt == Type.UNIFORM && mut.range <= 0.0) {
+										// no valid range specified, default to entire trait interval
+										mut.type = Type.ALL;
+									}
 									mut.type = mutt;
 									//$FALL-THROUGH$
 								case 1:
@@ -566,7 +584,7 @@ public abstract class Mutation {
 								case GAUSSIAN:
 									output.println("# mutationsdev:        " + mut.range);
 									break;
-								case RANGE:
+								case UNIFORM:
 									output.println("# mutationrange:        " + mut.range);
 									break;
 								default:
@@ -582,12 +600,13 @@ public abstract class Mutation {
 		 * <dt>none
 		 * <dd>No mutations
 		 * <dt>all
-		 * <dd>Mutate to any trait
-		 * <dt>other
-		 * <dd>Mutate to any <em>other</em> trait
-		 * <dt>range
-		 * <dd>Mutate trait {@code t} to {@code t &pm; <r>}. Only available for modules
-		 * where traits have a metric.
+		 * <dd>Mutate to any trait in trait interval, uniformly distributed.
+		 * <dt>gaussian
+		 * <dd>Mutate trait according to a Gaussian distribution around parental trait
+		 * with standard deviation {@code s}.
+		 * <dt>uniform
+		 * <dd>Mutate trait uniformly distributed around parental trait {@code t} within
+		 * a range {@code t &pm; r}.
 		 * </dl>
 		 */
 		public static enum Type implements CLOption.Key {
@@ -610,7 +629,7 @@ public abstract class Mutation {
 			/**
 			 * Mutate parental trait {@code t} to {@code t &pm; <r>}.
 			 */
-			RANGE("range", "uniform mutations, &pm; <r>");
+			UNIFORM("uniform", "uniform mutations, &pm; <r>");
 
 			/**
 			 * Key of player update. Used when parsing command line options.

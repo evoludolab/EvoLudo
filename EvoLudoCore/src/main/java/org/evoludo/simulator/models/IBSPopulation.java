@@ -1982,7 +1982,8 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Mutate the strategy of the focal individual with index {@code focal}.
+	 * Mutate the strategy of the focal individual with index {@code focal}. The
+	 * mutated strategy is committed and the scores updated.
 	 * 
 	 * @param focal the index of the focal individual
 	 * @return the elapsed time in realtime units
@@ -1994,21 +1995,24 @@ public abstract class IBSPopulation {
 	 * The strategy of the focal individual is stored in the array
 	 * {@code strategies} unless the focal individual switched strategy. In that
 	 * case the current strategy is stored in the array {@code strategyScratch}.
+	 * <p>
+	 * <strong>Important:</strong> The trait is not committed regardless of whether
+	 * a mutation occurred.
 	 * 
 	 * @param focal    the index of the focal individual
 	 * @param switched {@code true} if the focal individual switched strategy
-	 * @return {@code true} if mutation occurred
+	 * @return {@code true} if the trait of the focal individual changed
 	 */
 	protected abstract boolean maybeMutateAt(int focal, boolean switched);
 
 	/**
-	 * Consider mutating the trait of the parent individual with index {@code source}.
+	 * Consider mutating the trait of the parent individual with index
+	 * {@code source}. The mutated strategy is committed and the scores updated.
 	 * 
 	 * @param source the index of the parent individual
-	 * @param dest  the index of the location for the offspring placement
-	 * @return {@code true} if mutation occurred
+	 * @param dest   the index of the location for the offspring placement
 	 */
-	protected abstract boolean maybeMutateMoran(int source, int dest);
+	protected abstract void maybeMutateMoran(int source, int dest);
 
 	/**
 	 * Update focal individual with index {@code focal} for debugging.
@@ -2160,16 +2164,14 @@ public abstract class IBSPopulation {
 				adjustGameScoresAt(me);
 			return;
 		}
-		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
-			if (switched)
-				commitStrategyAt(me);
-			return;
-		}
-		// alternative approach - update random player and play one game
-		if (switched) {
-			resetScoreAt(me);
+		if (switched)
 			commitStrategyAt(me);
-		}
+		// no need to update ephemeral scores
+		if (playerScoring.equals(ScoringType.EPHEMERAL))
+			return;
+		if (switched || playerScoring.equals(ScoringType.RESET_ALWAYS))
+			resetScoreAt(me);
+		// let me play single game
 		playGameAt(me);
 	}
 

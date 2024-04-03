@@ -273,46 +273,39 @@ public class IBSMCPopulation extends IBSPopulation {
 
 	@Override
 	public double mutateAt(int focal) {
-		mutateAt(focal, focal, false, true);
+		updateScoreAt(focal, mutateAt(focal, false));
 		return 1.0 / (nPopulation * module.getSpeciesUpdateRate());
 	}
 
 	@Override
 	protected boolean maybeMutateAt(int focal, boolean switched) {
-		return mutateAt(focal, focal, switched, mutation.doMutate());
+		if (!mutation.doMutate())
+			return switched;
+		return mutateAt(focal, switched);
 	}
 
 	@Override
-	protected boolean maybeMutateMoran(int source, int dest) {
-		return mutateAt(dest, source, false, mutation.doMutate());
+	protected void maybeMutateMoran(int source, int dest) {
+		updateFromModelAt(dest, source);
+		if (mutation.doMutate())
+			mutateAt(dest, true);
+		updateScoreAt(dest, true);
 	}
-
-	// public boolean maybeMutateAt(int focal) {
-	// 	boolean mutate = mutation.doMutate();
-	// 	mutateAt(focal, focal, mutate);
-	// 	return mutate;
-	// }
 
 	/**
 	 * Mutate all traits/strategies of the focal individual with index {@code focal}
 	 * if {@code mutate == true}. In all cases commit strategies and update scores.
 	 * 
-	 * @param focal  the index of the focal individual
-	 * @param model  the index of the model individual
-	 * @param strat  the array of strategies to mutate
-	 * @param mutate {@code true} to process a mutation event
-	 * @return {@code true} if trait mutated
+	 * @param focal    the index of the focal individual that gets updated
+	 * @param switched {@code true} if focal already switched trait
+	 * @return {@code true} if the strategy has changed
 	 */
-	private boolean mutateAt(int focal, int model, boolean switched, boolean mutate) {
+	private boolean mutateAt(int focal, boolean switched) {
+		int dest = focal * nTraits;
 		double[] strat = switched ? strategiesScratch : strategies;
-		if (mutate) {
-			int source = model * nTraits;
-			int dest = focal * nTraits;
-			for (int i = 0; i < nTraits; i++)
-				strategiesScratch[dest + i] = mutation.mutate(strat[source + i]);
-		}
-		updateScoreAt(focal, switched || mutate);
-		return mutate;
+		for (int i = 0; i < nTraits; i++)
+			strategiesScratch[dest + i] = mutation.mutate(strat[dest + i]);
+		return true;
 	}
 
 	/**

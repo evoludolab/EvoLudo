@@ -487,13 +487,12 @@ public class IBSDPopulation extends IBSPopulation {
 		if (isVacantAt(me)) {
 			// 'me' is vacant
 			debugModel = pickNeighborSiteAt(me);
-			int nStrat = strategies[debugModel] % nTraits;
-			if (nStrat == VACANT)
+			if (isVacantAt(debugModel))
 				return realtimeIncr;
 			// neighbour is occupied - check if focal remains vacant; compare score against
 			// average population score
 			if (random01() < getFitnessAt(debugModel) * realtimeIncr)
-				maybeMutateAt(me, nStrat);
+				maybeMutateMoran(debugModel, me);
 			return realtimeIncr;
 		}
 		// 'me' is occupied - vacate site with fixed probability
@@ -515,30 +514,25 @@ public class IBSDPopulation extends IBSPopulation {
 
 	@Override
 	public double mutateAt(int focal) {
-		mutateAt(focal, strategies[focal], true);
+		updateStrategyAt(focal, mutation.mutate(strategies[focal] % nTraits) + nTraits);
+		updateScoreAt(focal, true);
 		return 1.0 / (nPopulation * module.getSpeciesUpdateRate());
 	}
 
 	@Override
 	protected boolean maybeMutateAt(int focal, boolean switched) {
-		return mutateAt(focal, switched ? strategiesScratch[focal] : strategies[focal], mutation.doMutate());
+		int strat = (switched ? strategiesScratch[focal] : strategies[focal]) % nTraits;
+		if (mutation.doMutate())
+			strat = mutation.mutate(strat) + nTraits;
+		return updateStrategyAt(focal, strat);
 	}
 
 	@Override
-	protected boolean maybeMutateMoran(int source, int dest) {
-		return maybeMutateAt(dest, strategies[source]);
-	}
-
-	public boolean maybeMutateAt(int focal, int strat) {
-		return mutateAt(focal, strat, mutation.doMutate());
-	}
-
-	private boolean mutateAt(int focal, int strat, boolean mutate) {
-		strat %= nTraits;
-		int nstrat = (mutate ? module.getMutation().mutate(strat) : strat);
-		boolean switched = updateStrategyAt(focal, nstrat);
-		updateScoreAt(focal, switched);
-		return mutate;
+	protected void maybeMutateMoran(int source, int dest) {
+		updateFromModelAt(dest, source);
+		if(mutation.doMutate())
+			strategiesScratch[dest] = mutation.mutate(strategiesScratch[dest] % nTraits) + nTraits;
+		updateScoreAt(dest, true);
 	}
 
 	@Override
