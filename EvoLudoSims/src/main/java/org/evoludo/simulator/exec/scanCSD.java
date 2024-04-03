@@ -43,7 +43,6 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBSC.InitType;
-import org.evoludo.simulator.models.IBSC.MutationType;
 import org.evoludo.simulator.models.IBSCPopulation;
 import org.evoludo.simulator.modules.CSD;
 import org.evoludo.simulator.views.MVPop2D;
@@ -107,11 +106,9 @@ public class scanCSD extends CSD {
 		final int SAMPLES = 11; 
 		double reportFreq = engine.getReportInterval();
 		double nGenerations = engine.getNGenerations();//-(SAMPLES-1)*reportFreq;
-		MutationType muttype = cpop.getMutationType(0);
-		double sdev = (muttype.getArgs() != null ? muttype.getArgs()[0] : 0.0);
-		// determine normalized thresholds for convergence to extremal trait values
-		// note: for small mutation rates the threshold of 2*sdev is too conservative
-		double lowMonoThreshold = Math.max(0.01, 2.0 * sdev / (getTraitMax()[0] - getTraitMin()[0]));
+		double sdev = mutation.range;
+		// note: sdev is already normalized; for small mutation rates the threshold of 2*sdev is too conservative
+		double lowMonoThreshold = Math.max(0.01, 2.0 * sdev);
 		double highMonoThreshold = 1.0 - lowMonoThreshold;
 		double lowmean = -1.0, lowstdev = -1.0;
 		double[] lowstatistics = null;

@@ -280,6 +280,21 @@ public abstract class Continuous extends Module {
 	protected double[] traitMax;
 
 	/**
+	 * The mutation operator for continuous traits.
+	 */
+	protected Mutation.Continuous mutation = null;
+
+	@Override
+	public Mutation.Continuous getMutation() {
+		return mutation;
+	}
+
+	/**
+	 * The map to translate traits of interacting individuals into payoffs.
+	 */
+	protected Traits2Payoff traits2payoff;
+
+	/**
 	 * Create new module with continuous traits.
 	 * 
 	 * @param engine the pacemeaker for running the model
@@ -355,18 +370,6 @@ public abstract class Continuous extends Module {
 		}
 		return true;
 	}
-
-	protected Mutation.Continuous mutation = null;
-
-	@Override
-	public Mutation.Continuous getMutation() {
-		return mutation;
-	}
-
-	/**
-	 * The map to translate traits of interacting individuals into payoffs.
-	 */
-	protected Traits2Payoff traits2payoff;
 
 	@Override
 	public void load() {

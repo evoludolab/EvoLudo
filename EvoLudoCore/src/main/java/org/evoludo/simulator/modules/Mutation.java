@@ -251,8 +251,11 @@ public abstract class Mutation {
 		 */
 		public final CLOption clo = new CLOption("mutations", "0.0",
 				EvoLudo.catModule,
-				"--mutations <p> [<t> [<r> [thermal|uniform]] set probability p,\n" + //
-						"                type t, range r and process:",
+				"--mutations <p> [<t> [<r> [thermal|uniform]]]  with\n" +
+				"             p: mutation probability\n" + //
+				"             r: mutation range\n" + //
+				"       process: reproduction or cosmic rays" + //
+				"             t: mutation type, with types:", //
 				new CLODelegate() {
 
 					/**
@@ -311,6 +314,8 @@ public abstract class Mutation {
 									mut.probability = Math.max(0.0, CLOParser.parseDouble(args[0]));
 									if (mut.probability <= 0.0)
 										mut.type = Type.NONE;
+									else if (mut.type == Type.NONE)
+										mut.type = Type.OTHER;
 									break;
 								case 0:
 								default:
@@ -463,10 +468,13 @@ public abstract class Mutation {
 		/**
 		 * Command line option to set the type of player updates.
 		 */
-		public final CLOption clo = new CLOption("mutations", "none",
+		public final CLOption clo = new CLOption("mutations", "0.0",
 				EvoLudo.catModule,
-				"--mutations <p> [<t> [<r> [thermal|uniform]]] set probability p,\n" + //
-						"                type t, range r and process:",
+			"--mutations <p> [<t> [<r> [thermal|uniform]]]"+CLOParser.TRAIT_DELIMITER+"<p1>...]>  with\n" +
+			"             p: mutation probability\n" + //
+			"             r: mutation range/sdev (fraction of interval)\n" + //
+			"       process: reproduction or cosmic rays" + //
+			"             t: mutation type, with types:\n", //
 				new CLODelegate() {
 
 					/**
@@ -525,6 +533,12 @@ public abstract class Mutation {
 									mut.probability = Math.max(0.0, CLOParser.parseDouble(args[0]));
 									if (mut.probability <= 0.0)
 										mut.type = Type.NONE;
+									else if (mut.type == Type.NONE) {
+										mut.type = Type.GAUSSIAN;
+										if (mut.range <= 0.0) {
+											mut.range = 0.01;
+										}
+									}
 									break;
 								case 0:
 								default:

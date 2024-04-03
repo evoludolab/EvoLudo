@@ -538,7 +538,7 @@ public class Dialect extends Continuous implements Module.Static, HasIBS, //
 							// double newtrait = strategies[fidx+n]+diff*adjustment;
 							double newtrait = strategies[fidx + d] + adjust;
 							// add Gaussian noise
-							double sdev = mutRange[d];
+							double sdev = mutation.range;
 							double mut;
 							if (sdev > 0.0)
 								mut = randomGaussian(newtrait, sdev);
@@ -558,7 +558,7 @@ public class Dialect extends Continuous implements Module.Static, HasIBS, //
 						// double newtrait = strategies[fidx+n]+diff*adjustment;
 
 						// add Gaussian noise, use reflective boundaries at [0, 1] (John Fairfield)
-						double sdev = mutRange[d];
+						double sdev = mutation.range;
 						double mut;
 						if (sdev > 0.0)
 							mut = randomGaussian(newtrait, sdev);

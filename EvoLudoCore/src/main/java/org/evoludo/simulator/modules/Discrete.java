@@ -201,6 +201,16 @@ public abstract class Discrete extends Module {
 	ArrayList<Discrete> species;
 
 	/**
+	 * The mutation operator for discrete traits.
+	 */
+	protected Mutation.Discrete mutation = null;
+
+	@Override
+	public Mutation.Discrete getMutation() {
+		return mutation;
+	}
+
+	/**
 	 * Create new module with a discrete set of strategies.
 	 * 
 	 * @param engine the pacemeaker for running the model
@@ -284,13 +294,6 @@ public abstract class Discrete extends Module {
 	public void unload() {
 		super.unload();
 		mutation = null;
-	}
-
-	protected Mutation.Discrete mutation = null;
-
-	@Override
-	public Mutation.Discrete getMutation() {
-		return mutation;
 	}
 
 	/**

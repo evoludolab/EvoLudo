@@ -39,9 +39,8 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.models.IBSC.InitType;
 import org.evoludo.simulator.models.IBS.ScoringType;
-import org.evoludo.simulator.models.IBSC.MutationType;
+import org.evoludo.simulator.models.IBSC.InitType;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.util.Formatter;
@@ -106,6 +105,11 @@ public class IBSMCPopulation extends IBSPopulation {
 	IBSMCPopulation opponent;
 
 	/**
+	 * The mutation parameters.
+	 */
+	protected Mutation.Continuous mutation;
+
+	/**
 	 * Creates a population of individuals with multiple continuous traits for IBS
 	 * simulations.
 	 * 
@@ -116,13 +120,22 @@ public class IBSMCPopulation extends IBSPopulation {
 	}
 
 	@Override
+	public void load() {
+		super.load();
+		// deal with module cast - pairmodule and groupmodule have to wait because
+		// nGroup requires parsing of command line options (see check())
+		// important: cannot deal with casting shadowed opponent here because for
+		// mutli-species modules all species need to be loaded first.
+		module = (Continuous) super.module;
+		mutation = module.getMutation();
+	}
+
+	@Override
 	public void unload() {
 		// free resources
 		super.unload();
 		traitMin = null;
 		traitMax = null;
-		mutRange = null;
-		mutRangeScaled = null;
 		strategies = null;
 		strategiesScratch = null;
 		myTrait = null;
@@ -133,6 +146,10 @@ public class IBSMCPopulation extends IBSPopulation {
 		oldScores = null;
 		initType = null;
 		initTraits = null;
+		module = null;
+		pairmodule = null;
+		groupmodule = null;
+		mutation = null;
 	}
 
 	@Override
@@ -140,14 +157,6 @@ public class IBSMCPopulation extends IBSPopulation {
 		// takes more than just the absence of mutations
 		return false;
 	}
-
-	/**
-	 * The type of mutations.
-	 * 
-	 * @see #setMutationType(MutationType)
-	 * @see MutationType
-	 */
-	protected MutationType[] mutationType;
 
 	/**
 	 * The array with the minimal values for each trait/strategy. Convenience
@@ -188,19 +197,6 @@ public class IBSMCPopulation extends IBSPopulation {
 	public double[] getTraitMax() {
 		return traitMax;
 	}
-
-	/**
-	 * Standard deviation of mutations.
-	 */
-	protected double[] mutRange;
-
-	/**
-	 * Scaled standard deviation of mutations. Convenience variable.
-	 * <p>
-	 * <strong>Note:</strong> Internally traits are always scaled to
-	 * <code>[0, 1]</code>
-	 */
-	protected double[] mutRangeScaled;
 
 	/**
 	 * The array of individual traits/strategies. The traits of individual {@code i}
@@ -250,8 +246,6 @@ public class IBSMCPopulation extends IBSPopulation {
 
 	@Override
 	public boolean haveSameStrategy(int a, int b) {
-		if (nTraits == 1)
-			return (Math.abs(strategies[a] - strategies[b]) < 1e-8);
 		int idxa = a * nTraits;
 		int idxb = b * nTraits;
 		for (int i = 0; i < nTraits; i++)
@@ -262,8 +256,6 @@ public class IBSMCPopulation extends IBSPopulation {
 
 	@Override
 	public boolean isSameStrategy(int a) {
-		if (nTraits == 1)
-			return (Math.abs(strategies[a] - strategiesScratch[a]) < 1e-8);
 		int idxa = a * nTraits;
 		for (int i = 0; i < nTraits; i++)
 			if (Math.abs(strategies[idxa + i] - strategiesScratch[idxa + i]) > 1e-8)
@@ -273,11 +265,6 @@ public class IBSMCPopulation extends IBSPopulation {
 
 	@Override
 	public void swapStrategies(int a, int b) {
-		if (nTraits == 1) {
-			strategiesScratch[a] = strategies[b];
-			strategiesScratch[b] = strategies[a];
-			return;
-		}
 		int idxa = a * nTraits;
 		int idxb = b * nTraits;
 		System.arraycopy(strategies, idxb, strategiesScratch, idxa, nTraits);
@@ -286,36 +273,46 @@ public class IBSMCPopulation extends IBSPopulation {
 
 	@Override
 	public double mutateAt(int focal) {
-		return mutateAt(focal, true);
+		mutateAt(focal, focal, false, true);
+		return 1.0 / (nPopulation * module.getSpeciesUpdateRate());
 	}
 
 	@Override
-	protected boolean maybeMutateAt(int source, boolean switched) {
-//XXX placeholder implement
-		return switched;
+	protected boolean maybeMutateAt(int focal, boolean switched) {
+		return mutateAt(focal, focal, switched, mutation.doMutate());
 	}
 
 	@Override
 	protected boolean maybeMutateMoran(int source, int dest) {
-//XXX placeholder implement
-		return false;
+		return mutateAt(dest, source, false, mutation.doMutate());
 	}
 
-	public boolean maybeMutateAt(int focal) {
-		boolean mutate = module.getMutation().doMutate();
-		mutateAt(focal, mutate);
-		return mutate;
-	}
+	// public boolean maybeMutateAt(int focal) {
+	// 	boolean mutate = mutation.doMutate();
+	// 	mutateAt(focal, focal, mutate);
+	// 	return mutate;
+	// }
 
-	private double mutateAt(int focal, boolean mutate) {
+	/**
+	 * Mutate all traits/strategies of the focal individual with index {@code focal}
+	 * if {@code mutate == true}. In all cases commit strategies and update scores.
+	 * 
+	 * @param focal  the index of the focal individual
+	 * @param model  the index of the model individual
+	 * @param strat  the array of strategies to mutate
+	 * @param mutate {@code true} to process a mutation event
+	 * @return {@code true} if trait mutated
+	 */
+	private boolean mutateAt(int focal, int model, boolean switched, boolean mutate) {
+		double[] strat = switched ? strategiesScratch : strategies;
 		if (mutate) {
-			Mutation.Continuous mutation = module.getMutation();
-			int start = focal * nTraits;
-			for (int i=0; i<nTraits; i++)
-				strategiesScratch[start+i] = mutation.mutate(strategies[start+i]);
+			int source = model * nTraits;
+			int dest = focal * nTraits;
+			for (int i = 0; i < nTraits; i++)
+				strategiesScratch[dest + i] = mutation.mutate(strat[source + i]);
 		}
-		updateScoreAt(focal, mutate);
-		return 1.0 / (nPopulation * module.getSpeciesUpdateRate());
+		updateScoreAt(focal, switched || mutate);
+		return mutate;
 	}
 
 	/**
@@ -774,8 +771,6 @@ public class IBSMCPopulation extends IBSPopulation {
 		boolean doReset = false;
 		doReset |= super.check();
 		// deal with casts once and for all
-		if (module == null)
-			module = (Continuous) super.module;
 		if (this instanceof IBSCPopulation) {
 			pairmodule = null;
 			groupmodule = null;
@@ -794,10 +789,6 @@ public class IBSMCPopulation extends IBSPopulation {
 
 		traitMin = module.getTraitMin();
 		traitMax = module.getTraitMax();
-		mutRangeScaled = ArrayMath.clone(mutRange);
-		// note: traits are normalized to [0, 1]; scale sdev of mutations accordingly
-		for (int n = 0; n < nTraits; n++)
-			mutRangeScaled[n] /= (traitMax[n] - traitMin[n]);
 
 		// check interaction geometry
 		if (interaction.isType(Geometry.Type.MEANFIELD) && interactionGroup.isSampling(IBSGroup.SamplingType.ALL)) {
@@ -817,71 +808,6 @@ public class IBSMCPopulation extends IBSPopulation {
 			logger.warning("group interactions with continuous traits have NOT been tested...");
 
 		return doReset;
-	}
-
-	/**
-	 * Sets the type of mutations to {@code type} with arguments {@code params} for
-	 * trait with {@code index}.
-	 * <p>
-	 * <strong>Note:</strong> The mutation type is the same for all
-	 * traits/strategies.
-	 * 
-	 * @param type  the mutation type
-	 * @param range the range of mutations
-	 * @param index the index of the trait
-	 */
-	public void setMutationType(MutationType type, double range, int index) {
-		if(index<0||index>=nTraits)
-			return;
-		if (mutationType==null || mutationType.length!=nTraits)
-			mutationType = new MutationType[nTraits];
-		if (mutRange == null || mutRange.length != nTraits)
-			mutRange = new double[nTraits];
-		mutationType[index] = type;
-		switch(type) {
-			case UNIFORM:
-			case GAUSSIAN:
-				mutRange[index] = range;
-				break;
-			case NONE:
-			default:
-				break;			
-		}
-	}
-
-	/**
-	 * Returns the type of mutations for trait {@code trait}.
-	 * 
-	 * @param trait the index of the trait
-	 * @return mutation type
-	 */
-	public MutationType getMutationType(int trait) {
-		MutationType type = mutationType[trait];
-		type.args = new double[] { mutRange[trait] };
-		return type;
-	}
-
-	/**
-	 * Returns the type of mutations for all traits.
-	 * 
-	 * @return the array of mutation types
-	 */
-	public MutationType[] getMutationTypes() {
-		int idx = 0;
-		for (MutationType mut : mutationType)
-			mut.args = new double[] { mutRange[idx++] }; 
-		return mutationType;
-	}
-
-	/**
-	 * Return formatted string of the mutation type of trait with index {@code idx}.
-	 * 
-	 * @param idx the index of the trait
-	 * @return the formatted string
-	 */
-	public String formatMutationType(int idx) {
-		MutationType type = mutationType[idx];
-			return module.getTraitName(idx) + ": " + type.key + " " + type.title + " " + Formatter.format(mutRange[idx], 4);
 	}
 
 	/**
