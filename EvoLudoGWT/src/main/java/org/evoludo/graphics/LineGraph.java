@@ -117,7 +117,7 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 
 	public void addData(double x, double[] data, boolean force) {
 		// always add data
-		buffer.add(prependTime2Data(x, data));
+		buffer.append(prependTime2Data(x, data));
 		// dynamically extend range if needed - never reduces range (would need to consult RingBuffer for this)
 		double min = ArrayMath.min(data);
 		// ignore NaN's in data

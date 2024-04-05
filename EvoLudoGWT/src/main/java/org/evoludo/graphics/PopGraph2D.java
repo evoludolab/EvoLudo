@@ -417,7 +417,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 			// note: cannot be reliably done in RingBuffer class without reflection
 			String[] colorCopy = Arrays.copyOf(colors, colors.length);
 			if (isNext || buffer.isEmpty())
-				buffer.add(colorCopy);
+				buffer.append(colorCopy);
 			else
 				buffer.replace(colorCopy);
 		}

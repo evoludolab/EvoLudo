@@ -145,7 +145,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 
 	public void addData(double t, double[] data, boolean force) {
 		if (buffer.isEmpty()) {
-			buffer.add(prependTime2Data(t, data));
+			buffer.append(prependTime2Data(t, data));
 			System.arraycopy(buffer.last(), 1, init, 1, nStates);
 		} else {
 			double[] last = buffer.last();
@@ -159,12 +159,12 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 					if (Double.isNaN(lastt))
 						buffer.replace(prependTime2Data(t, data));
 					else
-						buffer.add(prependTime2Data(t, data));
+						buffer.append(prependTime2Data(t, data));
 					System.arraycopy(buffer.last(), 1, init, 1, nStates);
 					return;
 				}
 				if (force || distSq(data, last) > bufferThreshold)
-					buffer.add(prependTime2Data(t, data));
+					buffer.append(prependTime2Data(t, data));
 			}
 		}
 	}

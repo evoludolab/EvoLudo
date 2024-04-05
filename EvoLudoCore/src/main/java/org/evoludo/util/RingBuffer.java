@@ -34,6 +34,7 @@ package org.evoludo.util;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.ListIterator;
 
 /**
  * Non-blocking ring buffer. Entries can be added continuously but only the most
@@ -49,7 +50,7 @@ import java.util.Iterator;
  *
  * @param <T> data type of buffer
  */
-public class RingBuffer<T> implements Iterator<T>, Iterable<T> {
+public class RingBuffer<T> implements Iterable<T> {
 
 	/**
 	 * Array to hold buffer of <code>T</code> objects.
@@ -78,13 +79,6 @@ public class RingBuffer<T> implements Iterator<T>, Iterable<T> {
 	int bufferDepth = 0;
 
 	/**
-	 * Helper variable used to implement the {@link Iterator} interface. Points to
-	 * next buffer element to be retrieved by {@link Iterator#next()}.
-	 * <code>bufferMarker</code> is specified relative to <code>bufferPtr</code>.
-	 */
-	private int bufferMarker;
-
-	/**
 	 * Create new ring buffer for storing up to <code>capacity</code> entries.
 	 * 
 	 * @param capacity maximum number of entries
@@ -105,7 +99,7 @@ public class RingBuffer<T> implements Iterator<T>, Iterable<T> {
 	 * @throws IllegalArgumentException if <code>capacity&le;0</code>
 	 */
 	public void setCapacity(int capacity) throws IllegalArgumentException {
-		if (capacity <= 0)
+		if (capacity < 0)
 			throw new IllegalArgumentException("RingBuffer capacity must be >0!");
 		if (buffer == null) {
 			buffer = new ArrayList<T>(capacity);
@@ -138,7 +132,7 @@ public class RingBuffer<T> implements Iterator<T>, Iterable<T> {
 			// grow buffer - rotate elements such that most recent is in position 0
 			for (int n = 0; n < bufferPtr; n++)
 				buffer.add(buffer.remove(0));
-			bufferPtr = -1;
+			bufferPtr = (isEmpty() ? -1 : 0);
 			bufferCapacity = capacity;
 		}
 	}
@@ -196,7 +190,7 @@ public class RingBuffer<T> implements Iterator<T>, Iterable<T> {
 	}
 
 	/**
-	 * Add new <code>entry</code> to ring buffer. If buffer is at capacity, the
+	 * Append new <code>entry</code> to ring buffer. If buffer is at capacity, the
 	 * oldest entry is removed.
 	 * 
 	 * <h3>Important:</h3>
@@ -209,7 +203,7 @@ public class RingBuffer<T> implements Iterator<T>, Iterable<T> {
 	 * 
 	 * @see #replace(int, Object)
 	 */
-	public void add(T entry) {
+	public void append(T entry) {
 		int size = buffer.size();
 		int depth = arrayLength(entry);
 		if (depth > 0) {
@@ -320,7 +314,7 @@ public class RingBuffer<T> implements Iterator<T>, Iterable<T> {
 	 * @throws IllegalArgumentException if <code>index&lt;0</code> or
 	 *                                  <code>index&gt;size-1</code>.
 	 * 
-	 * @see #add(Object)
+	 * @see #append(Object)
 	 */
 	public T replace(int index, T entry) throws IllegalArgumentException {
 		int size = buffer.size();
@@ -362,29 +356,80 @@ public class RingBuffer<T> implements Iterator<T>, Iterable<T> {
 		return replace(0, entry);
 	}
 
-	/**
-	 * Retrieve Iterator to loop over all entries of buffer.
-	 * 
-	 * @return {@link java.util.Iterator Iterator}
-	 */
+	private class Itr implements Iterator<T> {
+		/**
+		 * Index of current element in Iterator.
+		 */
+		int cursor = 0;
+
+		@Override
+		public boolean hasNext() {
+			return cursor < buffer.size();
+		}
+
+		@Override
+		public T next() {
+			return buffer.get((bufferPtr - (cursor++) + buffer.size()) % buffer.size());
+		}
+	}
+
+	private class LstItr extends Itr implements ListIterator<T> {
+
+		public LstItr() {
+			super();
+		}
+
+		public LstItr(int index) {
+			super();
+			cursor = index;
+		}
+
+		@Override
+		public boolean hasPrevious() {
+			return cursor > 0;
+		}
+
+		@Override
+		public T previous() {
+			return buffer.get((bufferPtr - (--cursor) + buffer.size()) % buffer.size());
+		}
+
+		@Override
+		public int nextIndex() {
+			return cursor;
+		}
+
+		@Override
+		public int previousIndex() {
+			return cursor - 1;
+		}
+
+		@Override
+		public void add(T element) {
+			throw new UnsupportedOperationException("Inserting elements in RingBuffer not supported!");
+		}
+
+		@Override
+		public void set(T element) {
+			replace(cursor, element);
+		}
+
+		@Override
+		public void remove() {
+			buffer.remove((bufferPtr + cursor) % buffer.size());
+		}
+	}
+
 	@Override
 	public Iterator<T> iterator() {
-		bufferMarker = 0;
-		return this;
+		return new Itr();
 	}
 
-	@Override
-	public boolean hasNext() {
-		return bufferMarker < buffer.size();
+	public ListIterator<T> listIterator() {
+		return new LstItr();
 	}
 
-	@Override
-	public T next() {
-		return buffer.get((bufferPtr - (bufferMarker++) + buffer.size()) % buffer.size());
-	}
-
-	@Override
-	public void remove() {
-		buffer.remove((bufferPtr + bufferMarker) % buffer.size());
+	public ListIterator<T> listIterator(int index) {
+		return new LstItr(index);
 	}
 }
