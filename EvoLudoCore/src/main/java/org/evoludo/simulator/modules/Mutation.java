@@ -254,7 +254,7 @@ public abstract class Mutation {
 				"--mutations <p> [<t> [<r> [thermal|uniform]]]  with\n" +
 				"             p: mutation probability\n" + //
 				"             r: mutation range\n" + //
-				"       process: reproduction or cosmic rays" + //
+				"       process: reproduction or cosmic rays\n" + //
 				"             t: mutation type, with types:", //
 				new CLODelegate() {
 
@@ -347,6 +347,11 @@ public abstract class Mutation {
 									break;
 							}
 						}
+					}
+
+					@Override
+					public int getKeyPos() {
+						return 1;
 					}
 				});
 
@@ -487,8 +492,8 @@ public abstract class Mutation {
 			"--mutations <p> [<t> [<r> [thermal|uniform]]]"+CLOParser.TRAIT_DELIMITER+"<p1>...]>  with\n" +
 			"             p: mutation probability\n" + //
 			"             r: mutation range/sdev (fraction of interval)\n" + //
-			"       process: reproduction or cosmic rays" + //
-			"             t: mutation type, with types:\n", //
+			"       process: reproduction or cosmic rays\n" + //
+			"             t: mutation type, with types:", //
 				new CLODelegate() {
 
 					/**
@@ -591,6 +596,11 @@ public abstract class Mutation {
 									break;
 							}
 						}
+					}
+
+					@Override
+					public int getKeyPos() {
+						return 1;
 					}
 				});
 

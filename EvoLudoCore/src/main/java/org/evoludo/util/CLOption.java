@@ -80,6 +80,15 @@ public class CLOption implements Comparable<CLOption> {
 		public default String getDescription() {
 			return null;
 		};
+
+		/**
+		 * Optional: position of key in the list of arguments. Used in help display.
+		 * 
+		 * @return the position of the key
+		 */
+		public default int getKeyPos() {
+			return 0;
+		}
 	}
 
 	/**
@@ -835,16 +844,17 @@ public class CLOption implements Comparable<CLOption> {
 			String[] args = arg.split(CLOParser.SPECIES_DELIMITER);
 			String argkeys = "";
 			for (int n = 0; n < args.length; n++) {
-				Key key = match(args[n]);
+				String[] argsn = args[n].split("\\s+|=|,");
+				int keypos = delegate.getKeyPos();
+				Key key = match(argsn[keypos]);
 				if (key == null && prev != null)
 					key = prev;
 				if (key == null) {
 					argkeys += "INVALID '" + args[n].trim() + "'";
 				} else {
-					String skey = key.getKey();
-					String keyarg = stripKey(skey, args[n]).trim();
-					argkeys += skey + (keyarg.length() > 0 ? " " + keyarg : "")
-							+ (n == args.length - 1 ? "" : CLOParser.SPECIES_DELIMITER);
+					argsn[keypos] = key.getKey();
+					argkeys += String.join(" ", argsn) 
+						+ (n == args.length - 1 ? "" : CLOParser.SPECIES_DELIMITER);
 				}
 				prev = (key == null ? prev : key);
 			}
