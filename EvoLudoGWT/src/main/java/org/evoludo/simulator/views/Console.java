@@ -32,19 +32,24 @@
 
 package org.evoludo.simulator.views;
 
+import java.util.ListIterator;
 import java.util.logging.Level;
 
 import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
+import org.evoludo.util.RingBuffer;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Model;
 
+import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.event.dom.client.ContextMenuEvent;
 import com.google.gwt.event.dom.client.ContextMenuHandler;
 import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.ui.HTML;
+import com.google.gwt.user.client.ui.Widget;
 
 /**
  *
@@ -53,6 +58,29 @@ import com.google.gwt.user.client.ui.HTML;
 public class Console extends AbstractView implements ContextMenu.Provider {
 
 	public static class Log extends HTML implements ContextMenu.Listener {
+		RingBuffer<String> buffer = new RingBuffer<>(1000);
+
+		public void clear() {
+			buffer.clear();
+			setHTML("");
+		}
+
+		public void add(String msg) {
+			buffer.append(msg);
+		}
+
+		public void replace(String msg) {
+			buffer.replace(msg);
+		}
+
+		public void show() {
+			StringBuilder sb = new StringBuilder();
+			ListIterator<String> bufit = buffer.listIterator(buffer.size());
+			while (bufit.hasPrevious())
+				sb.append(bufit.previous()).append("<br/>");
+			setHTML(sb.toString());
+		}
+
 		@Override
 		public HandlerRegistration addContextMenuHandler(ContextMenuHandler handler) {
 			return addDomHandler(handler, ContextMenuEvent.getType());
@@ -92,13 +120,6 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 	}
 
 	/**
-	 *
-	 */
-	public void clearLog() {
-		log.setHTML("");
-	}
-
-	/**
 	 * Log message in console. The output is prettified by coloring messages
 	 * according to their severity:
 	 * <dl>
@@ -131,16 +152,25 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 			pretty = "<span style='color:orange;'><b>Warning:</b> " + msg + "</span>";
 		else if (level == Level.FINE || level == Level.FINER || level == Level.FINEST)
 			pretty = "<span style='color:blue;'>DEBUG: " + msg + "</span>";
-		// abuse of Level.CONFIG for progress reports (GWT does not support custom
-		// levels)
-		if (level != Level.CONFIG)
-			pretty += "<br/>";
 		Element ele = log.getElement();
 		int scroll = ele.getScrollHeight();
 		int top = ele.getScrollTop();
-		log.setHTML(log.getHTML() + pretty);
-		if (scroll - top - ele.getClientHeight() < 1)
-			ele.setScrollTop(scroll);
+		if (log.buffer.capacity() == 0) {
+			// unlimited log messages
+			if (level != Level.CONFIG)
+				pretty += "<br/>";
+			log.setHTML(log.getHTML() + pretty);
+		}
+		else {
+			// abuse of Level.CONFIG for progress (GWT does not support custom levels)
+			if (level != Level.CONFIG)
+				log.add(pretty);
+			else
+				log.replace(pretty);
+			if (scroll - top - ele.getClientHeight() < 1)
+				ele.setScrollTop(scroll);
+			log.show();
+		}
 	}
 
 	@Override
@@ -168,13 +198,32 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 				// clear log (if active)
 				if (!isActive)
 					break;
-				clearLog();
+				log.clear();
 				return true;
 			default:
 		}
 		return super.keyUpHandler(key);
 	}
 
+	public void setLogCapacity(int capacity) {
+		log.buffer.setCapacity(capacity);
+		String label = (capacity / 1000) + "k";
+		if (label.equals("0k"))
+			label = "unlimited";
+		for (Widget item : bufferSizeMenu) {
+			ContextMenuCheckBoxItem menuItem = (ContextMenuCheckBoxItem) item;
+			menuItem.setChecked(menuItem.getText().equals(label));
+		}
+	}
+
+	/**
+	 * The context menu to set the buffer size for graphs with historical data.
+	 */
+	private ContextMenu bufferSizeMenu;
+
+	/**
+	 * The context menu item to clear the console.
+	 */
 	private ContextMenuItem clearMenu;
 
 	@Override
@@ -184,11 +233,39 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 			clearMenu = new ContextMenuItem("Clear", new Command() {
 				@Override
 				public void execute() {
-					clearLog();
+					log.clear();
 				}
 			});
 		}
 		menu.add(clearMenu);
+		if (bufferSizeMenu == null) {
+			bufferSizeMenu = new ContextMenu(menu);
+			bufferSizeMenu.add(new ContextMenuCheckBoxItem("1k", //
+					new ScheduledCommand() {
+						@Override
+						public void execute() {
+							setLogCapacity(1000);
+							log.show();
+						}
+					}));
+			bufferSizeMenu.add(new ContextMenuCheckBoxItem("10k", //
+					new ScheduledCommand() {
+						@Override
+						public void execute() {
+							setLogCapacity(10000);
+							log.show();
+						}
+					}));
+			bufferSizeMenu.add(new ContextMenuCheckBoxItem("unlimited", //
+					new ScheduledCommand() {
+						@Override
+						public void execute() {
+							setLogCapacity(0);
+						}
+					}));
+			setLogCapacity(log.buffer.capacity());
+		}
+		menu.add("Buffer size...", bufferSizeMenu);
 		populateContextMenu(menu);
 	}
 }
