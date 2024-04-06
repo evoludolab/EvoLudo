@@ -151,6 +151,18 @@ public abstract interface HasHistogram {
 	public interface StatisticsTime extends HasHistogram {
 	}
 
+	/**
+	 * {@link org.evoludo.simulator.modules.Module Module}s that implement the
+	 * {@code HasHistogram.StatisticsStationary} interface must be capable of running
+	 * statistics over multiple runs and generate histograms of stationary distributions.
+	 * 
+	 * @see org.evoludo.simulator.MVHistogram
+	 * 
+	 * @author Christoph Hauert
+	 */
+	public interface StatisticsStationary extends HasHistogram {
+	}
+
 	// public interface Statistics extends StatisticsProbability, StatisticsTime {
 	// }
 

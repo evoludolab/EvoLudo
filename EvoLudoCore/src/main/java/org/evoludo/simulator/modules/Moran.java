@@ -77,8 +77,9 @@ import org.evoludo.util.Formatter;
  */
 public class Moran extends Discrete implements Module.Static,
 		HasIBS, HasODE, HasSDE, HasPDE, HasPop2D.Strategy, HasPop3D.Strategy,
-		HasMean.Strategy, HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness,
-		HasHistogram.Degree, HasHistogram.StatisticsProbability, HasHistogram.StatisticsTime, HasConsole {
+		HasMean.Strategy, HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness,
+		HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsProbability, 
+		HasHistogram.StatisticsTime, HasHistogram.StatisticsStationary, HasConsole {
 
 	/**
 	 * The trait (and index) value of residents.

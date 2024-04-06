@@ -89,20 +89,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 
 	@Override
 	public String getName() {
-		switch( type ) {
-			case STRATEGY:
-				return "Strategies - Histogram";
-			case FITNESS:
-				return "Fitness - Histogram";
-			case DEGREE:
-				return "Structure - Degree";
-			case STATISTICS_FIXATION_PROBABILITY:
-				return "Statistics - Fixation probability";
-			case STATISTICS_FIXATION_TIME:
-				return "Statistics - Fixation time";
-			default:
-				return null;
-		}
+		return type.toString();
 	}
 
 	@Override
@@ -146,6 +133,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					nGraphs += getDegreeGraphs(pop.getInteractionGeometry(), pop.getReproductionGeometry());
 					break;
 				case STATISTICS_FIXATION_PROBABILITY:
+				case STATISTICS_STATIONARY:
 					nGraphs += nTraits;
 					break;
 				case STATISTICS_FIXATION_TIME:
@@ -325,6 +313,33 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						}
 						break;
 
+					case STATISTICS_STATIONARY:
+						for( int n=0; n<nTraits; n++ ) {
+							HistoGraph graph = new HistoGraph(this, module, n); 
+							boolean bottomPane = (n==nTraits-1);
+							// graph.setNormalized(nTraits);
+							graph.setNormalized(false);
+							wrapper.add(graph);
+							graphs2mods.put(graph, module);
+							AbstractGraph.GraphStyle style = graph.getStyle();
+							// fixed style attributes
+							style.yLabel = "visits";
+							style.percentY = true;
+							style.autoscaleY = true;
+							style.showYLabel = true;
+							style.showYTickLabels = true;
+							style.showXTicks = true;
+							style.showYTicks = true;
+							style.showXLevels = false;
+							style.showYLevels = true;
+							style.xLabel = "state";
+							style.showLabel = true;
+							style.showXLabel = bottomPane;	// show only on bottom panel
+							style.showXTickLabels = bottomPane;
+							if (bottomPane)
+								nXLabels++;
+						}
+						break;
 					default:
 				}
 			}
@@ -508,6 +523,19 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						graph.enableAutoscaleYMenu(false);
 						style.customYLevels = ((HasHistogram)pop).getCustomLevels(type, tag);
 					}
+					graph.setData(data);
+					break;
+
+				case STATISTICS_STATIONARY:
+					nBins = pop.getNPopulation()+1;
+					style.yMin = 0.0;
+					style.yMax = 1.0;
+					style.xMin = 0;
+					style.xMax = nBins-1;
+					style.label = pop.getTraitName(tag);
+					style.graphColor = ColorMapCSS.Color2Css(colors[tag]);
+					if( newPop )
+						data = new double[nTraits+1][nBins];
 					graph.setData(data);
 					break;
 
@@ -715,6 +743,17 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 				timestamp = -1.0;
 				return;
 	
+			case STATISTICS_STATIONARY:
+				int nt = model.getNMean();
+				double[] state = new double[nt];
+				model.getMeanTraits(state);
+				for( HistoGraph graph : graphs) {
+					graph.addData((int) (state[graph.getTag()] * graph.getModule().getNPopulation() + 0.1));
+					graph.paint();
+				}
+				timestamp = newtime;
+				break;
+
 			default:
 				break;
 		}

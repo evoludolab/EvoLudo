@@ -688,27 +688,32 @@ public abstract interface Model extends CLOProvider {
 		/**
 		 * Strategy: the data represents strategies.
 		 */
-		STRATEGY("Strategy"), //
+		STRATEGY("Strategies - Histogram"), //
 
 		/**
 		 * Fitness: the data represents payoffs/scores/fitness.
 		 */
-		FITNESS("Fitness"), //
+		FITNESS("Fitness - Histogram"), //
 
 		/**
 		 * Degree: the data represents degrees of the network structure.
 		 */
-		DEGREE("Degree"), //
+		DEGREE("Structure - Degree"), //
 
 		/**
 		 * Fixation probability: the data represents fixation probabilities.
 		 */
-		STATISTICS_FIXATION_PROBABILITY("Fixation probability"), //
+		STATISTICS_FIXATION_PROBABILITY("Statistics - Fixation probability"), //
 
 		/**
 		 * Fixation time: the data represents fixation times.
 		 */
-		STATISTICS_FIXATION_TIME("Fixation time"); //
+		STATISTICS_FIXATION_TIME("Statistics - Fixation time"), //
+
+		/**
+		 * Stationary distribution.
+		 */
+		STATISTICS_STATIONARY("Statistics - Stationary distribution"); //
 
 		/**
 		 * Identifying id of the type of data.
@@ -730,7 +735,8 @@ public abstract interface Model extends CLOProvider {
 		 * @return <code>true</code> for statistics data types
 		 */
 		public boolean isStatistics() {
-			return (this == STATISTICS_FIXATION_PROBABILITY || this == STATISTICS_FIXATION_TIME);
+			return (this == STATISTICS_FIXATION_PROBABILITY || //
+					this == STATISTICS_FIXATION_TIME);
 		}
 
 		/**
@@ -740,6 +746,11 @@ public abstract interface Model extends CLOProvider {
 		 */
 		public Mode getMode() {
 			return isStatistics() ? Mode.STATISTICS : Mode.DYNAMICS;
+		}
+	
+		@Override
+		public String toString() {
+			return id;
 		}
 	}
 
