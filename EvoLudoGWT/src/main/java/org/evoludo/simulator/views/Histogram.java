@@ -71,10 +71,10 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 	@SuppressWarnings("hiding")
 	protected Set<HistoGraph> graphs;
 
-	public static final int FIXATION_NODES = 144;
-	public static final int MAX_BINS = 250;
+	protected int MAX_BINS = 100;
 	protected int nSamples = -1;
 	double scale2bins = 1.0;
+	int binSize = 1;
 
 	/**
 	 * Flag to indicate whether the model entertains multiple species, i.e.
@@ -341,7 +341,6 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						for( int n=0; n<nTraits; n++ ) {
 							HistoGraph graph = new HistoGraph(this, module, n); 
 							boolean bottomPane = (n==nTraits-1);
-							// graph.setNormalized(nTraits);
 							graph.setNormalized(false);
 							wrapper.add(graph);
 							graphs2mods.put(graph, module);
@@ -392,8 +391,8 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 			switch( type ) {
 				case STRATEGY:
 					// histogram of strategies makes only sense for continuous traits
-					if( newPop || data==null || data.length!=nTraits || data[0].length!=HistoGraph.MAX_BINS ) 
-						data = new double[nTraits][HistoGraph.MAX_BINS];
+					if( newPop || data==null || data.length!=nTraits || data[0].length!=MAX_BINS ) 
+						data = new double[nTraits][MAX_BINS];
 					graph.setData(data);
 					graph.clearMarkers();
 					ArrayList<double[]> markers = pop.getMarkers();
@@ -423,8 +422,8 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					nTraits = (model.isContinuous()?1:nTraits);
 					if( vacant>=0 )
 						nTraits--;
-					if( newPop || data==null || data.length!=nTraits || data[0].length!=HistoGraph.MAX_BINS ) 
-						data = new double[nTraits][HistoGraph.MAX_BINS];
+					if( newPop || data==null || data.length!=nTraits || data[0].length!=MAX_BINS ) 
+						data = new double[nTraits][MAX_BINS];
 					graph.setData(data);
 					min = model.getMinScore(pop.getID());
 					max = model.getMaxScore(pop.getID());
@@ -501,7 +500,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					style.label = pop.getTraitName(tag);
 					style.graphColor = ColorMapCSS.Color2Css(colors[tag]);
 					if( newPop )
-						data = new double[nTraits+1][Math.min(nBins, FIXATION_NODES)];
+						data = new double[nTraits+1][Math.min(nBins, MAX_BINS)];
 					graph.setData(data);
 					break;
 
@@ -520,9 +519,9 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						style.label = "Absorbtion";
 						style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
 					}
-					if( nPop>FIXATION_NODES ) {
+					if( nPop>MAX_BINS ) {
 						if( newPop )
-							data = new double[nTraits][HistoGraph.MAX_BINS];
+							data = new double[nTraits][MAX_BINS];
 						graph.setNormalized(false);
 						graph.setNormalized(-1);
 						style.xMin = 0.0;
@@ -560,9 +559,9 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					style.graphColor = ColorMapCSS.Color2Css(colors[tag]);
 					if( newPop ) {
 						// determine the number of bins with maximum of MAX_BINS
-						int binSize = (nPop + 1) / MAX_BINS + 1;
-						data = new double[nTraits][nPop / binSize];
-						scale2bins = nPop / binSize;
+						binSize = (nPop + 1) / MAX_BINS + 1;
+						scale2bins = (nPop + 0) / binSize;
+						data = new double[nTraits][(int) scale2bins];
 					}
 					graph.setData(data);
 					break;
@@ -670,7 +669,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 								bincount = maxDegree(Math.max(inter.maxTot, repro.maxTot));
 							min = 0.0;
 							max = bincount;
-							bincount = Math.min(bincount, HistoGraph.MAX_BINS);
+							bincount = Math.min(bincount, MAX_BINS);
 							if (bincount != data[0].length) {
 								data = new double[data.length][bincount];
 								graph.setData(data);
@@ -749,13 +748,13 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					if( fixData != null && !fixData.timeRead ) {
 						int iNode = fixData.mutantNode;
 						if( graph.getTag()==fixData.typeFixed ) {
-							if( iNode<0 || nPop>FIXATION_NODES )
+							if( iNode<0 || nPop>MAX_BINS )
 								graph.addData(fixData.updatesFixed);
 							else
 								graph.addData(iNode, fixData.updatesFixed);
 						}
 						else if( graph.getTag()==nTrait ) {
-							if( iNode<0 || nPop>FIXATION_NODES )
+							if( iNode<0 || nPop>MAX_BINS )
 								graph.addData(fixData.updatesFixed);
 							else
 								graph.addData(iNode, fixData.updatesFixed);
@@ -774,7 +773,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 				double[] state = new double[nt];
 				model.getMeanTraits(state);
 				for( HistoGraph graph : graphs) {
-					graph.addData((int) (state[graph.getTag()] * scale2bins + 0.1));
+					graph.addData((int) (state[graph.getTag()] * scale2bins));
 					graph.paint();
 				}
 				timestamp = newtime;
@@ -829,7 +828,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					nTraits = pop.getNTraits();
 					status += (isMultispecies?pop.getName()+".":"")+(tag==nTraits?"Absorption":pop.getTraitName(tag))+": ";
 					int nPop = pop.getNPopulation();
-					if( nPop>FIXATION_NODES ) {
+					if( nPop>MAX_BINS ) {
 						double mean = Distributions.distrMean(data[tag]);
 						double sdev = Distributions.distrStdev(data[tag], mean);
 						GraphStyle style = graph.getStyle();
@@ -950,7 +949,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 			nBins = Math.max(maxDegree(repro.maxOut)+1, nBins);
 		if( !repro.isUndirected )
 			nBins = Math.max(maxDegree(repro.maxTot)+1, nBins);
-		return Math.max(2,  Math.min(nBins, HistoGraph.MAX_BINS));
+		return Math.max(2,  Math.min(nBins, MAX_BINS));
 	}
 
 	private String[] getDegreeLabels(int nTraits, boolean interUndirected) {
@@ -1048,7 +1047,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						"<tr><td><i>"+style.xLabel+":</i></td><td>");
 				Module module = graph.getModule();
 				int nPop = module.getNPopulation();
-				if( nPop>FIXATION_NODES ) {
+				if( nPop>MAX_BINS ) {
 					tip.append("["+Formatter.format(style.xMin+(double)bar/nBins*(style.xMax-style.xMin), 2)+"-"+
 							Formatter.format(style.xMin+(double)(bar+1)/nBins*(style.xMax-style.xMin), 2)+")");
 				}
@@ -1062,6 +1061,39 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 				else
 					tip.append("<td>"+Formatter.format(graph.getData(bar), 2)+"</td>");
 				tip.append("</tr></table>");
+				break;
+			case STATISTICS_STATIONARY:
+				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>" + //
+						"<tr><td><i>" + style.xLabel + ":</i></td>");
+				if (binSize == 1)
+					tip.append("<td>" + bar + "</td></tr>");
+				else {
+					String separator = (binSize > 2) ? "-" : ",";
+					int start = (int) (bar * binSize);
+					tip.append("<td>[" + start + separator + (start + binSize - 1)
+						+ "]</td></tr>");
+				}
+				// tip.append("<td>[" + (int) (bar / nBins * scale2bins) + "," + (int) ((bar + 1) / nBins * scale2bins) + "]</td></tr>");
+				// switch (binSize) {
+				// 	case 1:
+				// 		tip.append("<td>" + bar + "</td></tr>");
+				// 		break;
+				// 	case 2:
+				// 		tip.append("<tr><td>[" + (int) (bar / nBins * scale2bins) + "," + (int) ((bar + 1) / nBins * scale2bins)
+				// 				// + Formatter.format(style.xMin + (double) bar / nBins * (style.xMax - style.xMin), 2)
+				// 				// + "," +
+				// 				// Formatter.format(style.xMin + (double) (bar + 1) / nBins * (style.xMax - style.xMin), 2)
+				// 				+ "]</td></tr>");
+				// 		break;
+				// 	default:
+				// 		tip.append("<tr><td><i>["
+				// 				+ Formatter.format(style.xMin + (double) bar / nBins * (style.xMax - style.xMin), 2)
+				// 				+ "-" +
+				// 				Formatter.format(style.xMin + (double) (bar + 1) / nBins * (style.xMax - style.xMin), 2)
+				// 				+ "]</td></tr>");
+				// }
+				tip.append("<tr><td><i>" + style.yLabel + ":</i></td><td>"
+						+ Formatter.formatPercent(data[n][bar] / graph.getSamples(), 2) + "</td></tr></table>");
 				break;
 			default:
 				break;

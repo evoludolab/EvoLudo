@@ -38,7 +38,6 @@ import java.util.Set;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
-import org.evoludo.graphics.HistoGraph;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
@@ -62,6 +61,7 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 
 	@SuppressWarnings("hiding")
 	protected Set<PopGraph2D> graphs;
+	protected int MAX_BINS = 100;
 	double[][]	bins;
 	int			traitXIdx = 0, traitYIdx = 1;
 
@@ -151,7 +151,7 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 		for( PopGraph2D graph : graphs ) {
 			int nTraits = graphs2mods.get(graph).getNTraits();
 			int tag = graph.getTag();
-			int nBins = nTraits == 1 ? HistoGraph.MAX_BINS : HistoGraph.MAX_BINS * HistoGraph.MAX_BINS;
+			int nBins = nTraits == 1 ? MAX_BINS : MAX_BINS * MAX_BINS;
 			if (bins[tag] == null || bins[tag].length != nBins)
 				bins[tag] = new double[nBins];
 			graph.setGeometry(createGeometry(nTraits));
@@ -231,12 +231,12 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 //		geometry.name = module.getTraitName(n);
 		if( nTraits==1 ) {
 			geometry.setType(Geometry.Type.LINEAR);
-			geometry.size = HistoGraph.MAX_BINS;
+			geometry.size = MAX_BINS;
 			return geometry;
 		}
 		geometry.setType(Geometry.Type.SQUARE);
 		geometry.connectivity = 4;
-		geometry.size = HistoGraph.MAX_BINS*HistoGraph.MAX_BINS;
+		geometry.size = MAX_BINS * MAX_BINS;
 		return geometry;
 	}
 
@@ -270,7 +270,7 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 		if( node<0 )
 			return null;
 		GraphStyle style = agraph.getStyle();
-		int nBins = HistoGraph.MAX_BINS;
+		int nBins = MAX_BINS;
 		Module module = engine.getModule();
 		int nTraits = module.getNTraits();
 		if( nTraits == 1 ) {
@@ -282,8 +282,8 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 					(node<nBins?"<i>frequency:</i> "+Formatter.formatPercent(bins[agraph.getTag()][bar], 1)+"<br/>":"")+
 					"<i>"+style.yLabel+":</i> "+Formatter.format(time, 2);
 		}
-		int bar1 = node % HistoGraph.MAX_BINS;
-		int bar2 = node / HistoGraph.MAX_BINS;
+		int bar1 = node % MAX_BINS;
+		int bar2 = node / MAX_BINS;
 		return (style.label!=null?"<b>"+style.label+"</b><br/>":"")+
 				"<i>"+style.xLabel+":</i> ["+Formatter.format(style.xMin+bar1*(style.xMax-style.xMin)/nBins, 2)+", "+
 				Formatter.format(style.xMin+(bar1+1)*(style.xMax-style.xMin)/nBins, 2)+"]<br/>"+

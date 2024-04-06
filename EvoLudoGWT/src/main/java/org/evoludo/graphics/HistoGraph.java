@@ -137,16 +137,12 @@ public class HistoGraph extends AbstractGraph {
 	private int autoscaleidx = 0;
 	private ArrayList<Marker> binmarkers = new ArrayList<Marker>();
 
-	/**
-	 *
-	 */
-	public static final int MAX_BINS = 100;
-
 	protected double[][] data;
 	protected String message;
 	protected boolean isNormalized = true;
 	protected int normIdx = -1;
 	protected double nSamples;
+	int maxBinIdx;
 
 //	Bin binMin = new Bin();
 //	Bin binMax = new Bin();
@@ -187,6 +183,10 @@ public class HistoGraph extends AbstractGraph {
 
 	public void setData(double[][] data) {
 		this.data = data;
+		if (data != null && data.length > 0 && data[0] != null)
+			maxBinIdx = data[0].length - 1;
+		else
+			maxBinIdx = -1;
 	}
 
 	public double getData(int idx) {
@@ -211,6 +211,8 @@ public class HistoGraph extends AbstractGraph {
 		nSamples++;
 		if( data==null || bin<0 )
 			return;
+		if (bin > maxBinIdx)
+			bin = maxBinIdx;
 		data[tag][bin]++;
 		if( normIdx>=0 )
 			data[normIdx][bin]++;
@@ -454,7 +456,7 @@ public class HistoGraph extends AbstractGraph {
 		}
 
 		double barwidth = bounds.getWidth()/nBins;
-		double xshift = 1;
+		double xshift = 0;
 		double h = bounds.getHeight();
 		double map = h/(style.yMax-style.yMin);
 		if( normIdx>=0 ) {
@@ -502,17 +504,15 @@ public class HistoGraph extends AbstractGraph {
 
 	@Override
 	protected boolean calcBounds() {
-		if (!super.calcBounds())
+		if (!super.calcBounds() || data == null)
 			return false;
-		int nBins = MAX_BINS;
-		if( data!=null )
-			nBins = data[tag].length;
+		int nBins = data[tag].length;
 		double w = bounds.getWidth();
-		int barwidth = (int) ((w-2)/nBins);
-		if( barwidth<=0 )
+		int barwidth = (int) ((w - 2) / nBins);
+		if (barwidth <= 0)
 			// return success even though too small for bars
 			return true;
-		bounds.adjust(0, 0, barwidth*nBins-w, 0);
+		bounds.adjust(0, 0, barwidth * nBins - w, 0);
 		return true;
 	}
 
