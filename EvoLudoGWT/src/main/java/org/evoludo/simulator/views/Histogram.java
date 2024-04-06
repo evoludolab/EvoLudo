@@ -72,7 +72,9 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 	protected Set<HistoGraph> graphs;
 
 	public static final int FIXATION_NODES = 144;
+	public static final int MAX_BINS = 250;
 	protected int nSamples = -1;
+	double scale2bins = 1.0;
 
 	/**
 	 * Flag to indicate whether the model entertains multiple species, i.e.
@@ -92,9 +94,31 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 		return type.toString();
 	}
 
+	/**
+	 * Checks if the data type is referring to statistics.
+	 * 
+	 * @return <code>true</code> for statistics data types
+	 */
+	public boolean isStatistics() {
+		return (type == Model.Data.STATISTICS_FIXATION_PROBABILITY || //
+				type == Model.Data.STATISTICS_FIXATION_TIME || //
+				type == Model.Data.STATISTICS_STATIONARY);
+	}
+	
 	@Override
 	public void activate() {
-		model.setMode(type.getMode());
+		switch (type) {
+			case STRATEGY:
+			case FITNESS:
+			case DEGREE:
+			default:
+				model.setMode(Mode.DYNAMICS);
+			case STATISTICS_FIXATION_PROBABILITY:
+			case STATISTICS_FIXATION_TIME:
+				model.setMode(Mode.STATISTICS_SAMPLE);
+			case STATISTICS_STATIONARY:
+				model.setMode(Mode.STATISTICS_UPDATE);
+		}
 		super.activate();
 	}
 
@@ -332,7 +356,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 							style.showYTicks = true;
 							style.showXLevels = false;
 							style.showYLevels = true;
-							style.xLabel = "state";
+							style.xLabel = "strategy count";
 							style.showLabel = true;
 							style.showXLabel = bottomPane;	// show only on bottom panel
 							style.showXTickLabels = bottomPane;
@@ -468,7 +492,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					break;
 
 				case STATISTICS_FIXATION_PROBABILITY:
-					newPop &= model.permitsMode(Mode.STATISTICS);
+					newPop &= model.permitsMode(Mode.STATISTICS_SAMPLE);
 					int nBins = pop.getNPopulation();
 					style.yMin = 0.0;
 					style.yMax = 1.0;
@@ -482,7 +506,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					break;
 
 				case STATISTICS_FIXATION_TIME:
-					newPop &= model.permitsMode(Mode.STATISTICS);
+					newPop &= model.permitsMode(Mode.STATISTICS_SAMPLE);
 					int nPop = pop.getNPopulation();
 					nBins = nPop;
 					nTraits++;	// the last 'trait' is for unconditional absorption times
@@ -527,15 +551,19 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					break;
 
 				case STATISTICS_STATIONARY:
-					nBins = pop.getNPopulation()+1;
+					nPop = pop.getNPopulation();
 					style.yMin = 0.0;
 					style.yMax = 1.0;
 					style.xMin = 0;
-					style.xMax = nBins-1;
+					style.xMax = nPop;
 					style.label = pop.getTraitName(tag);
 					style.graphColor = ColorMapCSS.Color2Css(colors[tag]);
-					if( newPop )
-						data = new double[nTraits+1][nBins];
+					if( newPop ) {
+						// determine the number of bins with maximum of MAX_BINS
+						int binSize = (nPop + 1) / MAX_BINS + 1;
+						data = new double[nTraits][nPop / binSize];
+						scale2bins = nPop / binSize;
+					}
 					graph.setData(data);
 					break;
 
@@ -557,9 +585,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 
 	@Override
 	public void update(boolean force) {
-		boolean doStatistics = type.isStatistics();
-
-		if( !isActive && !doStatistics )
+		if( !isActive && !isStatistics() )
 			return;
 
 		double newtime = model.getTime();
@@ -664,7 +690,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 //NOTE: not fully ready for multi-species; info which species fixated missing
 				Module pop = null;
 				FixationData fixData = null;
-				boolean doStat = model.permitsMode(Mode.STATISTICS);
+				boolean doStat = model.permitsMode(Mode.STATISTICS_SAMPLE);
 				for( HistoGraph graph : graphs) {
 					if (!doStat || !(model instanceof IBSD)) {
 						graph.displayMessage("Statistics mode: incompatible settings");
@@ -701,7 +727,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 				int nPop = -1;
 				pop = null;
 				int nTrait = -1;
-				doStat = model.permitsMode(Mode.STATISTICS);
+				doStat = model.permitsMode(Mode.STATISTICS_SAMPLE);
 				for( HistoGraph graph : graphs) {
 					if (!doStat || !(model instanceof IBSD)) {
 						graph.displayMessage("Statistics mode: incompatible settings");
@@ -748,7 +774,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 				double[] state = new double[nt];
 				model.getMeanTraits(state);
 				for( HistoGraph graph : graphs) {
-					graph.addData((int) (state[graph.getTag()] * graph.getModule().getNPopulation() + 0.1));
+					graph.addData((int) (state[graph.getTag()] * scale2bins + 0.1));
 					graph.paint();
 				}
 				timestamp = newtime;
@@ -761,7 +787,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 
 	@Override
 	public String getCounter() {
-		if( model.isMode(Mode.STATISTICS) ) {
+		if (model.getMode() == Mode.STATISTICS_SAMPLE) {
 			return "samples: "+nSamples;
 		}
 		return super.getCounter();

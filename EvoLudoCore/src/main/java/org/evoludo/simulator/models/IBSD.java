@@ -149,7 +149,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		boolean modeOK = super.permitsMode(test);
 		if (!modeOK)
 			return false;
-		if (test == Mode.STATISTICS) {
+		if (test == Mode.STATISTICS_SAMPLE) {
 			for (Module mod : species) {
 				if (!(mod instanceof HasHistogram.StatisticsProbability || mod instanceof HasHistogram.StatisticsTime))
 					return false;
@@ -170,7 +170,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	@Override
 	public boolean check() {
 		boolean doReset = super.check();
-		if (permitsMode(Mode.STATISTICS))
+		if (permitsMode(Mode.STATISTICS_SAMPLE))
 			fixData = new FixationData();
 		else
 			fixData = null;

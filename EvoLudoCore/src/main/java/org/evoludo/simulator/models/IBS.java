@@ -60,7 +60,7 @@ public abstract class IBS implements Model.IBS {
 
 	@Override
 	public boolean permitsMode(Mode test) {
-		if (test == Mode.STATISTICS) {
+		if (test == Mode.STATISTICS_SAMPLE) {
 			for (Module mod : species) {
 				if (mod.getMutation().probability > 0.0)
 					return false;
@@ -76,7 +76,7 @@ public abstract class IBS implements Model.IBS {
 		if (this.mode == mode)
 			return true;
 		this.mode = mode;
-		if (mode == Mode.STATISTICS)
+		if (mode == Mode.STATISTICS_SAMPLE)
 			init();
 		return true;
 	}
@@ -421,7 +421,7 @@ public abstract class IBS implements Model.IBS {
 	@Override
 	public boolean next() {
 		// start new statistics sample if required
-		if (isMode(Mode.STATISTICS) && statisticsSampleNew) {
+		if (mode == Mode.STATISTICS_SAMPLE && statisticsSampleNew) {
 			engine.modelInit();
 			engine.modelUpdate();
 			// debugCheck("next (new sample)");

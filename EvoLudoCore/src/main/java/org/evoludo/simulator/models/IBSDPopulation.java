@@ -1880,7 +1880,7 @@ public class IBSDPopulation extends IBSPopulation {
 		super.init();
 		Model model = engine.getModel();
 		InitType myType = initType;
-		if (model.isMode(Mode.STATISTICS))
+		if (model.getMode() == Mode.STATISTICS_SAMPLE)
 			myType = InitType.STATISTICS;
 
 		Arrays.fill(strategiesTypeCount, 0);

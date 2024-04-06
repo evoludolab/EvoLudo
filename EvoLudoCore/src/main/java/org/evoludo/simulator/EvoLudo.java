@@ -1058,7 +1058,7 @@ public abstract class EvoLudo
 	 */
 	public void prev() {
 		// requires that model permits time reversal and not in statistics mode
-		if (!activeModel.permitsTimeReversal() || activeModel.isMode(Mode.STATISTICS))
+		if (!activeModel.permitsTimeReversal() || activeModel.getMode() != Mode.DYNAMICS)
 			return;
 		activeModel.setTimeReversed(!activeModel.isTimeReversed());
 		doPrev = true;
@@ -1156,7 +1156,7 @@ public abstract class EvoLudo
 	 * The flag to indicate whether the model running event has been processed. This
 	 * is required to deal with repeated samples for {@code Mode#STATISTICS}.
 	 * 
-	 * @see Mode#STATISTICS
+	 * @see Mode#STATISTICS_SAMPLE
 	 */
 	private boolean runFired = false;
 
@@ -1184,8 +1184,14 @@ public abstract class EvoLudo
 		// any specific request causes model to stop (and potentially resume later)
 		if (pendingAction != PendingAction.NONE)
 			runFired = false;
-		if (activeModel.isMode(Mode.DYNAMICS)) {
-			_fireModelChanged();
+		switch (activeModel.getMode()) {
+			default:
+			case STATISTICS_UPDATE:
+			case DYNAMICS:
+				_fireModelChanged();
+				break;
+			case STATISTICS_SAMPLE:
+				break;
 		}
 	}
 
@@ -1249,7 +1255,7 @@ public abstract class EvoLudo
 	 * {@link MilestoneListener}s.
 	 */
 	public synchronized void fireModelReinit() {
-		if (activeModel.isMode(Mode.DYNAMICS) || !isRunning) {
+		if (activeModel.getMode() == Mode.DYNAMICS || !isRunning) {
 			runFired = false;
 			for (MilestoneListener i : milestoneListeners)
 				i.modelDidReinit();
@@ -1290,7 +1296,7 @@ public abstract class EvoLudo
 			return;
 		// check if new sample completed
 		readStatisticsSample();
-		if (activeModel.isMode(Mode.DYNAMICS)) {
+		if (activeModel.getMode() == Mode.DYNAMICS) {
 			// MODE_DYNAMICS
 			runFired = false;
 			for (MilestoneListener i : milestoneListeners)

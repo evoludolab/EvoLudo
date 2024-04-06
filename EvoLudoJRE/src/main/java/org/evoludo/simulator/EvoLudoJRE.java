@@ -495,7 +495,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			}
 		}
 		// run simulation
-		if (model.isMode(Mode.DYNAMICS)) {
+		if (model.getMode() == Mode.DYNAMICS) {
 			boolean cont = true;
 			// relax initial configuration
 			modelRelax();
@@ -586,7 +586,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 					break;
 				cont = modelNext();
 			}
-		} else if (model.isMode(Mode.STATISTICS)) {
+		} else if (model.getMode() == Mode.STATISTICS_SAMPLE) {
 			// perform statistics
 			if (cloSeed.isSet()) {
 				// initial state set. now clear seed to obtain reproducible statistics
@@ -1254,7 +1254,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 
 	/**
 	 * Helper method to determine whether the data {@code type} requires
-	 * {@link Mode#STATISTICS} or {@link Mode#DYNAMICS}.
+	 * {@link Mode#STATISTICS_SAMPLE} or {@link Mode#DYNAMICS}.
 	 * 
 	 * @param type the data type to check
 	 * @return {@code true} if {@code Mode#DYNAMICS}
@@ -1318,7 +1318,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						}
 					}
 					dataTypes.trimToSize();
-					getModel().setMode(isDynamic ? Mode.DYNAMICS : Mode.STATISTICS);
+					getModel().setMode(isDynamic ? Mode.DYNAMICS : Mode.STATISTICS_SAMPLE);
 					return success;
 				}
 			});
@@ -1360,7 +1360,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			prsr.addCLO(cloExport);
 			// XXX should not be added for customized simulations or should it?
 			prsr.addCLO(cloData);
-			if (getModel().permitsMode(Mode.STATISTICS))
+			if (getModel().permitsMode(Mode.STATISTICS_SAMPLE))
 				prsr.addCLO(cloNSamples);
 			cloData.clearKeys();
 			cloData.addKeys(MultiView.getAvailableDataTypes(activeModule, activeModel));

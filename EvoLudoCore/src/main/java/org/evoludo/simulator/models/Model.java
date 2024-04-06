@@ -640,7 +640,13 @@ public abstract interface Model extends CLOProvider {
 		 * until it stops and advertise that a new data point is available. Once
 		 * retrieved start next sample.
 		 */
-		STATISTICS("statistics"); //
+		STATISTICS_SAMPLE("statistics_sample"), //
+
+		/**
+		 * Statistics: generate samples from single run to create statistics of the
+		 * model reflecting the different states of the population.
+		 */
+		STATISTICS_UPDATE("statistics_update"); //
 
 		/**
 		 * Identifying id of the type of mode.
@@ -655,12 +661,16 @@ public abstract interface Model extends CLOProvider {
 		Mode(String id) {
 			this.id = id;
 		}
+
+		@Override
+		public String toString() {
+			return id;
+		}
 	}
 
 	/**
 	 * Data types that are handled by the model. Currently the following data types
-	 * are
-	 * supported:
+	 * are supported:
 	 * <dl>
 	 * <dt>Strategy
 	 * <dd>the data represents strategies.
@@ -672,6 +682,8 @@ public abstract interface Model extends CLOProvider {
 	 * <dd>the data represents fixation probabilities.
 	 * <dt>Fixation time
 	 * <dd>the data represents fixation times.
+	 * <dt>Stationary distribution
+	 * <dd>the data represents the stationary strategy distribution.
 	 * <dt>undefined
 	 * <dd>the data type is not defined/unknown.
 	 * </dl>
@@ -729,25 +741,6 @@ public abstract interface Model extends CLOProvider {
 			this.id = id;
 		}
 
-		/**
-		 * Checks if the data type is referring to statistics.
-		 * 
-		 * @return <code>true</code> for statistics data types
-		 */
-		public boolean isStatistics() {
-			return (this == STATISTICS_FIXATION_PROBABILITY || //
-					this == STATISTICS_FIXATION_TIME);
-		}
-
-		/**
-		 * Gets the {@link Mode} associate with this data type.
-		 * 
-		 * @return the mode associate with this data type
-		 */
-		public Mode getMode() {
-			return isStatistics() ? Mode.STATISTICS : Mode.DYNAMICS;
-		}
-	
 		@Override
 		public String toString() {
 			return id;
@@ -1335,16 +1328,6 @@ public abstract interface Model extends CLOProvider {
 	 * @return {@code true} if {@code test} is available in current model
 	 */
 	public boolean permitsMode(Mode test);
-
-	/**
-	 * Check {@link Mode} of this model.
-	 *
-	 * @param test the mode to test
-	 * @return <code>true</code> if mode of model is <code>test</code>
-	 */
-	public default boolean isMode(Mode test) {
-		return (test == getMode());
-	}
 
 	/**
 	 * Sets the {@link Mode} of model/simulator. Returns {@code false} if
