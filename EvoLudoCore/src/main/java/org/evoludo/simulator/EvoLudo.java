@@ -1296,18 +1296,21 @@ public abstract class EvoLudo
 			return;
 		// check if new sample completed
 		readStatisticsSample();
-		if (activeModel.getMode() == Mode.DYNAMICS) {
-			// MODE_DYNAMICS
-			runFired = false;
-			for (MilestoneListener i : milestoneListeners)
-				i.modelStopped();
-		} else {
-			// MODE_STATISTICS
-			// note: calling fireModelChanged doesn't work because MODE_STATISTICS
-			// prevents firing
-			if (pendingAction == PendingAction.NONE)
-				pendingAction = PendingAction.STATISTIC;
-			_fireModelChanged();
+		switch (activeModel.getMode()) {
+			case DYNAMICS:
+			case STATISTICS_UPDATE:
+			default:
+				runFired = false;
+				for (MilestoneListener i : milestoneListeners)
+					i.modelStopped();
+				break;
+			case STATISTICS_SAMPLE:
+				// note: calling fireModelChanged doesn't work because MODE_STATISTICS
+				// prevents firing
+				if (pendingAction == PendingAction.NONE)
+					pendingAction = PendingAction.STATISTIC;
+				_fireModelChanged();
+				break;
 		}
 	}
 
