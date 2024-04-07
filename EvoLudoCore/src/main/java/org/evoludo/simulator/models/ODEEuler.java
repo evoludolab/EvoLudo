@@ -600,11 +600,6 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	@Override
-	public boolean permitsMode(Mode test) {
-		return (test == Mode.DYNAMICS);
-	}
-
-	@Override
 	public void setDt(double deltat) {
 		deltat = Math.max(0.0, deltat);
 		if (deltat == 0.0) {

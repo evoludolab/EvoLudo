@@ -1327,7 +1327,9 @@ public abstract interface Model extends CLOProvider {
 	 * @param test the mode to test
 	 * @return {@code true} if {@code test} is available in current model
 	 */
-	public boolean permitsMode(Mode test);
+	public default boolean permitsMode(Mode test) {
+		return test == Mode.DYNAMICS;
+	}
 
 	/**
 	 * Sets the {@link Mode} of model/simulator. Returns {@code false} if
