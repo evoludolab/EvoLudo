@@ -563,7 +563,8 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					if( newPop ) {
 						// determine the number of bins with maximum of MAX_BINS
 						binSize = (nPop + 1) / MAX_BINS + 1;
-						scale2bins = (nPop + 0) / binSize;
+						scale2bins = (nPop + 1) / binSize;	// number of bins
+						// doubles as the map for frequencies to bins
 						data = new double[nTraits][(int) scale2bins];
 					}
 					graph.setData(data);
@@ -1071,30 +1072,17 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 				if (binSize == 1)
 					tip.append("<td>" + bar + "</td></tr>");
 				else {
-					String separator = (binSize > 2) ? "-" : ",";
 					int start = (int) (bar * binSize);
-					tip.append("<td>[" + start + separator + (start + binSize - 1)
-						+ "]</td></tr>");
+					int end = start + binSize - 1;
+					if (bar == nBins - 1) {
+						// careful with last bin
+						module = graph.getModule();
+						nPop = module.getNPopulation();
+						end = Math.max(end, nPop);
+					}
+					String separator = (end - start > 1) ? "-" : ",";
+					tip.append("<td>[" + start + separator + end + "]</td></tr>");
 				}
-				// tip.append("<td>[" + (int) (bar / nBins * scale2bins) + "," + (int) ((bar + 1) / nBins * scale2bins) + "]</td></tr>");
-				// switch (binSize) {
-				// 	case 1:
-				// 		tip.append("<td>" + bar + "</td></tr>");
-				// 		break;
-				// 	case 2:
-				// 		tip.append("<tr><td>[" + (int) (bar / nBins * scale2bins) + "," + (int) ((bar + 1) / nBins * scale2bins)
-				// 				// + Formatter.format(style.xMin + (double) bar / nBins * (style.xMax - style.xMin), 2)
-				// 				// + "," +
-				// 				// Formatter.format(style.xMin + (double) (bar + 1) / nBins * (style.xMax - style.xMin), 2)
-				// 				+ "]</td></tr>");
-				// 		break;
-				// 	default:
-				// 		tip.append("<tr><td><i>["
-				// 				+ Formatter.format(style.xMin + (double) bar / nBins * (style.xMax - style.xMin), 2)
-				// 				+ "-" +
-				// 				Formatter.format(style.xMin + (double) (bar + 1) / nBins * (style.xMax - style.xMin), 2)
-				// 				+ "]</td></tr>");
-				// }
 				tip.append("<tr><td><i>" + style.yLabel + ":</i></td><td>"
 						+ Formatter.formatPercent(data[n][bar] / graph.getSamples(), 2) + "</td></tr></table>");
 				break;
