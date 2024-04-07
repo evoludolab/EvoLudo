@@ -600,6 +600,11 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	@Override
+	public boolean permitsMode(Mode test) {
+		return (test == Mode.DYNAMICS);
+	}
+
+	@Override
 	public void setDt(double deltat) {
 		deltat = Math.max(0.0, deltat);
 		if (deltat == 0.0) {
@@ -1937,8 +1942,6 @@ public class ODEEuler implements Model.ODE {
 		}
 		if (permitsTimeReversal())
 			parser.addCLO(cloTimeReversed);
-//XXX move to Discrete
-		parser.addCLO(mutation[0].clo);
 	}
 
 	@Override

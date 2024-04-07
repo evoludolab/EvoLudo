@@ -396,9 +396,8 @@ public abstract class EvoLudo
 			changed = (activeModel.getModelType() != type);
 			if (!changed)
 				return false;
-			removeCLOProvider(activeModel);
-			if (!(activeModel instanceof IBSPopulation))
-				activeModel.unload();
+			// unload previous model
+			modelUnload();
 		}
 		switch (type) {
 			case ODE:
@@ -1286,6 +1285,9 @@ public abstract class EvoLudo
 	 * {@link MilestoneListener}s.
 	 */
 	public synchronized void fireModelStopped() {
+		// model may already have been unloaded
+		if (activeModel == null)
+			return;
 		// check if new sample completed
 		readStatisticsSample();
 		if (activeModel.isMode(Mode.DYNAMICS)) {

@@ -240,7 +240,8 @@ public class RSP extends Discrete implements Pairs,
 	 * Command line option to set the payoff matrix.
 	 */
 	public final CLOption cloPayoff = new CLOption("paymatrix", "0,1,-1;-1,0,1;1,-1,0", EvoLudo.catModule,
-			"--paymatrix, -P<a11,a12,a13;a21,a22,a23;a31,a32,a33>   3x3 payoff matrix",
+			"--paymatrix, -P<a11,a12,a13;a21,a22,a23;a31,a32,a33>\n" + //
+			"                3x3 payoff matrix",
 			new CLODelegate() {
 
 				/**
