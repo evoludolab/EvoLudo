@@ -447,6 +447,29 @@ public abstract class AbstractGraph extends FocusPanel
 	protected static final int DEFAULT_BUFFER_SIZE = 10000;
 
 	/**
+	 * The minimum time between updates in milliseconds.
+	 */
+	protected static final int MIN_MSEC_BETWEEN_UPDATES = 100;	// max 10 updates per second
+
+	/**
+	 * The field to store the time of the last update.
+	 */
+	protected double updatetime = -1.0;
+
+	/**
+	 * Determine whether it is time to update the display.
+	 * 
+	 * @return {@code true} if time to update graph
+	 */
+	public boolean doUpdate() {
+		double now = Duration.currentTimeMillis();
+		if( now - updatetime < MIN_MSEC_BETWEEN_UPDATES)
+			return false;
+		updatetime = now;
+		return true;
+	}
+
+	/**
 	 * Create the base class for graphs. Allocates the canvas, retrieves the shared
 	 * tooltip and context menu. Use the CSS class {@code evoludo-Canvas2D} for
 	 * custom formatting of the canvas element.

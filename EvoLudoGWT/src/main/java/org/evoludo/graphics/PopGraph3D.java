@@ -383,7 +383,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 
 	@Override
 	public void paint() {
-		if (!isActive || spheres == null)
+		if (!isActive || !doUpdate() || spheres == null)
 			return;
 		if (invalidated)
 			initUniverse();

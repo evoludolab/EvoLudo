@@ -169,7 +169,7 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, //
 
 	@Override
 	public void paint() {
-		if (!isActive)
+		if (!isActive || !doUpdate())
 			return;
 		paint(true);
 	 	tooltip.update();

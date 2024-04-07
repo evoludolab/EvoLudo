@@ -131,7 +131,7 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 
 	@Override
 	public void paint() {
-		if (!isActive)
+		if (!isActive || !doUpdate())
 			return;
 		g.save();
 		g.scale(scale,  scale);

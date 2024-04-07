@@ -387,7 +387,7 @@ public class HistoGraph extends AbstractGraph {
 
 	@Override
 	public void paint() {
-		if (!isActive || displayMessage(message))
+		if (!isActive || !doUpdate() || displayMessage(message))
 			return;
 
 		g.save();

@@ -439,7 +439,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 	 */
 	@Override
 	public void paint() {
-		if (!isActive)
+		if (!isActive || !doUpdate())
 			return;
 		// helper variables
 		double xshift, yshift;
