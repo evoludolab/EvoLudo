@@ -113,11 +113,14 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 			case DEGREE:
 			default:
 				model.setMode(Mode.DYNAMICS);
+				break;
 			case STATISTICS_FIXATION_PROBABILITY:
 			case STATISTICS_FIXATION_TIME:
 				model.setMode(Mode.STATISTICS_SAMPLE);
+				break;
 			case STATISTICS_STATIONARY:
 				model.setMode(Mode.STATISTICS_UPDATE);
+				break;
 		}
 		super.activate();
 	}
