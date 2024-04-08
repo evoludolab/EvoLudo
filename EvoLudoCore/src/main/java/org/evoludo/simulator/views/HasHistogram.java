@@ -132,7 +132,7 @@ public abstract interface HasHistogram {
 	 * running statistics over multiple runs and include histograms of fixation
 	 * probabilities.
 	 * 
-	 * @see org.evoludo.simulator.MVHistogram
+	 * @see org.evoludo.simulator.Histogram
 	 * 
 	 * @author Christoph Hauert
 	 */
@@ -144,7 +144,7 @@ public abstract interface HasHistogram {
 	 * {@code HasHistogram.StatisticsTime} interface must be capable of running
 	 * statistics over multiple runs and include histograms of fixation times.
 	 * 
-	 * @see org.evoludo.simulator.MVHistogram
+	 * @see org.evoludo.simulator.Histogram
 	 * 
 	 * @author Christoph Hauert
 	 */
@@ -153,10 +153,12 @@ public abstract interface HasHistogram {
 
 	/**
 	 * {@link org.evoludo.simulator.modules.Module Module}s that implement the
-	 * {@code HasHistogram.StatisticsStationary} interface must be capable of running
-	 * statistics over multiple runs and generate histograms of stationary distributions.
+	 * {@code HasHistogram.StatisticsStationary} interface must be capable of
+	 * generate histograms of the number of times particular configurations
+	 * (frequencies of strategies) are visited, which eventually converges to
+	 * a stationary distributions in ergodic settings.
 	 * 
-	 * @see org.evoludo.simulator.MVHistogram
+	 * @see org.evoludo.simulator.Histogram
 	 * 
 	 * @author Christoph Hauert
 	 */

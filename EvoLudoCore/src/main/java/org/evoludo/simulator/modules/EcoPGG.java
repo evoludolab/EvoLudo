@@ -66,7 +66,8 @@ import org.evoludo.util.Formatter;
 public class EcoPGG extends Discrete implements Groups,
 		HasIBS, HasODE, HasSDE, HasPDE, 
 		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy, HasS3, HasPhase2D,
-		HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree, HasConsole {
+		HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness, 
+		HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsStationary, HasConsole {
 
 	/**
 	 * The trait (and index) value of defectors.

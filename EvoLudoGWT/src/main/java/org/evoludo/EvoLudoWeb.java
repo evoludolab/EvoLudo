@@ -1758,7 +1758,7 @@ public class EvoLudoWeb extends Composite
 			addView(new Histogram(engine, Model.Data.STATISTICS_FIXATION_PROBABILITY));
 		if (module instanceof HasHistogram.StatisticsTime)
 			addView(new Histogram(engine, Model.Data.STATISTICS_FIXATION_TIME));
-		if (module instanceof HasHistogram.StatisticsTime)
+		if (module instanceof HasHistogram.StatisticsStationary)
 			addView(new Histogram(engine, Model.Data.STATISTICS_STATIONARY));
 		// miscellaneous views
 		// note: console may be removed for (simulated) ePub modes

@@ -61,7 +61,8 @@ import org.evoludo.util.Formatter;
  */
 public class NetDyn extends Discrete implements HasIBS,
 		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy, HasPop2D.Fitness,
-		HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree, HasConsole {
+		HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree, 
+		HasHistogram.StatisticsStationary, HasConsole {
 
 	/**
 	 * The cost-to-benefit ratio of cooperation.

@@ -358,7 +358,6 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 							style.showYTicks = true;
 							style.showXLevels = false;
 							style.showYLevels = true;
-							style.xLabel = "strategy count";
 							style.showLabel = true;
 							style.showXLabel = bottomPane;	// show only on bottom panel
 							style.showXTickLabels = bottomPane;
@@ -553,12 +552,25 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					break;
 
 				case STATISTICS_STATIONARY:
-					nPop = pop.getNPopulation();
-					style.yMin = 0.0;
-					style.yMax = 1.0;
-					style.xMin = 0;
-					style.xMax = nPop;
 					style.label = pop.getTraitName(tag);
+					nPop = pop.getNPopulation();
+					if (model instanceof Model.DE) {
+						if (((Model.DE) model).isDensity()) {
+							style.xLabel = "density";
+							style.xMin = 0.0;
+							style.xMax = 0.0;
+							style.autoscaleX = true;
+						} else {
+							style.xLabel = "frequency";
+							style.xMin = 0.0;
+							style.xMax = 1.0;
+							style.percentX = true;
+						}
+					} else {
+						style.xLabel = "strategy count";
+						style.xMin = 0.0;
+						style.xMax = nPop;
+					}
 					style.graphColor = ColorMapCSS.Color2Css(colors[tag]);
 					if( newPop ) {
 						// determine the number of bins with maximum of MAX_BINS

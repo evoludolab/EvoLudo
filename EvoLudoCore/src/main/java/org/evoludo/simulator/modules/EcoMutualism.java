@@ -102,7 +102,7 @@ import org.evoludo.util.Formatter;
 public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 		/* HasIBS, */ HasODE, // HasSDE, // PDEs not (yet) an option
 		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy, HasPhase2D, HasPop2D.Fitness, HasPop3D.Fitness,
-		/* HasMean.Fitness, HasHistogram.Fitness, */ HasHistogram.Degree, HasConsole {
+		/* HasMean.Fitness, HasHistogram.Fitness, */ HasHistogram.StatisticsStationary, HasHistogram.Degree, HasConsole {
 
 	/**
 	 * The trait (and index) value of hosts infected by the defector strain of the

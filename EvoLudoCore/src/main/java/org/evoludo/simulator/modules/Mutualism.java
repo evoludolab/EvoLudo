@@ -86,7 +86,7 @@ import org.evoludo.util.Formatter;
 public class Mutualism extends Discrete implements Pairs,
 		HasIBS, HasODE, // HasSDE, single species only at present // HasPDE, not (yet) an option
 		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy, HasPhase2D, HasPop2D.Fitness, HasPop3D.Fitness,
-		HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree, HasConsole {
+		HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsStationary, HasConsole {
 
 	/**
 	 * The trait (and index) value of defectors.

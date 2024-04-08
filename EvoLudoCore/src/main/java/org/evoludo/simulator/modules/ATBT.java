@@ -75,7 +75,7 @@ import org.evoludo.util.Formatter;
  */
 public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, HasPDE,
 		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy, HasS3, HasPhase2D, HasPop2D.Fitness, HasPop3D.Fitness,
-		HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree, HasConsole {
+		HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsStationary, HasConsole {
 
 	/**
 	 * The identifier of cooperators: {@code trait % 2}.

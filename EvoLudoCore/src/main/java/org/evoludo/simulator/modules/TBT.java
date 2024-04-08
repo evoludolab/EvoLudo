@@ -97,7 +97,8 @@ public class TBT extends Discrete implements Pairs,
 		HasIBS, HasODE, HasSDE, HasPDE,
 		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy,
 		HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness,
-		HasHistogram.Degree, HasHistogram.StatisticsProbability, HasHistogram.StatisticsTime, HasConsole {
+		HasHistogram.Degree, HasHistogram.StatisticsProbability, HasHistogram.StatisticsTime, 
+		HasHistogram.StatisticsStationary, HasConsole {
 
 	/**
 	 * The trait (and index) value of defectors.
