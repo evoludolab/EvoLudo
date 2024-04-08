@@ -873,6 +873,12 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 				}
 				return status;
 
+			case STATISTICS_STATIONARY:
+				if (model.hasConverged()) {
+					logger.warning("Non ergodic system - no stationary distribution!");
+					return "";
+				}
+				//$FALL-THROUGH$
 			default:
 				return super.getStatus(force);
 		}
