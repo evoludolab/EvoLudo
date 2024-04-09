@@ -66,7 +66,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 	protected int nStates;
 	private String[] names;
 	private int[] order = new int[] { 0, 1, 2 };
-	protected double[] init = new double[4];
+	protected double[] init;
 	protected Point2D e0 = new Point2D();
 	protected Point2D e1 = new Point2D();
 	protected Point2D e2 = new Point2D();
@@ -79,6 +79,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 	public S3Graph(Controller controller, int nStates, int tag) {
 		super(controller, tag);
 		this.nStates = nStates;
+		init = new double[nStates + 1]; // add time
 		setStylePrimaryName("evoludo-S3Graph");
 	}
 
@@ -542,8 +543,11 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 						}
 					}));
 			}
-			menu.add("Set trait...", setTraitMenu);
 			cornerIdx = closestCorner(x, y);
+			menu.add("Set trait '"+names[order[cornerIdx]]+"' to ...", setTraitMenu);
+			// enable all traits
+			for (Widget item : setTraitMenu)
+				((ContextMenuItem) item).setEnabled(true);
 			// disable already visible traits
 			for (int t : order)
 				((ContextMenuItem) setTraitMenu.getWidget(t)).setEnabled(false);

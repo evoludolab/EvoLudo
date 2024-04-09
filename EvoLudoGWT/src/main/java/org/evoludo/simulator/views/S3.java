@@ -88,12 +88,13 @@ public class S3 extends AbstractView {
 		super.reset(soft);
 		Module module = engine.getModule();
 		int nRoles = module.getNRoles();
+		nState = module.getNTraits();
 		if (graphs.size() != nRoles) {
 			soft = false;
 			destroyGraphs();
 			int[] order = new int[3];
 			for (int role = 0; role < nRoles; role++) {
-				S3Graph graph = new S3Graph(this, role);
+				S3Graph graph = new S3Graph(this, nState, role);
 				wrapper.add(graph);
 				graphs2mods.put(graph, module);
 				GraphStyle style = graph.getStyle();
@@ -132,7 +133,6 @@ public class S3 extends AbstractView {
 		}
 		Color[] colors = module.getTraitColors();
 		String[] names = module.getTraitNames();
-		nState = module.getNTraits();
 		if (state == null || state.length != nState)
 			state = new double[nState];
 		if (init == null || init.length != nState)
