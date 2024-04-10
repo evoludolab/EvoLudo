@@ -708,9 +708,8 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 //NOTE: not fully ready for multi-species; info which species fixated missing
 				Module pop = null;
 				FixationData fixData = null;
-				boolean doStat = model.permitsMode(Mode.STATISTICS_SAMPLE);
 				for( HistoGraph graph : graphs) {
-					if (!doStat || !(model instanceof IBSD)) {
+					if (!(model instanceof IBSD)) {
 						graph.displayMessage("Statistics mode: incompatible settings");
 						continue;
 					}
@@ -745,9 +744,8 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 				int nPop = -1;
 				pop = null;
 				int nTrait = -1;
-				doStat = model.permitsMode(Mode.STATISTICS_SAMPLE);
 				for( HistoGraph graph : graphs) {
-					if (!doStat || !(model instanceof IBSD)) {
+					if (!(model instanceof IBSD)) {
 						graph.displayMessage("Statistics mode: incompatible settings");
 						continue;
 					}

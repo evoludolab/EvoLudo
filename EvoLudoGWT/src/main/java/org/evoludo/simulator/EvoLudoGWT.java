@@ -154,6 +154,8 @@ public class EvoLudoGWT extends EvoLudo {
 	public void run() {
 		isSuspended = false;
 		if (activeModel.getMode() == Mode.STATISTICS_SAMPLE) {
+			// initialize model first to guarantee a well-defined initial state
+			modelInit();
 			isRunning = true;
 			// MODE_STATISTICS: non-blocking way for running an arbitrary number of update
 			// steps to obtain one sample
