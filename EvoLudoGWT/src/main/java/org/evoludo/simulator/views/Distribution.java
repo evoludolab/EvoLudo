@@ -121,12 +121,12 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 	}
 
 	@Override
-	public void reset(boolean soft) {
-		super.reset(soft);
+	public void reset(boolean hard) {
+		super.reset(hard);
 		ArrayList<? extends Module> species = engine.getModule().getSpecies();
 		int nGraphs = species.size();
 		if( graphs.size()!=nGraphs ) {
-			soft = false;
+			hard = true;
 			destroyGraphs();
 			if( bins==null || bins.length!=nGraphs)
 				bins = new double[nGraphs][];
@@ -172,7 +172,7 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 					if( Math.abs(min-style.xMin)>1e-6 || Math.abs(max-style.xMax)>1e-6 ) {
 						style.xMin = min;
 						style.xMax = max;
-						soft = false;
+						hard = true;
 					}
 					style.xLabel = cmod.getTraitName(traitXIdx);
 					style.showLabel = false;
@@ -186,7 +186,7 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 						if( Math.abs(style.yIncr-rFreq)>1e-6 ) {
 							style.yMax = 0.0;
 							style.yIncr = -rFreq;
-							soft = false;
+							hard = true;
 						}
 						style.yLabel = "time";
 						style.showYLevels = true;
@@ -197,7 +197,7 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 						if( Math.abs(min-style.yMin)>1e-6 || Math.abs(max-style.yMax)>1e-6 ) {
 							style.yMin = min;
 							style.yMax = max;
-							soft = false;
+							hard = true;
 						}
 						style.yLabel = cmod.getTraitName(traitYIdx);
 						style.showYLevels = false;
@@ -211,10 +211,10 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 				case DEGREE:
 					// not implemented
 			}
-			if( !soft )
+			if( hard )
 				graph.reset();
 		}
-		update();
+		update(hard);
 	}
 
 	@Override

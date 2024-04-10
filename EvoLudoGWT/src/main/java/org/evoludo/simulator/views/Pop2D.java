@@ -179,8 +179,8 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 	}
 
 	@Override
-	public void reset(boolean soft) {
-		super.reset(soft);
+	public void reset(boolean hard) {
+		super.reset(hard);
 		// how to deal with distinct interaction/reproduction geometries?
 		// - currently two separate graphs are shown one for the interaction and the other for the reproduction geometry
 		// - alternatively links could be drawn in different colors (would need to revise network layout routines)
@@ -195,7 +195,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 			case SDE:
 				nGraphs = 1;
 				if( graphs.size()!=nGraphs ) {
-					soft = false;
+					hard = true;
 					destroyGraphs();
 					Module module = engine.getModule();
 					PopGraph2D graph = new PopGraph2D(this, module.getID());
@@ -214,7 +214,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 					nGraphs += Geometry.displayUniqueGeometry(module)?1:2;
 
 				if( graphs.size()!=nGraphs ) {
-					soft = false;
+					hard = true;
 					destroyGraphs();
 					for( Module module : species ) {
 						PopGraph2D graph = new PopGraph2D(this, module.getID());
@@ -273,7 +273,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 				// if report frequency did not change, we're done
 				if( Math.abs(style.yIncr-rFreq)>1e-8 ) {
 					style.yIncr = -rFreq;
-					soft = false;
+					hard = true;
 				}
 				style.yMax = 0.0;
 				style.showYLabel = true;
@@ -383,10 +383,10 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 			if( cMap==null )
 				throw new Error("MVPop2D: ColorMap not initialized - needs attention!");
 			graph.setColorMap(pop.processColorMap(cMap));
-			if( !soft )
+			if( hard )
 				graph.reset();
 		}
-		update();
+		update(hard);
 	}
 
 	@Override

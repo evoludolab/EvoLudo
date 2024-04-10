@@ -93,8 +93,8 @@ public class Phase2D extends AbstractView {
 	}
 
 	@Override
-	public void reset(boolean soft) {
-		super.reset(soft);
+	public void reset(boolean hard) {
+		super.reset(hard);
 
 		GraphStyle style;
 		nStates = getNStates();
@@ -105,7 +105,7 @@ public class Phase2D extends AbstractView {
 		}
 		Module module = engine.getModule();
 		if( graphs.size()!=1 ) {
-			soft = false;
+			hard = true;
 			graph = new ParaGraph(this, nStates, module.getID());
 			wrapper.add(graph);
 			graphs2mods.put(graph, module);
@@ -154,9 +154,9 @@ public class Phase2D extends AbstractView {
 		Arrays.fill(minstate, Double.MAX_VALUE);
 		Arrays.fill(maxstate, -Double.MAX_VALUE);
 		updateMinMaxState();
-		if( !soft ) {
+		if( hard ) {
 			graph.reset();
-			update();
+			update(true);
 			graph.autoscale();
 		}
 	}

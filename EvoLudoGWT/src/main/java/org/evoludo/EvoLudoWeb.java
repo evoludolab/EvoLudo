@@ -507,7 +507,7 @@ public class EvoLudoWeb extends Composite
 	 */
 	private void update(boolean updateGUI) {
 		for (EvoLudoView view : activeViews.values())
-			view.update();
+			view.update(updateGUI);
 		if (updateGUI) {
 			Model model = engine.getModel();
 			// do not force retrieving status if engine is running

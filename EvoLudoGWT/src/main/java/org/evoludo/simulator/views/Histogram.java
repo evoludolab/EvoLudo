@@ -136,8 +136,8 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 	}
 
 	@Override
-	public void reset(boolean soft) {
-		super.reset(soft);
+	public void reset(boolean hard) {
+		super.reset(hard);
 		ArrayList<? extends Module> species = engine.getModule().getSpecies();
 		isMultispecies = (species.size() > 1);
 		degreeProcessed = false;
@@ -176,7 +176,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 
 		if( graphs.size()!=nGraphs ) {
 			int nXLabels = 0;
-			soft = false;
+			hard = true;
 			destroyGraphs();
 			for( Module module : species ) {
 				int nTraits = module.getNTraits();
@@ -412,7 +412,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					if( Math.abs(min-style.xMin)>1e-6 || Math.abs(max-style.xMax)>1e-6 ) {
 						style.xMin = min;
 						style.xMax = max;
-						soft = false;
+						hard = true;
 					}
 					style.yMin = 0.0;
 					style.yMax = 1.0;
@@ -435,7 +435,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					if( Math.abs(min-style.xMin)>1e-6 || Math.abs(max-style.xMax)>1e-6 ) {
 						style.xMin = min;
 						style.xMax = max;
-						soft = false;
+						hard = true;
 					}
 					style.yMin = 0.0;
 					style.yMax = 1.0;
@@ -587,10 +587,10 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 
 				default:
 			}
-			if( !soft )
+			if( hard )
 				graph.reset();
 		}
-		update();
+		update(hard);
 	}
 
 	@Override

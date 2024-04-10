@@ -9,7 +9,7 @@
 //
 //	http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
+// Unless required by applicable law or agreed to in writing, hardware
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
@@ -140,20 +140,20 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 	}
 
 	@Override
-	public void reset(boolean soft) {
-		super.reset(soft);
+	public void reset(boolean hard) {
+		super.reset(hard);
 		if( !isActive ) {
 			for( PopGraph3D graph : graphs)
 				graph.invalidate();
 			return;
 		}
 		// prepare initializes or starts suspended animation
-		soft &= prepare();
-		if (!soft) {
+		hard &= prepare();
+		if (hard) {
 			for( PopGraph3D graph : graphs)
 				graph.reset();
 		}
-		update();
+		update(hard);
 	}
 
 	@Override
@@ -201,7 +201,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 	}
 
 	private boolean prepare() {
-		boolean soft = true;
+		boolean hard = false;
 		int nGraphs = 0;
 		Geometry geoDE = null;
 		switch( model.getModelType() ) {
@@ -212,7 +212,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 			case SDE:
 				nGraphs = 1;
 				if( graphs.size()!=nGraphs ) {
-					soft = false;
+					hard = true;
 					destroyGraphs();
 					Module module = engine.getModule();
 					PopGraph3D graph = new PopGraph3D(this, module.getID());
@@ -236,7 +236,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 					nGraphs += Geometry.displayUniqueGeometry(module)?1:2;
 
 				if( graphs.size()!=nGraphs ) {
-					soft = false;
+					hard = true;
 					destroyGraphs();
 					for( Module module : species ) {
 						PopGraph3D graph = new PopGraph3D(this, module.getID());
@@ -286,7 +286,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 			// ODE or SDE model (no geometry and thus no population)
 			for( PopGraph3D graph : graphs )
 				graph.displayMessage("No view available ("+mt.toString()+" solver)");
-			return soft;
+			return hard;
 		}
 		org.evoludo.simulator.models.Model.Continuous cmodel = null;
 		org.evoludo.simulator.models.Model.Discrete dmodel = null;
@@ -385,7 +385,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 				throw new Error("MVPop3D: ColorMap not initialized - needs attention!");
 			graph.setColorMap(module.processColorMap(cMap));
 		}
-		return soft;
+		return hard;
 	}
 
 	/**

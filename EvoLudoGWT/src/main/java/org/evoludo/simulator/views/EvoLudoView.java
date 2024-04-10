@@ -55,7 +55,7 @@ public interface EvoLudoView extends RequiresResize, IsWidget, FullscreenChangeH
 		reset(false);
 	}
 
-	public void reset(boolean soft);
+	public void reset(boolean hard);
 
 	public void restored();
 

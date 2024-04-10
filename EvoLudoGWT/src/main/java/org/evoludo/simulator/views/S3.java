@@ -84,13 +84,13 @@ public class S3 extends AbstractView {
 	}
 
 	@Override
-	public void reset(boolean soft) {
-		super.reset(soft);
+	public void reset(boolean hard) {
+		super.reset(hard);
 		Module module = engine.getModule();
 		int nRoles = module.getNRoles();
 		nState = module.getNTraits();
 		if (graphs.size() != nRoles) {
-			soft = false;
+			hard = true;
 			destroyGraphs();
 			int[] order = new int[3];
 			for (int role = 0; role < nRoles; role++) {
@@ -140,12 +140,12 @@ public class S3 extends AbstractView {
 		for (S3Graph graph : graphs) {
 			graph.setMarkers(module.getMarkers());
 			graph.getStyle().trajColor = ColorMapCSS.Color2Css(module.getTrajectoryColor());
-			soft &= !graph.setNames(names);
-			soft &= !graph.setColors(colors);
-			if (!soft)
+			hard |= graph.setNames(names);
+			hard |= graph.setColors(colors);
+			if (hard)
 				graph.reset();
 		}
-		update();
+		update(hard);
 	}
 
 	@Override

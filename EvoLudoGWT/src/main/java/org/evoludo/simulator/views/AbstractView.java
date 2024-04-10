@@ -204,7 +204,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	}
 
 	@Override
-	public void reset(boolean soft) {
+	public void reset(boolean hard) {
 		timestamp = -Double.MAX_VALUE;
 	}
 
@@ -319,7 +319,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 				// has changed and this view is no longer supported. if this is the 
 				// case destroyGraphs has been called and graphs is empty.
 				if (!graphs.isEmpty())
-					update();
+					update(updateGUI);
 				updateScheduled = false;
 			}
 		});

@@ -81,8 +81,8 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 	}
 
 	@Override
-	public void reset(boolean soft) {
-		super.reset(soft);
+	public void reset(boolean hard) {
+		super.reset(hard);
 		ArrayList<? extends Module> species = engine.getModule().getSpecies();
 		int nSpecies = model.getNSpecies();
 		// multiple line graphs for multi-species interactions and in case of multiple traits for continuous strategies
@@ -91,7 +91,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 		int nGraphs = (cmodel!=null && type==Model.Data.STRATEGY ? nMean : nSpecies);
 		// if the number of graphs has changed, destroy and recreate them
 		if( graphs.size()!=nGraphs ) {
-			soft = false;
+			hard = true;
 			destroyGraphs();
 			for( int n=0; n<nGraphs; n++ ) {
 				// in discrete models each species has its own panel with all traits
@@ -197,7 +197,7 @@ graphs2mods.put(graph, species.get(cmodel!=null ? 0 : n));
 					if( Math.abs(min-style.yMin)>1e-8 || Math.abs(max-style.yMax)>1e-8 ) {
 						style.yMin = min;
 						style.yMax = max;
-						soft = false;
+						hard = true;
 					}
 					if( nSpecies>1 )
 						style.label = module.getName();
@@ -228,13 +228,13 @@ graphs2mods.put(graph, species.get(cmodel!=null ? 0 : n));
 			if( Math.abs(style.xIncr-rFreq)>1e-8 ) {
 				style.xIncr = rFreq;
 				style.xMin = -graph.getSteps()*style.xIncr;
-				soft = false;
+				hard = true;
 			}
 			style.xMax = 0.0;
-			if( !soft )
+			if( hard )
 				graph.reset();
 		}
-		update();
+		update(hard);
 	}
 
 	@Override
