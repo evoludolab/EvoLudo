@@ -609,7 +609,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 		double newtime = model.getTime();
 		if( Math.abs(timestamp-newtime)<1e-8 ) {
 			for( HistoGraph graph : graphs)
-				graph.paint();
+				graph.paint(force);
 			return;
 		}
 		switch( type ) {
@@ -625,7 +625,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 // replace tag with traitID and speciesID?
 						cmodel.getTraitHistogramData(graph.getTag(), data);
 					}
-					graph.paint();
+					graph.paint(force);
 				}
 				timestamp = newtime;
 				return;
@@ -640,7 +640,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 // replace tag with traitID and speciesID?
 						model.getFitnessHistogramData(graph.getTag(), data);
 					}
-					graph.paint();
+					graph.paint(force);
 				}
 				timestamp = newtime;
 				return;
@@ -699,7 +699,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						style.xMin = min;
 						style.xMax = max;
 					}
-					graph.paint();
+					graph.paint(force);
 				}
 				timestamp = newtime;
 				return;
@@ -731,7 +731,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 							fixData.probRead = true;
 						}
 					}
-					graph.paint();
+					graph.paint(force);
 				}
 				// reset timestamp (needed to ensure processing of statistics data)
 				timestamp = -1.0;
@@ -779,7 +779,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 							fixData.timeRead = true;
 						}
 					}
-					graph.paint();
+					graph.paint(force);
 				}
 				// reset timestamp (needed to ensure processing of statistics data)
 				timestamp = -1.0;
@@ -791,7 +791,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 				model.getMeanTraits(state);
 				for( HistoGraph graph : graphs) {
 					graph.addData((int) (state[graph.getTag()] * scale2bins));
-					graph.paint();
+					graph.paint(force);
 				}
 				timestamp = newtime;
 				break;

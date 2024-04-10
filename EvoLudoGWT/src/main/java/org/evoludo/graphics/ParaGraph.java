@@ -168,14 +168,14 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, //
 	}
 
 	@Override
-	public void paint() {
-		if (!isActive || !doUpdate())
+	public void paint(boolean force) {
+		if (!isActive || (!force && !doUpdate()))
 			return;
-		paint(true);
+		paintPara(true);
 	 	tooltip.update();
 	}
 
-	private void paint(boolean withMarkers) {
+	private void paintPara(boolean withMarkers) {
 		g.save();
 		g.scale(scale,  scale);
 		clearCanvas();
@@ -291,7 +291,7 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, //
 	public void export(MyContext2d ctx) {
 		MyContext2d bak = g;
 		g = ctx;
-		paint(false);
+		paintPara(false);
 		g = bak;
 	}
 
@@ -362,7 +362,7 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, //
 				@Override
 				public void execute() {
 					buffer.clear();
-					paint();
+					paint(true);
 				}
 			});
 		}
@@ -371,7 +371,7 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, //
 				@Override
 				public void execute() {
 					autoscale();
-					paint();
+					paint(true);
 				}
 			});
 		}

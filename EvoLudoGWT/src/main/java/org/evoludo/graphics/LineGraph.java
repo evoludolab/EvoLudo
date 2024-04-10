@@ -130,8 +130,8 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 	}
 
 	@Override
-	public void paint() {
-		if (!isActive || !doUpdate())
+	public void paint(boolean force) {
+		if (!isActive || (!force && !doUpdate()))
 			return;
 		g.save();
 		g.scale(scale,  scale);
@@ -215,7 +215,7 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 	public void export(MyContext2d ctx) {
 		MyContext2d bak = g;
 		g = ctx;
-		paint();
+		paint(true);
 		g = bak;
 	}
 
@@ -337,7 +337,7 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 				@Override
 				public void execute() {
 					buffer.clear();
-					paint();
+					paint(true);
 				}
 			});
 		}

@@ -631,7 +631,14 @@ public abstract class AbstractGraph extends FocusPanel
 	/**
 	 * Draw the graph.
 	 */
-	public abstract void paint();
+	public void paint() {
+		paint(false);
+	}
+
+	/**
+	 * Draw the graph. For re-drawing the graph, set {@code force} to {@code true}.
+	 */
+	public abstract void paint(boolean force);
 
 	/**
 	 * Assign a list of markers to the graph.
@@ -738,7 +745,7 @@ public abstract class AbstractGraph extends FocusPanel
 							@Override
 							public void execute() {
 								setBufferCapacity(5000);
-								paint();
+								paint(true);
 							}
 						}));
 				bufferSizeMenu.add(new ContextMenuCheckBoxItem("10k", //
@@ -746,7 +753,7 @@ public abstract class AbstractGraph extends FocusPanel
 							@Override
 							public void execute() {
 								setBufferCapacity(10000);
-								paint();
+								paint(true);
 							}
 						}));
 				bufferSizeMenu.add(new ContextMenuCheckBoxItem("50k", //
@@ -754,7 +761,7 @@ public abstract class AbstractGraph extends FocusPanel
 							@Override
 							public void execute() {
 								setBufferCapacity(50000);
-								paint();
+								paint(true);
 							}
 						}));
 				bufferSizeMenu.add(new ContextMenuCheckBoxItem("100k", //
@@ -762,7 +769,7 @@ public abstract class AbstractGraph extends FocusPanel
 							@Override
 							public void execute() {
 								setBufferCapacity(100000);
-								paint();
+								paint(true);
 							}
 						}));
 			}
@@ -1437,7 +1444,7 @@ public abstract class AbstractGraph extends FocusPanel
 		if (zoom <= 0.0) {
 			zoom();
 			if (!hasMessage)
-				paint();
+				paint(true);
 			return;
 		}
 		zoom(zoom, 0.5, 0.5);
@@ -1489,7 +1496,7 @@ public abstract class AbstractGraph extends FocusPanel
 		zoomFactor = newZoomFactor;
 		if (zoomInertiaTimer.isRunning())
 			element.addClassName(dz > 0 ? "evoludo-cursorZoomIn" : "evoludo-cursorZoomOut");
-		paint();
+		paint(true);
 	}
 
 	/**
@@ -1505,7 +1512,7 @@ public abstract class AbstractGraph extends FocusPanel
 			return;
 		viewCorner.set(Math.min(width * (zoomFactor - 1.0), Math.max(0, viewCorner.x + dx)),
 				Math.min(height * (zoomFactor - 1.0), Math.max(0, viewCorner.y + dy)));
-		paint();
+		paint(true);
 	}
 
 	/**

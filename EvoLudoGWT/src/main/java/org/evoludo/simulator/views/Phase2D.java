@@ -177,7 +177,7 @@ public class Phase2D extends AbstractView {
 			updateMinMaxState();
 			graph.addData(newtime, state, force);
 		}
-		graph.paint();
+		graph.paint(force);
 		timestamp = newtime;
 	}
 
@@ -483,7 +483,7 @@ public class Phase2D extends AbstractView {
 					stateY = toggleState(stateY, traitYItems);
 				reset(true);
 				graph.autoscale();
-				graph.paint();
+				graph.paint(true);
 			}
 
 			int[] toggleState(int[] states, ContextMenuCheckBoxItem[] items) {

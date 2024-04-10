@@ -329,7 +329,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 				node.set(Math.max(-rr * xaspect + node.r, Math.min(rr * xaspect - node.r, node.x - dx * iscale)),
 						Math.max(-rr * yaspect + node.r, Math.min(rr * yaspect - node.r, node.y - dy * iscale)));
 				network.linkNodes();
-				paint();
+				paint(true);
 				return;
 			case NO_LAYOUT:
 				// lattices - shift view instead
@@ -438,8 +438,8 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 	 * @see Network2D
 	 */
 	@Override
-	public void paint() {
-		if (!isActive || !doUpdate())
+	public void paint(boolean force) {
+		if (!isActive || (!force && !doUpdate()))
 			return;
 		// helper variables
 		double xshift, yshift;
@@ -1309,7 +1309,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 					@Override
 					public void execute() {
 						buffer.clear();
-						paint();
+						paint(true);
 					}
 				});
 			}
@@ -1345,7 +1345,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 	public void export(MyContext2d ctx) {
 		MyContext2d bak = g;
 		g = ctx;
-		paint();
+		paint(true);
 		g = bak;
 	}
 }

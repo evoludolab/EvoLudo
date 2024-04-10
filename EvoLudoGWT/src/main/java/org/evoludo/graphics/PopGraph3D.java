@@ -351,7 +351,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	@Override
 	public synchronized void layoutUpdate() {
 		layoutUniverse();
-		paint();
+		paint(true);
 	}
 
 	@Override
@@ -382,8 +382,8 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	}
 
 	@Override
-	public void paint() {
-		if (!isActive || !doUpdate() || spheres == null)
+	public void paint(boolean force) {
+		if (!isActive || spheres == null || (!force && !doUpdate()))
 			return;
 		if (invalidated)
 			initUniverse();
@@ -1173,7 +1173,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 				graph3DCamera.setRotation(newWorldView.getRotation());
 			}
 			initUniverse();
-			paint();
+			paint(true);
 		}
 
 		/**
@@ -1186,7 +1186,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 		public void setOrthographic(boolean setOrtho) {
 			setOrtho(setOrtho);
 			initUniverse();
-			paint();
+			paint(true);
 		}
 
 		protected void resetCamera() {

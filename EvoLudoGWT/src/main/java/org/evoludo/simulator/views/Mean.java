@@ -291,7 +291,7 @@ graphs2mods.put(graph, species.get(cmodel!=null ? 0 : n));
 		}
 		if (isActive) {
 			for (LineGraph graph : graphs)
-				graph.paint();
+				graph.paint(force);
 		}
 		timestamp = newtime;
 	}

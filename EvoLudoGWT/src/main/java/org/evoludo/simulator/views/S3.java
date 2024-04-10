@@ -166,7 +166,7 @@ public class S3 extends AbstractView {
 				model.getMeanTraits(graph.getTag(), state);
 				graph.addData(newtime, state, force);
 			}
-			graph.paint();
+			graph.paint(force);
 		}
 		timestamp = newtime;
 	}

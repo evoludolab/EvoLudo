@@ -141,7 +141,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 		super.reset();
 		calcBounds();
 		buffer.clear();
-		paint();
+		paint(true);
 	}
 
 	public void addData(double t, double[] data, boolean force) {
@@ -181,14 +181,14 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 	}
 
 	@Override
-	public void paint() {
-		if (!isActive || !doUpdate())
+	public void paint(boolean force) {
+		if (!isActive || (!force && !doUpdate()))
 			return;
-		paint(true);
+		paintS3(true);
 		tooltip.update();
 	}
 
-	private void paint(boolean withMarkers) {
+	private void paintS3(boolean withMarkers) {
 		g.save();
 		g.scale(scale, scale);
 		clearCanvas();
@@ -254,7 +254,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 	public void export(MyContext2d ctx) {
 		MyContext2d bak = g;
 		g = ctx;
-		paint(false);
+		paintS3(false);
 		g = bak;
 	}
 
@@ -474,7 +474,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 				@Override
 				public void execute() {
 					buffer.clear();
-					paint();
+					paint(true);
 				}
 			});
 		}
@@ -503,7 +503,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 						order[2] = order[0];
 						order[0] = swap;
 					}
-					paint();
+					paint(true);
 				}
 			});
 		}
@@ -539,7 +539,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 								}
 								idx++;
 							}
-							paint();
+							paint(true);
 						}
 					}));
 			}

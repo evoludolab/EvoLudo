@@ -377,7 +377,7 @@ public class HistoGraph extends AbstractGraph {
 	public void export(MyContext2d ctx) {
 		MyContext2d bak = g;
 		g = ctx;
-		paint();
+		paint(true);
 		g = bak;
 	}
 
@@ -402,8 +402,10 @@ public class HistoGraph extends AbstractGraph {
 	}
 
 	@Override
-	public void paint() {
-		if (!isActive || !doUpdate() || displayMessage(message))
+	public void paint(boolean force) {
+		if (!isActive || displayMessage(message))
+			return;
+		if (!force && !doUpdate())
 			return;
 
 		g.save();
