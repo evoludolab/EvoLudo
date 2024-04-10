@@ -56,9 +56,12 @@ import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.Formatter;
 
 import com.google.gwt.core.client.Duration;
+import com.google.gwt.user.client.Command;
 
 /**
  *
@@ -1109,6 +1112,31 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 
 		}
 		return tip.toString();
+	}
+
+	private ContextMenuItem clearMenu;
+
+	@Override
+	public void populateContextMenu(ContextMenu menu) {
+		if (type == Model.Data.STATISTICS_STATIONARY) {
+			// add menu to clear canvas
+			if( clearMenu==null ) {
+				clearMenu = new ContextMenuItem("Clear", new Command() {
+					@Override
+					public void execute() {
+						for( HistoGraph graph : graphs )
+							graph.clearData();
+						timestamp = -1.0;
+						update();
+					}
+				});
+			}
+			menu.addSeparator();
+			menu.add(clearMenu);
+		} else {
+			clearMenu = null;
+		}
+		super.populateContextMenu(menu);		
 	}
 
 	@Override

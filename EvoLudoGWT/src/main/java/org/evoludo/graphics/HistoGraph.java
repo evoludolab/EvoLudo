@@ -53,40 +53,6 @@ public class HistoGraph extends AbstractGraph {
 		public String getTooltipAt(HistoGraph graph, int bar);
 	}
 
-	public class Bin {
-		int	index = 0;
-		double value = 0.0;
-
-		public void reset() {
-			index = 0;
-			value = 0.0;
-		}
-
-		public void checkMin(int bin) {
-			double val = getData(bin);
-			if( val<value ) {
-				value = val;
-				index = bin;
-				return;
-			}
-			if( bin==index && val>value ) {
-				// minimum invalid - find new one
-			}
-		}
-
-		public void checkMax(int bin) {
-			double val = getData(bin);
-			if( val>value ) {
-				value = val;
-				index = bin;
-				return;
-			}
-			if( bin==index && val<value ) {
-				// maximum invalid - find new one
-			}
-		}
-	}
-
 	// this is a quick and dirty implementation of bin markers - improvements?
 	public class Marker {
 		double	x;
@@ -144,9 +110,6 @@ public class HistoGraph extends AbstractGraph {
 	protected double nSamples;
 	int maxBinIdx;
 
-//	Bin binMin = new Bin();
-//	Bin binMax = new Bin();
-
 	/**
 	 * Create new histogram graph for <code>module</code> running in
 	 * <code>controller</code>. The tag is used to distinguish different graphs of
@@ -167,20 +130,97 @@ public class HistoGraph extends AbstractGraph {
 		return module;
 	}
 
+	/**
+	 * Set whether the data is normalized. If {@code isNormalized} is {@code true},
+	 * the sum of the data in each bin is normalized to {@code 1.0}.
+	 * <br>
+	 * <strong>Note:</strong> This conflicts with {@link #setNormalized(int)}.
+	 * 
+	 * @param isNormalized {@code true} if the data is normalized, {@code false}
+	 *                     otherwise
+	 */
 	public void setNormalized(boolean isNormalized) {
 		this.isNormalized = isNormalized;
-		if( isNormalized )
+		if (isNormalized)
 			normIdx = -1;
 	}
 
+	/**
+	 * Set the index of the data row that is used for normalization. If multiple
+	 * {@code HistoGraph}s share the same data, they all need to use the same row
+	 * for normalization.
+	 * <br>
+	 * <strong>Note:</strong> This conflicts with {@link #setNormalized(boolean)}.
+	 * 
+	 * @param normIdx the index of the data row for normalization
+	 */
 	public void setNormalized(int normIdx) {
 		this.normIdx = normIdx;
 	}
 
+	/**
+	 * Get the number of samples for this histogram.
+	 * 
+	 * @return the number of samples
+	 */
+	public double getSamples() {
+		return nSamples;
+	}
+
+	/**
+	 * Get the total number of samples in bin with index {@code idx}. For data that is not normalized the number of samples is returned.
+	 * 
+	 * @param idx the index of the bin
+	 * @return the number of samples
+	 * 
+	 * @see #getSamples()
+	 */
+	public double getSamples(int idx) {
+		if (data != null && normIdx >= 0)
+			return data[normIdx][idx];
+		return nSamples;
+	}
+
+	/**
+	 * Get the data for the histogram.
+	 * <br>
+	 * <strong>Note:</strong> The data may be shared by multiple
+	 * {@code HistoGraph}s, each refering to a row in the {@code double[][]} array
+	 * specified by the graphs {@code tag}.
+	 * 
+	 * @return the 2D data array for storing the histogram data
+	 */
 	public double[][] getData() {
 		return data;
 	}
 
+	/**
+	 * Get the data for the histogram in bin with index {@code idx}. Whether this
+	 * returns raw or normalized data depends on the setting of the graph.
+	 * 
+	 * @param idx the index of the bin
+	 * @return the histogram data for the bin {@code idx}
+	 * 
+	 * @see #setNormalized(boolean)
+	 * @see #setNormalized(int)
+	 */
+	public double getData(int idx) {
+		if (normIdx >= 0)
+			return data[tag][idx] / Math.max(1.0, data[normIdx][idx]);
+		if (!isNormalized)
+			return data[tag][idx] / Math.max(1.0, nSamples);
+		return data[tag][idx];
+	}
+
+	/**
+	 * Set the data for the histogram. 
+	 * <br>
+	 * <strong>Note:</strong> The data may be shared by multiple
+	 * {@code HistoGraph}s, each refering to a row in the {@code double[][]} array
+	 * specified by the graphs {@code tag}.
+	 * 
+	 * @param data the 2D data array for storing the histogram data
+	 */
 	public void setData(double[][] data) {
 		this.data = data;
 		if (data != null && data.length > 0 && data[0] != null)
@@ -189,62 +229,101 @@ public class HistoGraph extends AbstractGraph {
 			maxBinIdx = -1;
 	}
 
-	public double getData(int idx) {
-		if( normIdx>=0 )
-			return data[tag][idx]/Math.max(1.0, data[normIdx][idx]);
-		if( !isNormalized )
-			return data[tag][idx]/Math.max(1.0, nSamples);
-		return data[tag][idx];
-	}
-
-	public double getSamples() {
-		return nSamples;
-	}
-
-	public double getSamples(int idx) {
-		if( data!=null && normIdx>=0 )
-			return data[normIdx][idx];
-		return nSamples;
-	}
-
+	/**
+	 * Add data point to histogram by increasing the count of the bin with index
+	 * {@code bin} by one. For normalized data the normalization is updated
+	 * accordingly.
+	 * 
+	 * @param bin the index of the bin in the histogram
+	 * 
+	 * @see #setNormalized(boolean)
+	 * @see #setNormalized(int)
+	 */
 	public void addData(int bin) {
 		nSamples++;
-		if( data==null || bin<0 )
+		if (data == null || bin < 0)
 			return;
 		if (bin > maxBinIdx)
 			bin = maxBinIdx;
 		data[tag][bin]++;
-		if( normIdx>=0 )
+		if (normIdx >= 0)
 			data[normIdx][bin]++;
-//		binMin.checkMin(bin);
-//		binMax.checkMax(bin);
 	}
 
+	/**
+	 * Add data point to histogram by increasing the count of the bin with index
+	 * {@code bin} by {@code incr}. For normalized data the normalization is updated
+	 * accordingly.
+	 * 
+	 * @param bin the index of the bin in the histogram
+	 * @param incr the increment to add to the bin
+	 * 
+	 * @see #setNormalized(boolean)
+	 * @see #setNormalized(int)
+	 */
 	public void addData(int bin, double incr) {
 		nSamples++;
-		if( data==null || bin<0 )
+		if (data == null || bin < 0)
 			return;
 		data[tag][bin] += incr;
-		if( normIdx>=0 )
+		if (normIdx >= 0)
 			data[normIdx][bin]++;
-//		binMin.checkMin(bin);
-//		binMax.checkMax(bin);
 	}
 
+	/**
+	 * Add data point {@code x} to histogram. The data point is added to the
+	 * histogram for \(x\in[x_\text{min},x_\text{max}]\). If \(x&gt;x_\text{max}]\)
+	 * or \(x&lt;x_\text{min}]\) the range is doubled to \([x_\text{min},
+	 * x_\text{max} + (x_\text{max}-x_\text{min})]\)) or \([x_\text{min} -
+	 * (x_\text{max}-x_\text{min}), x_\text{max}]\)), respectively. The number of
+	 * bins remains unchanged.
+	 * <br>
+	 * <strong>Important:</strong> The number of bins needs to be even!
+	 * 
+	 * @param x the new data point
+	 * 
+	 * @see #x2bin(double)
+	 */
 	public void addData(double x) {
 		nSamples++;
-		if( data==null )
+		if (data == null)
 			return;
-		while( x>style.xMax ) {
-			// double range (of affected type only - plus absorption if necessary)
-			doubleBinRange();
-			style.xMax = 2*style.xMax-style.xMin;	// double the range not the maximum
+		while (x > style.xMax) {
+			doubleMaxRange();
+			style.xMax = 2 * style.xMax - style.xMin;
+		}
+		while (x < style.xMin) {
+			doubleMinRange();
+			style.xMin = 2 * style.xMin - style.xMax;
 		}
 		data[tag][x2bin(x)]++;
 	}
 
+	/**
+	 * Clear the histrogram data.
+	 */
+	public void clearData() {
+		if (data == null)
+			return;
+		for (double[] entry : data)
+			Arrays.fill(entry, 0.0);
+		nSamples = 0.0;
+	}
+
 	// IMPORTANT: bin count needs to be even!
-	private void doubleBinRange() {
+	private void doubleMinRange() {
+		double[] bins = data[tag];
+		int nBins = bins.length;
+		int nBins2 = nBins/2;
+		for( int i=0; i<nBins2; i++ ) {
+			int i2 = nBins - 1 - i - i;
+			bins[i] = bins[i2]+bins[i2-1];
+		}
+		Arrays.fill(bins, 0, nBins2, 0.0);
+	}
+
+	// IMPORTANT: bin count needs to be even!
+	private void doubleMaxRange() {
 		double[] bins = data[tag];
 		int nBins = bins.length;
 		int nBins2 = nBins/2;
@@ -255,20 +334,30 @@ public class HistoGraph extends AbstractGraph {
 		Arrays.fill(bins, nBins2, nBins, 0.0);
 	}
 
+	/**
+	 * Convert {@code x}-coordinate to bin index.
+	 * 
+	 * @param x the {@code x}-coordinate
+	 * @return the index of the bin 
+	 */
 	public int x2bin(double x) {
 		int len = data[tag].length;
 		// if x == style.xMax return len-1 (not len)
-		return Math.min((int)((x-style.xMin)/(style.xMax-style.xMin)*len), len-1);
+		return Math.min((int) ((x - style.xMin) / (style.xMax - style.xMin) * len), len - 1);
 	}
 
+	/**
+	 * Convert the bin index to {@code x}-coordinate.
+	 * 
+	 * @param bin the index of the bin
+	 * @return the {@code x}-coordinate
+	 */
 	public double bin2x(int bin) {
-//		return style.xMin+(double)bin/data[tag].length*(style.xMax-style.xMin);
-		double x = (double)bin/data[tag].length;
-//		return style.xMin+x*(style.xMax-style.xMin)+x;
-		x = style.xMin+x*(style.xMax-style.xMin)+x;
-		// would it be nice to round to nearest rational? 
+		double x = (double) bin / data[tag].length;
+		x = style.xMin + x * (style.xMax - style.xMin) + x;
+		// would it be nice to round to nearest rational?
 		double rounded = Math.round(x);
-		if( Math.abs(x-rounded)<1e-12 )
+		if (Math.abs(x - rounded) < 1e-12)
 			return rounded;
 		return x;
 	}
@@ -277,85 +366,12 @@ public class HistoGraph extends AbstractGraph {
 	public void reset() {
 		super.reset();
 		nSamples = 0.0;
-		if( data==null )
+		if (data == null)
 			return;
 		Arrays.fill(data[tag], 0.0);
-		if( normIdx>=0 )
+		if (normIdx >= 0)
 			Arrays.fill(data[normIdx], 0.0);
-//		binMin.reset();
-//		binMax.reset();
 	}
-
-//	/**
-//	 *
-//	 */
-//    @Override
-//	protected void initMenu() {
-//		super.initMenu();
-//		logScaleSeparator = new JPopupMenu.Separator();
-//		menu.add(logScaleSeparator);
-//		JCheckBoxMenuItem auto = new JCheckBoxMenuItem("Autoscale", doAutoscale);
-//		auto.setActionCommand(MENU_AUTO_SCALE);
-//		auto.addActionListener(this);
-//		auto.setFont(style.menuFont);
-//		menu.add(auto);
-//		logXScaleMenu = new JCheckBoxMenuItem("X Log Scale", data.logx);
-//		logXScaleMenu.setActionCommand(MENU_LOG_SCALE_X);
-//		logXScaleMenu.addActionListener(this);
-//		logXScaleMenu.setFont(style.menuFont);
-//		menu.add(logXScaleMenu);
-//		logYScaleMenu = new JCheckBoxMenuItem("Y Log Scale", data.logy);
-//		logYScaleMenu.setActionCommand(MENU_LOG_SCALE_Y);
-//		logYScaleMenu.addActionListener(this);
-//		logYScaleMenu.setFont(style.menuFont);
-//		menu.add(logYScaleMenu);
-////disable by default for now...
-////setLogScaleCMEnabled(false, false);
-//	}
-
-//	/**
-//	 *
-//	 * @param x
-//	 * @param y
-//	 */
-//    public void setLogScaleCMEnabled(boolean x, boolean y) {
-//		logScaleSeparator.setVisible(x || y);
-//		logXScaleMenu.setVisible(x);
-//		logYScaleMenu.setVisible(y);
-//	}
-
-//	@Override
-//	public void actionPerformed(ActionEvent e) {
-//		String cmd = e.getActionCommand();
-//		if( cmd.equals(MENU_AUTO_SCALE) ) {
-//			doAutoscale = ((JCheckBoxMenuItem)e.getSource()).getState();
-//frame.init(getBounds());
-//			updatescale = true;
-//			repaint();
-//			return;
-//		}
-//		if( cmd.equals(MENU_LOG_SCALE_X) ) {
-//			data.logx = ((JCheckBoxMenuItem)e.getSource()).getState();
-//frame.xaxis.logScale = data.logx;
-//frame.init(getBounds());
-////			updatescale = true;
-//			data.timestamp = -1.0;	// make sure the data is re-read and processed
-//			prepare();
-//			repaint();
-//			return;
-//		}
-//		if( cmd.equals(MENU_LOG_SCALE_Y) ) {
-//			data.logy = ((JCheckBoxMenuItem)e.getSource()).getState();
-//frame.yaxis.logScale = data.logy;
-//frame.init(getBounds());
-////			updatescale = true;
-//			data.timestamp = -1.0;
-//			prepare();
-//			repaint();
-//			return;
-//		}
-//		super.actionPerformed(e);
-//	}
 
 	@Override
 	public void export(MyContext2d ctx) {
@@ -477,13 +493,13 @@ public class HistoGraph extends AbstractGraph {
 				xshift += barwidth;
 			}
 		}
-		markBins();
+		drawMarkers();
 		drawFrame(4, yLevels);
 		g.restore();
 		tooltip.update();
 	}
 
-	protected void markBins() {
+	protected void drawMarkers() {
 		int nBins = data[tag].length;
 		double barwidth = bounds.getWidth()/nBins;
 		double h = bounds.getHeight();
@@ -491,7 +507,7 @@ public class HistoGraph extends AbstractGraph {
 		int n = 0;
 		for( Marker mark : binmarkers ) {
 			int bin = x2bin(mark.x);
-			mark.bin = bin;	// remember bin to easily retrieve potential notes for tooltips
+			mark.bin = bin;	// remember bin to easily retrieve notes for tooltips (if any)
 			double x = bin*barwidth;
 			g.setStrokeStyle(mark.color == null ? markerColors[n++ % nMarkers] : mark.color);
 			if (mark.linestyle != null)
