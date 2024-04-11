@@ -540,8 +540,6 @@ public class EvoLudoWeb extends Composite
 			view.unload();
 		activeView = null;
 		evoludoViews.setSelectedIndex(-1);
-		// close param panel, if visible
-		evoludoCLOPanel.setVisible(false);
 		removeKeyListeners(this);
 		// clear options (otherwise options may get inherited from previous launches).
 		evoludoCLO.setText("");
