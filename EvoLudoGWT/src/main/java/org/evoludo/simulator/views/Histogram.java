@@ -603,202 +603,197 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 
 	@Override
 	public void update(boolean force) {
-		if( !isActive && !isStatistics() )
+		if (!isActive && !isStatistics())
 			return;
 
 		double newtime = model.getTime();
-		if( Math.abs(timestamp-newtime)<1e-8 ) {
-			for( HistoGraph graph : graphs)
-				graph.paint(force);
-			return;
-		}
-		switch( type ) {
-			case STRATEGY:
-				double[][] data = null;
-				// cast ok because trait histograms only make sense for continuous models
-				Model.ContinuousIBS cmodel = (Model.ContinuousIBS)model;
-				for( HistoGraph graph : graphs) {
-					double[][] graphdata = graph.getData();
-					if( data!=graphdata ) {
-						data = graphdata;
-//XXX tag refers to trait id - insufficient to identify traits in multi-species modules
-// replace tag with traitID and speciesID?
-						cmodel.getTraitHistogramData(graph.getTag(), data);
-					}
-					graph.paint(force);
-				}
-				timestamp = newtime;
-				return;
+		if (Math.abs(timestamp - newtime) > 1e-8) {
+			timestamp = newtime;
 
-			case FITNESS:	// same as STRATEGY except for call to retrieve data
-				data = null;
-				for( HistoGraph graph : graphs) {
-					double[][] graphdata = graph.getData();
-					if( data!=graphdata ) {
-						data = graphdata;
-//XXX tag refers to trait id - insufficient to identify traits in multi-species modules
-// replace tag with traitID and speciesID?
-						model.getFitnessHistogramData(graph.getTag(), data);
-					}
-					graph.paint(force);
-				}
-				timestamp = newtime;
-				return;
-
-			case DEGREE:
-				data = null;
-				double min = 0.0, max = 0.0;
-				for( HistoGraph graph : graphs) {
-					Module module = graph.getModule();
-					Geometry inter = null, repro = null;
-					switch( model.getModelType() ) {
-						case ODE:
-							graph.displayMessage("ODE model: well-mixed population.");
-							continue;
-						case SDE:
-							graph.displayMessage("SDE model: well-mixed population.");
-							continue;
-						case PDE:
-							inter = repro = module.getGeometry();
-							if (inter.isRegular) {
-								graph.displayMessage("PDE model: regular structure with degree "+(int)(inter.connectivity+0.5)+".");								
-								continue;
-							}
-							if (inter.isLattice()) {
-								graph.displayMessage("PDE model: lattice structure with degree "+(int)(inter.connectivity+0.5)+
-										(inter.fixedBoundary?" (fixed":" (periodic")+" boundaries).");								
-								continue;
-							}
-							break;
-						case IBS:
-							inter = module.getInteractionGeometry();
-							repro = module.getReproductionGeometry();
-							break;
-						default: // unreachable
-					}
-					if (!degreeProcessed || (inter != null && inter.isDynamic) || (repro != null && repro.isDynamic)) {
+			// new data available - update histograms
+			switch (type) {
+				case STRATEGY:
+					double[][] data = null;
+					// cast ok because trait histograms only make sense for continuous models
+					Model.ContinuousIBS cmodel = (Model.ContinuousIBS) model;
+					for (HistoGraph graph : graphs) {
 						double[][] graphdata = graph.getData();
-						if (data != graphdata && inter != null && repro != null) {
+						if (data != graphdata) {
 							data = graphdata;
-							// find min and max for degree distribution on dynamic graphs
-							int bincount;
-							if (inter.isUndirected)
-								bincount = maxDegree(Math.max(inter.maxOut, repro.maxOut));
-							else
-								bincount = maxDegree(Math.max(inter.maxTot, repro.maxTot));
-							min = 0.0;
-							max = bincount;
-							bincount = Math.min(bincount, MAX_BINS);
-							if (bincount != data[0].length) {
-								data = new double[data.length][bincount];
-								graph.setData(data);
+							// XXX tag refers to trait id - insufficient to identify traits in multi-species
+							// modules
+							// replace tag with traitID and speciesID?
+							cmodel.getTraitHistogramData(graph.getTag(), data);
+						}
+					}
+					break;
+
+				case FITNESS: // same as STRATEGY except for call to retrieve data
+					data = null;
+					for (HistoGraph graph : graphs) {
+						double[][] graphdata = graph.getData();
+						if (data != graphdata) {
+							data = graphdata;
+							// XXX tag refers to trait id - insufficient to identify traits in multi-species
+							// modules
+							// replace tag with traitID and speciesID?
+							model.getFitnessHistogramData(graph.getTag(), data);
+						}
+					}
+					break;
+
+				case DEGREE:
+					data = null;
+					double min = 0.0, max = 0.0;
+					for (HistoGraph graph : graphs) {
+						Module module = graph.getModule();
+						Geometry inter = null, repro = null;
+						switch (model.getModelType()) {
+							case ODE:
+								graph.displayMessage("ODE model: well-mixed population.");
+								continue;
+							case SDE:
+								graph.displayMessage("SDE model: well-mixed population.");
+								continue;
+							case PDE:
+								inter = repro = module.getGeometry();
+								if (inter.isRegular) {
+									graph.displayMessage("PDE model: regular structure with degree "
+											+ (int) (inter.connectivity + 0.5) + ".");
+									continue;
+								}
+								if (inter.isLattice()) {
+									graph.displayMessage("PDE model: lattice structure with degree "
+											+ (int) (inter.connectivity + 0.5) +
+											(inter.fixedBoundary ? " (fixed" : " (periodic") + " boundaries).");
+									continue;
+								}
+								break;
+							case IBS:
+								inter = module.getInteractionGeometry();
+								repro = module.getReproductionGeometry();
+								break;
+							default: // unreachable
+						}
+						if (!degreeProcessed || (inter != null && inter.isDynamic)
+								|| (repro != null && repro.isDynamic)) {
+							double[][] graphdata = graph.getData();
+							if (data != graphdata && inter != null && repro != null) {
+								data = graphdata;
+								// find min and max for degree distribution on dynamic graphs
+								int bincount;
+								if (inter.isUndirected)
+									bincount = maxDegree(Math.max(inter.maxOut, repro.maxOut));
+								else
+									bincount = maxDegree(Math.max(inter.maxTot, repro.maxTot));
+								min = 0.0;
+								max = bincount;
+								bincount = Math.min(bincount, MAX_BINS);
+								if (bincount != data[0].length) {
+									data = new double[data.length][bincount];
+									graph.setData(data);
+								}
+								getDegreeHistogramData(data, inter, repro);
 							}
-							getDegreeHistogramData(data, inter, repro);
+							GraphStyle style = graph.getStyle();
+							style.xMin = min;
+							style.xMax = max;
 						}
-						GraphStyle style = graph.getStyle();
-						style.xMin = min;
-						style.xMax = max;
 					}
-					graph.paint(force);
-				}
-				timestamp = newtime;
-				return;
+					break;
 
-			case STATISTICS_FIXATION_PROBABILITY:
-//NOTE: not fully ready for multi-species; info which species fixated missing
-				Module pop = null;
-				FixationData fixData = null;
-				for( HistoGraph graph : graphs) {
-					if (!(model instanceof IBSD)) {
-						graph.displayMessage("Statistics mode: incompatible settings");
-						continue;
-					}
-					Module newPop = graph.getModule();
-					if (newPop != pop ) {
-						pop = newPop;
-						// cast safe - checked above
-						fixData = ((IBSD)model).getFixationData();
-						if (fixData == null) {
+				case STATISTICS_FIXATION_PROBABILITY:
+					// NOTE: not fully ready for multi-species; info which species fixated missing
+					Module pop = null;
+					FixationData fixData = null;
+					for (HistoGraph graph : graphs) {
+						if (!(model instanceof IBSD)) {
 							graph.displayMessage("Statistics mode: incompatible settings");
 							continue;
 						}
-					}
-					graph.clearMessage();
-					if( fixData != null && !fixData.probRead ) {
-						if( graph.getTag()==fixData.typeFixed ) {
-							graph.addData(fixData.mutantNode);
-							nSamples++;
-							fixData.probRead = true;
+						Module newPop = graph.getModule();
+						if (newPop != pop) {
+							pop = newPop;
+							// cast safe - checked above
+							fixData = ((IBSD) model).getFixationData();
+							if (fixData == null) {
+								graph.displayMessage("Statistics mode: incompatible settings");
+								continue;
+							}
+						}
+						graph.clearMessage();
+						if (fixData != null && !fixData.probRead) {
+							if (graph.getTag() == fixData.typeFixed) {
+								graph.addData(fixData.mutantNode);
+								nSamples++;
+								fixData.probRead = true;
+							}
 						}
 					}
-					graph.paint(force);
-				}
-				// reset timestamp (needed to ensure processing of statistics data)
-				timestamp = -1.0;
-				return;
+					// reset timestamp (needed to ensure processing of statistics data)
+					timestamp = -1.0;
+					break;
 
-			case STATISTICS_FIXATION_TIME:
-//NOTE: not fully ready for multi-species; info which species fixated missing
-				data = null;
-				fixData = null;
-				int nPop = -1;
-				pop = null;
-				int nTrait = -1;
-				for( HistoGraph graph : graphs) {
-					if (!(model instanceof IBSD)) {
-						graph.displayMessage("Statistics mode: incompatible settings");
-						continue;
-					}
-					Module newPop = graph.getModule();
-					if (newPop != pop ) {
-						pop = newPop;
-						// cast safe - checked above
-						fixData = ((IBSD)model).getFixationData();
-						if (fixData == null) {
+				case STATISTICS_FIXATION_TIME:
+					// NOTE: not fully ready for multi-species; info which species fixated missing
+					data = null;
+					fixData = null;
+					int nPop = -1;
+					pop = null;
+					int nTrait = -1;
+					for (HistoGraph graph : graphs) {
+						if (!(model instanceof IBSD)) {
 							graph.displayMessage("Statistics mode: incompatible settings");
 							continue;
 						}
-						nPop = pop.getNPopulation();
-						nTrait = pop.getNTraits();
-					}
-					graph.clearMessage();
-					if( fixData != null && !fixData.timeRead ) {
-						int iNode = fixData.mutantNode;
-						if( graph.getTag()==fixData.typeFixed ) {
-							if( iNode<0 || nPop>MAX_BINS )
-								graph.addData(fixData.updatesFixed);
-							else
-								graph.addData(iNode, fixData.updatesFixed);
+						Module newPop = graph.getModule();
+						if (newPop != pop) {
+							pop = newPop;
+							// cast safe - checked above
+							fixData = ((IBSD) model).getFixationData();
+							if (fixData == null) {
+								graph.displayMessage("Statistics mode: incompatible settings");
+								continue;
+							}
+							nPop = pop.getNPopulation();
+							nTrait = pop.getNTraits();
 						}
-						else if( graph.getTag()==nTrait ) {
-							if( iNode<0 || nPop>MAX_BINS )
-								graph.addData(fixData.updatesFixed);
-							else
-								graph.addData(iNode, fixData.updatesFixed);
-							nSamples++;
-							fixData.timeRead = true;
+						graph.clearMessage();
+						if (fixData != null && !fixData.timeRead) {
+							int iNode = fixData.mutantNode;
+							if (graph.getTag() == fixData.typeFixed) {
+								if (iNode < 0 || nPop > MAX_BINS)
+									graph.addData(fixData.updatesFixed);
+								else
+									graph.addData(iNode, fixData.updatesFixed);
+							} else if (graph.getTag() == nTrait) {
+								if (iNode < 0 || nPop > MAX_BINS)
+									graph.addData(fixData.updatesFixed);
+								else
+									graph.addData(iNode, fixData.updatesFixed);
+								nSamples++;
+								fixData.timeRead = true;
+							}
 						}
 					}
-					graph.paint(force);
-				}
-				// reset timestamp (needed to ensure processing of statistics data)
-				timestamp = -1.0;
-				return;
-	
-			case STATISTICS_STATIONARY:
-				int nt = model.getNMean();
-				double[] state = new double[nt];
-				model.getMeanTraits(state);
-				for( HistoGraph graph : graphs) {
-					graph.addData((int) (state[graph.getTag()] * scale2bins));
-					graph.paint(force);
-				}
-				timestamp = newtime;
-				break;
+					// reset timestamp (needed to ensure processing of statistics data)
+					timestamp = -1.0;
+					break;
 
-			default:
-				break;
+				case STATISTICS_STATIONARY:
+					int nt = model.getNMean();
+					double[] state = new double[nt];
+					model.getMeanTraits(state);
+					for (HistoGraph graph : graphs)
+						graph.addData((int) (state[graph.getTag()] * scale2bins));
+					break;
+
+				default:
+					break;
+			}
 		}
+		for (HistoGraph graph : graphs)
+			graph.paint(force);
 	}
 
 	@Override
