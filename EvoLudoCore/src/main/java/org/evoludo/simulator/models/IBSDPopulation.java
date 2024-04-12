@@ -1564,7 +1564,8 @@ public class IBSDPopulation extends IBSPopulation {
 	public void isConsistent() {
 		if (!isConsistent)
 			return;
-		super.isConsistent();
+		// assume innocence until found guilty
+		boolean passed = true;
 		double checkScores = 0.0;
 		double[] checkAccuTypeScores = new double[nTraits];
 		int[] checkStrategiesTypeCount = new int[nTraits];
@@ -1582,12 +1583,12 @@ public class IBSDPopulation extends IBSPopulation {
 			if (checkStrategiesTypeCount[n] != strategiesTypeCount[n]) {
 				logger.warning("accounting issue: strategy count of trait " + module.getTraitName(n) + " is "
 						+ checkStrategiesTypeCount[n] + " but strategiesTypeCount[" + n + "]=" + strategiesTypeCount[n]);
-				isConsistent = false;
+				passed = false;
 			}
 			if (Math.abs(checkAccuTypeScores[n] - accuTypeScores[n]) > 1e-8) {
 				logger.warning("accounting issue: accumulated scores of trait " + module.getTraitName(n) + " is "
 						+ checkAccuTypeScores[n] + " but accuTypeScores[" + n + "]=" + accuTypeScores[n]);
-				isConsistent = false;
+				passed = false;
 			}
 			accStrat += strategiesTypeCount[n];
 			if (n == VACANT)
@@ -1596,13 +1597,17 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 		if (nPopulation != accStrat) {
 			logger.warning("accounting issue: sum of trait types is " + accStrat + " but nPopulation=" + nPopulation);
-			isConsistent = false;
+			passed = false;
 		}
 		if (Math.abs(checkScores - accScores) > 1e-8) {
 			logger.warning("accounting issue: sum of scores is " + checkScores + " but accuTypeScores add up to "
 					+ accScores + " (" + Formatter.format(accuTypeScores, 8) + ")");
-			isConsistent = false;
+			passed = false;
 		}
+		// do not yet set isConsistent to false because this prevents the test in super to run
+		super.isConsistent();
+		// super may have already set isConsistent to false; add our assesement
+		isConsistent &= passed;
 	}
 
 	@Override
