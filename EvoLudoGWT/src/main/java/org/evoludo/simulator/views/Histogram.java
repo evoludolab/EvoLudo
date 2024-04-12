@@ -804,7 +804,6 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 		return super.getCounter();
 	}
 
-	protected static final int MIN_MSEC_BETWEEN_UPDATES = 100;	// max 10 updates per second
 	protected double updatetime = -1.0;
 	protected String status;
 
@@ -812,59 +811,63 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 	public String getStatus(boolean force) {
 		// status calculation are somewhat costly - throttle the max number of updates
 		double now = Duration.currentTimeMillis();
-		if( !force && now-updatetime<MIN_MSEC_BETWEEN_UPDATES ) 
+		if (!force && now - updatetime < AbstractGraph.MIN_MSEC_BETWEEN_UPDATES)
 			return status;
 		updatetime = now;
 		Module pop = null;
 		int nTraits, nSam;
 
-		switch( type ) {
+		switch (type) {
 			case STATISTICS_FIXATION_PROBABILITY:
 				nSam = Math.max(nSamples, 1);
 				status = "Avg. fix. prob: ";
-				for( HistoGraph graph : graphs ) {
+				for (HistoGraph graph : graphs) {
 					pop = graph.getModule();
-					status += (isMultispecies?pop.getName()+".":"")+pop.getTraitName(graph.getTag())+": "+
-							Formatter.formatFix(graph.getSamples()/nSam, 3)+", ";
+					status += (isMultispecies ? pop.getName() + "." : "") + pop.getTraitName(graph.getTag()) + ": " +
+							Formatter.formatFix(graph.getSamples() / nSam, 3) + ", ";
 				}
 				return status;
 
 			case STATISTICS_FIXATION_TIME:
 				status = "Avg. fix. time: ";
-				for( HistoGraph graph : graphs ) {
+				for (HistoGraph graph : graphs) {
 					double[][] data = graph.getData();
-					if( data==null )
+					if (data == null)
 						return "statistics unavailable";
 					pop = graph.getModule();
 					int tag = graph.getTag();
 					nTraits = pop.getNTraits();
-					status += (isMultispecies?pop.getName()+".":"")+(tag==nTraits?"Absorption":pop.getTraitName(tag))+": ";
+					status += (isMultispecies ? pop.getName() + "." : "")
+							+ (tag == nTraits ? "Absorption" : pop.getTraitName(tag)) + ": ";
 					int nPop = pop.getNPopulation();
-					if( nPop>MAX_BINS ) {
+					if (nPop > MAX_BINS) {
 						double mean = Distributions.distrMean(data[tag]);
 						double sdev = Distributions.distrStdev(data[tag], mean);
 						GraphStyle style = graph.getStyle();
-						status += Formatter.formatFix(style.xMin+mean*(style.xMax-style.xMin), 1)+" ± "+
-								Formatter.formatFix(sdev*(style.xMax-style.xMin), 1)+", ";
+						status += Formatter.formatFix(style.xMin + mean * (style.xMax - style.xMin), 1) + " ± " +
+								Formatter.formatFix(sdev * (style.xMax - style.xMin), 1) + ", ";
 						continue;
 					}
 					double sx = 0.0, sx2 = 0.0, sw = 0.0;
 					// note: the +1 accounts for the fact that there is an additional graph for
-					//		 the absorption time.
-					double[] dat = data[tag], sam = data[nTraits+1+tag];
+					// the absorption time.
+					double[] dat = data[tag], sam = data[nTraits + 1 + tag];
 					int nDat = dat.length;
-					for( int n=0; n<nDat; n++ ) {
+					for (int n = 0; n < nDat; n++) {
 						double w = sam[n];
-						if( w<=0.0 ) continue;
+						if (w <= 0.0)
+							continue;
 						double x = dat[n];
 						sx += x;
-						sx2 += x*x/w;
+						sx2 += x * x / w;
 						sw += w;
 					}
-					if( sw<=0.0 ) status += "0.000 ± 0.000, ";
+					if (sw <= 0.0)
+						status += "0.000 ± 0.000, ";
 					else {
-						double mean = sx/sw;
-						status += Formatter.formatFix(mean, 3)+" ± "+Formatter.formatFix(Math.sqrt(sx2/sw-mean*mean), 3)+", ";
+						double mean = sx / sw;
+						status += Formatter.formatFix(mean, 3) + " ± "
+								+ Formatter.formatFix(Math.sqrt(sx2 / sw - mean * mean), 3) + ", ";
 					}
 				}
 				return status;

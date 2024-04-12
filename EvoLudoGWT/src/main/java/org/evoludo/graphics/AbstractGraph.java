@@ -449,7 +449,7 @@ public abstract class AbstractGraph extends FocusPanel
 	/**
 	 * The minimum time between updates in milliseconds.
 	 */
-	protected static final int MIN_MSEC_BETWEEN_UPDATES = 100;	// max 10 updates per second
+	public static final int MIN_MSEC_BETWEEN_UPDATES = 100;	// max 10 updates per second
 
 	/**
 	 * The field to store the time of the last update.
