@@ -703,6 +703,8 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					break;
 
 				case STATISTICS_FIXATION_PROBABILITY:
+					if( model.getMode() != Mode.STATISTICS_SAMPLE)
+						break;
 					// NOTE: not fully ready for multi-species; info which species fixated missing
 					Module pop = null;
 					FixationData fixData = null;
@@ -735,6 +737,8 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					break;
 
 				case STATISTICS_FIXATION_TIME:
+					if( model.getMode() != Mode.STATISTICS_SAMPLE)
+						break;
 					// NOTE: not fully ready for multi-species; info which species fixated missing
 					data = null;
 					fixData = null;
