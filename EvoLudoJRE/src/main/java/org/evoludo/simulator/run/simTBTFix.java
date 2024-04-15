@@ -236,7 +236,7 @@ tFix += generation;
 	 * command line parsing stuff
 	 */
 	public final CLOption cloRatio = new CLOption("ratio", EvoLudo.catSimulation, "0",
-		"--ratio <r> | <l>:<u>      range for cost-to-benefit ratio",
+		"--ratio <r> | <l>:<u>  range for cost-to-benefit ratio",
 		new CLODelegate() {
 			@Override
 			public boolean parse(String arg) {
@@ -264,7 +264,7 @@ tFix += generation;
 			}
 		});
 	public final CLOption cloReward = new CLOption("reward", 'R', EvoLudo.catSimulation, "1",
-		"--reward, -R<r>           reward for mutual cooperation",
+		"--reward <r>    reward for mutual cooperation",
 		new CLODelegate() {
 			@Override
 			public boolean parse(String arg) {
@@ -292,7 +292,7 @@ tFix += generation;
 			}
 		});
 	public final CLOption cloSucker = new CLOption("sucker", 'S', EvoLudo.catSimulation, "0",
-		"--sucker, -S<s>           sucker's payoff for being cheated",
+		"--sucker <s>    sucker's payoff for being cheated",
 		new CLODelegate() {
 			@Override
 			public boolean parse(String arg) {
@@ -320,7 +320,7 @@ tFix += generation;
 			}
 		});
 	public final CLOption cloTemptation = new CLOption("temptation", 'T', EvoLudo.catSimulation, "1",
-		"--temptation, -T<t>       temptation to defect",
+		"--temptation <t>  temptation to defect",
 		new CLODelegate() {
 			@Override
 			public boolean parse(String arg) {
@@ -348,7 +348,7 @@ tFix += generation;
 			}
 		});
 	public final CLOption cloPunishment = new CLOption("punishment", 'P', EvoLudo.catSimulation, "0",
-		"--punishment, -P<p>       punishment for mutual defection",
+		"--punishment <p>  punishment for mutual defection",
 		new CLODelegate() {
 			@Override
 			public boolean parse(String arg) {
@@ -376,7 +376,7 @@ tFix += generation;
 			}
 		});
 	public final CLOption cloSteps = new CLOption("steps", 's', EvoLudo.catSimulation, "0",
-		"--steps, -s <s>       number of steps within interest interval",
+		"--steps <s>     number of steps within interest interval",
 		new CLODelegate() {
 	    	@Override
 	    	public boolean parse(String arg) {
@@ -389,7 +389,7 @@ tFix += generation;
 	    	}
 	    });
 	public final CLOption cloRuns = new CLOption("runs", 'r', EvoLudo.catSimulation, "1",
-		"--runs, -r<r>        number of repetitions",
+		"--runs <r>      number of repetitions",
 		new CLODelegate() {
 	    	@Override
 	    	public boolean parse(String arg) {
@@ -402,7 +402,7 @@ tFix += generation;
 	    	}
 	    });
 	public final CLOption cloResetFreq = new CLOption("resetfreq", EvoLudo.catSimulation, "1",
-		"--resetfreq <r>       regenerate population structure every r runs",
+		"--resetfreq <r>  regenerate population structure every r runs",
 		new CLODelegate() {
 	    	@Override
 	    	public boolean parse(String arg) {
@@ -415,7 +415,7 @@ tFix += generation;
 	    	}
 	    });
 	public final CLOption cloHub = new CLOption("hub", EvoLudo.catSimulation, CLOption.Argument.NONE, "nohub",
-		"--hub                 place mutant in hub (star and wheel structures only)",
+		"--hub           place mutant in hub (star and wheel structures only)",
 		new CLODelegate() {
 	    	@Override
 	    	public boolean parse(String arg) {
@@ -435,7 +435,7 @@ tFix += generation;
 	    	}
 	    });
 	public final CLOption cloNoHub = new CLOption("nohub", EvoLudo.catSimulation, CLOption.Argument.NONE, "nonohub",
-		"--nohub               do not place mutant in hub (star and wheel structures only)",
+		"--nohub         do not place mutant in hub (star and wheel structures only)",
 		new CLODelegate() {
 	    	@Override
 	    	public boolean parse(String arg) {

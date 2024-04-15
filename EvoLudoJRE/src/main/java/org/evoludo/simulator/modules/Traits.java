@@ -257,7 +257,7 @@ public class Traits extends Discrete implements Pairs,
 				}
 			});
 	public final CLOption cloPayoff = new CLOption("paymatrix", "const", EvoLudo.catModule,
-			"--paymatrix, -P<a11,a12,...,a1n;...;an1,an2,...,ann>  nxn payoff matrix", new CLODelegate() {
+			"--paymatrix <a11,a12,...,a1n;...;an1,an2,...,ann>  nxn payoff matrix", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					if (arg.startsWith("const")) {

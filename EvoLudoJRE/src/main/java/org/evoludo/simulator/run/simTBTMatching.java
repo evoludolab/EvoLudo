@@ -401,7 +401,7 @@ if( isHomoInit ) out.println("# homo init - half of runs with homogeneous A, oth
 	 * command line parsing stuff
 	 */
 	public final CLOption cloProgress = new CLOption("progress", EvoLudo.catSimulation, CLOption.Argument.NONE, "noprogress",
-			"--progress           make noise about progress",
+			"--progress      make noise about progress",
 		new CLODelegate() {
 			@Override
 			public boolean parse(String arg) {
@@ -411,7 +411,7 @@ if( isHomoInit ) out.println("# homo init - half of runs with homogeneous A, oth
 		}
 	);
 	public final CLOption cloMatching = new CLOption("matching", EvoLudo.catSimulation, CLOption.Argument.NONE, "nomatching",
-			"--matching                competing individuals must interact",
+			"--matching      competing individuals must interact",
 		new CLODelegate() {
 			@Override
 			public boolean parse(String arg) {
@@ -425,7 +425,7 @@ if( isHomoInit ) out.println("# homo init - half of runs with homogeneous A, oth
 		}
 	);
 	public final CLOption cloStatistics = new CLOption("statistics", EvoLudo.catSimulation, "100",
-    		"--statistics              generate histogram of times spent in each state",
+    		"--statistics    generate histogram of times spent in each state",
     	new CLODelegate() {
 	    	@Override
 	    	public boolean parse(String arg) {
@@ -446,7 +446,7 @@ if( isHomoInit ) out.println("# homo init - half of runs with homogeneous A, oth
     	}
     );
 	public final CLOption cloRuns = new CLOption("runs", 'r', EvoLudo.catSimulation, "1",
-    		"--runs, -r<r>        number of repetitions",
+    		"--runs <r>      number of repetitions",
     	new CLODelegate() {
 	    	@Override
 	    	public boolean parse(String arg) {

@@ -879,7 +879,7 @@ else {
 	 * command line parsing stuff
 	 */
 	public final CLOption cloSamples = new CLOption("samples", 's', EvoLudo.catSimulation, "1000",
-			"--samples, -s <s>     number of samples",
+			"--samples <s>   number of samples",
     		new CLODelegate() {
 		    	@Override
 		    	public boolean parse(String arg) {
@@ -893,7 +893,7 @@ else {
 		    	}
 		    });
 	public final CLOption cloRuns = new CLOption("runs", 'r', EvoLudo.catSimulation, "1000",
-			"--runs, -r<r>        number of repetitions",
+			"--runs <r>      number of repetitions",
 			new CLODelegate() {
 		    	@Override
 		    	public boolean parse(String arg) {
@@ -907,7 +907,7 @@ else {
 		    	}
 		    });
 	public final CLOption cloAnalytical = new CLOption("analytical", 'a', EvoLudo.catSimulation, CLOption.Argument.NONE, "noanalytical",
-			"--analytical, -a      analytical calculations (instead of simulations)",
+			"--analytical    analytical calculations (instead of simulations)",
     		new CLODelegate() {
 		    	@Override
 		    	public boolean parse(String arg) {
@@ -920,7 +920,7 @@ else {
 		    	}
 		    });
 	public final CLOption cloProgress = new CLOption("progress", EvoLudo.catSimulation, CLOption.Argument.NONE, "noverbose",
-			"--progress           make noise about progress",
+			"--progress      make noise about progress",
     		new CLODelegate() {
 		    	@Override
 		    	public boolean parse(String arg) {
