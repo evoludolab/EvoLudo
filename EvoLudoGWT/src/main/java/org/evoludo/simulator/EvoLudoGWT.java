@@ -153,27 +153,9 @@ public class EvoLudoGWT extends EvoLudo {
 	@Override
 	public void run() {
 		isSuspended = false;
-		if (activeModel.getMode() == Mode.STATISTICS_SAMPLE) {
-			// initialize model first to guarantee a well-defined initial state
-			modelInit();
-			isRunning = true;
-			// MODE_STATISTICS: non-blocking way for running an arbitrary number of update
-			// steps to obtain one sample
-			scheduleSample();
-			if (isRunning && Math.abs(((IBS)activeModel).getNStatisticsSamples() - snapshotAt) < 1.0) {
-				// process request at once - if desired, resume execution after
-				// snapshot was taken.
-				isRunning = false;
-				requestAction(PendingAction.SNAPSHOT);
-				// stop repeating command
-			}
-			return;
-		}
-		if (isRunning)
-			return;
 		// start with an update not the delay
-		next();
 		isRunning = true;
+		next();
 		timer.scheduleRepeating(delay);
 	}
 
@@ -195,13 +177,18 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public void next() {
-		if (isRunning)
-			return;
 		switch (activeModel.getMode()) {
 			case STATISTICS_SAMPLE:
 				// MODE_STATISTICS: non-blocking way for running an arbitrary number of update
 				// steps to obtain one sample
 				scheduleSample();
+				if (isRunning && Math.abs(((IBS)activeModel).getNStatisticsSamples() - snapshotAt) < 1.0) {
+					// process request at once - if desired, resume execution after
+					// snapshot was taken.
+					isRunning = false;
+					requestAction(PendingAction.SNAPSHOT);
+					// stop repeating command
+				}
 				break;
 			case STATISTICS_UPDATE:
 			case DYNAMICS:

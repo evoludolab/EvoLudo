@@ -573,7 +573,7 @@ public class EvoLudoWeb extends Composite
 				update();
 				// stop if single statistics requested
 				if (engine.isRunning())
-					engine.run();
+					engine.next();
 				break;
 			case STOP:
 				evoludoStartStop.setText("Start");
