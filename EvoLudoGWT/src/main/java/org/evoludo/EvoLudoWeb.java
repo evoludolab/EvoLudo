@@ -553,9 +553,7 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelRunning() {
-		// reset threshold for displaying messages
-		displayStatusThresholdLevel = Level.ALL.intValue();
-		evoludoStartStop.setText("Stop");
+		runGUI();
 	}
 
 	@Override
@@ -565,7 +563,7 @@ public class EvoLudoWeb extends Composite
 				applyCLO();
 				break;
 			case SNAPSHOT:
-				evoludoStartStop.setText("Start");
+				stopGUI();
 				update(true);
 				snapshotReady();
 				break;
@@ -576,7 +574,7 @@ public class EvoLudoWeb extends Composite
 					engine.next();
 				break;
 			case STOP:
-				evoludoStartStop.setText("Start");
+				stopGUI();
 				update(true);
 				if (engine.isEPub) {
 					if (runningEPub == this)
@@ -592,12 +590,12 @@ public class EvoLudoWeb extends Composite
 			default:
 		}
 		if (!engine.isRunning())
-			evoludoStartStop.setText("Start");
+			stopGUI();
 	}
 
 	@Override
 	public void modelStopped() {
-		evoludoStartStop.setText("Start");
+		stopGUI();
 		for (EvoLudoView view : activeViews.values())
 			// force last data point to views
 			view.update(true);
@@ -606,7 +604,7 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelDidReinit() {
-		_init();
+		stopGUI();
 		// forward init to all current views
 		for (EvoLudoView view : activeViews.values())
 			view.init();
@@ -615,7 +613,7 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelDidReset() {
-		_init();
+		stopGUI();
 		// invalidate network
 		for (EvoLudoView view : activeViews.values())
 			view.reset();
@@ -624,13 +622,30 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
-	 * Initialize GUI.
+	 * Display GUI for stopped model.
 	 */
-	private void _init() {
-		evoludoStartStop.setText("Start");
+	private void stopGUI() {
 		evoludoSlider.setValue(engine.getDelay());
-		// forces update of GUI on next call to update()
-		updatetime = -1.0;
+		// // forces update of GUI on next call to update()
+		// updatetime = -1.0;
+		evoludoStartStop.setText("Start");
+		evoludoStep.setEnabled(true);
+		evoludoInitReset.setEnabled(true);
+		evoludoApply.setEnabled(true);
+		evoludoDefault.setEnabled(true);
+	}
+
+	/**
+	 * Display GUI for running model.
+	 */
+	private void runGUI() {
+		// reset threshold for displaying messages
+		displayStatusThresholdLevel = Level.ALL.intValue();
+		evoludoStartStop.setText("Stop");
+		evoludoStep.setEnabled(false);
+		evoludoInitReset.setEnabled(false);
+		evoludoApply.setEnabled(false);
+		evoludoDefault.setEnabled(false);
 	}
 
 	/**
