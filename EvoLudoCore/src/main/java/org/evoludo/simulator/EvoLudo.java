@@ -683,23 +683,6 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Advance model by one step (<code>reportFreq</code> updates) and notify
-	 * all listeners.
-	 *
-	 * @return <code>true</code> if not converged, i.e. if <code>modelNext()</code>
-	 *         can be called again.
-	 */
-	public final boolean modelNext() {
-		startCPUSample();
-		fireModelRunning();
-		if (activeModel.isAsynchronous()) {
-			activeModel.next();
-			return true;
-		}
-		return modelNextDone(activeModel.next());
-	}
-
-	/**
 	 * Relax model by {@code nRelaxation} steps and notify all listeners when done.
 	 *
 	 * @return <code>true</code> if not converged, i.e. if <code>modelNext()</code>
@@ -717,6 +700,23 @@ public abstract class EvoLudo
 	}
 
 	/**
+	 * Advance model by one step (<code>reportFreq</code> updates) and notify
+	 * all listeners.
+	 *
+	 * @return <code>true</code> if not converged, i.e. if <code>modelNext()</code>
+	 *         can be called again.
+	 */
+	public final boolean modelNext() {
+		startCPUSample();
+		fireModelRunning();
+		if (activeModel.isAsynchronous()) {
+			activeModel.next();
+			return true;
+		}
+		return modelNextDone(activeModel.next());
+	}
+
+	/**
 	 * Called after the calculations of the next state of the model have finished.
 	 * For GWT this method serves as a callback for the asynchronous model
 	 * computations. For JRE this runs in a separate thread from the GUI and
@@ -731,12 +731,12 @@ public abstract class EvoLudo
 			doPrev = false;
 			activeModel.setTimeReversed(!activeModel.isTimeReversed());
 		}
+		endCPUSample();
 		if (!cont) {
 			fireModelStopped();
 			return false;
 		}
 		fireModelChanged();
-		endCPUSample();
 		return true;
 	}
 
