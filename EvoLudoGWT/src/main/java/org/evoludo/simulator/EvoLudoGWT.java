@@ -154,8 +154,8 @@ public class EvoLudoGWT extends EvoLudo {
 	public void run() {
 		isSuspended = false;
 		// start with an update not the delay
-		isRunning = true;
 		next();
+		isRunning = true;
 		timer.scheduleRepeating(delay);
 	}
 
@@ -181,6 +181,8 @@ public class EvoLudoGWT extends EvoLudo {
 			case STATISTICS_SAMPLE:
 				// MODE_STATISTICS: non-blocking way for running an arbitrary number of update
 				// steps to obtain one sample
+				if (!isRunning)
+					modelInit();
 				scheduleSample();
 				if (isRunning && Math.abs(((IBS)activeModel).getNStatisticsSamples() - snapshotAt) < 1.0) {
 					// process request at once - if desired, resume execution after

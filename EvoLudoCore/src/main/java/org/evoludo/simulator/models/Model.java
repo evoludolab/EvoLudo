@@ -619,12 +619,15 @@ public abstract interface Model extends CLOProvider {
 	/**
 	 * Modes of the model. Currently thefollowing modes are supported:
 	 * <dl>
-	 * <dt>dynamics
+	 * <dt>DYNAMICS
 	 * <dd>follow the time series of the model. This is the default.
-	 * <dt>statistics
+	 * <dt>STATISTICS_SAMPLE
 	 * <dd>generate samples to create statistics of the model. Run model until it
-	 * stops and advertise that a new data point is available. Once retrieved start
-	 * next sample.
+	 * stops and advertise that a new data point is available. Start next sample,
+	 * once the data is retrieved and processed.
+	 * <dt>STATISTICS_UPDATE
+	 * <dd>generate samples from single run to create statistics of the
+	 * model reflecting the different states of the population.
 	 * </dl>
 	 * 
 	 * @author Christoph Hauert
@@ -637,8 +640,8 @@ public abstract interface Model extends CLOProvider {
 
 		/**
 		 * Statistics: generate samples to create statistics of the model. Run model
-		 * until it stops and advertise that a new data point is available. Once
-		 * retrieved start next sample.
+		 * until it stops and advertise that a new data point is available. Start
+		 * next sample, once the data is retrieved and processed.
 		 */
 		STATISTICS_SAMPLE("statistics_sample"), //
 

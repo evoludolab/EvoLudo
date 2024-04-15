@@ -593,7 +593,6 @@ public abstract class EvoLudo
 		activeModel.reset();
 		resetRequested = false;
 		modelInit();
-		modelUpdate();
 		// notify of reset
 		fireModelReset();
 	}
@@ -606,6 +605,7 @@ public abstract class EvoLudo
 		for (Module pop : activeModule.getSpecies())
 			pop.init();
 		activeModel.init();
+		activeModel.update();
 		resetCPUSample();
 	}
 
@@ -614,7 +614,6 @@ public abstract class EvoLudo
 	 */
 	public final void modelReinit() {
 		modelInit();
-		modelUpdate();
 		fireModelReinit();
 	}
 

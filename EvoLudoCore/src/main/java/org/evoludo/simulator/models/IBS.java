@@ -73,11 +73,7 @@ public abstract class IBS implements Model.IBS {
 	public boolean setMode(Mode mode) {
 		if (!permitsMode(mode))
 			return false;
-		if (this.mode == mode)
-			return true;
 		this.mode = mode;
-		if (mode == Mode.STATISTICS_SAMPLE)
-			init();
 		return true;
 	}
 
@@ -423,7 +419,6 @@ public abstract class IBS implements Model.IBS {
 		// start new statistics sample if required
 		if (mode == Mode.STATISTICS_SAMPLE && statisticsSampleNew) {
 			engine.modelInit();
-			engine.modelUpdate();
 			// debugCheck("next (new sample)");
 			return true;
 		}
