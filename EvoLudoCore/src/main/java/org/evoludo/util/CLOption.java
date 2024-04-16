@@ -33,6 +33,7 @@
 package org.evoludo.util;
 
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 
@@ -852,15 +853,18 @@ public class CLOption implements Comparable<CLOption> {
 				if (key == null) {
 					argkeys += "INVALID '" + args[n].trim() + "'";
 				} else {
-					argsn[keypos] = key.getKey();
-					argkeys += String.join(" ", argsn) 
-						+ (n == args.length - 1 ? "" : CLOParser.SPECIES_DELIMITER);
+					String[] lead = Arrays.copyOfRange(argsn, 0, keypos);
+					String[] tail = Arrays.copyOfRange(argsn, keypos + 1, argsn.length);
+					argkeys += (lead.length > 0 ? String.join(",", lead) + " " : "") +
+							key.getKey() + 
+							(tail.length > 0 ? " " + String.join(",", tail) : "") +
+							(n == args.length - 1 ? "" : CLOParser.SPECIES_DELIMITER);
 				}
 				prev = (key == null ? prev : key);
 			}
-			return myDescr + "\n      (current: " + argkeys + ", default: " + defaultArg + ")";
+			return myDescr + "\n      (current: " + argkeys + " default: " + defaultArg + ")";
 		}
-		return myDescr + "\n      (current: " + arg + ", default: " + defaultArg + ")";
+		return myDescr + "\n      (current: " + arg + " default: " + defaultArg + ")";
 	}
 
 	/**
