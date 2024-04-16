@@ -616,8 +616,7 @@ public class EvoLudoWeb extends Composite
 		stopGUI();
 		// invalidate network
 		for (EvoLudoView view : activeViews.values())
-			view.reset();
-		update(true);
+			view.reset(true);
 		displayStatus(engine.getVersion());
 	}
 

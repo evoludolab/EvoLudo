@@ -393,9 +393,10 @@ removeAll();
 				}
 				Model.IBS ibs = (Model.IBS)model;
 				int count = ibs.getInteractionsAt(tag, node);
+				String nametag = ibs.getTagNameAt(tag, node);
 				toolTip = "<html><i>Node:</i> "+node+
 						  "<br><i>Strategy:</i> "+model.getTraitNameAt(tag, node)+
-						  "<br><i>Tag:</i> "+ibs.getTagNameAt(tag, node)+
+						  (nametag==null ? "" :"<br><i>Tag:</i> "+nametag)+
 						  "<br><i>Fitness:</i> "+model.getFitnessNameAt(tag, node)+
 						  (count<0?"":"<br><i>Interactions:</i> "+(count==Integer.MAX_VALUE?"all":""+count));
 				Geometry interaction = module.getInteractionGeometry();

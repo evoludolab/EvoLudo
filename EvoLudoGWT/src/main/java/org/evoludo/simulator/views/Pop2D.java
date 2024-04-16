@@ -520,7 +520,9 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 				else {
 					tip.append("<tr><td><i>Strategy:</i></td><td>"+model.getTraitNameAt(id, node)+"</td></tr>");
 				}
-				tip.append("<tr><td><i>Tag:</i></td><td>"+ibs.getTagNameAt(id, node)+"</td></tr>");
+				String tag = ibs.getTagNameAt(id, node);
+				if (tag != null)
+					tip.append("<tr><td><i>Tag:</i></td><td>"+tag+"</td></tr>");
 				// with payoff-to-fitness report score first, then fitness (see below)
 				boolean noFitMap = pop.getMapToFitness().isMap(Map2Fitness.Map.NONE);
 				String label = (noFitMap?"Fitness":"Score");

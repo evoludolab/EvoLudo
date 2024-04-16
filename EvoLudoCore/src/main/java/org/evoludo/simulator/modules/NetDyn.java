@@ -70,6 +70,11 @@ public class NetDyn extends Discrete implements HasIBS,
 	double ratio = 1.0;
 
 	/**
+	 * The selection strength on differences in payoff or cooperativity.
+	 */
+	double selection = 1.0;
+
+	/**
 	 * The probability to pick a random model for comparison.
 	 */
 	double pRandomSample = 0.01;
@@ -226,6 +231,24 @@ public class NetDyn extends Discrete implements HasIBS,
 	}
 
 	/**
+	 * Set the selection strength on differences in payoffs and cooperativity.
+	 * 
+	 * @param selection the new selection strength
+	 */
+	public void setSelection(double selection) {
+		this.selection = Math.max(0.0, selection);
+	}
+
+	/**
+	 * Get the selection strength on differences in payoffs and cooperativity.
+	 * 
+	 * @return the selection strength
+	 */
+	public double getSelection() {
+		return selection;
+	}
+
+	/**
 	 * Set the probability of picking a random model for comparison.
 	 * 
 	 * @param prob the new probability to pick a random model
@@ -334,6 +357,31 @@ public class NetDyn extends Discrete implements HasIBS,
 				}
 			});
 
+	/**
+	 * Command line option to set the cost-to-benefit ratio of cooperation.
+	 */
+	public final CLOption cloSelection = new CLOption("selection", "1", EvoLudo.catModule,
+			"--selection <s>  selection strength", new CLODelegate() {
+
+				/**
+				 * {@inheritDoc}
+				 * <p>
+				 * Parse the cost-to-benefit ratio of cooperation.
+				 * 
+				 * @param arg the cost-to-benefit ratio of cooperation
+				 */
+				@Override
+				public boolean parse(String arg) {
+					setSelection(CLOParser.parseDouble(arg));
+					return true;
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					output.println("# selection:            " + Formatter.format(getRatio(), 4));
+				}
+			});
+
 	// public final CLOption cloSample = new CLOption("sample", EvoLudo.catGUI,
 	// "0.01",
 	// "--sampling <s> probability for sampling random member of population",
@@ -399,6 +447,7 @@ public class NetDyn extends Discrete implements HasIBS,
 		parser.removeCLO(cloTraitColors.getName());
 		// prepare command line options
 		parser.addCLO(cloRatio);
+		parser.addCLO(cloSelection);
 		// add our version of the --colors option
 		parser.addCLO(cloColors);
 	}
@@ -406,7 +455,7 @@ public class NetDyn extends Discrete implements HasIBS,
 	@Override
 	public void adjustCLO(CLOParser parser) {
 		parser.removeCLO(new String[] { "popupdate", "playerupdate", "geometry", "geominter", "geomrepro",
-				"mutations" });
+				"mutations", "fitnessmap" });
 
 		cloGeometry.clearKeys();
 		cloGeometry.addKey(Type.DYNAMIC);
@@ -456,6 +505,17 @@ public class NetDyn extends Discrete implements HasIBS,
 		 */
 		protected IBS(EvoLudo engine) {
 			super(engine);
+		}
+
+		@Override
+		public synchronized void reset() {
+			super.reset();
+			// free memory that is not needed
+			fitness = null;
+			interactions = null;
+			strategies = null;
+			strategiesScratch = null;
+			tags = null;
 		}
 
 		@Override
@@ -608,7 +668,7 @@ public class NetDyn extends Discrete implements HasIBS,
 		 * @return the probability
 		 */
 		protected double getProbability(double z) {
-			return 1.0 / (2.0 + Math.expm1(-module.getMapToFitness().getSelection() * z));
+			return 1.0 / (2.0 + Math.expm1(-NetDyn.this.getSelection() * z));
 		}
 
 		/**
@@ -616,7 +676,7 @@ public class NetDyn extends Discrete implements HasIBS,
 		 */
 		public void updateFitnessMean() {
 			double gen = engine.getModel().getTime();
-			double p = prevgen > gen ? 0.0 : prevgen / gen;
+			double p = prevgen >= gen ? 0.0 : prevgen / gen;
 			double q = 1.0 - p;
 			prevgen = gen;
 			double sum = 0.0;
@@ -747,6 +807,14 @@ public class NetDyn extends Discrete implements HasIBS,
 		}
 
 		@Override
+		public void resetScores() {
+		}
+
+		@Override
+		public void updateScores() {
+		}
+
+		@Override
 		public void resetStrategies() {
 		}
 
@@ -805,6 +873,16 @@ public class NetDyn extends Discrete implements HasIBS,
 		@Override
 		public String getTraitNameAt(int index) {
 			return interaction.kin[index] + "-" + interaction.kout[index];
+		}
+
+		@Override
+		public int getInteractionsAt(int idx) {
+			return -1;
+		}
+
+		@Override
+		public String getTagNameAt(int idx) {
+			return null;
 		}
 
 		/**
