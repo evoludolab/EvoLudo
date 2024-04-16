@@ -2048,7 +2048,7 @@ public class IBSDPopulation extends IBSPopulation {
 		double monoFreq = 1.0;
 		if (VACANT >= 0) {
 			// the second argument indicates the frequency of vacant sites
-			if (len < 3)
+			if (len > 2)
 				monoFreq = Math.max(0.0, 1.0 - initType.args[2]);
 			if (residentType == VACANT && monoFreq < 1.0 - 1e-8) {
 				// problem encountered
