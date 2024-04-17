@@ -14,6 +14,7 @@ import org.evoludo.simulator.Resources;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.Console;
@@ -633,6 +634,7 @@ public class EvoLudoWeb extends Composite
 		evoludoInitReset.setEnabled(true);
 		evoludoApply.setEnabled(true);
 		evoludoDefault.setEnabled(true);
+		evoludoSlider.setEnabled(true);
 	}
 
 	/**
@@ -646,6 +648,8 @@ public class EvoLudoWeb extends Composite
 		evoludoInitReset.setEnabled(false);
 		evoludoApply.setEnabled(false);
 		evoludoDefault.setEnabled(false);
+		if (engine.getModel().getMode() == Mode.STATISTICS_SAMPLE)
+			evoludoSlider.setEnabled(false);
 	}
 
 	/**
