@@ -555,7 +555,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					break;
 
 				case STATISTICS_STATIONARY:
-					style.label = pop.getTraitName(tag);
+					style.label = (isMultispecies ? pop.getName() + ": " : "") + pop.getTraitName(tag);
 					nPop = pop.getNPopulation();
 					if (model instanceof Model.DE) {
 						if (((Model.DE) model).isDensity()) {
@@ -621,8 +621,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						if (data != graphdata) {
 							data = graphdata;
 							// XXX tag refers to trait id - insufficient to identify traits in multi-species
-							// modules
-							// replace tag with traitID and speciesID?
+							// modules; replace tag with traitID and speciesID?
 							cmodel.getTraitHistogramData(graph.getTag(), data);
 						}
 					}
@@ -635,8 +634,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						if (data != graphdata) {
 							data = graphdata;
 							// XXX tag refers to trait id - insufficient to identify traits in multi-species
-							// modules
-							// replace tag with traitID and speciesID?
+							// modules; replace tag with traitID and speciesID?
 							model.getFitnessHistogramData(graph.getTag(), data);
 						}
 					}
@@ -788,8 +786,9 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					int nt = model.getNMean();
 					double[] state = new double[nt];
 					model.getMeanTraits(state);
+					int idx = 0;
 					for (HistoGraph graph : graphs)
-						graph.addData((int) (state[graph.getTag()] * scale2bins));
+						graph.addData((int) (state[idx++] * scale2bins));
 					break;
 
 				default:
