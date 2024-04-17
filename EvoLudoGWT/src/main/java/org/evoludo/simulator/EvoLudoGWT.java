@@ -38,6 +38,7 @@ import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.math.ArrayMath;
+import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.PDESupervisor;

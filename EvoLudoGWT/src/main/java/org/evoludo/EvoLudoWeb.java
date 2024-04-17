@@ -563,6 +563,7 @@ public class EvoLudoWeb extends Composite
 				applyCLO();
 				break;
 			case SNAPSHOT:
+				engine.setSuspended(true);
 				stopGUI();
 				update(true);
 				snapshotReady();
@@ -1148,7 +1149,6 @@ public class EvoLudoWeb extends Composite
 		engine.setCLO(clo);
 		displayStatusThresholdLevel = Level.ALL.intValue();
 		displayStatus("Setting parameters pending. Waiting for engine to stop...");
-		// note, initially population is null
 		if (engine.isRunning()) {
 			engine.requestAction(PendingAction.APPLY);
 			return;
@@ -1163,7 +1163,7 @@ public class EvoLudoWeb extends Composite
 	private void applyCLO() {
 		displayStatusThresholdLevel = Level.ALL.intValue();
 		String currentView = evoludoViews.getSelectedItemText();
-		boolean resume = engine.isSuspended();
+		boolean resume = engine.isRunning() || engine.isSuspended();
 		engine.setSuspended(false);
 		Model oldModel = engine.getModel();
 		Model.Type oldModelType = oldModel != null ? oldModel.getModelType() : null;

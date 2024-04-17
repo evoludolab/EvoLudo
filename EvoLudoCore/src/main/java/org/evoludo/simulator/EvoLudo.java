@@ -47,6 +47,7 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.math.MersenneTwister;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.models.ChangeListener;
+import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSC;
 import org.evoludo.simulator.models.IBSD;
@@ -110,7 +111,7 @@ import org.evoludo.util.Plist;
  * @author Christoph Hauert
  */
 public abstract class EvoLudo
-		implements MilestoneListener, ChangeListener, CLOProvider, MersenneTwister.Chronometer {
+		implements MilestoneListener, CLOProvider, MersenneTwister.Chronometer {
 
 	/**
 	 * The interface to execute commands in a manner that is agnostic to the
@@ -137,7 +138,6 @@ public abstract class EvoLudo
 	public EvoLudo() {
 		logger = Logger.getLogger(EvoLudo.class.getName() + "-" + ID);
 		addMilestoneListener(this);
-		addChangeListener(this);
 		parser = new CLOParser(this);
 		// load all available modules
 		addModule(new Moran(this));
@@ -828,6 +828,8 @@ public abstract class EvoLudo
 	 */
 	public void setSuspended(boolean suspend) {
 		isSuspended = suspend;
+		if (isSuspended)
+			isRunning = false;
 	}
 
 	/**
@@ -1310,22 +1312,6 @@ public abstract class EvoLudo
 					pendingAction = PendingAction.STATISTIC;
 				_fireModelChanged();
 				break;
-		}
-	}
-
-	@Override
-	public void modelChanged(PendingAction action) {
-		switch (action) {
-			case APPLY:
-				if (isRunning) {
-					isSuspended = true;
-					isRunning = false;
-				}
-				break;
-			case SNAPSHOT:
-				isRunning = false;
-				break;
-			default:
 		}
 	}
 
