@@ -401,6 +401,11 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 		return Math.log(x) / (logBase * logRange) * (max - min) + min;
 	}
 
+	@Override
+	public void setEnabled(boolean enabled) {
+		getInputElement().setDisabled(!enabled);
+	}
+
 	/**
 	 * Get the value of slider taking its linear or logarithmic scaling into
 	 * account.
