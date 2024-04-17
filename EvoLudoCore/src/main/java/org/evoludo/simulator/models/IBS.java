@@ -10,6 +10,7 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
@@ -66,6 +67,15 @@ public abstract class IBS implements Model.IBS {
 					return false;
 			}
 		}
+		return true;
+	}
+
+	@Override
+	public boolean requestMode(Mode newmode) {
+		if (!permitsMode(newmode))
+			return false;
+		PendingAction.MODE.mode = newmode;
+		engine.requestAction(PendingAction.MODE);
 		return true;
 	}
 

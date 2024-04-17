@@ -1318,7 +1318,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						}
 					}
 					dataTypes.trimToSize();
-					getModel().setMode(isDynamic ? Mode.DYNAMICS : Mode.STATISTICS_SAMPLE);
+					getModel().requestMode(isDynamic ? Mode.DYNAMICS : Mode.STATISTICS_SAMPLE);
 					return success;
 				}
 			});

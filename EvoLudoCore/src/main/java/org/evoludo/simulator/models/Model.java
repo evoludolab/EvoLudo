@@ -1337,14 +1337,32 @@ public abstract interface Model extends CLOProvider {
 	/**
 	 * Sets the {@link Mode} of model/simulator. Returns {@code false} if
 	 * {@code mode} is not supported.
+	 * <p>
+	 * <strong>Note:</strong> Do not set mode directly. Changes of the execution
+	 * mode should be coordinated by the engine through requests.
 	 *
 	 * @param mode change mode of model to <code>mode</code>
 	 * @return {@code true} if mode successfully set
 	 *
-	 * @see #permitsMode(Mode)
+	 * @see #requestMode(Mode)
 	 */
 	public default boolean setMode(Mode mode) {
-		return permitsMode(mode);
+		if (!permitsMode(mode))
+			return false;
+		throw new UnsupportedOperationException("setting mode '" + mode + "' not supported");
+	}
+
+	/**
+	 * Request a change of the {@link Mode} of the model. Returns {@code false} if
+	 * {@code mode} is not supported.
+	 * 
+	 * @param mode the requested mode
+	 * @return {@code true} if mode supported
+	 * 
+	 * @see EvoLudo#requestAction(ChangeListener.PendingAction)
+	 */
+	public default boolean requestMode(Mode mode) {
+		return setMode(mode);
 	}
 
 	/**

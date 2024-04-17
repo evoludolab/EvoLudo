@@ -1205,22 +1205,6 @@ public abstract class EvoLudo
 	 */
 	private void _fireModelChanged() {
 		switch (pendingAction) {
-			case UNLOAD:
-				unloadModule();
-				pendingAction = PendingAction.NONE;
-				return;
-			case INIT:
-				modelReinit();
-				break;
-			case RESET:
-				modelReset();
-				break;
-			case STOP:
-				// stop requested (as opposed to simulations that stopped)
-				runFired = false;
-				for (MilestoneListener i : milestoneListeners)
-					i.modelStopped();
-				break;
 			case NONE:
 			case APPLY:
 			case SNAPSHOT:
@@ -1228,6 +1212,25 @@ public abstract class EvoLudo
 				for (ChangeListener i : changeListeners)
 					i.modelChanged(pendingAction);
 				break;
+			case MODE:
+				activeModel.setMode(pendingAction.mode);
+			//$FALL-THROUGH$
+			case STOP:
+				// stop requested (as opposed to simulations that stopped)
+				runFired = false;
+				for (MilestoneListener i : milestoneListeners)
+					i.modelStopped();
+				break;
+			case INIT:
+				modelReinit();
+				break;
+			case RESET:
+				modelReset();
+				break;
+			case UNLOAD:
+				unloadModule();
+				pendingAction = PendingAction.NONE;
+				return;
 			default:
 			// note: CLO re-parsing requests are handled separately, see parseCLO()
 			// case CLO:

@@ -1,5 +1,50 @@
 package org.evoludo;
 
+import java.util.HashMap;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
+
+import org.evoludo.geom.Rectangle2D;
+import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.EvoLudoGWT;
+import org.evoludo.simulator.EvoLudoTrigger;
+import org.evoludo.simulator.Resources;
+import org.evoludo.simulator.models.ChangeListener;
+import org.evoludo.simulator.models.MilestoneListener;
+import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.views.AbstractView;
+import org.evoludo.simulator.views.Console;
+import org.evoludo.simulator.views.Distribution;
+import org.evoludo.simulator.views.EvoLudoView;
+import org.evoludo.simulator.views.HasConsole;
+import org.evoludo.simulator.views.HasDistribution;
+import org.evoludo.simulator.views.HasHistogram;
+import org.evoludo.simulator.views.HasMean;
+import org.evoludo.simulator.views.HasPhase2D;
+import org.evoludo.simulator.views.HasPop2D;
+import org.evoludo.simulator.views.HasPop3D;
+import org.evoludo.simulator.views.HasS3;
+import org.evoludo.simulator.views.Histogram;
+import org.evoludo.simulator.views.Mean;
+import org.evoludo.simulator.views.Phase2D;
+import org.evoludo.simulator.views.Pop2D;
+import org.evoludo.simulator.views.Pop3D;
+import org.evoludo.simulator.views.S3;
+import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.InputEvent;
+import org.evoludo.ui.Slider;
+import org.evoludo.ui.TextLogFormatter;
+import org.evoludo.util.CLOParser;
+import org.evoludo.util.CLOProvider;
+import org.evoludo.util.CLOption;
+import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.Plist;
+import org.evoludo.util.PlistParser;
+import org.evoludo.util.XMLCoder;
+
 import com.google.gwt.canvas.client.Canvas;
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.EntryPoint;
@@ -44,51 +89,6 @@ import com.google.gwt.user.client.ui.ListBox;
 import com.google.gwt.user.client.ui.ResizeLayoutPanel;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.Widget;
-
-import java.util.HashMap;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
-
-import org.evoludo.geom.Rectangle2D;
-import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.EvoLudoGWT;
-import org.evoludo.simulator.EvoLudoTrigger;
-import org.evoludo.simulator.Resources;
-import org.evoludo.simulator.models.ChangeListener;
-import org.evoludo.simulator.models.MilestoneListener;
-import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.modules.Module;
-import org.evoludo.simulator.views.EvoLudoView;
-import org.evoludo.simulator.views.HasConsole;
-import org.evoludo.simulator.views.HasDistribution;
-import org.evoludo.simulator.views.HasHistogram;
-import org.evoludo.simulator.views.HasMean;
-import org.evoludo.simulator.views.HasPhase2D;
-import org.evoludo.simulator.views.HasPop2D;
-import org.evoludo.simulator.views.HasPop3D;
-import org.evoludo.simulator.views.HasS3;
-import org.evoludo.simulator.views.AbstractView;
-import org.evoludo.simulator.views.Console;
-import org.evoludo.simulator.views.Distribution;
-import org.evoludo.simulator.views.Histogram;
-import org.evoludo.simulator.views.Mean;
-import org.evoludo.simulator.views.Phase2D;
-import org.evoludo.simulator.views.Pop2D;
-import org.evoludo.simulator.views.Pop3D;
-import org.evoludo.simulator.views.S3;
-import org.evoludo.ui.ContextMenu;
-import org.evoludo.ui.InputEvent;
-import org.evoludo.ui.Slider;
-import org.evoludo.ui.TextLogFormatter;
-import org.evoludo.util.CLOParser;
-import org.evoludo.util.CLOProvider;
-import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.Plist;
-import org.evoludo.util.PlistParser;
-import org.evoludo.util.XMLCoder;
 
 /**
  * Entry point classes define <code>onModuleLoad()</code>.
@@ -559,20 +559,8 @@ public class EvoLudoWeb extends Composite
 	@Override
 	public void modelChanged(PendingAction action) {
 		switch (action) {
-			case APPLY:
-				applyCLO();
-				break;
-			case SNAPSHOT:
-				engine.setSuspended(true);
-				stopGUI();
-				update(true);
-				snapshotReady();
-				break;
-			case STATISTIC:
+			case NONE:
 				update();
-				// stop if single statistics requested
-				if (engine.isRunning())
-					engine.next();
 				break;
 			case STOP:
 				stopGUI();
@@ -584,11 +572,23 @@ public class EvoLudoWeb extends Composite
 						runningEPub.toggleRunning();
 				}
 				break;
-			case NONE:
+			case STATISTIC:
 				update();
+				// stop if single statistics requested
+				if (engine.isRunning())
+					engine.next();
 				break;
-			case UNLOAD:
+			case APPLY:
+				applyCLO();
+				break;
+			case SNAPSHOT:
+				engine.setSuspended(true);
+				stopGUI();
+				update(true);
+				snapshotReady();
+				break;
 			default:
+				// includes RESET, INIT, UNLOAD, MODE
 		}
 		if (!engine.isRunning())
 			stopGUI();

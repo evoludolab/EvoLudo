@@ -115,14 +115,14 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 			case FITNESS:
 			case DEGREE:
 			default:
-				model.setMode(Mode.DYNAMICS);
+				model.requestMode(Mode.DYNAMICS);
 				break;
 			case STATISTICS_FIXATION_PROBABILITY:
 			case STATISTICS_FIXATION_TIME:
-				model.setMode(Mode.STATISTICS_SAMPLE);
+				model.requestMode(Mode.STATISTICS_SAMPLE);
 				break;
 			case STATISTICS_STATIONARY:
-				model.setMode(Mode.STATISTICS_UPDATE);
+				model.requestMode(Mode.STATISTICS_UPDATE);
 				break;
 		}
 		super.activate();
@@ -131,7 +131,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 	@Override
 	public void deactivate() {
 		// revert to default of dynamics mode
-		model.setMode(Mode.DYNAMICS);
+		model.requestMode(Mode.DYNAMICS);
 		super.deactivate();
 	}
 
