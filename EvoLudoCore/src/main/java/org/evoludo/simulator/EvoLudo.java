@@ -86,6 +86,7 @@ import org.evoludo.simulator.modules.NetDyn;
 import org.evoludo.simulator.modules.RSP;
 import org.evoludo.simulator.modules.TBT;
 import org.evoludo.simulator.modules.Test;
+import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
@@ -2208,7 +2209,7 @@ public abstract class EvoLudo
 		parser.addCLO(cloRun);
 		parser.addCLO(cloDelay);
 		parser.addCLO(cloGenerations);
-		if (activeModel.permitsMode(Mode.STATISTICS_SAMPLE))
+		if (activeModule instanceof HasHistogram.StatisticsProbability || activeModule instanceof HasHistogram.StatisticsTime)
 			parser.addCLO(cloSamples);
 		parser.addCLO(cloRelaxation);
 		parser.addCLO(cloReportInterval);
