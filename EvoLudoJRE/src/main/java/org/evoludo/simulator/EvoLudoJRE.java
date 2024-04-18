@@ -1361,7 +1361,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			// XXX should not be added for customized simulations or should it?
 			prsr.addCLO(cloData);
 			if (getModel().permitsMode(Mode.STATISTICS_SAMPLE))
-				prsr.addCLO(cloNSamples);
+				prsr.addCLO(cloSamples);
 			cloData.clearKeys();
 			cloData.addKeys(MultiView.getAvailableDataTypes(activeModule, activeModel));
 			prsr.addCLO(cloDigits);

@@ -1359,7 +1359,7 @@ public abstract class EvoLudo
 	 * <strong>Note:</strong> {@code nSamples} is set with the command line
 	 * option <code>--samples</code>
 	 * 
-	 * @see #cloGenerations
+	 * @see #cloSamples
 	 */
 	protected double nSamples;
 
@@ -2032,11 +2032,11 @@ public abstract class EvoLudo
 	 * Command line option to set the number of samples to take for statistical
 	 * measurements. 
 	 */
-	public final CLOption cloNSamples = new CLOption("samples", "1000", EvoLudo.catSimulation,
-			"--samples       number of samples for statistics", new CLODelegate() {
+	public final CLOption cloSamples = new CLOption("samples", "unlimited", EvoLudo.catSimulation,
+			"--samples <s>   number of samples for statistics", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					setNSamples(CLOParser.parseDouble(arg));
+					setNSamples(cloSamples.isSet() ? CLOParser.parseDouble(arg) : -1.0);
 					return true;
 				}
 
@@ -2208,6 +2208,8 @@ public abstract class EvoLudo
 		parser.addCLO(cloRun);
 		parser.addCLO(cloDelay);
 		parser.addCLO(cloGenerations);
+		if (activeModel.permitsMode(Mode.STATISTICS_SAMPLE))
+			parser.addCLO(cloSamples);
 		parser.addCLO(cloRelaxation);
 		parser.addCLO(cloReportInterval);
 		parser.addCLO(cloRNG);

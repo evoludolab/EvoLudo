@@ -185,12 +185,17 @@ public class EvoLudoGWT extends EvoLudo {
 				if (!isRunning)
 					modelInit();
 				scheduleSample();
-				if (isRunning && Math.abs(((IBS)activeModel).getNStatisticsSamples() - snapshotAt) < 1.0) {
+				int samples = ((IBS)activeModel).getNStatisticsSamples();
+				if (isRunning && Math.abs(samples - snapshotAt) < 1.0) {
 					// process request at once - if desired, resume execution after
 					// snapshot was taken.
 					isRunning = false;
 					requestAction(PendingAction.SNAPSHOT);
 					// stop repeating command
+				}
+				if ((samples + 1) == nSamples) {
+					isRunning = false;
+					requestAction(PendingAction.STOP);
 				}
 				break;
 			case STATISTICS_UPDATE:
