@@ -75,7 +75,6 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 	protected Set<HistoGraph> graphs;
 
 	protected int MAX_BINS = 100;
-	protected int nSamples = -1;
 	double scale2bins = 1.0;
 	int binSize = 1;
 
@@ -142,7 +141,6 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 		isMultispecies = (species.size() > 1);
 		degreeProcessed = false;
 		int nGraphs = 0;
-		nSamples = 0;
 		for( Module pop : species ) {
 			int nTraits = pop.getNTraits();
 			switch( type ) {
@@ -714,7 +712,6 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						if (!fixData.probRead) {
 							if (graph.getTag() == fixData.typeFixed) {
 								graph.addData(fixData.mutantNode);
-								nSamples++;
 								fixData.probRead = true;
 							}
 						}
@@ -745,7 +742,6 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 									graph.addData(fixData.updatesFixed);
 								else
 									graph.addData(iNode, fixData.updatesFixed);
-								nSamples++;
 								fixData.timeRead = true;
 							}
 						}
@@ -786,7 +782,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 	@Override
 	public String getCounter() {
 		if (model.getMode() == Mode.STATISTICS_SAMPLE) {
-			return "samples: "+nSamples;
+			return "samples: " + ((IBSD) model).getNStatisticsSamples();
 		}
 		return super.getCounter();
 	}
@@ -801,15 +797,13 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 		if (!force && now - updatetime < AbstractGraph.MIN_MSEC_BETWEEN_UPDATES)
 			return status;
 		updatetime = now;
-		Module pop = null;
-		int nTraits, nSam;
 
 		switch (type) {
 			case STATISTICS_FIXATION_PROBABILITY:
-				nSam = Math.max(nSamples, 1);
+				int nSam = Math.max(((IBSD) model).getNStatisticsSamples(), 1);
 				status = "Avg. fix. prob: ";
 				for (HistoGraph graph : graphs) {
-					pop = graph.getModule();
+					Module pop = graph.getModule();
 					status += (isMultispecies ? pop.getName() + "." : "") + pop.getTraitName(graph.getTag()) + ": " +
 							Formatter.formatFix(graph.getSamples() / nSam, 3) + ", ";
 				}
@@ -819,11 +813,13 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 				status = "Avg. fix. time: ";
 				for (HistoGraph graph : graphs) {
 					double[][] data = graph.getData();
-					if (data == null)
-						return "statistics unavailable";
-					pop = graph.getModule();
+					if (data == null) {
+						logger.warning("Average fixation times not available!");
+						return "";
+					}
+					Module pop = graph.getModule();
 					int tag = graph.getTag();
-					nTraits = pop.getNTraits();
+					int nTraits = pop.getNTraits();
 					status += (isMultispecies ? pop.getName() + "." : "")
 							+ (tag == nTraits ? "Absorption" : pop.getTraitName(tag)) + ": ";
 					int nPop = pop.getNPopulation();

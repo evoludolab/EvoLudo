@@ -564,7 +564,6 @@ public class EvoLudoWeb extends Composite
 				update();
 				break;
 			case STOP:
-				stopGUI();
 				update(true);
 				if (engine.isEPub) {
 					if (runningEPub == this)
@@ -584,6 +583,7 @@ public class EvoLudoWeb extends Composite
 				break;
 			case SNAPSHOT:
 				engine.setSuspended(true);
+				// make sure GUI is in stopped state before taking the snapshot
 				stopGUI();
 				update(true);
 				snapshotReady();
@@ -597,29 +597,32 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelStopped() {
-		stopGUI();
 		for (EvoLudoView view : activeViews.values())
 			// force last data point to views
 			view.update(true);
-		update(true);
+		updateGUI();
 	}
 
 	@Override
 	public void modelDidReinit() {
-		stopGUI();
 		// forward init to all current views
 		for (EvoLudoView view : activeViews.values())
 			view.init();
-		update(true);
+		updateGUI();
 	}
 
 	@Override
 	public void modelDidReset() {
-		stopGUI();
 		// invalidate network
 		for (EvoLudoView view : activeViews.values())
 			view.reset(true);
+		updateGUI();
 		displayStatus(engine.getVersion());
+	}
+
+	private void updateGUI() {
+		stopGUI();
+		update(true);
 	}
 
 	/**
@@ -627,8 +630,6 @@ public class EvoLudoWeb extends Composite
 	 */
 	private void stopGUI() {
 		evoludoSlider.setValue(engine.getDelay());
-		// // forces update of GUI on next call to update()
-		// updatetime = -1.0;
 		evoludoStartStop.setText("Start");
 		evoludoStep.setEnabled(true);
 		evoludoInitReset.setEnabled(true);
