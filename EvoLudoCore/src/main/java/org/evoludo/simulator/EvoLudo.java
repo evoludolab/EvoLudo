@@ -1299,8 +1299,6 @@ public abstract class EvoLudo
 		// model may already have been unloaded
 		if (activeModel == null)
 			return;
-		// check if new sample completed
-		readStatisticsSample();
 		switch (activeModel.getMode()) {
 			case DYNAMICS:
 			case STATISTICS_UPDATE:
@@ -1310,6 +1308,8 @@ public abstract class EvoLudo
 					i.modelStopped();
 				break;
 			case STATISTICS_SAMPLE:
+				// check if new sample completed
+				readStatisticsSample();
 				// note: calling fireModelChanged doesn't work because MODE_STATISTICS
 				// prevents firing
 				if (pendingAction == PendingAction.NONE)
