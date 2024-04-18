@@ -2099,11 +2099,21 @@ public class IBSDPopulation extends IBSPopulation {
 		int residentType = (int) initType.args[1];
 		// revert mutant back to resident
 		strategies[mutant] = residentType;
-		int nLinks = ArrayMath.norm(interaction.kin);
-		int rand = random0n(nLinks);
+		// use Gillespie algorithm to place mutant
 		int idx = -1;
-		while (rand >= 0) {
-			rand -= interaction.kin[++idx];
+		if (nPopulation >= 100) {
+			// optimization of Gillespie algorithm to prevent bookkeeping (at the expense of
+			// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
+			int max = interaction.maxIn;
+			do {
+				idx = random0n(nPopulation);
+			} while (random0n(max) >= interaction.kin[idx]); // note: if < holds aRand is ok
+		} else {
+			int nLinks = ArrayMath.norm(interaction.kin);
+			int rand = random0n(nLinks);
+			while (rand >= 0) {
+				rand -= interaction.kin[++idx];
+			}	
 		}
 		if (strategies[idx] == VACANT) {
 			strategiesTypeCount[VACANT]--;
