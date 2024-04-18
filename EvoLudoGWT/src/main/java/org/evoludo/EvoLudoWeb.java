@@ -1202,7 +1202,7 @@ public class EvoLudoWeb extends Composite
 				// linear geometries)
 				// - changes in payoffs require rescaling of color maps
 				for (EvoLudoView view : activeViews.values())
-					view.reset(true);
+					view.reset(false);
 			}
 		}
 		setView(cloView.isSet() ? initialView : currentView);

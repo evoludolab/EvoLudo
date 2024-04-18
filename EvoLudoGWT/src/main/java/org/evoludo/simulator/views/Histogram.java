@@ -388,6 +388,8 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 			Module oldpop = pop;
 			pop = graph.getModule();
 			newPop = (oldpop != pop);
+			if (newPop)
+				data = graph.getData();
 			int tag = graph.getTag();
 			int vacant = pop.getVacant();
 			int nTraits = pop.getNTraits();
@@ -396,7 +398,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 			switch( type ) {
 				case STRATEGY:
 					// histogram of strategies makes only sense for continuous traits
-					if( newPop || data==null || data.length!=nTraits || data[0].length!=MAX_BINS ) 
+					if( data==null || data.length!=nTraits || data[0].length!=MAX_BINS ) 
 						data = new double[nTraits][MAX_BINS];
 					graph.setData(data);
 					graph.clearMarkers();
@@ -427,7 +429,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					nTraits = (model.isContinuous()?1:nTraits);
 					if( vacant>=0 )
 						nTraits--;
-					if( newPop || data==null || data.length!=nTraits || data[0].length!=MAX_BINS ) 
+					if( data==null || data.length!=nTraits || data[0].length!=MAX_BINS ) 
 						data = new double[nTraits][MAX_BINS];
 					graph.setData(data);
 					min = model.getMinScore(pop.getID());
@@ -483,8 +485,10 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						inter = pop.getInteractionGeometry();
 						repro = pop.getReproductionGeometry();
 					}
-					if( newPop )
-						data = new double[getDegreeGraphs(inter, repro)][getDegreeBins(inter, repro)];
+					int rows = getDegreeGraphs(inter, repro);
+					int cols = getDegreeBins(inter, repro);
+					if (data == null || data.length != rows || data[0].length != cols)
+						data = new double[rows][cols];
 					graph.setData(data);
 					style.yMin = 0.0;
 					style.yMax = 1.0;
@@ -496,7 +500,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					break;
 
 				case STATISTICS_FIXATION_PROBABILITY:
-					newPop &= model.permitsMode(Mode.STATISTICS_SAMPLE);
+					boolean statOk = model.permitsMode(Mode.STATISTICS_SAMPLE);
 					int nBins = pop.getNPopulation();
 					style.yMin = 0.0;
 					style.yMax = 1.0;
@@ -504,13 +508,14 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					style.xMax = nBins-1;
 					style.label = pop.getTraitName(tag);
 					style.graphColor = ColorMapCSS.Color2Css(colors[tag]);
-					if( newPop )
+					if (statOk && (data == null || data.length != nTraits + 1
+							|| data[0].length != Math.min(nBins, MAX_BINS)))
 						data = new double[nTraits+1][Math.min(nBins, MAX_BINS)];
 					graph.setData(data);
 					break;
 
 				case STATISTICS_FIXATION_TIME:
-					newPop &= model.permitsMode(Mode.STATISTICS_SAMPLE);
+					statOk = model.permitsMode(Mode.STATISTICS_SAMPLE);
 					int nPop = pop.getNPopulation();
 					nBins = nPop;
 					nTraits++;	// the last 'trait' is for unconditional absorption times
@@ -525,7 +530,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
 					}
 					if( nPop>MAX_BINS ) {
-						if( newPop )
+						if (statOk && (data == null || data.length != nTraits || data[0].length != MAX_BINS))
 							data = new double[nTraits][MAX_BINS];
 						graph.setNormalized(false);
 						graph.setNormalized(-1);
@@ -539,7 +544,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						style.customYLevels = null;
 					}
 					else {
-						if( newPop )
+						if (statOk && (data == null || data.length != 2 * nTraits || data[0].length != nPop))
 							data = new double[2*nTraits][nPop];
 						graph.setNormalized(tag+nTraits);
 						style.xMin = 0.0;
@@ -575,13 +580,12 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						style.xMax = nPop;
 					}
 					style.graphColor = ColorMapCSS.Color2Css(colors[tag]);
-					if( newPop ) {
-						// determine the number of bins with maximum of MAX_BINS
-						binSize = (nPop + 1) / MAX_BINS + 1;
-						scale2bins = (nPop + 1) / binSize;	// number of bins
-						// doubles as the map for frequencies to bins
+					// determine the number of bins with maximum of MAX_BINS
+					binSize = (nPop + 1) / MAX_BINS + 1;
+					// doubles as the map for frequencies to bins
+					scale2bins = (nPop + 1) / binSize;	// number of bins
+					if (data == null || data.length != nTraits || data[0].length != (int) scale2bins)
 						data = new double[nTraits][(int) scale2bins];
-					}
 					graph.setData(data);
 					break;
 
@@ -702,25 +706,12 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 
 				case STATISTICS_FIXATION_PROBABILITY:
 					// NOTE: not fully ready for multi-species; info which species fixated missing
-					Module pop = null;
-					FixationData fixData = null;
 					for (HistoGraph graph : graphs) {
-						if (!(model instanceof IBSD)) {
-							graph.displayMessage("Statistics mode: incompatible settings");
+						FixationData fixData = checkFixation(graph);
+						if (fixData == null)
 							continue;
-						}
-						Module newPop = graph.getModule();
-						if (newPop != pop) {
-							pop = newPop;
-							// cast safe - checked above
-							fixData = ((IBSD) model).getFixationData();
-							if (fixData == null) {
-								graph.displayMessage("Statistics mode: incompatible settings");
-								continue;
-							}
-						}
 						graph.clearMessage();
-						if (fixData != null && !fixData.probRead) {
+						if (!fixData.probRead) {
 							if (graph.getTag() == fixData.typeFixed) {
 								graph.addData(fixData.mutantNode);
 								nSamples++;
@@ -734,30 +725,15 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 
 				case STATISTICS_FIXATION_TIME:
 					// NOTE: not fully ready for multi-species; info which species fixated missing
-					data = null;
-					fixData = null;
-					int nPop = -1;
-					pop = null;
-					int nTrait = -1;
 					for (HistoGraph graph : graphs) {
-						if (!(model instanceof IBSD)) {
-							graph.displayMessage("Statistics mode: incompatible settings");
+						FixationData fixData = checkFixation(graph);
+						if (fixData == null)
 							continue;
-						}
-						Module newPop = graph.getModule();
-						if (newPop != pop) {
-							pop = newPop;
-							// cast safe - checked above
-							fixData = ((IBSD) model).getFixationData();
-							if (fixData == null) {
-								graph.displayMessage("Statistics mode: incompatible settings");
-								continue;
-							}
-							nPop = pop.getNPopulation();
-							nTrait = pop.getNTraits();
-						}
+						Module pop = graph.getModule();
+						int nPop = pop.getNPopulation();
+						int nTrait = pop.getNTraits();
 						graph.clearMessage();
-						if (fixData != null && !fixData.timeRead) {
+						if (!fixData.timeRead) {
 							int iNode = fixData.mutantNode;
 							if (graph.getTag() == fixData.typeFixed) {
 								if (iNode < 0 || nPop > MAX_BINS)
@@ -793,6 +769,18 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 		}
 		for (HistoGraph graph : graphs)
 			graph.paint(force);
+	}
+
+	private FixationData checkFixation(HistoGraph graph) {
+		if (!(model instanceof IBSD) || !model.permitsMode(Mode.STATISTICS_SAMPLE)) {
+			graph.displayMessage("Fixation: incompatible settings");
+			return null;
+		}
+		// cast safe - checked above
+		FixationData fixData = ((IBSD) model).getFixationData();
+		if (fixData == null)
+			graph.displayMessage("Fixation: incompatible settings");
+		return fixData;
 	}
 
 	@Override
