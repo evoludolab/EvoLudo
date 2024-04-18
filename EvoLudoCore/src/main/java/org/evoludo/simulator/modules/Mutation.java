@@ -251,10 +251,10 @@ public abstract class Mutation {
 		 */
 		public final CLOption clo = new CLOption("mutations", "0.0",
 				EvoLudo.catModule,
-				"--mutations <p> [<t> [<r> [thermal|uniform]]]  with\n" +
+				"--mutations <p> [<t> [thermal|uniform [<r>]]]  with\n" +
 				"             p: mutation probability\n" + //
-				"             r: mutation range\n" + //
 				"       process: reproduction or cosmic rays\n" + //
+				"             r: mutation range\n" + //
 				"             t: mutation type, with types:", //
 				new CLODelegate() {
 
@@ -286,18 +286,18 @@ public abstract class Mutation {
 							mut.type = Type.NONE;
 							switch (args.length) {
 								case 4:
-									mut.uniform = args[3].toLowerCase().startsWith("u");
-									//$FALL-THROUGH$
-								case 3:
-									mut.range = CLOParser.parseDouble(args[2]);
+									mut.range = CLOParser.parseDouble(args[3]);
 									if (mut.range < 1.0) {
 										mut.type = Type.NONE;
 										module.logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
-												"mutation range '" + args[2] + "' invalid - using '"
+												"mutation range '" + args[3] + "' invalid - using '"
 												+ mut.type + "'");
 										success = false;
 										continue;
 									}
+									//$FALL-THROUGH$
+								case 3:
+									mut.uniform = args[2].toLowerCase().startsWith("u");
 									//$FALL-THROUGH$
 								case 2:
 									Type mutt = (Type) clo.match(args[1]);
