@@ -153,7 +153,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 			for (Module mod : species) {
 				if (!(mod instanceof HasHistogram.StatisticsProbability || mod instanceof HasHistogram.StatisticsTime))
 					return false;
-				if (((IBSDPopulation) mod.getIBSPopulation()).getInitType() != InitType.MUTANT)
+				if (!((IBSDPopulation) mod.getIBSPopulation()).getInitType().statisticsOk())
 					return false;
 			}
 		}
@@ -301,12 +301,22 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		MONO("monomorphic", "monomorphic initialization with trait <t[,v]>"),
 
 		/**
-		 * Single mutant trait {@code m} in random location of otherwise homogeneous
-		 * population with trait {@code r}. For modules that admit vacant sites, their
+		 * Single mutant with trait {@code m} in otherwise homogeneous population with
+		 * trait {@code r}. The mutant is placed in a location chosen uniformly at
+		 * random (uniform initialization). For modules that admit vacant sites, their
 		 * frequency is {@code v}. The parameters are specified through the argument of
 		 * the format {@code m,r[,v]}.
 		 */
-		MUTANT("mutant", "mutant in homogeneous population <m,r[,v]>"),
+		MUTANT("mutant", "uniformly distributed, <m,r[,v]>"),
+
+		/**
+		 * Single mutant with trait {@code m} in otherwise homogeneous population with
+		 * trait {@code r}. The mutant is placed in a random location with probability
+		 * proportional to number of incoming links (temperature initialization). For
+		 * modules that admit vacant sites, their frequency is {@code v}. The parameters
+		 * are specified through the argument of the format {@code m,r[,v]}.
+		 */
+		TEMPERATURE("temperature", "temperature distribution, <m,r[,v]>"),
 
 		/**
 		 * Symmetric initial distribution, possibly generating evolutionary
@@ -377,6 +387,15 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		 */
 		public double[] getArgs() {
 			return args;
+		}
+
+		/**
+		 * Check if the initialization type is suitable for statistics.
+		 * 
+		 * @return {@code true} if suitable for statistics
+		 */
+		public boolean statisticsOk() {
+			return this.equals(STATISTICS) || this.equals(MUTANT) || this.equals(TEMPERATURE);
 		}
 	}
 

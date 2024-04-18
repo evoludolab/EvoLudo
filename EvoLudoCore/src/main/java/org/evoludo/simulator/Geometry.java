@@ -397,7 +397,7 @@ public class Geometry {
 		 * @see Geometry#initGeometrySquare()
 		 * @see Geometry#initGeometrySquareVonNeumann2nd(int, int, int)
 		 */
-		SQUARE_NEUMANN_2ND("n2", "square lattice (von Neumann)"),
+		SQUARE_NEUMANN_2ND("n2", "square lattice, diagonal neighbours"),
 
 		/**
 		 * Square lattice (Moore neighbourhood). Eight nearest neighbours (chess kings

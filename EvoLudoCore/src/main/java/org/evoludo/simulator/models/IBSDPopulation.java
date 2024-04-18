@@ -1915,6 +1915,10 @@ public class IBSDPopulation extends IBSPopulation {
 				initMutant();
 				break;
 
+			case TEMPERATURE:
+				initTemperature();
+				break;
+
 			case KALEIDOSCOPE:
 				initKaleidoscope();
 				break;
@@ -2023,14 +2027,24 @@ public class IBSDPopulation extends IBSPopulation {
 	 */
 	protected void initStatistics() {
 		FixationData fix = ((IBSD) engine.getModel()).getFixationData();
-		fix.mutantNode = initMutant();
+		switch (initType) {
+			case MUTANT:
+				fix.mutantNode = initMutant();
+				break;
+			case TEMPERATURE:
+				fix.mutantNode = initTemperature();
+				break;
+			default:
+				throw new Error("invalid initType (" + initType + ") for statistics.");
+		}
 		fix.mutantTrait = strategies[fix.mutantNode];
 		// this assumes InitType.MUTANT
 		fix.residentTrait = (int) initType.args[1];
 	}
 
 	/**
-	 * Monomorphic initial configuration with a single randomly placed mutant.
+	 * Monomorphic initial configuration with a single mutant placed in a location
+	 * chosen uniformly at random (uniform initialization, cosmic rays).
 	 * 
 	 * @return the location of the mutant
 	 * 
@@ -2066,6 +2080,37 @@ public class IBSDPopulation extends IBSPopulation {
 		strategies[loc] = mutantType;
 		strategiesTypeCount[mutantType]++;
 		return loc;
+	}
+
+	/**
+	 * Monomorphic initial configuration with a single mutant placed in a random
+	 * location chosen with probability proprtional to the number of incoming links
+	 * (temperature initialization, errors in reproduction).
+	 * 
+	 * @return the location of the mutant
+	 * 
+	 * @see InitType#TEMPERATURE
+	 */
+	protected int initTemperature() {
+		int mutant = initMutant();
+		if (interaction.isRegular)
+			return mutant;
+		int mutantType = strategies[mutant];
+		int residentType = (int) initType.args[1];
+		// revert mutant back to resident
+		strategies[mutant] = residentType;
+		int nLinks = ArrayMath.norm(interaction.kin);
+		int rand = random0n(nLinks);
+		int idx = -1;
+		while (rand >= 0) {
+			rand -= interaction.kin[++idx];
+		}
+		if (strategies[idx] == VACANT) {
+			strategiesTypeCount[VACANT]--;
+			strategiesTypeCount[residentType]++;
+		}
+		strategies[idx] = mutantType;
+		return idx;
 	}
 
 	/**
