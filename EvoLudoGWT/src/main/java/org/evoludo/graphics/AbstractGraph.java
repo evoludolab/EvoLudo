@@ -659,6 +659,8 @@ public abstract class AbstractGraph extends FocusPanel
 
 	/**
 	 * Draw the graph. For re-drawing the graph, set {@code force} to {@code true}.
+	 * 
+	 * @param force {@code true} to force re-drawing of graph
 	 */
 	public abstract void paint(boolean force);
 

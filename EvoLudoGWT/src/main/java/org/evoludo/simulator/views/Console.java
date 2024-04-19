@@ -57,22 +57,53 @@ import com.google.gwt.user.client.ui.Widget;
  */
 public class Console extends AbstractView implements ContextMenu.Provider {
 
+	/**
+	 * The console log widget. The log is implemented as a ring buffer to store a
+	 * limited number of messages. Once the buffer capacity is exceeded, the oldest
+	 * messages are discarded. If the buffer capacity is set to {@code 0} the number
+	 * of messsages is unlimited. The buffer is displayed in a HTML widget.
+	 */
 	public static class Log extends HTML implements ContextMenu.Listener {
-		RingBuffer<String> buffer = new RingBuffer<>(1000);
 
+		/**
+		 * The default capacity of the log buffer.
+		 */
+		public final static int DEFAULT_CAPACITY = 1000;
+
+		/**
+		 * The buffer to store the log messages.
+		 */
+		RingBuffer<String> buffer = new RingBuffer<>(DEFAULT_CAPACITY);
+
+		/**
+		 * Clear the log buffer and the display.
+		 */
 		public void clear() {
 			buffer.clear();
 			setHTML("");
 		}
 
+		/**
+		 * Add a message to the log buffer.
+		 * 
+		 * @param msg the message to add
+		 */
 		public void add(String msg) {
 			buffer.append(msg);
 		}
 
+		/**
+		 * Replace the most recent entry in the log with {@code msg}.
+		 * 
+		 * @param msg the replacement entry
+		 */
 		public void replace(String msg) {
 			buffer.replace(msg);
 		}
 
+		/**
+		 * Show the log buffer in the HTML widget.
+		 */
 		public void show() {
 			StringBuilder sb = new StringBuilder();
 			ListIterator<String> bufit = buffer.listIterator(buffer.size());
@@ -87,9 +118,23 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 		}
 	}
 
+	/**
+	 * The console log.
+	 */
 	protected Log log;
+
+	/**
+	 * The context menu for the console.
+	 */
 	protected ContextMenu contextMenu;
 
+	/**
+	 * Create a new console log. This keeps a record of all messages logged by the
+	 * model. By default the number of log entries is set to
+	 * {@value Log#DEFAULT_CAPACITY}.
+	 * 
+	 * @param engine the pacemaker for running the model
+	 */
 	public Console(EvoLudoGWT engine) {
 		super(engine, Model.Data.UNDEFINED);
 	}
@@ -160,8 +205,7 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 			if (level != Level.CONFIG)
 				pretty += "<br/>";
 			log.setHTML(log.getHTML() + pretty);
-		}
-		else {
+		} else {
 			// abuse of Level.CONFIG for progress (GWT does not support custom levels)
 			if (level != Level.CONFIG)
 				log.add(pretty);
@@ -184,7 +228,7 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * The console ignores most shortcuts but redefines the following:
+	 * The console ignores most keyboard shortcuts but redefines the following:
 	 * <dl>
 	 * <dt>{@code Backspace, Delete}</dt>
 	 * <dd>Clear the log.</dd>
@@ -205,6 +249,12 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 		return super.keyUpHandler(key);
 	}
 
+	/**
+	 * Set the capacity of the log buffer. If the buffer capacity is set to
+	 * {@code 0} the number of messsages is unlimited.
+	 * 
+	 * @param capacity the capacity of the log buffer
+	 */
 	public void setLogCapacity(int capacity) {
 		log.buffer.setCapacity(capacity);
 		String label = (capacity / 1000) + "k";

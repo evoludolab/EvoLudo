@@ -211,8 +211,7 @@ public class RingBuffer<T> implements Iterable<T> {
 				bufferDepth = depth;
 			else if (bufferDepth != depth)
 				bufferDepth = -1;
-		}
-		else {
+		} else {
 			// mixing arrays an objects?
 			if (bufferDepth != 0)
 				bufferDepth = -2;
@@ -227,11 +226,12 @@ public class RingBuffer<T> implements Iterable<T> {
 
 	/**
 	 * Helper method to deal with {@code entry} representing an array. Returns
-	 * the length of the array or {@code -1} if it is not an array. 
+	 * the length of the array or {@code -1} if it is not an array.
 	 * 
 	 * @param entry the buffer entry
-	 * @return the length of the array or {@code -1} if {@code entry} is not an array
-	 * @throws IllegalArgumentException if unable to determine array type of 
+	 * @return the length of the array or {@code -1} if {@code entry} is not an
+	 *         array
+	 * @throws IllegalArgumentException if unable to determine array type of
 	 *                                  <code>entry</code>
 	 */
 	protected int arrayLength(T entry) {
@@ -329,8 +329,7 @@ public class RingBuffer<T> implements Iterable<T> {
 				bufferDepth = depth;
 			else if (bufferDepth != depth)
 				bufferDepth = -1;
-		}
-		else {
+		} else {
 			// mixing arrays an objects?
 			if (bufferDepth != 0)
 				bufferDepth = -2;
@@ -357,10 +356,10 @@ public class RingBuffer<T> implements Iterable<T> {
 	}
 
 	/**
-	 * Iterates over all elements in this buffer starting with the most recent
-	 * entry.
+	 * Iterates backwards over all elements in this buffer starting with the most
+	 * recent entry.
 	 */
-	private class Itr implements Iterator<T> {
+	private class BckItr implements Iterator<T> {
 
 		/**
 		 * Index of current element in Iterator.
@@ -380,9 +379,10 @@ public class RingBuffer<T> implements Iterable<T> {
 	}
 
 	/**
-	 * Iterates over all elements in this buffer starting with the oldest entry.
+	 * Iterates forward over all elements in this buffer starting with the oldest
+	 * entry.
 	 */
-	private class BckItr implements Iterator<T> {
+	private class FwdItr implements Iterator<T> {
 
 		/**
 		 * Index of current element in Iterator.
@@ -401,12 +401,24 @@ public class RingBuffer<T> implements Iterable<T> {
 		}
 	}
 
-	private class LstItr extends Itr implements ListIterator<T> {
+	/**
+	 * Iterates forward over all elements in this buffer starting with the oldest
+	 * entry.
+	 */
+	private class LstItr extends FwdItr implements ListIterator<T> {
 
+		/**
+		 * Creates a new {@code ListIterator} over all elements in this buffer starting
+		 * with the oldest entry.
+		 */
 		public LstItr() {
 			super();
 		}
 
+		/**
+		 * Creates a new {@code ListIterator} over all elements in this buffer starting
+		 * with the entry at {@code index}.
+		 */
 		public LstItr(int index) {
 			super();
 			cursor = index;
@@ -450,17 +462,35 @@ public class RingBuffer<T> implements Iterable<T> {
 
 	@Override
 	public Iterator<T> iterator() {
-		return new Itr();
-	}
-
-	public Iterator<T> ordered() {
 		return new BckItr();
 	}
 
+	/**
+	 * Returns an iterator over all elements in this buffer in chronological order.
+	 * 
+	 * @return the forward iterator
+	 */
+	public Iterator<T> ordered() {
+		return new FwdItr();
+	}
+
+	/**
+	 * Returns a list iterator over all elements in this buffer in chronological
+	 * order.
+	 * 
+	 * @return the forward list iterator
+	 */
 	public ListIterator<T> listIterator() {
 		return new LstItr();
 	}
 
+	/**
+	 * Returns a list iterator over all elements in this buffer in chronological
+	 * order starting with entry at {@code index}.
+	 * 
+	 * @param index the index of the first element to be returned
+	 * @return the forward list iterator
+	 */
 	public ListIterator<T> listIterator(int index) {
 		return new LstItr(index);
 	}
