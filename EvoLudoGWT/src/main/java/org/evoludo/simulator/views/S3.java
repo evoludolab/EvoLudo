@@ -186,7 +186,7 @@ public class S3 extends AbstractView {
 	}
 
 	@Override
-	protected int[] exportTypes() {
-		return new int[] { EXPORT_SVG, EXPORT_PNG };
+	protected ExportType[] exportTypes() {
+		return new ExportType[] { ExportType.SVG, ExportType.PNG };
 	}
 }

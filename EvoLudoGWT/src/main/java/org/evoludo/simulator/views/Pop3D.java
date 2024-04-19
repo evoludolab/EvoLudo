@@ -604,8 +604,8 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 	}
 
 	@Override
-	protected int[] exportTypes() {
-		return new int[] { EXPORT_PNG };
-//		return new int[] { EXPORT_SVG, EXPORT_PNG };
+	protected ExportType[] exportTypes() {
+		return new ExportType[] { ExportType.PNG };
+//		return new ExportType[] { ExportType.SVG, ExportType.PNG };
 	}
 }

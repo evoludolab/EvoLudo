@@ -243,21 +243,21 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 		switch (key) {
 			case "S":
 				// save svg snapshot (if supported)
-				if (!hasExportType(EXPORT_SVG))
+				if (!hasExportType(ExportType.SVG))
 					return false;
 				exportSVG();
 				break;
 			case "P":
 				// save png snapshot (if supported)
-				if (!hasExportType(EXPORT_PNG))
+				if (!hasExportType(ExportType.PNG))
 					return false;
 				exportPNG();
 				break;
 			case "C":
 				// export csv data (if supported)
-				if (!hasExportType(EXPORT_DATA))
+				if (!hasExportType(ExportType.STAT_DATA))
 					return false;
-				exportData();
+				exportStatData();
 				break;
 			case "F":
 				// toggle fullscreen (if supported)
@@ -274,9 +274,9 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 		return true;
 	}
 
-	private boolean hasExportType(int export) {
-		for (int e : exportTypes())
-			if (e == export)
+	private boolean hasExportType(ExportType type) {
+		for (ExportType e : exportTypes())
+			if (e == type)
 				return true;
 		return false;
 	}
@@ -363,16 +363,18 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 
 		// process exports context menu (suppress in ePub, regardless of whether a
 		// standalone lab or not)
-		int[] types = exportTypes();
+		ExportType[] types = exportTypes();
 		boolean isEPub = engine.isEPub;
 		if (!isEPub && types != null && exportSubmenu == null) {
 			int nTypes = types.length;
 			exportSubmenu = new ContextMenu(contextMenu);
 			// always include option to export current state
-			exportSubmenu.add(new ContextMenuItem(exportMenuTitle[EXPORT_STATE], new ExportCommand(EXPORT_STATE)));
+			exportSubmenu.add(new ContextMenuItem(ExportType.STATE.toString(), new ExportCommand(ExportType.STATE)));
 			for (int n = 0; n < nTypes; n++) {
-				int t = types[n];
-				exportSubmenu.add(new ContextMenuItem(exportMenuTitle[t], new ExportCommand(t)));
+				ExportType t = types[n];
+				if (t == ExportType.STATE)
+					continue;
+				exportSubmenu.add(new ContextMenuItem(t.toString(), new ExportCommand(t)));
 			}
 		}
 		if (exportSubmenu != null) {
@@ -544,46 +546,96 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 		return null;
 	}-*/;
 
-	// create SVG graphics and open in new window/tab
-	protected static final int EXPORT_SVG = 1;
-	// create PNG graphics and open in new window/tab
-	protected static final int EXPORT_PNG = 2;
-	// export statistics data
-	protected static final int EXPORT_DATA = 3;
-	// export state (structure, fitness, parameters)
-	protected static final int EXPORT_STATE = 4;
+	/**
+	 * The available export data types:
+	 * <dl>
+	 * <dt>SVG</dt>
+	 * <dd>scalable vector graphics format, {@code svg}</dd>
+	 * <dt>PDF</dt>
+	 * <dd>portable document format, {@code pdf} (not yet implemented).</dd>
+	 * <dt>EPS</dt>
+	 * <dd>encapsulated postscript format, {@code eps} (not yet implemented).</dd>
+	 * <dt>PNG</dt>
+	 * <dd>portable network graphics format, {@code png}</dd>
+	 * <dt>STAT_DATA</dt>
+	 * <dd>statistics data as comma separated list, {@code csv}</dd>
+	 * <dt>TRAJ_DATA</dt>
+	 * <dd>trajectory data as comma separated list, {@code csv} (not yet
+	 * implemented).</dd>
+	 * <dt>STATE</dt>
+	 * <dd>current state of simulation, {@code plist}</dd>
+	 * </dl>
+	 */
+	public enum ExportType {
+		/**
+		 * Scalable vector graphics format, {@code svg}
+		 */
+		SVG("Vector graphics (svg)"),
 
-	protected static final String[] exportMenuTitle = { "-", // EXPORT_NONE
-			"Vector graphics (svg)", // EXPORT_SVG
-			"Bitmap graphics (png)", // EXPORT_PNG
-			"Statistics (csv)", // EXPORT_DATA
-			"State (plist)" // EXPORT_STATE
-	};
-	// further possibilities for the future
-	// protected static final int EXPORT_PDF = 2;
-	// protected static final int EXPORT_EPS = 3;
+		/**
+		 * Portable document format, {@code pdf} (not yet implemented).
+		 */
+		PDF("Vector graphics (pdf)"),
+
+		/**
+		 * Encapsulated postscript format, {@code eps} (not yet implemented).
+		 */
+		EPS("Vector graphics (eps)"),
+
+		/**
+		 * Portable network graphics format, {@code png}
+		 */
+		PNG("Bitmap graphics (png)"),
+
+		/**
+		 * Statistics data as comma separated list, {@code csv}
+		 */
+		STAT_DATA("Statistics (csv)"),
+
+		/**
+		 * Trajectory data as comma separated list, {@code csv} (not yet implemented).
+		 */
+		TRAJ_DATA("Trajectory (csv)"),
+
+		/**
+		 * Current state of simulation, {@code plist}
+		 */
+		STATE("State (plist)");
+
+		String title;
+
+		ExportType(String title) {
+			this.title = title;
+		}
+
+		@Override
+		public String toString() {
+			return title;
+		}
+	}
 
 	/**
-	 * Return the list of export types that are acceptable for _all_ graphs in this view.
+	 * Return the list of export types that are acceptable for _all_ graphs in this
+	 * view.
 	 *
 	 * @return the list of viable export types
 	 */
-	protected int[] exportTypes() {
+	protected ExportType[] exportTypes() {
 		return null;
 	}
 
-	protected void export(int exportType) {
-		switch (exportType) {
-			case EXPORT_SVG:
+	protected void export(ExportType type) {
+		switch (type) {
+			case SVG:
 				exportSVG();
 				break;
-			case EXPORT_PNG:
+			case PNG:
 				exportPNG();
 				break;
-			case EXPORT_DATA:
-				exportData();
+			case STAT_DATA:
+				exportStatData();
 				break;
-			case EXPORT_STATE:
+			case STATE:
 				engine.exportState();
 				break;
 			default:
@@ -650,7 +702,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	 * must be overridden by subclasses that return EXPORT_DATA among their
 	 * exportTypes
 	 */
-	protected void exportData() {
+	protected void exportStatData() {
 	}
 
 	protected static native MyContext2d _createSVGContext(int width, int height) /*-{
@@ -663,10 +715,10 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	}-*/;
 
 	public class ExportCommand implements Command {
-		int exportType = -1;
+		ExportType exportType;
 
-		public ExportCommand(int exportType) {
-			this.exportType = exportType;
+		public ExportCommand(ExportType type) {
+			exportType = type;
 		}
 
 		@Override

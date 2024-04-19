@@ -336,8 +336,8 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 	}
 
 	@Override
-	protected int[] exportTypes() {
-		return new int[] { EXPORT_SVG, EXPORT_PNG };
+	protected ExportType[] exportTypes() {
+		return new ExportType[] { ExportType.SVG, ExportType.PNG };
 	}
 
 	public class TraitCommand implements Command {

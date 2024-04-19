@@ -1119,20 +1119,20 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 	}
 
 	@Override
-	protected int[] exportTypes() {
+	protected ExportType[] exportTypes() {
 		switch( type ) {
 			case STATISTICS_FIXATION_PROBABILITY:
 			case STATISTICS_FIXATION_TIME:
-				return new int[] { EXPORT_SVG, EXPORT_PNG, EXPORT_DATA };
+				return new ExportType[] { ExportType.SVG, ExportType.PNG, ExportType.STAT_DATA };
 			case DEGREE:
 			default:
-				return new int[] { EXPORT_SVG, EXPORT_PNG };
+				return new ExportType[] { ExportType.SVG, ExportType.PNG };
 		}
 	}
 
 	@SuppressWarnings("null")
 	@Override
-	protected void exportData() {
+	protected void exportStatData() {
 // NOTE: consider exporting more data (e.g. overall fix probs/times, sdev, sample count); initial configuration for statistics, structure 
 		String export;
 		switch( type ) {
