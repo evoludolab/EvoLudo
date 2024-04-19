@@ -664,7 +664,7 @@ public abstract class IBS implements Model.IBS {
 					pop.isConsistent();
 					hasConverged &= pop.checkConvergence();
 					// update generation time and real time increments
-					double rate = pop.getModule().getSpeciesUpdateRate();
+					double rate = mod.getSpeciesUpdateRate();
 					// if wPopTot is based on maximum population size it is a constant
 					// wPopTot += pop.getPopulationSize() * rate;
 					double sum = pop.getTotalFitness();
