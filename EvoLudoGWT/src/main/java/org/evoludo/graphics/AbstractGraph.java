@@ -447,6 +447,15 @@ public abstract class AbstractGraph extends FocusPanel
 	protected static final int DEFAULT_BUFFER_SIZE = 10000;
 
 	/**
+	 * Return the {@link RingBuffer<double[]>} containing historical data, if applicable.
+	 * 
+	 * @return the buffer with historical data or {@code null}
+	 */
+	public RingBuffer<double[]> getBuffer() {
+		return buffer;
+	}
+
+	/**
 	 * The minimum time between updates in milliseconds.
 	 */
 	public static final int MIN_MSEC_BETWEEN_UPDATES = 100;	// max 10 updates per second
@@ -1675,19 +1684,23 @@ public abstract class AbstractGraph extends FocusPanel
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * The graph reacts to different kinds of touches:
+	 * The graph reacts to different kinds of touches: short touches or taps
+	 * ({@code &lt;250} msec) and long touches ({@code &gt;250} msec). Long touches
+	 * trigger different actions depending on the number of fingers:
 	 * <dl>
-	 * <dt>long touch with two fingers ({@code &gt;250} msec)
-	 * <dd>initiate pinching zoom.
+	 * <dt>Single finger
+	 * <dd>Initiate shifting the view
+	 * <dt>Two fingers
+	 * <dd>Initiate pinching zoom.
 	 * </dl>
 	 * 
 	 * @see #onTouchMove(TouchMoveEvent)
 	 */
 	@Override
 	public void onTouchStart(TouchStartEvent event) {
-		JsArray<Touch> touches = event.getTouches();
 		if (Duration.currentTimeMillis() - touchEndTime > 250.0) {
 			// long touch(es)
+			JsArray<Touch> touches = event.getTouches();
 			switch (touches.length()) {
 				case 1:
 					// initiate shift view
@@ -1756,8 +1769,10 @@ public abstract class AbstractGraph extends FocusPanel
 	 * <p>
 	 * The graph reacts to different kinds of touch moves:
 	 * <dl>
-	 * <dt>move two fingers
-	 * <dd>process pinching zoom.
+	 * <dt>Move one finger
+	 * <dd>Shift view
+	 * <dt>Pinch two fingers
+	 * <dd>Zoom view
 	 * </dl>
 	 */
 	@Override

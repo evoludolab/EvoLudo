@@ -32,23 +32,27 @@
 
 package org.evoludo.simulator.views;
 
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.logging.Logger;
 
 import org.evoludo.EvoLudoWeb;
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.MyContext2d;
+import org.evoludo.simulator.EvoLudoGWT;
+import org.evoludo.simulator.Resources;
+import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.ui.FullscreenChangeEvent;
 import org.evoludo.ui.FullscreenChangeHandler;
 import org.evoludo.ui.HasFullscreenChangeHandlers;
-import org.evoludo.simulator.EvoLudoGWT;
-import org.evoludo.simulator.Resources;
-import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.modules.Module;
+import org.evoludo.util.Formatter;
+import org.evoludo.util.RingBuffer;
 
 import com.google.gwt.canvas.client.Canvas;
 import com.google.gwt.canvas.dom.client.Context2d;
@@ -57,6 +61,7 @@ import com.google.gwt.core.client.ScriptInjector;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Style.Position;
 import com.google.gwt.event.shared.HandlerRegistration;
+import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.ui.ComplexPanel;
 import com.google.gwt.user.client.ui.Composite;
@@ -588,17 +593,24 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 		PNG("Bitmap graphics (png)"),
 
 		/**
-		 * Statistics data as comma separated list, {@code csv}
+		 * Statistics data as a comma separated list, {@code csv}
 		 */
 		STAT_DATA("Statistics (csv)"),
 
 		/**
-		 * Trajectory data as comma separated list, {@code csv} (not yet implemented).
+		 * Trajectory data as a comma separated list, {@code csv} (not yet implemented).
 		 */
 		TRAJ_DATA("Trajectory (csv)"),
 
 		/**
+		 * Mean state data as a comma separated list, {@code csv} (not yet implemented).
+		 */
+		MEAN_DATA("Mean state (csv)"),
+
+		/**
 		 * Current state of simulation, {@code plist}
+		 * 
+		 * @see EvoLudo#exportState()
 		 */
 		STATE("State (plist)");
 
@@ -634,6 +646,9 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 				break;
 			case STAT_DATA:
 				exportStatData();
+				break;
+			case MEAN_DATA:
+				exportMeanData();
 				break;
 			case STATE:
 				engine.exportState();
@@ -699,10 +714,50 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	}
 
 	/**
-	 * must be overridden by subclasses that return EXPORT_DATA among their
-	 * exportTypes
+	 * Export the statistics data.
+	 * <p>
+	 * <strong>Important:</strong> Must be overridden by subclasses that return
+	 * {@link ExportType#STAT_DATA} among their export data types.
+	 * 
+	 * @see #exportTypes()
 	 */
 	protected void exportStatData() {
+	}
+
+	/**
+	 * Export the mean data. By default this returns the buffer data as a comma
+	 * separated list.
+	 * 
+	 * @see #exportTypes()
+	 */
+	protected void exportMeanData() {
+		StringBuilder export = new StringBuilder("# data exported at " + 
+			DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + "\n");
+		export.append("# " + getName() + "\n");
+		int header = export.length();
+		// focus on Mean for now
+		RingBuffer<double[]> buffer = null;
+		for (AbstractGraph graph : graphs) {
+			RingBuffer<double[]> newbuffer = graph.getBuffer();
+			if (newbuffer == null || newbuffer.isEmpty() || newbuffer == buffer)
+				continue;
+			buffer = newbuffer;
+			String name = graph.getStyle().label;
+			if (name != null)
+				export.append("# " + name + "\n");
+			String legend = "time";
+			for (int i=0; i<buffer.depth() - 1; i++) {
+				legend += ", " + model.getMeanName(i);
+			}
+			export.append("# " + legend + "\n");
+			Iterator<double[]> entry = buffer.ordered();
+			while (entry.hasNext()) {
+				export.append(Formatter.format(entry.next(), 8) + "\n");
+			}
+		}
+		if (export.length() == header)
+			return;
+		EvoLudoWeb._export("data:text/csv;base64," + EvoLudoWeb.b64encode(export.toString()), "evoludo_mean.csv");
 	}
 
 	protected static native MyContext2d _createSVGContext(int width, int height) /*-{

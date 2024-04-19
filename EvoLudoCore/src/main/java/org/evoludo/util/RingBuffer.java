@@ -356,7 +356,12 @@ public class RingBuffer<T> implements Iterable<T> {
 		return replace(0, entry);
 	}
 
+	/**
+	 * Iterates over all elements in this buffer starting with the most recent
+	 * entry.
+	 */
 	private class Itr implements Iterator<T> {
+
 		/**
 		 * Index of current element in Iterator.
 		 */
@@ -369,7 +374,30 @@ public class RingBuffer<T> implements Iterable<T> {
 
 		@Override
 		public T next() {
-			return buffer.get((bufferPtr - (cursor++) + buffer.size()) % buffer.size());
+			int size = buffer.size();
+			return buffer.get((bufferPtr - (cursor++) + size) % size);
+		}
+	}
+
+	/**
+	 * Iterates over all elements in this buffer starting with the oldest entry.
+	 */
+	private class BckItr implements Iterator<T> {
+
+		/**
+		 * Index of current element in Iterator.
+		 */
+		int cursor = buffer.size();
+
+		@Override
+		public boolean hasNext() {
+			return cursor > 0;
+		}
+
+		@Override
+		public T next() {
+			int size = buffer.size();
+			return buffer.get((bufferPtr - (--cursor) + size) % size);
 		}
 	}
 
@@ -423,6 +451,10 @@ public class RingBuffer<T> implements Iterable<T> {
 	@Override
 	public Iterator<T> iterator() {
 		return new Itr();
+	}
+
+	public Iterator<T> ordered() {
+		return new BckItr();
 	}
 
 	public ListIterator<T> listIterator() {

@@ -1596,6 +1596,9 @@ public abstract class EvoLudo
 	/**
 	 * Export the current state of the engine using the appropriate means available
 	 * in the current environment (GWT/JRE).
+	 * 
+	 * @see org.evoludo.simulator.EvoLudoGWT#exportState()
+	 * @see org.evoludo.simulator.EvoLudoJRE#exportState()
 	 */
 	public abstract void exportState();
 

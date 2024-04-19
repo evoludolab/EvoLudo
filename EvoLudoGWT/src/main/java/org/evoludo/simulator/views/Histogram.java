@@ -1165,6 +1165,6 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 			for( int n=0; n<nData; n++ )
 				export += graph.bin2x(n)+",\t"+graph.getData(n)+"\n";
 		}
-		EvoLudoWeb._export("data:text/csv;base64,"+EvoLudoWeb.b64encode(export), "evoludo.csv");
+		EvoLudoWeb._export("data:text/csv;base64,"+EvoLudoWeb.b64encode(export), "evoludo_stat.csv");
 	}
 }

@@ -370,6 +370,6 @@ graphs2mods.put(graph, species.get(cmodel!=null ? 0 : n));
 
 	@Override
 	protected ExportType[] exportTypes() {
-		return new ExportType[] { ExportType.SVG, ExportType.PNG };
+		return new ExportType[] { ExportType.SVG, ExportType.PNG, ExportType.MEAN_DATA };
 	}
 }

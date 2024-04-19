@@ -251,18 +251,6 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 	}
 
 	/**
-	 * Get the buffer with historical data about previous states of the network.
-	 * This is applicable only if {@code hasHistory()} returns {@code true}, i.e.
-	 * currently only for {@code Geometry.Type#LINEAR}. If no historical data
-	 * collected this returns {@code null}.
-	 * 
-	 * @return the buffer with historical data or {@code null}
-	 */
-	public RingBuffer<String[]> getBuffer() {
-		return buffer;
-	}
-
-	/**
 	 * Get the graphical 2D network representation of the graph represented by
 	 * geometry.
 	 * 
