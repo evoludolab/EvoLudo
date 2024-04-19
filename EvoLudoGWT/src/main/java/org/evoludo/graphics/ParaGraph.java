@@ -35,12 +35,14 @@ package org.evoludo.graphics;
 import java.util.Iterator;
 
 import org.evoludo.geom.Point2D;
+import org.evoludo.graphics.AbstractGraph.HasTrajectory;
 import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
+import org.evoludo.util.Formatter;
 import org.evoludo.util.RingBuffer;
 
 import com.google.gwt.core.client.Duration;
@@ -56,7 +58,7 @@ import com.google.gwt.user.client.Command;
  *
  * @author Christoph Hauert
  */
-public class ParaGraph extends AbstractGraph implements Zooming, Shifting, //
+public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTrajectory, //
 	DoubleClickHandler {
 
 	protected int nStates;
@@ -378,5 +380,22 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, //
 		menu.add(clearMenu);
 		menu.add(autoscaleMenu);
 		super.populateContextMenuAt(menu, x, y);
+	}
+
+	@Override
+	public void exportTrajectory(StringBuilder export) {
+		if (buffer.isEmpty())
+			return;
+		// extract the parametric data from buffer
+		export.append("# time, " + map.getXAxisLabel() + ", " + map.getYAxisLabel() + "\n");
+		Point2D point = new Point2D();
+		Iterator<double[]> entry = buffer.ordered();
+		while (entry.hasNext()) {
+			double[] data = entry.next();
+			map.data2Phase(data, point);
+			export.append(Formatter.format(data[0], 8) + ", " + //
+					Formatter.format(point.x, 8) + ", " + //
+					Formatter.format(point.y, 8) + "\n");
+		}
 	}
 }

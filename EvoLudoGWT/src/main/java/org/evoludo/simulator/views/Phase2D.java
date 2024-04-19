@@ -227,7 +227,7 @@ public class Phase2D extends AbstractView {
 
 	@Override
 	protected ExportType[] exportTypes() {
-		return new ExportType[] { ExportType.SVG, ExportType.PNG };
+		return new ExportType[] { ExportType.SVG, ExportType.PNG, ExportType.TRAJ_DATA };
 	}
 
 	public class TraitMap implements Data2Phase {
