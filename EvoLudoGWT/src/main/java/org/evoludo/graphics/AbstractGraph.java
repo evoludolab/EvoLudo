@@ -279,6 +279,19 @@ public abstract class AbstractGraph extends FocusPanel
 	}
 
 	/**
+	 * Graphs that show trajectories and support exporting their data should implement this interface.
+	 */
+	public interface HasTrajectory {
+
+		/**
+		 * Export the trajectory of the graph to {@code export}.
+		 * 
+		 * @param export the string builder to export the trajectory
+		 */
+		public void exportTrajectory(StringBuilder export);
+	}
+
+	/**
 	 * The handler for {@link DoubleClickEvent}s.
 	 */
 	HandlerRegistration doubleClickHandler;

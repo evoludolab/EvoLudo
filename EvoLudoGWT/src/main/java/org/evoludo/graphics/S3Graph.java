@@ -38,6 +38,7 @@ import java.util.Iterator;
 import org.evoludo.geom.Path2D;
 import org.evoludo.geom.Point2D;
 import org.evoludo.geom.Segment2D;
+import org.evoludo.graphics.AbstractGraph.HasTrajectory;
 import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.simulator.ColorMapCSS;
@@ -60,7 +61,7 @@ import com.google.gwt.user.client.ui.Widget;
  *
  * @author Christoph Hauert
  */
-public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
+public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTrajectory, //
 	DoubleClickHandler {
 
 	protected int nStates;
@@ -649,5 +650,21 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, //
 		if (d0 > d2)
 			return 2;
 		return 0;
+	}
+
+	@Override
+	public void exportTrajectory(StringBuilder export) {
+		if (buffer.isEmpty())
+			return;
+		// extract the S3 data from buffer
+		export.append("# time, " + names[order[0]] + ", " + names[order[1]] + ", " + names[order[2]] + "\n");
+		Iterator<double[]> entry = buffer.ordered();
+		while (entry.hasNext()) {
+			double[] s3 = entry.next();
+			export.append(Formatter.format(s3[0], 8) + ", " + //
+					Formatter.format(s3[order[0] + 1], 8) + ", " + //
+					Formatter.format(s3[order[1] + 1], 8) + ", " + //
+					Formatter.format(s3[order[2] + 1], 8) + "\n");
+		}
 	}
 }

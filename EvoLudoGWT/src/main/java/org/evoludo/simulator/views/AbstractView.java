@@ -40,6 +40,7 @@ import java.util.logging.Logger;
 
 import org.evoludo.EvoLudoWeb;
 import org.evoludo.graphics.AbstractGraph;
+import org.evoludo.graphics.AbstractGraph.HasTrajectory;
 import org.evoludo.graphics.AbstractGraph.MyContext2d;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Resources;
@@ -650,6 +651,9 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 			case MEAN_DATA:
 				exportMeanData();
 				break;
+			case TRAJ_DATA:
+				exportTrajData();
+				break;
 			case STATE:
 				engine.exportState();
 				break;
@@ -714,6 +718,18 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	}
 
 	/**
+	 * The header for data exports.
+	 * 
+	 * @return the header as a string builder
+	 */
+	protected StringBuilder exportDataHeader() {
+		StringBuilder export = new StringBuilder("# data exported at " + 
+			DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + "\n");
+		export.append("# " + getName() + "\n");
+		return export;
+	}
+
+	/**
 	 * Export the statistics data.
 	 * <p>
 	 * <strong>Important:</strong> Must be overridden by subclasses that return
@@ -731,9 +747,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	 * @see #exportTypes()
 	 */
 	protected void exportMeanData() {
-		StringBuilder export = new StringBuilder("# data exported at " + 
-			DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + "\n");
-		export.append("# " + getName() + "\n");
+		StringBuilder export = exportDataHeader();
 		int header = export.length();
 		// focus on Mean for now
 		RingBuffer<double[]> buffer = null;
@@ -758,6 +772,25 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 		if (export.length() == header)
 			return;
 		EvoLudoWeb._export("data:text/csv;base64," + EvoLudoWeb.b64encode(export.toString()), "evoludo_mean.csv");
+	}
+
+	/**
+	 * Export the trajectories. By default this returns the buffer data as a comma
+	 * separated list.
+	 * 
+	 * @see #exportTypes()
+	 */
+	protected void exportTrajData() {
+		StringBuilder export = exportDataHeader();
+		int header = export.length();
+		for (AbstractGraph graph : graphs) {
+			if (!(graph instanceof HasTrajectory))
+				continue;
+			((HasTrajectory) graph).exportTrajectory(export);
+		}
+		if (export.length() == header)
+			return;
+		EvoLudoWeb._export("data:text/csv;base64," + EvoLudoWeb.b64encode(export.toString()), "evoludo_traj.csv");
 	}
 
 	protected static native MyContext2d _createSVGContext(int width, int height) /*-{
