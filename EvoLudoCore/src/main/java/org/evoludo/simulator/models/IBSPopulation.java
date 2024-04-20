@@ -1229,7 +1229,7 @@ public abstract class IBSPopulation {
 			return pickNeutralNeighbourAt(me, withSelf);
 
 		// mean-field
-		if (reproduction.isType(Geometry.Type.MEANFIELD)) {
+		if (reproduction.getType() == Geometry.Type.MEANFIELD) {
 			debugNModels = 0;
 			if (withSelf)
 				return pickFitFocalIndividual();
@@ -1338,7 +1338,7 @@ public abstract class IBSPopulation {
 	 * @return the index of a neighbour
 	 */
 	private int pickNeutralNeighbourAt(int me, boolean withSelf) {
-		if (reproduction.isType(Geometry.Type.MEANFIELD)) {
+		if (reproduction.getType() == Geometry.Type.MEANFIELD) {
 			debugNModels = 0;
 			if (withSelf)
 				return pickFocalSite();
@@ -1370,7 +1370,7 @@ public abstract class IBSPopulation {
 	 */
 	protected int pickNeighborSiteAt(int me) {
 		// mean-field
-		if (reproduction.isType(Geometry.Type.MEANFIELD))
+		if (reproduction.getType() == Geometry.Type.MEANFIELD)
 			return pickFocalSite(me);
 
 		debugModels = reproduction.out[me];
@@ -2200,7 +2200,7 @@ public abstract class IBSPopulation {
 	 */
 	protected void updatePlayerMoranBirthDeathAt(int parent) {
 		debugFocal = parent;
-		if (reproduction.isType(Geometry.Type.MEANFIELD)) {
+		if (reproduction.getType() == Geometry.Type.MEANFIELD) {
 			debugModel = pickFocalSite();
 			debugNModels = 0;
 		} else
@@ -3083,7 +3083,7 @@ public abstract class IBSPopulation {
 
 		// check sampling in special geometries
 		int nGroup = module.getNGroup();
-		if (interaction.isType(Geometry.Type.SQUARE) && interaction.isRegular && interaction.connectivity > 8 &&
+		if (interaction.getType() == Geometry.Type.SQUARE && interaction.isRegular && interaction.connectivity > 8 &&
 				interactionGroup.isSampling(IBSGroup.SamplingType.ALL) && nGroup > 2 && nGroup < 9) {
 			// if count > 8 then the interaction pattern Group.SAMPLING_ALL with a group
 			// size between 2 and 8
@@ -3094,7 +3094,7 @@ public abstract class IBSPopulation {
 			logger.warning("square " + name + " geometry has incompatible interaction pattern and neighborhood size" +
 					" - using random sampling of interaction partners!");
 		}
-		if (interaction.isType(Geometry.Type.CUBE) && interactionGroup.isSampling(IBSGroup.SamplingType.ALL) &&
+		if (interaction.getType() == Geometry.Type.CUBE && interactionGroup.isSampling(IBSGroup.SamplingType.ALL) &&
 				nGroup > 2 && nGroup <= interaction.connectivity) {
 			// Group.SAMPLING_ALL only works with pairwise interactions or all neighbors;
 			// restrictions do not apply for PDE's
@@ -3107,7 +3107,7 @@ public abstract class IBSPopulation {
 		Geometry reprogeom = (reproduction != null ? reproduction : interaction);
 		if (!populationUpdate.isMoran() && !populationUpdate.getType().equals(PopulationUpdate.Type.ECOLOGY)) {
 			// Moran type updates ignore playerUpdateType
-			if (reprogeom.isType(Geometry.Type.MEANFIELD) && referenceGroup.isSampling(IBSGroup.SamplingType.ALL)) {
+			if (reprogeom.getType() == Geometry.Type.MEANFIELD && referenceGroup.isSampling(IBSGroup.SamplingType.ALL)) {
 				// 010320 using everyone as a reference in mean-field simulations is not
 				// feasible - except for best-response
 				// ecological updates are based on births and deaths rather than references
@@ -3118,20 +3118,20 @@ public abstract class IBSPopulation {
 				}
 			}
 			// best-response in well-mixed populations should skip sampling of references
-			if (reprogeom.isType(Geometry.Type.MEANFIELD) && playerUpdate.getType() == PlayerUpdate.Type.BEST_RESPONSE) {
+			if (reprogeom.getType() == Geometry.Type.MEANFIELD && playerUpdate.getType() == PlayerUpdate.Type.BEST_RESPONSE) {
 				referenceGroup.setSampling(IBSGroup.SamplingType.NONE);
 			}
 		}
 		// in the original Moran process offspring can replace the parent
-		referenceGroup.setSelf(populationUpdate.isMoran() && reprogeom.isType(Geometry.Type.MEANFIELD));
+		referenceGroup.setSelf(populationUpdate.isMoran() && reprogeom.getType() == Geometry.Type.MEANFIELD);
 
 		// currently: if pop has interaction structure different from MEANFIELD its
 		// opponent population needs to be of the same size
 		if (module.getNPopulation() != opponent.getModule().getNPopulation()
 				&& opponent.getInteractionGeometry() != null // opponent geometry may not yet be initialized
 																// check will be repeated for opponent
-				&& (!getInteractionGeometry().isType(Geometry.Type.MEANFIELD)
-						|| !opponent.getInteractionGeometry().isType(Geometry.Type.MEANFIELD))) {
+				&& (getInteractionGeometry().getType() != Geometry.Type.MEANFIELD
+						|| opponent.getInteractionGeometry().getType() != Geometry.Type.MEANFIELD)) {
 			// at least for now, both populations need to be of the same size - except for
 			// well-mixed populations
 			logger.warning(
@@ -3145,9 +3145,9 @@ public abstract class IBSPopulation {
 		// interactions require more attention. exclude for now.
 		if (getInteractionGeometry().isInterspecies() && opponent.getInteractionGeometry() != null) {
 			// opponent not yet ready; check will be repeated for opponent
-			if ((!getInteractionGeometry().isType(opponent.getInteractionGeometry().getType())) &&
-					(getInteractionGeometry().isType(Geometry.Type.MEANFIELD) ||
-							opponent.getInteractionGeometry().isType(Geometry.Type.MEANFIELD))) {
+			if ((getInteractionGeometry().getType() != opponent.getInteractionGeometry().getType()) &&
+					(getInteractionGeometry().getType() == Geometry.Type.MEANFIELD ||
+							opponent.getInteractionGeometry().getType() == Geometry.Type.MEANFIELD)) {
 				logger.warning(
 						"interspecies interactions combining well-mixed and structured populations not (yet) tested"
 								+ " - well-mixed structure forced!");
@@ -3166,7 +3166,7 @@ public abstract class IBSPopulation {
 			} else if (!interaction.interReproSame) {
 				logger.warning("no migration on graphs with different interaction and reproduction neighborhoods!");
 				setMigrationType(MigrationType.NONE);
-			} else if (interaction.isType(Geometry.Type.MEANFIELD)) {
+			} else if (interaction.getType() == Geometry.Type.MEANFIELD) {
 				logger.warning("no migration in well-mixed populations!");
 				setMigrationType(MigrationType.NONE);
 			}
@@ -3198,8 +3198,8 @@ public abstract class IBSPopulation {
 
 		nMixedInter = -1;
 		hasLookupTable = module.isStatic() || //
-				(adjustScores && interaction.isType(Geometry.Type.MEANFIELD)) || //
-				(ephemeralScores && interaction.isType(Geometry.Type.MEANFIELD) //
+				(adjustScores && interaction.getType() == Geometry.Type.MEANFIELD) || //
+				(ephemeralScores && interaction.getType() == Geometry.Type.MEANFIELD //
 					&& interactionGroup.isSampling(SamplingType.ALL));
 		if (hasLookupTable) {
 			// allocate memory for fitness lookup table
@@ -3237,7 +3237,7 @@ public abstract class IBSPopulation {
 		}
 		// number of interactions can also be determined in structured populations with
 		// well-mixed demes
-		if (adjustScores && interaction.isType(Geometry.Type.HIERARCHY) && //
+		if (adjustScores && interaction.getType() == Geometry.Type.HIERARCHY && //
 				interaction.subgeometry.equals(Geometry.Type.MEANFIELD)) {
 			nMixedInter = interaction.hierarchy[interaction.hierarchy.length - 1]
 					- (interaction.isInterspecies() ? 0 : 1);

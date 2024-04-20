@@ -341,7 +341,7 @@ if( isHomoInit ) out.println("# homo init - half of runs with homogeneous A, oth
 	@Override
 	public boolean check() {
 		boolean doReset = super.check();
-		if( !interaction.interReproSame || interaction.geometry != Geometry.MEANFIELD ) {
+		if( !interaction.interReproSame || interaction.getType() != Geometry.MEANFIELD ) {
 			logger.warning("well-mixed populations required for both interactions and reproduction!");
 			interaction.geometry = Geometry.MEANFIELD;
 			interaction.size = nPopulation;

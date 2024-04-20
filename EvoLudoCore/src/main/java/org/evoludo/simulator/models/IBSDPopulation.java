@@ -756,7 +756,7 @@ public class IBSDPopulation extends IBSPopulation {
 		// populations as long as demes are well-mixed (although lookup tables are
 		// possible but not (yet) implemented.
 		if (hasLookupTable || //
-			(adjustScores && interaction.isType(Geometry.Type.HIERARCHY) //
+			(adjustScores && interaction.getType() == Geometry.Type.HIERARCHY //
 				&& interaction.subgeometry == Geometry.Type.MEANFIELD)) {
 			updateMixedMeanScores();
 			return;
@@ -839,7 +839,7 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 
 		// frequency dependent selection: determine active strategy with highest payoff
-		if (reproduction.isType(Geometry.Type.MEANFIELD)) {
+		if (reproduction.getType() == Geometry.Type.MEANFIELD) {
 			// well-mixed
 			System.arraycopy(opponent.strategiesTypeCount, 0, traitCount, 0, nTraits);
 			if (interaction.isInterspecies()) {
@@ -1376,8 +1376,8 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 		// check if original procedure works
 		if (module.isStatic() || //
-				(!interaction.isType(Geometry.Type.MEANFIELD) && //
-						!interaction.isType(Geometry.Type.HIERARCHY) && //
+				(interaction.getType() != Geometry.Type.MEANFIELD && //
+						interaction.getType() != Geometry.Type.HIERARCHY && //
 						interaction.subgeometry != Geometry.Type.MEANFIELD)) {
 			super.adjustGameScoresAt(me);
 			return;
@@ -1388,7 +1388,7 @@ public class IBSDPopulation extends IBSPopulation {
 		// members of the population
 		commitStrategyAt(me);
 		if (interaction.isInterspecies()) {
-			if (opponent.getInteractionGeometry().isType(Geometry.Type.MEANFIELD)) {
+			if (opponent.getInteractionGeometry().getType() == Geometry.Type.MEANFIELD) {
 				// competition is well-mixed as well - adjust lookup table
 				updateMixedMeanScores();
 			} else {
@@ -1821,8 +1821,8 @@ public class IBSDPopulation extends IBSPopulation {
 				doReset = true;
 			} else // no need to report both warnings
 					// optimized Moran type processes are incompatible with well mixed populations!
-			if (interaction.isType(Geometry.Type.MEANFIELD) ||
-					(interaction.isType(Geometry.Type.HIERARCHY) &&
+			if (interaction.getType() == Geometry.Type.MEANFIELD ||
+					(interaction.getType() == Geometry.Type.HIERARCHY &&
 							interaction.subgeometry == Geometry.Type.MEANFIELD)) {
 				optimizeMoran = false;
 				logger.warning("optimized Moran-type updates are incompatible with mean-field geometry - disabled.");
@@ -1831,7 +1831,7 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 
 		int nGroup = module.getNGroup();
-		if (interaction.isType(Geometry.Type.MEANFIELD) && !playerScoreAveraged && nGroup > 2) {
+		if (interaction.getType() == Geometry.Type.MEANFIELD && !playerScoreAveraged && nGroup > 2) {
 			// check if interaction count exceeds integer range
 			try {
 				int nPop = opponent.getModule().getNPopulation();
@@ -2155,10 +2155,10 @@ public class IBSDPopulation extends IBSPopulation {
 	protected void initStripes() {
 		// only makes sense for 2D lattices at this point. if not, defaults to uniform
 		// random initialization (the only other inittype that doesn't require --init).
-		if (interaction.interReproSame && (interaction.isType(Geometry.Type.SQUARE) ||
-				interaction.isType(Geometry.Type.SQUARE_NEUMANN) ||
-				interaction.isType(Geometry.Type.SQUARE_MOORE) ||
-				interaction.isType(Geometry.Type.LINEAR))) {
+		if (interaction.interReproSame && (interaction.getType() == Geometry.Type.SQUARE ||
+				interaction.getType() == Geometry.Type.SQUARE_NEUMANN ||
+				interaction.getType() == Geometry.Type.SQUARE_MOORE ||
+				interaction.getType() == Geometry.Type.LINEAR)) {
 			Arrays.fill(strategiesTypeCount, 0);
 			boolean act[] = module.getActiveTraits();
 			int nActive = module.getNActive();
@@ -2173,7 +2173,7 @@ public class IBSDPopulation extends IBSPopulation {
 			// edge. also prevents losing one trait interface with fixed boundary
 			// conditions. procedure tested for 2, 3, 4, 5 traits
 			int nStripes = nActive + 2 * sum(2, nActive - 2);
-			int size = (interaction.isType(Geometry.Type.LINEAR) ? nPopulation
+			int size = (interaction.getType() == Geometry.Type.LINEAR ? nPopulation
 					: (int) Math.sqrt(nPopulation));
 			int width = size / nStripes;
 			// make first strip wider

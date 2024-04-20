@@ -368,8 +368,8 @@ public class IBSMCPopulation extends IBSPopulation {
 			default:
 				// if resetting scores after every update, scores can be adjusted
 				// when interacting all neighbours but not in well-mixed populations
-				if (interaction.isType(Geometry.Type.MEANFIELD) || //
-						(interaction.isType(Geometry.Type.HIERARCHY) && //
+				if (interaction.getType() == Geometry.Type.MEANFIELD || //
+						(interaction.getType() == Geometry.Type.HIERARCHY && //
 								interaction.subgeometry == Geometry.Type.MEANFIELD))
 					return false;
 				return interactionGroup.isSampling(IBSGroup.SamplingType.ALL);
@@ -784,7 +784,7 @@ public class IBSMCPopulation extends IBSPopulation {
 		traitMax = module.getTraitMax();
 
 		// check interaction geometry
-		if (interaction.isType(Geometry.Type.MEANFIELD) && interactionGroup.isSampling(IBSGroup.SamplingType.ALL)) {
+		if (interaction.getType() == Geometry.Type.MEANFIELD && interactionGroup.isSampling(IBSGroup.SamplingType.ALL)) {
 			// interacting with everyone in mean-field simulations is not feasible - except
 			// for discrete strategies
 			logger.warning(

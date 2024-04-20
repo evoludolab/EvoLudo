@@ -389,7 +389,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 			engine.loadModel(Model.Type.ODE);
 			return true;
 		}
-		if (space.isType(Geometry.Type.MEANFIELD) || space.isType(Geometry.Type.COMPLETE)) {
+		if (space.getType() == Geometry.Type.MEANFIELD || space.getType() == Geometry.Type.COMPLETE) {
 			engine.getLogger().warning("unstructured population - reverting to ODE.");
 			engine.loadModel(Model.Type.ODE);
 			return true;
@@ -419,7 +419,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	@Override
 	public void reset() {
 		super.reset();
-		if (space.isType(Geometry.Type.MEANFIELD))
+		if (space.getType() == Geometry.Type.MEANFIELD)
 			return;
 		space.init();
 		if (fitness == null || fitness.length != space.size || fitness[0].length != nDim) {

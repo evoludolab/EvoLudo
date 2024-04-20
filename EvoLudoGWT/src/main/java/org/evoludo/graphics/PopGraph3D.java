@@ -266,7 +266,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	 */
 	public void setGeometry(Geometry geometry) {
 		Geometry.Type type = (geometry == null ? null : geometry.getType());
-		resetCamera = (this.geometry == null || this.geometry.isType(type));
+		resetCamera = (this.geometry == null || this.geometry.getType() == type);
 		this.geometry = geometry;
 		// geometry (and network) may be null for Model.ODE or Model.SDE
 		if (geometry == null)

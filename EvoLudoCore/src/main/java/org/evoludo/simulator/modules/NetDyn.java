@@ -790,12 +790,12 @@ public class NetDyn extends Discrete implements HasIBS,
 
 		@Override
 		public boolean checkGeometry(Geometry geom) {
-			return geom.isType(Type.DYNAMIC);
+			return geom.getType() == Type.DYNAMIC;
 		}
 
 		@Override
 		public boolean generateGeometry(Geometry geom) {
-			if (!geom.isType(Type.DYNAMIC))
+			if (geom.getType() != Type.DYNAMIC)
 				throw new Error("NetGames: Unknown geometry (" + geom.getType() + ")");
 			geom.isRewired = false;
 			geom.isUndirected = false;

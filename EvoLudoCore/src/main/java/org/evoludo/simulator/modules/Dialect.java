@@ -433,7 +433,7 @@ public class Dialect extends Continuous implements Module.Static, HasIBS, //
 						setNTraits(1);
 						doReset = true;
 					}
-					if (interaction.isType(Geometry.Type.HIERARCHY)) {
+					if (interaction.getType() == Geometry.Type.HIERARCHY) {
 						logger.warning(
 								"Edward-Wilkinson-model does not support hierarchical geometries (changed to von Neumann).");
 						interaction.parse("n");
@@ -452,7 +452,7 @@ public class Dialect extends Continuous implements Module.Static, HasIBS, //
 						setNTraits(1);
 						doReset = true;
 					}
-					if (interaction.isType(Geometry.Type.HIERARCHY)) {
+					if (interaction.getType() == Geometry.Type.HIERARCHY) {
 						logger.warning("XY-model does not support hierarchical geometries (changed to von Neumann).");
 						interaction.parse("n");
 						doReset = true;

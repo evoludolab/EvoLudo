@@ -159,7 +159,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 	@Override
 	public void alloc() {
 		super.alloc();
-		if (geometry.isType(Geometry.Type.LINEAR)) {
+		if (geometry.getType() == Geometry.Type.LINEAR) {
 			// only linear geometries have a buffer
 			double h = bounds.getHeight();
 			double w = bounds.getWidth();

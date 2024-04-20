@@ -142,7 +142,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 				return;
 			default:
 		}
-		if( geometry.isType(Geometry.Type.CUBE) || geometry.isType(Geometry.Type.VOID) ) {
+		if( geometry.getType() == Geometry.Type.CUBE || geometry.getType() == Geometry.Type.VOID ) {
 			setMessage("No representation for geometry!");
 			return;
 		}
@@ -449,9 +449,11 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		int side;
 
 		Geometry.Type type = geometry.getType();
-		isHierarchy = geometry.isType(Geometry.Type.HIERARCHY);
-		if( isHierarchy ) type = geometry.subgeometry;
-		if( !isHierarchy || !geometry.isType(Geometry.Type.SQUARE) ) hPeriods = null;
+		isHierarchy = geometry.getType() == Geometry.Type.HIERARCHY;
+		if (isHierarchy)
+			type = geometry.subgeometry;
+		if (!isHierarchy || geometry.getType() != Geometry.Type.SQUARE)
+			hPeriods = null;
 		// geometries that have special/fixed layout
 		switch( type ) {
 			case CUBE:
@@ -531,7 +533,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 
 	@Override
 	public void next(boolean isActive, boolean updateGUI) {
-		if( isActive && geometry!=null && geometry.isType(Geometry.Type.DYNAMIC) )
+		if( isActive && geometry!=null && geometry.getType() == Geometry.Type.DYNAMIC )
 			// invalidate time stamp
 			timestamp = -Double.MAX_VALUE;
 		super.next(isActive, updateGUI);
@@ -541,7 +543,8 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	protected void prepare() {
 		if (geometry == null)	// ODE/SDE models
 			return;
-		if( geometry.isType(Geometry.Type.DYNAMIC) ) {
+		boolean isDynamic = geometry.getType() == Geometry.Type.DYNAMIC;
+		if( isDynamic ) {
 			if( timestamp<network.timestamp ) {
 				// time stamp expired - get data
 				network.timestamp = ((PopListener)controller).getData(colors, tag);
@@ -561,7 +564,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
         	network.doLayout(this);
 		// dynamically update tooltip info
 		if( gtip!=null && gtip.isShowing() ) {
-			if( geometry.isType(Geometry.Type.DYNAMIC) && infoloc!=null )
+			if( isDynamic && infoloc!=null )
 				// confirm focus node - may have shifted
 				infonode = findNodeAt(infoloc);
                 gtip.setTipText(((PopListener)controller).getInfoAt(network, infonode, tag));

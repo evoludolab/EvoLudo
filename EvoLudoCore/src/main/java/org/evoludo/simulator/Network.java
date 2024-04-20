@@ -364,8 +364,9 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 			layoutTimeout = snapTimeout;
 
 		nNodes = geometry.size;
-		Geometry.Type type = (geometry.isType(Geometry.Type.HIERARCHY) ? //
-							geometry.subgeometry : geometry.getType());
+		Geometry.Type type = geometry.getType();
+		if (type == Geometry.Type.HIERARCHY)
+			type = geometry.subgeometry;
 		// geometries that have special/fixed layout
 		switch (type) {
 			case CUBE:
@@ -658,7 +659,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	 * @return the status of the layouting process
 	 */
 	public Status getStatus() {
-		if (geometry.isType(Geometry.Type.DYNAMIC) && status == Status.HAS_LAYOUT
+		if (geometry.getType() == Geometry.Type.DYNAMIC && status == Status.HAS_LAYOUT
 				&& Math.abs(engine.getModel().getTime() - timestamp) > 1e-8)
 			status = Status.ADJUST_LAYOUT;
 		return status;

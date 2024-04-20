@@ -502,7 +502,7 @@ public class TBT extends Discrete implements Pairs,
 
 		@Override
 		public String getMeanName(int index) {
-			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND)) {
+			if (reproduction.getType() == Geometry.Type.SQUARE_NEUMANN_2ND) {
 				if (index < nTraits)
 					return super.getMeanName(index) + " (1st)";
 				return super.getMeanName(index % nTraits) + " (2nd)";				
@@ -513,7 +513,7 @@ public class TBT extends Discrete implements Pairs,
 		@Override
 		public Color[] getMeanColors() {
 			Color[] colors = super.getMeanColors();
-			if (!reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
+			if (reproduction.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
 				return colors;
 			int nMean = getNMean();
 			Color[] color2nd = new Color[nMean];
@@ -552,7 +552,7 @@ public class TBT extends Discrete implements Pairs,
 		@Override
 		public boolean check() {
 			boolean doReset = super.check();
-			if (reproduction!= null && reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
+			if (reproduction!= null && reproduction.getType() == Geometry.Type.SQUARE_NEUMANN_2ND)
 				tsTraits = new double[2 * nTraits];
 			else
 				tsTraits = null;
@@ -562,7 +562,7 @@ public class TBT extends Discrete implements Pairs,
 		
 		@Override
 		public int getNMean() {
-			if (reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
+			if (reproduction.getType() == Geometry.Type.SQUARE_NEUMANN_2ND)
 				return 2 * nTraits;
 			return super.getNMean();
 		}
@@ -574,7 +574,7 @@ public class TBT extends Discrete implements Pairs,
 		public void getMeanTraits(double[] mean) {
 			// SQUARE_NEUMANN_2ND geometry for reproduction results in two disjoint 
 			// sublattices; report strategy frequencies in each sublattice separately
-			if (!reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND)) {
+			if (reproduction.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
 				super.getMeanTraits(mean);
 				return;
 			}
@@ -608,7 +608,7 @@ public class TBT extends Discrete implements Pairs,
 		public void getMeanFitness(double[] mean) {
 			// SQUARE_NEUMANN_2ND geometry for reproduction results in two disjoint 
 			// sublattices; report strategy frequencies in each sublattice separately
-			if (!reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND)) {
+			if (reproduction.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
 				super.getMeanFitness(mean);
 				return;
 			}
@@ -636,7 +636,7 @@ public class TBT extends Discrete implements Pairs,
 
 		@Override
 		public String getStatus() {
-			if (!reproduction.isType(Geometry.Type.SQUARE_NEUMANN_2ND))
+			if (reproduction.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
 				return super.getStatus();
 
 			double newtime = model.getTime();

@@ -161,18 +161,6 @@ public class Geometry {
 	}
 
 	/**
-	 * Checks if the type of this geometry is {@code type}.
-	 * 
-	 * @param type the type of the geometry to check
-	 * @return {@code true} if {@code type} matches this geometry
-	 */
-	public boolean isType(Type type) {
-		if (isRewired)
-			return Type.GENERIC.equals(type);
-		return geometry.equals(type);
-	}
-
-	/**
 	 * Get the type of this geometry.
 	 * 
 	 * @return the type of this geometry

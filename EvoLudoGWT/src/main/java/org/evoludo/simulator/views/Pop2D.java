@@ -261,7 +261,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 			}
 			Module pop = graphs2mods.get(graph);
 			PopGraph2D.GraphStyle style = graph.getStyle();
-			if( geometry.isType(Geometry.Type.LINEAR) ) {
+			if( geometry.getType() == Geometry.Type.LINEAR ) {
 				// frame, ticks, labels needed
 				style.xLabel = "nodes";
 				style.showXLabel = true;

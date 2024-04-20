@@ -218,7 +218,7 @@ tFix += generation;
 		super.init();
 		Arrays.fill(strategies, DEFECT);
 		if( initNode<0 ) {
-			if( interaction.geometry==Geometry.STAR || interaction.geometry==Geometry.WHEEL ) {
+			if( interaction.getType()==Geometry.STAR || interaction.getType()==Geometry.WHEEL ) {
 				if( initHub ) initNode = 0;
 				else {
 					if( initNoHub ) initNode = random0n(nPopulation-1)+1;
@@ -430,7 +430,7 @@ tFix += generation;
 	    	}
 	    	@Override
 	    	public void report(PrintStream output) {
-	    		if( (interaction.geometry==Geometry.STAR || interaction.geometry==Geometry.WHEEL) && initHub )
+	    		if( (interaction.getType()==Geometry.STAR || interaction.getType()==Geometry.WHEEL) && initHub )
 	    			output.println("# init:                 hub");
 	    	}
 	    });
@@ -450,7 +450,7 @@ tFix += generation;
 	    	}
 	    	@Override
 	    	public void report(PrintStream output) {
-				if( (interaction.geometry==Geometry.STAR || interaction.geometry==Geometry.WHEEL) && initNoHub )
+				if( (interaction.getType()==Geometry.STAR || interaction.getType()==Geometry.WHEEL) && initNoHub )
 					output.println("# init:                 leaves");
 	    	}
 	    });
