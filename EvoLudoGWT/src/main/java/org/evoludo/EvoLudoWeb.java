@@ -362,19 +362,8 @@ public class EvoLudoWeb extends Composite
 		logEvoHandler = new EvoLogHandler(viewConsole);
 		logger.addHandler(logEvoHandler);
 		logger.setLevel(Level.INFO);
-		logger.info("GWT Version: " + GWT.getVersion());
-		logger.info("GUI features: " + //
-				(isWebGLSupported ? "WebGL " : "") + //
-				(engine.isXML ? "XML " : "") + //
-				(engine.hasKeys() ? "keyboard " : "") + //
-				(engine.hasMouse() ? "mouse " : "") + //
-				(engine.hasTouch() ? "touch " : "") + //
-				(engine.isEPub ? "ePub (" + //
-						(engine.ePubHasKeys ? "keyboard" : "") + //
-						(engine.ePubHasMouse ? "mouse" : "") + //
-						(engine.ePubHasTouch ? "touch" : "") + ")" : ""));
 	}
-	
+
 	/**
 	 * Entry point method. Process DOM and add/allocate an EvoLudo lab whenever a
 	 * {@code <div>} element with <code>class="evoludo-simulation"</code> is found.
@@ -484,6 +473,7 @@ public class EvoLudoWeb extends Composite
 		// to trigger buttons and overlay labs.
 		engine.setCLO(null);
 		engine.requestAction(PendingAction.UNLOAD);
+		viewConsole.clearLog();
 	}
 
 	/**
@@ -1183,6 +1173,7 @@ public class EvoLudoWeb extends Composite
 			updateViews();
 			// process (emulated) ePub restrictions - adds console if possible
 			processEPubSettings();
+			logFeatures();
 			if (newModel != null)
 				engine.modelReset();
 			// show version information in status line (set level to replace info messages
@@ -2281,6 +2272,23 @@ public class EvoLudoWeb extends Composite
 					}
 				}, DragLeaveEvent.getType());
 		}
+	}
+
+	/**
+	 * Log GWT features and GUI specifics.
+	 */
+	void logFeatures(){
+		logger.info("GWT Version: " + GWT.getVersion());
+		logger.info("GUI features: " + //
+				(isWebGLSupported ? "WebGL " : "") + //
+				(engine.isXML ? "XML " : "") + //
+				(engine.hasKeys() ? "keyboard " : "") + //
+				(engine.hasMouse() ? "mouse " : "") + //
+				(engine.hasTouch() ? "touch " : "") + //
+				(engine.isEPub ? "ePub (" + //
+						(engine.ePubHasKeys ? "keyboard" : "") + //
+						(engine.ePubHasMouse ? "mouse" : "") + //
+						(engine.ePubHasTouch ? "touch" : "") + ")" : ""));
 	}
 
 	/**

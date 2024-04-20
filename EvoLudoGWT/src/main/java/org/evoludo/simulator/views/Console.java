@@ -35,12 +35,12 @@ package org.evoludo.simulator.views;
 import java.util.ListIterator;
 import java.util.logging.Level;
 
+import org.evoludo.simulator.EvoLudoGWT;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.RingBuffer;
-import org.evoludo.simulator.EvoLudoGWT;
-import org.evoludo.simulator.models.Model;
 
 import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.dom.client.Element;
@@ -144,6 +144,16 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 		return "Console log";
 	}
 
+	/**
+	 * Clear the console log.
+	 * <p>
+	 * <strong>Note:</strong> Cannot override {@code clear()} method because this
+	 * would clear the log on activiation.
+	 */
+	public void clearLog() {
+		log.clear();
+	}
+
 	@Override
 	public void createWidget() {
 		super.createWidget();
@@ -242,7 +252,7 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 				// clear log (if active)
 				if (!isActive)
 					break;
-				log.clear();
+				clearLog();
 				return true;
 			default:
 		}
@@ -283,7 +293,7 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 			clearMenu = new ContextMenuItem("Clear", new Command() {
 				@Override
 				public void execute() {
-					log.clear();
+					clearLog();
 				}
 			});
 		}
