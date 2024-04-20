@@ -1428,6 +1428,328 @@ public abstract class RNGDistribution {
 		}
 	}
 
+	/**
+	 * The interface to execute commands in a manner that is agnostic to the
+	 * implementation details regarding GWT or JRE environments.
+	 * 
+	 * @author Christoph Hauert
+	 */
+	public interface TestCommand {
+
+		/**
+		 * The command to execute.
+		 */
+		public void execute();
+	}
+
+	/**
+	 * Gillespie algorithm for selecting integers with support
+	 * <code>{0,1,2,3,..., n}</code> but with different weights.
+	 * <p>
+	 * <strong>Note:</strong> if multiple random number are drawn using the
+	 * <em>same</em> distribution of weights, optimizations are posssible that
+	 * require expensive initialization but then drawing the random number is
+	 * significantly cheaper.
+	 * <p>
+	 * For an excellent overview, see Keith Schwarz' website
+	 * <a href="http://www.keithschwarz.com/darts-dice-coins/">Darts, Dice, and
+	 * Coins: Sampling from a Discrete Distribution</a>. Of particular interest is
+	 * Vose's Alias Method, which is also what's implemented in
+	 * <a href="https://ccl.northwestern.edu/netlogo/">NetLogo</a>
+	 * 
+	 * @see <a href= "https://en.wikipedia.org/wiki/Gillespie_algorithm">
+	 *      Wikipedia: Gillespie algorithm</a>
+	 */
+	public static class Gillespie extends RNGDistribution {
+
+		//TODO static next-method missing
+
+		/**
+		 * Creates binomial distribution with <code>n</code> trials and success
+		 * probability <code>p</code> (mean <code>n p</code>) and a new instance of
+		 * {@link MersenneTwister}..
+		 *
+		 * @param p success probability of single trial
+		 * @param n number of trials
+		 */
+		public Gillespie() {
+			this(null);
+		}
+
+		/**
+		 * Creates binomial distribution with <code>n</code> trials and success
+		 * probability <code>p</code> (mean <code>n p</code>) and the random number
+		 * generator <code>rng</code>.
+		 *
+		 * @param rng random number generator
+		 * @param p   success probability of single trial
+		 * @param n   number of trials
+		 */
+		public Gillespie(MersenneTwister rng) throws IllegalArgumentException {
+			super(rng);
+		}
+
+		/**
+		 * Return a random integer with support {@code [0, weights.length)} from the
+		 * discrete distribution of weights defined by the {@code double[]} array
+		 * {@code weights}.
+		 * <p>
+		 * <strong>Note:</strong> if the sum of weights or the maximum weight is known,
+		 * consider using the methods {@code #nextSum(double[], double)} or
+		 * {@code #nextMax(double[], double)}, instead.
+		 * 
+		 * @param weights the array of weights of the discrete distribution
+		 * @return the random integer
+		 */
+		public int next(int[] weights) {
+			if (weights.length >= 100)
+				return nextMax(weights, ArrayMath.max(weights));
+			return nextSum(weights, ArrayMath.norm(weights));
+		}
+
+		/**
+		 * Return a random integer with support {@code [0, weights.length)} from the
+		 * discrete distribution of weights defined by the {@code double[]} array
+		 * {@code weights}. Given the sum of weights {@code sum} the Gillespie algorithm
+		 * picks a uniformly distributed random number in {@code [0, sum)} and then
+		 * walks through the array of weights until the cumulative sum exceeds the
+		 * random number. The index of the weight that exceeds the random number is
+		 * returned.
+		 * <p>
+		 * <strong>Note:</strong> this is the standard, non-optimized version of the
+		 * Gillespie algorithm and is most likely best for small supports.
+		 * 
+		 * @param weights the array of weights of the discrete distribution
+		 * @param sum     the sum of all weights
+		 * @return the random integer
+		 */
+		public int nextSum(int[] weights, int sum) {
+			int hit = random0n(sum);
+			int aRand = -1;
+			while (hit >= 0) {
+				hit -= weights[++aRand];
+			}	
+			return aRand;
+		}
+
+		/**
+		 * Return a random integer with support {@code [0, weights.length)} from the
+		 * discrete distribution of weights defined by the {@code double[]} array
+		 * {@code weights}. Given the maximum weight {@code max}, the drawing of
+		 * weighted random numbers can be optmized by simplifying bookkeeping at the
+		 * expense of drawing more random numbers.
+		 * <p>
+		 * <strong>Notes:</strong>
+		 * <ol>
+		 * <li>The optimization is most effective for large supports but can be hampered
+		 * by heavily skewed weight distributions.
+		 * <li>For small supports the standard version of the Gillespie algorithm is
+		 * likely faster.
+		 * <li>For skewed weights consider sorting the weights in descending order.
+		 * <li>{@code max} can be bigger than the actual maximum but the optimization
+		 * becomes less efficient.
+		 * </ol>
+		 * 
+		 * @param weights the array of weights of the discrete distribution
+		 * @param max     the maximum weight in the array
+		 * @return the random integer
+		 * 
+		 * @see Lipowski, A. &amp; Lipowska, D. (2011)
+		 *      <a href="http://arxiv.org/pdf/1109.3627.pdf">Roulette-wheel selection
+		 *      via stochastic acceptance</a>, arXive:1109.3627.
+		 */
+		public int nextMax(int[] weights, int max) {
+			int len = weights.length;
+			int aRand = -1;
+			do {
+				aRand = random0n(len);
+			} while (random0n(max) >= weights[aRand]); // note: if < holds aRand is ok
+			return aRand;
+		}
+
+		/**
+		 * Return a random integer with support {@code [0, weights.length)} from the
+		 * discrete distribution of weights defined by the {@code double[]} array
+		 * {@code weights}. Optimized sampling is used above the threshold of
+		 * {@code weights.length > 350}.
+		 * <p>
+		 * <strong>Note:</strong> if the sum of weights or the maximum weight is known,
+		 * consider using the methods {@code #nextSum(double[], double)} or
+		 * {@code #nextMax(double[], double)}, instead.
+		 * 
+		 * @param weights the array of weights of the discrete distribution
+		 * @return the random integer
+		 */
+		public int next(double[] weights) {
+			if (weights.length > 350)
+				return nextMax(weights, ArrayMath.max(weights));
+			return nextSum(weights, ArrayMath.norm(weights));
+		}
+
+		/**
+		 * Return a random integer with support {@code [0, weights.length)} from the
+		 * discrete distribution of weights defined by the {@code double[]} array
+		 * {@code weights}. Given the sum of weights {@code sum} the Gillespie algorithm
+		 * picks a uniformly distributed random number in {@code [0, sum)} and then
+		 * walks through the array of weights until the cumulative sum exceeds the
+		 * random number. The index of the weight that exceeds the random number is
+		 * returned.
+		 * <p>
+		 * <strong>Note:</strong> this is the standard, non-optimized version of the
+		 * Gillespie algorithm and is most likely best for small supports.
+		 * 
+		 * @param weights the array of weights of the discrete distribution
+		 * @param sum     the sum of all weights
+		 * @return the random integer
+		 */
+		public int nextSum(double[] weights, double sum) {
+			double hit = random01() * sum;
+			int aRand = -1;
+			for (double weight : weights) {
+				hit -= weight;
+				aRand++;
+				if (hit < 0.0)
+					return aRand;
+			}
+			// last resort; try to catch rounding errors
+			int len1 = weights.length - 1;
+			if (hit < 1e-6 && weights[len1] > 1e-6)
+				return len1;
+			throw new IllegalArgumentException("Gillespie algorithm failed to pick individual...");
+		}
+
+		/**
+		 * Return a random integer with support {@code [0, weights.length)} from the
+		 * discrete distribution of weights defined by the {@code double[]} array
+		 * {@code weights}. Given the maximum weight {@code max}, the drawing of
+		 * weighted random numbers can be optmized by simplifying bookkeeping at the
+		 * expense of drawing more random numbers.
+		 * <p>
+		 * <strong>Notes:</strong>
+		 * <ol>
+		 * <li>The optimization is most effective for large supports but can be hampered
+		 * by heavily skewed weight distributions.
+		 * <li>For small supports the standard version of the Gillespie algorithm is
+		 * likely faster. The threshold appears to be at around 350 elements.
+		 * <li>For skewed weights consider sorting the weights in descending order.
+		 * <li>{@code max} can be bigger than the actual maximum but the optimization
+		 * becomes less efficient.
+		 * </ol>
+		 * 
+		 * @param weights the array of weights of the discrete distribution
+		 * @param max     the maximum weight in the array
+		 * @return the random integer
+		 * 
+		 * @see Lipowski, A. &amp; Lipowska, D. (2011)
+		 *      <a href="http://arxiv.org/pdf/1109.3627.pdf">Roulette-wheel selection
+		 *      via stochastic acceptance</a>, arXive:1109.3627.
+		 */
+		public int nextMax(double[] weights, double max) {
+			int len = weights.length;
+			int aRand = -1;
+			do {
+				aRand = random0n(len);
+			} while (random01() * max > weights[aRand]); // note: if < holds aRand is ok
+			return aRand;
+		}
+
+		@Override
+		public Gillespie clone() {
+			Gillespie clone = new Gillespie(rng.clone());
+			clone(clone);
+			return clone;
+		}
+
+		/**
+		 * Test Gillespie algorithm for random weight distribution.
+		 * <p>
+		 * The test samples the distribution and bins the random numbers. This sample
+		 * distribution is compared to the theoretical expectation. The mean deviation
+		 * is the mean difference between the actual number of events in each bin and
+		 * their expected number. For a perfect match the mean deviation is
+		 * <code>0</code>. The test passes if the mean deviation lies within one
+		 * standard error from <code>0</code>. This is more stringent than the
+		 * traditional 95% confidence interval.
+		 * 
+		 * @param rng    the random number generator
+		 * @param logger the logger for reporting results
+		 * @param clock  the stop watch
+		 */
+		public static void test(MersenneTwister rng, Logger logger, Chronometer clock) {
+			RNGDistribution.Gillespie gillespie = new Gillespie();
+			int nBins = 350;
+			// initialize array with random weights
+			double[] weights = new double[nBins];
+			for (int i = 0; i < nBins; i++)
+				weights[i] = gillespie.random01() * 100.0;
+			double maxWeight = ArrayMath.max(weights);
+			double sumWeight = ArrayMath.norm(weights);
+			int nSamples = gillespie.testSamples;
+			double[] noopt = new double[nBins];
+			logger.info("Testing Gillespie algorithm: " + nSamples + " samples (non-optimized)...");
+			double msStart = clock.elapsedTimeMsec();
+			for (int i = 0; i < nSamples; i++) {
+				int idx = gillespie.nextSum(weights, sumWeight);
+				noopt[idx]++;
+			}
+			double msEnd = clock.elapsedTimeMsec();
+			logger.info("Time elapsed: " + (msEnd - msStart) + " msec");
+			double[] opt = new double[nBins];
+			logger.info("Testing Gillespie algorithm: " + nSamples + " samples (optimized)...");
+			msStart = clock.elapsedTimeMsec();
+			for (int i = 0; i < nSamples; i++) {
+				int idx = gillespie.nextMax(weights, maxWeight);
+				opt[idx]++;
+			}
+			msEnd = clock.elapsedTimeMsec();
+			logger.info("Time elapsed: " + (msEnd - msStart) + " msec");
+			ArrayMath.normalize(weights);
+			ArrayMath.normalize(noopt);
+			ArrayMath.normalize(opt);
+			boolean verbose = (logger.getLevel().intValue() <= Level.FINE.intValue());
+			if (verbose) {
+				StringBuilder buffer = new StringBuilder();
+				buffer.append("Weighted Distribution:\nbin: non-optimized optimized (expected)\n");
+				for (int n = 0; n < nBins; n++)
+					buffer.append(
+							n + ": " + Formatter.format(noopt[n], 6) + " " + //
+							Formatter.format(opt[n], 6) + //
+							" (" + Formatter.format(weights[n], 6) + ")\n");
+				logger.info(buffer.toString());
+			}
+			double m1no = 0.0;
+			double m2no = 0.0;
+			double m1o = 0.0;
+			double m2o = 0.0;
+			for (int n = 0; n < nBins; n++) {
+				double d = noopt[n] - weights[n];
+				m1no += d;
+				m2no += d * d;
+				d = opt[n] - weights[n];
+				m1o += d;
+				m2o += d * d;
+			}
+			m1no /= nSamples;
+			m2no /= nSamples;
+			m1o /= nSamples;
+			m2o /= nSamples;
+			double stdevno = Math.sqrt(m2no - m1no * m1no);
+			double sterrno = stdevno / Math.sqrt(nSamples);
+			logger.info("Statistics: mean +/- SEM = " + m1no + " +/- " + sterrno + " (non-optimized)");
+			double stdevo = Math.sqrt(m2o - m1o * m1o);
+			double sterro = stdevo / Math.sqrt(nSamples);
+			logger.info("Statistics: mean +/- SEM = " + m1o + " +/- " + sterro + " (optimized)");
+			// in order to pass the test, the mean+/-sterr must include 0
+			boolean successno = (Math.abs(m1no) < sterrno);
+			boolean successo = (Math.abs(m1o) < sterro);
+			if (successno && successo) {
+				logger.info("Test passed!");
+				return;
+			}
+			logger.severe("Test of Gillespie algorithm failed...");
+		}
+	}
+
 // NOTE: the test uses GWT specifics for measuring time (com.google.gwt.core.client.Duration) and for reporting (com.google.gwt.core.client.GWT.log)
 //	public void test() {
 //		test(10000, 10000000);

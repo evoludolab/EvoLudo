@@ -276,6 +276,7 @@ public class Test extends Module implements HasIBS, HasConsole {
 							RNGDistribution.Normal.test(rng.getRNG(), logger, engine);
 							RNGDistribution.Geometric.test(rng.getRNG(), logger, engine);
 							RNGDistribution.Binomial.test(rng.getRNG(), logger, engine);
+							RNGDistribution.Gillespie.test(rng.getRNG(), logger, engine);
 							int lap = engine.elapsedTimeMsec();
 							logger.info("RNGDistribution tests done: " + ((lap - start) / 1000.0) + " sec.");
 							testDone();
