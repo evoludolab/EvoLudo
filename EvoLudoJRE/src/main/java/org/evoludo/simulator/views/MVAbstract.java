@@ -278,27 +278,29 @@ public abstract class MVAbstract extends JComponent
 	
     @Override
 	public void showCustomMenu(JPopupMenu menu, Point loc, AbstractGraph owner, int tag) {
-		if( menuTime ) {
-			timeMenu.setEnabled(engine.isModelType(Model.Type.ODE));
-			Model.ODE model = (Model.ODE)engine.getModel();
-			timeMenu.setSelected( model.isTimeReversed() );
+		Model.Type type = engine.getModel().getModelType();
+		if (menuTime) {
+			timeMenu.setEnabled(type == Model.Type.ODE);
+			Model.ODE model = (Model.ODE) engine.getModel();
+			timeMenu.setSelected(model.isTimeReversed());
 		}
-		if( engine.isModelType(Model.Type.PDE) && menuSetLocal ) {
-			int node = ((PopGraph2D)owner).findNodeAt(loc);
-			if( node<0 ) {
-				nodeMenu.setEnabled(false);
+		if (type == Model.Type.PDE) {
+			if (menuSetLocal) {
+				int node = ((PopGraph2D) owner).findNodeAt(loc);
+				if (node < 0) {
+					nodeMenu.setEnabled(false);
+				} else {
+					nodeMenu.setText("Set location @ " + node + " (now @ " + localNode + ")");
+					nodeMenu.setEnabled(true);
+				}
 			}
-			else {
-				nodeMenu.setText("Set location @ "+node+" (now @ "+localNode+")");
-				nodeMenu.setEnabled(true);
+			if (menuShowLocal) {
+				localMenu.setText("Local dynamics @ " + localNode);
 			}
-		}
-		if( engine.isModelType(Model.Type.PDE) && menuShowLocal ) {
-			localMenu.setText("Local dynamics @ "+localNode);
 		}
 		lab.showCustomMenu(menu, owner, tag);
 	}
-	
+
     @Override
 	public void setLocalNode(int localNode) {
 		MVAbstract.localNode = localNode;

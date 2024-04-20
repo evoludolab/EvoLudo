@@ -607,16 +607,6 @@ public abstract interface Model extends CLOProvider {
 	public Type getModelType();
 
 	/**
-	 * Checks if model is of type <code>type</code>.
-	 * 
-	 * @param type the type to check
-	 * @return <code>true</code> if types match
-	 */
-	public default boolean isModelType(Type type) {
-		return type == getModelType();
-	}
-
-	/**
 	 * Modes of the model. Currently thefollowing modes are supported:
 	 * <dl>
 	 * <dt>DYNAMICS

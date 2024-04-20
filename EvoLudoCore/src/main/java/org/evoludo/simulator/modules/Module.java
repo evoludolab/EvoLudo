@@ -984,7 +984,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		int oldNPopulation = nPopulation;
 		nPopulation = Math.max(1, size);
 		boolean changed = (nPopulation != oldNPopulation);
-		engine.requiresReset(changed && model.isModelType(Type.IBS));
+		engine.requiresReset(changed && model.getModelType() == Type.IBS);
 		return changed;
 	}
 
@@ -1723,12 +1723,13 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 			parser.addCLO(cloTraitDisable);
 
 		// population size option only acceptable for IBS and SDE models
-		if (model.isModelType(Model.Type.IBS) || model.isModelType(Model.Type.SDE)) {
+		Model.Type type = model.getModelType();
+		if (type == Model.Type.IBS || type == Model.Type.SDE) {
 			parser.addCLO(cloNPopulation);
 		}
 
 		// geometry option only acceptable for IBS and PDE models
-		if (model.isModelType(Model.Type.IBS) || model.isModelType(Model.Type.PDE)) {
+		if (type == Model.Type.IBS || type == Model.Type.PDE) {
 			cloGeometry.addKeys(Geometry.Type.values());
 			cloGeometry.removeKey(Geometry.Type.DYNAMIC);
 			parser.addCLO(cloGeometry);

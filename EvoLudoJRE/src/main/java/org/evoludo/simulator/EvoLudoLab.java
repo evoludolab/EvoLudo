@@ -485,13 +485,12 @@ public class EvoLudoLab extends JFrame
 		boolean resume = engine.isSuspended();
 		engine.setSuspended(false);
 		Model oldModel = engine.getModel();
-		Model.Type oldModelType = oldModel != null ? oldModel.getModelType() : null;
 		Module oldModule = engine.getModule();
 		boolean parsingSuccess = engine.parseCLO();
 		Module module = engine.getModule();
 		setTitle(module.getTitle());
 		// reset is required if module and/or model changed
-		if (module != oldModule || !engine.getModel().isModelType(oldModelType)) {
+		if (module != oldModule || engine.getModel() != oldModel) {
 			engine.modelReset();
 		} else {
 			if (engine.paramsDidChange()) {

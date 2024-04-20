@@ -1618,7 +1618,7 @@ public class ODEEuler implements Model.ODE {
 		connect = false;
 		converged = false;
 		// PDE models have their own initialization types
-		if (isModelType(Type.PDE))
+		if (getModelType() == Type.PDE)
 			return;
 		int idx = -1;
 		// y0 is initialized except for species with random initial frequencies

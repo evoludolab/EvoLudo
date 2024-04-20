@@ -93,7 +93,7 @@ public class simMutual extends Mutualism implements ChangeListener {
 	 */
 	@Override
 	public void run() {
-		if(!model.isModelType(Model.Type.IBS)) {
+		if(model.getModelType() != Model.Type.IBS) {
 			System.err.printf("ERROR: IBS model expected!");
 			return;
 		}

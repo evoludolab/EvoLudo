@@ -1161,7 +1161,6 @@ public class EvoLudoWeb extends Composite
 		boolean resume = engine.isRunning() || engine.isSuspended();
 		engine.setSuspended(false);
 		Model oldModel = engine.getModel();
-		Model.Type oldModelType = oldModel != null ? oldModel.getModelType() : null;
 		Module oldModule = engine.getModule();
 		boolean parsingSuccess = engine.parseCLO();
 		evoludoSlider.setValue(engine.getDelay());
@@ -1169,7 +1168,7 @@ public class EvoLudoWeb extends Composite
 		// reset is required if module and/or model changed
 		Module newModule = engine.getModule();
 		Model newModel = engine.getModel();
-		if (newModule == null || engine.getModule() != oldModule || !newModel.isModelType(oldModelType)) {
+		if (newModule == null || engine.getModule() != oldModule || newModel != oldModel) {
 			updateViews();
 			// process (emulated) ePub restrictions - adds console if possible
 			processEPubSettings();
@@ -1734,7 +1733,8 @@ public class EvoLudoWeb extends Composite
 		if (module == null)
 			return;
 		Model model = engine.getModel();
-		boolean isODESDE = model.isModelType(Model.Type.ODE) || model.isModelType(Model.Type.SDE);
+		Model.Type type = model.getModelType();
+		boolean isODESDE = (type == Model.Type.ODE || type == Model.Type.SDE);
 		if (module instanceof HasPop2D.Strategy && !isODESDE)
 			addView(new Pop2D(engine, Model.Data.STRATEGY));
 		if (isWebGLSupported && module instanceof HasPop3D.Strategy && !isODESDE)

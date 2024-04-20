@@ -336,7 +336,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 						}
 					}
 					else {
-						if( engine.isModelType(Model.Type.PDE) ) {
+						if( model.getModelType() == Model.Type.PDE ) {
 							int nTraits = module.getNTraits();
 							Color[] colors = module.getTraitColors();
 							int dep = ((HasDE)module).getDependent();
@@ -358,7 +358,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 					// cMap1D.setRange(module.getMinFitness(), module.getMaxFitness());
 					int tag = graph.getTag();
 					cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
-					if( engine.isModelType(Model.Type.IBS) ) {
+					if( model.getModelType() == Model.Type.IBS ) {
 						Map2Fitness map2fit = module.getMapToFitness();
 						if (cmodel != null) {
 // hardcoded colors for min/max mono scores
@@ -426,7 +426,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 
 	@Override
 	public void mouseHitNode(int id, int node, boolean alt) {
-		if (model.isModelType(Model.Type.IBS))
+		if (model.getModelType() == Model.Type.IBS)
 			((Model.IBS) model).mouseHitNode(id, node, alt);
 	}
 

@@ -173,7 +173,7 @@ public interface MultiView {
 		ArrayList<DataTypes> dataOutputs = new ArrayList<>();
 		// query available views to deduce the data types to report
 		// strategy related data
-		boolean isODESDE = model.isModelType(Model.Type.ODE) || model.isModelType(Model.Type.SDE);
+		boolean isODESDE = (model.getModelType() == Model.Type.ODE || model.getModelType() == Model.Type.SDE);
 		if (module instanceof HasPop2D.Strategy && !isODESDE)
 			dataOutputs.add(DataTypes.TRAITS);
 		if (module instanceof HasMean.Strategy || module instanceof HasPhase2D || module instanceof HasS3)

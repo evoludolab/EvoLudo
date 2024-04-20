@@ -178,7 +178,7 @@ public class PlayerUpdate {
 				@Override
 				public void report(PrintStream output) {
 					ArrayList<? extends Module> species = module.getSpecies();
-					boolean isIBS = module.model.isModelType(Model.Type.IBS);
+					boolean isIBS = module.model.getModelType() == Model.Type.IBS;
 					for (Module mod : species) {
 						if (isIBS) {
 							IBSPopulation ibspop = mod.getIBSPopulation();

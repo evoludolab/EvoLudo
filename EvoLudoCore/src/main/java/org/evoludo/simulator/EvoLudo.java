@@ -433,16 +433,6 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Checks if active {@link Model} is of {@link Model.Type} type.
-	 * 
-	 * @param type the type of Model to load
-	 * @return <code>true</code> if active model is of type <code>type</code>
-	 */
-	public boolean isModelType(Model.Type type) {
-		return activeModel.isModelType(type);
-	}
-
-	/**
 	 * The flag to indicate whether a reset of the active model has been requested.
 	 * This is necessary after certain parameter changes. For example, changing the
 	 * population size (see {@link IBSPopulation#nPopulation}) requires a reset to

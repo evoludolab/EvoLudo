@@ -323,7 +323,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 						}
 					}
 					else {
-						if( engine.isModelType(Model.Type.PDE) ) {
+						if( model.getModelType() == Model.Type.PDE ) {
 							int nTraits = pop.getNTraits();
 							Color[] colors = pop.getTraitColors();
 							int dep = ((HasDE)pop).getDependent();
@@ -347,7 +347,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 //					cMap1D.setRange(pop.getMinFitness(), pop.getMaxFitness());
 					int tag = graph.getTag();
 					cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
-					if (engine.isModelType(Model.Type.IBS)) {
+					if (model.getModelType() == Model.Type.IBS) {
 						Map2Fitness map2fit = pop.getMapToFitness();
 						if (pop instanceof Discrete) {
 							// mark homogeneous fitness values by pale color
@@ -424,7 +424,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 
 	@Override
 	public void updateNodeAt(AbstractGraph graph, int node) {
-		if (!model.isModelType(Type.IBS))
+		if (model.getModelType() != Type.IBS)
 			return;
 		IBSPopulation pop = graphs2mods.get(graph).getIBSPopulation();
 		pop.debugUpdatePopulationAt(node);
@@ -432,7 +432,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 
 	@Override
 	public void mouseHitNode(int id, int node, boolean alt) {
-		if (model.isModelType(Model.Type.IBS))
+		if (model.getModelType() == Model.Type.IBS)
 			((Model.IBS) model).mouseHitNode(id, node, alt);
 	}
 
