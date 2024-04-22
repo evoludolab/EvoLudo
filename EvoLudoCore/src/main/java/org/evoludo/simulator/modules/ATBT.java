@@ -526,7 +526,7 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 	ATBTMap map;
 
 	@Override
-	public Data2Phase getMap() {
+	public Data2Phase getPhase2DMap() {
 		map = new ATBTMap();
 		return map;
 	}

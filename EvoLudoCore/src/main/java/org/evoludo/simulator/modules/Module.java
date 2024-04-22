@@ -55,6 +55,7 @@ import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.PDERD.HasPDE;
 import org.evoludo.simulator.models.SDEEuler.HasSDE;
 import org.evoludo.simulator.views.HasPhase2D;
+import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
@@ -1652,8 +1653,11 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					}
 					// cast check should be unnecessary. --phase2daxis should only be available if
 					// module implements at least HasPhase2D (plus some other conditions).
-					if (Module.this instanceof HasPhase2D)
-						((HasPhase2D) Module.this).setPhase2DTraits(phase2daxis[0], phase2daxis[1]);
+					if (Module.this instanceof HasPhase2D) {
+						Data2Phase map = ((HasPhase2D) Module.this).getPhase2DMap();
+						if (map != null && map.hasSetTraits())
+							map.setTraits(phase2daxis[0], phase2daxis[1]);
+					}
 					return true;
 				}
 
@@ -1688,8 +1692,11 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 			parser.addCLO(cloTraitNames);
 		}
 		// set traits on axis of phase plane (if implemented by module)
-		if (this instanceof HasPhase2D && ((HasPhase2D) this).setPhase2DTraits(null, null))
-			parser.addCLO(cloPhase2DAxis);
+		if (this instanceof HasPhase2D) {
+			Data2Phase map = ((HasPhase2D) Module.this).getPhase2DMap();
+			if (map != null && map.hasSetTraits())
+				parser.addCLO(cloPhase2DAxis);
+		}
 
 		// multi-species interactions
 		if (species.size() > 1) {

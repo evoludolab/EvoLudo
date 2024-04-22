@@ -364,7 +364,7 @@ public class EcoPGG extends Discrete implements Groups,
 	EcoPGGMap map;
 
 	@Override
-	public Data2Phase getMap() {
+	public Data2Phase getPhase2DMap() {
 		map = new EcoPGGMap();
 		return map;
 	}

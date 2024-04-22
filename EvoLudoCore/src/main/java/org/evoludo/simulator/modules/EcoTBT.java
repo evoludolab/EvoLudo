@@ -133,7 +133,7 @@ public class EcoTBT extends TBT implements HasS3, HasPhase2D {
 	EcoTBTMap map;
 
 	@Override
-	public Data2Phase getMap() {
+	public Data2Phase getPhase2DMap() {
 		map = new EcoTBTMap();
 		return map;
 	}

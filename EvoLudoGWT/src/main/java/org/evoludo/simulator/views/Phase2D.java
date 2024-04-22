@@ -126,7 +126,7 @@ public class Phase2D extends AbstractView {
 		}
 		graph.setMarkers(module.getMarkers());
 		if (map == null) {
-			map = ((HasPhase2D) module).getMap();
+			map = ((HasPhase2D) module).getPhase2DMap();
 			if (map == null) {
 				map = new TraitMap();
 				((HasPhase2D) module).setPhase2DMap(map);

@@ -127,7 +127,7 @@ public class EcoMoran extends Moran implements HasPhase2D, HasS3 {
 	EcoMoranMap map;
 
 	@Override
-	public Data2Phase getMap() {
+	public Data2Phase getPhase2DMap() {
 		map = new EcoMoranMap();
 		return map;
 	}

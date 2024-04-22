@@ -35,10 +35,9 @@ package org.evoludo.simulator.modules;
 import java.awt.Color;
 import java.io.PrintStream;
 
-import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.ODERK;
 import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasHistogram;
@@ -365,17 +364,6 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 	int[] phase2DTraitX;
 	int[] phase2DTraitY;
 	Data2Phase map;
-
-	@Override
-	public boolean setPhase2DTraits(int[] x, int[] y) {
-		if (x != null && y != null) {
-			phase2DTraitX = ArrayMath.clone(x);
-			phase2DTraitY = ArrayMath.clone(y);
-			if (map != null)
-				map.setTraits(phase2DTraitX, phase2DTraitY);
-		}
-		return true;
-	}
 
 	@Override
 	public void setPhase2DMap(Data2Phase map) {

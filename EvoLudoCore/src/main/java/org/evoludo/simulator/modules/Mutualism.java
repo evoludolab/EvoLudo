@@ -391,7 +391,7 @@ public class Mutualism extends Discrete implements Pairs,
 	MutualismMap map;
 
 	@Override
-	public Data2Phase getMap() {
+	public Data2Phase getPhase2DMap() {
 		map = new MutualismMap();
 		return map;
 	}

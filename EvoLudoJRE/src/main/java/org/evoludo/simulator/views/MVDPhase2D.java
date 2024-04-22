@@ -70,7 +70,7 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 		}
 		graph = new ParaGraph(this, 0);
 		if (map == null) {
-			map = ((HasPhase2D) module).getMap();
+			map = ((HasPhase2D) module).getPhase2DMap();
 			if (map == null) {
 				map = new TraitMap();
 				((HasPhase2D) module).setPhase2DMap(map);

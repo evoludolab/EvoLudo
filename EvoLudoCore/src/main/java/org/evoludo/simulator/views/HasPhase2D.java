@@ -56,7 +56,7 @@ public interface HasPhase2D {
 	 * 
 	 * @return the map
 	 */
-	public default Data2Phase getMap() {
+	public default Data2Phase getPhase2DMap() {
 		return null;
 	}
 
@@ -68,29 +68,6 @@ public interface HasPhase2D {
 	 * @param map the map
 	 */
 	public default void setPhase2DMap(Data2Phase map) {
-	}
-
-	/**
-	 * Allows custom implementations to set the traits displayed on phase plane
-	 * axis.
-	 * <p>
-	 * Modules may probe whether {@code setPhase2DTraits} is implemented with
-	 * {@code x} and {@code y} set to {@code null}. If the method returns
-	 * {@code true} the {@code --phase2daxis} command line option is available
-	 * otherwise not (e.g. when using custom maps such as in module
-	 * {@link org.evoludo.simulator.modules.ATBT ATBT}).
-	 * <p>
-	 * In multi-species models the traits are numbered sequentially, i.e. if the
-	 * first species has <code>nTraits</code> then e.g. an index of
-	 * <code>nTraits+1</code> refers to the <em>second</em> trait of the second
-	 * species. Be careful to account for vacant types in density based models.
-	 * 
-	 * @param x the array of indices of horizontal trait(s)
-	 * @param y the array of indices of vertical trait(s)
-	 * @return {@code true} on success
-	 */
-	public default boolean setPhase2DTraits(int[] x, int[] y) {
-		return false;
 	}
 
 	/**
@@ -185,7 +162,20 @@ public interface HasPhase2D {
 		}
 
 		/**
-		 * Allows custom implementations to set the traits displayed on phase plane axis.
+		 * Modules may probe whether {@code setTraits} is implemented. If the method
+		 * returns {@code true} the {@code --phase2daxis} command line option is
+		 * available otherwise not (e.g. when using custom maps such as in module
+		 * {@link org.evoludo.simulator.modules.ATBT ATBT}).
+		 * 
+		 * @return {@code true} if displayed traits can be customized
+		 */
+		public default boolean hasSetTraits() {
+			return false;
+		}
+
+		/**
+		 * Allows custom implementations to set the traits displayed on phase plane
+		 * axis.
 		 * <p>
 		 * In multi-species models the traits are numbered sequentially, i.e. if the
 		 * first species has <code>nTraits</code> then e.g. an index of
