@@ -78,7 +78,7 @@ public class S3 extends AbstractView {
 	@Override
 	public void clear() {
 		super.clear();
-		for( S3Graph graph : graphs )
+		for (S3Graph graph : graphs)
 			graph.clearGraph();
 		update();
 	}
@@ -107,6 +107,11 @@ public class S3 extends AbstractView {
 				style.showYTickLabels = false;
 				style.showYLabel = false;
 				style.showYLevels = false;
+				// set map for converting data to S3 coordinates
+				HasS3.Data2S3 map = ((HasS3) module).getS3Map(role);
+				if (map != null)
+					graph.setMap(map);	
+				map = graph.getMap();	
 				// show first three active traits
 				boolean[] active = module.getActiveTraits();
 				int idx = 0;
@@ -121,7 +126,7 @@ public class S3 extends AbstractView {
 					// less than 3 active traits
 					graph.displayMessage("Simplex S3 view requires at least 3 active traits!");
 				else
-					graph.setOrder(order);
+					map.setOrder(order);
 			}
 			// arrange graphs horizontally
 			gRows = 1;
@@ -162,7 +167,7 @@ public class S3 extends AbstractView {
 		double newtime = model.getTime();
 		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
 		for (S3Graph graph : graphs) {
-			if(isNext) {
+			if (isNext) {
 				model.getMeanTraits(graph.getTag(), state);
 				graph.addData(newtime, state, force);
 			}
