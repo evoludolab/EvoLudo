@@ -145,20 +145,16 @@ public class Phase2D extends AbstractView {
 		style.yLabel = map.getYAxisLabel();
 		style.showYLabel = (style.yLabel!=null);
 		style.trajColor = ColorMapCSS.Color2Css(module.getTrajectoryColor());
-		if (hard) {
-			// reset min/max
-			map.reset();
+		if (hard)
 			graph.reset();
-		}
-		update(hard);
 		graph.autoscale();
+		update(hard);
 	}
 
 	@Override
 	public void init() {
 		super.init();
 		model.getMeanTraits(state);
-		updateMinMaxState();
 		graph.addData(Double.NaN, state, true);
 	}
 
@@ -167,30 +163,10 @@ public class Phase2D extends AbstractView {
 		double newtime = model.getTime();
 		if( Math.abs(timestamp-newtime)>1e-8 ) {
 			model.getMeanTraits(state);
-			updateMinMaxState();
 			graph.addData(newtime, state, force);
 		}
 		graph.paint(force);
 		timestamp = newtime;
-	}
-
-	private void updateMinMaxState() {
-		TraitMap map = (TraitMap) this.map;
-		// state does not include time!!!
-		double x = state[map.stateX[0]];
-		if (map.stateX.length > 1) {
-			for (int n = 1; n < map.stateX.length; n++)
-				x += state[n];
-		}
-		map.minX = Math.min(map.minX, x);
-		map.maxX = Math.max(map.maxX, x);
-		double y = state[map.stateY[0]];
-		if (map.stateY.length > 1) {
-			for (int n = 1; n < map.stateY.length; n++)
-				y += state[n];
-		}
-		map.minY = Math.min(map.minY, y);
-		map.maxY = Math.max(map.maxY, y);
 	}
 
 	protected int getNStates() {
@@ -245,10 +221,10 @@ public class Phase2D extends AbstractView {
 
 		@Override
 		public void reset() {
-			minX = Double.MAX_VALUE;
-			maxX = -Double.MAX_VALUE;
-			minY = Double.MAX_VALUE;
-			maxY = -Double.MAX_VALUE;
+			minX = Double.POSITIVE_INFINITY;
+			maxX = Double.NEGATIVE_INFINITY;
+			minY = Double.POSITIVE_INFINITY;
+			maxY = Double.NEGATIVE_INFINITY;
 		}
 
 		@Override
@@ -270,21 +246,19 @@ public class Phase2D extends AbstractView {
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {
 			// NOTE: data[0] is time
-			if (stateX.length == 1) {
-				point.x = data[stateX[0] + 1];
-			} else {
-				point.x = 0.0;
-				for (int n : stateX)
-					point.x += data[n + 1];
+			point.x = data[stateX[0] + 1];
+			int nx = stateX.length;
+			if (nx > 1) {
+				for (int n = 1; n < nx; n++)
+					point.x += data[stateX[n] + 1];
 			}
 			minX = Math.min(minX, point.x);
 			maxX = Math.max(maxX, point.x);
-			if (stateY.length == 1) {
-				point.y = data[stateY[0] + 1];
-			} else {
-				point.y = 0.0;
-				for (int n : stateY)
-					point.y += data[n + 1];
+			point.y = data[stateY[0] + 1];
+			int ny = stateY.length;
+			if (ny > 1) {
+				for (int n = 1; n < ny; n++)
+					point.y += data[stateY[n] + 1];
 			}
 			minY = Math.min(minY, point.y);
 			maxY = Math.max(maxY, point.y);
@@ -308,9 +282,9 @@ public class Phase2D extends AbstractView {
 		public String getXAxisLabel() {
 			String xName = getTraitName(stateX[0]);
 			int nx = stateX.length;
-			if ( nx > 1) {
-				for (int n=1; n<nx; n++)
-				xName += "+"+getTraitName(stateX[n]);
+			if (nx > 1) {
+				for (int n = 1; n < nx; n++)
+					xName += "+" + getTraitName(stateX[n]);
 			}
 			return xName + (graph.getStyle().percentX ? " frequency" : " density");
 		}
@@ -319,31 +293,67 @@ public class Phase2D extends AbstractView {
 		public String getYAxisLabel() {
 			String yName = getTraitName(stateY[0]);
 			int ny = stateY.length;
-			if ( ny > 1) {
-				for (int n=1; n<ny; n++)
-				yName += "+"+getTraitName(stateX[n]);
+			if (ny > 1) {
+				for (int n = 1; n < ny; n++)
+					yName += "+" + getTraitName(stateY[n]);
 			}
 			return yName + (graph.getStyle().percentY ? " frequency" : " density");
 		}
 
 		@Override
 		public double getMinX(RingBuffer<double[]> buffer) {
+			if (!Double.isFinite(minX))
+				minX = findMin(buffer, stateX);
 			return minX;
 		}
 
 		@Override
 		public double getMaxX(RingBuffer<double[]> buffer) {
+			if (!Double.isFinite(maxX))
+				maxX = findMax(buffer, stateX);
 			return maxX;
 		}
 
 		@Override
 		public double getMinY(RingBuffer<double[]> buffer) {
+			if (!Double.isFinite(minY))
+				minY = findMin(buffer, stateY);
 			return minY;
 		}
 
 		@Override
 		public double getMaxY(RingBuffer<double[]> buffer) {
+			if (!Double.isFinite(maxY))
+				maxY = findMax(buffer, stateY);
 			return maxY;
+		}
+
+		private double findMin(RingBuffer<double[]> buffer, int[] idxs) {
+			double min = Double.POSITIVE_INFINITY;
+			for (double[] data : buffer) {
+				double d = data[idxs[0] + 1];
+				int nd = idxs.length;
+				if ( nd > 1) {
+					for (int n = 1; n < nd; n++)
+						d += data[idxs[n] + 1];
+				}
+				min = Math.min(min, d);
+			}
+			return min;
+		}
+
+		private double findMax(RingBuffer<double[]> buffer, int[] idxs) {
+			double max = Double.NEGATIVE_INFINITY;
+			for (double[] data : buffer) {
+				double d = data[idxs[0] + 1];
+				int nd = idxs.length;
+				if ( nd > 1) {
+					for (int n = 1; n < nd; n++)
+						d += data[idxs[n] + 1];
+				}
+				max = Math.max(max, d);
+			}
+			return max;
 		}
 
 		@Override

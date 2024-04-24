@@ -166,6 +166,19 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 		g.translate(0, h);
 		g.scale(1.0, -1.0);
 
+		// update axis range if necessary
+		style.xMin = Functions.roundDown(Math.min(style.xMin, map.getMinX(buffer)));
+		style.xMax = Functions.roundDown(Math.max(style.xMax, map.getMaxX(buffer)));
+		if (style.percentX) {
+			style.xMin = Math.max(style.xMin, 0.0);
+			style.xMax = Math.min(style.xMax, 1.0);
+		}
+		style.yMin = Functions.roundDown(Math.min(style.yMin, map.getMinY(buffer)));
+		style.yMax = Functions.roundDown(Math.max(style.yMax, map.getMaxY(buffer)));
+		if (style.percentX) {
+			style.yMin = Math.max(style.yMin, 0.0);
+			style.yMax = Math.min(style.yMax, 1.0);
+		}
 		double xScale = bounds.getWidth()/(style.xMax-style.xMin);
 		double yScale = h/(style.yMax-style.yMin);
 		Point2D nextPt = new Point2D();
@@ -246,11 +259,11 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 	}
 
 	public void autoscale() {
-		double minmax;
-		style.xMin = (Double.isNaN(minmax = map.getMinX(buffer)) ? 0.0 : Functions.roundDown(minmax));
-		style.xMax = (Double.isNaN(minmax = map.getMaxX(buffer)) ? 1.0 : Functions.roundUp(minmax));
-		style.yMin = (Double.isNaN(minmax = map.getMinY(buffer)) ? 0.0 : Functions.roundDown(minmax));
-		style.yMax = (Double.isNaN(minmax = map.getMaxY(buffer)) ? 1.0 : Functions.roundUp(minmax));
+		map.reset();
+		style.xMin = Functions.roundDown(map.getMinX(buffer));
+		style.xMax = Functions.roundUp(map.getMaxX(buffer));
+		style.yMin = Functions.roundDown(map.getMinY(buffer));
+		style.yMax = Functions.roundUp(map.getMaxY(buffer));
 	}
 
 	private boolean paintScheduled = false;
@@ -350,7 +363,6 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 			autoscaleMenu = new ContextMenuItem("Autoscale Axis", new Command() {
 				@Override
 				public void execute() {
-					// map.reset(); // see Phase2D.update - requires updateMinMaxState before painting
 					autoscale();
 					paint(true);
 				}
