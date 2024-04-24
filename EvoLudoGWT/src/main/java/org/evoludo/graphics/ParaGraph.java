@@ -40,6 +40,7 @@ import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
+import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
 import org.evoludo.util.Formatter;
@@ -81,12 +82,14 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 	}
 
 	public void setMap(Data2Phase map) {
-		if (map == null || map.equals(this.map))
+		if (map == null)
 			return;
 		this.map = map;
 	}
 
 	public Data2Phase getMap() {
+		if (map == null)
+			map = new TraitMap();
 		return map;
 	}
 
@@ -379,6 +382,154 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 			export.append(Formatter.format(data[0], 8) + ", " + //
 					Formatter.format(point.x, 8) + ", " + //
 					Formatter.format(point.y, 8) + "\n");
+		}
+	}
+
+	public class TraitMap implements Data2Phase {
+
+		// phase plane projections can be the sum of several dynamical variables
+		protected int[] stateX = new int[] { 0 };
+		protected int[] stateY = new int[] { 1 };
+		protected double minX;
+		protected double maxX;
+		protected double minY;
+		protected double maxY;
+
+		@Override
+		public void reset() {
+			minX = Double.POSITIVE_INFINITY;
+			maxX = Double.NEGATIVE_INFINITY;
+			minY = Double.POSITIVE_INFINITY;
+			maxY = Double.NEGATIVE_INFINITY;
+		}
+
+		@Override
+		public void setTraits(int[] x, int[] y) {
+			stateX = ArrayMath.clone(x);
+			stateY = ArrayMath.clone(y);
+		}
+
+		@Override
+		public int[] getTraitsX() {
+			return stateX;
+		}
+
+		@Override
+		public int[] getTraitsY() {
+			return stateY;
+		}
+
+		@Override
+		public boolean hasMultitrait() {
+			return true;
+		}
+
+		@Override
+		public boolean hasFixedAxis() {
+			return false;
+		}
+
+		@Override
+		public boolean data2Phase(double[] data, Point2D point) {
+			// NOTE: data[0] is time
+			point.x = data[stateX[0] + 1];
+			int nx = stateX.length;
+			if (nx > 1) {
+				for (int n = 1; n < nx; n++)
+					point.x += data[stateX[n] + 1];
+			}
+			minX = Math.min(minX, point.x);
+			maxX = Math.max(maxX, point.x);
+			point.y = data[stateY[0] + 1];
+			int ny = stateY.length;
+			if (ny > 1) {
+				for (int n = 1; n < ny; n++)
+					point.y += data[stateY[n] + 1];
+			}
+			minY = Math.min(minY, point.y);
+			maxY = Math.max(maxY, point.y);
+			return true;
+		}
+
+		@Override
+		public boolean phase2Data(Point2D point, double[] data) {
+			// point is in user coordinates
+			// data is the last/most recent state in buffer (excluding time!)
+			if (stateX.length != 1 || stateY.length != 1)
+				return false;
+			// conversion only possible phase plane axis each represents a single
+			// dynamical variable, i.e. no aggregates
+			data[stateX[0]] = point.x;
+			data[stateY[0]] = point.y;
+			return true;
+		}
+
+		@Override
+		public double getMinX(RingBuffer<double[]> buffer) {
+			if (!Double.isFinite(minX))
+				minX = findMin(buffer, stateX);
+			return minX;
+		}
+
+		@Override
+		public double getMaxX(RingBuffer<double[]> buffer) {
+			if (!Double.isFinite(maxX))
+				maxX = findMax(buffer, stateX);
+			return maxX;
+		}
+
+		@Override
+		public double getMinY(RingBuffer<double[]> buffer) {
+			if (!Double.isFinite(minY))
+				minY = findMin(buffer, stateY);
+			return minY;
+		}
+
+		@Override
+		public double getMaxY(RingBuffer<double[]> buffer) {
+			if (!Double.isFinite(maxY))
+				maxY = findMax(buffer, stateY);
+			return maxY;
+		}
+
+		private double findMin(RingBuffer<double[]> buffer, int[] idxs) {
+			double min = Double.POSITIVE_INFINITY;
+			for (double[] data : buffer) {
+				double d = data[idxs[0] + 1];
+				int nd = idxs.length;
+				if ( nd > 1) {
+					for (int n = 1; n < nd; n++)
+						d += data[idxs[n] + 1];
+				}
+				min = Math.min(min, d);
+			}
+			return min;
+		}
+
+		private double findMax(RingBuffer<double[]> buffer, int[] idxs) {
+			double max = Double.NEGATIVE_INFINITY;
+			for (double[] data : buffer) {
+				double d = data[idxs[0] + 1];
+				int nd = idxs.length;
+				if ( nd > 1) {
+					for (int n = 1; n < nd; n++)
+						d += data[idxs[n] + 1];
+				}
+				max = Math.max(max, d);
+			}
+			return max;
+		}
+
+		@Override
+		public String getTooltipAt(double x, double y) {
+			String tip = "<table><tr><td style='text-align:right'><i>" + style.xLabel //
+					+ ":</i></td><td>" + (style.percentX ? Formatter.formatPercent(x, 2) : Formatter.format(x, 2))
+					+ "</td></tr>";
+			tip += "<tr><td style='text-align:right'><i>" + style.yLabel //
+					+ ":</i></td><td>" + (style.percentY ? Formatter.formatPercent(y, 2) : Formatter.format(y, 2))
+					+ "</td></tr>";
+			tip += "</table>";
+			return tip;
 		}
 	}
 }

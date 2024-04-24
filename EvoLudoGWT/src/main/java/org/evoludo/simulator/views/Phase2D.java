@@ -35,7 +35,6 @@ package org.evoludo.simulator.views;
 import java.util.ArrayList;
 import java.util.Set;
 
-import org.evoludo.geom.Point2D;
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
 import org.evoludo.graphics.ParaGraph;
 import org.evoludo.math.ArrayMath;
@@ -49,8 +48,6 @@ import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
-import org.evoludo.util.Formatter;
-import org.evoludo.util.RingBuffer;
 
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.user.client.Command;
@@ -120,14 +117,11 @@ public class Phase2D extends AbstractView {
 			graph.setSize(width+"%", height+"%");
 		}
 		graph.setMarkers(module.getMarkers());
-		if (map == null) {
-			map = ((HasPhase2D) module).getPhase2DMap();
-			if (map == null) {
-				map = new TraitMap();
-				((HasPhase2D) module).setPhase2DMap(map);
-			}
-			graph.setMap(map);
-		}
+		// set map for converting data to phase plane coordinates
+		map = ((HasPhase2D) module).getPhase2DMap();
+		if (map != null)
+			graph.setMap(map);	
+		map = graph.getMap();	
 		// set axis labels and range
 		style = graph.getStyle();
 		if (model instanceof Model.DE && ((Model.DE) model).isDensity()) {
@@ -319,154 +313,6 @@ public class Phase2D extends AbstractView {
 	@Override
 	protected ExportType[] exportTypes() {
 		return new ExportType[] { ExportType.SVG, ExportType.PNG, ExportType.TRAJ_DATA };
-	}
-
-	public class TraitMap implements Data2Phase {
-
-		// phase plane projections can be the sum of several dynamical variables
-		protected int[] stateX = new int[] { 0 };
-		protected int[] stateY = new int[] { 1 };
-		protected double minX;
-		protected double maxX;
-		protected double minY;
-		protected double maxY;
-
-		@Override
-		public void reset() {
-			minX = Double.POSITIVE_INFINITY;
-			maxX = Double.NEGATIVE_INFINITY;
-			minY = Double.POSITIVE_INFINITY;
-			maxY = Double.NEGATIVE_INFINITY;
-		}
-
-		@Override
-		public void setTraits(int[] x, int[] y) {
-			stateX = ArrayMath.clone(x);
-			stateY = ArrayMath.clone(y);
-		}
-
-		@Override
-		public int[] getTraitsX() {
-			return stateX;
-		}
-
-		@Override
-		public int[] getTraitsY() {
-			return stateY;
-		}
-
-		@Override
-		public boolean hasMultitrait() {
-			return true;
-		}
-
-		@Override
-		public boolean hasFixedAxis() {
-			return false;
-		}
-
-		@Override
-		public boolean data2Phase(double[] data, Point2D point) {
-			// NOTE: data[0] is time
-			point.x = data[stateX[0] + 1];
-			int nx = stateX.length;
-			if (nx > 1) {
-				for (int n = 1; n < nx; n++)
-					point.x += data[stateX[n] + 1];
-			}
-			minX = Math.min(minX, point.x);
-			maxX = Math.max(maxX, point.x);
-			point.y = data[stateY[0] + 1];
-			int ny = stateY.length;
-			if (ny > 1) {
-				for (int n = 1; n < ny; n++)
-					point.y += data[stateY[n] + 1];
-			}
-			minY = Math.min(minY, point.y);
-			maxY = Math.max(maxY, point.y);
-			return true;
-		}
-
-		@Override
-		public boolean phase2Data(Point2D point, double[] data) {
-			// point is in user coordinates
-			// data is the last/most recent state in buffer (excluding time!)
-			if (stateX.length != 1 || stateY.length != 1)
-				return false;
-			// conversion only possible phase plane axis each represents a single
-			// dynamical variable, i.e. no aggregates
-			data[stateX[0]] = point.x;
-			data[stateY[0]] = point.y;
-			return true;
-		}
-
-		@Override
-		public double getMinX(RingBuffer<double[]> buffer) {
-			if (!Double.isFinite(minX))
-				minX = findMin(buffer, stateX);
-			return minX;
-		}
-
-		@Override
-		public double getMaxX(RingBuffer<double[]> buffer) {
-			if (!Double.isFinite(maxX))
-				maxX = findMax(buffer, stateX);
-			return maxX;
-		}
-
-		@Override
-		public double getMinY(RingBuffer<double[]> buffer) {
-			if (!Double.isFinite(minY))
-				minY = findMin(buffer, stateY);
-			return minY;
-		}
-
-		@Override
-		public double getMaxY(RingBuffer<double[]> buffer) {
-			if (!Double.isFinite(maxY))
-				maxY = findMax(buffer, stateY);
-			return maxY;
-		}
-
-		private double findMin(RingBuffer<double[]> buffer, int[] idxs) {
-			double min = Double.POSITIVE_INFINITY;
-			for (double[] data : buffer) {
-				double d = data[idxs[0] + 1];
-				int nd = idxs.length;
-				if ( nd > 1) {
-					for (int n = 1; n < nd; n++)
-						d += data[idxs[n] + 1];
-				}
-				min = Math.min(min, d);
-			}
-			return min;
-		}
-
-		private double findMax(RingBuffer<double[]> buffer, int[] idxs) {
-			double max = Double.NEGATIVE_INFINITY;
-			for (double[] data : buffer) {
-				double d = data[idxs[0] + 1];
-				int nd = idxs.length;
-				if ( nd > 1) {
-					for (int n = 1; n < nd; n++)
-						d += data[idxs[n] + 1];
-				}
-				max = Math.max(max, d);
-			}
-			return max;
-		}
-
-		@Override
-		public String getTooltipAt(double x, double y) {
-			GraphStyle style = graph.getStyle();
-			boolean isDensity = (model instanceof ODEEuler && ((Model.DE) model).isDensity());
-			String tip = "<table><tr><td style='text-align:right'><i>" + style.xLabel //
-					+ ":</i></td><td>" + (isDensity ? Formatter.format(x, 2) : Formatter.formatPercent(x, 2)) + "</td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + style.yLabel //
-					+ ":</i></td><td>" + (isDensity ? Formatter.format(y, 2) : Formatter.formatPercent(y, 2)) + "</td></tr>";
-			tip += "</table>";
-			return tip;
-		}
 	}
 
 	private ContextMenuCheckBoxItem[] traitXItems, traitYItems;
