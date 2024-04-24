@@ -33,7 +33,6 @@
 package org.evoludo.simulator.views;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Set;
 
 import org.evoludo.geom.Point2D;
@@ -68,8 +67,6 @@ public class Phase2D extends AbstractView {
 	protected ParaGraph graph;
 	protected int nStates;
 	protected double[] state;
-	protected double[] minstate;
-	protected double[] maxstate;
 	protected Data2Phase map;
 
 	/**
@@ -100,8 +97,6 @@ public class Phase2D extends AbstractView {
 		nStates = getNStates();
 		if( state==null || state.length!=nStates ) {
 			state = new double[nStates];
-			minstate = new double[nStates];
-			maxstate = new double[nStates];
 		}
 		Module module = engine.getModule();
 		if( graphs.size()!=1 ) {
@@ -150,15 +145,13 @@ public class Phase2D extends AbstractView {
 		style.yLabel = map.getYAxisLabel();
 		style.showYLabel = (style.yLabel!=null);
 		style.trajColor = ColorMapCSS.Color2Css(module.getTrajectoryColor());
-		// reset min/max
-		Arrays.fill(minstate, Double.MAX_VALUE);
-		Arrays.fill(maxstate, -Double.MAX_VALUE);
-		updateMinMaxState();
-		if( hard ) {
+		if (hard) {
+			// reset min/max
+			map.reset();
 			graph.reset();
-			update(true);
-			graph.autoscale();
 		}
+		update(hard);
+		graph.autoscale();
 	}
 
 	@Override
@@ -182,13 +175,22 @@ public class Phase2D extends AbstractView {
 	}
 
 	private void updateMinMaxState() {
-		for (int n=0; n<nStates; n++) {
-			double sn = state[n];
-			if (sn > maxstate[n])
-				maxstate[n] = sn;
-			if (sn < minstate[n])
-				minstate[n] = sn;
+		TraitMap map = (TraitMap) this.map;
+		// state does not include time!!!
+		double x = state[map.stateX[0]];
+		if (map.stateX.length > 1) {
+			for (int n = 1; n < map.stateX.length; n++)
+				x += state[n];
 		}
+		map.minX = Math.min(map.minX, x);
+		map.maxX = Math.max(map.maxX, x);
+		double y = state[map.stateY[0]];
+		if (map.stateY.length > 1) {
+			for (int n = 1; n < map.stateY.length; n++)
+				y += state[n];
+		}
+		map.minY = Math.min(map.minY, y);
+		map.maxY = Math.max(map.maxY, y);
 	}
 
 	protected int getNStates() {
@@ -235,7 +237,19 @@ public class Phase2D extends AbstractView {
 		// phase plane projections can be the sum of several dynamical variables
 		protected int[] stateX = new int[] { 0 };
 		protected int[] stateY = new int[] { 1 };
+		protected double minX;
+		protected double maxX;
+		protected double minY;
+		protected double maxY;
 		boolean multi = false;
+
+		@Override
+		public void reset() {
+			minX = Double.MAX_VALUE;
+			maxX = -Double.MAX_VALUE;
+			minY = Double.MAX_VALUE;
+			maxY = -Double.MAX_VALUE;
+		}
 
 		@Override
 		public void setTraits(int[] x, int[] y) {
@@ -263,6 +277,8 @@ public class Phase2D extends AbstractView {
 				for (int n : stateX)
 					point.x += data[n + 1];
 			}
+			minX = Math.min(minX, point.x);
+			maxX = Math.max(maxX, point.x);
 			if (stateY.length == 1) {
 				point.y = data[stateY[0] + 1];
 			} else {
@@ -270,6 +286,8 @@ public class Phase2D extends AbstractView {
 				for (int n : stateY)
 					point.y += data[n + 1];
 			}
+			minY = Math.min(minY, point.y);
+			maxY = Math.max(maxY, point.y);
 			return true;
 		}
 
@@ -310,46 +328,22 @@ public class Phase2D extends AbstractView {
 
 		@Override
 		public double getMinX(RingBuffer<double[]> buffer) {
-			double minx = minstate[stateX[0]];
-			int nx = stateX.length;
-			if (nx == 1)
-				return minx;
-			for (int n = 1; n < nx; n++)
-				minx += minstate[stateX[n]];
-			return minx;
+			return minX;
 		}
 
 		@Override
 		public double getMaxX(RingBuffer<double[]> buffer) {
-			double maxx = maxstate[stateX[0]];
-			int nx = stateX.length;
-			if (nx == 1)
-				return maxx;
-			for (int n = 1; n < nx; n++)
-				maxx += maxstate[stateX[n]];
-			return maxx;
+			return maxX;
 		}
 
 		@Override
 		public double getMinY(RingBuffer<double[]> buffer) {
-			double miny = minstate[stateY[0]];
-			int ny = stateY.length;
-			if (ny == 1)
-				return miny;
-			for (int n = 1; n < ny; n++)
-				miny += minstate[stateY[n]];
-			return miny;
+			return minY;
 		}
 
 		@Override
 		public double getMaxY(RingBuffer<double[]> buffer) {
-			double maxy = maxstate[stateY[0]];
-			int nx = stateY.length;
-			if (nx == 1)
-				return maxy;
-			for (int n = 1; n < nx; n++)
-				maxy += maxstate[stateY[n]];
-			return maxy;
+			return maxY;
 		}
 
 		@Override
@@ -481,9 +475,7 @@ public class Phase2D extends AbstractView {
 					stateX = toggleState(stateX, traitXItems);
 				else
 					stateY = toggleState(stateY, traitYItems);
-				reset(true);
-				graph.autoscale();
-				graph.paint(true);
+				Phase2D.this.reset(false);
 			}
 
 			int[] toggleState(int[] states, ContextMenuCheckBoxItem[] items) {

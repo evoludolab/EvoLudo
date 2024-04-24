@@ -100,6 +100,13 @@ public interface HasPhase2D {
 		public boolean phase2Data(Point2D point, double[] data);
 
 		/**
+		 * Reset the map. For maps that implement automatic scaling of the axes this
+		 * should reset the range of the phase plane.
+		 */
+		public default void reset() {
+		}
+	
+		/**
 		 * Return custom label for <code>x</code>-axis
 		 * 
 		 * @return <code>x</code>-axis label

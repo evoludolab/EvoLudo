@@ -135,28 +135,6 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 					buffer.append(prependTime2Data(t, data));
 			}
 		}
-		if( !isActive )
-			return;
-		Point2D point = new Point2D();
-		map.data2Phase(buffer.last(), point);
-		// dynamically extend range if needed - never reduce it. 
-		// (would need to consult RingBuffer for this - use autoscale menu).
-		if (!Double.isNaN(point.x)) {
-			style.xMin = Functions.roundDown(Math.min(style.xMin, point.x));
-			style.xMax = Functions.roundUp(Math.max(style.xMax, point.x));
-			if (style.percentX) {
-				style.xMin = Math.max(style.xMin, 0.0);
-				style.xMax = Math.min(style.xMax, 1.0);
-			}
-		}
-		if (!Double.isNaN(point.y)) {
-			style.yMin = Functions.roundDown(Math.min(style.yMin, point.y));
-			style.yMax = Functions.roundUp(Math.max(style.yMax, point.y));
-			if (style.percentY) {
-				style.yMin = Math.max(style.yMin, 0.0);
-				style.xMax = Math.min(style.xMax, 1.0);
-			}
-		}
 	}
 
 	private double distSq(double[] vec, double[] buf) {
@@ -372,6 +350,7 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 			autoscaleMenu = new ContextMenuItem("Autoscale Axis", new Command() {
 				@Override
 				public void execute() {
+					// map.reset(); // see Phase2D.update - requires updateMinMaxState before painting
 					autoscale();
 					paint(true);
 				}
