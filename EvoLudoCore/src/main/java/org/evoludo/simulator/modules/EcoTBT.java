@@ -172,13 +172,6 @@ public class EcoTBT extends TBT implements HasS3, HasPhase2D {
 					+ Formatter.formatPercent(x, 2) + "</td></tr>";
 			tip += "<tr><td style='text-align:right'><i>" + getYAxisLabel() + ":</i></td><td>"
 					+ Formatter.formatPercent(y, 2) + "</td></tr>";
-			tip += "<tr><td colspan='2' style='font-size:1pt'><hr/></td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + getTraitName(VACANT) + ":</i></td><td>"
-					+ Formatter.formatPercent(1.0 - x, 2) + "</td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + getTraitName(DEFECT) + ":</i></td><td>"
-					+ Formatter.formatPercent(x * (1.0 - y), 2) + "</td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + getTraitName(COOPERATE) + ":</i></td><td>"
-					+ Formatter.formatPercent(x * y, 2) + "</td></tr>";
 			tip += "</table>";
 			return tip;
 		}

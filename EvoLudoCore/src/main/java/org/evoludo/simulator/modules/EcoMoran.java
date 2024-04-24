@@ -166,13 +166,6 @@ public class EcoMoran extends Moran implements HasPhase2D, HasS3 {
 					+ Formatter.formatPercent(x, 2) + "</td></tr>";
 			tip += "<tr><td style='text-align:right'><i>" + getYAxisLabel() + ":</i></td><td>"
 					+ Formatter.formatPercent(y, 2) + "</td></tr>";
-			tip += "<tr><td colspan='2' style='font-size:1pt'><hr/></td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + getTraitName(VACANT) + ":</i></td><td>"
-					+ Formatter.formatPercent(1.0 - x, 2) + "</td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + getTraitName(RESIDENT) + ":</i></td><td>"
-					+ Formatter.formatPercent(x * (1.0 - y), 2) + "</td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + getTraitName(MUTANT) + ":</i></td><td>"
-					+ Formatter.formatPercent(x * y, 2) + "</td></tr>";
 			tip += "</table>";
 			return tip;
 		}

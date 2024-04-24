@@ -370,7 +370,7 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 		if (buffer.isEmpty())
 			return;
 		// extract the parametric data from buffer
-		export.append("# time, " + map.getXAxisLabel() + ", " + map.getYAxisLabel() + "\n");
+		export.append("# time, " + style.xLabel + ", " + style.yLabel + "\n");
 		Point2D point = new Point2D();
 		Iterator<double[]> entry = buffer.ordered();
 		while (entry.hasNext()) {

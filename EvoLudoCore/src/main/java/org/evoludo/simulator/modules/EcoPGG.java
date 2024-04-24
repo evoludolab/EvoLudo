@@ -40,9 +40,9 @@ import org.evoludo.math.Combinatorics;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
+import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.PDERD.HasPDE;
-import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.PDERDA;
 import org.evoludo.simulator.models.SDEEuler.HasSDE;
 import org.evoludo.simulator.modules.Discrete.Groups;
@@ -406,13 +406,6 @@ public class EcoPGG extends Discrete implements Groups,
 					+ Formatter.formatPercent(x, 2) + "</td></tr>";
 			tip += "<tr><td style='text-align:right'><i>" + getYAxisLabel() + ":</i></td><td>"
 					+ Formatter.formatPercent(y, 2) + "</td></tr>";
-			tip += "<tr><td colspan='2' style='font-size:1pt'><hr/></td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + getTraitName(VACANT) + ":</i></td><td>"
-					+ Formatter.formatPercent(1.0 - x, 2) + "</td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + getTraitName(DEFECT) + ":</i></td><td>"
-					+ Formatter.formatPercent(x * (1.0 - y), 2) + "</td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + getTraitName(COOPERATE) + ":</i></td><td>"
-					+ Formatter.formatPercent(x * y, 2) + "</td></tr>";
 			tip += "</table>";
 			return tip;
 		}

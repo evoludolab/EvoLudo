@@ -80,13 +80,15 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 
 		GraphAxis x = graph.getXAxis();
 		GraphAxis y = graph.getYAxis();
-		x.label = map.getXAxisLabel();
+		String label = map.getXAxisLabel();
+		x.label = (label == null ? getXAxisLabel() : label);
 		x.showLabel = true;
 		x.max = 1.0;
 		x.min = 0.0;
 		x.majorTicks = 3;
 		x.minorTicks = 1;
-		y.label = map.getYAxisLabel();
+		label = map.getYAxisLabel();
+		y.label = (label == null ? getYAxisLabel() : label);
 		y.showLabel = true;
 		y.max = 1.0;
 		y.min = 0.0;
@@ -141,6 +143,44 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 	// 	engine.modelCheck();
 	// 	engine.modelReinit();
 	// }
+
+	private String getXAxisLabel() {
+		int[] traitX = map.getTraitsX();
+		String xName = getTraitName(traitX[0]);
+		int nx = traitX.length;
+		if (nx > 1) {
+			for (int n = 1; n < nx; n++)
+				xName += "+" + getTraitName(traitX[n]);
+		}
+		return xName;
+	}
+
+	private String getYAxisLabel() {
+		int[] traitY = map.getTraitsY();
+		String yName = getTraitName(traitY[0]);
+		int ny = traitY.length;
+		if (ny > 1) {
+			for (int n = 1; n < ny; n++)
+				yName += "+" + getTraitName(traitY[n]);
+		}
+		return yName;
+	}
+
+	private String getTraitName(int idx) {
+		ArrayList<? extends Module> species = module.getSpecies();
+		int nSpecies = species.size();
+		if (nSpecies > 1) {
+			for (Module mod : species) {
+				int nTraits = mod.getNTraits();
+				if (idx < nTraits)					
+					return mod.getName() + ": " + mod.getTraitName(idx);
+				idx -= nTraits;
+			}
+			// trait not found... should not get here!
+			return null;
+		}
+		return module.getTraitName(idx);
+	}
 
 	@Override
 	public String getToolTipText(Point2D loc, int tag) {

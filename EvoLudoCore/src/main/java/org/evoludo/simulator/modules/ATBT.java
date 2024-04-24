@@ -573,15 +573,6 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 					+ Formatter.formatPercent(x, 2) + "</td></tr>";
 			tip += "<tr><td style='text-align:right'><i>" + getYAxisLabel() + ":</i></td><td>"
 					+ Formatter.formatPercent(y, 2) + "</td></tr>";
-			tip += "<tr><td colspan='2' style='font-size:1pt'><hr/></td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + getTraitName(COOPERATE_POOR) + ":</i></td><td>"
-					+ Formatter.formatPercent(x * (1.0 - y), 2) + "</td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + getTraitName(COOPERATE_RICH) + ":</i></td><td>"
-					+ Formatter.formatPercent(x * y, 2) + "</td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + getTraitName(DEFECT_POOR) + ":</i></td><td>"
-					+ Formatter.formatPercent((1.0 - x) * (1.0 - y), 2) + "</td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + getTraitName(DEFECT_RICH) + ":</i></td><td>"
-					+ Formatter.formatPercent((1.0 - x) * y, 2) + "</td></tr>";
 			tip += "</table>";
 			return tip;
 		}

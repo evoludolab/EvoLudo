@@ -140,9 +140,11 @@ public class Phase2D extends AbstractView {
 			style.percentX = true;
 			style.percentY = true;
 		}
-		style.xLabel = getXAxisLabel();
-		style.showXLabel = (style.xLabel!=null);
-		style.yLabel = getYAxisLabel();
+		String label = map.getXAxisLabel();
+		style.xLabel = (label == null ? getXAxisLabel() : label);
+		style.showXLabel = (style.xLabel != null);
+		label = map.getYAxisLabel();
+		style.yLabel = (label == null ? getYAxisLabel() : label);
 		style.showYLabel = (style.yLabel!=null);
 		style.trajColor = ColorMapCSS.Color2Css(module.getTrajectoryColor());
 		if (hard)
@@ -233,13 +235,84 @@ public class Phase2D extends AbstractView {
 		return false;
 	}
 
-	ContextMenu currentMenu;
-
 	@Override
 	public void populateContextMenu(ContextMenu menu) {
-		currentMenu = menu;
-		map.populateContextMenu();
-		currentMenu = null;
+		if (!map.hasFixedAxis()) {
+			// add context menu for configuring the phase plane axis
+			boolean isDensity = (model instanceof ODEEuler && ((Model.DE) model).isDensity());
+			Module module = engine.getModule();
+			ArrayList<? extends Module> species = module.getSpecies();
+			int nSpecies = species.size();
+			boolean isMultispecies = nSpecies > 1;
+			// no menu entries if single species and less than 3 traits
+			if (!isMultispecies) {
+				if (module.getNTraits() < 3) {
+					traitXMenu = traitYMenu = null;
+					traitXItems = traitYItems = null;
+					return;
+				}
+				// in multi-species models the menu includes species names
+				nSpecies = 0;
+			}
+			int totTraits = 0;
+			for (Module mod : species)
+				totTraits += mod.getNTraits();
+			if (traitXMenu == null || traitXItems == null || traitXItems.length != totTraits ||
+					traitYMenu == null || traitYItems == null || traitYItems.length != totTraits) {
+				traitXMenu = new ContextMenu(menu);
+				traitXItems = new ContextMenuCheckBoxItem[totTraits];
+				traitYMenu = new ContextMenu(menu);
+				traitYItems = new ContextMenuCheckBoxItem[totTraits];
+				int idx = 0;
+				for (Module mod : species) {
+					int vacant = mod.getVacant();
+					int nTraits = mod.getNTraits();
+					if (isMultispecies) {
+						// add separator unless it's the first species
+						if (idx > 0) {
+							traitXMenu.addSeparator();
+							traitYMenu.addSeparator();
+						}
+						// add species name as disabled menu entry
+						ContextMenuItem speciesName = new ContextMenuItem(mod.getName(),
+								(Scheduler.ScheduledCommand) null);
+						speciesName.getElement().getStyle()
+								.setFontWeight(com.google.gwt.dom.client.Style.FontWeight.BOLD);
+						speciesName.setEnabled(false);
+						traitXMenu.add(speciesName);
+						// cannot add same item to two menus...
+						speciesName = new ContextMenuItem(mod.getName(),
+								(Scheduler.ScheduledCommand) null);
+						speciesName.getElement().getStyle()
+								.setFontWeight(com.google.gwt.dom.client.Style.FontWeight.BOLD);
+						speciesName.setEnabled(false);
+						traitYMenu.add(speciesName);
+					}
+					for (int n = 0; n < nTraits; n++) {
+						ContextMenuCheckBoxItem traitXItem = new ContextMenuCheckBoxItem(mod.getTraitName(n), //
+								new TraitCommand(idx, TraitCommand.X_AXIS));
+						traitXMenu.add(traitXItem);
+						ContextMenuCheckBoxItem traitYItem = new ContextMenuCheckBoxItem(mod.getTraitName(n), //
+								new TraitCommand(idx, TraitCommand.Y_AXIS));
+						traitYMenu.add(traitYItem);
+						if (isDensity && n == vacant) {
+							traitXItem.setEnabled(false);
+							traitYItem.setEnabled(false);
+						}
+						traitXItems[idx] = traitXItem;
+						traitYItems[idx] = traitYItem;
+						idx++;
+					}
+				}
+				for (int n : map.getTraitsX())
+					traitXItems[n].setChecked(true);
+				for (int n : map.getTraitsY())
+					traitYItems[n].setChecked(true);
+			}
+			menu.addSeparator();
+			menu.add("X-axis trait...", traitXMenu);
+			menu.add("Y-axis trait...", traitYMenu);
+		}
 		super.populateContextMenu(menu);		
 	}
 
@@ -257,7 +330,6 @@ public class Phase2D extends AbstractView {
 		protected double maxX;
 		protected double minY;
 		protected double maxY;
-		boolean multi = false;
 
 		@Override
 		public void reset() {
@@ -269,11 +341,6 @@ public class Phase2D extends AbstractView {
 
 		@Override
 		public void setTraits(int[] x, int[] y) {
-			if (!multi) {
-				stateX[0] = x[0];
-				stateY[0] = y[0];
-				return;
-			}
 			stateX = ArrayMath.clone(x);
 			stateY = ArrayMath.clone(y);
 		}
@@ -289,8 +356,13 @@ public class Phase2D extends AbstractView {
 		}
 
 		@Override
-		public void setMultitrait(boolean multi) {
-			this.multi = multi;
+		public boolean hasMultitrait() {
+			return true;
+		}
+
+		@Override
+		public boolean hasFixedAxis() {
+			return false;
 		}
 
 		@Override
@@ -395,128 +467,53 @@ public class Phase2D extends AbstractView {
 			tip += "</table>";
 			return tip;
 		}
+	}
 
-		private ContextMenuCheckBoxItem[] traitXItems, traitYItems;
-		private ContextMenu traitXMenu, traitYMenu;
+	private ContextMenuCheckBoxItem[] traitXItems, traitYItems;
+	private ContextMenu traitXMenu, traitYMenu;
 
-		@Override
-		public void populateContextMenu() {
-			boolean isDensity = (model instanceof ODEEuler && ((Model.DE) model).isDensity());
-			Module module = engine.getModule();
-			ArrayList<? extends Module> species = module.getSpecies();
-			int nSpecies = species.size();
-			boolean isMultispecies = nSpecies > 1;
-			// no menu entries if single species and less than 3 traits
-			if (!isMultispecies) {
-				if (module.getNTraits() < 3) {
-					traitXMenu = traitYMenu = null;
-					traitXItems = traitYItems = null;
-					return;
-				}
-				// in multi-species models the menu includes species names
-				nSpecies = 0;
-			}
-			int totTraits = 0;
-			for (Module mod : species)
-				totTraits += mod.getNTraits();
-			if (traitXMenu == null || traitXItems == null || traitXItems.length != totTraits ||
-					traitYMenu == null || traitYItems == null || traitYItems.length != totTraits) {
-				traitXMenu = new ContextMenu(currentMenu);
-				traitXItems = new ContextMenuCheckBoxItem[totTraits];
-				traitYMenu = new ContextMenu(currentMenu);
-				traitYItems = new ContextMenuCheckBoxItem[totTraits];
-				int idx = 0;
-				for (Module mod : species) {
-					int vacant = mod.getVacant();
-					int nTraits = mod.getNTraits();
-					if (isMultispecies) {
-						// add separator unless it's the first species
-						if (idx > 0) {
-							traitXMenu.addSeparator();
-							traitYMenu.addSeparator();
-						}
-						// add species name as disabled menu entry
-						ContextMenuItem speciesName = new ContextMenuItem(mod.getName(),
-								(Scheduler.ScheduledCommand) null);
-						speciesName.getElement().getStyle().setFontWeight(com.google.gwt.dom.client.Style.FontWeight.BOLD);
-						speciesName.setEnabled(false);
-						traitXMenu.add(speciesName);
-						// cannot add same item to two menus...
-						speciesName = new ContextMenuItem(mod.getName(),
-								(Scheduler.ScheduledCommand) null);
-						speciesName.getElement().getStyle().setFontWeight(com.google.gwt.dom.client.Style.FontWeight.BOLD);
-						speciesName.setEnabled(false);
-						traitYMenu.add(speciesName);
-					}
-					for (int n = 0; n < nTraits; n++) {
-						ContextMenuCheckBoxItem traitXItem = new ContextMenuCheckBoxItem(mod.getTraitName(n), //
-								new TraitCommand(idx, TraitCommand.X_AXIS));
-						traitXMenu.add(traitXItem);
-						ContextMenuCheckBoxItem traitYItem = new ContextMenuCheckBoxItem(mod.getTraitName(n), //
-								new TraitCommand(idx, TraitCommand.Y_AXIS));
-						traitYMenu.add(traitYItem);
-						if (isDensity && n == vacant) {
-							traitXItem.setEnabled(false);
-							traitYItem.setEnabled(false);
-						}
-						traitXItems[idx] = traitXItem;
-						traitYItems[idx] = traitYItem;
-						idx++;
-					}
-				}
-				for (int n : stateX)
-					traitXItems[n].setChecked(true);
-				for (int n : stateY)
-					traitYItems[n].setChecked(true);
-			}
-			currentMenu.addSeparator();
-			currentMenu.add("X-axis trait...", traitXMenu);
-			currentMenu.add("Y-axis trait...", traitYMenu);
+	public class TraitCommand implements Command {
+		public static final int X_AXIS = 0;
+		public static final int Y_AXIS = 1;
+		int trait = -1;
+		int axis = -1;
+
+		public TraitCommand(int trait, int axis) {
+			this.trait = trait;
+			this.axis = axis;
 		}
 
-		public class TraitCommand implements Command {
-			public static final int X_AXIS = 0;
-			public static final int Y_AXIS = 1;
-			int trait = -1;
-			int axis = -1;
+		@Override
+		public void execute() {
+			if(axis == X_AXIS)
+				map.setTraits(toggleState(map.getTraitsX(), traitXItems), map.getTraitsY());
+			else
+				map.setTraits(map.getTraitsX(), toggleState(map.getTraitsY(), traitYItems));
+			Phase2D.this.reset(false);
+		}
 
-			public TraitCommand(int trait, int axis) {
-				this.trait = trait;
-				this.axis = axis;
-			}
-
-			@Override
-			public void execute() {
-				if(axis == X_AXIS)
-					stateX = toggleState(stateX, traitXItems);
-				else
-					stateY = toggleState(stateY, traitYItems);
-				Phase2D.this.reset(false);
-			}
-
-			int[] toggleState(int[] states, ContextMenuCheckBoxItem[] items) {
-				int idx = ArrayMath.first(states, trait);
-				if (idx < 0) {
-					if (multi) {
-						// add trait to axis
-						states = ArrayMath.append(states, trait);
-					} else {
-						// replace trait
-						states[0] = trait;
-					}
+		int[] toggleState(int[] states, ContextMenuCheckBoxItem[] items) {
+			int idx = ArrayMath.first(states, trait);
+			if (idx < 0) {
+				if (map.hasMultitrait()) {
+					// add trait to axis
+					states = ArrayMath.append(states, trait);
 				} else {
-					// remove trait from axis
-					// do not deselect last item
-					if (states.length > 1)
-						states = ArrayMath.drop(states, idx);
+					// replace trait
+					states[0] = trait;
 				}
-				// make sure all items are unchecked, then check current one
-				for (ContextMenuCheckBoxItem item : items)
-					item.setChecked(false);
-				for (int n : states)
-					items[n].setChecked(true);
-				return states;
+			} else {
+				// remove trait from axis
+				// do not deselect last item
+				if (states.length > 1)
+					states = ArrayMath.drop(states, idx);
 			}
+			// make sure all items are unchecked, then check current one
+			for (ContextMenuCheckBoxItem item : items)
+				item.setChecked(false);
+			for (int n : states)
+				items[n].setChecked(true);
+			return states;
 		}
 	}
 }

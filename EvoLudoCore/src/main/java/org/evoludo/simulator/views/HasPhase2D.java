@@ -125,47 +125,43 @@ public interface HasPhase2D {
 		}
 
 		/**
-		 * Return minimum value for <code>x</code>-axis. Returns {@link Double#NaN} by
-		 * default to indicate that no minimum was calculated.
+		 * Return minimum value for <code>x</code>-axis. Returns {@code 0} by default.
 		 * 
 		 * @param buffer the buffer with data points
 		 * @return the lower bound for <code>x</code>-axis
 		 */
 		public default double getMinX(RingBuffer<double[]> buffer) {
-			return Double.NaN;
+			return 0.0;
 		}
 
 		/**
-		 * Return minimum value for <code>x</code>-axis. Returns {@link Double#NaN} by
-		 * default to indicate that no maximum was calculated.
+		 * Return maximum value for <code>x</code>-axis. Returns {@code 1} by default.
 		 * 
 		 * @param buffer the buffer with data points
 		 * @return upper bound for <code>x</code>-axis
 		 */
 		public default double getMaxX(RingBuffer<double[]> buffer) {
-			return Double.NaN;
+			return 1.0;
 		}
 
 		/**
-		 * Return minimum value for <code>y</code>-axis. Returns {@link Double#NaN} by
-		 * default to indicate that no minimum was calculated.
+		 * Return minimum value for <code>y</code>-axis. Returns {@code 0} by default.
 		 * 
 		 * @param buffer the buffer with data points
 		 * @return the lower bound for <code>y</code>-axis
 		 */
 		public default double getMinY(RingBuffer<double[]> buffer) {
-			return Double.NaN;
+			return 0.0;
 		}
 
 		/**
-		 * Return maximum value for <code>y</code>-axis. Returns {@link Double#NaN} by
-		 * default to indicate that no maximum was calculated.
+		 * Return maximum value for <code>y</code>-axis. Returns {@code 1} by default.
 		 * 
 		 * @param buffer the buffer with data points
 		 * @return the upper bound for <code>y</code>-axis
 		 */
 		public default double getMaxY(RingBuffer<double[]> buffer) {
-			return Double.NaN;
+			return 1.0;
 		}
 
 		/**
@@ -216,23 +212,26 @@ public interface HasPhase2D {
 		}
 
 		/**
-		 * Maps that allow multiple traits on each axis of the phase plane must set this
-		 * to {@code true}. Default is single trait only.
+		 * Return whether multiple traits can be selected for each axis of the phase
+		 * plane.
 		 * 
-		 * @param multi the flag indicating whether multiple traits can be selected for
-		 *              each axis.
+		 * @return {@code true} if multiple traits can be selected for each axis
+		 * 
+		 * @see #hasFixedAxis()
 		 */
-		public default void setMultitrait(boolean multi) {
+		public default boolean hasMultitrait() {
+			return false;
 		}
 
 		/**
-		 * Return custom additions to context menu.
-		 * <p>
-		 * <strong>IMPORTANT:</strong> with GUI elements we must be extra careful to
-		 * keep GWT and JRE separate. In particular, the menu cannot be passed as an
-		 * argument but rather must be retrieved by implementing classes.
+		 * Return whether axis of the phase plane are customizable.
+		 * 
+		 * @return {@code true} if axis can be customized
+		 * 
+		 * @see #hasMultitrait()
 		 */
-		public default void populateContextMenu() {
+		public default boolean hasFixedAxis() {
+			return true;
 		}
 
 		/**

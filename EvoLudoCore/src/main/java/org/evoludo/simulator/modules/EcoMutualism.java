@@ -294,10 +294,6 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 			colors[HOST_MIXED] = Color.PINK;
 			colors[VACANT] = Color.LIGHT_GRAY;
 			setTraitColors(colors);
-			// by default show HOST_COOPERATE on horizontal and VIRUS_COOPERATE on
-			// vertical axis of phase plane
-			phase2DTraitX = new int[] { HOST_COOPERATE };
-			phase2DTraitY = new int[] { nTraits + VIRUS_COOPERATE};
 		}
 	}
 
@@ -332,8 +328,6 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 			partner.unload();
 			partner = null;
 		}
-		phase2DTraitX = null;
-		phase2DTraitY = null;
 	}
 
 	@Override
@@ -361,15 +355,14 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 		return "v1.0 May 2022";
 	}
 
-	int[] phase2DTraitX;
-	int[] phase2DTraitY;
 	Data2Phase map;
 
 	@Override
 	public void setPhase2DMap(Data2Phase map) {
 		this.map = map;
-		map.setMultitrait(true);
-		map.setTraits(phase2DTraitX, phase2DTraitY);
+		// by default show HOST_COOPERATE on horizontal and VIRUS_COOPERATE on
+		// vertical axis of phase plane; note the nTraits of the host species
+		map.setTraits(new int[] { HOST_COOPERATE }, new int[] { nTraits + VIRUS_COOPERATE});
 	}
 
 	@Override
