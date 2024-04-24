@@ -98,6 +98,8 @@ public class Functions {
 	 * @return the order of magnitude
 	 */
 	public static int magnitude(double value) {
+		if (!Double.isFinite(value))
+			return 0;
 		value = Math.abs(value);
 		// values of zero cause a headache
 		if (value < Double.MIN_VALUE)
