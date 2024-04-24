@@ -147,7 +147,8 @@ public class Phase2D extends AbstractView {
 		style.trajColor = ColorMapCSS.Color2Css(module.getTrajectoryColor());
 		if (hard)
 			graph.reset();
-		graph.autoscale();
+		else
+			graph.autoscale();
 		update(hard);
 	}
 

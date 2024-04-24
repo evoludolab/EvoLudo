@@ -69,6 +69,8 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 		super(controller, tag);
 		this.nStates = nStates;
 		setStylePrimaryName("evoludo-ParaGraph");
+		buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
+		init = new double[nStates + 1];
 	}
 
 	@Override
@@ -76,17 +78,6 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 		super.activate();
 		doubleClickHandler = addDoubleClickHandler(this);
 		autoscale();
-	}
-
-	@Override
-	public void alloc() {
-		super.alloc();
-		// buffer length is nStates + 1 for time
-		if (buffer == null || buffer.capacity() < MIN_BUFFER_SIZE) {
-			buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
-		}
-		if (init == null || init.length != nStates + 1)
-			init = new double[nStates + 1];
 	}
 
 	public void setMap(Data2Phase map) {
@@ -106,7 +97,6 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 	@Override
 	public void reset() {
 		super.reset();
-		calcBounds();
 		buffer.clear();
 	}
 
@@ -114,8 +104,10 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 		if (buffer.isEmpty()) {
 			buffer.append(prependTime2Data(t, data));
 			System.arraycopy(buffer.last(), 1, init, 1, nStates);
-		}
-		else {
+			// now we are finally ready to calculate frame etc.
+			autoscale();
+			calcBounds();
+		} else {
 			double[] last = buffer.last();
 			double lastt = last[0];
 			if (Math.abs(t - lastt) < 1e-8) {
@@ -168,13 +160,13 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 
 		// update axis range if necessary
 		style.xMin = Functions.roundDown(Math.min(style.xMin, map.getMinX(buffer)));
-		style.xMax = Functions.roundDown(Math.max(style.xMax, map.getMaxX(buffer)));
+		style.xMax = Functions.roundUp(Math.max(style.xMax, map.getMaxX(buffer)));
 		if (style.percentX) {
 			style.xMin = Math.max(style.xMin, 0.0);
 			style.xMax = Math.min(style.xMax, 1.0);
 		}
 		style.yMin = Functions.roundDown(Math.min(style.yMin, map.getMinY(buffer)));
-		style.yMax = Functions.roundDown(Math.max(style.yMax, map.getMaxY(buffer)));
+		style.yMax = Functions.roundUp(Math.max(style.yMax, map.getMaxY(buffer)));
 		if (style.percentX) {
 			style.yMin = Math.max(style.yMin, 0.0);
 			style.yMax = Math.min(style.yMax, 1.0);
