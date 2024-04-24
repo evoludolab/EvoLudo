@@ -140,9 +140,9 @@ public class Phase2D extends AbstractView {
 			style.percentX = true;
 			style.percentY = true;
 		}
-		style.xLabel = map.getXAxisLabel();
+		style.xLabel = getXAxisLabel();
 		style.showXLabel = (style.xLabel!=null);
-		style.yLabel = map.getYAxisLabel();
+		style.yLabel = getYAxisLabel();
 		style.showYLabel = (style.yLabel!=null);
 		style.trajColor = ColorMapCSS.Color2Css(module.getTrajectoryColor());
 		if (hard)
@@ -177,6 +177,45 @@ public class Phase2D extends AbstractView {
 		for (Module mod : species)
 			totTraits += mod.getNTraits();
 		return totTraits;
+	}
+
+	private String getXAxisLabel() {
+		int[] traitX = map.getTraitsX();
+		String xName = getTraitName(traitX[0]);
+		int nx = traitX.length;
+		if (nx > 1) {
+			for (int n = 1; n < nx; n++)
+				xName += "+" + getTraitName(traitX[n]);
+		}
+		return xName + (graph.getStyle().percentX ? " frequency" : " density");
+	}
+
+	private String getYAxisLabel() {
+		int[] traitY = map.getTraitsY();
+		String yName = getTraitName(traitY[0]);
+		int ny = traitY.length;
+		if (ny > 1) {
+			for (int n = 1; n < ny; n++)
+				yName += "+" + getTraitName(traitY[n]);
+		}
+		return yName + (graph.getStyle().percentY ? " frequency" : " density");
+	}
+
+	private String getTraitName(int idx) {
+		Module module = engine.getModule();
+		ArrayList<? extends Module> species = module.getSpecies();
+		int nSpecies = species.size();
+		if (nSpecies > 1) {
+			for (Module mod : species) {
+				int nTraits = mod.getNTraits();
+				if (idx < nTraits)					
+					return mod.getName() + ": " + mod.getTraitName(idx);
+				idx -= nTraits;
+			}
+			// trait not found... should not get here!
+			return null;
+		}
+		return module.getTraitName(idx);
 	}
 
 	@Override
@@ -240,6 +279,16 @@ public class Phase2D extends AbstractView {
 		}
 
 		@Override
+		public int[] getTraitsX() {
+			return stateX;
+		}
+
+		@Override
+		public int[] getTraitsY() {
+			return stateY;
+		}
+
+		@Override
 		public void setMultitrait(boolean multi) {
 			this.multi = multi;
 		}
@@ -277,28 +326,6 @@ public class Phase2D extends AbstractView {
 			data[stateX[0]] = point.x;
 			data[stateY[0]] = point.y;
 			return true;
-		}
-
-		@Override
-		public String getXAxisLabel() {
-			String xName = getTraitName(stateX[0]);
-			int nx = stateX.length;
-			if (nx > 1) {
-				for (int n = 1; n < nx; n++)
-					xName += "+" + getTraitName(stateX[n]);
-			}
-			return xName + (graph.getStyle().percentX ? " frequency" : " density");
-		}
-
-		@Override
-		public String getYAxisLabel() {
-			String yName = getTraitName(stateY[0]);
-			int ny = stateY.length;
-			if (ny > 1) {
-				for (int n = 1; n < ny; n++)
-					yName += "+" + getTraitName(stateY[n]);
-			}
-			return yName + (graph.getStyle().percentY ? " frequency" : " density");
 		}
 
 		@Override
@@ -365,30 +392,8 @@ public class Phase2D extends AbstractView {
 					+ ":</i></td><td>" + (isDensity ? Formatter.format(x, 2) : Formatter.formatPercent(x, 2)) + "</td></tr>";
 			tip += "<tr><td style='text-align:right'><i>" + style.yLabel //
 					+ ":</i></td><td>" + (isDensity ? Formatter.format(y, 2) : Formatter.formatPercent(y, 2)) + "</td></tr>";
-			tip += "<tr><td colspan='2' style='font-size:1pt'><hr/></td></tr>";
-			for (int n = 0; n < nStates; n++) {
-				tip += "<tr><td style='text-align:right'><i>" + getTraitName(n) + ":</i></td><td>" //
-						+ (isDensity ? Formatter.format(state[n], 2) : Formatter.formatPercent(state[n], 2)) + "</td></tr>";
-			}
 			tip += "</table>";
 			return tip;
-		}
-
-		protected String getTraitName(int idx) {
-			Module module = engine.getModule();
-			ArrayList<? extends Module> species = module.getSpecies();
-			int nSpecies = species.size();
-			if (nSpecies > 1) {
-				for (Module mod : species) {
-					int nTraits = mod.getNTraits();
-					if (idx < nTraits)					
-						return mod.getName() + ": " + mod.getTraitName(idx);
-					idx -= nTraits;
-				}
-				// trait not found... should not get here!
-				return null;
-			}
-			return module.getTraitName(idx);
 		}
 
 		private ContextMenuCheckBoxItem[] traitXItems, traitYItems;

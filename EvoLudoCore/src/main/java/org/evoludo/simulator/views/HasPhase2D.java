@@ -196,6 +196,26 @@ public interface HasPhase2D {
 		}
 
 		/**
+		 * Get the array of indices of traits displayed on the horizontal axis of the
+		 * phase plane.
+		 * 
+		 * @return the array of indices
+		 */
+		public default int[] getTraitsX() {
+			return new int[] { 0 };
+		}
+
+		/**
+		 * Get the array of indices of traits displayed on the vertical axis of the
+		 * phase plane.
+		 * 
+		 * @return the array of indices
+		 */
+		public default int[] getTraitsY() {
+			return new int[] { 1 };
+		}
+
+		/**
 		 * Maps that allow multiple traits on each axis of the phase plane must set this
 		 * to {@code true}. Default is single trait only.
 		 * 
