@@ -565,7 +565,6 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 							style.xLabel = "density";
 							style.xMin = 0.0;
 							style.xMax = 0.0;
-							style.autoscaleX = true;
 						} else {
 							style.xLabel = "frequency";
 							style.xMin = 0.0;

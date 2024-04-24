@@ -2022,7 +2022,7 @@ public abstract class AbstractGraph extends FocusPanel
 		/**
 		 * The flag to indicate whether to auto-scale the horizontal axis.
 		 */
-		public boolean autoscaleX = false;
+		public boolean autoscaleX = true;
 
 		/**
 		 * The flag to indicate whether to auto-scale the vertical axis.
