@@ -602,7 +602,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	public void getTraitHistogramData(double[][] bins) {
 		// clear bins
 		for (int n = 0; n < nTraits; n++)
-			getTraitHistogramData(fitness, n);
+			getTraitHistogramData(bins[n], n);
 	}
 
 	/**
