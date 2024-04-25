@@ -602,18 +602,27 @@ public class IBSMCPopulation extends IBSPopulation {
 	public void getTraitHistogramData(double[][] bins) {
 		// clear bins
 		for (int n = 0; n < nTraits; n++)
-			Arrays.fill(bins[n], 0.0);
-		int nBins = bins[0].length;
+			getTraitHistogramData(fitness, n);
+	}
+
+	/**
+	 * Creates a histogram for {@code trait} and returns the result in the array
+	 * <code>bins</code>.
+	 *
+	 * @param bins the array to store the histogram(s)
+	 */
+	public void getTraitHistogramData(double[] bins, int trait) {
+		// clear bins
+		Arrays.fill(bins, 0.0);
+		int nBins = bins.length;
 		double scale = (nBins - 1);
-		double norm = 1.0 / nPopulation;
 		// fill bins
-		for (int d = 0; d < nTraits; d++) {
-			for (int n = d; n < nPopulation * nTraits; n += nTraits)
-				// continuous strategies are stored in normalized form
-				bins[d][(int) (strategies[n] * scale + 0.5)]++;
-			for (int n = 0; n < nBins; n++)
-				bins[d][n] *= norm;
-		}
+		for (int n = trait; n < nPopulation * nTraits; n += nTraits)
+			// continuous strategies are stored in normalized form
+			bins[(int) (strategies[n] * scale + 0.5)]++;
+		double norm = 1.0 / nPopulation;
+		for (int n = 0; n < nBins; n++)
+			bins[n] *= norm;
 	}
 
 	/**
@@ -629,7 +638,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	 *
 	 * @see org.evoludo.simulator.Geometry#initGeometrySquare()
 	 */
-	public void getTraitHistogramData(double[] bins, int trait1, int trait2) {
+	public void get2DTraitHistogramData(double[] bins, int trait1, int trait2) {
 		// clear bins
 		Arrays.fill(bins, 0.0);
 		double incr = 1.0 / nPopulation;

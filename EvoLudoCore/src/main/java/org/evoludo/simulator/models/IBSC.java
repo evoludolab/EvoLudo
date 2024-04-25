@@ -74,8 +74,8 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	}
 
 	@Override
-	public void getTraitHistogramData(int id, double[] bins, int trait1, int trait2) {
-		getIBSMCPopulation(id).getTraitHistogramData(bins, trait1, trait2);
+	public void get2DTraitHistogramData(int id, double[] bins, int trait1, int trait2) {
+		getIBSMCPopulation(id).get2DTraitHistogramData(bins, trait1, trait2);
 	}
 
 	/**

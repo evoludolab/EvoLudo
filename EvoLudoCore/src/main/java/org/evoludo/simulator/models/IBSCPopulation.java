@@ -328,4 +328,14 @@ public class IBSCPopulation extends IBSMCPopulation {
 	public void commitStrategyAt(int me) {
 		strategies[me] = strategiesScratch[me];
 	}
+
+	/**
+	 * Creates a histogram for {@code trait} and returns the result in the array
+	 * <code>bins</code>.
+	 *
+	 * @param bins the array to store the histogram(s)
+	 */
+	public void getTraitHistogramData(double[] bins) {
+		getTraitHistogramData(bins, 0);
+	}
 }

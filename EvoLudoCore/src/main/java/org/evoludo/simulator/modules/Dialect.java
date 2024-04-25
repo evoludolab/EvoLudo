@@ -791,9 +791,9 @@ public class Dialect extends Continuous implements Module.Static, HasIBS, //
 		}
 
 		@Override
-		public void getTraitHistogramData(double[] bins, int trait1, int trait2) {
+		public void get2DTraitHistogramData(double[] bins, int trait1, int trait2) {
 			if (updateType != Dynamic.EW_MODEL) {
-				super.getTraitHistogramData(bins, trait1, trait2);
+				super.get2DTraitHistogramData(bins, trait1, trait2);
 				return;
 			}
 			// Edwards-Wilkinson model has only a single trait, ignore trait1 and trait2

@@ -104,7 +104,7 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 					// process data first
 					double[] histo = bins[graph.getTag()];
 					// casts ok because trait histograms make sense only for continuous models
-					((Model.ContinuousIBS)model).getTraitHistogramData(graph.getTag(), histo, traitXIdx, traitYIdx);
+					((Model.ContinuousIBS)model).get2DTraitHistogramData(graph.getTag(), histo, traitXIdx, traitYIdx);
 					ColorMap.Gradient1D<String> cMap = (ColorMap.Gradient1D<String>) graph.getColorMap();
 					cMap.setRange(0.0, ArrayMath.max(histo));
 					cMap.translate(histo, graph.getData());

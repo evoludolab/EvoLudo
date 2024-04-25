@@ -497,7 +497,7 @@ public abstract interface Model extends CLOProvider {
 		 * 
 		 * @see org.evoludo.simulator.Geometry#initGeometrySquare()
 		 */
-		public void getTraitHistogramData(int id, double[] bins, int trait1, int trait2);
+		public void get2DTraitHistogramData(int id, double[] bins, int trait1, int trait2);
 	}
 
 	/**
