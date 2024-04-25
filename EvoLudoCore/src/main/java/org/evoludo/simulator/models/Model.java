@@ -1332,7 +1332,7 @@ public abstract interface Model extends CLOProvider {
 	 * mode should be coordinated by the engine through requests.
 	 *
 	 * @param mode change mode of model to <code>mode</code>
-	 * @return {@code true} if mode successfully set
+	 * @return {@code true} if mode changed
 	 *
 	 * @see #requestMode(Mode)
 	 */
@@ -1352,7 +1352,7 @@ public abstract interface Model extends CLOProvider {
 	 * @see EvoLudo#requestAction(ChangeListener.PendingAction)
 	 */
 	public default boolean requestMode(Mode mode) {
-		return setMode(mode);
+		return permitsMode(mode);
 	}
 
 	/**

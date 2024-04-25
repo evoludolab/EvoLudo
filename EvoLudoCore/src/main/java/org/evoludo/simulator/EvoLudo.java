@@ -1204,7 +1204,9 @@ public abstract class EvoLudo
 					i.modelChanged(pendingAction);
 				break;
 			case MODE:
-				activeModel.setMode(pendingAction.mode);
+				if (!activeModel.setMode(pendingAction.mode))
+					// continue running if mode unchanged
+					break;
 			//$FALL-THROUGH$
 			case STOP:
 				// stop requested (as opposed to simulations that stopped)

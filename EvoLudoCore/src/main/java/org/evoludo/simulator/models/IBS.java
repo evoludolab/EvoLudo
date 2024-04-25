@@ -83,8 +83,9 @@ public abstract class IBS implements Model.IBS {
 	public boolean setMode(Mode mode) {
 		if (!permitsMode(mode))
 			return false;
+		boolean changed = (this.mode != mode);
 		this.mode = mode;
-		return true;
+		return changed;
 	}
 
 	@Override
