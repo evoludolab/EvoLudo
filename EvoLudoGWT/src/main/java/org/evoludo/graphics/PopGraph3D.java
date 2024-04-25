@@ -228,17 +228,6 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	}
 
 	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * <strong>Note:</strong> deliberately does <em>not</em> call super because no
-	 * Canvas2D is needed for 3D graphs
-	 */
-	@Override
-	public void alloc() {
-		graph3DPanel.onResize();
-	}
-
-	/**
 	 * Start the animation of the 3D scene.
 	 * <p>
 	 * <strong>Note:</strong> It is important to only run the animation as long as
@@ -325,6 +314,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	@Override
 	public void reset() {
 		super.reset();
+		graph3DPanel.onResize();
 		// geometry (and network) may be null for Model.ODE or Model.SDE
 		if (geometry == null)
 			return;

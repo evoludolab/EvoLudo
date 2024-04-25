@@ -619,20 +619,17 @@ public abstract class AbstractGraph extends FocusPanel
 	public void onResize() {
 		tooltip.close();
 		contextMenu.close();
-		alloc();
+		calcBounds();
+		updateCanvas();
 	}
 
-	/**
-	 * Allocate memory as appropriate. Must be called after resizing graph.
-	 */
-	public void alloc() {
-		// setting size of canvas clears it; do nothing if size remained the same
-		if (width != getOffsetWidth() || height != getOffsetHeight()) {
-			calcBounds();
-			canvas.setPixelSize(width, height);
-			canvas.setCoordinateSpaceWidth((int) (scale * width));
-			canvas.setCoordinateSpaceHeight((int) (scale * height));
-		}
+	private void updateCanvas() {
+		// canvas is null for PopGraph3D
+		if (canvas == null)
+			return;
+		canvas.setPixelSize(width, height);
+		canvas.setCoordinateSpaceWidth((int) (scale * width));
+		canvas.setCoordinateSpaceHeight((int) (scale * height));
 	}
 
 	/**
@@ -640,7 +637,11 @@ public abstract class AbstractGraph extends FocusPanel
 	 */
 	public void reset() {
 		clearMessage();
-		alloc();
+		// setting size of canvas clears it; do nothing if size remained the same
+		if (width != getOffsetWidth() || height != getOffsetHeight()) {
+			calcBounds();
+			updateCanvas();
+		}
 		zoom();
 	}
 

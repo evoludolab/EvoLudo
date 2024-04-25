@@ -92,15 +92,6 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTraj
 		doubleClickHandler = addDoubleClickHandler(this);
 	}
 
-	@Override
-	public void alloc() {
-		super.alloc();
-		// buffer length is nStates + 1 for time
-		if (buffer == null || buffer.capacity() < MIN_BUFFER_SIZE) {
-			buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
-		}
-	}
-
 	public void setMap(Data2S3 map) {
 		if (map == null)
 			return;
@@ -151,6 +142,8 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTraj
 	public void reset() {
 		super.reset();
 		calcBounds();
+		if (buffer == null || buffer.capacity() < MIN_BUFFER_SIZE)
+			buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
 		buffer.clear();
 		paint(true);
 	}

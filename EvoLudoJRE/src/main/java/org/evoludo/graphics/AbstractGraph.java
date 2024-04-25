@@ -246,11 +246,6 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 		controller.initCustomMenu(menu, this, tag);
 	}
 
-	public void alloc() {
-		// check if history settings changed - allocate plot if necessary
-		if( hasHistory!=hasHistory() ) initGraph();
-	}
-
 	public void reinit() {
 		// reset timestamp
 		timestamp = -Double.MAX_VALUE;
@@ -263,7 +258,9 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 
 	public void reset(boolean clear) {
 		// ensure that hasHistory is take into account
-		alloc();
+		// check if history settings changed - allocate plot if necessary
+		if( hasHistory!=hasHistory() )
+			initGraph();
 		if( frame!=null )
 			canvas = frame.canvas;
 		else {
