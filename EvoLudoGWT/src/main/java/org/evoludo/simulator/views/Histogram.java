@@ -35,7 +35,7 @@ package org.evoludo.simulator.views;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Set;
+import java.util.List;
 
 import org.evoludo.EvoLudoWeb;
 import org.evoludo.graphics.AbstractGraph;
@@ -72,7 +72,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 	// NOTE: this is a bit of a hack that allows us to use graphs as Set<HistoGraph> here
 	//		 but as Set<AbstractGraph> in super classes. saves a lot of ugly casting
 	@SuppressWarnings("hiding")
-	protected Set<HistoGraph> graphs;
+	protected List<HistoGraph> graphs;
 
 	protected int MAX_BINS = 100;
 	double scale2bins = 1.0;
@@ -88,7 +88,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 	@SuppressWarnings("unchecked")
 	public Histogram(EvoLudoGWT engine, Model.Data type) {
 		super(engine, type);
-		graphs = (Set<HistoGraph>) super.graphs;
+		graphs = (List<HistoGraph>) super.graphs;
 	}
 
 	@Override
@@ -173,7 +173,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						for( int n=0; n<nTraits; n++ ) {
 							HistoGraph graph = new HistoGraph(this, module, n);
 							wrapper.add(graph);
-							graphs2mods.put(graph, module);
+							graphs.add(graph);
 							AbstractGraph.GraphStyle style = graph.getStyle();
 							// fixed style attributes
 							style.yLabel = "frequency";
@@ -204,7 +204,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 							HistoGraph graph = new HistoGraph(this, module, paneIdx++);
 							boolean bottomPane = (n==bottomPaneIdx);
 							wrapper.add(graph);
-							graphs2mods.put(graph, module);
+							graphs.add(graph);
 							AbstractGraph.GraphStyle style = graph.getStyle();
 							// fixed style attributes
 							if (model instanceof Model.DE && ((Model.DE) model).isDensity()) {
@@ -243,7 +243,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 							// happens for ODE/SDE/PDE - do not show distribution
 							HistoGraph graph = new HistoGraph(this, module, 0); 
 							wrapper.add(graph);
-							graphs2mods.put(graph, module);
+							graphs.add(graph);
 							break;
 						}
 						nTraits = getDegreeGraphs(module.getInteractionGeometry(), module.getReproductionGeometry());
@@ -253,7 +253,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 							HistoGraph graph = new HistoGraph(this, module, n);
 							boolean bottomPane = (n==nTraits-1);
 							wrapper.add(graph);
-							graphs2mods.put(graph, module);
+							graphs.add(graph);
 							AbstractGraph.GraphStyle style = graph.getStyle();
 							// fixed style attributes
 							style.yLabel = "frequency";
@@ -283,7 +283,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 							boolean bottomPane = (n==nTraits-1);
 							graph.setNormalized(nTraits);
 							wrapper.add(graph);
-							graphs2mods.put(graph, module);
+							graphs.add(graph);
 							AbstractGraph.GraphStyle style = graph.getStyle();
 							// fixed style attributes
 							style.yLabel = "probability";
@@ -311,7 +311,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 							HistoGraph graph = new HistoGraph(this, module, n); 
 							boolean bottomPane = (n==nTraits-1);
 							wrapper.add(graph);
-							graphs2mods.put(graph, module);
+							graphs.add(graph);
 							AbstractGraph.GraphStyle style = graph.getStyle();
 							// fixed style attributes
 							style.yLabel = "frequency";
@@ -336,7 +336,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 							boolean bottomPane = (n==nTraits-1);
 							graph.setNormalized(false);
 							wrapper.add(graph);
-							graphs2mods.put(graph, module);
+							graphs.add(graph);
 							AbstractGraph.GraphStyle style = graph.getStyle();
 							// fixed style attributes
 							style.yLabel = "visits";

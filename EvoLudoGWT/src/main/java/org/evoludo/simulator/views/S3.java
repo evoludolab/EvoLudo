@@ -33,7 +33,7 @@
 package org.evoludo.simulator.views;
 
 import java.awt.Color;
-import java.util.Set;
+import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
 import org.evoludo.graphics.S3Graph;
@@ -50,7 +50,7 @@ import org.evoludo.simulator.modules.Module;
 public class S3 extends AbstractView {
 
 	@SuppressWarnings("hiding")
-	protected Set<S3Graph> graphs;
+	protected List<S3Graph> graphs;
 	protected double[] state, init;
 
 	/**
@@ -59,7 +59,7 @@ public class S3 extends AbstractView {
 	@SuppressWarnings("unchecked")
 	public S3(EvoLudoGWT engine) {
 		super(engine, Model.Data.STRATEGY);
-		graphs = (Set<S3Graph>) super.graphs;
+		graphs = (List<S3Graph>) super.graphs;
 	}
 
 	@Override
@@ -94,7 +94,7 @@ public class S3 extends AbstractView {
 			for (int role = 0; role < nRoles; role++) {
 				S3Graph graph = new S3Graph(this, module, role);
 				wrapper.add(graph);
-				graphs2mods.put(graph, module);
+				graphs.add(graph);
 				GraphStyle style = graph.getStyle();
 				style.showLabel = true;
 				style.showXTicks = true;

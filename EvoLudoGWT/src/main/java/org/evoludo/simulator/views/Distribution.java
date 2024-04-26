@@ -34,7 +34,7 @@ package org.evoludo.simulator.views;
 
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.Set;
+import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
@@ -60,7 +60,7 @@ import com.google.gwt.user.client.Command;
 public class Distribution extends AbstractView implements AbstractGraph.NodeGraphController {
 
 	@SuppressWarnings("hiding")
-	protected Set<PopGraph2D> graphs;
+	protected List<PopGraph2D> graphs;
 	protected int MAX_BINS = 100;
 	double[]	bins;
 	int			traitXIdx = 0, traitYIdx = 1;
@@ -68,7 +68,7 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 	@SuppressWarnings("unchecked")
 	public Distribution(EvoLudoGWT engine, Model.Data type) {
 		super(engine, type);
-		graphs = (Set<PopGraph2D>) super.graphs;
+		graphs = (List<PopGraph2D>) super.graphs;
 	}
 
 	@Override
@@ -99,7 +99,7 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 				PopGraph2D graph = new PopGraph2D(this, module);
 				graph.setDebugEnabled(false);
 				wrapper.add(graph);
-				graphs2mods.put(graph, module);
+				graphs.add(graph);
 			}
 			gRows = species.size();
 			if( gRows*gCols==2 ) {

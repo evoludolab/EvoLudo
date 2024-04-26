@@ -32,21 +32,21 @@
 
 package org.evoludo.simulator.views;
 
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Set;
+import java.util.List;
 import java.util.logging.Logger;
 
 import org.evoludo.EvoLudoWeb;
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.HasTrajectory;
 import org.evoludo.graphics.AbstractGraph.MyContext2d;
+import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Resources;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.Mode;
-import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
@@ -95,8 +95,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	 * Logger for keeping track of and reporting events and issues.
 	 */
 	protected Logger logger;
-	protected HashMap<AbstractGraph, Module> graphs2mods = new HashMap<AbstractGraph, Module>();
-	protected Set<? extends AbstractGraph> graphs = graphs2mods.keySet();
+	protected List<? extends AbstractGraph> graphs = new ArrayList<>();
 	protected int gRows = 1, gCols = 1;
 
 	protected boolean isActive = false;
@@ -136,7 +135,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	protected void destroyGraphs() {
 		for (AbstractGraph graph : graphs)
 			graph.removeFromParent();
-		graphs2mods.clear();
+		graphs.clear();
 		gRows = gCols = 1;
 	}
 

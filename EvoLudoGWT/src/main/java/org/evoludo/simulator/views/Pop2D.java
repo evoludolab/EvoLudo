@@ -34,7 +34,7 @@ package org.evoludo.simulator.views;
 
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.Set;
+import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.PopGraph2D;
@@ -64,14 +64,14 @@ import org.evoludo.util.Formatter;
 public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphController {
 
 	@SuppressWarnings("hiding")
-	private Set<PopGraph2D> graphs;
+	private List<PopGraph2D> graphs;
 
 	protected int hitNode = -1;
 
 	@SuppressWarnings("unchecked")
 	public Pop2D(EvoLudoGWT engine, Model.Data type) {
 		super(engine, type);
-		graphs = (Set<PopGraph2D>) super.graphs;
+		graphs = (List<PopGraph2D>) super.graphs;
 	}
 
 	@Override
@@ -202,7 +202,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 					// debugging not available for DE's
 					graph.setDebugEnabled(false);
 					wrapper.add(graph);
-					graphs2mods.put(graph, module);
+					graphs.add(graph);
 				}
 				// there is only a single graph for now but whatever...
 				for (PopGraph2D graph : graphs)
@@ -219,11 +219,11 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 					for( Module module : species ) {
 						PopGraph2D graph = new PopGraph2D(this, module);
 						wrapper.add(graph);
-						graphs2mods.put(graph, module);
+						graphs.add(graph);
 						if( !Geometry.displayUniqueGeometry(module) ) {
 							graph = new PopGraph2D(this, module);
 							wrapper.add(graph);
-							graphs2mods.put(graph, module);
+							graphs.add(graph);
 							// arrange graphs horizontally
 							gCols = 2;
 						}
@@ -242,7 +242,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 				// even if nGraphs did not change, the geometries associated with the graphs still need to be updated
 				boolean inter = true;
 				for (PopGraph2D graph : graphs) {
-					Module module = graphs2mods.get(graph);
+					Module module = graph.getModule();
 					Geometry geo = inter ? module.getInteractionGeometry() : module.getReproductionGeometry();
 					graph.setGeometry(geo);
 					// alternate between interaction and reproduction geometries
@@ -259,7 +259,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 				graph.reset();
 				continue;
 			}
-			Module pop = graphs2mods.get(graph);
+			Module module = graph.getModule();
 			PopGraph2D.GraphStyle style = graph.getStyle();
 			if( geometry.getType() == Geometry.Type.LINEAR ) {
 				// frame, ticks, labels needed
@@ -301,7 +301,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 				case STRATEGY:
 					if( model.isContinuous() ) {
 						ColorModelType cmt = engine.getColorModelType();
-						int nTraits = pop.getNTraits();
+						int nTraits = module.getNTraits();
 						if( cmt==ColorModelType.DISTANCE ) {
 							cMap = new ColorMapCSS.Gradient1D(new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
 							break;
@@ -312,21 +312,21 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 								cMap = new ColorMapCSS.Hue(0.0, 2.0/3.0, 500);
 								break;
 							case 2:
-								Color[] traitcolors = pop.getTraitColors();
+								Color[] traitcolors = module.getTraitColors();
 								cMap = new ColorMapCSS.Gradient2D(traitcolors[0], traitcolors[1], Color.BLACK, 50);
 								break;
 							default:
 								Color[] primaries = new Color[nTraits];
-								System.arraycopy(pop.getTraitColors(), 0, primaries, 0, nTraits);
+								System.arraycopy(module.getTraitColors(), 0, primaries, 0, nTraits);
 								cMap = new ColorMapCSS.GradientND(primaries);
 								break;
 						}
 					}
 					else {
 						if( model.getModelType() == Model.Type.PDE ) {
-							int nTraits = pop.getNTraits();
-							Color[] colors = pop.getTraitColors();
-							int dep = ((HasDE)pop).getDependent();
+							int nTraits = module.getNTraits();
+							Color[] colors = module.getTraitColors();
+							int dep = ((HasDE)module).getDependent();
 							if (nTraits == 2 && dep >= 0) {
 								int trait = (dep + 1) % nTraits;
 								cMap = new ColorMapCSS.Gradient1D(colors[dep], colors[trait], trait, 100);
@@ -335,7 +335,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 								cMap = new ColorMapCSS.Gradient2D(colors, dep, 100);
 						}
 						else
-							cMap = new ColorMapCSS.Index(pop.getTraitColors(), 220);
+							cMap = new ColorMapCSS.Index(module.getTraitColors(), 220);
 					}
 					break;
 				case FITNESS:
@@ -348,15 +348,15 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 					int tag = graph.getModule().getID();
 					cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
 					if (model.getModelType() == Model.Type.IBS) {
-						Map2Fitness map2fit = pop.getMapToFitness();
-						if (pop instanceof Discrete) {
+						Map2Fitness map2fit = module.getMapToFitness();
+						if (module instanceof Discrete) {
 							// mark homogeneous fitness values by pale color
-							Color[] pure = pop.getTraitColors();
-							int nMono = pop.getNTraits();
+							Color[] pure = module.getTraitColors();
+							int nMono = module.getNTraits();
 							for( int n=0; n<nMono; n++ ) {
 								// cast is save because pop is Discrete
 								org.evoludo.simulator.models.Model.Discrete dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
-								double mono = dmodel.getMonoScore(pop.getID(), n);
+								double mono = dmodel.getMonoScore(module.getID(), n);
 								if (Double.isNaN(mono))
 									continue;
 								cMap1D.setColor(map2fit.map(mono),
@@ -366,12 +366,12 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 							}
 							break;
 						}
-						if( pop instanceof Continuous ) {
+						if( module instanceof Continuous ) {
 							// cast is save because pop is Continuous
 							org.evoludo.simulator.models.Model.Continuous cmodel = (org.evoludo.simulator.models.Model.Continuous) model;
 // hardcoded colors for min/max mono scores
-							cMap1D.setColor(map2fit.map(cmodel.getMinMonoScore(pop.getID())), ColorMap.addAlpha(Color.BLUE.darker(), 220));
-							cMap1D.setColor(map2fit.map(cmodel.getMaxMonoScore(pop.getID())), ColorMap.addAlpha(Color.BLUE.brighter(), 220));
+							cMap1D.setColor(map2fit.map(cmodel.getMinMonoScore(module.getID())), ColorMap.addAlpha(Color.BLUE.darker(), 220));
+							cMap1D.setColor(map2fit.map(cmodel.getMaxMonoScore(module.getID())), ColorMap.addAlpha(Color.BLUE.brighter(), 220));
 							break;
 						}
 						// unknown type of population - no fitness values marked
@@ -382,7 +382,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 			}
 			if( cMap==null )
 				throw new Error("MVPop2D: ColorMap not initialized - needs attention!");
-			graph.setColorMap(pop.processColorMap(cMap));
+			graph.setColorMap(module.processColorMap(cMap));
 			if( hard )
 				graph.reset();
 		}
@@ -426,7 +426,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 	public void updateNodeAt(AbstractGraph graph, int node) {
 		if (model.getModelType() != Type.IBS)
 			return;
-		IBSPopulation pop = graphs2mods.get(graph).getIBSPopulation();
+		IBSPopulation pop = graph.getModule().getIBSPopulation();
 		pop.debugUpdatePopulationAt(node);
 	}
 
@@ -441,12 +441,12 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 		PopGraph2D graph = (PopGraph2D)agraph;
 		Geometry geometry = graph.getGeometry();
 		int nNodes = geometry.size;
-		Module pop = graphs2mods.get(graph);
+		Module module = graph.getModule();
 		int id;
 		String[] data = graph.getData();
 		StringBuilder tip = new StringBuilder("<table style='border-collapse:collapse;border-spacing:0;'>");
-		if (pop.getNSpecies() > 1)
-			tip.append("<tr><td><i>Species:</i></td><td>"+pop.getName()+"</td></tr>");
+		if (module.getNSpecies() > 1)
+			tip.append("<tr><td><i>Species:</i></td><td>"+module.getName()+"</td></tr>");
 
 		switch( model.getModelType() ) {
 			case ODE:
@@ -463,9 +463,9 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 					return tip+"</table>";
 //NOTE: reverse engineer color data from RingBuffer? - see below
 				}
-				String[] s = pop.getTraitNames();
-				Color[] c = pop.getTraitColors();
-				id = pop.getID();
+				String[] s = module.getTraitNames();
+				Color[] c = module.getTraitColors();
+				id = module.getID();
 				String names = "<tr><td><i>Strategies:</i></td><td><span style='color:"+ColorMapCSS.Color2Css(c[0])+
 						"; font-size:175%; line-height:0.57;'>&#x25A0;</span> "+s[0];
 				for( int n=1; n<s.length; n++ )
@@ -510,7 +510,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 //							population.getTraitNameAt(node)+"</td></tr></table>";
 				}
 				Model.IBS ibs = (Model.IBS)model;
-				id = pop.getID();
+				id = module.getID();
 				tip.append("<tr><td><i>Node:</i></td><td>"+node+"</td></tr>");
 				if( type==Model.Data.STRATEGY ) {
 					// strategy: use color-data to color strategy
@@ -524,7 +524,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 				if (tag != null)
 					tip.append("<tr><td><i>Tag:</i></td><td>"+tag+"</td></tr>");
 				// with payoff-to-fitness report score first, then fitness (see below)
-				boolean noFitMap = pop.getMapToFitness().isMap(Map2Fitness.Map.NONE);
+				boolean noFitMap = module.getMapToFitness().isMap(Map2Fitness.Map.NONE);
 				String label = (noFitMap?"Fitness":"Score");
 				if( type==Model.Data.FITNESS ) {
 					// fitness: use color-data to color strategy
@@ -543,7 +543,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 					else
 						tip.append("<tr><td><i>Interactions:</i></td><td>"+count+"</td></tr>");
 				}
-				Geometry interaction = pop.getInteractionGeometry();
+				Geometry interaction = module.getInteractionGeometry();
 				if( interaction.isUndirected )
 					tip.append("<tr><td><i>Neighbors:</i></td><td>"+formatStructureAt(node, interaction)+"</td></tr>");
 				else
@@ -553,7 +553,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 				if( interaction.isInterspecies() ) {
 					tip.append(formatStrategiesAt(node, interaction, getGraphFor(interaction.getOpponent().getModule())));
 				}
-				Geometry reproduction = pop.getReproductionGeometry();
+				Geometry reproduction = module.getReproductionGeometry();
 				if( !reproduction.interReproSame ) {
 					if( reproduction.isUndirected )
 						tip.append("<tr><td><i>Competitors:</i></td><td>"+formatStructureAt(node, reproduction)+"</td></tr>");
@@ -574,7 +574,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 		if( graphs==null || module==null )
 			return null;
 		for( PopGraph2D graph : graphs)
-			if( module==graphs2mods.get(graph) )
+			if (module==graph.getModule())
 				return graph;
 		return null;
 	}

@@ -33,7 +33,7 @@
 package org.evoludo.simulator.views;
 
 import java.util.ArrayList;
-import java.util.Set;
+import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
 import org.evoludo.graphics.ParaGraph;
@@ -59,7 +59,7 @@ import com.google.gwt.user.client.Command;
 public class Phase2D extends AbstractView {
 
 	@SuppressWarnings("hiding")
-	protected Set<ParaGraph> graphs;
+	protected List<ParaGraph> graphs;
 // short-cut as long as only a single ParaGraph graph is acceptable
 	protected ParaGraph graph;
 	protected double[] state;
@@ -71,7 +71,7 @@ public class Phase2D extends AbstractView {
 	@SuppressWarnings("unchecked")
 	public Phase2D(EvoLudoGWT engine) {
 		super(engine, Model.Data.UNDEFINED);
-		graphs = (Set<ParaGraph>) super.graphs;
+		graphs = (List<ParaGraph>) super.graphs;
 	}
 
 	@Override
@@ -99,7 +99,7 @@ public class Phase2D extends AbstractView {
 			hard = true;
 			graph = new ParaGraph(this, module);
 			wrapper.add(graph);
-			graphs2mods.put(graph, module);
+			graphs.add(graph);
 			style = graph.getStyle();
 			style.showLabel = true;
 			style.showXTicks = true;

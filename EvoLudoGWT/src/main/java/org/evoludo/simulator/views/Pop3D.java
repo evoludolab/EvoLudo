@@ -34,7 +34,7 @@ package org.evoludo.simulator.views;
 
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.Set;
+import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.PopGraph3D;
@@ -63,14 +63,14 @@ import thothbot.parallax.core.shared.materials.MeshLambertMaterial;
 public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphController {
 
 	@SuppressWarnings("hiding")
-	private Set<PopGraph3D> graphs;
+	private List<PopGraph3D> graphs;
 	protected int hitNode = -1;
 	protected PopGraph3D hitGraph = null;
 
 	@SuppressWarnings("unchecked")
 	public Pop3D(EvoLudoGWT engine, Model.Data type) {
 		super(engine, type);
-		graphs = (Set<PopGraph3D>) super.graphs;
+		graphs = (List<PopGraph3D>) super.graphs;
 	}
 
 	@Override
@@ -219,7 +219,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 					// debugging not available for DE's
 					graph.setDebugEnabled(false);
 					wrapper.add(graph);
-					graphs2mods.put(graph, module);
+					graphs.add(graph);
 					gCols = nGraphs;
 				}
 				// there is only a single graph for now but whatever...
@@ -241,11 +241,11 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 					for( Module module : species ) {
 						PopGraph3D graph = new PopGraph3D(this, module);
 						wrapper.add(graph);
-						graphs2mods.put(graph, module);
+						graphs.add(graph);
 						if( !Geometry.displayUniqueGeometry(module) ) {
 							graph = new PopGraph3D(this, module);
 							wrapper.add(graph);
-							graphs2mods.put(graph, module);
+							graphs.add(graph);
 							// arrange graphs horizontally
 							gCols = 2;
 						}
@@ -269,7 +269,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 				// update geometries associated with graphs
 				boolean inter = true;
 				for (PopGraph3D graph : graphs) {
-					Module module = graphs2mods.get(graph);
+					Module module = graph.getModule();
 					Geometry geo = inter ? module.getInteractionGeometry() : module.getReproductionGeometry();
 					graph.setGeometry(geo);
 					// alternate between interaction and reproduction geometries
@@ -297,7 +297,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 
 		for( PopGraph3D graph : graphs ) {
 			ColorMap<MeshLambertMaterial> cMap = null;
-			Module module = graphs2mods.get(graph);
+			Module module = graph.getModule();
 			switch( type ) {
 				case STRATEGY:
 					if (cmodel != null) {
@@ -435,13 +435,13 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 		PopGraph3D graph = (PopGraph3D)agraph;
 		Geometry geometry = graph.getGeometry();
 		int nNodes = geometry.size;
-		Module pop = graphs2mods.get(graph);
+		Module module = graph.getModule();
 		int id;
 		MeshLambertMaterial[] data = graph.getData();
 
 		StringBuilder tip = new StringBuilder("<table style='border-collapse:collapse;border-spacing:0;'>");
-		if (pop.getNSpecies() > 1)
-			tip.append("<tr><td><i>Species:</i></td><td>"+pop.getName()+"</td></tr>");
+		if (module.getNSpecies() > 1)
+			tip.append("<tr><td><i>Species:</i></td><td>"+module.getName()+"</td></tr>");
 
 			switch( model.getModelType() ) {
 			case ODE:
@@ -452,9 +452,9 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 					// but linear geometries are not allowed in 3D
 					return "Ceci n'est pas une erreur!";
 				}
-				String[] s = pop.getTraitNames();
-				Color[] c = pop.getTraitColors();
-				id = pop.getID();
+				String[] s = module.getTraitNames();
+				Color[] c = module.getTraitColors();
+				id = module.getID();
 				String names = "<tr><td><i>Strategies:</i></td><td><span style='color:"+ColorMapCSS.Color2Css(c[0])+
 						"; font-size:175%; line-height:0.57;'>&#x25A0;</span> "+s[0];
 				for( int n=1; n<s.length; n++ )
@@ -488,7 +488,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 					return "Ceci n'est pas une erreur!";
 				}
 				Model.IBS ibs = (Model.IBS)model;
-				id = pop.getID();
+				id = module.getID();
 				tip.append("<tr><td><i>Node:</i></td><td>"+node+"</td></tr>");
 				if( type==Model.Data.STRATEGY ) {
 					// strategy: use color-data to color strategy
@@ -501,7 +501,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 				String tag = ibs.getTagNameAt(id, node);
 				if (tag != null)
 					tip.append("<tr><td><i>Tag:</i></td><td>"+tag+"</td></tr>");
-				boolean noFitMap = pop.getMapToFitness().isMap(Map2Fitness.Map.NONE);
+				boolean noFitMap = module.getMapToFitness().isMap(Map2Fitness.Map.NONE);
 				String label = (noFitMap?"Fitness":"Score");
 				if( type==Model.Data.FITNESS ) {
 					// fitness: use color-data to color fitness
@@ -520,7 +520,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 					else
 						tip.append("<tr><td><i>Interactions:</i></td><td>"+count+"</td></tr>");
 				}
-				Geometry interaction = pop.getInteractionGeometry();
+				Geometry interaction = module.getInteractionGeometry();
 				if( interaction.isUndirected )
 					tip.append("<tr><td><i>Neighbors:</i></td><td>"+formatStructureAt(node, interaction)+"</td></tr>");
 				else
@@ -530,7 +530,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 				if( interaction.isInterspecies() ) {
 					tip.append(formatStrategiesAt(node, interaction, getGraphFor(interaction.getOpponent().getModule())));
 				}
-				Geometry reproduction = pop.getReproductionGeometry();
+				Geometry reproduction = module.getReproductionGeometry();
 				if( !reproduction.interReproSame ) {
 					if( reproduction.isUndirected )
 						tip.append("<tr><td><i>Competitors:</i></td><td>"+formatStructureAt(node, reproduction)+"</td></tr>");
@@ -550,7 +550,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 		if( graphs==null || module==null )
 			return null;
 		for( PopGraph3D graph : graphs)
-			if( module==graphs2mods.get(graph) )
+			if (module == graph.getModule())
 				return graph;
 		return null;
 	}

@@ -35,7 +35,7 @@ package org.evoludo.simulator.views;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Set;
+import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
@@ -58,14 +58,14 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 	// NOTE: this is a bit of a hack that allows us to use graphs as Set<LineGraph> here
 	//		 but as Set<AbstractGraph> in super classes. Saves a lot of ugly casting
 	@SuppressWarnings("hiding")
-	protected Set<LineGraph> graphs;
+	protected List<LineGraph> graphs;
 
 	double[] state, mean;
 
 	@SuppressWarnings("unchecked")
 	public Mean(EvoLudoGWT engine, Model.Data type) {
 		super(engine, type);
-		graphs = (Set<LineGraph>) super.graphs;
+		graphs = (List<LineGraph>) super.graphs;
 	}
 
 	@Override
@@ -96,9 +96,8 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 			// one graph per discrete species or continuous trait
 			for (Module module : species) {
 				LineGraph graph = new LineGraph(this, module);
-//				graphs.add(graph);
 				wrapper.add(graph);
-graphs2mods.put(graph, module);
+				graphs.add(graph);
 			}
 			// arrange graphs vertically
 			gRows = nGraphs;
