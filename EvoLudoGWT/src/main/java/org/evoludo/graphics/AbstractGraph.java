@@ -771,8 +771,7 @@ public abstract class AbstractGraph extends FocusPanel
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		// add menu to set buffer size for graphs with history
-//XXX Hack alert: buffer may be null for PopGraph2D with history...
-		if (hasHistory() && buffer != null) {
+		if (hasHistory()) {
 			if (bufferSizeMenu == null) {
 				bufferSizeMenu = new ContextMenu(menu);
 				bufferSizeMenu.add(new ContextMenuCheckBoxItem("5k", //
