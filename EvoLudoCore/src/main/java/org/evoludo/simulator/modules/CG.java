@@ -365,12 +365,12 @@ public class CG extends ATBT implements Module.Static {
 				return changed;
 			// check whether individual reproduces or environment changes
 			if (rand < myfit * realtimeIncr) {
-				// reproduction - offspring replaces randomly chosen neighbour
-				int[] group = referenceGroup.pickAt(me, reproduction, true);
+				// competition - offspring replaces randomly chosen neighbour
+				int[] group = compGroup.pickAt(me, competition, true);
 				if (group.length < 1)
 					// 'me' has no outgoing-neighbors (sink)
 					return changed;
-				// for reproduction we can use the back-end of Moran updating and only need to
+				// for competition we can use the back-end of Moran updating and only need to
 				// adjust updateStrategyAt to deal with strategy versus environment
 				maybeMutateMoran(me, group[0]);
 				return changed;

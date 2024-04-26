@@ -457,7 +457,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				// case HISTOGRAM:
 				// break;
 				// case STRUCTURE:
-				// this is tedious because of interaction and reproduction geometries as well as
+				// this is tedious because of interaction and competition geometries as well as
 				// directed graphs with for incoming, outgoing and total degrees, which results
 				// in up to 6 distributions
 				// output.println("# time,\t" + data.getKey() + (module.getNSpecies() > 1 ?

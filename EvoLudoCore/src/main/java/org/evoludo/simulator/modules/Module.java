@@ -342,7 +342,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 */
 	public void reset() {
 		interaction = null;
-		reproduction = null;
+		competition = null;
 	}
 
 	/**
@@ -856,7 +856,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * The geometry of population (interaction and reproduction graphs are the same)
+	 * The geometry of population (interaction and competition graphs are the same)
 	 */
 	protected Geometry structure;
 
@@ -870,7 +870,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * Opportunity to supply {@link Geometry}, in case interaction and reproduction
+	 * Opportunity to supply {@link Geometry}, in case interaction and competition
 	 * graphs are the same.
 	 * 
 	 * @return the new geometry
@@ -887,21 +887,21 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	protected Geometry interaction;
 
 	/**
-	 * The geometry of reproduction structure
+	 * The geometry of competition structure
 	 */
-	protected Geometry reproduction;
+	protected Geometry competition;
 
 	/**
-	 * Sets different geometries for interactions and reproduction.
+	 * Sets different geometries for interactions and competition.
 	 * 
-	 * @param interaction  the geometry for interactions
-	 * @param reproduction the geometry for reproduction
+	 * @param interaction the geometry for interactions
+	 * @param competition the geometry for competition
 	 * 
 	 * @see Geometry
 	 */
-	public void setGeometries(Geometry interaction, Geometry reproduction) {
+	public void setGeometries(Geometry interaction, Geometry competition) {
 		this.interaction = interaction;
-		this.reproduction = reproduction;
+		this.competition = competition;
 	}
 
 	/**
@@ -916,14 +916,14 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * Gets the reproduction geometry.
+	 * Gets the competition geometry.
 	 * 
-	 * @return the reproduction geometry
+	 * @return the competition geometry
 	 * 
 	 * @see Geometry
 	 */
-	public Geometry getReproductionGeometry() {
-		return reproduction;
+	public Geometry getCompetitionGeometry() {
+		return competition;
 	}
 
 	/**
@@ -1157,11 +1157,11 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 			});
 
 	/**
-	 * Command line option to set the geometry (interaction and reproduction graphs
+	 * Command line option to set the geometry (interaction and competition graphs
 	 * identical).
 	 * 
 	 * @see IBS#cloGeometryInteraction
-	 * @see IBS#cloGeometryReproduction
+	 * @see IBS#cloGeometryCompetition
 	 */
 	public final CLOption cloGeometry = new CLOption("geometry", "M", EvoLudo.catModule, null,
 			new CLODelegate() {
@@ -1176,7 +1176,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				 * geometries set.
 				 * <p>
 				 * <strong>Note:</strong> Whether this refers to the interaction geometry, the
-				 * reproduction geometry or both, depends on whether either of them is
+				 * competition geometry or both, depends on whether either of them is
 				 * explicitly set on the command line. Moreover, this can also refer to the
 				 * geometry used for PDE models.
 				 * 
@@ -1184,7 +1184,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				 */
 				@Override
 				public boolean parse(String arg) {
-					// for IBS models, if both --geominter and --geomrepro are specified they
+					// for IBS models, if both --geominter and --geomcomp are specified they
 					// override --geometry
 					String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
 					boolean doReset = false;
@@ -1209,13 +1209,13 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 						case IBS:
 							for (Module pop : species) {
 								// Geometry intergeo = mod.getInteractionGeometry();
-								// if( intergeo.interReproSame ) {
+								// if( intergeo.interCompSame ) {
 								// output.println("# geometry:
 								// "+cloGeometry.getKey(intergeo.geometry).getTitle()
 								// + (modules.size() > 1?" ("+mod.getName()+")":""));
 								// intergeo.printParams(output);
 								// }
-								if (pop.structure.interReproSame) {
+								if (pop.structure.interCompSame) {
 									output.println("# geometry:             " + pop.structure.getType().getTitle()
 											+ (species.size() > 1 ? " (" + pop.getName() + ")" : ""));
 									pop.structure.printParams(output);

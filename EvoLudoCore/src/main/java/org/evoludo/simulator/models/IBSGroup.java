@@ -72,7 +72,7 @@ public class IBSGroup {
 	protected RNGDistribution rng;
 
 	/**
-	 * Create a new interaction or reproduction group. The global, shared random
+	 * Create a new interaction or competition group. The global, shared random
 	 * number generator {@code rng} must be passed here to ensure reproducibility of
 	 * the simulation results.
 	 * <p>

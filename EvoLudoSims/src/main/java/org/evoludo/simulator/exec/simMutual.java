@@ -634,7 +634,7 @@ public class simMutual extends Mutualism implements ChangeListener {
 		int SX = player_s[lix][ix][jx];
 		// pick random neighbour of idx (use neighbourhood structure of EvoLudo) doesn't matter 
 		// which species as long as the structures and pop sizes are the same
-		Geometry neighs = mypop.getReproductionGeometry();
+		Geometry neighs = mypop.getCompetitionGeometry();
 		// sanity check (kin contains array with the number of incoming links; same as kout for undirected networks)
 		if (neighs.kin[idx] != 4)
 			throw new Error("must have exactly 4 neighbours!");
@@ -707,7 +707,7 @@ public class simMutual extends Mutualism implements ChangeListener {
 		eidx = fpop.pickFocalSite();
 		fpop.updatePlayerAsyncAt(eidx);
 		// retrieve index of model
-		enidx = fpop.getReferenceGroup().getGroup()[0];
+		enidx = fpop.getCompGroup().getGroup()[0];
 	}
 
 	

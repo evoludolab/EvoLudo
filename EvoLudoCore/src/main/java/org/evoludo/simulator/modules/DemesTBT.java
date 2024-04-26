@@ -125,7 +125,7 @@ public class DemesTBT extends TBT {
 	@Override
 	public void adjustCLO(CLOParser parser) {
 		super.adjustCLO(parser);
-		parser.removeCLO(new String[] { "geominter", "geomrepro" });
+		parser.removeCLO(new String[] { "geominter", "geomcomp" });
 
 		cloGeometry.clearKeys();
 		cloGeometry.addKey(Geometry.Type.HIERARCHY);

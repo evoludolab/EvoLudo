@@ -484,7 +484,7 @@ public class Dialect extends Continuous implements Module.Static, HasIBS, //
 					// stochastic version of Edward-Wilkinson model, see Family, F. (1986) J. Phys.
 					// A: Math. Gen. 19, L441-L446
 					// 'strategies' represent height of boundary layer
-					int[] neighs = reproduction.out[focal];
+					int[] neighs = competition.out[focal];
 					int nNeighs = neighs.length;
 					int minIdx = focal;
 					double minHeight = strategies[focal];
@@ -621,21 +621,21 @@ public class Dialect extends Continuous implements Module.Static, HasIBS, //
 			// pRand="+pRandInteraction+", focal="+focal);
 //XXX check if model is indeed picked in desired level?
 			int mdl;
-			switch (reproduction.getType()) {
+			switch (competition.getType()) {
 				case HIERARCHY:
 					int levelStart, unitStart;
 					// determine level at which to select model and size of level
 					int level = 1;
-					int maxLevel = reproduction.hierarchy.length - 1;
-					int unitSize = reproduction.hierarchy[maxLevel];
-					int levelSize = unitSize * reproduction.hierarchy[maxLevel - level];
+					int maxLevel = competition.hierarchy.length - 1;
+					int unitSize = competition.hierarchy[maxLevel];
+					int levelSize = unitSize * competition.hierarchy[maxLevel - level];
 					double prob = pRandInteraction * pRandInteraction;
 					while (rand < prob && level < maxLevel) {
 						level++;
 						prob *= pRandInteraction;
-						levelSize *= reproduction.hierarchy[maxLevel - level];
+						levelSize *= competition.hierarchy[maxLevel - level];
 					}
-					switch (reproduction.subgeometry) {
+					switch (competition.subgeometry) {
 						case MEANFIELD:
 							// determine start of unit and of level
 							unitStart = (focal / unitSize) * unitSize;
@@ -653,7 +653,7 @@ public class Dialect extends Continuous implements Module.Static, HasIBS, //
 							// determine location of focal unit relative to desired level
 							int unitSide = (int) Math.sqrt(unitSize);
 							int levelSide = (int) Math.sqrt(levelSize);
-							int side = (int) Math.sqrt(reproduction.size);
+							int side = (int) Math.sqrt(competition.size);
 							int unitX = ((focal % levelSide) / unitSide) * unitSide;
 							int unitY = (((focal / side) % levelSide) / unitSide) * unitSide;
 							unitStart = unitY * levelSide + unitX;
@@ -678,7 +678,7 @@ public class Dialect extends Continuous implements Module.Static, HasIBS, //
 
 						default:
 							throw new Error("teach me first how to deal with subgeometry '"
-									+ reproduction.subgeometry.getTitle() + "'!");
+									+ competition.subgeometry.getTitle() + "'!");
 					}
 
 				case COMPLETE:
@@ -696,7 +696,7 @@ public class Dialect extends Continuous implements Module.Static, HasIBS, //
 						mdl = random0n(nPopulation - 1);
 						if (mdl >= focal)
 							mdl++;
-					} while (reproduction.isNeighborOf(focal, mdl));
+					} while (competition.isNeighborOf(focal, mdl));
 					return mdl;
 			}
 		}
@@ -706,7 +706,7 @@ public class Dialect extends Continuous implements Module.Static, HasIBS, //
 		}
 
 		private double potentialAt(int idx, double spin) {
-			int[] neighs = reproduction.out[idx];
+			int[] neighs = competition.out[idx];
 			int len = neighs.length;
 			double sum = 0.0;
 			final double twopi = 2.0 * Math.PI;

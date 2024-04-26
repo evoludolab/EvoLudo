@@ -250,7 +250,7 @@ public class IBSDPopulation extends IBSPopulation {
 	public synchronized void reset() {
 		super.reset();
 		if (optimizeMoran && populationUpdate.isMoran()) {
-			int nLinks = (int) (reproduction.avgOut * nPopulation + 0.5);
+			int nLinks = (int) (competition.avgOut * nPopulation + 0.5);
 			if (activeLinks == null || activeLinks.length != nLinks) {
 				activeLinks = new link[nLinks];
 				for (int n = 0; n < nLinks; n++)
@@ -317,8 +317,8 @@ public class IBSDPopulation extends IBSPopulation {
 				if (type != rareType)
 					continue;
 				// check out-neighbors
-				int[] neighs = reproduction.out[n];
-				int no = reproduction.kout[n];
+				int[] neighs = competition.out[n];
+				int no = competition.kout[n];
 				for (int i = 0; i < no; i++) {
 					int aneigh = neighs[i];
 					if (strategies[aneigh] % nTraits == type)
@@ -331,15 +331,15 @@ public class IBSDPopulation extends IBSPopulation {
 					nact++;
 				}
 				// check in-neighbors
-				neighs = reproduction.in[n];
-				int ni = reproduction.kin[n];
+				neighs = competition.in[n];
+				int ni = competition.kin[n];
 				for (int i = 0; i < ni; i++) {
 					int aneigh = neighs[i];
 					if (strategies[aneigh] % nTraits == type)
 						continue;
 					activeLinks[nact].source = aneigh;
 					activeLinks[nact].destination = n;
-					double ascore = getFitnessAt(aneigh) / (reproduction.kout[aneigh]);
+					double ascore = getFitnessAt(aneigh) / (competition.kout[aneigh]);
 					activeLinks[nact].fitness = ascore;
 					totscore += ascore;
 					nact++;
@@ -368,8 +368,8 @@ public class IBSDPopulation extends IBSPopulation {
 		double totscore = 0.0;
 		for (int n = 0; n < nPopulation; n++) {
 			int type = strategies[n] % nTraits;
-			int[] neighs = reproduction.out[n];
-			int nn = reproduction.kout[n];
+			int[] neighs = competition.out[n];
+			int nn = competition.kout[n];
 			for (int i = 0; i < nn; i++) {
 				int aneigh = neighs[i];
 				if (strategies[aneigh] % nTraits == type)
@@ -432,8 +432,8 @@ public class IBSDPopulation extends IBSPopulation {
 		double totscore = 0.0;
 		for (int n = 0; n < nPopulation; n++) {
 			int type = strategies[n] % nTraits;
-			int[] neighs = reproduction.in[n];
-			int nn = reproduction.kin[n];
+			int[] neighs = competition.in[n];
+			int nn = competition.kin[n];
 			double nodescore = withSelf ? getFitnessAt(n) : 0.0;
 			int count = 0;
 			for (int i = 0; i < nn; i++) {
@@ -839,7 +839,7 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 
 		// frequency dependent selection: determine active strategy with highest payoff
-		if (reproduction.getType() == Geometry.Type.MEANFIELD) {
+		if (competition.getType() == Geometry.Type.MEANFIELD) {
 			// well-mixed
 			System.arraycopy(opponent.strategiesTypeCount, 0, traitCount, 0, nTraits);
 			if (interaction.isInterspecies()) {
@@ -1310,7 +1310,7 @@ public class IBSDPopulation extends IBSPopulation {
 				return;
 
 			default:
-				throw new Error("Unknown interaction type (" + interactionGroup.getSampling() + ")");
+				throw new Error("Unknown interaction type (" + interGroup.getSampling() + ")");
 		}
 	}
 
@@ -1870,7 +1870,7 @@ public class IBSDPopulation extends IBSPopulation {
 			default:
 				// if resetting scores after every update, scores can be adjusted
 				// when interacting all neighbours
-				return interactionGroup.isSampling(IBSGroup.SamplingType.ALL);
+				return interGroup.isSampling(IBSGroup.SamplingType.ALL);
 			case EPHEMERAL:
 				// for ephemeral scoring, scores are never adjusted
 			case RESET_ON_CHANGE:
@@ -2155,7 +2155,7 @@ public class IBSDPopulation extends IBSPopulation {
 	protected void initStripes() {
 		// only makes sense for 2D lattices at this point. if not, defaults to uniform
 		// random initialization (the only other inittype that doesn't require --init).
-		if (interaction.interReproSame && (interaction.getType() == Geometry.Type.SQUARE ||
+		if (interaction.interCompSame && (interaction.getType() == Geometry.Type.SQUARE ||
 				interaction.getType() == Geometry.Type.SQUARE_NEUMANN ||
 				interaction.getType() == Geometry.Type.SQUARE_MOORE ||
 				interaction.getType() == Geometry.Type.LINEAR)) {

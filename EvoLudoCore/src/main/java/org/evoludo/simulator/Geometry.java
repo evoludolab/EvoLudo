@@ -53,7 +53,7 @@ import org.evoludo.util.Plist;
 
 /**
  * Instances of <code>Geometry</code> represent the interaction and/or
- * reproduction structure of the population. For a list of currently implemented
+ * competition structure of the population. For a list of currently implemented
  * geometries, {@link Type}.
  * 
  * @author Christoph Hauert
@@ -131,7 +131,7 @@ public class Geometry {
 
 	/**
 	 * Gets the name of this graph. Typically this is "Interaction" or
-	 * "Reproduction" for the correpsonding graphs, or "Structure" if the two graphs
+	 * "Competition" for the correpsonding graphs, or "Structure" if the two graphs
 	 * are the same. In multi-species models the name of the species may be
 	 * prepended.
 	 * 
@@ -597,7 +597,7 @@ public class Geometry {
 		 * 
 		 * @see Module#cloGeometry
 		 * @see IBS#cloGeometryInteraction
-		 * @see IBS#cloGeometryReproduction
+		 * @see IBS#cloGeometryCompetition
 		 */
 		String key;
 
@@ -698,7 +698,7 @@ public class Geometry {
 	}
 
 	/**
-	 * The name of this graph. Typically this is "interaction" or "reproduction" for
+	 * The name of this graph. Typically this is "interaction" or "competition" for
 	 * the correpsonding graphs, or "structure" if the two graphs are the same. In
 	 * multi-species models the name of the species may be prepended.
 	 */
@@ -950,13 +950,13 @@ public class Geometry {
 	}
 
 	/**
-	 * {@code true} if the interaction and reproduction graphs are the same.
+	 * {@code true} if the interaction and competition graphs are the same.
 	 */
-	public boolean interReproSame = true;
+	public boolean interCompSame = true;
 
 	/**
 	 * Checks whether a single graphical representation can be used for the
-	 * interaction and reproduction graphs. Two distinct graphical represntations
+	 * interaction and competition graphs. Two distinct graphical represntations
 	 * are generally required if the two graphs differ but not if they both refer to
 	 * the same lattice structure even if connectivities or boundary conditions are
 	 * different.
@@ -964,10 +964,10 @@ public class Geometry {
 	 * <h3>Examples:</h3>
 	 * A single graphical representation is adequate:
 	 * <ol>
-	 * <li>if the interaction and reproduction graphs are identical,
-	 * <li>if both the interaction and reproduction graphs are lattices, even if the
+	 * <li>if the interaction and competition graphs are identical,
+	 * <li>if both the interaction and competition graphs are lattices, even if the
 	 * boundary conditions or the connectivities are different,
-	 * <li>but not if the interaction and reproduction graphs are separate instances
+	 * <li>but not if the interaction and competition graphs are separate instances
 	 * of the same random structure, e.g. random regular graphs.
 	 * </ol>
 	 * <h3>Requirements/notes:</h3>
@@ -977,40 +977,40 @@ public class Geometry {
 	 * </ol>
 	 * 
 	 * @param inter the interaction graph
-	 * @param repro the reproduction graph
+	 * @param comp the competition graph
 	 * @return {@code true} if a single graphical representation suffices,
 	 *         {@code false} if two separate graphical representations are required
-	 *         for the interaction and the reproduction graphs
+	 *         for the interaction and the competition graphs
 	 * 
 	 * @see #displayUniqueGeometry(Geometry, Geometry)
 	 */
-	public static boolean displayUniqueGeometry(Geometry inter, Geometry repro) {
+	public static boolean displayUniqueGeometry(Geometry inter, Geometry comp) {
 		Type geometry = inter.geometry;
 		if (inter.isLattice()) {
-			// lattice interaction geometry - return true if reproduction geometry is the
+			// lattice interaction geometry - return true if competition geometry is the
 			// same (regardless of connectivity)
-			if (repro == null)
-				return inter.interReproSame;
+			if (comp == null)
+				return inter.interCompSame;
 			// if both are square lattices a unique geometry is good enough
-			if (geometry.isSquareLattice() && repro.geometry.isSquareLattice())
+			if (geometry.isSquareLattice() && comp.geometry.isSquareLattice())
 				return true;
-			return (repro.geometry == geometry);
+			return (comp.geometry == geometry);
 		}
-		return inter.interReproSame;
+		return inter.interCompSame;
 	}
 
 	/**
 	 * Checks whether a single graphical representation can be used for the
-	 * interaction and reproduction graphs.
+	 * interaction and competition graphs.
 	 * 
-	 * @param module the population whose interaction and reproduction structures to
+	 * @param module the population whose interaction and competition structures to
 	 *               check
 	 * @return {@code true} if a single graphical representation suffices
 	 * 
 	 * @see #displayUniqueGeometry(Geometry, Geometry)
 	 */
 	public static boolean displayUniqueGeometry(Module module) {
-		return displayUniqueGeometry(module.getInteractionGeometry(), module.getReproductionGeometry());
+		return displayUniqueGeometry(module.getInteractionGeometry(), module.getCompetitionGeometry());
 	}
 
 	/**
@@ -1068,7 +1068,7 @@ public class Geometry {
 		pAddwire = -1.0;
 		isUndirected = true;
 		isRewired = false;
-		interReproSame = true;
+		interCompSame = true;
 		isDynamic = false;
 		isRegular = false;
 		isValid = false;
@@ -5019,8 +5019,8 @@ public class Geometry {
 	}
 
 	/**
-	 * Derive interaction geometry from current (reproduction) geometry. This is
-	 * only possible if {@code interReproSame} is {@code true}. Returns {@code null}
+	 * Derive interaction geometry from current (competition) geometry. This is
+	 * only possible if {@code interCompSame} is {@code true}. Returns {@code null}
 	 * otherwise.
 	 * <p>
 	 * If {@code opp==population} then it is an intra-species interaction, which
@@ -5033,8 +5033,8 @@ public class Geometry {
 	 *         derived
 	 */
 	public Geometry deriveInteractionGeometry(IBSPopulation opp) {
-		// this is reproduction geometry (hence population==opponent)
-		if (!interReproSame)
+		// this is competition geometry (hence population==opponent)
+		if (!interCompSame)
 			return null; // impossible to derive interaction geometry
 		// intra-species interactions: nothing to derive - use same geometry
 		if (population == opp)
@@ -5049,8 +5049,8 @@ public class Geometry {
 	}
 
 	/**
-	 * Derive reproduction geometry from current (interaction) geometry. This is
-	 * only possible if {@code interReproSame} is {@code true}. Returns {@code null}
+	 * Derive competition geometry from current (interaction) geometry. This is
+	 * only possible if {@code interCompSame} is {@code true}. Returns {@code null}
 	 * otherwise.
 	 * <p>
 	 * If {@code opp==population} then it is an intra-species interaction, which
@@ -5061,22 +5061,22 @@ public class Geometry {
 	 * @return the derived interaction geometry or {@code null} if it cannot be
 	 *         derived
 	 */
-	public Geometry deriveReproductionGeometry() {
+	public Geometry deriveCompetitionGeometry() {
 		// this is interaction geometry (hence population!=opponent for inter-species
 		// interactions)
-		if (!interReproSame)
-			return null; // impossible to derive reproduction geometry
+		if (!interCompSame)
+			return null; // impossible to derive competition geometry
 		// intra-species interactions: nothing to derive - use same geometry
 		if (population == opponent)
 			return this;
-		Geometry reproduction = clone();
-		reproduction.opponent = population;
+		Geometry competition = clone();
+		competition.opponent = population;
 		// add interactions with individual in same location
-		if (reproduction.geometry != Type.MEANFIELD)
+		if (competition.geometry != Type.MEANFIELD)
 			for (int n = 0; n < size; n++)
-				reproduction.removeLinkAt(n, n);
-		reproduction.evaluate();
-		return reproduction;
+				competition.removeLinkAt(n, n);
+		competition.evaluate();
+		return competition;
 	}
 
 	/**
@@ -5319,7 +5319,7 @@ public class Geometry {
 		boolean fixedBoundariesAvailable = (clo.isValidKey(Type.LINEAR) || clo.isValidKey(Type.SQUARE)
 				|| clo.isValidKey(Type.CUBE)
 				|| clo.isValidKey(Type.HONEYCOMB) || clo.isValidKey(Type.TRIANGULAR));
-		String descr = "--geometry <>   geometry - interaction==reproduction\n" //
+		String descr = "--geometry <>   geometry - interaction==competition\n" //
 				+ "      argument: <g><k>" //
 				+ (fixedBoundariesAvailable ? "[f|F]" : "") + " (g type, k neighbours)\n" //
 				+ clo.getDescriptionKey() + "\n      further specifications:" //
@@ -5386,7 +5386,7 @@ public class Geometry {
 		clone.pAddwire = pAddwire;
 		clone.isUndirected = isUndirected;
 		clone.isRewired = isRewired;
-		clone.interReproSame = interReproSame;
+		clone.interCompSame = interCompSame;
 		clone.isDynamic = isDynamic;
 		clone.isRegular = isRegular;
 		clone.isValid = isValid;

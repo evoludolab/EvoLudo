@@ -263,7 +263,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 				return;
 
 			default:
-				throw new Error("Unknown interaction type (" + interactionGroup.getSampling() + ")");
+				throw new Error("Unknown interaction type (" + interGroup.getSampling() + ")");
 		}
 	}
 

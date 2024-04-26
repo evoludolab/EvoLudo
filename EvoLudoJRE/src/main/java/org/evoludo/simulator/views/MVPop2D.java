@@ -399,21 +399,21 @@ removeAll();
 						  (nametag==null ? "" :"<br><i>Tag:</i> "+nametag)+
 						  "<br><i>Fitness:</i> "+model.getFitnessNameAt(tag, node)+
 						  (count<0?"":"<br><i>Interactions:</i> "+(count==Integer.MAX_VALUE?"all":""+count));
-				Geometry interaction = module.getInteractionGeometry();
-				if( interaction.isUndirected )
-					toolTip += "<br><i>Neighbors:</i> "+formatStructureAt(node, interaction.out, interaction.kout);
+				Geometry intergeom = module.getInteractionGeometry();
+				if( intergeom.isUndirected )
+					toolTip += "<br><i>Neighbors:</i> "+formatStructureAt(node, intergeom.out, intergeom.kout);
 //useful for debugging geometry - Geometry.checkConnections should be able to catch such problems
 //toolTip += "<br>in: "+formatStructureAt(node, data.in, data.kin);
 				else
-					toolTip += "<br><i>Links to:</i>  "+formatStructureAt(node, interaction.out, interaction.kout)+
-							   "<br><i>Link here:</i> "+formatStructureAt(node, interaction.in, interaction.kin);
-				if( !interaction.interReproSame ) {
-					Geometry reproduction = module.getReproductionGeometry();
-					if( reproduction.isUndirected )
-						toolTip += "<br><i>Competitors:</i> "+formatStructureAt(node, reproduction.out, reproduction.kout);
+					toolTip += "<br><i>Links to:</i>  "+formatStructureAt(node, intergeom.out, intergeom.kout)+
+							   "<br><i>Link here:</i> "+formatStructureAt(node, intergeom.in, intergeom.kin);
+				if( !intergeom.interCompSame ) {
+					Geometry compgeom = module.getCompetitionGeometry();
+					if( compgeom.isUndirected )
+						toolTip += "<br><i>Competitors:</i> "+formatStructureAt(node, compgeom.out, compgeom.kout);
 					else
-						toolTip += "<br><i>Competes for:</i>  "+formatStructureAt(node, reproduction.out, reproduction.kout)+
-								   "<br><i>Compete here:</i> "+formatStructureAt(node, reproduction.in, reproduction.kin);
+						toolTip += "<br><i>Competes for:</i>  "+formatStructureAt(node, compgeom.out, compgeom.kout)+
+								   "<br><i>Compete here:</i> "+formatStructureAt(node, compgeom.in, compgeom.kin);
 				}
 				return toolTip;
 

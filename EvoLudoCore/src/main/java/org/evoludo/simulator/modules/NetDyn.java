@@ -454,7 +454,7 @@ public class NetDyn extends Discrete implements HasIBS,
 
 	@Override
 	public void adjustCLO(CLOParser parser) {
-		parser.removeCLO(new String[] { "popupdate", "playerupdate", "geometry", "geominter", "geomrepro",
+		parser.removeCLO(new String[] { "popupdate", "playerupdate", "geometry", "geominter", "geomcomp",
 				"mutations", "fitnessmap" });
 
 		cloGeometry.clearKeys();
@@ -801,7 +801,7 @@ public class NetDyn extends Discrete implements HasIBS,
 			geom.isUndirected = false;
 			geom.isRegular = false;
 			geom.isDynamic = true;
-			geom.interReproSame = true;
+			geom.interCompSame = true;
 			geom.alloc();
 			return true;
 		}

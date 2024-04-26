@@ -341,15 +341,15 @@ if( isHomoInit ) out.println("# homo init - half of runs with homogeneous A, oth
 	@Override
 	public boolean check() {
 		boolean doReset = super.check();
-		if( !interaction.interReproSame || interaction.getType() != Geometry.MEANFIELD ) {
-			logger.warning("well-mixed populations required for both interactions and reproduction!");
+		if( !interaction.interCompSame || interaction.getType() != Geometry.MEANFIELD ) {
+			logger.warning("well-mixed populations required for both interactions and competition!");
 			interaction.geometry = Geometry.MEANFIELD;
 			interaction.size = nPopulation;
-			interaction.interReproSame = true;
-			reproduction = interaction;
-//			if( reproduction!=null ) {
-//				reproduction.geometry = Geometry.MEANFIELD;
-//				reproduction.size = nPopulation;
+			interaction.interCompSame = true;
+			competition = interaction;
+//			if( competition!=null ) {
+//				competition.geometry = Geometry.MEANFIELD;
+//				competition.size = nPopulation;
 //			}
 			doReset = true;
 		}
@@ -383,7 +383,7 @@ if( isHomoInit ) out.println("# homo init - half of runs with homogeneous A, oth
 			if( interaction.geometry!=Geometry.MEANFIELD ) {
 				logger.warning("statistics only for well-mixed populations available!");
 				interaction.geometry = Geometry.MEANFIELD;
-				interaction.interReproSame = true;
+				interaction.interCompSame = true;
 				doReset = true;
 			}
 		}

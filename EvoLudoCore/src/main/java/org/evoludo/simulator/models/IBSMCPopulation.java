@@ -372,7 +372,7 @@ public class IBSMCPopulation extends IBSPopulation {
 						(interaction.getType() == Geometry.Type.HIERARCHY && //
 								interaction.subgeometry == Geometry.Type.MEANFIELD))
 					return false;
-				return interactionGroup.isSampling(IBSGroup.SamplingType.ALL);
+				return interGroup.isSampling(IBSGroup.SamplingType.ALL);
 			case RESET_ON_CHANGE:
 				// if scores are reset only on an actual strategy change, scores
 				// can never be adjusted
@@ -536,7 +536,7 @@ public class IBSMCPopulation extends IBSPopulation {
 				return;
 
 			default:
-				throw new Error("Unknown interaction type (" + interactionGroup.getSampling() + ")");
+				throw new Error("Unknown interaction type (" + interGroup.getSampling() + ")");
 		}
 	}
 
@@ -793,12 +793,12 @@ public class IBSMCPopulation extends IBSPopulation {
 		traitMax = module.getTraitMax();
 
 		// check interaction geometry
-		if (interaction.getType() == Geometry.Type.MEANFIELD && interactionGroup.isSampling(IBSGroup.SamplingType.ALL)) {
+		if (interaction.getType() == Geometry.Type.MEANFIELD && interGroup.isSampling(IBSGroup.SamplingType.ALL)) {
 			// interacting with everyone in mean-field simulations is not feasible - except
 			// for discrete strategies
 			logger.warning(
-					"interaction type (" + interactionGroup.getSampling() + ") unfeasible in well-mixed populations!");
-			interactionGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+					"interaction type (" + interGroup.getSampling() + ") unfeasible in well-mixed populations!");
+			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 			// change of sampling may affect whether scores can be adjusted
 			adjustScores = doAdjustScores();
 		}

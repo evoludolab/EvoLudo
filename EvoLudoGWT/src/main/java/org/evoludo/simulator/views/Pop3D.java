@@ -227,8 +227,8 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 					graph.setGeometry(geoDE);
 				break;
 			case IBS:
-				// how to deal with distinct interaction/reproduction geometries?
-				// - currently two separate graphs are shown one for the interaction and the other for the reproduction geometry
+				// how to deal with distinct interaction/competition geometries?
+				// - currently two separate graphs are shown one for the interaction and the other for the competition geometry
 				// - alternatively links could be drawn in different colors (would need to revise network layout routines)
 				// - another alternative is to add context menu to toggle between the different link sets (could be difficult if one is a lattice...)
 				ArrayList<? extends Module> species = engine.getModule().getSpecies();
@@ -270,9 +270,9 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 				boolean inter = true;
 				for (PopGraph3D graph : graphs) {
 					Module module = graph.getModule();
-					Geometry geo = inter ? module.getInteractionGeometry() : module.getReproductionGeometry();
+					Geometry geo = inter ? module.getInteractionGeometry() : module.getCompetitionGeometry();
 					graph.setGeometry(geo);
-					// alternate between interaction and reproduction geometries
+					// alternate between interaction and competition geometries
 					// no consequences if they are the same
 					inter = !inter;
 				}
@@ -521,25 +521,25 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 						tip.append("<tr><td><i>Interactions:</i></td><td>"+count+"</td></tr>");
 				}
 
-				Geometry interaction = module.getInteractionGeometry();
-				if( interaction.isUndirected )
-					tip.append("<tr><td><i>Neighbors:</i></td><td>"+formatStructureAt(node, interaction)+"</td></tr>");
+				Geometry intergeom = module.getInteractionGeometry();
+				if( intergeom.isUndirected )
+					tip.append("<tr><td><i>Neighbors:</i></td><td>"+formatStructureAt(node, intergeom)+"</td></tr>");
 				else
 					//useful for debugging geometry - Geometry.checkConnections should be able to catch such problems
-					tip.append("<tr><td><i>Links to:</i></td><td>"+formatOutStructureAt(node, interaction)+"</td></tr>"+
-							"<tr><td><i>Link here:</i></td><td>"+formatInStructureAt(node, interaction)+"</td></tr>");
-				if( interaction.isInterspecies() )
-					tip.append(formatStrategiesAt(node, interaction, getOpponentInteractionGraph(graph)));
+					tip.append("<tr><td><i>Links to:</i></td><td>"+formatOutStructureAt(node, intergeom)+"</td></tr>"+
+							"<tr><td><i>Link here:</i></td><td>"+formatInStructureAt(node, intergeom)+"</td></tr>");
+				if( intergeom.isInterspecies() )
+					tip.append(formatStrategiesAt(node, intergeom, getOpponentInteractionGraph(graph)));
 
-				Geometry reproduction = module.getReproductionGeometry();
-				if( !reproduction.interReproSame ) {
-					if( reproduction.isUndirected )
-						tip.append("<tr><td><i>Competitors:</i></td><td>"+formatStructureAt(node, reproduction)+"</td></tr>");
+				Geometry compgeom = module.getCompetitionGeometry();
+				if( !compgeom.interCompSame ) {
+					if( compgeom.isUndirected )
+						tip.append("<tr><td><i>Competitors:</i></td><td>"+formatStructureAt(node, compgeom)+"</td></tr>");
 					else
-						tip.append("<tr><td><i>Competes for:</i></td><td>"+formatOutStructureAt(node, reproduction)+"</td></tr>"+
-								"<tr><td><i>Compete here:</i></td><td>"+formatInStructureAt(node, reproduction)+"</td></tr>");
-					if( interaction.isInterspecies() )
-						tip.append(formatStrategiesAt(node, reproduction, getOpponentCompetitionGraph(graph)));
+						tip.append("<tr><td><i>Competes for:</i></td><td>"+formatOutStructureAt(node, compgeom)+"</td></tr>"+
+								"<tr><td><i>Compete here:</i></td><td>"+formatInStructureAt(node, compgeom)+"</td></tr>");
+					if( intergeom.isInterspecies() )
+						tip.append(formatStrategiesAt(node, compgeom, getOpponentCompetitionGraph(graph)));
 				}
 				return tip.append("</table>").toString();
 			default:
@@ -565,12 +565,12 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 	private PopGraph3D getOpponentCompetitionGraph(PopGraph3D graph) {
 		Module module = graph.getModule();
 		Module opponent = module.getOpponent();
-		Geometry oppRepro = opponent.getReproductionGeometry();
+		Geometry oppComp = opponent.getCompetitionGeometry();
 		for( PopGraph3D oppGraph : graphs) {
 			if (oppGraph == graph)
 				continue;
 			Module oppModule = oppGraph.getModule();
-			if (oppModule == opponent && oppGraph.getGeometry() == oppRepro)
+			if (oppModule == opponent && oppGraph.getGeometry() == oppComp)
 				return oppGraph;
 		}
 		return null;
@@ -580,13 +580,13 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 		int nNeighs = geom.kout[node];
 		if (geom.getType() == Geometry.Type.MEANFIELD || nNeighs == 0)
 			return "";
-		int[] links = geom.out[node];
+		int[] neigh = geom.out[node];
 		String msg = "<tr><td><i style='padding-left:2em'>" + graph.getGeometry().getName() + ":</i></td>" +
-				"<td>[<span style='color:" + graph.getCSSColorAt(links[0])
+				"<td>[<span style='color:" + graph.getCSSColorAt(neigh[0])
 				+ "; font-size:175%; line-height:0.57;'>&#x25A0;</span>";
 		int disp = Math.min(nNeighs, 10);
 		for (int n = 1; n < disp; n++)
-			msg += "<span style='color:" + graph.getCSSColorAt(links[n])
+			msg += "<span style='color:" + graph.getCSSColorAt(neigh[n])
 					+ "; font-size:175%; line-height:0.57;'>&nbsp;&#x25A0;</span>";
 		if (disp < nNeighs)
 			msg += " ...";

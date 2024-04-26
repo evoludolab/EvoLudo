@@ -74,7 +74,7 @@ import org.evoludo.util.Formatter;
  * <ol>
  * <li>The population sizes of each species needs to be the same. Except for
  * well-mixed populations.
- * <li>The reproduction and interaction structures can be different within
+ * <li>The competition and interaction structures can be different within
  * and/or between species.
  * </ol>
  * 

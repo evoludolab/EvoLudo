@@ -159,8 +159,8 @@ public abstract class IBSPopulation {
 		rng = engine.getRNG();
 		isMultispecies = (module.getNSpecies() > 1);
 
-		interactionGroup = new IBSGroup(rng);
-		referenceGroup = new IBSGroup(rng);
+		interGroup = new IBSGroup(rng);
+		compGroup = new IBSGroup(rng);
 
 		populationUpdate = new PopulationUpdate((IBS) engine.getModel());
 	}
@@ -174,9 +174,9 @@ public abstract class IBSPopulation {
 	public void unload() {
 		// free resources
 		interaction = null;
-		reproduction = null;
-		interactionGroup = null;
-		referenceGroup = null;
+		competition = null;
+		interGroup = null;
+		compGroup = null;
 		cProbs = null;
 		groupScores = null;
 		smallScores = null;
@@ -446,34 +446,34 @@ public abstract class IBSPopulation {
 	/**
 	 * Reference to the interaction group.
 	 */
-	protected IBSGroup interactionGroup;
+	protected IBSGroup interGroup;
 
 	/**
 	 * Gets the interaction group.
 	 * 
 	 * @return the interaction group
 	 */
-	public IBSGroup getInteractionGroup() {
-		return interactionGroup;
+	public IBSGroup getInterGroup() {
+		return interGroup;
 	}
 
 	/**
-	 * The geometry of the reproduction graph.
+	 * The geometry of the competition graph.
 	 */
-	protected Geometry reproduction;
+	protected Geometry competition;
 
 	/**
-	 * Reference to the reference/model group.
+	 * Reference to the competition/reference/model group.
 	 */
-	protected IBSGroup referenceGroup;
+	protected IBSGroup compGroup;
 
 	/**
-	 * Gets the reference/model group.
+	 * Gets the competition/reference/model group.
 	 * 
-	 * @return the reference/model group
+	 * @return the competition/reference/model group
 	 */
-	public IBSGroup getReferenceGroup() {
-		return referenceGroup;
+	public IBSGroup getCompGroup() {
+		return compGroup;
 	}
 
 	/**
@@ -1229,7 +1229,7 @@ public abstract class IBSPopulation {
 			return pickNeutralNeighbourAt(me, withSelf);
 
 		// mean-field
-		if (reproduction.getType() == Geometry.Type.MEANFIELD) {
+		if (competition.getType() == Geometry.Type.MEANFIELD) {
 			debugNModels = 0;
 			if (withSelf)
 				return pickFitFocalIndividual();
@@ -1238,8 +1238,8 @@ public abstract class IBSPopulation {
 
 		if (VACANT < 0) {
 			// structured population
-			debugModels = reproduction.in[me];
-			debugNModels = reproduction.kin[me];
+			debugModels = competition.in[me];
+			debugNModels = competition.kin[me];
 			double totFitness = 0.0;
 			double myFit = 0.0;
 			if (withSelf) {
@@ -1279,8 +1279,8 @@ public abstract class IBSPopulation {
 		}
 
 		// vacancies require some extra care
-		debugModels = reproduction.in[me];
-		debugNModels = reproduction.kin[me];
+		debugModels = competition.in[me];
+		debugNModels = competition.kin[me];
 		double totFitness = 0.0;
 		double myFit = 0.0;
 		if (withSelf && !isVacantAt(me)) {
@@ -1338,7 +1338,7 @@ public abstract class IBSPopulation {
 	 * @return the index of a neighbour
 	 */
 	private int pickNeutralNeighbourAt(int me, boolean withSelf) {
-		if (reproduction.getType() == Geometry.Type.MEANFIELD) {
+		if (competition.getType() == Geometry.Type.MEANFIELD) {
 			debugNModels = 0;
 			if (withSelf)
 				return pickFocalSite();
@@ -1370,11 +1370,11 @@ public abstract class IBSPopulation {
 	 */
 	protected int pickNeighborSiteAt(int me) {
 		// mean-field
-		if (reproduction.getType() == Geometry.Type.MEANFIELD)
+		if (competition.getType() == Geometry.Type.MEANFIELD)
 			return pickFocalSite(me);
 
-		debugModels = reproduction.out[me];
-		debugNModels = reproduction.kout[me];
+		debugModels = competition.out[me];
+		debugNModels = competition.kout[me];
 		switch (debugNModels) {
 			case 0:
 				// no downstream neighbour? no place to put offspring
@@ -1426,11 +1426,11 @@ public abstract class IBSPopulation {
 		PopulationUpdate.Type put = populationUpdate.getType();
 		populationUpdate.setType(PopulationUpdate.Type.SYNC);
 		if (module.isPairwise()) {
-			interactionGroup.pickAt(me, interaction, true);
-			playPairGameAt(interactionGroup);
+			interGroup.pickAt(me, interaction, true);
+			playPairGameAt(interGroup);
 		} else {
-			interactionGroup.pickAt(me, interaction, true);
-			playGroupGameAt(interactionGroup);
+			interGroup.pickAt(me, interaction, true);
+			playGroupGameAt(interGroup);
 		}
 		populationUpdate.setType(put);
 	}
@@ -1457,24 +1457,24 @@ public abstract class IBSPopulation {
 			throw new Error("ERROR: playGameAt(int idx) and adjustScores are incompatible!");
 		}
 		if (module.isPairwise()) {
-			interactionGroup.pickAt(me, interaction, true);
-			playPairGameAt(interactionGroup);
+			interGroup.pickAt(me, interaction, true);
+			playPairGameAt(interGroup);
 			// if undirected, we are done
 			if (interaction.isUndirected)
 				return;
 
 			// directed graph - additionally/separately interact with in-neighbors
-			interactionGroup.pickAt(me, interaction, false);
-			playPairGameAt(interactionGroup);
+			interGroup.pickAt(me, interaction, false);
+			playPairGameAt(interGroup);
 		} else {
-			interactionGroup.pickAt(me, interaction, true);
-			playGroupGameAt(interactionGroup);
+			interGroup.pickAt(me, interaction, true);
+			playGroupGameAt(interGroup);
 			// if undirected, we are done
 			if (interaction.isUndirected)
 				return;
 			// directed graph - additionally/separately interact with in-neighbors
-			interactionGroup.pickAt(me, interaction, false);
-			playGroupGameAt(interactionGroup);
+			interGroup.pickAt(me, interaction, false);
+			playGroupGameAt(interGroup);
 		}
 	}
 
@@ -1522,22 +1522,22 @@ public abstract class IBSPopulation {
 			// undirected graph - same as earlier approach
 			// remove old scores
 			int[] neigh = interaction.out[me];
-			int nNeigh = reproduction.kout[me];
-			interactionGroup.setGroupAt(me, neigh, nNeigh);
-			yalpGroupGameAt(interactionGroup);
+			int nNeigh = competition.kout[me];
+			interGroup.setGroupAt(me, neigh, nNeigh);
+			yalpGroupGameAt(interGroup);
 			for (int i = 0; i < nNeigh; i++) {
 				int you = neigh[i];
-				interactionGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
-				yalpGroupGameAt(interactionGroup);
+				interGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
+				yalpGroupGameAt(interGroup);
 			}
 			commitStrategyAt(me);
 			// add new scores
-			interactionGroup.setGroupAt(me, neigh, nNeigh);
-			playGroupGameAt(interactionGroup);
+			interGroup.setGroupAt(me, neigh, nNeigh);
+			playGroupGameAt(interGroup);
 			for (int i = 0; i < nNeigh; i++) {
 				int you = neigh[i];
-				interactionGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
-				playGroupGameAt(interactionGroup);
+				interGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
+				playGroupGameAt(interGroup);
 			}
 			return;
 		}
@@ -1546,41 +1546,41 @@ public abstract class IBSPopulation {
 		// remove old scores
 		int[] neigh = interaction.out[me];
 		int nNeigh = interaction.kout[me];
-		interactionGroup.setGroupAt(me, neigh, nNeigh);
-		yalpGroupGameAt(interactionGroup);
+		interGroup.setGroupAt(me, neigh, nNeigh);
+		yalpGroupGameAt(interGroup);
 		for (int i = 0; i < nNeigh; i++) {
 			int you = neigh[i];
-			interactionGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
-			yalpGroupGameAt(interactionGroup);
+			interGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
+			yalpGroupGameAt(interGroup);
 		}
 		neigh = interaction.in[me];
 		nNeigh = interaction.kin[me];
-		interactionGroup.setGroupAt(me, neigh, nNeigh);
-		yalpGroupGameAt(interactionGroup);
+		interGroup.setGroupAt(me, neigh, nNeigh);
+		yalpGroupGameAt(interGroup);
 		for (int i = 0; i < nNeigh; i++) {
 			int you = neigh[i];
-			interactionGroup.setGroupAt(you, interaction.in[you], interaction.kin[you]);
-			yalpGroupGameAt(interactionGroup);
+			interGroup.setGroupAt(you, interaction.in[you], interaction.kin[you]);
+			yalpGroupGameAt(interGroup);
 		}
 		commitStrategyAt(me);
 		// add new scores
 		neigh = interaction.out[me];
 		nNeigh = interaction.kout[me];
-		interactionGroup.setGroupAt(me, neigh, nNeigh);
-		playGroupGameAt(interactionGroup);
+		interGroup.setGroupAt(me, neigh, nNeigh);
+		playGroupGameAt(interGroup);
 		for (int i = 0; i < nNeigh; i++) {
 			int you = neigh[i];
-			interactionGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
-			playGroupGameAt(interactionGroup);
+			interGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
+			playGroupGameAt(interGroup);
 		}
 		neigh = interaction.in[me];
 		nNeigh = interaction.kin[me];
-		interactionGroup.setGroupAt(me, neigh, nNeigh);
-		playGroupGameAt(interactionGroup);
+		interGroup.setGroupAt(me, neigh, nNeigh);
+		playGroupGameAt(interGroup);
 		for (int i = 0; i < nNeigh; i++) {
 			int you = neigh[i];
-			interactionGroup.setGroupAt(you, interaction.in[you], interaction.kin[you]);
-			playGroupGameAt(interactionGroup);
+			interGroup.setGroupAt(you, interaction.in[you], interaction.kin[you]);
+			playGroupGameAt(interGroup);
 		}
 	}
 
@@ -2200,7 +2200,7 @@ public abstract class IBSPopulation {
 	 */
 	protected void updatePlayerMoranBirthDeathAt(int parent) {
 		debugFocal = parent;
-		if (reproduction.getType() == Geometry.Type.MEANFIELD) {
+		if (competition.getType() == Geometry.Type.MEANFIELD) {
 			debugModel = pickFocalSite();
 			debugNModels = 0;
 		} else
@@ -2346,9 +2346,9 @@ public abstract class IBSPopulation {
 		debugFocal = me;
 		// note: choose random neighbor among in-neighbors (those are upstream to serve
 		// as models; this is the opposite for birth-death scenarios)
-		referenceGroup.pickAt(me, reproduction, false);
-		debugNModels = referenceGroup.nSampled;
-		debugModels = referenceGroup.group;
+		compGroup.pickAt(me, competition, false);
+		debugNModels = compGroup.nSampled;
+		debugModels = compGroup.group;
 		debugModel = -1;
 		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
 			// calculate scores of all individual involved in updating
@@ -2908,8 +2908,8 @@ public abstract class IBSPopulation {
 		}
 		if (playerScoring == ScoringType.EPHEMERAL) {
 			if (module.isPairwise()) {
-				if (interactionGroup.samplingType == SamplingType.RANDOM)
-					return interactionGroup.nSamples * score;
+				if (interGroup.samplingType == SamplingType.RANDOM)
+					return interGroup.nSamples * score;
 				if (count == 0)
 					return (nPopulation - 1) * score;
 				return count * score;
@@ -2961,15 +2961,15 @@ public abstract class IBSPopulation {
 		}
 
 		// check geometries: --geometry set structure, --geominter set interaction and
-		// --geomrepro set reproduction.
+		// --geomcomp set competition.
 		// now it is time to amalgamate. the more specific options --geominter,
-		// --geomrepro take precedence. structure
+		// --geomcomp take precedence. structure
 		// is always available from parsing the default of cloGeometry. hence first
-		// check --geominter, --geomrepro.
+		// check --geominter, --geomcomp.
 		IBS master = (IBS) engine.getModel();
 		Geometry structure = module.getGeometry();
 		if (interaction != null) {
-			if (reproduction != null) {
+			if (competition != null) {
 				// NOTE: this is hackish because every population has its own cloGeometry
 				// parsers but only one will actually do the parsing...
 				if (structure != null) {
@@ -2978,45 +2978,45 @@ public abstract class IBSPopulation {
 						interaction = structure;
 						doReset = true;
 					}
-					if (!reproduction.equals(structure) && !master.cloGeometryReproduction.isSet()) {
-						reproduction = structure;
+					if (!competition.equals(structure) && !master.cloGeometryCompetition.isSet()) {
+						competition = structure;
 						doReset = true;
 					}
-					interaction.interReproSame = reproduction.interReproSame = interaction.equals(reproduction);
+					interaction.interCompSame = competition.interCompSame = interaction.equals(competition);
 				}
 				// both geometries set on command line OR parameters manually changed and
 				// applied - check if can be collapsed
 				// NOTE: assumes that same arguments imply same geometries. this precludes that
-				// interaction and reproduction are both random
+				// interaction and competition are both random
 				// structures with otherwise identical parameters (e.g. random regular graphs of
 				// same degree but different realizations)
-				if (!interaction.isValid || !reproduction.isValid) {
-					interaction.interReproSame = reproduction.interReproSame = master.cloGeometryInteraction.getArg()
-							.equals(master.cloGeometryReproduction.getArg());
+				if (!interaction.isValid || !competition.isValid) {
+					interaction.interCompSame = competition.interCompSame = master.cloGeometryInteraction.getArg()
+							.equals(master.cloGeometryCompetition.getArg());
 				}
 			} else {
-				// reproduction not set - use --geometry (or its default for reproduction)
-				interaction.interReproSame = master.cloGeometryInteraction.getArg().equals(module.cloGeometry.getArg());
-				if (!interaction.interReproSame) {
-					reproduction = structure;
-					reproduction.interReproSame = false;
+				// competition not set - use --geometry (or its default for competition)
+				interaction.interCompSame = master.cloGeometryInteraction.getArg().equals(module.cloGeometry.getArg());
+				if (!interaction.interCompSame) {
+					competition = structure;
+					competition.interCompSame = false;
 				}
 			}
 		} else {
 			// interaction not set
-			if (reproduction != null) {
-				// reproduction set - use --geometry (or its default for interaction)
-				// NOTE: this is slightly different from above because reproduction knows
+			if (competition != null) {
+				// competition set - use --geometry (or its default for interaction)
+				// NOTE: this is slightly different from above because competition knows
 				// nothing about potentially different opponents in
 				// inter-species interactions.
 				interaction = structure;
-				interaction.interReproSame = master.cloGeometryReproduction.getArg()
+				interaction.interCompSame = master.cloGeometryCompetition.getArg()
 						.equals(module.cloGeometry.getArg());
 			} else {
 				// neither geometry is set - e.g. initial launch with --geometry specified (or
 				// no geometry specifications at all)
 				interaction = structure;
-				interaction.interReproSame = true;
+				interaction.interCompSame = true;
 			}
 		}
 		// set adding of links to geometries
@@ -3024,10 +3024,10 @@ public abstract class IBSPopulation {
 			double prev = interaction.pAddwire;
 			interaction.pAddwire = pAddwire[0];
 			doReset |= (Math.abs(prev - interaction.pAddwire) > 1e-8);
-			if (reproduction != null) {
-				prev = reproduction.pAddwire;
-				reproduction.pAddwire = pAddwire[1];
-				doReset |= (Math.abs(prev - reproduction.pAddwire) > 1e-8);
+			if (competition != null) {
+				prev = competition.pAddwire;
+				competition.pAddwire = pAddwire[1];
+				doReset |= (Math.abs(prev - competition.pAddwire) > 1e-8);
 			}
 		}
 		// set rewiring of links in geometries
@@ -3035,47 +3035,47 @@ public abstract class IBSPopulation {
 			double prev = interaction.pRewire;
 			interaction.pRewire = pRewire[0];
 			doReset |= (Math.abs(prev - interaction.pRewire) > 1e-8);
-			if (reproduction != null) {
-				prev = reproduction.pRewire;
-				reproduction.pRewire = pRewire[1];
-				doReset |= (Math.abs(prev - reproduction.pRewire) > 1e-8);
+			if (competition != null) {
+				prev = competition.pRewire;
+				competition.pRewire = pRewire[1];
+				doReset |= (Math.abs(prev - competition.pRewire) > 1e-8);
 			}
 		}
 		// set names of geometries
 		String name = module.getName();
-		if (interaction.interReproSame) {
+		if (interaction.interCompSame) {
 			if (name.isEmpty())
 				interaction.name = "Structure";
 			else
 				interaction.name = name + ": Structure";
 		} else {
-			if (Geometry.displayUniqueGeometry(interaction, reproduction)) {
+			if (Geometry.displayUniqueGeometry(interaction, competition)) {
 				if (name.isEmpty())
-					interaction.name = reproduction.name = "Structure";
+					interaction.name = competition.name = "Structure";
 				else
-					interaction.name = reproduction.name = name + ": Structure";
+					interaction.name = competition.name = name + ": Structure";
 			} else {
 				if (name.isEmpty()) {
 					interaction.name = "Interaction";
-					reproduction.name = "Reproduction";
+					competition.name = "Competition";
 				} else {
 					interaction.name = name + ": Interaction";
-					reproduction.name = name + ": Reproduction";
+					competition.name = name + ": Competition";
 				}
 			}
 		}
-		// Note: now that interaction and reproduction are set, we still cannot set
+		// Note: now that interaction and competition are set, we still cannot set
 		// structure to null because of subsequent CLO parsing
 
 		// check geometries
-		// Warning: there is a small chance that the interaction and reproduction
+		// Warning: there is a small chance that the interaction and competition
 		// geometries require different population sizes, which does not make sense 
 		// and would most likely result in a never ending initialization loop...
 		interaction.size = nPopulation;
 		doReset |= interaction.check();
-		if (reproduction != null) {
-			reproduction.size = interaction.size;
-			doReset |= reproduction.check();
+		if (competition != null) {
+			competition.size = interaction.size;
+			doReset |= competition.check();
 		}
 		// population structure may require special population sizes
 		module.setNPopulation(interaction.size);
@@ -3084,46 +3084,46 @@ public abstract class IBSPopulation {
 		// check sampling in special geometries
 		int nGroup = module.getNGroup();
 		if (interaction.getType() == Geometry.Type.SQUARE && interaction.isRegular && interaction.connectivity > 8 &&
-				interactionGroup.isSampling(IBSGroup.SamplingType.ALL) && nGroup > 2 && nGroup < 9) {
+				interGroup.isSampling(IBSGroup.SamplingType.ALL) && nGroup > 2 && nGroup < 9) {
 			// if count > 8 then the interaction pattern Group.SAMPLING_ALL with a group
 			// size between 2 and 8
 			// (excluding boundaries is not allowed because this pattern requires a
 			// particular (internal)
 			// arrangement of the neighbors.
-			interactionGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 			logger.warning("square " + name + " geometry has incompatible interaction pattern and neighborhood size" +
 					" - using random sampling of interaction partners!");
 		}
-		if (interaction.getType() == Geometry.Type.CUBE && interactionGroup.isSampling(IBSGroup.SamplingType.ALL) &&
+		if (interaction.getType() == Geometry.Type.CUBE && interGroup.isSampling(IBSGroup.SamplingType.ALL) &&
 				nGroup > 2 && nGroup <= interaction.connectivity) {
 			// Group.SAMPLING_ALL only works with pairwise interactions or all neighbors;
 			// restrictions do not apply for PDE's
-			interactionGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 			logger.warning("cubic " + name + " geometry has incompatible interaction pattern and neighborhood size" +
 					" - using random sampling of interaction partners!");
 		}
 
-		// check reproduction geometry (may still be undefined at this point)
-		Geometry reprogeom = (reproduction != null ? reproduction : interaction);
+		// check competition geometry (may still be undefined at this point)
+		Geometry compgeom = (competition != null ? competition : interaction);
 		if (!populationUpdate.isMoran() && !populationUpdate.getType().equals(PopulationUpdate.Type.ECOLOGY)) {
 			// Moran type updates ignore playerUpdateType
-			if (reprogeom.getType() == Geometry.Type.MEANFIELD && referenceGroup.isSampling(IBSGroup.SamplingType.ALL)) {
+			if (compgeom.getType() == Geometry.Type.MEANFIELD && compGroup.isSampling(IBSGroup.SamplingType.ALL)) {
 				// 010320 using everyone as a reference in mean-field simulations is not
 				// feasible - except for best-response
 				// ecological updates are based on births and deaths rather than references
 				if (playerUpdate.getType() != PlayerUpdate.Type.BEST_RESPONSE) {
-					logger.warning("reference type (" + referenceGroup.getSampling()
+					logger.warning("reference type (" + compGroup.getSampling()
 							+ ") unfeasible in well-mixed populations!");
-					referenceGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+					compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 				}
 			}
 			// best-response in well-mixed populations should skip sampling of references
-			if (reprogeom.getType() == Geometry.Type.MEANFIELD && playerUpdate.getType() == PlayerUpdate.Type.BEST_RESPONSE) {
-				referenceGroup.setSampling(IBSGroup.SamplingType.NONE);
+			if (compgeom.getType() == Geometry.Type.MEANFIELD && playerUpdate.getType() == PlayerUpdate.Type.BEST_RESPONSE) {
+				compGroup.setSampling(IBSGroup.SamplingType.NONE);
 			}
 		}
 		// in the original Moran process offspring can replace the parent
-		referenceGroup.setSelf(populationUpdate.isMoran() && reprogeom.getType() == Geometry.Type.MEANFIELD);
+		compGroup.setSelf(populationUpdate.isMoran() && compgeom.getType() == Geometry.Type.MEANFIELD);
 
 		// currently: if pop has interaction structure different from MEANFIELD its
 		// opponent population needs to be of the same size
@@ -3163,8 +3163,8 @@ public abstract class IBSPopulation {
 			if (!interaction.isUndirected) {
 				logger.warning("no migration on directed graphs!");
 				setMigrationType(MigrationType.NONE);
-			} else if (!interaction.interReproSame) {
-				logger.warning("no migration on graphs with different interaction and reproduction neighborhoods!");
+			} else if (!interaction.interCompSame) {
+				logger.warning("no migration on graphs with different interaction and competition neighborhoods!");
 				setMigrationType(MigrationType.NONE);
 			} else if (interaction.getType() == Geometry.Type.MEANFIELD) {
 				logger.warning("no migration in well-mixed populations!");
@@ -3200,7 +3200,7 @@ public abstract class IBSPopulation {
 		hasLookupTable = module.isStatic() || //
 				(adjustScores && interaction.getType() == Geometry.Type.MEANFIELD) || //
 				(ephemeralScores && interaction.getType() == Geometry.Type.MEANFIELD //
-					&& interactionGroup.isSampling(SamplingType.ALL));
+					&& interGroup.isSampling(SamplingType.ALL));
 		if (hasLookupTable) {
 			// allocate memory for fitness lookup table
 			if (typeFitness == null || typeFitness.length != nTraits)
@@ -3255,18 +3255,18 @@ public abstract class IBSPopulation {
 
 	/**
 	 * The array containing the probabilities for rewiring links of the interaction
-	 * and reproduction graphs.
+	 * and competition graphs.
 	 * 
 	 * @see Geometry#rewire()
 	 */
 	protected double[] pRewire;
 
 	/**
-	 * Set the probabilities for rewiring links of the interaction
-	 * and reproduction graphs.
+	 * Set the probabilities for rewiring links of the interaction and competition
+	 * graphs.
 	 * 
 	 * @param rewire the array
-	 *               <code>double[] {&lt;interaction&gt;, &lt;reproduction&gt;}</code>
+	 *               <code>double[] {&lt;interaction&gt;, &lt;competition&gt;}</code>
 	 */
 	public void setRewire(double[] rewire) {
 		if (pRewire == null)
@@ -3285,7 +3285,7 @@ public abstract class IBSPopulation {
 
 	/**
 	 * The array containing the probabilities for adding links to the interaction
-	 * and reproduction graphs.
+	 * and competition graphs.
 	 * 
 	 * @see Geometry#rewire()
 	 */
@@ -3293,10 +3293,10 @@ public abstract class IBSPopulation {
 
 	/**
 	 * Set the probabilities for adding links to the interaction
-	 * and reproduction graphs.
+	 * and competition graphs.
 	 * 
 	 * @param addwire the array
-	 *               <code>double[] {&lt;interaction&gt;, &lt;reproduction&gt;}</code>
+	 *               <code>double[] {&lt;interaction&gt;, &lt;competition&gt;}</code>
 	 */
 	public void setAddwire(double[] addwire) {
 		if (pAddwire == null)
@@ -3349,7 +3349,7 @@ public abstract class IBSPopulation {
 
 	/**
 	 * Reset the model. All parameters must be consistent at this point. Allocate
-	 * memory and initialize the interaction and reproduction structures. If
+	 * memory and initialize the interaction and competition structures. If
 	 * structures include random elements, e.g. random regular graphs, a new
 	 * structure is generated. Generate initial configuration. Subclasses must
 	 * override this method to allocate memory for the strategies and call super.
@@ -3389,8 +3389,8 @@ public abstract class IBSPopulation {
 			// (birth-death)
 			// reason: referenceGroup properly deals with hierarchies
 			// future: pick parent to populate vacated site (death-birth, fitness dependent)
-			referenceGroup.setSampling(IBSGroup.SamplingType.RANDOM);
-			referenceGroup.setNSamples(1);
+			compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+			compGroup.setNSamples(1);
 		}
 		// avoid numerical overflow for strong selection (mainly applies to exponential
 		// payoff-to-fitness mapping)
@@ -3407,14 +3407,14 @@ public abstract class IBSPopulation {
 		}
 		realtimeIncr = 1.0 / Math.max(maxFitness, module.getDeathRate());
 
-		if (interaction.interReproSame) {
-			reproduction = interaction.deriveReproductionGeometry();
+		if (interaction.interCompSame) {
+			competition = interaction.deriveCompetitionGeometry();
 		} else {
-			reproduction.init();
-			reproduction.rewire();
-			reproduction.evaluate();
+			competition.init();
+			competition.rewire();
+			competition.evaluate();
 		}
-		module.setGeometries(interaction, reproduction);
+		module.setGeometries(interaction, competition);
 		if (hasLookupTable) {
 			// allocate lookup tables
 			if (typeScores == null || typeScores.length != nTraits)
@@ -3445,7 +3445,7 @@ public abstract class IBSPopulation {
 			tags = new double[nPopulation];
 		// determine maximum reasonable group size
 		int maxGroup = Math.max(Math.max(interaction.maxIn, interaction.maxOut),
-				Math.max(reproduction.maxIn, reproduction.maxOut));
+				Math.max(competition.maxIn, competition.maxOut));
 		int nGroup = module.getNGroup();
 		maxGroup = Math.max(maxGroup, nGroup) + 1; // add 1 if focal should be part of group
 		if (groupScores == null || groupScores.length != maxGroup)
@@ -3458,7 +3458,7 @@ public abstract class IBSPopulation {
 		// number of interactions can be determined for ephemeral payoffs
 		// store in interactions array
 		if (ephemeralScores) {
-			if (interactionGroup.isSampling(SamplingType.ALL)) {
+			if (interGroup.isSampling(SamplingType.ALL)) {
 				if (nGroup > 2) {
 					// single interaction with all members in neighbourhood
 					Arrays.fill(interactions, 1);
@@ -3470,7 +3470,7 @@ public abstract class IBSPopulation {
 						System.arraycopy(interaction.kin, 0, interactions, 0, interactions.length);
 				}
 			} else {
-				Arrays.fill(interactions, Combinatorics.combinations(interactionGroup.nSamples, nGroup - 1));
+				Arrays.fill(interactions, Combinatorics.combinations(interGroup.nSamples, nGroup - 1));
 			}
 		}
 	}
@@ -3480,7 +3480,7 @@ public abstract class IBSPopulation {
 	 * override this method to generate the initial strategy configuration and call
 	 * super.
 	 * <p>
-	 * <strong>Note:</strong> Initialization leaves the interaction and reproduction
+	 * <strong>Note:</strong> Initialization leaves the interaction and competition
 	 * structures untouched
 	 * 
 	 * @see #check()
@@ -4100,23 +4100,23 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Gets the structure of reproductions or imitations.
+	 * Gets the structure of competition or imitations.
 	 * 
-	 * @return the reproduction structure
+	 * @return the competition structure
 	 */
-	public Geometry getReproductionGeometry() {
-		return reproduction;
+	public Geometry getCompetitionGeometry() {
+		return competition;
 	}
 
 	/**
-	 * Creates a new instance of the reproduction or imitation structure, if needed.
+	 * Creates a new instance of the competition or imitation structure, if needed.
 	 * 
-	 * @return the reproduction structure
+	 * @return the competition structure
 	 */
-	public Geometry createReproductionGeometry() {
-		if (reproduction == null || reproduction == module.getGeometry())
-			reproduction = new Geometry(engine, module);
-		return reproduction;
+	public Geometry createCompetitionGeometry() {
+		if (competition == null || competition == module.getGeometry())
+			competition = new Geometry(engine, module);
+		return competition;
 	}
 
 	/**
@@ -4344,7 +4344,7 @@ public abstract class IBSPopulation {
 	public abstract boolean restoreStrategies(Plist plist);
 
 	/**
-	 * Encode the interaction and reproduction structures of the IBS model in a
+	 * Encode the interaction and competition structures of the IBS model in a
 	 * <code>plist</code> inspired <code>XML</code> string.
 	 * 
 	 * @param plist the {@link java.lang.StringBuilder StringBuilder} to write the
@@ -4358,17 +4358,17 @@ public abstract class IBSPopulation {
 						"<dict>\n");
 		plist.append(interaction.encodeGeometry());
 		plist.append("</dict>\n");
-		if (interaction.interReproSame)
+		if (interaction.interCompSame)
 			return;
 		plist.append(
-				"<key>" + reproduction.name + "</key>\n" +
+				"<key>" + competition.name + "</key>\n" +
 						"<dict>\n");
-		plist.append(reproduction.encodeGeometry());
+		plist.append(competition.encodeGeometry());
 		plist.append("</dict>\n");
 	}
 
 	/**
-	 * Restore the interaction and reproduction structures encoded in the
+	 * Restore the interaction and competition structures encoded in the
 	 * <code>plist</code> inspired <code>map</code> of {@code key, value}-pairs.
 	 * 
 	 * @param plist the map of {@code key, value}-pairs
@@ -4381,19 +4381,19 @@ public abstract class IBSPopulation {
 		if (igeo == null)
 			return false;
 		interaction.decodeGeometry(igeo);
-		if (interaction.interReproSame) {
-			reproduction = interaction.deriveReproductionGeometry();
+		if (interaction.interCompSame) {
+			competition = interaction.deriveCompetitionGeometry();
 			return true;
 		}
-		Plist rgeo = (Plist) plist.get(reproduction.name);
+		Plist rgeo = (Plist) plist.get(competition.name);
 		if (rgeo == null)
 			return false;
-		reproduction.decodeGeometry(rgeo);
+		competition.decodeGeometry(rgeo);
 		return true;
 	}
 
 	/**
-	 * Set the seed of the random number generator for reproducible simulation runs.
+	 * Set the seed of the random number generator for competition simulation runs.
 	 *
 	 * @param s the seed for random number generator
 	 */

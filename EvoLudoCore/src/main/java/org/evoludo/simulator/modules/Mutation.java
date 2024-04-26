@@ -253,7 +253,7 @@ public abstract class Mutation {
 				EvoLudo.catModule,
 				"--mutations <p> [<t> [thermal|uniform [<r>]]]  with\n" +
 				"             p: mutation probability\n" + //
-				"       process: reproduction or cosmic rays\n" + //
+				"       process: reproduction vs cosmic rays\n" + //
 				"             r: mutation range\n" + //
 				"             t: mutation type, with types:", //
 				new CLODelegate() {
@@ -492,7 +492,7 @@ public abstract class Mutation {
 			"--mutations <p> [<t> [<r> [thermal|uniform]]]"+CLOParser.TRAIT_DELIMITER+"<p1>...]>  with\n" +
 			"             p: mutation probability\n" + //
 			"             r: mutation range/sdev (fraction of interval)\n" + //
-			"       process: reproduction or cosmic rays\n" + //
+			"       process: reproduction vs cosmic rays\n" + //
 			"             t: mutation type, with types:", //
 				new CLODelegate() {
 

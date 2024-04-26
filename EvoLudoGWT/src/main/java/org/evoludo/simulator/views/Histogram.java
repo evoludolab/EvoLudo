@@ -147,7 +147,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					}
 					break;
 				case DEGREE:
-					nGraphs += getDegreeGraphs(pop.getInteractionGeometry(), pop.getReproductionGeometry());
+					nGraphs += getDegreeGraphs(pop.getInteractionGeometry(), pop.getCompetitionGeometry());
 					break;
 				case STATISTICS_FIXATION_PROBABILITY:
 				case STATISTICS_STATIONARY:
@@ -246,7 +246,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 							graphs.add(graph);
 							break;
 						}
-						nTraits = getDegreeGraphs(module.getInteractionGeometry(), module.getReproductionGeometry());
+						nTraits = getDegreeGraphs(module.getInteractionGeometry(), module.getCompetitionGeometry());
 						Geometry inter = (mType == Model.Type.PDE ? module.getGeometry() : module.getInteractionGeometry());
 						String[] labels = getDegreeLabels(nTraits, inter.isUndirected);
 						for( int n=0; n<nTraits; n++ ) {
@@ -463,16 +463,16 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						graph.setData(null);
 						break;
 					}
-					Geometry inter, repro;
+					Geometry inter, comp;
 					if( mType==Model.Type.PDE ) {
-						inter = repro = module.getGeometry();
+						inter = comp = module.getGeometry();
 					}
 					else {
 						inter = module.getInteractionGeometry();
-						repro = module.getReproductionGeometry();
+						comp = module.getCompetitionGeometry();
 					}
-					int rows = getDegreeGraphs(inter, repro);
-					int cols = getDegreeBins(inter, repro);
+					int rows = getDegreeGraphs(inter, comp);
+					int cols = getDegreeBins(inter, comp);
 					if (data == null || data.length != rows || data[0].length != cols)
 						data = new double[rows][cols];
 					graph.setData(data);
@@ -480,9 +480,9 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					style.yMax = 1.0;
 					style.xMin = 0.0;
 					if( inter.isUndirected )
-						style.xMax = maxDegree(Math.max(inter.maxOut, repro.maxOut));
+						style.xMax = maxDegree(Math.max(inter.maxOut, comp.maxOut));
 					else
-						style.xMax = maxDegree(Math.max(inter.maxTot, repro.maxTot));
+						style.xMax = maxDegree(Math.max(inter.maxTot, comp.maxTot));
 					break;
 
 				case STATISTICS_FIXATION_PROBABILITY:
@@ -634,7 +634,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					double min = 0.0, max = 0.0;
 					for (HistoGraph graph : graphs) {
 						Module module = graph.getModule();
-						Geometry inter = null, repro = null;
+						Geometry inter = null, comp = null;
 						switch (model.getModelType()) {
 							case ODE:
 								graph.displayMessage("ODE model: well-mixed population.");
@@ -643,7 +643,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 								graph.displayMessage("SDE model: well-mixed population.");
 								continue;
 							case PDE:
-								inter = repro = module.getGeometry();
+								inter = comp = module.getGeometry();
 								if (inter.isRegular) {
 									graph.displayMessage("PDE model: regular structure with degree "
 											+ (int) (inter.connectivity + 0.5) + ".");
@@ -658,21 +658,21 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 								break;
 							case IBS:
 								inter = module.getInteractionGeometry();
-								repro = module.getReproductionGeometry();
+								comp = module.getCompetitionGeometry();
 								break;
 							default: // unreachable
 						}
 						if (!degreeProcessed || (inter != null && inter.isDynamic)
-								|| (repro != null && repro.isDynamic)) {
+								|| (comp != null && comp.isDynamic)) {
 							double[][] graphdata = graph.getData();
-							if (data != graphdata && inter != null && repro != null) {
+							if (data != graphdata && inter != null && comp != null) {
 								data = graphdata;
 								// find min and max for degree distribution on dynamic graphs
 								int bincount;
 								if (inter.isUndirected)
-									bincount = maxDegree(Math.max(inter.maxOut, repro.maxOut));
+									bincount = maxDegree(Math.max(inter.maxOut, comp.maxOut));
 								else
-									bincount = maxDegree(Math.max(inter.maxTot, repro.maxTot));
+									bincount = maxDegree(Math.max(inter.maxTot, comp.maxTot));
 								min = 0.0;
 								max = bincount;
 								bincount = Math.min(bincount, MAX_BINS);
@@ -680,7 +680,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 									data = new double[data.length][bincount];
 									graph.setData(data);
 								}
-								getDegreeHistogramData(data, inter, repro);
+								getDegreeHistogramData(data, inter, comp);
 							}
 							GraphStyle style = graph.getStyle();
 							style.xMin = min;
@@ -878,14 +878,14 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 		}
 	}
 
-	private void getDegreeHistogramData(double[][] data, Geometry inter, Geometry repro) {
+	private void getDegreeHistogramData(double[][] data, Geometry inter, Geometry comp) {
 		int kmax = maxDegree(inter.isUndirected?inter.maxOut:inter.maxTot);
-		if( inter!=repro )
-			kmax = Math.max(kmax, maxDegree(repro.isUndirected?repro.maxOut:repro.maxTot));
+		if( inter!=comp )
+			kmax = Math.max(kmax, maxDegree(comp.isUndirected?comp.maxOut:comp.maxTot));
 		double ibinwidth = (double)data[0].length/(kmax+1);
 		getDegreeHistogramData(data, inter, 0, ibinwidth);
-		if( inter!=repro )
-			getDegreeHistogramData(data, repro, inter.isUndirected?1:3, ibinwidth);
+		if( inter!=comp )
+			getDegreeHistogramData(data, comp, inter.isUndirected?1:3, ibinwidth);
 		degreeProcessed = true;
 	}
 
@@ -917,30 +917,30 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 		ArrayMath.multiply(datat, norm);
 	}
 
-	private int getDegreeGraphs(Geometry inter, Geometry repro) {
+	private int getDegreeGraphs(Geometry inter, Geometry comp) {
 		if( inter==null )
 			return 1;
 		int nGraphs = 1;
 		if( !inter.isUndirected )
 			nGraphs += 2;
-		if( repro!=inter ) {
+		if( comp!=inter ) {
 			nGraphs += 1;
-			if( !repro.isUndirected )
+			if( !comp.isUndirected )
 				nGraphs += 2;
 		}
 		return nGraphs;
 	}
 
-	private int getDegreeBins(Geometry inter, Geometry repro) {
+	private int getDegreeBins(Geometry inter, Geometry comp) {
 		if( inter==null )
 			return 0;
 		int nBins = maxDegree(inter.maxOut);
 		if( !inter.isUndirected )
 			nBins = Math.max(maxDegree(inter.maxTot)+1, nBins);
-		if( repro!=inter )
-			nBins = Math.max(maxDegree(repro.maxOut)+1, nBins);
-		if( !repro.isUndirected )
-			nBins = Math.max(maxDegree(repro.maxTot)+1, nBins);
+		if( comp!=inter )
+			nBins = Math.max(maxDegree(comp.maxOut)+1, nBins);
+		if( !comp.isUndirected )
+			nBins = Math.max(maxDegree(comp.maxTot)+1, nBins);
 		return Math.max(2,  Math.min(nBins, MAX_BINS));
 	}
 
@@ -951,18 +951,18 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 				return new String[] { null };
 			case 2:
 				// separate graphs, undirected
-				return new String[] { "interaction", "reproduction" };
+				return new String[] { "interaction", "competition" };
 			case 3:
 				// single directed graph
 				return new String[] { "in", "out", "total" };
 			case 4:
 				// separate graphs, one directed the other undirected
 				if( interUndirected )
-					return new String[] { "interaction", "reproduction - in", "reproduction - out", "reproduction - total" };
-				return new String[] { "interaction - in", "interaction - out", "interaction - total", "reproduction" };
+					return new String[] { "interaction", "competition - in", "competition - out", "competition - total" };
+				return new String[] { "interaction - in", "interaction - out", "interaction - total", "competition" };
 			case 6:
 				return new String[] { "interaction - in", "interaction - out", "interaction - total", 
-						"reproduction - in", "reproduction - out", "reproduction - total" };
+						"competition - in", "competition - out", "competition - total" };
 			default:
 				// should not happen...
 				throw new IllegalArgumentException("unvalid number of degree distributions");
@@ -1000,7 +1000,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 		double[][] data = graph.getData();
 		int nBins = data[0].length;
 		GraphStyle style = graph.getStyle();
-		// note label is null for undirected graph with the same interaction and reproduction graphs
+		// note label is null for undirected graph with the same interaction and competition graphs
 		StringBuilder tip = new StringBuilder(style.showLabel&&style.label!=null?"<b>"+style.label+"</b><br/>":"");
 		switch( type ) {
 			case DEGREE:

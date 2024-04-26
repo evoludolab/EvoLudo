@@ -279,7 +279,7 @@ public abstract class IBS implements Model.IBS {
 		// set shortcut for single species modules
 		population = isMultispecies ? null : pop;
 		cloGeometryInteraction.inheritKeysFrom(pop.getModule().cloGeometry);
-		cloGeometryReproduction.inheritKeysFrom(pop.getModule().cloGeometry);
+		cloGeometryCompetition.inheritKeysFrom(pop.getModule().cloGeometry);
 		cloMigration.addKeys(MigrationType.values());
 		PopulationUpdate pup = pop.getPopulationUpdate();
 		pup.clo.addKeys(PopulationUpdate.Type.values());
@@ -294,7 +294,7 @@ public abstract class IBS implements Model.IBS {
 		ephrng = null;
 		logger = null;
 		cloGeometryInteraction.clearKeys();
-		cloGeometryReproduction.clearKeys();
+		cloGeometryCompetition.clearKeys();
 		cloMigration.clearKeys();
 		for (Module mod : species) {
 			IBSPopulation pop = mod.getIBSPopulation();
@@ -1249,7 +1249,7 @@ public abstract class IBS implements Model.IBS {
 						IBSPopulation pop = mod.getIBSPopulation();
 						String intertype = interactiontypes[n++ % interactiontypes.length];
 						IBSGroup.SamplingType intt = (IBSGroup.SamplingType) cloInteractions.match(intertype);
-						IBSGroup group = pop.getInteractionGroup();
+						IBSGroup group = pop.getInterGroup();
 						if (intt == null) {
 							if (success) {
 								IBSGroup.SamplingType st = group.getSampling();
@@ -1276,7 +1276,7 @@ public abstract class IBS implements Model.IBS {
 				public void report(PrintStream output) {
 					for (Module mod : species) {
 						IBSPopulation pop = mod.getIBSPopulation();
-						IBSGroup group = pop.getInteractionGroup();
+						IBSGroup group = pop.getInterGroup();
 						IBSGroup.SamplingType st = group.getSampling();
 						output.println("# interactions:         " + st + //
 							(st == IBSGroup.SamplingType.RANDOM ? " " + group.getNSamples() : "") + //
@@ -1314,7 +1314,7 @@ public abstract class IBS implements Model.IBS {
 						IBSPopulation pop = mod.getIBSPopulation();
 						String reftype = referencetypes[n++ % referencetypes.length];
 						IBSGroup.SamplingType reft = (IBSGroup.SamplingType) cloReferences.match(reftype);
-						IBSGroup group = pop.getReferenceGroup();
+						IBSGroup group = pop.getCompGroup();
 						if (reft == null) {
 							if (success) {
 								IBSGroup.SamplingType st = group.getSampling();
@@ -1343,7 +1343,7 @@ public abstract class IBS implements Model.IBS {
 						IBSPopulation pop = mod.getIBSPopulation();
 						if (pop.getPopulationUpdate().isMoran())
 							continue;
-						IBSGroup group = pop.getReferenceGroup();
+						IBSGroup group = pop.getCompGroup();
 						IBSGroup.SamplingType st = group.getSampling();
 						output.println("# references:           " + st + //
 							(st == IBSGroup.SamplingType.RANDOM ? " " + group.getNSamples() : "") + //
@@ -1435,7 +1435,7 @@ public abstract class IBS implements Model.IBS {
 	 * {@link Module#cloGeometry} settings.
 	 * 
 	 * @see Geometry.Type
-	 * @see #cloGeometryReproduction
+	 * @see #cloGeometryCompetition
 	 * @see Module#cloGeometry
 	 */
 	public final CLOption cloGeometryInteraction = new CLOption("geominter", "M", EvoLudo.catModel,
@@ -1476,53 +1476,53 @@ public abstract class IBS implements Model.IBS {
 				public void report(PrintStream output) {
 					for (Module mod : species) {
 						IBSPopulation pop = mod.getIBSPopulation();
-						Geometry intergeo = pop.getInteractionGeometry();
+						Geometry intergeom = pop.getInteractionGeometry();
 						// interaction geometry can be null for pde models
-						if (intergeo == null || intergeo.interReproSame)
+						if (intergeom == null || intergeom.interCompSame)
 							continue;
-						output.println("# interactiongeometry:  " + intergeo.getType().getTitle() +
+						output.println("# interactiongeometry:  " + intergeom.getType().getTitle() +
 								(isMultispecies ? " (" + mod.getName() + ")" : ""));
-						intergeo.printParams(output);
+						intergeom.printParams(output);
 					}
 				}
 			});
 
 	/**
-	 * Command line option to set the reproduction geometry. This overrides the
+	 * Command line option to set the competition geometry. This overrides the
 	 * {@link Module#cloGeometry} settings.
 	 * 
 	 * @see Geometry.Type
 	 * @see #cloGeometryInteraction
 	 * @see Module#cloGeometry
 	 */
-	public final CLOption cloGeometryReproduction = new CLOption("geomrepro", "M", EvoLudo.catModel,
-			"--geomrepro <>  reproduction geometry (see --geometry)",
+	public final CLOption cloGeometryCompetition = new CLOption("geomcomp", "M", EvoLudo.catModel,
+			"--geomcomp <>   competition geometry (see --geometry)",
 			new CLODelegate() {
 
 				/**
 				 * {@inheritDoc}
 				 * <p>
-				 * Parse reproduction geometry in a single or multiple populations/species.
+				 * Parse competition geometry in a single or multiple populations/species.
 				 * <code>arg</code> can be a single value or an array of values with the
 				 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
-				 * <code>arg</code> until all populations/species have the reproduction geometry
+				 * <code>arg</code> until all populations/species have the competition geometry
 				 * set.
 				 * 
-				 * @param arg the (array of) reproduction geometry(ies)
+				 * @param arg the (array of) competition geometry(ies)
 				 */
 				@Override
 				public boolean parse(String arg) {
 					// only act if option has been explicitly specified - otherwise cloGeometry will
 					// take care of this
-					if (!cloGeometryReproduction.isSet())
+					if (!cloGeometryCompetition.isSet())
 						return true;
 					String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
 					boolean doReset = false;
 					int n = 0;
 					for (Module mod : species) {
 						IBSPopulation pop = mod.getIBSPopulation();
-						// creates new reproduction geometry if null or equal to getGeometry()
-						Geometry geom = pop.createReproductionGeometry();
+						// creates new competition geometry if null or equal to getGeometry()
+						Geometry geom = pop.createCompetitionGeometry();
 						doReset |= geom.parse(geomargs[n++ % geomargs.length]);
 					}
 					engine.requiresReset(doReset);
@@ -1533,13 +1533,13 @@ public abstract class IBS implements Model.IBS {
 				public void report(PrintStream output) {
 					for (Module mod : species) {
 						IBSPopulation pop = mod.getIBSPopulation();
-						Geometry reprogeo = pop.getReproductionGeometry();
-						// reproduction geometry can be null for pde models
-						if (reprogeo == null || reprogeo.interReproSame)
+						Geometry compgeom = pop.getCompetitionGeometry();
+						// competition geometry can be null for pde models
+						if (compgeom == null || compgeom.interCompSame)
 							continue;
-						output.println("# reproductiongeometry: " + reprogeo.getType().getTitle() +
+						output.println("# competitiongeometry: " + compgeom.getType().getTitle() +
 								(isMultispecies ? " (" + mod.getName() + ")" : ""));
-						reprogeo.printParams(output);
+						compgeom.printParams(output);
 					}
 				}
 			});
@@ -1558,7 +1558,7 @@ public abstract class IBS implements Model.IBS {
 				 * {@inheritDoc}
 				 * <p>
 				 * Parse fraction of links to rewire in geometry. {@code arg} rewiring of
-				 * interaction and reproduction graphs can be specified by two values separated
+				 * interaction and competition graphs can be specified by two values separated
 				 * by {@value CLOParser#CLOParser#VECTOR_DELIMITER}. {@code arg} can be a single
 				 * value or an array of values with the separator
 				 * {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through {@code arg}
@@ -1582,16 +1582,16 @@ public abstract class IBS implements Model.IBS {
 				public void report(PrintStream output) {
 					for (Module mod : species) {
 						IBSPopulation pop = mod.getIBSPopulation();
-						Geometry intergeo = pop.getReproductionGeometry();
-						output.println("# inter-rewiring: " + Formatter.format(intergeo.pRewire, 4) +
+						Geometry intergeo = pop.getCompetitionGeometry();
+						output.println("# interaction-rewiring: " + Formatter.format(intergeo.pRewire, 4) +
 								(isMultispecies ? " (" + mod.getName() + ")" : ""));
-						Geometry reprogeo = pop.getReproductionGeometry();
-						// reproduction geometry can be null for pde models
-						if (reprogeo == null)
+						Geometry compgeom = pop.getCompetitionGeometry();
+						// competition geometry can be null for pde models
+						if (compgeom == null)
 							continue;
-						output.println("# repro-rewiring: " + Formatter.format(reprogeo.pRewire, 4) +
+						output.println("# competition-rewiring: " + Formatter.format(compgeom.pRewire, 4) +
 								(isMultispecies ? " (" + mod.getName() + ")" : ""));
-						reprogeo.printParams(output);
+						compgeom.printParams(output);
 					}
 				}
 			});
@@ -1609,7 +1609,7 @@ public abstract class IBS implements Model.IBS {
 				 * {@inheritDoc}
 				 * <p>
 				 * Parse fraction of links to add in geometry. {@code arg} rewiring of
-				 * interaction and reproduction graphs can be specified by two values separated
+				 * interaction and competition graphs can be specified by two values separated
 				 * by {@value CLOParser#VECTOR_DELIMITER}. {@code arg} can be a single
 				 * value or an array of values with the separator
 				 * {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through {@code arg}
@@ -1633,16 +1633,16 @@ public abstract class IBS implements Model.IBS {
 				public void report(PrintStream output) {
 					for (Module mod : species) {
 						IBSPopulation pop = mod.getIBSPopulation();
-						Geometry intergeo = pop.getReproductionGeometry();
-						output.println("# inter-add: " + Formatter.format(intergeo.pRewire, 4) +
+						Geometry intergeo = pop.getCompetitionGeometry();
+						output.println("# interaction-add: " + Formatter.format(intergeo.pRewire, 4) +
 								(isMultispecies ? " (" + mod.getName() + ")" : ""));
-						Geometry reprogeo = pop.getReproductionGeometry();
-						// reproduction geometry can be null for pde models
-						if (reprogeo == null)
+						Geometry compgeom = pop.getCompetitionGeometry();
+						// competition geometry can be null for pde models
+						if (compgeom == null)
 							continue;
-						output.println("# repro-add: " + Formatter.format(reprogeo.pRewire, 4) +
+						output.println("# competition-add: " + Formatter.format(compgeom.pRewire, 4) +
 								(isMultispecies ? " (" + mod.getName() + ")" : ""));
-						reprogeo.printParams(output);
+						compgeom.printParams(output);
 					}
 				}
 			});
@@ -1753,7 +1753,7 @@ public abstract class IBS implements Model.IBS {
 			cloInteractions.clearKeys();
 			cloInteractions.addKeys(IBSGroup.SamplingType.values());
 			parser.addCLO(cloGeometryInteraction);
-			parser.addCLO(cloGeometryReproduction);
+			parser.addCLO(cloGeometryCompetition);
 		}
 	}
 
