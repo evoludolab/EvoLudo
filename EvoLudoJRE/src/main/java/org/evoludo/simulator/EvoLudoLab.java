@@ -312,15 +312,20 @@ public class EvoLudoLab extends JFrame
 		private static final long serialVersionUID = 1L;
 
 		public RunStopAction() {
-			super("Run");
+			super("Start");
 			putValue(Action.SHORT_DESCRIPTION, "Start/stop simulations");
 			putValue(Action.MNEMONIC_KEY, KeyEvent.VK_SPACE);
 		}
 
 		@Override
 		public void actionPerformed(ActionEvent e) {
-			engine.toggle();
-			putValue(Action.NAME, engine.isRunning()?"Stop":"Run");
+			if (engine.isRunning()) {
+				engine.stop();
+				putValue(Action.NAME, "Stop");
+			} else {
+				engine.run();
+				putValue(Action.NAME, "Start");
+			}
 		}
 	}
 
@@ -575,7 +580,7 @@ public class EvoLudoLab extends JFrame
 		if( myView!=null )
 			activeViews.setView(myView);
 		getContentPane().setBackground(bgcolorGUI);
-		runStopAction.putValue(Action.NAME, engine.isRunning()?"Stop":"Run");
+		runStopAction.putValue(Action.NAME, engine.isRunning()?"Stop":"Start");
 		evoludoSlider.setValue(log2lin(engine.getDelay()));
 	}
 
@@ -588,7 +593,7 @@ public class EvoLudoLab extends JFrame
 		if( params!=null ) params.setVisible(paramsVisible);
 		if( engine.isSuspended() ) {
 			engine.run();
-			runStopAction.putValue(Action.NAME, engine.isRunning()?"Stop":"Run");
+			runStopAction.putValue(Action.NAME, engine.isRunning()?"Stop":"Start");
 		}
 	}
 
@@ -696,7 +701,7 @@ public class EvoLudoLab extends JFrame
 		for (MultiView mvp : activeViews.getViews())
 			mvp.end();
 		update(true);
-		runStopAction.putValue(Action.NAME, "Run");
+		runStopAction.putValue(Action.NAME, "Start");
 	}
 
 	@Override

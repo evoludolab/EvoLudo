@@ -1018,17 +1018,6 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Toggles running of a {@link Model} on the next opportunity: requests starting
-	 * a halted model or halting a running
-	 */
-	public void toggle() {
-		if (isRunning)
-			stop();
-		else
-			run();
-	}
-
-	/**
 	 * Start the EvoLudo model and calculate the dynamics one step at a time.
 	 */
 	public abstract void run();
@@ -1204,15 +1193,34 @@ public abstract class EvoLudo
 					i.modelChanged(pendingAction);
 				break;
 			case MODE:
-				if (!activeModel.setMode(pendingAction.mode))
+				Mode mode = pendingAction.mode;
+				if (!activeModel.setMode(pendingAction.mode)) {
 					// continue running if mode unchanged
+					if (isRunning && mode == Mode.STATISTICS_SAMPLE) {
+						for (ChangeListener i : changeListeners)
+							i.modelChanged(PendingAction.STATISTIC);
+					}
 					break;
+				}
 			//$FALL-THROUGH$
 			case STOP:
 				// stop requested (as opposed to simulations that stopped)
 				runFired = false;
 				for (MilestoneListener i : milestoneListeners)
 					i.modelStopped();
+				break;
+			case START:
+				// ignore request if already running
+				if (!isRunning) {
+					if (activeModel.getMode() == Mode.STATISTICS_SAMPLE) {
+						// initialize statistics sample
+						modelInit();
+						isRunning = true;
+						next();
+					}
+					else
+						run();
+				}
 				break;
 			case INIT:
 				modelReinit();

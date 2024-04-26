@@ -182,8 +182,6 @@ public class EvoLudoGWT extends EvoLudo {
 			case STATISTICS_SAMPLE:
 				// MODE_STATISTICS: non-blocking way for running an arbitrary number of update
 				// steps to obtain one sample
-				if (!isRunning)
-					modelInit();
 				scheduleSample();
 				int samples = ((IBS)activeModel).getNStatisticsSamples();
 				if (isRunning && Math.abs(samples - snapshotAt) < 1.0) {

@@ -108,30 +108,19 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 	}
 	
 	@Override
-	public void activate() {
+	public Mode getMode() {
 		switch (type) {
 			case STRATEGY:
 			case FITNESS:
 			case DEGREE:
 			default:
-				model.requestMode(Mode.DYNAMICS);
-				break;
+				return Mode.DYNAMICS;
 			case STATISTICS_FIXATION_PROBABILITY:
 			case STATISTICS_FIXATION_TIME:
-				model.requestMode(Mode.STATISTICS_SAMPLE);
-				break;
+				return Mode.STATISTICS_SAMPLE;
 			case STATISTICS_STATIONARY:
-				model.requestMode(Mode.STATISTICS_UPDATE);
-				break;
+				return Mode.STATISTICS_UPDATE;
 		}
-		super.activate();
-	}
-
-	@Override
-	public void deactivate() {
-		// revert to default of dynamics mode
-		model.requestMode(Mode.DYNAMICS);
-		super.deactivate();
 	}
 
 	@Override

@@ -544,7 +544,12 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelRunning() {
-		runGUI();
+		if (engine.isEPub) {
+			if (runningEPub != null)
+				throw new IllegalStateException("Another ePub lab is already running!");
+			runningEPub = this;
+		}
+		updateGUI();
 	}
 
 	@Override
@@ -552,15 +557,6 @@ public class EvoLudoWeb extends Composite
 		switch (action) {
 			case NONE:
 				update();
-				break;
-			case STOP:
-				update(true);
-				if (engine.isEPub) {
-					if (runningEPub == this)
-						runningEPub = null;
-					else if (runningEPub != null)
-						runningEPub.toggleRunning();
-				}
 				break;
 			case STATISTIC:
 				update();
@@ -574,22 +570,24 @@ public class EvoLudoWeb extends Composite
 			case SNAPSHOT:
 				engine.setSuspended(true);
 				// make sure GUI is in stopped state before taking the snapshot
-				stopGUI();
-				update(true);
+				updateGUI();
 				snapshotReady();
 				break;
 			default:
-				// includes RESET, INIT, UNLOAD, MODE
+				// includes RESET, INIT, START, STOP, UNLOAD, MODE
 		}
 		if (!engine.isRunning())
-			stopGUI();
+			updateGUI();
 	}
 
 	@Override
 	public void modelStopped() {
-		for (EvoLudoView view : activeViews.values())
-			// force last data point to views
-			view.update(true);
+		if (engine.isEPub) {
+			if (runningEPub == null)
+				throw new IllegalStateException("Running ePub lab not found!");
+			if (runningEPub == this)
+				runningEPub = null;
+		}
 		updateGUI();
 	}
 
@@ -610,37 +608,21 @@ public class EvoLudoWeb extends Composite
 		displayStatus(engine.getVersion());
 	}
 
+	/**
+	 * Update GUI for running/stopped model.
+	 */
 	private void updateGUI() {
-		stopGUI();
-		update(true);
-	}
-
-	/**
-	 * Display GUI for stopped model.
-	 */
-	private void stopGUI() {
+		boolean stopped = !engine.isRunning();
+		update(stopped);
+		evoludoStartStop.setText(stopped ? "Start" : "Stop");
+		evoludoStep.setEnabled(stopped);
+		evoludoInitReset.setEnabled(stopped);
+		evoludoApply.setEnabled(stopped);
+		evoludoDefault.setEnabled(stopped);
 		evoludoSlider.setValue(engine.getDelay());
-		evoludoStartStop.setText("Start");
-		evoludoStep.setEnabled(true);
-		evoludoInitReset.setEnabled(true);
-		evoludoApply.setEnabled(true);
-		evoludoDefault.setEnabled(true);
-		evoludoSlider.setEnabled(true);
-	}
-
-	/**
-	 * Display GUI for running model.
-	 */
-	private void runGUI() {
-		// reset threshold for displaying messages
-		displayStatusThresholdLevel = Level.ALL.intValue();
-		evoludoStartStop.setText("Stop");
-		evoludoStep.setEnabled(false);
-		evoludoInitReset.setEnabled(false);
-		evoludoApply.setEnabled(false);
-		evoludoDefault.setEnabled(false);
-		if (engine.getModel().getMode() == Mode.STATISTICS_SAMPLE)
-			evoludoSlider.setEnabled(false);
+		evoludoSlider.setEnabled(engine.getModel().getMode() != Mode.STATISTICS_SAMPLE);
+		if (stopped)
+			displayStatusThresholdLevel = Level.ALL.intValue();
 	}
 
 	/**
@@ -948,7 +930,7 @@ public class EvoLudoWeb extends Composite
 	 * Initialize or reset EvoLudo model. If model is running wait until next update
 	 * is completed to prevent unexpected side effects.
 	 */
-	public void initReset() {
+	protected void initReset() {
 		String action = evoludoInitReset.getText();
 		displayStatus(action + " pending. Waiting for engine to stop...");
 		displayStatusThresholdLevel = Level.ALL.intValue();
@@ -969,7 +951,7 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoStartStop")
 	public void onStartStopClick(ClickEvent event) {
-		toggleRunning();
+		startStop();
 	}
 
 	/**
@@ -992,26 +974,16 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoStartStop")
 	public void onStartStopTouchEnd(TouchEndEvent event) {
-		toggleRunning();
+		startStop();
 	}
 
 	/**
-	 * Start/stop idling and stop/start running EvoLudo model.
+	 * Initialize or reset EvoLudo model. If model is running wait until next update
+	 * is completed to prevent unexpected side effects.
 	 */
-//XXX in ePubs, clicks on button text seem to be ignored when simulation is
-	// running but clicks on the button next to the text are registered as expected.
-	// does not apply when simulation is not running. bug in iBooks or issue here???
-	public void toggleRunning() {
-		// check if another lab is running in ePub
-		if (engine.isEPub) {
-			if (runningEPub != null && runningEPub != this) {
-				runningEPub.toggleRunning();
-				runningEPub = this;
-				return;
-			}
-			runningEPub = this;
-		}
-		engine.toggle();
+	protected void startStop() {
+		String action = evoludoStartStop.getText();
+		engine.requestAction(action.equals("Stop") ? PendingAction.STOP : PendingAction.START);
 	}
 
 	/**
@@ -1429,7 +1401,7 @@ public class EvoLudoWeb extends Composite
 	 * <dt>{@code 1-9}</dt>
 	 * <dd>Quick view selector. Switches to data view with the selected index if it
 	 * exists. {@code 1} is the first view etc.</dd>
-	 * <dt>{@code Enter, r}</dt>
+	 * <dt>{@code Enter, Space}</dt>
 	 * <dd>Starts (or stops) the current model. Note, {@code Shift-Enter} applies
 	 * the new parameter settings if the field is visible and has the keyboard
 	 * focus. Same as pressing the {@code Apply}-button.</dd>
@@ -1515,9 +1487,9 @@ public class EvoLudoWeb extends Composite
 				setView(Integer.toString(CLOParser.parseInteger(key) - 1));
 				break;
 			case "Enter":
-			case "r":
+			case " ":
 				// start/stop simulation
-				toggleRunning();
+				startStop();
 				break;
 			case "Escape":
 				// ignore "Escape" for ePubs

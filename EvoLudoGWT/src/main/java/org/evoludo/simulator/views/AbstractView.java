@@ -45,6 +45,7 @@ import org.evoludo.graphics.AbstractGraph.MyContext2d;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Resources;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
@@ -168,6 +169,11 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 		checkLayout();
 		if (isFullscreenSupported())
 			fullscreenHandler = addFullscreenChangeHandler(this);
+		model.requestMode(getMode());
+	}
+
+	public Mode getMode() {
+		return Mode.DYNAMICS;
 	}
 
 	protected void checkLayout() {
