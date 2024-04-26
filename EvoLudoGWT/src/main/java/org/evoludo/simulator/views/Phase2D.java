@@ -62,7 +62,6 @@ public class Phase2D extends AbstractView {
 	protected Set<ParaGraph> graphs;
 // short-cut as long as only a single ParaGraph graph is acceptable
 	protected ParaGraph graph;
-	protected int nStates;
 	protected double[] state;
 	protected Data2Phase map;
 
@@ -91,14 +90,14 @@ public class Phase2D extends AbstractView {
 		super.reset(hard);
 
 		GraphStyle style;
-		nStates = getNStates();
+		int nStates = model.getNMean();
 		if( state==null || state.length!=nStates ) {
 			state = new double[nStates];
 		}
 		Module module = engine.getModule();
 		if( graphs.size()!=1 ) {
 			hard = true;
-			graph = new ParaGraph(this, nStates, module.getID());
+			graph = new ParaGraph(this, module);
 			wrapper.add(graph);
 			graphs2mods.put(graph, module);
 			style = graph.getStyle();
@@ -164,15 +163,6 @@ public class Phase2D extends AbstractView {
 		}
 		graph.paint(force);
 		timestamp = newtime;
-	}
-
-	protected int getNStates() {
-		Module module = engine.getModule();
-		ArrayList<? extends Module> species = module.getSpecies();
-		int totTraits = 0;
-		for (Module mod : species)
-			totTraits += mod.getNTraits();
-		return totTraits;
 	}
 
 	private String getXAxisLabel() {

@@ -52,7 +52,6 @@ public class S3 extends AbstractView {
 	@SuppressWarnings("hiding")
 	protected Set<S3Graph> graphs;
 	protected double[] state, init;
-	protected int nState;
 
 	/**
 	 * @param engine the pacemeaker for running the model
@@ -88,13 +87,12 @@ public class S3 extends AbstractView {
 		super.reset(hard);
 		Module module = engine.getModule();
 		int nRoles = module.getNRoles();
-		nState = module.getNTraits();
 		if (graphs.size() != nRoles) {
 			hard = true;
 			destroyGraphs();
 			int[] order = new int[3];
 			for (int role = 0; role < nRoles; role++) {
-				S3Graph graph = new S3Graph(this, nState, role);
+				S3Graph graph = new S3Graph(this, module, role);
 				wrapper.add(graph);
 				graphs2mods.put(graph, module);
 				GraphStyle style = graph.getStyle();
@@ -137,11 +135,12 @@ public class S3 extends AbstractView {
 				graph.setSize(width + "%", height + "%");
 		}
 		Color[] colors = module.getTraitColors();
-		String[] names = module.getTraitNames();
-		if (state == null || state.length != nState)
-			state = new double[nState];
-		if (init == null || init.length != nState)
-			init = new double[nState];
+		String[] names = model.getMeanNames();
+		int nMean = model.getNMean();
+		if (state == null || state.length != nMean)
+			state = new double[nMean];
+		if (init == null || init.length != nMean)
+			init = new double[nMean];
 		for (S3Graph graph : graphs) {
 			graph.setMarkers(module.getMarkers());
 			graph.getStyle().trajColor = ColorMapCSS.Color2Css(module.getTrajectoryColor());
@@ -157,7 +156,7 @@ public class S3 extends AbstractView {
 	public void init() {
 		super.init();
 		for (S3Graph graph : graphs) {
-			model.getMeanTraits(graph.getTag(), state);
+			model.getMeanTraits(graph.getModule().getID(), state);
 			graph.addData(Double.NaN, state, true);
 		}
 	}
@@ -168,7 +167,7 @@ public class S3 extends AbstractView {
 		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
 		for (S3Graph graph : graphs) {
 			if (isNext) {
-				model.getMeanTraits(graph.getTag(), state);
+				model.getMeanTraits(graph.getModule().getID(), state);
 				graph.addData(newtime, state, force);
 			}
 			graph.paint(force);

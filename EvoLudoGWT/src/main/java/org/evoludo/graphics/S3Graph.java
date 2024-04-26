@@ -43,6 +43,7 @@ import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMapCSS;
+import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.HasS3;
 import org.evoludo.simulator.views.HasS3.Data2S3;
 import org.evoludo.ui.ContextMenu;
@@ -66,7 +67,6 @@ import com.google.gwt.user.client.ui.Widget;
 public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTrajectory, //
 	DoubleClickHandler {
 
-	protected int nStates;
 	private String[] names;
 	protected double[] init;
 	protected Point2D e0 = new Point2D();
@@ -74,15 +74,11 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTraj
 	protected Point2D e2 = new Point2D();
 	protected Path2D outline = new Path2D();
 	protected Data2S3 map;
+	protected int role;
 
-	public S3Graph(Controller controller, int tag) {
-		this(controller, 3, tag);
-	}
-
-	public S3Graph(Controller controller, int nStates, int tag) {
-		super(controller, tag);
-		this.nStates = nStates;
-		init = new double[nStates + 1]; // add time
+	public S3Graph(Controller controller, Module module, int role) {
+		super(controller, module);
+		this.role = role;
 		setStylePrimaryName("evoludo-S3Graph");
 	}
 
@@ -100,7 +96,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTraj
 
 	public Data2S3 getMap() {
 		if (map == null)
-			map = new S3Map(tag);
+			map = new S3Map(role);
 		return map;
 	}
 
@@ -151,13 +147,17 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTraj
 	public void addData(double t, double[] data, boolean force) {
 		if (buffer.isEmpty()) {
 			buffer.append(prependTime2Data(t, data));
-			System.arraycopy(buffer.last(), 1, init, 1, nStates);
+			int len = data.length;
+			if (init==null || init.length!=len)
+				init = new double[len + 1];	// add time
+			System.arraycopy(buffer.last(), 1, init, 1, len);
 		} else {
 			double[] last = buffer.last();
 			double lastt = last[0];
+			int len = last.length - 1;
 			if (Math.abs(t - lastt) < 1e-8) {
 				buffer.replace(prependTime2Data(t, data));
-				System.arraycopy(last, 1, init, 1, nStates);
+				System.arraycopy(last, 1, init, 1, len);
 			} else {
 				if (Double.isNaN(t)) {
 					// new starting point
@@ -165,7 +165,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTraj
 						buffer.replace(prependTime2Data(t, data));
 					else
 						buffer.append(prependTime2Data(t, data));
-					System.arraycopy(buffer.last(), 1, init, 1, nStates);
+					System.arraycopy(buffer.last(), 1, init, 1, len);
 					return;
 				}
 				if (force || distSq(data, last) > bufferThreshold)
@@ -526,8 +526,8 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTraj
 				break;
 		}
 
-		// process set strategy context menu
-		if (nStates > 3) {
+		// process set strategy context menu for >3 traits (plus time)
+		if (buffer.depth() > 4) {
 			if (setTraitMenu == null) {
 				setTraitMenu = new ContextMenu(menu);
 				for (String name : names)

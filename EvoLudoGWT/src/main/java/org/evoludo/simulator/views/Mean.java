@@ -93,14 +93,12 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 		if( graphs.size()!=nGraphs ) {
 			hard = true;
 			destroyGraphs();
-			for( int n=0; n<nGraphs; n++ ) {
-				// in discrete models each species has its own panel with all traits
-				// in continuous models each trait has its own panel with 3 lines: mean +/- sdev
-				LineGraph graph = new LineGraph(this, n);
+			// one graph per discrete species or continuous trait
+			for (Module module : species) {
+				LineGraph graph = new LineGraph(this, module);
 //				graphs.add(graph);
 				wrapper.add(graph);
-graphs2mods.put(graph, species.get(cmodel!=null ? 0 : n));
-				graph.getStyle().showXLabel = (n==nGraphs-1);
+graphs2mods.put(graph, module);
 			}
 			// arrange graphs vertically
 			gRows = nGraphs;
@@ -112,19 +110,19 @@ graphs2mods.put(graph, species.get(cmodel!=null ? 0 : n));
 
 		for( LineGraph graph : graphs ) {
 			AbstractGraph.GraphStyle style = graph.getStyle();
-			Module module = graphs2mods.get(graph);
-			// tag is index of species in discrete models and index of trait in continuous models
-			int tag = graph.getTag();
+			Module module = graph.getModule();
+			// index of trait in continuous models
+			int idx = 0;
 
 			switch( type ) {
 				default:
 				case STRATEGY:
 					if (cmodel != null) {
-						style.yLabel = model.getMeanName(tag);
+						style.yLabel = model.getMeanName(idx);
 						style.percentY = false;
-						style.yMin = cmodel.getTraitMin(0)[tag];
-						style.yMin = cmodel.getTraitMax(0)[tag];
-						Color color = model.getMeanColors()[tag];
+						style.yMin = cmodel.getTraitMin(0)[idx];
+						style.yMin = cmodel.getTraitMax(0)[idx];
+						Color color = model.getMeanColors()[idx];
 						String[] traitcolors = new String[3];
 						traitcolors[0] = ColorMapCSS.Color2Css(color);			// mean
 						traitcolors[1] = ColorMapCSS.Color2Css(color == Color.BLACK ? Color.LIGHT_GRAY : color.darker());	// min
@@ -135,10 +133,11 @@ graphs2mods.put(graph, species.get(cmodel!=null ? 0 : n));
 						int nState = 2*nMean;
 						if( mean==null || mean.length<nState )
 							mean = new double[nState];	// mean/sdev
-						graph.setNLines(3);
+						idx++;
 					}
 					else {
-						int nState = model.getNMean(tag);
+						int id = module.getID();
+						int nState = model.getNMean(id);
 						if( state==null || state.length<nState )
 							state = new double[nState];
 						mean = state;
@@ -154,18 +153,18 @@ graphs2mods.put(graph, species.get(cmodel!=null ? 0 : n));
 							style.yMin = 0.0;
 							style.yMax = 1.0;
 						}
-						Color[] colors = model.getMeanColors(tag);
+						Color[] colors = model.getMeanColors(id);
 						graph.setColors(ColorMapCSS.Color2Css(colors));
 						String[] mcolors = new String[colors.length];
 						int n = 0;
 						for (Color color : colors)
 							mcolors[n++] = ColorMapCSS.Color2Css(ColorMapCSS.addAlpha(color, 100));
 						graph.setMarkers(module.getMarkers(), mcolors);
-						graph.setNLines(nState);
 					}
 					break;
 				case FITNESS:
 					Color[] fitcolors;
+					int id = module.getID();
 					if (cmodel != null) {
 						if( state==null || state.length<nMean )
 							state = new double[nMean];
@@ -174,22 +173,20 @@ graphs2mods.put(graph, species.get(cmodel!=null ? 0 : n));
 							mean = new double[2];	// mean/sdev
 						// hardcoded color: black for mean, light gray for mean +/- sdev
 						fitcolors = new Color[] {Color.BLACK, Color.LIGHT_GRAY, Color.LIGHT_GRAY};
-						graph.setNLines(3);
 					}
 					else {
 						// one 'state' more for the average fitness
-						int nState = model.getNMean(tag) + 1;
+						int nState = model.getNMean(id) + 1;
 						if( state==null || state.length<nState )
 							state = new double[nState];
 						mean = state;
 						fitcolors = new Color[nState];
-						System.arraycopy(model.getMeanColors(tag), 0, fitcolors, 0, nState-1);
+						System.arraycopy(model.getMeanColors(id), 0, fitcolors, 0, nState-1);
 						fitcolors[nState-1] = Color.BLACK;
-						graph.setNLines(nState);
 					}
 					graph.setColors(ColorMapCSS.Color2Css(fitcolors));
-					double min = model.getMinScore(tag);
-					double max = model.getMaxScore(tag);
+					double min = model.getMinScore(id);
+					double max = model.getMaxScore(id);
 					if( max-min<1e-8 ) {
 						min -= 1.0;
 						max += 1.0;
@@ -244,20 +241,22 @@ graphs2mods.put(graph, species.get(cmodel!=null ? 0 : n));
 		int nState = -1;
 		boolean cmodel = model.isContinuous();
 		if( Math.abs(timestamp-newtime)>1e-8 ) {
+			int idx = 0;
 			for( LineGraph graph : graphs ) {
-				Module newMod = graphs2mods.get(graph);
+				Module newMod = graph.getModule();
 				switch( type ) {
 					case STRATEGY:
-						int tag = graph.getTag();
 						if( module != newMod ) {
+							idx = 0;
 							module = newMod;
-							model.getMeanTraits(graph.getTag(), mean);
-							nState = model.getNMean(tag);
+							model.getMeanTraits(idx++, mean);
+							nState = model.getNMean(module.getID());
 						}
-						// module cannot be null here but make compiler happy
+						// module cannot be null here but makes compiler happy
 						if (module != null && cmodel) {
-							double m = mean[tag];
-							double s = mean[tag+nState];
+							double m = mean[idx];
+							double s = mean[idx+nState];
+							idx++;
 							state[0] = m;
 							state[1] = m-s;
 							state[2] = m+s;
@@ -269,7 +268,7 @@ graphs2mods.put(graph, species.get(cmodel!=null ? 0 : n));
 					case FITNESS:
 						if( module != newMod ) {
 							module = newMod;
-							model.getMeanFitness(graph.getTag(), mean);
+							model.getMeanFitness(module.getID(), mean);
 						}
 						// module cannot be null here but make compiler happy
 						if (module != null && cmodel) {

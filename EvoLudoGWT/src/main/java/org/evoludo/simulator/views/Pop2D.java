@@ -163,11 +163,11 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 						continue;
 					switch( type ) {
 						case STRATEGY:
-							model.getTraitData(graph.getTag(), graph.getData(), graph.getColorMap());
+							model.getTraitData(graph.getModule().getID(), graph.getData(), graph.getColorMap());
 							break;
 						case FITNESS:
 							// cast should be safe for fitness data
-							model.getFitnessData(graph.getTag(), graph.getData(), (ColorMap.Gradient1D<String>) graph.getColorMap());
+							model.getFitnessData(graph.getModule().getID(), graph.getData(), (ColorMap.Gradient1D<String>) graph.getColorMap());
 							break;
 						default:
 							break;
@@ -198,7 +198,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 					hard = true;
 					destroyGraphs();
 					Module module = engine.getModule();
-					PopGraph2D graph = new PopGraph2D(this, module.getID());
+					PopGraph2D graph = new PopGraph2D(this, module);
 					// debugging not available for DE's
 					graph.setDebugEnabled(false);
 					wrapper.add(graph);
@@ -217,11 +217,11 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 					hard = true;
 					destroyGraphs();
 					for( Module module : species ) {
-						PopGraph2D graph = new PopGraph2D(this, module.getID());
+						PopGraph2D graph = new PopGraph2D(this, module);
 						wrapper.add(graph);
 						graphs2mods.put(graph, module);
 						if( !Geometry.displayUniqueGeometry(module) ) {
-							graph = new PopGraph2D(this, module.getID());
+							graph = new PopGraph2D(this, module);
 							wrapper.add(graph);
 							graphs2mods.put(graph, module);
 							// arrange graphs horizontally
@@ -345,7 +345,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 							500);
 					cMap = cMap1D;
 //					cMap1D.setRange(pop.getMinFitness(), pop.getMaxFitness());
-					int tag = graph.getTag();
+					int tag = graph.getModule().getID();
 					cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
 					if (model.getModelType() == Model.Type.IBS) {
 						Map2Fitness map2fit = pop.getMapToFitness();

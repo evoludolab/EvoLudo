@@ -43,6 +43,7 @@ import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
+import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.RingBuffer;
 
@@ -62,16 +63,20 @@ import com.google.gwt.user.client.Command;
 public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTrajectory, //
 	DoubleClickHandler {
 
-	protected int nStates;
 	protected double[] init;
 	protected Data2Phase map;
 
-	public ParaGraph(Controller controller, int nStates, int tag) {
-		super(controller, tag);
-		this.nStates = nStates;
+	/**
+	 * Create new parametric graph for <code>module</code> running in
+	 * <code>controller</code>.
+	 * 
+	 * @param controller the controller of this graph
+	 * @param module     the module backing the graph
+	 */
+	public ParaGraph(Controller controller, Module module) {
+		super(controller, module);
 		setStylePrimaryName("evoludo-ParaGraph");
 		buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
-		init = new double[nStates + 1];
 	}
 
 	@Override
@@ -106,16 +111,21 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 	public void addData(double t, double[] data, boolean force) {
 		if (buffer.isEmpty()) {
 			buffer.append(prependTime2Data(t, data));
-			System.arraycopy(buffer.last(), 1, init, 1, nStates);
+			double[] last = buffer.last();
+			int len = last.length;
+			if (init == null || init.length != len)
+				init = new double[len];
+			System.arraycopy(buffer.last(), 1, init, 1, len - 1);
 			// now we are finally ready to calculate frame etc.
 			autoscale();
 			calcBounds();
 		} else {
 			double[] last = buffer.last();
 			double lastt = last[0];
+			int len = last.length;
 			if (Math.abs(t - lastt) < 1e-8) {
 				buffer.replace(prependTime2Data(t, data));
-				System.arraycopy(data, 0, init, 1, nStates);
+				System.arraycopy(data, 0, init, 1, len - 1);
 			} else {
 				if (Double.isNaN(t)) {
 					// new starting point
@@ -123,7 +133,7 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 						buffer.replace(prependTime2Data(t, data));
 					else
 						buffer.append(prependTime2Data(t, data));
-					System.arraycopy(buffer.last(), 1, init, 1, nStates);
+					System.arraycopy(buffer.last(), 1, init, 1, len - 1);
 					return;
 				}
 				if (force || distSq(data, last) > bufferThreshold)
@@ -297,8 +307,10 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 			return;
 		double ux = style.xMin + sx / bounds.getWidth() * (style.xMax - style.xMin);
 		double uy = style.yMin + (1.0 - sy / bounds.getHeight()) * (style.yMax - style.yMin);
-		double[] state = new double[nStates];
-		System.arraycopy(buffer.last(), 1, state, 0, nStates);
+		double[] last = buffer.last();
+		int len = last.length;
+		double[] state = new double[len - 1];
+		System.arraycopy(last, 1, state, 0, len - 1);
 		map.phase2Data(new Point2D(ux, uy), state);
 		controller.setInitialState(state);
 	}

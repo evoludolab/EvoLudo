@@ -39,12 +39,13 @@ import org.evoludo.geom.Path2D;
 import org.evoludo.geom.PathIterator;
 import org.evoludo.geom.Point2D;
 import org.evoludo.geom.Rectangle2D;
+import org.evoludo.math.Combinatorics;
+import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.ui.Tooltip;
-import org.evoludo.math.Combinatorics;
-import org.evoludo.simulator.models.Model;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.RingBuffer;
 
@@ -424,9 +425,9 @@ public abstract class AbstractGraph extends FocusPanel
 	protected String[] markerColors;
 
 	/**
-	 * The identifying tag of the graph.
+	 * The module backing the graph.
 	 */
-	protected int tag;
+	protected Module module;
 
 	/**
 	 * The flag to indicate whether the graph is live (visible, activated).
@@ -497,11 +498,11 @@ public abstract class AbstractGraph extends FocusPanel
 	 * custom formatting of the canvas element.
 	 * 
 	 * @param controller the controller of this graph
-	 * @param tag        the identifying tag
+	 * @param module     the module backing the graph
 	 */
-	protected AbstractGraph(Controller controller, int tag) {
+	protected AbstractGraph(Controller controller, Module module) {
 		this.controller = controller;
-		this.tag = tag;
+		this.module = module;
 		logger = controller.getLogger();
 		wrapper = new LayoutPanel();
 		if (this instanceof Zooming) {
@@ -656,6 +657,15 @@ public abstract class AbstractGraph extends FocusPanel
 	 */
 	public void paint() {
 		paint(false);
+	}
+
+	/**
+	 * Get the module that backs the graph.
+	 * 
+	 * @return the module
+	 */
+	public Module getModule() {
+		return module;
 	}
 
 	/**
@@ -833,15 +843,6 @@ public abstract class AbstractGraph extends FocusPanel
 			ContextMenuCheckBoxItem menuItem = (ContextMenuCheckBoxItem) item;
 			menuItem.setChecked(menuItem.getText().equals(label));
 		}
-	}
-
-	/**
-	 * Gets the ID of the graph
-	 * 
-	 * @return the ID
-	 */
-	public int getTag() {
-		return tag;
 	}
 
 	/**

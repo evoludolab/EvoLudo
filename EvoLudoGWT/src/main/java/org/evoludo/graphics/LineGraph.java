@@ -37,10 +37,11 @@ import java.util.Iterator;
 import org.evoludo.geom.Point2D;
 import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
-import org.evoludo.ui.ContextMenu;
-import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
+import org.evoludo.simulator.modules.Module;
+import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.RingBuffer;
 
 import com.google.gwt.core.client.Scheduler;
@@ -57,32 +58,6 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 	}
 
 	/**
-	 * The number of lines shown on this graph.
-	 */
-	int nLines = -1;
-
-	/**
-	 * Set the number of lines shown on this graph.
-	 * 
-	 * @param nLines the number of lines shown
-	 */
-	public void setNLines(int nLines) {
-		if (nLines != this.nLines)
-			buffer = null;
-		this.nLines = nLines;
-	}
-
-	/**
-	 * Get the number of lines shown on this graph.
-	 * 
-	 * @return the number of lines shown
-	 
-	 */
-	public int getNLines() {
-		return nLines;
-	}
-
-	/**
 	 * The default number of (time) steps shown on this graph.
 	 */
 	protected double steps = DEFAULT_STEPS;
@@ -93,10 +68,10 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 	 * components of the data and represents the index of the data column.
 	 * 
 	 * @param controller the controller of this graph
-	 * @param id         the id of the graph
+	 * @param module     the module backing the graph
 	 */
-	public LineGraph(Controller controller, int id) {
-		super(controller, id);
+	public LineGraph(Controller controller, Module module) {
+		super(controller, module);
 		setStylePrimaryName("evoludo-LineGraph");
 	}
 
@@ -145,6 +120,7 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 
 		double yScale = h/(style.yMax-style.yMin);
 		Iterator<double[]> i = buffer.iterator();
+		int nLines = buffer.depth() - 1;
 		if( i.hasNext() ) {
 			double[] current = i.next();
 			g.setLineWidth(style.lineWidth);

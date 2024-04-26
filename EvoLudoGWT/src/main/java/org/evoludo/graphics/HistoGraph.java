@@ -91,8 +91,6 @@ public class HistoGraph extends AbstractGraph {
 		return null;
 	}
 
-	protected Module  module;
-
 	private static final double[][] autoscale = new double[][] { //
 		{ 1.0, 0.4, 4.0 }, //
 		{ 0.5, 0.2, 5.0 }, //
@@ -109,25 +107,33 @@ public class HistoGraph extends AbstractGraph {
 	protected int normIdx = -1;
 	protected double nSamples;
 	int maxBinIdx;
+	int row;
 
 	/**
 	 * Create new histogram graph for <code>module</code> running in
-	 * <code>controller</code>. The tag is used to distinguish different graphs of
-	 * the same module to visualize different components of the data and represents
-	 * the index of the data column.
+	 * <code>controller</code>. The row is used to identify data entries that apply 
+	 * to this histogram and represents the index of the data row.
 	 * 
 	 * @param controller the controller of this graph
-	 * @param module     the module who's data is shown
-	 * @param tag        id of the graph
+	 * @param module     the module backing the graph
+	 * @param row        the index of the data row
 	 */
-	public HistoGraph(Controller controller, Module module, int tag) {
-		super(controller, tag);
-		this.module = module;
+	public HistoGraph(Controller controller, Module module, int row) {
+		super(controller, module);
+		this.row = row;
 		setStylePrimaryName("evoludo-HistoGraph");
 	}
 
-	public Module getModule() {
-		return module;
+	/**
+	 * Get the index of the data row for to this histogram.
+	 * <p>
+	 * <strong>Note:<?strong> This is the same as the index of the corresponding
+	 * trait in the module.
+	 * 
+	 * @return the data row index
+	 */
+	public int getRow() {
+		return row;
 	}
 
 	/**
@@ -186,7 +192,7 @@ public class HistoGraph extends AbstractGraph {
 	 * <br>
 	 * <strong>Note:</strong> The data may be shared by multiple
 	 * {@code HistoGraph}s, each refering to a row in the {@code double[][]} array
-	 * specified by the graphs {@code tag}.
+	 * specified by the graphs {@code row}.
 	 * 
 	 * @return the 2D data array for storing the histogram data
 	 */
@@ -206,10 +212,10 @@ public class HistoGraph extends AbstractGraph {
 	 */
 	public double getData(int idx) {
 		if (normIdx >= 0)
-			return data[tag][idx] / Math.max(1.0, data[normIdx][idx]);
+			return data[row][idx] / Math.max(1.0, data[normIdx][idx]);
 		if (!isNormalized)
-			return data[tag][idx] / Math.max(1.0, nSamples);
-		return data[tag][idx];
+			return data[row][idx] / Math.max(1.0, nSamples);
+		return data[row][idx];
 	}
 
 	/**
@@ -217,7 +223,7 @@ public class HistoGraph extends AbstractGraph {
 	 * <br>
 	 * <strong>Note:</strong> The data may be shared by multiple
 	 * {@code HistoGraph}s, each refering to a row in the {@code double[][]} array
-	 * specified by the graphs {@code tag}.
+	 * specified by the graphs {@code row}.
 	 * 
 	 * @param data the 2D data array for storing the histogram data
 	 */
@@ -245,7 +251,7 @@ public class HistoGraph extends AbstractGraph {
 			return;
 		if (bin > maxBinIdx)
 			bin = maxBinIdx;
-		data[tag][bin]++;
+		data[row][bin]++;
 		if (normIdx >= 0)
 			data[normIdx][bin]++;
 	}
@@ -265,7 +271,7 @@ public class HistoGraph extends AbstractGraph {
 		nSamples++;
 		if (data == null || bin < 0)
 			return;
-		data[tag][bin] += incr;
+		data[row][bin] += incr;
 		if (normIdx >= 0)
 			data[normIdx][bin]++;
 	}
@@ -296,7 +302,7 @@ public class HistoGraph extends AbstractGraph {
 			doubleMinRange();
 			style.xMin = 2 * style.xMin - style.xMax;
 		}
-		data[tag][x2bin(x)]++;
+		data[row][x2bin(x)]++;
 	}
 
 	/**
@@ -312,7 +318,7 @@ public class HistoGraph extends AbstractGraph {
 
 	// IMPORTANT: bin count needs to be even!
 	private void doubleMinRange() {
-		double[] bins = data[tag];
+		double[] bins = data[row];
 		int nBins = bins.length;
 		int nBins2 = nBins/2;
 		for( int i=0; i<nBins2; i++ ) {
@@ -324,7 +330,7 @@ public class HistoGraph extends AbstractGraph {
 
 	// IMPORTANT: bin count needs to be even!
 	private void doubleMaxRange() {
-		double[] bins = data[tag];
+		double[] bins = data[row];
 		int nBins = bins.length;
 		int nBins2 = nBins/2;
 		for( int i=0; i<nBins2; i++ ) {
@@ -341,7 +347,7 @@ public class HistoGraph extends AbstractGraph {
 	 * @return the index of the bin 
 	 */
 	public int x2bin(double x) {
-		int len = data[tag].length;
+		int len = data[row].length;
 		// if x == style.xMax return len-1 (not len)
 		return Math.min((int) ((x - style.xMin) / (style.xMax - style.xMin) * len), len - 1);
 	}
@@ -353,7 +359,7 @@ public class HistoGraph extends AbstractGraph {
 	 * @return the {@code x}-coordinate
 	 */
 	public double bin2x(int bin) {
-		double x = (double) bin / data[tag].length;
+		double x = (double) bin / data[row].length;
 		x = style.xMin + x * (style.xMax - style.xMin) + x;
 		// would it be nice to round to nearest rational?
 		double rounded = Math.round(x);
@@ -368,7 +374,7 @@ public class HistoGraph extends AbstractGraph {
 		nSamples = 0.0;
 		if (data == null)
 			return;
-		Arrays.fill(data[tag], 0.0);
+		Arrays.fill(data[row], 0.0);
 		if (normIdx >= 0)
 			Arrays.fill(data[normIdx], 0.0);
 	}
@@ -415,7 +421,7 @@ public class HistoGraph extends AbstractGraph {
 
 		g.setFillStyle(style.graphColor);
 		int yLevels = 4;
-		double[] myData = data[tag];
+		double[] myData = data[row];
 		double[] norm = null;
 		int nBins = myData.length;
 		if( style.autoscaleY ) {
@@ -502,7 +508,7 @@ public class HistoGraph extends AbstractGraph {
 	}
 
 	protected void drawMarkers() {
-		int nBins = data[tag].length;
+		int nBins = data[row].length;
 		double barwidth = bounds.getWidth()/nBins;
 		double h = bounds.getHeight();
 		int nMarkers = binmarkers.size();
@@ -524,7 +530,7 @@ public class HistoGraph extends AbstractGraph {
 	protected boolean calcBounds() {
 		if (!super.calcBounds() || data == null)
 			return false;
-		int nBins = data[tag].length;
+		int nBins = data[row].length;
 		double w = bounds.getWidth();
 		int barwidth = (int) ((w - 2) / nBins);
 		if (barwidth <= 0)
@@ -540,7 +546,7 @@ public class HistoGraph extends AbstractGraph {
 		x -= (int)(3*style.frameWidth);
 		if( !bounds.contains(x, y) )
 			return -1;
-		int nBins = data[tag].length;
+		int nBins = data[row].length;
 		double ibarwidth = nBins/bounds.getWidth();
 		return (int)((x-bounds.getX())*ibarwidth);
 	}

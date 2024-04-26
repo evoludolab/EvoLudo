@@ -1035,6 +1035,19 @@ public abstract interface Model extends CLOProvider {
 	public abstract int getNMean(int id);
 
 	/**
+	 * Return the names of the mean traits of this model.
+	 *
+	 * @return the names of the mean traits
+	 */
+	public default String[] getMeanNames() {
+		int nMean = getNMean();
+		String[] names = new String[nMean];
+		for (int n=0; n<nMean; n++)
+			names[n] = getMeanName(n);
+		return names;
+	}
+
+	/**
 	 * Return the name of the mean trait with index {@code index} or {@code null} if
 	 * index is invalid.
 	 *

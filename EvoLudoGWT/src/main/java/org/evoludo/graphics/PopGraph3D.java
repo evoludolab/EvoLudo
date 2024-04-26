@@ -49,6 +49,7 @@ import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network3D;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
 
 import com.google.gwt.core.client.Duration;
@@ -168,10 +169,10 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	 * </dl>
 	 * 
 	 * @param controller the controller of this graph
-	 * @param tag        the identifying tag
+	 * @param module     the module backing the graph
 	 */
-	public PopGraph3D(NodeGraphController controller, int tag) {
-		super(controller, tag);
+	public PopGraph3D(NodeGraphController controller, Module module) {
+		super(controller, module);
 		setStylePrimaryName("evoludo-PopGraph3D");
 		// PopGraph3D cannot use wrapper - transfer all widgets to graphPanel3D
 		// (except canvas) and make this the wrapper
@@ -801,7 +802,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 		int node = findNodeAt(event.getX(), event.getY());
 		if (node >= 0 && !controller.isRunning()) {
 			// population signals change back to us
-			((NodeGraphController) controller).mouseHitNode(tag, node, event.isAltKeyDown());
+			((NodeGraphController) controller).mouseHitNode(module.getID(), node, event.isAltKeyDown());
 		}
 	}
 
@@ -843,7 +844,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 		if (Duration.currentTimeMillis() - touchEndTime < 250.0) {
 			// double tap
 			if (!controller.isRunning())
-				((NodeGraphController) controller).mouseHitNode(tag, node); // population signals change back to us
+				((NodeGraphController) controller).mouseHitNode(module.getID(), node); // population signals change back to us
 			event.preventDefault();
 		}
 	}

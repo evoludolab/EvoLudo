@@ -186,10 +186,10 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 				for( PopGraph3D graph : graphs) {
 					switch( type ) {
 						case STRATEGY:
-							model.getTraitData(graph.getTag(), graph.getData(), graph.getColorModel());
+							model.getTraitData(graph.getModule().getID(), graph.getData(), graph.getColorModel());
 							break;
 						case FITNESS:
-							model.getFitnessData(graph.getTag(), graph.getData(), //
+							model.getFitnessData(graph.getModule().getID(), graph.getData(), //
 								(ColorMap.Gradient1D<MeshLambertMaterial>)graph.getColorModel());
 							break;
 						default:
@@ -215,7 +215,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 					hard = true;
 					destroyGraphs();
 					Module module = engine.getModule();
-					PopGraph3D graph = new PopGraph3D(this, module.getID());
+					PopGraph3D graph = new PopGraph3D(this, module);
 					// debugging not available for DE's
 					graph.setDebugEnabled(false);
 					wrapper.add(graph);
@@ -239,11 +239,11 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 					hard = true;
 					destroyGraphs();
 					for( Module module : species ) {
-						PopGraph3D graph = new PopGraph3D(this, module.getID());
+						PopGraph3D graph = new PopGraph3D(this, module);
 						wrapper.add(graph);
 						graphs2mods.put(graph, module);
 						if( !Geometry.displayUniqueGeometry(module) ) {
-							graph = new PopGraph3D(this, module.getID());
+							graph = new PopGraph3D(this, module);
 							wrapper.add(graph);
 							graphs2mods.put(graph, module);
 							// arrange graphs horizontally
@@ -356,7 +356,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 						500);
 					cMap = cMap1D;
 					// cMap1D.setRange(module.getMinFitness(), module.getMaxFitness());
-					int tag = graph.getTag();
+					int tag = graph.getModule().getID();
 					cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
 					if( model.getModelType() == Model.Type.IBS ) {
 						Map2Fitness map2fit = module.getMapToFitness();

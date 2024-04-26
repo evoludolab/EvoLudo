@@ -62,7 +62,7 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 	@SuppressWarnings("hiding")
 	protected Set<PopGraph2D> graphs;
 	protected int MAX_BINS = 100;
-	double[][]	bins;
+	double[]	bins;
 	int			traitXIdx = 0, traitYIdx = 1;
 
 	@SuppressWarnings("unchecked")
@@ -88,39 +88,6 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 	}
 
 	@Override
-	public void update(boolean force) {
-		// always read data - some nodes may have changed due to user actions
-		double newtime = model.getTime();
-		boolean isNext = (Math.abs(timestamp-newtime)>1e-8);
-		timestamp = newtime;
-		for( PopGraph2D graph : graphs ) {
-			boolean doUpdate = isActive || graph.hasHistory();
-			// if graph is neither active nor has history, force can be safely ignored
-			// otherwise may lead to problems if graph has never been activated
-			if (!doUpdate)
-				continue;
-			switch( type ) {
-				case STRATEGY:
-					// process data first
-					double[] histo = bins[graph.getTag()];
-					// casts ok because trait histograms make sense only for continuous models
-					((Model.ContinuousIBS)model).get2DTraitHistogramData(graph.getTag(), histo, traitXIdx, traitYIdx);
-					ColorMap.Gradient1D<String> cMap = (ColorMap.Gradient1D<String>) graph.getColorMap();
-					cMap.setRange(0.0, ArrayMath.max(histo));
-					cMap.translate(histo, graph.getData());
-					break;
-//				case FITNESS:
-//					population.getFitHistogramData(bins);
-//					break;
-				default:
-					throw new Error("MVDistribution: not implemented for type "+type);
-			}
-			graph.addData(isNext);
-			graph.paint(force);
-		}
-	}
-
-	@Override
 	public void reset(boolean hard) {
 		super.reset(hard);
 		ArrayList<? extends Module> species = engine.getModule().getSpecies();
@@ -128,10 +95,8 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 		if( graphs.size()!=nGraphs ) {
 			hard = true;
 			destroyGraphs();
-			if( bins==null || bins.length!=nGraphs)
-				bins = new double[nGraphs][];
 			for( Module module : species ) {
-				PopGraph2D graph = new PopGraph2D(this, module.getID());
+				PopGraph2D graph = new PopGraph2D(this, module);
 				graph.setDebugEnabled(false);
 				wrapper.add(graph);
 				graphs2mods.put(graph, module);
@@ -147,17 +112,11 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 			for( PopGraph2D graph : graphs )
 				graph.setSize(width+"%", height+"%");
 		}
-		// even if nGraphs did not change, the geometries associated with the graphs still need to be updated
 		for( PopGraph2D graph : graphs ) {
-			int nTraits = graphs2mods.get(graph).getNTraits();
-			int tag = graph.getTag();
-			int nBins = nTraits == 1 ? MAX_BINS : MAX_BINS * MAX_BINS;
-			if (bins[tag] == null || bins[tag].length != nBins)
-				bins[tag] = new double[nBins];
+			Module module = graph.getModule();
+			int nTraits = module.getNTraits();
+			// even if nGraphs did not change, the geometries associated with the graphs still need to be updated
 			graph.setGeometry(createGeometry(nTraits));
-		}
-
-		for( PopGraph2D graph : graphs ) {
 			PopGraph2D.GraphStyle style = graph.getStyle();
 			switch( type ) {
 				default:
@@ -166,7 +125,7 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 					break;
 				case STRATEGY:
 					graph.setColorMap(new ColorMapCSS.Gradient1D(new Color[] { Color.WHITE, Color.BLACK, Color.YELLOW, Color.RED }, 500));
-					Continuous cmod = (Continuous) graphs2mods.get(graph);
+					Continuous cmod = (Continuous) module;
 					double min = cmod.getTraitMin()[traitXIdx];
 					double max = cmod.getTraitMax()[traitXIdx];
 					if( Math.abs(min-style.xMin)>1e-6 || Math.abs(max-style.xMax)>1e-6 ) {
@@ -180,7 +139,7 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 					style.showXTicks = true;
 					style.showXTickLabels = true;
 					style.showXLevels = false;
-					if( cmod.getNTraits()==1 ) {
+					if( nTraits==1 ) {
 						double rFreq = engine.getReportInterval();
 						// adjust y-axis scaling if report frequency has changed
 						if( Math.abs(style.yIncr-rFreq)>1e-6 ) {
@@ -225,18 +184,53 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 		update();
 	}
 
+	@Override
+	public void update(boolean force) {
+		// always read data - some nodes may have changed due to user actions
+		double newtime = model.getTime();
+		boolean isNext = (Math.abs(timestamp-newtime)>1e-8);
+		timestamp = newtime;
+		for( PopGraph2D graph : graphs ) {
+			boolean doUpdate = isActive || graph.hasHistory();
+			// if graph is neither active nor has history, force can be safely ignored
+			// otherwise may lead to problems if graph has never been activated
+			if (!doUpdate)
+				continue;
+			switch( type ) {
+				case STRATEGY:
+					// process data first
+					// casts ok because trait histograms make sense only for continuous models
+					((Model.ContinuousIBS)model).get2DTraitHistogramData(graph.getModule().getID(), bins, traitXIdx, traitYIdx);
+					ColorMap.Gradient1D<String> cMap = (ColorMap.Gradient1D<String>) graph.getColorMap();
+					cMap.setRange(0.0, ArrayMath.max(bins));
+					cMap.translate(bins, graph.getData());
+					break;
+//				case FITNESS:
+//					population.getFitHistogramData(bins);
+//					break;
+				default:
+					throw new Error("MVDistribution: not implemented for type "+type);
+			}
+			graph.addData(isNext);
+			graph.paint(force);
+		}
+	}
+
 	private Geometry createGeometry(int nTraits) {
 		Geometry geometry = new Geometry(engine);
-// adding a geometry name will display a label on the graph - not sure whether we really want this
-//		geometry.name = module.getTraitName(n);
-		if( nTraits==1 ) {
+		// adding a geometry name will display a label on the graph - not sure whether
+		// we really want this...
+		// geometry.name = module.getTraitName(n);
+		if (nTraits == 1) {
 			geometry.setType(Geometry.Type.LINEAR);
 			geometry.size = MAX_BINS;
-			return geometry;
+		} else {
+			geometry.setType(Geometry.Type.SQUARE);
+			geometry.connectivity = 4;
+			geometry.size = MAX_BINS * MAX_BINS;
 		}
-		geometry.setType(Geometry.Type.SQUARE);
-		geometry.connectivity = 4;
-		geometry.size = MAX_BINS * MAX_BINS;
+		if (bins == null || bins.length != geometry.size)
+			bins = new double[geometry.size];
 		return geometry;
 	}
 
@@ -266,10 +260,10 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 	}*/
 
 	@Override
-	public String getTooltipAt(AbstractGraph agraph, int node) {
+	public String getTooltipAt(AbstractGraph graph, int node) {
 		if( node<0 )
 			return null;
-		GraphStyle style = agraph.getStyle();
+		GraphStyle style = graph.getStyle();
 		int nBins = MAX_BINS;
 		Module module = engine.getModule();
 		int nTraits = module.getNTraits();
@@ -279,7 +273,7 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 			return (style.label!=null?"<b>"+style.label+"</b><br/>":"")+
 					"<i>"+style.xLabel+":</i> ["+Formatter.format(style.xMin+bar*(style.xMax-style.xMin)/nBins, 2)+", "+
 					Formatter.format(style.xMin+(bar+1)*(style.xMax-style.xMin)/nBins, 2)+"]<br/>"+
-					(node<nBins?"<i>frequency:</i> "+Formatter.formatPercent(bins[agraph.getTag()][bar], 1)+"<br/>":"")+
+					(node<nBins?"<i>frequency:</i> "+Formatter.formatPercent(bins[bar], 1)+"<br/>":"")+
 					"<i>"+style.yLabel+":</i> "+Formatter.format(time, 2);
 		}
 		int bar1 = node % MAX_BINS;
@@ -289,7 +283,7 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 				Formatter.format(style.xMin+(bar1+1)*(style.xMax-style.xMin)/nBins, 2)+"]<br/>"+
 				"<i>"+style.yLabel+":</i> ["+Formatter.format(style.yMin+bar2*(style.yMax-style.yMin)/nBins, 2)+", "+
 				Formatter.format(style.yMin+(bar2+1)*(style.yMax-style.yMin)/nBins, 2)+"]<br/>"+
-				"<i>frequency:</i> "+Formatter.formatPercent(bins[agraph.getTag()][node], 1)+"<br/>";
+				"<i>frequency:</i> "+Formatter.formatPercent(bins[node], 1)+"<br/>";
 	}
 
 	private ContextMenuCheckBoxItem[] traitXItems, traitYItems;
