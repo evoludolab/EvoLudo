@@ -127,7 +127,7 @@ public class HistoGraph extends AbstractGraph {
 	/**
 	 * Get the index of the data row for to this histogram.
 	 * <p>
-	 * <strong>Note:<?strong> This is the same as the index of the corresponding
+	 * <strong>Note:</strong> This is the same as the index of the corresponding
 	 * trait in the module.
 	 * 
 	 * @return the data row index
@@ -516,11 +516,11 @@ public class HistoGraph extends AbstractGraph {
 		for( Marker mark : binmarkers ) {
 			int bin = x2bin(mark.x);
 			mark.bin = bin;	// remember bin to easily retrieve notes for tooltips (if any)
-			double x = bin*barwidth;
+			double x = bin*barwidth-0.5;
 			g.setStrokeStyle(mark.color == null ? markerColors[n++ % nMarkers] : mark.color);
 			if (mark.linestyle != null)
 				g.setLineDash(mark.linestyle);
-			strokeLine(x+1.0, 0.0, x+1.0, h);
+			strokeLine(x, 0.0, x, h);
 			strokeLine(x+barwidth, 0.0, x+barwidth, h);
 			g.setLineDash(style.solidLine);
 		}
