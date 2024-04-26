@@ -543,6 +543,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 					else
 						tip.append("<tr><td><i>Interactions:</i></td><td>"+count+"</td></tr>");
 				}
+
 				Geometry interaction = module.getInteractionGeometry();
 				if( interaction.isUndirected )
 					tip.append("<tr><td><i>Neighbors:</i></td><td>"+formatStructureAt(node, interaction)+"</td></tr>");
@@ -550,9 +551,9 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 					//useful for debugging geometry - Geometry.checkConnections should be able to catch such problems
 					tip.append("<tr><td><i>Links to:</i></td><td>"+formatOutStructureAt(node, interaction)+"</td></tr>"+
 							"<tr><td><i>Link here:</i></td><td>"+formatInStructureAt(node, interaction)+"</td></tr>");
-				if( interaction.isInterspecies() ) {
-					tip.append(formatStrategiesAt(node, interaction, getGraphFor(interaction.getOpponent().getModule())));
-				}
+				if( interaction.isInterspecies() )
+					tip.append(formatStrategiesAt(node, interaction, getOpponentInteractionGraph(graph)));
+
 				Geometry reproduction = module.getReproductionGeometry();
 				if( !reproduction.interReproSame ) {
 					if( reproduction.isUndirected )
@@ -560,6 +561,8 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 					else
 						tip.append("<tr><td><i>Competes for:</i></td><td>"+formatOutStructureAt(node, reproduction)+"</td></tr>"+
 								"<tr><td><i>Compete here:</i></td><td>"+formatInStructureAt(node, reproduction)+"</td></tr>");
+					if( interaction.isInterspecies() )
+						tip.append(formatStrategiesAt(node, reproduction, getOpponentCompetitionGraph(graph)));
 				}
 				return tip.append("</table>").toString();
 
@@ -568,32 +571,49 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 		}
 	}
 
-	// NOTE: same as in MVPop3D - not enough to warrant a common abstract class MVPop
-//XXX this is not a unique mapping... each module may entertain several graphs (e.g. for interaction and reproduction graphs)
-	private PopGraph2D getGraphFor(Module module) {
-		if( graphs==null || module==null )
-			return null;
-		for( PopGraph2D graph : graphs)
-			if (module==graph.getModule())
-				return graph;
+	private PopGraph2D getOpponentInteractionGraph(PopGraph2D graph) {
+		Module module = graph.getModule();
+		Module opponent = module.getOpponent();
+		Geometry oppInter = opponent.getInteractionGeometry();
+		for( PopGraph2D oppGraph : graphs) {
+			if (oppGraph == graph)
+				continue;
+			Module oppModule = oppGraph.getModule();
+			if (oppModule == opponent && oppGraph.getGeometry() == oppInter)
+				return oppGraph;
+		}
+		return null;
+	}
+
+	private PopGraph2D getOpponentCompetitionGraph(PopGraph2D graph) {
+		Module module = graph.getModule();
+		Module opponent = module.getOpponent();
+		Geometry oppRepro = opponent.getReproductionGeometry();
+		for( PopGraph2D oppGraph : graphs) {
+			if (oppGraph == graph)
+				continue;
+			Module oppModule = oppGraph.getModule();
+			if (oppModule == opponent && oppGraph.getGeometry() == oppRepro)
+				return oppGraph;
+		}
 		return null;
 	}
 
 	private static String formatStrategiesAt(int node, Geometry geom, PopGraph2D graph) {
-		return formatStrategiesAt(geom.out[node], geom.kout[node], geom.getType(), graph.getGeometry().getName(), graph.getData());
-	}
-
-	private static String formatStrategiesAt(int[] links, int k, Geometry.Type type, String name, String[] data) {
-		if( type==Geometry.Type.MEANFIELD || k==0 )
+		int nNeighs = geom.kout[node];
+		if (geom.getType() == Geometry.Type.MEANFIELD || nNeighs == 0)
 			return "";
-		String msg = "<tr><td><i style='padding-left:2em'>"+name+":</i></td>"+
-				"<td>[<span style='color:"+data[links[0]]+"; font-size:175%; line-height:0.57;'>&#x25A0;</span>";
-		int disp = Math.min(k, 10);
-		for( int n=1; n<disp; n++ )
-			msg += "<span style='color:"+data[links[n]]+"; font-size:175%; line-height:0.57;'>&nbsp;&#x25A0;</span>";
-		if( disp<k )
+		int[] links = geom.out[node];
+		String msg = "<tr><td><i style='padding-left:2em'>" + graph.getGeometry().getName() + ":</i></td>" +
+				"<td>[<span style='color:" + graph.getCSSColorAt(links[0])
+				+ "; font-size:175%; line-height:0.57;'>&#x25A0;</span>";
+		int disp = Math.min(nNeighs, 10);
+		for (int n = 1; n < disp; n++)
+			msg += "<span style='color:" + graph.getCSSColorAt(links[n])
+					+ "; font-size:175%; line-height:0.57;'>&nbsp;&#x25A0;</span>";
+		if (disp < nNeighs)
 			msg += " ...";
-		return msg+"]</td></tr>";
+		return msg + "]</td></tr>";
 	}
 
 	private static String formatStructureAt(int node, Geometry geom) {

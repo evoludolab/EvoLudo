@@ -728,6 +728,16 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	}
 
 	/**
+	 * Get the color of the node at index {@code node} as a CSS color string.
+	 * 
+	 * @param node the index of the node
+	 * @return the color of the node
+	 */
+	public String getCSSColorAt(int node) {
+		return "#" + colors[node].getColor().getHexString();
+	}
+
+	/**
 	 * Helper field for determining which node has been hit by mouse or tap.
 	 */
 	Raycaster raycaster = new Raycaster();
