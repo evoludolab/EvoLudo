@@ -609,9 +609,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						double[][] graphdata = graph.getData();
 						if (data != graphdata) {
 							data = graphdata;
-							// XXX tag refers to trait id - insufficient to identify traits in multi-species
-							// modules; replace tag with traitID and speciesID?
-							cmodel.getTraitHistogramData(graph.getRow(), data);
+							cmodel.getTraitHistogramData(graph.getModule().getID(), data);
 						}
 					}
 					break;
@@ -622,8 +620,6 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						double[][] graphdata = graph.getData();
 						if (data != graphdata) {
 							data = graphdata;
-							// XXX tag refers to trait id - insufficient to identify traits in multi-species
-							// modules; replace tag with traitID and speciesID?
 							model.getFitnessHistogramData(graph.getModule().getID(), data);
 						}
 					}
