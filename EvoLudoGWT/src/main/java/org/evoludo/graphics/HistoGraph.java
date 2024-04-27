@@ -125,18 +125,6 @@ public class HistoGraph extends AbstractGraph {
 	}
 
 	/**
-	 * Get the index of the data row for to this histogram.
-	 * <p>
-	 * <strong>Note:</strong> This is the same as the index of the corresponding
-	 * trait in the module.
-	 * 
-	 * @return the data row index
-	 */
-	public int getRow() {
-		return row;
-	}
-
-	/**
 	 * Set whether the data is normalized. If {@code isNormalized} is {@code true},
 	 * the sum of the data in each bin is normalized to {@code 1.0}.
 	 * <br>

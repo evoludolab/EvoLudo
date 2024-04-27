@@ -129,6 +129,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 		ArrayList<? extends Module> species = engine.getModule().getSpecies();
 		isMultispecies = (species.size() > 1);
 		degreeProcessed = false;
+		doStatistics = false;
 		int nGraphs = 0;
 		for( Module pop : species ) {
 			int nTraits = pop.getNTraits();
@@ -264,11 +265,10 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 							style.showYTicks = true;
 							style.showXLevels = false;
 							style.showYLevels = true;
-							int idx = graph.getRow();
 							style.xLabel = "degree";
 							style.showXLabel = false;
 							style.showXTickLabels = false;
-							style.label = labels[idx];
+							style.label = labels[n];
 							style.showXLabel = bottomPane;
 							style.showXTickLabels = bottomPane;
 							style.graphColor = "#444";
@@ -369,6 +369,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 		}
 		Module module = null;
 		double[][] data = null;
+		int idx = 0;
 		for( HistoGraph graph : graphs) {
 			AbstractGraph.GraphStyle style = graph.getStyle();
 			Module oldmod = module;
@@ -376,7 +377,6 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 			boolean newPop = (oldmod != module);
 			if (newPop)
 				data = graph.getData();
-			int idx = graph.getRow();
 			int vacant = module.getVacant();
 			int nTraits = module.getNTraits();
 			Color[] colors = module.getTraitColors();
@@ -435,7 +435,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						style.graphColor = ColorMapCSS.Color2Css(tColor);
 						double mono = dmodel.getMonoScore(module.getID(), idx);
 						if (Double.isNaN(mono))
-							continue;
+							break;
 						graph.addMarker(mono,
 								ColorMapCSS.Color2Css(ColorMap.blendColors(tColor, Color.WHITE, 0.5)),
 								"monomorphic payoff");
@@ -486,7 +486,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					break;
 
 				case STATISTICS_FIXATION_PROBABILITY:
-					boolean statOk = model.permitsMode(Mode.STATISTICS_SAMPLE);
+					checkStatistics();
 					int nBins = module.getNPopulation();
 					style.yMin = 0.0;
 					style.yMax = 1.0;
@@ -494,20 +494,22 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					style.xMax = nBins-1;
 					style.label = module.getTraitName(idx);
 					style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
-					if (statOk && (data == null || data.length != nTraits + 1
-							|| data[0].length != Math.min(nBins, MAX_BINS)))
-						data = new double[nTraits+1][Math.min(nBins, MAX_BINS)];
-					graph.setData(data);
+					if (doStatistics) {
+						if (data == null || data.length != nTraits + 1 || data[0].length != Math.min(nBins, MAX_BINS))
+							data = new double[nTraits+1][Math.min(nBins, MAX_BINS)];
+						graph.setData(data);
+					} else {
+						graph.clearData();
+					}
 					break;
 
 				case STATISTICS_FIXATION_TIME:
-					statOk = model.permitsMode(Mode.STATISTICS_SAMPLE);
+					checkStatistics();
 					int nPop = module.getNPopulation();
 					nBins = nPop;
-					nTraits++;	// the last 'trait' is for unconditional absorption times
 					style.yMin = 0.0;
 					style.yMax = 1.0;
-					if( idx<nTraits-1 ) {
+					if( idx<nTraits ) {
 						style.label = module.getTraitName(idx);
 						style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
 					}
@@ -516,8 +518,13 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
 					}
 					if( nPop>MAX_BINS ) {
-						if (statOk && (data == null || data.length != nTraits || data[0].length != MAX_BINS))
-							data = new double[nTraits][MAX_BINS];
+						if (doStatistics) {
+							if (data == null || data.length != nTraits + 1 || data[0].length != MAX_BINS)
+								data = new double[nTraits + 1][MAX_BINS];
+							graph.setData(data);
+						} else {
+							graph.clearData();
+						}
 						graph.setNormalized(false);
 						graph.setNormalized(-1);
 						style.xMin = 0.0;
@@ -530,13 +537,18 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						style.customYLevels = null;
 					}
 					else {
-						if (statOk && (data == null || data.length != 2 * nTraits || data[0].length != nPop))
-							data = new double[2*nTraits][nPop];
-						graph.setNormalized(idx+nTraits);
+						if (doStatistics) {
+							if (data == null || data.length != 2 * (nTraits + 1) || data[0].length != nPop)
+								data = new double[2 * (nTraits + 1)][nPop];
+							graph.setData(data);
+						} else {
+							graph.clearData();
+						}
+						graph.setNormalized(idx + nTraits + 1);
 						style.xMin = 0.0;
 						style.xMax = nPop-1;
 						style.xLabel = "node";
-						style.showXTickLabels = (idx==(nTraits-1));
+						style.showXTickLabels = (idx == nTraits);
 						style.yLabel = "time";
 						style.percentY = false;
 						graph.enableAutoscaleYMenu(false);
@@ -578,6 +590,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 			}
 			if( hard )
 				graph.reset();
+			idx++;
 		}
 		update(hard);
 	}
@@ -592,7 +605,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 
 	@Override
 	public void update(boolean force) {
-		if (!isActive && !isStatistics())
+		if (!isActive && !doStatistics)
 			return;
 
 		double newtime = model.getTime();
@@ -687,17 +700,13 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 
 				case STATISTICS_FIXATION_PROBABILITY:
 					// NOTE: not fully ready for multi-species; info which species fixated missing
-					for (HistoGraph graph : graphs) {
-						FixationData fixData = checkFixation(graph);
-						if (fixData == null)
-							continue;
-						graph.clearMessage();
-						if (!fixData.probRead) {
-							if (graph.getRow() == fixData.typeFixed) {
-								graph.addData(fixData.mutantNode);
-								fixData.probRead = true;
-							}
-						}
+					FixationData fixData = ((IBSD) model).getFixationData();
+					if (fixData == null)
+						break;
+					if (!fixData.probRead) {
+						HistoGraph graph = graphs.get(fixData.typeFixed);
+						graph.addData(fixData.mutantNode);
+						fixData.probRead = true;
 					}
 					// reset timestamp (needed to ensure processing of statistics data)
 					timestamp = -1.0;
@@ -705,30 +714,22 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 
 				case STATISTICS_FIXATION_TIME:
 					// NOTE: not fully ready for multi-species; info which species fixated missing
-					for (HistoGraph graph : graphs) {
-						FixationData fixData = checkFixation(graph);
-						if (fixData == null)
-							continue;
-						Module pop = graph.getModule();
-						int nPop = pop.getNPopulation();
-						int nTrait = pop.getNTraits();
-						graph.clearMessage();
-						if (!fixData.timeRead) {
-							int iNode = fixData.mutantNode;
-							int idx = graph.getRow();
-							if (idx == fixData.typeFixed) {
-								if (iNode < 0 || nPop > MAX_BINS)
-									graph.addData(fixData.updatesFixed);
-								else
-									graph.addData(iNode, fixData.updatesFixed);
-							} else if (idx == nTrait) {
-								if (iNode < 0 || nPop > MAX_BINS)
-									graph.addData(fixData.updatesFixed);
-								else
-									graph.addData(iNode, fixData.updatesFixed);
-								fixData.timeRead = true;
-							}
+					fixData = ((IBSD) model).getFixationData();
+					if (fixData == null)
+						break;
+					if (!fixData.timeRead) {
+						HistoGraph graph = graphs.get(fixData.typeFixed);
+						HistoGraph absorption = graphs.get(graphs.size() - 1);
+						int initNode = fixData.mutantNode;
+						int nPop = graph.getModule().getNPopulation();
+						if (initNode < 0 || nPop > MAX_BINS) {
+							graph.addData(fixData.updatesFixed);
+							absorption.addData(fixData.updatesFixed);
+						} else {
+							graph.addData(initNode, fixData.updatesFixed);
+							absorption.addData(initNode, fixData.updatesFixed);
 						}
+						fixData.timeRead = true;
 					}
 					// reset timestamp (needed to ensure processing of statistics data)
 					timestamp = -1.0;
@@ -751,16 +752,21 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 			graph.paint(force);
 	}
 
-	private FixationData checkFixation(HistoGraph graph) {
-		if (!(model instanceof IBSD) || !model.permitsMode(Mode.STATISTICS_SAMPLE)) {
-			graph.displayMessage("Fixation: incompatible settings");
-			return null;
+	private boolean doStatistics = false;
+
+	private boolean checkStatistics() {
+		doStatistics = false;
+		// cast to IBSD is safe because checked first
+		if (!(model instanceof IBSD) || !model.permitsMode(Mode.STATISTICS_SAMPLE) || ((IBSD) model).getFixationData() == null) {
+			for (HistoGraph graph : graphs)
+				graph.displayMessage("Fixation: incompatible settings");
+			model.resetStatisticsSample();
+		} else {
+			for (HistoGraph graph : graphs)
+				graph.clearMessage();
+			doStatistics = true;
 		}
-		// cast safe - checked above
-		FixationData fixData = ((IBSD) model).getFixationData();
-		if (fixData == null)
-			graph.displayMessage("Fixation: incompatible settings");
-		return fixData;
+		return doStatistics;
 	}
 
 	@Override
@@ -786,39 +792,46 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 			case STATISTICS_FIXATION_PROBABILITY:
 				int nSam = Math.max(((IBSD) model).getNStatisticsSamples(), 1);
 				status = "Avg. fix. prob: ";
+				int idx = 0;
 				for (HistoGraph graph : graphs) {
-					Module pop = graph.getModule();
-					status += (isMultispecies ? pop.getName() + "." : "") + pop.getTraitName(graph.getRow()) + ": " +
-							Formatter.formatFix(graph.getSamples() / nSam, 3) + ", ";
+					Module module = graph.getModule();
+					if (idx > 0)
+						status += ", ";
+					status += (isMultispecies ? module.getName() + "." : "") + module.getTraitName(idx++) + ": " +
+							Formatter.formatFix(graph.getSamples() / nSam, 3);
 				}
 				return status;
 
 			case STATISTICS_FIXATION_TIME:
 				status = "Avg. fix. time: ";
+				idx = 0;
 				for (HistoGraph graph : graphs) {
 					double[][] data = graph.getData();
 					if (data == null) {
 						logger.warning("Average fixation times not available!");
 						return "";
 					}
-					Module pop = graph.getModule();
-					int tag = graph.getRow();
-					int nTraits = pop.getNTraits();
-					status += (isMultispecies ? pop.getName() + "." : "")
-							+ (tag == nTraits ? "Absorption" : pop.getTraitName(tag)) + ": ";
-					int nPop = pop.getNPopulation();
+					Module module = graph.getModule();
+					int nTraits = module.getNTraits();
+					if (idx > 0)
+						status += ", ";
+					status += (isMultispecies ? module.getName() + "." : "")
+							+ graph.getStyle().label + ": ";
+					int nPop = module.getNPopulation();
 					if (nPop > MAX_BINS) {
-						double mean = Distributions.distrMean(data[tag]);
-						double sdev = Distributions.distrStdev(data[tag], mean);
+						double mean = Distributions.distrMean(data[idx]);
+						double sdev = Distributions.distrStdev(data[idx], mean);
 						GraphStyle style = graph.getStyle();
 						status += Formatter.formatFix(style.xMin + mean * (style.xMax - style.xMin), 1) + " ± " +
-								Formatter.formatFix(sdev * (style.xMax - style.xMin), 1) + ", ";
+								Formatter.formatFix(sdev * (style.xMax - style.xMin), 1);
+						idx++;
 						continue;
 					}
 					double sx = 0.0, sx2 = 0.0, sw = 0.0;
 					// note: the +1 accounts for the fact that there is an additional graph for
 					// the absorption time.
-					double[] dat = data[tag], sam = data[nTraits + 1 + tag];
+					double[] dat = data[idx];
+					double[] sam = data[idx + nTraits + 1];
 					int nDat = dat.length;
 					for (int n = 0; n < nDat; n++) {
 						double w = sam[n];
@@ -830,12 +843,13 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						sw += w;
 					}
 					if (sw <= 0.0)
-						status += "0.000 ± 0.000, ";
+						status += "0.000 ± 0.000";
 					else {
 						double mean = sx / sw;
 						status += Formatter.formatFix(mean, 3) + " ± "
-								+ Formatter.formatFix(Math.sqrt(sx2 / sw - mean * mean), 3) + ", ";
+								+ Formatter.formatFix(Math.sqrt(sx2 / sw - mean * mean), 3);
 					}
+					idx++;
 				}
 				return status;
 
@@ -992,7 +1006,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 
 	@Override
 	public String getTooltipAt(HistoGraph graph, int bar) {
-		int n = graph.getRow();
+		int idx = graphs.indexOf(graph);
 		double[][] data = graph.getData();
 		int nBins = data[0].length;
 		GraphStyle style = graph.getStyle();
@@ -1003,7 +1017,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 				if( Math.abs(style.xMax-(nBins-1))<1e-6 ) {
 					tip.append("<table style='border-collapse:collapse;border-spacing:0;'>");
 					tip.append("<tr><td><i>"+style.xLabel+":</i></td><td>"+bar+"</td></tr>");
-					tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+Formatter.formatPercent(data[n][bar], 2)+"</td></tr></table>");
+					tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+Formatter.formatPercent(data[idx][bar], 2)+"</td></tr></table>");
 					break;
 				}
 				//$FALL-THROUGH$
@@ -1012,7 +1026,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>");
 				tip.append("<tr><td><i>"+style.xLabel+":</i></td><td>["+Formatter.format(style.xMin+bar*(style.xMax-style.xMin)/nBins, 2)+
 						", "+Formatter.format(style.xMin+(bar+1)*(style.xMax-style.xMin)/nBins, 2)+")</td></tr>");
-				tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+Formatter.formatPercent(data[n][bar], 2)+"</td></tr>");
+				tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+Formatter.formatPercent(data[idx][bar], 2)+"</td></tr>");
 				String note = graph.getNoteAt(bar);
 				if( note!=null ) tip.append("<tr><td><i>Note:</i></td><td>"+note+"</td></tr>");
 				tip.append("</table>");
@@ -1024,10 +1038,10 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 				double norm = data[nTraits][bar];
 				tip.append("<tr><td><i>samples:</i></td><td>"+(int)norm+"</td></tr>");
 				if( style.percentY )
-					tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+(norm>0.0?Formatter.formatPercent(data[n][bar]/norm, 2):"0")+
+					tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+(norm>0.0?Formatter.formatPercent(data[idx][bar]/norm, 2):"0")+
 							"</td></tr></table>");
 				else
-					tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+(norm>0.0?Formatter.format(data[n][bar]/norm, 2):"0")+
+					tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+(norm>0.0?Formatter.format(data[idx][bar]/norm, 2):"0")+
 							"</td></tr></table>");
 				break;
 			case STATISTICS_FIXATION_TIME:
@@ -1068,7 +1082,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					tip.append("<td>[" + start + separator + end + "]</td></tr>");
 				}
 				tip.append("<tr><td><i>" + style.yLabel + ":</i></td><td>"
-						+ Formatter.formatPercent(data[n][bar] / graph.getSamples(), 2) + "</td></tr></table>");
+						+ Formatter.formatPercent(data[idx][bar] / graph.getSamples(), 2) + "</td></tr></table>");
 				break;
 			default:
 				break;
@@ -1129,16 +1143,16 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 			default:
 				return;
 		}
-		Module pop = null;
+		Module module = null;
+		int idx = 0;
 		for( HistoGraph graph : graphs ) {
-			Module newPop = graph.getModule();
-			if (pop != newPop) {
-				pop = newPop;
+			Module newMod = graph.getModule();
+			if (module != newMod) {
+				module = newMod;
 				if( isMultispecies )
-					export += "# species: "+pop.getName()+"\n";
+					export += "# species: "+module.getName()+"\n";
 			}
-			int idx = graph.getRow();
-			export += "# trait: "+pop.getTraitName(idx)+"\n";
+			export += "# trait: "+model.getMeanName(idx++)+"\n";
 			double[][] data = graph.getData();
 			if( data==null ) {
 				export += "# no data available\n";

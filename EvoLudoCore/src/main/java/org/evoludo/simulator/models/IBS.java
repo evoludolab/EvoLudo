@@ -114,6 +114,11 @@ public abstract class IBS implements Model.IBS {
 	}
 
 	@Override
+	public void resetStatisticsSample() {
+		nStatisticsSamples = 0;
+	}
+
+	@Override
 	public void initStatisticsSample() {
 		statisticsSampleNew = false;
 	}
@@ -377,7 +382,7 @@ public abstract class IBS implements Model.IBS {
 
 	@Override
 	public void reset() {
-		nStatisticsSamples = 0;
+		resetStatisticsSample();
 
 		// with optimization, homogeneous populations do not wait for next mutation
 		// currently only relevant for discrete strategies, see IBSD

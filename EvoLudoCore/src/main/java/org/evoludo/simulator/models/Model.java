@@ -1378,15 +1378,21 @@ public abstract interface Model extends CLOProvider {
 	}
 
 	/**
-	 * Signal that statistics sample is ready to process.
+	 * Reset statistics and get ready to start new collection.
 	 */
-	public default void readStatisticsSample() {
+	public default void resetStatisticsSample() {
 	}
 
 	/**
 	 * Clear statistics sample and get ready to collect next sample.
 	 */
 	public default void initStatisticsSample() {
+	}
+
+	/**
+	 * Signal that statistics sample is ready to process.
+	 */
+	public default void readStatisticsSample() {
 	}
 
 	/**
