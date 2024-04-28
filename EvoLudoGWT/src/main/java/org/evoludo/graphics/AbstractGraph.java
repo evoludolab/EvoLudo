@@ -1117,9 +1117,8 @@ public abstract class AbstractGraph extends FocusPanel
 		}
 
 		if (style.showLabel && style.label != null) {
-			// adjust label font size to size of graph; 5% of height with minimum 9px and
-			// max 24px
-			int labelFontSize = (int) Math.min(24, Math.max(9, height * 0.05));
+			// adjust label font size to graph; 5% of height with minimum 10px and max 20px
+			int labelFontSize = (int) Math.min(20, Math.max(10, bounds.getHeight() * 0.05));
 			g.setFillStyle(style.labelColor);
 			if (gscale > 0.0) {
 				g.save();
@@ -1432,9 +1431,11 @@ public abstract class AbstractGraph extends FocusPanel
 		// g.fillText(msg, (width-g.measureText(msg).getWidth())/2, height/2);
 		// center text in bounds
 		double w = bounds.getWidth();
-		g.setFont(Math.min((int) (12.0 * 0.666 * w / g.measureText(msg).getWidth()), 24) + "px sans-serif");
+		// size font to fill approx 80% of linewidth (max. 20px)
+		int fontSize = Math.min((int) (12.0 * 0.8 * w / g.measureText(msg).getWidth()), 20);
+		g.setFont(fontSize + "px sans-serif");
 		g.fillText(msg, (bounds.getX() + w - g.measureText(msg).getWidth()) * 0.5,
-				bounds.getY() + bounds.getHeight() * 0.5);
+				bounds.getY() + bounds.getHeight() * 0.5 - fontSize * 0.333);
 		g.restore();
 		hasMessage = true;
 		return true;
