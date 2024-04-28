@@ -102,31 +102,33 @@ public class Formatter {
 	}
 
 	/**
-	 * Format string vector <code>aVector</code> as String with elements separated
-	 * by '{@value #VECTOR_DELIMITER}'.
+	 * Format the vector <code>aVector</code> of type {@code T} as String with
+	 * elements separated by '{@value #VECTOR_DELIMITER}'.
 	 * 
-	 * @param aVector the string vector to format
+	 * @param <T>     the type of the vector
+	 * @param aVector the vector to format
 	 * @return the formatted String vector
 	 */
-	public static String format(String[] aVector) {
+	public static <T> String format(T[] aVector) {
 		return format(aVector, VECTOR_DELIMITER);
 	}
 
 	/**
-	 * Format string vector <code>aVector</code> as String with elements separated
-	 * by {@code delimiter} string.
+	 * Format the vector <code>aVector</code> of type {@code T} as a String with
+	 * elements separated by {@code delimiter} string.
 	 * 
-	 * @param aVector the string vector to format
+	 * @param <T>       the type of the vector
+	 * @param aVector   the string vector to format
 	 * @param delimiter the delimiter for separating the entries in {@code aVector}
 	 * @return the formatted String vector
 	 */
-	public static String format(String[] aVector, String delimiter) {
+	public static <T> String format(T[] aVector, String delimiter) {
 		if (aVector == null)
 			return "";
 		int len = aVector.length;
 		if (len == 0)
 			return "";
-		String vecString = aVector[0];
+		String vecString = aVector[0].toString();
 		for (int i = 1; i < len; i++)
 			vecString += delimiter + aVector[i];
 		return vecString;

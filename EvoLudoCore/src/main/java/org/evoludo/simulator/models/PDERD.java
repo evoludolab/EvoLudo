@@ -1382,6 +1382,11 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		public String getTitle() {
 			return title;
 		}
+
+		@Override
+		public String toString() {
+			return key;
+		}
 	}
 
 	/**
@@ -1407,8 +1412,9 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		if (typeargs.length > 1)
 			init = CLOParser.parseVector(typeargs[1]);
 		int nt = module.getNTraits();
-		y0 = new double[nt];
-		if (!initType.equals(InitType.RANDOM) && (init == null || init.length != nt)) {
+		if (y0 == null || y0.length != nt)
+			y0 = new double[nt];
+		if (initType == null || !initType.equals(InitType.RANDOM) && (init == null || init.length != nt)) {
 			initType = InitType.RANDOM;
 			engine.getLogger().warning("parsing of initype(s) '" + arg + //
 					"' failed - using default " + InitType.RANDOM + "'.");

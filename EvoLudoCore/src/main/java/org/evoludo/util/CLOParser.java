@@ -212,7 +212,8 @@ public class CLOParser {
 				if (!name.equals(opt.getName()))
 					continue;
 				// option found
-				String arg = Formatter.format(ArrayMath.drop(args, 0), " ");
+				@SuppressWarnings("cast")	// the 'unnecessary' cast is necessary for GWT to compile
+				String arg = Formatter.format((String[])ArrayMath.drop(args, 0), " ");
 				switch (opt.getType()) {
 					case REQUIRED:
 						if (args.length < 1) {

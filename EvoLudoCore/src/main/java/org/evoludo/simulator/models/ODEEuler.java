@@ -1726,6 +1726,11 @@ public class ODEEuler implements Model.ODE {
 		public String getTitle() {
 			return title;
 		}
+
+		@Override
+		public String toString() {
+			return key;
+		}
 	}
 
 	/**
@@ -1791,7 +1796,7 @@ public class ODEEuler implements Model.ODE {
 			start += nTraits;
 		}
 		if (!parseOk) {
-			logger.warning("parsing of initype(s) '" + arg + "' failed.");
+			logger.warning("parsing of initype(s) '" + arg + "' failed - using " + Formatter.format(initType) + ".");
 			return false;
 		}
 		return true;
