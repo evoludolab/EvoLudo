@@ -144,6 +144,15 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 		return "Console log";
 	}
 
+	@Override
+	public void load() {
+		super.load();
+		// console gets special treatment as instantiated before the model is loaded
+		// to allow logging of problems when parsing command line options retrieve it
+		// now to make super happy...
+		model = engine.getModel();
+	}
+
 	/**
 	 * Clear the console log.
 	 * <p>
