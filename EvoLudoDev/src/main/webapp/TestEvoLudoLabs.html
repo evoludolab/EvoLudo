@@ -83,7 +83,7 @@
 <tr><th>2x2 Games (3D)</th><td><div class="evoludo-trigger-html"
 	data-clo="--module 2x2 --view 2 --geometry R2 --inittype uniform --popupdate s --playerupdate b --references all --popsize 200"></div>
 <th>2x2 Games (inter/repro)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module 2x2 --geominter R2 --geomrepro n --inittype frequency 1,1 --popupdate s --playerupdate b --references all --popsize 100"></div>
+	data-clo="--module 2x2 --geominter R2 --geomcomp n --inittype frequency 1,1 --popupdate s --playerupdate b --references all --popsize 100"></div>
 </tr>
 <tr><th>2x2 Games (statistics)</th><td><div class="evoludo-trigger-html"
 	data-clo="--module 2x2 --delay 50 --view Statistics_-_Fixation_probability --reportfreq 1 --geometry n --popsize 10x --popupdate d --interactions all --references random 1 --inittype mutant 0,1 --mutations 0.0 --paymatrix 0.25,1.25;0,1"></div></td>
@@ -140,8 +140,8 @@
 <th>Mutualisms (ODE)</th><td><div class="evoludo-trigger-html"
 	data-clo="--module Mut --view Strategies_-_2D_Phase_Plane --inittype frequency 1,1 --payhost 0,1.4;0.6,1 --paymutualist 0,0.4;-0.4,1 --playerupdate imitate 0.1 --model ODE"></div></td>
 </tr>
-<tr><th>Mutualisms (inter/repro)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module Mut --geominter R3 --geomrepro m --popsize 5x --inittype mutant 0,1 --popupdate s --playerupdate b --payhost 0,1.7;0,1 --paymutualist 0,1.7;0,1"></div></td>
+<tr><th>Mutualisms (inter/comp)</th><td><div class="evoludo-trigger-html"
+	data-clo="--module Mut --geominter R3 --geomcomp m --popsize 5x --inittype mutant 0,1 --popupdate s --playerupdate b --payhost 0,1.7;0,1 --paymutualist 0,1.7;0,1"></div></td>
 <th>Mutualisms (IBS)</th><td><div class="evoludo-trigger-html"
 	data-clo="--module Mut --geometry M --view Strategies_-_2D_Phase_Plane --inittype frequency 1,1 --payhost 0,1.4;0.6,1 --paymutualist 0,0.4;-0.4,1 --playerupdate imitate 0.1 --popsize 10000 --model IBS --popupdate a"></div></td>
 </tr>
@@ -174,7 +174,7 @@
 <!-- <div id="EvoLudoWeb" data-clo="--module ePGG --view 3 --reportfreq 0.2 --popsize 10000 --model ODE --popupdate async --playerupdate imitate 0.1 --switchpref 0.0 --geometry M --groupsize 8 --references all --init 70,5,25 --mutations 0.0 --cost 1.0 --interest 2.76 --deathrate 0.5"></div> -->
 <!-- <div id="EvoLudoWeb" data-clo="--module ePGG --view 0 --reportfreq 0.5 --popsize 100 --popupdate B --playerupdate imitate 0.1 --switchpref 0.0 --geometry l ---groupsize 8 --references all --init 70,5,25 --mutations 0.0 --cost 1.0 --interest 2.76 --deathrate 0.5"></div> -->
 <!--	<div id="EvoLudoWeb" data-clo="--module ePGG --popsize 101x --model ODE --popupdate async --geometry nf --groupsize 8 --colors black;red;green --reportfreq 2 --pdeD 4,1 --inittype circle --init 8,1,1 --cost 1.0 --interest 2.34 --deathrate 1.2 --pdedt 0.1 --pdeL 200"></div> -->
-<!-- <div class="evoludo-simulation" id="EvoLudoWeb" data-clo="--module Moran --delay 50 --view 0 --reportfreq 1 --geominter 0 --geomrepro 1 --popsize 12 --popupdate B --references random 1 --init 1,0 --mutations 0.0 --fitness 1,2"></div> -->
+<!-- <div class="evoludo-simulation" id="EvoLudoWeb" data-clo="--module Moran --delay 50 --view 0 --reportfreq 1 --geominter 0 --geomcomp 1 --popsize 12 --popupdate B --references random 1 --init 1,0 --mutations 0.0 --fitness 1,2"></div> -->
 <!-- <div id="EvoLudoLab"><div onclick="window.createEvoLudoLab('EvoLudoLab', '--module 2x2 --popsize 20 --geometry s')" style="cursor:pointer"><h1>Click Me!</h1></div></div> -->
 <!-- <div id="EvoLudoWeb" style="display:inline-block;" data-clo="--module Dialect --view 1 --reportfreq 1 --popsize 101x --geometry 0 --phenodim 1 --phenoupdate 1 --phenoperiodic --initsdev -1 --xytemp 0.05"></div> -->
 <!-- <div class="evoludo-simulation" style="display:inline-block;" data-clo="--module Dialect --view 0 --reportfreq 1 --popsize 101x --geometry 0 --phenodim 1 --phenoupdate 1 --phenoperiodic --initsdev -1 --xytemp 0.05"></div> -->
