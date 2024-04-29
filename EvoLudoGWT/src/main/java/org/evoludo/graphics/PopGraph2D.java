@@ -253,13 +253,12 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 				}
 			}
 			buffer.clear();
-			// since we have a buffer, allocate memory for colors.
-			// needed e.g. for histograms (see MVDistribution).
-			if (geometry != null && (colors == null || colors.length != geometry.size))
-				colors = new String[geometry.size];
 		} else {
 			buffer = null;
 		}
+		// the colors array is always needed
+		if (colors == null || colors.length != geometry.size)
+			colors = new String[geometry.size];
 		if (network != null)
 			network.reset();
 		calcBounds();
