@@ -196,6 +196,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 							break;
 					}
 					graph.update(isNext);
+					graph.paint(force);
 				}
 		}
 	}

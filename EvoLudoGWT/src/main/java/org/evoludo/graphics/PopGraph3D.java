@@ -119,7 +119,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	protected RenderingPanel graph3DPanel;
 	protected Pop3DScene graph3DScene;
 	protected Camera graph3DCamera;
-	protected ArrayList<Mesh> spheres;
+	protected ArrayList<Mesh> spheres = new ArrayList<>();
 
 	/**
 	 * The flag to indicate whether camera needs to be reset. This is true after the
@@ -255,8 +255,6 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	 * @param geometry the structure of the population
 	 */
 	public void setGeometry(Geometry geometry) {
-		Geometry.Type type = (geometry == null ? null : geometry.getType());
-		resetCamera = (this.geometry == null || this.geometry.getType() == type);
 		this.geometry = geometry;
 		// geometry (and network) may be null for Model.ODE or Model.SDE
 		if (geometry == null)
@@ -264,6 +262,8 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 		setGraphLabel(geometry.getName());
 		// update population
 		network = (Network3DGWT) geometry.getNetwork3D();
+		if (network.nNodes != geometry.size || geometry.isUniqueGeometry() )
+			invalidate();
 	}
 
 	/**
@@ -320,7 +320,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 		if (geometry == null)
 			return;
 		network.reset();
-		initUniverse();
+invalidated = true;
 	}
 
 	/**
@@ -341,14 +341,15 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 
 	@Override
 	public synchronized void layoutUpdate() {
-		layoutUniverse();
+		layoutNetwork();
 		paint(true);
 	}
 
 	@Override
 	public synchronized void layoutComplete() {
 		clearMessage();
-		layoutUniverse();
+		invalidated = false;
+		layoutNetwork();
 		((NodeGraphController) controller).layoutComplete();
 	}
 
@@ -374,10 +375,8 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 
 	@Override
 	public void paint(boolean force) {
-		if (!isActive || spheres == null || (!force && !doUpdate()))
+		if (!isActive || spheres.isEmpty() || (!force && !doUpdate()))
 			return;
-		if (invalidated)
-			initUniverse();
 		int k = 0;
 		for (Mesh sphere : spheres)
 			sphere.setMaterial(colors[k++]);
@@ -390,8 +389,15 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	 * @param isNext {@code true} if the state has changed
 	 */
 	public void update(boolean isNext) {
-		paint();
-		network.doLayout(this);
+		if (!isActive)
+			return;
+		if (invalidated || geometry.isDynamic) {
+			if (geometry.isLattice())
+//				layoutLattice();
+				initUniverse();
+			else
+				network.doLayout(this);
+		}
 	}
 
 	@Override
@@ -425,9 +431,6 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 			graph3DScene.resetCamera();
 			resetCamera = false;
 		}
-
-		if (spheres == null)
-			spheres = new ArrayList<Mesh>();
 		spheres.clear();
 		clearMessage();
 		invalidated = false;
@@ -440,7 +443,6 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 		switch (type) {
 			case VOID:
 			case LINEAR:
-				spheres = null;
 				displayMessage("No representation for geometry!");
 				return;
 			case CUBE:
@@ -633,7 +635,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 						network.doLayout(this);
 						break;
 					case HAS_LAYOUT:
-						layoutUniverse();
+						layoutNetwork();
 						break;
 					case NO_LAYOUT:
 					case LAYOUT_IN_PROGRESS:
@@ -642,15 +644,38 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 				return;
 		}
 		spheres.trimToSize();
-		populateUniverse();
+		drawUniverse();
+	}
+
+	public void initUniverse2() {
+		spheres.clear();
+		// allocate elements of universe - place them later
+		SphereGeometry unit = new SphereGeometry(50, 16, 12);
+		// NOTE: must rely on geometry.size (instead of network.nNodes) because network
+		// may not yet have been properly
+		// synchronized (Network.doLayoutPrep will take care of this)
+		// No need to check whether network is null because ODE/SDE models
+		// would never get here.
+		for (int k = 0; k < geometry.size; k++) {
+			Mesh mesh = new Mesh(unit);
+			mesh.setMaterial(colors[k]);
+			mesh.setName(Integer.toString(k));
+			mesh.setMatrixAutoUpdate(false);
+			spheres.add(mesh);
+		}
+		spheres.trimToSize();
 	}
 
 	/**
 	 * Called during an animated layouting process of Network3D.
 	 */
-	protected void layoutUniverse() {
+	protected void layoutNetwork() {
 		if (network.isStatus(Status.NO_LAYOUT))
 			return; // nothing to do (lattice)
+		if (invalidated) {
+			initUniverse2();
+			network.doLayout(this);
+		}
 		// link nodes
 		Node3D[] nodes = network.toArray();
 		// place spheres
@@ -670,17 +695,23 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 			mesh.updateMatrix();
 			k++;
 		}
-		populateUniverse();
+		drawUniverse();
 	}
 
 	/**
 	 * Adds the nodes, links, lights and camera to the scene.
 	 */
-	public void populateUniverse() {
+	public void drawUniverse() {
 		Scene scene = graph3DScene.getScene();
+		if (scene == null)
+			return;
 		scene.getChildren().clear();
 		scene.add(new Object3D().add(spheres));
+		if (graph3DCamera == null)
+			graph3DCamera = network.getWorldView();
 		scene.add(graph3DCamera);
+		if (ambient == null)
+			ambient = new AmbientLight(0x666666);
 		scene.add(ambient);
 		thothbot.parallax.core.shared.core.Geometry lines = network.getLinks();
 		if (lines != null) {
@@ -690,6 +721,12 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 			// links.getGeometry().setVerticesNeedUpdate(true);
 			// geometry can only be attached to one Canvas3d - clone geometry if not network
 			// founder
+			if (linkstyle == null) {
+				linkstyle = new LineBasicMaterial();
+				linkstyle.setOpacity(1.0);
+//XXX linewidth is ignored...
+				linkstyle.setLinewidth(2);
+			}
 			linkstyle.setColor(geometry.isUndirected ? ColorMap3D.UNDIRECTED : ColorMap3D.DIRECTED);
 			linkstyle.setVertexColors(Material.COLORS.VERTEX);
 			Line links = new Line(lines, linkstyle, MODE.PIECES);
@@ -1116,14 +1153,10 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 		 * <p>
 		 * The scene should be defined already.
 		 * 
-		 * @see PopGraph3D#populateUniverse()
+		 * @see PopGraph3D#drawUniverse()
 		 */
 		@Override
 		protected void onStart() {
-			ambient = new AmbientLight(0x666666);
-			linkstyle = new LineBasicMaterial();
-			linkstyle.setOpacity(1.0);
-			linkstyle.setLinewidth(2);
 		}
 
 		@Override
@@ -1173,8 +1206,6 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 				graph3DCamera.setScale(newWorldView.getScale());
 				graph3DCamera.setRotation(newWorldView.getRotation());
 			}
-			initUniverse();
-			paint(true);
 		}
 
 		/**
@@ -1186,7 +1217,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 		 */
 		public void setOrthographic(boolean setOrtho) {
 			setOrtho(setOrtho);
-			initUniverse();
+			drawUniverse();
 			paint(true);
 		}
 
@@ -1274,9 +1305,16 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 		}
 	}
 
+
 	@Override
 	public void onContextError(Context3dErrorEvent event) {
 		logger.severe("Context3D error: " + event.getMessage());
+	}
+
+	@Override
+	public void onResize() {
+		super.onResize();
+		graph3DScene.onResize();
 	}
 
 	@Override
