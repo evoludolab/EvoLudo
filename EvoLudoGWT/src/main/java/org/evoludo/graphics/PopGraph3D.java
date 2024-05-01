@@ -54,6 +54,7 @@ import org.evoludo.util.Formatter;
 
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.JsArray;
+import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.dom.client.CanvasElement;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.NativeEvent;
@@ -260,10 +261,11 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 		if (geometry == null)
 			return;
 		setGraphLabel(geometry.getName());
-		// update population
 		network = (Network3DGWT) geometry.getNetwork3D();
-		if (network.nNodes != geometry.size || geometry.isUniqueGeometry() )
-			invalidate();
+		// strictly speaking invalidation is only needed if structural changes
+		// result, i.e. if type changed, size changed, or geometry is not unique
+		// but the changes are non-trivial to detect
+		invalidate();
 	}
 
 	/**
@@ -375,7 +377,7 @@ invalidated = true;
 
 	@Override
 	public void paint(boolean force) {
-		if (!isActive || spheres.isEmpty() || (!force && !doUpdate()))
+		if (!isActive || (!force && !doUpdate()))
 			return;
 		int k = 0;
 		for (Mesh sphere : spheres)
@@ -392,9 +394,14 @@ invalidated = true;
 		if (!isActive)
 			return;
 		if (invalidated || geometry.isDynamic) {
+			// defer layouting to allow 3D view to be up and running
 			if (geometry.isLattice())
-//				layoutLattice();
-				initUniverse();
+				Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
+					@Override
+						public void execute() {
+							layoutLattice();
+						}
+					});
 			else
 				network.doLayout(this);
 		}
@@ -420,7 +427,7 @@ invalidated = true;
 	 * @see Network3D
 	 */
 	@SuppressWarnings("null")
-	public void initUniverse() {
+	public void layoutLattice() {
 		// scene ready to be set up?
 		if (graph3DScene.getScene() == null)
 			return;
@@ -441,10 +448,6 @@ invalidated = true;
 			type = geometry.subgeometry;
 		// geometries that have special/fixed layout
 		switch (type) {
-			case VOID:
-			case LINEAR:
-				displayMessage("No representation for geometry!");
-				return;
 			case CUBE:
 				int side, zdim;
 				// NOVA settings
@@ -460,7 +463,7 @@ invalidated = true;
 				double shift = (side - 1) * 0.5 * incr;
 				double zshift = (zdim - 1) * 0.5 * incr;
 				int idx = 0;
-				thothbot.parallax.core.shared.core.Geometry unit = new SphereGeometry(radius, 16, 12);
+				thothbot.parallax.core.shared.core.Geometry unit = new BoxGeometry(1.75 * radius, 1.75 * radius, 1.75 * radius);
 				double posk = -zshift;
 				for (int k = 0; k < zdim; k++) {
 					double posj = -shift;
@@ -525,6 +528,7 @@ invalidated = true;
 							}
 						}
 						Mesh mesh = new Mesh(unit);
+						mesh.setMaterial(colors[idx]);
 						mesh.setName(Integer.toString(idx++));
 						mesh.setPosition(new Vector3(posi, posj, 0));
 						mesh.setMatrixAutoUpdate(false);
@@ -610,37 +614,8 @@ invalidated = true;
 				}
 				break;
 
-			// case GENERIC:
-			// case DYNAMIC:
-			// and many more...
 			default:
-				// allocate elements of universe - place them later
-				unit = new SphereGeometry(50, 16, 12);
-				// NOTE: must rely on geometry.size (instead of network.nNodes) because network
-				// may not yet have been properly
-				// synchronized (Network.doLayoutPrep will take care of this)
-				// No need to check whether network is null because ODE/SDE models
-				// would never get here.
-				for (int k = 0; k < geometry.size; k++) {
-					Mesh mesh = new Mesh(unit);
-					mesh.setMaterial(colors[k]);
-					mesh.setName(Integer.toString(k));
-					mesh.setMatrixAutoUpdate(false);
-					spheres.add(mesh);
-				}
-				spheres.trimToSize();
-				switch (network.getStatus()) {
-					case ADJUST_LAYOUT:
-					case NEEDS_LAYOUT:
-						network.doLayout(this);
-						break;
-					case HAS_LAYOUT:
-						layoutNetwork();
-						break;
-					case NO_LAYOUT:
-					case LAYOUT_IN_PROGRESS:
-					default:
-				}
+				displayMessage("No representation for " + type.getTitle() + "!");
 				return;
 		}
 		spheres.trimToSize();
