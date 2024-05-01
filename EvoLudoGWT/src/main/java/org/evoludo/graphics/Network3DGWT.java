@@ -65,14 +65,9 @@ public class Network3DGWT extends Network3D {
 	protected Camera worldView;
 
 	/**
-	 * The links in the 3D network.
+	 * The links in the network.
 	 */
-	protected ArrayList<Vector3> lines;
-
-	/**
-	 * The colors of the vertices.
-	 */
-	protected ArrayList<Color> colors;
+	thothbot.parallax.core.shared.core.Geometry links;
 
 	/**
 	 * Create a new network in 3D for the given engine and geometry with a layouting
@@ -89,9 +84,8 @@ public class Network3DGWT extends Network3D {
 	public void reset() {
 		if (isStatus(Status.LAYOUT_IN_PROGRESS))
 			return;
-		lines = null;
-		colors = null;
 		worldView = null;
+		links = null;
 		super.reset();
 	}
 
@@ -123,19 +117,11 @@ public class Network3DGWT extends Network3D {
 	 * @return the links of this network
 	 */
 	public thothbot.parallax.core.shared.core.Geometry getLinks() {
-		if (lines == null)
-			return null;
-		thothbot.parallax.core.shared.core.Geometry links = new thothbot.parallax.core.shared.core.Geometry();
-		links.setVertices(lines);
-		if (colors != null)
-			links.setColors(colors);
 		return links;
 	}
 
 	@Override
 	public void linkNodes() {
-		lines = null;
-		colors = null;
 		if (nLinks <= 0 || fLinks <= 0.0) {
 			return;
 		}
@@ -143,11 +129,13 @@ public class Network3DGWT extends Network3D {
 			engine.getLogger().warning("Too many links to draw - skipping!");
 			return;
 		}
+		ArrayList<Vector3> lines;
+		ArrayList<Color> colors = null;
 		if (geometry.isUndirected) {
 			// draw undirected links
 			if (fLinks >= 1.0) {
 				// draw all links
-				lines = new ArrayList<Vector3>(nLinks + nLinks);
+				lines = new ArrayList<>(nLinks + nLinks);
 				for (int i = 0; i < nNodes; i++) {
 					int[] neighs = geometry.out[i];
 					int nn = geometry.kout[i];
@@ -170,7 +158,7 @@ public class Network3DGWT extends Network3D {
 				for (int n = 0; n < nLinks; n++)
 					idxs[n] = n;
 				int toDraw = (int) (fLinks * nLinks);
-				lines = new ArrayList<Vector3>(toDraw + toDraw);
+				lines = new ArrayList<>(toDraw + toDraw);
 				for (int l = 0; l < toDraw; l++) {
 					int idxsidx = rng.random0n(nLinks - l);
 					int nodeidx = idxs[idxsidx];
@@ -195,8 +183,8 @@ public class Network3DGWT extends Network3D {
 			// draw directed links
 			if (fLinks >= 1.0) {
 				// draw all links
-				lines = new ArrayList<Vector3>(nLinks + nLinks);
-				colors = new ArrayList<Color>(nLinks + nLinks);
+				lines = new ArrayList<>(nLinks + nLinks);
+				colors = new ArrayList<>(nLinks + nLinks);
 				for (int i = 0; i < nNodes; i++) {
 					int[] neighs = geometry.out[i];
 					int nn = geometry.kout[i];
@@ -231,8 +219,8 @@ public class Network3DGWT extends Network3D {
 				for (int n = 0; n < nLinks; n++)
 					idxs[n] = n;
 				int toDraw = (int) (fLinks * nLinks);
-				lines = new ArrayList<Vector3>(toDraw + toDraw);
-				colors = new ArrayList<Color>(toDraw + toDraw);
+				lines = new ArrayList<>(toDraw + toDraw);
+				colors = new ArrayList<>(toDraw + toDraw);
 				for (int l = 0; l < toDraw; l++) {
 					int idxsidx = rng.random0n(nLinks - l);
 					int nodeidx = idxs[idxsidx];
@@ -257,6 +245,10 @@ public class Network3DGWT extends Network3D {
 				}
 			}
 		}
+		links = new thothbot.parallax.core.shared.core.Geometry();
+		links.setVertices(lines);
+		if (colors != null)
+			links.setColors(colors);
 	}
 
 	/**
