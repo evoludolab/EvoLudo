@@ -7,6 +7,10 @@ TASKS:
 - refactor EvoLudo/GWT/JRE: should not deal with GUI related code (--delay, --run); move all methods related to delay and isSuspended (except delay variable) to superclass of EvoLudoWeb and EvoLudoLab
 - javadoc for EvoLudoJRE module
 
+BUGS:
+- 3D views ignore the linewidth setting for drawing the network
+- if multiple labs with active 3D views are shown on same page the aspect ratios of the two interfere (low priority, highly unlikely scenario)
+
 TODO:
 - reverting PDE model to ODE e.g. for well-mixed structures fails (must re-parse command line options)
 - HistoGraph should only hold its own data (possibly sharing norm with others); Histogram must coordinate differnt histograms and data retrieval

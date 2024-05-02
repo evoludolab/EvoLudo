@@ -38,18 +38,18 @@ import java.util.List;
 
 import org.evoludo.geom.Node3D;
 import org.evoludo.graphics.AbstractGraph.Zooming;
-import org.evoludo.simulator.ColorMap3D;
-import org.evoludo.ui.ContextMenu;
-import org.evoludo.ui.ContextMenuCheckBoxItem;
-import org.evoludo.ui.ContextMenuItem;
-import org.evoludo.ui.TrackballControls;
 import org.evoludo.simulator.ColorMap;
+import org.evoludo.simulator.ColorMap3D;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network3D;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.ContextMenuCheckBoxItem;
+import org.evoludo.ui.ContextMenuItem;
+import org.evoludo.ui.TrackballControls;
 import org.evoludo.util.Formatter;
 
 import com.google.gwt.core.client.Duration;
@@ -426,19 +426,7 @@ invalidated = true;
 	 * 
 	 * @see Network3D
 	 */
-	@SuppressWarnings("null")
 	public void layoutLattice() {
-		// scene ready to be set up?
-		if (graph3DScene.getScene() == null)
-			return;
-		// clear scene to avoid flashing
-		graph3DScene.getScene().getChildren().clear();
-		// reset camera to original position if graph changed
-		if (resetCamera) {
-			graph3DScene.resetCamera();
-			resetCamera = false;
-		}
-		spheres.clear();
 		clearMessage();
 		invalidated = false;
 
@@ -462,21 +450,17 @@ invalidated = true;
 				double radius = Math.max(1.0, incr * 0.3);
 				double shift = (side - 1) * 0.5 * incr;
 				double zshift = (zdim - 1) * 0.5 * incr;
-				int idx = 0;
-				thothbot.parallax.core.shared.core.Geometry unit = new BoxGeometry(1.75 * radius, 1.75 * radius, 1.75 * radius);
+				initUniverse(new BoxGeometry(1.75 * radius, 1.75 * radius, 1.75 * radius));
+				Iterator<Mesh> meshes = spheres.iterator();
 				double posk = -zshift;
 				for (int k = 0; k < zdim; k++) {
 					double posj = -shift;
 					for (int j = 0; j < side; j++) {
 						double posi = -shift;
 						for (int i = 0; i < side; i++) {
-							Mesh mesh = new Mesh(unit);
-							mesh.setMaterial(colors[idx]);
-							mesh.setName(Integer.toString(idx++));
+							Mesh mesh = meshes.next();
 							mesh.setPosition(new Vector3(posi, posj, posk));
-							mesh.setMatrixAutoUpdate(false);
 							mesh.updateMatrix();
-							spheres.add(mesh);
 							posi += incr;
 						}
 						posj += incr;
@@ -492,10 +476,8 @@ invalidated = true;
 				incr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
 				radius = Math.max(1.0, incr * 0.4);
 				shift = (side - 1) * 0.5 * incr;
-				idx = 0;
-				unit = new BoxGeometry(1.75 * radius, 1.75 * radius, 1.75 * radius);
 				int hLevels = 0;
-				int[] hPeriods = null;
+				int[] hPeriods = new int[0];
 				int HIERARCHY_GAP = 8; // unit gap in units?
 				// for hierarchical structures add gap between units
 				if (isHierarchy) {
@@ -509,6 +491,8 @@ invalidated = true;
 					}
 					shift += totGap * HIERARCHY_GAP * 0.5;
 				}
+				initUniverse(new BoxGeometry(1.75 * radius, 1.75 * radius, 1.75 * radius));
+				meshes = spheres.iterator();
 				double posj = -shift;
 				for (int j = 0; j < side; j++) {
 					if (isHierarchy && j > 0) {
@@ -527,13 +511,9 @@ invalidated = true;
 								posi += HIERARCHY_GAP;
 							}
 						}
-						Mesh mesh = new Mesh(unit);
-						mesh.setMaterial(colors[idx]);
-						mesh.setName(Integer.toString(idx++));
+						Mesh mesh = meshes.next();
 						mesh.setPosition(new Vector3(posi, posj, 0));
-						mesh.setMatrixAutoUpdate(false);
 						mesh.updateMatrix();
-						spheres.add(mesh);
 						posi += incr;
 					}
 					posj += incr;
@@ -546,19 +526,15 @@ invalidated = true;
 				double vincr = hincr * 0.5 * Math.sqrt(3.0);
 				radius = Math.max(1.0, hincr * 0.4);
 				shift = (side - 0.5) * 0.5 * hincr;
-				idx = 0;
-				unit = new SphereGeometry(radius, 16, 12);
+				initUniverse(new SphereGeometry(radius, 16, 12));
+				meshes = spheres.iterator();
 				posj = -(side - 1) * 0.5 * vincr;
 				for (int j = 0; j < side; j++) {
 					double posi = -shift + (j % 2) * hincr2;
 					for (int i = 0; i < side; i++) {
-						Mesh mesh = new Mesh(unit);
-						mesh.setMaterial(colors[idx]);
-						mesh.setName(Integer.toString(idx++));
+						Mesh mesh = meshes.next();
 						mesh.setPosition(new Vector3(posi, posj, 0));
-						mesh.setMatrixAutoUpdate(false);
 						mesh.updateMatrix();
-						spheres.add(mesh);
 						posi += hincr;
 					}
 					posj += vincr;
@@ -575,39 +551,28 @@ invalidated = true;
 				radius = Math.max(1.0, vincr * 0.4);
 				shift = (size2 - 0.5) * 0.5 * hincr;
 				double vshift = (side - 1.25) * 0.75 * vincr;
-				idx = 0;
-				unit = new SphereGeometry(radius, 16, 12);
+				initUniverse(new SphereGeometry(radius, 16, 12));
+				meshes = spheres.iterator();
 				// even nodes
 				posj = -vshift;
 				for (int j = 0; j < side; j++) {
 					double posi = -shift;
 					for (int i = 0; i < size2; i++) {
-						Mesh mesh = new Mesh(unit);
-						mesh.setMaterial(colors[idx]);
-						mesh.setName(Integer.toString(idx));
+						Mesh mesh = meshes.next();
 						mesh.setPosition(new Vector3(posi, posj, 0));
-						mesh.setMatrixAutoUpdate(false);
 						mesh.updateMatrix();
-						spheres.add(mesh);
-						idx += 2;
 						posi += hincr;
 					}
 					posj += (1 + (j % 2)) * vincr;
 				}
 				// odd nodes
-				idx = 1;
 				posj = -vshift - vincr2;
 				for (int j = 0; j < side; j++) {
 					double posi = -shift + hincr2;
 					for (int i = 0; i < size2; i++) {
-						Mesh mesh = new Mesh(unit);
-						mesh.setMaterial(colors[idx]);
-						mesh.setName(Integer.toString(idx));
+						Mesh mesh = meshes.next();
 						mesh.setPosition(new Vector3(posi, posj, 0));
-						mesh.setMatrixAutoUpdate(false);
 						mesh.updateMatrix();
-						spheres.add(idx, mesh);
-						idx += 2;
 						posi += hincr;
 					}
 					posj += (2 - (j % 2)) * vincr;
@@ -618,14 +583,12 @@ invalidated = true;
 				displayMessage("No representation for " + type.getTitle() + "!");
 				return;
 		}
-		spheres.trimToSize();
 		drawUniverse();
 	}
 
-	public void initUniverse2() {
+	public void initUniverse(thothbot.parallax.core.shared.core.Geometry unit) {
 		spheres.clear();
 		// allocate elements of universe - place them later
-		SphereGeometry unit = new SphereGeometry(50, 16, 12);
 		// NOTE: must rely on geometry.size (instead of network.nNodes) because network
 		// may not yet have been properly
 		// synchronized (Network.doLayoutPrep will take care of this)
@@ -638,7 +601,6 @@ invalidated = true;
 			mesh.setMatrixAutoUpdate(false);
 			spheres.add(mesh);
 		}
-		spheres.trimToSize();
 	}
 
 	/**
@@ -648,7 +610,7 @@ invalidated = true;
 		if (network.isStatus(Status.NO_LAYOUT))
 			return; // nothing to do (lattice)
 		if (invalidated) {
-			initUniverse2();
+			initUniverse(new SphereGeometry(50, 16, 12));
 			network.doLayout(this);
 		}
 		// link nodes

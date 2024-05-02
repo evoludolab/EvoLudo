@@ -62,7 +62,7 @@ public class Network3DGWT extends Network3D {
 	 * the visual perspective of different views. For example the 3D view of
 	 * strategies and of payoffs should use the same perspective.
 	 */
-	protected Camera worldView;
+	Camera worldView;
 
 	/**
 	 * The links in the network.
