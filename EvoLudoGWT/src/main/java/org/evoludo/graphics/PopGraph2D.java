@@ -291,6 +291,33 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Depending on the backing geometry this either
+	 * <ol>
+	 * <li>shows a message, if no graphical representation is available, e.g. for 3D
+	 * cubic lattices, or if there are too many nodes so that each node becomes to
+	 * small to display on screen.
+	 * <li>shows lattice geometries.
+	 * <li>initiates the generic layouting process for arbitrary network structures.
+	 * </ol>
+	 * 
+	 * @see Network2D
+	 */
+	@Override
+	public boolean paint(boolean force) {
+		if (super.paint(force))
+			return true;
+		if (!force && !doUpdate())
+			return true;
+		if (hasStaticLayout())
+			layoutLattice();
+		else
+			drawNetwork();
+		return false;
+	}
+
 	boolean hasStaticLayout() {
 		return (geometry.isLattice() || geometry.getType() == Geometry.Type.HIERARCHY && geometry.subgeometry.isLattice());
 	}
@@ -565,33 +592,6 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 		clearCanvas();
 		g.translate(bounds.getX() - viewCorner.x, bounds.getY() - viewCorner.y);
 		g.scale(zoomFactor, zoomFactor);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * Depending on the backing geometry this either
-	 * <ol>
-	 * <li>shows a message, if no graphical representation is available, e.g. for 3D
-	 * cubic lattices, or if there are too many nodes so that each node becomes to
-	 * small to display on screen.
-	 * <li>shows lattice geometries.
-	 * <li>initiates the generic layouting process for arbitrary network structures.
-	 * </ol>
-	 * 
-	 * @see Network2D
-	 */
-	@Override
-	public boolean paint(boolean force) {
-		if (super.paint(force))
-			return true;
-		if (!force && !doUpdate())
-			return true;
-		if (hasStaticLayout())
-			layoutLattice();
-		else
-			drawNetwork();
-		return false;
 	}
 
 	/**

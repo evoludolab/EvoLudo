@@ -346,6 +346,50 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	}
 
 	/**
+	 * Update the graph.
+	 * 
+	 * @param isNext {@code true} if the state has changed
+	 */
+	public void update(boolean isNext) {
+		if (!isActive)
+			return;
+		if (invalidated || (isNext && geometry.isDynamic)) {
+			// defer layouting to allow 3D view to be up and running
+			Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
+				@Override
+					public void execute() {
+						if (hasStaticLayout())
+							layoutLattice();
+						else
+							layoutNetwork();
+					}
+				});
+		}
+	}
+
+	@Override
+	public boolean paint(boolean force) {
+		if (super.paint(force))
+			return true;
+		if (!force && !doUpdate())
+			return true;
+		int k = 0;
+		for (Mesh sphere : spheres)
+			sphere.setMaterial(colors[k++]);
+		return false;
+	}
+
+	boolean hasStaticLayout() {
+		return (geometry.isLattice() || geometry.getType() == Geometry.Type.HIERARCHY && geometry.subgeometry.isLattice());
+	}
+
+	boolean hasAnimatedLayout() {
+		if (!animate)
+			return false;
+		return (geometry.size <= MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT && (int) (geometry.avgTot * geometry.size) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
+	}
+
+	/**
 	 * Invalidate the network. This forces networks to be regenerated.
 	 */
 	public void invalidate() {
@@ -372,78 +416,6 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 		clearMessage();
 		layoutNetwork();
 		((NodeGraphController) controller).layoutComplete();
-	}
-
-	/**
-	 * Get the canvas element.
-	 * <p>
-	 * <strong>Notes:</strong>
-	 * <ul>
-	 * <li>Before exporting the canvas to image/png the scene needs to be rendered.
-	 * <li>For resizing just returning the canvas element is fine.
-	 * <li>Attempts to render the scene of an inactive view triggers lots of WebGL
-	 * warnings.
-	 * </ul>
-	 * 
-	 * @param isRunning {@code true} if the graph is active (visible)
-	 * @return the canvas element
-	 */
-	public CanvasElement getCanvasElement(boolean isRunning) {
-		if (isRunning)
-			graph3DScene.getRenderer().render(graph3DScene.getScene(), graph3DCamera);
-		return graph3DScene.getCanvas().getCanvas();
-	}
-
-	@Override
-	public boolean paint(boolean force) {
-		if (super.paint(force))
-			return true;
-		if (!force && !doUpdate())
-			return true;
-		int k = 0;
-		for (Mesh sphere : spheres)
-			sphere.setMaterial(colors[k++]);
-		return false;
-	}
-
-	/**
-	 * Update the graph.
-	 * 
-	 * @param isNext {@code true} if the state has changed
-	 */
-	public void update(boolean isNext) {
-		if (!isActive)
-			return;
-		if (invalidated || (isNext && geometry.isDynamic)) {
-			// defer layouting to allow 3D view to be up and running
-			Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-				@Override
-					public void execute() {
-						if (hasStaticLayout())
-							layoutLattice();
-						else
-							layoutNetwork();
-					}
-				});
-		}
-	}
-
-	boolean hasStaticLayout() {
-		return (geometry.isLattice() || geometry.getType() == Geometry.Type.HIERARCHY && geometry.subgeometry.isLattice());
-	}
-
-	boolean hasAnimatedLayout() {
-		if (!animate)
-			return false;
-		return (geometry.size <= MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT && (int) (geometry.avgTot * geometry.size) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
-	}
-
-	@Override
-	public void zoom(double zoom) {
-		if (zoom <= 0.0)
-			graph3DScene.zoom();
-		else
-			graph3DScene.zoom(1.0 / zoom);
 	}
 
 	/**
@@ -716,6 +688,36 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 		msgLabel.setVisible(true);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * No need to calculate bounds in 3D world.
+	 */
+	@Override
+	protected boolean calcBounds() {
+		return true;
+	}
+
+	/**
+	 * Get the canvas element.
+	 * <p>
+	 * <strong>Notes:</strong>
+	 * <ul>
+	 * <li>Before exporting the canvas to image/png the scene needs to be rendered.
+	 * <li>For resizing just returning the canvas element is fine.
+	 * <li>Attempts to render the scene of an inactive view triggers lots of WebGL
+	 * warnings.
+	 * </ul>
+	 * 
+	 * @param isRunning {@code true} if the graph is active (visible)
+	 * @return the canvas element
+	 */
+	public CanvasElement getCanvasElement(boolean isRunning) {
+		if (isRunning)
+			graph3DScene.getRenderer().render(graph3DScene.getScene(), graph3DCamera);
+		return graph3DScene.getCanvas().getCanvas();
+	}
+
 	@Override
 	public String getTooltipAt(int x, int y) {
 		// no network may have been initialized (e.g. for ODE/SDE models)
@@ -789,14 +791,12 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 		return Integer.parseInt(intersects.get(0).object.getName());
 	}
 
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * No need to calculate bounds in 3D world.
-	 */
 	@Override
-	protected boolean calcBounds() {
-		return true;
+	public void zoom(double zoom) {
+		if (zoom <= 0.0)
+			graph3DScene.zoom();
+		else
+			graph3DScene.zoom(1.0 / zoom);
 	}
 
 	@Override
