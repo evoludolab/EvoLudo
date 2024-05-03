@@ -1449,6 +1449,10 @@ public abstract class AbstractGraph extends FocusPanel
 		hasMessage = false;
 	}
 
+	public boolean hasMessage() {
+		return hasMessage;
+	}
+
 	/**
 	 * Reset zoom.
 	 */

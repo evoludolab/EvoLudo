@@ -866,52 +866,40 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 		paint(true);
 	}
 
-	public void setAnaglyph(boolean anaglyph) {
-		// ensure stereo mode is exited
-		if (effect != null) {
-			boolean isAnaglyph = effect instanceof Anaglyph;
-			graph3DPanel.getRenderer().deletePlugin(effect);
-			effect = null;
-			if (isAnaglyph)
-				return;
-		}
-		effect = new Anaglyph(graph3DPanel.getRenderer(), graph3DScene.getScene());
+	public boolean isOrthographic() {
+		return (graph3DCamera instanceof OrthographicCamera);
 	}
 
-	public void setVR(boolean anaglyph) {
-		// ensure anaglyph mode is exited
-		if (effect != null) {
-			boolean isVR = effect instanceof Stereo;
+	public void setAnaglyph(boolean anaglyph) {
+		if (!anaglyph || isVR()) {
 			graph3DPanel.getRenderer().deletePlugin(effect);
 			effect = null;
-			if (isVR)
-				return;
 		}
-		effect = new Stereo(graph3DPanel.getRenderer(), graph3DScene.getScene());
+		if (anaglyph)
+			effect = new Anaglyph(graph3DPanel.getRenderer(), graph3DScene.getScene());
+	}
+
+	public boolean isAnaglyph() {
+		return (effect instanceof Anaglyph);
+	}
+
+	public void setVR(boolean vr) {
+		if (!vr || isAnaglyph()) {
+			graph3DPanel.getRenderer().deletePlugin(effect);
+			effect = null;
+		}
+		if (vr)
+			effect = new Stereo(graph3DPanel.getRenderer(), graph3DScene.getScene());
 	}
 	
+	public boolean isVR() {
+		return (effect instanceof Stereo);
+	}
+
 	/**
 	 * The context menu item for animating the layouting process.
 	 */
 	private ContextMenuCheckBoxItem animateMenu;
-
-	/**
-	 * The context menu item for selecting parallel projection of the graph instead
-	 * of the default perspective projection.
-	 */
-	private ContextMenuCheckBoxItem projectionMenu;
-
-	/**
-	 * The context menu item for selecting anaglyph projection of the 3D space for a
-	 * reperesentation of the graph suitable for colored 3D glasses.
-	 */
-	private ContextMenuCheckBoxItem anaglyphMenu;
-
-	/**
-	 * The context menu item for selecting stereo projection of the 3D space for a
-	 * virtual reality representation of the graph.
-	 */
-	private ContextMenuCheckBoxItem vrMenu;
 
 	/**
 	 * Helper variable for additional effects on the 3D view. This handles anaglyph
@@ -1031,56 +1019,6 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 			if (debugSubmenuTrigger != null)
 				debugSubmenuTrigger.setEnabled(!controller.isRunning());
 		}
-
-		// process perspective context menu
-		menu.addSeparator();
-		if (projectionMenu == null) {
-			projectionMenu = new ContextMenuCheckBoxItem("Parallel projection", new Command() {
-				@Override
-				public void execute() {
-					setOrthographic(graph3DCamera instanceof PerspectiveCamera);
-				}
-			});
-		}
-		menu.add(projectionMenu);
-
-		// process anaglyph context menu
-		if (anaglyphMenu == null) {
-			anaglyphMenu = new ContextMenuCheckBoxItem("Anaglyph 3D", new Command() {
-				@Override
-				public void execute() {
-					setAnaglyph(anaglyphMenu.isChecked());
-				}
-			});
-		}
-		menu.add(anaglyphMenu);
-
-		// process virtual reality context menu
-		if (vrMenu == null) {
-			vrMenu = new ContextMenuCheckBoxItem("Virtual reality (β)", new Command() {
-				@Override
-				public void execute() {
-					setVR(vrMenu.isChecked());
-				}
-			});
-		}
-		menu.add(vrMenu);
-
-		// process anaglyph, stereo and perspective - note: anaglyph and stereo not
-		// possible for parallel projection
-		boolean isStereo = effect != null;
-		boolean isOrthographic = graph3DCamera instanceof OrthographicCamera;
-		if (isStereo && isOrthographic) {
-			graph3DPanel.getRenderer().deletePlugin(effect);
-			effect = null;
-			isStereo = false;
-		}
-		projectionMenu.setChecked(isOrthographic);
-		projectionMenu.setEnabled(!isStereo && !hasMessage);
-		anaglyphMenu.setChecked(effect instanceof Anaglyph);
-		anaglyphMenu.setEnabled(!isOrthographic && !hasMessage);
-		vrMenu.setChecked(effect instanceof Stereo);
-		vrMenu.setEnabled(!isOrthographic && !hasMessage);
 		super.populateContextMenuAt(menu, x, y);
 	}
 

@@ -52,7 +52,11 @@ import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODEEuler.HasDE;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.util.Formatter;
+
+import com.google.gwt.user.client.Command;
 
 import thothbot.parallax.core.shared.materials.MeshLambertMaterial;
 
@@ -623,6 +627,95 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 				msg += "]";
 		}
 		return msg;
+	}
+
+	/**
+	 * The context menu item for selecting parallel projection of the graph instead
+	 * of the default perspective projection.
+	 */
+	private ContextMenuCheckBoxItem projectionMenu;
+
+	/**
+	 * The context menu item for selecting anaglyph projection of the 3D space for a
+	 * reperesentation of the graph suitable for colored 3D glasses.
+	 */
+	private ContextMenuCheckBoxItem anaglyphMenu;
+
+	/**
+	 * The context menu item for selecting stereo projection of the 3D space for a
+	 * virtual reality representation of the graph.
+	 */
+	private ContextMenuCheckBoxItem vrMenu;
+
+	@Override
+	public void populateContextMenu(ContextMenu menu) {
+		menu.addSeparator();
+		boolean hasMessage = false;
+		for (PopGraph3D graph : graphs)
+			hasMessage |= graph.hasMessage();
+		boolean isOrthographic = graphs.get(0).isOrthographic();
+		boolean isAnaglyph = graphs.get(0).isAnaglyph();
+		boolean isVR = graphs.get(0).isVR();
+
+		// process perspective context menu
+		if (projectionMenu == null) {
+			projectionMenu = new ContextMenuCheckBoxItem("Parallel projection", new Command() {
+				@Override
+				public void execute() {
+					boolean isOrthographic = !projectionMenu.isChecked();
+					for (PopGraph3D graph : graphs)
+						graph.setOrthographic(isOrthographic);
+					projectionMenu.setChecked(isOrthographic);
+				}
+			});
+		}
+		menu.add(projectionMenu);
+		projectionMenu.setChecked(isOrthographic);
+		projectionMenu.setEnabled(!(isAnaglyph || isVR) && !hasMessage);
+
+		// process anaglyph context menu
+		if (anaglyphMenu == null) {
+			anaglyphMenu = new ContextMenuCheckBoxItem("Anaglyph 3D", new Command() {
+				@Override
+				public void execute() {
+					boolean isAnaglyph = !anaglyphMenu.isChecked();
+					for (PopGraph3D graph : graphs)
+						graph.setAnaglyph(isAnaglyph);
+					anaglyphMenu.setChecked(isAnaglyph);
+				}
+			});
+		}
+		menu.add(anaglyphMenu);
+		anaglyphMenu.setChecked(isAnaglyph);
+		anaglyphMenu.setEnabled(!isOrthographic && !hasMessage);
+
+		// process virtual reality context menu
+		if (graphs.size() == 1) {
+			// VR only makes sense with a single graph
+			if (vrMenu == null) {
+				vrMenu = new ContextMenuCheckBoxItem("Virtual reality (β)", new Command() {
+					@Override
+					public void execute() {
+						boolean isVR = !vrMenu.isChecked();
+						for (PopGraph3D graph : graphs)
+							graph.setVR(isVR);
+						vrMenu.setChecked(isVR);
+					}
+				});
+			}
+			menu.add(vrMenu);
+			vrMenu.setChecked(isVR);
+			vrMenu.setEnabled(!isOrthographic && !hasMessage);
+		}
+
+		// anaglyph and VR not possible for parallel projection
+		if (isOrthographic) {
+			for (PopGraph3D graph : graphs) {
+				graph.setAnaglyph(false);
+				graph.setVR(false);
+			}
+		}
+		super.populateContextMenu(menu);		
 	}
 
 	@Override
