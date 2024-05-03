@@ -814,6 +814,10 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 		return true;
 	}
 
+	boolean hasStaticLayout() {
+		return (geometry.isLattice() || geometry.getType() == Geometry.Type.HIERARCHY && geometry.subgeometry.isLattice());
+	}
+
 	@Override
 	public String getTooltipAt(int x, int y) {
 		// no network may have been initialized (e.g. for ODE/SDE models)
@@ -1264,44 +1268,25 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 			});
 		}
 		menu.add(shakeMenu);
-		Geometry.Type type = geometry.getType();
-		switch (type) {
-			case HIERARCHY:
-				shakeMenu.setEnabled(!geometry.subgeometry.isLattice());
-				break;
-			// list of graphs that have static layout and hence do not permit shaking
-			case LINEAR:
-			case SQUARE_NEUMANN:
-			case SQUARE_NEUMANN_2ND:
-			case SQUARE_MOORE:
-			case SQUARE:
-			case CUBE:
-			case HONEYCOMB:
-			case TRIANGULAR:
-			case VOID:
-			case INVALID:
-				shakeMenu.setEnabled(false);
-				break;
-			default:
-				shakeMenu.setEnabled(true);
-				break;
-		}
+		shakeMenu.setEnabled(!hasMessage && !hasStaticLayout());
 
 		// process animate context menu
 		if (animateMenu == null) {
 			animateMenu = new ContextMenuCheckBoxItem("Animate layout", new Command() {
 				@Override
 				public void execute() {
-					network.toggleAnimateLayout();
+					boolean isAnimated = !animateMenu.isChecked();
+					layout = isAnimated ? Animate.ON : Animate.OFF;
+					animateMenu.setChecked(isAnimated);
 				}
 			});
 		}
-		animateMenu.setChecked(network == null ? false : network.doAnimateLayout());
+		animateMenu.setChecked(layout.isAnimated(geometry));
 		menu.add(animateMenu);
 		animateMenu.setEnabled(!hasMessage);
 
 		// add menu to clear buffer (applies only to linear geometry) 
-		if (type == Geometry.Type.LINEAR) {
+		if (geometry.getType() == Geometry.Type.LINEAR) {
 			if( clearMenu==null ) {
 				clearMenu = new ContextMenuItem("Clear", new Command() {
 					@Override

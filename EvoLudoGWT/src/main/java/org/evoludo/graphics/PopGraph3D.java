@@ -967,42 +967,22 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 			});
 		}
 		menu.add(shakeMenu);
-		switch (geometry.getType()) {
-			case HIERARCHY:
-				shakeMenu.setEnabled(geometry.subgeometry != Geometry.Type.SQUARE);
-				break;
-			// list of graphs that have static layout and hence do not permit shaking
-			case LINEAR:
-			case SQUARE_NEUMANN:
-			case SQUARE_NEUMANN_2ND:
-			case SQUARE_MOORE:
-			case SQUARE:
-			case CUBE:
-			case HONEYCOMB:
-			case TRIANGULAR:
-			case VOID:
-			case INVALID:
-				shakeMenu.setEnabled(false);
-				break;
-			default:
-				shakeMenu.setEnabled(true);
-				break;
-		}
-		if (hasMessage)
-			shakeMenu.setEnabled(false);
+		shakeMenu.setEnabled(!hasMessage && !hasStaticLayout());
 
 		// process animate context menu
 		if (animateMenu == null) {
 			animateMenu = new ContextMenuCheckBoxItem("Animate layout", new Command() {
 				@Override
 				public void execute() {
-					network.toggleAnimateLayout();
+					boolean isAnimated = !animateMenu.isChecked();
+					layout = isAnimated ? Animate.ON : Animate.OFF;
+					animateMenu.setChecked(isAnimated);
 				}
 			});
 		}
-		animateMenu.setChecked(network == null ? false : network.doAnimateLayout());
+		animateMenu.setChecked(layout.isAnimated(geometry));
 		menu.add(animateMenu);
-		animateMenu.setEnabled(!hasMessage);
+		animateMenu.setEnabled(!hasMessage && !hasStaticLayout());
 
 		// process debug node update
 		if (isDebugEnabled) {

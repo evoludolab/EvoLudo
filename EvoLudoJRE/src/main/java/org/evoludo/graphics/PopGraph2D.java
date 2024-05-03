@@ -79,7 +79,8 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	private static final long serialVersionUID = 20110423L;
 
 	protected Network2D	network;
-    protected Geometry	geometry;
+	protected Animate layout = Animate.DEFAULT;
+	protected Geometry	geometry;
     protected Color[]	colors;
 		
 	double scaleX = 1.0, scaleY = 1.0;
@@ -163,14 +164,22 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	protected double completed = 0.0;
 
 	@Override
-	public synchronized void layoutUpdate() {
-		if( !isVisible() )
+	public synchronized void layoutUpdate(double p) {
+		if (!isVisible())
 			return;
-		// complete layout
-		network.finishLayout();
-		forceRepaint = true;
-		clearMessage();
-		repaint();
+		if (layout.isAnimated(geometry)) {
+			// complete layout
+			network.finishLayout();
+			forceRepaint = true;
+			clearMessage();
+			repaint();
+			return;
+		}
+		if (p > completed) {
+			setMessage("layout progress: " + Formatter.format(100.0 * p, 0) + "%");
+			completed = p;
+		}
+		paintImmediately(getBounds());
 	}
 	
 	@Override
@@ -179,17 +188,6 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		if( !isVisible() )
 			return;
 		repaint();
-	}
-
-	@Override
-	public synchronized void layoutProgress(double p) {
-		if( !isVisible() )
-			return;
-		if( p>completed ) {
-			setMessage("layout progress: "+Formatter.format(100.0*p, 0)+"%");
-			completed = p;
-		}
-		paintImmediately(getBounds());
 	}
 
 	@Override
@@ -218,7 +216,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 
 		super.reset(clear || hasHistory);
         // enable/disable context menu items
-		animateMenu.setState(network.doAnimateLayout());
+		animateMenu.setState(layout.isAnimated(geometry));
 		switch (geometry.getType()) {
 			case VOID:
 			case TRIANGULAR:
@@ -388,8 +386,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 
 	public void setAnimateLayout(boolean animate) {
 		animateMenu.setState(animate);
-		if (network != null)
-			network.setAnimateLayout(animate ? Animate.ON : Animate.OFF);
+		layout = animate ? Animate.ON : Animate.OFF;
 	}
 
 	protected void shakeNetwork() {
