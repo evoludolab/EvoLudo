@@ -186,11 +186,11 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 				for( PopGraph3D graph : graphs) {
 					switch( type ) {
 						case STRATEGY:
-							model.getTraitData(graph.getModule().getID(), graph.getData(), graph.getColorModel());
+							model.getTraitData(graph.getModule().getID(), graph.getData(), graph.getColorMap());
 							break;
 						case FITNESS:
 							model.getFitnessData(graph.getModule().getID(), graph.getData(), //
-								(ColorMap.Gradient1D<MeshLambertMaterial>)graph.getColorModel());
+								(ColorMap.Gradient1D<MeshLambertMaterial>)graph.getColorMap());
 							break;
 						default:
 							break;

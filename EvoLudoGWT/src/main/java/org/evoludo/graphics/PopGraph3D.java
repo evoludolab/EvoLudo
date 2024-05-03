@@ -296,7 +296,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	 * 
 	 * @return the trait-to-colour map
 	 */
-	public ColorMap<MeshLambertMaterial> getColorModel() {
+	public ColorMap<MeshLambertMaterial> getColorMap() {
 		return colorMap;
 	}
 
