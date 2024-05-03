@@ -157,7 +157,11 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	protected AmbientLight ambient;
 	protected Label msgLabel;
 
-	private boolean invalidated = true;
+	/**
+	 * The flag to indicate whether the graph has been invalidated and needs to be
+	 * redrawn.
+	 */
+	boolean invalidated = true;
 
 	/**
 	 * The map for translating discrete traits into colors.
@@ -337,8 +341,8 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	@Override
 	public void reset() {
 		super.reset();
-		graph3DPanel.onResize();
-		invalidate();	
+		invalidate();
+		update(true);
 	}
 
 	/**
@@ -451,7 +455,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	 * 
 	 * @see Network3D
 	 */
-	public void layoutLattice() {
+	protected void layoutLattice() {
 		clearMessage();
 		invalidated = false;
 
@@ -664,7 +668,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	/**
 	 * Adds the nodes, links, lights and camera to the scene.
 	 */
-	public void drawUniverse() {
+	protected void drawUniverse() {
 		Scene scene = graph3DScene.getScene();
 		if (scene == null)
 			return;
@@ -1185,7 +1189,6 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 			control.zoom(zoom);
 		}
 	}
-
 
 	@Override
 	public void onContextError(Context3dErrorEvent event) {

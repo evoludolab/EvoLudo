@@ -55,6 +55,7 @@ import org.evoludo.util.RingBuffer;
 
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.JsArray;
+import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.dom.client.NativeEvent;
 import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.DoubleClickEvent;
@@ -122,6 +123,12 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 	public boolean hasHistory() {
 		return (buffer != null);
 	}
+
+	/**
+	 * The flag to indicate whether the graph has been invalidated and needs to be
+	 * redrawn.
+	 */
+	boolean invalidated = true;
 
 	/**
 	 * The map for translating discrete traits into colors.
@@ -195,6 +202,8 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 		setGraphLabel(geometry.getName());
 		// update population
 		network = geometry.getNetwork2D();
+		if (network.isStatus(Status.NEEDS_LAYOUT))
+			invalidate();
 	}
 
 	/**
@@ -246,6 +255,56 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 	@Override
 	public void reset() {
 		super.reset();
+		invalidate();
+		update(true);
+	}
+
+	/**
+	 * Update the graph.
+	 * 
+	 * @param isNext {@code true} if the state has changed
+	 */
+	public void update(boolean isNext) {
+		if (buffer != null) {
+			// add copy of colors array to buffer
+			// note: cannot be reliably done in RingBuffer class without reflection
+			String[] colorCopy = Arrays.copyOf(colors, colors.length);
+			if (isNext || buffer.isEmpty())
+				buffer.append(colorCopy);
+			else
+				buffer.replace(colorCopy);
+		}
+		if (!isActive)
+			return;
+		if (invalidated || (isNext && geometry.isDynamic)) {
+			// defer layouting won't hurt (essential for 3D)
+			Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
+				@Override
+					public void execute() {
+						if (hasStaticLayout())
+							layoutLattice();
+						else
+							layoutNetwork();
+						invalidated = false;
+					}
+				});
+		}
+	}
+
+	boolean hasStaticLayout() {
+		return (geometry.isLattice() || geometry.getType() == Geometry.Type.HIERARCHY && geometry.subgeometry.isLattice());
+	}
+
+	boolean hasAnimatedLayout() {
+		if (!animate)
+			return false;
+		return (geometry.size <= MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT && (int) (geometry.avgTot * geometry.size) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
+	}
+
+	/**
+	 * Invalidate the network. This forces networks to be regenerated.
+	 */
+	public void invalidate() {
 		if (geometry.getType() == Geometry.Type.LINEAR) {
 			// only linear geometries have a buffer
 			double h = bounds.getHeight();
@@ -271,19 +330,19 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 		} else {
 			buffer = null;
 		}
-		// the colors array is always needed
-		if (colors == null || colors.length != geometry.size)
-			colors = new String[geometry.size];
+		// geometry (and network) may be null for Model.ODE or Model.SDE
 		if (network != null)
 			network.reset();
 		calcBounds();
+		clearMessage();
+		invalidated = true;
 	}
 
 	@Override
 	public synchronized void layoutUpdate(double progress) {
 		if (hasAnimatedLayout()) {
 			network.finishLayout();
-			drawNetwork();
+			layoutNetwork();
 		}
 		else
 			displayMessage("Laying out network...  " + Formatter.formatPercent(progress, 0) + " completed.");
@@ -291,139 +350,13 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 
 	@Override
 	public synchronized void layoutComplete() {
+		clearMessage();
+		layoutNetwork();
 		((NodeGraphController) controller).layoutComplete();
 	}
 
 	/**
-	 * Shift a single node with index {@code nodeidx} by {@code (dx, dy)}. Positive
-	 * {@code dx} shift the node to the right and positive {@code dy} shift upwards.
-	 * 
-	 * @param nodeidx the index of the node
-	 * @param dx      the horizontal shift of the node
-	 * @param dy      the vertical shift of the node
-	 */
-	public void shiftNodeBy(int nodeidx, int dx, int dy) {
-		if (nodeidx < 0) {
-			// invalid node
-			return;
-		}
-		switch (network.getStatus()) {
-			case HAS_LAYOUT:
-				double rr = network.getRadius();
-				// bounds.width==bounds.height for networks
-				double iscale = (rr + rr) / (bounds.getWidth() * zoomFactor);
-				double xaspect, yaspect;
-				if (width < height) {
-					// portrait
-					xaspect = 1.0;
-					yaspect = (double) height / width;
-				} else {
-					// landscape
-					xaspect = (double) width / height;
-					yaspect = 1.0;
-				}
-				Node2D node = network.get(nodeidx);
-				node.set(Math.max(-rr * xaspect + node.r, Math.min(rr * xaspect - node.r, node.x - dx * iscale)),
-						Math.max(-rr * yaspect + node.r, Math.min(rr * yaspect - node.r, node.y - dy * iscale)));
-				network.linkNodes();
-				paint(true);
-				return;
-			case NO_LAYOUT:
-				// lattices - shift view instead
-				shift(dx, dy);
-				return;
-			default:
-				// nothing (yet) to shift
-				return;
-		}
-	}
-
-	/**
-	 * Helper method to draw the network.
-	 */
-	private synchronized void drawNetwork() {
-		// in case layout was not animated, a message was displayed but now hasMessage
-		// must be cleared; also clears canvas
-		prepCanvas();
-		int nNodes = geometry.size;
-		// scale universe
-		double r = network.getRadius();
-		double su = bounds.getWidth() / (r + r); // same as height in this case
-		g.scale(su, su);
-		g.save();
-		g.translate(r, r);
-		g.setFillStyle(style.linkColor);
-		Path2D links = network.getLinks();
-		if (!links.isEmpty()) {
-			g.setLineWidth(style.linkWidth);
-			stroke(links);
-		}
-		String current = colors[0];
-		g.setFillStyle(current);
-		Node2D[] nodes = network.toArray();
-		for (int k = 0; k < nNodes; k++) {
-			String next = colors[k];
-			// potential optimization of drawing
-			if (next != current) {
-				g.setFillStyle(next);
-				current = next;
-			}
-			Node2D node = nodes[k];
-			fillCircle(node.x, node.y, node.r);
-		}
-		g.restore();
-		drawFrame(0, 0, su);
-		g.restore();
-	}
-
-	// @Override
-	// public void drawFrame(int xLevels, int yLevels, double uniscale ) {
-	// GWT.log("PopGraph2D.drawFrame: ");
-	// super.drawFrame(xLevels, yLevels, uniscale);
-	// if( frame.x>=frame.width ) {
-	// g.save();
-	// resetTransforms();
-	// g.scale(scale, scale);
-	// setLineWidth(style.frameWidth);
-	// strokeLine(frame.x, frame.y-0.5, frame.x, frame.y+frame.height);
-	// g.restore();
-	// }
-	// }
-
-	/**
-	 * Helper method to get the canvas ready for drawing the graph.
-	 */
-	private void prepCanvas() {
-		clearMessage();
-		g.save();
-		g.scale(scale, scale);
-		clearCanvas();
-		g.translate(bounds.getX() - viewCorner.x, bounds.getY() - viewCorner.y);
-		g.scale(zoomFactor, zoomFactor);
-	}
-
-	/**
-	 * Add data to buffer of graph. If the graph has a buffer and the state changed,
-	 * {@code isNext==true}, then the data is added.
-	 *
-	 * @param isNext   {@code true} if the state has changed
-	 */
-	public void update(boolean isNext) {
-		if (buffer != null) {
-			// add copy of colors array to buffer
-			// note: cannot be reliably done in RingBuffer class without reflection
-			String[] colorCopy = Arrays.copyOf(colors, colors.length);
-			if (isNext || buffer.isEmpty())
-				buffer.append(colorCopy);
-			else
-				buffer.replace(colorCopy);
-		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * Depending on the backing geometry this either
+	 * Initializes the 2D universe. Depending on the backing geometry this either
 	 * <ol>
 	 * <li>shows a message, if no graphical representation is available, e.g. for 3D
 	 * cubic lattices, or if there are too many nodes so that each node becomes to
@@ -434,31 +367,23 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 	 * 
 	 * @see Network2D
 	 */
-	@Override
-	public void paint(boolean force) {
-		if (!isActive || (!force && !doUpdate()))
+	protected void layoutLattice() {
+		clearMessage();
+		invalidated = false;
+		if (dw < 1 && dh < 1 && dR < 2) {
+			displayMessage("Population size to large!");
 			return;
+		}
 		// helper variables
 		double xshift, yshift;
 		int row;
-
 		Geometry.Type type = geometry.getType();
 		if (isHierarchy)
 			type = geometry.subgeometry;
+		prepCanvas();
 		// geometries that have special/fixed layout
 		switch (type) {
-			case CUBE: // should not get here...
-			case VOID:
-				displayMessage("No representation for geometry!");
-				return;
-
 			case TRIANGULAR:
-				if (dw < 1) {
-					// too small
-					displayMessage("Population size to large!");
-					return;
-				}
-				prepCanvas();
 				Path2D triup = Path2D.createPolygon2D(new double[] { 0, dw, dw2 }, new double[] { 0, 0, -dh });
 				Path2D tridown = Path2D.createPolygon2D(new double[] { 0, dw, dw2 }, new double[] { 0, 0, dh });
 				triup.translate(0, dh);
@@ -495,12 +420,6 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 				break;
 
 			case HONEYCOMB:
-				if (dw < 1) {
-					// too small
-					displayMessage("Population size to large!");
-					return;
-				}
-				prepCanvas();
 				Path2D hex = Path2D.createPolygon2D(new double[] { 0, -dw2, -dw2, 0, dw2, dw2 },
 						new double[] { 0, dh3, dh, dh + dh3, dh, dh3 });
 				hex.translate(dw2, 0);
@@ -527,12 +446,6 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 			case SQUARE_NEUMANN_2ND:
 			case SQUARE_MOORE:
 			case SQUARE:
-				if (dw < 1) {
-					// too small
-					displayMessage("Population size to large!");
-					return;
-				}
-				prepCanvas();
 				// node 0 in lower left corner
 				yshift = bounds.getHeight() - dh;
 				row = 0;
@@ -568,16 +481,8 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 				break;
 
 			case LINEAR:
-				if (dw < 1) {
-					// too small
-					displayMessage("Population size to large!");
-					return;
-				}
-
 				int nSteps = (int) (bounds.getHeight() / dh);
 				yshift = 0;
-
-				prepCanvas();
 				Iterator<String[]> i = buffer.iterator();
 				while (i.hasNext() && nSteps-- > 0) {
 					xshift = 0;
@@ -593,31 +498,97 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 				g.restore();
 				break;
 
-			// case GENERIC:
-			// case DYNAMIC:
-			// and many more...
 			default:
-				int radius = Math.min(width / 2, height / 2);
-				int dR = (int) Math.sqrt(radius * radius * 2 / geometry.size);
-				if (dR < 2) {
-					// too small
-					displayMessage("Population size to large!");
-					return;
-				}
-				switch (network.getStatus()) {
-					case ADJUST_LAYOUT:
-					case NEEDS_LAYOUT:
-						network.doLayout(this);
-						break;
-					case HAS_LAYOUT:
-						drawNetwork();
-						break;
-					default:
-						// lattices, messages or layout in progress...
-						break;
-				}
-				break;
+				g.restore();
+				displayMessage("No representation for " + type.getTitle() + "!");
+				return;
 		}
+	}
+
+	/**
+	 * Helper method to draw the network.
+	 */
+	protected synchronized void layoutNetwork() {
+		if (network.isStatus(Status.NO_LAYOUT))
+			return; // nothing to do (lattice)
+		if (!network.isStatus(Status.HAS_LAYOUT) || geometry.isDynamic)
+			network.doLayout(this);
+		geometry.setNetwork2D(network);
+		drawNetwork();
+	}
+
+	protected void drawNetwork() {
+		if (invalidated)
+			// not yet ready to show network
+			return;
+		// in case layout was not animated, a message was displayed but now hasMessage
+		// must be cleared; also clears canvas
+		prepCanvas();
+		int nNodes = geometry.size;
+		// scale universe
+		double r = network.getRadius();
+		double su = bounds.getWidth() / (r + r); // same as height in this case
+		g.scale(su, su);
+		g.save();
+		g.translate(r, r);
+		g.setFillStyle(style.linkColor);
+		Path2D links = network.getLinks();
+		if (!links.isEmpty()) {
+			g.setLineWidth(style.linkWidth);
+			stroke(links);
+		}
+		String current = colors[0];
+		g.setFillStyle(current);
+		Node2D[] nodes = network.toArray();
+		for (int k = 0; k < nNodes; k++) {
+			String next = colors[k];
+			// potential optimization of drawing
+			if (next != current) {
+				g.setFillStyle(next);
+				current = next;
+			}
+			Node2D node = nodes[k];
+			fillCircle(node.x, node.y, node.r);
+		}
+		g.restore();
+		drawFrame(0, 0, su);
+		g.restore();
+	}
+
+	/**
+	 * Helper method to get the canvas ready for drawing the graph.
+	 */
+	private void prepCanvas() {
+		clearMessage();
+		g.save();
+		g.scale(scale, scale);
+		clearCanvas();
+		g.translate(bounds.getX() - viewCorner.x, bounds.getY() - viewCorner.y);
+		g.scale(zoomFactor, zoomFactor);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Depending on the backing geometry this either
+	 * <ol>
+	 * <li>shows a message, if no graphical representation is available, e.g. for 3D
+	 * cubic lattices, or if there are too many nodes so that each node becomes to
+	 * small to display on screen.
+	 * <li>shows lattice geometries.
+	 * <li>initiates the generic layouting process for arbitrary network structures.
+	 * </ol>
+	 * 
+	 * @see Network2D
+	 */
+	@Override
+	public void paint(boolean force) {
+		if (!isActive || (!force && !doUpdate()))
+			return;
+		if (hasStaticLayout())
+			layoutLattice();
+		else
+			drawNetwork();
 		tooltip.update();
 	}
 
@@ -649,6 +620,11 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 	protected int dh3;
 
 	/**
+	 * The diameter of nodes for networks.
+	 */
+	protected int dR;
+
+	/**
 	 * Convenience variable. The flag indicating whether the backing geometry is a
 	 * hierarchical structure.
 	 */
@@ -675,6 +651,9 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 		if (!super.calcBounds() || geometry == null)
 			return false;
 
+		dw = 0;
+		dh = 0;
+		dR = 0;
 		double h, w;
 		int diameter;
 		Geometry.Type type = geometry.getType();
@@ -808,7 +787,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 			// case Geometry.DYNAMIC:
 			default:
 				int radius = Math.min(width / 2, height / 2);
-				int dR = (int) Math.sqrt(radius * radius * 2 / geometry.size);
+				dR = (int) Math.sqrt(radius * radius * 2 / geometry.size);
 				buffer = null;
 				if (dR < 2) {
 					// too small
@@ -823,25 +802,16 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 		return true;
 	}
 
-	boolean hasStaticLayout() {
-		return (geometry.isLattice() || geometry.getType() == Geometry.Type.HIERARCHY && geometry.subgeometry.isLattice());
-	}
-
-	boolean hasAnimatedLayout() {
-		if (!animate)
-			return false;
-		return (geometry.size <= MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT && (int) (geometry.avgTot * geometry.size) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
-	}
-
 	@Override
 	public String getTooltipAt(int x, int y) {
 		// no network may have been initialized (e.g. for ODE/SDE models)
-		if (hitDragged || contextMenu.isVisible() || network == null || network.isStatus(Status.LAYOUT_IN_PROGRESS))
+		if (leftMouseButton || contextMenu.isVisible() || network == null || colors == null
+				|| network.isStatus(Status.LAYOUT_IN_PROGRESS))
 			return null;
 		int node = findNodeAt(x, y);
 		// when switching views the graph may not yet be ready to return
 		// data for tooltips (colors == null)
-		if (node < 0 || colors == null) {
+		if (node < 0) {
 			element.removeClassName("evoludo-cursorPointNode");
 			return null;
 		}
@@ -880,10 +850,19 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 	 */
 	public int findNodeAt(int x, int y) {
 		// no network may have been initialized (e.g. for ODE/SDE models)
-		if (hasMessage || network == null || network.isStatus(Status.LAYOUT_IN_PROGRESS))
+		if (hasMessage || network == null || invalidated || network.isStatus(Status.LAYOUT_IN_PROGRESS))
 			return FINDNODEAT_OUT_OF_BOUNDS;
-		int sx, sy, c, r;
+		int c, r;
 		double rr;
+
+		// some heuristic adjustments... cause remains mysterious
+		x = x - (int) (style.frameWidth * zoomFactor + 0.5);
+		y = y - (int) (style.frameWidth * zoomFactor - 0.5);
+		if (!bounds.contains(x, y))
+			return FINDNODEAT_OUT_OF_BOUNDS;
+
+		int sx = (int) ((viewCorner.x + x - bounds.getX()) / zoomFactor + 0.5);
+		int sy = (int) ((viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5);
 
 		Geometry.Type type = geometry.getType();
 		if (isHierarchy)
@@ -894,14 +873,6 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 				return FINDNODEAT_UNIMPLEMENTED;
 
 			case TRIANGULAR:
-				// some heuristic adjustments... cause remains mysterious
-				x = x - (int) (style.frameWidth * zoomFactor + 0.5);
-				y = y - (int) (style.frameWidth * zoomFactor - 0.5);
-				if (!bounds.contains(x, y))
-					return FINDNODEAT_OUT_OF_BOUNDS;
-
-				sx = (int) ((viewCorner.x + x - bounds.getX()) / zoomFactor + 0.5);
-				sy = (int) ((viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5);
 				r = sy / dh;
 				c = sx / dw2;
 				int rx = sy - r * dh;
@@ -916,14 +887,6 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 				return r * side + c;
 
 			case HONEYCOMB:
-				// some heuristic adjustments... cause remains mysterious
-				x = x - (int) (style.frameWidth * zoomFactor + 0.5);
-				y = y - (int) (style.frameWidth * zoomFactor - 0.5);
-				if (!bounds.contains(x, y))
-					return FINDNODEAT_OUT_OF_BOUNDS;
-
-				sx = (int) ((viewCorner.x + x - bounds.getX()) / zoomFactor + 0.5);
-				sy = (int) ((viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5);
 				r = sy / dh;
 				int odd = r % 2;
 				c = (sx - odd * dw2) / dw;
@@ -956,14 +919,6 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 			case SQUARE_NEUMANN_2ND:
 			case SQUARE_MOORE:
 			case SQUARE:
-				// some heuristic adjustments... cause remains mysterious
-				x = x - (int) (style.frameWidth * zoomFactor + 0.5);
-				y = y - (int) (style.frameWidth * zoomFactor - 0.5);
-				if (!bounds.contains(x, y))
-					return FINDNODEAT_OUT_OF_BOUNDS;
-
-				sx = (int) ((viewCorner.x + x - bounds.getX()) / zoomFactor + 0.5);
-				sy = (int) ((viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5);
 				// node 0 in lower left corner
 				c = sx / dw;
 				r = side - 1 - sy / dh;
@@ -982,10 +937,6 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 				return r * side + c;
 
 			case LINEAR:
-				if (!bounds.contains(x, y))
-					return FINDNODEAT_OUT_OF_BOUNDS;
-				sx = (int) ((viewCorner.x + x - bounds.getX()) / zoomFactor + 0.5);
-				sy = (int) ((viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5);
 				c = sx / dw;
 				r = sy / dh;
 				return r * geometry.size + c;
@@ -994,9 +945,8 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 				// note: cannot check bounds (or anything else) to rule out that mouse hovers
 				// over node because nodes may have been manually shifted.
 				rr = network.getRadius();
-				double iscale = (rr + rr) / (bounds.getWidth() * zoomFactor);
-				Point2D mousecoord = new Point2D((viewCorner.x + x - bounds.getX()) * iscale - rr,
-						(viewCorner.y + y - bounds.getY()) * iscale - rr);
+				double iscale = (rr + rr) / bounds.getWidth();
+				Point2D mousecoord = new Point2D(sx * iscale - rr, sy * iscale - rr);
 				Node2D[] nodes = network.toArray();
 				// in the undesirable case that nodes overlap, nodes with a higher index are
 				// drawn later (on top)
@@ -1219,6 +1169,50 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 	}
 
 	/**
+	 * Shift a single node with index {@code nodeidx} by {@code (dx, dy)}. Positive
+	 * {@code dx} shift the node to the right and positive {@code dy} shift upwards.
+	 * 
+	 * @param nodeidx the index of the node
+	 * @param dx      the horizontal shift of the node
+	 * @param dy      the vertical shift of the node
+	 */
+	public void shiftNodeBy(int nodeidx, int dx, int dy) {
+		if (nodeidx < 0) {
+			// invalid node
+			return;
+		}
+		switch (network.getStatus()) {
+			case HAS_LAYOUT:
+				double rr = network.getRadius();
+				// bounds.width==bounds.height for networks
+				double iscale = (rr + rr) / (bounds.getWidth() * zoomFactor);
+				double xaspect, yaspect;
+				if (width < height) {
+					// portrait
+					xaspect = 1.0;
+					yaspect = (double) height / width;
+				} else {
+					// landscape
+					xaspect = (double) width / height;
+					yaspect = 1.0;
+				}
+				Node2D node = network.get(nodeidx);
+				node.set(Math.max(-rr * xaspect + node.r, Math.min(rr * xaspect - node.r, node.x - dx * iscale)),
+						Math.max(-rr * yaspect + node.r, Math.min(rr * yaspect - node.r, node.y - dy * iscale)));
+				network.linkNodes();
+				drawNetwork();
+				return;
+			case NO_LAYOUT:
+				// lattices - shift view instead
+				shift(dx, dy);
+				return;
+			default:
+				// nothing (yet) to shift
+				return;
+		}
+	}
+
+	/**
 	 * The context menu item for animating the layouting process.
 	 */
 	private ContextMenuCheckBoxItem animateMenu;
@@ -1297,7 +1291,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 		}
 		animateMenu.setChecked(animate);
 		menu.add(animateMenu);
-		animateMenu.setEnabled(!hasMessage);
+		animateMenu.setEnabled(!hasMessage && !hasStaticLayout());
 
 		// add menu to clear buffer (applies only to linear geometry) 
 		if (geometry.getType() == Geometry.Type.LINEAR) {

@@ -152,7 +152,7 @@ public class Pop3D extends AbstractView implements AbstractGraph.NodeGraphContro
 			return;
 		}
 		// prepare initializes or starts suspended animation
-		hard &= prepare();
+		hard |= prepare();
 		if (hard) {
 			for( PopGraph3D graph : graphs)
 				graph.reset();
