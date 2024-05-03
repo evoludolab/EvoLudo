@@ -408,7 +408,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 	 *
 	 * @param isNext   {@code true} if the state has changed
 	 */
-	public void addData(boolean isNext) {
+	public void update(boolean isNext) {
 		if (buffer != null) {
 			// add copy of colors array to buffer
 			// note: cannot be reliably done in RingBuffer class without reflection

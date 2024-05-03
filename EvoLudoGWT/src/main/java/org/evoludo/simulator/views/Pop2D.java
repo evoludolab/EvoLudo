@@ -172,7 +172,7 @@ public class Pop2D extends AbstractView implements AbstractGraph.NodeGraphContro
 						default:
 							break;
 					}
-					graph.addData(isNext);
+					graph.update(isNext);
 					graph.paint(force);
 				}
 		}

@@ -211,7 +211,7 @@ public class Distribution extends AbstractView implements AbstractGraph.NodeGrap
 				default:
 					throw new Error("MVDistribution: not implemented for type "+type);
 			}
-			graph.addData(isNext);
+			graph.update(isNext);
 			graph.paint(force);
 		}
 	}

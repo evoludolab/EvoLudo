@@ -408,7 +408,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	public void update(boolean isNext) {
 		if (!isActive)
 			return;
-		if (invalidated || geometry.isDynamic) {
+		if (invalidated || (isNext && geometry.isDynamic)) {
 			// defer layouting to allow 3D view to be up and running
 			Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
 				@Override
