@@ -60,22 +60,13 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	public interface LayoutListener {
 
 		/**
-		 * Reports the current progress of the layouting process as a fraction of the
-		 * desired accuracy.
+		 * Requests an incremental update of the current layout.
 		 * 
 		 * @param progress the current progress
 		 * 
-		 * @see Network#setAccuracy(double)
-		 */
-		public void layoutProgress(double progress);
-
-		/**
-		 * Requests an incremental update of the current layout for a dynamically
-		 * animated layout process.
-		 * 
 		 * @see Animate
 		 */
-		public void layoutUpdate();
+		public void layoutUpdate(double progress);
 
 		/**
 		 * Notification that the layouting process has completed. This get called if the
@@ -256,11 +247,6 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 			}
 		}
 	}
-
-	/**
-	 * The mode of the animation of the network layouting process.
-	 */
-	protected Animate animateLayout = Animate.DEFAULT;
 
 	/**
 	 * The desired accuracy of the layouting process. The layouting process stops if
@@ -516,7 +502,12 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	protected abstract double attraction(int nodeidx);
 
 	/**
-	 * Add the finishing touches to the layout.
+	 * Add the finishing touches to the graph layout:
+	 * <ol>
+	 * <li>shift center of mass into origin
+	 * <li>rescale size of graph
+	 * <li>find number of links
+	 * </ol>
 	 */
 	public abstract void finishLayout();
 
@@ -560,33 +551,6 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	 */
 	public Geometry getGeometry() {
 		return geometry;
-	}
-
-	/**
-	 * Set the mode for animating the layouting process.
-	 * 
-	 * @param animate the animation mode
-	 * 
-	 * @see Animate
-	 */
-	public void setAnimateLayout(Animate animate) {
-		animateLayout = animate;
-	}
-
-	/**
-	 * Toggle the animation of the layouting process.
-	 */
-	public void toggleAnimateLayout() {
-		setAnimateLayout(doAnimateLayout() ? Animate.OFF : Animate.ON);
-	}
-
-	/**
-	 * Check if layouting process is animated. Depends on backing geometry.
-	 * 
-	 * @return {@code true} if layout is animated
-	 */
-	public boolean doAnimateLayout() {
-		return animateLayout.isAnimated(geometry);
 	}
 
 	/**

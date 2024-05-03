@@ -236,7 +236,8 @@ public abstract class Network3D extends Network {
 	 * <li>find number of links
 	 * </ol>
 	 */
-	public void networkLayout() {
+	@Override
+	public void finishLayout() {
 		Vector3D com = new Vector3D();
 		for (Node3D node : nodes)
 			com.shift(node);
@@ -260,13 +261,6 @@ public abstract class Network3D extends Network {
 			}
 		}
 		linkNodes();
-	}
-
-	@Override
-	public void finishLayout() {
-		networkLayout();
-		setStatus(Status.HAS_LAYOUT);
-		isRunning = false;
 	}
 
 	@Override

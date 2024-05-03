@@ -42,6 +42,7 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMap3D;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network;
+import org.evoludo.simulator.Network.Animate;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network3D;
 import org.evoludo.simulator.models.Model;
@@ -116,6 +117,11 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	 * applicable.
 	 */
 	protected Network3DGWT network;
+
+	/**
+	 * The mode of the animation of the network layouting process.
+	 */
+	protected Animate layout = Animate.DEFAULT;
 
 	protected RenderingPanel graph3DPanel;
 	protected Pop3DScene graph3DScene;
@@ -338,13 +344,13 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	}
 
 	@Override
-	public synchronized void layoutProgress(double p) {
-		displayMessage("Laying out network...  " + Formatter.formatPercent(p, 0) + " completed.");
-	}
-
-	@Override
-	public synchronized void layoutUpdate() {
-		layoutNetwork();
+	public synchronized void layoutUpdate(double progress) {
+		if (layout.isAnimated(geometry)) {
+			network.finishLayout();
+			layoutNetwork();
+		}
+		else
+			displayMessage("Laying out network...  " + Formatter.formatPercent(progress, 0) + " completed.");
 		paint(true);
 	}
 

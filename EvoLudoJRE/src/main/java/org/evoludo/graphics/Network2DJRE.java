@@ -76,7 +76,6 @@ public class Network2DJRE extends Network2D implements Runnable {
 
 		// multi-threaded way of layouting
 		double adjust;
-		boolean doAnimateLayout = animateLayout.isAnimated(geometry);
 		do {
 			pending = workers.size();
 			potential = 0.0;
@@ -97,10 +96,7 @@ public class Network2DJRE extends Network2D implements Runnable {
 				isRunning = false;
 				break;
 			}
-			if (doAnimateLayout)
-				listener.layoutUpdate();
-			else
-				listener.layoutProgress(accuracy / adjust);
+			listener.layoutUpdate(accuracy / adjust);
 		} while (isRunning);
 
 		// finish layout (center and scale network)

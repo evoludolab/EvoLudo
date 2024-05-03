@@ -90,8 +90,6 @@ public class Network2DGWT extends Network2D {
 		if (stat == Status.HAS_LAYOUT || stat == Status.NO_LAYOUT || stat == Status.HAS_MESSAGE)
 			return;
 		this.listener = ll;
-		if (!animateLayout.isAnimated(geometry))
-			listener.layoutProgress(0.0);
 		doLayoutPrep();
 		layout = new Duration();
 		prevLayout = Integer.MIN_VALUE;
@@ -158,16 +156,10 @@ public class Network2DGWT extends Network2D {
 			listener.layoutComplete();
 			return false;
 		}
-		if (animateLayout.isAnimated(geometry)) {
-			// GWT.log("layout update: elapsed="+elapsed+", prevLayout="+prevLayout+",
-			// iterations="+nIteration);
-			if (elapsed - prevLayout > MIN_DELAY_ANIMATE_MSEC) {
-				finishLayout();
-				listener.layoutUpdate();
-				prevLayout = layout.elapsedMillis();
-			}
-		} else
-			listener.layoutProgress(accuracy / prevAdjust);
+		if (elapsed - prevLayout > MIN_DELAY_ANIMATE_MSEC) {
+			listener.layoutUpdate(accuracy / prevAdjust);
+			prevLayout = layout.elapsedMillis();
+		}
 		return isRunning;
 	}
 }

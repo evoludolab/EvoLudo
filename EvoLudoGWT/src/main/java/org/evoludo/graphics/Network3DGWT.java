@@ -277,8 +277,6 @@ public class Network3DGWT extends Network3D {
 		if (stat == Status.HAS_LAYOUT || stat == Status.NO_LAYOUT || stat == Status.HAS_MESSAGE)
 			return;
 		this.listener = ll;
-		if (!animateLayout.isAnimated(geometry))
-			listener.layoutProgress(0.0);
 		doLayoutPrep();
 		layout = new Duration();
 		prevLayout = Integer.MIN_VALUE;
@@ -336,18 +334,16 @@ public class Network3DGWT extends Network3D {
 		int elapsed = layout.elapsedMillis();
 		if (adjust < accuracy || elapsed > layoutTimeout) { // layoutTimeout provides emergency exit
 			finishLayout();
+			setStatus(Status.HAS_LAYOUT);
+			isRunning = false;
 			timestamp = engine.getModel().getTime();
 			listener.layoutComplete();
 			return false;
 		}
-		if (animateLayout.isAnimated(geometry)) {
-			if (elapsed - prevLayout > MIN_DELAY_ANIMATE_MSEC) {
-				networkLayout();
-				listener.layoutUpdate();
-				prevLayout = layout.elapsedMillis();
-			}
-		} else
-			listener.layoutProgress(accuracy / prevAdjust);
+		if (elapsed - prevLayout > MIN_DELAY_ANIMATE_MSEC) {
+			listener.layoutUpdate(accuracy / prevAdjust);
+			prevLayout = layout.elapsedMillis();
+		}
 		return isRunning;
 	}
 }

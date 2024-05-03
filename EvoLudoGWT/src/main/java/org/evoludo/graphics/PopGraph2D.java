@@ -46,6 +46,7 @@ import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network;
+import org.evoludo.simulator.Network.Animate;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.models.Model;
@@ -86,6 +87,11 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 	 * applicable.
 	 */
 	protected Network2D network;
+
+	/**
+	 * The mode of the animation of the network layouting process.
+	 */
+	protected Animate layout = Animate.DEFAULT;
 
 	/**
 	 * The buffer to store historical data, if applicable.
@@ -265,13 +271,13 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 	}
 
 	@Override
-	public synchronized void layoutProgress(double p) {
-		displayMessage("Laying out network...  " + Formatter.formatPercent(p, 0) + " completed.");
-	}
-
-	@Override
-	public synchronized void layoutUpdate() {
-		drawNetwork();
+	public synchronized void layoutUpdate(double progress) {
+		if (layout.isAnimated(geometry)) {
+			network.finishLayout();
+			drawNetwork();
+		}
+		else
+			displayMessage("Laying out network...  " + Formatter.formatPercent(progress, 0) + " completed.");
 	}
 
 	@Override
