@@ -64,7 +64,6 @@ import org.evoludo.geom.Point2D;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.Network;
-import org.evoludo.simulator.Network.Animate;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.util.Formatter;
@@ -79,7 +78,18 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	private static final long serialVersionUID = 20110423L;
 
 	protected Network2D	network;
-	protected Animate layout = Animate.DEFAULT;
+
+	/**
+	 * Maximum number of nodes in network for animated layout, see {@link #DEFAULT}
+	 */
+	static final int MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT = 1000;
+
+	/**
+	 * Maximum number of edges in network for animated layout, see {@link #DEFAULT}
+	 */
+	static final int MAX_ANIMATE_LAYOUT_LINKS_DEFAULT = 5000;
+
+	protected boolean animate = true;
 	protected Geometry	geometry;
     protected Color[]	colors;
 		
@@ -167,7 +177,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	public synchronized void layoutUpdate(double p) {
 		if (!isVisible())
 			return;
-		if (layout.isAnimated(geometry)) {
+		if (hasAnimatedLayout()) {
 			// complete layout
 			network.finishLayout();
 			forceRepaint = true;
@@ -216,7 +226,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 
 		super.reset(clear || hasHistory);
         // enable/disable context menu items
-		animateMenu.setState(layout.isAnimated(geometry));
+		animateMenu.setState(animate);
 		switch (geometry.getType()) {
 			case VOID:
 			case TRIANGULAR:
@@ -384,9 +394,15 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		repaint();
 	}
 
+	boolean hasAnimatedLayout() {
+		if (!animate)
+			return false;
+		return (geometry.size <= MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT && (int) (geometry.avgTot * geometry.size) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
+	}
+
 	public void setAnimateLayout(boolean animate) {
+		this.animate = animate;
 		animateMenu.setState(animate);
-		layout = animate ? Animate.ON : Animate.OFF;
 	}
 
 	protected void shakeNetwork() {

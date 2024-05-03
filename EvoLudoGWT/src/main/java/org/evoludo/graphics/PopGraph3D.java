@@ -42,7 +42,6 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMap3D;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network;
-import org.evoludo.simulator.Network.Animate;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network3D;
 import org.evoludo.simulator.models.Model;
@@ -119,9 +118,19 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	protected Network3DGWT network;
 
 	/**
+	 * Maximum number of nodes in network for animated layout, see {@link #DEFAULT}
+	 */
+	static final int MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT = 1000;
+
+	/**
+	 * Maximum number of edges in network for animated layout, see {@link #DEFAULT}
+	 */
+	static final int MAX_ANIMATE_LAYOUT_LINKS_DEFAULT = 5000;
+
+	/**
 	 * The mode of the animation of the network layouting process.
 	 */
-	protected Animate layout = Animate.DEFAULT;
+	protected boolean animate = true;
 
 	protected RenderingPanel graph3DPanel;
 	protected Pop3DScene graph3DScene;
@@ -345,7 +354,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 
 	@Override
 	public synchronized void layoutUpdate(double progress) {
-		if (layout.isAnimated(geometry)) {
+		if (hasAnimatedLayout()) {
 			network.finishLayout();
 			layoutNetwork();
 		}
@@ -415,6 +424,12 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 
 	boolean hasStaticLayout() {
 		return (geometry.isLattice() || geometry.getType() == Geometry.Type.HIERARCHY && geometry.subgeometry.isLattice());
+	}
+
+	boolean hasAnimatedLayout() {
+		if (!animate)
+			return false;
+		return (geometry.size <= MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT && (int) (geometry.avgTot * geometry.size) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
 	}
 
 	@Override
@@ -974,13 +989,12 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 			animateMenu = new ContextMenuCheckBoxItem("Animate layout", new Command() {
 				@Override
 				public void execute() {
-					boolean isAnimated = !animateMenu.isChecked();
-					layout = isAnimated ? Animate.ON : Animate.OFF;
-					animateMenu.setChecked(isAnimated);
+					animate = !animateMenu.isChecked();
+					animateMenu.setChecked(animate);
 				}
 			});
 		}
-		animateMenu.setChecked(layout.isAnimated(geometry));
+		animateMenu.setChecked(animate);
 		menu.add(animateMenu);
 		animateMenu.setEnabled(!hasMessage && !hasStaticLayout());
 

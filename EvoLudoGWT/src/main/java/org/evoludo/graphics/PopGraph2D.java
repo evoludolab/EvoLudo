@@ -40,17 +40,16 @@ import org.evoludo.geom.Path2D;
 import org.evoludo.geom.Point2D;
 import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
-import org.evoludo.ui.ContextMenu;
-import org.evoludo.ui.ContextMenuCheckBoxItem;
-import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network;
-import org.evoludo.simulator.Network.Animate;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.ContextMenuCheckBoxItem;
+import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.RingBuffer;
 
@@ -89,9 +88,19 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 	protected Network2D network;
 
 	/**
+	 * Maximum number of nodes in network for animated layout, see {@link #DEFAULT}
+	 */
+	static final int MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT = 1000;
+
+	/**
+	 * Maximum number of edges in network for animated layout, see {@link #DEFAULT}
+	 */
+	static final int MAX_ANIMATE_LAYOUT_LINKS_DEFAULT = 5000;
+
+	/**
 	 * The mode of the animation of the network layouting process.
 	 */
-	protected Animate layout = Animate.DEFAULT;
+	protected boolean animate = true;
 
 	/**
 	 * The buffer to store historical data, if applicable.
@@ -272,7 +281,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 
 	@Override
 	public synchronized void layoutUpdate(double progress) {
-		if (layout.isAnimated(geometry)) {
+		if (hasAnimatedLayout()) {
 			network.finishLayout();
 			drawNetwork();
 		}
@@ -818,6 +827,12 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 		return (geometry.isLattice() || geometry.getType() == Geometry.Type.HIERARCHY && geometry.subgeometry.isLattice());
 	}
 
+	boolean hasAnimatedLayout() {
+		if (!animate)
+			return false;
+		return (geometry.size <= MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT && (int) (geometry.avgTot * geometry.size) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
+	}
+
 	@Override
 	public String getTooltipAt(int x, int y) {
 		// no network may have been initialized (e.g. for ODE/SDE models)
@@ -1275,13 +1290,12 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 			animateMenu = new ContextMenuCheckBoxItem("Animate layout", new Command() {
 				@Override
 				public void execute() {
-					boolean isAnimated = !animateMenu.isChecked();
-					layout = isAnimated ? Animate.ON : Animate.OFF;
-					animateMenu.setChecked(isAnimated);
+					animate = !animateMenu.isChecked();
+					animateMenu.setChecked(animate);
 				}
 			});
 		}
-		animateMenu.setChecked(layout.isAnimated(geometry));
+		animateMenu.setChecked(animate);
 		menu.add(animateMenu);
 		animateMenu.setEnabled(!hasMessage);
 
