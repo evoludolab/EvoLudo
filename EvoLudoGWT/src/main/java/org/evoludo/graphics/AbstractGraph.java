@@ -672,8 +672,14 @@ public abstract class AbstractGraph extends FocusPanel
 	 * Draw the graph. For re-drawing the graph, set {@code force} to {@code true}.
 	 * 
 	 * @param force {@code true} to force re-drawing of graph
+	 * @return {@code true} if painting skipped
 	 */
-	public abstract void paint(boolean force);
+	public boolean paint(boolean force) {
+		if (!isActive || hasMessage)
+			return true;
+		tooltip.update();
+		return false;
+	}
 
 	/**
 	 * Assign a list of markers to the graph.

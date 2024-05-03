@@ -395,13 +395,15 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	}
 
 	@Override
-	public void paint(boolean force) {
-		if (!isActive || (!force && !doUpdate()))
-			return;
+	public boolean paint(boolean force) {
+		if (super.paint(force))
+			return true;
+		if (!force && !doUpdate())
+			return true;
 		int k = 0;
 		for (Mesh sphere : spheres)
 			sphere.setMaterial(colors[k++]);
-		tooltip.update();
+		return false;
 	}
 
 	/**

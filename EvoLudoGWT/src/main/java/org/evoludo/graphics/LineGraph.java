@@ -105,9 +105,11 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 	}
 
 	@Override
-	public void paint(boolean force) {
-		if (!isActive || (!force && !doUpdate()))
-			return;
+	public boolean paint(boolean force) {
+		if (super.paint(force))
+			return true;
+		if (!force && !doUpdate())
+			return true;
 		g.save();
 		g.scale(scale,  scale);
 		clearCanvas();
@@ -170,7 +172,7 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 		g.restore();
 		drawFrame(4, 4);
 		g.restore();
-	 	tooltip.update();
+	 	return false;
 	}
 
 	private boolean paintScheduled = false;

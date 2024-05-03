@@ -153,11 +153,13 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 	}
 
 	@Override
-	public void paint(boolean force) {
-		if (!isActive || (!force && !doUpdate()))
-			return;
+	public boolean paint(boolean force) {
+		if (super.paint(force))
+			return true;
+		if (!force && !doUpdate())
+			return true;
 		paintPara(true);
-	 	tooltip.update();
+		return false;
 	}
 
 	private void paintPara(boolean withMarkers) {

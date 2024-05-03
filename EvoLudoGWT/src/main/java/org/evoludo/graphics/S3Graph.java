@@ -185,11 +185,13 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTraj
 	}
 
 	@Override
-	public void paint(boolean force) {
-		if (!isActive || (!force && !doUpdate()))
-			return;
+	public boolean paint(boolean force) {
+		if (super.paint(force))
+			return true;
+		if (!force && !doUpdate())
+			return true;
 		paintS3(true);
-		tooltip.update();
+		return false;
 	}
 
 	private void paintS3(boolean withMarkers) {

@@ -582,14 +582,16 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener,
 	 * @see Network2D
 	 */
 	@Override
-	public void paint(boolean force) {
-		if (!isActive || (!force && !doUpdate()))
-			return;
+	public boolean paint(boolean force) {
+		if (super.paint(force))
+			return true;
+		if (!force && !doUpdate())
+			return true;
 		if (hasStaticLayout())
 			layoutLattice();
 		else
 			drawNetwork();
-		tooltip.update();
+		return false;
 	}
 
 	/**

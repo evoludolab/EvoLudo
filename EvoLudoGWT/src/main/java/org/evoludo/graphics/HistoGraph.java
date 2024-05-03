@@ -396,11 +396,11 @@ public class HistoGraph extends AbstractGraph {
 	}
 
 	@Override
-	public void paint(boolean force) {
-		if (!isActive || displayMessage(message))
-			return;
+	public boolean paint(boolean force) {
+		if (super.paint(force))
+			return true;
 		if (!force && !doUpdate())
-			return;
+			return true;
 
 		g.save();
 		g.scale(scale,  scale);
@@ -492,7 +492,7 @@ public class HistoGraph extends AbstractGraph {
 		drawMarkers();
 		drawFrame(4, yLevels);
 		g.restore();
-		tooltip.update();
+		return false;
 	}
 
 	protected void drawMarkers() {
