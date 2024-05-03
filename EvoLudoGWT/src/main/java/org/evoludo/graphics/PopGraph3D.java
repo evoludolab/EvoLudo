@@ -213,8 +213,12 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 		if (network != null)
 			network.setLayoutListener(this);
 		// lazy allocation of memory for colors
-		if (geometry != null && (colors == null || colors.length != geometry.size))
+		if (geometry != null && (colors == null || colors.length != geometry.size)) {
 			colors = new MeshLambertMaterial[geometry.size];
+			// allocate one entry to be able to deduce the type of the array
+			// in generic methods (see e.g. getLeafColor(...) in NetDyn)
+			colors[0] = new MeshLambertMaterial();
+		}
 		// cannot yet start animation - kills scene
 		// graph3DScene.run();
 		doubleClickHandler = addDoubleClickHandler(this);
@@ -265,7 +269,8 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 		// strictly speaking invalidation is only needed if structural changes
 		// result, i.e. if type changed, size changed, or geometry is not unique
 		// but the changes are non-trivial to detect
-		invalidate();
+		if (network.isStatus(Status.NEEDS_LAYOUT))
+			invalidate();
 	}
 
 	/**
@@ -318,11 +323,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	public void reset() {
 		super.reset();
 		graph3DPanel.onResize();
-		// geometry (and network) may be null for Model.ODE or Model.SDE
-		if (geometry == null)
-			return;
-		network.reset();
-invalidated = true;
+		invalidate();	
 	}
 
 	/**
@@ -350,7 +351,6 @@ invalidated = true;
 	@Override
 	public synchronized void layoutComplete() {
 		clearMessage();
-		invalidated = false;
 		layoutNetwork();
 		((NodeGraphController) controller).layoutComplete();
 	}
@@ -395,16 +395,20 @@ invalidated = true;
 			return;
 		if (invalidated || geometry.isDynamic) {
 			// defer layouting to allow 3D view to be up and running
-			if (geometry.isLattice())
-				Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-					@Override
-						public void execute() {
+			Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
+				@Override
+					public void execute() {
+						if (hasStaticLayout())
 							layoutLattice();
-						}
-					});
-			else
-				network.doLayout(this);
+						else
+							layoutNetwork();
+					}
+				});
 		}
+	}
+
+	boolean hasStaticLayout() {
+		return (geometry.isLattice() || geometry.getType() == Geometry.Type.HIERARCHY && geometry.subgeometry.isLattice());
 	}
 
 	@Override
@@ -601,6 +605,7 @@ invalidated = true;
 			mesh.setMatrixAutoUpdate(false);
 			spheres.add(mesh);
 		}
+		invalidated = false;
 	}
 
 	/**
@@ -609,16 +614,15 @@ invalidated = true;
 	protected void layoutNetwork() {
 		if (network.isStatus(Status.NO_LAYOUT))
 			return; // nothing to do (lattice)
-		if (invalidated) {
+		if (invalidated)
 			initUniverse(new SphereGeometry(50, 16, 12));
+		if (!network.isStatus(Status.HAS_LAYOUT) || geometry.isDynamic)
 			network.doLayout(this);
-		}
 		// link nodes
 		Node3D[] nodes = network.toArray();
 		// place spheres
 		int k = 0;
-		for (Iterator<Mesh> i = spheres.iterator(); i.hasNext();) {
-			Mesh mesh = i.next();
+		for (Mesh mesh : spheres) {
 			Node3D node = nodes[k];
 			Vector3 vec = mesh.getPosition();
 			vec.setX(node.x);
@@ -632,6 +636,7 @@ invalidated = true;
 			mesh.updateMatrix();
 			k++;
 		}
+		geometry.setNetwork3D(network);
 		drawUniverse();
 	}
 
@@ -1143,6 +1148,7 @@ invalidated = true;
 				graph3DCamera.setScale(newWorldView.getScale());
 				graph3DCamera.setRotation(newWorldView.getRotation());
 			}
+			network.setWorldView(graph3DCamera);
 		}
 
 		/**
@@ -1158,14 +1164,6 @@ invalidated = true;
 			paint(true);
 		}
 
-		protected void resetCamera() {
-			if (graph3DCamera == null)
-				return;
-			boolean isOrthographic = (graph3DCamera instanceof OrthographicCamera);
-			graph3DCamera = null;
-			setOrtho(isOrthographic);
-		}
-	
 		/**
 		 * Helper method to allocate, set, or change the camera for the scene.
 		 * 
