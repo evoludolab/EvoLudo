@@ -854,6 +854,43 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 	}
 
 	/**
+	 * Set the projection of the camera. If {@code setOrtho == true} the camera uses
+	 * an orthographic (parallel) projection and a perspective projection otherwise.
+	 * 
+	 * @param orthographic the flag to set an orthographic (parallel) projection for
+	 *                     the camera
+	 */
+	public void setOrthographic(boolean orthographic) {
+		graph3DScene.setOrtho(orthographic);
+		drawUniverse();
+		paint(true);
+	}
+
+	public void setAnaglyph(boolean anaglyph) {
+		// ensure stereo mode is exited
+		if (effect != null) {
+			boolean isAnaglyph = effect instanceof Anaglyph;
+			graph3DPanel.getRenderer().deletePlugin(effect);
+			effect = null;
+			if (isAnaglyph)
+				return;
+		}
+		effect = new Anaglyph(graph3DPanel.getRenderer(), graph3DScene.getScene());
+	}
+
+	public void setVR(boolean anaglyph) {
+		// ensure anaglyph mode is exited
+		if (effect != null) {
+			boolean isVR = effect instanceof Stereo;
+			graph3DPanel.getRenderer().deletePlugin(effect);
+			effect = null;
+			if (isVR)
+				return;
+		}
+		effect = new Stereo(graph3DPanel.getRenderer(), graph3DScene.getScene());
+	}
+	
+	/**
 	 * The context menu item for animating the layouting process.
 	 */
 	private ContextMenuCheckBoxItem animateMenu;
@@ -1001,7 +1038,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 			projectionMenu = new ContextMenuCheckBoxItem("Parallel projection", new Command() {
 				@Override
 				public void execute() {
-					graph3DScene.setOrthographic(graph3DCamera instanceof PerspectiveCamera);
+					setOrthographic(graph3DCamera instanceof PerspectiveCamera);
 				}
 			});
 		}
@@ -1012,15 +1049,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 			anaglyphMenu = new ContextMenuCheckBoxItem("Anaglyph 3D", new Command() {
 				@Override
 				public void execute() {
-					// ensure stereo mode is exited
-					if (effect != null) {
-						boolean isAnaglyph = effect instanceof Anaglyph;
-						graph3DPanel.getRenderer().deletePlugin(effect);
-						effect = null;
-						if (isAnaglyph)
-							return;
-					}
-					effect = new Anaglyph(graph3DPanel.getRenderer(), graph3DScene.getScene());
+					setAnaglyph(anaglyphMenu.isChecked());
 				}
 			});
 		}
@@ -1031,15 +1060,7 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 			vrMenu = new ContextMenuCheckBoxItem("Virtual reality (β)", new Command() {
 				@Override
 				public void execute() {
-					// ensure anaglyph mode is exited
-					if (effect != null) {
-						boolean isVR = effect instanceof Stereo;
-						graph3DPanel.getRenderer().deletePlugin(effect);
-						effect = null;
-						if (isVR)
-							return;
-					}
-					effect = new Stereo(graph3DPanel.getRenderer(), graph3DScene.getScene());
+					setVR(vrMenu.isChecked());
 				}
 			});
 		}
@@ -1149,19 +1170,6 @@ public class PopGraph3D extends AbstractGraph implements Zooming, DoubleClickHan
 				graph3DCamera.setRotation(newWorldView.getRotation());
 			}
 			network.setWorldView(graph3DCamera);
-		}
-
-		/**
-		 * Set the projection of the camera. If {@code setOrtho == true} the camera uses
-		 * an orthographic (parallel) projection and a perspective projection otherwise.
-		 * 
-		 * @param setOrtho the flag to set an orthographic (parallel) projection for the
-		 *                 camera
-		 */
-		public void setOrthographic(boolean setOrtho) {
-			setOrtho(setOrtho);
-			drawUniverse();
-			paint(true);
 		}
 
 		/**
