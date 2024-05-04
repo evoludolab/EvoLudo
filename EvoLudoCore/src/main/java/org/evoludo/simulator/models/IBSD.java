@@ -153,8 +153,6 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 			for (Module mod : species) {
 				if (!(mod instanceof HasHistogram.StatisticsProbability || mod instanceof HasHistogram.StatisticsTime))
 					return false;
-				if (!((IBSDPopulation) mod.getIBSPopulation()).getInitType().statisticsOk())
-					return false;
 			}
 		}
 		return true;
@@ -387,15 +385,6 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		 */
 		public double[] getArgs() {
 			return args;
-		}
-
-		/**
-		 * Check if the initialization type is suitable for statistics.
-		 * 
-		 * @return {@code true} if suitable for statistics
-		 */
-		public boolean statisticsOk() {
-			return this.equals(STATISTICS) || this.equals(MUTANT) || this.equals(TEMPERATURE);
 		}
 	}
 

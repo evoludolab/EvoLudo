@@ -1070,7 +1070,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 				if (binSize == 1)
 					tip.append("<td>" + bar + "</td></tr>");
 				else {
-					int start = (int) (bar * binSize);
+					int start = bar * binSize;
 					int end = start + binSize - 1;
 					if (bar == nBins - 1) {
 						// careful with last bin
