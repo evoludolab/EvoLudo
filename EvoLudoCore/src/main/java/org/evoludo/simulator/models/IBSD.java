@@ -162,7 +162,6 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	public void unload() {
 		super.unload();
 		cloOptimize.clearKeys();
-		cloInitType.clearKeys();
 	}
 
 	@Override
@@ -218,11 +217,12 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 
 	@Override
 	public boolean setInitialTraits(double[] init) {
-		if (!cloInitType.isValidKey(InitType.FREQUENCY))
+		IBSDPopulation pop = (IBSDPopulation) species.get(0).getIBSPopulation();
+		if (!pop.getInit().clo.isValidKey(Init.Type.FREQUENCY))
 			return false;
 
 		if (!isMultispecies)
-			return ((IBSDPopulation) population).setInitialTraits(init);
+			return pop.setInitialTraits(init);
 
 		int skip = 0;
 		boolean success = true;
@@ -245,136 +245,35 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	public double getMonoScore(int id, int type) {
 		return getIBSDPopulation(id).getMonoScore(type);
 	}
-	
-	/**
-	 * Type of initial density distribution. Currently this model supports:
-	 * <dl>
-	 * <dt>frequency &lt;f1,..,fn&gt;
-	 * <dd>Random distribution of traits with given frequencies {@code &lt;f1,..,fd&gt;}
-	 * for traits {@code 1,...,d} (default).
-	 * <dt>uniform
-	 * <dd>Uniform random distribution of traits.
-	 * <dt>monomorphic &lt;t[,v]&gt;
-	 * <dd>Monomorphic initialization of trait {@code t}. For modules that admit
-	 * vacant sites, their frequency is {@code v}.
-	 * <dt>kaleidoscope
-	 * <dd>Symmetric initial distribution, possibly generating evolutionary
-	 * kaleidoscopes for deterministic synchronous updates.
-	 * <dt>mutant &lt;m,r[,v]&gt;
-	 * <dd>Single mutant with trait {@code m} in random location of otherwise
-	 * homogeneous population with trait {@code r}. For modules that admit vacant
-	 * sites, their frequency is {@code v}.
-	 * <dt>stripes &lt;t1,...,td&gt;
-	 * <dd>Stripes of different traits. Ensures that at least one interface between
-	 * any two traits exists. Requires square lattice geometry.
-	 * <dt>STATISTICS
-	 * <dd>Initialization for statistics. Same as {@link #MUTANT} plus bookkeeping
-	 * for statistics. Convenience type for statistics mode. Not user selectable.
-	 * </dl>
-	 * 
-	 * @author Christoph Hauert
-	 * 
-	 * @see #setInitType(Key)
-	 * @see IBSD#cloInitType
-	 * @see org.evoludo.simulator.modules.Discrete#cloInit
-	 *      modules.Discrete.cloInit
-	 */
-	public enum InitType implements CLOption.Key {
 
+	public static class Init {
 		/**
-		 * Random distribution of traits with frequencies {@code &lt;f1,..,fd&gt;} (default).
+		 * The model that is using this initialization. This is specific to IBS models.
 		 */
-		FREQUENCY("frequency", "random distribution with frequency <f1,..,fd>"),
+		org.evoludo.simulator.models.IBS ibs;
 
 		/**
-		 * Uniform random distribution of traits.
-		 */
-		UNIFORM("uniform", "uniform random distribution"),
-
-		/**
-		 * Monomorphic initialization of the population with the specified trait. For
-		 * modules that admit vacant sites, their frequency is {@code v}. The parameters
-		 * are specified through the argument of the format {@code t[,v]}.
-		 */
-		MONO("monomorphic", "monomorphic initialization with trait <t[,v]>"),
-
-		/**
-		 * Single mutant with trait {@code m} in otherwise homogeneous population with
-		 * trait {@code r}. The mutant is placed in a location chosen uniformly at
-		 * random (uniform initialization). For modules that admit vacant sites, their
-		 * frequency is {@code v}. The parameters are specified through the argument of
-		 * the format {@code m,r[,v]}.
-		 */
-		MUTANT("mutant", "uniformly distributed, <m,r[,v]>"),
-
-		/**
-		 * Single mutant with trait {@code m} in otherwise homogeneous population with
-		 * trait {@code r}. The mutant is placed in a random location with probability
-		 * proportional to number of incoming links (temperature initialization). For
-		 * modules that admit vacant sites, their frequency is {@code v}. The parameters
-		 * are specified through the argument of the format {@code m,r[,v]}.
-		 */
-		TEMPERATURE("temperature", "temperature distribution, <m,r[,v]>"),
-
-		/**
-		 * Symmetric initial distribution, possibly generating evolutionary
-		 * kaleidoscopes for deterministic synchronous updates.
-		 */
-		KALEIDOSCOPE("kaleidoscope", "evolutionary kaleidoscopes"),
-
-		/**
-		 * Stripes of different traits. Requires square lattice geometry.
-		 */
-		STRIPES("stripes", "stripes of traits"),
-
-		/**
-		 * Initialization for statistics. Same as {@link #MUTANT} plus bookkeeping for
-		 * statistics. Convenience type for statistics mode. Not user selectable.
+		 * Instantiate new initialization for use in IBS {@code model}s.
 		 * 
-		 * @see #MUTANT
+		 * @param ibs the model using this initialization
 		 */
-		STATISTICS("-stat", "convenience type for statistics mode");
+		public Init(org.evoludo.simulator.models.IBS ibs) {
+			this.ibs = ibs;
+			type = Type.UNIFORM;
+		}
 
 		/**
-		 * Key of initialization type. Used when parsing command line options.
+		 * The population update type.
 		 * 
-		 * @see IBSD#cloInitType
+		 * @see #clo
 		 */
-		String key;
-
-		/**
-		 * Brief description of initialization type for help display.
-		 * 
-		 * @see EvoLudo#helpCLO()
-		 */
-		String title;
+		Init.Type type;
 
 		/**
 		 * The arguments for the initialization. Convenience field, meaningful only
-		 * immediately after calls to {@link IBSDPopulation#getInitType()}.
+		 * immediately after calls to {@link IBSDPopulation#getInit()}.
 		 */
 		double[] args;
-
-		/**
-		 * Instantiate new initialization type.
-		 * 
-		 * @param key   identifier for parsing of command line option
-		 * @param title summary of initialization
-		 */
-		InitType(String key, String title) {
-			this.key = key;
-			this.title = title;
-		}
-
-		@Override
-		public String getKey() {
-			return key;
-		}
-
-		@Override
-		public String getTitle() {
-			return title;
-		}
 
 		/**
 		 * Get the arguments of this initialization type. Convenience field.
@@ -385,6 +284,195 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		 */
 		public double[] getArgs() {
 			return args;
+		}
+
+		@Override
+		public String toString() {
+			return type.getKey() + " " + Formatter.format(args, 2);
+		}
+
+		/**
+		 * Command line option to set the type of initial configuration.
+		 * <p>
+		 * <strong>Note:</strong> option not automatically added. Models that implement
+		 * different initialization types should load it in
+		 * {@link #collectCLO(CLOParser)}.
+		 * 
+		 * @see Type
+		 */
+		public final CLOption clo = new CLOption("inittype", Init.Type.UNIFORM.getKey(), EvoLudo.catModule,
+				"--inittype <t>  type of initial configuration", new CLODelegate() {
+					@Override
+					public boolean parse(String arg) {
+						boolean success = true;
+						String[] inittypes = arg.split(CLOParser.SPECIES_DELIMITER);
+						int idx = 0;
+						Init.Type prevtype = null;
+						boolean isMultiSpecies = (ibs.species.size() > 1);
+						for (Module mod : ibs.species) {
+							IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
+							String inittype = inittypes[idx++ % inittypes.length];
+							double[] initargs = null;
+							String[] typeargs = inittype.split("\\s+|=");
+							Init.Type newtype = (Init.Type) clo.match(inittype);
+							Init init = dpop.getInit();
+							if (newtype == null && prevtype != null) {
+								newtype = prevtype;
+								initargs = CLOParser.parseVector(typeargs[0]);
+							} else if (typeargs.length > 1)
+								initargs = CLOParser.parseVector(typeargs[1]);
+							// only uniform or kaleidoscope initializations do not require additional arguments
+							if (newtype == null || (initargs == null && !(newtype.equals(Init.Type.UNIFORM) || newtype.equals(Init.Type.KALEIDOSCOPE)))) {
+								ibs.logger.warning(
+										(isMultiSpecies ? mod.getName() + ": " : "") +
+												"inittype '" + inittype + "' unknown!");
+								// default to uniform
+								newtype = Init.Type.UNIFORM;
+								success = false;
+							}
+							init.type = newtype;
+							init.args = initargs;
+							prevtype = newtype;
+						}
+						return success;
+					}
+
+					@Override
+					public void report(PrintStream output) {
+						boolean isMultiSpecies = (ibs.species.size() > 1);
+						for (Module mod : ibs.species) {
+							IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
+							Init init = dpop.getInit();
+							output.println("# inittype:             " + init.type + " " + //
+									Formatter.format(init.args, 2) + (isMultiSpecies ? " ("
+											+ mod.getName() + ")" : ""));
+						}
+					}
+				});
+
+		/**
+		 * Type of initial density distribution. Currently this model supports:
+		 * <dl>
+		 * <dt>frequency &lt;f1,..,fn&gt;
+		 * <dd>Random distribution of traits with given frequencies {@code &lt;f1,..,fd&gt;}
+		 * for traits {@code 1,...,d} (default).
+		 * <dt>uniform
+		 * <dd>Uniform random distribution of traits.
+		 * <dt>monomorphic &lt;t[,v]&gt;
+		 * <dd>Monomorphic initialization of trait {@code t}. For modules that admit
+		 * vacant sites, their frequency is {@code v}.
+		 * <dt>kaleidoscope
+		 * <dd>Symmetric initial distribution, possibly generating evolutionary
+		 * kaleidoscopes for deterministic synchronous updates.
+		 * <dt>mutant &lt;m,r[,v]&gt;
+		 * <dd>Single mutant with trait {@code m} in random location of otherwise
+		 * homogeneous population with trait {@code r}. For modules that admit vacant
+		 * sites, their frequency is {@code v}.
+		 * <dt>stripes &lt;t1,...,td&gt;
+		 * <dd>Stripes of different traits. Ensures that at least one interface between
+		 * any two traits exists. Requires square lattice geometry.
+		 * <dt>STATISTICS
+		 * <dd>Initialization for statistics. Same as {@link #MUTANT} plus bookkeeping
+		 * for statistics. Convenience type for statistics mode. Not user selectable.
+		 * </dl>
+		 * 
+		 * @author Christoph Hauert
+		 * 
+		 * @see #setInitType(Key)
+		 * @see IBSD#cloInitType
+		 * @see org.evoludo.simulator.modules.Discrete#cloInit
+		 *      modules.Discrete.cloInit
+		 */
+		public enum Type implements CLOption.Key {
+
+			/**
+			 * Random distribution of traits with frequencies {@code &lt;f1,..,fd&gt;} (default).
+			 */
+			FREQUENCY("frequency", "random distribution with frequency <f1,..,fd>"),
+
+			/**
+			 * Uniform random distribution of traits.
+			 */
+			UNIFORM("uniform", "uniform random distribution"),
+
+			/**
+			 * Monomorphic initialization of the population with the specified trait. For
+			 * modules that admit vacant sites, their frequency is {@code v}. The parameters
+			 * are specified through the argument of the format {@code t[,v]}.
+			 */
+			MONO("monomorphic", "monomorphic initialization with trait <t[,v]>"),
+
+			/**
+			 * Single mutant with trait {@code m} in otherwise homogeneous population with
+			 * trait {@code r}. The mutant is placed in a location chosen uniformly at
+			 * random (uniform initialization). For modules that admit vacant sites, their
+			 * frequency is {@code v}. The parameters are specified through the argument of
+			 * the format {@code m,r[,v]}.
+			 */
+			MUTANT("mutant", "uniformly distributed, <m,r[,v]>"),
+
+			/**
+			 * Single mutant with trait {@code m} in otherwise homogeneous population with
+			 * trait {@code r}. The mutant is placed in a random location with probability
+			 * proportional to number of incoming links (temperature initialization). For
+			 * modules that admit vacant sites, their frequency is {@code v}. The parameters
+			 * are specified through the argument of the format {@code m,r[,v]}.
+			 */
+			TEMPERATURE("temperature", "temperature distribution, <m,r[,v]>"),
+
+			/**
+			 * Symmetric initial distribution, possibly generating evolutionary
+			 * kaleidoscopes for deterministic synchronous updates.
+			 */
+			KALEIDOSCOPE("kaleidoscope", "evolutionary kaleidoscopes"),
+
+			/**
+			 * Stripes of different traits. Requires square lattice geometry.
+			 */
+			STRIPES("stripes", "stripes of traits"),
+
+			/**
+			 * Initialization for statistics. Same as {@link #MUTANT} plus bookkeeping for
+			 * statistics. Convenience type for statistics mode. Not user selectable.
+			 * 
+			 * @see #MUTANT
+			 */
+			STATISTICS("-stat", "convenience type for statistics mode");
+
+			/**
+			 * Key of initialization type. Used when parsing command line options.
+			 * 
+			 * @see IBSD#cloInitType
+			 */
+			String key;
+
+			/**
+			 * Brief description of initialization type for help display.
+			 * 
+			 * @see EvoLudo#helpCLO()
+			 */
+			String title;
+
+			/**
+			 * Instantiate new initialization type.
+			 * 
+			 * @param key   identifier for parsing of command line option
+			 * @param title summary of initialization
+			 */
+			Type(String key, String title) {
+				this.key = key;
+				this.title = title;
+			}
+
+			@Override
+			public String getKey() {
+				return key;
+			}
+
+			@Override
+			public String getTitle() {
+				return title;
+			}
 		}
 	}
 
@@ -465,61 +553,6 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 			return key + ": " + title;
 		}
 	}
-
-	/**
-	 * Command line option to set the type of initial configuration.
-	 * <p>
-	 * <strong>Note:</strong> option not automatically added. Models that implement
-	 * different initialization types should load it in
-	 * {@link #collectCLO(CLOParser)}.
-	 * 
-	 * @see InitType
-	 */
-	public final CLOption cloInitType = new CLOption("inittype", InitType.UNIFORM.getKey(), EvoLudo.catModule,
-			"--inittype <t>  type of initial configuration", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					boolean success = true;
-					String[] inittypes = arg.split(CLOParser.SPECIES_DELIMITER);
-					int idx = 0;
-					InitType prevtype = null;
-					for (Module mod : species) {
-						IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
-						String inittype = inittypes[idx++ % inittypes.length];
-						double[] initargs = null;
-						String[] typeargs = inittype.split("\\s+|=");
-						InitType type = (InitType) cloInitType.match(inittype);
-						if (type == null && prevtype != null) {
-							type = prevtype;
-							initargs = CLOParser.parseVector(typeargs[0]);
-						} else if (typeargs.length > 1)
-							initargs = CLOParser.parseVector(typeargs[1]);
-						// only uniform or kaleidoscope initializations do not require additional arguments
-						if (type == null || (initargs == null && !(type.equals(InitType.UNIFORM) || type.equals(InitType.KALEIDOSCOPE)))) {
-							logger.warning(
-									(species.size() > 1 ? mod.getName() + ": " : "") +
-											"inittype '" + inittype + "' unknown!");
-							// default to uniform
-							type = InitType.UNIFORM;
-							success = false;
-						}
-						dpop.setInitType(type, initargs);
-						prevtype = type;
-					}
-					return success;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (Module mod : species) {
-						IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
-						InitType type = dpop.getInitType();
-						output.println("# inittype:             " + type.getKey() + " " + //
-								Formatter.format(type.args, 2) + (species.size() > 1 ? " ("
-										+ mod.getName() + ")" : ""));
-					}
-				}
-			});
 
 	/**
 	 * Command line option to request optimizations.
@@ -607,12 +640,15 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
-		parser.addCLO(cloInitType);
-		cloInitType.clearKeys();
-		cloInitType.addKeys(InitType.values());
+		IBSDPopulation pop = (IBSDPopulation) species.get(0).getIBSPopulation();
+		CLOption clo = pop.getInit().clo;
+		clo.clearKeys();
+		clo.addKeys(Init.Type.values());
+		parser.addCLO(clo);
 		// kaleidoscopes are not standard and must be requested/enabled by modules and
 		// their IBSDPopulation implementations.
-		cloInitType.removeKey(InitType.KALEIDOSCOPE);
+		clo.removeKey(Init.Type.KALEIDOSCOPE);
+		parser.addCLO(clo);
 		parser.addCLO(cloOptimize);
 		cloOptimize.addKeys(OptimizationType.values());
 	}

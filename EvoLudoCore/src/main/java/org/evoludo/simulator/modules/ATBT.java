@@ -42,7 +42,7 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSD;
-import org.evoludo.simulator.models.IBSD.InitType;
+import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
@@ -725,8 +725,10 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 	@Override
 	public void adjustCLO(CLOParser parser) {
 		super.adjustCLO(parser);
-		if (model instanceof IBSD)
-			((IBSD) model).cloInitType.addKey(InitType.KALEIDOSCOPE);
+		if (model instanceof IBSD) {
+			CLOption clo = ((IBSDPopulation) getIBSPopulation()).getInit().clo;
+			clo.addKey(Init.Type.KALEIDOSCOPE);
+		}
 	}
 
 	/**

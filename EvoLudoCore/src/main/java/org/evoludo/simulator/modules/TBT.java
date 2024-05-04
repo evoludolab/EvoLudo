@@ -41,7 +41,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSD;
-import org.evoludo.simulator.models.IBSD.InitType;
+import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.PDERD.HasPDE;
@@ -485,8 +485,10 @@ public class TBT extends Discrete implements Pairs,
 	@Override
 	public void adjustCLO(CLOParser parser) {
 		super.adjustCLO(parser);
-		if (model instanceof IBSD)
-			((IBSD) model).cloInitType.addKey(InitType.KALEIDOSCOPE);
+		if (model instanceof IBSD) {
+			CLOption clo = ((IBSDPopulation) getIBSPopulation()).getInit().clo;
+			clo.addKey(Init.Type.KALEIDOSCOPE);
+		}
 	}
 
 	@Override
@@ -672,7 +674,7 @@ public class TBT extends Discrete implements Pairs,
 					}
 					int l2 = l * l;
 					int m = l / 2;
-					double[] args = initType.getArgs();
+					double[] args = init.getArgs();
 					int type = ((args != null && args.length > 0) ? (int)args[0] : 0);
 					switch (type) {
 						default:

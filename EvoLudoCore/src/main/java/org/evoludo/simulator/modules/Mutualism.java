@@ -562,7 +562,7 @@ public class Mutualism extends Discrete implements Pairs,
 					}
 					int l2 = l * l;
 					int m = l / 2;
-					double[] args = initType.getArgs();
+					double[] args = init.getArgs();
 					int type = ((args != null && args.length > 0) ? (int)args[0] : 0);
 					switch (type) {
 						default:

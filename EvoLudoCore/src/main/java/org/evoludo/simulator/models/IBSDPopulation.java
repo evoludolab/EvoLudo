@@ -42,7 +42,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSD.FixationData;
-import org.evoludo.simulator.models.IBSD.InitType;
+import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Mutation;
@@ -172,6 +172,7 @@ public class IBSDPopulation extends IBSPopulation {
 		// mutli-species modules all species need to be loaded first.
 		module = (Discrete) super.module;
 		mutation = module.getMutation();
+		init = new Init((IBS) engine.getModel());
 	}
 
 	@Override
@@ -193,6 +194,7 @@ public class IBSDPopulation extends IBSPopulation {
 		pairmodule = null;
 		groupmodule = null;
 		mutation = null;
+		init = null;
 	}
 
 	/**
@@ -1722,15 +1724,16 @@ public class IBSDPopulation extends IBSPopulation {
 			return false;
 		// switch initialization type to frequencies
 		// IBSD calls routine only if frequency is valid key
-		setInitType(InitType.FREQUENCY, init);
+		this.init.type = Init.Type.FREQUENCY;
+		this.init.args = init;
 		return true;
 	}
 
 	@Override
-	public void getInitialTraits(double[] init) {
+	public void getInitialTraits(double[] traits) {
 		double iPop = 1.0 / nPopulation;
 		for (int n = 0; n < nTraits; n++)
-			init[n] = initTypeCount[n] * iPop;
+			traits[n] = initTypeCount[n] * iPop;
 	}
 
 	@Override
@@ -1884,9 +1887,9 @@ public class IBSDPopulation extends IBSPopulation {
 	public void init() {
 		super.init();
 		Model model = engine.getModel();
-		InitType myType = initType;
+		Init.Type myType = init.type;
 		if (model.getMode() == Mode.STATISTICS_SAMPLE)
-			myType = InitType.STATISTICS;
+			myType = Init.Type.STATISTICS;
 
 		Arrays.fill(strategiesTypeCount, 0);
 		switch (myType) {
@@ -1933,7 +1936,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * Initial configuration with uniform strategy frequencies of all
 	 * <em>active</em> strategies.
 	 * 
-	 * @see InitType#UNIFORM
+	 * @see Type#UNIFORM
 	 */
 	protected void initUniform() {
 		Arrays.fill(strategiesTypeCount, 0);
@@ -1956,15 +1959,15 @@ public class IBSDPopulation extends IBSPopulation {
 	/**
 	 * Initial configuration with strategy frequencies as specified in arguments.
 	 * 
-	 * @see InitType#FREQUENCY
+	 * @see Type#FREQUENCY
 	 */
 	protected void initFrequency() {
 		Arrays.fill(strategiesTypeCount, 0);
 		// different traits active
 		double[] cumFreqs = new double[nTraits];
-		cumFreqs[0] = initType.args[0];
+		cumFreqs[0] = init.args[0];
 		for (int i = 1; i < nTraits; i++)
-			cumFreqs[i] = cumFreqs[i - 1] + initType.args[i];
+			cumFreqs[i] = cumFreqs[i - 1] + init.args[i];
 		double inorm = 1.0 / cumFreqs[nTraits - 1];
 		ArrayMath.multiply(cumFreqs, inorm);
 
@@ -1986,16 +1989,16 @@ public class IBSDPopulation extends IBSPopulation {
 	 * Monomorphic initial configuration with specified trait (and frequency in
 	 * modules that allow empty sites).
 	 * 
-	 * @see InitType#MONO
+	 * @see Type#MONO
 	 */
 	protected void initMono() {
 		// initArgs contains the index of the monomorphic trait
-		int monoType = (int) initType.args[0];
+		int monoType = (int) init.args[0];
 		double monoFreq = 1.0;
 		if (VACANT >= 0) {
 			// the second argument indicates the frequency of vacant sites
-			if (initType.args.length < 2)
-				monoFreq = Math.max(0.0, 1.0 - initType.args[1]);
+			if (init.args.length < 2)
+				monoFreq = Math.max(0.0, 1.0 - init.args[1]);
 		}
 		initMono(monoType, monoFreq);
 	}
@@ -2023,11 +2026,11 @@ public class IBSDPopulation extends IBSPopulation {
 	/**
 	 * Initial configuration for generating a statistics sample.
 	 * 
-	 * @see InitType#STATISTICS
+	 * @see Type#STATISTICS
 	 */
 	protected void initStatistics() {
 		FixationData fix = ((IBSD) engine.getModel()).getFixationData();
-		switch (initType) {
+		switch (init.type) {
 			case MUTANT:
 				fix.mutantNode = initMutant();
 				break;
@@ -2035,11 +2038,11 @@ public class IBSDPopulation extends IBSPopulation {
 				fix.mutantNode = initTemperature();
 				break;
 			default:
-				throw new Error("invalid initType (" + initType + ") for statistics.");
+				throw new Error("invalid init type (" + init + ") for statistics.");
 		}
 		fix.mutantTrait = strategies[fix.mutantNode];
 		// this assumes InitType.MUTANT
-		fix.residentTrait = (int) initType.args[1];
+		fix.residentTrait = (int) init.args[1];
 	}
 
 	/**
@@ -2048,27 +2051,27 @@ public class IBSDPopulation extends IBSPopulation {
 	 * 
 	 * @return the location of the mutant
 	 * 
-	 * @see InitType#MUTANT
+	 * @see Type#MUTANT
 	 */
 	protected int initMutant() {
 		// initArgs contains the index of the resident and mutant traits
-		int mutantType = (int) initType.args[0];
-		int len = initType.args.length;
+		int mutantType = (int) init.args[0];
+		int len = init.args.length;
 		int residentType;
 		if (len > 1)
-			residentType = (int) initType.args[1];
+			residentType = (int) init.args[1];
 		else
 			residentType = (mutantType + 1) % nTraits;
 		double monoFreq = 1.0;
 		if (VACANT >= 0) {
 			// the second argument indicates the frequency of vacant sites
 			if (len > 2)
-				monoFreq = Math.max(0.0, 1.0 - initType.args[2]);
+				monoFreq = Math.max(0.0, 1.0 - init.args[2]);
 			if (residentType == VACANT && monoFreq < 1.0 - 1e-8) {
 				// problem encountered
-				initType = InitType.UNIFORM;
-				logger.warning("review " + ((IBSD) engine.getModel()).cloInitType.getName() + //
-						" settings! - using '" + initType.getKey() + "'.");
+				init.type = Init.Type.UNIFORM;
+				logger.warning("review " + init.clo.getName() + //
+						" settings! - using '" + init.type.getKey() + "'.");
 				initUniform();
 				return -1;
 			}
@@ -2089,14 +2092,14 @@ public class IBSDPopulation extends IBSPopulation {
 	 * 
 	 * @return the location of the mutant
 	 * 
-	 * @see InitType#TEMPERATURE
+	 * @see Type#TEMPERATURE
 	 */
 	protected int initTemperature() {
 		int mutant = initMutant();
 		if (interaction.isRegular)
 			return mutant;
 		int mutantType = strategies[mutant];
-		int residentType = (int) initType.args[1];
+		int residentType = (int) init.args[1];
 		// revert mutant back to resident
 		strategies[mutant] = residentType;
 		// use Gillespie algorithm to place mutant
@@ -2130,7 +2133,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * must be overriden in subclasses that admit kaleidoscopes.
 	 * <p>
 	 * <strong>Note:</strong> requires the explicit adding of the key
-	 * {@link InitType#KALEIDOSCOPE} for IBS models. For example, add
+	 * {@link Type#KALEIDOSCOPE} for IBS models. For example, add
 	 * 
 	 * <pre>
 	 * if (model.isModelType(Type.IBS))
@@ -2140,7 +2143,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * to
 	 * {@code org.evoludo.simulator.modules.Module#modelLoaded() Module#modelLoaded()}.
 	 * 
-	 * @see InitType#KALEIDOSCOPE
+	 * @see Type#KALEIDOSCOPE
 	 */
 	protected void initKaleidoscope() {
 	}
@@ -2150,7 +2153,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * invasion properties of one strategy into another with at least one instance
 	 * of all possible pairings.
 	 * 
-	 * @see InitType#STRIPES
+	 * @see Type#STRIPES
 	 */
 	protected void initStripes() {
 		// only makes sense for 2D lattices at this point. if not, defaults to uniform
@@ -2219,7 +2222,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * @param width  the width of the stripe
 	 * @param trait  the trait/stratgy of the stripe
 	 * 
-	 * @see InitType#STRIPES
+	 * @see Type#STRIPES
 	 */
 	private void fillStripe(int offset, int width, int trait) {
 		int size = (int) Math.sqrt(nPopulation);
@@ -2251,34 +2254,26 @@ public class IBSDPopulation extends IBSPopulation {
 	/**
 	 * Type of initial configuration.
 	 * 
-	 * @see #cloInitType
+	 * @see Init#clo
 	 */
-	protected InitType initType;
+	protected Init init;
 
 	/**
 	 * Sets the type of the initial configuration and any accompanying arguments. If
 	 * either {@code type} or {@code args} are {@code null} the respective current
 	 * setting is preserved.
-	 *
-	 * @param type the type of the initial configuration
-	 * @param args the arguments accompanying {@code type}
-	 * 
-	 * @see InitType
 	 */
-	public void setInitType(InitType type, double[] args) {
-		initType = type;
-		initType.args = args;
+	public void setInit(Init init) {
+		this.init = init;
 	}
 
 	/**
 	 * Gets the type of the initial configuration and its arguments.
 	 *
 	 * @return the type and arguments of the initial configuration
-	 * 
-	 * @see InitType
 	 */
-	public InitType getInitType() {
-		return initType;
+	public Init getInit() {
+		return init;
 	}
 
 	@Override

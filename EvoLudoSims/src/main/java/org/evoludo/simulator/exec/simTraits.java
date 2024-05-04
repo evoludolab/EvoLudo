@@ -89,7 +89,7 @@ public class simTraits extends Traits {
 		}
 
 		engine.setReportInterval(1.0);
-		pop.setInitType(InitType.UNIFORM, null);
+		pop.setInit(Type.UNIFORM, null);
 		playerUpdate.setType(PlayerUpdate.Type.IMITATE);
 		playerUpdate.setNoise(1.0);
 		engine.modelReset();

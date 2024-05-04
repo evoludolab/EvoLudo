@@ -40,7 +40,7 @@ import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSD;
-import org.evoludo.simulator.models.IBSD.InitType;
+import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.PDERD.HasPDE;
@@ -948,8 +948,10 @@ public class CDL extends Discrete implements Groups, HasIBS, HasODE, HasSDE, Has
 	@Override
 	public void adjustCLO(CLOParser parser) {
 		super.adjustCLO(parser);
-		if (model instanceof IBSD)
-			((IBSD) model).cloInitType.addKey(InitType.KALEIDOSCOPE);
+		if (model instanceof IBSD) {
+			CLOption clo = ((IBSDPopulation) getIBSPopulation()).getInit().clo;
+			clo.addKey(Init.Type.KALEIDOSCOPE);
+		}
 	}
 
 	@Override

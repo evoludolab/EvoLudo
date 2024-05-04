@@ -40,7 +40,8 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBS.MigrationType;
 import org.evoludo.simulator.models.IBSD;
-import org.evoludo.simulator.models.IBSD.InitType;
+import org.evoludo.simulator.models.IBSD.Init;
+import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.Type;
@@ -139,6 +140,12 @@ public class DemesTBT extends TBT {
 		option.clearKeys();
 		option.addKey(MigrationType.BIRTH_DEATH);
 		option.setDefault("B0");
+
+		// super TBT added kaleidoscopes but demes cannot deal with them
+		if (model instanceof IBSD) {
+			option = ((IBSDPopulation) getIBSPopulation()).getInit().clo;
+			option.removeKey(Init.Type.KALEIDOSCOPE);
+		}
 	}
 
 	@Override
@@ -156,13 +163,6 @@ public class DemesTBT extends TBT {
 
 		protected IBS(EvoLudo engine, Discrete module) {
 			super(engine);
-		}
-
-		@Override
-		public void load() {
-			super.load();
-			// TBT added kaleidoscopes but demes cannot deal with them
-			((IBSD) model).cloInitType.removeKey(InitType.KALEIDOSCOPE);
 		}
 
 		@Override
