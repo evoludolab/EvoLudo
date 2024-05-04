@@ -29,13 +29,6 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		super(engine);
 	}
 
-	@Override
-	public void unload() {
-		// free resources
-		super.unload();
-		cloInitType.clearKeys();
-	}
-
 	/**
 	 * Helper routine to retrieve the {@link IBSPopulation} associated with module
 	 * with {@code id}.
@@ -78,99 +71,34 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		getIBSMCPopulation(id).get2DTraitHistogramData(bins, trait1, trait2);
 	}
 
-	/**
-	 * Type of initial density distribution of traits. Currently this model supports:
-	 * <dl>
-	 * <dt>uniform
-	 * Uniform distribution of traits covering entire trait interval (default).
-	 * <dt>mono &lt;x&gt;
-	 * <dd>Monomorphic population with trait {@code xi}.
-	 * <dt>gaussian &lt;m,s&gt;
-	 * <dd>Gaussian distribution of traits with mean {@code mi} and standard
-	 * deviation
-	 * {@code si}.
-	 * <dt>mutant &lt;r,m&gt;
-	 * <dd>Monomorphic resident population with trait {@code r} and single mutant
-	 * with trait {@code m}.
-	 * </dl>
-	 * 
-	 * @author Christoph Hauert
-	 * 
-	 * @see #setInitType(Key)
-	 * @see EvoLudo#cloInitType
-	 */
-	public enum InitType implements CLOption.Key {
-
+	public static class Init {
 		/**
-		 * Uniform distribution of traits covering entire trait interval (default).
+		 * The model that is using this initialization. This is specific to IBS models.
 		 */
-		UNIFORM("uniform", "uniform trait distribution", 0),
+		org.evoludo.simulator.models.IBS ibs;
 
 		/**
-		 * Monomorphic population with trait(s) {@code xi}.
-		 */
-		MONO("mono", "monomorphic trait <x1,...,xd>", 1),
-
-		/**
-		 * Gaussian distribution of traits with mean {@code mi} and standard deviation
-		 * {@code si}.
-		 */
-		GAUSSIAN("gaussian", "Gaussian traits <m1,...,md;s1,...,sd>", 2),
-
-		/**
-		 * Monomorphic resident population with trait {@code ri} and single mutant with
-		 * trait {@code mi}.
-		 */
-		MUTANT("mutant", "mutant in monomorphic resident <m1,...,md;r1,...,rd>", 2);
-
-		/**
-		 * Key of initialization type. Used when parsing command line options.
+		 * Instantiate new initialization for use in IBS {@code model}s.
 		 * 
-		 * @see EvoLudo#cloInitType
+		 * @param ibs the model using this initialization
 		 */
-		String key;
-
-		/**
-		 * Brief description of initialization type for help display.
-		 * 
-		 * @see EvoLudo#helpCLO()
-		 */
-		String title;
-
-		/**
-		 * The number of parameters of the cost function.
-		 */
-		int nParams;
-
-		/**
-		 * The arguments for the initialization. Convenience field, meaningful only
-		 * immediately after calls to {@link IBSMCPopulation#getInitType(int)} or
-		 * {@link IBSCPopulation#getInitType()}.
-		 */
-		double[] args;
-
-		/**
-		 * Instantiate new initialization type.
-		 * 
-		 * @param key     identifier for parsing of command line option
-		 * @param title   summary of geometry
-		 * @param nParams the number of parameters
-		 */
-		InitType(String key, String title, int nParams) {
-			this.key = key;
-			this.title = title;
-			this.nParams = nParams;
+		public Init(org.evoludo.simulator.models.IBS ibs, int nTraits) {
+			this.ibs = ibs;
+			type = Type.UNIFORM;
+			args = new double[nTraits][];
 		}
 
-		@Override
-		public String getKey() {
-			return key;
-		}
+		/**
+		 * The population update type.
+		 * 
+		 * @see #clo
+		 */
+		Init.Type type;
 
-		@Override
-		public String getTitle() {
-			return title;
-		}
+		/**
+		 * The array of arguments for the initialization of each trait.
+		 */
+		double[][] args;
 
 		/**
 		 * Get the arguments of this initialization type. Convenience field.
@@ -179,74 +107,168 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		 * 
 		 * @see #args
 		 */
-		public double[] getArgs() {
+		public double[][] getArgs() {
 			return args;
 		}
-	}
 
-	/**
-	 * Command line option to set the type of initial configuration.
-	 * <p>
-	 * <strong>Note:</strong> option not automatically added. Models that implement
-	 * different initialization types should load it in
-	 * {@link #collectCLO(CLOParser)}.
-	 * 
-	 * @see InitType
-	 */
-	public final CLOption cloInitType = new CLOption("inittype", InitType.UNIFORM.getKey(), EvoLudo.catModule,
-			"--inittype <t>  type of initial configuration", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					boolean success = true;
-					IBSMCPopulation cpop = (IBSMCPopulation) population;
-					String[] inittypes = arg.split(CLOParser.TRAIT_DELIMITER);
-					Module mod = cpop.getModule();
-					int nt = mod.getNTraits();
-					InitType prevtype = null;
-					for (int n = 0; n < nt; n++) {
-						String inittype = inittypes[n % inittypes.length];
-						double[] initargs = null;
-						String[] typeargs = inittype.split("\\s+|=");
-						InitType type = (InitType) cloInitType.match(inittype);
-						if (type == null && prevtype != null) {
-							type = prevtype;
-							initargs = CLOParser.parseVector(typeargs[0]);
-						} else if (typeargs.length > 1)
-							initargs = CLOParser.parseVector(typeargs[1]);
-						boolean argsOk = (initargs != null && initargs.length >= type.nParams);
-						// only uniform initialization does not require additional arguments
-						if (type == null || (!type.equals(InitType.UNIFORM) && !argsOk)) {
-							logger.warning(
-									(species.size() > 1 ? mod.getName() + ": " : "") +
-											"inittype '" + inittype + "' unknown!");
-							type = InitType.UNIFORM;
-							success = false;
+		/**
+		 * Command line option to set the type of initial configuration.
+		 * <p>
+		 * <strong>Note:</strong> option not automatically added. Models that implement
+		 * different initialization types should load it in
+		 * {@link #collectCLO(CLOParser)}.
+		 * 
+		 * @see Type
+		 */
+		public final CLOption clo = new CLOption("inittype", Init.Type.UNIFORM.getKey(), EvoLudo.catModule,
+				"--inittype <t>  type of initial configuration", new CLODelegate() {
+					@Override
+					public boolean parse(String arg) {
+						boolean success = true;
+						for (Module mod : ibs.species) {
+							IBSMCPopulation cpop = (IBSMCPopulation) mod.getIBSPopulation();
+							String[] inittypes = arg.split(CLOParser.TRAIT_DELIMITER);
+							int nt = mod.getNTraits();
+							Init.Type prevtype = null;
+							boolean isMultiSpecies = (ibs.species.size() > 1);
+							for (int n = 0; n < nt; n++) {
+								String inittype = inittypes[n % inittypes.length];
+								double[] initargs = null;
+								String[] typeargs = inittype.split("\\s+|=");
+								Init.Type newtype = (Init.Type) clo.match(inittype);
+								Init init = cpop.getInit();
+								if (newtype == null && prevtype != null) {
+									newtype = prevtype;
+									initargs = CLOParser.parseVector(typeargs[0]);
+								} else if (typeargs.length > 1)
+									initargs = CLOParser.parseVector(typeargs[1]);
+								boolean argsOk = (initargs != null && initargs.length >= newtype.nParams);
+								// only uniform initialization does not require additional arguments
+								if (newtype == null || (!newtype.equals(Init.Type.UNIFORM) && !argsOk)) {
+									ibs.logger.warning(
+											(isMultiSpecies ? mod.getName() + ": " : "") +
+													"inittype '" + inittype + "' unknown!");
+									newtype = Init.Type.UNIFORM;
+									success = false;
+								}
+								init.type = newtype;
+								init.args[n] = initargs;
+								prevtype = newtype;
+							}
 						}
-						cpop.setInitType(type, initargs, n);
-						prevtype = type;
+						return success;
 					}
-					return success;
-				}
 
-				@Override
-				public void report(PrintStream output) {
-					IBSMCPopulation cpop = (IBSMCPopulation) population;
-					Module mod = cpop.getModule();
-					int nt = mod.getNTraits();
-					for (int n = 0; n < nt; n++) {
-						InitType type = cpop.getInitType(n);
-						output.println("# inittype:             " + type.getKey() + " " + //
-								Formatter.format(type.args, 2) + (species.size() > 1 ? " ("
-										+ mod.getName() + ")" : ""));
+					@Override
+					public void report(PrintStream output) {
+						boolean isMultiSpecies = (ibs.species.size() > 1);
+						for (Module mod : ibs.species) {
+							IBSMCPopulation cpop = (IBSMCPopulation) mod.getIBSPopulation();
+							Init init = cpop.getInit();
+							output.println("# inittype:             " + init.type + " " + //
+									Formatter.format(init.args, 2) + (isMultiSpecies ? " ("
+											+ mod.getName() + ")" : ""));
+						}
 					}
-				}
-			});
+				});
+
+		/**
+		 * Type of initial density distribution of traits. Currently this model supports:
+		 * <dl>
+		 * <dt>uniform
+		 * Uniform distribution of traits covering entire trait interval (default).
+		 * <dt>mono &lt;x&gt;
+		 * <dd>Monomorphic population with trait {@code xi}.
+		 * <dt>gaussian &lt;m,s&gt;
+		 * <dd>Gaussian distribution of traits with mean {@code mi} and standard
+		 * deviation
+		 * {@code si}.
+		 * <dt>mutant &lt;r,m&gt;
+		 * <dd>Monomorphic resident population with trait {@code r} and single mutant
+		 * with trait {@code m}.
+		 * </dl>
+		 * 
+		 * @author Christoph Hauert
+		 * 
+		 * @see #setInitType(Key)
+		 * @see EvoLudo#cloInitType
+		 */
+		public enum Type implements CLOption.Key {
+
+			/**
+			 * Uniform distribution of traits covering entire trait interval (default).
+			 */
+			UNIFORM("uniform", "uniform trait distribution", 0),
+
+			/**
+			 * Monomorphic population with trait(s) {@code xi}.
+			 */
+			MONO("mono", "monomorphic trait <x1,...,xd>", 1),
+
+			/**
+			 * Gaussian distribution of traits with mean {@code mi} and standard deviation
+			 * {@code si}.
+			 */
+			GAUSSIAN("gaussian", "Gaussian traits <m1,...,md;s1,...,sd>", 2),
+
+			/**
+			 * Monomorphic resident population with trait {@code ri} and single mutant with
+			 * trait {@code mi}.
+			 */
+			MUTANT("mutant", "mutant in monomorphic resident <m1,...,md;r1,...,rd>", 2);
+
+			/**
+			 * Key of initialization type. Used when parsing command line options.
+			 * 
+			 * @see EvoLudo#cloInitType
+			 */
+			String key;
+
+			/**
+			 * Brief description of initialization type for help display.
+			 * 
+			 * @see EvoLudo#helpCLO()
+			 */
+			String title;
+
+			/**
+			 * The number of parameters of the cost function.
+			 */
+			int nParams;
+
+			/**
+			 * Instantiate new initialization type.
+			 * 
+			 * @param key     identifier for parsing of command line option
+			 * @param title   summary of geometry
+			 * @param nParams the number of parameters
+			 */
+			Type(String key, String title, int nParams) {
+				this.key = key;
+				this.title = title;
+				this.nParams = nParams;
+			}
+
+			@Override
+			public String getKey() {
+				return key;
+			}
+
+			@Override
+			public String getTitle() {
+				return title;
+			}
+		}
+	}
 
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
-		parser.addCLO(cloInitType);
-		cloInitType.addKeys(InitType.values());
+		IBSMCPopulation pop = (IBSMCPopulation) species.get(0).getIBSPopulation();
+		CLOption clo = pop.getInit().clo;
+		clo.clearKeys();
+		clo.addKeys(Init.Type.values());
+		parser.addCLO(clo);
 		// interacting with all members of the population is not feasible for continuous
 		// traits; use single interaction with random neighbour as default
 		cloInteractions.setDefault("random 1");

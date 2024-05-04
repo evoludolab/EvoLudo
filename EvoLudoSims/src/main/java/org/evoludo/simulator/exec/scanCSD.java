@@ -42,7 +42,7 @@ import org.evoludo.math.Distributions;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.models.IBSC.InitType;
+import org.evoludo.simulator.models.IBSC.Init;
 import org.evoludo.simulator.models.IBSCPopulation;
 import org.evoludo.simulator.modules.CSD;
 import org.evoludo.simulator.views.MVPop2D;
@@ -90,10 +90,9 @@ public class scanCSD extends CSD {
 		double[] bparams = traits2payoff.getBenefitParameters()[0];
 		double[] cparams = traits2payoff.getCostParameters()[0];
 
-		// initialize
-		double[] dinit = new double[nTraits];
-		model.getInitialTraits(dinit);
-		double iMean = dinit[TRAIT_MEAN];
+		// initialization
+		Init init = cpop.getInit();
+		double iMean = init.getArgs()[0][TRAIT_MEAN];
 		boolean initHigh = false;
 
 		// print header
@@ -129,14 +128,11 @@ public class scanCSD extends CSD {
 						traits2payoff.setBenefitParameters(bparams, 0);
 						traits2payoff.setCostParameters(cparams, 0);
 						// initialize population
-						InitType type = cpop.getInitType();
-						double[] myinit = type.getArgs();
+						double[] myinit = init.getArgs()[0];
 						if( initHigh )
 							myinit[TRAIT_MEAN] = getTraitMax()[0]-iMean;
 						else
 							myinit[TRAIT_MEAN] = iMean;
-						cpop.setInitType(type, myinit, 0);
-
 						engine.modelReset();
 
 						// evolve population

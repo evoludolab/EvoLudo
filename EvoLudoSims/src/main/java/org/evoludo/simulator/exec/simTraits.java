@@ -36,13 +36,12 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 
-import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.EvoLudoJRE;
+import org.evoludo.simulator.models.IBSD;
+import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.PopulationUpdate;
-import org.evoludo.simulator.models.IBSD;
-import org.evoludo.simulator.models.IBSD.InitType;
-import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.modules.PlayerUpdate;
 import org.evoludo.simulator.modules.Traits;
 import org.evoludo.util.CLOParser;
@@ -89,7 +88,7 @@ public class simTraits extends Traits {
 		}
 
 		engine.setReportInterval(1.0);
-		pop.setInit(Type.UNIFORM, null);
+		// default init type is UNIFORM
 		playerUpdate.setType(PlayerUpdate.Type.IMITATE);
 		playerUpdate.setNoise(1.0);
 		engine.modelReset();

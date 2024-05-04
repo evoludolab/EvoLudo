@@ -35,12 +35,11 @@ package org.evoludo.simulator.models;
 import java.util.Arrays;
 import java.util.List;
 
-import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBS.ScoringType;
-import org.evoludo.simulator.models.IBSC.InitType;
+import org.evoludo.simulator.models.IBSC.Init;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.util.Formatter;
@@ -128,6 +127,7 @@ public class IBSMCPopulation extends IBSPopulation {
 		// mutli-species modules all species need to be loaded first.
 		module = (Continuous) super.module;
 		mutation = module.getMutation();
+		init = new Init((IBS) engine.getModel(), module.getNTraits());
 	}
 
 	@Override
@@ -143,13 +143,13 @@ public class IBSMCPopulation extends IBSPopulation {
 		groupStrat = null;
 		smallStrat = null;
 		meantrait = null;
+		inittrait = null;
 		oldScores = null;
-		initType = null;
-		initTraits = null;
 		module = null;
 		pairmodule = null;
 		groupmodule = null;
 		mutation = null;
+		init = null;
 	}
 
 	@Override
@@ -689,19 +689,12 @@ public class IBSMCPopulation extends IBSPopulation {
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * <strong>Note:</strong> For continuous modules the IBS model returns the concatenated mean and stdev of each trait in {@code init}.
+	 * <strong>Note:</strong> For continuous modules the IBS model returns the
+	 * concatenated mean and stdev of each trait in {@code traits}.
 	 */
 	@Override
-	public void getInitialTraits(double[] init) {
-		if (init==null || init.length < 2*nTraits)
-			return;
-		int idx = 0;
-		for (int n = 0; n < nTraits; n++) {
-			double shift = traitMin[n];
-			double range = traitMax[n] - shift;
-			init[idx++] = shift + initTraits[n][0] * range;
-			init[idx++] = initTraits[n][1] * range;
-		}
+	public void getInitialTraits(double[] traits) {
+		System.arraycopy(inittrait, 0, traits, 0, 2 * nTraits);
 	}
 
 	/**
@@ -755,6 +748,12 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * deviation. Must be of length {@code > 2 * nTraits}.
 	 */
 	private double[] meantrait;
+
+	/**
+	 * The array for storing the mean and standard deviation of the initial state.
+	 * Must be of length {@code > 2 * nTraits}.
+	 */
+	private double[] inittrait;
 
 	@Override
 	public String getStatus() {
@@ -813,71 +812,38 @@ public class IBSMCPopulation extends IBSPopulation {
 	}
 
 	/**
-	 * Type of initial configuration for each trait.
+	 * Type of initial configuration.
 	 * 
-	 * @see #cloInitType
+	 * @see Init#clo
 	 */
-	protected InitType[] initType;
-
-	/**
-	 * The array with arguments for the initialization. Their detailed meaning
-	 * depends on the type of initialization.
-	 * 
-	 * @see InitType
-	 */
-	double[][] initArgs;
-
-	/**
-	 * The array with mean and sdev of initial configuration.
-	 */
-	double[][] initTraits;
+	protected Init init;
 
 	/**
 	 * Sets the type of the initial configuration and any accompanying arguments. If
-	 * {@code trait} is invalid no change is made. If {@code type==null} and
-	 * {@code args != null} only the arguments of the initialization are changed.
-	 *
-	 * @param type  the type of the initial configuration
-	 * @param args  the array of arguments for the initialization
-	 * @param trait the index of the trait 
-	 * 
-	 * @see InitType
+	 * either {@code type} or {@code args} are {@code null} the respective current
+	 * setting is preserved.
 	 */
-	public void setInitType(InitType type, double[] args, int trait) {
-		if (trait <0 || trait > nTraits)
-			return;
-		if (initType == null || initType.length != nTraits)
-			initType = new InitType[nTraits];
-		if (initArgs == null || initArgs.length != nTraits)
-			initArgs = new double[nTraits][];
-		if (type != null)
-			initType[trait] = type;
-		if (args != null)
-			initArgs[trait] = args;
+	public void setInit(Init init) {
+		this.init = init;
 	}
 
 	/**
 	 * Gets the type of the initial configuration and its arguments.
 	 *
-	 * @param trait the index of the trait 
 	 * @return the type and arguments of the initial configuration
-	 * 
-	 * @see InitType
 	 */
-	public InitType getInitType(int trait) {
-		initType[trait].args = ArrayMath.clone(initArgs[trait]);
-		return initType[trait];
+	public Init getInit() {
+		return init;
 	}
 
 	@Override
 	public void init() {
 		super.init();
-
-		if (initTraits == null || initTraits.length != nTraits)
-			initTraits = new double[nTraits][2];
+		if (inittrait == null || inittrait.length != 2 * nTraits)
+			inittrait = new double[2 * nTraits];
 		int mutidx = -1;
 		for (int s = 0; s < nTraits; s++) {
-			switch (initType[s]) {
+			switch (init.type) {
 				default:
 				case UNIFORM:
 					for (int n = s; n < nPopulation * nTraits; n += nTraits)
@@ -886,15 +852,15 @@ public class IBSMCPopulation extends IBSPopulation {
 
 				case MONO:
 					// initArgs contains monomorphic trait
-					double mono = Math.min(Math.max(initArgs[s][0], traitMin[s]), traitMax[s]);
+					double mono = Math.min(Math.max(init.args[s][0], traitMin[s]), traitMax[s]);
 					double scaledmono = (mono - traitMin[s]) / (traitMax[s] - traitMin[s]);
 					for (int n = s; n < nPopulation * nTraits; n += nTraits)
 						strategies[n] = scaledmono;
 					break;
 
 				case GAUSSIAN:
-					double mean = Math.min(Math.max(initArgs[s][0], traitMin[s]), traitMax[s]);
-					double sdev = Math.min(Math.max(initArgs[s][1], traitMin[s]), traitMax[s]);
+					double mean = Math.min(Math.max(init.args[s][0], traitMin[s]), traitMax[s]);
+					double sdev = Math.min(Math.max(init.args[s][1], traitMin[s]), traitMax[s]);
 					double scaledmean = (mean - traitMin[s]) / (traitMax[s] - traitMin[s]);
 					double scaledsdev = sdev / (traitMax[s] - traitMin[s]);
 					for (int n = s; n < nPopulation * nTraits; n += nTraits)
@@ -902,29 +868,19 @@ public class IBSMCPopulation extends IBSPopulation {
 					break;
 
 				case MUTANT:
-					double resident = Math.min(Math.max(initArgs[s][0], traitMin[s]), traitMax[s]);
+					double resident = Math.min(Math.max(init.args[s][0], traitMin[s]), traitMax[s]);
 					double scaledresident = (resident - traitMin[s]) / (traitMax[s] - traitMin[s]);
 					for (int n = s; n < nPopulation * nTraits; n += nTraits)
 						strategies[n] = scaledresident;
 					if (mutidx < 0)
 						mutidx = random0n(nPopulation);
-					double mut = Math.min(Math.max(initArgs[s][1], traitMin[s]), traitMax[s]);
+					double mut = Math.min(Math.max(init.args[s][1], traitMin[s]), traitMax[s]);
 					strategies[mutidx] = (mut - traitMin[s]) / (traitMax[s] - traitMin[s]);
 					break;
 			}
-			// calculate mean and stdev of initial configuration
-			// see Distributions.variance
-			double mean = strategies[s];
-			double sum2 = 0.0;
-			for (int n = s + nTraits; n < nPopulation * nTraits; n += nTraits) {
-				double xn = strategies[n];
-				double dx = xn - mean;
-				mean += dx / (n + 1);
-				sum2 += dx * (xn - mean);	
-			}
-			initTraits[s][0] = mean;
-			initTraits[s][1] = Math.sqrt(sum2 / (nPopulation - 1));
 		}
+		// calculate mean and stdev of initial configuration
+		getMeanTraits(inittrait);
 	}
 
 	@Override
