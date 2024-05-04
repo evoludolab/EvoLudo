@@ -126,11 +126,11 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		if (buffer != null) {
 			// add copy of colors array to buffer
 			// note: cannot be reliably done in RingBuffer class without reflection
-			String[] colorCopy = Arrays.copyOf(colors, colors.length);
+			String[] copy = Arrays.copyOf(colors, colors.length);
 			if (isNext || buffer.isEmpty())
-				buffer.append(colorCopy);
+				buffer.append(copy);
 			else
-				buffer.replace(colorCopy);
+				buffer.replace(copy);
 		}
 		super.update(isNext);
 	}
@@ -187,6 +187,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				}
 			}
 			buffer.clear();
+			// allocate colors now to store history
+			if (colors == null || colors.length != geometry.size)
+				colors = new String[geometry.size];
 		} else {
 			buffer = null;
 		}
@@ -241,7 +244,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				triup.translate(0, -side * dh);
 				tridown.translate(0, -side * dh);
 				drawFrame(0, 0);
-				g.restore();
 				break;
 
 			case HONEYCOMB:
@@ -264,7 +266,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				else
 					hex.translate(-dw2, -dh * side);
 				drawFrame(0, 0);
-				g.restore();
 				break;
 
 			case SQUARE_NEUMANN:
@@ -302,7 +303,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 					drawFrame(4, 4);
 				else
 					drawFrame(0, 0);
-				g.restore();
 				break;
 
 			case LINEAR:
@@ -320,14 +320,12 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 					yshift += dh;
 				}
 				drawFrame(4, 4);
-				g.restore();
 				break;
 
 			default:
-				g.restore();
 				displayMessage("No representation for " + type.getTitle() + "!");
-				return;
 		}
+		g.restore();
 	}
 
 	/**
