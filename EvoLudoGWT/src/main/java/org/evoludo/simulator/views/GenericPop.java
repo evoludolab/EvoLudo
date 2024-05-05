@@ -13,6 +13,7 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
+import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.Type;
@@ -140,6 +141,11 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 					graph.paint(force);
 				}
 		}
+	}
+
+	@Override
+	public boolean isModelType(Model.Type type) {
+		return (engine.getModel() instanceof IBS);
 	}
 
 	/**
