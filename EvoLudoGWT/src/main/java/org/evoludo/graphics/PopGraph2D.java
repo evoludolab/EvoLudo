@@ -198,6 +198,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	@Override
 	protected void layoutLattice() {
 		super.layoutLattice();
+		invalidated = false;
 		if (dw < 1 && dh < 1 && dR < 2) {
 			displayMessage("Population size to large!");
 			return;
@@ -337,6 +338,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		if (!network.isStatus(Status.HAS_LAYOUT) || geometry.isDynamic)
 			network.doLayout(this);
 		geometry.setNetwork2D(network);
+		invalidated = false;
 		drawNetwork();
 	}
 

@@ -179,12 +179,12 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 						layoutLattice();
 					else
 						layoutNetwork();
-					invalidated = false;
 				}
 			});
 		}
 	}
 
+	@Override
 	public boolean paint(boolean force) {
 		if (super.paint(force))
 			return true;
