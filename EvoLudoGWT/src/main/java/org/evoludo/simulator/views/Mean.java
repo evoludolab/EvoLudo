@@ -53,14 +53,15 @@ import org.evoludo.util.RingBuffer;
  *
  * @author Christoph Hauert
  */
-public class Mean extends AbstractView implements LineGraph.LineGraphController{
+public class Mean extends AbstractView implements LineGraph.LineGraphController {
 
-	// NOTE: this is a bit of a hack that allows us to use graphs as Set<LineGraph> here
-	//		 but as Set<AbstractGraph> in super classes. Saves a lot of ugly casting
+	// NOTE: this is a bit of a hack that allows us to use graphs as Set<LineGraph>
+	// here
+	// but as Set<AbstractGraph> in super classes. Saves a lot of ugly casting
 	@SuppressWarnings("hiding")
 	protected List<LineGraph> graphs;
 
-	double[] state, mean;
+	double[] state, tmp;
 
 	@SuppressWarnings("unchecked")
 	public Mean(EvoLudoGWT engine, Model.Data type) {
@@ -70,7 +71,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 
 	@Override
 	public String getName() {
-		switch( type ) {
+		switch (type) {
 			case STRATEGY:
 				return "Strategies - Mean";
 			case FITNESS:
@@ -85,12 +86,13 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 		super.reset(hard);
 		ArrayList<? extends Module> species = engine.getModule().getSpecies();
 		int nSpecies = model.getNSpecies();
-		// multiple line graphs for multi-species interactions and in case of multiple traits for continuous strategies
+		// multiple line graphs for multi-species interactions and in case of multiple
+		// traits for continuous strategies
 		IBSC cmodel = model.isContinuous() ? (IBSC) model : null;
 		int nMean = model.getNMean();
-		int nGraphs = (cmodel!=null && type==Model.Data.STRATEGY ? nMean : nSpecies);
+		int nGraphs = (cmodel != null && type == Model.Data.STRATEGY ? nMean : nSpecies);
 		// if the number of graphs has changed, destroy and recreate them
-		if( graphs.size()!=nGraphs ) {
+		if (graphs.size() != nGraphs) {
 			hard = true;
 			destroyGraphs();
 			// one graph per discrete species or continuous trait
@@ -98,55 +100,56 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 				LineGraph graph = new LineGraph(this, module);
 				wrapper.add(graph);
 				graphs.add(graph);
+				if (cmodel == null)
+					continue;
+				for (int n = 1; n < module.getNTraits(); n++) {
+					graph = new LineGraph(this, module);
+					wrapper.add(graph);
+					graphs.add(graph);
+				}
 			}
 			// arrange graphs vertically
 			gRows = nGraphs;
-			int width = 100/gCols;
-			int height = 100/gRows;
-			for( LineGraph graph : graphs )
-				graph.setSize(width+"%", height+"%");
+			int width = 100 / gCols;
+			int height = 100 / gRows;
+			for (LineGraph graph : graphs)
+				graph.setSize(width + "%", height + "%");
 		}
 
-		for( LineGraph graph : graphs ) {
+		// index of trait in continuous models
+		int idx = 0;
+		// make sure we have enough temporary storage for all scenarios
+		tmp = new double[2 * model.getNMean() + 1];
+		for (LineGraph graph : graphs) {
 			AbstractGraph.GraphStyle style = graph.getStyle();
 			Module module = graph.getModule();
-			// index of trait in continuous models
-			int idx = 0;
 
-			switch( type ) {
+			switch (type) {
 				default:
 				case STRATEGY:
 					if (cmodel != null) {
+						// continuous module with single trait on graph (single species, for now)
 						style.yLabel = model.getMeanName(idx);
 						style.percentY = false;
 						style.yMin = cmodel.getTraitMin(0)[idx];
-						style.yMin = cmodel.getTraitMax(0)[idx];
+						style.yMax = cmodel.getTraitMax(0)[idx];
 						Color color = model.getMeanColors()[idx];
 						String[] traitcolors = new String[3];
-						traitcolors[0] = ColorMapCSS.Color2Css(color);			// mean
-						traitcolors[1] = ColorMapCSS.Color2Css(color == Color.BLACK ? Color.LIGHT_GRAY : color.darker());	// min
-						traitcolors[2] = traitcolors[1];						// max
+						traitcolors[0] = ColorMapCSS.Color2Css(color); // mean
+						traitcolors[1] = ColorMapCSS
+								.Color2Css(color == Color.BLACK ? Color.LIGHT_GRAY : color.darker()); // min
+						traitcolors[2] = traitcolors[1]; // max
 						graph.setColors(traitcolors);
-						if( state==null || state.length<3 )
-							state = new double[3];	// mean/min/max
-						int nState = 2*nMean;
-						if( mean==null || mean.length<nState )
-							mean = new double[nState];	// mean/sdev
 						idx++;
-					}
-					else {
+					} else {
+						// discrete module with multiple traits on graph
 						int id = module.getID();
-						int nState = model.getNMean(id);
-						if( state==null || state.length<nState )
-							state = new double[nState];
-						mean = state;
 						if (model instanceof Model.DE && ((Model.DE) model).isDensity()) {
 							style.yLabel = "density";
 							style.percentY = false;
 							style.yMin = 0.0;
 							style.yMax = 0.0;
-						}
-						else {
+						} else {
 							style.yLabel = "frequency";
 							style.percentY = true;
 							style.yMin = 0.0;
@@ -165,47 +168,38 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 					Color[] fitcolors;
 					int id = module.getID();
 					if (cmodel != null) {
-						if( state==null || state.length<nMean )
-							state = new double[nMean];
-						// only 2 entries needed for mean and sdev payoff
-						if( mean==null || mean.length<2 )
-							mean = new double[2];	// mean/sdev
 						// hardcoded color: black for mean, light gray for mean +/- sdev
-						fitcolors = new Color[] {Color.BLACK, Color.LIGHT_GRAY, Color.LIGHT_GRAY};
-					}
-					else {
+						fitcolors = new Color[] { Color.BLACK, Color.LIGHT_GRAY, Color.LIGHT_GRAY };
+					} else {
 						// one 'state' more for the average fitness
 						int nState = model.getNMean(id) + 1;
-						if( state==null || state.length<nState )
-							state = new double[nState];
-						mean = state;
 						fitcolors = new Color[nState];
-						System.arraycopy(model.getMeanColors(id), 0, fitcolors, 0, nState-1);
-						fitcolors[nState-1] = Color.BLACK;
+						System.arraycopy(model.getMeanColors(id), 0, fitcolors, 0, nState - 1);
+						fitcolors[nState - 1] = Color.BLACK;
 					}
 					graph.setColors(ColorMapCSS.Color2Css(fitcolors));
 					double min = model.getMinScore(id);
 					double max = model.getMaxScore(id);
-					if( max-min<1e-8 ) {
+					if (max - min < 1e-8) {
 						min -= 1.0;
 						max += 1.0;
 					}
-					if( Math.abs(min-style.yMin)>1e-8 || Math.abs(max-style.yMax)>1e-8 ) {
+					if (Math.abs(min - style.yMin) > 1e-8 || Math.abs(max - style.yMax) > 1e-8) {
 						style.yMin = min;
 						style.yMax = max;
 						hard = true;
 					}
-					if( nSpecies>1 )
+					if (nSpecies > 1)
 						style.label = module.getName();
 					style.yLabel = "payoffs";
 					if (module instanceof Discrete) {
 						// cast is save because module is Discrete
 						org.evoludo.simulator.models.Model.Discrete dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
-						double[] monoScores = new double[nMean+1];
+						double[] monoScores = new double[nMean + 1];
 						// the first entry is for dashed (>0) and dotted (<0) lines
 						monoScores[0] = 1.0;
-						for (int n=0;n<nMean;n++)
-							monoScores[n+1] = dmodel.getMonoScore(module.getID(), n);
+						for (int n = 0; n < nMean; n++)
+							monoScores[n + 1] = dmodel.getMonoScore(module.getID(), n);
 						String[] monoColors = new String[fitcolors.length];
 						int n = 0;
 						for (Color color : fitcolors)
@@ -216,18 +210,18 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 					}
 					break;
 			}
-			if( nSpecies>1 ) 
+			if (nSpecies > 1)
 				style.label = module.getName();
 			style.xLabel = "time";
 			style.showXLevels = false;
 			double rFreq = engine.getReportInterval();
-			if( Math.abs(style.xIncr-rFreq)>1e-8 ) {
+			if (Math.abs(style.xIncr - rFreq) > 1e-8) {
 				style.xIncr = rFreq;
-				style.xMin = -graph.getSteps()*style.xIncr;
+				style.xMin = -graph.getSteps() * style.xIncr;
 				hard = true;
 			}
 			style.xMax = 0.0;
-			if( hard )
+			if (hard)
 				graph.reset();
 		}
 		update(hard);
@@ -237,50 +231,57 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 	public void update(boolean force) {
 		double newtime = model.getTime();
 		Module module = null;
-		int nState = -1;
 		boolean cmodel = model.isContinuous();
-		if( Math.abs(timestamp-newtime)>1e-8 ) {
+		double[] state = null;
+		if (Math.abs(timestamp - newtime) > 1e-8) {
 			int idx = 0;
-			for( LineGraph graph : graphs ) {
-				Module newMod = graph.getModule();
-				switch( type ) {
+			for (LineGraph graph : graphs) {
+				Module nod = graph.getModule();
+				boolean newmod = module != nod;
+				module = nod;
+				int id = module.getID();
+				int nState = model.getNMean(id);
+				switch (type) {
 					case STRATEGY:
-						if( module != newMod ) {
+						if (newmod) {
 							idx = 0;
-							module = newMod;
-							model.getMeanTraits(idx++, mean);
-							nState = model.getNMean(module.getID());
+							model.getMeanTraits(id, tmp);
 						}
-						// module cannot be null here but makes compiler happy
-						if (module != null && cmodel) {
-							double m = mean[idx];
-							double s = mean[idx+nState];
+						// mean cannot be null here
+						if (cmodel) {
+							state = new double[4];
+							double m = tmp[idx];
+							double s = tmp[idx + nState];
+							state[1] = m;
+							state[2] = m - s;
+							state[3] = m + s;
 							idx++;
-							state[0] = m;
-							state[1] = m-s;
-							state[2] = m+s;
+						} else {
+							state = new double[nState + 1];
+							System.arraycopy(tmp, 0, state, 1, nState);
 						}
-						else
-							state = mean;
-						graph.addData(newtime, state, force);
+						state[0] = newtime;
+						graph.addData(state, force);
 						break;
 					case FITNESS:
-						if( module != newMod ) {
-							module = newMod;
-							model.getMeanFitness(module.getID(), mean);
+						if (newmod) {
+							model.getMeanFitness(id, tmp);
 						}
 						// module cannot be null here but make compiler happy
-						if (module != null && cmodel) {
+						if (cmodel) {
 							// fitness graph has only a single panel
-							double m = mean[0];
-							double s = mean[1];
-							state[0] = m;
-							state[1] = m-s;
-							state[2] = m+s;
+							state = new double[4];
+							double m = tmp[0];
+							double s = tmp[1];
+							state[1] = m;
+							state[2] = m - s;
+							state[3] = m + s;
+						} else {
+							state = new double[nState + 1];
+							System.arraycopy(tmp, 0, state, 1, nState);
 						}
-						else
-							state = mean;
-						graph.addData(newtime, state, force);
+						state[0] = newtime;
+						graph.addData(state, force);
 						break;
 					default:
 						break;
@@ -296,10 +297,14 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 
 	@Override
 	public String getTooltipAt(LineGraph graph, double sx, double sy) {
+		Module module = graph.getModule();
+		int id = module.getID();
 		GraphStyle style = graph.getStyle();
 		RingBuffer<double[]> buffer = graph.getBuffer();
 		double buffert = 0.0;
 		double mouset = style.xMin + sx * (style.xMax - style.xMin);
+		boolean hasVacant = !(model instanceof Model.DE && ((Model.DE) model).isDensity());
+		int vacant = module.getVacant();
 		Iterator<double[]> i = buffer.iterator();
 		String tip = "<table style='border-collapse:collapse;border-spacing:0;'>" +
 				"<tr><td style='text-align:right'><i>" + style.xLabel + ":</i></td><td>" +
@@ -322,7 +327,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 				double fx = 1.0 - (mouset - buffert) / dt;
 				tip += "<tr><td colspan='2'><hr/></td></tr><tr><td style='text-align:right'><i>" + style.xLabel +
 						":</i></td><td>" + Formatter.format(current[0] - fx * dt, 2) + "</td></tr>";
-				Color[] colors = model.getMeanColors();
+				Color[] colors = model.getMeanColors(id);
 				if (model.isContinuous()) {
 					double inter = interpolate(current[1], prev[1], fx);
 					tip += "<tr><td style='text-align:right'><i style='color:"
@@ -334,6 +339,8 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 				} else {
 					// len includes time
 					for (int n = 0; n < len - 1; n++) {
+						if (!hasVacant && n == vacant)
+							continue;
 						String name;
 						Color color;
 						int n1 = n + 1;
@@ -363,7 +370,7 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController{
 	}
 
 	private double interpolate(double current, double prev, double x) {
-		return (1.0-x)*current+x*prev;
+		return (1.0 - x) * current + x * prev;
 	}
 
 	@Override

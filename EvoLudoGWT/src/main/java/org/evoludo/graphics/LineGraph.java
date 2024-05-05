@@ -90,9 +90,16 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 		setSteps(steps*(style.xMax-style.xMin)/(style.xMax-oldMin));
 	}
 
-	public void addData(double x, double[] data, boolean force) {
+	public void addData(double t, double[] data, boolean force) {
+		addData(prependTime2Data(t, data), force);
+	}
+
+	public void addData(double[] data, boolean force) {
 		// always add data
-		buffer.append(prependTime2Data(x, data));
+		buffer.append(data);
+		// time does not count for min/max
+		double t = data[0];
+		data[0] = style.yMin;
 		// dynamically extend range if needed - never reduces range (would need to consult RingBuffer for this)
 		double min = ArrayMath.min(data);
 		// ignore NaN's in data
@@ -102,6 +109,7 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 		// ignore NaN's in data
 		if( max==max )
 			style.yMax = Math.max(style.yMax, max);
+		data[0] = t;
 	}
 
 	@Override
