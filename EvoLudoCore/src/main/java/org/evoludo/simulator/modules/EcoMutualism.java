@@ -35,6 +35,7 @@ package org.evoludo.simulator.modules;
 import java.awt.Color;
 import java.io.PrintStream;
 
+import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
@@ -99,9 +100,10 @@ import org.evoludo.util.Formatter;
  * @author Christoph Hauert
  */
 public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
-		/* HasIBS, */ HasODE, // HasSDE, // PDEs not (yet) an option
+		/* HasIBS, */ HasODE, // HasSDE, // PDEs not (yet) an option for mutiple species
 		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy, HasPhase2D, HasPop2D.Fitness, HasPop3D.Fitness,
-		/* HasMean.Fitness, HasHistogram.Fitness, HasHistogram.StatisticsStationary, */ HasHistogram.Degree, HasConsole {
+		/* HasMean.Fitness, HasHistogram.Fitness, HasHistogram.StatisticsStationary, */ HasHistogram.Degree,
+		HasConsole {
 
 	/**
 	 * The trait (and index) value of hosts infected by the defector strain of the
@@ -240,7 +242,8 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 	}
 
 	/**
-	 * Create a new instance of the module for eco-evolutionary host phage interactions.
+	 * Create a new instance of the module for eco-evolutionary host phage
+	 * interactions.
 	 * 
 	 * <h3>Important:</h3>
 	 * This instantiates only the skeleton and only of one species. The other
@@ -291,7 +294,7 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 			colors[HOST_NONE] = Color.BLACK;
 			colors[HOST_DEFECT] = Color.RED;
 			colors[HOST_COOPERATE] = Color.BLUE;
-			colors[HOST_MIXED] = Color.PINK;
+			colors[HOST_MIXED] = ColorMap.blendColors(Color.RED, Color.BLUE, 0.5);
 			colors[VACANT] = Color.LIGHT_GRAY;
 			setTraitColors(colors);
 		}
@@ -362,7 +365,7 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 		this.map = map;
 		// by default show HOST_COOPERATE on horizontal and VIRUS_COOPERATE on
 		// vertical axis of phase plane; note the nTraits of the host species
-		map.setTraits(new int[] { HOST_COOPERATE }, new int[] { nTraits + VIRUS_COOPERATE});
+		map.setTraits(new int[] { HOST_COOPERATE }, new int[] { nTraits + VIRUS_COOPERATE });
 	}
 
 	@Override
@@ -388,38 +391,38 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 	}
 
 	// /**
-	//  * {@inheritDoc}
-	//  * <p>
-	//  * <strong>Note:</strong> <code>count</code> refers to opponent (possibly
-	//  * different species)
-	//  */
+	// * {@inheritDoc}
+	// * <p>
+	// * <strong>Note:</strong> <code>count</code> refers to opponent (possibly
+	// * different species)
+	// */
 	// @Override
 	// public void mixedScores(int[] count, double[] traitScores) {
-	// 		// avoid self interactions in intra-species interactions
-	// 		int selfi = getInteractionGeometry().isInterspecies() ? 0 : -1;
-	// 		int x = count[COOPERATE];
-	// 		int y = count[DEFECT];
-	// 		double in = 1.0 / (x + y - selfi);
-	// 		traitScores[COOPERATE] = ((x - selfi) * reward + y * sucker) * in;
-	// 		traitScores[DEFECT] = (x * temptation + (y - selfi) * punishment) * in;
+	// // avoid self interactions in intra-species interactions
+	// int selfi = getInteractionGeometry().isInterspecies() ? 0 : -1;
+	// int x = count[COOPERATE];
+	// int y = count[DEFECT];
+	// double in = 1.0 / (x + y - selfi);
+	// traitScores[COOPERATE] = ((x - selfi) * reward + y * sucker) * in;
+	// traitScores[DEFECT] = (x * temptation + (y - selfi) * punishment) * in;
 	// }
 
 	// @Override
 	// public double pairScores(int me, int[] tCount, double[] tScore) {
-	// 	switch (me) {
-	// 		case COOPERATE:
-	// 			tScore[COOPERATE] = partner.reward;
-	// 			tScore[DEFECT] = partner.temptation;
-	// 			return tCount[COOPERATE] * reward + tCount[DEFECT] * sucker;
+	// switch (me) {
+	// case COOPERATE:
+	// tScore[COOPERATE] = partner.reward;
+	// tScore[DEFECT] = partner.temptation;
+	// return tCount[COOPERATE] * reward + tCount[DEFECT] * sucker;
 
-	// 		case DEFECT:
-	// 			tScore[COOPERATE] = partner.sucker;
-	// 			tScore[DEFECT] = partner.punishment;
-	// 			return tCount[COOPERATE] * temptation + tCount[DEFECT] * punishment;
+	// case DEFECT:
+	// tScore[COOPERATE] = partner.sucker;
+	// tScore[DEFECT] = partner.punishment;
+	// return tCount[COOPERATE] * temptation + tCount[DEFECT] * punishment;
 
-	// 		default: // should not end here
-	// 			throw new Error("Unknown strategy (" + me + ")");
-	// 	}
+	// default: // should not end here
+	// throw new Error("Unknown strategy (" + me + ")");
+	// }
 	// }
 
 	/**
@@ -437,7 +440,7 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 	 * are shorter lived but longer lived than their host for \(\kappa &gt;1\).
 	 */
 	double kappa;
-	
+
 	/**
 	 * The rate at which phages are released into the environment when a host lyses.
 	 * For example, host infected by the cooperator phage strain releases phages at
@@ -495,7 +498,7 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 	}
 
 	/**
-	 * Get the relative rate of death of phages as compared to the host. 
+	 * Get the relative rate of death of phages as compared to the host.
 	 * 
 	 * @return the relative rate of death
 	 * 
@@ -506,7 +509,7 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 	}
 
 	/**
-	 * Set the relative rate of death of phages as compared to the host. 
+	 * Set the relative rate of death of phages as compared to the host.
 	 * 
 	 * @param kappa the relative rate of death
 	 * 
@@ -517,7 +520,8 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 	}
 
 	/**
-	 * Get the rate at which phages are released into the environment when a host lyses.
+	 * Get the rate at which phages are released into the environment when a host
+	 * lyses.
 	 * 
 	 * @return the rate for releasing phages
 	 * 
@@ -528,7 +532,8 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 	}
 
 	/**
-	 * Set the rate at which phages are released into the environment when a host lyses.
+	 * Set the rate at which phages are released into the environment when a host
+	 * lyses.
 	 * 
 	 * @param lambda the rate for releasing phages
 	 * 
@@ -732,7 +737,8 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 			});
 
 	/**
-	 * Command line option to set the rate at which phages are released into the environment when a host lyses.
+	 * Command line option to set the rate at which phages are released into the
+	 * environment when a host lyses.
 	 * 
 	 * @see #lambda
 	 */
@@ -813,7 +819,8 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 			});
 
 	/**
-	 * Command line option to set the rate of simultanous double infection of hosts by phages.
+	 * Command line option to set the rate of simultanous double infection of hosts
+	 * by phages.
 	 */
 	public final CLOption cloDouble = new CLOption("double", "0.01", EvoLudo.catModule,
 			"--double <d>    rates of double infections", new CLODelegate() {
@@ -917,9 +924,19 @@ public class EcoMutualism extends Discrete implements /* Discrete.Pairs, */
 			change[EcoMutualism.HOST_NONE] = hu * (r - (ec + ed) * (mu1 + mu2 * (ec + ed)) - xi * hu);
 			change[EcoMutualism.HOST_COOPERATE] = hu * ec * (mu1 + ec * mu2) - d * hc;
 			change[EcoMutualism.HOST_DEFECT] = hu * ed * (mu1 + ed * mu2) - d * hd;
-			change[EcoMutualism.HOST_MIXED] = hu * mu2 * ec * ed * 2 - d * hm;
-			change[5 + EcoMutualism.VIRUS_COOPERATE] = lambda * d * (alpha * hc + beta * hm) - kappa * d * ec;
-			change[5 + EcoMutualism.VIRUS_DEFECT] = lambda * d * (gamma * hm + delta * hd) - kappa * d * ed;
+			// the factor two accounts for the fact that mixed infections can arise through
+			// two distinct pathways: either a cooperator strain infects first followed by a
+			// defector strain or vice versa. another way to see this is that the rate of
+			// double infections only depends on the overall viral density v = ec + ed and
+			// is proportional to v^2.
+			change[EcoMutualism.HOST_MIXED] = hu * mu2 * ec * ed * 2.0 - d * hm;
+			// the factor 2 here accounts for the fact that a host infected by one or two
+			// cooperator strains produces the same amount of viral particals when lysing.
+			// In game theoretical terms each cooperators recevies a payoff of alpha, which
+			// means that a cooperator that singly infected a host gets twice the amount. An
+			// analogous argument applies for defector strains.
+			change[5 + EcoMutualism.VIRUS_COOPERATE] = lambda * d * (2.0 * alpha * hc + beta * hm) - kappa * d * ec;
+			change[5 + EcoMutualism.VIRUS_DEFECT] = lambda * d * (gamma * hm + 2.0 * delta * hd) - kappa * d * ed;
 		}
 	}
 }
