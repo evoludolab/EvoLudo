@@ -39,6 +39,8 @@ import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
+import org.evoludo.graphics.AbstractGraph.Shifter;
+import org.evoludo.graphics.AbstractGraph.Zoomer;
 import org.evoludo.graphics.LineGraph;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
@@ -53,7 +55,7 @@ import org.evoludo.util.RingBuffer;
  *
  * @author Christoph Hauert
  */
-public class Mean extends AbstractView implements LineGraph.LineGraphController {
+public class Mean extends AbstractView implements LineGraph.LineGraphController, Shifter, Zoomer {
 
 	// NOTE: this is a bit of a hack that allows us to use graphs as Set<LineGraph>
 	// here

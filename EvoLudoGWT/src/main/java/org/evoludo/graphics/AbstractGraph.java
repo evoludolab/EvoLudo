@@ -233,6 +233,28 @@ public abstract class AbstractGraph extends FocusPanel
 	}
 
 	/**
+	 * Graphs that support shifting should implement this interface. Basic shifting
+	 * capabilities are handled by {@link AbstractGraph}.
+	 * 
+	 * @author Christoph Hauert
+	 */
+	public interface Shifting extends Shifter, MouseOutHandler, MouseDownHandler, MouseUpHandler, MouseMoveHandler, //
+					TouchStartHandler, TouchEndHandler, TouchMoveHandler {
+	}
+
+	public interface Shifter {
+		/**
+		 * Shift the (zoomed) graph within the view port by {@code (dx, dy)}. Positive
+		 * {@code dx} shift the graph to the right and positive {@code dy} shift it
+		 * upwards.
+		 * 
+		 * @param dx the horizontal shift of the graph
+		 * @param dy the vertical shift of the graph
+		 */
+		public void shift(int dx, int dy);
+	}
+
+	/**
 	 * Graphs that support zooming should implement this interface. Basic zooming
 	 * capabilities are handled by {@link AbstractGraph}.
 	 * 
@@ -243,7 +265,7 @@ public abstract class AbstractGraph extends FocusPanel
 	 * 
 	 * @author Christoph Hauert
 	 */
-	public interface Zooming extends MouseWheelHandler {
+	public interface Zooming extends Zoomer, MouseWheelHandler {
 
 		/**
 		 * The factor for increasing/decreasing the zoom level on
@@ -257,26 +279,35 @@ public abstract class AbstractGraph extends FocusPanel
 		 * The maximum zoom level.
 		 */
 		public final double ZOOM_MAX = 25.0;
-	}
-
-	/**
-	 * Graphs that support shifting should implement this interface. Basic shifting
-	 * capabilities are handled by {@link AbstractGraph}.
-	 * 
-	 * @author Christoph Hauert
-	 */
-	public interface Shifting extends MouseOutHandler, MouseDownHandler, MouseUpHandler, MouseMoveHandler, //
-					TouchStartHandler, TouchEndHandler, TouchMoveHandler {
 
 		/**
-		 * Shift the (zoomed) graph within the view port by {@code (dx, dy)}. Positive
-		 * {@code dx} shift the graph to the right and positive {@code dy} shift it
-		 * upwards.
-		 * 
-		 * @param dx the horizontal shift of the graph
-		 * @param dy the vertical shift of the graph
+		 * Reset zoom.
 		 */
-		public void shift(int dx, int dy);
+		public void zoom();
+
+		/**
+		 * Adjust zoom level by the factor {@code zoom}. Leave the center of the view in
+		 * place. If {@code zoom &leq; 0} reset zoom level.
+		 * 
+		 * @param zoom the new zoom level
+		 */
+		public void zoom(double zoom);
+	}
+
+	public interface Zoomer {
+
+		/**
+		 * Adjust zoom level by the factor {@code zoom} with the center at coordinates
+		 * {@code (x,y)} (in display coordinates as provided by event listeners).
+		 *
+		 * @param zoom the new zoom level
+		 * @param x    the {@code x}-coordinate of the zoom center
+		 * @param y    the {@code y}-coordinate of the zoom center
+		 * 
+		 * @see #onMouseWheel(MouseWheelEvent)
+		 * @see #onTouchMove(TouchMoveEvent)
+		 */
+		public void zoom(double zoom, int x, int y);
 	}
 
 	/**
@@ -351,6 +382,16 @@ public abstract class AbstractGraph extends FocusPanel
 	 * The controller of this graph.
 	 */
 	protected Controller controller;
+
+	/**
+	 * The controller for shifting this graph.
+	 */
+	Shifter shifter;
+
+	/**
+	 * The controller for zooming this graph.
+	 */
+	Zoomer zoomer;
 
 	/**
 	 * The reference to the (shared) tooltip.
@@ -514,10 +555,13 @@ public abstract class AbstractGraph extends FocusPanel
 					element.removeClassName("evoludo-cursorZoomOut");
 				}
 			};
+			zoomer = (Zoomer) (controller instanceof Zoomer ? controller : this);
 		}
 		if (this instanceof Shifting) {
+			// Zooming may already have taken care of this
 			if (viewCorner == null)
 				viewCorner = new Point2D();
+			shifter = (Shifter) (controller instanceof Shifter ? controller : this);
 		}
 
 		markerColors = new String[] { "rgb(0,0,0,0.4)" };
@@ -1460,7 +1504,9 @@ public abstract class AbstractGraph extends FocusPanel
 	}
 
 	/**
-	 * Reset zoom.
+	 * Reset zoom. Default implementation for graphs that implement {@code Zooming}.
+	 * 
+	 * @see Zooming#zoom()
 	 */
 	public void zoom() {
 		zoomFactor = 1.0;
@@ -1471,10 +1517,12 @@ public abstract class AbstractGraph extends FocusPanel
 	}
 
 	/**
-	 * Adjust zoom level by the factor {@code zoom}. Leave the center of the view in
-	 * place. If {@code zoom &leq; 0} reset zoom level.
+	 * Adjust zoom level by the factor {@code zoom}. Default implementation for
+	 * graphs that implement {@code Zooming}.
 	 * 
 	 * @param zoom the new zoom level
+	 * 
+	 * @see Zooming#zoom(double)
 	 */
 	public void zoom(double zoom) {
 		if (zoom <= 0.0) {
@@ -1487,14 +1535,15 @@ public abstract class AbstractGraph extends FocusPanel
 	}
 
 	/**
-	 * Called from event listeners to adjust zoom level.
+	 * Adjust zoom level by the factor {@code zoom} with the center at coordinates
+	 * {@code (x,y)} (in display coordinates as provided by event listeners).
+	 * Default implementation for graphs that implement {@code Zooming}.
 	 *
 	 * @param zoom the new zoom level
 	 * @param x    the {@code x}-coordinate of the zoom center
 	 * @param y    the {@code y}-coordinate of the zoom center
 	 * 
-	 * @see #onMouseWheel(MouseWheelEvent)
-	 * @see #onTouchMove(TouchMoveEvent)
+	 * @see Zooming#zoom(double, int, int)
 	 */
 	public void zoom(double zoom, int x, int y) {
 		if (hasMessage)
@@ -1536,12 +1585,13 @@ public abstract class AbstractGraph extends FocusPanel
 	}
 
 	/**
-	 * Shift the (zoomed) graph within the view port by {@code (dx, dy)}. Positive
-	 * {@code dx} shift the graph to the right and positive {@code dy} shift it
-	 * upwards.
+	 * Shift the (zoomed) graph within the view port by {@code (dx, dy)}. Default
+	 * implementation for graphs that implement {@code Shifting}.
 	 * 
 	 * @param dx the horizontal shift of the graph
 	 * @param dy the vertical shift of the graph
+	 * 
+	 * @see Shifting#shift(int, int)
 	 */
 	public void shift(int dx, int dy) {
 		if (hasMessage)
@@ -1650,7 +1700,7 @@ public abstract class AbstractGraph extends FocusPanel
 			element.addClassName("evoludo-cursorMoveView");
 			int x = event.getX();
 			int y = event.getY();
-			shift(mouseX - x, mouseY - y);
+			shifter.shift(mouseX - x, mouseY - y);
 			mouseX = x;
 			mouseY = y;
 		}
@@ -1683,7 +1733,8 @@ public abstract class AbstractGraph extends FocusPanel
 		int dz = event.getNativeEvent().getMouseWheelVelocityY();
 		if (hasMessage || dz == 0)
 			return;
-		zoom(Combinatorics.pow(Zooming.ZOOM_INCR, dz), x, y);
+		double zoom = Combinatorics.pow(Zooming.ZOOM_INCR, dz);
+		zoomer.zoom(zoom, x, y);
 		if (!zoomInertiaTimer.isRunning())
 			zoomInertiaTimer.schedule(200);
 	}

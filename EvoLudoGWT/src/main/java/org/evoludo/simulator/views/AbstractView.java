@@ -42,6 +42,8 @@ import org.evoludo.EvoLudoWeb;
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.HasTrajectory;
 import org.evoludo.graphics.AbstractGraph.MyContext2d;
+import org.evoludo.graphics.AbstractGraph.Shifter;
+import org.evoludo.graphics.AbstractGraph.Zoomer;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Resources;
@@ -76,6 +78,43 @@ import com.google.gwt.user.client.ui.ProvidesResize;
  */
 public abstract class AbstractView extends Composite implements EvoLudoView, ProvidesResize,
 		AbstractGraph.Controller, HasFullscreenChangeHandlers {
+
+	/**
+	 *
+	 * @author Christoph Hauert
+	 */
+	public interface Callback {
+
+		/**
+		 * Callback routine to notify recipient that the view has finished activation
+		 * and is ready to receive/display data.
+		 *
+		 * @param activeView view that finished its activation.
+		 */
+		public void viewActivated(EvoLudoView activeView);
+
+		/**
+		 * Notify callback that layout has completed. For example, this signals that a network
+		 * is ready for taking a snapshot.
+		 */
+		public void layoutComplete();
+
+		/**
+		 * Enables interactive data views to check whether EvoLudo model is running. For
+		 * example, mouse clicks that would change the strategy of an individual in
+		 * {@link Pop2D} or {@link Pop3D} are ignored if model is running.
+		 *
+		 * @return <code>true</code> if model is running.
+		 */
+		public boolean isRunning();
+
+		/**
+		 * Request EvoLudo model to restore a previously saved state of the model. This
+		 * method is called by the context menu (see
+		 * {@link AbstractView#populateContextMenu(ContextMenu)}).
+		 */
+		public void restoreFromFile();
+	}
 
 	protected HandlerRegistration fullscreenHandler;
 
@@ -228,6 +267,36 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	@Override
 	public boolean isRunning() {
 		return callback.isRunning();
+	}
+
+	/**
+	 * Default implementation for synchronized shifting of multiple graphs.
+	 * 
+	 * @param dx the shift in x-direction
+	 * @param dy the shift in y-direction
+	 * 
+	 * @see AbstractGraph.Shifter#shift(int, int)
+	 */
+	public void shift(int dx, int dy) {
+		for (AbstractGraph graph : graphs) {
+			if (graph instanceof Shifter)
+				((Shifter) graph).shift(dx, dy);
+		}
+	}
+
+	/**
+	 * Default implementation for synchronized zooming of multiple graphs.
+	 * 
+	 * @param dx the shift in x-direction
+	 * @param dy the shift in y-direction
+	 * 
+	 * @see AbstractGraph.Zoomer#zoom(double, int, int)
+	 */
+	public void zoom(double zoom, int x, int y) {
+		for (AbstractGraph graph : graphs) {
+			if (graph instanceof Zoomer)
+				((Zoomer) graph).zoom(zoom, x, y);
+		}
 	}
 
 	/**
@@ -821,42 +890,5 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 		public void execute() {
 			export(exportType);
 		}
-	}
-
-	/**
-	 *
-	 * @author Christoph Hauert
-	 */
-	public interface Callback {
-
-		/**
-		 * Callback routine to notify recipient that the view has finished activation
-		 * and is ready to receive/display data.
-		 *
-		 * @param activeView view that finished its activation.
-		 */
-		public void viewActivated(EvoLudoView activeView);
-
-		/**
-		 * Notify callback that layout has completed. For example, this signals that a network
-		 * is ready for taking a snapshot.
-		 */
-		public void layoutComplete();
-
-		/**
-		 * Enables interactive data views to check whether EvoLudo model is running. For
-		 * example, mouse clicks that would change the strategy of an individual in
-		 * {@link Pop2D} or {@link Pop3D} are ignored if model is running.
-		 *
-		 * @return <code>true</code> if model is running.
-		 */
-		public boolean isRunning();
-
-		/**
-		 * Request EvoLudo model to restore a previously saved state of the model. This
-		 * method is called by the context menu (see
-		 * {@link AbstractView#populateContextMenu(ContextMenu)}).
-		 */
-		public void restoreFromFile();
 	}
 }
