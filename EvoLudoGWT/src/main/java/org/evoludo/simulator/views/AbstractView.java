@@ -200,7 +200,6 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 		if (isActive)
 			return;
 		isActive = true;
-		clear();
 		for (AbstractGraph graph : graphs)
 			graph.activate();
 		scheduleUpdate(true);

@@ -664,17 +664,30 @@ public abstract class AbstractGraph extends FocusPanel
 	public void onResize() {
 		tooltip.close();
 		contextMenu.close();
-		calcBounds();
 		updateCanvas();
+		// check bounds and update messages if necessary
+		calcBounds();
 	}
 
+	/**
+	 * Update the canvas size and coordinate space dimensions.
+	 * 
+	 * <strong>IMPORTANT:</strong> Setting the canvas size or the coordinate space
+	 * dimensions clears the canvas (even with no actual changes)!
+	 */
 	private void updateCanvas() {
+		width = getOffsetWidth();
+		height = getOffsetHeight();
 		// canvas is null for PopGraph3D
 		if (canvas == null)
 			return;
-		canvas.setPixelSize(width, height);
-		canvas.setCoordinateSpaceWidth((int) (scale * width));
-		canvas.setCoordinateSpaceHeight((int) (scale * height));
+		int sw = (int) (scale * width);
+		int sh = (int) (scale * height);
+		if (canvas.getCoordinateSpaceWidth() != sw || canvas.getCoordinateSpaceHeight() != sh) {
+			canvas.setPixelSize(width, height);
+			canvas.setCoordinateSpaceWidth(sw);
+			canvas.setCoordinateSpaceHeight(sh);
+		}
 	}
 
 	/**
@@ -682,11 +695,8 @@ public abstract class AbstractGraph extends FocusPanel
 	 */
 	public void reset() {
 		clearMessage();
-		// setting size of canvas clears it; do nothing if size remained the same
-		if (width != getOffsetWidth() || height != getOffsetHeight()) {
-			calcBounds();
-			updateCanvas();
-		}
+		calcBounds();
+		updateCanvas();
 		zoom();
 	}
 
@@ -953,8 +963,6 @@ public abstract class AbstractGraph extends FocusPanel
 	 * @return {@code true} if bounds are successfully calculated.
 	 */
 	protected boolean calcBounds() {
-		width = getOffsetWidth();
-		height = getOffsetHeight();
 		if (width == 0 || height == 0)
 			return false;
 		bounds.set(style.minPadding, style.minPadding, width - 2 * style.minPadding, height - 2 * style.minPadding);

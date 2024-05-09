@@ -226,8 +226,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 
 	@Override
 	protected void layoutLattice() {
-		super.layoutLattice();
-
 		Geometry.Type type = geometry.getType();
 		boolean isHierarchy = (type == Geometry.Type.HIERARCHY);
 		if (isHierarchy)
@@ -380,7 +378,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 
 			default:
 				displayMessage("No representation for " + type.getTitle() + "!");
-				return;
+				break;
 		}
 		drawUniverse();
 	}
@@ -475,8 +473,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		// 		sphere.setMaterial(colors[k++]);
 		// 	graph3DPanel.forceLayout();
 		// }
-		msgLabel.setText("");
-		msgLabel.setVisible(true);
 	}
 
 	/**
@@ -772,10 +768,10 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		 */
 		@Override
 		protected void onUpdate(double duration) {
-			if (hasMessage)
-				return;
 			control.update();
 			getRenderer().render(getScene(), graph3DCamera);
+			if (hasMessage)
+				stop();
 		}
 
 		/**
@@ -822,6 +818,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		Style msgStyle = msgLabel.getElement().getStyle();
 		msgStyle.setFontSize(12.0 * 0.666 * width / g.measureText(msg).getWidth(), Unit.PX);
 		g.restore();
+		spheres.clear();
 		return true;
 	}
 
@@ -830,6 +827,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		if (hasMessage) {
 			msgLabel.setVisible(false);
 			hasMessage = false;
+			graph3DScene.run();
 		}
 	}
 }

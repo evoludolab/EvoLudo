@@ -165,13 +165,13 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	public void invalidate() {
 		super.invalidate();
-		if (geometry.getType() == Geometry.Type.LINEAR) {
+		if (geometry.getType() == Geometry.Type.LINEAR && !hasMessage) {
 			// only linear geometries have a buffer
 			double h = bounds.getHeight();
 			double w = bounds.getWidth();
 			if (h == 0 || dh == 0 || w == 0 || dw == 0) {
 				// graph has never been shown - dimensions not yet available
-				if (w > 0 && (int) (w / geometry.size) < 1) {
+				if (w > 0 && (int) (w / geometry.size) < MIN_DW) {
 					// too many nodes
 					buffer = null;
 				} else if (buffer == null || buffer.capacity() != geometry.size) {
@@ -197,19 +197,15 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 	@Override
 	protected void layoutLattice() {
-		super.layoutLattice();
 		invalidated = false;
-		if (dw < 1 && dh < 1 && dR < 2) {
-			displayMessage("Population size to large!");
+		if (!prepCanvas())
 			return;
-		}
 		// helper variables
 		double xshift, yshift;
 		int row;
 		Geometry.Type type = geometry.getType();
 		if (isHierarchy)
 			type = geometry.subgeometry;
-		prepCanvas();
 		// geometries that have special/fixed layout
 		switch (type) {
 			case TRIANGULAR:
@@ -324,7 +320,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				break;
 
 			default:
-				displayMessage("No representation for " + type.getTitle() + "!");
+				logger.warning("Unsupported geometry: " + type.getTitle());
 		}
 		g.restore();
 	}
@@ -346,9 +342,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		if (invalidated)
 			// not yet ready to show network
 			return;
-		// in case layout was not animated, a message was displayed but now hasMessage
-		// must be cleared; also clears canvas
-		prepCanvas();
+		if (!prepCanvas())
+			return;
 		int nNodes = geometry.size;
 		// scale universe
 		double r = network.getRadius();
@@ -382,14 +377,18 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 	/**
 	 * Helper method to get the canvas ready for drawing the graph.
+	 * 
+	 * @return {@code true} if the canvas is ready for drawing
 	 */
-	private void prepCanvas() {
-		clearMessage();
+	private boolean prepCanvas() {
+		if (hasMessage)
+			return false;
 		g.save();
 		g.scale(scale, scale);
 		clearCanvas();
 		g.translate(bounds.getX() - viewCorner.x, bounds.getY() - viewCorner.y);
 		g.scale(zoomFactor, zoomFactor);
+		return true;
 	}
 
 	/**
@@ -425,6 +424,21 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	protected int dR;
 
 	/**
+	 * The minimum width of a node in pixels.
+	 */
+	static final int MIN_DW = 3;
+
+	/**
+	 * The minimum height of a node in pixels.
+	 */
+	static final int MIN_DH = 3;
+
+	/**
+	 * The minimum diameter of a node in pixels.
+	 */
+	static final int MIN_DR = 3;
+
+	/**
 	 * Convenience variable. The flag indicating whether the backing geometry is a
 	 * hierarchical structure.
 	 */
@@ -450,7 +464,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	protected boolean calcBounds() {
 		if (!super.calcBounds() || geometry == null)
 			return false;
-
+		clearMessage();
 		dw = 0;
 		dh = 0;
 		dR = 0;
@@ -466,6 +480,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		switch (type) {
 			case CUBE: // should not get here...
 			case VOID:
+				displayMessage("No representation for " + type.getTitle() + "!");
 				return true;
 
 			case TRIANGULAR:
@@ -476,10 +491,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				w = dw2 * (side + 1);
 				dw = 2 * dw2;
 				dh = diameter / (side + 1);
-				if (dw < 1 || dh < 1) {
+				if (dw < MIN_DW || dh < MIN_DH) {
 					// too small
 					bounds.setSize(width, height);
-					return true;
+					break;
 				}
 				h = dh * side;
 				bounds.set((width - w) / 2, (height - h) / 2, w, h);
@@ -495,10 +510,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				dw = 2 * dw2;
 				dh3 = diameter / (3 * side + 1);
 				dh = 3 * dh3;
-				if (dw < 1 || dh3 < 1) {
+				if (dw < MIN_DW || dh3 < MIN_DH / 3) {
 					// too small
 					bounds.setSize(width, height);
-					return true;
+					break;
 				}
 				h = dh3 * (3 * side + 1);
 				bounds.set((width - w) / 2, (height - h) / 2, w, h);
@@ -536,10 +551,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				w = bounds.getWidth();
 				h = bounds.getHeight();
 				dw = (int) (Math.min(w, h) - gap) / side;
-				if (dw < 1) {
+				if (dw < MIN_DW) {
 					// too small
 					bounds.setSize(width, height);
-					return true;
+					break;
 				}
 				dh = dw;
 				int newdim = dw * side + gap;
@@ -552,10 +567,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				super.calcBounds();
 				w = bounds.getWidth();
 				dw = (int) (w / geometry.size);
-				if (dw < 1) {
+				if (dw < MIN_DW) {
 					// too small
 					bounds.setSize(width, height);
-					return true;
+					break;
 				}
 				dh = dw;
 				double adjw = dw * geometry.size;
@@ -589,16 +604,18 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				int radius = Math.min(width / 2, height / 2);
 				dR = (int) Math.sqrt(radius * radius * 2 / geometry.size);
 				buffer = null;
-				if (dR < 2) {
+				if (dR < MIN_DR) {
 					// too small
 					bounds.setSize(width, height);
-					return true;
+					break;
 				}
 				diameter = Math.min(width, height);
 				bounds.set((width - diameter) / 2, (height - diameter) / 2, diameter, diameter);
 				style.showFrame = false;
 				break;
 		}
+		if (dw < MIN_DW && dh < MIN_DH && dR < MIN_DR)
+			displayMessage("Population size to large!");
 		return true;
 	}
 
