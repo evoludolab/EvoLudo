@@ -1165,6 +1165,7 @@ public class EvoLudoWeb extends Composite
 				// - changes in payoffs require rescaling of color maps
 				for (EvoLudoView view : activeViews.values())
 					view.reset(false);
+				updateGUI();
 			}
 		}
 		setView(cloView.isSet() ? initialView : currentView);
