@@ -477,41 +477,34 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
+	 * Helper method to limit the number of GUI updates per second to conserve
+	 * resources or put them to better use.
+	 * 
+	 * @return {@code true} if an update is recommended, {@code false} otherwise
+	 */
+	private boolean doUpdate() {
+		double now = Duration.currentTimeMillis();
+		if (now - updatetime < MIN_MSEC_BETWEEN_UPDATES)
+			return false;
+		updatetime = now;
+		return true;
+	}
+	/**
 	 * Update GUI. If time since last update is less than
 	 * {@link #MIN_MSEC_BETWEEN_UPDATES} then views may choose to skip an update.
 	 */
 	public void update() {
-		// limit the number of GUI updates per second to conserve resources or put them
-		// to better use
-		double now = Duration.currentTimeMillis();
-		boolean updateGUI = (!engine.isRunning() || (now - updatetime > MIN_MSEC_BETWEEN_UPDATES));
-		update(updateGUI);
+		update(!engine.isRunning() || doUpdate());
 	}
 
 	/**
-	 * Helper method to update GUI. If <code>updateGUI</code> is <code>true</code>
-	 * the GUI gets updated, if <code>false</code>, or the model is running views
-	 * may ignore the request. However, views that record the history need to
-	 * process (but not necessarily visualize) the data regardless.
-	 *
-	 * @param updateGUI <code>true</code> to force update of GUI
+	 * Update GUI.
 	 */
-	private void update(boolean updateGUI) {
+	public void update(boolean force) {
 		for (EvoLudoView view : activeViews.values())
-			view.update(updateGUI);
-		if (updateGUI) {
-			Model model = engine.getModel();
-			// do not force retrieving status if engine is running
-			String s = activeView.getStatus(!engine.isRunning());
-			if (s == null)
-				s = model.getStatus();
-			displayStatus(s);
-			s = activeView.getCounter();
-			if (s == null)
-				s = model.getCounter();
-			evoludoTime.setText(s);
-			updatetime = Duration.currentTimeMillis();
-		}
+			view.update(force);
+		if (force)
+			updateStatus();
 	}
 
 	@Override
@@ -559,7 +552,7 @@ public class EvoLudoWeb extends Composite
 				update();
 				break;
 			case STATISTIC:
-				update();
+				update(true);
 				// stop if single statistics requested
 				if (engine.isRunning())
 					engine.next();
@@ -588,6 +581,7 @@ public class EvoLudoWeb extends Composite
 			if (runningEPub == this)
 				runningEPub = null;
 		}
+		update(true);
 		updateGUI();
 	}
 
@@ -613,7 +607,6 @@ public class EvoLudoWeb extends Composite
 	 */
 	private void updateGUI() {
 		boolean stopped = !engine.isRunning();
-		update(stopped);
 		evoludoStartStop.setText(stopped ? "Start" : "Stop");
 		evoludoStep.setEnabled(stopped);
 		evoludoInitReset.setEnabled(stopped);
@@ -622,7 +615,24 @@ public class EvoLudoWeb extends Composite
 		evoludoSlider.setValue(engine.getDelay());
 		evoludoSlider.setEnabled(engine.getModel().getMode() != Mode.STATISTICS_SAMPLE);
 		if (stopped)
-			displayStatusThresholdLevel = Level.ALL.intValue();
+			updateStatus();
+	}
+
+	/**
+	 * Helper method to update GUI.
+	 */
+	private void updateStatus() {
+		Model model = engine.getModel();
+		// do not force retrieving status if engine is running
+		String s = activeView.getStatus(!engine.isRunning());
+		if (s == null)
+			s = model.getStatus();
+		displayStatus(s);
+		s = activeView.getCounter();
+		if (s == null)
+			s = model.getCounter();
+		evoludoTime.setText(s);
+		updatetime = Duration.currentTimeMillis();
 	}
 
 	/**
