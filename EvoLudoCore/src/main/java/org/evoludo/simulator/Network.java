@@ -331,7 +331,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 		prevAdjust = 1.0;
 		nNodes = geometry.size;
 		norm = 1.0 / (nNodes * nNodes);
-
+		listener.layoutUpdate(0.0);
 		boolean needsLayout = status.equals(Status.NEEDS_LAYOUT);
 		setStatus(Status.LAYOUT_IN_PROGRESS);
 		double unitradius = Math.pow(0.8 / nNodes, 0.25);

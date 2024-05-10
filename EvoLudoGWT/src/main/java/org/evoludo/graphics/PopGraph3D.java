@@ -404,9 +404,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	}
 
 	@Override
-	protected void layoutNetwork() {
-		if (network.isStatus(Status.NO_LAYOUT))
-			return; // nothing to do (lattice)
+	protected void drawNetwork() {
 		if (invalidated)
 			initUniverse(new SphereGeometry(50, 16, 12));
 		if (!network.isStatus(Status.HAS_LAYOUT) || geometry.isDynamic)
@@ -429,7 +427,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			mesh.updateMatrix();
 			k++;
 		}
-		geometry.setNetwork3D(network);
 		drawUniverse();
 	}
 

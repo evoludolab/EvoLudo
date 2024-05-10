@@ -155,7 +155,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			return true;
 		if (hasStaticLayout())
 			layoutLattice();
-		else
+		else if (!invalidated)
 			drawNetwork();
 		return false;
 	}
