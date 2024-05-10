@@ -165,34 +165,30 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	public void invalidate() {
 		super.invalidate();
-		if (geometry.getType() == Geometry.Type.LINEAR && !hasMessage) {
-			// only linear geometries have a buffer
-			double h = bounds.getHeight();
-			double w = bounds.getWidth();
-			if (h == 0 || dh == 0 || w == 0 || dw == 0) {
-				// graph has never been shown - dimensions not yet available
-				if (w > 0 && (int) (w / geometry.size) < MIN_DW) {
-					// too many nodes
-					buffer = null;
-				} else if (buffer == null || buffer.capacity() != geometry.size) {
-					buffer = new RingBuffer<String[]>(geometry.size);
-				}
-			} else {
-				// determine length of history visible
-				int steps = Math.max((int) ((h / dh) * 1.25), MIN_BUFFER_SIZE); // visible history plus 1/4 to spare
-				if (buffer == null || buffer.capacity() < MIN_BUFFER_SIZE) {
-					buffer = new RingBuffer<String[]>(steps);
-				} else {
-					buffer.setCapacity(steps);
-				}
-			}
-			buffer.clear();
-			// allocate colors now to store history
-			if (colors == null || colors.length != geometry.size)
-				colors = new String[geometry.size];
-		} else {
+		if (hasMessage || geometry.getType() != Geometry.Type.LINEAR) {
 			buffer = null;
+			return;
 		}
+		// only linear geometries have a buffer
+		double h = bounds.getHeight();
+		double w = bounds.getWidth();
+		if (w == 0 || h == 0)
+			// dimensions not yet available
+			return;
+		if (w > 0 && (int) (w / geometry.size) < MIN_DW) {
+			buffer = null;
+			return;
+		}
+		// determine length of history visible
+		int steps = Math.max((int) ((h / dh) * 1.25), MIN_BUFFER_SIZE); // visible history plus 1/4 to spare
+		if (buffer == null || buffer.capacity() < MIN_BUFFER_SIZE)
+			buffer = new RingBuffer<String[]>(steps);
+		else
+			buffer.setCapacity(steps);
+		buffer.clear();
+		// allocate colors now to store history
+		if (colors == null || colors.length != geometry.size)
+			colors = new String[geometry.size];
 	}
 
 	@Override

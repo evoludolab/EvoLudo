@@ -406,12 +406,12 @@ public abstract class AbstractGraph extends FocusPanel
 	/**
 	 * The width of this graph.
 	 */
-	int width = -1;
+	int width = 0;
 
 	/**
 	 * The width of this graph.
 	 */
-	int height = -1;
+	int height = 0;
 
 	/**
 	 * The scale of this graph. Used to translate {@code width} and {@code height}
