@@ -159,7 +159,6 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	public void reset() {
 		super.reset();
 		invalidate();
-		update(true);
 	}
 
 	/**
