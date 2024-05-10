@@ -204,7 +204,6 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 			graph.activate();
 		scheduleUpdate(true);
 		callback.viewActivated(this);
-		checkLayout();
 		if (isFullscreenSupported())
 			fullscreenHandler = addFullscreenChangeHandler(this);
 		model.requestMode(getMode());
@@ -212,11 +211,6 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 
 	public Mode getMode() {
 		return Mode.DYNAMICS;
-	}
-
-	protected void checkLayout() {
-		if (callback != null)
-			callback.layoutComplete();
 	}
 
 	@Override

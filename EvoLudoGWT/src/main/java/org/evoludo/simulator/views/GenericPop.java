@@ -58,12 +58,6 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 
 	@Override
 	public void layoutComplete() {
-		checkLayout();
-		update();
-	}
-
-	@Override
-	protected void checkLayout() {
 		if( callback!=null && isActive ) {
 			// check if all graphs have layout
 			boolean layouting = false;
@@ -81,6 +75,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 			if( !layouting )
 				callback.layoutComplete();
 		}
+		update();
 	}
 
 	@Override
