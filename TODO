@@ -8,11 +8,10 @@ TASKS:
 - javadoc for EvoLudoJRE module
 
 BUGS:
-- init arguments leak from one lab instance to another through InitType.args (instantiate InitTypes)
 - keyboard shortcuts reach all labs on a page (should be restricted to the active one, check with 's' for shake)
 - 3D views ignore the linewidth setting for drawing the network (try updating to parallax 2.0?)
 - reverting PDE model to ODE e.g. for well-mixed structures fails (must re-parse command line options)
-- if multiple labs with active 3D views are shown on same page the aspect ratios of the two interfere (low priority, highly unlikely scenario)
+- aspect ratios of active 3D views in multiple labs on same page interfere (low priority, highly unlikely scenario)
 
 TODO:
 - improve reported score for progress of network layouting
@@ -58,6 +57,7 @@ CHECK:
 
 
 DONE:
++ init arguments leak from one lab instance to another through InitType.args (instantiate InitTypes)
 + HistoGraph should only hold its own data (possibly sharing norm with others); Histogram must coordinate differnt histograms and data retrieval
 + implement different types of mutations for discrete modules: random (cosmic rays) or errors in reproduction (temperature).
 + check ephemeral scoring (should yield qualitatively the same results as the detailled accounting)

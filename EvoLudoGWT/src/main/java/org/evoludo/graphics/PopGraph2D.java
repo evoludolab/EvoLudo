@@ -325,23 +325,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		g.restore();
 	}
 
-	/**
-	 * Helper method to draw the network.
-	 */
-	protected synchronized void layoutNetwork() {
-		if (network.isStatus(Status.NO_LAYOUT))
-			return; // nothing to do (lattice)
-		if (!network.isStatus(Status.HAS_LAYOUT) || geometry.isDynamic)
-			network.doLayout(this);
-		geometry.setNetwork2D(network);
-		invalidated = false;
-		drawNetwork();
-	}
-
+	@Override
 	protected void drawNetwork() {
-		if (invalidated)
-			// not yet ready to show network
-			return;
 		if (!prepCanvas())
 			return;
 		int nNodes = geometry.size;

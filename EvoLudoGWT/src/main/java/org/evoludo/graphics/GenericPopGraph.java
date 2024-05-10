@@ -219,10 +219,8 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	@Override
 	public synchronized void layoutUpdate(double progress) {
 		if (hasAnimatedLayout()) {
-			if (progress > 0.0) {
-				network.finishLayout();
+			if (progress > 0.0)
 				layoutNetwork();
-			}
 			return;
 		}
 		displayMessage("Laying out network...  " + Formatter.formatPercent(progress, 0) + " completed.");
@@ -248,6 +246,9 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	 * @see #hasStaticLayout()
 	 */
 	protected void layoutNetwork() {
+		if (!network.isStatus(Status.HAS_LAYOUT) || geometry.isDynamic)
+			network.doLayout(this);
+		network.finishLayout();
 		drawNetwork();
 	}
 

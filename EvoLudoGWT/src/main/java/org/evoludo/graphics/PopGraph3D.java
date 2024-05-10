@@ -212,18 +212,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		return false;
 	}
 
-
-	// @Override
-	// public synchronized void layoutUpdate(double progress) {
-	// 	if (hasAnimatedLayout()) {
-	// 		network.finishLayout();
-	// 		layoutNetwork();
-	// 	}
-	// 	else
-	// 		displayMessage("Laying out network...  " + Formatter.formatPercent(progress, 0) + " completed.");
-	// 	paint(true);
-	// }
-
 	@Override
 	protected void layoutLattice() {
 		Geometry.Type type = geometry.getType();
@@ -403,10 +391,13 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 
 	@Override
 	protected void drawNetwork() {
-		if (invalidated)
+		// if (!network.isStatus(Status.HAS_LAYOUT) || geometry.isDynamic)
+		// 	network.doLayout(this);
+		if (invalidated) {
 			initUniverse(new SphereGeometry(50, 16, 12));
-		if (!network.isStatus(Status.HAS_LAYOUT) || geometry.isDynamic)
-			network.doLayout(this);
+			if (network.isStatus(Status.HAS_LAYOUT))
+				network.finishLayout();	// add links
+		}
 		// link nodes
 		Node3D[] nodes = network.toArray();
 		// place spheres
