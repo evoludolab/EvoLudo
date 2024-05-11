@@ -193,9 +193,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 	@Override
 	protected void layoutLattice() {
-		invalidated = false;
 		if (!prepCanvas())
 			return;
+		invalidated = false;
 		// helper variables
 		double xshift, yshift;
 		int row;
@@ -325,6 +325,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	protected void drawNetwork() {
 		if (!prepCanvas())
 			return;
+		invalidated = false;
 		int nNodes = geometry.size;
 		// scale universe
 		double r = network.getRadius();
