@@ -160,9 +160,9 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 				style.xMin = 0;
 				style.xMax = geometry.size;
 				style.yLabel = "time";
-				double rFreq = -engine.getReportInterval();
+				double rFreq = engine.getReportInterval();
 				// if report frequency did not change, we're done
-				if( Math.abs(style.yIncr-rFreq)>1e-8 ) {
+				if( Math.abs(-style.yIncr - rFreq)>1e-8 ) {
 					style.yIncr = -rFreq;
 					hard = true;
 				}

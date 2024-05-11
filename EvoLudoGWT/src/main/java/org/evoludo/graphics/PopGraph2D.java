@@ -108,7 +108,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	public void activate() {
 		super.activate();
 		// lazy allocation of memory for colors
-		if (geometry != null && (colors == null || colors.length != geometry.size))
+		if (colors == null || colors.length != geometry.size)
 			colors = new String[geometry.size];
 	}
 
@@ -158,37 +158,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		else if (!invalidated)
 			drawNetwork();
 		return false;
-	}
-
-	/**
-	 * Invalidate the network. This forces networks to be regenerated.
-	 */
-	public void invalidate() {
-		super.invalidate();
-		if (hasMessage || geometry.getType() != Geometry.Type.LINEAR) {
-			buffer = null;
-			return;
-		}
-		// only linear geometries have a buffer
-		double h = bounds.getHeight();
-		double w = bounds.getWidth();
-		if (w == 0 || h == 0)
-			// dimensions not yet available
-			return;
-		if (w > 0 && (int) (w / geometry.size) < MIN_DW) {
-			buffer = null;
-			return;
-		}
-		// determine length of history visible
-		int steps = Math.max((int) ((h / dh) * 1.25), MIN_BUFFER_SIZE); // visible history plus 1/4 to spare
-		if (buffer == null || buffer.capacity() < MIN_BUFFER_SIZE)
-			buffer = new RingBuffer<String[]>(steps);
-		else
-			buffer.setCapacity(steps);
-		buffer.clear();
-		// allocate colors now to store history
-		if (colors == null || colors.length != geometry.size)
-			colors = new String[geometry.size];
 	}
 
 	@Override
@@ -462,10 +431,12 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		switch (type) {
 			case CUBE: // should not get here...
 			case VOID:
+				buffer = null;
 				displayMessage("No representation for " + type.getTitle() + "!");
 				return true;
 
 			case TRIANGULAR:
+				buffer = null;
 				side = (int) (Math.sqrt(geometry.size) + 0.5);
 				diameter = Math.min(width, height);
 				dw2 = diameter / (side + 3);
@@ -484,6 +455,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				break;
 
 			case HONEYCOMB:
+				buffer = null;
 				side = (int) (Math.sqrt(geometry.size) + 0.5);
 				diameter = Math.min(width, height);
 				dw2 = diameter / (2 * side + 1);
@@ -506,6 +478,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			case SQUARE_NEUMANN_2ND:
 			case SQUARE_MOORE:
 			case SQUARE:
+				buffer = null;
 				// note: a bit hackish to allow drawing frame for lattices but axes for 2D
 				// distributions
 				if (style.showDecoratedFrame)
@@ -546,33 +519,28 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 			case LINEAR:
 				// estimate y-range
-				super.calcBounds();
 				w = bounds.getWidth();
 				dw = (int) (w / geometry.size);
-				if (dw < MIN_DW) {
+				h = bounds.getHeight();
+				dh = dw;
+				int steps = (int) (h / dh);
+				if (dw < MIN_DW || steps == 0) {
 					// too small
 					bounds.setSize(width, height);
 					break;
 				}
-				dh = dw;
 				double adjw = dw * geometry.size;
-				h = bounds.getHeight();
 				double adjh = h - (h % dh);
 				bounds.set((w - adjw) / 2, (h - adjh) / 2, adjw, adjh);
-				// determine length of history visible
-				int steps = (int) (h / dh);
-				// polish...
-				if (steps > 0) {
-					if (buffer == null)
-						buffer = new RingBuffer<String[]>(5 * steps / 4);
-					else
-						buffer.setCapacity(5 * steps / 4);
-					// set y-range
-					style.setYRange(steps - 1);
-				} else {
-					if (buffer == null)
-						buffer = new RingBuffer<String[]>(geometry.size);
-				}
+				// determine length of history visible plus some
+				int capacity = (int) (1.1 * steps);
+				if (buffer == null)
+					buffer = new RingBuffer<String[]>(capacity);
+				// with a buffer we need to make sure colors is initialized as well
+				if (colors == null || colors.length != geometry.size)
+					colors = new String[geometry.size];
+				buffer.setCapacity(capacity);
+				style.setYRange(steps - 1);
 				style.showFrame = true;
 				break;
 
@@ -585,19 +553,21 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			default:
 				int radius = Math.min(width / 2, height / 2);
 				dR = (int) Math.sqrt(radius * radius * 2 / geometry.size);
-				buffer = null;
 				if (dR < MIN_DR) {
 					// too small
 					bounds.setSize(width, height);
 					break;
 				}
+				buffer = null;
 				diameter = Math.min(width, height);
 				bounds.set((width - diameter) / 2, (height - diameter) / 2, diameter, diameter);
 				style.showFrame = false;
 				break;
 		}
-		if (dw < MIN_DW && dh < MIN_DH && dR < MIN_DR)
+		if (dw < MIN_DW && dh < MIN_DH && dR < MIN_DR) {
+			buffer = null;
 			displayMessage("Population size to large!");
+		}
 		return true;
 	}
 
