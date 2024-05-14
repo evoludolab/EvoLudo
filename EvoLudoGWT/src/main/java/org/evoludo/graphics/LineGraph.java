@@ -84,7 +84,7 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 			style.xMin = style.xMax-1.0;
 		super.reset();
 		calcBounds();
-		if (buffer == null || buffer.capacity() < MIN_BUFFER_SIZE)
+		if (buffer == null || buffer.getCapacity() < MIN_BUFFER_SIZE)
 			buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
 		buffer.clear();
 		setSteps(steps*(style.xMax-style.xMin)/(style.xMax-oldMin));
@@ -130,7 +130,7 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 
 		double yScale = h/(style.yMax-style.yMin);
 		Iterator<double[]> i = buffer.iterator();
-		int nLines = buffer.depth() - 1;
+		int nLines = buffer.getDepth() - 1;
 		if( i.hasNext() ) {
 			double[] current = i.next();
 			g.setLineWidth(style.lineWidth);
@@ -228,7 +228,7 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 		totDy = 0;
 		double shift = units * style.xIncr;
 		shift = (rx > 0.0 ? -shift : shift);
-		double maxRange = buffer.capacity() * style.xIncr;
+		double maxRange = buffer.getCapacity() * style.xIncr;
 		double absMax = 0.0;
 		double absMin = absMax - maxRange;
 		if (shift > 0.0) {
@@ -270,7 +270,7 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 		int nSteps = (int) ((xMax - xMin) / style.xIncr);
 		if (nSteps < MIN_STEPS)
 			xMin = xMax - MIN_STEPS * style.xIncr;
-		double maxRange = buffer.capacity() * style.xIncr;
+		double maxRange = buffer.getCapacity() * style.xIncr;
 		// note: maximum of zero is hardcoded...
 		double absMax = 0.0;
 		double absMin = absMax - maxRange;
@@ -290,7 +290,7 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 	}
 
 	public void setSteps(double steps) {
-		this.steps = Math.max(1.0, Math.min(buffer.capacity(), steps));
+		this.steps = Math.max(1.0, Math.min(buffer.getCapacity(), steps));
 	}
 
 	public RingBuffer<double[]> getBuffer() {

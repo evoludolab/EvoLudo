@@ -867,7 +867,7 @@ public abstract class AbstractGraph extends FocusPanel
 							}
 						}));
 			}
-			setBufferCapacity(buffer.capacity());
+			setBufferCapacity(buffer.getCapacity());
 			bufferSizeTrigger = menu.add("Buffer size...", bufferSizeMenu);
 			bufferSizeTrigger.setEnabled(!controller.isRunning());
 		}
@@ -896,7 +896,7 @@ public abstract class AbstractGraph extends FocusPanel
 	 */
 	protected void setBufferCapacity(int capacity) {
 		buffer.setCapacity(capacity);
-		int bufSize = buffer.capacity();
+		int bufSize = buffer.getCapacity();
 		String label = (bufSize / 1000) + "k";
 		for (Widget item : bufferSizeMenu) {
 			ContextMenuCheckBoxItem menuItem = (ContextMenuCheckBoxItem) item;

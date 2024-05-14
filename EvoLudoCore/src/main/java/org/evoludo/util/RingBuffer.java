@@ -140,7 +140,7 @@ public class RingBuffer<T> implements Iterable<T> {
 	/**
 	 * @return capacity of ring buffer
 	 */
-	public int capacity() {
+	public int getCapacity() {
 		return bufferCapacity;
 	}
 
@@ -155,14 +155,14 @@ public class RingBuffer<T> implements Iterable<T> {
 	 *         <li>{@code -2}: buffer is mixture of objects and arrays
 	 *         </ul>
 	 */
-	public int depth() {
+	public int getDepth() {
 		return bufferDepth;
 	}
 
 	/**
 	 * @return number of entries in ring buffer
 	 */
-	public int size() {
+	public int getSize() {
 		return buffer.size();
 	}
 

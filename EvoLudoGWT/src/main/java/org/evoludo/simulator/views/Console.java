@@ -106,7 +106,7 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 		 */
 		public void show() {
 			StringBuilder sb = new StringBuilder();
-			ListIterator<String> bufit = buffer.listIterator(buffer.size());
+			ListIterator<String> bufit = buffer.listIterator(buffer.getSize());
 			while (bufit.hasPrevious())
 				sb.append(bufit.previous()).append("<br/>");
 			setHTML(sb.toString());
@@ -219,7 +219,7 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 		Element ele = log.getElement();
 		int scroll = ele.getScrollHeight();
 		int top = ele.getScrollTop();
-		if (log.buffer.capacity() == 0) {
+		if (log.buffer.getCapacity() == 0) {
 			// unlimited log messages
 			if (level != Level.CONFIG)
 				pretty += "<br/>";
@@ -332,7 +332,7 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 							setLogCapacity(0);
 						}
 					}));
-			setLogCapacity(log.buffer.capacity());
+			setLogCapacity(log.buffer.getCapacity());
 		}
 		menu.add("Buffer size...", bufferSizeMenu);
 		populateContextMenu(menu);

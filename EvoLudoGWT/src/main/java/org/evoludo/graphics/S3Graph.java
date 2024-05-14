@@ -138,7 +138,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTraj
 	public void reset() {
 		super.reset();
 		calcBounds();
-		if (buffer == null || buffer.capacity() < MIN_BUFFER_SIZE)
+		if (buffer == null || buffer.getCapacity() < MIN_BUFFER_SIZE)
 			buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
 		buffer.clear();
 		paint(true);
@@ -529,7 +529,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTraj
 		}
 
 		// process set strategy context menu for >3 traits (plus time)
-		if (buffer.depth() > 4) {
+		if (buffer.getDepth() > 4) {
 			if (setTraitMenu == null) {
 				setTraitMenu = new ContextMenu(menu);
 				for (String name : names)

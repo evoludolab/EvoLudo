@@ -830,7 +830,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 			if (name != null)
 				export.append("# " + name + "\n");
 			String legend = "time";
-			for (int i=0; i<buffer.depth() - 1; i++) {
+			for (int i=0; i<buffer.getDepth() - 1; i++) {
 				legend += ", " + model.getMeanName(i);
 			}
 			export.append("# " + legend + "\n");
