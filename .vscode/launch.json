@@ -39,6 +39,7 @@
 				"http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/simulator/views/*" : "${workspaceFolder}/EvoLudoGWT/src/main/java/org/evoludo/simulator/views/*",
 				"http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/ui/*" : "${workspaceFolder}/EvoLudoGWT/src/main/java/org/evoludo/ui/*",
 				"http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/EvoLudoWeb.java" : "${workspaceFolder}/EvoLudoGWT/src/main/java/org/evoludo/EvoLudoWeb.java",
+				"http://localhost:9876/sourcemaps/evoludoweb/java/awt/Color.java" : "${workspaceFolder}/EvoLudoGWT/src/main/super/java/awt/Color.java",
 			}
         },
         {
@@ -72,6 +73,7 @@
 				"http://10.0.0.10:9876/sourcemaps/evoludoweb/org/evoludo/simulator/views/*" : "${workspaceFolder}/EvoLudoGWT/src/main/java/org/evoludo/simulator/views/*",
 				"http://10.0.0.10:9876/sourcemaps/evoludoweb/org/evoludo/ui/*" : "${workspaceFolder}/EvoLudoGWT/src/main/java/org/evoludo/ui/*",
 				"http://10.0.0.10:9876/sourcemaps/evoludoweb/org/evoludo/EvoLudoWeb.java" : "${workspaceFolder}/EvoLudoGWT/src/main/java/org/evoludo/EvoLudoWeb.java",
+				"http://10.0.0.10:9876/sourcemaps/evoludoweb/java/awt/Color.java" : "${workspaceFolder}/EvoLudoGWT/src/main/super/java/awt/Color.java",
 			}
         },
         {
