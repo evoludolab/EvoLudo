@@ -132,7 +132,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * @param controller the controller of this graph
 	 * @param module     the module backing the graph
 	 */
-	public PopGraph3D(NodeGraphController controller, Module module) {
+	public PopGraph3D(PopGraphController controller, Module module) {
 		super(controller, module);
 		setStylePrimaryName("evoludo-PopGraph3D");
 		// PopGraph3D cannot use wrapper - transfer all widgets to graphPanel3D

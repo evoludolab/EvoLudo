@@ -4,8 +4,8 @@ import java.awt.Color;
 import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
-import org.evoludo.graphics.AbstractGraph.NodeGraphController;
 import org.evoludo.graphics.GenericPopGraph;
+import org.evoludo.graphics.GenericPopGraph.PopGraphController;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
@@ -21,7 +21,7 @@ import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
 
-public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph<T, N>> extends AbstractView implements NodeGraphController {
+public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph<T, N>> extends AbstractView implements PopGraphController {
 
 	@SuppressWarnings("hiding")
 	protected List<G> graphs;

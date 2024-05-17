@@ -38,6 +38,7 @@ import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
+import org.evoludo.graphics.GenericPopGraph;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
@@ -57,7 +58,7 @@ import com.google.gwt.user.client.Command;
  *
  * @author Christoph Hauert
  */
-public class Distribution extends AbstractView implements AbstractGraph.NodeGraphController {
+public class Distribution extends AbstractView implements GenericPopGraph.PopGraphController {
 
 	@SuppressWarnings("hiding")
 	protected List<PopGraph2D> graphs;

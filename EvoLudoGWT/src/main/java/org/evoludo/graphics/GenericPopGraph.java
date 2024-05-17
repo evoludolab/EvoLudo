@@ -27,6 +27,93 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		implements Network.LayoutListener, Zooming, DoubleClickHandler {
 
 	/**
+	 * The interface for communicating with graphs that show nodes, e.g. lattices or
+	 * networks.
+	 * 
+	 * @author Christoph Hauert
+	 */
+	public interface PopGraphController extends Controller {
+
+		/**
+		 * Checks if the backing model for the current visualization is of type
+		 * {@code type}.
+		 * 
+		 * @param type the type of model to check
+		 * @return {@code true} if the model is of type {@code type}
+		 */
+		public default boolean isModelType(Model.Type type) {
+			return false;
+		}
+
+		/**
+		 * Notifies the controller of the completion of the layouting process.
+		 */
+		public void layoutComplete();
+
+		/**
+		 * Notifies the controller that an update of the node with index {@code node} on
+		 * graph {@code graph} was requested. This is useful for visual debugging of the
+		 * backing model.
+		 * 
+		 * @param graph the graph that received the request
+		 * @param node  the index of the node that was selected to update
+		 */
+		public default void updateNodeAt(AbstractGraph graph, int node) {
+		}
+
+		/**
+		 * Notifies the controller that the mouse/tap has hit node with index
+		 * {@code node} on the graph with the tag {@code id}.
+		 * 
+		 * @param id   the id of the graph
+		 * @param node the index of the node that was hit
+		 */
+		public default void mouseHitNode(int id, int node) {
+			mouseHitNode(id, node, false);
+		}
+
+		/**
+		 * Notifies the controller that the mouse/tap has hit node with index
+		 * {@code node} on the graph with the tag {@code id}. The flag {@code alt}
+		 * indicates whether the {@code alt}-modifier was pressed
+		 * 
+		 * @param id   the id of the graph
+		 * @param node the index of the node that was hit
+		 * @param alt  {@code true} if the {@code alt}-key was pressed
+		 */
+		public default void mouseHitNode(int id, int node, boolean alt) {
+		}
+
+		/**
+		 * Notifies the controller that the tooltip was requested by graph
+		 * {@code graph}. If the request happened for a node its index is {@code node}
+		 * and {@code -1} otherwise.
+		 * 
+		 * @param graph the graph that received the request
+		 * @param node  the index of the node that was selected to update
+		 * @return the formatted
+		 */
+		public String getTooltipAt(AbstractGraph graph, int node);
+
+		/**
+		 * Opportunity for the controller to add functionality to the context menu
+		 * (optional implementation). Additional entries should be added to
+		 * {@code menu}. If the context menu was opened while the mouse was over a node
+		 * its index is {@code node}. At this point the menu already contains entries
+		 * that are relevant for all graphs, e.g. fullscreen and export. Override this
+		 * method to add further, more specialized entries. Finally, the current pane
+		 * will be asked whether it wants to add further entries (e.g. autoscale axis).
+		 *
+		 * @param menu the context menu
+		 * @param node the index of node
+		 * 
+		 * @see Controller#populateContextMenu(ContextMenu)
+		 */
+		public default void populateContextMenuAt(ContextMenu menu, int node) {
+		}
+	}
+
+	/**
 	 * The structure of the population.
 	 */
 	protected Geometry geometry;
@@ -68,7 +155,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	 */
 	protected Label label;
 
-	public GenericPopGraph(NodeGraphController controller, Module module) {
+	public GenericPopGraph(PopGraphController controller, Module module) {
 		super(controller, module);
 		label = new Label("Gugus");
 		label.getElement().getStyle().setZIndex(1);
@@ -230,7 +317,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	public synchronized void layoutComplete() {
 		clearMessage();
 		layoutNetwork();
-		((NodeGraphController) controller).layoutComplete();
+		((PopGraphController) controller).layoutComplete();
 	}
 
 	/**
@@ -271,7 +358,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 			return null;
 		}
 		element.addClassName("evoludo-cursorPointNode");
-		return ((NodeGraphController) controller).getTooltipAt(this, node);
+		return ((PopGraphController) controller).getTooltipAt(this, node);
 	}
 
 	/**
@@ -314,7 +401,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		int node = findNodeAt(event.getX(), event.getY());
 		if (node >= 0 && !controller.isRunning()) {
 			// population signals change back to us
-			((NodeGraphController) controller).mouseHitNode(module.getID(), node, event.isAltKeyDown());
+			((PopGraphController) controller).mouseHitNode(module.getID(), node, event.isAltKeyDown());
 		}
 	}
 
@@ -365,7 +452,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		// double tap?
 		if (!controller.isRunning())
 			// population signals change back to us
-			((NodeGraphController) controller).mouseHitNode(module.getID(), node);
+			((PopGraphController) controller).mouseHitNode(module.getID(), node);
 		event.preventDefault();
 	}
 
@@ -473,13 +560,13 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 					debugNodeMenu = new ContextMenuItem("Update node @ -", new Command() {
 						@Override
 						public void execute() {
-							((NodeGraphController) controller).updateNodeAt(GenericPopGraph.this, debugNode);
+							((PopGraphController) controller).updateNodeAt(GenericPopGraph.this, debugNode);
 						}
 					});
 					debugSubmenu.add(debugNodeMenu);
 				}
 				debugNodeMenu.setText("Update node @ " + debugNode);
-				debugNodeMenu.setEnabled(((NodeGraphController) controller).isModelType(Model.Type.IBS));
+				debugNodeMenu.setEnabled(((PopGraphController) controller).isModelType(Model.Type.IBS));
 				debugSubmenuTrigger = menu.add("Debug...", debugSubmenu);
 			}
 			if (debugSubmenuTrigger != null)

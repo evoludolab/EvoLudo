@@ -98,7 +98,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param controller the controller of this graph
 	 * @param tag        the identifying tag
 	 */
-	public PopGraph2D(NodeGraphController controller, Module module) {
+	public PopGraph2D(PopGraphController controller, Module module) {
 		super(controller, module);
 		setStylePrimaryName("evoludo-PopGraph2D");
 		label.setStyleName("evoludo-Label2D");
