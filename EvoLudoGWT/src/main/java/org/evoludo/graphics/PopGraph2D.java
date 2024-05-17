@@ -416,10 +416,12 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		if (!super.calcBounds() || geometry == null)
 			return false;
 		clearMessage();
+		int width = getOffsetWidth();
+		int height = getOffsetHeight();
 		dw = 0;
 		dh = 0;
 		dR = 0;
-		double h, w;
+		double bHeight, bWidth;
 		int diameter;
 		Geometry.Type type = geometry.getType();
 		isHierarchy = (type == Geometry.Type.HIERARCHY);
@@ -441,7 +443,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				diameter = Math.min(width, height);
 				dw2 = diameter / (side + 3);
 				// calculate width and height
-				w = dw2 * (side + 1);
+				bWidth = dw2 * (side + 1);
 				dw = 2 * dw2;
 				dh = diameter / (side + 1);
 				if (dw < MIN_DW || dh < MIN_DH) {
@@ -449,8 +451,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 					bounds.setSize(width, height);
 					break;
 				}
-				h = dh * side;
-				bounds.set((width - w) / 2, (height - h) / 2, w, h);
+				bHeight = dh * side;
+				bounds.set((width - bWidth) / 2, (height - bHeight) / 2, bWidth, bHeight);
 				style.showFrame = false;
 				break;
 
@@ -460,7 +462,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				diameter = Math.min(width, height);
 				dw2 = diameter / (2 * side + 1);
 				// calculate width and height
-				w = dw2 * (2 * side + 1);
+				bWidth = dw2 * (2 * side + 1);
 				dw = 2 * dw2;
 				dh3 = diameter / (3 * side + 1);
 				dh = 3 * dh3;
@@ -469,8 +471,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 					bounds.setSize(width, height);
 					break;
 				}
-				h = dh3 * (3 * side + 1);
-				bounds.set((width - w) / 2, (height - h) / 2, w, h);
+				bHeight = dh3 * (3 * side + 1);
+				bounds.set((width - bWidth) / 2, (height - bHeight) / 2, bWidth, bHeight);
 				style.showFrame = false;
 				break;
 
@@ -503,9 +505,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 					gap *= HIERARCHY_GAP;
 				}
 				// keep sites square
-				w = bounds.getWidth();
-				h = bounds.getHeight();
-				dw = (int) (Math.min(w, h) - gap) / side;
+				bWidth = bounds.getWidth();
+				bHeight = bounds.getHeight();
+				dw = (int) (Math.min(bWidth, bHeight) - gap) / side;
 				if (dw < MIN_DW) {
 					// too small
 					bounds.setSize(width, height);
@@ -513,25 +515,25 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				}
 				dh = dw;
 				int newdim = dw * side + gap;
-				bounds.set((w - newdim) / 2, (h - newdim) / 2, newdim, newdim);
+				bounds.set((bWidth - newdim) / 2, (bHeight - newdim) / 2, newdim, newdim);
 				style.showFrame = true;
 				break;
 
 			case LINEAR:
 				// estimate y-range
-				w = bounds.getWidth();
-				dw = (int) (w / geometry.size);
-				h = bounds.getHeight();
+				bWidth = bounds.getWidth();
+				dw = (int) (bWidth / geometry.size);
+				bHeight = bounds.getHeight();
 				dh = dw;
-				int steps = (int) (h / dh);
+				int steps = (int) (bHeight / dh);
 				if (dw < MIN_DW || steps == 0) {
 					// too small
 					bounds.setSize(width, height);
 					break;
 				}
 				double adjw = dw * geometry.size;
-				double adjh = h - (h % dh);
-				bounds.set((w - adjw) / 2, (h - adjh) / 2, adjw, adjh);
+				double adjh = bHeight - (bHeight % dh);
+				bounds.set((bWidth - adjw) / 2, (bHeight - adjh) / 2, adjw, adjh);
 				// determine length of history visible plus some
 				int capacity = (int) (1.1 * steps);
 				if (buffer == null)
@@ -861,6 +863,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				// bounds.width==bounds.height for networks
 				double iscale = (rr + rr) / (bounds.getWidth() * zoomFactor);
 				double xaspect, yaspect;
+				int width = getOffsetWidth();
+				int height = getOffsetHeight();
 				if (width < height) {
 					// portrait
 					xaspect = 1.0;

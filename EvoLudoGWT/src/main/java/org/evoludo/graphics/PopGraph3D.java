@@ -807,7 +807,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		msgLabel.setText(msg);
 		msgLabel.setVisible(true);
 		Style msgStyle = msgLabel.getElement().getStyle();
-		msgStyle.setFontSize(12.0 * 0.666 * width / g.measureText(msg).getWidth(), Unit.PX);
+		msgStyle.setFontSize(12.0 * 0.666 * getOffsetWidth() / g.measureText(msg).getWidth(), Unit.PX);
 		g.restore();
 		spheres.clear();
 		return true;

@@ -272,7 +272,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTraj
 	protected boolean calcBounds() {
 		if (!super.calcBounds())
 			return false;
-		bounds.set(style.minPadding, style.minPadding, width-2*style.minPadding, height-2*style.minPadding);
+		bounds.set(style.minPadding, style.minPadding, getOffsetWidth()-2*style.minPadding, getOffsetHeight()-2*style.minPadding);
 		String font = g.getFont();
 		if( style.showXTicks ) {
 			int tlen = style.tickLength;

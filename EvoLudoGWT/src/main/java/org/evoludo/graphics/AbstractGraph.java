@@ -317,16 +317,6 @@ public abstract class AbstractGraph extends FocusPanel
 	protected ContextMenu contextMenu;
 
 	/**
-	 * The width of this graph.
-	 */
-	int width = 0;
-
-	/**
-	 * The width of this graph.
-	 */
-	int height = 0;
-
-	/**
 	 * The scale of this graph. Used to translate {@code width} and {@code height}
 	 * into canvas coordinates. For example, on retina displays the scale is
 	 * typically {@code 2}, i.e. two pixels per unit width or height.
@@ -589,8 +579,8 @@ public abstract class AbstractGraph extends FocusPanel
 	 * dimensions clears the canvas (even with no actual changes)!
 	 */
 	private void updateCanvas() {
-		width = getOffsetWidth();
-		height = getOffsetHeight();
+		int width = getOffsetWidth();
+		int height = getOffsetHeight();
 		// canvas is null for PopGraph3D
 		if (canvas == null)
 			return;
@@ -876,6 +866,8 @@ public abstract class AbstractGraph extends FocusPanel
 	 * @return {@code true} if bounds are successfully calculated.
 	 */
 	protected boolean calcBounds() {
+		int width = getOffsetWidth();
+		int height = getOffsetHeight();
 		if (width == 0 || height == 0)
 			return false;
 		bounds.set(style.minPadding, style.minPadding, width - 2 * style.minPadding, height - 2 * style.minPadding);
@@ -1361,7 +1353,7 @@ public abstract class AbstractGraph extends FocusPanel
 	 * Assumes scaled canvas coordinates, i.e. lower, left corner at {@code (0,0)}.
 	 */
 	protected void clearCanvas() {
-		g.clearRect(0, 0, width, height);
+		g.clearRect(0, 0, getOffsetWidth(), getOffsetHeight());
 	}
 
 	/**
@@ -1517,8 +1509,8 @@ public abstract class AbstractGraph extends FocusPanel
 	public void shift(int dx, int dy) {
 		if (hasMessage)
 			return;
-		viewCorner.set(Math.min(width * (zoomFactor - 1.0), Math.max(0, viewCorner.x + dx)),
-				Math.min(height * (zoomFactor - 1.0), Math.max(0, viewCorner.y + dy)));
+		viewCorner.set(Math.min(getOffsetWidth() * (zoomFactor - 1.0), Math.max(0, viewCorner.x + dx)),
+				Math.min(getOffsetHeight() * (zoomFactor - 1.0), Math.max(0, viewCorner.y + dy)));
 		paint(true);
 	}
 
