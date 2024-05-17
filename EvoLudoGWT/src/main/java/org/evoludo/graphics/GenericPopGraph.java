@@ -114,6 +114,11 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	protected N network;
 
 	/**
+	 * The array to store the data for drawing the population structure.
+	 */
+	protected T[] data;
+
+	/**
 	 * Maximum number of nodes in network for animated layout, see {@link #DEFAULT}
 	 */
 	static final int MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT = 1000;
@@ -220,7 +225,9 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	 * 
 	 * @return the array of node colors
 	 */
-	public abstract T[] getData();
+	public T[] getData() {
+		return data;
+	}
 
 	/**
 	 * Get the network representation of the graph represented by the geometry.

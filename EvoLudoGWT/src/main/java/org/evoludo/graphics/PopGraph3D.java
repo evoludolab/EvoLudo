@@ -100,15 +100,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 */
 	protected boolean resetCamera = true;
 
-	/**
-	 * The array of colors used for drawing the nodes of the graph.
-	 * <p>
-	 * <strong>Note:</strong> This is deliberately hiding
-	 * {@link AbstractGraph#colors} because it serves the exact same purpose but is
-	 * an array of type {@code MeshLambertMaterial[]} instead of {@code Color[]}.
-	 */
-	@SuppressWarnings("hiding")
-	protected MeshLambertMaterial[] colors;
 	protected LineBasicMaterial linkstyle;
 	protected PointLight light;
 	protected AmbientLight ambient;
@@ -167,11 +158,12 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	public void activate() {
 		super.activate();
 		// lazy allocation of memory for colors
-		if (geometry != null && (colors == null || colors.length != geometry.size)) {
-			colors = new MeshLambertMaterial[geometry.size];
+		// ok to allocate data only here because no 3D view has history
+		if (geometry != null && (data == null || data.length != geometry.size)) {
+			data = new MeshLambertMaterial[geometry.size];
 			// allocate one entry to be able to deduce the type of the array
 			// in generic methods (see e.g. getLeafColor(...) in NetDyn)
-			colors[0] = new MeshLambertMaterial();
+			data[0] = new MeshLambertMaterial();
 		}
 		// cannot yet start animation - kills scene
 		// graph3DScene.run();
@@ -198,17 +190,12 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	}
 
 	@Override
-	public MeshLambertMaterial[] getData() {
-		return colors;
-	}
-
-	@Override
 	public boolean paint(boolean force) {
 		if (super.paint(force))
 			return true;
 		int k = 0;
 		for (Mesh sphere : spheres)
-			sphere.setMaterial(colors[k++]);
+			sphere.setMaterial(data[k++]);
 		return false;
 	}
 
@@ -381,7 +368,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		// would never get here.
 		for (int k = 0; k < geometry.size; k++) {
 			Mesh mesh = new Mesh(unit);
-			mesh.setMaterial(colors[k]);
+			mesh.setMaterial(data[k]);
 			mesh.setName(Integer.toString(k));
 			mesh.setMatrixAutoUpdate(false);
 			spheres.add(mesh);
@@ -503,7 +490,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * @return the color of the node
 	 */
 	public String getCSSColorAt(int node) {
-		return "#" + colors[node].getColor().getHexString();
+		return "#" + data[node].getColor().getHexString();
 	}
 
 	/**

@@ -111,13 +111,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	public void activate() {
 		super.activate();
 		// lazy allocation of memory for colors
-		if (colors == null || colors.length != geometry.size)
-			colors = new String[geometry.size];
-	}
-
-	@Override
-	public String[] getData() {
-		return colors;
+		if (data == null || data.length != geometry.size)
+			data = new String[geometry.size];
 	}
 
 	/**
@@ -127,9 +122,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	public void update(boolean isNext) {
 		if (buffer != null) {
-			// add copy of colors array to buffer
+			// add copy of data array to buffer
 			// note: cannot be reliably done in RingBuffer class without reflection
-			String[] copy = Arrays.copyOf(colors, colors.length);
+			String[] copy = Arrays.copyOf(data, data.length);
 			if (isNext || buffer.isEmpty())
 				buffer.append(copy);
 			else
@@ -311,11 +306,11 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			g.setLineWidth(style.linkWidth);
 			stroke(links);
 		}
-		String current = colors[0];
+		String current = data[0];
 		g.setFillStyle(current);
 		Node2D[] nodes = network.toArray();
 		for (int k = 0; k < nNodes; k++) {
-			String next = colors[k];
+			String next = data[k];
 			// potential optimization of drawing
 			if (next != current) {
 				g.setFillStyle(next);
@@ -541,10 +536,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				int capacity = (int) (1.1 * steps);
 				if (buffer == null)
 					buffer = new RingBuffer<String[]>(capacity);
-				// with a buffer we need to make sure colors is initialized as well
-				if (colors == null || colors.length != geometry.size)
-					colors = new String[geometry.size];
 				buffer.setCapacity(capacity);
+				// with a buffer we need to make sure colors is initialized as well
+				if (data == null || data.length != geometry.size)
+					data = new String[geometry.size];
 				style.setYRange(steps - 1);
 				style.showFrame = true;
 				break;
@@ -583,7 +578,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @return the color of the node
 	 */
 	public String getCSSColorAt(int node) {
-		return colors[node];
+		return data[node];
 	}
 
 	/**
