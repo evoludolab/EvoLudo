@@ -86,7 +86,6 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 		calcBounds();
 		if (buffer == null || buffer.getCapacity() < MIN_BUFFER_SIZE)
 			buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
-		buffer.clear();
 		setSteps(steps*(style.xMax-style.xMin)/(style.xMax-oldMin));
 	}
 
@@ -322,7 +321,7 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 			clearMenu = new ContextMenuItem("Clear", new Command() {
 				@Override
 				public void execute() {
-					buffer.clear();
+					clearHistory();
 					paint(true);
 				}
 			});

@@ -210,7 +210,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 //					population.getFitHistogramData(bins);
 //					break;
 				default:
-					throw new Error("MVDistribution: not implemented for type "+type);
+					throw new Error("Distribution: not implemented for type "+type);
 			}
 			graph.update(isNext);
 			graph.paint(force);

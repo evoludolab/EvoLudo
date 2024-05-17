@@ -598,6 +598,7 @@ public abstract class AbstractGraph extends FocusPanel
 	 */
 	public void reset() {
 		clearMessage();
+		clearHistory();
 		calcBounds();
 		updateCanvas();
 		zoom();
@@ -676,6 +677,14 @@ public abstract class AbstractGraph extends FocusPanel
 	 */
 	public boolean hasHistory() {
 		return (buffer != null);
+	}
+
+	/**
+	 * Clear the history of the graph (if there is one).
+	 */
+	public void clearHistory() {
+		if (buffer != null)
+			buffer.clear();
 	}
 
 	/**
@@ -770,7 +779,6 @@ public abstract class AbstractGraph extends FocusPanel
 							}
 						}));
 			}
-			setBufferCapacity(buffer.getCapacity());
 			bufferSizeTrigger = menu.add("Buffer size...", bufferSizeMenu);
 			bufferSizeTrigger.setEnabled(!controller.isRunning());
 		}

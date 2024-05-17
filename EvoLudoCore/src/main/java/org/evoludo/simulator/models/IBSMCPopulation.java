@@ -629,7 +629,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * Creates 2D histogram for traits <code>trait1</code> and <code>trait2</code>.
 	 * The result is returned in the linear array <code>bins</code> and arranged in
 	 * a way that is compatible with square lattice geometries for visualization by
-	 * {@link org.evoludo.simulator.MVDistribution} and
+	 * {@link org.evoludo.simulator.views.Distribution} and
 	 * {@link org.evoludo.graphics.PopGraph2D} (GWT only).
 	 *
 	 * @param bins   the linear array to store the 2D histogram

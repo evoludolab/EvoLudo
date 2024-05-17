@@ -137,10 +137,8 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTraj
 	@Override
 	public void reset() {
 		super.reset();
-		calcBounds();
 		if (buffer == null || buffer.getCapacity() < MIN_BUFFER_SIZE)
 			buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
-		buffer.clear();
 		paint(true);
 	}
 
@@ -477,7 +475,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTraj
 			clearMenu = new ContextMenuItem("Clear", new Command() {
 				@Override
 				public void execute() {
-					buffer.clear();
+					clearHistory();
 					paint(true);
 				}
 			});

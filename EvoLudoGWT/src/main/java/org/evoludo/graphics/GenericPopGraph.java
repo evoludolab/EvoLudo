@@ -543,7 +543,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 				clearMenu = new ContextMenuItem("Clear", new Command() {
 					@Override
 					public void execute() {
-						buffer.clear();
+						clearHistory();
 						paint(true);
 					}
 				});

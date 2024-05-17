@@ -69,17 +69,20 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * a {@code RingBuffer} of type {@code String[]} rather than {@code double[]}.
 	 */
 	@SuppressWarnings("hiding")
+//XXX hackish - use generic buffer instead
 	protected RingBuffer<String[]> buffer;
 
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * <strong>Hack alert:</strong> This needs to be overridden because
-	 * {@link #buffer} is hiding {@link AbstractGraph#buffer}.
-	 */
+//XXX hackish - will be resolved with generic buffer
 	@Override
 	public boolean hasHistory() {
 		return (buffer != null);
+	}
+
+//XXX hackish - will be resolved with generic buffer
+	@Override
+	public void clearHistory() {
+		if (buffer != null)
+			buffer.clear();
 	}
 
 	/**

@@ -102,12 +102,6 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 		return buffer;
 	}
 
-	@Override
-	public void reset() {
-		super.reset();
-		buffer.clear();
-	}
-
 	public void addData(double t, double[] data, boolean force) {
 		if (buffer.isEmpty()) {
 			buffer.append(prependTime2Data(t, data));
@@ -363,7 +357,7 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 			clearMenu = new ContextMenuItem("Clear", new Command() {
 				@Override
 				public void execute() {
-					buffer.clear();
+					clearHistory();
 					paint(true);
 				}
 			});
