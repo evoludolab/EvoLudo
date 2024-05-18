@@ -67,14 +67,14 @@ import com.google.gwt.user.client.Command;
  *
  * @author Christoph Hauert
  */
-public class Histogram extends AbstractView implements HistoGraph.HistoGraphController {
+public class Histogram extends AbstractView {
 
 	// NOTE: this is a bit of a hack that allows us to use graphs as Set<HistoGraph> here
 	//		 but as Set<AbstractGraph> in super classes. saves a lot of ugly casting
 	@SuppressWarnings("hiding")
 	protected List<HistoGraph> graphs;
 
-	protected int MAX_BINS = 100;
+	// protected int MAX_BINS = 100;
 	double scale2bins = 1.0;
 	int binSize = 1;
 
@@ -384,8 +384,8 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 			switch( type ) {
 				case STRATEGY:
 					// histogram of strategies makes only sense for continuous traits
-					if( data==null || data.length!=nTraits || data[0].length!=MAX_BINS ) 
-						data = new double[nTraits][MAX_BINS];
+					if( data==null || data.length!=nTraits || data[0].length!=HistoGraph.MAX_BINS ) 
+						data = new double[nTraits][HistoGraph.MAX_BINS];
 					graph.setData(data);
 					graph.clearMarkers();
 					ArrayList<double[]> markers = module.getMarkers();
@@ -415,8 +415,8 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					nTraits = (model.isContinuous()?1:nTraits);
 					if( vacant>=0 )
 						nTraits--;
-					if( data==null || data.length!=nTraits || data[0].length!=MAX_BINS ) 
-						data = new double[nTraits][MAX_BINS];
+					if( data==null || data.length!=nTraits || data[0].length!=HistoGraph.MAX_BINS ) 
+						data = new double[nTraits][HistoGraph.MAX_BINS];
 					graph.setData(data);
 					min = model.getMinScore(module.getID());
 					max = model.getMaxScore(module.getID());
@@ -495,8 +495,8 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					style.label = module.getTraitName(idx);
 					style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
 					if (doStatistics) {
-						if (data == null || data.length != nTraits + 1 || data[0].length != Math.min(nBins, MAX_BINS))
-							data = new double[nTraits+1][Math.min(nBins, MAX_BINS)];
+						if (data == null || data.length != nTraits + 1 || data[0].length != Math.min(nBins, HistoGraph.MAX_BINS))
+							data = new double[nTraits+1][Math.min(nBins, HistoGraph.MAX_BINS)];
 						graph.setData(data);
 					} else {
 						graph.clearData();
@@ -517,10 +517,10 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						style.label = "Absorbtion";
 						style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
 					}
-					if( nPop>MAX_BINS ) {
+					if( nPop>HistoGraph.MAX_BINS ) {
 						if (doStatistics) {
-							if (data == null || data.length != nTraits + 1 || data[0].length != MAX_BINS)
-								data = new double[nTraits + 1][MAX_BINS];
+							if (data == null || data.length != nTraits + 1 || data[0].length != HistoGraph.MAX_BINS)
+								data = new double[nTraits + 1][HistoGraph.MAX_BINS];
 							graph.setData(data);
 						} else {
 							graph.clearData();
@@ -578,7 +578,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					}
 					style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
 					// determine the number of bins with maximum of MAX_BINS
-					binSize = (nPop + 1) / MAX_BINS + 1;
+					binSize = (nPop + 1) / HistoGraph.MAX_BINS + 1;
 					// doubles as the map for frequencies to bins
 					scale2bins = (nPop + 1) / binSize;	// number of bins
 					if (data == null || data.length != nTraits || data[0].length != (int) scale2bins)
@@ -684,7 +684,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 									bincount = maxDegree(Math.max(inter.maxTot, comp.maxTot));
 								min = 0.0;
 								max = bincount;
-								bincount = Math.min(bincount, MAX_BINS);
+								bincount = Math.min(bincount, HistoGraph.MAX_BINS);
 								if (bincount != data[0].length) {
 									data = new double[data.length][bincount];
 									graph.setData(data);
@@ -722,7 +722,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						HistoGraph absorption = graphs.get(graphs.size() - 1);
 						int initNode = fixData.mutantNode;
 						int nPop = graph.getModule().getNPopulation();
-						if (initNode < 0 || nPop > MAX_BINS) {
+						if (initNode < 0 || nPop > HistoGraph.MAX_BINS) {
 							graph.addData(fixData.updatesFixed);
 							absorption.addData(fixData.updatesFixed);
 						} else {
@@ -818,7 +818,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 					status += (isMultispecies ? module.getName() + "." : "")
 							+ graph.getStyle().label + ": ";
 					int nPop = module.getNPopulation();
-					if (nPop > MAX_BINS) {
+					if (nPop > HistoGraph.MAX_BINS) {
 						double mean = Distributions.distrMean(data[idx]);
 						double sdev = Distributions.distrStdev(data[idx], mean);
 						GraphStyle style = graph.getStyle();
@@ -951,7 +951,7 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 			nBins = Math.max(maxDegree(comp.maxOut)+1, nBins);
 		if( !comp.isUndirected )
 			nBins = Math.max(maxDegree(comp.maxTot)+1, nBins);
-		return Math.max(2,  Math.min(nBins, MAX_BINS));
+		return Math.max(2,  Math.min(nBins, HistoGraph.MAX_BINS));
 	}
 
 	private String[] getDegreeLabels(int nTraits, boolean interUndirected) {
@@ -1003,93 +1003,6 @@ public class Histogram extends AbstractView implements HistoGraph.HistoGraphCont
 						Math.max(colors[tag].getGreen(), 127), 
 						Math.max(colors[tag].getBlue(), 127)));
 	}*/
-
-	@Override
-	public String getTooltipAt(HistoGraph graph, int bar) {
-		int idx = graphs.indexOf(graph);
-		double[][] data = graph.getData();
-		int nBins = data[0].length;
-		GraphStyle style = graph.getStyle();
-		// note label is null for undirected graph with the same interaction and competition graphs
-		StringBuilder tip = new StringBuilder(style.showLabel&&style.label!=null?"<b>"+style.label+"</b><br/>":"");
-		switch( type ) {
-			case DEGREE:
-				if( Math.abs(style.xMax-(nBins-1))<1e-6 ) {
-					tip.append("<table style='border-collapse:collapse;border-spacing:0;'>");
-					tip.append("<tr><td><i>"+style.xLabel+":</i></td><td>"+bar+"</td></tr>");
-					tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+Formatter.formatPercent(data[idx][bar], 2)+"</td></tr></table>");
-					break;
-				}
-				//$FALL-THROUGH$
-			case STRATEGY:
-			case FITNESS:
-				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>");
-				tip.append("<tr><td><i>"+style.xLabel+":</i></td><td>["+Formatter.format(style.xMin+bar*(style.xMax-style.xMin)/nBins, 2)+
-						", "+Formatter.format(style.xMin+(bar+1)*(style.xMax-style.xMin)/nBins, 2)+")</td></tr>");
-				tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+Formatter.formatPercent(data[idx][bar], 2)+"</td></tr>");
-				String note = graph.getNoteAt(bar);
-				if( note!=null ) tip.append("<tr><td><i>Note:</i></td><td>"+note+"</td></tr>");
-				tip.append("</table>");
-				break;
-			case STATISTICS_FIXATION_PROBABILITY:
-				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>");
-				tip.append("<tr><td><i>"+style.xLabel+":</i></td><td>"+bar+"</td></tr>");
-				int nTraits = data.length-1;
-				double norm = data[nTraits][bar];
-				tip.append("<tr><td><i>samples:</i></td><td>"+(int)norm+"</td></tr>");
-				if( style.percentY )
-					tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+(norm>0.0?Formatter.formatPercent(data[idx][bar]/norm, 2):"0")+
-							"</td></tr></table>");
-				else
-					tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+(norm>0.0?Formatter.format(data[idx][bar]/norm, 2):"0")+
-							"</td></tr></table>");
-				break;
-			case STATISTICS_FIXATION_TIME:
-				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>"+
-						"<tr><td><i>"+style.xLabel+":</i></td><td>");
-				Module module = graph.getModule();
-				int nPop = module.getNPopulation();
-				if( nPop>MAX_BINS ) {
-					tip.append("["+Formatter.format(style.xMin+(double)bar/nBins*(style.xMax-style.xMin), 2)+"-"+
-							Formatter.format(style.xMin+(double)(bar+1)/nBins*(style.xMax-style.xMin), 2)+")");
-				}
-				else {
-					tip.append(bar+"</td></tr>"+
-							"<tr><td><i>samples:</i></td><td>"+(int)graph.getSamples(bar));
-				}
-				tip.append("</td></tr><tr><td><i>"+style.yLabel+":</i></td>");
-				if( style.percentY )
-					tip.append("<td>"+Formatter.formatPercent(graph.getData(bar), 2)+"</td>");
-				else
-					tip.append("<td>"+Formatter.format(graph.getData(bar), 2)+"</td>");
-				tip.append("</tr></table>");
-				break;
-			case STATISTICS_STATIONARY:
-				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>" + //
-						"<tr><td><i>" + style.xLabel + ":</i></td>");
-				if (binSize == 1)
-					tip.append("<td>" + bar + "</td></tr>");
-				else {
-					int start = bar * binSize;
-					int end = start + binSize - 1;
-					if (bar == nBins - 1) {
-						// careful with last bin
-						module = graph.getModule();
-						nPop = module.getNPopulation();
-						end = Math.max(end, nPop);
-					}
-					String separator = (end - start > 1) ? "-" : ",";
-					tip.append("<td>[" + start + separator + end + "]</td></tr>");
-				}
-				tip.append("<tr><td><i>" + style.yLabel + ":</i></td><td>"
-						+ Formatter.formatPercent(data[idx][bar] / graph.getSamples(), 2) + "</td></tr></table>");
-				break;
-			default:
-				break;
-
-		}
-		return tip.toString();
-	}
 
 	private ContextMenuItem clearMenu;
 

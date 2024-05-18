@@ -37,6 +37,7 @@ import java.util.Arrays;
 
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
+import org.evoludo.util.Formatter;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.modules.Module;
@@ -48,10 +49,6 @@ import com.google.gwt.user.client.Command;
  * @author Christoph Hauert
  */
 public class HistoGraph extends AbstractGraph {
-
-	public interface HistoGraphController extends Controller {
-		public String getTooltipAt(HistoGraph graph, int bar);
-	}
 
 	// this is a quick and dirty implementation of bin markers - improvements?
 	public class Marker {
@@ -108,6 +105,8 @@ public class HistoGraph extends AbstractGraph {
 	protected double nSamples;
 	int maxBinIdx;
 	int row;
+
+	public static final int MAX_BINS = 100;
 
 	/**
 	 * Create new histogram graph for <code>module</code> running in
@@ -544,8 +543,86 @@ public class HistoGraph extends AbstractGraph {
 		int bar = getBinAt(x, y);
 		if( bar<0 )
 			return null;
-		//int n = graphs.indexOf(graph);
-		return ((HistoGraphController)controller).getTooltipAt(this, bar);
+		int nBins = data[0].length;
+		// note label is null for undirected graph with the same interaction and competition graphs
+		StringBuilder tip = new StringBuilder(style.showLabel&&style.label!=null?"<b>"+style.label+"</b><br/>":"");
+		switch( controller.getType() ) {
+			case DEGREE:
+				if( Math.abs(style.xMax-(nBins-1))<1e-6 ) {
+					tip.append("<table style='border-collapse:collapse;border-spacing:0;'>");
+					tip.append("<tr><td><i>"+style.xLabel+":</i></td><td>"+bar+"</td></tr>");
+					tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+Formatter.formatPercent(data[row][bar], 2)+"</td></tr></table>");
+					break;
+				}
+				//$FALL-THROUGH$
+			case STRATEGY:
+			case FITNESS:
+				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>");
+				tip.append("<tr><td><i>"+style.xLabel+":</i></td><td>["+Formatter.format(style.xMin+bar*(style.xMax-style.xMin)/nBins, 2)+
+						", "+Formatter.format(style.xMin+(bar+1)*(style.xMax-style.xMin)/nBins, 2)+")</td></tr>");
+				tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+Formatter.formatPercent(data[row][bar], 2)+"</td></tr>");
+				String note = getNoteAt(bar);
+				if( note!=null ) tip.append("<tr><td><i>Note:</i></td><td>"+note+"</td></tr>");
+				tip.append("</table>");
+				break;
+			case STATISTICS_FIXATION_PROBABILITY:
+				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>");
+				tip.append("<tr><td><i>"+style.xLabel+":</i></td><td>"+bar+"</td></tr>");
+				int nTraits = data.length-1;
+				double norm = data[nTraits][bar];
+				tip.append("<tr><td><i>samples:</i></td><td>"+(int)norm+"</td></tr>");
+				if( style.percentY )
+					tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+(norm>0.0?Formatter.formatPercent(data[row][bar]/norm, 2):"0")+
+							"</td></tr></table>");
+				else
+					tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+(norm>0.0?Formatter.format(data[row][bar]/norm, 2):"0")+
+							"</td></tr></table>");
+				break;
+			case STATISTICS_FIXATION_TIME:
+				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>"+
+						"<tr><td><i>"+style.xLabel+":</i></td><td>");
+				int nPop = module.getNPopulation();
+				if( nPop>MAX_BINS ) {
+					tip.append("["+Formatter.format(style.xMin+(double)bar/nBins*(style.xMax-style.xMin), 2)+"-"+
+							Formatter.format(style.xMin+(double)(bar+1)/nBins*(style.xMax-style.xMin), 2)+")");
+				}
+				else {
+					tip.append(bar+"</td></tr>"+
+							"<tr><td><i>samples:</i></td><td>"+(int)getSamples(bar));
+				}
+				tip.append("</td></tr><tr><td><i>"+style.yLabel+":</i></td>");
+				if( style.percentY )
+					tip.append("<td>"+Formatter.formatPercent(getData(bar), 2)+"</td>");
+				else
+					tip.append("<td>"+Formatter.format(getData(bar), 2)+"</td>");
+				tip.append("</tr></table>");
+				break;
+			case STATISTICS_STATIONARY:
+				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>" + //
+						"<tr><td><i>" + style.xLabel + ":</i></td>");
+				nPop = module.getNPopulation();
+				int binSize = (nPop + 1) / MAX_BINS + 1;
+				if (binSize == 1)
+					tip.append("<td>" + bar + "</td></tr>");
+				else {
+					int start = bar * binSize;
+					int end = start + binSize - 1;
+					if (bar == nBins - 1) {
+						// careful with last bin
+						nPop = module.getNPopulation();
+						end = Math.max(end, nPop);
+					}
+					String separator = (end - start > 1) ? "-" : ",";
+					tip.append("<td>[" + start + separator + end + "]</td></tr>");
+				}
+				tip.append("<tr><td><i>" + style.yLabel + ":</i></td><td>"
+						+ Formatter.formatPercent(data[row][bar] / getSamples(), 2) + "</td></tr></table>");
+				break;
+			default:
+				break;
+
+		}
+		return tip.toString();
 	}
 
 	private ContextMenuCheckBoxItem autoscaleYMenu;
