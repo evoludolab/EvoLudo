@@ -44,6 +44,7 @@ import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasS3;
 import org.evoludo.simulator.views.HasS3.Data2S3;
 import org.evoludo.ui.ContextMenu;
@@ -443,7 +444,9 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTraj
 		double sy = (viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5;
 		if( !inside(sx, sy) )
 			return null;
-		return map.getTooltipAt(sx, sy);
+		if (map instanceof BasicTooltipProvider)
+			return ((BasicTooltipProvider) map).getTooltipAt(sx, sy);
+		return null;
 	}
 
 	/**
@@ -623,7 +626,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTraj
 	 * 
 	 * @see HasS3#getS3Map(int)
 	 */
-	public class S3Map implements HasS3.Data2S3, TooltipProvider.S3 {
+	public class S3Map implements HasS3.Data2S3, BasicTooltipProvider {
 
 		public S3Map(int role) {
 			// ignore role by default
@@ -680,7 +683,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTraj
 		}
 
 		@Override
-		public String getTooltipAt(S3Graph graph, double sx, double sy) {
+		public String getTooltipAt(double sx, double sy) {
 			map.s32Data(sx, sy, tip);
 			String msg = "<table>";
 			for( int i=0; i<3; i++ )

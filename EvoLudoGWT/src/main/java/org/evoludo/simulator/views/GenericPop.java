@@ -19,7 +19,7 @@ import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
 
-public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph<T, N>> extends AbstractView implements PopGraphController, TooltipProvider.PopGraph {
+public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph<T, N>> extends AbstractView implements PopGraphController, TooltipProvider.Index {
 
 	@SuppressWarnings("hiding")
 	protected List<G> graphs;

@@ -233,17 +233,5 @@ public interface HasPhase2D {
 		public default boolean hasFixedAxis() {
 			return true;
 		}
-
-		/**
-		 * Return custom tooltip for state given by location of pointer (in user
-		 * coordinates).
-		 * 
-		 * @param x the horizontal position of pointer
-		 * @param y the vertical position of pointer
-		 * @return the custom tooltip
-		 */
-		public default String getTooltipAt(double x, double y) {
-			return null;
-		}
 	}
 }

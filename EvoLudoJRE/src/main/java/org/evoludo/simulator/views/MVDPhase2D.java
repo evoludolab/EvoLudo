@@ -184,7 +184,9 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 
 	@Override
 	public String getToolTipText(Point2D loc, int tag) {
-		return "<html>" + graph.getMap().getTooltipAt(loc.x, loc.y);
+		if (map instanceof BasicTooltipProvider)
+			return "<html>" + ((BasicTooltipProvider) map).getTooltipAt(loc.x, loc.y);
+		return null;
 	}
 
 	@Override
@@ -198,7 +200,7 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 		return "Strategy - Phase 2D";
 	}
 
-	public class TraitMap implements Data2Phase {
+	public class TraitMap implements Data2Phase, BasicTooltipProvider {
 
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {

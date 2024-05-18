@@ -42,6 +42,7 @@ import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
+import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
@@ -333,7 +334,9 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 			return null;
 		double ux = style.xMin + sx / bounds.getWidth() * (style.xMax - style.xMin);
 		double uy = style.yMin + (1.0 - sy / bounds.getHeight()) * (style.yMax - style.yMin);
-		return map.getTooltipAt(ux, uy);
+		if (map instanceof BasicTooltipProvider)
+			return ((BasicTooltipProvider) map).getTooltipAt(ux, uy);
+		return null;
 	}
 
 	/**
@@ -393,7 +396,7 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 		}
 	}
 
-	public class TraitMap implements Data2Phase {
+	public class TraitMap implements Data2Phase, BasicTooltipProvider {
 
 		// phase plane projections can be the sum of several dynamical variables
 		protected int[] stateX = new int[] { 0 };

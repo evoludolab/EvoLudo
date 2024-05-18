@@ -50,6 +50,7 @@ import org.evoludo.simulator.models.ODERK;
 import org.evoludo.simulator.models.PDERD.HasPDE;
 import org.evoludo.simulator.models.SDEEuler.HasSDE;
 import org.evoludo.simulator.modules.Discrete.Pairs;
+import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -536,7 +537,7 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 	 * a 2D phase plane: fraction of cooperators along {@code x}-axis and fraction
 	 * of rich patches along {@code y}-axis.
 	 */
-	public class ATBTMap implements Data2Phase {
+	public class ATBTMap implements Data2Phase, BasicTooltipProvider {
 
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {

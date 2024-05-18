@@ -46,6 +46,7 @@ import org.evoludo.simulator.models.PDERD.HasPDE;
 import org.evoludo.simulator.models.PDERDA;
 import org.evoludo.simulator.models.SDEEuler.HasSDE;
 import org.evoludo.simulator.modules.Discrete.Groups;
+import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -372,7 +373,7 @@ public class EcoPGG extends Discrete implements Groups,
 	/**
 	 * The map for translating the data of the ecological public goods game models into 2D phase plane representation.
 	 */
-	public class EcoPGGMap implements Data2Phase {
+	public class EcoPGGMap implements Data2Phase, BasicTooltipProvider {
 
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {

@@ -59,7 +59,7 @@ import com.google.gwt.user.client.Command;
  *
  * @author Christoph Hauert
  */
-public class Distribution extends AbstractView implements GenericPopGraph.PopGraphController, TooltipProvider.PopGraph {
+public class Distribution extends AbstractView implements GenericPopGraph.PopGraphController, TooltipProvider.Index {
 
 	@SuppressWarnings("hiding")
 	protected List<PopGraph2D> graphs;

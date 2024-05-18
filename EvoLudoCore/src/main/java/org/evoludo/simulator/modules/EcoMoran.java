@@ -36,6 +36,7 @@ import java.awt.Color;
 
 import org.evoludo.geom.Point2D;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasS3;
 import org.evoludo.util.Formatter;
@@ -132,7 +133,7 @@ public class EcoMoran extends Moran implements HasPhase2D, HasS3 {
 		return map;
 	}
 
-	public class EcoMoranMap implements Data2Phase {
+	public class EcoMoranMap implements Data2Phase, BasicTooltipProvider {
 
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {

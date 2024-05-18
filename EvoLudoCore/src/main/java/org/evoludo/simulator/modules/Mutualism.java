@@ -42,6 +42,7 @@ import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.modules.Discrete.Pairs;
+import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -399,7 +400,7 @@ public class Mutualism extends Discrete implements Pairs,
 	/**
 	 * The map for translating the data of the ecological public goods game models into 2D phase plane representation.
 	 */
-	public class MutualismMap implements Data2Phase {
+	public class MutualismMap implements Data2Phase, BasicTooltipProvider {
 
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {

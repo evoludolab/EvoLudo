@@ -37,6 +37,7 @@ import java.util.Arrays;
 
 import org.evoludo.geom.Point2D;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasS3;
 import org.evoludo.util.Formatter;
@@ -138,7 +139,7 @@ public class EcoTBT extends TBT implements HasS3, HasPhase2D {
 		return map;
 	}
 
-	public class EcoTBTMap implements Data2Phase {
+	public class EcoTBTMap implements Data2Phase, BasicTooltipProvider {
 
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {

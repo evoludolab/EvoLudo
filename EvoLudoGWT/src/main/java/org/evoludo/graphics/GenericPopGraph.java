@@ -80,9 +80,9 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		}
 	}
 
-	TooltipProvider.PopGraph tooltipProvider;
+	TooltipProvider.Index tooltipProvider;
 
-	public void setTooltipProvider(TooltipProvider.PopGraph tooltipProvider) {
+	public void setTooltipProvider(TooltipProvider.Index tooltipProvider) {
 		this.tooltipProvider = tooltipProvider;
 	}
 
@@ -139,8 +139,8 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		label.getElement().getStyle().setZIndex(1);
 		label.setVisible(false);
 		wrapper.add(label);
-		if (controller instanceof TooltipProvider.PopGraph)
-			tooltipProvider = (TooltipProvider.PopGraph) controller;
+		if (controller instanceof TooltipProvider.Index)
+			tooltipProvider = (TooltipProvider.Index) controller;
 	}
 
 	@Override
