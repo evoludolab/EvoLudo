@@ -543,7 +543,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		// process debug node update
 		if (isDebugEnabled) {
 			int debugNode = findNodeAt(x, y);
-			if (debugNode >= 0) {
+			if (debugNode >= 0 && debugNode < geometry.size) {
 				if (debugSubmenu == null) {
 					debugSubmenu = new ContextMenu(menu);
 					debugNodeMenu = new ContextMenuItem("Update node @ -", new Command() {
