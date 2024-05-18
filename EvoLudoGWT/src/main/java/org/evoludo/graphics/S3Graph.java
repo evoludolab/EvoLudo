@@ -444,6 +444,12 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTraj
 		double sy = (viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5;
 		if( !inside(sx, sy) )
 			return null;
+		if (tooltipProvider instanceof TooltipProvider.Simplex)
+			return ((TooltipProvider.Simplex) tooltipProvider).getTooltipAt(this, sx, sy);
+		if (map instanceof TooltipProvider.Simplex)
+			return ((TooltipProvider.Simplex) map).getTooltipAt(this, sx, sy);
+		if (tooltipProvider instanceof BasicTooltipProvider)
+			return ((BasicTooltipProvider) tooltipProvider).getTooltipAt(sx, sy);
 		if (map instanceof BasicTooltipProvider)
 			return ((BasicTooltipProvider) map).getTooltipAt(sx, sy);
 		return null;

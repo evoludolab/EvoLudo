@@ -314,14 +314,20 @@ public abstract class AbstractGraph extends FocusPanel
 	Zoomer zoomer;
 
 	/**
+	 * The reference to the (shared) context menu.
+	 */
+	protected ContextMenu contextMenu;
+
+	/**
 	 * The reference to the (shared) tooltip.
 	 */
 	protected Tooltip tooltip;
 
-	/**
-	 * The reference to the (shared) context menu.
-	 */
-	protected ContextMenu contextMenu;
+	TooltipProvider tooltipProvider;
+
+	public void setTooltipProvider(TooltipProvider tooltipProvider) {
+		this.tooltipProvider = tooltipProvider;
+	}
 
 	/**
 	 * The scale of this graph. Used to translate {@code width} and {@code height}

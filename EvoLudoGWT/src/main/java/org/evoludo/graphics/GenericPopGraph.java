@@ -80,12 +80,6 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		}
 	}
 
-	TooltipProvider.Index tooltipProvider;
-
-	public void setTooltipProvider(TooltipProvider.Index tooltipProvider) {
-		this.tooltipProvider = tooltipProvider;
-	}
-
 	/**
 	 * The structure of the population.
 	 */
@@ -139,8 +133,6 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		label.getElement().getStyle().setZIndex(1);
 		label.setVisible(false);
 		wrapper.add(label);
-		if (controller instanceof TooltipProvider.Index)
-			tooltipProvider = (TooltipProvider.Index) controller;
 	}
 
 	@Override
@@ -331,8 +323,8 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		// no network may have been initialized (e.g. for ODE/SDE models)
 		// when switching views the graph may not yet be ready to return
 		// data for tooltips (colors == null)
-		if (tooltipProvider == null || leftMouseButton || contextMenu.isVisible() 
-				|| network == null || network.isStatus(Status.LAYOUT_IN_PROGRESS))
+		if (leftMouseButton || contextMenu.isVisible() || network == null || 
+				network.isStatus(Status.LAYOUT_IN_PROGRESS))
 			return null;
 		int node = findNodeAt(x, y);
 		if (node < 0) {
@@ -340,7 +332,13 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 			return null;
 		}
 		element.addClassName("evoludo-cursorPointNode");
-		return tooltipProvider.getTooltipAt(this, node);
+		if (tooltipProvider instanceof TooltipProvider.Index)
+			return ((TooltipProvider.Index) tooltipProvider).getTooltipAt(this, node);
+		if (controller instanceof TooltipProvider.Index)
+			return ((TooltipProvider.Index) controller).getTooltipAt(this, node);
+		// false alarm
+		element.addClassName("evoludo-cursorPointNode");
+		return null;
 	}
 
 	/**

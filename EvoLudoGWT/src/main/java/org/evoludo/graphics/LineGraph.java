@@ -44,6 +44,7 @@ import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.Formatter;
@@ -56,7 +57,7 @@ import com.google.gwt.user.client.Command;
  *
  * @author Christoph Hauert
  */
-public class LineGraph extends AbstractGraph implements Shifting, Zooming {
+public class LineGraph extends AbstractGraph implements Shifting, Zooming, BasicTooltipProvider {
 
 	/**
 	 * The default number of (time) steps shown on this graph.
@@ -310,9 +311,15 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 		double sy = (height - (y - bounds.getY() + 0.5)) / height;
 		if( sy<0.0 || sy>1.0 )
 			return null;
+		if (tooltipProvider instanceof BasicTooltipProvider)
+			return ((BasicTooltipProvider) tooltipProvider).getTooltipAt(sx, sy);
+		return getTooltipAt(sx, sy);
+	}
 
+	@Override
+	public String getTooltipAt(double x, double y) {
 		double buffert = 0.0;
-		double mouset = style.xMin + sx * (style.xMax - style.xMin);
+		double mouset = style.xMin + x * (style.xMax - style.xMin);
 		// boolean hasVacant = !(model instanceof Model.DE && ((Model.DE) model).isDensity());
 		int vacant = module.getVacant();
 		boolean hasVacant = (vacant >= 0);
@@ -322,8 +329,8 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 				"<tr><td style='text-align:right'><i>" + style.xLabel + ":</i></td><td>" +
 				Formatter.format(mouset, 2) + "</td></tr>" +
 				"<tr><td style='text-align:right'><i>" + style.yLabel + ":</i></td><td>" +
-				(style.percentY ? Formatter.formatPercent(style.yMin + sy * (style.yMax - style.yMin), 1)
-						: Formatter.format(style.yMin + sy * (style.yMax - style.yMin), 2))
+				(style.percentY ? Formatter.formatPercent(style.yMin + y * (style.yMax - style.yMin), 1)
+						: Formatter.format(style.yMin + y * (style.yMax - style.yMin), 2))
 				+ "</td></tr>";
 		if (i.hasNext()) {
 			double[] current = i.next();

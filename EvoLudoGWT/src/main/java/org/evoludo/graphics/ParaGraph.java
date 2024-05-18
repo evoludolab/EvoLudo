@@ -334,6 +334,12 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 			return null;
 		double ux = style.xMin + sx / bounds.getWidth() * (style.xMax - style.xMin);
 		double uy = style.yMin + (1.0 - sy / bounds.getHeight()) * (style.yMax - style.yMin);
+		if (tooltipProvider instanceof TooltipProvider.Parametric)
+			return ((TooltipProvider.Parametric) tooltipProvider).getTooltipAt(this, ux, uy);
+		if (map instanceof TooltipProvider.Parametric)
+			return ((TooltipProvider.Parametric) map).getTooltipAt(this, ux, uy);
+		if (tooltipProvider instanceof BasicTooltipProvider)
+			return ((BasicTooltipProvider) tooltipProvider).getTooltipAt(ux, uy);
 		if (map instanceof BasicTooltipProvider)
 			return ((BasicTooltipProvider) map).getTooltipAt(ux, uy);
 		return null;

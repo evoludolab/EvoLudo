@@ -41,6 +41,7 @@ import org.evoludo.util.Formatter;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.views.BasicTooltipProvider;
 
 import com.google.gwt.user.client.Command;
 
@@ -48,7 +49,7 @@ import com.google.gwt.user.client.Command;
  *
  * @author Christoph Hauert
  */
-public class HistoGraph extends AbstractGraph {
+public class HistoGraph extends AbstractGraph implements BasicTooltipProvider {
 
 	// this is a quick and dirty implementation of bin markers - improvements?
 	public class Marker {
@@ -543,6 +544,13 @@ public class HistoGraph extends AbstractGraph {
 		int bar = getBinAt(x, y);
 		if( bar<0 )
 			return null;
+		if (tooltipProvider instanceof BasicTooltipProvider)
+			return ((BasicTooltipProvider) tooltipProvider).getTooltipAt(bar);
+		return getTooltipAt(bar);
+	}
+
+	@Override
+	public String getTooltipAt(int bar) {
 		int nBins = data[0].length;
 		// note label is null for undirected graph with the same interaction and competition graphs
 		StringBuilder tip = new StringBuilder(style.showLabel&&style.label!=null?"<b>"+style.label+"</b><br/>":"");

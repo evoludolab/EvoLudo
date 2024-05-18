@@ -10,5 +10,20 @@ public interface BasicTooltipProvider {
 	 * @param y the {@code y} coordinate
 	 * @return the tooltip
 	 */
-	public String getTooltipAt(double x, double y);
+	public default String getTooltipAt(double x, double y) {
+		return null;
+	}
+
+	/**
+	 * Get the tooltip for the location with index {@code index}. The index typically
+	 * refers to an individual node but may equally refer to a location on a lattice
+	 * for PDE models or trait distributions.
+	 * 
+	 * @param index the {@code index} coordinate
+	 * @param y     the {@code y} coordinate
+	 * @return the tooltip
+	 */
+	public default String getTooltipAt(int index) {
+		return null;
+	}
 }
