@@ -32,6 +32,7 @@
 
 package org.evoludo.graphics;
 
+import java.awt.Color;
 import java.util.Iterator;
 
 import org.evoludo.geom.Point2D;
@@ -39,9 +40,13 @@ import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
+import org.evoludo.simulator.ColorMapCSS;
+import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
+import org.evoludo.util.Formatter;
 import org.evoludo.util.RingBuffer;
 
 import com.google.gwt.core.client.Scheduler;
@@ -52,10 +57,6 @@ import com.google.gwt.user.client.Command;
  * @author Christoph Hauert
  */
 public class LineGraph extends AbstractGraph implements Shifting, Zooming {
-
-	public interface LineGraphController extends Controller {
-		public String getTooltipAt(LineGraph graph, double x, double y);
-	}
 
 	/**
 	 * The default number of (time) steps shown on this graph.
@@ -309,7 +310,80 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming {
 		double sy = (height - (y - bounds.getY() + 0.5)) / height;
 		if( sy<0.0 || sy>1.0 )
 			return null;
-		return ((LineGraphController)controller).getTooltipAt(this, sx, sy);
+
+		double buffert = 0.0;
+		double mouset = style.xMin + sx * (style.xMax - style.xMin);
+		// boolean hasVacant = !(model instanceof Model.DE && ((Model.DE) model).isDensity());
+		int vacant = module.getVacant();
+		boolean hasVacant = (vacant >= 0);
+		Iterator<double[]> i = buffer.iterator();
+		String tip = "<table style='border-collapse:collapse;border-spacing:0;'>" +
+				(style.label != null ? "<tr><td><b>" + style.label + "</b></td></tr>" : "") + 
+				"<tr><td style='text-align:right'><i>" + style.xLabel + ":</i></td><td>" +
+				Formatter.format(mouset, 2) + "</td></tr>" +
+				"<tr><td style='text-align:right'><i>" + style.yLabel + ":</i></td><td>" +
+				(style.percentY ? Formatter.formatPercent(style.yMin + sy * (style.yMax - style.yMin), 1)
+						: Formatter.format(style.yMin + sy * (style.yMax - style.yMin), 2))
+				+ "</td></tr>";
+		if (i.hasNext()) {
+			double[] current = i.next();
+			int len = current.length;
+			while (i.hasNext()) {
+				double[] prev = i.next();
+				double dt = current[0] - prev[0];
+				buffert -= Math.max(0.0, dt);
+				if (buffert > mouset) {
+					current = prev;
+					continue;
+				}
+				double fx = 1.0 - (mouset - buffert) / dt;
+				tip += "<tr><td colspan='2'><hr/></td></tr><tr><td style='text-align:right'><i>" + style.xLabel +
+						":</i></td><td>" + Formatter.format(current[0] - fx * dt, 2) + "</td></tr>";
+				Color[] colors = module.getTraitColors();
+				if (module instanceof Continuous) {
+					double inter = interpolate(current[1], prev[1], fx);
+					tip += "<tr><td style='text-align:right'><i style='color:"
+							+ ColorMapCSS.Color2Css(colors[0]) + ";'>mean:</i></td><td>" +
+							(style.percentY ? Formatter.formatPercent(inter, 2) : Formatter.format(inter, 2));
+					double sdev = inter - interpolate(current[2], prev[2], fx); // data: mean, mean-sdev, mean+sdev
+					tip += " ± " + (style.percentY ? Formatter.formatPercent(sdev, 2) : Formatter.format(sdev, 2))
+							+ "</td></tr>";
+				} else {
+					// len includes time
+					for (int n = 0; n < len - 1; n++) {
+						if (!hasVacant && n == vacant)
+							continue;
+						String name;
+						Color color;
+						Model.Data type = controller.getType();
+						int n1 = n + 1;
+						if (n1 == len - 1 && type == Model.Data.FITNESS) {
+							name = "average";
+							color = Color.BLACK;
+						} else {
+							name = module.getTraitName(n);
+							color = colors[n];
+						}
+						if (name == null)
+							continue;
+						tip += "<tr><td style='text-align:right'><i style='color:" + ColorMapCSS.Color2Css(color)
+								+ ";'>" + name + ":</i></td><td>";
+						// deal with NaN's
+						if (prev[n1] == prev[n1] && current[n1] == current[n1]) {
+							tip += (style.percentY ? Formatter.formatPercent(interpolate(current[n1], prev[n1], fx), 2)
+									: Formatter.format(interpolate(current[n1], prev[n1], fx), 2)) + "</td></tr>";
+						} else
+							tip += "-</td></tr>";
+					}
+				}
+				break;
+			}
+		}
+		return tip + "</table>";
+	}
+
+	private double interpolate(double current, double prev, double x) {
+		return (1.0 - x) * current + x * prev;
 	}
 
 	private ContextMenuItem clearMenu, zoomResetMenu, zoomInMenu, zoomOutMenu;

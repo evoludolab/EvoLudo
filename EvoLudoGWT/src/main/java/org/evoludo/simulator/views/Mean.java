@@ -34,11 +34,9 @@ package org.evoludo.simulator.views;
 
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
-import org.evoludo.graphics.AbstractGraph.GraphStyle;
 import org.evoludo.graphics.AbstractGraph.Shifter;
 import org.evoludo.graphics.AbstractGraph.Zoomer;
 import org.evoludo.graphics.LineGraph;
@@ -48,14 +46,12 @@ import org.evoludo.simulator.models.IBSC;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
-import org.evoludo.util.Formatter;
-import org.evoludo.util.RingBuffer;
 
 /**
  *
  * @author Christoph Hauert
  */
-public class Mean extends AbstractView implements LineGraph.LineGraphController, Shifter, Zoomer {
+public class Mean extends AbstractView implements Shifter, Zoomer {
 
 	// NOTE: this is a bit of a hack that allows us to use graphs as Set<LineGraph>
 	// here
@@ -295,84 +291,6 @@ public class Mean extends AbstractView implements LineGraph.LineGraphController,
 				graph.paint(force);
 		}
 		timestamp = newtime;
-	}
-
-	@Override
-	public String getTooltipAt(LineGraph graph, double sx, double sy) {
-		Module module = graph.getModule();
-		int id = module.getID();
-		GraphStyle style = graph.getStyle();
-		RingBuffer<double[]> buffer = graph.getBuffer();
-		double buffert = 0.0;
-		double mouset = style.xMin + sx * (style.xMax - style.xMin);
-		boolean hasVacant = !(model instanceof Model.DE && ((Model.DE) model).isDensity());
-		int vacant = module.getVacant();
-		Iterator<double[]> i = buffer.iterator();
-		String tip = "<table style='border-collapse:collapse;border-spacing:0;'>" +
-				"<tr><td style='text-align:right'><i>" + style.xLabel + ":</i></td><td>" +
-				Formatter.format(mouset, 2) + "</td></tr>" +
-				"<tr><td style='text-align:right'><i>" + style.yLabel + ":</i></td><td>" +
-				(style.percentY ? Formatter.formatPercent(style.yMin + sy * (style.yMax - style.yMin), 1)
-						: Formatter.format(style.yMin + sy * (style.yMax - style.yMin), 2))
-				+ "</td></tr>";
-		if (i.hasNext()) {
-			double[] current = i.next();
-			int len = current.length;
-			while (i.hasNext()) {
-				double[] prev = i.next();
-				double dt = current[0] - prev[0];
-				buffert -= Math.max(0.0, dt);
-				if (buffert > mouset) {
-					current = prev;
-					continue;
-				}
-				double fx = 1.0 - (mouset - buffert) / dt;
-				tip += "<tr><td colspan='2'><hr/></td></tr><tr><td style='text-align:right'><i>" + style.xLabel +
-						":</i></td><td>" + Formatter.format(current[0] - fx * dt, 2) + "</td></tr>";
-				Color[] colors = model.getMeanColors(id);
-				if (model.isContinuous()) {
-					double inter = interpolate(current[1], prev[1], fx);
-					tip += "<tr><td style='text-align:right'><i style='color:"
-							+ ColorMapCSS.Color2Css(colors[0]) + ";'>mean:</i></td><td>" +
-							(style.percentY ? Formatter.formatPercent(inter, 2) : Formatter.format(inter, 2));
-					double sdev = inter - interpolate(current[2], prev[2], fx); // data: mean, mean-sdev, mean+sdev
-					tip += " ± " + (style.percentY ? Formatter.formatPercent(sdev, 2) : Formatter.format(sdev, 2))
-							+ "</td></tr>";
-				} else {
-					// len includes time
-					for (int n = 0; n < len - 1; n++) {
-						if (!hasVacant && n == vacant)
-							continue;
-						String name;
-						Color color;
-						int n1 = n + 1;
-						if (n1 == len - 1 && type == Model.Data.FITNESS) {
-							name = "average";
-							color = Color.BLACK;
-						} else {
-							name = model.getMeanName(n);
-							color = colors[n];
-						}
-						if (name == null)
-							continue;
-						tip += "<tr><td style='text-align:right'><i style='color:" + ColorMapCSS.Color2Css(color)
-								+ ";'>" + name + ":</i></td><td>";
-						// deal with NaN's
-						if (prev[n1] == prev[n1] && current[n1] == current[n1]) {
-							tip += (style.percentY ? Formatter.formatPercent(interpolate(current[n1], prev[n1], fx), 2)
-									: Formatter.format(interpolate(current[n1], prev[n1], fx), 2)) + "</td></tr>";
-						} else
-							tip += "-</td></tr>";
-					}
-				}
-				break;
-			}
-		}
-		return tip + "</table>";
-	}
-
-	private double interpolate(double current, double prev, double x) {
-		return (1.0 - x) * current + x * prev;
 	}
 
 	@Override
