@@ -80,19 +80,9 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		}
 	}
 
-	public interface TooltipProvider {
-		/**
-		 * Get the tooltip for the node with index {@code node}.
-		 * 
-		 * @param node the index of the node
-		 * @return the tooltip for the node
-		 */
-		public String getTooltip(AbstractGraph graph, int node);
-	}
+	TooltipProvider.PopGraph tooltipProvider;
 
-	TooltipProvider tooltipProvider;
-
-	public void setTooltipProvider(TooltipProvider tooltipProvider) {
+	public void setTooltipProvider(TooltipProvider.PopGraph tooltipProvider) {
 		this.tooltipProvider = tooltipProvider;
 	}
 
@@ -149,8 +139,8 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		label.getElement().getStyle().setZIndex(1);
 		label.setVisible(false);
 		wrapper.add(label);
-		if (controller instanceof TooltipProvider)
-			tooltipProvider = (TooltipProvider) controller;
+		if (controller instanceof TooltipProvider.PopGraph)
+			tooltipProvider = (TooltipProvider.PopGraph) controller;
 	}
 
 	@Override
@@ -350,7 +340,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 			return null;
 		}
 		element.addClassName("evoludo-cursorPointNode");
-		return tooltipProvider.getTooltip(this, node);
+		return tooltipProvider.getTooltipAt(this, node);
 	}
 
 	/**

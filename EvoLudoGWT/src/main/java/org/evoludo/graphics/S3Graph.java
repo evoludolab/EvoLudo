@@ -623,7 +623,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTraj
 	 * 
 	 * @see HasS3#getS3Map(int)
 	 */
-	public class S3Map implements HasS3.Data2S3 {
+	public class S3Map implements HasS3.Data2S3, TooltipProvider.S3 {
 
 		public S3Map(int role) {
 			// ignore role by default
@@ -680,7 +680,7 @@ public class S3Graph extends AbstractGraph implements Zooming, Shifting, HasTraj
 		}
 
 		@Override
-		public String getTooltipAt(double sx, double sy) {
+		public String getTooltipAt(S3Graph graph, double sx, double sy) {
 			map.s32Data(sx, sy, tip);
 			String msg = "<table>";
 			for( int i=0; i<3; i++ )
