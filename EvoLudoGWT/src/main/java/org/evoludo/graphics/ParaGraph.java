@@ -61,7 +61,7 @@ import com.google.gwt.user.client.Command;
  *
  * @author Christoph Hauert
  */
-public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTrajectory, //
+public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shifting, HasTrajectory, //
 	DoubleClickHandler {
 
 	protected double[] init;
@@ -97,10 +97,6 @@ public class ParaGraph extends AbstractGraph implements Zooming, Shifting, HasTr
 		if (map == null)
 			map = new TraitMap();
 		return map;
-	}
-
-	public RingBuffer<double[]> getBuffer() {
-		return buffer;
 	}
 
 	public void addData(double t, double[] data, boolean force) {

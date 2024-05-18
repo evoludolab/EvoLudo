@@ -62,30 +62,6 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
 public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Shifting {
 
 	/**
-	 * The buffer to store historical data, if applicable.
-	 * <p>
-	 * <strong>Note:</strong> This is deliberately hiding
-	 * {@link AbstractGraph#buffer} because it serves the exact same purpose but is
-	 * a {@code RingBuffer} of type {@code String[]} rather than {@code double[]}.
-	 */
-	@SuppressWarnings("hiding")
-//XXX hackish - use generic buffer instead
-	protected RingBuffer<String[]> buffer;
-
-//XXX hackish - will be resolved with generic buffer
-	@Override
-	public boolean hasHistory() {
-		return (buffer != null);
-	}
-
-//XXX hackish - will be resolved with generic buffer
-	@Override
-	public void clearHistory() {
-		if (buffer != null)
-			buffer.clear();
-	}
-
-	/**
 	 * Create a graph for graphically visualizing the structure of a network (or
 	 * population). Allocates the canvas and the label and retrieves the shared
 	 * tooltip and context menu.

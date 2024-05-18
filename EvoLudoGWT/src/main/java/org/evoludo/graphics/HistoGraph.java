@@ -49,7 +49,7 @@ import com.google.gwt.user.client.Command;
  *
  * @author Christoph Hauert
  */
-public class HistoGraph extends AbstractGraph implements BasicTooltipProvider {
+public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipProvider {
 
 	// this is a quick and dirty implementation of bin markers - improvements?
 	public class Marker {

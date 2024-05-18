@@ -23,7 +23,7 @@ import com.google.gwt.event.dom.client.TouchStartEvent;
 import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.ui.Label;
 
-public abstract class GenericPopGraph<T, N extends Network> extends AbstractGraph
+public abstract class GenericPopGraph<T, N extends Network> extends AbstractGraph<T[]>
 		implements Network.LayoutListener, Zooming, DoubleClickHandler {
 
 	/**

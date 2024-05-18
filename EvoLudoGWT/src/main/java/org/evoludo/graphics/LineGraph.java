@@ -57,7 +57,7 @@ import com.google.gwt.user.client.Command;
  *
  * @author Christoph Hauert
  */
-public class LineGraph extends AbstractGraph implements Shifting, Zooming, BasicTooltipProvider {
+public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zooming, BasicTooltipProvider {
 
 	/**
 	 * The default number of (time) steps shown on this graph.
@@ -292,10 +292,6 @@ public class LineGraph extends AbstractGraph implements Shifting, Zooming, Basic
 
 	public void setSteps(double steps) {
 		this.steps = Math.max(1.0, Math.min(buffer.getCapacity(), steps));
-	}
-
-	public RingBuffer<double[]> getBuffer() {
-		return buffer;
 	}
 
 	@Override

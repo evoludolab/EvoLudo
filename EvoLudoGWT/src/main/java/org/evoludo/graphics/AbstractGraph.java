@@ -91,7 +91,7 @@ import com.google.gwt.user.client.ui.Widget;
  * 
  * @author Christoph Hauert
  */
-public abstract class AbstractGraph extends FocusPanel
+public abstract class AbstractGraph<B> extends FocusPanel
 		implements MouseOutHandler, MouseWheelHandler, MouseDownHandler, MouseUpHandler, MouseMoveHandler, //
 		TouchStartHandler, TouchEndHandler, TouchMoveHandler, //
 		RequiresResize, Tooltip.Provider, ContextMenu.Listener, ContextMenu.Provider {
@@ -405,7 +405,7 @@ public abstract class AbstractGraph extends FocusPanel
 	/**
 	 * The buffer to store historical data, if applicable.
 	 */
-	protected RingBuffer<double[]> buffer;
+	protected RingBuffer<B> buffer;
 
 	/**
 	 * The minimum buffer size.
@@ -422,7 +422,7 @@ public abstract class AbstractGraph extends FocusPanel
 	 * 
 	 * @return the buffer with historical data or {@code null}
 	 */
-	public RingBuffer<double[]> getBuffer() {
+	public RingBuffer<B> getBuffer() {
 		return buffer;
 	}
 
