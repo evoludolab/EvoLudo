@@ -104,11 +104,18 @@ public abstract class AbstractGraph extends FocusPanel
 	public interface Controller {
 
 		/**
-		 * Get the type of data visualized on graph.
+		 * Get the type of data visualized on the graph.
 		 * 
 		 * @return the data type
 		 */
 		public Model.Data getType();
+
+		/**
+		 * Get the type of the model supplying the data visualized on the graph.
+		 * 
+		 * @return the model type
+		 */
+		public Model.Type getModelType();
 
 		/**
 		 * Get the logger for returning progress, problems and messages to user.

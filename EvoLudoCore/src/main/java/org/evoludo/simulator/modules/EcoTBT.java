@@ -181,7 +181,7 @@ public class EcoTBT extends TBT implements HasS3, HasPhase2D {
 //	@Override
 //	public void init(Model model) {
 //		super.init(model);
-//		if (!model.isModelType(Model.Type.IBS))
+//		if (!model.getModelType() == Model.Type.IBS)
 //			return;
 //		DPopulation dpop = (DPopulation)model;
 //		int[] strat = dpop.strategies;

@@ -35,17 +35,6 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	public interface PopGraphController extends Controller {
 
 		/**
-		 * Checks if the backing model for the current visualization is of type
-		 * {@code type}.
-		 * 
-		 * @param type the type of model to check
-		 * @return {@code true} if the model is of type {@code type}
-		 */
-		public default boolean isModelType(Model.Type type) {
-			return false;
-		}
-
-		/**
 		 * Notifies the controller of the completion of the layouting process.
 		 */
 		public void layoutComplete();
@@ -566,7 +555,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 					debugSubmenu.add(debugNodeMenu);
 				}
 				debugNodeMenu.setText("Update node @ " + debugNode);
-				debugNodeMenu.setEnabled(((PopGraphController) controller).isModelType(Model.Type.IBS));
+				debugNodeMenu.setEnabled(controller.getModelType() == Model.Type.IBS);
 				debugSubmenuTrigger = menu.add("Debug...", debugSubmenu);
 			}
 			if (debugSubmenuTrigger != null)

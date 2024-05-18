@@ -184,6 +184,11 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	}
 
 	@Override
+	public Model.Type getModelType() {
+		return engine.getModel().getModelType();
+	}
+
+	@Override
 	public Logger getLogger() {
 		return logger;
 	}

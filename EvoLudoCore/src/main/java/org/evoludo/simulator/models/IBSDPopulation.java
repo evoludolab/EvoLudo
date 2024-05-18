@@ -2136,7 +2136,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * {@link Type#KALEIDOSCOPE} for IBS models. For example, add
 	 * 
 	 * <pre>
-	 * if (model.isModelType(Type.IBS))
+	 * if (model.getModelType() == Type.IBS)
 	 * 	IBSD.cloInitType.addKey(InitType.KALEIDOSCOPE);
 	 * </pre>
 	 * 
