@@ -40,17 +40,6 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		public void layoutComplete();
 
 		/**
-		 * Notifies the controller that an update of the node with index {@code node} on
-		 * graph {@code graph} was requested. This is useful for visual debugging of the
-		 * backing model.
-		 * 
-		 * @param graph the graph that received the request
-		 * @param node  the index of the node that was selected to update
-		 */
-		public default void updateNodeAt(AbstractGraph graph, int node) {
-		}
-
-		/**
 		 * Notifies the controller that the mouse/tap has hit node with index
 		 * {@code node} on the graph with the tag {@code id}.
 		 * 
@@ -556,7 +545,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 					debugNodeMenu = new ContextMenuItem("Update node @ -", new Command() {
 						@Override
 						public void execute() {
-							((PopGraphController) controller).updateNodeAt(GenericPopGraph.this, debugNode);
+							module.getIBSPopulation().debugUpdatePopulationAt(debugNode);
 						}
 					});
 					debugSubmenu.add(debugNodeMenu);

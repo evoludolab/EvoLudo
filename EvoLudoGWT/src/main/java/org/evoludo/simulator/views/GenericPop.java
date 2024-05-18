@@ -13,9 +13,7 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
-import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.Model.Type;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
@@ -160,14 +158,6 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 			default:
 				return super.keyDownHandler(key);
 		}
-	}
-
-	@Override
-	public void updateNodeAt(AbstractGraph graph, int node) {
-		if (model.getModelType() != Type.IBS)
-			return;
-		IBSPopulation pop = graph.getModule().getIBSPopulation();
-		pop.debugUpdatePopulationAt(node);
 	}
 
 	@Override
