@@ -63,17 +63,6 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		}
 
 		/**
-		 * Notifies the controller that the tooltip was requested by graph
-		 * {@code graph}. If the request happened for a node its index is {@code node}
-		 * and {@code -1} otherwise.
-		 * 
-		 * @param graph the graph that received the request
-		 * @param node  the index of the node that was selected to update
-		 * @return the formatted
-		 */
-		public String getTooltipAt(AbstractGraph graph, int node);
-
-		/**
 		 * Opportunity for the controller to add functionality to the context menu
 		 * (optional implementation). Additional entries should be added to
 		 * {@code menu}. If the context menu was opened while the mouse was over a node
@@ -89,6 +78,22 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		 */
 		public default void populateContextMenuAt(ContextMenu menu, int node) {
 		}
+	}
+
+	public interface TooltipProvider {
+		/**
+		 * Get the tooltip for the node with index {@code node}.
+		 * 
+		 * @param node the index of the node
+		 * @return the tooltip for the node
+		 */
+		public String getTooltip(AbstractGraph graph, int node);
+	}
+
+	TooltipProvider tooltipProvider;
+
+	public void setTooltipProvider(TooltipProvider tooltipProvider) {
+		this.tooltipProvider = tooltipProvider;
 	}
 
 	/**
@@ -144,6 +149,8 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		label.getElement().getStyle().setZIndex(1);
 		label.setVisible(false);
 		wrapper.add(label);
+		if (controller instanceof TooltipProvider)
+			tooltipProvider = (TooltipProvider) controller;
 	}
 
 	@Override
@@ -334,8 +341,8 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		// no network may have been initialized (e.g. for ODE/SDE models)
 		// when switching views the graph may not yet be ready to return
 		// data for tooltips (colors == null)
-		if (leftMouseButton || contextMenu.isVisible() || network == null
-				|| network.isStatus(Status.LAYOUT_IN_PROGRESS))
+		if (tooltipProvider == null || leftMouseButton || contextMenu.isVisible() 
+				|| network == null || network.isStatus(Status.LAYOUT_IN_PROGRESS))
 			return null;
 		int node = findNodeAt(x, y);
 		if (node < 0) {
@@ -343,7 +350,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 			return null;
 		}
 		element.addClassName("evoludo-cursorPointNode");
-		return ((PopGraphController) controller).getTooltipAt(this, node);
+		return tooltipProvider.getTooltip(this, node);
 	}
 
 	/**
