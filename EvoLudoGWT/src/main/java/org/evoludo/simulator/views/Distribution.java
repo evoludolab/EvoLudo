@@ -262,7 +262,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 	}*/
 
 	@Override
-	public String getTooltipAt(AbstractGraph graph, int node) {
+	public String getTooltipAt(AbstractGraph<?> graph, int node) {
 		if( node<0 )
 			return null;
 		GraphStyle style = graph.getStyle();

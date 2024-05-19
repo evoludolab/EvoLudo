@@ -134,7 +134,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	 * Logger for keeping track of and reporting events and issues.
 	 */
 	protected Logger logger;
-	protected List<? extends AbstractGraph> graphs = new ArrayList<>();
+	protected List<? extends AbstractGraph<?>> graphs = new ArrayList<>();
 	protected int gRows = 1, gCols = 1;
 
 	protected boolean isActive = false;
@@ -172,7 +172,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	}
 
 	protected void destroyGraphs() {
-		for (AbstractGraph graph : graphs)
+		for (AbstractGraph<?> graph : graphs)
 			graph.removeFromParent();
 		graphs.clear();
 		gRows = gCols = 1;
@@ -205,7 +205,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 		if (isActive)
 			return;
 		isActive = true;
-		for (AbstractGraph graph : graphs)
+		for (AbstractGraph<?> graph : graphs)
 			graph.activate();
 		scheduleUpdate(true);
 		callback.viewActivated(this);
@@ -221,7 +221,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	@Override
 	public void deactivate() {
 		isActive = false;
-		for (AbstractGraph graph : graphs)
+		for (AbstractGraph<?> graph : graphs)
 			graph.deactivate();
 		if (fullscreenHandler != null)
 			fullscreenHandler.removeHandler();
@@ -248,7 +248,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	@Override
 	public void restored() {
 		timestamp = -Double.MAX_VALUE;
-		for( AbstractGraph graph : graphs )
+		for( AbstractGraph<?> graph : graphs )
 			graph.reset();
 	}
 
@@ -276,7 +276,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	 * @see AbstractGraph.Shifter#shift(int, int)
 	 */
 	public void shift(int dx, int dy) {
-		for (AbstractGraph graph : graphs) {
+		for (AbstractGraph<?> graph : graphs) {
 			if (graph instanceof Shifter)
 				((Shifter) graph).shift(dx, dy);
 		}
@@ -291,7 +291,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	 * @see AbstractGraph.Zoomer#zoom(double, int, int)
 	 */
 	public void zoom(double zoom, int x, int y) {
-		for (AbstractGraph graph : graphs) {
+		for (AbstractGraph<?> graph : graphs) {
 			if (graph instanceof Zoomer)
 				((Zoomer) graph).zoom(zoom, x, y);
 		}
@@ -383,7 +383,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	public void onResize() {
 		if (!isActive)
 			return;
-		for (AbstractGraph graph : graphs)
+		for (AbstractGraph<?> graph : graphs)
 			graph.onResize();
 		scheduleUpdate(true);
 	}
@@ -407,10 +407,10 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 		updateScheduled = true;
 	}
 
-	public AbstractGraph getGraphAt(int x, int y) {
+	public AbstractGraph<?> getGraphAt(int x, int y) {
 		if (graphs == null)
 			return null;
-		for (AbstractGraph graph : graphs)
+		for (AbstractGraph<?> graph : graphs)
 			if (graph.contains(x, y))
 				return graph;
 		return null;
@@ -778,7 +778,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 		int hOffset = 0;
 		int vOffset = 0;
 		int count = 0;
-		for (AbstractGraph graph : graphs) {
+		for (AbstractGraph<?> graph : graphs) {
 			ctx.save();
 			ctx.translate(hOffset, vOffset);
 			graph.export(ctx);
@@ -821,16 +821,20 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	 * 
 	 * @see #exportTypes()
 	 */
+	@SuppressWarnings("unchecked")
 	protected void exportMeanData() {
 		StringBuilder export = exportDataHeader();
 		int header = export.length();
 		// focus on Mean for now
 		RingBuffer<double[]> buffer = null;
-		for (AbstractGraph graph : graphs) {
-			RingBuffer<double[]> newbuffer = graph.getBuffer();
+		for (AbstractGraph<?> graph : graphs) {
+			RingBuffer<?> newbuffer = graph.getBuffer();
 			if (newbuffer == null || newbuffer.isEmpty() || newbuffer == buffer)
 				continue;
-			buffer = newbuffer;
+			if (!(newbuffer.first() instanceof double[]))
+				continue;
+			// cast is safe because of the instanceof check
+			buffer = (RingBuffer<double[]>) newbuffer;
 			String name = graph.getStyle().label;
 			if (name != null)
 				export.append("# " + name + "\n");
@@ -858,7 +862,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	protected void exportTrajData() {
 		StringBuilder export = exportDataHeader();
 		int header = export.length();
-		for (AbstractGraph graph : graphs) {
+		for (AbstractGraph<?> graph : graphs) {
 			if (!(graph instanceof HasTrajectory))
 				continue;
 			((HasTrajectory) graph).exportTrajectory(export);

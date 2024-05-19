@@ -168,7 +168,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	}
 
 	@Override
-	public String getTooltipAt(AbstractGraph agraph, int node) {
+	public String getTooltipAt(AbstractGraph<?> agraph, int node) {
 		@SuppressWarnings("unchecked")
 		G graph = (G) agraph;
 		Geometry geometry = graph.getGeometry();

@@ -25,7 +25,7 @@ public interface TooltipProvider {
 		 * @param node the index of the node
 		 * @return the tooltip for the node
 		 */
-		public <B> String getTooltipAt(AbstractGraph<B> graph, int node);
+		public String getTooltipAt(AbstractGraph<?> graph, int node);
 	}
 
 	public interface Simplex extends TooltipProvider {
