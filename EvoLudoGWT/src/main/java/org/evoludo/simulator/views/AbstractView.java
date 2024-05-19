@@ -71,12 +71,13 @@ import com.google.gwt.user.client.ui.ComplexPanel;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.ProvidesResize;
+import com.google.gwt.user.client.ui.RequiresResize;
 
 /**
  *
  * @author Christoph Hauert
  */
-public abstract class AbstractView extends Composite implements EvoLudoView, ProvidesResize,
+public abstract class AbstractView extends Composite implements RequiresResize, ProvidesResize, FullscreenChangeHandler,
 		AbstractGraph.Controller, HasFullscreenChangeHandlers {
 
 	/**
@@ -91,7 +92,7 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 		 *
 		 * @param activeView view that finished its activation.
 		 */
-		public void viewActivated(EvoLudoView activeView);
+		public void viewActivated(AbstractView activeView);
 
 		/**
 		 * Notify callback that layout has completed. For example, this signals that a network
@@ -158,14 +159,14 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 		wrapper.getElement().getStyle().setPosition(Position.RELATIVE);
 	}
 
-	@Override
+	public abstract String getName();
+
 	public void load() {
 		// set some defaults
 		gRows = 1;
 		gCols = 1;
 	}
 
-	@Override
 	public void unload() {
 		destroyGraphs();
 		isActive = false;
@@ -195,7 +196,6 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 
 	protected Callback callback;
 
-	@Override
 	public void activate(Callback callme) {
 		callback = callme;
 		activate();
@@ -218,7 +218,6 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 		return Mode.DYNAMICS;
 	}
 
-	@Override
 	public void deactivate() {
 		isActive = false;
 		for (AbstractGraph<?> graph : graphs)
@@ -230,37 +229,41 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	public void clear() {
 	}
 
-	@Override
 	public String getStatus() {
 		return getStatus(false);
 	}
 
-	@Override
 	public String getStatus(boolean force) {
 		return null;
 	}
 
-	@Override
 	public String getCounter() {
 		return null;
 	}
 
-	@Override
 	public void restored() {
 		timestamp = -Double.MAX_VALUE;
 		for( AbstractGraph<?> graph : graphs )
 			graph.reset();
 	}
 
-	@Override
+	public void reset() {
+		reset(false);
+	}
+
 	public void reset(boolean hard) {
 		timestamp = -Double.MAX_VALUE;
 	}
 
-	@Override
 	public void init() {
 		timestamp = -Double.MAX_VALUE;
 	}
+
+	public void update() {
+		update(false);
+	}
+
+	public abstract void update(boolean force);
 
 	@Override
 	public boolean isRunning() {
@@ -298,9 +301,23 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * Opportunity for view to implement keyboard shortcut for actions (repeating).
+	 * If the key remains pressed this event is triggered repeatedly.
+	 * 
+	 * @param key the code of the pressed key
+	 * @return {@code true} if the key was handled
+	 * 
+	 * @see org.evoludo.EvoLudoWeb#keyDownHandler(String)
+	 */
+	public boolean keyDownHandler(String key) {
+		return false;
+	}
+
+	/**
+	 * Opportunity for view to implement keyboard shortcut for actions (non
+	 * repeating). For example to clear the display or export graphics.
 	 * <p>
-	 * List of additional shortcuts provided by all views for the following keys:
+	 * List of shortcuts provided by all views for the following keys:
 	 * <dl>
 	 * <dt>{@code S}</dt>
 	 * <dd>Export snapshot of view in the Scalable Vecorized Graphics format,
@@ -316,8 +333,10 @@ public abstract class AbstractView extends Composite implements EvoLudoView, Pro
 	 * <dd>Toggle full screen mode of data view without controls (if
 	 * available).</dd>
 	 * </dl>
+	 * 
+	 * @param key the code of the released key
+	 * @return {@code true} if the key was handled
 	 */
-	@Override
 	public boolean keyUpHandler(String key) {
 		switch (key) {
 			case "S":

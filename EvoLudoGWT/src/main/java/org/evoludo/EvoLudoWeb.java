@@ -19,7 +19,6 @@ import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.Console;
 import org.evoludo.simulator.views.Distribution;
-import org.evoludo.simulator.views.EvoLudoView;
 import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasDistribution;
 import org.evoludo.simulator.views.HasHistogram;
@@ -228,7 +227,7 @@ public class EvoLudoWeb extends Composite
 	 * Look-up table for active views. This is the selection shown in
 	 * {@link #evoludoViews}.
 	 */
-	HashMap<String, EvoLudoView> activeViews = new HashMap<String, EvoLudoView>();
+	HashMap<String, AbstractView> activeViews = new HashMap<String, AbstractView>();
 
 	/**
 	 * By default the first data view is shown. In general this shows the strategies
@@ -239,7 +238,7 @@ public class EvoLudoWeb extends Composite
 	/**
 	 * Currently visible view
 	 */
-	EvoLudoView activeView;
+	AbstractView activeView;
 
 	/**
 	 * The transparent backdrop of popup EvoLudo labs is stored here to reuse.
@@ -501,7 +500,7 @@ public class EvoLudoWeb extends Composite
 	 * Update GUI.
 	 */
 	public void update(boolean force) {
-		for (EvoLudoView view : activeViews.values())
+		for (AbstractView view : activeViews.values())
 			view.update(force);
 		if (force)
 			updateStatus();
@@ -511,7 +510,7 @@ public class EvoLudoWeb extends Composite
 	public void modelLoaded() {
 		// NOTE: at this point engine and GUI can be out of sync - better wait for reset
 		// to update views
-		// for (EvoLudoViews view : activeViews.values())
+		// for (AbstractView view : activeViews.values())
 		// view.load();
 		// assume that some kind of keys are always present, i.e. always add listener
 		// for e.g. 'Alt' but key shortcuts only if not ePub
@@ -520,7 +519,7 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelUnloaded() {
-		for (EvoLudoView view : activeViews.values())
+		for (AbstractView view : activeViews.values())
 			view.unload();
 		activeView = null;
 		evoludoViews.setSelectedIndex(-1);
@@ -531,7 +530,7 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelRestored() {
-		for (EvoLudoView view : activeViews.values())
+		for (AbstractView view : activeViews.values())
 			view.restored();
 	}
 
@@ -588,7 +587,7 @@ public class EvoLudoWeb extends Composite
 	@Override
 	public void modelDidReinit() {
 		// forward init to all current views
-		for (EvoLudoView view : activeViews.values())
+		for (AbstractView view : activeViews.values())
 			view.init();
 		updateGUI();
 	}
@@ -596,7 +595,7 @@ public class EvoLudoWeb extends Composite
 	@Override
 	public void modelDidReset() {
 		// invalidate network
-		for (EvoLudoView view : activeViews.values())
+		for (AbstractView view : activeViews.values())
 			view.reset(true);
 		updateGUI();
 		displayStatus(engine.getVersion());
@@ -642,7 +641,7 @@ public class EvoLudoWeb extends Composite
 	 * received.
 	 */
 	@Override
-	public void viewActivated(EvoLudoView aView) {
+	public void viewActivated(AbstractView aView) {
 		activeView = aView;
 	}
 
@@ -720,7 +719,7 @@ public class EvoLudoWeb extends Composite
 			} else
 				name = name.replace('_', ' ').trim();
 		}
-		EvoLudoView newView = activeViews.get(name);
+		AbstractView newView = activeViews.get(name);
 		if (newView == null) {
 			// requested view not found
 			if (activeViews.containsValue(activeView)) {
@@ -756,7 +755,7 @@ public class EvoLudoWeb extends Composite
 	 *
 	 * @param newView new view of model data to display
 	 */
-	protected void changeViewTo(EvoLudoView newView) {
+	protected void changeViewTo(AbstractView newView) {
 		if (newView != activeView) {
 			if (activeView != null)
 				activeView.deactivate();
@@ -1173,7 +1172,7 @@ public class EvoLudoWeb extends Composite
 				// - reflect changes in report frequency (time line graphs, distributions and
 				// linear geometries)
 				// - changes in payoffs require rescaling of color maps
-				for (EvoLudoView view : activeViews.values())
+				for (AbstractView view : activeViews.values())
 					view.reset(false);
 				updateGUI();
 			}
@@ -1444,7 +1443,7 @@ public class EvoLudoWeb extends Composite
 	 * @see <a href=
 	 *      "https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values">Mozilla
 	 *      Key Values</a>
-	 * @see EvoLudoView#keyUpHandler(String) EvoLudoViews.keyUpHandler(String) and
+	 * @see AbstractView#keyUpHandler(String) AbstractView.keyUpHandler(String) and
 	 *      implementing classes for further keys that may be handled by the current
 	 *      view
 	 */
@@ -1591,7 +1590,7 @@ public class EvoLudoWeb extends Composite
 	 * @see <a href=
 	 *      "https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values">Mozilla
 	 *      Key Values</a>
-	 * @see EvoLudoView#keyDownHandler(String) EvoLudoViews.keyDownHandler(String) and
+	 * @see AbstractView#keyDownHandler(String) AbstractView.keyDownHandler(String) and
 	 *      implementing classes for further keys that may be handled by the current
 	 *      view
 	 */
@@ -1706,7 +1705,7 @@ public class EvoLudoWeb extends Composite
 	 * {@link #processEPubSettings}).
 	 */
 	protected void updateViews() {
-		for (EvoLudoView view : activeViews.values())
+		for (AbstractView view : activeViews.values())
 			view.unload();
 		activeViews.clear();
 		evoludoViews.clear();
@@ -1755,7 +1754,7 @@ public class EvoLudoWeb extends Composite
 		if (module instanceof HasConsole)
 			addView(viewConsole);
 		// populate view selector and assign new population
-		for (EvoLudoView view : activeViews.values()) {
+		for (AbstractView view : activeViews.values()) {
 			view.load();
 			evoludoViews.addItem(view.getName());
 		}
@@ -1770,7 +1769,7 @@ public class EvoLudoWeb extends Composite
 	 *
 	 * @param view to add to active list
 	 */
-	private void addView(EvoLudoView view) {
+	private void addView(AbstractView view) {
 		activeViews.put(view.getName(), view);
 	}
 
@@ -1845,7 +1844,7 @@ public class EvoLudoWeb extends Composite
 				public String getDescription() {
 					String descr = "--view <v>      select view with index (also on keyboard)";
 					int idx = 1;
-					for (EvoLudoView view : activeViews.values()) {
+					for (AbstractView view : activeViews.values()) {
 						String keycode = "              " + (idx++) + ": ";
 						int len = keycode.length();
 						descr += "\n" + keycode.substring(len - 16, len) + view.getName();
