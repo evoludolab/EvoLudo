@@ -1,9 +1,9 @@
 #!/bin/bash
 
-EVOLUDO_GWT_HOME="EvoLudoGWT" ;
+EVOLUDO_PUBLIC="EvoLudo" ;
 EVOLUDO_JRE_HOME="EvoLudoJRE" ;
-EVOLUDO_DEV_HOME="EvoLudoDev" ;
-
+EVOLUDO_GWT_HOME="EvoLudoGWT" ;
+EVOLUDO_DEV_HOME="EvoLudoGWTDev" ;
 EVOLUDO_TEST_HOME="EvoLudoTest" ;
 EVOLUDO_TEST_TEST="$EVOLUDO_TEST_HOME/tests" ;
 
@@ -51,7 +51,7 @@ if [ -f .settings/gitexporter.json ]; then
     echo "Updating public repository..." ;
     npx gitexporter .settings/gitexporter.json
     # delete all empty directories - name of public repo must match settings in gitexporter.json
-    find ../EvoLudoTrial -type d -not \( -path "*/.git/*" -o -path "*/target/*" \) -empty -delete
+    find "../$EVOLUDO_PUBLIC" -type d -not \( -path "*/.git/*" -o -path "*/target/*" \) -empty -delete
 fi
 
 echo "Building EvoLudo distribution done!" ;

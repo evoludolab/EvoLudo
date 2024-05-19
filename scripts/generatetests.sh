@@ -25,7 +25,7 @@ nreportsafter=$((`ls | wc -l`)) ;
 if (( $nreportsbefore == $nreportsafter ))
 	# all tests successfully generated
 	then
-		pushd "$EVOLUDO_TEST_TEST/references" > /dev/null;
+		pushd "$EVOLUDO_TEST_TEST/references" > /dev/null ;
 		# find newest directory - must be the one generated for the set of tests
 		NEWSET=$(ls -td ./*/ | head -1) ;
 		echo "All tests for set '$NEWSET' successfully generated." ;
