@@ -83,11 +83,26 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		label.setStyleName("evoludo-Label2D");
 	}
 
+	public final static int MAX_LINEAR_SIZE = 500;
+
+	public void setGeometry(Geometry geometry) {
+		super.setGeometry(geometry);
+		int size = geometry.size;
+		if (geometry.getType() == Geometry.Type.LINEAR && size <= MAX_LINEAR_SIZE) {
+			// linear graphs maintain history; allocate generously
+			if (buffer == null)
+				buffer = new RingBuffer<String[]>(2 * MAX_LINEAR_SIZE);
+				// with a buffer we need to make sure colors is initialized as well
+			if (data == null || data.length != size)
+				data = new String[size];
+		}
+	}
+
 	@Override
 	public void activate() {
 		super.activate();
 		// lazy allocation of memory for colors
-		if (data == null || data.length != geometry.size)
+		if (!hasMessage && (data == null || data.length != geometry.size))
 			data = new String[geometry.size];
 	}
 
@@ -509,13 +524,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				double adjh = bHeight - (bHeight % dh);
 				bounds.set((bWidth - adjw) / 2, (bHeight - adjh) / 2, adjw, adjh);
 				// determine length of history visible plus some
-				int capacity = (int) (1.1 * steps);
 				if (buffer == null)
-					buffer = new RingBuffer<String[]>(capacity);
+					throw new IllegalStateException("Increase MAX_LINEAR_SIZE (" + MAX_LINEAR_SIZE + ")!");
+				int capacity = (int) (1.1 * steps);
 				buffer.setCapacity(capacity);
-				// with a buffer we need to make sure colors is initialized as well
-				if (data == null || data.length != geometry.size)
-					data = new String[geometry.size];
 				style.setYRange(steps - 1);
 				style.showFrame = true;
 				break;

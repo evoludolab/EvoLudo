@@ -165,10 +165,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		if (geometry == null)
 			return;
 		setGraphLabel(geometry.getName());
-		// update population
 		network = (N) (this instanceof PopGraph2D ? geometry.getNetwork2D() : geometry.getNetwork3D());
-		if (network.isStatus(Status.NEEDS_LAYOUT))
-			invalidate();
 	}
 
 	/**
