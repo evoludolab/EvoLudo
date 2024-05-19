@@ -55,9 +55,6 @@ import org.evoludo.simulator.modules.Module;
  */
 public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 
-	// @SuppressWarnings("hiding")
-	// private List<PopGraph2D> graphs;
-
 	public Pop2D(EvoLudoGWT engine, Model.Data type) {
 		super(engine, type);
 	}
