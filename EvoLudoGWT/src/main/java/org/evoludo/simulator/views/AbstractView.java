@@ -186,7 +186,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 
 	@Override
 	public Model.Type getModelType() {
-		return engine.getModel().getModelType();
+		return model.getModelType();
 	}
 
 	@Override
@@ -211,11 +211,17 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		callback.viewActivated(this);
 		if (isFullscreenSupported())
 			fullscreenHandler = addFullscreenChangeHandler(this);
-		model.requestMode(getMode());
+		setMode(getMode());
 	}
 
 	public Mode getMode() {
 		return Mode.DYNAMICS;
+	}
+
+	public void setMode(Mode mode) {
+		// if no module specified there is no model either
+		if (model != null)
+			model.requestMode(mode);
 	}
 
 	public void deactivate() {
