@@ -39,6 +39,7 @@
             <webApp>
               <extraClasspath>${basedir}/../EvoLudoCore/target/classes/</extraClasspath>
               <extraClasspath>${basedir}/../EvoLudoGWT/target/classes/</extraClasspath>
+              <extraClasspath>${basedir}/../EvoLudoCorePrivate/target/classes/</extraClasspath>
             </webApp>
             <contextXml>${basedir}/src/main/jettyconf/context.xml</contextXml>
           </configuration>
@@ -60,6 +61,13 @@
           <artifactId>EvoLudoGWT</artifactId>
           <version>${project.version}</version>
           <type>war</type>
+          <scope>runtime</scope>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCorePrivate</artifactId>
+          <version>${project.version}</version>
+          <!-- <type>war</type> -->
           <scope>runtime</scope>
         </dependency>
       </dependencies>

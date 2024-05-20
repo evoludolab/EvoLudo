@@ -13,27 +13,6 @@
   <artifactId>EvoLudoTest</artifactId>
   <packaging>jar</packaging>
 
-  <dependencies>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>EvoLudoCore</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>EvoLudoCore</artifactId>
-      <version>${project.version}</version>
-      <!-- do not include sources in final jar -->
-      <scope>provided</scope>
-      <classifier>sources</classifier>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>EvoLudoJRE</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-  </dependencies>
-
   <build>
     <plugins>
       <plugin>
@@ -82,4 +61,83 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>private</id>
+      <activation>
+          <file>
+              <exists>../EvoLudoCorePrivate/pom.xml</exists>
+          </file>
+      </activation>
+      <dependencies>
+        <!-- private versions take precedence -->
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCorePrivate</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCorePrivate</artifactId>
+          <version>${project.version}</version>
+          <!-- do not include sources in final jar -->
+          <scope>provided</scope>
+          <classifier>sources</classifier>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoJREPrivate</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <!-- public versions are second -->
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCore</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCore</artifactId>
+          <version>${project.version}</version>
+          <!-- do not include sources in final jar -->
+          <scope>provided</scope>
+          <classifier>sources</classifier>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoJRE</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>public</id>
+      <activation>
+          <file>
+              <missing>../EvoLudoCorePrivate/pom.xml</missing>
+          </file>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCore</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCore</artifactId>
+          <version>${project.version}</version>
+          <!-- do not include sources in final jar -->
+          <scope>provided</scope>
+          <classifier>sources</classifier>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoJRE</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>

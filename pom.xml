@@ -263,12 +263,38 @@
     </pluginManagement>
   </build>
 
-  <modules>
-    <module>EvoLudoCore</module>
-    <module>EvoLudoJRE</module>
-    <module>EvoLudoGWT</module>
-    <module>EvoLudoGWTDev</module>
-    <module>EvoLudoTest</module>
-    <module>EvoLudoSims</module>
-  </modules>
+  <profiles>
+    <profile>
+        <id>private</id>
+        <activation>
+            <file>
+                <exists>EvoLudoCorePrivate/pom.xml</exists>
+            </file>
+        </activation>
+        <modules>
+          <module>EvoLudoCorePrivate</module>
+          <module>EvoLudoCore</module>
+          <module>EvoLudoJREPrivate</module>
+          <module>EvoLudoJRE</module>
+          <module>EvoLudoGWT</module>
+          <module>EvoLudoGWTDev</module>
+          <module>EvoLudoTest</module>
+          <module>EvoLudoSims</module>
+        </modules>
+    </profile>
+    <profile>
+        <id>public</id>
+        <activation>
+          <activeByDefault>true</activeByDefault>
+        </activation>
+        <modules>
+          <module>EvoLudoCore</module>
+          <module>EvoLudoJRE</module>
+          <module>EvoLudoGWT</module>
+          <module>EvoLudoGWTDev</module>
+          <module>EvoLudoTest</module>
+          <module>EvoLudoSims</module>
+        </modules>
+    </profile>
+  </profiles>
 </project>

@@ -67,25 +67,14 @@ import org.evoludo.simulator.modules.ATBT;
 import org.evoludo.simulator.modules.CDL;
 import org.evoludo.simulator.modules.CDLP;
 import org.evoludo.simulator.modules.CDLPQ;
-import org.evoludo.simulator.modules.CG;
 import org.evoludo.simulator.modules.CLabour;
 import org.evoludo.simulator.modules.CSD;
 import org.evoludo.simulator.modules.Continuous;
-import org.evoludo.simulator.modules.DemesTBT;
-import org.evoludo.simulator.modules.Dialect;
 import org.evoludo.simulator.modules.Discrete;
-import org.evoludo.simulator.modules.EcoMoran;
-import org.evoludo.simulator.modules.EcoMutualism;
-import org.evoludo.simulator.modules.EcoPGG;
-import org.evoludo.simulator.modules.EcoTBT;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Moran;
-import org.evoludo.simulator.modules.Motility;
-import org.evoludo.simulator.modules.Mutualism;
-import org.evoludo.simulator.modules.NetDyn;
 import org.evoludo.simulator.modules.RSP;
 import org.evoludo.simulator.modules.TBT;
-import org.evoludo.simulator.modules.Test;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPop2D;
@@ -142,25 +131,14 @@ public abstract class EvoLudo
 		parser = new CLOParser(this);
 		// load all available modules
 		addModule(new Moran(this));
-		addModule(new EcoMoran(this));
-		addModule(new Motility(this));
-		addModule(new CG(this));
 		addModule(new TBT(this));
-		addModule(new EcoTBT(this));
 		addModule(new ATBT(this));
-		addModule(new DemesTBT(this));
 		addModule(new RSP(this));
 		addModule(new CDL(this));
 		addModule(new CDLP(this));
 		addModule(new CDLPQ(this));
-		addModule(new Mutualism(this));
-		addModule(new EcoMutualism(this));
-		addModule(new EcoPGG(this));
 		addModule(new CSD(this));
 		addModule(new CLabour(this));
-		addModule(new Dialect(this));
-		addModule(new NetDyn(this));
-		addModule(new Test(this));
 	}
 
 	/**
