@@ -65,9 +65,9 @@
             <arg>${evoludo.startup}</arg>
           </devmodeArgs>
           <style>PRETTY</style>
-          <launcherDir>${basedir}/EvoLudoDev/target/EvoLudoDev-${project.version}</launcherDir>
-          <devmodeWorkDir>${basedir}/EvoLudoDev/target/gwt/devmode/work</devmodeWorkDir>
-          <warDir>${basedir}/EvoLudoDev/target/EvoLudoDev-${project.version}</warDir>
+          <launcherDir>${basedir}/EvoLudoGWTDev/target/EvoLudoGWTDev-${project.version}</launcherDir>
+          <devmodeWorkDir>${basedir}/EvoLudoGWTDev/target/gwt/devmode/work</devmodeWorkDir>
+          <warDir>${basedir}/EvoLudoGWTDev/target/EvoLudoGWTDev-${project.version}</warDir>
         </configuration>
       </plugin>
 
@@ -267,7 +267,7 @@
     <module>EvoLudoCore</module>
     <module>EvoLudoJRE</module>
     <module>EvoLudoGWT</module>
-    <module>EvoLudoDev</module>
+    <module>EvoLudoGWTDev</module>
     <module>EvoLudoTest</module>
     <module>EvoLudoSims</module>
   </modules>
