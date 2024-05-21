@@ -1554,9 +1554,9 @@ public abstract class RNGDistribution {
 		 * @param max     the maximum weight in the array
 		 * @return the random integer
 		 * 
-		 * @see Lipowski, A. &amp; Lipowska, D. (2011)
-		 *      <a href="http://arxiv.org/pdf/1109.3627.pdf">Roulette-wheel selection
-		 *      via stochastic acceptance</a>, arXive:1109.3627.
+		 * @see <a href="http://arxiv.org/pdf/1109.3627.pdf">Lipowski, A. &amp;
+		 *      Lipowska, D. (2011) Roulette-wheel selection via stochastic
+		 *      acceptance</a>
 		 */
 		public int nextMax(int[] weights, int max) {
 			int len = weights.length;
@@ -1640,9 +1640,9 @@ public abstract class RNGDistribution {
 		 * @param max     the maximum weight in the array
 		 * @return the random integer
 		 * 
-		 * @see Lipowski, A. &amp; Lipowska, D. (2011)
-		 *      <a href="http://arxiv.org/pdf/1109.3627.pdf">Roulette-wheel selection
-		 *      via stochastic acceptance</a>, arXive:1109.3627.
+		 * @see <a href="http://arxiv.org/pdf/1109.3627.pdf">Lipowski, A. &amp;
+		 *      Lipowska, D. (2011) Roulette-wheel selection via stochastic
+		 *      acceptance</a>
 		 */
 		public int nextMax(double[] weights, double max) {
 			int len = weights.length;

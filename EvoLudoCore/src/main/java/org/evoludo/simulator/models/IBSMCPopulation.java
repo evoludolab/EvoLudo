@@ -606,10 +606,11 @@ public class IBSMCPopulation extends IBSPopulation {
 	}
 
 	/**
-	 * Creates a histogram for {@code trait} and returns the result in the array
-	 * <code>bins</code>.
+	 * Creates a histogram for the trait with index {@code trait} and returns the
+	 * result in the array <code>bins</code>.
 	 *
-	 * @param bins the array to store the histogram(s)
+	 * @param bins  the array to store the histogram(s)
+	 * @param trait the index of the trait
 	 */
 	public void getTraitHistogramData(double[] bins, int trait) {
 		// clear bins
@@ -822,6 +823,8 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * Sets the type of the initial configuration and any accompanying arguments. If
 	 * either {@code type} or {@code args} are {@code null} the respective current
 	 * setting is preserved.
+	 * 
+	 * @param init the type and arguments of the initial configuration
 	 */
 	public void setInit(Init init) {
 		this.init = init;

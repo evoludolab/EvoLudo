@@ -497,7 +497,9 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
-	 * Update GUI.
+	 * Update GUI. The update is forced if {@code force} is {@code true}.
+	 * 
+	 * @param force update update is forced if {@code true}
 	 */
 	public void update(boolean force) {
 		for (AbstractView view : activeViews.values())

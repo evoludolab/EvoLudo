@@ -75,7 +75,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * </dl>
 	 * 
 	 * @param controller the controller of this graph
-	 * @param tag        the identifying tag
+	 * @param module     the module backing the graph
 	 */
 	public PopGraph2D(PopGraphController controller, Module module) {
 		super(controller, module);

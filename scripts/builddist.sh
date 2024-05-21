@@ -30,6 +30,14 @@ fi
 echo "Building API documentation..." ;
 mvn javadoc:aggregate ;
 
+passed=$? ;
+
+if [ $passed -ne 0 ]
+    then 
+    echo "Building javadoc failed - aborting!" ;
+    exit $passed ;
+fi
+
 # create distribution directory
 mkdir -p dist/war ;
 

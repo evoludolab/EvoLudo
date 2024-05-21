@@ -127,6 +127,12 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	 */
 	protected Label label;
 
+	/**
+	 * Create the base class for population graphs.
+	 * 
+	 * @param controller the controller of this graph
+	 * @param module     the module backing the graph
+	 */
 	public GenericPopGraph(PopGraphController controller, Module module) {
 		super(controller, module);
 		label = new Label("Gugus");

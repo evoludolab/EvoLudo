@@ -81,6 +81,7 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		 * Instantiate new initialization for use in IBS {@code model}s.
 		 * 
 		 * @param ibs the model using this initialization
+		 * @param nTraits the number of traits
 		 */
 		public Init(org.evoludo.simulator.models.IBS ibs, int nTraits) {
 			this.ibs = ibs;

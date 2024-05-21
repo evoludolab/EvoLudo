@@ -418,6 +418,8 @@ public class RingBuffer<T> implements Iterable<T> {
 		/**
 		 * Creates a new {@code ListIterator} over all elements in this buffer starting
 		 * with the entry at {@code index}.
+		 * 
+		 * @param index the index of the first element to be returned
 		 */
 		public LstItr(int index) {
 			super();

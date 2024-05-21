@@ -126,8 +126,9 @@ public interface HasS3 {
 		 * <strong>Note:</strong> The array <code>data</code> contains a copy
 		 * of the last data point recorded in the buffer (excluding time).
 		 * 
-		 * @param p the point on the simplex to convert (in user coordinates)
-		 * @param s the array of data
+		 * @param x the x-coordinate of the point
+		 * @param y the y-coordinate of the point
+		 * @param s the point on the simplex
 		 * @return the array {@code s}
 		 */
 		public double[] s32Data(double x, double y, double[] s);

@@ -2262,6 +2262,8 @@ public class IBSDPopulation extends IBSPopulation {
 	 * Sets the type of the initial configuration and any accompanying arguments. If
 	 * either {@code type} or {@code args} are {@code null} the respective current
 	 * setting is preserved.
+	 * 
+	 * @param init the type and arguments of the initial configuration
 	 */
 	public void setInit(Init init) {
 		this.init = init;

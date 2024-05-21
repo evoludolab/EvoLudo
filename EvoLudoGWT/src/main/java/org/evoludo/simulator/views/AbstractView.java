@@ -292,10 +292,12 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	}
 
 	/**
-	 * Default implementation for synchronized zooming of multiple graphs.
+	 * Default implementation for synchronized zooming of multiple graphs. The 
+	 * center for zooming is given by the coordinates {@code (x,y)}.
 	 * 
-	 * @param dx the shift in x-direction
-	 * @param dy the shift in y-direction
+	 * @param zoom the zoom factor
+	 * @param x the x-coordinate
+	 * @param y the y-coordinate
 	 * 
 	 * @see AbstractGraph.Zoomer#zoom(double, int, int)
 	 */
