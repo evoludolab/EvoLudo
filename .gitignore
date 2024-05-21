@@ -24,3 +24,6 @@ scratch/
 
 # ignore reference and report files for tests
 test/reports/
+
+# ignore gitexporter log
+EvoLudo.gitexporter.log.json
