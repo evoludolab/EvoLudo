@@ -35,6 +35,7 @@ package org.evoludo.graphics;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.models.Model;
 
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.Scheduler;
@@ -152,7 +153,11 @@ public class Network2DGWT extends Network2D {
 			finishLayout();
 			setStatus(Status.HAS_LAYOUT);
 			isRunning = false;
-			timestamp = engine.getModel().getTime();
+			// in the unlikely event that unloaded during layouting the model may be null
+			Model model = engine.getModel();
+			if (model == null)
+				return false;
+			timestamp = model.getTime();
 			listener.layoutComplete();
 			return false;
 		}
