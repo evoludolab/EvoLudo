@@ -43,6 +43,22 @@
 
   <build>
     <plugins>
+      <!-- display active profiles for debuggin maven -->
+      <!-- <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-help-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+            <execution>
+                <id>show-profiles</id>
+                <phase>compile</phase>
+                <goals>
+                    <goal>active-profiles</goal>
+                </goals>
+            </execution>
+        </executions>
+      </plugin> -->
+
       <plugin>
         <groupId>io.github.git-commit-id</groupId>
         <artifactId>git-commit-id-maven-plugin</artifactId>
@@ -267,15 +283,13 @@
     <profile>
         <id>private</id>
         <activation>
-            <file>
-                <exists>EvoLudoCorePrivate/pom.xml</exists>
-            </file>
+          <file>
+            <exists>EvoLudoCorePrivate/pom.xml</exists>
+          </file>
         </activation>
         <modules>
           <module>EvoLudoCorePrivate</module>
-          <module>EvoLudoCore</module>
           <module>EvoLudoJREPrivate</module>
-          <module>EvoLudoJRE</module>
           <module>EvoLudoGWT</module>
           <module>EvoLudoGWTDev</module>
           <module>EvoLudoTest</module>

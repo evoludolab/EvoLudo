@@ -15,28 +15,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>EvoLudoCorePrivate</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>EvoLudoCore</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>EvoLudoCorePrivate</artifactId>
-      <version>${project.version}</version>
-      <classifier>sources</classifier>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>EvoLudoCore</artifactId>
-      <version>${project.version}</version>
-      <classifier>sources</classifier>
-    </dependency>
-    <dependency>
       <groupId>org.parallax3d</groupId>
       <artifactId>parallax-gwt</artifactId>
       <version>1.6</version>
@@ -120,4 +98,59 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>private</id>
+      <activation>
+        <file>
+          <exists>../EvoLudoCorePrivate/pom.xml</exists>
+        </file>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCorePrivate</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCorePrivate</artifactId>
+          <version>${project.version}</version>
+          <classifier>sources</classifier>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCore</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>EvoLudoCore</artifactId>
+            <version>${project.version}</version>
+            <classifier>sources</classifier>
+          </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>public</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCore</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>EvoLudoCore</artifactId>
+            <version>${project.version}</version>
+            <classifier>sources</classifier>
+          </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
 </project>
