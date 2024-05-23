@@ -2,32 +2,31 @@
 <!-- <!DOCTYPE ui:UiBinder SYSTEM "http://dl.google.com/download/gwt/DTD/xhtml.ent"> -->
 <!-- resolutions according to Thomas Broyer,
 see https://groups.google.com/g/google-web-toolkit/c/wrH3XvuFFPY:
-There's no DTD for UiBinder (because it's by essence impossible), and no XML Schema
-either (for similar reasons, though at least it would work well with XML Namespaces).
-That DOCTYPE you have here is only there to declare named entities like you have in
-XHTML (&nbsp;, &eacirc;, etc.) rather than having to use numeric character references
-(&#160; or &#xA0; for a non-breaking space); it's basically a concatenation of those
-3 files: https://www.w3.org/TR/xhtml1/#h-A2 
+There's no DTD for UiBinder (because it's by essence impossible), and no XML Schema either (for 
+similar reasons, though at least it would work well with XML Namespaces). That DOCTYPE you have here 
+is only there to declare named entities like you have in XHTML (&nbsp;, &eacirc;, etc.) rather than 
+having to use numeric character references (&#160; or &#xA0; for a non-breaking space); it's 
+basically a concatenation of those 3 files: https://www.w3.org/TR/xhtml1/#h-A2 
 	- if you don't need it, just remove the DOCTYPE altogether
 	- if you do use the entities, then: 
 		- cross your fingers that Google will preserve the file accessible at that URL in
 		  the future
 		- reference	one of the files from the W3C instead
 		- reference all 3 files from the W3C with a "proper" DOCTYPE (see above) -->
-<!DOCTYPE ui:UiBinder [
-
+<!-- The ENTITY entries trigger a call to www.w3.org at compile time; since this didn't resolve the
+issue with &nbsp; in GWT simply omit to allow offline compilation. -->
+<!-- <!DOCTYPE ui:UiBinder [
 <!ENTITY % HTMLlat1 SYSTEM "https://www.w3.org/TR/xhtml1/DTD/xhtml-lat1.ent">
 %HTMLlat1;
-
 <!ENTITY % HTMLsymbol SYSTEM "https://www.w3.org/TR/xhtml1/DTD/xhtml-symbol.ent">
 %HTMLsymbol;
-
 <!ENTITY % HTMLspecial SYSTEM "https://www.w3.org/TR/xhtml1/DTD/xhtml-special.ent">
 %HTMLspecial;
-]>
+]> -->
 <!-- The "proper" doctype above unfortunately results in terribly slow compilation
 times. Since the XHTML entities do not appear to be used the doctype is simply
 removed. -->
+<!DOCTYPE ui:UiBinder>
 <!--
 //
 // EvoLudo Project
@@ -212,7 +211,7 @@ removed. -->
 
 					<!-- parameters -->
 					<g:FlowPanel ui:field='evoludoCLOPanel' visible='false'>
-<!-- <textarea> is disabled in Apple Books, let's go with simpler editable div for now...
+						<!-- <textarea> is disabled in Apple Books, let's go with simpler editable div for now...
  				 		<g:TextArea ui:field='evoludoCLO' 
 				 			title="Specify simulation parameters" 
 				 			visibleLines='5'
