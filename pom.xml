@@ -7,6 +7,23 @@
   <name>EvoLudo</name>
   <description>Interactive in-silicio evolution</description>
   <url>https://www.evoludo.org</url>
+  <inceptionYear>2002</inceptionYear>
+  <licenses>
+    <license>
+      <name>Apache 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+  <organization>
+    <name>EvoLudo</name>
+    <url>https://www.evoludo.org</url>
+  </organization>
+  <developers>
+    <developer>
+      <name>Christoph Hauert</name>
+      <email>hauert@math.ubc.ca</email>
+    </developer>
+  </developers>
 
   <groupId>org.evoludo</groupId>
   <artifactId>EvoLudo</artifactId>
@@ -90,7 +107,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <inherited>false</inherited>
+        <version>3.6.3</version>
         <configuration>
           <doctitle>EvoLudo: in silico evolution</doctitle>
           <windowtitle>EvoLudo: in silico evolution</windowtitle>
@@ -99,19 +116,40 @@
           <script id='MathJax-script' async src='https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'></script>
           ]]>
           </header>
-          <footer><![CDATA[
-          <span style='display:inline-block; padding:14px 0;'>${evoludo.build}&nbsp;(revision ${evoludo.commit})</span>
+          <bottom><![CDATA[
+          <div style='background-color:#4D7A97; color:#fff; width:100%; height:2.8em; font-size:14px;'>
+          <span style='float:left; margin:12px;'>Copyright © Christoph Hauert {inceptionYear}–{currentYear} 
+            <span class='evoludo-footer-link' style='color:var(--selected-background-color) !important; font-weight:bold;'>{organizationName}.</span>
+          </span>
+          <span style='float:right; margin:12px;'>${evoludo.build}&nbsp;(revision ${evoludo.commit})</span>
+          </div>
           ]]>
-          </footer>
+          </bottom>
           <!-- JDK 11 needed to generate docs with frames -->
-          <javadocExecutable>${javadoc.exe}</javadocExecutable>
-          <!-- too many problems in javadoc for EvoLudoJRE - exclude for now -->
-          <skippedModules>EvoLudoJRE</skippedModules>
-          <reportOutputDirectory>docs</reportOutputDirectory>
-          <destDir>api</destDir>
-          <doclint>all,-reference</doclint>
+          <!-- <javadocExecutable>${javadoc.exe}</javadocExecutable> -->
+          <!-- accessibility throws errors about headers out of sequence but at the same time
+               javadoc does not appear to offer any way to format longer text, e.g. for more
+               comprehensive introductions to a class -->
+          <doclint>all,-accessibility</doclint>
           <show>private</show>
           <nohelp>true</nohelp>
+          <tags>
+            <tag>
+              <name>evoludo.todo</name>
+              <placement>a</placement>
+              <head>Work in progress:</head>
+            </tag>
+            <tag>
+              <name>evoludo.note</name>
+              <placement>a</placement>
+              <head>Note:</head>
+            </tag>
+            <tag>
+              <name>evoludo.impl</name>
+              <placement>a</placement>
+              <head>Implementation Notes:</head>
+            </tag>
+          </tags>
           <excludePackageNames>org.evoludo.simulator.run</excludePackageNames>
           <links>
             <link>https://docs.oracle.com/en/java/javase/19/docs/api/</link>
@@ -122,7 +160,7 @@
             <sourceFileExclude>**/main/super/**/*.java</sourceFileExclude>
           </sourceFileExcludes>
           <additionalJOptions>
-            <additionalJOption>--frames</additionalJOption>
+            <!-- <additionalJOption>- -frames</additionalJOption> -->
             <additionalJOption>--allow-script-in-comments</additionalJOption>
           </additionalJOptions>
           <additionalDependencies>
@@ -165,7 +203,7 @@
             </additionalDependency>
           </additionalDependencies>
         </configuration>
-        <executions>
+        <!-- <executions>
           <execution>
             <id>aggregate</id>
             <goals>
@@ -173,10 +211,10 @@
             </goals>
             <phase>site</phase>
             <configuration>
-              <!-- Specific configuration for the aggregate report -->
+              <!- - Specific configuration for the aggregate report - ->
             </configuration>
           </execution>
-        </executions>
+        </executions> -->
       </plugin>
 
       <plugin>

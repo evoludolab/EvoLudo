@@ -27,8 +27,8 @@ if [ $passed -ne 0 ]
 fi
 
 # build API documentation - places javadoc in docs/api
-echo "Building API documentation..." ;
-mvn javadoc:aggregate ;
+echo "Building public API documentation..." ;
+mvn -P public javadoc:aggregate ;
 
 passed=$? ;
 
@@ -52,6 +52,6 @@ cp -a "$EVOLUDO_JRE_HOME"/target/EvoLudo.*.jar dist/ ;
 
 # copy API documentation
 echo "Copying EvoLudo API documentation..." ;
-cp -a docs/api dist/
+cp -a target/site/apidocs dist/api
 
 echo "Building EvoLudo distribution done!" ;
