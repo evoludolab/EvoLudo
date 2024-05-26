@@ -1157,15 +1157,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * Set the fill colour for node with index {@code node}.
-	 * 
-	 * @param node the index of the node
-	 */
-	protected void setFillStyleAt(int node) {
-		g.setFillStyle(colors[node]);
-	}
-
-	/**
 	 * Set the stroke colour for node with index {@code node}.
 	 * 
 	 * @param node the index of the node

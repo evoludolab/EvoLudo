@@ -171,10 +171,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				for (int h = 0; h < side; h += 2) {
 					row = h * side;
 					for (int w = 0; w < side; w += 2) {
-						setFillStyleAt(row + w);
+						g.setFillStyle(data[row + w]);
 						fill(triup);
 						triup.translate(dw, 0);
-						setFillStyleAt(row + w + 1);
+						g.setFillStyle(data[row + w + 1]);
 						fill(tridown);
 						tridown.translate(dw, 0);
 					}
@@ -182,10 +182,10 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 					tridown.translate(-s2 * dw - dw2, dh);
 					row += side;
 					for (int w = 0; w < side; w += 2) {
-						setFillStyleAt(row + w);
+						g.setFillStyle(data[row + w]);
 						fill(tridown);
 						tridown.translate(dw, 0);
-						setFillStyleAt(row + w + 1);
+						g.setFillStyle(data[row + w + 1]);
 						fill(triup);
 						triup.translate(dw, 0);
 					}
@@ -205,7 +205,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				for (int h = 0; h < side; h++) {
 					row = h * side;
 					for (int w = 0; w < side; w++) {
-						setFillStyleAt(row + w);
+						g.setFillStyle(data[row + w]);
 						fill(hex);
 						hex.translate(dw, 0);
 					}
@@ -243,7 +243,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 								xshift += HIERARCHY_GAP;
 							}
 						}
-						setFillStyleAt(row + w);
+						g.setFillStyle(data[row + w]);
 						fillRect(xshift, yshift, dw, dh);
 						xshift += dw;
 					}
