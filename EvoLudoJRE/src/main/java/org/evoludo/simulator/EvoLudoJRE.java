@@ -1073,6 +1073,15 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		return cloarray;
 	}
 
+	@Override
+	public boolean restoreFromFile() {
+		if (!restoreState(plist)) {
+			logger.warning("failed to restore state in '" + plistname + "'");
+			return false;
+		}
+		return true;
+	}
+
 	public boolean parseCLO(boolean testing) {
 		boolean success = parseCLO();
 		if (testing) {
@@ -1097,14 +1106,12 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		}
 		if (!doRestore)
 			return success;
+		if (!success)
+			logger.warning("abort restoring of state in '" + plistname + "' due to parsing problems.");
 		// parseCLO does not reset model - do it now to be ready for restore
 		modelReset();
 		// finish restoring
-		if (!restoreState(plist)) {
-			logger.warning("failed to restore state in '" + plistname + "'");
-			return false;
-		}
-		return success;
+		return restoreFromFile();
 	}
 
 	@Override

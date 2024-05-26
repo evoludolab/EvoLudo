@@ -80,43 +80,6 @@ import com.google.gwt.user.client.ui.RequiresResize;
 public abstract class AbstractView extends Composite implements RequiresResize, ProvidesResize, FullscreenChangeHandler,
 		AbstractGraph.Controller, HasFullscreenChangeHandlers {
 
-	/**
-	 *
-	 * @author Christoph Hauert
-	 */
-	public interface Callback {
-
-		/**
-		 * Callback routine to notify recipient that the view has finished activation
-		 * and is ready to receive/display data.
-		 *
-		 * @param activeView view that finished its activation.
-		 */
-		public void viewActivated(AbstractView activeView);
-
-		/**
-		 * Notify callback that layout has completed. For example, this signals that a network
-		 * is ready for taking a snapshot.
-		 */
-		public void layoutComplete();
-
-		/**
-		 * Enables interactive data views to check whether EvoLudo model is running. For
-		 * example, mouse clicks that would change the strategy of an individual in
-		 * {@link Pop2D} or {@link Pop3D} are ignored if model is running.
-		 *
-		 * @return <code>true</code> if model is running.
-		 */
-		public boolean isRunning();
-
-		/**
-		 * Request EvoLudo model to restore a previously saved state of the model. This
-		 * method is called by the context menu (see
-		 * {@link AbstractView#populateContextMenu(ContextMenu)}).
-		 */
-		public void restoreFromFile();
-	}
-
 	protected HandlerRegistration fullscreenHandler;
 
 	protected EvoLudoGWT engine;
@@ -194,13 +157,6 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		return logger;
 	}
 
-	protected Callback callback;
-
-	public void activate(Callback callme) {
-		callback = callme;
-		activate();
-	}
-
 	public void activate() {
 		if (isActive)
 			return;
@@ -208,7 +164,6 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		for (AbstractGraph<?> graph : graphs)
 			graph.activate();
 		scheduleUpdate(true);
-		callback.viewActivated(this);
 		if (isFullscreenSupported())
 			fullscreenHandler = addFullscreenChangeHandler(this);
 		setMode(getMode());
@@ -273,7 +228,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 
 	@Override
 	public boolean isRunning() {
-		return callback.isRunning();
+		return engine.isRunning();
 	}
 
 	/**
@@ -493,11 +448,11 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 			restoreMenu = new ContextMenuItem("Restore...", new Command() {
 				@Override
 				public void execute() {
-					callback.restoreFromFile();
+					engine.restoreFromFile();
 				}
 			});
 		}
-		boolean idle = !callback.isRunning();
+		boolean idle = !engine.isRunning();
 		if (restoreMenu != null) {
 			restoreMenu.setEnabled(idle);
 			contextMenu.add(restoreMenu);

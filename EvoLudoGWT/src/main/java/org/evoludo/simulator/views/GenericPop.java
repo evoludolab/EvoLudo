@@ -56,7 +56,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 
 	@Override
 	public void layoutComplete() {
-		if( callback!=null && isActive ) {
+		if( isActive ) {
 			// check if all graphs have layout
 			boolean layouting = false;
 			for( G graph : graphs ) {
@@ -71,7 +71,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 				break;
 			}
 			if( !layouting )
-				callback.layoutComplete();
+				engine.layoutComplete();
 		}
 		update();
 	}

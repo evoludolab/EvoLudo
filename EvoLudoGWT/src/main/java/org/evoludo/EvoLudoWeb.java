@@ -41,8 +41,6 @@ import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.Plist;
-import org.evoludo.util.PlistParser;
 import org.evoludo.util.XMLCoder;
 
 import com.google.gwt.canvas.client.Canvas;
@@ -94,7 +92,7 @@ import com.google.gwt.user.client.ui.Widget;
  * Entry point classes define <code>onModuleLoad()</code>.
  */
 public class EvoLudoWeb extends Composite 
-	implements MilestoneListener, ChangeListener, AbstractView.Callback, CLOProvider, EntryPoint {
+	implements MilestoneListener, ChangeListener, CLOProvider, EntryPoint {
 
 	/**
 	 * <strong>Apple Books (iBook) notes:</strong>
@@ -534,6 +532,8 @@ public class EvoLudoWeb extends Composite
 	public void modelRestored() {
 		for (AbstractView view : activeViews.values())
 			view.restored();
+		displayStatusThresholdLevel = Level.ALL.intValue();
+		displayStatus("State successfully restored.");
 	}
 
 	@Override
@@ -634,22 +634,6 @@ public class EvoLudoWeb extends Composite
 			s = model.getCounter();
 		evoludoTime.setText(s);
 		updatetime = Duration.currentTimeMillis();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * The activated view receives focus to ensure that keyboard shortcuts are
-	 * received.
-	 */
-	@Override
-	public void viewActivated(AbstractView aView) {
-		activeView = aView;
-	}
-
-	@Override
-	public boolean isRunning() {
-		return engine.isRunning();
 	}
 
 	/**
@@ -770,7 +754,7 @@ public class EvoLudoWeb extends Composite
 			Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
 				@Override
 				public void execute() {
-					activeView.activate(EvoLudoWeb.this);
+					activeView.activate();
 				}
 			});
 		}
@@ -1355,7 +1339,7 @@ public class EvoLudoWeb extends Composite
 			ScriptInjector.fromString(Resources.INSTANCE.zip().getText()).inject();
 			hasZipJs = true;
 		}
-		handleDnD(data, EvoLudoWeb.this);
+		handleDnD(data, engine);
 	}
 
 	/**
@@ -1669,22 +1653,6 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
-	 * Callback method. {@link org.evoludo.simulator.Network.LayoutListener
-	 * Network.LayoutListener} reports back here once layout has completed. If
-	 * EvoLudo model was suspended, execution resumes. This happens if a particular
-	 * view was requested through command line options (see
-	 * {@link org.evoludo.simulator.EvoLudo#cloRun EvoLudo#cloRun} and
-	 * {@link #cloView}).
-	 */
-	@Override
-	public void layoutComplete() {
-		engine.layoutComplete();
-		if (engine.isSuspended()) {
-			engine.run();
-		}
-	}
-
-	/**
 	 * Adds a marker element with ID <code>snapshot-ready</code> to DOM. This is
 	 * used to control automated snapshots using <code>capture-website</code>.
 	 * 
@@ -1773,56 +1741,6 @@ public class EvoLudoWeb extends Composite
 	 */
 	private void addView(AbstractView view) {
 		activeViews.put(view.getName(), view);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * Called by <code>Restore...</code> context menu in {@link AbstractView}.
-	 */
-	@Override
-	public void restoreFromFile() {
-		restoreFromFile(this);
-	}
-
-	/**
-	 * JSNI method: opens javascript file chooser and attempts to restore state from
-	 * selected file
-	 *
-	 * @param evoludo model that processes contents of selected file
-	 */
-	private final native void restoreFromFile(EvoLudoWeb evoludo) /*-{
-		var input = $doc.createElement('input');
-		input.setAttribute('type', 'file');
-		input.onchange = function(e) {
-			var files = e.target.files;
-			if (files.length != 1)
-				return;
-			var file = files[0];
-			var reader = new FileReader();
-			reader.onload = function(e) {
-				evoludo.@org.evoludo.EvoLudoWeb::restoreFromFile(Ljava/lang/String;Ljava/lang/String;)(file.name, e.target.result);
-			}
-			reader.readAsText(file);
-		}
-		input.click();
-	}-*/;
-
-	/**
-	 * Restore state of EvoLudo model from String <code>content</code>.
-	 *
-	 * @param filename (only for reference and reporting of success or failure)
-	 * @param content  encoded state of EvoLudo model
-	 */
-	public void restoreFromFile(String filename, String content) {
-		displayStatusThresholdLevel = Level.ALL.intValue();
-		Plist parsed = PlistParser.parse(content);
-		if (parsed == null || !engine.restoreState(parsed)) {
-			displayStatus("failed to parse contents of file '" + filename + "'.",
-					Level.SEVERE.intValue());
-			return;
-		}
-		displayStatus("State stored in '" + filename + "' successfully restored.");
 	}
 
 	/**
@@ -1970,9 +1888,9 @@ public class EvoLudoWeb extends Composite
 	 * first to ensure that only a single 'plist' file was dropped.
 	 *
 	 * @param dataTransfer list of dropped file(s)
-	 * @param evoludo      model that processes contents of dropped file
+	 * @param engine       model that processes contents of dropped file
 	 */
-	private final native void handleDnD(JavaScriptObject dataTransfer, EvoLudoWeb evoludo) /*-{
+	private final native void handleDnD(JavaScriptObject dataTransfer, EvoLudoGWT engine) /*-{
 		var files = dataTransfer.files;
 		if (files.length != 1)
 			return;
@@ -1982,14 +1900,14 @@ public class EvoLudoWeb extends Composite
 			.then(function(zip) {
 				zip.forEach(function (relativePath, zipEntry) {
 					zip.file(zipEntry.name).async("string").then(function (data) {
-						evoludo.@org.evoludo.EvoLudoWeb::restoreFromFile(Ljava/lang/String;Ljava/lang/String;)(zipEntry.name, data);
+						engine.@org.evoludo.simulator.EvoLudoGWT::restoreFromFile(Ljava/lang/String;Ljava/lang/String;)(zipEntry.name, data);
 					});
 				});
 			}, function (e) {
 				// file is not compressed; try as plain plist file
 				var reader = new FileReader();
 				reader.onload = function(e) {
-					evoludo.@org.evoludo.EvoLudoWeb::restoreFromFile(Ljava/lang/String;Ljava/lang/String;)(file.name, e.target.result);
+					engine.@org.evoludo.simulator.EvoLudoGWT::restoreFromFile(Ljava/lang/String;Ljava/lang/String;)(file.name, e.target.result);
 				}
 				reader.readAsText(file);
 			});

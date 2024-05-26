@@ -985,6 +985,8 @@ public abstract class EvoLudo
 	 * taking snapshots.
 	 */
 	public void layoutComplete() {
+		if (isSuspended())
+			run();
 	}
 
 	/**
@@ -1602,6 +1604,13 @@ public abstract class EvoLudo
 		plist.append("</dict>\n" + "</plist>");
 		return plist.toString();
 	}
+
+	/**
+	 * Restore state of EvoLudo model from saved plist, which encodes engine state.
+	 * 
+	 * @see #encodeState()
+	 */
+	public abstract boolean restoreFromFile();
 
 	/**
 	 * Restore state of EvoLudo model from pre-processed plist, which encodes engine
