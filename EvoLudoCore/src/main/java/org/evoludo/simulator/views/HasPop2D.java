@@ -34,10 +34,10 @@ package org.evoludo.simulator.views;
 
 /**
  * {@link org.evoludo.simulator.modules.Module Module}s that implement the
- * {@code HasPop2D} interface include a graphical view that depicts a 2D
+ * {@code HasPop2D} interface request a graphical view to visualize a 2D
  * representation of the geomtery of the population in their GUI:
- * {@link org.evoludo.simulator.MVPop2D} for GWT and
- * {@link org.evoludo.simulator.MVPop2D} for JRE.
+ * {@link org.evoludo.simulator.views.Pop2D} for GWT and
+ * {@link org.evoludo.simulator.views.MVPop2D} for JRE.
  * <p>
  * <strong>Important:</strong> Implementations have to be agnostic of the
  * runtime environment (JRE vs GWT).
@@ -54,10 +54,8 @@ public abstract interface HasPop2D {
 	 * whereas for continuous modules the traits are shown on a color gradient
 	 * between the minimum and maximum trait values.
 	 * 
-	 * @see org.evoludo.simulator.MVPop2D
-	 * @see org.evoludo.simulator.MVPop2D
-	 * 
-	 * @author Christoph Hauert
+	 * @see org.evoludo.simulator.views.Pop2D
+	 * @see org.evoludo.simulator.views.MVPop2D
 	 */
 	public interface Strategy extends HasPop2D {
 	}
@@ -69,10 +67,8 @@ public abstract interface HasPop2D {
 	 * each individual. Fitness values are shown on a color gradient between the
 	 * minimum and maximum scores/payoffs/fitness.
 	 * 
-	 * @see org.evoludo.simulator.MVPop2D
-	 * @see org.evoludo.simulator.MVPop2D
-	 * 
-	 * @author Christoph Hauert
+	 * @see org.evoludo.simulator.views.Pop2D
+	 * @see org.evoludo.simulator.views.MVPop2D
 	 */
 	public interface Fitness extends HasPop2D {
 	}

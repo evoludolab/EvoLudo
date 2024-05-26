@@ -36,10 +36,10 @@ import org.evoludo.geom.Point2D;
 
 /**
  * {@link org.evoludo.simulator.modules.Module Module}s that implement the
- * {@code HasS3} interface include a graphical view that depicts the
+ * {@code HasS3} interface request a graphical view to visualize the
  * mean state of the population in the simplex \(S_3\) as a
- * function of time in their GUI: {@link org.evoludo.simulator.S3}
- * for GWT and {@link org.evoludo.simulator.MVDS3} for JRE.
+ * function of time in their GUI: {@link org.evoludo.simulator.views.S3}
+ * for GWT and {@link org.evoludo.simulator.views.MVDS3} for JRE.
  * <p>
  * <strong>Important:</strong> Implementations have to be agnostic of the
  * runtime environment (JRE vs GWT).
@@ -71,8 +71,6 @@ public interface HasS3 {
 
 	/**
 	 * Interface for providing custom mappings from data to the S3 simplex.
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public static interface Data2S3 {
 

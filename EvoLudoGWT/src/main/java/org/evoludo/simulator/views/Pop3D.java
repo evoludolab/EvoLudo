@@ -54,18 +54,34 @@ import com.google.gwt.user.client.Command;
 import thothbot.parallax.core.shared.materials.MeshLambertMaterial;
 
 /**
+ * The view to display configuration of the current state of the model in 3D.
+ * The visual representation depends on the geometry of the model. Lattice
+ * structures have a fixed layout but all other strutures are dynamically
+ * generated through a process insipired by the physical arrangement of charged
+ * spheres that are connected by springs. The spheres represent members of the
+ * population and the springs represent their interaction (or competition)
+ * neighbourhood. The size of the sphere scales with the size of the
+ * individual's neighbourhood. Moreover, the colour of the spheres reflects the
+ * state of the individual, for example their trait or fitness.
  *
  * @author Christoph Hauert
  */
 public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGraph3D> {
 
+	/**
+	 * Construct a new view to display the configuration of the current state of the
+	 * EvoLudo model in 3D.
+	 * 
+	 * @param engine the pacemeaker for running the model
+	 * @param type   the type of data to display
+	 */
 	public Pop3D(EvoLudoGWT engine, Model.Data type) {
 		super(engine, type);
 	}
 
 	@Override
 	public void activate() {
-		if( isActive )
+		if (isActive)
 			return;
 		prepare();
 		super.activate();
@@ -74,15 +90,15 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 	@Override
 	public void reset(boolean hard) {
 		super.reset(hard);
-		if( !isActive ) {
-			for( PopGraph3D graph : graphs)
+		if (!isActive) {
+			for (PopGraph3D graph : graphs)
 				graph.invalidate();
 			return;
 		}
 		// prepare initializes or starts suspended animation
 		hard |= prepare();
 		if (hard) {
-			for( PopGraph3D graph : graphs)
+			for (PopGraph3D graph : graphs)
 				graph.reset();
 		}
 		update(hard);
@@ -94,18 +110,24 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		update();
 	}
 
+	/**
+	 * Prepare the 3D view for the current model. This includes the creation of the
+	 * graph(s) and the initialization of the color map.
+	 * 
+	 * @return {@code true} if the view was successfully initialized
+	 */
 	private boolean prepare() {
 		boolean hard = false;
 		int nGraphs = 0;
 		Geometry geoDE = null;
-		switch( model.getModelType() ) {
+		switch (model.getModelType()) {
 			case PDE:
-				geoDE = ((Model.PDE)model).getGeometry();
+				geoDE = ((Model.PDE) model).getGeometry();
 				//$FALL-THROUGH$
 			case ODE:
 			case SDE:
 				nGraphs = 1;
-				if( graphs.size()!=nGraphs ) {
+				if (graphs.size() != nGraphs) {
 					hard = true;
 					destroyGraphs();
 					Module module = engine.getModule();
@@ -122,21 +144,24 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 				break;
 			case IBS:
 				// how to deal with distinct interaction/competition geometries?
-				// - currently two separate graphs are shown one for the interaction and the other for the competition geometry
-				// - alternatively links could be drawn in different colors (would need to revise network layout routines)
-				// - another alternative is to add context menu to toggle between the different link sets (could be difficult if one is a lattice...)
+				// - currently two separate graphs are shown one for the interaction and the
+				// other for the competition geometry
+				// - alternatively links could be drawn in different colors (would need to
+				// revise network layout routines)
+				// - another alternative is to add context menu to toggle between the different
+				// link sets (could be difficult if one is a lattice...)
 				ArrayList<? extends Module> species = engine.getModule().getSpecies();
-				for( Module module : species )
-					nGraphs += Geometry.displayUniqueGeometry(module)?1:2;
+				for (Module module : species)
+					nGraphs += Geometry.displayUniqueGeometry(module) ? 1 : 2;
 
-				if( graphs.size()!=nGraphs ) {
+				if (graphs.size() != nGraphs) {
 					hard = true;
 					destroyGraphs();
-					for( Module module : species ) {
+					for (Module module : species) {
 						PopGraph3D graph = new PopGraph3D(this, module);
 						wrapper.add(graph);
 						graphs.add(graph);
-						if( !Geometry.displayUniqueGeometry(module) ) {
+						if (!Geometry.displayUniqueGeometry(module)) {
 							graph = new PopGraph3D(this, module);
 							wrapper.add(graph);
 							graphs.add(graph);
@@ -145,17 +170,16 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 						}
 					}
 					gRows = species.size();
-					if( gRows*gCols==2 ) {
+					if (gRows * gCols == 2) {
 						// always arrange horizontally if only two graphs
 						gRows = 1;
 						gCols = 2;
 					}
-					int width = 100/gCols;
-					int height = 100/gRows;
-					for( PopGraph3D graph : graphs )
-						graph.setSize(width+"%", height+"%");
-				}
-				else {
+					int width = 100 / gCols;
+					int height = 100 / gRows;
+					for (PopGraph3D graph : graphs)
+						graph.setSize(width + "%", height + "%");
+				} else {
 					// start animation in preparation of activation
 					for (PopGraph3D graph : graphs)
 						graph.animate();
@@ -174,12 +198,13 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 			default:
 		}
 		boolean noWarnings = true;
-		// IMPORTANT: to avoid problems with WebGL and 3D rendering, each graph needs to have its own color map
+		// IMPORTANT: to avoid problems with WebGL and 3D rendering, each graph needs to
+		// have its own color map
 		Model.Type mt = model.getModelType();
-		if( mt.equals(Model.Type.ODE) || mt.equals(Model.Type.SDE) ) {
+		if (mt.equals(Model.Type.ODE) || mt.equals(Model.Type.SDE)) {
 			// ODE or SDE model (no geometry and thus no population)
-			for( PopGraph3D graph : graphs )
-				graph.displayMessage("No view available ("+mt.toString()+" solver)");
+			for (PopGraph3D graph : graphs)
+				graph.displayMessage("No view available (" + mt.toString() + " solver)");
 			return hard;
 		}
 		org.evoludo.simulator.models.Model.Continuous cmodel = null;
@@ -189,85 +214,87 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		else
 			dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
 
-		for( PopGraph3D graph : graphs ) {
+		for (PopGraph3D graph : graphs) {
 			ColorMap<MeshLambertMaterial> cMap = null;
 			Module module = graph.getModule();
-			switch( type ) {
+			switch (type) {
 				case STRATEGY:
 					if (cmodel != null) {
 						ColorModelType cmt = engine.getColorModelType();
 						int nTraits = module.getNTraits();
-						if( cmt==ColorModelType.DISTANCE ) {
-							cMap = new ColorMap3D.Gradient1D(new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
+						if (cmt == ColorModelType.DISTANCE) {
+							cMap = new ColorMap3D.Gradient1D(
+									new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
 							break;
 						}
-						switch( nTraits ) {
+						switch (nTraits) {
 							case 1:
 								// set hue range: min = red, max = blue
-								cMap = new ColorMap3D.Hue(0.0, 2.0/3.0, 500);
+								cMap = new ColorMap3D.Hue(0.0, 2.0 / 3.0, 500);
 								break;
 							case 2:
 								Color[] tColors = module.getTraitColors();
 								cMap = new ColorMap3D.Gradient2D(tColors[0], tColors[1], Color.BLACK, 50);
 								break;
 							default:
-								if( cmt==ColorModelType.DISTANCE ) {
-									cMap = new ColorMap3D.Gradient1D(new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
+								if (cmt == ColorModelType.DISTANCE) {
+									cMap = new ColorMap3D.Gradient1D(
+											new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
 									break;
 								}
 								Color[] primaries = new Color[nTraits];
 								System.arraycopy(module.getTraitColors(), 0, primaries, 0, nTraits);
 								cMap = new ColorMap3D.GradientND(primaries);
-								if( cmt!=ColorModelType.DISTANCE ) {
+								if (cmt != ColorModelType.DISTANCE) {
 									// log warning only once in case there are multiple species
-									if( noWarnings ) {
+									if (noWarnings) {
 										noWarnings = false;
-										logger.warning("display of >2 continuous traits not (yet) implemented - coloring trait distance");
+										logger.warning(
+												"display of >2 continuous traits not (yet) implemented - coloring trait distance");
 									}
 									engine.setColorModelType(ColorModelType.DISTANCE);
 								}
 								break;
 						}
-					}
-					else {
-						if( model.getModelType() == Model.Type.PDE ) {
+					} else {
+						if (model.getModelType() == Model.Type.PDE) {
 							int nTraits = module.getNTraits();
 							Color[] colors = module.getTraitColors();
-							int dep = ((HasDE)module).getDependent();
+							int dep = ((HasDE) module).getDependent();
 							if (nTraits == 2 && dep >= 0)
 								cMap = new ColorMap3D.Gradient1D(colors[dep], colors[(dep + 1) % nTraits], 100);
 							else
 								cMap = new ColorMap3D.Gradient2D(colors, dep, 100);
-						}
-						else
-							cMap = new ColorMap3D.Index(module.getTraitColors(), (int)(0.75 * 255));
+						} else
+							cMap = new ColorMap3D.Index(module.getTraitColors(), (int) (0.75 * 255));
 					}
 					break;
 				case FITNESS:
 					ColorMap.Gradient1D<MeshLambertMaterial> cMap1D = new ColorMap3D.Gradient1D(
-						new Color[] { ColorMap.addAlpha(Color.BLACK, 220), ColorMap.addAlpha(Color.GRAY, 220),
-								ColorMap.addAlpha(Color.YELLOW, 220), ColorMap.addAlpha(Color.RED, 220) },
-						500);
+							new Color[] { ColorMap.addAlpha(Color.BLACK, 220), ColorMap.addAlpha(Color.GRAY, 220),
+									ColorMap.addAlpha(Color.YELLOW, 220), ColorMap.addAlpha(Color.RED, 220) },
+							500);
 					cMap = cMap1D;
 					// cMap1D.setRange(module.getMinFitness(), module.getMaxFitness());
 					int tag = graph.getModule().getID();
 					cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
-					if( model.getModelType() == Model.Type.IBS ) {
+					if (model.getModelType() == Model.Type.IBS) {
 						Map2Fitness map2fit = module.getMapToFitness();
 						if (cmodel != null) {
-// hardcoded colors for min/max mono scores
-							cMap1D.setColor(map2fit.map(cmodel.getMinMonoScore(tag)), ColorMap.addAlpha(Color.BLUE.darker(), 220));
-							cMap1D.setColor(map2fit.map(cmodel.getMaxMonoScore(tag)), ColorMap.addAlpha(Color.BLUE.brighter(), 220));
-						}
-						else if (dmodel != null) {
+							// hardcoded colors for min/max mono scores
+							cMap1D.setColor(map2fit.map(cmodel.getMinMonoScore(tag)),
+									ColorMap.addAlpha(Color.BLUE.darker(), 220));
+							cMap1D.setColor(map2fit.map(cmodel.getMaxMonoScore(tag)),
+									ColorMap.addAlpha(Color.BLUE.brighter(), 220));
+						} else if (dmodel != null) {
 							// mark homogeneous fitness values by pale color
 							Color[] pure = module.getTraitColors();
 							int nMono = module.getNTraits();
 							assert dmodel != null;
-							for( int n=0; n<nMono; n++ ) 
-								cMap1D.setColor(map2fit.map(dmodel.getMonoScore(tag, n)), 
-										new Color(Math.max(pure[n].getRed(), 127), 
-												Math.max(pure[n].getGreen(), 127), 
+							for (int n = 0; n < nMono; n++)
+								cMap1D.setColor(map2fit.map(dmodel.getMonoScore(tag, n)),
+										new Color(Math.max(pure[n].getRed(), 127),
+												Math.max(pure[n].getGreen(), 127),
 												Math.max(pure[n].getBlue(), 127), 220));
 						}
 					}
@@ -275,7 +302,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 				default:
 					break;
 			}
-			if( cMap==null )
+			if (cMap == null)
 				throw new Error("MVPop3D: ColorMap not initialized - needs attention!");
 			graph.setColorMap(module.processColorMap(cMap));
 		}
@@ -284,11 +311,11 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 
 	@Override
 	public boolean isFullscreenSupported() {
-		if( !super.isFullscreenSupported() )
+		if (!super.isFullscreenSupported())
 			return false;
 		// fullscreen must be supported by all graphs
-		for( PopGraph3D graph : graphs )
-			if( !graph.isFullscreenSupported() ) 
+		for (PopGraph3D graph : graphs)
+			if (!graph.isFullscreenSupported())
 				return false;
 		return true;
 	}
@@ -379,12 +406,12 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 				graph.setVR(false);
 			}
 		}
-		super.populateContextMenu(menu);		
+		super.populateContextMenu(menu);
 	}
 
 	@Override
 	protected ExportType[] exportTypes() {
 		return new ExportType[] { ExportType.PNG };
-//		return new ExportType[] { ExportType.SVG, ExportType.PNG };
+		// return new ExportType[] { ExportType.SVG, ExportType.PNG };
 	}
 }

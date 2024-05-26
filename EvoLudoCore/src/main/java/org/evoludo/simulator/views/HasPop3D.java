@@ -34,9 +34,9 @@ package org.evoludo.simulator.views;
 
 /**
  * {@link org.evoludo.simulator.modules.Module Module}s that implement the
- * {@code HasPop3D} interface include a graphical view that depicts a 3D
+ * {@code HasPop3D} interface request a graphical view to visualize a 3D
  * representation of the geomtery of the population in their GUI:
- * {@link org.evoludo.simulator.MVPop3D} for GWT and none for JRE
+ * {@link org.evoludo.simulator.views.Pop3D} for GWT and none for JRE
  * ({@code java3d} has long been retired).
  * <p>
  * <strong>Important:</strong> Implementations have to be agnostic of the
@@ -51,13 +51,10 @@ public abstract interface HasPop3D {
 	 * {@code HasPop3D.Strategy} interface include 2D graphical visualizations of
 	 * the geometry of the population where nodes display the color coded strategy
 	 * of each individual. For discrete modules each trait has a distinct colour,
-	 * whereas
-	 * for continuous modules the traits are shown on a color gradient between the
-	 * minimum and maximum trait values.
+	 * whereas for continuous modules the traits are shown on a color gradient
+	 * between the minimum and maximum trait values.
 	 * 
-	 * @see org.evoludo.simulator.MVPop3D
-	 * 
-	 * @author Christoph Hauert
+	 * @see org.evoludo.simulator.views.Pop3D
 	 */
 	public interface Strategy extends HasPop3D {
 	}
@@ -69,9 +66,7 @@ public abstract interface HasPop3D {
 	 * each individual. Fitness values are shown on a color gradient between the
 	 * minimum and maximum scores/payoffs/fitness.
 	 * 
-	 * @see org.evoludo.simulator.MVPop3D
-	 * 
-	 * @author Christoph Hauert
+	 * @see org.evoludo.simulator.views.Pop3D
 	 */
 	public interface Fitness extends HasPop3D {
 	}

@@ -50,11 +50,27 @@ import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 
 /**
+ * The view to display configuration of the current state of the model in 2D.
+ * The visual representation depends on the geometry of the model. Lattice
+ * structures have a fixed layout but all other strutures are dynamically
+ * generated through a process insipired by the physical arrangement of charged
+ * spheres that are connected by springs. The spheres represent members of the
+ * population and the springs represent their interaction (or competition)
+ * neighbourhood. The size of the sphere scales with the size of the
+ * individual's neighbourhood. Moreover, the colour of the spheres reflects the
+ * state of the individual, for example their trait or fitness.
  *
  * @author Christoph Hauert
  */
 public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 
+	/**
+	 * Construct a new view to display the configuration of the current state of the
+	 * EvoLudo model in 2D.
+	 * 
+	 * @param engine the pacemeaker for running the model
+	 * @param type   the type of data to display
+	 */
 	public Pop2D(EvoLudoGWT engine, Model.Data type) {
 		super(engine, type);
 	}

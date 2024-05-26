@@ -34,11 +34,11 @@ package org.evoludo.simulator.views;
 
 /**
  * {@link org.evoludo.simulator.modules.Module Module}s that implement the
- * {@code HasDistribution} interface include a graphical view that depicts the
+ * {@code HasDistribution} interface request a graphical view to visualize the
  * density distribution of data in multiple dimensions in their GUI:
- * {@link org.evoludo.simulator.MVDistribution} for GWT and
- * {@link org.evoludo.simulator.MVCDistr},
- * {@link org.evoludo.simulator.MVC2Distr} for JRE modules with one or two
+ * {@link org.evoludo.simulator.views.Distribution} for GWT and
+ * {@link org.evoludo.simulator.views.MVCDistr},
+ * {@link org.evoludo.simulator.views.MVC2Distr} for JRE modules with one or two
  * continuous traits, respectively.
  * <p>
  * <strong>Important:</strong> Implementations have to be agnostic of the

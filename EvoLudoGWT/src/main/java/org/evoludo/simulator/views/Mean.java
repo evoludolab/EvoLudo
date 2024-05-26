@@ -48,19 +48,36 @@ import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
 
 /**
+ * The view to display graphs with time series data. Typically this is used to
+ * track the mean fitness or configuration of the current EvoLudo model.
  *
  * @author Christoph Hauert
  */
 public class Mean extends AbstractView implements Shifter, Zoomer {
 
-	// NOTE: this is a bit of a hack that allows us to use graphs as Set<LineGraph>
-	// here
-	// but as Set<AbstractGraph> in super classes. Saves a lot of ugly casting
+	/**
+	 * The list of graphs that display the time series data.
+	 * 
+	 * @evoludo.impl {@code List<LineGraph> graphs} is deliberately hiding
+	 *               {@code List<AbstractGraph> graphs} from the superclass because
+	 *               it saves a lot of ugly casting. Note that the two fields point
+	 *               to one and the same object.
+	 */
 	@SuppressWarnings("hiding")
 	protected List<LineGraph> graphs;
 
-	double[] state, tmp;
+	/**
+	 * The state of the model at the current time.
+	 */
+	double[] state;
 
+	/**
+	 * Construct a new view to display the time series data of the current EvoLudo
+	 * model.
+	 * 
+	 * @param engine the pacemeaker for running the model
+	 * @param type   the type of data to display
+	 */
 	@SuppressWarnings("unchecked")
 	public Mean(EvoLudoGWT engine, Model.Data type) {
 		super(engine, type);
@@ -117,7 +134,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 		// index of trait in continuous models
 		int idx = 0;
 		// make sure we have enough temporary storage for all scenarios
-		tmp = new double[2 * model.getNMean() + 1];
+		state = new double[2 * model.getNMean() + 1];
 		for (LineGraph graph : graphs) {
 			AbstractGraph.GraphStyle style = graph.getStyle();
 			Module module = graph.getModule();
@@ -243,40 +260,40 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 					case STRATEGY:
 						if (newmod) {
 							idx = 0;
-							model.getMeanTraits(id, tmp);
+							model.getMeanTraits(id, state);
 						}
 						// mean cannot be null here
 						if (cmodel) {
 							state = new double[4];
-							double m = tmp[idx];
-							double s = tmp[idx + nState];
+							double m = state[idx];
+							double s = state[idx + nState];
 							state[1] = m;
 							state[2] = m - s;
 							state[3] = m + s;
 							idx++;
 						} else {
 							state = new double[nState + 1];
-							System.arraycopy(tmp, 0, state, 1, nState);
+							System.arraycopy(state, 0, state, 1, nState);
 						}
 						state[0] = newtime;
 						graph.addData(state, force);
 						break;
 					case FITNESS:
 						if (newmod) {
-							model.getMeanFitness(id, tmp);
+							model.getMeanFitness(id, state);
 						}
 						// module cannot be null here but make compiler happy
 						if (cmodel) {
 							// fitness graph has only a single panel
 							state = new double[4];
-							double m = tmp[0];
-							double s = tmp[1];
+							double m = state[0];
+							double s = state[1];
 							state[1] = m;
 							state[2] = m - s;
 							state[3] = m + s;
 						} else {
 							state = new double[nState + 1];
-							System.arraycopy(tmp, 0, state, 1, nState);
+							System.arraycopy(state, 0, state, 1, nState);
 						}
 						state[0] = newtime;
 						graph.addData(state, force);

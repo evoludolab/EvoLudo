@@ -74,20 +74,28 @@ import com.google.gwt.user.client.ui.ProvidesResize;
 import com.google.gwt.user.client.ui.RequiresResize;
 
 /**
+ * The parent class of all panels that provide graphical representations the
+ * state of the current EvoLudo model.
  *
  * @author Christoph Hauert
  */
 public abstract class AbstractView extends Composite implements RequiresResize, ProvidesResize, FullscreenChangeHandler,
 		AbstractGraph.Controller, HasFullscreenChangeHandlers {
 
+	/**
+	 * The reference to the fullscreen event handler.
+	 */
 	protected HandlerRegistration fullscreenHandler;
 
+	/**
+	 * The reference to the EvoLudo engine that manages the simulation.
+	 */
 	protected EvoLudoGWT engine;
 
 	/**
 	 * The reference to the model that supplies the data for this graph.
 	 */
-	Model model; 
+	Model model;
 
 	/**
 	 * The type of data shown in this graph.
@@ -98,15 +106,43 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * Logger for keeping track of and reporting events and issues.
 	 */
 	protected Logger logger;
-	protected List<? extends AbstractGraph<?>> graphs = new ArrayList<>();
-	protected int gRows = 1, gCols = 1;
 
+	/**
+	 * The list of graphs that are displayed in this view.
+	 */
+	protected List<? extends AbstractGraph<?>> graphs = new ArrayList<>();
+
+	/**
+	 * The number of rows of graphs in this view.
+	 */
+	int gRows = 1;
+
+	/**
+	 * The number of columns of graphs in this view.
+	 */
+	int gCols = 1;
+
+	/**
+	 * The flag to indicate whether this view is currently active.
+	 */
 	protected boolean isActive = false;
+
+	/**
+	 * The timestamp of the last update of this view.
+	 */
 	protected double timestamp;
 
-	// widget elements
+	/**
+	 * The GWT widget that contains the graphical representations of the data.
+	 */
 	ComplexPanel wrapper;
 
+	/**
+	 * The constructor for the abstract view.
+	 * 
+	 * @param engine the EvoLudo engine
+	 * @param type   the type of data shown in this view
+	 */
 	public AbstractView(EvoLudoGWT engine, Model.Data type) {
 		this.engine = engine;
 		this.type = type;
@@ -116,25 +152,48 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		initWidget(wrapper);
 	}
 
+	/**
+	 * Create the widget that will contain the graphical representations of the
+	 * data.
+	 * 
+	 * @evoludo.note LayoutPanel would be a nice way to continue the onResize
+	 *               cascade but incompatible with current implementation of context
+	 *               menu and tooltips
+	 */
 	public void createWidget() {
-//Note: LayoutPanel would be a nice way to continue the onResize cascade but incompatible with current implementation of context menu and tooltips
 		wrapper = new FlowPanel();
 		wrapper.getElement().getStyle().setPosition(Position.RELATIVE);
 	}
 
+	/**
+	 * Get the name of this view. This is used to dynamically build the view
+	 * selector.
+	 * 
+	 * @return the name of this view
+	 */
 	public abstract String getName();
 
+	/**
+	 * Load the view. This is called for modules and models that implement this
+	 * view. This is independent of the activation of the view.
+	 */
 	public void load() {
-		// set some defaults
 		gRows = 1;
 		gCols = 1;
 	}
 
+	/**
+	 * Unload the view. This is called when changing the module or model that
+	 * implement this view. This is independent of the activation of the view.
+	 */
 	public void unload() {
 		destroyGraphs();
 		isActive = false;
 	}
 
+	/**
+	 * Destroy all graphs in this view and free up resources.
+	 */
 	protected void destroyGraphs() {
 		for (AbstractGraph<?> graph : graphs)
 			graph.removeFromParent();
@@ -157,6 +216,10 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		return logger;
 	}
 
+	/**
+	 * Activate the view. This is called when the view is selected in the view
+	 * selector.
+	 */
 	public void activate() {
 		if (isActive)
 			return;
@@ -169,16 +232,10 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		setMode(getMode());
 	}
 
-	public Mode getMode() {
-		return Mode.DYNAMICS;
-	}
-
-	public void setMode(Mode mode) {
-		// if no module specified there is no model either
-		if (model != null)
-			model.requestMode(mode);
-	}
-
+	/**
+	 * Deactivate the view. This is called when another view is selected in the view
+	 * selector.
+	 */
 	public void deactivate() {
 		isActive = false;
 		for (AbstractGraph<?> graph : graphs)
@@ -187,43 +244,131 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 			fullscreenHandler.removeHandler();
 	}
 
+	/**
+	 * Clear the view.
+	 */
 	public void clear() {
 	}
 
+	/**
+	 * Get the mode of this view. The graphical visualizations can request different
+	 * modes for running the model. The default mode is {@link Mode#DYNAMICS} to
+	 * generate a time series of the states of the model. Some views may digest data
+	 * and, for example, show statistics such as fixation probabilities or times, in
+	 * which case the mode {@link Mode#STATISTICS} should be requested.
+	 * 
+	 * @return the mode of this view
+	 * 
+	 * @see Mode
+	 */
+	public Mode getMode() {
+		return Mode.DYNAMICS;
+	}
+
+	/**
+	 * Set the mode of the model to {@code mode}. Does nothing if the model does not
+	 * support the requested mode.
+	 * 
+	 * @param mode the mode to set
+	 * @return {@code true} if the mode was successfully set
+	 */
+	public boolean setMode(Mode mode) {
+		// if no module specified there is no model either
+		if (model == null)
+			return false;
+		return model.requestMode(mode);
+	}
+
+	/**
+	 * Get the status of this view. Views that aggregate data may want to provide
+	 * custom status information. HTML formatting is acceptable.
+	 * 
+	 * @return the status of this view
+	 */
 	public String getStatus() {
 		return getStatus(false);
 	}
 
+	/**
+	 * Get the status of this view. Views that aggregate data may want to provide
+	 * custom status information. HTML formatting is acceptable. Some status updates
+	 * may be expensive to compute and views may decide to ignore the
+	 * {@code getStatus} request, except if {@code force} is {@code true}.
+	 * 
+	 * @param force whether to force an update of the status
+	 * @return the status of this view
+	 */
 	public String getStatus(boolean force) {
 		return null;
 	}
 
+	/**
+	 * Get the counter of of view. Views that aggregate data may want to provide
+	 * their own counter, e.g. the number of statistics samples instead of time
+	 * steps.
+	 * 
+	 * @return the custom counter of this view
+	 */
 	public String getCounter() {
 		return null;
 	}
 
+	/**
+	 * Called when a module has been restored.
+	 * 
+	 * @see org.evoludo.simulator.models.MilestoneListener#modelRestored()
+	 *      MilestoneListener.modelRestored()
+	 */
 	public void restored() {
 		timestamp = -Double.MAX_VALUE;
-		for( AbstractGraph<?> graph : graphs )
+		for (AbstractGraph<?> graph : graphs)
 			graph.reset();
 	}
 
-	public void reset() {
-		reset(false);
-	}
-
+	/**
+	 * Called when a module has been reset. All graphs are reset and updated if
+	 * needed, unless {@code hard} is {@code true}.
+	 * 
+	 * @param hard the flag to indicate whether to do a hard reset
+	 * 
+	 * @see org.evoludo.simulator.models.MilestoneListener#modelDidReset()
+	 *      MilestoneListener.modelDidReset()
+	 */
 	public void reset(boolean hard) {
 		timestamp = -Double.MAX_VALUE;
 	}
 
+	/**
+	 * Called when a module has been (re-)initialized.
+	 * 
+	 * @see org.evoludo.simulator.models.MilestoneListener#modelDidReinit()
+	 *      MilestoneListener.modelDidReinit()
+	 */
 	public void init() {
 		timestamp = -Double.MAX_VALUE;
 	}
 
+	/**
+	 * Called when the view needs updating. This gets called when the selected view
+	 * changed or new data is available from the model.
+	 * 
+	 * @see org.evoludo.simulator.models.ChangeListener#modelChanged(org.evoludo.simulator.models.ChangeListener.PendingAction)
+	 *      ChangeListener#modelChanged(PendingAction)
+	 */
 	public void update() {
 		update(false);
 	}
 
+	/**
+	 * Called when the view needs updating. This gets called when the selected view
+	 * changed or new data is available from the model. Views may ignore updating
+	 * requests unless {@code force} is {@code true}.
+	 * 
+	 * @param force {@code true} to force the update
+	 * 
+	 * @see org.evoludo.simulator.models.ChangeListener#modelChanged(org.evoludo.simulator.models.ChangeListener.PendingAction)
+	 *      ChangeListener#modelChanged(PendingAction)
+	 */
 	public abstract void update(boolean force);
 
 	@Override
@@ -247,12 +392,12 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	}
 
 	/**
-	 * Default implementation for synchronized zooming of multiple graphs. The 
+	 * Default implementation for synchronized zooming of multiple graphs. The
 	 * center for zooming is given by the coordinates {@code (x,y)}.
 	 * 
 	 * @param zoom the zoom factor
-	 * @param x the x-coordinate
-	 * @param y the y-coordinate
+	 * @param x    the x-coordinate
+	 * @param y    the y-coordinate
 	 * 
 	 * @see AbstractGraph.Zoomer#zoom(double, int, int)
 	 */
@@ -335,6 +480,12 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		return true;
 	}
 
+	/**
+	 * Checks if the view supports the export type {@code type}.
+	 * 
+	 * @param type the export type to check
+	 * @return {@code true} if the view supports the export type
+	 */
 	private boolean hasExportType(ExportType type) {
 		for (ExportType e : exportTypes())
 			if (e == type)
@@ -342,9 +493,10 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		return false;
 	}
 
-// note: works in Safari and Chrome; some weird scaling issues remain with Firefox
-//		 for Chrome it is important to use onfullscreenchange and not
-//		 onwebkitfullscreenchange! the two do not seem to be identical
+	// note: works in Safari and Chrome; some weird scaling issues remain with
+	// Firefox
+	// for Chrome it is important to use onfullscreenchange and not
+	// onwebkitfullscreenchange! the two do not seem to be identical
 	@Override
 	public void onFullscreenChange(FullscreenChangeEvent event) {
 		if (isFullscreen())
@@ -370,25 +522,43 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		scheduleUpdate(true);
 	}
 
+	/**
+	 * The flag to indicate whether an update is already scheduled. Subsequent
+	 * requests are ignored.
+	 */
 	private boolean updateScheduled = false;
 
-	protected void scheduleUpdate(boolean updateGUI) {
+	/**
+	 * Schedule an update of the view.
+	 * 
+	 * @param force {@code true} to force the update
+	 * 
+	 * @see #update(boolean)
+	 */
+	protected void scheduleUpdate(boolean force) {
 		if (updateScheduled)
 			return;
 		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
 			@Override
 			public void execute() {
 				// deferred updates can cause issues if in the mean time the model
-				// has changed and this view is no longer supported. if this is the 
+				// has changed and this view is no longer supported. if this is the
 				// case destroyGraphs has been called and graphs is empty.
 				if (!graphs.isEmpty())
-					update(updateGUI);
+					update(force);
 				updateScheduled = false;
 			}
 		});
 		updateScheduled = true;
 	}
 
+	/**
+	 * Get the graph at the coordinates {@code (x,y)}.
+	 * 
+	 * @param x the x-coordinate
+	 * @param y the y-coordinate
+	 * @return the graph at the coordinates {@code (x,y)}
+	 */
 	public AbstractGraph<?> getGraphAt(int x, int y) {
 		if (graphs == null)
 			return null;
@@ -398,8 +568,24 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		return null;
 	}
 
+	/**
+	 * The field to store the restore context menu.
+	 */
+	protected ContextMenuItem restoreMenu;
+
+	/**
+	 * The field to store the export submenu trigger.
+	 */
+	protected ContextMenuItem exportSubmenuTrigger;
+
+	/**
+	 * The field to store the export context submenu.
+	 */
 	protected ContextMenu exportSubmenu;
-	protected ContextMenuItem restoreMenu, exportSubmenuTrigger;
+
+	/**
+	 * The field to store the fullscreen context menu.
+	 */
 	protected ContextMenuCheckBoxItem fullscreenMenu;
 
 	@Override
@@ -461,6 +647,11 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 			exportSubmenuTrigger.setEnabled(idle);
 	}
 
+	/**
+	 * Enter or exit fullscreen mode.
+	 * 
+	 * @param fullscreen {@code true} to enter fullscreen
+	 */
 	public void setFullscreen(boolean fullscreen) {
 		if (fullscreen == isFullscreen())
 			return;
@@ -482,12 +673,16 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		};
 	}
 
-	/*
-	 * helper JSNI methods to deal with fullscreen NOTE: routines work reasonably
-	 * well with safari but not with other browsers because many aspects of the
-	 * fullscreen API are interpreted differently.
+	/**
+	 * Add a fullscreen change handler.
+	 * 
+	 * @evoludo.impl The JSNI routine works reasonably well with Safari but not with
+	 *               all other browsers because aspects of the fullscreen API are
+	 *               interpreted differently, see {@link #_jsFSCname()}.
+	 * 
+	 * @param eventname the name of the fullscreen change event
+	 * @param handler   the handler to add
 	 */
-
 	private final native void _addFullscreenChangeHandler(String eventname, FullscreenChangeHandler handler)
 	/*-{
 		$doc
@@ -498,10 +693,18 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 						}, true);
 	}-*/;
 
-	// it is awkward that the handler function needs to be specified again when
-	// removing the listener... handler must be exact copy of handler in
-	// <code>_addFullscreenChangeHandler(String eventname, FullscreenChangeHandler
-	// handler)</code>
+	/**
+	 * Add a fullscreen change handler.
+	 * 
+	 * @evoludo.impl The handler function needs to be specified again when removing
+	 *               the listener... Because we don't know how to store the handler
+	 *               returned by the JSNI method
+	 *               {@code _addFullscreenChangeHandler(String, FullscreenChangeHandler)}
+	 *               it must be exact copy of handler specification there.
+	 * 
+	 * @param eventname the name of the fullscreen change event
+	 * @param handler   the handler to add
+	 */
 	private final native void _removeFullscreenChangeHandler(String eventname, FullscreenChangeHandler handler)
 	/*-{
 		$doc
@@ -512,6 +715,11 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 						}, true);
 	}-*/;
 
+	/**
+	 * Request fullscreen mode for the element {@code ele}.
+	 * 
+	 * @param ele the element to request fullscreen mode for
+	 */
 	public static native void requestFullscreen(Element ele)
 	/*-{
 		if (ele.requestFullscreen) {
@@ -527,6 +735,9 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		}
 	}-*/;
 
+	/**
+	 * Exit fullscreen mode.
+	 */
 	public static native void exitFullscreen()
 	/*-{
 		if ($doc.exitFullscreen) {
@@ -540,6 +751,11 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		}
 	}-*/;
 
+	/**
+	 * Check if the document is in fullscreen mode.
+	 * 
+	 * @return {@code true} if the document is in fullscreen mode
+	 */
 	public final static native boolean isFullscreen()
 	/*-{
 		if (($doc.fullscreenElement != null)
@@ -587,8 +803,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * Determine name of the fullscreen change event in current web browser.
 	 * <p>
 	 * <strong>Note:</strong> Chrome implements both <code>fullscreenchange</code>
-	 * and
-	 * <code>webkitfullscreenchange</code> but with slightly different behaviour
+	 * and <code>webkitfullscreenchange</code> but with slightly different behaviour
 	 * (neither identical to Safari). <code>fullscreenchange</code> at least works
 	 * for a single graph and hence give it precedence. For Firefox scaling/resizing
 	 * issues remain as well as for Chrome with multiple graphs.
@@ -672,8 +887,16 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		 */
 		STATE("State (plist)");
 
+		/**
+		 * The title of the export type.
+		 */
 		String title;
 
+		/**
+		 * The constructor for the export type.
+		 * 
+		 * @param title the title of the export type
+		 */
 		ExportType(String title) {
 			this.title = title;
 		}
@@ -694,6 +917,11 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		return null;
 	}
 
+	/**
+	 * Export the data of the view.
+	 * 
+	 * @param type the type of data to export
+	 */
 	protected void export(ExportType type) {
 		switch (type) {
 			case SVG:
@@ -719,8 +947,14 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		setFullscreen(false);
 	}
 
+	/**
+	 * The flag to indicate whether the script for exporting SVG has been injected.
+	 */
 	private static boolean hasSVGjs = false;
 
+	/**
+	 * Export the view as a PNG image.
+	 */
 	protected void exportPNG() {
 		Canvas canvas = Canvas.createIfSupported();
 		if (canvas == null)
@@ -735,7 +969,8 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	}
 
 	/**
-	 * Get the pixel ratio of the current device. This is intended to prevent distortions on the <code>canvas</code> objects of the data views.
+	 * Get the pixel ratio of the current device. This is intended to prevent
+	 * distortions on the <code>canvas</code> objects of the data views.
 	 *
 	 * @return the pixel ratio of the current device
 	 */
@@ -744,6 +979,9 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		return $wnd.devicePixelRatio || 1;
 	}-*/;
 
+	/**
+	 * Export the view as a SVG image.
+	 */
 	protected void exportSVG() {
 		if (!hasSVGjs) {
 			// script (hopefully) needs to be injected only once
@@ -756,6 +994,12 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		_exportSVG(ctx);
 	}
 
+	/**
+	 * Export each graph in this view.
+	 * 
+	 * @param ctx   the graphical context of the canvas to export to
+	 * @param scale the scaling for the export canvas
+	 */
 	protected void export(MyContext2d ctx, int scale) {
 		int hOffset = 0;
 		int vOffset = 0;
@@ -765,11 +1009,10 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 			ctx.translate(hOffset, vOffset);
 			graph.export(ctx);
 			ctx.restore();
-			if (++count%gCols==0) {
+			if (++count % gCols == 0) {
 				hOffset = 0;
-				vOffset += scale * graph.getOffsetHeight();				
-			}
-			else
+				vOffset += scale * graph.getOffsetHeight();
+			} else
 				hOffset += scale * graph.getOffsetWidth();
 		}
 	}
@@ -780,8 +1023,8 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * @return the header as a string builder
 	 */
 	protected StringBuilder exportDataHeader() {
-		StringBuilder export = new StringBuilder("# data exported at " + 
-			DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + "\n");
+		StringBuilder export = new StringBuilder("# data exported at " +
+				DateTimeFormat.getFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + "\n");
 		export.append("# " + getName() + "\n");
 		return export;
 	}
@@ -821,7 +1064,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 			if (name != null)
 				export.append("# " + name + "\n");
 			String legend = "time";
-			for (int i=0; i<buffer.getDepth() - 1; i++) {
+			for (int i = 0; i < buffer.getDepth() - 1; i++) {
 				legend += ", " + model.getMeanName(i);
 			}
 			export.append("# " + legend + "\n");
@@ -854,18 +1097,42 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		EvoLudoWeb._export("data:text/csv;base64," + EvoLudoWeb.b64encode(export.toString()), "evoludo_traj.csv");
 	}
 
+	/**
+	 * Create a SVG context for exporting the view.
+	 * 
+	 * @param width  the width of the context
+	 * @param height the height of the context
+	 * @return the SVG context
+	 */
 	protected static native MyContext2d _createSVGContext(int width, int height) /*-{
 		return C2S(width, height);
 	}-*/;
 
+	/**
+	 * Export the SVG context. JSNI helper method.
+	 * 
+	 * @param ctx the SVG context to export
+	 */
 	protected static native void _exportSVG(Context2d ctx) /*-{
 		@org.evoludo.EvoLudoWeb::_export(Ljava/lang/String;Ljava/lang/String;)("data:image/svg+xml;charset=utf-8,"+
 			ctx.getSerializedSvg(true), "evoludo.svg");
 	}-*/;
 
+	/**
+	 * The export command triggered by the context menu entries.
+	 */
 	public class ExportCommand implements Command {
+
+		/**
+		 * The type of data to export.
+		 */
 		ExportType exportType;
 
+		/**
+		 * The constructor for the export command.
+		 * 
+		 * @param type the type of data to export
+		 */
 		public ExportCommand(ExportType type) {
 			exportType = type;
 		}

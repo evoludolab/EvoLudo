@@ -63,7 +63,8 @@ import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
 
 /**
- *
+ * Create button to launch EvoLudo lab in a semi-transparent overlay. 
+ * 
  * @author Christoph Hauert
  */
 public class EvoLudoTrigger extends PushButton {

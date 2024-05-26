@@ -53,19 +53,46 @@ import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.user.client.Command;
 
 /**
- *
+ * The view to display time series of data as a trajectory in a 2D phase plane.
+ * 
  * @author Christoph Hauert
  */
 public class Phase2D extends AbstractView {
 
+	/**
+	 * The list of graphs that display the trajectories in 2D phase planes.
+	 * 
+	 * @evoludo.impl {@code List<ParaGraph> graphs} is deliberately hiding
+	 *               {@code List<AbstractGraph> graphs} from the superclass because
+	 *               it saves a lot of ugly casting. Note that the two fields point
+	 *               to one and the same object.
+	 */
 	@SuppressWarnings("hiding")
 	protected List<ParaGraph> graphs;
-// short-cut as long as only a single ParaGraph graph is acceptable
+
+	/**
+	 * The graph that displays the trajectory in a 2D phase plane.
+	 * 
+	 * @evoludo.impl {@code ParaGraph graph} is a short-cut to {@code graphs.get(0)}
+	 *               as long as only a single graph is acceptable.
+	 */
 	protected ParaGraph graph;
+
+	/**
+	 * The current state of the model.
+	 */
 	protected double[] state;
+
+	/**
+	 * The map that transforms the current state of the model to a point on the 2D
+	 * phase plane.
+	 */
 	protected Data2Phase map;
 
 	/**
+	 * Construct a new view to display the time series data of the current EvoLudo
+	 * model as a trajectory in a 2D phase plane.
+	 * 
 	 * @param engine the pacemeaker for running the model
 	 */
 	@SuppressWarnings("unchecked")
@@ -165,6 +192,11 @@ public class Phase2D extends AbstractView {
 		timestamp = newtime;
 	}
 
+	/**
+	 * Get the label of the horizontal axis.
+	 * 
+	 * @return the label of the {@code x}-axis
+	 */
 	private String getXAxisLabel() {
 		int[] traitX = map.getTraitsX();
 		String xName = getTraitName(traitX[0]);
@@ -176,6 +208,11 @@ public class Phase2D extends AbstractView {
 		return xName + (graph.getStyle().percentX ? " frequency" : " density");
 	}
 
+	/**
+	 * Get the label of the vertical axis.
+	 * 
+	 * @return the label of the {@code y}-axis
+	 */
 	private String getYAxisLabel() {
 		int[] traitY = map.getTraitsY();
 		String yName = getTraitName(traitY[0]);
@@ -187,6 +224,13 @@ public class Phase2D extends AbstractView {
 		return yName + (graph.getStyle().percentY ? " frequency" : " density");
 	}
 
+	/**
+	 * Get the name of the trait with index {@code idx}. In multi-species modules
+	 * the species name is prepended and the index refers to traits of all species.
+	 * 
+	 * @param idx the index of the trait
+	 * @return the name of the trait
+	 */
 	private String getTraitName(int idx) {
 		Module module = engine.getModule();
 		ArrayList<? extends Module> species = module.getSpecies();
@@ -305,20 +349,66 @@ public class Phase2D extends AbstractView {
 		return new ExportType[] { ExportType.SVG, ExportType.PNG, ExportType.TRAJ_DATA };
 	}
 
-	private ContextMenuCheckBoxItem[] traitXItems, traitYItems;
-	private ContextMenu traitXMenu, traitYMenu;
+	/**
+	 * The context menu for selecting traits to display on the horizontal axis.
+	 */
+	private ContextMenuCheckBoxItem[] traitXItems;
 
+	/**
+	 * The context menu for selecting traits to display on the vertical axis.
+	 */
+	private ContextMenuCheckBoxItem[] traitYItems;
+
+	/**
+	 * The context menu trigger for selecting traits to display on the horizontal axis.
+	 */
+	private ContextMenu traitXMenu;
+	
+	/**
+	 * The context menu trigger for selecting traits to display on the vertical axis.
+	 */
+	private ContextMenu traitYMenu;
+
+	/**
+	 * Command to toggle the inclusion of a trait on the phase plane axis.
+	 */
 	public class TraitCommand implements Command {
+
+		/**
+		 * The index of the horizontal axis.
+		 */
 		public static final int X_AXIS = 0;
+
+		/**
+		 * The index of the vertical axis.
+		 */
 		public static final int Y_AXIS = 1;
+
+		/**
+		 * The index of the trait to show on the axis.
+		 */	
 		int trait = -1;
+
+		/**
+		 * The axis that this command affects.
+		 */
 		int axis = -1;
 
+		/**
+		 * Construct a new command to toggle the inclusion of a trait on either one of the phase plane
+		 * axis.
+		 * 
+		 * @param trait the index of the trait to show/hide on the axis
+		 * @param axis the index of the axis
+		 */
 		public TraitCommand(int trait, int axis) {
 			this.trait = trait;
 			this.axis = axis;
 		}
 
+		/**
+		 * Toggle the inclusion of the trait on the axis.
+		 */
 		@Override
 		public void execute() {
 			if(axis == X_AXIS)
@@ -328,6 +418,14 @@ public class Phase2D extends AbstractView {
 			Phase2D.this.reset(false);
 		}
 
+		/**
+		 * Toggle the inclusion of traits that are selected in {@code items} on the
+		 * current axis.
+		 * 
+		 * @param states the list of trait indices that are displayed on current axis
+		 * @param items  the list of context menu items
+		 * @return the updated list of trait indices
+		 */
 		int[] toggleState(int[] states, ContextMenuCheckBoxItem[] items) {
 			int idx = ArrayMath.first(states, trait);
 			if (idx < 0) {

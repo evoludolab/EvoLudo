@@ -52,6 +52,7 @@ import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.Widget;
 
 /**
+ * The view to display the console log.
  *
  * @author Christoph Hauert
  */

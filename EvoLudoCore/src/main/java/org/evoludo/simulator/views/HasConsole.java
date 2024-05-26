@@ -34,9 +34,9 @@ package org.evoludo.simulator.views;
 
 /**
  * {@link org.evoludo.simulator.modules.Module Module}s that implement the
- * {@code HasConsole} interface include console view in their GUI
- * {@link org.evoludo.simulator.MVConsole} for GWT and
- * {@link org.evoludo.simulator.MVConsole} for JRE.
+ * {@code HasConsole} interface request a console view in their GUI
+ * {@link org.evoludo.simulator.views.Console} for GWT and
+ * {@link org.evoludo.simulator.views.MVConsole} for JRE.
  * <p>
  * <strong>Important:</strong> Implementations have to be agnostic of the
  * runtime environment (JRE vs GWT).

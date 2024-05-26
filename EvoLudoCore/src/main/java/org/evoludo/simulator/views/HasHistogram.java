@@ -38,11 +38,11 @@ import org.evoludo.simulator.models.Model;
 
 /**
  * {@link org.evoludo.simulator.modules.Module Module}s that implement the
- * {@code HasHistogram} interface include a graphical view that depicts a
+ * {@code HasHistogram} interface request a graphical view to depicts a
  * histogram of data in their GUI:
- * {@link org.evoludo.simulator.MVHistogram} in GWT and
- * {@link org.evoludo.simulator.MVCTraitHistogram},
- * {@link org.evoludo.simulator.MVFitHistogram} in JRE for a single
+ * {@link org.evoludo.simulator.views.Histogram} in GWT and
+ * {@link org.evoludo.simulator.views.MVCTraitHistogram},
+ * {@link org.evoludo.simulator.views.MVFitHistogram} in JRE for a single
  * continuous trait or the fitness distribution, respectively.
  * <p>
  * <strong>Important:</strong> Implementations have to be agnostic of the
@@ -90,10 +90,8 @@ public abstract interface HasHistogram {
 	 * {@code HasHistogram.Strategy} interface include histograms of strategy
 	 * distributions. Currently this only applies to continuous modules.
 	 * 
-	 * @see org.evoludo.simulator.MVHistogram
-	 * @see org.evoludo.simulator.MVCTraitHistogram
-	 * 
-	 * @author Christoph Hauert
+	 * @see org.evoludo.simulator.views.Histogram
+	 * @see org.evoludo.simulator.views.MVCTraitHistogram
 	 */
 	public interface Strategy extends HasHistogram {
 	}
@@ -104,10 +102,8 @@ public abstract interface HasHistogram {
 	 * distributions. For discrete modules the distribution is show for each trait
 	 * separately.
 	 * 
-	 * @see org.evoludo.simulator.MVHistogram
-	 * @see org.evoludo.simulator.MVFitHistogram
-	 * 
-	 * @author Christoph Hauert
+	 * @see org.evoludo.simulator.views.Histogram
+	 * @see org.evoludo.simulator.views.MVFitHistogram
 	 */
 	public interface Fitness extends HasHistogram {
 	}
@@ -119,9 +115,7 @@ public abstract interface HasHistogram {
 	 * separately for interaction and reference graphs, as well as for incoming and
 	 * outgoing links (for directed graphs).
 	 * 
-	 * @see org.evoludo.simulator.MVHistogram
-	 * 
-	 * @author Christoph Hauert
+	 * @see org.evoludo.simulator.views.Histogram
 	 */
 	public interface Degree extends HasHistogram {
 	}
@@ -132,9 +126,7 @@ public abstract interface HasHistogram {
 	 * running statistics over multiple runs and include histograms of fixation
 	 * probabilities.
 	 * 
-	 * @see org.evoludo.simulator.Histogram
-	 * 
-	 * @author Christoph Hauert
+	 * @see org.evoludo.simulator.views.Histogram
 	 */
 	public interface StatisticsProbability extends HasHistogram {
 	}
@@ -144,9 +136,7 @@ public abstract interface HasHistogram {
 	 * {@code HasHistogram.StatisticsTime} interface must be capable of running
 	 * statistics over multiple runs and include histograms of fixation times.
 	 * 
-	 * @see org.evoludo.simulator.Histogram
-	 * 
-	 * @author Christoph Hauert
+	 * @see org.evoludo.simulator.views.Histogram
 	 */
 	public interface StatisticsTime extends HasHistogram {
 	}
@@ -158,9 +148,7 @@ public abstract interface HasHistogram {
 	 * (frequencies of strategies) are visited, which eventually converges to
 	 * a stationary distributions in ergodic settings.
 	 * 
-	 * @see org.evoludo.simulator.Histogram
-	 * 
-	 * @author Christoph Hauert
+	 * @see org.evoludo.simulator.views.Histogram
 	 */
 	public interface StatisticsStationary extends HasHistogram {
 	}

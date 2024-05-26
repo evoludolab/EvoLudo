@@ -44,16 +44,38 @@ import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
 
 /**
+ * The view to display time series of data as a trajectory on the \(S_3\)
+ * simplex.
  *
  * @author Christoph Hauert
  */
 public class S3 extends AbstractView {
 
+	/**
+	 * The list of graphs that display the trajectories in 2D phase planes.
+	 * 
+	 * @evoludo.impl {@code List<S3Graph> graphs} is deliberately hiding
+	 *               {@code List<AbstractGraph> graphs} from the superclass because
+	 *               it saves a lot of ugly casting. Note that the two fields point
+	 *               to one and the same object.
+	 */
 	@SuppressWarnings("hiding")
 	protected List<S3Graph> graphs;
-	protected double[] state, init;
 
 	/**
+	 * The current state of the model. The end point of the current trajectory.
+	 */
+	protected double[] state;
+
+	/**
+	 * The initial state of the model. The start point of the current trajectory.
+	 */
+	protected double[] init;
+
+	/**
+	 * Construct a new view to display the time series data of the current EvoLudo
+	 * model as a trajectory in a \(S_3\) simplex.
+	 * 
 	 * @param engine the pacemeaker for running the model
 	 */
 	@SuppressWarnings("unchecked")
@@ -108,8 +130,8 @@ public class S3 extends AbstractView {
 				// set map for converting data to S3 coordinates
 				HasS3.Data2S3 map = ((HasS3) module).getS3Map(role);
 				if (map != null)
-					graph.setMap(map);	
-				map = graph.getMap();	
+					graph.setMap(map);
+				map = graph.getMap();
 				// show first three active traits
 				boolean[] active = module.getActiveTraits();
 				int idx = 0;

@@ -167,7 +167,7 @@ public interface MultiView {
 	 *
 	 * @return the array of data types that can be reported by this module
 	 * 
-	 * @see org.evoludo.simulator.EvoLudoWeb#updateViews
+	 * @see org.evoludo.simulator.EvoLudoLab#updateViews
 	 */
 	public static DataTypes[] getAvailableDataTypes(Module module, Model model) {
 		ArrayList<DataTypes> dataOutputs = new ArrayList<>();

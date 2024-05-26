@@ -34,11 +34,11 @@ package org.evoludo.simulator.views;
 
 /**
  * {@link org.evoludo.simulator.modules.Module Module}s that implement the
- * {@code HasMean} interface include a graphical view that depicts the
- *  mean state of the population as a function of time in their GUI:
- * {@link org.evoludo.simulator.MVMean} for GWT and
- * {@link org.evoludo.simulator.MVDMean},
- * {@link org.evoludo.simulator.MVCMean} for JRE.
+ * {@code HasMean} interface request a graphical view to visualize the
+ * mean state of the population as a function of time in their GUI:
+ * {@link org.evoludo.simulator.views.Mean} for GWT and
+ * {@link org.evoludo.simulator.views.MVDMean},
+ * {@link org.evoludo.simulator.views.MVCMean} for JRE.
  * <p>
  * <strong>Important:</strong> Implementations have to be agnostic of the
  * runtime environment (JRE vs GWT).
