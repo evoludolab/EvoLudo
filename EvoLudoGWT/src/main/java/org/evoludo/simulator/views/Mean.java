@@ -247,7 +247,6 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 		double newtime = model.getTime();
 		Module module = null;
 		boolean cmodel = model.isContinuous();
-		double[] state = null;
 		if (Math.abs(timestamp - newtime) > 1e-8) {
 			int idx = 0;
 			for (LineGraph graph : graphs) {
@@ -263,20 +262,21 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 							model.getMeanTraits(id, state);
 						}
 						// mean cannot be null here
+						double[] data;
 						if (cmodel) {
-							state = new double[4];
+							data = new double[4];
 							double m = state[idx];
 							double s = state[idx + nState];
-							state[1] = m;
-							state[2] = m - s;
-							state[3] = m + s;
+							data[1] = m;
+							data[2] = m - s;
+							data[3] = m + s;
 							idx++;
 						} else {
-							state = new double[nState + 1];
-							System.arraycopy(state, 0, state, 1, nState);
+							data = new double[nState + 1];
+							System.arraycopy(state, 0, data, 1, nState);
 						}
-						state[0] = newtime;
-						graph.addData(state, force);
+						data[0] = newtime;
+						graph.addData(data, force);
 						break;
 					case FITNESS:
 						if (newmod) {
@@ -285,18 +285,18 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 						// module cannot be null here but make compiler happy
 						if (cmodel) {
 							// fitness graph has only a single panel
-							state = new double[4];
+							data = new double[4];
 							double m = state[0];
 							double s = state[1];
-							state[1] = m;
-							state[2] = m - s;
-							state[3] = m + s;
+							data[1] = m;
+							data[2] = m - s;
+							data[3] = m + s;
 						} else {
-							state = new double[nState + 1];
-							System.arraycopy(state, 0, state, 1, nState);
+							data = new double[nState + 1];
+							System.arraycopy(state, 0, data, 1, nState);
 						}
-						state[0] = newtime;
-						graph.addData(state, force);
+						data[0] = newtime;
+						graph.addData(data, force);
 						break;
 					default:
 						break;
