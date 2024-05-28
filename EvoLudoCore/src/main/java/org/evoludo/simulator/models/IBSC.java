@@ -7,7 +7,6 @@ import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Key;
 import org.evoludo.util.Formatter;
 
 /**
@@ -55,12 +54,12 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	public double getMinMonoScore(int id) {
 		return species.get(id).getMinMonoGameScore();
 	}
-	
+
 	@Override
 	public double getMaxMonoScore(int id) {
 		return species.get(id).getMaxMonoGameScore();
 	}
-	
+
 	@Override
 	public void getTraitHistogramData(int id, double[][] bins) {
 		getIBSMCPopulation(id).getTraitHistogramData(bins);
@@ -72,6 +71,7 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	}
 
 	public static class Init {
+
 		/**
 		 * The model that is using this initialization. This is specific to IBS models.
 		 */
@@ -80,7 +80,7 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		/**
 		 * Instantiate new initialization for use in IBS {@code model}s.
 		 * 
-		 * @param ibs the model using this initialization
+		 * @param ibs     the model using this initialization
 		 * @param nTraits the number of traits
 		 */
 		public Init(org.evoludo.simulator.models.IBS ibs, int nTraits) {
@@ -174,7 +174,8 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 				});
 
 		/**
-		 * Type of initial density distribution of traits. Currently this model supports:
+		 * Type of initial density distribution of traits. Currently this model
+		 * supports:
 		 * <dl>
 		 * <dt>uniform
 		 * Uniform distribution of traits covering entire trait interval (default).
@@ -191,8 +192,8 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		 * 
 		 * @author Christoph Hauert
 		 * 
-		 * @see #setInitType(Key)
-		 * @see EvoLudo#cloInitType
+		 * @see #clo
+		 * @see IBSMCPopulation#getInit()
 		 */
 		public enum Type implements CLOption.Key {
 
@@ -221,7 +222,7 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 			/**
 			 * Key of initialization type. Used when parsing command line options.
 			 * 
-			 * @see EvoLudo#cloInitType
+			 * @see Init#clo
 			 */
 			String key;
 

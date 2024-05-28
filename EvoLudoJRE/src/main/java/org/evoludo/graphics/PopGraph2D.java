@@ -80,12 +80,12 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	protected Network2D	network;
 
 	/**
-	 * Maximum number of nodes in network for animated layout, see {@link #DEFAULT}
+	 * Maximum number of nodes in network for animated layout.
 	 */
 	static final int MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT = 1000;
 
 	/**
-	 * Maximum number of edges in network for animated layout, see {@link #DEFAULT}
+	 * Maximum number of edges in network for animated layout.
 	 */
 	static final int MAX_ANIMATE_LAYOUT_LINKS_DEFAULT = 5000;
 

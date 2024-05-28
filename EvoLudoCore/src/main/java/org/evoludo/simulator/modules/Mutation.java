@@ -37,7 +37,8 @@ public abstract class Mutation {
 	/**
 	 * Mutation type.
 	 * 
-	 * @see #clo
+	 * @see Discrete.Type
+	 * @see Continuous.Type
 	 */
 	public CLOption.Key type;
 
@@ -129,13 +130,13 @@ public abstract class Mutation {
 				return trait;
 			// number of active traits (including vacancies)
 			int nActive = module.getNActive();
-			if (nActive <= (vacant < 0? 1 : 2))
+			if (nActive <= (vacant < 0 ? 1 : 2))
 				// no mutations if only one trait is active
 				return trait;
 			int nTraits = module.getNTraits();
 			if (nActive == nTraits) {
 				// all traits are active
-				int nt = (vacant < 0? nTraits : nTraits - 1);
+				int nt = (vacant < 0 ? nTraits : nTraits - 1);
 				switch ((Type) type) {
 					case ALL:
 						trait = rng.random0n(nt);
@@ -194,7 +195,6 @@ public abstract class Mutation {
 		 * @param change the change of the state
 		 * @param from   the start index of the traits to mutate
 		 * @param to     the end index of the traits to mutate
-		 * @return the mutated trait
 		 * 
 		 * @see Discrete.Type
 		 */
@@ -229,17 +229,18 @@ public abstract class Mutation {
 					mu1 = 1.0 - probability;
 					for (int i = from; i < to; i++) {
 						double x = 0.0;
-						// the range may depend on the current trait i; cannot fall outside 
+						// the range may depend on the current trait i; cannot fall outside
 						// interval [from, to]
 						int low = Math.max(from, i - irange);
 						int high = Math.min(to, i + irange);
-						// any other mutates to i: mu / (high - low) (\sum_{j=i-r}^{i+r} state[j] - state[i])
+						// any other mutates to i: mu / (high - low) (\sum_{j=i-r}^{i+r} state[j] -
+						// state[i])
 						// i mutates to any other: mu * state[i]
 						for (int j = low; j <= high; j++) {
 							if (j != i)
 								x += state[j];
 						}
-						change[i] = change[i] * mu1 + probability * (x / (high - low) - state[i]);						
+						change[i] = change[i] * mu1 + probability * (x / (high - low) - state[i]);
 					}
 					break;
 				default:
@@ -252,10 +253,10 @@ public abstract class Mutation {
 		public final CLOption clo = new CLOption("mutations", "0.0",
 				EvoLudo.catModule,
 				"--mutations <p> [<t> [thermal|uniform [<r>]]]  with\n" +
-				"             p: mutation probability\n" + //
-				"       process: reproduction vs cosmic rays\n" + //
-				"             r: mutation range\n" + //
-				"             t: mutation type, with types:", //
+						"             p: mutation probability\n" + //
+						"       process: reproduction vs cosmic rays\n" + //
+						"             r: mutation range\n" + //
+						"             t: mutation type, with types:", //
 				new CLODelegate() {
 
 					/**
@@ -395,7 +396,7 @@ public abstract class Mutation {
 			/**
 			 * Key of player update. Used when parsing command line options.
 			 * 
-			 * @see Module#clo
+			 * @see Mutation.Discrete#clo
 			 */
 			String key;
 
@@ -473,9 +474,9 @@ public abstract class Mutation {
 					// if( mut>1.0 ) mut = 2-mut;
 					return mut;
 
-					// just truncate to [0,1]
-					// mut = trait + rng.nextGaussian() * range;
-					// return Math.max(Math.min(mut, 1.0), 0.0);
+				// just truncate to [0,1]
+				// mut = trait + rng.nextGaussian() * range;
+				// return Math.max(Math.min(mut, 1.0), 0.0);
 				case UNIFORM:
 					mut = trait + rng.random01() * range * 2 - range;
 					return Math.max(Math.min(mut, 1.0), 0.0);
@@ -489,11 +490,11 @@ public abstract class Mutation {
 		 */
 		public final CLOption clo = new CLOption("mutations", "0.0",
 				EvoLudo.catModule,
-			"--mutations <p> [<t> [<r> [thermal|uniform]]]"+CLOParser.TRAIT_DELIMITER+"<p1>...]>  with\n" +
-			"             p: mutation probability\n" + //
-			"             r: mutation range/sdev (fraction of interval)\n" + //
-			"       process: reproduction vs cosmic rays\n" + //
-			"             t: mutation type, with types:", //
+				"--mutations <p> [<t> [<r> [thermal|uniform]]]" + CLOParser.TRAIT_DELIMITER + "<p1>...]>  with\n" +
+						"             p: mutation probability\n" + //
+						"             r: mutation range/sdev (fraction of interval)\n" + //
+						"       process: reproduction vs cosmic rays\n" + //
+						"             t: mutation type, with types:", //
 				new CLODelegate() {
 
 					/**
@@ -644,7 +645,7 @@ public abstract class Mutation {
 			/**
 			 * Key of player update. Used when parsing command line options.
 			 * 
-			 * @see Module#clo
+			 * @see Mutation.Continuous#clo
 			 */
 			String key;
 

@@ -102,7 +102,7 @@ public class PDESupervisor {
 	 * @param stepDt the time step to advance the PDE
 	 * @return <code>true</code> if system converged
 	 * 
-	 * @see org.evoludo.simulator.PDESupervisorGWT#next(double)
+	 * @see org.evoludo.simulator.models.PDESupervisorGWT#next(double)
 	 *      PDESupervisorGWT.next(double)
 	 */
 	public boolean next(double stepDt) {

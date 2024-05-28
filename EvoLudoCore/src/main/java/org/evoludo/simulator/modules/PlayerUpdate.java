@@ -272,7 +272,7 @@ public class PlayerUpdate {
 		/**
 		 * Key of player update. Used when parsing command line options.
 		 * 
-		 * @see Module#clo
+		 * @see PlayerUpdate#clo
 		 */
 		String key;
 

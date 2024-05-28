@@ -340,7 +340,7 @@ public abstract class RNGDistribution {
 	 * 
 	 * @return clone of RNGDistribution
 	 */
-//	@Override
+	// @Override
 	@SuppressWarnings("all")
 	public abstract RNGDistribution clone();
 
@@ -1151,7 +1151,7 @@ public abstract class RNGDistribution {
 			double msStart = clock.elapsedTimeMsec();
 			for (int n = 0; n < nSamples; n++) {
 				int rnd = geometric.next();
-//				int rnd = Geometric.next(rng, p);
+				// int rnd = Geometric.next(rng, p);
 				int idx = Math.min(rnd - 1, nBins - 1);
 				bins[idx]++;
 			}
@@ -1387,7 +1387,7 @@ public abstract class RNGDistribution {
 			double msStart = clock.elapsedTimeMsec();
 			for (int i = 0; i < nSamples; i++) {
 				int idx = binomial.next();
-//				int idx = Binomial.next(rng, p, n);
+				// int idx = Binomial.next(rng, p, n);
 				bins[idx]++;
 			}
 			double msEnd = clock.elapsedTimeMsec();
@@ -1462,28 +1462,27 @@ public abstract class RNGDistribution {
 	 */
 	public static class Gillespie extends RNGDistribution {
 
-		//TODO static next-method missing
+		// TODO static next-method missing
 
 		/**
-		 * Creates binomial distribution with <code>n</code> trials and success
-		 * probability <code>p</code> (mean <code>n p</code>) and a new instance of
-		 * {@link MersenneTwister}..
-		 *
-		 * @param p success probability of single trial
-		 * @param n number of trials
+		 * The threshold for switching between the standard and the optimized version of
+		 * the Gillespie algorithm.
+		 */
+		public static final int THRESHOLD_SIZE = 350;
+
+		/**
+		 * Creates a weighted distribution over intergers using the Gillespie algorithm
+		 * and a new instance of {@link MersenneTwister}.
 		 */
 		public Gillespie() {
 			this(null);
 		}
 
 		/**
-		 * Creates binomial distribution with <code>n</code> trials and success
-		 * probability <code>p</code> (mean <code>n p</code>) and the random number
-		 * generator <code>rng</code>.
+		 * Creates a weighted distribution over intergers using the Gillespie algorithm
+		 * using the random number generator {@code rng}.
 		 *
 		 * @param rng random number generator
-		 * @param p   success probability of single trial
-		 * @param n   number of trials
 		 */
 		public Gillespie(MersenneTwister rng) throws IllegalArgumentException {
 			super(rng);
@@ -1502,7 +1501,7 @@ public abstract class RNGDistribution {
 		 * @return the random integer
 		 */
 		public int next(int[] weights) {
-			if (weights.length >= 100)
+			if (weights.length >= THRESHOLD_SIZE)
 				return nextMax(weights, ArrayMath.max(weights));
 			return nextSum(weights, ArrayMath.norm(weights));
 		}
@@ -1528,7 +1527,7 @@ public abstract class RNGDistribution {
 			int aRand = -1;
 			while (hit >= 0) {
 				hit -= weights[++aRand];
-			}	
+			}
 			return aRand;
 		}
 
@@ -1571,7 +1570,7 @@ public abstract class RNGDistribution {
 		 * Return a random integer with support {@code [0, weights.length)} from the
 		 * discrete distribution of weights defined by the {@code double[]} array
 		 * {@code weights}. Optimized sampling is used above the threshold of
-		 * {@code weights.length > 350}.
+		 * <code> weights.length &gt; {@value #THRESHOLD_SIZE}</code>.
 		 * <p>
 		 * <strong>Note:</strong> if the sum of weights or the maximum weight is known,
 		 * consider using the methods {@code #nextSum(double[], double)} or
@@ -1581,7 +1580,7 @@ public abstract class RNGDistribution {
 		 * @return the random integer
 		 */
 		public int next(double[] weights) {
-			if (weights.length > 350)
+			if (weights.length > THRESHOLD_SIZE)
 				return nextMax(weights, ArrayMath.max(weights));
 			return nextSum(weights, ArrayMath.norm(weights));
 		}
@@ -1677,7 +1676,7 @@ public abstract class RNGDistribution {
 		 */
 		public static void test(MersenneTwister rng, Logger logger, Chronometer clock) {
 			RNGDistribution.Gillespie gillespie = new Gillespie();
-			int nBins = 350;
+			int nBins = THRESHOLD_SIZE;
 			// initialize array with random weights
 			double[] weights = new double[nBins];
 			for (int i = 0; i < nBins; i++)
@@ -1713,8 +1712,8 @@ public abstract class RNGDistribution {
 				for (int n = 0; n < nBins; n++)
 					buffer.append(
 							n + ": " + Formatter.format(noopt[n], 6) + " " + //
-							Formatter.format(opt[n], 6) + //
-							" (" + Formatter.format(weights[n], 6) + ")\n");
+									Formatter.format(opt[n], 6) + //
+									" (" + Formatter.format(weights[n], 6) + ")\n");
 				logger.info(buffer.toString());
 			}
 			double m1no = 0.0;
@@ -1750,70 +1749,80 @@ public abstract class RNGDistribution {
 		}
 	}
 
-// NOTE: the test uses GWT specifics for measuring time (com.google.gwt.core.client.Duration) and for reporting (com.google.gwt.core.client.GWT.log)
-//	public void test() {
-//		test(10000, 10000000);
-//	}
-//
-//	public void test(int nBins, int nSamples) {
-//		String msg = "Testing performance of random number generator: nBins="+ChHFormatter.formatSci(nBins, 1)+
-//					 ", nSamples="+ChHFormatter.formatSci(nSamples, 1);
-//		com.google.gwt.core.client.GWT.log(msg);
-//		System.out.println(msg);
-//		
-//		double[] bins = new double[nBins];
-//		com.google.gwt.core.client.Duration start = new com.google.gwt.core.client.Duration();
-//		for( int n=0; n<nSamples; n++ ) {
-//			double rand = random01();
-//			bins[(int)(rand*nBins)]++;
-//		}
-//		double end = start.elapsedMillis();
-//		double min = ChHMath.min(bins);
-//		double max = ChHMath.max(bins);
-//		ChHMath.normalize(bins);
-//		double mean = ChHMath.mean(bins);
-//		double var = ChHMath.variance(bins, mean);
-//		String result = "random01:  mean="+ChHFormatter.format(mean, 6)+" +/- "+ChHFormatter.format(Math.sqrt(var), 6)+
-//				" ("+ChHFormatter.format(1.0/Math.sqrt(nBins), 6)+")"+
-//				", min="+ChHFormatter.format(min, 0)+", max="+ChHFormatter.format(max, 0)+", time="+ChHFormatter.format(end/1000.0, 3)+"s"; 
-//		com.google.gwt.core.client.GWT.log(result);
-//		System.out.println(result);
-//
-//		java.util.Arrays.fill(bins, 0.0);
-//		start = new com.google.gwt.core.client.Duration();
-//		for( int n=0; n<nSamples; n++ ) {
-//			double rand = random01d();
-//			bins[(int)(rand*nBins)]++;
-//		}
-//		end = start.elapsedMillis();
-//		min = ChHMath.min(bins);
-//		max = ChHMath.max(bins);
-//		ChHMath.normalize(bins);
-//		mean = ChHMath.mean(bins);
-//		var = ChHMath.variance(bins, mean);
-//		result = "random01d: mean="+ChHFormatter.format(mean, 6)+" +/- "+ChHFormatter.format(Math.sqrt(var), 6)+
-//				" ("+ChHFormatter.format(1.0/Math.sqrt(nBins), 6)+")"+
-//				", min="+ChHFormatter.format(min, 0)+", max="+ChHFormatter.format(max, 0)+", time="+ChHFormatter.format(end/1000.0, 3)+"s"; 
-//		com.google.gwt.core.client.GWT.log(result);
-//		System.out.println(result);
-//
-//
-//		java.util.Arrays.fill(bins, 0.0);
-//		start = new com.google.gwt.core.client.Duration();
-//		for( int n=0; n<nSamples; n++ ) {
-//			int rand = random0n(nBins);
-//			bins[rand]++;
-//		}
-//		end = start.elapsedMillis();
-//		min = ChHMath.min(bins);
-//		max = ChHMath.max(bins);
-//		ChHMath.normalize(bins);
-//		mean = ChHMath.mean(bins);
-//		var = ChHMath.variance(bins, mean);
-//		result = "random0n:  mean="+ChHFormatter.format(mean, 6)+" +/- "+ChHFormatter.format(Math.sqrt(var), 6)+
-//				" ("+ChHFormatter.format(1.0/Math.sqrt(nBins), 6)+")"+
-//				", min="+ChHFormatter.format(min, 0)+", max="+ChHFormatter.format(max, 0)+", time="+ChHFormatter.format(end/1000.0, 3)+"s"; 
-//		com.google.gwt.core.client.GWT.log(result);
-//		System.out.println(result);
-//	}
+	// NOTE: the test uses GWT specifics for measuring time
+	// (com.google.gwt.core.client.Duration) and for reporting
+	// (com.google.gwt.core.client.GWT.log)
+	// public void test() {
+	// test(10000, 10000000);
+	// }
+	//
+	// public void test(int nBins, int nSamples) {
+	// String msg = "Testing performance of random number generator:
+	// nBins="+ChHFormatter.formatSci(nBins, 1)+
+	// ", nSamples="+ChHFormatter.formatSci(nSamples, 1);
+	// com.google.gwt.core.client.GWT.log(msg);
+	// System.out.println(msg);
+	//
+	// double[] bins = new double[nBins];
+	// com.google.gwt.core.client.Duration start = new
+	// com.google.gwt.core.client.Duration();
+	// for( int n=0; n<nSamples; n++ ) {
+	// double rand = random01();
+	// bins[(int)(rand*nBins)]++;
+	// }
+	// double end = start.elapsedMillis();
+	// double min = ChHMath.min(bins);
+	// double max = ChHMath.max(bins);
+	// ChHMath.normalize(bins);
+	// double mean = ChHMath.mean(bins);
+	// double var = ChHMath.variance(bins, mean);
+	// String result = "random01: mean="+ChHFormatter.format(mean, 6)+" +/-
+	// "+ChHFormatter.format(Math.sqrt(var), 6)+
+	// " ("+ChHFormatter.format(1.0/Math.sqrt(nBins), 6)+")"+
+	// ", min="+ChHFormatter.format(min, 0)+", max="+ChHFormatter.format(max, 0)+",
+	// time="+ChHFormatter.format(end/1000.0, 3)+"s";
+	// com.google.gwt.core.client.GWT.log(result);
+	// System.out.println(result);
+	//
+	// java.util.Arrays.fill(bins, 0.0);
+	// start = new com.google.gwt.core.client.Duration();
+	// for( int n=0; n<nSamples; n++ ) {
+	// double rand = random01d();
+	// bins[(int)(rand*nBins)]++;
+	// }
+	// end = start.elapsedMillis();
+	// min = ChHMath.min(bins);
+	// max = ChHMath.max(bins);
+	// ChHMath.normalize(bins);
+	// mean = ChHMath.mean(bins);
+	// var = ChHMath.variance(bins, mean);
+	// result = "random01d: mean="+ChHFormatter.format(mean, 6)+" +/-
+	// "+ChHFormatter.format(Math.sqrt(var), 6)+
+	// " ("+ChHFormatter.format(1.0/Math.sqrt(nBins), 6)+")"+
+	// ", min="+ChHFormatter.format(min, 0)+", max="+ChHFormatter.format(max, 0)+",
+	// time="+ChHFormatter.format(end/1000.0, 3)+"s";
+	// com.google.gwt.core.client.GWT.log(result);
+	// System.out.println(result);
+	//
+	//
+	// java.util.Arrays.fill(bins, 0.0);
+	// start = new com.google.gwt.core.client.Duration();
+	// for( int n=0; n<nSamples; n++ ) {
+	// int rand = random0n(nBins);
+	// bins[rand]++;
+	// }
+	// end = start.elapsedMillis();
+	// min = ChHMath.min(bins);
+	// max = ChHMath.max(bins);
+	// ChHMath.normalize(bins);
+	// mean = ChHMath.mean(bins);
+	// var = ChHMath.variance(bins, mean);
+	// result = "random0n: mean="+ChHFormatter.format(mean, 6)+" +/-
+	// "+ChHFormatter.format(Math.sqrt(var), 6)+
+	// " ("+ChHFormatter.format(1.0/Math.sqrt(nBins), 6)+")"+
+	// ", min="+ChHFormatter.format(min, 0)+", max="+ChHFormatter.format(max, 0)+",
+	// time="+ChHFormatter.format(end/1000.0, 3)+"s";
+	// com.google.gwt.core.client.GWT.log(result);
+	// System.out.println(result);
+	// }
 }

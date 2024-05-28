@@ -111,12 +111,16 @@ public class ContextMenu extends FlowPanel
 			HasTouchMoveHandlers, HasTouchCancelHandlers {
 
 		/**
-		 * @return absolute left positioning of widget with context menu
+		 * Get the absolute left positioning of the widget requesting the context menu.
+		 * 
+		 * @return the absolute left of widget
 		 */
 		public int getAbsoluteLeft();
 
 		/**
-		 * @return absolute top positioning of widget with context menu
+		 * Get the absolute top positioning of the widget requesting the context menu.
+		 * 
+		 * @return absolute top of widget
 		 */
 		public int getAbsoluteTop();
 	}
@@ -146,11 +150,29 @@ public class ContextMenu extends FlowPanel
 	protected class Registration implements HandlerRegistration {
 
 		/**
-		 * References to all event handlers relevant for handling context menus
-		 * registered with the listener widget.
+		 * The reference to the context menu event handler.
 		 */
-		private HandlerRegistration contextMenuHandler, touchStartHandler, touchEndHandler, touchMoveHandler,
-				touchCancelHandler;
+		private HandlerRegistration contextMenuHandler;
+
+		/**
+		 * The reference to the touch start event handler.
+		 */
+		private HandlerRegistration touchStartHandler;
+
+		/**
+		 * The reference to the touch end event handler.
+		 */
+		private HandlerRegistration touchEndHandler;
+
+		/**
+		 * The reference to the touch move event handler.
+		 */
+		private HandlerRegistration touchMoveHandler;
+
+		/**
+		 * The reference to the touch cancel event handler.
+		 */
+		private HandlerRegistration touchCancelHandler;
 
 		/**
 		 * Provider of context menu entries for this listener widget.
@@ -183,14 +205,18 @@ public class ContextMenu extends FlowPanel
 		}
 
 		/**
-		 * @return provider of entries of context menu for this listener widget
+		 * Get the provider of entries of context menu for this listener widget.
+		 * 
+		 * @return the provider
 		 */
 		public Provider getProvider() {
 			return provider;
 		}
 
 		/**
-		 * @return widget listening for context menu events
+		 * Get the listener widget for context menu events.
+		 * 
+		 * @return the listening widget
 		 */
 		public Listener getListener() {
 			return listener;
@@ -373,11 +399,11 @@ public class ContextMenu extends FlowPanel
 				@Override
 				public void onMouseDown(MouseDownEvent event) {
 					if (!contextMenu.isVisible())
-						return;	// context menu not visible - nothing to do
+						return; // context menu not visible - nothing to do
 					// IMPORTANT: here is potential for race conditions between contextMenu
 					// and its submenus! if mouse is over submenu let submenu handle event
 					if (contextMenu.childMenu != null && contextMenu.childMenu.isMouseOver)
-						return;	// submenu visible and mouse over - let submenu handle event
+						return; // submenu visible and mouse over - let submenu handle event
 					if (!contextMenu.isMouseOver && !contextMenu.isAutoHide())
 						contextMenu.close();
 				}
@@ -702,16 +728,20 @@ public class ContextMenu extends FlowPanel
 	}
 
 	/**
-	 * @return parent (sub)menu or <code>null</code> if this is the top level
-	 *         context menu
+	 * Get the parent menu. The parent can be a submenu or {@code null} for the top
+	 * level context menu.
+	 * 
+	 * @return the parent (sub)menu
 	 */
 	public ContextMenu getParentMenu() {
 		return parentMenu;
 	}
 
 	/**
-	 * @return <code>true</code> if this is a submenu. Returns <code>false</code>
-	 *         only for the top level context menu
+	 * Check if this is a submenu. Returns {@code false} only for the top level
+	 * context menu
+	 * 
+	 * @return <code>true</code> if this is a submenu
 	 */
 	public boolean isSubmenu() {
 		return (parentMenu != null);
@@ -836,9 +866,9 @@ public class ContextMenu extends FlowPanel
 		Touch touch = touches.get(0);
 		touchTimer.save((Listener) src, touch.getClientX(), touch.getClientY());
 		touchTimer.schedule(longTouch);
-//NOTE: this prevents scrolling of console
-//		event.stopPropagation();
-//		event.preventDefault();
+		// NOTE: this prevents scrolling of console
+		// event.stopPropagation();
+		// event.preventDefault();
 	}
 
 	/**
@@ -925,18 +955,22 @@ public class ContextMenu extends FlowPanel
 	}
 
 	/**
-	 * @return <code>true</code> if fullscreen mode is supported
+	 * Check if fullscreen mode is supported.
+	 * 
+	 * @return {@code true} if fullscreen supported
 	 */
 	public native boolean isFullscreenSupported()
 	/*-{
 		return $doc.fullscreenEnabled || $doc.mozFullScreenEnabled
-				|| $doc.webkitFullscreenEnabled || $doc.msFullscreenEnabled ? true
-				: false;
+			|| $doc.webkitFullscreenEnabled || $doc.msFullscreenEnabled ? true
+			: false;
 	}-*/;
 
 	/**
-	 * @return fullscreen element or <code>null</code> if not in fullscreen or
-	 *         fullscreen not supported
+	 * Get the fullscreen element. Return {@code null} if not in fullscreen or
+	 * fullscreen not supported.
+	 * 
+	 * @return the fullscreen element
 	 */
 	public final static native Element getFullscreenElement()
 	/*-{
@@ -962,12 +996,11 @@ public class ContextMenu extends FlowPanel
 	 */
 	private final native void _addFullscreenChangeHandler(String eventname, FullscreenChangeHandler handler)
 	/*-{
-		$doc
-				.addEventListener(
-						eventname,
-						function(event) {
-							handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
-						}, true);
+		$doc.addEventListener(
+			eventname,
+			function(event) {
+				handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
+			}, true);
 	}-*/;
 
 	/**
@@ -981,12 +1014,11 @@ public class ContextMenu extends FlowPanel
 	 */
 	private final native void _removeFullscreenChangeHandler(String eventname, FullscreenChangeHandler handler)
 	/*-{
-		$doc
-				.removeEventListener(
-						eventname,
-						function(event) {
-							handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
-						}, true);
+		$doc.removeEventListener(
+			eventname,
+			function(event) {
+				handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
+			}, true);
 	}-*/;
 
 	/**

@@ -326,8 +326,7 @@ public abstract class IBSPopulation {
 	 * this method. By default throws an error.
 	 * <li>Instead of overriding the method, subclasses may remove
 	 * {@link PlayerUpdate.Type#BEST_RESPONSE} from
-	 * {@link org.evoludo.simulator.modules.Module#clo
-	 * Module.cloPlayerUpdate}.
+	 * {@link org.evoludo.simulator.modules.PlayerUpdate#clo PlayerUpdate#clo}.
 	 * </ol>
 	 * 
 	 * @param me    the index of individual to update
@@ -411,7 +410,7 @@ public abstract class IBSPopulation {
 	/**
 	 * The update type of players. Convenience field.
 	 * 
-	 * @see Module#getPlayerUpdateType()
+	 * @see Module#getPlayerUpdate()
 	 */
 	PlayerUpdate playerUpdate;
 
@@ -646,18 +645,18 @@ public abstract class IBSPopulation {
 	 * 
 	 * <h3>Notes:</h3>
 	 * <ol>
-	 * <li>If {@link IBSGroup#SAMPLING_ALL}, and not
-	 * {@link Geometry.Type#MEANFIELD}, i.e. if the interaction
-	 * group includes all neighbors but not all other members of the population, it
-	 * is possible to adjust the payoffs of the relevant players after a strategy
-	 * change occurred.
-	 * <li>This nice approach is not possible if interacting with randomly chosen
-	 * neighbors or random individuals from the population because in those cases,
-	 * the payoffs of all players in the reference neighborhood are determined by
-	 * playing {@link #nInteractions} games. If reference and interaction
-	 * neighborhoods overlap, the final payoff may be derived from several
-	 * interactions and is averaged or accumulated accordingly.
+	 * <li>Adjusting scores is only feasible if all individuals have a fixed number
+	 * of interactions. For example, if all individuals always interact with all
+	 * their neighbours, see {@link IBSGroup.SamplingType#ALL}. The only exception
+	 * are well-mixed populations, {@link Geometry.Type#MEANFIELD}. With continuous
+	 * traits all possible encounters would need to be considered, which is
+	 * computationally not feasible. In contrast, for discrete traits separate
+	 * calculations to determine the scores of each trait type are possible.
+	 * <li>With random interactions the scores of individuals are based on variable
+	 * sets of interaction partners and their numbers of interactions may vary.
 	 * </ol>
+	 * 
+	 * @see IBSGroup.SamplingType
 	 */
 	protected boolean adjustScores;
 
@@ -1484,7 +1483,7 @@ public abstract class IBSPopulation {
 	 * 
 	 * <h3>Requirements/notes:</h3>
 	 * <ol>
-	 * <li>This optimized method is only applicable if {@link IBSGroup#SAMPLING_ALL}
+	 * <li>This optimized method is only applicable if {@link IBSGroup.SamplingType#ALL}
 	 * is true and not {@link Geometry.Type#MEANFIELD}, i.e. if the interaction
 	 * group includes all neighbors but not all other members of the population.
 	 * <li>For pairwise interactions more efficient approaches are possible but
@@ -2101,7 +2100,8 @@ public abstract class IBSPopulation {
 	 */
 	protected void debugMarkChange() {
 		// // <jf
-		// logger.fine("update: " + getTraitNameAt(me) + " " + me + " (" + getScoreAt(me) + ") adopts "
+		// logger.fine("update: " + getTraitNameAt(me) + " " + me + " (" +
+		// getScoreAt(me) + ") adopts "
 		// + getTraitNameAt(you) + " " + you + " (" + getScoreAt(you) + ")");
 		// // jf>
 		if (logger.isLoggable(Level.FINE) && debugFocal >= 0) {
@@ -2154,7 +2154,7 @@ public abstract class IBSPopulation {
 	/**
 	 * Update the scores of the focal individual with index {@code me}.
 	 * 
-	 * @param me the index of the focal individual
+	 * @param me       the index of the focal individual
 	 * @param switched {@code true} if the focal switched strategy
 	 */
 	protected void updateScoreAt(int me, boolean switched) {
@@ -2207,7 +2207,8 @@ public abstract class IBSPopulation {
 			debugModel = pickNeighborSiteAt(parent);
 		if (debugModel < 0)
 			return; // parent has no outgoing-neighbors (sink)
-		// note: do not return prematurely if <code>debugModel==debugFocal</code> because
+		// note: do not return prematurely if <code>debugModel==debugFocal</code>
+		// because
 		// this would preclude mutations and fail to reset scores.
 		maybeMutateMoran(debugFocal, debugModel);
 	}
@@ -2812,8 +2813,10 @@ public abstract class IBSPopulation {
 			}
 		} else { // some noise
 			double inoise = 1.0 / noise;
-			// the increased accuracy of {@code Math.expm1(x)} for {@code x} near {@code 0} is not so
-			// important but hopefully this also means the accuracy is more symmetrical for {@code x} 
+			// the increased accuracy of {@code Math.expm1(x)} for {@code x} near {@code 0}
+			// is not so
+			// important but hopefully this also means the accuracy is more symmetrical for
+			// {@code x}
 			// and {@code 1/x}
 			aProb = Math.min(1.0 - error, Math.max(error,
 					1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[0]) - myFitness) * inoise))));
@@ -2881,23 +2884,23 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Process the accumulated {@code score} in this population, taking the 
+	 * Process the accumulated {@code score} in this population, taking the
 	 * updating into account.
 	 * 
 	 * @param score the minimum or maximum score
-	 * @param max {@code true} if score is maximum
+	 * @param max   {@code true} if score is maximum
 	 * @return the processed extremal score
 	 */
 	protected double processScore(double score, boolean max) {
 		if (playerScoreAveraged)
 			return score;
 		// accumulated payoffs
-		int count = (score < 0.0 ? (max ? interaction.minOut : interaction.maxOut) :
-									(max ? interaction.maxOut : interaction.minOut));
+		int count = (score < 0.0 ? (max ? interaction.minOut : interaction.maxOut)
+				: (max ? interaction.maxOut : interaction.minOut));
 		if (adjustScores) {
 			// getMinGameScore in module must deal with structure and games
 			if (module.isPairwise()) {
-				// count == 0 for well-mixed populations, with vacancies, at most 
+				// count == 0 for well-mixed populations, with vacancies, at most
 				// nPopulation-1 interactions
 				if (count == 0)
 					return 2 * (nPopulation - 1) * score;
@@ -3069,7 +3072,7 @@ public abstract class IBSPopulation {
 
 		// check geometries
 		// Warning: there is a small chance that the interaction and competition
-		// geometries require different population sizes, which does not make sense 
+		// geometries require different population sizes, which does not make sense
 		// and would most likely result in a never ending initialization loop...
 		interaction.size = nPopulation;
 		doReset |= interaction.check();
@@ -3118,7 +3121,8 @@ public abstract class IBSPopulation {
 				}
 			}
 			// best-response in well-mixed populations should skip sampling of references
-			if (compgeom.getType() == Geometry.Type.MEANFIELD && playerUpdate.getType() == PlayerUpdate.Type.BEST_RESPONSE) {
+			if (compgeom.getType() == Geometry.Type.MEANFIELD
+					&& playerUpdate.getType() == PlayerUpdate.Type.BEST_RESPONSE) {
 				compGroup.setSampling(IBSGroup.SamplingType.NONE);
 			}
 		}
@@ -3189,7 +3193,8 @@ public abstract class IBSPopulation {
 			adjustScores = doAdjustScores();
 			ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 			if (!adjustScores && !playerScoreAveraged && !ephemeralScores) {
-				// non-adjustable and accumulated scores result in potentially unbounded payoffs - revert to averaged scores
+				// non-adjustable and accumulated scores result in potentially unbounded payoffs
+				// - revert to averaged scores
 				setPlayerScoreAveraged(true);
 				logger.warning("accumulated scores may result in unbounded fitness - forcing averaged scores.");
 				adjustScores = doAdjustScores(); // should now be true
@@ -3200,7 +3205,7 @@ public abstract class IBSPopulation {
 		hasLookupTable = module.isStatic() || //
 				(adjustScores && interaction.getType() == Geometry.Type.MEANFIELD) || //
 				(ephemeralScores && interaction.getType() == Geometry.Type.MEANFIELD //
-					&& interGroup.isSampling(SamplingType.ALL));
+						&& interGroup.isSampling(SamplingType.ALL));
 		if (hasLookupTable) {
 			// allocate memory for fitness lookup table
 			if (typeFitness == null || typeFitness.length != nTraits)
@@ -3276,7 +3281,7 @@ public abstract class IBSPopulation {
 			return;
 		}
 		pRewire[0] = Math.max(Math.min(rewire[0], 1.0), 0.0);
-		if (rewire.length == 1 ){
+		if (rewire.length == 1) {
 			pRewire[1] = pRewire[0];
 			return;
 		}
@@ -3296,7 +3301,7 @@ public abstract class IBSPopulation {
 	 * and competition graphs.
 	 * 
 	 * @param addwire the array
-	 *               <code>double[] {&lt;interaction&gt;, &lt;competition&gt;}</code>
+	 *                <code>double[] {&lt;interaction&gt;, &lt;competition&gt;}</code>
 	 */
 	public void setAddwire(double[] addwire) {
 		if (pAddwire == null)
@@ -3306,7 +3311,7 @@ public abstract class IBSPopulation {
 			return;
 		}
 		pAddwire[0] = Math.max(Math.min(addwire[0], 1.0), 0.0);
-		if (addwire.length == 1 ){
+		if (addwire.length == 1) {
 			pAddwire[1] = pAddwire[0];
 			return;
 		}
@@ -3362,7 +3367,7 @@ public abstract class IBSPopulation {
 		interaction.rewire();
 		interaction.evaluate();
 
-		// for accumulated payoffs the min and max scores can only be determined 
+		// for accumulated payoffs the min and max scores can only be determined
 		// after the structure of the population is known. note scores are potentially
 		// unbounded for accumulated scores with random interactions (not adjustable)
 		updateMinMaxScores();
@@ -3433,7 +3438,7 @@ public abstract class IBSPopulation {
 			fitness = null;
 			interactions = null;
 		} else {
-			// emphemeral scores need both 
+			// emphemeral scores need both
 			if (scores == null || scores.length != nPopulation)
 				scores = new double[nPopulation];
 			if (fitness == null || fitness.length != nPopulation)
@@ -3465,7 +3470,7 @@ public abstract class IBSPopulation {
 				} else {
 					// pairwise interactions
 					if (interaction.isRegular)
-						Arrays.fill(interactions, (int)(interaction.connectivity + 0.5));
+						Arrays.fill(interactions, (int) (interaction.connectivity + 0.5));
 					else
 						System.arraycopy(interaction.kin, 0, interactions, 0, interactions.length);
 				}
@@ -3568,7 +3573,8 @@ public abstract class IBSPopulation {
 			double fitn = getFitnessAt(n);
 			if (fitn + 1e-12 < minFitness || fitn - 1e-12 > maxFitness) {
 				logger.warning(
-						"scoring issue @ " + n + ": fitness=" + fitn + " not in [" + minFitness + ", " + maxFitness + "]");
+						"scoring issue @ " + n + ": fitness=" + fitn + " not in [" + minFitness + ", " + maxFitness
+								+ "]");
 				isConsistent = false;
 			}
 			if (Math.abs(map2fit.map(scoren) - fitn) > 1e-12) {
@@ -3590,26 +3596,30 @@ public abstract class IBSPopulation {
 					typeScoresStore = ArrayMath.clone(typeScores);
 					Arrays.fill(typeScores, Double.MAX_VALUE);
 					sumFitness = 0.0;
-					engine.getModel().update();	// initialize typeScores/typeFitness
+					engine.getModel().update(); // initialize typeScores/typeFitness
 				}
 				for (int n = 0; n < nTraits; n++) {
 					if (n == VACANT && typeScores[n] != typeScoresStore[n]) {
-						logger.warning("scoring issue for vacant trait " + n + ": score=" + typeScoresStore[n] + " instead of " + typeScores[n] + " (NaN)");
+						logger.warning("scoring issue for vacant trait " + n + ": score=" + typeScoresStore[n]
+								+ " instead of " + typeScores[n] + " (NaN)");
 						isConsistent = false;
 					}
 					if (Math.abs(typeScores[n] - typeScoresStore[n]) > 1e-12) {
-						logger.warning("scoring issue for trait " + n + ": score=" + typeScoresStore[n] + " instead of " + typeScores[n]);
+						logger.warning("scoring issue for trait " + n + ": score=" + typeScoresStore[n] + " instead of "
+								+ typeScores[n]);
 						isConsistent = false;
 					}
 					typeFitness[n] = map2fit.map(typeScores[n]);
 					if (Math.abs(typeFitness[n] - typeFitnessStore[n]) > 1e-12) {
 						logger.warning(
-								"fitness issue for trait " + n + ": fitness=" + typeFitnessStore[n] + " instead of " + typeFitness[n]);
+								"fitness issue for trait " + n + ": fitness=" + typeFitnessStore[n] + " instead of "
+										+ typeFitness[n]);
 						isConsistent = false;
 					}
 					if (Math.abs(map2fit.map(typeScores[n]) - typeFitness[n]) > 1e-12) {
 						logger.warning(
-								"scoring issue for trait " + n + ": score=" + typeScores[n] + " maps to " + map2fit.map(typeScores[n])
+								"scoring issue for trait " + n + ": score=" + typeScores[n] + " maps to "
+										+ map2fit.map(typeScores[n])
 										+ " instead of fitness=" + typeFitness[n]);
 						isConsistent = false;
 					}
@@ -3622,18 +3632,20 @@ public abstract class IBSPopulation {
 				double checkFitness = 0.0;
 				for (int n = 0; n < nPopulation; n++)
 					checkFitness += getFitnessAt(n);
-				if (Math.abs(sumFitness - checkFitness) > Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness))) {
+				if (Math.abs(sumFitness - checkFitness) > Combinatorics.pow(10,
+						-11 + Functions.magnitude(sumFitness))) {
 					logger.warning(
-							"accounting issue: fitness sums to " + checkFitness + " instead of sumFitness=" + sumFitness + 
-								" (delta="+ Math.abs(sumFitness - checkFitness) +", max="+Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness))+")");
+							"accounting issue: fitness sums to " + checkFitness + " instead of sumFitness=" + sumFitness
+									+
+									" (delta=" + Math.abs(sumFitness - checkFitness) + ", max="
+									+ Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness)) + ")");
 					isConsistent = false;
 				}
 				// restore data
 				typeScores = typeScoresStore;
 				typeFitness = typeFitnessStore;
 				sumFitness = sumFitnessStore;
-			}
-			else {
+			} else {
 				// no lookup tables
 				double[] scoresStore = scores;
 				scores = new double[nPopulation];
@@ -3643,7 +3655,8 @@ public abstract class IBSPopulation {
 				engine.getModel().update();
 				for (int n = 0; n < nPopulation; n++) {
 					if (Math.abs(scores[n] - scoresStore[n]) > 1e-12) {
-						logger.warning("scoring issue @ " + n + ": score=" + scoresStore[n] + " instead of " + scores[n]);
+						logger.warning(
+								"scoring issue @ " + n + ": score=" + scoresStore[n] + " instead of " + scores[n]);
 						isConsistent = false;
 					}
 					if (Math.abs(fitness[n] - fitnessStore[n]) > 1e-12) {
@@ -3666,7 +3679,8 @@ public abstract class IBSPopulation {
 				double checkFitness = ArrayMath.norm(fitness);
 				if (Math.abs(sumFitness - checkFitness) > 1e-12) {
 					logger.warning(
-							"accounting issue: sum of fitness is " + checkFitness + " instead of sumFitness=" + sumFitness);
+							"accounting issue: sum of fitness is " + checkFitness + " instead of sumFitness="
+									+ sumFitness);
 					isConsistent = false;
 				}
 				// restore data
@@ -3674,8 +3688,7 @@ public abstract class IBSPopulation {
 				fitness = fitnessStore;
 				sumFitness = sumFitnessStore;
 			}
-		}
-		else {
+		} else {
 			// no adjust scores
 			double checkFitness = 0.0;
 			// fitness array may not exist
@@ -3698,7 +3711,8 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Returns the initial trait(s) of this population in the array {@code init}. Used
+	 * Returns the initial trait(s) of this population in the array {@code init}.
+	 * Used
 	 * by GUI to visualize the initial state of this IBS model.
 	 * 
 	 * @param init the array for returning the initial trait values
@@ -3855,7 +3869,7 @@ public abstract class IBSPopulation {
 		if (hasLookupTable) {
 			StringBuffer buf = new StringBuffer();
 			buf.append(Formatter.format(getScoreAt(0), digits));
-			for (int n=1; n<nPopulation; n++)
+			for (int n = 1; n < nPopulation; n++)
 				buf.append(Formatter.VECTOR_DELIMITER + " " + Formatter.format(getScoreAt(n), digits));
 			return buf.toString();
 		}
@@ -3885,7 +3899,7 @@ public abstract class IBSPopulation {
 		if (hasLookupTable) {
 			StringBuffer buf = new StringBuffer();
 			buf.append(Formatter.format(getFitnessAt(0), digits));
-			for (int n=1; n<nPopulation; n++)
+			for (int n = 1; n < nPopulation; n++)
 				buf.append(Formatter.VECTOR_DELIMITER + " " + Formatter.format(getFitnessAt(n), digits));
 			return buf.toString();
 		}
@@ -4026,10 +4040,9 @@ public abstract class IBSPopulation {
 	 * Set the fraction of the population that gets updated in synchronous updates.
 	 * 
 	 * @param sync the fraction that gets updated
-	 * @return {@code true} if the fraction changed
 	 */
 	public void setSyncFraction(double sync) {
-		if (sync <= 0.0 || sync > 1.0 || Math.abs(syncFraction-sync)<1e-8)
+		if (sync <= 0.0 || sync > 1.0 || Math.abs(syncFraction - sync) < 1e-8)
 			return;
 		syncFraction = sync;
 	}
@@ -4042,7 +4055,7 @@ public abstract class IBSPopulation {
 	public double getSyncFraction() {
 		return syncFraction;
 	}
-	
+
 	/**
 	 * Sets the type of migrations to {@code type}.
 	 * 

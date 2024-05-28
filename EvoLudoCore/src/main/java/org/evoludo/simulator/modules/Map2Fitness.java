@@ -302,7 +302,7 @@ public class Map2Fitness {
 		/**
 		 * Key of map. Used when parsing command line options.
 		 * 
-		 * @see Module#clo
+		 * @see Map2Fitness#clo
 		 */
 		String key;
 

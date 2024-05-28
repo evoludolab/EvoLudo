@@ -160,9 +160,15 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @author Christoph Hauert
 	 */
 	public interface Shifting extends Shifter, MouseOutHandler, MouseDownHandler, MouseUpHandler, MouseMoveHandler, //
-					TouchStartHandler, TouchEndHandler, TouchMoveHandler {
+			TouchStartHandler, TouchEndHandler, TouchMoveHandler {
 	}
 
+	/**
+	 * Graphs that support shifting of their view should implement this interface.
+	 * Basic shifting is provided by {@link AbstractGraph} and is automatically
+	 * enabled unless {@link AbstractGraph#controller} is an instance of
+	 * {@code Shifter}.
+	 */
 	public interface Shifter {
 		/**
 		 * Shift the (zoomed) graph within the view port by {@code (dx, dy)}. Positive
@@ -215,6 +221,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		public void zoom(double zoom);
 	}
 
+	/**
+	 * Graphs that support zooming should implement this interface. Basic zooming is
+	 * provided by {@link AbstractGraph} and is automatically enabled unless
+	 * {@link AbstractGraph#controller} is an instance of {@code Zoomer}.
+	 */
 	public interface Zoomer {
 
 		/**
@@ -232,7 +243,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * Graphs that show trajectories and support exporting their data should implement this interface.
+	 * Graphs that show trajectories and support exporting their data should
+	 * implement this interface.
 	 */
 	public interface HasTrajectory {
 
@@ -324,8 +336,16 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	protected Tooltip tooltip;
 
+	/**
+	 * The provider for tooltips.
+	 */
 	BasicTooltipProvider tooltipProvider;
 
+	/**
+	 * Set the provider for tooltips.
+	 * 
+	 * @param tooltipProvider the provider for tooltips
+	 */
 	public void setTooltipProvider(BasicTooltipProvider tooltipProvider) {
 		this.tooltipProvider = tooltipProvider;
 	}
@@ -419,7 +439,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected static final int DEFAULT_BUFFER_SIZE = 10000;
 
 	/**
-	 * Return the {@link RingBuffer<double[]>} containing historical data, if applicable.
+	 * Return the {@link RingBuffer<double[]>} containing historical data, if
+	 * applicable.
 	 * 
 	 * @return the buffer with historical data or {@code null}
 	 */
@@ -430,7 +451,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * The minimum time between updates in milliseconds.
 	 */
-	public static final int MIN_MSEC_BETWEEN_UPDATES = 100;	// max 10 updates per second
+	public static final int MIN_MSEC_BETWEEN_UPDATES = 100; // max 10 updates per second
 
 	/**
 	 * The field to store the time of the last update.
@@ -444,7 +465,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	public boolean doUpdate() {
 		double now = Duration.currentTimeMillis();
-		if( now - updatetime < MIN_MSEC_BETWEEN_UPDATES)
+		if (now - updatetime < MIN_MSEC_BETWEEN_UPDATES)
 			return false;
 		updatetime = now;
 		return true;
@@ -669,7 +690,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @param colors  the list of custom colors
 	 */
 	public void setMarkers(ArrayList<double[]> markers, String[] colors) {
-		if (colors== null)
+		if (colors == null)
 			colors = new String[] { "rgb(0,0,0,0.4)" };
 		this.markers = markers;
 		markerColors = colors;
@@ -729,7 +750,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * The flag to indicate whether the graph supports zoom. The default is no
 	 * support.
 	 */
-	 protected boolean hasZoom = false;
+	protected boolean hasZoom = false;
 
 	/**
 	 * The context menu item to reset the zoom level.
@@ -1425,6 +1446,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		hasMessage = false;
 	}
 
+	/**
+	 * Check if the graph displays a message.
+	 * 
+	 * @return {@code true} if message displayed
+	 */
 	public boolean hasMessage() {
 		return hasMessage;
 	}
@@ -1553,7 +1579,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void onMouseOut(MouseOutEvent event) {
 		leftMouseButton = false;
 		element.removeClassName("evoludo-cursorMoveView");
-		if (mouseMoveHandler != null ) {
+		if (mouseMoveHandler != null) {
 			mouseMoveHandler.removeHandler();
 			mouseMoveHandler = null;
 		}
@@ -1901,22 +1927,35 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	public static class MyContext2d extends Context2d {
 
+		/**
+		 * Create a new custom context.
+		 */
 		protected MyContext2d() {
 		}
-	
+
+		/**
+		 * Set the line dash pattern for drawing lines.
+		 * 
+		 * @param segments the line dash pattern
+		 */
 		public final native void setLineDash(int[] segments) /*-{
 			this.setLineDash(segments);
 		}-*/;
 	}
 
 	/**
-	 * The style features for graphs.
-	 * 
-	 * @author Christoph Hauert
+	 * The style features for graphs. This is a collection of settings for line
+	 * styles, font sizes, ticks, padding, etc.
 	 */
 	public static class GraphStyle {
 		// public AxisStyle x = new AxisStyle();
 		// public AxisStyle y = new AxisStyle();
+
+		/**
+		 * Create a new graph style.
+		 */
+		public GraphStyle() {
+		}
 
 		/**
 		 * The minimum padding (in pixels) between boundaries of the HTML element and
@@ -2132,7 +2171,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		/**
 		 * The dashing pattern for a dashed line.
 		 */
-		public int[] solidLine = new int[] { };
+		public int[] solidLine = new int[] {};
 
 		/**
 		 * The dashing pattern for a dashed line.

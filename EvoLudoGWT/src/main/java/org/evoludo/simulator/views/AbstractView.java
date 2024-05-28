@@ -255,7 +255,8 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * modes for running the model. The default mode is {@link Mode#DYNAMICS} to
 	 * generate a time series of the states of the model. Some views may digest data
 	 * and, for example, show statistics such as fixation probabilities or times, in
-	 * which case the mode {@link Mode#STATISTICS} should be requested.
+	 * which case the mode {@link Mode#STATISTICS_SAMPLE} or
+	 * {@link Mode#STATISTICS_UPDATE} should be requested.
 	 * 
 	 * @return the mode of this view
 	 * 

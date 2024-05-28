@@ -133,7 +133,7 @@ public abstract class IBS implements Model.IBS {
 	 */
 	protected Logger logger;
 
-	@Override 
+	@Override
 	public Logger getLogger() {
 		return logger;
 	}
@@ -317,7 +317,7 @@ public abstract class IBS implements Model.IBS {
 	 * multi-species models this requires that all species are updated
 	 * synchronously. Helper variable for {@code ibsStep(double)}.
 	 * 
-	 * @see #clo
+	 * @see PopulationUpdate#clo
 	 * @see #check()
 	 * @see #ibsStep(double)
 	 */
@@ -450,9 +450,9 @@ public abstract class IBS implements Model.IBS {
 			// optimize waiting time in homogeneous states by advancing time and
 			// deterministically introduce new mutant (currently single species only)
 			// optimizeHomo also requires that mutations are rare (otherwise this
-			// optimization is pointless); more specifically mutation rates 
-			// <0.1/nPopulation such that mutations occur less than every 10 
-			// generations and hence scores can be assumed to be homogeneous when 
+			// optimization is pointless); more specifically mutation rates
+			// <0.1/nPopulation such that mutations occur less than every 10
+			// generations and hence scores can be assumed to be homogeneous when
 			// the mutant arises.
 			Module module = population.getModule();
 			double realnorm = 1.0 / (population.getTotalFitness() * module.getSpeciesUpdateRate());
@@ -465,7 +465,8 @@ public abstract class IBS implements Model.IBS {
 			update();
 			// communicate update
 			engine.fireModelChanged();
-//XXX this can easily skip past requested stops - ignore? does not make much sense anyways.
+			// XXX this can easily skip past requested stops - ignore? does not make much
+			// sense anyways.
 			realtime += realnorm;
 			generation += norm;
 			// introduce mutation uniformly at random
@@ -487,16 +488,17 @@ public abstract class IBS implements Model.IBS {
 			return false;
 		}
 		// note: time resolution is limited. need to allow for some slack when
-		// signalling convergence. using 1/nPopulation of the first species is 
+		// signalling convergence. using 1/nPopulation of the first species is
 		// an approximation but hopefully good enough. deviations expected in
-		// multi-species modules with different population sizes or different 
+		// multi-species modules with different population sizes or different
 		// update rates.
 		double minIncr = 1.0 / species.get(0).getNPopulation();
 		return (Math.abs(nextHalt - generation) >= minIncr);
 	}
 
 	/**
-	 * The flag to indicate whether the model is currently relaxing the initial configuration.
+	 * The flag to indicate whether the model is currently relaxing the initial
+	 * configuration.
 	 */
 	boolean isRelaxing = false;
 
@@ -614,7 +616,7 @@ public abstract class IBS implements Model.IBS {
 			wScoreTot += sum * rate;
 		}
 		// if wPopTot is based on maximum population size, gincr is a constant
-		//TODO: how to define a generation in populations with varying size? realtime
+		// TODO: how to define a generation in populations with varying size? realtime
 		// only? in particular, gincr is no longer constant if based on actual
 		// population size.
 		double gincr = 1.0 / wPopTot;
@@ -647,8 +649,8 @@ public abstract class IBS implements Model.IBS {
 					// uniform migration events (temperature based migrations
 					// are part of replication events)
 					// case MIGRATION:
-					// 	dt = debugFocalSpecies.migrate();
-					// 	break;
+					// dt = debugFocalSpecies.migrate();
+					// break;
 					default:
 						engine.fatal("unknown event type...");
 				}
@@ -659,7 +661,8 @@ public abstract class IBS implements Model.IBS {
 					n += debugFocalSpecies.getModule().getNPopulation();
 				} else {
 					generation += gincr;
-					realtime = (wScoreTot < 0.0 ? Double.POSITIVE_INFINITY : realtime + 1.0 / (wScoreTot * wScoreTot * dt));
+					realtime = (wScoreTot < 0.0 ? Double.POSITIVE_INFINITY
+							: realtime + 1.0 / (wScoreTot * wScoreTot * dt));
 				}
 				// if wPopTot is based on maximum population size it is a constant
 				// wPopTot = 0.0;
@@ -723,8 +726,7 @@ public abstract class IBS implements Model.IBS {
 		engine.fireModelChanged();
 	}
 
-	
-	@Override 
+	@Override
 	public Module getSpecies(int id) {
 		return species.get(id);
 	}
@@ -1141,9 +1143,10 @@ public abstract class IBS implements Model.IBS {
 	 * essentially unbounded... On regular structures the two variants merely amount
 	 * to a rescaling of the selection strength.
 	 * 
-	 * @see Module#cloSelection
+	 * @see Map2Fitness#setSelection(double)
 	 */
-	public final CLOption cloAccumulatedScores = new CLOption("accuscores", "noaccu", CLOption.Argument.NONE, EvoLudo.catModel, 
+	public final CLOption cloAccumulatedScores = new CLOption("accuscores", "noaccu", CLOption.Argument.NONE,
+			EvoLudo.catModel,
 			"--accuscores    accumulate scores (instead of averaging)",
 			new CLODelegate() {
 
@@ -1171,8 +1174,8 @@ public abstract class IBS implements Model.IBS {
 					for (Module mod : species) {
 						IBSPopulation pop = mod.getIBSPopulation();
 						output.println("# scoring:              " + //
-						(pop.getPlayerScoreAveraged() ? "averaged" : "accumulated") + //
-						(isMultispecies	? " (" + mod.getName() + ")" : ""));
+								(pop.getPlayerScoreAveraged() ? "averaged" : "accumulated") + //
+								(isMultispecies ? " (" + mod.getName() + ")" : ""));
 					}
 				}
 			});
@@ -1182,7 +1185,8 @@ public abstract class IBS implements Model.IBS {
 	 * 
 	 * @see ScoringType
 	 */
-	public final CLOption cloScoringType = new CLOption("resetscores", ScoringType.RESET_ALWAYS.getKey(), CLOption.Argument.REQUIRED, EvoLudo.catModel, 
+	public final CLOption cloScoringType = new CLOption("resetscores", ScoringType.RESET_ALWAYS.getKey(),
+			CLOption.Argument.REQUIRED, EvoLudo.catModel,
 			"--resetscores <t>  type for restting scores t:",
 			new CLODelegate() {
 
@@ -1221,7 +1225,7 @@ public abstract class IBS implements Model.IBS {
 					for (Module mod : species) {
 						IBSPopulation pop = mod.getIBSPopulation();
 						output.println("# resetscores:          " + pop.getPlayerScoring() + //
-							(isMultispecies	? " (" + mod.getName() + ")" : ""));
+								(isMultispecies ? " (" + mod.getName() + ")" : ""));
 					}
 				}
 			});
@@ -1230,7 +1234,8 @@ public abstract class IBS implements Model.IBS {
 	 * Command line option to set whether players interact with all their neighbours
 	 * or a random subsample.
 	 */
-	public final CLOption cloInteractions = new CLOption("interactions", IBSGroup.SamplingType.ALL.getKey(), EvoLudo.catModel,
+	public final CLOption cloInteractions = new CLOption("interactions", IBSGroup.SamplingType.ALL.getKey(),
+			EvoLudo.catModel,
 			"--interactions <t [n]> select interaction type t:",
 			new CLODelegate() {
 
@@ -1284,8 +1289,8 @@ public abstract class IBS implements Model.IBS {
 						IBSGroup group = pop.getInterGroup();
 						IBSGroup.SamplingType st = group.getSampling();
 						output.println("# interactions:         " + st + //
-							(st == IBSGroup.SamplingType.RANDOM ? " " + group.getNSamples() : "") + //
-							(isMultispecies ? " (" + mod.getName() + ")" : ""));
+								(st == IBSGroup.SamplingType.RANDOM ? " " + group.getNSamples() : "") + //
+								(isMultispecies ? " (" + mod.getName() + ")" : ""));
 					}
 				}
 			});
@@ -1294,7 +1299,8 @@ public abstract class IBS implements Model.IBS {
 	 * Command line option to set the method for choosing references/models among
 	 * the neighbours of a player for updating their strategy.
 	 */
-	public final CLOption cloReferences = new CLOption("references", IBSGroup.SamplingType.RANDOM.getKey() + " 1", EvoLudo.catModel,
+	public final CLOption cloReferences = new CLOption("references", IBSGroup.SamplingType.RANDOM.getKey() + " 1",
+			EvoLudo.catModel,
 			"--references <t [n]> select reference type t:",
 			new CLODelegate() {
 
@@ -1351,8 +1357,8 @@ public abstract class IBS implements Model.IBS {
 						IBSGroup group = pop.getCompGroup();
 						IBSGroup.SamplingType st = group.getSampling();
 						output.println("# references:           " + st + //
-							(st == IBSGroup.SamplingType.RANDOM ? " " + group.getNSamples() : "") + //
-							(isMultispecies ? " (" + mod.getName() + ")" : ""));
+								(st == IBSGroup.SamplingType.RANDOM ? " " + group.getNSamples() : "") + //
+								(isMultispecies ? " (" + mod.getName() + ")" : ""));
 					}
 				}
 			});
@@ -1673,7 +1679,7 @@ public abstract class IBS implements Model.IBS {
 				 */
 				@Override
 				public boolean parse(String arg) {
-					SpeciesUpdateType sut = (SpeciesUpdateType)cloSpeciesUpdateType.match(arg);
+					SpeciesUpdateType sut = (SpeciesUpdateType) cloSpeciesUpdateType.match(arg);
 					if (sut == null) {
 						logger.warning("species update '" + arg + "' unknown - using '"
 								+ getSpeciesUpdateType() + "'");
@@ -1693,7 +1699,8 @@ public abstract class IBS implements Model.IBS {
 	/**
 	 * Command line option to enable consistency checks.
 	 */
-	public final CLOption cloConsistency = new CLOption("consistency", "noconsistency", CLOption.Argument.NONE, EvoLudo.catModel,
+	public final CLOption cloConsistency = new CLOption("consistency", "noconsistency", CLOption.Argument.NONE,
+			EvoLudo.catModel,
 			"--consistency   check consistency of scores etc.", new CLODelegate() {
 
 				/**
@@ -1748,7 +1755,7 @@ public abstract class IBS implements Model.IBS {
 			pup.clo.setDefault(PopulationUpdate.Type.ECOLOGY.getKey());
 		}
 		if (!allStatic) {
-			// options that are only meaningful if at least some populations do not 
+			// options that are only meaningful if at least some populations do not
 			// have static fitness
 			parser.addCLO(cloAccumulatedScores);
 			parser.addCLO(cloScoringType);

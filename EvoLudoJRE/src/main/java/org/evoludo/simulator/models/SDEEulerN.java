@@ -117,7 +117,6 @@ public class SDEEulerN extends SDEEuler {
 	 * generator should be used.
 	 * 
 	 * @param engine the pacemeaker for running the model
-	 * @param module the module to numerically integrate
 	 * 
 	 * @see SDEEuler
 	 * @see EvoLudo#getRNG()

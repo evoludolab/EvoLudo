@@ -97,8 +97,8 @@ public class PDERDA extends PDERD {
 	 * @param engine     the pacemeaker for running the model
 	 *
 	 * @see EvoLudo#getRNG()
-	 * @see org.evoludo.simulator.PDESupervisorGWT PDESupervisorGWT
-	 * @see org.evoludo.simulator.PDESupervisorJRE PDESupervisorJRE
+	 * @see org.evoludo.simulator.models.PDESupervisorGWT PDESupervisorGWT
+	 * @see org.evoludo.simulator.models.PDESupervisorJRE PDESupervisorJRE
 	 */
 	public PDERDA(EvoLudo engine) {
 		super(engine);

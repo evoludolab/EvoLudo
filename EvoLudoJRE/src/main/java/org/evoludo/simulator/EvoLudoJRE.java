@@ -1248,14 +1248,14 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * The data array that contains identifiers for the kind of data reported by
 	 * simulations.
 	 * 
-	 * @see #simulation(String[])
+	 * @see #simulation()
 	 */
 	ArrayList<MultiView.DataTypes> dataTypes;
 
 	/**
 	 * The field to specify the accurracy of data reported in simulations.
 	 * 
-	 * @see #simulation(String[])
+	 * @see #simulation()
 	 */
 	int dataDigits;
 

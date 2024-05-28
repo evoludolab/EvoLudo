@@ -64,7 +64,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 		 * 
 		 * @param progress the current progress
 		 * 
-		 * @see Animate
+		 * @see org.evoludo.graphics.GenericPopGraph#hasAnimatedLayout()
 		 */
 		public void layoutUpdate(double progress);
 

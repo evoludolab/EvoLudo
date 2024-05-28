@@ -146,7 +146,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the list of markers
 	 */
-	 public ArrayList<double[]> getMarkers() {
+	public ArrayList<double[]> getMarkers() {
 		return markers.getMarkers();
 	}
 
@@ -180,7 +180,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @param model the current model
 	 */
 	public void setModel(Model model) {
-		markers = new Markers(model);		
+		markers = new Markers(model);
 		for (Module pop : species) {
 			pop.model = model;
 			pop.markers = markers;
@@ -350,7 +350,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * <p>
 	 * Default run-loop for modules. Opportunity to override in subclasses for
 	 * running customized simulations. Currently only called from
-	 * {@link org.evoludo.simulator.EvoLudoJRE#simulation(String[])} if custom
+	 * {@link org.evoludo.simulator.EvoLudoJRE#simulation()} if custom
 	 * simulation class is specified in {@code jar} file.
 	 */
 	@Override
@@ -643,7 +643,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * <dd>the colors of individuals that switched strategy since the last update
 	 * <dt>continuous
 	 * <dd>the colors for the mean &#177; standard deviation, see e.g.
-	 * {@link org.evoludo.simulator.MVMean}.
+	 * {@link org.evoludo.simulator.views.Mean}.
 	 * </dl>
 	 * Specifying the second set of colors is optional. By default they are
 	 * automatically generated as lighter versions of the base colors.
@@ -765,8 +765,8 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 
 	/**
 	 * Opportunity for modules to make adjustments to the color map in graphs such
-	 * as {@link org.evoludo.simulator.MVPop2D} or
-	 * {@link org.evoludo.simulator.MVPop3D}. By default no changes are made.
+	 * as {@link org.evoludo.simulator.views.Pop2D} or
+	 * {@link org.evoludo.simulator.views.Pop3D}. By default no changes are made.
 	 * 
 	 * @param <T>      the type of the color map
 	 * @param colorMap the color map
@@ -785,8 +785,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the minimum payoff/score
 	 * 
-	 * @see #getMinScore()
-	 * @see Model#processMinScore(int, double)
+	 * @see Model#getMinScore(int)
 	 */
 	public abstract double getMinGameScore();
 
@@ -797,8 +796,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the maximum payoff/score
 	 * 
-	 * @see #getMaxScore()
-	 * @see Model#processMaxScore(int, double)
+	 * @see Model#getMaxScore(int)
 	 */
 	public abstract double getMaxGameScore();
 
@@ -979,7 +977,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @param size the population size
 	 * @return {@code true} if population size changed
 	 * 
-	 * @see EvoLudo#reset()
+	 * @see EvoLudo#requiresReset(boolean)
 	 */
 	public boolean setNPopulation(int size) {
 		int oldNPopulation = nPopulation;
@@ -1724,7 +1722,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		if (anyVacant) {
 			parser.addCLO(cloDeathRate);
 		}
-		// add option to disable traits if >=3 traits, except >=2 traits for  
+		// add option to disable traits if >=3 traits, except >=2 traits for
 		// continuous modules with no vacancies (cannot disable vacancies)
 		if (minTraits > 2 || (anyNonVacant && minTraits > 1))
 			parser.addCLO(cloTraitDisable);

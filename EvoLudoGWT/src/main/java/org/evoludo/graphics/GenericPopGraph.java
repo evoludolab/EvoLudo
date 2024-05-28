@@ -97,12 +97,12 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	protected T[] data;
 
 	/**
-	 * Maximum number of nodes in network for animated layout, see {@link #DEFAULT}
+	 * Maximum number of nodes in network for animated layout.
 	 */
 	static final int MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT = 1000;
 
 	/**
-	 * Maximum number of edges in network for animated layout, see {@link #DEFAULT}
+	 * Maximum number of edges in network for animated layout.
 	 */
 	static final int MAX_ANIMATE_LAYOUT_LINKS_DEFAULT = 5000;
 

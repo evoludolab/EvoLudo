@@ -981,7 +981,7 @@ public class EvoLudoLab extends JFrame
 	 * the desired simulation.
 	 *
 	 * @param args array of command line arguments
-	 * @see EvoLudoJRE#simulation(String[])
+	 * @see EvoLudoJRE#simulation()
 	 */
 	public static void main(String[] args) {
 		EvoLudoJRE engine = new EvoLudoJRE();

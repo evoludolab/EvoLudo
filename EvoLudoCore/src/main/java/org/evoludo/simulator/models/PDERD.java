@@ -110,8 +110,8 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	 * implementations. In particular, JRE allows for parallel execution of certain
 	 * steps, while GWT uses a scheduling mechanism.
 	 * 
-	 * @see org.evoludo.simulator.PDESupervisorJRE
-	 * @see org.evoludo.simulator.PDESupervisorGWT
+	 * @see org.evoludo.simulator.models.PDESupervisorJRE
+	 * @see org.evoludo.simulator.models.PDESupervisorGWT
 	 */
 	protected PDESupervisor supervisor;
 
@@ -326,8 +326,8 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	 * @param engine the pacemeaker for running the model
 	 * 
 	 * @see EvoLudo#getRNG()
-	 * @see org.evoludo.simulator.PDESupervisorGWT PDESupervisorGWT
-	 * @see org.evoludo.simulator.PDESupervisorJRE PDESupervisorJRE
+	 * @see org.evoludo.simulator.models.PDESupervisorGWT PDESupervisorGWT
+	 * @see org.evoludo.simulator.models.PDESupervisorJRE PDESupervisorJRE
 	 */
 	public PDERD(EvoLudo engine) {
 		super(engine);
@@ -1302,10 +1302,8 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	 * 
 	 * @author Christoph Hauert
 	 * 
-	 * @see org.evoludo.simulator.modules.Discrete#cloInit Discrete.cloInit
-	 * @see EvoLudo#cloInitType
-	 * @see PDERD#setInitType(org.evoludo.util.CLOption.Key)
-	 *      setInitType(CLOption.Key)
+	 * @see #parse(String)
+	 * @see ODEEuler#cloInitType
 	 */
 	public enum InitType implements CLOption.Key {
 
@@ -1351,7 +1349,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		/**
 		 * Key of initialization type. Used when parsing command line options.
 		 * 
-		 * @see EvoLudo#cloInitType
+		 * @see ODEEuler#cloInitType
 		 */
 		String key;
 
@@ -1400,7 +1398,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	 * @param arg the arguments to parse
 	 * @return {@code true} if parsing successful
 	 * 
-	 * @see InitType
+	 * @see ODEEuler.InitType
 	 * @see PDERD.InitType
 	 */
 	@Override
@@ -1652,9 +1650,6 @@ public class PDERD extends ODEEuler implements Model.PDE {
 				}
 			});
 
-	// /**
-	// *
-	// */
 	// public final CLOption cloPdeColorRange = new CLOption("pdecolorrange",
 	// EvoLudo.catGUI,
 	// "auto", null,
@@ -1683,12 +1678,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		cloInitType.setDefault(InitType.RANDOM.getKey());
 	}
 
-	// /**
-	// *
-	// * @param colorranges
-	// */
 	// public boolean parsePDEColorRange(String colorranges) {
-	//// XXX this is not a standard delimiter and likely causes issues...
 	// String[] ranges = colorranges.split(";");
 	// if( ranges==null ) {
 	// delegate.getLogger().warning("invalid argument for pdecolorrange

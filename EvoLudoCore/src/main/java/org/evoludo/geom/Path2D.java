@@ -484,8 +484,9 @@ public class Path2D {
 	 * 
 	 * @return an instance of <code>Rectangle2D</code> that is a
 	 *         high-precision bounding box of the <code>Shape</code>.
-	 * @see #getBounds
 	 * @since 1.6
+	 * 
+	 * @evoludo.impl {@code getBounds()} is not implemented
 	 */
 	public final synchronized Rectangle2D getBounds2D() {
 		double x1, y1, x2, y2;

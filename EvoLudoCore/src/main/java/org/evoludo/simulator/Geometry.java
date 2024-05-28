@@ -82,7 +82,8 @@ public class Geometry {
 	Logger logger;
 
 	/**
-	 * Instantiates a new geometry for data visualization with pacemaker {@code engine}.
+	 * Instantiates a new geometry for data visualization with pacemaker
+	 * {@code engine}.
 	 * 
 	 * @param engine the pacemeaker for running the model
 	 * 
@@ -251,7 +252,7 @@ public class Geometry {
 	public Type subgeometry = Type.MEANFIELD;
 
 	/**
-	 * The available graph geometries:
+	 * The types of graph geometries. Currently available graph geometries are:
 	 * <dl>
 	 * <dt>MEANFIELD</dt>
 	 * <dd>mean-field/well-mixed population</dd>
@@ -380,7 +381,8 @@ public class Geometry {
 		SQUARE_NEUMANN("n", "square lattice (von Neumann)"),
 
 		/**
-		 * Square lattice. Four second-nearest neighbours (north-east, north-west, south-west, south-east).
+		 * Square lattice. Four second-nearest neighbours (north-east, north-west,
+		 * south-west, south-east).
 		 * 
 		 * @see Geometry#initGeometrySquare()
 		 * @see Geometry#initGeometrySquareVonNeumann2nd(int, int, int)
@@ -906,7 +908,7 @@ public class Geometry {
 	/**
 	 * Fraction of undirected links to add or rewire.
 	 * 
-	 * @see #rewireUndirected()
+	 * @see #rewireUndirected(double)
 	 * @see #addUndirected()
 	 */
 	public double pRewire = -1.0;
@@ -977,7 +979,7 @@ public class Geometry {
 	 * </ol>
 	 * 
 	 * @param inter the interaction graph
-	 * @param comp the competition graph
+	 * @param comp  the competition graph
 	 * @return {@code true} if a single graphical representation suffices,
 	 *         {@code false} if two separate graphical representations are required
 	 *         for the interaction and the competition graphs
@@ -1839,9 +1841,8 @@ public class Geometry {
 	 * <h3>Requirements/notes:</h3>
 	 * None.
 	 * 
-	 * @param degree the degree of the square lattice
-	 * @param start  the index of the first node to process
-	 * @param end    the index of the last node to process
+	 * @param start the index of the first node to process
+	 * @param end   the index of the last node to process
 	 * @return the number of nodes processed
 	 */
 	private int initGeometryHierarchySquare(int start, int end) {
@@ -4109,7 +4110,7 @@ public class Geometry {
 	 * <h3>Requirements/notes:</h3>
 	 * None.
 	 * 
-	 * @see #rewireUndirected()
+	 * @see #rewireUndirected(double)
 	 * @see #rewireDirected()
 	 */
 	public void rewire() {

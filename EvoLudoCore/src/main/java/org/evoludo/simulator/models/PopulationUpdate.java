@@ -12,8 +12,8 @@ public class PopulationUpdate {
 
 	/**
 	 * The model that is using this population update.
-	 * <p>
-	 * Currently only IBS models use population updates.
+	 * 
+	 * @evoludo.impl Currently only IBS models use population updates.
 	 */
 	IBS ibs;
 
@@ -70,10 +70,11 @@ public class PopulationUpdate {
 	 * 
 	 * @return {@code true} if update is Moran
 	 * 
-	 * @see Module#clo
+	 * @see Type
 	 */
 	public boolean isMoran() {
-		return (type.equals(Type.MORAN_BIRTHDEATH) || type.equals(Type.MORAN_DEATHBIRTH) || type.equals(Type.MORAN_IMITATE));
+		return (type.equals(Type.MORAN_BIRTHDEATH) || type.equals(Type.MORAN_DEATHBIRTH)
+				|| type.equals(Type.MORAN_IMITATE));
 	}
 
 	/**
@@ -116,6 +117,8 @@ public class PopulationUpdate {
 							continue;
 						}
 						pop.getPopulationUpdate().setType(put);
+						if (put != PopulationUpdate.Type.SYNC)
+							continue;
 						// parse p, if present
 						String[] args = updt.split("\\s+|=");
 						double sync = 1.0;
@@ -144,10 +147,10 @@ public class PopulationUpdate {
 	 * <dl>
 	 * <dt>synchronous</dt>
 	 * <dd>Synchronized population updates. The number of individuals that reassess
-	 * their strategy is determined by the player update noise,
-	 * {@link org.evoludo.simulator.modules.PlayerUpdate#getNoise()}. Without noise
-	 * all individuals update their strategy, while with high noise levels only a
-	 * few update (but at least one individual and each at most once).</dd>
+	 * their strategy is determined by an optional fraction following the key. The
+	 * default is that all individuals update. For a fraction of zero one random
+	 * individual updates, which is the same as {@code asynchronous} but much less
+	 * efficient.</dd>
 	 * <dt>Wright-Fisher</dt>
 	 * <dd>Wright-Fisher process (synchronous)</dd>
 	 * <dt>asynchronous</dt>
@@ -164,18 +167,17 @@ public class PopulationUpdate {
 	 * For <b>size</b> and <b>fitness</b> selection is also proportional to the
 	 * update rate of each species.
 	 * 
-	 * @see org.evoludo.simulator.models.IBS#clo
-	 *      IBS.cloPopulationUpdate
-	 * @see org.evoludo.simulator.modules.PlayerUpdate#clo
+	 * @see PopulationUpdate#clo
+	 * @see IBSPopulation#setSyncFraction(double)
 	 */
 	public static enum Type implements CLOption.Key {
 
 		/**
 		 * Synchronized population updates. The number of individuals that reassess
-		 * their strategy is determined by the player update noise,
-		 * {@link Module#cloPlayerUpdateNoise}. Without noise all individuals update
-		 * their strategy, while with high noise levels only a few update (but at least
-		 * one individual and each at most once).
+		 * their strategy is determined by an optional fraction following the key. The
+		 * default is that all individuals update. For a fraction of zero one random
+		 * individual updates, which is the same as {@code asynchronous} but much less
+		 * efficient.
 		 */
 		SYNC("synchronous", "synchronized population updates"),
 
@@ -223,8 +225,7 @@ public class PopulationUpdate {
 		/**
 		 * Key of population update type. Used for parsing command line options.
 		 * 
-		 * @see org.evoludo.simulator.models.IBS#clo
-		 *      IBS.cloPopulationUpdate
+		 * @see PopulationUpdate#clo
 		 */
 		String key;
 

@@ -290,8 +290,8 @@ public abstract interface Model extends CLOProvider {
 		 * increment <code>dt</code>.
 		 * <p>
 		 * <strong>Note:</strong> This method needs to be public to permit access by
-		 * {@link org.evoludo.simulator.PDESupervisorGWT} and
-		 * {@link org.evoludo.simulator.PDESupervisorJRE}
+		 * {@link org.evoludo.simulator.models.PDESupervisorGWT PDESupervisorGWT} and
+		 * {@link org.evoludo.simulator.models.PDESupervisorJRE PDESupervisorJRE}
 		 * 
 		 * @param dt the time increment for diffusion
 		 */
@@ -486,9 +486,8 @@ public abstract interface Model extends CLOProvider {
 		 * for traits <code>trait1</code> and <code>trait2</code>. The histogram is
 		 * returned in the linear array <code>bins</code> and arranged in a way that is
 		 * compatible with square lattice geometries for visualization by
-		 * {@link org.evoludo.simulator.MVDistribution} and
-		 * {@link org.evoludo.graphics.PopGraph2D} (GWT only). For modules with a
-		 * single trait only, <code>trait1</code> and <code>trait2</code> are ignored.
+		 * {@link org.evoludo.simulator.views.Distribution} (GWT only). For modules with
+		 * a single trait only, <code>trait1</code> and <code>trait2</code> are ignored.
 		 *
 		 * @param id     the id of the population for multi-species models
 		 * @param bins   the data array for storing the histogram
@@ -1042,7 +1041,7 @@ public abstract interface Model extends CLOProvider {
 	public default String[] getMeanNames() {
 		int nMean = getNMean();
 		String[] names = new String[nMean];
-		for (int n=0; n<nMean; n++)
+		for (int n = 0; n < nMean; n++)
 			names[n] = getMeanName(n);
 		return names;
 	}

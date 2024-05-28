@@ -88,6 +88,8 @@ import org.evoludo.util.CLOption.Key;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
+// import org.evoludo.simulator.EvoLudoJRE;
+
 /**
  * Interface with the outside world. Deals with command line options, help,
  * encoding/restoring state, logging, printing of result, etc. GWT/JRE neutral
@@ -393,7 +395,7 @@ public abstract class EvoLudo
 				activeModel = createIBS(activeModule);
 		}
 		addCLOProvider(activeModel);
-		activeModule.setModel(activeModel); 
+		activeModule.setModel(activeModel);
 		activeModel.load();
 		if (changed)
 			fireModelLoaded();
@@ -456,8 +458,6 @@ public abstract class EvoLudo
 	/**
 	 * List of engine listeners that get notified when the state of the population
 	 * changed, for example after population reset or completed an update step.
-	 * 
-	 * @see MilestoneListener
 	 */
 	protected List<MilestoneListener> milestoneListeners = new ArrayList<MilestoneListener>();
 
@@ -484,8 +484,6 @@ public abstract class EvoLudo
 
 	/**
 	 * List of change listeners that get notified when the model changes.
-	 * 
-	 * @see Model.ChangeListener
 	 */
 	protected List<ChangeListener> changeListeners = new ArrayList<ChangeListener>();
 
@@ -1034,7 +1032,7 @@ public abstract class EvoLudo
 	public void debug() {
 		if (!activeModel.permitsDebugStep())
 			return;
-		// temporarily change to finer logging level for debugging 
+		// temporarily change to finer logging level for debugging
 		Level logLevel = logger.getLevel();
 		logger.setLevel(Level.ALL);
 		activeModel.debugStep();
@@ -1182,7 +1180,7 @@ public abstract class EvoLudo
 					}
 					break;
 				}
-			//$FALL-THROUGH$
+				//$FALL-THROUGH$
 			case STOP:
 				// stop requested (as opposed to simulations that stopped)
 				runFired = false;
@@ -1197,8 +1195,7 @@ public abstract class EvoLudo
 						modelInit();
 						isRunning = true;
 						next();
-					}
-					else
+					} else
 						run();
 				}
 				break;
@@ -1213,8 +1210,8 @@ public abstract class EvoLudo
 				pendingAction = PendingAction.NONE;
 				return;
 			default:
-			// note: CLO re-parsing requests are handled separately, see parseCLO()
-			// case CLO:
+				// note: CLO re-parsing requests are handled separately, see parseCLO()
+				// case CLO:
 		}
 		pendingAction = PendingAction.NONE;
 	}
@@ -1224,9 +1221,8 @@ public abstract class EvoLudo
 	 * drag'n'drop with the GWT GUI or through the <code>--restore</code> command
 	 * line argument. Notifies all registered {@link MilestoneListener}s.
 	 *
-	 * @see org.evoludo.EvoLudoWeb#restoreFromFile(String, String)
-	 *      EvoLudoWeb.restoreFromFile(String, String)
-	 * @see EvoLudo#restoreState(Plist)
+	 * @see #restoreFromFile()
+	 * @see #restoreState(Plist)
 	 */
 	public synchronized void fireModelRestored() {
 		runFired = false;
@@ -1345,8 +1341,8 @@ public abstract class EvoLudo
 	protected double nSamples;
 
 	/**
-	 * Sets the number of statistical samples taken after which the active {@link Model} is
-	 * halted.
+	 * Sets the number of statistical samples taken after which the active
+	 * {@link Model} is halted.
 	 * 
 	 * @param nSamples the number of generations
 	 * 
@@ -1357,8 +1353,8 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Gets the number of statistical samples after which the active {@link Model} is
-	 * halted.
+	 * Gets the number of statistical samples after which the active {@link Model}
+	 * is halted.
 	 * 
 	 * @return the number of statistical samples
 	 * 
@@ -1418,7 +1414,8 @@ public abstract class EvoLudo
 		if (activeModel.isTimeReversed()) {
 			// time is 'decreasing' find next smaller milestone
 			double halt = nGenerations < time ? nGenerations : Double.NEGATIVE_INFINITY;
-			double relax = (Math.abs(nRelaxation) > 1e-8 && nRelaxation < time) ? nRelaxation : Double.NEGATIVE_INFINITY;
+			double relax = (Math.abs(nRelaxation) > 1e-8 && nRelaxation < time) ? nRelaxation
+					: Double.NEGATIVE_INFINITY;
 			return Math.max(halt, relax);
 		}
 		// time is 'increasing'
@@ -1481,12 +1478,12 @@ public abstract class EvoLudo
 	 * @return supervisor for coordinating PDE calculations
 	 * 
 	 * @see org.evoludo.simulator.EvoLudoGWT#hirePDESupervisor(org.evoludo.simulator.models.Model.PDE)
-	 *      EvoLudoGWT#hirePDESupervisor(org.evoludo.simulator.models.Model.PDE)
+	 *      EvoLudoGWT#hirePDESupervisor(Model.PDE)
 	 * @see org.evoludo.simulator.EvoLudoJRE#hirePDESupervisor(org.evoludo.simulator.models.Model.PDE)
-	 *      EvoLudoJRE#hirePDESupervisor(org.evoludo.simulator.models.Model.PDE)
+	 *      EvoLudoJRE#hirePDESupervisor(Model.PDE)
 	 * @see org.evoludo.simulator.models.PDESupervisor
-	 * @see org.evoludo.simulator.PDESupervisorGWT
-	 * @see org.evoludo.simulator.PDESupervisorJRE
+	 * @see org.evoludo.simulator.models.PDESupervisorGWT
+	 * @see org.evoludo.simulator.models.PDESupervisorJRE
 	 */
 	public abstract PDESupervisor hirePDESupervisor(Model.PDE charge);
 
@@ -1504,7 +1501,7 @@ public abstract class EvoLudo
 	public abstract int elapsedTimeMsec();
 
 	/**
-	 * The copyright string
+	 * The copyright string.
 	 */
 	public static final String COPYRIGHT = "\u00a9 Christoph Hauert"; // \u00a9 UTF-8 character code for ©
 
@@ -1512,7 +1509,7 @@ public abstract class EvoLudo
 	 * Return version string of current model. Version must include reference to git
 	 * commit to ensure reproducibility of results.
 	 *
-	 * @return version string
+	 * @return the version string
 	 */
 	public String getVersion() {
 		String version = COPYRIGHT;
@@ -1608,6 +1605,7 @@ public abstract class EvoLudo
 	/**
 	 * Restore state of EvoLudo model from saved plist, which encodes engine state.
 	 * 
+	 * @return {@code true} on successfully restoring state
 	 * @see #encodeState()
 	 */
 	public abstract boolean restoreFromFile();
@@ -1629,7 +1627,7 @@ public abstract class EvoLudo
 	 * </p>
 	 *
 	 * @param plist the lookup table with key value pairs
-	 * @return <code>true</code> on successful restoration of state
+	 * @return {@code true} on successfully restoring state
 	 */
 	public boolean restoreState(Plist plist) {
 		if (plist == null) {
@@ -1732,7 +1730,7 @@ public abstract class EvoLudo
 				String[] moduleName = param.split("[\\s+,=]");
 				if (moduleName == null || moduleName.length < 2) {
 					logger.warning("module key missing");
-					return null;				
+					return null;
 				}
 				moduleKey = cloModule.match(moduleName[1]);
 				// module key found; no need to continue
@@ -1959,7 +1957,7 @@ public abstract class EvoLudo
 	/**
 	 * Command line option to set the delay between subsequent updates.
 	 */
-	public final CLOption cloDelay = new CLOption("delay", "" + DELAY_INIT, catGUI,  // DELAY_INIT
+	public final CLOption cloDelay = new CLOption("delay", "" + DELAY_INIT, catGUI, // DELAY_INIT
 			"--delay <d>     delay between updates (d: delay in msec)", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -2021,7 +2019,7 @@ public abstract class EvoLudo
 
 	/**
 	 * Command line option to set the number of samples to take for statistical
-	 * measurements. 
+	 * measurements.
 	 */
 	public final CLOption cloSamples = new CLOption("samples", "unlimited", EvoLudo.catSimulation,
 			"--samples <s>   number of samples for statistics", new CLODelegate() {
@@ -2031,11 +2029,11 @@ public abstract class EvoLudo
 					return true;
 				}
 
-		    	@Override
-		    	public void report(PrintStream ps) {
+				@Override
+				public void report(PrintStream ps) {
 					// for customized simulations
-		    		ps.println("# samples:              "+Formatter.format(nSamples, 4));
-		    	}
+					ps.println("# samples:              " + Formatter.format(nSamples, 4));
+				}
 			});
 
 	/**
@@ -2058,13 +2056,9 @@ public abstract class EvoLudo
 
 	/**
 	 * Command line option to set the color for trajectories. For example, this
-	 * affects the display in {@link org.evoludo.simulator.MVS3} (and
-	 * {@link org.evoludo.graphics.S3Graph}) or
-	 * {@link org.evoludo.simulator.MVPhase2D} (and
-	 * {@link org.evoludo.graphics.ParaGraph}).
+	 * affects the display in {@link org.evoludo.simulator.views.S3} or
+	 * {@link org.evoludo.simulator.views.Phase2D}.
 	 */
-	// note: cannot import org.evoludo.gwt classes in header (otherwise compilation
-	// of java port fails).
 	public final CLOption cloTrajectoryColor = new CLOption("trajcolor", "black", catGUI,
 			"--trajcolor <c>  color for trajectories\n"
 					+ "           <c>: color name or '(r,g,b[,a])' with r,g,b,a in [0-255]",
@@ -2129,8 +2123,8 @@ public abstract class EvoLudo
 	 */
 	public final CLOption cloVerbose = new CLOption("verbose", "info", catGlobal,
 			"--verbose <l>   level of verbosity with l one of\n" //
-			+ "                all, debug/finest, finer, fine, config,\n" //
-			+ "                info, warning, error, or none",
+					+ "                all, debug/finest, finer, fine, config,\n" //
+					+ "                info, warning, error, or none",
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -2199,7 +2193,8 @@ public abstract class EvoLudo
 		parser.addCLO(cloRun);
 		parser.addCLO(cloDelay);
 		parser.addCLO(cloGenerations);
-		if (activeModule instanceof HasHistogram.StatisticsProbability || activeModule instanceof HasHistogram.StatisticsTime)
+		if (activeModule instanceof HasHistogram.StatisticsProbability
+				|| activeModule instanceof HasHistogram.StatisticsTime)
 			parser.addCLO(cloSamples);
 		parser.addCLO(cloRelaxation);
 		parser.addCLO(cloReportInterval);
@@ -2207,7 +2202,7 @@ public abstract class EvoLudo
 		// option for trait color schemes only makes sense for modules with multiple
 		// continuous traits that have 2D/3D visualizations
 		if (activeModel.isContinuous() && activeModule.getNTraits() > 1 && //
-			(activeModule instanceof HasPop2D || activeModule instanceof HasPop3D)) {
+				(activeModule instanceof HasPop2D || activeModule instanceof HasPop3D)) {
 			parser.addCLO(cloTraitColorScheme);
 			cloTraitColorScheme.addKeys(ColorModelType.values());
 		}
@@ -2277,7 +2272,7 @@ public abstract class EvoLudo
 		/**
 		 * Create a new color model type.
 		 * 
-		 * @param key the name of the color model
+		 * @param key   the name of the color model
 		 * @param title the title of the color model
 		 * 
 		 * @see #cloTraitColorScheme
@@ -2328,7 +2323,7 @@ public abstract class EvoLudo
 		this.colorModelType = colorModelType;
 	}
 
-    /**
+	/**
 	 * Report error and stop model execution, if running.
 	 * 
 	 * @param msg the error message
@@ -2344,5 +2339,5 @@ public abstract class EvoLudo
 		}
 		logger.severe(msg);
 		throw new Error(msg);
-    }
+	}
 }

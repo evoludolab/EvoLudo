@@ -218,7 +218,8 @@ public class IBSDPopulation extends IBSPopulation {
 	public int[] strategiesTypeCount;
 
 	/**
-	 * The array with the initial number of individuals of each trait/strategic type.
+	 * The array with the initial number of individuals of each trait/strategic
+	 * type.
 	 */
 	public int[] initTypeCount;
 
@@ -532,7 +533,7 @@ public class IBSDPopulation extends IBSPopulation {
 	@Override
 	protected void maybeMutateMoran(int source, int dest) {
 		updateFromModelAt(dest, source);
-		if(mutation.doMutate())
+		if (mutation.doMutate())
 			strategiesScratch[dest] = mutation.mutate(strategiesScratch[dest] % nTraits) + nTraits;
 		updateScoreAt(dest, true);
 	}
@@ -758,8 +759,8 @@ public class IBSDPopulation extends IBSPopulation {
 		// populations as long as demes are well-mixed (although lookup tables are
 		// possible but not (yet) implemented.
 		if (hasLookupTable || //
-			(adjustScores && interaction.getType() == Geometry.Type.HIERARCHY //
-				&& interaction.subgeometry == Geometry.Type.MEANFIELD)) {
+				(adjustScores && interaction.getType() == Geometry.Type.HIERARCHY //
+						&& interaction.subgeometry == Geometry.Type.MEANFIELD)) {
 			updateMixedMeanScores();
 			return;
 		}
@@ -1584,7 +1585,8 @@ public class IBSDPopulation extends IBSPopulation {
 		for (int n = 0; n < nTraits; n++) {
 			if (checkStrategiesTypeCount[n] != strategiesTypeCount[n]) {
 				logger.warning("accounting issue: strategy count of trait " + module.getTraitName(n) + " is "
-						+ checkStrategiesTypeCount[n] + " but strategiesTypeCount[" + n + "]=" + strategiesTypeCount[n]);
+						+ checkStrategiesTypeCount[n] + " but strategiesTypeCount[" + n + "]="
+						+ strategiesTypeCount[n]);
 				passed = false;
 			}
 			if (Math.abs(checkAccuTypeScores[n] - accuTypeScores[n]) > 1e-8) {
@@ -1606,7 +1608,8 @@ public class IBSDPopulation extends IBSPopulation {
 					+ accScores + " (" + Formatter.format(accuTypeScores, 8) + ")");
 			passed = false;
 		}
-		// do not yet set isConsistent to false because this prevents the test in super to run
+		// do not yet set isConsistent to false because this prevents the test in super
+		// to run
 		super.isConsistent();
 		// super may have already set isConsistent to false; add our assesement
 		isConsistent &= passed;
@@ -1720,7 +1723,7 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	public boolean setInitialTraits(double[] init) {
-		if (init==null || init.length != nTraits)
+		if (init == null || init.length != nTraits)
 			return false;
 		// switch initialization type to frequencies
 		// IBSD calls routine only if frequency is valid key
@@ -1928,7 +1931,8 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 		if (ArrayMath.norm(strategiesTypeCount) != nPopulation)
 			// fatal does not return control
-			engine.fatal("accounting problem (sum of traits "+ArrayMath.norm(strategiesTypeCount)+"!="+nPopulation+").");
+			engine.fatal("accounting problem (sum of traits " + ArrayMath.norm(strategiesTypeCount) + "!=" + nPopulation
+					+ ").");
 		System.arraycopy(strategiesTypeCount, 0, initTypeCount, 0, nTraits);
 	}
 
@@ -1936,7 +1940,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * Initial configuration with uniform strategy frequencies of all
 	 * <em>active</em> strategies.
 	 * 
-	 * @see Type#UNIFORM
+	 * @see IBSD.Init.Type#UNIFORM
 	 */
 	protected void initUniform() {
 		Arrays.fill(strategiesTypeCount, 0);
@@ -1959,7 +1963,7 @@ public class IBSDPopulation extends IBSPopulation {
 	/**
 	 * Initial configuration with strategy frequencies as specified in arguments.
 	 * 
-	 * @see Type#FREQUENCY
+	 * @see IBSD.Init.Type#FREQUENCY
 	 */
 	protected void initFrequency() {
 		Arrays.fill(strategiesTypeCount, 0);
@@ -1989,7 +1993,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * Monomorphic initial configuration with specified trait (and frequency in
 	 * modules that allow empty sites).
 	 * 
-	 * @see Type#MONO
+	 * @see IBSD.Init.Type#MONO
 	 */
 	protected void initMono() {
 		// initArgs contains the index of the monomorphic trait
@@ -2026,7 +2030,7 @@ public class IBSDPopulation extends IBSPopulation {
 	/**
 	 * Initial configuration for generating a statistics sample.
 	 * 
-	 * @see Type#STATISTICS
+	 * @see IBSD.Init.Type#STATISTICS
 	 */
 	protected void initStatistics() {
 		FixationData fix = ((IBSD) engine.getModel()).getFixationData();
@@ -2051,7 +2055,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * 
 	 * @return the location of the mutant
 	 * 
-	 * @see Type#MUTANT
+	 * @see IBSD.Init.Type#MUTANT
 	 */
 	protected int initMutant() {
 		// initArgs contains the index of the resident and mutant traits
@@ -2092,7 +2096,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * 
 	 * @return the location of the mutant
 	 * 
-	 * @see Type#TEMPERATURE
+	 * @see IBSD.Init.Type#TEMPERATURE
 	 */
 	protected int initTemperature() {
 		int mutant = initMutant();
@@ -2116,7 +2120,7 @@ public class IBSDPopulation extends IBSPopulation {
 			int rand = random0n(nLinks);
 			while (rand >= 0) {
 				rand -= interaction.kin[++idx];
-			}	
+			}
 		}
 		if (strategies[idx] == VACANT) {
 			strategiesTypeCount[VACANT]--;
@@ -2133,17 +2137,19 @@ public class IBSDPopulation extends IBSPopulation {
 	 * must be overriden in subclasses that admit kaleidoscopes.
 	 * <p>
 	 * <strong>Note:</strong> requires the explicit adding of the key
-	 * {@link Type#KALEIDOSCOPE} for IBS models. For example, add
+	 * {@link IBSD.Init.Type#KALEIDOSCOPE} for IBS models. For example, add
 	 * 
 	 * <pre>
-	 * if (model.getModelType() == Type.IBS)
-	 * 	IBSD.cloInitType.addKey(InitType.KALEIDOSCOPE);
+	 *	if (model instanceof IBSD) {
+	 *		CLOption clo = ((IBSDPopulation) getIBSPopulation()).getInit().clo;
+	 *		clo.addKey(Init.Type.KALEIDOSCOPE);
+	 *	}
 	 * </pre>
 	 * 
 	 * to
-	 * {@code org.evoludo.simulator.modules.Module#modelLoaded() Module#modelLoaded()}.
+	 * {@code org.evoludo.simulator.modules.Module#adjustCLO(org.evoludo.util.CLOParser)}.
 	 * 
-	 * @see Type#KALEIDOSCOPE
+	 * @see IBSD.Init.Type#KALEIDOSCOPE
 	 */
 	protected void initKaleidoscope() {
 	}
@@ -2153,15 +2159,16 @@ public class IBSDPopulation extends IBSPopulation {
 	 * invasion properties of one strategy into another with at least one instance
 	 * of all possible pairings.
 	 * 
-	 * @see Type#STRIPES
+	 * @see IBSD.Init.Type#STRIPES
 	 */
 	protected void initStripes() {
 		// only makes sense for 2D lattices at this point. if not, defaults to uniform
 		// random initialization (the only other inittype that doesn't require --init).
-		if (interaction.interCompSame && (interaction.getType() == Geometry.Type.SQUARE ||
-				interaction.getType() == Geometry.Type.SQUARE_NEUMANN ||
-				interaction.getType() == Geometry.Type.SQUARE_MOORE ||
-				interaction.getType() == Geometry.Type.LINEAR)) {
+		Geometry.Type type = interaction.getType();
+		if (interaction.interCompSame && (type == Geometry.Type.SQUARE ||
+				type == Geometry.Type.SQUARE_NEUMANN ||
+				type == Geometry.Type.SQUARE_MOORE ||
+				type == Geometry.Type.LINEAR)) {
 			Arrays.fill(strategiesTypeCount, 0);
 			boolean act[] = module.getActiveTraits();
 			int nActive = module.getNActive();
@@ -2222,7 +2229,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * @param width  the width of the stripe
 	 * @param trait  the trait/stratgy of the stripe
 	 * 
-	 * @see Type#STRIPES
+	 * @see #initStripes()
 	 */
 	private void fillStripe(int offset, int width, int trait) {
 		int size = (int) Math.sqrt(nPopulation);
@@ -2254,7 +2261,7 @@ public class IBSDPopulation extends IBSPopulation {
 	/**
 	 * Type of initial configuration.
 	 * 
-	 * @see Init#clo
+	 * @see IBSD.Init#clo
 	 */
 	protected Init init;
 

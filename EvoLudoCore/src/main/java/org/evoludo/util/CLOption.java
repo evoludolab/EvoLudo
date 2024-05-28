@@ -125,10 +125,29 @@ public class CLOption implements Comparable<CLOption> {
 		NONE;
 	}
 
+	/**
+	 * Simple key for command line options. Keys are similar to {@code enum}s but
+	 * more flexible because the set of keys can be modified at runtime.
+	 */
 	public static class SimpleKey implements Key {
+
+		/**
+		 * The key of the command line option.
+		 */
 		String key;
+
+		/**
+		 * The title of the command line option. Brief description of the key for the
+		 * help screen.
+		 */
 		String title;
 
+		/**
+		 * Create a new key with the name <code>key</code> and title <code>title</code>.
+		 * 
+		 * @param key   the key of the command line option
+		 * @param title the title of the command line option
+		 */
 		public SimpleKey(String key, String title) {
 			this.key = key;
 			this.title = title;
@@ -145,6 +164,10 @@ public class CLOption implements Comparable<CLOption> {
 		}
 	}
 
+	/**
+	 * The interface for keys of command line options. Options may offer several
+	 * distinct settings in the form of keys.
+	 */
 	public interface Key {
 
 		/**
@@ -856,7 +879,7 @@ public class CLOption implements Comparable<CLOption> {
 					String[] lead = Arrays.copyOfRange(argsn, 0, keypos);
 					String[] tail = Arrays.copyOfRange(argsn, keypos + 1, argsn.length);
 					argkeys += (lead.length > 0 ? String.join(",", lead) + " " : "") +
-							key.getKey() + 
+							key.getKey() +
 							(tail.length > 0 ? " " + String.join(",", tail) : "") +
 							(n == args.length - 1 ? "" : CLOParser.SPECIES_DELIMITER);
 				}

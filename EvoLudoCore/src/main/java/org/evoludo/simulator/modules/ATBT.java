@@ -837,7 +837,6 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 		 * {@code 2×2} games with environmental feedback.
 		 * 
 		 * @param engine the pacemeaker for running the model
-		 * @param module the module to numerically integrate
 		 */
 		protected ODE(EvoLudo engine) {
 			super(engine);

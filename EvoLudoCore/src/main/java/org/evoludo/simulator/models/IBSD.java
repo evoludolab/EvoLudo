@@ -9,7 +9,6 @@ import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Key;
 import org.evoludo.util.Formatter;
 
 /**
@@ -378,10 +377,8 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		 * 
 		 * @author Christoph Hauert
 		 * 
-		 * @see #setInitType(Key)
-		 * @see IBSD#cloInitType
-		 * @see org.evoludo.simulator.modules.Discrete#cloInit
-		 *      modules.Discrete.cloInit
+		 * @see Init#clo
+		 * @see IBSDPopulation#getInit()
 		 */
 		public enum Type implements CLOption.Key {
 
@@ -442,7 +439,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 			/**
 			 * Key of initialization type. Used when parsing command line options.
 			 * 
-			 * @see IBSD#cloInitType
+			 * @see Init#clo
 			 */
 			String key;
 
@@ -516,7 +513,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		/**
 		 * Key of optimization type. Used when parsing command line options.
 		 * 
-		 * @see IBSD#cloInitType
+		 * @see IBSD#cloOptimize
 		 */
 		String key;
 

@@ -97,7 +97,7 @@ public class ODEEuler implements Model.ODE {
 		 * <li><code>{@link #avgScores(double[], int, double[])}</code>,
 		 * <li><code>{@link #avgScores(double[], int, double[], int)}</code>, or
 		 * <li>
-		 * {@link ODEEuler#getDerivatives(double, double[], double[], double[], double[])}
+		 * {@link ODEEuler#getDerivatives(double, double[], double[], double[])}
 		 * </ul>
 		 * must be implemented in modules that advertise the model types
 		 * <code>ODE, SDE</code> or <code>PDE</code>.
@@ -128,7 +128,7 @@ public class ODEEuler implements Model.ODE {
 		 * <li><code>{@link #avgScores(double[], int, double[])}</code>,
 		 * <li><code>{@link #avgScores(double[], int, double[], int)}</code>, or
 		 * <li>
-		 * {@link ODEEuler#getDerivatives(double, double[], double[], double[], double[])}
+		 * {@link ODEEuler#getDerivatives(double, double[], double[], double[])}
 		 * </ul>
 		 * must be implemented in modules that advertise the model types
 		 * <code>ODE, SDE</code> or <code>PDE</code>.
@@ -407,7 +407,7 @@ public class ODEEuler implements Model.ODE {
 	 * <code>1.0/(maxFitness - minFitness)</code> for each species. This is used to
 	 * normalize imitation rules of players.
 	 * 
-	 * @see Module.Type#IMITATE
+	 * @see PlayerUpdate.Type#IMITATE
 	 */
 	double[] invFitRange;
 
@@ -492,7 +492,6 @@ public class ODEEuler implements Model.ODE {
 	 * implements Euler's method (fixed step size).
 	 * 
 	 * @param engine the pacemeaker for running the model
-	 * @param module the module to numerically integrate
 	 */
 	public ODEEuler(EvoLudo engine) {
 		this.engine = engine;
@@ -1041,7 +1040,6 @@ public class ODEEuler implements Model.ODE {
 	 * @see #updateEcology(Module, double[], double[], int, int, double[])
 	 * @see #updateImitate(Module, double[], double[], int, int, double[])
 	 * @see #updateThermal(Module, double[], double[], int, int, double[])
-	 * @see #updateZeroNoise(Module, double[], double[], int, int, double[])
 	 */
 	protected void getDerivatives(double time, double[] state, double[] fitness, double[] change) {
 		dstate = state;
@@ -1174,7 +1172,7 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	/**
-	 * Implementation of the player update {@link Type#THERMAL}. This
+	 * Implementation of the player update {@link PlayerUpdate.Type#THERMAL}. This
 	 * calculates the rates of change for each type in species <code>mod</code> for
 	 * the popular choice for 'pairwise comparisons' where the focal player \(i\)
 	 * and one of its neighbours \(j\) are randomly chosen. The focal player \(i\)
@@ -1233,7 +1231,7 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	/**
-	 * Implementation of player update {@link Type#BEST}. This
+	 * Implementation of player update {@link PlayerUpdate.Type#BEST}. This
 	 * calculates the rate of change individuals adopt the strategy of better
 	 * performing individuals with certainty (and never those of worse performing
 	 * individuals). This calculates the rates of change for each type in species
@@ -1260,7 +1258,7 @@ public class ODEEuler implements Model.ODE {
 	 * <strong>Note:</strong>In the limit of vanishing noise the updates
 	 * {@link #updateThermal(Module, double[], double[], int, int, double[])} and
 	 * {@link #updateImitate(Module, double[], double[], int, int, double[])}
-	 * recover the {@link Type#BEST} updating type as well.
+	 * recover the {@link PlayerUpdate.Type#BEST} updating type as well.
 	 * 
 	 * @param mod     the module representing the current species
 	 * @param state   array of frequencies/densities denoting the state population
@@ -1292,7 +1290,7 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	/**
-	 * Implementation of the player update {@link Type#IMITATE}. This
+	 * Implementation of the player update {@link PlayerUpdate.Type#IMITATE}. This
 	 * calculates the rates of change for each type in species <code>mod</code> for
 	 * the popular choice for 'pairwise comparisons' where the focal player \(i\)
 	 * and one of its neighbours \(j\) are randomly chosen. The focal player \(i\)
@@ -1328,7 +1326,7 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	/**
-	 * Implementation of the player update {@link Type#IMITATE_BETTER}.
+	 * Implementation of the player update {@link PlayerUpdate.Type#IMITATE_BETTER}.
 	 * This calculates the rates of change for each type in species <code>mod</code>
 	 * for the popular choice for 'pairwise comparisons' where the focal player
 	 * \(i\) and one of its neighbours \(j\) are randomly chosen. The focal player
@@ -1344,7 +1342,7 @@ public class ODEEuler implements Model.ODE {
 	 * Incidentally and somewhat surprisingly this update also reduces to the
 	 * standard replicator dynamics albeit with a constant rescaling of time such
 	 * that the rate of change are half of the standard replicator equation obtained
-	 * from {@code PlayerUpdateType#IMITATE}.
+	 * from {@code PlayerUpdate.Type#IMITATE}.
 	 * <p>
 	 * <strong>Note:</strong> in multi-species models all rates of change are scaled
 	 * by the maximum fitness difference for <em>all</em> species to preserve their
@@ -1413,7 +1411,7 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	/**
-	 * Implementation of the player update {@link Type#PROPORTIONAL}.
+	 * Implementation of the player update {@link PlayerUpdate.Type#PROPORTIONAL}.
 	 * This calculates the rates of change for each type in species <code>mod</code>
 	 * for a 'pairwise comparison' where the focal player
 	 * \(i\) and one of its neighbours \(j\) are randomly chosen. The focal player
@@ -1459,12 +1457,12 @@ public class ODEEuler implements Model.ODE {
 	}
 
 	/**
-	 * Implementation of the player update {@link Type#BEST_RESPONSE}.
+	 * Implementation of the player update {@link PlayerUpdate.Type#BEST_RESPONSE}.
 	 * This calculates the rates of change for each type in species <code>mod</code>
 	 * for the best-response dynamic where the focal player \(i\) switches to the
 	 * strategy \(j\) that has the highest payoff given the current state of the
 	 * population. Note, in contrast to other player updates, such as
-	 * {@link Type#THERMAL} or {@link Type#IMITATE} the
+	 * {@link PlayerUpdate.Type#THERMAL} or {@link PlayerUpdate.Type#IMITATE} the
 	 * best-response is an innovative update rule, which means that strategic types
 	 * that are currently not present in the population can get introduced.
 	 * Consequently, homogeneous states may not be absorbing.
@@ -1642,26 +1640,24 @@ public class ODEEuler implements Model.ODE {
 	 * density distributions:
 	 * <dl>
 	 * <dt>DENSITY
-	 * <dd>Initial densities as specified in
-	 * {@link org.evoludo.simulator.modules.Discrete#cloInit
-	 * modules.Discrete.cloInit} (density modules).
+	 * <dd>Initial densities as specified in {@link #cloInitType} (density modules).
 	 * <dt>FREQUENCY
-	 * <dd>Initial frequencies as specified in
-	 * {@link org.evoludo.simulator.modules.Discrete#cloInit
-	 * modules.Discrete.cloInit} (frequency modules).
+	 * <dd>Initial frequencies as specified in {@link #cloInitType} (frequency
+	 * modules).
 	 * <dt>UNIFORM
 	 * <dd>Uniform frequencies of traits (default; in density modules all densities
 	 * are set to zero).
 	 * <dt>RANDOM
-	 * <dd>Random initial trait frequencies. <strong>Note:</strong> Not available
-	 * for density based models.
+	 * <dd>Random initial trait frequencies. <br>
+	 * <strong>Note:</strong> Not available for density based models.
 	 * </dl>
 	 * 
 	 * @author Christoph Hauert
 	 * 
-	 * @see org.evoludo.simulator.modules.Discrete#cloInit Discrete.cloInit
-	 * @see EvoLudo#cloInitType
-	 * @see setInitType(CLOption.Key)
+	 * @see #cloInitType
+	 * @see #parse(String)
+	 * @see PDERD.InitType
+	 * @see PDERD#parse(String)
 	 */
 	public enum InitType implements CLOption.Key {
 
@@ -1695,7 +1691,7 @@ public class ODEEuler implements Model.ODE {
 		/**
 		 * Key of initialization type. Used when parsing command line options.
 		 * 
-		 * @see EvoLudo#cloInitType
+		 * @see InitType#parse(String)
 		 */
 		String key;
 

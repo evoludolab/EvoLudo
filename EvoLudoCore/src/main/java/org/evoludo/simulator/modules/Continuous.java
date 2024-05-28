@@ -964,7 +964,6 @@ public abstract class Continuous extends Module {
 		 * The key of the cost function. Used when parsing command line options.
 		 * 
 		 * @see Continuous#cloCosts
-		 * @see Continuous#cloCostParams
 		 */
 		String key;
 
@@ -1145,7 +1144,6 @@ public abstract class Continuous extends Module {
 		 * The key of the benefit function. Used when parsing command line options.
 		 * 
 		 * @see Continuous#cloBenefits
-		 * @see Continuous#cloBenefitParams
 		 */
 		String key;
 
@@ -1278,7 +1276,7 @@ public abstract class Continuous extends Module {
 	/**
 	 * Command line option to set the cost function(s) for continuous traits.
 	 * 
-	 * @see Traits2Payoff.Costs
+	 * @see Costs
 	 */
 	public final CLOption cloCosts = new CLOption("costs", Costs.ME_LINEAR.getKey() + " 1", EvoLudo.catModel, 
 			"--costs <s0 b00[" + CLOParser.VECTOR_DELIMITER + "b01...[" + CLOParser.TRAIT_DELIMITER + //
@@ -1340,7 +1338,7 @@ public abstract class Continuous extends Module {
 	/**
 	 * Command line option to set the benefit function(s) for continuous traits.
 	 * 
-	 * @see Traits2Payoff.Benefits
+	 * @see Benefits
 	 */
 	public final CLOption cloBenefits = new CLOption("benefits",
 			Benefits.WE_LINEAR.getKey() + " 3",
