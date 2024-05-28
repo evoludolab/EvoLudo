@@ -91,6 +91,8 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		if (map == null)
 			return;
 		this.map = map;
+		if (map instanceof BasicTooltipProvider)
+			setTooltipProvider((BasicTooltipProvider) map);
 	}
 
 	public Data2Phase getMap() {
@@ -332,12 +334,8 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		double uy = style.yMin + (1.0 - sy / bounds.getHeight()) * (style.yMax - style.yMin);
 		if (tooltipProvider instanceof TooltipProvider.Parametric)
 			return ((TooltipProvider.Parametric) tooltipProvider).getTooltipAt(this, ux, uy);
-		if (map instanceof TooltipProvider.Parametric)
-			return ((TooltipProvider.Parametric) map).getTooltipAt(this, ux, uy);
-		if (tooltipProvider instanceof BasicTooltipProvider)
-			return ((BasicTooltipProvider) tooltipProvider).getTooltipAt(ux, uy);
-		if (map instanceof BasicTooltipProvider)
-			return ((BasicTooltipProvider) map).getTooltipAt(ux, uy);
+		if (tooltipProvider != null)
+			return tooltipProvider.getTooltipAt(ux, uy);
 		return null;
 	}
 

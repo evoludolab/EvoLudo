@@ -93,6 +93,8 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		if (map == null)
 			return;
 		this.map = map;
+		if (map instanceof BasicTooltipProvider)
+			setTooltipProvider((BasicTooltipProvider) map);
 	}
 
 	public Data2S3 getMap() {
@@ -446,12 +448,8 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			return null;
 		if (tooltipProvider instanceof TooltipProvider.Simplex)
 			return ((TooltipProvider.Simplex) tooltipProvider).getTooltipAt(this, sx, sy);
-		if (map instanceof TooltipProvider.Simplex)
-			return ((TooltipProvider.Simplex) map).getTooltipAt(this, sx, sy);
-		if (tooltipProvider instanceof BasicTooltipProvider)
-			return ((BasicTooltipProvider) tooltipProvider).getTooltipAt(sx, sy);
-		if (map instanceof BasicTooltipProvider)
-			return ((BasicTooltipProvider) map).getTooltipAt(sx, sy);
+		if (tooltipProvider != null)
+			return tooltipProvider.getTooltipAt(sx, sy);
 		return null;
 	}
 

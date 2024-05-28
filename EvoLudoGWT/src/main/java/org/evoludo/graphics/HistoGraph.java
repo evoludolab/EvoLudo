@@ -122,6 +122,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		super(controller, module);
 		this.row = row;
 		setStylePrimaryName("evoludo-HistoGraph");
+		setTooltipProvider(this);
 	}
 
 	/**
@@ -544,9 +545,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		int bar = getBinAt(x, y);
 		if( bar<0 )
 			return null;
-		if (tooltipProvider instanceof BasicTooltipProvider)
-			return ((BasicTooltipProvider) tooltipProvider).getTooltipAt(bar);
-		return getTooltipAt(bar);
+		return tooltipProvider.getTooltipAt(bar);
 	}
 
 	@Override

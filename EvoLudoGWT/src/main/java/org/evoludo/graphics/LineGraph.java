@@ -75,6 +75,7 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 	public LineGraph(Controller controller, Module module) {
 		super(controller, module);
 		setStylePrimaryName("evoludo-LineGraph");
+		setTooltipProvider(this);
 	}
 
 	// note: labels, yMin and yMax etc. must be set at this point to calculate bounds
@@ -307,9 +308,7 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 		double sy = (height - (y - bounds.getY() + 0.5)) / height;
 		if( sy<0.0 || sy>1.0 )
 			return null;
-		if (tooltipProvider instanceof BasicTooltipProvider)
-			return ((BasicTooltipProvider) tooltipProvider).getTooltipAt(sx, sy);
-		return getTooltipAt(sx, sy);
+		return tooltipProvider.getTooltipAt(sx, sy);
 	}
 
 	@Override

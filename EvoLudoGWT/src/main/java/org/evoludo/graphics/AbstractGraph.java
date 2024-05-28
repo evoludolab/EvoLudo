@@ -42,6 +42,7 @@ import org.evoludo.geom.Rectangle2D;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
@@ -323,9 +324,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	protected Tooltip tooltip;
 
-	TooltipProvider tooltipProvider;
+	BasicTooltipProvider tooltipProvider;
 
-	public void setTooltipProvider(TooltipProvider tooltipProvider) {
+	public void setTooltipProvider(BasicTooltipProvider tooltipProvider) {
 		this.tooltipProvider = tooltipProvider;
 	}
 

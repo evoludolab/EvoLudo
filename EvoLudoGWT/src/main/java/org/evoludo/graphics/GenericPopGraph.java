@@ -139,6 +139,8 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		label.getElement().getStyle().setZIndex(1);
 		label.setVisible(false);
 		wrapper.add(label);
+		if (controller instanceof TooltipProvider.Index)
+			setTooltipProvider((TooltipProvider.Index) controller);
 	}
 
 	@Override
@@ -337,8 +339,9 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		element.addClassName("evoludo-cursorPointNode");
 		if (tooltipProvider instanceof TooltipProvider.Index)
 			return ((TooltipProvider.Index) tooltipProvider).getTooltipAt(this, node);
-		if (controller instanceof TooltipProvider.Index)
-			return ((TooltipProvider.Index) controller).getTooltipAt(this, node);
+		// last resort, try basic tooltip provider
+		if (tooltipProvider != null)
+			return tooltipProvider.getTooltipAt(node);
 		// false alarm
 		element.addClassName("evoludo-cursorPointNode");
 		return null;
