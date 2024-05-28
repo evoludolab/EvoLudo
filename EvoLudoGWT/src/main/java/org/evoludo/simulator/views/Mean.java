@@ -279,9 +279,8 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 						graph.addData(data, force);
 						break;
 					case FITNESS:
-						if (newmod) {
+						if (newmod)
 							model.getMeanFitness(id, state);
-						}
 						// module cannot be null here but make compiler happy
 						if (cmodel) {
 							// fitness graph has only a single panel
@@ -292,8 +291,9 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 							data[2] = m - s;
 							data[3] = m + s;
 						} else {
-							data = new double[nState + 1];
-							System.arraycopy(state, 0, data, 1, nState);
+							// +1 for time, +1 for average
+							data = new double[nState + 1 + 1];
+							System.arraycopy(state, 0, data, 1, nState + 1);
 						}
 						data[0] = newtime;
 						graph.addData(data, force);
