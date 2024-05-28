@@ -109,6 +109,9 @@
         <artifactId>maven-javadoc-plugin</artifactId>
         <version>3.6.3</version>
         <configuration>
+          <!-- Default configuration for all reports -->
+          <noqualifier>all</noqualifier>
+          <show>private</show>
           <doctitle>EvoLudo: in silico evolution</doctitle>
           <windowtitle>EvoLudo: in silico evolution</windowtitle>
           <header><![CDATA[
@@ -131,8 +134,6 @@
                javadoc does not appear to offer any way to format longer text, e.g. for more
                comprehensive introductions to a class -->
           <doclint>all,-accessibility</doclint>
-          <show>private</show>
-          <nohelp>true</nohelp>
           <tags>
             <tag>
               <name>evoludo.todo</name>
@@ -152,56 +153,17 @@
           </tags>
           <excludePackageNames>org.evoludo.simulator.run</excludePackageNames>
           <links>
-            <link>https://docs.oracle.com/en/java/javase/19/docs/api/</link>
+            <link>https://docs.oracle.com/en/java/javase/22/docs/api/</link>
             <link>https://www.gwtproject.org/javadoc/latest/</link>
             <link>https://thothbot.github.io/parallax/docs/1.6</link>
           </links>
-          <sourceFileExcludes>
-            <sourceFileExclude>**/main/super/**/*.java</sourceFileExclude>
-          </sourceFileExcludes>
           <additionalJOptions>
             <!-- <additionalJOption>- -frames</additionalJOption> -->
             <additionalJOption>--allow-script-in-comments</additionalJOption>
+            <!-- maximum number of warnings reported by maven seems to be 999; 1000 is treated as 0 -->
+            <!-- <additionalJOption>-Xmaxwarns</additionalJOption>
+            <additionalJOption>999</additionalJOption> -->
           </additionalJOptions>
-          <additionalDependencies>
-            <!-- Additional dependencies from GWT -->
-            <additionalDependency>
-              <groupId>org.parallax3d</groupId>
-              <artifactId>parallax-gwt</artifactId>
-              <version>1.6</version>
-            </additionalDependency>
-            <additionalDependency>
-              <groupId>org.evoludo</groupId>
-              <artifactId>gwt-user-epub</artifactId>
-              <version>2.11.0</version>
-            </additionalDependency>
-            <!-- Additional dependencies from JRE -->
-            <additionalDependency>
-              <groupId>org.freehep</groupId>
-              <artifactId>freehep-graphics2d</artifactId>
-              <version>2.4</version>
-            </additionalDependency>
-            <additionalDependency>
-              <groupId>org.freehep</groupId>
-              <artifactId>freehep-graphicsio-pdf</artifactId>
-              <version>2.4</version>
-            </additionalDependency>
-            <additionalDependency>
-              <groupId>org.freehep</groupId>
-              <artifactId>freehep-graphicsio-ps</artifactId>
-              <version>2.4</version>
-            </additionalDependency>
-            <additionalDependency>
-              <groupId>org.freehep</groupId>
-              <artifactId>freehep-graphicsio-svg</artifactId>
-              <version>2.4</version>
-            </additionalDependency>
-            <additionalDependency>
-              <groupId>com.googlecode.matrix-toolkits-java</groupId>
-              <artifactId>mtj</artifactId>
-              <version>1.0.4</version>
-            </additionalDependency>
-          </additionalDependencies>
         </configuration>
         <!-- <executions>
           <execution>
