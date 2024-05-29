@@ -325,8 +325,7 @@ public class CLOption implements Comparable<CLOption> {
 
 	/**
 	 * The delegate for parsing arguments, reporting settings and retrieving
-	 * customized
-	 * descriptions.
+	 * customized descriptions.
 	 */
 	private CLODelegate delegate;
 
@@ -563,6 +562,11 @@ public class CLOption implements Comparable<CLOption> {
 		return defaultArg;
 	}
 
+	/**
+	 * Set the argument for the command line option.
+	 * 
+	 * @param arg the argument
+	 */
 	public void setArg(String arg) {
 		if (arg != null)
 			arg = arg.trim();
@@ -647,6 +651,13 @@ public class CLOption implements Comparable<CLOption> {
 		return keys.put(key.getKey(), key);
 	}
 
+	/**
+	 * Get the key with name {@code aKey}. Returns {@code null} if the option has no
+	 * keys or no key with the name {@code aKey}.
+	 * 
+	 * @param aKey the name of the key
+	 * @return the key with name {@code aKey} or {@code null} if no such key exists
+	 */
 	public Key getKey(String aKey) {
 		if (keys == null)
 			return null;
@@ -683,32 +694,62 @@ public class CLOption implements Comparable<CLOption> {
 		return match;
 	}
 
+	/**
+	 * Remove key from the option's key collection. Returns {@code null} if the
+	 * option has no keys or the {@code key} is not part of the collection.
+	 * 
+	 * @param key the key to remove
+	 * @return the key that was removed or <code>null</code> if no such key exists
+	 */
 	public Key removeKey(Key key) {
 		return removeKey(key.getKey());
 	}
 
+	/**
+	 * Remove key with name <code>aKey</code> from the option's key collection.
+	 * 
+	 * @param aKey the name of the key to remove
+	 * @return the key that was removed or <code>null</code> if no such key exists
+	 */
 	public Key removeKey(String aKey) {
 		if (keys == null)
 			return null;
 		return keys.remove(aKey);
 	}
 
+	/**
+	 * Clear all keys from the option.
+	 */
 	public void clearKeys() {
 		if (keys == null)
 			return;
 		keys.clear();
 	}
 
+	/**
+	 * Check if <code>key</code> is a valid key for this option.
+	 * 
+	 * @param key the key to check
+	 * @return <code>true</code> if <code>key</code> is a valid key
+	 */
 	public boolean isValidKey(Key key) {
 		return isValidKey(key.getKey());
 	}
 
+	/**
+	 * Check if the key with name <code>aKey</code> is a valid key for this option.
+	 * This test is very lenient and passes if {@code aKey} and one of the keys
+	 * start at least with one identical character. This allows abbreviating keys as
+	 * well as appending options.
+	 * 
+	 * @param aKey the name of the key to check
+	 * @return <code>true</code> if the name <code>aKey</code> is valid
+	 * 
+	 * @see #differAt(String, String)
+	 */
 	public boolean isValidKey(String aKey) {
 		if (keys == null)
 			return true;
-		// in order to allow abbreviating keys as well as appending options, this test
-		// is very lenient and passes if aKey and one of the keys start at least with
-		// one identical character
 		for (String key : keys.keySet()) {
 			if (differAt(key, aKey) > 0)
 				return true;
@@ -716,6 +757,13 @@ public class CLOption implements Comparable<CLOption> {
 		return false;
 	}
 
+	/**
+	 * Compare two strings and return the index of the first character that differs.
+	 * 
+	 * @param a the first string
+	 * @param b the second string
+	 * @return the index of the first differing character
+	 */
 	public static int differAt(String a, String b) {
 		int max = Math.min(a.length(), b.length());
 		if (max == 0)
@@ -728,23 +776,56 @@ public class CLOption implements Comparable<CLOption> {
 		return idx;
 	}
 
-	public static String stripKey(CLOption.Key keyopt, String arg) {
-		return stripKey(keyopt.getKey(), arg);
+	/**
+	 * Strips the name of the key from the argument. If the key is not found, the
+	 * argument is returned unchanged.
+	 * 
+	 * @param key the key to strip
+	 * @param arg the argument to strip the key from
+	 * @return the argument without the key
+	 */
+	public static String stripKey(CLOption.Key key, String arg) {
+		return stripKey(key.getKey(), arg);
 	}
 
+	/**
+	 * Strips the key from the argument. If the key is not found, the argument is
+	 * returned unchanged.
+	 * 
+	 * @param key the name of the key to strip
+	 * @param arg the argument to strip the key from
+	 * @return the argument without the key
+	 */
 	public static String stripKey(String key, String arg) {
 		return arg.substring(CLOption.differAt(key, arg));
 	}
 
+	/**
+	 * Gets all keys of this option.
+	 * 
+	 * @return the key collection
+	 */
 	public Collection<Key> getKeys() {
 		return keys.values();
 	}
 
+	/**
+	 * Inherit keys from another option. This is useful if options share the same
+	 * keys.
+	 * 
+	 * @param option the option to inherit keys from
+	 */
 	public void inheritKeysFrom(CLOption option) {
 		inheritedKeys = true;
 		keys = option.keys;
 	}
 
+	/**
+	 * Get the description of the key with name <code>aKey</code>.
+	 * 
+	 * @param aKey the name of the key
+	 * @return the description of the key
+	 */
 	public String getDescriptionKey(String aKey) {
 		Key key = getKey(aKey);
 		if (key == null)
@@ -752,6 +833,13 @@ public class CLOption implements Comparable<CLOption> {
 		return key.toString();
 	}
 
+	/**
+	 * Get the description of all keys of this option. Minimal formatting is applied
+	 * with the name of the key and a brief description of the key separated by
+	 * '\n'. No HTML or other formatting can be applied.
+	 * 
+	 * @return the description of all keys
+	 */
 	public String getDescriptionKey() {
 		if (keys == null || inheritedKeys)
 			return "";
@@ -801,22 +889,28 @@ public class CLOption implements Comparable<CLOption> {
 	}
 
 	/**
-	 * @return the name of this option
+	 * Get the name of the option.
+	 * 
+	 * @return the name
 	 */
 	public String getName() {
 		return name;
 	}
 
 	/**
-	 * @return type of option
+	 * Get the type of the option.
+	 * 
+	 * @return the type
 	 */
 	public Argument getType() {
 		return type;
 	}
 
 	/**
-	 *
-	 * @return argument of option or default if argument not set.
+	 * Get the option argument. If no argument was set, the default argument is
+	 * returned.
+	 * 
+	 * @return the argument
 	 */
 	public String getArg() {
 		if (optionArg == null)
@@ -825,6 +919,8 @@ public class CLOption implements Comparable<CLOption> {
 	}
 
 	/**
+	 * Check if no argument was set.
+	 * 
 	 * @return <code>true</code> if no argument set.
 	 */
 	public boolean isDefault() {
@@ -832,8 +928,10 @@ public class CLOption implements Comparable<CLOption> {
 	}
 
 	/**
-	 * @return <code>true</code> if option set on command line (regardless of
-	 *         whether an argument was provided).
+	 * Check if option was set on command line (regardless of whether an argument
+	 * was provided).
+	 * 
+	 * @return <code>true</code> if option set
 	 */
 	public boolean isSet() {
 		return isSet;

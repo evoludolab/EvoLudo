@@ -42,6 +42,9 @@ import java.text.DecimalFormat;
  */
 public class Formatter {
 
+	/**
+	 * The maximum number of decimal digits to format.
+	 */
 	private static final int MAX_DIGITS = 12;
 
 	/**
@@ -77,7 +80,8 @@ public class Formatter {
 			new DecimalFormat("0.00000000000"), new DecimalFormat("0.000000000000") };
 
 	/**
-	 * Array of scientific formatters with fixed number of digits ranging from 0 to up to 12 non-zero decimal digits.
+	 * Array of scientific formatters with fixed number of digits ranging from 0 to
+	 * up to 12 non-zero decimal digits.
 	 */
 	private static final DecimalFormat[] mySciFormatters = { new DecimalFormat("0E0"), new DecimalFormat("0.#E0"),
 			new DecimalFormat("0.##E0"), new DecimalFormat("0.###E0"), new DecimalFormat("0.####E0"),
@@ -86,7 +90,8 @@ public class Formatter {
 			new DecimalFormat("0.###########E0"), new DecimalFormat("0.############E0") };
 
 	/**
-	 * Array of percentage formatters with fixed number of digits ranging from 0 to 12.
+	 * Array of percentage formatters with fixed number of digits ranging from 0 to
+	 * 12.
 	 */
 	private static final DecimalFormat[] myPercentFormatters = { new DecimalFormat("##0%"), new DecimalFormat("##0.0%"),
 			new DecimalFormat("##0.00%"), new DecimalFormat("##0.000%"), new DecimalFormat("##0.0000%"),
@@ -404,11 +409,34 @@ public class Formatter {
 		return matString;
 	}
 
-	private static final double[][] prettyThresholds = new double[][] { /* 0 */ { 1.0, 1e3 }, /* 1 */ { 1.0, 1e3 },
-			/* 2 */ { 1.0, 1e3 }, /* 3 */ { 1e-1, 1e3 }, /* 4 */ { 1e-1, 1e4 }, /* 5 */ { 1e-2, 1e5 },
-			/* 6 */ { 1e-3, 1e6 }, /* 7 */ { 1e-3, 1e6 }, /* 8 */ { 1e-3, 1e6 }, /* 9 */ { 1e-3, 1e6 },
-			/* 10 */ { 1e-3, 1e6 }, /* 11 */ { 1e-3, 1e6 }, /* 12 */ { 1e-3, 1e6 } };
+	/**
+	 * The thresholds for 'pretty' formatting of exponents for each number of
+	 * digits. For absolute values between the upper and lower bound fixed
+	 * formatting is used, otherwise scientific formatting is applied.
+	 */
+	private static final double[][] prettyThresholds = new double[][] {
+			/* 0 */ { 1.0, 1e3 },
+			/* 1 */ { 1.0, 1e3 },
+			/* 2 */ { 1.0, 1e3 },
+			/* 3 */ { 1e-1, 1e3 },
+			/* 4 */ { 1e-1, 1e4 },
+			/* 5 */ { 1e-2, 1e5 },
+			/* 6 */ { 1e-3, 1e6 },
+			/* 7 */ { 1e-3, 1e6 },
+			/* 8 */ { 1e-3, 1e6 },
+			/* 9 */ { 1e-3, 1e6 },
+			/* 10 */ { 1e-3, 1e6 },
+			/* 11 */ { 1e-3, 1e6 },
+			/* 12 */ { 1e-3, 1e6 } };
 
+	/**
+	 * Helper method to format a double <code>aDouble</code> as HTML string with
+	 * <code>digits</code> decimal places (trailing zeroes are included).
+	 * 
+	 * @param aDouble the number to format
+	 * @param digits  the number of decimal places
+	 * @return the formatted <code>double</code> as HTML string
+	 */
 	private static String prettyFormat(double aDouble, int digits) {
 		double[] thresh = prettyThresholds[digits];
 		double abs = Math.abs(aDouble);

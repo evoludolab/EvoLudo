@@ -212,8 +212,8 @@ public class CLOParser {
 				if (!name.equals(opt.getName()))
 					continue;
 				// option found
-				@SuppressWarnings("cast")	// the 'unnecessary' cast is necessary for GWT to compile
-				String arg = Formatter.format((String[])ArrayMath.drop(args, 0), " ");
+				@SuppressWarnings("cast") // the 'unnecessary' cast is necessary for GWT to compile
+				String arg = Formatter.format((String[]) ArrayMath.drop(args, 0), " ");
 				switch (opt.getType()) {
 					case REQUIRED:
 						if (args.length < 1) {
@@ -309,6 +309,12 @@ public class CLOParser {
 		return cmd.toString();
 	}
 
+	/**
+	 * Redirect all output to <code>output</code>. The default is to report all
+	 * output to {@code System.out}.
+	 * 
+	 * @param output the new output stream
+	 */
 	public void setOutput(PrintStream output) {
 		this.output = output;
 	}
@@ -484,6 +490,11 @@ public class CLOParser {
 		this.logger = logger;
 	}
 
+	/**
+	 * Helper method for logging warnings.
+	 * 
+	 * @param msg the warning message
+	 */
 	private void logWarning(String msg) {
 		if (logger != null)
 			logger.warning(msg);

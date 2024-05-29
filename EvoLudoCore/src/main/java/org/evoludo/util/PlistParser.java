@@ -59,46 +59,50 @@ public class PlistParser {
 	private PlistParser() {
 	}
 
-// NOTE: reading an actual plist-file is not compatible with GWT. A subclass
-// PlistParserJRE could provide parsers for a File object
-//
-//	/**
-//	 *
-//	 * @param xmlfile
-//	 * @return
-//	 */
-//	public static Map<String,Object> parse(File xmlfile) {
-//		Map<String,Object> plist = new HashMap<String,Object>();
-//		try {
-//			PlistReader reader = new PlistReader(new BufferedReader(new InputStreamReader(new FileInputStream(xmlfile), "UTF-8")));
-//			while( reader.hasNext() ) {
-//				PlistTag tag = reader.next();
-//				if( tag.equals("plist") ) {
-//					// check version of plist specifications? - see attributes of reader
-//					continue;
-//				}
-//				if( tag.equals("dict") ) {
-//					parseDict(reader, plist);
-//					continue;
-//				}
-//				if( tag.equals("/plist") ) break;
-//				// all other tags should not be encountered when parsing <plist>
-//				System.err.println((new Date().toString())+" - PlistParser, line "+reader.getLine()+": unknown tag '"+tag.getTag()+"' - ignored.");
-//			}
-//			reader.close();
-//		}
-//		catch( UnsupportedEncodingException e ) {
-//			System.err.println((new Date().toString())+" - PlistParser: UTF-8 encoding unsupported. "+e.getMessage());
-//			e.printStackTrace(System.err);
-//			return null;
-//		}
-//		catch( FileNotFoundException e ) {
-//			System.err.println((new Date().toString())+" - PlistParser: file "+xmlfile.getName()+" not found. "+e.getMessage());
-//			e.printStackTrace(System.err);
-//			return null;
-//		}
-//		return plist;
-//	}
+	// NOTE: reading an actual plist-file is not compatible with GWT. A subclass
+	// PlistParserJRE could provide parsers for a File object
+	//
+	// /**
+	// *
+	// * @param xmlfile
+	// * @return
+	// */
+	// public static Map<String,Object> parse(File xmlfile) {
+	// Map<String,Object> plist = new HashMap<String,Object>();
+	// try {
+	// PlistReader reader = new PlistReader(new BufferedReader(new
+	// InputStreamReader(new FileInputStream(xmlfile), "UTF-8")));
+	// while( reader.hasNext() ) {
+	// PlistTag tag = reader.next();
+	// if( tag.equals("plist") ) {
+	// // check version of plist specifications? - see attributes of reader
+	// continue;
+	// }
+	// if( tag.equals("dict") ) {
+	// parseDict(reader, plist);
+	// continue;
+	// }
+	// if( tag.equals("/plist") ) break;
+	// // all other tags should not be encountered when parsing <plist>
+	// System.err.println((new Date().toString())+" - PlistParser, line
+	// "+reader.getLine()+": unknown tag '"+tag.getTag()+"' - ignored.");
+	// }
+	// reader.close();
+	// }
+	// catch( UnsupportedEncodingException e ) {
+	// System.err.println((new Date().toString())+" - PlistParser: UTF-8 encoding
+	// unsupported. "+e.getMessage());
+	// e.printStackTrace(System.err);
+	// return null;
+	// }
+	// catch( FileNotFoundException e ) {
+	// System.err.println((new Date().toString())+" - PlistParser: file
+	// "+xmlfile.getName()+" not found. "+e.getMessage());
+	// e.printStackTrace(System.err);
+	// return null;
+	// }
+	// return plist;
+	// }
 
 	/**
 	 * Parse the contents of <code>plist</code>-file supplied as a String and return
@@ -169,7 +173,7 @@ public class PlistParser {
 			System.err.println((new Date().toString()) + " - PlistParser, line " + reader.getLine() + ": unknown tag '"
 					+ tag.getTag() + "' - ignored.");
 		}
-//		reader.close();
+		// reader.close();
 		if (plist.isEmpty())
 			return null;
 		return plist;

@@ -138,7 +138,10 @@ public class RingBuffer<T> implements Iterable<T> {
 	}
 
 	/**
-	 * @return capacity of ring buffer
+	 * Get the capacity of the ring buffer. The capacity is the maximum number of
+	 * entries the buffer can hold.
+	 * 
+	 * @return the capacity of the ring buffer
 	 */
 	public int getCapacity() {
 		return bufferCapacity;
@@ -160,13 +163,17 @@ public class RingBuffer<T> implements Iterable<T> {
 	}
 
 	/**
-	 * @return number of entries in ring buffer
+	 * Get the number of entries in the ring buffer.
+	 * 
+	 * @return the number of entries
 	 */
 	public int getSize() {
 		return buffer.size();
 	}
 
 	/**
+	 * Check if the ring buffer is empty.
+	 * 
 	 * @return <code>true</code> if ring buffer is empty
 	 */
 	public boolean isEmpty() {
@@ -174,6 +181,8 @@ public class RingBuffer<T> implements Iterable<T> {
 	}
 
 	/**
+	 * Check if the ring buffer is at capacity.
+	 * 
 	 * @return <code>true</code> if ring buffer is at capacity
 	 */
 	public boolean isFull() {

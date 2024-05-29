@@ -74,24 +74,24 @@ public class PlistReader implements Iterator<PlistTag> {
 	 */
 	boolean isVirgin = true;
 
-// NOTE: reading an actual plist-file is not compatible with GWT. A subclass
-// PlistReaderJRE could provide readers for a BufferedReader object.
-//	
-//	BufferedReader xmlbuf;
-//
-//	/**
-//	 * Create reader for <code>plist</code>-string provided through 
-//	 * <code>xmlbuf</code>.
-//	 * 
-//	 * @param xmlbuf buffer for reading <code>plist</code>-string
-//	 * @throws NullPointerException if <code>null</code> buffer provided
-//	 */
-//	public PlistReader(BufferedReader xmlbuf) throws NullPointerException {
-//		if( xmlbuf==null )
-//			throw new NullPointerException("no plist as input stream provided.");
-//		this.xmlbuf = xmlbuf;
-//		read = 0;
-//	}
+	// NOTE: reading an actual plist-file is not compatible with GWT. A subclass
+	// PlistReaderJRE could provide readers for a BufferedReader object.
+	//
+	// BufferedReader xmlbuf;
+	//
+	// /**
+	// * Create reader for <code>plist</code>-string provided through
+	// * <code>xmlbuf</code>.
+	// *
+	// * @param xmlbuf buffer for reading <code>plist</code>-string
+	// * @throws NullPointerException if <code>null</code> buffer provided
+	// */
+	// public PlistReader(BufferedReader xmlbuf) throws NullPointerException {
+	// if( xmlbuf==null )
+	// throw new NullPointerException("no plist as input stream provided.");
+	// this.xmlbuf = xmlbuf;
+	// read = 0;
+	// }
 
 	/**
 	 * Create reader for <code>plist</code>-string.
@@ -118,7 +118,7 @@ public class PlistReader implements Iterator<PlistTag> {
 		int end = line.indexOf("?>");
 		if (start >= 0 && end > start) {
 			// read attributes of xml tag
-//			attributes = line.substring(start+"<?xml".length(), end).trim();
+			// attributes = line.substring(start+"<?xml".length(), end).trim();
 			// parse version
 			line = line.substring(end + "?>".length()).trim();
 		}
@@ -138,7 +138,7 @@ public class PlistReader implements Iterator<PlistTag> {
 		int arg = name.indexOf(' ');
 		if (arg > 0) {
 			// read attributes of root tag
-//			attributes = name.substring(arg);
+			// attributes = name.substring(arg);
 			name = name.substring(0, arg);
 		}
 		if (root == null)
@@ -201,7 +201,7 @@ public class PlistReader implements Iterator<PlistTag> {
 		}
 		tag = new PlistTag(name, attributes, value);
 		line = line.substring(end).trim();
-//		if( line.indexOf("</"+root+">")>0 ) done = true;
+		// if( line.indexOf("</"+root+">")>0 ) done = true;
 		return true;
 	}
 
@@ -231,22 +231,24 @@ public class PlistReader implements Iterator<PlistTag> {
 		return read;
 	}
 
-// NOTE: reading an actual plist-file is not compatible with GWT. This closes the
-// buffer provided by a BufferedReader object and leaves us with a stale PlistReader 
-// object that cannot easily be re-animated...
-//	
-//	/**
-//	 * Close buffer that provided <code>plist</code>-string.
-//	 */
-//	public void close() {
-//		try {
-//			xmlbuf.close();
-//		}
-//		catch( IOException ioe ) {
-//			// ignore exception - who cares if we can't close the stream?
-//		}
-//		done = true;
-//		tag = null;
-//		read = -1;
-//	}
+	// NOTE: reading an actual plist-file is not compatible with GWT. This closes
+	// the
+	// buffer provided by a BufferedReader object and leaves us with a stale
+	// PlistReader
+	// object that cannot easily be re-animated...
+	//
+	// /**
+	// * Close buffer that provided <code>plist</code>-string.
+	// */
+	// public void close() {
+	// try {
+	// xmlbuf.close();
+	// }
+	// catch( IOException ioe ) {
+	// // ignore exception - who cares if we can't close the stream?
+	// }
+	// done = true;
+	// tag = null;
+	// read = -1;
+	// }
 }

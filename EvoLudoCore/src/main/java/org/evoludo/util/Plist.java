@@ -368,7 +368,8 @@ public class Plist extends HashMap<String, Object> {
 	 * @return encoded String
 	 */
 	public static String encodeKey(String key, double real) {
-		// return "<key>" + key + "</key>\n<real>" + Double.toHexString(real) + "</real>\n";
+		// return "<key>" + key + "</key>\n<real>" + Double.toHexString(real) +
+		// "</real>\n";
 		return "<key>" + key + "</key>\n<real>" + Long.toString(Double.doubleToLongBits(real)) + "L</real>\n";
 	}
 
