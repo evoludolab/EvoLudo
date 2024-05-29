@@ -119,6 +119,9 @@ public class Functions {
 		return magnitude;
 	}
 
+	/**
+	 * The maximum argument that the hyperbolic tangent can handle.
+	 */
 	private static final double TANH_MAX_ARG = 19.0;
 
 	/**

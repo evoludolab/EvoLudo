@@ -61,22 +61,22 @@ public class Distributions {
 	 *      Algorithms for calculating variance</a>
 	 */
 	public static double variance(double[] x) {
-	// two pass calculation
-	//		return variance(x, mean(x));
-	// one-pass online calculation
-			int dim = x.length;
-			if (dim < 2)
-				return Double.NaN;
-			double mean = x[0];
-			double sum2 = 0.0;
-			for (int n = 1; n < dim; n++) {
-				double xn = x[n];
-				double dx = xn - mean;
-				mean += dx / (n + 1);
-				sum2 += dx * (xn - mean);
-			}
-			return sum2 / (dim - 1);
+		// two pass calculation
+		// return variance(x, mean(x));
+		// one-pass online calculation
+		int dim = x.length;
+		if (dim < 2)
+			return Double.NaN;
+		double mean = x[0];
+		double sum2 = 0.0;
+		for (int n = 1; n < dim; n++) {
+			double xn = x[n];
+			double dx = xn - mean;
+			mean += dx / (n + 1);
+			sum2 += dx * (xn - mean);
 		}
+		return sum2 / (dim - 1);
+	}
 
 	/**
 	 * Sample variance of data points <code>x[i]</code> stored in double vector
@@ -175,7 +175,7 @@ public class Distributions {
 		double cov = 0.0;
 		for (int n = 0; n < dim; n++)
 			cov += (x[n] - meanx) * (y[n] - meany);
-	
+
 		return cov / (dim - 1);
 	}
 
@@ -302,30 +302,30 @@ public class Distributions {
 	}
 
 	/**
-		 * Sample skewness of data points <code>x[i]</code> stored in double vector
-		 * <code>x</code> with known mean <code>m1</code>.
-		 * 
-		 * @param x  data vector
-		 * @param m1 mean of<code>x</code>
-		 * @return skewness of <code>x</code>
-		 */
-		public static double skewness(double[] x, double m1) {
-	//		double m3 = centralMoment(x, m1, 3);
-	//		double s = stdev(x, m1);
-			// same as above but slightly more efficient
-			int n = x.length;
-			double m2 = 0.0, m3 = 0.0;
-			for (int i = 0; i < n; i++) {
-				double dx = x[i] - m1;
-				double dx2 = dx * dx;
-				m2 += dx2;
-				m3 += dx2 * dx;
-			}
-			m3 /= n;
-			m2 /= (n - 1.0);
-			double s = Math.sqrt(m2);
-			return m3 / (s * s * s);
+	 * Sample skewness of data points <code>x[i]</code> stored in double vector
+	 * <code>x</code> with known mean <code>m1</code>.
+	 * 
+	 * @param x  data vector
+	 * @param m1 mean of<code>x</code>
+	 * @return skewness of <code>x</code>
+	 */
+	public static double skewness(double[] x, double m1) {
+		// double m3 = centralMoment(x, m1, 3);
+		// double s = stdev(x, m1);
+		// same as above but slightly more efficient
+		int n = x.length;
+		double m2 = 0.0, m3 = 0.0;
+		for (int i = 0; i < n; i++) {
+			double dx = x[i] - m1;
+			double dx2 = dx * dx;
+			m2 += dx2;
+			m3 += dx2 * dx;
 		}
+		m3 /= n;
+		m2 /= (n - 1.0);
+		double s = Math.sqrt(m2);
+		return m3 / (s * s * s);
+	}
 
 	/**
 	 * Sample kurtosis of data points <code>x[i]</code> stored in double vector
@@ -339,30 +339,30 @@ public class Distributions {
 	}
 
 	/**
-		 * Sample kurtosis of data points <code>x[i]</code> stored in double vector
-		 * <code>x</code> with known mean <code>m1</code>.
-		 * 
-		 * @param x  data vector
-		 * @param m1 mean of<code>x</code>
-		 * @return kurtosis of <code>x</code>
-		 */
-		public static double kurtosis(double[] x, double m1) {
-	//		double m4 = centralMoment(x, m1, 4);
-	//		double s = stdev(x, m1);
-	//		return m4/pow(s, 4);
-			// same as above but slightly more efficient
-			int n = x.length;
-			double m2 = 0.0, m4 = 0.0;
-			for (int i = 0; i < n; i++) {
-				double dx = x[i] - m1;
-				double dx2 = dx * dx;
-				m2 += dx2;
-				m4 += dx2 * dx2;
-			}
-			m4 /= n;
-			m2 /= (n - 1.0);
-			return m4 / (m2 * m2);
+	 * Sample kurtosis of data points <code>x[i]</code> stored in double vector
+	 * <code>x</code> with known mean <code>m1</code>.
+	 * 
+	 * @param x  data vector
+	 * @param m1 mean of<code>x</code>
+	 * @return kurtosis of <code>x</code>
+	 */
+	public static double kurtosis(double[] x, double m1) {
+		// double m4 = centralMoment(x, m1, 4);
+		// double s = stdev(x, m1);
+		// return m4/pow(s, 4);
+		// same as above but slightly more efficient
+		int n = x.length;
+		double m2 = 0.0, m4 = 0.0;
+		for (int i = 0; i < n; i++) {
+			double dx = x[i] - m1;
+			double dx2 = dx * dx;
+			m2 += dx2;
+			m4 += dx2 * dx2;
 		}
+		m4 /= n;
+		m2 /= (n - 1.0);
+		return m4 / (m2 * m2);
+	}
 
 	/**
 	 * Bimodality coefficient of data points <code>x[i]</code> stored in double
@@ -383,41 +383,41 @@ public class Distributions {
 	}
 
 	/**
-		 * Bimodality coefficient of data points <code>x[i]</code> stored in double
-		 * vector <code>x</code> with known mean <code>m1</code>. Coefficient lies
-		 * between <code>5/9</code>, for uniform and exponential distributions, and
-		 * <code>1</code>, for Bernoulli distributions with two distinct values or the
-		 * sum of two Dirac delta functions. Values <code>&gt;5/9</code> may indicate
-		 * bimodal or multimodal distributions.
-		 * 
-		 * @see <a href=
-		 *      "https://en.wikipedia.org/wiki/Multimodal_distribution#cite_note-59">Wikipedia:
-		 *      Multimodal Distribution</a>
-		 * @param x  data vector
-		 * @param m1 mean of<code>x</code>
-		 * @return bimodality coefficient
-		 */
-		public static double bimodality(double[] x, double m1) {
-			double n = x.length;
-	//		double g = skewness(a, m1);
-	//		double k = kurtosis(a, m1)-3.0;
-	//		return (g*g+1)/(k+3*(n-1)*(n-1)/((n-2)*(n-3)));
-			// same as above but slightly more efficient
-			double m2 = 0.0, m3 = 0.0, m4 = 0.0;
-			for (int i = 0; i < n; i++) {
-				double dx = x[i] - m1;
-				double dx2 = dx * dx;
-				m2 += dx2;
-				m3 += dx2 * dx;
-				m4 += dx2 * dx2;
-			}
-			m4 /= n;
-			m3 /= n;
-			m2 /= (n - 1.0);
-			double g = m3 / Combinatorics.pow(Math.sqrt(m2), 3);
-			double k = m4 / (m2 * m2) - 3.0;
-			return (g * g + 1) / (k + 3 * (n - 1) * (n - 1) / ((n - 2) * (n - 3)));
+	 * Bimodality coefficient of data points <code>x[i]</code> stored in double
+	 * vector <code>x</code> with known mean <code>m1</code>. Coefficient lies
+	 * between <code>5/9</code>, for uniform and exponential distributions, and
+	 * <code>1</code>, for Bernoulli distributions with two distinct values or the
+	 * sum of two Dirac delta functions. Values <code>&gt;5/9</code> may indicate
+	 * bimodal or multimodal distributions.
+	 * 
+	 * @see <a href=
+	 *      "https://en.wikipedia.org/wiki/Multimodal_distribution#cite_note-59">Wikipedia:
+	 *      Multimodal Distribution</a>
+	 * @param x  data vector
+	 * @param m1 mean of<code>x</code>
+	 * @return bimodality coefficient
+	 */
+	public static double bimodality(double[] x, double m1) {
+		double n = x.length;
+		// double g = skewness(a, m1);
+		// double k = kurtosis(a, m1)-3.0;
+		// return (g*g+1)/(k+3*(n-1)*(n-1)/((n-2)*(n-3)));
+		// same as above but slightly more efficient
+		double m2 = 0.0, m3 = 0.0, m4 = 0.0;
+		for (int i = 0; i < n; i++) {
+			double dx = x[i] - m1;
+			double dx2 = dx * dx;
+			m2 += dx2;
+			m3 += dx2 * dx;
+			m4 += dx2 * dx2;
 		}
+		m4 /= n;
+		m3 /= n;
+		m2 /= (n - 1.0);
+		double g = m3 / Combinatorics.pow(Math.sqrt(m2), 3);
+		double k = m4 / (m2 * m2) - 3.0;
+		return (g * g + 1) / (k + 3 * (n - 1) * (n - 1) / ((n - 2) * (n - 3)));
+	}
 
 	/**
 	 * Mean of probability distribution with weights <code>w[i]</code> stored in

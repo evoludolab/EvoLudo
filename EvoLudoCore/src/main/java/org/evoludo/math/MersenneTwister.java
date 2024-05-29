@@ -204,19 +204,19 @@ import org.evoludo.util.Plist;
  * @version 22
  */
 
-//Note: some adjustments are needed to make this work with GWT
+// Note: some adjustments are needed to make this work with GWT
 // - GWT has a thing with clone()ing - Clonable removed
 // - java.io stuff is problematic in GWT - removed
 // - no advantage of extending java.util.Random - removed
 // - floats are bad in GWT - should not be used
 // - longs are really bad in GWT - should really not be used
-// - int's in JavaScript do not seem to be 32bit! need to use masks for consistent
-//	 results (see JavaScript implementation mersenne.js by Stephan Brumme:
-//	 https://create.stephan-brumme.com/mersenne-twister/)
+// - int's in JavaScript do not seem to be 32bit! need to use masks for
+// consistent results (see JavaScript implementation mersenne.js by
+// Stephan Brumme: https://create.stephan-brumme.com/mersenne-twister/)
 // - mag01 not needed - removed
 // - loops optimized by reducing access to arrays through local vars
 // - logging in tests adapted to work both with JRE/GWT
-//-- Christoph Hauert
+// -- Christoph Hauert
 
 public class MersenneTwister {
 
@@ -367,12 +367,12 @@ public class MersenneTwister {
 		mt[0] = (int) (seed & BIT32_MASK);
 		int mtmti1 = mt[0];
 		for (mti = 1; mti < N; mti++) {
-//ChH: orig			mt[mti] = (1812433253 * (mt[mti-1] ^ (mt[mti-1] >>> 30)) + mti);
-//ChH: optimized	mtmti1 = mt[mti-1];
-//					mtmti1 = (1812433253 * (mtmti1 ^ (mtmti1 >>> 30)) + mti);
-//					mt[mti] = mtmti1;
+			// ChH: orig mt[mti] = (1812433253 * (mt[mti-1] ^ (mt[mti-1] >>> 30)) + mti);
+			// ChH: optimized mtmti1 = mt[mti-1];
+			// mtmti1 = (1812433253 * (mtmti1 ^ (mtmti1 >>> 30)) + mti);
+			// mt[mti] = mtmti1;
 			int s = mtmti1 ^ (mtmti1 >>> 30);
-//check if mask needed - might be only in rare cases
+			// check if mask needed - might be only in rare cases
 			mtmti1 = ((((((s & 0xffff0000) >>> 16) * 1812433253) << 16) + (s & 0x0000ffff) * 1812433253) + mti)
 					& BIT32_MASK;
 			mt[mti] = mtmti1;
@@ -400,12 +400,13 @@ public class MersenneTwister {
 		k = (N > array.length ? N : array.length);
 		int mtmti1 = mt[0];
 		for (; k != 0; k--) {
-//ChH: orig			mt[i] = (mt[i] ^ ((mt[i-1] ^ (mt[i-1] >>> 30)) * 1664525)) + array[j] + j; /* non linear */
+			// ChH: orig mt[i] = (mt[i] ^ ((mt[i-1] ^ (mt[i-1] >>> 30)) * 1664525)) +
+			// array[j] + j; /* non linear */
 			// mt[i] &= BIT32_MASK; /* for WORDSIZE > 32 machines */
 			// avoid multiplication overflow: split 32 bits into 2x 16 bits and process them
 			// individually
 			int s = mtmti1 ^ (mtmti1 >>> 30);
-//check if mask needed - might be only in rare cases
+			// check if mask needed - might be only in rare cases
 			mtmti1 = ((mt[i] ^ (((((s & 0xffff0000) >>> 16) * 1664525) << 16) + (s & 0x0000ffff) * 1664525)) + array[j]
 					+ j) & BIT32_MASK;
 			mt[i] = mtmti1;
@@ -420,12 +421,13 @@ public class MersenneTwister {
 		}
 		mtmti1 = mt[i - 1];
 		for (k = N - 1; k != 0; k--) {
-//ChH: orig			mt[i] = (mt[i] ^ ((mt[i-1] ^ (mt[i-1] >>> 30)) * 1566083941)) - i; /* non linear */
+			// ChH: orig mt[i] = (mt[i] ^ ((mt[i-1] ^ (mt[i-1] >>> 30)) * 1566083941)) - i;
+			// /* non linear */
 			// mt[i] &= BIT32_MASK; /* for WORDSIZE > 32 machines */
 			// avoid multiplication overflow: split 32 bits into 2x 16 bits and process them
 			// individually
 			int s = mtmti1 ^ (mtmti1 >>> 30);
-//check if mask needed - might be only in rare cases
+			// check if mask needed - might be only in rare cases
 			mtmti1 = ((mt[i] ^ (((((s & 0xffff0000) >>> 16) * 1566083941) << 16) + (s & 0x0000ffff) * 1566083941)) - i)
 					& BIT32_MASK;
 			mt[i] = mtmti1;
@@ -522,10 +524,11 @@ public class MersenneTwister {
 			// return (int)((n * (long)nextInt()) >> 31);
 			// avoid multiplication overflow: split 32 bits into 2x 16 bits and process them
 			// individually
-//			int s = nextInt();
-//seems ok but uses lower bits somehow this does not seem to be a good strategy (worth looking into?)
-//			return (((((s & 0xffff0000) >>> 16) * n) << 16) +
-//					   (s & 0x0000ffff)         * n) & (n-1);
+			// int s = nextInt();
+			// seems ok but uses lower bits somehow this does not seem to be a good strategy
+			// (worth looking into?)
+			// return (((((s & 0xffff0000) >>> 16) * n) << 16) +
+			// (s & 0x0000ffff) * n) & (n-1);
 			// calc log_2(n)
 			int log2 = 1;
 			n = n >>> 2;
@@ -535,7 +538,7 @@ public class MersenneTwister {
 			}
 			// note: cannot shift by 32bit (apparently turns into nop...); log2>0 must hold;
 			// n=1 caught at start
-//check if mask needed - might be only in rare cases
+			// check if mask needed - might be only in rare cases
 			return (nextUInt() >>> (32 - log2)) & BIT32_MASK;
 		}
 
@@ -874,13 +877,13 @@ public class MersenneTwister {
 		}
 		double v1, v2, s;
 		do {
-//			int y = nextUInt();
-//			int z = nextUInt();
-//			int a = nextUInt();
-//			int b = nextUInt();
-//			/* derived from nextDouble documentation in jdk 1.2 docs, see top */
-//			v1 = 2 * (((((long)(y >>> 6)) << 27) + (z >>> 5)) / (double)(1L << 53))	- 1;
-//			v2 = 2 * (((((long)(a >>> 6)) << 27) + (b >>> 5)) / (double)(1L << 53))	- 1;
+			// int y = nextUInt();
+			// int z = nextUInt();
+			// int a = nextUInt();
+			// int b = nextUInt();
+			// /* derived from nextDouble documentation in jdk 1.2 docs, see top */
+			// v1 = 2 * (((((long)(y >>> 6)) << 27) + (z >>> 5)) / (double)(1L << 53)) - 1;
+			// v2 = 2 * (((((long)(a >>> 6)) << 27) + (b >>> 5)) / (double)(1L << 53)) - 1;
 			// ChH: long's are killers for GWT performance
 			// return ((((long)(y >>> 5)) << 26) + (z >>> 6)) / (double)(1L << 53);
 			v1 = (nextUInt() >>> 5) * TWO_TO_NEG25 + (nextUInt() >>> 6) * TWO_TO_NEG52 - 1;
@@ -912,7 +915,7 @@ public class MersenneTwister {
 	 * 
 	 * @return clone of MersenneTwister random number generator
 	 */
-//	@Override
+	// @Override
 	@SuppressWarnings("all")
 	synchronized public MersenneTwister clone() {
 		MersenneTwister clone = new MersenneTwister();
