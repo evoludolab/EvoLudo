@@ -45,19 +45,31 @@ import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
 
 /**
- *
+ * The module for the evolution of two behavioural traits. This module is
+ * designed for the study of specialization and division of labour.
+ * 
  * @author Christoph Hauert
+ * 
+ * @see "Henriques G. J. B., Ito K., Hauert C., Doebeli M. (2021) <em>On the importance of evolving phenotype distributions on evolutionary diversification.</em> PLoS Comput. Biol. 17(2): e1008733. <a href='https://doi.org/10.1371/journal.pcbi.1008733'>doi: 10.1371/journal.pcbi.1008733</a>"
  */
 public class CLabour extends Continuous implements MultiPairs, HasIBS, HasPop2D.Strategy,
 		HasPop3D.Strategy, HasMean.Strategy, HasHistogram.Strategy, HasDistribution.Strategy, HasPop2D.Fitness,
 		HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree, HasConsole {
-// NOTE: in order to introduce a maximum total investment, this module needs to extend models to
-// properly deal with mutations
 
-	// local variables
-	protected double maxInvest = -1.0;
+	// NOTE: in order to introduce a maximum total investment, this module needs to
+	// extend models to properly deal with constraints on mutations
+	// protected double maxInvest = -1.0;
+
+	/**
+	 * Temporary storage for the traits of the opponent.
+	 */
 	protected double[] you;
 
+	/**
+	 * Constructs a new EvoLudo module for the evolution of two behavioural traits.
+	 * 
+	 * @param engine the manager of modules and pacemeaker for running the model
+	 */
 	public CLabour(EvoLudo engine) {
 		super(engine);
 	}
@@ -114,11 +126,23 @@ public class CLabour extends Continuous implements MultiPairs, HasIBS, HasPop2D.
 		return myScore;
 	}
 
-	public void setMaxInvestment(double aValue) {
-		maxInvest = aValue;
-	}
+	// /**
+	// * Set the maximum combined investment. This is the maximum an individual can
+	// * invest in in all traits combined.
+	// *
+	// * @param aValue the maximum investment
+	// */
+	// public void setMaxInvestment(double aValue) {
+	// maxInvest = aValue;
+	// }
 
-	public double getMaxInvestment() {
-		return maxInvest;
-	}
+	// /**
+	// * Get the maximum combined investment. This is the maximum an individual can
+	// * invest in in all traits combined.
+	// *
+	// * @return the maximum investment
+	// */
+	// public double getMaxInvestment() {
+	// return maxInvest;
+	// }
 }

@@ -49,8 +49,6 @@ public abstract class Discrete extends Module {
 	 * All modules that admit interactions in pairs (as opposed to larger groups)
 	 * should implement this interface. The classical {@code 2×2} games are an
 	 * example, see {@link org.evoludo.simulator.modules.TBT}.
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public interface Pairs extends Features {
 
@@ -73,9 +71,10 @@ public abstract class Discrete extends Module {
 		 * ({@code nGroup=2}, {@code pairwise=true}), otherwise see
 		 * {@link Groups#groupScores(int[], double[])}.
 		 * 
-		 * @param me     the trait index of the focal individual
+		 * @param me         the trait index of the focal individual
 		 * @param traitCount number of opponents with each trait/strategy
-		 * @param traitScore array for returning the scores of each opponent trait/strategy
+		 * @param traitScore array for returning the scores of each opponent
+		 *                   trait/strategy
 		 * @return score of focal individual {@code me} accumulated over all
 		 *         interactions
 		 */
@@ -99,9 +98,9 @@ public abstract class Discrete extends Module {
 		 * {@link org.evoludo.simulator.models.IBSMCPopulation#check() CXPopulation} for
 		 * an example).
 		 * 
-		 * @param traitCount       number of individuals for each trait/strategy
+		 * @param traitCount number of individuals for each trait/strategy
 		 * @param traitScore array for returning the payoffs/scores of each
-		 *                    trait/strategy
+		 *                   trait/strategy
 		 */
 		public void mixedScores(int[] traitCount, double[] traitScore);
 	}
@@ -110,8 +109,6 @@ public abstract class Discrete extends Module {
 	 * All modules that admit interactions in larger groups (as opposed to
 	 * interactions in pairs) should implement this interface. The voluntary public
 	 * goods game is an example, see {@link org.evoludo.simulator.modules.CDL}.
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public interface Groups extends Pairs {
 
@@ -175,10 +172,10 @@ public abstract class Discrete extends Module {
 		 * {@link #pairScores(int, int[], double[])} or
 		 * {@link #groupScores(int[], double[])}, respectively.
 		 * 
-		 * @param traitCount       number of individuals for each trait/strategy
-		 * @param n           interaction group size
+		 * @param traitCount number of individuals for each trait/strategy
+		 * @param n          interaction group size
 		 * @param traitScore array for returning the payoffs/scores of each
-		 *                    trait/strategy
+		 *                   trait/strategy
 		 */
 		public void mixedScores(int[] traitCount, int n, double[] traitScore);
 
@@ -300,7 +297,7 @@ public abstract class Discrete extends Module {
 	 * Calculate and return the payoff/score of individuals in monomorphic
 	 * populations with trait/strategy {@code type}.
 	 * <p>
-	 * <strong>Note:</strong> Optional implementation. Returns {@code Double#NaN} 
+	 * <strong>Note:</strong> Optional implementation. Returns {@code Double#NaN}
 	 * if not defined or not implemented.
 	 * 
 	 * @param type trait/strategy

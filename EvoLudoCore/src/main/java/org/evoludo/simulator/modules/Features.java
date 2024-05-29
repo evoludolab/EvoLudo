@@ -65,8 +65,6 @@ interface Features {
 	 * Interface that all modules with static fitness/payoffs should implement. The
 	 * original Moran process is an example, see
 	 * {@link org.evoludo.simulator.modules.Moran}.
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public interface Static extends Features {
 

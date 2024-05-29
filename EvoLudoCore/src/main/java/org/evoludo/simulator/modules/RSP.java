@@ -67,7 +67,7 @@ import org.evoludo.util.Formatter;
 public class RSP extends Discrete implements Pairs,
 		HasIBS, HasODE, HasSDE, HasPDE,
 		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy, HasS3, HasPop2D.Fitness,
-		HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree, 
+		HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree,
 		HasHistogram.StatisticsStationary, HasConsole {
 
 	/**
@@ -113,7 +113,7 @@ public class RSP extends Discrete implements Pairs,
 		Color[] colors = new Color[nTraits];
 		colors[ROCK] = Color.BLUE;
 		// yellow has too little contrast
-		colors[SCISSORS] = new Color(238, 204, 17);	// hex #eecc11
+		colors[SCISSORS] = new Color(238, 204, 17); // hex #eecc11
 		colors[PAPER] = Color.RED;
 		setTraitColors(colors);
 		// allocate memory
@@ -242,7 +242,7 @@ public class RSP extends Discrete implements Pairs,
 	 */
 	public final CLOption cloPayoff = new CLOption("paymatrix", "0,1,-1;-1,0,1;1,-1,0", EvoLudo.catModule,
 			"--paymatrix <a11,a12,a13;a21,a22,a23;a31,a32,a33>\n" + //
-			"                3x3 payoff matrix",
+					"                3x3 payoff matrix",
 			new CLODelegate() {
 
 				/**
@@ -299,8 +299,6 @@ public class RSP extends Discrete implements Pairs,
 	 * The extension for IBS simulations specific to {@code 3×3} games. This
 	 * extension implements specific initial conditions that give rise to
 	 * fascinating evolutionary kaleidoscopes for deterministic updating.
-	 *
-	 * @author Christoph Hauert
 	 */
 	public class IBS extends IBSDPopulation {
 

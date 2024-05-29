@@ -111,7 +111,7 @@ public class CDLP extends CDL {
 		// trait colors (automatically generates lighter versions for new strategists)
 		Color[] colors = new Color[nTraits];
 		// yellow has too little contrast
-		colors[LONER] = new Color(238, 204, 17);	// hex #eecc11
+		colors[LONER] = new Color(238, 204, 17); // hex #eecc11
 		colors[DEFECT] = Color.RED;
 		colors[COOPERATE] = Color.BLUE;
 		colors[PUNISH] = Color.GREEN;

@@ -539,6 +539,13 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 	 */
 	public class ATBTMap implements Data2Phase, BasicTooltipProvider {
 
+		/**
+		 * Constructs a new map to translate between population states and the phase
+		 * plane.
+		 */
+		public ATBTMap() {
+		}
+
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {
 			// NOTE: data[0] is time!

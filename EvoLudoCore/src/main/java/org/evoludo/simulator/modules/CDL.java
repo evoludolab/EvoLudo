@@ -160,7 +160,7 @@ public class CDL extends Discrete implements Groups, HasIBS, HasODE, HasSDE, Has
 		// trait colors (automatically generates lighter versions for new strategists)
 		Color[] colors = new Color[nTraits];
 		// yellow has too little contrast
-		colors[LONER] = new Color(238, 204, 17);	// hex #eecc11
+		colors[LONER] = new Color(238, 204, 17); // hex #eecc11
 		colors[DEFECT] = Color.RED;
 		colors[COOPERATE] = Color.BLUE;
 		setTraitColors(colors);
@@ -308,7 +308,8 @@ public class CDL extends Discrete implements Groups, HasIBS, HasODE, HasSDE, Has
 
 		traitScore[LONER] = payLoner;
 		if (n < 2) {
-			// note: initInterest took care of adjusting payLoneXXX if public good is produced
+			// note: initInterest took care of adjusting payLoneXXX if public good is
+			// produced
 			// by a single individual
 			traitScore[COOPERATE] = payLoneCoop;
 			traitScore[DEFECT] = payLoneDefect;
@@ -963,8 +964,6 @@ public class CDL extends Discrete implements Groups, HasIBS, HasODE, HasSDE, Has
 	 * The extension for IBS simulations specific to voluntary (non-linear) public
 	 * goods games. This extension implements specific initial conditions that give
 	 * rise to fascinating evolutionary kaleidoscopes for deterministic updating.
-	 *
-	 * @author Christoph Hauert
 	 */
 	public class IBS extends IBSDPopulation {
 

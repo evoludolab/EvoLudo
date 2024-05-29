@@ -43,7 +43,8 @@ import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.Formatter;
 
 /**
- * Cooperation in voluntary (non-linear) public goods interactions with peer and pool punishment.
+ * Cooperation in voluntary (non-linear) public goods interactions with peer and
+ * pool punishment.
  * 
  * @author Christoph Hauert
  */
@@ -95,7 +96,7 @@ public class CDLPQ extends CDLP {
 		// trait colors (automatically generates lighter versions for new strategists)
 		Color[] colors = new Color[nTraits];
 		// yellow has too little contrast
-		colors[LONER] = new Color(238, 204, 17);	// hex #eecc11
+		colors[LONER] = new Color(238, 204, 17); // hex #eecc11
 		colors[DEFECT] = Color.RED;
 		colors[COOPERATE] = Color.BLUE;
 		colors[PUNISH] = Color.GREEN;
@@ -231,12 +232,12 @@ public class CDLPQ extends CDLP {
 		 * old version where punishment pool get divided among all culprits
 		 * double culprits = (double)y;
 		 * if( leniencyCoop>1e-6 )
-		 * 		culprits += (double)(x+w);
+		 * culprits += (double)(x+w);
 		 * if( culprits>0.0 ) {
-		 * 		double punit = (double)v/culprits*finePoolPunish;
-		 * 		groupTypeScores[DEFECT] -= punit;
-		 * 		groupTypeScores[COOPERATE] -= punit*leniencyCoop;
-		 * 		groupTypeScores[PUNISH] -= punit*leniencyCoop;
+		 * double punit = (double)v/culprits*finePoolPunish;
+		 * groupTypeScores[DEFECT] -= punit;
+		 * groupTypeScores[COOPERATE] -= punit*leniencyCoop;
+		 * groupTypeScores[PUNISH] -= punit*leniencyCoop;
 		 * }
 		 */
 		traitScore[LONER] -= v * leniencyLoner * finePoolPunish;

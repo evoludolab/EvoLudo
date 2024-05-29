@@ -46,6 +46,8 @@ import org.evoludo.util.Formatter;
  *      A. &amp; Hauert, C. (2021) Intriguing effects of selection intensity on
  *      the evolution of prosocial behaviors PLoS Comp. Biol. 17 (11)
  *      e1009611</a>
+ * 
+ * @author Christoph Hauert
  */
 public class Map2Fitness {
 
@@ -274,8 +276,6 @@ public class Map2Fitness {
 
 	/**
 	 * Enum representing the different types of payoff/score to fitness maps
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public enum Map implements CLOption.Key {
 

@@ -64,9 +64,9 @@ import org.evoludo.util.Formatter;
  * determines the characteristics of the game. Consider the payoff matrix
  * \begin{align}
  * \begin{matrix} &amp;
- * 		\begin{matrix} &amp;\hspace{-3ex} C &amp;\hspace{-1ex} D \end{matrix} \\
- * 		\begin{matrix} C\\ D \end{matrix} &amp; \hspace{-1ex}
- * 		\begin{pmatrix}R &amp; S\\ T &amp; P\end{pmatrix}
+ * \begin{matrix} &amp;\hspace{-3ex} C &amp;\hspace{-1ex} D \end{matrix} \\
+ * \begin{matrix} C\\ D \end{matrix} &amp; \hspace{-1ex}
+ * \begin{pmatrix}R &amp; S\\ T &amp; P\end{pmatrix}
  * \end{matrix}
  * \end{align}
  * where \(R\) refers to the payoff for mutual cooperation, \(S\) to the
@@ -97,7 +97,7 @@ public class TBT extends Discrete implements Pairs,
 		HasIBS, HasODE, HasSDE, HasPDE,
 		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy,
 		HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness,
-		HasHistogram.Degree, HasHistogram.StatisticsProbability, HasHistogram.StatisticsTime, 
+		HasHistogram.Degree, HasHistogram.StatisticsProbability, HasHistogram.StatisticsTime,
 		HasHistogram.StatisticsStationary, HasConsole {
 
 	/**
@@ -507,7 +507,7 @@ public class TBT extends Discrete implements Pairs,
 			if (competition.getType() == Geometry.Type.SQUARE_NEUMANN_2ND) {
 				if (index < nTraits)
 					return super.getMeanName(index) + " (1st)";
-				return super.getMeanName(index % nTraits) + " (2nd)";				
+				return super.getMeanName(index % nTraits) + " (2nd)";
 			}
 			return super.getMeanName(index);
 		}
@@ -537,8 +537,6 @@ public class TBT extends Discrete implements Pairs,
 	 * The extension for IBS simulations specific to {@code 2×2} games. This
 	 * extension implements specific initial conditions that give rise to
 	 * fascinating evolutionary kaleidoscopes for deterministic updating.
-	 *
-	 * @author Christoph Hauert
 	 */
 	public class TBTPop extends IBSDPopulation {
 
@@ -554,14 +552,14 @@ public class TBT extends Discrete implements Pairs,
 		@Override
 		public boolean check() {
 			boolean doReset = super.check();
-			if (competition!= null && competition.getType() == Geometry.Type.SQUARE_NEUMANN_2ND)
+			if (competition != null && competition.getType() == Geometry.Type.SQUARE_NEUMANN_2ND)
 				tsTraits = new double[2 * nTraits];
 			else
 				tsTraits = null;
 			tsMean = -1.0;
 			return doReset;
 		}
-		
+
 		@Override
 		public int getNMean() {
 			if (competition.getType() == Geometry.Type.SQUARE_NEUMANN_2ND)
@@ -574,7 +572,7 @@ public class TBT extends Discrete implements Pairs,
 
 		@Override
 		public void getMeanTraits(double[] mean) {
-			// SQUARE_NEUMANN_2ND geometry for competition results in two disjoint 
+			// SQUARE_NEUMANN_2ND geometry for competition results in two disjoint
 			// sublattices; report strategy frequencies in each sublattice separately
 			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
 				super.getMeanTraits(mean);
@@ -582,7 +580,7 @@ public class TBT extends Discrete implements Pairs,
 			}
 
 			double newtime = model.getTime();
-			if(Math.abs(tsMean - newtime) < engine.getReportInterval()) {
+			if (Math.abs(tsMean - newtime) < engine.getReportInterval()) {
 				System.arraycopy(tsTraits, 0, mean, 0, mean.length);
 				return;
 			}
@@ -608,7 +606,7 @@ public class TBT extends Discrete implements Pairs,
 
 		@Override
 		public void getMeanFitness(double[] mean) {
-			// SQUARE_NEUMANN_2ND geometry for competition results in two disjoint 
+			// SQUARE_NEUMANN_2ND geometry for competition results in two disjoint
 			// sublattices; report strategy frequencies in each sublattice separately
 			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
 				super.getMeanFitness(mean);
@@ -619,7 +617,7 @@ public class TBT extends Discrete implements Pairs,
 			Arrays.fill(mean, 0);
 			int side = (int) Math.sqrt(nPopulation);
 			int offset1, offset2;
-			while (n<nPopulation) {
+			while (n < nPopulation) {
 				if ((n / side) % 2 == 0) {
 					offset1 = 0;
 					offset2 = nTraits;
@@ -642,7 +640,7 @@ public class TBT extends Discrete implements Pairs,
 				return super.getStatus();
 
 			double newtime = model.getTime();
-			if(Math.abs(tsMean - newtime) < engine.getReportInterval())
+			if (Math.abs(tsMean - newtime) < engine.getReportInterval())
 				getMeanTraits(tsTraits);
 			String status = "";
 			for (int i = 0; i < 2 * nTraits; i++) {
@@ -651,7 +649,7 @@ public class TBT extends Discrete implements Pairs,
 			}
 			return status;
 		}
-	
+
 		@Override
 		protected void initKaleidoscope() {
 			// kaleidoscopes only available for lattice geometries
@@ -675,7 +673,7 @@ public class TBT extends Discrete implements Pairs,
 					int l2 = l * l;
 					int m = l / 2;
 					double[] args = init.getArgs();
-					int type = ((args != null && args.length > 0) ? (int)args[0] : 0);
+					int type = ((args != null && args.length > 0) ? (int) args[0] : 0);
 					switch (type) {
 						default:
 						case 0:

@@ -53,8 +53,6 @@ public abstract class Continuous extends Module {
 	 * All modules that admit interactions in pairs (as opposed to larger groups)
 	 * should implement this interface. The continuous snowdrift game is an example,
 	 * see {@link org.evoludo.simulator.modules.CSD}.
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public interface Pairs extends Features {
 
@@ -81,11 +79,11 @@ public abstract class Continuous extends Module {
 		 * ({@code nGroup=2}, {@code pairwise=true}), otherwise see
 		 * {@link Groups#groupScores(double, double[], int, double[])}.
 		 * 
-		 * @param me          the trait of the focal individual
-		 * @param groupTraits the traits of the group members
-		 * @param len         the number of memebrs in the group
-		 * @param groupPayoffs     the array for returning the payoffs/scores for each group
-		 *                    member
+		 * @param me           the trait of the focal individual
+		 * @param groupTraits  the traits of the group members
+		 * @param len          the number of memebrs in the group
+		 * @param groupPayoffs the array for returning the payoffs/scores for each group
+		 *                     member
 		 * @return the total (accumulated) payoff/score for the focal individual
 		 */
 		public double pairScores(double me, double[] groupTraits, int len, double[] groupPayoffs);
@@ -94,8 +92,6 @@ public abstract class Continuous extends Module {
 	/**
 	 * All modules that admit interactions in larger groups (as opposed to
 	 * interactions in pairs) should implement this interface.
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public interface Groups extends Pairs {
 
@@ -142,8 +138,6 @@ public abstract class Continuous extends Module {
 	 * All modules that admit interactions in pairs (as opposed to larger groups)
 	 * should implement this interface. The division of labour module is an example,
 	 * see {@link org.evoludo.simulator.modules.CLabour}.
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public interface MultiPairs extends Features {
 
@@ -172,11 +166,11 @@ public abstract class Continuous extends Module {
 		 * ({@code nGroup=2}, {@code pairwise=true}), otherwise see
 		 * {@link Groups#groupScores(double, double[], int, double[])}.
 		 * 
-		 * @param me          the trait of the focal individual
-		 * @param groupTraits the traits of the group members
-		 * @param len         the number of memebrs in the group
-		 * @param groupPayoffs     the array for returning the payoffs/scores for each group
-		 *                    member
+		 * @param me           the trait of the focal individual
+		 * @param groupTraits  the traits of the group members
+		 * @param len          the number of memebrs in the group
+		 * @param groupPayoffs the array for returning the payoffs/scores for each group
+		 *                     member
 		 * @return the total (accumulated) payoff/score for the focal individual
 		 */
 		public double pairScores(double me[], double[] groupTraits, int len, double[] groupPayoffs);
@@ -185,8 +179,6 @@ public abstract class Continuous extends Module {
 	/**
 	 * All modules that admit interactions in larger groups (as opposed to
 	 * interactions in pairs) with multiple traits should implement this interface.
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public interface MultiGroups extends MultiPairs {
 
@@ -494,10 +486,14 @@ public abstract class Continuous extends Module {
 	/**
 	 * Translate continuous traits into payoffs based on configurable cost and
 	 * benefit functions.
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public class Traits2Payoff {
+
+		/**
+		 * Constructs a new map for converting traits into oayoffs.
+		 */
+		public Traits2Payoff() {
+		}
 
 		/**
 		 * The array of cost functions, one for each trait.
@@ -553,7 +549,7 @@ public abstract class Continuous extends Module {
 		 * array {@code params}.
 		 * 
 		 * @param cparams the array of cost function parameters
-		 * @param index  the index of the trait
+		 * @param index   the index of the trait
 		 * 
 		 * @see #ci
 		 */
@@ -1008,7 +1004,7 @@ public abstract class Continuous extends Module {
 			return title;
 		}
 	}
-	
+
 	/**
 	 * Selected benefit functions to translate continuous traits into payoffs. Enum
 	 * on steroids. Currently available benefit functions are:
@@ -1188,7 +1184,7 @@ public abstract class Continuous extends Module {
 			return title;
 		}
 	}
-	
+
 	/**
 	 * Command line option to set the minimum value of each trait.
 	 */
@@ -1272,15 +1268,14 @@ public abstract class Continuous extends Module {
 				}
 			});
 
-
 	/**
 	 * Command line option to set the cost function(s) for continuous traits.
 	 * 
 	 * @see Costs
 	 */
-	public final CLOption cloCosts = new CLOption("costs", Costs.ME_LINEAR.getKey() + " 1", EvoLudo.catModel, 
+	public final CLOption cloCosts = new CLOption("costs", Costs.ME_LINEAR.getKey() + " 1", EvoLudo.catModel,
 			"--costs <s0 b00[" + CLOParser.VECTOR_DELIMITER + "b01...[" + CLOParser.TRAIT_DELIMITER + //
-			"s1 b10[" + CLOParser.VECTOR_DELIMITER + "b11...]]]>  cost function <si>:",
+					"s1 b10[" + CLOParser.VECTOR_DELIMITER + "b11...]]]>  cost function <si>:",
 			new CLODelegate() {
 
 				/**
@@ -1415,7 +1410,7 @@ public abstract class Continuous extends Module {
 			parser.addCLO(cloTraitDisable);
 		parser.addCLO(mutation.clo);
 	}
-	
+
 	/**
 	 * The absolute minimum score.
 	 */
