@@ -46,23 +46,73 @@ import org.evoludo.simulator.views.BasicTooltipProvider;
 import com.google.gwt.user.client.Command;
 
 /**
- *
+ * Histogram graph for displaying data in bins. The data is stored in a 2D array
+ * with the first index representing the data row and the second index the bin
+ * index. The data can be normalized to the total number of samples or to a
+ * specific data row. The graph can be used to display data for different types
+ * of modules, such as degree distributions, strategies, fitness values, or
+ * fixation probabilities.
+ * 
  * @author Christoph Hauert
  */
 public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipProvider {
 
-	// this is a quick and dirty implementation of bin markers - improvements?
+	/**
+	 * Marker for highlighting a specific bin in the histogram. The marker is
+	 * defined by its {@code x}-coordinate, color, and description. The linestyle
+	 * can be set to {@code null} for a solid line or to an array of integers
+	 * defining the dash pattern.
+	 */
 	public class Marker {
-		double	x;
-		int		bin = -1;
-		String	color;
-		String	descr;
-		int[]	linestyle;
 
+		/**
+		 * The {@code x}-coordinate of the marker.
+		 */
+		double x;
+
+		/**
+		 * The index of the marked bin.
+		 */
+		int bin = -1;
+
+		/**
+		 * The color of the marker.
+		 */
+		String color;
+
+		/**
+		 * The description of the marker. This is shown on the tolltip when hovering
+		 * over the marked bin.
+		 */
+		String descr;
+
+		/**
+		 * The linestyle of the marker. This can be set to {@code null} for a solid line
+		 * or to an array of integers defining the dash pattern.
+		 */
+		int[] linestyle;
+
+		/**
+		 * Create a new marker for the histogram at {@code x} with color {@code color}
+		 * and description {@code descr}.
+		 * 
+		 * @param x     the {@code x}-coordinate of the marker
+		 * @param color the color of the marker
+		 * @param descr the description of the marker
+		 */
 		public Marker(double x, String color, String descr) {
 			this(x, color, descr, null);
 		}
 
+		/**
+		 * Create a new marker for the histogram at {@code x} with color {@code color},
+		 * description {@code descr}, and linestyle {@code linestyle}.
+		 * 
+		 * @param x         the {@code x}-coordinate of the marker
+		 * @param color     the color of the marker
+		 * @param descr     the description of the marker
+		 * @param linestyle the linestyle of the marker
+		 */
 		public Marker(double x, String color, String descr, int[] linestyle) {
 			this.x = x;
 			this.color = color;
@@ -71,47 +121,123 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		}
 	}
 
+	/**
+	 * Add marker to histogram at {@code x} with color {@code color} and description
+	 * {@code descr}.
+	 * 
+	 * @param x     the {@code x}-coordinate of the marker
+	 * @param color the color of the marker
+	 * @param descr the description of the marker
+	 */
 	public void addMarker(double x, String color, String descr) {
 		binmarkers.add(new Marker(x, color, descr));
 	}
 
+	/**
+	 * Add marker to histogram at {@code x} with color {@code color}, description
+	 * {@code descr}, and linestyle {@code linestyle}.
+	 * 
+	 * @param x         the {@code x}-coordinate of the marker
+	 * @param color     the color of the marker
+	 * @param descr     the description of the marker
+	 * @param linestyle the linestyle of the marker
+	 */
 	public void addMarker(double x, String color, String descr, int[] linestyle) {
 		binmarkers.add(new Marker(x, color, descr, linestyle));
 	}
 
+	/**
+	 * Clear all markers from the histogram.
+	 */
 	public void clearMarkers() {
 		binmarkers.clear();
 	}
 
+	/**
+	 * Get the description of the marker at bin {@code bin} or {@code null} if no
+	 * marker is set.
+	 * 
+	 * @param bin the index of the bin
+	 * @return the description of the marker
+	 */
 	public String getNoteAt(int bin) {
-		for( Marker mark : binmarkers )
-			if( mark.bin==bin ) return mark.descr;
+		for (Marker mark : binmarkers)
+			if (mark.bin == bin)
+				return mark.descr;
 		return null;
 	}
 
+	/**
+	 * The list of thresholds for automatically scaling the y-axis. The first
+	 * element of each row is the maximum value for the y-axis, the second element
+	 * is the minimum value for the y-axis, and the third element is the number of
+	 * levels for the y-axis.
+	 * <p>
+	 * For example, the scale changes from {@code 0-1} with 4 levels to {@code
+	 * 0-0.5} with 5 levels if the maximum value drops below {@code 0.4}.
+	 */
 	private static final double[][] autoscale = new double[][] { //
-		{ 1.0, 0.4, 4.0 }, //
-		{ 0.5, 0.2, 5.0 }, //
-		{ 0.25, 0.08, 5.0 }, //
-		{ 0.1, 0.04, 5.0 }, //
-		{ 0.05, 0.008, 5.0 }, //
-		{ 0.01, 0.0, 5.0 }};
+			{ 1.0, 0.4, 4.0 }, //
+			{ 0.5, 0.2, 5.0 }, //
+			{ 0.25, 0.08, 5.0 }, //
+			{ 0.1, 0.04, 5.0 }, //
+			{ 0.05, 0.008, 5.0 }, //
+			{ 0.01, 0.0, 5.0 } };
+
+	/**
+	 * The index of the current autoscale setting.
+	 */
 	private int autoscaleidx = 0;
+
+	/**
+	 * The list of markers for the histogram.
+	 */
 	private ArrayList<Marker> binmarkers = new ArrayList<Marker>();
 
+	/**
+	 * The data array backing the histogram. This may be shared by multiple
+	 * {@code HistoGraph}s, each accessing a different row in the array.
+	 */
 	protected double[][] data;
-	protected String message;
-	protected boolean isNormalized = true;
-	protected int normIdx = -1;
-	protected double nSamples;
-	int maxBinIdx;
+
+	/**
+	 * The index of the data row.
+	 */
 	int row;
 
+	/**
+	 * The message to display if no histogram is available.
+	 */
+	protected String message;
+
+	/**
+	 * The flag to indicate whether the data is normalized.
+	 */
+	protected boolean isNormalized = true;
+
+	/**
+	 * The index of the data row used for normalization.
+	 */
+	protected int normIdx = -1;
+
+	/**
+	 * The number of samples in the histogram.
+	 */
+	protected double nSamples;
+
+	/**
+	 * The maximum bin index.
+	 */
+	int maxBinIdx;
+
+	/**
+	 * The maximum number of bins for the histogram.
+	 */
 	public static final int MAX_BINS = 100;
 
 	/**
 	 * Create new histogram graph for <code>module</code> running in
-	 * <code>controller</code>. The row is used to identify data entries that apply 
+	 * <code>controller</code>. The row is used to identify data entries that apply
 	 * to this histogram and represents the index of the data row.
 	 * 
 	 * @param controller the controller of this graph
@@ -163,7 +289,8 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	}
 
 	/**
-	 * Get the total number of samples in bin with index {@code idx}. For data that is not normalized the number of samples is returned.
+	 * Get the total number of samples in bin with index {@code idx}. For data that
+	 * is not normalized the number of samples is returned.
 	 * 
 	 * @param idx the index of the bin
 	 * @return the number of samples
@@ -208,7 +335,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	}
 
 	/**
-	 * Set the data for the histogram. 
+	 * Set the data for the histogram.
 	 * <br>
 	 * <strong>Note:</strong> The data may be shared by multiple
 	 * {@code HistoGraph}s, each refering to a row in the {@code double[][]} array
@@ -250,7 +377,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	 * {@code bin} by {@code incr}. For normalized data the normalization is updated
 	 * accordingly.
 	 * 
-	 * @param bin the index of the bin in the histogram
+	 * @param bin  the index of the bin in the histogram
 	 * @param incr the increment to add to the bin
 	 * 
 	 * @see #setNormalized(boolean)
@@ -305,26 +432,34 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		nSamples = 0.0;
 	}
 
-	// IMPORTANT: bin count needs to be even!
+	/**
+	 * Double the range of the histogram by lowering the minimum value.
+	 * 
+	 * @evoludo.impl The number of bins needs to be even!
+	 */
 	private void doubleMinRange() {
 		double[] bins = data[row];
 		int nBins = bins.length;
-		int nBins2 = nBins/2;
-		for( int i=0; i<nBins2; i++ ) {
+		int nBins2 = nBins / 2;
+		for (int i = 0; i < nBins2; i++) {
 			int i2 = nBins - 1 - i - i;
-			bins[i] = bins[i2]+bins[i2-1];
+			bins[i] = bins[i2] + bins[i2 - 1];
 		}
 		Arrays.fill(bins, 0, nBins2, 0.0);
 	}
 
-	// IMPORTANT: bin count needs to be even!
+	/**
+	 * Double the range of the histogram by increasing the maximum value.
+	 * 
+	 * @evoludo.impl The number of bins needs to be even!
+	 */
 	private void doubleMaxRange() {
 		double[] bins = data[row];
 		int nBins = bins.length;
-		int nBins2 = nBins/2;
-		for( int i=0; i<nBins2; i++ ) {
-			int i2 = i+i;
-			bins[i] = bins[i2]+bins[i2+1];
+		int nBins2 = nBins / 2;
+		for (int i = 0; i < nBins2; i++) {
+			int i2 = i + i;
+			bins[i] = bins[i2] + bins[i2 + 1];
 		}
 		Arrays.fill(bins, nBins2, nBins, 0.0);
 	}
@@ -333,7 +468,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	 * Convert {@code x}-coordinate to bin index.
 	 * 
 	 * @param x the {@code x}-coordinate
-	 * @return the index of the bin 
+	 * @return the index of the bin
 	 */
 	public int x2bin(double x) {
 		int len = data[row].length;
@@ -383,7 +518,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			return false;
 		// add frame
 		g.save();
-		g.scale(scale,  scale);
+		g.scale(scale, scale);
 		g.translate(bounds.getX(), bounds.getY());
 		drawFrame(4, 4);
 		g.restore();
@@ -404,7 +539,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			return true;
 
 		g.save();
-		g.scale(scale,  scale);
+		g.scale(scale, scale);
 		clearCanvas();
 		g.translate(bounds.getX(), bounds.getY());
 
@@ -413,80 +548,80 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		double[] myData = data[row];
 		double[] norm = null;
 		int nBins = myData.length;
-		if( style.autoscaleY ) {
-// Note: autoscaling is pretty slow - could be avoided by checks when adding new data points; increasing
-//		 max is fairly easy; if max gets reduced a global check for new maximum is required; graph would
-//		 need to keep track of bin index that contains the maximum.
+		if (style.autoscaleY) {
+			// Note: autoscaling is pretty slow - could be avoided by checks when adding new
+			// data points; increasing
+			// max is fairly easy; if max gets reduced a global check for new maximum is
+			// required; graph would
+			// need to keep track of bin index that contains the maximum.
 			double yMax = -Double.MAX_VALUE, yMin = Double.MAX_VALUE;
-			if( normIdx>=0 ) {
+			if (normIdx >= 0) {
 				norm = data[normIdx];
 				boolean nodata = true;
-				for( int n=0; n<nBins; n++ ) {
+				for (int n = 0; n < nBins; n++) {
 					double nnorm = norm[n];
-					if( nnorm<1e-8 )
+					if (nnorm < 1e-8)
 						continue;
-					double val = myData[n]/nnorm;
+					double val = myData[n] / nnorm;
 					yMin = Math.min(yMin, val);
 					yMax = Math.max(yMax, val);
 					nodata = false;
 				}
-				if( nodata ) {
+				if (nodata) {
 					yMax = 1.0;
 					yMin = 0.0;
 				}
-			}
-			else {
+			} else {
 				yMax = ArrayMath.max(myData);
-				if( !isNormalized )
+				if (!isNormalized)
 					yMax /= nSamples;
 			}
-			if( yMax<=1.0 ) {
+			if (yMax <= 1.0) {
 				// find maximum - assumes that data is normalized and max<=1!
-				while( yMax>autoscale[autoscaleidx][0] )
+				while (yMax > autoscale[autoscaleidx][0])
 					autoscaleidx--;
-				while( yMax<autoscale[autoscaleidx][1] )
+				while (yMax < autoscale[autoscaleidx][1])
 					autoscaleidx++;
 				style.yMax = autoscale[autoscaleidx][0];
-				yLevels = (int)autoscale[autoscaleidx][2];
-			}
-			else {
+				yLevels = (int) autoscale[autoscaleidx][2];
+			} else {
 				// round yMax up to 'nice' boundary
-				if( yMax>style.yMax )
+				if (yMax > style.yMax)
 					style.yMax = Functions.roundUp(yMax);
-				else if( yMax<0.8*style.yMax )
-					style.yMax = Functions.roundUp(yMax);		
+				else if (yMax < 0.8 * style.yMax)
+					style.yMax = Functions.roundUp(yMax);
 
-				if( normIdx<0 ) {
+				if (normIdx < 0) {
 					yMin = ArrayMath.min(myData);
-					if( !isNormalized )
+					if (!isNormalized)
 						yMin /= nSamples;
 				}
-				if( yMin<style.yMin )
+				if (yMin < style.yMin)
 					style.yMin = Functions.roundDown(yMin);
-				else if( yMin>1.25*style.yMin )
-					style.yMin = Functions.roundDown(yMin);		
+				else if (yMin > 1.25 * style.yMin)
+					style.yMin = Functions.roundDown(yMin);
 			}
 		}
 
-		double barwidth = bounds.getWidth()/nBins;
+		double barwidth = bounds.getWidth() / nBins;
 		double xshift = 0;
 		double h = bounds.getHeight();
-		double map = h/(style.yMax-style.yMin);
-		if( normIdx>=0 ) {
+		double map = h / (style.yMax - style.yMin);
+		if (normIdx >= 0) {
 			norm = data[normIdx];
-			for( int n=0; n<nBins; n++ ) {
+			for (int n = 0; n < nBins; n++) {
 				double nnorm = norm[n];
-				double barheight = nnorm < 1e-8 ? 0.0 : Math.min(Math.max(1.0, map*(myData[n]/nnorm-style.yMin)), h-1);
-				fillRect(xshift, h-barheight, barwidth-1.0, barheight);
+				double barheight = nnorm < 1e-8 ? 0.0
+						: Math.min(Math.max(1.0, map * (myData[n] / nnorm - style.yMin)), h - 1);
+				fillRect(xshift, h - barheight, barwidth - 1.0, barheight);
 				xshift += barwidth;
 			}
-		}
-		else {
-			if( !isNormalized )
-				map /= nSamples; 
-			for( int n=0; n<nBins; n++ ) {
-				double barheight = Math.min(Math.max(1.0, map*(myData[n]-style.yMin)), h-1);
-				fillRect(xshift, h-barheight, barwidth-1.0, barheight);
+		} else {
+			if (!isNormalized)
+				map /= nSamples;
+			for (int n = 0; n < nBins; n++) {
+				double barheight = Math.min(Math.max(1.0, map * (myData[n] - style.yMin)), h - 1);
+				fillRect(xshift, h - barheight, barwidth - 1.0, barheight);
 				xshift += barwidth;
 			}
 		}
@@ -496,21 +631,24 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		return false;
 	}
 
+	/**
+	 * Draw the marked bins.
+	 */
 	protected void drawMarkers() {
 		int nBins = data[row].length;
-		double barwidth = bounds.getWidth()/nBins;
+		double barwidth = bounds.getWidth() / nBins;
 		double h = bounds.getHeight();
 		int nMarkers = binmarkers.size();
 		int n = 0;
-		for( Marker mark : binmarkers ) {
+		for (Marker mark : binmarkers) {
 			int bin = x2bin(mark.x);
-			mark.bin = bin;	// remember bin to easily retrieve notes for tooltips (if any)
-			double x = bin*barwidth-0.5;
+			mark.bin = bin; // remember bin to easily retrieve notes for tooltips (if any)
+			double x = bin * barwidth - 0.5;
 			g.setStrokeStyle(mark.color == null ? markerColors[n++ % nMarkers] : mark.color);
 			if (mark.linestyle != null)
 				g.setLineDash(mark.linestyle);
 			strokeLine(x, 0.0, x, h);
-			strokeLine(x+barwidth, 0.0, x+barwidth, h);
+			strokeLine(x + barwidth, 0.0, x + barwidth, h);
 			g.setLineDash(style.solidLine);
 		}
 	}
@@ -529,21 +667,29 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		return true;
 	}
 
+	/**
+	 * Get the index of the bin at {@code (x, y)}. Returns {@code -1} if no bin is
+	 * found.
+	 * 
+	 * @param x the {@code x}-coordinate
+	 * @param y the {@code y}-coordinate
+	 * @return the index of the bin
+	 */
 	public int getBinAt(int x, int y) {
-		if( data==null )
+		if (data == null)
 			return -1;
-		x -= (int)(3*style.frameWidth);
-		if( !bounds.contains(x, y) )
+		x -= (int) (3 * style.frameWidth);
+		if (!bounds.contains(x, y))
 			return -1;
 		int nBins = data[row].length;
-		double ibarwidth = nBins/bounds.getWidth();
-		return (int)((x-bounds.getX())*ibarwidth);
+		double ibarwidth = nBins / bounds.getWidth();
+		return (int) ((x - bounds.getX()) * ibarwidth);
 	}
 
 	@Override
 	public String getTooltipAt(int x, int y) {
 		int bar = getBinAt(x, y);
-		if( bar<0 )
+		if (bar < 0)
 			return null;
 		return tooltipProvider.getTooltipAt(bar);
 	}
@@ -551,57 +697,67 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	@Override
 	public String getTooltipAt(int bar) {
 		int nBins = data[0].length;
-		// note label is null for undirected graph with the same interaction and competition graphs
-		StringBuilder tip = new StringBuilder(style.showLabel&&style.label!=null?"<b>"+style.label+"</b><br/>":"");
-		switch( controller.getType() ) {
+		// note label is null for undirected graph with the same interaction and
+		// competition graphs
+		StringBuilder tip = new StringBuilder(
+				style.showLabel && style.label != null ? "<b>" + style.label + "</b><br/>" : "");
+		switch (controller.getType()) {
 			case DEGREE:
-				if( Math.abs(style.xMax-(nBins-1))<1e-6 ) {
+				if (Math.abs(style.xMax - (nBins - 1)) < 1e-6) {
 					tip.append("<table style='border-collapse:collapse;border-spacing:0;'>");
-					tip.append("<tr><td><i>"+style.xLabel+":</i></td><td>"+bar+"</td></tr>");
-					tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+Formatter.formatPercent(data[row][bar], 2)+"</td></tr></table>");
+					tip.append("<tr><td><i>" + style.xLabel + ":</i></td><td>" + bar + "</td></tr>");
+					tip.append("<tr><td><i>" + style.yLabel + ":</i></td><td>"
+							+ Formatter.formatPercent(data[row][bar], 2) + "</td></tr></table>");
 					break;
 				}
 				//$FALL-THROUGH$
 			case STRATEGY:
 			case FITNESS:
 				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>");
-				tip.append("<tr><td><i>"+style.xLabel+":</i></td><td>["+Formatter.format(style.xMin+bar*(style.xMax-style.xMin)/nBins, 2)+
-						", "+Formatter.format(style.xMin+(bar+1)*(style.xMax-style.xMin)/nBins, 2)+")</td></tr>");
-				tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+Formatter.formatPercent(data[row][bar], 2)+"</td></tr>");
+				tip.append("<tr><td><i>" + style.xLabel + ":</i></td><td>["
+						+ Formatter.format(style.xMin + bar * (style.xMax - style.xMin) / nBins, 2) +
+						", " + Formatter.format(style.xMin + (bar + 1) * (style.xMax - style.xMin) / nBins, 2)
+						+ ")</td></tr>");
+				tip.append("<tr><td><i>" + style.yLabel + ":</i></td><td>" + Formatter.formatPercent(data[row][bar], 2)
+						+ "</td></tr>");
 				String note = getNoteAt(bar);
-				if( note!=null ) tip.append("<tr><td><i>Note:</i></td><td>"+note+"</td></tr>");
+				if (note != null)
+					tip.append("<tr><td><i>Note:</i></td><td>" + note + "</td></tr>");
 				tip.append("</table>");
 				break;
 			case STATISTICS_FIXATION_PROBABILITY:
 				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>");
-				tip.append("<tr><td><i>"+style.xLabel+":</i></td><td>"+bar+"</td></tr>");
-				int nTraits = data.length-1;
+				tip.append("<tr><td><i>" + style.xLabel + ":</i></td><td>" + bar + "</td></tr>");
+				int nTraits = data.length - 1;
 				double norm = data[nTraits][bar];
-				tip.append("<tr><td><i>samples:</i></td><td>"+(int)norm+"</td></tr>");
-				if( style.percentY )
-					tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+(norm>0.0?Formatter.formatPercent(data[row][bar]/norm, 2):"0")+
+				tip.append("<tr><td><i>samples:</i></td><td>" + (int) norm + "</td></tr>");
+				if (style.percentY)
+					tip.append("<tr><td><i>" + style.yLabel + ":</i></td><td>"
+							+ (norm > 0.0 ? Formatter.formatPercent(data[row][bar] / norm, 2) : "0") +
 							"</td></tr></table>");
 				else
-					tip.append("<tr><td><i>"+style.yLabel+":</i></td><td>"+(norm>0.0?Formatter.format(data[row][bar]/norm, 2):"0")+
+					tip.append("<tr><td><i>" + style.yLabel + ":</i></td><td>"
+							+ (norm > 0.0 ? Formatter.format(data[row][bar] / norm, 2) : "0") +
 							"</td></tr></table>");
 				break;
 			case STATISTICS_FIXATION_TIME:
-				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>"+
-						"<tr><td><i>"+style.xLabel+":</i></td><td>");
+				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>" +
+						"<tr><td><i>" + style.xLabel + ":</i></td><td>");
 				int nPop = module.getNPopulation();
-				if( nPop>MAX_BINS ) {
-					tip.append("["+Formatter.format(style.xMin+(double)bar/nBins*(style.xMax-style.xMin), 2)+"-"+
-							Formatter.format(style.xMin+(double)(bar+1)/nBins*(style.xMax-style.xMin), 2)+")");
+				if (nPop > MAX_BINS) {
+					tip.append("[" + Formatter.format(style.xMin + (double) bar / nBins * (style.xMax - style.xMin), 2)
+							+ "-" +
+							Formatter.format(style.xMin + (double) (bar + 1) / nBins * (style.xMax - style.xMin), 2)
+							+ ")");
+				} else {
+					tip.append(bar + "</td></tr>" +
+							"<tr><td><i>samples:</i></td><td>" + (int) getSamples(bar));
 				}
-				else {
-					tip.append(bar+"</td></tr>"+
-							"<tr><td><i>samples:</i></td><td>"+(int)getSamples(bar));
-				}
-				tip.append("</td></tr><tr><td><i>"+style.yLabel+":</i></td>");
-				if( style.percentY )
-					tip.append("<td>"+Formatter.formatPercent(getData(bar), 2)+"</td>");
+				tip.append("</td></tr><tr><td><i>" + style.yLabel + ":</i></td>");
+				if (style.percentY)
+					tip.append("<td>" + Formatter.formatPercent(getData(bar), 2) + "</td>");
 				else
-					tip.append("<td>"+Formatter.format(getData(bar), 2)+"</td>");
+					tip.append("<td>" + Formatter.format(getData(bar), 2) + "</td>");
 				tip.append("</tr></table>");
 				break;
 			case STATISTICS_STATIONARY:
@@ -632,9 +788,21 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		return tip.toString();
 	}
 
+	/**
+	 * The context menu to select autoscaling of the y-axis.
+	 */
 	private ContextMenuCheckBoxItem autoscaleYMenu;
+
+	/**
+	 * The flag to indicate whether the autoscale y-axis menu is enabled.
+	 */
 	private boolean enableAutoscaleYMenu = true;
 
+	/**
+	 * Enable or disable the autoscale y-axis menu.
+	 * 
+	 * @param enable {@code true} to enable the autoscale menu
+	 */
 	public void enableAutoscaleYMenu(boolean enable) {
 		enableAutoscaleYMenu = enable;
 	}
@@ -642,7 +810,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		// process autoscale context menu
-		if( autoscaleYMenu==null ) {
+		if (autoscaleYMenu == null) {
 			autoscaleYMenu = new ContextMenuCheckBoxItem("Autoscale y-axis", new Command() {
 				@Override
 				public void execute() {

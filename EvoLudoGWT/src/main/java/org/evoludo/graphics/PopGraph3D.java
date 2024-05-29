@@ -83,27 +83,65 @@ import thothbot.parallax.plugins.effects.Effect;
 import thothbot.parallax.plugins.effects.Stereo;
 
 /**
- * The graphical representation of network structures in 3D.
+ * The graphical representation of network structures in 3D. The 3D graph is
+ * based on the <a href="http://www.parallax3d.org/">Parallax 3D</a> library.
+ * The graph is displayed in a {@link RenderingPanel} which is a GWT widget
+ * that wraps the Parallax 3D library.
+ * <p>
+ * The graph is interactive and allows the user to zoom and rotate the view. The
+ * user can change the state of nodes by by double-clicking on them. The graph
+ * can be exported in PNG or SVG graphics formats.
  *
+ * 
  * @author Christoph Hauert
  */
 public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGWT> implements Context3dErrorHandler {
 
-	protected RenderingPanel graph3DPanel;
-	protected Pop3DScene graph3DScene;
-	protected Camera graph3DCamera;
-	protected ArrayList<Mesh> spheres = new ArrayList<>();
+	/**
+	 * The panel for rendering the 3D graph.
+	 */
+	RenderingPanel graph3DPanel;
+
+	/**
+	 * The 3D scene of the graph.
+	 */
+	Pop3DScene graph3DScene;
+
+	/**
+	 * The camera of the 3D graph.
+	 */
+	Camera graph3DCamera;
+
+	/**
+	 * The colors of the nodes.
+	 */
+	ArrayList<Mesh> spheres = new ArrayList<>();
 
 	/**
 	 * The flag to indicate whether camera needs to be reset. This is true after the
 	 * geometry changed (but not after a reset).
 	 */
-	protected boolean resetCamera = true;
+	boolean resetCamera = true;
 
-	protected LineBasicMaterial linkstyle;
-	protected PointLight light;
-	protected AmbientLight ambient;
-	protected Label msgLabel;
+	/**
+	 * The line style for the links.
+	 */
+	LineBasicMaterial linkstyle;
+
+	/**
+	 * The directed light source illuminating the scene.
+	 */
+	PointLight light;
+
+	/**
+	 * The ambient light source illuminating the scene.
+	 */
+	AmbientLight ambient;
+
+	/**
+	 * The label for displaying messages.
+	 */
+	Label msgLabel;
 
 	/**
 	 * Create a graph for graphically visualizing the structure of a network (or
@@ -311,7 +349,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 					posj += vincr;
 				}
 				break;
-
 			case TRIANGULAR:
 				side = (int) Math.sqrt(geometry.size); // data.size does not seem to be set at this point
 				int size2 = side / 2;
@@ -323,7 +360,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 				shift = (size2 - 0.5) * 0.5 * hincr;
 				double vshift = (side - 1.25) * 0.75 * vincr;
 				initUniverse(new SphereGeometry(radius, 16, 12));
-//				initUniverse(new TetrahedronGeometry(radius * 2, 0));
+				// initUniverse(new TetrahedronGeometry(radius * 2, 0));
 				meshes = spheres.iterator();
 				// even nodes
 				posj = -vshift;
@@ -350,7 +387,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 					posj += (2 - (j % 2)) * vincr;
 				}
 				break;
-
 			default:
 				displayMessage("No representation for " + type.getTitle() + "!");
 				break;
@@ -358,6 +394,12 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		drawUniverse();
 	}
 
+	/**
+	 * Initialize the universe of the 3D graph. Allocate the spheres and set their
+	 * material (colour).
+	 * 
+	 * @param unit the geometry of the unit (sphere) representing a node
+	 */
 	protected void initUniverse(thothbot.parallax.core.shared.core.Geometry unit) {
 		spheres.clear();
 		// allocate elements of universe - place them later
@@ -379,11 +421,11 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	@Override
 	protected void drawNetwork() {
 		// if (!network.isStatus(Status.HAS_LAYOUT) || geometry.isDynamic)
-		// 	network.doLayout(this);
+		// network.doLayout(this);
 		if (invalidated) {
 			initUniverse(new SphereGeometry(50, 16, 12));
 			if (network.isStatus(Status.HAS_LAYOUT))
-				network.finishLayout();	// add links
+				network.finishLayout(); // add links
 		}
 		// link nodes
 		Node3D[] nodes = network.toArray();
@@ -432,7 +474,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			if (linkstyle == null) {
 				linkstyle = new LineBasicMaterial();
 				linkstyle.setOpacity(1.0);
-//XXX linewidth is ignored...
+				// XXX linewidth is ignored...
 				linkstyle.setLinewidth(2);
 			}
 			linkstyle.setColor(geometry.isUndirected ? ColorMap3D.UNDIRECTED : ColorMap3D.DIRECTED);
@@ -441,15 +483,19 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			links.setMatrixAutoUpdate(false);
 			scene.add(links);
 		}
-		// // IMPORTANT: The following lines are crucial for Safari (desktop and iPadOS). Safari  
-		// // requires special convincing to properly display lattices as well as animated networks.  
-		// // Chrome, Firefox and Safari (iOS) are all fine. In those cases the following lines are  
+		// // IMPORTANT: The following lines are crucial for Safari (desktop and
+		// iPadOS). Safari
+		// // requires special convincing to properly display lattices as well as
+		// animated networks.
+		// // Chrome, Firefox and Safari (iOS) are all fine. In those cases the
+		// following lines are
 		// // not needed but do no harm either.
-		// if (network.isStatus(Status.NO_LAYOUT) || network.isStatus(Status.HAS_LAYOUT)) {
-		// 	int k = 0;
-		// 	for (Mesh sphere : spheres)
-		// 		sphere.setMaterial(colors[k++]);
-		// 	graph3DPanel.forceLayout();
+		// if (network.isStatus(Status.NO_LAYOUT) ||
+		// network.isStatus(Status.HAS_LAYOUT)) {
+		// int k = 0;
+		// for (Mesh sphere : spheres)
+		// sphere.setMaterial(colors[k++]);
+		// graph3DPanel.forceLayout();
 		// }
 	}
 
@@ -576,10 +622,20 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		paint(true);
 	}
 
+	/**
+	 * Check if the camera uses an orthographic projection.
+	 * 
+	 * @return {@code true} for orthographic projections
+	 */
 	public boolean isOrthographic() {
 		return (graph3DCamera instanceof OrthographicCamera);
 	}
 
+	/**
+	 * Set the anaglyph effect for the 3D view.
+	 * 
+	 * @param anaglyph {@code true} enable the anaglyph effect
+	 */
 	public void setAnaglyph(boolean anaglyph) {
 		if (!anaglyph || isVR()) {
 			graph3DPanel.getRenderer().deletePlugin(effect);
@@ -589,10 +645,20 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			effect = new Anaglyph(graph3DPanel.getRenderer(), graph3DScene.getScene());
 	}
 
+	/**
+	 * Check if the graph is displayed as an anaglyph.
+	 * 
+	 * @return {@code true} if anaglyph shown
+	 */
 	public boolean isAnaglyph() {
 		return (effect instanceof Anaglyph);
 	}
 
+	/**
+	 * Set the stereo effect for the 3D view.
+	 * 
+	 * @param vr {@code true} to enable the stereo effect
+	 */
 	public void setVR(boolean vr) {
 		if (!vr || isAnaglyph()) {
 			graph3DPanel.getRenderer().deletePlugin(effect);
@@ -601,11 +667,21 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		if (vr)
 			effect = new Stereo(graph3DPanel.getRenderer(), graph3DScene.getScene());
 	}
-	
+
+	/**
+	 * Check if the graph is displayed with stereo effect.
+	 * 
+	 * @return {@code true} if stereo effect shown
+	 */
 	public boolean isVR() {
 		return (effect instanceof Stereo);
 	}
 
+	/**
+	 * Check if the graph supports full screen mode.
+	 * 
+	 * @return {@code true} if full screen mode is supported
+	 */
 	public boolean isFullscreenSupported() {
 		return graph3DPanel.isSupportFullScreen();
 	}
@@ -622,6 +698,12 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * The class for animating the 3D network structure.
 	 */
 	public class Pop3DScene extends AnimatedScene implements RequiresResize {
+
+		/**
+		 * Create a new 3D scene.
+		 */
+		public Pop3DScene() {
+		}
 
 		/**
 		 * The control for rotating and zooming the scene.

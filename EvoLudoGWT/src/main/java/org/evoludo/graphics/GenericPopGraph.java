@@ -23,14 +23,36 @@ import com.google.gwt.event.dom.client.TouchStartEvent;
 import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.ui.Label;
 
+/**
+ * The base class for population graphs. This class provides the basic
+ * functionality for drawing population structures, e.g. lattices or networks.
+ * The class is abstract and must be subclassed to provide the actual drawing
+ * functionality, including:
+ * <ul>
+ * <li>(dynamical) layouting of the population structure
+ * <li>coloring of nodes according to their traits or fitness
+ * <li>handling of mouse events
+ * </ul>
+ * The class is designed to be used in conjunction with a controller that
+ * provides additional functionality, e.g. the ability to change the strategy of
+ * a node or to display additional information.
+ * 
+ * @author Christoph Hauert
+ * 
+ * @param <T> the type for storing the color data
+ * @param <N> the type of the network representation, 2D or 3D
+ * 
+ * @see PopGraph2D
+ * @see PopGraph3D
+ * @see Network2DGWT
+ * @see Network3DGWT
+ */
 public abstract class GenericPopGraph<T, N extends Network> extends AbstractGraph<T[]>
 		implements Network.LayoutListener, Zooming, DoubleClickHandler {
 
 	/**
 	 * The interface for communicating with graphs that show nodes, e.g. lattices or
 	 * networks.
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public interface PopGraphController extends Controller {
 
@@ -258,11 +280,22 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		return false;
 	}
 
+	/**
+	 * Check whether the layout of the graph is static, i.e. a lattice or lattice
+	 * hierarchy.
+	 * 
+	 * @return {@code true} if the layout is static
+	 */
 	boolean hasStaticLayout() {
 		return (geometry.isLattice()
 				|| geometry.getType() == Geometry.Type.HIERARCHY && geometry.subgeometry.isLattice());
 	}
 
+	/**
+	 * Check whether the layout of the graph is animated.
+	 * 
+	 * @return {@code true} if the layout is animated
+	 */
 	boolean hasAnimatedLayout() {
 		if (!animate)
 			return false;
@@ -328,7 +361,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		// no network may have been initialized (e.g. for ODE/SDE models)
 		// when switching views the graph may not yet be ready to return
 		// data for tooltips (colors == null)
-		if (leftMouseButton || contextMenu.isVisible() || network == null || 
+		if (leftMouseButton || contextMenu.isVisible() || network == null ||
 				network.isStatus(Status.LAYOUT_IN_PROGRESS))
 			return null;
 		int node = findNodeAt(x, y);

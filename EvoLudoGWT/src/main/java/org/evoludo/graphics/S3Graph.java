@@ -62,21 +62,70 @@ import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.ui.Widget;
 
 /**
+ * Graph for the simplex \(S_3\). The graph is used to visualize the evolution
+ * of three traits. The traits are projected onto the three corners of the
+ * simplex. The graph provides a context menu to set and/or swap the order of
+ * the traits.
+ * <p>
+ * The graph is backed by a {@link RingBuffer} to store the trajectory. The
+ * buffer is updated by calling {@link #addData(double, double[], boolean)}. It
+ * is interactive and allows the user to zoom and shift the view. The user can
+ * set the initial state by double-clicking on the graph. The graph can be
+ * exported in PNG or SVG graphics formats or the trajectory data as CSV.
  *
  * @author Christoph Hauert
  */
 public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shifting, HasTrajectory, //
-	DoubleClickHandler {
+		DoubleClickHandler {
 
+	/**
+	 * The names of the traits.
+	 */
 	private String[] names;
-	protected double[] init;
-	protected Point2D e0 = new Point2D();
-	protected Point2D e1 = new Point2D();
-	protected Point2D e2 = new Point2D();
-	protected Path2D outline = new Path2D();
-	protected Data2S3 map;
-	protected int role;
 
+	/**
+	 * The starting point of the most recent trajectory.
+	 */
+	double[] init;
+
+	/**
+	 * The lower left corner of the simplex.
+	 */
+	Point2D e0 = new Point2D();
+
+	/**
+	 * The lower right corner of the simplex.
+	 */
+	Point2D e1 = new Point2D();
+
+	/**
+	 * The upper corner of the simplex.
+	 */
+	Point2D e2 = new Point2D();
+
+	/**
+	 * The path that outlines the simplex.
+	 */
+	Path2D outline = new Path2D();
+
+	/**
+	 * The map for converting data to simplex coordinates (cartesian).
+	 */
+	Data2S3 map;
+
+	/**
+	 * The identifier of the role of the data.
+	 */
+	int role;
+
+	/**
+	 * Create a new simplex \(S_3\) graph for {@code module} running in {@code
+	 * controller} with the specified {@code role}.
+	 * 
+	 * @param controller the controller of this graph
+	 * @param module     the module backing the graph
+	 * @param role       the role of the data
+	 */
 	public S3Graph(Controller controller, Module module, int role) {
 		super(controller, module);
 		this.role = role;
@@ -89,6 +138,11 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		doubleClickHandler = addDoubleClickHandler(this);
 	}
 
+	/**
+	 * Set the map for converting data to simplex coordinates.
+	 * 
+	 * @param map the conversion map
+	 */
 	public void setMap(Data2S3 map) {
 		if (map == null)
 			return;
@@ -97,22 +151,33 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			setTooltipProvider((BasicTooltipProvider) map);
 	}
 
+	/**
+	 * Get the map for converting data to simplex coordinates.
+	 * 
+	 * @return the conversion map
+	 */
 	public Data2S3 getMap() {
 		if (map == null)
 			map = new S3Map(role);
 		return map;
 	}
 
+	/**
+	 * Set the colors of the traits.
+	 * 
+	 * @param clrs the colors of the traits
+	 * @return <code>true</code> if the colors have changed
+	 */
 	public boolean setColors(Color[] clrs) {
 		boolean changed = false;
 		int nColors = clrs.length;
-		if( colors==null || colors.length!=nColors ) {
+		if (colors == null || colors.length != nColors) {
 			colors = new String[nColors];
 			changed = true;
 		}
-		for( int n=0; n<nColors; n++ ) {
+		for (int n = 0; n < nColors; n++) {
 			String coln = ColorMapCSS.Color2Css(clrs[n]);
-			if( coln.equals(colors[n]) )
+			if (coln.equals(colors[n]))
 				continue;
 			colors[n] = coln;
 			changed = true;
@@ -120,16 +185,22 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		return changed;
 	}
 
+	/**
+	 * Set the names of the traits.
+	 * 
+	 * @param nms the array of names
+	 * @return <code>true</code> if the names have changed
+	 */
 	public boolean setNames(String[] nms) {
 		boolean changed = false;
 		int nNames = nms.length;
-		if( names==null || names.length!=nNames ) {
+		if (names == null || names.length != nNames) {
 			names = new String[nNames];
 			changed = true;
 		}
-		for( int n=0; n<nNames; n++ ) {
+		for (int n = 0; n < nNames; n++) {
 			// note: names[n] is null after memory allocation
-			if( nms[n].equals(names[n]) )
+			if (nms[n].equals(names[n]))
 				continue;
 			names[n] = nms[n];
 			changed = true;
@@ -145,12 +216,32 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		paint(true);
 	}
 
+	/**
+	 * Add data to the graph. The time {@code t} is prepended to the data as the
+	 * first element.
+	 * 
+	 * @evoludo.impl
+	 *               <ul>
+	 *               <li>The data array is cloned and the time prepended before
+	 *               adding
+	 *               it to the buffer.
+	 *               <li>In order to conserve memory the data is added only if the
+	 *               distance between
+	 *               the new data point and the last point in the buffer is larger
+	 *               than threshold {@link #bufferThreshold}, unless
+	 *               {@code force == true}.
+	 *               </ul>
+	 * 
+	 * @param t     the time of the data
+	 * @param data  the data to add
+	 * @param force <code>true</code> to force adding the data
+	 */
 	public void addData(double t, double[] data, boolean force) {
 		if (buffer.isEmpty()) {
 			buffer.append(prependTime2Data(t, data));
 			int len = data.length;
-			if (init==null || init.length!=len)
-				init = new double[len + 1];	// add time
+			if (init == null || init.length != len)
+				init = new double[len + 1]; // add time
 			System.arraycopy(buffer.last(), 1, init, 1, len);
 		} else {
 			double[] last = buffer.last();
@@ -175,6 +266,13 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		}
 	}
 
+	/**
+	 * Helper method to calculate the distance squared between two vectors.
+	 * 
+	 * @param vec the first vector
+	 * @param buf the second vector
+	 * @return the squared distance
+	 */
 	private double distSq(double[] vec, double[] buf) {
 		int dim = vec.length;
 		double dist2 = 0.0;
@@ -195,6 +293,13 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		return false;
 	}
 
+	/**
+	 * Paint the trajectory in the simplex. If <code>withMarkers</code> is
+	 * <code>true</code> the start and end points of the trajectory are marked with
+	 * green and red circles, respectively.
+	 * 
+	 * @param withMarkers <code>true</code> to mark start and end points
+	 */
 	private void paintS3(boolean withMarkers) {
 		g.save();
 		g.scale(scale, scale);
@@ -246,8 +351,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 				if (mark[0] > 0.0) {
 					g.setFillStyle(mcolor);
 					fillCircle(currPt.x, currPt.y, style.markerSize);
-				}
-				else {
+				} else {
 					g.setLineWidth(style.lineWidth);
 					g.setStrokeStyle(mcolor);
 					strokeCircle(currPt.x, currPt.y, style.markerSize);
@@ -265,45 +369,59 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		g = bak;
 	}
 
+	/**
+	 * Constant for \(\sqrt{2}\). Aspect ratio of equilateral triangle.
+	 */
 	static final double SQRT_2 = 1.41421356237;
+
+	/**
+	 * Threshold for storing new data point in buffer. Roughly corresponds to the
+	 * squared distance between two points that are at least a pixel apart.
+	 */
 	private double bufferThreshold;
+
+	/**
+	 * The minimum distance between two subsequent points in pixels.
+	 */
 	private static double MIN_PIXELS = 3.0;
 
 	@Override
 	protected boolean calcBounds() {
 		if (!super.calcBounds())
 			return false;
-		bounds.set(style.minPadding, style.minPadding, getOffsetWidth()-2*style.minPadding, getOffsetHeight()-2*style.minPadding);
+		bounds.set(style.minPadding, style.minPadding, getOffsetWidth() - 2 * style.minPadding,
+				getOffsetHeight() - 2 * style.minPadding);
 		String font = g.getFont();
-		if( style.showXTicks ) {
+		if (style.showXTicks) {
 			int tlen = style.tickLength;
-			int tlen2 = (int)(style.tickLength*0.5);
-			bounds.adjust(tlen, tlen2, -tlen-tlen, -tlen-tlen2);
+			int tlen2 = (int) (style.tickLength * 0.5);
+			bounds.adjust(tlen, tlen2, -tlen - tlen, -tlen - tlen2);
 		}
-		if( style.showXTickLabels )  {
+		if (style.showXTickLabels) {
 			setFont(style.ticksLabelFont);
-			int tik2 = (int)(g.measureText(Formatter.format((style.xMax-style.xMin)/Math.PI, 2)).getWidth()*0.5);
-			bounds.adjust(tik2, 0, -tik2-tik2, -14);
+			int tik2 = (int) (g.measureText(Formatter.format((style.xMax - style.xMin) / Math.PI, 2)).getWidth() * 0.5);
+			bounds.adjust(tik2, 0, -tik2 - tik2, -14);
 		}
-		if( style.showLabel ) {
+		if (style.showLabel) {
 			setFont(style.labelFont);
 			int[] order = map.getOrder();
 			// lower left & right
-			int xshift = (int)(Math.max(g.measureText(names[order[0]]).getWidth(), 
-					Math.max(g.measureText(names[order[1]]).getWidth(), g.measureText(names[order[2]]).getWidth()))*0.5+0.5);
+			int xshift = (int) (Math.max(g.measureText(names[order[0]]).getWidth(),
+					Math.max(g.measureText(names[order[1]]).getWidth(), g.measureText(names[order[2]]).getWidth()))
+					* 0.5 + 0.5);
 			int yshift = 20;
-			bounds.adjust(xshift, yshift, -xshift-xshift, -yshift-yshift);
+			bounds.adjust(xshift, yshift, -xshift - xshift, -yshift - yshift);
 		}
 		// constrain aspect ratio
 		double w = bounds.getWidth();
 		double h = bounds.getHeight();
-		if( w>h ) {
-			double nw = Math.min(w, h*SQRT_2);
-			bounds.adjust((w-nw)*0.5, 0, nw-w, 0);
+		if (w > h) {
+			double nw = Math.min(w, h * SQRT_2);
+			bounds.adjust((w - nw) * 0.5, 0, nw - w, 0);
 		}
-		if( w<h ) {
+		if (w < h) {
 			double nh = w;
-			bounds.adjust(0, (h-nh)*0.5, 0, nh-h);
+			bounds.adjust(0, (h - nh) * 0.5, 0, nh - h);
 		}
 		g.setFont(font);
 		// now that the bounds are known determine outline
@@ -315,15 +433,23 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		outline.lineTo(e1.x, e1.y);
 		outline.lineTo(e2.x, e2.y);
 		outline.closePath();
-//		outline.lineTo(e0.x, e0.y);
-		// store point only if it is estimated to be at least a few pixels from the previous point
+		// outline.lineTo(e0.x, e0.y);
+		// store point only if it is estimated to be at least a few pixels from the
+		// previous point
 		bufferThreshold = MIN_PIXELS * scale / Math.max(bounds.getWidth(), bounds.getHeight());
 		bufferThreshold *= bufferThreshold;
 		return true;
 	}
 
+	/**
+	 * Draws the frame of the simplex. The corners are marked by the trait names in
+	 * their respective colours. For visual
+	 * guidance each side is subdivided into {@code sLevels} sublevels.
+	 * 
+	 * @param sLevels the number of sublevels for the frame
+	 */
 	public void drawFrame(int sLevels) {
-		if( style.showFrame ) {
+		if (style.showFrame) {
 			g.beginPath();
 			g.moveTo(e0.x, e0.y);
 			g.lineTo(e1.x, e1.y);
@@ -334,64 +460,68 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			g.setStrokeStyle(style.frameColor);
 			g.stroke();
 		}
-		if( style.showXLevels ) {
+		if (style.showXLevels) {
 			g.setLineWidth(style.frameWidth);
 			g.setStrokeStyle(style.levelColor);
 			Point2D start = new Point2D();
 			Point2D end = new Point2D();
-			double iLevels = 1.0/sLevels;
+			double iLevels = 1.0 / sLevels;
 			double x = iLevels;
-			for( int l=1; l<sLevels; l++ ) {
-				map.data2S3(x, 1.0-x, 0.0, start);
-				map.data2S3(0.0, 1.0-x, x, end);
+			for (int l = 1; l < sLevels; l++) {
+				map.data2S3(x, 1.0 - x, 0.0, start);
+				map.data2S3(0.0, 1.0 - x, x, end);
 				strokeLine(start.x, start.y, end.x, end.y);
-				map.data2S3(0.0, x, 1.0-x, start);
-				map.data2S3(x, 0.0, 1.0-x, end);
+				map.data2S3(0.0, x, 1.0 - x, start);
+				map.data2S3(x, 0.0, 1.0 - x, end);
 				strokeLine(start.x, start.y, end.x, end.y);
-				map.data2S3(1.0-x, 0.0, x, start);
-				map.data2S3(1.0-x, x, 0.0, end);
+				map.data2S3(1.0 - x, 0.0, x, start);
+				map.data2S3(1.0 - x, x, 0.0, end);
 				strokeLine(start.x, start.y, end.x, end.y);
 				x += iLevels;
 			}
 		}
-		if( style.showXTicks ) {
+		if (style.showXTicks) {
 			g.setStrokeStyle(style.frameColor);
 			g.setFillStyle(style.frameColor);
 			setFont(style.ticksLabelFont);
 			double w = bounds.getWidth();
 			double h = bounds.getHeight();
-			double len = Math.sqrt(h*h+w*w/4);
-			double ty = w/(len+len)*(style.tickLength+1);
-			double tx = h/len*(style.tickLength+1);
-			double iLevels = 1.0/sLevels;
+			double len = Math.sqrt(h * h + w * w / 4);
+			double ty = w / (len + len) * (style.tickLength + 1);
+			double tx = h / len * (style.tickLength + 1);
+			double iLevels = 1.0 / sLevels;
 			double x = 0.0;
 			String tick;
 			Point2D loc = new Point2D();
-			for( int l=0; l<=sLevels; l++ ) {
-				if( style.percentX )
-					tick = Formatter.formatPercent(1.0-x, 0);
+			for (int l = 0; l <= sLevels; l++) {
+				if (style.percentX)
+					tick = Formatter.formatPercent(1.0 - x, 0);
 				else
-					tick = Formatter.format(1.0-x, 2);
-				map.data2S3(x, 1.0-x, 0.0, loc);
-				strokeLine(loc.x, loc.y, loc.x, loc.y+style.tickLength);
-				if( style.showXTickLabels )
-					g.fillText(tick, loc.x-g.measureText(tick).getWidth()*0.5, loc.y+style.tickLength+12.5);	// center tick labels with ticks
-				map.data2S3(0.0, x, 1.0-x, loc);
-				strokeLine(loc.x, loc.y, loc.x+tx, loc.y-ty);
-				if( style.showXTickLabels )
-					g.fillText(tick, loc.x+tx+6, loc.y-ty+3);
-				map.data2S3(1.0-x, 0.0, x, loc);
-				strokeLine(loc.x, loc.y, loc.x-tx, loc.y-ty);
-				if( style.showXTickLabels )
-					g.fillText(tick, loc.x-tx-(g.measureText(tick).getWidth()+6), loc.y-ty+3);
+					tick = Formatter.format(1.0 - x, 2);
+				map.data2S3(x, 1.0 - x, 0.0, loc);
+				strokeLine(loc.x, loc.y, loc.x, loc.y + style.tickLength);
+				if (style.showXTickLabels)
+					g.fillText(tick, loc.x - g.measureText(tick).getWidth() * 0.5, loc.y + style.tickLength + 12.5); // center
+																														// tick
+																														// labels
+																														// with
+																														// ticks
+				map.data2S3(0.0, x, 1.0 - x, loc);
+				strokeLine(loc.x, loc.y, loc.x + tx, loc.y - ty);
+				if (style.showXTickLabels)
+					g.fillText(tick, loc.x + tx + 6, loc.y - ty + 3);
+				map.data2S3(1.0 - x, 0.0, x, loc);
+				strokeLine(loc.x, loc.y, loc.x - tx, loc.y - ty);
+				if (style.showXTickLabels)
+					g.fillText(tick, loc.x - tx - (g.measureText(tick).getWidth() + 6), loc.y - ty + 3);
 				x += iLevels;
 			}
 		}
-		if( style.showLabel ) {
+		if (style.showLabel) {
 			double yshift = 14.5;
-			if( style.showXTicks )
+			if (style.showXTicks)
 				yshift += style.tickLength;
-			if( style.showXTickLabels )
+			if (style.showXTickLabels)
 				yshift += 12.5;
 			setFont(style.labelFont);
 			int[] order = map.getOrder();
@@ -399,15 +529,15 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			Point2D loc = new Point2D();
 			map.data2S3(1.0, 0.0, 0.0, loc);
 			String label = names[order[0]];
-			g.fillText(label, loc.x-g.measureText(label).getWidth()*0.5, loc.y+yshift);
+			g.fillText(label, loc.x - g.measureText(label).getWidth() * 0.5, loc.y + yshift);
 			g.setFillStyle(colors[order[1]]);
 			map.data2S3(0.0, 1.0, 0.0, loc);
 			label = names[order[1]];
-			g.fillText(label, loc.x-g.measureText(label).getWidth()*0.5, loc.y+yshift);
+			g.fillText(label, loc.x - g.measureText(label).getWidth() * 0.5, loc.y + yshift);
 			g.setFillStyle(colors[order[2]]);
 			map.data2S3(0.0, 0.0, 1.0, loc);
 			label = names[order[2]];
-			g.fillText(label, loc.x-g.measureText(label).getWidth()*0.5, loc.y-14.5);
+			g.fillText(label, loc.x - g.measureText(label).getWidth() * 0.5, loc.y - 14.5);
 		}
 	}
 
@@ -420,7 +550,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	public void onTouchStart(TouchStartEvent event) {
 		super.onTouchStart(event);
 		JsArray<Touch> touches = event.getTouches();
-		if( Duration.currentTimeMillis()-touchEndTime>250.0 || touches.length()>1 )
+		if (Duration.currentTimeMillis() - touchEndTime > 250.0 || touches.length() > 1)
 			// single tap or multiple touches
 			return;
 
@@ -429,6 +559,13 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		event.preventDefault();
 	}
 
+	/**
+	 * Helper method to convert screen coordinates into an initial configuration and
+	 * set the controller's initial state.
+	 * 
+	 * @param x the {@code x}-coordinate on screen
+	 * @param y the {@code y}-coordinate on screen
+	 */
 	private void processInitXY(int x, int y) {
 		// convert to user coordinates
 		double sx = (viewCorner.x + x - bounds.getX()) / zoomFactor + 0.5;
@@ -444,7 +581,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		// convert to user coordinates
 		double sx = (viewCorner.x + x - bounds.getX()) / zoomFactor + 0.5;
 		double sy = (viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5;
-		if( !inside(sx, sy) )
+		if (!inside(sx, sy))
 			return null;
 		if (tooltipProvider instanceof TooltipProvider.Simplex)
 			return ((TooltipProvider.Simplex) tooltipProvider).getTooltipAt(this, sx, sy);
@@ -471,14 +608,30 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		return inside && (Segment2D.orientation(e2, e0, p) >= 0);
 	}
 
-	private ContextMenuItem swapOrderMenu, clearMenu;
+	/**
+	 * The context menu item to swap the order of the traits along the closest edge.
+	 */
+	private ContextMenuItem swapOrderMenu;
+
+	/**
+	 * The context menu item to clear the canvas.
+	 */
+	private ContextMenuItem clearMenu;
+
+	/**
+	 * The context menu to select the trait in the closest corner.
+	 */
 	private ContextMenu setTraitMenu;
-	private int cornerIdx= -1;
+
+	/**
+	 * The index of the corner closest to the mouse pointer.
+	 */
+	private int cornerIdx = -1;
 
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		// add menu to clear canvas
-		if( clearMenu==null ) {
+		if (clearMenu == null) {
 			clearMenu = new ContextMenuItem("Clear", new Command() {
 				@Override
 				public void execute() {
@@ -491,24 +644,22 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		menu.add(clearMenu);
 
 		// process swap order context menu
-		if( swapOrderMenu==null ) {
+		if (swapOrderMenu == null) {
 			swapOrderMenu = new ContextMenuItem("Swap Order", new Command() {
 				@Override
 				public void execute() {
 					int swap;
 					int[] order = map.getOrder();
 					String label = swapOrderMenu.getText();
-					if( label.startsWith("Swap "+names[order[0]]) ) {
+					if (label.startsWith("Swap " + names[order[0]])) {
 						swap = order[0];
 						order[0] = order[1];
 						order[1] = swap;
-					}
-					else if( label.startsWith("Swap "+names[order[1]]) ) {
+					} else if (label.startsWith("Swap " + names[order[1]])) {
 						swap = order[1];
 						order[1] = order[2];
 						order[2] = swap;
-					}
-					else {
+					} else {
 						swap = order[2];
 						order[2] = order[0];
 						order[0] = swap;
@@ -520,16 +671,16 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		}
 		menu.add(swapOrderMenu);
 		int[] order = map.getOrder();
-		switch( closestEdge(x, y) ) {
+		switch (closestEdge(x, y)) {
 			case EDGE_LEFT:
-				swapOrderMenu.setText("Swap "+names[order[0]]+" \u2194 "+names[order[1]]);
+				swapOrderMenu.setText("Swap " + names[order[0]] + " \u2194 " + names[order[1]]);
 				break;
 			case EDGE_RIGHT:
-				swapOrderMenu.setText("Swap "+names[order[1]]+" \u2194 "+names[order[2]]);
+				swapOrderMenu.setText("Swap " + names[order[1]] + " \u2194 " + names[order[2]]);
 				break;
 			// case EDGE_BOTTOM:
 			default:
-				swapOrderMenu.setText("Swap "+names[order[2]]+" \u2194 "+names[order[0]]);
+				swapOrderMenu.setText("Swap " + names[order[2]] + " \u2194 " + names[order[0]]);
 				break;
 		}
 
@@ -556,7 +707,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 					}));
 			}
 			cornerIdx = closestCorner(x, y);
-			menu.add("Set trait '"+names[order[cornerIdx]]+"' to ...", setTraitMenu);
+			menu.add("Set trait '" + names[order[cornerIdx]] + "' to ...", setTraitMenu);
 			// enable all traits
 			for (Widget item : setTraitMenu)
 				((ContextMenuItem) item).setEnabled(true);
@@ -568,10 +719,28 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		super.populateContextMenuAt(menu, x, y);
 	}
 
+	/**
+	 * The index of the bottom left corner.
+	 */
 	protected final int CORNER_LEFT = 0;
+
+	/**
+	 * The index of the bottom right corner.
+	 */
 	protected final int CORNER_RIGHT = 1;
+
+	/**
+	 * The index of the top corner.
+	 */
 	protected final int CORNER_TOP = 2;
 
+	/**
+	 * Find the corner closest to the point {@code (x, y)}.
+	 * 
+	 * @param x the <code>x</code>-coordinate of the point
+	 * @param y the <code>y</code>-coordinate of the point
+	 * @return the index of the closest corner
+	 */
 	protected int closestCorner(double x, double y) {
 		Point2D p = new Point2D(x - bounds.getX(), y - bounds.getY());
 		double d0 = p.distance2(e0);
@@ -587,10 +756,28 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		return CORNER_TOP;
 	}
 
+	/**
+	 * The index of the left edge.
+	 */
 	protected final int EDGE_LEFT = 0;
+
+	/**
+	 * The index of the right edge.
+	 */
 	protected final int EDGE_RIGHT = 1;
+
+	/**
+	 * The index of the bottom edge.
+	 */
 	protected final int EDGE_BOTTOM = 2;
 
+	/**
+	 * Find the edge closest to the point {@code (x, y)}.
+	 * 
+	 * @param x the <code>x</code>-coordinate of the point
+	 * @param y the <code>y</code>-coordinate of the point
+	 * @return the index of the closest edge
+	 */
 	protected int closestEdge(double x, double y) {
 		Point2D p = new Point2D(x - bounds.getX(), y - bounds.getY());
 		double d0 = Segment2D.distance2(e0, e1, p);
@@ -624,14 +811,20 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	}
 
 	/**
-	 * Default mapping of data to simplex \(S_3\) projections. Custom implementations
-	 * of the {@code Data2S3} interface can be provided by modules that implement
-	 * the {@code HasS3} interface.
+	 * Default mapping of data to simplex \(S_3\) projections. Custom
+	 * implementations of the {@code Data2S3} interface can be provided by modules
+	 * that implement the {@code HasS3} interface.
 	 * 
 	 * @see HasS3#getS3Map(int)
 	 */
 	public class S3Map implements HasS3.Data2S3, BasicTooltipProvider {
 
+		/**
+		 * Create a new mapping of data to simplex projections. The role of the data is
+		 * ignored by default.
+		 * 
+		 * @param role the role of the data
+		 */
 		public S3Map(int role) {
 			// ignore role by default
 		}
@@ -666,8 +859,8 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		@Override
 		public Point2D data2S3(double s1, double s2, double s3, Point2D p) {
 			// top (c): s3, right (d): s2, left (l): s1
-			p.x = s2 - s1;	// [-1, 1]
-			p.y = (s3 - s2 - s1 + 1.0) * 0.5 - 1.0 / 3.0;	// [-1/3, 2/3]
+			p.x = s2 - s1; // [-1, 1]
+			p.y = (s3 - s2 - s1 + 1.0) * 0.5 - 1.0 / 3.0; // [-1/3, 2/3]
 			p.scale(s1 + s2 + s3);
 			p.x = (p.x + 1.0) * 0.5 * bounds.getWidth();
 			p.y = (2.0 / 3.0 - p.y) * bounds.getHeight();
@@ -690,10 +883,10 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		public String getTooltipAt(double sx, double sy) {
 			map.s32Data(sx, sy, tip);
 			String msg = "<table>";
-			for( int i=0; i<3; i++ )
+			for (int i = 0; i < 3; i++)
 				msg += "<tr><td style='text-align:right'><i>" + names[i] + ":</i></td><td>" //
-						+ Formatter.formatPercent(tip[i], 2)+"</td></tr>";
-			return msg+"</table>";
+						+ Formatter.formatPercent(tip[i], 2) + "</td></tr>";
+			return msg + "</table>";
 		}
 	}
 }

@@ -55,7 +55,15 @@ import com.google.gwt.event.dom.client.TouchEndEvent;
 import com.google.gwt.event.dom.client.TouchMoveEvent;
 
 /**
- * The graphical representation of network structures in 2D.
+ * The graphical representation of network structures in 2D. The graph is
+ * capable of displaying various types of lattices, networks, and hierarchical
+ * structures. The graph is also capable of displaying the history of a linear
+ * network.
+ * <p>
+ * The graph is interactive and allows the user to zoom and shift the view as
+ * well as customize the placement of nodes. The user can change the state of
+ * nodes by by double-clicking on them. The graph can be exported in PNG or SVG
+ * graphics formats.
  *
  * @author Christoph Hauert
  */
@@ -83,8 +91,13 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		label.setStyleName("evoludo-Label2D");
 	}
 
+	/**
+	 * The maximum size of a linear graph. This affects memory allocation to retain
+	 * the history of the graph.
+	 */
 	public final static int MAX_LINEAR_SIZE = 500;
 
+	@Override
 	public void setGeometry(Geometry geometry) {
 		super.setGeometry(geometry);
 		int size = geometry.size;
@@ -92,7 +105,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			// linear graphs maintain history; allocate generously
 			if (buffer == null)
 				buffer = new RingBuffer<String[]>(2 * MAX_LINEAR_SIZE);
-				// with a buffer we need to make sure colors is initialized as well
+			// with a buffer we need to make sure colors is initialized as well
 			if (data == null || data.length != size)
 				data = new String[size];
 		}

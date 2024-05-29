@@ -88,9 +88,21 @@ import com.google.gwt.user.client.ui.RequiresResize;
 import com.google.gwt.user.client.ui.Widget;
 
 /**
- * The base class for all graphical representations.
+ * The base class for all graphical representations. The class provides the
+ * basic functionality for drawing graphs, handling mouse and touch events,
+ * and displaying tooltips and context menus. It also provides the default
+ * implementations for zooming and shifting the view of the graph.
  * 
  * @author Christoph Hauert
+ * 
+ * @param <B> the type of buffer backing the graph: typically this is
+ *            {@code double[]} but in some cases {@code Color[]},
+ *            {@code String[]} or
+ *            {@link thothbot.parallax.core.shared.materials.MeshLambertMaterial
+ *            MeshLambertMaterial[]} for
+ *            {@link org.evoludo.simulator.views.Pop2D Pop2D},
+ *            {@link org.evoludo.graphics.PopGraph2D PopGraph2D} or
+ *            {@link org.evoludo.graphics.PopGraph3D PopGraph3D}, respectively.
  */
 public abstract class AbstractGraph<B> extends FocusPanel
 		implements MouseOutHandler, MouseWheelHandler, MouseDownHandler, MouseUpHandler, MouseMoveHandler, //
@@ -99,8 +111,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 
 	/**
 	 * The base interface for communicating with the controller of all graphs.
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public interface Controller {
 
@@ -156,8 +166,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * Graphs that support shifting should implement this interface. Basic shifting
 	 * capabilities are handled by {@link AbstractGraph}.
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public interface Shifting extends Shifter, MouseOutHandler, MouseDownHandler, MouseUpHandler, MouseMoveHandler, //
 			TouchStartHandler, TouchEndHandler, TouchMoveHandler {
@@ -189,8 +197,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @see AbstractGraph#zoom(double)
 	 * @see AbstractGraph#zoom(double, double, double)
 	 * @see AbstractGraph#zoom(double, int, int)
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public interface Zooming extends Zoomer, MouseWheelHandler {
 
