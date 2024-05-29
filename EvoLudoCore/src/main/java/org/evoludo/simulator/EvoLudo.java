@@ -108,8 +108,6 @@ public abstract class EvoLudo
 	/**
 	 * The interface to execute commands in a manner that is agnostic to the
 	 * implementation details regarding GWT or JRE environments.
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public interface Directive {
 

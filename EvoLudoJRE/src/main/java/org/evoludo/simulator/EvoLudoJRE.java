@@ -105,11 +105,27 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		return (int) (System.currentTimeMillis() - startmsec);
 	}
 
+	/**
+	 * The pacemaker for running EvoLudo.
+	 */
 	Timer timer = null;
 
-	Thread engineThread = null; // engine thread
+	/**
+	 * The engine thread. This thread is responsible for running the model.
+	 */
+	Thread engineThread = null;
+
+	/**
+	 * The command execution thread. This thread is responsible for executing
+	 * commands.
+	 */
 	Thread executeThread = null; // command execution thread
 
+	/**
+	 * Constructor for JRE application. This constructor is used when running
+	 * EvoLudo as a
+	 * JRE application.
+	 */
 	public EvoLudoJRE() {
 		// allocate a coalescing timer for poking the engine in regular intervals
 		// note: timer needs to be ready before parsing command line options
@@ -125,6 +141,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	}
 
 	/**
+	 * {@inheritDoc}
+	 * <p>
 	 * JRE uses stderr to report progress
 	 */
 	@Override
@@ -146,6 +164,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		executeThread.start();
 	}
 
+	/**
+	 * Launches the engine in a separate thread. Does nothing if the engine is
+	 * already running.
+	 */
 	protected void launchEngine() {
 		if (engineThread != null)
 			return;
@@ -185,7 +207,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	}
 
 	/**
-	 * poke waiting thread to resume execution.
+	 * Poke waiting thread to resume execution.
 	 */
 	public void poke() {
 		if (isWaiting) {
@@ -197,6 +219,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	}
 
 	/**
+	 * {@inheritDoc}
+	 * <p>
 	 * The <code>run()</code> method is double booked: first to start running the
 	 * EvoLudo model and second to implements the {@link Runnable} interface for
 	 * starting the engine in a separate thread. The two tasks can be easily triaged
@@ -294,6 +318,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		super.modelDidReset();
 	}
 
+	/**
+	 * The flag to indicate whether a simulation is running. Simulations are running
+	 * in headless mode.
+	 */
 	boolean simulationRunning = false;
 
 	/**
@@ -691,7 +719,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 								+ "\tabsorption: " //
 								+ Formatter.format(meanAbsUpdates + 0.0, dataDigits) + " ± "
 								+ Formatter.format(meanAbsUpdatesSdev + 0.0, dataDigits) //
-							);
+						);
 						break;
 					case STAT_TIMES:
 						double meanResTimes = 0.0;
@@ -731,8 +759,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 								+ "\tabsorption: " //
 								+ Formatter.format(meanAbsTimes + 0.0, dataDigits) + " ± "
 								+ Formatter.format(meanAbsTimeSdev + 0.0, dataDigits) //
-							);
-					break;
+						);
+						break;
 					default:
 						throw new Error("Statistics for " + data.getKey() + " not supported!");
 				}
@@ -800,13 +828,16 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		// trick: to avoid -0 output simply add 0...!
 		output.println(n + ",\t"
 				+ Formatter.format(node[0] + 0.0, dataDigits) + " ± " // mutant mean fixation time
-				+ Formatter.format(Math.sqrt(node[1] / (normut - 1.0)) + 0.0, dataDigits) + ", " // mutant mean fixation sdev
+				+ Formatter.format(Math.sqrt(node[1] / (normut - 1.0)) + 0.0, dataDigits) + ", " // mutant mean fixation
+																									// sdev
 				+ Formatter.format(normut, 0) + "; " // mutant mean fixation samples
 				+ Formatter.format(node[3] + 0.0, dataDigits) + " ± " // resident mean fixation time
-				+ Formatter.format(Math.sqrt(node[4] / (normres - 1.0)) + 0.0, dataDigits) + ", " // resident mean fixation sdev
+				+ Formatter.format(Math.sqrt(node[4] / (normres - 1.0)) + 0.0, dataDigits) + ", " // resident mean
+																									// fixation sdev
 				+ Formatter.format(normres, 0) + "; " // mutant mean fixation samples
 				+ Formatter.format(node[6] + 0.0, dataDigits) + " ± " // mean absorption time
-				+ Formatter.format(Math.sqrt(node[7] / (normabs - 1.0)) + 0.0, dataDigits) + ", " // mean absorption sdev
+				+ Formatter.format(Math.sqrt(node[7] / (normabs - 1.0)) + 0.0, dataDigits) + ", " // mean absorption
+																									// sdev
 				+ Formatter.format(normabs, 0)); // mean absorption samples
 	}
 
@@ -841,6 +872,13 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		}
 	}
 
+	/**
+	 * Helper method to retrieve property for given key from properties in jar
+	 * archive.
+	 * 
+	 * @param key the name of the property
+	 * @return the value of the property
+	 */
 	private String getProperty(String key) {
 		readProperties();
 		if (properties.isEmpty())
@@ -852,7 +890,9 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	}
 
 	/**
-	 * {@inheritDoc} Retrieves git commit version from file in jar archive.
+	 * {@inheritDoc}
+	 * <p>
+	 * Retrieves git commit version from file in jar archive.
 	 */
 	@Override
 	public String getGit() {
@@ -860,7 +900,9 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	}
 
 	/**
-	 * {@inheritDoc} Retrieves git commit time from file in jar archive.
+	 * {@inheritDoc}
+	 * <p>
+	 * Retrieves git commit time from file in jar archive.
 	 */
 	@Override
 	public String getGitDate() {
@@ -988,9 +1030,13 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	}
 
 	/**
-	 * Name of file to restore state from.
+	 * The name of the file to restore state from.
 	 */
 	String plistname = null;
+
+	/**
+	 * The processed state for restoring.
+	 */
 	Plist plist = null;
 
 	/**
@@ -1082,15 +1128,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		return true;
 	}
 
-	public boolean parseCLO(boolean testing) {
-		boolean success = parseCLO();
-		if (testing) {
-			// nothing to export in testing mode
-			exportname = null;
-		}
-		return success;
-	}
-
 	/**
 	 * {@inheritDoc}
 	 * <p>
@@ -1116,7 +1153,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 
 	@Override
 	public void helpCLO() {
-		output.println("List of command line options for module '" + activeModule.getKey() + "':\n" + parser.helpCLO(true));
+		output.println(
+				"List of command line options for module '" + activeModule.getKey() + "':\n" + parser.helpCLO(true));
 	}
 
 	/**
@@ -1218,7 +1256,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * can be read using {@code --restore} to restore the state and resume
 	 * execution, see {@link #cloRestore}.
 	 */
-	public final CLOption cloExport = new CLOption("export", "evoludo-%d.plist", CLOption.Argument.OPTIONAL, catSimulation,
+	public final CLOption cloExport = new CLOption("export", "evoludo-%d.plist", CLOption.Argument.OPTIONAL,
+			catSimulation,
 			"--export [<filename>]    export final state of simulation (%d for generation)", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1267,7 +1306,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * @return {@code true} if {@code Mode#DYNAMICS}
 	 */
 	private boolean isDynamicsDataType(MultiView.DataTypes type) {
-		return !(type == MultiView.DataTypes.STAT_PROB || type == MultiView.DataTypes.STAT_UPDATES || type == MultiView.DataTypes.STAT_TIMES);
+		return !(type == MultiView.DataTypes.STAT_PROB || type == MultiView.DataTypes.STAT_UPDATES
+				|| type == MultiView.DataTypes.STAT_TIMES);
 	}
 
 	/**
@@ -1388,6 +1428,14 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		return System.getProperty("java.version");
 	}
 
+	/**
+	 * Process PLIST file <code>name</code> and return the parsed content. If
+	 * <code>name</code> ends with <code>.zip</code> it is assumed to be a
+	 * compressed file. If parsing fails <code>null</code> is returned.
+	 * 
+	 * @param name the name of the PLIST file
+	 * @return the parsed content of the PLIST file
+	 */
 	public Plist readPlist(String name) {
 		if (name.endsWith(".zip")) {
 			// assume compressed file
@@ -1508,10 +1556,20 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		return true;
 	}
 
+	/**
+	 * Get the directory for exports.
+	 * 
+	 * @return the export directory
+	 */
 	public String getExportDir() {
 		return (exportdir == null ? "." : exportdir);
 	}
 
+	/**
+	 * Set the directory for exports.
+	 * 
+	 * @param dir the export directory
+	 */
 	public void setExportDir(File dir) {
 		exportdir = dir.getAbsolutePath();
 	}

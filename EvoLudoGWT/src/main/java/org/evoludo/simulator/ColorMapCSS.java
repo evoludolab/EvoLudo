@@ -63,6 +63,12 @@ import org.evoludo.util.Formatter;
 public abstract class ColorMapCSS extends ColorMap<String> {
 
 	/**
+	 * Constructs a new color map.
+	 */
+	public ColorMapCSS() {
+	}
+
+	/**
 	 * Convert Color to CSS style string. For colors with transparency, the output
 	 * is of the form <code>rgba(<span style="color:red;">r</span>, 
 	 * <span style="color:green;">g</span>, 
@@ -324,8 +330,8 @@ public abstract class ColorMapCSS extends ColorMap<String> {
 		 * <code>[0.0, 1.0]</code>.
 		 * 
 		 * @param colors the equally spaced reference colors of the gradient
-		 * @param trait the index of the trait
-		 * @param nIncr the number of intermediate, gradient colors
+		 * @param trait  the index of the trait
+		 * @param nIncr  the number of intermediate, gradient colors
 		 * 
 		 * @see #setRange(double, double)
 		 */

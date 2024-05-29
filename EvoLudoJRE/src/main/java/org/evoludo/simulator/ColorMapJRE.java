@@ -61,6 +61,12 @@ import java.awt.Color;
 public abstract class ColorMapJRE extends ColorMap<Color> {
 
 	/**
+	 * Constructs a new color map.
+	 */
+	public ColorMapJRE() {
+	}
+
+	/**
 	 * Associates integer indices with colors.
 	 */
 	public static class Index extends ColorMap.Index<Color> {

@@ -63,22 +63,39 @@ import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
 
 /**
- * Create button to launch EvoLudo lab in a semi-transparent overlay. 
+ * Create button to launch an EvoLudo lab in a semi-transparent overlay.
  * 
  * @author Christoph Hauert
  */
 public class EvoLudoTrigger extends PushButton {
 
+	/**
+	 * Lightbox panel to overlay the page.
+	 */
 	LightboxPanel popup = null;
+
+	/**
+	 * The EvoLudo lab.
+	 */
 	EvoLudoWeb lab = null;
+
+	/**
+	 * Flag to keep track of mouse position. {@code true} if mouse hovers over lab.
+	 */
 	boolean mouseOverLab = false;
 
+	/**
+	 * Create a new EvoLudo trigger button for the HTML element with ID {@code id}.
+	 * 
+	 * @param id the id of the element
+	 */
 	public EvoLudoTrigger(final String id) {
 		addClickHandler(new ClickHandler() {
 			@Override
 			public void onClick(ClickEvent event) {
-				if( popup!=null ) {
-					// NOTE: onLoad will be called automatically - do not call explicitly as it will cause trouble with 3D stuff
+				if (popup != null) {
+					// NOTE: onLoad will be called automatically - do not call explicitly as it will
+					// cause trouble with 3D stuff
 					popup.show();
 					return;
 				}
@@ -125,18 +142,24 @@ public class EvoLudoTrigger extends PushButton {
 		triggerStyle.setLineHeight(5, Unit.EX);
 	}
 
+	/**
+	 * The panel to provide a transparent overlay over the entire page and displays
+	 * the EvoLudo lab. A left-click with the mouse (or tap) outside the lab closes
+	 * the overlay, except if the context menu is visible or the lab is shown in
+	 * fullscreen.
+	 */
 	public class LightboxPanel extends SimplePanel {
+
+		/**
+		 * Create a new lightbox panel.
+		 */
 		public LightboxPanel() {
 			DOM.sinkEvents(getElement(), Event.ONKEYDOWN);
 			addBitlessDomHandler(new MouseDownHandler() {
 				@Override
 				public void onMouseDown(MouseDownEvent event) {
-					// do not close lab if:
-					// - mouse is inside lab
-					// - any other than the left mouse button pressed
-					// - context menu is visible (only close context menu)
-					// - showing in fullscreen
-					if( mouseOverLab || event.getNativeButton()!=NativeEvent.BUTTON_LEFT || ContextMenu.isShowing() || AbstractView.isFullscreen())
+					if (mouseOverLab || event.getNativeButton() != NativeEvent.BUTTON_LEFT || ContextMenu.isShowing()
+							|| AbstractView.isFullscreen())
 						return;
 					close();
 				}
@@ -152,7 +175,7 @@ public class EvoLudoTrigger extends PushButton {
 		@Override
 		public void onBrowserEvent(Event event) {
 			int type = event.getTypeInt();
-			if( type==Event.ONKEYDOWN && event.getKeyCode()==KeyCodes.KEY_ESCAPE ) {
+			if (type == Event.ONKEYDOWN && event.getKeyCode() == KeyCodes.KEY_ESCAPE) {
 				close();
 				event.stopPropagation();
 				return;
@@ -160,6 +183,9 @@ public class EvoLudoTrigger extends PushButton {
 			super.onBrowserEvent(event);
 		}
 
+		/**
+		 * Show the overlay.
+		 */
 		public void show() {
 			// some styles get forgotten on detach... kindly remind element
 			Style style = getElement().getStyle();
@@ -177,6 +203,9 @@ public class EvoLudoTrigger extends PushButton {
 			root.add(this);
 		}
 
+		/**
+		 * Close the overlay.
+		 */
 		public void close() {
 			popup.removeFromParent();
 			lab.clearKeyListener();

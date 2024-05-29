@@ -54,8 +54,6 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	/**
 	 * Interface for GUI elements that are interested in receiving updates regarding
 	 * the process of laying out the network.
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public interface LayoutListener {
 
@@ -96,8 +94,6 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	 * <dd>no layout needed; instead of the network a message is displayed (e.g. if
 	 * no layout available or too many links or nodes).
 	 * </dl>
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public enum Status {
 		/**

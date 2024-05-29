@@ -3,9 +3,9 @@
 <!-- resolutions according to Thomas Broyer,
 see https://groups.google.com/g/google-web-toolkit/c/wrH3XvuFFPY:
 There's no DTD for UiBinder (because it's by essence impossible), and no XML Schema either (for 
-similar reasons, though at least it would work well with XML Namespaces). That DOCTYPE you have here 
-is only there to declare named entities like you have in XHTML (&nbsp;, &eacirc;, etc.) rather than 
-having to use numeric character references (&#160; or &#xA0; for a non-breaking space); it's 
+similar reasons, though at least it would work well with XML Namespaces). That DOCTYPE you have
+here is only there to declare named entities like you have in XHTML (&nbsp;, &eacirc;, etc.) rather
+than having to use numeric character references (&#160; or &#xA0; for a non-breaking space); it's 
 basically a concatenation of those 3 files: https://www.w3.org/TR/xhtml1/#h-A2 
 	- if you don't need it, just remove the DOCTYPE altogether
 	- if you do use the entities, then: 
@@ -64,66 +64,66 @@ removed. -->
 	xmlns:g="urn:import:com.google.gwt.user.client.ui"
 	xmlns:e="urn:import:org.evoludo.ui">
 	<ui:style gss="true">
-	.right {
+		.right {
 		display: inline-block;
 		position: absolute;
 		right: 0;
-	}
-	
-	.fill {
+		}
+
+		.fill {
 		width: 100%;
-	}
-	
-	.threequarter, .half, .quarter {
+		}
+
+		.threequarter, .half, .quarter {
 		display: inline-block;
 		margin: 2px;
-	}
-	
-	.threequarter {
-		width: calc(75% - 16px);
-	}
-	
-	.half {
-		width: calc(50% - 4px);
-	}
+		}
 
-	.quarter {
+		.threequarter {
+		width: calc(75% - 16px);
+		}
+
+		.half {
+		width: calc(50% - 4px);
+		}
+
+		.quarter {
 		width: calc(25% - 3px);
-	}
-	
-	.quarter:first-of-type, .half:first-of-type {
+		}
+
+		.quarter:first-of-type, .half:first-of-type {
 		margin-left: 0;
-	}
-	
-	.quarter:last-of-type, .half:last-of-type {
+		}
+
+		.quarter:last-of-type, .half:last-of-type {
 		margin-right: 0;
-	}
-	
-	.clear {
+		}
+
+		.clear {
 		margin-top: 4pt;
 		clear: both;
-	}
-	
-	.clearfix {
+		}
+
+		.clearfix {
 		clear: both;
 		height: 1px;
-	}
-	
-	.deck {
+		}
+
+		.deck {
 		clear: both;
 		margin-top: 4pt;
 		margin-bottom: 4pt;
-	}
-	
-	.slider {
+		}
+
+		.slider {
 		clear: both;
-	}
-	
-	.overflow>div {
+		}
+
+		.overflow>div {
 		overflow: visible !important;
-	}
-	
-	.clotext {
+		}
+
+		.clotext {
 		margin-top: 3px;
 		resize: none;
 		font-size: small;
@@ -135,35 +135,35 @@ removed. -->
 		display: inline-block;
 		border: 1px solid #999;
 		border-radius: 3px;
-	}
-	
-	.clobutton {
+		}
+
+		.clobutton {
 		margin: 2px 0;
-	}
-	
-	.evoludo-Lab {
+		}
+
+		.evoludo-Lab {
 		position: relative;
 		overflow: hidden;
 		resize: none !important;
-	}
-	
-	.noresize {
+		}
+
+		.noresize {
 		resize: none;
-	}
-	
-	.status {
+		}
+
+		.status {
 		margin-top: 4pt;
 		clear: both;
 		resize: none;
 		font-size: 9pt;
 		height: 21pt;
 		line-height: 1.2;
-	}
-	
-	.evoludo-Panel {
+		}
+
+		.evoludo-Panel {
 		height: 100%;
 		position: relative;
-	}
+		}
 	</ui:style>
 	<g:HTMLPanel ui:field='evoludoPanel'
 		styleName='{style.evoludo-Panel}'>
@@ -211,12 +211,13 @@ removed. -->
 
 					<!-- parameters -->
 					<g:FlowPanel ui:field='evoludoCLOPanel' visible='false'>
-						<!-- <textarea> is disabled in Apple Books, let's go with simpler editable div for now...
+						<!-- <textarea> is disabled in Apple Books, let's go with simpler editable
+						div for now...
  				 		<g:TextArea ui:field='evoludoCLO' 
 				 			title="Specify simulation parameters" 
 				 			visibleLines='5'
 				 			styleName='evoludo-CLO {style.threequarter} {style.clotext}'></g:TextArea> -->
- 						<g:Label ui:field='evoludoCLO'
+						<g:Label ui:field='evoludoCLO'
 							title="Specify simulation parameters"
 							styleName='evoludo-CLO {style.threequarter} {style.clotext}'></g:Label>
 						<g:FlowPanel styleName='{style.right} {style.quarter}'>

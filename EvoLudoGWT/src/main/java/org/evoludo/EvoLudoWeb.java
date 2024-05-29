@@ -91,8 +91,8 @@ import com.google.gwt.user.client.ui.Widget;
 /**
  * Entry point classes define <code>onModuleLoad()</code>.
  */
-public class EvoLudoWeb extends Composite 
-	implements MilestoneListener, ChangeListener, CLOProvider, EntryPoint {
+public class EvoLudoWeb extends Composite
+		implements MilestoneListener, ChangeListener, CLOProvider, EntryPoint {
 
 	/**
 	 * <strong>Apple Books (iBook) notes:</strong>
@@ -169,6 +169,9 @@ public class EvoLudoWeb extends Composite
 	interface EvoLudoWebBinder extends UiBinder<Widget, EvoLudoWeb> {
 	}
 
+	/**
+	 * GWT magic to create GUI elements (see {@literal EvoLudoWeb.ui.xml}).
+	 */
 	private static EvoLudoWebBinder uiBinder = GWT.create(EvoLudoWebBinder.class);
 
 	/**
@@ -299,7 +302,7 @@ public class EvoLudoWeb extends Composite
 	 * DOM or if the HTML5 <code>canvas</code> element is not supported.
 	 * </ul>
 	 *
-	 * @param id  the DOM id of the element containing the lab 
+	 * @param id  the DOM id of the element containing the lab
 	 * @param clo the string with the command line options
 	 */
 	public EvoLudoWeb(String id, String clo) {
@@ -313,7 +316,7 @@ public class EvoLudoWeb extends Composite
 			isWebGLSupported = false;
 			return;
 		}
- 		initWidget(uiBinder.createAndBindUi(this));
+		initWidget(uiBinder.createAndBindUi(this));
 		// hide overlay
 		evoludoOverlay.setVisible(false);
 
@@ -407,7 +410,7 @@ public class EvoLudoWeb extends Composite
 				}
 			}
 			lab.add(new EvoLudoWeb(id, clo));
- 		}
+		}
 		// process DOM and replace all div's with class evoludo-trigger-html by a
 		// trigger button
 		NodeList<Element> triggers = querySelectorAll("div.evoludo-trigger-html");
@@ -486,6 +489,7 @@ public class EvoLudoWeb extends Composite
 		updatetime = now;
 		return true;
 	}
+
 	/**
 	 * Update GUI. If time since last update is less than
 	 * {@link #MIN_MSEC_BETWEEN_UPDATES} then views may choose to skip an update.
@@ -714,7 +718,7 @@ public class EvoLudoWeb extends Composite
 			} else {
 				newView = activeViews.get(evoludoViews.getSelectedItemText());
 				// if still no joy the last resort is the console
-				// note: may not be available in ePubs. however, if we still end up 
+				// note: may not be available in ePubs. however, if we still end up
 				// here, the problem lies deeper and requires a different resolution.
 				if (newView == null)
 					newView = activeViews.get(viewConsole.getName());
@@ -733,6 +737,7 @@ public class EvoLudoWeb extends Composite
 		}
 		changeViewTo(newView);
 	}
+
 	/**
 	 * Change view of EvoLudo model data. This helper method is called when the user
 	 * selects a new view with the popup list {@link #evoludoViews} or when a
@@ -1022,6 +1027,18 @@ public class EvoLudoWeb extends Composite
 		showAltKeys(false);
 	}
 
+	/**
+	 * Helper method to advance the EvoLudo model by a single step. The label on the
+	 * button determines the action:
+	 * <dl>
+	 * <dt>Step
+	 * <dd>advances the model by a single step,
+	 * <dt>Prev
+	 * <dd>goes back by a single step and
+	 * <dt>Debug
+	 * <dd>advances the model by a single update.
+	 * </dl>
+	 */
 	private void prevNextDebug() {
 		String label = evoludoStep.getText();
 		switch (label) {
@@ -1094,7 +1111,7 @@ public class EvoLudoWeb extends Composite
 			@Override
 			public void execute() {
 				// convert any nbsp's to regular spaces
-				applyCLO(evoludoCLO.getText().replace((char)160, ' '));
+				applyCLO(evoludoCLO.getText().replace((char) 160, ' '));
 			}
 		});
 	}
@@ -1252,10 +1269,12 @@ public class EvoLudoWeb extends Composite
 	public void displayStatus(String msg) {
 		displayStatus(msg, Level.INFO.intValue());
 	}
+
 	/**
 	 * Threshold level for overriding status message.
 	 */
 	private int displayStatusThresholdLevel = Level.ALL.intValue();
+
 	/**
 	 * Displays a message in the status line of the EvoLudo GUI with the severity
 	 * <code>level</code>. Status messages are only overridden by subsequent
@@ -1455,7 +1474,7 @@ public class EvoLudoWeb extends Composite
 				scheduleApplyCLO();
 				return true;
 			}
-			// escape closes the settings field 
+			// escape closes the settings field
 			if (!key.equals("Escape"))
 				return false;
 			// treat escape as if '0' had been pressed
@@ -1576,7 +1595,8 @@ public class EvoLudoWeb extends Composite
 	 * @see <a href=
 	 *      "https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values">Mozilla
 	 *      Key Values</a>
-	 * @see AbstractView#keyDownHandler(String) AbstractView.keyDownHandler(String) and
+	 * @see AbstractView#keyDownHandler(String) AbstractView.keyDownHandler(String)
+	 *      and
 	 *      implementing classes for further keys that may be handled by the current
 	 *      view
 	 */
@@ -1604,7 +1624,7 @@ public class EvoLudoWeb extends Composite
 				// advance single step
 				engine.next();
 				break;
-  			case "ArrowLeft":
+			case "ArrowLeft":
 			case "p":
 				// backtrack single step (if model allows it)
 				engine.prev();
@@ -1638,9 +1658,14 @@ public class EvoLudoWeb extends Composite
 	 * The helper variable to indicate whether the shift key is pressed.
 	 */
 	private boolean isShiftDown = false;
-	
-	private void showAltKeys(boolean visible) {
-		if (visible) {
+
+	/**
+	 * The Alt-key toggles the button labels for controlling the EvoLudo lab.
+	 * 
+	 * @param down {@code true} if the Alt-key is pressed
+	 */
+	private void showAltKeys(boolean down) {
+		if (down) {
 			evoludoInitReset.setText("Reset");
 			if (engine.getModel().permitsTimeReversal())
 				evoludoStep.setText("Previous");
@@ -1760,6 +1785,7 @@ public class EvoLudoWeb extends Composite
 					initialView = arg;
 					return true;
 				}
+
 				@Override
 				public String getDescription() {
 					String descr = "--view <v>      select view with index (also on keyboard)";
@@ -1772,7 +1798,7 @@ public class EvoLudoWeb extends Composite
 					return descr;
 				}
 			});
-	
+
 	@Override
 	public void collectCLO(CLOParser parser) {
 		// prepare command line options
@@ -1927,6 +1953,7 @@ public class EvoLudoWeb extends Composite
 		}
 		root.add(new EvoLudoWeb(id, clo));
 	}
+
 	/**
 	 * Insert EvoLudo model in DOM by replacing the <code>placeholder</code>
 	 * element.
@@ -1950,7 +1977,7 @@ public class EvoLudoWeb extends Composite
 		Style wstyle = wrap.getStyle();
 		// adopt size of placeholder - needs to account for padding of
 		// .evoludo-simulation - how?
-//XXX padding of .evoludo-simulation hardcoded
+		// XXX padding of .evoludo-simulation hardcoded
 		wstyle.setWidth(width - 2 * 8, Unit.PX);
 		wstyle.setHeight(height - 2 * 8, Unit.PX);
 		root.add(lab);
@@ -2018,11 +2045,19 @@ public class EvoLudoWeb extends Composite
 		root.add(lab);
 	}
 
+	/**
+	 * JSNI method: expose method for inserting EvoLudo models into ePub to
+	 * javascript.
+	 */
 	public static native void exportInsertEPubEvoLudoLab()
 	/*-{
 		$wnd.insertEPubEvoLudoLab = $entry(@org.evoludo.EvoLudoWeb::insertEPubEvoLudoLab(Lcom/google/gwt/dom/client/Element;Ljava/lang/String;));
 	}-*/;
 
+	/**
+	 * JSNI method: expose method for inserting EvoLudo models into HTML to
+	 * javascript.
+	 */
 	public static native void exportInsertEvoLudoLab()
 	/*-{
 		$wnd.insertEvoLudoLab = $entry(@org.evoludo.EvoLudoWeb::insertEvoLudoLab(Lcom/google/gwt/dom/client/Element;Ljava/lang/String;));
@@ -2031,13 +2066,13 @@ public class EvoLudoWeb extends Composite
 	/**
 	 * JSNI method: create EvoLudo labs directly from javascript.
 	 */
-	 public static native void exportCreateEvoLudoLab()
+	public static native void exportCreateEvoLudoLab()
 	/*-{
 		$wnd.createEvoLudoLab = $entry(@org.evoludo.EvoLudoWeb::createEvoLudoLab(Ljava/lang/String;Ljava/lang/String;));
 	}-*/;
 
 	/**
-	 * Expose method for creating EvoLudoTriggers to javascript
+	 * Expose method for creating EvoLudoTriggers to javascript.
 	 *
 	 * @param id the ID of element for EvoLudo trigger button
 	 */
@@ -2090,6 +2125,11 @@ public class EvoLudoWeb extends Composite
 		return ($doc.querySelector(":focus") === element);
 	}-*/;
 
+	/**
+	 * JSNI method: focus on {@code element}.
+	 * 
+	 * @param element the element to focus on
+	 */
 	public final native void focusOn(Element element)
 	/*-{
 		element.focus();
@@ -2099,7 +2139,7 @@ public class EvoLudoWeb extends Composite
 	 * JSNI method: return the pixel ratio of the current device. This is intended
 	 * to prevent distortions on the <code>canvas</code> objects of the data views.
 	 *
-	 * @return pixel ratio of device
+	 * @return the pixel ratio of device
 	 */
 	public final static native int getDevicePixelRatio()
 	/*-{
@@ -2178,7 +2218,7 @@ public class EvoLudoWeb extends Composite
 	/**
 	 * Log GWT features and GUI specifics.
 	 */
-	void logFeatures(){
+	void logFeatures() {
 		logger.info("GWT Version: " + GWT.getVersion());
 		logger.info("GUI features: " + //
 				(isWebGLSupported ? "WebGL " : "") + //
@@ -2415,7 +2455,7 @@ public class EvoLudoWeb extends Composite
 	 * help message) and encoding (to avoid the wrath of XHTML).
 	 */
 	public class EvoLogHandler extends Handler {
-		
+
 		/**
 		 * The GUI console (or null).
 		 */

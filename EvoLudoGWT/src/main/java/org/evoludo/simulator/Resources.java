@@ -72,7 +72,8 @@ public interface Resources extends ClientBundle {
 	public TextResource canvas2SVG();
 
 	/**
-	 * Get the JavaScript file for patching the macOS patch for Apple Books (iBooks) on devices without touch.
+	 * Get the JavaScript file for patching the macOS patch for Apple Books (iBooks)
+	 * on devices without touch.
 	 * 
 	 * @return the JavaScript file
 	 */
@@ -80,7 +81,8 @@ public interface Resources extends ClientBundle {
 	public TextResource touchEventsGWTHandler();
 
 	/**
-	 * Get the JavaScript file for accepting compressed files for restoring states through drag'n'drop.
+	 * Get the JavaScript file for accepting compressed files for restoring states
+	 * through drag'n'drop.
 	 * 
 	 * @return the JavaScript file
 	 */

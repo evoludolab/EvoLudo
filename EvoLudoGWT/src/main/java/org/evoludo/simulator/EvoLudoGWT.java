@@ -185,7 +185,7 @@ public class EvoLudoGWT extends EvoLudo {
 				// MODE_STATISTICS: non-blocking way for running an arbitrary number of update
 				// steps to obtain one sample
 				scheduleSample();
-				int samples = ((IBS)activeModel).getNStatisticsSamples();
+				int samples = ((IBS) activeModel).getNStatisticsSamples();
 				if (isRunning && Math.abs(samples - snapshotAt) < 1.0) {
 					// process request at once - if desired, resume execution after
 					// snapshot was taken.
@@ -208,6 +208,9 @@ public class EvoLudoGWT extends EvoLudo {
 		}
 	}
 
+	/**
+	 * Schedule the next sample.
+	 */
 	private void scheduleSample() {
 		Scheduler.get().scheduleIncremental(new RepeatingCommand() {
 			@Override
@@ -217,7 +220,7 @@ public class EvoLudoGWT extends EvoLudo {
 				switch (pendingAction) {
 					case NONE:
 					case STATISTIC:
-					case STOP:	// finish sample
+					case STOP: // finish sample
 						break;
 					default:
 					case APPLY:
@@ -227,13 +230,16 @@ public class EvoLudoGWT extends EvoLudo {
 					case SNAPSHOT:
 					case UNLOAD:
 						fireModelStopped();
-						return false;				
+						return false;
 				}
 				return modelNext();
 			}
 		});
 	}
 
+	/**
+	 * Schedule the next step.
+	 */
 	private void scheduleStep() {
 		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
 			@Override
@@ -241,7 +247,7 @@ public class EvoLudoGWT extends EvoLudo {
 				modelNext();
 			}
 		});
-}
+	}
 
 	@Override
 	public void modelUnloaded() {
@@ -351,21 +357,27 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	/**
-	 * @return <code>true</code> if execution environment supports keyboard events.
+	 * Check if execution environment supports keyboard events.
+	 * 
+	 * @return <code>true</code> if keyboard events are supported
 	 */
 	public final native boolean hasKeys() /*-{
 		return true == ("onkeydown" in $wnd);
 	}-*/;
 
 	/**
-	 * @return <code>true</code> if execution environment supports mouse events.
+	 * Check if execution environment supports mouse events.
+	 * 
+	 * @return <code>true</code> if mouse events are supported
 	 */
 	public final native boolean hasMouse() /*-{
 		return true == ("onmousedown" in $wnd);
 	}-*/;
 
 	/**
-	 * @return <code>true</code> if execution environment supports touch events.
+	 * Check if execution environment supports touch events.
+	 * 
+	 * @return <code>true</code> if touch events are supported
 	 */
 	public final native boolean hasTouch() /*-{
 		return true == ("ontouchstart" in $wnd || $wnd.DocumentTouch
@@ -386,8 +398,15 @@ public class EvoLudoGWT extends EvoLudo {
 		return (window.document.createElement("div").tagName == "DIV");
 	}-*/;
 
-	private ContextMenuCheckBoxItem timeReverseMenu, symDiffMenu;
-	protected ContextMenu debugSubmenu;
+	/**
+	 * The context menu item to reverse time.
+	 */
+	private ContextMenuCheckBoxItem timeReverseMenu;
+
+	/**
+	 * The context menu item for symmetrical diffusion (only applies to PDE models).
+	 */
+	private ContextMenuCheckBoxItem symDiffMenu;
 
 	/**
 	 * Opportunity to contribute entries to the context menu for models. this needs
@@ -477,6 +496,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 *
 	 * @param filename (only for reference and reporting of success or failure)
 	 * @param content  encoded state of EvoLudo model
+	 * @return <code>true</code> if state was successfully restored
 	 */
 	public boolean restoreFromFile(String filename, String content) {
 		Plist parsed = PlistParser.parse(content);

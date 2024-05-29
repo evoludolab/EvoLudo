@@ -315,8 +315,6 @@ public class Geometry {
 	 * <dt>SCALEFREE_KLEMM</dt>
 	 * <dd>scale-free graph, Klemm &amp; Eguiluz</dd>
 	 * </dl>
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public enum Type implements CLOption.Key {
 		/**
@@ -5313,7 +5311,9 @@ public class Geometry {
 	}
 
 	/**
-	 * @return usage for <code>--geometry</code> command line option
+	 * Get the usage description for the command line option <code>--geometry</code>. 
+	 * 
+	 * @return the usage description
 	 */
 	public String usage() {
 		CLOption clo = engine.getModule().cloGeometry;

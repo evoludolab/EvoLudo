@@ -36,9 +36,8 @@
   When updating your version of GWT, you should also update this DTD reference,
   so that your app can take advantage of the latest GWT module capabilities.
 -->
-<!DOCTYPE module PUBLIC "-//Google Inc.//DTD Google Web Toolkit 2.9.0//EN"
-  "http://www.gwtproject.org/doctype/2.9.0/gwt-module.dtd">
- <module rename-to='evoludoweb'>
+<!DOCTYPE module PUBLIC "-//Google Inc.//DTD Google Web Toolkit 2.9.0//EN" "http://www.gwtproject.org/doctype/2.9.0/gwt-module.dtd">
+<module rename-to='evoludoweb'>
 	<!-- Inherit the core Web Toolkit stuff -->
 	<inherits name='com.google.gwt.user.User' />
 	<!-- required for dealing with properties -->

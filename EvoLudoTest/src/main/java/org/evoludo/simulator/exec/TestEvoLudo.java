@@ -53,7 +53,25 @@ import org.evoludo.util.Plist;
 import org.evoludo.util.PlistParser;
 
 /**
- *
+ * TestEvoLudo is a test suite for EvoLudo. It generates test cases from a
+ * generator file or directory and compares the results with reference files.
+ * The test suite can be run in two modes: (1) generating test cases from a
+ * generator file or directory, and (2) testing the generated or existing test
+ * cases. The test suite accepts the following command line options:
+ * <ul>
+ * <li>{@code --generate <filename>}: read option sets from file and generate
+ * test cases
+ * <li>{@code --tests <directory>}: directory for storing/retrieving test cases
+ * (defaults to references)
+ * <li>{@code --references <directory>}: directory for storing/retrieving test
+ * cases
+ * <li>{@code --reports <directory>}: directory for storing failed test reports
+ * <li>{@code --compress}: compress generated test files
+ * <li>{@code --minor}: dump differences for minor failures
+ * <li>{@code --verb}: verbose mode
+ * <li>{@code --help}, {@code -h} or no arguments: this help screen
+ * </ul>
+ * 
  * @author Christoph Hauert
  */
 public class TestEvoLudo implements MilestoneListener {
@@ -69,16 +87,54 @@ public class TestEvoLudo implements MilestoneListener {
 	 */
 	Logger logger;
 
-	File testsDir; // directory to containing test or to store generated tests
-	File reportsDir; // directory to store reports of failed tests
-	File referencesDir; // directory with reference results
-	File generator; // directory with generator scripts
+	/**
+	 * Directory containing tests or for storing generated tests.
+	 */
+	File testsDir;
+
+	/**
+	 * Directory for storing reports of failed tests.
+	 */
+	File reportsDir;
+
+	/**
+	 * Directory with reference results.
+	 */
+	File referencesDir;
+
+	/**
+	 * Directory with generator scripts for tests.
+	 */
+	File generator;
+
+	/**
+	 * The flag to indicate whether to perform tests or generate test cases.
+	 */
 	boolean performTest;
+
+	/**
+	 * The flag to indicate whether tests are running.
+	 */
 	boolean isRunning;
+
+	/**
+	 * The flag to indicate whether to use compression for the generated test files.
+	 */
 	boolean useCompression = false;
+
+	/**
+	 * The flag to indicate whether to dump differences for minor failures.
+	 */
 	boolean dumpMinor = false;
+
+	/**
+	 * The flag to indicate whether to run in verbose mode.
+	 */
 	boolean verbose = false;
 
+	/**
+	 * Constructor for TestEvoLudo.
+	 */
 	public TestEvoLudo() {
 		engine = new EvoLudoJRE();
 		// applications remove --export option because it does not make sense
@@ -88,6 +144,9 @@ public class TestEvoLudo implements MilestoneListener {
 		engine.addMilestoneListener(this);
 	}
 
+	/**
+	 * Generate test cases from generator file or directory.
+	 */
 	public void generate() {
 		if (generator.isDirectory()) {
 			File[] gens = generator.listFiles(new FilenameFilter() {
@@ -103,6 +162,11 @@ public class TestEvoLudo implements MilestoneListener {
 		}
 	}
 
+	/**
+	 * Generate test cases from generator file {@code clo}.
+	 * 
+	 * @param clo the generator file
+	 */
 	protected void generate(File clo) {
 		String filename = clo.getName();
 		File exportDir = new File(
@@ -159,7 +223,6 @@ public class TestEvoLudo implements MilestoneListener {
 				logOk("check passed - link to '" + ref.getName() + "' created.");
 				continue;
 			}
-
 			if (useCompression) {
 				// with compression
 				ref = exportDir.toPath().resolve(export + ".zip").toFile();
@@ -197,6 +260,14 @@ public class TestEvoLudo implements MilestoneListener {
 		}
 	}
 
+	/**
+	 * Generate export filename from command line options {@code clo} and index
+	 * {@code idx}.
+	 * 
+	 * @param clo the command line options
+	 * @param idx the index of the test
+	 * @return the export filename
+	 */
 	private String generateExportFilename(String clo, int idx) {
 		String module = engine.getModule().getKey();
 		String model = engine.getModel().getModelType().getKey();
@@ -211,6 +282,12 @@ public class TestEvoLudo implements MilestoneListener {
 		return clo.substring(exportIdx, exportEnd).strip();
 	}
 
+	/**
+	 * Strip export option from command line options {@code clo}.
+	 * 
+	 * @param clo the command line options
+	 * @return the stripped command line options
+	 */
 	private String stripExport(String clo) {
 		int expidx;
 		while ((expidx = clo.indexOf("--export")) >= 0) {
@@ -271,6 +348,17 @@ public class TestEvoLudo implements MilestoneListener {
 		return true;
 	}
 
+	/**
+	 * Compare reference output {@code reference} with the output of the test
+	 * {@code replicate} and generate a report if differences are found. The
+	 * reference is stored in {@code refname}. The method returns {@code true} if
+	 * the test passed.
+	 * 
+	 * @param refname   the name of the reference file
+	 * @param reference the reference {@code Plist}
+	 * @param replicate the replicate {@code Plist}
+	 * @return {@code true} if the test passed
+	 */
 	private boolean compareRuns(File refname, Plist reference, Plist replicate) {
 		nTests++;
 		System.out.println("Testing: analyzing differences...");
@@ -347,8 +435,33 @@ public class TestEvoLudo implements MilestoneListener {
 		return true;
 	}
 
-	int nTests, nTestFailures, nTestMinor, nTestWarnings;
+	/**
+	 * The total number of tests.
+	 */
+	int nTests;
 
+	/**
+	 * The number of failed tests.
+	 */
+	int nTestFailures;
+
+	/**
+	 * The number of tests failing with minor errors.
+	 */
+	int nTestMinor;
+
+	/**
+	 * The number of tests with warnings.
+	 */
+	int nTestWarnings;
+
+	/**
+	 * Test all files in directory {@code dir}. This directory can either contain
+	 * test files or files for generating them. In either case the test output is
+	 * compared to the reference files.
+	 * 
+	 * @param dir the directory with test files
+	 */
 	public void test(File dir) {
 		if (dir.isDirectory()) {
 			File[] tests = dir.listFiles();
@@ -429,6 +542,14 @@ public class TestEvoLudo implements MilestoneListener {
 		return null;
 	}
 
+	/**
+	 * Recursively search for a file with name {@code search} in directory
+	 * {@code file}.
+	 * 
+	 * @param file   the directory to search
+	 * @param search the name of the file to search for
+	 * @return the file if found, otherwise {@code null}
+	 */
 	private static File search(File file, String search) {
 		if (file.isDirectory()) {
 			for (File f : file.listFiles()) {
@@ -482,6 +603,11 @@ public class TestEvoLudo implements MilestoneListener {
 		return (nTestFailures == 0);
 	}
 
+	/**
+	 * Parse the command line options.
+	 * 
+	 * @param args the command line options
+	 */
 	public void parse(String[] args) {
 		// test suite accepts several arguments:
 		// --generate <filename>: read option sets from file and generate test cases
@@ -650,9 +776,12 @@ public class TestEvoLudo implements MilestoneListener {
 			logError("report directory '" + reportsDir.getPath() + "' not writable.");
 			engine.exit(1);
 		}
-		performTest = !(generator != null);
+		performTest = (generator == null);
 	}
 
+	/**
+	 * Print help screen.
+	 */
 	public void help() {
 		System.out.println(
 				"EvoLudo tests: " + engine.getVersion() + //
@@ -680,6 +809,11 @@ public class TestEvoLudo implements MilestoneListener {
 		testSuite.engine.exit(success ? 0 : 2);
 	}
 
+	/**
+	 * Log message to console or logger.
+	 * 
+	 * @param msg the message to log
+	 */
 	public void logMessage(String msg) {
 		if (logger.isLoggable(Level.INFO))
 			logger.info(msg);
@@ -687,6 +821,11 @@ public class TestEvoLudo implements MilestoneListener {
 			System.out.println(msg);
 	}
 
+	/**
+	 * Log bold message to console or logger.
+	 * 
+	 * @param msg the message to log
+	 */
 	public void logTitle(String msg) {
 		if (logger.isLoggable(Level.INFO))
 			logger.info(ConsoleColors.BLACK_BOLD + msg + ConsoleColors.RESET);
@@ -694,6 +833,11 @@ public class TestEvoLudo implements MilestoneListener {
 			System.out.println(ConsoleColors.BLACK_BOLD + msg + ConsoleColors.RESET);
 	}
 
+	/**
+	 * Log message in green color to console or logger.
+	 * 
+	 * @param msg the message to log
+	 */
 	public void logOk(String msg) {
 		if (logger.isLoggable(Level.INFO))
 			logger.info(ConsoleColors.GREEN + msg + ConsoleColors.RESET);
@@ -701,6 +845,11 @@ public class TestEvoLudo implements MilestoneListener {
 			System.out.println(ConsoleColors.GREEN + msg + ConsoleColors.RESET);
 	}
 
+	/**
+	 * Log warning message in yellow color to console or logger.
+	 * 
+	 * @param msg the warning to log
+	 */
 	public void logWarning(String msg) {
 		if (logger.isLoggable(Level.WARNING))
 			logger.warning(ConsoleColors.YELLOW + msg + ConsoleColors.RESET);
@@ -708,6 +857,11 @@ public class TestEvoLudo implements MilestoneListener {
 			System.out.println(ConsoleColors.YELLOW + "WARNING: " + msg + ConsoleColors.RESET);
 	}
 
+	/**
+	 * Log error message in red color to console or logger.
+	 * 
+	 * @param msg the error to log
+	 */
 	public void logError(String msg) {
 		if (logger.isLoggable(Level.SEVERE))
 			logger.severe(ConsoleColors.RED + msg + ConsoleColors.RESET);
@@ -715,82 +869,306 @@ public class TestEvoLudo implements MilestoneListener {
 			System.out.println(ConsoleColors.RED + "ERROR: " + msg + ConsoleColors.RESET);
 	}
 
+	/**
+	 * The control codes for changing the style of the console output.
+	 */
 	enum ConsoleColors {
-		// Color end string, color reset
+
+		/**
+		 * Reset all styling.
+		 */
 		RESET("\033[0m"),
 
-		// Regular Colors. Normal color, no bold, background color etc.
-		BLACK("\033[0;30m"), // BLACK
-		RED("\033[0;31m"), // RED
-		GREEN("\033[0;32m"), // GREEN
-		YELLOW("\033[0;33m"), // YELLOW
-		BLUE("\033[0;34m"), // BLUE
-		MAGENTA("\033[0;35m"), // MAGENTA
-		CYAN("\033[0;36m"), // CYAN
-		WHITE("\033[0;37m"), // WHITE
+		/**
+		 * Black color. Regular font, no background.
+		 */
+		BLACK("\033[0;30m"),
 
-		// Bold
-		BLACK_BOLD("\033[1;30m"), // BLACK
-		RED_BOLD("\033[1;31m"), // RED
-		GREEN_BOLD("\033[1;32m"), // GREEN
-		YELLOW_BOLD("\033[1;33m"), // YELLOW
-		BLUE_BOLD("\033[1;34m"), // BLUE
-		MAGENTA_BOLD("\033[1;35m"), // MAGENTA
-		CYAN_BOLD("\033[1;36m"), // CYAN
-		WHITE_BOLD("\033[1;37m"), // WHITE
+		/**
+		 * Red color. Regular font, no background.
+		 */
+		RED("\033[0;31m"),
 
-		// Underline
-		BLACK_UNDERLINED("\033[4;30m"), // BLACK
-		RED_UNDERLINED("\033[4;31m"), // RED
-		GREEN_UNDERLINED("\033[4;32m"), // GREEN
-		YELLOW_UNDERLINED("\033[4;33m"), // YELLOW
-		BLUE_UNDERLINED("\033[4;34m"), // BLUE
-		MAGENTA_UNDERLINED("\033[4;35m"), // MAGENTA
-		CYAN_UNDERLINED("\033[4;36m"), // CYAN
-		WHITE_UNDERLINED("\033[4;37m"), // WHITE
+		/**
+		 * Green color. Regular font, no background.
+		 */
+		GREEN("\033[0;32m"),
 
-		// Background
-		BLACK_BACKGROUND("\033[40m"), // BLACK
-		RED_BACKGROUND("\033[41m"), // RED
-		GREEN_BACKGROUND("\033[42m"), // GREEN
-		YELLOW_BACKGROUND("\033[43m"), // YELLOW
-		BLUE_BACKGROUND("\033[44m"), // BLUE
-		MAGENTA_BACKGROUND("\033[45m"), // MAGENTA
-		CYAN_BACKGROUND("\033[46m"), // CYAN
-		WHITE_BACKGROUND("\033[47m"), // WHITE
+		/**
+		 * Yellow color. Regular font, no background.
+		 */
+		YELLOW("\033[0;33m"),
 
-		// High Intensity
-		BLACK_BRIGHT("\033[0;90m"), // BLACK
-		RED_BRIGHT("\033[0;91m"), // RED
-		GREEN_BRIGHT("\033[0;92m"), // GREEN
-		YELLOW_BRIGHT("\033[0;93m"), // YELLOW
-		BLUE_BRIGHT("\033[0;94m"), // BLUE
-		MAGENTA_BRIGHT("\033[0;95m"), // MAGENTA
-		CYAN_BRIGHT("\033[0;96m"), // CYAN
-		WHITE_BRIGHT("\033[0;97m"), // WHITE
+		/**
+		 * Blue color. Regular font, no background.
+		 */
+		BLUE("\033[0;34m"),
 
-		// Bold High Intensity
-		BLACK_BOLD_BRIGHT("\033[1;90m"), // BLACK
-		RED_BOLD_BRIGHT("\033[1;91m"), // RED
-		GREEN_BOLD_BRIGHT("\033[1;92m"), // GREEN
-		YELLOW_BOLD_BRIGHT("\033[1;93m"), // YELLOW
-		BLUE_BOLD_BRIGHT("\033[1;94m"), // BLUE
-		MAGENTA_BOLD_BRIGHT("\033[1;95m"), // MAGENTA
-		CYAN_BOLD_BRIGHT("\033[1;96m"), // CYAN
-		WHITE_BOLD_BRIGHT("\033[1;97m"), // WHITE
+		/**
+		 * Magenta color. Regular font, no background.
+		 */
+		MAGENTA("\033[0;35m"),
 
-		// High Intensity backgrounds
-		BLACK_BACKGROUND_BRIGHT("\033[0;100m"), // BLACK
-		RED_BACKGROUND_BRIGHT("\033[0;101m"), // RED
-		GREEN_BACKGROUND_BRIGHT("\033[0;102m"), // GREEN
-		YELLOW_BACKGROUND_BRIGHT("\033[0;103m"), // YELLOW
-		BLUE_BACKGROUND_BRIGHT("\033[0;104m"), // BLUE
-		MAGENTA_BACKGROUND_BRIGHT("\033[0;105m"), // MAGENTA
-		CYAN_BACKGROUND_BRIGHT("\033[0;106m"), // CYAN
-		WHITE_BACKGROUND_BRIGHT("\033[0;107m"); // WHITE
+		/**
+		 * Cyan color. Regular font, no background.
+		 */
+		CYAN("\033[0;36m"),
 
+		/**
+		 * White color. Regular font, no background.
+		 */
+		WHITE("\033[0;37m"),
+
+		/**
+		 * Black color. Bold font, no background.
+		 */
+		BLACK_BOLD("\033[1;30m"),
+
+		/**
+		 * Red color. Bold font, no background.
+		 */
+		RED_BOLD("\033[1;31m"),
+
+		/**
+		 * Green color. Bold font, no background.
+		 */
+		GREEN_BOLD("\033[1;32m"),
+
+		/**
+		 * Yellow color. Bold font, no background.
+		 */
+		YELLOW_BOLD("\033[1;33m"),
+
+		/**
+		 * Blue color. Bold font, no background.
+		 */
+		BLUE_BOLD("\033[1;34m"),
+
+		/**
+		 * Magenta color. Bold font, no background.
+		 */
+		MAGENTA_BOLD("\033[1;35m"),
+
+		/**
+		 * Cyan color. Bold font, no background.
+		 */
+		CYAN_BOLD("\033[1;36m"),
+
+		/**
+		 * White color. Bold font, no background.
+		 */
+		WHITE_BOLD("\033[1;37m"),
+
+		/**
+		 * Black color. Underlined, no background.
+		 */
+		BLACK_UNDERLINED("\033[4;30m"),
+
+		/**
+		 * Red color. Underlined, no background.
+		 */
+		RED_UNDERLINED("\033[4;31m"),
+
+		/**
+		 * Green color. Underlined, no background.
+		 */
+		GREEN_UNDERLINED("\033[4;32m"),
+
+		/**
+		 * Yellow color. Underlined, no background.
+		 */
+		YELLOW_UNDERLINED("\033[4;33m"),
+
+		/**
+		 * Blue color. Underlined, no background.
+		 */
+		BLUE_UNDERLINED("\033[4;34m"),
+
+		/**
+		 * Magenta color. Underlined, no background.
+		 */
+		MAGENTA_UNDERLINED("\033[4;35m"),
+
+		/**
+		 * Cyan color. Underlined, no background.
+		 */
+		CYAN_UNDERLINED("\033[4;36m"),
+
+		/**
+		 * White color. Underlined, no background.
+		 */
+		WHITE_UNDERLINED("\033[4;37m"),
+
+		/**
+		 * Black background color.
+		 */
+		BLACK_BACKGROUND("\033[40m"),
+
+		/**
+		 * Red background color.
+		 */
+		RED_BACKGROUND("\033[41m"),
+
+		/**
+		 * Green background color.
+		 */
+		GREEN_BACKGROUND("\033[42m"),
+
+		/**
+		 * Yellow background color.
+		 */
+		YELLOW_BACKGROUND("\033[43m"),
+
+		/**
+		 * Blue background color.
+		 */
+		BLUE_BACKGROUND("\033[44m"),
+
+		/**
+		 * Magenta background color.
+		 */
+		MAGENTA_BACKGROUND("\033[45m"),
+
+		/**
+		 * Cyan background color.
+		 */
+		CYAN_BACKGROUND("\033[46m"),
+
+		/**
+		 * White background color.
+		 */
+		WHITE_BACKGROUND("\033[47m"),
+
+		/**
+		 * Black high intensity color. Regular font, no background.
+		 */
+		BLACK_BRIGHT("\033[0;90m"),
+
+		/**
+		 * Red high intensity color. Regular font, no background.
+		 */
+		RED_BRIGHT("\033[0;91m"),
+
+		/**
+		 * Green high intensity color. Regular font, no background.
+		 */
+		GREEN_BRIGHT("\033[0;92m"),
+
+		/**
+		 * Yellow high intensity color. Regular font, no background.
+		 */
+		YELLOW_BRIGHT("\033[0;93m"),
+
+		/**
+		 * Blue high intensity color. Regular font, no background.
+		 */
+		BLUE_BRIGHT("\033[0;94m"),
+
+		/**
+		 * Magenta high intensity color. Regular font, no background.
+		 */
+		MAGENTA_BRIGHT("\033[0;95m"),
+
+		/**
+		 * Cyan high intensity color. Regular font, no background.
+		 */
+		CYAN_BRIGHT("\033[0;96m"),
+
+		/**
+		 * White high intensity color. Regular font, no background.
+		 */
+		WHITE_BRIGHT("\033[0;97m"),
+
+		/**
+		 * Black high intensity color. Bold font, no background.
+		 */
+		BLACK_BOLD_BRIGHT("\033[1;90m"),
+
+		/**
+		 * Red high intensity color. Bold font, no background.
+		 */
+		RED_BOLD_BRIGHT("\033[1;91m"),
+
+		/**
+		 * Green high intensity color. Bold font, no background.
+		 */
+		GREEN_BOLD_BRIGHT("\033[1;92m"),
+
+		/**
+		 * Yellow high intensity color. Bold font, no background.
+		 */
+		YELLOW_BOLD_BRIGHT("\033[1;93m"),
+
+		/**
+		 * Blue high intensity color. Bold font, no background.
+		 */
+		BLUE_BOLD_BRIGHT("\033[1;94m"),
+
+		/**
+		 * Magenta high intensity color. Bold font, no background.
+		 */
+		MAGENTA_BOLD_BRIGHT("\033[1;95m"),
+
+		/**
+		 * Cyan high intensity color. Bold font, no background.
+		 */
+		CYAN_BOLD_BRIGHT("\033[1;96m"),
+
+		/**
+		 * White high intensity color. Bold font, no background.
+		 */
+		WHITE_BOLD_BRIGHT("\033[1;97m"),
+
+		/**
+		 * Black high intensity background.
+		 */
+		BLACK_BACKGROUND_BRIGHT("\033[0;100m"),
+
+		/**
+		 * Red high intensity background.
+		 */
+		RED_BACKGROUND_BRIGHT("\033[0;101m"),
+
+		/**
+		 * Green high intensity background.
+		 */
+		GREEN_BACKGROUND_BRIGHT("\033[0;102m"),
+
+		/**
+		 * Yellow high intensity background.
+		 */
+		YELLOW_BACKGROUND_BRIGHT("\033[0;103m"),
+
+		/**
+		 * Blue high intensity background.
+		 */
+		BLUE_BACKGROUND_BRIGHT("\033[0;104m"),
+
+		/**
+		 * Magenta high intensity background.
+		 */
+		MAGENTA_BACKGROUND_BRIGHT("\033[0;105m"),
+
+		/**
+		 * Cyan high intensity background.
+		 */
+		CYAN_BACKGROUND_BRIGHT("\033[0;106m"),
+
+		/**
+		 * White high intensity background.
+		 */
+		WHITE_BACKGROUND_BRIGHT("\033[0;107m");
+
+		/**
+		 * The style code.
+		 */
 		private final String code;
 
+		/**
+		 * Constructor for ConsoleColors.
+		 * 
+		 * @param code the style code
+		 */
 		ConsoleColors(String code) {
 			this.code = code;
 		}

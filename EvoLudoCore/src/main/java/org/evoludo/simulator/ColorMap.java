@@ -74,6 +74,12 @@ import org.evoludo.simulator.models.PDERD;
 public abstract class ColorMap<T extends Object> {
 
 	/**
+	 * Constructs a new color map.
+	 */
+	public ColorMap() {
+	}
+
+	/**
 	 * Useful constant for converting <code>int</code> representations of color
 	 * channels (<code>0-255</code>) to floating point representations
 	 * (<code>0-1</code>).
@@ -299,10 +305,22 @@ public abstract class ColorMap<T extends Object> {
 		 */
 		protected final int nColors;
 
+		/**
+		 * Constructs a new index color map.
+		 * 
+		 * @param size the number of colors
+		 */
 		protected Index(int size) {
 			nColors = size;
 		}
 
+		/**
+		 * Constructs a new index color map with transparency <code>alpha</code>.
+		 * 
+		 * @param srccolors the indexed colors
+		 * @param alpha     the transparency of the colors
+		 * @param colors    the array to store the colors
+		 */
 		protected Index(Color[] srccolors, int alpha, T[] colors) {
 			this.srccolors = srccolors;
 			this.colors = colors;
@@ -373,6 +391,12 @@ public abstract class ColorMap<T extends Object> {
 	public static abstract class Gradient<T> extends ColorMap<T> {
 
 		/**
+		 * Constructs a new gradient color map.
+		 */
+		public Gradient() {
+		}
+
+		/**
 		 * Utility method for creating a smooth gradient ranging from color
 		 * <code>start</code> to color <code>end</code> in <code>last-first</code>
 		 * steps. The color gradient is stored in the array <code>gradient</code> from
@@ -393,6 +417,15 @@ public abstract class ColorMap<T extends Object> {
 			}
 		}
 
+		/**
+		 * Utility method for creating a smooth gradient spanning all colors in the
+		 * array <code>colors</code>. An equal number of shades are created between two
+		 * adjacent colors. The color gradient is stored in the array
+		 * <code>gradient</code>.
+		 * 
+		 * @param gradient the array for storing the color gradient
+		 * @param colors   the array of colors for the gradient
+		 */
 		public void interpolateColors(T[] gradient, Color[] colors) {
 			int parts = colors.length - 1;
 			int nGradient = gradient.length - 1;
