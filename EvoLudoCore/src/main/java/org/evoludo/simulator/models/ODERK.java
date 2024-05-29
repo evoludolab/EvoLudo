@@ -162,13 +162,16 @@ public class ODERK extends ODEEuler {
 		return doReset;
 	}
 
-//	@Override
-//	public void collectCLO(CLOParser parser) {
-// ODERungeKutta does not provide any additional command line options
-// - setAutoDt: adaptive time steps are currently the default and cannot be changed 
-//	 (except in the java GUI). command line option could be added but seems of limited value.
-//	 if autoDt is false this defaults to the simple Euler integrator, which may not be desirable.
-//	}
+	// @Override
+	// public void collectCLO(CLOParser parser) {
+	// ODERungeKutta does not provide any additional command line options
+	// - setAutoDt: adaptive time steps are currently the default and cannot be
+	// changed
+	// (except in the java GUI). command line option could be added but seems of
+	// limited value.
+	// if autoDt is false this defaults to the simple Euler integrator, which may
+	// not be desirable.
+	// }
 
 	/**
 	 * Magic numbers from Numerical Recipes in C.
@@ -214,8 +217,8 @@ public class ODERK extends ODEEuler {
 		if (doEuler)
 			return super.deStep(step);
 		double errmax;
-		double h = step;		// set step size to the initial trial value.
-		double[] yscal = yt;	// constant fractional errors
+		double h = step; // set step size to the initial trial value.
+		double[] yscal = yt; // constant fractional errors
 
 		while (true) {
 			// take a step.
@@ -223,12 +226,12 @@ public class ODERK extends ODEEuler {
 				// step failed - decrease step width and try again
 				h /= 2.0;
 			}
-			errmax = 0.0;		// evaluate accuracy.
+			errmax = 0.0; // evaluate accuracy.
 			for (int i = 0; i < nDim; i++) {
-				if (yscal[i] > 1e-6)	// ignore component if variable is zero.
+				if (yscal[i] > 1e-6) // ignore component if variable is zero.
 					errmax = Math.max(errmax, Math.abs(yerr[i] / yscal[i]));
 			}
-			errmax /= ACCURACY;	// scale relative to required tolerance.
+			errmax /= ACCURACY; // scale relative to required tolerance.
 			if (errmax <= 1.0)
 				break; // step succeeded - compute size of next step.
 			double htemp = SAFETY * h * Math.pow(errmax, PSHRNK);
@@ -248,7 +251,7 @@ public class ODERK extends ODEEuler {
 		if (errmax > ERRCON)
 			dtTry = SAFETY * h * Math.pow(errmax, PGROW);
 		else
-			dtTry = 2.0 * h;	// no more than doubling.
+			dtTry = 2.0 * h; // no more than doubling.
 		dtTaken = h;
 
 		// if it's a replicator equation the densities/frequencies must add up to 1
@@ -318,7 +321,7 @@ public class ODERK extends ODEEuler {
 		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(t + a2 * h, ytmp, ftmp, ak2);	// second step.
+		getDerivatives(t + a2 * h, ytmp, ftmp, ak2); // second step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) {
@@ -330,7 +333,7 @@ public class ODERK extends ODEEuler {
 		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(t + a3 * h, ytmp, ftmp, ak3);	// third step.
+		getDerivatives(t + a3 * h, ytmp, ftmp, ak3); // third step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) {
@@ -342,7 +345,7 @@ public class ODERK extends ODEEuler {
 		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(t + a4 * h, ytmp, ftmp, ak4);	// fourth step.
+		getDerivatives(t + a4 * h, ytmp, ftmp, ak4); // fourth step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) {
@@ -354,7 +357,7 @@ public class ODERK extends ODEEuler {
 		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(t + a5 * h, ytmp, ftmp, ak5);	// fifth step.
+		getDerivatives(t + a5 * h, ytmp, ftmp, ak5); // fifth step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) {
@@ -366,7 +369,7 @@ public class ODERK extends ODEEuler {
 		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(t + a6 * h, ytmp, ftmp, ak6);	// sixth step.
+		getDerivatives(t + a6 * h, ytmp, ftmp, ak6); // sixth step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) { // accumulate increments with proper weights.

@@ -190,8 +190,6 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		 * with trait {@code m}.
 		 * </dl>
 		 * 
-		 * @author Christoph Hauert
-		 * 
 		 * @see #clo
 		 * @see IBSMCPopulation#getInit()
 		 */

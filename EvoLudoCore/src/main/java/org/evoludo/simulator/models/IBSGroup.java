@@ -170,7 +170,7 @@ public class IBSGroup {
 	 * 
 	 * <h3>Notes</h3>
 	 * In the original Moran process the offspring can replace the parent. Hence,
-	 * for reference groups in well-mixed populations it makes sense to include 
+	 * for reference groups in well-mixed populations it makes sense to include
 	 * the focal individual. In contrast, self-interactions may simplify some
 	 * analytical considerations but in IBS never make sense.
 	 */
@@ -256,7 +256,8 @@ public class IBSGroup {
 		focal = me;
 		switch (samplingType) {
 			case NONE: // speeds things up e.g. for best-response in well-mixed populations
-				//XXX if nSampled == 0 updatePlayerAt aborts if no references found... pretend...
+				// XXX if nSampled == 0 updatePlayerAt aborts if no references found...
+				// pretend...
 				nSampled = 1;
 				return null;
 

@@ -39,10 +39,6 @@ import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.modules.Continuous;
 
 /**
- *
- * @author Christoph Hauert
- */
-/**
  * The core class for individual based simulations with a <em>single</em>
  * continuous trait/strategy. As compared to the more generic
  * {@link IBSMCPopulation} this subclass takes advantage of simplifications that

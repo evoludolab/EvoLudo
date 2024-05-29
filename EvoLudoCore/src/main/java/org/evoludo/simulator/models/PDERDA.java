@@ -94,7 +94,7 @@ public class PDERDA extends PDERD {
 	 * i.e. JRE or GWT, respectively, to properly deal with multiple threads or
 	 * scheduling.
 	 *
-	 * @param engine     the pacemeaker for running the model
+	 * @param engine the pacemeaker for running the model
 	 *
 	 * @see EvoLudo#getRNG()
 	 * @see org.evoludo.simulator.models.PDESupervisorGWT PDESupervisorGWT
@@ -104,18 +104,20 @@ public class PDERDA extends PDERD {
 		super(engine);
 	}
 
-// DEBUG - uncomment to disable reactions.
-//		@Override
-//		protected void react(int start, int end) {
-//			// NOTE: swapping would be faster but results in some strange behavior with 'apply' and 'init';
-//			//		 since this is not critical it is not worth tracking down
-//			for( int n=0; n<density.length; n++ )
-//				System.arraycopy(density[n], 0, next[n], 0, density[n].length);
-//			double[] dummy = new double[d];
-//			updateFitness(dummy, dummy, dummy);
-//			// NOTE: in the absence of reactions, the total/mean density of each type should not change
-////			GWT.log("react: meanDensity="+meanDensity);
-//		}
+	// DEBUG - uncomment to disable reactions.
+	// @Override
+	// protected void react(int start, int end) {
+	// // NOTE: swapping would be faster but results in some strange behavior with
+	// 'apply' and 'init';
+	// // since this is not critical it is not worth tracking down
+	// for( int n=0; n<density.length; n++ )
+	// System.arraycopy(density[n], 0, next[n], 0, density[n].length);
+	// double[] dummy = new double[d];
+	// updateFitness(dummy, dummy, dummy);
+	// // NOTE: in the absence of reactions, the total/mean density of each type
+	// should not change
+	//// GWT.log("react: meanDensity="+meanDensity);
+	// }
 
 	@Override
 	public void diffuse(int start, int end) {
@@ -191,12 +193,12 @@ public class PDERDA extends PDERD {
 			ArrayMath.multiply(sn, -space.kout[n], s);
 			Arrays.fill(adv, 0.0);
 			// loop over neighbours
-//debug outflux of site
-//double[] outflux = new double[dim];
+			// debug outflux of site
+			// double[] outflux = new double[dim];
 			for (int i = 0; i < nIn; i++) {
 				double[] si = next[neighs[i]]; // current state of neighbour i, si
 				// diffusion
-				ArrayMath.add(s, si);	// s += si
+				ArrayMath.add(s, si); // s += si
 				ArrayMath.sub(si, sn, delta); // delta = si-sn
 				ArrayMath.add(delta, 1.0); // delta = 1+si-sn; note 1+sn-si=2-delta
 				// loop over traits - advection
@@ -205,24 +207,27 @@ public class PDERDA extends PDERD {
 					for (int k = 0; k < nDim; k++) {
 						double dk = delta[k] * 0.5;
 						advj += beta[j][k] * (-sn[j] * dk + si[j] * (1.0 - dk));
-//debug outflux of site
-//outflux[j] += beta[j][k]*sn[j]*dk;
+						// debug outflux of site
+						// outflux[j] += beta[j][k]*sn[j]*dk;
 					}
 					adv[j] += advj;
 				}
 			}
-//debug outflux of site
-//for( int j=0; j<dim; j++ ) {
-//	if( outflux[j]>sn[j] ) {
-//		double[] dest = new double[dim];
-//		com.google.gwt.core.client.GWT.log("ALERT @ "+n+": diff="+ChHFormatter.formatSci(ChHMath.sub(sn, outflux, dest), 4)+
-//				", state="+ChHFormatter.format(sn,4)+", flux="+ChHFormatter.formatSci(outflux,4));
-//		com.google.gwt.core.client.GWT.log("time="+time+", beta="+ChHFormatter.format(beta, 4)+", delta="+ChHFormatter.format(delta, 4)+
-//										   ", sn="+ChHFormatter.format(sn, 4));
-//		break;
-//	}
-//}
-// end debug
+			// debug outflux of site
+			// for( int j=0; j<dim; j++ ) {
+			// if( outflux[j]>sn[j] ) {
+			// double[] dest = new double[dim];
+			// com.google.gwt.core.client.GWT.log("ALERT @ "+n+":
+			// diff="+ChHFormatter.formatSci(ChHMath.sub(sn, outflux, dest), 4)+
+			// ", state="+ChHFormatter.format(sn,4)+",
+			// flux="+ChHFormatter.formatSci(outflux,4));
+			// com.google.gwt.core.client.GWT.log("time="+time+",
+			// beta="+ChHFormatter.format(beta, 4)+", delta="+ChHFormatter.format(delta, 4)+
+			// ", sn="+ChHFormatter.format(sn, 4));
+			// break;
+			// }
+			// }
+			// end debug
 			ArrayMath.multiply(s, alpha);
 			ArrayMath.add(s, sn);
 			ArrayMath.add(s, adv);
@@ -332,7 +337,8 @@ public class PDERDA extends PDERD {
 		// on magnitude of advcoeff
 		double maxA = Math.max(ArrayMath.max(advcoeff), Math.abs(ArrayMath.min(advcoeff))) * invdx2;
 		doAdvection = maxA > 0.0;
-// DEBUG the following seems too conservative (at least for normalized densities - try without but check whether densities remain in [0,1])
+		// DEBUG the following seems too conservative (at least for normalized densities
+		// - try without but check whether densities remain in [0,1])
 		if (doAdvection) {
 			int maxK = Math.max(space.maxOut, space.maxIn);
 			// threshold of 1 is much to aggressive - this means everyone in one site

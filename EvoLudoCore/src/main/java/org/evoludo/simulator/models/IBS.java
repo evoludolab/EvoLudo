@@ -32,8 +32,6 @@ public abstract class IBS implements Model.IBS {
 	/**
 	 * Modules that offer individual based simulation models must implement this
 	 * interface.
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public interface HasIBS {
 

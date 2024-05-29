@@ -64,8 +64,6 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	/**
 	 * Methods that every {@link Module} must implement, which advertises numerical
 	 * solutions based on partial differential equations.
-	 *
-	 * @author Christoph Hauert
 	 */
 	public interface HasPDE extends HasDE {
 
@@ -1299,8 +1297,6 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	 * <dt>DEFAULT
 	 * <dd>Default initialization (UNIFORM)
 	 * </dl>
-	 * 
-	 * @author Christoph Hauert
 	 * 
 	 * @see #parse(String)
 	 * @see ODEEuler#cloInitType

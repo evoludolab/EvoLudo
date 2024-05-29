@@ -50,33 +50,6 @@ import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
 /**
- * A minimalstic helper class (or data structure) to represent a single
- * <em>directed</em> link in the network structure. <em>Undirected</em> links
- * are represented by two directed ones. This is used for Moran optimizations.
- *
- * @author Christoph Hauert
- * 
- * @see IBSDPopulation#optimizeMoran
- */
-class link {
-	/**
-	 * The index of the individual at the tail end of the link.
-	 */
-	int source;
-
-	/**
-	 * The index of the individual at the head of the link.
-	 */
-	int destination;
-
-	/**
-	 * The fitness of the individual at the tail end (for fitness based picking of
-	 * individuals).
-	 */
-	double fitness;
-}
-
-/**
  * The core class for individual based simulations with discrete
  * traits/strategies. Manages the strategies of the population,
  * while delegating the management of the population and individual fitness as
@@ -469,6 +442,31 @@ public class IBSDPopulation extends IBSPopulation {
 				break;
 			}
 		}
+	}
+
+	/**
+	 * A minimalstic helper class (or data structure) to represent a single
+	 * <em>directed</em> link in the network structure. <em>Undirected</em> links
+	 * are represented by two directed ones. This is used for Moran optimizations.
+	 * 
+	 * @see IBSDPopulation#optimizeMoran
+	 */
+	static class link {
+		/**
+		 * The index of the individual at the tail end of the link.
+		 */
+		int source;
+
+		/**
+		 * The index of the individual at the head of the link.
+		 */
+		int destination;
+
+		/**
+		 * The fitness of the individual at the tail end (for fitness based picking of
+		 * individuals).
+		 */
+		double fitness;
 	}
 
 	/**
@@ -2140,10 +2138,10 @@ public class IBSDPopulation extends IBSPopulation {
 	 * {@link IBSD.Init.Type#KALEIDOSCOPE} for IBS models. For example, add
 	 * 
 	 * <pre>
-	 *	if (model instanceof IBSD) {
-	 *		CLOption clo = ((IBSDPopulation) getIBSPopulation()).getInit().clo;
-	 *		clo.addKey(Init.Type.KALEIDOSCOPE);
-	 *	}
+	 * if (model instanceof IBSD) {
+	 * 	CLOption clo = ((IBSDPopulation) getIBSPopulation()).getInit().clo;
+	 * 	clo.addKey(Init.Type.KALEIDOSCOPE);
+	 * }
 	 * </pre>
 	 * 
 	 * to

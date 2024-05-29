@@ -203,8 +203,6 @@ public class PDESupervisorJRE extends PDESupervisor {
 
 	/**
 	 * Worker class for processing PDE updates.
-	 *
-	 * @author Christoph Hauert
 	 */
 	static class RDWorker implements Runnable {
 

@@ -1483,7 +1483,8 @@ public abstract class IBSPopulation {
 	 * 
 	 * <h3>Requirements/notes:</h3>
 	 * <ol>
-	 * <li>This optimized method is only applicable if {@link IBSGroup.SamplingType#ALL}
+	 * <li>This optimized method is only applicable if
+	 * {@link IBSGroup.SamplingType#ALL}
 	 * is true and not {@link Geometry.Type#MEANFIELD}, i.e. if the interaction
 	 * group includes all neighbors but not all other members of the population.
 	 * <li>For pairwise interactions more efficient approaches are possible but

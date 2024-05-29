@@ -231,7 +231,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 			System.arraycopy(init, skip, tmp, 0, dpop.nTraits);
 			success &= dpop.setInitialTraits(tmp);
 			skip += dpop.nTraits;
-		}			
+		}
 		return success;
 	}
 
@@ -239,7 +239,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	public boolean setInitialTraits(int id, double[] init) {
 		return getIBSDPopulation(id).setInitialTraits(init);
 	}
-	
+
 	@Override
 	public double getMonoScore(int id, int type) {
 		return getIBSDPopulation(id).getMonoScore(type);
@@ -320,8 +320,10 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 								initargs = CLOParser.parseVector(typeargs[0]);
 							} else if (typeargs.length > 1)
 								initargs = CLOParser.parseVector(typeargs[1]);
-							// only uniform or kaleidoscope initializations do not require additional arguments
-							if (newtype == null || (initargs == null && !(newtype.equals(Init.Type.UNIFORM) || newtype.equals(Init.Type.KALEIDOSCOPE)))) {
+							// only uniform or kaleidoscope initializations do not require additional
+							// arguments
+							if (newtype == null || (initargs == null && !(newtype.equals(Init.Type.UNIFORM)
+									|| newtype.equals(Init.Type.KALEIDOSCOPE)))) {
 								ibs.logger.warning(
 										(isMultiSpecies ? mod.getName() + ": " : "") +
 												"inittype '" + inittype + "' unknown!");
@@ -353,7 +355,8 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		 * Type of initial density distribution. Currently this model supports:
 		 * <dl>
 		 * <dt>frequency &lt;f1,..,fn&gt;
-		 * <dd>Random distribution of traits with given frequencies {@code &lt;f1,..,fd&gt;}
+		 * <dd>Random distribution of traits with given frequencies
+		 * {@code &lt;f1,..,fd&gt;}
 		 * for traits {@code 1,...,d} (default).
 		 * <dt>uniform
 		 * <dd>Uniform random distribution of traits.
@@ -375,15 +378,14 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		 * for statistics. Convenience type for statistics mode. Not user selectable.
 		 * </dl>
 		 * 
-		 * @author Christoph Hauert
-		 * 
 		 * @see Init#clo
 		 * @see IBSDPopulation#getInit()
 		 */
 		public enum Type implements CLOption.Key {
 
 			/**
-			 * Random distribution of traits with frequencies {@code &lt;f1,..,fd&gt;} (default).
+			 * Random distribution of traits with frequencies {@code &lt;f1,..,fd&gt;}
+			 * (default).
 			 */
 			FREQUENCY("frequency", "random distribution with frequency <f1,..,fd>"),
 

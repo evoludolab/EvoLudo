@@ -57,8 +57,6 @@ public abstract interface Model extends CLOProvider {
 
 	/**
 	 * Common interface for all models with discrete strategy sets.
-	 *
-	 * @author Christoph Hauert
 	 */
 	public interface Discrete extends Model {
 
@@ -86,8 +84,6 @@ public abstract interface Model extends CLOProvider {
 
 	/**
 	 * Common interface for all models with continuous strategy sets.
-	 *
-	 * @author Christoph Hauert
 	 */
 	public interface Continuous extends Model {
 
@@ -142,8 +138,6 @@ public abstract interface Model extends CLOProvider {
 	 * <p>
 	 * <strong>Note:</strong> Currently differential equation models are restricted
 	 * to discrete strategy sets.
-	 *
-	 * @author Christoph Hauert
 	 */
 	public abstract interface DE extends Discrete {
 
@@ -198,8 +192,6 @@ public abstract interface Model extends CLOProvider {
 
 	/**
 	 * Interface for ordinary differential equation models.
-	 *
-	 * @author Christoph Hauert
 	 */
 	public interface ODE extends DE {
 
@@ -221,8 +213,6 @@ public abstract interface Model extends CLOProvider {
 
 	/**
 	 * Interface for stochastic differential equation models.
-	 *
-	 * @author Christoph Hauert
 	 */
 	public interface SDE extends ODE {
 
@@ -234,8 +224,6 @@ public abstract interface Model extends CLOProvider {
 
 	/**
 	 * Interface for partial differential equation models.
-	 *
-	 * @author Christoph Hauert
 	 */
 	public interface PDE extends DE {
 
@@ -379,8 +367,6 @@ public abstract interface Model extends CLOProvider {
 
 	/**
 	 * Interface for individual based simulation models.
-	 *
-	 * @author Christoph Hauert
 	 */
 	public interface IBS extends Model {
 
@@ -453,16 +439,12 @@ public abstract interface Model extends CLOProvider {
 
 	/**
 	 * Interface for models with discrete strategy sets
-	 *
-	 * @author Christoph Hauert
 	 */
 	public interface DiscreteIBS extends Discrete, IBS {
 	}
 
 	/**
 	 * Interface for models with continuous strategy sets
-	 *
-	 * @author Christoph Hauert
 	 */
 	public interface ContinuousIBS extends Continuous, IBS {
 
@@ -511,8 +493,6 @@ public abstract interface Model extends CLOProvider {
 	 * <dt>PDE</dt>
 	 * <dd>partial differential equations</dd>
 	 * </dl>
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public static enum Type implements CLOption.Key {
 		/**
@@ -618,8 +598,6 @@ public abstract interface Model extends CLOProvider {
 	 * <dd>generate samples from single run to create statistics of the
 	 * model reflecting the different states of the population.
 	 * </dl>
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public static enum Mode {
 		/**
@@ -679,8 +657,6 @@ public abstract interface Model extends CLOProvider {
 	 * <dt>undefined
 	 * <dd>the data type is not defined/unknown.
 	 * </dl>
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public static enum Data {
 

@@ -368,8 +368,8 @@ public class SDEEuler extends ODEEuler implements Model.SDE {
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
 		// SDE's currently are restricted to single species modules
-		// and implement mutation to other types only (including ALL 
-		// as well should be fairly straight forward, though). 
+		// and implement mutation to other types only (including ALL
+		// as well should be fairly straight forward, though).
 		mutation[0].clo.clearKeys();
 		mutation[0].clo.addKey(Mutation.Discrete.Type.NONE);
 		mutation[0].clo.addKey(Mutation.Discrete.Type.OTHER);

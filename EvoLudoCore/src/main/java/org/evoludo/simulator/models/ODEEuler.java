@@ -65,8 +65,6 @@ public class ODEEuler implements Model.ODE {
 	/**
 	 * Methods that every {@link Module} must implement, which advertises numerical
 	 * solutions based on differential equations.
-	 *
-	 * @author Christoph Hauert
 	 */
 	public abstract interface HasDE {
 
@@ -152,8 +150,6 @@ public class ODEEuler implements Model.ODE {
 	/**
 	 * Additional methods that must be implemented by {@link Module}s that advertise
 	 * numerical solutions based on <em>ordinary</em> differential equations.
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public interface HasODE extends HasDE {
 
@@ -1651,8 +1647,6 @@ public class ODEEuler implements Model.ODE {
 	 * <dd>Random initial trait frequencies. <br>
 	 * <strong>Note:</strong> Not available for density based models.
 	 * </dl>
-	 * 
-	 * @author Christoph Hauert
 	 * 
 	 * @see #cloInitType
 	 * @see #parse(String)
