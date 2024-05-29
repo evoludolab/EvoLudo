@@ -132,8 +132,10 @@
           <!-- <javadocExecutable>${javadoc.exe}</javadocExecutable> -->
           <!-- accessibility throws errors about headers out of sequence but at the same time
                javadoc does not appear to offer any way to format longer text, e.g. for more
-               comprehensive introductions to a class -->
-          <doclint>all,-accessibility</doclint>
+               comprehensive introductions to a class. reference throws errors for unresolved
+               references, e.g. those to classes in other modules. this can only be verified 
+               at the time of aggregating the documentation. -->
+          <doclint>all,-accessibility,-reference</doclint>
           <tags>
             <tag>
               <name>evoludo.todo</name>
@@ -165,7 +167,7 @@
             <additionalJOption>999</additionalJOption> -->
           </additionalJOptions>
         </configuration>
-        <!-- <executions>
+        <executions>
           <execution>
             <id>aggregate</id>
             <goals>
@@ -173,10 +175,11 @@
             </goals>
             <phase>site</phase>
             <configuration>
-              <!- - Specific configuration for the aggregate report - ->
+              <!-- Specific configuration for the aggregate report -->
+              <doclint>all,-accessibility</doclint>
             </configuration>
           </execution>
-        </executions> -->
+        </executions>
       </plugin>
 
       <plugin>
@@ -299,7 +302,9 @@
     <profile>
         <id>public</id>
         <activation>
-          <activeByDefault>true</activeByDefault>
+          <file>
+            <missing>EvoLudoCorePrivate/pom.xml</missing>
+          </file>
         </activation>
         <modules>
           <module>EvoLudoCore</module>

@@ -125,17 +125,19 @@
           <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>EvoLudoCore</artifactId>
-            <version>${project.version}</version>
-            <classifier>sources</classifier>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCore</artifactId>
+          <version>${project.version}</version>
+          <classifier>sources</classifier>
           </dependency>
       </dependencies>
     </profile>
     <profile>
       <id>public</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <file>
+          <missing>../EvoLudoCorePrivate/pom.xml</missing>
+        </file>
       </activation>
       <dependencies>
         <dependency>
@@ -144,10 +146,10 @@
           <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>EvoLudoCore</artifactId>
-            <version>${project.version}</version>
-            <classifier>sources</classifier>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCore</artifactId>
+          <version>${project.version}</version>
+          <classifier>sources</classifier>
           </dependency>
       </dependencies>
     </profile>

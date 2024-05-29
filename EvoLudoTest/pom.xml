@@ -114,9 +114,9 @@
     <profile>
       <id>public</id>
       <activation>
-          <file>
-              <missing>../EvoLudoCorePrivate/pom.xml</missing>
-          </file>
+        <file>
+          <missing>../EvoLudoCorePrivate/pom.xml</missing>
+        </file>
       </activation>
       <dependencies>
         <dependency>
