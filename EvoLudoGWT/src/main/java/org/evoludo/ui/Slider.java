@@ -87,6 +87,7 @@ import com.google.gwt.user.client.ui.RootPanel;
  * 	}
  * }
  * </pre>
+ * 
  * </blockquote>
  * 
  * @author Christoph Hauert
@@ -342,17 +343,19 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 			throw new IllegalArgumentException("logarithmic base must be positive.");
 		if (max <= 0.0 || min <= 0.0)
 			throw new IllegalArgumentException("min and max of logarithmic range must be both positive.");
-// possible to work with logarithmic scales for min<0 and max<0 by reinterpreting range - worth the hassle?
-//		if( max*min<=0.0 ) throw new IllegalArgumentException("logarithmic range cannot include zero.");
+		// possible to work with logarithmic scales for min<0 and max<0 by
+		// reinterpreting range - worth the hassle?
+		// if( max*min<=0.0 ) throw new IllegalArgumentException("logarithmic range
+		// cannot include zero.");
 
 		double newLogBase = Math.log(base);
 		if (Math.abs(logBase - newLogBase) < 1e-8)
 			return;
 		double value = getValue();
 		// process change of base
-//		if( logBase<0.0 ) {
-//			// slider was linear
-//		}
+		// if( logBase<0.0 ) {
+		// // slider was linear
+		// }
 		logBase = newLogBase;
 		setValue(value);
 		_update();
@@ -449,8 +452,9 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 	protected void updateTitle() {
 		if (title == null)
 			return;
-// unfortunately GWT does not implement String.format (or any more advanced formatters)...
-//		getElement().setTitle(String.format(title, getValue()));
+		// unfortunately GWT does not implement String.format (or any more advanced
+		// formatters)...
+		// getElement().setTitle(String.format(title, getValue()));
 		String tooltip = title.replaceAll("{min}", String.valueOf(min));
 		tooltip = tooltip.replaceAll("{max}", String.valueOf(max));
 		tooltip = tooltip.replaceAll("{value}", String.valueOf((int) (getValue() + 0.5)));
@@ -469,10 +473,10 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 
 	@Override
 	public void onClick(ClickEvent event) {
-//ok but slight jumps with mouse; blinks on first touch...
+		// ok but slight jumps with mouse; blinks on first touch...
 		double x = min + event.getX() * (max - min) / getOffsetWidth();
 		getInputElement().setValue(String.valueOf(x));
-//		event.preventDefault();
+		// event.preventDefault();
 	}
 
 	@Override
@@ -490,6 +494,12 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 		touchSlider(event);
 	}
 
+	/**
+	 * Helper function to update the slider value based on touch events.
+	 * 
+	 * @param <H>   the handler type
+	 * @param event the touch event
+	 */
 	private <H extends EventHandler> void touchSlider(TouchEvent<H> event) {
 		JsArray<Touch> touches = event.getTouches();
 		if (touches.length() > 1)

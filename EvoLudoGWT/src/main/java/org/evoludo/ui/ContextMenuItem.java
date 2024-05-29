@@ -198,7 +198,9 @@ public class ContextMenuItem extends Label
 	}
 
 	/**
-	 * @return <code>true</code> if menu item controls a submenu
+	 * Check if context menu item controls a submenu.
+	 * 
+	 * @return <code>true</code> if menu item has a submenu
 	 */
 	public boolean hasSubmenu() {
 		return (childMenu != null);
@@ -236,7 +238,7 @@ public class ContextMenuItem extends Label
 	 */
 	@Override
 	public void onMouseOver(MouseOverEvent event) {
-		if( !hasSubmenu() )
+		if (!hasSubmenu())
 			((ContextMenu) getParent()).closeChildMenu();
 		open();
 	}

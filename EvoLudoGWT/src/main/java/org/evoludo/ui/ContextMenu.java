@@ -632,8 +632,10 @@ public class ContextMenu extends FlowPanel
 	}
 
 	/**
-	 * @return <code>true</code> if context menu hides automatically (with delay)
-	 *         after pointer exited
+	 * Checks if context menu hides automatically (with some delay) after pointer
+	 * exited.
+	 * 
+	 * @return <code>true</code> if context menu hides automatically
 	 * 
 	 * @see #setAutoHide(boolean)
 	 */
@@ -654,6 +656,9 @@ public class ContextMenu extends FlowPanel
 	}
 
 	/**
+	 * Checks if submenus open automatically when pointer hovers over corresponding
+	 * menu item in parent menu.
+	 * 
 	 * @return <code>true</code> if context menu opens automatically
 	 * 
 	 * @see #setAutoOpen(boolean)
@@ -675,6 +680,9 @@ public class ContextMenu extends FlowPanel
 	}
 
 	/**
+	 * Checks if submenus close automatically when pointer stops hovering over
+	 * corresponding menu item in parent menu.
+	 * 
 	 * @return <code>true</code> if context menu closes automatically
 	 * 
 	 * @see #setAutoClose(boolean)
@@ -690,8 +698,8 @@ public class ContextMenu extends FlowPanel
 	 * ensure that once the context menu is visible, the pointer is located inside
 	 * the context menu.
 	 * 
-	 * @param ox horizontal offset
-	 * @param oy vertical offset
+	 * @param ox the horizontal offset
+	 * @param oy the vertical offset
 	 * 
 	 * @see #offsetX
 	 * @see #offsetY
@@ -706,7 +714,7 @@ public class ContextMenu extends FlowPanel
 	 * pointer has exited the context menu, provided that <code>autoHide</code> is
 	 * set to <code>true</code>.
 	 * 
-	 * @param delay for hiding context (sub)menu
+	 * @param delay the delay for hiding context (sub)menu
 	 * 
 	 * @see #delayHide
 	 */
@@ -719,7 +727,7 @@ public class ContextMenu extends FlowPanel
 	 * finger touch, provided that no other touch events fired during
 	 * <code>delay</code>.
 	 * 
-	 * @param delay for showing context menu after two-finger touch
+	 * @param delay the delay for showing context menu after two-finger touch
 	 * 
 	 * @see #delayHide
 	 */
@@ -798,6 +806,12 @@ public class ContextMenu extends FlowPanel
 	 * for use once the timer fires (if it does).
 	 */
 	public class TouchTimer extends Timer {
+
+		/**
+		 * Constructs a new timer for touch events.
+		 */
+		public TouchTimer() {
+		}
 
 		/**
 		 * Horizontal position of touch event scheduled to trigger context menu

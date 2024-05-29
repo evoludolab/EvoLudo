@@ -92,16 +92,16 @@ import thothbot.parallax.core.shared.math.Vector3;
 public class TrackballControls extends Controls implements MouseWheelHandler, MouseDownHandler, MouseUpHandler,
 		MouseMoveHandler, TouchStartHandler, TouchMoveHandler, TouchEndHandler, RequiresResize {
 
-//XXX should probably use currently unused max/minDistance instead...
-//	/**
-//	 * 
-//	 */
-//	private double minDistance = 0.0;
-//
-//	/**
-//	 * 
-//	 */
-//	private double maxDistance = Double.MAX_VALUE;
+	// XXX should probably use currently unused max/minDistance instead...
+	// /**
+	// * The minimum distance to the object. Determines how close you can zoom in.
+	// */
+	// private double minDistance = 0.0;
+	//
+	// /**
+	// * The maximum distance to the object. Determines how far you can zoom out.
+	// */
+	// private double maxDistance = Double.MAX_VALUE;
 
 	/**
 	 * Maximum eye distance. How far you can zoom out.
@@ -214,7 +214,7 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	 */
 	private Vector3 target;
 
-//	private Vector3 lastPosition;
+	// private Vector3 lastPosition;
 
 	/**
 	 * Location of eye.
@@ -262,7 +262,7 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 			widget.getElement().setAttribute("tabindex", "-1");
 
 		target = new Vector3();
-//		lastPosition = new Vector3();
+		// lastPosition = new Vector3();
 		eye = new Vector3();
 		rotateStart = new Vector3();
 		rotateEnd = new Vector3();
@@ -304,7 +304,9 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	}
 
 	/**
-	 * @return <code>true</code> if trackball controls are enabled
+	 * Check if trackball controls are enabled.
+	 * 
+	 * @return <code>true</code> if enabled
 	 */
 	public boolean isEnabled() {
 		return isEnabled;
@@ -391,26 +393,28 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 		this.dynamicDampingFactor = dynamicDampingFactor;
 	}
 
-//	/**
-//	 * Sets minimum distance to the object. Default 0
-//	 * 
-//	 * @param minDistance
-//	 */
-//	public void setMinDistance(double minDistance) {
-//		this.minDistance = minDistance;
-//	}
+	// /**
+	// * Sets minimum distance to the object. Default 0
+	// *
+	// * @param minDistance
+	// */
+	// public void setMinDistance(double minDistance) {
+	// this.minDistance = minDistance;
+	// }
 
-//	/**
-//	 * Sets maximum distance to the object. Default Infinity.
-//	 * 
-//	 * @param maxDistance
-//	 */
-//	public void setMaxDistance(double maxDistance) {
-//		this.maxDistance = maxDistance;
-//	}
+	// /**
+	// * Sets maximum distance to the object. Default Infinity.
+	// *
+	// * @param maxDistance
+	// */
+	// public void setMaxDistance(double maxDistance) {
+	// this.maxDistance = maxDistance;
+	// }
 
 	/**
-	 * @return target point where the eye is looking
+	 * Get the target point where the eye is looking.
+	 * 
+	 * @return the target point
 	 */
 	public Vector3 getTarget() {
 		return target;
@@ -449,11 +453,11 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 		}
 
 		getObject().getPosition().add(target, eye);
-//		checkDistances();
+		// checkDistances();
 		getObject().lookAt(target);
 
-//		if( lastPosition.distanceTo(getObject().getPosition())>0 ) 
-//			lastPosition.copy(getObject().getPosition());
+		// if( lastPosition.distanceTo(getObject().getPosition())>0 )
+		// lastPosition.copy(getObject().getPosition());
 	}
 
 	/**
@@ -729,11 +733,11 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	}
 
 	/**
-	 * 
+	 * The mouse coordinates on the virtual trackball.
 	 */
 	private Vector3 mouseOnBall = new Vector3();
-//	private Vector3 projection = new Vector3();
-//	private Vector3 projSide = new Vector3();
+	// private Vector3 projection = new Vector3();
+	// private Vector3 projSide = new Vector3();
 
 	/**
 	 * Convert pointer coordinates to coordinates on (virtual) trackball (unit
@@ -759,29 +763,29 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 		projection.add(getObject().getUp().clone().cross(eye).setLength(mouseOnBall.getX()));
 		projection.add(eye.setLength(mouseOnBall.getZ()));
 
-//attempts to avoid the clone-ing fail for unknown reasons...
-//		projection.copy(getObject().getUp());
-//		projSide.copy(projection).cross(eye).setLength(mouseOnBall.getX());
-//		projection.setLength(mouseOnBall.getY());
-//		projection.add(projSide);
-//		projection.add(eye.setLength(mouseOnBall.getZ()));
+		// attempts to avoid the clone-ing fail for unknown reasons...
+		// projection.copy(getObject().getUp());
+		// projSide.copy(projection).cross(eye).setLength(mouseOnBall.getX());
+		// projection.setLength(mouseOnBall.getY());
+		// projection.add(projSide);
+		// projection.add(eye.setLength(mouseOnBall.getZ()));
 
-//		projection.copy(getObject().getUp()).setLength(mouseOnBall.getY());
-//		projection.add(projSide.copy(getObject().getUp()).cross(eye).setLength(mouseOnBall.getX()));
-//		projection.add(eye.setLength(mouseOnBall.getZ()));
+		// projection.copy(getObject().getUp()).setLength(mouseOnBall.getY());
+		// projection.add(projSide.copy(getObject().getUp()).cross(eye).setLength(mouseOnBall.getX()));
+		// projection.add(eye.setLength(mouseOnBall.getZ()));
 
 		return projection;
 	}
 
-//	private void checkDistances() {
-//		if( isZoom || isPan ) {
-//			if( getObject().getPosition().lengthSq()>maxDistance*maxDistance ) 
-//				getObject().getPosition().setLength(maxDistance);
-//
-//			if( eye.lengthSq()<minDistance*minDistance ) 
-//				getObject().getPosition().add(target, eye.setLength(minDistance));
-//		}
-//	}
+	// private void checkDistances() {
+	// if( isZoom || isPan ) {
+	// if( getObject().getPosition().lengthSq()>maxDistance*maxDistance )
+	// getObject().getPosition().setLength(maxDistance);
+	//
+	// if( eye.lengthSq()<minDistance*minDistance )
+	// getObject().getPosition().add(target, eye.setLength(minDistance));
+	// }
+	// }
 
 	/**
 	 * Update eye and target for (dynamical) panning.

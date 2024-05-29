@@ -100,7 +100,9 @@ public class ContextMenuCheckBoxItem extends ContextMenuItem {
 	}
 
 	/**
-	 * @return <code>true</code> if menu item is active (checked)
+	 * Check if menu item is active (checked).
+	 * 
+	 * @return <code>true</code> if active (checked)
 	 */
 	public boolean isChecked() {
 		return isChecked;

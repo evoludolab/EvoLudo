@@ -651,6 +651,9 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	}
 
 	/**
+	 * Check if document has focus. This is important to avoid showing tooltips when
+	 * the browser window is not in focus.
+	 * 
 	 * @return <code>true</code> if document has focus
 	 */
 	public final static native boolean hasFocus()
@@ -659,16 +662,20 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	}-*/;
 
 	/**
+	 * Check if fullscreen mode is supported.
+	 * 
 	 * @return <code>true</code> if fullscreen mode is supported
 	 */
 	public native boolean isFullscreenSupported()
 	/*-{
 		return $doc.fullscreenEnabled || $doc.mozFullScreenEnabled
-				|| $doc.webkitFullscreenEnabled || $doc.msFullscreenEnabled ? true
-				: false;
+			|| $doc.webkitFullscreenEnabled || $doc.msFullscreenEnabled ? true
+			: false;
 	}-*/;
 
 	/**
+	 * Get fullscreen element.
+	 * 
 	 * @return fullscreen element or <code>null</code> if not in fullscreen or
 	 *         fullscreen not supported
 	 */
@@ -696,12 +703,11 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 */
 	private final native void _addFullscreenChangeHandler(String eventname, FullscreenChangeHandler handler)
 	/*-{
-		$doc
-				.addEventListener(
-						eventname,
-						function(event) {
-							handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
-						}, true);
+		$doc.addEventListener(
+			eventname,
+			function(event) {
+				handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
+			}, true);
 	}-*/;
 
 	/**
@@ -715,12 +721,11 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 */
 	private final native void _removeFullscreenChangeHandler(String eventname, FullscreenChangeHandler handler)
 	/*-{
-		$doc
-				.removeEventListener(
-						eventname,
-						function(event) {
-							handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
-						}, true);
+		$doc.removeEventListener(
+			eventname,
+			function(event) {
+				handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
+			}, true);
 	}-*/;
 
 	/**
