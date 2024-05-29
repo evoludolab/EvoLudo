@@ -92,11 +92,11 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 		setSteps(steps*(style.xMax-style.xMin)/(style.xMax-oldMin));
 	}
 
-	public void addData(double t, double[] data, boolean force) {
-		addData(prependTime2Data(t, data), force);
+	public void addData(double t, double[] data) {
+		addData(prependTime2Data(t, data));
 	}
 
-	public void addData(double[] data, boolean force) {
+	public void addData(double[] data) {
 		// always add data
 		buffer.append(data);
 		// time does not count for min/max

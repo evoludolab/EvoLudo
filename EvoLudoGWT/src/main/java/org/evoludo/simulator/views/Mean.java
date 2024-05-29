@@ -276,7 +276,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 							System.arraycopy(state, 0, data, 1, nState);
 						}
 						data[0] = newtime;
-						graph.addData(data, force);
+						graph.addData(data);
 						break;
 					case FITNESS:
 						if (newmod)
@@ -296,7 +296,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 							System.arraycopy(state, 0, data, 1, nState + 1);
 						}
 						data[0] = newtime;
-						graph.addData(data, force);
+						graph.addData(data);
 						break;
 					default:
 						break;
