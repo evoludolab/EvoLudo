@@ -435,6 +435,9 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 		 */
 		int axis = -1;
 
+		/**
+		 * The list of traits to toggle.
+		 */
 		ContextMenuCheckBoxItem[] traitItems;
 
 		/**

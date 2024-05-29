@@ -60,8 +60,6 @@ public abstract interface HasMean {
 	 * {@link org.evoludo.simulator.models.Model Model} implements the
 	 * method {@link org.evoludo.simulator.models.Model#getMeanTraits(int, double[])
 	 * Model.getMeanTraits(int, double[])}.
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public interface Strategy extends HasMean {
 	}
@@ -79,8 +77,6 @@ public abstract interface HasMean {
 	 * {@link org.evoludo.simulator.models.Model Model} implements the method
 	 * {@link org.evoludo.simulator.models.Model#getMeanFitness(int, double[])
 	 * Model.getMeanFitness(int, double[])}.
-	 * 
-	 * @author Christoph Hauert
 	 */
 	public interface Fitness extends HasMean {
 	}

@@ -67,6 +67,12 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 	public static class Log extends HTML implements ContextMenu.Listener {
 
 		/**
+		 * Constructs a new log.
+		 */
+		public Log() {
+		}
+
+		/**
 		 * The default capacity of the log buffer.
 		 */
 		public final static int DEFAULT_CAPACITY = 1000;

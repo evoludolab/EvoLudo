@@ -118,11 +118,11 @@ public class Phase2D extends AbstractView {
 
 		GraphStyle style;
 		int nStates = model.getNMean();
-		if( state==null || state.length!=nStates ) {
+		if (state == null || state.length != nStates) {
 			state = new double[nStates];
 		}
 		Module module = engine.getModule();
-		if( graphs.size()!=1 ) {
+		if (graphs.size() != 1) {
 			hard = true;
 			graph = new ParaGraph(this, module);
 			wrapper.add(graph);
@@ -138,24 +138,23 @@ public class Phase2D extends AbstractView {
 			// arrange graphs vertically (currently only one)
 			gRows = 1;
 			gCols = 1;
-			int width = 100/gCols;
-			int height = 100/gRows;
-			graph.setSize(width+"%", height+"%");
+			int width = 100 / gCols;
+			int height = 100 / gRows;
+			graph.setSize(width + "%", height + "%");
 		}
 		graph.setMarkers(module.getMarkers());
 		// set map for converting data to phase plane coordinates
 		map = ((HasPhase2D) module).getPhase2DMap();
 		if (map != null)
-			graph.setMap(map);	
-		map = graph.getMap();	
+			graph.setMap(map);
+		map = graph.getMap();
 		// set axis labels and range
 		style = graph.getStyle();
 		if (model instanceof Model.DE && ((Model.DE) model).isDensity()) {
 			// density model
 			style.percentX = false;
 			style.percentY = false;
-		}
-		else {
+		} else {
 			// frequency model
 			style.percentX = true;
 			style.percentY = true;
@@ -165,7 +164,7 @@ public class Phase2D extends AbstractView {
 		style.showXLabel = (style.xLabel != null);
 		label = map.getYAxisLabel();
 		style.yLabel = (label == null ? getYAxisLabel() : label);
-		style.showYLabel = (style.yLabel!=null);
+		style.showYLabel = (style.yLabel != null);
 		style.trajColor = ColorMapCSS.Color2Css(module.getTrajectoryColor());
 		if (hard)
 			graph.reset();
@@ -184,7 +183,7 @@ public class Phase2D extends AbstractView {
 	@Override
 	public void update(boolean force) {
 		double newtime = model.getTime();
-		if( Math.abs(timestamp-newtime)>1e-8 ) {
+		if (Math.abs(timestamp - newtime) > 1e-8) {
 			model.getMeanTraits(state);
 			graph.addData(newtime, state, force);
 		}
@@ -238,7 +237,7 @@ public class Phase2D extends AbstractView {
 		if (nSpecies > 1) {
 			for (Module mod : species) {
 				int nTraits = mod.getNTraits();
-				if (idx < nTraits)					
+				if (idx < nTraits)
 					return mod.getName() + ": " + mod.getTraitName(idx);
 				idx -= nTraits;
 			}
@@ -341,7 +340,7 @@ public class Phase2D extends AbstractView {
 			menu.add("X-axis trait...", traitXMenu);
 			menu.add("Y-axis trait...", traitYMenu);
 		}
-		super.populateContextMenu(menu);		
+		super.populateContextMenu(menu);
 	}
 
 	@Override
@@ -360,12 +359,14 @@ public class Phase2D extends AbstractView {
 	private ContextMenuCheckBoxItem[] traitYItems;
 
 	/**
-	 * The context menu trigger for selecting traits to display on the horizontal axis.
+	 * The context menu trigger for selecting traits to display on the horizontal
+	 * axis.
 	 */
 	private ContextMenu traitXMenu;
-	
+
 	/**
-	 * The context menu trigger for selecting traits to display on the vertical axis.
+	 * The context menu trigger for selecting traits to display on the vertical
+	 * axis.
 	 */
 	private ContextMenu traitYMenu;
 
@@ -386,7 +387,7 @@ public class Phase2D extends AbstractView {
 
 		/**
 		 * The index of the trait to show on the axis.
-		 */	
+		 */
 		int trait = -1;
 
 		/**
@@ -395,11 +396,12 @@ public class Phase2D extends AbstractView {
 		int axis = -1;
 
 		/**
-		 * Construct a new command to toggle the inclusion of a trait on either one of the phase plane
+		 * Construct a new command to toggle the inclusion of a trait on either one of
+		 * the phase plane
 		 * axis.
 		 * 
 		 * @param trait the index of the trait to show/hide on the axis
-		 * @param axis the index of the axis
+		 * @param axis  the index of the axis
 		 */
 		public TraitCommand(int trait, int axis) {
 			this.trait = trait;
@@ -411,7 +413,7 @@ public class Phase2D extends AbstractView {
 		 */
 		@Override
 		public void execute() {
-			if(axis == X_AXIS)
+			if (axis == X_AXIS)
 				map.setTraits(toggleState(map.getTraitsX(), traitXItems), map.getTraitsY());
 			else
 				map.setTraits(map.getTraitsX(), toggleState(map.getTraitsY(), traitYItems));

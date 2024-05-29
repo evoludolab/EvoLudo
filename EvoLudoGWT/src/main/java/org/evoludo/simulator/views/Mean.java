@@ -50,6 +50,9 @@ import org.evoludo.simulator.modules.Module;
 /**
  * The view to display graphs with time series data. Typically this is used to
  * track the mean fitness or configuration of the current EvoLudo model.
+ * <p>
+ * The view is interactive and allows to shift the time axis and to zoom in and
+ * out. For multiple graphs the zooming and shifting is synchronized.
  *
  * @author Christoph Hauert
  */

@@ -530,7 +530,8 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	private boolean updateScheduled = false;
 
 	/**
-	 * Schedule an update of the view.
+	 * Schedule an update of the view. If an update is already scheduled subsequent
+	 * requests are ignored.
 	 * 
 	 * @param force {@code true} to force the update
 	 * 

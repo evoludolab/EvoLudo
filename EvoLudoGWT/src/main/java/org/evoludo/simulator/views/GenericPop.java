@@ -471,7 +471,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	 * @param links the array of indices of the neighbours
 	 * @param k     the number of links
 	 * @param type  the type of the geometry
-	 * @return
+	 * @return the formatted string
 	 */
 	private static String formatStructureAt(int[] links, int k, Geometry.Type type) {
 		if (type == Geometry.Type.MEANFIELD)

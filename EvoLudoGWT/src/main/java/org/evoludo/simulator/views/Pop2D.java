@@ -78,7 +78,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	@Override
 	public void clear() {
 		super.clear();
-		for( PopGraph2D graph : graphs )
+		for (PopGraph2D graph : graphs)
 			graph.clearGraph();
 	}
 
@@ -86,19 +86,22 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	public void reset(boolean hard) {
 		super.reset(hard);
 		// how to deal with distinct interaction/competition geometries?
-		// - currently two separate graphs are shown one for the interaction and the other for the competition geometry
-		// - alternatively links could be drawn in different colors (would need to revise network layout routines)
-		// - another alternative is to add context menu to toggle between the different link sets (could be difficult if one is a lattice...)
+		// - currently two separate graphs are shown one for the interaction and the
+		// other for the competition geometry
+		// - alternatively links could be drawn in different colors (would need to
+		// revise network layout routines)
+		// - another alternative is to add context menu to toggle between the different
+		// link sets (could be difficult if one is a lattice...)
 		int nGraphs = 0;
 		Geometry geoDE = null;
-		switch( model.getModelType() ) {
+		switch (model.getModelType()) {
 			case PDE:
 				geoDE = ((Model.PDE) model).getGeometry();
 				//$FALL-THROUGH$
 			case ODE:
 			case SDE:
 				nGraphs = 1;
-				if( graphs.size()!=nGraphs ) {
+				if (graphs.size() != nGraphs) {
 					hard = true;
 					destroyGraphs();
 					Module module = engine.getModule();
@@ -114,17 +117,17 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 				break;
 			case IBS:
 				ArrayList<? extends Module> species = engine.getModule().getSpecies();
-				for( Module module : species )
-					nGraphs += Geometry.displayUniqueGeometry(module)?1:2;
+				for (Module module : species)
+					nGraphs += Geometry.displayUniqueGeometry(module) ? 1 : 2;
 
-				if( graphs.size()!=nGraphs ) {
+				if (graphs.size() != nGraphs) {
 					hard = true;
 					destroyGraphs();
-					for( Module module : species ) {
+					for (Module module : species) {
 						PopGraph2D graph = new PopGraph2D(this, module);
 						wrapper.add(graph);
 						graphs.add(graph);
-						if( !Geometry.displayUniqueGeometry(module) ) {
+						if (!Geometry.displayUniqueGeometry(module)) {
 							graph = new PopGraph2D(this, module);
 							wrapper.add(graph);
 							graphs.add(graph);
@@ -133,17 +136,18 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 						}
 					}
 					gRows = species.size();
-					if( gRows*gCols==2 ) {
+					if (gRows * gCols == 2) {
 						// always arrange horizontally if only two graphs
 						gRows = 1;
 						gCols = 2;
 					}
-					int width = 100/gCols;
-					int height = 100/gRows;
-					for( PopGraph2D graph : graphs )
-						graph.setSize(width+"%", height+"%");
+					int width = 100 / gCols;
+					int height = 100 / gRows;
+					for (PopGraph2D graph : graphs)
+						graph.setSize(width + "%", height + "%");
 				}
-				// even if nGraphs did not change, the geometries associated with the graphs still need to be updated
+				// even if nGraphs did not change, the geometries associated with the graphs
+				// still need to be updated
 				boolean inter = true;
 				for (PopGraph2D graph : graphs) {
 					Module module = graph.getModule();
@@ -157,15 +161,15 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 			default:
 		}
 
-		for( PopGraph2D graph : graphs ) {
+		for (PopGraph2D graph : graphs) {
 			Geometry geometry = graph.getGeometry();
-			if( geometry==null ) {
+			if (geometry == null) {
 				graph.reset();
 				continue;
 			}
 			Module module = graph.getModule();
 			PopGraph2D.GraphStyle style = graph.getStyle();
-			if( geometry.getType() == Geometry.Type.LINEAR ) {
+			if (geometry.getType() == Geometry.Type.LINEAR) {
 				// frame, ticks, labels needed
 				style.xLabel = "nodes";
 				style.showXLabel = true;
@@ -175,7 +179,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 				style.yLabel = "time";
 				double rFreq = engine.getReportInterval();
 				// if report frequency did not change, we're done
-				if( Math.abs(-style.yIncr - rFreq)>1e-8 ) {
+				if (Math.abs(-style.yIncr - rFreq) > 1e-8) {
 					style.yIncr = -rFreq;
 					hard = true;
 				}
@@ -185,8 +189,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 				style.showXTicks = true;
 				style.showYTicks = true;
 				style.showYLevels = true;
-			}
-			else {
+			} else {
 				// border is all we want
 				style.showXLabel = false;
 				style.showYLabel = false;
@@ -195,25 +198,26 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 				style.showXTicks = false;
 				style.showYTicks = false;
 			}
-//			style.label = geometry.name;
-//			style.showLabel = !style.label.isEmpty();
+			// style.label = geometry.name;
+			// style.showLabel = !style.label.isEmpty();
 			style.percentY = false;
 			style.showXLevels = false;
 
 			ColorMap<String> cMap = null;
-			switch( type ) {
+			switch (type) {
 				case STRATEGY:
-					if( model.isContinuous() ) {
+					if (model.isContinuous()) {
 						ColorModelType cmt = engine.getColorModelType();
 						int nTraits = module.getNTraits();
-						if( cmt==ColorModelType.DISTANCE ) {
-							cMap = new ColorMapCSS.Gradient1D(new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
+						if (cmt == ColorModelType.DISTANCE) {
+							cMap = new ColorMapCSS.Gradient1D(
+									new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
 							break;
 						}
-						switch( nTraits ) {
+						switch (nTraits) {
 							case 1:
 								// set hue range: min = red, max = blue
-								cMap = new ColorMapCSS.Hue(0.0, 2.0/3.0, 500);
+								cMap = new ColorMapCSS.Hue(0.0, 2.0 / 3.0, 500);
 								break;
 							case 2:
 								Color[] traitcolors = module.getTraitColors();
@@ -225,20 +229,17 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 								cMap = new ColorMapCSS.GradientND(primaries);
 								break;
 						}
-					}
-					else {
-						if( model.getModelType() == Model.Type.PDE ) {
+					} else {
+						if (model.getModelType() == Model.Type.PDE) {
 							int nTraits = module.getNTraits();
 							Color[] colors = module.getTraitColors();
-							int dep = ((HasDE)module).getDependent();
+							int dep = ((HasDE) module).getDependent();
 							if (nTraits == 2 && dep >= 0) {
 								int trait = (dep + 1) % nTraits;
 								cMap = new ColorMapCSS.Gradient1D(colors[dep], colors[trait], trait, 100);
-							}
-							else
+							} else
 								cMap = new ColorMapCSS.Gradient2D(colors, dep, 100);
-						}
-						else
+						} else
 							cMap = new ColorMapCSS.Index(module.getTraitColors(), 220);
 					}
 					break;
@@ -248,7 +249,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 									ColorMap.addAlpha(Color.YELLOW, 220), ColorMap.addAlpha(Color.RED, 220) },
 							500);
 					cMap = cMap1D;
-//					cMap1D.setRange(pop.getMinFitness(), pop.getMaxFitness());
+					// cMap1D.setRange(pop.getMinFitness(), pop.getMaxFitness());
 					int tag = graph.getModule().getID();
 					cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
 					if (model.getModelType() == Model.Type.IBS) {
@@ -257,7 +258,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 							// mark homogeneous fitness values by pale color
 							Color[] pure = module.getTraitColors();
 							int nMono = module.getNTraits();
-							for( int n=0; n<nMono; n++ ) {
+							for (int n = 0; n < nMono; n++) {
 								// cast is save because pop is Discrete
 								org.evoludo.simulator.models.Model.Discrete dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
 								double mono = dmodel.getMonoScore(module.getID(), n);
@@ -270,12 +271,14 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 							}
 							break;
 						}
-						if( module instanceof Continuous ) {
+						if (module instanceof Continuous) {
 							// cast is save because pop is Continuous
 							org.evoludo.simulator.models.Model.Continuous cmodel = (org.evoludo.simulator.models.Model.Continuous) model;
-// hardcoded colors for min/max mono scores
-							cMap1D.setColor(map2fit.map(cmodel.getMinMonoScore(module.getID())), ColorMap.addAlpha(Color.BLUE.darker(), 220));
-							cMap1D.setColor(map2fit.map(cmodel.getMaxMonoScore(module.getID())), ColorMap.addAlpha(Color.BLUE.brighter(), 220));
+							// hardcoded colors for min/max mono scores
+							cMap1D.setColor(map2fit.map(cmodel.getMinMonoScore(module.getID())),
+									ColorMap.addAlpha(Color.BLUE.darker(), 220));
+							cMap1D.setColor(map2fit.map(cmodel.getMaxMonoScore(module.getID())),
+									ColorMap.addAlpha(Color.BLUE.brighter(), 220));
 							break;
 						}
 						// unknown type of population - no fitness values marked
@@ -284,10 +287,10 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 				default:
 					break;
 			}
-			if( cMap==null )
+			if (cMap == null)
 				throw new Error("MVPop2D: ColorMap not initialized - needs attention!");
 			graph.setColorMap(module.processColorMap(cMap));
-			if( hard )
+			if (hard)
 				graph.reset();
 		}
 		update(hard);
