@@ -154,6 +154,7 @@
             </tag>
           </tags>
           <excludePackageNames>org.evoludo.simulator.run</excludePackageNames>
+          <skippedModules>EvoLudoJRE</skippedModules>
           <links>
             <link>https://docs.oracle.com/en/java/javase/22/docs/api/</link>
             <link>https://www.gwtproject.org/javadoc/latest/</link>
@@ -163,8 +164,8 @@
             <!-- <additionalJOption>- -frames</additionalJOption> -->
             <additionalJOption>--allow-script-in-comments</additionalJOption>
             <!-- maximum number of warnings reported by maven seems to be 999; 1000 is treated as 0 -->
-            <!-- <additionalJOption>-Xmaxwarns</additionalJOption>
-            <additionalJOption>999</additionalJOption> -->
+            <additionalJOption>-Xmaxwarns</additionalJOption>
+            <additionalJOption>999</additionalJOption>
           </additionalJOptions>
         </configuration>
         <executions>

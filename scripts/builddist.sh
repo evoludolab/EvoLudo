@@ -27,9 +27,9 @@ if [ $passed -ne 0 ]
 fi
 
 # build API documentation - places javadoc in docs/api
-# note: the compile goal is necessary to resolve cross-module dependencies of the javadoc
+# note: some say compile goal is necessary to resolve cross-module dependencies of the javadoc but seems ok now
 echo "Building public API documentation..." ;
-mvn -P public compile javadoc:aggregate ;
+mvn -P public,-private javadoc:aggregate ;
 
 passed=$? ;
 
