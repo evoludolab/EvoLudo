@@ -73,7 +73,7 @@ public class Network3DGWT extends Network3D {
 	 * Create a new network in 3D for the given engine and geometry with a layouting
 	 * process optimzed for GWT.
 	 * 
-	 * @param engine   the pacemeaker for running the model
+	 * @param engine   the pacemaker for running the model
 	 * @param geometry the structure of the population
 	 */
 	public Network3DGWT(EvoLudo engine, Geometry geometry) {

@@ -54,30 +54,70 @@ import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.Formatter;
 
 /**
- *
+ * Simulation of the two player, two trait model.
+ * 
  * @author Christoph Hauert
+ * 
+ * @see "Ohtsuki, H., Hauert, C., Lieberman, E., & Nowak, M. A. (2006).
+ *      <em>A simple rule for the evolution of cooperation on graphs and social
+ *      networks.</em> Nature, 441(7092), 502-505.
+ *      <a href='http://dx.doi.org/10.1038/nature04605'>doi:
+ *      10.1038/nature04605</a>"
  */
 public class simTBT extends TBT implements ChangeListener {
 
-	// additional parameters
+	/**
+	 * The flag to indicate whether to show progress.
+	 */
 	boolean progress = false;
+
+	/**
+	 * The number of runs.
+	 */
 	int nRuns = 1;
+
+	/**
+	 * The scan parameters for the S-T-plane.
+	 */
 	double[] scanST;
+
+	/**
+	 * The scan parameters for the donation game.
+	 */
 	double[] scanDG;
+
+	/**
+	 * The two player, two trait model.
+	 */
 	org.evoludo.simulator.models.IBS ibs;
 
-	// snapshots
+	/**
+	 * The interval for saving snapshots.
+	 */
 	long snapinterval = 0;
+
+	/**
+	 * The prefix for snapshot filenames.
+	 */
 	String snapprefix = "";
+
+	/**
+	 * The output stream. Defaults to {@code System.out}.
+	 */
 	PrintStream out;
 
+	/**
+	 * Create a new simulation to investigate the two player, two trait model.
+	 * 
+	 * @param engine the pacemaker for running the model
+	 */
 	public simTBT(EvoLudo engine) {
 		super(engine);
 	}
 
 	@Override
 	public void run() {
-		if(model.getModelType() != Model.Type.IBS) {
+		if (model.getModelType() != Model.Type.IBS) {
 			System.err.printf("ERROR: IBS model expected!");
 			return;
 		}
@@ -235,15 +275,16 @@ public class simTBT extends TBT implements ChangeListener {
 				saveSnapshot(AbstractGraph.SNAPSHOT_PNG);
 		}
 
-//		System.out.print("# long-term average:      ");
-//		double[] avg = getStrategyTypeMean(); 
-//		for( int n=0; n<nTraits; n++ )
-//			System.out.print(ChHFormatter.formatFix(avg[n]/nPopulation, 6)+"\t");
-//		System.out.println("");
-//		System.out.println("# generations @ end: "+ChHFormatter.formatSci(generation,6)); 
-//		dumpEnd(); 
-//		engine.exportState();
-//		System.out.flush();
+		// System.out.print("# long-term average: ");
+		// double[] avg = getStrategyTypeMean();
+		// for( int n=0; n<nTraits; n++ )
+		// System.out.print(ChHFormatter.formatFix(avg[n]/nPopulation, 6)+"\t");
+		// System.out.println("");
+		// System.out.println("# generations @ end:
+		// "+ChHFormatter.formatSci(generation,6));
+		// dumpEnd();
+		// engine.exportState();
+		// System.out.flush();
 
 		String msg = "# average and sdev frequencies\n# ";
 		for (int n = 0; n < nTraits; n++)
@@ -258,6 +299,9 @@ public class simTBT extends TBT implements ChangeListener {
 		engine.exportState();
 	}
 
+	/*
+	 * Temporary variables for fixation probabilities and absorption times.
+	 */
 	double[] mean, var, state, meanmean, meanvar;
 	double prevsample;
 
@@ -287,9 +331,11 @@ public class simTBT extends TBT implements ChangeListener {
 		}
 		// absorbing state reached
 		model.getMeanTraits(getID(), state);
-//output.println("stop - before: generations="+generations+", prevsample="+prevsample+", state="+ChHFormatter.format(state,4)+
-//	", mean="+ChHFormatter.format(mean,4)+", var="+ChHFormatter.format(var,4));
-//output.println("test: mean[0].old="+mean[0]+" -> "+((mean[0]*(prevsample-relaxation)+state[0]*(generations-(prevsample-relaxation)))/generations));
+		// output.println("stop - before: generations="+generations+",
+		// prevsample="+prevsample+", state="+ChHFormatter.format(state,4)+
+		// ", mean="+ChHFormatter.format(mean,4)+", var="+ChHFormatter.format(var,4));
+		// output.println("test: mean[0].old="+mean[0]+" ->
+		// "+((mean[0]*(prevsample-relaxation)+state[0]*(generations-(prevsample-relaxation)))/generations));
 		// calculate weighted mean and sdev - see wikipedia
 		double nGenerations = engine.getNGenerations();
 		double nRelaxation = engine.getNRelaxation();
@@ -300,12 +346,13 @@ public class simTBT extends TBT implements ChangeListener {
 			mean[n] += wn * delta;
 			var[n] += w * delta * (state[n] - mean[n]);
 		}
-//output.println("stop - after: mean="+ChHFormatter.format(mean,4)+", var="+ChHFormatter.format(var,4));
+		// output.println("stop - after: mean="+ChHFormatter.format(mean,4)+",
+		// var="+ChHFormatter.format(var,4));
 		prevsample = nGenerations + nRelaxation;
 	}
 
-	/*
-	 * command line parsing stuff
+	/**
+	 * Command line option to show the simulation progress.
 	 */
 	public final CLOption cloProgress = new CLOption("progress", EvoLudo.catSimulation,
 			"--progress      make noise about progress", new CLODelegate() {
@@ -315,6 +362,10 @@ public class simTBT extends TBT implements ChangeListener {
 					return true;
 				}
 			});
+
+	/**
+	 * Command line option to set the interval for taking snapshots.
+	 */
 	public final CLOption cloSnapInterval = new CLOption("snapinterval", "0", EvoLudo.catSimulation,
 			"--snapinterval <n>  save snapshot every n generations (-1 only at end)", new CLODelegate() {
 				@Override
@@ -323,6 +374,10 @@ public class simTBT extends TBT implements ChangeListener {
 					return true;
 				}
 			});
+
+	/**
+	 * Command line option to set the prefix for snapshot filenames.
+	 */
 	public final CLOption cloSnapPrefix = new CLOption("snapprefix", "", EvoLudo.catSimulation,
 			"--snapprefix <s>  set prefix for snapshot filename", new CLODelegate() {
 				@Override
@@ -331,6 +386,10 @@ public class simTBT extends TBT implements ChangeListener {
 					return true;
 				}
 			});
+
+	/**
+	 * Command line option to set the number of runs.
+	 */
 	public final CLOption cloRuns = new CLOption("runs", "1", EvoLudo.catSimulation,
 			"--runs <r>      number of repetitions", new CLODelegate() {
 				@Override
@@ -344,6 +403,10 @@ public class simTBT extends TBT implements ChangeListener {
 					output.println("# runs:                 " + nRuns);
 				}
 			});
+
+	/**
+	 * Command line option to scan the S-T-plane.
+	 */
 	public final CLOption cloScanST = new CLOption("scan", "-1,2,0.05", EvoLudo.catSimulation,
 			"--scan <start,end,incr>  scan S-T-plane", new CLODelegate() {
 				@Override
@@ -360,6 +423,10 @@ public class simTBT extends TBT implements ChangeListener {
 						output.println("# scan S-T-plane:       " + Formatter.format(scanST, 4));
 				}
 			});
+
+	/**
+	 * Command line option to scan the donation game.
+	 */
 	public final CLOption cloScanDG = new CLOption("scanDG", "0,0.2,0.02", EvoLudo.catSimulation,
 			"--scanDG <start,end,incr>  scan cost-to-benefit ratios in the donation game", new CLODelegate() {
 				@Override
@@ -390,6 +457,13 @@ public class simTBT extends TBT implements ChangeListener {
 		super.collectCLO(parser);
 	}
 
+	/**
+	 * Save snapshot of current configuration.
+	 * 
+	 * @param format the format of the snapshot
+	 * 
+	 * @see MVPop2D
+	 */
 	public void saveSnapshot(int format) {
 		if (format == AbstractGraph.SNAPSHOT_NONE)
 			return; // do not waste our time
@@ -414,6 +488,12 @@ public class simTBT extends TBT implements ChangeListener {
 		}
 	}
 
+	/**
+	 * Open file for exporting the snapshot.
+	 * 
+	 * @param ext the file extension
+	 * @return the file for the snapshot
+	 */
 	protected File openSnapshot(String ext) {
 		String pre = (snapprefix.length() > 0 ? snapprefix
 				: getKey() + "R" + Formatter.format(getPayoff(COOPERATE, COOPERATE), 2) + "S"

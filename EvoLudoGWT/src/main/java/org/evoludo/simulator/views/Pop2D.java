@@ -68,7 +68,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	 * Construct a new view to display the configuration of the current state of the
 	 * EvoLudo model in 2D.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 * @param type   the type of data to display
 	 */
 	public Pop2D(EvoLudoGWT engine, Model.Data type) {

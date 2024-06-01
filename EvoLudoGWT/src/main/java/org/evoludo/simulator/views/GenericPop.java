@@ -67,7 +67,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	 * Construct a new view to display the configuration of the current state of the
 	 * EvoLudo model in 2D or 3D.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 * @param type   the type of data to display
 	 */
 	@SuppressWarnings("unchecked")

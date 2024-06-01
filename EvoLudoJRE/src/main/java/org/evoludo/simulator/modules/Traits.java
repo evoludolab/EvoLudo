@@ -55,7 +55,19 @@ import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.Formatter;
 
 /**
+ * Evolutionary dynamics in populations with {@code d} strategic traits.
  *
+ * @evoludo.impl This module requires external libraries for modelling
+ *               stochastic differential equations. More specifically, for
+ *               solving linear algebra problems and eigenvalues, in particular,
+ *               for {@code d>3} strategies, the <a href=
+ *               "https://javadoc.io/doc/com.googlecode.matrix-toolkits-java/mtj/latest/index.html">
+ *               matrix toolkit for java</a> is used. This dependency pulls in
+ *               all the native
+ *               <a href="https://github.com/fommil/netlib-java">netlib</a>
+ *               libraries, weighing in at a total of ~40MB (or ~15MB in final
+ *               .jar).
+ * 
  * @author Christoph Hauert
  */
 public class Traits extends Discrete implements Pairs,
@@ -205,11 +217,13 @@ public class Traits extends Discrete implements Pairs,
 	 * <dt>constant
 	 * <dd>constant payoff matrix of all {@code 1.0}.
 	 * <dt>unity
-	 * <dd>identity matrix with all {@code 1.0} on diagonal and {@code 0.0} otherwise.
+	 * <dd>identity matrix with all {@code 1.0} on diagonal and {@code 0.0}
+	 * otherwise.
 	 * <dt>random
 	 * <dd>random payoffs in {@code (-1.0, 1.0)}.
 	 * <dt>matrix
-	 * <dd>if matrix dimensions provided through {@link #setPayoffs(double[][])} are valid nothing happens but if not this defaults to random.
+	 * <dd>if matrix dimensions provided through {@link #setPayoffs(double[][])} are
+	 * valid nothing happens but if not this defaults to random.
 	 * </dl>
 	 */
 	public void initPayoffs() {

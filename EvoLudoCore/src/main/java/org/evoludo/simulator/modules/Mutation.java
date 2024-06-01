@@ -9,6 +9,12 @@ import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
 
+/**
+ * The abstract superclass to implement mutations in IBS models with discrete or
+ * continuous traits.
+ * 
+ * @author Christoph Hauert
+ */
 public abstract class Mutation {
 
 	/**
@@ -100,8 +106,16 @@ public abstract class Mutation {
 		throw new UnsupportedOperationException("Not implemented");
 	}
 
+	/**
+	 * The class to implement mutations in discrete IBS models.
+	 */
 	public static class Discrete extends Mutation {
 
+		/**
+		 * Construct mutator for discrete traits.
+		 * 
+		 * @param module the module using this mutation
+		 */
 		public Discrete(Module module) {
 			super(module);
 			// add all keys by default
@@ -435,8 +449,16 @@ public abstract class Mutation {
 		}
 	}
 
+	/**
+	 * The class to implement mutations in continuous IBS models.
+	 */
 	public static class Continuous extends Mutation {
 
+		/**
+		 * Construct mutator for continuous traits.
+		 * 
+		 * @param module the module using this mutation
+		 */
 		public Continuous(Module module) {
 			super(module);
 			// add all keys by default

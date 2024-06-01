@@ -49,7 +49,7 @@ public class PDESupervisorGWT extends PDESupervisor {
 	 * Creates a new supervisor to manage the PDE calculations of model
 	 * <strong>charge</strong> with scheduling in GWT.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 * @param charge the model to supervise
 	 */
 	public PDESupervisorGWT(EvoLudo engine, Model.PDE charge) {

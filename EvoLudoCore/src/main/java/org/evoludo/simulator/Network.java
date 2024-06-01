@@ -244,7 +244,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	/**
 	 * Create a new network for the given engine and geometry.
 	 * 
-	 * @param engine   the pacemeaker for running the model
+	 * @param engine   the pacemaker for running the model
 	 * @param geometry the structure of the population
 	 */
 	public Network(EvoLudo engine, Geometry geometry) {

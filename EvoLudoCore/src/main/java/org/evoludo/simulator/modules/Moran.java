@@ -99,7 +99,7 @@ public class Moran extends Discrete implements Module.Static,
 	/**
 	 * Create a new instance of the module for the Moran process.
 	 * 
-	 * @param engine the manager of modules and pacemeaker for running the model
+	 * @param engine the manager of modules and pacemaker for running the model
 	 */
 	public Moran(EvoLudo engine) {
 		super(engine);
@@ -321,8 +321,8 @@ public class Moran extends Discrete implements Module.Static,
 	// return (1.0-ChHMath.pow(ir, m))/(1.0-ChHMath.pow(ir, n));
 	// }
 
-	/*
-	 * command line parsing stuff
+	/**
+	 * Command line option to set the fitness values for residents and mutants.
 	 */
 	public final CLOption cloFitness = new CLOption("fitness", "1,2", EvoLudo.catModule,
 			"--fitness <r,m>  fitness of resident, mutant", new CLODelegate() {

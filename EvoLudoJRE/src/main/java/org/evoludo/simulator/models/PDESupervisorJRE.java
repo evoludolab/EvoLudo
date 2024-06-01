@@ -52,7 +52,7 @@ public class PDESupervisorJRE extends PDESupervisor {
 	 * Creates a new supervisor to manage the PDE calculations of model
 	 * <strong>charge</strong> with multiple threads in JRE.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 * @param charge the model to supervise
 	 */
 	public PDESupervisorJRE(EvoLudo engine, Model.PDE charge) {

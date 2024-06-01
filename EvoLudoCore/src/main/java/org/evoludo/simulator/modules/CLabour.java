@@ -68,7 +68,7 @@ public class CLabour extends Continuous implements MultiPairs, HasIBS, HasPop2D.
 	/**
 	 * Constructs a new EvoLudo module for the evolution of two behavioural traits.
 	 * 
-	 * @param engine the manager of modules and pacemeaker for running the model
+	 * @param engine the manager of modules and pacemaker for running the model
 	 */
 	public CLabour(EvoLudo engine) {
 		super(engine);

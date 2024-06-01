@@ -130,7 +130,7 @@ public class IBSDPopulation extends IBSPopulation {
 	/**
 	 * Creates a population of individuals with discrete traits for IBS simulations.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 */
 	public IBSDPopulation(EvoLudo engine) {
 		super(engine);
@@ -452,6 +452,13 @@ public class IBSDPopulation extends IBSPopulation {
 	 * @see IBSDPopulation#optimizeMoran
 	 */
 	static class link {
+
+		/**
+		 * Construct a new link.
+		 */
+		public link() {
+		}
+
 		/**
 		 * The index of the individual at the tail end of the link.
 		 */
@@ -1669,6 +1676,13 @@ public class IBSDPopulation extends IBSPopulation {
 		strategiesTypeCount[newtype]++;
 	}
 
+	/**
+	 * Gets the score of individuals in a population that is monomorphic in trait
+	 * {@code type}.
+	 * 
+	 * @param type the trait type
+	 * @return the monomorphic score
+	 */
 	public double getMonoScore(int type) {
 		// for accumulated payoffs this makes only sense with adjustScores, without
 		// VACANT and for regular interaction geometries otherwise individuals may
@@ -1720,6 +1734,13 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 	}
 
+	/**
+	 * Set the initial trait frequencies in the population. Switches the
+	 * initialization type to {@link Init.Type#FREQUENCY}.
+	 * 
+	 * @param init the initial traits
+	 * @return {@code true} if the initialization was successful
+	 */
 	public boolean setInitialTraits(double[] init) {
 		if (init == null || init.length != nTraits)
 			return false;
@@ -2005,6 +2026,14 @@ public class IBSDPopulation extends IBSPopulation {
 		initMono(monoType, monoFreq);
 	}
 
+	/**
+	 * Helper method for initializing monomorphic populations. If the module admits
+	 * vacant sites the frequency of individuals with the monomorphic trait is set
+	 * to {@code monoFreq}.
+	 * 
+	 * @param monoType the monomorphic trait
+	 * @param monoFreq the frequency of the monomorphic trait
+	 */
 	private void initMono(int monoType, double monoFreq) {
 		if (monoFreq > 1.0 - 1e-8) {
 			Arrays.fill(strategies, monoType);

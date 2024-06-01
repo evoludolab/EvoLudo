@@ -84,13 +84,13 @@ public class MVPop2D extends MVAbstract implements PopListener {
 
 	public Data type = Data.VOID;
 	protected ColorMap<Color> colorMap;
-	
-	//<jf
-	private final JCheckBoxMenuItem toggleDebugCheckBox = new JCheckBoxMenuItem("Enable debugging",false);
+
+	// <jf
+	private final JCheckBoxMenuItem toggleDebugCheckBox = new JCheckBoxMenuItem("Enable debugging", false);
 	private final JMenuItem debugUpdateAtItem = new JMenuItem("Update @ here");
-	
-	protected int CMNode;   //the graph node indicated by the mouse when showCustomMenu
-	//jf>
+
+	protected int CMNode; // the graph node indicated by the mouse when showCustomMenu
+	// jf>
 
 	public MVPop2D(EvoLudoLab lab, Data type) {
 		super(lab);
@@ -102,15 +102,15 @@ public class MVPop2D extends MVAbstract implements PopListener {
 
 	@Override
 	public String getName() {
-		switch( type ) {
+		switch (type) {
 			case DSTRAT:
-				return "Strategy "+DIM+"- Structure";
+				return "Strategy " + DIM + "- Structure";
 			case CSTRAT:
-				return "Trait "+DIM+"- Structure";
+				return "Trait " + DIM + "- Structure";
 			case FITNESS:
-				return "Fitness "+DIM+"- Structure";
+				return "Fitness " + DIM + "- Structure";
 			case TAG:
-				return "Tags "+DIM+"- Structure";
+				return "Tags " + DIM + "- Structure";
 			default:
 				return "Unknown...";
 		}
@@ -118,10 +118,11 @@ public class MVPop2D extends MVAbstract implements PopListener {
 
 	@Override
 	public void reset(boolean clear) {
-// at one point (likely in the distant past) this view lost its ability to display multiple graphs...
-		if( graphs.size()!=1 ) {
+		// at one point (likely in the distant past) this view lost its ability to
+		// display multiple graphs...
+		if (graphs.size() != 1) {
 			graphs.clear();
-removeAll();
+			removeAll();
 			int aTag = 0;
 			PopGraph2D graph = new PopGraph2D(this, module.getGeometry(), aTag);
 			GraphAxis axis = graph.getXAxis();
@@ -131,20 +132,21 @@ removeAll();
 			axis.label = "time";
 			axis.showLabel = true;
 			axis.max = 0.0;
-			axis.min = 10.0;	// this is just to achieve better layout
+			axis.min = 10.0; // this is just to achieve better layout
 			axis.step = -engine.getReportInterval();
 			axis.majorTicks = 4;
 			axis.minorTicks = 1;
 			axis.formatter = new DecimalFormat("0.#");
 			axis.grid = 0;
-			JScrollPane scroll = new JScrollPane(graph, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+			JScrollPane scroll = new JScrollPane(graph, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
+					ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 			scroll.getViewport().setOpaque(false);
 			scroll.setOpaque(false);
 			scroll.setBorder(null);
 			add(scroll);
 			graphs.add(graph);
 		}
-		for( Iterator<AbstractGraph> i = graphs.iterator(); i.hasNext(); ) {
+		for (Iterator<AbstractGraph> i = graphs.iterator(); i.hasNext();) {
 			GraphAxis axis = i.next().getYAxis();
 			axis.max = 0.0;
 			axis.step = -engine.getReportInterval();
@@ -157,30 +159,30 @@ removeAll();
 	public boolean verifyYAxis(GraphAxis y, int tag) {
 		boolean axisShown = y.enabled;
 		y.enabled = graphs.get(tag).hasHistory();
-		return (axisShown!=y.enabled);
+		return (axisShown != y.enabled);
 	}
 
 	@Override
 	public void initColor(int tag) {
 		Color[] tColors = module.getTraitColors();
-		switch( type ) {
+		switch (type) {
 			case DSTRAT:
-				if( engine.getModel().getModelType() == Model.Type.PDE ) {
-					int dep = ((HasDE)module).getDependent();
-					switch( module.getNTraits() ) {
+				if (engine.getModel().getModelType() == Model.Type.PDE) {
+					int dep = ((HasDE) module).getDependent();
+					switch (module.getNTraits()) {
 						case 1:
 							colorMap = new ColorMapJRE.Gradient1D(tColors, 500);
 							break;
 						case 2:
 							if (dep >= 0) {
-								int trait = (dep+1)%2;
+								int trait = (dep + 1) % 2;
 								colorMap = new ColorMapJRE.Gradient1D(tColors[dep], tColors[trait], trait, 500);
 								break;
 							}
 							colorMap = new ColorMapJRE.Gradient2D(tColors, 100);
 							break;
 						case 3:
-							if( dep>=0 ) {
+							if (dep >= 0) {
 								colorMap = new ColorMapJRE.Gradient2D(tColors, dep, 100);
 								break;
 							}
@@ -189,16 +191,15 @@ removeAll();
 							colorMap = new ColorMapJRE.GradientND(tColors, dep);
 							break;
 					}
-				}
-				else
+				} else
 					colorMap = new ColorMapJRE.Index(tColors);
 				break;
 
 			case CSTRAT:
-				switch( module.getNTraits() ) {
+				switch (module.getNTraits()) {
 					case 1:
 						// set hue range: min = red, max = blue
-						colorMap = new ColorMapJRE.Hue(0.0, 2.0/3.0, 500);
+						colorMap = new ColorMapJRE.Hue(0.0, 2.0 / 3.0, 500);
 						break;
 					case 2:
 						colorMap = new ColorMapJRE.Gradient2D(tColors, 100);
@@ -212,30 +213,30 @@ removeAll();
 				break;
 
 			case FITNESS:
-				ColorMap.Gradient1D<Color> cMap1D = new ColorMapJRE.Gradient1D(new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
+				ColorMap.Gradient1D<Color> cMap1D = new ColorMapJRE.Gradient1D(
+						new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
 				colorMap = cMap1D;
 				// cMap1D.setRange(module.getMinFitness(), module.getMaxFitness());
 				Model model = engine.getModel();
 				cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
-//DEBUG
-				if( engine.getModel().getModelType() == Model.Type.IBS ) {
+				// DEBUG
+				if (engine.getModel().getModelType() == Model.Type.IBS) {
 					Map2Fitness map2fit = module.getMapToFitness();
-					if( model.isContinuous() ) {
+					if (model.isContinuous()) {
 						// cast is save because pop is Continuous
 						org.evoludo.simulator.models.Model.Continuous cmodel = (org.evoludo.simulator.models.Model.Continuous) model;
-//hardcoded colors for min/max mono scores
+						// hardcoded colors for min/max mono scores
 						cMap1D.setColor(map2fit.map(cmodel.getMinMonoScore(tag)), Color.BLUE.darker());
 						cMap1D.setColor(map2fit.map(cmodel.getMaxMonoScore(tag)), Color.BLUE.brighter());
-					}
-					else {
+					} else {
 						// cast is save because pop is Discrete
 						org.evoludo.simulator.models.Model.Discrete dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
 						// mark homogeneous fitness values by pale color
 						int nMono = module.getNTraits();
-						for( int n=0; n<nMono; n++ ) 
-							cMap1D.setColor(map2fit.map(dmodel.getMonoScore(tag, n)), 
-									new Color(Math.max(tColors[n].getRed(), 127), 
-											Math.max(tColors[n].getGreen(), 127), 
+						for (int n = 0; n < nMono; n++)
+							cMap1D.setColor(map2fit.map(dmodel.getMonoScore(tag, n)),
+									new Color(Math.max(tColors[n].getRed(), 127),
+											Math.max(tColors[n].getGreen(), 127),
 											Math.max(tColors[n].getBlue(), 127)));
 					}
 				}
@@ -252,24 +253,25 @@ removeAll();
 
 	@Override
 	public void initStyle(GraphStyle style, AbstractGraph owner, int tag) {
-		// this method is called when creating snapshots for simulations but 
+		// this method is called when creating snapshots for simulations but
 		// simulations have no GUI (i.e. lab==null)
-		if( lab==null ) {
+		if (lab == null) {
 			// opportunity to set default styles for snapshots
 			return;
 		}
 		super.initStyle(style, owner, tag);
-		((PopGraph2D)owner).setAnimateLayout(lab.doAnimateLayout());
+		((PopGraph2D) owner).setAnimateLayout(lab.doAnimateLayout());
 	}
 
 	// implement GraphListener - mostly done in MVAbstract
 	@Override
 	public void initCustomMenu(JPopupMenu menu, AbstractGraph owner, int tag) {
 		super.initCustomMenu(menu, owner, tag);
-//		initCMSetLocalDynamics(menu, owner);
-//<jf		
+		// initCMSetLocalDynamics(menu, owner);
+		// <jf
 		// check if findNodeAt is implemented by passing the most unlikely coordinates
-		if (owner.findNodeAt(new Point(-Integer.MAX_VALUE, -Integer.MAX_VALUE))!=AbstractGraph.FINDNODEAT_UNIMPLEMENTED){
+		if (owner.findNodeAt(
+				new Point(-Integer.MAX_VALUE, -Integer.MAX_VALUE)) != AbstractGraph.FINDNODEAT_UNIMPLEMENTED) {
 			toggleDebugCheckBox.setActionCommand(CUSTOM_MENU_TOGGLE_DEBUG);
 			toggleDebugCheckBox.addActionListener(this);
 			toggleDebugCheckBox.setFont(owner.style.menuFont);
@@ -285,51 +287,52 @@ removeAll();
 
 	@Override
 	public void resetCustomMenu(JPopupMenu menu, AbstractGraph owner, int tag) {
-		super.resetCustomMenu(menu,owner,tag);
-		
+		super.resetCustomMenu(menu, owner, tag);
+
 		toggleDebugCheckBox.setState(false);
 		debugUpdateAtItem.setVisible(toggleDebugCheckBox.getState());
 	}
 
-//NOTE: JRE is getting in disrepair... review/reimplement?
-//	@Override
-//	public void showCustomMenu(JPopupMenu menu, Point loc, AbstractGraph owner, int tag) {
-//		CMNode = owner.findNodeAt(loc);
-//		if (CMNode>=0){
-//			debugUpdateAtItem.setText("Update node @ "+CMNode);
-//			debugUpdateAtItem.setEnabled(true);
-//		}
-//		else{
-//			debugUpdateAtItem.setText("Update node @ -");
-//			debugUpdateAtItem.setEnabled(false);
-//		}
-//		super.showCustomMenu(menu,loc,owner,tag);
-//	}
+	// NOTE: JRE is getting in disrepair... review/reimplement?
+	// @Override
+	// public void showCustomMenu(JPopupMenu menu, Point loc, AbstractGraph owner,
+	// int tag) {
+	// CMNode = owner.findNodeAt(loc);
+	// if (CMNode>=0){
+	// debugUpdateAtItem.setText("Update node @ "+CMNode);
+	// debugUpdateAtItem.setEnabled(true);
+	// }
+	// else{
+	// debugUpdateAtItem.setText("Update node @ -");
+	// debugUpdateAtItem.setEnabled(false);
+	// }
+	// super.showCustomMenu(menu,loc,owner,tag);
+	// }
 
-//	@Override
-//	public void actionPerformed(ActionEvent e) {
-//		String cmd = e.getActionCommand();
-//		if( cmd.equals(CUSTOM_MENU_TOGGLE_DEBUG) ) {
-//			debugUpdateAtItem.setVisible(toggleDebugCheckBox.getState());
-//			return;
-//		}
-//		if( cmd.equals(CUSTOM_MENU_DEBUG_UPDATE_AT) ) {
-//			if (CMNode >= 0) debugUpdatePopulationAt(CMNode);
-//			return;
-//		}
-//		super.actionPerformed(e);
-//	}
+	// @Override
+	// public void actionPerformed(ActionEvent e) {
+	// String cmd = e.getActionCommand();
+	// if( cmd.equals(CUSTOM_MENU_TOGGLE_DEBUG) ) {
+	// debugUpdateAtItem.setVisible(toggleDebugCheckBox.getState());
+	// return;
+	// }
+	// if( cmd.equals(CUSTOM_MENU_DEBUG_UPDATE_AT) ) {
+	// if (CMNode >= 0) debugUpdatePopulationAt(CMNode);
+	// return;
+	// }
+	// super.actionPerformed(e);
+	// }
 
-//	private void debugUpdatePopulationAt(int node) {
-//		population.debugUpdatePopulationAt(node);
-//		module.debugUpdatePopulationAt(node);
-//	}
-	//jf>
+	// private void debugUpdatePopulationAt(int node) {
+	// population.debugUpdatePopulationAt(node);
+	// module.debugUpdatePopulationAt(node);
+	// }
+	// jf>
 
 	@Override
 	public double getData(Color[] data, int tag) {
 		Model model = engine.getModel();
-		switch( type ) {
+		switch (type) {
 			case DSTRAT:
 			case CSTRAT:
 				model.getTraitData(tag, data, colorMap);
@@ -338,9 +341,9 @@ removeAll();
 				// cast should be safe for fitness data
 				model.getFitnessData(tag, data, (ColorMap.Gradient1D<Color>) colorMap);
 				break;
-//			case TAG:
-//				population.getTagData(data, colorMap);
-//				break;
+			// case TAG:
+			// population.getTagData(data, colorMap);
+			// break;
 			default:
 				break;
 		}
@@ -349,71 +352,74 @@ removeAll();
 
 	@Override
 	public String getInfoAt(Network2D network, int node, int tag) {
-		if( node<0 )
+		if (node < 0)
 			return null;
 		int nNodes = network.getGeometry().size;
 
-//		String toolTip, struct = "";
+		// String toolTip, struct = "";
 		String toolTip;
 		Model model = engine.getModel();
-		switch( model.getModelType() ) {
+		switch (model.getModelType()) {
 			case ODE:
-				return null;	// no further information available
+				return null; // no further information available
 
 			case PDE:
-				if( node>=nNodes ) {
+				if (node >= nNodes) {
 					// this can only happen for Geometry.LINEAR
-					double t = (node/nNodes)*engine.getReportInterval();
-					if( network.timestamp<t )
+					double t = (node / nNodes) * engine.getReportInterval();
+					if (network.timestamp < t)
 						return null;
-					return "<html><i>Node:</i> "+(node%nNodes)+"<br><i>Time:</i> "+Formatter.format(-t, 2);
+					return "<html><i>Node:</i> " + (node % nNodes) + "<br><i>Time:</i> " + Formatter.format(-t, 2);
 				}
 				String[] s = module.getTraitNames();
-				String names   = "<br><i>Strategies:</i> "+s[0];
-				for( int n=1; n<s.length; n++ )
-					names += ", "+s[n];
-				String density = "<br><i>Densities:&nbsp;</i> "+model.getTraitNameAt(tag, node);
-				String fitness = "<br><i>Fitness:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</i> "+model.getFitnessNameAt(tag, node);
-				toolTip = "<html><i>Node:</i> "+node+names+density+fitness;
-				Geometry diffusion = ((Model.PDE)model).getGeometry();
-				if( diffusion.isUndirected )
-					toolTip += "<br><i>Connections:</i> "+formatStructureAt(node, diffusion.out, diffusion.kout);
+				String names = "<br><i>Strategies:</i> " + s[0];
+				for (int n = 1; n < s.length; n++)
+					names += ", " + s[n];
+				String density = "<br><i>Densities:&nbsp;</i> " + model.getTraitNameAt(tag, node);
+				String fitness = "<br><i>Fitness:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</i> "
+						+ model.getFitnessNameAt(tag, node);
+				toolTip = "<html><i>Node:</i> " + node + names + density + fitness;
+				Geometry diffusion = ((Model.PDE) model).getGeometry();
+				if (diffusion.isUndirected)
+					toolTip += "<br><i>Connections:</i> " + formatStructureAt(node, diffusion.out, diffusion.kout);
 				else
-					toolTip += "<br><i>Links to:</i>  "+formatStructureAt(node, diffusion.out, diffusion.kout)+
-							   "<br><i>Link here:</i> "+formatStructureAt(node, diffusion.in, diffusion.kin);
+					toolTip += "<br><i>Links to:</i>  " + formatStructureAt(node, diffusion.out, diffusion.kout) +
+							"<br><i>Link here:</i> " + formatStructureAt(node, diffusion.in, diffusion.kin);
 				return toolTip;
 
 			case IBS:
-				if( node>=nNodes ) {
+				if (node >= nNodes) {
 					// this can only happen for Geometry.LINEAR
-					double t = (node/nNodes)*engine.getReportInterval();
-					if( network.timestamp<t )
+					double t = (node / nNodes) * engine.getReportInterval();
+					if (network.timestamp < t)
 						return null;
-					return "<html><i>Node:</i> "+(node%nNodes)+"<br><i>Time:</i> "+Formatter.format(-t, 2);
+					return "<html><i>Node:</i> " + (node % nNodes) + "<br><i>Time:</i> " + Formatter.format(-t, 2);
 				}
-				Model.IBS ibs = (Model.IBS)model;
+				Model.IBS ibs = (Model.IBS) model;
 				int count = ibs.getInteractionsAt(tag, node);
 				String nametag = ibs.getTagNameAt(tag, node);
-				toolTip = "<html><i>Node:</i> "+node+
-						  "<br><i>Strategy:</i> "+model.getTraitNameAt(tag, node)+
-						  (nametag==null ? "" :"<br><i>Tag:</i> "+nametag)+
-						  "<br><i>Fitness:</i> "+model.getFitnessNameAt(tag, node)+
-						  (count<0?"":"<br><i>Interactions:</i> "+(count==Integer.MAX_VALUE?"all":""+count));
+				toolTip = "<html><i>Node:</i> " + node +
+						"<br><i>Strategy:</i> " + model.getTraitNameAt(tag, node) +
+						(nametag == null ? "" : "<br><i>Tag:</i> " + nametag) +
+						"<br><i>Fitness:</i> " + model.getFitnessNameAt(tag, node) +
+						(count < 0 ? ""
+								: "<br><i>Interactions:</i> " + (count == Integer.MAX_VALUE ? "all" : "" + count));
 				Geometry intergeom = module.getInteractionGeometry();
-				if( intergeom.isUndirected )
-					toolTip += "<br><i>Neighbors:</i> "+formatStructureAt(node, intergeom.out, intergeom.kout);
-//useful for debugging geometry - Geometry.checkConnections should be able to catch such problems
-//toolTip += "<br>in: "+formatStructureAt(node, data.in, data.kin);
+				if (intergeom.isUndirected)
+					toolTip += "<br><i>Neighbors:</i> " + formatStructureAt(node, intergeom.out, intergeom.kout);
+				// useful for debugging geometry - Geometry.checkConnections should be able to
+				// catch such problems
+				// toolTip += "<br>in: "+formatStructureAt(node, data.in, data.kin);
 				else
-					toolTip += "<br><i>Links to:</i>  "+formatStructureAt(node, intergeom.out, intergeom.kout)+
-							   "<br><i>Link here:</i> "+formatStructureAt(node, intergeom.in, intergeom.kin);
-				if( !intergeom.interCompSame ) {
+					toolTip += "<br><i>Links to:</i>  " + formatStructureAt(node, intergeom.out, intergeom.kout) +
+							"<br><i>Link here:</i> " + formatStructureAt(node, intergeom.in, intergeom.kin);
+				if (!intergeom.interCompSame) {
 					Geometry compgeom = module.getCompetitionGeometry();
-					if( compgeom.isUndirected )
-						toolTip += "<br><i>Competitors:</i> "+formatStructureAt(node, compgeom.out, compgeom.kout);
+					if (compgeom.isUndirected)
+						toolTip += "<br><i>Competitors:</i> " + formatStructureAt(node, compgeom.out, compgeom.kout);
 					else
-						toolTip += "<br><i>Competes for:</i>  "+formatStructureAt(node, compgeom.out, compgeom.kout)+
-								   "<br><i>Compete here:</i> "+formatStructureAt(node, compgeom.in, compgeom.kin);
+						toolTip += "<br><i>Competes for:</i>  " + formatStructureAt(node, compgeom.out, compgeom.kout) +
+								"<br><i>Compete here:</i> " + formatStructureAt(node, compgeom.in, compgeom.kin);
 				}
 				return toolTip;
 
@@ -423,22 +429,25 @@ removeAll();
 	}
 
 	private static String formatStructureAt(int node, int[][] structure, int[] degree) {
-		if( structure==null ) return "well-mixed";
+		if (structure == null)
+			return "well-mixed";
 		int k = degree[node];
 		int[] links = structure[node];
 		String msg;
-		switch( k ) {
+		switch (k) {
 			case 0:
 				return "none";
 
 			case 1:
-				return "1 ["+links[0]+"]";
+				return "1 [" + links[0] + "]";
 
 			default:
-				msg = k+" ["+links[0];
+				msg = k + " [" + links[0];
 				int disp = Math.min(k, 8);
-				for( int n=1; n<disp; n++ ) msg += " "+links[n];
-				if( disp<k ) msg += " ...";
+				for (int n = 1; n < disp; n++)
+					msg += " " + links[n];
+				if (disp < k)
+					msg += " ...";
 				msg += "]";
 		}
 		return msg;
@@ -453,25 +462,26 @@ removeAll();
 
 	@Override
 	public boolean mouseHitNode(int node, int tag) {
-		if( lab.isRunning() )
+		if (lab.isRunning())
 			return false;
-			return ((Model.IBS)engine.getModel()).mouseHitNode(tag, node);	// population signals change back to us
+		return ((Model.IBS) engine.getModel()).mouseHitNode(tag, node); // population signals change back to us
 	}
 
-//	@Override
-//	public boolean mouseHitNode(int node, int refnode, int tag) {
-//		if( lab.isRunning() )
-//			return false;
-//		return module.mouseHitNode(node, refnode);	// population signals change back to us
-//	}
+	// @Override
+	// public boolean mouseHitNode(int node, int refnode, int tag) {
+	// if( lab.isRunning() )
+	// return false;
+	// return module.mouseHitNode(node, refnode); // population signals change back
+	// to us
+	// }
 
 	public static BufferedImage getSnapshot(EvoLudo engine, Module module, int width, int height) {
 		BufferedImage snapimage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g2 = snapimage.createGraphics();
-		MVPop2D mvpop = new MVPop2D(null, engine.getModel().isContinuous()?Data.CSTRAT:Data.DSTRAT);
+		MVPop2D mvpop = new MVPop2D(null, engine.getModel().isContinuous() ? Data.CSTRAT : Data.DSTRAT);
 		mvpop.setModule(module);
 		mvpop.reset(true);
-		PopGraph2D snapgraph = (PopGraph2D)mvpop.getGraphs().get(0);
+		PopGraph2D snapgraph = (PopGraph2D) mvpop.getGraphs().get(0);
 		snapgraph.prepareSnapshot(g2, new Rectangle(0, 0, width, height));
 		g2.dispose();
 		return snapimage;
@@ -480,51 +490,54 @@ removeAll();
 	/**
 	 * static method to create snapshots for simulations in bitmap format
 	 * 
-	 * @param engine the pacemeaker for running the model reference to engine (for logging)
-	 * @param module reference to module that supplies the data for the snapshot
-	 * @param width of snapshot
-	 * @param height of snapshot
+	 * @param engine   the pacemaker for running the model reference to engine (for
+	 *                 logging)
+	 * @param module   reference to module that supplies the data for the snapshot
+	 * @param width    of snapshot
+	 * @param height   of snapshot
 	 * @param snapfile file for saving snapshot
 	 */
 	public static void exportSnapshotPNG(EvoLudo engine, Module module, int width, int height, File snapfile) {
 		BufferedImage snapimage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g2 = snapimage.createGraphics();
-		MVPop2D mvpop = new MVPop2D(null, engine.getModel().isContinuous()?Data.CSTRAT:Data.DSTRAT);
+		MVPop2D mvpop = new MVPop2D(null, engine.getModel().isContinuous() ? Data.CSTRAT : Data.DSTRAT);
 		mvpop.setModule(module);
 		mvpop.reset(true);
-		PopGraph2D snapgraph = (PopGraph2D)mvpop.getGraphs().get(0);
+		PopGraph2D snapgraph = (PopGraph2D) mvpop.getGraphs().get(0);
 		snapgraph.prepareSnapshot(g2, new Rectangle(0, 0, width, height));
 		g2.dispose();
-		try { 
+		try {
 			ImageIO.write(snapimage, "PNG", snapfile);
-		}
-		catch( IOException x ) {
-			engine.getLogger().warning("writing PNG image to "+snapfile.getAbsolutePath()+" failed!");
+		} catch (IOException x) {
+			engine.getLogger().warning("writing PNG image to " + snapfile.getAbsolutePath() + " failed!");
 			return;
 		}
-		engine.getLogger().info("PNG image written to "+snapfile.getAbsolutePath());
+		engine.getLogger().info("PNG image written to " + snapfile.getAbsolutePath());
 		return;
 	}
 
 	/**
 	 * static method to create snapshots for simulations in vector format
 	 * 
-	 * @param engine the pacemeaker for running the model reference to engine (for logging)
-	 * @param module reference to module that supplies the data for the snapshot
-	 * @param width of snapshot
-	 * @param height of snapshot
-	 * @param snapfile file for saving snapshot
+	 * @param engine     the pacemaker for running the model reference to engine
+	 *                   (for logging)
+	 * @param module     reference to module that supplies the data for the snapshot
+	 * @param width      of snapshot
+	 * @param height     of snapshot
+	 * @param snapfile   file for saving snapshot
 	 * @param compressed <code>true</code> to compress snapshot
 	 */
-	public static void exportSnapshotSVG(EvoLudo engine, Module module, int width, int height, File snapfile, boolean compressed) {
+	public static void exportSnapshotSVG(EvoLudo engine, Module module, int width, int height, File snapfile,
+			boolean compressed) {
 		Properties props = new Properties();
-		MVPop2D mvpop = new MVPop2D(null, engine.getModel().isContinuous()?Data.CSTRAT:Data.DSTRAT);
+		MVPop2D mvpop = new MVPop2D(null, engine.getModel().isContinuous() ? Data.CSTRAT : Data.DSTRAT);
 		mvpop.setModule(module);
 		mvpop.reset(true);
-		PopGraph2D snapgraph = (PopGraph2D)mvpop.getGraphs().get(0);
+		PopGraph2D snapgraph = (PopGraph2D) mvpop.getGraphs().get(0);
 		try {
 			props.setProperty(SVGGraphics2D.TITLE, "Generated by EvoLudoLabs \u00a9 Christoph Hauert");
-			if( compressed ) props.setProperty(SVGGraphics2D.COMPRESS, "true");
+			if (compressed)
+				props.setProperty(SVGGraphics2D.COMPRESS, "true");
 			props.setProperty(SVGGraphics2D.TRANSPARENT, "true");
 			VectorGraphics vg2 = new SVGGraphics2D(snapfile, new Dimension(width, height));
 			vg2.setProperties(props);
@@ -534,12 +547,11 @@ removeAll();
 			snapgraph.printAll(vg2);
 			vg2.endExport();
 			vg2.dispose();
-		}
-		catch( IOException x ) {
-			engine.getLogger().warning("writing SVG graphics to "+snapfile.getAbsolutePath()+" failed!");
+		} catch (IOException x) {
+			engine.getLogger().warning("writing SVG graphics to " + snapfile.getAbsolutePath() + " failed!");
 			return;
 		}
-		engine.getLogger().info("SVG graphics written to "+snapfile.getAbsolutePath());
+		engine.getLogger().info("SVG graphics written to " + snapfile.getAbsolutePath());
 		return;
 	}
 }

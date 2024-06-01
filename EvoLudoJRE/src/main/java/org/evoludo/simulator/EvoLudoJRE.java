@@ -123,8 +123,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 
 	/**
 	 * Constructor for JRE application. This constructor is used when running
-	 * EvoLudo as a
-	 * JRE application.
+	 * EvoLudo as a JRE application.
 	 */
 	public EvoLudoJRE() {
 		// allocate a coalescing timer for poking the engine in regular intervals
@@ -975,7 +974,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	protected PrintStream output = System.out;
 
 	/**
-	 * @return where output should be directed (JRE only)
+	 * Get output for all reporting (JRE only). Used by {@link #cloOutput} and
+	 * {@link #cloAppend} to redirect output to a file.
+	 * 
+	 * @return the output for reporting
 	 */
 	public PrintStream getOutput() {
 		return output;
@@ -985,7 +987,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * Set output for all reporting (JRE only). Used by {@link #cloOutput} and
 	 * {@link #cloAppend} to redirect output to a file.
 	 * 
-	 * @param output stream to redirect output to.
+	 * @param output the output stream for reporting
 	 */
 	public void setOutput(PrintStream output) {
 		this.output = (output == null ? System.out : output);

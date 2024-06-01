@@ -52,60 +52,110 @@ import org.evoludo.math.Combinatorics;
 public class Plist extends HashMap<String, Object> {
 
 	/**
-	 * 
+	 * Required for serializable classes.
 	 */
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * The list of keys to skip when comparing two plists.
+	 */
 	Collection<String> skip;
 
+	/**
+	 * The flag to indicate if the comparison should fail fast, i.e. after first
+	 * issue encountered.
+	 */
 	boolean failFast = false;
 
+	/**
+	 * The number of repeated messages to report before skipping further messages.
+	 */
+	static final int N_REPEAT = 3;
+
+	/**
+	 * Construct a new plist.
+	 */
 	public Plist() {
-		nRepeat = 3;
+		nRepeat = N_REPEAT;
 		repeat = 0;
 	}
 
+	/**
+	 * Set verbose mode to report all differences.
+	 */
 	public void verbose() {
 		nRepeat = Integer.MAX_VALUE;
 	}
 
+	/**
+	 * Set quiet mode to suppress all differences.
+	 */
 	public void quiet() {
 		nRepeat = 0;
 	}
 
+	/**
+	 * Check if in fail-fast mode.
+	 * 
+	 * @return <code>true</code> if fail-fast mode is set
+	 */
 	public boolean failfast() {
 		return failFast;
 	}
 
+	/**
+	 * Set the fail-fast mode to stop comparisons after the first issue encountered.
+	 * 
+	 * @param failfast the fail-fast-flag
+	 */
 	public void failfast(boolean failfast) {
 		failFast = failfast;
-		nRepeat = failFast ? 0 : 3;
+		nRepeat = failFast ? 0 : N_REPEAT;
 	}
 
+	/**
+	 * Get the number of issues found.
+	 * 
+	 * @return the number of issues
+	 */
 	public int getNIssues() {
 		return nIssues;
 	}
 
+	/**
+	 * Get the number of major issues found.
+	 * 
+	 * @return the number of issues
+	 */
 	public int getNMajor() {
 		return nIssues - nNumerical;
 	}
 
+	/**
+	 * Get the number of minor issues found (most likely numerical).
+	 * 
+	 * @return the number of issues
+	 */
 	public int getNMinor() {
 		return nNumerical;
 	}
 
 	/**
-	 * @param plist the plist-dictionary to compare against <code>this</code>
-	 * @return the number of differences found
+	 * Compare this plist to {@code plist}.
+	 * 
+	 * @param plist the plist to compare against
+	 * @return the number of differences
 	 */
 	public int diff(Plist plist) {
 		return diff(plist, new ArrayList<String>());
 	}
 
 	/**
-	 * @param plist the plist-dictionary to compare against <code>this</code>
+	 * Compare this plist to {@code plist} but ignore keys in {@code clo}.
+	 * 
+	 * @param plist the dictionary to compare against
 	 * @param clo   the collection of keys to skip
-	 * @return the number of differences found
+	 * @return the number of differences
 	 */
 	public int diff(Plist plist, Collection<String> clo) {
 		skip = clo;
@@ -117,6 +167,12 @@ public class Plist extends HashMap<String, Object> {
 		return nIssues;
 	}
 
+	/**
+	 * Helper method to compare two plist-dictionaries.
+	 * 
+	 * @param reference the reference plist
+	 * @param plist     the plist to check
+	 */
 	private void diffDict(Plist reference, Plist plist) {
 		// step 1: check if dict reference contains all keys of plist
 		for (String key : plist.keySet()) {
@@ -214,6 +270,12 @@ public class Plist extends HashMap<String, Object> {
 		}
 	}
 
+	/**
+	 * Helper method to compare two plist-arrays.
+	 * 
+	 * @param reference the reference array
+	 * @param array     the array to check
+	 */
 	private void diffArray(List<Object> reference, List<Object> array) {
 		if (reference.size() != array.size()) {
 			processDiff(
@@ -289,13 +351,34 @@ public class Plist extends HashMap<String, Object> {
 		}
 	}
 
+	/**
+	 * The number of significant digits. This is used to distinguish between minor
+	 * numerical issues and major differences.
+	 */
 	private static final int PRECISION_DIGITS = 12;
 
+	/**
+	 * Check if the difference between <code>ref</code> and <code>check</code> is
+	 * due to rounding errors.
+	 * 
+	 * @param ref   the reference value
+	 * @param check the value to check
+	 * 
+	 * @see #PRECISION_DIGITS
+	 */
 	private void checkRounding(Double ref, Double check) {
 		// tolerate if only last 3 digits differ
 		checkRounding(ref, check, PRECISION_DIGITS);
 	}
 
+	/**
+	 * Check if the difference between <code>ref</code> and <code>check</code> is
+	 * due to rounding errors.
+	 * 
+	 * @param ref    the reference value
+	 * @param check  the value to check
+	 * @param digits the number of significant digits
+	 */
 	private void checkRounding(Double ref, Double check, Integer digits) {
 		int order = (int) Math.floor(Math.log10(1.0 + ref));
 		double scale = Combinatorics.pow(10.0, digits - order);
@@ -303,17 +386,49 @@ public class Plist extends HashMap<String, Object> {
 			nNumerical++;
 	}
 
+	/**
+	 * The number of issues found.
+	 */
 	private int nIssues;
+
+	/**
+	 * The number of numerical issues found.
+	 */
 	private int nNumerical;
+
+	/**
+	 * The number of times a particular type of issue is reported before skipping
+	 * any further ones.
+	 */
 	private int nRepeat;
+
+	/**
+	 * The previous message.
+	 */
 	private String prevmsg;
+
+	/**
+	 * The number of times the previous message was repeated.
+	 */
 	private int repeat;
 
+	/**
+	 * Process a difference.
+	 * 
+	 * @param msg the message to report
+	 */
 	private void processDiff(String msg) {
 		nIssues++;
 		reportDiff(msg);
 	}
 
+	/**
+	 * Report a difference. Nothing is reported if the message is a repetition of
+	 * the previous message and {@code nRepeat} has been reached. If messages have
+	 * been skipped a summary is reported before continuing with the next issue.
+	 * 
+	 * @param msg the message to report
+	 */
 	private void reportDiff(String msg) {
 		if (prevmsg == null || !msg.startsWith(prevmsg)) {
 			// arrays are most likely candidates for excessive repeated messages

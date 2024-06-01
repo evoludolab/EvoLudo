@@ -289,7 +289,7 @@ public abstract class Continuous extends Module {
 	/**
 	 * Create new module with continuous traits.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 */
 	protected Continuous(EvoLudo engine) {
 		this(engine, null);
@@ -312,7 +312,7 @@ public abstract class Continuous extends Module {
 	 * a single species module and interactions within species
 	 * ({@code opponent == this} holds).
 	 * 
-	 * @param engine  the pacemeaker for running the model
+	 * @param engine  the pacemaker for running the model
 	 * @param partner the partner species
 	 */
 	protected Continuous(EvoLudo engine, Continuous partner) {

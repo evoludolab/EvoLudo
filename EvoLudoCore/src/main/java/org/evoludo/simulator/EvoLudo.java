@@ -88,8 +88,6 @@ import org.evoludo.util.CLOption.Key;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
-// import org.evoludo.simulator.EvoLudoJRE;
-
 /**
  * Interface with the outside world. Deals with command line options, help,
  * encoding/restoring state, logging, printing of result, etc. GWT/JRE neutral
@@ -2230,11 +2228,11 @@ public abstract class EvoLudo
 	 * <dt>DEFAULT
 	 * <dd>Default coloring type. Not user selectable.
 	 * </dl>
-	 * <p>
-	 * <strong>Note:</strong> currently only used by
-	 * {@link org.evoludo.simulator.modules.Dialect}.
 	 * 
 	 * @see #cloTraitColorScheme
+	 * 
+	 * @evoludo.impl currently only used by
+	 *               {@link org.evoludo.simulator.modules.Dialect}.
 	 */
 	public static enum ColorModelType implements CLOption.Key {
 

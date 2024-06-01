@@ -319,7 +319,9 @@ public abstract class RNGDistribution {
 	}
 
 	/**
-	 * @return <code>true</code> if seed of random number generator has been set
+	 * Check if seed of random number generator has been set.
+	 * 
+	 * @return <code>true</code> if seed set
 	 */
 	public boolean isRNGSeedSet() {
 		return seedSet;
@@ -412,29 +414,37 @@ public abstract class RNGDistribution {
 		}
 
 		/**
-		 * @return lower bound of uniform interval (inclusive)
+		 * Get the lower bound of the uniform distribution (inclusive).
+		 * 
+		 * @return the lower bound
 		 */
 		public double getMin() {
 			return min;
 		}
 
 		/**
-		 * @return upper bound of uniform interval (exclusive)
+		 * Get the upper bound of the uniform distribution (exclusive).
+		 * 
+		 * @return the upper bound
 		 */
 		public double getMax() {
 			return min + range;
 		}
 
 		/**
-		 * @return width of uniform interval <code>max-min</code>
+		 * Get the range of the uniform distribution.
+		 * 
+		 * @return the range of the interval <code>max-min</code>
 		 */
 		public double getRange() {
 			return range;
 		}
 
 		/**
-		 * @return uniformly distributed random number from interval
-		 *         <code>[min, max)</code>
+		 * Generate a uniformly distributed random number from interval
+		 * <code>[min, max)</code>.
+		 * 
+		 * @return the uniformly distributed random number
 		 */
 		public double next() {
 			return min + random01() * range;
@@ -563,7 +573,7 @@ public abstract class RNGDistribution {
 	public static class Exponential extends RNGDistribution {
 
 		/**
-		 * Mean of exponential distribution.
+		 * The mean of exponential distribution.
 		 */
 		private double mean;
 
@@ -579,7 +589,7 @@ public abstract class RNGDistribution {
 		 * Creates exponential distribution with <code>mean</code> and a new instance of
 		 * {@link MersenneTwister}.
 		 * 
-		 * @param mean of exponential distribution
+		 * @param mean the mean of the exponential distribution
 		 */
 		public Exponential(double mean) {
 			this(null, mean);
@@ -589,8 +599,8 @@ public abstract class RNGDistribution {
 		 * Creates exponential distribution with <code>mean</code> and random number
 		 * generator <code>rng</code>.
 		 *
-		 * @param rng  random number generator
-		 * @param mean of exponential distribution
+		 * @param rng  the random number generator
+		 * @param mean the mean of the exponential distribution
 		 * @throws IllegalArgumentException if <code>man&le;0</code>
 		 * @see MersenneTwister
 		 */
@@ -602,14 +612,18 @@ public abstract class RNGDistribution {
 		}
 
 		/**
-		 * @return mean of exponential distribution
+		 * Get the mean of the exponential distribution.
+		 * 
+		 * @return the mean
 		 */
 		public double getMean() {
 			return mean;
 		}
 
 		/**
-		 * @return exponentially distributed random number with <code>mean</code>
+		 * Generate an exponentially distributed random number with <code>mean</code>.
+		 * 
+		 * @return the exponentially distributed random number
 		 */
 		public double next() {
 			return -Math.log1p(-random01()) * mean;
@@ -735,12 +749,12 @@ public abstract class RNGDistribution {
 	public static class Normal extends RNGDistribution {
 
 		/**
-		 * Mean of Normal distribution.
+		 * The mean of the Normal distribution.
 		 */
 		private double mean;
 
 		/**
-		 * Standard deviation of Normal distribution.
+		 * The standard deviation of the Normal distribution.
 		 */
 		private double stdev;
 
@@ -783,21 +797,28 @@ public abstract class RNGDistribution {
 		}
 
 		/**
-		 * @return mean of Normal distribution
+		 * Get the mean of the Normal distribution.
+		 * 
+		 * @return the mean
 		 */
 		public double getMean() {
 			return mean;
 		}
 
 		/**
-		 * @return standard deviation of Normal distribution
+		 * Get the standard deviation of the Normal distribution.
+		 * 
+		 * @return the standard deviation
 		 */
 		public double getStdev() {
 			return stdev;
 		}
 
 		/**
-		 * @return Normally distributed random number
+		 * Generate a normally distributed random number with <code>mean</code> and
+		 * standard deviation <code>stdev</code>.
+		 * 
+		 * @return the Normally distributed random number
 		 */
 		public double next() {
 			return mean + stdev * rng.nextGaussian();
@@ -1052,14 +1073,19 @@ public abstract class RNGDistribution {
 		}
 
 		/**
-		 * @return success probability of single trial
+		 * Get the success probability of a single trial.
+		 * 
+		 * @return the success probability of a single trial
 		 */
 		public double getProbability() {
 			return p;
 		}
 
 		/**
-		 * @return number of trials until first success
+		 * Generate a geometrically distributed random number with success probability
+		 * <code>p</code>.
+		 * 
+		 * @return the number of trials until first success
 		 */
 		public int next() {
 			double uRand = random01();
@@ -1281,21 +1307,29 @@ public abstract class RNGDistribution {
 		}
 
 		/**
-		 * @return success probability of single trial
+		 * Get the probability of success <code>p</code> of a single trial for the
+		 * binomial distribution.
+		 * 
+		 * @return the success probability of a single trial
 		 */
 		public double getProbability() {
 			return p;
 		}
 
 		/**
-		 * @return number of trials
+		 * Get the number of trials <code>n</code> for the binomial distribution.
+		 * 
+		 * @return the number of trials
 		 */
 		public int getTrials() {
 			return cdf.length - 1;
 		}
 
 		/**
-		 * @return number of successful trials
+		 * Generate the number of successful trials drawn from the binomial
+		 * distribution.
+		 * 
+		 * @return the number of successful trials
 		 */
 		public int next() {
 			double uRand = random01();

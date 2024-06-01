@@ -54,7 +54,7 @@ public abstract class Network3D extends Network {
 	/**
 	 * Create a new network in 3D for the given engine and geometry.
 	 * 
-	 * @param engine   the pacemeaker for running the model
+	 * @param engine   the pacemaker for running the model
 	 * @param geometry the structure of the population
 	 */
 	public Network3D(EvoLudo engine, Geometry geometry) {

@@ -78,7 +78,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 	 * Construct a new view to display the time series data of the current EvoLudo
 	 * model.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 * @param type   the type of data to display
 	 */
 	@SuppressWarnings("unchecked")

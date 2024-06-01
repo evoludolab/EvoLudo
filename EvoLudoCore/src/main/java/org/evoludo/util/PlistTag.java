@@ -40,17 +40,17 @@ package org.evoludo.util;
  */
 public class PlistTag {
 	/**
-	 * Name of <code>&lt;key&gt;</code> tag.
+	 * The name of <code>&lt;key&gt;</code> tag.
 	 */
 	String tag;
 
 	/**
-	 * Value associated with <code>tag</code>.
+	 * The value associated with <code>tag</code>.
 	 */
 	String value;
 
 	/**
-	 * Attributes of <code>tag</code> (or <code>null</code>).
+	 * The attributes of <code>tag</code> (or <code>null</code>).
 	 */
 	String attributes;
 
@@ -58,8 +58,8 @@ public class PlistTag {
 	 * Create a <code>plist</code> entry with <code>&lt;key&gt;</code> name
 	 * <code>tag</code> without attributes associated with <code>value</code>.
 	 * 
-	 * @param tag   name of <code>&lt;key&gt;</code>
-	 * @param value value of <code>plist</code> entry
+	 * @param tag   the name of <code>&lt;key&gt;</code>
+	 * @param value the value the entry
 	 */
 	public PlistTag(String tag, String value) {
 		this(tag, null, value);
@@ -70,9 +70,9 @@ public class PlistTag {
 	 * <code>tag</code> and <code>attributes</code> associated with
 	 * <code>value</code>.
 	 * 
-	 * @param tag        name of <code>&lt;key&gt;</code>
-	 * @param attributes of <code>&lt;key&gt;</code>
-	 * @param value      value of <code>plist</code> entry
+	 * @param tag        the name of <code>&lt;key&gt;</code>
+	 * @param attributes the attributes of the entry
+	 * @param value      the value the entry
 	 */
 	public PlistTag(String tag, String attributes, String value) {
 		this.tag = tag;
@@ -93,29 +93,36 @@ public class PlistTag {
 	}
 
 	/**
-	 * @return <code>&lt;key&gt;</code> name of this <code>plist</code> entry.
+	 * The name (<code>&lt;key&gt;</code>) of this <code>plist</code> entry.
+	 * 
+	 * @return the name
 	 */
 	public String getTag() {
 		return tag;
 	}
 
 	/**
-	 * @return value of this <code>plist</code> entry.
+	 * The value of this <code>plist</code> entry.
+	 * 
+	 * @return the value
 	 */
 	public String getValue() {
 		return value;
 	}
 
 	/**
-	 * @return <code>true</code> if <code>&lt;key&gt;</code> has attributes
+	 * Check if this <code>plist</code> entry has attributes.
+	 * 
+	 * @return <code>true</code> if entry has attributes
 	 */
 	public boolean hasAttributes() {
 		return (attributes != null);
 	}
 
 	/**
-	 * @return attributes of <code>&lt;key&gt;</code> and <code>null</code> if
-	 *         <code>&lt;key&gt;</code> has no attributes.
+	 * Get the attributes of this <code>plist</code> entry.
+	 * 
+	 * @return the attributes
 	 */
 	public String getAttributes() {
 		return attributes;

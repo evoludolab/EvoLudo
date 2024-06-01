@@ -107,7 +107,7 @@ public class Histogram extends AbstractView {
 	/**
 	 * Construct a new view to display the histogram of various quantities.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 * @param type   the type of data to display
 	 */
 	@SuppressWarnings("unchecked")

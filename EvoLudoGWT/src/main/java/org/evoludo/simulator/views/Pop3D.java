@@ -72,7 +72,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 	 * Construct a new view to display the configuration of the current state of the
 	 * EvoLudo model in 3D.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 * @param type   the type of data to display
 	 */
 	public Pop3D(EvoLudoGWT engine, Model.Data type) {

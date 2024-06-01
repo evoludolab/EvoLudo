@@ -9,6 +9,11 @@ import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
 
+/**
+ * The class to manage customised markers for graphs.
+ * 
+ * @author Christoph Hauert
+ */
 public class Markers {
 
 	/**
@@ -30,13 +35,24 @@ public class Markers {
 		this.model = model;
 	}
 
+	/**
+	 * Add marker to list of markers. Markers are provided as {@code double[]}
+	 * arrays to indicate special frequencies/densities. By default markers are
+	 * shown as solid dots or lines, respectively.
+	 * 
+	 * @param aMark the marker to add
+	 * @return {@code true} if successfull
+	 */
 	public boolean addMarker(double[] aMark) {
 		return addMarker(aMark, true);
 	}
 
 	/**
 	 * Add marker to list of markers. Markers are provided as {@code double[]}
-	 * arrays to indicate special frequencies/densities.
+	 * arrays to indicate special frequencies/densities. If {@code filled==true},
+	 * markers are shown as solid dots or lines, respectively and as open dots (or
+	 * dashed lines), otherwise. This is useful, for example, to indicate the
+	 * stability of equilibria.
 	 * <p>
 	 * In multi-species modules the markers for each species are concatenated into a
 	 * single array. The frequencies/densities of the marker for the first species

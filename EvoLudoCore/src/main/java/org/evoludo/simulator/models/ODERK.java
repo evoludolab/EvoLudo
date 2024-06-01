@@ -80,7 +80,7 @@ public class ODERK extends ODEEuler {
 	 * <code>engine</code> to control the numerical evaluations. The integrator
 	 * implements the fifth order Runge-Kutta method with adaptive step size.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 */
 	public ODERK(EvoLudo engine) {
 		super(engine);

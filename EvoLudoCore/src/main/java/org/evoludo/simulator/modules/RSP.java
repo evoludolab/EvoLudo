@@ -93,7 +93,7 @@ public class RSP extends Discrete implements Pairs,
 	/**
 	 * Create a new instance of the module for rock-scissors-paper games.
 	 * 
-	 * @param engine the manager of modules and pacemeaker for running the model
+	 * @param engine the manager of modules and pacemaker for running the model
 	 */
 	public RSP(EvoLudo engine) {
 		super(engine);
@@ -305,7 +305,7 @@ public class RSP extends Discrete implements Pairs,
 		/**
 		 * Create a new instance of the IBS model for {@code 3×3} games.
 		 * 
-		 * @param engine the pacemeaker for running the model
+		 * @param engine the pacemaker for running the model
 		 */
 		protected IBS(EvoLudo engine) {
 			super(engine);

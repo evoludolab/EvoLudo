@@ -93,7 +93,7 @@ public class Phase2D extends AbstractView {
 	 * Construct a new view to display the time series data of the current EvoLudo
 	 * model as a trajectory in a 2D phase plane.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 */
 	@SuppressWarnings("unchecked")
 	public Phase2D(EvoLudoGWT engine) {

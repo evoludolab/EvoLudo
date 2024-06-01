@@ -155,7 +155,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * If {@code partner == null} this is a single species module and
 	 * interactions within species ({@code opponent == this} holds).
 	 * 
-	 * @param engine  the pacemeaker for running the model
+	 * @param engine  the pacemaker for running the model
 	 * @param partner the module of the partner species or {@code null} for single
 	 *                species modules
 	 */

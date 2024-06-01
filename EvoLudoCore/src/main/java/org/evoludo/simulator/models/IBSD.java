@@ -24,7 +24,7 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	 * Creates a population of individuals for IBS simulations with discrete
 	 * traits/strategies.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 */
 	public IBSD(EvoLudo engine) {
 		super(engine);
@@ -40,6 +40,13 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	 * EXPERIMENTAL: should mature into data structure useful for statistics
 	 */
 	public static class FixationData {
+
+		/**
+		 * Creates a new fixation data structure.
+		 */
+		public FixationData() {
+		}
+
 		/**
 		 * The index of the node (location) where the initial mutant arose.
 		 */
@@ -245,7 +252,12 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		return getIBSDPopulation(id).getMonoScore(type);
 	}
 
+	/**
+	 * The initialization of populations with discrete traits. This includes the
+	 * initialization type as well as any accompanying arguments.
+	 */
 	public static class Init {
+
 		/**
 		 * The model that is using this initialization. This is specific to IBS models.
 		 */

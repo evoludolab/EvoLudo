@@ -100,7 +100,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 	 * Construct a new view to display the distribution of continuous traits of the
 	 * current EvoLudo model.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 * @param type   the type of data to display
 	 */
 	@SuppressWarnings("unchecked")

@@ -89,7 +89,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 	 * Creates a population of individuals with a single continuous trait for IBS
 	 * simulations.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 */
 	public IBSCPopulation(EvoLudo engine) {
 		super(engine);

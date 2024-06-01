@@ -136,7 +136,7 @@ public abstract class IBSPopulation {
 	/**
 	 * Creates a population of individuals for IBS simulations.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 */
 	protected IBSPopulation(EvoLudo engine) {
 		this.engine = engine;
@@ -1977,6 +1977,11 @@ public abstract class IBSPopulation {
 		}
 	}
 
+	/**
+	 * Perform a mutation event. The focal individual is picked uniformly at random.
+	 * 
+	 * @return the elapsed time in realtime units
+	 */
 	public double mutate() {
 		return mutateAt(pickFocalSite());
 	}
@@ -2131,8 +2136,16 @@ public abstract class IBSPopulation {
 		}
 	}
 
-	private String formatInfoAt(int idx, int ref) {
-		return " " + idx + (idx == ref ? "* (" : " (") + getTraitNameAt(idx) + ", " + getScoreAt(idx) + ")";
+	/**
+	 * Helper method to format information about updating the focal individual at
+	 * index {@code focal} using the model individual with index {@code model}.
+	 * 
+	 * @param focal the index of the focal individual
+	 * @param model the index of the model individual
+	 * @return the formatted information
+	 */
+	private String formatInfoAt(int focal, int model) {
+		return " " + focal + (focal == model ? "* (" : " (") + getTraitNameAt(focal) + ", " + getScoreAt(focal) + ")";
 	}
 
 	/**

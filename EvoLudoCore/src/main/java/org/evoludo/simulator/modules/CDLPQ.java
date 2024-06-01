@@ -75,7 +75,7 @@ public class CDLPQ extends CDLP {
 	 * Create a new instance of the module for voluntary public goods games with
 	 * peer and pool punishment.
 	 * 
-	 * @param engine the manager of modules and pacemeaker for running the model
+	 * @param engine the manager of modules and pacemaker for running the model
 	 */
 	public CDLPQ(EvoLudo engine) {
 		super(engine);

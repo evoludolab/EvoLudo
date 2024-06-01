@@ -85,7 +85,7 @@ public class Geometry {
 	 * Instantiates a new geometry for data visualization with pacemaker
 	 * {@code engine}.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 * 
 	 * @see org.evoludo.simulator.views.Distribution#createGeometry(int)
 	 */
@@ -98,7 +98,7 @@ public class Geometry {
 	 * Instantiates a new geometry for intra-species module {@code module} with
 	 * pacemaker {@code engine}.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 * @param module the module with interaction parameters
 	 */
 	public Geometry(EvoLudo engine, Module module) {
@@ -110,7 +110,7 @@ public class Geometry {
 	 * opponent {@code oppModule} with pacemaker {@code engine}. For intra-species
 	 * interactions {@code population==opponent} holds.
 	 * 
-	 * @param engine    the pacemeaker for running the model
+	 * @param engine    the pacemaker for running the model
 	 * @param popModule the module with interaction parameters
 	 * @param oppModule the module of the opponent
 	 */

@@ -48,26 +48,67 @@ import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.Formatter;
 
 /**
- *
+ * Simulations to investigate peer punishment in the voluntary public goods
+ * game. This module extends the CDLP module to determine, for example, the
+ * probability of fixation in each of the four homogeneous, absorbing states.
+ * 
  * @author Christoph Hauert
+ * 
+ * @see "Hauert C., Traulsen A., Brandt H., Nowak M. A., Sigmund K. (2007)
+ *      <em>Via Freedom to Coercion: The Emergence of Costly Punishment.</em>
+ *      Science 316:1905-1907. doi: <a href=
+ *      'https://doi.org/10.1126/science.1141588'>10.1126/science.1141588</a>"
+ * @see "Hauert C., De Monte S., Hofbauer J., Sigmund K. (2002)
+ *      <em>Volunteering as Red Queen Mechanism for Cooperation in Public
+ *      Goods Games.</em> Science 296:1129-1132. doi: <a href=
+ *      'https://doi.org/10.1126/science.1070582'>10.1126/science.1070582</a>"
  */
 public class simCDLP extends CDLP implements ChangeListener {
 
-	/* additional parameters */
+	/**
+	 * The threshold for qualifying as a corner state.
+	 */
 	int threshold = -1;
+
+	/**
+	 * The time to reach the punisher corner.
+	 */
 	long timesamples = -1;
+
+	/**
+	 * Generate a histogram of states visited.
+	 */
 	boolean doLocation = false;
+
+	/**
+	 * Generate the basins of attraction.
+	 */
 	private boolean doBasin = false;
+
+	/**
+	 * The flag to indicate whether the initial configuration is given by the
+	 * interior fixed point {@code Q} (for CDL only).
+	 */
 	private boolean initInQ = false;
+
+	/**
+	 * The output stream. Defaults to {@code System.out}.
+	 */
 	PrintStream out;
 
+	/**
+	 * Create a new simulation to investigate the role of punishment in voluntary
+	 * public goods games.
+	 * 
+	 * @param engine the pacemaker for running the model
+	 */
 	public simCDLP(EvoLudo engine) {
 		super(engine);
 	}
 
 	@Override
 	public void run() {
-		if(model.getModelType() != Model.Type.IBS) {
+		if (model.getModelType() != Model.Type.IBS) {
 			System.err.printf("ERROR: IBS model expected!");
 			return;
 		}
@@ -187,10 +228,10 @@ public class simCDLP extends CDLP implements ChangeListener {
 			double meant = t / timesamples;
 			double sdevt = Math.sqrt(t2 / timesamples - meant * meant);
 			out.println("# time to reach punisher corner\n" +
-//				ChHFormatter.format(meant, 6)+"\t"+
-//				ChHFormatter.format(sdevt, 6));
+			// ChHFormatter.format(meant, 6)+"\t"+
+			// ChHFormatter.format(sdevt, 6));
 					meant + "\t" + sdevt);
-//			System.out.flush();
+			// System.out.flush();
 			return;
 		}
 
@@ -285,6 +326,9 @@ public class simCDLP extends CDLP implements ChangeListener {
 		engine.exportState();
 	}
 
+	/*
+	 * Temporary variables for fixation probabilities and absorption times.
+	 */
 	double[] mean, var, state;
 	double prevsample;
 
@@ -298,10 +342,16 @@ public class simCDLP extends CDLP implements ChangeListener {
 		updateStatistics(engine.getNGenerations());
 	}
 
+	/**
+	 * Start collecting statistics.
+	 */
 	protected void startStatistics() {
 		prevsample = engine.getModel().getTime();
 	}
 
+	/**
+	 * Reset statistics.
+	 */
 	protected void resetStatistics() {
 		if (mean == null)
 			mean = new double[nTraits];
@@ -314,6 +364,11 @@ public class simCDLP extends CDLP implements ChangeListener {
 		Arrays.fill(var, 0.0);
 	}
 
+	/**
+	 * Update statistics.
+	 * 
+	 * @param time the current time
+	 */
 	protected void updateStatistics(double time) {
 		if (prevsample >= time)
 			return;
@@ -329,6 +384,14 @@ public class simCDLP extends CDLP implements ChangeListener {
 		prevsample = time;
 	}
 
+	/**
+	 * Find the interior fixed point {@code Q} for the CDL model.
+	 * 
+	 * @param n     the maximum size of the interaction group
+	 * @param r     the multiplication factor of the public good
+	 * @param sigma the payoff for loners
+	 * @return the interior fixed point {@code Q}
+	 */
 	private double[] findQ(int n, double r, double sigma) {
 		double[] q = new double[] { 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0, 0.0 };
 		double zlow = 0.0;
@@ -357,16 +420,31 @@ public class simCDLP extends CDLP implements ChangeListener {
 		return q;
 	}
 
+	/**
+	 * The function \(F(z)\) for the interior fixed point \(Q\).
+	 * 
+	 * @param z the fraction of loners
+	 * @param n the maximum size of the interaction group
+	 * @param r the multiplication factor of the public good
+	 * @return the value of \(F(z)\)
+	 */
 	private double func(double z, int n, double r) {
 		return 1.0 + (r - 1.0) * Math.pow(z, (n - 1)) - r * (1 - Math.pow(z, n)) / (n * (1 - z));
 	}
 
+	/**
+	 * The sign function. Returns 1.0 for positive values, 0.0 for negative values,
+	 * and 0.5 for zero.
+	 * 
+	 * @param x the value
+	 * @return the sign of the value
+	 */
 	private double sign(double x) {
 		return x > 0.0 ? 1.0 : (x < 0.0 ? 0.0 : 0.5);
 	}
 
-	/*
-	 * command line parsing stuff
+	/**
+	 * Command line option to set the threshold for corner states.
 	 */
 	public final CLOption cloThreshold = new CLOption("threshold", "-1", EvoLudo.catSimulation,
 			"--threshold <t>  threshold for corner count", new CLODelegate() {
@@ -381,6 +459,11 @@ public class simCDLP extends CDLP implements ChangeListener {
 					output.println("# threshold:            " + threshold);
 				}
 			});
+
+	/**
+	 * Command line option to determine the basin of attraction of punishers and
+	 * cooperators.
+	 */
 	public final CLOption cloBasin = new CLOption("basin", EvoLudo.catSimulation,
 			"--basin         basin of attraction - punisher vs. cooperation", new CLODelegate() {
 				@Override
@@ -389,6 +472,11 @@ public class simCDLP extends CDLP implements ChangeListener {
 					return true;
 				}
 			});
+
+	/**
+	 * Command line option to determine the time to reach the threshold of
+	 * punishers.
+	 */
 	public final CLOption cloTime2Punish = new CLOption("time2pun", "-1", EvoLudo.catSimulation,
 			"--time2pun <s>  time to reach threshold of punishers, s number of samples", new CLODelegate() {
 				@Override
@@ -402,6 +490,10 @@ public class simCDLP extends CDLP implements ChangeListener {
 					output.println(timesamples > 0 ? "# samples:              " + timesamples : "");
 				}
 			});
+
+	/**
+	 * Command line option to generate a histogram of states visited.
+	 */
 	public final CLOption cloHistogram = new CLOption("histogram", EvoLudo.catSimulation,
 			"--histogram     generate histogram of states visited", new CLODelegate() {
 				@Override

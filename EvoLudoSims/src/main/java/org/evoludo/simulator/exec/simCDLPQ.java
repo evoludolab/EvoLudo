@@ -54,22 +54,42 @@ import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.Formatter;
 
 /**
- *
+ * Simulations of peer- versus pool-punishment in voluntary public goods games.
+ * 
  * @author Christoph Hauert
+ * 
+ * @see "Sigmund K., De Silva H., Traulsen A., Hauert C. (2010)
+ *      <em>Social learning promotes institutions for governing the
+ *      commons.</em> Nature 466: 861-863.
+ *      <a href='https://doi.org/10.1038/nature09203'>doi:
+ *      10.1038/nature09203</a>"
  */
 public class simCDLPQ extends CDLPQ implements ChangeListener {
 
 	// snapshots
+	/**
+	 * The interval for saving snapshots.
+	 */
 	long snapinterval = 1;
+
+	/**
+	 * The output stream. Defaults to {@code System.out}.
+	 */
 	PrintStream out;
 
+	/**
+	 * Create a new simulation to investigate the role of pool- versus
+	 * peer-punishment in voluntary public goods games.
+	 * 
+	 * @param engine the pacemaker for running the model
+	 */
 	public simCDLPQ(EvoLudo engine) {
 		super(engine);
 	}
 
 	@Override
 	public void run() {
-		if(model.getModelType() != Model.Type.IBS) {
+		if (model.getModelType() != Model.Type.IBS) {
 			System.err.printf("ERROR: IBS model expected!");
 			return;
 		}
@@ -131,6 +151,9 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 		engine.exportState();
 	}
 
+	/*
+	 * Temporary variables for fixation probabilities and absorption times.
+	 */
 	double[] mean, var, state;
 	double prevsample;
 
@@ -144,10 +167,16 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 		updateStatistics(engine.getNGenerations());
 	}
 
+	/**
+	 * Start collecting statistics.
+	 */
 	protected void startStatistics() {
 		prevsample = engine.getModel().getTime();
 	}
 
+	/**
+	 * Reset statistics.
+	 */
 	protected void resetStatistics() {
 		if (mean == null)
 			mean = new double[nTraits];
@@ -160,6 +189,11 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 		Arrays.fill(var, 0.0);
 	}
 
+	/**
+	 * Update statistics.
+	 * 
+	 * @param time the current time
+	 */
 	protected void updateStatistics(double time) {
 		if (prevsample >= time)
 			return;
@@ -175,8 +209,8 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 		prevsample = time;
 	}
 
-	/*
-	 * command line parsing stuff
+	/**
+	 * Command line option to set the interval for taking snapshots.
 	 */
 	public final CLOption cloSnapInterval = new CLOption("snapinterval", "1000", EvoLudo.catSimulation,
 			"--snapinterval <n>  save snapshot every n generations", new CLODelegate() {
@@ -196,6 +230,13 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 		super.collectCLO(parser);
 	}
 
+	/**
+	 * Save snapshot of current configuration.
+	 * 
+	 * @param format the format of the snapshot
+	 * 
+	 * @see MVPop2D
+	 */
 	public void saveSnapshot(int format) {
 		if (format == AbstractGraph.SNAPSHOT_NONE)
 			return; // do not waste our time
@@ -220,6 +261,12 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 		}
 	}
 
+	/**
+	 * Open file for exporting the snapshot.
+	 * 
+	 * @param ext the file extension
+	 * @return the file for the snapshot
+	 */
 	protected File openSnapshot(String ext) {
 		String pre = getKey() + "-t" + Formatter.format(engine.getModel().getTime(), 2);
 		File snapfile = new File(pre + "." + ext);

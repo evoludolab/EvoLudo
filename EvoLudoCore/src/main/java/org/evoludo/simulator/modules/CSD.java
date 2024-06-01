@@ -97,7 +97,7 @@ public class CSD extends Continuous implements Pairs, HasIBS, HasPop2D.Strategy,
 	/**
 	 * Create a new instance of the module for continuous games.
 	 * 
-	 * @param engine the manager of modules and pacemeaker for running the model
+	 * @param engine the manager of modules and pacemaker for running the model
 	 */
 	public CSD(EvoLudo engine) {
 		super(engine);

@@ -371,6 +371,13 @@ public class RingBuffer<T> implements Iterable<T> {
 	private class BckItr implements Iterator<T> {
 
 		/**
+		 * Creates a new {@code Iterator} over all elements in this buffer starting with
+		 * the most recent entry.
+		 */
+		public BckItr() {
+		}
+
+		/**
 		 * Index of current element in Iterator.
 		 */
 		int cursor = 0;
@@ -392,6 +399,13 @@ public class RingBuffer<T> implements Iterable<T> {
 	 * entry.
 	 */
 	private class FwdItr implements Iterator<T> {
+
+		/**
+		 * Creates a new {@code Iterator} over all elements in this buffer starting with
+		 * the oldest entry.
+		 */
+		public FwdItr() {
+		}
 
 		/**
 		 * Index of current element in Iterator.

@@ -210,7 +210,7 @@ public abstract class Discrete extends Module {
 	/**
 	 * Create new module with a discrete set of strategies.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 */
 	protected Discrete(EvoLudo engine) {
 		this(engine, null);
@@ -233,7 +233,7 @@ public abstract class Discrete extends Module {
 	 * {@code partner == null} this is a single species module and interactions
 	 * within species ({@code opponent == this} holds).
 	 * 
-	 * @param engine  the pacemeaker for running the model
+	 * @param engine  the pacemaker for running the model
 	 * @param partner the partner species
 	 */
 	protected Discrete(EvoLudo engine, Discrete partner) {

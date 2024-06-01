@@ -54,7 +54,7 @@ public class Network2DGWT extends Network2D {
 	 * Create a new network in 2D for the given engine and geometry with a layouting
 	 * process optimzed for GWT.
 	 * 
-	 * @param engine   the pacemeaker for running the model
+	 * @param engine   the pacemaker for running the model
 	 * @param geometry the structure of the population
 	 */
 	public Network2DGWT(EvoLudo engine, Geometry geometry) {

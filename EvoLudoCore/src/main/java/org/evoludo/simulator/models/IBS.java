@@ -228,7 +228,7 @@ public abstract class IBS implements Model.IBS {
 	/**
 	 * Creates a population of individuals for IBS simulations.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 */
 	public IBS(EvoLudo engine) {
 		this.engine = engine;
@@ -1005,7 +1005,9 @@ public abstract class IBS implements Model.IBS {
 	}
 
 	/**
-	 * @return species update type.
+	 * Get species update type.
+	 * 
+	 * @return the species update type
 	 */
 	public SpeciesUpdateType getSpeciesUpdateType() {
 		return speciesUpdateType;
@@ -1014,7 +1016,7 @@ public abstract class IBS implements Model.IBS {
 	/**
 	 * Pick focal population according to the selected scheme.
 	 * 
-	 * @return focal population
+	 * @return the focal population
 	 * 
 	 * @see SpeciesUpdateType
 	 */
@@ -1127,9 +1129,19 @@ public abstract class IBS implements Model.IBS {
 
 	/**
 	 * Enumeration of possible events in focal population.
+	 * 
+	 * @see #pickEvent(IBSPopulation)
 	 */
 	public enum Event {
+
+		/**
+		 * Mutation event.
+		 */
 		MUTATION,
+
+		/**
+		 * Replication event.
+		 */
 		REPLICATION
 	}
 

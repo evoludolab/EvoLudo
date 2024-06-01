@@ -116,7 +116,7 @@ public class SDEEulerN extends SDEEuler {
 	 * <strong>Important:</strong> for reproducibility the shared random number
 	 * generator should be used.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 * 
 	 * @see SDEEuler
 	 * @see EvoLudo#getRNG()

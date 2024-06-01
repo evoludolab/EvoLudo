@@ -216,6 +216,7 @@ import org.evoludo.util.Plist;
 // - mag01 not needed - removed
 // - loops optimized by reducing access to arrays through local vars
 // - logging in tests adapted to work both with JRE/GWT
+// - added methods to encode and restore RNG state
 // -- Christoph Hauert
 
 public class MersenneTwister {
@@ -241,7 +242,6 @@ public class MersenneTwister {
 	private double __nextNextGaussian;
 	private boolean __haveNextNextGaussian;
 
-	/* ChH: custom methods added for encoding and restoring RNG state */
 	/**
 	 * Encode state of random number generator as <code>plist</code> for saving.
 	 * 

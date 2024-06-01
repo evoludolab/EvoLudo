@@ -76,7 +76,7 @@ public class S3 extends AbstractView {
 	 * Construct a new view to display the time series data of the current EvoLudo
 	 * model as a trajectory in a \(S_3\) simplex.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 */
 	@SuppressWarnings("unchecked")
 	public S3(EvoLudoGWT engine) {

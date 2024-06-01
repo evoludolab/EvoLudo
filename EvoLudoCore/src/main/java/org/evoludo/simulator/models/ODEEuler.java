@@ -487,7 +487,7 @@ public class ODEEuler implements Model.ODE {
 	 * <code>engine</code> to control the numerical evaluations. The integrator
 	 * implements Euler's method (fixed step size).
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 */
 	public ODEEuler(EvoLudo engine) {
 		this.engine = engine;
@@ -941,6 +941,17 @@ public class ODEEuler implements Model.ODE {
 		return true;
 	}
 
+	/**
+	 * Helper method to check if the species with trait indices {@code start}
+	 * through {@code stop} is monomorphic. The species may have dependent trait
+	 * {@code dep} and allow for vacant sites (with index {@code vac}).
+	 * 
+	 * @param start the start index of the species
+	 * @param stop  the stop index of the species
+	 * @param dep   the index of the dependent trait
+	 * @param vac   the index of the vacant trait
+	 * @return <code>true</code> if the species is monomorphic
+	 */
 	private boolean isMonomorphic(int start, int stop, int dep, int vac) {
 		boolean mono = false;
 		for (int n = start; n < stop; n++) {
@@ -1606,6 +1617,17 @@ public class ODEEuler implements Model.ODE {
 		init(true);
 	}
 
+	/**
+	 * Helper method to set the intital state of the model. The method initializes
+	 * the state vector {@link #yt} and the initial state vector {@link #y0}. If
+	 * {@code doRandom}
+	 * is <code>true</code> random initial frequencies are set for species with
+	 * {@code InitType.RANDOM}.
+	 * 
+	 * @param doRandom if <code>true</code> use random initial frequencies as
+	 *                 requested
+	 * 
+	 */
 	private void init(boolean doRandom) {
 		t = 0.0;
 		dtTry = dt;

@@ -11,6 +11,36 @@ import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.Formatter;
 
+/**
+ * The implementation of player updates. Player updates are used to update the
+ * strategies of individuals in a population through (probabilistic) comparisons
+ * with the performance of other members (and their strategies) in the
+ * population. 
+ * <p>
+ * The player update type can be set to one of the following:
+ * <dl>
+ * <dt>best
+ * <dd>best wins (equal - stay)
+ * <dt>best-random
+ * <dd>best wins (equal - random)
+ * <dt>best-response
+ * <dd>best-response dynamics
+ * <dt>imitate
+ * <dd>imitate/replicate (linear)
+ * <dt>imitate-better
+ * <dd>imitate/replicate (better only)
+ * <dt>proportional
+ * <dd>proportional to payoff
+ * <dt>thermal
+ * <dd>Fermi/thermal update
+ * </dl>
+ * The player update type can be set via the command line option {@code
+ * --playerupdate <u> [<n>[,<e>]]} where {@code <u>} is the player update type,
+ * {@code <n>} the noise when updating the trait, and {@code <e>} the error
+ * probability when adopting the trait.
+ * 
+ * @author Christoph Hauert
+ */
 public class PlayerUpdate {
 
 	/**

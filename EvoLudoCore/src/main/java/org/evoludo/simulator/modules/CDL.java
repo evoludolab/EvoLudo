@@ -141,7 +141,7 @@ public class CDL extends Discrete implements Groups, HasIBS, HasODE, HasSDE, Has
 	/**
 	 * Create a new instance of the module for voluntary public goods games.
 	 * 
-	 * @param engine the manager of modules and pacemeaker for running the model
+	 * @param engine the manager of modules and pacemaker for running the model
 	 */
 	public CDL(EvoLudo engine) {
 		super(engine);
@@ -971,7 +971,7 @@ public class CDL extends Discrete implements Groups, HasIBS, HasODE, HasSDE, Has
 		 * Create a new instance of the IBS model for voluntary (non-linear) public
 		 * goods games.
 		 * 
-		 * @param engine the pacemeaker for running the model
+		 * @param engine the pacemaker for running the model
 		 */
 		protected IBS(EvoLudo engine) {
 			super(engine);

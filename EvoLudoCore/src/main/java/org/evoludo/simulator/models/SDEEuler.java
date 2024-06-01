@@ -47,6 +47,9 @@ import org.evoludo.util.CLOParser;
  */
 public class SDEEuler extends ODEEuler implements Model.SDE {
 
+	/**
+	 * Interface for modules that implement stochastic differential equations (SDE).
+	 */
 	public interface HasSDE extends HasDE {
 
 		/**
@@ -90,7 +93,7 @@ public class SDEEuler extends ODEEuler implements Model.SDE {
 	 * <strong>Important:</strong> for reproducibility the shared random number
 	 * generator should be used.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 * 
 	 * @see EvoLudo#getRNG()
 	 */

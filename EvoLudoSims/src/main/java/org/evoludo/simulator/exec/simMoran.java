@@ -46,23 +46,45 @@ import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.Formatter;
 
 /**
- *
+ * Simulations to investigate the Moran process on graph structured populations.
+ * 
  * @author Christoph Hauert
+ * 
+ * @see "Lieberman, E., Hauert, C., & Nowak, M. A. (2005).
+ *      <em>Evolutionary dynamics on graphs.</em>Nature, 433(7023), 312-316.
+ *      <a href='http://dx.doi.org/10.1038/nature03204'>doi:
+ *      10.1038/nature03204</a>"
  */
 public class simMoran extends Moran {
 
-	// additional parameters
+	/**
+	 * The number of samples for statistics.
+	 */
 	long nSamples = 100000;
+
+	/**
+	 * The flag to indicate whether to show progress.
+	 */
 	boolean progress = false;
+
+	/**
+	 * The output stream. Defaults to {@code System.out}.
+	 */
 	PrintStream out;
 
+	/**
+	 * Create a new simulation to investigate fixation probabilities and times in
+	 * the Moran process.
+	 * 
+	 * @param engine the pacemaker for running the model
+	 */
 	public simMoran(EvoLudo engine) {
 		super(engine);
 	}
 
 	@Override
 	public void run() {
-		out = ((EvoLudoJRE)engine).getOutput();		
+		out = ((EvoLudoJRE) engine).getOutput();
 		// assumes IBS simulations
 		IBSDPopulation pop = (IBSDPopulation) getIBSPopulation();
 		long nFix = 0;
@@ -73,140 +95,171 @@ public class simMoran extends Moran {
 		double sumSquaresFix = 0;
 		double sumSquaresAbs = 0;
 
-//		modelReset();
-		if( progress )
+		// modelReset();
+		if (progress)
 			nextReport = 10;
 
 		// TEST fix times
 		// RESULT excellent agreement with analytics
-//		{
-//		int mFix = 0;
-//		double mFixMean = 0.0, mFixSumVar = 0.0, mAbsMean = 0.0, mAbsSumVar = 0.0;
-//		for( long r=1; r<=nSamples; r++ ) {
-//			int nUpdates = 0;
-//			int nMut = 1;
-//			double fitRes = mapToFitness(traitScores[RESIDENT]);
-//			double fitMut = mapToFitness(traitScores[MUTANT]);
-//			do {
-//				// the first nMut individuals are mutants
-//				double totFit = fitRes*(nPopulation-nMut)+fitMut*nMut;
-//				if( random01()*totFit-fitMut*nMut>0.0 ) {
-//					// resident picked
-//					if( random0n(nPopulation)<nMut ) nMut--;	// mutant replaced
-//				}
-//				else {
-//					// mutant picked
-//					if( random0n(nPopulation)>=nMut ) nMut++;	// resident replaced
-//				}
-//				nUpdates++;
-//			}
-//			while( nMut>0 && nMut<nPopulation );
-//			if( nMut==nPopulation ) {
-//				mFix++;
-//				double delta = nUpdates-mFixMean;
-//				mFixMean += delta/mFix;
-//				mFixSumVar += delta*(nUpdates-mFixMean);
-//			}
-//			double delta = nUpdates-mAbsMean;
-//			mAbsMean += delta/r;
-//			mAbsSumVar += delta*(nUpdates-mAbsMean);
-//		}
-//		double rhoA1 = rhoA(1);
-//		output.println("# r\tfixation prob\t(analytical)\tfixation time\t(analytical)\tabsorbtion time\t(analytical)");
-//		output.println(ChHFormatter.formatFix(getFitness()[MUTANT], 2)+"\t"+
-//				ChHFormatter.formatFix((double)mFix/nSamples, 8)+"\t"+ChHFormatter.formatFix(rhoA1, 8)+"\t"+
-//				ChHFormatter.formatFix(mFixMean, 8)+" ± "+
-//					ChHFormatter.formatFix(Math.sqrt(mFixSumVar/(mFix-1)), 8)+"\t"+ChHFormatter.formatFix(tA1(), 8)+"\t"+
-//				ChHFormatter.formatFix(mAbsMean, 8)+" ± "+
-//				ChHFormatter.formatFix(Math.sqrt(mAbsSumVar/(nSamples-1)), 8)+"\t"+ChHFormatter.formatFix(t1(rhoA1), 8));
-//		}
+		// {
+		// int mFix = 0;
+		// double mFixMean = 0.0, mFixSumVar = 0.0, mAbsMean = 0.0, mAbsSumVar = 0.0;
+		// for( long r=1; r<=nSamples; r++ ) {
+		// int nUpdates = 0;
+		// int nMut = 1;
+		// double fitRes = mapToFitness(traitScores[RESIDENT]);
+		// double fitMut = mapToFitness(traitScores[MUTANT]);
+		// do {
+		// // the first nMut individuals are mutants
+		// double totFit = fitRes*(nPopulation-nMut)+fitMut*nMut;
+		// if( random01()*totFit-fitMut*nMut>0.0 ) {
+		// // resident picked
+		// if( random0n(nPopulation)<nMut ) nMut--; // mutant replaced
+		// }
+		// else {
+		// // mutant picked
+		// if( random0n(nPopulation)>=nMut ) nMut++; // resident replaced
+		// }
+		// nUpdates++;
+		// }
+		// while( nMut>0 && nMut<nPopulation );
+		// if( nMut==nPopulation ) {
+		// mFix++;
+		// double delta = nUpdates-mFixMean;
+		// mFixMean += delta/mFix;
+		// mFixSumVar += delta*(nUpdates-mFixMean);
+		// }
+		// double delta = nUpdates-mAbsMean;
+		// mAbsMean += delta/r;
+		// mAbsSumVar += delta*(nUpdates-mAbsMean);
+		// }
+		// double rhoA1 = rhoA(1);
+		// output.println("# r\tfixation prob\t(analytical)\tfixation
+		// time\t(analytical)\tabsorbtion time\t(analytical)");
+		// output.println(ChHFormatter.formatFix(getFitness()[MUTANT], 2)+"\t"+
+		// ChHFormatter.formatFix((double)mFix/nSamples,
+		// 8)+"\t"+ChHFormatter.formatFix(rhoA1, 8)+"\t"+
+		// ChHFormatter.formatFix(mFixMean, 8)+" ± "+
+		// ChHFormatter.formatFix(Math.sqrt(mFixSumVar/(mFix-1)),
+		// 8)+"\t"+ChHFormatter.formatFix(tA1(), 8)+"\t"+
+		// ChHFormatter.formatFix(mAbsMean, 8)+" ± "+
+		// ChHFormatter.formatFix(Math.sqrt(mAbsSumVar/(nSamples-1)),
+		// 8)+"\t"+ChHFormatter.formatFix(t1(rhoA1), 8));
+		// }
 		// END TEST
 
 		// print header
 		engine.dumpParameters();
-		
+
 		// evolve population
-		for( long r=1; r<=nSamples; r++ ) {
-			while (engine.modelNext());
+		for (long r = 1; r <= nSamples; r++) {
+			while (engine.modelNext())
+				;
 			double fixTime = engine.getModel().getTime();
-			if( pop.strategiesTypeCount[RESIDENT] == 0 ) {
+			if (pop.strategiesTypeCount[RESIDENT] == 0) {
 				// mutants fixated
 				nFix++;
 				double difMean = fixTime - meanFixTime;
-				meanFixTime += difMean/nFix;
+				meanFixTime += difMean / nFix;
 				double difMeanNew = fixTime - meanFixTime;
 				sumSquaresFix += difMeanNew * difMean;
 			}
 			double difMean = fixTime - meanAbsTime;
-			meanAbsTime += difMean/r;
+			meanAbsTime += difMean / r;
 			double difMeanNew = fixTime - meanAbsTime;
 			sumSquaresAbs += difMeanNew * difMean;
-			if( progress && nextReport==r ) {
-				out.println("# "+Formatter.formatFix((double)nFix/(double)r, 8)+"\t(runs: "+r+", "+msecToSring(System.currentTimeMillis()-msecStart)+")");
+			if (progress && nextReport == r) {
+				out.println("# " + Formatter.formatFix((double) nFix / (double) r, 8) + "\t(runs: " + r + ", "
+						+ msecToString(System.currentTimeMillis() - msecStart) + ")");
 				nextReport *= 10;
 			}
 			engine.modelReset();
 		}
 		double rhoA1 = rhoA(1, nPopulation);
 		out.println("# r\tfixation prob\t(analytical)\tfixation time\t(analytical)\tabsorbtion time\t(analytical)");
-		out.println(Formatter.formatFix(getFitness()[MUTANT], 2)+"\t"+
-				Formatter.formatFix((double)nFix/(double)nSamples, 8)+"\t"+Formatter.formatFix(rhoA1, 8)+"\t"+
-				Formatter.formatFix(meanFixTime*nPopulation, 8)+" ± "+
-					Formatter.formatFix(Math.sqrt(sumSquaresFix/(nFix-1))*nPopulation, 8)+"\t"+Formatter.formatFix(tA1(nPopulation), 8)+"\t"+
-				Formatter.formatFix(meanAbsTime*nPopulation, 8)+" ± "+
-				Formatter.formatFix(Math.sqrt(sumSquaresAbs/(nSamples-1))*nPopulation, 8)+"\t"+Formatter.formatFix(t1(rhoA1, nPopulation), 8));
+		out.println(Formatter.formatFix(getFitness()[MUTANT], 2) + "\t" +
+				Formatter.formatFix((double) nFix / (double) nSamples, 8) + "\t" + Formatter.formatFix(rhoA1, 8) + "\t"
+				+
+				Formatter.formatFix(meanFixTime * nPopulation, 8) + " ± " +
+				Formatter.formatFix(Math.sqrt(sumSquaresFix / (nFix - 1)) * nPopulation, 8) + "\t"
+				+ Formatter.formatFix(tA1(nPopulation), 8) + "\t" +
+				Formatter.formatFix(meanAbsTime * nPopulation, 8) + " ± " +
+				Formatter.formatFix(Math.sqrt(sumSquaresAbs / (nSamples - 1)) * nPopulation, 8) + "\t"
+				+ Formatter.formatFix(t1(rhoA1, nPopulation), 8));
 		engine.dumpEnd();
 		engine.exportState();
 	}
 
-	private String msecToSring(long msec) {
-		long sec = msec/1000;
-		long min = sec/60;
+	/**
+	 * Helper method to convert milliseconds to a more readable string
+	 * representation in the format 'HH:mm:ss.ss'.
+	 * 
+	 * @param msec the time in milliseconds
+	 * @return the formatted string
+	 */
+	private String msecToString(long msec) {
+		long sec = msec / 1000;
+		long min = sec / 60;
 		sec %= 60;
-		long hour = min/60;
+		long hour = min / 60;
 		min %= 60;
 		DecimalFormat twodigits = new DecimalFormat("00");
-		return hour+":"+twodigits.format(min)+":"+twodigits.format(sec);	
+		return hour + ":" + twodigits.format(min) + ":" + twodigits.format(sec);
 	}
-	
-	public void setNSamples(long aValue) {
-		if (aValue <= 0L)
+
+	/**
+	 * Set the number of samples for statistics.
+	 * 
+	 * @param nSamples the number of samples
+	 */
+	public void setNSamples(long nSamples) {
+		if (nSamples <= 0L)
 			return;
-		nSamples = aValue;
+		this.nSamples = nSamples;
 	}
-	
+
+	/**
+	 * Get the number of samples for statistics.
+	 * 
+	 * @return the number of samples
+	 */
 	public double getNSamples() {
 		return nSamples;
 	}
-	
-	/*
-	 * command line parsing stuff
+
+	/**
+	 * Command line option for setting the number of samples for statistics.
 	 */
-    final CLOption cloSamples = new CLOption("samples", "100000", EvoLudo.catSimulation,	// 10^5
-			  "--samples <s>   number of samples",
-    		new CLODelegate() {
-		    	@Override
-		    	public boolean parse(String arg) {
+	final CLOption cloSamples = new CLOption("samples", "100000", EvoLudo.catSimulation, // 10^5
+			"--samples <s>   number of samples",
+			new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
 					setNSamples(CLOParser.parseLong(arg));
 					return true;
-		    	}
-		    	@Override
-		    	public void report(PrintStream output) {
-//					output.println("# samples:              "+activeModel.getNStatisticsSamples());
-output.println("# samples:              "+((IBS)engine.getModel()).getNStatisticsSamples());
-		    	}
-		    });
-    final CLOption cloProgress = new CLOption("progress", EvoLudo.catSimulation,
-			  "--progress      print progress reports",
-    		new CLODelegate() {
-		    	@Override
-		    	public boolean parse(String arg) {
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					// output.println("# samples: "+activeModel.getNStatisticsSamples());
+					output.println("# samples:              " + ((IBS) engine.getModel()).getNStatisticsSamples());
+				}
+			});
+
+	/**
+	 * Command line option to show the simulation progress.
+	 */
+	final CLOption cloProgress = new CLOption("progress", EvoLudo.catSimulation,
+			"--progress      print progress reports",
+			new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
 					progress = cloProgress.isSet();
 					return true;
-		    	}
-		    });
+				}
+			});
 
-    @Override
+	@Override
 	public void collectCLO(CLOParser parser) {
 		// prepare command line options
 		parser.addCLO(cloSamples);

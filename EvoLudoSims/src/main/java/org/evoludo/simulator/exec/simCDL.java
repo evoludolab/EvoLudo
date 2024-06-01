@@ -48,22 +48,55 @@ import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.Formatter;
 
 /**
- *
+ * Simulations to investigate the role of volunteering in public goods games.
+ * 
  * @author Christoph Hauert
+ * 
+ * @see "Hauert C., De Monte S., Hofbauer J., Sigmund K. (2002)
+ *      <em>Volunteering as Red Queen Mechanism for Cooperation in Public
+ *      Goods Games.</em> Science 296:1129-1132. doi: <a href=
+ *      'https://doi.org/10.1126/science.1070582'>10.1126/science.1070582</a>"
  */
 public class simCDL extends CDL implements ChangeListener {
 
-	/* additional parameters */
+	/**
+	 * The flag to indicate whether to show progress.
+	 */
 	boolean progress = false;
+
+	/**
+	 * The number of samples for fixation probabilities.
+	 */
 	int nSamples = 100;
+
+	/**
+	 * The number of steps for initial frequencies.
+	 */
 	int nSteps = 100;
+
+	/**
+	 * The scan range for non-linearity in public goods games.
+	 */
 	double[] scanNL;
+
+	/**
+	 * The output stream. Defaults to {@code System.out}.
+	 */
 	PrintStream out;
 
+	/**
+	 * Create a new simulation to investigate the role of volunteering in public
+	 * goods games.
+	 * 
+	 * @param engine the pacemaker for running the model
+	 */
 	public simCDL(EvoLudo engine) {
 		super(engine);
 	}
 
+	/**
+	 * The initial counts for the different strategies.
+	 */
 	int[] initcount;
 
 	@Override
@@ -79,50 +112,50 @@ public class simCDL extends CDL implements ChangeListener {
 		engine.modelReset();
 		engine.dumpParameters();
 
-// TESTING PROBABILITIES AND TIME SCALES
-//		initcount = null;
-//		double[] prob = new double[nTraits];
-//		double[] time = new double[nTraits];
-//		double[] time2 = new double[nTraits];
-//		for (int s = 1; s <= nSamples; s++) {
-//			modelReset();
-//			while (modelNext())	;
-//			int winIdx;
-//			switch( modelType ) {
-//				case ODE:
-//					winIdx = ChHMath.maxIndex(ode.getState());
-//					break;
-//				case PDE:
-//					throw new Error("not implemented...");
-//				case SDE:
-//					winIdx = ChHMath.maxIndex(sde.getState());
-//					break;
-//				case SIMULATION:
-//				default:
-//					winIdx = ChHMath.maxIndex(strategiesTypeCount);
-//			}
-//			prob[winIdx]++;
-//			// running average and variance of absorption time
-//			double tn = generation;
-//			double d = tn-time[winIdx];
-//			time[winIdx] += d/s;
-//			time2[winIdx] += d*(tn-time[winIdx]);
-//		}
-//		for( int n=0; n<nTraits; n++ ) {
-//			time2[n] /= (prob[n]-1);
-//			time2[n] = Math.sqrt(time2[n]);
-//			prob[n] /= nSamples;
-//		}
-//		output.println("fix. probs: "+ChHFormatter.format(prob, 4));
-//		output.println("abs. times: "+ChHFormatter.format(time, 4));
-//		output.println("abs. sdevs: "+ChHFormatter.format(time2, 4));
-//		engine.dumpEnd();
-//		engine.exportState();
-//		((EvoLudoJRE) engine).exit(0);
-// END TESTING
+		// TESTING PROBABILITIES AND TIME SCALES
+		// initcount = null;
+		// double[] prob = new double[nTraits];
+		// double[] time = new double[nTraits];
+		// double[] time2 = new double[nTraits];
+		// for (int s = 1; s <= nSamples; s++) {
+		// modelReset();
+		// while (modelNext()) ;
+		// int winIdx;
+		// switch( modelType ) {
+		// case ODE:
+		// winIdx = ChHMath.maxIndex(ode.getState());
+		// break;
+		// case PDE:
+		// throw new Error("not implemented...");
+		// case SDE:
+		// winIdx = ChHMath.maxIndex(sde.getState());
+		// break;
+		// case SIMULATION:
+		// default:
+		// winIdx = ChHMath.maxIndex(strategiesTypeCount);
+		// }
+		// prob[winIdx]++;
+		// // running average and variance of absorption time
+		// double tn = generation;
+		// double d = tn-time[winIdx];
+		// time[winIdx] += d/s;
+		// time2[winIdx] += d*(tn-time[winIdx]);
+		// }
+		// for( int n=0; n<nTraits; n++ ) {
+		// time2[n] /= (prob[n]-1);
+		// time2[n] = Math.sqrt(time2[n]);
+		// prob[n] /= nSamples;
+		// }
+		// output.println("fix. probs: "+ChHFormatter.format(prob, 4));
+		// output.println("abs. times: "+ChHFormatter.format(time, 4));
+		// output.println("abs. sdevs: "+ChHFormatter.format(time2, 4));
+		// engine.dumpEnd();
+		// engine.exportState();
+		// ((EvoLudoJRE) engine).exit(0);
+		// END TESTING
 		// calculate fixation probabilities for different initial configurations
-//		double incr = Math.max(1.0, nPopulation*0.02);
-//		double incr = Math.max(1.0, nPopulation*0.05);
+		// double incr = Math.max(1.0, nPopulation*0.02);
+		// double incr = Math.max(1.0, nPopulation*0.05);
 
 		double nGenerations = engine.getNGenerations();
 		double nRelaxation = engine.getNRelaxation();
@@ -258,6 +291,9 @@ public class simCDL extends CDL implements ChangeListener {
 		}
 	}
 
+	/*
+	 * Temporary variables for fixation probabilities and absorption times.
+	 */
 	double[] mean, var, state, meanmean, meanvar;
 	double prevsample;
 
@@ -271,10 +307,16 @@ public class simCDL extends CDL implements ChangeListener {
 		updateStatistics(engine.getNGenerations() + engine.getNRelaxation());
 	}
 
+	/**
+	 * Start collecting statistics.
+	 */
 	protected void startStatistics() {
 		prevsample = engine.getModel().getTime();
 	}
 
+	/**
+	 * Reset statistics.
+	 */
 	protected void resetStatistics() {
 		if (mean == null)
 			mean = new double[nTraits];
@@ -287,6 +329,11 @@ public class simCDL extends CDL implements ChangeListener {
 		Arrays.fill(var, 0.0);
 	}
 
+	/**
+	 * Update statistics.
+	 * 
+	 * @param time the current time
+	 */
 	protected void updateStatistics(double time) {
 		if (prevsample >= time)
 			return;
@@ -332,6 +379,9 @@ public class simCDL extends CDL implements ChangeListener {
 	 * private double sign(double x) { return x>0.0?1.0:(x<0.0?0.0:0.5); }
 	 */
 
+	/**
+	 * Command line option to set the number of samples for fixation probabilities.
+	 */
 	public final CLOption cloNSamples = new CLOption("samples", "100", EvoLudo.catSimulation,
 			"--samples       number of samples for fixation probs", new CLODelegate() {
 				@Override
@@ -345,6 +395,10 @@ public class simCDL extends CDL implements ChangeListener {
 					output.println("# samples:              " + nSamples);
 				}
 			});
+
+	/**
+	 * Command line option to set the number of steps for initial frequencies.
+	 */
 	public final CLOption cloNSteps = new CLOption("steps", "0", EvoLudo.catSimulation,
 			"--steps         number of steps for initial frequencies", new CLODelegate() {
 				@Override
@@ -358,6 +412,11 @@ public class simCDL extends CDL implements ChangeListener {
 					output.println("# steps:                " + nSteps);
 				}
 			});
+
+	/**
+	 * Command line option to set the range and increments for scanning
+	 * non-linearities.
+	 */
 	public final CLOption cloScanNL = new CLOption("scanNL", "-2.5,2.5,0.5", EvoLudo.catSimulation,
 			"--scanNL <start,end,incr>  scan non-linearity of PGG", new CLODelegate() {
 				@Override
@@ -374,6 +433,10 @@ public class simCDL extends CDL implements ChangeListener {
 						output.println("# scan non-linear PGG:  " + Formatter.format(scanNL, 4));
 				}
 			});
+
+	/**
+	 * Command line option to show the simulation progress.
+	 */
 	public final CLOption cloProgress = new CLOption("progress", EvoLudo.catSimulation,
 			"--progress      make noise about progress", new CLODelegate() {
 				@Override
@@ -399,8 +462,18 @@ public class simCDL extends CDL implements ChangeListener {
 		return new simCDLIBS(engine);
 	}
 
+	/**
+	 * The simulation for the CDL module. This class adds specific initializations
+	 * for measuring fixation probabilities and absorption times for given initial
+	 * strategy frequencies.
+	 */
 	class simCDLIBS extends CDL.IBS {
 
+		/**
+		 * Create a new simulation.
+		 * 
+		 * @param engine the pacemaker for running the model
+		 */
 		protected simCDLIBS(EvoLudo engine) {
 			super(engine);
 		}

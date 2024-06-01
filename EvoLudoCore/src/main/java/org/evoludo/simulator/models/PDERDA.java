@@ -94,7 +94,7 @@ public class PDERDA extends PDERD {
 	 * i.e. JRE or GWT, respectively, to properly deal with multiple threads or
 	 * scheduling.
 	 *
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 *
 	 * @see EvoLudo#getRNG()
 	 * @see org.evoludo.simulator.models.PDESupervisorGWT PDESupervisorGWT

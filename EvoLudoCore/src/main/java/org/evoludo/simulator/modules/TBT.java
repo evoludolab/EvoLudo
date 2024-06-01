@@ -137,7 +137,7 @@ public class TBT extends Discrete implements Pairs,
 	/**
 	 * Create a new instance of the module for {@code 2×2} games.
 	 * 
-	 * @param engine the manager of modules and pacemeaker for running the model
+	 * @param engine the manager of modules and pacemaker for running the model
 	 */
 	public TBT(EvoLudo engine) {
 		super(engine);
@@ -496,8 +496,18 @@ public class TBT extends Discrete implements Pairs,
 		return new TBT.TBTIBS(engine);
 	}
 
+	/**
+	 * The extension for IBS simulations specific to {@code 2×2} games. This
+	 * extension implements customizations for trait names and colors for
+	 * {@code Geometry.Type.SQUARE_NEUMANN_2ND}.
+	 */
 	public class TBTIBS extends IBSD {
 
+		/**
+		 * Create a new instance of the IBS model for {@code 2×2} games.
+		 * 
+		 * @param engine the pacemaker for running the model
+		 */
 		public TBTIBS(EvoLudo engine) {
 			super(engine);
 		}
@@ -534,16 +544,29 @@ public class TBT extends Discrete implements Pairs,
 	}
 
 	/**
-	 * The extension for IBS simulations specific to {@code 2×2} games. This
-	 * extension implements specific initial conditions that give rise to
-	 * fascinating evolutionary kaleidoscopes for deterministic updating.
+	 * The extension for IBS simulations specific to populations engaging in
+	 * {@code 2×2} games. This extension implements customizations for
+	 * {@code Geometry.Type.SQUARE_NEUMANN_2ND} as well as specific initial
+	 * conditions that give rise to fascinating evolutionary kaleidoscopes for
+	 * deterministic updating.
 	 */
 	public class TBTPop extends IBSDPopulation {
 
 		/**
+		 * Timestamp for the last mean trait calculation.
+		 */
+		double tsMean = -1.0;
+
+		/**
+		 * The trait frequencies for the two sublattices for
+		 * {@code Geometry.Type.SQUARE_NEUMANN_2ND}.
+		 */
+		double[] tsTraits;
+
+		/**
 		 * Create a new instance of the IBS model for {@code 2×2} games.
 		 * 
-		 * @param engine the pacemeaker for running the model
+		 * @param engine the pacemaker for running the model
 		 */
 		protected TBTPop(EvoLudo engine) {
 			super(engine);
@@ -566,9 +589,6 @@ public class TBT extends Discrete implements Pairs,
 				return 2 * nTraits;
 			return super.getNMean();
 		}
-
-		double tsMean = -1.0;
-		double[] tsTraits;
 
 		@Override
 		public void getMeanTraits(double[] mean) {

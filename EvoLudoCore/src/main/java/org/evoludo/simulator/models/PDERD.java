@@ -321,7 +321,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	 * i.e. JRE or GWT, respectively, to properly deal with multiple threads or
 	 * scheduling.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 * 
 	 * @see EvoLudo#getRNG()
 	 * @see org.evoludo.simulator.models.PDESupervisorGWT PDESupervisorGWT
@@ -450,6 +450,10 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		supervisor.update();
 	}
 
+	/**
+	 * The generation when the model execution is halted next. This is needed to
+	 * keep track of halting for asynchronous execution in GWT.
+	 */
 	double gwtHalt;
 
 	/**

@@ -41,7 +41,7 @@ public class Functions {
 	/**
 	 * Ensure non-instantiability with private default constructor
 	 */
-	public Functions() {
+	private Functions() {
 	}
 
 	/**

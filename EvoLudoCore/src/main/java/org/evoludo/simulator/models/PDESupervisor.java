@@ -50,7 +50,7 @@ public class PDESupervisor {
 	 * particular, parallel execution of computations for JRE and scheduling for
 	 * GWT.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 * @param charge the model to supervise
 	 */
 	public PDESupervisor(EvoLudo engine, Model.PDE charge) {

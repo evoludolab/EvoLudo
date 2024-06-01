@@ -81,7 +81,9 @@ public class XMLCoder {
 	}
 
 	/**
-	 * @return <code>true</code> if strictly XML compliant encoding/decoding
+	 * Check if encoding/decoding is strictly XML compliant.
+	 * 
+	 * @return <code>true</code> if strictly compliant
 	 */
 	public static boolean isStrict() {
 		return strict;
@@ -104,8 +106,8 @@ public class XMLCoder {
 	 * though the latter is perfectly fine in XHTML documents).
 	 * </p>
 	 * 
-	 * @param string to encode in XML
-	 * @return encoded string
+	 * @param string the string to encode in XML
+	 * @return the encoded string
 	 */
 	public static String encode(String string) {
 		if (string == null)
@@ -145,8 +147,8 @@ public class XMLCoder {
 	 * Decode XML string. If <code>strict==false</code> some additional characters
 	 * are decoded that still validate in ePub's.
 	 * 
-	 * @param string XML string to decode
-	 * @return decoded string
+	 * @param string the XML string to decode
+	 * @return the decoded string
 	 */
 	public static String decode(String string) {
 		int start, end = 0;

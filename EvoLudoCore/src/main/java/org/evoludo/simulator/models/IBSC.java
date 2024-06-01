@@ -22,7 +22,7 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 	 * Creates a population of individuals for IBS simulations with continuous
 	 * traits/strategies.
 	 * 
-	 * @param engine the pacemeaker for running the model
+	 * @param engine the pacemaker for running the model
 	 */
 	public IBSC(EvoLudo engine) {
 		super(engine);
@@ -70,6 +70,10 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		getIBSMCPopulation(id).get2DTraitHistogramData(bins, trait1, trait2);
 	}
 
+	/**
+	 * The initialization of populations with continuous traits. This includes the
+	 * initialization type as well as any accompanying arguments.
+	 */
 	public static class Init {
 
 		/**

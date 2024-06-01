@@ -151,7 +151,7 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 	/**
 	 * Create a new instance of the module for asymmetric {@code 2×2} games.
 	 * 
-	 * @param engine the manager of modules and pacemeaker for running the model
+	 * @param engine the manager of modules and pacemaker for running the model
 	 */
 	public ATBT(EvoLudo engine) {
 		super(engine);
@@ -764,7 +764,7 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 		 * Create a new instance of the IBS model for asymmteric {@code 2×2}
 		 * games.
 		 * 
-		 * @param engine the pacemeaker for running the model
+		 * @param engine the pacemaker for running the model
 		 */
 		protected IBS(EvoLudo engine) {
 			(new TBT(engine)).super(engine);
@@ -843,7 +843,7 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 		 * Constructs a new ODE solver taylored for the integration of asymmetric
 		 * {@code 2×2} games with environmental feedback.
 		 * 
-		 * @param engine the pacemeaker for running the model
+		 * @param engine the pacemaker for running the model
 		 */
 		protected ODE(EvoLudo engine) {
 			super(engine);
