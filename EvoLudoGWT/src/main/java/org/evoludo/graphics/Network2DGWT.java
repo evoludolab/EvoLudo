@@ -88,18 +88,18 @@ public class Network2DGWT extends Network2D {
 	@Override
 	public void doLayout(LayoutListener ll) {
 		Status stat = getStatus();
-		if (stat == Status.HAS_LAYOUT || stat == Status.NO_LAYOUT || stat == Status.HAS_MESSAGE)
+		if (stat != Status.NEEDS_LAYOUT && stat != Status.ADJUST_LAYOUT)
 			return;
 		this.listener = ll;
 		doLayoutPrep();
 		layout = new Duration();
 		prevLayout = Integer.MIN_VALUE;
-		Scheduler.get().scheduleFixedDelay(new Scheduler.RepeatingCommand() {
+		Scheduler.get().scheduleIncremental(new Scheduler.RepeatingCommand() {
 			@Override
 			public boolean execute() {
 				return doLayoutStep();
 			}
-		}, 5);
+		});
 	}
 
 	/**
