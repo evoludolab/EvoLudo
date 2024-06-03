@@ -546,8 +546,13 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 				// deferred updates can cause issues if in the mean time the model
 				// has changed and this view is no longer supported. if this is the
 				// case destroyGraphs has been called and graphs is empty.
-				if (!graphs.isEmpty())
-					update(force);
+				try {
+					// catch errors to prevent the views from crashing GUI
+					if (!graphs.isEmpty())
+						update(force);
+				} catch (Exception e) {
+					logger.severe("Error updating view: " + e.getMessage());
+				}
 				updateScheduled = false;
 			}
 		});
