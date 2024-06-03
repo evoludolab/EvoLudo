@@ -16,6 +16,7 @@ BUGS:
 TODO:
 - improve reported score for progress of network layouting
 - move generation of degree histograms to Geometry
+- resolve issues with geometries in GenericPop.getOpponentInteraction/CompetitionGraph()
 - ephemeral scoring is too slow (about half the speed of adjusting scores; should be faster, though)
 - check if interactions-array can be replaced by interaction.kout for adjustScores (but only if read-only access is ensured)!
 - merge options cloSamples and cloRuns?

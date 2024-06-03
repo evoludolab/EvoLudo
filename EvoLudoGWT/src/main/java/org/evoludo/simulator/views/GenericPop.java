@@ -376,7 +376,9 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 			if (oppGraph == graph)
 				continue;
 			Module oppModule = oppGraph.getModule();
-			if (oppModule == opponent && oppGraph.getGeometry() == oppInter)
+			//XXX this should work but somehow the pointers are different even though the objects appear to be the same...
+			// if (oppModule == opponent && oppGraph.getGeometry() == oppInter)
+			if (oppModule == opponent && oppGraph.getGeometry().name == oppInter.name)
 				return oppGraph;
 		}
 		return null;
@@ -397,7 +399,9 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 			if (oppGraph == graph)
 				continue;
 			Module oppModule = oppGraph.getModule();
-			if (oppModule == opponent && oppGraph.getGeometry() == oppComp)
+			//XXX this should work but somehow the pointers are different even though the objects appear to be the same...
+			// if (oppModule == opponent && oppGraph.getGeometry() == oppComp)
+			if (oppModule == opponent && oppGraph.getGeometry().name == oppComp.name)
 				return oppGraph;
 		}
 		return null;
