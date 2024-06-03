@@ -1158,17 +1158,10 @@ public class EvoLudoWeb extends Composite
 			logFeatures();
 			if (newModel != null)
 				engine.modelReset();
-			// show version information in status line (set level to replace info messages
-			// but not warnings and errors)
-			displayStatus(engine.getVersion(), Level.INFO.intValue() + 1);
 		} else {
 			// process (emulated) ePub restrictions - adds console if possible
 			processEPubSettings();
-			if (engine.paramsDidChange()) {
-				// show version information in status line (set level to replace info messages
-				// but not warnings and errors)
-				displayStatus(engine.getVersion(), Level.INFO.intValue() + 1);
-			} else {
+			if (!engine.paramsDidChange()) {
 				// resume running if no reset was necessary or --run was provided
 				engine.setSuspended(resume || engine.isSuspended());
 				// even without reset necessary data views should be adjusted to:
