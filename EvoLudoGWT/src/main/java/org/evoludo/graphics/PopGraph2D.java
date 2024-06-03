@@ -567,7 +567,12 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		}
 		if (dw < MIN_DW && dh < MIN_DH && dR < MIN_DR) {
 			buffer = null;
+			data = null;
 			displayMessage("Population size to large!");
+		} else {
+			// lazy allocation of memory for colors
+			if (isActive && (data == null || data.length != geometry.size))
+				data = new String[geometry.size];
 		}
 		return true;
 	}
