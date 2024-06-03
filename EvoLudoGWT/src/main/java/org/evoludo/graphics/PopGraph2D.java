@@ -379,12 +379,12 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	/**
 	 * The minimum width of a node in pixels.
 	 */
-	static final int MIN_DW = 3;
+	static final int MIN_DW = 2;
 
 	/**
 	 * The minimum height of a node in pixels.
 	 */
-	static final int MIN_DH = 3;
+	static final int MIN_DH = 2;
 
 	/**
 	 * The minimum diameter of a node in pixels.
@@ -468,7 +468,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				dw = 2 * dw2;
 				dh3 = diameter / (3 * side + 1);
 				dh = 3 * dh3;
-				if (dw < MIN_DW || dh3 < MIN_DH / 3) {
+				if (dw < MIN_DW || dh3 < Math.max(MIN_DH / 3, 1)) {
 					// too small
 					bounds.setSize(width, height);
 					break;
