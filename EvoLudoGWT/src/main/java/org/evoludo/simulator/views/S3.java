@@ -180,6 +180,7 @@ public class S3 extends AbstractView {
 		for (S3Graph graph : graphs) {
 			model.getMeanTraits(graph.getModule().getID(), state);
 			graph.addData(Double.NaN, state, true);
+			graph.paint(true);
 		}
 	}
 

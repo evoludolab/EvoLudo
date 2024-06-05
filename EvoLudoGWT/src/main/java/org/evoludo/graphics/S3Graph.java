@@ -501,11 +501,8 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 				map.data2S3(x, 1.0 - x, 0.0, loc);
 				strokeLine(loc.x, loc.y, loc.x, loc.y + style.tickLength);
 				if (style.showXTickLabels)
-					g.fillText(tick, loc.x - g.measureText(tick).getWidth() * 0.5, loc.y + style.tickLength + 12.5); // center
-																														// tick
-																														// labels
-																														// with
-																														// ticks
+					// center tick labels with ticks
+					g.fillText(tick, loc.x - g.measureText(tick).getWidth() * 0.5, loc.y + style.tickLength + 12.5);
 				map.data2S3(0.0, x, 1.0 - x, loc);
 				strokeLine(loc.x, loc.y, loc.x + tx, loc.y - ty);
 				if (style.showXTickLabels)
