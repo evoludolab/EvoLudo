@@ -251,6 +251,19 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	}
 
 	/**
+	 * Check if the view has finished layouting its graphs. Currently only
+	 * {@code GenericPop} and its graphs require layouting.
+	 * 
+	 * @return {@code true} if the view has layout
+	 * 
+	 * @see GenericPop
+	 * @see GenericPopGraph
+	 */
+	public boolean hasLayout() {
+		return true;
+	}
+
+	/**
 	 * Get the mode of this view. The graphical visualizations can request different
 	 * modes for running the model. The default mode is {@link Mode#DYNAMICS} to
 	 * generate a time series of the states of the model. Some views may digest data

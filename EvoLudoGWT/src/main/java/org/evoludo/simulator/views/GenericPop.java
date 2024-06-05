@@ -97,24 +97,25 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	}
 
 	@Override
-	public void layoutComplete() {
-		if (isActive) {
-			// check if all graphs have layout
-			boolean layouting = false;
-			for (G graph : graphs) {
-				// graph may not have a network (e.g. for ODE/SDE models)
-				Network net = graph.getNetwork();
-				if (net == null)
-					continue;
-				Status status = net.getStatus();
-				if (status.equals(Status.HAS_LAYOUT) || status.equals(Status.NO_LAYOUT))
-					continue;
-				layouting = true;
-				break;
-			}
-			if (!layouting)
-				engine.layoutComplete();
+	public boolean hasLayout() {
+		// check if all graphs have layout
+		for (G graph : graphs) {
+			// graph may not have a network (e.g. for ODE/SDE models)
+			Network net = graph.getNetwork();
+			if (net == null)
+				continue;
+			Status status = net.getStatus();
+			if (status.equals(Status.HAS_LAYOUT) || status.equals(Status.NO_LAYOUT))
+				continue;
+			return false;
 		}
+		return true;
+	}
+
+	@Override
+	public void layoutComplete() {
+		if (isActive && hasLayout())
+			engine.layoutComplete();
 		update();
 	}
 
