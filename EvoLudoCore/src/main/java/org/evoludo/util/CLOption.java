@@ -968,20 +968,26 @@ public class CLOption implements Comparable<CLOption> {
 			for (int n = 0; n < args.length; n++) {
 				String[] argsn = args[n].split("\\s+|=|,");
 				int keypos = delegate.getKeyPos();
-				Key key = match(argsn[keypos]);
-				if (key == null && prev != null)
-					key = prev;
-				if (key == null) {
-					argkeys += "INVALID '" + args[n].trim() + "'";
-				} else {
+				if (keypos < argsn.length) {
+					// key provided
+					Key key = match(argsn[keypos]);
+					if (key == null && prev != null)
+						key = prev;
+					if (key == null) {
+						argkeys += "INVALID '" + args[n].trim() + "'";
+						break;
+					}
 					String[] lead = Arrays.copyOfRange(argsn, 0, keypos);
 					String[] tail = Arrays.copyOfRange(argsn, keypos + 1, argsn.length);
 					argkeys += (lead.length > 0 ? String.join(",", lead) + " " : "") +
 							key.getKey() +
 							(tail.length > 0 ? " " + String.join(",", tail) : "") +
 							(n == args.length - 1 ? "" : CLOParser.SPECIES_DELIMITER);
+					prev = key;
+				} else {
+					argkeys += String.join(",", argsn) +
+							(n == args.length - 1 ? "" : CLOParser.SPECIES_DELIMITER);
 				}
-				prev = (key == null ? prev : key);
 			}
 			return myDescr + "\n      (current: " + argkeys + " default: " + defaultArg + ")";
 		}
