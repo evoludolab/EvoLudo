@@ -135,9 +135,7 @@
     <profile>
       <id>public</id>
       <activation>
-        <file>
-          <missing>../EvoLudoCorePrivate/pom.xml</missing>
-        </file>
+        <activeByDefault>true</activeByDefault>
       </activation>
       <dependencies>
         <dependency>

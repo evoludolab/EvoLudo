@@ -28,7 +28,7 @@
 				"http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/simulator/views/HasPop3D.java" : "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/views/HasPop3D.java",
 				"http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/simulator/views/HasS3.java" : "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/views/HasS3.java",
 				"http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/simulator/ColorMap.java" : "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/ColorMap.java",
-				"http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/simulator/EvoLudo.java" : "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/EvoLudo.java",
+				"http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/simulator/EvoLudo.java" : "${workspaceFolder}/${evoludo.engineModule}/src/main/java/org/evoludo/simulator/EvoLudo.java",
 				"http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/simulator/Geometry.java" : "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/Geometry.java",
 				"http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/simulator/Network.java" : "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/Network.java",
 				"http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/simulator/Network2D.java" : "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/Network2D.java",
