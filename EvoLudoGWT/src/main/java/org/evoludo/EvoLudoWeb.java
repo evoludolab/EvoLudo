@@ -1156,15 +1156,16 @@ public class EvoLudoWeb extends Composite
 		Module newModule = engine.getModule();
 		Model newModel = engine.getModel();
 		if (newModule == null || engine.getModule() != oldModule || newModel != oldModel) {
-			updateViews();
 			// process (emulated) ePub restrictions - adds console if possible
 			processEPubSettings();
+			resetViews();
 			logFeatures();
 			if (newModel != null)
 				engine.modelReset();
 		} else {
 			// process (emulated) ePub restrictions - adds console if possible
 			processEPubSettings();
+			updateViews();
 			if (!engine.paramsDidChange()) {
 				// resume running if no reset was necessary or --run was provided
 				engine.setSuspended(resume || engine.isSuspended());
@@ -1689,18 +1690,32 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
-	 * Each EvoLudo model may entertain its own selection of views to visualize its
+	 * Each EvoLudo module may entertain its own selection of views to visualize its
 	 * data. Unloads all currently active views, resets the list and generates a new
 	 * list of suitable views based on the features of the current model.
 	 * <p>
 	 * <strong>Note:</strong> the console view is dealt with elsewhere (see
 	 * {@link #processEPubSettings}).
 	 */
-	protected void updateViews() {
+	protected void resetViews() {
 		for (AbstractView view : activeViews.values())
 			view.unload();
 		activeViews.clear();
-		evoludoViews.clear();
+		updateViews();
+	}
+
+	/**
+	 * Each EvoLudo model may entertain its own selection of views to visualize its
+	 * data. Re-use currently active views if possible otherwise instantiate
+	 * suitable views based on the features of the current model. Update the view
+	 * selector accordingly.
+	 * <p>
+	 * <strong>Note:</strong> the console view is dealt with elsewhere (see
+	 * {@link #processEPubSettings}).
+	 */
+	protected void updateViews() {
+		HashMap<String, AbstractView> oldViews = activeViews;
+		activeViews = new HashMap<>();
 		// strategies related views
 		Module module = engine.getModule();
 		if (module == null)
@@ -1709,47 +1724,54 @@ public class EvoLudoWeb extends Composite
 		Model.Type type = model.getModelType();
 		boolean isODESDE = (type == Model.Type.ODE || type == Model.Type.SDE);
 		if (module instanceof HasPop2D.Strategy && !isODESDE)
-			addView(new Pop2D(engine, Model.Data.STRATEGY));
+			addView(new Pop2D(engine, Model.Data.STRATEGY), oldViews);
 		if (isWebGLSupported && module instanceof HasPop3D.Strategy && !isODESDE)
-			addView(new Pop3D(engine, Model.Data.STRATEGY));
-		if (module instanceof HasMean.Strategy)
-			addView(new Mean(engine, Model.Data.STRATEGY));
+			addView(new Pop3D(engine, Model.Data.STRATEGY), oldViews);
 		if (module instanceof HasPhase2D)
-			addView(new Phase2D(engine));
+			addView(new Phase2D(engine), oldViews);
+		if (module instanceof HasMean.Strategy)
+			addView(new Mean(engine, Model.Data.STRATEGY), oldViews);
+		if (module instanceof HasPhase2D)
+			addView(new Phase2D(engine), oldViews);
 		if (module instanceof HasS3)
-			addView(new S3(engine));
+			addView(new S3(engine), oldViews);
 		if (module instanceof HasHistogram.Strategy)
-			addView(new Histogram(engine, Model.Data.STRATEGY));
+			addView(new Histogram(engine, Model.Data.STRATEGY), oldViews);
 		if (module instanceof HasDistribution.Strategy)
-			addView(new Distribution(engine, Model.Data.STRATEGY));
+			addView(new Distribution(engine, Model.Data.STRATEGY), oldViews);
 		// fitness related views
 		if (module instanceof HasPop2D.Fitness && !isODESDE)
-			addView(new Pop2D(engine, Model.Data.FITNESS));
+			addView(new Pop2D(engine, Model.Data.FITNESS), oldViews);
 		if (isWebGLSupported && module instanceof HasPop3D.Fitness && !isODESDE)
-			addView(new Pop3D(engine, Model.Data.FITNESS));
+			addView(new Pop3D(engine, Model.Data.FITNESS), oldViews);
 		if (module instanceof HasMean.Fitness)
-			addView(new Mean(engine, Model.Data.FITNESS));
+			addView(new Mean(engine, Model.Data.FITNESS), oldViews);
 		if (module instanceof HasHistogram.Fitness)
-			addView(new Histogram(engine, Model.Data.FITNESS));
+			addView(new Histogram(engine, Model.Data.FITNESS), oldViews);
 		// structure related views
 		if (module instanceof HasHistogram.Degree && !isODESDE)
-			addView(new Histogram(engine, Model.Data.DEGREE));
+			addView(new Histogram(engine, Model.Data.DEGREE), oldViews);
 		// statistics related views
 		if (module instanceof HasHistogram.StatisticsProbability)
-			addView(new Histogram(engine, Model.Data.STATISTICS_FIXATION_PROBABILITY));
+			addView(new Histogram(engine, Model.Data.STATISTICS_FIXATION_PROBABILITY), oldViews);
 		if (module instanceof HasHistogram.StatisticsTime)
-			addView(new Histogram(engine, Model.Data.STATISTICS_FIXATION_TIME));
+			addView(new Histogram(engine, Model.Data.STATISTICS_FIXATION_TIME), oldViews);
 		if (module instanceof HasHistogram.StatisticsStationary)
-			addView(new Histogram(engine, Model.Data.STATISTICS_STATIONARY));
+			addView(new Histogram(engine, Model.Data.STATISTICS_STATIONARY), oldViews);
 		// miscellaneous views
 		// note: console may be removed for (simulated) ePub modes
 		if (module instanceof HasConsole)
-			addView(viewConsole);
-		// populate view selector and assign new population
+			addView(viewConsole, oldViews);
+		// load all newly added views and update view selector
+		evoludoViews.clear();
 		for (AbstractView view : activeViews.values()) {
-			view.load();
+			if (!oldViews.containsKey(view.getName()))
+				view.load();
 			evoludoViews.addItem(view.getName());
 		}
+		// unload views that are no longer available
+		for (AbstractView view : oldViews.values())
+			view.unload();
 		evoludoViews.setItemSelected(0, true);
 		if (!activeViews.containsValue(activeView))
 			activeView = activeViews.get(evoludoViews.getSelectedItemText());
@@ -1761,7 +1783,10 @@ public class EvoLudoWeb extends Composite
 	 *
 	 * @param view to add to active list
 	 */
-	private void addView(AbstractView view) {
+	private void addView(AbstractView view, HashMap<String, AbstractView> oldViews) {
+		String name = view.getName();
+		if (oldViews.containsKey(name))
+			view = oldViews.remove(name);
 		activeViews.put(view.getName(), view);
 	}
 
