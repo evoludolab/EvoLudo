@@ -1327,7 +1327,7 @@ public abstract interface Model extends CLOProvider {
 	public default boolean setMode(Mode mode) {
 		if (!permitsMode(mode))
 			return false;
-		throw new UnsupportedOperationException("setting mode '" + mode + "' not supported");
+		throw new UnsupportedOperationException("Setting mode '" + mode + "' not supported");
 	}
 
 	/**

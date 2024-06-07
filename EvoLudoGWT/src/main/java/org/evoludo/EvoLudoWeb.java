@@ -1752,11 +1752,11 @@ public class EvoLudoWeb extends Composite
 		if (module instanceof HasHistogram.Degree && !isODESDE)
 			addView(new Histogram(engine, Model.Data.DEGREE), oldViews);
 		// statistics related views
-		if (module instanceof HasHistogram.StatisticsProbability)
+		if (module instanceof HasHistogram.StatisticsProbability && model.permitsMode(Mode.STATISTICS_SAMPLE))
 			addView(new Histogram(engine, Model.Data.STATISTICS_FIXATION_PROBABILITY), oldViews);
-		if (module instanceof HasHistogram.StatisticsTime)
+		if (module instanceof HasHistogram.StatisticsTime && model.permitsMode(Mode.STATISTICS_SAMPLE))
 			addView(new Histogram(engine, Model.Data.STATISTICS_FIXATION_TIME), oldViews);
-		if (module instanceof HasHistogram.StatisticsStationary)
+		if (module instanceof HasHistogram.StatisticsStationary && model.permitsMode(Mode.STATISTICS_UPDATE))
 			addView(new Histogram(engine, Model.Data.STATISTICS_STATIONARY), oldViews);
 		// miscellaneous views
 		// note: console may be removed for (simulated) ePub modes

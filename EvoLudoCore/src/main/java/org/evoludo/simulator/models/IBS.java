@@ -14,6 +14,7 @@ import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
+import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -59,11 +60,42 @@ public abstract class IBS implements Model.IBS {
 
 	@Override
 	public boolean permitsMode(Mode test) {
-		if (test == Mode.STATISTICS_SAMPLE) {
-			for (Module mod : species) {
-				if (mod.getMutation().probability > 0.0)
-					return false;
-			}
+		switch (test) {
+			case STATISTICS_SAMPLE:
+				return permitsSampleStatistics();
+			case STATISTICS_UPDATE:
+				return permitsUpdateStatistics();
+			case DYNAMICS:
+			default:
+				return true;
+		}
+	}
+
+	/**
+	 * Check if the current model settings permit sample statistics. Fixation
+	 * probabilities and times are examples of statistics based on samples.
+	 * 
+	 * @return <code>true</code> if sample statistics are permitted
+	 */
+	public boolean permitsSampleStatistics() {
+		for (Module mod : species) {
+			if (mod.getMutation().probability > 0.0 || !(mod instanceof HasHistogram.StatisticsProbability
+					|| mod instanceof HasHistogram.StatisticsTime))
+				return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Check if the current model settings permit update statistics. Sojourn times
+	 * are an example of statistics based on updates.
+	 * 
+	 * @return <code>true</code> if update statistics are permitted
+	 */
+	public boolean permitsUpdateStatistics() {
+		for (Module mod : species) {
+			if (!(mod instanceof HasHistogram.StatisticsTime))
+				return false;
 		}
 		return true;
 	}

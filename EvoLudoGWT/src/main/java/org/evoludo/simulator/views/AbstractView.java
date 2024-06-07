@@ -44,6 +44,7 @@ import org.evoludo.graphics.AbstractGraph.HasTrajectory;
 import org.evoludo.graphics.AbstractGraph.MyContext2d;
 import org.evoludo.graphics.AbstractGraph.Shifter;
 import org.evoludo.graphics.AbstractGraph.Zoomer;
+import org.evoludo.graphics.GenericPopGraph;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Resources;
@@ -229,7 +230,12 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		scheduleUpdate(true);
 		if (isFullscreenSupported())
 			fullscreenHandler = addFullscreenChangeHandler(this);
-		setMode(getMode());
+		if (!setMode(getMode())) {
+			// this is should not happen because view should not be available
+			// if mode is not supported, see EvoLudoWeb#updateViews()
+			for (AbstractGraph<?> graph : graphs)
+				graph.displayMessage("Mode '" + getMode() + "'' not supported");
+		}
 	}
 
 	/**

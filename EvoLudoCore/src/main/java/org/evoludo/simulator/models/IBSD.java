@@ -5,7 +5,6 @@ import java.io.PrintStream;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
-import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -151,15 +150,19 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 	}
 
 	@Override
-	public boolean permitsMode(Mode test) {
-		boolean modeOK = super.permitsMode(test);
-		if (!modeOK)
+	public boolean permitsSampleStatistics() {
+		if (!super.permitsSampleStatistics())
 			return false;
-		if (test == Mode.STATISTICS_SAMPLE) {
-			for (Module mod : species) {
-				if (!(mod instanceof HasHistogram.StatisticsProbability || mod instanceof HasHistogram.StatisticsTime))
-					return false;
-			}
+		// sampling statistics also require:
+		// - mutant or temperature initialization
+		// - no vacant sites or monostop (otherwise extinction is the only absorbing state)
+		for (Module mod : species) {
+			Init.Type type = ((IBSDPopulation) mod.getIBSPopulation()).getInit().type;
+			if ((type.equals(Init.Type.MUTANT) || 
+				type.equals(Init.Type.TEMPERATURE)) &&
+				(mod.getVacant() < 0 || (mod.getVacant() >= 0 && ((org.evoludo.simulator.modules.Discrete) mod).getMonoStop())))
+				continue;
+			return false;
 		}
 		return true;
 	}
