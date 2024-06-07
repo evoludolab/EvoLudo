@@ -1309,7 +1309,35 @@ public abstract interface Model extends CLOProvider {
 	 * @return {@code true} if {@code test} is available in current model
 	 */
 	public default boolean permitsMode(Mode test) {
-		return test == Mode.DYNAMICS;
+		switch (test) {
+			case STATISTICS_SAMPLE:
+				return permitsSampleStatistics();
+			case STATISTICS_UPDATE:
+				return permitsUpdateStatistics();
+			case DYNAMICS:
+			default:
+				return true;
+		}
+	}
+
+	/**
+	 * Check if the current model settings permit sample statistics. Fixation
+	 * probabilities and times are examples of statistics based on samples.
+	 * 
+	 * @return <code>true</code> if sample statistics are permitted
+	 */
+	public default boolean permitsSampleStatistics() {
+		return false;
+	}
+
+	/**
+	 * Check if the current model settings permit update statistics. Sojourn times
+	 * are an example of statistics based on updates.
+	 * 
+	 * @return <code>true</code> if update statistics are permitted
+	 */
+	public default boolean permitsUpdateStatistics() {
+		return false;
 	}
 
 	/**

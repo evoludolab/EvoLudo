@@ -59,24 +59,6 @@ public abstract class IBS implements Model.IBS {
 	protected Mode mode = Mode.DYNAMICS;
 
 	@Override
-	public boolean permitsMode(Mode test) {
-		switch (test) {
-			case STATISTICS_SAMPLE:
-				return permitsSampleStatistics();
-			case STATISTICS_UPDATE:
-				return permitsUpdateStatistics();
-			case DYNAMICS:
-			default:
-				return true;
-		}
-	}
-
-	/**
-	 * Check if the current model settings permit sample statistics. Fixation
-	 * probabilities and times are examples of statistics based on samples.
-	 * 
-	 * @return <code>true</code> if sample statistics are permitted
-	 */
 	public boolean permitsSampleStatistics() {
 		for (Module mod : species) {
 			if (mod.getMutation().probability > 0.0 || !(mod instanceof HasHistogram.StatisticsProbability
@@ -86,12 +68,7 @@ public abstract class IBS implements Model.IBS {
 		return true;
 	}
 
-	/**
-	 * Check if the current model settings permit update statistics. Sojourn times
-	 * are an example of statistics based on updates.
-	 * 
-	 * @return <code>true</code> if update statistics are permitted
-	 */
+	@Override
 	public boolean permitsUpdateStatistics() {
 		for (Module mod : species) {
 			if (!(mod instanceof HasHistogram.StatisticsTime))
