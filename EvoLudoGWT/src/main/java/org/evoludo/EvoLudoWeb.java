@@ -725,7 +725,7 @@ public class EvoLudoWeb extends Composite
 			}
 		}
 		// ensures that activeView gets activated (possibly again)
-		if (newView == activeView) {
+		if (newView == activeView && activeView != null) {
 			activeView.deactivate();
 			activeView = null;
 		}
@@ -1718,8 +1718,10 @@ public class EvoLudoWeb extends Composite
 		activeViews = new HashMap<>();
 		// strategies related views
 		Module module = engine.getModule();
-		if (module == null)
+		if (module == null) {
+			addView(viewConsole, oldViews);
 			return;
+		}
 		Model model = engine.getModel();
 		Model.Type type = model.getModelType();
 		boolean isODESDE = (type == Model.Type.ODE || type == Model.Type.SDE);
