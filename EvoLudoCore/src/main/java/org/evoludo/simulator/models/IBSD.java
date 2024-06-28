@@ -284,13 +284,12 @@ public class IBSD extends IBS implements Model.DiscreteIBS {
 		Init.Type type;
 
 		/**
-		 * The arguments for the initialization. Convenience field, meaningful only
-		 * immediately after calls to {@link IBSDPopulation#getInit()}.
+		 * The arguments for the initialization.
 		 */
 		double[] args;
 
 		/**
-		 * Get the arguments of this initialization type. Convenience field.
+		 * Get the arguments of this initialization type.
 		 * 
 		 * @return the arguments associated with this initialization type
 		 * 

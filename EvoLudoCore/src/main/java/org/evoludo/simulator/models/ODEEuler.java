@@ -1702,7 +1702,16 @@ public class ODEEuler implements Model.ODE {
 		 * <p>
 		 * <strong>Note:</strong> Not available for density based models.
 		 */
-		RANDOM("random", "random initial frequencies");
+		RANDOM("random", "random initial frequencies"),
+
+		/**
+		 * Single mutant in homogeneous resident.
+		 * <p>
+		 * <strong>Note:</strong> Only available for SDE models. Not available for density based models.
+		 * 
+		 * @see SDEEuler
+		 */
+		MUTANT("mutant", "single mutant");
 
 		/**
 		 * Key of initialization type. Used when parsing command line options.
@@ -1784,6 +1793,22 @@ public class ODEEuler implements Model.ODE {
 			int nTraits = pop.getNTraits();
 			boolean success = false;
 			switch (type) {
+				case MUTANT:
+					// SDE models only (no vacant sites)
+					// initargs contains the index of the resident and mutant traits
+					int mutantType = (int) initargs[0];
+					int len = initargs.length;
+					int residentType;
+					if (len > 1)
+						residentType = (int) initargs[1];
+					else
+						residentType = (mutantType + 1) % nTraits;
+					// set all initial frequencies to zero
+					Arrays.fill(y0, start, start + nTraits, 0.0);
+					y0[mutantType] = 1.0 / pop.getNPopulation();
+					y0[residentType] = 1.0 - y0[mutantType];
+					success = true;
+					break;
 				case DENSITY:
 				case FREQUENCY:
 					if (initargs == null || initargs.length != nTraits)
@@ -1952,6 +1977,8 @@ public class ODEEuler implements Model.ODE {
 		} else {
 			cloInitType.removeKey(InitType.DENSITY);
 		}
+		if (!(this instanceof SDEEuler))
+			cloInitType.removeKey(InitType.MUTANT);
 		if (permitsTimeReversal())
 			parser.addCLO(cloTimeReversed);
 	}

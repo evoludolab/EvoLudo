@@ -106,7 +106,7 @@ public class IBSC extends IBS implements Model.ContinuousIBS {
 		double[][] args;
 
 		/**
-		 * Get the arguments of this initialization type. Convenience field.
+		 * Get the arguments of this initialization type.
 		 * 
 		 * @return the arguments associated with this initialization type
 		 * 

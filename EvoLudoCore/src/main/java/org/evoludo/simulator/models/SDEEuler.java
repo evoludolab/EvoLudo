@@ -37,6 +37,7 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
+import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.util.CLOParser;
 
 /**
@@ -120,13 +121,24 @@ public class SDEEuler extends ODEEuler implements Model.SDE {
 		boolean doReset = super.check();
 		if (species.size() > 1) {
 			engine.getLogger()
-					.warning("SDE model for inter-species interactions not (yet?) implemented - reverting to ODE.");
+					.warning("SDE model for inter-species interactions not (yet?) implemented - revert to ODE.");
 			engine.loadModel(Model.Type.ODE);
 			return true;
 		}
 		if (dependents[0] < 0) {
 			engine.getLogger().warning(getClass().getSimpleName()
 					+ " - noise only for replicator type dynamics implemented - revert to ODE (no noise)!");
+			engine.loadModel(Model.Type.ODE);
+			return true;
+		}
+		if (module.VACANT >= 0) {
+			engine.getLogger()
+					.warning("SDE model for variable population sizes not (yet?) implemented - revert to ODE.");
+			engine.loadModel(Model.Type.ODE);
+			return true;
+		}
+		if (isDensity()) {
+			engine.getLogger().warning("SDE model requires fixed population size - revert to ODE.");
 			engine.loadModel(Model.Type.ODE);
 			return true;
 		}
@@ -305,7 +317,8 @@ public class SDEEuler extends ODEEuler implements Model.SDE {
 				double cyy = sqrte1 * u2 * u2 + sqrte2 * v2 * v2;
 
 				// noise (note this scales with sqrt(dt) - for efficiency applied here)
-				double r1 = rng.nextGaussian() * sqrtdt, r2 = rng.nextGaussian() * sqrtdt;
+				double r1 = rng.nextGaussian() * sqrtdt;
+				double r2 = rng.nextGaussian() * sqrtdt;
 				double nx = cxx * r1 + cxy * r2;
 				double ny = cyx * r1 + cyy * r2;
 				// 2) deterministic term stored in dyt
@@ -367,12 +380,33 @@ public class SDEEuler extends ODEEuler implements Model.SDE {
 		return ArrayMath.distSq(yout, yt);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * 
+	 * @see InitType#MUTANT
+	 */
+	@Override
+	public boolean permitsSampleStatistics() {
+		if (module.getMutation().probability > 0.0 || !(module instanceof HasHistogram.StatisticsProbability
+				|| module instanceof HasHistogram.StatisticsTime))
+			return false;
+		// sampling statistics also require:
+		// - mutant initialization (same as temperature in well-mixed populations)
+		// - convergence unaffected by vacant sites
+		return initType[0].equals(InitType.MUTANT);
+	}
+
+	@Override
+	public boolean permitsUpdateStatistics() {
+		return (module instanceof HasHistogram.StatisticsTime);
+	}
+
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
-		// SDE's currently are restricted to single species modules
-		// and implement mutation to other types only (including ALL
-		// as well should be fairly straight forward, though).
+		// SDE's currently are restricted to single species modules and implement
+		// mutation to other types only (including ALL as well should be fairly straight
+		// forward, though).
 		mutation[0].clo.clearKeys();
 		mutation[0].clo.addKey(Mutation.Discrete.Type.NONE);
 		mutation[0].clo.addKey(Mutation.Discrete.Type.OTHER);
