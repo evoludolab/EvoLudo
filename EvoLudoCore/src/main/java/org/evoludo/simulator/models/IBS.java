@@ -111,11 +111,7 @@ public abstract class IBS implements Model.IBS {
 	 */
 	protected int nStatisticsSamples = 0;
 
-	/**
-	 * Gets the number of statistics samples collected so far.
-	 * 
-	 * @return the number of samples
-	 */
+	@Override
 	public int getNStatisticsSamples() {
 		return nStatisticsSamples;
 	}

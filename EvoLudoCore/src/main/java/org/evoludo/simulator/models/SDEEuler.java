@@ -35,6 +35,7 @@ package org.evoludo.simulator.models;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.views.HasHistogram;
@@ -46,7 +47,7 @@ import org.evoludo.util.CLOParser;
  * 
  * @author Christoph Hauert
  */
-public class SDEEuler extends ODEEuler implements Model.SDE {
+public class SDEEuler extends ODEEuler implements Model.SDE, Statistics {
 
 	/**
 	 * Interface for modules that implement stochastic differential equations (SDE).
@@ -85,6 +86,27 @@ public class SDEEuler extends ODEEuler implements Model.SDE {
 	RNGDistribution rng;
 
 	/**
+	 * Indicates current mode of SDE model.
+	 */
+	protected Mode mode = Mode.DYNAMICS;
+
+	/**
+	 * <code>true</code> if new sample for statistics should be started
+	 * ({@link EvoLudo#modelInit()} will be called on next update).
+	 */
+	protected boolean statisticsSampleNew = false;
+
+	/**
+	 * Number of statistics samples collected.
+	 */
+	protected int nStatisticsSamples = 0;
+
+	/**
+	 * The container for collecting statistics samples.
+	 */
+	protected FixationData fixData = null;
+
+	/**
 	 * Constructs a new model for the numerical integration of the system of
 	 * stochastic differential equations representing the dynamics specified by the
 	 * {@link Module} <code>module</code> using the {@link EvoLudo} pacemaker
@@ -118,16 +140,9 @@ public class SDEEuler extends ODEEuler implements Model.SDE {
 
 	@Override
 	public boolean check() {
-		boolean doReset = super.check();
 		if (species.size() > 1) {
 			engine.getLogger()
 					.warning("SDE model for inter-species interactions not (yet?) implemented - revert to ODE.");
-			engine.loadModel(Model.Type.ODE);
-			return true;
-		}
-		if (dependents[0] < 0) {
-			engine.getLogger().warning(getClass().getSimpleName()
-					+ " - noise only for replicator type dynamics implemented - revert to ODE (no noise)!");
 			engine.loadModel(Model.Type.ODE);
 			return true;
 		}
@@ -142,6 +157,17 @@ public class SDEEuler extends ODEEuler implements Model.SDE {
 			engine.loadModel(Model.Type.ODE);
 			return true;
 		}
+		boolean doReset = super.check();
+		if (dependents[0] < 0) {
+			engine.getLogger().warning(getClass().getSimpleName()
+					+ " - noise only for replicator type dynamics implemented - revert to ODE (no noise)!");
+			engine.loadModel(Model.Type.ODE);
+			return true;
+		}
+		if (permitsMode(Mode.STATISTICS_SAMPLE))
+			fixData = new FixationData();
+		else
+			fixData = null;
 		// at this point it is clear that we have a dependent trait
 		int dim = nDim - 1;
 		// only one or two traits acceptable or, alternatively, two or three
@@ -171,6 +197,8 @@ public class SDEEuler extends ODEEuler implements Model.SDE {
 		// the presence of mutations).
 		converged = false;
 		connect = true;
+		if (fixData != null)
+			fixData.reset();
 	}
 
 	/**
@@ -378,6 +406,62 @@ public class SDEEuler extends ODEEuler implements Model.SDE {
 		t += step;
 		dtTaken = Math.abs(step);
 		return ArrayMath.distSq(yout, yt);
+	}
+
+	@Override
+	public boolean requestMode(Mode newmode) {
+		if (!permitsMode(newmode))
+			return false;
+		PendingAction.MODE.mode = newmode;
+		engine.requestAction(PendingAction.MODE);
+		return true;
+	}
+
+	@Override
+	public boolean setMode(Mode mode) {
+		if (!permitsMode(mode))
+			return false;
+		boolean changed = (this.mode != mode);
+		this.mode = mode;
+		return changed;
+	}
+
+	@Override
+	public Mode getMode() {
+		return mode;
+	}
+
+	@Override
+	public FixationData getFixationData() {
+		return fixData;
+	}
+
+	@Override
+	public void readStatisticsSample() {
+		nStatisticsSamples++;
+		statisticsSampleNew = true;
+		if (fixData == null)
+			return;
+
+		// collect new statistics sample
+		fixData.typeFixed = ArrayMath.maxIndex(yt);
+		int vacant = module.getVacant();
+		if (fixData.typeFixed == vacant) {
+			// closer look is needed - look for what other strategy survived (if any)
+			for (int n = 0; n < module.getNTraits(); n++) {
+				if (n == vacant)
+					continue;
+				if (yt[n] > 0) {
+					// no other strategies should be present
+					fixData.typeFixed = n;
+					break;
+				}
+			}
+		}
+		fixData.timeFixed = t;
+		fixData.updatesFixed = t;
+		fixData.probRead = false;
+		fixData.timeRead = false;
 	}
 
 	/**

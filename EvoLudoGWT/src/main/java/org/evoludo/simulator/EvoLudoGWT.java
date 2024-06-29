@@ -35,17 +35,17 @@ package org.evoludo.simulator;
 import org.evoludo.EvoLudoWeb;
 import org.evoludo.graphics.Network2DGWT;
 import org.evoludo.graphics.Network3DGWT;
-import org.evoludo.ui.ContextMenu;
-import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
-import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.PDESupervisorGWT;
-import org.evoludo.simulator.models.Model.Mode;
+import org.evoludo.simulator.models.Statistics;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
+import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -185,7 +185,7 @@ public class EvoLudoGWT extends EvoLudo {
 				// MODE_STATISTICS: non-blocking way for running an arbitrary number of update
 				// steps to obtain one sample
 				scheduleSample();
-				int samples = ((IBS) activeModel).getNStatisticsSamples();
+				int samples = ((Statistics) activeModel).getNStatisticsSamples();
 				if (isRunning && Math.abs(samples - snapshotAt) < 1.0) {
 					// process request at once - if desired, resume execution after
 					// snapshot was taken.

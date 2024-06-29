@@ -35,10 +35,10 @@ package org.evoludo.simulator.exec;
 import java.io.PrintStream;
 import java.text.DecimalFormat;
 
-import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBS;
+import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.models.IBSDPopulation;
+import org.evoludo.simulator.models.Statistics;
 import org.evoludo.simulator.modules.Moran;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -242,7 +242,7 @@ public class simMoran extends Moran {
 				@Override
 				public void report(PrintStream output) {
 					// output.println("# samples: "+activeModel.getNStatisticsSamples());
-					output.println("# samples:              " + ((IBS) engine.getModel()).getNStatisticsSamples());
+					output.println("# samples:              " + ((Statistics) engine.getModel()).getNStatisticsSamples());
 				}
 			});
 

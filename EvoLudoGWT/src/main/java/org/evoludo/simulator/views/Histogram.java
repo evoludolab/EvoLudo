@@ -49,10 +49,10 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.models.IBSD;
-import org.evoludo.simulator.models.IBSD.FixationData;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Statistics;
 import org.evoludo.simulator.models.Model.Mode;
+import org.evoludo.simulator.models.Statistics.FixationData;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
@@ -723,7 +723,7 @@ public class Histogram extends AbstractView {
 
 				case STATISTICS_FIXATION_PROBABILITY:
 					// NOTE: not fully ready for multi-species; info which species fixated missing
-					FixationData fixData = ((IBSD) model).getFixationData();
+					FixationData fixData = ((Statistics) model).getFixationData();
 					if (fixData == null)
 						break;
 					if (!fixData.probRead) {
@@ -737,7 +737,7 @@ public class Histogram extends AbstractView {
 
 				case STATISTICS_FIXATION_TIME:
 					// NOTE: not fully ready for multi-species; info which species fixated missing
-					fixData = ((IBSD) model).getFixationData();
+					fixData = ((Statistics) model).getFixationData();
 					if (fixData == null)
 						break;
 					if (!fixData.timeRead) {
@@ -788,8 +788,8 @@ public class Histogram extends AbstractView {
 	private boolean checkStatistics() {
 		doStatistics = false;
 		// cast to IBSD is safe because checked first
-		if (!(model instanceof IBSD) || !model.permitsMode(Mode.STATISTICS_SAMPLE)
-				|| ((IBSD) model).getFixationData() == null) {
+		if (!(model instanceof Statistics) || !model.permitsMode(Mode.STATISTICS_SAMPLE)
+				|| ((Statistics) model).getFixationData() == null) {
 			for (HistoGraph graph : graphs)
 				graph.displayMessage("Fixation: incompatible settings");
 			model.resetStatisticsSample();
@@ -804,7 +804,7 @@ public class Histogram extends AbstractView {
 	@Override
 	public String getCounter() {
 		if (model.getMode() == Mode.STATISTICS_SAMPLE) {
-			return "samples: " + ((IBSD) model).getNStatisticsSamples();
+			return "samples: " + ((Statistics) model).getNStatisticsSamples();
 		}
 		return super.getCounter();
 	}
@@ -829,7 +829,7 @@ public class Histogram extends AbstractView {
 
 		switch (type) {
 			case STATISTICS_FIXATION_PROBABILITY:
-				int nSam = Math.max(((IBSD) model).getNStatisticsSamples(), 1);
+				int nSam = Math.max(((Statistics) model).getNStatisticsSamples(), 1);
 				status = "Avg. fix. prob: ";
 				int idx = 0;
 				for (HistoGraph graph : graphs) {

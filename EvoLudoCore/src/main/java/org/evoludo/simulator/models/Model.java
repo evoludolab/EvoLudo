@@ -53,8 +53,8 @@ import org.evoludo.util.Plist;
  *
  * @author Christoph Hauert
  */
-public abstract interface Model extends CLOProvider {
-
+public abstract interface Model extends CLOProvider, Statistics {
+//XXX THIS MUST NOT EXTEND STATISTICS - turn Model into class
 	/**
 	 * Common interface for all models with discrete strategy sets.
 	 */
@@ -1320,25 +1320,25 @@ public abstract interface Model extends CLOProvider {
 		}
 	}
 
-	/**
-	 * Check if the current model settings permit sample statistics. Fixation
-	 * probabilities and times are examples of statistics based on samples.
-	 * 
-	 * @return <code>true</code> if sample statistics are permitted
-	 */
-	public default boolean permitsSampleStatistics() {
-		return false;
-	}
+	// /**
+	//  * Check if the current model settings permit sample statistics. Fixation
+	//  * probabilities and times are examples of statistics based on samples.
+	//  * 
+	//  * @return <code>true</code> if sample statistics are permitted
+	//  */
+	// public default boolean permitsSampleStatistics() {
+	// 	return false;
+	// }
 
-	/**
-	 * Check if the current model settings permit update statistics. Sojourn times
-	 * are an example of statistics based on updates.
-	 * 
-	 * @return <code>true</code> if update statistics are permitted
-	 */
-	public default boolean permitsUpdateStatistics() {
-		return false;
-	}
+	// /**
+	//  * Check if the current model settings permit update statistics. Sojourn times
+	//  * are an example of statistics based on updates.
+	//  * 
+	//  * @return <code>true</code> if update statistics are permitted
+	//  */
+	// public default boolean permitsUpdateStatistics() {
+	// 	return false;
+	// }
 
 	/**
 	 * Sets the {@link Mode} of model/simulator. Returns {@code false} if
@@ -1380,23 +1380,23 @@ public abstract interface Model extends CLOProvider {
 		return Mode.DYNAMICS;
 	}
 
-	/**
-	 * Reset statistics and get ready to start new collection.
-	 */
-	public default void resetStatisticsSample() {
-	}
+	// /**
+	//  * Reset statistics and get ready to start new collection.
+	//  */
+	// public default void resetStatisticsSample() {
+	// }
 
-	/**
-	 * Clear statistics sample and get ready to collect next sample.
-	 */
-	public default void initStatisticsSample() {
-	}
+	// /**
+	//  * Clear statistics sample and get ready to collect next sample.
+	//  */
+	// public default void initStatisticsSample() {
+	// }
 
-	/**
-	 * Signal that statistics sample is ready to process.
-	 */
-	public default void readStatisticsSample() {
-	}
+	// /**
+	//  * Signal that statistics sample is ready to process.
+	//  */
+	// public default void readStatisticsSample() {
+	// }
 
 	/**
 	 * Encode the state of the model in a <code>plist</code> inspired
