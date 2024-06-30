@@ -67,13 +67,13 @@
         <artifactId>maven-help-plugin</artifactId>
         <version>3.1.0</version>
         <executions>
-            <execution>
-                <id>show-profiles</id>
-                <phase>compile</phase>
-                <goals>
-                    <goal>active-profiles</goal>
-                </goals>
-            </execution>
+          <execution>
+            <id>show-profiles</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>active-profiles</goal>
+            </goals>
+          </execution>
         </executions>
       </plugin> -->
 
@@ -286,39 +286,70 @@
 
   <profiles>
     <profile>
-        <id>private</id>
-        <activation>
-          <file>
-            <exists>EvoLudoCorePrivate/pom.xml</exists>
-          </file>
-        </activation>
-        <properties>
-          <evoludo.engineModule>EvoLudoCorePrivate</evoludo.engineModule>
-        </properties>
-        <modules>
-          <module>EvoLudoCorePrivate</module>
-          <module>EvoLudoCore</module>
-          <module>EvoLudoJREPrivate</module>
-          <module>EvoLudoJRE</module>
-          <module>EvoLudoGWT</module>
-          <module>EvoLudoGWTDev</module>
-          <module>EvoLudoTest</module>
-          <module>EvoLudoSims</module>
-        </modules>
+      <id>private</id>
+      <activation>
+        <file>
+          <exists>EvoLudoCorePrivate/pom.xml</exists>
+        </file>
+      </activation>
+      <properties>
+        <evoludo.engineModule>EvoLudoCorePrivate</evoludo.engineModule>
+      </properties>
+      <modules>
+        <module>EvoLudoCorePrivate</module>
+        <module>EvoLudoCore</module>
+        <module>EvoLudoJREPrivate</module>
+        <module>EvoLudoJRE</module>
+        <module>EvoLudoGWT</module>
+        <module>EvoLudoGWTDev</module>
+        <module>EvoLudoTest</module>
+        <module>EvoLudoSims</module>
+      </modules>
     </profile>
+
+    <!-- We want to exclude EvoLudo modules from 'env-dev' profile, Maven forces us to make a
+    'env-prod' profile -->
     <profile>
-        <id>public</id>
-        <activation>
-          <activeByDefault>true</activeByDefault>
-        </activation>
-        <modules>
-          <module>EvoLudoCore</module>
-          <module>EvoLudoJRE</module>
-          <module>EvoLudoGWT</module>
-          <module>EvoLudoGWTDev</module>
-          <module>EvoLudoTest</module>
-          <module>EvoLudoSims</module>
-        </modules>
+      <id>env-dev</id>
+      <activation>
+        <property>
+          <name>env</name>
+          <value>dev</value>
+        </property>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.eclipse.jetty</groupId>
+              <artifactId>jetty-maven-plugin</artifactId>
+              <configuration>
+                <webApp>
+                  <resourceBases>
+                    <resourceBase>${basedir}/src/main/webapp</resourceBase>
+                    <resourceBase>${basedir}/../target/gwt/launcherDir/</resourceBase>
+                  </resourceBases>
+                </webApp>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+
+    <profile>
+      <id>public</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <modules>
+        <module>EvoLudoCore</module>
+        <module>EvoLudoJRE</module>
+        <module>EvoLudoGWT</module>
+        <module>EvoLudoGWTDev</module>
+        <module>EvoLudoTest</module>
+        <module>EvoLudoSims</module>
+      </modules>
     </profile>
   </profiles>
 </project>
