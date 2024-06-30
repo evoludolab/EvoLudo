@@ -71,6 +71,13 @@ public class IBSD extends IBS implements Model.DiscreteIBS, Statistics {
 	}
 
 	@Override
+	public void resetStatisticsSample() {
+		super.resetStatisticsSample();
+		if (fixData != null)
+			fixData.reset();
+	}
+
+	@Override
 	public boolean permitsSampleStatistics() {
 		if (!super.permitsSampleStatistics())
 			return false;
@@ -125,13 +132,6 @@ public class IBSD extends IBS implements Model.DiscreteIBS, Statistics {
 			}
 		}
 		return doReset;
-	}
-
-	@Override
-	public void reset() {
-		super.reset();
-		if (fixData != null)
-			fixData.reset();
 	}
 
 	/**

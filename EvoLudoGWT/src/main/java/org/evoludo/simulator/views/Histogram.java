@@ -511,14 +511,20 @@ public class Histogram extends AbstractView {
 
 				case STATISTICS_FIXATION_PROBABILITY:
 					checkStatistics();
-					int nBins = module.getNPopulation();
 					style.yMin = 0.0;
 					style.yMax = 1.0;
 					style.xMin = 0;
-					style.xMax = nBins - 1;
+					style.xMax = 1;
 					style.label = module.getTraitName(idx);
 					style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
 					if (doStatistics) {
+						int nBins;
+						if (model.getModelType() == Model.Type.SDE)
+							nBins = 1;
+						else {
+							nBins = module.getNPopulation();
+							style.xMax = nBins - 1;
+						}
 						if (data == null || data.length != nTraits + 1
 								|| data[0].length != Math.min(nBins, HistoGraph.MAX_BINS))
 							data = new double[nTraits + 1][Math.min(nBins, HistoGraph.MAX_BINS)];
@@ -531,7 +537,6 @@ public class Histogram extends AbstractView {
 				case STATISTICS_FIXATION_TIME:
 					checkStatistics();
 					int nPop = module.getNPopulation();
-					nBins = nPop;
 					style.yMin = 0.0;
 					style.yMax = 1.0;
 					if (idx < nTraits) {
@@ -541,7 +546,7 @@ public class Histogram extends AbstractView {
 						style.label = "Absorbtion";
 						style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
 					}
-					if (nPop > HistoGraph.MAX_BINS) {
+					if (doFixtimeDistr(module)) {
 						if (doStatistics) {
 							if (data == null || data.length != nTraits + 1 || data[0].length != HistoGraph.MAX_BINS)
 								data = new double[nTraits + 1][HistoGraph.MAX_BINS];
@@ -744,8 +749,7 @@ public class Histogram extends AbstractView {
 						HistoGraph graph = graphs.get(fixData.typeFixed);
 						HistoGraph absorption = graphs.get(graphs.size() - 1);
 						int initNode = fixData.mutantNode;
-						int nPop = graph.getModule().getNPopulation();
-						if (initNode < 0 || nPop > HistoGraph.MAX_BINS) {
+						if (initNode < 0 || doFixtimeDistr(graph.getModule())) {
 							graph.addData(fixData.updatesFixed);
 							absorption.addData(fixData.updatesFixed);
 						} else {
@@ -799,6 +803,17 @@ public class Histogram extends AbstractView {
 			doStatistics = true;
 		}
 		return doStatistics;
+	}
+
+	/**
+	 * Helper method to check whether to show the fixation time distribution
+	 * or the fixation times for each node.
+	 * 
+	 * @param module the module of the graph
+	 * @return {@code true} to show the fixation time distribution
+	 */
+	private boolean doFixtimeDistr(Module module) {
+		return (module.getNPopulation() > HistoGraph.MAX_BINS || model.getModelType() == Model.Type.SDE);
 	}
 
 	@Override
@@ -856,8 +871,7 @@ public class Histogram extends AbstractView {
 						status += ", ";
 					status += (isMultispecies ? module.getName() + "." : "")
 							+ graph.getStyle().label + ": ";
-					int nPop = module.getNPopulation();
-					if (nPop > HistoGraph.MAX_BINS) {
+					if (doFixtimeDistr(module)) {
 						double mean = Distributions.distrMean(data[idx]);
 						double sdev = Distributions.distrStdev(data[idx], mean);
 						GraphStyle style = graph.getStyle();

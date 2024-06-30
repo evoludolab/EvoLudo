@@ -197,8 +197,18 @@ public class SDEEuler extends ODEEuler implements Model.SDE, Statistics {
 		// the presence of mutations).
 		converged = false;
 		connect = true;
-		if (fixData != null)
-			fixData.reset();
+		resetStatisticsSample();
+	}
+
+	@Override
+	public boolean next() {
+		// start new statistics sample if required
+		if (mode == Mode.STATISTICS_SAMPLE && statisticsSampleNew) {
+			engine.modelInit();
+			// debugCheck("next (new sample)");
+			return true;
+		}
+		return super.next();
 	}
 
 	/**
@@ -437,6 +447,16 @@ public class SDEEuler extends ODEEuler implements Model.SDE, Statistics {
 	}
 
 	@Override
+	public int getNStatisticsSamples() {
+		return nStatisticsSamples;
+	}
+
+	@Override
+	public void initStatisticsSample() {
+		statisticsSampleNew = false;
+	}
+
+	@Override
 	public void readStatisticsSample() {
 		nStatisticsSamples++;
 		statisticsSampleNew = true;
@@ -462,6 +482,18 @@ public class SDEEuler extends ODEEuler implements Model.SDE, Statistics {
 		fixData.updatesFixed = t;
 		fixData.probRead = false;
 		fixData.timeRead = false;
+	}
+
+	@Override
+	public void resetStatisticsSample() {
+		nStatisticsSamples = 0;
+		if (fixData != null) {
+			fixData.reset();
+			// this needs to be revised for vacant sites
+			fixData.mutantTrait = ArrayMath.minIndex(y0);
+			fixData.residentTrait = ArrayMath.maxIndex(y0);
+			fixData.mutantNode = 0;
+		}
 	}
 
 	/**
