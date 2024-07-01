@@ -58,6 +58,8 @@ public abstract class Model implements CLOProvider, Statistics {
 
 	public interface DeleteMe {
 		// for PDESupervisor
+		public abstract double getAccuracy();
+		public abstract double getDt();
 		public abstract double getTime();
 		// for EvoLudoGWT when requesting symmetrical diffusion
 		public abstract boolean check();
@@ -66,7 +68,7 @@ public abstract class Model implements CLOProvider, Statistics {
 	/**
 	 * Common interface for all models with discrete strategy sets.
 	 */
-	public interface Discrete extends DeleteMe {
+	public interface Discrete {
 
 		/**
 		 * Calculate and return the payoff/score of individuals in monomorphic
@@ -88,7 +90,7 @@ public abstract class Model implements CLOProvider, Statistics {
 	/**
 	 * Common interface for all models with continuous strategy sets.
 	 */
-	public interface Continuous extends DeleteMe {
+	public interface Continuous {
 
 		/**
 		 * Gets the minimum trait values in this module.
@@ -164,78 +166,15 @@ public abstract class Model implements CLOProvider, Statistics {
 	}
 
 	/**
-	 * Common interface for all differential equations models.
-	 * <p>
-	 * <strong>Note:</strong> Currently differential equation models are restricted
-	 * to discrete strategy sets.
-	 */
-	public abstract interface DE extends Discrete {
-
-		/**
-		 * Return whether this DE model tracks frequencies or densities. Returns
-		 * <code>false</code> (i.e. frequency based model) by default.
-		 *
-		 * @return <code>true</code> if state refers to densities.
-		 */
-		public default boolean isDensity() {
-			return false;
-		}
-
-		/**
-		 * Sets the discretization of time increments in continuous time models.
-		 * <p>
-		 * <strong>Note:</strong> Some models may need to adjust, i.e. reduce,
-		 * <code>dt</code> (see {@link PDERD#checkDt()}) or choose a variable step size
-		 * in which case <code>dt</code> is ignored (see {@link ODERK#getAutoDt()}).
-		 *
-		 * @param dt the time increments in continuous time models.
-		 */
-		public void setDt(double dt);
-
-		/**
-		 * Gets the discretization of time increments in continuous time models.
-		 * <p>
-		 * <strong>Note:</strong> This may be different from <code>dt</code> set through
-		 * {@link #setDt(double)} if the model required adjustments.
-		 *
-		 * @return the time increment in continuous time models.
-		 */
-		public double getDt();
-
-		/**
-		 * Sets the desired accuracy for determining convergence. If
-		 * <code>y(t+dt)-y(t)&lt;a dt</code> holds, where <code>y(t+dt)</code> denotes
-		 * the new state and <code>y(t)</code> the previous state, the numerical
-		 * integration is reported as having converged and stops.
-		 *
-		 * @param accuracy the numerical accuracy
-		 */
-		public void setAccuracy(double accuracy);
-
-		/**
-		 * Gets the numerical accuracy for determining convergence.
-		 *
-		 * @return the numerical accuracy
-		 */
-		public double getAccuracy();
-	}
-
-	/**
 	 * Interface for ordinary differential equation models.
 	 */
-	public interface ODE extends DE {
-	}
-
-	/**
-	 * Interface for stochastic differential equation models.
-	 */
-	public interface SDE extends ODE {
+	public interface ODE {
 	}
 
 	/**
 	 * Interface for partial differential equation models.
 	 */
-	public interface PDE extends DE {
+	public interface PDE extends DeleteMe {
 
 		/**
 		 * Sets whether symmetries should be preserved. Not all models may be able to

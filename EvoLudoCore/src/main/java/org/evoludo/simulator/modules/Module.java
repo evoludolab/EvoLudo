@@ -44,6 +44,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
+import org.evoludo.simulator.models.DE;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSPopulation;
@@ -443,7 +444,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @return the index of the vacant type
 	 */
 	public int getDependent() {
-		if (model instanceof Model.DE && ((Model.DE) model).isDensity())
+		if (model instanceof DE && ((DE) model).isDensity())
 			return -1;
 		return VACANT;
 	}

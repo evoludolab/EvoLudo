@@ -47,7 +47,7 @@ import org.evoludo.util.CLOParser;
  * 
  * @author Christoph Hauert
  */
-public class SDEEuler extends ODEEuler implements Model.SDE, Statistics {
+public class SDEEuler extends ODEEuler implements Statistics {
 
 	/**
 	 * Interface for modules that implement stochastic differential equations (SDE).

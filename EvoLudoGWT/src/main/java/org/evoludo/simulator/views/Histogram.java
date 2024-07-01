@@ -49,9 +49,10 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.models.DE;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.Statistics;
 import org.evoludo.simulator.models.Model.Mode;
+import org.evoludo.simulator.models.Statistics;
 import org.evoludo.simulator.models.Statistics.FixationData;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
@@ -233,7 +234,7 @@ public class Histogram extends AbstractView {
 							graphs.add(graph);
 							AbstractGraph.GraphStyle style = graph.getStyle();
 							// fixed style attributes
-							if (model instanceof Model.DE && ((Model.DE) model).isDensity()) {
+							if (model instanceof DE && ((DE) model).isDensity()) {
 								style.yLabel = "density";
 								style.percentY = false;
 								style.yMin = 0.0;
@@ -588,8 +589,8 @@ public class Histogram extends AbstractView {
 				case STATISTICS_STATIONARY:
 					style.label = (isMultispecies ? module.getName() + ": " : "") + module.getTraitName(idx);
 					nPop = module.getNPopulation();
-					if (model instanceof Model.DE) {
-						if (((Model.DE) model).isDensity()) {
+					if (model instanceof DE) {
+						if (((DE) model).isDensity()) {
 							style.xLabel = "density";
 							style.xMin = 0.0;
 							style.xMax = 0.0;

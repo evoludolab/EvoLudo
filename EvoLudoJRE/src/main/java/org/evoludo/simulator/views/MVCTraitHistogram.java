@@ -143,12 +143,12 @@ public class MVCTraitHistogram extends MVAbstract implements HistoGraphListener 
 
 	@Override
 	public boolean getData(HistoData data, int tag) {
-		Model.Continuous model = (Model.Continuous)engine.getModel();
+		Model model = engine.getModel();
 		// check if we need to process data first
 		double now = model.getTime();
 		if( now-data.timestamp>1e-10 ) {
 			// process data first
-			model.getTraitHistogramData(0, bins);
+			((Model.Continuous) model).getTraitHistogramData(0, bins);
 			// convert to percentages - also need to keep track of maxima
 			for( int n=0; n<nData; n++ ) {
 				int nBins = bins[n].length;

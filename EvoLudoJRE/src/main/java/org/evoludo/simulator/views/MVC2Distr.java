@@ -175,13 +175,13 @@ public class MVC2Distr extends MVAbstract implements PopListener {
 
     @Override
 	public double getData(Color[] data, int tag) {
-		Model.Continuous model = (Model.Continuous)engine.getModel();
+		Model model = engine.getModel();
 		// check if we need to process data first
 		double now = model.getTime();
 		if( now-timestamp>1e-8 ) {
 			// process data first
 //			((CXPopulation)population).getTraitDensityData(data, colorMap, bins, true);
-			model.get2DTraitHistogramData(0, bins, 0, 1);
+			((Model.Continuous) model).get2DTraitHistogramData(0, bins, 0, 1);
 			// translate data into colors
 			timestamp = now;
 		}

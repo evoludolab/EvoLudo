@@ -60,7 +60,7 @@ import org.evoludo.util.Plist;
  *
  * @author Christoph Hauert
  */
-public class ODEEuler extends Model implements Model.ODE {
+public class ODEEuler extends DE {
 
 	/**
 	 * Methods that every {@link Module} must implement, which advertises numerical

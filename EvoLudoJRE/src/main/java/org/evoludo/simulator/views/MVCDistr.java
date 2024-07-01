@@ -253,12 +253,12 @@ public class MVCDistr extends MVAbstract implements PopListener {
 
     @Override
 	public double getData(Color[] data, int tag) {
-		Model.Continuous model = (Model.Continuous)engine.getModel();
+		Model model = engine.getModel();
 		// check if we need to process data first
     	double now = model.getTime();
 		if( now-timestamp>1e-8 ) {
 			// process data first
-			model.getTraitHistogramData(0, bins);
+			((Model.Continuous) model).getTraitHistogramData(0, bins);
 			timestamp = now;
 		}
 		colorMap.translate(bins[tag], data);
