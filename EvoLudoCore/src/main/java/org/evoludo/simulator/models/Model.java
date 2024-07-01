@@ -351,82 +351,15 @@ public abstract class Model implements CLOProvider, Statistics {
 	}
 
 	/**
-	 * Interface for individual based simulation models.
-	 */
-	public interface IBS {
-
-		/**
-		 * Gets the number of interactions at location <code>idx</code> for species with
-		 * ID <code>id</code>. Used by GUI for example to show interaction counts in
-		 * tooltips.
-		 * <p>
-		 * <strong>Note:</strong> optional implementation. Currently makes sense only
-		 * for IBS models.
-		 *
-		 * @param id  the species identifier
-		 * @param idx the index of the location
-		 * @return the interaction count
-		 */
-		public default int getInteractionsAt(int id, int idx) {
-			return -1;
-		}
-
-		/**
-		 * Gets formatted tag of individual at location <code>idx</code> for species
-		 * with ID <code>id</code>. The formatting may include HTML tags. Used by GUI
-		 * for example to show tags in tooltips. Opportunity to track ancestry through
-		 * tags.
-		 * <p>
-		 * <strong>Note:</strong> optional implementation. Currently makes sense only
-		 * for IBS models.
-		 *
-		 * @param id  the species identifier
-		 * @param idx the index of the location
-		 * @return the formatted tag
-		 */
-		public default String getTagNameAt(int id, int idx) {
-			return null;
-		}
-
-		/**
-		 * Used by GUI to interact with Model. Called whenever a mouse click/tap was
-		 * registered by a node.
-		 * 
-		 * @param id  the species identifier
-		 * @param hit the index of the node hit by mouse
-		 * @return <code>false</code> if no actions taken
-		 */
-		public default boolean mouseHitNode(int id, int hit) {
-			return mouseHitNode(id, hit, false);
-		}
-
-		/**
-		 * Used by GUI to interact with Model. Called whenever a mouse click/tap was
-		 * registered by a node, potentially with the Alt modifier key.
-		 * <p>
-		 * <strong>Experimental:</strong> allow more diverse interactions by including
-		 * modifier keys.
-		 *
-		 * @param id  the species identifier
-		 * @param hit the index of the node hit by mouse
-		 * @param alt <code>true</code> if modifier key Alt was pressed
-		 * @return <code>false</code> if no actions taken
-		 */
-		public default boolean mouseHitNode(int id, int hit, boolean alt) {
-			return false;
-		}
-	}
-
-	/**
 	 * Interface for models with discrete strategy sets
 	 */
-	public interface DiscreteIBS extends Discrete, IBS {
+	public interface DiscreteIBS extends Discrete {
 	}
 
 	/**
 	 * Interface for models with continuous strategy sets
 	 */
-	public interface ContinuousIBS extends Continuous, IBS {
+	public interface ContinuousIBS extends Continuous {
 
 		/**
 		 * Gets the histogram of the trait distributions and returns the data in an

@@ -28,7 +28,7 @@ import org.evoludo.util.Plist;
  * 
  * @author Christoph Hauert
  */
-public abstract class IBS extends Model implements Model.IBS {
+public abstract class IBS extends Model {
 
 	/**
 	 * Modules that offer individual based simulation models must implement this
@@ -961,17 +961,47 @@ public abstract class IBS extends Model implements Model.IBS {
 		getIBSPopulation(id).getFitnessHistogramData(bins);
 	}
 
-	@Override
+	/**
+	 * Gets formatted tag of individual at location <code>idx</code> for species
+	 * with ID <code>id</code>. The formatting may include HTML tags. Used by GUI
+	 * for example to show tags in tooltips. Opportunity to track ancestry through
+	 * tags.
+	 * <p>
+	 * <strong>Note:</strong> optional implementation. Currently makes sense only
+	 * for IBS models.
+	 *
+	 * @param id  the species identifier
+	 * @param idx the index of the location
+	 * @return the formatted tag
+	 */
 	public String getTagNameAt(int id, int idx) {
 		return getIBSPopulation(id).getTagNameAt(idx);
 	}
 
-	@Override
+	/**
+	 * Gets the number of interactions at location <code>idx</code> for species with
+	 * ID <code>id</code>. Used by GUI for example to show interaction counts in
+	 * tooltips.
+	 * <p>
+	 * <strong>Note:</strong> optional implementation. Currently makes sense only
+	 * for IBS models.
+	 *
+	 * @param id  the species identifier
+	 * @param idx the index of the location
+	 * @return the interaction count
+	 */
 	public int getInteractionsAt(int id, int idx) {
 		return getIBSPopulation(id).getInteractionsAt(idx);
 	}
 
-	@Override
+	/**
+	 * Used by GUI to interact with Model. Called whenever a mouse click/tap was
+	 * registered by a node.
+	 * 
+	 * @param id  the species identifier
+	 * @param hit the index of the node hit by mouse
+	 * @return <code>false</code> if no actions taken
+	 */
 	public boolean mouseHitNode(int id, int hit, boolean alt) {
 		IBSPopulation pop = getIBSPopulation(id);
 		if (!pop.mouseHitNode(hit, alt)) {
