@@ -3,7 +3,6 @@ package org.evoludo.simulator.models;
 import java.awt.Color;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.logging.Logger;
 
 import org.evoludo.math.Combinatorics;
 import org.evoludo.math.RNGDistribution;
@@ -132,21 +131,6 @@ public abstract class IBS extends Model {
 	}
 
 	/**
-	 * The pacemaker of all models. Interface with the outside world.
-	 */
-	protected EvoLudo engine;
-
-	/**
-	 * Logger for keeping track of and reporting events and issues.
-	 */
-	protected Logger logger;
-
-	@Override
-	public Logger getLogger() {
-		return logger;
-	}
-
-	/**
 	 * The shared random number generator to ensure reproducibility of results.
 	 * 
 	 * @see EvoLudo#getRNG()
@@ -241,7 +225,7 @@ public abstract class IBS extends Model {
 	 * @param engine the pacemaker for running the model
 	 */
 	public IBS(EvoLudo engine) {
-		this.engine = engine;
+		super(engine);
 	}
 
 	/**
@@ -257,7 +241,6 @@ public abstract class IBS extends Model {
 	 */
 	@Override
 	public void load() {
-		logger = engine.getLogger();
 		rng = engine.getRNG();
 		species = engine.getModule().getSpecies();
 		nSpecies = species.size();

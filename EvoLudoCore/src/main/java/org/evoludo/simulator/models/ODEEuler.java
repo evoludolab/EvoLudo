@@ -37,7 +37,6 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Logger;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
@@ -172,21 +171,6 @@ public class ODEEuler extends DE {
 	@Override
 	public Type getModelType() {
 		return Type.ODE;
-	}
-
-	/**
-	 * The pacemaker of all models. Interface with the outside world.
-	 */
-	protected EvoLudo engine;
-
-	/**
-	 * Logger for keeping track of and reporting events and issues.
-	 */
-	protected Logger logger;
-
-	@Override
-	public Logger getLogger() {
-		return logger;
 	}
 
 	/**
@@ -490,12 +474,11 @@ public class ODEEuler extends DE {
 	 * @param engine the pacemaker for running the model
 	 */
 	public ODEEuler(EvoLudo engine) {
-		this.engine = engine;
+		super(engine);
 	}
 
 	@Override
 	public void load() {
-		logger = engine.getLogger();
 		species = engine.getModule().getSpecies();
 		nSpecies = species.size();
 		initType = new InitType[nSpecies];

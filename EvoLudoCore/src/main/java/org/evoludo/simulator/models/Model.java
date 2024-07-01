@@ -66,6 +66,26 @@ public abstract class Model implements CLOProvider, Statistics {
 	}
 
 	/**
+	 * The pacemaker of all models. Interface with the outside world.
+	 */
+	protected EvoLudo engine;
+
+	/**
+	 * Logger for keeping track of and reporting events and issues.
+	 */
+	protected Logger logger;
+
+	/**
+	 * Creates a model.
+	 * 
+	 * @param engine the pacemaker for running the model
+	 */
+	public Model(EvoLudo engine) {
+		this.engine = engine;
+		logger = Logger.getLogger(getClass().getName());
+	}
+
+	/**
 	 * Common interface for all models with discrete strategy sets.
 	 */
 	public interface Discrete {
@@ -548,7 +568,7 @@ public abstract class Model implements CLOProvider, Statistics {
 	 * @return <code>true</code> if model calculations are asynchronous
 	 */
 	public boolean isAsynchronous() {
-		return EvoLudo.isGWT;
+		return false;
 	}
 
 	/**
@@ -650,7 +670,9 @@ public abstract class Model implements CLOProvider, Statistics {
 	 *
 	 * @return the logger
 	 */
-	public abstract Logger getLogger();
+	public Logger getLogger() {
+		return logger;
+	}
 
 	/**
 	 * Returns the minimum score that individuals of species with ID <code>id</code>

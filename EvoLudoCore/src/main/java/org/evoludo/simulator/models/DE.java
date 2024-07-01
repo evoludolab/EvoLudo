@@ -1,5 +1,6 @@
 package org.evoludo.simulator.models;
 
+import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Model.Discrete;
 
 /**
@@ -9,6 +10,10 @@ import org.evoludo.simulator.models.Model.Discrete;
  * to discrete strategy sets.
  */
 public abstract class DE extends Model implements Discrete {
+
+	public DE(EvoLudo engine) {
+		super(engine);
+	}
 
 	/**
 	 * Return whether this DE model tracks frequencies or densities. Returns
