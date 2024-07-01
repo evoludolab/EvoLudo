@@ -57,8 +57,6 @@ public abstract class Model implements CLOProvider, Statistics {
 //XXX THIS MUST NOT EXTEND STATISTICS - turn Model into class
 
 	public interface DeleteMe {
-		public abstract boolean isAsynchronous();
-		public abstract boolean permitsTimeReversal();
 		// for PDESupervisor
 		public abstract double getTime();
 		// for EvoLudoGWT when requesting symmetrical diffusion
@@ -226,16 +224,6 @@ public abstract class Model implements CLOProvider, Statistics {
 	 * Interface for ordinary differential equation models.
 	 */
 	public interface ODE extends DE {
-
-		/**
-		 * {@inheritDoc}
-		 * <p>
-		 * ODE and SDE models return <code>true</code> by default.
-		 */
-		@Override
-		public default boolean permitsTimeReversal() {
-			return true;
-		}
 	}
 
 	/**
@@ -248,11 +236,6 @@ public abstract class Model implements CLOProvider, Statistics {
 	 * Interface for partial differential equation models.
 	 */
 	public interface PDE extends DE {
-
-		@Override
-		public default boolean isAsynchronous() {
-			return EvoLudo.isGWT;
-		}
 
 		/**
 		 * Sets whether symmetries should be preserved. Not all models may be able to
@@ -626,7 +609,7 @@ public abstract class Model implements CLOProvider, Statistics {
 	 * @return <code>true</code> if model calculations are asynchronous
 	 */
 	public boolean isAsynchronous() {
-		return false;
+		return EvoLudo.isGWT;
 	}
 
 	/**

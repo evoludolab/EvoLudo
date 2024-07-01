@@ -1576,6 +1576,16 @@ public class ODEEuler extends Model implements Model.ODE {
 		return status;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * ODE and SDE models return <code>true</code> by default.
+	 */
+	@Override
+	public boolean permitsTimeReversal() {
+		return true;
+	}
+
 	@Override
 	public boolean isTimeReversed() {
 		return !forward;
