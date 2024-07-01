@@ -53,17 +53,22 @@ import org.evoludo.util.Plist;
  *
  * @author Christoph Hauert
  */
-public abstract interface Model extends CLOProvider, Statistics {
+public abstract class Model implements CLOProvider, Statistics {
 //XXX THIS MUST NOT EXTEND STATISTICS - turn Model into class
+
+	public interface DeleteMe {
+		public abstract boolean isAsynchronous();
+		public abstract boolean permitsTimeReversal();
+		// for PDESupervisor
+		public abstract double getTime();
+		// for EvoLudoGWT when requesting symmetrical diffusion
+		public abstract boolean check();
+	}
+
 	/**
 	 * Common interface for all models with discrete strategy sets.
 	 */
-	public interface Discrete extends Model {
-
-		@Override
-		public default boolean isContinuous() {
-			return false;
-		}
+	public interface Discrete extends DeleteMe {
 
 		/**
 		 * Calculate and return the payoff/score of individuals in monomorphic
@@ -85,12 +90,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	/**
 	 * Common interface for all models with continuous strategy sets.
 	 */
-	public interface Continuous extends Model {
-
-		@Override
-		public default boolean isContinuous() {
-			return true;
-		}
+	public interface Continuous extends DeleteMe {
 
 		/**
 		 * Gets the minimum trait values in this module.
@@ -195,11 +195,6 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 */
 	public interface ODE extends DE {
 
-		@Override
-		public default Type getModelType() {
-			return Type.ODE;
-		}
-
 		/**
 		 * {@inheritDoc}
 		 * <p>
@@ -215,22 +210,12 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * Interface for stochastic differential equation models.
 	 */
 	public interface SDE extends ODE {
-
-		@Override
-		public default Type getModelType() {
-			return Type.SDE;
-		}
 	}
 
 	/**
 	 * Interface for partial differential equation models.
 	 */
 	public interface PDE extends DE {
-
-		@Override
-		public default Type getModelType() {
-			return Type.PDE;
-		}
 
 		@Override
 		public default boolean isAsynchronous() {
@@ -368,12 +353,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	/**
 	 * Interface for individual based simulation models.
 	 */
-	public interface IBS extends Model {
-
-		@Override
-		public default Type getModelType() {
-			return Type.IBS;
-		}
+	public interface IBS {
 
 		/**
 		 * Gets the number of interactions at location <code>idx</code> for species with
@@ -576,14 +556,16 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * 
 	 * @return <code>true</code> if traits are continuous
 	 */
-	public boolean isContinuous();
+	public boolean isContinuous() {
+		return this instanceof Continuous;
+	}
 
 	/**
 	 * Gets the type of this model.
 	 * 
 	 * @return the type of model
 	 */
-	public Type getModelType();
+	public abstract Type getModelType();
 
 	/**
 	 * Modes of the model. Currently thefollowing modes are supported:
@@ -722,7 +704,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 *
 	 * @return <code>true</code> if model calculations are asynchronous
 	 */
-	public default boolean isAsynchronous() {
+	public boolean isAsynchronous() {
 		return false;
 	}
 
@@ -731,28 +713,28 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * 
 	 * @see MilestoneListener#modelLoaded()
 	 */
-	public void load();
+	public abstract void load();
 
 	/**
 	 * Milestone: Unload this model and free resources (if applicable).
 	 * 
 	 * @see MilestoneListener#modelUnloaded()
 	 */
-	public void unload();
+	public abstract void unload();
 
 	/**
 	 * Milestone: Initialize this model
 	 * 
 	 * @see MilestoneListener#modelDidReinit()
 	 */
-	public void init();
+	public abstract void init();
 
 	/**
 	 * Milestone: Reset this model
 	 * 
 	 * @see MilestoneListener#modelDidReset()
 	 */
-	public void reset();
+	public abstract void reset();
 
 	/**
 	 * Update this model. For example called after initialization and when
@@ -760,7 +742,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * 
 	 * @see ChangeListener#modelChanged(ChangeListener.PendingAction)
 	 */
-	public void update();
+	public abstract void update();
 
 	/**
 	 * Check consistency of parameters and adjust if necessary (and possible). All
@@ -774,7 +756,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * 
 	 * @see java.util.logging.Logger
 	 */
-	public boolean check();
+	public abstract boolean check();
 
 	/**
 	 * Advance model by one step. The details of what happens during one step
@@ -793,7 +775,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * @see ChangeListener#modelChanged(ChangeListener.PendingAction)
 	 * @see org.evoludo.simulator.modules.Discrete#setMonoStop(boolean)
 	 */
-	public boolean next();
+	public abstract boolean next();
 
 	/**
 	 * Relax the initial configuration of the model over {@code generations}. During
@@ -805,7 +787,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * @see #relaxing()
 	 * @see #next()
 	 */
-	public default boolean relax(double generations) {
+	public boolean relax(double generations) {
 		return false;
 	}
 
@@ -816,7 +798,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * 
 	 * @see #relax(double)
 	 */
-	public default boolean relaxing() {
+	public boolean relaxing() {
 		return false;
 	}
 
@@ -837,7 +819,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * 
 	 * @see Module#getMinGameScore()
 	 */
-	public double getMinScore(int id);
+	public abstract double getMinScore(int id);
 
 	/**
 	 * Returns the maximum score that individuals of species with ID <code>id</code>
@@ -849,7 +831,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * 
 	 * @see Module#getMaxGameScore()
 	 */
-	public double getMaxScore(int id);
+	public abstract double getMaxScore(int id);
 
 	/**
 	 * Calculates and returns the absolute fitness minimum. This is important to
@@ -865,7 +847,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * 
 	 * @see #getMinScore(int id)
 	 */
-	public double getMinFitness(int id);
+	public abstract double getMinFitness(int id);
 
 	/**
 	 * Calculates and returns the absolute fitness maximum. This is important to
@@ -881,7 +863,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * 
 	 * @see #getMaxScore(int id)
 	 */
-	public double getMaxFitness(int id);
+	public abstract double getMaxFitness(int id);
 
 	/**
 	 * Returns status message from model. Typically this is a string summarizing the
@@ -908,7 +890,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * 
 	 * @return elapsed time as string
 	 */
-	public default String getCounter() {
+	public String getCounter() {
 		return "time: " + Formatter.format(getTime(), 2);
 	}
 
@@ -918,7 +900,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * 
 	 * @return elapsed time
 	 */
-	public double getTime();
+	public abstract double getTime();
 
 	/**
 	 * Gets the elapsed time in real time units. The real time increments of
@@ -930,7 +912,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * 
 	 * @return elapsed real time
 	 */
-	public default double getRealtime() {
+	public double getRealtime() {
 		return getTime();
 	}
 
@@ -943,7 +925,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * @param init the array with the initial trait values
 	 * @return {@code true} if initial traits successfully set
 	 */
-	public default boolean setInitialTraits(double[] init) {
+	public boolean setInitialTraits(double[] init) {
 		return false;
 	}
 
@@ -964,7 +946,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * @param init the array with the initial trait values
 	 * @return {@code true} if initial traits successfully set
 	 */
-	public default boolean setInitialTraits(int id, double[] init) {
+	public boolean setInitialTraits(int id, double[] init) {
 		return false;
 	}
 
@@ -1014,7 +996,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 *
 	 * @return the names of the mean traits
 	 */
-	public default String[] getMeanNames() {
+	public String[] getMeanNames() {
 		int nMean = getNMean();
 		String[] names = new String[nMean];
 		for (int n = 0; n < nMean; n++)
@@ -1082,7 +1064,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * @param idx the index of the location
 	 * @return array of mean trait values
 	 */
-	public default double[] getMeanTraitAt(int id, int idx) {
+	public double[] getMeanTraitAt(int id, int idx) {
 		return null;
 	}
 
@@ -1098,7 +1080,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * @param idx the index of the location
 	 * @return description of traits at <code>idx</code>
 	 */
-	public default String getTraitNameAt(int id, int idx) {
+	public String getTraitNameAt(int id, int idx) {
 		return null;
 	}
 
@@ -1132,7 +1114,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * @return <code>true</code> if this and the previous data point should be
 	 *         connected, i.e. no reset had been requested in the mean time.
 	 */
-	public boolean getMeanFitness(double[] mean);
+	public abstract boolean getMeanFitness(double[] mean);
 
 	/**
 	 * Gets the mean fitness values for species with ID <code>id</code>. The result
@@ -1160,7 +1142,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * @param idx the location of the fitness values
 	 * @return the array of mean fitness values
 	 */
-	public default double[] getMeanFitnessAt(int id, int idx) {
+	public double[] getMeanFitnessAt(int id, int idx) {
 		return null;
 	}
 
@@ -1176,7 +1158,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * @param idx the index of the location
 	 * @return the fitness as a formatted string
 	 */
-	public default String getFitnessNameAt(int id, int idx) {
+	public String getFitnessNameAt(int id, int idx) {
 		return null;
 	}
 
@@ -1192,7 +1174,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * @param idx the index of the location
 	 * @return the score as a formatted string
 	 */
-	public default String getScoreNameAt(int id, int idx) {
+	public String getScoreNameAt(int id, int idx) {
 		return null;
 	}
 
@@ -1231,14 +1213,14 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 *
 	 * @return <code>true</code> if data points are connected.
 	 */
-	public boolean isConnected();
+	public abstract boolean isConnected();
 
 	/**
 	 * Checks if model has converged.
 	 *
 	 * @return <code>true</code> if model has converged.
 	 */
-	public boolean hasConverged();
+	public abstract boolean hasConverged();
 
 	/**
 	 * Checks if time reversal is permitted. By default returns <code>false</code>.
@@ -1248,7 +1230,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 *
 	 * @see #setTimeReversed(boolean)
 	 */
-	public default boolean permitsTimeReversal() {
+	public boolean permitsTimeReversal() {
 		return false;
 	}
 
@@ -1260,7 +1242,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 *
 	 * @see #setTimeReversed(boolean)
 	 */
-	public default boolean isTimeReversed() {
+	public boolean isTimeReversed() {
 		return false;
 	}
 
@@ -1281,7 +1263,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * @see org.evoludo.simulator.models.SDEEuler#setTimeReversed
 	 *      SDEEuler.setTimeReversed
 	 */
-	public default void setTimeReversed(boolean reversed) {
+	public void setTimeReversed(boolean reversed) {
 	}
 
 	/**
@@ -1291,14 +1273,14 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 *
 	 * @return <code>true</code> if stepwise debuggin is permissible.
 	 */
-	public default boolean permitsDebugStep() {
+	public boolean permitsDebugStep() {
 		return false;
 	}
 
 	/**
 	 * Perform single debug step in models that allow it.
 	 */
-	public default void debugStep() {
+	public void debugStep() {
 	}
 
 	/**
@@ -1308,7 +1290,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * @param test the mode to test
 	 * @return {@code true} if {@code test} is available in current model
 	 */
-	public default boolean permitsMode(Mode test) {
+	public boolean permitsMode(Mode test) {
 		switch (test) {
 			case STATISTICS_SAMPLE:
 				return permitsSampleStatistics();
@@ -1319,26 +1301,6 @@ public abstract interface Model extends CLOProvider, Statistics {
 				return true;
 		}
 	}
-
-	// /**
-	//  * Check if the current model settings permit sample statistics. Fixation
-	//  * probabilities and times are examples of statistics based on samples.
-	//  * 
-	//  * @return <code>true</code> if sample statistics are permitted
-	//  */
-	// public default boolean permitsSampleStatistics() {
-	// 	return false;
-	// }
-
-	// /**
-	//  * Check if the current model settings permit update statistics. Sojourn times
-	//  * are an example of statistics based on updates.
-	//  * 
-	//  * @return <code>true</code> if update statistics are permitted
-	//  */
-	// public default boolean permitsUpdateStatistics() {
-	// 	return false;
-	// }
 
 	/**
 	 * Sets the {@link Mode} of model/simulator. Returns {@code false} if
@@ -1352,7 +1314,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 *
 	 * @see #requestMode(Mode)
 	 */
-	public default boolean setMode(Mode mode) {
+	public boolean setMode(Mode mode) {
 		if (!permitsMode(mode))
 			return false;
 		throw new UnsupportedOperationException("Setting mode '" + mode + "' not supported");
@@ -1367,7 +1329,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * 
 	 * @see EvoLudo#requestAction(ChangeListener.PendingAction)
 	 */
-	public default boolean requestMode(Mode mode) {
+	public boolean requestMode(Mode mode) {
 		return permitsMode(mode);
 	}
 
@@ -1376,27 +1338,9 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 *
 	 * @return mode of model
 	 */
-	public default Mode getMode() {
+	public Mode getMode() {
 		return Mode.DYNAMICS;
 	}
-
-	// /**
-	//  * Reset statistics and get ready to start new collection.
-	//  */
-	// public default void resetStatisticsSample() {
-	// }
-
-	// /**
-	//  * Clear statistics sample and get ready to collect next sample.
-	//  */
-	// public default void initStatisticsSample() {
-	// }
-
-	// /**
-	//  * Signal that statistics sample is ready to process.
-	//  */
-	// public default void readStatisticsSample() {
-	// }
 
 	/**
 	 * Encode the state of the model in a <code>plist</code> inspired
@@ -1410,7 +1354,7 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * @see org.evoludo.util.Plist
 	 * @see org.evoludo.util.XMLCoder
 	 */
-	public void encodeState(StringBuilder plist);
+	public abstract void encodeState(StringBuilder plist);
 
 	/**
 	 * Restore the state encoded in the <code>plist</code> inspired <code>map</code>
@@ -1423,5 +1367,5 @@ public abstract interface Model extends CLOProvider, Statistics {
 	 * @see org.evoludo.util.PlistReader
 	 * @see org.evoludo.util.PlistParser
 	 */
-	public boolean restoreState(Plist map);
+	public abstract boolean restoreState(Plist map);
 }

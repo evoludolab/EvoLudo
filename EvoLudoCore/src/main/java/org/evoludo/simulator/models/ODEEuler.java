@@ -60,7 +60,7 @@ import org.evoludo.util.Plist;
  *
  * @author Christoph Hauert
  */
-public class ODEEuler implements Model.ODE {
+public class ODEEuler extends Model implements Model.ODE {
 
 	/**
 	 * Methods that every {@link Module} must implement, which advertises numerical
@@ -164,14 +164,14 @@ public class ODEEuler implements Model.ODE {
 		 *
 		 * @see EvoLudo#getRNG()
 		 */
-		public default Model.ODE createODE() {
+		public default Model createODE() {
 			return null;
 		}
 	}
 
 	@Override
-	public boolean isContinuous() {
-		return false;
+	public Type getModelType() {
+		return Type.ODE;
 	}
 
 	/**

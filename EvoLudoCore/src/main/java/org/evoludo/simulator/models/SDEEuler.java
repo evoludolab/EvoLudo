@@ -67,9 +67,14 @@ public class SDEEuler extends ODEEuler implements Model.SDE, Statistics {
 		 * 
 		 * @see EvoLudo#getRNG()
 		 */
-		public default Model.SDE createSDE() {
+		public default Model createSDE() {
 			return null;
 		}
+	}
+
+	@Override
+	public Type getModelType() {
+		return Type.SDE;
 	}
 
 	/**

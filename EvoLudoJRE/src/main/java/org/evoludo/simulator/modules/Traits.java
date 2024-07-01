@@ -311,7 +311,7 @@ public class Traits extends Discrete implements Pairs,
 	}
 
 	@Override
-	public Model.SDE createSDE() {
+	public Model createSDE() {
 		return new SDEEulerN(engine);
 	}
 }

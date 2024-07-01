@@ -28,7 +28,7 @@ import org.evoludo.util.Plist;
  * 
  * @author Christoph Hauert
  */
-public abstract class IBS implements Model.IBS {
+public abstract class IBS extends Model implements Model.IBS {
 
 	/**
 	 * Modules that offer individual based simulation models must implement this
@@ -48,9 +48,14 @@ public abstract class IBS implements Model.IBS {
 		 * 
 		 * @see EvoLudo#getRNG()
 		 */
-		public default Model.IBS createIBS() {
+		public default Model createIBS() {
 			return null;
 		}
+	}
+
+	@Override
+	public Type getModelType() {
+		return Type.IBS;
 	}
 
 	/**

@@ -751,7 +751,7 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 	}
 
 	@Override
-	public Model.ODE createODE() {
+	public Model createODE() {
 		return new ATBT.ODE(engine);
 	}
 

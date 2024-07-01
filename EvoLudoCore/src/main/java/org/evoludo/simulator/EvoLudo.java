@@ -261,9 +261,9 @@ public abstract class EvoLudo
 	 * @param module the interaction {@link Module}
 	 * @return the ODE model for <code>module</code>
 	 */
-	public Model.ODE createODE(Module module) {
+	public Model createODE(Module module) {
 		if (module instanceof HasODE) {
-			Model.ODE model = ((HasODE) module).createODE();
+			Model model = ((HasODE) module).createODE();
 			if (model != null)
 				return model;
 		}
@@ -279,9 +279,9 @@ public abstract class EvoLudo
 	 * @param module the interaction {@link Module}
 	 * @return the SDE model for <code>module</code>
 	 */
-	public Model.SDE createSDE(Module module) {
+	public Model createSDE(Module module) {
 		if (module instanceof HasSDE) {
-			Model.SDE model = ((HasSDE) module).createSDE();
+			Model model = ((HasSDE) module).createSDE();
 			if (model != null)
 				return model;
 		}
@@ -297,9 +297,9 @@ public abstract class EvoLudo
 	 * @param module the interaction {@link Module}
 	 * @return the PDE model for <code>module</code>
 	 */
-	public Model.PDE createPDE(Module module) {
+	public Model createPDE(Module module) {
 		if (module instanceof HasPDE) {
-			Model.PDE model = ((HasPDE) module).createPDE();
+			Model model = ((HasPDE) module).createPDE();
 			if (model != null)
 				return model;
 		}
@@ -316,9 +316,9 @@ public abstract class EvoLudo
 	 * @param module the interaction {@link Module}
 	 * @return the IBS model for <code>module</code>
 	 */
-	public Model.IBS createIBS(Module module) {
+	public Model createIBS(Module module) {
 		if (module instanceof HasIBS) {
-			Model.IBS model = ((HasIBS) module).createIBS();
+			Model model = ((HasIBS) module).createIBS();
 			if (model != null)
 				return model;
 		}

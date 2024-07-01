@@ -78,7 +78,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		 *
 		 * @see EvoLudo#getRNG()
 		 */
-		public default Model.PDE createPDE() {
+		public default Model createPDE() {
 			return null;
 		}
 	}
@@ -93,7 +93,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	 */
 	@Override
 	public Type getModelType() {
-		return PDE.super.getModelType();
+		return Type.PDE;
 	}
 
 	/**
