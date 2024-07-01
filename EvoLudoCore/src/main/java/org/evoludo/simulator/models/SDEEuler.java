@@ -146,12 +146,6 @@ public class SDEEuler extends ODEEuler implements Model.SDE, Statistics {
 			engine.loadModel(Model.Type.ODE);
 			return true;
 		}
-		if (module.VACANT >= 0) {
-			engine.getLogger()
-					.warning("SDE model for variable population sizes not (yet?) implemented - revert to ODE.");
-			engine.loadModel(Model.Type.ODE);
-			return true;
-		}
 		if (isDensity()) {
 			engine.getLogger().warning("SDE model requires fixed population size - revert to ODE.");
 			engine.loadModel(Model.Type.ODE);

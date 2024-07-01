@@ -10,7 +10,7 @@ TASKS:
 BUGS:
 - keyboard shortcuts reach all labs on a page (should be restricted to the active one, check with 's' for shake)
 - 3D views ignore the linewidth setting for drawing the network (try updating to parallax 2.0?)
-- reverting PDE model to ODE e.g. for well-mixed structures fails (must re-parse command line options)
+- reverting SDE/PDE model to ODE e.g. for well-mixed structures fails (must re-parse command line options)
 - aspect ratios of active 3D views in multiple labs on same page interfere (low priority, highly unlikely scenario)
 
 TODO:
