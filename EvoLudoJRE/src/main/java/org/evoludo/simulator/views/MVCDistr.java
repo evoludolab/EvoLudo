@@ -253,7 +253,7 @@ public class MVCDistr extends MVAbstract implements PopListener {
 
     @Override
 	public double getData(Color[] data, int tag) {
-		Model.ContinuousIBS model = (Model.ContinuousIBS)engine.getModel();
+		Model.Continuous model = (Model.Continuous)engine.getModel();
 		// check if we need to process data first
     	double now = model.getTime();
 		if( now-timestamp>1e-8 ) {

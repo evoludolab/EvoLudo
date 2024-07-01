@@ -645,7 +645,7 @@ public class Histogram extends AbstractView {
 				case STRATEGY:
 					double[][] data = null;
 					// cast ok because trait histograms only make sense for continuous models
-					Model.ContinuousIBS cmodel = (Model.ContinuousIBS) model;
+					Model.Continuous cmodel = (Model.Continuous) model;
 					for (HistoGraph graph : graphs) {
 						double[][] graphdata = graph.getData();
 						if (data != graphdata) {

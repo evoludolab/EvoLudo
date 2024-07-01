@@ -14,6 +14,7 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
+import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
@@ -208,7 +209,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	@Override
 	public void mouseHitNode(int id, int node, boolean alt) {
 		if (model.getModelType() == Model.Type.IBS)
-			((Model.IBS) model).mouseHitNode(id, node, alt);
+			((IBS) model).mouseHitNode(id, node, alt);
 	}
 
 	@Override
@@ -293,7 +294,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 					// style='color:"+colors[node]+";'>"+
 					// population.getTraitNameAt(node)+"</td></tr></table>";
 				}
-				Model.IBS ibs = (Model.IBS) model;
+				IBS ibs = (IBS) model;
 				id = module.getID();
 				tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>");
 				if (type == Model.Data.STRATEGY) {

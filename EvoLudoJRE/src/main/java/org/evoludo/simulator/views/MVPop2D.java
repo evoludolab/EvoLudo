@@ -62,6 +62,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODEEuler.HasDE;
 import org.evoludo.simulator.modules.Map2Fitness;
@@ -395,7 +396,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 						return null;
 					return "<html><i>Node:</i> " + (node % nNodes) + "<br><i>Time:</i> " + Formatter.format(-t, 2);
 				}
-				Model.IBS ibs = (Model.IBS) model;
+				IBS ibs = (IBS) model;
 				int count = ibs.getInteractionsAt(tag, node);
 				String nametag = ibs.getTagNameAt(tag, node);
 				toolTip = "<html><i>Node:</i> " + node +
@@ -464,7 +465,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 	public boolean mouseHitNode(int node, int tag) {
 		if (lab.isRunning())
 			return false;
-		return ((Model.IBS) engine.getModel()).mouseHitNode(tag, node); // population signals change back to us
+		return ((IBS) engine.getModel()).mouseHitNode(tag, node, false); // population signals change back to us
 	}
 
 	// @Override
