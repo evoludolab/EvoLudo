@@ -1,9 +1,7 @@
 package org.evoludo.simulator.models;
 
-import java.awt.Color;
 import java.io.PrintStream;
 
-import org.evoludo.math.Combinatorics;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
@@ -664,8 +662,8 @@ public abstract class IBS extends Model {
 	@Override
 	public String getCounter() {
 		String counter = super.getCounter();
-		if (mode == Mode.DYNAMICS)
-			return counter + " (" + Formatter.format(getRealtime(), 2) + ")";
+		if (mode == Mode.DYNAMICS && Double.isFinite(realtime))
+			return counter + " (" + Formatter.format(realtime, 2) + ")";
 		return counter;
 	}
 
@@ -717,41 +715,6 @@ public abstract class IBS extends Model {
 	@Override
 	public int getNMean(int id) {
 		return getIBSPopulation(id).getNMean();
-	}
-
-	@Override
-	public String getMeanName(int index) {
-		for (Module mod : species) {
-			int nt = mod.getNTraits();
-			if (index < nt) {
-				if (mod.getActiveTraits()[index])
-					return mod.getTraitName(index);
-				return null;
-			}
-			index -= nt;
-		}
-		return null;
-	}
-
-	@Override
-	public Color[] getMeanColors() {
-		int nMean = getNMean();
-		Color[] colors = new Color[nMean];
-		int skip = 0;
-		for (Module mod : species)
-			System.arraycopy(mod.getTraitColors(), 0, colors, skip, mod.getNTraits());
-		return colors;
-	}
-
-	@Override
-	public Color[] getMeanColors(int id) {
-		if (!isMultispecies)
-			return getMeanColors();
-		Module mod = species.get(id);
-		int nt = mod.getNTraits();
-		Color[] colors = new Color[nt];
-		System.arraycopy(mod.getTraitColors(), 0, colors, 0, nt);
-		return colors;
 	}
 
 	@Override
@@ -883,19 +846,6 @@ public abstract class IBS extends Model {
 			converged &= pop.checkConvergence();
 		}
 		return true;
-	}
-
-	/**
-	 * Flag to indicate whether the current data point belongs to the same time
-	 * series. This is used by the GUI to decide whether to connect the data points
-	 * or not. Typically this is false only after {@link #init()}, {@link #reset()},
-	 * {@link #restoreState(Plist)} or similar.
-	 */
-	protected boolean connect;
-
-	@Override
-	public boolean isConnected() {
-		return connect;
 	}
 
 	/**
@@ -1993,25 +1943,6 @@ public abstract class IBS extends Model {
 	}
 
 	/**
-	 * Set random seed
-	 *
-	 * @param s the seed for the random number generator
-	 */
-	public void srandom(long s) {
-		rng.setRNGSeed(s);
-	}
-
-	/**
-	 * random integer number from interval <code>[0, n]</code>.
-	 *
-	 * @param n the upper limit of interval (inclusive)
-	 * @return the random integer number in <code>[0, n]</code>.
-	 */
-	public int random0N(int n) {
-		return rng.random0N(n);
-	}
-
-	/**
 	 * random integer number from interval <code>[0, n)</code>.
 	 *
 	 * @param n the upper limit of interval (exclusive)
@@ -2029,61 +1960,5 @@ public abstract class IBS extends Model {
 	 */
 	public double random01() {
 		return rng.random01();
-	}
-
-	/**
-	 * Random number from interval [0, 1) with maximum 53bit resolution.
-	 * <p>
-	 * <strong>Note:</strong> takes twice as long as regular precision.
-	 *
-	 * @return the random number in <code>[0, 1)</code>.
-	 */
-	public double random01d() {
-		return rng.random01d();
-	}
-
-	/**
-	 * Generate Gaussian (normal) distributed random number.
-	 * 
-	 * @param mean the mean of the Gaussian distribution
-	 * @param sdev the (standard deviation) of the Gaussian distribution
-	 * @return the Gaussian distributed random number
-	 */
-	public double randomGaussian(double mean, double sdev) {
-		return mean + sdev * rng.nextGaussian();
-	}
-
-	/**
-	 * Generate binomially distributed random number.
-	 * 
-	 * @param p the probability of success
-	 * @param n the number of trials
-	 * @return the number of successes
-	 */
-	public int nextBinomial(double p, int n) {
-		if (n == 0)
-			return 0;
-		if (p > 1.0 - 1e-8)
-			return 0;
-
-		// check if gaussian approximation is suitable
-		double np = n * p;
-		if (np / (1.0 - p) > 9.0 && n * (1.0 - p) / p > 9.0)
-			return (int) Math.floor(randomGaussian(np + 0.5, Math.sqrt(np * (1.0 - p))));
-
-		double uRand = random01();
-		double pi = Combinatorics.pow(1.0 - p, n);
-		double f = p / (1.0 - p);
-		double sum = 0.0;
-
-		for (int i = 0; i <= n; i++) {
-			sum += pi * Combinatorics.combinations(n, i);
-			if (uRand <= sum)
-				return i;
-			pi *= f;
-		}
-		logger.warning(
-				"What the heck are you doing here!!! (rand: " + uRand + ", p: " + p + ", n: " + n + " -> " + sum + ")");
-		return -1;
 	}
 }

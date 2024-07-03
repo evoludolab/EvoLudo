@@ -34,6 +34,7 @@ package org.evoludo.simulator.models;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -117,6 +118,14 @@ public abstract class Model implements CLOProvider {
 	 * the model execution automatically stops.
 	 */
 	protected boolean converged = false;
+
+	/**
+	 * Flag to indicate whether the current data point belongs to the same time
+	 * series. This is used by the GUI to decide whether to connect the data points
+	 * or not. Typically this is false only after {@link #init()}, {@link #reset()},
+	 * {@link #restoreState(Plist)} or similar.
+	 */
+	protected boolean connect;
 
 	/**
 	 * Creates a model.
@@ -669,8 +678,12 @@ public abstract class Model implements CLOProvider {
 	public String[] getMeanNames() {
 		int nMean = getNMean();
 		String[] names = new String[nMean];
-		for (int n = 0; n < nMean; n++)
-			names[n] = getMeanName(n);
+		int skip = 0;
+		for (Module mod : species) {
+			int nt = mod.getNTraits();
+			System.arraycopy(mod.getTraitNames(), 0, names, skip, nt);
+			skip += nt;
+		}
 		return names;
 	}
 
@@ -681,14 +694,35 @@ public abstract class Model implements CLOProvider {
 	 * @param index the index of the mean trait
 	 * @return the name of mean trait with index {@code index}
 	 */
-	public abstract String getMeanName(int index);
+	public String getMeanName(int index) {
+		for (Module mod : species) {
+			int nt = mod.getNTraits();
+			if (index < nt) {
+				if (mod.getActiveTraits()[index])
+					return mod.getTraitName(index);
+				return null;
+			}
+			index -= nt;
+		}
+		return null;
+	}
 
 	/**
 	 * Return the colors for the mean traits of this model.
 	 *
 	 * @return the color array for the mean values
 	 */
-	public abstract Color[] getMeanColors();
+	public Color[] getMeanColors() {
+		int nMean = getNMean();
+		Color[] colors = new Color[nMean];
+		int skip = 0;
+		for (Module mod : species) {
+			int nt = mod.getNTraits();
+			System.arraycopy(mod.getTraitColors(), 0, colors, skip, nt);
+			skip += nt;
+		}
+		return colors;
+	}
 
 	/**
 	 * Return the colors for the mean traits for species with ID {@code id}.
@@ -696,7 +730,10 @@ public abstract class Model implements CLOProvider {
 	 * @param id the index of the mean trait
 	 * @return the color array for the mean values
 	 */
-	public abstract Color[] getMeanColors(int id);
+	public Color[] getMeanColors(int id) {
+		Color[] colors = getSpecies(id).getTraitColors();
+		return Arrays.copyOf(colors, colors.length);
+	}
 
 	/**
 	 * Collect and return mean trait values for all species.
@@ -883,7 +920,9 @@ public abstract class Model implements CLOProvider {
 	 *
 	 * @return <code>true</code> if data points are connected.
 	 */
-	public abstract boolean isConnected();
+	public boolean isConnected() {
+		return connect;
+	}
 
 	/**
 	 * Checks if time reversal is permitted. By default returns <code>false</code>.

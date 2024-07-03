@@ -32,7 +32,6 @@
 
 package org.evoludo.simulator.models;
 
-import java.awt.Color;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
@@ -373,15 +372,6 @@ public class ODEEuler extends Model implements Discrete {
 	double[] invFitRange;
 
 	/**
-	 * <code>true</code> if the previous and the current data point should be
-	 * connected.
-	 *
-	 * @see #checkConvergence(double)
-	 * @see #setAccuracy(double)
-	 */
-	boolean connect = true;
-
-	/**
 	 * The names of the traits (dynamical variables) in the ODE. In multi-species
 	 * modules all names are concatenated into this single array. The names of the
 	 * first species are stored in <code>names[0]</code> through
@@ -504,8 +494,8 @@ public class ODEEuler extends Model implements Discrete {
 			ft = new double[nDim];
 			dyt = new double[nDim];
 			yout = new double[nDim];
-			names = new String[nDim];
 		}
+		names = getMeanNames();
 
 		if (isAdjustedDynamics && minFit <= 0.0) {
 			// fitness is not guaranteed to be positive
@@ -519,12 +509,6 @@ public class ODEEuler extends Model implements Discrete {
 	@Override
 	public void reset() {
 		int skip = 0;
-		for (Module pop : species) {
-			int nTraits = pop.getNTraits();
-			System.arraycopy(pop.getTraitNames(), 0, names, skip, nTraits);
-			skip += nTraits;
-		}
-		skip = 0;
 		staticfit = null;
 		for (Module pop : species) {
 			if (!pop.isStatic())
@@ -638,40 +622,6 @@ public class ODEEuler extends Model implements Discrete {
 	}
 
 	@Override
-	public String getMeanName(int index) {
-		for (Module mod : species) {
-			int nt = mod.getNTraits();
-			if (index < nt) {
-				if (mod.getActiveTraits()[index])
-					return mod.getTraitName(index);
-				return null;
-			}
-			index -= nt;
-		}
-		return null;
-	}
-
-	@Override
-	public Color[] getMeanColors() {
-		Color[] colors = new Color[nDim];
-		int idx = 0;
-		for (Module mod : species) {
-			int start = idxSpecies[idx];
-			System.arraycopy(mod.getTraitColors(), 0, colors, start, idxSpecies[idx + 1] - start);
-		}
-		return colors;
-	}
-
-	@Override
-	public Color[] getMeanColors(int id) {
-		Module mod = species.get(id);
-		int nt = mod.getNTraits();
-		Color[] colors = new Color[nt];
-		System.arraycopy(mod.getTraitColors(), 0, colors, 0, nt);
-		return colors;
-	}
-
-	@Override
 	public boolean getMeanTraits(int id, double[] mean) {
 		double[] state = (dstate == null ? yt : dstate);
 		int start = idxSpecies[id];
@@ -687,21 +637,6 @@ public class ODEEuler extends Model implements Discrete {
 	}
 
 	/**
-	 * Gets array with all trait names.
-	 * <p>
-	 * <strong>NOTE:</strong> this is a convenience method for multi-species modules
-	 * to efficiently retrieve all trait names for further processing or
-	 * visualization.
-	 *
-	 * @return the trait names
-	 * 
-	 * @see #names
-	 */
-	public String[] getTraitNames() {
-		return names;
-	}
-
-	/**
 	 * Unused interface method.
 	 */
 	@Override
@@ -711,24 +646,24 @@ public class ODEEuler extends Model implements Discrete {
 
 	@Override
 	public double getMinScore(int id) {
-		return species.get(id).getMinGameScore();
+		return getSpecies(id).getMinGameScore();
 	}
 
 	@Override
 	public double getMaxScore(int id) {
-		return species.get(id).getMaxGameScore();
+		return getSpecies(id).getMaxGameScore();
 	}
 
 	@Override
 	public double getMinFitness(int id) {
-		Module mod = species.get(id);
+		Module mod = getSpecies(id);
 		Map2Fitness map2fit = mod.getMapToFitness();
 		return map2fit.map(mod.getMinGameScore());
 	}
 
 	@Override
 	public double getMaxFitness(int id) {
-		Module mod = species.get(id);
+		Module mod = getSpecies(id);
 		Map2Fitness map2fit = mod.getMapToFitness();
 		return map2fit.map(mod.getMaxGameScore());
 	}
@@ -790,16 +725,6 @@ public class ODEEuler extends Model implements Discrete {
 			bins[idx][bin] = yt[offset + idx];
 			idx++;
 		}
-	}
-
-	@Override
-	public double getTime() {
-		return time;
-	}
-
-	@Override
-	public boolean isConnected() {
-		return connect;
 	}
 
 	/**

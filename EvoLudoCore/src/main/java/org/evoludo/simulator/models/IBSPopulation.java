@@ -3737,6 +3737,11 @@ public abstract class IBSPopulation {
 
 	/**
 	 * Return the number of mean values for this population (for traits or fitness).
+	 * <p>
+	 * <strong>Note:</strong> The number of mean traits in a model may differ from
+	 * the number of traits in the corresponding module. This is the case for
+	 * example for {@link Geometry.Type#SQUARE_NEUMANN_2ND} with two disjoint
+	 * interaction or competition graphs.
 	 *
 	 * @return the number of mean values
 	 * 
