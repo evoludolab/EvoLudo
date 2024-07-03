@@ -42,7 +42,7 @@ import org.evoludo.simulator.ColorMap3D;
 import org.evoludo.simulator.EvoLudo.ColorModelType;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.ODEEuler.HasDE;
 import org.evoludo.simulator.models.PDERD;
 import org.evoludo.simulator.modules.Map2Fitness;
@@ -76,7 +76,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 	 * @param engine the pacemaker for running the model
 	 * @param type   the type of data to display
 	 */
-	public Pop3D(EvoLudoGWT engine, Model.Data type) {
+	public Pop3D(EvoLudoGWT engine, Data type) {
 		super(engine, type);
 	}
 

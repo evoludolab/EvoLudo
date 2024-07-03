@@ -49,9 +49,9 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.FixationData;
-import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.Model.Mode;
+import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.ODEEuler;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
@@ -111,7 +111,7 @@ public class Histogram extends AbstractView {
 	 * @param type   the type of data to display
 	 */
 	@SuppressWarnings("unchecked")
-	public Histogram(EvoLudoGWT engine, Model.Data type) {
+	public Histogram(EvoLudoGWT engine, Data type) {
 		super(engine, type);
 		graphs = (List<HistoGraph>) super.graphs;
 	}
@@ -119,17 +119,6 @@ public class Histogram extends AbstractView {
 	@Override
 	public String getName() {
 		return type.toString();
-	}
-
-	/**
-	 * Checks if the data type is referring to statistics.
-	 * 
-	 * @return <code>true</code> for statistics data types
-	 */
-	public boolean isStatistics() {
-		return (type == Model.Data.STATISTICS_FIXATION_PROBABILITY || //
-				type == Model.Data.STATISTICS_FIXATION_TIME || //
-				type == Model.Data.STATISTICS_STATIONARY);
 	}
 
 	@Override
@@ -1106,7 +1095,7 @@ public class Histogram extends AbstractView {
 
 	@Override
 	public void populateContextMenu(ContextMenu menu) {
-		if (type == Model.Data.STATISTICS_STATIONARY) {
+		if (type == Data.STATISTICS_STATIONARY) {
 			// add menu to clear canvas
 			if (clearMenu == null) {
 				clearMenu = new ContextMenuItem("Clear", new Command() {

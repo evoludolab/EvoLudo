@@ -1,7 +1,5 @@
 package org.evoludo.simulator.models;
 
-import org.evoludo.simulator.models.Model.Mode;
-
 /**
  * All <code>ChangeListener</code>'s get informed about state changes of the
  * core of EvoLudo models.

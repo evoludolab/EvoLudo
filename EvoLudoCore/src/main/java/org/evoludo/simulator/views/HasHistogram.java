@@ -34,7 +34,7 @@ package org.evoludo.simulator.views;
 
 import java.awt.Color;
 
-import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Data;
 
 /**
  * {@link org.evoludo.simulator.modules.Module Module}s that implement the
@@ -65,7 +65,7 @@ public abstract interface HasHistogram {
 	 * @param idx  the index of the trait
 	 * @return the array of levels for reference
 	 */
-	public default double[] getCustomLevels(Model.Data type, int idx) {
+	public default double[] getCustomLevels(Data type, int idx) {
 		return null;
 	}
 

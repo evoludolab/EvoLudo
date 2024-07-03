@@ -12,9 +12,10 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.EvoLudoTrigger;
 import org.evoludo.simulator.Resources;
 import org.evoludo.simulator.models.ChangeListener;
+import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.MilestoneListener;
+import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.Console;
@@ -1723,45 +1724,45 @@ public class EvoLudoWeb extends Composite
 		Model model = engine.getModel();
 		boolean isODESDE = (model.isODE() || model.isSDE());
 		if (module instanceof HasPop2D.Strategy && !isODESDE)
-			addView(new Pop2D(engine, Model.Data.STRATEGY), oldViews);
+			addView(new Pop2D(engine, Data.STRATEGY), oldViews);
 		if (isWebGLSupported && module instanceof HasPop3D.Strategy && !isODESDE)
-			addView(new Pop3D(engine, Model.Data.STRATEGY), oldViews);
+			addView(new Pop3D(engine, Data.STRATEGY), oldViews);
 		if (module instanceof HasPhase2D)
 			addView(new Phase2D(engine), oldViews);
 		if (module instanceof HasMean.Strategy)
-			addView(new Mean(engine, Model.Data.STRATEGY), oldViews);
+			addView(new Mean(engine, Data.STRATEGY), oldViews);
 		if (module instanceof HasPhase2D)
 			addView(new Phase2D(engine), oldViews);
 		if (module instanceof HasS3)
 			addView(new S3(engine), oldViews);
 		if (module instanceof HasHistogram.Strategy)
-			addView(new Histogram(engine, Model.Data.STRATEGY), oldViews);
+			addView(new Histogram(engine, Data.STRATEGY), oldViews);
 		if (module instanceof HasDistribution.Strategy)
-			addView(new Distribution(engine, Model.Data.STRATEGY), oldViews);
+			addView(new Distribution(engine, Data.STRATEGY), oldViews);
 		// fitness related views
 		if (module instanceof HasPop2D.Fitness && !isODESDE)
-			addView(new Pop2D(engine, Model.Data.FITNESS), oldViews);
+			addView(new Pop2D(engine, Data.FITNESS), oldViews);
 		if (isWebGLSupported && module instanceof HasPop3D.Fitness && !isODESDE)
-			addView(new Pop3D(engine, Model.Data.FITNESS), oldViews);
+			addView(new Pop3D(engine, Data.FITNESS), oldViews);
 		if (module instanceof HasMean.Fitness)
-			addView(new Mean(engine, Model.Data.FITNESS), oldViews);
+			addView(new Mean(engine, Data.FITNESS), oldViews);
 		if (module instanceof HasHistogram.Fitness)
-			addView(new Histogram(engine, Model.Data.FITNESS), oldViews);
+			addView(new Histogram(engine, Data.FITNESS), oldViews);
 		// structure related views
 		if (module instanceof HasHistogram.Degree && !isODESDE)
-			addView(new Histogram(engine, Model.Data.DEGREE), oldViews);
+			addView(new Histogram(engine, Data.DEGREE), oldViews);
 		// statistics related views
 		if (model.permitsMode(Mode.STATISTICS_SAMPLE)) {
 			// sample statistics available
 			if (module instanceof HasHistogram.StatisticsProbability)
-				addView(new Histogram(engine, Model.Data.STATISTICS_FIXATION_PROBABILITY), oldViews);
+				addView(new Histogram(engine, Data.STATISTICS_FIXATION_PROBABILITY), oldViews);
 			if (module instanceof HasHistogram.StatisticsTime)
-				addView(new Histogram(engine, Model.Data.STATISTICS_FIXATION_TIME), oldViews);
+				addView(new Histogram(engine, Data.STATISTICS_FIXATION_TIME), oldViews);
 		}
 		if (model.permitsMode(Mode.STATISTICS_UPDATE)) {
 			// update statistics available
 			if (module instanceof HasHistogram.StatisticsStationary)
-				addView(new Histogram(engine, Model.Data.STATISTICS_STATIONARY), oldViews);
+				addView(new Histogram(engine, Data.STATISTICS_STATIONARY), oldViews);
 		}
 		// miscellaneous views
 		// note: console may be removed for (simulated) ePub modes

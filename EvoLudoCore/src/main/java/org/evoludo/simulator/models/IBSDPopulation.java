@@ -42,7 +42,6 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSD.Init;
-import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.util.Formatter;

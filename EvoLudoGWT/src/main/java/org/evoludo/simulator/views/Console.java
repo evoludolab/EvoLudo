@@ -36,7 +36,7 @@ import java.util.ListIterator;
 import java.util.logging.Level;
 
 import org.evoludo.simulator.EvoLudoGWT;
-import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Data;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
@@ -143,7 +143,7 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 	 * @param engine the pacemaker for running the model
 	 */
 	public Console(EvoLudoGWT engine) {
-		super(engine, Model.Data.UNDEFINED);
+		super(engine, Data.UNDEFINED);
 	}
 
 	@Override

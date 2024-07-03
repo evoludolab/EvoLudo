@@ -36,8 +36,8 @@ import java.awt.Color;
 import java.io.PrintStream;
 
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBS.HasIBS;
-import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.PDERD.HasPDE;
 import org.evoludo.simulator.models.SDEEuler.HasSDE;
@@ -239,7 +239,7 @@ public class Moran extends Discrete implements Module.Static,
 	private double[][] statRefTime;
 
 	@Override
-	public double[] getCustomLevels(Model.Data type, int trait) {
+	public double[] getCustomLevels(Data type, int trait) {
 		// currently reference levels only available for Moran (birth-death) updates
 		// in IBS models (otherwise ibs is null, see reset(Model)
 		if (!model.isIBS() || !getIBSPopulation().getPopulationUpdate().isMoran())

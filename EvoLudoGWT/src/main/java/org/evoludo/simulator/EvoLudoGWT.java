@@ -37,7 +37,7 @@ import org.evoludo.graphics.Network2DGWT;
 import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
-import org.evoludo.simulator.models.Model.Mode;
+import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.PDERD;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.PDESupervisorGWT;

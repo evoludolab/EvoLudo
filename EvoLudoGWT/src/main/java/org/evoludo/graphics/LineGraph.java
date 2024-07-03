@@ -41,7 +41,7 @@ import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.ColorMapCSS;
-import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
@@ -422,9 +422,9 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 							continue;
 						String name;
 						Color color;
-						Model.Data type = controller.getType();
+						Data type = controller.getType();
 						int n1 = n + 1;
-						if (n1 == len - 1 && type == Model.Data.FITNESS) {
+						if (n1 == len - 1 && type == Data.FITNESS) {
 							name = "average";
 							color = Color.BLACK;
 						} else {

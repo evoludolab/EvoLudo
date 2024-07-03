@@ -39,14 +39,14 @@ import java.util.List;
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
 import org.evoludo.graphics.GenericPopGraph;
-import org.evoludo.graphics.TooltipProvider;
 import org.evoludo.graphics.PopGraph2D;
+import org.evoludo.graphics.TooltipProvider;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
@@ -104,7 +104,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 	 * @param type   the type of data to display
 	 */
 	@SuppressWarnings("unchecked")
-	public Distribution(EvoLudoGWT engine, Model.Data type) {
+	public Distribution(EvoLudoGWT engine, Data type) {
 		super(engine, type);
 		graphs = (List<PopGraph2D>) super.graphs;
 	}

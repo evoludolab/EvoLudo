@@ -39,7 +39,7 @@ import org.evoludo.graphics.AbstractGraph.GraphStyle;
 import org.evoludo.graphics.S3Graph;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
-import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
 
@@ -80,7 +80,7 @@ public class S3 extends AbstractView {
 	 */
 	@SuppressWarnings("unchecked")
 	public S3(EvoLudoGWT engine) {
-		super(engine, Model.Data.STRATEGY);
+		super(engine, Data.STRATEGY);
 		graphs = (List<S3Graph>) super.graphs;
 	}
 

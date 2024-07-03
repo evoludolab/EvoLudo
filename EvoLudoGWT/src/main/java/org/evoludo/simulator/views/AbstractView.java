@@ -48,8 +48,9 @@ import org.evoludo.graphics.GenericPopGraph;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Resources;
+import org.evoludo.simulator.models.Data;
+import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
@@ -101,7 +102,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	/**
 	 * The type of data shown in this graph.
 	 */
-	Model.Data type;
+	Data type;
 
 	/**
 	 * Logger for keeping track of and reporting events and issues.
@@ -144,7 +145,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * @param engine the EvoLudo engine
 	 * @param type   the type of data shown in this view
 	 */
-	public AbstractView(EvoLudoGWT engine, Model.Data type) {
+	public AbstractView(EvoLudoGWT engine, Data type) {
 		this.engine = engine;
 		this.type = type;
 		model = engine.getModel();
@@ -203,7 +204,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	}
 
 	@Override
-	public Model.Data getType() {
+	public Data getType() {
 		return type;
 	}
 

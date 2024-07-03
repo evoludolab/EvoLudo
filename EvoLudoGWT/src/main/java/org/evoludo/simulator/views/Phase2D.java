@@ -40,7 +40,7 @@ import org.evoludo.graphics.ParaGraph;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
-import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.ODEEuler;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
@@ -97,7 +97,7 @@ public class Phase2D extends AbstractView {
 	 */
 	@SuppressWarnings("unchecked")
 	public Phase2D(EvoLudoGWT engine) {
-		super(engine, Model.Data.UNDEFINED);
+		super(engine, Data.UNDEFINED);
 		graphs = (List<ParaGraph>) super.graphs;
 	}
 

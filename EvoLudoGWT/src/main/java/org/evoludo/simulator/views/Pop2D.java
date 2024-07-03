@@ -42,7 +42,7 @@ import org.evoludo.simulator.EvoLudo.ColorModelType;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network2D;
-import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.ODEEuler.HasDE;
 import org.evoludo.simulator.models.PDERD;
 import org.evoludo.simulator.modules.Continuous;
@@ -72,7 +72,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	 * @param engine the pacemaker for running the model
 	 * @param type   the type of data to display
 	 */
-	public Pop2D(EvoLudoGWT engine, Model.Data type) {
+	public Pop2D(EvoLudoGWT engine, Data type) {
 		super(engine, type);
 	}
 

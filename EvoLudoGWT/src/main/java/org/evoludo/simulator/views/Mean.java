@@ -42,9 +42,9 @@ import org.evoludo.graphics.AbstractGraph.Zoomer;
 import org.evoludo.graphics.LineGraph;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
-import org.evoludo.simulator.models.ODEEuler;
+import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBSC;
-import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.ODEEuler;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
 
@@ -83,7 +83,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 	 * @param type   the type of data to display
 	 */
 	@SuppressWarnings("unchecked")
-	public Mean(EvoLudoGWT engine, Model.Data type) {
+	public Mean(EvoLudoGWT engine, Data type) {
 		super(engine, type);
 		graphs = (List<LineGraph>) super.graphs;
 	}
@@ -109,7 +109,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 		// traits for continuous strategies
 		IBSC cmodel = model.isContinuous() ? (IBSC) model : null;
 		int nMean = model.getNMean();
-		int nGraphs = (cmodel != null && type == Model.Data.STRATEGY ? nMean : nSpecies);
+		int nGraphs = (cmodel != null && type == Data.STRATEGY ? nMean : nSpecies);
 		// if the number of graphs has changed, destroy and recreate them
 		if (graphs.size() != nGraphs) {
 			hard = true;

@@ -40,6 +40,7 @@ import org.evoludo.geom.PathIterator;
 import org.evoludo.geom.Point2D;
 import org.evoludo.geom.Rectangle2D;
 import org.evoludo.math.Combinatorics;
+import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
@@ -119,7 +120,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		 * 
 		 * @return the data type
 		 */
-		public Model.Data getType();
+		public Data getType();
 
 		/**
 		 * Get the type of the model supplying the data visualized on the graph.

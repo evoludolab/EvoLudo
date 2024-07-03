@@ -14,8 +14,8 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
+import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBS;
-import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
@@ -72,7 +72,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	 * @param type   the type of data to display
 	 */
 	@SuppressWarnings("unchecked")
-	public GenericPop(EvoLudoGWT engine, Model.Data type) {
+	public GenericPop(EvoLudoGWT engine, Data type) {
 		super(engine, type);
 		graphs = (List<G>) super.graphs;
 		tag = (this instanceof Pop2D) ? "2D" : "3D";
@@ -249,14 +249,14 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 							"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + s[n];
 				names += "</td></tr>";
 				String density = "";
-				if (type == Model.Data.STRATEGY)
+				if (type == Data.STRATEGY)
 					density = "<tr><td><i>Densities:</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
 							"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getTraitNameAt(id, node)
 							+ "</td></tr>";
 				else
 					density = "<tr><td><i>Densities:</i></td><td>" + model.getTraitNameAt(id, node) + "</td></tr>";
 				String fitness = "";
-				if (type == Model.Data.FITNESS)
+				if (type == Data.FITNESS)
 					fitness = "<tr><td><i>Fitness:</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
 							"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getFitnessNameAt(id, node);
 				else
@@ -297,7 +297,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 				IBS ibs = (IBS) model;
 				id = module.getID();
 				tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>");
-				if (type == Model.Data.STRATEGY) {
+				if (type == Data.STRATEGY) {
 					// strategy: use color-data to color strategy
 					tip.append("<tr><td><i>Strategy:</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
 							"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getTraitNameAt(id, node)
@@ -311,7 +311,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 				// with payoff-to-fitness report score first, then fitness (see below)
 				boolean noFitMap = module.getMapToFitness().isMap(Map2Fitness.Map.NONE);
 				String label = (noFitMap ? "Fitness" : "Score");
-				if (type == Model.Data.FITNESS) {
+				if (type == Data.FITNESS) {
 					// fitness: use color-data to color strategy
 					tip.append("<tr><td><i>" + label + ":</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
 							"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getScoreNameAt(id, node)
