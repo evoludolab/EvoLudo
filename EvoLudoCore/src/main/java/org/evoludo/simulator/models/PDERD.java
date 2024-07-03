@@ -456,6 +456,11 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	 */
 	double gwtHalt;
 
+	@Override
+	public boolean useScheduling() {
+		return EvoLudo.isGWT;
+	}
+
 	/**
 	 * {@inheritDoc}
 	 * <p>

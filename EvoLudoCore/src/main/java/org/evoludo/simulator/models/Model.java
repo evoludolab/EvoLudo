@@ -561,13 +561,15 @@ public abstract class Model implements CLOProvider, Statistics {
 	}
 
 	/**
-	 * GWT models run asynchronously, while JRE runs multiple threads synchronously.
-	 * This parallel execution results in an significant speed-boost (for PDE
-	 * calculations).
+	 * GWT models run asynchronously and long running tasks require scheduling to
+	 * maintain responsive user interface. In contrast, JRE provides a
+	 * multi-threaded environment, which allows to run multiple threads
+	 * synchronously. This parallel execution results in an significant speed-boost
+	 * (for PDE calculations).
 	 *
 	 * @return <code>true</code> if model calculations are asynchronous
 	 */
-	public boolean isAsynchronous() {
+	public boolean useScheduling() {
 		return false;
 	}
 

@@ -672,7 +672,7 @@ public abstract class EvoLudo
 	public final boolean modelNext() {
 		startCPUSample();
 		fireModelRunning();
-		if (activeModel.isAsynchronous()) {
+		if (activeModel.useScheduling()) {
 			activeModel.next();
 			return true;
 		}
