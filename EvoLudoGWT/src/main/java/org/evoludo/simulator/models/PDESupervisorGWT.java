@@ -52,7 +52,7 @@ public class PDESupervisorGWT extends PDESupervisor {
 	 * @param engine the pacemaker for running the model
 	 * @param charge the model to supervise
 	 */
-	public PDESupervisorGWT(EvoLudo engine, Model.PDE charge) {
+	public PDESupervisorGWT(EvoLudo engine, PDERD charge) {
 		super(engine, charge);
 	}
 

@@ -53,6 +53,7 @@ import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.Type;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
+import org.evoludo.simulator.models.PDERD;
 import org.evoludo.simulator.models.PDERD.HasPDE;
 import org.evoludo.simulator.models.SDEEuler.HasSDE;
 import org.evoludo.simulator.views.HasPhase2D;
@@ -105,8 +106,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	protected Logger logger;
 
 	/**
-	 * Reference to current model. Note: actual instance is a sub-interface of Model
-	 * (currently Model.ODE/SDE/PDE or Model.IBS)
+	 * Reference to current model.
 	 */
 	protected Model model;
 
@@ -1201,7 +1201,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					switch (model.getModelType()) {
 						case PDE:
 							// inter-species PDEs not yet implemented
-							Geometry geo = ((Model.PDE) model).getGeometry();
+							Geometry geo = ((PDERD) model).getGeometry();
 							output.println("# pde geometry:         " + geo.getType().getTitle());
 							geo.printParams(output);
 							break;

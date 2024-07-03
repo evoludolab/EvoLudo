@@ -175,7 +175,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	}
 
 	@Override
-	public PDESupervisor hirePDESupervisor(Model.PDE charge) {
+	public PDESupervisor hirePDESupervisor(PDERD charge) {
 		return new PDESupervisorJRE(this, charge);
 	}
 

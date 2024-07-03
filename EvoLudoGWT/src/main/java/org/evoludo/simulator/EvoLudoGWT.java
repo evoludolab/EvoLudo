@@ -37,8 +37,8 @@ import org.evoludo.graphics.Network2DGWT;
 import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
-import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.Mode;
+import org.evoludo.simulator.models.PDERD;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.PDESupervisorGWT;
 import org.evoludo.simulator.models.Statistics;
@@ -304,7 +304,7 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	@Override
-	public PDESupervisor hirePDESupervisor(Model.PDE charge) {
+	public PDESupervisor hirePDESupervisor(PDERD charge) {
 		return new PDESupervisorGWT(this, charge);
 	}
 
@@ -438,7 +438,7 @@ public class EvoLudoGWT extends EvoLudo {
 					symDiffMenu = new ContextMenuCheckBoxItem("Symmetric diffusion", new Command() {
 						@Override
 						public void execute() {
-							Model.PDE pde = (Model.PDE) activeModel;
+							PDERD pde = (PDERD) activeModel;
 							pde.setSymmetric(!pde.isSymmetric());
 							pde.check();
 						}
@@ -446,7 +446,7 @@ public class EvoLudoGWT extends EvoLudo {
 				}
 				menu.addSeparator();
 				menu.add(symDiffMenu);
-				Model.PDE pde = (Model.PDE) activeModel;
+				PDERD pde = (PDERD) activeModel;
 				symDiffMenu.setChecked(pde.isSymmetric());
 				Geometry space = pde.getGeometry();
 				symDiffMenu.setEnabled(space.isRegular || space.isLattice());

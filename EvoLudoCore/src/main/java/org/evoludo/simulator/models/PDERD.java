@@ -58,7 +58,7 @@ import org.evoludo.util.Plist;
  *
  * @author Christoph Hauert
  */
-public class PDERD extends ODEEuler implements Model.PDE {
+public class PDERD extends ODEEuler {
 
 	/**
 	 * Methods that every {@link Module} must implement, which advertises numerical
@@ -82,14 +82,6 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * <strong>Note:</strong> This is the default in the implemented interface
-	 * {@link Model.PDE} but because {@link PDERD} also extends {@link ODEEuler}
-	 * this method is also inherited. In order to make its return value unambiguous
-	 * it needs to be overridden.
-	 */
 	@Override
 	public Type getModelType() {
 		return Type.PDE;
@@ -327,7 +319,6 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	 * 
 	 * @return the geometry of the PDE
 	 */
-	@Override
 	public Geometry getGeometry() {
 		return space;
 	}
@@ -472,7 +463,22 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		return !converged;
 	}
 
-	@Override
+	/**
+	 * Reaction step. Update cells with indices between <code>start</code>
+	 * (including) and <code>end</code> (excluding) and return the accumulated/total
+	 * change in state.
+	 * <p>
+	 * <strong>Note:</strong> At the end, the state in <code>density</code> is
+	 * unchanged, the new density distribution is in <code>next</code> and the
+	 * fitness matching <code>density</code> is updated.
+	 * <p>
+	 * <strong>Important:</strong> must be thread safe for JRE. In particular, no
+	 * memory can be shared with anyone else!
+	 *
+	 * @param from the index of the first cell (including)
+	 * @param to   the index of the last cell (excluding)
+	 * @return the accumulated change in state
+	 */
 	public double react(int start, int end) {
 		double[] minFit = new double[nDim];
 		Arrays.fill(minFit, Double.MAX_VALUE);
@@ -542,19 +548,40 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		ArrayMath.add(meanFitness, mean);
 	}
 
-	@Override
+	/**
+	 * Normalizes the mean fitnesses after the reaction step is complete.
+	 */
 	public synchronized void normalizeMeanFitness() {
 		ArrayMath.multiply(meanFitness, 1.0 / space.size);
 	}
 
-	@Override
+	/**
+	 * Resets minimum, maximum and mean fitnesses prior to reaction step.
+	 */
 	public synchronized void resetFitness() {
 		Arrays.fill(minFitness, Double.MAX_VALUE);
 		Arrays.fill(maxFitness, -Double.MAX_VALUE);
 		Arrays.fill(meanFitness, 0.0);
 	}
 
-	@Override
+	/**
+	 * Diffusion step. Update cells with indices between <code>from</code>
+	 * (including) and <code>to</code> (excluding). In order to preserve symmetry,
+	 * if requested and possible, the neighbouring cells are sorted according to
+	 * their density before the diffusion step is performed. The sorting is fairly
+	 * expensive in terms of CPU time but it doesn't matter whether the sorting is
+	 * ascending or descending.
+	 * <p>
+	 * <strong>Note:</strong> At the end, the state in <code>next</code> is
+	 * unchanged, the new density distribution is in <code>density</code> and the
+	 * fitness is untouched/unused.
+	 * <p>
+	 * <strong>Important:</strong> must be thread safe for JRE. In particular, no
+	 * memory can be shared with anyone else!
+	 *
+	 * @param from the index of the first cell (including)
+	 * @param to   the index of the last cell (excluding)
+	 */
 	public void diffuse(int start, int end) {
 		double[] minDens = new double[nDim];
 		Arrays.fill(minDens, Double.MAX_VALUE);
@@ -620,14 +647,18 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		updateDensity(minDens, maxDens, meanDens);
 	}
 
-	@Override
+	/**
+	 * Resets minimum, maximum and mean density prior to diffusion step.
+	 */
 	public synchronized void resetDensity() {
 		Arrays.fill(minDensity, Double.MAX_VALUE);
 		Arrays.fill(maxDensity, -Double.MAX_VALUE);
 		Arrays.fill(meanDensity, 0.0);
 	}
 
-	@Override
+	/**
+	 * Initializes minimum, maximum and mean density based on current state.
+	 */
 	public synchronized void setDensity() {
 		resetDensity();
 		for (int n = 0; n < space.size; n++)
@@ -651,7 +682,9 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		ArrayMath.add(meanDensity, mean);
 	}
 
-	@Override
+	/**
+	 * Normalizes the mean density after the diffusion step is complete.
+	 */
 	public synchronized void normalizeMeanDensity() {
 		ArrayMath.multiply(meanDensity, 1.0 / space.size);
 	}
@@ -941,7 +974,14 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		return diffcoeff;
 	}
 
-	@Override
+	/**
+	 * Sets whether symmetries should be preserved. Not all models may be able to
+	 * honour the request. For example {@link PDERD} is only able to preserve
+	 * symmetries in the diffusion step if the
+	 * {@link Geometry#isLattice()} returns <code>true</code>.
+	 *
+	 * @param symmetric the request to preserve symmetry
+	 */
 	public void setSymmetric(boolean symmetric) {
 		requestSymmetric = symmetric;
 	}
@@ -958,18 +998,34 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		return requestSymmetric;
 	}
 
-	@Override
+	/**
+	 * Gets whether the model preserves symmetry. Requires that symmetry
+	 * preservation is requested <em>and</em> the model is able to honour the
+	 * request.
+	 *
+	 * @return <code>true</code> if symmetry is preserved
+	 */
 	public boolean isSymmetric() {
 		return isSymmetric;
 	}
 
-	@Override
+	/**
+	 * Increments time by <code>dt</code>. This is used by the
+	 * {@link PDESupervisor} to report back on the progress.
+	 *
+	 * @param dt the time that has elapsed
+	 * @return {@code true} to continue and {@code false} to request a stop
+	 */
 	public boolean incrementTime(double incr) {
 		t += incr;
 		return (Math.abs(gwtHalt - t) > 1e-8);
 	}
 
-	@Override
+	/**
+	 * Indicates that the numerical integration has converged to a homogeneous
+	 * state. This is used by the {@link PDESupervisor} to report back on the
+	 * progress.
+	 */
 	public void setConverged() {
 		converged = true;
 	}
@@ -1418,7 +1474,16 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		return true;
 	}
 
-	@Override
+	/**
+	 * Helper method to initialize the effective rate of diffusion for the time
+	 * increment <code>dt</code>.
+	 * <p>
+	 * <strong>Note:</strong> This method needs to be public to permit access by
+	 * {@link org.evoludo.simulator.models.PDESupervisorGWT PDESupervisorGWT} and
+	 * {@link org.evoludo.simulator.models.PDESupervisorJRE PDESupervisorJRE}
+	 * 
+	 * @param dt the time increment for diffusion
+	 */
 	public void initDiffusion(double deltat) {
 		if (alpha == null || alpha.length != nDim)
 			alpha = new double[nDim];

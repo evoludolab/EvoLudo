@@ -191,7 +191,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	@SuppressWarnings("unchecked")
 	public void setGeometry(Geometry geometry) {
 		this.geometry = geometry;
-		// geometry (and network) may be null for Model.ODE or Model.SDE
+		// geometry (and network) may be null for ODE or SDE models
 		if (geometry == null)
 			return;
 		setGraphLabel(geometry.getName());
@@ -307,7 +307,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	 * Invalidate the network. This forces networks to be regenerated.
 	 */
 	public void invalidate() {
-		// geometry (and network) may be null for Model.ODE or Model.SDE
+		// geometry (and network) may be null for ODE or SDE models
 		if (network != null)
 			network.reset();
 		clearMessage();

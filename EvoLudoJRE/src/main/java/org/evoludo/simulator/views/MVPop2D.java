@@ -65,6 +65,7 @@ import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODEEuler.HasDE;
+import org.evoludo.simulator.models.PDERD;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
@@ -380,7 +381,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 				String fitness = "<br><i>Fitness:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</i> "
 						+ model.getFitnessNameAt(tag, node);
 				toolTip = "<html><i>Node:</i> " + node + names + density + fitness;
-				Geometry diffusion = ((Model.PDE) model).getGeometry();
+				Geometry diffusion = ((PDERD) model).getGeometry();
 				if (diffusion.isUndirected)
 					toolTip += "<br><i>Connections:</i> " + formatStructureAt(node, diffusion.out, diffusion.kout);
 				else

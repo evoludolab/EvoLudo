@@ -44,6 +44,7 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODEEuler.HasDE;
+import org.evoludo.simulator.models.PDERD;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
@@ -122,7 +123,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		Geometry geoDE = null;
 		switch (model.getModelType()) {
 			case PDE:
-				geoDE = ((Model.PDE) model).getGeometry();
+				geoDE = ((PDERD) model).getGeometry();
 				//$FALL-THROUGH$
 			case ODE:
 			case SDE:

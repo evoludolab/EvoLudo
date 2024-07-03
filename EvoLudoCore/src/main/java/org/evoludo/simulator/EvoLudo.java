@@ -1473,15 +1473,15 @@ public abstract class EvoLudo
 	 * @param charge the PDE model to supervise
 	 * @return supervisor for coordinating PDE calculations
 	 * 
-	 * @see org.evoludo.simulator.EvoLudoGWT#hirePDESupervisor(org.evoludo.simulator.models.Model.PDE)
-	 *      EvoLudoGWT#hirePDESupervisor(Model.PDE)
-	 * @see org.evoludo.simulator.EvoLudoJRE#hirePDESupervisor(org.evoludo.simulator.models.Model.PDE)
-	 *      EvoLudoJRE#hirePDESupervisor(Model.PDE)
+	 * @see org.evoludo.simulator.EvoLudoGWT#hirePDESupervisor(org.evoludo.simulator.models.PDERD)
+	 *      EvoLudoGWT#hirePDESupervisor(PDERD)
+	 * @see org.evoludo.simulator.EvoLudoJRE#hirePDESupervisor(org.evoludo.simulator.models.PDERD)
+	 *      EvoLudoJRE#hirePDESupervisor(PDERD)
 	 * @see org.evoludo.simulator.models.PDESupervisor
 	 * @see org.evoludo.simulator.models.PDESupervisorGWT
 	 * @see org.evoludo.simulator.models.PDESupervisorJRE
 	 */
-	public abstract PDESupervisor hirePDESupervisor(Model.PDE charge);
+	public abstract PDESupervisor hirePDESupervisor(PDERD charge);
 
 	/**
 	 * {@inheritDoc}
