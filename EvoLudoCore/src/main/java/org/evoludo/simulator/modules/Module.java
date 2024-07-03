@@ -44,14 +44,14 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
-import org.evoludo.simulator.models.DE;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Markers;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.Model.Type;
+import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ODEEuler;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.PDERD;
 import org.evoludo.simulator.models.PDERD.HasPDE;
@@ -363,8 +363,8 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the array of supported Model types
 	 */
-	public Model.Type[] getModelTypes() {
-		ArrayList<Model.Type> types = new ArrayList<>();
+	public Type[] getModelTypes() {
+		ArrayList<Type> types = new ArrayList<>();
 		if (this instanceof HasIBS)
 			types.add(Type.IBS);
 		if (this instanceof HasODE)
@@ -373,7 +373,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 			types.add(Type.SDE);
 		if (this instanceof HasPDE)
 			types.add(Type.PDE);
-		return types.toArray(new Model.Type[0]);
+		return types.toArray(new Type[0]);
 	}
 
 	/**
@@ -444,7 +444,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @return the index of the vacant type
 	 */
 	public int getDependent() {
-		if (model instanceof DE && ((DE) model).isDensity())
+		if (model.isDE() && ((ODEEuler) model).isDensity())
 			return -1;
 		return VACANT;
 	}
@@ -984,7 +984,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		int oldNPopulation = nPopulation;
 		nPopulation = Math.max(1, size);
 		boolean changed = (nPopulation != oldNPopulation);
-		engine.requiresReset(changed && model.getModelType() == Type.IBS);
+		engine.requiresReset(changed && model.isIBS());
 		return changed;
 	}
 
@@ -1729,13 +1729,12 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 			parser.addCLO(cloTraitDisable);
 
 		// population size option only acceptable for IBS and SDE models
-		Model.Type type = model.getModelType();
-		if (type == Model.Type.IBS || type == Model.Type.SDE) {
+		if (model.isIBS() || model.isSDE()) {
 			parser.addCLO(cloNPopulation);
 		}
 
 		// geometry option only acceptable for IBS and PDE models
-		if (type == Model.Type.IBS || type == Model.Type.PDE) {
+		if (model.isIBS() || model.isPDE()) {
 			cloGeometry.addKeys(Geometry.Type.values());
 			cloGeometry.removeKey(Geometry.Type.DYNAMIC);
 			parser.addCLO(cloGeometry);

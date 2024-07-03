@@ -43,7 +43,6 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOProvider;
-import org.evoludo.util.CLOption;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -152,28 +151,6 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
-	 * Milestone: Initialize this model
-	 * 
-	 * @see MilestoneListener#modelDidReinit()
-	 */
-	public abstract void init();
-
-	/**
-	 * Milestone: Reset this model
-	 * 
-	 * @see MilestoneListener#modelDidReset()
-	 */
-	public abstract void reset();
-
-	/**
-	 * Update this model. For example called after initialization and when
-	 * parameters changed.
-	 * 
-	 * @see ChangeListener#modelChanged(ChangeListener.PendingAction)
-	 */
-	public abstract void update();
-
-	/**
 	 * Check consistency of parameters and adjust if necessary (and possible). All
 	 * issues and modifications should be reported through <code>logger</code>. Some
 	 * parameters can be adjusted while the model remains active or even while
@@ -192,6 +169,34 @@ public abstract class Model implements CLOProvider {
 			fixData = null;
 		return false;
 	}
+
+	/**
+	 * Milestone: Reset this model
+	 * 
+	 * @see MilestoneListener#modelDidReset()
+	 */
+	public void reset() {
+		time = 0.0;
+		resetStatisticsSample();
+	}
+
+	/**
+	 * Milestone: Initialize this model
+	 * 
+	 * @see MilestoneListener#modelDidReinit()
+	 */
+	public void init() {
+		time = 0.0;
+		converged = false;
+	}
+
+	/**
+	 * Update this model. For example called after initialization and when
+	 * parameters changed.
+	 * 
+	 * @see ChangeListener#modelChanged(ChangeListener.PendingAction)
+	 */
+	public abstract void update();
 
 	/**
 	 * Advance model by one step. The details of what happens during one step
@@ -415,96 +420,6 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
-	 * Model types that modules may support. Currently available model types are:
-	 * <dl>
-	 * <dt>IBS</dt>
-	 * <dd>individual based simulations</dd>
-	 * <dt>ODE</dt>
-	 * <dd>ordinary differential equations</dd>
-	 * <dt>SDE</dt>
-	 * <dd>stochastic differential equations</dd>
-	 * <dt>PDE</dt>
-	 * <dd>partial differential equations</dd>
-	 * </dl>
-	 */
-	public static enum Type implements CLOption.Key {
-		/**
-		 * Individual based simulation model
-		 */
-		IBS("IBS", "individual based simulations"),
-
-		/**
-		 * Ordinary differential equation model
-		 */
-		ODE("ODE", "ordinary differential equations"),
-
-		/**
-		 * Stochastic differential equation model
-		 */
-		SDE("SDE", "stochastic differential equations"),
-
-		/**
-		 * Partial differential equation model
-		 */
-		PDE("PDE", "partial differential equations");
-
-		/**
-		 * Identifying key of the model type.
-		 */
-		String key;
-
-		/**
-		 * Title/description of the model type.
-		 */
-		String title;
-
-		/**
-		 * Construct an enum for model type.
-		 * 
-		 * @param key   the identifying key of the model
-		 * @param title the title/description of the model
-		 */
-		Type(String key, String title) {
-			this.key = key;
-			this.title = title;
-		}
-
-		/**
-		 * Parse the string <code>arg</code> and return the best matching model type.
-		 * 
-		 * @param arg the string to match with a model type
-		 * @return the best matching model type
-		 */
-		public static Type parse(String arg) {
-			int best = 0;
-			Type match = null;
-			for (Type t : values()) {
-				int diff = CLOption.differAt(arg, t.key);
-				if (diff > best) {
-					best = diff;
-					match = t;
-				}
-			}
-			return match;
-		}
-
-		@Override
-		public String toString() {
-			return key + ": " + title;
-		}
-
-		@Override
-		public String getKey() {
-			return key;
-		}
-
-		@Override
-		public String getTitle() {
-			return title;
-		}
-	}
-
-	/**
 	 * Checks if model deals with continuous traits.
 	 * 
 	 * @return <code>true</code> if traits are continuous
@@ -519,6 +434,52 @@ public abstract class Model implements CLOProvider {
 	 * @return the type of model
 	 */
 	public abstract Type getModelType();
+
+	/**
+	 * Checks if model is of type IBS.
+	 * 
+	 * @return {@code true} for IBS models
+	 */
+	public boolean isIBS() {
+		return getModelType() == Type.IBS;
+	}
+
+	/**
+	 * Checks if model is of type ODE.
+	 * 
+	 * @return {@code true} for ODE models
+	 */
+	public boolean isODE() {
+		return getModelType() == Type.ODE;
+	}
+
+	/**
+	 * Checks if model is of type SDE.
+	 * 
+	 * @return {@code true} for SDE models
+	 */
+	public boolean isSDE() {
+		return getModelType() == Type.SDE;
+	}
+
+	/**
+	 * Checks if model is of type PDE.
+	 * 
+	 * @return {@code true} for PDE models
+	 */
+	public boolean isPDE() {
+		return getModelType() == Type.PDE;
+	}
+
+	/**
+	 * Checks if model is of type ODE/SDE/PDE.
+	 * 
+	 * @return {@code true} for differential equations models
+	 */
+	public boolean isDE() {
+		Type type = getModelType();
+		return (type == Type.ODE || type == Type.SDE || type == Type.PDE);
+	}
 
 	/**
 	 * Modes of the model. Currently thefollowing modes are supported:

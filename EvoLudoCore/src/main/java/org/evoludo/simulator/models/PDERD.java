@@ -363,12 +363,12 @@ public class PDERD extends ODEEuler {
 		boolean doReset = false;
 		if (species.size() > 1) {
 			logger.warning("PDE model for inter-species interactions not (yet?) implemented - reverting to ODE.");
-			engine.loadModel(Model.Type.ODE);
+			engine.loadModel(Type.ODE);
 			return true;
 		}
 		if (space.getType() == Geometry.Type.MEANFIELD || space.getType() == Geometry.Type.COMPLETE) {
 			logger.warning("unstructured population - reverting to ODE.");
-			engine.loadModel(Model.Type.ODE);
+			engine.loadModel(Type.ODE);
 			return true;
 		}
 		doReset |= space.setSize(discretization);

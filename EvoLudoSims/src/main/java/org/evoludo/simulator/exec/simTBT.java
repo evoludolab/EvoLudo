@@ -42,10 +42,9 @@ import java.util.logging.Level;
 import javax.imageio.ImageIO;
 
 import org.evoludo.graphics.AbstractGraph;
-import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.models.ChangeListener;
-import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.TBT;
 import org.evoludo.simulator.views.MVPop2D;
 import org.evoludo.util.CLOParser;
@@ -117,7 +116,7 @@ public class simTBT extends TBT implements ChangeListener {
 
 	@Override
 	public void run() {
-		if (model.getModelType() != Model.Type.IBS) {
+		if (!model.isIBS()) {
 			System.err.printf("ERROR: IBS model expected!");
 			return;
 		}

@@ -5,7 +5,6 @@ import java.util.ArrayList;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBSPopulation;
-import org.evoludo.simulator.models.Model;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -208,7 +207,7 @@ public class PlayerUpdate {
 				@Override
 				public void report(PrintStream output) {
 					ArrayList<? extends Module> species = module.getSpecies();
-					boolean isIBS = module.model.getModelType() == Model.Type.IBS;
+					boolean isIBS = module.model.isIBS();
 					for (Module mod : species) {
 						if (isIBS) {
 							IBSPopulation ibspop = mod.getIBSPopulation();

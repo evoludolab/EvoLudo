@@ -201,11 +201,10 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		boolean noWarnings = true;
 		// IMPORTANT: to avoid problems with WebGL and 3D rendering, each graph needs to
 		// have its own color map
-		Model.Type mt = model.getModelType();
-		if (mt.equals(Model.Type.ODE) || mt.equals(Model.Type.SDE)) {
+		if (model.isODE() || model.isSDE()) {
 			// ODE or SDE model (no geometry and thus no population)
 			for (PopGraph3D graph : graphs)
-				graph.displayMessage("No view available (" + mt.toString() + " solver)");
+				graph.displayMessage("No view available (" + model.getModelType().toString() + " solver)");
 			return hard;
 		}
 		org.evoludo.simulator.models.Continuous cmodel = null;
@@ -258,7 +257,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 								break;
 						}
 					} else {
-						if (model.getModelType() == Model.Type.PDE) {
+						if (model.isPDE()) {
 							int nTraits = module.getNTraits();
 							Color[] colors = module.getTraitColors();
 							int dep = ((HasDE) module).getDependent();
@@ -279,7 +278,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 					// cMap1D.setRange(module.getMinFitness(), module.getMaxFitness());
 					int tag = graph.getModule().getID();
 					cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
-					if (model.getModelType() == Model.Type.IBS) {
+					if (model.isIBS()) {
 						Map2Fitness map2fit = module.getMapToFitness();
 						if (cmodel != null) {
 							// hardcoded colors for min/max mono scores

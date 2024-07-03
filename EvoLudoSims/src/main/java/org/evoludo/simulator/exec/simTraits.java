@@ -40,7 +40,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSDPopulation;
-import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.models.PopulationUpdate;
 import org.evoludo.simulator.modules.PlayerUpdate;
 import org.evoludo.simulator.modules.Traits;
@@ -138,10 +138,10 @@ public class simTraits extends Traits {
 		setNPopulation(100);
 		mutation.probability = 0.01;
 		pop.getPopulationUpdate().setType(PopulationUpdate.Type.ASYNC);
-		engine.loadModel(Model.Type.IBS);
+		engine.loadModel(Type.IBS);
 		engine.modelReset();
 		engine.modelRelax();
-		engine.loadModel(Model.Type.SDE);
+		engine.loadModel(Type.SDE);
 		engine.modelReset();
 		engine.modelRelax();
 
@@ -153,7 +153,7 @@ public class simTraits extends Traits {
 			mutation.probability = 1.0 / popsizes[n];
 
 			// individual based simulations
-			engine.loadModel(Model.Type.IBS);
+			engine.loadModel(Type.IBS);
 			pop.getPopulationUpdate().setType(PopulationUpdate.Type.ASYNC);
 			engine.modelReset();
 			long cpuBefore = osMBean.getProcessCpuTime(); // time in nanoseconds
@@ -164,7 +164,7 @@ public class simTraits extends Traits {
 				mcSims += 1000L;
 			}
 			// stochastic differential equations
-			engine.loadModel(Model.Type.SDE);
+			engine.loadModel(Type.SDE);
 			engine.modelReset();
 			cpuBefore = osMBean.getProcessCpuTime(); // time in nanoseconds
 			long cpuSDE, mcSDE = 0;

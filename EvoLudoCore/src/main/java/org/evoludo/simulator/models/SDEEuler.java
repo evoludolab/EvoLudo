@@ -115,19 +115,19 @@ public class SDEEuler extends ODEEuler {
 	public boolean check() {
 		if (species.size() > 1) {
 			logger.warning("SDE model for inter-species interactions not (yet?) implemented - revert to ODE.");
-			engine.loadModel(Model.Type.ODE);
+			engine.loadModel(Type.ODE);
 			return true;
 		}
 		if (isDensity()) {
 			logger.warning("SDE model requires fixed population size - revert to ODE.");
-			engine.loadModel(Model.Type.ODE);
+			engine.loadModel(Type.ODE);
 			return true;
 		}
 		boolean doReset = super.check();
 		if (dependents[0] < 0) {
 			logger.warning(getClass().getSimpleName()
 					+ " - noise only for replicator type dynamics implemented - revert to ODE (no noise)!");
-			engine.loadModel(Model.Type.ODE);
+			engine.loadModel(Type.ODE);
 			return true;
 		}
 		// at this point it is clear that we have a dependent trait
@@ -137,7 +137,7 @@ public class SDEEuler extends ODEEuler {
 		if (!getClass().getSuperclass().equals(SDEEuler.class) && (dim < 1 || dim > 2)) {
 			logger.warning(getClass().getSimpleName()
 					+ " - too many traits (max 2, or 3 for replicator) - revert to ODE!");
-			engine.loadModel(Model.Type.ODE);
+			engine.loadModel(Type.ODE);
 			return true;
 		}
 		if (isAdjustedDynamics) {

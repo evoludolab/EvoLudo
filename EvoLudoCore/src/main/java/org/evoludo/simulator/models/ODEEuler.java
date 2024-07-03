@@ -472,43 +472,6 @@ public class ODEEuler extends Model implements Discrete {
 	}
 
 	@Override
-	public void reset() {
-		time = 0.0;
-		int skip = 0;
-		for (Module pop : species) {
-			int nTraits = pop.getNTraits();
-			System.arraycopy(pop.getTraitNames(), 0, names, skip, nTraits);
-			skip += nTraits;
-		}
-		skip = 0;
-		staticfit = null;
-		for (Module pop : species) {
-			if (!pop.isStatic())
-				continue;
-			// allocate memory after the first population with static fitness is found
-			if (staticfit == null || staticfit.length != nDim)
-				staticfit = new double[nDim];
-			int nTraits = pop.getNTraits();
-			System.arraycopy(((Module.Static) pop).getStaticScores(), 0, staticfit, skip,
-					nTraits);
-			Map2Fitness map2fit = pop.getMapToFitness();
-			for (int n = 0; n < nTraits; n++)
-				staticfit[skip + n] = map2fit.map(staticfit[skip + n]);
-			skip += nTraits;
-		}
-		normalizeState(y0);
-		// check if stop is requested if population becomes monomorphic
-		// for multi-species models only first species checked
-		// cast is safe because ODEs only avaliable for Discrete modules
-		monoStop = ((org.evoludo.simulator.modules.Discrete) species.get(0)).getMonoStop();
-	}
-
-	@Override
-	public void init() {
-		init(true);
-	}
-
-	@Override
 	public boolean check() {
 		boolean doReset = super.check();
 		dstate = null;
@@ -551,6 +514,42 @@ public class ODEEuler extends Model implements Discrete {
 			isAdjustedDynamics = false;
 		}
 		return doReset;
+	}
+
+	@Override
+	public void reset() {
+		int skip = 0;
+		for (Module pop : species) {
+			int nTraits = pop.getNTraits();
+			System.arraycopy(pop.getTraitNames(), 0, names, skip, nTraits);
+			skip += nTraits;
+		}
+		skip = 0;
+		staticfit = null;
+		for (Module pop : species) {
+			if (!pop.isStatic())
+				continue;
+			// allocate memory after the first population with static fitness is found
+			if (staticfit == null || staticfit.length != nDim)
+				staticfit = new double[nDim];
+			int nTraits = pop.getNTraits();
+			System.arraycopy(((Module.Static) pop).getStaticScores(), 0, staticfit, skip,
+					nTraits);
+			Map2Fitness map2fit = pop.getMapToFitness();
+			for (int n = 0; n < nTraits; n++)
+				staticfit[skip + n] = map2fit.map(staticfit[skip + n]);
+			skip += nTraits;
+		}
+		normalizeState(y0);
+		// check if stop is requested if population becomes monomorphic
+		// for multi-species models only first species checked
+		// cast is safe because ODEs only avaliable for Discrete modules
+		monoStop = ((org.evoludo.simulator.modules.Discrete) species.get(0)).getMonoStop();
+	}
+
+	@Override
+	public void init() {
+		init(true);
 	}
 
 	/**
@@ -1618,7 +1617,7 @@ public class ODEEuler extends Model implements Discrete {
 		connect = false;
 		converged = false;
 		// PDE models have their own initialization types
-		if (getModelType() == Type.PDE)
+		if (isPDE())
 			return;
 		int idx = -1;
 		// y0 is initialized except for species with random initial frequencies

@@ -127,6 +127,17 @@ public abstract class IBS extends Model {
 	public boolean optimizeHomo = false;
 
 	/**
+	 * Flag to indicate whether the population updates are synchronous. In
+	 * multi-species models this requires that all species are updated
+	 * synchronously. Helper variable for {@code ibsStep(double)}.
+	 * 
+	 * @see PopulationUpdate#clo
+	 * @see #check()
+	 * @see #ibsStep(double)
+	 */
+	boolean isSynchronous;
+
+	/**
 	 * Creates a population of individuals for IBS simulations.
 	 * 
 	 * @param engine the pacemaker for running the model
@@ -205,17 +216,6 @@ public abstract class IBS extends Model {
 		super.unload();
 	}
 
-	/**
-	 * Flag to indicate whether the population updates are synchronous. In
-	 * multi-species models this requires that all species are updated
-	 * synchronously. Helper variable for {@code ibsStep(double)}.
-	 * 
-	 * @see PopulationUpdate#clo
-	 * @see #check()
-	 * @see #ibsStep(double)
-	 */
-	boolean isSynchronous;
-
 	@Override
 	public boolean check() {
 		boolean doReset = super.check();
@@ -239,44 +239,8 @@ public abstract class IBS extends Model {
 	}
 
 	@Override
-	public void init() {
-		init(false);
-	}
-
-	/**
-	 * Initializes the IBS model. {@code soft} initializations adjust parameters but
-	 * do not touch the current state of the IBS population(s).
-	 * <p>
-	 * <strong>Note:</strong> Method must be {@code public} because of subclasses in
-	 * {@code org.evoludo.simulator}.
-	 * 
-	 * @param soft the flag to indicate whether this should be a {@code soft}
-	 *             initialization.
-	 */
-	public void init(boolean soft) {
-		// reset time
-		time = 0.0;
-		realtime = 0.0;
-		converged = false;
-		connect = false;
-		if (soft) {
-			// signal change to engine without destroying state
-			// used for simulations in systems with long relaxation times
-			engine.paramsDidChange();
-			return;
-		}
-		converged = true;
-		for (Module mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
-			pop.init();
-			converged &= pop.checkConvergence();
-		}
-	}
-
-	@Override
 	public void reset() {
-		resetStatisticsSample();
-
+		super.reset();
 		// with optimization, homogeneous populations do not wait for next mutation
 		// currently only relevant for discrete strategies, see IBSD
 		if (optimizeHomo) {
@@ -300,6 +264,40 @@ public abstract class IBS extends Model {
 		for (Module mod : species) {
 			IBSPopulation pop = mod.getIBSPopulation();
 			pop.reset();
+		}
+	}
+
+	@Override
+	public void init() {
+		init(false);
+	}
+
+	/**
+	 * Initializes the IBS model. {@code soft} initializations adjust parameters but
+	 * do not touch the current state of the IBS population(s).
+	 * <p>
+	 * <strong>Note:</strong> Method must be {@code public} because of subclasses in
+	 * {@code org.evoludo.simulator}.
+	 * 
+	 * @param soft the flag to indicate whether this should be a {@code soft}
+	 *             initialization.
+	 */
+	public void init(boolean soft) {
+		super.init();
+		// reset time
+		realtime = 0.0;
+		connect = false;
+		if (soft) {
+			// signal change to engine without destroying state
+			// used for simulations in systems with long relaxation times
+			engine.paramsDidChange();
+			return;
+		}
+		converged = true;
+		for (Module mod : species) {
+			IBSPopulation pop = mod.getIBSPopulation();
+			pop.init();
+			converged &= pop.checkConvergence();
 		}
 	}
 

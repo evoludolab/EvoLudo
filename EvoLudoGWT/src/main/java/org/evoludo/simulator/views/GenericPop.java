@@ -208,7 +208,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 
 	@Override
 	public void mouseHitNode(int id, int node, boolean alt) {
-		if (model.getModelType() == Model.Type.IBS)
+		if (model.isIBS())
 			((IBS) model).mouseHitNode(id, node, alt);
 	}
 

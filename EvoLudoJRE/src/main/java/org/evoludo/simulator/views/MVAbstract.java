@@ -279,12 +279,11 @@ public abstract class MVAbstract extends JComponent
     @Override
 	public void showCustomMenu(JPopupMenu menu, Point loc, AbstractGraph owner, int tag) {
 		Model model = engine.getModel();
-		Model.Type type = model.getModelType();
 		if (menuTime) {
-			timeMenu.setEnabled(type == Model.Type.ODE);
+			timeMenu.setEnabled(model.isODE());
 			timeMenu.setSelected(model.isTimeReversed());
 		}
-		if (type == Model.Type.PDE) {
+		if (model.isPDE()) {
 			if (menuSetLocal) {
 				int node = ((PopGraph2D) owner).findNodeAt(loc);
 				if (node < 0) {

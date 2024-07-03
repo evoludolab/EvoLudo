@@ -231,7 +231,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 								break;
 						}
 					} else {
-						if (model.getModelType() == Model.Type.PDE) {
+						if (model.isPDE()) {
 							int nTraits = module.getNTraits();
 							Color[] colors = module.getTraitColors();
 							int dep = ((HasDE) module).getDependent();
@@ -253,7 +253,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 					// cMap1D.setRange(pop.getMinFitness(), pop.getMaxFitness());
 					int tag = graph.getModule().getID();
 					cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
-					if (model.getModelType() == Model.Type.IBS) {
+					if (model.isIBS()) {
 						Map2Fitness map2fit = module.getMapToFitness();
 						if (module instanceof Discrete) {
 							// mark homogeneous fitness values by pale color

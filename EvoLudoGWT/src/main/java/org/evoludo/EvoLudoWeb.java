@@ -1721,8 +1721,7 @@ public class EvoLudoWeb extends Composite
 			return;
 		}
 		Model model = engine.getModel();
-		Model.Type type = model.getModelType();
-		boolean isODESDE = (type == Model.Type.ODE || type == Model.Type.SDE);
+		boolean isODESDE = (model.isODE() || model.isSDE());
 		if (module instanceof HasPop2D.Strategy && !isODESDE)
 			addView(new Pop2D(engine, Model.Data.STRATEGY), oldViews);
 		if (isWebGLSupported && module instanceof HasPop3D.Strategy && !isODESDE)

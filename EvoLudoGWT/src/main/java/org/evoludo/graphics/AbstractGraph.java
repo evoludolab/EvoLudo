@@ -126,7 +126,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		 * 
 		 * @return the model type
 		 */
-		public Model.Type getModelType();
+		public Model getModel();
 
 		/**
 		 * Get the logger for returning progress, problems and messages to user.

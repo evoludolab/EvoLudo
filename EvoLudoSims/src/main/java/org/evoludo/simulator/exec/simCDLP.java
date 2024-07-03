@@ -35,10 +35,9 @@ package org.evoludo.simulator.exec;
 import java.io.PrintStream;
 import java.util.Arrays;
 
-import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.modules.CDLP;
@@ -108,7 +107,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 
 	@Override
 	public void run() {
-		if (model.getModelType() != Model.Type.IBS) {
+		if (!model.isIBS()) {
 			System.err.printf("ERROR: IBS model expected!");
 			return;
 		}

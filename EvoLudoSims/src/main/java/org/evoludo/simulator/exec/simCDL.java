@@ -36,11 +36,10 @@ import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.logging.Level;
 
-import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.models.ChangeListener;
-import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.CDL;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -101,7 +100,7 @@ public class simCDL extends CDL implements ChangeListener {
 
 	@Override
 	public void run() {
-		if (model.getModelType() != Model.Type.IBS) {
+		if (!model.isIBS()) {
 			System.err.printf("ERROR: IBS model expected!");
 			return;
 		}
@@ -352,7 +351,7 @@ public class simCDL extends CDL implements ChangeListener {
 	@Override
 	public boolean check() {
 		boolean doReset = super.check();
-		if (model.getModelType() == Model.Type.ODE && nSamples > 1) {
+		if (model.isODE() && nSamples > 1) {
 			logger.warning("ODE models are deterministic, no point in taking multiple samples.");
 			nSamples = 1;
 		}

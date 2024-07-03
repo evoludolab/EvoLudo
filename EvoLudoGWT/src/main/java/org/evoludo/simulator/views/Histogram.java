@@ -49,10 +49,10 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.models.DE;
+import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.Mode;
-import org.evoludo.simulator.models.FixationData;
+import org.evoludo.simulator.models.ODEEuler;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
@@ -233,7 +233,7 @@ public class Histogram extends AbstractView {
 							graphs.add(graph);
 							AbstractGraph.GraphStyle style = graph.getStyle();
 							// fixed style attributes
-							if (model instanceof DE && ((DE) model).isDensity()) {
+							if (model.isDE() && ((ODEEuler) model).isDensity()) {
 								style.yLabel = "density";
 								style.percentY = false;
 								style.yMin = 0.0;
@@ -263,8 +263,7 @@ public class Histogram extends AbstractView {
 						break;
 
 					case DEGREE:
-						Model.Type mType = model.getModelType();
-						if (mType == Model.Type.ODE || mType == Model.Type.SDE) {
+						if (model.isODE() || model.isSDE()) {
 							// happens for ODE/SDE/PDE - do not show distribution
 							HistoGraph graph = new HistoGraph(this, module, 0);
 							wrapper.add(graph);
@@ -272,7 +271,7 @@ public class Histogram extends AbstractView {
 							break;
 						}
 						nTraits = getDegreeGraphs(module.getInteractionGeometry(), module.getCompetitionGeometry());
-						Geometry inter = (mType == Model.Type.PDE ? module.getGeometry()
+						Geometry inter = (model.isPDE() ? module.getGeometry()
 								: module.getInteractionGeometry());
 						String[] labels = getDegreeLabels(nTraits, inter.isUndirected);
 						for (int n = 0; n < nTraits; n++) {
@@ -483,13 +482,12 @@ public class Histogram extends AbstractView {
 					break;
 
 				case DEGREE:
-					Model.Type mType = model.getModelType();
-					if (mType == Model.Type.ODE || mType == Model.Type.SDE) {
+					if (model.isODE() || model.isSDE()) {
 						graph.setData(null);
 						break;
 					}
 					Geometry inter, comp;
-					if (mType == Model.Type.PDE) {
+					if (model.isPDE()) {
 						inter = comp = module.getGeometry();
 					} else {
 						inter = module.getInteractionGeometry();
@@ -519,7 +517,7 @@ public class Histogram extends AbstractView {
 					style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
 					if (doStatistics) {
 						int nBins;
-						if (model.getModelType() == Model.Type.SDE)
+						if (model.isSDE())
 							nBins = 1;
 						else {
 							nBins = module.getNPopulation();
@@ -588,8 +586,8 @@ public class Histogram extends AbstractView {
 				case STATISTICS_STATIONARY:
 					style.label = (isMultispecies ? module.getName() + ": " : "") + module.getTraitName(idx);
 					nPop = module.getNPopulation();
-					if (model instanceof DE) {
-						if (((DE) model).isDensity()) {
+					if (model.isDE()) {
+						if (((ODEEuler) model).isDensity()) {
 							style.xLabel = "density";
 							style.xMin = 0.0;
 							style.xMax = 0.0;
@@ -813,7 +811,7 @@ public class Histogram extends AbstractView {
 	 * @return {@code true} to show the fixation time distribution
 	 */
 	private boolean doFixtimeDistr(Module module) {
-		return (module.getNPopulation() > HistoGraph.MAX_BINS || model.getModelType() == Model.Type.SDE);
+		return (module.getNPopulation() > HistoGraph.MAX_BINS || model.isSDE());
 	}
 
 	/**

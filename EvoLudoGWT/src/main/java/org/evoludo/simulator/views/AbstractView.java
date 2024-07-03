@@ -208,8 +208,8 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	}
 
 	@Override
-	public Model.Type getModelType() {
-		return model.getModelType();
+	public Model getModel() {
+		return model;
 	}
 
 	@Override

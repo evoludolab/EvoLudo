@@ -169,7 +169,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 		Color[] tColors = module.getTraitColors();
 		switch (type) {
 			case DSTRAT:
-				if (engine.getModel().getModelType() == Model.Type.PDE) {
+				if (engine.getModel().isPDE()) {
 					int dep = ((HasDE) module).getDependent();
 					switch (module.getNTraits()) {
 						case 1:
@@ -222,7 +222,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 				Model model = engine.getModel();
 				cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
 				// DEBUG
-				if (engine.getModel().getModelType() == Model.Type.IBS) {
+				if (engine.getModel().isIBS()) {
 					Map2Fitness map2fit = module.getMapToFitness();
 					if (model.isContinuous()) {
 						// cast is save because pop is Continuous

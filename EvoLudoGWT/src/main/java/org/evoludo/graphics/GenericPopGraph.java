@@ -5,7 +5,6 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
-import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
@@ -585,7 +584,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 					debugSubmenu.add(debugNodeMenu);
 				}
 				debugNodeMenu.setText("Update node @ " + debugNode);
-				debugNodeMenu.setEnabled(controller.getModelType() == Model.Type.IBS);
+				debugNodeMenu.setEnabled(controller.getModel().isIBS());
 				debugSubmenuTrigger = menu.add("Debug...", debugSubmenu);
 			}
 			if (debugSubmenuTrigger != null)

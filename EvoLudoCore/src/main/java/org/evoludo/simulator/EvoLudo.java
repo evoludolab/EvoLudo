@@ -55,7 +55,6 @@ import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.Mode;
-import org.evoludo.simulator.models.Model.Type;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.ODERK;
 import org.evoludo.simulator.models.PDERD;
@@ -63,6 +62,7 @@ import org.evoludo.simulator.models.PDERD.HasPDE;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.SDEEuler;
 import org.evoludo.simulator.models.SDEEuler.HasSDE;
+import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.ATBT;
 import org.evoludo.simulator.modules.CDL;
 import org.evoludo.simulator.modules.CDLP;
@@ -1746,8 +1746,8 @@ public abstract class EvoLudo
 		// remains unspecified)
 		Collection<Key> keys = cloModel.getKeys();
 		// if IBS not an option, pick first model type as default
-		Model.Type defaulttype = (keys.contains(Model.Type.IBS) ? Model.Type.IBS : Model.Type.values()[0]);
-		Model.Type type = null;
+		Type defaulttype = (keys.contains(Type.IBS) ? Type.IBS : Type.values()[0]);
+		Type type = null;
 		nParams = cloarray.length;
 		for (int i = 0; i < nParams; i++) {
 			String param = cloarray[i];
@@ -1762,7 +1762,7 @@ public abstract class EvoLudo
 					// model key found; no need to continue
 					break;
 				}
-				type = Model.Type.parse(newModel);
+				type = Type.parse(newModel);
 				if (type == null) {
 					logger.warning("invalid model type " + newModel + " - use " + defaulttype.getKey()
 							+ " as default.");
@@ -1895,9 +1895,9 @@ public abstract class EvoLudo
 			});
 
 	/**
-	 * Command line option to set the type of model (see {@link Model.Type}).
+	 * Command line option to set the type of model (see {@link Type}).
 	 */
-	public final CLOption cloModel = new CLOption("model", Model.Type.IBS.getKey(), catModule,
+	public final CLOption cloModel = new CLOption("model", Type.IBS.getKey(), catModule,
 			"--model <m>     model type", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
