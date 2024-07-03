@@ -65,7 +65,7 @@ public class IBSD extends IBS implements Model.Discrete, Statistics {
 			}
 		}
 		fixData.timeFixed = realtime;
-		fixData.updatesFixed = generation;
+		fixData.updatesFixed = time;
 		fixData.probRead = false;
 		fixData.timeRead = false;
 	}

@@ -172,14 +172,6 @@ public class ODEEuler extends DE {
 	}
 
 	/**
-	 * The current time. May be negative when integrating backwards.
-	 * 
-	 * @see #forward
-	 * @see #isTimeReversed()
-	 */
-	double t;
-
-	/**
 	 * Discretization of time increment for continuous time models. This is the
 	 * attempted size of next step to take.
 	 * <p>
@@ -477,7 +469,7 @@ public class ODEEuler extends DE {
 
 	@Override
 	public void reset() {
-		t = 0.0;
+		time = 0.0;
 		int skip = 0;
 		for (Module pop : species) {
 			int nTraits = pop.getNTraits();
@@ -769,7 +761,7 @@ public class ODEEuler extends DE {
 
 	@Override
 	public double getTime() {
-		return t;
+		return time;
 	}
 
 	@Override
@@ -806,13 +798,13 @@ public class ODEEuler extends DE {
 		double nextHalt = engine.getNextHalt();
 		// continue if milestone reached in previous step, i.e. deltat < 1e-8
 		double step = engine.getReportInterval();
-		double deltat = Math.abs(nextHalt - t);
+		double deltat = Math.abs(nextHalt - time);
 		if (deltat >= 1e-8)
 			step = Math.min(step, deltat);
 		// NOTE: dt is always >0
 		double elapsed = 0.0;
 		double minast = accuracy * accuracy * dt;
-		double timeBefore = t;
+		double timeBefore = time;
 		while (Math.abs(step - elapsed) > 1e-8) {
 			// take deterministic step
 			double nextstep = Math.min(dtTry, step - elapsed);
@@ -828,8 +820,8 @@ public class ODEEuler extends DE {
 			}
 		}
 		// try to minimize rounding errors
-		t = timeBefore + (forward ? elapsed : -elapsed);
-		if (Math.abs(nextHalt - t) < 1e-8)
+		time = timeBefore + (forward ? elapsed : -elapsed);
+		if (Math.abs(nextHalt - time) < 1e-8)
 			return false;
 		return !converged;
 	}
@@ -935,8 +927,8 @@ public class ODEEuler extends DE {
 		yt = yout;
 		yout = swap;
 		// determine fitness of new state
-		getDerivatives(t, yt, ft, dyt);
-		t += step;
+		getDerivatives(time, yt, ft, dyt);
+		time += step;
 		dtTaken = Math.abs(step);
 		return ArrayMath.distSq(yout, yt);
 	}
@@ -978,7 +970,7 @@ public class ODEEuler extends DE {
 	 * multiple threads in PDE's and JRE. However, apparently not needed as
 	 * javascript and java yield the exact same results (after 15k generations!)
 	 *
-	 * @param time    the current time
+	 * @param t       the time at which to calculate the derivative
 	 * @param state   the array of frequencies/densities denoting the state
 	 *                population
 	 * @param fitness the array of fitness values of types in population
@@ -991,7 +983,7 @@ public class ODEEuler extends DE {
 	 * @see #updateImitate(Module, double[], double[], int, int, double[])
 	 * @see #updateThermal(Module, double[], double[], int, int, double[])
 	 */
-	protected void getDerivatives(double time, double[] state, double[] fitness, double[] change) {
+	protected void getDerivatives(double t, double[] state, double[] fitness, double[] change) {
 		dstate = state;
 		int index = 0;
 		for (Module mod : species) {
@@ -1492,7 +1484,7 @@ public class ODEEuler extends DE {
 
 	@Override
 	public void update() {
-		getDerivatives(t, yt, ft, dyt);
+		getDerivatives(time, yt, ft, dyt);
 	}
 
 	@Override
@@ -1581,7 +1573,7 @@ public class ODEEuler extends DE {
 	 * 
 	 */
 	private void init(boolean doRandom) {
-		t = 0.0;
+		time = 0.0;
 		dtTry = dt;
 		connect = false;
 		converged = false;
@@ -1937,7 +1929,7 @@ public class ODEEuler extends DE {
 	@Override
 	public void encodeState(StringBuilder plist) {
 		plist.append(Plist.encodeKey("Model", getModelType().toString()));
-		plist.append(Plist.encodeKey("Time", t));
+		plist.append(Plist.encodeKey("Time", time));
 		plist.append(Plist.encodeKey("Dt", dt));
 		plist.append(Plist.encodeKey("Forward", forward));
 		plist.append(Plist.encodeKey("AdjustedDynamics", isAdjustedDynamics));
@@ -1949,7 +1941,7 @@ public class ODEEuler extends DE {
 	@Override
 	public boolean restoreState(Plist plist) {
 		boolean success = true;
-		t = (Double) plist.get("Time");
+		time = (Double) plist.get("Time");
 		dt = (Double) plist.get("Dt");
 		forward = (Boolean) plist.get("Forward");
 		isAdjustedDynamics = (Boolean) plist.get("AdjustedDynamics");

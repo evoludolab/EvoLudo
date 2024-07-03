@@ -124,20 +124,6 @@ public abstract class IBS extends Model {
 	protected IBSPopulation population;
 
 	/**
-	 * Keeps track of the number of generations (or Monte-Carlo steps) that have
-	 * elapsed. In a population of size <code>N</code> one generation corresponds to
-	 * <code>N</code> updates, which translates to <code>N</code> events (birth,
-	 * death, imitation, etc.).
-	 * <p>
-	 * <strong>Note:</strong> generally differs from 'real time' (see
-	 * {@link #realtime}). <code>generation==0</code> after {@link #reset()} and at
-	 * the beginning of a simulation run. <code>generation</code> is incremented
-	 * <em>before</em> the next event is processed, to reflect the time at which the
-	 * event occurs.
-	 */
-	protected double generation = -1.0;
-
-	/**
 	 * Keeps track of the elapsed time, taking into account the fitness of the
 	 * population. For example, less time passes between reproductive events in
 	 * populations with high fitness, while more time passes in low fitness
@@ -295,7 +281,7 @@ public abstract class IBS extends Model {
 	 */
 	public void init(boolean soft) {
 		// reset time
-		generation = 0.0;
+		time = 0.0;
 		realtime = 0.0;
 		converged = false;
 		connect = false;
@@ -386,7 +372,7 @@ public abstract class IBS extends Model {
 			int nPop = module.getNPopulation();
 			double norm = 1.0 / nPop;
 			int skip = distrMutation.next();
-			generation += skip * norm;
+			time += skip * norm;
 			realtime += skip * realnorm;
 			population.resetStrategies();
 			update();
@@ -395,7 +381,7 @@ public abstract class IBS extends Model {
 			// XXX this can easily skip past requested stops - ignore? does not make much
 			// sense anyways.
 			realtime += realnorm;
-			generation += norm;
+			time += norm;
 			// introduce mutation uniformly at random
 			population.mutateAt(random0n(nPop));
 			return true;
@@ -403,7 +389,7 @@ public abstract class IBS extends Model {
 		double nextHalt = engine.getNextHalt();
 		// continue if milestone reached in previous step, i.e. deltat < 1e-8
 		double step = engine.getReportInterval();
-		double incr = Math.abs(nextHalt - generation);
+		double incr = Math.abs(nextHalt - time);
 		if (incr < 1e-8)
 			return false;
 		step = Math.min(step, incr);
@@ -420,7 +406,7 @@ public abstract class IBS extends Model {
 		// multi-species modules with different population sizes or different
 		// update rates.
 		double minIncr = 1.0 / species.get(0).getNPopulation();
-		return (Math.abs(nextHalt - generation) >= minIncr);
+		return (Math.abs(nextHalt - time) >= minIncr);
 	}
 
 	/**
@@ -485,7 +471,7 @@ public abstract class IBS extends Model {
 			for (int f = 0; f < nUpdates; f++) {
 				// advance time and real time (if possible)
 				realtime = (scoreTot <= 1e-8 ? Double.POSITIVE_INFINITY : realtime + nPopTot * popFrac / scoreTot);
-				generation += popFrac;
+				time += popFrac;
 				// update populations
 				for (Module mod : species) {
 					IBSPopulation pop = mod.getIBSPopulation();
@@ -554,7 +540,7 @@ public abstract class IBS extends Model {
 		// switching to long is not an option because of GWT!
 		double dUpdates = Math.max(1.0, Math.ceil(stepDt / gincr - 1e-8));
 		double stepDone = 0.0;
-		double gStart = generation;
+		double gStart = time;
 		boolean hasConverged = false;
 		while (dUpdates >= 1.0) {
 			double stepSize = 0.0;
@@ -583,11 +569,11 @@ public abstract class IBS extends Model {
 				}
 				// advance time and real time (if possible)
 				if (debugFocalSpecies.getPopulationUpdate().getType() == PopulationUpdate.Type.ONCE) {
-					generation++;
+					time++;
 					realtime = (wScoreTot < 0.0 ? Double.POSITIVE_INFINITY : realtime + 1.0 / wScoreTot);
 					n += debugFocalSpecies.getModule().getNPopulation();
 				} else {
-					generation += gincr;
+					time += gincr;
 					realtime = (wScoreTot < 0.0 ? Double.POSITIVE_INFINITY
 							: realtime + 1.0 / (wScoreTot * wScoreTot * dt));
 				}
@@ -617,7 +603,7 @@ public abstract class IBS extends Model {
 			}
 			stepSize = nUpdates * gincr;
 			stepDone += Math.abs(stepSize);
-			generation = gStart + Math.abs(stepDone);
+			time = gStart + Math.abs(stepDone);
 			if (hasConverged)
 				// cannot return just yet; still need to update ephemeral scores
 				break;
@@ -705,16 +691,20 @@ public abstract class IBS extends Model {
 
 	@Override
 	public String getCounter() {
-		return "time: " + Formatter.format(getTime(), 2) + " ("
+		return super.getCounter() + " ("
 				+ Formatter.format(getRealtime(), 2) + ")";
 	}
 
-	@Override
-	public double getTime() {
-		return generation;
-	}
-
-	@Override
+	/**
+	 * Gets the elapsed time in real time units. The real time increments of
+	 * microscopic updates depends on the fitness of the population. In populations
+	 * with high fitness many events happen per unit time and hence the increments
+	 * are smaller. In contrast in populations with low fitness fewer events happen
+	 * and consequently more time elapses between subsequent events. By default no
+	 * distinction between real time and generation time is made.
+	 * 
+	 * @return elapsed real time
+	 */
 	public double getRealtime() {
 		return realtime;
 	}
@@ -1981,7 +1971,7 @@ public abstract class IBS extends Model {
 
 	@Override
 	public boolean restoreState(Plist plist) {
-		generation = (Double) plist.get("Generation");
+		time = (Double) plist.get("Generation");
 		realtime = (Double) plist.get("Realtime");
 		connect = false;
 		boolean success = true;

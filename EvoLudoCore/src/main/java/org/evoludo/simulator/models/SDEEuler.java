@@ -394,8 +394,8 @@ public class SDEEuler extends ODEEuler implements Statistics {
 		yt = yout;
 		yout = swap;
 		// determine fitness of new state
-		getDerivatives(t, yt, ft, dyt);
-		t += step;
+		getDerivatives(time, yt, ft, dyt);
+		time += step;
 		dtTaken = Math.abs(step);
 		return ArrayMath.distSq(yout, yt);
 	}
@@ -437,8 +437,8 @@ public class SDEEuler extends ODEEuler implements Statistics {
 				}
 			}
 		}
-		fixData.timeFixed = t;
-		fixData.updatesFixed = t;
+		fixData.timeFixed = time;
+		fixData.updatesFixed = time;
 		fixData.probRead = false;
 		fixData.timeRead = false;
 	}

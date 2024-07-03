@@ -76,6 +76,29 @@ public abstract class Model implements CLOProvider, Statistics {
 	protected RNGDistribution rng;
 
 	/**
+	 * Keeps track of the time elapsed. Time is measured in number of generations.
+	 * In IBS models this corresponds to one Monte-Carlo step, such that in a
+	 * population of size <code>N</code> one generation corresponds to
+	 * <code>N</code> updates, which translates to <code>N</code> events (birth,
+	 * death, imitation, etc.).
+	 * 
+	 * <strong>Notes:</strong>
+	 * <ol>
+	 * <li><code>generation==0</code> after {@link #reset()} and at the beginning of
+	 * a simulation run.
+	 * <li><code>generation</code> is incremented <em>before</em> the next event is
+	 * processed, to reflect the time at which the event occurs.
+	 * <li>generally differs from 'real time'.
+	 * <li>may be negative for models that admit time reversal (e.g. integrating ODE
+	 * backwards).
+	 * </ol>
+	 * 
+	 * @see #permitsTimeReversal()
+	 * @see IBS#realtime
+	 */
+	protected double time = -1.0;
+
+	/**
 	 * Short-cut to the list of species modules. Convenience field.
 	 */
 	protected ArrayList<? extends Module> species;
@@ -755,25 +778,14 @@ public abstract class Model implements CLOProvider, Statistics {
 	}
 
 	/**
-	 * Gets the elapsed time in model. Typically this is measured in generations for
-	 * individual based simulations and continuous time for numerical models.
+	 * Gets the elapsed time in model. Time is measured in generations.
 	 * 
 	 * @return elapsed time
-	 */
-	public abstract double getTime();
-
-	/**
-	 * Gets the elapsed time in real time units. The real time increments of
-	 * microscopic updates depends on the fitness of the population. In populations
-	 * with high fitness many events happen per unit time and hence the increments
-	 * are smaller. In contrast in populations with low fitness fewer events happen
-	 * and consequently more time elapses between subsequent events. By default no
-	 * distinction between real time and generation time is made.
 	 * 
-	 * @return elapsed real time
+	 * @see #time
 	 */
-	public double getRealtime() {
-		return getTime();
+	public double getTime() {
+		return time;
 	}
 
 	/**

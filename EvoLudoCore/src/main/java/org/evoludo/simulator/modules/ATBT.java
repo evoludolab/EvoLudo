@@ -861,7 +861,7 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 		}
 
 		@Override
-		protected void getDerivatives(double time, double[] state, double[] fitness, double[] change) {
+		protected void getDerivatives(double t, double[] state, double[] fitness, double[] change) {
 			avgScores(state, 2, fitness);
 			double xr = state[ATBT.COOPERATE_RICH];
 			double xp = state[ATBT.COOPERATE_POOR];

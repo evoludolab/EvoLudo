@@ -289,8 +289,8 @@ public class SDEEulerN extends SDEEuler {
 		yt = yout;
 		yout = swap;
 		// determine fitness of new state
-		getDerivatives(t, yt, ft, dyt);
-		t += step;
+		getDerivatives(time, yt, ft, dyt);
+		time += step;
 		return ArrayMath.distSq(yout, yt);
 	}
 

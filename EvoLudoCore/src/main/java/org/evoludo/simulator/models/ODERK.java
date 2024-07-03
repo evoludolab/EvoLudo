@@ -238,14 +238,14 @@ public class ODERK extends ODEEuler {
 			// truncation error too large, reduce step size.
 			h = (h >= 0.0 ? Math.max(htemp, 0.1 * h) : Math.min(htemp, 0.1 * h));
 			// no more than a factor of 10.
-			double tnew = t + h;
-			if (tnew == t) {
+			double tnew = time + h;
+			if (tnew == time) {
 				logger.warning("stepsize underflow in ODE method rungeKuttaStep().");
 				dtTaken = 0.0;
 				return -1.0;
 			}
 		}
-		t += h;
+		time += h;
 		// ensure that dtTry and dtTaken remain positive
 		h = Math.abs(h);
 		if (errmax > ERRCON)
@@ -263,7 +263,7 @@ public class ODERK extends ODEEuler {
 		yt = yout;
 		yout = swap;
 		// determine fitness of new state
-		getDerivatives(t, yt, ft, dyt);
+		getDerivatives(time, yt, ft, dyt);
 		return ArrayMath.distSq(yout, yt);
 	}
 
@@ -321,7 +321,7 @@ public class ODERK extends ODEEuler {
 		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(t + a2 * h, ytmp, ftmp, ak2); // second step.
+		getDerivatives(time + a2 * h, ytmp, ftmp, ak2); // second step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) {
@@ -333,7 +333,7 @@ public class ODERK extends ODEEuler {
 		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(t + a3 * h, ytmp, ftmp, ak3); // third step.
+		getDerivatives(time + a3 * h, ytmp, ftmp, ak3); // third step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) {
@@ -345,7 +345,7 @@ public class ODERK extends ODEEuler {
 		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(t + a4 * h, ytmp, ftmp, ak4); // fourth step.
+		getDerivatives(time + a4 * h, ytmp, ftmp, ak4); // fourth step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) {
@@ -357,7 +357,7 @@ public class ODERK extends ODEEuler {
 		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(t + a5 * h, ytmp, ftmp, ak5); // fifth step.
+		getDerivatives(time + a5 * h, ytmp, ftmp, ak5); // fifth step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) {
@@ -369,7 +369,7 @@ public class ODERK extends ODEEuler {
 		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(t + a6 * h, ytmp, ftmp, ak6); // sixth step.
+		getDerivatives(time + a6 * h, ytmp, ftmp, ak6); // sixth step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) { // accumulate increments with proper weights.

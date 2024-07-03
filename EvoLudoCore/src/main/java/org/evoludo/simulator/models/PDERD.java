@@ -451,14 +451,14 @@ public class PDERD extends ODEEuler {
 		gwtHalt = engine.getNextHalt();
 		// continue if milestone reached in previous step, i.e. deltat < 1e-8
 		double step = engine.getReportInterval();
-		double deltat = Math.abs(gwtHalt - t);
+		double deltat = Math.abs(gwtHalt - time);
 		if (deltat >= 1e-8)
 			step = Math.min(step, deltat);
 		connect = true;
 		// note: returns immediately for asynchronous execution (GWT)
 		supervisor.next(step);
 		// important: for GWT condition never holds because t unchanged
-		if (Math.abs(gwtHalt - t) < 1e-8)
+		if (Math.abs(gwtHalt - time) < 1e-8)
 			return false;
 		return !converged;
 	}
@@ -493,7 +493,7 @@ public class PDERD extends ODEEuler {
 				double[] ds = density[n];
 				double[] s = next[n]; // s is only a short-cut - data written to s is stored in next[]
 				double[] f = fitness[n];
-				getDerivatives(t, ds, f, dy);
+				getDerivatives(time, ds, f, dy);
 				for (int i = 0; i < nDim; i++) {
 					double dyidt = dy[i] * dt;
 					s[i] = ds[i] + dyidt;
@@ -515,7 +515,7 @@ public class PDERD extends ODEEuler {
 			double[] ds = density[n];
 			double[] s = next[n]; // s is only a short-cut - data written to s is stored in next[]
 			double[] f = fitness[n];
-			getDerivatives(t, ds, f, dy);
+			getDerivatives(time, ds, f, dy);
 			for (int i = 0; i < nDim; i++) {
 				double dyidt = dy[i] * dt;
 				s[i] = ds[i] + dyidt;
@@ -1017,8 +1017,8 @@ public class PDERD extends ODEEuler {
 	 * @return {@code true} to continue and {@code false} to request a stop
 	 */
 	public boolean incrementTime(double incr) {
-		t += incr;
-		return (Math.abs(gwtHalt - t) > 1e-8);
+		time += incr;
+		return (Math.abs(gwtHalt - time) > 1e-8);
 	}
 
 	/**
