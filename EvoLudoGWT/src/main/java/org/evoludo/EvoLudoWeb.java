@@ -701,12 +701,12 @@ public class EvoLudoWeb extends Composite
 			// if length of string is 1 or 2, assume an index is given
 			if (name.length() < 3) {
 				int idx = Integer.parseInt(name);
-				if (idx >= 0 || idx < evoludoViews.getItemCount())
-					name = null;
-				else
+				if (idx >= 0 && idx < evoludoViews.getItemCount())
 					// in order to align argument to --view and keyboard shortcuts
 					// the view count starts at 1 (both 0 and 1 return the first view)
 					name = evoludoViews.getItemText(Math.max(0, idx - 1));
+				else
+					name = null;
 			} else
 				name = name.replace('_', ' ').trim();
 		}
