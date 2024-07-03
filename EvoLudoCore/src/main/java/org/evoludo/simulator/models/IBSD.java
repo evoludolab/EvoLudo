@@ -17,7 +17,7 @@ import org.evoludo.util.Formatter;
  * 
  * @author Christoph Hauert
  */
-public class IBSD extends IBS implements Model.Discrete, Statistics {
+public class IBSD extends IBS implements Model.Discrete {
 
 	/**
 	 * Creates a population of individuals for IBS simulations with discrete
@@ -29,21 +29,9 @@ public class IBSD extends IBS implements Model.Discrete, Statistics {
 		super(engine);
 	}
 
-	/**
-	 * EXPERIMENTAL: container for fixation data; should probably become a more
-	 * generic structure.
-	 */
-	protected FixationData fixData = null;
-
-	@Override
-	public FixationData getFixationData() {
-		return fixData;
-	}
-
 	@Override
 	public void readStatisticsSample() {
-		nStatisticsSamples++;
-		statisticsSampleNew = true;
+		super.readStatisticsSample();
 		if (fixData == null)
 			return;
 
@@ -104,10 +92,6 @@ public class IBSD extends IBS implements Model.Discrete, Statistics {
 	@Override
 	public boolean check() {
 		boolean doReset = super.check();
-		if (permitsMode(Mode.STATISTICS_SAMPLE))
-			fixData = new FixationData();
-		else
-			fixData = null;
 		// NOTE: optimizeHomo is disabled for multi-species (see cloOptimize)
 		if (optimizeHomo) {
 			if (population.populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY) {

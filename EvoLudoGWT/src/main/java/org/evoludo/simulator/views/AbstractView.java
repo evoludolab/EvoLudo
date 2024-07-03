@@ -323,17 +323,6 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	}
 
 	/**
-	 * Get the counter of of view. Views that aggregate data may want to provide
-	 * their own counter, e.g. the number of statistics samples instead of time
-	 * steps.
-	 * 
-	 * @return the custom counter of this view
-	 */
-	public String getCounter() {
-		return null;
-	}
-
-	/**
 	 * Called when a module has been restored.
 	 * 
 	 * @see org.evoludo.simulator.models.MilestoneListener#modelRestored()

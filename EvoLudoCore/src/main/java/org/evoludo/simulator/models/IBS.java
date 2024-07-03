@@ -75,32 +75,6 @@ public abstract class IBS extends Model {
 	}
 
 	/**
-	 * <code>true</code> if new sample for statistics should be started
-	 * ({@link EvoLudo#modelInit()} will be called on next update).
-	 */
-	protected boolean statisticsSampleNew = false;
-
-	/**
-	 * Number of statistics samples collected.
-	 */
-	protected int nStatisticsSamples = 0;
-
-	@Override
-	public int getNStatisticsSamples() {
-		return nStatisticsSamples;
-	}
-
-	@Override
-	public void resetStatisticsSample() {
-		nStatisticsSamples = 0;
-	}
-
-	@Override
-	public void initStatisticsSample() {
-		statisticsSampleNew = false;
-	}
-
-	/**
 	 * The random number generator to display states with ephemeral payoffs. In
 	 * order to ensure reproducibility of results this cannot be the same random
 	 * number generator as for running the simulations.
@@ -244,7 +218,7 @@ public abstract class IBS extends Model {
 
 	@Override
 	public boolean check() {
-		boolean doReset = false;
+		boolean doReset = super.check();
 		boolean allSync = true, allAsync = true;
 		for (Module mod : species) {
 			IBSPopulation pop = mod.getIBSPopulation();
@@ -691,8 +665,10 @@ public abstract class IBS extends Model {
 
 	@Override
 	public String getCounter() {
-		return super.getCounter() + " ("
-				+ Formatter.format(getRealtime(), 2) + ")";
+		String counter = super.getCounter();
+		if (mode == Mode.DYNAMICS)
+			return counter + " (" + Formatter.format(getRealtime(), 2) + ")";
+		return counter;
 	}
 
 	/**

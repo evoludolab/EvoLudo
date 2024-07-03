@@ -56,7 +56,7 @@ import org.evoludo.util.Plist;
  *
  * @author Christoph Hauert
  */
-public abstract class Model implements CLOProvider, Statistics {
+public abstract class Model implements CLOProvider {
 
 	/**
 	 * The pacemaker of all models. Interface with the outside world.
@@ -231,6 +231,81 @@ public abstract class Model implements CLOProvider, Statistics {
 		return mode;
 	}
 
+	/**
+	 * Check if the current model settings permit sample statistics. Fixation
+	 * probabilities and times are examples of statistics based on samples.
+	 * 
+	 * @return <code>true</code> if sample statistics are permitted
+	 */
+	public boolean permitsSampleStatistics() {
+		return false;
+	}
+
+	/**
+	 * Check if the current model settings permit update statistics. Sojourn times
+	 * are an example of statistics based on updates.
+	 * 
+	 * @return <code>true</code> if update statistics are permitted
+	 */
+	public boolean permitsUpdateStatistics() {
+		return false;
+	}
+
+	/**
+	 * Reset statistics and get ready to start new collection.
+	 */
+	public void resetStatisticsSample() {
+		nStatisticsSamples = 0;
+	}
+
+	/**
+	 * Clear statistics sample and get ready to collect next sample.
+	 */
+	public void initStatisticsSample() {
+		statisticsSampleNew = false;
+	}
+
+	/**
+	 * Signal that statistics sample is ready to process.
+	 */
+	public void readStatisticsSample() {
+		nStatisticsSamples++;
+		statisticsSampleNew = true;
+	}
+
+	/**
+	 * Gets the number of statistics samples collected so far.
+	 * 
+	 * @return the number of samples
+	 */
+	public int getNStatisticsSamples() {
+		return nStatisticsSamples;
+	}
+
+	/**
+	 * <code>true</code> if new sample for statistics should be started
+	 * ({@link EvoLudo#modelInit()} will be called on next update).
+	 */
+	protected boolean statisticsSampleNew = false;
+
+	/**
+	 * Number of statistics samples collected.
+	 */
+	protected int nStatisticsSamples = 0;
+
+	/**
+	 * The container for collecting statistics samples.
+	 */
+	protected FixationData fixData = null;
+
+	/**
+	 * Gets the statistics sample of the fixation data.
+	 * 
+	 * @return the statistics sample
+	 */
+	public FixationData getFixationData() {
+		return fixData;
+	}
 
 	/**
 	 * Common interface for all models with discrete strategy sets.
@@ -637,7 +712,13 @@ public abstract class Model implements CLOProvider, Statistics {
 	 * 
 	 * @see java.util.logging.Logger
 	 */
-	public abstract boolean check();
+	public boolean check() {
+		if (permitsMode(Mode.STATISTICS_SAMPLE))
+			fixData = new FixationData();
+		else
+			fixData = null;
+		return false;
+	}
 
 	/**
 	 * Advance model by one step. The details of what happens during one step
@@ -774,6 +855,8 @@ public abstract class Model implements CLOProvider, Statistics {
 	 * @return elapsed time as string
 	 */
 	public String getCounter() {
+		if (mode == Mode.STATISTICS_SAMPLE)
+			return "samples: " + getNStatisticsSamples();
 		return "time: " + Formatter.format(getTime(), 2);
 	}
 

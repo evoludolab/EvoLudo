@@ -633,10 +633,7 @@ public class EvoLudoWeb extends Composite
 		if (s == null)
 			s = model.getStatus();
 		displayStatus(s);
-		s = activeView.getCounter();
-		if (s == null)
-			s = model.getCounter();
-		evoludoTime.setText(s);
+		evoludoTime.setText(model.getCounter());
 		updatetime = Duration.currentTimeMillis();
 	}
 

@@ -501,7 +501,7 @@ public class ODEEuler extends DE {
 
 	@Override
 	public boolean check() {
-		boolean doReset = false;
+		boolean doReset = super.check();
 		dstate = null;
 		double minFit = Double.MAX_VALUE;
 		double maxFit = -Double.MAX_VALUE;

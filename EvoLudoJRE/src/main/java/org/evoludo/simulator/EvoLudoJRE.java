@@ -72,7 +72,7 @@ import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.models.PDERD;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.PDESupervisorJRE;
-import org.evoludo.simulator.models.Statistics.FixationData;
+import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Traits;
 import org.evoludo.simulator.views.MultiView;
@@ -491,8 +491,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				// "\tSpecies" : "") + ",\tDegree distribution of population structure");
 				// break;
 				case STAT_PROB:
-					// casts are safe because otherwise STAT_PROB not available
-					FixationData fix = ((IBSD) getModel()).getFixationData();
+					// fix != null because otherwise STAT_PROB not available
+					FixationData fix = getModel().getFixationData();
 					muttrait = fix.mutantTrait;
 					restrait = fix.residentTrait;
 					nTraits = module.getNTraits();
@@ -500,8 +500,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 					fixProb = new double[nPopulation][nTraits + 1];
 					break;
 				case STAT_UPDATES:
-					// casts are safe because otherwise STAT_UPDATES not available
-					fix = ((IBSD) getModel()).getFixationData();
+					// fix != null because otherwise STAT_UPDATES not available
+					fix = getModel().getFixationData();
 					muttrait = fix.mutantTrait;
 					restrait = fix.residentTrait;
 					nTraits = module.getNTraits();
@@ -509,8 +509,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 					fixUpdate = new double[nPopulation][9];
 					break;
 				case STAT_TIMES:
-					// casts are safe because otherwise STAT_TIMES not available
-					fix = ((IBSD) getModel()).getFixationData();
+					// fix != null because otherwise STAT_TIMES not available
+					fix = getModel().getFixationData();
 					muttrait = fix.mutantTrait;
 					restrait = fix.residentTrait;
 					nTraits = module.getNTraits();

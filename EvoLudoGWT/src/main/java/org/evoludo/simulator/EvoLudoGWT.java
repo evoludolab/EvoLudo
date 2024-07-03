@@ -41,7 +41,6 @@ import org.evoludo.simulator.models.Model.Mode;
 import org.evoludo.simulator.models.PDERD;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.PDESupervisorGWT;
-import org.evoludo.simulator.models.Statistics;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.ui.ContextMenu;
@@ -185,7 +184,7 @@ public class EvoLudoGWT extends EvoLudo {
 				// MODE_STATISTICS: non-blocking way for running an arbitrary number of update
 				// steps to obtain one sample
 				scheduleSample();
-				int samples = ((Statistics) activeModel).getNStatisticsSamples();
+				int samples = activeModel.getNStatisticsSamples();
 				if (isRunning && Math.abs(samples - snapshotAt) < 1.0) {
 					// process request at once - if desired, resume execution after
 					// snapshot was taken.

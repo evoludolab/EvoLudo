@@ -43,7 +43,6 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.Model.Mode;
-import org.evoludo.simulator.models.Statistics.FixationData;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.util.Formatter;
@@ -2060,7 +2059,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * @see IBSD.Init.Type#STATISTICS
 	 */
 	protected void initStatistics() {
-		FixationData fix = ((Statistics) engine.getModel()).getFixationData();
+		FixationData fix = engine.getModel().getFixationData();
 		switch (init.type) {
 			case MUTANT:
 				fix.mutantNode = initMutant();

@@ -45,7 +45,7 @@ import org.evoludo.util.CLOParser;
  * 
  * @author Christoph Hauert
  */
-public class SDEEuler extends ODEEuler implements Statistics {
+public class SDEEuler extends ODEEuler {
 
 	/**
 	 * Interface for modules that implement stochastic differential equations (SDE).
@@ -80,22 +80,6 @@ public class SDEEuler extends ODEEuler implements Statistics {
 	 * SDE models are restricted to single species).
 	 */
 	protected Module module;
-
-	/**
-	 * <code>true</code> if new sample for statistics should be started
-	 * ({@link EvoLudo#modelInit()} will be called on next update).
-	 */
-	protected boolean statisticsSampleNew = false;
-
-	/**
-	 * Number of statistics samples collected.
-	 */
-	protected int nStatisticsSamples = 0;
-
-	/**
-	 * The container for collecting statistics samples.
-	 */
-	protected FixationData fixData = null;
 
 	/**
 	 * Constructs a new model for the numerical integration of the system of
@@ -146,10 +130,6 @@ public class SDEEuler extends ODEEuler implements Statistics {
 			engine.loadModel(Model.Type.ODE);
 			return true;
 		}
-		if (permitsMode(Mode.STATISTICS_SAMPLE))
-			fixData = new FixationData();
-		else
-			fixData = null;
 		// at this point it is clear that we have a dependent trait
 		int dim = nDim - 1;
 		// only one or two traits acceptable or, alternatively, two or three
@@ -401,24 +381,8 @@ public class SDEEuler extends ODEEuler implements Statistics {
 	}
 
 	@Override
-	public FixationData getFixationData() {
-		return fixData;
-	}
-
-	@Override
-	public int getNStatisticsSamples() {
-		return nStatisticsSamples;
-	}
-
-	@Override
-	public void initStatisticsSample() {
-		statisticsSampleNew = false;
-	}
-
-	@Override
 	public void readStatisticsSample() {
-		nStatisticsSamples++;
-		statisticsSampleNew = true;
+		super.readStatisticsSample();
 		if (fixData == null)
 			return;
 
@@ -445,7 +409,7 @@ public class SDEEuler extends ODEEuler implements Statistics {
 
 	@Override
 	public void resetStatisticsSample() {
-		nStatisticsSamples = 0;
+		super.resetStatisticsSample();
 		if (fixData != null) {
 			fixData.reset();
 			// this needs to be revised for vacant sites
