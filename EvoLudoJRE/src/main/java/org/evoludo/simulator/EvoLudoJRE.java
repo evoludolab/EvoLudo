@@ -75,6 +75,7 @@ import org.evoludo.simulator.models.PDESupervisorJRE;
 import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Traits;
+import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.MultiView;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -1409,7 +1410,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			prsr.addCLO(cloExport);
 			// XXX should not be added for customized simulations or should it?
 			prsr.addCLO(cloData);
-			if (getModel().permitsMode(Mode.STATISTICS_SAMPLE))
+			// cannot use permitsSampleStatistics because it also checks parameters
+			// that have not yet been set
+			if (activeModule instanceof HasHistogram.StatisticsProbability
+					|| activeModule instanceof HasHistogram.StatisticsTime)
 				prsr.addCLO(cloSamples);
 			cloData.clearKeys();
 			cloData.addKeys(MultiView.getAvailableDataTypes(activeModule, activeModel));
