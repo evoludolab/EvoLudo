@@ -33,12 +33,15 @@
 package org.evoludo.simulator.models;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
@@ -76,6 +79,66 @@ public abstract class Model implements CLOProvider, Statistics {
 	protected Logger logger;
 
 	/**
+	 * The shared random number generator to ensure reproducibility of results.
+	 * 
+	 * @see EvoLudo#getRNG()
+	 */
+	protected RNGDistribution rng;
+
+	/**
+	 * Short-cut to the list of species modules. Convenience field.
+	 */
+	protected ArrayList<? extends Module> species;
+
+	/**
+	 * Return the species with ID <code>id</code>.
+	 *
+	 * @param id the species identifier
+	 * @return the species
+	 */
+	public Module getSpecies(int id) {
+		return species.get(id);
+	}
+
+	/**
+	 * The number of species in multi-species models.
+	 */
+	protected int nSpecies;
+
+	/**
+	 * Return the number of species in this model.
+	 *
+	 * @return the number of species
+	 */
+	public int getNSpecies() {
+		return nSpecies;
+	}
+
+	/**
+	 * Flag to indicate whether the model entertains multiple species, i.e.
+	 * {@code nSpecies&gt;1}. Convenience field.
+	 */
+	protected boolean isMultispecies;
+
+	/**
+	 * Flag to indicate whether the model has converged. Once a model has converged
+	 * the model execution automatically stops.
+	 */
+	protected boolean converged = false;
+
+	/**
+	 * Checks if model has converged.
+	 *
+	 * @return <code>true</code> if model has converged.
+	 *
+	 * @see #checkConvergence(double)
+	 * @see #setAccuracy(double)
+	 */
+	public boolean hasConverged() {
+		return converged;
+	}
+
+	/**
 	 * Creates a model.
 	 * 
 	 * @param engine the pacemaker for running the model
@@ -84,6 +147,77 @@ public abstract class Model implements CLOProvider, Statistics {
 		this.engine = engine;
 		logger = Logger.getLogger(getClass().getName());
 	}
+
+	/**
+	 * Indicates current mode of IBS model.
+	 */
+	protected Mode mode = Mode.DYNAMICS;
+
+	/**
+	 * Request a change of the {@link Mode} of the model. Returns {@code false} if
+	 * {@code mode} is not supported.
+	 * 
+	 * @param aMode the requested mode
+	 * @return {@code true} if mode supported
+	 * 
+	 * @see EvoLudo#requestAction(ChangeListener.PendingAction)
+	 */
+	public boolean requestMode(Mode newmode) {
+		if (!permitsMode(newmode))
+			return false;
+		PendingAction.MODE.mode = newmode;
+		engine.requestAction(PendingAction.MODE);
+		return true;
+	}
+
+	/**
+	 * Check if current model implements mode {@code test}; by default only
+	 * {@link Mode#DYNAMICS} is permitted.
+	 *
+	 * @param test the mode to test
+	 * @return {@code true} if {@code test} is available in current model
+	 */
+	public boolean permitsMode(Mode test) {
+		switch (test) {
+			case STATISTICS_SAMPLE:
+				return permitsSampleStatistics();
+			case STATISTICS_UPDATE:
+				return permitsUpdateStatistics();
+			case DYNAMICS:
+			default:
+				return true;
+		}
+	}
+
+	/**
+	 * Sets the {@link Mode} of model/simulator. Returns {@code false} if
+	 * {@code mode} is not supported.
+	 * <p>
+	 * <strong>Note:</strong> Do not set mode directly. Changes of the execution
+	 * mode should be coordinated by the engine through requests.
+	 *
+	 * @param mode change mode of model to <code>mode</code>
+	 * @return {@code true} if mode changed
+	 *
+	 * @see #requestMode(Mode)
+	 */
+	public boolean setMode(Mode mode) {
+		if (!permitsMode(mode))
+			return false;
+		boolean changed = (this.mode != mode);
+		this.mode = mode;
+		return changed;
+	}
+
+	/**
+	 * Gets the {@link Mode} of the model.
+	 *
+	 * @return mode of model
+	 */
+	public Mode getMode() {
+		return mode;
+	}
+
 
 	/**
 	 * Common interface for all models with discrete strategy sets.
@@ -578,14 +712,22 @@ public abstract class Model implements CLOProvider, Statistics {
 	 * 
 	 * @see MilestoneListener#modelLoaded()
 	 */
-	public abstract void load();
+	public void load() {
+		rng = engine.getRNG();
+		species = engine.getModule().getSpecies();
+		nSpecies = species.size();
+		isMultispecies = (nSpecies > 1);
+	}
 
 	/**
 	 * Milestone: Unload this model and free resources (if applicable).
 	 * 
 	 * @see MilestoneListener#modelUnloaded()
 	 */
-	public abstract void unload();
+	public void unload() {
+		rng = null;
+		species = null;
+	}
 
 	/**
 	 * Milestone: Initialize this model
@@ -824,21 +966,6 @@ public abstract class Model implements CLOProvider, Statistics {
 	 * @param init the array for storing the initial trait values
 	 */
 	public abstract void getInitialTraits(int id, double[] init);
-
-	/**
-	 * Return the number of species in this model.
-	 *
-	 * @return the number of species
-	 */
-	public abstract int getNSpecies();
-
-	/**
-	 * Return the species with ID <code>id</code>.
-	 *
-	 * @param id the species identifier
-	 * @return the species
-	 */
-	public abstract Module getSpecies(int id);
 
 	/**
 	 * Return the number of mean values for this model including all species (for
@@ -1083,13 +1210,6 @@ public abstract class Model implements CLOProvider, Statistics {
 	public abstract boolean isConnected();
 
 	/**
-	 * Checks if model has converged.
-	 *
-	 * @return <code>true</code> if model has converged.
-	 */
-	public abstract boolean hasConverged();
-
-	/**
 	 * Checks if time reversal is permitted. By default returns <code>false</code>.
 	 * Only few models are capable of time reversal.
 	 *
@@ -1148,65 +1268,6 @@ public abstract class Model implements CLOProvider, Statistics {
 	 * Perform single debug step in models that allow it.
 	 */
 	public void debugStep() {
-	}
-
-	/**
-	 * Check if current model implements mode {@code test}; by default only
-	 * {@link Mode#DYNAMICS} is permitted.
-	 *
-	 * @param test the mode to test
-	 * @return {@code true} if {@code test} is available in current model
-	 */
-	public boolean permitsMode(Mode test) {
-		switch (test) {
-			case STATISTICS_SAMPLE:
-				return permitsSampleStatistics();
-			case STATISTICS_UPDATE:
-				return permitsUpdateStatistics();
-			case DYNAMICS:
-			default:
-				return true;
-		}
-	}
-
-	/**
-	 * Sets the {@link Mode} of model/simulator. Returns {@code false} if
-	 * {@code mode} is not supported.
-	 * <p>
-	 * <strong>Note:</strong> Do not set mode directly. Changes of the execution
-	 * mode should be coordinated by the engine through requests.
-	 *
-	 * @param mode change mode of model to <code>mode</code>
-	 * @return {@code true} if mode changed
-	 *
-	 * @see #requestMode(Mode)
-	 */
-	public boolean setMode(Mode mode) {
-		if (!permitsMode(mode))
-			return false;
-		throw new UnsupportedOperationException("Setting mode '" + mode + "' not supported");
-	}
-
-	/**
-	 * Request a change of the {@link Mode} of the model. Returns {@code false} if
-	 * {@code mode} is not supported.
-	 * 
-	 * @param mode the requested mode
-	 * @return {@code true} if mode supported
-	 * 
-	 * @see EvoLudo#requestAction(ChangeListener.PendingAction)
-	 */
-	public boolean requestMode(Mode mode) {
-		return permitsMode(mode);
-	}
-
-	/**
-	 * Gets the {@link Mode} of the model.
-	 *
-	 * @return mode of model
-	 */
-	public Mode getMode() {
-		return Mode.DYNAMICS;
 	}
 
 	/**

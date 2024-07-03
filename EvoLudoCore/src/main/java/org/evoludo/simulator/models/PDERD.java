@@ -38,7 +38,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.evoludo.math.ArrayMath;
-import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
@@ -72,11 +71,11 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		 * <p>
 		 * <strong>Important:</strong> if the custom PDE implementation involves random
 		 * numbers, the shared random number generator should be used for
-		 * reproducibility
+		 * reproducibility.
 		 *
 		 * @return custom PDE model or <code>null</code> to use use default
-		 *
-		 * @see EvoLudo#getRNG()
+		 * 
+		 * @see Model#rng
 		 */
 		public default Model createPDE() {
 			return null;
@@ -112,14 +111,6 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	 * @see org.evoludo.simulator.models.PDESupervisorGWT
 	 */
 	protected PDESupervisor supervisor;
-
-	/**
-	 * The shared random number generator to ensure reproducibility of results. Used
-	 * here for reproducible randomized initial configurations.
-	 * 
-	 * @see EvoLudo#getRNG()
-	 */
-	RNGDistribution rng;
 
 	/**
 	 * Geometry representing the spatial dimensions of this PDE.
@@ -348,7 +339,6 @@ public class PDERD extends ODEEuler implements Model.PDE {
 			supervisor = engine.hirePDESupervisor(this);
 		module = engine.getModule();
 		space = module.createGeometry();
-		rng = engine.getRNG();
 		sorting = new Comparator<double[]>() {
 
 			/**
@@ -368,27 +358,25 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	public synchronized void unload() {
 		supervisor.unload();
 		supervisor = null;
-		super.unload();
 		space = null;
 		density = null;
 		next = null;
 		fitness = null;
-		rng = null;
 		sorting = null;
 		module = null;
+		super.unload();
 	}
 
 	@Override
 	public boolean check() {
 		boolean doReset = false;
 		if (species.size() > 1) {
-			engine.getLogger()
-					.warning("PDE model for inter-species interactions not (yet?) implemented - reverting to ODE.");
+			logger.warning("PDE model for inter-species interactions not (yet?) implemented - reverting to ODE.");
 			engine.loadModel(Model.Type.ODE);
 			return true;
 		}
 		if (space.getType() == Geometry.Type.MEANFIELD || space.getType() == Geometry.Type.COMPLETE) {
-			engine.getLogger().warning("unstructured population - reverting to ODE.");
+			logger.warning("unstructured population - reverting to ODE.");
 			engine.loadModel(Model.Type.ODE);
 			return true;
 		}
@@ -410,7 +398,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		// space.isLattice are only available after geometry is initialized.
 		isSymmetric = (requestSymmetric && space.isLattice());
 		if (requestSymmetric != isSymmetric)
-			engine.getLogger().warning("request to preserve symmetry cannot be honoured.");
+			logger.warning("request to preserve symmetry cannot be honoured.");
 		return doReset;
 	}
 
@@ -834,7 +822,6 @@ public class PDERD extends ODEEuler implements Model.PDE {
 	@Override
 	public String getStatus() {
 		String status = "";
-		boolean isMultispecies = (species.size() > 1);
 		int idx = 0;
 		int offset = 0;
 		for (Module pop : species) {
@@ -1419,7 +1406,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 			y0 = new double[nt];
 		if (initType == null || !initType.equals(InitType.RANDOM) && (init == null || init.length != nt)) {
 			initType = InitType.RANDOM;
-			engine.getLogger().warning("parsing of initype(s) '" + arg + //
+			logger.warning("parsing of initype(s) '" + arg + //
 					"' failed - using default " + InitType.RANDOM + "'.");
 			return false;
 		}
@@ -1457,7 +1444,7 @@ public class PDERD extends ODEEuler implements Model.PDE {
 		// migrates! this can introduce artifacts!
 		if (dt < 1e-5 || maxK * maxD * dt > 0.5) {
 			double deltat = Math.max(0.5 / (maxD * maxK), Double.MIN_VALUE);
-			engine.getLogger().warning("PDE time scale adjusted (diffusion): dt=" + Formatter.formatSci(deltat, 4)
+			logger.warning("PDE time scale adjusted (diffusion): dt=" + Formatter.formatSci(deltat, 4)
 					+ " (was dt=" + Formatter.formatSci(dt, 4) + ").");
 			dt = deltat;
 		}
@@ -1733,14 +1720,13 @@ public class PDERD extends ODEEuler implements Model.PDE {
 			for (Module pop : species) {
 				Plist pplist = (Plist) plist.get(pop.getName());
 				if (!restoreGeometry(pplist)) {
-					engine.getLogger().warning(
-							"restore geometry in " + getModelType() + "-model failed (" + pop.getName() + ").");
+					logger.warning("restore geometry in " + getModelType() + "-model failed (" + pop.getName() + ").");
 					success = false;
 				}
 			}
 		} else {
 			if (!restoreGeometry(plist)) {
-				engine.getLogger().warning("restore geometry in " + getModelType() + "-model failed.");
+				logger.warning("restore geometry in " + getModelType() + "-model failed.");
 				success = false;
 			}
 		}

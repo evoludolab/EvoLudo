@@ -345,7 +345,7 @@ public class PDERDA extends PDERD {
 			// migrates! this can introduce artifacts!
 			if (dt < 1e-5 || nDim * maxA * maxK * dt > 0.5) {
 				double deltat = Math.max(0.5 / (nDim * maxA * maxK), Double.MIN_VALUE);
-				engine.getLogger().info("PDE time scale adjusted (advection): dt=" + Formatter.formatSci(deltat, 4)
+				logger.info("PDE time scale adjusted (advection): dt=" + Formatter.formatSci(deltat, 4)
 						+ " (was dt=" + Formatter.formatSci(dt, 4) + ").");
 				dt = deltat;
 			}

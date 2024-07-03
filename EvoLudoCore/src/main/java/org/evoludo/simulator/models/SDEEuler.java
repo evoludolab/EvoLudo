@@ -33,9 +33,7 @@
 package org.evoludo.simulator.models;
 
 import org.evoludo.math.ArrayMath;
-import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.views.HasHistogram;
@@ -84,18 +82,6 @@ public class SDEEuler extends ODEEuler implements Statistics {
 	protected Module module;
 
 	/**
-	 * The shared random number generator to ensure reproducibility of results.
-	 * 
-	 * @see EvoLudo#getRNG()
-	 */
-	RNGDistribution rng;
-
-	/**
-	 * Indicates current mode of SDE model.
-	 */
-	protected Mode mode = Mode.DYNAMICS;
-
-	/**
 	 * <code>true</code> if new sample for statistics should be started
 	 * ({@link EvoLudo#modelInit()} will be called on next update).
 	 */
@@ -133,32 +119,29 @@ public class SDEEuler extends ODEEuler implements Statistics {
 	public void load() {
 		super.load();
 		module = engine.getModule();
-		rng = engine.getRNG();
 	}
 
 	@Override
 	public synchronized void unload() {
-		super.unload();
-		rng = null;
 		module = null;
+		super.unload();
 	}
 
 	@Override
 	public boolean check() {
 		if (species.size() > 1) {
-			engine.getLogger()
-					.warning("SDE model for inter-species interactions not (yet?) implemented - revert to ODE.");
+			logger.warning("SDE model for inter-species interactions not (yet?) implemented - revert to ODE.");
 			engine.loadModel(Model.Type.ODE);
 			return true;
 		}
 		if (isDensity()) {
-			engine.getLogger().warning("SDE model requires fixed population size - revert to ODE.");
+			logger.warning("SDE model requires fixed population size - revert to ODE.");
 			engine.loadModel(Model.Type.ODE);
 			return true;
 		}
 		boolean doReset = super.check();
 		if (dependents[0] < 0) {
-			engine.getLogger().warning(getClass().getSimpleName()
+			logger.warning(getClass().getSimpleName()
 					+ " - noise only for replicator type dynamics implemented - revert to ODE (no noise)!");
 			engine.loadModel(Model.Type.ODE);
 			return true;
@@ -172,7 +155,7 @@ public class SDEEuler extends ODEEuler implements Statistics {
 		// only one or two traits acceptable or, alternatively, two or three
 		// traits for replicator dynamics (for SDEEuler but not SDEulerN)
 		if (!getClass().getSuperclass().equals(SDEEuler.class) && (dim < 1 || dim > 2)) {
-			engine.getLogger().warning(getClass().getSimpleName()
+			logger.warning(getClass().getSimpleName()
 					+ " - too many traits (max 2, or 3 for replicator) - revert to ODE!");
 			engine.loadModel(Model.Type.ODE);
 			return true;
@@ -180,7 +163,7 @@ public class SDEEuler extends ODEEuler implements Statistics {
 		if (isAdjustedDynamics) {
 			// XXX check min/max fitness instead
 			// fitness is not guaranteed to be positive
-			engine.getLogger().warning(getClass().getSimpleName()
+			logger.warning(getClass().getSimpleName()
 					+ " - adjusted dynamics for SDE's not (yet) implemented (revert to standard dynamics).");
 			isAdjustedDynamics = false;
 		}
@@ -415,29 +398,6 @@ public class SDEEuler extends ODEEuler implements Statistics {
 		t += step;
 		dtTaken = Math.abs(step);
 		return ArrayMath.distSq(yout, yt);
-	}
-
-	@Override
-	public boolean requestMode(Mode newmode) {
-		if (!permitsMode(newmode))
-			return false;
-		PendingAction.MODE.mode = newmode;
-		engine.requestAction(PendingAction.MODE);
-		return true;
-	}
-
-	@Override
-	public boolean setMode(Mode mode) {
-		if (!permitsMode(mode))
-			return false;
-		boolean changed = (this.mode != mode);
-		this.mode = mode;
-		return changed;
-	}
-
-	@Override
-	public Mode getMode() {
-		return mode;
 	}
 
 	@Override

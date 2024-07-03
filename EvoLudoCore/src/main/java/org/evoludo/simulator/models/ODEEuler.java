@@ -34,13 +34,11 @@ package org.evoludo.simulator.models;
 
 import java.awt.Color;
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
-import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Map2Fitness;
@@ -172,19 +170,6 @@ public class ODEEuler extends DE {
 	public Type getModelType() {
 		return Type.ODE;
 	}
-
-	/**
-	 * List with all species in model including this one. List should be shared with
-	 * other populations (to simplify bookkeeping) but the species list CANNOT be
-	 * static! Otherwise it is impossible to run multiple instances of
-	 * modules/models concurrently.
-	 */
-	protected ArrayList<? extends Module> species;
-
-	/**
-	 * The number of species in the model.
-	 */
-	protected int nSpecies;
 
 	/**
 	 * The current time. May be negative when integrating backwards.
@@ -412,14 +397,6 @@ public class ODEEuler extends DE {
 	String[] names;
 
 	/**
-	 * <code>true</code> if the numerical integration converged.
-	 *
-	 * @see #checkConvergence(double)
-	 * @see #setAccuracy(double)
-	 */
-	protected boolean converged = false;
-
-	/**
 	 * Set to <code>true</code> to requests that the numerical integration stops
 	 * once the population reaches a monomorphic state.
 	 *
@@ -479,8 +456,7 @@ public class ODEEuler extends DE {
 
 	@Override
 	public void load() {
-		species = engine.getModule().getSpecies();
-		nSpecies = species.size();
+		super.load();
 		initType = new InitType[nSpecies];
 		mutation = new Mutation.Discrete[nSpecies];
 		int idx = 0;
@@ -490,14 +466,13 @@ public class ODEEuler extends DE {
 
 	@Override
 	public void unload() {
-		logger = null;
-		species = null;
 		yt = ft = dyt = yout = null;
 		mutation = null;
 		staticfit = null;
 		names = null;
 		initType = null;
 		cloInitType.clearKeys();
+		super.unload();
 	}
 
 	@Override
@@ -625,16 +600,6 @@ public class ODEEuler extends DE {
 	@Override
 	public double getMonoScore(int id, int type) {
 		return ((org.evoludo.simulator.modules.Discrete) species.get(id)).getMonoGameScore(type);
-	}
-
-	@Override
-	public Module getSpecies(int id) {
-		return species.get(id);
-	}
-
-	@Override
-	public int getNSpecies() {
-		return nSpecies;
 	}
 
 	@Override
@@ -867,11 +832,6 @@ public class ODEEuler extends DE {
 		if (Math.abs(nextHalt - t) < 1e-8)
 			return false;
 		return !converged;
-	}
-
-	@Override
-	public boolean hasConverged() {
-		return converged;
 	}
 
 	/**
@@ -1539,7 +1499,6 @@ public class ODEEuler extends DE {
 	public String getStatus() {
 		String status = "";
 		int from = 0;
-		boolean isMultispecies = (species.size() > 1);
 		for (Module pop : species) {
 			int to = from + pop.getNTraits();
 			// omit status for vacant trait in density models
@@ -1636,7 +1595,6 @@ public class ODEEuler extends DE {
 				if (!initType[++idx].equals(InitType.RANDOM))
 					continue;
 				int dim = pop.getNTraits();
-				RNGDistribution rng = engine.getRNG();
 				int from = idxSpecies[idx];
 				for (int n = 0; n < dim; n++)
 					y0[from + n] = rng.random01();

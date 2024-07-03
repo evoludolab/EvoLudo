@@ -139,7 +139,7 @@ public class ODERK extends ODEEuler {
 	public boolean check() {
 		boolean doReset = super.check();
 		if (!autoDt) {
-			engine.getLogger().warning(getClass().getSimpleName()
+			logger.warning(getClass().getSimpleName()
 					+ " - Runge-Kutta with fixed time increments requested - revert to Euler method.");
 			doEuler = true;
 		}
@@ -154,7 +154,7 @@ public class ODERK extends ODEEuler {
 				allDependent = false;
 		}
 		if (!noDependent && !allDependent) {
-			engine.getLogger().warning(getClass().getSimpleName()
+			logger.warning(getClass().getSimpleName()
 					+ " - Runge-Kutta currently requires dependent traits either in all or no species - revert to Euler method.");
 			doEuler = true;
 		}
@@ -240,7 +240,7 @@ public class ODERK extends ODEEuler {
 			// no more than a factor of 10.
 			double tnew = t + h;
 			if (tnew == t) {
-				engine.getLogger().warning("stepsize underflow in ODE method rungeKuttaStep().");
+				logger.warning("stepsize underflow in ODE method rungeKuttaStep().");
 				dtTaken = 0.0;
 				return -1.0;
 			}

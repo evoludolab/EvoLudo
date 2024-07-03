@@ -2,14 +2,12 @@ package org.evoludo.simulator.models;
 
 import java.awt.Color;
 import java.io.PrintStream;
-import java.util.ArrayList;
 
 import org.evoludo.math.Combinatorics;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
@@ -57,11 +55,6 @@ public abstract class IBS extends Model {
 		return Type.IBS;
 	}
 
-	/**
-	 * Indicates current mode of IBS model.
-	 */
-	protected Mode mode = Mode.DYNAMICS;
-
 	@Override
 	public boolean permitsSampleStatistics() {
 		for (Module mod : species) {
@@ -79,29 +72,6 @@ public abstract class IBS extends Model {
 				return false;
 		}
 		return true;
-	}
-
-	@Override
-	public boolean requestMode(Mode newmode) {
-		if (!permitsMode(newmode))
-			return false;
-		PendingAction.MODE.mode = newmode;
-		engine.requestAction(PendingAction.MODE);
-		return true;
-	}
-
-	@Override
-	public boolean setMode(Mode mode) {
-		if (!permitsMode(mode))
-			return false;
-		boolean changed = (this.mode != mode);
-		this.mode = mode;
-		return changed;
-	}
-
-	@Override
-	public Mode getMode() {
-		return mode;
 	}
 
 	/**
@@ -131,13 +101,6 @@ public abstract class IBS extends Model {
 	}
 
 	/**
-	 * The shared random number generator to ensure reproducibility of results.
-	 * 
-	 * @see EvoLudo#getRNG()
-	 */
-	protected RNGDistribution rng;
-
-	/**
 	 * The random number generator to display states with ephemeral payoffs. In
 	 * order to ensure reproducibility of results this cannot be the same random
 	 * number generator as for running the simulations.
@@ -155,26 +118,10 @@ public abstract class IBS extends Model {
 	protected RNGDistribution.Geometric distrMutation;
 
 	/**
-	 * Short-cut to the list of species modules. Convenience field.
-	 */
-	protected ArrayList<? extends Module> species;
-
-	/**
 	 * Short-cut to {@code species.get(0).getIBSPopulation()} for single species
 	 * models; {@code null} in multi-species models. Convenience field.
 	 */
 	protected IBSPopulation population;
-
-	/**
-	 * The number of species in multi-species models.
-	 */
-	protected int nSpecies;
-
-	/**
-	 * Flag to indicate whether the model entertains multiple species, i.e.
-	 * {@code nSpecies&gt;1}. Convenience field.
-	 */
-	protected boolean isMultispecies;
 
 	/**
 	 * Keeps track of the number of generations (or Monte-Carlo steps) that have
@@ -241,10 +188,7 @@ public abstract class IBS extends Model {
 	 */
 	@Override
 	public void load() {
-		rng = engine.getRNG();
-		species = engine.getModule().getSpecies();
-		nSpecies = species.size();
-		isMultispecies = (nSpecies > 1);
+		super.load();
 		for (Module mod : species) {
 			IBSPopulation pop = mod.createIBSPop();
 			if (pop == null) {
@@ -286,9 +230,7 @@ public abstract class IBS extends Model {
 
 	@Override
 	public void unload() {
-		rng = null;
 		ephrng = null;
-		logger = null;
 		cloGeometryInteraction.clearKeys();
 		cloGeometryCompetition.clearKeys();
 		cloMigration.clearKeys();
@@ -300,7 +242,7 @@ public abstract class IBS extends Model {
 			pop.unload();
 			mod.setIBSPopulation(null);
 		}
-		species = null;
+		super.unload();
 	}
 
 	/**
@@ -414,12 +356,6 @@ public abstract class IBS extends Model {
 			pop.updateScores();
 		}
 	}
-
-	/**
-	 * Flag to indicate whether the model has converged. Once a model has converged
-	 * the model execution automatically stops.
-	 */
-	protected boolean converged = false;
 
 	@Override
 	public boolean next() {
@@ -717,11 +653,6 @@ public abstract class IBS extends Model {
 		engine.fireModelChanged();
 	}
 
-	@Override
-	public Module getSpecies(int id) {
-		return species.get(id);
-	}
-
 	/**
 	 * Helper routine to retrieve the {@link IBSPopulation} associated with module
 	 * with {@code id}.
@@ -786,16 +717,6 @@ public abstract class IBS extends Model {
 	@Override
 	public double getRealtime() {
 		return realtime;
-	}
-
-	@Override
-	public boolean hasConverged() {
-		return converged;
-	}
-
-	@Override
-	public int getNSpecies() {
-		return nSpecies;
 	}
 
 	@Override
