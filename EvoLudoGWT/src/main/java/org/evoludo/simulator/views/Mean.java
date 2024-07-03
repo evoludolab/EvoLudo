@@ -213,7 +213,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 					style.yLabel = "payoffs";
 					if (module instanceof Discrete) {
 						// cast is save because module is Discrete
-						org.evoludo.simulator.models.Model.Discrete dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
+						org.evoludo.simulator.models.Discrete dmodel = (org.evoludo.simulator.models.Discrete) model;
 						double[] monoScores = new double[nMean + 1];
 						// the first entry is for dashed (>0) and dotted (<0) lines
 						monoScores[0] = 1.0;

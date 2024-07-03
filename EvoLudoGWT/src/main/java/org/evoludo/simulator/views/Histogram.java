@@ -454,7 +454,7 @@ public class Histogram extends AbstractView {
 					style.yMax = 1.0;
 					if (module instanceof Discrete) {
 						// cast is save because pop is Discrete
-						org.evoludo.simulator.models.Model.Discrete dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
+						org.evoludo.simulator.models.Discrete dmodel = (org.evoludo.simulator.models.Discrete) model;
 						style.label = (isMultispecies ? module.getName() + ": " : "") + module.getTraitName(idx);
 						Color tColor = colors[idx];
 						style.graphColor = ColorMapCSS.Color2Css(tColor);
@@ -468,7 +468,7 @@ public class Histogram extends AbstractView {
 					}
 					if (module instanceof Continuous) {
 						// cast is save because pop is Continuous
-						org.evoludo.simulator.models.Model.Continuous cmodel = (org.evoludo.simulator.models.Model.Continuous) model;
+						org.evoludo.simulator.models.Continuous cmodel = (org.evoludo.simulator.models.Continuous) model;
 						Color tcolor = colors[idx];
 						graph.addMarker(cmodel.getMinMonoScore(module.getID()),
 								ColorMapCSS.Color2Css(ColorMap.blendColors(tcolor, Color.BLACK, 0.5)),
@@ -645,7 +645,7 @@ public class Histogram extends AbstractView {
 				case STRATEGY:
 					double[][] data = null;
 					// cast ok because trait histograms only make sense for continuous models
-					Model.Continuous cmodel = (Model.Continuous) model;
+					org.evoludo.simulator.models.Continuous cmodel = (org.evoludo.simulator.models.Continuous) model;
 					for (HistoGraph graph : graphs) {
 						double[][] graphdata = graph.getData();
 						if (data != graphdata) {

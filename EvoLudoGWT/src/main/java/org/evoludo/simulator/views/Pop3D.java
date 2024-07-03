@@ -208,12 +208,12 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 				graph.displayMessage("No view available (" + mt.toString() + " solver)");
 			return hard;
 		}
-		org.evoludo.simulator.models.Model.Continuous cmodel = null;
-		org.evoludo.simulator.models.Model.Discrete dmodel = null;
+		org.evoludo.simulator.models.Continuous cmodel = null;
+		org.evoludo.simulator.models.Discrete dmodel = null;
 		if (model.isContinuous())
-			cmodel = (org.evoludo.simulator.models.Model.Continuous) model;
+			cmodel = (org.evoludo.simulator.models.Continuous) model;
 		else
-			dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
+			dmodel = (org.evoludo.simulator.models.Discrete) model;
 
 		for (PopGraph3D graph : graphs) {
 			ColorMap<MeshLambertMaterial> cMap = null;

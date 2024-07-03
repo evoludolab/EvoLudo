@@ -40,7 +40,6 @@ import java.util.logging.Logger;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOProvider;
@@ -104,28 +103,9 @@ public abstract class Model implements CLOProvider {
 	protected ArrayList<? extends Module> species;
 
 	/**
-	 * Return the species with ID <code>id</code>.
-	 *
-	 * @param id the species identifier
-	 * @return the species
-	 */
-	public Module getSpecies(int id) {
-		return species.get(id);
-	}
-
-	/**
 	 * The number of species in multi-species models.
 	 */
 	protected int nSpecies;
-
-	/**
-	 * Return the number of species in this model.
-	 *
-	 * @return the number of species
-	 */
-	public int getNSpecies() {
-		return nSpecies;
-	}
 
 	/**
 	 * Flag to indicate whether the model entertains multiple species, i.e.
@@ -140,6 +120,124 @@ public abstract class Model implements CLOProvider {
 	protected boolean converged = false;
 
 	/**
+	 * Creates a model.
+	 * 
+	 * @param engine the pacemaker for running the model
+	 */
+	public Model(EvoLudo engine) {
+		this.engine = engine;
+		logger = Logger.getLogger(getClass().getName());
+	}
+
+	/**
+	 * Milestone: Load this model and allocate resources (if applicable).
+	 * 
+	 * @see MilestoneListener#modelLoaded()
+	 */
+	public void load() {
+		rng = engine.getRNG();
+		species = engine.getModule().getSpecies();
+		nSpecies = species.size();
+		isMultispecies = (nSpecies > 1);
+	}
+
+	/**
+	 * Milestone: Unload this model and free resources (if applicable).
+	 * 
+	 * @see MilestoneListener#modelUnloaded()
+	 */
+	public void unload() {
+		rng = null;
+		species = null;
+	}
+
+	/**
+	 * Milestone: Initialize this model
+	 * 
+	 * @see MilestoneListener#modelDidReinit()
+	 */
+	public abstract void init();
+
+	/**
+	 * Milestone: Reset this model
+	 * 
+	 * @see MilestoneListener#modelDidReset()
+	 */
+	public abstract void reset();
+
+	/**
+	 * Update this model. For example called after initialization and when
+	 * parameters changed.
+	 * 
+	 * @see ChangeListener#modelChanged(ChangeListener.PendingAction)
+	 */
+	public abstract void update();
+
+	/**
+	 * Check consistency of parameters and adjust if necessary (and possible). All
+	 * issues and modifications should be reported through <code>logger</code>. Some
+	 * parameters can be adjusted while the model remains active or even while
+	 * running, whereas others require a reset. An example of the former category is
+	 * in general simple adjustments of payoffs, while an example of the latter
+	 * category is a change of the population structure.
+	 *
+	 * @return <code>true</code> if reset required
+	 * 
+	 * @see java.util.logging.Logger
+	 */
+	public boolean check() {
+		if (permitsMode(Mode.STATISTICS_SAMPLE))
+			fixData = new FixationData();
+		else
+			fixData = null;
+		return false;
+	}
+
+	/**
+	 * Advance model by one step. The details of what happens during one step
+	 * depends on the models {@link Type} as well as its {@link Mode}.
+	 * 
+	 * @return <code>true</code> if <code>next()</code> can be called again.
+	 *         Typically <code>false</code> is returned if the model requires
+	 *         attention, such as the following conditions:
+	 *         <ul>
+	 *         <li>the model has converged
+	 *         <li>the model turned monomorphic (stops only if requested)
+	 *         <li>a statistics sample is available
+	 *         <li>a preset time has been reached
+	 *         </ul>
+	 * 
+	 * @see ChangeListener#modelChanged(ChangeListener.PendingAction)
+	 * @see org.evoludo.simulator.modules.Discrete#setMonoStop(boolean)
+	 */
+	public abstract boolean next();
+
+	/**
+	 * Relax the initial configuration of the model over {@code generations}. During
+	 * relaxation the method {@link #relaxing()} must return {@code true}.
+	 * 
+	 * @param generations the number of generations to relax the model
+	 * @return {@code false} if converged during relaxation
+	 * 
+	 * @see #relaxing()
+	 * @see #next()
+	 */
+	public boolean relax(double generations) {
+		return false;
+	}
+
+	/**
+	 * Check if EvoLudo model is in the process of relaxing.
+	 * 
+	 * @return {@code true} if model is currently relaxing
+	 * 
+	 * @see #relax(double)
+	 */
+	public boolean relaxing() {
+		return false;
+	}
+
+	/**
 	 * Checks if model has converged.
 	 *
 	 * @return <code>true</code> if model has converged.
@@ -152,13 +250,22 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
-	 * Creates a model.
-	 * 
-	 * @param engine the pacemaker for running the model
+	 * Return the species with ID <code>id</code>.
+	 *
+	 * @param id the species identifier
+	 * @return the species
 	 */
-	public Model(EvoLudo engine) {
-		this.engine = engine;
-		logger = Logger.getLogger(getClass().getName());
+	public Module getSpecies(int id) {
+		return species.get(id);
+	}
+
+	/**
+	 * Return the number of species in this model.
+	 *
+	 * @return the number of species
+	 */
+	public int getNSpecies() {
+		return nSpecies;
 	}
 
 	/**
@@ -305,106 +412,6 @@ public abstract class Model implements CLOProvider {
 	 */
 	public FixationData getFixationData() {
 		return fixData;
-	}
-
-	/**
-	 * Common interface for all models with discrete strategy sets.
-	 */
-	public interface Discrete {
-
-		/**
-		 * Calculate and return the payoff/score of individuals in monomorphic
-		 * populations with trait/strategy {@code type} but also deals with payoff
-		 * accounting (averaged versus accumulated).
-		 *
-		 * @param id   the id of the population for multi-species models
-		 * @param type trait/strategy
-		 * @return payoff/score in monomorphic population with trait/strategy
-		 *         {@code type}. Returns {@code NaN} if scores ill defined
-		 * 
-		 * @see org.evoludo.simulator.modules.Discrete#getMonoGameScore(int)
-		 */
-		public default double getMonoScore(int id, int type) {
-			return Double.NaN;
-		}
-	}
-
-	/**
-	 * Common interface for all models with continuous strategy sets.
-	 */
-	public interface Continuous {
-
-		/**
-		 * Gets the minimum trait values in this module.
-		 * 
-		 * @param id the id of the population for multi-species models
-		 * @return the array with the minimum trait values
-		 */
-		public double[] getTraitMin(int id);
-
-		/**
-		 * Gets the maximum trait values in this module.
-		 * 
-		 * @param id the id of the population for multi-species models
-		 * @return the array with the maximum trait values
-		 */
-		public double[] getTraitMax(int id);
-
-		/**
-		 * Calculates and returns minimum score in monomorphic population. This depends
-		 * on the payoff accounting (averaged versus accumulated) as well as the
-		 * {@link Geometry}. Since modules are agnostic of runtime details, the request
-		 * is simply forwarded to the current {@link Model} together with the species ID
-		 * for multi-species modules.
-		 * 
-		 * @param id the id of the population for multi-species models
-		 * @return the minimum monomorphic score
-		 */
-		public double getMinMonoScore(int id);
-
-		/**
-		 * Calculates and returns maximum score in monomorphic population. This depends
-		 * on the payoff accounting (averaged versus accumulated) as well as the
-		 * {@link Geometry}. Since modules are agnostic of runtime details, the request
-		 * is simply forwarded to the current {@link Model} together with the species ID
-		 * for multi-species modules.
-		 * 
-		 * @param id the id of the population for multi-species models
-		 * @return the maximum monomorphic score
-		 */
-		public double getMaxMonoScore(int id);
-
-		/**
-		 * Gets the histogram of the trait distributions and returns the data in an
-		 * array <code>bins</code>, where the first index denotes the trait (in case
-		 * there are multiple) and the second index refers to the bins in the histogram.
-		 * <p>
-		 * This is a helper method to forward the request to the appropriate
-		 * {@link IBSMCPopulation} (for multiple traits) or {@link IBSCPopulation} (for
-		 * single traits).
-		 *
-		 * @param id   the id of the population for multi-species models
-		 * @param bins the 2D data array for storing the histogram
-		 */
-		public void getTraitHistogramData(int id, double[][] bins);
-
-		/**
-		 * Gets the histogram of the trait distribution for the traits of the
-		 * {@link Module}. For modules with multiple traits a 2D histogram is generated
-		 * for traits <code>trait1</code> and <code>trait2</code>. The histogram is
-		 * returned in the linear array <code>bins</code> and arranged in a way that is
-		 * compatible with square lattice geometries for visualization by
-		 * {@link org.evoludo.simulator.views.Distribution} (GWT only). For modules with
-		 * a single trait only, <code>trait1</code> and <code>trait2</code> are ignored.
-		 *
-		 * @param id     the id of the population for multi-species models
-		 * @param bins   the data array for storing the histogram
-		 * @param trait1 the index of the first trait (horizontal axis)
-		 * @param trait2 the index of the second trait (vertical axis)
-		 * 
-		 * @see org.evoludo.simulator.Geometry#initGeometrySquare()
-		 */
-		public void get2DTraitHistogramData(int id, double[] bins, int trait1, int trait2);
 	}
 
 	/**
@@ -653,114 +660,6 @@ public abstract class Model implements CLOProvider {
 	 * @return <code>true</code> if model calculations are asynchronous
 	 */
 	public boolean useScheduling() {
-		return false;
-	}
-
-	/**
-	 * Milestone: Load this model and allocate resources (if applicable).
-	 * 
-	 * @see MilestoneListener#modelLoaded()
-	 */
-	public void load() {
-		rng = engine.getRNG();
-		species = engine.getModule().getSpecies();
-		nSpecies = species.size();
-		isMultispecies = (nSpecies > 1);
-	}
-
-	/**
-	 * Milestone: Unload this model and free resources (if applicable).
-	 * 
-	 * @see MilestoneListener#modelUnloaded()
-	 */
-	public void unload() {
-		rng = null;
-		species = null;
-	}
-
-	/**
-	 * Milestone: Initialize this model
-	 * 
-	 * @see MilestoneListener#modelDidReinit()
-	 */
-	public abstract void init();
-
-	/**
-	 * Milestone: Reset this model
-	 * 
-	 * @see MilestoneListener#modelDidReset()
-	 */
-	public abstract void reset();
-
-	/**
-	 * Update this model. For example called after initialization and when
-	 * parameters changed.
-	 * 
-	 * @see ChangeListener#modelChanged(ChangeListener.PendingAction)
-	 */
-	public abstract void update();
-
-	/**
-	 * Check consistency of parameters and adjust if necessary (and possible). All
-	 * issues and modifications should be reported through <code>logger</code>. Some
-	 * parameters can be adjusted while the model remains active or even while
-	 * running, whereas others require a reset. An example of the former category is
-	 * in general simple adjustments of payoffs, while an example of the latter
-	 * category is a change of the population structure.
-	 *
-	 * @return <code>true</code> if reset required
-	 * 
-	 * @see java.util.logging.Logger
-	 */
-	public boolean check() {
-		if (permitsMode(Mode.STATISTICS_SAMPLE))
-			fixData = new FixationData();
-		else
-			fixData = null;
-		return false;
-	}
-
-	/**
-	 * Advance model by one step. The details of what happens during one step
-	 * depends on the models {@link Type} as well as its {@link Mode}.
-	 * 
-	 * @return <code>true</code> if <code>next()</code> can be called again.
-	 *         Typically <code>false</code> is returned if the model requires
-	 *         attention, such as the following conditions:
-	 *         <ul>
-	 *         <li>the model has converged
-	 *         <li>the model turned monomorphic (stops only if requested)
-	 *         <li>a statistics sample is available
-	 *         <li>a preset time has been reached
-	 *         </ul>
-	 * 
-	 * @see ChangeListener#modelChanged(ChangeListener.PendingAction)
-	 * @see org.evoludo.simulator.modules.Discrete#setMonoStop(boolean)
-	 */
-	public abstract boolean next();
-
-	/**
-	 * Relax the initial configuration of the model over {@code generations}. During
-	 * relaxation the method {@link #relaxing()} must return {@code true}.
-	 * 
-	 * @param generations the number of generations to relax the model
-	 * @return {@code false} if converged during relaxation
-	 * 
-	 * @see #relaxing()
-	 * @see #next()
-	 */
-	public boolean relax(double generations) {
-		return false;
-	}
-
-	/**
-	 * Check if EvoLudo model is in the process of relaxing.
-	 * 
-	 * @return {@code true} if model is currently relaxing
-	 * 
-	 * @see #relax(double)
-	 */
-	public boolean relaxing() {
 		return false;
 	}
 

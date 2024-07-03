@@ -109,7 +109,7 @@ public class MVFitness extends MVAbstract implements StateGraphListener {
 		boolean changed = false;
 		int n = module.getNTraits();
 		// cast is save because pop is not Continuous
-		org.evoludo.simulator.models.Model.Discrete dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
+		org.evoludo.simulator.models.Discrete dmodel = (org.evoludo.simulator.models.Discrete) model;
 		for( int i=0; i<n; i++ ) {
 			changed |= frame.updateYThreshold(i, 
 				dmodel.getMonoScore(module.getID(), i), 

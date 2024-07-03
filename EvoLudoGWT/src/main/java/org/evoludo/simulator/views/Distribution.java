@@ -239,7 +239,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 				case STRATEGY:
 					// process data first
 					// casts ok because trait histograms make sense only for continuous models
-					((Model.Continuous) model).get2DTraitHistogramData(graph.getModule().getID(), bins, traitXIdx,
+					((org.evoludo.simulator.models.Continuous) model).get2DTraitHistogramData(graph.getModule().getID(), bins, traitXIdx,
 							traitYIdx);
 					ColorMap.Gradient1D<String> cMap = (ColorMap.Gradient1D<String>) graph.getColorMap();
 					cMap.setRange(0.0, ArrayMath.max(bins));

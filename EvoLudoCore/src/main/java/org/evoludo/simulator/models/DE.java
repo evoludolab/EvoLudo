@@ -1,7 +1,6 @@
 package org.evoludo.simulator.models;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.Model.Discrete;
 
 /**
  * Common abstract base class for all differential equations models.

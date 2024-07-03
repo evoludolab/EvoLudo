@@ -258,7 +258,7 @@ public class MVCDistr extends MVAbstract implements PopListener {
     	double now = model.getTime();
 		if( now-timestamp>1e-8 ) {
 			// process data first
-			((Model.Continuous) model).getTraitHistogramData(0, bins);
+			((org.evoludo.simulator.models.Continuous) model).getTraitHistogramData(0, bins);
 			timestamp = now;
 		}
 		colorMap.translate(bins[tag], data);

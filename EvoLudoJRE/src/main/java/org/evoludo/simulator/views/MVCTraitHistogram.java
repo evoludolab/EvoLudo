@@ -148,7 +148,7 @@ public class MVCTraitHistogram extends MVAbstract implements HistoGraphListener 
 		double now = model.getTime();
 		if( now-data.timestamp>1e-10 ) {
 			// process data first
-			((Model.Continuous) model).getTraitHistogramData(0, bins);
+			((org.evoludo.simulator.models.Continuous) model).getTraitHistogramData(0, bins);
 			// convert to percentages - also need to keep track of maxima
 			for( int n=0; n<nData; n++ ) {
 				int nBins = bins[n].length;

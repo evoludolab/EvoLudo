@@ -161,14 +161,14 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 		if( model.isContinuous() ) {
 			Color tcolor = module.getTraitColors()[tag];
 			// cast is save because pop is Continuous
-			org.evoludo.simulator.models.Model.Continuous cmodel = (org.evoludo.simulator.models.Model.Continuous) model;
+			org.evoludo.simulator.models.Continuous cmodel = (org.evoludo.simulator.models.Continuous) model;
 			// for continuous strategies we have a single histogram and may want to mark several bins
 			boolean changed = frame.updateMarkedBin(0, cmodel.getMinMonoScore(module.getID()), tcolor.darker());
 			changed |= frame.updateMarkedBin(1, cmodel.getMaxMonoScore(module.getID()), tcolor.brighter());
 			return changed;
 		}
 		// cast is save because pop is not Continuous
-		org.evoludo.simulator.models.Model.Discrete dmodel = (org.evoludo.simulator.models.Model.Discrete) model;
+		org.evoludo.simulator.models.Discrete dmodel = (org.evoludo.simulator.models.Discrete) model;
 		// for discrete strategies we have different histograms and mark only a single bin
 		return frame.updateMarkedBin(0, 
 				dmodel.getMonoScore(module.getID(), tag), 

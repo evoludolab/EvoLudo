@@ -16,7 +16,7 @@ import org.evoludo.util.Formatter;
  * 
  * @author Christoph Hauert
  */
-public class IBSC extends IBS implements Model.Continuous {
+public class IBSC extends IBS implements Continuous {
 
 	/**
 	 * Creates a population of individuals for IBS simulations with continuous

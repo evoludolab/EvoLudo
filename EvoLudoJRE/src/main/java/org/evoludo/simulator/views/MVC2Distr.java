@@ -181,7 +181,7 @@ public class MVC2Distr extends MVAbstract implements PopListener {
 		if( now-timestamp>1e-8 ) {
 			// process data first
 //			((CXPopulation)population).getTraitDensityData(data, colorMap, bins, true);
-			((Model.Continuous) model).get2DTraitHistogramData(0, bins, 0, 1);
+			((org.evoludo.simulator.models.Continuous) model).get2DTraitHistogramData(0, bins, 0, 1);
 			// translate data into colors
 			timestamp = now;
 		}

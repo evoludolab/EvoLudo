@@ -17,7 +17,7 @@ import org.evoludo.util.Formatter;
  * 
  * @author Christoph Hauert
  */
-public class IBSD extends IBS implements Model.Discrete {
+public class IBSD extends IBS implements Discrete {
 
 	/**
 	 * Creates a population of individuals for IBS simulations with discrete
