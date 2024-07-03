@@ -145,7 +145,7 @@ public class Markers {
 									case ODE:
 									case SDE:
 									case PDE:
-										if (((DE) model).isDensity())
+										if (((ODEEuler) model).isDensity())
 											// no dependent traits for density based model (vac >= 0 must hold)
 											smk = ArrayMath.insert(smk, 0.0, vac);
 										else
