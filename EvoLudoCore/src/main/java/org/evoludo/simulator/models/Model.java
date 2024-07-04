@@ -992,12 +992,12 @@ public abstract class Model implements CLOProvider {
 	/**
 	 * Indicates the interval (measured in generations) after which models report
 	 * updates on their current state. for example, the GUI gets updated whenever
-	 * <code>reportInterval</code> generations (or fractions thereof) have elapsed.
+	 * <code>timeStep</code> generations (or fractions thereof) have elapsed.
 	 * <p>
-	 * <strong>Note:</strong> <code>reportInterval&lt;0</code> disables reporting;
-	 * <code>reportInterval=0</code> reports every single update.
+	 * <strong>Note:</strong> <code>timeStep&lt;0</code> disables reporting;
+	 * <code>timeStep=0</code> reports every single update.
 	 */
-	protected double reportInterval = 1.0;
+	protected double timeStep = 1.0;
 
 	/**
 	 * Set the report interval, i.e. number of updates in one step (see
@@ -1005,8 +1005,8 @@ public abstract class Model implements CLOProvider {
 	 *
 	 * @param aValue the new report interval
 	 */
-	public void setReportInterval(double aValue) {
-		reportInterval = Math.max(0.0, aValue);
+	public void setTimeStep(double aValue) {
+		timeStep = Math.max(0.0, aValue);
 	}
 
 	/**
@@ -1015,31 +1015,31 @@ public abstract class Model implements CLOProvider {
 	 * 
 	 * @return the report interval
 	 */
-	public double getReportInterval() {
-		return reportInterval;
+	public double getTimeStep() {
+		return timeStep;
 	}
 
 	/**
 	 * Command line option to set the number of generations between reports for
 	 * {@link #modelNext()}.
 	 */
-	public final CLOption cloReportInterval = new CLOption("reportfreq", "1", EvoLudo.catGlobal,
-			"--reportfreq <f>  report frequency in MC steps", new CLODelegate() {
+	public final CLOption cloTimeStep = new CLOption("timestep", "1", EvoLudo.catGlobal,
+			"--timestep <f>  report frequency in generations", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					setReportInterval(Double.parseDouble(arg));
+					setTimeStep(Double.parseDouble(arg));
 					return true;
 				}
 
 				@Override
 				public void report(PrintStream output) {
-					output.println("# reportfreq:           " + Formatter.format(getReportInterval(), 4));
+					output.println("# timestep:           " + Formatter.format(getTimeStep(), 4));
 				}
 			});
 
 	@Override
 	public void collectCLO(CLOParser parser) {
-		parser.addCLO(cloReportInterval);
+		parser.addCLO(cloTimeStep);
 	}
 
 	/**

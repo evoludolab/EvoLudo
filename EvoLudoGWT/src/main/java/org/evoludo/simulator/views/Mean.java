@@ -233,7 +233,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 				style.label = module.getName();
 			style.xLabel = "time";
 			style.showXLevels = false;
-			double rFreq = model.getReportInterval();
+			double rFreq = model.getTimeStep();
 			if (Math.abs(style.xIncr - rFreq) > 1e-8) {
 				style.xIncr = rFreq;
 				style.xMin = -graph.getSteps() * style.xIncr;

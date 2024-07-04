@@ -180,7 +180,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 					style.showXTickLabels = true;
 					style.showXLevels = false;
 					if (nTraits == 1) {
-						double rFreq = model.getReportInterval();
+						double rFreq = model.getTimeStep();
 						// adjust y-axis scaling if report frequency has changed
 						if (Math.abs(style.yIncr - rFreq) > 1e-6) {
 							style.yMax = 0.0;
@@ -321,7 +321,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 		int nTraits = module.getNTraits();
 		if (nTraits == 1) {
 			int bar = node % nBins;
-			double time = -node / nBins * model.getReportInterval();
+			double time = -node / nBins * model.getTimeStep();
 			return (style.label != null ? "<b>" + style.label + "</b><br/>" : "") +
 					"<i>" + style.xLabel + ":</i> ["
 					+ Formatter.format(style.xMin + bar * (style.xMax - style.xMin) / nBins, 2) + ", " +

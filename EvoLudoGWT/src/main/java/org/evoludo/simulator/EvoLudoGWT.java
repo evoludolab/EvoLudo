@@ -136,13 +136,13 @@ public class EvoLudoGWT extends EvoLudo {
 			return;
 		if (snapshotAt > 0.0) {
 			delay = 1;
-			if (activeModel.getMode() == Mode.STATISTICS_SAMPLE || snapshotAt > activeModel.getReportInterval()) {
+			if (activeModel.getMode() == Mode.STATISTICS_SAMPLE || snapshotAt > activeModel.getTimeStep()) {
 				run();
 				return;
 			}
 			// clear isSuspended otherwise the engine starts running
 			isSuspended = false;
-			activeModel.setReportInterval(snapshotAt);
+			activeModel.setTimeStep(snapshotAt);
 			next();
 			// pretend to be running, otherwise the snapshot request
 			// will be honoured before the engine had a chance to process
@@ -167,8 +167,8 @@ public class EvoLudoGWT extends EvoLudo {
 	Timer timer = new Timer() {
 		@Override
 		public void run() {
-			double reportInterval = activeModel.getReportInterval();
-			if (Math.abs(activeModel.getTime() + reportInterval - snapshotAt) < reportInterval)
+			double timeStep = activeModel.getTimeStep();
+			if (Math.abs(activeModel.getTime() + timeStep - snapshotAt) < timeStep)
 				requestAction(PendingAction.SNAPSHOT);
 			if (isRunning && !modelNext() && snapshotAt > activeModel.getTime())
 				// population absorbed before time for snapshot - do it now

@@ -358,7 +358,7 @@ public abstract class IBS extends Model {
 		}
 		double nextHalt = engine.getNextHalt();
 		// continue if milestone reached in previous step, i.e. deltat < 1e-8
-		double step = reportInterval;
+		double step = timeStep;
 		double incr = Math.abs(nextHalt - time);
 		if (incr < 1e-8)
 			return false;
@@ -390,10 +390,10 @@ public abstract class IBS extends Model {
 		if (generations < 1.0)
 			return false;
 		isRelaxing = true;
-		double rf = reportInterval;
-		reportInterval = generations;
+		double rf = timeStep;
+		timeStep = generations;
 		boolean cont = next();
-		reportInterval = rf;
+		timeStep = rf;
 		isRelaxing = false;
 		return cont;
 	}

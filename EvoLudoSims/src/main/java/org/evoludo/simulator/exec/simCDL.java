@@ -107,7 +107,7 @@ public class simCDL extends CDL implements ChangeListener {
 		out = ((EvoLudoJRE) engine).getOutput();
 		double[][][] fixprob = null;
 		double[][] abstime = null;
-		model.setReportInterval(1.0);
+		model.setTimeStep(1.0);
 		engine.modelReset();
 		engine.dumpParameters();
 

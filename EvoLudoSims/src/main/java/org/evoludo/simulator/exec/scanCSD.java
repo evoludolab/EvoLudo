@@ -227,7 +227,7 @@ public class scanCSD extends CSD {
 
 		long prev = progress ? System.currentTimeMillis() : 0L;
 		final int SAMPLES = 11;
-		double reportFreq = model.getReportInterval();
+		double reportFreq = model.getTimeStep();
 		double nGenerations = engine.getNGenerations();// -(SAMPLES-1)*reportFreq;
 		double sdev = mutation.range;
 		// note: sdev is already normalized; for small mutation rates the threshold of

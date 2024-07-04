@@ -122,7 +122,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 	public void reset(boolean clear) {
 		// at one point (likely in the distant past) this view lost its ability to
 		// display multiple graphs...
-		double rInter = engine.getModel().getReportInterval();
+		double rInter = engine.getModel().getTimeStep();
 		if (graphs.size() != 1) {
 			graphs.clear();
 			removeAll();
@@ -369,7 +369,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 			case PDE:
 				if (node >= nNodes) {
 					// this can only happen for Geometry.LINEAR
-					double t = (node / nNodes) * engine.getModel().getReportInterval();
+					double t = (node / nNodes) * engine.getModel().getTimeStep();
 					if (network.timestamp < t)
 						return null;
 					return "<html><i>Node:</i> " + (node % nNodes) + "<br><i>Time:</i> " + Formatter.format(-t, 2);
@@ -393,7 +393,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 			case IBS:
 				if (node >= nNodes) {
 					// this can only happen for Geometry.LINEAR
-					double t = (node / nNodes) * engine.getModel().getReportInterval();
+					double t = (node / nNodes) * engine.getModel().getTimeStep();
 					if (network.timestamp < t)
 						return null;
 					return "<html><i>Node:</i> " + (node % nNodes) + "<br><i>Time:</i> " + Formatter.format(-t, 2);
