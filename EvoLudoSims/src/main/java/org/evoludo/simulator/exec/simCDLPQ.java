@@ -107,8 +107,8 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 
 		// evolve population
 		startStatistics();
-		double nGenerations = engine.getNGenerations();
-		for (long g = 0; g < nGenerations; g++) {
+		double timeStop = model.getTimeStop();
+		for (long g = 0; g < timeStop; g++) {
 			if (g % snapinterval == 0) {
 				// save snapshot
 				saveSnapshot(AbstractGraph.SNAPSHOT_PNG);
@@ -158,19 +158,19 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 
 	@Override
 	public synchronized void modelChanged(PendingAction action) {
-		updateStatistics(engine.getModel().getTime());
+		updateStatistics(model.getTime());
 	}
 
 	@Override
 	public synchronized void modelStopped() {
-		updateStatistics(engine.getNGenerations());
+		updateStatistics(model.getTimeStop());
 	}
 
 	/**
 	 * Start collecting statistics.
 	 */
 	protected void startStatistics() {
-		prevsample = engine.getModel().getTime();
+		prevsample = model.getTime();
 	}
 
 	/**
@@ -225,7 +225,7 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 		// prepare command line options
 		parser.addCLO(cloSnapInterval);
 
-		engine.cloGenerations.setDefault("1000000");
+		model.cloTimeStop.setDefault("1000000");
 		super.collectCLO(parser);
 	}
 

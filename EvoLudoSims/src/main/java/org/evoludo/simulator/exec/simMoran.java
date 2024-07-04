@@ -265,6 +265,6 @@ public class simMoran extends Moran {
 		parser.addCLO(cloProgress);
 
 		super.collectCLO(parser);
-		parser.removeCLO("generations");
+		parser.removeCLO("timeend");
 	}
 }

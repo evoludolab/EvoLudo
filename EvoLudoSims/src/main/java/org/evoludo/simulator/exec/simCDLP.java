@@ -135,7 +135,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 		engine.modelReset();
 		resetStatistics();
 		engine.dumpParameters();
-		double nGenerations = engine.getNGenerations();
+		double timeStop = model.getTimeStop();
 
 		// do statistics starting from random initial configurations and determine the
 		// probablility to end in each of the four corners
@@ -163,7 +163,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 			// retrieve the shared RNG to ensure reproducibility of results
 			RNGDistribution rng = engine.getRNG();
 
-			nextrial: for (long g = 0; g <= nGenerations; g++) {
+			nextrial: for (long g = 0; g <= timeStop; g++) {
 				int len = types.length;
 				int remaining = nPopulation - len;
 				System.arraycopy(types, 0, typ, 0, len);
@@ -200,14 +200,14 @@ public class simCDLP extends CDLP implements ChangeListener {
 			}
 			if (doBasin) {
 				out.println("# absorbtion probabilities for coop-pun-edge (C P C+P)\n"
-						+ Formatter.format(basin[COOPERATE] / nGenerations, 6) + "\t"
-						+ Formatter.format(basin[PUNISH] / nGenerations, 6) + "\t"
-						+ Formatter.format((basin[COOPERATE] + basin[PUNISH]) / nGenerations, 6));
+						+ Formatter.format(basin[COOPERATE] / timeStop, 6) + "\t"
+						+ Formatter.format(basin[PUNISH] / timeStop, 6) + "\t"
+						+ Formatter.format((basin[COOPERATE] + basin[PUNISH]) / timeStop, 6));
 			} else {
 				String msg = "# absorbtion probabilities for each corner from random initial configuration\n"
-						+ Formatter.format(corner[0] / nGenerations, 6);
+						+ Formatter.format(corner[0] / timeStop, 6);
 				for (int n = 1; n < nTraits; n++)
-					msg += "\t" + Formatter.format(corner[n] / nGenerations, 6);
+					msg += "\t" + Formatter.format(corner[n] / timeStop, 6);
 				out.println(msg);
 			}
 			return;
@@ -236,7 +236,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 
 		// evolve population
 		startStatistics();
-		for (long g = 0; g < nGenerations; g++) {
+		for (long g = 0; g < timeStop; g++) {
 			int c = pop.strategiesTypeCount[COOPERATE];
 			int d = pop.strategiesTypeCount[DEFECT];
 			int l = pop.strategiesTypeCount[LONER];
@@ -338,7 +338,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 
 	@Override
 	public synchronized void modelStopped() {
-		updateStatistics(engine.getNGenerations());
+		updateStatistics(model.getTimeStop());
 	}
 
 	/**
@@ -509,7 +509,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 		parser.addCLO(cloTime2Punish);
 		parser.addCLO(cloHistogram);
 
-		engine.cloGenerations.setDefault("1000000");
+		model.cloTimeStop.setDefault("1000000");
 		super.collectCLO(parser);
 	}
 }

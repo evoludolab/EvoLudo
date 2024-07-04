@@ -193,7 +193,7 @@ public class EvoLudoGWT extends EvoLudo {
 					requestAction(PendingAction.SNAPSHOT);
 					// stop repeating command
 				}
-				if ((samples + 1) == nSamples) {
+				if ((samples + 1) == activeModel.getNSamples()) {
 					isRunning = false;
 					requestAction(PendingAction.STOP);
 				}

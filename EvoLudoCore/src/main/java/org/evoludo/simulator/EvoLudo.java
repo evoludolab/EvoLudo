@@ -75,7 +75,6 @@ import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Moran;
 import org.evoludo.simulator.modules.RSP;
 import org.evoludo.simulator.modules.TBT;
-import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
@@ -529,7 +528,7 @@ public abstract class EvoLudo
 	public final boolean modelCheck() {
 		// special case: if --generation 0 model should not run regardless of
 		// whether --run option was provided.
-		if (Math.abs(nGenerations) < 1e-8)
+		if (Math.abs(activeModel.getTimeStop()) < 1e-8)
 			setSuspended(false);
 		// check module first; model may contact module
 		boolean doReset = false;
@@ -646,18 +645,15 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Relax model by {@code nRelaxation} steps and notify all listeners when done.
+	 * Relax model by {@code timeRelax} steps and notify all listeners when done.
 	 *
 	 * @return <code>true</code> if not converged, i.e. if <code>modelNext()</code>
 	 *         can be called.
 	 * 
-	 * @see #cloRelaxation
-	 * @see Model#relax(double)
+	 * @see Model#relax()
 	 */
 	public final boolean modelRelax() {
-		if (nRelaxation < 1.0)
-			return true;
-		boolean cont = activeModel.relax(nRelaxation);
+		boolean cont = activeModel.relax();
 		fireModelRelaxed();
 		return cont;
 	}
@@ -1292,135 +1288,6 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * The relaxation time for simulations measured in generations.
-	 * <p>
-	 * <strong>Note:</strong> {@code nRelaxation} is set with the command line
-	 * option <code>--relaxation</code>
-	 * 
-	 * @see #cloRelaxation
-	 */
-	protected double nRelaxation;
-
-	/**
-	 * Sets the number of generations to relax the initial configuration of the
-	 * active {@link Model}. In interactive mode (with GUI) the active {@link Model}
-	 * starts running upon launch and stop after {@code nRelaxation}.
-	 * 
-	 * @param nRelax the number of generations
-	 * 
-	 * @see #nRelaxation
-	 */
-	public void setNRelaxation(double nRelax) {
-		nRelaxation = nRelax;
-	}
-
-	/**
-	 * Gets the number of generations to relax the initial configuration of the
-	 * active {@link Model}.
-	 * 
-	 * @return the number of generations
-	 * 
-	 * @see #nRelaxation
-	 */
-	public double getNRelaxation() {
-		return nRelaxation;
-	}
-
-	/**
-	 * The number of statistical samples to collect before returning the results.
-	 * <p>
-	 * <strong>Note:</strong> {@code nSamples} is set with the command line
-	 * option <code>--samples</code>
-	 * 
-	 * @see #cloSamples
-	 */
-	protected double nSamples;
-
-	/**
-	 * Sets the number of statistical samples taken after which the active
-	 * {@link Model} is halted.
-	 * 
-	 * @param nSamples the number of generations
-	 * 
-	 * @see #nSamples
-	 */
-	public void setNSamples(double nSamples) {
-		this.nSamples = nSamples;
-	}
-
-	/**
-	 * Gets the number of statistical samples after which the active {@link Model}
-	 * is halted.
-	 * 
-	 * @return the number of statistical samples
-	 * 
-	 * @see #nSamples
-	 */
-	public double getNSamples() {
-		return nSamples;
-	}
-
-	/**
-	 * Running simulations are halted when <code>generation &ge; nGenerations</code>
-	 * holds for the first time. This is useful to indicate the end of simulations
-	 * or to generate (graphical) snapshots in the GUI after a specified amount of
-	 * time has elapsed.
-	 * <p>
-	 * <strong>Note:</strong> {@code nGenerations} is set with the command line
-	 * option <code>--generations</code> (or <code>-g</code>),
-	 * 
-	 * @see #cloGenerations
-	 */
-	protected double nGenerations;
-
-	/**
-	 * Sets the number of generations after which the active {@link Model} is
-	 * halted.
-	 * 
-	 * @param nGenerations the number of generations
-	 * 
-	 * @see #nGenerations
-	 */
-	public void setNGenerations(double nGenerations) {
-		this.nGenerations = nGenerations;
-	}
-
-	/**
-	 * Gets the number of generations after which the active {@link Model} is
-	 * halted.
-	 * 
-	 * @return the number of generations
-	 * 
-	 * @see #nGenerations
-	 */
-	public double getNGenerations() {
-		return nGenerations;
-	}
-
-	/**
-	 * Gets the next generation for which stopping the model execution has been
-	 * requested.
-	 * 
-	 * @return the next requested stop
-	 */
-	public double getNextHalt() {
-		// watch out for models that allow time reversal!
-		// nGenerations and nRelaxation can be positive or negative
-		double time = activeModel.getTime();
-		if (activeModel.isTimeReversed()) {
-			// time is 'decreasing' find next smaller milestone
-			double halt = nGenerations < time ? nGenerations : Double.NEGATIVE_INFINITY;
-			double relax = (Math.abs(nRelaxation) > 1e-8 && nRelaxation < time) ? nRelaxation
-					: Double.NEGATIVE_INFINITY;
-			return Math.max(halt, relax);
-		}
-		// time is 'increasing'
-		double halt = nGenerations > time ? nGenerations : Double.POSITIVE_INFINITY;
-		double relax = (Math.abs(nRelaxation) > 1e-8 && nRelaxation > time) ? nRelaxation : Double.POSITIVE_INFINITY;
-		return Math.min(halt, relax);
-	}
-
-	/**
 	 * <strong>Note:</strong> Instead of sharing logging system, EvoLudo could
 	 * implement helper routines for logging notifications. However, when logging
 	 * notifications with a severity of {@link Level#WARNING} or higher the default
@@ -1936,73 +1803,6 @@ public abstract class EvoLudo
 			});
 
 	/**
-	 * Command line option to set the number of generations to relax the model from
-	 * the initial configuration. After relaxation the model is assumed to be close
-	 * to its (thermal) equilibrium. In particular, the system should be ready for
-	 * measurements such as the strategy abundances, their fluctuations or the local
-	 * strategy configurations in structured populations.
-	 */
-	public final CLOption cloRelaxation = new CLOption("relaxation", "0", catGlobal,
-			"--relaxation <n>  relaxation time in MC steps", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					setNRelaxation(CLOParser.parseDouble(arg));
-					if (getNRelaxation() > 0)
-						setSuspended(true);
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					if (nRelaxation > 0)
-						output.println("# relaxation:           " + Formatter.format(nRelaxation, 4));
-				}
-			});
-
-	/**
-	 * Command line option to set the number of generations after which to stop the
-	 * model calculations. Model execution can be resumed afterwards.
-	 */
-	public final CLOption cloGenerations = new CLOption("generations", "never", catGlobal,
-			"--generations <g>  halt execution after <g> MC steps", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					if (cloGenerations.isSet()) {
-						setNGenerations(CLOParser.parseDouble(arg));
-						return true;
-					}
-					String gens = cloGenerations.getDefault();
-					setNGenerations(gens.equals("never") ? Double.POSITIVE_INFINITY : CLOParser.parseDouble(gens));
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					if (nGenerations > 0)
-						output.println("# generations:          " + Formatter.format(nGenerations, 4));
-				}
-			});
-
-	/**
-	 * Command line option to set the number of samples to take for statistical
-	 * measurements.
-	 */
-	public final CLOption cloSamples = new CLOption("samples", "unlimited", EvoLudo.catSimulation,
-			"--samples <s>   number of samples for statistics", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					setNSamples(cloSamples.isSet() ? CLOParser.parseDouble(arg) : -1.0);
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream ps) {
-					// for customized simulations
-					ps.println("# samples:              " + Formatter.format(nSamples, 4));
-				}
-			});
-
-	/**
 	 * Command line option to set the color for trajectories. For example, this
 	 * affects the display in {@link org.evoludo.simulator.views.S3} or
 	 * {@link org.evoludo.simulator.views.Phase2D}.
@@ -2140,11 +1940,6 @@ public abstract class EvoLudo
 		parser.addCLO(cloSeed);
 		parser.addCLO(cloRun);
 		parser.addCLO(cloDelay);
-		parser.addCLO(cloGenerations);
-		if (activeModule instanceof HasHistogram.StatisticsProbability
-				|| activeModule instanceof HasHistogram.StatisticsTime)
-			parser.addCLO(cloSamples);
-		parser.addCLO(cloRelaxation);
 		parser.addCLO(cloRNG);
 		// option for trait color schemes only makes sense for modules with multiple
 		// continuous traits that have 2D/3D visualizations

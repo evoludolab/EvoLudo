@@ -115,7 +115,7 @@ public class simTraits extends Traits {
 		// for IBS simulations
 		ibs = (IBSD) engine.getModel();
 		pop = (IBSDPopulation) getIBSPopulation();
-		engine.cloRelaxation.setDefault("10000");
+		model.cloTimeRelax.setDefault("10000");
 
 		// initialize timing
 		try {
@@ -234,7 +234,7 @@ public class simTraits extends Traits {
 		super.collectCLO(parser);
 
 		parser.removeCLO(
-				new String[] { "popsize", "popupdate", "playerupdate", "geometry", "mutations", "generations" });
+				new String[] { "popsize", "popupdate", "playerupdate", "geometry", "mutations", "timeend" });
 		parser.addCLO(cloNPopulations);
 		parser.addCLO(cloProgress);
 		parser.addCLO(cloMinTime);

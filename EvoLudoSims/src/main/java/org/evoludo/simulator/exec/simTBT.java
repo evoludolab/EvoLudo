@@ -158,10 +158,10 @@ public class simTBT extends TBT implements ChangeListener {
 					// to new payoffs.
 					ibs.init(true);
 					// should be fine to reduce relaxation time
-					double relax = engine.getNRelaxation();
-					engine.setNRelaxation(relax * 0.5);
+					double relax = model.getTimeRelax();
+					model.setTimeRelax(relax * 0.5);
 					converged = !engine.modelRelax();
-					engine.setNRelaxation(relax);
+					model.setTimeRelax(relax);
 				}
 				prevsample = ibs.getTime();
 				if (converged) {
@@ -250,25 +250,25 @@ public class simTBT extends TBT implements ChangeListener {
 			converged = !engine.modelRelax();
 			// evolve population
 			prevsample = ibs.getTime();
-			double nGenerations = engine.getNGenerations();
+			double timeStop = model.getTimeStop();
 			if (converged) {
 				// simulations converged already - mean is current state and sdev is zero
 				model.getMeanTraits(getID(), mean);
 			} else {
-				for (long g = 1; g <= nGenerations; g++) {
+				for (long g = 1; g <= timeStop; g++) {
 					if (snapinterval > 0 && g % snapinterval == 0) {
 						// save snapshot
 						saveSnapshot(AbstractGraph.SNAPSHOT_PNG);
 					}
 					engine.modelNext();
 					if (progress && g % 1000 == 0) {
-						engine.logProgress(g + "/" + nGenerations + " done");
+						engine.logProgress(g + "/" + timeStop + " done");
 					}
 				}
 			}
 			for (int n = 0; n < nTraits; n++) {
 				meanmean[n] += mean[n];
-				meanvar[n] += Math.sqrt(var[n] / (nGenerations - 1));
+				meanvar[n] += Math.sqrt(var[n] / (timeStop - 1));
 			}
 			if (snapinterval < 0)
 				saveSnapshot(AbstractGraph.SNAPSHOT_PNG);
@@ -313,7 +313,7 @@ public class simTBT extends TBT implements ChangeListener {
 		model.getMeanTraits(getID(), state);
 		// calculate weighted mean and sdev - see wikipedia
 		double w = generation - prevsample;
-		double wn = w / (generation - engine.getNRelaxation());
+		double wn = w / (generation - model.getTimeRelax());
 		for (int n = 0; n < nTraits; n++) {
 			double delta = state[n] - mean[n];
 			mean[n] += wn * delta;
@@ -330,24 +330,17 @@ public class simTBT extends TBT implements ChangeListener {
 		}
 		// absorbing state reached
 		model.getMeanTraits(getID(), state);
-		// output.println("stop - before: generations="+generations+",
-		// prevsample="+prevsample+", state="+ChHFormatter.format(state,4)+
-		// ", mean="+ChHFormatter.format(mean,4)+", var="+ChHFormatter.format(var,4));
-		// output.println("test: mean[0].old="+mean[0]+" ->
-		// "+((mean[0]*(prevsample-relaxation)+state[0]*(generations-(prevsample-relaxation)))/generations));
 		// calculate weighted mean and sdev - see wikipedia
-		double nGenerations = engine.getNGenerations();
-		double nRelaxation = engine.getNRelaxation();
-		double w = nGenerations - (prevsample - nRelaxation);
-		double wn = w / nGenerations;
+		double timeStop = model.getTimeStop();
+		double timeRelax = model.getTimeRelax();
+		double w = timeStop - (prevsample - timeRelax);
+		double wn = w / timeStop;
 		for (int n = 0; n < nTraits; n++) {
 			double delta = state[n] - mean[n];
 			mean[n] += wn * delta;
 			var[n] += w * delta * (state[n] - mean[n]);
 		}
-		// output.println("stop - after: mean="+ChHFormatter.format(mean,4)+",
-		// var="+ChHFormatter.format(var,4));
-		prevsample = nGenerations + nRelaxation;
+		prevsample = timeStop + timeRelax;
 	}
 
 	/**
@@ -452,7 +445,7 @@ public class simTBT extends TBT implements ChangeListener {
 		parser.addCLO(cloScanST);
 		parser.addCLO(cloScanDG);
 
-		engine.cloGenerations.setDefault("10");
+		model.cloTimeStop.setDefault("10");
 		super.collectCLO(parser);
 	}
 

@@ -356,7 +356,7 @@ public abstract class IBS extends Model {
 			population.mutateAt(random0n(nPop));
 			return true;
 		}
-		double nextHalt = engine.getNextHalt();
+		double nextHalt = getNextHalt();
 		// continue if milestone reached in previous step, i.e. deltat < 1e-8
 		double step = timeStep;
 		double incr = Math.abs(nextHalt - time);
@@ -377,30 +377,6 @@ public abstract class IBS extends Model {
 		// update rates.
 		double minIncr = 1.0 / species.get(0).getNPopulation();
 		return (Math.abs(nextHalt - time) >= minIncr);
-	}
-
-	/**
-	 * The flag to indicate whether the model is currently relaxing the initial
-	 * configuration.
-	 */
-	boolean isRelaxing = false;
-
-	@Override
-	public boolean relax(double generations) {
-		if (generations < 1.0)
-			return false;
-		isRelaxing = true;
-		double rf = timeStep;
-		timeStep = generations;
-		boolean cont = next();
-		timeStep = rf;
-		isRelaxing = false;
-		return cont;
-	}
-
-	@Override
-	public boolean relaxing() {
-		return isRelaxing;
 	}
 
 	/**

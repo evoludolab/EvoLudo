@@ -753,7 +753,7 @@ public class ODEEuler extends Model implements Discrete {
 		if (converged)
 			return false;
 		connect = true;
-		double nextHalt = engine.getNextHalt();
+		double nextHalt = getNextHalt();
 		// continue if milestone reached in previous step, i.e. deltat < 1e-8
 		double step = timeStep;
 		double deltat = Math.abs(nextHalt - time);

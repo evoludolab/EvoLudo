@@ -26,10 +26,10 @@
 --module Moran --model SDE --timestep 1 --popsize 200 --playerupdate best --inittype frequency 99,1 --fitness 1,1.1
 --module Moran --model SDE --timestep 1 --popsize 200 --playerupdate best-response --inittype frequency 99,1 --fitness 1,1.1
 # mutation
---module Moran --model SDE --timestep 1 --popsize 200 --playerupdate thermal 0.1 --inittype frequency 99,1 --mutations 0.02 other --fitness 1,1.1 --generations 1000
+--module Moran --model SDE --timestep 1 --popsize 200 --playerupdate thermal 0.1 --inittype frequency 99,1 --mutations 0.02 other --fitness 1,1.1 --timestop 1000
 # fitness map and selection
---module Moran --model SDE --timestep 1 --popsize 200 --playerupdate thermal 0.1 --inittype frequency 99,1 --mutations 0.02 other --fitness 1,1.1 --fitnessmap exp 1.0,0.1 --generations 1000
---module Moran --model SDE --timestep 1 --popsize 200 --playerupdate thermal 0.1 --inittype frequency 99,1 --mutations 0.02 other --fitness 1,1.1 --fitnessmap exp 1.0,10.0 --generations 1000
+--module Moran --model SDE --timestep 1 --popsize 200 --playerupdate thermal 0.1 --inittype frequency 99,1 --mutations 0.02 other --fitness 1,1.1 --fitnessmap exp 1.0,0.1 --timestop 1000
+--module Moran --model SDE --timestep 1 --popsize 200 --playerupdate thermal 0.1 --inittype frequency 99,1 --mutations 0.02 other --fitness 1,1.1 --fitnessmap exp 1.0,10.0 --timestop 1000
 
 # PDE
 # base scenario
@@ -68,11 +68,11 @@
 --module Moran --model IBS --timestep 1 --geometry S5,5 --popsize 196 --popupdate B --inittype mutant 1,0 --fitness 1,1.2
 --module Moran --model IBS --timestep 1 --geometry f4 --popsize 500 --popupdate B --inittype mutant 1,0 --fitness 1,1.25
 # mutation
---module Moran --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --playerupdate thermal 0.1 --inittype mutant 1,0 --mutations 0.05 other --fitness 1,1.1 --generations 1000
+--module Moran --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --playerupdate thermal 0.1 --inittype mutant 1,0 --mutations 0.05 other --fitness 1,1.1 --timestop 1000
 # fitness map and selection
---module Moran --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --inittype mutant 1,0 --mutations 0.05 other --fitness 1,1.1 --fitnessmap exp 1.0,0.1 --generations 1000
---module Moran --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --inittype mutant 1,0 --mutations 0.05 other --fitness 1,1.1 --fitnessmap exp 1.0,10.0 --generations 1000
---module Moran --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate B --inittype mutant 1,0 --mutations 0.05 other --fitness 1,1.1 --fitnessmap exp 1.0,0.1 --generations 1000
---module Moran --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate B --inittype mutant 1,0 --mutations 0.05 other --fitness 1,1.1 --fitnessmap exp 1.0,10.0 --generations 1000
---module Moran --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate d --inittype mutant 1,0 --mutations 0.05 other --fitness 1,1.1 --fitnessmap exp 1.0,0.1  --generations 1000
---module Moran --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate d --inittype mutant 1,0 --mutations 0.05 other --fitness 1,1.1 --fitnessmap exp 1.0,10.0  --generations 1000
+--module Moran --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --inittype mutant 1,0 --mutations 0.05 other --fitness 1,1.1 --fitnessmap exp 1.0,0.1 --timestop 1000
+--module Moran --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --inittype mutant 1,0 --mutations 0.05 other --fitness 1,1.1 --fitnessmap exp 1.0,10.0 --timestop 1000
+--module Moran --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate B --inittype mutant 1,0 --mutations 0.05 other --fitness 1,1.1 --fitnessmap exp 1.0,0.1 --timestop 1000
+--module Moran --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate B --inittype mutant 1,0 --mutations 0.05 other --fitness 1,1.1 --fitnessmap exp 1.0,10.0 --timestop 1000
+--module Moran --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate d --inittype mutant 1,0 --mutations 0.05 other --fitness 1,1.1 --fitnessmap exp 1.0,0.1  --timestop 1000
+--module Moran --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate d --inittype mutant 1,0 --mutations 0.05 other --fitness 1,1.1 --fitnessmap exp 1.0,10.0  --timestop 1000

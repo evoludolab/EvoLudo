@@ -228,7 +228,7 @@ public class scanCSD extends CSD {
 		long prev = progress ? System.currentTimeMillis() : 0L;
 		final int SAMPLES = 11;
 		double reportFreq = model.getTimeStep();
-		double nGenerations = engine.getNGenerations();// -(SAMPLES-1)*reportFreq;
+		double timeStop = model.getTimeStop();// -(SAMPLES-1)*reportFreq;
 		double sdev = mutation.range;
 		// note: sdev is already normalized; for small mutation rates the threshold of
 		// 2*sdev is too conservative
@@ -262,7 +262,7 @@ public class scanCSD extends CSD {
 
 						// evolve population
 						engine.modelRelax();
-						while (model.getTime() < nGenerations) {
+						while (model.getTime() < timeStop) {
 							engine.modelNext();
 							int g = (int) model.getTime();
 							if (snapinterval > 0 && g % snapinterval == 0) {
@@ -273,12 +273,12 @@ public class scanCSD extends CSD {
 								long now = System.currentTimeMillis();
 								if (now - prev > 1000 || g % 1000 == 0) {
 									prev = now;
-									engine.logProgress(g + "/" + (nGenerations + (SAMPLES - 1) * reportFreq) + " done");
+									engine.logProgress(g + "/" + (timeStop + (SAMPLES - 1) * reportFreq) + " done");
 								}
 							}
 							// to speed things up, check every 1000 generations whether trait minimum or
-							// maximum has been reached
-							// more precisely, whether mean trait <lowMonoThreshold or >highMonoThreshold
+							// maximum has been reached more precisely, whether mean trait <lowMonoThreshold
+							// or >highMonoThreshold
 							if (g % 1000 == 0) {
 								double mean = Distributions.mean(cpop.strategies);
 								double tmin = getTraitMin()[0];
@@ -822,7 +822,7 @@ public class scanCSD extends CSD {
 		parser.addCLO(cloSnapInterval);
 		parser.addCLO(cloProgress);
 
-		engine.cloGenerations.setDefault("10000");
+		model.cloTimeStop.setDefault("10000");
 
 		super.collectCLO(parser);
 	}

@@ -156,8 +156,8 @@ public class simCDL extends CDL implements ChangeListener {
 		// double incr = Math.max(1.0, nPopulation*0.02);
 		// double incr = Math.max(1.0, nPopulation*0.05);
 
-		double nGenerations = engine.getNGenerations();
-		double nRelaxation = engine.getNRelaxation();
+		double timeStop = model.getTimeStop();
+		double timeRelax = model.getTimeRelax();
 		if (nSteps > 0) {
 			// even if seed was set, we need to clear the flag here otherwise subsequent
 			// calls to modelReset() will keep generating the same initial configuration!
@@ -193,9 +193,8 @@ public class simCDL extends CDL implements ChangeListener {
 						engine.modelReset();
 						while (engine.modelNext())
 							;
-						// if nGenerations was reached, ODE, SDE or simulations may not yet have been
-						// absorbed
-						// in particular if interior fixed point is attractor
+						// if timeStop was reached, ODE, SDE or simulations may not yet have been
+						// absorbed in particular if interior fixed point is attractor
 						model.getMeanTraits(getID(), state);
 						int winIdx = ArrayMath.maxIndex(state);
 						if (state[winIdx] > 0.999)
@@ -206,7 +205,7 @@ public class simCDL extends CDL implements ChangeListener {
 							ArrayMath.add(fixprob[c][d], state);
 						// running average of absorption/convergence time
 						double time = engine.getModel().getTime();
-						if (nGenerations > 0 && Math.abs(time - nGenerations) < 1e-8)
+						if (timeStop > 0 && Math.abs(time - timeStop) < 1e-8)
 							// emergency brake triggered
 							abstime[c][d] = Double.POSITIVE_INFINITY;
 						else
@@ -252,7 +251,7 @@ public class simCDL extends CDL implements ChangeListener {
 			state = new double[nTraits];
 			progress |= (logger.getLevel().intValue() <= Level.FINE.intValue());
 			int tot = (int) ((scanNL[1] - scanNL[0]) / scanNL[2]) + 1, done = 0;
-			nGenerations += nRelaxation;
+			timeStop += timeRelax;
 			out.println("# average frequencies\n# a\tr\tL\tD\tC\tT");
 			double a = scanNL[0];
 			while (Math.abs(a) < Math.abs(scanNL[1] + scanNL[2])) {
@@ -273,10 +272,10 @@ public class simCDL extends CDL implements ChangeListener {
 					Arrays.fill(var, 0.0);
 				}
 				String msg = Formatter.format(a, 4) + "\t" + Formatter.format(r, 4);
-				double time = Math.max(engine.getModel().getTime(), nGenerations);
+				double time = Math.max(engine.getModel().getTime(), timeStop);
 				for (int n = 0; n < nTraits; n++)
 					msg += "\t" + Formatter.format(mean[n], 6) + "\t"
-							+ Formatter.format(Math.sqrt(var[n] / (time - nRelaxation - 1.0)), 6);
+							+ Formatter.format(Math.sqrt(var[n] / (time - timeRelax - 1.0)), 6);
 				out.println(msg);
 				out.flush();
 				done++;
@@ -303,7 +302,7 @@ public class simCDL extends CDL implements ChangeListener {
 
 	@Override
 	public synchronized void modelStopped() {
-		updateStatistics(engine.getNGenerations() + engine.getNRelaxation());
+		updateStatistics(model.getTimeStop() + model.getTimeRelax());
 	}
 
 	/**
@@ -339,7 +338,7 @@ public class simCDL extends CDL implements ChangeListener {
 		model.getMeanTraits(getID(), state);
 		// calculate weighted mean and sdev - see wikipedia
 		double w = time - prevsample;
-		double wn = w / (time - engine.getNRelaxation());
+		double wn = w / (time - model.getTimeRelax());
 		for (int n = 0; n < nTraits; n++) {
 			double delta = state[n] - mean[n];
 			mean[n] += wn * delta;
@@ -452,7 +451,7 @@ public class simCDL extends CDL implements ChangeListener {
 		parser.addCLO(cloScanNL);
 		parser.addCLO(cloProgress);
 
-		engine.cloGenerations.setDefault("1000000");
+		model.cloTimeStop.setDefault("1000000");
 		super.collectCLO(parser);
 	}
 

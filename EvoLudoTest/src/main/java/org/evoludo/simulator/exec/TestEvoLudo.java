@@ -307,7 +307,7 @@ public class TestEvoLudo implements MilestoneListener {
 	 * ensures that the results are reproducible with potentially custom seeds and
 	 * also run at full speed. Returns {@code false} if the module didn't run and
 	 * hence no export was generated, even if requested with the {@code --export}
-	 * option. This happens for example with {@code --generations 0}.
+	 * option. This happens for example with {@code --timestop 0}.
 	 * 
 	 * @param task the task that is running (generating or testing)
 	 * @param clo  the command line options for running the module

@@ -80,7 +80,7 @@ public class PDESupervisorGWT extends PDESupervisor {
 		if (inProgress)
 			return true;
 		inProgress = true;
-		final double timeEnd = charge.getTime() + stepDt;
+		final double timeStop = charge.getTime() + stepDt;
 		final double dt = charge.getDt();
 		double acc = charge.getAccuracy();
 		final double acc2 = acc * acc;
@@ -92,7 +92,7 @@ public class PDESupervisorGWT extends PDESupervisor {
 				// check if emergency brake was pulled (e.g. when unloading running model)
 				if (!inProgress)
 					return false;
-				double timeRemain = timeEnd - charge.getTime();
+				double timeRemain = timeStop - charge.getTime();
 				boolean cont = true;
 				double change = Double.MAX_VALUE;
 				if (timeRemain > charge.getDt()) {

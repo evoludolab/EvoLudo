@@ -75,7 +75,6 @@ import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.PDESupervisorJRE;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Traits;
-import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.MultiView;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -447,7 +446,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		double[][] fixTime = new double[0][0];
 		int nTraits = -1;
 		int nPopulation = -1;
-		long nSamplesLong = (long) nSamples;
+		long nSamplesLong = (long) model.getNSamples();
 		long samples = 0L;
 		int muttrait = -1;
 		int restrait = -1;
@@ -610,7 +609,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 							output.println("# dynamics output for " + data.getKey() + " not supported!");
 					}
 				}
-				if (!cont || (nGenerations > 0.0 && model.getTime() > nGenerations))
+				double timeStop = model.getTimeStop();
+				if (!cont || (timeStop > 0.0 && model.getTime() > timeStop))
 					break;
 				cont = modelNext();
 			}
@@ -1410,11 +1410,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			prsr.addCLO(cloExport);
 			// XXX should not be added for customized simulations or should it?
 			prsr.addCLO(cloData);
-			// cannot use permitsSampleStatistics because it also checks parameters
-			// that have not yet been set
-			if (activeModule instanceof HasHistogram.StatisticsProbability
-					|| activeModule instanceof HasHistogram.StatisticsTime)
-				prsr.addCLO(cloSamples);
 			cloData.clearKeys();
 			cloData.addKeys(MultiView.getAvailableDataTypes(activeModule, activeModel));
 			prsr.addCLO(cloDigits);

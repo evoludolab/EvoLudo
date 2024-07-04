@@ -44,6 +44,7 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
@@ -231,17 +232,32 @@ public abstract class Model implements CLOProvider {
 	public abstract boolean next();
 
 	/**
-	 * Relax the initial configuration of the model over {@code generations}. During
-	 * relaxation the method {@link #relaxing()} must return {@code true}.
+	 * The flag to indicate whether the model is currently relaxing the initial
+	 * configuration.
+	 */
+	boolean isRelaxing = false;
+
+	/**
+	 * Relax the initial configuration of the model over {@code timeRelax}
+	 * generations. During relaxation the method {@link #relaxing()} must return
+	 * {@code true}.
 	 * 
-	 * @param generations the number of generations to relax the model
 	 * @return {@code false} if converged during relaxation
 	 * 
 	 * @see #relaxing()
 	 * @see #next()
+	 * @see #cloTimeRelax
 	 */
-	public boolean relax(double generations) {
-		return false;
+	public boolean relax() {
+		if (timeRelax < 1.0)
+			return false;
+		isRelaxing = true;
+		double rf = timeStep;
+		timeStep = timeRelax;
+		boolean cont = next();
+		timeStep = rf;
+		isRelaxing = false;
+		return cont;
 	}
 
 	/**
@@ -249,10 +265,10 @@ public abstract class Model implements CLOProvider {
 	 * 
 	 * @return {@code true} if model is currently relaxing
 	 * 
-	 * @see #relax(double)
+	 * @see #relax()
 	 */
 	public boolean relaxing() {
-		return false;
+		return isRelaxing;
 	}
 
 	/**
@@ -990,6 +1006,28 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
+	 * Gets the next generation for which stopping the model execution has been
+	 * requested.
+	 * 
+	 * @return the next requested stop
+	 */
+	public double getNextHalt() {
+		// watch out for models that allow time reversal!
+		// timeStop and timeRelax can be positive or negative
+		if (isTimeReversed()) {
+			// time is 'decreasing' find next smaller milestone
+			double halt = timeStop < time ? timeStop : Double.NEGATIVE_INFINITY;
+			double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax < time) ? timeRelax
+					: Double.NEGATIVE_INFINITY;
+			return Math.max(halt, relax);
+		}
+		// time is 'increasing'
+		double halt = timeStop > time ? timeStop : Double.POSITIVE_INFINITY;
+		double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax > time) ? timeRelax : Double.POSITIVE_INFINITY;
+		return Math.min(halt, relax);
+	}
+
+	/**
 	 * Indicates the interval (measured in generations) after which models report
 	 * updates on their current state. for example, the GUI gets updated whenever
 	 * <code>timeStep</code> generations (or fractions thereof) have elapsed.
@@ -1037,9 +1075,189 @@ public abstract class Model implements CLOProvider {
 				}
 			});
 
+	/**
+	 * The relaxation time for simulations measured in generations.
+	 * <p>
+	 * <strong>Note:</strong> {@code timeRelax} is set with the command line
+	 * option <code>--timerelax</code>
+	 * 
+	 * @see #cloTimeRelax
+	 */
+	protected double timeRelax;
+
+	/**
+	 * Sets the number of generations to relax the initial configuration of the
+	 * active {@link Model}. In interactive mode (with GUI) the active {@link Model}
+	 * starts running upon launch and stop after {@code timeRelax}.
+	 * 
+	 * @param relax the number of generations
+	 * 
+	 * @see #timeRelax
+	 */
+	public void setTimeRelax(double relax) {
+		timeRelax = relax;
+	}
+
+	/**
+	 * Gets the number of generations to relax the initial configuration of the
+	 * active {@link Model}.
+	 * 
+	 * @return the number of generations
+	 * 
+	 * @see #timeRelax
+	 */
+	public double getTimeRelax() {
+		return timeRelax;
+	}
+
+	/**
+	 * Command line option to set the number of generations to relax the model from
+	 * the initial configuration. After relaxation the model is assumed to be close
+	 * to its (thermal) equilibrium. In particular, the system should be ready for
+	 * measurements such as the strategy abundances, their fluctuations or the local
+	 * strategy configurations in structured populations.
+	 */
+	public final CLOption cloTimeRelax = new CLOption("timerelax", "0", EvoLudo.catGlobal,
+			"--timerelax <n>  relaxation time in generations", new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
+					setTimeRelax(CLOParser.parseDouble(arg));
+					if (getTimeRelax() > 0)
+						engine.setSuspended(true);
+					return true;
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					if (timeRelax > 0)
+						output.println("# relaxation:           " + Formatter.format(timeRelax, 4));
+				}
+			});
+
+	/**
+	 * Running simulations are halted when <code>time &ge; timeStop</code> holds for
+	 * the first time. This is useful to indicate the end of simulations or to
+	 * generate (graphical) snapshots in the GUI after a specified amount of time
+	 * has elapsed.
+	 * <p>
+	 * <strong>Note:</strong> {@code timeStop} is set with the command line
+	 * option <code>--timestop</code> (or <code>-g</code>),
+	 * 
+	 * @see #cloTimeStop
+	 */
+	protected double timeStop;
+
+	/**
+	 * Sets the number of generations after which the active {@link Model} is
+	 * halted.
+	 * 
+	 * @param timeStop the number of generations
+	 * 
+	 * @see #timeStop
+	 */
+	public void setTimeStop(double timeStop) {
+		this.timeStop = timeStop;
+	}
+
+	/**
+	 * Gets the number of generations after which the active {@link Model} is
+	 * halted.
+	 * 
+	 * @return the number of generations
+	 * 
+	 * @see #timeStop
+	 */
+	public double getTimeStop() {
+		return timeStop;
+	}
+
+	/**
+	 * Command line option to set the number of generations after which to stop the
+	 * model calculations. Model execution can be resumed afterwards.
+	 */
+	public final CLOption cloTimeStop = new CLOption("timestop", "never", EvoLudo.catGlobal,
+			"--timestop <g>   halt execution after <g> generations", new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
+					if (cloTimeStop.isSet()) {
+						setTimeStop(CLOParser.parseDouble(arg));
+						return true;
+					}
+					String gens = cloTimeStop.getDefault();
+					setTimeStop(gens.equals("never") ? Double.POSITIVE_INFINITY : CLOParser.parseDouble(gens));
+					return true;
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					if (timeStop > 0)
+						output.println("# generations:          " + Formatter.format(timeStop, 4));
+				}
+			});
+
+	/**
+	 * The number of statistical samples to collect before returning the results.
+	 * <p>
+	 * <strong>Note:</strong> {@code nSamples} is set with the command line
+	 * option <code>--samples</code>
+	 * 
+	 * @see #cloSamples
+	 */
+	protected double nSamples;
+
+	/**
+	 * Sets the number of statistical samples taken after which the active
+	 * {@link Model} is halted.
+	 * 
+	 * @param nSamples the number of samples
+	 * 
+	 * @see #nSamples
+	 */
+	public void setNSamples(double nSamples) {
+		this.nSamples = nSamples;
+	}
+
+	/**
+	 * Gets the number of statistical samples after which the active {@link Model}
+	 * is halted.
+	 * 
+	 * @return the number of statistical samples
+	 * 
+	 * @see #nSamples
+	 */
+	public double getNSamples() {
+		return nSamples;
+	}
+
+	/**
+	 * Command line option to set the number of samples to take for statistical
+	 * measurements.
+	 */
+	public final CLOption cloSamples = new CLOption("samples", "unlimited", EvoLudo.catSimulation,
+			"--samples <s>   number of samples for statistics", new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
+					setNSamples(cloSamples.isSet() ? CLOParser.parseDouble(arg) : -1.0);
+					return true;
+				}
+
+				@Override
+				public void report(PrintStream ps) {
+					// for customized simulations
+					ps.println("# samples:              " + Formatter.format(nSamples, 4));
+				}
+			});
+
 	@Override
 	public void collectCLO(CLOParser parser) {
 		parser.addCLO(cloTimeStep);
+		parser.addCLO(cloTimeStop);
+		Module module = getSpecies(0);
+		// cannot use permitsSampleStatistics and permitsUpdateStatistics because
+		// they also check parameters that have not yet been set
+		if (module instanceof HasHistogram.StatisticsProbability
+				|| module instanceof HasHistogram.StatisticsTime)
+			parser.addCLO(cloSamples);
 	}
 
 	/**

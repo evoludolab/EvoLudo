@@ -106,7 +106,7 @@ public class PDESupervisor {
 	 *      PDESupervisorGWT.next(double)
 	 */
 	public boolean next(double stepDt) {
-		final double timeEnd = charge.getTime() + stepDt;
+		final double timeStop = charge.getTime() + stepDt;
 		final double dt = charge.getDt();
 		final double acc = charge.getAccuracy();
 		final double acc2 = acc * acc;
@@ -120,7 +120,7 @@ public class PDESupervisor {
 			// at this point, fitness and density are synchronized
 			// the new density distribution is in 'next'
 			charge.incrementTime(dt);
-			timeRemain = timeEnd - charge.getTime();
+			timeRemain = timeStop - charge.getTime();
 			if (change > acc2dt2)
 				continue;
 			charge.setConverged();
