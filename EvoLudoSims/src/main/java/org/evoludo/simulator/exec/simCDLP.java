@@ -131,7 +131,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 		}
 		if (doLocation)
 			location = new double[nPopulation + 1][nPopulation + 1][nPopulation + 1];
-		engine.setReportInterval(1.0);
+		model.setReportInterval(1.0);
 		engine.modelReset();
 		resetStatistics();
 		engine.dumpParameters();
@@ -158,7 +158,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 				doBasin = false;
 			}
 			double[] basin = new double[nTraits];
-			engine.setReportInterval(doBasin ? 1.0 : 10.0);
+			model.setReportInterval(doBasin ? 1.0 : 10.0);
 			int[] typ = types.clone();
 			// retrieve the shared RNG to ensure reproducibility of results
 			RNGDistribution rng = engine.getRNG();

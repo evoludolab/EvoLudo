@@ -358,7 +358,7 @@ public abstract class IBS extends Model {
 		}
 		double nextHalt = engine.getNextHalt();
 		// continue if milestone reached in previous step, i.e. deltat < 1e-8
-		double step = engine.getReportInterval();
+		double step = reportInterval;
 		double incr = Math.abs(nextHalt - time);
 		if (incr < 1e-8)
 			return false;
@@ -390,10 +390,10 @@ public abstract class IBS extends Model {
 		if (generations < 1.0)
 			return false;
 		isRelaxing = true;
-		double rf = engine.getReportInterval();
-		engine.setReportInterval(generations);
+		double rf = reportInterval;
+		reportInterval = generations;
 		boolean cont = next();
-		engine.setReportInterval(rf);
+		reportInterval = rf;
 		isRelaxing = false;
 		return cont;
 	}
@@ -1590,6 +1590,7 @@ public abstract class IBS extends Model {
 
 	@Override
 	public void collectCLO(CLOParser parser) {
+		super.collectCLO(parser);
 		if (species.size() > 1) {
 			cloSpeciesUpdateType.addKeys(SpeciesUpdateType.values());
 			parser.addCLO(cloSpeciesUpdateType);

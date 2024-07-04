@@ -122,6 +122,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 	public void reset(boolean clear) {
 		// at one point (likely in the distant past) this view lost its ability to
 		// display multiple graphs...
+		double rInter = engine.getModel().getReportInterval();
 		if (graphs.size() != 1) {
 			graphs.clear();
 			removeAll();
@@ -135,7 +136,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 			axis.showLabel = true;
 			axis.max = 0.0;
 			axis.min = 10.0; // this is just to achieve better layout
-			axis.step = -engine.getReportInterval();
+			axis.step = -rInter;
 			axis.majorTicks = 4;
 			axis.minorTicks = 1;
 			axis.formatter = new DecimalFormat("0.#");
@@ -151,7 +152,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 		for (Iterator<AbstractGraph> i = graphs.iterator(); i.hasNext();) {
 			GraphAxis axis = i.next().getYAxis();
 			axis.max = 0.0;
-			axis.step = -engine.getReportInterval();
+			axis.step = -rInter;
 			// somehow we should mark that axis.min is invalid...
 		}
 		super.reset(clear);
@@ -368,7 +369,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 			case PDE:
 				if (node >= nNodes) {
 					// this can only happen for Geometry.LINEAR
-					double t = (node / nNodes) * engine.getReportInterval();
+					double t = (node / nNodes) * engine.getModel().getReportInterval();
 					if (network.timestamp < t)
 						return null;
 					return "<html><i>Node:</i> " + (node % nNodes) + "<br><i>Time:</i> " + Formatter.format(-t, 2);
@@ -392,7 +393,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 			case IBS:
 				if (node >= nNodes) {
 					// this can only happen for Geometry.LINEAR
-					double t = (node / nNodes) * engine.getReportInterval();
+					double t = (node / nNodes) * engine.getModel().getReportInterval();
 					if (network.timestamp < t)
 						return null;
 					return "<html><i>Node:</i> " + (node % nNodes) + "<br><i>Time:</i> " + Formatter.format(-t, 2);

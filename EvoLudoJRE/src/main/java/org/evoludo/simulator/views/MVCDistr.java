@@ -173,6 +173,7 @@ public class MVCDistr extends MVAbstract implements PopListener {
 		bins = new double[nData][];
 		double[] min = module.getTraitMin();
 		double[] max = module.getTraitMax();
+		Model model = engine.getModel();
 		for( int n=0; n<nData; n++ ) {
             Geometry geometry = new Geometry(engine);
             geometry.setType(Geometry.Type.LINEAR);
@@ -193,7 +194,7 @@ public class MVCDistr extends MVAbstract implements PopListener {
 			if( nData>1 && n!=nData-1 ) y.showLabel = false;
 			y.max = 0.0;
 			y.min = 10.0;	// this is just to achieve better layout
-			y.step = -engine.getReportInterval();
+			y.step = -model.getReportInterval();
 			y.majorTicks = 4;
 			y.minorTicks = 1;
 			y.formatter = new DecimalFormat("0.#");
@@ -236,7 +237,7 @@ public class MVCDistr extends MVAbstract implements PopListener {
 	@Override
 	public boolean	verifyYAxis(GraphAxis y, int tag) {
 		boolean changed = false;
-		double step = -engine.getReportInterval();
+		double step = -engine.getModel().getReportInterval();
 		if( Math.abs(y.step-step)>1e-8 ) {
 			y.step = step;
 			changed = true;
@@ -277,7 +278,7 @@ public class MVCDistr extends MVAbstract implements PopListener {
 		double xLow = x.min+xBin*xDelta;
 		int yBin = node/nNodes;
 		GraphAxis y = graph.getYAxis();
-		double yDelta = engine.getReportInterval();
+		double yDelta = engine.getModel().getReportInterval();
 		double yHigh = y.max-yBin*yDelta;
 		String info = "<html><i>"+y.label+":</i> ("+y.formatter.format(yHigh)+", "+y.formatter.format(yHigh-yDelta)+"]"+
 					  "<br><i>"+x.label+":</i> ["+x.formatter.format(xLow)+", "+x.formatter.format(xLow+xDelta)+")";

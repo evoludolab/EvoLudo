@@ -98,7 +98,7 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 		int[][] fix = new int[nTraits][nTraits];
 		int lastfix = -1;
 
-		engine.setReportInterval(1.0);
+		model.setReportInterval(1.0);
 		engine.modelReset();
 		resetStatistics();
 

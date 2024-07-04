@@ -33,6 +33,7 @@
 package org.evoludo.simulator.models;
 
 import java.awt.Color;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.logging.Level;
@@ -43,7 +44,10 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
+import org.evoludo.util.CLOption;
+import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -983,6 +987,59 @@ public abstract class Model implements CLOProvider {
 	 * Perform single debug step in models that allow it.
 	 */
 	public void debugStep() {
+	}
+
+	/**
+	 * Indicates the interval (measured in generations) after which models report
+	 * updates on their current state. for example, the GUI gets updated whenever
+	 * <code>reportInterval</code> generations (or fractions thereof) have elapsed.
+	 * <p>
+	 * <strong>Note:</strong> <code>reportInterval&lt;0</code> disables reporting;
+	 * <code>reportInterval=0</code> reports every single update.
+	 */
+	protected double reportInterval = 1.0;
+
+	/**
+	 * Set the report interval, i.e. number of updates in one step (see
+	 * {@link #modelNext()} measured in generations (or fractions thereof).
+	 *
+	 * @param aValue the new report interval
+	 */
+	public void setReportInterval(double aValue) {
+		reportInterval = Math.max(0.0, aValue);
+	}
+
+	/**
+	 * Get the interval between subsequent reports to the GUI or the simulation
+	 * controller measured in generations (or fractions thereof).
+	 * 
+	 * @return the report interval
+	 */
+	public double getReportInterval() {
+		return reportInterval;
+	}
+
+	/**
+	 * Command line option to set the number of generations between reports for
+	 * {@link #modelNext()}.
+	 */
+	public final CLOption cloReportInterval = new CLOption("reportfreq", "1", EvoLudo.catGlobal,
+			"--reportfreq <f>  report frequency in MC steps", new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
+					setReportInterval(Double.parseDouble(arg));
+					return true;
+				}
+
+				@Override
+				public void report(PrintStream output) {
+					output.println("# reportfreq:           " + Formatter.format(getReportInterval(), 4));
+				}
+			});
+
+	@Override
+	public void collectCLO(CLOParser parser) {
+		parser.addCLO(cloReportInterval);
 	}
 
 	/**

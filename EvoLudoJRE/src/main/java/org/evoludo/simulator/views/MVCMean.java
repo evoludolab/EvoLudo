@@ -81,7 +81,7 @@ public class MVCMean extends MVAbstract implements StateGraphListener {
 		x.showLabel = false;
 		x.max = 0.0;
 		x.min = 1.0;	// min>max forces recalculation
-		x.step = -engine.getReportInterval();
+		x.step = -engine.getModel().getReportInterval();
 		x.grid = 0;
 		x.majorTicks = 3;
 		x.minorTicks = 1;
@@ -166,7 +166,7 @@ public class MVCMean extends MVAbstract implements StateGraphListener {
 	@Override
 	public boolean	verifyXAxis(GraphAxis x, int tag) {
 		boolean changed = false;
-		double step = -engine.getReportInterval();
+		double step = -engine.getModel().getReportInterval();
 		if( Math.abs(x.step-step)>1e-8 ) {
 			double steps = (x.max-x.min)/x.step;
 			x.min = x.max-steps*step;

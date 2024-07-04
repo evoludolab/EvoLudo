@@ -600,7 +600,7 @@ public class TBT extends Discrete implements Pairs,
 			}
 
 			double newtime = model.getTime();
-			if (Math.abs(tsMean - newtime) < engine.getReportInterval()) {
+			if (Math.abs(tsMean - newtime) < model.getReportInterval()) {
 				System.arraycopy(tsTraits, 0, mean, 0, mean.length);
 				return;
 			}
@@ -660,7 +660,7 @@ public class TBT extends Discrete implements Pairs,
 				return super.getStatus();
 
 			double newtime = model.getTime();
-			if (Math.abs(tsMean - newtime) < engine.getReportInterval())
+			if (Math.abs(tsMean - newtime) < model.getReportInterval())
 				getMeanTraits(tsTraits);
 			String status = "";
 			for (int i = 0; i < 2 * nTraits; i++) {

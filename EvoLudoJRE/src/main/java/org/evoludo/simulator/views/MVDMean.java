@@ -60,7 +60,7 @@ public class MVDMean extends MVAbstract implements StateGraphListener {
 		x.showLabel = true;
 		x.max = 0.0;
 		x.min = 1.0;	// min>max forces recalculation
-		x.step = -engine.getReportInterval();
+		x.step = -engine.getModel().getReportInterval();
 		x.grid = 0;
 		x.majorTicks = 3;
 		x.minorTicks = 1;

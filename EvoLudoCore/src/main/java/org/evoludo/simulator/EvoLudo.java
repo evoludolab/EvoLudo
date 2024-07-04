@@ -1421,36 +1421,6 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Indicates the interval (measured in generations) after which models report
-	 * updates on their current state. for example, the GUI gets updated whenever
-	 * <code>reportInterval</code> generations (or fractions thereof) have elapsed.
-	 * <p>
-	 * <strong>Note:</strong> <code>reportInterval&lt;0</code> disables reporting;
-	 * <code>reportInterval=0</code> reports every single update.
-	 */
-	protected double reportInterval = 1.0;
-
-	/**
-	 * Set the report interval, i.e. number of updates in one step (see
-	 * {@link #modelNext()} measured in generations (or fractions thereof).
-	 *
-	 * @param aValue the new report interval
-	 */
-	public void setReportInterval(double aValue) {
-		reportInterval = Math.max(0.0, aValue);
-	}
-
-	/**
-	 * Get the interval between subsequent reports to the GUI or the simulation
-	 * controller measured in generations (or fractions thereof).
-	 * 
-	 * @return the report interval
-	 */
-	public double getReportInterval() {
-		return reportInterval;
-	}
-
-	/**
 	 * <strong>Note:</strong> Instead of sharing logging system, EvoLudo could
 	 * implement helper routines for logging notifications. However, when logging
 	 * notifications with a severity of {@link Level#WARNING} or higher the default
@@ -2033,24 +2003,6 @@ public abstract class EvoLudo
 			});
 
 	/**
-	 * Command line option to set the number of generations between reports for
-	 * {@link #modelNext()}.
-	 */
-	public final CLOption cloReportInterval = new CLOption("reportfreq", "1", catGlobal,
-			"--reportfreq <f>  report frequency in MC steps", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					setReportInterval(Double.parseDouble(arg));
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# reportfreq:           " + Formatter.format(getReportInterval(), 4));
-				}
-			});
-
-	/**
 	 * Command line option to set the color for trajectories. For example, this
 	 * affects the display in {@link org.evoludo.simulator.views.S3} or
 	 * {@link org.evoludo.simulator.views.Phase2D}.
@@ -2193,7 +2145,6 @@ public abstract class EvoLudo
 				|| activeModule instanceof HasHistogram.StatisticsTime)
 			parser.addCLO(cloSamples);
 		parser.addCLO(cloRelaxation);
-		parser.addCLO(cloReportInterval);
 		parser.addCLO(cloRNG);
 		// option for trait color schemes only makes sense for modules with multiple
 		// continuous traits that have 2D/3D visualizations

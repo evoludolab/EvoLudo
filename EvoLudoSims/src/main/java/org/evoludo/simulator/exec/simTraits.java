@@ -127,7 +127,7 @@ public class simTraits extends Traits {
 			throw new Error("failed to initialize timing system - " + e.getMessage() + ".");
 		}
 
-		engine.setReportInterval(1.0);
+		model.setReportInterval(1.0);
 		// default init type is UNIFORM
 		playerUpdate.setType(PlayerUpdate.Type.IMITATE);
 		playerUpdate.setNoise(1.0);

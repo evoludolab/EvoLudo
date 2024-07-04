@@ -233,7 +233,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 					// this can only happen for Geometry.LINEAR
 					int idx = node / nNodes;
 					node %= nNodes;
-					double t = idx * engine.getReportInterval();
+					double t = idx * model.getReportInterval();
 					tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>" +
 							"<tr><td><i>Time:</i></td><td>" + Formatter.format(-t, 2) + "</td></tr>");
 					return tip + "</table>";
@@ -280,7 +280,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 					// this can only happen for Geometry.LINEAR
 					int idx = node / nNodes;
 					node %= nNodes;
-					double t = idx * engine.getReportInterval();
+					double t = idx * model.getReportInterval();
 					tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>" +
 							"<tr><td><i>Time:</i></td><td>" + Formatter.format(-t, 2) + "</td></tr>");
 					return tip + "</table>";

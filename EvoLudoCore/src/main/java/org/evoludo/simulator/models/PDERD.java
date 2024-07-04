@@ -450,7 +450,7 @@ public class PDERD extends ODEEuler {
 	public boolean next() {
 		gwtHalt = engine.getNextHalt();
 		// continue if milestone reached in previous step, i.e. deltat < 1e-8
-		double step = engine.getReportInterval();
+		double step = reportInterval;
 		double deltat = Math.abs(gwtHalt - time);
 		if (deltat >= 1e-8)
 			step = Math.min(step, deltat);

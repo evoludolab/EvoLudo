@@ -755,7 +755,7 @@ public class ODEEuler extends Model implements Discrete {
 		connect = true;
 		double nextHalt = engine.getNextHalt();
 		// continue if milestone reached in previous step, i.e. deltat < 1e-8
-		double step = engine.getReportInterval();
+		double step = reportInterval;
 		double deltat = Math.abs(nextHalt - time);
 		if (deltat >= 1e-8)
 			step = Math.min(step, deltat);
@@ -1872,6 +1872,7 @@ public class ODEEuler extends Model implements Discrete {
 
 	@Override
 	public void collectCLO(CLOParser parser) {
+		super.collectCLO(parser);
 		parser.addCLO(cloAdjustedDynamics);
 		parser.addCLO(cloDEAccuracy);
 		parser.addCLO(cloDEdt);
