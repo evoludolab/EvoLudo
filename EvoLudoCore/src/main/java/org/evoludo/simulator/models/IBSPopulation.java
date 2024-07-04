@@ -821,104 +821,82 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Draws the index of a member of the population uniformly at random.
+	 * Draws the index of a individual of the population uniformly at random. Vacant
+	 * sites are skipped.
 	 * <p>
 	 * <strong>Important:</strong> This method is highly time sensitive. Any
 	 * optimization effort is worth making.
-	 * 
-	 * <h3>Discussions/extensions:</h3>
-	 * <ol>
-	 * <li>Should picking include vacant sites, or not, or selectable?
-	 * <li>Currently vacant sites are excluded for fitness based picking but not for
-	 * random picking.
-	 * </ol>
 	 *
-	 * @return the index of the picked member
+	 * @return the index of the picked individual
 	 */
-	public int pickFocalSite() {
-		// if( VACANT<0 )
-		return random0n(nPopulation);
-
-		// // vacancies require more attention
-		// int nTot = getPopulationSize();
-		// int pick = random0n(nTot);
-		// int found = 0;
-		// if (pick + pick > nTot) {
-		// // start search at back
-		// pick = nTot - pick;
-		// for (int n=nPopulation-1; n>=0; n--) {
-		// if (isVacantAt(n))
-		// continue;
-		// if (++found > pick)
-		// return n;
-		// }
-		// } else {
-		// // start search at front
-		// for (int n=0; n<nPopulation; n++) {
-		// if (isVacantAt(n))
-		// continue;
-		// if (++found > pick)
-		// return n;
-		// }
-		// }
-		// engine.fatal("pickRandomFocalIndividual() failed to pick individual...");
-		// fatal does not return control
-		// return -1;
+	public int pickFocalIndividual() {
+		if( VACANT<0 )
+			return random0n(nPopulation);
+		return pickFocal(-1);
 	}
 
 	/**
-	 * Draws the index of a member of the population uniformly at random but
-	 * excluding the individual with index <code>excl</code>.
+	 * Pick a focal individual uniformly at random but excluding the individual with
+	 * index <code>excl</code>. Helper method.
+	 * 
+	 * @param excl the index of the excluded individual
+	 * @return the index of the picked individual
+	 */
+	private int pickFocal(int excl) {
+		int nTot = getPopulationSize();
+		int pick = random0n(nTot);
+		int found = 0;
+		if (pick + pick > nTot) {
+			// start search at back
+			pick = nTot - pick;
+			for (int n = nPopulation - 1; n >= 0; n--) {
+				if (isVacantAt(n))
+					continue;
+				if (++found > pick) {
+					if (n == excl)
+						continue;
+					return n;
+				}
+			}
+		} else {
+			// start search at front
+			for (int n = 0; n < nPopulation; n++) {
+				if (isVacantAt(n))
+					continue;
+				if (++found > pick) {
+					if (n == excl)
+						continue;
+					return n;
+				}
+			}
+		}
+		engine.fatal("pickFocal() failed to pick individual...");
+		// fatal does not return control
+		return -1;
+	}
+
+	/**
+	 * Draws the index of a individual of the population uniformly at random but
+	 * excluding the individual with index <code>excl</code>. Vacant sites are
+	 * skipped.
 	 * <p>
 	 * <strong>Important:</strong> This method is highly time sensitive. Any
 	 * optimization effort is worth making.
-	 * 
-	 * <h3>Discussions/extensions:</h3>
-	 * <ol>
-	 * <li>Should picking include vacant sites, or not, or selectable?
-	 * <li>Currently vacant sites are excluded for fitness based picking but not for
-	 * random picking.
-	 * </ol>
 	 *
-	 * @param excl the index of the member that should be excluded from picking
-	 * @return the index of the picked member
+	 * @param excl the index of the excluded individual
+	 * @return the index of the picked individual
 	 */
-	public int pickFocalSite(int excl) {
+	public int pickFocalIndividual(int excl) {
 		if (excl < 0 || excl > nPopulation)
-			return pickFocalSite();
+			return pickFocalIndividual();
 
-		// if( VACANT<0 ) {
-		int rand = random0n(nPopulation - 1);
-		if (rand >= excl)
-			return rand + 1;
-		return rand;
-		// }
-		//
-		// // vacancies require more attention
-		// int nTot = getPopulationSize()-1;
-		// int pick = random0n(nTot);
-		// int found = 0;
-		// if (pick + pick > nTot) {
-		// // start search at back
-		// pick = nTot - pick;
-		// for (int n=nPopulation-1; n>=0; n--) {
-		// if (isVacantAt(n) || n == excl)
-		// continue;
-		// if (++found > pick)
-		// return n;
-		// }
-		// } else {
-		// // start search at front
-		// for (int n=0; n<nPopulation; n++) {
-		// if (isVacantAt(n) || n == excl)
-		// continue;
-		// if (++found > pick)
-		// return n;
-		// }
-		// }
-		// engine.fatal("pickRandomFocalIndividual(int) failed to pick individual...");
-		// fatal does not return control
-		// return -1;
+		if( VACANT < 0) {
+			int rand = random0n(nPopulation - 1);
+			if (rand >= excl)
+				return rand + 1;
+			return rand;
+		}
+		return pickFocal(excl);
 	}
 
 	/**
@@ -945,7 +923,7 @@ public abstract class IBSPopulation {
 	public int pickFitFocalIndividual() {
 		// differences in scores too small, pick random individual
 		if (isNeutral)
-			return pickFocalSite();
+			return pickFocalIndividual();
 
 		if (VACANT < 0) {
 			if (nPopulation >= 100) {
@@ -1031,7 +1009,7 @@ public abstract class IBSPopulation {
 
 		// differences in scores too small, pick random individual
 		if (isNeutral)
-			return pickFocalSite(excl);
+			return pickFocalIndividual(excl);
 
 		if (VACANT < 0) {
 			// note: review threshold for optimizations (see pickFitFocalIndividual above)
@@ -1340,8 +1318,8 @@ public abstract class IBSPopulation {
 		if (competition.getType() == Geometry.Type.MEANFIELD) {
 			debugNModels = 0;
 			if (withSelf)
-				return pickFocalSite();
-			return pickFocalSite(me);
+				return pickFocalIndividual();
+			return pickFocalIndividual(me);
 		}
 		return pickNeighborSiteAt(me);
 	}
@@ -1370,7 +1348,7 @@ public abstract class IBSPopulation {
 	protected int pickNeighborSiteAt(int me) {
 		// mean-field
 		if (competition.getType() == Geometry.Type.MEANFIELD)
-			return pickFocalSite(me);
+			return pickFocalIndividual(me);
 
 		debugModels = competition.out[me];
 		debugNModels = competition.kout[me];
@@ -1983,7 +1961,7 @@ public abstract class IBSPopulation {
 	 * @return the elapsed time in realtime units
 	 */
 	public double mutate() {
-		return mutateAt(pickFocalSite());
+		return mutateAt(pickFocalIndividual());
 	}
 
 	/**
@@ -2153,7 +2131,7 @@ public abstract class IBSPopulation {
 	 * individual.
 	 */
 	protected void updatePlayerAsync() {
-		updatePlayerAsyncAt(pickFocalSite());
+		updatePlayerAsyncAt(pickFocalIndividual());
 	}
 
 	/**
@@ -2215,7 +2193,7 @@ public abstract class IBSPopulation {
 	protected void updatePlayerMoranBirthDeathAt(int parent) {
 		debugFocal = parent;
 		if (competition.getType() == Geometry.Type.MEANFIELD) {
-			debugModel = pickFocalSite();
+			debugModel = pickFocalIndividual();
 			debugNModels = 0;
 		} else
 			debugModel = pickNeighborSiteAt(parent);
@@ -2237,7 +2215,7 @@ public abstract class IBSPopulation {
 	 *      of cooperation on graphs, Nature 441, 502-505</a>
 	 */
 	public void updatePlayerMoranDeathBirth() {
-		updatePlayerMoranDeathBirthAt(pickFocalSite());
+		updatePlayerMoranDeathBirthAt(pickFocalIndividual());
 	}
 
 	/**
@@ -2266,7 +2244,7 @@ public abstract class IBSPopulation {
 	 *      of cooperation on graphs, Nature 441, 502-505</a>
 	 */
 	public void updatePlayerMoranImitate() {
-		updatePlayerMoranImitateAt(pickFocalSite());
+		updatePlayerMoranImitateAt(pickFocalIndividual());
 	}
 
 	/**
@@ -2329,7 +2307,7 @@ public abstract class IBSPopulation {
 	 * @return real-time increment
 	 */
 	public double updatePlayerEcology() {
-		return updatePlayerEcologyAt(pickFocalSite());
+		return updatePlayerEcologyAt(pickFocalIndividual());
 	}
 
 	/**
