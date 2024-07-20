@@ -250,10 +250,10 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	@Override
-	public void modelUnloaded() {
+	public void moduleUnloaded() {
 		isRunning = false;
 		timer.cancel();
-		super.modelUnloaded();
+		super.moduleUnloaded();
 	}
 
 	@Override

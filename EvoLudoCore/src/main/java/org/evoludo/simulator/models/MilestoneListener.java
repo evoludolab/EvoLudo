@@ -2,12 +2,30 @@ package org.evoludo.simulator.models;
 
 /**
  * All <code>MilestoneListener</code>'s get informed about milestones and state
- * changes of the core of EvoLudo models. The implementation of all methods is
+ * changes of the core of EvoLudo modules. The implementation of all methods is
  * optional.
  *
  * @author Christoph Hauert
  */
 public interface MilestoneListener {
+
+	/**
+	 * Called when EvoLudo module finished loading.
+	 */
+	public default void moduleLoaded() {
+	}
+
+	/**
+	 * Called when EvoLudo module is unloading.
+	 */
+	public default void moduleUnloaded() {
+	}
+
+	/**
+	 * Called when the state of the EvoLudo module has been restored.
+	 */
+	public default void moduleRestored() {
+	}
 
 	/**
 	 * Called when EvoLudo model finished loading.
@@ -19,12 +37,6 @@ public interface MilestoneListener {
 	 * Called when EvoLudo model is unloading.
 	 */
 	public default void modelUnloaded() {
-	}
-
-	/**
-	 * Called when the state of the EvoLudo model has been restored.
-	 */
-	public default void modelRestored() {
 	}
 
 	/**

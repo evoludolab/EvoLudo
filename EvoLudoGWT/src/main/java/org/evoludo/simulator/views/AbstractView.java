@@ -326,8 +326,8 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	/**
 	 * Called when a module has been restored.
 	 * 
-	 * @see org.evoludo.simulator.models.MilestoneListener#modelRestored()
-	 *      MilestoneListener.modelRestored()
+	 * @see org.evoludo.simulator.models.MilestoneListener#moduleRestored()
+	 *      MilestoneListener.moduleRestored()
 	 */
 	public void restored() {
 		timestamp = -Double.MAX_VALUE;

@@ -373,7 +373,7 @@ public abstract class EvoLudo
 			if (!changed)
 				return false;
 			// unload previous model
-			modelUnload();
+			unloadModel();
 		}
 		switch (type) {
 			case ODE:
@@ -507,14 +507,13 @@ public abstract class EvoLudo
 	 * Unload model framework. Notifies all registered
 	 * {@link MilestoneListener}'s.
 	 */
-	public void modelUnload() {
+	public void unloadModel() {
 		if (activeModel == null)
 			return;
 		// remove CLO parsers that are no longer needed
 		removeCLOProvider(activeModel);
 		activeModel.unload();
 		fireModelUnloaded();
-		activeModel = null;
 	}
 
 	/**
@@ -532,8 +531,8 @@ public abstract class EvoLudo
 			setSuspended(false);
 		// check module first; model may contact module
 		boolean doReset = false;
-		for (Module pop : activeModule.getSpecies())
-			doReset |= pop.check();
+		for (Module mod : activeModule.getSpecies())
+			doReset |= mod.check();
 		Type type = activeModel.getModelType();
 		doReset |= activeModel.check();
 		if (activeModel.getModelType() != type)
@@ -550,8 +549,8 @@ public abstract class EvoLudo
 			rng.setRNGSeed();
 		// check consistency of parameters in models
 		modelCheck();
-		for (Module pop : activeModule.getSpecies())
-			pop.reset();
+		for (Module mod : activeModule.getSpecies())
+			mod.reset();
 		activeModel.reset();
 		resetRequested = false;
 		modelInit();
@@ -564,8 +563,8 @@ public abstract class EvoLudo
 	 */
 	public final void modelInit() {
 		initStatisticsSample();
-		for (Module pop : activeModule.getSpecies())
-			pop.init();
+		for (Module mod : activeModule.getSpecies())
+			mod.init();
 		activeModel.init();
 		activeModel.update();
 		resetCPUSample();
@@ -577,13 +576,6 @@ public abstract class EvoLudo
 	public final void modelReinit() {
 		modelInit();
 		fireModelReinit();
-	}
-
-	/**
-	 * Update all populations.
-	 */
-	public final void modelUpdate() {
-		activeModel.update();
 	}
 
 	/**
@@ -706,15 +698,11 @@ public abstract class EvoLudo
 	 * @return <code>true</code> if reset was necessary
 	 */
 	public boolean paramsDidChange() {
-		if (resetRequested) {
+		if (resetRequested || modelCheck()) {
 			modelReset();
 			return true;
 		}
-		if (modelCheck()) {
-			modelReset();
-			return true;
-		}
-		modelUpdate();
+		activeModel.update();
 		return false;
 	}
 
@@ -891,6 +879,7 @@ public abstract class EvoLudo
 			rng.setRNGSeed();
 		addCLOProvider(activeModule);
 		activeModule.load();
+		fireModuleLoaded();
 		return activeModule;
 	}
 
@@ -918,8 +907,8 @@ public abstract class EvoLudo
 					iterator.remove();
 			}
 		}
-		modelUnload();
-		activeModule = null;
+		unloadModel();
+		fireModuleUnloaded();
 	}
 
 	/**
@@ -1079,6 +1068,47 @@ public abstract class EvoLudo
 	}
 
 	/**
+	 * Called whenever a new module has finished loading. Notifies all registered
+	 * {@link MilestoneListener}s.
+	 */
+	public synchronized void fireModuleLoaded() {
+		runFired = false;
+		pendingAction = PendingAction.NONE;
+		for (MilestoneListener i : milestoneListeners)
+			i.moduleLoaded();
+		logger.info(
+				"Module '" + activeModule.getTitle() + "' loaded\n" + activeModule.getInfo() + "\nVersion: "
+						+ getVersion());
+	}
+
+	/**
+	 * Called whenever the current module has finished unloading. Notifies all
+	 * registered {@link MilestoneListener}s.
+	 */
+	public synchronized void fireModuleUnloaded() {
+		runFired = false;
+		for (MilestoneListener i : milestoneListeners)
+			i.moduleUnloaded();
+		logger.info("Module '" + activeModule.getTitle() + "' unloaded");
+		activeModule = null;
+	}
+
+	/**
+	 * Called after the state of the model has been restored either through
+	 * drag'n'drop with the GWT GUI or through the <code>--restore</code> command
+	 * line argument. Notifies all registered {@link MilestoneListener}s.
+	 *
+	 * @see #restoreFromFile()
+	 * @see #restoreState(Plist)
+	 */
+	public synchronized void fireModuleRestored() {
+		runFired = false;
+		for (MilestoneListener i : milestoneListeners)
+			i.moduleRestored();
+		logger.info("Module restored");
+	}
+
+	/**
 	 * Called whenever a new model has finished loading. Notifies all registered
 	 * {@link MilestoneListener}s.
 	 */
@@ -1088,19 +1118,21 @@ public abstract class EvoLudo
 		for (MilestoneListener i : milestoneListeners)
 			i.modelLoaded();
 		logger.info(
-				"Module '" + activeModule.getTitle() + "' loaded\n" + activeModule.getInfo() + "\nVersion: "
-						+ getVersion());
+				"Model '" + activeModel.getModelType() + "' loaded");
 	}
 
 	/**
-	 * Called whenever the current model has finished unloading. Notifies all
-	 * registered {@link MilestoneListener}s.
+	 * Called whenever a new model has finished loading. Notifies all registered
+	 * {@link MilestoneListener}s.
 	 */
 	public synchronized void fireModelUnloaded() {
 		runFired = false;
+		pendingAction = PendingAction.NONE;
 		for (MilestoneListener i : milestoneListeners)
-			i.modelUnloaded();
-		logger.info("Module '" + activeModule.getTitle() + "' unloaded");
+			i.modelLoaded();
+		logger.info(
+				"Model '" + activeModel.getModelType() + "' unloaded");
+		activeModel = null;
 	}
 
 	/**
@@ -1209,21 +1241,6 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Called after the state of the model has been restored either through
-	 * drag'n'drop with the GWT GUI or through the <code>--restore</code> command
-	 * line argument. Notifies all registered {@link MilestoneListener}s.
-	 *
-	 * @see #restoreFromFile()
-	 * @see #restoreState(Plist)
-	 */
-	public synchronized void fireModelRestored() {
-		runFired = false;
-		for (MilestoneListener i : milestoneListeners)
-			i.modelRestored();
-		logger.info("Engine restored.");
-	}
-
-	/**
 	 * Called after the model has been re-initialized. Notifies all registered
 	 * {@link MilestoneListener}s.
 	 */
@@ -1232,7 +1249,7 @@ public abstract class EvoLudo
 			runFired = false;
 			for (MilestoneListener i : milestoneListeners)
 				i.modelDidReinit();
-			logger.info("Engine init.");
+			logger.info("Model init");
 		}
 	}
 
@@ -1244,7 +1261,7 @@ public abstract class EvoLudo
 		runFired = false;
 		for (MilestoneListener i : milestoneListeners)
 			i.modelDidReset();
-		logger.info("Engine reset.");
+		logger.info("Model reset");
 	}
 
 	/**
@@ -1255,7 +1272,7 @@ public abstract class EvoLudo
 		runFired = false;
 		for (MilestoneListener i : milestoneListeners)
 			i.modelRelaxed();
-		logger.info("Engine relaxed.");
+		logger.info("Model relaxed");
 	}
 
 	/**
@@ -1493,7 +1510,7 @@ public abstract class EvoLudo
 		success &= activeModel.restoreState(plist);
 		if (success) {
 			logger.info("Restore succeeded.");
-			fireModelRestored();
+			fireModuleRestored();
 		} else {
 			logger.warning("restore failed - resetting model.");
 			modelReset();

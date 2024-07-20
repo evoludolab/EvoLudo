@@ -2335,7 +2335,7 @@ public class IBSDPopulation extends IBSPopulation {
 		} else {
 			commitStrategyAt(hit);
 			// when in doubt, recalculate everything for everyone
-			engine.modelUpdate();
+			engine.getModel().update();
 		}
 		engine.fireModelChanged();
 		return true;

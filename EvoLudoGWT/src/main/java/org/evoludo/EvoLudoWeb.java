@@ -511,7 +511,7 @@ public class EvoLudoWeb extends Composite
 	}
 
 	@Override
-	public void modelLoaded() {
+	public void moduleLoaded() {
 		// NOTE: at this point engine and GUI can be out of sync - better wait for reset
 		// to update views
 		// for (AbstractView view : activeViews.values())
@@ -524,7 +524,7 @@ public class EvoLudoWeb extends Composite
 	}
 
 	@Override
-	public void modelUnloaded() {
+	public void moduleUnloaded() {
 		for (AbstractView view : activeViews.values())
 			view.unload();
 		activeView = null;
@@ -539,7 +539,7 @@ public class EvoLudoWeb extends Composite
 	}
 
 	@Override
-	public void modelRestored() {
+	public void moduleRestored() {
 		for (AbstractView view : activeViews.values())
 			view.restored();
 		displayStatusThresholdLevel = Level.ALL.intValue();

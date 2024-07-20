@@ -682,12 +682,12 @@ public class EvoLudoLab extends JFrame
 	}
 
 	@Override
-	public void modelUnloaded() { 
+	public void moduleUnloaded() { 
 		activeViews.clear();
 	}
 
 	@Override
-	public void modelRestored() {
+	public void moduleRestored() {
 		updateLabels();
 	}
 

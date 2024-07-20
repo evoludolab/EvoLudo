@@ -264,7 +264,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * Load new module and perform basic initializations.
 	 * 
 	 * @see EvoLudo#loadModule(String)
-	 * @see MilestoneListener#modelLoaded()
+	 * @see MilestoneListener#moduleLoaded()
 	 */
 	public void load() {
 		map2fitness = new Map2Fitness(this, Map2Fitness.Map.NONE);
@@ -281,7 +281,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * Unload module and free all resources.
 	 * 
 	 * @see EvoLudo#unloadModule()
-	 * @see MilestoneListener#modelUnloaded()
+	 * @see MilestoneListener#moduleUnloaded()
 	 */
 	public void unload() {
 		traitName = null;
