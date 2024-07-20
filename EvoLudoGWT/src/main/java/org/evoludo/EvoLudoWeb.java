@@ -362,6 +362,7 @@ public class EvoLudoWeb extends Composite
 		logEvoHandler = new EvoLogHandler(viewConsole);
 		logger.addHandler(logEvoHandler);
 		logger.setLevel(Level.INFO);
+		logFeatures();
 	}
 
 	/**
@@ -1163,7 +1164,6 @@ public class EvoLudoWeb extends Composite
 			// process (emulated) ePub restrictions - adds console if possible
 			processEPubSettings();
 			resetViews();
-			logFeatures();
 			if (newModel != null)
 				engine.modelReset();
 		} else {
