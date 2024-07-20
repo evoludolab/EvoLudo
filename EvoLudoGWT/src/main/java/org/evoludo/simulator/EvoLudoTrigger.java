@@ -75,11 +75,6 @@ public class EvoLudoTrigger extends PushButton {
 	LightboxPanel popup = null;
 
 	/**
-	 * The EvoLudo lab.
-	 */
-	EvoLudoWeb lab = null;
-
-	/**
 	 * Flag to keep track of mouse position. {@code true} if mouse hovers over lab.
 	 */
 	boolean mouseOverLab = false;
@@ -100,7 +95,7 @@ public class EvoLudoTrigger extends PushButton {
 					return;
 				}
 				popup = new LightboxPanel();
-				lab = new EvoLudoWeb(id, popup);
+				EvoLudoWeb lab = new EvoLudoWeb(id, popup);
 				FocusPanel panel = new FocusPanel();
 				panel.addStyleName("evoludo-simulation");
 				Style style = panel.getElement().getStyle();
@@ -181,6 +176,7 @@ public class EvoLudoTrigger extends PushButton {
 				return;
 			}
 			super.onBrowserEvent(event);
+			event.stopPropagation();
 		}
 
 		/**
@@ -208,7 +204,6 @@ public class EvoLudoTrigger extends PushButton {
 		 */
 		public void close() {
 			popup.removeFromParent();
-			lab.clearKeyListener();
 			RootPanel.get().getElement().getStyle().setProperty("overflow", "auto");
 		}
 	}

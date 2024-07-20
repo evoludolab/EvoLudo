@@ -289,7 +289,6 @@ public class EvoLudoWeb extends Composite
 	public EvoLudoWeb(String id, EvoLudoTrigger.LightboxPanel popup) {
 		this(id, (String) null);
 		this.popup = popup;
-		keyListener = this;
 	}
 
 	/**
@@ -520,6 +519,8 @@ public class EvoLudoWeb extends Composite
 		// assume that some kind of keys are always present, i.e. always add listener
 		// for e.g. 'Alt' but key shortcuts only if not ePub
 		addKeyListeners(this);
+		if (popup != null)
+			keyListener = this;
 	}
 
 	@Override
@@ -529,7 +530,11 @@ public class EvoLudoWeb extends Composite
 		activeView = null;
 		evoludoViews.setSelectedIndex(-1);
 		removeKeyListeners(this);
-		// clear options (otherwise options may get inherited from previous launches).
+		if (keyListener == this)
+			keyListener = null;
+		// clear and close settings (otherwise options may get inherited from previous
+		// launches).
+		evoludoCLOPanel.setVisible(false);
 		evoludoCLO.setText("");
 	}
 
@@ -1474,8 +1479,6 @@ public class EvoLudoWeb extends Composite
 			// escape closes the settings field
 			if (!key.equals("Escape"))
 				return false;
-			// treat escape as if '0' had been pressed
-			key = "0";
 		}
 		// activeView may wish to handle key
 		if (activeView.keyUpHandler(key))
@@ -1509,6 +1512,10 @@ public class EvoLudoWeb extends Composite
 				// stop running simulation
 				if (engine.isRunning()) {
 					engine.stop();
+					break;
+				}
+				if (evoludoCLOPanel.isVisible()) {
+					toggleSettings();
 					break;
 				}
 				// NOTE: non-printing keys (such as modifiers, delete, or escape) do not fire
@@ -1593,9 +1600,8 @@ public class EvoLudoWeb extends Composite
 	 *      "https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values">Mozilla
 	 *      Key Values</a>
 	 * @see AbstractView#keyDownHandler(String) AbstractView.keyDownHandler(String)
-	 *      and
-	 *      implementing classes for further keys that may be handled by the current
-	 *      view
+	 *      and implementing classes for further keys that may be handled by the
+	 *      current view
 	 */
 	public boolean keyDownHandler(String key) {
 		// check if lab is visible
@@ -1908,14 +1914,6 @@ public class EvoLudoWeb extends Composite
 	private static EvoLudoWeb keyListener = null;
 
 	/**
-	 * Clears the <code>keyListener</code> and restores the normal processing of key
-	 * events.
-	 */
-	public void clearKeyListener() {
-		keyListener = null;
-	}
-
-	/**
 	 * JSNI method: check whether a single plist files was dropped.
 	 * <p>
 	 * <strong>Note:</strong> This check needs to be done in native javascript
@@ -2150,7 +2148,7 @@ public class EvoLudoWeb extends Composite
 	 */
 	public final native boolean isElementActive(Element element)
 	/*-{
-		return ($doc.querySelector(":focus") === element);
+		return ($doc.activeElement === element);
 	}-*/;
 
 	/**
