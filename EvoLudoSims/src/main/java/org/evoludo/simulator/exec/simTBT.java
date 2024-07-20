@@ -307,7 +307,7 @@ public class simTBT extends TBT implements ChangeListener {
 	@Override
 	public synchronized void modelChanged(PendingAction pending) {
 		double generation = ibs.getTime();
-		if (model.relaxing() || prevsample >= generation) {
+		if (model.isRelaxing() || prevsample >= generation) {
 			return;
 		}
 		model.getMeanTraits(getID(), state);
@@ -325,7 +325,7 @@ public class simTBT extends TBT implements ChangeListener {
 	@Override
 	public synchronized void modelStopped() {
 		double generation = ibs.getTime();
-		if (model.relaxing() || prevsample >= generation) {
+		if (model.isRelaxing() || prevsample >= generation) {
 			return;
 		}
 		// absorbing state reached

@@ -239,12 +239,12 @@ public abstract class Model implements CLOProvider {
 
 	/**
 	 * Relax the initial configuration of the model over {@code timeRelax}
-	 * generations. During relaxation the method {@link #relaxing()} must return
+	 * generations. During relaxation the method {@link #isRelaxing()} must return
 	 * {@code true}.
 	 * 
 	 * @return {@code false} if converged during relaxation
 	 * 
-	 * @see #relaxing()
+	 * @see #isRelaxing()
 	 * @see #next()
 	 * @see #cloTimeRelax
 	 */
@@ -267,7 +267,7 @@ public abstract class Model implements CLOProvider {
 	 * 
 	 * @see #relax()
 	 */
-	public boolean relaxing() {
+	public boolean isRelaxing() {
 		return isRelaxing;
 	}
 
