@@ -821,8 +821,35 @@ public abstract class IBSPopulation {
 	}
 
 	/**
+	 * Draws the index of a site in the population uniformly at random, irrespective
+	 * of whether it is occupied or not.
+	 *
+	 * @return the index of the picked site
+	 */
+	public int pickFocalSite() {
+		return random0n(nPopulation);
+	}
+
+	/**
+	 * Draws the index of a site in the population uniformly at random, irrespective
+	 * of whether it is occupied or not.
+	 *
+	 * @param excl the index of the excluded site
+	 * @return the index of the picked site
+	 */
+	public int pickFocalSite(int excl) {
+		if (excl < 0 || excl > nPopulation)
+			return pickFocalSite();
+		int rand = random0n(nPopulation - 1);
+		if (rand >= excl)
+			return rand + 1;
+		return rand;
+	}
+
+	/**
 	 * Draws the index of a individual of the population uniformly at random. Vacant
-	 * sites are skipped.
+	 * sites are skipped. In the absence of vacant sites this is equivalent to
+	 * {@link #pickFocalSite()}.
 	 * <p>
 	 * <strong>Important:</strong> This method is highly time sensitive. Any
 	 * optimization effort is worth making.
@@ -830,8 +857,8 @@ public abstract class IBSPopulation {
 	 * @return the index of the picked individual
 	 */
 	public int pickFocalIndividual() {
-		if( VACANT<0 )
-			return random0n(nPopulation);
+		if (VACANT < 0)
+			return pickFocalSite();
 		return pickFocal(-1);
 	}
 
@@ -887,15 +914,10 @@ public abstract class IBSPopulation {
 	 * @return the index of the picked individual
 	 */
 	public int pickFocalIndividual(int excl) {
+		if( VACANT < 0)
+			return pickFocalSite(excl);
 		if (excl < 0 || excl > nPopulation)
 			return pickFocalIndividual();
-
-		if( VACANT < 0) {
-			int rand = random0n(nPopulation - 1);
-			if (rand >= excl)
-				return rand + 1;
-			return rand;
-		}
 		return pickFocal(excl);
 	}
 
@@ -2307,7 +2329,7 @@ public abstract class IBSPopulation {
 	 * @return real-time increment
 	 */
 	public double updatePlayerEcology() {
-		return updatePlayerEcologyAt(pickFocalIndividual());
+		return updatePlayerEcologyAt(pickFocalSite());
 	}
 
 	/**
