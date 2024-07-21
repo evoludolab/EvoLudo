@@ -367,10 +367,8 @@ public abstract class EvoLudo
 	 * @return <code>true</code> if model type changed
 	 */
 	public boolean loadModel(Type type) {
-		boolean changed = true;
 		if (activeModel != null) {
-			changed = (activeModel.getModelType() != type);
-			if (!changed)
+			if (activeModel.getModelType() == type)
 				return false;
 			// unload previous model
 			unloadModel();
@@ -392,10 +390,8 @@ public abstract class EvoLudo
 		addCLOProvider(activeModel);
 		activeModule.setModel(activeModel);
 		activeModel.load();
-		if (changed)
-			fireModelLoaded();
-		requiresReset(changed);
-		return changed;
+		fireModelLoaded();
+		return true;
 	}
 
 	/**
