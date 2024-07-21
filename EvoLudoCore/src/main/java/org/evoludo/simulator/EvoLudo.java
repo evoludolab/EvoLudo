@@ -531,8 +531,21 @@ public abstract class EvoLudo
 			doReset |= mod.check();
 		Type type = activeModel.getModelType();
 		doReset |= activeModel.check();
-		if (activeModel.getModelType() != type)
+		Type newtype = activeModel.getModelType();
+		if (newtype != type) {
+			// model type changed; update model type in clo and parse again
+			String[] splitclo = getSplitCLO();
+			int idx = 0;
+			for (String o : splitclo) {
+				if (o.startsWith("model")) {
+					splitclo[idx] = "model " + newtype.getKey();
+					break;
+				}
+				idx++;
+			}
+			parseCLO(splitclo);
 			return modelCheck();
+		}
 		return doReset;
 	}
 
