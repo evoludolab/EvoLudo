@@ -94,24 +94,6 @@ public class ArrayMath {
 	}
 
 	/**
-	 * Append {@code double} array {@code elements} to {@code double} array
-	 * {@code array}. The length of the returned array is
-	 * {@code array.length + elements.length}. {@code array} and {@code elements}
-	 * remain unchanged.
-	 * 
-	 * @param array    the array
-	 * @param elements the array to append
-	 * @return the new (longer) array
-	 */
-	public static double[] append(double[] array, double[] elements) {
-		int alen = array.length;
-		int elen = elements.length;
-		double[] newarray = Arrays.copyOf(array, alen + elen);
-		System.arraycopy(elements, 0, newarray, alen, elen);
-		return newarray;
-	}
-
-	/**
 	 * Append {@code element} of type {@code T} to array {@code array} of the same
 	 * type. The length of the returned array is {@code array.length +1}.
 	 * 
@@ -124,6 +106,43 @@ public class ArrayMath {
 		int len = array.length;
 		T[] newarray = Arrays.copyOf(array, len + 1);
 		newarray[len] = element;
+		return newarray;
+	}
+
+	/**
+	 * Append {@code double} array {@code elements} to {@code double} array
+	 * {@code array}. The length of the returned array is
+	 * {@code array.length + elements.length}. {@code array} and {@code elements}
+	 * remain unchanged.
+	 * 
+	 * @param head the base array
+	 * @param tail the array to append
+	 * @return the new (longer) array
+	 */
+	public static double[] merge(double[] head, double[] tail) {
+		int alen = head.length;
+		int elen = tail.length;
+		double[] newarray = Arrays.copyOf(head, alen + elen);
+		System.arraycopy(tail, 0, newarray, alen, elen);
+		return newarray;
+	}
+
+	/**
+	 * Append {@code double} array {@code elements} to {@code double} array
+	 * {@code array}. The length of the returned array is
+	 * {@code array.length + elements.length}. {@code array} and {@code elements}
+	 * remain unchanged.
+	 * 
+	 * @param head the base array
+	 * @param tail the array to append
+	 * @return the new (longer) array
+	 */
+	public static <T> T[] merge(T[] head, T[] tail) {
+		int alen = head.length;
+		int elen = tail.length;
+		T[] newarray = Arrays.copyOf(head, alen + elen);
+		System.arraycopy(head, 0, newarray, 0, alen);
+		System.arraycopy(tail, 0, newarray, alen, elen);
 		return newarray;
 	}
 

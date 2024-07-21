@@ -157,7 +157,7 @@ public class Markers {
 								}
 							}
 							// now smk.length == nt holds
-							dmk = ArrayMath.append(dmk, smk);
+							dmk = ArrayMath.merge(dmk, smk);
 						}
 						if (!mksuccess) {
 							model.getLogger().warning("failed to set marker '" + aMarker + "' - ignored.");
