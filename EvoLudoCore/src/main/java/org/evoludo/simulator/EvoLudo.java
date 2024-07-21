@@ -553,6 +553,8 @@ public abstract class EvoLudo
 	 * Reset all populations and notify all listeners.
 	 */
 	public final void modelReset() {
+		if (activeModel == null)
+			return;
 		// reset random number generator if seed was specified
 		if (rng.isRNGSeedSet())
 			rng.setRNGSeed();
@@ -1098,7 +1100,8 @@ public abstract class EvoLudo
 		runFired = false;
 		for (MilestoneListener i : milestoneListeners)
 			i.moduleUnloaded();
-		logger.info("Module '" + activeModule.getTitle() + "' unloaded");
+		if (activeModule != null)
+			logger.info("Module '" + activeModule.getTitle() + "' unloaded");
 		activeModule = null;
 	}
 
@@ -1139,8 +1142,8 @@ public abstract class EvoLudo
 		pendingAction = PendingAction.NONE;
 		for (MilestoneListener i : milestoneListeners)
 			i.modelLoaded();
-		logger.info(
-				"Model '" + activeModel.getModelType() + "' unloaded");
+		if (activeModel != null)
+			logger.info("Model '" + activeModel.getModelType() + "' unloaded");
 		activeModel = null;
 	}
 

@@ -607,9 +607,11 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelDidReset() {
+		resetViews();
 		// invalidate network
 		for (AbstractView view : activeViews.values())
 			view.reset(true);
+		changeViewTo(activeView, true);
 		updateGUI();
 		displayStatus(engine.getVersion());
 	}
@@ -729,18 +731,13 @@ public class EvoLudoWeb extends Composite
 					newView = activeViews.get(viewConsole.getName());
 			}
 		}
-		// ensures that activeView gets activated (possibly again)
-		if (newView == activeView && activeView != null) {
-			activeView.deactivate();
-			activeView = null;
-		}
 		for (int n = 0; n < evoludoViews.getItemCount(); n++) {
 			if (evoludoViews.getItemText(n).equals(name)) {
 				evoludoViews.setSelectedIndex(n);
 				break;
 			}
 		}
-		changeViewTo(newView);
+		changeViewTo(newView, true);
 	}
 
 	/**
@@ -748,11 +745,27 @@ public class EvoLudoWeb extends Composite
 	 * selects a new view with the popup list {@link #evoludoViews} or when a
 	 * particular view is requested through command line options (see
 	 * {@link #cloView}).
-	 *
+	 * 
 	 * @param newView new view of model data to display
 	 */
 	protected void changeViewTo(AbstractView newView) {
-		if (newView != activeView) {
+		changeViewTo(newView, false);
+	}
+
+	/**
+	 * Change view of EvoLudo model data. This helper method is called when the user
+	 * selects a new view with the popup list {@link #evoludoViews} or when a
+	 * particular view is requested through command line options (see
+	 * {@link #cloView}). The view is re-activated if {@code force} is {@code true}
+	 * and activation is skipped if the view didn't change and {@code force} is
+	 * {@code false}.
+	 *
+	 * @param newView new view of model data to display
+	 * @param force   if {@code true} the view is re-activated even if it didn't
+	 *                change
+	 */
+	protected void changeViewTo(AbstractView newView, boolean force) {
+		if (force || newView != activeView) {
 			if (activeView != null)
 				activeView.deactivate();
 			// initially activeView would otherwise be null, which causes troubles if mouse
@@ -1163,9 +1176,7 @@ public class EvoLudoWeb extends Composite
 		if (newModule == null || engine.getModule() != oldModule || newModel != oldModel) {
 			// process (emulated) ePub restrictions - adds console if possible
 			processEPubSettings();
-			resetViews();
-			if (newModel != null)
-				engine.modelReset();
+			engine.modelReset();
 		} else {
 			// process (emulated) ePub restrictions - adds console if possible
 			processEPubSettings();

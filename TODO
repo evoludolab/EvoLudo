@@ -8,7 +8,6 @@ TASKS:
 
 BUGS:
 - 3D views ignore the linewidth setting for drawing the network (try updating to parallax 2.0?)
-- reverting SDE/PDE model to ODE e.g. for well-mixed structures fails (must re-parse command line options)
 - aspect ratios of active 3D views in multiple labs on same page interfere (low priority, highly unlikely scenario)
 
 TODO:
@@ -56,6 +55,7 @@ CHECK:
 
 
 DONE:
++ reverting SDE/PDE model to ODE e.g. for well-mixed structures fails (must re-parse command line options)
 + keyboard shortcuts reach all labs on a page (should be restricted to the active one, check with 's' for shake)
 + enable offline compilation of GWT module ('mvn -pl EvoLudoGWT gwt:compile' throws 'java.lang.RuntimeException: java.net.UnknownHostException: www.w3.org', more specifically: Generator 'com.google.gwt.uibinder.rebind.UiBinderGenerator' threw an exception while rebinding 'org.evoludo.EvoLudoWeb.EvoLudoWebBinder'); thanks to thomas broyer on gitter.
 + init arguments leak from one lab instance to another through InitType.args (instantiate InitTypes)
