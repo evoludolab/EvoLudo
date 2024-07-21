@@ -139,7 +139,7 @@ public abstract class Model implements CLOProvider {
 	 */
 	public Model(EvoLudo engine) {
 		this.engine = engine;
-		logger = Logger.getLogger(getClass().getName());
+		logger = engine.getLogger();
 	}
 
 	/**
