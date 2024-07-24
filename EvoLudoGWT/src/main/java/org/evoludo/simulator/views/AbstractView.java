@@ -148,7 +148,6 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	public AbstractView(EvoLudoGWT engine, Data type) {
 		this.engine = engine;
 		this.type = type;
-		model = engine.getModel();
 		logger = engine.getLogger();
 		createWidget();
 		initWidget(wrapper);
@@ -182,6 +181,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	public void load() {
 		gRows = 1;
 		gCols = 1;
+		model = engine.getModel();
 	}
 
 	/**
@@ -191,6 +191,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	public void unload() {
 		destroyGraphs();
 		isActive = false;
+		model = null;
 	}
 
 	/**

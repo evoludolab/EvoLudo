@@ -1141,7 +1141,7 @@ public abstract class EvoLudo
 		runFired = false;
 		pendingAction = PendingAction.NONE;
 		for (MilestoneListener i : milestoneListeners)
-			i.modelLoaded();
+			i.modelUnloaded();
 		if (activeModel != null)
 			logger.info("Model '" + activeModel.getModelType() + "' unloaded");
 		activeModel = null;

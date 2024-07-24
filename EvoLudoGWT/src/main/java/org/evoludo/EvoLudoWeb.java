@@ -526,10 +526,6 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void moduleUnloaded() {
-		for (AbstractView view : activeViews.values())
-			view.unload();
-		activeView = null;
-		evoludoViews.setSelectedIndex(-1);
 		removeKeyListeners(this);
 		if (keyListener == this)
 			keyListener = null;
@@ -545,6 +541,19 @@ public class EvoLudoWeb extends Composite
 			view.restored();
 		displayStatusThresholdLevel = Level.ALL.intValue();
 		displayStatus("State successfully restored.");
+	}
+
+	@Override
+	public void modelLoaded() {
+		updateViews();
+	}
+
+	@Override
+	public void modelUnloaded() {
+		for (AbstractView view : activeViews.values())
+			view.unload();
+		activeView = null;
+		evoludoViews.setSelectedIndex(-1);
 	}
 
 	@Override
@@ -607,11 +616,9 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelDidReset() {
-		resetViews();
 		// invalidate network
 		for (AbstractView view : activeViews.values())
 			view.reset(true);
-		changeViewTo(activeView, true);
 		updateGUI();
 		displayStatus(engine.getVersion());
 	}
