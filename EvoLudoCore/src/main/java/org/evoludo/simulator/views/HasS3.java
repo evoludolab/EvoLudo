@@ -75,6 +75,15 @@ public interface HasS3 {
 	public static interface Data2S3 {
 
 		/**
+		 * Get the name of the map.
+		 * 
+		 * @return the name of the map
+		 */
+		public default String getName() {
+			return "";
+		}
+	
+		/**
 		 * Convert the data array to cartesian coordinates of point on simplex. The
 		 * conversion observes the selection and order of traits.
 		 * <p>

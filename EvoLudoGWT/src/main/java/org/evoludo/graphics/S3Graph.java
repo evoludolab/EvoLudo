@@ -41,11 +41,9 @@ import org.evoludo.geom.Segment2D;
 import org.evoludo.graphics.AbstractGraph.HasTrajectory;
 import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
-import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
-import org.evoludo.simulator.views.HasS3;
 import org.evoludo.simulator.views.HasS3.Data2S3;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
@@ -157,8 +155,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @return the conversion map
 	 */
 	public Data2S3 getMap() {
-		if (map == null)
-			map = new S3Map(role);
 		return map;
 	}
 
@@ -309,6 +305,8 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 
 		Point2D prevPt = new Point2D();
 		Point2D currPt = new Point2D();
+		double w = bounds.getWidth();
+		double h = bounds.getHeight();
 		String tC = style.trajColor;
 		g.setStrokeStyle(tC);
 		// increase line width for trajectories with transparency
@@ -318,10 +316,14 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			double[] current = i.next();
 			double ct = current[0];
 			map.data2S3(current, currPt);
+			currPt.x *= w;
+			currPt.y *= h;
 			while (i.hasNext()) {
 				double[] prev = i.next();
 				double pt = prev[0];
 				map.data2S3(prev, prevPt);
+				prevPt.x *= w;
+				prevPt.y *= h;
 				if (!Double.isNaN(ct))
 					strokeLine(prevPt.x, prevPt.y, currPt.x, currPt.y);
 				current = prev;
@@ -335,11 +337,11 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		if (withMarkers) {
 			g.setFillStyle(style.startColor);
 			map.data2S3(init, prevPt);
-			fillCircle(prevPt.x, prevPt.y, style.markerSize);
+			fillCircle(prevPt.x * w, prevPt.y * h, style.markerSize);
 			if (!buffer.isEmpty()) {
 				g.setFillStyle(style.endColor);
 				map.data2S3(buffer.last(), currPt);
-				fillCircle(currPt.x, currPt.y, style.markerSize);
+				fillCircle(currPt.x * w, currPt.y * h, style.markerSize);
 			}
 		}
 		if (markers != null) {
@@ -350,11 +352,11 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 				String mcolor = markerColors[n++ % nMarkers];
 				if (mark[0] > 0.0) {
 					g.setFillStyle(mcolor);
-					fillCircle(currPt.x, currPt.y, style.markerSize);
+					fillCircle(currPt.x * w, currPt.y * h, style.markerSize);
 				} else {
 					g.setLineWidth(style.lineWidth);
 					g.setStrokeStyle(mcolor);
-					strokeCircle(currPt.x, currPt.y, style.markerSize);
+					strokeCircle(currPt.x * w, currPt.y * h, style.markerSize);
 				}
 			}
 		}
@@ -425,9 +427,17 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		}
 		g.setFont(font);
 		// now that the bounds are known determine outline
+		w = bounds.getWidth();
+		h = bounds.getHeight();
 		map.data2S3(1.0, 0.0, 0.0, e0);
+		e0.x *= w;
+		e0.y *= h;
 		map.data2S3(0.0, 1.0, 0.0, e1);
+		e1.x *= w;
+		e1.y *= h;
 		map.data2S3(0.0, 0.0, 1.0, e2);
+		e2.x *= w;
+		e2.y *= h;
 		outline.reset();
 		outline.moveTo(e0.x, e0.y);
 		outline.lineTo(e1.x, e1.y);
@@ -449,6 +459,8 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @param sLevels the number of sublevels for the frame
 	 */
 	public void drawFrame(int sLevels) {
+		double w = bounds.getWidth();
+		double h = bounds.getHeight();
 		if (style.showFrame) {
 			g.beginPath();
 			g.moveTo(e0.x, e0.y);
@@ -470,13 +482,13 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			for (int l = 1; l < sLevels; l++) {
 				map.data2S3(x, 1.0 - x, 0.0, start);
 				map.data2S3(0.0, 1.0 - x, x, end);
-				strokeLine(start.x, start.y, end.x, end.y);
+				strokeLine(start.x * w, start.y * h, end.x * w, end.y * h);
 				map.data2S3(0.0, x, 1.0 - x, start);
 				map.data2S3(x, 0.0, 1.0 - x, end);
-				strokeLine(start.x, start.y, end.x, end.y);
+				strokeLine(start.x * w, start.y * h, end.x * w, end.y * h);
 				map.data2S3(1.0 - x, 0.0, x, start);
 				map.data2S3(1.0 - x, x, 0.0, end);
-				strokeLine(start.x, start.y, end.x, end.y);
+				strokeLine(start.x * w, start.y * h, end.x * w, end.y * h);
 				x += iLevels;
 			}
 		}
@@ -484,8 +496,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			g.setStrokeStyle(style.frameColor);
 			g.setFillStyle(style.frameColor);
 			setFont(style.ticksLabelFont);
-			double w = bounds.getWidth();
-			double h = bounds.getHeight();
 			double len = Math.sqrt(h * h + w * w / 4);
 			double ty = w / (len + len) * (style.tickLength + 1);
 			double tx = h / len * (style.tickLength + 1);
@@ -499,15 +509,21 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 				else
 					tick = Formatter.format(1.0 - x, 2);
 				map.data2S3(x, 1.0 - x, 0.0, loc);
+				loc.x *= w;
+				loc.y *= h;
 				strokeLine(loc.x, loc.y, loc.x, loc.y + style.tickLength);
 				if (style.showXTickLabels)
 					// center tick labels with ticks
 					g.fillText(tick, loc.x - g.measureText(tick).getWidth() * 0.5, loc.y + style.tickLength + 12.5);
 				map.data2S3(0.0, x, 1.0 - x, loc);
+				loc.x *= w;
+				loc.y *= h;
 				strokeLine(loc.x, loc.y, loc.x + tx, loc.y - ty);
 				if (style.showXTickLabels)
 					g.fillText(tick, loc.x + tx + 6, loc.y - ty + 3);
 				map.data2S3(1.0 - x, 0.0, x, loc);
+				loc.x *= w;
+				loc.y *= h;
 				strokeLine(loc.x, loc.y, loc.x - tx, loc.y - ty);
 				if (style.showXTickLabels)
 					g.fillText(tick, loc.x - tx - (g.measureText(tick).getWidth() + 6), loc.y - ty + 3);
@@ -525,16 +541,26 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			g.setFillStyle(colors[order[0]]);
 			Point2D loc = new Point2D();
 			map.data2S3(1.0, 0.0, 0.0, loc);
+			loc.x *= w;
+			loc.y *= h;
 			String label = names[order[0]];
 			g.fillText(label, loc.x - g.measureText(label).getWidth() * 0.5, loc.y + yshift);
 			g.setFillStyle(colors[order[1]]);
 			map.data2S3(0.0, 1.0, 0.0, loc);
+			loc.x *= w;
+			loc.y *= h;
 			label = names[order[1]];
 			g.fillText(label, loc.x - g.measureText(label).getWidth() * 0.5, loc.y + yshift);
 			g.setFillStyle(colors[order[2]]);
 			map.data2S3(0.0, 0.0, 1.0, loc);
+			loc.x *= w;
+			loc.y *= h;
 			label = names[order[2]];
 			g.fillText(label, loc.x - g.measureText(label).getWidth() * 0.5, loc.y - 14.5);
+		}
+		if (style.label != null) {
+			g.setFillStyle(style.labelColor);
+			g.fillText(style.label, -10.0, -32.0);
 		}
 	}
 
@@ -804,86 +830,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 					Formatter.format(s3[order[0] + 1], 8) + ", " + //
 					Formatter.format(s3[order[1] + 1], 8) + ", " + //
 					Formatter.format(s3[order[2] + 1], 8) + "\n");
-		}
-	}
-
-	/**
-	 * Default mapping of data to simplex \(S_3\) projections. Custom
-	 * implementations of the {@code Data2S3} interface can be provided by modules
-	 * that implement the {@code HasS3} interface.
-	 * 
-	 * @see HasS3#getS3Map(int)
-	 */
-	public class S3Map implements HasS3.Data2S3, BasicTooltipProvider {
-
-		/**
-		 * Create a new mapping of data to simplex projections. The role of the data is
-		 * ignored by default.
-		 * 
-		 * @param role the role of the data
-		 */
-		public S3Map(int role) {
-			// ignore role by default
-		}
-
-		/**
-		 * The indices of the traits on the simplex. The first entry refers to the lower
-		 * left corner, the second to the lower right and the last entry to the top
-		 * corner.
-		 */
-		int[] order = new int[] { 0, 1, 2 };
-
-		/**
-		 * Temporary storage for the simplex coordinates of the tooltip.
-		 */
-		double[] tip = new double[3];
-
-		@Override
-		public void setOrder(int[] order) {
-			System.arraycopy(order, 0, this.order, 0, this.order.length);
-		}
-
-		@Override
-		public int[] getOrder() {
-			return order;
-		}
-
-		@Override
-		public Point2D data2S3(double[] s3, Point2D p) {
-			return data2S3(s3[order[0] + 1], s3[order[1] + 1], s3[order[2] + 1], p);
-		}
-
-		@Override
-		public Point2D data2S3(double s1, double s2, double s3, Point2D p) {
-			// top (c): s3, right (d): s2, left (l): s1
-			p.x = s2 - s1; // [-1, 1]
-			p.y = (s3 - s2 - s1 + 1.0) * 0.5 - 1.0 / 3.0; // [-1/3, 2/3]
-			p.scale(s1 + s2 + s3);
-			p.x = (p.x + 1.0) * 0.5 * bounds.getWidth();
-			p.y = (2.0 / 3.0 - p.y) * bounds.getHeight();
-			return p;
-		}
-
-		@Override
-		public double[] s32Data(double x, double y, double[] s) {
-			// point is in scaled user coordinates
-			double s2 = 1.0 - y / (bounds.getHeight() - 1);
-			double s1 = x / (bounds.getWidth() - 1) - s2 * 0.5;
-			s[order[2]] = Math.max(0.0, s2);
-			s[order[1]] = Math.max(0.0, s1);
-			s[order[0]] = Math.max(0.0, 1.0 - s1 - s2);
-			ArrayMath.normalize(s);
-			return s;
-		}
-
-		@Override
-		public String getTooltipAt(double sx, double sy) {
-			map.s32Data(sx, sy, tip);
-			String msg = "<table>";
-			for (int i = 0; i < 3; i++)
-				msg += "<tr><td style='text-align:right'><i>" + names[i] + ":</i></td><td>" //
-						+ Formatter.formatPercent(tip[i], 2) + "</td></tr>";
-			return msg + "</table>";
 		}
 	}
 }
