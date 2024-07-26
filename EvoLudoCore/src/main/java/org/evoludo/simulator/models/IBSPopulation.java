@@ -2952,7 +2952,8 @@ public abstract class IBSPopulation {
 
 	/**
 	 * Check all model parameters for consistency and adjust if necessary (and
-	 * feasible). Returns {@code true} if adjustments require a reset.
+	 * feasible). Returns {@code true} if adjustments require a reset. Free memory
+	 * if possible and request a reset if new memory needs to be allocated.
 	 * 
 	 * @return {@code true} if reset is required
 	 * 
@@ -3253,6 +3254,16 @@ public abstract class IBSPopulation {
 					}
 				}
 			}
+			// with lookup tables scores, fitness and interaction arrays not needed
+			scores = null;
+			fitness = null;
+			interactions = null;
+		} else {
+			// request reset if we had lookup tables before to allocate arrays scores, fitness 
+			// and interaction
+			doReset |= (typeFitness != null || typeScores != null);
+			typeFitness = null;
+			typeScores = null;
 		}
 		// number of interactions can also be determined in structured populations with
 		// well-mixed demes
@@ -3440,18 +3451,9 @@ public abstract class IBSPopulation {
 				typeScores = new double[nTraits];
 			if (typeFitness == null || typeFitness.length != nTraits)
 				typeFitness = new double[nTraits];
-		} else {
-			// free lookup tables
-			typeScores = null;
-			typeFitness = null;
 		}
 		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
-		if (hasLookupTable && !ephemeralScores) {
-			// lookup tables don't need scores, fitness or interactions
-			scores = null;
-			fitness = null;
-			interactions = null;
-		} else {
+		if (!hasLookupTable || ephemeralScores) {
 			// emphemeral scores need both
 			if (scores == null || scores.length != nPopulation)
 				scores = new double[nPopulation];
