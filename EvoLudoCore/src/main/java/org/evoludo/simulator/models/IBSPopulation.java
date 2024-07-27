@@ -1370,7 +1370,7 @@ public abstract class IBSPopulation {
 	protected int pickNeighborSiteAt(int me) {
 		// mean-field
 		if (competition.getType() == Geometry.Type.MEANFIELD)
-			return pickFocalIndividual(me);
+			return pickFocalSite(me);
 
 		debugModels = competition.out[me];
 		debugNModels = competition.kout[me];
