@@ -42,13 +42,13 @@ import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.NativeJS;
 import org.evoludo.util.XMLCoder;
 
 import com.google.gwt.canvas.client.Canvas;
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.EntryPoint;
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.ScriptInjector;
 import com.google.gwt.dom.client.DataTransfer;
@@ -260,8 +260,8 @@ public class EvoLudoWeb extends Composite
 		EvoLudoWeb.exportInsertEvoLudoLab();
 		EvoLudoWeb.exportInsertEPubEvoLudoLab();
 		EvoLudoWeb.exportCreateEvoLudoLab();
-		String ePub = getEPubReader();
-		if ((ePub != null) && ePub.startsWith("iBooks") && !ePubReaderHasFeature("touch-events")) {
+		String ePub = NativeJS.getEPubReader();
+		if ((ePub != null) && ePub.startsWith("iBooks") && !NativeJS.ePubReaderHasFeature("touch-events")) {
 			// patch macOS patch for Apple Books (iBooks) on devices without touch
 			// (doesn't play nicely with GWT without some gentle encouragement).
 			ScriptInjector.fromString(Resources.INSTANCE.touchEventsGWTHandler().getText())
@@ -328,7 +328,7 @@ public class EvoLudoWeb extends Composite
 			return;
 		}
 		// canvas is supported, now check if WebGL is supported as well
-		isWebGLSupported = _isWebGLSupported();
+		isWebGLSupported = NativeJS.isWebGLSupported();
 
 		// instantiate engine early so that logging can be set up; EvoLudo console is
 		// added later
@@ -341,7 +341,7 @@ public class EvoLudoWeb extends Composite
 		// note: log handler needs to know whether this is an ePub (regardless of any
 		// feature declarations with --gui) to make sure log is properly XML encoded (if
 		// needed).
-		boolean isEPub = getEPubReader() != null;
+		boolean isEPub = NativeJS.getEPubReader() != null;
 		XMLCoder.setStrict(engine.isXML);
 		ConsoleLogHandler logHandler = new ConsoleLogHandler();
 		logHandler.setFormatter(new TextLogFormatter(true, isEPub || engine.isXML));
@@ -381,7 +381,7 @@ public class EvoLudoWeb extends Composite
 		Resources.INSTANCE.css().ensureInjected();
 		// process DOM and replace all div's with class evoludo-simulation by an
 		// interactive lab
-		NodeList<Element> labs = querySelectorAll("div.evoludo-simulation");
+		NodeList<Element> labs = NativeJS.querySelectorAll("div.evoludo-simulation");
 		int nLabs = labs.getLength();
 		for (int n = 0; n < nLabs; n++) {
 			Element labElement = labs.getItem(n);
@@ -414,7 +414,7 @@ public class EvoLudoWeb extends Composite
 		}
 		// process DOM and replace all div's with class evoludo-trigger-html by a
 		// trigger button
-		NodeList<Element> triggers = querySelectorAll("div.evoludo-trigger-html");
+		NodeList<Element> triggers = NativeJS.querySelectorAll("div.evoludo-trigger-html");
 		int nTriggers = triggers.getLength();
 		for (int n = 0; n < nTriggers; n++) {
 			Element triggerElement = triggers.getItem(n);
@@ -894,7 +894,7 @@ public class EvoLudoWeb extends Composite
 			@Override
 			public void execute() {
 				evoludoLayout.onResize();
-				focusOn(evoludoCLO.getElement());
+				NativeJS.focusOn(evoludoCLO.getElement());
 			}
 		});
 	}
@@ -1374,7 +1374,7 @@ public class EvoLudoWeb extends Composite
 		drop.preventDefault();
 		drop.stopPropagation();
 		evoludoOverlay.setVisible(false);
-		if (!isValidDnD(data)) {
+		if (!NativeJS.isValidDnD(data)) {
 			displayStatus("Drag'n'drop failed: Invalid state file.", Level.SEVERE.intValue());
 			return;
 		}
@@ -1384,7 +1384,7 @@ public class EvoLudoWeb extends Composite
 			ScriptInjector.fromString(Resources.INSTANCE.zip().getText()).inject();
 			hasZipJs = true;
 		}
-		handleDnD(data, engine);
+		NativeJS.handleDnD(data, engine);
 	}
 
 	/**
@@ -1492,7 +1492,7 @@ public class EvoLudoWeb extends Composite
 		if (engine.isEPub && !engine.ePubStandalone)
 			// in ePub text flow only "Alt" key is acceptable and does not count as handled
 			return false;
-		boolean cloActive = isElementActive(evoludoCLO.getElement());
+		boolean cloActive = NativeJS.isElementActive(evoludoCLO.getElement());
 		if (cloActive) {
 			// focus is on command line options ignore keypress
 			// except Shift-Enter, which applies the new settings
@@ -1637,7 +1637,7 @@ public class EvoLudoWeb extends Composite
 		if (key.equals("Shift"))
 			// shift-key does not count as handled
 			isShiftDown = true;
-		boolean cloActive = isElementActive(evoludoCLO.getElement());
+		boolean cloActive = NativeJS.isElementActive(evoludoCLO.getElement());
 		if (cloActive)
 			// focus is on command line options ignore keypress
 			return false;
@@ -1870,9 +1870,9 @@ public class EvoLudoWeb extends Composite
 				@Override
 				public boolean parse(String arg) {
 					if (arg.startsWith("full")) {
-						if (isFullscreenSupported()) {
+						if (NativeJS.isFullscreenSupported()) {
 							// enter full screen, if supported
-							requestFullscreen(evoludoPanel.getParent().getParent().getElement());
+							NativeJS.requestFullscreen(evoludoPanel.getParent().getParent().getElement());
 							return true;
 						}
 						arg = cloSize.getDefault();
@@ -1968,58 +1968,6 @@ public class EvoLudoWeb extends Composite
 	private static EvoLudoWeb keyListener = null;
 
 	/**
-	 * JSNI method: check whether a single plist files was dropped.
-	 * <p>
-	 * <strong>Note:</strong> This check needs to be done in native javascript
-	 * because the DataTransfer object returned by the <code>onDrop</code> handler
-	 * cannot be read using GWT routines.
-	 *
-	 * @param dataTransfer list of dropped file(s)
-	 * @return <code>true</code> if the dropped file looks promising and ok for
-	 *         further processing
-	 */
-	private final native boolean isValidDnD(JavaScriptObject dataTransfer) /*-{
-		var files = dataTransfer.files;
-		if (files.length != 1)
-			return false;
-		var fname = files[0].name;
-		return fname.includes(".plist");
-	}-*/;
-
-	/**
-	 * JSNI method: the HTML5 File API enables reading of files. Take advantage of
-	 * functionality to read contents of dropped file.
-	 * <p>
-	 * <strong>Note:</strong> {@link #isValidDnD(JavaScriptObject)} should be called
-	 * first to ensure that only a single 'plist' file was dropped.
-	 *
-	 * @param dataTransfer list of dropped file(s)
-	 * @param engine       model that processes contents of dropped file
-	 */
-	private final native void handleDnD(JavaScriptObject dataTransfer, EvoLudoGWT engine) /*-{
-		var files = dataTransfer.files;
-		if (files.length != 1)
-			return;
-		var file = files[0];
-		// first try as compressed data
-		JSZip.loadAsync(file)
-			.then(function(zip) {
-				zip.forEach(function (relativePath, zipEntry) {
-					zip.file(zipEntry.name).async("string").then(function (data) {
-						engine.@org.evoludo.simulator.EvoLudoGWT::restoreFromFile(Ljava/lang/String;Ljava/lang/String;)(zipEntry.name, data);
-					});
-				});
-			}, function (e) {
-				// file is not compressed; try as plain plist file
-				var reader = new FileReader();
-				reader.onload = function(e) {
-					engine.@org.evoludo.simulator.EvoLudoGWT::restoreFromFile(Ljava/lang/String;Ljava/lang/String;)(file.name, e.target.result);
-				}
-				reader.readAsText(file);
-			});
-	}-*/;
-
-	/**
 	 * Expose method for creating EvoLudo labs (EvoLudoWeb objects) to javascript
 	 *
 	 * @param id  the ID of element for EvoLudo lab
@@ -2028,7 +1976,7 @@ public class EvoLudoWeb extends Composite
 	public static void createEvoLudoLab(String id, String clo) {
 		RootPanel root = RootPanel.get(id);
 		if (root == null) {
-			alert("Element with id '" + id + "' not found.");
+			NativeJS.alert("Element with id '" + id + "' not found.");
 			return;
 		}
 		root.add(new EvoLudoWeb(id, clo));
@@ -2159,7 +2107,7 @@ public class EvoLudoWeb extends Composite
 	public static void createEvoLudoTrigger(String id) {
 		RootPanel root = RootPanel.get(id);
 		if (root == null) {
-			alert("Element with id '" + id + "' not found.");
+			NativeJS.alert("Element with id '" + id + "' not found.");
 			return;
 		}
 		root.add(new EvoLudoTrigger(id));
@@ -2171,59 +2119,6 @@ public class EvoLudoWeb extends Composite
 	public static native void exportCreateEvoLudoTrigger()
 	/*-{
 		$wnd.createEvoLudoTrigger = $entry(@org.evoludo.EvoLudoWeb::createEvoLudoTrigger(Ljava/lang/String;));
-	}-*/;
-
-	/**
-	 * Display javascript alert panel - use sparingly.
-	 *
-	 * @param msg the message to display
-	 */
-	public static native void alert(String msg) /*-{
-		$wnd.alert(msg);
-	}-*/;
-
-	/**
-	 * JSNI method: expose convenient javascript method to obtain a list of elements
-	 * in the DOM that match the selection criterion <code>selector</code>.
-	 *
-	 * @param selector the criterion for selecting elements in DOM
-	 * @return list of elements that match <code>selector</code>
-	 */
-	public final native NodeList<Element> querySelectorAll(String selector)
-	/*-{
-		return $doc.querySelectorAll(selector);
-	}-*/;
-
-	/**
-	 * JSNI method: check if {@code element} is active.
-	 * 
-	 * @param element the element to check
-	 * @return {@code true} if {@code element} is active
-	 */
-	public final native boolean isElementActive(Element element)
-	/*-{
-		return ($doc.activeElement === element);
-	}-*/;
-
-	/**
-	 * JSNI method: focus on {@code element}.
-	 * 
-	 * @param element the element to focus on
-	 */
-	public final native void focusOn(Element element)
-	/*-{
-		element.focus();
-	}-*/;
-
-	/**
-	 * JSNI method: return the pixel ratio of the current device. This is intended
-	 * to prevent distortions on the <code>canvas</code> objects of the data views.
-	 *
-	 * @return the pixel ratio of device
-	 */
-	public final static native int getDevicePixelRatio()
-	/*-{
-		return $wnd.devicePixelRatio || 1;
 	}-*/;
 
 	/**
@@ -2301,265 +2196,22 @@ public class EvoLudoWeb extends Composite
 	void logFeatures() {
 		logger.info("GWT Version: " + GWT.getVersion());
 		logger.info("GUI features: " + //
-				(isWebGLSupported ? "WebGL " : "") + //
-				(engine.isXML ? "XML " : "") + //
-				(engine.hasKeys() ? "keyboard " : "") + //
-				(engine.hasMouse() ? "mouse " : "") + //
-				(engine.hasTouch() ? "touch " : "") + //
-				(engine.isEPub ? "ePub (" + //
+				(NativeJS.isWebGLSupported() ? "WebGL " : "") + //
+				(NativeJS.isXML() ? "XML " : "") + //
+				(NativeJS.hasKeys() ? "keyboard " : "") + //
+				(NativeJS.hasMouse() ? "mouse " : "") + //
+				(NativeJS.hasTouch() ? "touch " : "") + //
+				(NativeJS.isEPub() ? "ePub (" + //
 						(engine.ePubHasKeys ? "keyboard" : "") + //
 						(engine.ePubHasMouse ? "mouse" : "") + //
 						(engine.ePubHasTouch ? "touch" : "") + ")" : ""));
 	}
 
 	/**
-	 * Retrieve string identifying the ePub reading system:
-	 * <ul>
-	 * <li>web browser: null</li>
-	 * <li>iBooks: iBooks, Apple Books</li>
-	 * <li>Adobe Digital Editions 4.5.8 (macOS): RMSDK</li>
-	 * <li>Readium: no JS (and no display equations!)</li>
-	 * <li>TEA Ebook 1.5.0 (macOS): no JS (and issues with MathML)</li>
-	 * <li>calibre: calibre-desktop (supports JS and MathML but appears
-	 * unstable)</li>
-	 * </ul>
-	 * <strong>Note:</strong> nonlinear content in Apple Books on iOS does
-	 * <strong>not</strong> report as an ePub reading system (at least on the iPad).
-	 * Apple Books on macOS behaves as expected.
-	 *
-	 * @return identification string of ePub reading system or <code>null</code> if
-	 *         no reading system or reading system unknown
-	 */
-	public final static native String getEPubReader()
-	/*-{
-		var epub = $wnd.navigator.epubReadingSystem
-				|| window.navigator.epubReadingSystem
-				|| navigator.epubReadingSystem;
-		if (!epub)
-			return null;
-		return epub.name;
-	}-*/;
-
-	/**
-	 * JSNI method: test if ePub reader supports <code>feature</code>. in ePub 3
-	 * possible features are:
-	 * <dl>
-	 * <dt>dom-manipulation</dt>
-	 * <dd>Scripts MAY make structural changes to the document’s DOM (applies to
-	 * spine-level scripting only).</dd>
-	 * <dt>layout-changes</dt>
-	 * <dd>Scripts MAY modify attributes and CSS styles that affect content layout
-	 * (applies to spine-level scripting only).</dd>
-	 * <dt>touch-events</dt>
-	 * <dd>The device supports touch events and the Reading System passes touch
-	 * events to the content.</dd>
-	 * <dt>mouse-events</dt>
-	 * <dd>The device supports mouse events and the Reading System passes mouse
-	 * events to the content.</dd>
-	 * <dt>keyboard-events</dt>
-	 * <dd>The device supports keyboard events and the Reading System passes
-	 * keyboard events to the content.</dd>
-	 * <dt>spine-scripting</dt>
-	 * <dd>Indicates whether the Reading System supports spine-level scripting
-	 * (e.g., so a container-constrained script can determine whether any actions
-	 * that depend on scripting support in a Top-level Content Document have any
-	 * chance of success before attempting them).</dd>
-	 * </dl>
-	 *
-	 * @see <a href=
-	 *      "https://www.w3.org/publishing/epub3/epub-contentdocs.html#app-epubReadingSystem">
-	 *      https://www.w3.org/publishing/epub3/epub-contentdocs.html#app-epubReadingSystem</a>
-	 *
-	 * @param feature the ePub feature to test
-	 * @return <code>true</code> if feature supported
-	 */
-	public final static native boolean ePubReaderHasFeature(String feature)
-	/*-{
-		var epub = $wnd.navigator.epubReadingSystem;
-		if (!epub)
-			return false;
-		return $wnd.navigator.epubReadingSystem.hasFeature(feature);
-	}-*/;
-
-	/**
 	 * Indicator whether display system supports WebGL to display population
 	 * structures in 3D.
 	 */
 	private final boolean isWebGLSupported;
-
-	/**
-	 * JSNI method: check whether WebGL and hence 3D graphics are supported.
-	 * <p>
-	 * <strong>Note:</strong> asssumes that <code>canvas</code> is supported
-	 *
-	 * @return <code>true</code> if WebGL is supported
-	 */
-	private static native boolean _isWebGLSupported() /*-{
-		try {
-			var canvas = $doc.createElement('canvas');
-			// must explicitly check for null (otherwise this may return an object
-			// violating the signature of the _isWebGLSupported() method)
-			return (!!$wnd.WebGLRenderingContext
-					&& (canvas.getContext('webgl') || canvas
-							.getContext('experimental-webgl'))) != null;
-		} catch (e) {
-			return false;
-		}
-	}-*/;
-
-	/**
-	 * JSNI method: base-64 encoding of string.
-	 *
-	 * @param b string to encode
-	 * @return encoded string
-	 */
-	public static native String b64encode(String b) /*-{
-		return window.btoa(b);
-	}-*/;
-
-	/**
-	 * JSNI method: decoding of base-64 encoded string.
-	 *
-	 * @param a string to decode
-	 * @return decoded string
-	 */
-	public static native String b64decode(String a) /*-{
-		return window.atob(a);
-	}-*/;
-
-	/**
-	 * JSNI method: encourage browser to download {@code dataURL} as a file named
-	 * {@code filename}.
-	 * <p>
-	 * <strong>Note:</strong> <code>&#x23;</code> characters cause trouble in data
-	 * URL. Escape them with <code>%23</code>.
-	 *
-	 * @param dataURL  the file content encoded as data URL
-	 * @param filename the name of the downloaded file
-	 */
-	public static native void _export(String dataURL, String filename) /*-{
-		var elem = $doc.createElement('a');
-		// character '#' makes trouble in data URL's - escape
-		elem.href = dataURL.replace(/#/g, "%23");
-		elem.download = filename;
-		$doc.body.appendChild(elem);
-		elem.click();
-		$doc.body.removeChild(elem);
-	}-*/;
-
-	/**
-	 * Check if fullscreen mode is supported.
-	 * 
-	 * @return {@code true} if fullscreen supported
-	 */
-	public native boolean isFullscreenSupported()
-	/*-{
-		return $doc.fullscreenEnabled || $doc.mozFullScreenEnabled
-			|| $doc.webkitFullscreenEnabled || $doc.msFullscreenEnabled ? true
-			: false;
-	}-*/;
-
-	/**
-	 * Request fullscreen mode for the element {@code ele}.
-	 * 
-	 * @param ele the element to request fullscreen mode for
-	 */
-	public static native void requestFullscreen(Element ele)
-	/*-{
-		if (ele.requestFullscreen) {
-			ele.requestFullscreen();
-			// using promise:
-			//			ele.requestFullscreen().then(console.log("request honoured! width="+ele.scrollWidth));
-		} else if (ele.msRequestFullscreen) {
-			ele.msRequestFullscreen();
-		} else if (ele.mozRequestFullScreen) {
-			ele.mozRequestFullScreen();
-		} else if (ele.webkitRequestFullScreen) {
-			ele.webkitRequestFullScreen();
-		}
-	}-*/;
-
-	/*
-	 * some potentially useful (but currently unused) javascript snippets
-	 */
-
-	// /**
-	// * open new window displaying data url
-	// *
-	// * <p>unfortunately an increasing number of browsers deem data url's unsafe
-	// and ignore this call.
-	// * at present (october 2019), works as expected in Safari but not Google
-	// Chrome or Firefox.
-	// *
-	// * @param dataURL
-	// */
-	// protected static native void _export(String dataURL)
-	// /*-{
-	// $wnd.open(dataURL, '_blank');
-	// }-*/;
-
-	// public static native String getComputedStyle(Element element, String style)
-	// /*-{
-	// return $wnd.getComputedStyle(element, null).getPropertyValue(style);
-	// }-*/;
-
-	// public static native int getBoundingHeight(Element element)
-	// /*-{
-	// return element.getBoundingClientRect().height;
-	// }-*/;
-
-	// public final native Element activeElement()
-	// /*-{
-	// return $doc.activeElement;
-	// }-*/;
-
-	// public static native JsArray<Node> getAttributes(Element elem) /*-{
-	// return elem.attributes;
-	// }-*/;
-
-	// public final static native int getScreenWidth()
-	// /*-{
-	// return $wnd.screen.width;
-	// }-*/;
-
-	// public final static native int getScreenHeight()
-	// /*-{
-	// return $wnd.screen.height;
-	// }-*/;
-
-	// protected static native String dumpStyle(Element element)
-	// /*-{
-	// return Object.keys(element.style).map(function(k) { return k + ":" +
-	// element.style[k] }).join(", ");
-	// }-*/;
-
-	// public final static native String getLocalStorage(String key)
-	// /*-{
-	// return localStorage.getItem(key);
-	// }-*/;
-
-	// public final static native String setLocalStorage(String key, String value)
-	// /*-{
-	// return localStorage.setItem(key, value);
-	// }-*/;
-
-	// public static native void logJS(String msg)
-	// /*-{
-	// console.log(msg);
-	// }-*/;
-
-	// /**
-	// * determine browser prefix for event handlers and features
-	// *
-	// * @return browser specific javascript prefix
-	// */
-	// private static native String _jsPrefix()
-	// /*-{
-	// var styles = $wnd.getComputedStyle($doc.documentElement, '');
-	// return (Array.prototype.slice
-	// .call(styles).join('')
-	// .match(/-(moz|webkit|ms)-/) || (styles.OLink === '' && ['', 'o']))[1];
-	// }-*/;
 
 	/**
 	 * Custom handler for logging system. Redirects notifications to EvoLudo console

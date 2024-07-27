@@ -38,7 +38,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
 
-import org.evoludo.EvoLudoWeb;
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.HasTrajectory;
 import org.evoludo.graphics.AbstractGraph.MyContext2d;
@@ -58,13 +57,12 @@ import org.evoludo.ui.FullscreenChangeEvent;
 import org.evoludo.ui.FullscreenChangeHandler;
 import org.evoludo.ui.HasFullscreenChangeHandlers;
 import org.evoludo.util.Formatter;
+import org.evoludo.util.NativeJS;
 import org.evoludo.util.RingBuffer;
 
 import com.google.gwt.canvas.client.Canvas;
-import com.google.gwt.canvas.dom.client.Context2d;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.ScriptInjector;
-import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Style.Position;
 import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.i18n.client.DateTimeFormat;
@@ -230,7 +228,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		for (AbstractGraph<?> graph : graphs)
 			graph.activate();
 		scheduleUpdate(true);
-		if (isFullscreenSupported())
+		if (NativeJS.isFullscreenSupported())
 			fullscreenHandler = addFullscreenChangeHandler(this);
 		if (!setMode(getMode())) {
 			// this is should not happen because view should not be available
@@ -478,12 +476,12 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 				break;
 			case "F":
 				// toggle fullscreen (if supported)
-				if (!isFullscreenSupported())
+				if (!NativeJS.isFullscreenSupported())
 					return false;
-				if (isFullscreen())
-					exitFullscreen();
+				if (NativeJS.isFullscreen())
+					NativeJS.exitFullscreen();
 				else
-					requestFullscreen(getElement());
+					NativeJS.requestFullscreen(getElement());
 				break;
 			default:
 				return false;
@@ -510,8 +508,8 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	// onwebkitfullscreenchange! the two do not seem to be identical
 	@Override
 	public void onFullscreenChange(FullscreenChangeEvent event) {
-		if (isFullscreen())
-			getFullscreenElement().addClassName("fullscreen");
+		if (NativeJS.isFullscreen())
+			NativeJS.getFullscreenElement().addClassName("fullscreen");
 		else
 			wrapper.getElement().removeClassName("fullscreen");
 		// deferring onResize helps Chrome to get the dimensions right (not needed for
@@ -613,18 +611,18 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		engine.populateContextMenu(contextMenu);
 
 		// process fullscreen context menu
-		if (fullscreenMenu == null && isFullscreenSupported()) {
+		if (fullscreenMenu == null && NativeJS.isFullscreenSupported()) {
 			fullscreenMenu = new ContextMenuCheckBoxItem("Full screen (β)", new Command() {
 				@Override
 				public void execute() {
-					setFullscreen(!isFullscreen());
+					setFullscreen(!NativeJS.isFullscreen());
 				}
 			});
 		}
-		if (isFullscreenSupported()) {
+		if (NativeJS.isFullscreenSupported()) {
 			contextMenu.addSeparator();
 			contextMenu.add(fullscreenMenu);
-			fullscreenMenu.setChecked(isFullscreen());
+			fullscreenMenu.setChecked(NativeJS.isFullscreen());
 		}
 
 		// process exports context menu (suppress in ePub, regardless of whether a
@@ -670,176 +668,25 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * @param fullscreen {@code true} to enter fullscreen
 	 */
 	public void setFullscreen(boolean fullscreen) {
-		if (fullscreen == isFullscreen())
+		if (fullscreen == NativeJS.isFullscreen())
 			return;
 		if (fullscreen)
-			requestFullscreen(getElement());
+			NativeJS.requestFullscreen(getElement());
 		else
-			exitFullscreen();
+			NativeJS.exitFullscreen();
 	}
 
 	@Override
 	public HandlerRegistration addFullscreenChangeHandler(FullscreenChangeHandler handler) {
-		String eventname = _jsFSCname();
-		_addFullscreenChangeHandler(eventname, handler);
+		String eventname = NativeJS.fullscreenChangeEventName();
+		NativeJS.addFullscreenChangeHandler(eventname, handler);
 		return new HandlerRegistration() {
 			@Override
 			public void removeHandler() {
-				_removeFullscreenChangeHandler(eventname, handler);
+				NativeJS.removeFullscreenChangeHandler(eventname, handler);
 			}
 		};
 	}
-
-	/**
-	 * Add a fullscreen change handler.
-	 * 
-	 * @evoludo.impl The JSNI routine works reasonably well with Safari but not with
-	 *               all other browsers because aspects of the fullscreen API are
-	 *               interpreted differently, see {@link #_jsFSCname()}.
-	 * 
-	 * @param eventname the name of the fullscreen change event
-	 * @param handler   the handler to add
-	 */
-	private final native void _addFullscreenChangeHandler(String eventname, FullscreenChangeHandler handler)
-	/*-{
-		$doc
-				.addEventListener(
-						eventname,
-						function(event) {
-							handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
-						}, true);
-	}-*/;
-
-	/**
-	 * Add a fullscreen change handler.
-	 * 
-	 * @evoludo.impl The handler function needs to be specified again when removing
-	 *               the listener... Because we don't know how to store the handler
-	 *               returned by the JSNI method
-	 *               {@code _addFullscreenChangeHandler(String, FullscreenChangeHandler)}
-	 *               it must be exact copy of handler specification there.
-	 * 
-	 * @param eventname the name of the fullscreen change event
-	 * @param handler   the handler to add
-	 */
-	private final native void _removeFullscreenChangeHandler(String eventname, FullscreenChangeHandler handler)
-	/*-{
-		$doc
-				.removeEventListener(
-						eventname,
-						function(event) {
-							handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
-						}, true);
-	}-*/;
-
-	/**
-	 * Request fullscreen mode for the element {@code ele}.
-	 * 
-	 * @param ele the element to request fullscreen mode for
-	 */
-	public static native void requestFullscreen(Element ele)
-	/*-{
-		if (ele.requestFullscreen) {
-			ele.requestFullscreen();
-			// using promise:
-			//			ele.requestFullscreen().then(console.log("request honoured! width="+ele.scrollWidth));
-		} else if (ele.msRequestFullscreen) {
-			ele.msRequestFullscreen();
-		} else if (ele.mozRequestFullScreen) {
-			ele.mozRequestFullScreen();
-		} else if (ele.webkitRequestFullScreen) {
-			ele.webkitRequestFullScreen();
-		}
-	}-*/;
-
-	/**
-	 * Exit fullscreen mode.
-	 */
-	public static native void exitFullscreen()
-	/*-{
-		if ($doc.exitFullscreen) {
-			$doc.exitFullscreen();
-		} else if ($doc.msExitFullscreen) {
-			$doc.msExitFullscreen();
-		} else if ($doc.mozCancelFullScreen) {
-			$doc.mozCancelFullScreen();
-		} else if ($doc.webkitCancelFullScreen) {
-			$doc.webkitCancelFullScreen();
-		}
-	}-*/;
-
-	/**
-	 * Check if the document is in fullscreen mode.
-	 * 
-	 * @return {@code true} if the document is in fullscreen mode
-	 */
-	public final static native boolean isFullscreen()
-	/*-{
-		if (($doc.fullscreenElement != null)
-				|| ($doc.mozFullScreenElement != null)
-				|| ($doc.webkitFullscreenElement != null)
-				|| ($doc.msFullscreenElement != null))
-			return true;
-		// NOTE: Document.fullscreen et al. are obsolete - last resort
-		return $doc.fullscreen || $doc.mozFullScreen || $doc.webkitIsFullScreen ? true
-				: false;
-	}-*/;
-
-	/**
-	 * Check if web browser supports fullscreen.
-	 * 
-	 * @return <code>true</code> if fullscreen is supported
-	 */
-	public native boolean isFullscreenSupported()
-	/*-{
-		return $doc.fullscreenEnabled || $doc.mozFullScreenEnabled
-				|| $doc.webkitFullscreenEnabled || $doc.msFullscreenEnabled ? true
-				: false;
-	}-*/;
-
-	/**
-	 * Gets fullscreen element if in fullscreen mode or <code>null</code> if not in
-	 * fullscreen or fullscreen not supported by web browser.
-	 *
-	 * @return fullscreen element or <code>null</code>
-	 */
-	public final static native Element getFullscreenElement()
-	/*-{
-		if ($doc.fullscreenElement != null)
-			return $doc.fullscreenElement;
-		if ($doc.mozFullScreenElement != null)
-			return $doc.mozFullScreenElement;
-		if ($doc.webkitFullscreenElement != null)
-			return $doc.webkitFullscreenElement;
-		if ($doc.msFullscreenElement != null)
-			return $doc.msFullscreenElement;
-		return null;
-	}-*/;
-
-	/**
-	 * Determine name of the fullscreen change event in current web browser.
-	 * <p>
-	 * <strong>Note:</strong> Chrome implements both <code>fullscreenchange</code>
-	 * and <code>webkitfullscreenchange</code> but with slightly different behaviour
-	 * (neither identical to Safari). <code>fullscreenchange</code> at least works
-	 * for a single graph and hence give it precedence. For Firefox scaling/resizing
-	 * issues remain as well as for Chrome with multiple graphs.
-	 *
-	 * @return web browser specific fullscreen change event name or
-	 *         <code>null</code> if Fullscreen API not implemented.
-	 */
-	private static native String _jsFSCname()
-	/*-{
-		if ($doc.onfullscreenchange !== undefined)
-			return "fullscreenchange";
-		if ($doc.onwebkitfullscreenchange !== undefined)
-			return "webkitfullscreenchange";
-		if ($doc.onmozfullscreenchange !== undefined)
-			return "mozfullscreenchange";
-		if ($doc.onmsfullscreenchange !== undefined)
-			return "msfullscreenchange";
-		return null;
-	}-*/;
 
 	/**
 	 * The available export data types:
@@ -976,25 +823,14 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		Canvas canvas = Canvas.createIfSupported();
 		if (canvas == null)
 			return;
-		int scale = getDevicePixelRatio();
+		int scale = NativeJS.getDevicePixelRatio();
 		canvas.setCoordinateSpaceWidth(getOffsetWidth() * scale);
 		canvas.setCoordinateSpaceHeight(getOffsetHeight() * scale);
 		MyContext2d ctx = canvas.getContext2d().cast();
 		export(ctx, scale);
-		EvoLudoWeb._export(canvas.getCanvasElement().toDataUrl("image/png").replaceFirst("^data:image/[^;]",
+		NativeJS.export(canvas.getCanvasElement().toDataUrl("image/png").replaceFirst("^data:image/[^;]",
 				"data:application/octet-stream"), "evoludo.png");
 	}
-
-	/**
-	 * Get the pixel ratio of the current device. This is intended to prevent
-	 * distortions on the <code>canvas</code> objects of the data views.
-	 *
-	 * @return the pixel ratio of the current device
-	 */
-	public final static native int getDevicePixelRatio()
-	/*-{
-		return $wnd.devicePixelRatio || 1;
-	}-*/;
 
 	/**
 	 * Export the view as a SVG image.
@@ -1005,10 +841,10 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 			ScriptInjector.fromString(Resources.INSTANCE.canvas2SVG().getText()).inject();
 			hasSVGjs = true;
 		}
-		int scale = getDevicePixelRatio();
-		MyContext2d ctx = _createSVGContext(getOffsetWidth() * scale, getOffsetHeight() * scale);
+		int scale = NativeJS.getDevicePixelRatio();
+		MyContext2d ctx = NativeJS.createSVGContext(getOffsetWidth() * scale, getOffsetHeight() * scale);
 		export(ctx, scale);
-		_exportSVG(ctx);
+		NativeJS.exportSVG(ctx);
 	}
 
 	/**
@@ -1092,7 +928,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		}
 		if (export.length() == header)
 			return;
-		EvoLudoWeb._export("data:text/csv;base64," + EvoLudoWeb.b64encode(export.toString()), "evoludo_mean.csv");
+		NativeJS.export("data:text/csv;base64," + NativeJS.b64encode(export.toString()), "evoludo_mean.csv");
 	}
 
 	/**
@@ -1111,29 +947,8 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		}
 		if (export.length() == header)
 			return;
-		EvoLudoWeb._export("data:text/csv;base64," + EvoLudoWeb.b64encode(export.toString()), "evoludo_traj.csv");
+		NativeJS.export("data:text/csv;base64," + NativeJS.b64encode(export.toString()), "evoludo_traj.csv");
 	}
-
-	/**
-	 * Create a SVG context for exporting the view.
-	 * 
-	 * @param width  the width of the context
-	 * @param height the height of the context
-	 * @return the SVG context
-	 */
-	protected static native MyContext2d _createSVGContext(int width, int height) /*-{
-		return C2S(width, height);
-	}-*/;
-
-	/**
-	 * Export the SVG context. JSNI helper method.
-	 * 
-	 * @param ctx the SVG context to export
-	 */
-	protected static native void _exportSVG(Context2d ctx) /*-{
-		@org.evoludo.EvoLudoWeb::_export(Ljava/lang/String;Ljava/lang/String;)("data:image/svg+xml;charset=utf-8,"+
-			ctx.getSerializedSvg(true), "evoludo.svg");
-	}-*/;
 
 	/**
 	 * The export command triggered by the context menu entries.

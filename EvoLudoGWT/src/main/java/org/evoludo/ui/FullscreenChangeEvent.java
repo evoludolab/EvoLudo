@@ -73,20 +73,7 @@ public class FullscreenChangeEvent extends DomEvent<FullscreenChangeHandler> {
 	protected FullscreenChangeEvent() {
 	}
 
-	// NOTE: apparently it is not possible to simply add custom methods here...
-	// public boolean isFullscreen() {
-	// return _isFullscreen();
-	// }
-	//
-	// private final static native boolean _isFullscreen()
-	// /*-{
-	// if( ($doc.fullscreenElement!=null) || ($doc.mozFullScreenElement!=null) ||
-	// ($doc.webkitFullscreenElement!=null) || ($doc.msFullscreenElement!=null) )
-	// return true;
-	// // NOTE: Document.fullscreen et al. are obsolete - last resort
-	// return $doc.fullscreen || $doc.mozFullScreen || $doc.webkitIsFullScreen ?
-	// true : false;
-	// }-*/;
+	// NOTE: apparently it is not possible to simply add custom methods here... e.g. public boolean isFullscreen()
 
 	@Override
 	public final Type<FullscreenChangeHandler> getAssociatedType() {

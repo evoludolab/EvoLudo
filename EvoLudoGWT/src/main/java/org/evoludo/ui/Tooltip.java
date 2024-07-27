@@ -34,6 +34,8 @@ package org.evoludo.ui;
 
 import java.util.HashMap;
 
+import org.evoludo.util.NativeJS;
+
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Style;
@@ -313,7 +315,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 					tooltip.close();
 				}
 			});
-			if (tooltip.isFullscreenSupported())
+			if (NativeJS.isFullscreenSupported())
 				tooltip.fullscreenHandler = tooltip.addFullscreenChangeHandler(tooltip);
 			tooltip.participants = new HashMap<FocusPanel, Registration>();
 			tooltip.addTouchStartHandler(tooltip);
@@ -391,7 +393,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 * Helper method: show tooltip now and set timeout timer.
 	 */
 	private void _show() {
-		if (!hasFocus()) {
+		if (!NativeJS.hasFocus()) {
 			close();
 			return;
 		}
@@ -430,7 +432,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 * @param origin the FocusPanel with tooltips.
 	 */
 	private void _update(FocusPanel origin) {
-		if (!hasFocus()) {
+		if (!NativeJS.hasFocus()) {
 			close();
 			return;
 		}
@@ -616,12 +618,12 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 
 	@Override
 	public HandlerRegistration addFullscreenChangeHandler(FullscreenChangeHandler handler) {
-		String eventname = _jsFSCname();
-		_addFullscreenChangeHandler(eventname, handler);
+		String eventname = NativeJS.fullscreenChangeEventName();
+		NativeJS.addFullscreenChangeHandler(eventname, handler);
 		return new HandlerRegistration() {
 			@Override
 			public void removeHandler() {
-				_removeFullscreenChangeHandler(eventname, handler);
+				NativeJS.removeFullscreenChangeHandler(eventname, handler);
 			}
 		};
 	}
@@ -638,7 +640,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 			return;
 		// note: if we want to be smart, we can relocate the tooltip only if the
 		// fullscreen element is among our listeners. worth it? see also ContexMenu.
-		Element fs = getFullscreenElement();
+		Element fs = NativeJS.getFullscreenElement();
 		if (fs != null) {
 			// entered fullscreen
 			fs.appendChild(tooltip.getElement());
@@ -649,107 +651,4 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 		// position fixed can get lost when relocating element
 		tooltip.style.setPosition(Position.FIXED);
 	}
-
-	/**
-	 * Check if document has focus. This is important to avoid showing tooltips when
-	 * the browser window is not in focus.
-	 * 
-	 * @return <code>true</code> if document has focus
-	 */
-	public final static native boolean hasFocus()
-	/*-{
-		return $doc.hasFocus();
-	}-*/;
-
-	/**
-	 * Check if fullscreen mode is supported.
-	 * 
-	 * @return <code>true</code> if fullscreen mode is supported
-	 */
-	public native boolean isFullscreenSupported()
-	/*-{
-		return $doc.fullscreenEnabled || $doc.mozFullScreenEnabled
-			|| $doc.webkitFullscreenEnabled || $doc.msFullscreenEnabled ? true
-			: false;
-	}-*/;
-
-	/**
-	 * Get fullscreen element.
-	 * 
-	 * @return fullscreen element or <code>null</code> if not in fullscreen or
-	 *         fullscreen not supported
-	 */
-	public final static native Element getFullscreenElement()
-	/*-{
-		if ($doc.fullscreenElement != null)
-			return $doc.fullscreenElement;
-		if ($doc.mozFullScreenElement != null)
-			return $doc.mozFullScreenElement;
-		if ($doc.webkitFullscreenElement != null)
-			return $doc.webkitFullscreenElement;
-		if ($doc.msFullscreenElement != null)
-			return $doc.msFullscreenElement;
-		return null;
-	}-*/;
-
-	/**
-	 * Native method to register fullscreen change handler
-	 * {@link #onFullscreenChange(FullscreenChangeEvent)}.
-	 * 
-	 * @param eventname name of fullscreen change event (browser dependent)
-	 * @param handler   of fullscreen change events
-	 * 
-	 * @see #_jsFSCname()
-	 */
-	private final native void _addFullscreenChangeHandler(String eventname, FullscreenChangeHandler handler)
-	/*-{
-		$doc.addEventListener(
-			eventname,
-			function(event) {
-				handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
-			}, true);
-	}-*/;
-
-	/**
-	 * Native method to remove fullscreen change handler. In order to identify the
-	 * correct handler, the same information is required as when registering the
-	 * handler. This is opaquely hidden by the {@link HandlerRegistration} returned
-	 * after registration.
-	 * 
-	 * @param eventname name of fullscreen change event (browser dependent)
-	 * @param handler   of fullscreen change events
-	 */
-	private final native void _removeFullscreenChangeHandler(String eventname, FullscreenChangeHandler handler)
-	/*-{
-		$doc.removeEventListener(
-			eventname,
-			function(event) {
-				handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
-			}, true);
-	}-*/;
-
-	/**
-	 * Determine browser specific name of the fullscreen change event
-	 * <p>
-	 * <strong>Note:</strong> Chrome implements both <code>fullscreenchange</code>
-	 * and <code>webkitfullscreenchange</code> but with slightly different behaviour
-	 * (neither identical to Safari). <code>fullscreenchange</code> at least works
-	 * for a single graph and hence give it precedence. For Firefox scaling/resizing
-	 * issues remain as well as for Chrome with multiple graphs.
-	 * 
-	 * @return browser specific fullscreen change event name or <code>null</code> if
-	 *         Fullscreen API not implemented.
-	 */
-	private static native String _jsFSCname()
-	/*-{
-		if ($doc.onfullscreenchange !== undefined)
-			return "fullscreenchange";
-		if ($doc.onwebkitfullscreenchange !== undefined)
-			return "webkitfullscreenchange";
-		if ($doc.onmozfullscreenchange !== undefined)
-			return "mozfullscreenchange";
-		if ($doc.onmsfullscreenchange !== undefined)
-			return "msfullscreenchange";
-		return null;
-	}-*/;
 }

@@ -48,6 +48,7 @@ import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.NativeJS;
 import org.evoludo.util.Plist;
 import org.evoludo.util.PlistParser;
 
@@ -343,60 +344,18 @@ public class EvoLudoGWT extends EvoLudo {
 	 */
 	public void detectGUIFeatures() {
 		isGWT = true;
-		hasTouch = hasTouch();
-		isXML = isXML();
-		isEPub = (EvoLudoWeb.getEPubReader() != null);
+		hasTouch = NativeJS.hasTouch();
+		isXML = NativeJS.isXML();
+		isEPub = (NativeJS.getEPubReader() != null);
 		// IMPORTANT: ibooks (desktop) returns ePubReader for standalone pages as well,
 		// i.e. isEPub is true
 		// however, ibooks (ios) does not report as an ePubReader for standalone pages,
 		// i.e. isEPub is false
 		ePubStandalone = (Document.get().getElementById("evoludo-standalone") != null);
-		ePubHasKeys = EvoLudoWeb.ePubReaderHasFeature("keyboard-events");
-		ePubHasMouse = EvoLudoWeb.ePubReaderHasFeature("mouse-events");
-		ePubHasTouch = EvoLudoWeb.ePubReaderHasFeature("touch-events");
+		ePubHasKeys = NativeJS.ePubReaderHasFeature("keyboard-events");
+		ePubHasMouse = NativeJS.ePubReaderHasFeature("mouse-events");
+		ePubHasTouch = NativeJS.ePubReaderHasFeature("touch-events");
 	}
-
-	/**
-	 * Check if execution environment supports keyboard events.
-	 * 
-	 * @return <code>true</code> if keyboard events are supported
-	 */
-	public final native boolean hasKeys() /*-{
-		return true == ("onkeydown" in $wnd);
-	}-*/;
-
-	/**
-	 * Check if execution environment supports mouse events.
-	 * 
-	 * @return <code>true</code> if mouse events are supported
-	 */
-	public final native boolean hasMouse() /*-{
-		return true == ("onmousedown" in $wnd);
-	}-*/;
-
-	/**
-	 * Check if execution environment supports touch events.
-	 * 
-	 * @return <code>true</code> if touch events are supported
-	 */
-	public final native boolean hasTouch() /*-{
-		return true == ("ontouchstart" in $wnd || $wnd.DocumentTouch
-				&& $doc instanceof DocumentTouch);
-	}-*/;
-
-	/**
-	 * Test whether loaded from an XHTML document.
-	 * <p>
-	 * <strong>Note:</strong> GWT interferes here and both
-	 * <code>Document.get().createElement("div").getTagName()=="DIV"</code> as well
-	 * as <code>$doc.createElement("div").tagName == "DIV"</code> falsely (always?)
-	 * return <code>false</code>.
-	 *
-	 * @return <code>true</code> if XML document
-	 */
-	private final native boolean isXML() /*-{
-		return (window.document.createElement("div").tagName == "DIV");
-	}-*/;
 
 	/**
 	 * The context menu item to reverse time.
@@ -520,7 +479,7 @@ public class EvoLudoGWT extends EvoLudo {
 		String state = encodeState();
 		if (state == null)
 			return;
-		EvoLudoWeb._export("data:text/x-plist;base64," + EvoLudoWeb.b64encode(state), "evoludo.plist");
+		NativeJS.export("data:text/x-plist;base64," + NativeJS.b64encode(state), "evoludo.plist");
 		logger.info("state saved in 'evoludo.plist'.");
 	}
 
@@ -571,9 +530,9 @@ public class EvoLudoGWT extends EvoLudo {
 					if (arg.contains("standalone")) {
 						ePubStandalone = true;
 						isEPub = true;
-						ePubHasKeys = hasKeys();
-						ePubHasMouse = hasMouse();
-						ePubHasTouch = hasTouch();
+						ePubHasKeys = NativeJS.hasKeys();
+						ePubHasMouse = NativeJS.hasMouse();
+						ePubHasTouch = NativeJS.hasTouch();
 					}
 					// disable keys (if available)
 					if (ePubHasKeys && arg.contains("nokeys"))

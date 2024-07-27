@@ -181,16 +181,6 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 	}
 
 	/**
-	 * Always returns <code>false</code> to disable fullscreen for console
-	 * 
-	 * @return <code>false</code>
-	 */
-	@Override
-	public boolean isFullscreenSupported() {
-		return false;
-	}
-
-	/**
 	 * Log message in console. The output is prettified by coloring messages
 	 * according to their severity:
 	 * <dl>

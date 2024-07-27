@@ -49,6 +49,7 @@ import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.ui.Tooltip;
 import org.evoludo.util.Formatter;
+import org.evoludo.util.NativeJS;
 import org.evoludo.util.RingBuffer;
 
 import com.google.gwt.canvas.client.Canvas;
@@ -520,7 +521,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		canvas.getParent().getElement().getStyle().setHeight(100, Unit.PCT);
 		add(wrapper);
 		element = getElement();
-		scale = getDevicePixelRatio();
+		scale = NativeJS.getDevicePixelRatio();
 		contextMenu = ContextMenu.sharedContextMenu();
 		contextMenu.add(this, this);
 		tooltip = Tooltip.sharedTooltip();
@@ -544,7 +545,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		isActive = true;
 		onResize();
 		if (this instanceof Zooming) {
-			boolean isEPub = isEPub();
+			boolean isEPub = NativeJS.isEPub();
 			// important: ibooks (desktop) returns ePubReader for standalone pages as well,
 			// i.e. isEPub is true
 			// however, ibooks (ios) does not report as an ePubReader for standalone pages,
@@ -1889,27 +1890,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * Check if graph is displayed in an ePub reading system.
-	 * 
-	 * @return <code>true</code> if ePub reading system.
-	 */
-	public final static native boolean isEPub()
-	/*-{
-		return $wnd.navigator.epubReadingSystem!=null;
-	}-*/;
-
-	/**
-	 * Get the pixel ratio of the current device. This is intended to prevent
-	 * distortions on the <code>canvas</code> objects of the data views.
-	 *
-	 * @return the pixel ratio of the current device
-	 */
-	public final static native int getDevicePixelRatio()
-	/*-{
-		return $wnd.devicePixelRatio || 1;
-	}-*/;
-
-	/**
 	 * Get the graph style.
 	 * 
 	 * @return the graph style
@@ -1945,7 +1925,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		 * 
 		 * @param segments the line dash pattern
 		 */
-		public final native void setLineDash(int[] segments) /*-{
+		public final native void setLineDash(int[] segments)
+		/*-{
 			this.setLineDash(segments);
 		}-*/;
 	}

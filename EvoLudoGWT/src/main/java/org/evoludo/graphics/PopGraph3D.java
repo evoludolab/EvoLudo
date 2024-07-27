@@ -677,15 +677,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		return (effect instanceof Stereo);
 	}
 
-	/**
-	 * Check if the graph supports full screen mode.
-	 * 
-	 * @return {@code true} if full screen mode is supported
-	 */
-	public boolean isFullscreenSupported() {
-		return graph3DPanel.isSupportFullScreen();
-	}
-
 	@Override
 	public void export(MyContext2d ctx) {
 		ctx.save();

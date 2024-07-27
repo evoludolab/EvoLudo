@@ -37,7 +37,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.evoludo.EvoLudoWeb;
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
 import org.evoludo.graphics.HistoGraph;
@@ -59,6 +58,7 @@ import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.Formatter;
+import org.evoludo.util.NativeJS;
 
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.user.client.Command;
@@ -1164,6 +1164,6 @@ public class Histogram extends AbstractView {
 			for (int n = 0; n < nData; n++)
 				export += graph.bin2x(n) + ",\t" + graph.getData(n) + "\n";
 		}
-		EvoLudoWeb._export("data:text/csv;base64," + EvoLudoWeb.b64encode(export), "evoludo_stat.csv");
+		NativeJS.export("data:text/csv;base64," + NativeJS.b64encode(export), "evoludo_stat.csv");
 	}
 }

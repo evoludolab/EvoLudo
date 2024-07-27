@@ -309,17 +309,6 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		return hard;
 	}
 
-	@Override
-	public boolean isFullscreenSupported() {
-		if (!super.isFullscreenSupported())
-			return false;
-		// fullscreen must be supported by all graphs
-		for (PopGraph3D graph : graphs)
-			if (!graph.isFullscreenSupported())
-				return false;
-		return true;
-	}
-
 	/**
 	 * The context menu item for selecting parallel projection of the graph instead
 	 * of the default perspective projection.

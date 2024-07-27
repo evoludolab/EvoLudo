@@ -34,6 +34,8 @@ package org.evoludo.ui;
 
 import java.util.HashMap;
 
+import org.evoludo.util.NativeJS;
+
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Style;
@@ -376,14 +378,14 @@ public class ContextMenu extends FlowPanel
 			contextMenu = new ContextMenu();
 			// context menu needs to be added in different places of the DOM
 			// depending on whether fullscreen mode is active
-			Element fs = getFullscreenElement();
+			Element fs = NativeJS.getFullscreenElement();
 			if (fs != null)
 				fs.appendChild(contextMenu.getElement());
 			else
 				RootPanel.get().add(contextMenu);
 			contextMenu.style.setPosition(Position.FIXED);
 			// add fullscreen change handler to shared instance of context menu
-			if (contextMenu.isFullscreenSupported())
+			if (NativeJS.isFullscreenSupported())
 				contextMenu.fullscreenChangeHandler = contextMenu.addFullscreenChangeHandler(contextMenu);
 			// add window scroll change handler to shared instance of context menu
 			Window.addWindowScrollHandler(new ScrollHandler() {
@@ -932,12 +934,12 @@ public class ContextMenu extends FlowPanel
 
 	@Override
 	public HandlerRegistration addFullscreenChangeHandler(FullscreenChangeHandler handler) {
-		String eventname = _jsFSCname();
-		_addFullscreenChangeHandler(eventname, handler);
+		String eventname = NativeJS.fullscreenChangeEventName();
+		NativeJS.addFullscreenChangeHandler(eventname, handler);
 		return new HandlerRegistration() {
 			@Override
 			public void removeHandler() {
-				_removeFullscreenChangeHandler(eventname, handler);
+				NativeJS.removeFullscreenChangeHandler(eventname, handler);
 			}
 		};
 	}
@@ -954,7 +956,7 @@ public class ContextMenu extends FlowPanel
 			return;
 		// note: if we want to be smart, we can relocate the context menu only if the
 		// fullscreen element is among our listeners. worth it? see also Tooltip
-		Element fs = getFullscreenElement();
+		Element fs = NativeJS.getFullscreenElement();
 		// note: do not remove contextMenu from parent! this breaks it's functionality!
 		// instead, just move contextMenu within the DOM.
 		if (fs != null) {
@@ -967,96 +969,4 @@ public class ContextMenu extends FlowPanel
 		// position fixed can get lost when relocating element
 		contextMenu.style.setPosition(Position.FIXED);
 	}
-
-	/**
-	 * Check if fullscreen mode is supported.
-	 * 
-	 * @return {@code true} if fullscreen supported
-	 */
-	public native boolean isFullscreenSupported()
-	/*-{
-		return $doc.fullscreenEnabled || $doc.mozFullScreenEnabled
-			|| $doc.webkitFullscreenEnabled || $doc.msFullscreenEnabled ? true
-			: false;
-	}-*/;
-
-	/**
-	 * Get the fullscreen element. Return {@code null} if not in fullscreen or
-	 * fullscreen not supported.
-	 * 
-	 * @return the fullscreen element
-	 */
-	public final static native Element getFullscreenElement()
-	/*-{
-		if ($doc.fullscreenElement != null)
-			return $doc.fullscreenElement;
-		if ($doc.mozFullScreenElement != null)
-			return $doc.mozFullScreenElement;
-		if ($doc.webkitFullscreenElement != null)
-			return $doc.webkitFullscreenElement;
-		if ($doc.msFullscreenElement != null)
-			return $doc.msFullscreenElement;
-		return null;
-	}-*/;
-
-	/**
-	 * Native method to register fullscreen change handler
-	 * {@link #onFullscreenChange(FullscreenChangeEvent)}.
-	 * 
-	 * @param eventname name of fullscreen change event (browser dependent)
-	 * @param handler   of fullscreen change events
-	 * 
-	 * @see #_jsFSCname()
-	 */
-	private final native void _addFullscreenChangeHandler(String eventname, FullscreenChangeHandler handler)
-	/*-{
-		$doc.addEventListener(
-			eventname,
-			function(event) {
-				handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
-			}, true);
-	}-*/;
-
-	/**
-	 * Native method to remove fullscreen change handler. In order to identify the
-	 * correct handler, the same information is required as when registering the
-	 * handler. This is opaquely hidden by the {@link HandlerRegistration} returned
-	 * after registration.
-	 * 
-	 * @param eventname name of fullscreen change event (browser dependent)
-	 * @param handler   of fullscreen change events
-	 */
-	private final native void _removeFullscreenChangeHandler(String eventname, FullscreenChangeHandler handler)
-	/*-{
-		$doc.removeEventListener(
-			eventname,
-			function(event) {
-				handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
-			}, true);
-	}-*/;
-
-	/**
-	 * Determine browser specific name of the fullscreen change event
-	 * <p>
-	 * <strong>Note:</strong> Chrome implements both <code>fullscreenchange</code>
-	 * and <code>webkitfullscreenchange</code> but with slightly different behaviour
-	 * (neither identical to Safari). <code>fullscreenchange</code> at least works
-	 * for a single graph and hence gives it precedence here. For Firefox
-	 * scaling/resizing issues remain as well as for Chrome with multiple graphs.
-	 * 
-	 * @return browser specific fullscreen change event name or <code>null</code> if
-	 *         Fullscreen API not implemented.
-	 */
-	private static native String _jsFSCname()
-	/*-{
-		if ($doc.onfullscreenchange !== undefined)
-			return "fullscreenchange";
-		if ($doc.onwebkitfullscreenchange !== undefined)
-			return "webkitfullscreenchange";
-		if ($doc.onmozfullscreenchange !== undefined)
-			return "mozfullscreenchange";
-		if ($doc.onmsfullscreenchange !== undefined)
-			return "msfullscreenchange";
-		return null;
-	}-*/;
 }
