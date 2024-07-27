@@ -654,7 +654,13 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
-	 * Outermost panel implementing the ability to resize the GUI of EvoLudo models
+	 * Outermost panel containing the EvoLudo GUI.
+	 */
+	@UiField
+	HTMLPanel evoludoPanel;
+
+	/**
+	 * Panel implementing the ability to resize the GUI of EvoLudo models
 	 * (only possible in browser or standalone mode in ePubs).
 	 */
 	@UiField
@@ -1851,10 +1857,40 @@ public class EvoLudoWeb extends Composite
 				}
 			});
 
+	/**
+	 * Command line option to set the size of the GUI or enter fullscreen.
+	 */
+	public final CLOption cloSize = new CLOption("size", "530,620", EvoLudo.catGUI,
+			"--size <w,h|fullscreen>  size of GUI (w: width, h: height in pixels)", new CLODelegate() {
+				/**
+				 * {@inheritDoc}
+				 * <p>
+				 * Set the initial size of the lab to {@code arg}.
+				 */
+				@Override
+				public boolean parse(String arg) {
+					if (arg.startsWith("full")) {
+						if (isFullscreenSupported()) {
+							// enter full screen, if supported
+							requestFullscreen(evoludoPanel.getParent().getParent().getElement());
+							return true;
+						}
+						arg = cloSize.getDefault();
+					}
+					double[] dim = CLOParser.parseVector(arg);
+					if (dim == null || dim.length != 2)
+						return false;
+					// note: why do we need to set the initial size on the grandparent?
+					evoludoPanel.getParent().getParent().setSize((int) dim[0] + "px", (int) dim[1] + "px");
+					return true;
+				}
+			});
+
 	@Override
 	public void collectCLO(CLOParser parser) {
 		// prepare command line options
 		parser.addCLO(cloView);
+		parser.addCLO(cloSize);
 	}
 
 	/**
@@ -2409,6 +2445,38 @@ public class EvoLudoWeb extends Composite
 		$doc.body.appendChild(elem);
 		elem.click();
 		$doc.body.removeChild(elem);
+	}-*/;
+
+	/**
+	 * Check if fullscreen mode is supported.
+	 * 
+	 * @return {@code true} if fullscreen supported
+	 */
+	public native boolean isFullscreenSupported()
+	/*-{
+		return $doc.fullscreenEnabled || $doc.mozFullScreenEnabled
+			|| $doc.webkitFullscreenEnabled || $doc.msFullscreenEnabled ? true
+			: false;
+	}-*/;
+
+	/**
+	 * Request fullscreen mode for the element {@code ele}.
+	 * 
+	 * @param ele the element to request fullscreen mode for
+	 */
+	public static native void requestFullscreen(Element ele)
+	/*-{
+		if (ele.requestFullscreen) {
+			ele.requestFullscreen();
+			// using promise:
+			//			ele.requestFullscreen().then(console.log("request honoured! width="+ele.scrollWidth));
+		} else if (ele.msRequestFullscreen) {
+			ele.msRequestFullscreen();
+		} else if (ele.mozRequestFullScreen) {
+			ele.mozRequestFullScreen();
+		} else if (ele.webkitRequestFullScreen) {
+			ele.webkitRequestFullScreen();
+		}
 	}-*/;
 
 	/*

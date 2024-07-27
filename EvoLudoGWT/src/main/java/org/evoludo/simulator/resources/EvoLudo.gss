@@ -34,8 +34,6 @@
 /** GSS rules for EvoLudo for the Web */
 #EvoLudoWeb, .evoludo-simulation {
 	border: 1px solid #ccc;
-	width: 530px;
-	height: 620px;
 	min-width: 300px;
 	min-height: 380px;
 	padding: 8px;
