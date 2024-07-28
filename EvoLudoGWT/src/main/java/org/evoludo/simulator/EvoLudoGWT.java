@@ -56,6 +56,7 @@ import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.Scheduler.RepeatingCommand;
 import com.google.gwt.dom.client.Document;
+import com.google.gwt.dom.client.Element;
 import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.Timer;
 
@@ -368,6 +369,11 @@ public class EvoLudoGWT extends EvoLudo {
 	private ContextMenuCheckBoxItem symDiffMenu;
 
 	/**
+	 * The field to store the fullscreen context menu.
+	 */
+	protected ContextMenuCheckBoxItem fullscreenMenu;
+
+	/**
 	 * Opportunity to contribute entries to the context menu for models. this needs
 	 * to be quarantined in order to not interfere with java simulations.
 	 *
@@ -413,6 +419,49 @@ public class EvoLudoGWT extends EvoLudo {
 			case IBS:
 			default:
 		}
+		// process fullscreen context menu
+		if (fullscreenMenu == null && NativeJS.isFullscreenSupported()) {
+			fullscreenMenu = new ContextMenuCheckBoxItem("Full screen (β)", new Command() {
+				@Override
+				public void execute() {
+					setFullscreen(!NativeJS.isFullscreen());
+				}
+			});
+		}
+		if (NativeJS.isFullscreenSupported()) {
+			menu.addSeparator();
+			menu.add(fullscreenMenu);
+			fullscreenMenu.setChecked(NativeJS.isFullscreen());
+		}
+	}
+
+	/**
+	 * The reference to the fullscreen element.
+	 */
+	Element fullscreenElement;
+
+	/**
+	 * Set the fullscreen element.
+	 * 
+	 * @param element the element to set as fullscreen
+	 */
+	public void setFullscreenElement(Element element) {
+		fullscreenElement = element;
+	}
+
+	/**
+	 * Enter or exit fullscreen mode.
+	 * 
+	 * @param fullscreen {@code true} to enter fullscreen
+	 */
+	public void setFullscreen(boolean fullscreen) {
+		if (fullscreen == NativeJS.isFullscreen())
+			return;
+		if (fullscreen)
+			// note: seems a little weird to get grandparents involved...
+			NativeJS.requestFullscreen(fullscreenElement);
+		else
+			NativeJS.exitFullscreen();
 	}
 
 	/**

@@ -18,7 +18,6 @@ TODO:
 - check if interactions-array can be replaced by interaction.kout for adjustScores (but only if read-only access is ensured)!
 - merge options cloSamples and cloRuns?
 - implement custom color maps (NetGames is an example); this is tricky due to incompatibilities between JRE and GWT; one possibility is to add relevant code to EvoLudoJRE and EvoLudoGWT (inelegant because it requires synchronizing code across two not obviously related classes); another possibility is to add <lab>GWT and <lab>JRE classes to take care of the implementation specific components (much like the original <lab>Lab class setup); both are far from satisfactory or even elegant solutions...
-- fixation probability does not seem to work if initfreqs is e.g. 1:1. this is not intuitive. either change the x-axis from node to something more meaningful and report results graphically or display a message.
 - check reference lines for fixation probabilities and times (seem to be off for Moran on test page and do not seem to get updated e.g. when changing population size).
 
 Browser:
@@ -55,6 +54,8 @@ CHECK:
 
 
 DONE:
++ add clo's to set the initial size of the GUI, including fullscreen.
++ fixation probability does not seem to work if initfreqs is e.g. 1:1. this is not intuitive. either change the x-axis from node to something more meaningful and report results graphically or display a message. (omit fixation views for unsuitable parameters)
 + reverting SDE/PDE model to ODE e.g. for well-mixed structures fails (must re-parse command line options)
 + keyboard shortcuts reach all labs on a page (should be restricted to the active one, check with 's' for shake)
 + enable offline compilation of GWT module ('mvn -pl EvoLudoGWT gwt:compile' throws 'java.lang.RuntimeException: java.net.UnknownHostException: www.w3.org', more specifically: Generator 'com.google.gwt.uibinder.rebind.UiBinderGenerator' threw an exception while rebinding 'org.evoludo.EvoLudoWeb.EvoLudoWebBinder'); thanks to thomas broyer on gitter.

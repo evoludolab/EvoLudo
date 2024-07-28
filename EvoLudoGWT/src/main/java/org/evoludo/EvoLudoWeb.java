@@ -35,6 +35,9 @@ import org.evoludo.simulator.views.Pop2D;
 import org.evoludo.simulator.views.Pop3D;
 import org.evoludo.simulator.views.S3;
 import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.FullscreenChangeEvent;
+import org.evoludo.ui.FullscreenChangeHandler;
+import org.evoludo.ui.HasFullscreenChangeHandlers;
 import org.evoludo.ui.InputEvent;
 import org.evoludo.ui.Slider;
 import org.evoludo.ui.TextLogFormatter;
@@ -93,7 +96,7 @@ import com.google.gwt.user.client.ui.Widget;
  * Entry point classes define <code>onModuleLoad()</code>.
  */
 public class EvoLudoWeb extends Composite
-		implements MilestoneListener, ChangeListener, CLOProvider, EntryPoint {
+		implements HasFullscreenChangeHandlers, FullscreenChangeHandler, MilestoneListener, ChangeListener, CLOProvider, EntryPoint {
 
 	/**
 	 * <strong>Apple Books (iBook) notes:</strong>
@@ -214,6 +217,16 @@ public class EvoLudoWeb extends Composite
 	 * Reference to registration of drag'n'drop handlers (if one was installed).
 	 */
 	HandlerRegistration dragEnterHandler, dragLeaveHandler;
+
+	/**
+	 * The reference to the fullscreen event handler.
+	 */
+	HandlerRegistration fullscreenHandler;
+
+	/**
+	 * The reference to the fullscreen widget.
+	 */
+	Widget fullscreenWidget;
 
 	/**
 	 * ID of element in DOM that contains the EvoLudo lab.
@@ -363,6 +376,9 @@ public class EvoLudoWeb extends Composite
 		logger.addHandler(logEvoHandler);
 		logger.setLevel(Level.INFO);
 		logFeatures();
+		// add full screen change handler
+		if (NativeJS.isFullscreenSupported())
+			fullscreenHandler = addFullscreenChangeHandler(this);
 	}
 
 	/**
@@ -439,6 +455,11 @@ public class EvoLudoWeb extends Composite
 	@Override
 	public void onLoad() {
 		super.onLoad();
+		// now evoludoPanel is attached and we can set the grandparent as the
+		// fullscreen element
+		fullscreenWidget = evoludoPanel.getParent().getParent();
+		engine.setFullscreenElement(fullscreenWidget.getElement());
+
 		String clo = engine.getCLO();
 		// clo may have been set from the URL or as an HTML attribute
 		if (clo == null || clo.length() == 0) {
@@ -1566,6 +1587,12 @@ public class EvoLudoWeb extends Composite
 					return false;
 				engine.exportState();
 				break;
+			case "F":
+				// toggle fullscreen (if supported)
+				if (!NativeJS.isFullscreenSupported())
+					return false;
+				engine.setFullscreen(!NativeJS.isFullscreen());
+				break;
 			case "H":
 				// show help panel
 				showHelp();
@@ -1871,8 +1898,7 @@ public class EvoLudoWeb extends Composite
 				public boolean parse(String arg) {
 					if (arg.startsWith("full")) {
 						if (NativeJS.isFullscreenSupported()) {
-							// enter full screen, if supported
-							NativeJS.requestFullscreen(evoludoPanel.getParent().getParent().getElement());
+							engine.setFullscreen(true);
 							return true;
 						}
 						arg = cloSize.getDefault();
@@ -1881,7 +1907,7 @@ public class EvoLudoWeb extends Composite
 					if (dim == null || dim.length != 2)
 						return false;
 					// note: why do we need to set the initial size on the grandparent?
-					evoludoPanel.getParent().getParent().setSize((int) dim[0] + "px", (int) dim[1] + "px");
+					fullscreenWidget.setSize((int) dim[0] + "px", (int) dim[1] + "px");
 					return true;
 				}
 			});
@@ -1891,6 +1917,29 @@ public class EvoLudoWeb extends Composite
 		// prepare command line options
 		parser.addCLO(cloView);
 		parser.addCLO(cloSize);
+	}
+
+	@Override
+	public HandlerRegistration addFullscreenChangeHandler(FullscreenChangeHandler handler) {
+		String eventname = NativeJS.fullscreenChangeEventName();
+		NativeJS.addFullscreenChangeHandler(eventname, handler);
+		return new HandlerRegistration() {
+			@Override
+			public void removeHandler() {
+				NativeJS.removeFullscreenChangeHandler(eventname, handler);
+			}
+		};
+	}
+
+	// note: works in Safari and Chrome; some weird scaling issues remain with
+	// Firefox for Chrome it is important to use {@code onfullscreenchange} and not
+	// {@code onwebkitfullscreenchange}! the two do not seem to be identical
+	@Override
+	public void onFullscreenChange(FullscreenChangeEvent event) {
+		if (NativeJS.isFullscreen())
+			NativeJS.getFullscreenElement().addClassName("fullscreen");
+		else
+			evoludoPanel.getParent().getParent().getElement().removeClassName("fullscreen");
 	}
 
 	/**

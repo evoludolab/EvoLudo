@@ -51,11 +51,7 @@ import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.ui.ContextMenu;
-import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
-import org.evoludo.ui.FullscreenChangeEvent;
-import org.evoludo.ui.FullscreenChangeHandler;
-import org.evoludo.ui.HasFullscreenChangeHandlers;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.NativeJS;
 import org.evoludo.util.RingBuffer;
@@ -64,7 +60,6 @@ import com.google.gwt.canvas.client.Canvas;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.ScriptInjector;
 import com.google.gwt.dom.client.Style.Position;
-import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.ui.ComplexPanel;
@@ -79,13 +74,8 @@ import com.google.gwt.user.client.ui.RequiresResize;
  *
  * @author Christoph Hauert
  */
-public abstract class AbstractView extends Composite implements RequiresResize, ProvidesResize, FullscreenChangeHandler,
-		AbstractGraph.Controller, HasFullscreenChangeHandlers {
-
-	/**
-	 * The reference to the fullscreen event handler.
-	 */
-	protected HandlerRegistration fullscreenHandler;
+public abstract class AbstractView extends Composite implements RequiresResize, ProvidesResize,
+		AbstractGraph.Controller {
 
 	/**
 	 * The reference to the EvoLudo engine that manages the simulation.
@@ -228,8 +218,6 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		for (AbstractGraph<?> graph : graphs)
 			graph.activate();
 		scheduleUpdate(true);
-		if (NativeJS.isFullscreenSupported())
-			fullscreenHandler = addFullscreenChangeHandler(this);
 		if (!setMode(getMode())) {
 			// this is should not happen because view should not be available
 			// if mode is not supported, see EvoLudoWeb#updateViews()
@@ -246,8 +234,6 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		isActive = false;
 		for (AbstractGraph<?> graph : graphs)
 			graph.deactivate();
-		if (fullscreenHandler != null)
-			fullscreenHandler.removeHandler();
 	}
 
 	/**
@@ -474,15 +460,6 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 					return false;
 				exportStatData();
 				break;
-			case "F":
-				// toggle fullscreen (if supported)
-				if (!NativeJS.isFullscreenSupported())
-					return false;
-				if (NativeJS.isFullscreen())
-					NativeJS.exitFullscreen();
-				else
-					NativeJS.requestFullscreen(getElement());
-				break;
 			default:
 				return false;
 		}
@@ -500,26 +477,6 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 			if (e == type)
 				return true;
 		return false;
-	}
-
-	// note: works in Safari and Chrome; some weird scaling issues remain with
-	// Firefox
-	// for Chrome it is important to use onfullscreenchange and not
-	// onwebkitfullscreenchange! the two do not seem to be identical
-	@Override
-	public void onFullscreenChange(FullscreenChangeEvent event) {
-		if (NativeJS.isFullscreen())
-			NativeJS.getFullscreenElement().addClassName("fullscreen");
-		else
-			wrapper.getElement().removeClassName("fullscreen");
-		// deferring onResize helps Chrome to get the dimensions right (not needed for
-		// Safari)
-		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-			@Override
-			public void execute() {
-				onResize();
-			}
-		});
 	}
 
 	@Override
@@ -598,32 +555,12 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 */
 	protected ContextMenu exportSubmenu;
 
-	/**
-	 * The field to store the fullscreen context menu.
-	 */
-	protected ContextMenuCheckBoxItem fullscreenMenu;
-
 	@Override
 	public void populateContextMenu(ContextMenu contextMenu) {
 		// models may also like to add entries to context menu
 		// IMPORTANT: cannot query model directly due to interference with java
 		// simulations. all GUI related methods must be quarantined through EvoLudoGWT
 		engine.populateContextMenu(contextMenu);
-
-		// process fullscreen context menu
-		if (fullscreenMenu == null && NativeJS.isFullscreenSupported()) {
-			fullscreenMenu = new ContextMenuCheckBoxItem("Full screen (β)", new Command() {
-				@Override
-				public void execute() {
-					setFullscreen(!NativeJS.isFullscreen());
-				}
-			});
-		}
-		if (NativeJS.isFullscreenSupported()) {
-			contextMenu.addSeparator();
-			contextMenu.add(fullscreenMenu);
-			fullscreenMenu.setChecked(NativeJS.isFullscreen());
-		}
 
 		// process exports context menu (suppress in ePub, regardless of whether a
 		// standalone lab or not)
@@ -660,32 +597,6 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		}
 		if (exportSubmenuTrigger != null)
 			exportSubmenuTrigger.setEnabled(idle);
-	}
-
-	/**
-	 * Enter or exit fullscreen mode.
-	 * 
-	 * @param fullscreen {@code true} to enter fullscreen
-	 */
-	public void setFullscreen(boolean fullscreen) {
-		if (fullscreen == NativeJS.isFullscreen())
-			return;
-		if (fullscreen)
-			NativeJS.requestFullscreen(getElement());
-		else
-			NativeJS.exitFullscreen();
-	}
-
-	@Override
-	public HandlerRegistration addFullscreenChangeHandler(FullscreenChangeHandler handler) {
-		String eventname = NativeJS.fullscreenChangeEventName();
-		NativeJS.addFullscreenChangeHandler(eventname, handler);
-		return new HandlerRegistration() {
-			@Override
-			public void removeHandler() {
-				NativeJS.removeFullscreenChangeHandler(eventname, handler);
-			}
-		};
 	}
 
 	/**
@@ -808,7 +719,6 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 				break;
 			default:
 		}
-		setFullscreen(false);
 	}
 
 	/**
