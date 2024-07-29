@@ -74,19 +74,9 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, HasPDE,
+public class ATBT extends TBT implements Pairs, HasIBS, HasODE, HasSDE, HasPDE,
 		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy, HasS3, HasPhase2D, HasPop2D.Fitness, HasPop3D.Fitness,
 		HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsStationary, HasConsole {
-
-	/**
-	 * The identifier of cooperators: {@code trait % 2}.
-	 */
-	public static final int COOPERATE = 0;
-
-	/**
-	 * The identifier of defectors: {@code trait % 2}.
-	 */
-	public static final int DEFECT = 1;
 
 	/**
 	 * The identifier of rich sites: {@code (int) (trait / 2)}.
@@ -122,7 +112,7 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 	 * The {@code 2×2} payoff matrix for interactions between cooperators and
 	 * defectors.
 	 */
-	double[][] payoffs;
+	double[][] game;
 
 	/**
 	 * The array of environmental values for rich and poor sites.
@@ -142,11 +132,6 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 	 * {@code false} asymmetries have a genetic origin (heritable).
 	 */
 	boolean environmentalAsymmetry = true;
-
-	/**
-	 * The {@code 4×4} payoff matrix
-	 */
-	double[][] payoffMatrix;
 
 	/**
 	 * Create a new instance of the module for asymmetric {@code 2×2} games.
@@ -175,21 +160,19 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 		colors[COOPERATE_POOR] = ColorMap.blendColors(Color.BLUE, Color.BLACK, 0.5);
 		colors[DEFECT_POOR] = ColorMap.blendColors(Color.RED, Color.BLACK, 0.5);
 		setTraitColors(colors);
-
 		// allocate
-		payoffs = new double[nTraits / 2][nTraits / 2];
+		game = payoffs;	// reuse payoffs from TBT
 		environment = new double[nTraits / 2];
 		feedback = new double[nTraits];
-		payoffMatrix = new double[nTraits][nTraits];
+		payoffs = new double[nTraits][nTraits];
 	}
 
 	@Override
 	public void unload() {
 		super.unload();
-		payoffs = null;
+		game = null;
 		environment = null;
 		feedback = null;
-		payoffMatrix = null;
 	}
 
 	@Override
@@ -219,54 +202,39 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 	}
 
 	@Override
-	public double getMinGameScore() {
-		return ArrayMath.min(payoffMatrix);
-	}
-
-	@Override
-	public double getMaxGameScore() {
-		return ArrayMath.max(payoffMatrix);
-	}
-
-	@Override
-	public double getMonoGameScore(int type) {
-		return payoffMatrix[type][type];
-	}
-
-	@Override
 	public double pairScores(int me, int[] traitCount, double[] traitScore) {
-		double[] tCount = new double[nTraits];
 		// need trait counts as double array for dot-product
-		ArrayMath.copy(traitScore, tCount);
+		double[] state = new double[] { traitCount[COOPERATE_RICH], traitCount[DEFECT_RICH], traitCount[COOPERATE_POOR],
+			traitCount[DEFECT_POOR] };
 
 		switch (me) {
 			case COOPERATE_RICH:
-				traitScore[COOPERATE_RICH] = payoffMatrix[COOPERATE_RICH][COOPERATE_RICH];
-				traitScore[DEFECT_RICH] = payoffMatrix[DEFECT_RICH][COOPERATE_RICH];
-				traitScore[COOPERATE_POOR] = payoffMatrix[COOPERATE_POOR][COOPERATE_RICH];
-				traitScore[DEFECT_POOR] = payoffMatrix[DEFECT_POOR][COOPERATE_RICH];
-				return ArrayMath.dot(payoffMatrix[COOPERATE_RICH], tCount);
+				traitScore[COOPERATE_RICH] = payoffs[COOPERATE_RICH][COOPERATE_RICH];
+				traitScore[DEFECT_RICH] = payoffs[DEFECT_RICH][COOPERATE_RICH];
+				traitScore[COOPERATE_POOR] = payoffs[COOPERATE_POOR][COOPERATE_RICH];
+				traitScore[DEFECT_POOR] = payoffs[DEFECT_POOR][COOPERATE_RICH];
+				return ArrayMath.dot(payoffs[COOPERATE_RICH], state);
 
 			case DEFECT_RICH:
-				traitScore[COOPERATE_RICH] = payoffMatrix[COOPERATE_RICH][DEFECT_RICH];
-				traitScore[DEFECT_RICH] = payoffMatrix[DEFECT_RICH][DEFECT_RICH];
-				traitScore[COOPERATE_POOR] = payoffMatrix[COOPERATE_POOR][DEFECT_RICH];
-				traitScore[DEFECT_POOR] = payoffMatrix[DEFECT_POOR][DEFECT_RICH];
-				return ArrayMath.dot(payoffMatrix[DEFECT_RICH], tCount);
+				traitScore[COOPERATE_RICH] = payoffs[COOPERATE_RICH][DEFECT_RICH];
+				traitScore[DEFECT_RICH] = payoffs[DEFECT_RICH][DEFECT_RICH];
+				traitScore[COOPERATE_POOR] = payoffs[COOPERATE_POOR][DEFECT_RICH];
+				traitScore[DEFECT_POOR] = payoffs[DEFECT_POOR][DEFECT_RICH];
+				return ArrayMath.dot(payoffs[DEFECT_RICH], state);
 
 			case COOPERATE_POOR:
-				traitScore[COOPERATE_RICH] = payoffMatrix[COOPERATE_RICH][COOPERATE_POOR];
-				traitScore[DEFECT_RICH] = payoffMatrix[DEFECT_RICH][COOPERATE_POOR];
-				traitScore[COOPERATE_POOR] = payoffMatrix[COOPERATE_POOR][COOPERATE_POOR];
-				traitScore[DEFECT_POOR] = payoffMatrix[DEFECT_POOR][COOPERATE_POOR];
-				return ArrayMath.dot(payoffMatrix[COOPERATE_POOR], tCount);
+				traitScore[COOPERATE_RICH] = payoffs[COOPERATE_RICH][COOPERATE_POOR];
+				traitScore[DEFECT_RICH] = payoffs[DEFECT_RICH][COOPERATE_POOR];
+				traitScore[COOPERATE_POOR] = payoffs[COOPERATE_POOR][COOPERATE_POOR];
+				traitScore[DEFECT_POOR] = payoffs[DEFECT_POOR][COOPERATE_POOR];
+				return ArrayMath.dot(payoffs[COOPERATE_POOR], state);
 
 			case DEFECT_POOR:
-				traitScore[COOPERATE_RICH] = payoffMatrix[COOPERATE_RICH][DEFECT_POOR];
-				traitScore[DEFECT_RICH] = payoffMatrix[DEFECT_RICH][DEFECT_POOR];
-				traitScore[COOPERATE_POOR] = payoffMatrix[COOPERATE_POOR][DEFECT_POOR];
-				traitScore[DEFECT_POOR] = payoffMatrix[DEFECT_POOR][DEFECT_POOR];
-				return ArrayMath.dot(payoffMatrix[DEFECT_POOR], tCount);
+				traitScore[COOPERATE_RICH] = payoffs[COOPERATE_RICH][DEFECT_POOR];
+				traitScore[DEFECT_RICH] = payoffs[DEFECT_RICH][DEFECT_POOR];
+				traitScore[COOPERATE_POOR] = payoffs[COOPERATE_POOR][DEFECT_POOR];
+				traitScore[DEFECT_POOR] = payoffs[DEFECT_POOR][DEFECT_POOR];
+				return ArrayMath.dot(payoffs[DEFECT_POOR], state);
 
 			default: // should not end here
 				throw new Error("Unknown strategy (" + me + ")");
@@ -275,10 +243,10 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 
 	@Override
 	public void avgScores(double[] density, int n, double[] avgscores) {
-		avgscores[COOPERATE_RICH] = ArrayMath.dot(payoffMatrix[COOPERATE_RICH], density);
-		avgscores[DEFECT_RICH] = ArrayMath.dot(payoffMatrix[DEFECT_RICH], density);
-		avgscores[COOPERATE_POOR] = ArrayMath.dot(payoffMatrix[COOPERATE_POOR], density);
-		avgscores[DEFECT_POOR] = ArrayMath.dot(payoffMatrix[DEFECT_POOR], density);
+		avgscores[COOPERATE_RICH] = ArrayMath.dot(payoffs[COOPERATE_RICH], density);
+		avgscores[DEFECT_RICH] = ArrayMath.dot(payoffs[DEFECT_RICH], density);
+		avgscores[COOPERATE_POOR] = ArrayMath.dot(payoffs[COOPERATE_POOR], density);
+		avgscores[DEFECT_POOR] = ArrayMath.dot(payoffs[DEFECT_POOR], density);
 	}
 
 	@Override
@@ -286,14 +254,14 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 		double[] density = new double[] { count[COOPERATE_RICH], count[DEFECT_RICH], count[COOPERATE_POOR],
 				count[DEFECT_POOR] };
 		double in = 1.0 / (ArrayMath.norm(density) - 1.0);
-		traitScores[COOPERATE_RICH] = (ArrayMath.dot(payoffMatrix[COOPERATE_RICH], density)
-				- payoffMatrix[COOPERATE_RICH][COOPERATE_RICH]) * in;
-		traitScores[DEFECT_RICH] = (ArrayMath.dot(payoffMatrix[DEFECT_RICH], density)
-				- payoffMatrix[DEFECT_RICH][DEFECT_RICH]) * in;
-		traitScores[COOPERATE_POOR] = (ArrayMath.dot(payoffMatrix[COOPERATE_POOR], density)
-				- payoffMatrix[COOPERATE_POOR][COOPERATE_POOR]) * in;
-		traitScores[DEFECT_POOR] = (ArrayMath.dot(payoffMatrix[DEFECT_POOR], density)
-				- payoffMatrix[DEFECT_POOR][DEFECT_POOR]) * in;
+		traitScores[COOPERATE_RICH] = (ArrayMath.dot(payoffs[COOPERATE_RICH], density)
+				- payoffs[COOPERATE_RICH][COOPERATE_RICH]) * in;
+		traitScores[DEFECT_RICH] = (ArrayMath.dot(payoffs[DEFECT_RICH], density)
+				- payoffs[DEFECT_RICH][DEFECT_RICH]) * in;
+		traitScores[COOPERATE_POOR] = (ArrayMath.dot(payoffs[COOPERATE_POOR], density)
+				- payoffs[COOPERATE_POOR][COOPERATE_POOR]) * in;
+		traitScores[DEFECT_POOR] = (ArrayMath.dot(payoffs[DEFECT_POOR], density)
+				- payoffs[DEFECT_POOR][DEFECT_POOR]) * in;
 	}
 
 	@Override
@@ -301,29 +269,29 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 		super.check();
 		// build payoff matrix (for all models) - if necessary
 		if (!init4x4) {
-			payoffMatrix[COOPERATE_RICH][COOPERATE_RICH] = payoffMatrix[COOPERATE_RICH][COOPERATE_POOR] //
-					= payoffs[COOPERATE][COOPERATE] + environment[RICH];
-			payoffMatrix[COOPERATE_RICH][DEFECT_RICH] = payoffMatrix[COOPERATE_RICH][DEFECT_POOR] //
-					= payoffs[COOPERATE][DEFECT] + environment[RICH];
-			payoffMatrix[DEFECT_RICH][COOPERATE_RICH] = payoffMatrix[DEFECT_RICH][COOPERATE_POOR] //
-					= payoffs[DEFECT][COOPERATE] + environment[RICH];
-			payoffMatrix[DEFECT_RICH][DEFECT_RICH] = payoffMatrix[DEFECT_RICH][DEFECT_POOR] //
-					= payoffs[DEFECT][DEFECT] + environment[RICH];
-			payoffMatrix[COOPERATE_POOR][COOPERATE_RICH] = payoffMatrix[COOPERATE_POOR][COOPERATE_POOR] //
-					= payoffs[COOPERATE][COOPERATE] + environment[POOR];
-			payoffMatrix[COOPERATE_POOR][DEFECT_RICH] = payoffMatrix[COOPERATE_POOR][DEFECT_POOR] //
-					= payoffs[COOPERATE][DEFECT] + environment[POOR];
-			payoffMatrix[DEFECT_POOR][COOPERATE_RICH] = payoffMatrix[DEFECT_POOR][COOPERATE_POOR] //
-					= payoffs[DEFECT][COOPERATE] + environment[POOR];
-			payoffMatrix[DEFECT_POOR][DEFECT_RICH] = payoffMatrix[DEFECT_POOR][DEFECT_POOR] //
-					= payoffs[DEFECT][DEFECT] + environment[POOR];
+			payoffs[COOPERATE_RICH][COOPERATE_RICH] = payoffs[COOPERATE_RICH][COOPERATE_POOR] //
+					= game[COOPERATE][COOPERATE] + environment[RICH];
+			payoffs[COOPERATE_RICH][DEFECT_RICH] = payoffs[COOPERATE_RICH][DEFECT_POOR] //
+					= game[COOPERATE][DEFECT] + environment[RICH];
+			payoffs[DEFECT_RICH][COOPERATE_RICH] = payoffs[DEFECT_RICH][COOPERATE_POOR] //
+					= game[DEFECT][COOPERATE] + environment[RICH];
+			payoffs[DEFECT_RICH][DEFECT_RICH] = payoffs[DEFECT_RICH][DEFECT_POOR] //
+					= game[DEFECT][DEFECT] + environment[RICH];
+			payoffs[COOPERATE_POOR][COOPERATE_RICH] = payoffs[COOPERATE_POOR][COOPERATE_POOR] //
+					= game[COOPERATE][COOPERATE] + environment[POOR];
+			payoffs[COOPERATE_POOR][DEFECT_RICH] = payoffs[COOPERATE_POOR][DEFECT_POOR] //
+					= game[COOPERATE][DEFECT] + environment[POOR];
+			payoffs[DEFECT_POOR][COOPERATE_RICH] = payoffs[DEFECT_POOR][COOPERATE_POOR] //
+					= game[DEFECT][COOPERATE] + environment[POOR];
+			payoffs[DEFECT_POOR][DEFECT_RICH] = payoffs[DEFECT_POOR][DEFECT_POOR] //
+					= game[DEFECT][DEFECT] + environment[POOR];
 		}
 		// IMPORTANT: for DE-models feedbacks are rates, for simulations we need to
 		// ensure we are dealing with probabilities; better would be to somehow scale
 		// time to make these rates compatible with probabilities - this requires more
 		// thought.
 		for (int i = 0; i < nTraits; i++)
-			this.feedback[i] = Math.max(0.0, Math.min(1.0, this.feedback[i]));
+			feedback[i] = Math.max(0.0, Math.min(1.0, feedback[i]));
 		return false;
 	}
 
@@ -342,67 +310,18 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 	 *
 	 * @param payoffs the payoff matrix
 	 */
-	public void setPayoffMatrix(double[][] payoffs) {
+	@Override
+	public void setPayoffs(double[][] payoffs) {
 		init4x4 = false;
-		if (payoffs == null)
+		// check if 2x2 or 4x4
+		if (payoffs == null || (payoffs.length != 2 && payoffs.length != 4 && payoffs.length != payoffs[0].length))
 			return;
-		int rows = payoffs.length;
-		if (rows != 2 && rows != 4)
-			return;
-		// check if square
-		for (int i = 0; i < rows; i++)
-			if (payoffs[i].length != rows)
-				return;
-		if (rows == 2) {
-			this.payoffs[COOPERATE][COOPERATE] = payoffs[0][0];
-			this.payoffs[COOPERATE][DEFECT] = payoffs[0][1];
-			this.payoffs[DEFECT][COOPERATE] = payoffs[1][0];
-			this.payoffs[DEFECT][DEFECT] = payoffs[1][1];
+		if (payoffs.length == 2) {
+			game = payoffs;
 			return;
 		}
 		init4x4 = true;
-		// note: this used to do an unhealthy switcheroo of indices - trouble and
-		// confusion preprogrammed...
-		ArrayMath.copy(payoffs, payoffMatrix);
-		// System.arraycopy(payoffs[0], 0, payoffMatrix[COOPERATE_RICH], 0, rows);
-		// System.arraycopy(payoffs[1], 0, payoffMatrix[COOPERATE_POOR], 0, rows);
-		// System.arraycopy(payoffs[2], 0, payoffMatrix[DEFECT_RICH], 0, rows);
-		// System.arraycopy(payoffs[3], 0, payoffMatrix[DEFECT_POOR], 0, rows);
-	}
-
-	/**
-	 * Get the {@code 2×2} payoff matrix for interactions between cooperators
-	 * and defectors.
-	 *
-	 * @return the payoff matrix
-	 */
-	public double[][] getPayoffMatrix() {
-		return ArrayMath.clone(payoffs);
-	}
-
-	/**
-	 * Set the payoff for type {@code me} against type {@code you} to
-	 * {@code payoff}.
-	 *
-	 * @param payoff the payoff to {@code me}
-	 * @param me     the strategy index of the row player
-	 * @param you    the strategy index of the column player
-	 */
-	public void setPayoff(double payoff, int me, int you) {
-		if (me < 0 || me > 2 || you < 0 || you > 2)
-			return;
-		payoffs[me][you] = payoff;
-	}
-
-	/**
-	 * Get the payoff for type {@code me} against type {@code you}.
-	 *
-	 * @param me  the strategy index of the row player
-	 * @param you the strategy index of the column player
-	 * @return the payoff to {@code me}
-	 */
-	public double getPayoff(int me, int you) {
-		return payoffs[me][you];
+		this.payoffs = payoffs;
 	}
 
 	/**
@@ -592,8 +511,8 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 	 * {@code 4×4} payoff matrix for arbitrary interactions between four
 	 * strategic types.
 	 */
-	public final CLOption cloPayoffs = new CLOption("payoffs", "1,0;1.65,0", EvoLudo.catModule,
-			"--payoffs <a,b;c,d>     2x2 (or 4x4) payoff matrix", new CLODelegate() {
+	public final CLOption cloPayoffs4x4 = new CLOption("paymatrix", "1,0;1.65,0", EvoLudo.catModule,
+			"--paymatrix <a,b;c,d>   2x2 (or 4x4) payoff matrix", new CLODelegate() {
 
 				/**
 				 * {@inheritDoc}
@@ -612,17 +531,17 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 				@Override
 				public boolean parse(String arg) {
 					double[][] payMatrix = CLOParser.parseMatrix(arg);
-					if (payMatrix == null) {
-						logger.warning("invalid payoffs (" + arg + ") - using '" + cloPayoffs.getDefault() + "'");
+					if (payMatrix == null || (payMatrix.length != 2 && payMatrix.length != 4) || payMatrix[0].length != payMatrix.length) {
+						logger.warning("invalid payoffs (" + arg + ") - using '" + cloPayoffs4x4.getDefault() + "'");
 						return false;
 					}
-					setPayoffMatrix(payMatrix);
+					setPayoffs(payMatrix);
 					return true;
 				}
 
 				@Override
 				public void report(PrintStream output) {
-					output.println("# paymatrix:            " + Formatter.format(getPayoffMatrix(), 4));
+					output.println("# paymatrix:            " + Formatter.format(getPayoffs(), 4));
 				}
 			});
 
@@ -722,9 +641,11 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
+		// ATBT provides its own implementation of the --paymatrix option
+		parser.removeCLO("paymatrix");
 		init4x4 = false;
 		// prepare command line options
-		parser.addCLO(cloPayoffs);
+		parser.addCLO(cloPayoffs4x4);
 		parser.addCLO(cloEnvironment);
 		parser.addCLO(cloAsymmetry);
 		parser.addCLO(cloFeedback);
@@ -747,7 +668,7 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 	 */
 	@Override
 	public IBSDPopulation createIBSPop() {
-		return new ATBT.IBS(engine);
+		return new ATBT.ATBTPop(engine);
 	}
 
 	@Override
@@ -756,9 +677,9 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 	}
 
 	/**
-	 * Extends TBT.IBS to take advantage of kaleidoscope initializations.
+	 * Extends TBT.TBTPop to take advantage of kaleidoscope initializations.
 	 */
-	public class IBS extends TBT.TBTPop {
+	public class ATBTPop extends TBT.TBTPop {
 
 		/**
 		 * Create a new instance of the IBS model for asymmteric {@code 2×2}
@@ -766,7 +687,7 @@ public class ATBT extends Discrete implements Pairs, HasIBS, HasODE, HasSDE, Has
 		 * 
 		 * @param engine the pacemaker for running the model
 		 */
-		protected IBS(EvoLudo engine) {
+		protected ATBTPop(EvoLudo engine) {
 			(new TBT(engine)).super(engine);
 		}
 

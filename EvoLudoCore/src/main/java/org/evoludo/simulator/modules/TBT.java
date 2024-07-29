@@ -101,38 +101,20 @@ public class TBT extends Discrete implements Pairs,
 		HasHistogram.StatisticsStationary, HasConsole {
 
 	/**
-	 * The trait (and index) value of defectors.
-	 */
-	public static final int DEFECT = 0;
-
-	/**
 	 * The trait (and index) value of cooperators.
 	 */
-	public static final int COOPERATE = 1;
+	public static final int COOPERATE = 0;
 
 	/**
-	 * The payoff for mutual cooperation. Traditionally termed the <em>reward</em>
-	 * {@code R}.
+	 * The trait (and index) value of defectors.
 	 */
-	double reward = 1.0;
+	public static final int DEFECT = 1;
 
 	/**
-	 * The payoff to a cooperator interacting with a defector. Traditionally termed
-	 * the <em>sucker's payoff</em> {@code S}.
+	 * The {@code 2×2} payoff matrix for interactions between cooperators and
+	 * defectors.
 	 */
-	double sucker = 0.0;
-
-	/**
-	 * The payoff to a defector interacting with a cooperator. Traditionally termed
-	 * the <em>temptation to defect</em> {@code T}.
-	 */
-	double temptation = 1.65;
-
-	/**
-	 * The payoff for mutual defection. Traditionally termed the <em>punishment</em>
-	 * {@code P}.
-	 */
-	double punishment = 0.0;
+	double[][] payoffs;
 
 	/**
 	 * Create a new instance of the module for {@code 2×2} games.
@@ -159,6 +141,14 @@ public class TBT extends Discrete implements Pairs,
 		colors[DEFECT + nTraits] = Color.YELLOW;
 		colors[COOPERATE + nTraits] = Color.GREEN;
 		setTraitColors(colors);
+		// payoffs
+		payoffs = new double[nTraits][nTraits];
+	}
+
+	@Override
+	public void unload() {
+		super.unload();
+		payoffs = null;
 	}
 
 	@Override
@@ -188,38 +178,31 @@ public class TBT extends Discrete implements Pairs,
 
 	@Override
 	public double getMinGameScore() {
-		return Math.min(reward, Math.min(sucker, Math.min(temptation, punishment)));
+		return ArrayMath.min(payoffs);
 	}
 
 	@Override
 	public double getMaxGameScore() {
-		return Math.max(reward, Math.max(sucker, Math.max(temptation, punishment)));
+		return ArrayMath.max(payoffs);
 	}
 
 	@Override
 	public double getMonoGameScore(int type) {
-		switch (type) {
-			case COOPERATE:
-				return reward;
-			case DEFECT:
-				return punishment;
-			default:
-				return Double.NaN;
-		}
+		return payoffs[type][type];
 	}
 
 	@Override
 	public double pairScores(int me, int[] traitCount, double[] traitScore) {
 		switch (me) {
 			case COOPERATE:
-				traitScore[COOPERATE] = reward;
-				traitScore[DEFECT] = temptation;
-				return traitCount[COOPERATE] * reward + traitCount[DEFECT] * sucker;
+				traitScore[COOPERATE] = payoffs[COOPERATE][COOPERATE];
+				traitScore[DEFECT] = payoffs[DEFECT][COOPERATE];
+				return traitCount[COOPERATE] * payoffs[COOPERATE][COOPERATE] + traitCount[DEFECT] * payoffs[COOPERATE][DEFECT];
 
 			case DEFECT:
-				traitScore[COOPERATE] = sucker;
-				traitScore[DEFECT] = punishment;
-				return traitCount[COOPERATE] * temptation + traitCount[DEFECT] * punishment;
+				traitScore[COOPERATE] = payoffs[COOPERATE][DEFECT];
+				traitScore[DEFECT] = payoffs[DEFECT][DEFECT];
+				return traitCount[COOPERATE] * payoffs[DEFECT][COOPERATE] + traitCount[DEFECT] * payoffs[DEFECT][DEFECT];
 
 			default: // should not end here
 				throw new Error("Unknown strategy (" + me + ")");
@@ -228,8 +211,8 @@ public class TBT extends Discrete implements Pairs,
 
 	@Override
 	public void avgScores(double[] density, int n, double[] avgscores) {
-		avgscores[COOPERATE] = density[COOPERATE] * reward + density[DEFECT] * sucker;
-		avgscores[DEFECT] = density[COOPERATE] * temptation + density[DEFECT] * punishment;
+		avgscores[COOPERATE] = density[COOPERATE] * payoffs[COOPERATE][COOPERATE] + density[DEFECT] * payoffs[COOPERATE][DEFECT];
+		avgscores[DEFECT] = density[COOPERATE] * payoffs[DEFECT][COOPERATE] + density[DEFECT] * payoffs[DEFECT][DEFECT];
 	}
 
 	@Override
@@ -237,8 +220,8 @@ public class TBT extends Discrete implements Pairs,
 		int x = traitCount[COOPERATE];
 		int y = traitCount[DEFECT];
 		double in = 1.0 / (x + y - 1);
-		traitScore[COOPERATE] = ((x - 1) * reward + y * sucker) * in;
-		traitScore[DEFECT] = (x * temptation + (y - 1) * punishment) * in;
+		traitScore[COOPERATE] = ((x - 1) * payoffs[COOPERATE][COOPERATE] + y * payoffs[COOPERATE][DEFECT]) * in;
+		traitScore[DEFECT] = (x * payoffs[DEFECT][COOPERATE] + (y - 1) * payoffs[DEFECT][DEFECT]) * in;
 	}
 
 	/**
@@ -247,10 +230,7 @@ public class TBT extends Discrete implements Pairs,
 	 * @param payoffs the payoff matrix
 	 */
 	public void setPayoffs(double[][] payoffs) {
-		reward = payoffs[COOPERATE][COOPERATE];
-		sucker = payoffs[COOPERATE][DEFECT];
-		temptation = payoffs[DEFECT][COOPERATE];
-		punishment = payoffs[DEFECT][DEFECT];
+		this.payoffs = payoffs;
 	}
 
 	/**
@@ -259,188 +239,39 @@ public class TBT extends Discrete implements Pairs,
 	 * @return the payoff matrix
 	 */
 	public double[][] getPayoffs() {
-		final double[][] payoffs = new double[2][2];
-		payoffs[COOPERATE][COOPERATE] = reward;
-		payoffs[COOPERATE][DEFECT] = sucker;
-		payoffs[DEFECT][COOPERATE] = temptation;
-		payoffs[DEFECT][DEFECT] = punishment;
 		return payoffs;
 	}
 
 	/**
-	 * Set the payoff of strategy {@code me} interacting with strategy {@code you}
-	 * to {@code payoff}.
-	 * 
+	 * Set the payoff for type {@code me} against type {@code you} to
+	 * {@code payoff}.
+	 *
 	 * @param payoff the payoff to {@code me}
 	 * @param me     the strategy index of the row player
 	 * @param you    the strategy index of the column player
 	 */
 	public void setPayoff(double payoff, int me, int you) {
-		if (me == COOPERATE) {
-			if (you == COOPERATE)
-				reward = payoff;
-			else
-				sucker = payoff;
+		if (me < 0 || me > 2 || you < 0 || you > 2)
 			return;
-		}
-		if (you == DEFECT)
-			punishment = payoff;
-		else
-			temptation = payoff;
+		payoffs[me][you] = payoff;
 	}
 
 	/**
-	 * Get the payoff of strategy {@code me} interacting with strategy {@code you}.
+	 * Get the payoff for type {@code me} against type {@code you}.
 	 *
 	 * @param me  the strategy index of the row player
 	 * @param you the strategy index of the column player
 	 * @return the payoff to {@code me}
 	 */
 	public double getPayoff(int me, int you) {
-		if (me == COOPERATE) {
-			if (you == COOPERATE)
-				return reward;
-			return sucker;
-		}
-		if (you == DEFECT)
-			return punishment;
-		return temptation;
+		return payoffs[me][you];
 	}
-
-	/**
-	 * Command line option to set the payoff for mutual cooperation.
-	 */
-	public final CLOption cloReward = new CLOption("reward", "1", EvoLudo.catModule,
-			"--reward <r>    reward for mutual cooperation", new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse the payoff for mutual cooperation.
-				 * 
-				 * @param arg the reward
-				 */
-				@Override
-				public boolean parse(String arg) {
-					if (cloPayoffs.isSet()) {
-						if (cloReward.isSet())
-							logger.warning("option --paymatrix " + cloPayoffs.getArg() + " takes precedence; --reward "
-									+ cloReward.getArg() + " ignored!");
-						// this signals no problems to suppress further parsing attempts
-						return true;
-					}
-					setPayoff(CLOParser.parseDouble(arg), COOPERATE, COOPERATE);
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# reward:               " + Formatter.format(getPayoff(COOPERATE, COOPERATE), 4));
-				}
-			});
-
-	/**
-	 * Command line option to set the sucker's payoff of a cooperator facing a
-	 * defector.
-	 */
-	public final CLOption cloSucker = new CLOption("sucker", "0", EvoLudo.catModule,
-			"--sucker <s>    sucker's payoff for being cheated", new CLODelegate() {
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse the payoff to a cooperator against a defector.
-				 * 
-				 * @param arg the sucker's payoff
-				 */
-				@Override
-				public boolean parse(String arg) {
-					if (cloPayoffs.isSet()) {
-						if (cloSucker.isSet())
-							logger.warning("option --paymatrix " + cloPayoffs.getArg() + " takes precedence; --sucker "
-									+ cloSucker.getArg() + " ignored!");
-						// this signals no problems to suppress further parsing attempts
-						return true;
-					}
-					setPayoff(CLOParser.parseDouble(arg), COOPERATE, DEFECT);
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# sucker:               " + Formatter.format(getPayoff(COOPERATE, DEFECT), 4));
-				}
-			});
-
-	/**
-	 * Command line option to set the payoff for the temptation to defect for a
-	 * defector encountering a cooperator.
-	 */
-	public final CLOption cloTemptation = new CLOption("temptation", "1.65", EvoLudo.catModule,
-			"--temptation <t>  temptation to defect", new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse the payoff to a defector interacting with a cooperator.
-				 * 
-				 * @param arg the temptation
-				 */
-				@Override
-				public boolean parse(String arg) {
-					if (cloPayoffs.isSet()) {
-						if (cloTemptation.isSet())
-							logger.warning("option --paymatrix " + cloPayoffs.getArg()
-									+ " takes precedence; --temptation " + cloTemptation.getArg() + " ignored!");
-						// this signals no problems to suppress further parsing attempts
-						return true;
-					}
-					setPayoff(CLOParser.parseDouble(arg), DEFECT, COOPERATE);
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# temptation:           " + Formatter.format(getPayoff(DEFECT, COOPERATE), 4));
-				}
-			});
-
-	/**
-	 * Command line option to set the payoff for mutual defection.
-	 */
-	public final CLOption cloPunishment = new CLOption("punishment", "0", EvoLudo.catModule,
-			"--punishment <p>  punishment for mutual defection", new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse the payoff for mutual defection.
-				 * 
-				 * @param arg the punishment
-				 */
-				@Override
-				public boolean parse(String arg) {
-					if (cloPayoffs.isSet()) {
-						if (cloPunishment.isSet())
-							logger.warning("option --paymatrix " + cloPayoffs.getArg()
-									+ " takes precedence; --punishment " + cloPunishment.getArg() + " ignored!");
-						// this signals no problems to suppress further parsing attempts
-						return true;
-					}
-					setPayoff(CLOParser.parseDouble(arg), DEFECT, DEFECT);
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# punishment:           " + Formatter.format(getPayoff(DEFECT, DEFECT), 4));
-				}
-			});
 
 	/**
 	 * Command line option to set the {@code 2×2} payoff matrix for
 	 * interactions between cooperators and defectors.
 	 */
-	public final CLOption cloPayoffs = new CLOption("paymatrix", "0,1.65;0,1", EvoLudo.catModule,
+	public final CLOption cloPayoffs = new CLOption("paymatrix", "1,0;1.65,0", EvoLudo.catModule,
 			"--paymatrix <a,b;c,d>  2x2 payoff matrix", new CLODelegate() {
 
 				/**
@@ -475,10 +306,6 @@ public class TBT extends Discrete implements Pairs,
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
-		parser.addCLO(cloReward);
-		parser.addCLO(cloSucker);
-		parser.addCLO(cloTemptation);
-		parser.addCLO(cloPunishment);
 		parser.addCLO(cloPayoffs);
 	}
 
