@@ -505,7 +505,7 @@ public class IBSDPopulation extends IBSPopulation {
 		debugModel = -1;
 		if (random01() < module.getDeathRate() * realtimeIncr) {
 			// vacate focal site
-			updateStrategyAt(me, VACANT);
+			strategiesScratch[me] = VACANT + nTraits;
 			updateScoreAt(me, true);
 		}
 		return realtimeIncr;
@@ -515,12 +515,15 @@ public class IBSDPopulation extends IBSPopulation {
 	public void updateFromModelAt(int index, int modelPlayer) {
 		super.updateFromModelAt(index, modelPlayer); // deal with tags
 		int newstrat = strategies[modelPlayer] % nTraits;
-		updateStrategyAt(index, newstrat);
+		int oldstrat = strategies[index] % nTraits;
+		if (oldstrat != newstrat)
+			newstrat += nTraits;
+		strategiesScratch[index] = newstrat;
 	}
 
 	@Override
 	public double mutateAt(int focal) {
-		updateStrategyAt(focal, mutation.mutate(strategies[focal] % nTraits) + nTraits);
+		strategiesScratch[focal] = mutation.mutate(strategies[focal] % nTraits) + nTraits;
 		updateScoreAt(focal, true);
 		return 1.0 / (nPopulation * module.getSpeciesUpdateRate());
 	}
@@ -528,9 +531,10 @@ public class IBSDPopulation extends IBSPopulation {
 	@Override
 	protected boolean maybeMutateAt(int focal, boolean switched) {
 		int strat = (switched ? strategiesScratch[focal] : strategies[focal]) % nTraits;
-		if (mutation.doMutate())
-			strat = mutation.mutate(strat) + nTraits;
-		return updateStrategyAt(focal, strat);
+		boolean mutate = mutation.doMutate();
+		if (mutate)
+			strategiesScratch[focal] = mutation.mutate(strat) + nTraits;
+		return switched || mutate;
 	}
 
 	@Override
@@ -554,23 +558,6 @@ public class IBSDPopulation extends IBSPopulation {
 				strategies[idx] = (strategies[idx] % nTraits) + nTraits;
 			}
 		}
-	}
-
-	/**
-	 * Update the trait/strategy of individual with index {@code index} to the new
-	 * trait/strategy {@code newstrat}.
-	 * 
-	 * @param index    the index of the individual
-	 * @param newstrat the new trait/strategy of the individual
-	 * @return {@code true} if the strategy has changed
-	 */
-	protected boolean updateStrategyAt(int index, int newstrat) {
-		int oldstrat = strategies[index] % nTraits;
-		boolean changed = (oldstrat != newstrat);
-		if (changed)
-			newstrat += nTraits;
-		strategiesScratch[index] = newstrat;
-		return changed;
 	}
 
 	@Override
@@ -827,18 +814,18 @@ public class IBSDPopulation extends IBSPopulation {
 		// constant selection: simply choose active strategy with highest payoff
 		if (module.isStatic()) {
 			double max = typeScores[mytype]; // assumes mytype is active
-			int idx = mytype;
+			int newtype = mytype;
 			for (int n = 0; n < nTraits; n++) {
 				if (!active[n])
 					continue;
 				// note: if my payoff and highest payoff are tied, keep type
 				if (typeScores[n] > max) {
 					max = typeScores[n];
-					idx = n;
+					newtype = n;
 				}
 			}
-			if (idx != mytype) {
-				updateStrategyAt(me, idx);
+			if (newtype != mytype) {
+				strategiesScratch[me] = newtype + nTraits;
 				return true;
 			}
 			return false;
@@ -912,18 +899,18 @@ public class IBSDPopulation extends IBSPopulation {
 			}
 		}
 		double max = traitScore[mytype]; // assumes mytype is active
-		int idx = mytype;
+		int newtype = mytype;
 		for (int n = 0; n < nTraits; n++) {
 			if (!active[n])
 				continue;
 			// note: if my payoff and highest payoff are tied, keep type
 			if (traitScore[n] > max) {
 				max = traitScore[n];
-				idx = n;
+				newtype = n;
 			}
 		}
-		if (idx != mytype) {
-			updateStrategyAt(me, idx);
+		if (newtype != mytype) {
+			strategiesScratch[me] = newtype + nTraits;
 			return true;
 		}
 		return false;
