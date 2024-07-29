@@ -363,7 +363,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * into canvas coordinates. For example, on retina displays the scale is
 	 * typically {@code 2}, i.e. two pixels per unit width or height.
 	 * 
-	 * @see #getDevicePixelRatio()
+	 * @see NativeJS#getDevicePixelRatio()
 	 * @see Canvas#setCoordinateSpaceWidth(int)
 	 * @see Canvas#setCoordinateSpaceHeight(int)
 	 */

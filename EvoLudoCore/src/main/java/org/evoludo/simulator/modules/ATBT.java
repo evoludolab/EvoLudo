@@ -667,7 +667,7 @@ public class ATBT extends TBT implements Pairs, HasIBS, HasODE, HasSDE, HasPDE,
 	 * {@link CG#createIBSPop()}
 	 */
 	@Override
-	public IBSDPopulation createIBSPop() {
+	public ATBT.ATBTPop createIBSPop() {
 		return new ATBT.ATBTPop(engine);
 	}
 

@@ -276,8 +276,8 @@ public abstract class Model implements CLOProvider {
 	 *
 	 * @return <code>true</code> if model has converged.
 	 *
-	 * @see #checkConvergence(double)
-	 * @see #setAccuracy(double)
+	 * @see IBSDPopulation#checkConvergence()
+	 * @see ODEEuler#setAccuracy(double)
 	 */
 	public boolean hasConverged() {
 		return converged;
@@ -309,9 +309,9 @@ public abstract class Model implements CLOProvider {
 
 	/**
 	 * Request a change of the {@link Mode} of the model. Returns {@code false} if
-	 * {@code mode} is not supported.
+	 * {@code newmode} is not supported.
 	 * 
-	 * @param aMode the requested mode
+	 * @param newmode the requested mode
 	 * @return {@code true} if mode supported
 	 * 
 	 * @see EvoLudo#requestAction(ChangeListener.PendingAction)
@@ -1039,7 +1039,7 @@ public abstract class Model implements CLOProvider {
 
 	/**
 	 * Set the report interval, i.e. number of updates in one step (see
-	 * {@link #modelNext()} measured in generations (or fractions thereof).
+	 * {@link EvoLudo#modelNext()} measured in generations (or fractions thereof).
 	 *
 	 * @param aValue the new report interval
 	 */
@@ -1059,7 +1059,7 @@ public abstract class Model implements CLOProvider {
 
 	/**
 	 * Command line option to set the number of generations between reports for
-	 * {@link #modelNext()}.
+	 * {@link EvoLudo#modelNext()}.
 	 */
 	public final CLOption cloTimeStep = new CLOption("timestep", "1", EvoLudo.catGlobal,
 			"--timestep <f>  report frequency in generations", new CLODelegate() {

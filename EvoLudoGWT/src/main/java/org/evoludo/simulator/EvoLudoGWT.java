@@ -32,7 +32,6 @@
 
 package org.evoludo.simulator;
 
-import org.evoludo.EvoLudoWeb;
 import org.evoludo.graphics.Network2DGWT;
 import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.math.ArrayMath;
@@ -341,7 +340,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 * Use JSNI helper methods to query and detect features of the execution
 	 * environment.
 	 *
-	 * @see EvoLudoWeb#ePubReaderHasFeature(String)
+	 * @see NativeJS#ePubReaderHasFeature(String)
 	 */
 	public void detectGUIFeatures() {
 		isGWT = true;

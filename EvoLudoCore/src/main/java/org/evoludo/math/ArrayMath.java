@@ -50,7 +50,8 @@ public class ArrayMath {
 
 	/**
 	 * Append {@code element} to {@code boolean} array {@code array}. The length of
-	 * the returned array is {@code array.length +1}.
+	 * the returned array is {@code array.length + 1}. The array {@code array}
+	 * remains unchanged.
 	 * 
 	 * @param array   the array
 	 * @param element the element to append
@@ -65,7 +66,8 @@ public class ArrayMath {
 
 	/**
 	 * Append {@code element} to {@code int} array {@code array}. The length of the
-	 * returned array is {@code array.length +1}.
+	 * returned array is {@code array.length + 1}. The array {@code array} remains
+	 * unchanged.
 	 * 
 	 * @param array   the array
 	 * @param element the element to append
@@ -80,7 +82,8 @@ public class ArrayMath {
 
 	/**
 	 * Append {@code element} to {@code double} array {@code array}. The length of
-	 * the returned array is {@code array.length +1}.
+	 * the returned array is {@code array.length + 1}. The array {@code array}
+	 * remains unchanged.
 	 * 
 	 * @param array   the array
 	 * @param element the element to append
@@ -95,7 +98,8 @@ public class ArrayMath {
 
 	/**
 	 * Append {@code element} of type {@code T} to array {@code array} of the same
-	 * type. The length of the returned array is {@code array.length +1}.
+	 * type. The length of the returned array is {@code array.length + 1}. The array
+	 * {@code array} remains unchanged.
 	 * 
 	 * @param <T>     the type of the array
 	 * @param array   the array
@@ -110,9 +114,9 @@ public class ArrayMath {
 	}
 
 	/**
-	 * Append {@code double} array {@code elements} to {@code double} array
-	 * {@code array}. The length of the returned array is
-	 * {@code array.length + elements.length}. {@code array} and {@code elements}
+	 * Append {@code double} array {@code tail} to {@code double} array
+	 * {@code head}. The length of the returned array is
+	 * {@code head.length + tail.length}. The arrays {@code head} and {@code tail}
 	 * remain unchanged.
 	 * 
 	 * @param head the base array
@@ -128,11 +132,11 @@ public class ArrayMath {
 	}
 
 	/**
-	 * Append {@code double} array {@code elements} to {@code double} array
-	 * {@code array}. The length of the returned array is
-	 * {@code array.length + elements.length}. {@code array} and {@code elements}
-	 * remain unchanged.
+	 * Append array {@code tail} of type {@code T[]} to array {@code head}. The
+	 * length of the returned array is {@code head.length + tail.length}. The arrays
+	 * {@code head} and {@code tail} remain unchanged.
 	 * 
+	 * @param <T>  the type of the array
 	 * @param head the base array
 	 * @param tail the array to append
 	 * @return the new (longer) array

@@ -41,6 +41,9 @@ import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.NodeList;
 
+/**
+ * Collection of native javascript methods.
+ */
 public class NativeJS {
 
 	/**
@@ -50,7 +53,7 @@ public class NativeJS {
 	}
 
 	/**
-	 * Display javascript alert panel - use sparingly.
+	 * JSNI method: Display javascript alert panel - use sparingly.
 	 *
 	 * @param msg the message to display
 	 */
@@ -112,8 +115,8 @@ public class NativeJS {
 	}-*/;
 
 	/**
-	 * Check if document has focus. This is important to avoid showing tooltips when
-	 * the browser window is not in focus.
+	 * JSNI method: Check if document has focus. This is important to avoid showing
+	 * tooltips when the browser window is not in focus.
 	 * 
 	 * @return <code>true</code> if document has focus
 	 */
@@ -134,7 +137,7 @@ public class NativeJS {
 	}-*/;
 
 	/**
-	 * Check if fullscreen mode is supported.
+	 * JSNI method: Check if fullscreen mode is supported.
 	 * 
 	 * @return {@code true} if fullscreen supported
 	 */
@@ -146,7 +149,7 @@ public class NativeJS {
 	}-*/;
 
 	/**
-	 * Request fullscreen mode for the element {@code ele}.
+	 * JSNI method: Request fullscreen mode for the element {@code ele}.
 	 * 
 	 * @param ele the element to request fullscreen mode for
 	 */
@@ -166,7 +169,7 @@ public class NativeJS {
 	}-*/;
 
 	/**
-	 * Check if the document is in fullscreen mode.
+	 * JSNI method: Check if the document is in fullscreen mode.
 	 * 
 	 * @return {@code true} if the document is in fullscreen mode
 	 */
@@ -183,8 +186,9 @@ public class NativeJS {
 	}-*/;
 
 	/**
-	 * Gets fullscreen element if in fullscreen mode or <code>null</code> if not in
-	 * fullscreen or fullscreen not supported by web browser.
+	 * JSNI method: Gets fullscreen element if in fullscreen mode or
+	 * <code>null</code> if not in fullscreen or fullscreen not supported by web
+	 * browser.
 	 *
 	 * @return fullscreen element or <code>null</code>
 	 */
@@ -202,7 +206,7 @@ public class NativeJS {
 	}-*/;
 
 	/**
-	 * Exit fullscreen mode.
+	 * JSNI method: Exit fullscreen mode.
 	 */
 	public static native void exitFullscreen()
 	/*-{
@@ -218,7 +222,8 @@ public class NativeJS {
 	}-*/;
 
 	/**
-	 * Determine name of the fullscreen change event in current web browser.
+	 * JSNI method: Determine name of the fullscreen change event in current web
+	 * browser.
 	 * <p>
 	 * <strong>Note:</strong> Chrome implements both <code>fullscreenchange</code>
 	 * and <code>webkitfullscreenchange</code> but with slightly different behaviour
@@ -243,27 +248,26 @@ public class NativeJS {
 	}-*/;
 
 	/**
-	 * Add a fullscreen change handler.
+	 * JSNI method: Add a fullscreen change handler.
 	 * 
 	 * @evoludo.impl The JSNI routine works reasonably well with Safari but not with
 	 *               all other browsers because aspects of the fullscreen API are
-	 *               interpreted differently, see {@link #_jsFSCname()}.
+	 *               interpreted differently, see {@link #fullscreenChangeEventName()}.
 	 * 
 	 * @param eventname the name of the fullscreen change event
 	 * @param handler   the handler to add
 	 */
 	public static final native void addFullscreenChangeHandler(String eventname, FullscreenChangeHandler handler)
 	/*-{
-		$doc
-				.addEventListener(
-						eventname,
-						function(event) {
-							handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
-						}, true);
+		$doc.addEventListener(
+			eventname,
+			function(event) {
+				handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
+			}, true);
 	}-*/;
 
 	/**
-	 * Add a fullscreen change handler.
+	 * JSNI method: Remove the fullscreen change handler.
 	 * 
 	 * @evoludo.impl The handler function needs to be specified again when removing
 	 *               the listener... Because we don't know how to store the handler
@@ -276,12 +280,11 @@ public class NativeJS {
 	 */
 	public static final native void removeFullscreenChangeHandler(String eventname, FullscreenChangeHandler handler)
 	/*-{
-		$doc
-				.removeEventListener(
-						eventname,
-						function(event) {
-							handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
-						}, true);
+		$doc.removeEventListener(
+			eventname,
+			function(event) {
+				handler.@org.evoludo.ui.FullscreenChangeHandler::onFullscreenChange(Lorg/evoludo/ui/FullscreenChangeEvent;)(event);
+			}, true);
 	}-*/;
 
 	/**
@@ -297,8 +300,8 @@ public class NativeJS {
 			// must explicitly check for null (otherwise this may return an object
 			// violating the signature of the _isWebGLSupported() method)
 			return (!!$wnd.WebGLRenderingContext
-					&& (canvas.getContext('webgl') || canvas
-							.getContext('experimental-webgl'))) != null;
+					&& (canvas.getContext('webgl') || 
+						canvas.getContext('experimental-webgl'))) != null;
 		} catch (e) {
 			return false;
 		}
@@ -357,7 +360,7 @@ public class NativeJS {
 	}-*/;
 
 	/**
-	 * Create a SVG context for exporting the view.
+	 * JSNI method: Create a SVG context for exporting the view.
 	 * <p>
 	 * <strong>Note:</strong> Requires that the {@code Canvas2SVG.js} script has
 	 * been injected, e.g. using something like
@@ -373,7 +376,7 @@ public class NativeJS {
 	}-*/;
 
 	/**
-	 * Export the SVG context. JSNI helper method.
+	 * JSNI method: Export the SVG context.
 	 * 
 	 * @param ctx the SVG context to export
 	 */
@@ -404,7 +407,7 @@ public class NativeJS {
 	}-*/;
 
 	/**
-	 * Test whether loaded from an XHTML document.
+	 * JSNI method: Test whether loaded from an XHTML document.
 	 * <p>
 	 * <strong>Note:</strong> GWT interferes here and both
 	 * <code>Document.get().createElement("div").getTagName()=="DIV"</code> as well
@@ -418,7 +421,7 @@ public class NativeJS {
 	}-*/;
 
 	/**
-	 * Check if graph is displayed in an ePub reading system.
+	 * JSNI method: Check if graph is displayed in an ePub reading system.
 	 * 
 	 * @return <code>true</code> if ePub reading system.
 	 */
@@ -431,7 +434,7 @@ public class NativeJS {
 	}-*/;
 
 	/**
-	 * Retrieve string identifying the ePub reading system:
+	 * JSNI method: Retrieve string identifying the ePub reading system:
 	 * <ul>
 	 * <li>web browser: null</li>
 	 * <li>iBooks: iBooks, Apple Books</li>
@@ -500,7 +503,7 @@ public class NativeJS {
 	}-*/;
 
 	/**
-	 * Check if execution environment supports keyboard events.
+	 * JSNI method: Check if execution environment supports keyboard events.
 	 * 
 	 * @return <code>true</code> if keyboard events are supported
 	 */
@@ -509,7 +512,7 @@ public class NativeJS {
 	}-*/;
 
 	/**
-	 * Check if execution environment supports mouse events.
+	 * JSNI method: Check if execution environment supports mouse events.
 	 * 
 	 * @return <code>true</code> if mouse events are supported
 	 */
@@ -518,7 +521,7 @@ public class NativeJS {
 	}-*/;
 
 	/**
-	 * Check if execution environment supports touch events.
+	 * JSNI method: Check if execution environment supports touch events.
 	 * 
 	 * @return <code>true</code> if touch events are supported
 	 */
@@ -527,9 +530,9 @@ public class NativeJS {
 				&& $doc instanceof DocumentTouch);
 	}-*/;
 
-	/*
-	 * some potentially useful (but currently unused) javascript snippets
-	 */
+	// /*
+	//  * some potentially useful (but currently unused) javascript snippets
+	//  */
 
 	// /**
 	// * open new window displaying data url

@@ -68,8 +68,7 @@ import java.util.Arrays;
 public class Path2D {
 
 	/**
-	 * An even-odd winding rule for determining the interior of
-	 * a path.
+	 * An even-odd winding rule for determining the interior of a path.
 	 *
 	 * @see PathIterator#WIND_EVEN_ODD
 	 * @since 1.6
@@ -77,8 +76,7 @@ public class Path2D {
 	public static final int WIND_EVEN_ODD = PathIterator.WIND_EVEN_ODD;
 
 	/**
-	 * A non-zero winding rule for determining the interior of a
-	 * path.
+	 * A non-zero winding rule for determining the interior of a path.
 	 *
 	 * @see PathIterator#WIND_NON_ZERO
 	 * @since 1.6
@@ -179,24 +177,6 @@ public class Path2D {
 
 	/**
 	 * Constructs a new double precision {@code Path2D} object
-	 * from an arbitrary {@link java.awt.Shape} object.
-	 * All of the initial geometry and the winding rule for this path are
-	 * taken from the specified {@code Shape} object.
-	 *
-	 * @param p2d the specified {@code Shape} object
-	 * @since 1.6
-	 */
-	public Path2D(Path2D p2d) {
-		setWindingRule(p2d.windingRule);
-		this.numTypes = p2d.numTypes;
-		// trim arrays:
-		this.pointTypes = Arrays.copyOf(p2d.pointTypes, p2d.numTypes);
-		this.numCoords = p2d.numCoords;
-		this.doubleCoords = Arrays.copyOf(doubleCoords, numCoords);
-	}
-
-	/**
-	 * Constructs a new double precision {@code Path2D} object
 	 * from an arbitrary {@link Path2D} object, transformed by an
 	 * {@link AffineTransform} object.
 	 * All of the initial geometry and the winding rule for this path are
@@ -216,6 +196,9 @@ public class Path2D {
 		this.doubleCoords = p2d.cloneCoordsDouble(at);
 	}
 
+	/**
+	 * Trim excessive storage of {@code Path2D}. No data is lost.
+	 */
 	public final void trimToSize() {
 		// trim arrays:
 		if (numTypes < pointTypes.length) {
@@ -238,11 +221,23 @@ public class Path2D {
 		return ret;
 	}
 
+	/**
+	 * Append the point with coordinates {@code (x,y)} to this path.
+	 * 
+	 * @param x the {@code x} coordinate of the point
+	 * @param y the {@code y} coordinate of the point
+	 */
 	void append(double x, double y) {
 		doubleCoords[numCoords++] = x;
 		doubleCoords[numCoords++] = y;
 	}
 
+	/**
+	 * Return the point in the {@code Path2D} with the specified index.
+	 * 
+	 * @param coordindex the index of the point
+	 * @return the point in the path
+	 */
 	Point2D getPoint(int coordindex) {
 		return new Point2D(doubleCoords[coordindex],
 				doubleCoords[coordindex + 1]);
@@ -386,12 +381,12 @@ public class Path2D {
 	 * path segments with a line segment.
 	 * If the {@code connect} parameter is {@code true} and the
 	 * path is not empty then any initial {@code moveTo} in the
-	 * geometry of the appended {@code Shape} is turned into a
+	 * geometry of the appended {@code Iterator} is turned into a
 	 * {@code lineTo} segment.
 	 * If the destination coordinates of such a connecting {@code lineTo}
 	 * segment match the ending coordinates of a currently open
 	 * subpath then the segment is omitted as superfluous.
-	 * The winding rule of the specified {@code Shape} is ignored
+	 * The winding rule of the specified {@code Iterator} is ignored
 	 * and the appended geometry is governed by the winding
 	 * rule specified for this path.
 	 *
@@ -471,10 +466,10 @@ public class Path2D {
 
 	/**
 	 * Returns a high precision and more accurate bounding box of
-	 * the <code>Shape</code> than the <code>getBounds</code> method.
+	 * the <code>Path2D</code> than the <code>getBounds</code> method.
 	 * Note that there is no guarantee that the returned
 	 * {@link Rectangle2D} is the smallest bounding box that encloses
-	 * the <code>Shape</code>, only that the <code>Shape</code> lies
+	 * the <code>Path2D</code>, only that the <code>Path2D</code> lies
 	 * entirely within the indicated <code>Rectangle2D</code>. The
 	 * bounding box returned by this method is usually tighter than that
 	 * returned by the <code>getBounds</code> method and never fails due
@@ -483,7 +478,7 @@ public class Path2D {
 	 * store the dimensions.
 	 * 
 	 * @return an instance of <code>Rectangle2D</code> that is a
-	 *         high-precision bounding box of the <code>Shape</code>.
+	 *         high-precision bounding box of the <code>Path2D</code>.
 	 * @since 1.6
 	 * 
 	 * @evoludo.impl {@code getBounds()} is not implemented
@@ -515,7 +510,7 @@ public class Path2D {
 	/**
 	 * Returns an iterator object that iterates along this path.
 	 * boundary and provides access to a flattened view of the
-	 * <code>Shape</code> outline geometry.
+	 * <code>Path2D</code> outline geometry.
 	 * <p>
 	 * Only SEG_MOVETO, SEG_LINETO, and SEG_CLOSE point types are
 	 * returned by the iterator.
@@ -566,6 +561,12 @@ public class Path2D {
 
 		static final int curvecoords[] = { 2, 2, 4, 6, 0 };
 
+		/**
+		 * Constructs a new path iterator object from an arbitrary
+		 * {@link Path2D} object.
+		 * 
+		 * @param path the path to iterate over its segments
+		 */
 		Iterator(Path2D path) {
 			this.path = path;
 			this.doubleCoords = path.doubleCoords;
@@ -738,6 +739,11 @@ public class Path2D {
 		numTypes = numCoords = 0;
 	}
 
+	/**
+	 * Check if the path is empty.
+	 * 
+	 * @return <code>true</code> if the path is empty
+	 */
 	public boolean isEmpty() {
 		return (numTypes == 0);
 	}

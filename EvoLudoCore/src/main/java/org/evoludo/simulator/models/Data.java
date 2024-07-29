@@ -76,6 +76,11 @@ public enum Data {
 		return id;
 	}
 
+	/**
+	 * Checks if the data type is a statistics type.
+	 * 
+	 * @return <code>true</code> for statistics data types
+	 */
 	public boolean isStatistics() {
 		return (this == STATISTICS_FIXATION_PROBABILITY || this == STATISTICS_FIXATION_TIME
 				|| this == STATISTICS_STATIONARY);

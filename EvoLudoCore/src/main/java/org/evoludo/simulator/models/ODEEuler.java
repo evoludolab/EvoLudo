@@ -540,10 +540,11 @@ public class ODEEuler extends Model implements Discrete {
 	 * Sets the discretization of time increments in continuous time models.
 	 * <p>
 	 * <strong>Note:</strong> Some models may need to adjust, i.e. reduce,
-	 * <code>dt</code> (see {@link PDERD#checkDt()}) or choose a variable step size
-	 * in which case <code>dt</code> is ignored (see {@link ODERK#getAutoDt()}).
+	 * <code>deltat</code> (see {@link PDERD#checkDt()}) or choose a variable step
+	 * size in which case <code>deltat</code> is ignored (see
+	 * {@link ODERK#getAutoDt()}).
 	 *
-	 * @param dt the time increments in continuous time models.
+	 * @param deltat the time increments in continuous time models.
 	 */
 	public void setDt(double deltat) {
 		deltat = Math.max(0.0, deltat);
@@ -1504,11 +1505,11 @@ public class ODEEuler extends Model implements Discrete {
 
 	/**
 	 * Sets the desired accuracy for determining convergence. If
-	 * <code>y(t+dt)-y(t)&lt;a dt</code> holds, where <code>y(t+dt)</code> denotes
+	 * <code>y(t+dt)-y(t)&lt;acc dt</code> holds, where <code>y(t+dt)</code> denotes
 	 * the new state and <code>y(t)</code> the previous state, the numerical
 	 * integration is reported as having converged and stops.
 	 *
-	 * @param accuracy the numerical accuracy
+	 * @param acc the numerical accuracy
 	 */
 	public void setAccuracy(double acc) {
 		if (acc <= 0.0)

@@ -475,8 +475,8 @@ public class PDERD extends ODEEuler {
 	 * <strong>Important:</strong> must be thread safe for JRE. In particular, no
 	 * memory can be shared with anyone else!
 	 *
-	 * @param from the index of the first cell (including)
-	 * @param to   the index of the last cell (excluding)
+	 * @param start the index of the first cell (including)
+	 * @param end   the index of the last cell (excluding)
 	 * @return the accumulated change in state
 	 */
 	public double react(int start, int end) {
@@ -565,8 +565,8 @@ public class PDERD extends ODEEuler {
 	}
 
 	/**
-	 * Diffusion step. Update cells with indices between <code>from</code>
-	 * (including) and <code>to</code> (excluding). In order to preserve symmetry,
+	 * Diffusion step. Update cells with indices between <code>start</code>
+	 * (including) and <code>end</code> (excluding). In order to preserve symmetry,
 	 * if requested and possible, the neighbouring cells are sorted according to
 	 * their density before the diffusion step is performed. The sorting is fairly
 	 * expensive in terms of CPU time but it doesn't matter whether the sorting is
@@ -579,8 +579,8 @@ public class PDERD extends ODEEuler {
 	 * <strong>Important:</strong> must be thread safe for JRE. In particular, no
 	 * memory can be shared with anyone else!
 	 *
-	 * @param from the index of the first cell (including)
-	 * @param to   the index of the last cell (excluding)
+	 * @param start the index of the first cell (including)
+	 * @param end   the index of the last cell (excluding)
 	 */
 	public void diffuse(int start, int end) {
 		double[] minDens = new double[nDim];
@@ -1010,10 +1010,10 @@ public class PDERD extends ODEEuler {
 	}
 
 	/**
-	 * Increments time by <code>dt</code>. This is used by the
+	 * Increments time by <code>incr</code>. This is used by the
 	 * {@link PDESupervisor} to report back on the progress.
 	 *
-	 * @param dt the time that has elapsed
+	 * @param incr the time that has elapsed
 	 * @return {@code true} to continue and {@code false} to request a stop
 	 */
 	public boolean incrementTime(double incr) {
@@ -1482,7 +1482,7 @@ public class PDERD extends ODEEuler {
 	 * {@link org.evoludo.simulator.models.PDESupervisorGWT PDESupervisorGWT} and
 	 * {@link org.evoludo.simulator.models.PDESupervisorJRE PDESupervisorJRE}
 	 * 
-	 * @param dt the time increment for diffusion
+	 * @param deltat the time increment for diffusion
 	 */
 	public void initDiffusion(double deltat) {
 		if (alpha == null || alpha.length != nDim)

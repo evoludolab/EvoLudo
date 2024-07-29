@@ -1842,9 +1842,11 @@ public class EvoLudoWeb extends Composite
 
 	/**
 	 * Convenience method to add <code>view</code> to list of active views
-	 * <code>activeViews</code>.
+	 * <code>activeViews</code>. If a view with the same name already exists in
+	 * <code>oldViews</code> it is reused.
 	 *
 	 * @param view to add to active list
+	 * @param oldViews list of current views
 	 */
 	private void addView(AbstractView view, HashMap<String, AbstractView> oldViews) {
 		String name = view.getName();

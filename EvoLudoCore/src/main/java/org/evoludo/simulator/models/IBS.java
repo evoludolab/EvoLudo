@@ -807,6 +807,7 @@ public abstract class IBS extends Model {
 	 * 
 	 * @param id  the species identifier
 	 * @param hit the index of the node hit by mouse
+	 * @param alt <code>true</code> if {@code Alt}-key pressed
 	 * @return <code>false</code> if no actions taken
 	 */
 	public boolean mouseHitNode(int id, int hit, boolean alt) {
