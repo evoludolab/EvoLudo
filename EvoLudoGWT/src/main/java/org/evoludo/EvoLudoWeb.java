@@ -565,11 +565,6 @@ public class EvoLudoWeb extends Composite
 	}
 
 	@Override
-	public void modelLoaded() {
-		updateViews();
-	}
-
-	@Override
 	public void modelUnloaded() {
 		for (AbstractView view : activeViews.values())
 			view.unload();
@@ -1204,17 +1199,15 @@ public class EvoLudoWeb extends Composite
 		boolean parsingSuccess = engine.parseCLO();
 		evoludoSlider.setValue(engine.getDelay());
 		revertCLO();
+		updateViews();
+		// process (emulated) ePub restrictions - adds console if possible
+		processEPubSettings();
 		// reset is required if module and/or model changed
 		Module newModule = engine.getModule();
 		Model newModel = engine.getModel();
 		if (newModule == null || engine.getModule() != oldModule || newModel != oldModel) {
-			// process (emulated) ePub restrictions - adds console if possible
-			processEPubSettings();
 			engine.modelReset();
 		} else {
-			// process (emulated) ePub restrictions - adds console if possible
-			processEPubSettings();
-			updateViews();
 			if (!engine.paramsDidChange()) {
 				// resume running if no reset was necessary or --run was provided
 				engine.setSuspended(resume || engine.isSuspended());
