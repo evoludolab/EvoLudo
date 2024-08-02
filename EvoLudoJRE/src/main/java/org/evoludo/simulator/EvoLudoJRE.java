@@ -452,15 +452,13 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		int nPopulation = -1;
 		long nSamplesLong = (long) model.getNSamples();
 		long samples = 0L;
-		int muttrait = -1;
-		int restrait = -1;
 		// check and print settings
 		modelCheck();
 		dumpParameters();
-		// get ready to run simulation
-		modelReset();
 		// print data legend (for dynamical reports) and initialize variables (for
 		// statistics reports)
+		Mode mode = Mode.DYNAMICS;
+		// note parser of data types ensures a single mode
 		for (MultiView.DataTypes data : dataTypes) {
 			switch (data) {
 				case MEAN:
@@ -495,310 +493,394 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				// "\tSpecies" : "") + ",\tDegree distribution of population structure");
 				// break;
 				case STAT_PROB:
-					// fix != null because otherwise STAT_PROB not available
-					FixationData fix = getModel().getFixationData();
-					muttrait = fix.mutantTrait;
-					restrait = fix.residentTrait;
 					nTraits = module.getNTraits();
 					nPopulation = module.getNPopulation();
 					fixProb = new double[nPopulation][nTraits + 1];
+					mode = Mode.STATISTICS_SAMPLE;
 					break;
 				case STAT_UPDATES:
-					// fix != null because otherwise STAT_UPDATES not available
-					fix = getModel().getFixationData();
-					muttrait = fix.mutantTrait;
-					restrait = fix.residentTrait;
 					nTraits = module.getNTraits();
 					nPopulation = module.getNPopulation();
 					fixUpdate = new double[nPopulation][9];
+					mode = Mode.STATISTICS_SAMPLE;
 					break;
 				case STAT_TIMES:
-					// fix != null because otherwise STAT_TIMES not available
-					fix = getModel().getFixationData();
-					muttrait = fix.mutantTrait;
-					restrait = fix.residentTrait;
 					nTraits = module.getNTraits();
 					nPopulation = module.getNPopulation();
 					fixTime = new double[nPopulation][9];
+					mode = Mode.STATISTICS_SAMPLE;
 					break;
 				default:
 					output.println("# data output for " + data.getKey() + " not (yet) supported!");
+					return;
 			}
 		}
+		if (!model.requestMode(mode)) {
+			// mode not supported
+			logger.info("Mode " + mode + " not supported!");
+			return;
+		}
+		// get ready to run simulation(s)
+		modelReset();
 		// run simulation
-		if (model.getMode() == Mode.DYNAMICS) {
-			boolean cont = true;
-			// relax initial configuration
-			modelRelax();
-			while (true) {
-				String time = Formatter.format(model.getTime(), dataDigits);
-				// report dynamical data
-				for (MultiView.DataTypes data : dataTypes) {
-					switch (data) {
-						case MEAN:
-							model.getMeanTraits(meantrait);
-							output.println(time + ",\t" + data.getKey() + ",\t"
-									+ Formatter.format(meantrait, dataDigits));
-							break;
-						case FITMEAN:
-							model.getMeanFitness(meanfit);
-							output.println(time + ",\t" + data.getKey() + ",\t"
-									+ Formatter.format(meanfit, dataDigits));
-							break;
-						case TRAITS:
-							if (model instanceof IBSD) {
-								boolean isMultispecies = (module.getNSpecies() > 1);
-								for (Module mod : module.getSpecies()) {
-									IBSDPopulation pop = (IBSDPopulation) mod.getIBSPopulation();
-									output.println(time + ",\t" + data.getKey()
-											+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
-											+ pop.getTraits());
-								}
-								break;
-							}
-							if (model instanceof IBSC) {
-								boolean isMultispecies = (module.getNSpecies() > 1);
-								for (Module mod : module.getSpecies()) {
-									IBSMCPopulation pop = (IBSMCPopulation) mod.getIBSPopulation();
-									output.println(time + ",\t" + data.getKey()
-											+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
-											+ pop.getTraits(dataDigits));
-								}
-								break;
-							}
-							if (model instanceof PDERD) {
-								output.println("How to best report trait distribution in PDE?");
-								break;
-							}
-							throw new Error("This never happens.");
-						case SCORES:
-							if (model instanceof IBS) {
-								boolean isMultispecies = (module.getNSpecies() > 1);
-								for (Module mod : module.getSpecies()) {
-									IBSPopulation pop = mod.getIBSPopulation();
-									output.println(time + ",\t" + data.getKey()
-											+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
-											+ pop.getScores(dataDigits));
-								}
-								break;
-							}
-							if (model instanceof PDERD) {
-								output.println("How to best report score distribution in PDE?");
-								break;
-							}
-							throw new Error("This never happens.");
-						case FITNESS:
-							if (model instanceof IBS) {
-								boolean isMultispecies = (module.getNSpecies() > 1);
-								for (Module mod : module.getSpecies()) {
-									IBSPopulation pop = mod.getIBSPopulation();
-									output.println(time + ",\t" + data.getKey()
-											+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
-											+ pop.getFitness(dataDigits));
-								}
-								break;
-							}
-							if (model instanceof PDERD) {
-								output.println("How to best report fitness distribution in PDE?");
-								break;
-							}
-							throw new Error("This never happens.");
-						// case FITHISTOGRAM:
-						// break;
-						// case HISTOGRAM:
-						// break;
-						// case STRUCTURE:
-						// break;
-						default:
-							output.println("# dynamics output for " + data.getKey() + " not supported!");
-					}
-				}
-				double timeStop = model.getTimeStop();
-				if (!cont || (timeStop > 0.0 && model.getTime() > timeStop))
-					break;
-				cont = modelNext();
-			}
-		} else if (model.getMode() == Mode.STATISTICS_SAMPLE) {
-			// perform statistics
-			if (cloSeed.isSet()) {
-				// initial state set. now clear seed to obtain reproducible statistics
-				// rather just a single data point repeatedly
-				rng.clearRNGSeed();
+		switch (model.getMode()) {
 
-			}
-			while (true) {
-				while (modelNext())
-					;
-				// read and process sample
-				samples++;
-				FixationData fixData = ((IBSD) model).getFixationData();
+			case DYNAMICS:
+				boolean cont = true;
+				// relax initial configuration
+				modelRelax();
+				while (true) {
+					String time = Formatter.format(model.getTime(), dataDigits);
+					// report dynamical data
+					for (MultiView.DataTypes data : dataTypes) {
+						switch (data) {
+							case MEAN:
+								model.getMeanTraits(meantrait);
+								output.println(time + ",\t" + data.getKey() + ",\t"
+										+ Formatter.format(meantrait, dataDigits));
+								break;
+							case FITMEAN:
+								model.getMeanFitness(meanfit);
+								output.println(time + ",\t" + data.getKey() + ",\t"
+										+ Formatter.format(meanfit, dataDigits));
+								break;
+							case TRAITS:
+								if (model instanceof IBSD) {
+									boolean isMultispecies = (module.getNSpecies() > 1);
+									for (Module mod : module.getSpecies()) {
+										IBSDPopulation pop = (IBSDPopulation) mod.getIBSPopulation();
+										output.println(time + ",\t" + data.getKey()
+												+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
+												+ pop.getTraits());
+									}
+									break;
+								}
+								if (model instanceof IBSC) {
+									boolean isMultispecies = (module.getNSpecies() > 1);
+									for (Module mod : module.getSpecies()) {
+										IBSMCPopulation pop = (IBSMCPopulation) mod.getIBSPopulation();
+										output.println(time + ",\t" + data.getKey()
+												+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
+												+ pop.getTraits(dataDigits));
+									}
+									break;
+								}
+								if (model instanceof PDERD) {
+									output.println("How to best report trait distribution in PDE?");
+									break;
+								}
+								throw new Error("This never happens.");
+							case SCORES:
+								if (model instanceof IBS) {
+									boolean isMultispecies = (module.getNSpecies() > 1);
+									for (Module mod : module.getSpecies()) {
+										IBSPopulation pop = mod.getIBSPopulation();
+										output.println(time + ",\t" + data.getKey()
+												+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
+												+ pop.getScores(dataDigits));
+									}
+									break;
+								}
+								if (model instanceof PDERD) {
+									output.println("How to best report score distribution in PDE?");
+									break;
+								}
+								throw new Error("This never happens.");
+							case FITNESS:
+								if (model instanceof IBS) {
+									boolean isMultispecies = (module.getNSpecies() > 1);
+									for (Module mod : module.getSpecies()) {
+										IBSPopulation pop = mod.getIBSPopulation();
+										output.println(time + ",\t" + data.getKey()
+												+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
+												+ pop.getFitness(dataDigits));
+									}
+									break;
+								}
+								if (model instanceof PDERD) {
+									output.println("How to best report fitness distribution in PDE?");
+									break;
+								}
+								throw new Error("This never happens.");
+							// case FITHISTOGRAM:
+							// break;
+							// case HISTOGRAM:
+							// break;
+							// case STRUCTURE:
+							// break;
+							default:
+								output.println("# dynamics output for " + data.getKey() + " not supported!");
+						}
+					}
+					double timeStop = model.getTimeStop();
+					if (!cont || (timeStop > 0.0 && model.getTime() > timeStop))
+						break;
+					cont = modelNext();
+				}
+				break;
+
+			case STATISTICS_SAMPLE:
+				// perform statistics
+				if (cloSeed.isSet()) {
+					// initial state set. now clear seed to obtain reproducible statistics
+					// rather just a single data point repeatedly
+					rng.clearRNGSeed();
+
+				}
+				while (true) {
+					while (modelNext())
+						;
+					// read and process sample
+					samples++;
+					FixationData fixData = model.getFixationData();
+					for (MultiView.DataTypes data : dataTypes) {
+						switch (data) {
+							case STAT_PROB:
+								double[] node = fixProb[fixData.mutantNode];
+								node[(fixData.typeFixed == fixData.mutantTrait ? 0 : 1)]++;
+								node[nTraits]++;
+								fixData.probRead = true;
+								break;
+							case STAT_UPDATES:
+								updateMeanVar(fixUpdate[fixData.mutantNode], (fixData.typeFixed == fixData.mutantTrait),
+										fixData.updatesFixed);
+								fixData.timeRead = true;
+								break;
+							case STAT_TIMES:
+								updateMeanVar(fixTime[fixData.mutantNode], (fixData.typeFixed == fixData.mutantTrait),
+										fixData.timeFixed);
+								fixData.timeRead = true;
+								break;
+							default:
+								throw new Error("Statistics for " + data.getKey() + " not supported!");
+						}
+					}
+					if (samples >= nSamplesLong)
+						break;
+					modelReset();
+				}
+				// report statistics
+				FixationData fixData = model.getFixationData();
 				for (MultiView.DataTypes data : dataTypes) {
 					switch (data) {
 						case STAT_PROB:
-							double[] node = fixProb[fixData.mutantNode];
-							node[(fixData.typeFixed == muttrait ? 0 : 1)]++;
-							node[2]++;
-							fixData.probRead = true;
+							output.println("# index,\t" + data.getKey() + (module.getNSpecies() > 1 ? "\tSpecies" : "")
+									+ ",\tFixation probability of single " + traitNames[fixData.mutantTrait]
+									+ " in " + traitNames[fixData.residentTrait]
+									+ " populations for all locations with samples");
+							double meanFix = 0.0;
+							double varFix = 0.0;
+							for (int n = 0; n < nPopulation; n++) {
+								double[] node = fixProb[n];
+								double norm = node[nTraits];
+								if (norm <= 0.0)
+									continue;	// no samples for node n
+								double inorm = 1.0 / norm;
+								double n0 = node[0] * inorm;
+								double n1 = node[1] * inorm;
+								output.println(n + ",\t"
+										+ Formatter.format(n0, dataDigits) + ", " // mutant fixation
+										+ Formatter.format(n1, dataDigits) + ", " // resident fixation
+										+ Formatter.format(norm, 0)); // sample size
+								double dx = n0 - meanFix;
+								meanFix += dx / (n + 1);
+								varFix += dx * (n0 - meanFix);
+							}
+							// trick: to avoid -0 output simply add 0...!
+							output.println("# overall:\t" + Formatter.format(meanFix + 0.0, dataDigits) + " ± "
+									+ Formatter.format(Math.sqrt(varFix / (nPopulation - 1)) + 0.0, dataDigits));
 							break;
 						case STAT_UPDATES:
-							updateMeanVar(fixUpdate[fixData.mutantNode], (fixData.typeFixed == muttrait),
-									fixData.updatesFixed);
-							fixData.timeRead = true;
+							double meanResUpdates = 0.0;
+							double meanResUpdateSdev = 0.0;
+							double meanMutUpdates = 0.0;
+							double meanMutUpdateSdev = 0.0;
+							double meanAbsUpdates = 0.0;
+							double meanAbsUpdatesSdev = 0.0;
+							output.println("# index,\t" + data.getKey() + (module.getNSpecies() > 1 ? "\tSpecies" : "")
+									+ ",\tFixation and absorption updates (mean, sdev, samples) of single "
+									+ traitNames[fixData.mutantTrait]
+									+ " in " + traitNames[fixData.residentTrait] + " population for all locations");
+							for (int n = 0; n < nPopulation; n++) {
+								printTimeStat(fixUpdate, n);
+								double in1 = 1.0 / (n + 1);
+								double[] fn = fixUpdate[n];
+								double dx;
+								double norm = fn[MUTANT_NORM];
+								if (norm > 1.0) {
+									dx = fn[MUTANT_MEAN] - meanMutUpdates;
+									meanMutUpdates += dx * in1;
+									dx = Math.sqrt(fn[MUTANT_VAR] / (norm - 1.0)) - meanMutUpdateSdev;
+									meanMutUpdateSdev += dx * in1;
+								}
+								norm = fn[RESIDENT_NORM];
+								if (norm > 1.0) {
+									dx = fn[RESIDENT_MEAN] - meanResUpdates;
+									meanResUpdates += dx * in1;
+									dx = Math.sqrt(fn[RESIDENT_VAR] / (norm - 1.0)) -meanResUpdateSdev;
+									meanResUpdateSdev += dx * in1;
+								}
+								norm = fn[ABSORPTION_NORM];
+								if (norm > 1.0) {
+									dx = fn[ABSORPTION_MEAN] - meanAbsUpdates;
+									meanAbsUpdates += dx * in1;
+									dx = Math.sqrt(fn[ABSORPTION_VAR] / (norm - 1.0)) - meanAbsUpdatesSdev;
+									meanAbsUpdatesSdev += dx * in1;
+								}
+							}
+							// trick: to avoid -0 output simply add 0...!
+							output.println("# overall:\t" + traitNames[fixData.mutantTrait] + ": " //
+									+ Formatter.format(meanMutUpdates + 0.0, dataDigits) + " ± " //
+									+ Formatter.format(meanMutUpdateSdev + 0.0, dataDigits) //
+									+ "\t" + traitNames[fixData.residentTrait] + ": " //
+									+ Formatter.format(meanResUpdates + 0.0, dataDigits) + " ± "
+									+ Formatter.format(meanResUpdateSdev + 0.0, dataDigits) //
+									+ "\tabsorption: " //
+									+ Formatter.format(meanAbsUpdates + 0.0, dataDigits) + " ± "
+									+ Formatter.format(meanAbsUpdatesSdev + 0.0, dataDigits) //
+							);
 							break;
 						case STAT_TIMES:
-							updateMeanVar(fixTime[fixData.mutantNode], (fixData.typeFixed == muttrait),
-									fixData.timeFixed);
-							fixData.timeRead = true;
+							double meanResTimes = 0.0;
+							double meanResTimeSdev = 0.0;
+							double meanMutTimes = 0.0;
+							double meanMutTimeSdev = 0.0;
+							double meanAbsTimes = 0.0;
+							double meanAbsTimeSdev = 0.0;
+							output.println("# index,\t" + data.getKey() + (module.getNSpecies() > 1 ? "\tSpecies" : "")
+									+ ",\tFixation and absorption times (mean, sdev, samples) of single "
+									+ traitNames[fixData.mutantTrait]
+									+ " in " + traitNames[fixData.residentTrait] + " population for all locations");
+							for (int n = 0; n < nPopulation; n++) {
+								printTimeStat(fixTime, n);
+								double in1 = 1.0 / (n + 1);
+								double[] fn = fixTime[n];
+								double dx;
+								double norm = fn[MUTANT_NORM];
+								if (norm > 1.0) {
+									dx = fn[MUTANT_MEAN] - meanMutTimes;
+									meanMutTimes += dx * in1;
+									dx = Math.sqrt(fn[MUTANT_VAR] / (norm - 1.0)) - meanMutTimeSdev;
+									meanMutTimeSdev += dx * in1;
+								}
+								norm = fn[RESIDENT_NORM];
+								if (norm > 1.0) {
+									dx = fn[RESIDENT_MEAN] - meanResTimes;
+									meanResTimes += dx * in1;
+									dx = Math.sqrt(fn[RESIDENT_VAR] / (norm - 1.0)) - meanResTimeSdev;
+									meanResTimeSdev += dx * in1;
+								}
+								norm = fn[ABSORPTION_NORM];
+								if (norm > 1.0) {
+									dx = fn[ABSORPTION_MEAN] - meanAbsTimes;
+									meanAbsTimes += dx * in1;
+									dx = Math.sqrt(fn[ABSORPTION_VAR] / (norm - 1.0)) - meanAbsTimeSdev;
+									meanAbsTimeSdev += dx * in1;
+								}
+							}
+							// trick: to avoid -0 output simply add 0...!
+							output.println("# overall:\t" + traitNames[fixData.mutantTrait] + ": " //
+									+ Formatter.format(meanMutTimes + 0.0, dataDigits) + " ± " //
+									+ Formatter.format(meanMutTimeSdev + 0.0, dataDigits) //
+									+ "\t" + traitNames[fixData.residentTrait] + ": " //
+									+ Formatter.format(meanResTimes + 0.0, dataDigits) + " ± "
+									+ Formatter.format(meanResTimeSdev + 0.0, dataDigits) //
+									+ "\tabsorption: " //
+									+ Formatter.format(meanAbsTimes + 0.0, dataDigits) + " ± "
+									+ Formatter.format(meanAbsTimeSdev + 0.0, dataDigits) //
+							);
 							break;
 						default:
 							throw new Error("Statistics for " + data.getKey() + " not supported!");
 					}
 				}
-				if (samples > nSamplesLong)
-					break;
-				modelReset();
-			}
-			// report statistics
-			for (MultiView.DataTypes data : dataTypes) {
-				switch (data) {
-					case STAT_PROB:
-						output.println("# index,\t" + data.getKey() + (module.getNSpecies() > 1 ? "\tSpecies" : "")
-								+ ",\tFixation probability of " + traitNames[muttrait]
-								+ " mutant in " + traitNames[restrait] + " resident for all locations with samples");
-						double meanFix = 0.0;
-						double varFix = 0.0;
-						for (int n = 0; n < nPopulation; n++) {
-							double[] node = fixProb[n];
-							double norm = node[2];
-							double inorm = 1.0 / norm;
-							double n0 = node[0] * inorm;
-							double n1 = node[1] * inorm;
-							output.println(n + ",\t"
-									+ Formatter.format(n0, dataDigits) + ", " // mutant fixation
-									+ Formatter.format(n1, dataDigits) + ", " // resident fixation
-									+ Formatter.format(norm, 0)); // sample size
-							double dx = n0 - meanFix;
-							meanFix += dx / (n + 1);
-							varFix += dx * (n0 - meanFix);
-						}
-						// trick: to avoid -0 output simply add 0...!
-						output.println("# overall:\t" + Formatter.format(meanFix + 0.0, dataDigits) + " ± "
-								+ Formatter.format(Math.sqrt(varFix / (nPopulation - 1)) + 0.0, dataDigits));
-						break;
-					case STAT_UPDATES:
-						double meanResUpdates = 0.0;
-						double meanResUpdateSdev = 0.0;
-						double meanMutUpdates = 0.0;
-						double meanMutUpdateSdev = 0.0;
-						double meanAbsUpdates = 0.0;
-						double meanAbsUpdatesSdev = 0.0;
-						output.println("# index,\t" + data.getKey() + (module.getNSpecies() > 1 ? "\tSpecies" : "")
-								+ ",\tFixation and absorption updates (mean, sdev, samples) of " + traitNames[muttrait]
-								+ " mutant in " + traitNames[restrait] + " resident for all locations");
-						for (int n = 0; n < nPopulation; n++) {
-							printTimeStat(fixUpdate, n);
-							double in1 = 1.0 / (n + 1);
-							double[] fn = fixUpdate[n];
-							double dx = fn[0] - meanMutUpdates;
-							meanMutUpdates += dx * in1;
-							// in [1] is the variance convert to sdev first
-							dx = Math.sqrt(fn[1] / (fn[2] - 1.0)) - meanMutUpdateSdev;
-							meanMutUpdateSdev += dx * in1;
-							dx = fn[3] - meanResUpdates;
-							meanResUpdates += dx * in1;
-							dx = Math.sqrt(fn[3] / (fn[5] - 1.0)) - meanResUpdateSdev;
-							meanResUpdateSdev += dx * in1;
-							dx = fn[6] - meanAbsUpdates;
-							meanAbsUpdates += dx * in1;
-							dx = Math.sqrt(fn[6] / (fn[8] - 1.0)) - meanAbsUpdatesSdev;
-							meanAbsUpdatesSdev += dx * in1;
-						}
-						// trick: to avoid -0 output simply add 0...!
-						output.println("# overall:\t" + traitNames[muttrait] + ": " //
-								+ Formatter.format(meanMutUpdates + 0.0, dataDigits) + " ± " //
-								+ Formatter.format(meanMutUpdateSdev + 0.0, dataDigits) //
-								+ "\t" + traitNames[restrait] + ": " //
-								+ Formatter.format(meanResUpdates + 0.0, dataDigits) + " ± "
-								+ Formatter.format(meanResUpdateSdev + 0.0, dataDigits) //
-								+ "\tabsorption: " //
-								+ Formatter.format(meanAbsUpdates + 0.0, dataDigits) + " ± "
-								+ Formatter.format(meanAbsUpdatesSdev + 0.0, dataDigits) //
-						);
-						break;
-					case STAT_TIMES:
-						double meanResTimes = 0.0;
-						double meanResTimeSdev = 0.0;
-						double meanMutTimes = 0.0;
-						double meanMutTimeSdev = 0.0;
-						double meanAbsTimes = 0.0;
-						double meanAbsTimeSdev = 0.0;
-						output.println("# index,\t" + data.getKey() + (module.getNSpecies() > 1 ? "\tSpecies" : "")
-								+ ",\tFixation and absorption times (mean, sdev, samples) of " + traitNames[muttrait]
-								+ " mutant in " + traitNames[restrait] + " resident for all locations");
-						for (int n = 0; n < nPopulation; n++) {
-							printTimeStat(fixTime, n);
-							double in1 = 1.0 / (n + 1);
-							double[] fn = fixTime[n];
-							double dx = fn[0] - meanMutTimes;
-							meanMutTimes += dx * in1;
-							// in [1] is the variance convert to sdev first
-							dx = Math.sqrt(fn[1] / (fn[2] - 1.0)) - meanMutTimeSdev;
-							meanMutTimeSdev += dx * in1;
-							dx = fn[3] - meanResTimes;
-							meanResTimes += dx * in1;
-							dx = Math.sqrt(fn[3] / (fn[5] - 1.0)) - meanResTimeSdev;
-							meanResTimeSdev += dx * in1;
-							dx = fn[6] - meanAbsTimes;
-							meanAbsTimes += dx * in1;
-							dx = Math.sqrt(fn[6] / (fn[8] - 1.0)) - meanAbsTimeSdev;
-							meanAbsTimeSdev += dx * in1;
-						}
-						// trick: to avoid -0 output simply add 0...!
-						output.println("# overall:\t" + traitNames[muttrait] + ": " //
-								+ Formatter.format(meanMutTimes + 0.0, dataDigits) + " ± " //
-								+ Formatter.format(meanMutTimeSdev + 0.0, dataDigits) //
-								+ "\t" + traitNames[restrait] + ": " //
-								+ Formatter.format(meanResTimes + 0.0, dataDigits) + " ± "
-								+ Formatter.format(meanResTimeSdev + 0.0, dataDigits) //
-								+ "\tabsorption: " //
-								+ Formatter.format(meanAbsTimes + 0.0, dataDigits) + " ± "
-								+ Formatter.format(meanAbsTimeSdev + 0.0, dataDigits) //
-						);
-						break;
-					default:
-						throw new Error("Statistics for " + data.getKey() + " not supported!");
-				}
-			}
-		} else {
-			throw new Error("Mode not recognized.");
+				break;
+			case STATISTICS_UPDATE:
+				throw new Error("Mode " + Mode.STATISTICS_UPDATE + " not implemented.");
+			default:
+				throw new Error("Mode not recognized.");
 		}
 		dumpEnd();
 		exit(0);
 	}
 
 	/**
+	 * Index of the mutants mean fixation probability/updates/time.
+	 */
+	static int MUTANT_MEAN = 0;
+
+	/**
+	 * Index of the mutants variance of fixation probability/updates/times.
+	 */
+	static int MUTANT_VAR = 1;
+
+	/**
+	 * Index of the number of samples for the mutants mean and variance.
+	 */
+	static int MUTANT_NORM = 2;
+
+	/**
+	 * Index of the reseidents mean fixation probability/updates/time.
+	 */
+	static int RESIDENT_MEAN = 3;
+
+	/**
+	 * Index of the residents variance of fixation probability/updates/times.
+	 */
+	static int RESIDENT_VAR = 4;
+
+	/**
+	 * Index of the number of samples for the residents mean and variance.
+	 */
+	static int RESIDENT_NORM = 5;
+
+	/**
+	 * Index of the mean  absorption probability/update/time.
+	 */
+	static int ABSORPTION_MEAN = 6;
+
+	/**
+	 * Index of the variance of the mean absorption probability/updates/time.
+	 */
+	static int ABSORPTION_VAR = 7;
+
+	/**
+	 * Index of the the number of samples for absorption probability/updates/time.
+	 */
+	static int ABSORPTION_NORM = 8;
+
+	/**
 	 * Helper method to calculate running mean and variance for fixation
 	 * updates/times. The data structure of the {@code meanvar} array is defined as
 	 * follows:
-	 * <ol>
-	 * <li>mean of mutant fixation
-	 * <li>variance of mutant fixation
-	 * <li>sample count of mutant fixation
-	 * <li>mean of resident fixation
-	 * <li>variance of resident fixation
-	 * <li>sample count of resident fixation
-	 * <li>mean of absorption
-	 * <li>variance of absorption
-	 * <li>sample count of absorption ({@code meanvar[2] + meanvar[5] == meanvar[8]}
+	 * <dl>
+	 * <dt>{@code MUTANT_MEAN}
+	 * <dd>mean of mutant fixation
+	 * <dt>{@code MUTANT_VAR}
+	 * <dd>variance of mutant fixation
+	 * <dt>{@code MUTANT_NORM}
+	 * <dd>sample count of mutant fixation
+	 * <dt>{@code RESIDENT_MEAN}
+	 * <dd>mean of resident fixation
+	 * <dt>{@code RESIDENT_VAR}
+	 * <dd>variance of resident fixation
+	 * <dt>{@code RESIDENT_NORM}
+	 * <dd>sample count of resident fixation
+	 * <dt>{@code ABSORPTION_MEAN}
+	 * <dd>mean of absorption
+	 * <dt>{@code ABSORPTION_VAR}
+	 * <dd>variance of absorption
+	 * <dt>{@code ABSORPTION_NORM}
+	 * <dd>sample count of absorption ({@code meanvar[MUTANT_NORM] + meanvar[RESIDENT_NORM] == meanvar[ABSORPTION_NORM]}
 	 * must hold)
-	 * </ol>
+	 * </dl>
 	 * 
 	 * @param meanvar     the array that stores the running mean and variance
 	 * @param mutantfixed the flag to indicate whether the mutant fixated
 	 * @param x           the time/updates to fixation
 	 */
 	protected void updateMeanVar(double[] meanvar, boolean mutantfixed, double x) {
-		int idx = mutantfixed ? 0 : 3;
+		int idx = mutantfixed ? MUTANT_MEAN : RESIDENT_MEAN;
 		double mean = meanvar[idx];
 		double dx = x - mean;
 		double norm = ++meanvar[idx + 2];
@@ -806,13 +888,12 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		meanvar[idx] = mean;
 		meanvar[idx + 1] += dx * (x - mean);
 		// absorption
-		idx = 6;
-		mean = meanvar[idx];
+		mean = meanvar[ABSORPTION_MEAN];
 		dx = x - mean;
-		norm = ++meanvar[idx + 2];
+		norm = ++meanvar[ABSORPTION_NORM];
 		mean += dx / norm;
-		meanvar[idx] = mean;
-		meanvar[idx + 1] += dx * (x - mean);
+		meanvar[ABSORPTION_MEAN] = mean;
+		meanvar[ABSORPTION_VAR] += dx * (x - mean);
 	}
 
 	/**
@@ -826,21 +907,23 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 */
 	private void printTimeStat(double[][] meanvar, int n) {
 		double[] node = meanvar[n];
-		double normut = node[2];
-		double normres = node[5];
-		double normabs = node[8];
+		double normut = node[MUTANT_NORM];
+		double normres = node[RESIDENT_NORM];
+		double normabs = node[ABSORPTION_NORM];
+		if (normabs <= 0.0)
+			return; // no samples for node n
 		// trick: to avoid -0 output simply add 0...!
 		output.println(n + ",\t"
-				+ Formatter.format(node[0] + 0.0, dataDigits) + " ± " // mutant mean fixation time
-				+ Formatter.format(Math.sqrt(node[1] / (normut - 1.0)) + 0.0, dataDigits) + ", " // mutant mean fixation
+				+ Formatter.format(node[MUTANT_MEAN] + 0.0, dataDigits) + " ± " // mutant mean fixation time
+				+ (normut > 1.0 ? Formatter.format(Math.sqrt(node[MUTANT_VAR] / (normut - 1.0)) + 0.0, dataDigits) : "-") + ", " // mutant mean fixation
 																									// sdev
 				+ Formatter.format(normut, 0) + "; " // mutant mean fixation samples
-				+ Formatter.format(node[3] + 0.0, dataDigits) + " ± " // resident mean fixation time
-				+ Formatter.format(Math.sqrt(node[4] / (normres - 1.0)) + 0.0, dataDigits) + ", " // resident mean
+				+ Formatter.format(node[RESIDENT_MEAN] + 0.0, dataDigits) + " ± " // resident mean fixation time
+				+ (normres > 1.0 ? Formatter.format(Math.sqrt(node[RESIDENT_VAR] / (normres - 1.0)) + 0.0, dataDigits) : "-") + ", "  // resident mean
 																									// fixation sdev
 				+ Formatter.format(normres, 0) + "; " // mutant mean fixation samples
-				+ Formatter.format(node[6] + 0.0, dataDigits) + " ± " // mean absorption time
-				+ Formatter.format(Math.sqrt(node[7] / (normabs - 1.0)) + 0.0, dataDigits) + ", " // mean absorption
+				+ Formatter.format(node[ABSORPTION_MEAN] + 0.0, dataDigits) + " ± " // mean absorption time
+				+ (normabs > 1.0 ? Formatter.format(Math.sqrt(node[ABSORPTION_VAR] / (normabs - 1.0)) + 0.0, dataDigits) : "-") + ", " // mean absorption
 																									// sdev
 				+ Formatter.format(normabs, 0)); // mean absorption samples
 	}

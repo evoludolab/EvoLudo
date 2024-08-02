@@ -172,27 +172,29 @@ public interface MultiView {
 	public static DataTypes[] getAvailableDataTypes(Module module, Model model) {
 		ArrayList<DataTypes> dataOutputs = new ArrayList<>();
 		// query available views to deduce the data types to report
-		// strategy related data
+		// individual data
 		boolean isODESDE = (model.isODE() || model.isSDE());
 		if (module instanceof HasPop2D.Strategy && !isODESDE)
 			dataOutputs.add(DataTypes.TRAITS);
-		if (module instanceof HasMean.Strategy || module instanceof HasPhase2D || module instanceof HasS3)
-			dataOutputs.add(DataTypes.MEAN);
-		if (module instanceof HasHistogram.Strategy || module instanceof HasDistribution.Strategy)
-			dataOutputs.add(DataTypes.HISTOGRAM);
-		// fitness related data
 		if (module instanceof HasPop2D.Fitness && !isODESDE) {
 			dataOutputs.add(DataTypes.SCORES);
 			dataOutputs.add(DataTypes.FITNESS);
 		}
+		// mean data
+		if (module instanceof HasMean.Strategy || module instanceof HasPhase2D || module instanceof HasS3)
+			dataOutputs.add(DataTypes.MEAN);
 		if (module instanceof HasMean.Fitness)
 			dataOutputs.add(DataTypes.FITMEAN);
+
+		// histograms
+		if (module instanceof HasHistogram.Strategy || module instanceof HasDistribution.Strategy)
+			dataOutputs.add(DataTypes.HISTOGRAM);
 		if (module instanceof HasHistogram.Fitness)
 			dataOutputs.add(DataTypes.FITHISTOGRAM);
-		// structure related data
 		if (module instanceof HasHistogram.Degree && !isODESDE)
 			dataOutputs.add(DataTypes.STRUCTURE);
-		// statistics related data
+
+		// statistics
 		if (module instanceof HasHistogram.StatisticsProbability)
 			dataOutputs.add(DataTypes.STAT_PROB);
 		if (module instanceof HasHistogram.StatisticsTime) {
