@@ -389,7 +389,11 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			exit(0);
 		}
 		// parse options
-		parseCLO(args);
+		if (!parseCLO(args)) {
+			// problems parsing command line options
+			// return control to caller.
+			return;
+		}
 		if (cloExport.isSet()) {
 			// export option provided: run model and dump state.
 			setDelay(1);
