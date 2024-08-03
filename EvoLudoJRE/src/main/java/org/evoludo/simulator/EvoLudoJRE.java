@@ -444,10 +444,12 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			System.arraycopy(tnames, 0, traitNames, offset, nt);
 			offset += nt;
 		}
-		// helper variables
-		double[][] fixProb = new double[0][0];
-		double[][] fixUpdate = new double[0][0];
-		double[][] fixTime = new double[0][0];
+		// helper variables for statistics
+		double[][] fixProb = new double[0][];
+		double[][] fixUpdate = new double[0][];
+		double[][] fixTime = new double[0][];
+		double[] fixTotUpdate = new double[0];
+		double[] fixTotTime = new double[0];
 		int nTraits = -1;
 		int nPopulation = -1;
 		long nSamplesLong = (long) model.getNSamples();
@@ -502,12 +504,14 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 					nTraits = module.getNTraits();
 					nPopulation = module.getNPopulation();
 					fixUpdate = new double[nPopulation][9];
+					fixTotUpdate = new double[9];
 					mode = Mode.STATISTICS_SAMPLE;
 					break;
 				case STAT_TIMES:
 					nTraits = module.getNTraits();
 					nPopulation = module.getNPopulation();
 					fixTime = new double[nPopulation][9];
+					fixTotTime = new double[9];
 					mode = Mode.STATISTICS_SAMPLE;
 					break;
 				default:
@@ -633,22 +637,25 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 					// read and process sample
 					samples++;
 					FixationData fixData = model.getFixationData();
+					boolean mutantFixed = (fixData.typeFixed == fixData.mutantTrait);
 					for (MultiView.DataTypes data : dataTypes) {
 						switch (data) {
 							case STAT_PROB:
 								double[] node = fixProb[fixData.mutantNode];
-								node[(fixData.typeFixed == fixData.mutantTrait ? 0 : 1)]++;
+								node[(mutantFixed ? 0 : 1)]++;
 								node[nTraits]++;
 								fixData.probRead = true;
 								break;
 							case STAT_UPDATES:
-								updateMeanVar(fixUpdate[fixData.mutantNode], (fixData.typeFixed == fixData.mutantTrait),
+								updateMeanVar(fixUpdate[fixData.mutantNode], mutantFixed,
 										fixData.updatesFixed);
+								updateMeanVar(fixTotUpdate, mutantFixed, fixData.updatesFixed);
 								fixData.timeRead = true;
 								break;
 							case STAT_TIMES:
-								updateMeanVar(fixTime[fixData.mutantNode], (fixData.typeFixed == fixData.mutantTrait),
+								updateMeanVar(fixTime[fixData.mutantNode], mutantFixed,
 										fixData.timeFixed);
+								updateMeanVar(fixTotTime, mutantFixed, fixData.timeFixed);
 								fixData.timeRead = true;
 								break;
 							default:
@@ -691,104 +698,22 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 									+ Formatter.format(Math.sqrt(varFix / (nPopulation - 1)) + 0.0, dataDigits));
 							break;
 						case STAT_UPDATES:
-							double meanResUpdates = 0.0;
-							double meanResUpdateSdev = 0.0;
-							double meanMutUpdates = 0.0;
-							double meanMutUpdateSdev = 0.0;
-							double meanAbsUpdates = 0.0;
-							double meanAbsUpdatesSdev = 0.0;
 							output.println("# index,\t" + data.getKey() + (module.getNSpecies() > 1 ? "\tSpecies" : "")
 									+ ",\tFixation and absorption updates (mean, sdev, samples) of single "
 									+ traitNames[fixData.mutantTrait]
 									+ " in " + traitNames[fixData.residentTrait] + " population for all locations");
-							for (int n = 0; n < nPopulation; n++) {
+							for (int n = 0; n < nPopulation; n++)
 								printTimeStat(fixUpdate, n);
-								double in1 = 1.0 / (n + 1);
-								double[] fn = fixUpdate[n];
-								double dx;
-								double norm = fn[MUTANT_NORM];
-								if (norm > 1.0) {
-									dx = fn[MUTANT_MEAN] - meanMutUpdates;
-									meanMutUpdates += dx * in1;
-									dx = Math.sqrt(fn[MUTANT_VAR] / (norm - 1.0)) - meanMutUpdateSdev;
-									meanMutUpdateSdev += dx * in1;
-								}
-								norm = fn[RESIDENT_NORM];
-								if (norm > 1.0) {
-									dx = fn[RESIDENT_MEAN] - meanResUpdates;
-									meanResUpdates += dx * in1;
-									dx = Math.sqrt(fn[RESIDENT_VAR] / (norm - 1.0)) -meanResUpdateSdev;
-									meanResUpdateSdev += dx * in1;
-								}
-								norm = fn[ABSORPTION_NORM];
-								if (norm > 1.0) {
-									dx = fn[ABSORPTION_MEAN] - meanAbsUpdates;
-									meanAbsUpdates += dx * in1;
-									dx = Math.sqrt(fn[ABSORPTION_VAR] / (norm - 1.0)) - meanAbsUpdatesSdev;
-									meanAbsUpdatesSdev += dx * in1;
-								}
-							}
-							// trick: to avoid -0 output simply add 0...!
-							output.println("# overall:\t" + traitNames[fixData.mutantTrait] + ": " //
-									+ Formatter.format(meanMutUpdates + 0.0, dataDigits) + " ± " //
-									+ Formatter.format(meanMutUpdateSdev + 0.0, dataDigits) //
-									+ "\t" + traitNames[fixData.residentTrait] + ": " //
-									+ Formatter.format(meanResUpdates + 0.0, dataDigits) + " ± "
-									+ Formatter.format(meanResUpdateSdev + 0.0, dataDigits) //
-									+ "\tabsorption: " //
-									+ Formatter.format(meanAbsUpdates + 0.0, dataDigits) + " ± "
-									+ Formatter.format(meanAbsUpdatesSdev + 0.0, dataDigits) //
-							);
+							printTimeStat(fixTotUpdate, "# overall:\t");
 							break;
 						case STAT_TIMES:
-							double meanResTimes = 0.0;
-							double meanResTimeSdev = 0.0;
-							double meanMutTimes = 0.0;
-							double meanMutTimeSdev = 0.0;
-							double meanAbsTimes = 0.0;
-							double meanAbsTimeSdev = 0.0;
 							output.println("# index,\t" + data.getKey() + (module.getNSpecies() > 1 ? "\tSpecies" : "")
 									+ ",\tFixation and absorption times (mean, sdev, samples) of single "
 									+ traitNames[fixData.mutantTrait]
 									+ " in " + traitNames[fixData.residentTrait] + " population for all locations");
-							for (int n = 0; n < nPopulation; n++) {
+							for (int n = 0; n < nPopulation; n++)
 								printTimeStat(fixTime, n);
-								double in1 = 1.0 / (n + 1);
-								double[] fn = fixTime[n];
-								double dx;
-								double norm = fn[MUTANT_NORM];
-								if (norm > 1.0) {
-									dx = fn[MUTANT_MEAN] - meanMutTimes;
-									meanMutTimes += dx * in1;
-									dx = Math.sqrt(fn[MUTANT_VAR] / (norm - 1.0)) - meanMutTimeSdev;
-									meanMutTimeSdev += dx * in1;
-								}
-								norm = fn[RESIDENT_NORM];
-								if (norm > 1.0) {
-									dx = fn[RESIDENT_MEAN] - meanResTimes;
-									meanResTimes += dx * in1;
-									dx = Math.sqrt(fn[RESIDENT_VAR] / (norm - 1.0)) - meanResTimeSdev;
-									meanResTimeSdev += dx * in1;
-								}
-								norm = fn[ABSORPTION_NORM];
-								if (norm > 1.0) {
-									dx = fn[ABSORPTION_MEAN] - meanAbsTimes;
-									meanAbsTimes += dx * in1;
-									dx = Math.sqrt(fn[ABSORPTION_VAR] / (norm - 1.0)) - meanAbsTimeSdev;
-									meanAbsTimeSdev += dx * in1;
-								}
-							}
-							// trick: to avoid -0 output simply add 0...!
-							output.println("# overall:\t" + traitNames[fixData.mutantTrait] + ": " //
-									+ Formatter.format(meanMutTimes + 0.0, dataDigits) + " ± " //
-									+ Formatter.format(meanMutTimeSdev + 0.0, dataDigits) //
-									+ "\t" + traitNames[fixData.residentTrait] + ": " //
-									+ Formatter.format(meanResTimes + 0.0, dataDigits) + " ± "
-									+ Formatter.format(meanResTimeSdev + 0.0, dataDigits) //
-									+ "\tabsorption: " //
-									+ Formatter.format(meanAbsTimes + 0.0, dataDigits) + " ± "
-									+ Formatter.format(meanAbsTimeSdev + 0.0, dataDigits) //
-							);
+							printTimeStat(fixTotTime, "# overall:\t");
 							break;
 						default:
 							throw new Error("Statistics for " + data.getKey() + " not supported!");
@@ -879,51 +804,65 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * @param mutantfixed the flag to indicate whether the mutant fixated
 	 * @param x           the time/updates to fixation
 	 */
-	protected void updateMeanVar(double[] meanvar, boolean mutantfixed, double x) {
-		int idx = mutantfixed ? MUTANT_MEAN : RESIDENT_MEAN;
-		double mean = meanvar[idx];
+	void updateMeanVar(double[] meanvar, boolean mutantfixed, double x) {
+		updateMeanVar(meanvar, x, mutantfixed ? MUTANT_MEAN : RESIDENT_MEAN);
+		updateMeanVar(meanvar, x, ABSORPTION_MEAN);
+	}
+
+	/**
+	 * Helper method to calculate running mean and variance samples {@code x}. The
+	 * entries in the {@code meanvar} array are
+	 * {@code [offset: mean, offset + 1: variance, offset + 2: sample count]}.
+	 * 
+	 * @param meanvar the array with the running mean and variance
+	 * @param x       the fixation probability/update/time
+	 * @param offset  the offset in the {@code meanvar} array
+	 */
+	private void updateMeanVar(double[] meanvar, double x, int offset) {
+		double mean = meanvar[offset];
 		double dx = x - mean;
-		double norm = ++meanvar[idx + 2];
+		double norm = ++meanvar[offset + 2];
 		mean += dx / norm;
-		meanvar[idx] = mean;
-		meanvar[idx + 1] += dx * (x - mean);
-		// absorption
-		mean = meanvar[ABSORPTION_MEAN];
-		dx = x - mean;
-		norm = ++meanvar[ABSORPTION_NORM];
-		mean += dx / norm;
-		meanvar[ABSORPTION_MEAN] = mean;
-		meanvar[ABSORPTION_VAR] += dx * (x - mean);
+		meanvar[offset] = mean;
+		meanvar[offset + 1] += dx * (x - mean);
 	}
 
 	/**
 	 * Helper method to print the fixation and absorption updates/times.
 	 * 
-	 * @param meanvar the 2D array that stores the running mean and variance for all
-	 *                nodes
+	 * @param meanvar the 2D array with mean and variance for all nodes
 	 * @param n       the index of the node to process
+	 */
+	private void printTimeStat(double[][] meanvar, int n) {
+		printTimeStat(meanvar[n], n + ",\t");
+	}
+
+	/**
+	 * Helper method to print the fixation and absorption updates/times.
+	 * 
+	 * @param meanvar the array with the running mean and variance
+	 * @param head    the string to prepend to the output
+	 * 
 	 * @see #updateMeanVar(double[], boolean, double) see updateMeanVar(double[],
 	 *      boolean, double) for structure of {@code meanvar} array
 	 */
-	private void printTimeStat(double[][] meanvar, int n) {
-		double[] node = meanvar[n];
-		double normut = node[MUTANT_NORM];
-		double normres = node[RESIDENT_NORM];
-		double normabs = node[ABSORPTION_NORM];
+	private void printTimeStat(double[] meanvar, String head) {
+		double normut = meanvar[MUTANT_NORM];
+		double normres = meanvar[RESIDENT_NORM];
+		double normabs = meanvar[ABSORPTION_NORM];
 		if (normabs <= 0.0)
 			return; // no samples for node n
 		// trick: to avoid -0 output simply add 0...!
-		output.println(n + ",\t"
-				+ Formatter.format(node[MUTANT_MEAN] + 0.0, dataDigits) + " ± " // mutant mean fixation time
-				+ (normut > 1.0 ? Formatter.format(Math.sqrt(node[MUTANT_VAR] / (normut - 1.0)) + 0.0, dataDigits) : "-") + ", " // mutant mean fixation
+		output.println(head + Formatter.format(meanvar[MUTANT_MEAN] + 0.0, dataDigits) + " ± " // mutant mean fixation time
+				+ (normut > 1.0 ? Formatter.format(Math.sqrt(meanvar[MUTANT_VAR] / (normut - 1.0)) + 0.0, dataDigits) : "-") + ", " // mutant mean fixation
 																									// sdev
 				+ Formatter.format(normut, 0) + "; " // mutant mean fixation samples
-				+ Formatter.format(node[RESIDENT_MEAN] + 0.0, dataDigits) + " ± " // resident mean fixation time
-				+ (normres > 1.0 ? Formatter.format(Math.sqrt(node[RESIDENT_VAR] / (normres - 1.0)) + 0.0, dataDigits) : "-") + ", "  // resident mean
+				+ Formatter.format(meanvar[RESIDENT_MEAN] + 0.0, dataDigits) + " ± " // resident mean fixation time
+				+ (normres > 1.0 ? Formatter.format(Math.sqrt(meanvar[RESIDENT_VAR] / (normres - 1.0)) + 0.0, dataDigits) : "-") + ", "  // resident mean
 																									// fixation sdev
 				+ Formatter.format(normres, 0) + "; " // mutant mean fixation samples
-				+ Formatter.format(node[ABSORPTION_MEAN] + 0.0, dataDigits) + " ± " // mean absorption time
-				+ (normabs > 1.0 ? Formatter.format(Math.sqrt(node[ABSORPTION_VAR] / (normabs - 1.0)) + 0.0, dataDigits) : "-") + ", " // mean absorption
+				+ Formatter.format(meanvar[ABSORPTION_MEAN] + 0.0, dataDigits) + " ± " // mean absorption time
+				+ (normabs > 1.0 ? Formatter.format(Math.sqrt(meanvar[ABSORPTION_VAR] / (normabs - 1.0)) + 0.0, dataDigits) : "-") + ", " // mean absorption
 																									// sdev
 				+ Formatter.format(normabs, 0)); // mean absorption samples
 	}
