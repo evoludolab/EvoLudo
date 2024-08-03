@@ -57,7 +57,7 @@ public class MVFitness extends MVAbstract implements StateGraphListener {
 			super.reset(clear);
 			return;
 		}
-		LineGraph graph = new LineGraph(this, 0);
+		LineGraph graph = new LineGraph(this, module, module.getID());
 		GraphAxis x = graph.getXAxis();
 		GraphAxis y = graph.getYAxis();
 		x.label = "time";

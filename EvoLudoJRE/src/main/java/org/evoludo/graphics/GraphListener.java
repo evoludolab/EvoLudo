@@ -45,7 +45,7 @@ public interface GraphListener {
 
 	public void polish(Graphics2D plot, AbstractGraph graph);
 
-	public void initStyle(GraphStyle style, AbstractGraph owner, int tag);
+	public void initStyle(GraphStyle style, AbstractGraph owner);
 
 //	public void		setLocalDynamics(boolean isLocalDynamics);
 
@@ -87,19 +87,31 @@ public interface GraphListener {
 //	public void		initCustomMenu(JPopupMenu menu, int tag);
 //	public void		resetCustomMenu(JPopupMenu menu, int tag);
 
-	public void		initCustomMenu(JPopupMenu menu, AbstractGraph owner, int tag);
+	public void		initCustomMenu(JPopupMenu menu, AbstractGraph owner);
 
-	public void		resetCustomMenu(JPopupMenu menu, AbstractGraph owner, int tag);
+	public void		resetCustomMenu(JPopupMenu menu, AbstractGraph owner);
 
-	public void		showCustomMenu(JPopupMenu menu, Point loc, AbstractGraph owner, int tag);
+	public void		showCustomMenu(JPopupMenu menu, Point loc, AbstractGraph owner);
 
-	public boolean	verifyXAxis(GraphAxis x, int tag);
+	// e.g. track changes of payoffs in fitness histograms
+	public default boolean	verifyXAxis(GraphAxis x, int tag) {
+		return false;
+	}
 
-	public boolean	verifyYAxis(GraphAxis y, int tag);
+	// e.g. track changes of payoffs in mean fitness plot
+	public default boolean	verifyYAxis(GraphAxis y, int tag) {
+		return false;
+	}
 
-	public boolean	verifyYThresholds(FrameLayer frame, int tag);
+	// e.g. track changes of payoffs in mean fitness plot
+	public default boolean	verifyYThresholds(FrameLayer frame, int tag)  {
+		return false;
+	}
 
-	public boolean	verifyMarkedBins(HistoFrameLayer frame, int tag);
+	// e.g. track changes of payoffs in fitness histogram plot
+	public default boolean	verifyMarkedBins(HistoFrameLayer frame, int tag)  {
+		return false;
+	}
 
 	public Logger getLogger();
 

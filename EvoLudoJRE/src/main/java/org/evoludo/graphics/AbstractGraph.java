@@ -74,6 +74,7 @@ import javax.swing.event.MouseInputAdapter;
 
 import org.evoludo.geom.Point2D;
 import org.evoludo.math.Combinatorics;
+import org.evoludo.simulator.modules.Module;
 
 public abstract class AbstractGraph extends JLayeredPane implements ActionListener, GlassLayerListener /*, PopupMenuListener*/ {
 
@@ -102,7 +103,7 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 	protected JToolTip gtip;
 	protected int tooltipInitial;
 	protected int tooltipDismiss;
-	public int tag = -1;
+	Module module;
 	protected boolean hasViewport = false;
 	protected boolean zoomInOut = true;
 	protected boolean zoomReset = true;
@@ -128,9 +129,9 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 	public static final int FINDNODEAT_OUT_OF_BOUNDS = -1;
 	//jf>
 
-	public AbstractGraph(GraphListener controller, int tag) {
+	public AbstractGraph(GraphListener controller, Module module) {
 		this.controller = controller;
-		this.tag = tag;
+		this.module = module;
 		setLayout(new OverlayLayout(this));
 		style = new GraphStyle(this);
 
@@ -146,6 +147,15 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 		addMouseMotionListener(zoomListener);
 	}
 
+	/**
+	 * Get the module that backs the graph.
+	 * 
+	 * @return the module
+	 */
+	public Module getModule() {
+		return module;
+	}
+
 	private boolean inited = false;
 
 	/**
@@ -155,7 +165,7 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 	 */
 	protected void init() {
 		// GET STYLE PARAMETERS
-		controller.initStyle(style, this, tag);
+		controller.initStyle(style, this);
 
 		// graph/frame dimensions may need to be layed out again if font changed
 		initGraph();
@@ -243,7 +253,7 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 		dumpMenu.setFont(style.menuFont);
 		menu.add(dumpMenu);
 
-		controller.initCustomMenu(menu, this, tag);
+		controller.initCustomMenu(menu, this);
 	}
 
 	public void reinit() {
@@ -270,7 +280,7 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 		// init initializes the context menu - must be called before resetCustomMenu, canvas must be set
 		if( !inited )
 			init();
-		controller.resetCustomMenu(menu, this, tag);
+		controller.resetCustomMenu(menu, this);
 		clearMessage();
 		calcBounds();
 		if( clear )
@@ -504,7 +514,7 @@ g2.setPaint(Color.black);
 			return;
 		}
 		if( cmd.equals(MENU_SAVE_IMAGE) ) {
-			controller.saveSnapshot(tag, hasViewport, getSnapshotFormat());
+			controller.saveSnapshot(module.getID(), hasViewport, getSnapshotFormat());
 			return;
 		}
 		if( cmd.equals(MENU_SAVE_STATE) ) {
@@ -687,7 +697,7 @@ g2.setPaint(Color.black);
 		boolean idle = !controller.isRunning();
 		snapMenu.setEnabled(idle);
 		dumpMenu.setEnabled(idle);
-		controller.showCustomMenu(menu, mouse, this, tag);
+		controller.showCustomMenu(menu, mouse, this);
 		menu.show(comp, mouse.x, mouse.y);
 
 		mouseAction = MOUSE_MENU;

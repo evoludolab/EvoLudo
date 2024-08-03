@@ -53,7 +53,7 @@ public class MVDMean extends MVAbstract implements StateGraphListener {
 			super.reset(clear);
 			return;
 		}
-		LineGraph graph = new LineGraph(this, 0);
+		LineGraph graph = new LineGraph(this, module, 0);
 		GraphAxis x = graph.getXAxis();
 		GraphAxis y = graph.getYAxis();
 		x.label = "time";

@@ -42,6 +42,8 @@ import java.text.DecimalFormat;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JPopupMenu;
 
+import org.evoludo.simulator.modules.Module;
+
 public class HistoGraph extends AbstractGraph {
 
 	private static final long serialVersionUID = 20110423L;
@@ -57,6 +59,7 @@ public class HistoGraph extends AbstractGraph {
 	private Color	color;
 	private String	name;
 	private final HistoData data;
+	int row = -1;
 
 	protected JCheckBoxMenuItem logXScaleMenu;
 	protected JCheckBoxMenuItem logYScaleMenu;
@@ -66,8 +69,9 @@ public class HistoGraph extends AbstractGraph {
 	protected static final String MENU_LOG_SCALE_X = "xlog";
 	protected static final String MENU_LOG_SCALE_Y = "ylog";
 
-	public HistoGraph(GraphListener controller, int tag) {
-		super(controller, tag);
+	public HistoGraph(GraphListener controller, Module module, int row) {
+		super(controller, module);
+		this.row = row;
 		data = new HistoData();
 		frame = new HistoFrameLayer(data, style);
 		add(frame, LAYER_FRAME);
@@ -149,14 +153,15 @@ frame.init(getBounds());
 
 	@Override
 	public void reset(boolean clear) {
-		name = controller.getName(tag);
+		int id = module.getID();
+		name = controller.getName(id);
 		// specify relative positioning of annotation with respect to top-right-corner
 		frame.labels.clear();
 		if( name!=null )
 			frame.labels.add(new GraphLabel(name, 8, style.labelMetrics.getHeight(), Color.black));
 		GraphAxis x = frame.xaxis, y = frame.yaxis;
-		boolean changed = controller.verifyXAxis(x, tag);
-		changed |= controller.verifyYAxis(y, tag);
+		boolean changed = controller.verifyXAxis(x, id);
+		changed |= controller.verifyYAxis(y, id);
 		if( changed || clear ) {
 			x.restore();
 			y.restore();
@@ -171,7 +176,7 @@ frame.init(getBounds());
 		y.majorTicks = (int)autoscale[autoscaleidx][2];
 		y.grid = y.majorTicks;
 //		((HistoGraphListener)controller).getData(data, tag);
-		if( ((HistoGraphListener)controller).getData(data, tag) ) {
+		if( ((HistoGraphListener)controller).getData(data, id) ) {
 			x.min = data.xmin;
 			x.max = data.xmax;
 			x.restore();
@@ -190,14 +195,15 @@ frame.init(getBounds());
 
 	@Override
 	public void reinit() {
-		color = controller.getColor(tag);
+		int id = module.getID();
+		color = controller.getColor(id);
 		// needs to be called only after potential changes to the frame such that new binwidth is known
 // note: causes grief in Traits
 //		 this may get called before bounds are set and hence before the binwidth could be determined - skip if this is the case.
 //		controller.verifyMarkedBins((HistoFrameLayer)frame, tag);
 frame.init(getBounds());
 if( getBounds().width>0 && getBounds().height>0 )
-	controller.verifyMarkedBins((HistoFrameLayer)frame, tag);
+	controller.verifyMarkedBins((HistoFrameLayer)frame, id);
 		data.reset();
 		super.reinit();
 	}
@@ -206,7 +212,8 @@ if( getBounds().width>0 && getBounds().height>0 )
 	protected void prepare() {
 		// get data
 //		((HistoGraphListener)controller).getData(data, tag);
-		if( ((HistoGraphListener)controller).getData(data, tag) ) {
+		int id = module.getID();
+		if( ((HistoGraphListener)controller).getData(data, id) ) {
 // note: is this too drastic a measure? - do we care?
 			GraphAxis x = frame.xaxis;
 			x.min = data.xmin;

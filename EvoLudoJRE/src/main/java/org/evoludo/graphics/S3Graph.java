@@ -42,6 +42,7 @@ import java.awt.event.MouseEvent;
 import javax.swing.JMenuItem;
 
 import org.evoludo.geom.Point2D;
+import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
 
 public class S3Graph extends AbstractGraph {
@@ -55,9 +56,11 @@ public class S3Graph extends AbstractGraph {
 	private Color[] colors;
 	private boolean[] active;
 	private final int[] order = new int[] { 0, 1, 2 };
+	int role = -1;
 
-	public S3Graph(StateGraphListener controller, int tag) {
-		super(controller, tag);
+	public S3Graph(StateGraphListener controller, Module module, int role) {
+		super(controller, module);
+		this.role = role;
 		hasHistory = true;
 		frame = new S3FrameLayer(style, order);
 		GraphAxis x = frame.xaxis;
@@ -130,11 +133,12 @@ public class S3Graph extends AbstractGraph {
 
 	@Override
 	public void reinit() {
-		colors = controller.getColors(tag);
-		frame.setLabels(names, colors, active, tag);
+		int id = module.getID();
+		colors = controller.getColors(id);
+		frame.setLabels(names, colors, active, id);
 // note: this is a bit overkill... but seems necessary do deal with labels...
 		frame.init(getBounds());
-		((StateGraphListener)controller).getData(data, tag);
+		((StateGraphListener)controller).getData(data, id);
 		data.reset();
 		if( doSVG ) {
 			S3ToCartesian(data.state, q);
@@ -145,12 +149,13 @@ public class S3Graph extends AbstractGraph {
 
 	@Override
 	public void reset(boolean clear) {
-		nStates = controller.getNData(tag);
+		int id = module.getID();
+		nStates = controller.getNData(id);
 		data.init(nStates);
-		names = controller.getNames(tag);
-		active = controller.getActives(tag);
+		names = controller.getNames(id);
+		active = controller.getActives(id);
 //		if( names.length!=3 ) {
-		if( controller.getActiveCount(tag)!=3 ) {
+		if( controller.getActiveCount(id)!=3 ) {
 			super.reset(clear);
 			setMessage("Requires exactly 3 active traits/strategies!");
 			return;
@@ -173,7 +178,7 @@ public class S3Graph extends AbstractGraph {
 	protected void prepare() {
 		if( hasMessage() ) return;	// no need to fetch data
 		data.next();
-		((StateGraphListener)controller).getData(data, tag);
+		((StateGraphListener)controller).getData(data, module.getID());
 	}
 
 	private final Point2D p = new Point2D();
@@ -213,7 +218,7 @@ public class S3Graph extends AbstractGraph {
 //older		controller.setData(pos, tag);
 //newer		l.setLocation((double)(loc.x-graph.x)/(double)graph.width, (double)(loc.y-graph.y)/(double)graph.height);
 //newer		((StateGraphListener)controller).setState(l, tag);
-		((StateGraphListener)controller).setState(cartesianToS3(loc), tag);
+		((StateGraphListener)controller).setState(cartesianToS3(loc));
 	}
 
 	// tool tips

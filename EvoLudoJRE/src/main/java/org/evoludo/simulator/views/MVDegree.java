@@ -72,8 +72,8 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 		add(xLabel);
 	}
 
-	private void addGraph(int tag) {
-		HistoGraph graph = new HistoGraph(this, tag);
+	private void addGraph(int row) {
+		HistoGraph graph = new HistoGraph(this, module, row);
 		GraphAxis x = graph.getXAxis();
 		x.label = xLabelText;
 		x.showLabel = false;
@@ -143,8 +143,8 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 	}
 
 	@Override
-	public void initStyle(GraphStyle style, AbstractGraph owner, int tag) {
-		super.initStyle(style, owner, tag);
+	public void initStyle(GraphStyle style, AbstractGraph owner) {
+		super.initStyle(style, owner);
 		xLabel.setFont(style.labelFont);
 		xLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, getFontMetrics(style.labelFont).stringWidth(xLabelText)));
 	}

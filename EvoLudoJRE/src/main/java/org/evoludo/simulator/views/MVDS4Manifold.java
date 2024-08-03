@@ -66,7 +66,7 @@ public class MVDS4Manifold extends MVAbstract implements StateGraphListener {
 			super.reset(clear);
 			return;
 		}
-		ParaGraph graph = new ParaGraph(this, 0);
+		ParaGraph graph = new ParaGraph(this, module);
 		GraphAxis x = graph.getXAxis();
 		GraphAxis y = graph.getYAxis();
 		x.showLabel = false;
@@ -89,8 +89,8 @@ public class MVDS4Manifold extends MVAbstract implements StateGraphListener {
 
 	// implement GraphListener - mostly done in MVAbstract
 	@Override
-	public void initCustomMenu(JPopupMenu menu, AbstractGraph owner, int tag) {
-		super.initCustomMenu(menu, owner, tag);
+	public void initCustomMenu(JPopupMenu menu, AbstractGraph owner) {
+		super.initCustomMenu(menu, owner);
 //		initCMShowLocalDynamics(menu, owner);
 		initCMTimeReversed(menu, owner);
 	}

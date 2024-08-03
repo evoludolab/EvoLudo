@@ -63,7 +63,7 @@ public class MVDS3 extends MVAbstract implements StateGraphListener {
 			super.reset(clear);
 			return;
 		}
-		S3Graph graph = new S3Graph(this, 0);
+		S3Graph graph = new S3Graph(this, module, 0);
 		GraphAxis x = graph.getXAxis();
 		x.grid = 2;
 		x.majorTicks = 2;
@@ -78,8 +78,8 @@ public class MVDS3 extends MVAbstract implements StateGraphListener {
 	}
 
 	@Override
-	public void initCustomMenu(JPopupMenu menu, AbstractGraph owner, int tag) {
-		super.initCustomMenu(menu, owner, tag);
+	public void initCustomMenu(JPopupMenu menu, AbstractGraph owner) {
+		super.initCustomMenu(menu, owner);
 //		initCMShowLocalDynamics(menu, owner);
 		initCMTimeReversed(menu, owner);
 	}

@@ -917,7 +917,7 @@ public class EvoLudoLab extends JFrame
 		return bgcolorGUI;
 	}
 
-    public void showCustomMenu(JPopupMenu menu, AbstractGraph owner, int tag) { }
+    public void showCustomMenu(JPopupMenu menu, AbstractGraph owner) { }
 
     public String getCLO() {
     	return engine.getCLO();

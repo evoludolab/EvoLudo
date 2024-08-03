@@ -75,7 +75,7 @@ public class MVCMean extends MVAbstract implements StateGraphListener {
 	}
 
 	private void addGraph(int tag) {
-		LineGraph graph = new LineGraph(this, tag);
+		LineGraph graph = new LineGraph(this, module, tag);
 		GraphAxis x = graph.getXAxis();
 		x.label = xLabelText;
 		x.showLabel = false;
@@ -133,8 +133,8 @@ public class MVCMean extends MVAbstract implements StateGraphListener {
 	}
 
 	@Override
-	public void initStyle(GraphStyle style, AbstractGraph owner, int tag) {
-		super.initStyle(style, owner, tag);
+	public void initStyle(GraphStyle style, AbstractGraph owner) {
+		super.initStyle(style, owner);
 		if( nData==1 )
 			return;
 		xLabel.setFont(style.labelFont);

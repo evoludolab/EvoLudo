@@ -126,8 +126,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 		if (graphs.size() != 1) {
 			graphs.clear();
 			removeAll();
-			int aTag = 0;
-			PopGraph2D graph = new PopGraph2D(this, module.getGeometry(), aTag);
+			PopGraph2D graph = new PopGraph2D(this, module.getGeometry(), module);
 			GraphAxis axis = graph.getXAxis();
 			axis.enabled = false;
 			axis = graph.getYAxis();
@@ -255,21 +254,21 @@ public class MVPop2D extends MVAbstract implements PopListener {
 	}
 
 	@Override
-	public void initStyle(GraphStyle style, AbstractGraph owner, int tag) {
+	public void initStyle(GraphStyle style, AbstractGraph owner) {
 		// this method is called when creating snapshots for simulations but
 		// simulations have no GUI (i.e. lab==null)
 		if (lab == null) {
 			// opportunity to set default styles for snapshots
 			return;
 		}
-		super.initStyle(style, owner, tag);
+		super.initStyle(style, owner);
 		((PopGraph2D) owner).setAnimateLayout(lab.doAnimateLayout());
 	}
 
 	// implement GraphListener - mostly done in MVAbstract
 	@Override
-	public void initCustomMenu(JPopupMenu menu, AbstractGraph owner, int tag) {
-		super.initCustomMenu(menu, owner, tag);
+	public void initCustomMenu(JPopupMenu menu, AbstractGraph owner) {
+		super.initCustomMenu(menu, owner);
 		// initCMSetLocalDynamics(menu, owner);
 		// <jf
 		// check if findNodeAt is implemented by passing the most unlikely coordinates
@@ -289,8 +288,8 @@ public class MVPop2D extends MVAbstract implements PopListener {
 	}
 
 	@Override
-	public void resetCustomMenu(JPopupMenu menu, AbstractGraph owner, int tag) {
-		super.resetCustomMenu(menu, owner, tag);
+	public void resetCustomMenu(JPopupMenu menu, AbstractGraph owner) {
+		super.resetCustomMenu(menu, owner);
 
 		toggleDebugCheckBox.setState(false);
 		debugUpdateAtItem.setVisible(toggleDebugCheckBox.getState());
@@ -298,8 +297,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 
 	// NOTE: JRE is getting in disrepair... review/reimplement?
 	// @Override
-	// public void showCustomMenu(JPopupMenu menu, Point loc, AbstractGraph owner,
-	// int tag) {
+	// public void showCustomMenu(JPopupMenu menu, Point loc, AbstractGraph owner) {
 	// CMNode = owner.findNodeAt(loc);
 	// if (CMNode>=0){
 	// debugUpdateAtItem.setText("Update node @ "+CMNode);
@@ -309,7 +307,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 	// debugUpdateAtItem.setText("Update node @ -");
 	// debugUpdateAtItem.setEnabled(false);
 	// }
-	// super.showCustomMenu(menu,loc,owner,tag);
+	// super.showCustomMenu(menu,loc,owner);
 	// }
 
 	// @Override

@@ -55,11 +55,8 @@ import javax.swing.JPopupMenu;
 
 import org.evoludo.geom.Point2D;
 import org.evoludo.graphics.AbstractGraph;
-import org.evoludo.graphics.FrameLayer;
-import org.evoludo.graphics.GraphAxis;
 import org.evoludo.graphics.GraphListener;
 import org.evoludo.graphics.GraphStyle;
-import org.evoludo.graphics.HistoFrameLayer;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoJRE;
@@ -149,7 +146,7 @@ public abstract class MVAbstract extends JComponent
 // note: fonts and antialiasing are not set when instantiating the classes - delete/rewrite and do it here!
 //if called from reset then this is ok for antialiasing but not for fonts - screws zooming up!
     @Override
-	public void initStyle(GraphStyle style, AbstractGraph owner, int tag) {
+	public void initStyle(GraphStyle style, AbstractGraph owner) {
 		// do not set fonts directly because this could screw up zoomed views!
 		style.setLabelFont(lab.getLabelFont());
 		style.setTickFont(lab.getTickFont());
@@ -180,7 +177,7 @@ public abstract class MVAbstract extends JComponent
 	}
 	
     @Override
-	public void initCustomMenu(JPopupMenu menu, AbstractGraph owner, int tag) {	}
+	public void initCustomMenu(JPopupMenu menu, AbstractGraph owner) {	}
 	
 //	protected void initCMShowLocalDynamics(JPopupMenu menu, ActionListener handler) {
 //		menu.add(customSeparator);
@@ -216,7 +213,7 @@ public abstract class MVAbstract extends JComponent
 	
 // note: for now only deal with local dynamics menu
     @Override
-	public void resetCustomMenu(JPopupMenu menu, AbstractGraph owner, int tag) {
+	public void resetCustomMenu(JPopupMenu menu, AbstractGraph owner) {
 		if( !menuShowLocal && !menuSetLocal && !menuTime ) return;
 		
 		int idx;
@@ -277,7 +274,7 @@ public abstract class MVAbstract extends JComponent
 	}
 	
     @Override
-	public void showCustomMenu(JPopupMenu menu, Point loc, AbstractGraph owner, int tag) {
+	public void showCustomMenu(JPopupMenu menu, Point loc, AbstractGraph owner) {
 		Model model = engine.getModel();
 		if (menuTime) {
 			timeMenu.setEnabled(model.isODE());
@@ -297,7 +294,7 @@ public abstract class MVAbstract extends JComponent
 				localMenu.setText("Local dynamics @ " + localNode);
 			}
 		}
-		lab.showCustomMenu(menu, owner, tag);
+		lab.showCustomMenu(menu, owner);
 	}
 
     @Override
@@ -369,30 +366,6 @@ public abstract class MVAbstract extends JComponent
 		return module.getTraitName(tag);
 	}
 	
-	// e.g. track changes of payoffs in fitness histogram plot
-    @Override
-	public boolean	verifyXAxis(GraphAxis x, int tag) {
-		return false;
-	}
-	
-	// e.g. track changes of payoffs in mean fitness plot
-    @Override
-	public boolean	verifyYAxis(GraphAxis y, int tag) {
-		return false;
-	}
-	
-	// e.g. track changes of payoffs in mean fitness plot
-    @Override
-	public boolean	verifyYThresholds(FrameLayer frame, int tag) {
-		return false;
-	}
-	
-	// e.g. track changes of payoffs in fitness histogram plot
-    @Override
-	public boolean	verifyMarkedBins(HistoFrameLayer frame, int tag) {
-		return false;
-	}
-	
 	// NOTE: at least one getData variant must be overridden in subclass
     @Override
 	public boolean getData(double data[], int tag) {
@@ -404,8 +377,8 @@ public abstract class MVAbstract extends JComponent
 		return null;
 	}
 
-	public void setState(double[] state, int tag) {
-// note: need to decide how to set the state... setState(Point2D, int) does not work for S3Graphs...
+	public void setState(double[] state) {
+// note: need to decide how to set the state... setState(Point2D) does not work for S3Graphs...
 	}
 	
 	public String getToolTipText(Point2D loc, int tag) {

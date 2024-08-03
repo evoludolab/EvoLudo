@@ -42,5 +42,5 @@ public interface StateGraphListener extends GraphListener {
 
 //	public void setLabels(java.util.List<GraphLabel> labels, int tag);
 
-	public void	setState(double[] state, int tag);
+	public void	setState(double[] state);
 }

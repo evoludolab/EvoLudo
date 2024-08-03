@@ -38,6 +38,7 @@ import java.awt.Point;
 import java.awt.event.MouseEvent;
 
 import org.evoludo.geom.Point2D;
+import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
 
 public class ParaGraph extends AbstractGraph {
@@ -50,8 +51,8 @@ public class ParaGraph extends AbstractGraph {
 	private String[] names;
 	protected Data2Phase map;
 
-	public ParaGraph(StateGraphListener controller, int tag) {
-		super(controller, tag);
+	public ParaGraph(StateGraphListener controller, Module module) {
+		super(controller, module);
 		hasHistory = true;
 		frame = new FrameLayer(style);
 		add(frame, LAYER_FRAME);
@@ -72,11 +73,12 @@ public class ParaGraph extends AbstractGraph {
 	// 100531 this is adapted from S3Graph - check if needed!
     @Override
 	public void reinit() {
-		colors = controller.getColors(tag);
-		frame.setLabels(names, colors, tag);
+		int id = module.getID();
+		colors = controller.getColors(id);
+		frame.setLabels(names, colors, id);
 // note: this is a bit overkill... but seems necessary to deal with labels...
 		frame.init(getBounds());
-		((StateGraphListener)controller).getData(data, tag);
+		((StateGraphListener)controller).getData(data, id);
 		data.reset();
 		if( doSVG )
 			svgPlot.moveTo(data.now.x*canvas.width, data.now.y*canvas.height);
@@ -85,10 +87,11 @@ public class ParaGraph extends AbstractGraph {
 
     @Override
 	public void reset(boolean clear) {
-		nStates = controller.getNData(tag);
+		int id = module.getID();
+		nStates = controller.getNData(id);
 		data.init(nStates);
 		data.isLocal = isLocalDynamics;
-		names = controller.getNames(tag);
+		names = controller.getNames(id);
 		super.reset(clear);
 	}
 
@@ -102,7 +105,7 @@ public class ParaGraph extends AbstractGraph {
 	@Override
 	protected void prepare() {
 		data.next();
-		((StateGraphListener)controller).getData(data, tag);
+		((StateGraphListener)controller).getData(data, module.getID());
 	}
 
 	@Override
@@ -132,7 +135,7 @@ public class ParaGraph extends AbstractGraph {
 //		l.setLocation((double)(loc.x-canvas.x)/(double)canvas.width, (double)(loc.y-canvas.y)/(double)canvas.height);
 //		((StateGraphListener)controller).setState(l, tag);
 		((StateGraphListener)controller).setState(new double[] { (double)(loc.x-canvas.x)/(double)canvas.width, 
-				(double)(loc.y-canvas.y)/(double)canvas.height }, tag);
+				(double)(loc.y-canvas.y)/(double)canvas.height });
 		reset(false);
 	}
 
@@ -144,7 +147,7 @@ public class ParaGraph extends AbstractGraph {
 		if( !canvas.contains(loc) ) return null;
 
 		l.setLocation((double)(loc.x-canvas.x)/(double)canvas.width, (double)(loc.y-canvas.y)/(double)canvas.height);
-		return ((StateGraphListener)controller).getToolTipText(l, tag);
+		return ((StateGraphListener)controller).getToolTipText(l, module.getID());
 	}
 
 	@Override

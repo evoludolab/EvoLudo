@@ -77,7 +77,7 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 	}
 
 	private void addGraph() {
-		HistoGraph graph = new HistoGraph(this, graphs.size());
+		HistoGraph graph = new HistoGraph(this, module, graphs.size());
 		GraphAxis x = graph.getXAxis();
 		x.label = xLabelText;	// this is needed for tooltips
 		x.showLabel = false;
@@ -125,8 +125,8 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 	}
 
 	@Override
-	public void initStyle(GraphStyle style, AbstractGraph owner, int tag) {
-		super.initStyle(style, owner, tag);
+	public void initStyle(GraphStyle style, AbstractGraph owner) {
+		super.initStyle(style, owner);
 		xLabel.setFont(style.labelFont);
 		xLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, getFontMetrics(style.labelFont).stringWidth(xLabelText)));
 	}

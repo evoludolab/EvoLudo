@@ -68,7 +68,7 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 			super.reset(clear);
 			return;
 		}
-		graph = new ParaGraph(this, 0);
+		graph = new ParaGraph(this, module);
 		if (map == null) {
 			map = ((HasPhase2D) module).getPhase2DMap();
 			if (map == null) {
@@ -106,8 +106,8 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 
 	// implement GraphListener - mostly done in MVAbstract
 	@Override
-	public void initCustomMenu(JPopupMenu menu, AbstractGraph owner, int tag) {
-		super.initCustomMenu(menu, owner, tag);
+	public void initCustomMenu(JPopupMenu menu, AbstractGraph owner) {
+		super.initCustomMenu(menu, owner);
 //		initCMShowLocalDynamics(menu, owner);
 		initCMTimeReversed(menu, owner);
 	}
@@ -131,7 +131,7 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 
 // retire setting of initial state in phase planes (outdated JRE)
 	// @Override
-	// public void setState(double[] loc, int tag) {
+	// public void setState(double[] loc) {
 	// 	Point2D xy = new Point2D(loc[0], 1.0 - loc[1]);
 	// 	int totTraits = 0;
 	// 	for (Module mod : module.getSpecies()) 

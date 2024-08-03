@@ -75,19 +75,19 @@ public class MVCTraitHistogram extends MVAbstract implements HistoGraphListener 
 		}
 	}
 	
-	private void addGraph(int tag) {
-		HistoGraph graph = new HistoGraph(this, tag);
+	private void addGraph(int row) {
+		HistoGraph graph = new HistoGraph(this, module, row);
 		GraphAxis x = graph.getXAxis();
-		x.label = module.getTraitName(tag);
+		x.label = module.getTraitName(row);
 		x.showLabel = true;
-		x.min = module.getTraitMin()[tag];
-		x.max = module.getTraitMax()[tag];
+		x.min = module.getTraitMin()[row];
+		x.max = module.getTraitMax()[row];
 		x.grid = 0;
 		x.majorTicks = 3;
 		x.minorTicks = 1;
 		// assist the layout manager...
 		graph.setAlignmentX(Component.CENTER_ALIGNMENT);
-		if( tag>0 )
+		if( row>0 )
 			add(Box.createVerticalStrut(4));
 		add(graph);
 		graphs.add(graph);
@@ -102,8 +102,9 @@ public class MVCTraitHistogram extends MVAbstract implements HistoGraphListener 
 		if( nData==nGraphs ) {
 			for( AbstractGraph graph : graphs ) {
 				GraphAxis x = graph.getXAxis();
-				x.min = module.getTraitMin()[graph.tag];
-				x.max = module.getTraitMax()[graph.tag];
+				int id = graph.getModule().getID();
+				x.min = module.getTraitMin()[id];
+				x.max = module.getTraitMax()[id];
 			}
 			super.reset(clear);
 			return;

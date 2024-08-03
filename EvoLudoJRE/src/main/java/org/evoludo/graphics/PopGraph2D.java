@@ -66,6 +66,7 @@ import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
 
 
@@ -110,8 +111,8 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	protected static final String MENU_LINK_ALL = "100";
 	protected static final int MAX_LINK_COUNT = 10000;
 
-	public PopGraph2D(PopListener controller, Geometry geometry, int tag) {
-        super(controller, tag);
+	public PopGraph2D(PopListener controller, Geometry geometry, Module module) {
+        super(controller, module);
         this.geometry = geometry;
 
         // enable clear menu
@@ -204,7 +205,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	public void reinit() {
 		if( hasHistory )
 			clear();
-		((PopListener)controller).initColor(tag);
+		((PopListener)controller).initColor(module.getID());
 		super.reinit();
 	}
 
@@ -435,7 +436,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
     	if( canvas==null )
     		canvas = new Rectangle();
     	canvas.setBounds(myCanvas);
-		network.timestamp = ((PopListener)controller).getData(colors, tag);
+		network.timestamp = ((PopListener)controller).getData(colors, module.getID());
         if( network.getStatus().requiresLayout() )
         	network.doLayout(this);
 		drawLinks(g2d, canvas);
@@ -556,11 +557,12 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	protected void prepare() {
 		if (geometry == null)	// ODE/SDE models
 			return;
+		int id = module.getID();
 		boolean isDynamic = geometry.getType() == Geometry.Type.DYNAMIC;
 		if( isDynamic ) {
 			if( timestamp<network.timestamp ) {
 				// time stamp expired - get data
-				network.timestamp = ((PopListener)controller).getData(colors, tag);
+				network.timestamp = ((PopListener)controller).getData(colors, id);
 				// invalidate network layout
 				if( network.isStatus(Status.HAS_LAYOUT) )
 					network.setStatus(Status.ADJUST_LAYOUT);
@@ -572,7 +574,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		}
 		if( frame.msg!=null )
 			return;	// no need to fetch data
-		network.timestamp = ((PopListener)controller).getData(colors, tag);
+		network.timestamp = ((PopListener)controller).getData(colors, id);
         if( network.getStatus().requiresLayout() ) 
         	network.doLayout(this);
 		// dynamically update tooltip info
@@ -580,7 +582,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 			if( isDynamic && infoloc!=null )
 				// confirm focus node - may have shifted
 				infonode = findNodeAt(infoloc);
-                gtip.setTipText(((PopListener)controller).getInfoAt(network, infonode, tag));
+                gtip.setTipText(((PopListener)controller).getInfoAt(network, infonode, id));
 		}
 	}
 
@@ -613,7 +615,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 			return null;
 		}
 		infonode = findNodeAt(infoloc);
-		return ((PopListener)controller).getInfoAt(network, infonode, tag);
+		return ((PopListener)controller).getInfoAt(network, infonode, module.getID());
 	}
 
 	private int refnode = -1;
@@ -689,7 +691,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 							forceRepaint = true;
 // worth keeping? only if GWT is on board as well.
 //						((PopListener)controller).mouseHitNode(node, refnode, tag);	// population signals change back to us
-						((PopListener)controller).mouseHitNode(node, tag);	// population signals change back to us
+						((PopListener)controller).mouseHitNode(node, module.getID());	// population signals change back to us
 						return true;
 
 					case MOUSE_DRAG_END:
@@ -699,9 +701,9 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 							// make sure changes get repainted
 							if( hasHistory )
 								forceRepaint = true;
-							((PopListener)controller).mouseHitNode(node, tag);	// population signals change back to us
+							((PopListener)controller).mouseHitNode(node, module.getID());	// population signals change back to us
 						}
-						setToolTipText(((PopListener)controller).getInfoAt(network, node, tag));
+						setToolTipText(((PopListener)controller).getInfoAt(network, node, module.getID()));
 						// dispatch fake mouse moved event to re-display tooltip
 						dispatchEvent(new MouseEvent(this, MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, loc.x, loc.y, 0, false));
 						isMouseDrawing = false;

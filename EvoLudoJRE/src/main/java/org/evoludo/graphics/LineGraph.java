@@ -47,6 +47,7 @@ import java.awt.geom.Rectangle2D;
 import java.util.LinkedList;
 
 import org.evoludo.math.Combinatorics;
+import org.evoludo.simulator.modules.Module;
 
 class Data {
 	double time;
@@ -271,9 +272,11 @@ public class LineGraph extends AbstractGraph {
 	private final StateData	state = new StateData();
 	private Color[]	colors;
 	private final LineQueue svgQueue = new LineQueue();
+	int row = -1;
 
-	public LineGraph(StateGraphListener controller, int tag) {
-		super(controller, tag);
+	public LineGraph(StateGraphListener controller, Module module, int row) {
+		super(controller, module);
+		this.row = row;
 		frame = new FrameLayer(style);
 		add(frame, LAYER_FRAME);
 		hasHistory = true;
@@ -281,10 +284,11 @@ public class LineGraph extends AbstractGraph {
 
 	@Override
 	public void reset(boolean clear) {
-		nStates = controller.getNData(tag);
+		int id = module.getID();
+		nStates = controller.getNData(id);
 		state.init(nStates);
 		state.isLocal = isLocalDynamics;
-		((StateGraphListener)controller).getData(state, tag);
+		((StateGraphListener)controller).getData(state, id);
 		GraphAxis x = frame.xaxis;
 		if( doSVG ) svgQueue.reset(state, x.max-x.min);
 		else svgQueue.reset();
@@ -293,12 +297,13 @@ public class LineGraph extends AbstractGraph {
 
 	@Override
 	public void reinit() {
-		colors = controller.getColors(tag);
-		((StateGraphListener)controller).getData(state, tag);
+		int id = module.getID();
+		colors = controller.getColors(id);
+		((StateGraphListener)controller).getData(state, id);
 		GraphAxis x = frame.xaxis, y = frame.yaxis;
-		boolean changed = controller.verifyXAxis(x, tag);
-		changed |= controller.verifyYAxis(y, tag);
-		changed |= controller.verifyYThresholds(frame, tag);
+		boolean changed = controller.verifyXAxis(x, id);
+		changed |= controller.verifyYAxis(y, id);
+		changed |= controller.verifyYThresholds(frame, id);
 		// do not restore zoom when clearing the canvas
 		if( changed ) {
 			x.restore();
@@ -328,7 +333,7 @@ public class LineGraph extends AbstractGraph {
 	@Override
 	protected void prepare() {
 		state.next();
-		((StateGraphListener)controller).getData(state, tag);
+		((StateGraphListener)controller).getData(state, module.getID());
 	}
 
 	@Override
