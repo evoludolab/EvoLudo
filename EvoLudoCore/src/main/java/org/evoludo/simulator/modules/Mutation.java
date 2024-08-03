@@ -3,6 +3,7 @@ package org.evoludo.simulator.modules;
 import java.io.PrintStream;
 import java.util.ArrayList;
 
+import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.util.CLOParser;
@@ -60,20 +61,9 @@ public abstract class Mutation {
 
 	/**
 	 * The flag to indicate whether mutations arise uniformly distributed (cosmic
-	 * rays) or are tied to reproduction events (thermal mutations).
+	 * rays) or are tied to reproduction events (temperature mutations).
 	 */
-	public boolean uniform = false;
-
-	/**
-	 * Returns the flag indicating whether mutations are uniformly distributed
-	 * (cosmic rays) or tied to reproduction events (thermal mutations).
-	 * 
-	 * @return {@code true} if mutations are uniformly distributed, {@code false} if
-	 *         tied to reproduction events
-	 */
-	public boolean getUniform() {
-		return uniform;
-	}
+	public boolean temperature = false;
 
 	/**
 	 * Check if a mutation arises.
@@ -126,7 +116,7 @@ public abstract class Mutation {
 
 		@Override
 		public boolean doMutate() {
-			if (type == Type.NONE || uniform)
+			if (type == Type.NONE || !temperature)
 				return false;
 			if (probability >= 1.0)
 				return true;
@@ -266,7 +256,7 @@ public abstract class Mutation {
 		 */
 		public final CLOption clo = new CLOption("mutations", "0.0",
 				EvoLudo.catModule,
-				"--mutations <p> [<t> [thermal|uniform [<r>]]]  with\n" +
+					"--mutations <p> [temperature|random (default)] [<t> [<r>]]]  with\n" +
 						"             p: mutation probability\n" + //
 						"       process: reproduction vs cosmic rays\n" + //
 						"             r: mutation range\n" + //
@@ -296,23 +286,27 @@ public abstract class Mutation {
 							Mutation mut = mod.getMutation();
 							// set defaults
 							mut.probability = 0.0;
-							mut.uniform = false;
+							mut.temperature = false;
 							mut.range = 0.0;
 							mut.type = Type.NONE;
+							// deal with optional temperature|random flag first
+							if (args.length > 1) {
+								if (args[1].toLowerCase().startsWith("t")) {
+									mut.temperature = true;
+									args = ArrayMath.drop(args, 1);
+								}
+							}
 							switch (args.length) {
-								case 4:
-									mut.range = CLOParser.parseDouble(args[3]);
+								case 3:
+									mut.range = CLOParser.parseDouble(args[2]);
 									if (mut.range < 1.0) {
 										mut.type = Type.NONE;
 										module.logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
-												"mutation range '" + args[3] + "' invalid - using '"
+												"mutation range '" + args[2] + "' invalid - using '"
 												+ mut.type + "'");
 										success = false;
 										continue;
 									}
-									//$FALL-THROUGH$
-								case 3:
-									mut.uniform = args[2].toLowerCase().startsWith("u");
 									//$FALL-THROUGH$
 								case 2:
 									Type mutt = (Type) clo.match(args[1]);
@@ -353,7 +347,7 @@ public abstract class Mutation {
 							output.println("# mutationtype:         " + mutt
 									+ (species.size() > 1 ? " (" + mod.getName() + ")" : ""));
 							output.println("# mutationprob:         " + mut.probability
-									+ (mut.uniform ? " uniform" : " thermal"));
+									+ (mut.temperature ? " temperature" : " random"));
 							switch (mutt) {
 								case RANGE:
 									output.println("# mutationrange:        " + mut.range);
@@ -469,7 +463,7 @@ public abstract class Mutation {
 
 		@Override
 		public boolean doMutate() {
-			if (type == Type.NONE || uniform)
+			if (type == Type.NONE || !temperature)
 				return false;
 			if (probability >= 1.0)
 				return true;
@@ -512,9 +506,9 @@ public abstract class Mutation {
 		 */
 		public final CLOption clo = new CLOption("mutations", "0.0",
 				EvoLudo.catModule,
-				"--mutations <p> [<t> [<r> [thermal|uniform]]]" + CLOParser.TRAIT_DELIMITER + "<p1>...]>  with\n" +
+					"--mutations <p> [temperature|random (default)] [<t> [<r>]>  with\n" +
 						"             p: mutation probability\n" + //
-						"             r: mutation range/sdev (fraction of interval)\n" + //
+						"             r: mutation range (fraction of interval)\n" + //
 						"       process: reproduction vs cosmic rays\n" + //
 						"             t: mutation type, with types:", //
 				new CLODelegate() {
@@ -542,13 +536,17 @@ public abstract class Mutation {
 							Mutation mut = mod.getMutation();
 							// set defaults
 							mut.probability = 0.0;
-							mut.uniform = false;
+							mut.temperature = false;
 							mut.range = 0.0;
 							mut.type = Type.NONE;
+							// deal with optional temperature|random flag first
+							if (args.length > 1) {
+								if (args[1].toLowerCase().startsWith("t")) {
+									mut.temperature = true;
+									args = ArrayMath.drop(args, 1);
+								}
+							}
 							switch (args.length) {
-								case 4:
-									mut.uniform = args[3].toLowerCase().startsWith("u");
-									//$FALL-THROUGH$
 								case 3:
 									mut.range = CLOParser.parseDouble(args[2]);
 									if (mut.range <= 0.0) {
@@ -607,7 +605,7 @@ public abstract class Mutation {
 							output.println("# mutationtype:         " + mutt
 									+ (species.size() > 1 ? " (" + mod.getName() + ")" : ""));
 							output.println("# mutationprob:         " + mut.probability
-									+ (mut.uniform ? " uniform" : " thermal"));
+									+ (mut.temperature ? " temperature" : " random"));
 							switch (mutt) {
 								case GAUSSIAN:
 									output.println("# mutationsdev:        " + mut.range);

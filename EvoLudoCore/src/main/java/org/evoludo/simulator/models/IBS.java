@@ -957,7 +957,7 @@ public abstract class IBS extends Model {
 	 */
 	protected Event pickEvent(IBSPopulation pop) {
 		Mutation mu = pop.module.getMutation();
-		if (!mu.uniform || mu.probability <= 0.0 || random01() > mu.probability)
+		if (mu.temperature || mu.probability <= 0.0 || random01() > mu.probability)
 			return Event.REPLICATION;
 		return Event.MUTATION;
 	}
