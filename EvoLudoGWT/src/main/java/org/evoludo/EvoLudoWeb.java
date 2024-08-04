@@ -1221,8 +1221,10 @@ public class EvoLudoWeb extends Composite
 			}
 		}
 		setView(cloView.isSet() ? initialView : currentView);
-		if (!parsingSuccess)
+		if (!parsingSuccess) {
 			displayStatus("Problems parsing arguments - check log for details.", Level.WARNING.intValue() + 1);
+			cloSize.parse();
+		}
 	}
 
 	/**
