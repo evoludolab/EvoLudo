@@ -133,8 +133,10 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public void layoutComplete() {
-		if (snapshotAt < 0.0)
+		if (snapshotAt < 0.0) {
+			super.layoutComplete();
 			return;
+		}
 		if (snapshotAt > 0.0) {
 			delay = 1;
 			if (activeModel.getMode() == Mode.STATISTICS_SAMPLE || snapshotAt > activeModel.getTimeStep()) {
