@@ -207,8 +207,8 @@ public class Map2Fitness {
 	 * Command line option to set the payoff/score to fitness map.
 	 */
 	public final CLOption clo = new CLOption("fitnessmap", "none", EvoLudo.catModule,
-			"--fitnessmap <m> [<b>[,<w>]]  select map with baseline fitness b (1)\n" + //
-					"                and selection strength w (1):",
+			"--fitnessmap <m> [<b>[,<w>]]  payoff-to-fitness, baseline b [1]\n" + //
+					"                and selection strength w [1]:",
 			new CLODelegate() {
 
 				/**

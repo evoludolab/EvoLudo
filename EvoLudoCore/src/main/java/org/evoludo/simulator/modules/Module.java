@@ -1549,7 +1549,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 							descr = "--colors <c1;...;c" + nTraits + ";n1;...;n" + nTraits
 									+ ">  trait colors (c: regular, n: new)";
 					}
-					descr += "\n        ci, ni: color name or (r,g,b) triplet (in 0-255), with i:";
+					descr += "\n        ci, ni: color name or (r,g,b) triplet (in 0-255) with i:";
 					int idx = 0;
 					for (Module pop : species) {
 						nt = pop.getNTraits();

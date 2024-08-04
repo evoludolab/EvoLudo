@@ -218,8 +218,8 @@ public class IBSD extends IBS implements Discrete {
 		 * 
 		 * @see Type
 		 */
-		public final CLOption clo = new CLOption("inittype", Init.Type.UNIFORM.getKey(), EvoLudo.catModule,
-				"--inittype <t>  type of initial configuration", new CLODelegate() {
+		public final CLOption clo = new CLOption("inittype", Init.Type.UNIFORM.getKey(), EvoLudo.catModule, null,
+				new CLODelegate() {
 					@Override
 					public boolean parse(String arg) {
 						boolean success = true;
@@ -267,6 +267,18 @@ public class IBSD extends IBS implements Discrete {
 									Formatter.format(init.args, 2) + (isMultiSpecies ? " ("
 											+ mod.getName() + ")" : ""));
 						}
+					}
+
+					@Override
+					public String getDescription() {
+						String descr = "--inittype <t>  type of initial configuration:\n" + clo.getDescriptionKey()
+							+ "\n                with r, m indices of resident, mutant traits";
+						boolean noVacant = false;
+						for (Module mod : ibs.species)
+							noVacant |= mod.getVacant() < 0;
+						if (noVacant)
+							return descr.replaceAll("\\[,v\\]", "");
+						return descr + "\n                and v frequency of vacant sites";
 					}
 				});
 
@@ -318,7 +330,7 @@ public class IBSD extends IBS implements Discrete {
 			 * modules that admit vacant sites, their frequency is {@code v}. The parameters
 			 * are specified through the argument of the format {@code t[,v]}.
 			 */
-			MONO("monomorphic", "monomorphic initialization with trait <t[,v]>"),
+			MONO("monomorphic", "monomorphic initialization with trait <r[,v]>"),
 
 			/**
 			 * Single mutant with trait {@code m} in otherwise homogeneous population with
@@ -429,7 +441,7 @@ public class IBSD extends IBS implements Discrete {
 		 * which a change in the composition of the population may occur. This destroys
 		 * the time scale.
 		 */
-		MORAN("moran", "restrict update to active links (destroys time-scale)");
+		MORAN("moran", "update active links only (destroys time-scale)");
 
 		/**
 		 * Key of optimization type. Used when parsing command line options.
@@ -476,7 +488,7 @@ public class IBSD extends IBS implements Discrete {
 	 * Command line option to request optimizations.
 	 */
 	public final CLOption cloOptimize = new CLOption("optimize", "none", EvoLudo.catModel,
-			"--optimize <t1[,t2,...]>  optimize aspects of evolutionary process", new CLODelegate() {
+			"--optimize <t1[,t2,...]>  enable optimizations:", new CLODelegate() {
 
 				/**
 				 * {@inheritDoc}

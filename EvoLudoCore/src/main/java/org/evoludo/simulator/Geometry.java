@@ -354,7 +354,7 @@ public class Geometry {
 						+ "                n: square lattice (von neumann)\n" //
 						+ "                m: square lattice (moore)\n" //
 						+ "                append f for fixed boundaries\n" //
-						+ "                n1,...,nm number of units on each hierarchical level\n" //
+						+ "                n1,...,nm number of units on each level\n" //
 						+ "                total of m+1 levels with nPopulation/(n1*...*nm)\n" //
 						+ "                individuals in last level\n" //
 						+ "                w: strength of ties between levels"),
@@ -490,7 +490,7 @@ public class Geometry {
 		 * @see Geometry#initGeometrySuperstar()
 		 */
 		SUPER_STAR("S", "super-star (single hub, petals)",
-				"S<p[,a]> super-star (p petals [1], a amplify [3])"),
+				"S<p[,a]> super-star, p petals [1], a amplify [3]"),
 
 		/**
 		 * Wheel graph, connectivity \(k=4(N-1)/N\).
@@ -519,7 +519,7 @@ public class Geometry {
 		 * @see Geometry#initGeometryRandomRegularGraph()
 		 */
 		RANDOM_REGULAR_GRAPH("r", "random regular graph",
-				"r<d> random regular graph (d degree [2])"),
+				"r<d> random regular graph, d degree [2]"),
 
 		/**
 		 * Directed random regular graph. (not yet implemented)
@@ -533,7 +533,7 @@ public class Geometry {
 		 * 
 		 * @see Geometry#initGeometryRandomGraph()
 		 */
-		RANDOM_GRAPH("R", "random graph", "R<d> random graph (d degree [2])"),
+		RANDOM_GRAPH("R", "random graph", "R<d> random graph, d degree [2]"),
 
 		/**
 		 * Directed random graph. {@code D<d>} random graph with degree {@code d}.
@@ -541,7 +541,7 @@ public class Geometry {
 		 * @see Geometry#initGeometryRandomGraphDirected()
 		 */
 		RANDOM_GRAPH_DIRECTED("D", "random graph (directed)",
-				"D<d> directed random graph (d degree [2])"),
+				"D<d> directed random graph, d degree [2]"),
 
 		/**
 		 * Scale-free network. {@code p<e>} scale-free network with exponent {@code e}.
@@ -559,7 +559,7 @@ public class Geometry {
 		 */
 		SCALEFREE_KLEMM("F", "scale-free, small world graph (Klemm & Eguiluz)",
 				"F<n[,p]> scale-free, small world graph\n" + //
-						"                (Klemm & Eguiluz) with avg. degree n, p random links"),
+						"                (Klemm & Eguiluz) n avg. degree, p random links"),
 
 		/**
 		 * Scale-free network. {@code f<d>} scale-free network with degree {@code d}.
@@ -567,7 +567,7 @@ public class Geometry {
 		 * @see Geometry#initGeometryScaleFreeBA()
 		 */
 		SCALEFREE_BA("f", "scale-free graph (Barabasi & Albert)",
-				"f<n> scale-free graph with avg. degree n\n" + //
+				"f<n> scale-free graph, n avg. degree\n" + //
 						"                (Barabasi & Albert)"),
 
 		/**

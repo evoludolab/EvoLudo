@@ -1799,17 +1799,17 @@ public abstract class IBS extends Model {
 		/**
 		 * Diffusive migration (exchange of neighbors).
 		 */
-		DIFFUSION("D", "diffusive migration (exchange of neighbors)"),
+		DIFFUSION("D", "diffusive migration, exchange of neighbors"),
 
 		/**
 		 * Birth-death migration (fit migrates, random death).
 		 */
-		BIRTH_DEATH("B", "birth-death migration (fit migrates, random death)"),
+		BIRTH_DEATH("B", "birth-death migration, fit migrates, random dies"),
 
 		/**
 		 * Death-birth migration (random death, fit migrates).
 		 */
-		DEATH_BIRTH("d", "death-birth migration (random death, fit migrates)");
+		DEATH_BIRTH("d", "death-birth migration, random dies, fit migrates");
 
 		/**
 		 * Key of migration type. Used for parsing command line options.

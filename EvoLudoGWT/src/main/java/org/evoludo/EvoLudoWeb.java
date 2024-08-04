@@ -1883,7 +1883,7 @@ public class EvoLudoWeb extends Composite
 	 * Command line option to set the size of the GUI or enter fullscreen.
 	 */
 	public final CLOption cloSize = new CLOption("size", "530,620", EvoLudo.catGUI,
-			"--size <w,h|fullscreen>  size of GUI (w: width, h: height in pixels)", new CLODelegate() {
+			"--size <w,h|fullscreen>  size of GUI, w: width, h: height", new CLODelegate() {
 				/**
 				 * {@inheritDoc}
 				 * <p>

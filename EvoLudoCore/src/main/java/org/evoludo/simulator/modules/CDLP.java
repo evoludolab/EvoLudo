@@ -131,7 +131,7 @@ public class CDLP extends CDL {
 
 	@Override
 	public String getTitle() {
-		return "Volunteering and punishment in public goods games";
+		return "Punishment in voluntary public goods games";
 	}
 
 	@Override

@@ -116,7 +116,7 @@ public class CDLPQ extends CDLP {
 
 	@Override
 	public String getTitle() {
-		return "Peer & pool punishment in voluntary public goods games";
+		return "Peer & pool punishment in voluntary public goods";
 	}
 
 	@Override

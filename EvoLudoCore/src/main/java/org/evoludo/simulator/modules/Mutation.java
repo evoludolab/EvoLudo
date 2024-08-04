@@ -256,7 +256,7 @@ public abstract class Mutation {
 		 */
 		public final CLOption clo = new CLOption("mutations", "0.0",
 				EvoLudo.catModule,
-					"--mutations <p> [temperature|random (default)] [<t> [<r>]]]  with\n" +
+					"--mutations <p> [temperature|random (default)] [<t> [<r>]]]\n" +
 						"             p: mutation probability\n" + //
 						"       process: reproduction vs cosmic rays\n" + //
 						"             r: mutation range\n" + //
