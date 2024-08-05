@@ -591,10 +591,10 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 */
 	private void processInitXY(int x, int y) {
 		// convert to user coordinates
-		double sx = (viewCorner.x + x - bounds.getX()) / zoomFactor + 0.5;
-		double sy = (viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5;
+		double sx = (viewCorner.x + x - bounds.getX()) / zoomFactor - 0.5;
+		double sy = (viewCorner.y + y - bounds.getY()) / zoomFactor;
 		double[] s3 = new double[3];
-		map.s32Data(sx, sy, s3);
+		map.s32Data(sx / bounds.getWidth(), 1.0 - sy / bounds.getHeight(), s3);
 		controller.setInitialState(s3);
 	}
 
@@ -602,10 +602,12 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	@Override
 	public String getTooltipAt(int x, int y) {
 		// convert to user coordinates
-		double sx = (viewCorner.x + x - bounds.getX()) / zoomFactor + 0.5;
-		double sy = (viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5;
+		double sx = (viewCorner.x + x - bounds.getX()) / zoomFactor - 0.5;
+		double sy = (viewCorner.y + y - bounds.getY()) / zoomFactor;
 		if (!inside(sx, sy))
 			return null;
+		sx /= bounds.getWidth();
+		sy = 1.0 - sy / bounds.getHeight();
 		if (tooltipProvider instanceof TooltipProvider.Simplex)
 			return ((TooltipProvider.Simplex) tooltipProvider).getTooltipAt(this, sx, sy);
 		if (tooltipProvider != null)

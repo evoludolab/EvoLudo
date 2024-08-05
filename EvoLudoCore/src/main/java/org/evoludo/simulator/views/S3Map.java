@@ -128,8 +128,9 @@ public class S3Map implements HasS3.Data2S3, BasicTooltipProvider {
 	public double[] s32Data(double x, double y, double[] s) {
 		// point is in scaled user coordinates
 		s[order[2]] = Math.max(0.0, y);
-		s[order[1]] = Math.max(0.0, x);
-		s[order[0]] = Math.max(0.0, 1.0 - x - y);
+		double s1 = Math.max(0.0, x - y * 0.5);
+		s[order[1]] = s1;
+		s[order[0]] = Math.max(0.0, 1.0 - y - s1);
 		ArrayMath.normalize(s);
 		return s;
 	}
