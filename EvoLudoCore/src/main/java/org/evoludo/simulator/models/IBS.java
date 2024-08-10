@@ -66,7 +66,7 @@ public abstract class IBS extends Model {
 	@Override
 	public boolean permitsUpdateStatistics() {
 		for (Module mod : species) {
-			if (!(mod instanceof HasHistogram.StatisticsTime))
+			if (!(mod instanceof HasHistogram.StatisticsStationary))
 				return false;
 		}
 		return true;
