@@ -314,7 +314,7 @@ public class ODEEuler extends Model implements Discrete {
 	/**
 	 * Type of initial configuration for each species.
 	 * 
-	 * @see #cloInitType
+	 * @see #cloInit
 	 */
 	protected InitType initType[];
 
@@ -457,7 +457,7 @@ public class ODEEuler extends Model implements Discrete {
 		staticfit = null;
 		names = null;
 		initType = null;
-		cloInitType.clearKeys();
+		cloInit.clearKeys();
 		super.unload();
 	}
 
@@ -1566,9 +1566,9 @@ public class ODEEuler extends Model implements Discrete {
 	 * density distributions:
 	 * <dl>
 	 * <dt>DENSITY
-	 * <dd>Initial densities as specified in {@link #cloInitType} (density modules).
+	 * <dd>Initial densities as specified in {@link #cloInit} (density modules).
 	 * <dt>FREQUENCY
-	 * <dd>Initial frequencies as specified in {@link #cloInitType} (frequency
+	 * <dd>Initial frequencies as specified in {@link #cloInit} (frequency
 	 * modules).
 	 * <dt>UNIFORM
 	 * <dd>Uniform frequencies of traits (default; in density modules all densities
@@ -1578,7 +1578,7 @@ public class ODEEuler extends Model implements Discrete {
 	 * <strong>Note:</strong> Not available for density based models.
 	 * </dl>
 	 * 
-	 * @see #cloInitType
+	 * @see #cloInit
 	 * @see #parse(String)
 	 * @see PDERD.InitType
 	 * @see PDERD#parse(String)
@@ -1667,7 +1667,7 @@ public class ODEEuler extends Model implements Discrete {
 	 * process its arguments as appropriate.
 	 * <p>
 	 * <strong>Note:</strong> Not possible to perform parsing in {@code CLODelegate}
-	 * of {@link #cloInitType} because PDE model provide their own
+	 * of {@link #cloInit} because PDE model provide their own
 	 * {@link PDERD.InitType}s.
 	 * 
 	 * @param arg the arguments to parse
@@ -1691,7 +1691,7 @@ public class ODEEuler extends Model implements Discrete {
 			String inittype = inittypes[idx % inittypes.length];
 			double[] initargs = null;
 			String[] typeargs = inittype.split("\\s+|=");
-			InitType type = (InitType) cloInitType.match(inittype);
+			InitType type = (InitType) cloInit.match(inittype);
 			// if matching of inittype failed assume it was omitted; use previous type
 			if (type == null && idx > 0) {
 				type = initType[idx - 1];
@@ -1780,8 +1780,8 @@ public class ODEEuler extends Model implements Discrete {
 	 * @see InitType
 	 * @see PDERD.InitType
 	 */
-	public final CLOption cloInitType = new CLOption("inittype", InitType.UNIFORM.getKey(), EvoLudo.catModule,
-			"--inittype <t>  type of initial configuration", new CLODelegate() {
+	public final CLOption cloInit = new CLOption("init", InitType.UNIFORM.getKey(), EvoLudo.catModule,
+			"--init <t>      type of initial configuration", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					// parsing must be 'outsourced' to ODEEuler class to enable
@@ -1794,7 +1794,7 @@ public class ODEEuler extends Model implements Discrete {
 					int idx = 0;
 					for (Module pop : species) {
 						InitType type = initType[idx++];
-						String msg = "# inittype:             " + type;
+						String msg = "# init:                 " + type;
 						if (type.equals(InitType.DENSITY) || type.equals(InitType.FREQUENCY)) {
 							int from = idxSpecies[idx];
 							msg += Formatter.format(Arrays.copyOfRange(y0, from, from + pop.getNTraits()), 4);
@@ -1877,17 +1877,17 @@ public class ODEEuler extends Model implements Discrete {
 		parser.addCLO(cloAdjustedDynamics);
 		parser.addCLO(cloDEAccuracy);
 		parser.addCLO(cloDEdt);
-		parser.addCLO(cloInitType);
-		cloInitType.clearKeys();
-		cloInitType.addKeys(InitType.values());
+		parser.addCLO(cloInit);
+		cloInit.clearKeys();
+		cloInit.addKeys(InitType.values());
 		if (isDensity()) {
-			cloInitType.removeKey(InitType.RANDOM);
-			cloInitType.removeKey(InitType.FREQUENCY);
+			cloInit.removeKey(InitType.RANDOM);
+			cloInit.removeKey(InitType.FREQUENCY);
 		} else {
-			cloInitType.removeKey(InitType.DENSITY);
+			cloInit.removeKey(InitType.DENSITY);
 		}
 		if (!(this instanceof SDEEuler))
-			cloInitType.removeKey(InitType.MUTANT);
+			cloInit.removeKey(InitType.MUTANT);
 		if (permitsTimeReversal())
 			parser.addCLO(cloTimeReversed);
 	}

@@ -2229,7 +2229,7 @@ public class IBSDPopulation extends IBSPopulation {
 				strategiesTypeCount[strategies[n] % nTraits]++;
 			return;
 		}
-		logger.warning("inittype 'stripes': 2D lattice structures required - using 'uniform'.");
+		logger.warning("init 'stripes': 2D lattice structures required - using 'uniform'.");
 		initUniform();
 	}
 

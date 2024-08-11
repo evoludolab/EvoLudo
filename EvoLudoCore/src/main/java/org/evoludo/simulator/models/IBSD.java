@@ -218,7 +218,7 @@ public class IBSD extends IBS implements Discrete {
 		 * 
 		 * @see Type
 		 */
-		public final CLOption clo = new CLOption("inittype", Init.Type.UNIFORM.getKey(), EvoLudo.catModule, null,
+		public final CLOption clo = new CLOption("init", Init.Type.UNIFORM.getKey(), EvoLudo.catModule, null,
 				new CLODelegate() {
 					@Override
 					public boolean parse(String arg) {
@@ -245,7 +245,7 @@ public class IBSD extends IBS implements Discrete {
 									|| newtype.equals(Init.Type.KALEIDOSCOPE)))) {
 								ibs.logger.warning(
 										(isMultiSpecies ? mod.getName() + ": " : "") +
-												"inittype '" + inittype + "' unknown!");
+												"init '" + inittype + "' unknown!");
 								// default to uniform
 								newtype = Init.Type.UNIFORM;
 								success = false;
@@ -263,7 +263,7 @@ public class IBSD extends IBS implements Discrete {
 						for (Module mod : ibs.species) {
 							IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
 							Init init = dpop.getInit();
-							output.println("# inittype:             " + init.type + " " + //
+							output.println("# init:                 " + init.type + " " + //
 									Formatter.format(init.args, 2) + (isMultiSpecies ? " ("
 											+ mod.getName() + ")" : ""));
 						}
@@ -271,7 +271,7 @@ public class IBSD extends IBS implements Discrete {
 
 					@Override
 					public String getDescription() {
-						String descr = "--inittype <t>  type of initial configuration:\n" + clo.getDescriptionKey()
+						String descr = "--init <t>      type of initial configuration:\n" + clo.getDescriptionKey()
 							+ "\n                with r, m indices of resident, mutant traits";
 						boolean noVacant = false;
 						for (Module mod : ibs.species)

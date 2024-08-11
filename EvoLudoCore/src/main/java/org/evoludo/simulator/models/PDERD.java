@@ -151,7 +151,7 @@ public class PDERD extends ODEEuler {
 	 * PDE's currently support only single species models {@code initType} is a
 	 * scalar field.
 	 * 
-	 * @see #cloInitType
+	 * @see #cloInit
 	 */
 	@SuppressWarnings("hiding")
 	protected InitType initType;
@@ -1351,7 +1351,7 @@ public class PDERD extends ODEEuler {
 	 * </dl>
 	 * 
 	 * @see #parse(String)
-	 * @see ODEEuler#cloInitType
+	 * @see ODEEuler#cloInit
 	 */
 	public enum InitType implements CLOption.Key {
 
@@ -1397,7 +1397,7 @@ public class PDERD extends ODEEuler {
 		/**
 		 * Key of initialization type. Used when parsing command line options.
 		 * 
-		 * @see ODEEuler#cloInitType
+		 * @see ODEEuler#cloInit
 		 */
 		String key;
 
@@ -1440,7 +1440,7 @@ public class PDERD extends ODEEuler {
 	 * process its arguments as appropriate.
 	 * <p>
 	 * <strong>Note:</strong> Not possible to perform parsing in {@code CLODelegate}
-	 * of {@link #cloInitType} because PDE model provide their own
+	 * of {@link #cloInit} because PDE model provide their own
 	 * {@link PDERD.InitType}s.
 	 * 
 	 * @param arg the arguments to parse
@@ -1452,7 +1452,7 @@ public class PDERD extends ODEEuler {
 	@Override
 	public boolean parse(String arg) {
 		// this is just for a single species - as everything else in PDE models
-		initType = (InitType) cloInitType.match(arg);
+		initType = (InitType) cloInit.match(arg);
 		String[] typeargs = arg.split("\\s+|=");
 		double[] init = null;
 		if (typeargs.length > 1)
@@ -1730,9 +1730,9 @@ public class PDERD extends ODEEuler {
 		parser.addCLO(cloPdeSymmetric);
 		// parser.addCLO(cloPdeColorRange);
 		// ODEEuler loaded its own keys already - clear and reload ours.
-		cloInitType.clearKeys();
-		cloInitType.addKeys(InitType.values());
-		cloInitType.setDefault(InitType.RANDOM.getKey());
+		cloInit.clearKeys();
+		cloInit.addKeys(InitType.values());
+		cloInit.setDefault(InitType.RANDOM.getKey());
 	}
 
 	// public boolean parsePDEColorRange(String colorranges) {

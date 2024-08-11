@@ -125,8 +125,8 @@ public class IBSC extends IBS implements Continuous {
 		 * 
 		 * @see Type
 		 */
-		public final CLOption clo = new CLOption("inittype", Init.Type.UNIFORM.getKey(), EvoLudo.catModule,
-				"--inittype <t>  type of initial configuration", new CLODelegate() {
+		public final CLOption clo = new CLOption("init", Init.Type.UNIFORM.getKey(), EvoLudo.catModule,
+				"--init <t>      type of initial configuration", new CLODelegate() {
 					@Override
 					public boolean parse(String arg) {
 						boolean success = true;
@@ -152,7 +152,7 @@ public class IBSC extends IBS implements Continuous {
 								if (newtype == null || (!newtype.equals(Init.Type.UNIFORM) && !argsOk)) {
 									ibs.logger.warning(
 											(isMultiSpecies ? mod.getName() + ": " : "") +
-													"inittype '" + inittype + "' unknown!");
+													"init '" + inittype + "' unknown!");
 									newtype = Init.Type.UNIFORM;
 									success = false;
 								}
@@ -170,7 +170,7 @@ public class IBSC extends IBS implements Continuous {
 						for (Module mod : ibs.species) {
 							IBSMCPopulation cpop = (IBSMCPopulation) mod.getIBSPopulation();
 							Init init = cpop.getInit();
-							output.println("# inittype:             " + init.type + " " + //
+							output.println("# init:                 " + init.type + " " + //
 									Formatter.format(init.args, 2) + (isMultiSpecies ? " ("
 											+ mod.getName() + ")" : ""));
 						}
