@@ -286,9 +286,9 @@ public abstract class Mutation {
 		/**
 		 * Command line option to set the type of player updates.
 		 */
-		public final CLOption clo = new CLOption("mutations", "0.0",
+		public final CLOption clo = new CLOption("mutation", "0.0",
 				EvoLudo.catModule,
-					"--mutations <p> [temperature|random (default)] [<t> [<r>]]]\n" +
+					"--mutation <p> [temperature|random (default)] [<t> [<r>]]]\n" +
 						"             p: mutation probability\n" + //
 						"       process: reproduction vs cosmic rays\n" + //
 						"             r: mutation range\n" + //
@@ -536,9 +536,9 @@ public abstract class Mutation {
 		/**
 		 * Command line option to set the type of player updates.
 		 */
-		public final CLOption clo = new CLOption("mutations", "0.0",
+		public final CLOption clo = new CLOption("mutation", "0.0",
 				EvoLudo.catModule,
-					"--mutations <p> [temperature|random (default)] [<t> [<r>]>  with\n" +
+					"--mutation <p> [temperature|random (default)] [<t> [<r>]>  with\n" +
 						"             p: mutation probability\n" + //
 						"             r: mutation range (fraction of interval)\n" + //
 						"       process: reproduction vs cosmic rays\n" + //
