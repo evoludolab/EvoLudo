@@ -176,6 +176,25 @@ public class PlayerUpdate {
 		return error;
 	}
 
+	@Override
+	public String toString() {
+		String str = type.toString();
+		switch (type) {
+			case THERMAL: // fermi update
+			case IMITATE: // imitation update
+			case IMITATE_BETTER: // imitation update (better strategies only)
+				str += " " + Formatter.formatSci(noise, 6);
+				// XXX add errors to PROPORTIONAL as well as DE models?
+				if (module.model.isIBS())
+					str += "," + Formatter.formatSci(error, 6);
+				break;
+			default:
+				// no other PlayerUpdate.Type seems to implement noise
+				break;
+		}
+		return str;
+	}
+
 	/**
 	 * Command line option to set the type of player updates.
 	 */
@@ -247,28 +266,8 @@ public class PlayerUpdate {
 							if (ibspop.getPopulationUpdate().isMoran())
 								continue;
 						}
-						PlayerUpdate pu = mod.getPlayerUpdate();
-						PlayerUpdate.Type put = pu.getType();
-						output.println("# playerupdate:         " + put
+						output.println("# playerupdate:         " + mod.getPlayerUpdate()
 								+ (species.size() > 1 ? " (" + mod.getName() + ")" : ""));
-						switch (put) {
-							case THERMAL: // fermi update
-							case IMITATE: // imitation update
-							case IMITATE_BETTER: // imitation update (better strategies only)
-								output.println(
-										"# playerupdatenoise:    "
-												+ Formatter.formatSci(pu.getNoise(), 6));
-								// XXX errors could probably be added to PROPORTIONAL as well as DE models
-								if (isIBS) {
-									output.println(
-											"# playerupdateerror:    "
-													+ Formatter.formatSci(pu.getError(), 6));
-								}
-								break;
-							default:
-								// no other PlayerUpdateType's seem to implement noise
-								break;
-						}
 					}
 				}
 			});
