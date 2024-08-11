@@ -874,8 +874,10 @@ public abstract class IBS extends Model {
 				}
 				return pickFocalSpeciesSize(wPopTot);
 			case TURNS:
-				// case SYNC:
 				return pickFocalSpeciesTurns();
+			case UNIFORM:
+				return species.get(random0n(nSpecies)).getIBSPopulation();
+			// case SYNC:
 			default:
 				throw new Error("unknown species update type!");
 		}
@@ -1633,6 +1635,11 @@ public abstract class IBS extends Model {
 	 * @see Module#speciesUpdateRate
 	 */
 	public static enum SpeciesUpdateType implements CLOption.Key {
+
+		/**
+		 * Pick focal species based on population size.
+		 */
+		UNIFORM("uniform", "pick species with equal probabilities"), //
 
 		/**
 		 * Pick focal species based on population size.
