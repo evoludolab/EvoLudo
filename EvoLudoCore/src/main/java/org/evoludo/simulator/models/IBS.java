@@ -9,6 +9,7 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
+import org.evoludo.simulator.modules.SpeciesUpdate;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -195,6 +196,8 @@ public abstract class IBS extends Model {
 		// ToDo: further updates to implement or make standard
 		pup.clo.removeKey(PopulationUpdate.Type.WRIGHT_FISHER);
 		pup.clo.removeKey(PopulationUpdate.Type.ECOLOGY);
+		speciesUpdate = new SpeciesUpdate(species.get(0));
+		speciesUpdate.clo.addKeys(SpeciesUpdate.Type.values());
 	}
 
 	@Override
@@ -211,6 +214,7 @@ public abstract class IBS extends Model {
 			pop.unload();
 			mod.setIBSPopulation(null);
 		}
+		speciesUpdate = null;
 		super.unload();
 	}
 
@@ -828,24 +832,15 @@ public abstract class IBS extends Model {
 	/**
 	 * Type of species update (multi-species models only).
 	 */
-	public SpeciesUpdateType speciesUpdateType = SpeciesUpdateType.SIZE;
-
-	/**
-	 * Set species update to <code>type</code>.
-	 * 
-	 * @param type update type of species
-	 */
-	public void setSpeciesUpdateType(SpeciesUpdateType type) {
-		speciesUpdateType = type;
-	}
+	public SpeciesUpdate speciesUpdate;
 
 	/**
 	 * Get species update type.
 	 * 
 	 * @return the species update type
 	 */
-	public SpeciesUpdateType getSpeciesUpdateType() {
-		return speciesUpdateType;
+	public SpeciesUpdate getSpeciesUpdate() {
+		return speciesUpdate;
 	}
 
 	/**
@@ -858,7 +853,7 @@ public abstract class IBS extends Model {
 	public IBSPopulation pickFocalSpecies() {
 		if (!isMultispecies)
 			return population;
-		switch (speciesUpdateType) {
+		switch (speciesUpdate.getType()) {
 			case FITNESS:
 				double wScoreTot = 0.0;
 				for (Module mod : species) {
@@ -1506,44 +1501,6 @@ public abstract class IBS extends Model {
 			});
 
 	/**
-	 * Command line option to set the method for selecting which species to update.
-	 * 
-	 * @see SpeciesUpdateType
-	 */
-	public final CLOption cloSpeciesUpdateType = new CLOption("speciesupdate", SpeciesUpdateType.SIZE.getKey(),
-			EvoLudo.catModel, "--speciesupdate <u>  species update type", new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse method for selecting which species to update in models with multiple
-				 * populations/species. <code>arg</code> can be a single value or an array of
-				 * values with the separator {@value CLOParser#SPECIES_DELIMITER}. The parser
-				 * cycles through <code>arg</code> until all populations/species have the
-				 * selection method set.
-				 * 
-				 * @param arg the (array of) selection method(s)
-				 */
-				@Override
-				public boolean parse(String arg) {
-					SpeciesUpdateType sut = (SpeciesUpdateType) cloSpeciesUpdateType.match(arg);
-					if (sut == null) {
-						logger.warning("species update '" + arg + "' unknown - using '"
-								+ getSpeciesUpdateType() + "'");
-						return false;
-					}
-					setSpeciesUpdateType(sut);
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					if (species.size() > 1)
-						output.println("# speciesupdate:        " + getSpeciesUpdateType());
-				}
-			});
-
-	/**
 	 * Command line option to enable consistency checks.
 	 */
 	public final CLOption cloConsistency = new CLOption("consistency", "noconsistency", CLOption.Argument.NONE,
@@ -1570,10 +1527,8 @@ public abstract class IBS extends Model {
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
-		if (species.size() > 1) {
-			cloSpeciesUpdateType.addKeys(SpeciesUpdateType.values());
-			parser.addCLO(cloSpeciesUpdateType);
-		}
+		if (species.size() > 1)
+			parser.addCLO(speciesUpdate.clo);
 		PopulationUpdate pup = species.get(0).getIBSPopulation().getPopulationUpdate();
 		parser.addCLO(pup.clo);
 		parser.addCLO(cloMigration);
@@ -1614,94 +1569,6 @@ public abstract class IBS extends Model {
 			cloInteractions.addKeys(IBSGroup.SamplingType.values());
 			parser.addCLO(cloGeometryInteraction);
 			parser.addCLO(cloGeometryCompetition);
-		}
-	}
-
-	/**
-	 * Types of species updates (only relevant for multi-species models):
-	 * <dl>
-	 * <dt>size</dt>
-	 * <dd>focal species selected proportional to their size</dd>
-	 * <dt>fitness</dt>
-	 * <dd>focal species selected proportional to their total fitness</dd>
-	 * <dt>turns</dt>
-	 * <dd>one species is selected after another.</dd>
-	 * <dt>sync</dt>
-	 * <dd>simultaneous updates of all species.</dd>
-	 * </dl>
-	 * For <em>size</em> and <em>fitness</em> selection is also proportional to the
-	 * update rate of each species.
-	 * 
-	 * @see Module#speciesUpdateRate
-	 */
-	public static enum SpeciesUpdateType implements CLOption.Key {
-
-		/**
-		 * Pick focal species based on population size.
-		 */
-		UNIFORM("uniform", "pick species with equal probabilities"), //
-
-		/**
-		 * Pick focal species based on population size.
-		 */
-		SIZE("size", "pick species based on size"), //
-
-		/**
-		 * Pick focal species based on population fitness.
-		 */
-		FITNESS("fitness", "pick species based on fitness"), //
-
-		/**
-		 * Pick species sequentially.
-		 */
-		TURNS("turns", "pick species sequentially"); //
-
-		/**
-		 * Simultaneous updates of all species. Not implemented
-		 */
-		// SYNC("sync", "simultaneous updates of all species"); //
-
-		/**
-		 * Key of species update type. Used for parsing command line options.
-		 * 
-		 * @see org.evoludo.simulator.models.IBS#cloSpeciesUpdateType
-		 *      IBS#cloSpeciesUpdateType
-		 * @see org.evoludo.simulator.models.IBS#setSpeciesUpdateType(SpeciesUpdateType)
-		 *      IBS.setSpeciesUpdateType(SpeciesUpdateType)
-		 */
-		String key;
-
-		/**
-		 * Brief description of species update type for GUI and help display.
-		 * 
-		 * @see EvoLudo#helpCLO()
-		 */
-		String title;
-
-		/**
-		 * Instantiate new species update type.
-		 * 
-		 * @param key   the identifier for parsing of command line options
-		 * @param title the summary of the species update for GUI and help display
-		 */
-		SpeciesUpdateType(String key, String title) {
-			this.key = key;
-			this.title = title;
-		}
-
-		@Override
-		public String getKey() {
-			return key;
-		}
-
-		@Override
-		public String getTitle() {
-			return title;
-		}
-
-		@Override
-		public String toString() {
-			return key + ": " + title;
 		}
 	}
 
