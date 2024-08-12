@@ -92,28 +92,28 @@
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/EvoLudoJRE/src/main/java/org/evoludo/simulator/EvoLudoLab.java",
-            "args": "--module 2x2 --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --inittype mutant 0,1 --mutations 0.0 --paymatrix 0.25,1.25;0,1 --data traits"
+            "args": "--module 2x2 --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1 --data traits"
         },
         {
             "name": "JRE 2x2 Evoludo (GUI)",
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/EvoLudoJRE/src/main/java/org/evoludo/simulator/EvoLudoLab.java",
-            "args": "--module 2x2 --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --inittype mutant 0,1 --mutations 0.0 --paymatrix 0.25,1.25;0,1"
+            "args": "--module 2x2 --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1"
         },
         {
             "name": "JRE ePGG EvoLudo",
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/EvoLudoJRE/src/main/java/org/evoludo/simulator/EvoLudoLab.java",
-            "args": "--module ePGG --delay 100 --pdeN 61x --model PDE --geometry nf --colors red;green;black --timestep 1 --pdeD 2,1 --inittype circle 1,1,8 --fitnessmap static --cost 1.0 --interest 2.34 --groupsize 8 --deathrate 1.2 --dt 0.1 --pdeL 200"
+            "args": "--module ePGG --delay 100 --pdeN 61x --model PDE --geometry nf --colors red;green;black --timestep 1 --pdeD 2,1 --init circle 1,1,8 --fitnessmap static --cost 1.0 --interest 2.34 --groupsize 8 --deathrate 1.2 --dt 0.1 --pdeL 200"
         },
         {
             "name": "JRE cSD EvoLudo",
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/EvoLudoJRE/src/main/java/org/evoludo/simulator/EvoLudoLab.java",
-            "args": "--module cSD --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --delay 0 --export cSD-1.plist --timestop 1000 --geometry M --inittype gaussian 0.05,0.01 --interactions random 1 --model IBS --mutations 0.1 gaussian 0.01 --playerupdate thermal 0.1 --popsize 1000 --popupdate async --references random 1 --timestep 1 --seed 0"
+            "args": "--module cSD --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --delay 0 --export cSD-1.plist --timestop 1000 --geometry M --init gaussian 0.05,0.01 --interactions random 1 --model IBS --mutation 0.1 gaussian 0.01 --playerupdate thermal 0.1 --popsize 1000 --popupdate async --references random 1 --timestep 1 --seed 0"
         },
         {
             "name": "JRE TestEvoludo (generate)",

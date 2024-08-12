@@ -2,83 +2,83 @@
 
 # ODE
 # base scenario
---module CDL --model ODE --timestep 1 --playerupdate thermal 0.1 --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 1000
+--module CDL --model ODE --timestep 1 --playerupdate thermal 0.1 --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 1000
 # population updates
---module CDL --model ODE --timestep 1 --playerupdate thermal 0.1 --adjusted --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static --timestop 1000
+--module CDL --model ODE --timestep 1 --playerupdate thermal 0.1 --adjusted --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static --timestop 1000
 # player updates
---module CDL --model ODE --timestep 1 --playerupdate imitate 0.1 --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 1000
---module CDL --model ODE --timestep 1 --playerupdate best --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 1000
+--module CDL --model ODE --timestep 1 --playerupdate imitate 0.1 --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 1000
+--module CDL --model ODE --timestep 1 --playerupdate best --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 1000
 #NOTE heuristic accuracy threshold to trigger convergence for best-response dynamics
---module CDL --model ODE --timestep 1 --playerupdate best-response --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 50
+--module CDL --model ODE --timestep 1 --playerupdate best-response --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 50
 # mutation
---module CDL --model ODE --timestep 1 --playerupdate thermal 0.1 --inittype frequency 2,2,6 --mutations 0.02 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1
+--module CDL --model ODE --timestep 1 --playerupdate thermal 0.1 --init frequency 2,2,6 --mutation 0.02 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1
 # fitness map and selection
---module CDL --model ODE --timestep 1 --playerupdate thermal 0.1 --inittype frequency 2,2,6 --mutations 0.02 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,0.1
+--module CDL --model ODE --timestep 1 --playerupdate thermal 0.1 --init frequency 2,2,6 --mutation 0.02 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,0.1
 #NOTE convergence threshold not reached
---module CDL --model ODE --timestep 1 --playerupdate thermal 0.1 --inittype frequency 2,2,6 --mutations 0.02 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,10.0 --timestop 50
+--module CDL --model ODE --timestep 1 --playerupdate thermal 0.1 --init frequency 2,2,6 --mutation 0.02 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,10.0 --timestop 50
 
 # SDE
 # base scenario
---module CDL --model SDE --timestep 1 --popsize 200 --playerupdate thermal 0.1 --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1
+--module CDL --model SDE --timestep 1 --popsize 200 --playerupdate thermal 0.1 --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1
 # population updates
 #CHECK adjusted not yet implemented
-#--module CDL --model SDE --timestep 1 --popsize 200 --playerupdate thermal 0.1 --adjusted --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1  --fitnessmap static
+#--module CDL --model SDE --timestep 1 --popsize 200 --playerupdate thermal 0.1 --adjusted --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1  --fitnessmap static
 # player updates
---module CDL --model SDE --timestep 1 --popsize 200 --playerupdate imitate 0.1 --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1
---module CDL --model SDE --timestep 1 --popsize 200 --playerupdate best --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1
---module CDL --model SDE --timestep 1 --popsize 200 --playerupdate best-response --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1
+--module CDL --model SDE --timestep 1 --popsize 200 --playerupdate imitate 0.1 --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1
+--module CDL --model SDE --timestep 1 --popsize 200 --playerupdate best --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1
+--module CDL --model SDE --timestep 1 --popsize 200 --playerupdate best-response --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1
 # mutation
---module CDL --model SDE --timestep 1 --popsize 200 --playerupdate thermal 0.1 --inittype frequency 2,2,6 --mutations 0.02 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 1000
+--module CDL --model SDE --timestep 1 --popsize 200 --playerupdate thermal 0.1 --init frequency 2,2,6 --mutation 0.02 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 1000
 # fitness map and selection
---module CDL --model SDE --timestep 1 --popsize 200 --playerupdate thermal 0.1 --inittype frequency 2,2,6 --mutations 0.02 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,0.1 --timestop 1000
---module CDL --model SDE --timestep 1 --popsize 200 --playerupdate thermal 0.1 --inittype frequency 2,2,6 --mutations 0.02 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,10.0 --timestop 1000
+--module CDL --model SDE --timestep 1 --popsize 200 --playerupdate thermal 0.1 --init frequency 2,2,6 --mutation 0.02 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,0.1 --timestop 1000
+--module CDL --model SDE --timestep 1 --popsize 200 --playerupdate thermal 0.1 --init frequency 2,2,6 --mutation 0.02 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,10.0 --timestop 1000
 
 # PDE
 # base scenario
---module CDL --model PDE --timestep 1 --geometry n --playerupdate thermal 0.1 --inittype random 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
+--module CDL --model PDE --timestep 1 --geometry n --playerupdate thermal 0.1 --init random 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
 # population updates
---module CDL --model PDE --timestep 1 --geometry n --playerupdate thermal 0.1 --adjusted --inittype random 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static --timestop 100
+--module CDL --model PDE --timestep 1 --geometry n --playerupdate thermal 0.1 --adjusted --init random 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static --timestop 100
 # player updates
---module CDL --model PDE --timestep 1 --geometry n --playerupdate imitate 0.1 --inittype random 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
---module CDL --model PDE --timestep 1 --geometry n --playerupdate best --inittype random 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
---module CDL --model PDE --timestep 1 --geometry n --playerupdate best-response --inittype random 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
+--module CDL --model PDE --timestep 1 --geometry n --playerupdate imitate 0.1 --init random 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
+--module CDL --model PDE --timestep 1 --geometry n --playerupdate best --init random 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
+--module CDL --model PDE --timestep 1 --geometry n --playerupdate best-response --init random 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
 # mutation
---module CDL --model PDE --timestep 1 --geometry n --playerupdate thermal 0.1 --inittype random 2,2,6 --mutations 0.02 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
+--module CDL --model PDE --timestep 1 --geometry n --playerupdate thermal 0.1 --init random 2,2,6 --mutation 0.02 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
 # fitness map and selection
---module CDL --model PDE --timestep 1 --geometry n --playerupdate thermal 0.1 --inittype random 2,2,6 --mutations 0.02 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,0.1 --timestop 100
---module CDL --model PDE --timestep 1 --geometry n --playerupdate thermal 0.1 --inittype random 2,2,6 --mutations 0.02 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,10.0 --timestop 100
+--module CDL --model PDE --timestep 1 --geometry n --playerupdate thermal 0.1 --init random 2,2,6 --mutation 0.02 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,0.1 --timestop 100
+--module CDL --model PDE --timestep 1 --geometry n --playerupdate thermal 0.1 --init random 2,2,6 --mutation 0.02 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,10.0 --timestop 100
 
 # IBS
 # base scenario
---module CDL --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --inittype uniform --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1
+--module CDL --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init uniform --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1
 # population/player updates
---module CDL --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate imitate 0.1 --inittype uniform --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1
+--module CDL --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate imitate 0.1 --init uniform --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1
 #NOTE last non-loner does not switch, homogeneous state not reached 
---module CDL --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate best --inittype uniform --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 10
---module CDL --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate best-response --inittype uniform --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
+--module CDL --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate best --init uniform --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 10
+--module CDL --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate best-response --init uniform --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
 #NOTE Birth-death takes longer to absorb, set max. generations
---module CDL --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate B --inittype uniform --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static --timestop 100
+--module CDL --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate B --init uniform --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static --timestop 100
 #NOTE death-Birth absorbs reasonably fast
---module CDL --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate d --inittype uniform --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static
+--module CDL --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate d --init uniform --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static
 # population/player updates - structured
---module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate async --playerupdate thermal 0.1 --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
---module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate async --playerupdate imitate 0.1 --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
---module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate async --playerupdate best --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
---module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate async --playerupdate best-response --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
---module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate B --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static --timestop 100
---module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate d --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static --timestop 100
+--module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
+--module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate async --playerupdate imitate 0.1 --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
+--module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate async --playerupdate best --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
+--module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate async --playerupdate best-response --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 100
+--module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate B --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static --timestop 100
+--module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate d --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static --timestop 100
 # geometries
---module CDL --model IBS --timestep 1 --geometry n --popsize 50x --popupdate B --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static --timestop 100
---module CDL --model IBS --timestep 1 --geometry s --popsize 200 --popupdate B --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static --timestop 100
+--module CDL --model IBS --timestep 1 --geometry n --popsize 50x --popupdate B --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static --timestop 100
+--module CDL --model IBS --timestep 1 --geometry s --popsize 200 --popupdate B --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static --timestop 100
 #CHECK games on directed graphs are largely untested... exclude for now
-#--module CDL --model IBS --timestep 1 --geometry S5,5 --popsize 196 --popupdate B --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static --timestop 500
---module CDL --model IBS --timestep 1 --geometry f4 --popsize 500 --popupdate B --inittype frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static --timestop 100
+#--module CDL --model IBS --timestep 1 --geometry S5,5 --popsize 196 --popupdate B --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static --timestop 500
+--module CDL --model IBS --timestep 1 --geometry f4 --popsize 500 --popupdate B --init frequency 2,2,6 --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap static --timestop 100
 # mutation
---module CDL --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --playerupdate thermal 0.1 --inittype frequency 2,2,6 --mutations 0.05 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 1000
+--module CDL --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --playerupdate thermal 0.1 --init frequency 2,2,6 --mutation 0.05 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --timestop 1000
 # fitness map and selection
---module CDL --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --inittype frequency 2,2,6 --mutations 0.05 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,0.1 --timestop 1000
---module CDL --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --inittype frequency 2,2,6 --mutations 0.05 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,10.0 --timestop 1000
---module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate B --inittype frequency 2,2,6 --mutations 0.05 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,0.1 --timestop 1000
---module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate B --inittype frequency 2,2,6 --mutations 0.05 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,10.0 --timestop 1000
---module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate d --inittype frequency 2,2,6 --mutations 0.05 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,0.1 --timestop 1000
---module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate d --inittype frequency 2,2,6 --mutations 0.05 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,10.0 --timestop 1000
+--module CDL --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init frequency 2,2,6 --mutation 0.05 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,0.1 --timestop 1000
+--module CDL --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init frequency 2,2,6 --mutation 0.05 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,10.0 --timestop 1000
+--module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate B --init frequency 2,2,6 --mutation 0.05 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,0.1 --timestop 1000
+--module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate B --init frequency 2,2,6 --mutation 0.05 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,10.0 --timestop 1000
+--module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate d --init frequency 2,2,6 --mutation 0.05 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,0.1 --timestop 1000
+--module CDL --model IBS --timestep 1 --geometry r4 --popsize 500 --popupdate d --init frequency 2,2,6 --mutation 0.05 other --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --fitnessmap exp 1.0,10.0 --timestop 1000
