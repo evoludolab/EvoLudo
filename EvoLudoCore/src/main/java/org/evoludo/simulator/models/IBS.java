@@ -848,7 +848,7 @@ public abstract class IBS extends Model {
 	 * 
 	 * @return the focal population
 	 * 
-	 * @see SpeciesUpdateType
+	 * @see SpeciesUpdate.Type
 	 */
 	public IBSPopulation pickFocalSpecies() {
 		if (!isMultispecies)

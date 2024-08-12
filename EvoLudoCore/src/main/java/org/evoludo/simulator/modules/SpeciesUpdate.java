@@ -223,10 +223,7 @@ public class SpeciesUpdate {
 		/**
 		 * Key of species update type. Used for parsing command line options.
 		 * 
-		 * @see org.evoludo.simulator.models.IBS#cloSpeciesUpdateType
-		 *      IBS#cloSpeciesUpdateType
-		 * @see org.evoludo.simulator.models.IBS#setSpeciesUpdateType(SpeciesUpdateType)
-		 *      IBS.setSpeciesUpdateType(SpeciesUpdateType)
+		 * @see SpeciesUpdate#clo
 		 */
 		String key;
 

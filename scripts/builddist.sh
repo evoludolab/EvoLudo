@@ -1,15 +1,36 @@
 #!/bin/bash
 
 EVOLUDO_PUBLIC="EvoLudo" ;
+EVOLUDO_CORE_HOME="EvoLudoCore" ;
 EVOLUDO_JRE_HOME="EvoLudoJRE" ;
 EVOLUDO_GWT_HOME="EvoLudoGWT" ;
 EVOLUDO_DEV_HOME="EvoLudoGWTDev" ;
 EVOLUDO_TEST_HOME="EvoLudoTest" ;
 EVOLUDO_TEST_TEST="$EVOLUDO_TEST_HOME/tests" ;
 
-# build project
-echo "Building EvoLudo project..." ;
-mvn clean install ;
+### find most recently changed src file (skip hidden files)
+LATEST_JAVA=`find ${EVOLUDO_GWT_HOME}/src/main/ ${EVOLUDO_CORE_HOME}/src/main/ \
+			-type f -not -name '.*'  -not -name '*.properties' -print0 | \
+			xargs -0 stat -f "%m %N" | \
+			sort -rn | head -1 | cut -f2- -d" "` ;
+LATEST_GWT=`find ${EVOLUDO_GWT_HOME}/target/EvoLudoGWT* \
+			-type f -name 'evoludoweb.nocache.js'` ;
+
+# build project - if needed
+if [[ ${LATEST_JAVA} -nt ${LATEST_GWT} ]]; then
+	echo "Building EvoLudo project..." ;
+	mvn clean install ;
+else
+	echo "Building EvoLudo project skipped..."
+fi
+
+passed=$? ;
+
+if [ $passed -ne 0 ]
+	then 
+	echo "Building EvoLudo project failed - aborting!" ;
+	exit $passed ;
+fi
 
 # run tests
 echo "Running EvoLudo tests..." ;
