@@ -871,26 +871,31 @@ public abstract class IBSPopulation {
 	 */
 	private int pickFocal(int excl) {
 		int nTot = getPopulationSize();
+		if (excl >= 0)
+			nTot--;
 		int pick = random0n(nTot);
-		int found = 0;
 		if (pick + pick > nTot) {
-			// start search at back
-			pick = nTot - pick;
+			pick = nTot - pick - 1;
+			// start search at tail; cannot stop halfway;
+			// vacancies may be concentrated at tail
 			for (int n = nPopulation - 1; n >= 0; n--) {
 				if (isVacantAt(n))
 					continue;
-				if (++found > pick) {
+				pick--;
+				if (pick < 0) {
 					if (n == excl)
 						continue;
 					return n;
 				}
 			}
 		} else {
-			// start search at front
+			// start search at head; cannot stop halfway;
+			// vacancies may be concentrated at head
 			for (int n = 0; n < nPopulation; n++) {
 				if (isVacantAt(n))
 					continue;
-				if (++found > pick) {
+				pick--;
+				if (pick < 0) {
 					if (n == excl)
 						continue;
 					return n;
