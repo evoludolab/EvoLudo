@@ -483,12 +483,16 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	 * @return the {@code x}-coordinate
 	 */
 	public double bin2x(int bin) {
-		double x = (double) bin / data[row].length;
-		x = style.xMin + x * (style.xMax - style.xMin) + x;
+		double norm = 1.0 / data[row].length;
+		double x = bin * norm;
+		double range = style.xMax - style.xMin;
+		// center of bin
+		x = style.xMin + range * (x + norm * 0.5);
 		// would it be nice to round to nearest rational?
-		double rounded = Math.round(x);
-		if (Math.abs(x - rounded) < 1e-12)
-			return rounded;
+		// Math.round involves longs, which are evil in GWT...
+		// double rounded = Math.round(x);
+		// if (Math.abs(x - rounded) < 1e-12)
+		// 	return rounded;
 		return x;
 	}
 

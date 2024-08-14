@@ -1121,6 +1121,7 @@ public class Histogram extends AbstractView {
 		switch (type) {
 			case STATISTICS_FIXATION_PROBABILITY:
 			case STATISTICS_FIXATION_TIME:
+			case STATISTICS_STATIONARY:
 				return new ExportType[] { ExportType.SVG, ExportType.PNG, ExportType.STAT_DATA };
 			case DEGREE:
 			default:
@@ -1128,7 +1129,6 @@ public class Histogram extends AbstractView {
 		}
 	}
 
-	@SuppressWarnings("null")
 	@Override
 	protected void exportStatData() {
 		// NOTE: consider exporting more data (e.g. overall fix probs/times, sdev,
@@ -1141,19 +1141,23 @@ public class Histogram extends AbstractView {
 			case STATISTICS_FIXATION_TIME:
 				export = "# fixation time\n";
 				break;
+			case STATISTICS_STATIONARY:
+				export = "# stationary distribution\n";
+				break;
 			default:
 				return;
 		}
 		Module module = null;
-		int idx = 0;
+		int idx = -1;
 		for (HistoGraph graph : graphs) {
 			Module newMod = graph.getModule();
+			idx++;
 			if (module != newMod) {
 				module = newMod;
 				if (isMultispecies)
 					export += "# species: " + module.getName() + "\n";
 			}
-			export += "# trait: " + model.getMeanName(idx++) + "\n";
+			export += "# trait: " + model.getMeanName(idx) + "\n";
 			double[][] data = graph.getData();
 			if (data == null) {
 				export += "# no data available\n";
