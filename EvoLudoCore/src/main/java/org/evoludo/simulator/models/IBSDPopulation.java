@@ -2004,11 +2004,36 @@ public class IBSDPopulation extends IBSPopulation {
 		int monoType = (int) init.args[0];
 		double monoFreq = 1.0;
 		if (VACANT >= 0) {
-			// the second argument indicates the frequency of vacant sites
-			if (init.args.length < 2)
-				monoFreq = Math.max(0.0, 1.0 - init.args[1]);
+			// if present the second argument indicates the frequency of vacant sites
+			// if not use estimate for carrying capacity
+			monoFreq = (init.args.length > 1 ? Math.max(0.0, 1.0 - init.args[1]) : estimateVacantFrequency(monoType));
 		}
 		initMono(monoType, monoFreq);
+	}
+
+	/**
+	 * Helper method to determine the frequency of vacant sites based on an estimate
+	 * of the carrying capacity. In well-mixed populations this is \(1-d/r\), where
+	 * \(d\) is the death rate and \(r\) the fitness of the resident type.
+	 * Similarly, on regular graphs the carrying capacity is
+	 * \(1-(k-1)d/(r(k-1)-d)\), where \(k\) is the degree of the graph. Finally, on
+	 * generic structures, the estimate of the carrying capacity is based on the
+	 * average out-degree of all nodes. Note that resdients in structured
+	 * populations will additionally have a characteristic distribution, which is not
+	 * accounted for in this estimate.
+	 * 
+	 * @return the estimated frequency of vacant sites
+	 */
+	private double estimateVacantFrequency(int type) {
+		double d = module.getDeathRate();
+		double fit = map2fit.map(module.getMonoGameScore(type));
+		Geometry geometry = module.getGeometry();
+		if (geometry.getType() == Geometry.Type.MEANFIELD)
+			// carrying capacity is 1.0 - d / fit
+			return d / fit;
+		double k1 = geometry.avgOut - 1.0;
+		// carrying capacity on a k-regular graph is 1.0 - (k - 1) * d / (fit * (k - 1) - d)
+		return k1 * d / (fit * k1 - d);
 	}
 
 	/**
@@ -2080,9 +2105,9 @@ public class IBSDPopulation extends IBSPopulation {
 			residentType = (mutantType + 1) % nTraits;
 		double monoFreq = 1.0;
 		if (VACANT >= 0) {
-			// the second argument indicates the frequency of vacant sites
-			if (len > 2)
-				monoFreq = Math.max(0.0, 1.0 - init.args[2]);
+			// if present the third argument indicates the frequency of vacant sites
+			// if not use estimate for carrying capacity
+			monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2]) : estimateVacantFrequency(residentType));
 			if (residentType == VACANT && monoFreq < 1.0 - 1e-8) {
 				// problem encountered
 				init.type = Init.Type.UNIFORM;
