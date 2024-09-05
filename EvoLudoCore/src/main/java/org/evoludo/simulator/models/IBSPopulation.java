@@ -682,11 +682,6 @@ public abstract class IBSPopulation {
 	protected int maxEffScoreIdx = -1;
 
 	/**
-	 * The time increment for ecological updates.
-	 */
-	protected double realtimeIncr = -Double.MAX_VALUE;
-
-	/**
 	 * Perform synchronous migration.
 	 * 
 	 * @return the number of migrants
@@ -2329,12 +2324,12 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Perform a single ecological update of a site selected uniformly at random.
+	 * Perform a single ecological update of an individual selected uniformly at random.
 	 * 
 	 * @return real-time increment
 	 */
 	public double updatePlayerEcology() {
-		return updatePlayerEcologyAt(pickFocalSite());
+		return updatePlayerEcologyAt(pickFocalIndividual());
 	}
 
 	/**
@@ -3440,7 +3435,6 @@ public abstract class IBSPopulation {
 					+ Formatter.format(map2fit.getSelection(), 4));
 			updateMinMaxScores();
 		}
-		realtimeIncr = 1.0 / Math.max(maxFitness, module.getDeathRate());
 
 		if (interaction.interCompSame) {
 			competition = interaction.deriveCompetitionGeometry();

@@ -37,6 +37,7 @@ import java.util.List;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
+import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
@@ -475,11 +476,11 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	/**
-	 * Perform a single ecological update of the site with index {@code me}:
+	 * Perform a single ecological update of the individual with index {@code me}:
 	 * <ol>
-	 * <li>If focal site is empty, draw random neighbour and, if occupied, place
-	 * clonal offspring on focal site with probability proportional to fitness.
-	 * <li>If focal site is occupied, individual dies with constant probability.
+	 * <li>Focal individual dies with probability proportional to the death rate.
+	 * <li>Otherwise, draw a random neighbour and, if unoccupied, place clonal
+	 * offspring on neighboring site with probability proportional to fitness.
 	 * </ol>
 	 *
 	 * @param me the index of the focal individual
@@ -488,27 +489,21 @@ public class IBSDPopulation extends IBSPopulation {
 	@Override
 	protected double updatePlayerEcologyAt(int me) {
 		debugFocal = me;
-		// NOTE: review real time increments - now that the process is adapted to rates
-		// (instead of probabilities)
-		if (isVacantAt(me)) {
-			// 'me' is vacant
-			debugModel = pickNeighborSiteAt(me);
-			if (isVacantAt(debugModel))
-				return realtimeIncr;
-			// neighbour is occupied - check if focal remains vacant; compare score against
-			// average population score
-			if (random01() < getFitnessAt(debugModel) * realtimeIncr)
-				maybeMutateMoran(debugModel, me);
-			return realtimeIncr;
-		}
-		// 'me' is occupied - vacate site with fixed probability
 		debugModel = -1;
-		if (random01() < module.getDeathRate() * realtimeIncr) {
+		double randomTestVal = random01() * (module.getDeathRate() + maxFitness); // time rescaling
+		if (randomTestVal < module.getDeathRate()) {
 			// vacate focal site
 			strategiesScratch[me] = VACANT + nTraits;
 			updateScoreAt(me, true);
+		} else if (randomTestVal < (module.getDeathRate() + getFitnessAt(me))) {
+			// fill neighbor site if vacant
+			debugModel = pickNeighborSiteAt(me);
+			if (isVacantAt(debugModel)) {
+				maybeMutateMoran(me, debugModel);
+			}
 		}
-		return realtimeIncr;
+		double rate = getPopulationSize() * (module.getDeathRate()+maxFitness);
+		return RNGDistribution.Exponential.next(rng.getRNG(), rate);
 	}
 
 	@Override
