@@ -172,6 +172,13 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		doubleClickHandler = addDoubleClickHandler(this);
 	}
 
+	@Override
+	public void onResize() {
+		super.onResize();
+		if (hasMessage)
+			((PopGraphController) controller).layoutComplete();
+	}
+
 	/**
 	 * Set the graph label to the string {@code msg} (no HTML formatting).
 	 * 
@@ -261,8 +268,10 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 			Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
 				@Override
 				public void execute() {
-					if (hasStaticLayout())
-						layoutLattice();
+					if (hasStaticLayout()) {
+						drawLattice();
+						((PopGraphController) controller).layoutComplete();
+					}
 					else
 						layoutNetwork();
 				}
@@ -312,6 +321,8 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		clearMessage();
 		calcBounds();
 		invalidated = true;
+		if (hasMessage)
+			((PopGraphController) controller).layoutComplete();
 	}
 
 	@Override
@@ -336,7 +347,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	 * 
 	 * @see #hasStaticLayout()
 	 */
-	protected abstract void layoutLattice();
+	protected abstract void drawLattice();
 
 	/**
 	 * Draws structures with resulting from dynamic layouting of network.

@@ -238,7 +238,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	}
 
 	@Override
-	protected void layoutLattice() {
+	protected void drawLattice() {
 		Geometry.Type type = geometry.getType();
 		boolean isHierarchy = (type == Geometry.Type.HIERARCHY);
 		if (isHierarchy)

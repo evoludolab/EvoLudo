@@ -156,14 +156,14 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		if (super.paint(force))
 			return true;
 		if (hasStaticLayout())
-			layoutLattice();
+			drawLattice();
 		else if (!invalidated)
 			drawNetwork();
 		return false;
 	}
 
 	@Override
-	protected void layoutLattice() {
+	protected void drawLattice() {
 		if (!prepCanvas())
 			return;
 		invalidated = false;
