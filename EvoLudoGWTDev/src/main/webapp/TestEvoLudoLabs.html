@@ -64,7 +64,7 @@
 <!-- <div class="evoludo-simulation" style="margin:1em auto" data-clo="--module asym2x2 --view 2 --init 1,1 --initrich 0.8    --geometry M --popsize 500 --model ODE --popupdate async --playerupdate r --payoffs -0.5,-0.5;0,0 --feedback 0.1,0.1 --environment 1,0"></div> -->
 <!-- <div class="evoludo-simulation" style="margin:1em auto" data-clo="--module Moran --delay 50 --fitness 1,2 --geometry r4 --init 1,0 --mutation 0.0 --popsize 20 --popupdate B --timestep 1 --references random 1"></div> -->
 <!-- <div class="evoludo-simulation" style="margin:1em auto" data-clo="--module eMut --deathrate 10.0 --birthrate 26.0 --comprate 0.1 --single 0.1 --double 0.01 --kappa 1 --lambda 1 --payvirus 0.16,1.16;0,1 --init 48,3.8,11.7,72.5,0:21.2,3.8,0 --delay 50 --model ODE --mutation 0.0 --timestep 0.05 --view Strategies_-_2D_Phase_Plane"></div> -->
-<div class="evoludo-simulation" style="margin:1em auto" data-clo="--module 2x2 --delay 50 --timestep 1 --geometry M --popsize 100 --popupdate async --interactions random 1 --references random 1 --playerupdate best --init mutant 1,0 --mutation 0.0 --paymatrix 0.25,1.25;0,1 --resetscores ephemeral"></div>
+<div class="evoludo-simulation" style="margin:1em auto" data-clo="--module 2x2 --delay 50 --timestep 1 --geometry M --popsize 100 --popupdate async --interactions random 1 --references random 1 --playerupdate best --init mutant 1,0 --mutation 0.0 --paymatrix 1,0;1.25,0.25 --resetscores ephemeral"></div>
 
 <table>
 <tbody>
@@ -84,12 +84,12 @@
 	data-clo="--module 2x2 --geominter R2 --geomcomp n --init frequency 1,1 --popupdate s --playerupdate b --references all --popsize 100"></div>
 </tr>
 <tr><th>2x2 Games (statistics)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module 2x2 --delay 50 --view Statistics_-_Fixation_probability --timestep 1 --geometry n --popsize 10x --popupdate d --interactions all --references random 1 --init mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1"></div></td>
+	data-clo="--module 2x2 --delay 50 --view Statistics_-_Fixation_probability --timestep 1 --geometry n --popsize 10x --popupdate d --interactions all --references random 1 --init mutant 0,1 --mutation 0.0 --paymatrix 1,0;1.25,0.25"></div></td>
 </tr>
 <tr><th>Ecological 2x2 Games</th><td><div class="evoludo-trigger-html"
-	data-clo="--module e2x2 --delay 50 --timestep 1 --geometry n --popsize 10x --popupdate e --interactions all --init uniform --mutation 0.0 --paymatrix 0.1,1.1;0,1 --fitnessmap static 1,1 --deathrate 0.5"></div></td>
+	data-clo="--module e2x2 --delay 50 --timestep 1 --geometry n --popsize 10x --popupdate e --interactions all --init uniform --mutation 0.0 --paymatrix 1,0;1.1,0.1 --fitnessmap static 1,1 --deathrate 0.5"></div></td>
 <th>Ecological 2x2 Games (stationary)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module e2x2 --delay 50 --view Statistics_-_Stationary_distribution --timestep 1 --geometry n --popsize 10x --popupdate e --interactions all --init mutant 1,0,0.2 --mutation 0.01 --paymatrix 0.1,1.1;0,1 --fitnessmap static 1,1 --deathrate 0.5"></div></td>
+	data-clo="--module e2x2 --delay 50 --view Statistics_-_Stationary_distribution --timestep 1 --geometry n --popsize 10x --popupdate e --interactions all --init mutant 1,0,0.2 --mutation 0.01 --paymatrix 1,0;1.1,0.1 --fitnessmap static 1,1 --deathrate 0.5"></div></td>
 </tr>
 <tr><th>CDL</th><td><div class="evoludo-trigger-html"
 	data-clo="--module CDL --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --delay 50 --view Strategies_-_Simplex_S3 --timestep 1 --popsize 10000 --model IBS --popupdate async --playerupdate imitate-better 1 --geometry M --interactions all --references random 1 --init frequency 20,20,60 --mutation 0.0"></div>
@@ -156,7 +156,7 @@
 <tr><th>Test EvoLudo</th><td><div class="evoludo-trigger-html"
 	data-clo="--module Test --RNG"></div></td>
 <th>Snapshot</th><td><div class="evoludo-trigger-html"
-		data-clo="--module 2x2 --delay 200 --geometry m --init mutant 1,0 --interactions all --mutation 0.0 --playerupdate b --popsize 165x --popupdate s --punishment 0.0 --references all --timestep 1 --reward 1 --sucker 0 --temptation 1.65 --view Strategies_-_Structure --snap 20,79"></div></td>
+		data-clo="--module 2x2 --delay 200 --geometry m --init mutant 1,0 --interactions all --mutation 0.0 --paymatrix 1,0;1.65,0 --playerupdate b --popsize 165x --popupdate s --references all --timestep 1 --view Strategies_-_Structure --snap 20,79"></div></td>
 	</tr>
 </tbody>
 </table>
