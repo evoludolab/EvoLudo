@@ -2001,7 +2001,7 @@ public class IBSDPopulation extends IBSPopulation {
 		if (VACANT >= 0) {
 			// if present the second argument indicates the frequency of vacant sites
 			// if not use estimate for carrying capacity
-			monoFreq = (init.args.length > 1 ? Math.max(0.0, 1.0 - init.args[1]) : estimateVacantFrequency(monoType));
+			monoFreq = (init.args.length > 1 ? Math.max(0.0, 1.0 - init.args[1]) : 1.0 - estimateVacantFrequency(monoType));
 		}
 		initMono(monoType, monoFreq);
 	}
@@ -2102,7 +2102,7 @@ public class IBSDPopulation extends IBSPopulation {
 		if (VACANT >= 0) {
 			// if present the third argument indicates the frequency of vacant sites
 			// if not use estimate for carrying capacity
-			monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2]) : estimateVacantFrequency(residentType));
+			monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2]) : 1.0 - estimateVacantFrequency(residentType));
 			if (residentType == VACANT && monoFreq < 1.0 - 1e-8) {
 				// problem encountered
 				init.type = Init.Type.UNIFORM;
