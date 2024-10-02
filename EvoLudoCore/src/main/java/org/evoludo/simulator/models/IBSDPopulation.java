@@ -2001,7 +2001,8 @@ public class IBSDPopulation extends IBSPopulation {
 		if (VACANT >= 0) {
 			// if present the second argument indicates the frequency of vacant sites
 			// if not use estimate for carrying capacity
-			monoFreq = (init.args.length > 1 ? Math.max(0.0, 1.0 - init.args[1]) : 1.0 - estimateVacantFrequency(monoType));
+			monoFreq = (init.args.length > 1 ? Math.max(0.0, 1.0 - init.args[1])
+					: 1.0 - estimateVacantFrequency(monoType));
 		}
 		initMono(monoType, monoFreq);
 	}
@@ -2013,9 +2014,10 @@ public class IBSDPopulation extends IBSPopulation {
 	 * Similarly, on regular graphs the carrying capacity is
 	 * \(1-(k-1)d/(r(k-1)-d)\), where \(k\) is the degree of the graph. Finally, on
 	 * generic structures, the estimate of the carrying capacity is based on the
-	 * average out-degree of all nodes. Note that resdients in structured
-	 * populations will additionally have a characteristic distribution, which is not
-	 * accounted for in this estimate.
+	 * average out-degree of all nodes.
+	 * <p>
+	 * <strong>Note:</strong> residents in structured populations additionally have
+	 * a characteristic distribution, which is not accounted for in this estimate.
 	 * 
 	 * @return the estimated frequency of vacant sites
 	 */
@@ -2028,7 +2030,7 @@ public class IBSDPopulation extends IBSPopulation {
 			return d / fit;
 		double k1 = geometry.avgOut - 1.0;
 		// carrying capacity on a k-regular graph is 1.0 - (k - 1) * d / (fit * (k - 1) - d)
-		return k1 * d / (fit * k1 - d);
+		return Math.min(Math.max(k1 * d / (fit * k1 - d), 0.0), 1.0);
 	}
 
 	/**
@@ -2102,7 +2104,8 @@ public class IBSDPopulation extends IBSPopulation {
 		if (VACANT >= 0) {
 			// if present the third argument indicates the frequency of vacant sites
 			// if not use estimate for carrying capacity
-			monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2]) : 1.0 - estimateVacantFrequency(residentType));
+			monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2])
+					: 1.0 - estimateVacantFrequency(residentType));
 			if (residentType == VACANT && monoFreq < 1.0 - 1e-8) {
 				// problem encountered
 				init.type = Init.Type.UNIFORM;
