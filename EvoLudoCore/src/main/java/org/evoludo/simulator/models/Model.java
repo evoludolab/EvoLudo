@@ -1252,6 +1252,7 @@ public abstract class Model implements CLOProvider {
 	public void collectCLO(CLOParser parser) {
 		parser.addCLO(cloTimeStep);
 		parser.addCLO(cloTimeStop);
+		parser.addCLO(cloTimeRelax);
 		Module module = getSpecies(0);
 		// cannot use permitsSampleStatistics and permitsUpdateStatistics because
 		// they also check parameters that have not yet been set
