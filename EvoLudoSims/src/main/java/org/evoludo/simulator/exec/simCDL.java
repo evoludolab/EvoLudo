@@ -260,7 +260,7 @@ public class simCDL extends CDL implements ChangeListener {
 				engine.modelReset();
 				resetStatistics();
 				// relax population
-				boolean converged = !engine.modelRelax();
+				boolean converged = engine.modelRelax();
 				startStatistics();
 				if (!converged) {
 					while (engine.modelNext())

@@ -648,17 +648,19 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Relax model by {@code timeRelax} steps and notify all listeners when done.
+	 * Relax model by {@code timeRelax} steps and notify all listeners when done. If model
+	 * converged during relaxation additionally notifies listeners that model has stopped.
 	 *
-	 * @return <code>true</code> if not converged, i.e. if <code>modelNext()</code>
-	 *         can be called.
+	 * @return <code>true</code> if converged
 	 * 
 	 * @see Model#relax()
 	 */
 	public final boolean modelRelax() {
-		boolean cont = activeModel.relax();
+		boolean converged = activeModel.relax();
 		fireModelRelaxed();
-		return cont;
+		if (converged)
+			fireModelStopped();
+		return converged;
 	}
 
 	/**

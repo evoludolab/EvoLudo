@@ -242,7 +242,7 @@ public abstract class Model implements CLOProvider {
 	 * generations. During relaxation the method {@link #isRelaxing()} must return
 	 * {@code true}.
 	 * 
-	 * @return {@code false} if converged during relaxation
+	 * @return {@code true} if converged during relaxation
 	 * 
 	 * @see #isRelaxing()
 	 * @see #next()
@@ -254,10 +254,10 @@ public abstract class Model implements CLOProvider {
 		isRelaxing = true;
 		double rf = timeStep;
 		timeStep = timeRelax;
-		boolean cont = next();
+		next();
 		timeStep = rf;
 		isRelaxing = false;
-		return cont;
+		return hasConverged();
 	}
 
 	/**

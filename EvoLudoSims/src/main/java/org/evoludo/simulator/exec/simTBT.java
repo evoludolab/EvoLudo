@@ -151,7 +151,7 @@ public class simTBT extends TBT implements ChangeListener {
 				if (converged) {
 					// restore original relaxation time
 					engine.modelReset();
-					converged = !engine.modelRelax();
+					converged = engine.modelRelax();
 				} else {
 					// if simulations did not converge, keep configuration, only reset time
 					// and adjust min/max scores as well as update scores of all individuals
@@ -160,7 +160,7 @@ public class simTBT extends TBT implements ChangeListener {
 					// should be fine to reduce relaxation time
 					double relax = model.getTimeRelax();
 					model.setTimeRelax(relax * 0.5);
-					converged = !engine.modelRelax();
+					converged = engine.modelRelax();
 					model.setTimeRelax(relax);
 				}
 				prevsample = ibs.getTime();
@@ -205,7 +205,7 @@ public class simTBT extends TBT implements ChangeListener {
 					Arrays.fill(var, 0.0);
 					engine.modelReset();
 					// relax population
-					converged = !engine.modelRelax();
+					converged = engine.modelRelax();
 					prevsample = ibs.getTime();
 					if (converged) {
 						// simulations converged already - mean is current state and sdev is zero
@@ -247,7 +247,7 @@ public class simTBT extends TBT implements ChangeListener {
 				engine.modelReset();
 			}
 			// relax population
-			converged = !engine.modelRelax();
+			converged = engine.modelRelax();
 			// evolve population
 			prevsample = ibs.getTime();
 			double timeStop = model.getTimeStop();
