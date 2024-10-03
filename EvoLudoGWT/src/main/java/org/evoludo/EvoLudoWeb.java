@@ -985,6 +985,7 @@ public class EvoLudoWeb extends Composite
 		displayStatus(action + " pending. Waiting for engine to stop...");
 		displayStatusThresholdLevel = Level.ALL.intValue();
 		engine.requestAction(action.equals("Reset") ? PendingAction.RESET : PendingAction.INIT);
+		updateGUI();
 	}
 
 	/**
@@ -1217,9 +1218,9 @@ public class EvoLudoWeb extends Composite
 				// - changes in payoffs require rescaling of color maps
 				for (AbstractView view : activeViews.values())
 					view.reset(false);
-				updateGUI();
 			}
 		}
+		updateGUI();
 		setView(cloView.isSet() ? initialView : currentView);
 		if (!parsingSuccess) {
 			displayStatus("Problems parsing arguments - check log for details.", Level.WARNING.intValue() + 1);

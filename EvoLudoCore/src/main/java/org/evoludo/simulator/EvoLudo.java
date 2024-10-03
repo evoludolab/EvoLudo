@@ -567,6 +567,7 @@ public abstract class EvoLudo
 		modelInit();
 		// notify of reset
 		fireModelReset();
+		modelRelax();
 	}
 
 	/**
@@ -656,6 +657,8 @@ public abstract class EvoLudo
 	 * @see Model#relax()
 	 */
 	public final boolean modelRelax() {
+		if (activeModel.getTimeRelax() < 1.0)
+			return activeModel.hasConverged();
 		boolean converged = activeModel.relax();
 		fireModelRelaxed();
 		if (converged)

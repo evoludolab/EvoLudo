@@ -249,7 +249,7 @@ public abstract class Model implements CLOProvider {
 	 * @see #cloTimeRelax
 	 */
 	public boolean relax() {
-		if (timeRelax < 1.0)
+		if (timeRelax < 1.0 || time > timeRelax)
 			return false;
 		isRelaxing = true;
 		double rf = timeStep;
@@ -1122,8 +1122,6 @@ public abstract class Model implements CLOProvider {
 				@Override
 				public boolean parse(String arg) {
 					setTimeRelax(CLOParser.parseDouble(arg));
-					if (getTimeRelax() > 0)
-						engine.setSuspended(true);
 					return true;
 				}
 
