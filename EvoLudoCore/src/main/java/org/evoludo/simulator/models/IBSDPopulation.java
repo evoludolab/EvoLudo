@@ -502,7 +502,11 @@ public class IBSDPopulation extends IBSPopulation {
 				maybeMutateMoran(me, debugModel);
 			}
 		}
-		double rate = getPopulationSize() * (module.getDeathRate()+maxFitness);
+		int nPop = getPopulationSize();
+		if (nPop == 0)
+			// population went extinct, no more events possible
+			return Double.POSITIVE_INFINITY;
+		double rate = nPop * (module.getDeathRate() + maxFitness);
 		return RNGDistribution.Exponential.next(rng.getRNG(), rate);
 	}
 
