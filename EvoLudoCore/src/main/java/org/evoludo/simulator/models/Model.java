@@ -258,6 +258,11 @@ public abstract class Model implements CLOProvider {
 			next();
 			timeStep = rf;
 			isRelaxing = false;
+			// reset strategies after relaxation
+			for (Module mod : species) {
+				IBSPopulation pop = mod.getIBSPopulation();
+				pop.resetStrategies();
+			}
 		}
 		return hasConverged();
 	}

@@ -2046,6 +2046,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * @param monoFreq the frequency of the monomorphic trait
 	 */
 	private void initMono(int monoType, double monoFreq) {
+		monoType = monoType % nTraits;
 		if (monoFreq > 1.0 - 1e-8) {
 			Arrays.fill(strategies, monoType);
 			strategiesTypeCount[monoType] = nPopulation;
@@ -2106,11 +2107,11 @@ public class IBSDPopulation extends IBSPopulation {
 	 */
 	protected int initMutant() {
 		// initArgs contains the index of the resident and mutant traits
-		int mutantType = (int) init.args[0];
+		int mutantType = (int) init.args[0] % nTraits;
 		int len = init.args.length;
 		int residentType;
 		if (len > 1)
-			residentType = (int) init.args[1];
+			residentType = (int) init.args[1] % nTraits;
 		else
 			residentType = (mutantType + 1) % nTraits;
 		double monoFreq = 1.0;
@@ -2131,7 +2132,7 @@ public class IBSDPopulation extends IBSPopulation {
 		initMono(residentType, monoFreq);
 		// place a single individual with a random but different strategy
 		int loc = random0n(nPopulation);
-		strategiesTypeCount[strategies[loc]]--;
+		strategiesTypeCount[strategies[loc] % nTraits]--;
 		strategies[loc] = mutantType;
 		strategiesTypeCount[mutantType]++;
 		return loc;
@@ -2172,7 +2173,7 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 		if (strategies[idx] == VACANT) {
 			strategiesTypeCount[VACANT]--;
-			strategiesTypeCount[residentType]++;
+			strategiesTypeCount[residentType % nTraits]++;
 		}
 		strategies[idx] = mutantType;
 		return idx;
