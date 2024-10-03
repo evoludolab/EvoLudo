@@ -249,14 +249,16 @@ public abstract class Model implements CLOProvider {
 	 * @see #cloTimeRelax
 	 */
 	public boolean relax() {
-		if (timeRelax < 1.0 || time > timeRelax)
-			return false;
-		isRelaxing = true;
-		double rf = timeStep;
-		timeStep = timeRelax;
-		next();
-		timeStep = rf;
-		isRelaxing = false;
+		if (hasConverged())
+			return true;
+		if (timeRelax > 0.0 && time < timeRelax) {
+			isRelaxing = true;
+			double rf = timeStep;
+			timeStep = timeRelax - time;
+			next();
+			timeStep = rf;
+			isRelaxing = false;
+		}
 		return hasConverged();
 	}
 

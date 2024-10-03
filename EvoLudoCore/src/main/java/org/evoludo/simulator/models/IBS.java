@@ -295,10 +295,16 @@ public abstract class IBS extends Model {
 			engine.paramsDidChange();
 			return;
 		}
-		converged = true;
+		// initialize all populations
 		for (Module mod : species) {
 			IBSPopulation pop = mod.getIBSPopulation();
 			pop.init();
+		}
+		// check for convergence separately because initialization may want to 
+		// relax the configuration, which could result in convergence
+		converged = true;
+		for (Module mod : species) {
+			IBSPopulation pop = mod.getIBSPopulation();
 			converged &= pop.checkConvergence();
 		}
 	}
