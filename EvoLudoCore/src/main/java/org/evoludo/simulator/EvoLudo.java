@@ -1308,6 +1308,7 @@ public abstract class EvoLudo
 				runFired = false;
 				for (MilestoneListener i : milestoneListeners)
 					i.modelStopped();
+				logger.info("Model stopped");
 				break;
 			case STATISTICS_SAMPLE:
 				// check if new sample completed
