@@ -543,6 +543,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	public void activate() {
 		isActive = true;
+		onResize();
 		if (this instanceof Zooming) {
 			boolean isEPub = NativeJS.isEPub();
 			// important: ibooks (desktop) returns ePubReader for standalone pages as well,
