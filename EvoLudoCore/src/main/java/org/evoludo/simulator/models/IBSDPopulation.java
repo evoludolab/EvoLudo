@@ -2063,11 +2063,9 @@ public class IBSDPopulation extends IBSPopulation {
 			}
 			strategiesTypeCount[monoType] = nMono;
 			strategiesTypeCount[VACANT] = nPopulation - nMono;
-			if (competition.getType() == Geometry.Type.MEANFIELD || 
-					(competition.getType() == Geometry.Type.HIERARCHY && 
-							competition.subgeometry == Geometry.Type.MEANFIELD))
-				return;
 			// relax the monomorphic configuration (ignore monoStop)
+			// the actual monomorphic frequency may differ from the requested frequency
+			// this is meaningful even for well-mixed populations
 			boolean mono = module.getMonoStop();
 			module.setMonoStop(false);
 			engine.getModel().relax();
