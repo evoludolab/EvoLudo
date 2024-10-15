@@ -35,6 +35,7 @@
 				"http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/simulator/Network.java" : "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/Network.java",
 				"http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/simulator/Network2D.java" : "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/Network2D.java",
 				"http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/simulator/Network3D.java" : "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/Network3D.java",
+				"http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/util/NativeJS.java" : "${workspaceFolder}/EvoLudoGWT/src/main/java/org/evoludo/util/NativeJS.java",
 				"http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/util/*" : "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/util/*",
 				"http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/graphics/*" : "${workspaceFolder}/EvoLudoGWT/src/main/java/org/evoludo/graphics/*",
 				"http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/simulator/*" : "${workspaceFolder}/EvoLudoGWT/src/main/java/org/evoludo/simulator/*",
