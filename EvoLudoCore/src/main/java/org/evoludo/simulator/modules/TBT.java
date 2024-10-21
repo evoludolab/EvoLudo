@@ -316,6 +316,8 @@ public class TBT extends Discrete implements Pairs,
 			CLOption clo = ((IBSDPopulation) getIBSPopulation()).getInit().clo;
 			clo.addKey(Init.Type.KALEIDOSCOPE);
 		}
+		// handling of 2nd neighbours in von Neumann lattice implemented
+		cloGeometry.addKey(Geometry.Type.SQUARE_NEUMANN_2ND);
 	}
 
 	@Override

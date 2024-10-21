@@ -1736,7 +1736,9 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		// geometry option only acceptable for IBS and PDE models
 		if (model.isIBS() || model.isPDE()) {
 			cloGeometry.addKeys(Geometry.Type.values());
+			// by default remove DYNAMIC and SQUARE_NEUMANN_2ND geometries
 			cloGeometry.removeKey(Geometry.Type.DYNAMIC);
+			cloGeometry.removeKey(Geometry.Type.SQUARE_NEUMANN_2ND);
 			parser.addCLO(cloGeometry);
 		}
 
