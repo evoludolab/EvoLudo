@@ -236,7 +236,7 @@ public abstract class Discrete extends Module {
 	 * @param engine  the pacemaker for running the model
 	 * @param partner the partner species
 	 */
-	protected Discrete(EvoLudo engine, Discrete partner) {
+	private Discrete(EvoLudo engine, Discrete partner) {
 		super(engine, partner);
 		if (partner == null) {
 			species = new ArrayList<Discrete>();
