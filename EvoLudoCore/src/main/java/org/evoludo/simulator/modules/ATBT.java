@@ -48,8 +48,7 @@ import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.ODERK;
 import org.evoludo.simulator.models.PDERD.HasPDE;
 import org.evoludo.simulator.models.SDEEuler.HasSDE;
-import org.evoludo.simulator.modules.Discrete.Pairs;
-import org.evoludo.simulator.modules.Module.HasIBS;
+import org.evoludo.simulator.modules.Discrete.IBSDPairs;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasHistogram;
@@ -74,7 +73,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class ATBT extends TBT implements Pairs, HasIBS, HasODE, HasSDE, HasPDE,
+public class ATBT extends TBT implements IBSDPairs, HasODE, HasSDE, HasPDE,
 		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy, HasS3, HasPhase2D, HasPop2D.Fitness, HasPop3D.Fitness,
 		HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsStationary, HasConsole {
 

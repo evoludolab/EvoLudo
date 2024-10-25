@@ -50,17 +50,10 @@ import org.evoludo.util.Formatter;
 public abstract class Continuous extends Module {
 
 	/**
-	 * All modules that admit interactions in pairs (as opposed to larger groups)
-	 * should implement this interface. The continuous snowdrift game is an example,
-	 * see {@link org.evoludo.simulator.modules.CSD}.
+	 * Modules that offer individual based simulation models with continuous traits
+	 * and pairwise interactions must implement this interface.
 	 */
-	public interface Pairs extends Features {
-
-		@Override
-		public default boolean isPairwise() {
-			return true;
-		}
-
+	public interface IBSCPairs extends HasIBS, Pairs {
 		/**
 		 * Calculate the payoff/score for modules with interactions in pairs and a
 		 * single continuous trait. The focal individual has trait {@code me} and the
@@ -90,22 +83,10 @@ public abstract class Continuous extends Module {
 	}
 
 	/**
-	 * All modules that admit interactions in larger groups (as opposed to
-	 * interactions in pairs) should implement this interface.
+	 * Modules that offer individual based simulation models with continuous traits
+	 * and interactions in groups must implement this interface.
 	 */
-	public interface Groups extends Pairs {
-
-		/**
-		 * Get the interaction group size.
-		 * 
-		 * @return the interaction group size
-		 */
-		public abstract int getNGroup();
-
-		@Override
-		public default boolean isPairwise() {
-			return (getNGroup() == 2);
-		}
+	public interface IBSCGroups extends IBSCPairs, Groups {
 
 		/**
 		 * Calculate the payoff/score for modules with interactions in groups and a
@@ -135,17 +116,10 @@ public abstract class Continuous extends Module {
 	}
 
 	/**
-	 * All modules that admit interactions in pairs (as opposed to larger groups)
-	 * should implement this interface. The division of labour module is an example,
-	 * see {@link org.evoludo.simulator.modules.CLabour}.
+	 * Modules that offer individual based simulation models with multiple
+	 * continuous traits and pairwise interactions must implement this interface.
 	 */
-	public interface MultiPairs extends Features {
-
-		@Override
-		public default boolean isPairwise() {
-			return true;
-		}
-
+	public interface IBSMCPairs extends HasIBS, Pairs {
 		/**
 		 * Calculate the payoff/score for modules with interactions in pairs and
 		 * multiple continuous traits. The focal individual has traits {@code me} and
@@ -177,22 +151,10 @@ public abstract class Continuous extends Module {
 	}
 
 	/**
-	 * All modules that admit interactions in larger groups (as opposed to
-	 * interactions in pairs) with multiple traits should implement this interface.
+	 * Modules that offer individual based simulation models with continuous traits
+	 * and interactions in groups must implement this interface.
 	 */
-	public interface MultiGroups extends MultiPairs {
-
-		/**
-		 * Get the interaction group size.
-		 * 
-		 * @return the interaction group size
-		 */
-		public abstract int getNGroup();
-
-		@Override
-		public default boolean isPairwise() {
-			return getNGroup() == 2;
-		}
+	public interface IBSMCGroups extends IBSCGroups {
 
 		/**
 		 * Calculate the payoff/score for modules with interactions in groups and
@@ -222,6 +184,70 @@ public abstract class Continuous extends Module {
 		 * @return the payoff/score for the focal individual
 		 */
 		public double groupScores(double me[], double[] group, int len, double[] payoffs);
+	}
+
+	/**
+	 * All modules that admit interactions in pairs (as opposed to larger groups)
+	 * should implement this interface. The continuous snowdrift game is an example,
+	 * see {@link org.evoludo.simulator.modules.CSD}.
+	 */
+	public interface Pairs extends Features {
+
+		@Override
+		public default boolean isPairwise() {
+			return true;
+		}
+	}
+
+	/**
+	 * All modules that admit interactions in larger groups (as opposed to
+	 * interactions in pairs) should implement this interface.
+	 */
+	public interface Groups extends Pairs {
+
+		/**
+		 * Get the interaction group size.
+		 * 
+		 * @return the interaction group size
+		 */
+		public abstract int getNGroup();
+
+		@Override
+		public default boolean isPairwise() {
+			return (getNGroup() == 2);
+		}
+	}
+
+	/**
+	 * All modules that admit interactions in pairs (as opposed to larger groups)
+	 * should implement this interface. The division of labour module is an example,
+	 * see {@link org.evoludo.simulator.modules.CLabour}.
+	 */
+	public interface MultiPairs extends Features {
+
+		@Override
+		public default boolean isPairwise() {
+			return true;
+		}
+	}
+
+	/**
+	 * All modules that admit interactions in larger groups (as opposed to
+	 * interactions in pairs) with multiple traits should implement this interface.
+	 */
+	public interface MultiGroups extends MultiPairs {
+
+		/**
+		 * Get the interaction group size.
+		 * 
+		 * @return the interaction group size
+		 */
+		public abstract int getNGroup();
+
+		@Override
+		public default boolean isPairwise() {
+			return getNGroup() == 2;
+		}
 	}
 
 	/**

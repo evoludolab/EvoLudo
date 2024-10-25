@@ -76,18 +76,18 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * {@code null} otherwise. Convenience field to reduce the number of
 	 * (unnecessary) casts.
 	 * 
-	 * @see Continuous.Pairs
+	 * @see Continuous.IBSMCPairs
 	 */
-	protected Continuous.MultiPairs pairmodule;
+	protected Continuous.IBSMCPairs pairmodule;
 
 	/**
 	 * For group interaction modules {@code module==groupmodule} holds and
 	 * {@code null} otherwise. Convenience field to reduce the number of
 	 * (unnecessary) casts.
 	 * 
-	 * @see Continuous.Groups
+	 * @see Continuous.IBSMCGroups
 	 */
-	protected Continuous.MultiGroups groupmodule;
+	protected Continuous.IBSMCGroups groupmodule;
 
 	/**
 	 * The interaction partner/opponent of this population
@@ -778,12 +778,12 @@ public class IBSMCPopulation extends IBSPopulation {
 			groupmodule = null;
 		} else {
 			if (module.isPairwise()) {
-				pairmodule = (Continuous.MultiPairs) module;
+				pairmodule = (Continuous.IBSMCPairs) module;
 				groupmodule = null;
 			} else {
 				pairmodule = null;
 				// module may be just be Continuous...
-				groupmodule = (module instanceof Continuous.MultiGroups ? (Continuous.MultiGroups) module : null);
+				groupmodule = (module instanceof Continuous.IBSMCGroups ? (Continuous.IBSMCGroups) module : null);
 			}
 		}
 		// IBSMCPopulation opponent shadows IBSPopulation opponent to save casts

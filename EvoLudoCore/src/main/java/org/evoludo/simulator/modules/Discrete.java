@@ -33,6 +33,7 @@
 package org.evoludo.simulator.modules;
 
 import java.util.ArrayList;
+
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -46,16 +47,10 @@ import org.evoludo.util.CLOption.CLODelegate;
 public abstract class Discrete extends Module {
 
 	/**
-	 * All modules that admit interactions in pairs (as opposed to larger groups)
-	 * should implement this interface. The classical {@code 2×2} games are an
-	 * example, see {@link org.evoludo.simulator.modules.TBT}.
+	 * Modules that offer individual based simulation models with discrete traits
+	 * and pairwise interactions must implement this interface.
 	 */
-	public interface Pairs extends Features {
-
-		@Override
-		public default boolean isPairwise() {
-			return true;
-		}
+	public interface IBSDPairs extends HasIBS, Pairs {
 
 		/**
 		 * Calculate and return total (accumulated) payoff/score for pairwise
@@ -106,23 +101,10 @@ public abstract class Discrete extends Module {
 	}
 
 	/**
-	 * All modules that admit interactions in larger groups (as opposed to
-	 * interactions in pairs) should implement this interface. The voluntary public
-	 * goods game is an example, see {@link org.evoludo.simulator.modules.CDL}.
+	 * Modules that offer individual based simulation models with discrete traits
+	 * and interactions in groups must implement this interface.
 	 */
-	public interface Groups extends Pairs {
-
-		/**
-		 * Get the interaction group size.
-		 * 
-		 * @return the interaction group size
-		 */
-		public abstract int getNGroup();
-
-		@Override
-		public default boolean isPairwise() {
-			return getNGroup() == 2;
-		}
+	public interface IBSDGroups extends IBSDPairs, Groups {
 
 		/**
 		 * Calculate the payoff/score for interactions in groups consisting of
@@ -182,6 +164,39 @@ public abstract class Discrete extends Module {
 		@Override
 		public default void mixedScores(int[] traitCount, double[] traitScore) {
 			mixedScores(traitCount, 2, traitScore);
+		}
+	}
+
+	/**
+	 * All modules that admit interactions in pairs (as opposed to larger groups)
+	 * should implement this interface. The classical {@code 2×2} games are an
+	 * example, see {@link org.evoludo.simulator.modules.TBT}.
+	 */
+	public interface Pairs extends Features {
+
+		@Override
+		public default boolean isPairwise() {
+			return true;
+		}
+	}
+
+	/**
+	 * All modules that admit interactions in larger groups (as opposed to
+	 * interactions in pairs) should implement this interface. The voluntary public
+	 * goods game is an example, see {@link org.evoludo.simulator.modules.CDL}.
+	 */
+	public interface Groups extends Pairs {
+
+		/**
+		 * Get the interaction group size.
+		 * 
+		 * @return the interaction group size
+		 */
+		public abstract int getNGroup();
+
+		@Override
+		public default boolean isPairwise() {
+			return getNGroup() == 2;
 		}
 	}
 

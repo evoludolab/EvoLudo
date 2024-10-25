@@ -76,18 +76,18 @@ public class IBSDPopulation extends IBSPopulation {
 	 * {@code null} otherwise. Convenience field to reduce the number of
 	 * (unnecessary) casts.
 	 * 
-	 * @see Discrete.Pairs
+	 * @see Discrete.IBSDPairs
 	 */
-	protected Discrete.Pairs pairmodule;
+	protected Discrete.IBSDPairs pairmodule;
 
 	/**
 	 * For group interaction modules {@code module==groupmodule} holds and
 	 * {@code null} otherwise. Convenience field to reduce the number of
 	 * (unnecessary) casts.
 	 * 
-	 * @see Discrete.Groups
+	 * @see Discrete.IBSDGroups
 	 */
-	protected Discrete.Groups groupmodule;
+	protected Discrete.IBSDGroups groupmodule;
 
 	/**
 	 * The interaction partner/opponent of this population
@@ -502,11 +502,7 @@ public class IBSDPopulation extends IBSPopulation {
 				maybeMutateMoran(me, debugModel);
 			}
 		}
-		int nPop = getPopulationSize();
-		if (nPop == 0)
-			// population went extinct, no more events possible
-			return Double.POSITIVE_INFINITY;
-		double rate = nPop * (module.getDeathRate() + maxFitness);
+		double rate = getPopulationSize() * (module.getDeathRate()+maxFitness);
 		return RNGDistribution.Exponential.next(rng.getRNG(), rate);
 	}
 
@@ -1807,12 +1803,12 @@ public class IBSDPopulation extends IBSPopulation {
 		boolean doReset = super.check();
 		// pairwise and group interactions may have changed
 		if (module.isPairwise()) {
-			pairmodule = (Discrete.Pairs) module;
+			pairmodule = (Discrete.IBSDPairs) module;
 			groupmodule = null;
 		} else {
 			pairmodule = null;
 			// module may be just be Discrete...
-			groupmodule = (module instanceof Discrete.Groups ? (Discrete.Groups) module : null);
+			groupmodule = (module instanceof Discrete.IBSDGroups ? (Discrete.IBSDGroups) module : null);
 		}
 		// IBSDPopulation opponent shadows IBSPopulation opponent to save casts
 		// important: now all modules/populations have been loaded (load() is too early)
@@ -2046,7 +2042,6 @@ public class IBSDPopulation extends IBSPopulation {
 	 * @param monoFreq the frequency of the monomorphic trait
 	 */
 	private void initMono(int monoType, double monoFreq) {
-		monoType = monoType % nTraits;
 		if (monoFreq > 1.0 - 1e-8) {
 			Arrays.fill(strategies, monoType);
 			strategiesTypeCount[monoType] = nPopulation;
@@ -2063,13 +2058,6 @@ public class IBSDPopulation extends IBSPopulation {
 			}
 			strategiesTypeCount[monoType] = nMono;
 			strategiesTypeCount[VACANT] = nPopulation - nMono;
-			// relax the monomorphic configuration (ignore monoStop)
-			// the actual monomorphic frequency may differ from the requested frequency
-			// this is meaningful even for well-mixed populations
-			boolean mono = module.getMonoStop();
-			module.setMonoStop(false);
-			engine.getModel().relax();
-			module.setMonoStop(mono);
 		}
 	}
 
@@ -2105,11 +2093,11 @@ public class IBSDPopulation extends IBSPopulation {
 	 */
 	protected int initMutant() {
 		// initArgs contains the index of the resident and mutant traits
-		int mutantType = (int) init.args[0] % nTraits;
+		int mutantType = (int) init.args[0];
 		int len = init.args.length;
 		int residentType;
 		if (len > 1)
-			residentType = (int) init.args[1] % nTraits;
+			residentType = (int) init.args[1];
 		else
 			residentType = (mutantType + 1) % nTraits;
 		double monoFreq = 1.0;
@@ -2130,7 +2118,7 @@ public class IBSDPopulation extends IBSPopulation {
 		initMono(residentType, monoFreq);
 		// place a single individual with a random but different strategy
 		int loc = random0n(nPopulation);
-		strategiesTypeCount[strategies[loc] % nTraits]--;
+		strategiesTypeCount[strategies[loc]]--;
 		strategies[loc] = mutantType;
 		strategiesTypeCount[mutantType]++;
 		return loc;
@@ -2171,7 +2159,7 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 		if (strategies[idx] == VACANT) {
 			strategiesTypeCount[VACANT]--;
-			strategiesTypeCount[residentType % nTraits]++;
+			strategiesTypeCount[residentType]++;
 		}
 		strategies[idx] = mutantType;
 		return idx;
