@@ -48,7 +48,6 @@ import org.evoludo.math.MersenneTwister;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
-import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSC;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSPopulation;
@@ -72,6 +71,7 @@ import org.evoludo.simulator.modules.CSD;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.modules.Module.HasIBS;
 import org.evoludo.simulator.modules.Moran;
 import org.evoludo.simulator.modules.RSP;
 import org.evoludo.simulator.modules.TBT;
@@ -567,7 +567,6 @@ public abstract class EvoLudo
 		modelInit();
 		// notify of reset
 		fireModelReset();
-		modelRelax();
 	}
 
 	/**
@@ -649,21 +648,17 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Relax model by {@code timeRelax} steps and notify all listeners when done. If model
-	 * converged during relaxation additionally notifies listeners that model has stopped.
+	 * Relax model by {@code timeRelax} steps and notify all listeners when done.
 	 *
-	 * @return <code>true</code> if converged
+	 * @return <code>true</code> if not converged, i.e. if <code>modelNext()</code>
+	 *         can be called.
 	 * 
 	 * @see Model#relax()
 	 */
 	public final boolean modelRelax() {
-		if (activeModel.getTimeRelax() < 1.0)
-			return activeModel.hasConverged();
-		boolean converged = activeModel.relax();
+		boolean cont = activeModel.relax();
 		fireModelRelaxed();
-		if (converged)
-			fireModelStopped();
-		return converged;
+		return cont;
 	}
 
 	/**
@@ -1308,7 +1303,6 @@ public abstract class EvoLudo
 				runFired = false;
 				for (MilestoneListener i : milestoneListeners)
 					i.modelStopped();
-				logger.info("Model stopped");
 				break;
 			case STATISTICS_SAMPLE:
 				// check if new sample completed

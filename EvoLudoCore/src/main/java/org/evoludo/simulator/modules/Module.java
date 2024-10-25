@@ -45,7 +45,6 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.IBS;
-import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Markers;
 import org.evoludo.simulator.models.MilestoneListener;
@@ -70,6 +69,29 @@ import org.evoludo.util.Formatter;
  * @author Christoph Hauert
  */
 public abstract class Module implements Features, MilestoneListener, CLOProvider, Runnable {
+
+	/**
+	 * Modules that offer individual based simulation models must implement this
+	 * interface.
+	 */
+	public interface HasIBS {
+
+		/**
+		 * Provides opportunity for module to supply custom implementation of individual
+		 * based simulations, IBS.
+		 * <p>
+		 * <strong>Important:</strong> if the custom IBS implementation involves random
+		 * numbers, the shared random number generator must be used for reproducibility.
+		 * 
+		 * @return the custom implementation of the IBS or <code>null</code> to use the
+		 *         default
+		 * 
+		 * @see EvoLudo#getRNG()
+		 */
+		public default Model createIBS() {
+			return null;
+		}
+	}
 
 	/**
 	 * The name of the species. Mainly used in multi-species modules.

@@ -35,8 +35,8 @@ package org.evoludo.simulator.modules;
 import java.awt.Color;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.modules.Continuous.MultiPairs;
+import org.evoludo.simulator.modules.Module.HasIBS;
 import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasDistribution;
 import org.evoludo.simulator.views.HasHistogram;

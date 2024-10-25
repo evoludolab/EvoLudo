@@ -38,7 +38,6 @@ import java.util.Arrays;
 
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
@@ -46,6 +45,7 @@ import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.PDERD.HasPDE;
 import org.evoludo.simulator.models.SDEEuler.HasSDE;
 import org.evoludo.simulator.modules.Discrete.Groups;
+import org.evoludo.simulator.modules.Module.HasIBS;
 import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;

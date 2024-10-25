@@ -36,14 +36,14 @@ import java.io.PrintStream;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
-import org.evoludo.simulator.modules.Discrete.Pairs;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.PDERD.HasPDE;
 import org.evoludo.simulator.models.SDEEuler.HasSDE;
 import org.evoludo.simulator.models.SDEEulerN;
+import org.evoludo.simulator.modules.Discrete.Pairs;
+import org.evoludo.simulator.modules.Module.HasIBS;
 import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;

@@ -37,10 +37,10 @@ import java.io.PrintStream;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Data;
-import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.PDERD.HasPDE;
 import org.evoludo.simulator.models.SDEEuler.HasSDE;
+import org.evoludo.simulator.modules.Module.HasIBS;
 import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
