@@ -80,4 +80,37 @@ interface Features {
 		 */
 		public double[] getStaticScores();
 	}
+
+	/**
+	 * All modules that admit interactions in pairs (as opposed to larger groups)
+	 * should implement this interface. The classical {@code 2×2} games are an
+	 * example, see {@link org.evoludo.simulator.modules.TBT}.
+	 */
+	interface Pairs extends Features {
+
+		@Override
+		public default boolean isPairwise() {
+			return true;
+		}
+	}
+
+	/**
+	 * All modules that admit interactions in larger groups (as opposed to
+	 * interactions in pairs) should implement this interface. The voluntary public
+	 * goods game is an example, see {@link org.evoludo.simulator.modules.CDL}.
+	 */
+	interface Groups extends Pairs {
+
+		/**
+		 * Get the interaction group size.
+		 * 
+		 * @return the interaction group size
+		 */
+		public abstract int getNGroup();
+
+		@Override
+		public default boolean isPairwise() {
+			return getNGroup() == 2;
+		}
+	}
 }

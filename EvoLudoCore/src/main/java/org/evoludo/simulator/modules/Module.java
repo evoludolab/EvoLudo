@@ -1703,9 +1703,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		map2fitness.clo.addKeys(Map2Fitness.Map.values());
 		parser.addCLO(map2fitness.clo);
 
-		if (this instanceof Discrete.Groups ||
-				this instanceof Continuous.Groups ||
-				this instanceof Continuous.MultiGroups)
+		if (this instanceof Features.Groups)
 			parser.addCLO(cloNGroup);
 
 		if (nTraits > 0) {

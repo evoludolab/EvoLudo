@@ -50,7 +50,7 @@ public abstract class Discrete extends Module {
 	 * Modules that offer individual based simulation models with discrete traits
 	 * and pairwise interactions must implement this interface.
 	 */
-	public interface IBSDPairs extends HasIBS, Pairs {
+	public interface IBSDPairs extends HasIBS, Features.Pairs {
 
 		/**
 		 * Calculate and return total (accumulated) payoff/score for pairwise
@@ -104,7 +104,7 @@ public abstract class Discrete extends Module {
 	 * Modules that offer individual based simulation models with discrete traits
 	 * and interactions in groups must implement this interface.
 	 */
-	public interface IBSDGroups extends IBSDPairs, Groups {
+	public interface IBSDGroups extends IBSDPairs, Features.Groups {
 
 		/**
 		 * Calculate the payoff/score for interactions in groups consisting of
@@ -164,39 +164,6 @@ public abstract class Discrete extends Module {
 		@Override
 		public default void mixedScores(int[] traitCount, double[] traitScore) {
 			mixedScores(traitCount, 2, traitScore);
-		}
-	}
-
-	/**
-	 * All modules that admit interactions in pairs (as opposed to larger groups)
-	 * should implement this interface. The classical {@code 2×2} games are an
-	 * example, see {@link org.evoludo.simulator.modules.TBT}.
-	 */
-	public interface Pairs extends Features {
-
-		@Override
-		public default boolean isPairwise() {
-			return true;
-		}
-	}
-
-	/**
-	 * All modules that admit interactions in larger groups (as opposed to
-	 * interactions in pairs) should implement this interface. The voluntary public
-	 * goods game is an example, see {@link org.evoludo.simulator.modules.CDL}.
-	 */
-	public interface Groups extends Pairs {
-
-		/**
-		 * Get the interaction group size.
-		 * 
-		 * @return the interaction group size
-		 */
-		public abstract int getNGroup();
-
-		@Override
-		public default boolean isPairwise() {
-			return getNGroup() == 2;
 		}
 	}
 

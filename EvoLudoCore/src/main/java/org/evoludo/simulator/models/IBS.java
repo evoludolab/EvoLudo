@@ -141,12 +141,12 @@ public abstract class IBS extends Model {
 			if (pop == null) {
 				if (mod instanceof org.evoludo.simulator.modules.Discrete) {
 					pop = new IBSDPopulation(engine);
-				} else if (mod instanceof org.evoludo.simulator.modules.Continuous.MultiPairs ||
-						mod instanceof org.evoludo.simulator.modules.Continuous.MultiGroups) {
-					// note: must check MultiContinuous first because it extends Continuous
-					pop = new IBSMCPopulation(engine);
 				} else if (mod instanceof org.evoludo.simulator.modules.Continuous) {
-					pop = new IBSCPopulation(engine);
+					// continuous module, check trait number
+					if (mod.getNTraits() > 1)
+						pop = new IBSMCPopulation(engine);
+					else
+						pop = new IBSCPopulation(engine);
 				} else {
 					engine.fatal("unknown module type '" + mod + "'... fix me!");
 					// fatal does not return control
