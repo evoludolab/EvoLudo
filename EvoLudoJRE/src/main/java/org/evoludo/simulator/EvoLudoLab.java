@@ -77,7 +77,6 @@ import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
-import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasDistribution;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -570,9 +569,7 @@ public class EvoLudoLab extends JFrame
 //		if( module instanceof HasHistogram.StatisticsTime )
 //			addMultiView(viewStatFixT);
 		// miscellaneous views
-		// note: console may be removed for (simulated) ePub modes
-		if( module instanceof HasConsole )
-			addMultiView(console);
+		addMultiView(console);
 		for (MultiView mvp : activeViews.getViews()) {
 			mvp.setModule(module);
 			mvp.reset(true);

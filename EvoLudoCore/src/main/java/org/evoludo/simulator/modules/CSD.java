@@ -36,7 +36,6 @@ import java.awt.Color;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
-import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasDistribution;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -94,7 +93,7 @@ public class CSD extends Continuous implements
 		HasPop2D.Strategy, HasPop3D.Strategy, HasPop2D.Fitness, HasPop3D.Fitness,
 		HasMean.Strategy, HasMean.Fitness, 
 		HasHistogram.Strategy, HasDistribution.Strategy, HasHistogram.Fitness, 
-		HasHistogram.Degree, HasConsole {
+		HasHistogram.Degree {
 
 	/**
 	 * Create a new instance of the module for continuous games.

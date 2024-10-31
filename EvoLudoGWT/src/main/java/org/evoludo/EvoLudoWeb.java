@@ -20,7 +20,6 @@ import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.Console;
 import org.evoludo.simulator.views.Distribution;
-import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasDistribution;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -985,7 +984,6 @@ public class EvoLudoWeb extends Composite
 		displayStatus(action + " pending. Waiting for engine to stop...");
 		displayStatusThresholdLevel = Level.ALL.intValue();
 		engine.requestAction(action.equals("Reset") ? PendingAction.RESET : PendingAction.INIT);
-		updateGUI();
 	}
 
 	/**
@@ -1218,9 +1216,9 @@ public class EvoLudoWeb extends Composite
 				// - changes in payoffs require rescaling of color maps
 				for (AbstractView view : activeViews.values())
 					view.reset(false);
+				updateGUI();
 			}
 		}
-		updateGUI();
 		setView(cloView.isSet() ? initialView : currentView);
 		if (!parsingSuccess) {
 			displayStatus("Problems parsing arguments - check log for details.", Level.WARNING.intValue() + 1);
@@ -1819,8 +1817,7 @@ public class EvoLudoWeb extends Composite
 		}
 		// miscellaneous views
 		// note: console may be removed for (simulated) ePub modes
-		if (module instanceof HasConsole)
-			addView(viewConsole, oldViews);
+		addView(viewConsole, oldViews);
 		// load all newly added views and update view selector
 		evoludoViews.clear();
 		for (AbstractView view : activeViews.values()) {

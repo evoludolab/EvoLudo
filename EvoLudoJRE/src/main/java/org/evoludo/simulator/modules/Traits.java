@@ -43,7 +43,6 @@ import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.PDERD.HasPDE;
 import org.evoludo.simulator.models.SDEEuler.HasSDE;
 import org.evoludo.simulator.models.SDEEulerN;
-import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
@@ -72,7 +71,7 @@ import org.evoludo.util.Formatter;
 public class Traits extends Discrete implements
 		HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy, HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness,
-		HasHistogram.Fitness, HasHistogram.Degree, HasConsole {
+		HasHistogram.Fitness, HasHistogram.Degree {
 	protected static final int PAYOFF_UNITY = 0;
 	protected static final int PAYOFF_CONST = 1;
 	protected static final int PAYOFF_MATRIX = 2;

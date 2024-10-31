@@ -36,7 +36,6 @@ import java.awt.Color;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
-import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasDistribution;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -56,7 +55,7 @@ import org.evoludo.simulator.views.HasPop3D;
  */
 public class CLabour extends Continuous implements HasIBS.MCPairs, HasPop2D.Strategy,
 		HasPop3D.Strategy, HasMean.Strategy, HasHistogram.Strategy, HasDistribution.Strategy, HasPop2D.Fitness,
-		HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree, HasConsole {
+		HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree {
 
 	// NOTE: in order to introduce a maximum total investment, this module needs to
 	// extend models to properly deal with constraints on mutations

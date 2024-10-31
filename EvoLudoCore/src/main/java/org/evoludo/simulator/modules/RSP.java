@@ -46,7 +46,6 @@ import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.PDERD.HasPDE;
 import org.evoludo.simulator.models.SDEEuler.HasSDE;
-import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
@@ -66,7 +65,7 @@ import org.evoludo.util.Formatter;
 public class RSP extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy, HasS3, HasPop2D.Fitness,
 		HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree,
-		HasHistogram.StatisticsStationary, HasConsole {
+		HasHistogram.StatisticsStationary {
 
 	/**
 	 * The trait (and index) value of the strategy 'rock'.

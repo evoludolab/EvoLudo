@@ -45,7 +45,6 @@ import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.PDERD.HasPDE;
 import org.evoludo.simulator.models.SDEEuler.HasSDE;
-import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
@@ -65,7 +64,7 @@ public class CDL extends Discrete implements
 		HasIBS.DGroups, HasODE, HasSDE, HasPDE, 
 		HasPop2D.Strategy, HasPop3D.Strategy, HasPop2D.Fitness, HasPop3D.Fitness,
 		HasMean.Strategy, HasMean.Fitness, HasS3, 
-		HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsStationary, HasConsole {
+		HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsStationary {
 
 	/**
 	 * The trait (and index) value of cooperators.
