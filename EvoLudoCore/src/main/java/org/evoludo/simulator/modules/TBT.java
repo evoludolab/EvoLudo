@@ -278,7 +278,7 @@ public class TBT extends Discrete implements Pairs,
 				 * {@inheritDoc}
 				 * <p>
 				 * Parse the payoff matrix for {@code 2×2} games. The argument must have
-				 * the form 'P,T;S,R' referring to the punishment, temptation, sucker's payoff
+				 * the form 'R,S;T,P' referring to the punishment, temptation, sucker's payoff
 				 * and reward, respectively.
 				 * <p>
 				 * Note '{@value CLOParser#VECTOR_DELIMITER}' separates entries in 1D arrays and

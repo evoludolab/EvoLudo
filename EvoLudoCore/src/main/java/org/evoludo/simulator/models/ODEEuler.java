@@ -94,11 +94,14 @@ public class ODEEuler extends Model implements Discrete {
 		 * <ul>
 		 * <li><code>{@link #avgScores(double[], int, double[])}</code>,
 		 * <li><code>{@link #avgScores(double[], int, double[], int)}</code>, or
-		 * <li>
-		 * {@link ODEEuler#getDerivatives(double, double[], double[], double[])}
 		 * </ul>
-		 * must be implemented in modules that advertise the model types
+		 * should be implemented in modules that advertise the model types
 		 * <code>ODE, SDE</code> or <code>PDE</code>.
+		 * <p>
+		 * Alternatively, the method
+		 * {@link ODEEuler#getDerivatives(double, double[], double[], double[])} may be
+		 * overridden in a subclass of {@code ODEEuler}, which may prevent calls to
+		 * {@code avgScores(...)} altogether.
 		 *
 		 * @param density   the frequency/density of each trait/strategy
 		 * @param n         the size of interaction groups
@@ -125,12 +128,16 @@ public class ODEEuler extends Model implements Discrete {
 		 * <ul>
 		 * <li><code>{@link #avgScores(double[], int, double[])}</code>,
 		 * <li><code>{@link #avgScores(double[], int, double[], int)}</code>, or
-		 * <li>
-		 * {@link ODEEuler#getDerivatives(double, double[], double[], double[])}
 		 * </ul>
-		 * must be implemented in modules that advertise the model types
+		 * should be implemented in modules that advertise the model types
 		 * <code>ODE, SDE</code> or <code>PDE</code>.
+		 * <p>
+		 * Alternatively, the method
+		 * {@link ODEEuler#getDerivatives(double, double[], double[], double[])} may be
+		 * overridden in a subclass of {@code ODEEuler}, which may prevent calls to
+		 * {@code avgScores(...)} altogether.
 		 *
+		 * 
 		 * @param density   the frequency/density of each trait/strategy
 		 * @param n         the size of interaction groups
 		 * @param avgscores the array for storing the average payoffs/scores for each
