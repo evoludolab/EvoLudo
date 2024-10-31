@@ -35,7 +35,7 @@ package org.evoludo.simulator.modules;
 import java.awt.Color;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Continuous.IBSMCPairs;
+import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasDistribution;
 import org.evoludo.simulator.views.HasHistogram;
@@ -54,7 +54,7 @@ import org.evoludo.simulator.views.HasPop3D;
  * diversification.</em> PLoS Comput. Biol. 17(2): e1008733. 
  * <a href='https://doi.org/10.1371/journal.pcbi.1008733'>doi: 10.1371/journal.pcbi.1008733</a>"
  */
-public class CLabour extends Continuous implements IBSMCPairs, HasPop2D.Strategy,
+public class CLabour extends Continuous implements HasIBS.MCPairs, HasPop2D.Strategy,
 		HasPop3D.Strategy, HasMean.Strategy, HasHistogram.Strategy, HasDistribution.Strategy, HasPop2D.Fitness,
 		HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree, HasConsole {
 

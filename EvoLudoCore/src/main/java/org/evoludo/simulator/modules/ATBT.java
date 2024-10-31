@@ -40,6 +40,7 @@ import org.evoludo.geom.Point2D;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
@@ -72,7 +73,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class ATBT extends TBT implements IBSD.IBSDPairs, HasODE, HasSDE, HasPDE,
+public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy, HasS3, HasPhase2D, HasPop2D.Fitness, HasPop3D.Fitness,
 		HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsStationary, HasConsole {
 

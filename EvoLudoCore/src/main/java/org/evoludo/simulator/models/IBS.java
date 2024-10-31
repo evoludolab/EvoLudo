@@ -6,6 +6,7 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.modules.Features;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
@@ -46,6 +47,264 @@ public abstract class IBS extends Model {
 		 */
 		public default Model createIBS() {
 			return null;
+		}
+
+		/**
+		 * Modules that offer individual based simulation models with discrete traits
+		 * and pairwise interactions must implement this interface.
+		 */
+		public interface DPairs extends IBS.HasIBS, Features.Pairs {
+
+			/**
+			 * Calculate and return total (accumulated) payoff/score for pairwise
+			 * interactions of the focal individual with trait/strategy {@code me}
+			 * against opponents with different traits/strategies. The respective numbers of
+			 * each of the {@code nTraits} opponent traits/strategies are provided in
+			 * the array {@code tCount}. The payoffs/scores for each of the
+			 * {@code nTraits} opponent traits/strategies must be stored and returned
+			 * in the array {@code tScore}.
+			 * <p>
+			 * <strong>Important:</strong> must be overridden and implemented in subclasses
+			 * that define game interactions between pairs of individuals
+			 * ({@code nGroup=2}, {@code pairwise=true}), otherwise see
+			 * {@link Groups#groupScores(int[], double[])}.
+			 * 
+			 * @param me         the trait index of the focal individual
+			 * @param traitCount number of opponents with each trait/strategy
+			 * @param traitScore array for returning the scores of each opponent
+			 *                   trait/strategy
+			 * @return score of focal individual {@code me} accumulated over all
+			 *         interactions
+			 */
+			public double pairScores(int me, int[] traitCount, double[] traitScore);
+
+			/**
+			 * Calculate the average payoff/score in a finite population with the number of
+			 * each trait/strategy provided in {@code count} for pairwise interactions.
+			 * The payoffs/scores for each of the {@code nTraits} traits/strategies
+			 * must be stored and returned in the array {@code traitScores}.
+			 * <p>
+			 * <strong>Important:</strong> must be overridden and implemented in subclasses
+			 * that define game interactions in well-mixed populations where individuals
+			 * interact with everyone else. Computationally it is not feasible to cover this
+			 * scenario with {@link #pairScores(int, int[], double[])} or
+			 * {@link Groups#groupScores(int[], double[])}, respectively.
+			 * <p>
+			 * <strong>Note:</strong> If explicit calculations of the well-mixed scores are
+			 * not available, interactions with everyone in well-mixed populations should
+			 * checked for and excluded with a warning in {@link #check()} (see
+			 * {@link org.evoludo.simulator.models.IBSMCPopulation#check() CXPopulation} for
+			 * an example).
+			 * 
+			 * @param traitCount number of individuals for each trait/strategy
+			 * @param traitScore array for returning the payoffs/scores of each
+			 *                   trait/strategy
+			 */
+			public void mixedScores(int[] traitCount, double[] traitScore);
+		}
+
+		/**
+		 * Modules that offer individual based simulation models with discrete traits
+		 * and interactions in groups must implement this interface.
+		 */
+		interface DGroups extends DPairs, Features.Groups {
+
+			/**
+			 * Calculate the payoff/score for interactions in groups consisting of
+			 * traits/strategies with respective numbers given in the array
+			 * {@code tCount}. The interaction group size is given by the sum over
+			 * {@code tCount[i]} for {@code i=0,1,...,nTraits}. The payoffs/scores
+			 * for each of the {@code nTraits} traits/strategies must be stored and
+			 * returned in the array {@code tScore}.
+			 * <p>
+			 * <strong>Important:</strong> must be overridden and implemented in subclasses
+			 * that define game interactions among groups of individuals (for groups with
+			 * sizes {@code nGroup&gt;2}, otherwise see
+			 * {@link #pairScores(int, int[], double[])}).
+			 * 
+			 * @param traitCount group composition given by the number of individuals with
+			 *                   each trait/strategy
+			 * @param traitScore array for returning the payoffs/scores of each
+			 *                   trait/strategy
+			 */
+			public void groupScores(int[] traitCount, double[] traitScore);
+
+			/**
+			 * Calculate the average payoff/score in a finite population with the number of
+			 * each trait/strategy provided in {@code count} for interaction groups of
+			 * size {@code n}. The payoffs/scores for each of the {@code nTraits}
+			 * traits/strategies must be stored and returned in the array
+			 * {@code traitScores}.
+			 * 
+			 * <h3>Notes:</h3>
+			 * For payoff calculations:
+			 * <ul>
+			 * <li>each strategy sees one less of its own type in its environment
+			 * <li>the size of the environment is {@code nPopulation-1}
+			 * <li>the fact that the payoff of each strategy does not depend on its own type
+			 * simplifies things
+			 * </ul>
+			 * If explicit calculations of the well-mixed scores are not available,
+			 * interactions with everyone in well-mixed populations should be checked for
+			 * and excluded with a warning in {@link #check()} (see
+			 * {@link org.evoludo.simulator.models.IBSMCPopulation#check() IBSMCPopulation}
+			 * for an example).
+			 * 
+			 * <h3>Important:</h3>
+			 * Must be overridden and implemented in subclasses that define game
+			 * interactions in well-mixed populations where individuals interact with
+			 * everyone else. Computationally it is not feasible to cover this scenario with
+			 * {@link #pairScores(int, int[], double[])} or
+			 * {@link #groupScores(int[], double[])}, respectively.
+			 * 
+			 * @param traitCount number of individuals for each trait/strategy
+			 * @param n          interaction group size
+			 * @param traitScore array for returning the payoffs/scores of each
+			 *                   trait/strategy
+			 */
+			public void mixedScores(int[] traitCount, int n, double[] traitScore);
+
+			@Override
+			public default void mixedScores(int[] traitCount, double[] traitScore) {
+				mixedScores(traitCount, 2, traitScore);
+			}
+		}
+
+		/**
+		 * Modules that offer individual based simulation models with continuous traits
+		 * and pairwise interactions must implement this interface.
+		 */
+		interface CPairs extends IBS.HasIBS, Features.Pairs {
+			/**
+			 * Calculate the payoff/score for modules with interactions in pairs and a
+			 * single continuous trait. The focal individual has trait {@code me} and the
+			 * traits of its {@code len} interaction partners are given in {@code group}.
+			 * The payoffs/scores for each of the {@code len} opponent
+			 * traits/strategies must be stored and returned in the array
+			 * {@code payoffs}.
+			 * 
+			 * <h3>Note:</h3> Only the first {@code len} entries in {@code group} are
+			 * guaranteed to exist and have meaningful values. The population structure may
+			 * restrict the size of the interaction group. {@code len&le;nGroup} always
+			 * holds.
+			 * 
+			 * <h3>Important:</h3> must be overridden and implemented in subclasses that
+			 * define game interactions between pairs of individuals
+			 * ({@code nGroup=2}, {@code pairwise=true}), otherwise see
+			 * {@link Groups#groupScores(double, double[], int, double[])}.
+			 * 
+			 * @param me           the trait of the focal individual
+			 * @param groupTraits  the traits of the group members
+			 * @param len          the number of memebrs in the group
+			 * @param groupPayoffs the array for returning the payoffs/scores for each group
+			 *                     member
+			 * @return the total (accumulated) payoff/score for the focal individual
+			 */
+			public double pairScores(double me, double[] groupTraits, int len, double[] groupPayoffs);
+		}
+
+		/**
+		 * Modules that offer individual based simulation models with continuous traits
+		 * and interactions in groups must implement this interface.
+		 */
+		interface CGroups extends CPairs, Features.Groups {
+
+			/**
+			 * Calculate the payoff/score for modules with interactions in groups and a
+			 * single continuous trait. The focal individual has trait {@code me} and the
+			 * traits of its {@code len} interaction partners are given in {@code group}.
+			 * The payoffs/scores for each of the {@code len} participants must be
+			 * stored and returned in the array {@code payoffs}.
+			 * 
+			 * <h3>Note:</h3> Only the first {@code len*nTraits} entries in {@code group}
+			 * are guaranteed to exist and have meaningful values. The population structure
+			 * may restrict the size of the interaction group. {@code len&le;nGroup} always
+			 * holds.
+			 * 
+			 * <h3>Important:</h3> Must be overridden and implemented in subclasses that
+			 * define game interactions among groups of individuals with multiple continuous
+			 * traits (for groups with sizes {@code nGroup&gt;2}, otherwise see
+			 * {@link #pairScores(double, double[], int, double[])}).
+			 * 
+			 * @param me           the trait of the focal individual
+			 * @param groupTraits  the traits of the group members
+			 * @param len          the number of members in the group
+			 * @param groupPayoffs the array for returning the payoffs/scores for each group
+			 *                     member
+			 * @return the payoff/score for the focal individual
+			 */
+			public double groupScores(double me, double[] groupTraits, int len, double[] groupPayoffs);
+		}
+
+		/**
+		 * Modules that offer individual based simulation models with multiple
+		 * continuous traits and pairwise interactions must implement this interface.
+		 */
+		interface MCPairs extends IBS.HasIBS, Features.Pairs {
+			/**
+			 * Calculate the payoff/score for modules with interactions in pairs and
+			 * multiple continuous traits. The focal individual has traits {@code me} and
+			 * the traits of its {@code len} interaction partners are given in
+			 * {@code group}. The traits they are arranged in the usual manner, i.e. first
+			 * all traits of the first group member then all traits by the second group
+			 * member etc. for a total of {@code len*nTraits} entries. The payoffs/scores
+			 * for each of the {@code len} opponent traits/strategies must be stored
+			 * and returned in the array {@code payoffs}.
+			 * 
+			 * <h3>Note:</h3> Only the first {@code len} entries in {@code group} are
+			 * guaranteed to exist and have meaningful values. The population structure may
+			 * restrict the size of the interaction group. {@code len&le;nGroup} always
+			 * holds.
+			 * 
+			 * <h3>Important:</h3> must be overridden and implemented in subclasses that
+			 * define game interactions between pairs of individuals
+			 * ({@code nGroup=2}, {@code pairwise=true}), otherwise see
+			 * {@link Groups#groupScores(double, double[], int, double[])}.
+			 * 
+			 * @param me           the trait of the focal individual
+			 * @param groupTraits  the traits of the group members
+			 * @param len          the number of memebrs in the group
+			 * @param groupPayoffs the array for returning the payoffs/scores for each group
+			 *                     member
+			 * @return the total (accumulated) payoff/score for the focal individual
+			 */
+			public double pairScores(double me[], double[] groupTraits, int len, double[] groupPayoffs);
+		}
+
+		/**
+		 * Modules that offer individual based simulation models with continuous traits
+		 * and interactions in groups must implement this interface.
+		 */
+		interface MCGroups extends CGroups {
+
+			/**
+			 * Calculate the payoff/score for modules with interactions in groups and
+			 * multiple single continuous traits. The focal individual has traits {@code me}
+			 * and the traits of its {@code len} interaction partners are given in
+			 * {@code group}. The traits they are arranged in the usual manner, i.e. first
+			 * all traits of the first group member then all traits by the second group
+			 * member etc. for a total of {@code len*nTraits} entries. The payoffs/scores
+			 * for each of the {@code len} participants must be stored and returned in
+			 * the array {@code payoffs}.
+			 * 
+			 * <h3>Note:</h3> Only the first {@code len*nTraits} entries in {@code group}
+			 * are guaranteed to exist and have meaningful values. The population structure
+			 * may restrict the size of the interaction group. {@code len&le;nGroup} always
+			 * holds.
+			 * 
+			 * <h3>Important:</h3> must be overridden and implemented in subclasses that
+			 * define game interactions among groups of individuals with multiple continuous
+			 * traits (for groups with sizes {@code nGroup&gt;2}, otherwise see
+			 * {@link #pairScores(double[], double[], int, double[])}).
+			 * 
+			 * @param me      the traits of the focal individual
+			 * @param group   the traits of the group members
+			 * @param len     the number of memebrs in the group
+			 * @param payoffs the array for returning the payoffs/scores for each group
+			 *                member
+			 * @return the payoff/score for the focal individual
+			 */
+			public double groupScores(double me[], double[] group, int len, double[] payoffs);
 		}
 	}
 

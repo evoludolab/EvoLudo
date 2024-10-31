@@ -38,6 +38,7 @@ import java.util.List;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSC.Init;
 import org.evoludo.simulator.modules.Continuous;
@@ -76,18 +77,18 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * {@code null} otherwise. Convenience field to reduce the number of
 	 * (unnecessary) casts.
 	 * 
-	 * @see Continuous.IBSMCPairs
+	 * @see HasIBS.MCPairs
 	 */
-	protected Continuous.IBSMCPairs pairmodule;
+	protected HasIBS.MCPairs pairmodule;
 
 	/**
 	 * For group interaction modules {@code module==groupmodule} holds and
 	 * {@code null} otherwise. Convenience field to reduce the number of
 	 * (unnecessary) casts.
 	 * 
-	 * @see Continuous.IBSMCGroups
+	 * @see HasIBS.MCGroups
 	 */
-	protected Continuous.IBSMCGroups groupmodule;
+	protected HasIBS.MCGroups groupmodule;
 
 	/**
 	 * The interaction partner/opponent of this population
@@ -778,12 +779,12 @@ public class IBSMCPopulation extends IBSPopulation {
 			groupmodule = null;
 		} else {
 			if (module.isPairwise()) {
-				pairmodule = (Continuous.IBSMCPairs) module;
+				pairmodule = (HasIBS.MCPairs) module;
 				groupmodule = null;
 			} else {
 				pairmodule = null;
 				// module may be just be Continuous...
-				groupmodule = (module instanceof Continuous.IBSMCGroups ? (Continuous.IBSMCGroups) module : null);
+				groupmodule = (module instanceof HasIBS.MCGroups ? (HasIBS.MCGroups) module : null);
 			}
 		}
 		// IBSMCPopulation opponent shadows IBSPopulation opponent to save casts

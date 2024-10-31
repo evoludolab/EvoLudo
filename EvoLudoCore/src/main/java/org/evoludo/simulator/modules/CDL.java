@@ -38,6 +38,7 @@ import java.util.Arrays;
 
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
@@ -61,7 +62,7 @@ import org.evoludo.util.Formatter;
  * @author Christoph Hauert
  */
 public class CDL extends Discrete implements 
-		IBSD.IBSDGroups, HasODE, HasSDE, HasPDE, 
+		HasIBS.DGroups, HasODE, HasSDE, HasPDE, 
 		HasPop2D.Strategy, HasPop3D.Strategy, HasPop2D.Fitness, HasPop3D.Fitness,
 		HasMean.Strategy, HasMean.Fitness, HasS3, 
 		HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsStationary, HasConsole {

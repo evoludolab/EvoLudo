@@ -41,6 +41,7 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.modules.Discrete;
@@ -76,18 +77,18 @@ public class IBSDPopulation extends IBSPopulation {
 	 * {@code null} otherwise. Convenience field to reduce the number of
 	 * (unnecessary) casts.
 	 * 
-	 * @see IBSD.IBSDPairs
+	 * @see HasIBS.DPairs
 	 */
-	protected IBSD.IBSDPairs pairmodule;
+	protected HasIBS.DPairs pairmodule;
 
 	/**
 	 * For group interaction modules {@code module==groupmodule} holds and
 	 * {@code null} otherwise. Convenience field to reduce the number of
 	 * (unnecessary) casts.
 	 * 
-	 * @see IBSD.IBSDGroups
+	 * @see HasIBS.DGroups
 	 */
-	protected IBSD.IBSDGroups groupmodule;
+	protected HasIBS.DGroups groupmodule;
 
 	/**
 	 * The interaction partner/opponent of this population
@@ -1803,12 +1804,12 @@ public class IBSDPopulation extends IBSPopulation {
 		boolean doReset = super.check();
 		// pairwise and group interactions may have changed
 		if (module.isPairwise()) {
-			pairmodule = (IBSD.IBSDPairs) module;
+			pairmodule = (HasIBS.DPairs) module;
 			groupmodule = null;
 		} else {
 			pairmodule = null;
 			// module may be just be Discrete...
-			groupmodule = (module instanceof IBSD.IBSDGroups ? (IBSD.IBSDGroups) module : null);
+			groupmodule = (module instanceof HasIBS.DGroups ? (HasIBS.DGroups) module : null);
 		}
 		// IBSDPopulation opponent shadows IBSPopulation opponent to save casts
 		// important: now all modules/populations have been loaded (load() is too early)

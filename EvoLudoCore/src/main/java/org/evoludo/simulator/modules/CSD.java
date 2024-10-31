@@ -35,7 +35,7 @@ package org.evoludo.simulator.modules;
 import java.awt.Color;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Continuous.IBSCPairs;
+import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasDistribution;
 import org.evoludo.simulator.views.HasHistogram;
@@ -90,7 +90,7 @@ import org.evoludo.simulator.views.HasPop3D;
  * @see TBT
  */
 public class CSD extends Continuous implements 
-		IBSCPairs, 
+		HasIBS.CPairs, 
 		HasPop2D.Strategy, HasPop3D.Strategy, HasPop2D.Fitness, HasPop3D.Fitness,
 		HasMean.Strategy, HasMean.Fitness, 
 		HasHistogram.Strategy, HasDistribution.Strategy, HasHistogram.Fitness, 
