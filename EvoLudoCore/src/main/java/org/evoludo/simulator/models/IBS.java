@@ -315,6 +315,8 @@ public abstract class IBS extends Model {
 
 	@Override
 	public boolean permitsSampleStatistics() {
+		if (species == null)
+			return false;
 		for (Module mod : species) {
 			if (mod.getMutation().probability > 0.0 || !(mod instanceof HasHistogram.StatisticsProbability
 					|| mod instanceof HasHistogram.StatisticsTime))
@@ -325,6 +327,8 @@ public abstract class IBS extends Model {
 
 	@Override
 	public boolean permitsUpdateStatistics() {
+		if (species == null)
+			return false;
 		for (Module mod : species) {
 			if (!(mod instanceof HasHistogram.StatisticsStationary))
 				return false;
