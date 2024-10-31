@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.IBS;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -53,7 +54,7 @@ public abstract class Continuous extends Module {
 	 * Modules that offer individual based simulation models with continuous traits
 	 * and pairwise interactions must implement this interface.
 	 */
-	public interface IBSCPairs extends HasIBS, Pairs {
+	public interface IBSCPairs extends IBS.HasIBS, Pairs {
 		/**
 		 * Calculate the payoff/score for modules with interactions in pairs and a
 		 * single continuous trait. The focal individual has trait {@code me} and the
@@ -119,7 +120,7 @@ public abstract class Continuous extends Module {
 	 * Modules that offer individual based simulation models with multiple
 	 * continuous traits and pairwise interactions must implement this interface.
 	 */
-	public interface IBSMCPairs extends HasIBS, Pairs {
+	public interface IBSMCPairs extends IBS.HasIBS, Pairs {
 		/**
 		 * Calculate the payoff/score for modules with interactions in pairs and
 		 * multiple continuous traits. The focal individual has traits {@code me} and

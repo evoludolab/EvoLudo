@@ -37,7 +37,7 @@ package org.evoludo.simulator.modules;
  * 
  * @author Christoph Hauert
  */
-interface Features {
+public interface Features {
 
 	/**
 	 * Returns whether payoffs/fitness are static ({@code false} by default).

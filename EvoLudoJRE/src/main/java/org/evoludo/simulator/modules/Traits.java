@@ -37,12 +37,12 @@ import java.io.PrintStream;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.PDERD.HasPDE;
 import org.evoludo.simulator.models.SDEEuler.HasSDE;
 import org.evoludo.simulator.models.SDEEulerN;
-import org.evoludo.simulator.modules.Discrete.IBSDPairs;
 import org.evoludo.simulator.views.HasConsole;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -70,7 +70,7 @@ import org.evoludo.util.Formatter;
  * @author Christoph Hauert
  */
 public class Traits extends Discrete implements
-		IBSDPairs, HasODE, HasSDE, HasPDE,
+		IBSD.IBSDPairs, HasODE, HasSDE, HasPDE,
 		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy, HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness,
 		HasHistogram.Fitness, HasHistogram.Degree, HasConsole {
 	protected static final int PAYOFF_UNITY = 0;

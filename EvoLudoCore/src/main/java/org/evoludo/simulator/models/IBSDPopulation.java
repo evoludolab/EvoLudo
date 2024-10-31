@@ -76,18 +76,18 @@ public class IBSDPopulation extends IBSPopulation {
 	 * {@code null} otherwise. Convenience field to reduce the number of
 	 * (unnecessary) casts.
 	 * 
-	 * @see Discrete.IBSDPairs
+	 * @see IBSD.IBSDPairs
 	 */
-	protected Discrete.IBSDPairs pairmodule;
+	protected IBSD.IBSDPairs pairmodule;
 
 	/**
 	 * For group interaction modules {@code module==groupmodule} holds and
 	 * {@code null} otherwise. Convenience field to reduce the number of
 	 * (unnecessary) casts.
 	 * 
-	 * @see Discrete.IBSDGroups
+	 * @see IBSD.IBSDGroups
 	 */
-	protected Discrete.IBSDGroups groupmodule;
+	protected IBSD.IBSDGroups groupmodule;
 
 	/**
 	 * The interaction partner/opponent of this population
@@ -1803,12 +1803,12 @@ public class IBSDPopulation extends IBSPopulation {
 		boolean doReset = super.check();
 		// pairwise and group interactions may have changed
 		if (module.isPairwise()) {
-			pairmodule = (Discrete.IBSDPairs) module;
+			pairmodule = (IBSD.IBSDPairs) module;
 			groupmodule = null;
 		} else {
 			pairmodule = null;
 			// module may be just be Discrete...
-			groupmodule = (module instanceof Discrete.IBSDGroups ? (Discrete.IBSDGroups) module : null);
+			groupmodule = (module instanceof IBSD.IBSDGroups ? (IBSD.IBSDGroups) module : null);
 		}
 		// IBSDPopulation opponent shadows IBSPopulation opponent to save casts
 		// important: now all modules/populations have been loaded (load() is too early)

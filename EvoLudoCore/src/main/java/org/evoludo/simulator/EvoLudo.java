@@ -48,6 +48,7 @@ import org.evoludo.math.MersenneTwister;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
+import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSC;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSPopulation;
@@ -71,7 +72,6 @@ import org.evoludo.simulator.modules.CSD;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
-import org.evoludo.simulator.modules.Module.HasIBS;
 import org.evoludo.simulator.modules.Moran;
 import org.evoludo.simulator.modules.RSP;
 import org.evoludo.simulator.modules.TBT;
@@ -316,8 +316,8 @@ public abstract class EvoLudo
 	 * @return the IBS model for <code>module</code>
 	 */
 	public Model createIBS(Module module) {
-		if (module instanceof HasIBS) {
-			Model model = ((HasIBS) module).createIBS();
+		if (module instanceof IBS.HasIBS) {
+			Model model = ((IBS.HasIBS) module).createIBS();
 			if (model != null)
 				return model;
 		}

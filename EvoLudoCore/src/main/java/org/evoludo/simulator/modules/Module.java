@@ -71,29 +71,6 @@ import org.evoludo.util.Formatter;
 public abstract class Module implements Features, MilestoneListener, CLOProvider, Runnable {
 
 	/**
-	 * Modules that offer individual based simulation models must implement this
-	 * interface.
-	 */
-	public interface HasIBS {
-
-		/**
-		 * Provides opportunity for module to supply custom implementation of individual
-		 * based simulations, IBS.
-		 * <p>
-		 * <strong>Important:</strong> if the custom IBS implementation involves random
-		 * numbers, the shared random number generator must be used for reproducibility.
-		 * 
-		 * @return the custom implementation of the IBS or <code>null</code> to use the
-		 *         default
-		 * 
-		 * @see EvoLudo#getRNG()
-		 */
-		public default Model createIBS() {
-			return null;
-		}
-	}
-
-	/**
 	 * The name of the species. Mainly used in multi-species modules.
 	 */
 	protected String name;
@@ -387,7 +364,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 */
 	public Type[] getModelTypes() {
 		ArrayList<Type> types = new ArrayList<>();
-		if (this instanceof HasIBS)
+		if (this instanceof IBS.HasIBS)
 			types.add(Type.IBS);
 		if (this instanceof HasODE)
 			types.add(Type.ODE);
