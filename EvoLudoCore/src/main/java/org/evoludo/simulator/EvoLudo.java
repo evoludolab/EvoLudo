@@ -1034,8 +1034,6 @@ public abstract class EvoLudo
 	@Override
 	public void modelStopped() {
 		isRunning = false;
-		if (pendingAction == PendingAction.SNAPSHOT)
-			_fireModelChanged();
 	}
 
 	@Override
@@ -1065,15 +1063,27 @@ public abstract class EvoLudo
 	protected PendingAction pendingAction = PendingAction.NONE;
 
 	/**
-	 * Requests a {@link PendingAction} to be performed on the next opportunity.
+	 * Requests a {@link PendingAction} to be processed on the next opportunity. If
+	 * model is not running the action is processed immediately.
 	 * 
 	 * @param action the action requested
 	 */
 	public synchronized void requestAction(PendingAction action) {
+		requestAction(action, !isRunning);
+	}
+
+	/**
+	 * Requests a {@link PendingAction} to be processed on the next opportunity. If
+	 * model is not running or {@code now} is set to {@code true} the action is
+	 * processed immediately.
+	 * 
+	 * @param action the action requested
+	 * @param now    <code>true</code> to processes action immediately
+	 */
+	public synchronized void requestAction(PendingAction action, boolean now) {
 		pendingAction = action;
-		// if model is not running and not re-parsing of CLOs, process request
-		// immediately
-		if (!isRunning && !pendingAction.equals(PendingAction.CLO)) {
+		// if requested and not re-parsing of CLOs, process request immediately
+		if (now && !pendingAction.equals(PendingAction.CLO)) {
 			_fireModelChanged();
 		}
 	}
@@ -1201,7 +1211,6 @@ public abstract class EvoLudo
 		switch (pendingAction) {
 			case NONE:
 			case APPLY:
-			case SNAPSHOT:
 			case STATISTIC:
 				for (ChangeListener i : changeListeners)
 					i.modelChanged(pendingAction);
@@ -1217,8 +1226,8 @@ public abstract class EvoLudo
 					break;
 				}
 				//$FALL-THROUGH$
-			case STOP:
-				// stop requested (as opposed to simulations that stopped)
+			case SNAPSHOT:	// snapshot requested
+			case STOP:		// stop requested (as opposed to simulations that stopped)	
 				runFired = false;
 				for (MilestoneListener i : milestoneListeners)
 					i.modelStopped();
@@ -1248,6 +1257,7 @@ public abstract class EvoLudo
 			default:
 				// note: CLO re-parsing requests are handled separately, see parseCLO()
 				// case CLO:
+				// case SNAPSHOT: ignore, handled in EvoLudoWeb.modelChanged()
 		}
 		pendingAction = PendingAction.NONE;
 	}

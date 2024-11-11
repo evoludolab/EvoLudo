@@ -35,8 +35,8 @@ package org.evoludo.simulator;
 import org.evoludo.graphics.Network2DGWT;
 import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.math.ArrayMath;
+import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
-import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.PDERD;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.PDESupervisorGWT;
@@ -139,27 +139,34 @@ public class EvoLudoGWT extends EvoLudo {
 		}
 		if (snapshotAt > 0.0) {
 			delay = 1;
-			if (activeModel.getMode() == Mode.STATISTICS_SAMPLE || snapshotAt > activeModel.getTimeStep()) {
-				run();
-				return;
+			switch (activeModel.getMode()) {
+				case STATISTICS_SAMPLE:
+					activeModel.setNSamples((int) (snapshotAt + 0.5));
+					run();
+					return;
+				case STATISTICS_UPDATE:
+				case DYNAMICS:
+					activeModel.setTimeStop(snapshotAt);
+					if (snapshotAt < activeModel.getTimeStep()) {
+						activeModel.setTimeStep(snapshotAt);
+						activeModel.next();
+						break;
+					}
+					run();
+					return;
+				default:
+					throw new Error("layoutComplete(): unknown mode...");
 			}
-			// clear isSuspended otherwise the engine starts running
-			isSuspended = false;
-			activeModel.setTimeStep(snapshotAt);
-			next();
-			// pretend to be running, otherwise the snapshot request
-			// will be honoured before the engine had a chance to process
-			// the deferred step.
-			isRunning = true;
 		}
-		requestAction(PendingAction.SNAPSHOT);
+		for (ChangeListener i : changeListeners)
+			i.modelChanged(PendingAction.SNAPSHOT);
 	}
 
 	@Override
 	public void run() {
 		isSuspended = false;
 		// start with an update not the delay
-		next();
+		modelNext();
 		isRunning = true;
 		timer.scheduleRepeating(delay);
 	}
@@ -170,13 +177,7 @@ public class EvoLudoGWT extends EvoLudo {
 	Timer timer = new Timer() {
 		@Override
 		public void run() {
-			double timeStep = activeModel.getTimeStep();
-			if (Math.abs(activeModel.getTime() + timeStep - snapshotAt) < timeStep)
-				requestAction(PendingAction.SNAPSHOT);
-			if (isRunning && !modelNext() && (activeModel.getMode() == Mode.DYNAMICS && snapshotAt > activeModel.getTime()))
-				// population absorbed before time for snapshot - do it now
-				requestAction(PendingAction.SNAPSHOT);
-			if (!isRunning)
+			if (!modelNext())
 				timer.cancel();
 		}
 	};
@@ -185,25 +186,17 @@ public class EvoLudoGWT extends EvoLudo {
 	public void next() {
 		switch (activeModel.getMode()) {
 			case STATISTICS_SAMPLE:
-				// MODE_STATISTICS: non-blocking way for running an arbitrary number of update
+				// non-blocking way for running an arbitrary number of update
 				// steps to obtain one sample
+				if (activeModel.getNStatisticsSamples() == activeModel.getNSamples()) {
+					requestAction(PendingAction.SNAPSHOT, true);
+					break;
+				}
 				scheduleSample();
-				int samples = activeModel.getNStatisticsSamples();
-				if (isRunning && Math.abs(samples - snapshotAt) < 1.0) {
-					// process request at once - if desired, resume execution after
-					// snapshot was taken.
-					isRunning = false;
-					requestAction(PendingAction.SNAPSHOT);
-					// stop repeating command
-				}
-				if ((samples + 1) == activeModel.getNSamples()) {
-					isRunning = false;
-					requestAction(PendingAction.STOP);
-				}
 				break;
 			case STATISTICS_UPDATE:
 			case DYNAMICS:
-				// MODE_DYNAMICS: update single step
+				// schedule single step
 				scheduleStep();
 				break;
 			default:
@@ -257,6 +250,37 @@ public class EvoLudoGWT extends EvoLudo {
 		isRunning = false;
 		timer.cancel();
 		super.moduleUnloaded();
+	}
+
+	@Override
+	public void modelStopped() {
+		super.modelStopped();
+		if (pendingAction != PendingAction.NONE && pendingAction != PendingAction.SNAPSHOT)
+			return;
+		// model stopped because of convergence (not user request)
+		// check if snapshot requested:
+		// - for sample statistics: after snapshotAt samples
+		// - for update statistics: after snapshotAt time units
+		// - for dynamics: after snapshotAt time units or if converged
+		switch (activeModel.getMode()) {
+			case STATISTICS_SAMPLE:
+				if (Math.abs(activeModel.getNStatisticsSamples() - snapshotAt) >= 1.0)
+					return;
+				break;
+			case DYNAMICS:
+				if (activeModel.hasConverged() && snapshotAt > activeModel.getTime())
+					break;
+				//$FALL-THROUGH$
+			case STATISTICS_UPDATE:
+				double timeStep = activeModel.getTimeStep();
+				if (Math.abs(activeModel.getTime() + timeStep - snapshotAt) > timeStep)
+					return;
+				break;
+			default:
+				throw new Error("modelStopped(): unknown mode...");
+		}
+		for (ChangeListener i : changeListeners)
+			i.modelChanged(PendingAction.SNAPSHOT);
 	}
 
 	@Override
