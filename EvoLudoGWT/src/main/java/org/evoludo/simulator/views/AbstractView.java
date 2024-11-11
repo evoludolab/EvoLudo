@@ -218,13 +218,13 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		for (AbstractGraph<?> graph : graphs)
 			graph.activate();
 		update(true);
-		layoutComplete();
 		if (!setMode(getMode())) {
 			// this is should not happen because view should not be available
 			// if mode is not supported, see EvoLudoWeb#updateViews()
 			for (AbstractGraph<?> graph : graphs)
 				graph.displayMessage("Mode '" + getMode() + "'' not supported");
 		}
+		layoutComplete();
 	}
 
 	/**

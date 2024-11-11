@@ -807,10 +807,6 @@ public class EvoLudoWeb extends Composite
 				@Override
 				public void execute() {
 					activeView.activate();
-					// initial view has layout and is active resume running
-					// otherwise wait until layout is complete
-					if (activeView.hasLayout() && engine.isSuspended())
-						engine.run();
 				}
 			});
 		}

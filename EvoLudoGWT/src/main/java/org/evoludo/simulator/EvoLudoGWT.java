@@ -173,7 +173,7 @@ public class EvoLudoGWT extends EvoLudo {
 			double timeStep = activeModel.getTimeStep();
 			if (Math.abs(activeModel.getTime() + timeStep - snapshotAt) < timeStep)
 				requestAction(PendingAction.SNAPSHOT);
-			if (isRunning && !modelNext() && snapshotAt > activeModel.getTime())
+			if (isRunning && !modelNext() && (activeModel.getMode() == Mode.DYNAMICS && snapshotAt > activeModel.getTime()))
 				// population absorbed before time for snapshot - do it now
 				requestAction(PendingAction.SNAPSHOT);
 			if (!isRunning)
