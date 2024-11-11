@@ -597,7 +597,8 @@ public class EvoLudoWeb extends Composite
 				applyCLO();
 				break;
 			case SNAPSHOT:
-				engine.setSuspended(true);
+				if (engine.isRunning())
+					engine.setSuspended(true);
 				// make sure GUI is in stopped state before taking the snapshot
 				updateGUI();
 				snapshotReady();
