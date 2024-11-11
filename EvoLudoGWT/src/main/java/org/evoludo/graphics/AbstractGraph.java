@@ -138,6 +138,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		public Logger getLogger();
 
 		/**
+		 * Notifies the controller of the completion of the layouting process.
+		 */
+		public void layoutComplete();
+
+		/**
 		 * Checks if the controller is busy running calculations.
 		 * 
 		 * @return {@code true} if calculations are running

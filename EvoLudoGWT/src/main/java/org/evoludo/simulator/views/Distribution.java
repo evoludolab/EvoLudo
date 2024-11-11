@@ -115,11 +115,6 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 	}
 
 	@Override
-	public void layoutComplete() {
-		// not needed - no network layouts
-	}
-
-	@Override
 	public void clear() {
 		for (PopGraph2D graph : graphs)
 			graph.clearGraph();

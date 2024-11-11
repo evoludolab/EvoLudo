@@ -56,11 +56,6 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	public interface PopGraphController extends Controller {
 
 		/**
-		 * Notifies the controller of the completion of the layouting process.
-		 */
-		public void layoutComplete();
-
-		/**
 		 * Notifies the controller that the mouse/tap has hit node with index
 		 * {@code node} on the graph with the tag {@code id}.
 		 * 
@@ -176,7 +171,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	public void onResize() {
 		super.onResize();
 		if (hasMessage)
-			((PopGraphController) controller).layoutComplete();
+			controller.layoutComplete();
 	}
 
 	/**
@@ -270,7 +265,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 				public void execute() {
 					if (hasStaticLayout()) {
 						drawLattice();
-						((PopGraphController) controller).layoutComplete();
+						controller.layoutComplete();
 					}
 					else
 						layoutNetwork();
@@ -322,7 +317,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		calcBounds();
 		invalidated = true;
 		if (hasMessage)
-			((PopGraphController) controller).layoutComplete();
+			controller.layoutComplete();
 	}
 
 	@Override
@@ -339,7 +334,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	public synchronized void layoutComplete() {
 		clearMessage();
 		layoutNetwork();
-		((PopGraphController) controller).layoutComplete();
+		controller.layoutComplete();
 	}
 
 	/**

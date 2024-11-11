@@ -217,7 +217,8 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		isActive = true;
 		for (AbstractGraph<?> graph : graphs)
 			graph.activate();
-		scheduleUpdate(true);
+		update(true);
+		layoutComplete();
 		if (!setMode(getMode())) {
 			// this is should not happen because view should not be available
 			// if mode is not supported, see EvoLudoWeb#updateViews()
@@ -255,6 +256,15 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		return true;
 	}
 
+	@Override
+	public void layoutComplete() {
+		// some views (currently only networks) may require more involved layouting and
+		// report completion once done.
+		if (!hasLayout())
+			return;
+		engine.layoutComplete();
+	}
+
 	/**
 	 * Get the mode of this view. The graphical visualizations can request different
 	 * modes for running the model. The default mode is {@link Mode#DYNAMICS} to
@@ -282,6 +292,8 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		// if no module specified there is no model either
 		if (model == null)
 			return false;
+		if (model.getMode() == mode)
+			return true;
 		return model.requestMode(mode);
 	}
 
