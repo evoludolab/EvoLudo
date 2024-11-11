@@ -615,6 +615,8 @@ public class EvoLudoGWT extends EvoLudo {
 						return true;
 					}
 					snapshotAt = 0.0;
+					if (arg.isEmpty())
+						return true;
 					int[] args = CLOParser.parseIntVector(arg);
 					switch (args.length) {
 						case 0:
