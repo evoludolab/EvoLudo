@@ -1208,16 +1208,18 @@ public abstract class EvoLudo
 	 * @see PendingAction
 	 */
 	private void _fireModelChanged() {
-		switch (pendingAction) {
+		PendingAction action = pendingAction;
+		pendingAction = PendingAction.NONE;
+		switch (action) {
 			case NONE:
 			case APPLY:
 			case STATISTIC:
 				for (ChangeListener i : changeListeners)
-					i.modelChanged(pendingAction);
+					i.modelChanged(action);
 				break;
 			case MODE:
-				Mode mode = pendingAction.mode;
-				if (!activeModel.setMode(pendingAction.mode)) {
+				Mode mode = action.mode;
+				if (!activeModel.setMode(mode)) {
 					// continue running if mode unchanged
 					if (isRunning && mode == Mode.STATISTICS_SAMPLE) {
 						for (ChangeListener i : changeListeners)
@@ -1252,14 +1254,12 @@ public abstract class EvoLudo
 				break;
 			case UNLOAD:
 				unloadModule();
-				pendingAction = PendingAction.NONE;
-				return;
+				break;
 			default:
 				// note: CLO re-parsing requests are handled separately, see parseCLO()
 				// case CLO:
 				// case SNAPSHOT: ignore, handled in EvoLudoWeb.modelChanged()
 		}
-		pendingAction = PendingAction.NONE;
 	}
 
 	/**
