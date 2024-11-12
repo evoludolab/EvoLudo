@@ -1889,13 +1889,8 @@ public class IBSDPopulation extends IBSPopulation {
 	@Override
 	public void init() {
 		super.init();
-		Model model = engine.getModel();
-		Init.Type myType = init.type;
-		if (model.getMode() == Mode.STATISTICS_SAMPLE)
-			myType = Init.Type.STATISTICS;
-
 		Arrays.fill(strategiesTypeCount, 0);
-		switch (myType) {
+		switch (init.type) {
 			case STRIPES:
 				initStripes();
 				break;
@@ -1913,16 +1908,18 @@ public class IBSDPopulation extends IBSPopulation {
 				initMono();
 				break;
 
-			case STATISTICS:
-				initStatistics();
-				break;
-
 			case MUTANT:
-				initMutant();
+				FixationData fix = engine.getModel().getFixationData();
+				fix.mutantNode = initMutant();
+				fix.mutantTrait = strategies[fix.mutantNode];
+				fix.residentTrait = (int) init.args[1];
 				break;
 
 			case TEMPERATURE:
-				initTemperature();
+				fix = engine.getModel().getFixationData();
+				fix.mutantNode = initTemperature();
+				fix.mutantTrait = strategies[fix.mutantNode];
+				fix.residentTrait = (int) init.args[1];
 				break;
 
 			case KALEIDOSCOPE:
@@ -2060,28 +2057,6 @@ public class IBSDPopulation extends IBSPopulation {
 			strategiesTypeCount[monoType] = nMono;
 			strategiesTypeCount[VACANT] = nPopulation - nMono;
 		}
-	}
-
-	/**
-	 * Initial configuration for generating a statistics sample.
-	 * 
-	 * @see IBSD.Init.Type#STATISTICS
-	 */
-	protected void initStatistics() {
-		FixationData fix = engine.getModel().getFixationData();
-		switch (init.type) {
-			case MUTANT:
-				fix.mutantNode = initMutant();
-				break;
-			case TEMPERATURE:
-				fix.mutantNode = initTemperature();
-				break;
-			default:
-				throw new Error("invalid init type (" + init + ") for statistics.");
-		}
-		fix.mutantTrait = strategies[fix.mutantNode];
-		// this assumes InitType.MUTANT
-		fix.residentTrait = (int) init.args[1];
 	}
 
 	/**

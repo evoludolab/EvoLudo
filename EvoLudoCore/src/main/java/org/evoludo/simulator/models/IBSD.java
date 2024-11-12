@@ -359,15 +359,7 @@ public class IBSD extends IBS implements Discrete {
 			/**
 			 * Stripes of different traits. Requires square lattice geometry.
 			 */
-			STRIPES("stripes", "stripes of traits"),
-
-			/**
-			 * Initialization for statistics. Same as {@link #MUTANT} plus bookkeeping for
-			 * statistics. Convenience type for statistics mode. Not user selectable.
-			 * 
-			 * @see #MUTANT
-			 */
-			STATISTICS("-stat", "convenience type for statistics mode");
+			STRIPES("stripes", "stripes of traits");
 
 			/**
 			 * Key of initialization type. Used when parsing command line options.
