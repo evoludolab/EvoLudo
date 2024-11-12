@@ -198,7 +198,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	 * The data array backing the histogram. This may be shared by multiple
 	 * {@code HistoGraph}s, each accessing a different row in the array.
 	 */
-	protected double[][] data;
+	double[][] data;
 
 	/**
 	 * The index of the data row.
@@ -208,32 +208,39 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	/**
 	 * The message to display if no histogram is available.
 	 */
-	protected String message;
+	String message;
 
 	/**
 	 * The flag to indicate whether the data is normalized.
 	 */
-	protected boolean isNormalized = true;
+	private boolean isNormalized = true;
 
 	/**
 	 * The index of the data row used for normalization.
 	 */
-	protected int normIdx = -1;
+	private int normIdx = -1;
 
 	/**
 	 * The number of samples in the histogram.
 	 */
-	protected double nSamples;
+	double nSamples;
 
 	/**
-	 * The maximum bin index.
+	 * The number of bins.
+	 * 
+	 * @evoludo.impl The number of bins needs to be even for doubling the range of
+	 *               the histogram.
+	 * 
+	 * @see #doubleMinRange()
+	 * @see #doubleMaxRange()
 	 */
-	int maxBinIdx;
+	int nBins;
 
 	/**
 	 * The maximum number of bins for the histogram.
 	 */
 	public static final int MAX_BINS = 100;
+	public static final int MIN_BIN_WIDTH = 1;
 
 	/**
 	 * Create new histogram graph for <code>module</code> running in
@@ -249,6 +256,16 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		this.row = row;
 		setStylePrimaryName("evoludo-HistoGraph");
 		setTooltipProvider(this);
+	}
+
+	/**
+	 * Calculate the maximum number of bins for the histogram with a width of at
+	 * least {@code MIN_BIN_WIDTH}.
+	 * 
+	 * @return the maximum number of bins
+	 */
+	public int getMaxBins() {
+		return (int) (bounds.getWidth() / (MIN_BIN_WIDTH + 1));
 	}
 
 	/**
@@ -346,9 +363,9 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	public void setData(double[][] data) {
 		this.data = data;
 		if (data != null && data.length > 0 && data[0] != null)
-			maxBinIdx = data[0].length - 1;
+			nBins = data[0].length;
 		else
-			maxBinIdx = -1;
+			nBins = -1;
 	}
 
 	/**
@@ -365,8 +382,8 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		nSamples++;
 		if (data == null || bin < 0)
 			return;
-		if (bin > maxBinIdx)
-			bin = maxBinIdx;
+		if (bin >= nBins)
+			bin = nBins - 1;
 		data[row][bin]++;
 		if (normIdx >= 0)
 			data[normIdx][bin]++;
@@ -439,7 +456,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	 */
 	private void doubleMinRange() {
 		double[] bins = data[row];
-		int nBins = bins.length;
 		int nBins2 = nBins / 2;
 		for (int i = 0; i < nBins2; i++) {
 			int i2 = nBins - 1 - i - i;
@@ -455,7 +471,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	 */
 	private void doubleMaxRange() {
 		double[] bins = data[row];
-		int nBins = bins.length;
 		int nBins2 = nBins / 2;
 		for (int i = 0; i < nBins2; i++) {
 			int i2 = i + i;
@@ -551,7 +566,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		int yLevels = 4;
 		double[] myData = data[row];
 		double[] norm = null;
-		int nBins = myData.length;
 		if (style.autoscaleY) {
 			// Note: autoscaling is pretty slow - could be avoided by checks when adding new
 			// data points; increasing
@@ -639,7 +653,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	 * Draw the marked bins.
 	 */
 	protected void drawMarkers() {
-		int nBins = data[row].length;
 		double barwidth = bounds.getWidth() / nBins;
 		double h = bounds.getHeight();
 		int nMarkers = binmarkers.size();
@@ -661,7 +674,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	protected boolean calcBounds() {
 		if (!super.calcBounds() || data == null)
 			return false;
-		int nBins = data[row].length;
 		double w = bounds.getWidth();
 		int barwidth = (int) ((w - 2) / nBins);
 		if (barwidth <= 0)
@@ -685,7 +697,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		x -= (int) (3 * style.frameWidth);
 		if (!bounds.contains(x, y))
 			return -1;
-		int nBins = data[row].length;
 		double ibarwidth = nBins / bounds.getWidth();
 		return (int) ((x - bounds.getX()) * ibarwidth);
 	}
@@ -700,7 +711,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 
 	@Override
 	public String getTooltipAt(int bar) {
-		int nBins = data[0].length;
 		// note label is null for undirected graph with the same interaction and
 		// competition graphs
 		StringBuilder tip = new StringBuilder(
