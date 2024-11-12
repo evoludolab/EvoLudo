@@ -393,6 +393,8 @@ public class Histogram extends AbstractView {
 			int vacant = module.getVacant();
 			int nTraits = module.getNTraits();
 			Color[] colors = module.getTraitColors();
+			if (hard)
+				graph.reset();
 
 			switch (type) {
 				case STRATEGY:
@@ -505,16 +507,24 @@ public class Histogram extends AbstractView {
 					style.label = module.getTraitName(idx);
 					style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
 					if (doStatistics) {
-						int nBins;
+						int nNode;
 						if (model.isSDE())
-							nBins = 1;
+							nNode = 1;	// only one 'node' in SDE
 						else {
-							nBins = module.getNPopulation();
-							style.xMax = nBins - 1;
+							nNode = module.getNPopulation();
+							style.xMax = nNode - 1;
 						}
+						int maxBins = graph.getMaxBins();
 						if (data == null || data.length != nTraits + 1
-								|| data[0].length != Math.min(nBins, HistoGraph.MAX_BINS))
-							data = new double[nTraits + 1][Math.min(nBins, HistoGraph.MAX_BINS)];
+								|| data[0].length > maxBins) {
+							binSize = 1;
+							int bins = nNode;
+							while (bins > maxBins) {
+								bins = nNode / ++binSize;
+							}
+							data = new double[nTraits + 1][bins];
+							scale2bins = 1.0 / binSize;
+						}
 						graph.setData(data);
 					} else {
 						graph.clearData();
@@ -537,6 +547,10 @@ public class Histogram extends AbstractView {
 						if (doStatistics) {
 							if (data == null || data.length != nTraits + 1 || data[0].length != HistoGraph.MAX_BINS)
 								data = new double[nTraits + 1][HistoGraph.MAX_BINS];
+							// int maxBins = graph.getMaxBins();
+							// if (data == null || data.length != nTraits + 1 
+							// 	|| data[0].length > maxBins)
+							// 	data = new double[nTraits + 1][Math.min(nPop, maxBins)];
 							graph.setData(data);
 						} else {
 							graph.clearData();
@@ -603,8 +617,6 @@ public class Histogram extends AbstractView {
 
 				default:
 			}
-			if (hard)
-				graph.reset();
 			idx++;
 		}
 		update(hard);
@@ -720,7 +732,7 @@ public class Histogram extends AbstractView {
 						break;
 					if (!fixData.probRead) {
 						HistoGraph graph = graphs.get(fixData.typeFixed);
-						graph.addData(fixData.mutantNode);
+						graph.addData((int) (fixData.mutantNode * scale2bins));
 						fixData.probRead = true;
 					}
 					// reset timestamp (needed to ensure processing of statistics data)

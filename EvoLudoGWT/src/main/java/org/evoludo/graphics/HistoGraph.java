@@ -237,6 +237,11 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	int nBins;
 
 	/**
+	 * The maximum number of bins with a width of at least {@code MIN_BIN_WIDTH}.
+	 */
+	int maxBins = -1;
+
+	/**
 	 * The maximum number of bins for the histogram.
 	 */
 	public static final int MAX_BINS = 100;
@@ -263,9 +268,11 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	 * least {@code MIN_BIN_WIDTH}.
 	 * 
 	 * @return the maximum number of bins
+	 * 
+	 * @see #calcBounds()
 	 */
 	public int getMaxBins() {
-		return (int) (bounds.getWidth() / (MIN_BIN_WIDTH + 1));
+		return maxBins;
 	}
 
 	/**
@@ -362,8 +369,13 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	 */
 	public void setData(double[][] data) {
 		this.data = data;
-		if (data != null && data.length > 0 && data[0] != null)
+		if (data != null && data.length > 0 && data[0] != null) {
 			nBins = data[0].length;
+			double width = bounds.getWidth();
+			double barwidth = (width - 2.0 * style.frameWidth) / nBins;
+			double dw = barwidth * nBins - width;
+			bounds.adjust(dw * 0.5, 0, dw, 0);
+		}
 		else
 			nBins = -1;
 	}
@@ -672,14 +684,9 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 
 	@Override
 	protected boolean calcBounds() {
-		if (!super.calcBounds() || data == null)
+		if (!super.calcBounds())
 			return false;
-		double w = bounds.getWidth();
-		int barwidth = (int) ((w - 2) / nBins);
-		if (barwidth <= 0)
-			// return success even though too small for bars
-			return true;
-		bounds.adjust(0, 0, barwidth * nBins - w, 0);
+		maxBins = (int) (bounds.getWidth() / (MIN_BIN_WIDTH + 1));
 		return true;
 	}
 
@@ -741,7 +748,20 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 				break;
 			case STATISTICS_FIXATION_PROBABILITY:
 				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>");
-				tip.append("<tr><td><i>" + style.xLabel + ":</i></td><td>" + bar + "</td></tr>");
+				tip.append("<tr><td><i>" + style.xLabel + ":</i></td>");
+				int binSize = (int) ((style.xMax + 1) / nBins);
+				if (binSize == 1)
+					tip.append("<td>" + bar + "</td></tr>");
+				else {
+					int start = bar * binSize;
+					int end = start + binSize - 1;
+					if (bar == nBins - 1) {
+						// careful with last bin
+						end = Math.max(end, (int) style.xMax);
+					}
+					String separator = (end - start > 1) ? "-" : ",";
+					tip.append("<td>[" + start + separator + end + "]</td></tr>");
+				}
 				int nTraits = data.length - 1;
 				double norm = data[nTraits][bar];
 				tip.append("<tr><td><i>samples:</i></td><td>" + (int) norm + "</td></tr>");
@@ -778,7 +798,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>" + //
 						"<tr><td><i>" + style.xLabel + ":</i></td>");
 				nPop = module.getNPopulation();
-				int binSize = (nPop + 1) / MAX_BINS + 1;
+				binSize = (nPop + 1) / MAX_BINS + 1;
 				if (binSize == 1)
 					tip.append("<td>" + bar + "</td></tr>");
 				else {
