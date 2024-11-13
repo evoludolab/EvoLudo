@@ -177,7 +177,7 @@ public class EvoLudoGWT extends EvoLudo {
 	Timer timer = new Timer() {
 		@Override
 		public void run() {
-			if (!modelNext())
+			if (!modelNext() || !isRunning)
 				timer.cancel();
 		}
 	};
