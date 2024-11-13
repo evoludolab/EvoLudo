@@ -160,9 +160,12 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 			g.setLineWidth(style.lineWidth);
 			double xScale = w / (style.xMax - style.xMin);
 			double start = -style.xMax * xScale;
-			for (int n = 0; n < nLines; n++) {
-				g.setFillStyle(colors[n]);
-				fillCircle(start, (current[n + 1] - style.yMin) * yScale, style.markerSize);
+			if (start <= 0.0) {
+				// suppress markers if view is shifted and 0 invisible
+				for (int n = 0; n < nLines; n++) {
+					g.setFillStyle(colors[n]);
+					fillCircle(start, (current[n + 1] - style.yMin) * yScale, style.markerSize);
+				}
 			}
 			double end = start;
 			while (i.hasNext()) {
