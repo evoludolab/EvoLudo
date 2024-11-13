@@ -1214,6 +1214,7 @@ public abstract class EvoLudo
 			case NONE:
 			case APPLY:
 			case STATISTIC:
+			case SNAPSHOT:
 				for (ChangeListener i : changeListeners)
 					i.modelChanged(action);
 				break;
@@ -1228,7 +1229,6 @@ public abstract class EvoLudo
 					break;
 				}
 				//$FALL-THROUGH$
-			case SNAPSHOT:	// snapshot requested
 			case STOP:		// stop requested (as opposed to simulations that stopped)	
 				runFired = false;
 				for (MilestoneListener i : milestoneListeners)
@@ -1258,7 +1258,6 @@ public abstract class EvoLudo
 			default:
 				// note: CLO re-parsing requests are handled separately, see parseCLO()
 				// case CLO:
-				// case SNAPSHOT: ignore, handled in EvoLudoWeb.modelChanged()
 		}
 	}
 

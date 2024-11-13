@@ -35,8 +35,8 @@ package org.evoludo.simulator;
 import org.evoludo.graphics.Network2DGWT;
 import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.math.ArrayMath;
-import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
+import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.PDERD;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.PDESupervisorGWT;
@@ -158,8 +158,7 @@ public class EvoLudoGWT extends EvoLudo {
 					throw new Error("layoutComplete(): unknown mode...");
 			}
 		}
-		for (ChangeListener i : changeListeners)
-			i.modelChanged(PendingAction.SNAPSHOT);
+		requestAction(PendingAction.SNAPSHOT, true);
 	}
 
 	@Override
@@ -256,35 +255,20 @@ public class EvoLudoGWT extends EvoLudo {
 		super.moduleUnloaded();
 	}
 
-	@Override
-	public void modelStopped() {
-		super.modelStopped();
-		if (pendingAction != PendingAction.NONE && pendingAction != PendingAction.SNAPSHOT)
+	public synchronized void fireModelStopped() {
+		// model may already have been unloaded
+		if (activeModel == null)
 			return;
-		// model stopped because of convergence (not user request)
-		// check if snapshot requested:
-		// - for sample statistics: after snapshotAt samples
-		// - for update statistics: after snapshotAt time units
-		// - for dynamics: after snapshotAt time units or if converged
-		switch (activeModel.getMode()) {
-			case STATISTICS_SAMPLE:
-				if (Math.abs(activeModel.getNStatisticsSamples() - snapshotAt) >= 1.0)
-					return;
-				break;
-			case DYNAMICS:
-				if (activeModel.hasConverged() && snapshotAt > activeModel.getTime())
-					break;
-				//$FALL-THROUGH$
-			case STATISTICS_UPDATE:
-				double timeStep = activeModel.getTimeStep();
-				if (Math.abs(activeModel.getTime() + timeStep - snapshotAt) > timeStep)
-					return;
-				break;
-			default:
-				throw new Error("modelStopped(): unknown mode...");
+		double time = activeModel.getTime();
+		double timeStep = activeModel.getTimeStep();
+		Mode mode = activeModel.getMode();
+		if ((mode == Mode.DYNAMICS || mode == Mode.STATISTICS_UPDATE) 
+				&& ((activeModel.hasConverged() && snapshotAt > time) 
+				|| (Math.abs(time + timeStep - snapshotAt) <= timeStep))){
+			requestAction(PendingAction.SNAPSHOT, true);
+			return;
 		}
-		for (ChangeListener i : changeListeners)
-			i.modelChanged(PendingAction.SNAPSHOT);
+		super.fireModelStopped();
 	}
 
 	@Override
