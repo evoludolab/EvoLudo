@@ -186,12 +186,16 @@ public class EvoLudoGWT extends EvoLudo {
 	public void next() {
 		switch (activeModel.getMode()) {
 			case STATISTICS_SAMPLE:
-				// non-blocking way for running an arbitrary number of update
-				// steps to obtain one sample
-				if (activeModel.getNStatisticsSamples() == activeModel.getNSamples()) {
-					requestAction(PendingAction.SNAPSHOT, true);
+				int samplesCollected = activeModel.getNStatisticsSamples();
+				if (samplesCollected == activeModel.getNSamples()) {
+					// requested sample count reached, reset to unlimited
+					activeModel.setNSamples(-1.0);
+					requestAction(Math.abs(snapshotAt - samplesCollected) < 1.0 
+						? PendingAction.SNAPSHOT : PendingAction.STOP, true);
 					break;
 				}
+				// non-blocking way for running an arbitrary number of update
+				// steps to obtain one sample
 				scheduleSample();
 				break;
 			case STATISTICS_UPDATE:
