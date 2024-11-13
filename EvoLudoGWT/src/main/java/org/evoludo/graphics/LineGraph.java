@@ -167,7 +167,7 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 			double end = start;
 			while (i.hasNext()) {
 				double[] prev = i.next();
-				if (current[0] < prev[0]) {
+				if (current[0] <= prev[0]) {
 					current = prev;
 					end = start;
 					continue;
@@ -177,7 +177,8 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 				if (start < 0.0) {
 					for (int n = 0; n < nLines; n++) {
 						setStrokeStyleAt(n);
-						double pi = prev[n + 1] - style.yMin, ci = current[n + 1] - style.yMin;
+						double pi = prev[n + 1] - style.yMin;
+						double ci = current[n + 1] - style.yMin;
 						if (start >= -w && end <= 0.0) {
 							strokeLine(start, pi * yScale, end, ci * yScale);
 							continue;
