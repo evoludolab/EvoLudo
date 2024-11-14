@@ -101,25 +101,26 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 	}
 
 	@Override
-	public void reset(boolean hard) {
-		super.reset(hard);
+	protected void allocateGraphs() {
 		ArrayList<? extends Module> species = engine.getModule().getSpecies();
-		int nSpecies = model.getNSpecies();
+		int nGraphs = 0;
 		// multiple line graphs for multi-species interactions and in case of multiple
 		// traits for continuous strategies
-		IBSC cmodel = model.isContinuous() ? (IBSC) model : null;
-		int nMean = model.getNMean();
-		int nGraphs = (cmodel != null && type == Data.STRATEGY ? nMean : nSpecies);
+		for (Module module : species) {
+			if (model.isContinuous())
+				nGraphs += module.getNTraits();
+			else
+				nGraphs++;
+		}
 		// if the number of graphs has changed, destroy and recreate them
 		if (graphs.size() != nGraphs) {
-			hard = true;
 			destroyGraphs();
 			// one graph per discrete species or continuous trait
 			for (Module module : species) {
 				LineGraph graph = new LineGraph(this, module);
 				wrapper.add(graph);
 				graphs.add(graph);
-				if (cmodel == null)
+				if (!model.isContinuous())
 					continue;
 				for (int n = 1; n < module.getNTraits(); n++) {
 					graph = new LineGraph(this, module);
@@ -134,7 +135,14 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 			for (LineGraph graph : graphs)
 				graph.setSize(width + "%", height + "%");
 		}
+	}
 
+	@Override
+	public void reset(boolean hard) {
+		super.reset(hard);
+		int nSpecies = model.getNSpecies();
+		IBSC cmodel = model.isContinuous() ? (IBSC) model : null;
+		int nMean = model.getNMean();
 		// index of trait in continuous models
 		int idx = 0;
 		// make sure we have enough temporary storage for all scenarios

@@ -92,7 +92,6 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 
 	@Override
 	public void unload() {
-		destroyGraphs();
 		super.unload();
 		hitNode = -1;
 	}

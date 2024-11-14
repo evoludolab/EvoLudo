@@ -170,6 +170,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		gRows = 1;
 		gCols = 1;
 		model = engine.getModel();
+		allocateGraphs();
 	}
 
 	/**
@@ -181,6 +182,9 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		isActive = false;
 		model = null;
 	}
+
+//XXX	protected abstract void allocateGraphs();
+	protected void allocateGraphs() {};
 
 	/**
 	 * Destroy all graphs in this view and free up resources.
