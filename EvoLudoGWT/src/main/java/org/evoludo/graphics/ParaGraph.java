@@ -161,7 +161,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			System.arraycopy(buffer.last(), 1, init, 1, len - 1);
 			// now we are finally ready to calculate frame etc.
 			autoscale();
-			calcBounds();
 		} else {
 			double[] last = buffer.last();
 			double lastt = last[0];
@@ -314,15 +313,13 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	private static double MIN_PIXELS = 3.0;
 
 	@Override
-	protected boolean calcBounds() {
-		if (!super.calcBounds())
-			return false;
+	public void calcBounds(int width, int height) {
+		super.calcBounds(width, height);
 		// store point only if it is estimated to be at least a few pixels from the
 		// previous point
 		bufferThreshold = MIN_PIXELS * scale * Math.min((style.xMax - style.xMin) / bounds.getWidth(), //
 				(style.yMax - style.yMin) / bounds.getHeight());
 		bufferThreshold *= bufferThreshold;
-		return true;
 	}
 
 	/**

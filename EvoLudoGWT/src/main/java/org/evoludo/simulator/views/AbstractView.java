@@ -493,10 +493,18 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 
 	@Override
 	public void onResize() {
+		if (getOffsetWidth() == 0 || getOffsetHeight() == 0)
+			return;
 		for (AbstractGraph<?> graph : graphs)
 			graph.onResize();
+		engine.guiReady();
 		if (isActive)
 			scheduleUpdate(true);
+	}
+
+	public void setBounds(int width, int height) {
+		for (AbstractGraph<?> graph : graphs)
+			graph.calcBounds(width, height);
 	}
 
 	/**

@@ -314,7 +314,6 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		if (network != null)
 			network.reset();
 		clearMessage();
-		calcBounds();
 		invalidated = true;
 		if (hasMessage)
 			controller.layoutComplete();

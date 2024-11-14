@@ -374,7 +374,7 @@ public class Histogram extends AbstractView {
 			// arrange histograms vertically
 			gRows = nGraphs;
 			int width = 100 / gCols;
-			int xaxisdeco = 7; // estimate of height of x-axis decorations in %
+			int xaxisdeco = 5; // estimate of height of x-axis decorations in %
 								// unfortunately GWT chokes on CSS calc()
 			int height = (100 - nXLabels * xaxisdeco) / gRows;
 			for (HistoGraph graph : graphs)
@@ -515,6 +515,7 @@ public class Histogram extends AbstractView {
 							style.xMax = nNode - 1;
 						}
 						int maxBins = graph.getMaxBins();
+if (maxBins < 0) maxBins = 100;
 						if (data == null || data.length != nTraits + 1
 								|| data[0].length > maxBins) {
 							binSize = 1;

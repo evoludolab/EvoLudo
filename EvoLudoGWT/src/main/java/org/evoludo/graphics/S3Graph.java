@@ -388,11 +388,8 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	private static double MIN_PIXELS = 3.0;
 
 	@Override
-	protected boolean calcBounds() {
-		if (!super.calcBounds())
-			return false;
-		bounds.set(style.minPadding, style.minPadding, getOffsetWidth() - 2 * style.minPadding,
-				getOffsetHeight() - 2 * style.minPadding);
+	public void calcBounds(int width, int height) {
+		super.calcBounds(width, height);
 		String font = g.getFont();
 		if (style.showXTicks) {
 			int tlen = style.tickLength;
@@ -448,7 +445,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		// previous point
 		bufferThreshold = MIN_PIXELS * scale / Math.max(bounds.getWidth(), bounds.getHeight());
 		bufferThreshold *= bufferThreshold;
-		return true;
 	}
 
 	/**

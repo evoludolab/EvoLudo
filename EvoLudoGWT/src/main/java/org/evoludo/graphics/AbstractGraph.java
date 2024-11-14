@@ -646,7 +646,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void reset() {
 		clearMessage();
 		clearHistory();
-		calcBounds();
 		updateCanvas();
 		zoom();
 	}
@@ -925,6 +924,16 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		int height = getOffsetHeight();
 		if (width == 0 || height == 0)
 			return false;
+		calcBounds(width, height);
+		return true;
+	}
+	/**
+	 * Calculate bounds of drawing area.
+	 * 
+	 * @param width  the width of the drawing area
+	 * @param height the height of the drawing area
+	 */
+	public void calcBounds(int width, int height) {
 		bounds.set(style.minPadding, style.minPadding, width - 2 * style.minPadding, height - 2 * style.minPadding);
 		if (style.showFrame) {
 			double f = style.frameWidth;
@@ -974,7 +983,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			bounds.adjust(0, 0, 0, -(style.tickLength + 2));
 		if (style.showYTicks)
 			bounds.adjust(0, 0, -(style.tickLength + 2), 0);
-		return true;
 	}
 
 	/**

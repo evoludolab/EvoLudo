@@ -683,11 +683,9 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	}
 
 	@Override
-	protected boolean calcBounds() {
-		if (!super.calcBounds())
-			return false;
+	public void calcBounds(int width, int height) {
+		super.calcBounds(width, height);
 		maxBins = (int) (bounds.getWidth() / (MIN_BIN_WIDTH + 1));
-		return true;
 	}
 
 	/**

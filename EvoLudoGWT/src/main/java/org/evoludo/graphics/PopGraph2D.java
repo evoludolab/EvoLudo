@@ -414,12 +414,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	static final int HIERARCHY_GAP = 1; // unit gap in pixels
 
 	@Override
-	protected boolean calcBounds() {
-		if (!super.calcBounds() || geometry == null)
-			return false;
+	public void calcBounds(int width, int height) {
+		super.calcBounds(width, height);
 		clearMessage();
-		int width = getOffsetWidth();
-		int height = getOffsetHeight();
 		dw = 0;
 		dh = 0;
 		dR = 0;
@@ -437,7 +434,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			case VOID:
 				buffer = null;
 				displayMessage("No representation for " + type.getTitle() + "!");
-				return true;
+				return;
 
 			case TRIANGULAR:
 				buffer = null;
@@ -486,7 +483,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				// note: a bit hackish to allow drawing frame for lattices but axes for 2D
 				// distributions
 				if (style.showDecoratedFrame)
-					super.calcBounds();
+					super.calcBounds(width, height);
 				else
 					bounds.set(style.minPadding, style.minPadding, width - 2 * style.minPadding,
 							height - 2 * style.minPadding);
@@ -574,7 +571,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			if (isActive && (data == null || data.length != geometry.size))
 				data = new String[geometry.size];
 		}
-		return true;
 	}
 
 	/**

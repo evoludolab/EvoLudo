@@ -131,6 +131,23 @@ public class EvoLudoGWT extends EvoLudo {
 		});
 	}
 
+	Directive notifyGUI;
+
+	public boolean parseCLO(Directive command) {
+		notifyGUI = command;
+		return parseCLO();
+	}
+
+	/**
+	 * Called when the GUI has finished loading and the dimensions of all elements are known.
+	 */
+	public void guiReady() {
+		if (notifyGUI == null)
+			return;
+		notifyGUI.execute();
+		notifyGUI = null;
+	}
+
 	@Override
 	public void layoutComplete() {
 		if (snapshotAt < 0.0) {

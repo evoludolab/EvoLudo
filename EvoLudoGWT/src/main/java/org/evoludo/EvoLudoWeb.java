@@ -8,6 +8,7 @@ import java.util.logging.Logger;
 
 import org.evoludo.geom.Rectangle2D;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.EvoLudo.Directive;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.EvoLudoTrigger;
 import org.evoludo.simulator.Resources;
@@ -304,8 +305,7 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
-	 * Mai
-	 * n constructor for EvoLudo labs.
+	 * Main constructor for EvoLudo labs.
 	 * <p>
 	 * <strong>Note:</strong>
 	 * <ul>
@@ -625,6 +625,8 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelDidReinit() {
+		// if (!isGUIReady)
+		// 	return;
 		// forward init to all current views
 		for (AbstractView view : activeViews.values())
 			view.init();
@@ -633,6 +635,8 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelDidReset() {
+		// if (!isGUIReady)
+		// 	return;
 		// invalidate network
 		for (AbstractView view : activeViews.values())
 			view.reset(true);
@@ -801,7 +805,7 @@ public class EvoLudoWeb extends Composite
 			// initially activeView would otherwise be null, which causes troubles if mouse
 			// is on canvas triggering events...
 			activeView = newView;
-			evoludoDeck.setWidget(activeView);
+			evoludoDeck.showWidget(activeView);
 			// adding a new widget can cause a flurry of activities; wait until they subside
 			// before activation
 			Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
@@ -1182,32 +1186,74 @@ public class EvoLudoWeb extends Composite
 		applyCLO();
 	}
 
+	class GUIState {
+		Module module;
+		Model model;
+		String view;
+		boolean resume;
+		boolean success;
+	}
+
+	GUIState guiState = new GUIState();
+
+	/**
+	 * The flag indicating whether the GUI is ready to receive commands. In
+	 * particular this means that the dimensions of all elements are known. Note, if
+	 * {@code isGUIReady} is {@code true} this implies that {@code isGWT} must be
+	 * {@code true} too.
+	 */
+	public boolean isGUIReady = false;
+
 	/**
 	 * Helper method: applies the command line arguments stored in
 	 * {@link #evoludoCLO}.
 	 */
 	private void applyCLO() {
 		displayStatusThresholdLevel = Level.ALL.intValue();
-		String currentView = evoludoViews.getSelectedItemText();
-		boolean resume = engine.isRunning() || engine.isSuspended();
+		guiState.view = evoludoViews.getSelectedItemText();
+		guiState.resume = engine.isRunning() || engine.isSuspended();
 		engine.setSuspended(false);
-		Model oldModel = engine.getModel();
-		Module oldModule = engine.getModule();
-		boolean parsingSuccess = engine.parseCLO();
-		evoludoSlider.setValue(engine.getDelay());
-		revertCLO();
+		guiState.model = engine.getModel();
+		guiState.module = engine.getModule();
+		// parseCLO() does the heavy lifting and configures the GUI
+		guiState.success = engine.parseCLO();
+		guiState.success = engine.parseCLO(new Directive() {
+			@Override
+			public void execute() {
+				configGUI();
+			}
+		});
 		updateViews();
 		// process (emulated) ePub restrictions - adds console if possible
 		processEPubSettings();
+		setView(cloView.isSet() ? initialView : guiState.view);
+		if (!guiState.success) {
+			displayStatus("Problems parsing arguments - check log for details.", Level.WARNING.intValue() + 1);
+			cloSize.parse();
+		}
+	}
+
+	private void configGUI() {
+		evoludoSlider.setValue(engine.getDelay());
+		revertCLO();
 		// reset is required if module and/or model changed
 		Module newModule = engine.getModule();
 		Model newModel = engine.getModel();
-		if (newModule == null || engine.getModule() != oldModule || newModel != oldModel) {
+		if (newModule == null || newModule != guiState.module || newModel != guiState.model) {
+ 			if (guiState.module == null) {
+				int width = activeView.getOffsetWidth();
+				int height = activeView.getOffsetHeight();
+				for (AbstractView view : activeViews.values()) {
+					if (view == activeView)
+						continue;
+					view.setBounds(width, height);
+				}
+			}
 			engine.modelReset();
 		} else {
 			if (!engine.paramsDidChange()) {
 				// resume running if no reset was necessary or --run was provided
-				engine.setSuspended(resume || engine.isSuspended());
+				engine.setSuspended(guiState.resume || engine.isSuspended());
 				// even without reset necessary data views should be adjusted to:
 				// - reflect changes in report frequency (time line graphs, distributions and
 				// linear geometries)
@@ -1217,11 +1263,7 @@ public class EvoLudoWeb extends Composite
 				updateGUI();
 			}
 		}
-		setView(cloView.isSet() ? initialView : currentView);
-		if (!parsingSuccess) {
-			displayStatus("Problems parsing arguments - check log for details.", Level.WARNING.intValue() + 1);
-			cloSize.parse();
-		}
+		isGUIReady = true;
 	}
 
 	/**
@@ -1738,21 +1780,6 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
-	 * Each EvoLudo module may entertain its own selection of views to visualize its
-	 * data. Unloads all currently active views, resets the list and generates a new
-	 * list of suitable views based on the features of the current model.
-	 * <p>
-	 * <strong>Note:</strong> the console view is dealt with elsewhere (see
-	 * {@link #processEPubSettings}).
-	 */
-	protected void resetViews() {
-		for (AbstractView view : activeViews.values())
-			view.unload();
-		activeViews.clear();
-		updateViews();
-	}
-
-	/**
 	 * Each EvoLudo model may entertain its own selection of views to visualize its
 	 * data. Re-use currently active views if possible otherwise instantiate
 	 * suitable views based on the features of the current model. Update the view
@@ -1764,6 +1791,7 @@ public class EvoLudoWeb extends Composite
 	protected void updateViews() {
 		HashMap<String, AbstractView> oldViews = activeViews;
 		activeViews = new HashMap<>();
+		evoludoDeck.clear();
 		// strategies related views
 		Module module = engine.getModule();
 		if (module == null) {
@@ -1844,6 +1872,7 @@ public class EvoLudoWeb extends Composite
 		if (oldViews.containsKey(name))
 			view = oldViews.remove(name);
 		activeViews.put(view.getName(), view);
+		evoludoDeck.add(view);
 	}
 
 	/**

@@ -88,7 +88,6 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 		if (style.xMax - style.xMin < 1e-6)
 			style.xMin = style.xMax - 1.0;
 		super.reset();
-		calcBounds();
 		if (buffer == null || buffer.getCapacity() < MIN_BUFFER_SIZE)
 			buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
 		setSteps(steps * (style.xMax - style.xMin) / (style.xMax - oldMin));
