@@ -1909,17 +1909,23 @@ public class IBSDPopulation extends IBSPopulation {
 				break;
 
 			case MUTANT:
+				int mutant = initMutant();
 				FixationData fix = engine.getModel().getFixationData();
-				fix.mutantNode = initMutant();
-				fix.mutantTrait = strategies[fix.mutantNode];
-				fix.residentTrait = (int) init.args[1];
+				if (fix != null) {
+					fix.mutantNode = mutant;
+					fix.mutantTrait = strategies[fix.mutantNode];
+					fix.residentTrait = (int) init.args[1];
+				}
 				break;
 
 			case TEMPERATURE:
+				mutant = initTemperature();
 				fix = engine.getModel().getFixationData();
-				fix.mutantNode = initTemperature();
-				fix.mutantTrait = strategies[fix.mutantNode];
-				fix.residentTrait = (int) init.args[1];
+				if (fix != null) {
+					fix.mutantNode = mutant;
+					fix.mutantTrait = strategies[fix.mutantNode];
+					fix.residentTrait = (int) init.args[1];
+				}
 				break;
 
 			case KALEIDOSCOPE:
