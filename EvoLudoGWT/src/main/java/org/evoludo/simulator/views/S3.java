@@ -46,6 +46,8 @@ import org.evoludo.simulator.modules.Module;
 /**
  * The view to display time series of data as a trajectory on the \(S_3\)
  * simplex.
+ * 
+ * @evoludo.impl Note (yet) ready for multiple species!
  *
  * @author Christoph Hauert
  */
@@ -90,33 +92,17 @@ public class S3 extends AbstractView {
 	}
 
 	@Override
-	public void unload() {
-		super.unload();
-		state = null;
-		init = null;
-	}
-
-	@Override
-	public void clear() {
-		super.clear();
-		for (S3Graph graph : graphs)
-			graph.clearGraph();
-		update();
-	}
-
-	@Override
-	public void reset(boolean hard) {
-		super.reset(hard);
+	protected void allocateGraphs() {
 		Module module = engine.getModule();
 		int nRoles = module.getNRoles();
 		if (graphs.size() != nRoles) {
-			hard = true;
 			destroyGraphs();
 			int[] order = new int[3];
 			for (int role = 0; role < nRoles; role++) {
 				S3Graph graph = new S3Graph(this, module, role);
 				wrapper.add(graph);
 				graphs.add(graph);
+				graph.setNames(model.getMeanNames());
 				GraphStyle style = graph.getStyle();
 				style.showLabel = true;
 				style.showXTicks = true;
@@ -157,6 +143,27 @@ public class S3 extends AbstractView {
 			for (S3Graph graph : graphs)
 				graph.setSize(width + "%", height + "%");
 		}
+	}
+
+	@Override
+	public void unload() {
+		super.unload();
+		state = null;
+		init = null;
+	}
+
+	@Override
+	public void clear() {
+		super.clear();
+		for (S3Graph graph : graphs)
+			graph.clearGraph();
+		update();
+	}
+
+	@Override
+	public void reset(boolean hard) {
+		super.reset(hard);
+		Module module = engine.getModule();
 		Color[] colors = module.getTraitColors();
 		String[] names = model.getMeanNames();
 		int nMean = model.getNMean();

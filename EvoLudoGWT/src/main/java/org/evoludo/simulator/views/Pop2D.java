@@ -76,16 +76,9 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		super(engine, type);
 	}
 
-	@Override
-	public void clear() {
-		super.clear();
-		for (PopGraph2D graph : graphs)
-			graph.clearGraph();
-	}
 
 	@Override
-	public void reset(boolean hard) {
-		super.reset(hard);
+	protected void allocateGraphs() {
 		// how to deal with distinct interaction/competition geometries?
 		// - currently two separate graphs are shown one for the interaction and the
 		// other for the competition geometry
@@ -103,7 +96,6 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 			case SDE:
 				nGraphs = 1;
 				if (graphs.size() != nGraphs) {
-					hard = true;
 					destroyGraphs();
 					Module module = engine.getModule();
 					PopGraph2D graph = new PopGraph2D(this, module);
@@ -122,7 +114,6 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 					nGraphs += Geometry.displayUniqueGeometry(module) ? 1 : 2;
 
 				if (graphs.size() != nGraphs) {
-					hard = true;
 					destroyGraphs();
 					for (Module module : species) {
 						PopGraph2D graph = new PopGraph2D(this, module);
@@ -161,7 +152,18 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 				break;
 			default:
 		}
+	}
 
+	@Override
+	public void clear() {
+		super.clear();
+		for (PopGraph2D graph : graphs)
+			graph.clearGraph();
+	}
+
+	@Override
+	public void reset(boolean hard) {
+		super.reset(hard);
 		for (PopGraph2D graph : graphs) {
 			Geometry geometry = graph.getGeometry();
 			if (geometry == null) {

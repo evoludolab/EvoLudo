@@ -107,23 +107,13 @@ public class Phase2D extends AbstractView {
 	}
 
 	@Override
-	public void unload() {
-		super.unload();
-		state = null;
-	}
-
-	@Override
-	public void reset(boolean hard) {
-		super.reset(hard);
-
+	protected void allocateGraphs() {
 		GraphStyle style;
 		int nStates = model.getNMean();
-		if (state == null || state.length != nStates) {
+		if (state == null || state.length != nStates)
 			state = new double[nStates];
-		}
 		Module module = engine.getModule();
 		if (graphs.size() != 1) {
-			hard = true;
 			graph = new ParaGraph(this, module);
 			wrapper.add(graph);
 			graphs.add(graph);
@@ -142,6 +132,21 @@ public class Phase2D extends AbstractView {
 			int height = 100 / gRows;
 			graph.setSize(width + "%", height + "%");
 		}
+	}
+
+	@Override
+	public void unload() {
+		super.unload();
+		state = null;
+	}
+
+	@Override
+	public void reset(boolean hard) {
+		super.reset(hard);
+
+		GraphStyle style;
+		Module module = engine.getModule();
+		style = graph.getStyle();
 		graph.setMarkers(module.getMarkers());
 		// set map for converting data to phase plane coordinates
 		map = ((HasPhase2D) module).getPhase2DMap();

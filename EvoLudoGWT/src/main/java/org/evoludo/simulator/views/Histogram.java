@@ -138,8 +138,7 @@ public class Histogram extends AbstractView {
 	}
 
 	@Override
-	public void reset(boolean hard) {
-		super.reset(hard);
+	protected void allocateGraphs() {
 		ArrayList<? extends Module> species = engine.getModule().getSpecies();
 		isMultispecies = (species.size() > 1);
 		degreeProcessed = false;
@@ -178,7 +177,6 @@ public class Histogram extends AbstractView {
 
 		if (graphs.size() != nGraphs) {
 			int nXLabels = 0;
-			hard = true;
 			destroyGraphs();
 			for (Module module : species) {
 				int nTraits = module.getNTraits();
@@ -380,6 +378,11 @@ public class Histogram extends AbstractView {
 			for (HistoGraph graph : graphs)
 				graph.setSize(width + "%", height + (graph.getStyle().showXLabel ? xaxisdeco : 0) + "%");
 		}
+	}
+	
+	@Override
+	public void reset(boolean hard) {
+		super.reset(hard);
 		Module module = null;
 		double[][] data = null;
 		int idx = 0;
