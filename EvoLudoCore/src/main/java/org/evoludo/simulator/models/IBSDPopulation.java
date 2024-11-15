@@ -496,6 +496,8 @@ public class IBSDPopulation extends IBSPopulation {
 			// vacate focal site
 			strategiesScratch[me] = VACANT + nTraits;
 			updateScoreAt(me, true);
+			if (strategiesTypeCount[VACANT] == nPopulation)
+				return Double.POSITIVE_INFINITY;
 		} else if (randomTestVal < (module.getDeathRate() + getFitnessAt(me))) {
 			// fill neighbor site if vacant
 			debugModel = pickNeighborSiteAt(me);
@@ -503,7 +505,7 @@ public class IBSDPopulation extends IBSPopulation {
 				maybeMutateMoran(me, debugModel);
 			}
 		}
-		double rate = getPopulationSize() * (module.getDeathRate()+maxFitness);
+		double rate = getPopulationSize() * (module.getDeathRate() + maxFitness);
 		return RNGDistribution.Exponential.next(rng.getRNG(), rate);
 	}
 
