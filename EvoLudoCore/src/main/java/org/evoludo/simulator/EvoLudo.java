@@ -553,6 +553,15 @@ public abstract class EvoLudo
 	 * Reset all populations and notify all listeners.
 	 */
 	public final void modelReset() {
+		modelReset(false);
+	}
+
+	/**
+	 * Reset all populations and notify all listeners if requested.
+	 * 
+	 * @param quiet set to {@code true} to skip notifying listeners
+	 */
+	public final void modelReset(boolean quiet) {
 		if (activeModel == null)
 			return;
 		// reset random number generator if seed was specified
@@ -565,6 +574,8 @@ public abstract class EvoLudo
 		activeModel.reset();
 		resetRequested = false;
 		modelInit();
+		if (quiet)
+			return;
 		// notify of reset
 		fireModelReset();
 	}

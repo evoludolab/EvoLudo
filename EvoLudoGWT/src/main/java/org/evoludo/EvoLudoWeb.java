@@ -724,57 +724,6 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
-	 * Parse <code>name</code> to determine which data view of the EvoLudo model to
-	 * display in the GUI. <code>name</code> can either be a number (as a String)
-	 * that indicates the position of the requested view in the popup list
-	 * {@link #evoludoViews} or the title of the view (with spaces replaced by '_').
-	 * This routine is called when processing keyboard shortcuts (see
-	 * {@link #keyDownHandler(String)} or command line options (see
-	 * {@link #cloView}). If <code>name</code> cannot be found the active view
-	 * remains unchanged (if possible) or otherwise shows the view selected in the
-	 * popup list {@link #evoludoViews}.
-	 *
-	 * @param name of data view to display
-	 */
-	protected void setView(String name) {
-		if (name != null) {
-			// if length of string is 1 or 2, assume an index is given
-			if (name.length() < 3) {
-				int idx = Integer.parseInt(name);
-				if (idx >= 0 && idx < evoludoViews.getItemCount())
-					// in order to align argument to --view and keyboard shortcuts
-					// the view count starts at 1 (both 0 and 1 return the first view)
-					name = evoludoViews.getItemText(Math.max(0, idx - 1));
-				else
-					name = null;
-			} else
-				name = name.replace('_', ' ').trim();
-		}
-		AbstractView newView = activeViews.get(name);
-		if (newView == null) {
-			// requested view not found
-			if (activeViews.containsValue(activeView)) {
-				name = activeView.getName();
-				newView = activeView;
-			} else {
-				newView = activeViews.get(evoludoViews.getSelectedItemText());
-				// if still no joy the last resort is the console
-				// note: may not be available in ePubs. however, if we still end up
-				// here, the problem lies deeper and requires a different resolution.
-				if (newView == null)
-					newView = activeViews.get(viewConsole.getName());
-			}
-		}
-		for (int n = 0; n < evoludoViews.getItemCount(); n++) {
-			if (evoludoViews.getItemText(n).equals(name)) {
-				evoludoViews.setSelectedIndex(n);
-				break;
-			}
-		}
-		changeViewTo(newView, true);
-	}
-
-	/**
 	 * Change view of EvoLudo model data. This helper method is called when the user
 	 * selects a new view with the popup list {@link #evoludoViews} or when a
 	 * particular view is requested through command line options (see
@@ -806,6 +755,8 @@ public class EvoLudoWeb extends Composite
 			// is on canvas triggering events...
 			activeView = newView;
 			evoludoDeck.showWidget(activeView);
+			// set selected item in view selector
+			evoludoViews.setSelectedIndex(evoludoDeck.getWidgetIndex(activeView));
 			// adding a new widget can cause a flurry of activities; wait until they subside
 			// before activation
 			Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
@@ -1189,7 +1140,7 @@ public class EvoLudoWeb extends Composite
 	class GUIState {
 		Module module;
 		Model model;
-		String view;
+		AbstractView view;
 		boolean resume;
 		boolean success;
 	}
@@ -1197,26 +1148,17 @@ public class EvoLudoWeb extends Composite
 	GUIState guiState = new GUIState();
 
 	/**
-	 * The flag indicating whether the GUI is ready to receive commands. In
-	 * particular this means that the dimensions of all elements are known. Note, if
-	 * {@code isGUIReady} is {@code true} this implies that {@code isGWT} must be
-	 * {@code true} too.
-	 */
-	public boolean isGUIReady = false;
-
-	/**
 	 * Helper method: applies the command line arguments stored in
 	 * {@link #evoludoCLO}.
 	 */
 	private void applyCLO() {
 		displayStatusThresholdLevel = Level.ALL.intValue();
-		guiState.view = evoludoViews.getSelectedItemText();
+		guiState.view = activeView;
 		guiState.resume = engine.isRunning() || engine.isSuspended();
 		engine.setSuspended(false);
 		guiState.model = engine.getModel();
 		guiState.module = engine.getModule();
 		// parseCLO() does the heavy lifting and configures the GUI
-		guiState.success = engine.parseCLO();
 		guiState.success = engine.parseCLO(new Directive() {
 			@Override
 			public void execute() {
@@ -1226,7 +1168,32 @@ public class EvoLudoWeb extends Composite
 		updateViews();
 		// process (emulated) ePub restrictions - adds console if possible
 		processEPubSettings();
-		setView(cloView.isSet() ? initialView : guiState.view);
+		if (cloView.isSet()) {
+			// if length of string is 1 or 2, assume an index is given
+			if (initialView.length() < 3) {
+				int idx = Integer.parseInt(initialView) - 1;
+				if (idx >= 0 && idx < activeViews.size())
+					guiState.view = activeViews.values().toArray(new AbstractView[0])[idx];
+			} else {
+				initialView = initialView.replace('_', ' ').trim();
+				for (AbstractView view : activeViews.values()) {
+					if (view.getName() != initialView)
+						continue;
+					guiState.view = view;
+					break;
+				}
+			}
+		}
+		if (guiState.view == null) {
+			// initial load and view not set (or not found)
+			guiState.view = activeViews.values().toArray(new AbstractView[0])[0];
+		}
+		if (guiState.view != activeView && activeView != null)
+			activeView.deactivate();
+		activeView = guiState.view;
+		evoludoDeck.showWidget(activeView);
+		// set selected item in view selector
+		evoludoViews.setSelectedIndex(evoludoDeck.getWidgetIndex(activeView));
 		if (!guiState.success) {
 			displayStatus("Problems parsing arguments - check log for details.", Level.WARNING.intValue() + 1);
 			cloSize.parse();
@@ -1240,7 +1207,11 @@ public class EvoLudoWeb extends Composite
 		Module newModule = engine.getModule();
 		Model newModel = engine.getModel();
 		if (newModule == null || newModule != guiState.module || newModel != guiState.model) {
- 			if (guiState.module == null) {
+			engine.modelReset(true);
+			for (AbstractView view : activeViews.values())
+				view.load();
+			if (guiState.module == null) {
+				// startup
 				int width = activeView.getOffsetWidth();
 				int height = activeView.getOffsetHeight();
 				for (AbstractView view : activeViews.values()) {
@@ -1249,7 +1220,7 @@ public class EvoLudoWeb extends Composite
 					view.setBounds(width, height);
 				}
 			}
-			engine.modelReset();
+			modelDidReset();
 		} else {
 			if (!engine.paramsDidChange()) {
 				// resume running if no reset was necessary or --run was provided
@@ -1263,7 +1234,7 @@ public class EvoLudoWeb extends Composite
 				updateGUI();
 			}
 		}
-		isGUIReady = true;
+		activeView.activate();
 	}
 
 	/**
@@ -1326,11 +1297,15 @@ public class EvoLudoWeb extends Composite
 	 * parameters.
 	 */
 	void showHelp() {
+		if (viewConsole == null) {
+			displayStatus("Console not available...", Level.SEVERE.intValue());
+			return;
+		}
 		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
 			@Override
 			public void execute() {
 				engine.helpCLO();
-				setView("Console log");
+				changeViewTo(viewConsole);
 			}
 		});
 	}
@@ -1577,7 +1552,7 @@ public class EvoLudoWeb extends Composite
 			case "8":
 			case "9":
 				// quick view selector
-				setView(Integer.toString(CLOParser.parseInteger(key) - 1));
+				changeViewTo(activeViews.values().toArray(new AbstractView[0])[CLOParser.parseInteger(key) - 1]);
 				break;
 			case "Enter":
 			case " ":
@@ -1842,19 +1817,13 @@ public class EvoLudoWeb extends Composite
 		// miscellaneous views
 		// note: console may be removed for (simulated) ePub modes
 		addView(viewConsole, oldViews);
-		// load all newly added views and update view selector
-		evoludoViews.clear();
-		for (AbstractView view : activeViews.values()) {
-			if (!oldViews.containsKey(view.getName()))
-				view.load();
-			evoludoViews.addItem(view.getName());
-		}
 		// unload views that are no longer available
 		for (AbstractView view : oldViews.values())
 			view.unload();
-		evoludoViews.setItemSelected(0, true);
-		if (!activeViews.containsValue(activeView))
-			activeView = activeViews.get(evoludoViews.getSelectedItemText());
+		// update view selector
+		evoludoViews.clear();
+		for (AbstractView view : activeViews.values())
+			evoludoViews.addItem(view.getName());
 	}
 
 	/**
