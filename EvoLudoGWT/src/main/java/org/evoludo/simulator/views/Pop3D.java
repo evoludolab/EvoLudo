@@ -80,56 +80,24 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		super(engine, type);
 	}
 
+//TODO; split allocateGraphs into loading and reset component
 	@Override
-	public void activate() {
-		if (isActive)
-			return;
-		prepare();
-		super.activate();
-	}
-
-	@Override
-	public void reset(boolean hard) {
-		super.reset(hard);
-		if (!isActive) {
-			for (PopGraph3D graph : graphs)
-				graph.invalidate();
-			return;
-		}
-		// prepare initializes or starts suspended animation
-		hard |= prepare();
-		if (hard) {
-			for (PopGraph3D graph : graphs)
-				graph.reset();
-		}
-		update(hard);
-	}
-
-	@Override
-	public void init() {
-		super.init();
-		update();
-	}
-
-	/**
-	 * Prepare the 3D view for the current model. This includes the creation of the
-	 * graph(s) and the initialization of the color map.
-	 * 
-	 * @return {@code true} if the view was successfully initialized
-	 */
-	private boolean prepare() {
-		boolean hard = false;
+	protected void allocateGraphs() {
+		// boolean hard = false;
 		int nGraphs = 0;
 		Geometry geoDE = null;
 		switch (model.getModelType()) {
-			case PDE:
-				geoDE = ((PDERD) model).getGeometry();
-				//$FALL-THROUGH$
 			case ODE:
 			case SDE:
+				// ODE or SDE model (no geometry and thus no population)
+				// 3D view should not be available for selection
+				for (PopGraph3D graph : graphs)
+					graph.displayMessage("No view available (" + model.getModelType().toString() + " solver)");
+				return;
+			case PDE:
+				geoDE = ((PDERD) model).getGeometry();
 				nGraphs = 1;
 				if (graphs.size() != nGraphs) {
-					hard = true;
 					destroyGraphs();
 					Module module = engine.getModule();
 					PopGraph3D graph = new PopGraph3D(this, module);
@@ -156,7 +124,6 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 					nGraphs += Geometry.displayUniqueGeometry(module) ? 1 : 2;
 
 				if (graphs.size() != nGraphs) {
-					hard = true;
 					destroyGraphs();
 					for (Module module : species) {
 						PopGraph3D graph = new PopGraph3D(this, module);
@@ -180,11 +147,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 					int height = 100 / gRows;
 					for (PopGraph3D graph : graphs)
 						graph.setSize(width + "%", height + "%");
-				} else {
-					// start animation in preparation of activation
-					for (PopGraph3D graph : graphs)
-						graph.animate();
-				}
+				} 
 				// update geometries associated with graphs
 				boolean inter = true;
 				for (PopGraph3D graph : graphs) {
@@ -201,12 +164,6 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		boolean noWarnings = true;
 		// IMPORTANT: to avoid problems with WebGL and 3D rendering, each graph needs to
 		// have its own color map
-		if (model.isODE() || model.isSDE()) {
-			// ODE or SDE model (no geometry and thus no population)
-			for (PopGraph3D graph : graphs)
-				graph.displayMessage("No view available (" + model.getModelType().toString() + " solver)");
-			return hard;
-		}
 		org.evoludo.simulator.models.Continuous cmodel = null;
 		org.evoludo.simulator.models.Discrete dmodel = null;
 		if (model.isContinuous())
@@ -290,7 +247,6 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 							// mark homogeneous fitness values by pale color
 							Color[] pure = module.getTraitColors();
 							int nMono = module.getNTraits();
-							assert dmodel != null;
 							for (int n = 0; n < nMono; n++)
 								cMap1D.setColor(map2fit.map(dmodel.getMonoScore(tag, n)),
 										new Color(Math.max(pure[n].getRed(), 127),
@@ -306,7 +262,36 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 				throw new Error("MVPop3D: ColorMap not initialized - needs attention!");
 			graph.setColorMap(module.processColorMap(cMap));
 		}
-		return hard;
+	}
+
+	@Override
+	public void activate() {
+		if (isActive)
+			return;
+		// allocateGraphs();
+		super.activate();
+		allocateGraphs();
+	}
+
+	@Override
+	public void reset(boolean hard) {
+		super.reset(hard);
+		if (!isActive) {
+			for (PopGraph3D graph : graphs)
+				graph.invalidate();
+			return;
+		}
+		// prepare initializes or starts suspended animation
+		allocateGraphs();
+		for (PopGraph3D graph : graphs)
+			graph.reset();
+		update(hard);
+	}
+
+	@Override
+	public void init() {
+		super.init();
+		update();
 	}
 
 	/**

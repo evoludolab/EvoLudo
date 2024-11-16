@@ -7,6 +7,7 @@ TASKS:
 - javadoc for EvoLudoJRE module
 
 BUGS:
+- switching directly from 3D fitness view to 3D strategy view shows up empty; resizing lab or switching to another view and back to 3d strategy view restores content (reduce calls to allocateGraphs).
 - 3D views ignore the linewidth setting for drawing the network (try updating to parallax 2.0?)
 - aspect ratios of active 3D views in multiple labs on same page interfere (low priority, highly unlikely scenario)
 

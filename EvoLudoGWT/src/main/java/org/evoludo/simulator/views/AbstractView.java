@@ -164,7 +164,10 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 
 	/**
 	 * Load the view. This is called for modules and models that implement this
-	 * view. This is independent of the activation of the view.
+	 * view. This is called early on when initializing the view and is independent
+	 * of the activation of the view.
+	 * 
+	 * @see #allocateGraphs()
 	 */
 	public void load() {
 		gRows = 1;
@@ -183,8 +186,16 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		model = null;
 	}
 
-//XXX	protected abstract void allocateGraphs();
-	protected void allocateGraphs() {};
+	/**
+	 * Allocate all graphs managed by this view. This is called when loading the
+	 * view. Once all views are attached to the browser DOM a call to the graph's
+	 * {@code calcBounds(int, int)} is triggered through {@code setBounds(int, int)}
+	 * to properly calculate the layout.
+	 * 
+	 * @see #load()
+	 * @see #setBounds(int, int)
+	 */
+	protected abstract void allocateGraphs();
 
 	/**
 	 * Destroy all graphs in this view and free up resources.

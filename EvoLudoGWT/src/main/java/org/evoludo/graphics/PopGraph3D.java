@@ -208,23 +208,14 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		// 3D graphs do not implement Shifting interface. Add mouse listeners here.
 		mouseDownHandler = addMouseDownHandler(this);
 		mouseUpHandler = addMouseUpHandler(this);
+		if (!graph3DScene.isRunning && graph3DPanel.getRenderer() != null)
+			graph3DScene.run();
 	}
 
 	@Override
 	public void deactivate() {
 		graph3DScene.stop();
 		super.deactivate();
-	}
-
-	/**
-	 * Start the animation of the 3D scene.
-	 * <p>
-	 * <strong>Note:</strong> It is important to only run the animation as long as
-	 * the graph is visible. Even when idling the animation consumes considerable
-	 * CPU resources.
-	 */
-	public void animate() {
-		graph3DScene.run();
 	}
 
 	@Override
@@ -499,14 +490,13 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		// }
 	}
 
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * No need to calculate bounds in 3D world.
-	 */
 	@Override
-	protected boolean calcBounds() {
-		return true;
+	public void calcBounds(int width, int height) {
+		// Note: even though graph3DScene != null, getCanvas() still
+		// throws exception 'cannot read properties of undefined'...
+		// however, exception is caught and has no further consequences
+		// checking graph3DScene doesn't work and try-catch-block not needed
+		graph3DScene.getCanvas().setSize(width, height);
 	}
 
 	/**
@@ -773,12 +763,17 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		 * @param doOrthographic {@code true} for an orthographic projection
 		 */
 		private void setOrtho(boolean doOrthographic) {
+			Canvas3d c3d = getCanvas();
+			int width = c3d.getWidth();
+			int height = c3d.getHeight();
+			if (width == 0 || height == 0)
+				return;
 			if (doOrthographic) {
 				// orthographic projection
 				if (graph3DCamera instanceof OrthographicCamera)
 					return;
-				Canvas3d c3d = getCanvas();
-				graph3DCamera = new OrthographicCamera(c3d.getWidth(), c3d.getHeight(), -10000, // near
+				graph3DCamera = new OrthographicCamera(width, height, 
+						-10000, // near
 						10000 // far
 				);
 			} else {
@@ -819,6 +814,10 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		 */
 		@Override
 		protected void onUpdate(double duration) {
+			// TODO: make sure control is initialized once we get here...
+			// onUpdate is called frequently!
+			if (control == null)
+				positionCamera();
 			control.update();
 			getRenderer().render(getScene(), graph3DCamera);
 			if (hasMessage)
