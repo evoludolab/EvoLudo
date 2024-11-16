@@ -1694,19 +1694,24 @@ public class ODEEuler extends Model implements Discrete {
 		int idx = 0;
 		int start = 0;
 		boolean parseOk = true;
+		species: 
 		for (Module pop : species) {
 			String inittype = inittypes[idx % inittypes.length];
 			double[] initargs = null;
 			String[] typeargs = inittype.split("\\s+|=");
 			InitType type = (InitType) cloInit.match(inittype);
 			// if matching of inittype failed assume it was omitted; use previous type
-			if (type == null && idx > 0) {
+			if (type == null) {
+				// if no previous match, give up
+				if (idx == 0) {
+					parseOk = false;
+					break;
+				}
 				type = initType[idx - 1];
 				initargs = CLOParser.parseVector(typeargs[0]);
 			} else if (typeargs.length > 1)
 				initargs = CLOParser.parseVector(typeargs[1]);
 			int nTraits = pop.getNTraits();
-			boolean success = false;
 			switch (type) {
 				case MUTANT:
 					// SDE models only (no vacant sites)
@@ -1722,33 +1727,28 @@ public class ODEEuler extends Model implements Discrete {
 					Arrays.fill(y0, start, start + nTraits, 0.0);
 					y0[mutantType] = 1.0 / pop.getNPopulation();
 					y0[residentType] = 1.0 - y0[mutantType];
-					success = true;
 					break;
 				case DENSITY:
 				case FREQUENCY:
-					if (initargs == null || initargs.length != nTraits)
-						break;
+					if (initargs == null || initargs.length != nTraits) {
+						parseOk = false;
+						break species;
+					}
 					System.arraycopy(initargs, 0, y0, start, nTraits);
-					success = true;
 					break;
 				case RANDOM:
 				case UNIFORM:
 				default:
 					// uniform distribution is the default. for densities set all to zero.
 					Arrays.fill(y0, start, start + nTraits, isDensity() ? 0.0 : 1.0);
-					success = true;
 					break;
-			}
-			if (!success) {
-				type = InitType.UNIFORM;
-				parseOk = false;
 			}
 			initType[idx] = type;
 			idx++;
 			start += nTraits;
 		}
 		if (!parseOk) {
-			logger.warning("parsing of initype(s) '" + arg + "' failed - using " + Formatter.format(initType) + ".");
+			logger.warning("parsing of initype(s) '" + arg + "' failed - using " + cloInit.getDefault() + ".");
 			return false;
 		}
 		return true;
