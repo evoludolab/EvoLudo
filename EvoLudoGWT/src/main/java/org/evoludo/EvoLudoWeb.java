@@ -1808,8 +1808,6 @@ public class EvoLudoWeb extends Composite
 			addView(new Phase2D(engine), oldViews);
 		if (module instanceof HasMean.Strategy)
 			addView(new Mean(engine, Data.STRATEGY), oldViews);
-		if (module instanceof HasPhase2D)
-			addView(new Phase2D(engine), oldViews);
 		if (module instanceof HasS3)
 			addView(new S3(engine), oldViews);
 		if (module instanceof HasHistogram.Strategy)
