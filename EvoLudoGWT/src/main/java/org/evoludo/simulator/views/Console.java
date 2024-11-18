@@ -233,10 +233,6 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 	public void update(boolean force) {
 	}
 
-	@Override
-	public void onResize() {
-	}
-
 	/**
 	 * {@inheritDoc}
 	 * <p>

@@ -625,8 +625,6 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelDidReinit() {
-		// if (!isGUIReady)
-		// 	return;
 		// forward init to all current views
 		for (AbstractView view : activeViews.values())
 			view.init();
@@ -635,8 +633,6 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelDidReset() {
-		// if (!isGUIReady)
-		// 	return;
 		// invalidate network
 		for (AbstractView view : activeViews.values())
 			view.reset(true);

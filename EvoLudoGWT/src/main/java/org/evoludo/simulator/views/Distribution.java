@@ -131,6 +131,9 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 				graph.setDebugEnabled(false);
 				wrapper.add(graph);
 				graphs.add(graph);
+				// even if nGraphs did not change, the geometries associated with the graphs
+				// still need to be updated
+				graph.setGeometry(createGeometry(module.getNTraits()));
 			}
 			gRows = species.size();
 			if (gRows * gCols == 2) {
@@ -151,9 +154,6 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 		for (PopGraph2D graph : graphs) {
 			Module module = graph.getModule();
 			int nTraits = module.getNTraits();
-			// even if nGraphs did not change, the geometries associated with the graphs
-			// still need to be updated
-			graph.setGeometry(createGeometry(nTraits));
 			PopGraph2D.GraphStyle style = graph.getStyle();
 			switch (type) {
 				default:

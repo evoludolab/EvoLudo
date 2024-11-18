@@ -76,7 +76,7 @@
 <tr><th>Ecological Moran</th><td><div class="evoludo-trigger-html"
 	data-clo="--module eMoran --view Strategies_-_Structure --delay 50 --timestep 1 --popsize 500 --popupdate e --mutation 0 --geometry M --fitness 1,2 --deathrate 0.5 --init uniform"></div></td>
 <th>Ecological Moran (statistics)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module eMoran --view Statistics_-_Fixation_probability --delay 50 --timestep 1 --popsize 100 --popupdate e --monostop --init mutant 0,1,0.2 --mutation 0 --geometry r4 --fitness 1,2 --deathrate 0.5"></div></td>
+	data-clo="--module eMoran --view Statistics_-_Fixation_probability --delay 50 --timestep 1 --popsize 100 --popupdate e --monostop --init mutant 1,0,0.2 --mutation 0 --geometry r4 --fitness 1,2 --deathrate 0.5"></div></td>
 </tr>
 <tr><th>2x2 Games (3D)</th><td><div class="evoludo-trigger-html"
 	data-clo="--module 2x2 --view 2 --geometry R2 --init uniform --popupdate s --playerupdate b --references all --popsize 200"></div>
@@ -84,7 +84,7 @@
 	data-clo="--module 2x2 --geominter R2 --geomcomp n --init frequency 1,1 --popupdate s --playerupdate b --references all --popsize 100"></div>
 </tr>
 <tr><th>2x2 Games (statistics)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module 2x2 --delay 50 --view Statistics_-_Fixation_probability --timestep 1 --geometry n --popsize 10x --popupdate d --interactions all --references random 1 --init mutant 0,1 --mutation 0.0 --paymatrix 1,0;1.25,0.25"></div></td>
+	data-clo="--module 2x2 --delay 50 --view Statistics_-_Fixation_probability --timestep 1 --geometry n --popsize 10x --popupdate d --interactions all --references random 1 --init mutant 1,0 --mutation 0.0 --paymatrix 1,0;1.25,0.25"></div></td>
 </tr>
 <tr><th>Ecological 2x2 Games</th><td><div class="evoludo-trigger-html"
 	data-clo="--module e2x2 --delay 50 --timestep 1 --geometry n --popsize 10x --popupdate e --interactions all --init uniform --mutation 0.0 --paymatrix 1,0;1.1,0.1 --fitnessmap static 1,1 --deathrate 0.5"></div></td>
@@ -144,7 +144,7 @@
 	data-clo="--module Mut --geometry M --view Strategies_-_2D_Phase_Plane --init frequency 1,1 --payhost 0,1.4;0.6,1 --paymutualist 0,0.4;-0.4,1 --playerupdate imitate 0.1 --popsize 10000 --model IBS --popupdate a"></div></td>
 </tr>
 <tr><th>Ecological Mutualisms</th><td><div class="evoludo-trigger-html"
-	data-clo="--module eMut --deathrate 10.0 --birthrate 26.0 --comprate 0.1 --single 0.1 --double 0.01 --kappa 1 --lambda 1 --payvirus 0.16,1.16;0,1 --init density 48,3.8,11.7,72.5,0:21.2,3.8,0 --delay 50 --model ODE --timestep 0.05 --view Strategies_-_2D_Phase_Plane"></div>
+	data-clo="--module eMut --deathrate 10.0 --birthrate 26.0 --comprate 0.1 --single 0.1 --double 0.01 --kappa 1 --lambda 1 --payvirus 0.08,1.16;0,0.5 --init density 48,3.8,11.7,72.5,0:21.2,3.8,0 --delay 50 --model ODE --timestep 0.05 --view Strategies_-_2D_Phase_Plane"></div>
 <th>Ecological Mutualisms (T&amp;C)</th><td><div class="evoludo-trigger-html"
 	data-clo="--module eMut --deathrate 10.0 --birthrate 26.0 --comprate 0.1 --single 0.1 --double 0.01 --kappa 1 --lambda 1 --payvirus 0.83,1.99;0.65,1 --init density 20.6,1.5,5.5,19.5,0:28,5,0 --delay 50 --model ODE --timestep 0.02 --view Strategies_-_2D_Phase_Plane"></div></td>
 </tr>
