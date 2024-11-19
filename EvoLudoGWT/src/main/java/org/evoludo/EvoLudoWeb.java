@@ -933,6 +933,7 @@ public class EvoLudoWeb extends Composite
 		displayStatus(action + " pending. Waiting for engine to stop...");
 		displayStatusThresholdLevel = Level.ALL.intValue();
 		engine.requestAction(action.equals("Reset") ? PendingAction.RESET : PendingAction.INIT);
+		updateGUI();
 	}
 
 	/**

@@ -578,6 +578,7 @@ public abstract class EvoLudo
 			return;
 		// notify of reset
 		fireModelReset();
+		modelRelax();
 	}
 
 	/**
@@ -659,17 +660,21 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Relax model by {@code timeRelax} steps and notify all listeners when done.
+	 * Relax model by {@code timeRelax} steps and notify all listeners when done. If model
+	 * converged during relaxation additionally notifies listeners that model has stopped.
 	 *
-	 * @return <code>true</code> if not converged, i.e. if <code>modelNext()</code>
-	 *         can be called.
+	 * @return <code>true</code> if converged
 	 * 
 	 * @see Model#relax()
 	 */
 	public final boolean modelRelax() {
-		boolean cont = activeModel.relax();
+		if (activeModel.getTimeRelax() < 1.0)
+			return activeModel.hasConverged();
+		boolean converged = activeModel.relax();
 		fireModelRelaxed();
-		return cont;
+		if (converged)
+			fireModelStopped();
+		return converged;
 	}
 
 	/**
@@ -1323,6 +1328,7 @@ public abstract class EvoLudo
 				runFired = false;
 				for (MilestoneListener i : milestoneListeners)
 					i.modelStopped();
+				logger.info("Model stopped");
 				break;
 			case STATISTICS_SAMPLE:
 				// check if new sample completed

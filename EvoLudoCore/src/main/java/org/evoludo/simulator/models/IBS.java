@@ -558,10 +558,16 @@ public abstract class IBS extends Model {
 			engine.paramsDidChange();
 			return;
 		}
-		converged = true;
+		// initialize all populations
 		for (Module mod : species) {
 			IBSPopulation pop = mod.getIBSPopulation();
 			pop.init();
+		}
+		// check for convergence separately because initialization may want to 
+		// relax the configuration, which could result in convergence
+		converged = true;
+		for (Module mod : species) {
+			IBSPopulation pop = mod.getIBSPopulation();
 			converged &= pop.checkConvergence();
 		}
 	}
@@ -755,6 +761,7 @@ public abstract class IBS extends Model {
 		double stepDone = 0.0;
 		double gStart = time;
 		boolean hasConverged = false;
+		updates:
 		while (dUpdates >= 1.0) {
 			double stepSize = 0.0;
 			int nUpdates = Math.min((int) dUpdates, 1000000000); // 1e9 about half of Integer.MAX_VALUE (2.1e9)
@@ -809,17 +816,18 @@ public abstract class IBS extends Model {
 					}
 					wScoreTot += sum * rate;
 				}
-				if (hasConverged)
-					break;
+				if (hasConverged) {
+					stepSize = n * gincr;
+					stepDone += Math.abs(stepSize);
+					time = gStart + Math.abs(stepDone);
+					break updates;
+				}
 				// if wPopTot is based on maximum population size, gincr is a constant
 				// gincr = 1.0 / wPopTot;
 			}
 			stepSize = nUpdates * gincr;
 			stepDone += Math.abs(stepSize);
 			time = gStart + Math.abs(stepDone);
-			if (hasConverged)
-				// cannot return just yet; still need to update ephemeral scores
-				break;
 			dUpdates = (stepDt - stepDone) / gincr;
 		}
 		for (Module mod : species) {
