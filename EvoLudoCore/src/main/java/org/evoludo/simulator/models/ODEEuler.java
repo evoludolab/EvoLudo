@@ -616,7 +616,8 @@ public class ODEEuler extends Model implements Discrete {
 
 	@Override
 	public double getMonoScore(int id, int type) {
-		return ((org.evoludo.simulator.modules.Discrete) species.get(id)).getMonoGameScore(type);
+		org.evoludo.simulator.modules.Discrete module = (org.evoludo.simulator.modules.Discrete) species.get(id);
+		return module.getMonoGameScore(type % module.getNTraits());
 	}
 
 	@Override

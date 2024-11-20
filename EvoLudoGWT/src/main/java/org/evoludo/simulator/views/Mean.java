@@ -145,15 +145,13 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 		int nMean = model.getNMean();
 		// index of trait in continuous models
 		int idx = 0;
-		// make sure we have enough temporary storage for all scenarios
-		state = new double[2 * model.getNMean() + 1];
 		for (LineGraph graph : graphs) {
 			AbstractGraph.GraphStyle style = graph.getStyle();
 			Module module = graph.getModule();
 
 			switch (type) {
-				default:
 				case STRATEGY:
+					state = new double[nMean];
 					if (cmodel != null) {
 						// continuous module with single trait on graph (single species, for now)
 						style.yLabel = model.getMeanName(idx);
@@ -194,6 +192,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 				case FITNESS:
 					Color[] fitcolors;
 					int id = module.getID();
+					state = new double[nMean + 1];
 					if (cmodel != null) {
 						// hardcoded color: black for mean, light gray for mean +/- sdev
 						fitcolors = new Color[] { Color.BLACK, Color.LIGHT_GRAY, Color.LIGHT_GRAY };
@@ -236,7 +235,9 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 						graph.setMarkers(marker, monoColors);
 					}
 					break;
-			}
+					default:
+						throw new IllegalArgumentException("Unknown data type: " + type);
+				}
 			if (nSpecies > 1)
 				style.label = module.getName();
 			style.xLabel = "time";

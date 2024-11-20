@@ -37,6 +37,7 @@ import java.io.PrintStream;
 import java.util.Arrays;
 
 import org.evoludo.math.ArrayMath;
+import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.IBS.HasIBS;
@@ -166,6 +167,29 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 	@Override
 	public String getVersion() {
 		return "v1.0 March 2021";
+	}
+
+	@Override
+	public String getTraitName(int idx) {
+		String idxname = super.getTraitName(idx % nTraits);
+		if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+			return idxname;
+		if (idx >= nTraits)
+			return idxname + " (2nd)";
+		return idxname + " (1st)";
+	}
+
+	@Override
+	public Color[] getTraitColors() {
+		Color[] colors = super.getTraitColors();
+		if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+			return colors;
+		Color[] color2nd = new Color[2 * nTraits];
+		for (int n = 0; n < nTraits; n++) {
+			color2nd[n] = colors[n];
+			color2nd[nTraits + n] = ColorMap.addAlpha(colors[n].brighter(), 120);
+		}
+		return color2nd;
 	}
 
 	@Override
@@ -339,16 +363,6 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 		}
 
 		@Override
-		public String getMeanName(int index) {
-			if (competition.getType() == Geometry.Type.SQUARE_NEUMANN_2ND) {
-				if (index < nTraits)
-					return super.getMeanName(index) + " (1st)";
-				return super.getMeanName(index % nTraits) + " (2nd)";
-			}
-			return super.getMeanName(index);
-		}
-
-		@Override
 		public Color[] getMeanColors() {
 			Color[] colors = super.getMeanColors();
 			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
@@ -384,10 +398,21 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 		double tsMean = -1.0;
 
 		/**
+		 * Timestamp for the last fitness calculation.
+		 */
+		double tsFit = -1.0;
+
+		/**
 		 * The trait frequencies for the two sublattices for
 		 * {@code Geometry.Type.SQUARE_NEUMANN_2ND}.
 		 */
 		double[] tsTraits;
+
+		/**
+		 * The trait fitnesses for the two sublattices for
+		 * {@code Geometry.Type.SQUARE_NEUMANN_2ND}.
+		 */
+		double[] tsFits;
 
 		/**
 		 * Create a new instance of the IBS model for {@code 2×2} games.
@@ -401,12 +426,27 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 		@Override
 		public boolean check() {
 			boolean doReset = super.check();
-			if (competition != null && competition.getType() == Geometry.Type.SQUARE_NEUMANN_2ND)
+			if (competition != null && competition.getType() == Geometry.Type.SQUARE_NEUMANN_2ND) {
 				tsTraits = new double[2 * nTraits];
-			else
+				tsFits = new double[2 * nTraits + 1];
+			} else {
 				tsTraits = null;
+				tsFits = null;
+			}
 			tsMean = -1.0;
+			tsFit = -1.0;
 			return doReset;
+		}
+
+		@Override
+		public String getTraitNameAt(int idx) {
+			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+				return super.getTraitNameAt(idx);
+			int side = (int) Math.sqrt(nPopulation);
+			int trait = strategies[idx] % nTraits;
+			if ((idx / side) % 2 == (idx % side) % 2)
+				return module.getTraitName(trait);
+			return module.getTraitName(nTraits + trait);
 		}
 
 		@Override
@@ -433,17 +473,14 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 			int n = 0;
 			Arrays.fill(mean, 0);
 			int side = (int) Math.sqrt(nPopulation);
-			int offset1, offset2;
 			while (n < nPopulation) {
 				if ((n / side) % 2 == 0) {
-					offset1 = 0;
-					offset2 = nTraits;
-				} else {
-					offset1 = nTraits;
-					offset2 = 0;
-				}
-				mean[offset1 + strategies[n++] % nTraits]++;
-				mean[offset2 + (strategies[n++] % nTraits)]++;
+					mean[strategies[n++] % nTraits]++;
+					mean[nTraits + (strategies[n++] % nTraits)]++;
+					continue;
+				} 
+				mean[nTraits + (strategies[n++] % nTraits)]++;
+				mean[strategies[n++] % nTraits]++;
 			}
 			ArrayMath.multiply(mean, 2.0 / nPopulation);
 			System.arraycopy(mean, 0, tsTraits, 0, mean.length);
@@ -459,25 +496,29 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 				return;
 			}
 
+			double newtime = model.getTime();
+			if (Math.abs(tsFit - newtime) < model.getTimeStep()) {
+				System.arraycopy(tsFits, 0, mean, 0, mean.length);
+				return;
+			}
 			int n = 0;
 			Arrays.fill(mean, 0);
 			int side = (int) Math.sqrt(nPopulation);
-			int offset1, offset2;
 			while (n < nPopulation) {
 				if ((n / side) % 2 == 0) {
-					offset1 = 0;
-					offset2 = nTraits;
-				} else {
-					offset1 = nTraits;
-					offset2 = 0;
+					mean[strategies[n] % nTraits] += getFitnessAt(n++);
+					mean[nTraits + (strategies[n] % nTraits)] += getFitnessAt(n++);
+					continue;
 				}
-				mean[offset1 + strategies[n] % nTraits] += getFitnessAt(n++);
-				mean[offset2 + (strategies[n] % nTraits)] += getFitnessAt(n++);
+				mean[nTraits + (strategies[n] % nTraits)] += getFitnessAt(n++);
+				mean[strategies[n] % nTraits] += getFitnessAt(n++);
 			}
 			// total payoff in last entry
 			mean[2 * nTraits] = sumFitness * 0.25;
 			// averages for each sublattice
 			ArrayMath.multiply(mean, 2.0 / nPopulation);
+			System.arraycopy(mean, 0, tsFits, 0, mean.length);
+			tsFit = newtime;
 		}
 
 		@Override
@@ -486,13 +527,12 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 				return super.getStatus();
 
 			double newtime = model.getTime();
-			if (Math.abs(tsMean - newtime) < model.getTimeStep())
+			if (Math.abs(tsMean - newtime) >= model.getTimeStep())
 				getMeanTraits(tsTraits);
 			String status = "";
-			for (int i = 0; i < 2 * nTraits; i++) {
-				status += (status.length() > 0 ? ", " : "") + model.getMeanName(i) + ": "
+			for (int i = 0; i < 2 * nTraits; i++)
+				status += (status.length() > 0 ? ", " : "") + module.getTraitName(i) + ": "
 						+ Formatter.formatPercent(tsTraits[i], 1);
-			}
 			return status;
 		}
 
