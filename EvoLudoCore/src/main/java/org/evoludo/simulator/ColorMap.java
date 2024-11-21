@@ -330,6 +330,15 @@ public abstract class ColorMap<T extends Object> {
 		}
 
 		/**
+		 * Get the array of colors tha backs this color map.
+		 * 
+		 * @return the array of colors
+		 */
+		public T[] getColors() {
+			return colors;
+		}
+
+		/**
 		 * Assign a new <code>color</code> to <code>index</code>.
 		 * 
 		 * @param index the index of the <code>color</code>
@@ -344,7 +353,7 @@ public abstract class ColorMap<T extends Object> {
 		 * <code>alpha</code>.
 		 * <p>
 		 * <strong>Note:</strong> the transparency of the supplied color is always
-		 * honoured but overruled if {@code alpha != 255}.
+		 * honoured.
 		 * 
 		 * @param index the index of the <code>color</code>
 		 * @param color the new color for <code>index</code>
@@ -353,7 +362,7 @@ public abstract class ColorMap<T extends Object> {
 		public void setColor(int index, Color color, int alpha) {
 			if (index < 0 || index >= nColors)
 				return;
-			if (alpha == 255 && color.getAlpha() < 255)
+			if (color.getAlpha() < 255)
 				this.colors[index] = color2Color(color);
 			else
 				this.colors[index] = color2Color(addAlpha(color, alpha));
