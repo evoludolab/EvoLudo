@@ -3092,8 +3092,16 @@ public abstract class IBSPopulation {
 		interaction.size = nPopulation;
 		doReset |= interaction.check();
 		if (competition != null) {
-			competition.size = interaction.size;
+			module.setNPopulation(interaction.size);
+			nPopulation = interaction.size; // keep local copy in sync
+			competition.size = nPopulation;
 			doReset |= competition.check();
+			if (competition.size != nPopulation) {
+				// try checking interaction geometry again
+				interaction.size = competition.size;
+				if (interaction.check())
+					logger.severe("incompatible interaction and competition geometries!");
+			}
 		}
 		// population structure may require special population sizes
 		module.setNPopulation(interaction.size);
