@@ -295,6 +295,9 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		if (ibs != null)
 			ibs.unload();
 		ibs = null;
+		interaction = null;
+		competition = null;
+		structure = null;
 	}
 
 	/**
@@ -341,8 +344,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @see MilestoneListener#modelDidReset()
 	 */
 	public void reset() {
-		interaction = null;
-		competition = null;
 	}
 
 	/**
