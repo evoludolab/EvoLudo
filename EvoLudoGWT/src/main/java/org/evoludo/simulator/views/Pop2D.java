@@ -86,29 +86,9 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		// revise network layout routines)
 		// - another alternative is to add context menu to toggle between the different
 		// link sets (could be difficult if one is a lattice...)
-		int nGraphs = 0;
-		Geometry geoDE = null;
 		switch (model.getModelType()) {
-			case PDE:
-				geoDE = ((PDERD) model).getGeometry();
-				//$FALL-THROUGH$
-			case ODE:
-			case SDE:
-				nGraphs = 1;
-				if (graphs.size() != nGraphs) {
-					destroyGraphs();
-					Module module = engine.getModule();
-					PopGraph2D graph = new PopGraph2D(this, module);
-					// debugging not available for DE's
-					graph.setDebugEnabled(false);
-					wrapper.add(graph);
-					graphs.add(graph);
-				}
-				// there is only a single graph for now but whatever...
-				for (PopGraph2D graph : graphs)
-					graph.setGeometry(geoDE);
-				break;
 			case IBS:
+				int nGraphs = 0;
 				ArrayList<? extends Module> species = engine.getModule().getSpecies();
 				for (Module module : species)
 					nGraphs += Geometry.displayUniqueGeometry(module) ? 1 : 2;
@@ -135,29 +115,55 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 					}
 					int width = 100 / gCols;
 					int height = 100 / gRows;
-					for (PopGraph2D graph : graphs)
+					boolean inter = true;
+					for (PopGraph2D graph : graphs) {
 						graph.setSize(width + "%", height + "%");
-				}
-				// even if nGraphs did not change, the geometries associated with the graphs
-				// still need to be updated
-				boolean inter = true;
-				for (PopGraph2D graph : graphs) {
-					Module module = graph.getModule();
-					Geometry igeom = module.getInteractionGeometry();
-					Geometry cgeom = module.getCompetitionGeometry();
-					Geometry geo = inter ? igeom : cgeom;
-					if (!igeom.interCompSame && Geometry.displayUniqueGeometry(igeom, cgeom))
-						// different geometries but only one graph - pick competition.
-						// note: this is not a proper solution but fits the requirements of
-						// the competition with second nearest neighbours
-						geo = cgeom;
-					graph.setGeometry(geo);
-					// alternate between interaction and competition geometries
-					// no consequences if they are the same
-					inter = !inter;
+						setGraphGeometry(graph, inter);
+						inter = !inter;
+					}
 				}
 				break;
+			case PDE:
+				// PDEs currently restricted to single species
+				if (graphs.size() != 1) {
+					destroyGraphs();
+					Module module = engine.getModule();
+					PopGraph2D graph = new PopGraph2D(this, module);
+					// debugging not available for DE's
+					graph.setDebugEnabled(false);
+					wrapper.add(graph);
+					graphs.add(graph);
+					graph.setSize("100%", "100%");
+					setGraphGeometry(graph, true);
+				}
+				break;
+			case ODE:
+			case SDE:
+				break;
 			default:
+		}
+	}
+
+	private void setGraphGeometry(PopGraph2D graph, boolean inter) {
+		Module module = graph.getModule();
+		switch (model.getModelType()) {
+			case IBS:
+				Geometry igeom = module.getInteractionGeometry();
+				Geometry cgeom = module.getCompetitionGeometry();
+				Geometry geo = inter ? igeom : cgeom;
+				if (!igeom.interCompSame && Geometry.displayUniqueGeometry(igeom, cgeom))
+					// different geometries but only one graph - pick competition.
+					// note: this is not a proper solution but fits the requirements of
+					// the competition with second nearest neighbours
+					geo = cgeom;
+				graph.setGeometry(geo);
+				break;
+			case PDE:
+				graph.setGeometry(((PDERD) model).getGeometry());
+				break;
+			case ODE:
+			case SDE:
+				graph.displayMessage("No structure to display in " + type + " model.");
 		}
 	}
 
@@ -171,12 +177,12 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	@Override
 	public void reset(boolean hard) {
 		super.reset(hard);
+		boolean inter = true;
 		for (PopGraph2D graph : graphs) {
+			// update geometries associated with the graphs
+			setGraphGeometry(graph, inter);
+			inter = !inter;
 			Geometry geometry = graph.getGeometry();
-			if (geometry == null) {
-				graph.reset();
-				continue;
-			}
 			Module module = graph.getModule();
 			PopGraph2D.GraphStyle style = graph.getStyle();
 			if (geometry.getType() == Geometry.Type.LINEAR) {

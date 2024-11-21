@@ -109,6 +109,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			if (data == null || data.length != size)
 				data = new String[size];
 		}
+		calcBounds();
 	}
 
 	@Override
