@@ -158,7 +158,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 						style.percentY = false;
 						style.yMin = cmodel.getTraitMin(0)[idx];
 						style.yMax = cmodel.getTraitMax(0)[idx];
-						Color color = model.getMeanColors()[idx];
+						Color color = module.getMeanColors()[idx];
 						String[] traitcolors = new String[3];
 						traitcolors[0] = ColorMapCSS.Color2Css(color); // mean
 						traitcolors[1] = ColorMapCSS
@@ -168,7 +168,6 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 						idx++;
 					} else {
 						// discrete module with multiple traits on graph
-						int id = module.getID();
 						if (model.isDE() && ((ODEEuler) model).isDensity()) {
 							style.yLabel = "density";
 							style.percentY = false;
@@ -180,7 +179,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 							style.yMin = 0.0;
 							style.yMax = 1.0;
 						}
-						Color[] colors = model.getMeanColors(id);
+						Color[] colors = module.getMeanColors();
 						graph.setColors(ColorMapCSS.Color2Css(colors));
 						String[] mcolors = new String[colors.length];
 						int n = 0;
@@ -198,10 +197,9 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 						fitcolors = new Color[] { Color.BLACK, Color.LIGHT_GRAY, Color.LIGHT_GRAY };
 					} else {
 						// one 'state' more for the average fitness
-						int nState = model.getNMean(id) + 1;
-						fitcolors = new Color[nState];
-						System.arraycopy(model.getMeanColors(id), 0, fitcolors, 0, nState - 1);
-						fitcolors[nState - 1] = Color.BLACK;
+						fitcolors = new Color[nMean + 1];
+						System.arraycopy(module.getMeanColors(), 0, fitcolors, 0, nMean);
+						fitcolors[nMean] = Color.BLACK;
 					}
 					graph.setColors(ColorMapCSS.Color2Css(fitcolors));
 					double min = model.getMinScore(id);

@@ -172,7 +172,7 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 	@Override
 	public String getTraitName(int idx) {
 		String idxname = super.getTraitName(idx % nTraits);
-		if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+		if (competition == null || competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
 			return idxname;
 		if (idx >= nTraits)
 			return idxname + " (2nd)";
@@ -180,14 +180,16 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 	}
 
 	@Override
-	public Color[] getTraitColors() {
-		Color[] colors = super.getTraitColors();
-		if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+	public Color[] getMeanColors() {
+		Color[] colors = super.getMeanColors();
+		// not all models entertain competition geometries, e.g. ODE/SDE
+		if (competition == null || competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
 			return colors;
 		Color[] color2nd = new Color[2 * nTraits];
 		for (int n = 0; n < nTraits; n++) {
-			color2nd[n] = colors[n];
-			color2nd[nTraits + n] = ColorMap.addAlpha(colors[n].brighter(), 120);
+			Color cn = colors[n];
+			color2nd[n] = cn;
+			color2nd[nTraits + n] = ColorMap.addAlpha(cn, 150);
 		}
 		return color2nd;
 	}
@@ -342,43 +344,6 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 	}
 
 	@Override
-	public TBTIBS createIBS() {
-		return new TBT.TBTIBS(engine);
-	}
-
-	/**
-	 * The extension for IBS simulations specific to {@code 2×2} games. This
-	 * extension implements customizations for trait names and colors for
-	 * {@code Geometry.Type.SQUARE_NEUMANN_2ND}.
-	 */
-	public class TBTIBS extends IBSD {
-
-		/**
-		 * Create a new instance of the IBS model for {@code 2×2} games.
-		 * 
-		 * @param engine the pacemaker for running the model
-		 */
-		public TBTIBS(EvoLudo engine) {
-			super(engine);
-		}
-
-		@Override
-		public Color[] getMeanColors() {
-			Color[] colors = super.getMeanColors();
-			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
-				return colors;
-			int nMean = getNMean();
-			Color[] color2nd = new Color[nMean];
-			System.arraycopy(colors, 0, color2nd, 0, nTraits);
-			for (int n = 0; n < nTraits; n++) {
-				color2nd[n] = colors[n];
-				color2nd[nTraits + n] = colors[n].darker();
-			}
-			return color2nd;
-		}
-	}
-
-	@Override
 	public IBSDPopulation createIBSPop() {
 		return new TBT.TBTPop(engine);
 	}
@@ -426,12 +391,12 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 		@Override
 		public boolean check() {
 			boolean doReset = super.check();
-			if (competition != null && competition.getType() == Geometry.Type.SQUARE_NEUMANN_2ND) {
-				tsTraits = new double[2 * nTraits];
-				tsFits = new double[2 * nTraits + 1];
-			} else {
+			if (competition == null || competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
 				tsTraits = null;
 				tsFits = null;
+			} else {
+				tsTraits = new double[2 * nTraits];
+				tsFits = new double[2 * nTraits + 1];
 			}
 			tsMean = -1.0;
 			tsFit = -1.0;
@@ -440,7 +405,7 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 
 		@Override
 		public String getTraitNameAt(int idx) {
-			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+			if (competition == null || competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
 				return super.getTraitNameAt(idx);
 			int side = (int) Math.sqrt(nPopulation);
 			int trait = strategies[idx] % nTraits;
@@ -451,16 +416,16 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 
 		@Override
 		public int getNMean() {
-			if (competition.getType() == Geometry.Type.SQUARE_NEUMANN_2ND)
-				return 2 * nTraits;
-			return super.getNMean();
+			if (competition == null || competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+				return super.getNMean();
+			return 2 * nTraits;
 		}
 
 		@Override
 		public void getMeanTraits(double[] mean) {
 			// SQUARE_NEUMANN_2ND geometry for competition results in two disjoint
 			// sublattices; report strategy frequencies in each sublattice separately
-			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
+			if (competition == null || competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
 				super.getMeanTraits(mean);
 				return;
 			}
@@ -491,7 +456,7 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 		public void getMeanFitness(double[] mean) {
 			// SQUARE_NEUMANN_2ND geometry for competition results in two disjoint
 			// sublattices; report strategy frequencies in each sublattice separately
-			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
+			if (competition == null || competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
 				super.getMeanFitness(mean);
 				return;
 			}
@@ -523,7 +488,7 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 
 		@Override
 		public String getStatus() {
-			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+			if (competition == null || competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
 				return super.getStatus();
 
 			double newtime = model.getTime();

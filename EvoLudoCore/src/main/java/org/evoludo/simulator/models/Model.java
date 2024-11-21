@@ -35,7 +35,6 @@ package org.evoludo.simulator.models;
 import java.awt.Color;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -242,29 +241,22 @@ public abstract class Model implements CLOProvider {
 	 * generations. During relaxation the method {@link #isRelaxing()} must return
 	 * {@code true}.
 	 * 
-	 * @return {@code true} if converged during relaxation
+	 * @return {@code false} if converged during relaxation
 	 * 
 	 * @see #isRelaxing()
 	 * @see #next()
 	 * @see #cloTimeRelax
 	 */
 	public boolean relax() {
-		if (hasConverged())
-			return true;
-		if (timeRelax > 0.0 && time < timeRelax) {
-			isRelaxing = true;
-			double rf = timeStep;
-			timeStep = timeRelax - time;
-			next();
-			timeStep = rf;
-			isRelaxing = false;
-			// reset strategies after relaxation
-			for (Module mod : species) {
-				IBSPopulation pop = mod.getIBSPopulation();
-				pop.resetStrategies();
-			}
-		}
-		return hasConverged();
+		if (timeRelax < 1.0)
+			return false;
+		isRelaxing = true;
+		double rf = timeStep;
+		timeStep = timeRelax;
+		boolean cont = next();
+		timeStep = rf;
+		isRelaxing = false;
+		return cont;
 	}
 
 	/**
@@ -735,34 +727,6 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
-	 * Return the colors for the mean traits of this model.
-	 *
-	 * @return the color array for the mean values
-	 */
-	public Color[] getMeanColors() {
-		int nMean = getNMean();
-		Color[] colors = new Color[nMean];
-		int skip = 0;
-		for (Module mod : species) {
-			int nt = mod.getNTraits();
-			System.arraycopy(mod.getTraitColors(), 0, colors, skip, nt);
-			skip += nt;
-		}
-		return colors;
-	}
-
-	/**
-	 * Return the colors for the mean traits for species with ID {@code id}.
-	 *
-	 * @param id the index of the mean trait
-	 * @return the color array for the mean values
-	 */
-	public Color[] getMeanColors(int id) {
-		Color[] colors = getSpecies(id).getTraitColors();
-		return Arrays.copyOf(colors, colors.length);
-	}
-
-	/**
 	 * Collect and return mean trait values for all species.
 	 * <p>
 	 * <strong>NOTE:</strong> this is a convenience method for multi-species modules
@@ -1129,6 +1093,8 @@ public abstract class Model implements CLOProvider {
 				@Override
 				public boolean parse(String arg) {
 					setTimeRelax(CLOParser.parseDouble(arg));
+					if (getTimeRelax() > 0)
+						engine.setSuspended(true);
 					return true;
 				}
 
@@ -1257,7 +1223,6 @@ public abstract class Model implements CLOProvider {
 	public void collectCLO(CLOParser parser) {
 		parser.addCLO(cloTimeStep);
 		parser.addCLO(cloTimeStop);
-		parser.addCLO(cloTimeRelax);
 		Module module = getSpecies(0);
 		// cannot use permitsSampleStatistics and permitsUpdateStatistics because
 		// they also check parameters that have not yet been set

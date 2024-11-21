@@ -633,6 +633,17 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
+	 * Gets the colors for the mean values of traits. By default this is the same as the trait
+	 * colors. Opportunity for subclasses to return different sets of colors for
+	 * plotting mean values.
+	 * 
+	 * @return the array of mean value colors
+	 */
+	public Color[] getMeanColors() {
+		return getTraitColors();
+	}
+
+	/**
 	 * Sets trait colors specified in {@code colors}. If less than {@code nTraits}
 	 * colors are specified, additional traits are colored using the default colors.
 	 * If still not enough, random colors are generated. Both {@link Discrete} and

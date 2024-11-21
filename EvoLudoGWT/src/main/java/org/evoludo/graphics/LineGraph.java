@@ -413,7 +413,7 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 				double fx = 1.0 - (mouset - buffert) / dt;
 				tip += "<tr><td colspan='2'><hr/></td></tr><tr><td style='text-align:right'><i>" + style.xLabel +
 						":</i></td><td>" + Formatter.format(current[0] - fx * dt, 2) + "</td></tr>";
-				Color[] colors = module.getTraitColors();
+				Color[] colors = module.getMeanColors();
 				if (module instanceof Continuous) {
 					double inter = interpolate(current[1], prev[1], fx);
 					tip += "<tr><td style='text-align:right'><i style='color:"
