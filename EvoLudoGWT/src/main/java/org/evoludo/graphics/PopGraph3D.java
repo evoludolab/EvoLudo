@@ -269,7 +269,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 				}
 				break;
 			case SQUARE_NEUMANN:
-			case SQUARE_NEUMANN_2ND:
 			case SQUARE_MOORE:
 			case SQUARE:
 				side = (int) Math.sqrt(geometry.size); // data.size does not seem to be set at this point
@@ -316,6 +315,28 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 						mesh.updateMatrix();
 						posi += incr;
 					}
+					posj += incr;
+				}
+				break;
+			case SQUARE_NEUMANN_2ND:
+				side = (int) Math.sqrt(geometry.size); // data.size does not seem to be set at this point
+				incr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
+				radius = Math.max(1.0, incr * 0.4);
+				shift = (side - 1) * 0.5 * incr;
+				initUniverse(new BoxGeometry(1.75 * radius, 1.75 * radius, 1.75 * radius));
+				meshes = spheres.iterator();
+				posj = -shift;
+				double posz = 0.4375 * radius;
+				for (int j = 0; j < side; j++) {
+					double posi = -shift;
+					for (int i = 0; i < side; i++) {
+						Mesh mesh = meshes.next();
+						mesh.setPosition(new Vector3(posi, posj, posz));
+						mesh.updateMatrix();
+						posi += incr;
+						posz = -posz;
+					}
+					posz = -posz;
 					posj += incr;
 				}
 				break;

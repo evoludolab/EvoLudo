@@ -152,7 +152,14 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 				boolean inter = true;
 				for (PopGraph3D graph : graphs) {
 					Module module = graph.getModule();
-					Geometry geo = inter ? module.getInteractionGeometry() : module.getCompetitionGeometry();
+					Geometry igeom = module.getInteractionGeometry();
+					Geometry cgeom = module.getCompetitionGeometry();
+					Geometry geo = inter ? igeom : cgeom;
+					if (!igeom.interCompSame && Geometry.displayUniqueGeometry(igeom, cgeom))
+						// different geometries but only one graph - pick competition.
+						// note: this is not a proper solution but fits the requirements of
+						// the competition with second nearest neighbours
+						geo = cgeom;
 					graph.setGeometry(geo);
 					// alternate between interaction and competition geometries
 					// no consequences if they are the same

@@ -233,7 +233,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				break;
 
 			case SQUARE_NEUMANN:
-			case SQUARE_NEUMANN_2ND:
 			case SQUARE_MOORE:
 			case SQUARE:
 				// node 0 in lower left corner
@@ -258,6 +257,49 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 						}
 						g.setFillStyle(data[row + w]);
 						fillRect(xshift, yshift, dw, dh);
+						xshift += dw;
+					}
+					yshift -= dh;
+					row += side;
+				}
+				if (style.showDecoratedFrame)
+					drawFrame(4, 4);
+				else
+					drawFrame(0, 0);
+				break;
+
+			case SQUARE_NEUMANN_2ND:
+				// node 0 in lower left corner
+				yshift = bounds.getHeight() - dh;
+				row = 0;
+				// // generate custom color map for sub-lattices
+				// String[] colors = ((ColorMapCSS.Index) colorMap).getColors();
+				// HashMap<String, String> sub1map = new HashMap<String, String>();
+				// sub1map.put(colors[0], colors[0]);
+				// sub1map.put(colors[1], colors[1]);
+				// sub1map.put(colors[2], colors[4]);
+				// sub1map.put(colors[3], colors[5]);
+				// HashMap<String, String> sub2map = new HashMap<String, String>();
+				// sub2map.put(colors[0], colors[2]);
+				// sub2map.put(colors[1], colors[3]);
+				// sub2map.put(colors[2], colors[6]);
+				// sub2map.put(colors[3], colors[7]);
+				double dw2 = dw / 2.0;
+				for (int h = 0; h < side; h++) {
+					xshift = 0.0;
+					for (int w = 0; w < side; w++) {
+						// if (h % 2 == w % 2)
+						// 	// sub-lattice 1
+						// 	g.setFillStyle(sub1map.get(data[row + w]));
+						// else
+						// 	// sub-lattice 2
+						// 	g.setFillStyle(sub2map.get(data[row + w]));
+						g.setFillStyle(data[row + w]);
+						if (h % 2 == w % 2)
+							fillRect(xshift, yshift, dw, dh);
+						else
+							fillCircle(xshift + dw2, yshift + dw2, dw2);	
+							// fillRect(xshift + 0.5, yshift + 0.5, dw - 1.0, dh - 1.0);
 						xshift += dw;
 					}
 					yshift -= dh;
