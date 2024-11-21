@@ -1219,8 +1219,8 @@ public class Geometry {
 				if (setSize(prod * nIndiv)) {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
-						logger.warning("hierarchical " + name //
-								+ " geometry with levels " + Formatter.format(hierarchy)
+						logger.warning(name + " geometry '" //
+								+ geometry + "' with levels " + Formatter.format(hierarchy)
 								+ " requires population size of " + size + "!");
 					doReset = true;
 				}
@@ -1233,7 +1233,8 @@ public class Geometry {
 				if ((Math.abs(1.0 - connectivity) < 1e-8 && (isInterspecies() || linearAsymmetry == 0)) //
 						|| ((int) (connectivity + 0.5) % 2 == 1 && linearAsymmetry == 0) || connectivity >= size) {
 					connectivity = Math.min(Math.max(2, connectivity + 1), size - 1 - (size - 1) % 2);
-					logger.warning("linear " + name + " geometry requires even integer number of neighbors - using "
+					logger.warning(name + " geometry '" //
+							+ geometry + "' requires even integer number of neighbors - using "
 							+ connectivity + "!");
 					doReset = true;
 				}
@@ -1256,8 +1257,8 @@ public class Geometry {
 			case SUPER_STAR:
 				if (petalsamplification < 3) {
 					petalsamplification = 3;
-					logger.warning("super-star " + name + //
-							" geometry requires amplification of >=3 - using " + petalsamplification + "!");
+					logger.warning(name + " geometry '" //
+							+ geometry + "' requires amplification of >=3 - using " + petalsamplification + "!");
 				}
 				// check population size
 				int pnodes = petalscount * (petalsamplification - 2);
@@ -1265,7 +1266,8 @@ public class Geometry {
 				if (setSize(nReservoir * petalscount + pnodes + 1)) {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
-						logger.warning("super-star " + name + " geometry requires special size - using " + size + "!");
+						logger.warning(name + " geometry '" //
+							+ geometry + "' requires special size - using " + size + "!");
 					doReset = true;
 				}
 				connectivity = (double) (2 * nReservoir * petalscount + pnodes) / (double) size;
@@ -1276,8 +1278,8 @@ public class Geometry {
 				if (setSize(unit * unit * (1 + unit * (1 + unit)))) {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
-						logger.warning("strong suppressor " + name //
-								+ " geometry requires special size - using " + size + "!");
+						logger.warning(name + " geometry '" //
+							+ geometry + "' requires special size - using " + size + "!");
 					doReset = true;
 				}
 				break;
@@ -1292,8 +1294,8 @@ public class Geometry {
 				if (setSize((int) (unit + (1 + alpha) * unit23 + 0.5))) {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
-						logger.warning("strong amplifier " + name //
-								+ " geometry requires special size - using " + size + "!");
+						logger.warning(name + " geometry '" //
+							+ geometry + "' requires special size - using " + size + "!");
 					doReset = true;
 				}
 				break;
@@ -1313,8 +1315,8 @@ public class Geometry {
 				if (setSize(side2)) {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
-						logger.warning("square " + name //
-								+ " geometry requires integer square size - using " + size + "!");
+						logger.warning(name + " geometry '" //
+							+ geometry + "' requires even integer square size - using " + size + "!");
 					doReset = true;
 				}
 				// check connectivity - must be 1, 4 or 3x3, 5x5, 7x7 etc.
@@ -1326,8 +1328,8 @@ public class Geometry {
 					connectivity = count;
 					if (connectivity >= size)
 						connectivity = 4; // simply reset to von Neumann
-					logger.warning("square " + name //
-							+ " geometry has invalid connectivity - using " + connectivity + "!");
+					logger.warning(name + " geometry '" //
+							+ geometry + "' has invalid connectivity - using " + connectivity + "!");
 					doReset = true;
 				}
 				break;
@@ -1339,8 +1341,8 @@ public class Geometry {
 					if (setSize(side3)) {
 						// show size-change-warning only if an explicit population size was requested
 						if (!engine.getModule().cloNPopulation.isDefault())
-							logger.warning("cubic " + name //
-									+ " geometry requires integer cube size - using " + size + "!");
+							logger.warning(name + " geometry '" //
+							+ geometry + "' requires integer cube size - using " + size + "!");
 						doReset = true;
 					}
 					// check connectivity - must be 6 or 3x3x3, 5x5x5, 7x7x6 etc.
@@ -1354,8 +1356,8 @@ public class Geometry {
 					connectivity = count;
 					if (connectivity >= size)
 						connectivity = 6; // simply reset to minimum
-					logger.warning("cubic " + name //
-							+ " geometry has invalid connectivity - using " + connectivity + "!");
+					logger.warning(name + " geometry '" //
+							+ geometry + "' has invalid connectivity - using " + connectivity + "!");
 					doReset = true;
 				}
 				break;
@@ -1369,8 +1371,8 @@ public class Geometry {
 					if (setSize(side2)) {
 						// show size-change-warning only if an explicit population size was requested
 						if (!engine.getModule().cloNPopulation.isDefault())
-							logger.warning("hexagonal " + name //
-									+ " geometry requires even integer square size - using " + size
+							logger.warning(name + " geometry '" //
+									+ geometry + "' requires even integer square size - using " + size
 									+ "!");
 						doReset = true;
 					}
@@ -1378,7 +1380,8 @@ public class Geometry {
 				if ((Math.abs(connectivity - 6) > 1e-8 && Math.abs(1.0 - connectivity) > 1e-8)
 						|| (Math.abs(1.0 - connectivity) < 1e-8 && !isInterspecies())) {
 					connectivity = 6;
-					logger.warning("hexagonal " + name + " geometry requires connectivity 6!");
+					logger.warning(name + " geometry '" //
+							+ geometry + "' requires connectivity 6!");
 				}
 				break;
 			case TRIANGULAR:
@@ -1391,8 +1394,8 @@ public class Geometry {
 					if (setSize(side2)) {
 						// show size-change-warning only if an explicit population size was requested
 						if (!engine.getModule().cloNPopulation.isDefault())
-							logger.warning("triangular " + name //
-									+ " geometry requires even integer square size - using " + size
+							logger.warning(name + " geometry '" //
+									+ geometry + "' requires even integer square size - using " + size
 									+ "!");
 						doReset = true;
 					}
@@ -1400,7 +1403,8 @@ public class Geometry {
 				if ((Math.abs(connectivity - 3) > 1e-8 && Math.abs(1.0 - connectivity) > 1e-8)
 						|| (Math.abs(1.0 - connectivity) < 1e-8 && !isInterspecies())) {
 					connectivity = 3;
-					logger.warning("triangular " + name + " geometry requires connectivity 3!");
+					logger.warning(name + " geometry '" //
+							+ geometry + "' requires connectivity 3!");
 				}
 				break;
 			case RANDOM_REGULAR_GRAPH:
@@ -1412,8 +1416,8 @@ public class Geometry {
 					if (setSize(size + 1)) {
 						// show size-change-warning only if an explicit population size was requested
 						if (!engine.getModule().cloNPopulation.isDefault())
-							logger.warning("RRG " + name //
-									+ " geometry requires even (directed) link count - set size to " + size
+							logger.warning(name + " geometry '" //
+									+ geometry + "' requires even (directed) link count - set size to " + size
 									+ "!");
 						doReset = true;
 					}
@@ -1425,9 +1429,8 @@ public class Geometry {
 				if (setSize(12)) {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
-						logger.warning(
-								(geometry == Type.FRUCHT ? "Frucht" : (geometry == Type.TIETZE ? "Tietze" : "Franklin"))
-										+ " graph " + name + " geometry requires size 12!");
+						logger.warning(name + " geometry '" //
+						+ geometry + "' requires size 12!");
 					doReset = true;
 				}
 				connectivity = 3.0;
@@ -1436,7 +1439,8 @@ public class Geometry {
 				if (setSize(14)) {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
-						logger.warning("Heawood graph " + name + " geometry requires size 14!");
+						logger.warning(name + " geometry '" //
+							+ geometry + "' requires size 14!");
 					doReset = true;
 				}
 				connectivity = 3.0;
@@ -1445,7 +1449,8 @@ public class Geometry {
 				if (setSize(12)) {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
-						logger.warning("Icosahedron graph " + name + " geometry requires size 12!");
+						logger.warning(name + " geometry '" //
+							+ geometry + "' requires size 12!");
 					doReset = true;
 				}
 				connectivity = 5.0;
@@ -1455,8 +1460,8 @@ public class Geometry {
 				if (setSize(20)) {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
-						logger.warning((geometry == Type.DODEKAHEDRON ? "Dodekahedron" : "Desargues") + " graph " + name
-								+ " geometry requires size 20!");
+						logger.warning(name + " geometry '" //
+						+ geometry + "' requires size 20!");
 					doReset = true;
 				}
 				connectivity = 3.0;
