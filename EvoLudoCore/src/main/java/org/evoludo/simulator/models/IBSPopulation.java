@@ -3037,6 +3037,9 @@ public abstract class IBSPopulation {
 				interaction.interCompSame = true;
 			}
 		}
+		// make sure competiton geometry is set
+		if (competition == null)
+			competition = interaction;
 		// set adding of links to geometries
 		if (pAddwire != null) {
 			double prev = interaction.pAddwire;
