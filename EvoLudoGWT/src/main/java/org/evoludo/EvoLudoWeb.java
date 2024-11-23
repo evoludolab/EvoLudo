@@ -933,7 +933,6 @@ public class EvoLudoWeb extends Composite
 		displayStatus(action + " pending. Waiting for engine to stop...");
 		displayStatusThresholdLevel = Level.ALL.intValue();
 		engine.requestAction(action.equals("Reset") ? PendingAction.RESET : PendingAction.INIT);
-		updateGUI();
 	}
 
 	/**
@@ -1181,7 +1180,7 @@ public class EvoLudoWeb extends Composite
 				}
 			}
 		}
-		if (guiState.view == null) {
+		if (guiState.view == null || !activeViews.containsValue(activeView)) {
 			// initial load and view not set (or not found)
 			guiState.view = activeViews.values().toArray(new AbstractView[0])[0];
 		}

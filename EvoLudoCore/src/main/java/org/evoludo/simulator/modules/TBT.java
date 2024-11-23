@@ -172,7 +172,7 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 	@Override
 	public String getTraitName(int idx) {
 		String idxname = super.getTraitName(idx % nTraits);
-		if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+		if (competition == null || competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
 			return idxname;
 		if (idx >= nTraits)
 			return idxname + " (2nd)";
@@ -183,7 +183,7 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 	public Color[] getMeanColors() {
 		Color[] colors = super.getMeanColors();
 		// not all models entertain competition geometries, e.g. ODE/SDE
-		if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+		if (competition == null || competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
 			return colors;
 		Color[] color2nd = new Color[2 * nTraits];
 		for (int n = 0; n < nTraits; n++) {
@@ -491,9 +491,7 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
 				return super.getStatus();
 
-			double newtime = model.getTime();
-			if (Math.abs(tsMean - newtime) >= model.getTimeStep())
-				getMeanTraits(tsTraits);
+			getMeanTraits(tsTraits);
 			String status = "";
 			for (int i = 0; i < 2 * nTraits; i++)
 				status += (status.length() > 0 ? ", " : "") + module.getTraitName(i) + ": "
