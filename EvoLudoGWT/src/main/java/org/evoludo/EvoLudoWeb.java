@@ -1180,7 +1180,7 @@ public class EvoLudoWeb extends Composite
 				}
 			}
 		}
-		if (guiState.view == null || !activeViews.containsValue(activeView)) {
+		if (guiState.view == null || (activeView != null && !activeViews.containsValue(activeView))) {
 			// initial load and view not set (or not found)
 			guiState.view = activeViews.values().toArray(new AbstractView[0])[0];
 		}
