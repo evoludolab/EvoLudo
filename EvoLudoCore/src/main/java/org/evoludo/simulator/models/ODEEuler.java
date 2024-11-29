@@ -770,21 +770,14 @@ public class ODEEuler extends Model implements Discrete {
 			step = Math.min(step, deltat);
 		// NOTE: dt is always >0
 		double elapsed = 0.0;
-		double minast = accuracy * accuracy * dt;
 		double timeBefore = time;
 		while (Math.abs(step - elapsed) > 1e-8) {
-			// take deterministic step
 			double nextstep = Math.min(dtTry, step - elapsed);
 			double d2 = deStep(forward ? nextstep : -nextstep);
 			elapsed += dtTaken;
 			converged = checkConvergence(d2);
 			if (converged)
 				break;
-			// emergency brake - not up for negotiations.
-			if (dtTaken < minast) {
-				converged = true;
-				break;
-			}
 		}
 		// try to minimize rounding errors
 		time = timeBefore + (forward ? elapsed : -elapsed);

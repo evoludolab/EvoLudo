@@ -185,6 +185,10 @@ public class SDEEuler extends ODEEuler {
 		if (converged)
 			return true;
 		if (mutation[0].probability > 0.0) {
+			// if dist2 is zero (or very small) and (at least) one trait is absent, 
+			// random noise may be invalid (pushing state outside of permissible values)
+			if (dist2 < accuracy && ArrayMath.min(yt) < accuracy)
+				return false;
 			int vacant = module.getVacant();
 			// extinction is absorbing even with mutations
 			converged = (vacant < 0 ? false : (yt[vacant] > 1.0 - accuracy));
@@ -230,17 +234,14 @@ public class SDEEuler extends ODEEuler {
 				double b = ((1.0 - mu) * x * (1.0 - x) + mu) * effnoise;
 				double c = Math.sqrt(b);
 				double n = c * rng.nextGaussian() * sqrtdt;
+				dyt[0] += n;
+				dyt[1] -= n;
 				if (mu > 0.0) {
-					// the deterministic drift term also depends on mutations
-					ArrayMath.multiply(dyt, 1.0 - mu);
-					double m = mu * (1.0 - 2.0 * x) + n;
-					dyt[0] += m;
-					dyt[1] -= m;
-					ArrayMath.addscale(yt, dyt, step, yout);
+					yout[0] = yt[0] + step * dyt[0];
+					yout[1] = yt[1] + step * dyt[1];
 				} else {
-					dyt[0] += n;
-					dyt[1] -= n;
-					// extinct species must'nt make a sudden reappearance due to roundoff errors!
+					// in the absence of mutations, extinct traits (or species) must not make
+					// a sudden reappearance due to roundoff errors!
 					if (yt[0] > 0.0)
 						yout[0] = yt[0] + step * dyt[0];
 					else
@@ -344,7 +345,8 @@ public class SDEEuler extends ODEEuler {
 					dyt[1] += ny;
 					if (yt[2] > 0.0)
 						dyt[2] -= nx + ny;
-					// extinct species must not make a sudden reappearance due to roundoff errors!
+					// in the absence of mutations, extinct traits (or species) must not make
+					// a sudden reappearance due to roundoff errors!
 					for (int i = 0; i < nDim; i++)
 						if (yt[i] > 0.0)
 							yout[i] = yt[i] + step * dyt[i];
