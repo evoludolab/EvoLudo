@@ -593,6 +593,12 @@ if (maxBins < 0) maxBins = 100;
 				case STATISTICS_STATIONARY:
 					style.label = (isMultispecies ? module.getName() + ": " : "") + module.getTraitName(idx);
 					nPop = module.getNPopulation();
+					// determine the number of bins with maximum of MAX_BINS
+					binSize = (nPop + 1) / HistoGraph.MAX_BINS + 1;
+					int nBins = (nPop + 1) / binSize;
+					if (data == null || data.length != nTraits || data[0].length != nBins)
+						data = new double[nTraits][nBins];
+					graph.setData(data);
 					if (model.isDE()) {
 						if (((ODEEuler) model).isDensity()) {
 							style.xLabel = "density";
@@ -604,19 +610,14 @@ if (maxBins < 0) maxBins = 100;
 							style.xMax = 1.0;
 							style.percentX = true;
 						}
+						scale2bins = nBins;
 					} else {
 						style.xLabel = "strategy count";
 						style.xMin = 0.0;
 						style.xMax = nPop;
+						scale2bins = 1.0 / binSize;
 					}
 					style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
-					// determine the number of bins with maximum of MAX_BINS
-					binSize = (nPop + 1) / HistoGraph.MAX_BINS + 1;
-					// doubles as the map for frequencies to bins
-					scale2bins = (nPop + 1) / binSize; // number of bins
-					if (data == null || data.length != nTraits || data[0].length != (int) scale2bins)
-						data = new double[nTraits][(int) scale2bins];
-					graph.setData(data);
 					break;
 
 				default:
@@ -770,8 +771,17 @@ if (maxBins < 0) maxBins = 100;
 					double[] state = new double[nt];
 					model.getMeanTraits(state);
 					int idx = 0;
-					for (HistoGraph graph : graphs)
-						graph.addData((int) (state[idx++] * scale2bins));
+					if (model.isIBS()) {
+						for (HistoGraph graph : graphs) {
+							// use the fact that the state is an integer number in IBS
+							// to avoid rounding errors in determining the appropriate bin
+							int nPop = graph.getModule().getNPopulation();
+							graph.addData((int) ((int) (state[idx++] * nPop + 0.5) * scale2bins));
+						}
+					} else {
+						for (HistoGraph graph : graphs)
+							graph.addData((int) (state[idx++] * scale2bins));
+					}
 					break;
 
 				default:
