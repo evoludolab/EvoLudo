@@ -505,7 +505,11 @@ public class IBSDPopulation extends IBSPopulation {
 				maybeMutateMoran(me, debugModel);
 			}
 		}
-		double rate = getPopulationSize() * (module.getDeathRate() + maxFitness);
+		int nPop = getPopulationSize();
+		if (nPop == 0)
+			// population went extinct, no more events possible
+			return Double.POSITIVE_INFINITY;
+		double rate = nPop * (module.getDeathRate() + maxFitness);
 		return RNGDistribution.Exponential.next(rng.getRNG(), rate);
 	}
 
@@ -2048,6 +2052,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * @param monoFreq the frequency of the monomorphic trait
 	 */
 	private void initMono(int monoType, double monoFreq) {
+		monoType = monoType % nTraits;
 		if (monoFreq > 1.0 - 1e-8) {
 			Arrays.fill(strategies, monoType);
 			strategiesTypeCount[monoType] = nPopulation;
@@ -2064,6 +2069,13 @@ public class IBSDPopulation extends IBSPopulation {
 			}
 			strategiesTypeCount[monoType] = nMono;
 			strategiesTypeCount[VACANT] = nPopulation - nMono;
+			// relax the monomorphic configuration (ignore monoStop)
+			// the actual monomorphic frequency may differ from the requested frequency
+			// this is meaningful even for well-mixed populations
+			boolean mono = module.getMonoStop();
+			module.setMonoStop(false);
+			engine.getModel().relax();
+			module.setMonoStop(mono);
 		}
 	}
 
@@ -2077,18 +2089,18 @@ public class IBSDPopulation extends IBSPopulation {
 	 */
 	protected int initMutant() {
 		// initArgs contains the index of the resident and mutant traits
-		int mutantType = (int) init.args[0];
+		int mutantType = (int) init.args[0] % nTraits;
 		int len = init.args.length;
 		int residentType;
 		if (len > 1)
-			residentType = (int) init.args[1];
+			residentType = (int) init.args[1] % nTraits;
 		else
 			residentType = (mutantType + 1) % nTraits;
-		double monoFreq = 1.0;
+		int loc;
 		if (VACANT >= 0) {
 			// if present the third argument indicates the frequency of vacant sites
 			// if not use estimate for carrying capacity
-			monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2])
+			double monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2])
 					: 1.0 - estimateVacantFrequency(residentType));
 			if (residentType == VACANT && monoFreq < 1.0 - 1e-8) {
 				// problem encountered
@@ -2098,12 +2110,25 @@ public class IBSDPopulation extends IBSPopulation {
 				initUniform();
 				return -1;
 			}
+			initMono(residentType, monoFreq);
+			// check if resident population went extinct or a single survivor
+			if (strategiesTypeCount[VACANT] >= nPopulation - 1)
+				return -1;
+			// change trait of random resident to a mutant
+			int idx = random0n(getPopulationSize());
+			loc = -1;
+			while (idx >= 0) {
+				if (isVacantAt(++loc))
+					continue;
+				idx--;
+			}
+		} else {
+			initMono(residentType, 1.0);
+			// change trait of random resident to a mutant
+			loc = random0n(nPopulation);
 		}
-		initMono(residentType, monoFreq);
-		// place a single individual with a random but different strategy
-		int loc = random0n(nPopulation);
-		strategiesTypeCount[strategies[loc]]--;
 		strategies[loc] = mutantType;
+		strategiesTypeCount[residentType]--;
 		strategiesTypeCount[mutantType]++;
 		return loc;
 	}
@@ -2143,7 +2168,7 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 		if (strategies[idx] == VACANT) {
 			strategiesTypeCount[VACANT]--;
-			strategiesTypeCount[residentType]++;
+			strategiesTypeCount[residentType % nTraits]++;
 		}
 		strategies[idx] = mutantType;
 		return idx;

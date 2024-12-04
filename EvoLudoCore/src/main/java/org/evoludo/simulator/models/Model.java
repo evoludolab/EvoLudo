@@ -241,22 +241,29 @@ public abstract class Model implements CLOProvider {
 	 * generations. During relaxation the method {@link #isRelaxing()} must return
 	 * {@code true}.
 	 * 
-	 * @return {@code false} if converged during relaxation
+	 * @return {@code true} if converged during relaxation
 	 * 
 	 * @see #isRelaxing()
 	 * @see #next()
 	 * @see #cloTimeRelax
 	 */
 	public boolean relax() {
-		if (timeRelax < 1.0)
-			return false;
-		isRelaxing = true;
-		double rf = timeStep;
-		timeStep = timeRelax;
-		boolean cont = next();
-		timeStep = rf;
-		isRelaxing = false;
-		return cont;
+		if (hasConverged())
+			return true;
+		if (timeRelax > 0.0 && time < timeRelax) {
+			isRelaxing = true;
+			double rf = timeStep;
+			timeStep = timeRelax - time;
+			next();
+			timeStep = rf;
+			isRelaxing = false;
+			// reset strategies after relaxation
+			for (Module mod : species) {
+				IBSPopulation pop = mod.getIBSPopulation();
+				pop.resetStrategies();
+			}
+		}
+		return hasConverged();
 	}
 
 	/**
@@ -1093,8 +1100,6 @@ public abstract class Model implements CLOProvider {
 				@Override
 				public boolean parse(String arg) {
 					setTimeRelax(CLOParser.parseDouble(arg));
-					if (getTimeRelax() > 0)
-						engine.setSuspended(true);
 					return true;
 				}
 
@@ -1223,6 +1228,7 @@ public abstract class Model implements CLOProvider {
 	public void collectCLO(CLOParser parser) {
 		parser.addCLO(cloTimeStep);
 		parser.addCLO(cloTimeStop);
+		parser.addCLO(cloTimeRelax);
 		Module module = getSpecies(0);
 		// cannot use permitsSampleStatistics and permitsUpdateStatistics because
 		// they also check parameters that have not yet been set
