@@ -213,7 +213,7 @@ public class S3 extends AbstractView {
 			// note: setInitialTraits requires different arguments for discrete and
 			// continuous modules
 			if (model.setInitialTraits(init)) {
-				engine.modelReinit();
+				engine.modelInit();
 				return true;
 			}
 		}

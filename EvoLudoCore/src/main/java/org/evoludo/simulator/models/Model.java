@@ -196,7 +196,7 @@ public abstract class Model implements CLOProvider {
 	/**
 	 * Milestone: Initialize this model
 	 * 
-	 * @see MilestoneListener#modelDidReinit()
+	 * @see MilestoneListener#modelDidInit()
 	 */
 	public void init() {
 		time = 0.0;
@@ -431,7 +431,7 @@ public abstract class Model implements CLOProvider {
 
 	/**
 	 * <code>true</code> if new sample for statistics should be started
-	 * ({@link EvoLudo#modelInit()} will be called on next update).
+	 * ({@link EvoLudo#modelInit(true)} will be called on next update).
 	 */
 	protected boolean statisticsSampleNew = false;
 

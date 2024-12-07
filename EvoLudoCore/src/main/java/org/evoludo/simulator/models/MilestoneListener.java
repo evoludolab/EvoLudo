@@ -93,7 +93,7 @@ public interface MilestoneListener {
 	/**
 	 * Called after the EvoLudo model got re-initialized.
 	 */
-	public default void modelDidReinit() {
+	public default void modelDidInit() {
 	}
 
 	/**

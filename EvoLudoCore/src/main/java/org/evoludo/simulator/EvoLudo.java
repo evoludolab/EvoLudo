@@ -573,32 +573,38 @@ public abstract class EvoLudo
 			mod.reset();
 		activeModel.reset();
 		resetRequested = false;
-		modelInit();
+		modelInit(true);
+		modelRelax();
 		if (quiet)
 			return;
 		// notify of reset
 		fireModelReset();
-		modelRelax();
 	}
 
 	/**
-	 * Initialize all populations (includes strategies but not structures).
+	 * Initialize all populations and notify all listeners.
 	 */
 	public final void modelInit() {
+		modelInit(false);
+	}
+
+	/**
+	 * Initialize all populations and notify all listeners if requested. In contrast
+	 * to {@link #modelReset(boolean)} this method does not re-generate the
+	 * population structures.
+	 * 
+	 * @param quiet set to {@code true} to skip notifying listeners
+	 */
+	public final void modelInit(boolean quiet) {
 		initStatisticsSample();
 		for (Module mod : activeModule.getSpecies())
 			mod.init();
 		activeModel.init();
 		activeModel.update();
 		resetCPUSample();
-	}
-
-	/**
-	 * Re-init all populations and notify all listeners.
-	 */
-	public final void modelReinit() {
-		modelInit();
-		fireModelReinit();
+		if (quiet)
+			return;
+		fireModelInit();
 	}
 
 	/**
@@ -1053,7 +1059,7 @@ public abstract class EvoLudo
 	}
 
 	@Override
-	public void modelDidReinit() {
+	public void modelDidInit() {
 		isRunning = false;
 	}
 
@@ -1255,7 +1261,7 @@ public abstract class EvoLudo
 				if (!isRunning) {
 					if (activeModel.getMode() == Mode.STATISTICS_SAMPLE) {
 						// initialize statistics sample
-						modelInit();
+						modelInit(true);
 						isRunning = true;
 						next();
 					} else
@@ -1263,7 +1269,7 @@ public abstract class EvoLudo
 				}
 				break;
 			case INIT:
-				modelReinit();
+				modelInit();
 				break;
 			case RESET:
 				modelReset();
@@ -1281,11 +1287,11 @@ public abstract class EvoLudo
 	 * Called after the model has been re-initialized. Notifies all registered
 	 * {@link MilestoneListener}s.
 	 */
-	public synchronized void fireModelReinit() {
+	public synchronized void fireModelInit() {
 		if (activeModel.getMode() == Mode.DYNAMICS || !isRunning) {
 			runFired = false;
 			for (MilestoneListener i : milestoneListeners)
-				i.modelDidReinit();
+				i.modelDidInit();
 			logger.info("Model init");
 		}
 	}

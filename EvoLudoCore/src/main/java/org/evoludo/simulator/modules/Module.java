@@ -327,7 +327,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * untouched and only initializes the strategies.
 	 * 
 	 * @see EvoLudo#modelInit()
-	 * @see MilestoneListener#modelDidReinit()
+	 * @see MilestoneListener#modelDidInit()
 	 */
 	public void init() {
 	}

@@ -166,7 +166,7 @@ public class SDEEuler extends ODEEuler {
 	public boolean next() {
 		// start new statistics sample if required
 		if (mode == Mode.STATISTICS_SAMPLE && statisticsSampleNew) {
-			engine.modelInit();
+			engine.modelInit(true);
 			// debugCheck("next (new sample)");
 			return true;
 		}

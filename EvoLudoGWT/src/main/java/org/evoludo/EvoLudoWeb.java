@@ -624,7 +624,7 @@ public class EvoLudoWeb extends Composite
 	}
 
 	@Override
-	public void modelDidReinit() {
+	public void modelDidInit() {
 		// forward init to all current views
 		for (AbstractView view : activeViews.values())
 			view.init();

@@ -304,10 +304,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	}
 
 	@Override
-	public void modelDidReinit() {
+	public void modelDidInit() {
 		timer.stop();
 		isWaiting = true;
-		super.modelDidReinit();
+		super.modelDidInit();
 	}
 
 	@Override

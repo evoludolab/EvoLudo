@@ -134,7 +134,7 @@ public interface ChangeListener {
 	 * <code>modelChanged(PendingAction)</code> first. In particular, this applies
 	 * to pending actions that fire their own notifications, such as
 	 * <code>RESET</code> and <code>INIT</code> that in turn trigger
-	 * <code>modelReinit()</code> and <code>modelReset()</code>, respectively.
+	 * <code>modelReset()</code> and <code>modelInit()</code>, respectively.
 	 *
 	 * @param action pending action that needs to be processed.
 	 * @see ChangeListener.PendingAction PendingAction

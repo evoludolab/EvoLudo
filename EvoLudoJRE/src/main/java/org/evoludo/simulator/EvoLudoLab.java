@@ -702,7 +702,7 @@ public class EvoLudoLab extends JFrame
 	}
 
 	@Override
-	public synchronized void modelDidReinit() {
+	public synchronized void modelDidInit() {
 		for (MultiView mvp : activeViews.getViews())
 			mvp.init();
 		updateLabels();

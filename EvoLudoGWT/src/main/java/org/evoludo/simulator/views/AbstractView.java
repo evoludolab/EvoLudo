@@ -363,8 +363,8 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	/**
 	 * Called when a module has been (re-)initialized.
 	 * 
-	 * @see org.evoludo.simulator.models.MilestoneListener#modelDidReinit()
-	 *      MilestoneListener.modelDidReinit()
+	 * @see org.evoludo.simulator.models.MilestoneListener#modelDidInit()
+	 *      MilestoneListener.modelDidInit()
 	 */
 	public void init() {
 		timestamp = -Double.MAX_VALUE;

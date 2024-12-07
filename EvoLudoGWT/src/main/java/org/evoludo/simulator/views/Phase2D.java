@@ -261,7 +261,7 @@ public class Phase2D extends AbstractView {
 			// note: setInitialTraits requires different arguments for discrete and
 			// continuous modules
 			if (model.setInitialTraits(init)) {
-				engine.modelReinit();
+				engine.modelInit();
 				return true;
 			}
 		}

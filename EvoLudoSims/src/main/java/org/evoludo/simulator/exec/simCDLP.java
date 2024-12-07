@@ -177,7 +177,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 				}
 				dinit[typ[0]] = remaining + 1;
 				model.setInitialTraits(dinit);
-				engine.modelReinit();
+				engine.modelInit();
 				do {
 					engine.modelNext();
 					if (doBasin) {
