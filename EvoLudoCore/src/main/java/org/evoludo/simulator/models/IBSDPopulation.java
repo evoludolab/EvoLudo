@@ -1917,7 +1917,7 @@ public class IBSDPopulation extends IBSPopulation {
 				FixationData fix = engine.getModel().getFixationData();
 				if (fix != null) {
 					fix.mutantNode = mutant;
-					fix.mutantTrait = strategies[fix.mutantNode];
+					fix.mutantTrait = (mutant < 0 ? mutant : strategies[mutant]);
 					fix.residentTrait = (int) init.args[1];
 				}
 				break;
@@ -1929,6 +1929,7 @@ public class IBSDPopulation extends IBSPopulation {
 					fix.mutantNode = mutant;
 					fix.mutantTrait = strategies[fix.mutantNode];
 					fix.residentTrait = (int) init.args[1];
+					fix.mutantTrait = (mutant < 0 ? mutant : strategies[mutant]);
 				}
 				break;
 
@@ -2108,8 +2109,11 @@ public class IBSDPopulation extends IBSPopulation {
 				initUniform();
 				return -1;
 			}
+			// initialize monomorphic resident population at carrying capacity
+			// relax resident population to equilibrium configuration if requested
 			initMono(residentType, monoFreq);
 			// check if resident population went extinct or a single survivor
+			// check if resident population went extinct or only a single survivor
 			if (strategiesTypeCount[VACANT] >= nPopulation - 1)
 				return -1;
 			// change trait of random resident to a mutant
@@ -2142,7 +2146,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 */
 	protected int initTemperature() {
 		int mutant = initMutant();
-		if (interaction.isRegular)
+		if (interaction.isRegular || mutant < 0)
 			return mutant;
 		int mutantType = strategies[mutant];
 		int residentType = (int) init.args[1];

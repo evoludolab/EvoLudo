@@ -263,7 +263,13 @@ public abstract class Model implements CLOProvider {
 				pop.resetStrategies();
 			}
 		}
-		return hasConverged();
+		if (hasConverged()) {
+			// no point in reporting failed initializations for statistics
+			if (mode != Mode.STATISTICS_SAMPLE)
+				logger.warning("extinction during relaxation.");
+			return true;
+		}
+		return false;
 	}
 
 	/**
