@@ -409,6 +409,8 @@ public abstract class Model implements CLOProvider {
 	 */
 	public void resetStatisticsSample() {
 		nStatisticsSamples = 0;
+		nStatisticsFailed = 0;
+		statisticsSampleNew = true;
 	}
 
 	/**
@@ -416,6 +418,13 @@ public abstract class Model implements CLOProvider {
 	 */
 	public void initStatisticsSample() {
 		statisticsSampleNew = false;
+	}
+
+	/**
+	 * Clear statistics sample and get ready to collect next sample.
+	 */
+	public void initStatisticsFailed() {
+		nStatisticsFailed++;
 	}
 
 	/**
@@ -436,15 +445,29 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
+	 * Gets the number of failed statistics samples.
+	 * 
+	 * @return the number of samples
+	 */
+	public int getNStatisticsFailed() {
+		return nStatisticsFailed;
+	}
+
+	/**
 	 * <code>true</code> if new sample for statistics should be started
 	 * ({@link EvoLudo#modelInit(true)} will be called on next update).
 	 */
-	protected boolean statisticsSampleNew = false;
+	protected boolean statisticsSampleNew = true;
 
 	/**
 	 * Number of statistics samples collected.
 	 */
 	protected int nStatisticsSamples = 0;
+
+	/**
+	 * Number of failed statistics samples.
+	 */
+	protected int nStatisticsFailed = 0;
 
 	/**
 	 * The container for collecting statistics samples.
@@ -626,8 +649,10 @@ public abstract class Model implements CLOProvider {
 	 * @return elapsed time as string
 	 */
 	public String getCounter() {
-		if (mode == Mode.STATISTICS_SAMPLE)
-			return "samples: " + getNStatisticsSamples();
+		if (mode == Mode.STATISTICS_SAMPLE) {
+			int failed = getNStatisticsFailed();
+			return "samples: " + getNStatisticsSamples() + (failed > 0 ? " (failed: " + failed + ")" : "");
+		}
 		return "time: " + Formatter.format(getTime(), 2);
 	}
 

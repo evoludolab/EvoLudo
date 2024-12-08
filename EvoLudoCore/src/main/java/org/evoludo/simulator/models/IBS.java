@@ -589,7 +589,7 @@ public abstract class IBS extends Model {
 	@Override
 	public boolean next() {
 		// start new statistics sample if required
-		if (mode == Mode.STATISTICS_SAMPLE && statisticsSampleNew) {
+		if (mode == Mode.STATISTICS_SAMPLE && statisticsSampleNew && !isRelaxing) {
 			engine.modelInit(true);
 			// debugCheck("next (new sample)");
 			return true;

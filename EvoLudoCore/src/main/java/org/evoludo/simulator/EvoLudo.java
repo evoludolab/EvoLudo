@@ -596,10 +596,16 @@ public abstract class EvoLudo
 	 * @param quiet set to {@code true} to skip notifying listeners
 	 */
 	public final void modelInit(boolean quiet) {
-		initStatisticsSample();
 		for (Module mod : activeModule.getSpecies())
 			mod.init();
 		activeModel.init();
+		if (activeModel.getMode() == Mode.STATISTICS_SAMPLE) {
+			if (activeModel.getFixationData().mutantNode < 0) {
+				activeModel.initStatisticsFailed();
+				return;
+			}
+			initStatisticsSample();
+		}
 		activeModel.update();
 		resetCPUSample();
 		if (quiet)
