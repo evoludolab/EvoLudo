@@ -1110,7 +1110,8 @@ public abstract class EvoLudo
 	 * @param now    <code>true</code> to processes action immediately
 	 */
 	public synchronized void requestAction(PendingAction action, boolean now) {
-		pendingAction = action;
+		if (pendingAction != PendingAction.STOP)
+			pendingAction = action;
 		// if requested and not re-parsing of CLOs, process request immediately
 		if (now && !pendingAction.equals(PendingAction.CLO)) {
 			_fireModelChanged();
