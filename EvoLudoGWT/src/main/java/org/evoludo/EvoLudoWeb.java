@@ -604,8 +604,16 @@ public class EvoLudoWeb extends Composite
 				updateGUI();
 				snapshotReady();
 				break;
+			case GUI:
+				updateStatus();
+				break;
+			case MODE:
+				// reset threshold for status messages after mode change
+				displayStatusThresholdLevel = Level.ALL.intValue();
+				updateStatus();
+				break;
 			default:
-				// includes RESET, INIT, START, STOP, UNLOAD, MODE
+				// includes RESET, INIT, START, STOP, UNLOAD
 		}
 		if (!engine.isRunning())
 			updateGUI();

@@ -602,6 +602,7 @@ public abstract class EvoLudo
 		if (activeModel.getMode() == Mode.STATISTICS_SAMPLE) {
 			if (activeModel.getFixationData().mutantNode < 0) {
 				activeModel.initStatisticsFailed();
+				requestAction(PendingAction.GUI, true);
 				return;
 			}
 			initStatisticsSample();
@@ -1239,13 +1240,6 @@ public abstract class EvoLudo
 		PendingAction action = pendingAction;
 		pendingAction = PendingAction.NONE;
 		switch (action) {
-			case NONE:
-			case APPLY:
-			case STATISTIC:
-			case SNAPSHOT:
-				for (ChangeListener i : changeListeners)
-					i.modelChanged(action);
-				break;
 			case MODE:
 				Mode mode = action.mode;
 				if (!activeModel.setMode(mode)) {
@@ -1257,6 +1251,14 @@ public abstract class EvoLudo
 					break;
 				}
 				//$FALL-THROUGH$
+			case NONE:
+			case GUI:
+			case APPLY:
+			case STATISTIC:
+			case SNAPSHOT:
+				for (ChangeListener i : changeListeners)
+					i.modelChanged(action);
+				break;
 			case STOP:		// stop requested (as opposed to simulations that stopped)	
 				runFired = false;
 				for (MilestoneListener i : milestoneListeners)

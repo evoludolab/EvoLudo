@@ -117,7 +117,12 @@ public interface ChangeListener {
 		 * Produce snapshot of current configuration (may not always be available, type
 		 * of snapshot (graphical, statistics, or state) not defined).
 		 */
-		SNAPSHOT;
+		SNAPSHOT,
+
+		/**
+		 * Update graphical user interface (status and counter, not necessarily views).
+		 */
+		GUI;
 
 		/**
 		 * The pending execution mode of the model.
