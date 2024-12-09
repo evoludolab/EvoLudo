@@ -636,10 +636,9 @@ public abstract class IBS extends Model {
 		if (incr < 1e-8)
 			return false;
 		step = Math.min(step, incr);
-		double deltat = ibsStep(step);
 		connect = true;
 		// converged if deltat<0
-		if (deltat < 0.0) {
+		if (!ibsStep(step)) {
 			converged = true;
 			return false;
 		}
@@ -666,14 +665,20 @@ public abstract class IBS extends Model {
 	 * converged/absorbed (individual based simulations cannot reverse time).
 	 * 
 	 * @param stepDt the time increment requested for advancing the IBS model
-	 * @return actual time increment (in generations)
+	 * @return <code>true</code> if <code>ibsStep(double)</code> can be called again.
+	 *         Typically <code>false</code> is returned if the simulation requires
+	 *         attention, such as the following conditions:
+	 *         <ul>
+	 *         <li>the population(s) have reached an absorbing state
+	 *         <li>the population(s) turned monomorphic (stops only if requested)
+	 *         <li>the population(s) went extinct
+	 *         </ul>
 	 * 
 	 * @see org.evoludo.simulator.modules.Discrete#cloMonoStop
 	 */
-	public double ibsStep(double stepDt) {
+	public boolean ibsStep(double stepDt) {
 		// synchronous population updates
 		if (isSynchronous) {
-			double incr = 0.0;
 			int nPopTot = 0;
 			double scoreTot = 0.0;
 			double popFrac = 1.0;
@@ -695,7 +700,7 @@ public abstract class IBS extends Model {
 				for (Module mod : species) {
 					IBSPopulation pop = mod.getIBSPopulation();
 					pop.prepareStrategies();
-					incr += pop.step();
+					pop.step();
 					pop.isConsistent();
 				}
 				// commit strategies and reset scores
@@ -718,9 +723,9 @@ public abstract class IBS extends Model {
 					scoreTot += pop.getTotalFitness();
 				}
 				if (hasConverged)
-					return -incr;
+					return false;
 			}
-			return incr;
+			return true;
 		}
 
 		// asynchronous population update - update one individual at a time
@@ -843,9 +848,7 @@ public abstract class IBS extends Model {
 			pop.updateScores();
 			rng = freeze;
 		}
-		if (hasConverged)
-			return -stepDone;
-		return stepDt;
+		return !hasConverged;
 	}
 
 	@Override
