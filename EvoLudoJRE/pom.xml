@@ -14,19 +14,6 @@
   <packaging>jar</packaging>
 
   <dependencies>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>EvoLudoCore</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>EvoLudoCore</artifactId>
-      <version>${project.version}</version>
-      <!-- do not include sources in final jar -->
-      <scope>provided</scope>
-      <classifier>sources</classifier>
-    </dependency>
     <!-- note: the dependency on com.googlecode.matrix-toolkits-java is only required
     for SDE models with >2 independent traits but pulls in all the native netlib
     libraries, weighing in at a total of ~40MB (or ~15MB to final .jar). -->
@@ -118,4 +105,64 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>private</id>
+      <activation>
+        <file>
+          <exists>../EvoLudoCorePrivate/pom.xml</exists>
+        </file>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCorePrivate</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCorePrivate</artifactId>
+          <version>${project.version}</version>
+          <!-- do not include sources in final jar -->
+          <scope>provided</scope>
+          <classifier>sources</classifier>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCore</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCore</artifactId>
+          <version>${project.version}</version>
+          <!-- do not include sources in final jar -->
+          <scope>provided</scope>
+          <classifier>sources</classifier>
+          </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>public</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCore</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCore</artifactId>
+          <version>${project.version}</version>
+          <classifier>sources</classifier>
+          <!-- do not include sources in final jar -->
+          <scope>provided</scope>
+          </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>
