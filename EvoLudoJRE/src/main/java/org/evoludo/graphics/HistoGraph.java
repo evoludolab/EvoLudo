@@ -153,15 +153,15 @@ frame.init(getBounds());
 
 	@Override
 	public void reset(boolean clear) {
-		int id = module.getID();
-		name = controller.getName(id);
+		name = controller.getName(row);
 		// specify relative positioning of annotation with respect to top-right-corner
 		frame.labels.clear();
 		if( name!=null )
 			frame.labels.add(new GraphLabel(name, 8, style.labelMetrics.getHeight(), Color.black));
 		GraphAxis x = frame.xaxis, y = frame.yaxis;
-		boolean changed = controller.verifyXAxis(x, id);
-		changed |= controller.verifyYAxis(y, id);
+		// JRE: only single species supported
+		boolean changed = controller.verifyXAxis(x, 0);
+		changed |= controller.verifyYAxis(y, 0);
 		if( changed || clear ) {
 			x.restore();
 			y.restore();
@@ -176,7 +176,7 @@ frame.init(getBounds());
 		y.majorTicks = (int)autoscale[autoscaleidx][2];
 		y.grid = y.majorTicks;
 //		((HistoGraphListener)controller).getData(data, tag);
-		if( ((HistoGraphListener)controller).getData(data, id) ) {
+		if( ((HistoGraphListener)controller).getData(data, row) ) {
 			x.min = data.xmin;
 			x.max = data.xmax;
 			x.restore();
@@ -195,15 +195,14 @@ frame.init(getBounds());
 
 	@Override
 	public void reinit() {
-		int id = module.getID();
-		color = controller.getColor(id);
+		color = controller.getColor(row);
 		// needs to be called only after potential changes to the frame such that new binwidth is known
 // note: causes grief in Traits
 //		 this may get called before bounds are set and hence before the binwidth could be determined - skip if this is the case.
 //		controller.verifyMarkedBins((HistoFrameLayer)frame, tag);
 frame.init(getBounds());
 if( getBounds().width>0 && getBounds().height>0 )
-	controller.verifyMarkedBins((HistoFrameLayer)frame, id);
+	controller.verifyMarkedBins((HistoFrameLayer)frame, row);
 		data.reset();
 		super.reinit();
 	}
@@ -212,8 +211,7 @@ if( getBounds().width>0 && getBounds().height>0 )
 	protected void prepare() {
 		// get data
 //		((HistoGraphListener)controller).getData(data, tag);
-		int id = module.getID();
-		if( ((HistoGraphListener)controller).getData(data, id) ) {
+		if( ((HistoGraphListener)controller).getData(data, row) ) {
 // note: is this too drastic a measure? - do we care?
 			GraphAxis x = frame.xaxis;
 			x.min = data.xmin;

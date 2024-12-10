@@ -349,6 +349,8 @@ if( glass!=null ) glass.clear();
 
 	public void next(boolean isActive, boolean updateGUI) {
 		if( hasHistory ) {
+			if (plot == null)
+				return; // not yet ready
 			prepare();
 			plot(plot);
 			if( !isActive || !updateGUI )

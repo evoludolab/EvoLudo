@@ -284,11 +284,10 @@ public class LineGraph extends AbstractGraph {
 
 	@Override
 	public void reset(boolean clear) {
-		int id = module.getID();
-		nStates = controller.getNData(id);
+		nStates = controller.getNData(row);
 		state.init(nStates);
 		state.isLocal = isLocalDynamics;
-		((StateGraphListener)controller).getData(state, id);
+		((StateGraphListener)controller).getData(state, row);
 		GraphAxis x = frame.xaxis;
 		if( doSVG ) svgQueue.reset(state, x.max-x.min);
 		else svgQueue.reset();
@@ -297,13 +296,13 @@ public class LineGraph extends AbstractGraph {
 
 	@Override
 	public void reinit() {
-		int id = module.getID();
-		colors = controller.getColors(id);
-		((StateGraphListener)controller).getData(state, id);
+		colors = controller.getColors(row);
+		((StateGraphListener)controller).getData(state, row);
 		GraphAxis x = frame.xaxis, y = frame.yaxis;
-		boolean changed = controller.verifyXAxis(x, id);
-		changed |= controller.verifyYAxis(y, id);
-		changed |= controller.verifyYThresholds(frame, id);
+		// JRE: only single species supported
+		boolean changed = controller.verifyXAxis(x, 0);
+		changed |= controller.verifyYAxis(y, 0);
+		changed |= controller.verifyYThresholds(frame, 0);
 		// do not restore zoom when clearing the canvas
 		if( changed ) {
 			x.restore();
@@ -333,7 +332,7 @@ public class LineGraph extends AbstractGraph {
 	@Override
 	protected void prepare() {
 		state.next();
-		((StateGraphListener)controller).getData(state, module.getID());
+		((StateGraphListener)controller).getData(state, row);
 	}
 
 	@Override
