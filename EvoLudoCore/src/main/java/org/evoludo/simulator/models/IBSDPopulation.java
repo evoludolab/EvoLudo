@@ -2068,6 +2068,9 @@ public class IBSDPopulation extends IBSPopulation {
 			}
 			strategiesTypeCount[monoType] = nMono;
 			strategiesTypeCount[VACANT] = nPopulation - nMono;
+			// check if population exists
+			if (nMono == 0)
+				return;
 			// relax the monomorphic configuration (ignore monoStop)
 			// the actual monomorphic frequency may differ from the requested frequency
 			// this is meaningful even for well-mixed populations

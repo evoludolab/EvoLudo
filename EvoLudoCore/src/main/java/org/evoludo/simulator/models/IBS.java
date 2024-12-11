@@ -637,7 +637,6 @@ public abstract class IBS extends Model {
 			return false;
 		step = Math.min(step, incr);
 		connect = true;
-		// converged if deltat<0
 		if (!ibsStep(step)) {
 			converged = true;
 			return false;
@@ -715,14 +714,14 @@ public abstract class IBS extends Model {
 					pop.resetScores();
 				}
 				// calculate new scores (requires that all strategies are committed and reset)
-				boolean hasConverged = true;
+				converged = true;
 				for (Module mod : species) {
 					IBSPopulation pop = mod.getIBSPopulation();
 					pop.updateScores();
-					hasConverged &= pop.checkConvergence();
+					converged &= pop.checkConvergence();
 					scoreTot += pop.getTotalFitness();
 				}
-				if (hasConverged)
+				if (converged)
 					return false;
 			}
 			return true;
@@ -765,7 +764,6 @@ public abstract class IBS extends Model {
 		double dUpdates = Math.max(1.0, Math.ceil(stepDt / gincr - 1e-8));
 		double stepDone = 0.0;
 		double gStart = time;
-		boolean hasConverged = false;
 		updates:
 		while (dUpdates >= 1.0) {
 			double stepSize = 0.0;
@@ -805,11 +803,11 @@ public abstract class IBS extends Model {
 				// if wPopTot is based on maximum population size it is a constant
 				// wPopTot = 0.0;
 				wScoreTot = 0.0;
-				hasConverged = true;
+				converged = true;
 				for (Module mod : species) {
 					IBSPopulation pop = mod.getIBSPopulation();
 					pop.isConsistent();
-					hasConverged &= pop.checkConvergence();
+					converged &= pop.checkConvergence();
 					// update generation time and real time increments
 					double rate = mod.getSpeciesUpdateRate();
 					// if wPopTot is based on maximum population size it is a constant
@@ -821,7 +819,7 @@ public abstract class IBS extends Model {
 					}
 					wScoreTot += sum * rate;
 				}
-				if (hasConverged) {
+				if (converged) {
 					stepSize = n * gincr;
 					stepDone += Math.abs(stepSize);
 					time = gStart + Math.abs(stepDone);
@@ -848,7 +846,7 @@ public abstract class IBS extends Model {
 			pop.updateScores();
 			rng = freeze;
 		}
-		return !hasConverged;
+		return !converged;
 	}
 
 	@Override
