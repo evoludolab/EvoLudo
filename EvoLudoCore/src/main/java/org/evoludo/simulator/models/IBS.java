@@ -1759,13 +1759,13 @@ public abstract class IBS extends Model {
 					for (Module mod : species) {
 						IBSPopulation pop = mod.getIBSPopulation();
 						Geometry intergeo = pop.getCompetitionGeometry();
-						output.println("# interaction-add: " + Formatter.format(intergeo.pRewire, 4) +
+						output.println("# interaction-add:      " + Formatter.format(intergeo.pRewire, 4) +
 								(isMultispecies ? " (" + mod.getName() + ")" : ""));
 						Geometry compgeom = pop.getCompetitionGeometry();
 						// competition geometry can be null for pde models
 						if (compgeom == null)
 							continue;
-						output.println("# competition-add: " + Formatter.format(compgeom.pRewire, 4) +
+						output.println("# competition-add:      " + Formatter.format(compgeom.pRewire, 4) +
 								(isMultispecies ? " (" + mod.getName() + ")" : ""));
 						compgeom.printParams(output);
 					}

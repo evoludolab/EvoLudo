@@ -1080,7 +1080,7 @@ public abstract class Model implements CLOProvider {
 
 				@Override
 				public void report(PrintStream output) {
-					output.println("# timestep:           " + Formatter.format(getTimeStep(), 4));
+					output.println("# timestep:             " + Formatter.format(getTimeStep(), 4));
 				}
 			});
 

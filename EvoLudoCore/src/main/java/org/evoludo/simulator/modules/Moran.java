@@ -338,7 +338,7 @@ public class Moran extends Discrete implements Module.Static,
 
 				@Override
 				public void report(PrintStream output) {
-					output.println("# fitness:      " + Formatter.format(getFitness(), 4));
+					output.println("# fitness:              " + Formatter.format(getFitness(), 4));
 				}
 			});
 
