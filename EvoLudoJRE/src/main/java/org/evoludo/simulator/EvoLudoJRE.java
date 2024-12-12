@@ -459,7 +459,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		double[] fixTotTime = new double[0];
 		int nTraits = -1;
 		int nPopulation = -1;
-		long nSamplesLong = (long) model.getNSamples();
+		long nSamples = (long) model.getNSamples();
+		long nFailed = 0L;
 		long samples = 0L;
 		// print settings
 		dumpParameters();
@@ -654,8 +655,9 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 								throw new Error("Statistics for " + data.getKey() + " not supported!");
 						}
 					}
-					if (samples >= nSamplesLong)
+					if (samples >= nSamples)
 						break;
+					nFailed += model.getNStatisticsFailed();
 					modelReset();
 				}
 				// report statistics
@@ -687,7 +689,9 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 							}
 							// trick: to avoid -0 output simply add 0...!
 							output.println("# overall:\t" + Formatter.format(meanFix + 0.0, dataDigits) + " ± "
-									+ Formatter.format(Math.sqrt(varFix / (nPopulation - 1)) + 0.0, dataDigits));
+									+ Formatter.format(Math.sqrt(varFix / (nPopulation - 1)) + 0.0, dataDigits) + ", "
+									+ Formatter.format(samples, 0) +
+									(nFailed > 0L ? " (" + nFailed + " failed)" : ""));
 							break;
 						case STAT_UPDATES:
 							output.println("# index,\t" + data.getKey() + (module.getNSpecies() > 1 ? "\tSpecies" : "")
@@ -696,7 +700,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 									+ " in " + traitNames[fixData.residentTrait] + " population for all locations");
 							for (int n = 0; n < nPopulation; n++)
 								printTimeStat(fixUpdate, n);
-							printTimeStat(fixTotUpdate, "# overall:\t");
+							String tail = "";
+							if (nFailed > 0L)
+								tail = " (" + nFailed + " failed)";
+							printTimeStat(fixTotUpdate, "# overall:\t", tail);
 							break;
 						case STAT_TIMES:
 							output.println("# index,\t" + data.getKey() + (module.getNSpecies() > 1 ? "\tSpecies" : "")
@@ -705,7 +712,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 									+ " in " + traitNames[fixData.residentTrait] + " population for all locations");
 							for (int n = 0; n < nPopulation; n++)
 								printTimeStat(fixTime, n);
-							printTimeStat(fixTotTime, "# overall:\t");
+							tail = "";
+							if (nFailed > 0L)
+								tail = " (" + nFailed + " failed)";
+							printTimeStat(fixTotUpdate, "# overall:\t", tail);
 							break;
 						default:
 							throw new Error("Statistics for " + data.getKey() + " not supported!");
@@ -839,6 +849,20 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 *      boolean, double) for structure of {@code meanvar} array
 	 */
 	private void printTimeStat(double[] meanvar, String head) {
+		printTimeStat(meanvar, head, "");
+	}
+
+	/**
+	 * Helper method to print the fixation and absorption updates/times.
+	 * 
+	 * @param meanvar the array with the running mean and variance
+	 * @param head    the string to prepend to the output
+	 * @param tail    the string to append to the output
+	 * 
+	 * @see #updateMeanVar(double[], boolean, double) see updateMeanVar(double[],
+	 *      boolean, double) for structure of {@code meanvar} array
+	 */
+	private void printTimeStat(double[] meanvar, String head, String tail) {
 		double normut = meanvar[MUTANT_NORM];
 		double normres = meanvar[RESIDENT_NORM];
 		double normabs = meanvar[ABSORPTION_NORM];
@@ -856,7 +880,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				+ Formatter.format(meanvar[ABSORPTION_MEAN] + 0.0, dataDigits) + " ± " // mean absorption time
 				+ (normabs > 1.0 ? Formatter.format(Math.sqrt(meanvar[ABSORPTION_VAR] / (normabs - 1.0)) + 0.0, dataDigits) : "-") + ", " // mean absorption
 																									// sdev
-				+ Formatter.format(normabs, 0)); // mean absorption samples
+				+ Formatter.format(normabs, 0)
+				+ tail); // mean absorption samples
 	}
 
 	/**
