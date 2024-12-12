@@ -2076,7 +2076,10 @@ public class IBSDPopulation extends IBSPopulation {
 			// this is meaningful even for well-mixed populations
 			boolean mono = module.getMonoStop();
 			module.setMonoStop(false);
-			engine.getModel().relax();
+			Model model = engine.getModel();
+			// update required to calculate scores/fitness
+			model.update();
+			model.relax();
 			module.setMonoStop(mono);
 		}
 	}

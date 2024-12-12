@@ -364,7 +364,7 @@ public abstract class IBS extends Model {
 	 * population. For example, less time passes between reproductive events in
 	 * populations with high fitness, while more time passes in low fitness
 	 * populations because there are fewer reproduction events per unit time. If
-	 * individual scares can be negative {@code realtime} is set to
+	 * individual scores can be negative {@code realtime} is set to
 	 * {@code Double#POSITIVE_INFINITY} to indicate that the measure is meaningless.
 	 * <p>
 	 * <strong>Note:</strong> Requires non-negative individual scores.
