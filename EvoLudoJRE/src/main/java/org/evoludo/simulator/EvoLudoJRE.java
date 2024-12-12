@@ -419,14 +419,21 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			// return control to caller.
 			return;
 		}
-		// run simulation
+		// prepare to run simulations
+		Module module = getModule();
+		Model model = getModel();
+		// request mode based on data types (only one mode allowed and ensured by option parser)
+		Mode mode = (isDynamicsDataType(dataTypes.get(0)) ? 
+				Mode.DYNAMICS : Mode.STATISTICS_SAMPLE);
+		if (!model.requestMode(mode)) {
+			// mode not supported
+			logger.info("Mode " + mode + " not supported!");
+			return;
+		}
 		// reset model to check and apply all parameters
 		modelReset();
 		// register hook to dump state when receiving SIGINT
 		registerHook();
-		// helper variables
-		Module module = getModule();
-		Model model = getModel();
 		// allocate storage and initialize helper variables
 		int totTraits = 0;
 		boolean isContinuous = model.isContinuous();
@@ -454,13 +461,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		int nPopulation = -1;
 		long nSamplesLong = (long) model.getNSamples();
 		long samples = 0L;
-		// check and print settings
-		modelCheck();
+		// print settings
 		dumpParameters();
 		// print data legend (for dynamical reports) and initialize variables (for
 		// statistics reports)
-		Mode mode = Mode.DYNAMICS;
-		// note parser of data types ensures a single mode
 		for (MultiView.DataTypes data : dataTypes) {
 			switch (data) {
 				case MEAN:
@@ -498,41 +502,29 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 					nTraits = module.getNTraits();
 					nPopulation = module.getNPopulation();
 					fixProb = new double[nPopulation][nTraits + 1];
-					mode = Mode.STATISTICS_SAMPLE;
 					break;
 				case STAT_UPDATES:
 					nTraits = module.getNTraits();
 					nPopulation = module.getNPopulation();
 					fixUpdate = new double[nPopulation][9];
 					fixTotUpdate = new double[9];
-					mode = Mode.STATISTICS_SAMPLE;
 					break;
 				case STAT_TIMES:
 					nTraits = module.getNTraits();
 					nPopulation = module.getNPopulation();
 					fixTime = new double[nPopulation][9];
 					fixTotTime = new double[9];
-					mode = Mode.STATISTICS_SAMPLE;
 					break;
 				default:
 					output.println("# data output for " + data.getKey() + " not (yet) supported!");
 					return;
 			}
 		}
-		if (!model.requestMode(mode)) {
-			// mode not supported
-			logger.info("Mode " + mode + " not supported!");
-			return;
-		}
-		// get ready to run simulation(s)
-		modelReset();
 		// run simulation
 		switch (model.getMode()) {
 
 			case DYNAMICS:
 				boolean cont = true;
-				// relax initial configuration
-				modelRelax();
 				while (true) {
 					String time = Formatter.format(model.getTime(), dataDigits);
 					// report dynamical data
@@ -1394,7 +1386,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						}
 					}
 					dataTypes.trimToSize();
-					getModel().requestMode(isDynamic ? Mode.DYNAMICS : Mode.STATISTICS_SAMPLE);
+					// too early to set the mode; relevant options may not have been parsed yet
 					return success;
 				}
 			});
