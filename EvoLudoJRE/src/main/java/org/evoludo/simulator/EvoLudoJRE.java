@@ -715,7 +715,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 							tail = "";
 							if (nFailed > 0L)
 								tail = " (" + nFailed + " failed)";
-							printTimeStat(fixTotUpdate, "# overall:\t", tail);
+							printTimeStat(fixTotTime, "# overall:\t", tail);
 							break;
 						default:
 							throw new Error("Statistics for " + data.getKey() + " not supported!");
