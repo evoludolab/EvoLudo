@@ -1827,6 +1827,7 @@ public class EvoLudoWeb extends Composite
 		// unload views that are no longer available
 		for (AbstractView view : oldViews.values())
 			view.unload();
+		oldViews.clear();
 		// update view selector
 		evoludoViews.clear();
 		for (AbstractView view : activeViews.values())

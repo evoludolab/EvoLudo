@@ -163,12 +163,19 @@ public class Histogram extends AbstractView {
 				case DEGREE:
 					nGraphs += getDegreeGraphs(pop.getInteractionGeometry(), pop.getCompetitionGeometry());
 					break;
-				case STATISTICS_FIXATION_PROBABILITY:
 				case STATISTICS_STATIONARY:
 					nGraphs += nTraits;
 					break;
 				case STATISTICS_FIXATION_TIME:
-					nGraphs += nTraits + 1;
+					nGraphs++;
+					//$FALL-THROUGH$
+				case STATISTICS_FIXATION_PROBABILITY:
+					nGraphs += nTraits;
+					// no graph for vacant trait if monostop
+					if (pop.getVacant() >= 0) {
+						if (pop instanceof Discrete && ((Discrete) pop).getMonoStop())
+							nGraphs--;
+					}
 					break;
 				default:
 					nGraphs = Integer.MIN_VALUE;
@@ -289,9 +296,23 @@ public class Histogram extends AbstractView {
 						break;
 
 					case STATISTICS_FIXATION_PROBABILITY:
+						bottomPaneIdx = nTraits - 1;
+						// no graph for vacant trait if monostop
+						int skip = module.getVacant();
+						if (skip >= 0) {
+							// module has vacancies - check if monostop set (requires Discrete too)
+							if (!(module instanceof Discrete))
+								skip = -1;
+							else if (!((Discrete) module).getMonoStop())
+								skip = -1;
+							else if (skip == bottomPaneIdx)
+								bottomPaneIdx--;
+						}
 						for (int n = 0; n < nTraits; n++) {
+							if (n == skip)
+								continue;
 							HistoGraph graph = new HistoGraph(this, module, n);
-							boolean bottomPane = (n == nTraits - 1);
+							boolean bottomPane = (n == bottomPaneIdx);
 							graph.setNormalized(nTraits);
 							wrapper.add(graph);
 							graphs.add(graph);
@@ -318,9 +339,21 @@ public class Histogram extends AbstractView {
 
 					case STATISTICS_FIXATION_TIME:
 						nTraits++; // the last 'trait' is for unconditional absorption times
+						bottomPaneIdx = nTraits - 1;
+						// no graph for vacant trait if monostop
+						skip = module.getVacant();
+						if (skip >= 0) {
+							// module has vacancies - check if monostop set (requires Discrete too)
+							if (!(module instanceof Discrete))
+								skip = -1;
+							else if (!((Discrete) module).getMonoStop())
+								skip = -1;
+						}
 						for (int n = 0; n < nTraits; n++) {
+							if (n == skip)
+								continue;
 							HistoGraph graph = new HistoGraph(this, module, n);
-							boolean bottomPane = (n == nTraits - 1);
+							boolean bottomPane = (n == bottomPaneIdx);
 							wrapper.add(graph);
 							graphs.add(graph);
 							AbstractGraph.GraphStyle style = graph.getStyle();
@@ -335,6 +368,7 @@ public class Histogram extends AbstractView {
 							style.showYLevels = true;
 							style.showLabel = true;
 							style.showXLabel = bottomPane; // show only on bottom panel
+							style.showXTickLabels = bottomPane;
 							style.autoscaleY = true;
 							if (bottomPane)
 								nXLabels++;
@@ -540,7 +574,8 @@ if (maxBins < 0) maxBins = 100;
 					int nPop = module.getNPopulation();
 					style.yMin = 0.0;
 					style.yMax = 1.0;
-					if (idx < nTraits) {
+					// last graph is for absorption times
+					if (idx < graphs.size() - 1) {
 						style.label = module.getTraitName(idx);
 						style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
 					} else {
@@ -564,7 +599,6 @@ if (maxBins < 0) maxBins = 100;
 						style.xMin = 0.0;
 						style.xMax = Functions.roundUp(nPop / 4);
 						style.xLabel = "fixation time";
-						style.showXTickLabels = true;
 						style.yLabel = "probability";
 						style.percentY = true;
 						graph.enableAutoscaleYMenu(true);
@@ -581,7 +615,6 @@ if (maxBins < 0) maxBins = 100;
 						style.xMin = 0.0;
 						style.xMax = nPop - 1;
 						style.xLabel = "node";
-						style.showXTickLabels = (idx == nTraits);
 						style.yLabel = "time";
 						style.percentY = false;
 						graph.enableAutoscaleYMenu(false);
