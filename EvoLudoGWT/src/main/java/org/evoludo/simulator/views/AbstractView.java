@@ -115,7 +115,12 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	/**
 	 * The flag to indicate whether this view is currently active.
 	 */
-	protected boolean isActive = false;
+	boolean isActive = false;
+
+	/**
+	 * The flag to indicate whether this view has been loaded.
+	 */
+	boolean isLoaded = false;
 
 	/**
 	 * The timestamp of the last update of this view.
@@ -170,10 +175,13 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * @see #allocateGraphs()
 	 */
 	public void load() {
+		if (isLoaded)
+			return;
 		gRows = 1;
 		gCols = 1;
 		model = engine.getModel();
 		allocateGraphs();
+		isLoaded = true;
 	}
 
 	/**
@@ -181,9 +189,12 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * implement this view. This is independent of the activation of the view.
 	 */
 	public void unload() {
+		if (!isLoaded)
+			return;
 		destroyGraphs();
 		isActive = false;
 		model = null;
+		isLoaded = false;
 	}
 
 	/**

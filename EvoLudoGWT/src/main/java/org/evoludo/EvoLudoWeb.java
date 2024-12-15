@@ -1217,6 +1217,7 @@ public class EvoLudoWeb extends Composite
 			engine.modelReset(true);
 			for (AbstractView view : activeViews.values())
 				view.load();
+//TODO: check if 'manually' setting dimensions is still necessary
 			if (guiState.module == null) {
 				// startup
 				int width = activeView.getOffsetWidth();
@@ -1230,6 +1231,10 @@ public class EvoLudoWeb extends Composite
 			modelDidReset();
 		} else {
 			if (!engine.paramsDidChange()) {
+				// set of available views may have changed (e.g. statistics)
+				for (AbstractView view : activeViews.values())
+					view.load();
+				evoludoLayout.onResize();
 				// resume running if no reset was necessary or --run was provided
 				engine.setSuspended(guiState.resume || engine.isSuspended());
 				// even without reset necessary data views should be adjusted to:
