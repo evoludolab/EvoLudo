@@ -237,11 +237,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	int nBins;
 
 	/**
-	 * The maximum number of bins with a width of at least {@code MIN_BIN_WIDTH}.
-	 */
-	int maxBins = -1;
-
-	/**
 	 * The maximum number of bins for the histogram.
 	 */
 	public static final int MAX_BINS = 100;
@@ -272,7 +267,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	 * @see #calcBounds()
 	 */
 	public int getMaxBins() {
-		return maxBins;
+		return (int) (bounds.getWidth() / (MIN_BIN_WIDTH + 1));
 	}
 
 	/**
@@ -369,13 +364,8 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	 */
 	public void setData(double[][] data) {
 		this.data = data;
-		if (data != null && data.length > 0 && data[0] != null) {
+		if (data != null && data.length > 0 && data[0] != null)
 			nBins = data[0].length;
-			double width = bounds.getWidth();
-			double barwidth = (width - 2.0 * style.frameWidth) / nBins;
-			double dw = barwidth * nBins - width;
-			bounds.adjust(dw * 0.5, 0, dw, 0);
-		}
 		else
 			nBins = -1;
 	}
@@ -680,12 +670,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			strokeLine(x + barwidth, 0.0, x + barwidth, h);
 			g.setLineDash(style.solidLine);
 		}
-	}
-
-	@Override
-	public void calcBounds(int width, int height) {
-		super.calcBounds(width, height);
-		maxBins = (int) (bounds.getWidth() / (MIN_BIN_WIDTH + 1));
 	}
 
 	/**
