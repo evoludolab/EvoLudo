@@ -558,6 +558,10 @@ public abstract class EvoLudo
 
 	/**
 	 * Reset all populations and notify all listeners if requested.
+	 * <p>
+	 * <strong>Note:</strong> if {@code quiet} is set to {@code true} the model is
+	 * not relaxed and the listeners are not notified. It is the caller's
+	 * responsibility to relax the model and notify the listeners as appropriate.
 	 * 
 	 * @param quiet set to {@code true} to skip notifying listeners
 	 */

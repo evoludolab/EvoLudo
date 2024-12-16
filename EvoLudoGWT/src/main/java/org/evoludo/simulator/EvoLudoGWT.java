@@ -97,9 +97,14 @@ public class EvoLudoGWT extends EvoLudo {
 	public boolean ePubHasKeys = false;
 
 	/**
-	 * generation at which to request snapshot
+	 * The generation at which to request a snapshot.
 	 */
 	protected double snapshotAt = -Double.MAX_VALUE;
+
+	/**
+	 * The number of samples after which to stop. If negative no limit is set.
+	 */
+	double statisticsAt = -1.0;
 
 	/**
 	 * Create timer to measure execution times since instantiation.
@@ -203,9 +208,9 @@ public class EvoLudoGWT extends EvoLudo {
 		switch (activeModel.getMode()) {
 			case STATISTICS_SAMPLE:
 				int samplesCollected = activeModel.getNStatisticsSamples();
-				if (samplesCollected == activeModel.getNSamples()) {
+				if (samplesCollected == statisticsAt) {
 					// requested sample count reached, reset to unlimited
-					activeModel.setNSamples(-1.0);
+					statisticsAt = -1.0;
 					requestAction(Math.abs(snapshotAt - samplesCollected) < 1.0 
 						? PendingAction.SNAPSHOT : PendingAction.STOP, true);
 					break;
@@ -270,6 +275,12 @@ public class EvoLudoGWT extends EvoLudo {
 		isRunning = false;
 		timer.cancel();
 		super.moduleUnloaded();
+	}
+
+	@Override
+	public void modelDidReset() {
+		super.modelDidReset();
+		statisticsAt = activeModel.getNSamples();
 	}
 
 	public synchronized void fireModelStopped() {

@@ -1228,7 +1228,10 @@ public class EvoLudoWeb extends Composite
 					view.setBounds(width, height);
 				}
 			}
-			modelDidReset();
+			// notify of reset (reset above was quiet because views may not have
+			// been ready for notification)
+			engine.fireModelReset();
+			engine.modelRelax();
 		} else {
 			if (!engine.paramsDidChange()) {
 				// set of available views may have changed (e.g. statistics)
@@ -1238,8 +1241,8 @@ public class EvoLudoWeb extends Composite
 				// resume running if no reset was necessary or --run was provided
 				engine.setSuspended(guiState.resume || engine.isSuspended());
 				// even without reset necessary data views should be adjusted to:
-				// - reflect changes in report frequency (time line graphs, distributions and
-				// linear geometries)
+				// - reflect changes in report frequency (time line graphs, distributions
+				// and linear geometries)
 				// - changes in payoffs require rescaling of color maps
 				for (AbstractView view : activeViews.values())
 					view.reset(false);
