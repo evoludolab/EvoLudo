@@ -553,14 +553,18 @@ public class Histogram extends AbstractView {
 						}
 						int maxBins = graph.getMaxBins();
 if (maxBins < 0) maxBins = 100;
-						if (data == null || data.length != nTraits + 1
-								|| data[0].length > maxBins) {
+						if (data == null 
+								|| data.length != nTraits + 1
+								|| nNode > maxBins
+								|| (nNode <= maxBins && data[0].length != nNode)) {
 							binSize = 1;
 							int bins = nNode;
 							while (bins > maxBins) {
 								bins = nNode / ++binSize;
 							}
-							data = new double[nTraits + 1][bins];
+							// allocate memory for data if size changed
+							if (data == null || data.length != nTraits + 1 || data[0].length != bins)
+								data = new double[nTraits + 1][bins];
 							scale2bins = 1.0 / binSize;
 						}
 						graph.setData(data);
@@ -571,7 +575,7 @@ if (maxBins < 0) maxBins = 100;
 
 				case STATISTICS_FIXATION_TIME:
 					checkStatistics();
-					int nPop = module.getNPopulation();
+					int nNode = module.getNPopulation();
 					style.yMin = 0.0;
 					style.yMax = 1.0;
 					// last graph is for absorption times
@@ -584,12 +588,10 @@ if (maxBins < 0) maxBins = 100;
 					}
 					if (doFixtimeDistr(module)) {
 						if (doStatistics) {
-							if (data == null || data.length != nTraits + 1 || data[0].length != HistoGraph.MAX_BINS)
-								data = new double[nTraits + 1][HistoGraph.MAX_BINS];
-							// int maxBins = graph.getMaxBins();
-							// if (data == null || data.length != nTraits + 1 
-							// 	|| data[0].length > maxBins)
-							// 	data = new double[nTraits + 1][Math.min(nPop, maxBins)];
+							int maxBins = graph.getMaxBins() * (HistoGraph.MIN_BIN_WIDTH + 1)
+									/ (HistoGraph.MIN_BIN_WIDTH + 2);
+							if (data == null || data.length != nTraits + 1 || data[0].length != maxBins)
+								data = new double[nTraits + 1][maxBins];
 							graph.setData(data);
 						} else {
 							graph.clearData();
@@ -597,7 +599,7 @@ if (maxBins < 0) maxBins = 100;
 						graph.setNormalized(false);
 						graph.setNormalized(-1);
 						style.xMin = 0.0;
-						style.xMax = Functions.roundUp(nPop / 4);
+						style.xMax = Functions.roundUp(nNode / 4);
 						style.xLabel = "fixation time";
 						style.yLabel = "probability";
 						style.percentY = true;
@@ -605,15 +607,15 @@ if (maxBins < 0) maxBins = 100;
 						style.customYLevels = null;
 					} else {
 						if (doStatistics) {
-							if (data == null || data.length != 2 * (nTraits + 1) || data[0].length != nPop)
-								data = new double[2 * (nTraits + 1)][nPop];
+							if (data == null || data.length != 2 * (nTraits + 1) || data[0].length != nNode)
+								data = new double[2 * (nTraits + 1)][nNode];
 							graph.setData(data);
 						} else {
 							graph.clearData();
 						}
 						graph.setNormalized(idx + nTraits + 1);
 						style.xMin = 0.0;
-						style.xMax = nPop - 1;
+						style.xMax = nNode - 1;
 						style.xLabel = "node";
 						style.yLabel = "time";
 						style.percentY = false;
@@ -625,10 +627,10 @@ if (maxBins < 0) maxBins = 100;
 
 				case STATISTICS_STATIONARY:
 					style.label = (isMultispecies ? module.getName() + ": " : "") + module.getTraitName(idx);
-					nPop = module.getNPopulation();
+					nNode = module.getNPopulation();
 					// determine the number of bins with maximum of MAX_BINS
-					binSize = (nPop + 1) / HistoGraph.MAX_BINS + 1;
-					int nBins = (nPop + 1) / binSize;
+					binSize = (nNode + 1) / HistoGraph.MAX_BINS + 1;
+					int nBins = (nNode + 1) / binSize;
 					if (data == null || data.length != nTraits || data[0].length != nBins)
 						data = new double[nTraits][nBins];
 					graph.setData(data);
@@ -647,7 +649,7 @@ if (maxBins < 0) maxBins = 100;
 					} else {
 						style.xLabel = "strategy count";
 						style.xMin = 0.0;
-						style.xMax = nPop;
+						style.xMax = nNode;
 						scale2bins = 1.0 / binSize;
 					}
 					style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
@@ -763,40 +765,38 @@ if (maxBins < 0) maxBins = 100;
 					}
 					break;
 
+				// NOTE: not fully ready for multi-species; info which species fixated missing
 				case STATISTICS_FIXATION_PROBABILITY:
-					// NOTE: not fully ready for multi-species; info which species fixated missing
-					FixationData fixData = model.getFixationData();
-					if (fixData == null)
-						break;
-					if (!fixData.probRead) {
-						HistoGraph graph = graphs.get(fixData.typeFixed);
-						graph.addData((int) (fixData.mutantNode * scale2bins));
-						fixData.probRead = true;
-					}
-					// reset timestamp (needed to ensure processing of statistics data)
+					// always reset timestamp (double processing prevented by fixData.probRead)
 					timestamp = -1.0;
+					FixationData fixData = model.getFixationData();
+					// return if no fixation data available, already processed or invalid
+					if (fixData == null || fixData.probRead || fixData.mutantNode < 0)
+						break;
+					HistoGraph graph = graphs.get(fixData.typeFixed);
+					graph.addData((int) (fixData.mutantNode * scale2bins));
+					fixData.probRead = true;
 					break;
 
+				// NOTE: not fully ready for multi-species; info which species fixated missing
 				case STATISTICS_FIXATION_TIME:
-					// NOTE: not fully ready for multi-species; info which species fixated missing
-					fixData = model.getFixationData();
-					if (fixData == null)
-						break;
-					if (!fixData.timeRead) {
-						HistoGraph graph = graphs.get(fixData.typeFixed);
-						HistoGraph absorption = graphs.get(graphs.size() - 1);
-						int initNode = fixData.mutantNode;
-						if (initNode < 0 || doFixtimeDistr(graph.getModule())) {
-							graph.addData(fixData.updatesFixed);
-							absorption.addData(fixData.updatesFixed);
-						} else {
-							graph.addData(initNode, fixData.updatesFixed);
-							absorption.addData(initNode, fixData.updatesFixed);
-						}
-						fixData.timeRead = true;
-					}
-					// reset timestamp (needed to ensure processing of statistics data)
+					// always reset timestamp (double processing prevented by fixData.timeRead)
 					timestamp = -1.0;
+					fixData = model.getFixationData();
+					// return if no fixation data available, already processed or invalid
+					if (fixData == null || fixData.timeRead || fixData.mutantNode < 0)
+						break;
+					int initNode = fixData.mutantNode;
+					graph = graphs.get(fixData.typeFixed);
+					HistoGraph absorption = graphs.get(graphs.size() - 1);
+					if (initNode < 0 || doFixtimeDistr(graph.getModule())) {
+						graph.addData(fixData.updatesFixed);
+						absorption.addData(fixData.updatesFixed);
+					} else {
+						graph.addData(initNode, fixData.updatesFixed);
+						absorption.addData(initNode, fixData.updatesFixed);
+					}
+					fixData.timeRead = true;
 					break;
 
 				case STATISTICS_STATIONARY:
@@ -805,15 +805,15 @@ if (maxBins < 0) maxBins = 100;
 					model.getMeanTraits(state);
 					int idx = 0;
 					if (model.isIBS()) {
-						for (HistoGraph graph : graphs) {
+						for (HistoGraph sgraph : graphs) {
 							// use the fact that the state is an integer number in IBS
 							// to avoid rounding errors in determining the appropriate bin
-							int nPop = graph.getModule().getNPopulation();
-							graph.addData((int) ((int) (state[idx++] * nPop + 0.5) * scale2bins));
+							int nPop = sgraph.getModule().getNPopulation();
+							sgraph.addData((int) ((int) (state[idx++] * nPop + 0.5) * scale2bins));
 						}
 					} else {
-						for (HistoGraph graph : graphs)
-							graph.addData((int) (state[idx++] * scale2bins));
+						for (HistoGraph sgraph : graphs)
+							sgraph.addData((int) (state[idx++] * scale2bins));
 					}
 					break;
 
@@ -859,7 +859,7 @@ if (maxBins < 0) maxBins = 100;
 	 * @return {@code true} to show the fixation time distribution
 	 */
 	private boolean doFixtimeDistr(Module module) {
-		return (module.getNPopulation() > HistoGraph.MAX_BINS || model.isSDE());
+		return (module.getNPopulation() > graphs.get(0).getMaxBins() || model.isSDE());
 	}
 
 	/**
