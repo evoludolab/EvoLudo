@@ -658,8 +658,20 @@ public class EvoLudoWeb extends Composite
 		evoludoInitReset.setEnabled(stopped);
 		evoludoApply.setEnabled(stopped);
 		evoludoDefault.setEnabled(stopped);
+		boolean statistics = engine.getModel().getMode() == Mode.STATISTICS_SAMPLE;
+		if (statistics) {
+			evoludoStep.setText("Sample");
+			evoludoStep.setTitle("Calculate single sample");
+			evoludoInitReset.setText("Reset");
+			evoludoInitReset.setTitle("Reset statistics");
+		} else {
+			evoludoStep.setText("Step");
+			evoludoStep.setTitle("Advance single simulation step");
+			evoludoInitReset.setText("Init");
+			evoludoInitReset.setTitle("Initialize population (press Alt to re-initialize structure)");
+		}
 		evoludoSlider.setValue(engine.getDelay());
-		evoludoSlider.setEnabled(engine.getModel().getMode() != Mode.STATISTICS_SAMPLE);
+		evoludoSlider.setEnabled(!statistics);
 		if (stopped)
 			updateStatus();
 	}
@@ -1050,6 +1062,7 @@ public class EvoLudoWeb extends Composite
 	private void prevNextDebug() {
 		String label = evoludoStep.getText();
 		switch (label) {
+			case "Sample":
 			case "Step":
 				engine.next();
 				return;
@@ -1743,6 +1756,12 @@ public class EvoLudoWeb extends Composite
 	 * @param down {@code true} if the Alt-key is pressed
 	 */
 	private void showAltKeys(boolean down) {
+		boolean statistics = engine.getModel().getMode() == Mode.STATISTICS_SAMPLE;
+		// only 'reset' in statistics mode
+		evoludoInitReset.setText(statistics ? "Reset" : "Init");
+		evoludoStep.setText(statistics ? "Sample" : "Step");
+		if (statistics)
+			return;
 		if (down) {
 			evoludoInitReset.setText("Reset");
 			if (engine.getModel().permitsTimeReversal())
@@ -1751,8 +1770,6 @@ public class EvoLudoWeb extends Composite
 				evoludoStep.setText("Debug");
 			return;
 		}
-		evoludoInitReset.setText("Init");
-		evoludoStep.setText("Step");
 	}
 
 	/**
