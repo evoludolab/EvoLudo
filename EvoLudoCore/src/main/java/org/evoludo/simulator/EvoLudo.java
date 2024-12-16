@@ -1273,8 +1273,6 @@ public abstract class EvoLudo
 				// ignore request if already running
 				if (!isRunning) {
 					if (activeModel.getMode() == Mode.STATISTICS_SAMPLE) {
-						// initialize statistics sample
-						modelInit(true);
 						isRunning = true;
 						next();
 					} else
