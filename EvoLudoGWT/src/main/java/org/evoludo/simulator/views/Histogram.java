@@ -836,7 +836,6 @@ if (maxBins < 0) maxBins = 100;
 	 */
 	private boolean checkStatistics() {
 		doStatistics = false;
-		// cast to IBSD is safe because checked first
 		if (!model.permitsMode(Mode.STATISTICS_SAMPLE)
 				|| model.getFixationData() == null) {
 			for (HistoGraph graph : graphs)
