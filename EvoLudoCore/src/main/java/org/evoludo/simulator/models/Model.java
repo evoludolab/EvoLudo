@@ -431,8 +431,10 @@ public abstract class Model implements CLOProvider {
 	 * Signal that statistics sample is ready to process.
 	 */
 	public void readStatisticsSample() {
-		nStatisticsSamples++;
-		statisticsSampleNew = true;
+		if (!statisticsSampleNew) {
+			nStatisticsSamples++;
+			statisticsSampleNew = true;
+		}
 	}
 
 	/**
@@ -454,8 +456,7 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
-	 * <code>true</code> if new sample for statistics should be started
-	 * ({@link EvoLudo#modelInit(true)} will be called on next update).
+	 * The flag to indicate whether to start new statistics sample.
 	 */
 	protected boolean statisticsSampleNew = true;
 

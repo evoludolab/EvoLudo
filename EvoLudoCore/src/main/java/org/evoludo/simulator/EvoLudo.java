@@ -421,32 +421,6 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * The flag to indicate whether the statistics sample has been read - once the
-	 * active model may start working on next sample.
-	 */
-	protected boolean statisticsSampleRead = true;
-
-	/**
-	 * Read the statistics sample from active model if it hasn't been read yet.
-	 */
-	protected void readStatisticsSample() {
-		// check if new sample completed
-		if (!statisticsSampleRead) {
-			activeModel.readStatisticsSample();
-			statisticsSampleRead = true;
-		}
-	}
-
-	/**
-	 * Reset the statistics sample. Call after processing to signal readiness for
-	 * next sample.
-	 */
-	protected void initStatisticsSample() {
-		statisticsSampleRead = false;
-		activeModel.initStatisticsSample();
-	}
-
-	/**
 	 * List of engine listeners that get notified when the state of the population
 	 * changed, for example after population reset or completed an update step.
 	 */
@@ -609,7 +583,7 @@ public abstract class EvoLudo
 				requestAction(PendingAction.GUI, true);
 				return;
 			}
-			initStatisticsSample();
+			activeModel.initStatisticsSample();
 		}
 		activeModel.update();
 		resetCPUSample();
@@ -1349,7 +1323,7 @@ public abstract class EvoLudo
 				break;
 			case STATISTICS_SAMPLE:
 				// check if new sample completed
-				readStatisticsSample();
+				activeModel.readStatisticsSample();
 				// note: calling fireModelChanged doesn't work because MODE_STATISTICS
 				// prevents firing
 				if (pendingAction == PendingAction.NONE)
