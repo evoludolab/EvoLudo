@@ -190,7 +190,9 @@ public abstract class Model implements CLOProvider {
 	 */
 	public void reset() {
 		time = 0.0;
-		resetStatisticsSample();
+		// do not reset statistics while running
+		if (!engine.isRunning())
+			resetStatisticsSample();
 	}
 
 	/**

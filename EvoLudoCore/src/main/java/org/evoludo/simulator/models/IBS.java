@@ -6,6 +6,7 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Features;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
@@ -590,7 +591,16 @@ public abstract class IBS extends Model {
 	public boolean next() {
 		// start new statistics sample if required
 		if (mode == Mode.STATISTICS_SAMPLE && statisticsSampleNew && !isRelaxing) {
-			engine.modelInit(true);
+			reset();
+			init();
+			if (fixData.mutantNode < 0) {
+				initStatisticsFailed();
+				engine.requestAction(PendingAction.GUI, true);
+				// check if STOP has been requested
+				return engine.isRunning();
+			}
+			initStatisticsSample();
+			update();
 			// debugCheck("next (new sample)");
 			return true;
 		}

@@ -572,14 +572,6 @@ public abstract class EvoLudo
 		for (Module mod : activeModule.getSpecies())
 			mod.init();
 		activeModel.init();
-		if (activeModel.getMode() == Mode.STATISTICS_SAMPLE) {
-			if (activeModel.getFixationData().mutantNode < 0) {
-				activeModel.initStatisticsFailed();
-				requestAction(PendingAction.GUI, true);
-				return;
-			}
-			activeModel.initStatisticsSample();
-		}
 		activeModel.update();
 		resetCPUSample();
 		modelRelax(quiet);

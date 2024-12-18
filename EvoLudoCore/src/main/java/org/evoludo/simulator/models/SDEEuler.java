@@ -34,6 +34,7 @@ package org.evoludo.simulator.models;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.views.HasHistogram;
@@ -166,7 +167,16 @@ public class SDEEuler extends ODEEuler {
 	public boolean next() {
 		// start new statistics sample if required
 		if (mode == Mode.STATISTICS_SAMPLE && statisticsSampleNew) {
-			engine.modelInit(true);
+			reset();
+			init();
+			if (fixData.mutantNode < 0) {
+				initStatisticsFailed();
+				engine.requestAction(PendingAction.GUI, true);
+				// check if STOP has been requested
+				return engine.isRunning();
+			}
+			initStatisticsSample();
+			update();
 			// debugCheck("next (new sample)");
 			return true;
 		}
