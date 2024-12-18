@@ -338,8 +338,7 @@ public class Histogram extends AbstractView {
 						break;
 
 					case STATISTICS_FIXATION_TIME:
-						nTraits++; // the last 'trait' is for unconditional absorption times
-						bottomPaneIdx = nTraits - 1;
+						bottomPaneIdx = nTraits;
 						// no graph for vacant trait if monostop
 						skip = module.getVacant();
 						if (skip >= 0) {
@@ -349,11 +348,12 @@ public class Histogram extends AbstractView {
 							else if (!((Discrete) module).getMonoStop())
 								skip = -1;
 						}
-						for (int n = 0; n < nTraits; n++) {
+						for (int n = 0; n <= nTraits; n++) {
 							if (n == skip)
 								continue;
 							HistoGraph graph = new HistoGraph(this, module, n);
 							boolean bottomPane = (n == bottomPaneIdx);
+							graph.setNormalized(n + nTraits + 1);
 							wrapper.add(graph);
 							graphs.add(graph);
 							AbstractGraph.GraphStyle style = graph.getStyle();
@@ -613,7 +613,6 @@ if (maxBins < 0) maxBins = 100;
 						} else {
 							graph.clearData();
 						}
-						graph.setNormalized(idx + nTraits + 1);
 						style.xMin = 0.0;
 						style.xMax = nNode - 1;
 						style.xLabel = "node";
@@ -879,6 +878,9 @@ if (maxBins < 0) maxBins = 100;
 		if (!force && now - updatetime < AbstractGraph.MIN_MSEC_BETWEEN_UPDATES)
 			return status;
 		updatetime = now;
+		// multi-species not supported for statistics
+		if (isMultispecies)
+			return null;
 
 		switch (type) {
 			case STATISTICS_FIXATION_PROBABILITY:
@@ -909,6 +911,16 @@ if (maxBins < 0) maxBins = 100;
 						status += ", ";
 					status += (isMultispecies ? module.getName() + "." : "")
 							+ graph.getStyle().label + ": ";
+					int skip = module.getVacant();
+					if (skip >= 0) {
+						// module has vacancies - check if monostop set (requires Discrete too)
+						if (!(module instanceof Discrete))
+							skip = -1;
+						else if (!((Discrete) module).getMonoStop())
+							skip = -1;
+						if (skip == idx)
+							idx++;
+					}
 					if (doFixtimeDistr(module)) {
 						double mean = Distributions.distrMean(data[idx]);
 						double sdev = Distributions.distrStdev(data[idx], mean);
