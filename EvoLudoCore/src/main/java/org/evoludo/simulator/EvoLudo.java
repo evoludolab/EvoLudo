@@ -546,6 +546,7 @@ public abstract class EvoLudo
 		for (Module mod : activeModule.getSpecies())
 			mod.reset();
 		activeModel.reset();
+		activeModel.resetStatisticsSample();
 		resetRequested = false;
 		modelInit(true);
 		if (!quiet) {
