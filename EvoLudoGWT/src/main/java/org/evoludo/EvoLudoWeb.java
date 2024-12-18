@@ -1205,8 +1205,7 @@ public class EvoLudoWeb extends Composite
 			}
 		}
 		if (guiState.view == null
-			|| (guiState.view != null && !activeViews.containsValue(guiState.view)
-			|| (activeView != null && !activeViews.containsValue(activeView)))) {
+			|| (guiState.view != null && !activeViews.containsValue(guiState.view))) {
 			// initial load and view not set (or not found)
 			guiState.view = activeViews.values().toArray(new AbstractView[0])[0];
 		}
@@ -1220,11 +1219,11 @@ public class EvoLudoWeb extends Composite
 			displayStatus("Problems parsing arguments - check log for details.", Level.WARNING.intValue() + 1);
 			cloSize.parse();
 		}
+		evoludoSlider.setValue(engine.getDelay());
+		revertCLO();
 	}
 
 	private void configGUI() {
-		evoludoSlider.setValue(engine.getDelay());
-		revertCLO();
 		// reset is required if module and/or model changed
 		Module newModule = engine.getModule();
 		Model newModel = engine.getModel();
@@ -1232,38 +1231,43 @@ public class EvoLudoWeb extends Composite
 			engine.modelReset(true);
 			for (AbstractView view : activeViews.values())
 				view.load();
-//TODO: check if 'manually' setting dimensions is still necessary
 			if (guiState.module == null) {
 				// startup
-				int width = activeView.getOffsetWidth();
-				int height = activeView.getOffsetHeight();
-				for (AbstractView view : activeViews.values()) {
-					if (view == activeView)
-						continue;
-					view.setBounds(width, height);
-				}
+				loadViews();
 			}
 			// notify of reset (reset above was quiet because views may not have
 			// been ready for notification)
 			engine.fireModelReset();
 		} else {
 			if (!engine.paramsDidChange()) {
-				// set of available views may have changed (e.g. statistics)
-				for (AbstractView view : activeViews.values())
-					view.load();
-				evoludoLayout.onResize();
+				loadViews();
+				updateGUI();
 				// resume running if no reset was necessary or --run was provided
 				engine.setSuspended(guiState.resume || engine.isSuspended());
-				// even without reset necessary data views should be adjusted to:
-				// - reflect changes in report frequency (time line graphs, distributions
-				// and linear geometries)
-				// - changes in payoffs require rescaling of color maps
-				for (AbstractView view : activeViews.values())
-					view.reset(false);
-				updateGUI();
 			}
 		}
 		activeView.activate();
+	}
+
+	/**
+	 * Helper method to update the views after the command line options have been
+	 * applied. Ensures that all views are loaded, the correct sizes applied and the
+	 * content reset.
+	 */
+	private void loadViews() {
+		// set of available views may have changed (e.g. statistics)
+		int width = activeView.getOffsetWidth();
+		int height = activeView.getOffsetHeight();
+		for (AbstractView view : activeViews.values()) {
+			view.load();
+			view.setBounds(width, height);
+			// even without reset necessary data views should be adjusted to:
+			// - reflect changes in report frequency (time line graphs, distributions
+			// and linear geometries)
+			// - changes in payoffs require rescaling of color maps
+			view.reset(false);
+		}
+		evoludoLayout.onResize();
 	}
 
 	/**
