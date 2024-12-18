@@ -532,10 +532,6 @@ public abstract class EvoLudo
 
 	/**
 	 * Reset all populations and notify all listeners if requested.
-	 * <p>
-	 * <strong>Note:</strong> if {@code quiet} is set to {@code true} the model is
-	 * not relaxed and the listeners are not notified. It is the caller's
-	 * responsibility to relax the model and notify the listeners as appropriate.
 	 * 
 	 * @param quiet set to {@code true} to skip notifying listeners
 	 */
@@ -552,11 +548,10 @@ public abstract class EvoLudo
 		activeModel.reset();
 		resetRequested = false;
 		modelInit(true);
-		modelRelax();
-		if (quiet)
-			return;
-		// notify of reset
-		fireModelReset();
+		if (!quiet) {
+			// notify of reset
+			fireModelReset();
+		}
 	}
 
 	/**
@@ -587,9 +582,11 @@ public abstract class EvoLudo
 		}
 		activeModel.update();
 		resetCPUSample();
-		if (quiet)
-			return;
-		fireModelInit();
+		modelRelax(quiet);
+		if (!quiet) {
+			// notify of init
+			fireModelInit();
+		}
 	}
 
 	/**
@@ -652,19 +649,35 @@ public abstract class EvoLudo
 
 	/**
 	 * Relax model by {@code timeRelax} steps and notify all listeners when done. If model
-	 * converged during relaxation additionally notifies listeners that model has stopped.
+	 * converged during relaxation notify listeners that model has stopped.
 	 *
 	 * @return <code>true</code> if converged
 	 * 
 	 * @see Model#relax()
 	 */
 	public final boolean modelRelax() {
+		return modelRelax(false);
+	}
+
+	/**
+	 * Relax model by {@code timeRelax} steps and notify all listeners if requested.
+	 *
+	 * @param quiet set to {@code true} to skip notifying listeners
+	 * 
+	 * @return <code>true</code> if converged
+	 * 
+	 * @see Model#relax()
+	 */
+	public final boolean modelRelax(boolean quiet) {
 		if (activeModel.getTimeRelax() < 1.0)
 			return activeModel.hasConverged();
 		boolean converged = activeModel.relax();
-		fireModelRelaxed();
-		if (converged)
-			fireModelStopped();
+		if (!quiet) {
+			if (converged)
+				fireModelStopped();
+			else
+				fireModelRelaxed();
+		}
 		return converged;
 	}
 
@@ -1222,12 +1235,10 @@ public abstract class EvoLudo
 			case MODE:
 				Mode mode = action.mode;
 				if (!activeModel.setMode(mode)) {
+					if (!isRunning || mode != Mode.STATISTICS_SAMPLE)
+						break;
 					// continue running if mode unchanged
-					if (isRunning && mode == Mode.STATISTICS_SAMPLE) {
-						for (ChangeListener i : changeListeners)
-							i.modelChanged(PendingAction.STATISTIC);
-					}
-					break;
+					action = PendingAction.STATISTIC;
 				}
 				//$FALL-THROUGH$
 			case NONE:

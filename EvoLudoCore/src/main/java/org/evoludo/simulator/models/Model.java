@@ -357,7 +357,7 @@ public abstract class Model implements CLOProvider {
 
 	/**
 	 * Sets the {@link Mode} of model/simulator. Returns {@code false} if
-	 * {@code mode} is not supported.
+	 * {@code mode} is already active or not supported.
 	 * <p>
 	 * <strong>Note:</strong> Do not set mode directly. Changes of the execution
 	 * mode should be coordinated by the engine through requests.

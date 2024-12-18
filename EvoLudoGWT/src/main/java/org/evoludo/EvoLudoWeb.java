@@ -1244,7 +1244,6 @@ public class EvoLudoWeb extends Composite
 			// notify of reset (reset above was quiet because views may not have
 			// been ready for notification)
 			engine.fireModelReset();
-			engine.modelRelax();
 		} else {
 			if (!engine.paramsDidChange()) {
 				// set of available views may have changed (e.g. statistics)
