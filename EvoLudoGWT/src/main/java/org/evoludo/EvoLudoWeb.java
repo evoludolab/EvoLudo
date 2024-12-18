@@ -613,7 +613,7 @@ public class EvoLudoWeb extends Composite
 				updateStatus();
 				break;
 			default:
-				// includes RESET, INIT, START, STOP, UNLOAD
+				// includes RESET, INIT, START, STOP, MODE, UNLOAD
 		}
 		if (!engine.isRunning())
 			updateGUI();
@@ -764,24 +764,26 @@ public class EvoLudoWeb extends Composite
 	 *                change
 	 */
 	protected void changeViewTo(AbstractView newView, boolean force) {
-		if (force || newView != activeView) {
-			if (activeView != null)
-				activeView.deactivate();
-			// initially activeView would otherwise be null, which causes troubles if mouse
-			// is on canvas triggering events...
-			activeView = newView;
-			evoludoDeck.showWidget(activeView);
-			// set selected item in view selector
-			evoludoViews.setSelectedIndex(evoludoDeck.getWidgetIndex(activeView));
-			// adding a new widget can cause a flurry of activities; wait until they subside
-			// before activation
-			Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-				@Override
-				public void execute() {
-					activeView.activate();
-				}
-			});
-		}
+		if (!force && newView == activeView)
+			return;
+
+		if (activeView != null)
+			activeView.deactivate();
+		// initially activeView would otherwise be null, which causes troubles if mouse
+		// is on canvas triggering events...
+		activeView = newView;
+		evoludoDeck.showWidget(activeView);
+		// set selected item in view selector
+		evoludoViews.setSelectedIndex(evoludoDeck.getWidgetIndex(activeView));
+		// adding a new widget can cause a flurry of activities; wait until they subside
+		// before activation
+		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
+			@Override
+			public void execute() {
+				activeView.activate();
+			}
+		});
+		updateGUI();
 	}
 
 	/**
