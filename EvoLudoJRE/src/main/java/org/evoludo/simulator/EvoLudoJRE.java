@@ -231,10 +231,9 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	public void run() {
 		Thread me = Thread.currentThread();
 		if (!me.getName().equals("Engine")) {
-			isSuspended = false;
 			if (isRunning)
 				return;
-			isRunning = true;
+			fireModelRunning();
 			// this is the EDT, check if engine thread alive and kicking
 			if (engineThread == null) {
 				logger.severe("engine crashed. resetting and relaunching.");
@@ -460,7 +459,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		int nTraits = -1;
 		int nPopulation = -1;
 		long nSamples = (long) model.getNSamples();
-		long nFailed = 0L;
 		long samples = 0L;
 		// print settings
 		dumpParameters();
@@ -624,9 +622,9 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 					rng.clearRNGSeed();
 
 				}
-				while (true) {
-					while (modelNext())
-						;
+				isRunning = true;
+				while (isRunning) {
+					while (activeModel.next());
 					// read and process sample
 					samples++;
 					FixationData fixData = model.getFixationData();
@@ -655,12 +653,11 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 								throw new Error("Statistics for " + data.getKey() + " not supported!");
 						}
 					}
-					if (samples >= nSamples)
-						break;
-					nFailed += model.getNStatisticsFailed();
-					modelReset();
+					activeModel.readStatisticsSample();
+					isRunning = (samples < nSamples);
 				}
 				// report statistics
+				int nFailed = model.getNStatisticsFailed();
 				FixationData fixData = model.getFixationData();
 				for (MultiView.DataTypes data : dataTypes) {
 					switch (data) {

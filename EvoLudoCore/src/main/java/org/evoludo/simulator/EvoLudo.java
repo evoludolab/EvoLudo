@@ -1186,6 +1186,8 @@ public abstract class EvoLudo
 	public synchronized void fireModelRunning() {
 		if (runFired)
 			return;
+		isRunning = true;
+		isSuspended = false;
 		for (MilestoneListener i : milestoneListeners)
 			i.modelRunning();
 		runFired = isRunning();
@@ -1251,7 +1253,7 @@ public abstract class EvoLudo
 				// ignore request if already running
 				if (!isRunning) {
 					if (activeModel.getMode() == Mode.STATISTICS_SAMPLE) {
-						isRunning = true;
+						fireModelRunning();
 						next();
 					} else
 						run();

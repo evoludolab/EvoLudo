@@ -185,10 +185,11 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public void run() {
-		isSuspended = false;
+		if (isRunning)
+			return;
+		fireModelRunning();
 		// start with an update not the delay
 		modelNext();
-		isRunning = true;
 		timer.scheduleRepeating(delay);
 	}
 
@@ -244,16 +245,15 @@ public class EvoLudoGWT extends EvoLudo {
 					case STOP: // finish sample
 						break;
 					default:
-					case APPLY:
-					case CLO:
-					case INIT:
-					case RESET:
-					case SNAPSHOT:
-					case UNLOAD:
 						fireModelStopped();
 						return false;
 				}
-				return modelNext();
+				if (activeModel.next()) {
+					fireModelChanged();
+					return true;
+				}
+				fireModelStopped();
+				return (activeModel.getFixationData().mutantNode < 0);
 			}
 		});
 	}

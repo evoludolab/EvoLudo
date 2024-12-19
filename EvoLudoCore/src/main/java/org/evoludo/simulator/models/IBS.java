@@ -606,7 +606,6 @@ public abstract class IBS extends Model {
 		}
 		// convergence only signaled without mutations
 		if (converged && !optimizeHomo) {
-			engine.fireModelStopped();
 			return false;
 		}
 		// this implies single species
