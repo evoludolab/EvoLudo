@@ -1107,7 +1107,6 @@ public abstract class EvoLudo
 	 * {@link MilestoneListener}s.
 	 */
 	public synchronized void fireModuleLoaded() {
-		runFired = false;
 		pendingAction = PendingAction.NONE;
 		for (MilestoneListener i : milestoneListeners)
 			i.moduleLoaded();
@@ -1121,7 +1120,6 @@ public abstract class EvoLudo
 	 * registered {@link MilestoneListener}s.
 	 */
 	public synchronized void fireModuleUnloaded() {
-		runFired = false;
 		for (MilestoneListener i : milestoneListeners)
 			i.moduleUnloaded();
 		if (activeModule != null)
@@ -1138,7 +1136,6 @@ public abstract class EvoLudo
 	 * @see #restoreState(Plist)
 	 */
 	public synchronized void fireModuleRestored() {
-		runFired = false;
 		for (MilestoneListener i : milestoneListeners)
 			i.moduleRestored();
 		logger.info("Module restored");
@@ -1149,7 +1146,6 @@ public abstract class EvoLudo
 	 * {@link MilestoneListener}s.
 	 */
 	public synchronized void fireModelLoaded() {
-		runFired = false;
 		pendingAction = PendingAction.NONE;
 		for (MilestoneListener i : milestoneListeners)
 			i.modelLoaded();
@@ -1162,7 +1158,6 @@ public abstract class EvoLudo
 	 * {@link MilestoneListener}s.
 	 */
 	public synchronized void fireModelUnloaded() {
-		runFired = false;
 		pendingAction = PendingAction.NONE;
 		for (MilestoneListener i : milestoneListeners)
 			i.modelUnloaded();
@@ -1172,25 +1167,16 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * The flag to indicate whether the model running event has been processed. This
-	 * is required to deal with repeated samples for {@code Mode#STATISTICS}.
-	 * 
-	 * @see Mode#STATISTICS_SAMPLE
-	 */
-	private boolean runFired = false;
-
-	/**
 	 * Called whenever the model starts its calculations. Fires only when starting
 	 * to run. Notifies all registered {@link MilestoneListener}s.
 	 */
 	public synchronized void fireModelRunning() {
-		if (runFired)
+		if (isRunning)
 			return;
 		isRunning = true;
 		isSuspended = false;
 		for (MilestoneListener i : milestoneListeners)
 			i.modelRunning();
-		runFired = isRunning();
 	}
 
 	/**
@@ -1202,9 +1188,6 @@ public abstract class EvoLudo
 	 * @see PendingAction
 	 */
 	public synchronized void fireModelChanged() {
-		// any specific request causes model to stop (and potentially resume later)
-		if (pendingAction != PendingAction.NONE)
-			runFired = false;
 		switch (activeModel.getMode()) {
 			default:
 			case STATISTICS_UPDATE:
@@ -1245,7 +1228,6 @@ public abstract class EvoLudo
 					i.modelChanged(action);
 				break;
 			case STOP:		// stop requested (as opposed to simulations that stopped)	
-				runFired = false;
 				for (MilestoneListener i : milestoneListeners)
 					i.modelStopped();
 				break;
@@ -1280,7 +1262,6 @@ public abstract class EvoLudo
 	 */
 	public synchronized void fireModelInit() {
 		if (activeModel.getMode() == Mode.DYNAMICS || !isRunning) {
-			runFired = false;
 			for (MilestoneListener i : milestoneListeners)
 				i.modelDidInit();
 			logger.info("Model init");
@@ -1292,7 +1273,6 @@ public abstract class EvoLudo
 	 * {@link MilestoneListener}s.
 	 */
 	public synchronized void fireModelReset() {
-		runFired = false;
 		for (MilestoneListener i : milestoneListeners)
 			i.modelDidReset();
 		logger.info("Model reset");
@@ -1303,7 +1283,6 @@ public abstract class EvoLudo
 	 * {@link MilestoneListener}s.
 	 */
 	public synchronized void fireModelRelaxed() {
-		runFired = false;
 		for (MilestoneListener i : milestoneListeners)
 			i.modelRelaxed();
 		logger.info("Model relaxed");
@@ -1322,7 +1301,6 @@ public abstract class EvoLudo
 			case DYNAMICS:
 			case STATISTICS_UPDATE:
 			default:
-				runFired = false;
 				for (MilestoneListener i : milestoneListeners)
 					i.modelStopped();
 				logger.info("Model stopped");
