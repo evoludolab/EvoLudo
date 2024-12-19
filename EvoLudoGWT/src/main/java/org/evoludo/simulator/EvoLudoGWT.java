@@ -274,12 +274,10 @@ public class EvoLudoGWT extends EvoLudo {
 	public void moduleUnloaded() {
 		isRunning = false;
 		timer.cancel();
-		super.moduleUnloaded();
 	}
 
 	@Override
 	public void modelDidReset() {
-		super.modelDidReset();
 		statisticsAt = activeModel.getNSamples();
 	}
 

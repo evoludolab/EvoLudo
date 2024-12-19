@@ -1044,21 +1044,6 @@ public abstract class EvoLudo
 		logger.setLevel(logLevel);
 	}
 
-	@Override
-	public void modelStopped() {
-		isRunning = false;
-	}
-
-	@Override
-	public void modelDidInit() {
-		isRunning = false;
-	}
-
-	@Override
-	public void modelDidReset() {
-		isRunning = false;
-	}
-
 	/**
 	 * Run simulation. Currently only implemented by EvoLudoJRE. Returns control to
 	 * caller only if the arguments in {@code clo} do not match requirements for
@@ -1228,6 +1213,7 @@ public abstract class EvoLudo
 					i.modelChanged(action);
 				break;
 			case STOP:		// stop requested (as opposed to simulations that stopped)	
+				isRunning = false;
 				for (MilestoneListener i : milestoneListeners)
 					i.modelStopped();
 				break;
@@ -1262,6 +1248,7 @@ public abstract class EvoLudo
 	 */
 	public synchronized void fireModelInit() {
 		if (activeModel.getMode() == Mode.DYNAMICS || !isRunning) {
+			isRunning = false;
 			for (MilestoneListener i : milestoneListeners)
 				i.modelDidInit();
 			logger.info("Model init");
@@ -1273,6 +1260,7 @@ public abstract class EvoLudo
 	 * {@link MilestoneListener}s.
 	 */
 	public synchronized void fireModelReset() {
+		isRunning = false;
 		for (MilestoneListener i : milestoneListeners)
 			i.modelDidReset();
 		logger.info("Model reset");
@@ -1301,6 +1289,7 @@ public abstract class EvoLudo
 			case DYNAMICS:
 			case STATISTICS_UPDATE:
 			default:
+				isRunning = false;
 				for (MilestoneListener i : milestoneListeners)
 					i.modelStopped();
 				logger.info("Model stopped");
