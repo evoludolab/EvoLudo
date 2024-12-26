@@ -1724,6 +1724,8 @@ public class PDERD extends ODEEuler {
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
+		// geometry for PDE model defaults to von Neumann lattice
+		module.cloGeometry.setDefault("n");
 		parser.addCLO(cloPdeN);
 		parser.addCLO(cloPdeL);
 		parser.addCLO(cloPdeDiffusion);
