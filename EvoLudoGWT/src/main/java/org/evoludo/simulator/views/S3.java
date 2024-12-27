@@ -114,11 +114,13 @@ public class S3 extends AbstractView {
 				style.showYLabel = false;
 				style.showYLevels = false;
 				// set map for converting data to S3 coordinates
-				HasS3.Data2S3 map = ((HasS3) module).getS3Map(role);
+				S3Map map = ((HasS3) module).getS3Map(role);
 				if (map == null)
-					map = new S3Map(model, role);
+					map = new S3Map(); // no roles by default
+				map.setNames(module.getTraitNames());
+				map.setColors(module.getTraitColors());
 				graph.setMap(map);
-				style.label = map.getName();
+				style.label = map.getLabel();
 				// show first three active traits
 				boolean[] active = module.getActiveTraits();
 				int idx = 0;

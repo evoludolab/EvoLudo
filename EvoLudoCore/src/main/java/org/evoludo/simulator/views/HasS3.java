@@ -32,8 +32,6 @@
 
 package org.evoludo.simulator.views;
 
-import org.evoludo.geom.Point2D;
-
 /**
  * {@link org.evoludo.simulator.modules.Module Module}s that implement the
  * {@code HasS3} interface request a graphical view to visualize the
@@ -48,6 +46,37 @@ import org.evoludo.geom.Point2D;
  */
 
 public interface HasS3 {
+
+	/**
+	 * The index of the bottom left corner.
+	 */
+	public final int CORNER_LEFT = 0;
+
+	/**
+	 * The index of the bottom right corner.
+	 */
+	public final int CORNER_RIGHT = 1;
+
+	/**
+	 * The index of the top corner.
+	 */
+	public final int CORNER_TOP = 2;
+
+	/**
+	 * The index of the left edge.
+	 */
+	public final int EDGE_LEFT = 0;
+
+	/**
+	 * The index of the right edge.
+	 */
+	public final int EDGE_RIGHT = 1;
+
+	/**
+	 * The index of the bottom edge.
+	 */
+	public final int EDGE_BOTTOM = 2;
+
 	/**
 	 * Get the map that transforms the data of the model to a 2D phase plane
 	 * (projection).
@@ -55,7 +84,7 @@ public interface HasS3 {
 	 * @param role the role of the players
 	 * @return the map
 	 */
-	public default Data2S3 getS3Map(int role) {
+	public default S3Map getS3Map(int role) {
 		return null;
 	}
 
@@ -66,118 +95,6 @@ public interface HasS3 {
 	 * 
 	 * @param map the map
 	 */
-	public default void setS3Map(Data2S3 map) {
-	}
-
-	/**
-	 * Interface for providing custom mappings from data to the S3 simplex.
-	 */
-	public static interface Data2S3 {
-
-		/**
-		 * Get the name of the map.
-		 * 
-		 * @return the name of the map
-		 */
-		public default String getName() {
-			return "";
-		}
-	
-		/**
-		 * Convert the data array to cartesian coordinates of point on simplex. The
-		 * conversion observes the selection and order of traits.
-		 * <p>
-		 * <strong>Notes:</strong>
-		 * <ol>
-		 * <li>The array <code>s</code> includes the time at <code>s[0]</code> and
-		 * should not be altered.
-		 * <li>The point on simplex is returned in scaled user coordinates in
-		 * {@code [0,1]}.
-		 * <li>In order to deal with projections onto \(S_3\) subspaces the coordinates
-		 * do not need to sum up to {@code 1.0}.
-		 * <li>
-		 * </ol>
-		 * 
-		 * @param s the data array indicating a point on the simplex
-		 * @param p the cartesian coordinates of the point on the simplex
-		 * @return <code>true</code> upon successful completion of conversion
-		 * 
-		 * @see #setOrder(int[])
-		 */
-		public Point2D data2S3(double[] s, Point2D p);
-
-		/**
-		 * Convert data triplet to cartesian coordinates of point on simplex.
-		 * <p>
-		 * <strong>Notes:</strong>
-		 * <ol>
-		 * <li>The point on simplex is returned in scaled user coordinates in
-		 * {@code [0,1]}.
-		 * <li>In order to deal with projections onto \(S_3\) subspaces the coordinates
-		 * {@code s1}, {@code s2}, {@code s3}, do not need to sum up to {@code 1.0}.
-		 * <li>
-		 * </ol>
-		 * 
-		 * @param s1 the index of the trait in the lower left corner of the simplex
-		 * @param s2 the index of the trait in the lower right corner of the simplex
-		 * @param s3 the index of the trait in the top corner of the simplex
-		 * @param p  the cartesian coordinates of the point on the simplex
-		 * @return the point {@code p}
-		 */
-		public Point2D data2S3(double s1, double s2, double s3, Point2D p);
-
-		/**
-		 * Convert scaled cartesian coordinates of point on simplex to data array. The
-		 * coordinates are in {@code [0,1]}.
-		 * <p>
-		 * <strong>Note:</strong> The array <code>data</code> contains a copy
-		 * of the last data point recorded in the buffer (excluding time).
-		 * 
-		 * @param x the x-coordinate of the point
-		 * @param y the y-coordinate of the point
-		 * @param s the point on the simplex
-		 * @return the array {@code s}
-		 */
-		public double[] s32Data(double x, double y, double[] s);
-
-		/**
-		 * Set the indices of the traits displayed on the simplex. The first entry
-		 * {@code order[0]} denotes the index of the trait in the lower left corner of
-		 * the simplex, the second entry {@code order[1]} the index of the trait in the
-		 * lower right corner, and the last entry {@code order[2]} the index of the
-		 * trait in the top corner.
-		 * <p>
-		 * In multi-species models the traits are numbered sequentially, i.e. if the
-		 * first species has <code>nTraits</code> then e.g. an index of
-		 * <code>nTraits+1</code> refers to the <em>second</em> trait of the second
-		 * species. Be careful to account for vacant types in density based models.
-		 * 
-		 * @param order the array of indices
-		 */
-		public default void setOrder(int[] order) {
-		}
-
-		/**
-		 * Get the indices of the traits that span the simplex. The first entry
-		 * {@code order[0]} denotes the index of the trait in the lower left corner of
-		 * the simplex, the second entry {@code order[1]} the index of the trait in the
-		 * lower right corner, and the last entry {@code order[2]} the index of the
-		 * trait in the top corner.
-		 * 
-		 * @return the array of indices
-		 */
-		public default int[] getOrder() {
-			return new int[] { 0, 1, 2 };
-		}
-
-		/**
-		 * Return custom additions to context menu.
-		 * <p>
-		 * <strong>IMPORTANT:</strong> with GUI elements we must be extra careful to
-		 * keep GWT and JRE separate. In particular, the menu cannot be passed as an
-		 * argument but rather must be retrieved by implementing classes.
-		 */
-		public default void populateContextMenu() {
-		}
+	public default void setS3Map(S3Map map) {
 	}
 }

@@ -32,9 +32,10 @@
 
 package org.evoludo.simulator.views;
 
+import java.awt.Color;
+
 import org.evoludo.geom.Point2D;
 import org.evoludo.math.ArrayMath;
-import org.evoludo.simulator.models.Model;
 import org.evoludo.util.Formatter;
 
 /**
@@ -44,42 +45,22 @@ import org.evoludo.util.Formatter;
  * 
  * @see HasS3#getS3Map(int)
  */
-public class S3Map implements HasS3.Data2S3, BasicTooltipProvider {
-
-	/**
-	 * The model that provides the data.
-	 */
-	Model model;
+public class S3Map implements BasicTooltipProvider {
 
 	/**
 	 * The name of the map.
 	 */
-	String name;
+	String label = "";
 
 	/**
-	 * Create a new mapping of data to simplex projections. The role of the data is
-	 * ignored by default.
-	 * 
-	 * @param model the model that provides the data
-	 * @param role  the role of the data
+	 * The names of the traits.
 	 */
-	public S3Map(Model model, int role) {
-		this(model, role, null);
-	}
+	String[] names;
 
 	/**
-	 * Create a new mapping of data to simplex projections. The role of the data is
-	 * ignored by default.
-	 * 
-	 * @param model the model that provides the data
-	 * @param role  the role of the data
-	 * @param name  the name of the map
+	 * The colors of the traits.
 	 */
-	public S3Map(Model model, int role, String name) {
-		this.model = model;
-		this.name = name;
-		// ignore role by default
-	}
+	Color[] colors;
 
 	/**
 	 * The indices of the traits on the simplex. The first entry refers to the lower
@@ -89,31 +70,169 @@ public class S3Map implements HasS3.Data2S3, BasicTooltipProvider {
 	int[] order = new int[] { 0, 1, 2 };
 
 	/**
+	 * The role of this map.
+	 */
+	int role = -1;
+
+	/**
 	 * Temporary storage for the simplex coordinates of the tooltip.
 	 */
 	double[] tip = new double[3];
 
-	@Override
+	/**
+	 * Create a new mapping of data to simplex projections.
+	 */
+	public S3Map() {
+		this(-1, null);
+	}
+
+	/**
+	 * Create a new mapping of data to simplex projections for different roles. The
+	 * role is specified by the index {@code role} and names {@code label}.
+	 * 
+	 * @param role  the role of the data
+	 * @param label the name of the map
+	 */
+	public S3Map(int role, String label) {
+		this.label = label;
+		this.role = role;
+	}
+
+	/**
+	 * Get the name of the map.
+	 * 
+	 * @return the name of the map
+	 */
+	public String getLabel() {
+		return label;
+	}
+
+	/**
+	 * Get the role of the map.
+	 * 
+	 * @return the role of the map
+	 */
+	public int getRole() {
+		return role;
+	}
+
+	/**
+	 * Set the indices of the traits displayed on the simplex. The first entry
+	 * {@code order[0]} denotes the index of the trait in the lower left corner of
+	 * the simplex, the second entry {@code order[1]} the index of the trait in the
+	 * lower right corner, and the last entry {@code order[2]} the index of the
+	 * trait in the top corner.
+	 * <p>
+	 * In multi-species models the traits are numbered sequentially, i.e. if the
+	 * first species has <code>nTraits</code> then e.g. an index of
+	 * <code>nTraits+1</code> refers to the <em>second</em> trait of the second
+	 * species. Be careful to account for vacant types in density based models.
+	 * 
+	 * @param order the array of indices
+	 */
 	public void setOrder(int[] order) {
 		System.arraycopy(order, 0, this.order, 0, this.order.length);
 	}
 
-	@Override
+	/**
+	 * Get the indices of the traits that span the simplex. The first entry
+	 * {@code order[0]} denotes the index of the trait in the lower left corner of
+	 * the simplex, the second entry {@code order[1]} the index of the trait in the
+	 * lower right corner, and the last entry {@code order[2]} the index of the
+	 * trait in the top corner.
+	 * 
+	 * @return the array of indices
+	 */
 	public int[] getOrder() {
 		return order;
 	}
 
-	@Override
-	public String getName() {
-		return name;
+	/**
+	 * Set the names of the traits.
+	 * 
+	 * @return the names of the traits
+	 */
+	public void setNames(String[] names) {
+		this.names = names;
 	}
 
-	@Override
+	/**
+	 * Get the names of the traits.
+	 * 
+	 * @return the names of the traits
+	 */
+	public String[] getNames() {
+		return names;
+	}
+
+	/**
+	 * Get the name of the traits at the corner with index {@code idx}.
+	 * 
+	 * @return the names of the traits
+	 */
+	public String getName(int idx) {
+		return names[order[idx]];
+	}
+
+	/**
+	 * Set the colors of the traits.
+	 * 
+	 * @return the names of the traits
+	 */
+	public void setColors(Color[] colors) {
+		this.colors = colors;
+	}
+
+	/**
+	 * Get the colors of the traits.
+	 * 
+	 * @return the colors of the traits
+	 */
+	public Color[] getColors() {
+		return colors;
+	}
+
+	/**
+	 * Convert the data array to cartesian coordinates of point on simplex. The
+	 * conversion observes the selection and order of traits.
+	 * <p>
+	 * <strong>Notes:</strong>
+	 * <ol>
+	 * <li>The array <code>s</code> includes the time at <code>s[0]</code> and
+	 * should not be altered.
+	 * <li>The point on simplex is returned in scaled user coordinates in
+	 * {@code [0,1]}.
+	 * <li>In order to deal with projections onto \(S_3\) subspaces the coordinates
+	 * do not need to sum up to {@code 1.0}.
+	 * </ol>
+	 * 
+	 * @param s the data array indicating a point on the simplex
+	 * @param p the cartesian coordinates of the point on the simplex
+	 * @return the point {@code p}
+	 * 
+	 * @see #setOrder(int[])
+	 */
 	public Point2D data2S3(double[] s3, Point2D p) {
 		return data2S3(s3[order[0] + 1], s3[order[1] + 1], s3[order[2] + 1], p);
 	}
 
-	@Override
+	/**
+	 * Convert data triplet to cartesian coordinates of point on simplex.
+	 * <p>
+	 * <strong>Notes:</strong>
+	 * <ol>
+	 * <li>The point on simplex is returned in scaled user coordinates in
+	 * {@code [0,1]}.
+	 * <li>In order to deal with projections onto \(S_3\) subspaces the coordinates
+	 * {@code s1}, {@code s2}, {@code s3}, do not need to sum up to {@code 1.0}.
+	 * </ol>
+	 * 
+	 * @param s1 the index of the trait in the lower left corner of the simplex
+	 * @param s2 the index of the trait in the lower right corner of the simplex
+	 * @param s3 the index of the trait in the top corner of the simplex
+	 * @param p  the cartesian coordinates of the point on the simplex
+	 * @return the point {@code p}
+	 */
 	public Point2D data2S3(double s1, double s2, double s3, Point2D p) {
 		// top (c): s3, right (d): s2, left (l): s1
 		p.x = s2 - s1; // [-1, 1]
@@ -124,7 +243,18 @@ public class S3Map implements HasS3.Data2S3, BasicTooltipProvider {
 		return p;
 	}
 
-	@Override
+	/**
+	 * Convert scaled cartesian coordinates of point on simplex to data array. The
+	 * coordinates are in {@code [0,1]}.
+	 * <p>
+	 * <strong>Note:</strong> The array <code>data</code> contains a copy
+	 * of the last data point recorded in the buffer (excluding time).
+	 * 
+	 * @param x the x-coordinate of the point
+	 * @param y the y-coordinate of the point
+	 * @param s the point on the simplex
+	 * @return the array {@code s}
+	 */
 	public double[] s32Data(double x, double y, double[] s) {
 		// point is in scaled user coordinates
 		s[order[2]] = Math.max(0.0, y);
@@ -138,7 +268,6 @@ public class S3Map implements HasS3.Data2S3, BasicTooltipProvider {
 	@Override
 	public String getTooltipAt(double sx, double sy) {
 		s32Data(sx, sy, tip);
-		String[] names = model.getMeanNames();
 		String msg = "<table>";
 		for (int i = 0; i < 3; i++)
 			msg += "<tr><td style='text-align:right'><i>" + names[i] + ":</i></td><td>" //

@@ -44,7 +44,8 @@ import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
-import org.evoludo.simulator.views.HasS3.Data2S3;
+import org.evoludo.simulator.views.HasS3;
+import org.evoludo.simulator.views.S3Map;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.Formatter;
@@ -109,7 +110,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	/**
 	 * The map for converting data to simplex coordinates (cartesian).
 	 */
-	Data2S3 map;
+	S3Map map;
 
 	/**
 	 * The identifier of the role of the data.
@@ -141,7 +142,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * 
 	 * @param map the conversion map
 	 */
-	public void setMap(Data2S3 map) {
+	public void setMap(S3Map map) {
 		if (map == null)
 			return;
 		this.map = map;
@@ -154,7 +155,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * 
 	 * @return the conversion map
 	 */
-	public Data2S3 getMap() {
+	public S3Map getMap() {
 		return map;
 	}
 
@@ -693,13 +694,13 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		menu.add(swapOrderMenu);
 		int[] order = map.getOrder();
 		switch (closestEdge(x, y)) {
-			case EDGE_LEFT:
+			case HasS3.EDGE_LEFT:
 				swapOrderMenu.setText("Swap " + names[order[0]] + " \u2194 " + names[order[1]]);
 				break;
-			case EDGE_RIGHT:
+			case HasS3.EDGE_RIGHT:
 				swapOrderMenu.setText("Swap " + names[order[1]] + " \u2194 " + names[order[2]]);
 				break;
-			// case EDGE_BOTTOM:
+			// case HasS3.EDGE_BOTTOM:
 			default:
 				swapOrderMenu.setText("Swap " + names[order[2]] + " \u2194 " + names[order[0]]);
 				break;
@@ -741,21 +742,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	}
 
 	/**
-	 * The index of the bottom left corner.
-	 */
-	protected final int CORNER_LEFT = 0;
-
-	/**
-	 * The index of the bottom right corner.
-	 */
-	protected final int CORNER_RIGHT = 1;
-
-	/**
-	 * The index of the top corner.
-	 */
-	protected final int CORNER_TOP = 2;
-
-	/**
 	 * Find the corner closest to the point {@code (x, y)}.
 	 * 
 	 * @param x the <code>x</code>-coordinate of the point
@@ -769,28 +755,13 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		double d2 = p.distance2(e2);
 		if (d0 < d1) {
 			if (d0 < d2)
-				return CORNER_LEFT;
-			return CORNER_TOP;
+				return HasS3.CORNER_LEFT;
+			return HasS3.CORNER_TOP;
 		}
 		if (d1 < d2)
-			return CORNER_RIGHT;
-		return CORNER_TOP;
+			return HasS3.CORNER_RIGHT;
+		return HasS3.CORNER_TOP;
 	}
-
-	/**
-	 * The index of the left edge.
-	 */
-	protected final int EDGE_LEFT = 0;
-
-	/**
-	 * The index of the right edge.
-	 */
-	protected final int EDGE_RIGHT = 1;
-
-	/**
-	 * The index of the bottom edge.
-	 */
-	protected final int EDGE_BOTTOM = 2;
 
 	/**
 	 * Find the edge closest to the point {@code (x, y)}.
@@ -806,12 +777,12 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		double d2 = Segment2D.distance2(e2, e0, p);
 		if (d0 > d1) {
 			if (d1 > d2)
-				return 2;
-			return 1;
+				return HasS3.EDGE_BOTTOM;
+			return HasS3.EDGE_RIGHT;
 		}
 		if (d0 > d2)
-			return 2;
-		return 0;
+			return HasS3.EDGE_BOTTOM;
+		return HasS3.EDGE_LEFT;
 	}
 
 	@Override
