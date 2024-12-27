@@ -404,10 +404,10 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		}
 		if (style.showLabel) {
 			setFont(style.labelFont);
-			int[] order = map.getOrder();
 			// lower left & right
-			int xshift = (int) (Math.max(g.measureText(names[order[0]]).getWidth(),
-					Math.max(g.measureText(names[order[1]]).getWidth(), g.measureText(names[order[2]]).getWidth()))
+			int xshift = (int) (Math.max(g.measureText(map.getName(HasS3.CORNER_LEFT)).getWidth(),
+					Math.max(g.measureText(map.getName(HasS3.CORNER_RIGHT)).getWidth(), 
+							g.measureText(map.getName(HasS3.CORNER_TOP)).getWidth()))
 					* 0.5 + 0.5);
 			int yshift = 20;
 			bounds.adjust(xshift, yshift, -xshift - xshift, -yshift - yshift);
@@ -540,19 +540,19 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			map.data2S3(1.0, 0.0, 0.0, loc);
 			loc.x *= w;
 			loc.y *= h;
-			String label = names[order[0]];
+			String label = map.getName(HasS3.CORNER_LEFT);
 			g.fillText(label, loc.x - g.measureText(label).getWidth() * 0.5, loc.y + yshift);
 			g.setFillStyle(colors[order[1]]);
 			map.data2S3(0.0, 1.0, 0.0, loc);
 			loc.x *= w;
 			loc.y *= h;
-			label = names[order[1]];
+			label = map.getName(HasS3.CORNER_RIGHT);
 			g.fillText(label, loc.x - g.measureText(label).getWidth() * 0.5, loc.y + yshift);
 			g.setFillStyle(colors[order[2]]);
 			map.data2S3(0.0, 0.0, 1.0, loc);
 			loc.x *= w;
 			loc.y *= h;
-			label = names[order[2]];
+			label = map.getName(HasS3.CORNER_TOP);
 			g.fillText(label, loc.x - g.measureText(label).getWidth() * 0.5, loc.y - 14.5);
 		}
 		if (style.label != null) {
@@ -580,6 +580,28 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	}
 
 	/**
+	 * Convert the {@code x}-component of the screen coordinates {@code (x, y)} into
+	 * scaled (Cartesian) simplex coordinates.
+	 * 
+	 * @return the scaled simplex coordinate in {@code [0, 1]}
+
+
+	 */
+	double scaledX(double x) {
+		return ((viewCorner.x + x - bounds.getX()) / zoomFactor + 0.5) / (bounds.getWidth() - 1.0);
+	}
+
+	/**
+	 * Convert the {@code y}-component of the screen coordinates {@code (x, y)} into
+	 * scaled (Cartesian) simplex coordinates.
+	 * 
+	 * @return the scaled simplex coordinate in {@code [0, 1]}
+	 */
+	double scaledY(double y) {
+		return 1.0 - ((viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5) / (bounds.getHeight() - 1.0);
+	}
+
+	/**
 	 * Helper method to convert screen coordinates into an initial configuration and
 	 * set the controller's initial state.
 	 * 
@@ -588,10 +610,8 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 */
 	private void processInitXY(int x, int y) {
 		// convert to user coordinates
-		double sx = (viewCorner.x + x - bounds.getX()) / zoomFactor - 0.5;
-		double sy = (viewCorner.y + y - bounds.getY()) / zoomFactor;
 		double[] s3 = new double[3];
-		map.s32Data(sx / bounds.getWidth(), 1.0 - sy / bounds.getHeight(), s3);
+		map.s32Data(scaledX(x), scaledY(y), s3);
 		controller.setInitialState(s3);
 	}
 
@@ -599,12 +619,10 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	@Override
 	public String getTooltipAt(int x, int y) {
 		// convert to user coordinates
-		double sx = (viewCorner.x + x - bounds.getX()) / zoomFactor - 0.5;
-		double sy = (viewCorner.y + y - bounds.getY()) / zoomFactor;
+		double sx = scaledX(x);
+		double sy = scaledY(y);
 		if (!inside(sx, sy))
 			return null;
-		sx /= bounds.getWidth();
-		sy = 1.0 - sy / bounds.getHeight();
 		if (tooltipProvider instanceof TooltipProvider.Simplex)
 			return ((TooltipProvider.Simplex) tooltipProvider).getTooltipAt(this, sx, sy);
 		if (tooltipProvider != null)
@@ -613,14 +631,17 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	}
 
 	/**
-	 * Check if point (in user coordinates) lies inside of simplex.
+	 * Check if point (in scaled user coordinates) lies inside of simplex.
 	 * 
-	 * @param x <code>x</code>-coordinate of point
-	 * @param y <code>y</code>-coordinate of point
+	 * @param sx <code>x</code>-coordinate of point
+	 * @param sy <code>y</code>-coordinate of point
 	 * @return <code>true</code> if inside
 	 */
-	private boolean inside(double x, double y) {
-		Point2D p = new Point2D(x, y);
+	protected boolean inside(double sx, double sy) {
+		final Point2D e0 = new Point2D(0.0, 0.0);
+		final Point2D e2 = new Point2D(1.0, 0.0);
+		final Point2D e1 = new Point2D(0.5, 1.0);
+		Point2D p = new Point2D(sx, sy);
 		boolean inside = (Segment2D.orientation(e0, e1, p) >= 0);
 		if (!inside)
 			return false;
