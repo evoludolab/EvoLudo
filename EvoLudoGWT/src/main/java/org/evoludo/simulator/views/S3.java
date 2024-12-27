@@ -32,7 +32,6 @@
 
 package org.evoludo.simulator.views;
 
-import java.awt.Color;
 import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
@@ -102,7 +101,6 @@ public class S3 extends AbstractView {
 				S3Graph graph = new S3Graph(this, module, role);
 				wrapper.add(graph);
 				graphs.add(graph);
-				graph.setNames(model.getMeanNames());
 				GraphStyle style = graph.getStyle();
 				style.showLabel = true;
 				style.showXTicks = true;
@@ -165,21 +163,19 @@ public class S3 extends AbstractView {
 	@Override
 	public void reset(boolean hard) {
 		super.reset(hard);
-		Module module = engine.getModule();
-		Color[] colors = module.getTraitColors();
-		String[] names = model.getMeanNames();
 		int nMean = model.getNMean();
 		if (state == null || state.length != nMean)
 			state = new double[nMean];
 		if (init == null || init.length != nMean)
 			init = new double[nMean];
 		for (S3Graph graph : graphs) {
+			S3Map map = graph.getMap();
+			Module module = graph.getModule();
 			graph.setMarkers(module.getMarkers());
 			graph.getStyle().trajColor = ColorMapCSS.Color2Css(module.getTrajectoryColor());
-			hard |= graph.setNames(names);
-			hard |= graph.setColors(colors);
-			if (hard)
-				graph.reset();
+			map.setNames(module.getTraitNames());
+			map.setColors(module.getTraitColors());
+			graph.reset();
 		}
 		update(hard);
 	}

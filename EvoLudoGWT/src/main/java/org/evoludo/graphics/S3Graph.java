@@ -32,7 +32,6 @@
 
 package org.evoludo.graphics;
 
-import java.awt.Color;
 import java.util.Iterator;
 
 import org.evoludo.geom.Path2D;
@@ -159,57 +158,12 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		return map;
 	}
 
-	/**
-	 * Set the colors of the traits.
-	 * 
-	 * @param clrs the colors of the traits
-	 * @return <code>true</code> if the colors have changed
-	 */
-	public boolean setColors(Color[] clrs) {
-		boolean changed = false;
-		int nColors = clrs.length;
-		if (colors == null || colors.length != nColors) {
-			colors = new String[nColors];
-			changed = true;
-		}
-		for (int n = 0; n < nColors; n++) {
-			String coln = ColorMapCSS.Color2Css(clrs[n]);
-			if (coln.equals(colors[n]))
-				continue;
-			colors[n] = coln;
-			changed = true;
-		}
-		return changed;
-	}
-
-	/**
-	 * Set the names of the traits.
-	 * 
-	 * @param nms the array of names
-	 * @return <code>true</code> if the names have changed
-	 */
-	public boolean setNames(String[] nms) {
-		boolean changed = false;
-		int nNames = nms.length;
-		if (names == null || names.length != nNames) {
-			names = new String[nNames];
-			changed = true;
-		}
-		for (int n = 0; n < nNames; n++) {
-			// note: names[n] is null after memory allocation
-			if (nms[n].equals(names[n]))
-				continue;
-			names[n] = nms[n];
-			changed = true;
-		}
-		return changed;
-	}
-
 	@Override
 	public void reset() {
 		super.reset();
 		if (buffer == null || buffer.getCapacity() < MIN_BUFFER_SIZE)
 			buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
+		colors = ColorMapCSS.Color2Css(map.getColors());		
 		paint(true);
 	}
 
