@@ -69,6 +69,7 @@ import org.evoludo.simulator.modules.CDLP;
 import org.evoludo.simulator.modules.CDLPQ;
 import org.evoludo.simulator.modules.CLabour;
 import org.evoludo.simulator.modules.CSD;
+import org.evoludo.simulator.modules.Centipede;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
@@ -134,6 +135,7 @@ public abstract class EvoLudo
 		addModule(new CDL(this));
 		addModule(new CDLP(this));
 		addModule(new CDLPQ(this));
+		addModule(new Centipede(this));
 		addModule(new CSD(this));
 		addModule(new CLabour(this));
 	}
