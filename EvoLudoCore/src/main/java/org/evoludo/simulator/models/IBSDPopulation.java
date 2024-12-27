@@ -1978,8 +1978,9 @@ public class IBSDPopulation extends IBSPopulation {
 		// different traits active
 		double[] cumFreqs = new double[nTraits];
 		cumFreqs[0] = init.args[0];
+		int nInit = init.args.length;
 		for (int i = 1; i < nTraits; i++)
-			cumFreqs[i] = cumFreqs[i - 1] + init.args[i];
+			cumFreqs[i] = cumFreqs[i - 1] + (i < nInit ? init.args[i] : 0.0);
 		double inorm = 1.0 / cumFreqs[nTraits - 1];
 		ArrayMath.multiply(cumFreqs, inorm);
 
