@@ -202,7 +202,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		// 3D graphs do not implement Shifting interface. Add mouse listeners here.
 		mouseDownHandler = addMouseDownHandler(this);
 		mouseUpHandler = addMouseUpHandler(this);
-		if (!graph3DScene.isRunning && graph3DPanel.getRenderer() != null)
+		if (graph3DPanel.getRenderer() != null)
 			graph3DScene.run();
 	}
 
@@ -822,8 +822,9 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 
 		@Override
 		public void onResize() {
-			if (control != null)
-				control.onResize();
+			if (control == null)
+				positionCamera();
+			control.onResize();
 		}
 
 		/**
@@ -834,14 +835,12 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		 */
 		@Override
 		protected void onUpdate(double duration) {
-			// TODO: make sure control is initialized once we get here...
-			// onUpdate is called frequently!
-			if (control == null)
-				positionCamera();
-			control.update();
-			getRenderer().render(getScene(), graph3DCamera);
-			if (hasMessage)
-				stop();
+			if (isActive) {
+				control.update();
+				getRenderer().render(getScene(), graph3DCamera);
+				return;
+			}
+			stop();
 		}
 
 		/**
