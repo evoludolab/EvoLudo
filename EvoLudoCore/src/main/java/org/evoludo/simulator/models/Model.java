@@ -301,6 +301,8 @@ public abstract class Model implements CLOProvider {
 	 * @return the species
 	 */
 	public Module getSpecies(int id) {
+		if (id < 0 || id >= nSpecies)
+			return null;
 		return species.get(id);
 	}
 

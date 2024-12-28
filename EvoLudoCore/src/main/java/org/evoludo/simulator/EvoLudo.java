@@ -1586,7 +1586,10 @@ public abstract class EvoLudo
 					return null;
 				}
 				moduleKey = cloModule.match(moduleName[1]);
-				// module key found; no need to continue
+				// exact match required
+				if (moduleKey != null && !moduleKey.getKey().equals(moduleName[1]))
+					moduleKey = null;
+				// module parameter found; no need to continue
 				cloarray = ArrayMath.drop(cloarray, i--);
 				nParams--;
 				break;
@@ -1620,7 +1623,7 @@ public abstract class EvoLudo
 					break;
 				}
 				type = Type.parse(newModel);
-				if (type == null) {
+				if (type == null || !keys.contains(type)) {
 					logger.warning("invalid model type " + newModel + " - use " + defaulttype.getKey()
 							+ " as default.");
 					type = defaulttype;
@@ -1690,7 +1693,7 @@ public abstract class EvoLudo
 		if (cloarray == null) {
 			parser.clearCLO();
 			parser.addCLO(cloModule);
-			logger.severe("Mandatory option --" + cloModule.getName() + " not found!");
+			logger.severe("Module not found!");
 			logger.info("<pre>List of available modules:\n" + parser.helpCLO(false) + "</pre>");
 			return false;
 		}

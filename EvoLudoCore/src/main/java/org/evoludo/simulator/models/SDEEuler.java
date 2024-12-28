@@ -39,6 +39,7 @@ import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.util.CLOParser;
+import org.evoludo.util.CLOption;
 
 /**
  * Integrator for stochastic differential equations (SDE) based on Euler's
@@ -438,8 +439,9 @@ public class SDEEuler extends ODEEuler {
 	 */
 	@Override
 	public boolean permitsSampleStatistics() {
-		if (module.getMutation().probability > 0.0 || !(module instanceof HasHistogram.StatisticsProbability
-				|| module instanceof HasHistogram.StatisticsTime))
+		if (!(module instanceof HasHistogram.StatisticsProbability
+				|| module instanceof HasHistogram.StatisticsTime)
+				|| module.getMutation().probability > 0.0)
 			return false;
 		// sampling statistics also require:
 		// - mutant initialization (same as temperature in well-mixed populations)
@@ -458,8 +460,11 @@ public class SDEEuler extends ODEEuler {
 		// SDE's currently are restricted to single species modules and implement
 		// mutation to other types only (including ALL as well should be fairly straight
 		// forward, though).
-		mutation[0].clo.clearKeys();
-		mutation[0].clo.addKey(Mutation.Discrete.Type.NONE);
-		mutation[0].clo.addKey(Mutation.Discrete.Type.OTHER);
+		if (mutation != null && mutation.length > 0) {
+			CLOption clo = mutation[0].clo;
+			clo.clearKeys();
+			clo.addKey(Mutation.Discrete.Type.NONE);
+			clo.addKey(Mutation.Discrete.Type.OTHER);
+		}
 	}
 }
