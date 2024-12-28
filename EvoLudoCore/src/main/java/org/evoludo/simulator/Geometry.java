@@ -5325,7 +5325,8 @@ public class Geometry {
 		boolean fixedBoundariesAvailable = (clo.isValidKey(Type.LINEAR) || clo.isValidKey(Type.SQUARE)
 				|| clo.isValidKey(Type.CUBE)
 				|| clo.isValidKey(Type.HONEYCOMB) || clo.isValidKey(Type.TRIANGULAR));
-		String descr = "--geometry <>   geometry - interaction==competition\n" //
+		String descr = "--geometry <>   geometry " //
+				+ (engine.getModel().isIBS() ? "- interaction==competition\n" : "\n") //
 				+ "      argument: <g><k>" //
 				+ (fixedBoundariesAvailable ? "[f|F]" : "") + " (g type, k neighbours)\n" //
 				+ clo.getDescriptionKey() + "\n      further specifications:" //

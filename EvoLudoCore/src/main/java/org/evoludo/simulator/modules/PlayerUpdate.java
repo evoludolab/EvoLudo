@@ -200,7 +200,7 @@ public class PlayerUpdate {
 	 */
 	public final CLOption clo = new CLOption("playerupdate",
 			PlayerUpdate.Type.IMITATE.getKey() + " 1,0",
-			EvoLudo.catModule,
+			EvoLudo.catModel,
 			"--playerupdate <u> [<n>[,<e>]] set player update type with\n" + //
 					"                noise n (neutral=1) and error probability e (0):",
 			new CLODelegate() {

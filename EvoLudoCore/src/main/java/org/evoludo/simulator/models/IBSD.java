@@ -218,7 +218,7 @@ public class IBSD extends IBS implements Discrete {
 		 * 
 		 * @see Type
 		 */
-		public final CLOption clo = new CLOption("init", Init.Type.UNIFORM.getKey(), EvoLudo.catModule, null,
+		public final CLOption clo = new CLOption("init", Init.Type.UNIFORM.getKey(), EvoLudo.catModel, null,
 				new CLODelegate() {
 					@Override
 					public boolean parse(String arg) {

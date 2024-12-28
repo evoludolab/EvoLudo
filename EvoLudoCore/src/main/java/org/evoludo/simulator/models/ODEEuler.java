@@ -1781,7 +1781,7 @@ public class ODEEuler extends Model implements Discrete {
 	 * @see InitType
 	 * @see PDERD.InitType
 	 */
-	public final CLOption cloInit = new CLOption("init", InitType.UNIFORM.getKey(), EvoLudo.catModule,
+	public final CLOption cloInit = new CLOption("init", InitType.UNIFORM.getKey(), EvoLudo.catModel,
 			"--init <t>      type of initial configuration", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {

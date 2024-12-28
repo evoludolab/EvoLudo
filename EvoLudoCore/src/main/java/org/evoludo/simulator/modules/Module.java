@@ -1173,7 +1173,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @see IBS#cloGeometryInteraction
 	 * @see IBS#cloGeometryCompetition
 	 */
-	public final CLOption cloGeometry = new CLOption("geometry", "M", EvoLudo.catModule, null,
+	public final CLOption cloGeometry = new CLOption("geometry", "M", EvoLudo.catModel, null,
 			new CLODelegate() {
 
 				/**
@@ -1249,7 +1249,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	/**
 	 * Command line option to set the population size.
 	 */
-	public final CLOption cloNPopulation = new CLOption("popsize", "100", EvoLudo.catModule, null,
+	public final CLOption cloNPopulation = new CLOption("popsize", "100", EvoLudo.catModel, null,
 			new CLODelegate() {
 
 				/**

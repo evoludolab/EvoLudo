@@ -586,7 +586,8 @@ public class EvoLudoGWT extends EvoLudo {
 				msg += "\n             " + (idx + n) + ": " + mod.getTraitName(n);
 			idx += nt;
 		}
-		catModule.setHeader("Module specific options with trait names and indices:" + msg);
+		catModule.setHeader("Options for module '" + activeModule.getKey() + "' with trait indices and names:" + msg);
+		catModel.setHeader("Options for model '" + activeModel.getModelType() + "'");
 		logger.info("<pre>EvoLudoWeb\nList of command line options for module '" + activeModule.getKey() + "':\n"
 				+ parser.helpCLO(true) + "</pre>");
 	}
