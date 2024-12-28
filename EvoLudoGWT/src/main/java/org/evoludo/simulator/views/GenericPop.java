@@ -16,6 +16,7 @@ import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBS;
+import org.evoludo.simulator.models.PDERD;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
@@ -129,6 +130,29 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 			graph.invalidate();
 		}
 		super.destroyGraphs();
+	}
+
+	void setGraphGeometry(GenericPopGraph<T,N> graph, boolean inter) {
+		Module module = graph.getModule();
+		switch (model.getModelType()) {
+			case IBS:
+				Geometry igeom = module.getInteractionGeometry();
+				Geometry cgeom = module.getCompetitionGeometry();
+				Geometry geo = inter ? igeom : cgeom;
+				if (!igeom.interCompSame && Geometry.displayUniqueGeometry(igeom, cgeom))
+					// different geometries but only one graph - pick competition.
+					// note: this is not a proper solution but fits the requirements of
+					// the competition with second nearest neighbours
+					geo = cgeom;
+				graph.setGeometry(geo);
+				break;
+			case PDE:
+				graph.setGeometry(((PDERD) model).getGeometry());
+				break;
+			case ODE:
+			case SDE:
+				graph.displayMessage("No structure to display in " + type + " model.");
+		}
 	}
 
 	@Override

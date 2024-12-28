@@ -44,7 +44,6 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.ODEEuler.HasDE;
-import org.evoludo.simulator.models.PDERD;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Map2Fitness;
@@ -93,81 +92,59 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 				for (Module module : species)
 					nGraphs += Geometry.displayUniqueGeometry(module) ? 1 : 2;
 
-				if (graphs.size() != nGraphs) {
-					destroyGraphs();
-					for (Module module : species) {
-						PopGraph2D graph = new PopGraph2D(this, module);
+				if (graphs.size() == nGraphs)
+					return;
+				destroyGraphs();
+				for (Module module : species) {
+					PopGraph2D graph = new PopGraph2D(this, module);
+					wrapper.add(graph);
+					graphs.add(graph);
+					if (!Geometry.displayUniqueGeometry(module)) {
+						graph = new PopGraph2D(this, module);
 						wrapper.add(graph);
 						graphs.add(graph);
-						if (!Geometry.displayUniqueGeometry(module)) {
-							graph = new PopGraph2D(this, module);
-							wrapper.add(graph);
-							graphs.add(graph);
-							// arrange graphs horizontally
-							gCols = 2;
-						}
-					}
-					gRows = species.size();
-					if (gRows * gCols == 2) {
-						// always arrange horizontally if only two graphs
-						gRows = 1;
+						// arrange graphs horizontally
 						gCols = 2;
 					}
-					int width = 100 / gCols;
-					int height = 100 / gRows;
-					boolean inter = true;
-					for (PopGraph2D graph : graphs) {
-						graph.setSize(width + "%", height + "%");
-						setGraphGeometry(graph, inter);
-						inter = !inter;
-						if (isActive)
-							graph.activate();
-					}
+				}
+				gRows = species.size();
+				if (gRows * gCols == 2) {
+					// always arrange horizontally if only two graphs
+					gRows = 1;
+					gCols = 2;
+				}
+				int width = 100 / gCols;
+				int height = 100 / gRows;
+				boolean inter = true;
+				for (PopGraph2D graph : graphs) {
+					graph.setSize(width + "%", height + "%");
+					setGraphGeometry(graph, inter);
+					inter = !inter;
+					if (isActive)
+						graph.activate();
 				}
 				break;
 			case PDE:
 				// PDEs currently restricted to single species
-				if (graphs.size() != 1) {
-					destroyGraphs();
-					Module module = engine.getModule();
-					PopGraph2D graph = new PopGraph2D(this, module);
-					// debugging not available for DE's
-					graph.setDebugEnabled(false);
-					wrapper.add(graph);
-					graphs.add(graph);
-					graph.setSize("100%", "100%");
-					setGraphGeometry(graph, true);
-					if (isActive)
-						graph.activate();
-				}
+				if (graphs.size() == 1)
+					return;
+
+				destroyGraphs();
+				Module module = engine.getModule();
+				PopGraph2D graph = new PopGraph2D(this, module);
+				// debugging not available for DE's
+				graph.setDebugEnabled(false);
+				wrapper.add(graph);
+				graphs.add(graph);
+				graph.setSize("100%", "100%");
+				setGraphGeometry(graph, true);
+				if (isActive)
+					graph.activate();
 				break;
 			case ODE:
 			case SDE:
 				break;
 			default:
-		}
-	}
-
-	private void setGraphGeometry(PopGraph2D graph, boolean inter) {
-		Module module = graph.getModule();
-		switch (model.getModelType()) {
-			case IBS:
-				Geometry igeom = module.getInteractionGeometry();
-				Geometry cgeom = module.getCompetitionGeometry();
-				Geometry geo = inter ? igeom : cgeom;
-				if (!igeom.interCompSame && Geometry.displayUniqueGeometry(igeom, cgeom))
-					// different geometries but only one graph - pick competition.
-					// note: this is not a proper solution but fits the requirements of
-					// the competition with second nearest neighbours
-					geo = cgeom;
-				graph.setGeometry(geo);
-				break;
-			case PDE:
-				graph.setGeometry(((PDERD) model).getGeometry());
-				break;
-			case ODE:
-			case SDE:
-				graph.displayMessage("No structure to display in " + type + " model.");
 		}
 	}
 

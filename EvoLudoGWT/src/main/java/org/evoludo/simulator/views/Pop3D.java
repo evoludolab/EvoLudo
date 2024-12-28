@@ -44,7 +44,6 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.ODEEuler.HasDE;
-import org.evoludo.simulator.models.PDERD;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
@@ -80,37 +79,9 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		super(engine, type);
 	}
 
-//TODO; split allocateGraphs into loading and reset component
 	@Override
 	protected void allocateGraphs() {
-		// boolean hard = false;
-		int nGraphs = 0;
-		Geometry geoDE = null;
 		switch (model.getModelType()) {
-			case ODE:
-			case SDE:
-				// ODE or SDE model (no geometry and thus no population)
-				// 3D view should not be available for selection
-				for (PopGraph3D graph : graphs)
-					graph.displayMessage("No view available (" + model.getModelType().toString() + " solver)");
-				return;
-			case PDE:
-				geoDE = ((PDERD) model).getGeometry();
-				nGraphs = 1;
-				if (graphs.size() != nGraphs) {
-					destroyGraphs();
-					Module module = engine.getModule();
-					PopGraph3D graph = new PopGraph3D(this, module);
-					// debugging not available for DE's
-					graph.setDebugEnabled(false);
-					wrapper.add(graph);
-					graphs.add(graph);
-					gCols = nGraphs;
-				}
-				// there is only a single graph for now but whatever...
-				for (PopGraph3D graph : graphs)
-					graph.setGeometry(geoDE);
-				break;
 			case IBS:
 				// how to deal with distinct interaction/competition geometries?
 				// - currently two separate graphs are shown one for the interaction and the
@@ -119,56 +90,71 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 				// revise network layout routines)
 				// - another alternative is to add context menu to toggle between the different
 				// link sets (could be difficult if one is a lattice...)
+				int nGraphs = 0;
 				ArrayList<? extends Module> species = engine.getModule().getSpecies();
 				for (Module module : species)
 					nGraphs += Geometry.displayUniqueGeometry(module) ? 1 : 2;
 
-				if (graphs.size() != nGraphs) {
-					destroyGraphs();
-					for (Module module : species) {
-						PopGraph3D graph = new PopGraph3D(this, module);
+				if (graphs.size() == nGraphs)
+					return;
+
+				destroyGraphs();
+				for (Module module : species) {
+					PopGraph3D graph = new PopGraph3D(this, module);
+					wrapper.add(graph);
+					graphs.add(graph);
+					if (!Geometry.displayUniqueGeometry(module)) {
+						graph = new PopGraph3D(this, module);
 						wrapper.add(graph);
 						graphs.add(graph);
-						if (!Geometry.displayUniqueGeometry(module)) {
-							graph = new PopGraph3D(this, module);
-							wrapper.add(graph);
-							graphs.add(graph);
-							// arrange graphs horizontally
-							gCols = 2;
-						}
-					}
-					gRows = species.size();
-					if (gRows * gCols == 2) {
-						// always arrange horizontally if only two graphs
-						gRows = 1;
+						// arrange graphs horizontally
 						gCols = 2;
 					}
-					int width = 100 / gCols;
-					int height = 100 / gRows;
-					for (PopGraph3D graph : graphs)
-						graph.setSize(width + "%", height + "%");
-				} 
-				// update geometries associated with graphs
+				}
+				gRows = species.size();
+				if (gRows * gCols == 2) {
+					// always arrange horizontally if only two graphs
+					gRows = 1;
+					gCols = 2;
+				}
+				int width = 100 / gCols;
+				int height = 100 / gRows;
 				boolean inter = true;
 				for (PopGraph3D graph : graphs) {
-					Module module = graph.getModule();
-					Geometry igeom = module.getInteractionGeometry();
-					Geometry cgeom = module.getCompetitionGeometry();
-					Geometry geo = inter ? igeom : cgeom;
-					if (!igeom.interCompSame && Geometry.displayUniqueGeometry(igeom, cgeom))
-						// different geometries but only one graph - pick competition.
-						// note: this is not a proper solution but fits the requirements of
-						// the competition with second nearest neighbours
-						geo = cgeom;
-					graph.setGeometry(geo);
-					// alternate between interaction and competition geometries
-					// no consequences if they are the same
+					graph.setSize(width + "%", height + "%");
+					setGraphGeometry(graph, inter);
 					inter = !inter;
+					if (isActive)
+						graph.activate();
 				}
 				break;
+			case PDE:
+				// PDEs currently restricted to single species
+				if (graphs.size() == 1)
+					return;
+
+				destroyGraphs();
+				Module module = engine.getModule();
+				PopGraph3D graph = new PopGraph3D(this, module);
+				// debugging not available for DE's
+				graph.setDebugEnabled(false);
+				wrapper.add(graph);
+				graphs.add(graph);
+				graph.setSize("100%", "100%");
+				setGraphGeometry(graph, true);
+				if (isActive)
+					graph.activate();
+				break;
+			case ODE:
+			case SDE:
+				return;
 			default:
 		}
-		boolean noWarnings = true;
+	}
+
+	@Override
+	public void reset(boolean hard) {
+		super.reset(hard);
 		// IMPORTANT: to avoid problems with WebGL and 3D rendering, each graph needs to
 		// have its own color map
 		org.evoludo.simulator.models.Continuous cmodel = null;
@@ -178,7 +164,12 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		else
 			dmodel = (org.evoludo.simulator.models.Discrete) model;
 
+		boolean inter = true;
+		boolean noWarnings = true;
 		for (PopGraph3D graph : graphs) {
+			// update geometries associated with the graphs
+			setGraphGeometry(graph, inter);
+			inter = !inter;
 			ColorMap<MeshLambertMaterial> cMap = null;
 			Module module = graph.getModule();
 			switch (type) {
@@ -268,30 +259,8 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 			if (cMap == null)
 				throw new Error("MVPop3D: ColorMap not initialized - needs attention!");
 			graph.setColorMap(module.processColorMap(cMap));
-		}
-	}
-
-	@Override
-	public void activate() {
-		if (isActive)
-			return;
-		// allocateGraphs();
-		super.activate();
-		allocateGraphs();
-	}
-
-	@Override
-	public void reset(boolean hard) {
-		super.reset(hard);
-		if (!isActive) {
-			for (PopGraph3D graph : graphs)
-				graph.invalidate();
-			return;
-		}
-		// prepare initializes or starts suspended animation
-		allocateGraphs();
-		for (PopGraph3D graph : graphs)
 			graph.reset();
+		}
 		update(hard);
 	}
 
