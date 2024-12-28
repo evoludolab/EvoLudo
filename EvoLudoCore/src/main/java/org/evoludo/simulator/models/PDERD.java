@@ -1104,10 +1104,10 @@ public class PDERD extends ODEEuler {
 					System.arraycopy(y0, 0, density[n], 0, nDim);
 				double[] disturb = new double[nDim];
 				ArrayMath.multiply(y0, 1.2, disturb);
-				for (int n = 0; n < nDim; n++)
-					disturb[n] = 1.2 * y0[n];
-				if (dependent >= 0)
+				if (dependent >= 0) {
+					disturb[dependent] = y0[dependent] * 0.8;
 					ArrayMath.normalize(disturb);
+				}
 				System.arraycopy(disturb, 0, density[space.size / 2], 0, nDim);
 				break;
 
