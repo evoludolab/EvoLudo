@@ -530,12 +530,10 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * warnings.
 	 * </ul>
 	 * 
-	 * @param isRunning {@code true} if the graph is active (visible)
 	 * @return the canvas element
 	 */
-	public CanvasElement getCanvasElement(boolean isRunning) {
-		if (isRunning)
-			graph3DScene.getRenderer().render(graph3DScene.getScene(), graph3DCamera);
+	public CanvasElement getCanvasElement() {
+		graph3DScene.getRenderer().render(graph3DScene.getScene(), graph3DCamera);
 		return graph3DScene.getCanvas().getCanvas();
 	}
 
@@ -691,7 +689,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	public void export(MyContext2d ctx) {
 		ctx.save();
 		ctx.scale(scale, scale);
-		ctx.drawImage(getCanvasElement(graph3DScene.isRunning), 0, 0);
+		ctx.drawImage(getCanvasElement(), 0, 0);
 		ctx.restore();
 	}
 
@@ -712,11 +710,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		TrackballControls control;
 
 		/**
-		 * The flag indicating whether animations are currently running.
-		 */
-		boolean isRunning = false;
-
-		/**
 		 * {@inheritDoc}
 		 * <p>
 		 * The scene should be defined already.
@@ -725,28 +718,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		 */
 		@Override
 		protected void onStart() {
-		}
-
-		@Override
-		public void stop() {
-			super.stop();
-			isRunning = false;
-		}
-
-		@Override
-		public void run() {
-			super.run();
-			isRunning = true;
 			positionCamera();
-		}
-
-		/**
-		 * Checks if the scene is busy animating.
-		 * 
-		 * @return {@code true} if the animation is running.
-		 */
-		public boolean isRunning() {
-			return isRunning;
 		}
 
 		/**
