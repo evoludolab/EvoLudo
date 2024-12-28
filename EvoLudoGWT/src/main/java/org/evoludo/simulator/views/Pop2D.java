@@ -120,6 +120,8 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 						graph.setSize(width + "%", height + "%");
 						setGraphGeometry(graph, inter);
 						inter = !inter;
+						if (isActive)
+							graph.activate();
 					}
 				}
 				break;
@@ -135,6 +137,8 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 					graphs.add(graph);
 					graph.setSize("100%", "100%");
 					setGraphGeometry(graph, true);
+					if (isActive)
+						graph.activate();
 				}
 				break;
 			case ODE:

@@ -212,8 +212,10 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * Destroy all graphs in this view and free up resources.
 	 */
 	protected void destroyGraphs() {
-		for (AbstractGraph<?> graph : graphs)
+		for (AbstractGraph<?> graph : graphs) {
+			graph.deactivate();
 			graph.removeFromParent();
+		}
 		graphs.clear();
 		gRows = gCols = 1;
 	}
@@ -369,6 +371,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 */
 	public void reset(boolean hard) {
 		timestamp = -Double.MAX_VALUE;
+		allocateGraphs();
 	}
 
 	/**
