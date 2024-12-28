@@ -118,12 +118,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	ArrayList<Mesh> spheres = new ArrayList<>();
 
 	/**
-	 * The flag to indicate whether camera needs to be reset. This is true after the
-	 * geometry changed (but not after a reset).
-	 */
-	boolean resetCamera = true;
-
-	/**
 	 * The line style for the links.
 	 */
 	LineBasicMaterial linkstyle;
@@ -515,9 +509,14 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	public void calcBounds(int width, int height) {
 		// Note: even though graph3DScene != null, getCanvas() still
 		// throws exception 'cannot read properties of undefined'...
-		// however, exception is caught and has no further consequences
-		// checking graph3DScene doesn't work and try-catch-block not needed
-		graph3DScene.getCanvas().setSize(width, height);
+		// exception could be ignored because it is caught further
+		// upstream but this would disrupt the logical flow.
+		try {
+			graph3DScene.getCanvas().setSize(width, height);
+		} catch (Exception e) {
+			// ask a wizard to fix this... ignore for now
+			// logger.warning("Canvas not yet initialized.");
+		}
 	}
 
 	/**
