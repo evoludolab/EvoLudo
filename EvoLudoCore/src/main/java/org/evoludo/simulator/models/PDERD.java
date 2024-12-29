@@ -1099,14 +1099,17 @@ public class PDERD extends ODEEuler {
 					System.arraycopy(y0, 0, density[n], 0, nDim);
 				break;
 
-			case DISTURBANCE:
+			case PERTURBATION:
 				for (int n = 0; n < space.size; n++)
 					System.arraycopy(y0, 0, density[n], 0, nDim);
 				double[] disturb = new double[nDim];
-				ArrayMath.multiply(y0, 1.2, disturb);
 				if (dependent >= 0) {
-					disturb[dependent] = y0[dependent] * 0.8;
+					// flip frequencies and normalize
+					ArrayMath.multiply(y0, -1.0, disturb);
+					ArrayMath.add(disturb, 1.0);
 					ArrayMath.normalize(disturb);
+				} else {
+					ArrayMath.multiply(y0, 1.2, disturb);
 				}
 				System.arraycopy(disturb, 0, density[space.size / 2], 0, nDim);
 				break;
@@ -1115,15 +1118,12 @@ public class PDERD extends ODEEuler {
 				if (dependent >= 0) {
 					for (int n = 0; n < space.size; n++) {
 						double[] ds = density[n]; // ds is only a short-cut - data written to ds is stored in density[]
-						double norm = 1.0;
 						for (int i = 0; i < nDim; i++) {
-							if (i == dependent)
-								continue;
 							double dsi = rng.random01() * y0[i];
 							ds[i] = dsi;
-							norm -= dsi;
 						}
-						ds[dependent] = norm;
+						if (dependent >= 0)
+							ArrayMath.normalize(ds);
 					}
 					break;
 				}
@@ -1143,7 +1143,7 @@ public class PDERD extends ODEEuler {
 				if (dependent >= 0) {
 					int len = density[0].length;
 					double[] empty = new double[len];
-					empty[dependent] = 1.0;
+					empty[module.VACANT < 0 ? dependent : module.VACANT] = 1.0;
 					for (int n = 0; n < space.size; n++)
 						System.arraycopy(empty, 0, density[n], 0, len);
 				} else {
@@ -1152,18 +1152,17 @@ public class PDERD extends ODEEuler {
 				}
 				switch (space.getType()) {
 					case CUBE:
-						int l, m, mz;
-						if (space.size == 25000) { // NOVA
-							l = 50;
-							m = 25;
-							mz = 5;
-						} else {
+						int l = 50;
+						int m = 25;
+						int mz = 5;
+						if (space.size != 25000) { // not NOVA
 							l = (int) (Math.pow(space.size, 1.0 / 3.0) + 0.5);
 							m = l / 2;
 							mz = m;
 						}
 						int l2 = l * l;
-						int dd = Math.max(1, l / 5), r = nDim / 2;
+						int dd = Math.max(1, l / 5);
+						int r = nDim / 2;
 						double r2 = (dd * dd) * 0.25;
 						for (int z = -r; z <= r; z++)
 							for (int y = -r; y <= r; y++)
@@ -1200,27 +1199,23 @@ public class PDERD extends ODEEuler {
 			case GAUSSIAN:
 				switch (space.getType()) {
 					case CUBE:
-						int l, lz;
-						double m, mz;
-						if (space.size == 25000) { // NOVA
-							l = 50;
-							lz = 10;
-						} else {
+						int l = 50;
+						int lz = 10;
+						if (space.size != 25000) { // not NOVA
 							l = (int) (Math.pow(space.size, 1.0 / 3.0) + 0.5);
 							lz = l;
 						}
-						m = (l - 1) * 0.5;
-						mz = (lz - 1) * 0.5;
+						double m = (l - 1) * 0.5;
+						double mz = (lz - 1) * 0.5;
 						int l2 = l * l;
 						double norm = 1.0 / l;
 						for (int z = 0; z < lz; z++) {
 							double z2 = (z - mz) * (z - mz);
 							for (int y = 0; y < l; y++) {
 								double y2 = (y - m) * (y - m);
-								for (int x = 0; x < l; x++) {
-									double dens = Math.exp(-((x - m) * (x - m) + y2 + z2) * norm);
-									ArrayMath.multiply(y0, dens, density[z * l2 + y * l + x]);
-								}
+								for (int x = 0; x < l; x++) 
+									scaleDensity(density[z * l2 + y * l + x], 
+											Math.exp(-((x - m) * (x - m) + y2 + z2) * norm));
 							}
 						}
 						break;
@@ -1241,10 +1236,9 @@ public class PDERD extends ODEEuler {
 						norm = 1.0 / l;
 						for (int y = 0; y < l; y++) {
 							double y2 = (y - m) * (y - m);
-							for (int x = 0; x < l; x++) {
-								double dens = Math.exp(-((x - m) * (x - m) + y2) * norm);
-								ArrayMath.multiply(y0, dens, density[y * l + x]);
-							}
+							for (int x = 0; x < l; x++) 
+								scaleDensity(density[y * l + x], 
+										Math.exp(-((x - m) * (x - m) + y2) * norm));
 						}
 				}
 				break;
@@ -1252,17 +1246,14 @@ public class PDERD extends ODEEuler {
 			case RING:
 				switch (space.getType()) {
 					case CUBE:
-						int l, lz;
-						double m, mz;
-						if (space.size == 25000) { // NOVA
-							l = 50;
-							lz = 10;
-						} else {
+						int l = 50;
+						int lz = 10;
+						if (space.size != 25000) { // not NOVA
 							l = (int) (Math.pow(space.size, 1.0 / 3.0) + 0.5);
 							lz = l;
 						}
-						m = (l - 1) * 0.5;
-						mz = (lz - 1) * 0.5;
+						double m = (l - 1) * 0.5;
+						double mz = (lz - 1) * 0.5;
 						int l2 = l * l;
 						double m3 = m * 0.333;
 						double norm = 1.0 / l;
@@ -1272,8 +1263,8 @@ public class PDERD extends ODEEuler {
 								double y2 = (y - m) * (y - m);
 								for (int x = 0; x < l; x++) {
 									double r = Math.pow((x - m) * (x - m) + y2 + z2, 1.0 / 3.0);
-									double dens = Math.exp(-(r - m3) * (r - m3) * norm);
-									ArrayMath.multiply(y0, dens, density[z * l2 + y * l + x]);
+									scaleDensity(density[z * l2 + y * l + x], 
+											Math.exp(-(r - m3) * (r - m3) * norm));
 								}
 							}
 						}
@@ -1286,8 +1277,8 @@ public class PDERD extends ODEEuler {
 						norm = 1.0 / l;
 						for (int x = 0; x < l; x++) {
 							double r = Math.abs(x - m);
-							double dens = Math.exp(-(r - m3) * (r - m3) * norm);
-							ArrayMath.multiply(y0, dens, density[x]);
+							scaleDensity(density[x], 
+									Math.exp(-(r - m3) * (r - m3) * norm));
 						}
 						break;
 
@@ -1300,8 +1291,8 @@ public class PDERD extends ODEEuler {
 							double y2 = (y - m) * (y - m);
 							for (int x = 0; x < l; x++) {
 								double r = Math.sqrt((x - m) * (x - m) + y2);
-								double dens = Math.exp(-(r - m3) * (r - m3) * norm);
-								ArrayMath.multiply(y0, dens, density[y * l + x]);
+								scaleDensity(density[y * l + x], 
+										Math.exp(-(r - m3) * (r - m3) * norm));
 							}
 						}
 				}
@@ -1318,6 +1309,20 @@ public class PDERD extends ODEEuler {
 		// loc[2] = 0.0;
 		// }
 		// }
+	}
+
+	/**
+	 * Helper method to scale the density vector {@code d} by the scalar factor
+	 * {@code scale}. The scalar must lie in \((0, 1)\) such that the initial
+	 * densities/frequencies represent the maximum.
+	 * 
+	 * @param d     the density vector to scale
+	 * @param scale the scaling factor
+	 */
+	private void scaleDensity(double[] d, double scale) {
+		ArrayMath.multiply(y0, scale, d);
+		if (dependent >= 0)
+			d[dependent] = 1.0 + d[dependent] - ArrayMath.norm(d);
 	}
 
 	/**
@@ -1379,7 +1384,7 @@ public class PDERD extends ODEEuler {
 		 * Spatially homogeneous distribution. Perturbation in the center with increased
 		 * densities by a factor {@code 1.2} in independent traits.
 		 */
-		DISTURBANCE("perturbation", "perturbation in center <d1,...,dn>"),
+		PERTURBATION("perturbation", "perturbation in center <d1,...,dn>"),
 
 		/**
 		 * Gaussian density distribution in the center. In 2D lattices this generates a
@@ -1471,6 +1476,10 @@ public class PDERD extends ODEEuler {
 			Arrays.fill(y0, 1.0);
 		else
 			System.arraycopy(init, 0, y0, 0, nt);
+		if (dependent >= 0) {
+			// normalize frequencies
+			ArrayMath.normalize(y0);
+		}
 		return true;
 	}
 
