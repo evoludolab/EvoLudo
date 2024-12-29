@@ -7,50 +7,51 @@ EVOLUDO_GWT_HOME="EvoLudoGWT" ;
 EVOLUDO_DEV_HOME="EvoLudoGWTDev" ;
 EVOLUDO_TEST_HOME="EvoLudoTest" ;
 EVOLUDO_TEST_TEST="$EVOLUDO_TEST_HOME/tests" ;
+EVOLUDO_DIST="dist" ;
+EVOLUDO_API="$EVOLUDO_DIST/api" ;
+EVOLUDO_WAR="$EVOLUDO_DIST/war" ;
+EVOLUDO_SH="scripts"
 
 ### find most recently changed src file (skip hidden files)
-LATEST_JAVA=`find ${EVOLUDO_GWT_HOME}/src/main/ ${EVOLUDO_CORE_HOME}/src/main/ \
-			-type f -not -name '.*'  -not -name '*.properties' -print0 | \
+LATEST_JAVA=`find . -type f -name '*.java' -print0 | \
 			xargs -0 stat -f "%m %N" | \
 			sort -rn | head -1 | cut -f2- -d" "` ;
 LATEST_GWT=`find ${EVOLUDO_GWT_HOME}/target/EvoLudoGWT* \
 			-type f -name 'evoludoweb.nocache.js'` ;
+LATEST_JAR=`find ${EVOLUDO_JRE_HOME}/target/ \
+			-type f -name 'EvoLudo.*.jar' -print0 | \
+			xargs -0 stat -f "%m %N" | \
+			sort -rn | head -1 | cut -f2- -d" "` ;
+LATEST_DOC=`find ${EVOLUDO_API}/ \
+			-type f -name '*.html' -print0 | \
+			xargs -0 stat -f "%m %N" | \
+			sort -rn | head -1 | cut -f2- -d" "` ;
 
-# build project - if needed
-if [[ ${LATEST_JAVA} -nt ${LATEST_GWT} ]]; then
-	echo "Building EvoLudo project..." ;
-	mvn clean install ;
-else
-	echo "Building EvoLudo project skipped..."
+if [ -d ${EVOLUDO_DIST} ]
+    then 
+    echo "Distribution directory exists - aborting!" ;
+    exit 1 ;
 fi
 
-passed=$? ;
-
-if [ $passed -ne 0 ]
-	then 
-	echo "Building EvoLudo project failed - aborting!" ;
-	exit $passed ;
-fi
-
-# run tests
-echo "Running EvoLudo tests..." ;
-java -jar "$EVOLUDO_TEST_HOME"/target/EvoLudoTest.*.jar \
-		--tests "$EVOLUDO_TEST_TEST/generators" \
-		--references "$EVOLUDO_TEST_TEST/references/current" \
-		--reports "$EVOLUDO_TEST_TEST/reports"
+# start by running tests
+${EVOLUDO_SH}/runtests.sh
 
 passed=$? ;
 
 if [ $passed -ne 0 ]
     then 
-    echo "EvoLudo test\(s\) failed - aborting!" ;
+    echo "EvoLudo test(s) failed - aborting!" ;
     exit $passed ;
 fi
 
-# build API documentation - places javadoc in docs/api
+# build API documentation (if needed) - places javadoc in docs/api
 # note: some say compile goal is necessary to resolve cross-module dependencies of the javadoc but seems ok now
-echo "Building public API documentation..." ;
-mvn -P public,-private javadoc:aggregate ;
+if [[ ! -d ${EVOLUDO_API} || ( -d ${EVOLUDO_API} && ${LATEST_JAVA} -nt ${LATEST_DOC} ) ]]; then
+	echo "Building public API documentation..." ;
+	mvn -P public,-private javadoc:aggregate ;
+else
+	echo "Building public API documentation skipped..."
+fi
 
 passed=$? ;
 
