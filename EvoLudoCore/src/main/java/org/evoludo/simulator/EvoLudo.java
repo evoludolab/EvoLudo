@@ -2116,6 +2116,8 @@ public abstract class EvoLudo
 
 	/**
 	 * Report error and stop model execution, if running.
+	 * <p>
+	 * <strong>IMPORTANT:</strong> Does not return control to caller.
 	 * 
 	 * @param msg the error message
 	 */
@@ -2129,6 +2131,7 @@ public abstract class EvoLudo
 			pendingAction = PendingAction.NONE;
 		}
 		logger.severe(msg);
-		throw new Error(msg);
+		if (isGWT)
+			throw new Error(msg);
 	}
 }

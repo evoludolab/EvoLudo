@@ -1694,6 +1694,12 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		return snapfile;
 	}
 
+	@Override
+	public void fatal(String msg) {
+		super.fatal(msg);
+		exit(1);
+	}
+
 	/*
 	 * <strong>Notes:</strong> (as of 20191223 likely only of historical
 	 * interest; as of 20231006 entry point retired, see EvoLudoLab#main.)
