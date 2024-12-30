@@ -1093,10 +1093,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	protected String[] preprocessCLO(String[] cloarray) {
 		// once module is loaded pre-processing of command line arguments can proceed
 		cloarray = super.preprocessCLO(cloarray);
-		if (cloarray == null)
-			return null;
-		// check if --help or --restore requested
 		String helpName = cloHelp.getName();
+		if (cloarray == null)
+			return new String[] { helpName };
+		// check if --help or --restore requested
 		String restoreName = cloRestore.getName();
 		int nParams = cloarray.length;
 		for (int i = 0; i < nParams; i++) {
@@ -1193,8 +1193,19 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 
 	@Override
 	public void helpCLO() {
-		output.println(
-				"List of command line options for module '" + activeModule.getKey() + "':\n" + parser.helpCLO(true));
+		super.helpCLO();
+		output.print("List of command line options");
+		String missing = "";
+		if (activeModule != null) {
+			output.print(" for module '" + activeModule.getKey() + "'");
+			if (activeModel != null)
+				output.print(" and model '" + activeModel.getModelType().getKey() + "'");
+			else
+				missing = " (select model for more options)";
+		}
+		else
+			missing = " (select module and model for more options)";	
+		output.println(missing + ":\n" + parser.helpCLO(true));
 	}
 
 	/**
@@ -1212,7 +1223,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * existing file).
 	 */
 	public final CLOption cloOutput = new CLOption("output", "stdout", catSimulation,
-			"--output <f>              redirect output to file", new CLODelegate() {
+			"--output <f>    redirect output to file", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					// --append option takes precedence; ignore --output setting
@@ -1243,7 +1254,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * existing file).
 	 */
 	public final CLOption cloAppend = new CLOption("append", "stdout", catSimulation,
-			"--append <f>              append output to file", new CLODelegate() {
+			"--append <f>    append output to file", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					// --append option takes precedence; ignore --output setting
@@ -1277,7 +1288,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * {@code --export}, see {@link #cloExport}.
 	 */
 	public final CLOption cloRestore = new CLOption("restore", "norestore", catSimulation,
-			"--restore <filename>      restore saved state from file", new CLODelegate() {
+			"--restore <filename>  restore saved state from file", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					// option gets special treatment
@@ -1298,7 +1309,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 */
 	public final CLOption cloExport = new CLOption("export", "evoludo-%d.plist", CLOption.Argument.OPTIONAL,
 			catSimulation,
-			"--export [<filename>]    export final state of simulation (%d for generation)", new CLODelegate() {
+			"--export [<filename>]  export final state of simulation (%d for generation)", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					if (!cloExport.isSet()) {

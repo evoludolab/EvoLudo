@@ -40,7 +40,6 @@ import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.PDERD;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.PDESupervisorGWT;
-import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
@@ -573,22 +572,10 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public void helpCLO() {
-		// list trait indices and names
-		String msg = "";
-		int idx = 0;
-		for (Module mod : activeModule.getSpecies()) {
-			String name = mod.getName();
-			int namelen = name.length();
-			if (namelen > 0)
-				msg += "\n       Species: " + name;
-			int nt = mod.getNTraits();
-			for (int n = 0; n < nt; n++)
-				msg += "\n             " + (idx + n) + ": " + mod.getTraitName(n);
-			idx += nt;
-		}
-		catModule.setHeader("Options for module '" + activeModule.getKey() + "' with trait indices and names:" + msg);
-		catModel.setHeader("Options for model '" + activeModel.getModelType() + "'");
-		logger.info("<pre>EvoLudoWeb\nList of command line options for module '" + activeModule.getKey() + "':\n"
+		super.helpCLO();
+		logger.info("<pre>EvoLudoWeb\nList of command line options for module '" //
+				+ activeModule.getKey() + "' and model '" //
+				+ activeModel.getModelType().getKey() + "':\n" //
 				+ parser.helpCLO(true) + "</pre>");
 	}
 

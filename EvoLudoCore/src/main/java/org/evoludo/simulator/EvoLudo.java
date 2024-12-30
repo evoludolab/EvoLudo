@@ -1694,14 +1694,20 @@ public abstract class EvoLudo
 			parser.clearCLO();
 			parser.addCLO(cloModule);
 			logger.severe("Module not found!");
-			logger.info("<pre>List of available modules:\n" + parser.helpCLO(false) + "</pre>");
+			String help = parser.helpCLO(false);
+			if (isGWT)
+				logger.info("<pre>List of available modules:\n" + help + "</pre>");
+			else
+				logger.info("List of available modules:\n" + help);
 			return false;
 		}
 		parser.initCLO();
 		// preprocessing removed (and possibly altered) --module and --model options
 		// add current settings back to cloarray
-		cloarray = ArrayMath.append(cloarray, cloModule.getName() + " " + activeModule.getKey());
-		cloarray = ArrayMath.append(cloarray, cloModel.getName() + " " + activeModel.getModelType().getKey());
+		if (activeModule != null)
+			cloarray = ArrayMath.append(cloarray, cloModule.getName() + " " + activeModule.getKey());
+		if (activeModel != null)
+			cloarray = ArrayMath.append(cloarray, cloModel.getName() + " " + activeModel.getModelType().getKey());
 		boolean success = parser.parseCLO(cloarray);
 		if (pendingAction.equals(PendingAction.CLO)) {
 			// start again from scratch
@@ -1715,7 +1721,26 @@ public abstract class EvoLudo
 	/**
 	 * Format, encode and output help on command line options.
 	 */
-	public abstract void helpCLO();
+	public void helpCLO() {
+		if (activeModule == null)
+			return;
+		// list trait indices and names
+		String msg = "";
+		int idx = 0;
+		for (Module mod : activeModule.getSpecies()) {
+			String name = mod.getName();
+			int namelen = name.length();
+			if (namelen > 0)
+				msg += "\n       Species: " + name;
+			int nt = mod.getNTraits();
+			for (int n = 0; n < nt; n++)
+				msg += "\n             " + (idx + n) + ": " + mod.getTraitName(n);
+			idx += nt;
+		}
+		catModule.setHeader("Options for module '" + activeModule.getKey() + "' with trait indices and names:" + msg);
+		if (activeModel != null)
+			catModel.setHeader("Options for model '" + activeModel.getModelType() + "'");		
+	}
 
 	/**
 	 * The category for global options.
@@ -1966,8 +1991,9 @@ public abstract class EvoLudo
 		parser.addCLO(cloRNG);
 		// option for trait color schemes only makes sense for modules with multiple
 		// continuous traits that have 2D/3D visualizations
-		if (activeModel.isContinuous() && activeModule.getNTraits() > 1 && //
-				(activeModule instanceof HasPop2D || activeModule instanceof HasPop3D)) {
+		if (activeModel instanceof org.evoludo.simulator.models.Continuous //
+				&& activeModule.getNTraits() > 1 //
+				&& (activeModule instanceof HasPop2D || activeModule instanceof HasPop3D)) {
 			parser.addCLO(cloTraitColorScheme);
 			cloTraitColorScheme.addKeys(ColorModelType.values());
 		}
