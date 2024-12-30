@@ -1207,6 +1207,7 @@ public abstract class EvoLudo
 				//$FALL-THROUGH$
 			case NONE:
 			case GUI:
+			case CONSOLE:
 			case APPLY:
 			case STATISTIC:
 			case SNAPSHOT:
@@ -1971,6 +1972,20 @@ public abstract class EvoLudo
 			});
 
 	/**
+	 * Command line option to print help message for available command line options.
+	 */
+	public final CLOption cloHelp = new CLOption("help", catGlobal,
+			"--help          print this help screen", new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
+					if (cloHelp.isSet()) {
+						helpCLO();
+					}
+					return true;
+				}
+			});
+
+	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * <strong>Note:</strong> In contrast to other providers of command line
@@ -1979,6 +1994,7 @@ public abstract class EvoLudo
 	 */
 	@Override
 	public void collectCLO(CLOParser prsr) {
+		parser.addCLO(cloHelp);
 		parser.addCLO(cloVerbose);
 		if (!EvoLudo.isGWT)
 			// default verbosity if running as java application is warning

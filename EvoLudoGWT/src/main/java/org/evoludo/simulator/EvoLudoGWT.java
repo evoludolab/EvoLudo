@@ -324,9 +324,14 @@ public class EvoLudoGWT extends EvoLudo {
 			return null;
 		// check if --export requested
 		String exportName = "export";
+		String helpName = cloHelp.getName();
 		int nParams = cloarray.length;
 		for (int i = 0; i < nParams; i++) {
 			String param = cloarray[i];
+			if (param.startsWith(helpName)) {
+				// discard/ignore all other options
+				return new String[] { helpName };
+			}
 			if (!doRestore && param.startsWith(exportName)) {
 				// see --export option in EvoLudoJRE.java
 				// remove --export option and file name
@@ -577,6 +582,7 @@ public class EvoLudoGWT extends EvoLudo {
 				+ activeModule.getKey() + "' and model '" //
 				+ activeModel.getModelType().getKey() + "':\n" //
 				+ parser.helpCLO(true) + "</pre>");
+		requestAction(PendingAction.CONSOLE, true);
 	}
 
 	/**

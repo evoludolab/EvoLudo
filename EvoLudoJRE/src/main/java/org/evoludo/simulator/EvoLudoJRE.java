@@ -1206,6 +1206,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		else
 			missing = " (select module and model for more options)";	
 		output.println(missing + ":\n" + parser.helpCLO(true));
+		exit(0);
 	}
 
 	/**
@@ -1433,21 +1434,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				}
 			});
 
-	/**
-	 * Command line option to print help message for available command line options.
-	 */
-	public final CLOption cloHelp = new CLOption("help", catGlobal,
-			"--help          print this help screen", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					if (cloHelp.isSet()) {
-						helpCLO();
-						exit(0); // abort
-					}
-					return true;
-				}
-			});
-
 	@Override
 	public void collectCLO(CLOParser prsr) {
 		// some options are only meaningful when running simulations
@@ -1463,7 +1449,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			prsr.addCLO(cloDigits);
 		}
 		prsr.addCLO(cloRestore);
-		prsr.addCLO(cloHelp);
 		super.collectCLO(prsr);
 		// some options are not meaningful when running simulations
 		if (!isApplication) {

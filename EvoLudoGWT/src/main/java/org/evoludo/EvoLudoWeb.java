@@ -612,6 +612,10 @@ public class EvoLudoWeb extends Composite
 				displayStatusThresholdLevel = Level.ALL.intValue();
 				updateStatus();
 				break;
+			case CONSOLE:
+				guiState.view = viewConsole;
+				changeViewTo(viewConsole);
+				break;
 			default:
 				// includes RESET, INIT, START, STOP, MODE, UNLOAD
 		}
@@ -1322,25 +1326,7 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoHelp")
 	public void onHelpClick(ClickEvent event) {
-		showHelp();
-	}
-
-	/**
-	 * Helper method: request display of short description of all available
-	 * parameters.
-	 */
-	void showHelp() {
-		if (viewConsole == null) {
-			displayStatus("Console not available...", Level.SEVERE.intValue());
-			return;
-		}
-		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-			@Override
-			public void execute() {
-				engine.helpCLO();
-				changeViewTo(viewConsole);
-			}
-		});
+		engine.helpCLO();
 	}
 
 	/**
@@ -1637,7 +1623,7 @@ public class EvoLudoWeb extends Composite
 				break;
 			case "H":
 				// show help panel
-				showHelp();
+				engine.helpCLO();
 				break;
 			default:
 				return false;

@@ -122,7 +122,12 @@ public interface ChangeListener {
 		/**
 		 * Update graphical user interface (status and counter, not necessarily views).
 		 */
-		GUI;
+		GUI,
+
+		/**
+		 * Display console.
+		 */
+		CONSOLE;
 
 		/**
 		 * The pending execution mode of the model.
