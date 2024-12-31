@@ -1098,7 +1098,7 @@ public abstract class Continuous extends Module {
 	 * 
 	 * @see Costs
 	 */
-	public final CLOption cloCosts = new CLOption("costs", Costs.ME_LINEAR.getKey() + " 1", EvoLudo.catModel,
+	public final CLOption cloCosts = new CLOption("costs", Costs.ME_LINEAR.getKey() + " 1", EvoLudo.catModule,
 			"--costs <s0 b00[" + CLOParser.VECTOR_DELIMITER + "b01...[" + CLOParser.TRAIT_DELIMITER + //
 					"s1 b10[" + CLOParser.VECTOR_DELIMITER + "b11...]]]>  cost function <si>:",
 			new CLODelegate() {
@@ -1162,7 +1162,7 @@ public abstract class Continuous extends Module {
 	 */
 	public final CLOption cloBenefits = new CLOption("benefits",
 			Benefits.WE_LINEAR.getKey() + " 3",
-			EvoLudo.catModel,
+			EvoLudo.catModule,
 			"--benefits <s0 b00[" + CLOParser.VECTOR_DELIMITER + "b01...[" + CLOParser.TRAIT_DELIMITER + //
 					"s1 b10[" + CLOParser.VECTOR_DELIMITER + "b11...]]]>  benefit function <si>:",
 			new CLODelegate() {

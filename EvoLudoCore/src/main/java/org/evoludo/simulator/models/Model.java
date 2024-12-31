@@ -1072,8 +1072,8 @@ public abstract class Model implements CLOProvider {
 	 * Command line option to set the number of generations between reports for
 	 * {@link EvoLudo#modelNext()}.
 	 */
-	public final CLOption cloTimeStep = new CLOption("timestep", "1", EvoLudo.catGlobal,
-			"--timestep <f>  report frequency in generations", new CLODelegate() {
+	public final CLOption cloTimeStep = new CLOption("timestep", "1", EvoLudo.catModel,
+			"--timestep <s>  report frequency in generations", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					setTimeStep(Double.parseDouble(arg));
@@ -1128,8 +1128,8 @@ public abstract class Model implements CLOProvider {
 	 * measurements such as the strategy abundances, their fluctuations or the local
 	 * strategy configurations in structured populations.
 	 */
-	public final CLOption cloTimeRelax = new CLOption("timerelax", "0", EvoLudo.catGlobal,
-			"--timerelax <n>  relaxation time in generations", new CLODelegate() {
+	public final CLOption cloTimeRelax = new CLOption("timerelax", "0", EvoLudo.catModel,
+			"--timerelax <r>  relaxation time in generations", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					setTimeRelax(CLOParser.parseDouble(arg));
@@ -1184,8 +1184,8 @@ public abstract class Model implements CLOProvider {
 	 * Command line option to set the number of generations after which to stop the
 	 * model calculations. Model execution can be resumed afterwards.
 	 */
-	public final CLOption cloTimeStop = new CLOption("timestop", "never", EvoLudo.catGlobal,
-			"--timestop <g>   halt execution after <g> generations", new CLODelegate() {
+	public final CLOption cloTimeStop = new CLOption("timestop", "never", EvoLudo.catModel,
+			"--timestop <h>   halt execution after <h> generations", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					if (cloTimeStop.isSet()) {

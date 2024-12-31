@@ -1409,8 +1409,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * all traits are activated.
 	 */
 	public final CLOption cloTraitDisable = new CLOption("disable", "none", EvoLudo.catModule,
-			"--disable <d[" + CLOParser.VECTOR_DELIMITER + "d...[" + CLOParser.SPECIES_DELIMITER + "d["
-					+ CLOParser.VECTOR_DELIMITER + "d...]]]  indices of disabled traits.",
+			"--disable <d1[" + CLOParser.VECTOR_DELIMITER + "d2...]>  indices of disabled traits.",
 			new CLODelegate() {
 
 				/**

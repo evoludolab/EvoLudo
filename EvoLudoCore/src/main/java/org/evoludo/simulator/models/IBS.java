@@ -1310,13 +1310,13 @@ public abstract class IBS extends Model {
 	 */
 	public final CLOption cloScoringType = new CLOption("resetscores", ScoringType.RESET_ALWAYS.getKey(),
 			CLOption.Argument.REQUIRED, EvoLudo.catModel,
-			"--resetscores <t>  type for restting scores t:",
+			"--resetscores <t>  type for resetting scores t:",
 			new CLODelegate() {
 
 				/**
 				 * {@inheritDoc}
 				 * <p>
-				 * Parse method for restting the scores of individuals.
+				 * Parse method for resetting the scores of individuals.
 				 * 
 				 * @param arg the method for resetting the scores.
 				 */

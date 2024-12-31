@@ -1800,7 +1800,7 @@ public abstract class EvoLudo
 	/**
 	 * Command line option to set seed of random number generator.
 	 */
-	public final CLOption cloSeed = new CLOption("seed", "no seed", CLOption.Argument.OPTIONAL, catGlobal,
+	public final CLOption cloSeed = new CLOption("seed", "no seed", CLOption.Argument.OPTIONAL, catModel,
 			"--seed[=s]      random seed (0)", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {

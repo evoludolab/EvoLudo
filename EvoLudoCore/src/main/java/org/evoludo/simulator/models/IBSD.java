@@ -426,7 +426,7 @@ public class IBSD extends IBS implements Discrete {
 		 * according to an exponential distribution for an event happening with
 		 * probability {@code Module#getMutationProb()}.
 		 */
-		HOMO("homo", "skip homogneous states (single species only)"),
+		HOMO("homo", "skip homogeneous states (single species only)"),
 
 		/**
 		 * Optimize Moran processes by restring events exclusively to links along

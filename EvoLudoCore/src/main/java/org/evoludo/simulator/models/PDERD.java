@@ -1030,6 +1030,16 @@ public class PDERD extends ODEEuler {
 		converged = true;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Due to diffusion PDE models do not permit time reversal.
+	 */
+	@Override
+	public boolean permitsTimeReversal() {
+		return false;
+	}
+
 	// @Override
 	// public boolean[] getAutoScale() {
 	// return scaleAuto;
@@ -1340,9 +1350,9 @@ public class PDERD extends ODEEuler {
 	 * <dt>CIRCLE
 	 * <dd>Circle in the center with uniform densities given by {@link ODEEuler#y0}.
 	 * <dt>DISTURBANCE
-	 * <dd>Spatially homogeneous distribution given by {@link ODEEuler#y0}.
-	 * Perturbation in the center cell with densities {@code 1.2*y0} (for frequency
-	 * based models the perturbation is normalized).
+	 * <dd>Spatially homogeneous distribution given by {@link ODEEuler#y0} with a
+	 * perturbation in the center cell with densities {@code 1.2*y0}, or, for frequency
+	 * based models with inverted and normalized frequencies.
 	 * <dt>GAUSSIAN
 	 * <dd>Gaussian density distribution in the center. In 2D lattices this
 	 * generates a sombrero-like distribution. Maximum density is given by
@@ -1381,8 +1391,10 @@ public class PDERD extends ODEEuler {
 		CIRCLE("circle", "circle in center <d1,...,dn>"),
 
 		/**
-		 * Spatially homogeneous distribution. Perturbation in the center with increased
-		 * densities by a factor {@code 1.2} in independent traits.
+		 * Perturbation of a spatially homogeneous distribution with densities
+		 * {@code y0}. The perturbation in the center cell has increased densities by a
+		 * factor {@code 1.2}, or, for frequency based models with inverted and
+		 * normalized frequencies.
 		 */
 		PERTURBATION("perturbation", "perturbation in center <d1,...,dn>"),
 

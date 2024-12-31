@@ -294,7 +294,7 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 	 * Command line option to set the {@code 2×2} payoff matrix for
 	 * interactions between cooperators and defectors.
 	 */
-	public final CLOption cloPayoffs = new CLOption("paymatrix", "1,0;1.65,0", EvoLudo.catModule,
+	public final CLOption cloPayoffs = new CLOption("paymatrix", "3,0;5,1", EvoLudo.catModule,
 			"--paymatrix <a,b;c,d>  2x2 payoff matrix", new CLODelegate() {
 
 				/**
