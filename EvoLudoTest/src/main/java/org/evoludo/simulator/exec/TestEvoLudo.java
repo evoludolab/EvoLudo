@@ -374,7 +374,7 @@ public class TestEvoLudo implements MilestoneListener {
 			String rclo = (String) reference.get("CLO");
 			String mclo = (String) replicate.get("CLO");
 			if (!rclo.equals(mclo)) {
-				logWarning("CLO strings differ (me: " + mclo + ", ref: " + rclo + ")");
+				logWarning("CLO strings differ!\n me: " + mclo + "\nref: " + rclo + ")");
 				nTestWarnings++;
 			}
 		}
@@ -497,8 +497,10 @@ public class TestEvoLudo implements MilestoneListener {
 					if (clo.length() < 1 || clo.startsWith("#"))
 						continue;
 					// run module
-					if (!runModule("Testing", clo))
+					if (!runModule("Testing", clo)) {
+						nTest++;
 						continue;
+					}
 					// check result against references
 					Plist result = PlistParser.parse(engine.encodeState());
 					String refname = generateExportFilename(clo, ++nTest);
