@@ -506,7 +506,7 @@ public abstract class Mutation {
 		public double mutate(double trait) {
 			double mut;
 			switch ((Type) type) {
-				case ALL:
+				case UNIFORM:
 					return rng.random01();
 				case GAUSSIAN:
 					// draw mutants until we find viable one...
@@ -525,7 +525,7 @@ public abstract class Mutation {
 				// just truncate to [0,1]
 				// mut = trait + rng.nextGaussian() * range;
 				// return Math.max(Math.min(mut, 1.0), 0.0);
-				case UNIFORM:
+				case RANGE:
 					mut = trait + rng.random01() * range * 2 - range;
 					return Math.max(Math.min(mut, 1.0), 0.0);
 				default:
@@ -599,21 +599,22 @@ public abstract class Mutation {
 										success = false;
 										continue;
 									}
-									if (mutt == Type.UNIFORM && mut.range <= 0.0) {
+									if ((mutt == Type.RANGE || mutt == Type.GAUSSIAN) && mut.range <= 0.0) {
 										// no valid range specified, default to entire trait interval
-										mut.type = Type.ALL;
+										mut.type = Type.UNIFORM;
+										module.logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
+												"no valid range found - using '"
+												+ mut.type + "'");
+										success = false;
+										continue;
 									}
 									mut.type = mutt;
 									//$FALL-THROUGH$
 								case 1:
 									mut.probability = Math.max(0.0, CLOParser.parseDouble(args[0]));
-									if (mut.probability <= 0.0)
+									if (mut.probability <= 0.0 || mut.type == Type.NONE) {
 										mut.type = Type.NONE;
-									else if (mut.type == Type.NONE) {
-										mut.type = Type.GAUSSIAN;
-										if (mut.range <= 0.0) {
-											mut.range = 0.01;
-										}
+										mut.probability = 0.0;
 									}
 									break;
 								case 0:
@@ -642,7 +643,7 @@ public abstract class Mutation {
 								case GAUSSIAN:
 									output.println("# mutationsdev:        " + mut.range);
 									break;
-								case UNIFORM:
+								case RANGE:
 									output.println("# mutationrange:        " + mut.range);
 									break;
 								default:
@@ -662,12 +663,12 @@ public abstract class Mutation {
 		 * <dl>
 		 * <dt>none
 		 * <dd>No mutations
-		 * <dt>all
+		 * <dt>uniform
 		 * <dd>Mutate to any trait in trait interval, uniformly distributed.
 		 * <dt>gaussian
 		 * <dd>Mutate trait according to a Gaussian distribution around parental trait
 		 * with standard deviation {@code s}.
-		 * <dt>uniform
+		 * <dt>range
 		 * <dd>Mutate trait uniformly distributed around parental trait {@code t} within
 		 * a range {@code t &pm; r}.
 		 * </dl>
@@ -682,7 +683,7 @@ public abstract class Mutation {
 			/**
 			 * Mutate to any trait value.
 			 */
-			ALL("all", "uniform mutations to any trait value"),
+			UNIFORM("all", "uniform mutations to any trait value"),
 
 			/**
 			 * Gaussian distributed mutations around parental trait.
@@ -692,7 +693,7 @@ public abstract class Mutation {
 			/**
 			 * Mutate parental trait {@code t} to {@code t &pm; <r>}.
 			 */
-			UNIFORM("uniform", "uniform mutations, &pm; <r>");
+			RANGE("range", "mutations with range &pm; <r>");
 
 			/**
 			 * Key of player update. Used when parsing command line options.
