@@ -132,6 +132,13 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 		super.destroyGraphs();
 	}
 
+	/**
+	 * Helper method to assign a geometry to a graph.
+	 * 
+	 * @param graph the graph to assign the geometry
+	 * @param inter {@code true} for interaction geometry, {@code false} for
+	 * 			competition geometry
+	 */
 	void setGraphGeometry(GenericPopGraph<T,N> graph, boolean inter) {
 		Module module = graph.getModule();
 		switch (model.getModelType()) {

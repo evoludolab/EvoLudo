@@ -1161,14 +1161,42 @@ public class EvoLudoWeb extends Composite
 		applyCLO();
 	}
 
+	/**
+	 * Helper structure to store the current state of the GUI.
+	 */
 	class GUIState {
+
+		/**
+		 * The active module.
+		 */
 		Module module;
+
+		/**
+		 * The active model.
+		 */
 		Model model;
+
+		/**
+		 * The active view.
+		 */
 		AbstractView view;
+
+		/**
+		 * The flag to indicate whether to resume execution of the model.
+		 */
 		boolean resume;
+
+		/**
+		 * The flag to indicate whether the command line arguments were successfully
+		 * parsed.
+		 */
 		boolean success;
 	}
 
+	/**
+	 * Field to store the current state of the GUI while applying a new set of
+	 * parameters.
+	 */
 	GUIState guiState = new GUIState();
 
 	/**
@@ -1227,6 +1255,10 @@ public class EvoLudoWeb extends Composite
 		revertCLO();
 	}
 
+	/**
+	 * Helper method to update the views after the command line options have been
+	 * applied. Ensures that all views are loaded and the GUI updated.
+	 */
 	private void configGUI() {
 		// reset is required if module and/or model changed
 		Module newModule = engine.getModule();

@@ -240,6 +240,10 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	 * The maximum number of bins for the histogram.
 	 */
 	public static final int MAX_BINS = 100;
+
+	/**
+	 * The minimum width of a bin.
+	 */
 	public static final int MIN_BIN_WIDTH = 1;
 
 	/**

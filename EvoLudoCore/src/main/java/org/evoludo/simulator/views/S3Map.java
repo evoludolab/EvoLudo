@@ -150,7 +150,7 @@ public class S3Map implements BasicTooltipProvider {
 	/**
 	 * Set the names of the traits.
 	 * 
-	 * @return the names of the traits
+	 * @param names the names of the traits
 	 */
 	public void setNames(String[] names) {
 		this.names = names;
@@ -168,6 +168,7 @@ public class S3Map implements BasicTooltipProvider {
 	/**
 	 * Get the name of the traits at the corner with index {@code idx}.
 	 * 
+	 * @param idx the index of the corner
 	 * @return the names of the traits
 	 */
 	public String getName(int idx) {
@@ -177,7 +178,7 @@ public class S3Map implements BasicTooltipProvider {
 	/**
 	 * Set the colors of the traits.
 	 * 
-	 * @return the names of the traits
+	 * @param colors the colors of the traits
 	 */
 	public void setColors(Color[] colors) {
 		this.colors = colors;
@@ -206,7 +207,7 @@ public class S3Map implements BasicTooltipProvider {
 	 * do not need to sum up to {@code 1.0}.
 	 * </ol>
 	 * 
-	 * @param s the data array indicating a point on the simplex
+	 * @param s3 the data array indicating a point on the simplex
 	 * @param p the cartesian coordinates of the point on the simplex
 	 * @return the point {@code p}
 	 * 

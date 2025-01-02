@@ -303,6 +303,7 @@ public class RSP extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 		 * Create a new instance of the IBS model for {@code 3×3} games.
 		 * 
 		 * @param engine the pacemaker for running the model
+		 * @param module the module that defines the game
 		 */
 		protected IBS(EvoLudo engine, RSP module) {
 			super(engine, module);

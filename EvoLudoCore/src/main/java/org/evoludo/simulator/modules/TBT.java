@@ -383,6 +383,7 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 		 * Create a new instance of the IBS model for {@code 2×2} games.
 		 * 
 		 * @param engine the pacemaker for running the model
+		 * @param module the module that defines the game
 		 */
 		protected TBTPop(EvoLudo engine, TBT module) {
 			super(engine, module);

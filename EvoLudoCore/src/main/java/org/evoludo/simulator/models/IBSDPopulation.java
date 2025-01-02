@@ -131,6 +131,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * Creates a population of individuals with discrete traits for IBS simulations.
 	 * 
 	 * @param engine the pacemaker for running the model
+	 * @param module the module that defines the game
 	 */
 	public IBSDPopulation(EvoLudo engine, Discrete module) {
 		super(engine, module);
@@ -1999,6 +2000,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * <strong>Note:</strong> residents in structured populations additionally have
 	 * a characteristic distribution, which is not accounted for in this estimate.
 	 * 
+	 * @param type the resident type
 	 * @return the estimated frequency of vacant sites
 	 */
 	private double estimateVacantFrequency(int type) {

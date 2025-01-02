@@ -1,3 +1,35 @@
+//
+// EvoLudo Project
+//
+// Copyright 2010 Christoph Hauert
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// For publications in any form, you are kindly requested to attribute the
+// author and project as follows:
+//
+//	Hauert, Christoph (<year>) EvoLudo Project, http://www.evoludo.org
+//			(doi: <doi>[, <version>])
+//
+//	<doi>:	digital object identifier of the downloaded release (or the
+//			most recent release if downloaded from github.com),
+//	<year>:	year of release (or download), and
+//	[, <version>]: optional version number (as reported in output header
+//			or GUI console) to simplify replication of reported results.
+//
+// The formatting may be adjusted to comply with publisher requirements.
+//
+
 package org.evoludo.simulator.modules;
 
 import java.awt.Color;
@@ -18,21 +50,55 @@ import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.Formatter;
 
+/**
+ * The Centipede class provides an EvoLudo module for the centipede game.
+ */
 public class Centipede extends Discrete implements HasIBS.DPairs,
 		HasPop2D.Strategy, HasPop2D.Fitness, HasPop3D.Strategy, HasPop3D.Fitness,
 		HasS3, HasMean.Strategy, HasMean.Fitness {
 
-	// parameters
+	/**
+	 * The number of decision nodes in the centipede game.
+	 */
 	int nNodes = 4;
+
+	/**
+	 * The cost of cooperation, i.e. the costs incurring to the player when
+	 * continuing the centipede game for another round.
+	 */
 	double cost = 1.0;
+
+	/**
+	 * The benefit of cooperation, i.e. the benefit provided to the opponent when
+	 * continuing the centipede game for another round.
+	 */
 	double benefit = 3.0;
 
-	// utility variables
+	/**
+	 * The payoff matrix for the first mover.
+	 */
 	double[][] payFirst;
+
+	/**
+	 * The payoff matrix for the second mover.
+	 */
 	double[][] paySecond;
+
+	/**
+	 * The number of first mover rounds.
+	 */
 	int nFirst;
+
+	/**
+	 * The number of second mover rounds.
+	 */
 	int nSecond;
 
+	/**
+	 * Constructs a new instance for the Centipede module.
+	 * 
+	 * @param engine the EvoLudo engine
+	 */
 	public Centipede(EvoLudo engine) {
 		super(engine);
 	}
@@ -121,12 +187,26 @@ public class Centipede extends Discrete implements HasIBS.DPairs,
 		return mutation;
 	}
 
+	/**
+	 * Returns the payoff for the first mover.
+	 * 
+	 * @param meTrait the trait of the first mover
+	 * @param youTrait the trait of the second mover
+	 * @return the payoff for the first mover
+	 */
 	public double getPayFirst(int meTrait, int youTrait) {
 		int meFirst = meTrait / nSecond;
 		int youSecond = youTrait % nSecond;
 		return payFirst[meFirst][youSecond];
 	}
 
+	/**
+	 * Returns the payoff for the second mover.
+	 * 
+	 * @param meTrait the trait of the second mover
+	 * @param youTrait the trait of the first mover
+	 * @return the payoff for the second mover
+	 */
 	public double getPaySecond(int meTrait, int youTrait) {
 		int meSecond = meTrait % nSecond;
 		int youFirst = youTrait / nSecond;
@@ -175,22 +255,51 @@ public class Centipede extends Discrete implements HasIBS.DPairs,
 		return ArrayMath.max(payFirst) + ArrayMath.max(paySecond);
 	}
 
+	/**
+	 * Set the cost of cooperation, i.e. the costs incurring to the player when
+	 * continuing the centipede game for another round.
+	 * 
+	 * @param cost the cost of cooperation
+	 */
 	public void setCost(double cost) {
 		this.cost = cost;
 	}
 
+	/**
+	 * Get the cost of cooperation, i.e. the costs incurring to the player when
+	 * continuing the centipede game for another round.
+	 * 
+	 * @return the cost of cooperation
+	 */
 	public double getCost() {
 		return cost;
 	}
 
+	/**
+	 * Set the benefit of cooperation, i.e. the benefit provided to the opponent when
+	 * continuing the centipede game for another round.
+	 * 
+	 * @param benefit the benefit of cooperation
+	 */
 	public void setBenefit(double benefit) {
 		this.benefit = benefit;
 	}
 
+	/**
+	 * Get the benefit of cooperation, i.e. the benefit provided to the opponent when
+	 * continuing the centipede game for another round.
+	 * 
+	 * @return the benefit of cooperation
+	 */
 	public double getBenefit() {
 		return benefit;
 	}
 
+	/**
+	 * Set the number of decision nodes for the centipede game.
+	 * 
+	 * @param nNodes the number of decision nodes
+	 */
 	public void setNodes(int nNodes) {
 		if (nNodes == this.nNodes)
 			return;
@@ -198,6 +307,11 @@ public class Centipede extends Discrete implements HasIBS.DPairs,
 		engine.requiresReset(true);
 	}
 
+	/**
+	 * Get the number of decision nodes for the centipede game.
+	 * 
+	 * @return the number of decision nodes
+	 */
 	public double getNodes() {
 		return nNodes;
 	}
@@ -289,8 +403,17 @@ public class Centipede extends Discrete implements HasIBS.DPairs,
 		parser.addCLO(cloNodes);
 	}
 
+	/**
+	 * The CentiMap class provides a mapping of the centipede game to a pair of
+	 * \(S_3\) simplices for the first mover and second mover roles.
+	 */
 	public class CentiMap extends S3Map {
 
+		/**
+		 * Constructs a new CentiMap instance for the given role.
+		 * 
+		 * @param role the role of the player
+		 */
 		public CentiMap(int role) {
 			super(role, role == 0 ? "First mover" : "Second mover");
 			super.setNames(new String[] { "0", "1", "2" });
@@ -325,8 +448,17 @@ public class Centipede extends Discrete implements HasIBS.DPairs,
 		}
 	}
 
+	/**
+	 * The CentiMutations class provides a mutation operator for the centipede game.
+	 */
 	public class CentiMutations extends Mutation.Discrete {
 
+		/**
+		 * Constructs a new CentiMutations instance to deal with mutations in the
+		 * Centipede game.
+		 * 
+		 * @param module the module that defines the Centipede game
+		 */
 		public CentiMutations(Module module) {
 			super(module);
 		}

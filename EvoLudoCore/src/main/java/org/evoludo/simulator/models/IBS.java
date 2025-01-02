@@ -68,7 +68,7 @@ public abstract class IBS extends Model {
 			 * <strong>Important:</strong> must be overridden and implemented in subclasses
 			 * that define game interactions between pairs of individuals
 			 * ({@code nGroup=2}, {@code pairwise=true}), otherwise see
-			 * {@link Groups#groupScores(int[], double[])}.
+			 * {@link DGroups#groupScores(int[], double[])}.
 			 * 
 			 * @param me         the trait index of the focal individual
 			 * @param traitCount number of opponents with each trait/strategy
@@ -89,7 +89,7 @@ public abstract class IBS extends Model {
 			 * that define game interactions in well-mixed populations where individuals
 			 * interact with everyone else. Computationally it is not feasible to cover this
 			 * scenario with {@link #pairScores(int, int[], double[])} or
-			 * {@link Groups#groupScores(int[], double[])}, respectively.
+			 * {@link DGroups#groupScores(int[], double[])}, respectively.
 			 * <p>
 			 * <strong>Note:</strong> If explicit calculations of the well-mixed scores are
 			 * not available, interactions with everyone in well-mixed populations should
@@ -192,7 +192,7 @@ public abstract class IBS extends Model {
 			 * <h3>Important:</h3> must be overridden and implemented in subclasses that
 			 * define game interactions between pairs of individuals
 			 * ({@code nGroup=2}, {@code pairwise=true}), otherwise see
-			 * {@link Groups#groupScores(double, double[], int, double[])}.
+			 * {@link CGroups#groupScores(double, double[], int, double[])}.
 			 * 
 			 * @param me           the trait of the focal individual
 			 * @param groupTraits  the traits of the group members
@@ -260,7 +260,7 @@ public abstract class IBS extends Model {
 			 * <h3>Important:</h3> must be overridden and implemented in subclasses that
 			 * define game interactions between pairs of individuals
 			 * ({@code nGroup=2}, {@code pairwise=true}), otherwise see
-			 * {@link Groups#groupScores(double, double[], int, double[])}.
+			 * {@link MCGroups#groupScores(double, double[], int, double[])}.
 			 * 
 			 * @param me           the trait of the focal individual
 			 * @param groupTraits  the traits of the group members
@@ -296,7 +296,7 @@ public abstract class IBS extends Model {
 			 * <h3>Important:</h3> must be overridden and implemented in subclasses that
 			 * define game interactions among groups of individuals with multiple continuous
 			 * traits (for groups with sizes {@code nGroup&gt;2}, otherwise see
-			 * {@link #pairScores(double[], double[], int, double[])}).
+			 * {@link CPairs#pairScores(double[], double[], int, double[])}).
 			 * 
 			 * @param me      the traits of the focal individual
 			 * @param group   the traits of the group members

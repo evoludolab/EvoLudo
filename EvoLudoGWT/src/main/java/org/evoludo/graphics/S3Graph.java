@@ -535,11 +535,10 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 
 	/**
 	 * Convert the {@code x}-component of the screen coordinates {@code (x, y)} into
-	 * scaled (Cartesian) simplex coordinates.
+	 * scaled (Cartesian) coordinates in {@code [0, 1]}.
 	 * 
-	 * @return the scaled simplex coordinate in {@code [0, 1]}
-
-
+	 * @param x the {@code x}-coordinate on screen
+	 * @return the scaled coordinate
 	 */
 	double scaledX(double x) {
 		return ((viewCorner.x + x - bounds.getX()) / zoomFactor + 0.5) / (bounds.getWidth() - 1.0);
@@ -547,9 +546,10 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 
 	/**
 	 * Convert the {@code y}-component of the screen coordinates {@code (x, y)} into
-	 * scaled (Cartesian) simplex coordinates.
+	 * scaled (Cartesian) coordinates in {@code [0, 1]}.
 	 * 
-	 * @return the scaled simplex coordinate in {@code [0, 1]}
+	 * @param y the {@code y}-coordinate on screen
+	 * @return the scaled coordinate
 	 */
 	double scaledY(double y) {
 		return 1.0 - ((viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5) / (bounds.getHeight() - 1.0);

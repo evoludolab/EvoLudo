@@ -135,8 +135,19 @@ public class EvoLudoGWT extends EvoLudo {
 		});
 	}
 
+	/**
+	 * The field to store the command to execute after parsing the command line
+	 * options.
+	 */
 	Directive notifyGUI;
 
+	/**
+	 * Parse command line options and set the {@code command} to execute after
+	 * parsing completed.
+	 * 
+	 * @param command the command to execute after parsing
+	 * @return <code>true</code> if parsing was successful
+	 */
 	public boolean parseCLO(Directive command) {
 		notifyGUI = command;
 		return parseCLO();

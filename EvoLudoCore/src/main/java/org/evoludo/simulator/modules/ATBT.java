@@ -684,6 +684,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 		 * games.
 		 * 
 		 * @param engine the pacemaker for running the model
+		 * @param module the module that defines the game
 		 */
 		protected ATBTPop(EvoLudo engine, ATBT module) {
 			super(engine, module);

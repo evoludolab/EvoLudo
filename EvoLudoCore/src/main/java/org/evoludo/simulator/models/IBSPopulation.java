@@ -128,6 +128,7 @@ public abstract class IBSPopulation {
 	 * Creates a population of individuals for IBS simulations.
 	 * 
 	 * @param engine the pacemaker for running the model
+	 * @param module the module that defines the game
 	 */
 	protected IBSPopulation(EvoLudo engine, Module module) {
 		this.engine = engine;

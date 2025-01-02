@@ -114,6 +114,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * simulations.
 	 * 
 	 * @param engine the pacemaker for running the model
+	 * @param module the module that defines the game
 	 */
 	public IBSMCPopulation(EvoLudo engine, Continuous module) {
 		super(engine, module);

@@ -972,6 +972,7 @@ public class CDL extends Discrete implements
 		 * goods games.
 		 * 
 		 * @param engine the pacemaker for running the model
+		 * @param module the module that defines the model
 		 */
 		protected IBS(EvoLudo engine, CDL module) {
 			super(engine, module);
