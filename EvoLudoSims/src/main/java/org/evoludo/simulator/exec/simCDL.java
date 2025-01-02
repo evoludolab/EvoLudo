@@ -18,7 +18,7 @@
 // For publications in any form, you are kindly requested to attribute the
 // author and project as follows:
 //
-//	Hauert, Christoph (<year>) EvoLudo Project, http://www.evoludo.org
+//	Hauert, Christoph (<year>) EvoLudo Project, https://www.evoludo.org
 //			(doi: <doi>[, <version>])
 //
 //	<doi>:	digital object identifier of the downloaded release (or the
