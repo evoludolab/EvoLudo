@@ -37,6 +37,7 @@ import java.util.Arrays;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBS.ScoringType;
+import org.evoludo.simulator.modules.Continuous;
 
 /**
  * The core class for individual based simulations with a <em>single</em>
@@ -91,8 +92,19 @@ public class IBSCPopulation extends IBSMCPopulation {
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	public IBSCPopulation(EvoLudo engine) {
-		super(engine);
+	public IBSCPopulation(EvoLudo engine, Continuous module) {
+		super(engine, module);
+		opponent = this;
+		if (module instanceof HasIBS.CPairs)
+			pairmodule = (HasIBS.CPairs) module;
+		if (module instanceof HasIBS.CGroups)
+			groupmodule = (HasIBS.CGroups) module;
+	}
+
+	@Override
+	public void setOpponentPop(IBSPopulation opponent) {
+		super.setOpponentPop(opponent);
+		this.opponent = (IBSCPopulation) super.opponent;
 	}
 
 	@Override
@@ -283,23 +295,6 @@ public class IBSCPopulation extends IBSMCPopulation {
 
 		for (int i = 0; i < group.nSampled; i++)
 			opponent.removeScoreAt(group.group[i], groupScores[i]);
-	}
-
-	@Override
-	public boolean check() {
-		boolean doReset = super.check();
-		if (module.isPairwise()) {
-			pairmodule = (HasIBS.CPairs) module;
-			groupmodule = null;
-		} else {
-			pairmodule = null;
-			// module may be just be Continuous...
-			groupmodule = (module instanceof HasIBS.CGroups ? (HasIBS.CGroups) module : null);
-		}
-		// IBSCPopulation opponent shadows IBSMCPopulation/IBSPopulation opponent to
-		// save casts
-		opponent = (IBSCPopulation) super.opponent;
-		return doReset;
 	}
 
 	@Override

@@ -457,7 +457,7 @@ public class simCDL extends CDL implements ChangeListener {
 
 	@Override
 	public CDL.IBS createIBSPop() {
-		return new simCDLIBS(engine);
+		return new simCDLIBS(engine, this);
 	}
 
 	/**
@@ -472,8 +472,8 @@ public class simCDL extends CDL implements ChangeListener {
 		 * 
 		 * @param engine the pacemaker for running the model
 		 */
-		protected simCDLIBS(EvoLudo engine) {
-			super(engine);
+		protected simCDLIBS(EvoLudo engine, CDL module) {
+			super(engine, module);
 		}
 
 		@Override

@@ -427,27 +427,25 @@ public abstract class IBS extends Model {
 			IBSPopulation pop = mod.createIBSPop();
 			if (pop == null) {
 				if (mod instanceof org.evoludo.simulator.modules.Discrete) {
-					pop = new IBSDPopulation(engine);
+					pop = new IBSDPopulation(engine, (org.evoludo.simulator.modules.Discrete) mod);
 				} else if (mod instanceof org.evoludo.simulator.modules.Continuous) {
 					// continuous module, check trait number
 					if (mod.getNTraits() > 1)
-						pop = new IBSMCPopulation(engine);
+						pop = new IBSMCPopulation(engine, (org.evoludo.simulator.modules.Continuous) mod);
 					else
-						pop = new IBSCPopulation(engine);
+						pop = new IBSCPopulation(engine, (org.evoludo.simulator.modules.Continuous) mod);
 				} else {
 					engine.fatal("unknown module type '" + mod + "'... fix me!");
 					// fatal does not return control
 				}
 			}
 			mod.setIBSPopulation(pop);
-			pop.setModule(mod);
-			pop.load();
 		}
 		// now that all populations are instantiated, we can assign opponents
 		for (Module mod : species) {
 			IBSPopulation pop = mod.getIBSPopulation();
 			// set opponents
-			pop.opponent = mod.getOpponent().getIBSPopulation();
+			pop.setOpponentPop(mod.getOpponent().getIBSPopulation());
 		}
 		IBSPopulation pop = species.get(0).getIBSPopulation();
 		// set shortcut for single species modules
@@ -470,14 +468,8 @@ public abstract class IBS extends Model {
 		cloGeometryInteraction.clearKeys();
 		cloGeometryCompetition.clearKeys();
 		cloMigration.clearKeys();
-		for (Module mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
-			// may already have been unloaded with module
-			if (pop == null)
-				continue;
-			pop.unload();
+		for (Module mod : species)
 			mod.setIBSPopulation(null);
-		}
 		speciesUpdate = null;
 		super.unload();
 	}

@@ -115,42 +115,26 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	public IBSMCPopulation(EvoLudo engine) {
-		super(engine);
-	}
-
-	@Override
-	public void load() {
-		super.load();
+	public IBSMCPopulation(EvoLudo engine, Continuous module) {
+		super(engine, module);
 		// deal with module cast - pairmodule and groupmodule have to wait because
 		// nGroup requires parsing of command line options (see check())
 		// important: cannot deal with casting shadowed opponent here because for
 		// mutli-species modules all species need to be loaded first.
-		module = (Continuous) super.module;
+		this.module = module;
 		mutation = module.getMutation();
+		opponent = this;
+		if (module instanceof HasIBS.MCPairs)
+			pairmodule = (HasIBS.MCPairs) module;
+		if (module instanceof HasIBS.MCGroups)
+			groupmodule = (HasIBS.MCGroups) module;
 		init = new Init((IBS) engine.getModel(), module.getNTraits());
 	}
 
 	@Override
-	public void unload() {
-		// free resources
-		super.unload();
-		traitMin = null;
-		traitMax = null;
-		strategies = null;
-		strategiesScratch = null;
-		myTrait = null;
-		oldTrait = null;
-		groupStrat = null;
-		smallStrat = null;
-		meantrait = null;
-		inittrait = null;
-		oldScores = null;
-		module = null;
-		pairmodule = null;
-		groupmodule = null;
-		mutation = null;
-		init = null;
+	public void setOpponentPop(IBSPopulation opponent) {
+		super.setOpponentPop(opponent);
+		this.opponent = (IBSMCPopulation) super.opponent;
 	}
 
 	@Override
@@ -773,23 +757,6 @@ public class IBSMCPopulation extends IBSPopulation {
 	public boolean check() {
 		boolean doReset = false;
 		doReset |= super.check();
-		// deal with casts once and for all
-		if (this instanceof IBSCPopulation) {
-			pairmodule = null;
-			groupmodule = null;
-		} else {
-			if (module.isPairwise()) {
-				pairmodule = (HasIBS.MCPairs) module;
-				groupmodule = null;
-			} else {
-				pairmodule = null;
-				// module may be just be Continuous...
-				groupmodule = (module instanceof HasIBS.MCGroups ? (HasIBS.MCGroups) module : null);
-			}
-		}
-		// IBSMCPopulation opponent shadows IBSPopulation opponent to save casts
-		opponent = (IBSMCPopulation) super.opponent;
-
 		traitMin = module.getTraitMin();
 		traitMax = module.getTraitMax();
 

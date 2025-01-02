@@ -292,8 +292,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		engine.removeMilestoneListener(this);
 		if (this instanceof ChangeListener)
 			engine.removeChangeListener((ChangeListener) this);
-		if (ibs != null)
-			ibs.unload();
 		ibs = null;
 		interaction = null;
 		competition = null;

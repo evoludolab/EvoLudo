@@ -132,42 +132,24 @@ public class IBSDPopulation extends IBSPopulation {
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	public IBSDPopulation(EvoLudo engine) {
-		super(engine);
-	}
-
-	@Override
-	public void load() {
-		super.load();
-		// deal with module cast - pairmodule and groupmodule have to wait because
-		// nGroup requires parsing of command line options (see check())
+	public IBSDPopulation(EvoLudo engine, Discrete module) {
+		super(engine, module);
 		// important: cannot deal with casting shadowed opponent here because for
-		// mutli-species modules all species need to be loaded first.
-		module = (Discrete) super.module;
+		// multi-species modules all species need to be loaded first.
+		opponent = this;
+		this.module = module;
 		mutation = module.getMutation();
+		if (module instanceof HasIBS.DPairs)
+			pairmodule = (HasIBS.DPairs) module;
+		if (module instanceof HasIBS.DGroups)
+			groupmodule = (HasIBS.DGroups) module;
 		init = new Init((IBS) engine.getModel());
 	}
 
 	@Override
-	public void unload() {
-		super.unload();
-		accuTypeScores = null;
-		initTypeCount = null;
-		strategiesTypeCount = null;
-		activeLinks = null;
-		strategies = null;
-		strategiesScratch = null;
-		groupStrat = null;
-		groupIdxs = null;
-		smallStrat = null;
-		traitCount = null;
-		traitScore = null;
-		traitTempScore = null;
-		module = null;
-		pairmodule = null;
-		groupmodule = null;
-		mutation = null;
-		init = null;
+	public void setOpponentPop(IBSPopulation opponent) {
+		super.setOpponentPop(opponent);
+		this.opponent = (IBSDPopulation) super.opponent;
 	}
 
 	/**
@@ -1806,18 +1788,6 @@ public class IBSDPopulation extends IBSPopulation {
 	@Override
 	public boolean check() {
 		boolean doReset = super.check();
-		// pairwise and group interactions may have changed
-		if (module.isPairwise()) {
-			pairmodule = (HasIBS.DPairs) module;
-			groupmodule = null;
-		} else {
-			pairmodule = null;
-			// module may be just be Discrete...
-			groupmodule = (module instanceof HasIBS.DGroups ? (HasIBS.DGroups) module : null);
-		}
-		// IBSDPopulation opponent shadows IBSPopulation opponent to save casts
-		// important: now all modules/populations have been loaded (load() is too early)
-		opponent = (IBSDPopulation) super.opponent;
 
 		if (optimizeMoran) {
 			// optimized Moran type processes are incompatible with mutations!

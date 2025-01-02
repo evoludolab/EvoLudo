@@ -101,7 +101,7 @@ public abstract class Discrete extends Module {
 		super(engine, partner);
 		if (partner == null) {
 			species = new ArrayList<Discrete>();
-			// recall this.modules shadows super.modules for later convenience
+			// recall this.species shadows super.species for later convenience
 			super.species = species;
 		} else {
 			// link ArrayList<Discrete> shadows

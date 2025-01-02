@@ -666,7 +666,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 	 */
 	@Override
 	public ATBT.ATBTPop createIBSPop() {
-		return new ATBT.ATBTPop(engine);
+		return new ATBT.ATBTPop(engine, this);
 	}
 
 	@Override
@@ -685,8 +685,8 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 		 * 
 		 * @param engine the pacemaker for running the model
 		 */
-		protected ATBTPop(EvoLudo engine) {
-			(new TBT(engine)).super(engine);
+		protected ATBTPop(EvoLudo engine, ATBT module) {
+			super(engine, module);
 		}
 
 		@Override

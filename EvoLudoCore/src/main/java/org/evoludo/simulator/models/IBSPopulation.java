@@ -86,15 +86,6 @@ public abstract class IBSPopulation {
 	protected Module.Static staticmodule;
 
 	/**
-	 * Associates a module with this population.
-	 * 
-	 * @param mod the module associated with this population
-	 */
-	public void setModule(Module mod) {
-		module = mod;
-	}
-
-	/**
 	 * Gets the module asociated with this population.
 	 * 
 	 * @return the module associated with this population
@@ -138,19 +129,11 @@ public abstract class IBSPopulation {
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	protected IBSPopulation(EvoLudo engine) {
+	protected IBSPopulation(EvoLudo engine, Module module) {
 		this.engine = engine;
 		logger = engine.getLogger();
 		opponent = this;
-	}
-
-	/**
-	 * Load/prepare the IBS population. This is triggered by the milestone event for
-	 * loading the IBS model.
-	 * 
-	 * @see IBS#load()
-	 */
-	public void load() {
+		this.module = module;
 		// initialize helper variables
 		nTraits = module.getNTraits();
 		VACANT = module.getVacant();
@@ -166,27 +149,12 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Unload the IBS population and free resources. This is triggered by the
-	 * milestone event for unloading the IBS model.
+	 * Set the interaction partner/opponent of this population.
 	 * 
-	 * @see IBS#unload()
+	 * @param opponent the interaction partner/opponent
 	 */
-	public void unload() {
-		// free resources
-		interaction = null;
-		competition = null;
-		interGroup = null;
-		compGroup = null;
-		cProbs = null;
-		groupScores = null;
-		smallScores = null;
-		scores = null;
-		fitness = null;
-		tags = null;
-		interactions = null;
-		typeScores = null;
-		typeFitness = null;
-		populationUpdate = null;
+	public void setOpponentPop(IBSPopulation opponent) {
+		this.opponent = opponent;
 	}
 
 	/**

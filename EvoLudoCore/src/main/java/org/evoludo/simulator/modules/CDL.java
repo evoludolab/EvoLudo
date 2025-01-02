@@ -957,7 +957,7 @@ public class CDL extends Discrete implements
 
 	@Override
 	public CDL.IBS createIBSPop() {
-		return new CDL.IBS(engine);
+		return new CDL.IBS(engine, this);
 	}
 
 	/**
@@ -973,8 +973,8 @@ public class CDL extends Discrete implements
 		 * 
 		 * @param engine the pacemaker for running the model
 		 */
-		protected IBS(EvoLudo engine) {
-			super(engine);
+		protected IBS(EvoLudo engine, CDL module) {
+			super(engine, module);
 		}
 
 		@Override

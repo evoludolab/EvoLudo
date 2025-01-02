@@ -289,7 +289,7 @@ public class RSP extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 
 	@Override
 	public RSP.IBS createIBSPop() {
-		return new RSP.IBS(engine);
+		return new RSP.IBS(engine, this);
 	}
 
 	/**
@@ -304,8 +304,8 @@ public class RSP extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 		 * 
 		 * @param engine the pacemaker for running the model
 		 */
-		protected IBS(EvoLudo engine) {
-			super(engine);
+		protected IBS(EvoLudo engine, RSP module) {
+			super(engine, module);
 		}
 
 		@Override

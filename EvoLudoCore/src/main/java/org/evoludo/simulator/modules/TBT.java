@@ -345,7 +345,7 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 
 	@Override
 	public IBSDPopulation createIBSPop() {
-		return new TBT.TBTPop(engine);
+		return new TBT.TBTPop(engine, this);
 	}
 
 	/**
@@ -384,8 +384,8 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 		 * 
 		 * @param engine the pacemaker for running the model
 		 */
-		protected TBTPop(EvoLudo engine) {
-			super(engine);
+		protected TBTPop(EvoLudo engine, TBT module) {
+			super(engine, module);
 		}
 
 		@Override
