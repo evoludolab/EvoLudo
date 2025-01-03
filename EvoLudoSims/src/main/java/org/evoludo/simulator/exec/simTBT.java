@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010-2020 Christoph Hauert
+// Copyright 2010-2025 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,12 +19,10 @@
 // author and project as follows:
 //
 //	Hauert, Christoph (<year>) EvoLudo Project, https://www.evoludo.org
-//			(doi: <doi>[, <version>])
+//			(doi: 10.5281/zenodo.14591549 [, <version>])
 //
-//	<doi>:	digital object identifier of the downloaded release (or the
-//			most recent release if downloaded from github.com),
-//	<year>:	year of release (or download), and
-//	[, <version>]: optional version number (as reported in output header
+//	<year>:    year of release (or download), and
+//	<version>: optional version number (as reported in output header
 //			or GUI console) to simplify replication of reported results.
 //
 // The formatting may be adjusted to comply with publisher requirements.

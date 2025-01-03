@@ -4,11 +4,9 @@
 For publications in any form, you are kindly requested to attribute the
 author and project as follows:
 
-	Hauert, Christoph (<year>) EvoLudo Project, http://www.evoludo.org
-			(doi: <doi>[, <version>])
+	Hauert, Christoph (<year>) EvoLudo Project, https://www.evoludo.org
+			(doi: 10.5281/zenodo.14591549 [, <version>])
 
-	<doi>:	digital object identifier of the downloaded release (or the
-			most recent release if downloaded from github.com),
 	<year>:	year of release (or download), and
 	[, <version>]: optional version number (as reported in output header
 			or GUI console) to simplify replication of reported results.
