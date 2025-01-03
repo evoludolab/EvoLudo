@@ -33,7 +33,6 @@
   <properties>
     <evoludo.server>localhost</evoludo.server>
     <evoludo.startup>TestEvoLudoLabs.html</evoludo.startup>
-    <evoludo.sim>simTBT</evoludo.sim>
     <evoludo.commit default-value="unknown">${git.commit.id.describe}</evoludo.commit>
     <evoludo.build default-value="">${git.build.time}</evoludo.build>
     <evoludo.engineModule default-value="EvoLudoCore"></evoludo.engineModule>

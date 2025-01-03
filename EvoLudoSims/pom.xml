@@ -45,7 +45,6 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
           <includes>
-            <include>**/org/evoludo/simulator/exec/${evoludo.sim}.java</include>
             <include>**/org/evoludo/simulator/exec/*.java</include>
           </includes>
         </configuration>
@@ -55,27 +54,130 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
-          <finalName>${evoludo.sim}.${evoludo.commit}</finalName>
-          <formats>
-            <format>jar</format>
-            <!-- <format>dir</format> -->
-          </formats>
-          <descriptorRefs>
-            <descriptorRef>jar-with-dependencies</descriptorRef>
-          </descriptorRefs>
           <appendAssemblyId>false</appendAssemblyId>
-          <archive>
-            <manifest>
-              <mainClass>org.evoludo.simulator.EvoLudoLab</mainClass>
-            </manifest>
-            <manifestEntries>
-              <Engine-Class>org.evoludo.simulator.exec.${evoludo.sim}</Engine-Class>
-            </manifestEntries>
-          </archive>
         </configuration>
         <executions>
           <execution>
-            <id>make-assembly</id>
+            <id>scanCSD</id>
+            <configuration>
+              <finalName>scanCSD.${evoludo.commit}</finalName>
+              <archive>
+                <manifest>
+                  <mainClass>org.evoludo.simulator.exec.scanCSD</mainClass>
+                </manifest>
+              </archive>
+              <descriptorRefs>
+                <descriptorRef>jar-with-dependencies</descriptorRef>
+              </descriptorRefs>
+            </configuration>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>simCDL</id>
+            <configuration>
+              <finalName>simCDL.${evoludo.commit}</finalName>
+              <archive>
+                <manifest>
+                  <mainClass>org.evoludo.simulator.exec.simCDL</mainClass>
+                </manifest>
+              </archive>
+              <descriptorRefs>
+                <descriptorRef>jar-with-dependencies</descriptorRef>
+              </descriptorRefs>
+            </configuration>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>simCDLP</id>
+            <configuration>
+              <finalName>simCDLP.${evoludo.commit}</finalName>
+              <archive>
+                <manifest>
+                  <mainClass>org.evoludo.simulator.exec.simCDLP</mainClass>
+                </manifest>
+              </archive>
+              <descriptorRefs>
+                <descriptorRef>jar-with-dependencies</descriptorRef>
+              </descriptorRefs>
+            </configuration>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>simCDLPQ</id>
+            <configuration>
+              <finalName>simCDLPQ.${evoludo.commit}</finalName>
+              <archive>
+                <manifest>
+                  <mainClass>org.evoludo.simulator.exec.simCDLPQ</mainClass>
+                </manifest>
+              </archive>
+              <descriptorRefs>
+                <descriptorRef>jar-with-dependencies</descriptorRef>
+              </descriptorRefs>
+            </configuration>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>simMoran</id>
+            <configuration>
+              <finalName>simMoran.${evoludo.commit}</finalName>
+              <archive>
+                <manifest>
+                  <mainClass>org.evoludo.simulator.exec.simMoran</mainClass>
+                </manifest>
+              </archive>
+              <descriptorRefs>
+                <descriptorRef>jar-with-dependencies</descriptorRef>
+              </descriptorRefs>
+            </configuration>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>simTBT</id>
+            <configuration>
+              <finalName>simTBT.${evoludo.commit}</finalName>
+              <archive>
+                <manifest>
+                  <mainClass>org.evoludo.simulator.exec.simTBT</mainClass>
+                </manifest>
+              </archive>
+              <descriptorRefs>
+                <descriptorRef>jar-with-dependencies</descriptorRef>
+              </descriptorRefs>
+            </configuration>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>simTraits</id>
+            <configuration>
+              <finalName>simTraits.${evoludo.commit}</finalName>
+              <archive>
+                <manifest>
+                  <mainClass>org.evoludo.simulator.exec.simTraits</mainClass>
+                </manifest>
+              </archive>
+              <descriptorRefs>
+                <descriptorRef>jar-with-dependencies</descriptorRef>
+              </descriptorRefs>
+            </configuration>
             <phase>package</phase>
             <goals>
               <goal>single</goal>
@@ -85,4 +187,64 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>private</id>
+      <activation>
+        <file>
+          <exists>../EvoLudoCorePrivate/pom.xml</exists>
+        </file>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCorePrivate</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCorePrivate</artifactId>
+          <version>${project.version}</version>
+          <!-- do not include sources in final jar -->
+          <scope>provided</scope>
+          <classifier>sources</classifier>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCore</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCore</artifactId>
+          <version>${project.version}</version>
+          <!-- do not include sources in final jar -->
+          <scope>provided</scope>
+          <classifier>sources</classifier>
+          </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>public</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCore</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>EvoLudoCore</artifactId>
+          <version>${project.version}</version>
+          <classifier>sources</classifier>
+          <!-- do not include sources in final jar -->
+          <scope>provided</scope>
+          </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>
