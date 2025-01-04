@@ -97,6 +97,17 @@ import org.evoludo.util.Plist;
  * input/output routines.
  * 
  * @author Christoph Hauert
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
+ * 
  */
 public abstract class EvoLudo
 		implements MilestoneListener, CLOProvider, MersenneTwister.Chronometer {
@@ -122,20 +133,7 @@ public abstract class EvoLudo
 	 * or graphical snapshots.
 	 */
 	public EvoLudo() {
-		logger = Logger.getLogger(EvoLudo.class.getName() + "-" + ID);
-		addMilestoneListener(this);
-		parser = new CLOParser(this);
-		// load all available modules
-		addModule(new Moran(this));
-		addModule(new TBT(this));
-		addModule(new ATBT(this));
-		addModule(new RSP(this));
-		addModule(new CDL(this));
-		addModule(new CDLP(this));
-		addModule(new CDLPQ(this));
-		addModule(new Centipede(this));
-		addModule(new CSD(this));
-		addModule(new CLabour(this));
+		this(true);
 	}
 
 	/**
@@ -2147,5 +2145,24 @@ public abstract class EvoLudo
 		logger.severe(msg);
 		if (isGWT)
 			throw new Error(msg);
+	}
+
+	protected EvoLudo(boolean loadModules) {
+		logger = Logger.getLogger(EvoLudo.class.getName() + "-" + ID);
+		addMilestoneListener(this);
+		parser = new CLOParser(this);
+		if (!loadModules)
+			return;
+		// load all available modules
+		addModule(new Moran(this));
+		addModule(new TBT(this));
+		addModule(new ATBT(this));
+		addModule(new RSP(this));
+		addModule(new CDL(this));
+		addModule(new CDLP(this));
+		addModule(new CDLPQ(this));
+		addModule(new Centipede(this));
+		addModule(new CSD(this));
+		addModule(new CLabour(this));
 	}
 }

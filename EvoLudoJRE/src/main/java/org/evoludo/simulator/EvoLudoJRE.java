@@ -45,13 +45,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipInputStream;
 
@@ -119,11 +117,16 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 */
 	Thread executeThread = null; // command execution thread
 
+	public EvoLudoJRE() {
+		this(true);
+	}
+
 	/**
 	 * Constructor for JRE application. This constructor is used when running
 	 * EvoLudo as a JRE application.
 	 */
-	public EvoLudoJRE() {
+	public EvoLudoJRE(boolean loadModules) {
+		super(loadModules);
 		// allocate a coalescing timer for poking the engine in regular intervals
 		// note: timer needs to be ready before parsing command line options
 		timer = new Timer(0, new ActionListener() {
@@ -134,7 +137,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		});
 		launchEngine();
 		// add modules that require JRE (e.g. due to libraries)
-		addModule(new Traits(this));
+		if (loadModules)
+			addModule(new Traits(this));
 	}
 
 	/**
