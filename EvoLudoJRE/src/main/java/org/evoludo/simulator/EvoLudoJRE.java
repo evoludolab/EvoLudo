@@ -322,6 +322,36 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	boolean simulationRunning = false;
 
 	/**
+	 * Run custom module {@code module} with command line options {@code args}.
+	 * 
+	 * @param module the custom module to run
+	 * @param args   the command line options
+	 */
+	public void custom(Module module, String[] args) {
+		isApplication = false;
+		System.setProperty("java.awt.headless", "true");
+		// prepend --module option (in case not specified)
+		args = ArrayMath.merge(new String[] {"--module", module.getKey()}, args);
+		// EvoLudo has its own parser for command line options and expects a single string
+		setCLO(Formatter.format(args, " "));
+		addModule(module);
+		addCLOProvider(module);
+		// parse options
+		parseCLO();
+		// reset model to check and apply all parameters
+		modelReset();
+		// register hook to dump state when receiving SIGINT
+		registerHook();
+		// run simulation
+		module.run();
+		// close output stream if needed
+		PrintStream out = getOutput();
+		if (!out.equals(System.out))
+			out.close();
+		exit(0);
+	}
+
+	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * This handles the following scenarios:
@@ -346,46 +376,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	@Override
 	public void simulation() {
 		String[] args = getSplitCLO();
-		String main = EvoLudoJRE.getAttribute("Engine-Class");
-		if (main != null) {
-			Module module;
-			// customized engine specified
-			try {
-				// automatic instantiation of desired class!
-				module = (Module) Class.forName(main).getDeclaredConstructor(EvoLudo.class).newInstance(this);
-			} catch (Exception e) {
-				e.printStackTrace();
-				// log directly to System.out - no other outlets available at this time
-				Logger.getLogger(EvoLudo.class.getName()).severe("Failed to instantiate " + main);
-				System.exit(1);
-				// code never gets here but prevents null-pointer warnings.
-				return;
-			}
-			// prepend --module option (any additional --module options are ignored)
-			if (args == null) {
-				args = new String[2];
-			} else {
-				args = Arrays.copyOf(args, args.length + 2);
-				System.arraycopy(args, 0, args, 2, args.length - 2);
-			}
-			args[0] = cloModule.getName();
-			args[1] = module.getKey();
-			addModule(module);
-			addCLOProvider(module);
-			// parse options
-			parseCLO(args);
-			// reset model to check and apply all parameters
-			modelReset();
-			// register hook to dump state when receiving SIGINT
-			registerHook();
-			// run simulation
-			module.run();
-			// close output stream if needed
-			PrintStream out = getOutput();
-			if (!out.equals(System.out))
-				out.close();
-			exit(0);
-		}
 		// parse options
 		if (!parseCLO(args)) {
 			// problems parsing command line options

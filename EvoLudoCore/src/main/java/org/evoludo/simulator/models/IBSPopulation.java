@@ -4500,11 +4500,4 @@ public abstract class IBSPopulation {
 				"What the heck are you doing here!!! (rand: " + uRand + ", p: " + p + ", n: " + n + " -> " + sum + ")");
 		return -1;
 	}
-
-	/**
-	 * Entry point for JRE simulations. Must be overridden in simulation subclasses.
-	 */
-	public void exec() {
-		throw new Error("Executable not implemented!");
-	}
 }

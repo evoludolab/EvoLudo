@@ -265,4 +265,9 @@ public class simMoran extends Moran {
 		super.collectCLO(parser);
 		parser.removeCLO("timeend");
 	}
+
+	public static void main(String[] args) {
+		EvoLudoJRE engine = new EvoLudoJRE(false);
+		engine.custom(new simMoran(engine), args);
+	}
 }

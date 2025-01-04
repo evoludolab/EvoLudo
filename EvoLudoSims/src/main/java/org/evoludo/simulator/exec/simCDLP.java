@@ -510,4 +510,9 @@ public class simCDLP extends CDLP implements ChangeListener {
 		model.cloTimeStop.setDefault("1000000");
 		super.collectCLO(parser);
 	}
+
+	public static void main(String[] args) {
+		EvoLudoJRE engine = new EvoLudoJRE(false);
+		engine.custom(new simCDLP(engine), args);
+	}
 }

@@ -501,4 +501,9 @@ public class simCDL extends CDL implements ChangeListener {
 			resetStatistics();
 		}
 	}
+
+	public static void main(String[] args) {
+		EvoLudoJRE engine = new EvoLudoJRE(false);
+		engine.custom(new simCDL(engine), args);
+	}
 }

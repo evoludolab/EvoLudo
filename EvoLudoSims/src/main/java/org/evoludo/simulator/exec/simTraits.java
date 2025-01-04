@@ -237,4 +237,9 @@ public class simTraits extends Traits {
 		parser.addCLO(cloProgress);
 		parser.addCLO(cloMinTime);
 	}
+
+	public static void main(String[] args) {
+		EvoLudoJRE engine = new EvoLudoJRE(false);
+		engine.custom(new simTraits(engine), args);
+	}
 }

@@ -872,4 +872,9 @@ public class scanCSD extends CSD {
 			snapfile = new File(pre + "-" + (counter++) + "." + ext);
 		return snapfile;
 	}
+
+	public static void main(String[] args) {
+		EvoLudoJRE engine = new EvoLudoJRE(false);
+		engine.custom(new scanCSD(engine), args);
+	}
 }

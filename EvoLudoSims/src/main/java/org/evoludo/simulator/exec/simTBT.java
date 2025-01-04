@@ -497,4 +497,9 @@ public class simTBT extends TBT implements ChangeListener {
 			snapfile = new File(pre + "-" + (counter++) + "." + ext);
 		return snapfile;
 	}
+
+	public static void main(String[] args) {
+		EvoLudoJRE engine = new EvoLudoJRE(false);
+		engine.custom(new simTBT(engine), args);
+	}
 }
