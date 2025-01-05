@@ -613,10 +613,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				}
 				isRunning = true;
 				while (isRunning) {
-					while (activeModel.next());
-					// read and process sample
+					FixationData fixData = generateSample();
 					samples++;
-					FixationData fixData = model.getFixationData();
 					boolean mutantFixed = (fixData.typeFixed == fixData.mutantTrait);
 					for (MultiView.DataTypes data : dataTypes) {
 						switch (data) {
@@ -642,7 +640,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 								throw new Error("Statistics for " + data.getKey() + " not supported!");
 						}
 					}
-					activeModel.readStatisticsSample();
 					isRunning = (samples < nSamples);
 				}
 				// report statistics
@@ -715,6 +712,36 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		}
 		dumpEnd();
 		exit(0);
+	}
+
+	/**
+	 * Generate a single, valid statistics sample. 
+	 * 
+	 * @return the statistics sample
+	 * 
+	 * @see EvoLudoGWT#scheduleSample()
+	 */
+	public FixationData generateSample() {
+		FixationData fix;
+		do {
+			// in unfortunate cases even a single sample can take exceedingly long
+			// times. stop/init/reset need to be able to interrupt.
+			switch (pendingAction) {
+				case NONE:
+				case STATISTIC:
+				case STOP: // finish sample
+					break;
+				default:
+					fireModelStopped();
+					break;
+			}
+			while (activeModel.next()) {
+				fireModelChanged();
+			}
+			fireModelStopped();
+			fix = activeModel.getFixationData();
+		} while (fix.mutantNode < 0);
+		return fix;
 	}
 
 	/**
