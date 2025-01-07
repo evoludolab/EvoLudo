@@ -261,7 +261,7 @@ public class IBSC extends IBS implements Continuous {
 			/**
 			 * Brief description of initialization type for help display.
 			 * 
-			 * @see EvoLudo#helpCLO()
+			 * @see EvoLudo#getCLOHelp()
 			 */
 			String title;
 

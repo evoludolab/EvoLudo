@@ -130,7 +130,7 @@ public interface MultiView {
 		/**
 		 * Brief description of map for help display.
 		 * 
-		 * @see EvoLudo#helpCLO()
+		 * @see EvoLudo#getCLOHelp()
 		 */
 		String title;
 

@@ -1216,7 +1216,6 @@ public abstract class EvoLudo
 				//$FALL-THROUGH$
 			case NONE:
 			case STATISTIC_FAILED:
-			case CONSOLE:
 			case STATISTIC:
 				for (ChangeListener i : changeListeners)
 					i.modelChanged(action);
@@ -1692,11 +1691,7 @@ public abstract class EvoLudo
 			parser.clearCLO();
 			parser.addCLO(cloModule);
 			logger.severe("Module not found!");
-			String help = parser.helpCLO(false);
-			if (isGWT)
-				logger.info("<pre>List of available modules:\n" + help + "</pre>");
-			else
-				logger.info("List of available modules:\n" + help);
+			showHelp();
 			return false;
 		}
 		parser.initCLO();
@@ -1718,27 +1713,45 @@ public abstract class EvoLudo
 
 	/**
 	 * Format, encode and output help on command line options.
+	 * 
+	 * @return the help string
 	 */
-	public void helpCLO() {
-		if (activeModule == null)
-			return;
+	public String getCLOHelp() {
 		// list trait indices and names
-		String msg = "";
-		int idx = 0;
-		for (Module mod : activeModule.getSpecies()) {
-			String name = mod.getName();
-			int namelen = name.length();
-			if (namelen > 0)
-				msg += "\n       Species: " + name;
-			int nt = mod.getNTraits();
-			for (int n = 0; n < nt; n++)
-				msg += "\n             " + (idx + n) + ": " + mod.getTraitName(n);
-			idx += nt;
-		}
-		catModule.setHeader("Options for module '" + activeModule.getKey() + "' with trait indices and names:" + msg);
-		if (activeModel != null)
-			catModel.setHeader("Options for model '" + activeModel.getModelType() + "'");		
+		String globalMsg = "List of command line options";
+		if (activeModule != null) {
+			globalMsg += " for module '" + activeModule.getKey() + "'";
+			if (activeModel != null) {
+				globalMsg += " and model '" + activeModel.getModelType().getKey() + "'";
+				catModel.setHeader("Options for model '" + activeModel.getModelType().getKey() + "'");
+			} else
+				globalMsg += " (select model for more options)";
+			globalMsg += "\n\nGlobal options:";
+			
+			int idx = 0;
+			String moduleMsg = "";
+			for (Module mod : activeModule.getSpecies()) {
+				String name = mod.getName();
+				int namelen = name.length();
+				if (namelen > 0)
+					moduleMsg += "\n       Species: " + name;
+				int nt = mod.getNTraits();
+				for (int n = 0; n < nt; n++)
+					moduleMsg += "\n             " + (idx + n) + ": " + mod.getTraitName(n);
+				idx += nt;
+			}
+			catModule.setHeader("Options for module '" + activeModule.getKey() //
+				+ "' with trait indices and names:" + moduleMsg);
+		} else
+			globalMsg += " (select module and model for more options):";
+		catGlobal.setHeader(globalMsg);
+		return parser.helpCLO(true);
 	}
+
+	/**
+	 * Show help on command line options.
+	 */
+	public abstract void showHelp();
 
 	/**
 	 * The category for global options.
@@ -1976,7 +1989,7 @@ public abstract class EvoLudo
 				@Override
 				public boolean parse(String arg) {
 					if (cloHelp.isSet()) {
-						helpCLO();
+						showHelp();
 					}
 					return true;
 				}
@@ -2069,7 +2082,7 @@ public abstract class EvoLudo
 		/**
 		 * Brief description of the color model type for help display.
 		 * 
-		 * @see EvoLudo#helpCLO()
+		 * @see EvoLudo#getCLOHelp()
 		 */
 		private final String title;
 

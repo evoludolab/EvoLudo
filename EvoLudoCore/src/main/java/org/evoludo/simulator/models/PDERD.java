@@ -1419,7 +1419,7 @@ public class PDERD extends ODEEuler {
 		/**
 		 * Brief description of initialization type for help display.
 		 * 
-		 * @see EvoLudo#helpCLO()
+		 * @see EvoLudo#getCLOHelp()
 		 */
 		String title;
 

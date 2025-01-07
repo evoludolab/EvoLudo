@@ -401,7 +401,7 @@ public class IBSD extends IBS implements Discrete {
 			/**
 			 * Brief description of initialization type for help display.
 			 * 
-			 * @see EvoLudo#helpCLO()
+			 * @see EvoLudo#getCLOHelp()
 			 */
 			String title;
 
@@ -475,7 +475,7 @@ public class IBSD extends IBS implements Discrete {
 		/**
 		 * Brief description of optimization type for help display.
 		 * 
-		 * @see EvoLudo#helpCLO()
+		 * @see EvoLudo#getCLOHelp()
 		 */
 		String title;
 

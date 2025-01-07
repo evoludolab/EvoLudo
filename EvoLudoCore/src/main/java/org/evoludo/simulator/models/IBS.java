@@ -1919,7 +1919,7 @@ public abstract class IBS extends Model {
 		/**
 		 * Brief description of population update type for GUI and help display.
 		 * 
-		 * @see EvoLudo#helpCLO()
+		 * @see EvoLudo#getCLOHelp()
 		 */
 		String title;
 
@@ -1998,7 +1998,7 @@ public abstract class IBS extends Model {
 		/**
 		 * Brief description of migration type for GUI and help display.
 		 * 
-		 * @see EvoLudo#helpCLO()
+		 * @see EvoLudo#getCLOHelp()
 		 */
 		String title;
 

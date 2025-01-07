@@ -789,7 +789,7 @@ public abstract class Continuous extends Module {
 		/**
 		 * The brief description of the cost function for the help display.
 		 * 
-		 * @see EvoLudo#helpCLO()
+		 * @see EvoLudo#getCLOHelp()
 		 */
 		String title;
 
@@ -969,7 +969,7 @@ public abstract class Continuous extends Module {
 		/**
 		 * The brief description of the benefit function for the help display.
 		 * 
-		 * @see EvoLudo#helpCLO()
+		 * @see EvoLudo#getCLOHelp()
 		 */
 		String title;
 

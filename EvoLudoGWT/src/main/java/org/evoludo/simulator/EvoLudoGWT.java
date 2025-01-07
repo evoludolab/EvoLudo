@@ -159,6 +159,14 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	/**
+	 * Show the help message.
+	 */
+	@Override
+	public void showHelp() {
+		gui.showHelp();
+	}
+
+	/**
 	 * Called when the GUI has finished loading and the dimensions of all elements are known.
 	 */
 	public void guiReady() {
@@ -593,16 +601,6 @@ public class EvoLudoGWT extends EvoLudo {
 			return;
 		NativeJS.export("data:text/x-plist;base64," + NativeJS.b64encode(state), "evoludo.plist");
 		logger.info("state saved in 'evoludo.plist'.");
-	}
-
-	@Override
-	public void helpCLO() {
-		super.helpCLO();
-		logger.info("<pre>EvoLudoWeb\nList of command line options for module '" //
-				+ activeModule.getKey() + "' and model '" //
-				+ activeModel.getModelType().getKey() + "':\n" //
-				+ parser.helpCLO(true) + "</pre>");
-		requestAction(PendingAction.CONSOLE, true);
 	}
 
 	/**

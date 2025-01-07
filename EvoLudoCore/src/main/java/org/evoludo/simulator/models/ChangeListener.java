@@ -100,12 +100,7 @@ public interface ChangeListener {
 		/**
 		 * Statistic sample failed.
 		 */
-		STATISTIC_FAILED,
-
-		/**
-		 * Display console.
-		 */
-		CONSOLE;
+		STATISTIC_FAILED;
 
 		/**
 		 * The pending execution mode of the model.

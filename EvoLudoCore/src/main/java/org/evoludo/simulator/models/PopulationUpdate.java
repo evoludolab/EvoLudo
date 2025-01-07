@@ -290,7 +290,7 @@ public class PopulationUpdate {
 		/**
 		 * Brief description of population update type for GUI and help display.
 		 * 
-		 * @see EvoLudo#helpCLO()
+		 * @see EvoLudo#getCLOHelp()
 		 */
 		String title;
 

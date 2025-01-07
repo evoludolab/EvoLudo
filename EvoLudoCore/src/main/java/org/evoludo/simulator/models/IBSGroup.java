@@ -505,7 +505,7 @@ public class IBSGroup {
 		/**
 		 * Brief description of interaction type for GUI and help display.
 		 * 
-		 * @see EvoLudo#helpCLO()
+		 * @see EvoLudo#getCLOHelp()
 		 */
 		String title;
 

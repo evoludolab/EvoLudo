@@ -632,10 +632,6 @@ public class EvoLudoWeb extends Composite
 				displayStatusThresholdLevel = Level.ALL.intValue();
 				updateStatus();
 				break;
-			case CONSOLE:
-				guiState.view = viewConsole;
-				changeViewTo(viewConsole);
-				break;
 			default:
 				// includes SHUTDOWN, RESET, INIT, STOP, MODE
 		}
@@ -1345,7 +1341,16 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoHelp")
 	public void onHelpClick(ClickEvent event) {
-		engine.helpCLO();
+		showHelp();
+	}
+
+	/**
+	 * Show help in the console, {@link #viewConsole}.
+	 */
+	public void showHelp() {
+		guiState.view = viewConsole;
+		logger.info("<pre>EvoLudo (GWT):\n" + engine.getCLOHelp() + "</pre>");
+		changeViewTo(viewConsole);
 	}
 
 	/**
@@ -1643,7 +1648,7 @@ public class EvoLudoWeb extends Composite
 				break;
 			case "H":
 				// show help panel
-				engine.helpCLO();
+				showHelp();
 				break;
 			default:
 				return false;

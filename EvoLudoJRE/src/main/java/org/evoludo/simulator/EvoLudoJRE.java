@@ -1197,8 +1197,9 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	public boolean parseCLO() {
 		boolean success = super.parseCLO();
 		if (activeModule == null) {
-			// this is fatal - exit
-			fatal("--module missing - exiting!");
+			// this is fatal - show help and exit
+			showHelp();
+			exit(1);
 		}
 		if (!doRestore)
 			return success;
@@ -1211,21 +1212,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	}
 
 	@Override
-	public void helpCLO() {
-		super.helpCLO();
-		output.print("List of command line options");
-		String missing = "";
-		if (activeModule != null) {
-			output.print(" for module '" + activeModule.getKey() + "'");
-			if (activeModel != null)
-				output.print(" and model '" + activeModel.getModelType().getKey() + "'");
-			else
-				missing = " (select model for more options)";
-		}
-		else
-			missing = " (select module and model for more options)";	
-		output.println(missing + ":\n" + parser.helpCLO(true));
-		exit(0);
+	public void showHelp() {
+		output.println("EvoLudo (JRE):\n" + getCLOHelp());
 	}
 
 	/**

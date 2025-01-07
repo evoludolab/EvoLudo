@@ -602,14 +602,14 @@ public class Geometry {
 		/**
 		 * Brief description of geometry type for GUI and help display.
 		 * 
-		 * @see EvoLudo#helpCLO()
+		 * @see EvoLudo#getCLOHelp()
 		 */
 		String title;
 
 		/**
 		 * Optional long description of geometry type for help display.
 		 * 
-		 * @see EvoLudo#helpCLO()
+		 * @see EvoLudo#getCLOHelp()
 		 */
 		String description;
 
