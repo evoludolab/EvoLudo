@@ -86,11 +86,6 @@ public interface ChangeListener {
 		STOP,
 
 		/**
-		 * Start execution.
-		 */
-		START,
-
-		/**
 		 * Command line options may have changed and should be applied to EvoLudo model.
 		 * Running models resume execution if no reset was required.
 		 */

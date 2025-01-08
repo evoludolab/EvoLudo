@@ -1009,6 +1009,22 @@ public abstract class EvoLudo
 	public abstract void next();
 
 	/**
+	 * Start or stop EvoLudo model. If model is running wait until next update
+	 * is completed to prevent unexpected side effects.
+	 */
+	public void startStop() {
+		if (isRunning) {
+			requestAction(PendingAction.STOP);
+			return;
+		}
+		if (activeModel.getMode() == Mode.STATISTICS_SAMPLE) {
+			fireModelRunning();
+			next();
+		} else
+			run();
+	}
+
+	/**
 	 * Flag to indicate if a backstep is in progress.
 	 */
 	private boolean doPrev = false;
@@ -1214,16 +1230,6 @@ public abstract class EvoLudo
 				isRunning = false;
 				for (MilestoneListener i : milestoneListeners)
 					i.modelStopped();
-				break;
-			case START:
-				// ignore request if already running
-				if (!isRunning) {
-					if (activeModel.getMode() == Mode.STATISTICS_SAMPLE) {
-						fireModelRunning();
-						next();
-					} else
-						run();
-				}
 				break;
 			case INIT:
 				modelInit();

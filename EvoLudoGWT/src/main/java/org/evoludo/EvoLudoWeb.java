@@ -1006,7 +1006,7 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoStartStop")
 	public void onStartStopClick(ClickEvent event) {
-		startStop();
+		engine.startStop();
 	}
 
 	/**
@@ -1029,16 +1029,7 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoStartStop")
 	public void onStartStopTouchEnd(TouchEndEvent event) {
-		startStop();
-	}
-
-	/**
-	 * Initialize or reset EvoLudo model. If model is running wait until next update
-	 * is completed to prevent unexpected side effects.
-	 */
-	protected void startStop() {
-		String action = evoludoStartStop.getText();
-		engine.requestAction(action.equals("Stop") ? PendingAction.STOP : PendingAction.START);
+		engine.startStop();
 	}
 
 	/**
@@ -1638,7 +1629,7 @@ public class EvoLudoWeb extends Composite
 			case "Enter":
 			case " ":
 				// start/stop simulation
-				startStop();
+				engine.startStop();
 				break;
 			case "Escape":
 				// ignore "Escape" for ePubs
