@@ -266,7 +266,7 @@ public class EvoLudoGWT extends EvoLudo {
 				// times. stop/init/reset need to be able to interrupt.
 				switch (pendingAction) {
 					case NONE:
-					case STATISTIC:
+					case STATISTIC_READY:
 					case STOP: // finish sample
 						break;
 					default:

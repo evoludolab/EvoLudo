@@ -52,8 +52,6 @@ public interface ChangeListener {
 	 * <li><code>STATISTIC</code>: Statistic is ready. Make sure to resume
 	 * calculations.
 	 * <li><code>STATISTIC_FAILED</code>: Statistic sample failed.
-	 * <li><code>CLO</code>: Re-parse command line options. This is necessary e.g. if
-	 * nTraits has changed.
 	 * </ul>
 	 */
 	public enum PendingAction {
@@ -83,19 +81,14 @@ public interface ChangeListener {
 		STOP,
 
 		/**
-		 * Re-parse command line options. This is necessary e.g. if nTraits has changed.
-		 */
-		CLO,
-
-		/**
 		 * Change execution mode of model.
 		 */
-		MODE,
+		CHANGE_MODE,
 
 		/**
 		 * Statistic is ready. Make sure to resume calculations.
 		 */
-		STATISTIC,
+		STATISTIC_READY,
 
 		/**
 		 * Statistic sample failed.

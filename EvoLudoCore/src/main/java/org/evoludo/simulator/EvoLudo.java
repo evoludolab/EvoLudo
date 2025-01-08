@@ -419,6 +419,21 @@ public abstract class EvoLudo
 	}
 
 	/**
+	 * The flag to indicate whether the module reqiuires a full reparsing of the
+	 * command line options.
+	 */
+	private boolean reparseCLO = false;
+
+	/**
+	 * Request full reparsing of the command line options. This is necessary if the
+	 * command line options have changed in a fundamental way, for example if the 
+	 * number of traits in a module has changed.
+	 */
+	public void requestParseCLO() {
+		reparseCLO = true;
+	}
+
+	/**
 	 * List of engine listeners that get notified when the state of the population
 	 * changed, for example after population reset or completed an update step.
 	 */
@@ -1091,8 +1106,8 @@ public abstract class EvoLudo
 	public synchronized void requestAction(PendingAction action, boolean now) {
 		if (pendingAction != PendingAction.STOP)
 			pendingAction = action;
-		// if requested and not re-parsing of CLOs, process request immediately
-		if (now && !pendingAction.equals(PendingAction.CLO)) {
+		// if now process request immediately
+		if (now) {
 			processPendingAction();
 		}
 	}
@@ -1205,18 +1220,18 @@ public abstract class EvoLudo
 		PendingAction action = pendingAction;
 		pendingAction = PendingAction.NONE;
 		switch (action) {
-			case MODE:
+			case CHANGE_MODE:
 				Mode mode = action.mode;
 				if (!activeModel.setMode(mode)) {
 					if (!isRunning || mode != Mode.STATISTICS_SAMPLE)
 						break;
 					// continue running if mode unchanged
-					action = PendingAction.STATISTIC;
+					action = PendingAction.STATISTIC_READY;
 				}
 				//$FALL-THROUGH$
 			case NONE:
 			case STATISTIC_FAILED:
-			case STATISTIC:
+			case STATISTIC_READY:
 				for (ChangeListener i : changeListeners)
 					i.modelChanged(action);
 				break;
@@ -1235,8 +1250,6 @@ public abstract class EvoLudo
 				unloadModule();
 				break;
 			default:
-				// note: CLO re-parsing requests are handled separately, see parseCLO()
-				// case CLO:
 		}
 	}
 
@@ -1298,7 +1311,7 @@ public abstract class EvoLudo
 				// note: calling fireModelChanged doesn't work because MODE_STATISTICS
 				// prevents firing
 				if (pendingAction == PendingAction.NONE)
-					pendingAction = PendingAction.STATISTIC;
+					pendingAction = PendingAction.STATISTIC_READY;
 				processPendingAction();
 				break;
 		}
@@ -1702,9 +1715,9 @@ public abstract class EvoLudo
 		if (activeModel != null)
 			cloarray = ArrayMath.append(cloarray, cloModel.getName() + " " + activeModel.getModelType().getKey());
 		boolean success = parser.parseCLO(cloarray);
-		if (pendingAction.equals(PendingAction.CLO)) {
+		if (reparseCLO) {
 			// start again from scratch
-			pendingAction = PendingAction.NONE;
+			reparseCLO = false;
 			parser.initCLO();
 			return parser.parseCLO(cloarray);
 		}

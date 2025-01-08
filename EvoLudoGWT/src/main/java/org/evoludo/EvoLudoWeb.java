@@ -620,7 +620,7 @@ public class EvoLudoWeb extends Composite
 			case NONE:
 				update();
 				break;
-			case STATISTIC:
+			case STATISTIC_READY:
 				update();
 				// stop if single statistics requested
 				if (engine.isRunning())
@@ -630,7 +630,7 @@ public class EvoLudoWeb extends Composite
 				// always update counter
 				updateCounter();
 				break;
-			case MODE:
+			case CHANGE_MODE:
 				// reset threshold for status messages after mode change
 				displayStatusThresholdLevel = Level.ALL.intValue();
 				updateStatus();

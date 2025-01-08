@@ -41,18 +41,17 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.ChangeListener;
-import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Markers;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.models.ODEEuler;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.PDERD;
 import org.evoludo.simulator.models.PDERD.HasPDE;
 import org.evoludo.simulator.models.SDEEuler.HasSDE;
+import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
 import org.evoludo.util.CLOParser;
@@ -484,7 +483,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	public void setNTraits(int nTraits) {
 		// prevent requesting re-parsing of CLOs on initial load
 		if (this.nTraits > 0 && this.nTraits != nTraits)
-			engine.requestAction(PendingAction.CLO);
+			engine.requestParseCLO();
 		this.nTraits = nTraits;
 	}
 
