@@ -42,21 +42,21 @@ public interface ChangeListener {
 	 * The GUI or engine can request running models to suspend execution and process
 	 * a <code>pendingAction</code>. Valid requests are:
 	 * <ul>
-	 * <li><code>NONE</code>: No action requested, continue.</li>
+	 * <li><code>NONE</code>: No action requested, continue.
 	 * <li><code>APPLY</code>: Command line options may have changed and should be
 	 * applied to EvoLudo model. Running models resume execution if no reset was
-	 * required.</li>
+	 * required.
 	 * <li><code>INIT</code> Initialize model (re-initialize strategies, stop
-	 * execution).</li>
+	 * execution).
 	 * <li><code>RESET</code>: Reset model (re-initialize geometry and strategies,
-	 * stop execution).</li>
-	 * <li><code>UNLOAD</code>: Unload model (stop execution).</li>
-	 * <li><code>STOP</code>: Stop execution.</li>
+	 * stop execution).
+	 * <li><code>SHUTDOWN</code>: Unload model (stop execution).
+	 * <li><code>STOP</code>: Stop execution.
 	 * <li><code>STATISTIC</code>: Statistic is ready. Make sure to resume
-	 * calculations.</li>
+	 * calculations.
 	 * <li><code>SNAPSHOT</code>: Produce snapshot of current configuration (may not
 	 * always be available, type of snapshot (graphical, statistics, or state) not
-	 * defined).</li>
+	 * defined).
 	 * </ul>
 	 */
 	public enum PendingAction {
@@ -68,7 +68,7 @@ public interface ChangeListener {
 		/**
 		 * GWT application unloaded (stop execution, unload model).
 		 */
-		UNLOAD,
+		SHUTDOWN,
 
 		/**
 		 * Initialize model (re-initialize strategies, stop execution).
@@ -113,9 +113,9 @@ public interface ChangeListener {
 		SNAPSHOT,
 
 		/**
-		 * Update graphical user interface (status and counter, not necessarily views).
+		 * Statistic sample failed.
 		 */
-		GUI,
+		STATISTIC_FAILED,
 
 		/**
 		 * Display console.

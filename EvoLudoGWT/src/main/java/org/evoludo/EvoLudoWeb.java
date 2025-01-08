@@ -374,7 +374,7 @@ public class EvoLudoWeb extends Composite
 
 		// instantiate engine early so that logging can be set up; EvoLudo console is
 		// added later
-		engine = new EvoLudoGWT();
+		engine = new EvoLudoGWT(this);
 		engine.addCLOProvider(this);
 		engine.addMilestoneListener(this);
 		engine.addChangeListener(this);
@@ -523,7 +523,7 @@ public class EvoLudoWeb extends Composite
 		// possible to load those again. ditto for epubs. only seems to apply
 		// to trigger buttons and overlay labs.
 		engine.setCLO(null);
-		engine.requestAction(PendingAction.UNLOAD);
+		engine.requestAction(PendingAction.SHUTDOWN);
 		viewConsole.clearLog();
 	}
 
@@ -634,7 +634,7 @@ public class EvoLudoWeb extends Composite
 				updateGUI();
 				snapshotReady();
 				break;
-			case GUI:
+			case STATISTIC_FAILED:
 				updateStatus();
 				break;
 			case MODE:
@@ -647,7 +647,7 @@ public class EvoLudoWeb extends Composite
 				changeViewTo(viewConsole);
 				break;
 			default:
-				// includes RESET, INIT, START, STOP, MODE, UNLOAD
+				// includes SHUTDOWN, RESET, INIT, START, STOP, MODE
 		}
 		if (!engine.isRunning())
 			updateGUI();
@@ -1224,7 +1224,7 @@ public class EvoLudoWeb extends Composite
 	 * Helper method: applies the command line arguments stored in
 	 * {@link #evoludoCLO}.
 	 */
-	private void applyCLO() {
+	public void applyCLO() {
 		displayStatusThresholdLevel = Level.ALL.intValue();
 		guiState.view = activeView;
 		guiState.resume = engine.isRunning() || engine.isSuspended();

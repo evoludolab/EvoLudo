@@ -170,7 +170,7 @@ public class SDEEuler extends ODEEuler {
 			init();
 			if (fixData.mutantNode < 0) {
 				initStatisticsFailed();
-				engine.requestAction(PendingAction.GUI, true);
+				engine.requestAction(PendingAction.STATISTIC_FAILED, true);
 				// check if STOP has been requested
 				return engine.isRunning();
 			}

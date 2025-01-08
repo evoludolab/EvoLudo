@@ -912,7 +912,7 @@ public abstract class EvoLudo
 	 * or triggered by GWT's
 	 * {@link org.evoludo.EvoLudoWeb#onUnload()}, i.e. when unloading
 	 * the GWT application. In both cases the model has stopped running (either
-	 * through {@link PendingAction#APPLY} or {@link PendingAction#UNLOAD}) and
+	 * through {@link PendingAction#APPLY} or {@link PendingAction#SHUTDOWN}) and
 	 * hence no need to issue further requests.
 	 */
 	public void unloadModule() {
@@ -1096,7 +1096,7 @@ public abstract class EvoLudo
 			pendingAction = action;
 		// if requested and not re-parsing of CLOs, process request immediately
 		if (now && !pendingAction.equals(PendingAction.CLO)) {
-			_fireModelChanged();
+			processPendingAction();
 		}
 	}
 
@@ -1190,7 +1190,7 @@ public abstract class EvoLudo
 			default:
 			case STATISTICS_UPDATE:
 			case DYNAMICS:
-				_fireModelChanged();
+				processPendingAction();
 				break;
 			case STATISTICS_SAMPLE:
 				break;
@@ -1204,7 +1204,7 @@ public abstract class EvoLudo
 	 * @see MilestoneListener
 	 * @see PendingAction
 	 */
-	private void _fireModelChanged() {
+	private void processPendingAction() {
 		PendingAction action = pendingAction;
 		pendingAction = PendingAction.NONE;
 		switch (action) {
@@ -1218,7 +1218,7 @@ public abstract class EvoLudo
 				}
 				//$FALL-THROUGH$
 			case NONE:
-			case GUI:
+			case STATISTIC_FAILED:
 			case CONSOLE:
 			case APPLY:
 			case STATISTIC:
@@ -1237,7 +1237,7 @@ public abstract class EvoLudo
 			case RESET:
 				modelReset();
 				break;
-			case UNLOAD:
+			case SHUTDOWN:
 				unloadModule();
 				break;
 			default:
@@ -1305,7 +1305,7 @@ public abstract class EvoLudo
 				// prevents firing
 				if (pendingAction == PendingAction.NONE)
 					pendingAction = PendingAction.STATISTIC;
-				_fireModelChanged();
+				processPendingAction();
 				break;
 		}
 	}
