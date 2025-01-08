@@ -624,14 +624,6 @@ public class EvoLudoWeb extends Composite
 				if (engine.isRunning())
 					engine.next();
 				break;
-			case SNAPSHOT:
-				if (engine.isRunning())
-					engine.setSuspended(true);
-				update(true);
-				// make sure GUI is in stopped state before taking the snapshot
-				updateGUI();
-				snapshotReady();
-				break;
 			case STATISTIC_FAILED:
 				updateStatus();
 				break;
@@ -1792,13 +1784,20 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
-	 * Adds a marker element with ID <code>snapshot-ready</code> to DOM. This is
-	 * used to control automated snapshots using <code>capture-website</code>.
+	 * Prepare GUI to create a snapshot. Stops running model, updates GUI (buttons
+	 * and view) and adds a marker element with ID <code>snapshot-ready</code> to
+	 * DOM. This is used to control automated snapshots using
+	 * <code>capture-website</code>.
 	 * 
 	 * @see <a href="https://github.com/sindresorhus/capture-website-cli"> Github:
 	 *      capture-website-cli</a>
 	 */
-	private void snapshotReady() {
+	public void snapshotReady() {
+		if (engine.isRunning())
+			engine.setSuspended(true);
+		update(true);
+		// make sure GUI is in stopped state before taking the snapshot
+		updateGUI();
 		// add div to DOM to signal completion of layout for capture-website
 		DivElement marker = Document.get().createDivElement();
 		marker.setId("snapshot-ready");

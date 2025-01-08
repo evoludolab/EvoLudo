@@ -1218,7 +1218,6 @@ public abstract class EvoLudo
 			case STATISTIC_FAILED:
 			case CONSOLE:
 			case STATISTIC:
-			case SNAPSHOT:
 				for (ChangeListener i : changeListeners)
 					i.modelChanged(action);
 				break;

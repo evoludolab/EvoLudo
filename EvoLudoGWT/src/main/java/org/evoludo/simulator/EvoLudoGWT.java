@@ -195,7 +195,7 @@ public class EvoLudoGWT extends EvoLudo {
 					throw new Error("layoutComplete(): unknown mode...");
 			}
 		}
-		requestAction(PendingAction.SNAPSHOT, true);
+		gui.snapshotReady();
 	}
 
 	@Override
@@ -227,8 +227,10 @@ public class EvoLudoGWT extends EvoLudo {
 				if (samplesCollected == statisticsAt) {
 					// requested sample count reached, reset to unlimited
 					statisticsAt = -1.0;
-					requestAction(Math.abs(snapshotAt - samplesCollected) < 1.0 
-						? PendingAction.SNAPSHOT : PendingAction.STOP, true);
+					if (Math.abs(snapshotAt - samplesCollected) < 1.0)
+						gui.snapshotReady();
+					else
+						requestAction(PendingAction.STOP, true);
 					break;
 				}
 				// non-blocking way for running an arbitrary number of update
@@ -303,10 +305,12 @@ public class EvoLudoGWT extends EvoLudo {
 		double time = activeModel.getTime();
 		double timeStep = activeModel.getTimeStep();
 		Mode mode = activeModel.getMode();
-		if ((mode == Mode.DYNAMICS || mode == Mode.STATISTICS_UPDATE) 
-				&& ((activeModel.hasConverged() && snapshotAt > time) 
-				|| (Math.abs(time + timeStep - snapshotAt) <= timeStep))){
-			requestAction(PendingAction.SNAPSHOT, true);
+		if ((mode == Mode.STATISTICS_SAMPLE
+					&& Math.abs(snapshotAt - activeModel.getNStatisticsSamples()) < 1.0)
+				|| (mode == Mode.STATISTICS_UPDATE || mode == Mode.DYNAMICS)
+					&& (activeModel.hasConverged() && snapshotAt > time
+							|| Math.abs(time + timeStep - snapshotAt) <= timeStep)) {
+			gui.snapshotReady();
 			return;
 		}
 		super.fireModelStopped();

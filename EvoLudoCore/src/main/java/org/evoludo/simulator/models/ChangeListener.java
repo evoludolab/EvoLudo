@@ -51,9 +51,9 @@ public interface ChangeListener {
 	 * <li><code>STOP</code>: Stop execution.
 	 * <li><code>STATISTIC</code>: Statistic is ready. Make sure to resume
 	 * calculations.
-	 * <li><code>SNAPSHOT</code>: Produce snapshot of current configuration (may not
-	 * always be available, type of snapshot (graphical, statistics, or state) not
-	 * defined).
+	 * <li><code>STATISTIC_FAILED</code>: Statistic sample failed.
+	 * <li><code>CLO</code>: Re-parse command line options. This is necessary e.g. if
+	 * nTraits has changed.
 	 * </ul>
 	 */
 	public enum PendingAction {
@@ -96,12 +96,6 @@ public interface ChangeListener {
 		 * Statistic is ready. Make sure to resume calculations.
 		 */
 		STATISTIC,
-
-		/**
-		 * Produce snapshot of current configuration (may not always be available, type
-		 * of snapshot (graphical, statistics, or state) not defined).
-		 */
-		SNAPSHOT,
 
 		/**
 		 * Statistic sample failed.
