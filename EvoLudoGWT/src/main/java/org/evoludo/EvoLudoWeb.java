@@ -558,8 +558,10 @@ public class EvoLudoWeb extends Composite
 	public void update(boolean force) {
 		for (AbstractView view : activeViews.values())
 			view.update(force);
-		if (force)
-			updateStatus();
+		if (!force)
+			return;
+		updateStatus();
+		updateCounter();
 	}
 
 	@Override
@@ -619,18 +621,20 @@ public class EvoLudoWeb extends Composite
 				update();
 				break;
 			case STATISTIC:
-				update(true);
+				update();
 				// stop if single statistics requested
 				if (engine.isRunning())
 					engine.next();
-				break;
+				//$FALL-THROUGH$
 			case STATISTIC_FAILED:
-				updateStatus();
+				// always update counter
+				updateCounter();
 				break;
 			case MODE:
 				// reset threshold for status messages after mode change
 				displayStatusThresholdLevel = Level.ALL.intValue();
 				updateStatus();
+				updateCounter();
 				break;
 			default:
 				// includes SHUTDOWN, RESET, INIT, STOP, MODE
@@ -694,10 +698,11 @@ public class EvoLudoWeb extends Composite
 		evoludoSlider.setEnabled(!statistics);
 		if (stopped)
 			updateStatus();
+		updateCounter();
 	}
 
 	/**
-	 * Helper method to update GUI.
+	 * Helper method to update status of GUI.
 	 */
 	private void updateStatus() {
 		Model model = engine.getModel();
@@ -706,8 +711,14 @@ public class EvoLudoWeb extends Composite
 		if (s == null)
 			s = model.getStatus();
 		displayStatus(s);
-		evoludoTime.setText(model.getCounter());
 		updatetime = Duration.currentTimeMillis();
+	}
+
+	/**
+	 * Helper method to update counter of GUI.
+	 */
+	private void updateCounter() {
+		evoludoTime.setText(engine.getModel().getCounter());
 	}
 
 	/**
