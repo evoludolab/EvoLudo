@@ -908,12 +908,9 @@ public abstract class EvoLudo
 	 * Unload current module to free up resources.
 	 * 
 	 * <h3>Implementation note:</h3>
-	 * Called from {@link loadModule} to first unload the active module
-	 * or triggered by GWT's
-	 * {@link org.evoludo.EvoLudoWeb#onUnload()}, i.e. when unloading
-	 * the GWT application. In both cases the model has stopped running (either
-	 * through {@link PendingAction#APPLY} or {@link PendingAction#SHUTDOWN}) and
-	 * hence no need to issue further requests.
+	 * Called from {@link loadModule} to first unload the active module or triggered
+	 * by GWT's {@link org.evoludo.EvoLudoWeb#onUnload()}, i.e. when unloading the
+	 * GWT application.
 	 */
 	public void unloadModule() {
 		if (activeModule != null) {
@@ -1220,7 +1217,6 @@ public abstract class EvoLudo
 			case NONE:
 			case STATISTIC_FAILED:
 			case CONSOLE:
-			case APPLY:
 			case STATISTIC:
 			case SNAPSHOT:
 				for (ChangeListener i : changeListeners)

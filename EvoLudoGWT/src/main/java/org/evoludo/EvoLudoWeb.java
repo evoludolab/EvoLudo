@@ -496,7 +496,8 @@ public class EvoLudoWeb extends Composite
 			if (root != null)
 				clo = root.getElement().getAttribute("data-clo").trim();
 		}
-		applyCLO(clo);
+		engine.setCLO(clo);
+		applyCLO();
 		// save initial set of parameters as default
 		defaultCLO = clo;
 	}
@@ -623,9 +624,6 @@ public class EvoLudoWeb extends Composite
 				if (engine.isRunning())
 					engine.next();
 				break;
-			case APPLY:
-				applyCLO();
-				break;
 			case SNAPSHOT:
 				if (engine.isRunning())
 					engine.setSuspended(true);
@@ -647,7 +645,7 @@ public class EvoLudoWeb extends Composite
 				changeViewTo(viewConsole);
 				break;
 			default:
-				// includes SHUTDOWN, RESET, INIT, START, STOP, MODE
+				// includes SHUTDOWN, RESET, INIT, STOP, MODE
 		}
 		if (!engine.isRunning())
 			updateGUI();
@@ -1134,7 +1132,8 @@ public class EvoLudoWeb extends Composite
 	@UiHandler("evoludoApply")
 	public void onApplyClick(ClickEvent event) {
 		if (evoludoApply.getText().equals("Apply")) {
-			scheduleApplyCLO();
+			engine.setCLO(evoludoCLO.getText().replace((char) 160, ' '));
+			applyCLO();
 			return;
 		}
 		// open standalone lab (ePubs only)
@@ -1149,37 +1148,6 @@ public class EvoLudoWeb extends Composite
 			return;
 		}
 		Window.Location.assign(href);
-	}
-
-	/**
-	 * Helper method: request setting new command line parameters.
-	 */
-	void scheduleApplyCLO() {
-		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-			@Override
-			public void execute() {
-				// convert any nbsp's to regular spaces
-				applyCLO(evoludoCLO.getText().replace((char) 160, ' '));
-			}
-		});
-	}
-
-	/**
-	 * Process and apply the command line arguments <code>clo</code>. Loads new
-	 * model (and unloads old one), if necessary, and loads/adjusts the data views
-	 * as appropriate.
-	 * 
-	 * @param clo the command line arguments
-	 */
-	public void applyCLO(String clo) {
-		engine.setCLO(clo);
-		displayStatusThresholdLevel = Level.ALL.intValue();
-		displayStatus("Setting parameters pending. Waiting for engine to stop...");
-		if (engine.isRunning()) {
-			engine.requestAction(PendingAction.APPLY);
-			return;
-		}
-		applyCLO();
 	}
 
 	/**
@@ -1221,10 +1189,15 @@ public class EvoLudoWeb extends Composite
 	GUIState guiState = new GUIState();
 
 	/**
-	 * Helper method: applies the command line arguments stored in
-	 * {@link #evoludoCLO}.
+	 * Process and apply the command line arguments stored in {@link #evoludoCLO}
+	 * Loads new model (and unloads old one), if necessary, and loads/adjusts the
+	 * data views as appropriate.
 	 */
 	public void applyCLO() {
+		if (engine.isRunning()) {
+			logger.warning("Cannot apply parameters while engine is running.");
+			return;
+		}
 		displayStatusThresholdLevel = Level.ALL.intValue();
 		guiState.view = activeView;
 		guiState.resume = engine.isRunning() || engine.isSuspended();
@@ -1358,7 +1331,8 @@ public class EvoLudoWeb extends Composite
 					return;
 				}
 				evoludoCLO.setText(defaultCLO);
-				applyCLO(defaultCLO);
+				engine.setCLO(defaultCLO);
+				applyCLO();
 			}
 		});
 	}
@@ -1599,7 +1573,8 @@ public class EvoLudoWeb extends Composite
 			// focus is on command line options ignore keypress
 			// except Shift-Enter, which applies the new settings
 			if (isShiftDown && key.equals("Enter")) {
-				scheduleApplyCLO();
+				engine.setCLO(evoludoCLO.getText().replace((char) 160, ' '));
+				applyCLO();
 				return true;
 			}
 			// escape closes the settings field

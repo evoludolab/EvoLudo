@@ -103,8 +103,9 @@ public class ParamPanel implements ActionListener {
 				//$FALL-THROUGH$
 			default:
 			case 24:	// Apply
-				controller.applyCLO(inputCLO.getText());
-				break;
+				controller.getEngine().setCLO(inputCLO.getText());
+				controller.applyCLO();
+			break;
 		}
 	}
 }

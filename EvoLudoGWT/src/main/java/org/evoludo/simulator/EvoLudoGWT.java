@@ -30,6 +30,7 @@
 
 package org.evoludo.simulator;
 
+import org.evoludo.EvoLudoWeb;
 import org.evoludo.graphics.Network2DGWT;
 import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.math.ArrayMath;
@@ -109,9 +110,15 @@ public class EvoLudoGWT extends EvoLudo {
 	private final Duration elapsedTime = new Duration();
 
 	/**
+	 * The reference to the GUI.
+	 */
+	EvoLudoWeb gui;
+
+	/**
 	 * Construct EvoLudo controller for GWT applications (web or ePub).
 	 */
-	public EvoLudoGWT() {
+	public EvoLudoGWT(EvoLudoWeb gui) {
+		this.gui = gui;
 		detectGUIFeatures();
 	}
 
@@ -308,7 +315,7 @@ public class EvoLudoGWT extends EvoLudo {
 	@Override
 	public boolean restoreState(Plist plist) {
 		setCLO((String) (plist.get("CLO")));
-		requestAction(PendingAction.APPLY);
+		gui.applyCLO();
 		return super.restoreState(plist);
 	}
 

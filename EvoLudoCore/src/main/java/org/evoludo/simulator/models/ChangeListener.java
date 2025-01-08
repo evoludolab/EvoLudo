@@ -43,9 +43,6 @@ public interface ChangeListener {
 	 * a <code>pendingAction</code>. Valid requests are:
 	 * <ul>
 	 * <li><code>NONE</code>: No action requested, continue.
-	 * <li><code>APPLY</code>: Command line options may have changed and should be
-	 * applied to EvoLudo model. Running models resume execution if no reset was
-	 * required.
 	 * <li><code>INIT</code> Initialize model (re-initialize strategies, stop
 	 * execution).
 	 * <li><code>RESET</code>: Reset model (re-initialize geometry and strategies,
@@ -84,12 +81,6 @@ public interface ChangeListener {
 		 * Stop execution.
 		 */
 		STOP,
-
-		/**
-		 * Command line options may have changed and should be applied to EvoLudo model.
-		 * Running models resume execution if no reset was required.
-		 */
-		APPLY,
 
 		/**
 		 * Re-parse command line options. This is necessary e.g. if nTraits has changed.

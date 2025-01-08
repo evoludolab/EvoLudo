@@ -479,7 +479,16 @@ public class EvoLudoLab extends JFrame
 	protected Logger logger;
 	MVConsole console;
 
-	protected void applyCLO() {
+	/**
+	 * Process and apply the command line arguments <code>clo</code>. Loads new
+	 * model (and unloads old one), if necessary, and loads/adjusts the data views
+	 * as appropriate.
+	 */
+	public void applyCLO() {
+		if (engine.isRunning()) {
+			logger.warning("Cannot apply parameters while engine is running.");
+			return;
+		}
 		int idx = activeViews.getActiveIndex();
 		if( idx<0 || cloView.isSet() )
 			idx = Integer.parseInt(appView);
@@ -663,17 +672,6 @@ public class EvoLudoLab extends JFrame
 		if (updateGUI) {
 			updateLabels();
 		}
-	}
-
-	public void applyCLO(String clo) {
-		engine.setCLO(clo);
-		displayStatus("Setting parameters pending. Waiting for engine to stop...");
-		// note, initially population is null
-		if (engine.isRunning()) {
-			engine.requestAction(PendingAction.APPLY);
-			return;
-		}
-		applyCLO();
 	}
 
 	@Override
