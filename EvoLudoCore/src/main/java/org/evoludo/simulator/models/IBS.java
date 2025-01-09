@@ -490,6 +490,8 @@ public abstract class IBS extends Model {
 		pup.clo.removeKey(PopulationUpdate.Type.ECOLOGY);
 		speciesUpdate = new SpeciesUpdate(species.get(0));
 		speciesUpdate.clo.addKeys(SpeciesUpdate.Type.values());
+		statisticsSettings = new Statistics(this);
+		statisticsSettings.clo.addKeys(Statistics.Type.values());
 	}
 
 	@Override
@@ -613,7 +615,8 @@ public abstract class IBS extends Model {
 	public boolean next() {
 		// start new statistics sample if required
 		if (mode == Mode.STATISTICS_SAMPLE && statisticsSampleNew && !isRelaxing) {
-			reset();
+			if (nStatisticsSamples % statisticsSettings.resetInterval == 0)
+				reset();
 			init();
 			if (fixData.mutantNode < 0) {
 				initStatisticsFailed();
@@ -1838,6 +1841,9 @@ public abstract class IBS extends Model {
 		parser.addCLO(cloGeometryRewire);
 		parser.addCLO(cloGeometryAddwire);
 		parser.addCLO(cloConsistency);
+		statisticsSettings.clo.clearKeys();
+		statisticsSettings.clo.addKeys(Statistics.Type.values());
+		parser.addCLO(statisticsSettings.clo);
 
 		boolean anyVacant = false;
 		boolean anyNonVacant = false;
@@ -2026,6 +2032,160 @@ public abstract class IBS extends Model {
 		@Override
 		public String toString() {
 			return key + ": " + title;
+		}
+	}
+
+	/**
+	 * The settings for statistics mode.
+	 */
+	Statistics statisticsSettings;
+
+	/**
+	 * The class managing the settings for statistics mode.
+	 */
+	public static class Statistics {
+
+		/**
+		 * The model that is using the statistics settings. This is specific to IBS
+		 * models.
+		 */
+		org.evoludo.simulator.models.IBS ibs;
+
+		/**
+		 * The statistics type.
+		 * 
+		 * @see #clo
+		 */
+		Statistics.Type type;
+
+		/**
+		 * The number of samples before resetting the geometry.
+		 */
+		int resetInterval = 0;
+
+		/**
+		 * The settings for the statitsics.
+		 */
+		String[] args;
+
+		/**
+		 * Get the settings for the statitsics.
+		 * 
+		 * @return the statistics settings
+		 * 
+		 * @see #args
+		 */
+		public String[] getArgs() {
+			return args;
+		}
+
+		@Override
+		public String toString() {
+			return type.getKey() + " " + Formatter.format(args, ";");
+		}
+
+		/**
+		 * Instantiate new statistics settings for use in IBS {@code model}s.
+		 * 
+		 * @param ibs the model using this statistics settings
+		 */
+		public Statistics(org.evoludo.simulator.models.IBS ibs) {
+			this.ibs = ibs;
+			type = Statistics.Type.RESET_GEOMETRY;
+		}
+
+		/**
+		 * Command line option to customize statistics settings.
+		 */
+		public final CLOption clo = new CLOption("statistics", "reset 1", EvoLudo.catSimulation,
+				null, new CLODelegate() {
+					@Override
+					public boolean parse(String arg) {
+						if (clo.isSet()) {
+							// multiple settings are separated by Formatter.MATRIX_DELIMITER
+							args = arg.split(Formatter.MATRIX_DELIMITER);
+							// currently at most a single setting
+							for (String st : args) {
+								type = (Statistics.Type) clo.match(st.trim(), 2);
+								if (type == null) {
+									ibs.logger.warning("failed to parse statistics options '" + arg + "'!");
+									return false;
+								}
+								String[] typeargs = st.split("\\s+|=");
+								resetInterval = typeargs.length > 1 ? CLOParser.parseInteger(typeargs[1]) : 1;
+							}
+						}
+						return true;
+					}
+
+					@Override
+					public void report(PrintStream ps) {
+						// for customized simulations
+						ps.println("# statistics:           " + Formatter.format(args, Formatter.MATRIX_DELIMITER));
+					}
+
+					@Override
+					public String getDescription() {
+						String descr = "--statistics <s>  settings:\n" + clo.getDescriptionKey();
+						return descr;
+					}
+				});
+
+		/**
+		 * Type of statistics.
+		 * <dl>
+		 * <dt>RESET_GEOMETRY
+		 * <dd>Reset geometry every {@code s} samples (never for {@code s&le;0}).
+		 * </dl>
+		 */
+		public static enum Type implements CLOption.Key {
+
+			/**
+			 * Skip homogeneous states by introducing a mutant and advancing the time
+			 * according to an exponential distribution for an event happening with
+			 * probability {@code Module#getMutationProb()}.
+			 */
+			RESET_GEOMETRY("reset <s>", "reset geometry every <s> samples (0 never)");
+
+			/**
+			 * Key of optimization type. Used when parsing command line options.
+			 * 
+			 * @see IBS#cloStatistics
+			 */
+			String key;
+
+			/**
+			 * Brief description of optimization type for help display.
+			 * 
+			 * @see EvoLudo#getCLOHelp()
+			 */
+			String title;
+
+			/**
+			 * Instantiate new optimization type.
+			 * 
+			 * @param key   identifier for parsing of command line option
+			 * @param title summary of optimization
+			 */
+			Type(String key, String title) {
+				this.key = key;
+				this.title = title;
+			}
+
+			@Override
+			public String getKey() {
+				return key;
+			}
+
+			@Override
+			public String getTitle() {
+				return title;
+			}
+
+			@Override
+			public String toString() {
+				return key + ": " + title;
+			}
 		}
 	}
 

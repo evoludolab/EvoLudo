@@ -49,7 +49,7 @@ public interface ChangeListener {
 	 * stop execution).
 	 * <li><code>SHUTDOWN</code>: Unload model (stop execution).
 	 * <li><code>STOP</code>: Stop execution.
-	 * <li><code>STATISTIC</code>: Statistic is ready. Make sure to resume
+	 * <li><code>STATISTIC_READY</code>: Statistic is ready. Make sure to resume
 	 * calculations.
 	 * <li><code>STATISTIC_FAILED</code>: Statistic sample failed.
 	 * </ul>

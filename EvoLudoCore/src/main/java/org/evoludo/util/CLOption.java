@@ -669,16 +669,33 @@ public class CLOption implements Comparable<CLOption> {
 	 * is <code>true</code>, then a better match must match at least one more
 	 * character of <code>name</code>.
 	 * 
-	 * @param keyname of key to match
+	 * @param keyname the name of the key to match
 	 * @return matching <code>Key</code> or <code>null</code> if no match was found
 	 */
 	public Key match(String keyname) {
+		return match(keyname, 1);
+	}
+
+	/**
+	 * Returns the key that best matches <code>name</code> with at least {@code min}
+	 * characters matching. If several keys are equally good matches the first match
+	 * is returned. If <code>name</code> perfectly matches one key, i.e.
+	 * <code>name.startsWith(key.getName())</code> is <code>true</code>, then a
+	 * better match must match at least one more character of <code>name</code>.
+	 * 
+	 * @param keyname the name of the key to match
+	 * @param min     minimum number of characters that must match
+	 * @return matching <code>Key</code> or <code>null</code> if no match was found
+	 */
+	public Key match(String keyname, int min) {
 		if (keys == null)
 			return null;
 		double best = 0.0;
 		Key match = null;
 		for (Key key : keys.values()) {
 			int diff = differAt(keyname, key.getKey());
+			if (diff < min)
+				continue;
 			if (diff >= best && diff == key.getKey().length()) {
 				best = diff + 0.5;
 				match = key;

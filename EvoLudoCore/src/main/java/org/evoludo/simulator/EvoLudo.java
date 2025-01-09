@@ -545,6 +545,8 @@ public abstract class EvoLudo
 
 	/**
 	 * Reset all populations and notify all listeners if requested.
+	 * <p>
+	 * <strong>Note:</strong> if {@code quiet == true} statistics are preserved.
 	 * 
 	 * @param quiet set to {@code true} to skip notifying listeners
 	 */
@@ -559,11 +561,11 @@ public abstract class EvoLudo
 		for (Module mod : activeModule.getSpecies())
 			mod.reset();
 		activeModel.reset();
-		activeModel.resetStatisticsSample();
 		resetRequested = false;
 		modelInit(true);
 		if (!quiet) {
 			// notify of reset
+			activeModel.resetStatisticsSample();
 			fireModelReset();
 		}
 	}
@@ -1222,7 +1224,12 @@ public abstract class EvoLudo
 		switch (action) {
 			case CHANGE_MODE:
 				Mode mode = action.mode;
-				if (!activeModel.setMode(mode)) {
+				if (activeModel.setMode(mode)) {
+					// mode changed
+					if (mode == Mode.STATISTICS_SAMPLE)
+						modelReset(true);
+				} else {
+					// mode unchanged
 					if (!isRunning || mode != Mode.STATISTICS_SAMPLE)
 						break;
 					// continue running if mode unchanged

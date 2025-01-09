@@ -889,7 +889,7 @@ if (maxBins < 0) maxBins = 100;
 					if (idx > 0)
 						status += ", ";
 					status += (isMultispecies ? module.getName() + "." : "") + module.getTraitName(idx++) + ": " +
-							Formatter.formatFix(graph.getSamples() / nSam, 3);
+							Formatter.formatFix(graph.getSamples() / nSam, 4);
 				}
 				return status;
 
@@ -922,8 +922,8 @@ if (maxBins < 0) maxBins = 100;
 						double mean = Distributions.distrMean(data[idx]);
 						double sdev = Distributions.distrStdev(data[idx], mean);
 						GraphStyle style = graph.getStyle();
-						status += Formatter.formatFix(style.xMin + mean * (style.xMax - style.xMin), 1) + " ± " +
-								Formatter.formatFix(sdev * (style.xMax - style.xMin), 1);
+						status += Formatter.formatFix(style.xMin + mean * (style.xMax - style.xMin), 2) + " ± " +
+								Formatter.formatFix(sdev * (style.xMax - style.xMin), 2);
 						idx++;
 						continue;
 					}
@@ -943,11 +943,11 @@ if (maxBins < 0) maxBins = 100;
 						sw += w;
 					}
 					if (sw <= 0.0)
-						status += "0.000 ± 0.000";
+						status += "0.0000 ± 0.0000";
 					else {
 						double mean = sx / sw;
-						status += Formatter.formatFix(mean, 3) + " ± "
-								+ Formatter.formatFix(Math.sqrt(sx2 / sw - mean * mean), 3);
+						status += Formatter.formatFix(mean, 4) + " ± "
+								+ Formatter.formatFix(Math.sqrt(sx2 / sw - mean * mean), 4);
 					}
 					idx++;
 				}
