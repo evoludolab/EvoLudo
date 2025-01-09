@@ -110,7 +110,7 @@ import org.evoludo.util.Plist;
  * 
  */
 public abstract class EvoLudo
-		implements MilestoneListener, CLOProvider, MersenneTwister.Chronometer {
+		implements CLOProvider, MersenneTwister.Chronometer {
 
 	/**
 	 * The interface to execute commands in a manner that is agnostic to the
@@ -1244,8 +1244,7 @@ public abstract class EvoLudo
 				break;
 			case STOP:		// stop requested (as opposed to simulations that stopped)	
 				isRunning = false;
-				for (MilestoneListener i : milestoneListeners)
-					i.modelStopped();
+				fireModelStopped();
 				break;
 			case INIT:
 				modelInit();
@@ -2183,7 +2182,6 @@ public abstract class EvoLudo
 
 	protected EvoLudo(boolean loadModules) {
 		logger = Logger.getLogger(EvoLudo.class.getName() + "-" + ID);
-		addMilestoneListener(this);
 		parser = new CLOParser(this);
 		if (!loadModules)
 			return;

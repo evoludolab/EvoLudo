@@ -294,25 +294,28 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	}
 
 	@Override
-	public void modelStopped() {
+	public synchronized void fireModelStopped() {
 		timer.stop();
 		isWaiting = true;
 		if (simulationRunning) {
 			simulationRunning = false;
 			notify();
 		}
+		super.fireModelStopped();
 	}
 
 	@Override
-	public void modelDidInit() {
+	public synchronized void fireModelInit() {
 		timer.stop();
 		isWaiting = true;
+		super.fireModelInit();
 	}
 
 	@Override
-	public void modelDidReset() {
+	public synchronized void fireModelReset() {
 		timer.stop();
 		isWaiting = true;
+		super.fireModelReset();
 	}
 
 	/**

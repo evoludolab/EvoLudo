@@ -296,14 +296,16 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	@Override
-	public void moduleUnloaded() {
+	public synchronized void fireModuleUnloaded() {
 		isRunning = false;
 		timer.cancel();
+		super.fireModuleUnloaded();
 	}
 
 	@Override
-	public void modelDidReset() {
+	public synchronized void fireModelReset() {
 		statisticsAt = activeModel.getNSamples();
+		super.fireModelReset();
 	}
 
 	public synchronized void fireModelStopped() {
