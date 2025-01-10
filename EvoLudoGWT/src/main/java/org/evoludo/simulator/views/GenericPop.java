@@ -128,6 +128,17 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	}
 
 	@Override
+	public void modelChanged(PendingAction action) {
+		super.modelChanged(action);
+		if (action == PendingAction.CHANGE_MODE) {
+			for (G graph : graphs) {
+				if (graph.getGeometry().isUniqueGeometry())
+					graph.invalidate();
+			}
+		}
+	}
+
+	@Override
 	public boolean hasLayout() {
 		// check if all graphs have layout
 		for (G graph : graphs) {
