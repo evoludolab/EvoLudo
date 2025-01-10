@@ -274,7 +274,6 @@ public class EvoLudoGWT extends EvoLudo {
 						return false;
 				}
 				if (activeModel.next()) {
-					fireModelChanged();
 					return true;
 				}
 				fireModelStopped();
@@ -324,6 +323,15 @@ public class EvoLudoGWT extends EvoLudo {
 			return;
 		}
 		super.fireModelStopped();
+	}
+
+	@Override
+	void processPendingAction() {
+		boolean updateGUI = (pendingAction == PendingAction.STOP 
+				&& activeModel.getMode() == Mode.STATISTICS_SAMPLE);
+		super.processPendingAction();
+		if (updateGUI)
+			gui.modelStopped();
 	}
 
 	@Override

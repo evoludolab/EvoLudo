@@ -1224,7 +1224,7 @@ public abstract class EvoLudo
 	 * @see MilestoneListener
 	 * @see PendingAction
 	 */
-	private void processPendingAction() {
+	void processPendingAction() {
 		PendingAction action = pendingAction;
 		pendingAction = PendingAction.NONE;
 		switch (action) {
@@ -1232,8 +1232,10 @@ public abstract class EvoLudo
 				Mode mode = action.mode;
 				if (activeModel.setMode(mode)) {
 					// mode changed
-					if (mode == Mode.STATISTICS_SAMPLE)
+					if (mode == Mode.STATISTICS_SAMPLE) {
+						// do not notify listeners, preserve statistics
 						modelReset(true);
+					}
 				} else {
 					// mode unchanged
 					if (!isRunning || mode != Mode.STATISTICS_SAMPLE)

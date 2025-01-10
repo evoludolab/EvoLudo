@@ -1664,15 +1664,12 @@ public class IBSDPopulation extends IBSPopulation {
 	public void getFitnessHistogramData(double[][] bins) {
 		int nBins = bins[0].length;
 		int maxBin = nBins - 1;
-		// for neutral selection maxScore==minScore! in that case assume range [score-1,
-		// score+1]
-		// needs to be synchronized with GUI (e.g. MVFitness, MVFitHistogram, ...)
-		double map, min = minFitness;
+		double map, min = minScore;
 		if (isNeutral) {
 			map = nBins * 0.5;
 			min--;
 		} else
-			map = nBins / (maxFitness - min);
+			map = nBins / (maxScore - min);
 		int idx = 0;
 
 		// clear bins

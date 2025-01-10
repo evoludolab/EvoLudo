@@ -2103,19 +2103,17 @@ public abstract class IBS extends Model {
 				null, new CLODelegate() {
 					@Override
 					public boolean parse(String arg) {
-						if (clo.isSet()) {
-							// multiple settings are separated by Formatter.MATRIX_DELIMITER
-							args = arg.split(Formatter.MATRIX_DELIMITER);
-							// currently at most a single setting
-							for (String st : args) {
-								type = (Statistics.Type) clo.match(st.trim(), 2);
-								if (type == null) {
-									ibs.logger.warning("failed to parse statistics options '" + arg + "'!");
-									return false;
-								}
-								String[] typeargs = st.split("\\s+|=");
-								resetInterval = typeargs.length > 1 ? CLOParser.parseInteger(typeargs[1]) : 1;
+						// multiple settings are separated by Formatter.MATRIX_DELIMITER
+						args = arg.split(Formatter.MATRIX_DELIMITER);
+						// currently at most a single setting
+						for (String st : args) {
+							type = (Statistics.Type) clo.match(st.trim(), 2);
+							if (type == null) {
+								ibs.logger.warning("failed to parse statistics options '" + arg + "'!");
+								return false;
 							}
+							String[] typeargs = st.split("\\s+|=");
+							resetInterval = typeargs.length > 1 ? CLOParser.parseInteger(typeargs[1]) : 1;
 						}
 						return true;
 					}

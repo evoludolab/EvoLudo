@@ -1203,12 +1203,7 @@ public class EvoLudoWeb extends Composite
 		Model newModel = engine.getModel();
 		if (newModule == null || newModule != guiState.module || newModel != guiState.model) {
 			engine.modelReset(true);
-			for (AbstractView view : activeViews.values())
-				view.load();
-			if (guiState.module == null) {
-				// startup
-				loadViews();
-			}
+			loadViews();
 			// notify of reset (reset above was quiet because views may not have
 			// been ready for notification)
 			engine.fireModelReset();
@@ -1239,7 +1234,8 @@ public class EvoLudoWeb extends Composite
 			// - reflect changes in report frequency (time line graphs, distributions
 			// and linear geometries)
 			// - changes in payoffs require rescaling of color maps
-			view.reset(false);
+			if (guiState.module == null)
+				view.reset(false);
 		}
 		evoludoLayout.onResize();
 	}
@@ -1828,13 +1824,11 @@ public class EvoLudoWeb extends Composite
 				addView(new Histogram(engine, Data.STATISTICS_FIXATION_PROBABILITY), oldViews);
 			if (module instanceof HasHistogram.StatisticsTime)
 				addView(new Histogram(engine, Data.STATISTICS_FIXATION_TIME), oldViews);
-			model.resetStatisticsSample();
 		}
 		if (model.permitsMode(Mode.STATISTICS_UPDATE)) {
 			// update statistics available
 			if (module instanceof HasHistogram.StatisticsStationary)
 				addView(new Histogram(engine, Data.STATISTICS_STATIONARY), oldViews);
-			model.resetStatisticsSample();
 		}
 		// miscellaneous views
 		// note: console may be removed for (simulated) ePub modes
