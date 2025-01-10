@@ -209,14 +209,6 @@ public class EvoLudoWeb extends Composite
 	private static EvoLudoWebBinder uiBinder = GWT.create(EvoLudoWebBinder.class);
 
 	/**
-	 * In order to conserve computational resources the minimum time between
-	 * subsequent GUI updates has to be at least
-	 * <code>MIN_MSEC_BETWEEN_UPDATES</code> milliseconds. If update request are
-	 * made more frequently some are request are not honoured and simply dropped.
-	 */
-	protected static final int MIN_MSEC_BETWEEN_UPDATES = 50; // max 20 updates per second
-
-	/**
 	 * Time of last GUI update
 	 */
 	protected double updatetime = -1.0;
@@ -528,42 +520,6 @@ public class EvoLudoWeb extends Composite
 		viewConsole.clearLog();
 	}
 
-	/**
-	 * Helper method to limit the number of GUI updates per second to conserve
-	 * resources or put them to better use.
-	 * 
-	 * @return {@code true} if an update is recommended, {@code false} otherwise
-	 */
-	private boolean doUpdate() {
-		double now = Duration.currentTimeMillis();
-		if (now - updatetime < MIN_MSEC_BETWEEN_UPDATES)
-			return false;
-		updatetime = now;
-		return true;
-	}
-
-	/**
-	 * Update GUI. If time since last update is less than
-	 * {@link #MIN_MSEC_BETWEEN_UPDATES} then views may choose to skip an update.
-	 */
-	public void update() {
-		update(!engine.isRunning() || doUpdate());
-	}
-
-	/**
-	 * Update GUI. The update is forced if {@code force} is {@code true}.
-	 * 
-	 * @param force update update is forced if {@code true}
-	 */
-	public void update(boolean force) {
-		for (AbstractView view : activeViews.values())
-			view.update(force);
-		if (!force)
-			return;
-		updateStatus();
-		updateCounter();
-	}
-
 	@Override
 	public void moduleLoaded() {
 		// NOTE: at this point engine and GUI can be out of sync - better wait for reset
@@ -615,14 +571,11 @@ public class EvoLudoWeb extends Composite
 	@Override
 	public void modelChanged(PendingAction action) {
 		switch (action) {
-			case NONE:
-				update();
-				break;
 			case STATISTIC_READY:
-				update();
 				// stop if single statistics requested
 				if (engine.isRunning())
 					engine.next();
+				updateStatus();
 				//$FALL-THROUGH$
 			case STATISTIC_FAILED:
 				// always update counter
@@ -631,6 +584,8 @@ public class EvoLudoWeb extends Composite
 			case CHANGE_MODE:
 				// reset threshold for status messages after mode change
 				displayStatusThresholdLevel = Level.ALL.intValue();
+				//$FALL-THROUGH$
+			case NONE: 
 				updateStatus();
 				updateCounter();
 				break;
@@ -1802,7 +1757,7 @@ public class EvoLudoWeb extends Composite
 	public void snapshotReady() {
 		if (engine.isRunning())
 			engine.setSuspended(true);
-		update(true);
+		activeView.update(true);
 		// make sure GUI is in stopped state before taking the snapshot
 		updateGUI();
 		// add div to DOM to signal completion of layout for capture-website
@@ -1824,12 +1779,13 @@ public class EvoLudoWeb extends Composite
 		HashMap<String, AbstractView> oldViews = activeViews;
 		activeViews = new HashMap<>();
 		evoludoDeck.clear();
-		// strategies related views
 		Module module = engine.getModule();
 		if (module == null) {
+			// no module loaded; show console only
 			addView(viewConsole, oldViews);
 			return;
 		}
+		// strategies related views
 		Model model = engine.getModel();
 		boolean isODESDE = (model.isODE() || model.isSDE());
 		if (module instanceof HasPop2D.Strategy && !isODESDE)

@@ -45,6 +45,7 @@ import org.evoludo.graphics.GenericPopGraph;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Resources;
+import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Mode;
@@ -56,6 +57,7 @@ import org.evoludo.util.NativeJS;
 import org.evoludo.util.RingBuffer;
 
 import com.google.gwt.canvas.client.Canvas;
+import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.core.client.ScriptInjector;
 import com.google.gwt.dom.client.Style.Position;
@@ -74,7 +76,7 @@ import com.google.gwt.user.client.ui.RequiresResize;
  * @author Christoph Hauert
  */
 public abstract class AbstractView extends Composite implements RequiresResize, ProvidesResize,
-		AbstractGraph.Controller, MilestoneListener {
+		AbstractGraph.Controller, MilestoneListener, ChangeListener {
 
 	/**
 	 * The reference to the EvoLudo engine that manages the simulation.
@@ -122,9 +124,14 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	boolean isLoaded = false;
 
 	/**
-	 * The timestamp of the last update of this view.
+	 * The timestamp of model at the last update of this view.
 	 */
 	protected double timestamp;
+
+	/**
+	 * Time of last GUI update
+	 */
+	double updatetime = -1.0;
 
 	/**
 	 * The GWT widget that contains the graphical representations of the data.
@@ -177,6 +184,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		if (isLoaded)
 			return;
 		engine.addMilestoneListener(this);
+		engine.addChangeListener(this);
 		gRows = 1;
 		gCols = 1;
 		model = engine.getModel();
@@ -192,6 +200,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		if (!isLoaded)
 			return;
 		engine.removeMilestoneListener(this);
+		engine.removeChangeListener(this);
 		destroyGraphs();
 		isActive = false;
 		model = null;
@@ -352,6 +361,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	@Override
 	public void moduleRestored() {
 		timestamp = -Double.MAX_VALUE;
+		updatetime = -1.0;
 		for (AbstractGraph<?> graph : graphs)
 			graph.reset();
 	}
@@ -369,17 +379,39 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 */
 	public void reset(boolean hard) {
 		timestamp = -Double.MAX_VALUE;
+		updatetime = -1.0;
 		allocateGraphs();
 	}
 
 	@Override
 	public void modelDidInit() {
 		timestamp = -Double.MAX_VALUE;
+		updatetime = -1.0;
 	}
 
 	@Override
 	public void modelStopped() {
 		update(true);
+	}
+
+	/**
+	 * In order to conserve computational resources the minimum time between
+	 * subsequent GUI updates has to be at least
+	 * <code>MIN_MSEC_BETWEEN_UPDATES</code> milliseconds. If update request are
+	 * made more frequently some are request are not honoured and simply dropped.
+	 */
+	protected static final int MIN_MSEC_BETWEEN_UPDATES = 50; // max 20 updates per second
+
+	@Override
+	public void modelChanged(PendingAction action) {
+		if (action == PendingAction.NONE
+				|| action == PendingAction.STATISTIC_READY) {
+			double now = Duration.currentTimeMillis();
+			boolean update = (now - updatetime > MIN_MSEC_BETWEEN_UPDATES);
+			if (update)
+				updatetime = now;
+			update(update);
+		}
 	}
 
 	/**
@@ -399,9 +431,6 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * requests unless {@code force} is {@code true}.
 	 * 
 	 * @param force {@code true} to force the update
-	 * 
-	 * @see org.evoludo.simulator.models.ChangeListener#modelChanged(org.evoludo.simulator.models.ChangeListener.PendingAction)
-	 *      ChangeListener#modelChanged(PendingAction)
 	 */
 	public abstract void update(boolean force);
 
