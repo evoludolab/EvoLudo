@@ -158,12 +158,12 @@ public class EvoLudoGWT extends EvoLudo {
 		return parseCLO();
 	}
 
-	/**
-	 * Show the help message.
-	 */
 	@Override
 	public void showHelp() {
 		gui.showHelp();
+		// if module not ready, exit startup
+		if (activeModule == null)
+			notifyGUI = null;
 	}
 
 	/**

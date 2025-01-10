@@ -1306,6 +1306,14 @@ public class EvoLudoWeb extends Composite
 	public void showHelp() {
 		guiState.view = viewConsole;
 		logger.info("<pre>EvoLudo (GWT):\n" + engine.getCLOHelp() + "</pre>");
+		// no view may be available if things went wrong from the start...
+		if (evoludoDeck.getWidgetCount() == 0) {
+			evoludoDeck.add(viewConsole);
+			evoludoDeck.showWidget(viewConsole);
+			evoludoViews.clear();
+			evoludoViews.addItem(viewConsole.getName());
+			return;
+		}
 		changeViewTo(viewConsole);
 	}
 
