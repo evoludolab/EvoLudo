@@ -192,6 +192,16 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		isLoaded = true;
 	}
 
+	@Override
+	public void moduleUnloaded() {
+		unload();
+	}
+
+	@Override
+	public void modelUnloaded() {
+		unload();
+	}
+
 	/**
 	 * Unload the view. This is called when changing the module or model that
 	 * implement this view. This is independent of the activation of the view.
@@ -199,12 +209,19 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	public void unload() {
 		if (!isLoaded)
 			return;
-		engine.removeMilestoneListener(this);
-		engine.removeChangeListener(this);
 		destroyGraphs();
 		isActive = false;
 		model = null;
 		isLoaded = false;
+	}
+
+	/**
+	 * Dispose of view. Deregister listeners and free up resources.
+	 */
+	public void dispose() {
+		unload();
+		engine.removeMilestoneListener(this);
+		engine.removeChangeListener(this);
 	}
 
 	/**

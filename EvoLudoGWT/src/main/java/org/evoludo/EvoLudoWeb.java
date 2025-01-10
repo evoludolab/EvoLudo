@@ -535,11 +535,12 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void moduleUnloaded() {
+		activeView = null;
+		evoludoViews.setSelectedIndex(-1);
 		removeKeyListeners(this);
 		if (keyListener == this)
 			keyListener = null;
-		// clear and close settings (otherwise options may get inherited from previous
-		// launches).
+		// clear and close settings
 		evoludoCLOPanel.setVisible(false);
 		evoludoCLO.setText("");
 	}
@@ -552,8 +553,6 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelUnloaded() {
-		for (AbstractView view : activeViews.values())
-			view.unload();
 		activeView = null;
 		evoludoViews.setSelectedIndex(-1);
 	}
@@ -1834,7 +1833,7 @@ public class EvoLudoWeb extends Composite
 		addView(viewConsole, oldViews);
 		// unload views that are no longer available
 		for (AbstractView view : oldViews.values())
-			view.unload();
+			view.dispose();
 		oldViews.clear();
 		// update view selector
 		evoludoViews.clear();

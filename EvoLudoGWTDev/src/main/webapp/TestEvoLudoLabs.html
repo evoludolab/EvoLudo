@@ -132,14 +132,14 @@
 	data-clo="--module Dialect --seed 0 --phenodim 2 --phenoupdate adjust --phenoadj 0.1 --phenoadjtype 0 --phenomaxadj 0.05 --init gaussian --phenorandinter 0.1 --phenorandadj 0.1 --phenomaxrandrepel 0.05 --mutation 0.01 gaussian 0.01 --init gaussian 0.5,0.02 --timestep 1 --popsize 144 --geometry Hnf4,4"></div></td>
 </tr>
 <tr><th>Mutualisms</th><td><div class="evoludo-trigger-html"
-	data-clo="--module Mut --geometry n --popsize 5x --init mutant 0,1 --popupdate s --playerupdate b --payhost 0,1.7;0,1 --paymutualist 0,1.7;0,1"></div></td>
+	data-clo="--module Mutual --geometry n --popsize 5x --init mutant 0,1 --popupdate s --playerupdate b --payhost 0,1.7;0,1 --paymutualist 0,1.7;0,1"></div></td>
 <th>Mutualisms (ODE)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module Mut --view Strategies_-_2D_Phase_Plane --init frequency 1,1 --payhost 0,1.4;0.6,1 --paymutualist 0,0.4;-0.4,1 --playerupdate imitate 0.1 --model ODE"></div></td>
+	data-clo="--module Mutual --view Strategies_-_2D_Phase_Plane --init frequency 1,1 --payhost 0,1.4;0.6,1 --paymutualist 0,0.4;-0.4,1 --playerupdate imitate 0.1 --model ODE"></div></td>
 </tr>
 <tr><th>Mutualisms (inter/comp)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module Mut --geominter R3 --geomcomp m --popsize 5x --init mutant 0,1 --popupdate s --playerupdate b --payhost 0,1.7;0,1 --paymutualist 0,1.7;0,1"></div></td>
+	data-clo="--module Mutual --geominter R3 --geomcomp m --popsize 5x --init mutant 0,1 --popupdate s --playerupdate b --payhost 0,1.7;0,1 --paymutualist 0,1.7;0,1"></div></td>
 <th>Mutualisms (IBS)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module Mut --geometry M --view Strategies_-_2D_Phase_Plane --init frequency 1,1 --payhost 0,1.4;0.6,1 --paymutualist 0,0.4;-0.4,1 --playerupdate imitate 0.1 --popsize 10000 --model IBS --popupdate a"></div></td>
+	data-clo="--module Mutual --geometry M --view Strategies_-_2D_Phase_Plane --init frequency 1,1 --payhost 0,1.4;0.6,1 --paymutualist 0,0.4;-0.4,1 --playerupdate imitate 0.1 --popsize 10000 --model IBS --popupdate a"></div></td>
 </tr>
 <tr><th>Ecological Mutualisms</th><td><div class="evoludo-trigger-html"
 	data-clo="--module eMut --deathrate 10.0 --birthrate 26.0 --comprate 0.1 --single 0.1 --double 0.01 --kappa 1 --lambda 1 --payvirus 0.08,1.16;0,0.5 --init density 48,3.8,11.7,72.5,0:21.2,3.8,0 --delay 50 --model ODE --timestep 0.05 --view Strategies_-_2D_Phase_Plane"></div>

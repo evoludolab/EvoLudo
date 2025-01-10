@@ -36,7 +36,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -491,12 +490,24 @@ public abstract class EvoLudo
 	 * {@link MilestoneListener}'s.
 	 */
 	public void unloadModel() {
+		unloadModel(false);
+	}
+
+	/**
+	 * Unload model framework and, if requested, notifies all registered
+	 * {@link MilestoneListener}'s.
+	 * 
+	 * @param quiet set to {@code true} to skip notifying listeners
+	 */
+	public void unloadModel(boolean quiet) {
 		if (activeModel == null)
 			return;
 		// remove CLO parsers that are no longer needed
 		removeCLOProvider(activeModel);
 		activeModel.unload();
-		fireModelUnloaded();
+		if (!quiet)
+			fireModelUnloaded();
+		activeModel = null;
 	}
 
 	/**
@@ -930,19 +941,15 @@ public abstract class EvoLudo
 	 * GWT application.
 	 */
 	public void unloadModule() {
+		unloadModel(true);
 		if (activeModule != null) {
 			removeCLOProvider(activeModule);
-			// clear species except active one
-			// note: cannot simply re-add activeModule after clearing species b/c Module
-			// cannot be added to List<? extends Module>...
-			for (Iterator<? extends Module> iterator = activeModule.getSpecies().iterator(); iterator.hasNext();) {
-				Module pop = iterator.next();
-				pop.unload();
-				if (pop != activeModule)
-					iterator.remove();
-			}
+			ArrayList<? extends Module> species = activeModule.getSpecies();
+			for (Module mod : species)
+				mod.unload();
+			species.clear();
+			activeModule = null;
 		}
-		unloadModel();
 		fireModuleUnloaded();
 	}
 
@@ -1175,7 +1182,6 @@ public abstract class EvoLudo
 			i.modelUnloaded();
 		if (activeModel != null)
 			logger.info("Model '" + activeModel.getModelType() + "' unloaded");
-		activeModel = null;
 	}
 
 	/**

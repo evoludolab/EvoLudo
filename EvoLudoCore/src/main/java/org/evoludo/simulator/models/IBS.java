@@ -497,12 +497,14 @@ public abstract class IBS extends Model {
 	@Override
 	public void unload() {
 		ephrng = null;
+		population = null;
 		cloGeometryInteraction.clearKeys();
 		cloGeometryCompetition.clearKeys();
 		cloMigration.clearKeys();
 		for (Module mod : species)
 			mod.setIBSPopulation(null);
 		speciesUpdate = null;
+		statisticsSettings = null;
 		super.unload();
 	}
 
