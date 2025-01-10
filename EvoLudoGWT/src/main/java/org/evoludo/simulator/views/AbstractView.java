@@ -46,6 +46,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Resources;
 import org.evoludo.simulator.models.Data;
+import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.ui.ContextMenu;
@@ -73,7 +74,7 @@ import com.google.gwt.user.client.ui.RequiresResize;
  * @author Christoph Hauert
  */
 public abstract class AbstractView extends Composite implements RequiresResize, ProvidesResize,
-		AbstractGraph.Controller {
+		AbstractGraph.Controller, MilestoneListener {
 
 	/**
 	 * The reference to the EvoLudo engine that manages the simulation.
@@ -175,6 +176,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	public void load() {
 		if (isLoaded)
 			return;
+		engine.addMilestoneListener(this);
 		gRows = 1;
 		gCols = 1;
 		model = engine.getModel();
@@ -189,6 +191,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	public void unload() {
 		if (!isLoaded)
 			return;
+		engine.removeMilestoneListener(this);
 		destroyGraphs();
 		isActive = false;
 		model = null;
@@ -346,16 +349,16 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		return null;
 	}
 
-	/**
-	 * Called when a module has been restored.
-	 * 
-	 * @see org.evoludo.simulator.models.MilestoneListener#moduleRestored()
-	 *      MilestoneListener.moduleRestored()
-	 */
-	public void restored() {
+	@Override
+	public void moduleRestored() {
 		timestamp = -Double.MAX_VALUE;
 		for (AbstractGraph<?> graph : graphs)
 			graph.reset();
+	}
+
+	@Override
+	public void modelDidReset() {
+		reset(true);
 	}
 
 	/**
@@ -363,23 +366,20 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * needed, unless {@code hard} is {@code true}.
 	 * 
 	 * @param hard the flag to indicate whether to do a hard reset
-	 * 
-	 * @see org.evoludo.simulator.models.MilestoneListener#modelDidReset()
-	 *      MilestoneListener.modelDidReset()
 	 */
 	public void reset(boolean hard) {
 		timestamp = -Double.MAX_VALUE;
 		allocateGraphs();
 	}
 
-	/**
-	 * Called when a module has been (re-)initialized.
-	 * 
-	 * @see org.evoludo.simulator.models.MilestoneListener#modelDidInit()
-	 *      MilestoneListener.modelDidInit()
-	 */
-	public void init() {
+	@Override
+	public void modelDidInit() {
 		timestamp = -Double.MAX_VALUE;
+	}
+
+	@Override
+	public void modelStopped() {
+		update(true);
 	}
 
 	/**

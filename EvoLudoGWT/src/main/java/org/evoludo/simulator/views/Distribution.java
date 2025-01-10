@@ -212,8 +212,8 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 	}
 
 	@Override
-	public void init() {
-		super.init();
+	public void modelDidInit() {
+		super.modelDidInit();
 		for (PopGraph2D graph : graphs)
 			graph.init();
 		update();

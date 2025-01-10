@@ -660,8 +660,8 @@ if (maxBins < 0) maxBins = 100;
 	}
 
 	@Override
-	public void init() {
-		super.init();
+	public void modelDidInit() {
+		super.modelDidInit();
 		for (HistoGraph graph : graphs)
 			graph.init();
 		update();

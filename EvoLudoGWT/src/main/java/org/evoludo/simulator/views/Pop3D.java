@@ -263,8 +263,8 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 	}
 
 	@Override
-	public void init() {
-		super.init();
+	public void modelDidInit() {
+		super.modelDidInit();
 		update();
 	}
 

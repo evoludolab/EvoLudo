@@ -590,8 +590,6 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void moduleRestored() {
-		for (AbstractView view : activeViews.values())
-			view.restored();
 		displayStatusThresholdLevel = Level.ALL.intValue();
 		displayStatus("State successfully restored.");
 	}
@@ -651,23 +649,16 @@ public class EvoLudoWeb extends Composite
 			if (runningEPub == this)
 				runningEPub = null;
 		}
-		update(true);
 		updateGUI();
 	}
 
 	@Override
 	public void modelDidInit() {
-		// forward init to all current views
-		for (AbstractView view : activeViews.values())
-			view.init();
 		updateGUI();
 	}
 
 	@Override
 	public void modelDidReset() {
-		// invalidate network
-		for (AbstractView view : activeViews.values())
-			view.reset(true);
 		updateGUI();
 		displayStatus(engine.getVersion());
 	}

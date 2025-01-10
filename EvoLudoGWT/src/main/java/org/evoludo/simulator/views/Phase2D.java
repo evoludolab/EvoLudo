@@ -177,8 +177,8 @@ public class Phase2D extends AbstractView {
 	}
 
 	@Override
-	public void init() {
-		super.init();
+	public void modelDidInit() {
+		super.modelDidInit();
 		model.getMeanTraits(state);
 		graph.addData(Double.NaN, state, true);
 		graph.paint(true);
