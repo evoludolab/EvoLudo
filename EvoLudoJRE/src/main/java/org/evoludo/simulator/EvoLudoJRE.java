@@ -1190,6 +1190,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		return true;
 	}
 
+	int exitStatus;
+
 	/**
 	 * {@inheritDoc}
 	 * <p>
@@ -1199,10 +1201,11 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	@Override
 	public boolean parseCLO() {
 		boolean success = super.parseCLO();
+		exitStatus = 0;
 		if (activeModule == null) {
 			// this is fatal - show help and exit
+			exitStatus = 1;
 			showHelp();
-			exit(1);
 		}
 		if (!doRestore)
 			return success;
@@ -1217,6 +1220,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	@Override
 	public void showHelp() {
 		output.println("EvoLudo (JRE):\n" + getCLOHelp());
+		exit(exitStatus);
 	}
 
 	/**
@@ -1765,7 +1769,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		 */
 		@Override
 		public void run() {
-			engine.exportState("panic-%d");
+			engine.exportState("panic-t%d-" + new Date().toString());
 		}
 	}
 }
