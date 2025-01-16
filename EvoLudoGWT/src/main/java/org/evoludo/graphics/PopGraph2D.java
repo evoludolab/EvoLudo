@@ -458,6 +458,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	public void calcBounds(int width, int height) {
 		super.calcBounds(width, height);
 		clearMessage();
+		noGraph = false;
 		dw = 0;
 		dh = 0;
 		dR = 0;
@@ -474,6 +475,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			case CUBE: // should not get here...
 			case VOID:
 				buffer = null;
+				data = null;
+				noGraph = true;
 				displayMessage("No representation for " + type.getTitle() + "!");
 				return;
 
@@ -606,6 +609,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		if (dw < MIN_DW && dh < MIN_DH && dR < MIN_DR) {
 			buffer = null;
 			data = null;
+			noGraph = true;
 			displayMessage("Population size to large!");
 		} else {
 			// lazy allocation of memory for colors

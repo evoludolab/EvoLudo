@@ -157,6 +157,8 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	 */
 	protected boolean animate = true;
 
+	boolean noGraph = false;
+
 	/**
 	 * The flag to indicate whether the graph has been invalidated and needs to be
 	 * redrawn.
@@ -275,6 +277,11 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	}
 
 	@Override
+	public boolean hasMessage() {
+		return super.hasMessage() || noGraph;
+	}
+
+	@Override
 	public void reset() {
 		super.reset();
 		invalidate();
@@ -286,7 +293,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	 * @param isNext {@code true} if the state has changed
 	 */
 	public void update(boolean isNext) {
-		if (!isActive || hasMessage)
+		if (!isActive || noGraph || hasMessage)
 			return;
 		if (invalidated || (isNext && geometry.isDynamic)) {
 			// defer layouting to allow 3D view to be up and running
