@@ -59,6 +59,7 @@ import thothbot.parallax.core.client.RenderingPanel;
 import thothbot.parallax.core.client.context.Canvas3d;
 import thothbot.parallax.core.client.events.Context3dErrorEvent;
 import thothbot.parallax.core.client.events.Context3dErrorHandler;
+import thothbot.parallax.core.client.renderers.WebGLRenderer;
 import thothbot.parallax.core.shared.cameras.Camera;
 import thothbot.parallax.core.shared.cameras.OrthographicCamera;
 import thothbot.parallax.core.shared.cameras.PerspectiveCamera;
@@ -505,16 +506,10 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 
 	@Override
 	public void calcBounds(int width, int height) {
-		// Note: even though graph3DScene != null, getCanvas() still
-		// throws exception 'cannot read properties of undefined'...
-		// exception could be ignored because it is caught further
-		// upstream but this would disrupt the logical flow.
-		try {
-			graph3DScene.getCanvas().setSize(width, height);
-		} catch (Exception e) {
-			// ask a wizard to fix this... ignore for now
-			// logger.warning("Canvas not yet initialized.");
-		}
+		Canvas3d canvas = graph3DScene.getCanvas();
+		if (canvas == null)
+			return;
+		canvas.setSize(width, height);
 	}
 
 	/**
@@ -719,6 +714,34 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			positionCamera();
 		}
 
+		/**
+		 * Helper variable to fix unnecessary exceptions in parallax
+		 * (renderingPanel is private in RenderingPanel class).
+		 */
+		RenderingPanel renderingPanel;
+
+		@Override
+		public WebGLRenderer getRenderer() {
+			// prevent exceptions if rendering panel not yet initialized
+			if (renderingPanel == null)
+				return null;
+			return super.getRenderer();
+		}
+
+		@Override
+		public Canvas3d getCanvas() {
+			// prevent exceptions if rendering panel not yet initialized
+			if (renderingPanel == null)
+				return null;
+			return super.getCanvas();
+		}
+	
+		@Override
+		public void init(RenderingPanel renderingPanel, AnimationUpdateHandler animationUpdateHandler) {
+			super.init(renderingPanel, animationUpdateHandler);
+			this.renderingPanel = renderingPanel;
+		}
+	
 		/**
 		 * Positions the camera. The camera position is shared between different views
 		 * of the 3D graph, e.g. view of the strategies and view of fitnesses.
