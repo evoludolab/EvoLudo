@@ -178,11 +178,13 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * view. This is called early on when initializing the view and is independent
 	 * of the activation of the view.
 	 * 
+	 * @return {@code true} if view had not been loaded
+	 * 
 	 * @see #allocateGraphs()
 	 */
-	public void load() {
+	public boolean load() {
 		if (isLoaded)
-			return;
+			return false;
 		engine.addMilestoneListener(this);
 		engine.addChangeListener(this);
 		gRows = 1;
@@ -190,6 +192,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		model = engine.getModel();
 		allocateGraphs();
 		isLoaded = true;
+		return true;
 	}
 
 	@Override

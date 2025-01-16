@@ -1250,7 +1250,7 @@ public abstract class EvoLudo
 				for (ChangeListener i : changeListeners)
 					i.modelChanged(action);
 				break;
-			case STOP:		// stop requested (as opposed to simulations that stopped)	
+			case STOP:		// stop requested (as opposed to simulations that stopped)
 				isRunning = false;
 				fireModelStopped();
 				break;

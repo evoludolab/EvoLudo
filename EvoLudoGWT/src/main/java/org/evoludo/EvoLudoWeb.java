@@ -1208,12 +1208,13 @@ public class EvoLudoWeb extends Composite
 			// been ready for notification)
 			engine.fireModelReset();
 		} else {
-			if (!engine.paramsDidChange()) {
-				loadViews();
-				updateGUI();
-				// resume running if no reset was necessary or --run was provided
-				engine.setSuspended(guiState.resume || engine.isSuspended());
-			}
+			if (!engine.paramsDidChange())
+				// do not resume execution if reset was required (unless --run was specified)
+				guiState.resume = false;
+			loadViews();
+			updateGUI();
+			// resume running if no reset was necessary or --run was provided
+			engine.setSuspended(guiState.resume || engine.isSuspended());
 		}
 		activeView.activate();
 	}
@@ -1228,13 +1229,9 @@ public class EvoLudoWeb extends Composite
 		int width = activeView.getOffsetWidth();
 		int height = activeView.getOffsetHeight();
 		for (AbstractView view : activeViews.values()) {
-			view.load();
+			boolean loaded = view.load();
 			view.setBounds(width, height);
-			// even without reset necessary data views should be adjusted to:
-			// - reflect changes in report frequency (time line graphs, distributions
-			// and linear geometries)
-			// - changes in payoffs require rescaling of color maps
-			if (guiState.module == null)
+			if (loaded)
 				view.reset(false);
 		}
 		evoludoLayout.onResize();

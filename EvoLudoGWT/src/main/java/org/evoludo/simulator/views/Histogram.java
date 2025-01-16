@@ -876,7 +876,8 @@ if (maxBins < 0) maxBins = 100;
 			return status;
 		updatetime = now;
 		// multi-species not supported for statistics
-		if (isMultispecies)
+		// clo changes may trigger reset before view has been loaded
+		if (isMultispecies || !isLoaded)
 			return null;
 
 		switch (type) {
