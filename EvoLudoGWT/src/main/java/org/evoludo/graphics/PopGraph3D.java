@@ -759,7 +759,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			if (graph3DCamera == null
 					|| ((graph3DCamera instanceof OrthographicCamera) != (newWorldView instanceof OrthographicCamera)))
 				setOrtho(newWorldView instanceof OrthographicCamera);
-			if (newWorldView != null) {
+			if (newWorldView != null && graph3DCamera != null) {
 				// copy position of camera
 				graph3DCamera.setPosition(newWorldView.getPosition());
 				graph3DCamera.setQuaternion(newWorldView.getQuaternion());
