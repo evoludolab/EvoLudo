@@ -1700,10 +1700,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		event.preventDefault();
 		int x = event.getX();
 		int y = event.getY();
-		int dz = event.getNativeEvent().getMouseWheelVelocityY();
+		int dz = event.getDeltaY();
 		if (hasMessage || dz == 0)
 			return;
-		double zoom = Combinatorics.pow(Zooming.ZOOM_INCR, dz);
+		double zoom = Combinatorics.pow(Zooming.ZOOM_INCR, -dz);
 		zoomer.zoom(zoom, x, y);
 		if (!zoomInertiaTimer.isRunning())
 			zoomInertiaTimer.schedule(200);
