@@ -303,7 +303,8 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public synchronized void fireModelReset() {
-		statisticsAt = activeModel.getNSamples();
+		if (activeModel != null)
+			statisticsAt = activeModel.getNSamples();
 		super.fireModelReset();
 	}
 

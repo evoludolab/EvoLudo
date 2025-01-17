@@ -1286,6 +1286,8 @@ public abstract class EvoLudo
 	 */
 	public synchronized void fireModelReset() {
 		isRunning = false;
+		if (activeModel == null)
+			return;
 		for (MilestoneListener i : milestoneListeners)
 			i.modelDidReset();
 		logger.info("Model reset");
