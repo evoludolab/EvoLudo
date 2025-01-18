@@ -945,9 +945,11 @@ public abstract class EvoLudo
 		if (activeModule != null) {
 			removeCLOProvider(activeModule);
 			ArrayList<? extends Module> species = activeModule.getSpecies();
-			for (Module mod : species)
+			for (Module mod : species) {
 				mod.unload();
-			species.clear();
+				if (mod != activeModule)
+					species.remove(mod);
+			}
 			activeModule = null;
 		}
 		fireModuleUnloaded();
