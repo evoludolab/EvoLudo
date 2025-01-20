@@ -490,8 +490,10 @@ public abstract class IBS extends Model {
 		pup.clo.removeKey(PopulationUpdate.Type.ECOLOGY);
 		speciesUpdate = new SpeciesUpdate(species.get(0));
 		speciesUpdate.clo.addKeys(SpeciesUpdate.Type.values());
-		statisticsSettings = new Statistics(this);
-		statisticsSettings.clo.addKeys(Statistics.Type.values());
+		if (permitsSampleStatistics()) {
+			statisticsSettings = new Statistics(this);
+			statisticsSettings.clo.addKeys(Statistics.Type.values());
+		}
 	}
 
 	@Override
@@ -1843,9 +1845,11 @@ public abstract class IBS extends Model {
 		parser.addCLO(cloGeometryRewire);
 		parser.addCLO(cloGeometryAddwire);
 		parser.addCLO(cloConsistency);
-		statisticsSettings.clo.clearKeys();
-		statisticsSettings.clo.addKeys(Statistics.Type.values());
-		parser.addCLO(statisticsSettings.clo);
+		if (permitsSampleStatistics()) {
+			statisticsSettings.clo.clearKeys();
+			statisticsSettings.clo.addKeys(Statistics.Type.values());
+			parser.addCLO(statisticsSettings.clo);
+		}
 
 		boolean anyVacant = false;
 		boolean anyNonVacant = false;
@@ -2066,12 +2070,12 @@ public abstract class IBS extends Model {
 		int resetInterval = 0;
 
 		/**
-		 * The settings for the statitsics.
+		 * The settings for the statistics.
 		 */
 		String[] args;
 
 		/**
-		 * Get the settings for the statitsics.
+		 * Get the settings for the statistics.
 		 * 
 		 * @return the statistics settings
 		 * 

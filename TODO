@@ -7,6 +7,7 @@ TASKS:
 - javadoc for EvoLudoJRE module
 
 BUGS:
+- JRE and GWT do not return the same results with identical parameters even though they should... see exercise 13.19
 - switching directly from 3D fitness view to 3D strategy view shows up empty; resizing lab or switching to another view and back to 3d strategy view restores content (reduce calls to allocateGraphs).
 - 3D views ignore the linewidth setting for drawing the network (try updating to parallax 2.0?)
 - aspect ratios of active 3D views in multiple labs on same page interfere (low priority, highly unlikely scenario)
@@ -33,7 +34,6 @@ iBooks (desktop):
 - LinearGraph: shifting/zooming view does not work (shift sets x-axis [-1,0] to [0,1], zoom out changes to [0,0]...)
 
 touch:
-- pinch zoom works on touch pad but zoom direction is flipped as compared to iPad (does this make sense...?)
 
 ePub:
 - important: standalone pages report as ePub in iBooks desktop but false on iBooks on iPad (i.e. export menu is active but not working...)
@@ -55,6 +55,7 @@ CHECK:
 
 
 DONE:
++ pinch zoom works on touch pad but zoom direction is flipped as compared to iPad (does this make sense...?)
 + add clo's to set the initial size of the GUI, including fullscreen.
 + fixation probability does not seem to work if initfreqs is e.g. 1:1. this is not intuitive. either change the x-axis from node to something more meaningful and report results graphically or display a message. (omit fixation views for unsuitable parameters)
 + reverting SDE/PDE model to ODE e.g. for well-mixed structures fails (must re-parse command line options)

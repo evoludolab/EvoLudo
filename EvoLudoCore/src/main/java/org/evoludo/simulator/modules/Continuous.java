@@ -1011,7 +1011,7 @@ public abstract class Continuous extends Module {
 	/**
 	 * Command line option to set the minimum value of each trait.
 	 */
-	public final CLOption cloTraitRange = new CLOption("traitrange", "0,1", EvoLudo.catModel, null,
+	public final CLOption cloTraitRange = new CLOption("traitrange", "0,1", EvoLudo.catModule, null,
 			new CLODelegate() {
 
 				/**
@@ -1228,9 +1228,10 @@ public abstract class Continuous extends Module {
 		// best-response is not an acceptable update rule for continuous strategies -
 		// exclude Population.PLAYER_UPDATE_BEST_RESPONSE
 		playerUpdate.clo.removeKey(PlayerUpdate.Type.BEST_RESPONSE);
-		// add option to disable traits if >=2 traits
-		if (nTraits > 1)
-			parser.addCLO(cloTraitDisable);
+//TODO: implement enabling/disabling traits as in discrete case
+//		// add option to disable traits if >=2 traits
+//		if (nTraits > 1)
+//			parser.addCLO(cloTraitDisable);
 		parser.addCLO(mutation.clo);
 	}
 
