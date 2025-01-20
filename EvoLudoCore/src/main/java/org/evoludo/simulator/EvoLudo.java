@@ -1601,10 +1601,17 @@ public abstract class EvoLudo
 	protected String[] preprocessCLO(String[] cloarray) {
 		if (cloarray == null)
 			return null;
-		// first, deal with --module option
+		int nParams = cloarray.length;
+		// first, deal with --help option
+		String helpName = cloHelp.getName();
+		for (int i = 0; i < nParams; i++) {
+			String param = cloarray[i];
+			if (param.startsWith(helpName))
+				return null;
+		}
+		// now deal with --module option
 		String moduleParam = cloModule.getName();
 		CLOption.Key moduleKey = null;
-		int nParams = cloarray.length;
 		for (int i = 0; i < nParams; i++) {
 			String param = cloarray[i];
 			if (param.startsWith(moduleParam)) {
@@ -1623,8 +1630,10 @@ public abstract class EvoLudo
 				break;
 			}
 		}
-		if (moduleKey == null || loadModule(moduleKey.getKey()) == null)
+		if (moduleKey == null || loadModule(moduleKey.getKey()) == null) {
+			logger.severe("Module not found!");
 			return null;
+		}
 		// second, determine feasible --model options for given module
 		cloModel.clearKeys();
 		cloModel.addKeys(activeModule.getModelTypes());
@@ -1718,13 +1727,6 @@ public abstract class EvoLudo
 	protected boolean parseCLO(String[] cloarray) {
 		parser.setLogger(logger);
 		cloarray = preprocessCLO(cloarray);
-		if (cloarray == null) {
-			parser.clearCLO();
-			parser.addCLO(cloModule);
-			logger.severe("Module not found!");
-			showHelp();
-			return false;
-		}
 		parser.initCLO();
 		// preprocessing removed (and possibly altered) --module and --model options
 		// add current settings back to cloarray
@@ -1774,7 +1776,7 @@ public abstract class EvoLudo
 			catModule.setHeader("Options for module '" + activeModule.getKey() //
 				+ "' with trait indices and names:" + moduleMsg);
 		} else
-			globalMsg += " (select module and model for more options):";
+			globalMsg += " (select module and model for more info):";
 		catGlobal.setHeader(globalMsg);
 		return parser.helpCLO(true);
 	}

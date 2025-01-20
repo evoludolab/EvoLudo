@@ -1118,18 +1118,13 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	protected String[] preprocessCLO(String[] cloarray) {
 		// once module is loaded pre-processing of command line arguments can proceed
 		cloarray = super.preprocessCLO(cloarray);
-		String helpName = cloHelp.getName();
 		if (cloarray == null)
-			return new String[] { helpName };
-		// check if --help or --restore requested
+			return new String[] { cloHelp.getName() };
+		// check if --restore requested
 		String restoreName = cloRestore.getName();
 		int nParams = cloarray.length;
 		for (int i = 0; i < nParams; i++) {
 			String param = cloarray[i];
-			if (param.startsWith(helpName)) {
-				// discard/ignore all other options
-				return new String[] { helpName };
-			}
 			if (param.startsWith(restoreName)) {
 				plistname = CLOption.stripKey(restoreName, param).trim();
 				cloarray = ArrayMath.drop(cloarray, i--);

@@ -360,17 +360,12 @@ public class EvoLudoGWT extends EvoLudo {
 		// once module is loaded pre-processing of command line arguments can proceed
 		cloarray = super.preprocessCLO(cloarray);
 		if (cloarray == null)
-			return null;
+			return new String[] { cloHelp.getName() };
 		// check if --export requested
 		String exportName = "export";
-		String helpName = cloHelp.getName();
 		int nParams = cloarray.length;
 		for (int i = 0; i < nParams; i++) {
 			String param = cloarray[i];
-			if (param.startsWith(helpName)) {
-				// discard/ignore all other options
-				return new String[] { helpName };
-			}
 			if (!doRestore && param.startsWith(exportName)) {
 				// see --export option in EvoLudoJRE.java
 				// remove --export option and file name

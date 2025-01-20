@@ -1305,6 +1305,7 @@ public class EvoLudoWeb extends Composite
 			evoludoDeck.showWidget(viewConsole);
 			evoludoViews.clear();
 			evoludoViews.addItem(viewConsole.getName());
+			displayStatus("Set EvoLudo options to get started.");
 			return;
 		}
 		changeViewTo(viewConsole);
