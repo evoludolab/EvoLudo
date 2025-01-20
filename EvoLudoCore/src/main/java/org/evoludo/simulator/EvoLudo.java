@@ -829,12 +829,6 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Command line option to restore state from file require special considerations
-	 * (only applicable to JRE).
-	 */
-	protected boolean doRestore = false;
-
-	/**
 	 * Minimum delay between subsequent updates for speed slider
 	 * {@link org.evoludo.ui.Slider}
 	 */
@@ -1521,7 +1515,6 @@ public abstract class EvoLudo
 			logger.severe("restore state failed (version missing).");
 			return false;
 		}
-		doRestore = true;
 		// version check
 		String restoreGit = version.substring(version.lastIndexOf(' '), version.lastIndexOf(')'));
 		String myVersion = getVersion();
@@ -1546,7 +1539,6 @@ public abstract class EvoLudo
 			logger.warning("restore failed - resetting model.");
 			modelReset();
 		}
-		doRestore = false;
 		return success;
 	}
 

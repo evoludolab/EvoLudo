@@ -1116,11 +1116,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 */
 	@Override
 	protected String[] preprocessCLO(String[] cloarray) {
-		// once module is loaded pre-processing of command line arguments can proceed
-		cloarray = super.preprocessCLO(cloarray);
-		if (cloarray == null)
-			return new String[] { cloHelp.getName() };
-		// check if --restore requested
+		// first check if --restore requested; ignore if already restoring
 		String restoreName = cloRestore.getName();
 		int nParams = cloarray.length;
 		for (int i = 0; i < nParams; i++) {
@@ -1134,58 +1130,40 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 					logger.warning("file name to restore state missing - ignored.");
 					break;
 				}
-				// ignore if already restoring; strip restore option and argument
-				if (!doRestore) {
-					plist = readPlist(plistname);
-					if (plist == null)
-						continue;
-					String restoreOptions = (String) plist.get("CLO");
-					if (restoreOptions == null) {
-						logger.warning("state in '" + plistname + "' corrupt (CLO key missing) - ignored.");
-						plist = null;
-						continue;
-					}
-					String[] clos = restoreOptions.split("--");
-					String moduleName = cloModule.getName();
-					String moduleKey = activeModule.getKey();
-					int rParams = clos.length;
-					for (int j = 0; j < rParams; j++) {
-						String rParam = clos[j];
-						if (rParam.startsWith(moduleName)) {
-							String rModule = CLOption.stripKey(moduleName, param).trim();
-							if (!rModule.equals(moduleKey)) {
-								logger.warning("state in '" + plistname + "' refers to module '" + rModule
-										+ "' but expected '" + moduleKey + "' - skipping restore.");
-								plist = null;
-								break;
-							}
-							// merge options and remove --module from clos
-							clos = ArrayMath.drop(clos, j--);
-							rParams--;
-							String[] sargs = new String[nParams + rParams];
-							System.arraycopy(cloarray, 0, sargs, 0, nParams);
-							System.arraycopy(clos, 0, sargs, nParams, rParams);
-							doRestore = true;
-							// restart preprocessing with extended command line arguments
-							// note: if the same option is listed multiple times the last one overwrites
-							// the previous ones. thus, any options specified in the restore file take
-							// precedence over those specified on the command line.
-							return preprocessCLO(sargs);
-						}
-					}
+				plist = readPlist(plistname);
+				if (plist == null)
+					continue;
+				String restoreOptions = (String) plist.get("CLO");
+				if (restoreOptions == null) {
+					logger.warning("state in '" + plistname + "' corrupt (CLO key missing) - ignored.");
+					plist = null;
+					plistname = null;
+					continue;
 				}
+				String[] clos = restoreOptions.trim().split("\\s+--");
+				// strip '--' from first argument
+				if (clos[0].startsWith("--"))
+					clos[0] = clos[0].substring(2);
+				// note: if the same option is listed multiple times the last one overwrites
+				// the previous ones. thus, any options specified in the restore file take
+				// precedence over those specified on the command line.
+				cloarray = ArrayMath.merge(cloarray, clos);
 			}
 		}
+		// once restore is checked pre-processing of command line arguments can proceed
+		cloarray = super.preprocessCLO(cloarray);
+		if (cloarray == null)
+			return new String[] { cloHelp.getName() };
 		return cloarray;
 	}
 
 	@Override
 	public boolean restoreFromFile() {
-		if (!restoreState(plist)) {
+		boolean success = restoreState(plist);
+		if (!success)
 			logger.warning("failed to restore state in '" + plistname + "'");
-			return false;
-		}
-		return true;
+		plistname = null;
+		return success;
 	}
 
 	int exitStatus;
@@ -1205,10 +1183,11 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			exitStatus = 1;
 			showHelp();
 		}
-		if (!doRestore)
+		if (plistname == null)
+			// not restoring state - continue
 			return success;
 		if (!success)
-			logger.warning("abort restoring of state in '" + plistname + "' due to parsing problems.");
+			logger.warning("problems parsing CLO from '" + plistname + "'...");
 		// parseCLO does not reset model - do it now to be ready for restore
 		modelReset();
 		// finish restoring

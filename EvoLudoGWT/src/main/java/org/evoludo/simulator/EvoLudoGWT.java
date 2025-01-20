@@ -361,12 +361,12 @@ public class EvoLudoGWT extends EvoLudo {
 		cloarray = super.preprocessCLO(cloarray);
 		if (cloarray == null)
 			return new String[] { cloHelp.getName() };
-		// check if --export requested
+		// check and remove --export option
 		String exportName = "export";
 		int nParams = cloarray.length;
 		for (int i = 0; i < nParams; i++) {
 			String param = cloarray[i];
-			if (!doRestore && param.startsWith(exportName)) {
+			if (param.startsWith(exportName)) {
 				// see --export option in EvoLudoJRE.java
 				// remove --export option and file name
 				cloarray = ArrayMath.drop(cloarray, i--);
