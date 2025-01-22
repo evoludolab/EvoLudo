@@ -388,12 +388,12 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		if (cloExport.isSet()) {
 			// export option provided: run model and dump state.
 			setDelay(1);
-			setSuspended(true);
 			// reset model to check and apply all parameters
 			modelReset();
 			// register hook to dump state when receiving SIGINT
 			registerHook();
-			simulationRunning = true;
+			simulationRunning = (Math.abs(activeModel.getTimeStop()) > 1e-8);
+			setSuspended(simulationRunning);
 			while (simulationRunning) {
 				synchronized (this) {
 					run();
