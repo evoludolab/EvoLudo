@@ -627,18 +627,8 @@ public class EvoLudoWeb extends Composite
 		evoludoInitReset.setEnabled(stopped);
 		evoludoApply.setEnabled(stopped);
 		evoludoDefault.setEnabled(stopped);
+		updateKeys();
 		boolean statistics = engine.getModel().getMode() == Mode.STATISTICS_SAMPLE;
-		if (statistics) {
-			evoludoStep.setText("Sample");
-			evoludoStep.setTitle("Calculate single sample");
-			evoludoInitReset.setText("Reset");
-			evoludoInitReset.setTitle("Reset statistics");
-		} else {
-			evoludoStep.setText("Step");
-			evoludoStep.setTitle("Advance single simulation step");
-			evoludoInitReset.setText("Init");
-			evoludoInitReset.setTitle("Initialize population (press Alt to re-initialize structure)");
-		}
 		evoludoSlider.setValue(engine.getDelay());
 		evoludoSlider.setEnabled(!statistics);
 		if (stopped)
@@ -892,7 +882,8 @@ public class EvoLudoWeb extends Composite
 		@Override
 		public void run() {
 			// show alt-button labels
-			showAltKeys(true);
+			isAltDown = true;
+			updateKeys();
 		}
 	};
 
@@ -919,7 +910,8 @@ public class EvoLudoWeb extends Composite
 	public void onInitResetTouchEnd(TouchEndEvent event) {
 		showAltTouchTimer.cancel();
 		initReset();
-		showAltKeys(false);
+		isAltDown = false;
+		updateKeys();
 	}
 
 	/**
@@ -1013,7 +1005,8 @@ public class EvoLudoWeb extends Composite
 	public void onStepTouchEnd(TouchEndEvent event) {
 		showAltTouchTimer.cancel();
 		prevNextDebug();
-		showAltKeys(false);
+		isAltDown = false;
+		updateKeys();
 	}
 
 	/**
@@ -1514,9 +1507,11 @@ public class EvoLudoWeb extends Composite
 		if (!isShowing())
 			return false;
 		// process modifiers
-		if (key.equals("Alt"))
+		if (key.equals("Alt")) {
 			// alt-key does not count as handled
-			showAltKeys(false);
+			isAltDown = false;
+			updateKeys();
+		}
 		if (key.equals("Shift"))
 			// shift-key does not count as handled
 			isShiftDown = false;
@@ -1669,9 +1664,11 @@ public class EvoLudoWeb extends Composite
 		// check if lab is visible
 		if (!isShowing())
 			return false;
-		if (key.equals("Alt"))
+		if (key.equals("Alt")) {
 			// alt-key does not count as handled
-			showAltKeys(true);
+			isAltDown = true;
+			updateKeys();
+		}
 		if (key.equals("Shift"))
 			// shift-key does not count as handled
 			isShiftDown = true;
@@ -1720,30 +1717,45 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
-	 * The helper variable to indicate whether the shift key is pressed.
+	 * The helper variable to indicate whether the Shift key is pressed.
 	 */
 	private boolean isShiftDown = false;
 
 	/**
-	 * The Alt-key toggles the button labels for controlling the EvoLudo lab.
-	 * 
-	 * @param down {@code true} if the Alt-key is pressed
+	 * The helper variable to indicate whether the Alt key is pressed.
 	 */
-	private void showAltKeys(boolean down) {
+	private boolean isAltDown = false;
+
+	/**
+	 * The Alt-key toggles the button labels for controlling the EvoLudo lab.
+	 */
+	private void updateKeys() {
 		boolean statistics = engine.getModel().getMode() == Mode.STATISTICS_SAMPLE;
 		// only 'reset' in statistics mode
-		evoludoInitReset.setText(statistics ? "Reset" : "Init");
-		evoludoStep.setText(statistics ? "Sample" : "Step");
-		if (statistics)
-			return;
-		if (down) {
+		if (statistics) {
 			evoludoInitReset.setText("Reset");
-			if (engine.getModel().permitsTimeReversal())
-				evoludoStep.setText("Previous");
-			if (engine.getModel().permitsDebugStep())
-				evoludoStep.setText("Debug");
+			evoludoInitReset.setTitle("Reset statistics");
+			evoludoStep.setText("Sample");
+			evoludoStep.setTitle("Calculate single sample");
 			return;
 		}
+		if (isAltDown) {
+			evoludoInitReset.setText("Reset");
+			evoludoInitReset.setTitle("Initialize population and regenerate structure");
+			if (engine.getModel().permitsTimeReversal()) {
+				evoludoStep.setText("Previous");
+				evoludoStep.setTitle("Backtrack single simulation step");
+			}
+			if (engine.getModel().permitsDebugStep()) {
+				evoludoStep.setText("Debug");
+				evoludoStep.setTitle("Single update event");
+			}
+			return;
+		}
+		evoludoInitReset.setText("Init");
+		evoludoInitReset.setTitle("Initialize population (preserve structure)");
+		evoludoStep.setText("Step");
+		evoludoStep.setTitle("Advance single simulation step");
 	}
 
 	/**
