@@ -212,8 +212,8 @@ public class EvoLudoGWT extends EvoLudo {
 			return;
 		fireModelRunning();
 		// start with an update not the delay
-		modelNext();
-		timer.scheduleRepeating(delay);
+		if (modelNext())
+			timer.scheduleRepeating(delay);
 	}
 
 	/**
