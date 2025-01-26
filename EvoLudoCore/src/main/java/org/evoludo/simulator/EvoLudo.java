@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -938,11 +939,11 @@ public abstract class EvoLudo
 		unloadModel(true);
 		if (activeModule != null) {
 			removeCLOProvider(activeModule);
-			ArrayList<? extends Module> species = activeModule.getSpecies();
-			for (Module mod : species) {
+			for (Iterator<? extends Module> it = activeModule.getSpecies().iterator(); it.hasNext();) {
+				Module mod = it.next();
 				mod.unload();
 				if (mod != activeModule)
-					species.remove(mod);
+					it.remove();
 			}
 			activeModule = null;
 		}
