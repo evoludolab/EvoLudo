@@ -30,8 +30,8 @@
 
 package org.evoludo.util;
 
+import org.evoludo.EvoLudoWeb;
 import org.evoludo.graphics.AbstractGraph.MyContext2d;
-import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.ui.FullscreenChangeHandler;
 
 import com.google.gwt.canvas.dom.client.Context2d;
@@ -334,7 +334,7 @@ public class NativeJS {
 	 * @param dataTransfer list of dropped file(s)
 	 * @param engine       model that processes contents of dropped file
 	 */
-	public static final native void handleDnD(JavaScriptObject dataTransfer, EvoLudoGWT engine) /*-{
+	public static final native void handleDnD(JavaScriptObject dataTransfer, EvoLudoWeb gui) /*-{
 		var files = dataTransfer.files;
 		if (files.length != 1)
 			return;
@@ -344,17 +344,40 @@ public class NativeJS {
 			.then(function(zip) {
 				zip.forEach(function (relativePath, zipEntry) {
 					zip.file(zipEntry.name).async("string").then(function (data) {
-						engine.@org.evoludo.simulator.EvoLudoGWT::restoreFromFile(Ljava/lang/String;Ljava/lang/String;)(zipEntry.name, data);
+						gui.@org.evoludo.EvoLudoWeb::restoreFromString(Ljava/lang/String;Ljava/lang/String;)(zipEntry.name, data);
 					});
 				});
 			}, function (e) {
 				// file is not compressed; try as plain plist file
 				var reader = new FileReader();
 				reader.onload = function(e) {
-					engine.@org.evoludo.simulator.EvoLudoGWT::restoreFromFile(Ljava/lang/String;Ljava/lang/String;)(file.name, e.target.result);
+					gui.@org.evoludo.EvoLudoWeb::restoreFromString(Ljava/lang/String;Ljava/lang/String;)(file.name, e.target.result);
 				}
 				reader.readAsText(file);
 			});
+	}-*/;
+
+	/**
+	 * JSNI method: opens javascript file chooser and attempts to restore state from
+	 * selected file
+	 *
+	 * @param evoludo model that processes contents of selected file
+	 */
+	public static final native void restoreFromFile(EvoLudoWeb gui) /*-{
+		var input = $doc.createElement('input');
+		input.setAttribute('type', 'file');
+		input.onchange = function(e) {
+			var files = e.target.files;
+			if (files.length != 1)
+				return;
+			var file = files[0];
+			var reader = new FileReader();
+			reader.onload = function(e) {
+				gui.@org.evoludo.EvoLudoWeb::restoreFromString(Ljava/lang/String;Ljava/lang/String;)(file.name, e.target.result);
+			}
+			reader.readAsText(file);
+		}
+		input.click();
 	}-*/;
 
 	/**

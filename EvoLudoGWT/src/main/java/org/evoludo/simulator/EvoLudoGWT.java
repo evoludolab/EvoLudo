@@ -46,8 +46,6 @@ import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.NativeJS;
-import org.evoludo.util.Plist;
-import org.evoludo.util.PlistParser;
 
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.Scheduler;
@@ -335,13 +333,6 @@ public class EvoLudoGWT extends EvoLudo {
 			gui.modelStopped();
 	}
 
-	@Override
-	public boolean restoreState(Plist plist) {
-		setCLO((String) (plist.get("CLO")));
-		gui.applyCLO();
-		return super.restoreState(plist);
-	}
-
 	/**
 	 * {@inheritDoc}
 	 * <p>
@@ -548,48 +539,8 @@ public class EvoLudoGWT extends EvoLudo {
 	 */
 	@Override
 	public boolean restoreFromFile() {
-		restoreFromFile(this);
+		NativeJS.restoreFromFile(gui);
 		// how to return success/failure from JSNI?
-		return true;
-	}
-
-	/**
-	 * JSNI method: opens javascript file chooser and attempts to restore state from
-	 * selected file
-	 *
-	 * @param evoludo model that processes contents of selected file
-	 */
-	private final native void restoreFromFile(EvoLudoGWT evoludo) /*-{
-		var input = $doc.createElement('input');
-		input.setAttribute('type', 'file');
-		input.onchange = function(e) {
-			var files = e.target.files;
-			if (files.length != 1)
-				return;
-			var file = files[0];
-			var reader = new FileReader();
-			reader.onload = function(e) {
-				evoludo.@org.evoludo.simulator.EvoLudoGWT::restoreFromFile(Ljava/lang/String;Ljava/lang/String;)(file.name, e.target.result);
-			}
-			reader.readAsText(file);
-		}
-		input.click();
-	}-*/;
-
-	/**
-	 * Restore state of EvoLudo model from String <code>content</code>.
-	 *
-	 * @param filename (only for reference and reporting of success or failure)
-	 * @param content  encoded state of EvoLudo model
-	 * @return <code>true</code> if state was successfully restored
-	 */
-	public boolean restoreFromFile(String filename, String content) {
-		Plist parsed = PlistParser.parse(content);
-		if (parsed == null || !restoreState(parsed)) {
-			logger.severe("failed to parse contents of file '" + filename + "'.");
-			return false;
-		}
-		logger.info("State stored in '" + filename + "' successfully restored.");
 		return true;
 	}
 

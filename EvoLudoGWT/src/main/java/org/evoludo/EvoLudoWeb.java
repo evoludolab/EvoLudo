@@ -76,6 +76,8 @@ import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.NativeJS;
+import org.evoludo.util.Plist;
+import org.evoludo.util.PlistParser;
 import org.evoludo.util.XMLCoder;
 
 import com.google.gwt.canvas.client.Canvas;
@@ -1103,6 +1105,11 @@ public class EvoLudoWeb extends Composite
 		Model model;
 
 		/**
+		 * The the configuration to restore, if any.
+		 */
+		Plist plist;
+
+		/**
 		 * The active view.
 		 */
 		AbstractView view;
@@ -1205,10 +1212,14 @@ public class EvoLudoWeb extends Composite
 				// do not resume execution if reset was required (unless --run was specified)
 				guiState.resume = false;
 			loadViews();
-			updateGUI();
 			// resume running if no reset was necessary or --run was provided
 			engine.setSuspended(guiState.resume || engine.isSuspended());
 		}
+		if (guiState.plist != null) {
+			engine.restoreState(guiState.plist);
+			guiState.plist = null;
+		}
+		updateGUI();
 		activeView.activate();
 	}
 
@@ -1397,8 +1408,8 @@ public class EvoLudoWeb extends Composite
 		DataTransfer data = drop.getDataTransfer();
 		drop.preventDefault();
 		drop.stopPropagation();
-		evoludoOverlay.setVisible(false);
 		if (!NativeJS.isValidDnD(data)) {
+			evoludoOverlay.setVisible(false);
 			displayStatus("Drag'n'drop failed: Invalid state file.", Level.SEVERE.intValue());
 			return;
 		}
@@ -1408,7 +1419,26 @@ public class EvoLudoWeb extends Composite
 			ScriptInjector.fromString(Resources.INSTANCE.zip().getText()).inject();
 			hasZipJs = true;
 		}
-		NativeJS.handleDnD(data, engine);
+		NativeJS.handleDnD(data, this);
+		evoludoOverlay.setVisible(false);
+		displayStatus("Processing drag'n'drop...");
+	}
+
+	/**
+	 * Restore state of EvoLudo model from String <code>content</code>.
+	 *
+	 * @param filename (only for reference and reporting of success or failure)
+	 * @param content  encoded state of EvoLudo model
+	 */
+	public void restoreFromString(String filename, String content) {
+		Plist parsed = PlistParser.parse(content);
+		if (parsed == null) {
+			logger.severe("failed to parse contents of file '" + filename + "'.");
+			return;
+		}
+		engine.setCLO((String) (parsed.get("CLO")));
+		guiState.plist = parsed;
+		applyCLO();
 	}
 
 	/**
