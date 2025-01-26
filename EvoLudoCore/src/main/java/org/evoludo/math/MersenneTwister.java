@@ -576,7 +576,16 @@ public class MersenneTwister {
 		do {
 			bits = nextInt();
 			val = bits % n;
-		} while (bits - val + (n - 1) < 0);
+			// note: the while-loop essentially checks for an integer overflow.
+			// } while (bits - val + (n - 1) < 0);
+			// in GWT/JavaScript this needs to be done explicitly because all
+			// numbers are doubles and overflows are handled differently.
+			// ChH: check overflow in an JRE/GWT agnostic manner:
+			// val <= n-1 must hold
+			// bits + (n-1-val) may result in overflow, which manifests itself 
+			// by a negative result
+			// check against Integer.MAX_VALUE instead
+		} while (Integer.MAX_VALUE - bits < n - 1 - val);
 		return val;
 	}
 
