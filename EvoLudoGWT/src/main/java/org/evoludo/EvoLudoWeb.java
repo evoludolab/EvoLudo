@@ -1864,6 +1864,9 @@ public class EvoLudoWeb extends Composite
 				addView(new Histogram(engine, Data.STATISTICS_FIXATION_PROBABILITY), oldViews);
 			if (module instanceof HasHistogram.StatisticsTime)
 				addView(new Histogram(engine, Data.STATISTICS_FIXATION_TIME), oldViews);
+		} else {
+			if (activeView != null && activeView.getMode() == Mode.STATISTICS_SAMPLE)
+				logger.warning("sampling statistics not supported for current settings!");
 		}
 		if (model.permitsMode(Mode.STATISTICS_UPDATE)) {
 			// update statistics available

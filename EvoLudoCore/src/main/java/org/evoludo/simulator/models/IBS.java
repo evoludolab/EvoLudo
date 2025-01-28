@@ -490,10 +490,7 @@ public abstract class IBS extends Model {
 		pup.clo.removeKey(PopulationUpdate.Type.ECOLOGY);
 		speciesUpdate = new SpeciesUpdate(species.get(0));
 		speciesUpdate.clo.addKeys(SpeciesUpdate.Type.values());
-		if (permitsSampleStatistics()) {
-			statisticsSettings = new Statistics(this);
-			statisticsSettings.clo.addKeys(Statistics.Type.values());
-		}
+		statisticsSettings = new Statistics(this);
 	}
 
 	@Override
@@ -528,6 +525,13 @@ public abstract class IBS extends Model {
 			for (Module mod : species)
 				mod.getIBSPopulation().getPopulationUpdate().setType(PopulationUpdate.Type.SYNC);
 			doReset = true;
+		}
+		// update converged flag to account for changes that preclude convergence
+		if (!doReset) {
+			for (Module mod : species) {
+				IBSPopulation pop = mod.getIBSPopulation();
+				converged &= pop.checkConvergence();
+			}
 		}
 		return doReset;
 	}
@@ -1845,11 +1849,9 @@ public abstract class IBS extends Model {
 		parser.addCLO(cloGeometryRewire);
 		parser.addCLO(cloGeometryAddwire);
 		parser.addCLO(cloConsistency);
-		if (permitsSampleStatistics()) {
-			statisticsSettings.clo.clearKeys();
-			statisticsSettings.clo.addKeys(Statistics.Type.values());
-			parser.addCLO(statisticsSettings.clo);
-		}
+		statisticsSettings.clo.clearKeys();
+		statisticsSettings.clo.addKeys(Statistics.Type.values());
+		parser.addCLO(statisticsSettings.clo);
 
 		boolean anyVacant = false;
 		boolean anyNonVacant = false;
