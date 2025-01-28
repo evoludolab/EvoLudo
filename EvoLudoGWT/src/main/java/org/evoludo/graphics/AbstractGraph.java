@@ -764,17 +764,17 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * The context menu item to reset the zoom level.
 	 */
-	private ContextMenuItem zoomResetMenu;
+	ContextMenuItem zoomResetMenu;
 
 	/**
 	 * The context menu item to zoom in (enlarge) by a factor of {@code 2}.
 	 */
-	private ContextMenuItem zoomInMenu;
+	ContextMenuItem zoomInMenu;
 
 	/**
 	 * The context menu item to zoom out (reduce) by a factor of {@code 1/2}.
 	 */
-	private ContextMenuItem zoomOutMenu;
+	ContextMenuItem zoomOutMenu;
 
 	/**
 	 * {@inheritDoc}
@@ -823,6 +823,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 							}
 						}));
 			}
+			setBufferCapacity(buffer.getCapacity());
 			bufferSizeTrigger = menu.add("Buffer size...", bufferSizeMenu);
 			bufferSizeTrigger.setEnabled(!controller.isRunning());
 		}

@@ -518,7 +518,7 @@ public class EvoLudoWeb extends Composite
 		// possible to load those again. ditto for epubs. only seems to apply
 		// to trigger buttons and overlay labs.
 		engine.setCLO(null);
-		engine.requestAction(PendingAction.SHUTDOWN);
+		engine.requestAction(PendingAction.SHUTDOWN, true);
 		viewConsole.clearLog();
 	}
 

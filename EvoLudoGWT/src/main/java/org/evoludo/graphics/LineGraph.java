@@ -471,21 +471,6 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 	 */
 	private ContextMenuItem clearMenu;
 
-	/**
-	 * The context menu to reset the zoom.
-	 */
-	private ContextMenuItem zoomResetMenu;
-
-	/**
-	 * The context menu to zoom in.
-	 */
-	private ContextMenuItem zoomInMenu;
-
-	/**
-	 * The context menu to zoom out.
-	 */
-	private ContextMenuItem zoomOutMenu;
-
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		// add menu to clear canvas
@@ -500,18 +485,9 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 		}
 		menu.addSeparator();
 		menu.add(clearMenu);
-		menu.addSeparator();
-		// process zoom context menu entries
-		if (zoomInMenu == null)
-			zoomInMenu = new ContextMenuItem("Zoom in x-axis (2x)", new ZoomCommand(2.0));
-		menu.add(zoomInMenu);
-		if (zoomOutMenu == null)
-			zoomOutMenu = new ContextMenuItem("Zoom out x-axis (0.5x)", new ZoomCommand(0.5));
-		menu.add(zoomOutMenu);
-		if (zoomResetMenu == null)
-			zoomResetMenu = new ContextMenuItem("Reset zoom", new ZoomCommand());
-		menu.add(zoomResetMenu);
 		super.populateContextMenuAt(menu, x, y);
+		zoomInMenu.setText("Zoom in x-axis (2x)");
+		zoomOutMenu.setText("Zoom out x-axis (0.5x)");
 	}
 
 	/**

@@ -106,26 +106,24 @@ public class RingBuffer<T> implements Iterable<T> {
 			return;
 		}
 		if (bufferCapacity > capacity) {
-			if (0.8 * buffer.size() > capacity) {
-				if (bufferPtr + capacity < bufferCapacity) {
-					for (int n = 0; n < bufferPtr; n++)
-						buffer.remove(0);
-					if (capacity < buffer.size()) {
-						int count = buffer.size() - capacity;
-						for (int n = 0; n < count; n++)
-							buffer.remove(capacity);
-					}
-					bufferPtr = -1;
-				} else {
-					int idx = (bufferPtr + capacity) % bufferCapacity;
-					int count = bufferPtr - idx;
+			if (bufferPtr + capacity < bufferCapacity) {
+				for (int n = 0; n < bufferPtr; n++)
+					buffer.remove(0);
+				if (capacity < buffer.size()) {
+					int count = buffer.size() - capacity;
 					for (int n = 0; n < count; n++)
-						buffer.remove(idx);
-					bufferPtr = idx;
+						buffer.remove(capacity);
 				}
-				buffer.trimToSize();
-				bufferCapacity = capacity;
+				bufferPtr = -1;
+			} else {
+				int idx = (bufferPtr + capacity) % bufferCapacity;
+				int count = bufferPtr - idx;
+				for (int n = 0; n < count; n++)
+					buffer.remove(idx);
+				bufferPtr = idx;
 			}
+			buffer.trimToSize();
+			bufferCapacity = capacity;
 		} else if (bufferCapacity < capacity) {
 			// grow buffer - rotate elements such that most recent is in position 0
 			for (int n = 0; n < bufferPtr; n++)

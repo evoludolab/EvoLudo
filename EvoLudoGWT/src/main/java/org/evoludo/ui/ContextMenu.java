@@ -315,7 +315,7 @@ public class ContextMenu extends FlowPanel
 	 * <code>true</code> to automatically set timer for hiding context menu after
 	 * pointer exited context menu.
 	 */
-	private boolean autoHide = false;
+	private boolean autoHide = true;
 
 	/**
 	 * <code>true</code> to open sub-menus automatically on hovering over the

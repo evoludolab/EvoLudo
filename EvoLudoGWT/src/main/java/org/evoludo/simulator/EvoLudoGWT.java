@@ -489,7 +489,7 @@ public class EvoLudoGWT extends EvoLudo {
 		}
 		// process fullscreen context menu
 		if (fullscreenMenu == null && NativeJS.isFullscreenSupported()) {
-			fullscreenMenu = new ContextMenuCheckBoxItem("Full screen (β)", new Command() {
+			fullscreenMenu = new ContextMenuCheckBoxItem("Full screen", new Command() {
 				@Override
 				public void execute() {
 					setFullscreen(!NativeJS.isFullscreen());

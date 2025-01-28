@@ -457,7 +457,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			});
 		}
 		if (autoscaleMenu == null) {
-			autoscaleMenu = new ContextMenuItem("Autoscale Axis", new Command() {
+			autoscaleMenu = new ContextMenuItem("Autoscale axis", new Command() {
 				@Override
 				public void execute() {
 					autoscale();

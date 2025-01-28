@@ -75,11 +75,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		DoubleClickHandler {
 
 	/**
-	 * The names of the traits.
-	 */
-	private String[] names;
-
-	/**
 	 * The starting point of the most recent trajectory.
 	 */
 	double[] init;
@@ -402,8 +397,8 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 
 	/**
 	 * Draws the frame of the simplex. The corners are marked by the trait names in
-	 * their respective colours. For visual
-	 * guidance each side is subdivided into {@code sLevels} sublevels.
+	 * their respective colours. For visual guidance each side is subdivided into
+	 * {@code sLevels} sublevels.
 	 * 
 	 * @param sLevels the number of sublevels for the frame
 	 */
@@ -645,6 +640,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 				public void execute() {
 					int swap;
 					int[] order = map.getOrder();
+					String[] names = map.getNames();
 					String label = swapOrderMenu.getText();
 					if (label.startsWith("Swap " + names[order[0]])) {
 						swap = order[0];
@@ -666,6 +662,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		}
 		menu.add(swapOrderMenu);
 		int[] order = map.getOrder();
+		String[] names = map.getNames();
 		switch (closestEdge(x, y)) {
 			case HasS3.EDGE_LEFT:
 				swapOrderMenu.setText("Swap " + names[order[0]] + " \u2194 " + names[order[1]]);
@@ -764,6 +761,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			return;
 		// extract the S3 data from buffer
 		int[] order = map.getOrder();
+		String[] names = map.getNames();
 		export.append("# time, " + names[order[0]] + ", " + names[order[1]] + ", " + names[order[2]] + "\n");
 		Iterator<double[]> entry = buffer.ordered();
 		while (entry.hasNext()) {

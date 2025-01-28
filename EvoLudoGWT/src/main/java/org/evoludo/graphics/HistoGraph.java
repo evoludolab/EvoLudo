@@ -762,7 +762,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>" +
 						"<tr><td><i>" + style.xLabel + ":</i></td><td>");
 				int nPop = module.getNPopulation();
-				if (nPop > MAX_BINS) {
+				if (nPop > data[0].length) {
 					tip.append("[" + Formatter.format(style.xMin + (double) bar / nBins * (style.xMax - style.xMin), 2)
 							+ "-" +
 							Formatter.format(style.xMin + (double) (bar + 1) / nBins * (style.xMax - style.xMin), 2)
