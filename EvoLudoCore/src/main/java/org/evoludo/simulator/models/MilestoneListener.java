@@ -89,6 +89,13 @@ public interface MilestoneListener {
 	}
 
 	/**
+	 * Called when the settings of the EvoLudo model changed but no reset was
+	 * necessary.
+	 */
+	public default void modelSettings() {
+	}
+
+	/**
 	 * Called after the EvoLudo model got re-initialized.
 	 */
 	public default void modelDidInit() {

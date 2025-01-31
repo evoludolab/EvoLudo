@@ -252,6 +252,12 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 	}
 
 	@Override
+	public void modelSettings() {
+		super.modelSettings();
+		reset(false);
+	}
+
+	@Override
 	public void modelDidInit() {
 		super.modelDidInit();
 		update(true);

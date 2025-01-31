@@ -329,7 +329,6 @@ public class Histogram extends AbstractView {
 							style.showLabel = true;
 							style.showXLabel = bottomPane; // show only on bottom panel
 							style.showXTickLabels = bottomPane;
-							style.customYLevels = ((HasHistogram) module).getCustomLevels(type, n);
 							if (bottomPane)
 								nXLabels++;
 						}
@@ -566,6 +565,7 @@ if (maxBins < 0) maxBins = 100;
 							scale2bins = 1.0 / binSize;
 						}
 						graph.setData(data);
+						style.customYLevels = ((HasHistogram) module).getCustomLevels(type, idx);
 					} else {
 						graph.clearData();
 					}
@@ -657,6 +657,17 @@ if (maxBins < 0) maxBins = 100;
 			idx++;
 		}
 		update(hard);
+	}
+
+	@Override
+	public void modelSettings() {
+		super.modelSettings();
+		int idx = 0;
+		for (HistoGraph graph : graphs) {
+			Module module = graph.getModule();
+			AbstractGraph.GraphStyle style = graph.getStyle();
+			style.customYLevels = ((HasHistogram) module).getCustomLevels(type, idx++);
+		}
 	}
 
 	@Override

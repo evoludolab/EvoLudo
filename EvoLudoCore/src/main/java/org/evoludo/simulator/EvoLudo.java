@@ -426,7 +426,7 @@ public abstract class EvoLudo
 
 	/**
 	 * Request full reparsing of the command line options. This is necessary if the
-	 * command line options have changed in a fundamental way, for example if the 
+	 * command line options have changed in a fundamental way, for example if the
 	 * number of traits in a module has changed.
 	 */
 	public void requestParseCLO() {
@@ -668,8 +668,8 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Relax model by {@code timeRelax} steps and notify all listeners when done. If model
-	 * converged during relaxation notify listeners that model has stopped.
+	 * Relax model by {@code timeRelax} steps and notify all listeners when done. If
+	 * model converged during relaxation notify listeners that model has stopped.
 	 *
 	 * @return <code>true</code> if converged
 	 * 
@@ -753,6 +753,7 @@ public abstract class EvoLudo
 			return true;
 		}
 		activeModel.update();
+		fireSettingsChanged();
 		return false;
 	}
 
@@ -1215,6 +1216,18 @@ public abstract class EvoLudo
 	}
 
 	/**
+	 * Called whenever the settings of the model have changed. For example, to
+	 * trigger the range of values or markers in the GUI. Notifies all registered
+	 * {@link MilestoneListener}s.
+	 * 
+	 * @see MilestoneListener
+	 */
+	public synchronized void fireSettingsChanged() {
+		for (MilestoneListener i : milestoneListeners)
+			i.modelSettings();
+	}
+
+	/**
 	 * Helper method for handling model changed events and processes pending
 	 * actions.
 	 * 
@@ -1247,7 +1260,7 @@ public abstract class EvoLudo
 				for (ChangeListener i : changeListeners)
 					i.modelChanged(action);
 				break;
-			case STOP:		// stop requested (as opposed to simulations that stopped)
+			case STOP: // stop requested (as opposed to simulations that stopped)
 				isRunning = false;
 				fireModelStopped();
 				break;
@@ -1753,7 +1766,7 @@ public abstract class EvoLudo
 			} else
 				globalMsg += " (select model for more options)";
 			globalMsg += "\n\nGlobal options:";
-			
+
 			int idx = 0;
 			String moduleMsg = "";
 			for (Module mod : activeModule.getSpecies()) {
@@ -1767,7 +1780,7 @@ public abstract class EvoLudo
 				idx += nt;
 			}
 			catModule.setHeader("Options for module '" + activeModule.getKey() //
-				+ "' with trait indices and names:" + moduleMsg);
+					+ "' with trait indices and names:" + moduleMsg);
 		} else
 			globalMsg += " (select module and model for more info):";
 		catGlobal.setHeader(globalMsg);
