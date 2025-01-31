@@ -180,7 +180,7 @@ public class CLOption implements Comparable<CLOption> {
 		 * 
 		 * @return the title of the command line option
 		 * 
-		 * @see org.evoludo.simulator.EvoLudo#helpCLO()
+		 * @see org.evoludo.simulator.EvoLudo#showHelp()
 		 */
 		public String getTitle();
 
@@ -191,7 +191,7 @@ public class CLOption implements Comparable<CLOption> {
 		 * @return the description of the command line option
 		 * 
 		 * @see #getTitle()
-		 * @see org.evoludo.simulator.EvoLudo#helpCLO()
+		 * @see org.evoludo.simulator.EvoLudo#showHelp()
 		 */
 		public default String getDescription() {
 			return getTitle();
