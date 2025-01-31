@@ -446,7 +446,7 @@ public abstract class EvoLudo
 	 * @param newListener the new milestone listener
 	 */
 	public void addMilestoneListener(MilestoneListener newListener) {
-		milestoneListeners.add(newListener);
+		milestoneListeners.add(0, newListener);
 	}
 
 	/**
@@ -472,7 +472,7 @@ public abstract class EvoLudo
 	 * @param newListener the new change listener
 	 */
 	public void addChangeListener(ChangeListener newListener) {
-		changeListeners.add(newListener);
+		changeListeners.add(0, newListener);
 	}
 
 	/**
