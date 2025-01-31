@@ -776,6 +776,13 @@ public class IBSMCPopulation extends IBSPopulation {
 		if (module.getNGroup() > 2)
 			logger.warning("group interactions with continuous traits have NOT been tested...");
 
+		if (strategies == null || strategies.length != nPopulation * nTraits)
+			strategies = new double[nPopulation * nTraits];
+		if (strategiesScratch == null || strategiesScratch.length != nPopulation * nTraits)
+			strategiesScratch = new double[nPopulation * nTraits];
+		if (myTrait == null || myTrait.length != nTraits)
+			myTrait = new double[nTraits];
+
 		return doReset;
 	}
 
@@ -856,12 +863,6 @@ public class IBSMCPopulation extends IBSPopulation {
 	@Override
 	public synchronized void reset() {
 		super.reset();
-		if (strategies == null || strategies.length != nPopulation * nTraits)
-			strategies = new double[nPopulation * nTraits];
-		if (strategiesScratch == null || strategiesScratch.length != nPopulation * nTraits)
-			strategiesScratch = new double[nPopulation * nTraits];
-		if (myTrait == null || myTrait.length != nTraits)
-			myTrait = new double[nTraits];
 		// groupScores have the same maximum length
 		int maxGroup = groupScores.length;
 		if (groupStrat == null || groupStrat.length != maxGroup * nTraits)

@@ -217,10 +217,6 @@ public class IBSDPopulation extends IBSPopulation {
 			// conserve memory
 			activeLinks = null;
 		}
-		if (strategies == null || strategies.length != nPopulation)
-			strategies = new int[nPopulation];
-		if (strategiesScratch == null || strategiesScratch.length != nPopulation)
-			strategiesScratch = new int[nPopulation];
 		// groupScores have the same maximum length
 		int maxGroup = groupScores.length;
 		if (groupStrat == null || groupStrat.length != maxGroup)
@@ -229,19 +225,6 @@ public class IBSDPopulation extends IBSPopulation {
 			groupIdxs = new int[maxGroup];
 		if (smallStrat == null || smallStrat.length != maxGroup)
 			smallStrat = new int[maxGroup];
-		if (traitCount == null || traitCount.length != nTraits)
-			traitCount = new int[nTraits];
-		if (traitScore == null || traitScore.length != nTraits)
-			traitScore = new double[nTraits];
-		if (accuTypeScores == null || accuTypeScores.length != nTraits)
-			accuTypeScores = new double[nTraits];
-		if (initTypeCount == null || initTypeCount.length != nTraits)
-			initTypeCount = new int[nTraits];
-		if (strategiesTypeCount == null || strategiesTypeCount.length != nTraits)
-			strategiesTypeCount = new int[nTraits];
-		// best-response may require temporary memory - this is peanuts, just reserve it
-		if (traitTempScore == null || traitTempScore.length != nTraits)
-			traitTempScore = new double[nTraits];
 	}
 
 	/**
@@ -1836,6 +1819,25 @@ public class IBSDPopulation extends IBSPopulation {
 		// doReset = true;
 		// }
 		// // if imitation becomes obsolete the above check can be removed
+
+		// start allocating memory
+		if (strategies == null || strategies.length != nPopulation)
+			strategies = new int[nPopulation];
+		if (strategiesScratch == null || strategiesScratch.length != nPopulation)
+			strategiesScratch = new int[nPopulation];
+		if (traitCount == null || traitCount.length != nTraits)
+			traitCount = new int[nTraits];
+		if (traitScore == null || traitScore.length != nTraits)
+			traitScore = new double[nTraits];
+		if (accuTypeScores == null || accuTypeScores.length != nTraits)
+			accuTypeScores = new double[nTraits];
+		if (initTypeCount == null || initTypeCount.length != nTraits)
+			initTypeCount = new int[nTraits];
+		if (strategiesTypeCount == null || strategiesTypeCount.length != nTraits)
+			strategiesTypeCount = new int[nTraits];
+		// best-response may require temporary memory - this is peanuts, just reserve it
+		if (traitTempScore == null || traitTempScore.length != nTraits)
+			traitTempScore = new double[nTraits];
 		return doReset;
 	}
 

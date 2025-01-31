@@ -3236,6 +3236,11 @@ public abstract class IBSPopulation {
 			scores = null;
 			fitness = null;
 			interactions = null;
+			// allocate lookup tables
+			if (typeScores == null || typeScores.length != nTraits)
+				typeScores = new double[nTraits];
+			if (typeFitness == null || typeFitness.length != nTraits)
+				typeFitness = new double[nTraits];
 		} else {
 			// request reset if we had lookup tables before to allocate arrays scores, fitness 
 			// and interaction
@@ -3257,6 +3262,18 @@ public abstract class IBSPopulation {
 
 		if (VACANT >= 0 && nGroup > 2)
 			logger.warning("group interactions with vacant sites have NOT been tested...");
+
+		if (!hasLookupTable || ephemeralScores) {
+			// emphemeral scores need both
+			if (scores == null || scores.length != nPopulation)
+				scores = new double[nPopulation];
+			if (fitness == null || fitness.length != nPopulation)
+				fitness = new double[nPopulation];
+			if (interactions == null || interactions.length != nPopulation)
+				interactions = new int[nPopulation];
+		}
+		if (tags == null || tags.length != nPopulation)
+			tags = new double[nPopulation];
 
 		return doReset;
 	}
@@ -3422,25 +3439,6 @@ public abstract class IBSPopulation {
 			competition.evaluate();
 		}
 		module.setGeometries(interaction, competition);
-		if (hasLookupTable) {
-			// allocate lookup tables
-			if (typeScores == null || typeScores.length != nTraits)
-				typeScores = new double[nTraits];
-			if (typeFitness == null || typeFitness.length != nTraits)
-				typeFitness = new double[nTraits];
-		}
-		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
-		if (!hasLookupTable || ephemeralScores) {
-			// emphemeral scores need both
-			if (scores == null || scores.length != nPopulation)
-				scores = new double[nPopulation];
-			if (fitness == null || fitness.length != nPopulation)
-				fitness = new double[nPopulation];
-			if (interactions == null || interactions.length != nPopulation)
-				interactions = new int[nPopulation];
-		}
-		if (tags == null || tags.length != nPopulation)
-			tags = new double[nPopulation];
 		// determine maximum reasonable group size
 		int maxGroup = Math.max(Math.max(interaction.maxIn, interaction.maxOut),
 				Math.max(competition.maxIn, competition.maxOut));
@@ -3455,7 +3453,7 @@ public abstract class IBSPopulation {
 
 		// number of interactions can be determined for ephemeral payoffs
 		// store in interactions array
-		if (ephemeralScores) {
+		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
 			if (interGroup.isSampling(SamplingType.ALL)) {
 				if (nGroup > 2) {
 					// single interaction with all members in neighbourhood
