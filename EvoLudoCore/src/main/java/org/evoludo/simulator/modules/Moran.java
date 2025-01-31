@@ -33,6 +33,7 @@ package org.evoludo.simulator.modules;
 import java.awt.Color;
 import java.io.PrintStream;
 
+import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBS;
@@ -220,21 +221,6 @@ public class Moran extends Discrete implements Module.Static,
 		return typeScores[aType];
 	}
 
-	/**
-	 * Storage for the reference fixation probability based on analytical
-	 * calculations.
-	 */
-	private double[][] statRefProb;
-
-	/**
-	 * Storage for the reference fixation time based on analytical calculations.
-	 * <p>
-	 * <strong>Note:</strong> {@code statRefTime} has three rows with conditional
-	 * fixation times for a single mutant, a single 'resident' as well as the
-	 * unconditional absorption time.
-	 */
-	private double[][] statRefTime;
-
 	@Override
 	public double[] getCustomLevels(Data type, int trait) {
 		// currently reference levels only available for Moran (birth-death) updates
@@ -255,6 +241,29 @@ public class Moran extends Discrete implements Module.Static,
 	}
 
 	/**
+	 * Store fixation probability of {@code i} individuals of type {@code A}.
+	 */
+	double rhoAi = -1.0;
+
+	/**
+	 * Store fixation time of {@code i} individuals of type {@code A}.
+	 */
+	double tAi = -1.0;
+
+	/**
+	 * Store absorption time of {@code i} individuals of type {@code A}.
+	 */
+	double taui = -1.0;
+
+	@Override
+	public void modelSettings() {
+		super.modelSettings();
+		rhoAi = -1.0;
+		tAi = -1.0;
+		taui = -1.0;
+	}
+
+	/**
 	 * Helper method to retrieve the reference fixation probabilities for trait
 	 * {@code trait} for the initial number of mutants according to {@code init}.
 	 * In order to optimize repeated calls the result is stored in the field
@@ -266,18 +275,20 @@ public class Moran extends Discrete implements Module.Static,
 	 * @see #rhoA(int, int)
 	 */
 	private double[] getReferenceProb(int trait) {
-		if (statRefProb == null || statRefProb.length != nTraits)
-			statRefProb = new double[nTraits][];
-		if (statRefProb[trait] == null) {
+		if (rhoAi < 0.0) {
+			// calculate reference fixation probabilities
 			double[] init = new double[nTraits];
 			model.getInitialTraits(init);
 			int m = (int) (init[MUTANT] * nPopulation);
 			m = Math.min(Math.max(m, 1), nPopulation - 1);
-			double rho = rhoA(m, nPopulation);
-			statRefProb[MUTANT] = new double[] { rho };
-			statRefProb[RESIDENT] = new double[] { 1.0 - rho };
+			if (nPopulation > 1000)
+				rhoAi = Math.max(0.0, 1.0 - 1.0 / Combinatorics.pow(typeScores[MUTANT], m));
+			else
+				rhoAi = rhoA(m, nPopulation);
 		}
-		return statRefProb[trait];
+		if (trait == MUTANT)
+			return new double[] { rhoAi };
+		return new double[] { 1.0 - rhoAi };
 	}
 
 	/**
@@ -293,21 +304,33 @@ public class Moran extends Discrete implements Module.Static,
 	 * @see #t1(double, int)
 	 */
 	private double[] getReferenceTime(int trait) {
-		if (statRefTime == null || statRefTime.length != nTraits + 1)
-			statRefTime = new double[nTraits + 1][];
-		if (statRefTime[trait] == null) {
-			double rho = getReferenceProb(MUTANT)[0];
+		if (tAi < 0.0) {
+			// calculate reference fixation times
+			// numerical evaluations take too long for large populations
+			if (nPopulation > 500)
+				return null;
 			double[] init = new double[nTraits];
 			model.getInitialTraits(init);
 			int m = (int) (init[MUTANT] * nPopulation);
 			m = Math.min(Math.max(m, 1), nPopulation - 1);
-			double tai = tAi(m, nPopulation, rho, tA1(nPopulation)) / nPopulation;
-			statRefTime[MUTANT] = new double[] { tai };
-			double abs = ti(m, nPopulation, t1(rho, nPopulation)) / nPopulation;
-			statRefTime[nTraits] = new double[] { abs };
-			statRefTime[RESIDENT] = new double[] { abs - rho * tai / (1.0 - rho) };
+			double rhoA1 = rhoA(1, nPopulation);
+			double tA1 = tA1(nPopulation);
+			double t1 = t1(rhoA1, nPopulation);
+			if (m > 1) {
+				rhoAi = rhoA(m, nPopulation);
+				tAi = tAi(m, nPopulation, rhoAi, tA1) / nPopulation;
+				taui = ti(m, nPopulation, t1) / nPopulation;
+			} else {
+				rhoAi = rhoA1;
+				tAi = tA1 / nPopulation;
+				taui = t1 / nPopulation;
+			}
 		}
-		return statRefTime[trait];
+		if (trait == MUTANT)
+			return new double[] { tAi };
+		if (trait == nTraits)
+			return new double[] { taui };
+		return new double[] { (taui - rhoAi * tAi) / (1.0 - rhoAi) };
 	}
 
 	// fixation probability of m mutants in resident population of size n with
