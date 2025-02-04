@@ -125,10 +125,10 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 		}
 		String msg = "# fixation probs\n# \t";
 		for (int n = 0; n < nTraits; n++)
-			msg += traitName[n] + "\t";
+			msg += getTraitName(n) + "\t";
 		out.println(msg);
 		for (int n = 0; n < nTraits; n++) {
-			msg = "# " + traitName[n] + ":\t";
+			msg = "# " + getTraitName(n) + ":\t";
 			double sum = 0.0;
 			for (int m = 0; m < nTraits; m++)
 				sum += fix[n][m];

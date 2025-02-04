@@ -268,12 +268,12 @@ public class simCDLP extends CDLP implements ChangeListener {
 		double norm = 1.0 / generation;
 		String msg = "# fixation probs\n# \t";
 		for (int n = 0; n < nTraits; n++)
-			msg += traitName[n] + "\t";
+			msg += getTraitName(n) + "\t";
 		out.println(msg);
 		// fix is never null but make compiler happy
 		if (fix != null) {
 			for (int n = 0; n < nTraits; n++) {
-				msg = "# " + traitName[n] + ":\t";
+				msg = "# " + getTraitName(n) + ":\t";
 				double sum = 0.0;
 				for (int m = 0; m < nTraits; m++)
 					sum += fix[n][m];

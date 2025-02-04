@@ -416,7 +416,7 @@ public abstract class Continuous extends Module {
 		 */
 		public String formatCosts(int idx) {
 			Costs cost = costs[idx];
-			return traitName[idx] + ": " + cost.key + ": " + cost.title + " " + Formatter.format(ci[idx], 4);
+			return getTraitName(idx) + ": " + cost.key + ": " + cost.title + " " + Formatter.format(ci[idx], 4);
 		}
 
 		/**
@@ -517,7 +517,7 @@ public abstract class Continuous extends Module {
 		 */
 		public String formatBenefits(int idx) {
 			Benefits benefit = benefits[idx];
-			return traitName[idx] + ": " + benefit.key + " " + benefit.title + " " + Formatter.format(bi[idx], 4);
+			return getTraitName(idx) + ": " + benefit.key + " " + benefit.title + " " + Formatter.format(bi[idx], 4);
 		}
 
 		/**
@@ -1070,13 +1070,13 @@ public abstract class Continuous extends Module {
 					switch (nTraits) {
 						case 1:
 							return "--traitrange <min" + CLOParser.VECTOR_DELIMITER + "max>  range of trait "
-									+ traitName[0];
+									+ getTraitName(0);
 						case 2:
 							return "--traitrange <min0" + CLOParser.VECTOR_DELIMITER + "max0" + //
 									CLOParser.TRAIT_DELIMITER + "min1" + CLOParser.VECTOR_DELIMITER + "max1]>" + //
 									CLOParser.VECTOR_DELIMITER + "  range of traits, with\n"
-									+ "             0: " + traitName[0] + "\n" //
-									+ "             1: " + traitName[1];
+									+ "             0: " + getTraitName(0) + "\n" //
+									+ "             1: " + getTraitName(1);
 						default:
 							String descr = "--traitrange <min0,max0[" + CLOParser.VECTOR_DELIMITER + "..."
 									+ CLOParser.VECTOR_DELIMITER + "min" + (nTraits - 1)
@@ -1084,7 +1084,7 @@ public abstract class Continuous extends Module {
 							for (int n = 0; n < nTraits; n++) {
 								String aTrait = "              " + n + ": ";
 								int traitlen = aTrait.length();
-								descr += "\n" + aTrait.substring(traitlen - 16, traitlen) + traitName[n];
+								descr += "\n" + aTrait.substring(traitlen - 16, traitlen) + getTraitName(n);
 							}
 							return descr;
 					}

@@ -543,7 +543,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	/**
 	 * Names of traits.
 	 */
-	protected String[] traitName;
+	String[] traitName;
 
 	/**
 	 * Gets the name of the trait with index {@code trait}.
@@ -1459,7 +1459,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 						for (int n = 0; n < pop.nTraits; n++) {
 							if (!pop.active[n])
 								continue;
-							msg += pop.traitName[n];
+							msg += pop.getTraitName(n);
 							count++;
 							if (count < pop.nActive)
 								msg += ", ";

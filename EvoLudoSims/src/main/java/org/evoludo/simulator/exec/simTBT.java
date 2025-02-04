@@ -137,7 +137,7 @@ public class simTBT extends TBT implements ChangeListener {
 			setPayoff(0.0, DEFECT, DEFECT);
 			String msg = "# average +/- sdev frequencies, covariance\n# r\t";
 			for (int n = 0; n < nTraits; n++)
-				msg += traitName[n] + "\t";
+				msg += getTraitName(n) + "\t";
 			out.println(msg);
 			double r = scanDG[0];
 			while (r < scanDG[1] + scanDG[2]) {
@@ -191,7 +191,7 @@ public class simTBT extends TBT implements ChangeListener {
 			setPayoff(0.0, DEFECT, DEFECT);
 			String msg = "# average +/- sdev frequencies\n# S\tT\t";
 			for (int n = 0; n < nTraits; n++)
-				msg += getName() + "." + traitName[n] + "\t";
+				msg += getName() + "." + getTraitName(n) + "\t";
 			out.println(msg);
 			double s = scanST[0];
 			while (s < scanST[1] + scanST[2]) {
@@ -285,7 +285,7 @@ public class simTBT extends TBT implements ChangeListener {
 
 		String msg = "# average and sdev frequencies\n# ";
 		for (int n = 0; n < nTraits; n++)
-			msg += traitName[n] + "\t";
+			msg += getTraitName(n) + "\t";
 		out.println(msg);
 		msg = "";
 		for (int n = 0; n < nTraits; n++)
