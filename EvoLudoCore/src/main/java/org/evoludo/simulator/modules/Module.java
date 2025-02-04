@@ -664,10 +664,10 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		// assign default colors
 		if (defaultColor == null)
 			defaultColor = new Color[] {
-					Color.RED,
 					Color.BLUE,
-					Color.YELLOW,
+					Color.RED,
 					Color.GREEN,
+					Color.YELLOW,
 					Color.MAGENTA,
 					Color.ORANGE,
 					Color.PINK,
