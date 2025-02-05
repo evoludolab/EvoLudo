@@ -77,7 +77,7 @@ The `GWT Eclipse Plugin` provides a development WebServer, which enables rapid d
 1. Launch *eclipse*.
 2. From the Debug or Run configurations select `EvoLudo - GWT Development WebServer` to compile the project and launch the development web server.<br/>
 *Note:* may not be available before completing all steps above, including restarting *eclipse*.
-3. From the Debug or Run configurations select `EvoLudo - GWT Debug with Chrome` or open a browser and point it to [http://127.0.0.1:8888/TestEvoLudoLabs.html](http://127.0.0.1:8888/TestEvoLudoLabs.html) to launch the web interface of EvoLudo.<br/>
+3. From the Debug or Run configurations select `EvoLudo - GWT Debug with Chrome` or open a browser and point it to [http://127.0.0.1:8888/TestEvoLudo.html](http://127.0.0.1:8888/TestEvoLudo.html) to launch the web interface of EvoLudo.<br/>
 *Note:* may not be available if *Google Chrome* is not installed or unknown to *eclipse*.
 4. After making changes to the code in *eclipse*, simply reload the browser page to trigger a recompile of the EvoLudo source code.<br/>
 *Note:* due to the size of the project, the first build may take fairly long but subsequent recompiles are significantly faster.
@@ -90,7 +90,7 @@ Fortunately step-by-step debugging can be largely avoided thanks to the efficien
 The GWT compiler converts the `java` source code into platform and browser independent JavaScript.
 1. Launch *eclipse*.
 2. Right-click on EvoLudo in `Project Explorer`, select the `GWT > Compile` menu and click `Compile`.
-3. The compiled JavaScript is located in `war/evoludoweb`. For examples on how to embed an interactive EvoLudo lab on a web page, see `war/TestEvoLudoLabs.html`.
+3. The compiled JavaScript is located in `war/evoludoweb`. For examples on how to embed an interactive EvoLudo lab on a web page, see `war/TestEvoLudo.html`.
 
 ### Contribute to EvoLudo
 Pull requests by anyone are most welcome!

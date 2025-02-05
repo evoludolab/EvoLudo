@@ -32,7 +32,7 @@
 
   <properties>
     <evoludo.server>localhost</evoludo.server>
-    <evoludo.startup>TestEvoLudoLabs.html</evoludo.startup>
+    <evoludo.startup>TestEvoLudo.html</evoludo.startup>
     <evoludo.commit default-value="unknown">${git.commit.id.describe}</evoludo.commit>
     <evoludo.build default-value="">${git.build.time}</evoludo.build>
     <evoludo.engineModule default-value="EvoLudoCore"></evoludo.engineModule>
@@ -310,6 +310,7 @@
         <module>EvoLudoJREPrivate</module>
         <module>EvoLudoJRE</module>
         <module>EvoLudoGWT</module>
+        <module>EvoLudoGWTPrivate</module>
         <module>EvoLudoTest</module>
         <module>EvoLudoSims</module>
       </modules>

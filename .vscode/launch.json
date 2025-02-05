@@ -11,7 +11,7 @@
             // "trace": {
             //     "logFile": "${workspaceFolder}/vscode.trace.json",
             // },
-            "url": "http://localhost:8888/TestEvoLudoLabs.html",
+            "url": "http://localhost:8888/TestEvoLudo.html",
 //snapshot            "url": "http://localhost:8888/EvoLudoLab.html?clo=--snap%2020%20--module%20Moran%20--geometry%20n%20--popsize%2064%20--inittype%20mono%200%20--seed%200%20--view%20Strategies_-_Structure%20--snap%2020,1",
 			"webRoot": "${workspaceFolder}/EvoLudoGWTDev/target/EvoLudoGWTDev-${project.version}",
 			"sourceMapPathOverrides": {
@@ -48,7 +48,7 @@
 			"name": "GWT EvoLudo (10.0.0.10)",
             "type": "chrome",
             "request": "launch",
-            "url": "http://10.0.0.10:8888/TestEvoLudoLabs.html",
+            "url": "http://10.0.0.10:8888/TestEvoLudo.html",
 			"webRoot": "${workspaceFolder}/EvoLudoGWTDev/target/EvoLudoGWTDev-${project.version}",
 			"sourceMapPathOverrides": {
 				"http://10.0.0.10:9876/sourcemaps/evoludoweb/org/evoludo/simulator/EvoLudo.java" : "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/EvoLudo.java",
