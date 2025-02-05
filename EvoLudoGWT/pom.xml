@@ -15,6 +15,11 @@
 
   <dependencies>
     <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>EvoLudoCore</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.parallax3d</groupId>
       <artifactId>parallax-gwt</artifactId>
     </dependency>
@@ -28,7 +33,16 @@
     </dependency>
     <dependency>
       <groupId>org.gwtproject</groupId>
+      <artifactId>gwt-servlet</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.gwtproject</groupId>
       <artifactId>gwt-dev</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 
@@ -91,10 +105,33 @@
           <moduleName>org.evoludo.EvoLudoWeb</moduleName>
           <relocateSuperSource>true</relocateSuperSource>
           <style>${gwt.style}</style>
-          <skipModule>true</skipModule>
+          <!-- no longer needed after merging EvoLudoGWT and EvoLudoGWTDev modules -->
+          <!-- <skipModule>true</skipModule> -->
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-maven-plugin</artifactId>
+        <configuration>
+          <scanIntervalSeconds>1</scanIntervalSeconds>
+          <webApp>
+            <extraClasspath>${basedir}/../EvoLudoCore/target/classes/</extraClasspath>
+            <extraClasspath>${basedir}/../EvoLudoGWT/target/classes/</extraClasspath>
+            <extraClasspath>${basedir}/../EvoLudoCorePrivate/target/classes/</extraClasspath>
+          </webApp>
+          <contextXml>${basedir}/src/main/jettyconf/context.xml</contextXml>
+          <packaging>war</packaging>
         </configuration>
       </plugin>
     </plugins>
+    <resources>
+      <resource>
+        <filtering>true</filtering>
+        <directory>${project.basedir}/src/main/webapp</directory>
+        <targetPath>${project.build.directory}/EvoLudoGWT-${project.version}</targetPath>
+      </resource>
+    </resources>
   </build>
 
   <profiles>

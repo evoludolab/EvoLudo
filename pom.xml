@@ -37,7 +37,7 @@
     <evoludo.build default-value="">${git.build.time}</evoludo.build>
     <evoludo.engineModule default-value="EvoLudoCore"></evoludo.engineModule>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <javadoc.exe>/Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/javadoc</javadoc.exe>
+    <!-- <javadoc.exe>/Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/javadoc</javadoc.exe> -->
     <gwt.style>OBFUSCATED</gwt.style>
   </properties>
 
@@ -108,9 +108,9 @@
             <arg>${evoludo.startup}</arg>
           </devmodeArgs>
           <style>PRETTY</style>
-          <launcherDir>${basedir}/EvoLudoGWTDev/target/EvoLudoGWTDev-${project.version}</launcherDir>
-          <devmodeWorkDir>${basedir}/EvoLudoGWTDev/target/gwt/devmode/work</devmodeWorkDir>
-          <warDir>${basedir}/EvoLudoGWTDev/target/EvoLudoGWTDev-${project.version}</warDir>
+          <launcherDir>${basedir}/EvoLudoGWT/target/EvoLudoGWT-${project.version}</launcherDir>
+          <devmodeWorkDir>${basedir}/EvoLudoGWT/target/gwt/devmode/work</devmodeWorkDir>
+          <warDir>${basedir}/EvoLudoGWT/target/EvoLudoGWT-${project.version}</warDir>
         </configuration>
       </plugin>
 
@@ -310,7 +310,6 @@
         <module>EvoLudoJREPrivate</module>
         <module>EvoLudoJRE</module>
         <module>EvoLudoGWT</module>
-        <module>EvoLudoGWTDev</module>
         <module>EvoLudoTest</module>
         <module>EvoLudoSims</module>
       </modules>
@@ -355,7 +354,6 @@
         <module>EvoLudoCore</module>
         <module>EvoLudoJRE</module>
         <module>EvoLudoGWT</module>
-        <module>EvoLudoGWTDev</module>
         <module>EvoLudoTest</module>
         <module>EvoLudoSims</module>
       </modules>
