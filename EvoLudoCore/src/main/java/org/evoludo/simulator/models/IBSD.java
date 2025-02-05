@@ -103,9 +103,9 @@ public class IBSD extends IBS implements Discrete {
 		// - mutant or temperature initialization
 		// - no vacant sites or monostop (otherwise extinction is the only absorbing state)
 		for (Module mod : species) {
-			Init.Type type = ((IBSDPopulation) mod.getIBSPopulation()).getInit().type;
-			if ((type.equals(Init.Type.MUTANT) || 
-				type.equals(Init.Type.TEMPERATURE)) &&
+			Init.Type itype = ((IBSDPopulation) mod.getIBSPopulation()).getInit().type;
+			if ((itype.equals(Init.Type.MUTANT) || 
+				itype.equals(Init.Type.TEMPERATURE)) &&
 				(mod.getVacant() < 0 || (mod.getVacant() >= 0 && ((org.evoludo.simulator.modules.Discrete) mod).getMonoStop())))
 				continue;
 			return false;
@@ -186,8 +186,8 @@ public class IBSD extends IBS implements Discrete {
 	}
 
 	@Override
-	public double getMonoScore(int id, int type) {
-		return getIBSDPopulation(id).getMonoScore(type);
+	public double getMonoScore(int id, int idx) {
+		return getIBSDPopulation(id).getMonoScore(idx);
 	}
 
 	/**
@@ -259,10 +259,10 @@ public class IBSD extends IBS implements Discrete {
 						boolean isMultiSpecies = (ibs.species.size() > 1);
 						for (Module mod : ibs.species) {
 							IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
-							String inittype = inittypes[idx++ % inittypes.length];
+							String itype = inittypes[idx++ % inittypes.length];
 							double[] initargs = null;
-							String[] typeargs = inittype.split("\\s+|=");
-							Init.Type newtype = (Init.Type) clo.match(inittype);
+							String[] typeargs = itype.split("\\s+|=");
+							Init.Type newtype = (Init.Type) clo.match(itype);
 							Init init = dpop.getInit();
 							if (newtype == null && prevtype != null) {
 								newtype = prevtype;
@@ -275,7 +275,7 @@ public class IBSD extends IBS implements Discrete {
 									|| newtype.equals(Init.Type.KALEIDOSCOPE)))) {
 								ibs.logger.warning(
 										(isMultiSpecies ? mod.getName() + ": " : "") +
-												"init '" + inittype + "' unknown!");
+												"init '" + itype + "' unknown!");
 								// default to uniform
 								newtype = Init.Type.UNIFORM;
 								success = false;

@@ -340,11 +340,6 @@ public abstract class IBS extends Model {
 	}
 
 	@Override
-	public Type getModelType() {
-		return Type.IBS;
-	}
-
-	@Override
 	public boolean permitsSampleStatistics() {
 		if (species == null)
 			return false;
@@ -437,6 +432,7 @@ public abstract class IBS extends Model {
 	 */
 	public IBS(EvoLudo engine) {
 		super(engine);
+		type = Type.IBS;
 	}
 
 	/**
@@ -2064,7 +2060,7 @@ public abstract class IBS extends Model {
 		 * 
 		 * @see #clo
 		 */
-		Statistics.Type type;
+		Statistics.Type stattype;
 
 		/**
 		 * The number of samples before resetting the geometry.
@@ -2089,7 +2085,7 @@ public abstract class IBS extends Model {
 
 		@Override
 		public String toString() {
-			return type.getKey() + " " + Formatter.format(args, ";");
+			return stattype.getKey() + " " + Formatter.format(args, ";");
 		}
 
 		/**
@@ -2099,7 +2095,7 @@ public abstract class IBS extends Model {
 		 */
 		public Statistics(org.evoludo.simulator.models.IBS ibs) {
 			this.ibs = ibs;
-			type = Statistics.Type.RESET_GEOMETRY;
+			stattype = Statistics.Type.RESET_GEOMETRY;
 		}
 
 		/**
@@ -2113,8 +2109,8 @@ public abstract class IBS extends Model {
 						args = arg.split(Formatter.MATRIX_DELIMITER);
 						// currently at most a single setting
 						for (String st : args) {
-							type = (Statistics.Type) clo.match(st.trim(), 2);
-							if (type == null) {
+							stattype = (Statistics.Type) clo.match(st.trim(), 2);
+							if (stattype == null) {
 								ibs.logger.warning("failed to parse statistics options '" + arg + "'!");
 								return false;
 							}
@@ -2199,7 +2195,7 @@ public abstract class IBS extends Model {
 	public void encodeState(StringBuilder plist) {
 		plist.append(Plist.encodeKey("Generation", getTime()));
 		plist.append(Plist.encodeKey("Realtime", getRealtime()));
-		plist.append(Plist.encodeKey("Model", getModelType().toString()));
+		plist.append(Plist.encodeKey("Model", type.toString()));
 		boolean isMultiSpecies = (species.size() > 1);
 		for (Module mod : species) {
 			IBSPopulation pop = mod.getIBSPopulation();
@@ -2230,15 +2226,15 @@ public abstract class IBS extends Model {
 					success = false;
 				}
 				if (!pop.restoreInteractions(pplist)) {
-					logger.warning("restore interactions in " + getModelType() + "-model failed (" + name + ").");
+					logger.warning("restore interactions in " + type + "-model failed (" + name + ").");
 					success = false;
 				}
 				if (!pop.restoreStrategies(pplist)) {
-					logger.warning("restore strategies in " + getModelType() + "-model failed (" + name + ").");
+					logger.warning("restore strategies in " + type + "-model failed (" + name + ").");
 					success = false;
 				}
 				if (!pop.restoreFitness(pplist)) {
-					logger.warning("restore fitness in " + getModelType() + "-model failed (" + name + ").");
+					logger.warning("restore fitness in " + type + "-model failed (" + name + ").");
 					success = false;
 				}
 			}
@@ -2249,15 +2245,15 @@ public abstract class IBS extends Model {
 			success = false;
 		}
 		if (!population.restoreInteractions(plist)) {
-			logger.warning("restore interactions in " + getModelType() + "-model failed.");
+			logger.warning("restore interactions in " + type + "-model failed.");
 			success = false;
 		}
 		if (!population.restoreStrategies(plist)) {
-			logger.warning("restore strategies in " + getModelType() + "-model failed.");
+			logger.warning("restore strategies in " + type + "-model failed.");
 			success = false;
 		}
 		if (!population.restoreFitness(plist)) {
-			logger.warning("restore fitness in " + getModelType() + "-model failed.");
+			logger.warning("restore fitness in " + type + "-model failed.");
 			success = false;
 		}
 		return success;

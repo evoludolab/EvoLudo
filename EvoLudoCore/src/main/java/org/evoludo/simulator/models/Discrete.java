@@ -37,17 +37,17 @@ public interface Discrete {
 
 	/**
 	 * Calculate and return the payoff/score of individuals in monomorphic
-	 * populations with trait/strategy {@code type} but also deals with payoff
+	 * populations with trait/strategy {@code idx} but also deals with payoff
 	 * accounting (averaged versus accumulated).
 	 *
 	 * @param id   the id of the population for multi-species models
-	 * @param type trait/strategy
+	 * @param idx trait/strategy
 	 * @return payoff/score in monomorphic population with trait/strategy
-	 *         {@code type}. Returns {@code NaN} if scores ill defined
+	 *         {@code idx}. Returns {@code NaN} if scores ill defined
 	 * 
 	 * @see org.evoludo.simulator.modules.Discrete#getMonoGameScore(int)
 	 */
-	public default double getMonoScore(int id, int type) {
+	public default double getMonoScore(int id, int idx) {
 		return Double.NaN;
 	}
 }

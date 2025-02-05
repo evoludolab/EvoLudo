@@ -174,11 +174,6 @@ public class ODEEuler extends Model implements Discrete {
 		}
 	}
 
-	@Override
-	public Type getModelType() {
-		return Type.ODE;
-	}
-
 	/**
 	 * Discretization of time increment for continuous time models. This is the
 	 * attempted size of next step to take.
@@ -443,6 +438,7 @@ public class ODEEuler extends Model implements Discrete {
 	 */
 	public ODEEuler(EvoLudo engine) {
 		super(engine);
+		type = Type.ODE;
 	}
 
 	@Override
@@ -613,9 +609,9 @@ public class ODEEuler extends Model implements Discrete {
 	}
 
 	@Override
-	public double getMonoScore(int id, int type) {
+	public double getMonoScore(int id, int idx) {
 		org.evoludo.simulator.modules.Discrete module = (org.evoludo.simulator.modules.Discrete) species.get(id);
-		return module.getMonoGameScore(type % module.getNTraits());
+		return module.getMonoGameScore(idx % module.getNTraits());
 	}
 
 	@Override
@@ -1691,20 +1687,20 @@ public class ODEEuler extends Model implements Discrete {
 			String inittype = inittypes[idx % inittypes.length];
 			double[] initargs = null;
 			String[] typeargs = inittype.split("\\s+|=");
-			InitType type = (InitType) cloInit.match(inittype);
+			InitType itype = (InitType) cloInit.match(inittype);
 			// if matching of inittype failed assume it was omitted; use previous type
-			if (type == null) {
+			if (itype == null) {
 				// if no previous match, give up
 				if (idx == 0) {
 					parseOk = false;
 					break;
 				}
-				type = initType[idx - 1];
+				itype = initType[idx - 1];
 				initargs = CLOParser.parseVector(typeargs[0]);
 			} else if (typeargs.length > 1)
 				initargs = CLOParser.parseVector(typeargs[1]);
 			int nTraits = pop.getNTraits();
-			switch (type) {
+			switch (itype) {
 				case MUTANT:
 					// SDE models only (no vacant sites)
 					// initargs contains the index of the resident and mutant traits
@@ -1735,7 +1731,7 @@ public class ODEEuler extends Model implements Discrete {
 					Arrays.fill(y0, start, start + nTraits, isDensity() ? 0.0 : 1.0);
 					break;
 			}
-			initType[idx] = type;
+			initType[idx] = itype;
 			idx++;
 			start += nTraits;
 		}
@@ -1792,9 +1788,9 @@ public class ODEEuler extends Model implements Discrete {
 				public void report(PrintStream output) {
 					int idx = 0;
 					for (Module pop : species) {
-						InitType type = initType[idx++];
-						String msg = "# init:                 " + type;
-						if (type.equals(InitType.DENSITY) || type.equals(InitType.FREQUENCY)) {
+						InitType itype = initType[idx++];
+						String msg = "# init:                 " + itype;
+						if (itype.equals(InitType.DENSITY) || itype.equals(InitType.FREQUENCY)) {
 							int from = idxSpecies[idx];
 							msg += Formatter.format(Arrays.copyOfRange(y0, from, from + pop.getNTraits()), 4);
 							Arrays.copyOfRange(y0, idxSpecies[idx], pop.getNTraits());
@@ -1893,7 +1889,7 @@ public class ODEEuler extends Model implements Discrete {
 
 	@Override
 	public void encodeState(StringBuilder plist) {
-		plist.append(Plist.encodeKey("Model", getModelType().toString()));
+		plist.append(Plist.encodeKey("Model", type.toString()));
 		plist.append(Plist.encodeKey("Time", time));
 		plist.append(Plist.encodeKey("Dt", dt));
 		plist.append(Plist.encodeKey("Forward", forward));
@@ -1913,11 +1909,11 @@ public class ODEEuler extends Model implements Discrete {
 		accuracy = (Double) plist.get("Accuracy");
 		connect = false;
 		if (!restoreStrategies(plist)) {
-			logger.warning("restore strategies in " + getModelType() + "-model failed.");
+			logger.warning("restore strategies in " + type + "-model failed.");
 			success = false;
 		}
 		if (!restoreFitness(plist)) {
-			logger.warning("restore fitness in " + getModelType() + "-model failed.");
+			logger.warning("restore fitness in " + type + "-model failed.");
 			success = false;
 		}
 		return success;

@@ -42,7 +42,6 @@ import org.evoludo.math.Combinatorics;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
-import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -114,17 +113,9 @@ public class Geometry {
 	 */
 	public Geometry(EvoLudo engine, Module popModule, Module oppModule) {
 		this(engine);
-		Model model = engine.getModel();
-		switch (model.getModelType()) {
-			// case ODE:
-			// case SDE:
-			// should not get here (geometries meaningless)
-			// case PDE:
-			default:
-				return;
-			case IBS:
-				population = popModule.getIBSPopulation();
-				opponent = oppModule.getIBSPopulation();
+		if (engine.getModel().isIBS()) {
+			population = popModule.getIBSPopulation();
+			opponent = oppModule.getIBSPopulation();
 		}
 	}
 

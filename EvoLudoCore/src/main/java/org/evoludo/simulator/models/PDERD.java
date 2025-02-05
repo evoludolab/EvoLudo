@@ -80,11 +80,6 @@ public class PDERD extends ODEEuler {
 		}
 	}
 
-	@Override
-	public Type getModelType() {
-		return Type.PDE;
-	}
-
 	/**
 	 * Convenience variable: module associated with this model (useful as long as
 	 * PDE models are restricted to single species).
@@ -310,6 +305,7 @@ public class PDERD extends ODEEuler {
 	 */
 	public PDERD(EvoLudo engine) {
 		super(engine);
+		type = Type.PDE;
 	}
 
 	/**
@@ -1091,16 +1087,16 @@ public class PDERD extends ODEEuler {
 	public void init() {
 		super.init();
 		// RD_INIT_SQUARE and RD_INIT_CIRCLE only available on lattices
-		InitType type = initType;
+		InitType itype = initType;
 		if (!space.isLattice()) {
 			// some initialization types make only sense on lattices
-			if (type == InitType.CIRCLE || type == InitType.SQUARE || type == InitType.GAUSSIAN
-					|| type == InitType.RING)
-				type = InitType.UNIFORM;
+			if (itype == InitType.CIRCLE || itype == InitType.SQUARE || itype == InitType.GAUSSIAN
+					|| itype == InitType.RING)
+				itype = InitType.UNIFORM;
 		}
 
 		boolean isCircular = false;
-		switch (type) {
+		switch (itype) {
 			default:
 			case UNIFORM:
 				for (int n = 0; n < space.size; n++)
@@ -1806,13 +1802,13 @@ public class PDERD extends ODEEuler {
 			for (Module pop : species) {
 				Plist pplist = (Plist) plist.get(pop.getName());
 				if (!restoreGeometry(pplist)) {
-					logger.warning("restore geometry in " + getModelType() + "-model failed (" + pop.getName() + ").");
+					logger.warning("restore geometry in " + type + "-model failed (" + pop.getName() + ").");
 					success = false;
 				}
 			}
 		} else {
 			if (!restoreGeometry(plist)) {
-				logger.warning("restore geometry in " + getModelType() + "-model failed.");
+				logger.warning("restore geometry in " + type + "-model failed.");
 				success = false;
 			}
 		}

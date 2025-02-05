@@ -167,24 +167,11 @@ public class Markers {
 									mksuccess = false;
 									break;
 								}
-								switch (model.getModelType()) {
-									case IBS:
-										smk = ArrayMath.insert(smk, 1.0 - ArrayMath.norm(smk),
-												dep >= 0 ? dep : vac);
-										break;
-									case ODE:
-									case SDE:
-									case PDE:
-										if (((ODEEuler) model).isDensity())
-											// no dependent traits for density based model (vac >= 0 must hold)
-											smk = ArrayMath.insert(smk, 0.0, vac);
-										else
-											// frequency based models (dep >= 0 must hold)
-											smk = ArrayMath.insert(smk, 1.0 - ArrayMath.norm(smk), dep);
-										break;
-									default: // unreachable
-										break;
-								}
+								if (dep >= 0)
+									smk = ArrayMath.insert(smk, 1.0 - ArrayMath.norm(smk), dep);
+								else
+									// vac >= 0 must hold
+									smk = ArrayMath.insert(smk, 0.0, vac);
 							}
 							// now smk.length == nt holds
 							dmk = ArrayMath.merge(dmk, smk);

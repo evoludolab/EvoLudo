@@ -96,7 +96,7 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 	@Override
 	public void reset(boolean clear) {
 		Geometry geometry;
-		switch (engine.getModel().getModelType()) {
+		switch (engine.getModel().getType()) {
 			case ODE:
 			case SDE:
 				super.reset(clear);

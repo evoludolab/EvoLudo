@@ -167,10 +167,10 @@ public class IBSC extends IBS implements Continuous {
 							Init.Type prevtype = null;
 							boolean isMultiSpecies = (ibs.species.size() > 1);
 							for (int n = 0; n < nt; n++) {
-								String inittype = inittypes[n % inittypes.length];
+								String itype = inittypes[n % inittypes.length];
 								double[] initargs = null;
-								String[] typeargs = inittype.split("\\s+|=");
-								Init.Type newtype = (Init.Type) clo.match(inittype);
+								String[] typeargs = itype.split("\\s+|=");
+								Init.Type newtype = (Init.Type) clo.match(itype);
 								Init init = cpop.getInit();
 								if (newtype == null && prevtype != null) {
 									newtype = prevtype;
@@ -182,7 +182,7 @@ public class IBSC extends IBS implements Continuous {
 								if (newtype == null || (!newtype.equals(Init.Type.UNIFORM) && !argsOk)) {
 									ibs.logger.warning(
 											(isMultiSpecies ? mod.getName() + ": " : "") +
-													"init '" + inittype + "' unknown!");
+													"init '" + itype + "' unknown!");
 									newtype = Init.Type.UNIFORM;
 									success = false;
 								}

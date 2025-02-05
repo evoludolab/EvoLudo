@@ -70,11 +70,6 @@ public class SDEEuler extends ODEEuler {
 		}
 	}
 
-	@Override
-	public Type getModelType() {
-		return Type.SDE;
-	}
-
 	/**
 	 * Convenience variable: module associated with this model (useful as long as
 	 * SDE models are restricted to single species).
@@ -97,6 +92,7 @@ public class SDEEuler extends ODEEuler {
 	 */
 	public SDEEuler(EvoLudo engine) {
 		super(engine);
+		type = Type.SDE;
 	}
 
 	@Override

@@ -215,7 +215,7 @@ public abstract class MVAbstract extends JComponent
 		if( !menuShowLocal && !menuSetLocal && !menuTime ) return;
 		
 		int idx;
-		switch( engine.getModel().getModelType() ) {
+		switch( engine.getModel().getType() ) {
 			case PDE:
 				hideAllCM(menu);
 				if( menuShowLocal ) {

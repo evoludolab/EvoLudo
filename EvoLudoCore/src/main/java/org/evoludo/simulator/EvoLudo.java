@@ -366,7 +366,7 @@ public abstract class EvoLudo
 	 */
 	public boolean loadModel(Type type) {
 		if (activeModel != null) {
-			if (activeModel.getModelType() == type)
+			if (activeModel.isType(type))
 				return false;
 			// unload previous model
 			unloadModel();
@@ -528,9 +528,9 @@ public abstract class EvoLudo
 		boolean doReset = false;
 		for (Module mod : activeModule.getSpecies())
 			doReset |= mod.check();
-		Type type = activeModel.getModelType();
+		Type type = activeModel.getType();
 		doReset |= activeModel.check();
-		Type newtype = activeModel.getModelType();
+		Type newtype = activeModel.getType();
 		if (newtype != type) {
 			// model type changed; update model type in clo and parse again
 			String[] splitclo = getSplitCLO();
@@ -1167,7 +1167,7 @@ public abstract class EvoLudo
 		for (MilestoneListener i : milestoneListeners)
 			i.modelLoaded();
 		logger.info(
-				"Model '" + activeModel.getModelType() + "' loaded");
+				"Model '" + activeModel.getType() + "' loaded");
 	}
 
 	/**
@@ -1179,7 +1179,7 @@ public abstract class EvoLudo
 		for (MilestoneListener i : milestoneListeners)
 			i.modelUnloaded();
 		if (activeModel != null)
-			logger.info("Model '" + activeModel.getModelType() + "' unloaded");
+			logger.info("Model '" + activeModel.getType() + "' unloaded");
 	}
 
 	/**
@@ -1739,7 +1739,7 @@ public abstract class EvoLudo
 		if (activeModule != null)
 			cloarray = ArrayMath.append(cloarray, cloModule.getName() + " " + activeModule.getKey());
 		if (activeModel != null)
-			cloarray = ArrayMath.append(cloarray, cloModel.getName() + " " + activeModel.getModelType().getKey());
+			cloarray = ArrayMath.append(cloarray, cloModel.getName() + " " + activeModel.getType().getKey());
 		boolean success = parser.parseCLO(cloarray);
 		if (reparseCLO) {
 			// start again from scratch
@@ -1761,8 +1761,8 @@ public abstract class EvoLudo
 		if (activeModule != null) {
 			globalMsg += " for module '" + activeModule.getKey() + "'";
 			if (activeModel != null) {
-				globalMsg += " and model '" + activeModel.getModelType().getKey() + "'";
-				catModel.setHeader("Options for model '" + activeModel.getModelType().getKey() + "'");
+				globalMsg += " and model '" + activeModel.getType().getKey() + "'";
+				catModel.setHeader("Options for model '" + activeModel.getType().getKey() + "'");
 			} else
 				globalMsg += " (select model for more options)";
 			globalMsg += "\n\nGlobal options:";
@@ -1842,7 +1842,7 @@ public abstract class EvoLudo
 
 				@Override
 				public void report(PrintStream output) {
-					output.println("# model:                " + activeModel.getModelType());
+					output.println("# model:                " + activeModel.getType());
 				}
 			});
 

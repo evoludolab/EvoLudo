@@ -448,44 +448,38 @@ public class EvoLudoGWT extends EvoLudo {
 	 * @param menu the context menu where entries can be added
 	 */
 	public void populateContextMenu(ContextMenu menu) {
-		switch (activeModel.getModelType()) {
-			case ODE:
-			case SDE:
-				// add time reverse context menu
-				if (timeReverseMenu == null) {
-					timeReverseMenu = new ContextMenuCheckBoxItem("Time reversed", new Command() {
-						@Override
-						public void execute() {
-							activeModel.setTimeReversed(!activeModel.isTimeReversed());
-						}
-					});
-				}
-				menu.addSeparator();
-				menu.add(timeReverseMenu);
-				timeReverseMenu.setChecked(activeModel.isTimeReversed());
-				timeReverseMenu.setEnabled(activeModel.permitsTimeReversal());
-				return;
-			case PDE:
-				// add context menu to allow symmetric diffusion
-				if (symDiffMenu == null) {
-					symDiffMenu = new ContextMenuCheckBoxItem("Symmetric diffusion", new Command() {
-						@Override
-						public void execute() {
-							PDERD pde = (PDERD) activeModel;
-							pde.setSymmetric(!pde.isSymmetric());
-							pde.check();
-						}
-					});
-				}
-				menu.addSeparator();
-				menu.add(symDiffMenu);
-				PDERD pde = (PDERD) activeModel;
-				symDiffMenu.setChecked(pde.isSymmetric());
-				Geometry space = pde.getGeometry();
-				symDiffMenu.setEnabled(space.isRegular || space.isLattice());
-				break;
-			case IBS:
-			default:
+		if ( activeModel.isODE() || activeModel.isSDE() ) {
+			// add time reverse context menu
+			if (timeReverseMenu == null) {
+				timeReverseMenu = new ContextMenuCheckBoxItem("Time reversed", new Command() {
+					@Override
+					public void execute() {
+						activeModel.setTimeReversed(!activeModel.isTimeReversed());
+					}
+				});
+			}
+			menu.addSeparator();
+			menu.add(timeReverseMenu);
+			timeReverseMenu.setChecked(activeModel.isTimeReversed());
+			timeReverseMenu.setEnabled(activeModel.permitsTimeReversal());
+		} else if (activeModel.isPDE()) {
+			// add context menu to allow symmetric diffusion
+			if (symDiffMenu == null) {
+				symDiffMenu = new ContextMenuCheckBoxItem("Symmetric diffusion", new Command() {
+					@Override
+					public void execute() {
+						PDERD pde = (PDERD) activeModel;
+						pde.setSymmetric(!pde.isSymmetric());
+						pde.check();
+					}
+				});
+			}
+			menu.addSeparator();
+			menu.add(symDiffMenu);
+			PDERD pde = (PDERD) activeModel;
+			symDiffMenu.setChecked(pde.isSymmetric());
+			Geometry space = pde.getGeometry();
+			symDiffMenu.setEnabled(space.isRegular || space.isLattice());
 		}
 		// process fullscreen context menu
 		if (fullscreenMenu == null && NativeJS.isFullscreenSupported()) {

@@ -493,11 +493,27 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
-	 * Gets the type of this model.
-	 * 
-	 * @return the type of model
+	 * The type of the model: IBS, ODE, SDE, or PDE.
 	 */
-	public abstract Type getModelType();
+	Type type;
+
+	/**
+	 * Gets the type of the model.
+	 * 
+	 * @return the type of the model
+	 */
+	public Type getType() {
+		return type;
+	}
+
+	/**
+	 * Checks if model is of type {@code type}.
+	 * 
+	 * @return {@code true} for models of type {@code type}
+	 */
+	public boolean isType(Type aType) {
+		return (type == aType);
+	}
 
 	/**
 	 * Checks if model is of type IBS.
@@ -505,7 +521,7 @@ public abstract class Model implements CLOProvider {
 	 * @return {@code true} for IBS models
 	 */
 	public boolean isIBS() {
-		return getModelType() == Type.IBS;
+		return type == Type.IBS;
 	}
 
 	/**
@@ -514,7 +530,7 @@ public abstract class Model implements CLOProvider {
 	 * @return {@code true} for ODE models
 	 */
 	public boolean isODE() {
-		return getModelType() == Type.ODE;
+		return type == Type.ODE;
 	}
 
 	/**
@@ -523,7 +539,7 @@ public abstract class Model implements CLOProvider {
 	 * @return {@code true} for SDE models
 	 */
 	public boolean isSDE() {
-		return getModelType() == Type.SDE;
+		return type == Type.SDE;
 	}
 
 	/**
@@ -532,7 +548,7 @@ public abstract class Model implements CLOProvider {
 	 * @return {@code true} for PDE models
 	 */
 	public boolean isPDE() {
-		return getModelType() == Type.PDE;
+		return type == Type.PDE;
 	}
 
 	/**
@@ -541,7 +557,6 @@ public abstract class Model implements CLOProvider {
 	 * @return {@code true} for differential equations models
 	 */
 	public boolean isDE() {
-		Type type = getModelType();
 		return (type == Type.ODE || type == Type.SDE || type == Type.PDE);
 	}
 

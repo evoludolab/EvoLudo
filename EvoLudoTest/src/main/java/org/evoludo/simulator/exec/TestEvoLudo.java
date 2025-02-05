@@ -268,7 +268,7 @@ public class TestEvoLudo implements MilestoneListener {
 	 */
 	private String generateExportFilename(String clo, int idx) {
 		String module = engine.getModule().getKey();
-		String model = engine.getModel().getModelType().getKey();
+		String model = engine.getModel().getType().getKey();
 		int exportIdx = clo.indexOf("--export");
 		if (exportIdx < 0)
 			return module + "-" + idx + "-" + model + ".plist";

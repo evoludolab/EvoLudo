@@ -718,33 +718,25 @@ if (maxBins < 0) maxBins = 100;
 					double min = 0.0, max = 0.0;
 					for (HistoGraph graph : graphs) {
 						Module module = graph.getModule();
-						Geometry inter = null, comp = null;
-						switch (model.getModelType()) {
-							case ODE:
-								graph.displayMessage("ODE model: well-mixed population.");
+						Geometry inter = module.getInteractionGeometry();
+						Geometry comp = module.getCompetitionGeometry();
+						if (model.isODE() || model.isSDE()) {
+							graph.displayMessage(model.getType().getKey() + " model: well-mixed population.");
+							continue;
+						}
+						if (model.isPDE()) {
+							inter = comp = module.getGeometry();
+							if (inter.isRegular) {
+								graph.displayMessage("PDE model: regular structure with degree "
+										+ (int) (inter.connectivity + 0.5) + ".");
 								continue;
-							case SDE:
-								graph.displayMessage("SDE model: well-mixed population.");
+							}
+							if (inter.isLattice()) {
+								graph.displayMessage("PDE model: lattice structure with degree "
+										+ (int) (inter.connectivity + 0.5) +
+										(inter.fixedBoundary ? " (fixed" : " (periodic") + " boundaries).");
 								continue;
-							case PDE:
-								inter = comp = module.getGeometry();
-								if (inter.isRegular) {
-									graph.displayMessage("PDE model: regular structure with degree "
-											+ (int) (inter.connectivity + 0.5) + ".");
-									continue;
-								}
-								if (inter.isLattice()) {
-									graph.displayMessage("PDE model: lattice structure with degree "
-											+ (int) (inter.connectivity + 0.5) +
-											(inter.fixedBoundary ? " (fixed" : " (periodic") + " boundaries).");
-									continue;
-								}
-								break;
-							case IBS:
-								inter = module.getInteractionGeometry();
-								comp = module.getCompetitionGeometry();
-								break;
-							default: // unreachable
+							}
 						}
 						if (!degreeProcessed || (inter != null && inter.isDynamic)
 								|| (comp != null && comp.isDynamic)) {

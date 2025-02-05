@@ -142,7 +142,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
     
 	// this is up-to-date after call to controller.initData()
 	protected void checkGraph() {
-		org.evoludo.simulator.models.Type model = controller.getEngine().getModel().getModelType();
+		org.evoludo.simulator.models.Type model = controller.getEngine().getModel().getType();
 		switch( model ) {
 			case ODE:
 				setMessage("No view available (ODE Solver)");

@@ -181,26 +181,24 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	 * 			competition geometry
 	 */
 	void setGraphGeometry(GenericPopGraph<T,N> graph, boolean inter) {
-		Module module = graph.getModule();
-		switch (model.getModelType()) {
-			case IBS:
-				Geometry igeom = module.getInteractionGeometry();
-				Geometry cgeom = module.getCompetitionGeometry();
-				Geometry geo = inter ? igeom : cgeom;
-				if (!igeom.interCompSame && Geometry.displayUniqueGeometry(igeom, cgeom))
-					// different geometries but only one graph - pick competition.
-					// note: this is not a proper solution but fits the requirements of
-					// the competition with second nearest neighbours
-					geo = cgeom;
-				graph.setGeometry(geo);
-				break;
-			case PDE:
-				graph.setGeometry(((PDERD) model).getGeometry());
-				break;
-			case ODE:
-			case SDE:
-				graph.displayMessage("No structure to display in " + type + " model.");
+		if (model.isIBS()) {
+			Module module = graph.getModule();
+			Geometry igeom = module.getInteractionGeometry();
+			Geometry cgeom = module.getCompetitionGeometry();
+			Geometry geo = inter ? igeom : cgeom;
+			if (!igeom.interCompSame && Geometry.displayUniqueGeometry(igeom, cgeom))
+				// different geometries but only one graph - pick competition.
+				// note: this is not a proper solution but fits the requirements of
+				// the competition with second nearest neighbours
+				geo = cgeom;
+			graph.setGeometry(geo);
+			return;
 		}
+		if (model.isPDE()) {
+			graph.setGeometry(((PDERD) model).getGeometry());
+			return;
+		}
+		graph.displayMessage("No structure to display in " + type + " model.");
 	}
 
 	@Override
@@ -213,43 +211,36 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 
 	@Override
 	public void update(boolean force) {
-		switch (model.getModelType()) {
-			case ODE:
-				for (G graph : graphs)
-					graph.displayMessage("No view available (ODE Solver)");
-				break;
-			case SDE:
-				for (G graph : graphs)
-					graph.displayMessage("No view available (SDE Solver)");
-				break;
-			case PDE:
-			default:
-				// always read data - some nodes may have changed due to user actions
-				double newtime = model.getTime();
-				boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
-				timestamp = newtime;
-				for (G graph : graphs) {
-					boolean doUpdate = (isActive || graph.hasHistory()) && !graph.hasMessage();
-					// if graph is neither active nor has history, force can be safely ignored
-					// otherwise may lead to problems if graph has never been activated
-					if (!doUpdate)
-						continue;
-					switch (type) {
-						case STRATEGY:
-							model.getTraitData(graph.getModule().getID(), graph.getData(), graph.getColorMap());
-							break;
-						case FITNESS:
-							// cast should be safe for fitness data
-							model.getFitnessData(graph.getModule().getID(), graph.getData(),
-									(ColorMap.Gradient1D<T>) graph.getColorMap());
-							break;
-						default:
-							break;
-					}
-					graph.update(isNext);
-					graph.paint(force);
+		if (model.isIBS() || model.isPDE()) {
+			// always read data - some nodes may have changed due to user actions
+			double newtime = model.getTime();
+			boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
+			timestamp = newtime;
+			for (G graph : graphs) {
+				boolean doUpdate = (isActive || graph.hasHistory()) && !graph.hasMessage();
+				// if graph is neither active nor has history, force can be safely ignored
+				// otherwise may lead to problems if graph has never been activated
+				if (!doUpdate)
+					continue;
+				switch (type) {
+					case STRATEGY:
+						model.getTraitData(graph.getModule().getID(), graph.getData(), graph.getColorMap());
+						break;
+					case FITNESS:
+						// cast should be safe for fitness data
+						model.getFitnessData(graph.getModule().getID(), graph.getData(),
+								(ColorMap.Gradient1D<T>) graph.getColorMap());
+						break;
+					default:
+						break;
 				}
+				graph.update(isNext);
+				graph.paint(force);
+			}
+			return;
 		}
+		for (G graph : graphs)
+			graph.displayMessage("No view available for " + type + " model.");
 	}
 
 	/**
@@ -295,143 +286,137 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 		if (module.getNSpecies() > 1)
 			tip.append("<tr><td><i>Species:</i></td><td>" + module.getName() + "</td></tr>");
 
-		switch (model.getModelType()) {
-			case ODE:
-				return null; // no further information available
+		if (model.isIBS()) {
+			if (node >= nNodes) {
+				// this can only happen for Geometry.LINEAR
+				int idx = node / nNodes;
+				node %= nNodes;
+				double t = idx * model.getTimeStep();
+				tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>" +
+						"<tr><td><i>Time:</i></td><td>" + Formatter.format(-t, 2) + "</td></tr>");
+				return tip + "</table>";
+				// NOTE: RingBuffer contains color-strings; requires reverse engineering to
+				// determine strategies...
+				// RingBuffer.Array<String> buffer = graph.getBuffer();
+				// if( idx>=buffer.size() ) return tip+"</table>";
+				// String[] colors = graph.getBuffer().get(idx);
+				// return tip+"<tr><td
+				// colspan='2'><hr/></td></tr><tr><td><i>Strategy:</i></td><td
+				// style='color:"+colors[node]+";'>"+
+				// population.getTraitNameAt(node)+"</td></tr></table>";
+			}
+			IBS ibs = (IBS) model;
+			id = module.getID();
+			tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>");
+			if (type == Data.STRATEGY) {
+				// strategy: use color-data to color strategy
+				tip.append("<tr><td><i>Strategy:</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
+						"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getTraitNameAt(id, node)
+						+ "</td></tr>");
+			} else {
+				tip.append("<tr><td><i>Strategy:</i></td><td>" + model.getTraitNameAt(id, node) + "</td></tr>");
+			}
+			String tag = ibs.getTagNameAt(id, node);
+			if (tag != null)
+				tip.append("<tr><td><i>Tag:</i></td><td>" + tag + "</td></tr>");
+			// with payoff-to-fitness report score first, then fitness (see below)
+			boolean noFitMap = module.getMapToFitness().isMap(Map2Fitness.Map.NONE);
+			String label = (noFitMap ? "Fitness" : "Score");
+			if (type == Data.FITNESS) {
+				// fitness: use color-data to color strategy
+				tip.append("<tr><td><i>" + label + ":</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
+						"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getScoreNameAt(id, node)
+						+ "</td></tr>");
+			} else {
+				tip.append(
+						"<tr><td><i>" + label + ":</i></td><td>" + model.getScoreNameAt(id, node) + "</td></tr>");
+			}
+			if (!noFitMap)
+				tip.append("<tr><td><i>Fitness:</i></td><td>" + model.getFitnessNameAt(id, node) + "</td></tr>");
+			int count = ibs.getInteractionsAt(id, node);
+			if (count >= 0) {
+				if (count == Integer.MAX_VALUE)
+					tip.append("<tr><td><i>Interactions:</i></td><td>all</td></tr>");
+				else
+					tip.append("<tr><td><i>Interactions:</i></td><td>" + count + "</td></tr>");
+			}
 
-			case PDE:
-				if (node >= nNodes) {
-					// this can only happen for Geometry.LINEAR
-					int idx = node / nNodes;
-					node %= nNodes;
-					double t = idx * model.getTimeStep();
-					tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>" +
-							"<tr><td><i>Time:</i></td><td>" + Formatter.format(-t, 2) + "</td></tr>");
-					return tip + "</table>";
-					// NOTE: reverse engineer color data from RingBuffer? - see below
-				}
-				String[] s = module.getTraitNames();
-				Color[] c = module.getTraitColors();
-				id = module.getID();
-				String names = "<tr><td><i>Strategies:</i></td><td><span style='color:" + ColorMapCSS.Color2Css(c[0]) +
-						"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + s[0];
-				for (int n = 1; n < s.length; n++)
-					names += ", <span style='color:" + ColorMapCSS.Color2Css(c[n]) +
-							"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + s[n];
-				names += "</td></tr>";
-				String density = "";
-				if (type == Data.STRATEGY)
-					density = "<tr><td><i>Densities:</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
-							"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getTraitNameAt(id, node)
-							+ "</td></tr>";
-				else
-					density = "<tr><td><i>Densities:</i></td><td>" + model.getTraitNameAt(id, node) + "</td></tr>";
-				String fitness = "";
-				if (type == Data.FITNESS)
-					fitness = "<tr><td><i>Fitness:</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
-							"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getFitnessNameAt(id, node);
-				else
-					fitness = "<tr><td><i>Fitness:</i></td><td>" + model.getFitnessNameAt(id, node);
-				fitness += " → "
-						+ Formatter.pretty(
-								ArrayMath.dot(model.getMeanTraitAt(id, node), model.getMeanFitnessAt(id, node)), 3)
-						+ "</td></tr>";
-				tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>" + names + density + fitness);
-				if (geometry.isUndirected)
-					tip.append(
-							"<tr><td><i>Connections:</i></td><td>" + formatStructureAt(node, geometry) + "</td></tr>");
-				else
-					tip.append("<tr><td><i>Links to:</i></td><td>" + formatOutStructureAt(node, geometry) + "</td></tr>"
-							+
-							"<tr><td><i>Link here:</i></td><td>" + formatInStructureAt(node, geometry) + "</td></tr>");
-				return tip.append("</table>").toString();
+			Geometry intergeom = module.getInteractionGeometry();
+			if (intergeom.isUndirected)
+				tip.append(
+						"<tr><td><i>Neighbors:</i></td><td>" + formatStructureAt(node, intergeom) + "</td></tr>");
+			else
+				// useful for debugging geometry - Geometry.checkConnections should be able to
+				// catch such problems
+				tip.append("<tr><td><i>Links to:</i></td><td>" + formatOutStructureAt(node, intergeom)
+						+ "</td></tr>" +
+						"<tr><td><i>Link here:</i></td><td>" + formatInStructureAt(node, intergeom) + "</td></tr>");
+			if (intergeom.isInterspecies())
+				tip.append(formatStrategiesAt(node, intergeom, getOpponentInteractionGraph(graph)));
 
-			case IBS:
-				if (node >= nNodes) {
-					// this can only happen for Geometry.LINEAR
-					int idx = node / nNodes;
-					node %= nNodes;
-					double t = idx * model.getTimeStep();
-					tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>" +
-							"<tr><td><i>Time:</i></td><td>" + Formatter.format(-t, 2) + "</td></tr>");
-					return tip + "</table>";
-					// NOTE: RingBuffer contains color-strings; requires reverse engineering to
-					// determine strategies...
-					// RingBuffer.Array<String> buffer = graph.getBuffer();
-					// if( idx>=buffer.size() ) return tip+"</table>";
-					// String[] colors = graph.getBuffer().get(idx);
-					// return tip+"<tr><td
-					// colspan='2'><hr/></td></tr><tr><td><i>Strategy:</i></td><td
-					// style='color:"+colors[node]+";'>"+
-					// population.getTraitNameAt(node)+"</td></tr></table>";
-				}
-				IBS ibs = (IBS) model;
-				id = module.getID();
-				tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>");
-				if (type == Data.STRATEGY) {
-					// strategy: use color-data to color strategy
-					tip.append("<tr><td><i>Strategy:</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
-							"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getTraitNameAt(id, node)
+			Geometry compgeom = module.getCompetitionGeometry();
+			if (!compgeom.interCompSame) {
+				if (compgeom.isUndirected)
+					tip.append("<tr><td><i>Competitors:</i></td><td>" + formatStructureAt(node, compgeom)
 							+ "</td></tr>");
-				} else {
-					tip.append("<tr><td><i>Strategy:</i></td><td>" + model.getTraitNameAt(id, node) + "</td></tr>");
-				}
-				String tag = ibs.getTagNameAt(id, node);
-				if (tag != null)
-					tip.append("<tr><td><i>Tag:</i></td><td>" + tag + "</td></tr>");
-				// with payoff-to-fitness report score first, then fitness (see below)
-				boolean noFitMap = module.getMapToFitness().isMap(Map2Fitness.Map.NONE);
-				String label = (noFitMap ? "Fitness" : "Score");
-				if (type == Data.FITNESS) {
-					// fitness: use color-data to color strategy
-					tip.append("<tr><td><i>" + label + ":</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
-							"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getScoreNameAt(id, node)
-							+ "</td></tr>");
-				} else {
-					tip.append(
-							"<tr><td><i>" + label + ":</i></td><td>" + model.getScoreNameAt(id, node) + "</td></tr>");
-				}
-				if (!noFitMap)
-					tip.append("<tr><td><i>Fitness:</i></td><td>" + model.getFitnessNameAt(id, node) + "</td></tr>");
-				int count = ibs.getInteractionsAt(id, node);
-				if (count >= 0) {
-					if (count == Integer.MAX_VALUE)
-						tip.append("<tr><td><i>Interactions:</i></td><td>all</td></tr>");
-					else
-						tip.append("<tr><td><i>Interactions:</i></td><td>" + count + "</td></tr>");
-				}
-
-				Geometry intergeom = module.getInteractionGeometry();
-				if (intergeom.isUndirected)
-					tip.append(
-							"<tr><td><i>Neighbors:</i></td><td>" + formatStructureAt(node, intergeom) + "</td></tr>");
 				else
-					// useful for debugging geometry - Geometry.checkConnections should be able to
-					// catch such problems
-					tip.append("<tr><td><i>Links to:</i></td><td>" + formatOutStructureAt(node, intergeom)
+					tip.append("<tr><td><i>Competes for:</i></td><td>" + formatOutStructureAt(node, compgeom)
 							+ "</td></tr>" +
-							"<tr><td><i>Link here:</i></td><td>" + formatInStructureAt(node, intergeom) + "</td></tr>");
+							"<tr><td><i>Compete here:</i></td><td>" + formatInStructureAt(node, compgeom)
+							+ "</td></tr>");
 				if (intergeom.isInterspecies())
-					tip.append(formatStrategiesAt(node, intergeom, getOpponentInteractionGraph(graph)));
-
-				Geometry compgeom = module.getCompetitionGeometry();
-				if (!compgeom.interCompSame) {
-					if (compgeom.isUndirected)
-						tip.append("<tr><td><i>Competitors:</i></td><td>" + formatStructureAt(node, compgeom)
-								+ "</td></tr>");
-					else
-						tip.append("<tr><td><i>Competes for:</i></td><td>" + formatOutStructureAt(node, compgeom)
-								+ "</td></tr>" +
-								"<tr><td><i>Compete here:</i></td><td>" + formatInStructureAt(node, compgeom)
-								+ "</td></tr>");
-					if (intergeom.isInterspecies())
-						tip.append(formatStrategiesAt(node, compgeom, getOpponentCompetitionGraph(graph)));
-				}
-				return tip.append("</table>").toString();
-
-			default:
-				return null;
+					tip.append(formatStrategiesAt(node, compgeom, getOpponentCompetitionGraph(graph)));
+			}
+			return tip.append("</table>").toString();
 		}
+		if (model.isPDE()) {
+			if (node >= nNodes) {
+				// this can only happen for Geometry.LINEAR
+				int idx = node / nNodes;
+				node %= nNodes;
+				double t = idx * model.getTimeStep();
+				tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>" +
+						"<tr><td><i>Time:</i></td><td>" + Formatter.format(-t, 2) + "</td></tr>");
+				return tip + "</table>";
+				// NOTE: reverse engineer color data from RingBuffer? - see below
+			}
+			String[] s = module.getTraitNames();
+			Color[] c = module.getTraitColors();
+			id = module.getID();
+			String names = "<tr><td><i>Strategies:</i></td><td><span style='color:" + ColorMapCSS.Color2Css(c[0]) +
+					"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + s[0];
+			for (int n = 1; n < s.length; n++)
+				names += ", <span style='color:" + ColorMapCSS.Color2Css(c[n]) +
+						"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + s[n];
+			names += "</td></tr>";
+			String density = "";
+			if (type == Data.STRATEGY)
+				density = "<tr><td><i>Densities:</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
+						"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getTraitNameAt(id, node)
+						+ "</td></tr>";
+			else
+				density = "<tr><td><i>Densities:</i></td><td>" + model.getTraitNameAt(id, node) + "</td></tr>";
+			String fitness = "";
+			if (type == Data.FITNESS)
+				fitness = "<tr><td><i>Fitness:</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
+						"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getFitnessNameAt(id, node);
+			else
+				fitness = "<tr><td><i>Fitness:</i></td><td>" + model.getFitnessNameAt(id, node);
+			fitness += " → "
+					+ Formatter.pretty(
+							ArrayMath.dot(model.getMeanTraitAt(id, node), model.getMeanFitnessAt(id, node)), 3)
+					+ "</td></tr>";
+			tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>" + names + density + fitness);
+			if (geometry.isUndirected)
+				tip.append(
+						"<tr><td><i>Connections:</i></td><td>" + formatStructureAt(node, geometry) + "</td></tr>");
+			else
+				tip.append("<tr><td><i>Links to:</i></td><td>" + formatOutStructureAt(node, geometry) + "</td></tr>"
+						+
+						"<tr><td><i>Link here:</i></td><td>" + formatInStructureAt(node, geometry) + "</td></tr>");
+			return tip.append("</table>").toString();
+		}
+		return null;
 	}
 
 	/**

@@ -358,7 +358,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 		// String toolTip, struct = "";
 		String toolTip;
 		Model model = engine.getModel();
-		switch (model.getModelType()) {
+		switch (model.getType()) {
 			case ODE:
 				return null; // no further information available
 

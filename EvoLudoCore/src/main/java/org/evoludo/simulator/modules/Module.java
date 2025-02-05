@@ -49,6 +49,7 @@ import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODEEuler;
 import org.evoludo.simulator.models.ODEEuler.HasODE;
 import org.evoludo.simulator.models.PDERD;
+import org.evoludo.simulator.models.SDEEuler;
 import org.evoludo.simulator.models.PDERD.HasPDE;
 import org.evoludo.simulator.models.SDEEuler.HasSDE;
 import org.evoludo.simulator.models.Type;
@@ -990,7 +991,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		int oldNPopulation = nPopulation;
 		nPopulation = Math.max(1, size);
 		boolean changed = (nPopulation != oldNPopulation);
-		engine.requiresReset(changed && model.isIBS());
+		engine.requiresReset(changed && model instanceof IBS);
 		return changed;
 	}
 
@@ -1204,30 +1205,28 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 
 				@Override
 				public void report(PrintStream output) {
-					switch (model.getModelType()) {
-						case PDE:
-							// inter-species PDEs not yet implemented
-							Geometry geo = ((PDERD) model).getGeometry();
-							output.println("# pde geometry:         " + geo.getType().getTitle());
-							geo.printParams(output);
-							break;
-						case IBS:
-							for (Module pop : species) {
-								// Geometry intergeo = mod.getInteractionGeometry();
-								// if( intergeo.interCompSame ) {
-								// output.println("# geometry:
-								// "+cloGeometry.getKey(intergeo.geometry).getTitle()
-								// + (modules.size() > 1?" ("+mod.getName()+")":""));
-								// intergeo.printParams(output);
-								// }
-								if (pop.structure.interCompSame) {
-									output.println("# geometry:             " + pop.structure.getType().getTitle()
-											+ (species.size() > 1 ? " (" + pop.getName() + ")" : ""));
-									pop.structure.printParams(output);
-								}
+					if (model.isIBS()) {
+						for (Module pop : species) {
+							// Geometry intergeo = mod.getInteractionGeometry();
+							// if( intergeo.interCompSame ) {
+							// output.println("# geometry:
+							// "+cloGeometry.getKey(intergeo.geometry).getTitle()
+							// + (modules.size() > 1?" ("+mod.getName()+")":""));
+							// intergeo.printParams(output);
+							// }
+							if (pop.structure.interCompSame) {
+								output.println("# geometry:             " + pop.structure.getType().getTitle()
+										+ (species.size() > 1 ? " (" + pop.getName() + ")" : ""));
+								pop.structure.printParams(output);
 							}
-							break;
-						default:
+						}
+						return;
+					}
+					if (model.isPDE()) {
+						// inter-species PDEs not yet implemented
+						Geometry geo = ((PDERD) model).getGeometry();
+						output.println("# pde geometry:         " + geo.getType().getTitle());
+						geo.printParams(output);
 					}
 				}
 
@@ -1732,12 +1731,12 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 			parser.addCLO(cloTraitDisable);
 
 		// population size option only acceptable for IBS and SDE models
-		if (model.isIBS() || model.isSDE()) {
+		if (model instanceof IBS || model instanceof SDEEuler) {
 			parser.addCLO(cloNPopulation);
 		}
 
 		// geometry option only acceptable for IBS and PDE models
-		if (model.isIBS() || model.isPDE()) {
+		if (model instanceof IBS || model instanceof PDERD) {
 			cloGeometry.addKeys(Geometry.Type.values());
 			// by default remove DYNAMIC and SQUARE_NEUMANN_2ND geometries
 			cloGeometry.removeKey(Geometry.Type.DYNAMIC);

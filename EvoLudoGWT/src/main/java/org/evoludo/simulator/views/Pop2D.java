@@ -83,66 +83,61 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		// revise network layout routines)
 		// - another alternative is to add context menu to toggle between the different
 		// link sets (could be difficult if one is a lattice...)
-		switch (model.getModelType()) {
-			case IBS:
-				int nGraphs = 0;
-				ArrayList<? extends Module> species = engine.getModule().getSpecies();
-				for (Module module : species)
-					nGraphs += Geometry.displayUniqueGeometry(module) ? 1 : 2;
+		if (model.isIBS()) {
+			int nGraphs = 0;
+			ArrayList<? extends Module> species = engine.getModule().getSpecies();
+			for (Module module : species)
+				nGraphs += Geometry.displayUniqueGeometry(module) ? 1 : 2;
 
-				if (graphs.size() == nGraphs)
-					return;
-				destroyGraphs();
-				for (Module module : species) {
-					PopGraph2D graph = new PopGraph2D(this, module);
-					wrapper.add(graph);
-					graphs.add(graph);
-					if (!Geometry.displayUniqueGeometry(module)) {
-						graph = new PopGraph2D(this, module);
-						wrapper.add(graph);
-						graphs.add(graph);
-						// arrange graphs horizontally
-						gCols = 2;
-					}
-				}
-				gRows = species.size();
-				if (gRows * gCols == 2) {
-					// always arrange horizontally if only two graphs
-					gRows = 1;
-					gCols = 2;
-				}
-				int width = 100 / gCols;
-				int height = 100 / gRows;
-				boolean inter = true;
-				for (PopGraph2D graph : graphs) {
-					graph.setSize(width + "%", height + "%");
-					setGraphGeometry(graph, inter);
-					inter = !inter;
-					if (isActive)
-						graph.activate();
-				}
-				break;
-			case PDE:
-				// PDEs currently restricted to single species
-				if (graphs.size() == 1)
-					return;
-
-				destroyGraphs();
-				Module module = engine.getModule();
+			if (graphs.size() == nGraphs)
+				return;
+			destroyGraphs();
+			for (Module module : species) {
 				PopGraph2D graph = new PopGraph2D(this, module);
-				// debugging not available for DE's
-				graph.setDebugEnabled(false);
 				wrapper.add(graph);
 				graphs.add(graph);
-				graph.setSize("100%", "100%");
-				setGraphGeometry(graph, true);
+				if (!Geometry.displayUniqueGeometry(module)) {
+					graph = new PopGraph2D(this, module);
+					wrapper.add(graph);
+					graphs.add(graph);
+					// arrange graphs horizontally
+					gCols = 2;
+				}
+			}
+			gRows = species.size();
+			if (gRows * gCols == 2) {
+				// always arrange horizontally if only two graphs
+				gRows = 1;
+				gCols = 2;
+			}
+			int width = 100 / gCols;
+			int height = 100 / gRows;
+			boolean inter = true;
+			for (PopGraph2D graph : graphs) {
+				graph.setSize(width + "%", height + "%");
+				setGraphGeometry(graph, inter);
+				inter = !inter;
 				if (isActive)
 					graph.activate();
-				break;
-			case ODE:
-			case SDE:
-				break;
-			default:
+			}
+			return;
+		}
+		if (model.isPDE()) {
+			// PDEs currently restricted to single species
+			if (graphs.size() == 1)
+				return;
+
+			destroyGraphs();
+			Module module = engine.getModule();
+			PopGraph2D graph = new PopGraph2D(this, module);
+			// debugging not available for DE's
+			graph.setDebugEnabled(false);
+			wrapper.add(graph);
+			graphs.add(graph);
+			graph.setSize("100%", "100%");
+			setGraphGeometry(graph, true);
+			if (isActive)
+				graph.activate();
 		}
 	}
 
