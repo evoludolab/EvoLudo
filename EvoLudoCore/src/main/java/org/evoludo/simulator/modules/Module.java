@@ -46,12 +46,12 @@ import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Markers;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.ODEEuler;
-import org.evoludo.simulator.models.ODEEuler.HasODE;
-import org.evoludo.simulator.models.PDERD;
-import org.evoludo.simulator.models.SDEEuler;
-import org.evoludo.simulator.models.PDERD.HasPDE;
-import org.evoludo.simulator.models.SDEEuler.HasSDE;
+import org.evoludo.simulator.models.ODE;
+import org.evoludo.simulator.models.ODE.HasODE;
+import org.evoludo.simulator.models.PDE;
+import org.evoludo.simulator.models.SDE;
+import org.evoludo.simulator.models.PDE.HasPDE;
+import org.evoludo.simulator.models.SDE.HasSDE;
 import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
@@ -440,7 +440,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @return the index of the vacant type
 	 */
 	public int getDependent() {
-		if (model.isDE() && ((ODEEuler) model).isDensity())
+		if (model.isDE() && ((ODE) model).isDensity())
 			return -1;
 		return VACANT;
 	}
@@ -1224,7 +1224,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					}
 					if (model.isPDE()) {
 						// inter-species PDEs not yet implemented
-						Geometry geo = ((PDERD) model).getGeometry();
+						Geometry geo = ((PDE) model).getGeometry();
 						output.println("# pde geometry:         " + geo.getType().getTitle());
 						geo.printParams(output);
 					}
@@ -1731,12 +1731,12 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 			parser.addCLO(cloTraitDisable);
 
 		// population size option only acceptable for IBS and SDE models
-		if (model instanceof IBS || model instanceof SDEEuler) {
+		if (model instanceof IBS || model instanceof SDE) {
 			parser.addCLO(cloNPopulation);
 		}
 
 		// geometry option only acceptable for IBS and PDE models
-		if (model instanceof IBS || model instanceof PDERD) {
+		if (model instanceof IBS || model instanceof PDE) {
 			cloGeometry.addKeys(Geometry.Type.values());
 			// by default remove DYNAMIC and SQUARE_NEUMANN_2ND geometries
 			cloGeometry.removeKey(Geometry.Type.DYNAMIC);

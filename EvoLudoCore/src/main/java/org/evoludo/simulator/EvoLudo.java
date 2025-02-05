@@ -53,13 +53,13 @@ import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.ODEEuler.HasODE;
-import org.evoludo.simulator.models.ODERK;
-import org.evoludo.simulator.models.PDERD;
-import org.evoludo.simulator.models.PDERD.HasPDE;
+import org.evoludo.simulator.models.ODE.HasODE;
+import org.evoludo.simulator.models.RungeKutta;
+import org.evoludo.simulator.models.PDE;
+import org.evoludo.simulator.models.PDE.HasPDE;
 import org.evoludo.simulator.models.PDESupervisor;
-import org.evoludo.simulator.models.SDEEuler;
-import org.evoludo.simulator.models.SDEEuler.HasSDE;
+import org.evoludo.simulator.models.SDE;
+import org.evoludo.simulator.models.SDE.HasSDE;
 import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.ATBT;
 import org.evoludo.simulator.modules.CDL;
@@ -252,7 +252,7 @@ public abstract class EvoLudo
 	/**
 	 * Creates ordinary differential equation model for <code>module</code>.
 	 * <p>
-	 * <strong>Note:</strong> by default returns {@link ODERK} model.
+	 * <strong>Note:</strong> by default returns {@link RungeKutta} model.
 	 * Override to provide custom implementation of ODE model.
 	 * 
 	 * @param module the interaction {@link Module}
@@ -264,13 +264,13 @@ public abstract class EvoLudo
 			if (model != null)
 				return model;
 		}
-		return new ODERK(this);
+		return new RungeKutta(this);
 	}
 
 	/**
 	 * Creates stochastic differential equation model for <code>module</code>.
 	 * <p>
-	 * <strong>Note:</strong> by default returns {@link SDEEuler} model.
+	 * <strong>Note:</strong> by default returns {@link SDE} model.
 	 * Override to provide custom implementation of SDE model.
 	 * 
 	 * @param module the interaction {@link Module}
@@ -282,13 +282,13 @@ public abstract class EvoLudo
 			if (model != null)
 				return model;
 		}
-		return new SDEEuler(this);
+		return new SDE(this);
 	}
 
 	/**
 	 * Creates partial differential equation model for <code>module</code>.
 	 * <p>
-	 * <strong>Note:</strong> by default returns {@link PDERD} model.
+	 * <strong>Note:</strong> by default returns {@link PDE} model.
 	 * Override to provide custom implementation of PDE model.
 	 * 
 	 * @param module the interaction {@link Module}
@@ -300,7 +300,7 @@ public abstract class EvoLudo
 			if (model != null)
 				return model;
 		}
-		return new PDERD(this);
+		return new PDE(this);
 	}
 
 	/**
@@ -1366,15 +1366,15 @@ public abstract class EvoLudo
 	 * @param charge the PDE model to supervise
 	 * @return supervisor for coordinating PDE calculations
 	 * 
-	 * @see org.evoludo.simulator.EvoLudoGWT#hirePDESupervisor(org.evoludo.simulator.models.PDERD)
+	 * @see org.evoludo.simulator.EvoLudoGWT#hirePDESupervisor(org.evoludo.simulator.models.PDE)
 	 *      EvoLudoGWT#hirePDESupervisor(PDERD)
-	 * @see org.evoludo.simulator.EvoLudoJRE#hirePDESupervisor(org.evoludo.simulator.models.PDERD)
+	 * @see org.evoludo.simulator.EvoLudoJRE#hirePDESupervisor(org.evoludo.simulator.models.PDE)
 	 *      EvoLudoJRE#hirePDESupervisor(PDERD)
 	 * @see org.evoludo.simulator.models.PDESupervisor
 	 * @see org.evoludo.simulator.models.PDESupervisorGWT
 	 * @see org.evoludo.simulator.models.PDESupervisorJRE
 	 */
-	public abstract PDESupervisor hirePDESupervisor(PDERD charge);
+	public abstract PDESupervisor hirePDESupervisor(PDE charge);
 
 	/**
 	 * {@inheritDoc}

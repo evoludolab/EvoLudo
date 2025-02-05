@@ -41,7 +41,7 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.models.Data;
-import org.evoludo.simulator.models.ODEEuler.HasDE;
+import org.evoludo.simulator.models.ODE.HasDE;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Map2Fitness;

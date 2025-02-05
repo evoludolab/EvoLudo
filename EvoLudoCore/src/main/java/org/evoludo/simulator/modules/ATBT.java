@@ -43,10 +43,10 @@ import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.ODEEuler.HasODE;
-import org.evoludo.simulator.models.ODERK;
-import org.evoludo.simulator.models.PDERD.HasPDE;
-import org.evoludo.simulator.models.SDEEuler.HasSDE;
+import org.evoludo.simulator.models.ODE.HasODE;
+import org.evoludo.simulator.models.RungeKutta;
+import org.evoludo.simulator.models.PDE.HasPDE;
+import org.evoludo.simulator.models.SDE.HasSDE;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -749,7 +749,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 	 * Provide ODE implementation for asymmetric {@code 2×2} games with
 	 * environmental feedback.
 	 */
-	public class ODE extends ODERK {
+	public class ODE extends RungeKutta {
 
 		/**
 		 * Convenience variable: module associated with this model (useful for single

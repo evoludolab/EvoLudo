@@ -66,7 +66,7 @@ import org.evoludo.simulator.models.IBSMCPopulation;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.PDERD;
+import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.PDESupervisorJRE;
 import org.evoludo.simulator.modules.Module;
@@ -177,7 +177,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	}
 
 	@Override
-	public PDESupervisor hirePDESupervisor(PDERD charge) {
+	public PDESupervisor hirePDESupervisor(PDE charge) {
 		return new PDESupervisorJRE(this, charge);
 	}
 
@@ -555,7 +555,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 									}
 									break;
 								}
-								if (model instanceof PDERD) {
+								if (model instanceof PDE) {
 									output.println("How to best report trait distribution in PDE?");
 									break;
 								}
@@ -571,7 +571,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 									}
 									break;
 								}
-								if (model instanceof PDERD) {
+								if (model instanceof PDE) {
 									output.println("How to best report score distribution in PDE?");
 									break;
 								}
@@ -587,7 +587,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 									}
 									break;
 								}
-								if (model instanceof PDERD) {
+								if (model instanceof PDE) {
 									output.println("How to best report fitness distribution in PDE?");
 									break;
 								}

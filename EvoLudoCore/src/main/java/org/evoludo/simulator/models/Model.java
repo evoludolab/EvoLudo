@@ -286,7 +286,7 @@ public abstract class Model implements CLOProvider {
 	 * @return <code>true</code> if model has converged.
 	 *
 	 * @see IBSDPopulation#checkConvergence()
-	 * @see ODEEuler#setAccuracy(double)
+	 * @see ODE#setAccuracy(double)
 	 */
 	public boolean hasConverged() {
 		return converged;
@@ -1004,9 +1004,9 @@ public abstract class Model implements CLOProvider {
 	 *
 	 * @param reversed the request whether time should be reversed.
 	 *
-	 * @see org.evoludo.simulator.models.ODEEuler#setTimeReversed
+	 * @see org.evoludo.simulator.models.ODE#setTimeReversed
 	 *      ODEEuler.setTimeReversed
-	 * @see org.evoludo.simulator.models.SDEEuler#setTimeReversed
+	 * @see org.evoludo.simulator.models.SDE#setTimeReversed
 	 *      SDEEuler.setTimeReversed
 	 */
 	public void setTimeReversed(boolean reversed) {

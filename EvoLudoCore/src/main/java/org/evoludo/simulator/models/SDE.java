@@ -45,7 +45,7 @@ import org.evoludo.util.CLOption;
  * 
  * @author Christoph Hauert
  */
-public class SDEEuler extends ODEEuler {
+public class SDE extends ODE {
 
 	/**
 	 * Interface for modules that implement stochastic differential equations (SDE).
@@ -90,7 +90,7 @@ public class SDEEuler extends ODEEuler {
 	 * 
 	 * @see EvoLudo#getRNG()
 	 */
-	public SDEEuler(EvoLudo engine) {
+	public SDE(EvoLudo engine) {
 		super(engine);
 		type = Type.SDE;
 	}
@@ -130,7 +130,7 @@ public class SDEEuler extends ODEEuler {
 		int dim = nDim - 1;
 		// only one or two traits acceptable or, alternatively, two or three
 		// traits for replicator dynamics (for SDEEuler but not SDEulerN)
-		if (!getClass().getSuperclass().equals(SDEEuler.class) && (dim < 1 || dim > 2)) {
+		if (!getClass().getSuperclass().equals(SDE.class) && (dim < 1 || dim > 2)) {
 			logger.warning(getClass().getSimpleName()
 					+ " - too many traits (max 2, or 3 for replicator) - revert to ODE!");
 			engine.loadModel(Type.ODE);

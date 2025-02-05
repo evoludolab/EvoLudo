@@ -42,7 +42,7 @@ import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBSC;
-import org.evoludo.simulator.models.ODEEuler;
+import org.evoludo.simulator.models.ODE;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
 
@@ -166,7 +166,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 						idx++;
 					} else {
 						// discrete module with multiple traits on graph
-						if (model.isDE() && ((ODEEuler) model).isDensity()) {
+						if (model.isDE() && ((ODE) model).isDensity()) {
 							style.yLabel = "density";
 							style.percentY = false;
 							style.yMin = 0.0;

@@ -37,10 +37,10 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.ODEEuler.HasODE;
-import org.evoludo.simulator.models.PDERD.HasPDE;
-import org.evoludo.simulator.models.SDEEuler.HasSDE;
-import org.evoludo.simulator.models.SDEEulerN;
+import org.evoludo.simulator.models.ODE.HasODE;
+import org.evoludo.simulator.models.PDE.HasPDE;
+import org.evoludo.simulator.models.SDE.HasSDE;
+import org.evoludo.simulator.models.SDEN;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
@@ -308,6 +308,6 @@ public class Traits extends Discrete implements
 
 	@Override
 	public Model createSDE() {
-		return new SDEEulerN(engine);
+		return new SDEN(engine);
 	}
 }

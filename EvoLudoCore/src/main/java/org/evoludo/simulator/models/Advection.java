@@ -51,7 +51,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class PDERDA extends PDERD {
+public class Advection extends PDE {
 
 	/**
 	 * The 2D array of advection coefficients for each trait against all others.
@@ -64,7 +64,7 @@ public class PDERDA extends PDERD {
 	/**
 	 * Helper variable to store the effective advection coefficients. This depends
 	 * not only on the advection coefficients {@link #advcoeff} ut also on the time
-	 * increment {@link ODEEuler#dt dt} and the linear extension, {@link #linext}.
+	 * increment {@link ODE#dt dt} and the linear extension, {@link #linext}.
 	 *
 	 * @see #initDiffusion(double)
 	 */
@@ -98,7 +98,7 @@ public class PDERDA extends PDERD {
 	 * @see org.evoludo.simulator.models.PDESupervisorGWT PDESupervisorGWT
 	 * @see org.evoludo.simulator.models.PDESupervisorJRE PDESupervisorJRE
 	 */
-	public PDERDA(EvoLudo engine) {
+	public Advection(EvoLudo engine) {
 		super(engine);
 	}
 

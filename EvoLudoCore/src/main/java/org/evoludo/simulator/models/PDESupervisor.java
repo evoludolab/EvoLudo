@@ -51,7 +51,7 @@ public class PDESupervisor {
 	 * @param engine the pacemaker for running the model
 	 * @param charge the model to supervise
 	 */
-	public PDESupervisor(EvoLudo engine, PDERD charge) {
+	public PDESupervisor(EvoLudo engine, PDE charge) {
 		this.engine = engine;
 		this.charge = charge;
 	}
@@ -59,7 +59,7 @@ public class PDESupervisor {
 	/**
 	 * The model to manage and supervise its execution.
 	 */
-	protected PDERD charge;
+	protected PDE charge;
 
 	/**
 	 * The number of units in the discretization of the PDE.

@@ -58,7 +58,7 @@ import org.evoludo.util.Plist;
  *
  * @author Christoph Hauert
  */
-public class ODEEuler extends Model implements Discrete {
+public class ODE extends Model implements Discrete {
 
 	/**
 	 * Methods that every {@link Module} must implement, which advertises numerical
@@ -97,7 +97,7 @@ public class ODEEuler extends Model implements Discrete {
 		 * <code>ODE, SDE</code> or <code>PDE</code>.
 		 * <p>
 		 * Alternatively, the method
-		 * {@link ODEEuler#getDerivatives(double, double[], double[], double[])} may be
+		 * {@link ODE#getDerivatives(double, double[], double[], double[])} may be
 		 * overridden in a subclass of {@code ODEEuler}, which may prevent calls to
 		 * {@code avgScores(...)} altogether.
 		 *
@@ -131,7 +131,7 @@ public class ODEEuler extends Model implements Discrete {
 		 * <code>ODE, SDE</code> or <code>PDE</code>.
 		 * <p>
 		 * Alternatively, the method
-		 * {@link ODEEuler#getDerivatives(double, double[], double[], double[])} may be
+		 * {@link ODE#getDerivatives(double, double[], double[], double[])} may be
 		 * overridden in a subclass of {@code ODEEuler}, which may prevent calls to
 		 * {@code avgScores(...)} altogether.
 		 *
@@ -190,7 +190,7 @@ public class ODEEuler extends Model implements Discrete {
 
 	/**
 	 * The attempted size of next step to take. In {@code ODEEuler} this is always
-	 * equal to {@code dt} but for more sophisticated integrators, {@link ODERK} for
+	 * equal to {@code dt} but for more sophisticated integrators, {@link RungeKutta} for
 	 * example, the attempted step size may get adjusted.
 	 * <p>
 	 * <strong>Important:</strong> always positive regardless of direction of
@@ -436,7 +436,7 @@ public class ODEEuler extends Model implements Discrete {
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	public ODEEuler(EvoLudo engine) {
+	public ODE(EvoLudo engine) {
 		super(engine);
 		type = Type.ODE;
 	}
@@ -541,9 +541,9 @@ public class ODEEuler extends Model implements Discrete {
 	 * Sets the discretization of time increments in continuous time models.
 	 * <p>
 	 * <strong>Note:</strong> Some models may need to adjust, i.e. reduce,
-	 * <code>deltat</code> (see {@link PDERD#checkDt()}) or choose a variable step
+	 * <code>deltat</code> (see {@link PDE#checkDt()}) or choose a variable step
 	 * size in which case <code>deltat</code> is ignored (see
-	 * {@link ODERK#getAutoDt()}).
+	 * {@link RungeKutta#getAutoDt()}).
 	 *
 	 * @param deltat the time increments in continuous time models.
 	 */
@@ -1575,8 +1575,8 @@ public class ODEEuler extends Model implements Discrete {
 	 * 
 	 * @see #cloInit
 	 * @see #parse(String)
-	 * @see PDERD.InitType
-	 * @see PDERD#parse(String)
+	 * @see PDE.InitType
+	 * @see PDE#parse(String)
 	 */
 	public enum InitType implements CLOption.Key {
 
@@ -1663,7 +1663,7 @@ public class ODEEuler extends Model implements Discrete {
 	 * <p>
 	 * <strong>Note:</strong> Not possible to perform parsing in {@code CLODelegate}
 	 * of {@link #cloInit} because PDE model provide their own
-	 * {@link PDERD.InitType}s.
+	 * {@link PDE.InitType}s.
 	 * 
 	 * @param arg the arguments to parse
 	 * @return {@code true} if parsing successful
@@ -1745,8 +1745,8 @@ public class ODEEuler extends Model implements Discrete {
 	/**
 	 * Command line option to set the time increment <code>dt</code> in DE models.
 	 * If the requested <code>dt</code> turns out to be too big, e.g. due to
-	 * diffusion in {@link org.evoludo.simulator.models.PDERD}, it is
-	 * reduced appropriately. For {@link org.evoludo.simulator.models.ODERK}
+	 * diffusion in {@link org.evoludo.simulator.models.PDE}, it is
+	 * reduced appropriately. For {@link org.evoludo.simulator.models.RungeKutta}
 	 * this represents the initial step.
 	 * 
 	 * @see #dt
@@ -1773,7 +1773,7 @@ public class ODEEuler extends Model implements Discrete {
 	 * configurations.
 	 * 
 	 * @see InitType
-	 * @see PDERD.InitType
+	 * @see PDE.InitType
 	 */
 	public final CLOption cloInit = new CLOption("init", InitType.UNIFORM.getKey(), EvoLudo.catModel,
 			"--init <t>      type of initial configuration", new CLODelegate() {
@@ -1781,7 +1781,7 @@ public class ODEEuler extends Model implements Discrete {
 				public boolean parse(String arg) {
 					// parsing must be 'outsourced' to ODEEuler class to enable
 					// PDE models to override it and do their own initialization.
-					return ODEEuler.this.parse(arg);
+					return ODE.this.parse(arg);
 				}
 
 				@Override
@@ -1881,7 +1881,7 @@ public class ODEEuler extends Model implements Discrete {
 		} else {
 			cloInit.removeKey(InitType.DENSITY);
 		}
-		if (!(this instanceof SDEEuler))
+		if (!(this instanceof SDE))
 			cloInit.removeKey(InitType.MUTANT);
 		if (permitsTimeReversal())
 			parser.addCLO(cloTimeReversed);

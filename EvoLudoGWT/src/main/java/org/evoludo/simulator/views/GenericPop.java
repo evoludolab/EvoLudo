@@ -46,7 +46,7 @@ import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBS;
-import org.evoludo.simulator.models.PDERD;
+import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
@@ -195,7 +195,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 			return;
 		}
 		if (model.isPDE()) {
-			graph.setGeometry(((PDERD) model).getGeometry());
+			graph.setGeometry(((PDE) model).getGeometry());
 			return;
 		}
 		graph.displayMessage("No structure to display in " + type + " model.");

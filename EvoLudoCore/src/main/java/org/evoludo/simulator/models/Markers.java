@@ -96,7 +96,7 @@ public class Markers {
 	 * @param filled the flag to indicate whether the marker should be filled
 	 * @return {@code true} if successfull
 	 * 
-	 * @see org.evoludo.simulator.models.ODEEuler#yt
+	 * @see org.evoludo.simulator.models.ODE#yt
 	 */
 	public boolean addMarker(double[] aMark, boolean filled) {
 		// important: data buffers for ParaGraph & co store time in first element

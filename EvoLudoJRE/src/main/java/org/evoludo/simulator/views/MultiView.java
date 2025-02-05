@@ -34,8 +34,8 @@ import java.util.ArrayList;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.ODEEuler;
-import org.evoludo.simulator.models.PDERD;
+import org.evoludo.simulator.models.ODE;
+import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOption;
 
@@ -173,7 +173,7 @@ public interface MultiView {
 		ArrayList<DataTypes> dataOutputs = new ArrayList<>();
 		// query available views to deduce the data types to report
 		// individual data
-		boolean isODESDE = (model instanceof ODEEuler && !(model instanceof PDERD));
+		boolean isODESDE = (model instanceof ODE && !(model instanceof PDE));
 		if (module instanceof HasPop2D.Strategy && !isODESDE)
 			dataOutputs.add(DataTypes.TRAITS);
 		if (module instanceof HasPop2D.Fitness && !isODESDE) {

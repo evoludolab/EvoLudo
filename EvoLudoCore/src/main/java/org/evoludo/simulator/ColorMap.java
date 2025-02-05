@@ -35,7 +35,7 @@ import java.util.Arrays;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.models.IBSMCPopulation;
-import org.evoludo.simulator.models.PDERD;
+import org.evoludo.simulator.models.PDE;
 
 /**
  * Interface for mapping data to colors.
@@ -744,7 +744,7 @@ public abstract class ColorMap<T extends Object> {
 		 * values.
 		 * </ol>
 		 * 
-		 * @see PDERD
+		 * @see PDE
 		 */
 		@Override
 		public boolean translate(double[][] data, T[] color) {
@@ -757,7 +757,7 @@ public abstract class ColorMap<T extends Object> {
 		/**
 		 * {@inheritDoc}
 		 * 
-		 * @see PDERD
+		 * @see PDE
 		 */
 		@Override
 		public boolean translate(double[][] data1, double[][] data2, T[] color) {
@@ -1042,7 +1042,7 @@ public abstract class ColorMap<T extends Object> {
 		 * values.
 		 * </ol>
 		 * 
-		 * @see PDERD
+		 * @see PDE
 		 */
 		@Override
 		public boolean translate(double[][] data, T[] color) {
@@ -1068,7 +1068,7 @@ public abstract class ColorMap<T extends Object> {
 		 * for mapping data values.
 		 * </ol>
 		 * 
-		 * @see PDERD
+		 * @see PDE
 		 */
 		@Override
 		public boolean translate(double[][] data, T[] color, int dep) {
@@ -1249,7 +1249,7 @@ public abstract class ColorMap<T extends Object> {
 		 * values.
 		 * </ol>
 		 * 
-		 * @see PDERD
+		 * @see PDE
 		 */
 		@Override
 		public boolean translate(double[][] data, T[] color) {

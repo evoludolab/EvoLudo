@@ -39,7 +39,7 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Data;
-import org.evoludo.simulator.models.ODEEuler;
+import org.evoludo.simulator.models.ODE;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
@@ -153,7 +153,7 @@ public class Phase2D extends AbstractView {
 		map = graph.getMap();
 		// set axis labels and range
 		style = graph.getStyle();
-		if (model instanceof ODEEuler && ((ODEEuler) model).isDensity()) {
+		if (model instanceof ODE && ((ODE) model).isDensity()) {
 			// density model
 			style.percentX = false;
 			style.percentY = false;
@@ -270,7 +270,7 @@ public class Phase2D extends AbstractView {
 	public void populateContextMenu(ContextMenu menu) {
 		if (!map.hasFixedAxis()) {
 			// add context menu for configuring the phase plane axis
-			boolean isDensity = (model instanceof ODEEuler && ((ODEEuler) model).isDensity());
+			boolean isDensity = (model instanceof ODE && ((ODE) model).isDensity());
 			Module module = engine.getModule();
 			ArrayList<? extends Module> species = module.getSpecies();
 			int nSpecies = species.size();

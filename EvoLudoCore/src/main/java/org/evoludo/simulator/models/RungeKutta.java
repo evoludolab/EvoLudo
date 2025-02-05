@@ -41,14 +41,14 @@ import org.evoludo.simulator.modules.Module;
  * 
  * @author Christoph Hauert
  */
-public class ODERK extends ODEEuler {
+public class RungeKutta extends ODE {
 
 	/**
 	 * <code>true</code> if the adaptive step sizes should be used. If
 	 * <code>false</code> the traditional Euler's method with fixed step size is
 	 * used.
 	 * 
-	 * @see ODEEuler
+	 * @see ODE
 	 */
 	boolean autoDt = true;
 
@@ -57,7 +57,7 @@ public class ODERK extends ODEEuler {
 	 * size. This happens if <code>autoDt==false</code> or in multi-species modules
 	 * with mixed frequency and density dynamics.
 	 * 
-	 * @see ODEEuler
+	 * @see ODE
 	 * @see #autoDt
 	 */
 	boolean doEuler = false;
@@ -67,7 +67,7 @@ public class ODERK extends ODEEuler {
 	 * of the states. In mutli-species modules this requires that all modules are
 	 * frequency based.
 	 * 
-	 * @see ODEEuler
+	 * @see ODE
 	 */
 	boolean isReplicator = false;
 
@@ -80,7 +80,7 @@ public class ODERK extends ODEEuler {
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	public ODERK(EvoLudo engine) {
+	public RungeKutta(EvoLudo engine) {
 		super(engine);
 	}
 
@@ -117,7 +117,7 @@ public class ODERK extends ODEEuler {
 	 * @param autoDt the flag to indicate whether adaptive step sizes should be
 	 *               used.
 	 * 
-	 * @see ODEEuler
+	 * @see ODE
 	 */
 	public void setAutoDt(boolean autoDt) {
 		this.autoDt = autoDt;

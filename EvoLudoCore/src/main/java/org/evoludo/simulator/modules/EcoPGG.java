@@ -39,10 +39,10 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.ODEEuler.HasODE;
-import org.evoludo.simulator.models.PDERD.HasPDE;
-import org.evoludo.simulator.models.PDERDA;
-import org.evoludo.simulator.models.SDEEuler.HasSDE;
+import org.evoludo.simulator.models.ODE.HasODE;
+import org.evoludo.simulator.models.PDE.HasPDE;
+import org.evoludo.simulator.models.Advection;
+import org.evoludo.simulator.models.SDE.HasSDE;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -179,7 +179,7 @@ public class EcoPGG extends Discrete implements
 
 	@Override
 	public Model createPDE() {
-		return new PDERDA(engine);
+		return new Advection(engine);
 	}
 
 	/**

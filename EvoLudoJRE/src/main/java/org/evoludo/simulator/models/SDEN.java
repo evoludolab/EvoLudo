@@ -53,7 +53,7 @@ import no.uib.cipr.matrix.UpperSPDDenseMatrix;
  * 
  * @author Christoph Hauert
  */
-public class SDEEulerN extends SDEEuler {
+public class SDEN extends SDE {
 
 	/**
 	 * Diffusion matrix \(\mathbf{B}\) in the Fokker-Planck equation. \(\mathbf{B}\)
@@ -94,7 +94,7 @@ public class SDEEulerN extends SDEEuler {
 	 * State vector. The current frequencies of the system, equivalent to
 	 * <code>yt</code>.
 	 * 
-	 * @see ODEEuler#yt
+	 * @see ODE#yt
 	 */
 	DenseVector vecyt;
 
@@ -116,10 +116,10 @@ public class SDEEulerN extends SDEEuler {
 	 * 
 	 * @param engine the pacemaker for running the model
 	 * 
-	 * @see SDEEuler
+	 * @see SDE
 	 * @see EvoLudo#getRNG()
 	 */
-	public SDEEulerN(EvoLudo engine) {
+	public SDEN(EvoLudo engine) {
 		super(engine);
 	}
 
@@ -184,7 +184,7 @@ public class SDEEulerN extends SDEEuler {
 	 * {@inheritDoc}
 	 * <p>
 	 * <strong>Note:</strong> for two or three traits (dynamical variables) the
-	 * calculations are delegated to the parent class {@link SDEEuler}, which uses
+	 * calculations are delegated to the parent class {@link SDE}, which uses
 	 * optimized routines based on analytical solutions.
 	 */
 	@Override

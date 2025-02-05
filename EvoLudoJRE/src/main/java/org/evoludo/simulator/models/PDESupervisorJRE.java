@@ -53,7 +53,7 @@ public class PDESupervisorJRE extends PDESupervisor {
 	 * @param engine the pacemaker for running the model
 	 * @param charge the model to supervise
 	 */
-	public PDESupervisorJRE(EvoLudo engine, PDERD charge) {
+	public PDESupervisorJRE(EvoLudo engine, PDE charge) {
 		super(engine, charge);
 	}
 
@@ -212,7 +212,7 @@ public class PDESupervisorJRE extends PDESupervisor {
 		/**
 		 * The reference to the supervised PDE model.
 		 */
-		PDERD charge;
+		PDE charge;
 
 		/**
 		 * The index of the first PDE unit processed by this worker.
@@ -276,7 +276,7 @@ public class PDESupervisorJRE extends PDESupervisor {
 		 * @param start the first unit processed byt this worker
 		 * @param end   the last unit processed byt this worker
 		 */
-		public RDWorker(PDESupervisorJRE boss, PDERD charge, int start, int end) {
+		public RDWorker(PDESupervisorJRE boss, PDE charge, int start, int end) {
 			this.boss = boss;
 			this.charge = charge;
 			this.start = start;

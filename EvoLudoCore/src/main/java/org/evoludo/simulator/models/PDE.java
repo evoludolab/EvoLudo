@@ -56,7 +56,7 @@ import org.evoludo.util.Plist;
  *
  * @author Christoph Hauert
  */
-public class PDERD extends ODEEuler {
+public class PDE extends ODE {
 
 	/**
 	 * Methods that every {@link Module} must implement, which advertises numerical
@@ -139,7 +139,7 @@ public class PDERD extends ODEEuler {
 	 * Type of initial configuration for each species.
 	 * <p>
 	 * <strong>Note:</strong> this variable is deliberately hiding a field from
-	 * {@link ODEEuler} because PDE models have their own initialization types. Make
+	 * {@link ODE} because PDE models have their own initialization types. Make
 	 * sure {@code initType} is not accessed through calls to {@code super}. Since
 	 * PDE's currently support only single species models {@code initType} is a
 	 * scalar field.
@@ -268,7 +268,7 @@ public class PDERD extends ODEEuler {
 	/**
 	 * Helper variable to store the effective diffusion terms. This depends not only
 	 * on the diffusion coefficients {@link #diffcoeff} but also on the time
-	 * increment {@link ODEEuler#dt dt} and the linear extension, {@link #linext}.
+	 * increment {@link ODE#dt dt} and the linear extension, {@link #linext}.
 	 * 
 	 * @see #initDiffusion(double)
 	 */
@@ -303,7 +303,7 @@ public class PDERD extends ODEEuler {
 	 * @see org.evoludo.simulator.models.PDESupervisorGWT PDESupervisorGWT
 	 * @see org.evoludo.simulator.models.PDESupervisorJRE PDESupervisorJRE
 	 */
-	public PDERD(EvoLudo engine) {
+	public PDE(EvoLudo engine) {
 		super(engine);
 		type = Type.PDE;
 	}
@@ -970,7 +970,7 @@ public class PDERD extends ODEEuler {
 
 	/**
 	 * Sets whether symmetries should be preserved. Not all models may be able to
-	 * honour the request. For example {@link PDERD} is only able to preserve
+	 * honour the request. For example {@link PDE} is only able to preserve
 	 * symmetries in the diffusion step if the
 	 * {@link Geometry#isLattice()} returns <code>true</code>.
 	 *
@@ -1335,32 +1335,32 @@ public class PDERD extends ODEEuler {
 	 * <dl>
 	 * <dt>UNIFORM
 	 * <dd>Uniform/homogeneous distribution of trait densities given by
-	 * {@link ODEEuler#y0}.
+	 * {@link ODE#y0}.
 	 * <dt>RANDOM
 	 * <dd>Random trait densities, uniformly distributed between zero and the
-	 * densities given by {@link ODEEuler#y0}.
+	 * densities given by {@link ODE#y0}.
 	 * <dt>SQUARE
-	 * <dd>Square in the center with uniform densities given by {@link ODEEuler#y0}.
+	 * <dd>Square in the center with uniform densities given by {@link ODE#y0}.
 	 * <dt>CIRCLE
-	 * <dd>Circle in the center with uniform densities given by {@link ODEEuler#y0}.
+	 * <dd>Circle in the center with uniform densities given by {@link ODE#y0}.
 	 * <dt>DISTURBANCE
-	 * <dd>Spatially homogeneous distribution given by {@link ODEEuler#y0} with a
+	 * <dd>Spatially homogeneous distribution given by {@link ODE#y0} with a
 	 * perturbation in the center cell with densities {@code 1.2*y0}, or, for frequency
 	 * based models with inverted and normalized frequencies.
 	 * <dt>GAUSSIAN
 	 * <dd>Gaussian density distribution in the center. In 2D lattices this
 	 * generates a sombrero-like distribution. Maximum density is given by
-	 * {@link ODEEuler#y0}.
+	 * {@link ODE#y0}.
 	 * <dt>GAUSSIAN_RING
 	 * <dd>Ring distribution in the center with Gaussian distributed densities along
 	 * the radius. In 2D lattices this generates a donut-like distribution. Maximum
-	 * density is given by {@link ODEEuler#y0}.
+	 * density is given by {@link ODE#y0}.
 	 * <dt>DEFAULT
 	 * <dd>Default initialization (UNIFORM)
 	 * </dl>
 	 * 
 	 * @see #parse(String)
-	 * @see ODEEuler#cloInit
+	 * @see ODE#cloInit
 	 */
 	public enum InitType implements CLOption.Key {
 
@@ -1408,7 +1408,7 @@ public class PDERD extends ODEEuler {
 		/**
 		 * Key of initialization type. Used when parsing command line options.
 		 * 
-		 * @see ODEEuler#cloInit
+		 * @see ODE#cloInit
 		 */
 		String key;
 
@@ -1452,13 +1452,13 @@ public class PDERD extends ODEEuler {
 	 * <p>
 	 * <strong>Note:</strong> Not possible to perform parsing in {@code CLODelegate}
 	 * of {@link #cloInit} because PDE model provide their own
-	 * {@link PDERD.InitType}s.
+	 * {@link PDE.InitType}s.
 	 * 
 	 * @param arg the arguments to parse
 	 * @return {@code true} if parsing successful
 	 * 
-	 * @see ODEEuler.InitType
-	 * @see PDERD.InitType
+	 * @see ODE.InitType
+	 * @see PDE.InitType
 	 */
 	@Override
 	public boolean parse(String arg) {
@@ -1507,7 +1507,7 @@ public class PDERD extends ODEEuler {
 	}
 
 	/**
-	 * Helper method to check whether the time increment, {@link ODEEuler#dt}, is
+	 * Helper method to check whether the time increment, {@link ODE#dt}, is
 	 * acceptable. If it is too large the diffusion step runs into numerical issues.
 	 * If <code>dt</code> needs to be decreased a warning is emitted.
 	 */
