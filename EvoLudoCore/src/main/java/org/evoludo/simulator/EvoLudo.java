@@ -69,9 +69,12 @@ import org.evoludo.simulator.modules.CLabour;
 import org.evoludo.simulator.modules.CSD;
 import org.evoludo.simulator.modules.Centipede;
 import org.evoludo.simulator.modules.Continuous;
+import org.evoludo.simulator.modules.DemesTBT;
 import org.evoludo.simulator.modules.Discrete;
+import org.evoludo.simulator.modules.EcoPGG;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Moran;
+import org.evoludo.simulator.modules.NetGames;
 import org.evoludo.simulator.modules.RSP;
 import org.evoludo.simulator.modules.TBT;
 import org.evoludo.simulator.views.HasPhase2D;
@@ -97,9 +100,6 @@ import org.evoludo.util.Plist;
  * input/output routines.
  * 
  * @author Christoph Hauert
- * 
- * 
- * 
  * 
  * 
  * 
@@ -2216,5 +2216,8 @@ public abstract class EvoLudo
 		addModule(new Centipede(this));
 		addModule(new CSD(this));
 		addModule(new CLabour(this));
+		addModule(new DemesTBT(this));
+		addModule(new EcoPGG(this));
+		addModule(new NetGames(this));
 	}
 }
