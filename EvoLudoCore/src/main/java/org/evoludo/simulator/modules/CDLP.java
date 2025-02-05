@@ -565,7 +565,7 @@ public class CDLP extends CDL {
 	 * for {@code CDLP} - use default IBS model.
 	 */
 	@Override
-	public CDL.IBS createIBSPop() {
+	public CDL.IBSPop createIBSPop() {
 		return null;
 	}
 }

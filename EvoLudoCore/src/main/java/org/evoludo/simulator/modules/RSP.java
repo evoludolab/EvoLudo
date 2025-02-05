@@ -286,8 +286,8 @@ public class RSP extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 	}
 
 	@Override
-	public RSP.IBS createIBSPop() {
-		return new RSP.IBS(engine, this);
+	public RSP.IBSPop createIBSPop() {
+		return new RSP.IBSPop(engine, this);
 	}
 
 	/**
@@ -295,7 +295,7 @@ public class RSP extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 	 * extension implements specific initial conditions that give rise to
 	 * fascinating evolutionary kaleidoscopes for deterministic updating.
 	 */
-	public class IBS extends IBSDPopulation {
+	public class IBSPop extends IBSDPopulation {
 
 		/**
 		 * Create a new instance of the IBS model for {@code 3×3} games.
@@ -303,7 +303,7 @@ public class RSP extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 		 * @param engine the pacemaker for running the model
 		 * @param module the module that defines the game
 		 */
-		protected IBS(EvoLudo engine, RSP module) {
+		protected IBSPop(EvoLudo engine, RSP module) {
 			super(engine, module);
 		}
 

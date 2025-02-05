@@ -149,11 +149,11 @@ public class DemesTBT extends TBT {
 	}
 
 	@Override
-	public DemesTBT.IBS createIBSPop() {
-		return new DemesTBT.IBS(engine, this);
+	public DemesTBT.IBSPop createIBSPop() {
+		return new DemesTBT.IBSPop(engine, this);
 	}
 
-	public class IBS extends TBT.TBTPop implements MilestoneListener, ChangeListener {
+	public class IBSPop extends TBT.IBSPop implements MilestoneListener, ChangeListener {
 
 		// IBSDPopulation pop;
 		protected RNGDistribution.Geometric distrMigration, distrMutationMigration;
@@ -161,7 +161,7 @@ public class DemesTBT extends TBT {
 		int[][] demeTypeCount;
 		boolean optimizeMigration;
 
-		protected IBS(EvoLudo engine, DemesTBT module) {
+		protected IBSPop(EvoLudo engine, DemesTBT module) {
 			super(engine, module);
 		}
 

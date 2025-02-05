@@ -454,7 +454,7 @@ public class simCDL extends CDL implements ChangeListener {
 	}
 
 	@Override
-	public CDL.IBS createIBSPop() {
+	public CDL.IBSPop createIBSPop() {
 		return new simCDLIBS(engine, this);
 	}
 
@@ -463,7 +463,7 @@ public class simCDL extends CDL implements ChangeListener {
 	 * for measuring fixation probabilities and absorption times for given initial
 	 * strategy frequencies.
 	 */
-	class simCDLIBS extends CDL.IBS {
+	class simCDLIBS extends CDL.IBSPop {
 
 		/**
 		 * Create a new simulation.

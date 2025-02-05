@@ -954,8 +954,8 @@ public class CDL extends Discrete implements
 	}
 
 	@Override
-	public CDL.IBS createIBSPop() {
-		return new CDL.IBS(engine, this);
+	public CDL.IBSPop createIBSPop() {
+		return new CDL.IBSPop(engine, this);
 	}
 
 	/**
@@ -963,7 +963,7 @@ public class CDL extends Discrete implements
 	 * goods games. This extension implements specific initial conditions that give
 	 * rise to fascinating evolutionary kaleidoscopes for deterministic updating.
 	 */
-	public class IBS extends IBSDPopulation {
+	public class IBSPop extends IBSDPopulation {
 
 		/**
 		 * Create a new instance of the IBS model for voluntary (non-linear) public
@@ -972,7 +972,7 @@ public class CDL extends Discrete implements
 		 * @param engine the pacemaker for running the model
 		 * @param module the module that defines the model
 		 */
-		protected IBS(EvoLudo engine, CDL module) {
+		protected IBSPop(EvoLudo engine, CDL module) {
 			super(engine, module);
 		}
 

@@ -343,7 +343,7 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 
 	@Override
 	public IBSDPopulation createIBSPop() {
-		return new TBT.TBTPop(engine, this);
+		return new TBT.IBSPop(engine, this);
 	}
 
 	/**
@@ -353,7 +353,7 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 	 * conditions that give rise to fascinating evolutionary kaleidoscopes for
 	 * deterministic updating.
 	 */
-	public class TBTPop extends IBSDPopulation {
+	public class IBSPop extends IBSDPopulation {
 
 		/**
 		 * Timestamp for the last mean trait calculation.
@@ -383,7 +383,7 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 		 * @param engine the pacemaker for running the model
 		 * @param module the module that defines the game
 		 */
-		protected TBTPop(EvoLudo engine, TBT module) {
+		protected IBSPop(EvoLudo engine, TBT module) {
 			super(engine, module);
 		}
 

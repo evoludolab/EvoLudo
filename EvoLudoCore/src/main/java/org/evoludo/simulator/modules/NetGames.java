@@ -466,15 +466,15 @@ public class NetGames extends Discrete implements org.evoludo.simulator.models.I
 	}
 
 	@Override
-	public NetGames.IBS createIBSPop() {
-		return new NetGames.IBS(engine, this);
+	public NetGames.IBSPop createIBSPop() {
+		return new NetGames.IBSPop(engine, this);
 	}
 
 	/**
 	 * The extension for IBS simulations implement cooperative actions on dynamical
 	 * networks.
 	 */
-	public class IBS extends IBSDPopulation {
+	public class IBSPop extends IBSDPopulation {
 
 		/**
 		 * The previous generation time.
@@ -497,7 +497,7 @@ public class NetGames extends Discrete implements org.evoludo.simulator.models.I
 		 * 
 		 * @param engine the pacemaker for running the model
 		 */
-		protected IBS(EvoLudo engine, NetGames module) {
+		protected IBSPop(EvoLudo engine, NetGames module) {
 			super(engine, module);
 		}
 

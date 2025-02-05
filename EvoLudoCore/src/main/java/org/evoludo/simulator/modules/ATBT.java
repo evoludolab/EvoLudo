@@ -675,7 +675,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 	/**
 	 * Extends TBT.TBTPop to take advantage of kaleidoscope initializations.
 	 */
-	public class ATBTPop extends TBT.TBTPop {
+	public class ATBTPop extends TBT.IBSPop {
 
 		/**
 		 * Create a new instance of the IBS model for asymmteric {@code 2×2}
