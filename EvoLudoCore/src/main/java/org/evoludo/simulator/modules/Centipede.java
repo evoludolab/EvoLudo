@@ -117,8 +117,8 @@ public class Centipede extends Discrete implements HasIBS.DPairs,
 	}
 
 	@Override
-	public String getInfo() {
-		return "Title: " + getTitle() + "\nAuthor: JaGeLuSeCh\nCentipede game in single population.";
+	public String getAuthors() {
+		return "JaGeLuSeCh";
 	}
 
 	@Override

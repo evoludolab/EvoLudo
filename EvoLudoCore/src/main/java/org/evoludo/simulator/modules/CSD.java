@@ -118,8 +118,8 @@ public class CSD extends Continuous implements
 	}
 
 	@Override
-	public String getInfo() {
-		return "Title: " + getTitle() + "\nAuthor: Christoph Hauert\n" + "Origin of cooperators and defectors.";
+	public String getAuthors() {
+		return "Christoph Hauert";
 	}
 
 	@Override

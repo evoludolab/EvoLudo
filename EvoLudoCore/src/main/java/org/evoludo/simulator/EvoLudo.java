@@ -1127,9 +1127,10 @@ public abstract class EvoLudo
 		pendingAction = PendingAction.NONE;
 		for (MilestoneListener i : milestoneListeners)
 			i.moduleLoaded();
-		logger.info(
-				"Module '" + activeModule.getTitle() + "' loaded\n" + activeModule.getInfo() + "\nVersion: "
-						+ getVersion());
+		String authors = activeModule.getAuthors();
+		logger.info("Module loaded: " 
+				+ activeModule.getTitle() + (authors == null ? "" : " by " + authors) 
+				+ "\nVersion: "	+ getVersion());
 	}
 
 	/**

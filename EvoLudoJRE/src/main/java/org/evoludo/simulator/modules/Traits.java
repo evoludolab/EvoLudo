@@ -110,9 +110,8 @@ public class Traits extends Discrete implements
 	}
 
 	@Override
-	public String getInfo() {
-		return "Title: " + getTitle()
-				+ "\nAuthor: Christoph Hauert\nIndividual based simulations versus stochastic differential equations.";
+	public String getAuthors() {
+		return "Christoph Hauert";
 	}
 
 	@Override

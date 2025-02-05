@@ -127,9 +127,8 @@ public class NetGames extends Discrete implements org.evoludo.simulator.models.I
 	}
 
 	@Override
-	public String getInfo() {
-		return "Title: " + getTitle()
-				+ "\nAuthor: Christoph Hauert & Lucas Wardil\nSocial interactions forming social networks.";
+	public String getAuthors() {
+		return "Christoph Hauert & Lucas Wardil";
 	}
 
 	@Override

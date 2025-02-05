@@ -117,9 +117,8 @@ public class CDLP extends CDL {
 	}
 
 	@Override
-	public String getInfo() {
-		return "Title: " + getTitle() + "\n"
-				+ "Author: Christoph Hauert\nEvolution of Cooperators, Defectors, Loners and Punishers.";
+	public String getAuthors() {
+		return "Christoph Hauert";
 	}
 
 	@Override

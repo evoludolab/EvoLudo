@@ -99,8 +99,8 @@ public class CLabour extends Continuous implements HasIBS.MCPairs, HasPop2D.Stra
 	}
 
 	@Override
-	public String getInfo() {
-		return "Title: " + getTitle() + "\nAuthor: Christoph Hauert\n" + "Specialization and division of labour.";
+	public String getAuthors() {
+		return "Christoph Hauert";
 	}
 
 	@Override

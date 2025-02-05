@@ -177,9 +177,8 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 	}
 
 	@Override
-	public String getInfo() {
-		return "Title: " + getTitle()
-				+ "\nAuthor: Christoph Hauert\nEvolution under environmentally and genetically induced asymmetries.";
+	public String getAuthors() {
+		return "Christoph Hauert";
 	}
 
 	@Override

@@ -138,8 +138,8 @@ public class EcoPGG extends Discrete implements
 	}
 
 	@Override
-	public String getInfo() {
-		return "Title: " + getTitle() + "\nAuthor: Christoph Hauert\n" + "Selection diffusion dynamics.";
+	public String getAuthors() {
+		return "Christoph Hauert";
 	}
 
 	@Override

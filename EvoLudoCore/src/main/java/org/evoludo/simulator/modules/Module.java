@@ -228,18 +228,13 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * Returns brief description of the active module, including title, author and
-	 * version. For example, 2x2 games in {@link org.evoludo.simulator.modules.TBT}
-	 * return "Title: 2x2 Games\nAuthor: Christoph Hauert\nTime evolution of
-	 * cooperators and defectors in different population structures."
-	 * <p>
-	 * <strong>Note:</strong> newline characters, '\n', are acceptable in returned
-	 * String. If necessary they will be replaced by {@literal <br/>
-	 * } e.g. for ePub's. Do <em>not</em> use HTML formatting in info string.
+	 * Returns a string with information about the authors of the module.
 	 * 
-	 * @return the description of active module
+	 * @return the names of the authors
 	 */
-	public abstract String getInfo();
+	public String getAuthors() {
+		return null;
+	}
 
 	/**
 	 * Returns title of active module, e.g. 2x2 games in

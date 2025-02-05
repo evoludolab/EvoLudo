@@ -878,10 +878,6 @@ public class EvoLudoLab extends JFrame
 		return Font.PLAIN;
 	}
 
-	public String getAppletInfo() {
-		return engine.getModule().getInfo();
-	}
-
     public boolean doAnimateLayout() {
 		return doAnimateLayout;
 	}

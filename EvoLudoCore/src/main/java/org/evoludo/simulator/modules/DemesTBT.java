@@ -82,8 +82,8 @@ public class DemesTBT extends TBT {
 	}
 
 	@Override
-	public String getInfo() {
-		return "Title: " + getTitle() + "\nAuthor: Christoph Hauert\n2x2 games in deme structured populations.";
+	public String getAuthors() {
+		return "Christoph Hauert";
 	}
 
 	@Override

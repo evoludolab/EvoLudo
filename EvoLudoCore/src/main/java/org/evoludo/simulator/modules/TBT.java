@@ -153,8 +153,8 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 	}
 
 	@Override
-	public String getInfo() {
-		return "Title: " + getTitle() + "\nAuthor: Christoph Hauert\n2x2 games in populations of constant size.";
+	public String getAuthors() {
+		return "Christoph Hauert";
 	}
 
 	@Override

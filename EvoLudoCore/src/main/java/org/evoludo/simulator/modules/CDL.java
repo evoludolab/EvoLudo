@@ -171,9 +171,8 @@ public class CDL extends Discrete implements
 	}
 
 	@Override
-	public String getInfo() {
-		return "Title: " + getTitle() + "\nAuthor: Christoph Hauert\n"
-				+ "Cooperation in voluntary (non-linear) public goods interactions.";
+	public String getAuthors() {
+		return "Christoph Hauert";
 	}
 
 	@Override
