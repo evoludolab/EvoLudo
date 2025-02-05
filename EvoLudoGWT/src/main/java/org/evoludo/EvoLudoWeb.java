@@ -1760,7 +1760,8 @@ public class EvoLudoWeb extends Composite
 	 * The Alt-key toggles the button labels for controlling the EvoLudo lab.
 	 */
 	private void updateKeys() {
-		boolean statistics = engine.getModel().getMode() == Mode.STATISTICS_SAMPLE;
+		Model model = engine.getModel();
+		boolean statistics = (model != null && model.getMode() == Mode.STATISTICS_SAMPLE);
 		// only 'reset' in statistics mode
 		if (statistics) {
 			evoludoInitReset.setText("Reset");
