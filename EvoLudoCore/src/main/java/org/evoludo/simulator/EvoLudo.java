@@ -1166,8 +1166,7 @@ public abstract class EvoLudo
 		pendingAction = PendingAction.NONE;
 		for (MilestoneListener i : milestoneListeners)
 			i.modelLoaded();
-		logger.info(
-				"Model '" + activeModel.getType() + "' loaded");
+		logger.info("Model '" + activeModel.getType() + "' loaded");
 	}
 
 	/**
@@ -1193,6 +1192,7 @@ public abstract class EvoLudo
 		isSuspended = false;
 		for (MilestoneListener i : milestoneListeners)
 			i.modelRunning();
+		logger.info("Model running");
 	}
 
 	/**
