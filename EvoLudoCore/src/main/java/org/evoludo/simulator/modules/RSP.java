@@ -122,11 +122,6 @@ public class RSP extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 	}
 
 	@Override
-	public String getKey() {
-		return "RSP";
-	}
-
-	@Override
 	public String getInfo() {
 		return "Title: " + getTitle() + "\nAuthor: Christoph Hauert\nDynamics of Rock-Scissors-Paper games.";
 	}

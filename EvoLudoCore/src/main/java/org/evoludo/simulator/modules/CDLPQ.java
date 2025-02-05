@@ -103,11 +103,6 @@ public class CDLPQ extends CDLP {
 	}
 
 	@Override
-	public String getKey() {
-		return "CDLPQ";
-	}
-
-	@Override
 	public String getInfo() {
 		return "Title: " + getTitle() + "\nAuthor: Christoph Hauert.";
 	}

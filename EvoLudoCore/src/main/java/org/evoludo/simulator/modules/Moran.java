@@ -129,11 +129,6 @@ public class Moran extends Discrete implements Module.Static,
 	}
 
 	@Override
-	public String getKey() {
-		return "Moran";
-	}
-
-	@Override
 	public String getInfo() {
 		return "Title: " + getTitle() + "\nAuthor: Christoph Hauert\nMoran process in structured population.";
 	}

@@ -216,13 +216,16 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * Returns identifier of the active module, e.g. 2x2 games in
+	 * Returns identifier of the active module. For example, 2x2 games in
 	 * {@link org.evoludo.simulator.modules.TBT} return "2x2". This corresponds to
-	 * the argument for the {@code --module} option to load a particular module.
+	 * the argument for the {@code --module} option to load a particular module. The
+	 * default is to use the class name.
 	 * 
 	 * @return the identifying key of this module
 	 */
-	public abstract String getKey();
+	public String getKey() {
+		return getClass().getSimpleName();
+	}
 
 	/**
 	 * Returns brief description of the active module, including title, author and
