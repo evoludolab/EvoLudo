@@ -92,11 +92,6 @@ public class DemesTBT extends TBT {
 	}
 
 	@Override
-	public String getVersion() {
-		return "v1.0 April 2021";
-	}
-
-	@Override
 	public void mixedScores(int[] count, double[] traitScores) {
 		double ideme = 1.0 / (sizeDemes - 1);
 		traitScores[COOPERATE] = ((count[COOPERATE] - 1) * payoffs[COOPERATE][COOPERATE]

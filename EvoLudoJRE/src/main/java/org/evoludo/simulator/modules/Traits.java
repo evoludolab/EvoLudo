@@ -120,11 +120,6 @@ public class Traits extends Discrete implements
 	}
 
 	@Override
-	public String getVersion() {
-		return "v1.0 April 2021";
-	}
-
-	@Override
 	public double getMinGameScore() {
 		double min = Double.MAX_VALUE;
 		for (int i = 0; i < nTraits; i++)

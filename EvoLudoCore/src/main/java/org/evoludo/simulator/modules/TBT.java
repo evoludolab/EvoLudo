@@ -163,11 +163,6 @@ public class TBT extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 	}
 
 	@Override
-	public String getVersion() {
-		return "v1.0 March 2021";
-	}
-
-	@Override
 	public String getTraitName(int idx) {
 		String idxname = super.getTraitName(idx % nTraits);
 		if (competition == null || competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)

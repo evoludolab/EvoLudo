@@ -398,6 +398,7 @@ public class EvoLudoWeb extends Composite
 		logEvoHandler = new EvoLogHandler(viewConsole);
 		logger.addHandler(logEvoHandler);
 		logger.setLevel(Level.INFO);
+		logger.info(engine.getVersion());
 		logFeatures();
 		// add full screen change handler
 		if (NativeJS.isFullscreenSupported())

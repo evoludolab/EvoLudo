@@ -136,11 +136,6 @@ public class NetGames extends Discrete implements org.evoludo.simulator.models.I
 		return "Network Games";
 	}
 
-	@Override
-	public String getVersion() {
-		return "v1.0 April 2021";
-	}
-
 	/**
 	 * {@inheritDoc}
 	 * <p>

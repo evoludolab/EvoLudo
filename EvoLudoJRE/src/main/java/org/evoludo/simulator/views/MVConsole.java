@@ -127,7 +127,7 @@ public class MVConsole extends JComponent implements MultiView {
 		EvoLudoJRE engine = lab.getEngine();
 		Module module = engine.getModule();
 		String authors = module.getAuthors();
-		text.replaceSelection(module.getTitle() + (authors == null ? "" : " by " + authors) + "\nVersion: " + engine.getVersion());
+		text.replaceSelection(engine.getVersion() + "\n" + module.getTitle() + (authors == null ? "" : " by " + authors));
 		text.setEditable(false);
 	}
 

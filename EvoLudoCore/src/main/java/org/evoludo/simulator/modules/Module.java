@@ -245,17 +245,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	public abstract String getTitle();
 
 	/**
-	 * Version identifier of this module. This is typically used together with the
-	 * git commit to uniquely identify the code base.
-	 * 
-	 * @return the version String
-	 * 
-	 * @see EvoLudo#getVersion()
-	 * @see EvoLudo#getGit()
-	 */
-	public abstract String getVersion();
-
-	/**
 	 * Load new module and perform basic initializations.
 	 * 
 	 * @see EvoLudo#loadModule(String)

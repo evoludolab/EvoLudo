@@ -127,11 +127,6 @@ public class Centipede extends Discrete implements HasIBS.DPairs,
 	}
 
 	@Override
-	public String getVersion() {
-		return "v1.0 December 2023";
-	}
-
-	@Override
 	public boolean check() {
 		boolean doReset = super.check();
 		nSecond = nNodes / 2 + 1;

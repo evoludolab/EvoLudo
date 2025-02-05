@@ -109,11 +109,6 @@ public class CLabour extends Continuous implements HasIBS.MCPairs, HasPop2D.Stra
 	}
 
 	@Override
-	public String getVersion() {
-		return "v1.0 April 2021";
-	}
-
-	@Override
 	public double pairScores(double[] me, double[] groupTraits, int len, double[] groupPayoffs) {
 		double myScore = 0.0;
 

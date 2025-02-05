@@ -157,6 +157,7 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 	 */
 	public void clearLog() {
 		log.clear();
+		log(Level.INFO, engine.getVersion());
 	}
 
 	@Override

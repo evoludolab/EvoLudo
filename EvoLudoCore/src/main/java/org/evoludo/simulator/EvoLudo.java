@@ -1128,9 +1128,7 @@ public abstract class EvoLudo
 		for (MilestoneListener i : milestoneListeners)
 			i.moduleLoaded();
 		String authors = activeModule.getAuthors();
-		logger.info("Module loaded: " 
-				+ activeModule.getTitle() + (authors == null ? "" : " by " + authors) 
-				+ "\nVersion: "	+ getVersion());
+		logger.info("Module loaded: " + activeModule.getTitle() + (authors == null ? "" : " by " + authors));
 	}
 
 	/**
@@ -1402,13 +1400,10 @@ public abstract class EvoLudo
 	 * @return the version string
 	 */
 	public String getVersion() {
-		String version = COPYRIGHT;
 		String git = getGit();
-		if (activeModule != null)
-			version += ", " + activeModule.getVersion();
 		if ("unknown".equals(git))
-			return version;
-		return version + " (EvoLudo Engine: " + git + ")";
+			return COPYRIGHT;
+		return "EvoLudo: " + git + " " + COPYRIGHT;
 	}
 
 	/**

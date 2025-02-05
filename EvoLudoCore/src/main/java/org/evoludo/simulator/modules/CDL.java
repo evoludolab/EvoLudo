@@ -181,11 +181,6 @@ public class CDL extends Discrete implements
 	}
 
 	@Override
-	public String getVersion() {
-		return "v1.0 March 2021";
-	}
-
-	@Override
 	public int getDependent() {
 		return LONER;
 	}

@@ -113,11 +113,6 @@ public class CDLPQ extends CDLP {
 	}
 
 	@Override
-	public String getVersion() {
-		return "v1.0 March 2021";
-	}
-
-	@Override
 	public double getMinGameScore() {
 		double min = super.getMinGameScore();
 		int[] sample = new int[nTraits];

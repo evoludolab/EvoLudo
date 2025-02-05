@@ -139,11 +139,6 @@ public class Moran extends Discrete implements Module.Static,
 	}
 
 	@Override
-	public String getVersion() {
-		return "v1.0 March 2021";
-	}
-
-	@Override
 	public int getDependent() {
 		return RESIDENT;
 	}

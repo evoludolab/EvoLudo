@@ -187,11 +187,6 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 	}
 
 	@Override
-	public String getVersion() {
-		return "v1.0 April 2021";
-	}
-
-	@Override
 	public int getDependent() {
 		return DEFECT_POOR;
 	}

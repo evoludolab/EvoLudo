@@ -132,11 +132,6 @@ public class RSP extends Discrete implements HasIBS.DPairs, HasODE, HasSDE, HasP
 	}
 
 	@Override
-	public String getVersion() {
-		return "v1.0 March 2021";
-	}
-
-	@Override
 	public int getDependent() {
 		return PAPER;
 	}

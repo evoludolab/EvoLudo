@@ -128,11 +128,6 @@ public class CSD extends Continuous implements
 	}
 
 	@Override
-	public String getVersion() {
-		return "v1.0 March 2021";
-	}
-
-	@Override
 	public double pairScores(double me, double[] groupTraits, int len, double[] groupPayoffs) {
 		double yourInvest;
 		double myScore = 0.0;

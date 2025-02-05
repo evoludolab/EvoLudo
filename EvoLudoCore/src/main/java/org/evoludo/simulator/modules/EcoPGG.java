@@ -148,11 +148,6 @@ public class EcoPGG extends Discrete implements
 	}
 
 	@Override
-	public String getVersion() {
-		return "v1.0 March 2021";
-	}
-
-	@Override
 	public double getMinGameScore() {
 		return Math.min(getMonoGameScore(COOPERATE),
 				Math.min(getMonoGameScore(DEFECT), (interest / nGroup - 1.0) * cost));
