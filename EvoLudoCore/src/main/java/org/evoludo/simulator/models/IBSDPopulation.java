@@ -2128,24 +2128,29 @@ public class IBSDPopulation extends IBSPopulation {
 		int residentType = (int) init.args[1];
 		// revert mutant back to resident
 		strategies[mutant] = residentType;
-		// use Gillespie algorithm to place mutant
-		int idx = -1;
-		if (nPopulation >= 100) {
-			// optimization of Gillespie algorithm to prevent bookkeeping (at the expense of
-			// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
-			int max = interaction.maxIn;
-			do {
-				idx = random0n(nPopulation);
-			} while (random0n(max) >= interaction.kin[idx]); // note: if < holds aRand is ok
-		} else {
-			int nLinks = ArrayMath.norm(interaction.kin);
-			int rand = random0n(nLinks);
-			while (rand >= 0) {
-				rand -= interaction.kin[++idx];
+		// pick parent uniformly at random (everyone has the same fitness)
+		int parent;
+		if (VACANT < 0)
+			parent = random0n(nPopulation);
+		else {
+			int idx = random0n(getPopulationSize());
+			parent = -1;
+			while (idx >= 0) {
+				if (isVacantAt(++parent))
+					continue;
+				idx--;
 			}
 		}
+		// now pick neighbouring node uniformly at random to place mutant
+		// note: regular structures (including well-mixed) do not get here
+		int nneighs = competition.kout[parent];
+		if (nneighs == 0)
+			// nowhere to place offspring...
+			return -1;
+		int idx = competition.out[parent][random0n(nneighs)];
 		if (strategies[idx] == VACANT) {
 			strategiesTypeCount[VACANT]--;
+			// number of residents unchanged, initMono decreased it
 			strategiesTypeCount[residentType % nTraits]++;
 		}
 		strategies[idx] = mutantType;
