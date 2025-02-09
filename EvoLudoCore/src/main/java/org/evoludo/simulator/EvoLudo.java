@@ -1644,6 +1644,10 @@ public abstract class EvoLudo
 		// if IBS is not an option, pick first available model as default (which one
 		// remains unspecified)
 		Collection<Key> keys = cloModel.getKeys();
+		if (keys.isEmpty()) {
+			logger.severe("No model found!");
+			return null;
+		}
 		// if IBS not an option, pick first model type as default
 		Type defaulttype = (keys.contains(Type.IBS) ? Type.IBS : Type.values()[0]);
 		Type type = null;

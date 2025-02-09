@@ -631,9 +631,13 @@ public class EvoLudoWeb extends Composite
 		evoludoApply.setEnabled(stopped);
 		evoludoDefault.setEnabled(stopped);
 		updateKeys();
-		boolean statistics = engine.getModel().getMode() == Mode.STATISTICS_SAMPLE;
 		evoludoSlider.setValue(engine.getDelay());
-		evoludoSlider.setEnabled(!statistics);
+		Model model = engine.getModel();
+		if (model == null) {
+			evoludoSlider.setEnabled(true);
+			return;
+		}
+		evoludoSlider.setEnabled(model.getMode() != Mode.STATISTICS_SAMPLE);
 		if (stopped)
 			updateStatus();
 		updateCounter();
@@ -1832,7 +1836,7 @@ public class EvoLudoWeb extends Composite
 		}
 		// strategies related views
 		Model model = engine.getModel();
-		boolean isODESDE = (model.isODE() || model.isSDE());
+		boolean isODESDE = (model != null && (model.isODE() || model.isSDE()));
 		if (module instanceof HasPop2D.Strategy && !isODESDE)
 			addView(new Pop2D(engine, Data.STRATEGY), oldViews);
 		if (isWebGLSupported && module instanceof HasPop3D.Strategy && !isODESDE)
@@ -1860,7 +1864,7 @@ public class EvoLudoWeb extends Composite
 		if (module instanceof HasHistogram.Degree && !isODESDE)
 			addView(new Histogram(engine, Data.DEGREE), oldViews);
 		// statistics related views
-		if (model.permitsMode(Mode.STATISTICS_SAMPLE)) {
+		if (model != null && model.permitsMode(Mode.STATISTICS_SAMPLE)) {
 			// sample statistics available
 			if (module instanceof HasHistogram.StatisticsProbability)
 				addView(new Histogram(engine, Data.STATISTICS_FIXATION_PROBABILITY), oldViews);
@@ -1870,7 +1874,7 @@ public class EvoLudoWeb extends Composite
 			if (activeView != null && activeView.getMode() == Mode.STATISTICS_SAMPLE)
 				logger.warning("sampling statistics not supported for current settings!");
 		}
-		if (model.permitsMode(Mode.STATISTICS_UPDATE)) {
+		if (model != null && model.permitsMode(Mode.STATISTICS_UPDATE)) {
 			// update statistics available
 			if (module instanceof HasHistogram.StatisticsStationary)
 				addView(new Histogram(engine, Data.STATISTICS_STATIONARY), oldViews);

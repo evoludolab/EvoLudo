@@ -273,6 +273,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		trajectoryColor = null;
 		map2fitness = null;
 		playerUpdate = null;
+		markers = null;
 		opponent = this;
 		engine.removeMilestoneListener(this);
 		if (this instanceof ChangeListener)
@@ -1717,11 +1718,12 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		if (minTraits > 2 || (anyNonVacant && minTraits > 1))
 			parser.addCLO(cloTraitDisable);
 
+		if (model == null)
+			return;
 		// population size option only acceptable for IBS and SDE models
 		if (model instanceof IBS || model instanceof SDE) {
 			parser.addCLO(cloNPopulation);
 		}
-
 		// geometry option only acceptable for IBS and PDE models
 		if (model instanceof IBS || model instanceof PDE) {
 			cloGeometry.addKeys(Geometry.Type.values());

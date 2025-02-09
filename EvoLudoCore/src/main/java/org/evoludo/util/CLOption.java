@@ -31,6 +31,7 @@
 package org.evoludo.util;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -821,7 +822,9 @@ public class CLOption implements Comparable<CLOption> {
 	 * @return the key collection
 	 */
 	public Collection<Key> getKeys() {
-		return keys.values();
+		if (keys != null)
+			return keys.values();
+		return new ArrayList<Key>();
 	}
 
 	/**
