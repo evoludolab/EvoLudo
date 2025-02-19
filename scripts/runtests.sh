@@ -40,6 +40,6 @@ fi
 
 java -jar "$EVOLUDO_TEST_HOME"/target/EvoLudoTest.*.jar \
     	--tests "$EVOLUDO_TEST_TEST/generators" \
-    	--references "$EVOLUDO_TEST_TEST/references/current" \
+    	--references "$EVOLUDO_TEST_TEST/references" \
 		--reports "$EVOLUDO_TEST_TEST/reports" \
 		"$@"
