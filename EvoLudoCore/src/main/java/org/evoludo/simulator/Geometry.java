@@ -2050,11 +2050,13 @@ public class Geometry {
 		int nTodo = end - start;
 		int nLinks = nTodo * degree;
 		int[] todo = new int[nTodo];
-		for (int n = 0; n < nTodo; n++)
+		for (int n = start; n < end; n++)
 			todo[n] = n;
 
 		// ensure connectedness for static graphs
 		int[] active = new int[nTodo];
+		int[] done = new int[nTodo];
+		int nDone = 0;
 		int idxa = rng.random0n(nTodo);
 		active[0] = todo[idxa];
 		nTodo--;
@@ -2068,6 +2070,7 @@ public class Geometry {
 			int nodeb = todo[idxb];
 			addEdgeAt(nodea, nodeb);
 			if (kout[nodea] == degree) {
+				done[nDone++] = nodea;
 				nActive--;
 				if (idxa != nActive)
 					System.arraycopy(active, idxa + 1, active, idxa, nActive - idxa);
@@ -2108,11 +2111,21 @@ public class Geometry {
 				b -= degree - kout[nodeb];
 			}
 
-			if (nodea == nodeb || isNeighborOf(nodea, nodeb))
+			if (nodea == nodeb)
 				continue;
-			addEdgeAt(nodea, nodeb);
+			if (isNeighborOf(nodea, nodeb)) {
+				if (nDone < 1)
+					continue;
+				if (!rewireNeighbourEdge(rng, nodea, nodeb, done, nDone))
+					// cross fingers and try again
+					continue;
+			} else {
+				// A!=B and A-B are not connected
+				addEdgeAt(nodea, nodeb);
+			}
 			nLinks -= 2;
 			if (kout[nodea] == degree) {
+				done[nDone++] = nodea;
 				nTodo--;
 				if (idxa != nTodo)
 					System.arraycopy(todo, idxa + 1, todo, idxa, nTodo - idxa);
@@ -2120,11 +2133,56 @@ public class Geometry {
 					idxb--;
 			}
 			if (kout[nodeb] == degree) {
+				done[nDone++] = nodeb;
 				nTodo--;
 				if (idxb != nTodo)
 					System.arraycopy(todo, idxb + 1, todo, idxb, nTodo - idxb);
 			}
 		}
+	}
+
+	/**
+	 * Utility method to rewire an edge between two nodes. This assumes that
+	 * {@code nodeA} and {@code nodeB} are neighbours. Pick random node {@code C}
+	 * from set {@code done} and node {@code D} a random neighbour of {@code C}. Now
+	 * try to rewire the edge {@code A-B} to {@code A-C} and {@code B-D} or
+	 * {@code B-C} and {@code A-D}, respectively. Returns {@code false} and do
+	 * nothing if the edge would result in self-loops or double edges.
+	 * 
+	 * @param rng   the random number generator
+	 * @param nodeA the first node with {@code nodeB} as neighbour
+	 * @param nodeB the second node with {@code nodeA} as neighbour
+	 * @param done  the set of nodes to pick node {@code C} from
+	 * @param nDone the number of nodes in {@code done}
+	 * @return {@code true} if the edges are successfully rewired, {@code false}
+	 *         otherwise
+	 */
+	private boolean rewireNeighbourEdge(RNGDistribution rng, int nodeA, int nodeB, int[] done, int nDone) {
+		// do not yet give up - pick third node at random from connected set
+		// plus one of its neighbours
+		int nodeC = done[rng.random0n(nDone)];
+		// note: D may or may not be member of full; must not be A or B
+		int nodeD = out[nodeC][rng.random0n(kout[nodeC])];
+		// A-B as well as C-D are connected
+		if (nodeD != nodeB && !isNeighborOf(nodeA, nodeC) && !isNeighborOf(nodeB, nodeD)) {
+			// note: D=A cannot hold because then isNeighborOf(nodea, nodec)==true
+			// break C-D edge, connect A-C and B-D
+			// leaves connectivity of C and D unchanged
+			removeEdgeAt(nodeC, nodeD);
+			addEdgeAt(nodeA, nodeC);
+			addEdgeAt(nodeB, nodeD);
+			return true;
+		}
+		if (nodeD != nodeA && !isNeighborOf(nodeA, nodeD) && !isNeighborOf(nodeB, nodeC)) {
+			// note: D=B cannot hold because then isNeighborOf(nodeb, nodec)==true
+			// break C-D edge, connect B-C and A-D
+			// leaves connectivity of C and D unchanged
+			removeEdgeAt(nodeC, nodeD);
+			addEdgeAt(nodeA, nodeD);
+			addEdgeAt(nodeB, nodeC);
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -3534,7 +3592,7 @@ public class Geometry {
 		int trials = 0;
 		while (!initGeometryDegreeDistr(degrees) && ++trials < MAX_TRIALS)
 			;
-		if (trials >= 10) {
+		if (trials >= MAX_TRIALS) {
 			// reset sets size=-1
 			int mysize = size;
 			reset();
@@ -3852,28 +3910,7 @@ public class Geometry {
 				// make sure there is at least one node in connected set
 				if (todo == size)
 					continue;
-				// do not yet give up - pick third node at random from connected set plus one of
-				// its neighbours
-				int idxc = rng.random0n(size - todo);
-				int nodec = full[idxc];
-				// note: D may or may not be member of full; must not be A or B
-				int noded = out[nodec][rng.random0n(kout[nodec])];
-				// A-B as well as C-D are connected
-				if (noded != nodeb && !isNeighborOf(nodea, nodec) && !isNeighborOf(nodeb, noded)) {
-					// note: D=A cannot hold because then isNeighborOf(nodea, nodec)==true
-					// break C-D edge, connect A-C and B-D
-					// leaves connectivity of C and D unchanged
-					removeEdgeAt(nodec, noded);
-					addEdgeAt(nodea, nodec);
-					addEdgeAt(nodeb, noded);
-				} else if (noded != nodea && !isNeighborOf(nodea, noded) && !isNeighborOf(nodeb, nodec)) {
-					// note: D=B cannot hold because then isNeighborOf(nodeb, nodec)==true
-					// break C-D edge, connect B-C and A-D
-					// leaves connectivity of C and D unchanged
-					removeEdgeAt(nodec, noded);
-					addEdgeAt(nodea, noded);
-					addEdgeAt(nodeb, nodec);
-				} else
+				if (!rewireNeighbourEdge(rng, nodea, nodeb, full, size - todo))
 					success = false;
 			} else {
 				addEdgeAt(nodea, nodeb);
