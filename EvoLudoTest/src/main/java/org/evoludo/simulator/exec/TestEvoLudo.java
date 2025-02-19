@@ -35,6 +35,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -167,8 +168,10 @@ public class TestEvoLudo implements MilestoneListener {
 	 */
 	protected void generate(File clo) {
 		String filename = clo.getName();
+		// strip extension
+		filename = filename.substring(0, filename.lastIndexOf(".clo"));
 		File exportDir = new File(
-				referencesDir.getPath() + File.separator + filename.substring(0, filename.lastIndexOf(".clo")));
+				referencesDir.getPath() + File.separator + filename);
 		if (!exportDir.exists() && !exportDir.mkdir()) {
 			logWarning("Generating: failed to make directory '" + exportDir.getPath() + "' - skipped.");
 			return;
@@ -194,33 +197,34 @@ public class TestEvoLudo implements MilestoneListener {
 			plist.failfast(true);
 			String export = generateExportFilename(test, ++nTest);
 			// check result against references
-			File current = referencesDir.toPath().getParent().resolve("current").toFile();
+			File current = new File(referencesDir.getPath() + File.separator + filename);
 			File ref = checkReference(current, plist, export);
-			if (ref != null && ref != current) {
-				// check passed; create link to reference
-				String refname = ref.getName();
-				Path exportPath = null;
-				if (refname.substring(refname.lastIndexOf(".") + 1).equals("zip"))
-					export += ".zip";
-				try {
-					exportPath = exportDir.toPath().toRealPath();
-				} catch (IOException e) {
-					logError("check passed but failed to resolve '" + exportDir.toPath() + "' to real path.");
-					continue;
-				}
-				Path lnkSrc = null;
-				Path lnkDst = null;
-				try {
-					lnkSrc = exportPath.resolve(export);
-					lnkDst = exportPath.relativize(ref.toPath().toRealPath());
-					Files.createSymbolicLink(lnkSrc, lnkDst);
-				} catch (IOException e) {
-					logError("check passed but failed to create link from '" + lnkSrc + "' to '" + lnkDst + "'.");
-					continue;
-				}
-				logOk("check passed - link to '" + ref.getName() + "' created.");
+			if (ref != null && ref != current)
+				// check passed
 				continue;
+			if (ref == null) {
+				// copy failed test to reports directory
+				try {
+					String zip = "";
+					File src = search(current, export);
+					if (src == null) {
+						zip = ".zip";
+						src = search(current, export + zip);
+					}
+					Path dst = new File(reportsDir.getPath() + File.separator 
+							+ export.substring(0, export.lastIndexOf(".plist"))
+							+ "-old.plist" + zip).toPath();
+					Files.move(src.toPath(), dst);
+				} catch (FileAlreadyExistsException e) {
+					logError("file '" + reportsDir + File.separator + export + "' already exists.");
+					continue;
+				} catch (IOException e) {
+					logError("failed to move '" + referencesDir + File.separator + export 
+						+ "' to '" + reportsDir + File.separator + export + "'.");
+					continue;
+				}
 			}
+			// save new reference
 			if (useCompression) {
 				// with compression
 				ref = exportDir.toPath().resolve(export + ".zip").toFile();
@@ -253,6 +257,7 @@ public class TestEvoLudo implements MilestoneListener {
 					nTestFailures++;
 				}
 			}
+			logOk(ref.getName() + ": test generated/updated.");
 			// check test
 			test(ref);
 		}
@@ -333,7 +338,7 @@ public class TestEvoLudo implements MilestoneListener {
 		while (isRunning) {
 			synchronized (this) {
 				engine.run();
-				// System.out.println(task + ": engine running, waiting to finish...");
+				// logMessage(task + ": engine running, waiting to finish...");
 				try {
 					wait();
 				} catch (InterruptedException e) {
@@ -359,15 +364,13 @@ public class TestEvoLudo implements MilestoneListener {
 	 */
 	private boolean compareRuns(File refname, Plist reference, Plist replicate) {
 		nTests++;
-		System.out.println("Testing: analyzing differences...");
+		logMessage("Testing: analyzing differences...");
 		// create 'plist' of current state and compare to 'reference'
 		if (verbose)
 			replicate.verbose();
 		// ignore some plist entries
 		int nIssues = replicate.diff(reference, Arrays.asList("Export date", "Version", "JavaVersion", "CLO"));
 		// check option strings only if some tests failed
-		if (replicate.failfast())
-			return (nIssues == 0);
 		if (replicate.getNMajor() > 0) {
 			String rclo = (String) reference.get("CLO");
 			String mclo = (String) replicate.get("CLO");
@@ -390,9 +393,13 @@ public class TestEvoLudo implements MilestoneListener {
 				color = ConsoleColors.YELLOW;
 			} else {
 				// at least some serious diffs found
-				msg = "found " + nIssues + " differences for options '" + replicate.get("CLO") + "'";
-				if (nMinor > 0)
-					msg += " (with " + nMinor + " minor numerical)";
+				if (replicate.failfast()) {
+					msg = "failed";
+				} else {
+					msg = "found " + nIssues + " differences for options '" + replicate.get("CLO") + "'";
+					if (nMinor > 0)
+						msg += " (with " + nMinor + " minor numerical)";
+				}
 				msg += " - review!";
 				color = ConsoleColors.RED;
 			}
@@ -411,26 +418,27 @@ public class TestEvoLudo implements MilestoneListener {
 			default:
 				logMessage(msg);
 		}
-		if (nIssues > 0) {
-			String javaref = (String) reference.get("JavaVersion");
-			String javarep = (String) replicate.get("JavaVersion");
-			if (javaref != null && !javaref.equals(javarep))
-				logWarning("JRE versions differ (me: " + javarep + ", ref: " + javaref + ")");
-			String ext;
-			String report = reportsDir.getAbsolutePath() + File.separator + refname.getName();
-			if (nIssues == nMinor) {
-				nTestMinor++;
-				if (!dumpMinor)
-					return false;
-				ext = "-minor.plist";
-			} else {
-				nTestFailures++;
-				ext = "-failed.plist";
-			}
-			engine.exportState(report.substring(0, report.lastIndexOf(".plist")) + ext);
+		if (nIssues == 0)
+			return true;
+		if (replicate.failfast())
 			return false;
+		String javaref = (String) reference.get("JavaVersion");
+		String javarep = (String) replicate.get("JavaVersion");
+		if (javaref != null && !javaref.equals(javarep))
+			logWarning("JRE versions differ (me: " + javarep + ", ref: " + javaref + ")");
+		String ext;
+		String report = reportsDir.getAbsolutePath() + File.separator + refname.getName();
+		if (nIssues == nMinor) {
+			nTestMinor++;
+			if (!dumpMinor)
+				return false;
+			ext = "-minor.plist";
+		} else {
+			nTestFailures++;
+			ext = "-failed.plist";
 		}
-		return true;
+		engine.exportState(report.substring(0, report.lastIndexOf(".plist")) + ext);
+		return false;
 	}
 
 	/**
@@ -474,7 +482,7 @@ public class TestEvoLudo implements MilestoneListener {
 		String filename = dir.getName();
 		String ext = filename.substring(filename.lastIndexOf('.'));
 		if (ext.equals(".plist") || ext.equals(".zip")) {
-			System.out.println("Testing: '" + parent + dir.getName() + "'...");
+			logMessage("Testing: '" + parent + dir.getName() + "'...");
 			Plist reference = engine.readPlist(dir.getAbsolutePath());
 			if (reference == null)
 				return;
@@ -697,7 +705,7 @@ public class TestEvoLudo implements MilestoneListener {
 				// check directory
 				arg = args[++i];
 				Path reports = FileSystems.getDefault().getPath(arg);
-				reportsDir = new File(reports.toFile().getPath() + File.separator + engine.getGit());
+				reportsDir = new File(reports.toFile().getPath());
 				continue;
 			}
 			// dump differences for minor failures
@@ -717,7 +725,7 @@ public class TestEvoLudo implements MilestoneListener {
 			referencesDir = testsDir;
 		if (reportsDir == null) {
 			if (testsDir.isDirectory()) {
-				reportsDir = new File(testsDir.getPath() + File.separator + engine.getGit());
+				reportsDir = new File(testsDir.getPath());
 				if (!reportsDir.exists() && !reportsDir.mkdir()) {
 					logError("failed to create directory '" + reportsDir.getPath() + "' for reports.");
 					engine.exit(1);
@@ -738,11 +746,6 @@ public class TestEvoLudo implements MilestoneListener {
 			}
 			if (!referencesDir.canWrite()) {
 				logError("directory for generated references is not writable.");
-				engine.exit(1);
-			}
-			referencesDir = new File(referencesDir.getPath() + File.separator + engine.getGit());
-			if (!referencesDir.exists() && !referencesDir.mkdir()) {
-				logError("failed to create directory '" + referencesDir.getPath() + "' for references.");
 				engine.exit(1);
 			}
 		} else {

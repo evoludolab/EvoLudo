@@ -126,14 +126,14 @@
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/EvoLudoTest/src/main/java/org/evoludo/simulator/exec/TestEvoludo.java",
-            "args": "--references ${workspaceFolder}/EvoLudoTest/tests/references/current --reports ${workspaceFolder}/EvoLudoTest/tests/reports"
+            "args": "--references ${workspaceFolder}/EvoLudoTest/tests/references --reports ${workspaceFolder}/EvoLudoTest/tests/reports"
         },
         {
             "name": "JRE TestEvoludo (with clo)",
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/EvoLudoTest/src/main/java/org/evoludo/simulator/exec/TestEvoludo.java",
-            "args": "--tests ${workspaceFolder}/EvoLudoTest/tests/generators --references ${workspaceFolder}/EvoLudoTest/tests/references/current --reports ${workspaceFolder}/EvoLudoTest/tests/reports"
+            "args": "--tests ${workspaceFolder}/EvoLudoTest/tests/generators --references ${workspaceFolder}/EvoLudoTest/tests/references --reports ${workspaceFolder}/EvoLudoTest/tests/reports"
         },
     ]
 }
