@@ -1745,16 +1745,21 @@ public abstract class IBS extends Model {
 				public void report(PrintStream output) {
 					for (Module mod : species) {
 						IBSPopulation pop = mod.getIBSPopulation();
-						Geometry intergeo = pop.getCompetitionGeometry();
-						output.println("# interaction-rewiring: " + Formatter.format(intergeo.pRewire, 4) +
-								(isMultispecies ? " (" + mod.getName() + ")" : ""));
-						Geometry compgeom = pop.getCompetitionGeometry();
-						// competition geometry can be null for pde models
-						if (compgeom == null)
+						Geometry intergeo = pop.getInteractionGeometry();
+						if (intergeo.pRewire > 0.0)
+							output.println((intergeo.interCompSame ? "# structure-rewiring:   " : "# interaction-rewiring: ")
+									+ Formatter.format(intergeo.pRewire, 4)
+									+ (isMultispecies ? " (" + mod.getName() + ")" : ""));
+						if (intergeo.interCompSame)
 							continue;
-						output.println("# competition-rewiring: " + Formatter.format(compgeom.pRewire, 4) +
-								(isMultispecies ? " (" + mod.getName() + ")" : ""));
-						compgeom.printParams(output);
+						Geometry compgeo = pop.getCompetitionGeometry();
+						// competition geometry can be null for pde models
+						if (compgeo == null || compgeo.interCompSame)
+							continue;
+						if (compgeo.pRewire > 0.0)
+							output.println("# competition-rewiring: " + Formatter.format(compgeo.pRewire, 4) +
+									(isMultispecies ? " (" + mod.getName() + ")" : ""));
+						compgeo.printParams(output);
 					}
 				}
 			});
@@ -1797,15 +1802,20 @@ public abstract class IBS extends Model {
 					for (Module mod : species) {
 						IBSPopulation pop = mod.getIBSPopulation();
 						Geometry intergeo = pop.getCompetitionGeometry();
-						output.println("# interaction-add:      " + Formatter.format(intergeo.pRewire, 4) +
-								(isMultispecies ? " (" + mod.getName() + ")" : ""));
-						Geometry compgeom = pop.getCompetitionGeometry();
-						// competition geometry can be null for pde models
-						if (compgeom == null)
+						if (intergeo.pRewire > 0.0)
+							output.println((intergeo.interCompSame ? "# structure-add:        " : "# interaction-add:      ")
+									+ Formatter.format(intergeo.pRewire, 4)
+									+ (isMultispecies ? " (" + mod.getName() + ")" : ""));
+						if (intergeo.interCompSame)
 							continue;
-						output.println("# competition-add:      " + Formatter.format(compgeom.pRewire, 4) +
+						Geometry compgeo = pop.getCompetitionGeometry();
+						// competition geometry can be null for pde models
+						if (compgeo == null)
+							continue;
+						if (compgeo.pRewire > 0.0)
+							output.println("# competition-add:      " + Formatter.format(compgeo.pRewire, 4) +
 								(isMultispecies ? " (" + mod.getName() + ")" : ""));
-						compgeom.printParams(output);
+						compgeo.printParams(output);
 					}
 				}
 			});

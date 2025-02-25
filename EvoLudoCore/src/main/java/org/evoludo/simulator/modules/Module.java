@@ -1195,13 +1195,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				public void report(PrintStream output) {
 					if (model.isIBS()) {
 						for (Module pop : species) {
-							// Geometry intergeo = mod.getInteractionGeometry();
-							// if( intergeo.interCompSame ) {
-							// output.println("# geometry:
-							// "+cloGeometry.getKey(intergeo.geometry).getTitle()
-							// + (modules.size() > 1?" ("+mod.getName()+")":""));
-							// intergeo.printParams(output);
-							// }
 							if (pop.structure.interCompSame) {
 								output.println("# geometry:             " + pop.structure.getType().getTitle()
 										+ (species.size() > 1 ? " (" + pop.getName() + ")" : ""));
@@ -1442,9 +1435,11 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				public void report(PrintStream output) {
 					String msg = "";
 					for (Module pop : species) {
+						if (pop.nTraits == pop.nActive)
+							continue;
 						int count = 0;
 						for (int n = 0; n < pop.nTraits; n++) {
-							if (!pop.active[n])
+							if (pop.active[n])
 								continue;
 							msg += pop.getTraitName(n);
 							count++;

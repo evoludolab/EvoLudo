@@ -766,7 +766,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	static int MUTANT_NORM = 2;
 
 	/**
-	 * Index of the reseidents mean fixation probability/updates/time.
+	 * Index of the residents mean fixation probability/updates/time.
 	 */
 	static int RESIDENT_MEAN = 3;
 

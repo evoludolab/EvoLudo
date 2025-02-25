@@ -1630,9 +1630,9 @@ public class Geometry {
 	public void printParams(PrintStream output) {
 		switch (geometry) {
 			case SUPER_STAR:
-				output.println("# connectivity:         " + Formatter.format(connectivity, 4));
 				output.println("# petalscount:          " + Formatter.format(superstar_petals, 0));
 				output.println("# amplification:        " + Formatter.format(superstar_amplification, 4));
+				output.println("# connectivity:         " + Formatter.format(connectivity, 4));
 				break;
 			case LINEAR:
 				if (linearAsymmetry != 0) {
