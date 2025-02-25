@@ -33,9 +33,12 @@ package org.evoludo.simulator.exec;
 import java.io.PrintStream;
 import java.text.DecimalFormat;
 
+import org.evoludo.math.Distributions;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoJRE;
-import org.evoludo.simulator.models.IBSDPopulation;
+import org.evoludo.simulator.models.FixationData;
+import org.evoludo.simulator.models.Mode;
+import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.Moran;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -55,11 +58,6 @@ import org.evoludo.util.Formatter;
 public class simMoran extends Moran {
 
 	/**
-	 * The number of samples for statistics.
-	 */
-	long nSamples = 100000;
-
-	/**
 	 * The flag to indicate whether to show progress.
 	 */
 	boolean progress = false;
@@ -70,29 +68,36 @@ public class simMoran extends Moran {
 	PrintStream out;
 
 	/**
+	 * The EvoLudoJRE engine for running the simulation. This is a convenience field
+	 * that saves us casting engine to EvoLudoJRE every time we need to access its
+	 * methods.
+	 */
+	EvoLudoJRE jrengine;
+
+	/**
 	 * Create a new simulation to investigate fixation probabilities and times in
 	 * the Moran process.
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	public simMoran(EvoLudo engine) {
+	public simMoran(EvoLudoJRE engine) {
 		super(engine);
+		out = engine.getOutput();
+		jrengine = engine;
+	}
+
+	@Override
+	public Type[] getModelTypes() {
+		return new Type[] { Type.IBS, Type.SDE };
 	}
 
 	@Override
 	public void run() {
-		out = ((EvoLudoJRE) engine).getOutput();
-		// assumes IBS simulations
-		IBSDPopulation pop = (IBSDPopulation) getIBSPopulation();
-		long nFix = 0;
+		// set statistics mode
+		model.requestMode(Mode.STATISTICS_SAMPLE);
 		long nextReport = -1;
 		long msecStart = System.currentTimeMillis();
-		double meanAbsTime = 0;
-		double meanFixTime = 0;
-		double sumSquaresFix = 0;
-		double sumSquaresAbs = 0;
 
-		// modelReset();
 		if (progress)
 			nextReport = 10;
 
@@ -147,41 +152,63 @@ public class simMoran extends Moran {
 
 		// print header
 		engine.dumpParameters();
+		if (engine.cloSeed.isSet()) {
+			// RNG seed is set. now clear seed to obtain reproducible statistics
+			// rather just a single data point repeatedly
+			engine.getRNG().clearRNGSeed();
+		}
 
+		long nSamples = (long) engine.getModel().getNSamples();
+		double[][] fixProb = new double[nPopulation][2];
+		double[][][] fixUpdate = new double[nPopulation][2][3];
+		double[][][] fixTime = new double[nPopulation][2][3];
+		double[][] absUpdate = new double[nPopulation][3];
+		double[][] absTime = new double[nPopulation][3];
+		double[][] fixTotUpdate = new double[2][3];
+		double[][] fixTotTime = new double[2][3];
+		double[] absTotUpdate = new double[3];
+		double[] absTotTime = new double[3];
 		// evolve population
 		for (long r = 1; r <= nSamples; r++) {
-			while (engine.modelNext())
-				;
-			double fixTime = engine.getModel().getTime();
-			if (pop.strategiesTypeCount[RESIDENT] == 0) {
-				// mutants fixated
-				nFix++;
-				double difMean = fixTime - meanFixTime;
-				meanFixTime += difMean / nFix;
-				double difMeanNew = fixTime - meanFixTime;
-				sumSquaresFix += difMeanNew * difMean;
-			}
-			double difMean = fixTime - meanAbsTime;
-			meanAbsTime += difMean / r;
-			double difMeanNew = fixTime - meanAbsTime;
-			sumSquaresAbs += difMeanNew * difMean;
+			FixationData fixData = jrengine.generateSample();
+			int typeFixed = (fixData.typeFixed == fixData.mutantTrait ? 0 : 1);
+			fixProb[fixData.mutantNode][typeFixed]++;
+			Distributions.pushMeanVar(fixUpdate[fixData.mutantNode][typeFixed], fixData.updatesFixed);
+			Distributions.pushMeanVar(absUpdate[fixData.mutantNode], fixData.updatesFixed);
+			Distributions.pushMeanVar(fixTime[fixData.mutantNode][typeFixed], fixData.timeFixed);
+			Distributions.pushMeanVar(absTime[fixData.mutantNode], fixData.timeFixed);
+			Distributions.pushMeanVar(fixTotUpdate[typeFixed], fixData.updatesFixed);
+			Distributions.pushMeanVar(absTotUpdate, fixData.updatesFixed);
+			Distributions.pushMeanVar(fixTotTime[typeFixed], fixData.timeFixed);
+			Distributions.pushMeanVar(absTotTime, fixData.timeFixed);
+
 			if (progress && nextReport == r) {
-				out.println("# " + Formatter.formatFix((double) nFix / (double) r, 8) + "\t(runs: " + r + ", "
-						+ msecToString(System.currentTimeMillis() - msecStart) + ")");
+				out.println("# runs: " + r + ", " + msecToString(System.currentTimeMillis() - msecStart));
 				nextReport *= 10;
 			}
-			engine.modelReset();
+		}
+		double meanFix = 0.0;
+		double varFix = 0.0;
+		double count = 0.0;
+		for (int n = 0; n < nPopulation; n++) {
+			double[] node = fixProb[n];
+			double norm = node[0] + node[1];
+			if (norm <= 0.0)
+				continue; // no samples for node n
+			double inorm = 1.0 / norm;
+			double n0 = node[0] * inorm;
+			double dx = n0 - meanFix;
+			meanFix += dx / (++count);
+			varFix += dx * (n0 - meanFix);
 		}
 		double rhoA1 = rhoA(1, nPopulation);
-		out.println("# r\tfixation prob\t(analytical)\tfixation time\t(analytical)\tabsorbtion time\t(analytical)");
-		out.println(Formatter.formatFix(getFitness()[MUTANT], 2) + "\t" +
-				Formatter.formatFix((double) nFix / (double) nSamples, 8) + "\t" + Formatter.formatFix(rhoA1, 8) + "\t"
-				+
-				Formatter.formatFix(meanFixTime * nPopulation, 8) + " ± " +
-				Formatter.formatFix(Math.sqrt(sumSquaresFix / (nFix - 1)) * nPopulation, 8) + "\t"
-				+ Formatter.formatFix(tA1(nPopulation), 8) + "\t" +
-				Formatter.formatFix(meanAbsTime * nPopulation, 8) + " ± " +
-				Formatter.formatFix(Math.sqrt(sumSquaresAbs / (nSamples - 1)) * nPopulation, 8) + "\t"
+		out.println("# r\tfixation prob\t(well-mixed)\tfixation time\t(well-mixed)\tabsorbtion time\t(well-mixed)");
+		out.println(Formatter.formatFix(getFitness()[MUTANT], 2) + "\t"
+				+ Formatter.formatFix(meanFix, 8) + " ± " + Formatter.formatFix(Math.sqrt(varFix / (count - 1.0)), 8) + "\t"
+				+ Formatter.formatFix(rhoA1, 8) + "\t"
+				+ Formatter.formatFix(fixTotUpdate[0][0], 8) + " ± " + Formatter.formatFix(Math.sqrt(fixTotUpdate[0][1] / (fixTotUpdate[0][2] - 1)), 8) + "\t"
+				+ Formatter.formatFix(tA1(nPopulation), 8) + "\t"
+				+ Formatter.formatFix(absTotUpdate[0], 8) + " ± " + Formatter.formatFix(Math.sqrt(absTotUpdate[1] / (absTotUpdate[2] - 1)), 8) + "\t"
 				+ Formatter.formatFix(t1(rhoA1, nPopulation), 8));
 		engine.dumpEnd();
 		engine.exportState();
@@ -205,45 +232,6 @@ public class simMoran extends Moran {
 	}
 
 	/**
-	 * Set the number of samples for statistics.
-	 * 
-	 * @param nSamples the number of samples
-	 */
-	public void setNSamples(long nSamples) {
-		if (nSamples <= 0L)
-			return;
-		this.nSamples = nSamples;
-	}
-
-	/**
-	 * Get the number of samples for statistics.
-	 * 
-	 * @return the number of samples
-	 */
-	public double getNSamples() {
-		return nSamples;
-	}
-
-	/**
-	 * Command line option for setting the number of samples for statistics.
-	 */
-	final CLOption cloSamples = new CLOption("samples", "100000", EvoLudo.catSimulation, // 10^5
-			"--samples <s>   number of samples",
-			new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					setNSamples(CLOParser.parseLong(arg));
-					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					// output.println("# samples: "+activeModel.getNStatisticsSamples());
-					output.println("# samples:              " + engine.getModel().getNStatisticsSamples());
-				}
-			});
-
-	/**
 	 * Command line option to show the simulation progress.
 	 */
 	final CLOption cloProgress = new CLOption("progress", EvoLudo.catSimulation,
@@ -259,11 +247,8 @@ public class simMoran extends Moran {
 	@Override
 	public void collectCLO(CLOParser parser) {
 		// prepare command line options
-		parser.addCLO(cloSamples);
 		parser.addCLO(cloProgress);
-
 		super.collectCLO(parser);
-		parser.removeCLO("timeend");
 	}
 
 	public static void main(String[] args) {

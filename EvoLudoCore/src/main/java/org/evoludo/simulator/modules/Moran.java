@@ -447,8 +447,8 @@ public class Moran extends Discrete implements Module.Static,
 	// }
 
 	/**
-	 * The absorbtion time of a single mutant in a population of constant
-	 * size {@code N} (and {@code N-1} residents).
+	 * The absorbtion time (in generations) of a single mutant in a population of
+	 * constant size {@code N} (and {@code N-1} residents).
 	 * 
 	 * @param rhoA the fixation probability of a single mutant
 	 * @param n    the size of the population
@@ -470,12 +470,12 @@ public class Moran extends Discrete implements Module.Static,
 			}
 			sum += sumprod / Tplus(l, n);
 		}
-		return sum * rhoA;
+		return (sum * rhoA) / N;
 	}
 
 	/**
-	 * The absorbtion time of {@code i} mutants in a population of constant
-	 * size {@code N} (and {@code N-i} residents).
+	 * The absorbtion time (in generations) of {@code i} mutants in a population of
+	 * constant size {@code N} (and {@code N-i} residents).
 	 * 
 	 * @param i  the number of mutants
 	 * @param n  the size of the population
@@ -507,7 +507,7 @@ public class Moran extends Discrete implements Module.Static,
 			}
 			sum2 += sumprod;
 		}
-		return sum1 + sum2;
+		return (sum1 + sum2) / N;
 	}
 
 	// // requires rhoB
@@ -530,7 +530,7 @@ public class Moran extends Discrete implements Module.Static,
 
 	/**
 	 * The conditional fixation time of a single mutant in a population of fixed
-	 * size {@code N} (and {@code N-1} residents).
+	 * size {@code N} (and {@code N-1} residents) measured in generations.
 	 * 
 	 * @param n the size of the population
 	 * @return the conditional fixation time
@@ -549,12 +549,12 @@ public class Moran extends Discrete implements Module.Static,
 			}
 			sum += sumprod * rhoA(l, n) / Tplus(l, n);
 		}
-		return sum;
+		return sum / N;
 	}
 
 	/**
 	 * The conditional fixation time of {@code i} mutants in a population of fixed
-	 * size {@code N} (and {@code N-i} residents).
+	 * size {@code N} (and {@code N-i} residents) measured in generations.
 	 * 
 	 * @param i    the number of mutants
 	 * @param n    the size of the population
@@ -586,7 +586,7 @@ public class Moran extends Discrete implements Module.Static,
 			}
 			sum2 += sumprod;
 		}
-		return sum1 + sum2;
+		return (sum1 + sum2) / N;
 	}
 
 	// private double tBN1() {
