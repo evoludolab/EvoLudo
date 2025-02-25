@@ -857,14 +857,14 @@ public class Geometry {
 	 * 
 	 * @see #initGeometrySuperstar()
 	 */
-	public int petalscount = -1;
+	public int superstar_petals = -1;
 
 	/**
 	 * The chain length in superstars.
 	 * 
 	 * @see #initGeometrySuperstar()
 	 */
-	public int petalsamplification = -1;
+	public int superstar_amplification = -1;
 
 	/**
 	 * The exponent in scale-free networks.
@@ -1047,8 +1047,8 @@ public class Geometry {
 		minTot = -1;
 		maxTot = -1;
 		avgTot = -1.0;
-		petalscount = -1;
-		petalsamplification = -1;
+		superstar_petals = -1;
+		superstar_amplification = -1;
 		rawhierarchy = null;
 		hierarchy = null;
 		sfExponent = -2.0;
@@ -1110,7 +1110,7 @@ public class Geometry {
 		switch (geometry) {
 			case COMPLETE:
 				connectivity = (size - 1);
-				petalsamplification = 1;
+				superstar_amplification = 1;
 				if (pRewire > 0.0 || pAddwire > 0.0) {
 					logger.warning("cannot add or rewire links for '" + geometry + "' - ignored!");
 					pRewire = 0.0;
@@ -1234,7 +1234,7 @@ public class Geometry {
 				break;
 			case STAR:
 				connectivity = 2.0 * (size - 1) / size;
-				petalsamplification = 2;
+				superstar_amplification = 2;
 				if (pRewire > 0.0) {
 					logger.warning("cannot rewire links for '" + geometry + "' - ignored!");
 					pRewire = 0.0;
@@ -1244,22 +1244,22 @@ public class Geometry {
 				connectivity = 4.0 * (size - 1) / size;
 				break;
 			case SUPER_STAR:
-				if (petalsamplification < 3) {
-					petalsamplification = 3;
+				if (superstar_amplification < 3) {
+					superstar_amplification = 3;
 					logger.warning(name + " geometry '" //
-							+ geometry + "' requires amplification of >=3 - using " + petalsamplification + "!");
+							+ geometry + "' requires amplification of >=3 - using " + superstar_amplification + "!");
 				}
 				// check population size
-				int pnodes = petalscount * (petalsamplification - 2);
-				int nReservoir = (size - 1 - pnodes) / petalscount;
-				if (setSize(nReservoir * petalscount + pnodes + 1)) {
+				int pnodes = superstar_petals * (superstar_amplification - 2);
+				int nReservoir = (size - 1 - pnodes) / superstar_petals;
+				if (setSize(nReservoir * superstar_petals + pnodes + 1)) {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
 						logger.warning(name + " geometry '" //
 							+ geometry + "' requires special size - using " + size + "!");
 					doReset = true;
 				}
-				connectivity = (double) (2 * nReservoir * petalscount + pnodes) / (double) size;
+				connectivity = (double) (2 * nReservoir * superstar_petals + pnodes) / (double) size;
 				isUndirected = false;
 				break;
 			case STRONG_SUPPRESSOR:
@@ -1456,7 +1456,7 @@ public class Geometry {
 				connectivity = 3.0;
 				break;
 			case MEANFIELD:
-				petalsamplification = 1;
+				superstar_amplification = 1;
 				//$FALL-THROUGH$
 			case RANDOM_GRAPH:
 				break;
@@ -1631,8 +1631,8 @@ public class Geometry {
 		switch (geometry) {
 			case SUPER_STAR:
 				output.println("# connectivity:         " + Formatter.format(connectivity, 4));
-				output.println("# petalscount:          " + Formatter.format(petalscount, 0));
-				output.println("# amplification:        " + Formatter.format(petalsamplification, 4));
+				output.println("# petalscount:          " + Formatter.format(superstar_petals, 0));
+				output.println("# amplification:        " + Formatter.format(superstar_amplification, 4));
 				break;
 			case LINEAR:
 				if (linearAsymmetry != 0) {
@@ -1949,8 +1949,8 @@ public class Geometry {
 	 *
 	 * <h3>Requirements/notes:</h3>
 	 * <ol>
-	 * <li>Population size: \(N=(r+k-1)p+1\) whith \(r,k,p\) integer and \(r\gg
-	 * k,p\).
+	 * <li>Population size: \(N=(r+k-1)p+1\) with \(r,k,p\) integer.
+	 * <li>Strong amplification requires \(r\gg k,p\).
 	 * <li>Node \(0\) is the hub.
 	 * </ol>
 	 * 
@@ -1967,21 +1967,21 @@ public class Geometry {
 		// hub is node 0, outermost petals are nodes 1 - p
 		// inner petal nodes are p+1 - 2p, 2p+1 - 3p etc.
 		// petal nodes (kernel-2)p+1 - (kernel-2)p+p=(kernel-1)p are connected to hub
-		int pnodes = petalscount * (petalsamplification - 2);
+		int pnodes = superstar_petals * (superstar_amplification - 2);
 
 		// connect hub
 		for (int i = pnodes + 1; i < size; i++) {
 			addLinkAt(0, i);
-			addLinkAt(i, (i - pnodes - 1) % petalscount + 1);
+			addLinkAt(i, (i - pnodes - 1) % superstar_petals + 1);
 		}
 
 		// chain petals - outer petal nodes to inner petal nodes
-		for (int i = 1; i <= (pnodes - petalscount); i++)
-			addLinkAt(i, i + petalscount);
+		for (int i = 1; i <= (pnodes - superstar_petals); i++)
+			addLinkAt(i, i + superstar_petals);
 
 		// connect petals - inner petal nodes to hub
-		for (int i = 1; i <= petalscount; i++)
-			addLinkAt(pnodes - petalscount + i, 0);
+		for (int i = 1; i <= superstar_petals; i++)
+			addLinkAt(pnodes - superstar_petals + i, 0);
 	}
 
 	/**
@@ -2009,11 +2009,17 @@ public class Geometry {
 		int unit13 = Math.max(5, (int) Math.pow(size / 4, 1.0 / 3.0));
 		int unit23 = unit13 * unit13;
 		int unit = unit23 * unit13;
-		int nU = unit, nV = unit23, nW = size - nU - nV;
+		int nU = unit;
+		int nV = unit23;
+		int nW = size - nU - nV;
 		// recall: size = unit^3+(1+a)x^2 for suitable a
 		// three types of nodes: unit^3 in U, unit^2 in V and rest in W
 		// arrangement: W (regular graph core), V, U
-		int w0 = 0, wn = nW, v0 = wn, vn = v0 + nV, u0 = vn;// , un = size;
+		int w0 = 0;
+		int wn = nW;
+		int v0 = wn;
+		int vn = v0 + nV;
+		int u0 = vn;// , un = size;
 		// step 1: create core of (approximate) random regular graph of degree unit^2
 		initRRGCore(rng, w0, wn, unit23);
 		// each node in U is a leaf, connected to a single node in V, and each node in V
@@ -2207,7 +2213,11 @@ public class Geometry {
 		// recall: size = unit^2(1+unit(1+unit)) = unit^2+unit^3+unit^4
 		// three types of nodes: unit^2 in W, unit^4 in V and unit^3 in U
 		// nodes: V, W, U
-		int v0 = 0, vn = (int) Combinatorics.pow(unit, 4), w0 = vn, wn = vn + unit * unit, u0 = wn; // , un = size;
+		int v0 = 0;
+		int vn = (int) Combinatorics.pow(unit, 4);
+		int w0 = vn;
+		int wn = vn + unit * unit;
+		int u0 = wn; // , un = size;
 		// each node in V is connected to one node in U and to all nodes in W
 		for (int v = v0; v < vn; v++) {
 			int u = u0 + (v - v0) / unit;
@@ -5250,28 +5260,28 @@ public class Geometry {
 				connectivity = Math.max(2, Integer.parseInt(sub));
 				break;
 			case STAR: // star
-				petalsamplification = 2;
+				superstar_amplification = 2;
 				break;
 			case WHEEL: // wheel - cycle (k=2) with single hub (k=N-1)
 				break;
 			case SUPER_STAR: // super-star
-				int oldPetalsAmplification = petalsamplification;
-				int oldPetalsCount = petalscount;
-				petalsamplification = 3;
+				int oldPetalsAmplification = superstar_amplification;
+				int oldPetalsCount = superstar_petals;
+				superstar_amplification = 3;
 				ivec = CLOParser.parseIntVector(sub);
 				switch (ivec.length) {
 					default:
 					case 2:
-						petalsamplification = ivec[1];
+						superstar_amplification = ivec[1];
 						//$FALL-THROUGH$
 					case 1:
-						petalscount = ivec[0];
+						superstar_petals = ivec[0];
 						break;
 					case 0:
 						geometry = Type.INVALID; // too few parameters, change to default geometry
 				}
-				doReset |= (oldPetalsAmplification != petalsamplification);
-				doReset |= (oldPetalsCount != petalscount);
+				doReset |= (oldPetalsAmplification != superstar_amplification);
+				doReset |= (oldPetalsCount != superstar_petals);
 				break;
 			case STRONG_AMPLIFIER: // strong amplifier
 			case STRONG_SUPPRESSOR: // strong suppressor
@@ -5411,8 +5421,8 @@ public class Geometry {
 		clone.minTot = minTot;
 		clone.maxTot = maxTot;
 		clone.avgTot = avgTot;
-		clone.petalscount = petalscount;
-		clone.petalsamplification = petalsamplification;
+		clone.superstar_petals = superstar_petals;
+		clone.superstar_amplification = superstar_amplification;
 		clone.sfExponent = sfExponent;
 		clone.connectivity = connectivity;
 		clone.pRewire = pRewire;
