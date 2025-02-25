@@ -232,7 +232,7 @@ public class simTraits extends Traits {
 		super.collectCLO(parser);
 
 		parser.removeCLO(
-				new String[] { "popsize", "popupdate", "playerupdate", "geometry", "mutation", "timeend" });
+				new String[] { "popsize", "popupdate", "playerupdate", "geometry", "mutation", "timestop" });
 		parser.addCLO(cloNPopulations);
 		parser.addCLO(cloProgress);
 		parser.addCLO(cloMinTime);

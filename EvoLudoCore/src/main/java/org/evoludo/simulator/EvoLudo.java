@@ -1605,26 +1605,32 @@ public abstract class EvoLudo
 			return null;
 		int nParams = cloarray.length;
 		// first, deal with --help option
+		boolean helpRequested = false;
 		String helpName = cloHelp.getName();
 		for (int i = 0; i < nParams; i++) {
 			String param = cloarray[i];
-			if (param.startsWith(helpName))
-				return null;
+			if (param.startsWith(helpName)) {
+				helpRequested = true;
+				break;
+			}
 		}
 		// now deal with --module option
 		String moduleParam = cloModule.getName();
 		CLOption.Key moduleKey = null;
+		String moduleName = "<missing>";
 		for (int i = 0; i < nParams; i++) {
 			String param = cloarray[i];
 			if (param.startsWith(moduleParam)) {
-				String[] moduleName = param.split("[\\s+,=]");
-				if (moduleName == null || moduleName.length < 2) {
-					logger.warning("module key missing");
+				String[] moduleArgs = param.split("[\\s+,=]");
+				if (moduleArgs == null || moduleArgs.length < 2) {
+					if (!helpRequested)
+						logger.severe("module key missing");
 					return null;
 				}
-				moduleKey = cloModule.match(moduleName[1]);
+				moduleName = moduleArgs[1];
+				moduleKey = cloModule.match(moduleName);
 				// exact match required
-				if (moduleKey != null && !moduleKey.getKey().equals(moduleName[1]))
+				if (moduleKey != null && !moduleKey.getKey().equals(moduleName))
 					moduleKey = null;
 				// module parameter found; no need to continue
 				cloarray = ArrayMath.drop(cloarray, i--);
@@ -1633,7 +1639,8 @@ public abstract class EvoLudo
 			}
 		}
 		if (moduleKey == null || loadModule(moduleKey.getKey()) == null) {
-			logger.severe("Module not found!");
+			if (!helpRequested)
+				logger.severe("Module '" + moduleName + "' not found!");
 			return null;
 		}
 		// second, determine feasible --model options for given module
@@ -1645,7 +1652,8 @@ public abstract class EvoLudo
 		// remains unspecified)
 		Collection<Key> keys = cloModel.getKeys();
 		if (keys.isEmpty()) {
-			logger.severe("No model found!");
+			if (!helpRequested)
+				logger.severe("No model found!");
 			return null;
 		}
 		// if IBS not an option, pick first model type as default
@@ -1705,6 +1713,8 @@ public abstract class EvoLudo
 				break;
 			}
 		}
+		if (helpRequested)
+			return null;
 		return cloarray;
 	}
 
