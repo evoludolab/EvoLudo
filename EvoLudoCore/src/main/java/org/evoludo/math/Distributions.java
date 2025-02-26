@@ -55,8 +55,8 @@ public class Distributions {
 	 * @param x data vector
 	 * @return sample variance of <code>x</code>
 	 * @see <a href=
-	 *      "https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm">Wikipedia:
-	 *      Algorithms for calculating variance</a>
+	 *      "https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm">
+	 *      Wikipedia: Algorithms for calculating variance</a>
 	 */
 	public static double variance(double[] x) {
 		// two pass calculation
@@ -664,4 +664,49 @@ public class Distributions {
 		return moment / n;
 	}
 
+	/**
+	 * Add sample {@code x} to running (or online) mean and variance. The entries in
+	 * the {@code meanvar} array are {@code [mean, M2, count]}, where {@code M2}
+	 * refers to the second central moment such that {@code M2/(count-1)} is the
+	 * sample variance.
+	 * 
+	 * @param meanvar the array with the running values
+	 * @param x       the sample
+	 * 
+	 * @see <a href=
+	 *      "https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm">
+	 *      Wikipedia: Algorithms for calculating variance</a>
+	 */
+	public static void pushMeanVar(double[] meanvar, double x) {
+		double mean = meanvar[0];
+		double dx = x - mean;
+		double norm = ++meanvar[2];
+		mean += dx / norm;
+		meanvar[0] = mean;
+		meanvar[1] += dx * (x - mean);
+	}
+
+	/**
+	 * Remove sample {@code x} from running (or online) mean and variance. The
+	 * entries in the {@code meanvar} array are {@code [mean, M2, count]}, where
+	 * {@code M2} refers to the second central moment such that {@code M2/(count-1)}
+	 * is the sample variance.
+	 * 
+	 * @param meanvar the array with the running values
+	 * @param x       the sample
+	 * 
+	 * @see <a href=
+	 *      "https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Welford's_online_algorithm">
+	 *      Wikipedia: Algorithms for calculating variance</a>
+	 */
+	public static void popMeanVar(double[] meanvar, double x) {
+		if (meanvar[2] == 0)
+			return;
+		double mean = meanvar[0];
+		double dx = x - mean;
+		double norm = --meanvar[2];
+		mean -= dx / norm;
+		meanvar[0] = mean;
+		meanvar[1] -= dx * (x - mean);
+	}
 }
