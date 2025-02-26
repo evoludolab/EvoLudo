@@ -15,26 +15,24 @@ EVOLUDO_SH="scripts"
 LATEST_JAVA=`find . -type f -name '*.java' -print0 | \
 			xargs -0 stat -f "%m %N" | \
 			sort -rn | head -1 | cut -f2- -d" "` ;
-LATEST_GWT=`find ${EVOLUDO_GWT_HOME}/target/EvoLudoGWT* \
-			-type f -name 'evoludoweb.nocache.js'` ;
-LATEST_JAR=`find ${EVOLUDO_JRE_HOME}/target/ \
-			-type f -name 'EvoLudo.*.jar' -print0 | \
+LATEST_TEST_JAR=`find ${EVOLUDO_TEST_HOME}/target/ \
+			-type f -name 'EvoLudo*.jar' -print0 | \
 			xargs -0 stat -f "%m %N" | \
 			sort -rn | head -1 | cut -f2- -d" "` ;
 
 # build project - if needed
-if [[ ${LATEST_JAVA} -nt ${LATEST_GWT} || ${LATEST_JAVA} -nt ${LATEST_JAR} ]]; then
-	echo "Building EvoLudo project..." ;
-	mvn clean install ;
+if [[ ${LATEST_JAVA} -nt ${LATEST_TEST_JAR} ]]; then
+	echo "Building EvoLudo test suite..." ;
+	mvn -pl EvoLudoTest clean install ;
 else
-	echo "Building EvoLudo project skipped..."
+	echo "EvoLudo test suite up to date."
 fi
 
 passed=$? ;
 
 if [ $passed -ne 0 ]
 	then 
-	echo "Building EvoLudo project failed - aborting!" ;
+	echo "Building EvoLudo test suite failed - aborting!" ;
 	exit $passed ;
 fi
 
