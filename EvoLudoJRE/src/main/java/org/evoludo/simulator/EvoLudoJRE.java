@@ -688,7 +688,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 									+ traitNames[fixData.mutantTrait]
 									+ " in " + traitNames[fixData.residentTrait] + " population for all locations");
 							for (int n = 0; n < nPopulation; n++)
-								printTimeStat(fixUpdate, n);
+								printTimeStat(fixUpdate[n], n + ",\t");
 							String tail = "";
 							if (nFailed > 0L)
 								tail = " (" + nFailed + " failed)";
@@ -700,7 +700,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 									+ traitNames[fixData.mutantTrait]
 									+ " in " + traitNames[fixData.residentTrait] + " population for all locations");
 							for (int n = 0; n < nPopulation; n++)
-								printTimeStat(fixTime, n);
+								printTimeStat(fixTime[n], n + ",\t");
 							tail = "";
 							if (nFailed > 0L)
 								tail = " (" + nFailed + " failed)";
@@ -728,6 +728,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * @see EvoLudoGWT#scheduleSample()
 	 */
 	public FixationData generateSample() {
+		if (activeModel.getMode() != Mode.STATISTICS_SAMPLE) {
+			if (!activeModel.requestMode(Mode.STATISTICS_SAMPLE))
+				return null;
+		}
 		FixationData fix;
 		do {
 			// in unfortunate cases even a single sample can take exceedingly long
@@ -846,16 +850,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		mean += dx / norm;
 		meanvar[offset] = mean;
 		meanvar[offset + 1] += dx * (x - mean);
-	}
-
-	/**
-	 * Helper method to print the fixation and absorption updates/times.
-	 * 
-	 * @param meanvar the 2D array with mean and variance for all nodes
-	 * @param n       the index of the node to process
-	 */
-	private void printTimeStat(double[][] meanvar, int n) {
-		printTimeStat(meanvar[n], n + ",\t");
 	}
 
 	/**

@@ -506,13 +506,26 @@ public abstract class IBS extends Model {
 	@Override
 	public boolean check() {
 		boolean doReset = super.check();
-		boolean allSync = true, allAsync = true;
+		boolean allSync = true;
+		boolean allAsync = true;
+		boolean noneUnique = true;
 		for (Module mod : species) {
 			IBSPopulation pop = mod.getIBSPopulation();
 			doReset |= pop.check();
 			boolean sync = pop.getPopulationUpdate().isSynchronous();
 			allSync &= sync;
 			allAsync &= !sync;
+			if (!noneUnique)
+				continue;
+			Geometry geom = pop.getInteractionGeometry();
+			if (geom != null) {
+				noneUnique &= !geom.isUniqueGeometry();
+				if (geom.interCompSame)
+					continue;
+			}
+			geom = pop.getCompetitionGeometry();
+			if (geom != null)
+				noneUnique &= !geom.isUniqueGeometry();
 		}
 		isSynchronous = !allAsync;
 		if (isSynchronous && !allSync) {
@@ -529,6 +542,9 @@ public abstract class IBS extends Model {
 				converged &= pop.checkConvergence();
 			}
 		}
+		// if no geometries are unique no need to reset model for statistics (init is sufficient)
+		if (noneUnique)
+			statisticsSettings.resetInterval = 0;
 		return doReset;
 	}
 
@@ -619,7 +635,8 @@ public abstract class IBS extends Model {
 	public boolean next() {
 		// start new statistics sample if required
 		if (mode == Mode.STATISTICS_SAMPLE && statisticsSampleNew && !isRelaxing) {
-			if (nStatisticsSamples % statisticsSettings.resetInterval == 0)
+			if (statisticsSettings.resetInterval > 0 && 
+					nStatisticsSamples % statisticsSettings.resetInterval == 0)
 				reset();
 			init();
 			if (fixData.mutantNode < 0) {
