@@ -47,7 +47,8 @@ import org.evoludo.util.CLOption;
 import org.evoludo.util.Formatter;
 
 /**
- *
+ * Simulations of 2x2 games in deme structured populations.
+ * 
  * @author Christoph Hauert
  */
 public class DemesTBT extends TBT {
@@ -62,6 +63,11 @@ public class DemesTBT extends TBT {
 	 */
 	int sizeDemes;
 
+	/**
+	 * Create a new instance of the DemesTBT module.
+	 * 
+	 * @param engine the pace maker of the simulation
+	 */
 	public DemesTBT(EvoLudo engine) {
 		super(engine);
 	}
@@ -148,14 +154,37 @@ public class DemesTBT extends TBT {
 		return new DemesTBT.IBSPop(engine, this);
 	}
 
+	/**
+	 * Custom implemenation for individual based simulations in deme structured populations.
+	 */
 	public class IBSPop extends TBT.IBSPop implements MilestoneListener, ChangeListener {
 
-		// IBSDPopulation pop;
+		/**
+		 * The distribution for migration events.
+		 */
 		protected RNGDistribution.Geometric distrMigration, distrMutationMigration;
+
+		/**
+		 * The time spent in homogenous states.
+		 */
 		private double[] pure;
+
+		/**
+		 * The number of traits in each deme.
+		 */
 		int[][] demeTypeCount;
+
+		/**
+		 * The flag to indicate whether to optimize migration.
+		 */
 		boolean optimizeMigration;
 
+		/**
+		 * Create a new instance of the IBSPop class.
+		 * 
+		 * @param engine the pace maker of the simulation
+		 * @param module the module that defines the interactions
+		 */
 		protected IBSPop(EvoLudo engine, DemesTBT module) {
 			super(engine, module);
 		}
@@ -260,9 +289,11 @@ public class DemesTBT extends TBT {
 		}
 
 		/**
+		 * Determine the number of homogeneous demes in trait A, provided that all demes
+		 * are homogeneous. Returns {@code -1} if any deme is heterogeneous.
 		 * 
-		 * @return number of homogeneous A demes if all demes are homogeneous; -1 if any
-		 *         deme is not homogeneous
+		 * @return the number of homogeneous A demes or {@code -1} if any deme is
+		 *         heterogeneous
 		 */
 		protected int homoDemes() {
 			if (strategiesTypeCount[DemesTBT.COOPERATE] % sizeDemes != 0)
@@ -366,12 +397,21 @@ public class DemesTBT extends TBT {
 			updateStatistics(engine.getModel().getTimeStop());
 		}
 
+		/**
+		 * Time of previous sample.
+		 */
 		protected double prevsample = Double.MAX_VALUE;
 
+		/**
+		 * Start collecting statistics.
+		 */
 		protected void startStatistics() {
 			prevsample = engine.getModel().getTime();
 		}
 
+		/**
+		 * Reset statistics.
+		 */
 		protected void resetStatistics() {
 			if (pure == null)
 				pure = new double[nTraits];
@@ -379,6 +419,11 @@ public class DemesTBT extends TBT {
 			Arrays.fill(pure, 0.0);
 		}
 
+		/**
+		 * Update statistics.
+		 * 
+		 * @param time the time of the sample
+		 */
 		protected void updateStatistics(double time) {
 			if (prevsample >= time)
 				return;

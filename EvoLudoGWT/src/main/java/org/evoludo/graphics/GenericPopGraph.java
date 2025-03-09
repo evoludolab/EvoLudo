@@ -157,6 +157,11 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	 */
 	protected boolean animate = true;
 
+	/**
+	 * The flag to indicate whether the graph needs to be drawn.
+	 * 
+	 * @see #hasMessage()
+	 */
 	boolean noGraph = false;
 
 	/**

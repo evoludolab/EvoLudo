@@ -490,6 +490,7 @@ public class NetGames extends Discrete implements org.evoludo.simulator.models.I
 		 * networks.
 		 * 
 		 * @param engine the pacemaker for running the model
+		 * @param module the module that defines the game
 		 */
 		protected IBSPop(EvoLudo engine, NetGames module) {
 			super(engine, module);
@@ -717,6 +718,14 @@ public class NetGames extends Discrete implements org.evoludo.simulator.models.I
 			}
 		}
 
+		/**
+		 * Utility method to determine the color of leaves in the network.
+		 * 
+		 * @param <T>  the type parameter of the color
+		 * @param type the type of color to use
+		 * @param cMap the color map to use
+		 * @return the color of the leaf with type {@code T}
+		 */
 		private <T> T getLeafColor(T type, ColorMap<T> cMap) {
 			T leafcolor;
 			// Hack-alert: determine type of color map to use black for leaves in 2D

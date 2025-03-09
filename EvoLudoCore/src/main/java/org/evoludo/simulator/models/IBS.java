@@ -326,7 +326,7 @@ public abstract class IBS extends Model {
 			 * <h3>Important:</h3> must be overridden and implemented in subclasses that
 			 * define game interactions among groups of individuals with multiple continuous
 			 * traits (for groups with sizes {@code nGroup&gt;2}, otherwise see
-			 * {@link CPairs#pairScores(double[], double[], int, double[])}).
+			 * {@link CPairs#pairScores(double, double[], int, double[])}).
 			 * 
 			 * @param me      the traits of the focal individual
 			 * @param group   the traits of the group members
@@ -2177,24 +2177,22 @@ public abstract class IBS extends Model {
 			RESET_GEOMETRY("reset <s>", "reset geometry every <s> samples (0 never)");
 
 			/**
-			 * Key of optimization type. Used when parsing command line options.
-			 * 
-			 * @see IBS#cloStatistics
+			 * Key of statistics type. Used when parsing command line options.
 			 */
 			String key;
 
 			/**
-			 * Brief description of optimization type for help display.
+			 * Brief description of statistics type for help display.
 			 * 
 			 * @see EvoLudo#getCLOHelp()
 			 */
 			String title;
 
 			/**
-			 * Instantiate new optimization type.
+			 * Instantiate new statistics type.
 			 * 
 			 * @param key   identifier for parsing of command line option
-			 * @param title summary of optimization
+			 * @param title summary of statistics
 			 */
 			Type(String key, String title) {
 				this.key = key;

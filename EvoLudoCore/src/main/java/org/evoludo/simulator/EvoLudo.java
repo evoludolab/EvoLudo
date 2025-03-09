@@ -2084,7 +2084,7 @@ public abstract class EvoLudo
 	protected ColorModelType colorModelType = ColorModelType.DEFAULT;
 
 	/**
-	 * Coloring method types for continuous traits. Enum on steroids. Currently
+	 * Coloring methods for multiple continuous traits. Enum on steroids. Currently
 	 * available coloring types are:
 	 * <dl>
 	 * <dt>traits
@@ -2100,9 +2100,6 @@ public abstract class EvoLudo
 	 * </dl>
 	 * 
 	 * @see #cloTraitColorScheme
-	 * 
-	 * @evoludo.impl currently only used by
-	 *               {@link org.evoludo.simulator.modules.Dialect}.
 	 */
 	public static enum ColorModelType implements CLOption.Key {
 
@@ -2210,6 +2207,13 @@ public abstract class EvoLudo
 			throw new Error(msg);
 	}
 
+	/**
+	 * Constructor to instantiate a new EvoLudo controller. If
+	 * {@code loadModules == true}, load all available modules. Otherwise a
+	 * specific module needs to be loaded by the caller.
+	 * 
+	 * @param loadModules the flag to indicate whether to load modules
+	 */
 	protected EvoLudo(boolean loadModules) {
 		logger = Logger.getLogger(EvoLudo.class.getName() + "-" + ID);
 		parser = new CLOParser(this);

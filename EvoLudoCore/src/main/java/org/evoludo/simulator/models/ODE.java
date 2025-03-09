@@ -98,7 +98,7 @@ public class ODE extends Model implements Discrete {
 		 * <p>
 		 * Alternatively, the method
 		 * {@link ODE#getDerivatives(double, double[], double[], double[])} may be
-		 * overridden in a subclass of {@code ODEEuler}, which may prevent calls to
+		 * overridden in a subclass of {@code ODE}, which may prevent calls to
 		 * {@code avgScores(...)} altogether.
 		 *
 		 * @param density   the frequency/density of each trait/strategy
@@ -132,7 +132,7 @@ public class ODE extends Model implements Discrete {
 		 * <p>
 		 * Alternatively, the method
 		 * {@link ODE#getDerivatives(double, double[], double[], double[])} may be
-		 * overridden in a subclass of {@code ODEEuler}, which may prevent calls to
+		 * overridden in a subclass of {@code ODE}, which may prevent calls to
 		 * {@code avgScores(...)} altogether.
 		 *
 		 * 
@@ -189,7 +189,7 @@ public class ODE extends Model implements Discrete {
 	double dt;
 
 	/**
-	 * The attempted size of next step to take. In {@code ODEEuler} this is always
+	 * The attempted size of next step to take. In {@code ODE} this is always
 	 * equal to {@code dt} but for more sophisticated integrators, {@link RungeKutta} for
 	 * example, the attempted step size may get adjusted.
 	 * <p>
@@ -1612,7 +1612,7 @@ public class ODE extends Model implements Discrete {
 		 * <p>
 		 * <strong>Note:</strong> Only available for SDE models. Not available for density based models.
 		 * 
-		 * @see SDEEuler
+		 * @see SDE
 		 */
 		MUTANT("mutant", "single mutant");
 
@@ -1779,7 +1779,7 @@ public class ODE extends Model implements Discrete {
 			"--init <t>      type of initial configuration", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					// parsing must be 'outsourced' to ODEEuler class to enable
+					// parsing must be 'outsourced' to ODE class to enable
 					// PDE models to override it and do their own initialization.
 					return ODE.this.parse(arg);
 				}

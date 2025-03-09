@@ -1746,7 +1746,7 @@ public class PDE extends ODE {
 		parser.addCLO(cloPdeDiffusion);
 		parser.addCLO(cloPdeSymmetric);
 		// parser.addCLO(cloPdeColorRange);
-		// ODEEuler loaded its own keys already - clear and reload ours.
+		// ODE loaded its own keys already - clear and reload ours.
 		cloInit.clearKeys();
 		cloInit.addKeys(InitType.values());
 		cloInit.setDefault(InitType.RANDOM.getKey());

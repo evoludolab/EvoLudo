@@ -507,9 +507,10 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
-	 * Checks if model is of type {@code type}.
+	 * Checks if model is of type {@code aType}.
 	 * 
-	 * @return {@code true} for models of type {@code type}
+	 * @param aType the type to check
+	 * @return {@code true} for models of type {@code aType}
 	 */
 	public boolean isType(Type aType) {
 		return (type == aType);
@@ -1005,9 +1006,9 @@ public abstract class Model implements CLOProvider {
 	 * @param reversed the request whether time should be reversed.
 	 *
 	 * @see org.evoludo.simulator.models.ODE#setTimeReversed
-	 *      ODEEuler.setTimeReversed
+	 *      ODE.setTimeReversed
 	 * @see org.evoludo.simulator.models.SDE#setTimeReversed
-	 *      SDEEuler.setTimeReversed
+	 *      SDE.setTimeReversed
 	 */
 	public void setTimeReversed(boolean reversed) {
 	}

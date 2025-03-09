@@ -296,10 +296,14 @@ public class simTBT extends TBT implements ChangeListener {
 		engine.exportState();
 	}
 
-	/*
+	/**
 	 * Temporary variables for fixation probabilities and absorption times.
 	 */
 	double[] mean, var, state, meanmean, meanvar;
+
+	/**
+	 * Time of previous sample.
+	 */
 	double prevsample;
 
 	@Override
@@ -498,6 +502,11 @@ public class simTBT extends TBT implements ChangeListener {
 		return snapfile;
 	}
 
+	/**
+	 * Main method to run the simulation.
+	 * 
+	 * @param args the array of command line arguments
+	 */
 	public static void main(String[] args) {
 		EvoLudoJRE engine = new EvoLudoJRE(false);
 		engine.custom(new simTBT(engine), args);

@@ -578,6 +578,13 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 			scheduleUpdate(true);
 	}
 
+	/**
+	 * Set the bounds of the view to the given {@code width} and {@code height}.
+	 * This is called when loading the views or changing the size of the GUI.
+	 * 
+	 * @param width  the width of the view
+	 * @param height the height of the view
+	 */
 	public void setBounds(int width, int height) {
 		for (AbstractGraph<?> graph : graphs)
 			graph.calcBounds(width, height);

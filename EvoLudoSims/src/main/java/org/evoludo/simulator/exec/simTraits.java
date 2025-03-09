@@ -238,6 +238,11 @@ public class simTraits extends Traits {
 		parser.addCLO(cloMinTime);
 	}
 
+	/**
+	 * Main method to run the simulation.
+	 * 
+	 * @param args the array of command line arguments
+	 */
 	public static void main(String[] args) {
 		EvoLudoJRE engine = new EvoLudoJRE(false);
 		engine.custom(new simTraits(engine), args);

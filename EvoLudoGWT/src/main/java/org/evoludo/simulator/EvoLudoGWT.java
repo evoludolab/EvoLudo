@@ -114,6 +114,8 @@ public class EvoLudoGWT extends EvoLudo {
 
 	/**
 	 * Construct EvoLudo controller for GWT applications (web or ePub).
+	 * 
+	 * @param gui the reference to the GUI
 	 */
 	public EvoLudoGWT(EvoLudoWeb gui) {
 		this.gui = gui;

@@ -287,10 +287,14 @@ public class simCDL extends CDL implements ChangeListener {
 		}
 	}
 
-	/*
+	/**
 	 * Temporary variables for fixation probabilities and absorption times.
 	 */
 	double[] mean, var, state, meanmean, meanvar;
+
+	/**
+	 * Time of previous sample.
+	 */
 	double prevsample;
 
 	@Override
@@ -469,6 +473,7 @@ public class simCDL extends CDL implements ChangeListener {
 		 * Create a new simulation.
 		 * 
 		 * @param engine the pacemaker for running the model
+		 * @param module the module defining the interactions
 		 */
 		protected simCDLIBS(EvoLudo engine, CDL module) {
 			super(engine, module);
@@ -502,6 +507,11 @@ public class simCDL extends CDL implements ChangeListener {
 		}
 	}
 
+	/**
+	 * Main method to run the simulation.
+	 * 
+	 * @param args the array of command line arguments
+	 */
 	public static void main(String[] args) {
 		EvoLudoJRE engine = new EvoLudoJRE(false);
 		engine.custom(new simCDL(engine), args);

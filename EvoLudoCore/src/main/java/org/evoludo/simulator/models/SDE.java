@@ -129,7 +129,7 @@ public class SDE extends ODE {
 		// at this point it is clear that we have a dependent trait
 		int dim = nDim - 1;
 		// only one or two traits acceptable or, alternatively, two or three
-		// traits for replicator dynamics (for SDEEuler but not SDEulerN)
+		// traits for replicator dynamics (for SDE but not SDEN)
 		if (!getClass().getSuperclass().equals(SDE.class) && (dim < 1 || dim > 2)) {
 			logger.warning(getClass().getSimpleName()
 					+ " - too many traits (max 2, or 3 for replicator) - revert to ODE!");
@@ -361,7 +361,7 @@ public class SDE extends ODE {
 				break;
 
 			default: // any number of strategies
-				throw new Error("SDEEuler dimension d>3 not implemented (use SDEEulerN)!");
+				throw new Error("SDE dimension d>3 not implemented (use SDEN)!");
 		}
 		// polish result
 		idx = ArrayMath.minIndex(yout);

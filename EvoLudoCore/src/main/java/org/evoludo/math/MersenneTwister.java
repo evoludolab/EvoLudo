@@ -251,7 +251,9 @@ import org.evoludo.util.Plist;
 
 public class MersenneTwister {
 
-	// Period parameters
+	/**
+	 * Period parameters
+	 */
 	private static final int N = 624;
 	private static final int M = 397;
 	private static final int MATRIX_A = 0x9908b0df; // private static final * constant vector a
@@ -259,17 +261,100 @@ public class MersenneTwister {
 	private static final int UPPER_MASK = 0x80000000; // most significant w-r bits
 	private static final int LOWER_MASK = 0x7fffffff; // least significant r bits
 
-	// Tempering parameters
+	/**
+	 * Tempering parameters
+	 */
 	private static final int TEMPERING_MASK_B = 0x9d2c5680;
 	private static final int TEMPERING_MASK_C = 0xefc60000;
 
+	/**
+	 * Constant: {@code 2^27}.
+	 */
+	private static final double TWO_TO_27 = 134217728.0;
+
+	/**
+	 * Constant: {@code 2^31}.
+	 */
+	private static final float TWO_TO_31f = 2147483648f;
+
+	/**
+	 * Constant: {@code 2^31 - 1}.
+	 */
+	private static final double TWO_TO_31M1 = 2147483647.0;
+
+	/**
+	 * Constant: {@code 2^32}.
+	 */
+	private static final double TWO_TO_32 = 4294967296.0;
+
+	/**
+	 * Constant: {@code 2^53}.
+	 */
+	private static final double TWO_TO_53 = 9007199254740992.0;
+
+	/**
+	 * Constant: {@code 2^-24}.
+	 */
+	private static final double TWO_TO_NEG24 = 8.0 / TWO_TO_27;
+
+	/**
+	 * Constant: {@code 2^-25}.
+	 */
+	private static final double TWO_TO_NEG25 = 4.0 / TWO_TO_27;
+
+	/**
+	 * Constant: {@code 2^-27}.
+	 */
+	private static final double TWO_TO_NEG27 = 1.0 / TWO_TO_27;
+
+	/**
+	 * Constant: {@code 2^-31}.
+	 */
+	private static final float TWO_TO_NEG31f = 1f / TWO_TO_31f;
+
+	/**
+	 * Constant: {@code 1/2^-31}.
+	 */
+	private static final double TWO_TO_NEG31 = 2.0 / TWO_TO_32;
+
+	/**
+	 * Constant: {@code 1/(2^-31 - 1)}.
+	 */
+	private static final double INV_TWO_TO_31M1 = 1.0 / (TWO_TO_31M1);
+
+	/**
+	 * Constant: {@code 2^-52}.
+	 */
+	private static final double TWO_TO_NEG52 = 2.0 / TWO_TO_53;
+
+	/**
+	 * Constant: {@code 2^-53}.
+	 */
+	private static final double TWO_TO_NEG53 = 1.0 / TWO_TO_53;
+
+	/**
+	 * The array for the state vector
+	 */
 	private int mt[]; // the array for the state vector
-	private int mti; // mti==N+1 means mt[N] is not initialized
+
+	/**
+	 * The current index for the state vector. {@code mti == N+1} means {@code mt[N]} is not initialized.
+	 */
+	private int mti;
 
 	// a good initial seed (of int size, though stored in a long)
 	// private static final long GOOD_SEED = 4357;
 
+	/**
+	 * Gaussian random numbers are generated in pairs. This is the second of the two.
+	 */
 	private double __nextNextGaussian;
+
+	/**
+	 * The flag to indicate that the next Gaussian has already been generated.
+	 * 
+	 * @see #__nextNextGaussian
+	 */
 	private boolean __haveNextNextGaussian;
 
 	/**
@@ -877,20 +962,6 @@ public class MersenneTwister {
 	synchronized public float nextFloat() {
 		return nextInt() * TWO_TO_NEG31f;
 	}
-
-	private static final double TWO_TO_27 = 134217728.0;
-	private static final float TWO_TO_31f = 2147483648f;
-	private static final double TWO_TO_31M1 = 2147483647.0;
-	private static final double TWO_TO_32 = 4294967296.0;
-	private static final double TWO_TO_53 = 9007199254740992.0;
-	private static final double TWO_TO_NEG24 = 8.0 / TWO_TO_27;
-	private static final double TWO_TO_NEG25 = 4.0 / TWO_TO_27;
-	private static final double TWO_TO_NEG27 = 1.0 / TWO_TO_27;
-	private static final float TWO_TO_NEG31f = 1f / TWO_TO_31f;
-	private static final double TWO_TO_NEG31 = 2.0 / TWO_TO_32;
-	private static final double INV_TWO_TO_31M1 = 1.0 / (TWO_TO_31M1);
-	private static final double TWO_TO_NEG52 = 2.0 / TWO_TO_53;
-	private static final double TWO_TO_NEG53 = 1.0 / TWO_TO_53;
 
 	/**
 	 * Clears the internal Gaussian variable from the RNG. You only need to do this

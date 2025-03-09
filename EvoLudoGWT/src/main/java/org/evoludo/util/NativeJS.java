@@ -331,8 +331,8 @@ public class NativeJS {
 	 * <strong>Note:</strong> {@link #isValidDnD(JavaScriptObject)} should be called
 	 * first to ensure that only a single 'plist' file was dropped.
 	 *
-	 * @param dataTransfer list of dropped file(s)
-	 * @param engine       model that processes contents of dropped file
+	 * @param dataTransfer the list of dropped file(s)
+	 * @param gui          the user interface that processes dropped file
 	 */
 	public static final native void handleDnD(JavaScriptObject dataTransfer, EvoLudoWeb gui) /*-{
 		var files = dataTransfer.files;
@@ -361,7 +361,7 @@ public class NativeJS {
 	 * JSNI method: opens javascript file chooser and attempts to restore state from
 	 * selected file
 	 *
-	 * @param evoludo model that processes contents of selected file
+	 * @param gui the user interface that processes the contents of selected file
 	 */
 	public static final native void restoreFromFile(EvoLudoWeb gui) /*-{
 		var input = $doc.createElement('input');

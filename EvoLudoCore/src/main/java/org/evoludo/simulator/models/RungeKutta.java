@@ -172,13 +172,37 @@ public class RungeKutta extends ODE {
 	// }
 
 	/**
-	 * Magic numbers from Numerical Recipes in C.
+	 * The safety margin for adjusting time steps. Magic number from Numerical
+	 * Recipes in C.
 	 */
 	private static final double SAFETY = 0.9;
+
+	/**
+	 * The exponent for increasing the time step if error outside margin. Magic
+	 * number from Numerical Recipes in C.
+	 * 
+	 * @see #ERRCON
+	 */
 	private static final double PGROW = -0.2;
+
+	/**
+	 * The exponent for decreasing the time step if error outside margin. Magic
+	 * number from Numerical Recipes in C.
+	 * 
+	 * @see #ACCURACY
+	 */
 	private static final double PSHRNK = -0.25;
-	// The value ERRCON equals (5/SAFETY)^(1/PGROW)
+
+	/**
+	 * The maximum error in a single step. The value {@code ERRCON} equals
+	 * {@code (5/SAFETY)^(1/PGROW)}. Magic number from Numerical Recipes in C.
+	 */
 	private static final double ERRCON = 1.89e-4;
+
+	/**
+	 * The accuracy required for the integration. Magic number from Numerical
+	 * Recipes in C.
+	 */
 	private static final double ACCURACY = 1e-7;
 
 	/**

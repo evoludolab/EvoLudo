@@ -873,6 +873,11 @@ public class scanCSD extends CSD {
 		return snapfile;
 	}
 
+	/**
+	 * Main method to run the simulation.
+	 * 
+	 * @param args the array of command line arguments
+	 */
 	public static void main(String[] args) {
 		EvoLudoJRE engine = new EvoLudoJRE(false);
 		engine.custom(new scanCSD(engine), args);

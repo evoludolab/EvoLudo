@@ -141,7 +141,7 @@ public class SDEN extends SDE {
 		super.reset();
 		int d1 = nDim - 1;
 		if (d1 < 3) {
-			// use optimized SDEEuler method instead
+			// use optimized SDE method instead
 			destroy();
 			return;
 		}
