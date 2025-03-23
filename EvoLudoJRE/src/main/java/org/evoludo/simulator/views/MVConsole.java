@@ -51,9 +51,7 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
 
-import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.EvoLudoLab;
-import org.evoludo.simulator.modules.Module;
 
 public class MVConsole extends JComponent implements MultiView {
 
@@ -124,10 +122,7 @@ public class MVConsole extends JComponent implements MultiView {
 	protected void clear() {
 		text.setEditable(true);
 		text.selectAll();
-		EvoLudoJRE engine = lab.getEngine();
-		Module module = engine.getModule();
-		String authors = module.getAuthors();
-		text.replaceSelection(engine.getVersion() + "\n" + module.getTitle() + (authors == null ? "" : " by " + authors));
+		text.replaceSelection("");
 		text.setEditable(false);
 	}
 

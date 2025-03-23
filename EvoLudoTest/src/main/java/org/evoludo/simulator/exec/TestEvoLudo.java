@@ -136,8 +136,6 @@ public class TestEvoLudo implements MilestoneListener {
 	 */
 	public TestEvoLudo() {
 		engine = new EvoLudoJRE();
-		// applications remove --export option because it does not make sense
-		engine.isApplication = false;
 		logger = engine.getLogger();
 		// register as Model.MilestoneListener to receive milestone notifications
 		engine.addMilestoneListener(this);

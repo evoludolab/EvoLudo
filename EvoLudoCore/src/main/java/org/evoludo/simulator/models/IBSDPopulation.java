@@ -447,9 +447,6 @@ public class IBSDPopulation extends IBSPopulation {
 	 * <li>Otherwise, draw a random neighbour and, if unoccupied, place clonal
 	 * offspring on neighboring site with probability proportional to fitness.
 	 * </ol>
-	 *
-	 * @param me the index of the focal individual
-	 * @return time increment
 	 */
 	@Override
 	protected double updatePlayerEcologyAt(int me) {

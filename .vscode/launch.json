@@ -80,25 +80,32 @@
 			}
         },
         {
-            "name": "JRE Moran EvoLudo",
+            "name": "JRE 2x2 Evoludo (legacy GUI)",
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/EvoLudoJRE/src/main/java/org/evoludo/simulator/EvoLudoLab.java",
-            "args": "--module Moran"
+            "args": "--module 2x2 --model IBS --gui --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init mutant 1,0 --paymatrix 1,0;1.25,0.25"
         },
         {
-            "name": "JRE 2x2 Evoludo (simulation)",
+            "name": "JRE 2x2 Evoludo (data)",
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/EvoLudoJRE/src/main/java/org/evoludo/simulator/EvoLudoLab.java",
-            "args": "--module 2x2 --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1 --data traits"
+            "args": "--module 2x2 --model IBS --data traits --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init mutant 1,0 --paymatrix 1,0;1.25,0.25"
         },
         {
-            "name": "JRE 2x2 Evoludo (GUI)",
+            "name": "JRE 2x2 Evoludo (export)",
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/EvoLudoJRE/src/main/java/org/evoludo/simulator/EvoLudoLab.java",
-            "args": "--module 2x2 --model IBS --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init mutant 0,1 --mutation 0.0 --paymatrix 0.25,1.25;0,1"
+            "args": "--module 2x2 --model IBS --export test2x2.plist --data traits --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init mutant 1,0 --paymatrix 1,0;1.25,0.25"
+        },
+        {
+            "name": "JRE 2x2 Evoludo (custom)",
+            "type": "java",
+            "request": "launch",
+            "mainClass": "${workspaceFolder}/EvoLudoSims/src/main/java/org/evoludo/simulator/exec/simTBT.java",
+            "args": "--model IBS --data traits --timestep 1 --geometry M --references random 1 --popsize 500 --popupdate async --playerupdate thermal 0.1 --init mutant 1,0 --paymatrix 1,0;1.25,0.25"
         },
         {
             "name": "JRE ePGG EvoLudo",

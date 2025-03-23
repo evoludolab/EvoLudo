@@ -87,9 +87,19 @@ import org.evoludo.util.PlistParser;
 public class EvoLudoJRE extends EvoLudo implements Runnable {
 
 	/**
-	 * <code>true</code> when running as JRE application.
+	 * The flag to indicate whether the engine is running in headless mode.
 	 */
-	public boolean isApplication = true;
+	private boolean isHeadless = false;
+
+	/**
+	 * Set headless mode of JRE application.
+	 * 
+	 * @param headless <code>true</code> to run in headless mode
+	 */
+	public void setHeadless(boolean headless) {
+		isHeadless = headless;
+		System.setProperty("java.awt.headless", headless ? "true" : "false");
+	}
 
 	/**
 	 * Store time to measure execution times since instantiation.
@@ -127,6 +137,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 */
 	public EvoLudoJRE(boolean loadModules) {
 		super(loadModules);
+		setHeadless(true);
 		// allocate a coalescing timer for poking the engine in regular intervals
 		// note: timer needs to be ready before parsing command line options
 		timer = new Timer(0, new ActionListener() {
@@ -331,8 +342,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * @param args   the command line options
 	 */
 	public void custom(Module module, String[] args) {
-		isApplication = false;
-		System.setProperty("java.awt.headless", "true");
+		setHeadless(true);
 		// prepend --module option (in case not specified)
 		args = ArrayMath.merge(new String[] {"--module", module.getKey()}, args);
 		// EvoLudo has its own parser for command line options and expects a single string
@@ -378,6 +388,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 */
 	@Override
 	public void simulation() {
+		setHeadless(true);
 		String[] args = getSplitCLO();
 		// parse options
 		if (!parseCLO(args)) {
@@ -1422,7 +1433,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	@Override
 	public void collectCLO(CLOParser prsr) {
 		// some options are only meaningful when running simulations
-		if (!isApplication) {
+		if (isHeadless) {
 			// simulation
 			prsr.addCLO(cloOutput);
 			prsr.addCLO(cloAppend);
@@ -1436,7 +1447,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		prsr.addCLO(cloRestore);
 		super.collectCLO(prsr);
 		// some options are not meaningful when running simulations
-		if (!isApplication) {
+		if (isHeadless) {
 			// --run does not make sense for simulations
 			prsr.removeCLO(cloRun);
 		}

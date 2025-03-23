@@ -562,8 +562,8 @@ public class EvoLudoGWT extends EvoLudo {
 	 * <strong>Note:</strong> for development/debugging only; should be disabled in
 	 * production
 	 */
-	public final CLOption cloGUIFeatures = new CLOption("gui", "auto", catGUI,
-			"--gui <f1[,f2[...]]> list of GUI features (debug only):\n"
+	public final CLOption cloMimic = new CLOption("mimic", "auto", catGUI,
+			"--mimic <f1[,f2[...]]> list of GUI features to mimic:\n"
 					+ "          epub: enable ePub mode\n"
 					+ "    standalone: standalone ePub mode\n"
 					+ "        nokeys: disable key events (if available)\n"
@@ -574,7 +574,7 @@ public class EvoLudoGWT extends EvoLudo {
 				public boolean parse(String arg) {
 					// set/reset defaults
 					detectGUIFeatures();
-					if (!cloGUIFeatures.isSet())
+					if (!cloMimic.isSet())
 						return true;
 					// simulate ePub mode
 					if (arg.contains("epub"))
@@ -642,7 +642,7 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public void collectCLO(CLOParser prsr) {
-		parser.addCLO(cloGUIFeatures);
+		parser.addCLO(cloMimic);
 		parser.addCLO(cloSnap);
 		super.collectCLO(prsr);
 	}

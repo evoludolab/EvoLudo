@@ -111,8 +111,7 @@ public class PDESupervisorJRE extends PDESupervisor {
 	private void hireWorkers() {
 		int nWorkers = Runtime.getRuntime().availableProcessors();
 		engine.getLogger().info("Total of " + nWorkers + " processors available.");
-		boolean isHeadless = GraphicsEnvironment.isHeadless();
-		if (!isHeadless && nWorkers > 2)
+		if (nWorkers > 2 && !GraphicsEnvironment.isHeadless())
 			nWorkers--;
 		nWorkers = Math.min(nWorkers, Math.max(1, nUnits / RDWorker.RD_MIN_WORKLOAD));
 		engine.getLogger().info("Using " + nWorkers + " threads for integrating " + nUnits + " PDE units.");

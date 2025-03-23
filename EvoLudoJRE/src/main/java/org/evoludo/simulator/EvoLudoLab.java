@@ -101,7 +101,7 @@ import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.Formatter;
 
 public class EvoLudoLab extends JFrame
-	implements MilestoneListener, ChangeListener, CLOProvider {
+		implements MilestoneListener, ChangeListener, CLOProvider {
 
 	private static final long serialVersionUID = 20110423L;
 
@@ -109,7 +109,7 @@ public class EvoLudoLab extends JFrame
 	ParamPanel params;
 	JSlider evoludoSlider;
 	JButton runStop, resetButton;
-	private final EvoLudoPanel	activeViews;
+	private final EvoLudoPanel activeViews;
 	JLabel status, counter;
 	private final Action resetAction, runStopAction, stepAction;
 
@@ -170,7 +170,8 @@ public class EvoLudoLab extends JFrame
 		add(activeViews, BorderLayout.CENTER);
 		panelA = new JPanel(new GridLayout(3, 1, 2, 2));
 		panelA.setOpaque(false);
-		evoludoSlider = new JSlider(JSlider.HORIZONTAL, (int)EvoLudo.DELAY_MIN, (int)EvoLudo.DELAY_MAX, (int)(EvoLudo.DELAY_MAX-EvoLudo.DELAY_MIN)/2);
+		evoludoSlider = new JSlider(JSlider.HORIZONTAL, (int) EvoLudo.DELAY_MIN, (int) EvoLudo.DELAY_MAX,
+				(int) (EvoLudo.DELAY_MAX - EvoLudo.DELAY_MIN) / 2);
 		evoludoSlider.setInverted(true);
 		evoludoSlider.setToolTipText("Sets delay between updates (slow - left, fast - right)");
 		panelA.add(evoludoSlider);
@@ -181,7 +182,7 @@ public class EvoLudoLab extends JFrame
 		button.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				if( params==null ) 
+				if (params == null)
 					params = new ParamPanel(EvoLudoLab.this);
 				params.setVisible(true);
 			}
@@ -212,7 +213,8 @@ public class EvoLudoLab extends JFrame
 	}
 
 	/**
-	 * simulate global key listener: http://www.javaworld.com/javaworld/javatips/jw-javatip69.html
+	 * simulate global key listener:
+	 * http://www.javaworld.com/javaworld/javatips/jw-javatip69.html
 	 * implement ContainerListener
 	 */
 	public class ContainerHandler implements ContainerListener {
@@ -234,8 +236,8 @@ public class EvoLudoLab extends JFrame
 
 		public void addKeyListenerRecursively(Component c) {
 			c.addKeyListener(keyHandler);
-			if( c instanceof Container ) {
-				Container cont = (Container)c;
+			if (c instanceof Container) {
+				Container cont = (Container) c;
 				cont.addContainerListener(this);
 				Component[] children = cont.getComponents();
 				for (Component child : children) {
@@ -246,8 +248,8 @@ public class EvoLudoLab extends JFrame
 
 		public void removeKeyListenerRecursively(Component c) {
 			c.removeKeyListener(keyHandler);
-			if( c instanceof Container ) {
-				Container cont = (Container)c;
+			if (c instanceof Container) {
+				Container cont = (Container) c;
 				cont.addContainerListener(this);
 				Component[] children = cont.getComponents();
 				for (Component child : children) {
@@ -264,15 +266,15 @@ public class EvoLudoLab extends JFrame
 
 		@Override
 		public void keyPressed(KeyEvent e) {
-			if( e.getKeyCode()==KeyEvent.VK_ALT ) {
-				((ResetAction)resetAction).update(true);
+			if (e.getKeyCode() == KeyEvent.VK_ALT) {
+				((ResetAction) resetAction).update(true);
 			}
 		}
 
 		@Override
 		public void keyReleased(KeyEvent e) {
-			if( e.getKeyCode()==KeyEvent.VK_ALT ) {
-				((ResetAction)resetAction).update(false);
+			if (e.getKeyCode() == KeyEvent.VK_ALT) {
+				((ResetAction) resetAction).update(false);
 			}
 		}
 
@@ -293,14 +295,14 @@ public class EvoLudoLab extends JFrame
 
 		@Override
 		public void actionPerformed(ActionEvent e) {
-			if( (e.getModifiers() & ActionEvent.ALT_MASK)==0 )
+			if ((e.getModifiers() & ActionEvent.ALT_MASK) == 0)
 				engine.requestAction(PendingAction.INIT);
 			else
 				engine.requestAction(PendingAction.RESET);
 		}
 
 		public void update(boolean altPressed) {
-			putValue(Action.NAME, altPressed?"Reset":"Init");
+			putValue(Action.NAME, altPressed ? "Reset" : "Init");
 		}
 	}
 
@@ -349,11 +351,12 @@ public class EvoLudoLab extends JFrame
 		private final boolean isIncrease;
 
 		public ChangeDelayAction(double factor) {
-			isIncrease = factor>1.0;
-			putValue(Action.NAME, isIncrease?"Slower":"Faster");
-			putValue(Action.ACTION_COMMAND_KEY, isIncrease?"Slower":"Faster");
-			putValue(Action.SHORT_DESCRIPTION, isIncrease?"Reduce simulation speed":"Increase simulation speed");
-			putValue(Action.MNEMONIC_KEY, isIncrease?Integer.valueOf(KeyEvent.VK_MINUS):Integer.valueOf(KeyEvent.VK_PLUS));
+			isIncrease = factor > 1.0;
+			putValue(Action.NAME, isIncrease ? "Slower" : "Faster");
+			putValue(Action.ACTION_COMMAND_KEY, isIncrease ? "Slower" : "Faster");
+			putValue(Action.SHORT_DESCRIPTION, isIncrease ? "Reduce simulation speed" : "Increase simulation speed");
+			putValue(Action.MNEMONIC_KEY,
+					isIncrease ? Integer.valueOf(KeyEvent.VK_MINUS) : Integer.valueOf(KeyEvent.VK_PLUS));
 		}
 
 		@Override
@@ -374,7 +377,7 @@ public class EvoLudoLab extends JFrame
 	 */
 	private int lin2log(double x) {
 		double logRange = (Math.log(EvoLudo.DELAY_MAX) - Math.log(EvoLudo.DELAY_MIN));
-		return (int)(Math.exp((x - EvoLudo.DELAY_MIN) / (EvoLudo.DELAY_MAX - EvoLudo.DELAY_MIN) * logRange) + 0.5);
+		return (int) (Math.exp((x - EvoLudo.DELAY_MIN) / (EvoLudo.DELAY_MAX - EvoLudo.DELAY_MIN) * logRange) + 0.5);
 	}
 
 	/**
@@ -385,7 +388,7 @@ public class EvoLudoLab extends JFrame
 	 */
 	private int log2lin(double x) {
 		double logRange = (Math.log(EvoLudo.DELAY_MAX) - Math.log(EvoLudo.DELAY_MIN));
-		return (int)(Math.log(x) / logRange * (EvoLudo.DELAY_MAX - EvoLudo.DELAY_MIN) + EvoLudo.DELAY_MIN + 0.5);
+		return (int) (Math.log(x) / logRange * (EvoLudo.DELAY_MAX - EvoLudo.DELAY_MIN) + EvoLudo.DELAY_MIN + 0.5);
 	}
 
 	public class ChangeViewAction extends AbstractAction {
@@ -432,7 +435,8 @@ public class EvoLudoLab extends JFrame
 		final Integer CONTROL_PREV_VIEW = 8;
 
 		InputMap windowInput = pane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
-//		InputMap windowInput = pane.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+		// InputMap windowInput =
+		// pane.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
 		ActionMap windowAction = pane.getActionMap();
 
 		windowInput.put(KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, InputEvent.ALT_DOWN_MASK), CONTROL_RESET);
@@ -447,7 +451,7 @@ public class EvoLudoLab extends JFrame
 		// VK_EQUALS also applies to '=' on keypad...
 		windowInput.put(KeyStroke.getKeyStroke(107, 0), CONTROL_DELAY_DECREASE);
 		windowInput.put(KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, 0), CONTROL_DELAY_DECREASE);
-		windowAction.put(CONTROL_DELAY_DECREASE, new ChangeDelayAction(1.0/1.2));
+		windowAction.put(CONTROL_DELAY_DECREASE, new ChangeDelayAction(1.0 / 1.2));
 		// 109 is the keycode for '-' on keypad
 		windowInput.put(KeyStroke.getKeyStroke(109, 0), CONTROL_DELAY_INCREASE);
 		windowInput.put(KeyStroke.getKeyStroke(KeyEvent.VK_MINUS, 0), CONTROL_DELAY_INCREASE);
@@ -462,7 +466,8 @@ public class EvoLudoLab extends JFrame
 	}
 
 	/**
-     * application: this init() is called from exec() passing the command line options
+	 * application: this init() is called from exec() passing the command line
+	 * options
 	 */
 	protected synchronized void init() {
 		evoludoSlider.addChangeListener(new javax.swing.event.ChangeListener() {
@@ -471,7 +476,7 @@ public class EvoLudoLab extends JFrame
 				engine.setDelay(lin2log(evoludoSlider.getValue()));
 			}
 		});
-    }
+	}
 
 	/**
 	 * Logger for keeping track of and reporting events and issues.
@@ -490,7 +495,7 @@ public class EvoLudoLab extends JFrame
 			return;
 		}
 		int idx = activeViews.getActiveIndex();
-		if( idx<0 || cloView.isSet() )
+		if (idx < 0 || cloView.isSet())
 			idx = Integer.parseInt(appView);
 		// parse command line options
 		boolean resume = engine.isSuspended();
@@ -513,7 +518,7 @@ public class EvoLudoLab extends JFrame
 				engine.setSuspended(resume);
 				// even without reset necessary data views should be adjusted to:
 				// - reflect changes in report frequency (time line graphs, distributions and
-				//	 linear geometries)
+				// linear geometries)
 				// - changes in payoffs require rescaling of color maps
 				updateViews();
 			}
@@ -521,9 +526,9 @@ public class EvoLudoLab extends JFrame
 		activeViews.setView(idx);
 		if (!parsingSuccess)
 			displayStatus("Problems parsing arguments - check log for details.", Level.WARNING.intValue() + 1);
-    }
+	}
 
-    public void addMultiView(MultiView view) {
+	public void addMultiView(MultiView view) {
 		activeViews.addView(view);
 	}
 
@@ -531,84 +536,85 @@ public class EvoLudoLab extends JFrame
 		return activeViews.getViews();
 	}
 
-    protected void updateViews() {
+	protected void updateViews() {
 		String myView = activeViews.getView();
-    	activeViews.clear();
+		activeViews.clear();
 		// model is loaded, now get GUI ready.
 		// strategies related views
-    	Module module = engine.getModule();
-    	Model model = engine.getModel();
-		if( module instanceof HasPop2D.Strategy )
-			if( model.isContinuous() )
+		Module module = engine.getModule();
+		Model model = engine.getModel();
+		if (module instanceof HasPop2D.Strategy)
+			if (model.isContinuous())
 				addMultiView(new MVPop2D(this, MVPop2D.Data.CSTRAT));
 			else
 				addMultiView(new MVPop2D(this, MVPop2D.Data.DSTRAT));
-		if( module instanceof HasMean.Strategy ) {
-			if( model.isContinuous() )
+		if (module instanceof HasMean.Strategy) {
+			if (model.isContinuous())
 				addMultiView(new MVCMean(this));
 			else
 				addMultiView(new MVDMean(this));
 		}
-		if( module instanceof HasPhase2D )
+		if (module instanceof HasPhase2D)
 			addMultiView(new MVDPhase2D(this));
-		if( module instanceof HasS3 )
+		if (module instanceof HasS3)
 			addMultiView(new MVDS3(this));
-		if( module instanceof HasHistogram.Strategy )
+		if (module instanceof HasHistogram.Strategy)
 			addMultiView(new MVCTraitHistogram(this));
-		if( module instanceof HasDistribution.Strategy ) {
+		if (module instanceof HasDistribution.Strategy) {
 			addMultiView(new MVCDistr(this));
-			if( module.getNTraits()==2 )
+			if (module.getNTraits() == 2)
 				addMultiView(new MVC2Distr(this));
 		}
 		// fitness related views
-		if( module instanceof HasPop2D.Fitness )
+		if (module instanceof HasPop2D.Fitness)
 			addMultiView(new MVPop2D(this, MVPop2D.Data.FITNESS));
-		if( module instanceof HasMean.Fitness )
+		if (module instanceof HasMean.Fitness)
 			addMultiView(new MVFitness(this));
-		if( module instanceof HasHistogram.Fitness )
+		if (module instanceof HasHistogram.Fitness)
 			addMultiView(new MVFitHistogram(this));
 		// structure related views
-		if( module instanceof HasHistogram.Degree )
+		if (module instanceof HasHistogram.Degree)
 			addMultiView(new MVDegree(this));
 		// statistics related views
-//		if( module instanceof HasHistogram.StatisticsProbability )
-//			addMultiView(viewStatFixP);
-//		if( module instanceof HasHistogram.StatisticsTime )
-//			addMultiView(viewStatFixT);
+		// if( module instanceof HasHistogram.StatisticsProbability )
+		// addMultiView(viewStatFixP);
+		// if( module instanceof HasHistogram.StatisticsTime )
+		// addMultiView(viewStatFixT);
 		// miscellaneous views
 		addMultiView(console);
 		for (MultiView mvp : activeViews.getViews()) {
 			mvp.setModule(module);
 			mvp.reset(true);
 		}
-		if( myView!=null )
+		if (myView != null)
 			activeViews.setView(myView);
 		getContentPane().setBackground(bgcolorGUI);
-		runStopAction.putValue(Action.NAME, engine.isRunning()?"Stop":"Start");
+		runStopAction.putValue(Action.NAME, engine.isRunning() ? "Stop" : "Start");
 		evoludoSlider.setValue(log2lin(engine.getDelay()));
 	}
 
 	/**
-     * applet: called by the browser or applet viewer to inform this applet to
-	 *		   start its execution
-     */
+	 * applet: called by the browser or applet viewer to inform this applet to
+	 * start its execution
+	 */
 	public void start() {
-		runStop.requestFocus();		// focus on run/stop button
-		if( params!=null ) params.setVisible(paramsVisible);
-		if( engine.isSuspended() ) {
+		runStop.requestFocus(); // focus on run/stop button
+		if (params != null)
+			params.setVisible(paramsVisible);
+		if (engine.isSuspended()) {
 			engine.run();
-			runStopAction.putValue(Action.NAME, engine.isRunning()?"Stop":"Start");
+			runStopAction.putValue(Action.NAME, engine.isRunning() ? "Stop" : "Start");
 		}
 	}
 
 	/**
-     * applet: called by the browser or applet viewer to inform this applet
-	 *		   to stop its execution
-     */
+	 * applet: called by the browser or applet viewer to inform this applet
+	 * to stop its execution
+	 */
 	public void stop() {
-// should we rather unload the engine?
+		// should we rather unload the engine?
 		engine.stop();
-		if( params!=null ) {
+		if (params != null) {
 			paramsVisible = params.isVisible();
 			params.setVisible(false);
 		}
@@ -675,7 +681,7 @@ public class EvoLudoLab extends JFrame
 	}
 
 	@Override
-	public void moduleUnloaded() { 
+	public void moduleUnloaded() {
 		activeViews.clear();
 	}
 
@@ -710,7 +716,7 @@ public class EvoLudoLab extends JFrame
 		updateLabels();
 	}
 
-    public boolean isRunning() {
+	public boolean isRunning() {
 		return engine.isRunning();
 	}
 
@@ -719,7 +725,7 @@ public class EvoLudoLab extends JFrame
 	 */
 	protected int appWidth = 420;
 	protected int appHeight = 570;
-	protected String appView = "0";	// index or title
+	protected String appView = "0"; // index or title
 	protected boolean doAnimateLayout = false;
 
 	/*
@@ -727,129 +733,142 @@ public class EvoLudoLab extends JFrame
 	 */
 	public final CLOption cloSize = new CLOption("size", "420x570", EvoLudo.catGUI,
 			"--size <w>x<h>  size of application window (w: width, h: height)",
-    		new CLODelegate() {
-		    	@Override
-		    	public boolean parse(String arg) {
+			new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
 					int mark = arg.indexOf('x');
-					if( mark<0 ) {
-						logger.warning("size '"+arg+"' invalid - ignored.");
+					if (mark < 0) {
+						logger.warning("size '" + arg + "' invalid - ignored.");
 						return false;
 					}
-					appWidth  = Integer.parseInt(arg.substring(0, mark));
-					appHeight = Integer.parseInt(arg.substring(mark+1));
+					appWidth = Integer.parseInt(arg.substring(0, mark));
+					appHeight = Integer.parseInt(arg.substring(mark + 1));
 					return true;
-		    	}
-		    });
+				}
+			});
 
 	public final CLOption cloView = new CLOption("view", "0", EvoLudo.catGUI,
 			"--view <v>      active view upon launch (v: index or title)",
-    		new CLODelegate() {
-		    	@Override
-		    	public boolean parse(String arg) {
+			new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
 					appView = arg;
 					return true;
-		    	}
-		    });
+				}
+			});
 
 	public final CLOption cloAA = new CLOption("noAA", EvoLudo.catGUI,
 			"--noAA          disable anti-aliasing",
-    		new CLODelegate() {
-		    	@Override
-		    	public boolean parse(String arg) {
+			new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
 					// by default do not interfere - i.e. leave AA as is
-					if( cloAA.isSet() ) return true;
+					if (cloAA.isSet())
+						return true;
 					ToggleAntiAliasingAction.sharedInstance().setAntiAliasing(true);
 					return true;
-		    	}
-		    });
+				}
+			});
 
 	public final CLOption cloAnimate = new CLOption("animate", EvoLudo.catGUI,
 			"--animate       animate progress of laying out networks",
-    		new CLODelegate() {
-		    	@Override
-		    	public boolean parse(String arg) {
+			new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
 					// by default do not interfere - i.e. leave animation setting as is
-					if( !cloAnimate.isSet() ) return true;
+					if (!cloAnimate.isSet())
+						return true;
 					doAnimateLayout = true;
 					return true;
-		    	}
-		    });
+				}
+			});
 
-	public final CLOption cloTickFont = new CLOption("tickfont", "10", EvoLudo.catGUI,	// GraphStyle.FONT_TICK_SIZE
+	public final CLOption cloTickFont = new CLOption("tickfont", "10", EvoLudo.catGUI, // GraphStyle.FONT_TICK_SIZE
 			"--tickfont [[<n>:]<t>:]<s>  font for tick labels (n: name, t: italic/bold/plain, s: size)",
-    		new CLODelegate() {
-		    	@Override
-		    	public boolean parse(String arg) {
+			new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
 					tickFont = parseFont(arg, GraphStyle.defaultTickFont);
 					return true;
-		    	}
-		    });
+				}
+			});
 
-	public final CLOption cloLabelFont = new CLOption("labelfont", "11", EvoLudo.catGUI,	// GraphStyle.FONT_LABEL_SIZE
-			"--labelfont [[<n>:]<t>:]<s> font for axis labels (n: name, t: italic/bold/plain, s: size)",
-    		new CLODelegate() {
-		    	@Override
-		    	public boolean parse(String arg) {
+	public final CLOption cloLabelFont = new CLOption("labelfont", "11", EvoLudo.catGUI, // GraphStyle.FONT_LABEL_SIZE
+			"--labelfont [[<n>:]<t>:]<s>  font for axis labels (n: name, t: italic/bold/plain, s: size)",
+			new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
 					labelFont = parseFont(arg, GraphStyle.defaultLabelFont);
 					return true;
-		    	}
-		    });
+				}
+			});
 
-	public final CLOption cloLineStroke = new CLOption("linestroke", "0.008", EvoLudo.catGUI,	// GraphStyle.LINE_STROKE
+	public final CLOption cloLineStroke = new CLOption("linestroke", "0.008", EvoLudo.catGUI, // GraphStyle.LINE_STROKE
 			"--linestroke <s>  stroke width of lines",
-    		new CLODelegate() {
-		    	@Override
-		    	public boolean parse(String arg) {
+			new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
 					lineStroke = Double.parseDouble(arg);
 					return true;
-		    	}
-		    });
+				}
+			});
 
-	public final CLOption cloFrameStroke = new CLOption("framestroke", "1", EvoLudo.catGUI,	// GraphStyle.FRAME_STROKE
+	public final CLOption cloFrameStroke = new CLOption("framestroke", "1", EvoLudo.catGUI, // GraphStyle.FRAME_STROKE
 			"--framestroke <s>  stroke width of frames and ticks",
-    		new CLODelegate() {
-		    	@Override
-		    	public boolean parse(String arg) {
+			new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
 					frameStroke = Double.parseDouble(arg);
 					return true;
-		    	}
-		    });
+				}
+			});
 
 	public final CLOption cloBGColorGUI = new CLOption("bgcolorGUI", "(200)", EvoLudo.catGUI,
 			"--bgcolorGUI <c>  set background color of GUI",
-    		new CLODelegate() {
-		    	@Override
-		    	public boolean parse(String arg) {
+			new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
 					setBackgroundGUI(CLOParser.parseColor(arg));
 					return true;
-		    	}
-		    });
+				}
+			});
 
-    /**
-     * do not use short options for GUI settings - they are reserved for engine
+	public final CLOption cloGUI = new CLOption("gui", EvoLudo.catGUI,
+			"--gui           launch legacy java GUI",
+			new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
+					// nothing to do - already handled in main()
+					return true;
+				}
+			});
+
+	/**
+	 * do not use short options for GUI settings - they are reserved for engine
 	 *
-     * @param parser command line option parser
-     */
-    @Override
+	 * @param parser command line option parser
+	 */
+	@Override
 	public void collectCLO(CLOParser parser) {
 		// prepare command line options
-    	parser.addCLO(cloSize);
-    	parser.addCLO(cloView);
-    	parser.addCLO(cloAA);
-    	parser.addCLO(cloAnimate);
-    	parser.addCLO(cloTickFont);
-    	parser.addCLO(cloLabelFont);
-    	parser.addCLO(cloLineStroke);
-    	parser.addCLO(cloFrameStroke);
-    	parser.addCLO(cloBGColorGUI);
+		parser.addCLO(cloGUI);
+		parser.addCLO(cloSize);
+		parser.addCLO(cloView);
+		parser.addCLO(cloAA);
+		parser.addCLO(cloAnimate);
+		parser.addCLO(cloTickFont);
+		parser.addCLO(cloLabelFont);
+		parser.addCLO(cloLineStroke);
+		parser.addCLO(cloFrameStroke);
+		parser.addCLO(cloBGColorGUI);
 	}
 
-    public Font parseFont(String arg, Font fallback) {
+	public Font parseFont(String arg, Font fallback) {
 		String[] args = arg.split(":");
 		String name = fallback.getFamily();
-		int	type = fallback.getStyle();
-		int	size;
-		switch( args.length ) {
+		int type = fallback.getStyle();
+		int size;
+		switch (args.length) {
 			case 3:
 				name = args[0];
 				type = parseFontType(args[1]);
@@ -870,63 +889,68 @@ public class EvoLudoLab extends JFrame
 
 	private int parseFontType(String fonttype) {
 		String type = fonttype.toLowerCase();
-		if( type.contains("italic") ) {
-			if( type.contains("bold") ) return Font.ITALIC|Font.BOLD;
+		if (type.contains("italic")) {
+			if (type.contains("bold"))
+				return Font.ITALIC | Font.BOLD;
 			return Font.ITALIC;
 		}
-		if( type.contains("bold") ) return Font.BOLD;
+		if (type.contains("bold"))
+			return Font.BOLD;
 		return Font.PLAIN;
 	}
 
-    public boolean doAnimateLayout() {
+	public boolean doAnimateLayout() {
 		return doAnimateLayout;
 	}
 
-    public Font getLabelFont() {
+	public Font getLabelFont() {
 		return labelFont;
 	}
 
-    public Font getTickFont() {
+	public Font getTickFont() {
 		return tickFont;
 	}
 
-    public double getLineStroke() {
+	public double getLineStroke() {
 		return lineStroke;
 	}
 
-    public double getFrameStroke() {
+	public double getFrameStroke() {
 		return frameStroke;
 	}
 
-    public void setBackgroundGUI(Color bgcolorGUI) {
+	public void setBackgroundGUI(Color bgcolorGUI) {
 		this.bgcolorGUI = bgcolorGUI;
 	}
 
-    public Color getBackgroundGUI() {
+	public Color getBackgroundGUI() {
 		return bgcolorGUI;
 	}
 
-    public void showCustomMenu(JPopupMenu menu, AbstractGraph owner) { }
+	public void showCustomMenu(JPopupMenu menu, AbstractGraph owner) {
+	}
 
-    public String getCLO() {
-    	return engine.getCLO();
-    }
+	public String getCLO() {
+		return engine.getCLO();
+	}
 
-    /**
+	/**
 	 * Launch the java GUI. Note, exec() must be called on the EDT to take care of
 	 * the initialization.
 	 */
 	public void exec() {
-		int	posX = 50, posY = 10;
+		int posX = 50, posY = 10;
 
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		/* the java focus system is buggy but i guess this is apple's call...
+		/*
+		 * the java focus system is buggy but i guess this is apple's call...
 		 * just hide the context menu when applet/application becomes deactivated
 		 * although this is non-standard behavior it is otherwise just annoying...
 		 */
 		addWindowFocusListener(new WindowAdapter() {
-// note: maybe only dismiss menu on focus lost? - but then we loose control and may end up with an orphaned menu...
+			// note: maybe only dismiss menu on focus lost? - but then we loose control and
+			// may end up with an orphaned menu...
 			@Override
 			public void windowLostFocus(WindowEvent e) {
 				activeViews.setContextMenuEnabled(false);
@@ -947,24 +971,22 @@ public class EvoLudoLab extends JFrame
 		setVisible(true);
 		// start GUI manager in another thread to avoid blocking the EDT
 		new Thread(
-			new Runnable() {
-                @Override
-				public void run() {
-					start();
-				}
-			}, "GUI Manager"
-		).start();
+				new Runnable() {
+					@Override
+					public void run() {
+						start();
+					}
+				}, "GUI Manager").start();
 	}
 
 	/**
-	 * Generic entry point for java. Triage three scenarios:
+	 * Generic entry point for java:
 	 * <ol>
-	 * <li>if {@code EvoLudoJRE.getAttribute("Engine-Class")} returns not
-	 * {@code null} a customised simulation is set up. Any {@code --module},
-	 * {@code --data} or {@code --export} options are ignored.
-	 * <li>if options {@code --data} or {@code --export} are present a generic
-	 * simulation for the module specified by {@code --module} is set up.
-	 * <li>otherwise the java GUI is launched.
+	 * <li>option {@code --gui} launches the legacy java GUI.
+	 * <li>options {@code --data} or {@code --export} launch a generic simulation
+	 * for the module specified by {@code --module}.
+	 * <li>exits if none of {@code --gui}, {@code --data}, or {@code --export} are
+	 * provided.
 	 * </ol>
 	 * In all cases the command line options are used to configure and initialize
 	 * the desired simulation.
@@ -974,23 +996,25 @@ public class EvoLudoLab extends JFrame
 	 */
 	public static void main(String[] args) {
 		EvoLudoJRE engine = new EvoLudoJRE();
-		System.setProperty("java.awt.headless", "true");
-		engine.isApplication = false;
-		// EvoLudo has its own parser for command line options and expects a single string
 		engine.setCLO(Formatter.format(args, " "));
-		engine.simulation();
-		// last resort: launch GUI if call to simulation() returns control here
-		System.setProperty("java.awt.headless", "false");
-		engine.isApplication = true;
-		// parse options (again) to include application specific ones
-		if (!engine.parseCLO())
-			engine.getLogger().warning("Parsing issues of command line arguments.");
-
-		javax.swing.SwingUtilities.invokeLater(new Runnable() {
-            @Override
-			public void run() {
-				new EvoLudoLab(engine).exec();
+		args = engine.getSplitCLO();
+		// first check if legacy java GUI requested
+		for (String arg : args) {
+			if (arg.startsWith("gui")) {
+				engine.setHeadless(false);
+				javax.swing.SwingUtilities.invokeLater(new Runnable() {
+					@Override
+					public void run() {
+						new EvoLudoLab(engine).exec();
+					}
+				});
+				return;
 			}
-		});
+		}
+		engine.simulation();
+		// should not get here...
+		engine.fatal(
+				"One of the command line options --gui, --data <types> or --export <file> is required.\n"
+				+ "Try --help for more information.");
 	}
 }
