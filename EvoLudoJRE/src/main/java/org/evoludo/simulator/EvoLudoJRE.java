@@ -39,8 +39,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.net.URL;
-import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
@@ -48,8 +46,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Properties;
-import java.util.jar.Attributes;
-import java.util.jar.Manifest;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipInputStream;
 
@@ -127,13 +123,22 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 */
 	Thread executeThread = null; // command execution thread
 
+	/**
+	 * Constructor for JRE application. This constructor is used when running
+	 * EvoLudo as a JRE application.
+	 */
 	public EvoLudoJRE() {
 		this(true);
 	}
 
 	/**
-	 * Constructor for JRE application. This constructor is used when running
-	 * EvoLudo as a JRE application.
+	 * Constructor for JRE application. All avalable modules are loaded if
+	 * {@code loadModules} is {@code true}. Otherwise the caller is responsible
+	 * for loading a module, which applies for example to custom simulations.
+	 * 
+	 * @param loadModules {@code true} to load modules
+	 * 
+	 * @see #custom(Module, String[])
 	 */
 	public EvoLudoJRE(boolean loadModules) {
 		super(loadModules);
@@ -974,59 +979,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	@Override
 	public String getGitDate() {
 		return getProperty("git.build.time");
-	}
-
-	/**
-	 * Attributes of MANIFEST are stored here.
-	 */
-	protected static Attributes attributes = null;
-
-	/**
-	 * Helper method to read {@link Attributes} from MANIFEST in jar archive.
-	 * <p>
-	 * <b>Note:</b> {@link java.io.UnsupportedEncodingException} should never be
-	 * thrown.
-	 */
-	private static void readAttributes() {
-		if (attributes != null)
-			return;
-		try {
-			Class<IBSPopulation> myClass = IBSPopulation.class;
-			String className = "/" + myClass.getName().replace('.', '/') + ".class";
-			String myUrl = myClass.getResource(className).toString();
-			int to = myUrl.indexOf("!/");
-			String jarName;
-			jarName = URLDecoder.decode(myUrl.substring(0, to + 1), "UTF-8");
-			attributes = new Manifest(new URL(jarName + "/META-INF/MANIFEST.MF").openStream()).getMainAttributes();
-		} catch (Exception e) {
-			// not much we can do...
-		}
-	}
-
-	/**
-	 * Retrieve attribute for given key.
-	 * 
-	 * @param key of <code>attribute</code>
-	 * @return attribute for <code>key</code>
-	 */
-	public static String getAttribute(String key) {
-		readAttributes();
-		if (attributes == null)
-			return null; // reading attributes failed
-		return attributes.getValue(key);
-	}
-
-	/**
-	 * Retrieve attribute for given key.
-	 * 
-	 * @param key of <code>attribute</code>
-	 * @return attribute for <code>key</code>
-	 */
-	public static String getAttribute(Attributes.Name key) {
-		readAttributes();
-		if (attributes == null)
-			return null; // reading attributes failed
-		return attributes.getValue(key);
 	}
 
 	/**
