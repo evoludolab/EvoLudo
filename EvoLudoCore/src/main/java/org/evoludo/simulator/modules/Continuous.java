@@ -1078,9 +1078,11 @@ public abstract class Continuous extends Module {
 									+ "             0: " + getTraitName(0) + "\n" //
 									+ "             1: " + getTraitName(1);
 						default:
-							String descr = "--traitrange <min0,max0[" + CLOParser.VECTOR_DELIMITER + "..."
-									+ CLOParser.VECTOR_DELIMITER + "min" + (nTraits - 1)
-									+ ",max" + (nTraits - 1) + "]>  range of traits, with";
+							String descr = "--traitrange <min0" + CLOParser.VECTOR_DELIMITER + "max0[" //
+									+ CLOParser.TRAIT_DELIMITER + "..."
+									+ CLOParser.TRAIT_DELIMITER + "min" + (nTraits - 1)
+									+ CLOParser.VECTOR_DELIMITER + "max" + (nTraits - 1) //
+									+ "]>  range of traits, with";
 							for (int n = 0; n < nTraits; n++) {
 								String aTrait = "              " + n + ": ";
 								int traitlen = aTrait.length();

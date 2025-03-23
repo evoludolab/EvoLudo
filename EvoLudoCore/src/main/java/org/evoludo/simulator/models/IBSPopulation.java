@@ -949,8 +949,7 @@ public abstract class IBSPopulation {
 		// vacancies require some extra care
 		if (nPopulation >= 100) {
 			// optimization of gillespie algorithm to prevent bookkeeping (at the expense of
-			// drawing more random numbers)
-			// see e.g. http://arxiv.org/pdf/1109.3627.pdf
+			// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
 			double mScore;
 			// note: for constant selection maxEffScoreIdx is never set using the effective
 			// current maximum score makes this optimization more efficient
@@ -1004,8 +1003,7 @@ public abstract class IBSPopulation {
 			// note: review threshold for optimizations (see pickFitFocalIndividual above)
 			if (nPopulation >= 100) {
 				// optimization of gillespie algorithm to prevent bookkeeping (at the expense of
-				// drawing more random numbers)
-				// see e.g. http://arxiv.org/pdf/1109.3627.pdf
+				// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
 				if (excl == maxEffScoreIdx) {
 					// excluding the maximum score can cause issues if it is much larger than the
 					// rest;
@@ -1065,8 +1063,7 @@ public abstract class IBSPopulation {
 		// vacancies require some extra care
 		if (nPopulation >= 100) {
 			// optimization of gillespie algorithm to prevent bookkeeping (at the expense of
-			// drawing more random numbers)
-			// see e.g. http://arxiv.org/pdf/1109.3627.pdf
+			// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
 			if (excl == maxEffScoreIdx) {
 				// excluding the maximum score can cause issues if it is much larger than the
 				// rest;

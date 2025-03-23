@@ -1492,8 +1492,6 @@ public abstract class RNGDistribution {
 	 */
 	public static class Gillespie extends RNGDistribution {
 
-		// TODO static next-method missing
-
 		/**
 		 * The threshold for switching between the standard and the optimized version of
 		 * the Gillespie algorithm.
@@ -1520,14 +1518,15 @@ public abstract class RNGDistribution {
 
 		/**
 		 * Return a random integer with support {@code [0, weights.length)} from the
-		 * discrete distribution of weights defined by the {@code double[]} array
-		 * {@code weights}.
+		 * discrete distribution of weights defined by the {@code int[]} array
+		 * {@code weights}. Optimized sampling is used above the threshold of
+		 * <code> weights.length &gt; {@value #THRESHOLD_SIZE}</code>.
 		 * <p>
 		 * <strong>Note:</strong> if the sum of weights or the maximum weight is known,
-		 * consider using the methods {@code #nextSum(double[], double)} or
-		 * {@code #nextMax(double[], double)}, instead.
+		 * consider using the methods {@code #nextSum(int[], int)} or
+		 * {@code #nextMax(int[], int)}, instead.
 		 * 
-		 * @param weights the array of weights of the discrete distribution
+		 * @param weights the array of integer weights of the discrete distribution
 		 * @return the random integer
 		 */
 		public int next(int[] weights) {
@@ -1538,15 +1537,19 @@ public abstract class RNGDistribution {
 
 		/**
 		 * Return a random integer with support {@code [0, weights.length)} from the
-		 * discrete distribution of weights defined by the {@code double[]} array
+		 * discrete distribution of weights defined by the {@code int[]} array
 		 * {@code weights}. Given the sum of weights {@code sum} the Gillespie algorithm
 		 * picks a uniformly distributed random number in {@code [0, sum)} and then
 		 * walks through the array of weights until the cumulative sum exceeds the
 		 * random number. The index of the weight that exceeds the random number is
 		 * returned.
 		 * <p>
-		 * <strong>Note:</strong> this is the standard, non-optimized version of the
-		 * Gillespie algorithm and is most likely best for small supports.
+		 * <strong>Note:</strong>
+		 * <ol>
+		 * <li>this is the standard, non-optimized version of the Gillespie algorithm
+		 * and is most likely best for small supports.
+		 * <li>For skewed weights consider sorting the weights in descending order.
+		 * </ol>
 		 * 
 		 * @param weights the array of weights of the discrete distribution
 		 * @param sum     the sum of all weights
@@ -1563,7 +1566,7 @@ public abstract class RNGDistribution {
 
 		/**
 		 * Return a random integer with support {@code [0, weights.length)} from the
-		 * discrete distribution of weights defined by the {@code double[]} array
+		 * discrete distribution of weights defined by the {@code int[]} array
 		 * {@code weights}. Given the maximum weight {@code max}, the drawing of
 		 * weighted random numbers can be optmized by simplifying bookkeeping at the
 		 * expense of drawing more random numbers.
@@ -1574,7 +1577,6 @@ public abstract class RNGDistribution {
 		 * by heavily skewed weight distributions.
 		 * <li>For small supports the standard version of the Gillespie algorithm is
 		 * likely faster.
-		 * <li>For skewed weights consider sorting the weights in descending order.
 		 * <li>{@code max} can be bigger than the actual maximum but the optimization
 		 * becomes less efficient.
 		 * </ol>
@@ -1624,15 +1626,26 @@ public abstract class RNGDistribution {
 		 * random number. The index of the weight that exceeds the random number is
 		 * returned.
 		 * <p>
-		 * <strong>Note:</strong> this is the standard, non-optimized version of the
-		 * Gillespie algorithm and is most likely best for small supports.
+		 * <strong>Note:</strong>
+		 * <ol>
+		 * <li>this is the standard, non-optimized version of the Gillespie algorithm
+		 * and is most likely best for small supports.
+		 * <li>For skewed weights consider sorting the weights in descending order.
+		 * </ol>
 		 * 
 		 * @param weights the array of weights of the discrete distribution
 		 * @param sum     the sum of all weights
 		 * @return the random integer
 		 */
 		public int nextSum(double[] weights, double sum) {
-			double hit = random01() * sum;
+			return nextHit(weights, random01() * sum);
+		}
+
+		public static int nextSum(MersenneTwister rng, double[] weights, double sum) {
+			return nextHit(weights, rng.nextDouble() * sum);
+		}
+
+		static int nextHit(double[] weights, double hit) {
 			int aRand = -1;
 			for (double weight : weights) {
 				hit -= weight;
@@ -1660,7 +1673,6 @@ public abstract class RNGDistribution {
 		 * by heavily skewed weight distributions.
 		 * <li>For small supports the standard version of the Gillespie algorithm is
 		 * likely faster. The threshold appears to be at around 350 elements.
-		 * <li>For skewed weights consider sorting the weights in descending order.
 		 * <li>{@code max} can be bigger than the actual maximum but the optimization
 		 * becomes less efficient.
 		 * </ol>
@@ -1674,11 +1686,15 @@ public abstract class RNGDistribution {
 		 *      acceptance</a>
 		 */
 		public int nextMax(double[] weights, double max) {
+			return nextMax(rng, weights, max);
+		}
+
+		public static int nextMax(MersenneTwister rng, double[] weights, double max) {
 			int len = weights.length;
 			int aRand = -1;
 			do {
-				aRand = random0n(len);
-			} while (random01() * max > weights[aRand]); // note: if < holds aRand is ok
+				aRand = rng.nextInt(len);
+			} while (rng.nextDouble() * max > weights[aRand]); // note: if < holds aRand is ok
 			return aRand;
 		}
 
