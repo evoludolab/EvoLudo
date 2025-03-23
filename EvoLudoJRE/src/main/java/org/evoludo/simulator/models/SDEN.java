@@ -272,12 +272,15 @@ public class SDEN extends SDE {
 				else
 					yout[i] = 0.0;
 		}
+		// polish result
 		idx = ArrayMath.minIndex(yout);
 		if (yout[idx] < 0.0) {
-			step = -yt[idx] / dyt[idx]; // note: dy[idx]<0 -> ddt>0
+			// step too big, resulted in negative densities/frequencies
+			// note, yt[idx]>0 must hold (from previous step) but
+			// sign of dyt[idx] depends on direction of integration
+			step = -yt[idx] / dyt[idx]; // note: dyt[idx]<0 -> step>0
 			// ensure all frequencies are positive - despite roundoff errors
 			for (int i = 0; i < nDim; i++)
-				// XXX shouldn't this be stepTaken?
 				yout[i] = Math.max(0.0, yt[i] + step * dyt[i]);
 			yout[idx] = 0.0; // avoid roundoff errors
 		}
@@ -289,6 +292,7 @@ public class SDEN extends SDE {
 		// determine fitness of new state
 		getDerivatives(time, yt, ft, dyt);
 		time += step;
+		dtTaken = Math.abs(step);
 		return ArrayMath.distSq(yout, yt);
 	}
 

@@ -221,7 +221,6 @@ public class SDE extends ODE {
 		double stepSize = Math.abs(step);
 		double sqrtdt = Math.sqrt(stepSize) / stepSize;
 		double x;
-		double[] swap;
 		int idx;
 		double effnoise = 1.0 / module.getNPopulation();
 		// scale noise according effective population size
@@ -369,7 +368,7 @@ public class SDE extends ODE {
 			// step too big, resulted in negative densities/frequencies
 			// note, yt[idx]>0 must hold (from previous step) but
 			// sign of dyt[idx] depends on direction of integration
-			step = -yt[idx] / dyt[idx];
+			step = -yt[idx] / dyt[idx]; // note: dyt[idx]<0 -> step>0
 			// ensure all frequencies are positive - despite roundoff errors
 			for (int i = 0; i < nDim; i++)
 				yout[i] = Math.max(0.0, yt[i] + step * dyt[i]);
@@ -377,7 +376,7 @@ public class SDE extends ODE {
 		}
 		normalizeState(yout);
 		// the new state is in yout - swap and determine new fitness
-		swap = yt;
+		double[] swap = yt;
 		yt = yout;
 		yout = swap;
 		// determine fitness of new state
