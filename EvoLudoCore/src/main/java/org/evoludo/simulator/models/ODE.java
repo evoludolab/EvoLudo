@@ -1736,7 +1736,7 @@ public class ODE extends Model implements Discrete {
 			start += nTraits;
 		}
 		if (!parseOk) {
-			logger.warning("parsing of initype(s) '" + arg + "' failed - using " + cloInit.getDefault() + ".");
+			logger.warning("parsing of init '" + arg + "' failed - using " + cloInit.getDefault() + ".");
 			return false;
 		}
 		return true;

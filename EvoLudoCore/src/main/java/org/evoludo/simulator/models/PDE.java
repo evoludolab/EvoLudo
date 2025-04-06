@@ -1473,7 +1473,7 @@ public class PDE extends ODE {
 			y0 = new double[nt];
 		if (initType == null || !initType.equals(InitType.RANDOM) && (init == null || init.length != nt)) {
 			initType = InitType.RANDOM;
-			logger.warning("parsing of initype(s) '" + arg + //
+			logger.warning("parsing of init '" + arg + //
 					"' failed - using default " + InitType.RANDOM + "'.");
 			return false;
 		}
