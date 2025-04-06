@@ -30,9 +30,11 @@
   <version>1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
+  <!-- EvoLudo configuration settings-->
   <properties>
     <evoludo.server>localhost</evoludo.server>
     <evoludo.startup>TestEvoLudo.html</evoludo.startup>
+    <evoludo.jettyPort>8888</evoludo.jettyPort>
     <evoludo.commit default-value="unknown">${git.commit.id.describe}</evoludo.commit>
     <evoludo.build default-value="">${git.build.time}</evoludo.build>
     <evoludo.engineModule default-value="EvoLudoCore"></evoludo.engineModule>
@@ -106,6 +108,8 @@
             <arg>${evoludo.server}</arg>
             <arg>-startupUrl</arg>
             <arg>${evoludo.startup}</arg>
+            <arg>-port</arg>
+            <arg>${evoludo.jettyPort}</arg>
           </devmodeArgs>
           <style>PRETTY</style>
           <launcherDir>${basedir}/EvoLudoGWT/target/EvoLudoGWT-${project.version}</launcherDir>
