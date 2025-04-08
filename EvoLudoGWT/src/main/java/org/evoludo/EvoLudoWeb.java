@@ -1221,8 +1221,10 @@ public class EvoLudoWeb extends Composite
 			engine.setSuspended(guiState.resume || engine.isSuspended());
 		}
 		if (guiState.plist != null) {
-			engine.restoreState(guiState.plist);
+			Plist state = guiState.plist;
 			guiState.plist = null;
+			displayStatus("Restoring state...");
+			engine.restoreState(state);
 		}
 		updateGUI();
 		activeView.activate();
