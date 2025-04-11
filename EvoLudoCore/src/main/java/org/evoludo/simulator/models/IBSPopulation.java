@@ -2848,7 +2848,11 @@ public abstract class IBSPopulation {
 	 * @return the processed minimum score
 	 */
 	public double getMinScore() {
-		return processScore(module.getMinGameScore(), true);
+		double min = module.getMinGameScore();
+		if (playerScoreAveraged)
+			return min;
+		// accumulated payoffs
+		return processScore(min, (min < 0.0 ? interaction.maxOut : interaction.minOut));
 	}
 
 	/**
@@ -2858,7 +2862,11 @@ public abstract class IBSPopulation {
 	 * @return the processed maximum score
 	 */
 	public double getMaxScore() {
-		return processScore(module.getMaxGameScore(), true);
+		double max = module.getMaxGameScore();
+		if (playerScoreAveraged)
+			return max;
+		// accumulated payoffs
+		return processScore(max, (max < 0.0 ? interaction.minOut : interaction.maxOut));
 	}
 
 	/**
@@ -2869,12 +2877,7 @@ public abstract class IBSPopulation {
 	 * @param max   {@code true} if score is maximum
 	 * @return the processed extremal score
 	 */
-	protected double processScore(double score, boolean max) {
-		if (playerScoreAveraged)
-			return score;
-		// accumulated payoffs
-		int count = (score < 0.0 ? (max ? interaction.minOut : interaction.maxOut)
-				: (max ? interaction.maxOut : interaction.minOut));
+	protected double processScore(double score, int count) {
 		if (adjustScores) {
 			// getMinGameScore in module must deal with structure and games
 			if (module.isPairwise()) {
