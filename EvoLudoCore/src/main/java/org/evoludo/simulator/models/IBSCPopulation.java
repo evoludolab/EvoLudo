@@ -113,13 +113,13 @@ public class IBSCPopulation extends IBSMCPopulation {
 
 	@Override
 	public boolean isSameStrategy(int a) {
-		return (Math.abs(strategies[a] - strategiesScratch[a]) < 1e-8);
+		return (Math.abs(strategies[a] - strategiesNext[a]) < 1e-8);
 	}
 
 	@Override
 	public void swapStrategies(int a, int b) {
-		strategiesScratch[a] = strategies[b];
-		strategiesScratch[b] = strategies[a];
+		strategiesNext[a] = strategies[b];
+		strategiesNext[b] = strategies[a];
 	}
 
 	@Override
@@ -170,7 +170,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 		}
 		int nInter = nOut + nIn;
 		double oldScore = pairmodule.pairScores(strategies[me], groupStrat, nInter, oldScores);
-		double newScore = pairmodule.pairScores(strategiesScratch[me], groupStrat, nInter, groupScores);
+		double newScore = pairmodule.pairScores(strategiesNext[me], groupStrat, nInter, groupScores);
 		commitStrategyAt(me);
 		if (playerScoreAveraged) {
 			double iInter = 1.0 / nInter;
@@ -298,12 +298,12 @@ public class IBSCPopulation extends IBSMCPopulation {
 
 	@Override
 	public void prepareStrategies() {
-		System.arraycopy(strategies, 0, strategiesScratch, 0, nPopulation);
+		System.arraycopy(strategies, 0, strategiesNext, 0, nPopulation);
 	}
 
 	@Override
 	public void commitStrategyAt(int me) {
-		strategies[me] = strategiesScratch[me];
+		strategies[me] = strategiesNext[me];
 	}
 
 	/**

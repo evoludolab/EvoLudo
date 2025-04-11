@@ -503,7 +503,7 @@ public class NetGames extends Discrete implements org.evoludo.simulator.models.I
 			fitness = null;
 			interactions = null;
 			strategies = null;
-			strategiesScratch = null;
+			strategiesNext = null;
 			tags = null;
 		}
 

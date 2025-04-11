@@ -712,13 +712,13 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 				return changed;
 			int oldtype = strategies[me] % nTraits;
 			if (changed) {
-				int newtype = strategiesScratch[me] % nTraits;
+				int newtype = strategiesNext[me] % nTraits;
 				// only strategies can be adopted
 				int newstrat = newtype % 2;
 				changed = (oldtype % 2 != newstrat);
 				// make sure patch type is preserved
 				int oldpatch = oldtype / 2;
-				strategiesScratch[me] = oldpatch + oldpatch + newstrat + (changed ? nTraits : 0);
+				strategiesNext[me] = oldpatch + oldpatch + newstrat + (changed ? nTraits : 0);
 			}
 			// note: should we allow simultaneous strategy and patch changes? i don't think
 			// so... which approach corresponds to the ODE?
@@ -731,7 +731,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 					// determine new patch type (old one was GOOD if oldtype is even and will now
 					// turn BAD and vice versa)
 					int newpatch = (oldtype + 1) % 2;
-					strategiesScratch[me] = newpatch + oldstrat + oldstrat + nTraits;
+					strategiesNext[me] = newpatch + oldstrat + oldstrat + nTraits;
 					return true;
 				}
 			}

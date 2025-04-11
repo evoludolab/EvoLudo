@@ -192,7 +192,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	/**
 	 * The array for temporarily storing strategies during updates.
 	 */
-	protected double[] strategiesScratch;
+	protected double[] strategiesNext;
 
 	/**
 	 * Temporary storage for strategies/traits of individuals in group interactions.
@@ -225,7 +225,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	@Override
 	public void updateFromModelAt(int index, int modelPlayer) {
 		super.updateFromModelAt(index, modelPlayer); // deal with tags
-		System.arraycopy(strategies, modelPlayer * nTraits, strategiesScratch, index * nTraits, nTraits);
+		System.arraycopy(strategies, modelPlayer * nTraits, strategiesNext, index * nTraits, nTraits);
 	}
 
 	@Override
@@ -242,7 +242,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	public boolean isSameStrategy(int a) {
 		int idxa = a * nTraits;
 		for (int i = 0; i < nTraits; i++)
-			if (Math.abs(strategies[idxa + i] - strategiesScratch[idxa + i]) > 1e-8)
+			if (Math.abs(strategies[idxa + i] - strategiesNext[idxa + i]) > 1e-8)
 				return false;
 		return true;
 	}
@@ -251,8 +251,8 @@ public class IBSMCPopulation extends IBSPopulation {
 	public void swapStrategies(int a, int b) {
 		int idxa = a * nTraits;
 		int idxb = b * nTraits;
-		System.arraycopy(strategies, idxb, strategiesScratch, idxa, nTraits);
-		System.arraycopy(strategies, idxa, strategiesScratch, idxb, nTraits);
+		System.arraycopy(strategies, idxb, strategiesNext, idxa, nTraits);
+		System.arraycopy(strategies, idxa, strategiesNext, idxb, nTraits);
 	}
 
 	@Override
@@ -286,9 +286,9 @@ public class IBSMCPopulation extends IBSPopulation {
 	 */
 	private boolean mutateAt(int focal, boolean switched) {
 		int dest = focal * nTraits;
-		double[] strat = switched ? strategiesScratch : strategies;
+		double[] strat = switched ? strategiesNext : strategies;
 		for (int i = 0; i < nTraits; i++)
-			strategiesScratch[dest + i] = mutation.mutate(strat[dest + i]);
+			strategiesNext[dest + i] = mutation.mutate(strat[dest + i]);
 		return true;
 	}
 
@@ -430,7 +430,7 @@ public class IBSMCPopulation extends IBSPopulation {
 		int nInter = nOut + nIn;
 		int offset = me * nTraits;
 		System.arraycopy(strategies, offset, oldTrait, 0, nTraits);
-		System.arraycopy(strategiesScratch, offset, myTrait, 0, nTraits);
+		System.arraycopy(strategiesNext, offset, myTrait, 0, nTraits);
 		double oldScore = pairmodule.pairScores(oldTrait, groupStrat, nInter, oldScores);
 		double newScore = pairmodule.pairScores(myTrait, groupStrat, nInter, groupScores);
 		commitStrategyAt(me);
@@ -555,20 +555,20 @@ public class IBSMCPopulation extends IBSPopulation {
 
 	@Override
 	public void prepareStrategies() {
-		System.arraycopy(strategies, 0, strategiesScratch, 0, nPopulation * nTraits);
+		System.arraycopy(strategies, 0, strategiesNext, 0, nPopulation * nTraits);
 	}
 
 	@Override
 	public void commitStrategies() {
 		double[] swap = strategies;
-		strategies = strategiesScratch;
-		strategiesScratch = swap;
+		strategies = strategiesNext;
+		strategiesNext = swap;
 	}
 
 	@Override
 	public void commitStrategyAt(int me) {
 		int idx = me * nTraits;
-		System.arraycopy(strategiesScratch, idx, strategies, idx, nTraits);
+		System.arraycopy(strategiesNext, idx, strategies, idx, nTraits);
 	}
 
 	@Override
@@ -778,8 +778,8 @@ public class IBSMCPopulation extends IBSPopulation {
 
 		if (strategies == null || strategies.length != nPopulation * nTraits)
 			strategies = new double[nPopulation * nTraits];
-		if (strategiesScratch == null || strategiesScratch.length != nPopulation * nTraits)
-			strategiesScratch = new double[nPopulation * nTraits];
+		if (strategiesNext == null || strategiesNext.length != nPopulation * nTraits)
+			strategiesNext = new double[nPopulation * nTraits];
 		if (myTrait == null || myTrait.length != nTraits)
 			myTrait = new double[nTraits];
 
@@ -888,7 +888,7 @@ public class IBSMCPopulation extends IBSPopulation {
 			return false; // invalid argument
 		int offset = hit * nTraits;
 		for (int n = 0; n < nTraits; n++)
-			strategiesScratch[offset + n] = Math.min(Math.max(strategies[offset + n] + (alt ? -0.1 : 0.1), 0.0), 1.0);
+			strategiesNext[offset + n] = Math.min(Math.max(strategies[offset + n] + (alt ? -0.1 : 0.1), 0.0), 1.0);
 		// update scores and display
 		if (adjustScores) {
 			adjustGameScoresAt(hit); // this also commits strategy

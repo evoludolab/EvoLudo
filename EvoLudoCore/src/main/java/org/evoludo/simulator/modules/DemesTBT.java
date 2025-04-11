@@ -438,7 +438,7 @@ public class DemesTBT extends TBT {
 		@Override
 		public void commitStrategyAt(int me) {
 			int deme = me / sizeDemes;
-			int newstrat = strategiesScratch[me];
+			int newstrat = strategiesNext[me];
 			int oldtype = strategies[me] % nTraits;
 			demeTypeCount[deme][oldtype]--;
 			demeTypeCount[deme][newstrat % nTraits]++;

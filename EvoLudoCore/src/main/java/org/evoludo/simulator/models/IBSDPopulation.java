@@ -159,7 +159,7 @@ public class IBSDPopulation extends IBSPopulation {
 	/**
 	 * The array for temporarily storing strategies during updates.
 	 */
-	protected int[] strategiesScratch;
+	protected int[] strategiesNext;
 
 	/**
 	 * The array with the total scores for each trait/strategic type.
@@ -455,7 +455,7 @@ public class IBSDPopulation extends IBSPopulation {
 		double randomTestVal = random01() * (module.getDeathRate() + maxFitness); // time rescaling
 		if (randomTestVal < module.getDeathRate()) {
 			// vacate focal site
-			strategiesScratch[me] = VACANT + nTraits;
+			strategiesNext[me] = VACANT + nTraits;
 			updateScoreAt(me, true);
 		} else if (randomTestVal < (module.getDeathRate() + getFitnessAt(me))) {
 			// fill neighbor site if vacant
@@ -479,22 +479,22 @@ public class IBSDPopulation extends IBSPopulation {
 		int oldstrat = strategies[index] % nTraits;
 		if (oldstrat != newstrat)
 			newstrat += nTraits;
-		strategiesScratch[index] = newstrat;
+		strategiesNext[index] = newstrat;
 	}
 
 	@Override
 	public double mutateAt(int focal) {
-		strategiesScratch[focal] = mutation.mutate(strategies[focal] % nTraits) + nTraits;
+		strategiesNext[focal] = mutation.mutate(strategies[focal] % nTraits) + nTraits;
 		updateScoreAt(focal, true);
 		return 1.0 / (nPopulation * module.getSpeciesUpdateRate());
 	}
 
 	@Override
 	protected boolean maybeMutateAt(int focal, boolean switched) {
-		int strat = (switched ? strategiesScratch[focal] : strategies[focal]) % nTraits;
+		int strat = (switched ? strategiesNext[focal] : strategies[focal]) % nTraits;
 		boolean mutate = mutation.doMutate();
 		if (mutate)
-			strategiesScratch[focal] = mutation.mutate(strat) + nTraits;
+			strategiesNext[focal] = mutation.mutate(strat) + nTraits;
 		return switched || mutate;
 	}
 
@@ -502,7 +502,7 @@ public class IBSDPopulation extends IBSPopulation {
 	protected void maybeMutateMoran(int source, int dest) {
 		updateFromModelAt(dest, source);
 		if (mutation.doMutate())
-			strategiesScratch[dest] = mutation.mutate(strategiesScratch[dest] % nTraits) + nTraits;
+			strategiesNext[dest] = mutation.mutate(strategiesNext[dest] % nTraits) + nTraits;
 		updateScoreAt(dest, true);
 	}
 
@@ -528,13 +528,13 @@ public class IBSDPopulation extends IBSPopulation {
 
 	@Override
 	public boolean isSameStrategy(int a) {
-		return ((strategies[a] % nTraits) == (strategiesScratch[a] % nTraits));
+		return ((strategies[a] % nTraits) == (strategiesNext[a] % nTraits));
 	}
 
 	@Override
 	public void swapStrategies(int a, int b) {
-		strategiesScratch[a] = strategies[b];
-		strategiesScratch[b] = strategies[a];
+		strategiesNext[a] = strategies[b];
+		strategiesNext[b] = strategies[a];
 	}
 
 	@Override
@@ -589,7 +589,7 @@ public class IBSDPopulation extends IBSPopulation {
 	// // strategyTypeCount not yet updated if strategy not committed
 	// tcount[si]++;
 	// // strategies not yet committed
-	// if( !committed && i==idx ) si = strategiesScratch[i]%nTraits;
+	// if( !committed && i==idx ) si = strategiesNext[i]%nTraits;
 	// if( !Double.isNaN(scores[i]) ) {
 	// // ignore score if i used to be vacant
 	// if( playerScoreAveraged ) tscores[si] += scores[i];
@@ -638,18 +638,18 @@ public class IBSDPopulation extends IBSPopulation {
 	// int si = strategies[i]%nTraits;
 	// strat[si]++;
 	// score[si] += scores[i];
-	// sstrat[strategiesScratch[i]%nTraits]++;
+	// sstrat[strategiesNext[i]%nTraits]++;
 	// }
 	// if( idx>=0 ) {
 	// strat[strategies[idx]%nTraits]--;
-	// strat[strategiesScratch[idx]%nTraits]++;
+	// strat[strategiesNext[idx]%nTraits]++;
 	// }
 	// if( VACANT>=0 && (score[VACANT]<0 || accuTypeScores[VACANT]<0) ) {
 	// GWT.log(loc+" (vacant): strat="+strat+" ("+strategiesTypeCount+"),
 	// score="+score+" ("+accuTypeScores+"), scratch="+sstrat);
 	// if( idx>=0 )
 	// GWT.log("idx="+idx+", strategies="+strategies[idx]+",
-	// scratch="+strategiesScratch[idx]+", scores="+scores[idx]);
+	// scratch="+strategiesNext[idx]+", scores="+scores[idx]);
 	// return;
 	// }
 	// for( int i=0; i<nTraits; i++ ) {
@@ -658,7 +658,7 @@ public class IBSDPopulation extends IBSPopulation {
 	// score="+score+" ("+accuTypeScores+"), scratch="+sstrat);
 	// if( idx>=0 )
 	// GWT.log("idx="+idx+", strategies="+strategies[idx]+",
-	// scratch="+strategiesScratch[idx]+", scores="+scores[idx]);
+	// scratch="+strategiesNext[idx]+", scores="+scores[idx]);
 	// return;
 	// }
 	// }
@@ -668,7 +668,7 @@ public class IBSDPopulation extends IBSPopulation {
 	public void resetScoreAt(int index) {
 		accuTypeScores[strategies[index] % nTraits] -= getScoreAt(index);
 		super.resetScoreAt(index);
-		accuTypeScores[strategiesScratch[index] % nTraits] += getScoreAt(index);
+		accuTypeScores[strategiesNext[index] % nTraits] += getScoreAt(index);
 	}
 
 	@Override
@@ -786,7 +786,7 @@ public class IBSDPopulation extends IBSPopulation {
 				}
 			}
 			if (newtype != mytype) {
-				strategiesScratch[me] = newtype + nTraits;
+				strategiesNext[me] = newtype + nTraits;
 				return true;
 			}
 			return false;
@@ -871,7 +871,7 @@ public class IBSDPopulation extends IBSPopulation {
 			}
 		}
 		if (newtype != mytype) {
-			strategiesScratch[me] = newtype + nTraits;
+			strategiesNext[me] = newtype + nTraits;
 			return true;
 		}
 		return false;
@@ -1073,7 +1073,7 @@ public class IBSDPopulation extends IBSPopulation {
 	@Override
 	public void adjustPairGameScoresAt(int me) {
 		int oldType = strategies[me] % nTraits;
-		int newType = strategiesScratch[me] % nTraits;
+		int newType = strategiesNext[me] % nTraits;
 		commitStrategyAt(me);
 		// count out-neighbors
 		int nIn = 0, nOut = interaction.kout[me];
@@ -1271,7 +1271,7 @@ public class IBSDPopulation extends IBSPopulation {
 	@Override
 	public void yalpGroupGameAt(IBSGroup group) {
 		int me = group.focal;
-		int newtype = strategiesScratch[me] % nTraits;
+		int newtype = strategiesNext[me] % nTraits;
 		if (newtype == VACANT || group.nSampled <= 0) {
 			// isolated individual or vacant site - reset score
 			resetScoreAt(me);
@@ -1477,7 +1477,7 @@ public class IBSDPopulation extends IBSPopulation {
 
 	@Override
 	public void prepareStrategies() {
-		System.arraycopy(strategies, 0, strategiesScratch, 0, nPopulation);
+		System.arraycopy(strategies, 0, strategiesNext, 0, nPopulation);
 	}
 
 	/**
@@ -1489,8 +1489,8 @@ public class IBSDPopulation extends IBSPopulation {
 	@Override
 	public void commitStrategies() {
 		int[] swap = strategies;
-		strategies = strategiesScratch;
-		strategiesScratch = swap;
+		strategies = strategiesNext;
+		strategiesNext = swap;
 		updateStrategiesTypeCount();
 	}
 
@@ -1606,12 +1606,12 @@ public class IBSDPopulation extends IBSPopulation {
 	public boolean becomesVacantAt(int index) {
 		if (VACANT < 0)
 			return false;
-		return strategiesScratch[index] % nTraits == VACANT;
+		return strategiesNext[index] % nTraits == VACANT;
 	}
 
 	@Override
 	public void commitStrategyAt(int me) {
-		int newstrat = strategiesScratch[me];
+		int newstrat = strategiesNext[me];
 		int newtype = newstrat % nTraits;
 		int oldtype = strategies[me] % nTraits;
 		strategies[me] = newstrat; // the type may be the same but nevertheless it could have changed
@@ -1823,8 +1823,8 @@ public class IBSDPopulation extends IBSPopulation {
 		// start allocating memory
 		if (strategies == null || strategies.length != nPopulation)
 			strategies = new int[nPopulation];
-		if (strategiesScratch == null || strategiesScratch.length != nPopulation)
-			strategiesScratch = new int[nPopulation];
+		if (strategiesNext == null || strategiesNext.length != nPopulation)
+			strategiesNext = new int[nPopulation];
 		if (traitCount == null || traitCount.length != nTraits)
 			traitCount = new int[nTraits];
 		if (traitScore == null || traitScore.length != nTraits)
@@ -2329,7 +2329,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * @return {@code false} if no actions taken (should not happen)
 	 */
 	private boolean mouseSetHit(int hit, int strategy) {
-		strategiesScratch[hit] = strategy;
+		strategiesNext[hit] = strategy;
 
 		/* this is a strategy change - need to adjust scores */
 		if (adjustScores) {
