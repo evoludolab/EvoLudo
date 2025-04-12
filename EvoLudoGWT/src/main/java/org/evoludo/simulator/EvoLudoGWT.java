@@ -308,6 +308,13 @@ public class EvoLudoGWT extends EvoLudo {
 		super.fireModelReset();
 	}
 
+	@Override
+	public synchronized void fireSettingsChanged() {
+		if (activeModel != null)
+			statisticsAt = activeModel.getNSamples();
+		super.fireSettingsChanged();
+	}
+
 	public synchronized void fireModelStopped() {
 		// model may already have been unloaded
 		if (activeModel == null)
