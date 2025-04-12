@@ -1244,6 +1244,9 @@ public abstract class EvoLudo
 					if (mode == Mode.STATISTICS_SAMPLE) {
 						// do not notify listeners, preserve statistics
 						modelReset(true);
+					} else {
+						// stop running
+						isRunning = false;
 					}
 				} else {
 					// mode unchanged
@@ -1333,7 +1336,7 @@ public abstract class EvoLudo
 			case STATISTICS_SAMPLE:
 				// check if new sample completed
 				activeModel.readStatisticsSample();
-				// note: calling fireModelChanged doesn't work because MODE_STATISTICS
+				// note: calling fireModelChanged doesn't work because STATISTICS_SAMPLE
 				// prevents firing
 				if (pendingAction == PendingAction.NONE)
 					pendingAction = PendingAction.STATISTIC_READY;
