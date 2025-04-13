@@ -38,6 +38,7 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.modules.Features.Scores;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
@@ -470,8 +471,7 @@ public class ODE extends Model implements Discrete {
 		double maxFit = -Double.MAX_VALUE;
 		dependents = new int[nSpecies];
 		rates = new double[nSpecies];
-		invFitRange = new double[nSpecies];
-		Arrays.fill(invFitRange, 1.0);
+		invFitRange = null;
 		idxSpecies = new int[nSpecies + 1];
 		nDim = 0;
 		int idx = 0;
@@ -481,20 +481,26 @@ public class ODE extends Model implements Discrete {
 			int nTraits = mod.getNTraits();
 			idxSpecies[idx] = nDim;
 			rates[idx] = mod.getSpeciesUpdateRate();
-			Map2Fitness map2fit = mod.getMapToFitness();
-			minFit = map2fit.map(mod.getMinGameScore());
-			maxFit = map2fit.map(mod.getMaxGameScore());
-			if (maxFit > minFit)
-				invFitRange[idx] = 1.0 / (maxFit - minFit);
+			if (mod instanceof Scores) {
+				if (invFitRange == null || invFitRange.length != nSpecies) {
+					invFitRange = new double[nSpecies];
+					Arrays.fill(invFitRange, 1.0);
+				}
+				Map2Fitness map2fit = mod.getMapToFitness();
+				minFit = map2fit.map(mod.getMinGameScore());
+				maxFit = map2fit.map(mod.getMaxGameScore());
+				if (maxFit > minFit)
+					invFitRange[idx] = 1.0 / (maxFit - minFit);
+			}
 			idx++;
 			nDim += nTraits;
 		}
 		idxSpecies[nSpecies] = nDim;
 		if (yt == null || yt.length != nDim) {
 			yt = new double[nDim];
-			ft = new double[nDim];
 			dyt = new double[nDim];
 			yout = new double[nDim];
+			ft = new double[nDim];
 		}
 		names = getMeanNames();
 

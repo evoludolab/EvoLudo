@@ -319,26 +319,28 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 			String tag = ibs.getTagNameAt(id, node);
 			if (tag != null)
 				tip.append("<tr><td><i>Tag:</i></td><td>" + tag + "</td></tr>");
-			// with payoff-to-fitness report score first, then fitness (see below)
-			boolean noFitMap = module.getMapToFitness().isMap(Map2Fitness.Map.NONE);
-			String label = (noFitMap ? "Fitness" : "Score");
-			if (type == Data.FITNESS) {
-				// fitness: use color-data to color strategy
-				tip.append("<tr><td><i>" + label + ":</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
-						"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getScoreNameAt(id, node)
-						+ "</td></tr>");
-			} else {
-				tip.append(
-						"<tr><td><i>" + label + ":</i></td><td>" + model.getScoreNameAt(id, node) + "</td></tr>");
-			}
-			if (!noFitMap)
-				tip.append("<tr><td><i>Fitness:</i></td><td>" + model.getFitnessNameAt(id, node) + "</td></tr>");
-			int count = ibs.getInteractionsAt(id, node);
-			if (count >= 0) {
-				if (count == Integer.MAX_VALUE)
-					tip.append("<tr><td><i>Interactions:</i></td><td>all</td></tr>");
-				else
-					tip.append("<tr><td><i>Interactions:</i></td><td>" + count + "</td></tr>");
+			if (!module.isContact()) {
+				// with payoff-to-fitness report score first, then fitness (see below)
+				boolean noFitMap = module.getMapToFitness().isMap(Map2Fitness.Map.NONE);
+				String label = (noFitMap ? "Fitness" : "Score");
+				if (type == Data.FITNESS) {
+					// fitness: use color-data to color strategy
+					tip.append("<tr><td><i>" + label + ":</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
+							"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getScoreNameAt(id, node)
+							+ "</td></tr>");
+				} else {
+					tip.append(
+							"<tr><td><i>" + label + ":</i></td><td>" + model.getScoreNameAt(id, node) + "</td></tr>");
+				}
+				if (!noFitMap)
+					tip.append("<tr><td><i>Fitness:</i></td><td>" + model.getFitnessNameAt(id, node) + "</td></tr>");
+				int count = ibs.getInteractionsAt(id, node);
+				if (count >= 0) {
+					if (count == Integer.MAX_VALUE)
+						tip.append("<tr><td><i>Interactions:</i></td><td>all</td></tr>");
+					else
+						tip.append("<tr><td><i>Interactions:</i></td><td>" + count + "</td></tr>");
+				}
 			}
 
 			Geometry intergeom = module.getInteractionGeometry();

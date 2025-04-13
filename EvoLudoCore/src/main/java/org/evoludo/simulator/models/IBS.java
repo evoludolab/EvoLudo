@@ -622,10 +622,14 @@ public abstract class IBS extends Model {
 		// all populations need to be updated/reset before scores can be calculated for
 		// inter-species interactions
 		for (Module mod : species) {
+			if (mod.isContact())
+				continue;
 			IBSPopulation pop = mod.getIBSPopulation();
 			pop.resetScores();
 		}
 		for (Module mod : species) {
+			if (mod.isContact())
+				continue;
 			IBSPopulation pop = mod.getIBSPopulation();
 			pop.updateScores();
 		}
@@ -1866,7 +1870,8 @@ public abstract class IBS extends Model {
 		super.collectCLO(parser);
 		if (species.size() > 1)
 			parser.addCLO(speciesUpdate.clo);
-		PopulationUpdate pup = species.get(0).getIBSPopulation().getPopulationUpdate();
+		IBSPopulation ibs = species.get(0).getIBSPopulation();
+		PopulationUpdate pup = ibs.getPopulationUpdate();
 		parser.addCLO(pup.clo);
 		parser.addCLO(cloMigration);
 		parser.addCLO(cloGeometryRewire);
@@ -1879,11 +1884,13 @@ public abstract class IBS extends Model {
 		boolean anyVacant = false;
 		boolean anyNonVacant = false;
 		boolean allStatic = true;
+		boolean allContact = true;
 		for (Module mod : species) {
 			int vacant = mod.getVacant();
 			anyVacant |= vacant >= 0;
 			anyNonVacant |= vacant < 0;
 			allStatic &= mod.isStatic();
+			allContact &= mod.isContact();
 		}
 		if (anyNonVacant) {
 			// additional options that only make sense without vacant sites
@@ -1897,9 +1904,9 @@ public abstract class IBS extends Model {
 			pup.clo.addKey(PopulationUpdate.Type.ECOLOGY);
 			pup.clo.setDefault(PopulationUpdate.Type.ECOLOGY.getKey());
 		}
-		if (!allStatic) {
-			// options that are only meaningful if at least some populations do not
-			// have static fitness
+		if (!(allStatic || allContact)) {
+			// options that are only meaningful if at least some populations have
+			// (non-static) fitness
 			parser.addCLO(cloAccumulatedScores);
 			parser.addCLO(cloScoringType);
 			cloScoringType.clearKeys();
@@ -1909,6 +1916,14 @@ public abstract class IBS extends Model {
 			cloInteractions.addKeys(IBSGroup.SamplingType.values());
 			parser.addCLO(cloGeometryInteraction);
 			parser.addCLO(cloGeometryCompetition);
+		}
+		if (allContact) {
+			// options that do not make sense for contact processes
+			// remove Moran updating
+			CLOption opt = pup.clo;
+			opt.removeKey(PopulationUpdate.Type.MORAN_BIRTHDEATH);
+			opt.removeKey(PopulationUpdate.Type.MORAN_DEATHBIRTH);
+			opt.removeKey(PopulationUpdate.Type.MORAN_IMITATE);
 		}
 	}
 
@@ -1944,7 +1959,12 @@ public abstract class IBS extends Model {
 		/**
 		 * Determine payoffs/fitness calculated only for updating.
 		 */
-		EPHEMERAL("ephemeral", "payoffs for updating only");
+		EPHEMERAL("ephemeral", "payoffs for updating only"),
+
+		/**
+		 * Individuals do not have payoffs/fitness.
+		 */
+		NONE("none", "no payoffs");
 
 		/**
 		 * Key of population update type. Used for parsing command line options.

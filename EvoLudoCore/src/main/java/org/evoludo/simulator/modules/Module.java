@@ -251,8 +251,10 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @see MilestoneListener#moduleLoaded()
 	 */
 	public void load() {
-		map2fitness = new Map2Fitness(this, Map2Fitness.Map.NONE);
-		playerUpdate = new PlayerUpdate(this);
+		if (!isContact()) {
+			map2fitness = new Map2Fitness(this, Map2Fitness.Map.NONE);
+			playerUpdate = new PlayerUpdate(this);
+		}
 		// currently only the Test module uses neither Discrete nor Continuous classes.
 		if (species == null)
 			species = new ArrayList<Module>();
@@ -1671,9 +1673,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	@Override
 	public void collectCLO(CLOParser parser) {
 		// prepare command line options
-		map2fitness.clo.addKeys(Map2Fitness.Map.values());
-		parser.addCLO(map2fitness.clo);
-
 		if (this instanceof Features.Groups)
 			parser.addCLO(cloNGroup);
 
@@ -1696,20 +1695,27 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 
 		boolean anyVacant = false;
 		boolean anyNonVacant = false;
+		boolean allContact = true;
 		int minTraits = Integer.MAX_VALUE;
 		int maxTraits = -Integer.MAX_VALUE;
-		for (Module pop : species) {
-			boolean hasVacant = (pop.getVacant() >= 0);
+		for (Module mod : species) {
+			boolean hasVacant = (mod.getVacant() >= 0);
 			anyVacant |= hasVacant;
 			anyNonVacant |= !hasVacant;
-			int nt = pop.getNTraits();
+			allContact &= mod.isContact();
+			int nt = mod.getNTraits();
 			minTraits = Math.min(minTraits, nt);
 			maxTraits = Math.min(maxTraits, nt);
 		}
-		if (anyNonVacant) {
-			// additional options that only make sense without vacant sites
-			playerUpdate.clo.addKeys(PlayerUpdate.Type.values());
-			parser.addCLO(playerUpdate.clo);
+		if (!allContact) {
+			// omit fitness mapping for contact modules
+			map2fitness.clo.addKeys(Map2Fitness.Map.values());
+			parser.addCLO(map2fitness.clo);
+			if (anyNonVacant) {
+				// additional options that only make sense without vacant sites
+				playerUpdate.clo.addKeys(PlayerUpdate.Type.values());
+				parser.addCLO(playerUpdate.clo);
+			}
 		}
 		if (anyVacant) {
 			parser.addCLO(cloDeathRate);
