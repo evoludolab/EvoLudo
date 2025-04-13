@@ -224,22 +224,22 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 							500);
 					cMap = cMap1D;
 					// cMap1D.setRange(module.getMinFitness(), module.getMaxFitness());
-					int tag = graph.getModule().getID();
-					cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
+					int id = graph.getModule().getID();
+					cMap1D.setRange(model.getMinScore(id), model.getMaxScore(id));
 					if (model.isIBS()) {
 						Map2Fitness map2fit = module.getMapToFitness();
 						if (cmodel != null) {
 							// hardcoded colors for min/max mono scores
-							cMap1D.setColor(map2fit.map(cmodel.getMinMonoScore(tag)),
+							cMap1D.setColor(map2fit.map(cmodel.getMinMonoScore(id)),
 									ColorMap.addAlpha(Color.BLUE.darker(), 220));
-							cMap1D.setColor(map2fit.map(cmodel.getMaxMonoScore(tag)),
+							cMap1D.setColor(map2fit.map(cmodel.getMaxMonoScore(id)),
 									ColorMap.addAlpha(Color.BLUE.brighter(), 220));
 						} else if (dmodel != null) {
 							// mark homogeneous fitness values by pale color
 							Color[] pure = module.getTraitColors();
 							int nMono = module.getNTraits();
 							for (int n = 0; n < nMono; n++)
-								cMap1D.setColor(map2fit.map(dmodel.getMonoScore(tag, n)),
+								cMap1D.setColor(map2fit.map(dmodel.getMonoScore(id, n)),
 										new Color(Math.max(pure[n].getRed(), 127),
 												Math.max(pure[n].getGreen(), 127),
 												Math.max(pure[n].getBlue(), 127), 220));

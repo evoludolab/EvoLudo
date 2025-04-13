@@ -244,6 +244,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 					cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
 					if (model.isIBS()) {
 						Map2Fitness map2fit = module.getMapToFitness();
+						int id = module.getID();
 						if (module instanceof Discrete) {
 							// mark homogeneous fitness values by pale color
 							Color[] pure = module.getTraitColors();
@@ -251,7 +252,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 							for (int n = 0; n < nMono; n++) {
 								// cast is save because pop is Discrete
 								org.evoludo.simulator.models.Discrete dmodel = (org.evoludo.simulator.models.Discrete) model;
-								double mono = dmodel.getMonoScore(module.getID(), n);
+								double mono = dmodel.getMonoScore(id, n);
 								if (Double.isNaN(mono))
 									continue;
 								cMap1D.setColor(map2fit.map(mono),
@@ -265,9 +266,9 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 							// cast is save because pop is Continuous
 							org.evoludo.simulator.models.Continuous cmodel = (org.evoludo.simulator.models.Continuous) model;
 							// hardcoded colors for min/max mono scores
-							cMap1D.setColor(map2fit.map(cmodel.getMinMonoScore(module.getID())),
+							cMap1D.setColor(map2fit.map(cmodel.getMinMonoScore(id)),
 									ColorMap.addAlpha(Color.BLUE.darker(), 220));
-							cMap1D.setColor(map2fit.map(cmodel.getMaxMonoScore(module.getID())),
+							cMap1D.setColor(map2fit.map(cmodel.getMaxMonoScore(id)),
 									ColorMap.addAlpha(Color.BLUE.brighter(), 220));
 							break;
 						}

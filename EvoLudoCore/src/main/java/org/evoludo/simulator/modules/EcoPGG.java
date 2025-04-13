@@ -43,6 +43,7 @@ import org.evoludo.simulator.models.ODE.HasODE;
 import org.evoludo.simulator.models.PDE.HasPDE;
 import org.evoludo.simulator.models.Advection;
 import org.evoludo.simulator.models.SDE.HasSDE;
+import org.evoludo.simulator.modules.Features.Scores;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -60,7 +61,7 @@ import org.evoludo.util.Formatter;
  * 
  * @author Christoph Hauert
  */
-public class EcoPGG extends Discrete implements 
+public class EcoPGG extends Discrete implements Scores, 
 		HasIBS.DGroups, HasODE, HasSDE, HasPDE,
 		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy, HasS3, HasPhase2D,
 		HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness,

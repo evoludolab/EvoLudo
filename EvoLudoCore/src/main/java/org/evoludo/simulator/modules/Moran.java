@@ -40,6 +40,7 @@ import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.ODE.HasODE;
 import org.evoludo.simulator.models.PDE.HasPDE;
 import org.evoludo.simulator.models.SDE.HasSDE;
+import org.evoludo.simulator.modules.Features.Static;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
@@ -72,7 +73,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class Moran extends Discrete implements Module.Static,
+public class Moran extends Discrete implements Static,
 		IBS.HasIBS, HasODE, HasSDE, HasPDE, HasPop2D.Strategy, HasPop3D.Strategy,
 		HasMean.Strategy, HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness,
 		HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsProbability,

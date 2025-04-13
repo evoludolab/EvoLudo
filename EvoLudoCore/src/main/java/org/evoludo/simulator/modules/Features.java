@@ -30,6 +30,8 @@
 
 package org.evoludo.simulator.modules;
 
+import org.evoludo.simulator.models.Model;
+
 /**
  * Interface to query features of the Module.
  * 
@@ -38,9 +40,27 @@ package org.evoludo.simulator.modules;
 public interface Features {
 
 	/**
-	 * Returns whether payoffs/fitness are static ({@code false} by default).
+	 * Modules that are based on contact processes should implement the
+	 * {@link Contact} interface and thus return {@code true}. All other modules
+	 * must return {@code false}.
 	 * 
-	 * @return {@code true} if static
+	 * @return {@code true} if contact process
+	 * 
+	 * @see SIR
+	 */
+	public default boolean isContact() {
+		return false;
+	}
+
+	/**
+	 * Modules that are based on static fitness should implement the {@link Static}
+	 * interface and thus return {@code true}. The {@link Moran} modules is an
+	 * example. All other modules must return {@code false}.
+	 * 
+	 * @return {@code false} by default
+	 * 
+	 * @see org.evoludo.simulator.modules.Moran
+	 * @see Static
 	 */
 	public default boolean isStatic() {
 		return false;
@@ -60,11 +80,23 @@ public interface Features {
 	}
 
 	/**
+	 * Interface that all modules based on contact processes should implement. The
+	 * {@link SIR} module is an example.
+	 */
+	public interface Contact extends Features {
+
+		@Override
+		public default boolean isContact() {
+			return true;
+		}
+	}
+
+	/**
 	 * Interface that all modules with static fitness/payoffs should implement. The
 	 * original Moran process is an example, see
 	 * {@link org.evoludo.simulator.modules.Moran}.
 	 */
-	public interface Static extends Features {
+	public interface Static extends Scores {
 
 		@Override
 		public default boolean isStatic() {
@@ -77,6 +109,52 @@ public interface Features {
 		 * @return the array with the static scores
 		 */
 		public double[] getStaticScores();
+	}
+
+	/**
+	 * Interface that all modules with frequency dependent fitness/payoffs should
+	 * implement. The classical {@code 2x2} games is an example, see
+	 * {@link org.evoludo.simulator.modules.TBT}.
+	 */
+	public interface Scores extends Features {
+
+		/**
+		 * Calculates and returns the minimum payoff/score of an individual. This value
+		 * is important for converting payoffs/scores into probabilities, for scaling
+		 * graphical output and some optimizations.
+		 * 
+		 * @return the minimum payoff/score
+		 * 
+		 * @see Model#getMinScore(int)
+		 */
+		public abstract double getMinGameScore();
+
+		/**
+		 * Calculates and returns the maximum payoff/score of an individual. This value
+		 * is important for converting payoffs/scores into probabilities, for scaling
+		 * graphical output and some optimizations.
+		 * 
+		 * @return the maximum payoff/score
+		 * 
+		 * @see Model#getMaxScore(int)
+		 */
+		public abstract double getMaxGameScore();
+
+		/**
+		 * Calculates and returns the minimum payoff/score of individuals in monomorphic
+		 * populations.
+		 * 
+		 * @return the minimum payoff/score in monomorphic populations
+		 */
+		public abstract double getMinMonoGameScore();
+
+		/**
+		 * Calculates and returns the maximum payoff/score of individuals in monomorphic
+		 * populations.
+		 * 
+		 * @return the maximum payoff/score in monomorphic populations
+		 */
+		public abstract double getMaxMonoGameScore();
 	}
 
 	/**

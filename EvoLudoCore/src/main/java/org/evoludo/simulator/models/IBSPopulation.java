@@ -74,7 +74,7 @@ public abstract class IBSPopulation {
 	protected EvoLudo engine;
 
 	/**
-	 * The module associated with this model.
+	 * The module associated with this population.
 	 */
 	protected Module module;
 
@@ -84,7 +84,7 @@ public abstract class IBSPopulation {
 	protected Module.Static staticmodule;
 
 	/**
-	 * Gets the module asociated with this population.
+	 * Gets the module associated with this population.
 	 * 
 	 * @return the module associated with this population
 	 */
@@ -2351,7 +2351,7 @@ public abstract class IBSPopulation {
 	 * 
 	 * @see #resetScoreAt(int)
 	 */
-	private boolean updatePlayerAt(int me, int[] refGroup, int rGroupSize) {
+	public boolean updatePlayerAt(int me, int[] refGroup, int rGroupSize) {
 		if (rGroupSize <= 0)
 			return false;
 

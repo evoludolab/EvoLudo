@@ -775,42 +775,48 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * Calculates and returns the minimum payoff/score of an individual. This value
-	 * is important for converting payoffs/scores into probabilities, for scaling
-	 * graphical output and some optimizations.
+	 * Returns the minimum payoff/score of an individual.
 	 * 
 	 * @return the minimum payoff/score
 	 * 
-	 * @see Model#getMinScore(int)
+	 * @see Scores#getMinGameScore()
 	 */
-	public abstract double getMinGameScore();
+	public double getMinGameScore() {
+		throw new UnsupportedOperationException("Implement Payoffs interface");
+	}
 
 	/**
-	 * Calculates and returns the maximum payoff/score of an individual. This value
-	 * is important for converting payoffs/scores into probabilities, for scaling
-	 * graphical output and some optimizations.
+	 * Returns the maximum payoff/score of an individual.
 	 * 
 	 * @return the maximum payoff/score
 	 * 
-	 * @see Model#getMaxScore(int)
+	 * @see Scores#getMaxGameScore()
 	 */
-	public abstract double getMaxGameScore();
+	public double getMaxGameScore() {
+		throw new UnsupportedOperationException("Implement Payoffs interface");
+	}
 
 	/**
-	 * Calculates and returns the minimum payoff/score of individuals in monomorphic
-	 * populations.
+	 * Returns the minimum payoff/score of an individual in monomorphic populations.
 	 * 
-	 * @return the minimum payoff/score in monomorphic populations
+	 * @return the minimum payoff/score
+	 * 
+	 * @see Scores#getMinGameScore()
 	 */
-	public abstract double getMinMonoGameScore();
+	public double getMinMonoGameScore() {
+		throw new UnsupportedOperationException("Implement Payoffs interface");
+	}
 
 	/**
-	 * Calculates and returns the maximum payoff/score of individuals in monomorphic
-	 * populations.
+	 * Returns the maximum payoff/score of an individual in monomorphic populations.
 	 * 
-	 * @return the maximum payoff/score in monomorphic populations
+	 * @return the maximum payoff/score
+	 * 
+	 * @see Scores#getMaxGameScore()
 	 */
-	public abstract double getMaxMonoGameScore();
+	public double getMaxMonoGameScore() {
+		throw new UnsupportedOperationException("Implement Payoffs interface");
+	}
 
 	/**
 	 * Checks whether dynamic is neutral, i.e. no selection acting on the different
