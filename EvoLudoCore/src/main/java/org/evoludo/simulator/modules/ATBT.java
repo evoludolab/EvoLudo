@@ -710,7 +710,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 		private boolean processEnvironmentalAsymmetryAt(int me, boolean changed) {
 			if (!environmentalAsymmetry)
 				return changed;
-			int oldtype = strategies[me] % nTraits;
+			int oldtype = getTraitAt(me);
 			if (changed) {
 				int newtype = strategiesNext[me] % nTraits;
 				// only strategies can be adopted

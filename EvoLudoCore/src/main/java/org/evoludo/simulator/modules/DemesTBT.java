@@ -245,7 +245,7 @@ public class DemesTBT extends TBT {
 				int skip = d * sizeDemes;
 				Arrays.fill(demeTypeCount[d], 0);
 				for (int n = 0; n < sizeDemes; n++)
-					demeTypeCount[d][strategies[skip + n] % nTraits]++;
+					demeTypeCount[d][getTraitAt(skip + n)]++;
 			}
 			resetStatistics();
 			startStatistics();
@@ -439,7 +439,7 @@ public class DemesTBT extends TBT {
 		public void commitStrategyAt(int me) {
 			int deme = me / sizeDemes;
 			int newstrat = strategiesNext[me];
-			int oldtype = strategies[me] % nTraits;
+			int oldtype = getTraitAt(me);
 			demeTypeCount[deme][oldtype]--;
 			demeTypeCount[deme][newstrat % nTraits]++;
 			super.commitStrategyAt(me);
@@ -452,7 +452,7 @@ public class DemesTBT extends TBT {
 				int skip = d * sizeDemes;
 				Arrays.fill(demeTypeCount[d], 0);
 				for (int n = 0; n < sizeDemes; n++)
-					demeTypeCount[d][strategies[skip + n] % nTraits]++;
+					demeTypeCount[d][getTraitAt(skip + n)]++;
 			}
 		}
 

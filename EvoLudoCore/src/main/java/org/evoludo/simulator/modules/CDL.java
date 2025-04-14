@@ -32,7 +32,6 @@ package org.evoludo.simulator.modules;
 
 import java.awt.Color;
 import java.io.PrintStream;
-import java.util.Arrays;
 
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
@@ -974,7 +973,7 @@ public class CDL extends Discrete implements Scores,
 				initUniform();
 				return;
 			}
-			Arrays.fill(strategiesTypeCount, 0);
+			initMono(CDL.COOPERATE);
 			int r, c, mid, size;
 			switch (getInteractionGeometry().getType()) {
 				case CUBE:
@@ -988,9 +987,6 @@ public class CDL extends Discrete implements Scores,
 					}
 					int l2 = l * l;
 					int m = l / 2;
-					Arrays.fill(strategies, CDL.COOPERATE);
-					Arrays.fill(strategiesTypeCount, 0);
-					strategiesTypeCount[CDL.COOPERATE] = nPopulation;
 					if (l % 2 == 0) { // even number of sites
 						// since NOVA has even numbers of pixels along each side, place a 4x4x4 cube of
 						// D's in the center
@@ -998,11 +994,11 @@ public class CDL extends Discrete implements Scores,
 						for (int z = mz - 2; z < mz + 2; z++)
 							for (int y = m - 2; y < m + 2; y++)
 								for (int x = m - 2; x < m + 2; x++)
-									strategies[z * l2 + y * l + x] = CDL.DEFECT;
+									setTraitAt(z * l2 + y * l + x, CDL.DEFECT);
 						for (int z = mz - 1; z < mz + 1; z++)
 							for (int y = m - 1; y < m + 1; y++)
 								for (int x = m - 1; x < m + 1; x++)
-									strategies[z * l2 + y * l + x] = CDL.LONER;
+								setTraitAt(z * l2 + y * l + x, CDL.LONER);
 						strategiesTypeCount[CDL.LONER] += 2 * 2 * 2;
 						strategiesTypeCount[CDL.DEFECT] += 4 * 4 * 4 - 2 * 2 * 2;
 						strategiesTypeCount[CDL.COOPERATE] -= 4 * 4 * 4;
@@ -1012,11 +1008,11 @@ public class CDL extends Discrete implements Scores,
 						for (int z = mz - 2; z < mz + 3; z++)
 							for (int y = m - 2; y < m + 3; y++)
 								for (int x = m - 2; x < m + 3; x++)
-									strategies[z * l2 + y * l + x] = CDL.DEFECT;
+								setTraitAt(z * l2 + y * l + x, CDL.DEFECT);
 						for (int z = mz - 1; z < mz + 2; z++)
 							for (int y = m - 1; y < m + 2; y++)
 								for (int x = m - 1; x < m + 2; x++)
-									strategies[z * l2 + y * l + x] = CDL.LONER;
+								setTraitAt(z * l2 + y * l + x, CDL.LONER);
 						strategiesTypeCount[CDL.LONER] += 3 * 3 * 3;
 						strategiesTypeCount[CDL.DEFECT] += 5 * 5 * 5 - 3 * 3 * 3;
 						strategiesTypeCount[CDL.COOPERATE] -= 5 * 5 * 5;
@@ -1027,59 +1023,53 @@ public class CDL extends Discrete implements Scores,
 				case SQUARE_NEUMANN_2ND:
 				case SQUARE_MOORE:
 				case SQUARE:
-					Arrays.fill(strategies, CDL.COOPERATE);
-					Arrays.fill(strategiesTypeCount, 0);
-					strategiesTypeCount[CDL.COOPERATE] = nPopulation;
 					size = (int) Math.floor(Math.sqrt(nPopulation) + 0.5);
 					mid = size / 2;
 					/* border around center */
 					int cells = 5;
 					for (r = -cells / 2; r <= cells / 2; r++)
 						for (c = -cells / 2; c <= cells / 2; c++)
-							strategies[(mid + r) * size + mid + c] = CDL.DEFECT;
+							setTraitAt((mid + r) * size + mid + c, CDL.DEFECT);
 					/* square in center */
 					cells = 3;
 					for (r = -cells / 2; r <= cells / 2; r++)
 						for (c = -cells / 2; c <= cells / 2; c++)
-							strategies[(mid + r) * size + mid + c] = CDL.LONER;
+							setTraitAt((mid + r) * size + mid + c, CDL.LONER);
 					strategiesTypeCount[CDL.LONER] += 3 * 3;
 					strategiesTypeCount[CDL.DEFECT] += 5 * 5 - 3 * 3;
 					strategiesTypeCount[CDL.COOPERATE] -= 5 * 5;
 					break;
 
 				case HONEYCOMB:
-					Arrays.fill(strategies, CDL.COOPERATE);
-					Arrays.fill(strategiesTypeCount, 0);
-					strategiesTypeCount[CDL.COOPERATE] = nPopulation;
 					mid = (int) Math.floor(nPopulation + Math.sqrt(nPopulation) + 0.5) / 2;
 					size = (int) Math.floor(Math.sqrt(nPopulation) + 0.5);
-					strategies[mid] = CDL.LONER;
-					strategies[mid + 1] = CDL.LONER;
-					strategies[mid - 1] = CDL.LONER;
-					strategies[mid - size] = CDL.LONER;
-					strategies[mid + size] = CDL.LONER;
-					strategies[mid + 2] = CDL.DEFECT;
-					strategies[mid - 2] = CDL.DEFECT;
-					strategies[mid - 2 * size] = CDL.DEFECT;
-					strategies[mid + 2 * size] = CDL.DEFECT;
-					strategies[mid - 2 * size - 1] = CDL.DEFECT;
-					strategies[mid + 2 * size - 1] = CDL.DEFECT;
-					strategies[mid - 2 * size + 1] = CDL.DEFECT;
-					strategies[mid + 2 * size + 1] = CDL.DEFECT;
+					setTraitAt(mid, CDL.LONER);
+					setTraitAt(mid + 1, CDL.LONER);
+					setTraitAt(mid - 1, CDL.LONER);
+					setTraitAt(mid - size, CDL.LONER);
+					setTraitAt(mid + size, CDL.LONER);
+					setTraitAt(mid + 2, CDL.DEFECT);
+					setTraitAt(mid - 2, CDL.DEFECT);
+					setTraitAt(mid - 2 * size, CDL.DEFECT);
+					setTraitAt(mid + 2 * size, CDL.DEFECT);
+					setTraitAt(mid - 2 * size - 1, CDL.DEFECT);
+					setTraitAt(mid + 2 * size - 1, CDL.DEFECT);
+					setTraitAt(mid - 2 * size + 1, CDL.DEFECT);
+					setTraitAt(mid + 2 * size + 1, CDL.DEFECT);
 					if (mid % 2 == 1) {
-						strategies[mid - size + 1] = CDL.LONER;
-						strategies[mid + size + 1] = CDL.LONER;
-						strategies[mid - size - 1] = CDL.DEFECT;
-						strategies[mid + size - 1] = CDL.DEFECT;
-						strategies[mid - size + 2] = CDL.DEFECT;
-						strategies[mid + size + 2] = CDL.DEFECT;
+						setTraitAt(mid - size + 1, CDL.LONER);
+						setTraitAt(mid + size + 1, CDL.LONER);
+						setTraitAt(mid - size - 1, CDL.DEFECT);
+						setTraitAt(mid + size - 1, CDL.DEFECT);
+						setTraitAt(mid - size + 2, CDL.DEFECT);
+						setTraitAt(mid + size + 2, CDL.DEFECT);
 					} else {
-						strategies[mid - size - 1] = CDL.LONER;
-						strategies[mid + size - 1] = CDL.LONER;
-						strategies[mid - size + 1] = CDL.DEFECT;
-						strategies[mid + size + 1] = CDL.DEFECT;
-						strategies[mid - size - 2] = CDL.DEFECT;
-						strategies[mid + size - 2] = CDL.DEFECT;
+						setTraitAt(mid - size - 1, CDL.LONER);
+						setTraitAt(mid + size - 1, CDL.LONER);
+						setTraitAt(mid - size + 1, CDL.DEFECT);
+						setTraitAt(mid + size + 1, CDL.DEFECT);
+						setTraitAt(mid - size - 2, CDL.DEFECT);
+						setTraitAt(mid + size - 2, CDL.DEFECT);
 					}
 					strategiesTypeCount[CDL.LONER] += 7;
 					strategiesTypeCount[CDL.DEFECT] += 12;
@@ -1087,37 +1077,34 @@ public class CDL extends Discrete implements Scores,
 					break;
 
 				case TRIANGULAR:
-					Arrays.fill(strategies, CDL.COOPERATE);
-					Arrays.fill(strategiesTypeCount, 0);
-					strategiesTypeCount[CDL.COOPERATE] = nPopulation;
 					mid = (int) Math.floor(nPopulation + Math.sqrt(nPopulation) + 0.5) / 2;
 					size = (int) Math.floor(Math.sqrt(nPopulation) + 0.5);
-					strategies[mid] = CDL.LONER;
-					strategies[mid - 1] = CDL.LONER;
-					strategies[mid + 1] = CDL.LONER;
-					strategies[mid + size] = CDL.LONER;
-					strategies[mid + 2] = CDL.DEFECT;
-					strategies[mid - 2] = CDL.DEFECT;
-					strategies[mid + 2 + size] = CDL.DEFECT;
-					strategies[mid - 2 + size] = CDL.DEFECT;
-					strategies[mid + 1 + size] = CDL.DEFECT;
-					strategies[mid - 1 + size] = CDL.DEFECT;
-					strategies[mid + 1 - size] = CDL.DEFECT;
-					strategies[mid - 1 - size] = CDL.DEFECT;
-					strategies[mid - size] = CDL.DEFECT;
+					setTraitAt(mid, CDL.LONER);
+					setTraitAt(mid - 1, CDL.LONER);
+					setTraitAt(mid + 1, CDL.LONER);
+					setTraitAt(mid + size, CDL.LONER);
+					setTraitAt(mid + 2, CDL.DEFECT);
+					setTraitAt(mid - 2, CDL.DEFECT);
+					setTraitAt(mid + 2 + size, CDL.DEFECT);
+					setTraitAt(mid - 2 + size, CDL.DEFECT);
+					setTraitAt(mid + 1 + size, CDL.DEFECT);
+					setTraitAt(mid - 1 + size, CDL.DEFECT);
+					setTraitAt(mid + 1 - size, CDL.DEFECT);
+					setTraitAt(mid - 1 - size, CDL.DEFECT);
+					setTraitAt(mid - size, CDL.DEFECT);
 
-					strategies[mid + 2 - size] = CDL.DEFECT;
-					strategies[mid - 2 - size] = CDL.DEFECT;
-					strategies[mid + 3] = CDL.DEFECT;
-					strategies[mid - 3] = CDL.DEFECT;
-					strategies[mid + 3 - size] = CDL.LONER;
-					strategies[mid - 3 - size] = CDL.LONER;
-					strategies[mid + 2 * size] = CDL.LONER;
-					strategies[mid + 2 * size - 1] = CDL.DEFECT;
-					strategies[mid + 2 * size + 1] = CDL.DEFECT;
-					strategies[mid + 4 - size] = CDL.DEFECT;
-					strategies[mid - 4 - size] = CDL.DEFECT;
-					strategies[mid + 3 * size] = CDL.DEFECT;
+					setTraitAt(mid + 2 - size, CDL.DEFECT);
+					setTraitAt(mid - 2 - size, CDL.DEFECT);
+					setTraitAt(mid + 3, CDL.DEFECT);
+					setTraitAt(mid - 3, CDL.DEFECT);
+					setTraitAt(mid + 3 - size, CDL.LONER);
+					setTraitAt(mid - 3 - size, CDL.LONER);
+					setTraitAt(mid + 2 * size, CDL.LONER);
+					setTraitAt(mid + 2 * size - 1, CDL.DEFECT);
+					setTraitAt(mid + 2 * size + 1, CDL.DEFECT);
+					setTraitAt(mid + 4 - size, CDL.DEFECT);
+					setTraitAt(mid - 4 - size, CDL.DEFECT);
+					setTraitAt(mid + 3 * size, CDL.DEFECT);
 
 					strategiesTypeCount[CDL.LONER] += 13;
 					strategiesTypeCount[CDL.DEFECT] += 9;

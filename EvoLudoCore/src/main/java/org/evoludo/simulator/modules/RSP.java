@@ -32,7 +32,6 @@ package org.evoludo.simulator.modules;
 
 import java.awt.Color;
 import java.io.PrintStream;
-import java.util.Arrays;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
@@ -307,9 +306,7 @@ public class RSP extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasS
 				initUniform();
 				return;
 			}
-			Arrays.fill(strategies, RSP.ROCK);
-			Arrays.fill(strategiesTypeCount, 0);
-			strategiesTypeCount[RSP.ROCK] = nPopulation;
+			initMono(RSP.ROCK);
 			int mid, size;
 			switch (interaction.getType()) {
 				case SQUARE_NEUMANN:
@@ -322,10 +319,10 @@ public class RSP extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasS
 					int width = 20, height = 5;
 					for (int w = mid - width / 2; w <= mid + width / 2; w++)
 						for (int h = mid; h <= mid + height; h++)
-							strategies[h * size + w] = RSP.SCISSORS;
+							setTraitAt(h * size + w, RSP.SCISSORS);
 					for (int w = mid - width / 2; w <= mid + width / 2; w++)
 						for (int h = mid - height; h <= mid; h++)
-							strategies[h * size + w] = RSP.PAPER;
+							setTraitAt(h * size + w, RSP.PAPER);
 					strategiesTypeCount[RSP.ROCK] -= 10 * 20;
 					strategiesTypeCount[RSP.SCISSORS] += 5 * 20;
 					strategiesTypeCount[RSP.PAPER] += 5 * 20;

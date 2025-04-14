@@ -403,7 +403,7 @@ public class TBT extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasS
 			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
 				return super.getTraitNameAt(idx);
 			int side = (int) Math.sqrt(nPopulation);
-			int trait = strategies[idx] % nTraits;
+			int trait = getTraitAt(idx);
 			if ((idx / side) % 2 == (idx % side) % 2)
 				return module.getTraitName(trait);
 			return module.getTraitName(nTraits + trait);
@@ -435,12 +435,12 @@ public class TBT extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasS
 			int side = (int) Math.sqrt(nPopulation);
 			while (n < nPopulation) {
 				if ((n / side) % 2 == 0) {
-					mean[strategies[n++] % nTraits]++;
-					mean[nTraits + (strategies[n++] % nTraits)]++;
+					mean[getTraitAt(n++)]++;
+					mean[nTraits + getTraitAt(n++)]++;
 					continue;
 				} 
-				mean[nTraits + (strategies[n++] % nTraits)]++;
-				mean[strategies[n++] % nTraits]++;
+				mean[nTraits + getTraitAt(n++)]++;
+				mean[getTraitAt(n++)]++;
 			}
 			ArrayMath.multiply(mean, 2.0 / nPopulation);
 			System.arraycopy(mean, 0, tsTraits, 0, mean.length);
@@ -466,12 +466,12 @@ public class TBT extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasS
 			int side = (int) Math.sqrt(nPopulation);
 			while (n < nPopulation) {
 				if ((n / side) % 2 == 0) {
-					mean[strategies[n] % nTraits] += getFitnessAt(n++);
-					mean[nTraits + (strategies[n] % nTraits)] += getFitnessAt(n++);
+					mean[getTraitAt(n)] += getFitnessAt(n++);
+					mean[nTraits + getTraitAt(n)] += getFitnessAt(n++);
 					continue;
 				}
-				mean[nTraits + (strategies[n] % nTraits)] += getFitnessAt(n++);
-				mean[strategies[n] % nTraits] += getFitnessAt(n++);
+				mean[nTraits + getTraitAt(n)] += getFitnessAt(n++);
+				mean[getTraitAt(n)] += getFitnessAt(n++);
 			}
 			// total payoff in last entry
 			mean[2 * nTraits] = sumFitness * 0.25;
@@ -504,6 +504,7 @@ public class TBT extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasS
 			}
 			int mid = -1;
 			Arrays.fill(strategiesTypeCount, 0);
+			initMono(TBT.COOPERATE);
 			switch (interaction.getType()) {
 				case CUBE:
 					int l, mz;
@@ -525,15 +526,15 @@ public class TBT extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasS
 								// odd dimensions (this excludes NOVA, hence mz=m)
 								// place single TBT.DEFECT in center
 								mid = m * (l2 + l + 1);
-								strategiesTypeCount[strategies[mid] % nTraits]--;
-								strategies[mid] = TBT.DEFECT;
+								strategiesTypeCount[TBT.COOPERATE]--;
+								setTraitAt(mid, TBT.DEFECT);
 								strategiesTypeCount[TBT.DEFECT]++;
 							} else {
 								// even dimensions - place 2x2x2 cube of TBT.DEFECTors in center
 								for (int z = mz - 1; z <= mz; z++)
 									for (int y = m - 1; y <= m; y++)
 										for (int x = m - 1; x <= m; x++)
-											strategies[z * l2 + y * l + x] = TBT.DEFECT;
+											setTraitAt(z * l2 + y * l + x, TBT.DEFECT);
 								strategiesTypeCount[TBT.COOPERATE] -= 2 * 2 * 2;
 								strategiesTypeCount[TBT.DEFECT] += 2 * 2 * 2;
 							}
@@ -544,7 +545,7 @@ public class TBT extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasS
 								for (int z = mz - 1; z <= mz + 1; z++)
 									for (int y = m - 1; y <= m + 1; y++)
 										for (int x = m - 1; x <= m + 1; x++)
-											strategies[z * l2 + y * l + x] = TBT.COOPERATE;
+											setTraitAt(z * l2 + y * l + x, TBT.COOPERATE);
 								strategiesTypeCount[TBT.DEFECT] -= 3 * 3 * 3;
 								strategiesTypeCount[TBT.COOPERATE] += 3 * 3 * 3;
 							} else {
@@ -552,7 +553,7 @@ public class TBT extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasS
 								for (int z = mz - 2; z <= mz + 1; z++)
 									for (int y = m - 2; y <= m + 1; y++)
 										for (int x = m - 2; x <= m + 1; x++)
-											strategies[z * l2 + y * l + x] = TBT.COOPERATE;
+											setTraitAt(z * l2 + y * l + x, TBT.COOPERATE);
 								strategiesTypeCount[TBT.DEFECT] -= 4 * 4 * 4;
 								strategiesTypeCount[TBT.COOPERATE] += 4 * 4 * 4;
 							}
@@ -574,12 +575,9 @@ public class TBT extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasS
 				case LINEAR:
 					if (mid < 0)
 						mid = nPopulation / 2;
-					int restrait = TBT.COOPERATE;
-					Arrays.fill(strategies, restrait);
-					int muttrait = (restrait + 1) % nTraits;
-					strategies[mid] = muttrait;
-					strategiesTypeCount[restrait] = nPopulation - 1;
-					strategiesTypeCount[muttrait] = 1;
+					setTraitAt(mid, TBT.DEFECT);
+					strategiesTypeCount[TBT.COOPERATE]--;
+					strategiesTypeCount[TBT.DEFECT] = 1;
 					break;
 
 				default:

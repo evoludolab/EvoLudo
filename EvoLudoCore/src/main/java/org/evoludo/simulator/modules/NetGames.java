@@ -501,10 +501,9 @@ public class NetGames extends Discrete implements Scores, HasIBS,
 		@Override
 		public synchronized void reset() {
 			super.reset();
-			// free memory that is not needed
+			// free memory that is not needed (strategies not needed as well...)
 			fitness = null;
 			interactions = null;
-			strategies = null;
 			strategiesNext = null;
 			tags = null;
 		}
