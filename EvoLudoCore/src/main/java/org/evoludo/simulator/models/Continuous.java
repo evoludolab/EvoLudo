@@ -31,7 +31,7 @@
 package org.evoludo.simulator.models;
 
 /**
- * Common interface for all models with continuous strategy sets.
+ * Common interface for all models with continuous traits.
  */
 public interface Continuous {
 

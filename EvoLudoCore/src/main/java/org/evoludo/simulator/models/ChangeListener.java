@@ -43,9 +43,9 @@ public interface ChangeListener {
 	 * a <code>pendingAction</code>. Valid requests are:
 	 * <ul>
 	 * <li><code>NONE</code>: No action requested, continue.
-	 * <li><code>INIT</code> Initialize model (re-initialize strategies, stop
+	 * <li><code>INIT</code> Initialize model (re-initialize traits, stop
 	 * execution).
-	 * <li><code>RESET</code>: Reset model (re-initialize geometry and strategies,
+	 * <li><code>RESET</code>: Reset model (re-initialize geometry and traits,
 	 * stop execution).
 	 * <li><code>SHUTDOWN</code>: Unload model (stop execution).
 	 * <li><code>STOP</code>: Stop execution.
@@ -66,12 +66,12 @@ public interface ChangeListener {
 		SHUTDOWN,
 
 		/**
-		 * Initialize model (re-initialize strategies, stop execution).
+		 * Initialize model (re-initialize traits, stop execution).
 		 */
 		INIT,
 
 		/**
-		 * Reset model (re-initialize geometry and strategies, stop execution).
+		 * Reset model (re-initialize geometry and traits, stop execution).
 		 */
 		RESET,
 

@@ -89,8 +89,8 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 	@Override
 	public String getName() {
 		switch (type) {
-			case STRATEGY:
-				return "Strategies - Mean";
+			case TRAIT:
+				return "Traits - Mean";
 			case FITNESS:
 				return "Fitness - Mean";
 			default:
@@ -103,7 +103,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 		ArrayList<? extends Module> species = engine.getModule().getSpecies();
 		int nGraphs = 0;
 		// multiple line graphs for multi-species interactions and in case of multiple
-		// traits for continuous strategies
+		// traits for continuous traits
 		for (Module module : species) {
 			if (model.isContinuous())
 				nGraphs += module.getNTraits();
@@ -148,7 +148,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 			Module module = graph.getModule();
 
 			switch (type) {
-				case STRATEGY:
+				case TRAIT:
 					state = new double[nMean];
 					if (cmodel != null) {
 						// continuous module with single trait on graph (single species, for now)
@@ -277,7 +277,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 				int id = module.getID();
 				int nState = model.getNMean(id);
 				switch (type) {
-					case STRATEGY:
+					case TRAIT:
 						if (newmod) {
 							idx = 0;
 							model.getMeanTraits(id, state);

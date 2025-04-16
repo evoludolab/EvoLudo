@@ -101,7 +101,7 @@ public class Phase2D extends AbstractView {
 
 	@Override
 	public String getName() {
-		return "Strategies - 2D Phase Plane";
+		return "Traits - 2D Phase Plane";
 	}
 
 	@Override

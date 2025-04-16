@@ -46,8 +46,8 @@ public abstract interface HasPop2D {
 
 	/**
 	 * {@link org.evoludo.simulator.modules.Module Module}s that implement the
-	 * {@code HasPop2D.Strategy} interface include 2D graphical visualizations of
-	 * the geometry of the population where nodes display the color coded strategy
+	 * {@code HasPop2D.Traits} interface include 2D graphical visualizations of
+	 * the geometry of the population where nodes display the color coded trait
 	 * of each individual. For discrete modules each trait has a distinct colour,
 	 * whereas for continuous modules the traits are shown on a color gradient
 	 * between the minimum and maximum trait values.
@@ -55,7 +55,7 @@ public abstract interface HasPop2D {
 	 * @see org.evoludo.simulator.views.Pop2D
 	 * @see org.evoludo.simulator.views.MVPop2D
 	 */
-	public interface Strategy extends HasPop2D {
+	public interface Traits extends HasPop2D {
 	}
 
 	/**

@@ -41,7 +41,7 @@ import org.evoludo.util.Formatter;
 
 /**
  * Base class for individual based simulation models, IBS, with a single or
- * multiple continuous traits/strategies. This class deals with initialization
+ * multiple continuous traits. This class deals with initialization
  * and mutation types but the heavy lifting is done by the {@link IBS} parent.
  * 
  * @author Christoph Hauert
@@ -50,7 +50,7 @@ public class IBSC extends IBS implements Continuous {
 
 	/**
 	 * Creates a population of individuals for IBS simulations with continuous
-	 * traits/strategies.
+	 * traits.
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */

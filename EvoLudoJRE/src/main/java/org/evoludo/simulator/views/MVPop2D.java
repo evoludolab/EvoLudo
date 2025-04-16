@@ -371,7 +371,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 					return "<html><i>Node:</i> " + (node % nNodes) + "<br><i>Time:</i> " + Formatter.format(-t, 2);
 				}
 				String[] s = module.getTraitNames();
-				String names = "<br><i>Strategies:</i> " + s[0];
+				String names = "<br><i>Traits:</i> " + s[0];
 				for (int n = 1; n < s.length; n++)
 					names += ", " + s[n];
 				String density = "<br><i>Densities:&nbsp;</i> " + model.getTraitNameAt(tag, node);

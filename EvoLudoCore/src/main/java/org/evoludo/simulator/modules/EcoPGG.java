@@ -63,7 +63,7 @@ import org.evoludo.util.Formatter;
  */
 public class EcoPGG extends Discrete implements Scores, 
 		HasIBS.DGroups, HasODE, HasSDE, HasPDE,
-		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy, HasS3, HasPhase2D,
+		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasS3, HasPhase2D,
 		HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness,
 		HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsStationary {
 

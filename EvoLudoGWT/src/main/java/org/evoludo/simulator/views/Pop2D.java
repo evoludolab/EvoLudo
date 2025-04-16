@@ -195,7 +195,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 
 			ColorMap<String> cMap = null;
 			switch (type) {
-				case STRATEGY:
+				case TRAIT:
 					if (model.isContinuous()) {
 						ColorModelType cmt = engine.getColorModelType();
 						int nTraits = module.getNTraits();

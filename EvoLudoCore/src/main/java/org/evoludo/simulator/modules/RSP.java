@@ -61,22 +61,22 @@ import org.evoludo.util.Formatter;
  * @author Christoph Hauert
  */
 public class RSP extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasSDE, HasPDE,
-		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy, HasS3, HasPop2D.Fitness,
+		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasS3, HasPop2D.Fitness,
 		HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree,
 		HasHistogram.StatisticsStationary {
 
 	/**
-	 * The trait (and index) value of the strategy 'rock'.
+	 * The trait (and index) value of the trait 'rock'.
 	 */
 	public static final int ROCK = 0;
 
 	/**
-	 * The trait (and index) value of the strategy 'scissors'.
+	 * The trait (and index) value of the trait 'scissors'.
 	 */
 	public static final int SCISSORS = 1;
 
 	/**
-	 * The trait (and index) value of the strategy 'paper'.
+	 * The trait (and index) value of the trait 'paper'.
 	 */
 	public static final int PAPER = 2;
 
@@ -104,7 +104,7 @@ public class RSP extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasS
 		names[SCISSORS] = "Scissors";
 		names[PAPER] = "Paper";
 		setTraitNames(names);
-		// trait colors (automatically generates lighter versions for new strategists)
+		// trait colors (automatically generates lighter versions for new traits)
 		Color[] colors = new Color[nTraits];
 		colors[ROCK] = Color.BLUE;
 		// yellow has too little contrast
@@ -176,7 +176,7 @@ public class RSP extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasS
 						+ traitCount[PAPER] * payoff[PAPER][PAPER];
 
 			default: // should not end here
-				throw new Error("Unknown strategy (" + me + ")");
+				throw new Error("Unknown trait (" + me + ")");
 		}
 	}
 
@@ -236,7 +236,7 @@ public class RSP extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasS
 				 * Parse the payoff matrix for {@code 3×3} games. The argument must have
 				 * the form {@code 'a00,a01,a02;a10,11,a12;a20,a21,a22'} where {@code aij}
 				 * refers to the payoff to an individual of type {@code i} interacting with a
-				 * type {@code j} strategist.
+				 * type {@code j} trait.
 				 * <p>
 				 * Note '{@value CLOParser#VECTOR_DELIMITER}' separates entries in 1D arrays and
 				 * '{@value CLOParser#MATRIX_DELIMITER}' separates rows in 2D arrays.

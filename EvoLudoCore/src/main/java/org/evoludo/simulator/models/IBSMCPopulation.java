@@ -46,11 +46,11 @@ import org.evoludo.util.Plist;
 
 /**
  * The core class for individual based simulations with <em>multiple</em>
- * continuous traits/strategies. Manages the strategies of the population, while
- * delegating the management of the population and individual fitness as well as
- * simulation steps to super. Note that some further optimizations and
- * simplifications are possible in the special case of a single continuous
- * trait/strategy, which is handled in the subclass {@link IBSCPopulation}.
+ * continuous traits. Manages the traits of the population, while delegating the
+ * management of the population and individual fitness as well as simulation
+ * steps to super. Note that some further optimizations and simplifications are
+ * possible in the special case of a single continuous trait, which is handled
+ * in the subclass {@link IBSCPopulation}.
  * 
  * @author Christoph Hauert
  * 
@@ -184,25 +184,25 @@ public class IBSMCPopulation extends IBSPopulation {
 
 	/**
 	 * The array of individual traits. The traits of individual {@code i} are stored
-	 * at {@code strategies[i * nTraits]} through
-	 * {@code strategies[(i + 1) * nTraits - 1]}
+	 * at {@code traits[i * nTraits]} through
+	 * {@code traits[(i + 1) * nTraits - 1]}
 	 */
 	public double[] traits;
 
 	/**
-	 * The array for temporarily storing strategies during updates.
+	 * The array for temporarily storing traits during updates.
 	 */
 	protected double[] traitsNext;
 
 	/**
-	 * Temporary storage for strategies/traits of individuals in group interactions.
+	 * Temporary storage for traits of individuals in group interactions.
 	 */
 	protected double[] tmpGroup;
 
 	/**
 	 * Temporary storage for traits of individuals in small sub-group interactions.
 	 */
-	protected double[] smallStrat;
+	protected double[] smallTrait;
 
 	/**
 	 * Temporary storage for the traits of the focal individual.
@@ -276,25 +276,25 @@ public class IBSMCPopulation extends IBSPopulation {
 	}
 
 	/**
-	 * Mutate all traits/strategies of the focal individual with index {@code focal}
-	 * if {@code mutate == true}. In all cases commit strategies and update scores.
+	 * Mutate all traits of the focal individual with index {@code focal}
+	 * if {@code mutate == true}. In all cases commit traits and update scores.
 	 * 
 	 * @param focal    the index of the focal individual that gets updated
 	 * @param switched {@code true} if focal already switched trait
-	 * @return {@code true} if the strategy has changed
+	 * @return {@code true} if the trait has changed
 	 */
 	private boolean mutateAt(int focal, boolean switched) {
 		int dest = focal * nTraits;
-		double[] strat = switched ? traitsNext : traits;
+		double[] trait = switched ? traitsNext : traits;
 		for (int i = 0; i < nTraits; i++)
-			traitsNext[dest + i] = mutation.mutate(strat[dest + i]);
+			traitsNext[dest + i] = mutation.mutate(trait[dest + i]);
 		return true;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * Here we introduce the convention the trait/strategy closer to {@code me} is
+	 * Here we introduce the convention the trait closer to {@code me} is
 	 * preferred.
 	 */
 	@Override
@@ -307,7 +307,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	}
 
 	/**
-	 * Measure the (Cartesian) distance between strategies at {@code a} and
+	 * Measure the (Cartesian) distance between traits at {@code a} and
 	 * {@code b}
 	 * 
 	 * @param a the index where the traits of the first individual start
@@ -483,9 +483,9 @@ public class IBSMCPopulation extends IBSPopulation {
 					Arrays.fill(smallScores, 0, group.nSampled, 0.0);
 					for (int n = 0; n < group.nSampled; n++) {
 						for (int i = 0; i < nGroup - 1; i++)
-							System.arraycopy(tmpGroup, ((n + i) % group.nSampled) * nTraits, smallStrat, i * nTraits,
+							System.arraycopy(tmpGroup, ((n + i) % group.nSampled) * nTraits, smallTrait, i * nTraits,
 									nTraits);
-						myScore += groupmodule.groupScores(myTrait, smallStrat, nGroup - 1, groupScores);
+						myScore += groupmodule.groupScores(myTrait, smallTrait, nGroup - 1, groupScores);
 						if (ephemeralScores)
 							continue;
 						for (int i = 0; i < nGroup - 1; i++)
@@ -533,9 +533,9 @@ public class IBSMCPopulation extends IBSPopulation {
 			Arrays.fill(smallScores, 0, group.nSampled, 0.0);
 			for (int n = 0; n < group.nSampled; n++) {
 				for (int i = 0; i < nGroup - 1; i++)
-					System.arraycopy(tmpGroup, ((n + i) % group.nSampled) * nTraits, smallStrat, i * nTraits,
+					System.arraycopy(tmpGroup, ((n + i) % group.nSampled) * nTraits, smallTrait, i * nTraits,
 							nTraits);
-				myScore += groupmodule.groupScores(myTrait, smallStrat, nGroup - 1, groupScores);
+				myScore += groupmodule.groupScores(myTrait, smallTrait, nGroup - 1, groupScores);
 				for (int i = 0; i < nGroup - 1; i++)
 					smallScores[(n + i) % group.nSampled] += groupScores[i];
 			}
@@ -844,8 +844,8 @@ public class IBSMCPopulation extends IBSPopulation {
 		int maxGroup = groupScores.length;
 		if (tmpGroup == null || tmpGroup.length != maxGroup * nTraits)
 			tmpGroup = new double[maxGroup * nTraits];
-		if (smallStrat == null || smallStrat.length != maxGroup * nTraits)
-			smallStrat = new double[maxGroup * nTraits];
+		if (smallTrait == null || smallTrait.length != maxGroup * nTraits)
+			smallTrait = new double[maxGroup * nTraits];
 		if (meantrait == null || meantrait.length != 2 * nTraits)
 			meantrait = new double[2 * nTraits];
 		if (adjustScores) {

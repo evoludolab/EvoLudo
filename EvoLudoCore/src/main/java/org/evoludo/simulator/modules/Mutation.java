@@ -237,7 +237,7 @@ public abstract class Mutation {
 			double mu1;
 			switch ((Type) type) {
 				case ALL:
-					// mutations to any strategy
+					// mutations to any trait
 					dim = to - from;
 					mu1 = 1.0 - probability;
 					double muid = probability / dim;
@@ -247,7 +247,7 @@ public abstract class Mutation {
 						change[i] = change[i] * mu1 + muid * (1.0 - dim * state[i]);
 					break;
 				case OTHER:
-					// mutations to any of the _other_ strategies
+					// mutations to any of the _other_ traits
 					dim = to - from;
 					mu1 = 1.0 - probability;
 					double muid1 = probability / (dim - 1);
@@ -257,7 +257,7 @@ public abstract class Mutation {
 						change[i] = change[i] * mu1 + muid1 * (1.0 - dim * state[i]);
 					break;
 				case RANGE:
-					// mutations to any of the _other_ strategies at most range traits away
+					// mutations to any of the _other_ traits at most range traits away
 					dim = to - from;
 					int irange = (int) range;
 					mu1 = 1.0 - probability;

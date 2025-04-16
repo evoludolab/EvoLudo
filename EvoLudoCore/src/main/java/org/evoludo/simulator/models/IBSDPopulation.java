@@ -48,10 +48,9 @@ import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
 /**
- * The core class for individual based simulations with discrete
- * traits/strategies. Manages the traits of the population, while delegating the
- * management of the population and individual fitness as well as simulation
- * steps to super.
+ * The core class for individual based simulations with discrete traits. Manages
+ * the traits of the population, while delegating the management of the
+ * population and individual fitness as well as simulation steps to super.
  *
  * @author Christoph Hauert
  * 
@@ -246,7 +245,7 @@ public class IBSDPopulation extends IBSPopulation {
 			super.updatePlayerMoranBirthDeath();
 			return;
 		}
-		// for two strategies, we need to consider only the nodes of the rarer type but
+		// for two traits, we need to consider only the nodes of the rarer type but
 		// both in- as well as out-links
 		if (nTraits == 2) {
 			int rareType = (traitsCount[1] < traitsCount[0] ? 1 : 0);
@@ -304,7 +303,7 @@ public class IBSDPopulation extends IBSPopulation {
 			return;
 		}
 
-		// default, more than two strategies - check all nodes
+		// default, more than two traits - check all nodes
 		// create list of active links
 		// birth-death: keep track of all nodes that have different downstream neighbors
 		int nact = 0;
@@ -478,11 +477,11 @@ public class IBSDPopulation extends IBSPopulation {
 	@Override
 	public void updateFromModelAt(int index, int modelPlayer) {
 		super.updateFromModelAt(index, modelPlayer); // deal with tags
-		int newstrat = getTraitAt(modelPlayer);
-		int oldstrat = getTraitAt(index);
-		if (oldstrat != newstrat)
-			newstrat += nTraits;
-		traitsNext[index] = newstrat;
+		int newtrait = getTraitAt(modelPlayer);
+		int oldtrait = getTraitAt(index);
+		if (oldtrait != newtrait)
+			newtrait += nTraits;
+		traitsNext[index] = newtrait;
 	}
 
 	@Override
@@ -766,7 +765,7 @@ public class IBSDPopulation extends IBSPopulation {
 					groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpTraitScore);
 			} else {
 				// intra-species: evaluate performance of focal individual for all active
-				// strategies
+				// traits
 				size = stripVacancies(group, size, tmpTraits, tmpGroup);
 				countTraits(tmpCount, tmpTraits, 0, size);
 				for (int n = 0; n < nTraits; n++) {
@@ -888,7 +887,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 *
 	 * @param group   the group which potentially includes references to vacant
 	 *                sites
-	 * @param gTraits the array of strategies in the group
+	 * @param gTraits the array of traits in the group
 	 * @param gIdxs   the array of indices of the individuals in the group
 	 */
 	protected void stripGroupVacancies(IBSGroup group, int[] gTraits, int[] gIdxs) {
@@ -1235,8 +1234,8 @@ public class IBSDPopulation extends IBSPopulation {
 	 */
 	@Override
 	public void adjustGameScoresAt(int me) {
-		// check whether an actual strategy change has occurred
-		// NOTE: isSameStrategy() only works before committing strategy!
+		// check whether an actual trait change has occurred
+		// NOTE: isSameTrait() only works before committing trait!
 		if (isSameTrait(me)) {
 			commitTraitAt(me);
 			return;
@@ -1261,8 +1260,8 @@ public class IBSDPopulation extends IBSPopulation {
 			} else {
 				// XXX combinations of structured and unstructured populations require more
 				// attention
-				int newstrat = getTraitAt(me);
-				if (newstrat == VACANT) {
+				int newtrait = getTraitAt(me);
+				if (newtrait == VACANT) {
 					resetScoreAt(me);
 				} else {
 					// update score of 'me' based on opponent population
@@ -1272,7 +1271,7 @@ public class IBSDPopulation extends IBSPopulation {
 						pairmodule.mixedScores(opponent.traitsCount, tmpTraitScore);
 					else
 						groupmodule.mixedScores(opponent.traitsCount, nGroup, tmpTraitScore);
-					setScoreAt(me, tmpTraitScore[newstrat], nGroup * opponent.getPopulationSize());
+					setScoreAt(me, tmpTraitScore[newtrait], nGroup * opponent.getPopulationSize());
 				}
 			}
 		}
@@ -1363,13 +1362,12 @@ public class IBSDPopulation extends IBSPopulation {
 	 * <code>counts</code>.
 	 * <p>
 	 * <strong>Note:</strong> <code>offset</code> is convenient for hierarchical
-	 * structures and prevents copying parts of the <code>strategies</code> array.
+	 * structures and prevents copying parts of the <code>traits</code> array.
 	 *
-	 * @param counts the array to return the number of individuals with each
-	 *               trait/strategy
-	 * @param myTraits the array with the strategies/traits of he individuals
-	 * @param offset the offset into the array {@code traits} to start counting
-	 * @param len    the number of individuals to count
+	 * @param counts   the array to return the number of individuals with each trait
+	 * @param myTraits the array with the traits of the individuals
+	 * @param offset   the offset into the array {@code traits} to start counting
+	 * @param len      the number of individuals to count
 	 */
 	public void countTraits(int[] counts, int[] myTraits, int offset, int len) {
 		Arrays.fill(counts, 0);
@@ -1380,7 +1378,7 @@ public class IBSDPopulation extends IBSPopulation {
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * Reset the colors of recently changed strategies.
+	 * Reset the colors of recently changed trait.
 	 */
 	@Override
 	public void resetTraits() {
@@ -1396,7 +1394,7 @@ public class IBSDPopulation extends IBSPopulation {
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * For discrete modules, update the strategy count of each type and check if
+	 * For discrete modules, update the trait count of each type and check if
 	 * population reached a homogeneous state.
 	 */
 	@Override
@@ -1408,7 +1406,7 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	/**
-	 * Update the count of each trait/strategic type.
+	 * Update the count of each trait.
 	 * 
 	 * @see #traitsCount
 	 */
@@ -1419,9 +1417,9 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	/**
-	 * Gets the count of each trait/strategic type.
+	 * Gets the count of each trait.
 	 * 
-	 * @return count of each trait/strategic type
+	 * @return the array with the numbers of each trait
 	 */
 	public int[] getTraitsCount() {
 		return traitsCount;
@@ -1438,17 +1436,17 @@ public class IBSDPopulation extends IBSPopulation {
 		int[] checkTraitCount = new int[nTraits];
 		// scores array may not exist
 		for (int n = 0; n < nPopulation; n++) {
-			int stratn = getTraitAt(n);
-			checkTraitCount[stratn]++;
+			int traitn = getTraitAt(n);
+			checkTraitCount[traitn]++;
 			double scoren = getScoreAt(n);
 			checkScores += scoren;
-			checkAccuTypeScores[stratn] += scoren;
+			checkAccuTypeScores[traitn] += scoren;
 		}
-		int accStrat = 0;
+		int accTrait = 0;
 		double accScores = 0.0;
 		for (int n = 0; n < nTraits; n++) {
 			if (checkTraitCount[n] != traitsCount[n]) {
-				logger.warning("accounting issue: strategy count of trait " + module.getTraitName(n) + " is "
+				logger.warning("accounting issue: trait count of " + module.getTraitName(n) + " is "
 						+ checkTraitCount[n] + " but traitCount[" + n + "]="
 						+ traitsCount[n]);
 				passed = false;
@@ -1458,13 +1456,13 @@ public class IBSDPopulation extends IBSPopulation {
 						+ checkAccuTypeScores[n] + " but accuTypeScores[" + n + "]=" + accuTypeScores[n]);
 				passed = false;
 			}
-			accStrat += traitsCount[n];
+			accTrait += traitsCount[n];
 			if (n == VACANT)
 				continue;
 			accScores += accuTypeScores[n];
 		}
-		if (nPopulation != accStrat) {
-			logger.warning("accounting issue: sum of trait types is " + accStrat + " but nPopulation=" + nPopulation);
+		if (nPopulation != accTrait) {
+			logger.warning("accounting issue: sum of trait types is " + accTrait + " but nPopulation=" + nPopulation);
 			passed = false;
 		}
 		if (Math.abs(checkScores - accScores) > 1e-8) {
@@ -1524,10 +1522,10 @@ public class IBSDPopulation extends IBSPopulation {
 
 	@Override
 	public void commitTraitAt(int me) {
-		int newstrat = traitsNext[me];
-		int newtype = newstrat % nTraits;
+		int newtrait = traitsNext[me];
+		int newtype = newtrait % nTraits;
 		int oldtype = getTraitAt(me);
-		traits[me] = newstrat; // the type may be the same but nevertheless it could have changed
+		traits[me] = newtrait; // the type may be the same but nevertheless it could have changed
 		debugSame = (oldtype == newtype);
 		if (debugSame)
 			return;
@@ -1656,7 +1654,7 @@ public class IBSDPopulation extends IBSPopulation {
 
 	/**
 	 * Gets the traits of all individuals as indices. Those with indices in
-	 * {@code [0, nTraits)} denote individuals that have not changed strategy since
+	 * {@code [0, nTraits)} denote individuals that have not changed traits since
 	 * the previous report, while those in {@code [nTraits, 2*nTraits)} have.
 	 * 
 	 * @return the traits
@@ -1773,7 +1771,7 @@ public class IBSDPopulation extends IBSPopulation {
 			case EPHEMERAL:
 				// for ephemeral scoring, scores are never adjusted
 			case RESET_ON_CHANGE:
-				// if scores are reset only on an actual strategy change, scores
+				// if scores are reset only on an actual trait change, scores
 				// can never be adjusted
 				return false;
 		}
@@ -1834,8 +1832,8 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	/**
-	 * Initial configuration with uniform strategy frequencies of all
-	 * <em>active</em> strategies.
+	 * Initial configuration with uniform trait frequencies of all
+	 * <em>active</em> traits.
 	 * 
 	 * @see IBSD.Init.Type#UNIFORM
 	 */
@@ -1850,14 +1848,14 @@ public class IBSDPopulation extends IBSPopulation {
 			nact[idx++] = n;
 		}
 		for (int n = 0; n < nPopulation; n++) {
-			int aStrat = nact[random0n(nActive)];
-			setTraitAt(n, aStrat);
-			traitsCount[aStrat]++;
+			int aTrait = nact[random0n(nActive)];
+			setTraitAt(n, aTrait);
+			traitsCount[aTrait]++;
 		}
 	}
 
 	/**
-	 * Initial configuration with strategy frequencies as specified in arguments.
+	 * Initial configuration with trait frequencies as specified in arguments.
 	 * 
 	 * @see IBSD.Init.Type#FREQUENCY
 	 */
@@ -1873,16 +1871,16 @@ public class IBSDPopulation extends IBSPopulation {
 		ArrayMath.multiply(cumFreqs, inorm);
 
 		for (int n = 0; n < nPopulation; n++) {
-			int aStrat = -1;
+			int aTrait = -1;
 			double aRand = random01();
 			for (int i = 0; i < nTraits; i++) {
 				if (aRand < cumFreqs[i]) {
-					aStrat = i;
+					aTrait = i;
 					break;
 				}
 			}
-			setTraitAt(n, aStrat);
-			traitsCount[aStrat]++;
+			setTraitAt(n, aTrait);
+			traitsCount[aTrait]++;
 		}
 	}
 
@@ -2112,7 +2110,7 @@ public class IBSDPopulation extends IBSPopulation {
 
 	/**
 	 * Initial configuration with monomorphic stripes of each type to investigate
-	 * invasion properties of one strategy into another with at least one instance
+	 * invasion properties of one trait into another with at least one instance
 	 * of all possible pairings.
 	 * 
 	 * @see IBSD.Init.Type#STRIPES
@@ -2178,11 +2176,11 @@ public class IBSDPopulation extends IBSPopulation {
 
 	/**
 	 * Helper method to initialize lattice structures with homogeneous stripes of
-	 * each trait/strategic type.
+	 * each trait.
 	 * 
 	 * @param offset the offset to the start of the stripe
 	 * @param width  the width of the stripe
-	 * @param trait  the trait/stratgy of the stripe
+	 * @param trait  the trait of the stripe
 	 * 
 	 * @see #initStripes()
 	 */
@@ -2196,7 +2194,7 @@ public class IBSDPopulation extends IBSPopulation {
 
 	/**
 	 * Helper method to determine the number of stripes required so that each
-	 * trait/strategic type shares at least one interface with every other trait:
+	 * trait shares at least one interface with every other trait:
 	 * {@code nStripes = nTraits + 2 * sum(2, nTraits - 2)}. Procedure tested for
 	 * {@code 2, 3, 4, 5} traits.
 	 * 
@@ -2250,18 +2248,18 @@ public class IBSDPopulation extends IBSPopulation {
 
 	/**
 	 * Process event from GUI: individual with index {@code hit} was hit by mouse
-	 * (or tap) in order to set its strategy to {@code strategy}.
+	 * (or tap) in order to set its trait to {@code trait}.
 	 * 
-	 * @param hit      the index of the individual that was hit by mouse or tap
-	 * @param strategy the new strategy of the individual
+	 * @param hit   the index of the individual that was hit by mouse or tap
+	 * @param trait the new trait of the individual
 	 * @return {@code false} if no actions taken (should not happen)
 	 */
-	private boolean mouseSetHit(int hit, int strategy) {
-		traitsNext[hit] = strategy;
+	private boolean mouseSetHit(int hit, int trait) {
+		traitsNext[hit] = trait;
 
-		/* this is a strategy change - need to adjust scores */
+		/* this is a trait change - need to adjust scores */
 		if (adjustScores) {
-			adjustGameScoresAt(hit); // this also commits strategy
+			adjustGameScoresAt(hit); // this also commits trait
 		} else {
 			commitTraitAt(hit);
 			// when in doubt, recalculate everything for everyone
@@ -2274,7 +2272,7 @@ public class IBSDPopulation extends IBSPopulation {
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * <strong>Important:</strong> Strategies must already be restored!
+	 * <strong>Important:</strong> traits must already be restored!
 	 */
 	@Override
 	public boolean restoreFitness(Plist plist) {
@@ -2303,7 +2301,7 @@ public class IBSDPopulation extends IBSPopulation {
 
 	@Override
 	public void encodeTraits(StringBuilder plist) {
-		plist.append("<key>Strategies</key>\n<dict>\n");
+		plist.append("<key>Traits</key>\n<dict>\n");
 		String[] names = module.getTraitNames();
 		for (int n = 0; n < nTraits; n++)
 			plist.append(Plist.encodeKey(Integer.toString(n), names[n]));
@@ -2314,14 +2312,14 @@ public class IBSDPopulation extends IBSPopulation {
 	@Override
 	public boolean restoreTraits(Plist plist) {
 		@SuppressWarnings("unchecked")
-		List<Integer> strat = (List<Integer>) plist.get("Configuration");
-		if (strat == null || strat.size() != nPopulation)
+		List<Integer> config = (List<Integer>) plist.get("Configuration");
+		if (config == null || config.size() != nPopulation)
 			return false;
 		Arrays.fill(traitsCount, 0);
 		for (int n = 0; n < nPopulation; n++) {
-			int stratn = strat.get(n);
-			setTraitAt(n, stratn);
-			traitsCount[stratn % nTraits]++;
+			int traitn = config.get(n);
+			setTraitAt(n, traitn);
+			traitsCount[traitn % nTraits]++;
 		}
 		return true;
 	}

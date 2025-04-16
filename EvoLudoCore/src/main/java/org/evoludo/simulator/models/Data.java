@@ -34,8 +34,8 @@ package org.evoludo.simulator.models;
  * Data types that are handled by the model. Currently the following data types
  * are supported:
  * <dl>
- * <dt>Strategy
- * <dd>the data represents strategies.
+ * <dt>Trait
+ * <dd>the data represents traits.
  * <dt>Fitness
  * <dd>the data represents payoffs/scores/fitness.
  * <dt>Degree
@@ -45,7 +45,7 @@ package org.evoludo.simulator.models;
  * <dt>Fixation time
  * <dd>the data represents fixation times.
  * <dt>Stationary distribution
- * <dd>the data represents the stationary strategy distribution.
+ * <dd>the data represents the stationary trait distribution.
  * <dt>undefined
  * <dd>the data type is not defined/unknown.
  * </dl>
@@ -58,9 +58,9 @@ public enum Data {
 	UNDEFINED("undefined"), //
 
 	/**
-	 * Strategy: the data represents strategies.
+	 * Trait: the data represents traits.
 	 */
-	STRATEGY("Strategies - Histogram"), //
+	TRAIT("Traits - Histogram"), //
 
 	/**
 	 * Fitness: the data represents payoffs/scores/fitness.

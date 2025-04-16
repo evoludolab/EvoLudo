@@ -48,7 +48,7 @@ public abstract interface HasMean {
 	/**
 	 * {@link org.evoludo.simulator.modules.Module Module}s that implement this
 	 * interface request a {@link org.evoludo.graphics.LineGraph LineGraph}
-	 * that depicts the mean strategies of the population. For discrete modules with
+	 * that depicts the mean traits of the population. For discrete modules with
 	 * \(d\) traits the frequency/density of all traits is shown in a single panel.
 	 * In contrast, for continuous modules with \(d\) traits, \(d\) panels are shown
 	 * each depicting the mean \(\bar x_i\) of one trait together with its standard
@@ -59,7 +59,7 @@ public abstract interface HasMean {
 	 * method {@link org.evoludo.simulator.models.Model#getMeanTraits(int, double[])
 	 * Model.getMeanTraits(int, double[])}.
 	 */
-	public interface Strategy extends HasMean {
+	public interface Traits extends HasMean {
 	}
 
 	/**

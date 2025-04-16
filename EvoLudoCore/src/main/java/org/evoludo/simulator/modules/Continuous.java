@@ -1227,7 +1227,7 @@ public abstract class Continuous extends Module {
 		parser.addCLO(cloCosts);
 		cloBenefits.addKeys(Benefits.values());
 		parser.addCLO(cloBenefits);
-		// best-response is not an acceptable update rule for continuous strategies -
+		// best-response is not an acceptable update rule for continuous traits -
 		// exclude Population.PLAYER_UPDATE_BEST_RESPONSE
 		playerUpdate.clo.removeKey(PlayerUpdate.Type.BEST_RESPONSE);
 //TODO: implement enabling/disabling traits as in discrete case

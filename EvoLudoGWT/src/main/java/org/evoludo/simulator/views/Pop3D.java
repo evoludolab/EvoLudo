@@ -166,7 +166,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 			ColorMap<MeshLambertMaterial> cMap = null;
 			Module module = graph.getModule();
 			switch (type) {
-				case STRATEGY:
+				case TRAIT:
 					if (cmodel != null) {
 						ColorModelType cmt = engine.getColorModelType();
 						int nTraits = module.getNTraits();

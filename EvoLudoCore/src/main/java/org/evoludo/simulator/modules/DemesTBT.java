@@ -438,10 +438,10 @@ public class DemesTBT extends TBT {
 		@Override
 		public void commitTraitAt(int me) {
 			int deme = me / sizeDemes;
-			int newstrat = traitsNext[me];
+			int newtrait = traitsNext[me];
 			int oldtype = getTraitAt(me);
 			demeTypeCount[deme][oldtype]--;
-			demeTypeCount[deme][newstrat % nTraits]++;
+			demeTypeCount[deme][newtrait % nTraits]++;
 			super.commitTraitAt(me);
 		}
 
@@ -478,8 +478,8 @@ public class DemesTBT extends TBT {
 		 */
 		@Override
 		public void adjustGameScoresAt(int me) {
-			// check whether an actual strategy change has occurred
-			// note: isSameStrategy() only works before committing strategy!
+			// check whether an actual trait change has occurred
+			// note: isSameTrait() only works before committing trait!
 			if (isSameTrait(me)) {
 				commitTraitAt(me);
 				return;

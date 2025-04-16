@@ -38,7 +38,7 @@ import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
 
 /**
- * Parent class of all EvoLudo modules with discrete strategy sets.
+ * Parent class of all EvoLudo modules with discrete sets of traits.
  * 
  * @author Christoph Hauert
  */
@@ -67,7 +67,7 @@ public abstract class Discrete extends Module {
 	}
 
 	/**
-	 * Create new module with a discrete set of strategies.
+	 * Create new module with a discrete set of traits.
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
@@ -76,7 +76,7 @@ public abstract class Discrete extends Module {
 	}
 
 	/**
-	 * Create another module with a discrete set of strategies. The additional
+	 * Create another module with a discrete set of traits. The additional
 	 * module represents another species in multi-species modules that interact with
 	 * species {@code partner}.
 	 * 
@@ -87,7 +87,7 @@ public abstract class Discrete extends Module {
 	}
 
 	/**
-	 * Create a new module with a discrete set of strategies with pacemaker
+	 * Create a new module with a discrete set of traits with pacemaker
 	 * {@code engine} and interactions with module {@code partner}. If
 	 * {@code partner == null} this is a single species module and interactions
 	 * within species ({@code opponent == this} holds).
@@ -154,14 +154,13 @@ public abstract class Discrete extends Module {
 
 	/**
 	 * Calculate and return the payoff/score of individuals in monomorphic
-	 * populations with trait/strategy {@code type}.
+	 * populations with trait {@code type}.
 	 * <p>
 	 * <strong>Note:</strong> Optional implementation. Returns {@code Double#NaN}
 	 * if not defined or not implemented.
 	 * 
-	 * @param type trait/strategy
-	 * @return payoff/score in monomorphic population with trait/strategy
-	 *         {@code type}
+	 * @param type the index of the trait
+	 * @return payoff/score in monomorphic population with trait {@code type}
 	 */
 	public double getMonoGameScore(int type) {
 		return Double.NaN;

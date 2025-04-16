@@ -60,8 +60,8 @@ import org.evoludo.util.Formatter;
  */
 public class CDL extends Discrete implements Scores, 
 		HasIBS.DGroups, HasODE, HasSDE, HasPDE, 
-		HasPop2D.Strategy, HasPop3D.Strategy, HasPop2D.Fitness, HasPop3D.Fitness,
-		HasMean.Strategy, HasMean.Fitness, HasS3, 
+		HasPop2D.Traits, HasPop3D.Traits, HasPop2D.Fitness, HasPop3D.Fitness,
+		HasMean.Traits, HasMean.Fitness, HasS3, 
 		HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsStationary {
 
 	/**
@@ -155,7 +155,7 @@ public class CDL extends Discrete implements Scores,
 		names[DEFECT] = "Defector";
 		names[COOPERATE] = "Cooperator";
 		setTraitNames(names);
-		// trait colors (automatically generates lighter versions for new strategists)
+		// trait colors (automatically generates lighter versions for new traits)
 		Color[] colors = new Color[nTraits];
 		// yellow has too little contrast
 		colors[LONER] = new Color(238, 204, 17); // hex #eecc11
@@ -282,7 +282,7 @@ public class CDL extends Discrete implements Scores,
 				return x * r1 * 0.5 * costCoop + /* + y * 0.0 */ +z * payLoneDefect;
 
 			default: // should not end here
-				throw new Error("Unknown strategy (" + me + ")");
+				throw new Error("Unknown trait (" + me + ")");
 		}
 	}
 

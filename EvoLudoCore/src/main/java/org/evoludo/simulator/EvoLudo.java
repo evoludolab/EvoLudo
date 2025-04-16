@@ -405,7 +405,7 @@ public abstract class EvoLudo
 	 * The flag to indicate whether a reset of the active model has been requested.
 	 * This is necessary after certain parameter changes. For example, changing the
 	 * population size (see {@link IBSPopulation#nPopulation}) requires a reset to
-	 * (re)generate population geometries and initialize types/strategies.
+	 * (re)generate population geometries and initialize traits.
 	 */
 	private boolean resetRequested = true;
 

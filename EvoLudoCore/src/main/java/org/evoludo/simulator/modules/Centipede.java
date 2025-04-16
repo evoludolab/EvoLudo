@@ -53,8 +53,8 @@ import org.evoludo.util.Formatter;
  * The Centipede class provides an EvoLudo module for the centipede game.
  */
 public class Centipede extends Discrete implements Scores, HasIBS.DPairs,
-		HasPop2D.Strategy, HasPop2D.Fitness, HasPop3D.Strategy, HasPop3D.Fitness,
-		HasS3, HasMean.Strategy, HasMean.Fitness {
+		HasPop2D.Traits, HasPop2D.Fitness, HasPop3D.Traits, HasPop3D.Fitness,
+		HasS3, HasMean.Traits, HasMean.Fitness {
 
 	/**
 	 * The number of decision nodes in the centipede game.

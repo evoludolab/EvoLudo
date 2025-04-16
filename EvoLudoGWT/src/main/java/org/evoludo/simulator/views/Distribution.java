@@ -109,7 +109,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 
 	@Override
 	public String getName() {
-		return "Strategies - Distribution";
+		return "Traits - Distribution";
 	}
 
 	@Override
@@ -158,7 +158,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 				case FITNESS:
 					// not implemented
 					break;
-				case STRATEGY:
+				case TRAIT:
 					graph.setColorMap(new ColorMapCSS.Gradient1D(
 							new Color[] { Color.WHITE, Color.BLACK, Color.YELLOW, Color.RED }, 500));
 					Continuous cmod = (Continuous) module;
@@ -232,7 +232,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 			if (!doUpdate)
 				continue;
 			switch (type) {
-				case STRATEGY:
+				case TRAIT:
 					// process data first
 					// casts ok because trait histograms make sense only for continuous models
 					((org.evoludo.simulator.models.Continuous) model).get2DTraitHistogramData(graph.getModule().getID(), bins, traitXIdx,

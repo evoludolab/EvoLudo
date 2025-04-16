@@ -62,7 +62,7 @@ import org.evoludo.util.CLOption.CLODelegate;
  * <p>
  * The population update type can be set via the command line option {@code
  * --popupdate <u> [<p>]} where {@code <u>} is the population update type, and
- * {@code <p>} the fraction of individuals that reassess their strategy.
+ * {@code <p>} the fraction of individuals that reassess their trait.
  * 
  * @author Christoph Hauert
  */
@@ -205,7 +205,7 @@ public class PopulationUpdate {
 	 * <dl>
 	 * <dt>synchronous</dt>
 	 * <dd>Synchronized population updates. The number of individuals that reassess
-	 * their strategy is determined by an optional fraction following the key. The
+	 * their trait is determined by an optional fraction following the key. The
 	 * default is that all individuals update. For a fraction of zero one random
 	 * individual updates, which is the same as {@code asynchronous} but much less
 	 * efficient.</dd>
@@ -232,7 +232,7 @@ public class PopulationUpdate {
 
 		/**
 		 * Synchronized population updates. The number of individuals that reassess
-		 * their strategy is determined by an optional fraction following the key. The
+		 * their trait is determined by an optional fraction following the key. The
 		 * default is that all individuals update. For a fraction of zero one random
 		 * individual updates, which is the same as {@code asynchronous} but much less
 		 * efficient.

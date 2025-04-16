@@ -88,8 +88,8 @@ import org.evoludo.simulator.views.HasPop3D;
  */
 public class CSD extends Continuous implements 
 		HasIBS.CPairs, 
-		HasPop2D.Strategy, HasPop3D.Strategy, HasPop2D.Fitness, HasPop3D.Fitness,
-		HasMean.Strategy, HasMean.Fitness, 
+		HasPop2D.Traits, HasPop3D.Traits, HasPop2D.Fitness, HasPop3D.Fitness,
+		HasMean.Traits, HasMean.Fitness, 
 		HasHistogram.Strategy, HasDistribution.Strategy, HasHistogram.Fitness, 
 		HasHistogram.Degree {
 

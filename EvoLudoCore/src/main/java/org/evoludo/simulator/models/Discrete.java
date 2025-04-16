@@ -31,18 +31,18 @@
 package org.evoludo.simulator.models;
 
 /**
- * Common interface for all models with discrete strategy sets.
+ * Common interface for all models with discrete sets of traits.
  */
 public interface Discrete {
 
 	/**
 	 * Calculate and return the payoff/score of individuals in monomorphic
-	 * populations with trait/strategy {@code idx} but also deals with payoff
+	 * populations with trait {@code idx} but also deals with payoff
 	 * accounting (averaged versus accumulated).
 	 *
-	 * @param id   the id of the population for multi-species models
-	 * @param idx trait/strategy
-	 * @return payoff/score in monomorphic population with trait/strategy
+	 * @param id  the id of the population for multi-species models
+	 * @param idx the index of the trait
+	 * @return payoff/score in monomorphic population with trait
 	 *         {@code idx}. Returns {@code NaN} if scores ill defined
 	 * 
 	 * @see org.evoludo.simulator.modules.Discrete#getMonoGameScore(int)

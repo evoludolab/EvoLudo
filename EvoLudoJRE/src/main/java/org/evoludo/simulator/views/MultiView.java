@@ -174,14 +174,14 @@ public interface MultiView {
 		// query available views to deduce the data types to report
 		// individual data
 		boolean isODESDE = (model instanceof ODE && !(model instanceof PDE));
-		if (module instanceof HasPop2D.Strategy && !isODESDE)
+		if (module instanceof HasPop2D.Traits && !isODESDE)
 			dataOutputs.add(DataTypes.TRAITS);
 		if (module instanceof HasPop2D.Fitness && !isODESDE) {
 			dataOutputs.add(DataTypes.SCORES);
 			dataOutputs.add(DataTypes.FITNESS);
 		}
 		// mean data
-		if (module instanceof HasMean.Strategy || module instanceof HasPhase2D || module instanceof HasS3)
+		if (module instanceof HasMean.Traits || module instanceof HasPhase2D || module instanceof HasS3)
 			dataOutputs.add(DataTypes.MEAN);
 		if (module instanceof HasMean.Fitness)
 			dataOutputs.add(DataTypes.FITMEAN);

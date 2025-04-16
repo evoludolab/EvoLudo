@@ -62,22 +62,22 @@
 	data-clo="--module 2x2 --delay 50 --view Statistics_-_Fixation_probability --timestep 1 --geometry n --popsize 10x --popupdate d --interactions all --references random 1 --init mutant 1,0 --mutation 0.0 --paymatrix 1,0;1.25,0.25"></div></td>
 </tr>
 <tr><th>CDL</th><td><div class="evoludo-trigger-html"
-	data-clo="--module CDL --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --delay 50 --view Strategies_-_Simplex_S3 --timestep 1 --popsize 10000 --model IBS --popupdate async --playerupdate imitate-better 1 --geometry M --interactions all --references random 1 --init frequency 20,20,60 --mutation 0.0"></div>
+	data-clo="--module CDL --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --delay 50 --view Traits_-_Simplex_S3 --timestep 1 --popsize 10000 --model IBS --popupdate async --playerupdate imitate-better 1 --geometry M --interactions all --references random 1 --init frequency 20,20,60 --mutation 0.0"></div>
 <th>CDL (SDE)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module CDL --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --delay 50 --view Strategies_-_Simplex_S3 --timestep 1 --popsize 10000 --model SDE --playerupdate imitate-better 1 --init frequency 20,20,60 --mutation 0.0"></div>
+	data-clo="--module CDL --interest 3 --groupsize 5 --loner 1 --lonecoop 1 --lonedefect 1 --cost 1 --delay 50 --view Traits_-_Simplex_S3 --timestep 1 --popsize 10000 --model SDE --playerupdate imitate-better 1 --init frequency 20,20,60 --mutation 0.0"></div>
 </tr>
 <tr><th>Rock-Paper-Scissors (ODE)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module RSP --run --delay 50 --trajcolor (255,0,0,25) --points 0.5,0.333,0.167 --view Strategies_-_Simplex_S3 --timestep 0.1 --popsize 1000 --model ODE --popupdate async --playerupdate imitate 0.1 --geometry M --interactions all --references random 1 --init frequency 20,20,60 --mutation 0.0 --paymatrix 0,0.7,-1;-1,0,3.4;0.8,-1,0"></div>
+	data-clo="--module RSP --run --delay 50 --trajcolor (255,0,0,25) --points 0.5,0.333,0.167 --view Traits_-_Simplex_S3 --timestep 0.1 --popsize 1000 --model ODE --popupdate async --playerupdate imitate 0.1 --geometry M --interactions all --references random 1 --init frequency 20,20,60 --mutation 0.0 --paymatrix 0,0.7,-1;-1,0,3.4;0.8,-1,0"></div>
 <th>Rock-Paper-Scissors</th><td><div class="evoludo-trigger-html"
-	data-clo="--module RSP --delay 50 --trajcolor (255,0,0,25) --points 0.5,0.333,0.167 --view Strategies_-_Simplex_S3 --timestep 0.1 --popsize 1000 --popupdate d --geometry M --interactions all --references random 1 --init frequency 20,20,60 --mutation 0.0 --paymatrix 0,0.7,-1;-1,0,3.4;0.8,-1,0"></div>
+	data-clo="--module RSP --delay 50 --trajcolor (255,0,0,25) --points 0.5,0.333,0.167 --view Traits_-_Simplex_S3 --timestep 0.1 --popsize 1000 --popupdate d --geometry M --interactions all --references random 1 --init frequency 20,20,60 --mutation 0.0 --paymatrix 0,0.7,-1;-1,0,3.4;0.8,-1,0"></div>
 </tr>
 <tr><th>Demes</th><td><div class="evoludo-trigger-html"
 	data-clo="--module Demes2x2 --init mutant 1,0 --popupdate B --popsize 144 --geometry H24 --fitnessmap static 1.0,0.5 --migration B0.01"></div>
 </tr>
 <tr><th>Ecological Public Goods (ODE)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module ePGG --run --delay 100 --view Strategies_-_Simplex_S3 --model ODE --colors red;green;black --timestep 1 --init frequency 1,1,8 --fitnessmap static 0.0,1.0 --cost 1.0 --interest 3.05 --groupsize 12 --deathrate 0.5 --dt 0.1"></div>
+	data-clo="--module ePGG --run --delay 100 --view Traits_-_Simplex_S3 --model ODE --colors red;green;black --timestep 1 --init frequency 1,1,8 --fitnessmap static 0.0,1.0 --cost 1.0 --interest 3.05 --groupsize 12 --deathrate 0.5 --dt 0.1"></div>
 <th>Ecological Public Goods (SDE)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module ePGG --run --view Strategies_-_2D_Phase_Plane --interest 2.76 --cost 1.0 --deathrate 0.5 --init frequency 1,1,8 --model SDE --popsize 1000 --timestep 1 --dt 0.1 --groupsize 8 --fitnessmap static 0.0,1.0 --colors red;green;black"></div>
+	data-clo="--module ePGG --run --view Traits_-_2D_Phase_Plane --interest 2.76 --cost 1.0 --deathrate 0.5 --init frequency 1,1,8 --model SDE --popsize 1000 --timestep 1 --dt 0.1 --groupsize 8 --fitnessmap static 0.0,1.0 --colors red;green;black"></div>
 </tr>
 <tr><th>Ecological Public Goods (PDE)</th><td><div class="evoludo-trigger-html"
 	data-clo="--module ePGG --run --delay 100 --pdeN 61x --model PDE --geometry nf --colors red;green;black --timestep 1 --pdeD 2,1 --init circle 1,1,8 --fitnessmap static --cost 1.0 --interest 2.34 --groupsize 8 --deathrate 1.2 --dt 0.1 --pdeL 200"></div>
@@ -85,10 +85,10 @@
 	data-clo="--module ePGG --run --pdeA 0,0;10,10 --pdeN 61x --pdeL 200 --pdeD 0,0 --interest 2.4 --cost 1.0 --deathrate 1.2 --init ring 1,1,8 --model PDE --timestep 1 --dt 0.1 --groupsize 8 --geometry nf --fitnessmap static --colors red;green;black --pdeSymmetry"></div>
 </tr>
 <tr><th>Continuous Snowdrift Game</th><td><div class="evoludo-trigger-html"
-	data-clo="--module cSD --run --view Strategies_-_Distribution --delay 200 --timestep 20 --popsize 500 --popupdate async --playerupdate imitate 0.1 --geometry M --interactions random 1 --references random 1 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --init gaussian 0.2,0.05 --mutation 0.01 gaussian 0.01"></div>
+	data-clo="--module cSD --run --view Traits_-_Distribution --delay 200 --timestep 20 --popsize 500 --popupdate async --playerupdate imitate 0.1 --geometry M --interactions random 1 --references random 1 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --init gaussian 0.2,0.05 --mutation 0.01 gaussian 0.01"></div>
 </tr>
 <tr><th>Division of Labour</th><td><div class="evoludo-trigger-html"
-	data-clo="--module cLabour --run --view Strategies_-_Distribution --delay 200 --timestep 20 --popsize 5000 --mutation 0.01 gaussian 0.01 --traitrange 0,1 --init gaussian 0.1,0.01;gaussian 0.9,0.01 --costs 1 4.56,-1.6 --benefits 11 6,-1.4 --popupdate async --geometry M --playerupdate imitate 0.1 --interactions random 1 --references random 1"></div>
+	data-clo="--module cLabour --run --view Traits_-_Distribution --delay 200 --timestep 20 --popsize 5000 --mutation 0.01 gaussian 0.01 --traitrange 0,1 --init gaussian 0.1,0.01;gaussian 0.9,0.01 --costs 1 4.56,-1.6 --benefits 11 6,-1.4 --popupdate async --geometry M --playerupdate imitate 0.1 --interactions random 1 --references random 1"></div>
 </tr>
 <tr><th>Dynamical Networks</th><td><div class="evoludo-trigger-html"
 	data-clo="--module NG --ratio 0.5 --selection 2"></div>
@@ -96,12 +96,12 @@
 <tr><th>Mutualisms</th><td><div class="evoludo-trigger-html"
 	data-clo="--module Mutual --geometry n --popsize 5x --init mutant 0,1 --popupdate s --playerupdate b --payhost 0,1.7;0,1 --paymutualist 0,1.7;0,1"></div></td>
 <th>Mutualisms (ODE)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module Mutual --view Strategies_-_2D_Phase_Plane --init frequency 1,1 --payhost 0,1.4;0.6,1 --paymutualist 0,0.4;-0.4,1 --playerupdate imitate 0.1 --model ODE"></div></td>
+	data-clo="--module Mutual --view Traits_-_2D_Phase_Plane --init frequency 1,1 --payhost 0,1.4;0.6,1 --paymutualist 0,0.4;-0.4,1 --playerupdate imitate 0.1 --model ODE"></div></td>
 </tr>
 <tr><th>Asymmetric 2x2 (lattice)</th><td><div class="evoludo-trigger-html"
 	data-clo="--module a2x2 --init mutant 1,0 --geometry m --popsize 51x --popupdate s --playerupdate b --paymatrix 1,0;1.65,0 --feedback 0,0,0,0 --environment 0,0"></div></td>
 <th>Asymmetric 2x2 (DE)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module a2x2 --view Strategies_-_2D_Phase_Plane --init frequency 0.4,0.1,0.4,0.1 --model ODE --paymatrix -0.5,-0.5;0,0 --feedback 0.1,0.1 --environment 1,0"></div></td>
+	data-clo="--module a2x2 --view Traits_-_2D_Phase_Plane --init frequency 0.4,0.1,0.4,0.1 --model ODE --paymatrix -0.5,-0.5;0,0 --feedback 0.1,0.1 --environment 1,0"></div></td>
 </tr>
 </tbody>
 </table>

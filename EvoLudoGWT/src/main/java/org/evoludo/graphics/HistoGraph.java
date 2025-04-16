@@ -716,7 +716,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 					break;
 				}
 				//$FALL-THROUGH$
-			case STRATEGY:
+			case TRAIT:
 			case FITNESS:
 				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>");
 				tip.append("<tr><td><i>" + style.xLabel + ":</i></td><td>["

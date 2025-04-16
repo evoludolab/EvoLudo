@@ -1842,12 +1842,12 @@ public class PDE extends ODE {
 	}
 
 	@Override
-	void encodeStrategies(StringBuilder plist) {
+	void encodeTraits(StringBuilder plist) {
 		plist.append(Plist.encodeKey("Density", density));
 	}
 
 	@Override
-	public boolean restoreStrategies(Plist plist) {
+	public boolean restoreTraits(Plist plist) {
 		@SuppressWarnings("unchecked")
 		List<List<Double>> state = (List<List<Double>>) plist.get("Density");
 		if (state == null || state.size() != space.size || state.get(0) == null || state.get(0).size() != nDim)

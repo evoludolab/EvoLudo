@@ -112,8 +112,8 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	@Override
 	public String getName() {
 		switch (type) {
-			case STRATEGY:
-				return "Strategies - " + tag + " Structure";
+			case TRAIT:
+				return "Traits - " + tag + " Structure";
 			case FITNESS:
 				return "Fitness - " + tag + " Structure";
 			default:
@@ -223,7 +223,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 				if (!doUpdate)
 					continue;
 				switch (type) {
-					case STRATEGY:
+					case TRAIT:
 						model.getTraitData(graph.getModule().getID(), graph.getData(), graph.getColorMap());
 						break;
 					case FITNESS:
@@ -296,25 +296,25 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 						"<tr><td><i>Time:</i></td><td>" + Formatter.format(-t, 2) + "</td></tr>");
 				return tip + "</table>";
 				// NOTE: RingBuffer contains color-strings; requires reverse engineering to
-				// determine strategies...
+				// determine traits...
 				// RingBuffer.Array<String> buffer = graph.getBuffer();
 				// if( idx>=buffer.size() ) return tip+"</table>";
 				// String[] colors = graph.getBuffer().get(idx);
 				// return tip+"<tr><td
-				// colspan='2'><hr/></td></tr><tr><td><i>Strategy:</i></td><td
+				// colspan='2'><hr/></td></tr><tr><td><i>Trait:</i></td><td
 				// style='color:"+colors[node]+";'>"+
 				// population.getTraitNameAt(node)+"</td></tr></table>";
 			}
 			IBS ibs = (IBS) model;
 			id = module.getID();
 			tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>");
-			if (type == Data.STRATEGY) {
-				// strategy: use color-data to color strategy
-				tip.append("<tr><td><i>Strategy:</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
+			if (type == Data.TRAIT) {
+				// trait: use color-data to color trait
+				tip.append("<tr><td><i>Trait:</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
 						"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getTraitNameAt(id, node)
 						+ "</td></tr>");
 			} else {
-				tip.append("<tr><td><i>Strategy:</i></td><td>" + model.getTraitNameAt(id, node) + "</td></tr>");
+				tip.append("<tr><td><i>Trait:</i></td><td>" + model.getTraitNameAt(id, node) + "</td></tr>");
 			}
 			String tag = ibs.getTagNameAt(id, node);
 			if (tag != null)
@@ -324,7 +324,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 				boolean noFitMap = module.getMapToFitness().isMap(Map2Fitness.Map.NONE);
 				String label = (noFitMap ? "Fitness" : "Score");
 				if (type == Data.FITNESS) {
-					// fitness: use color-data to color strategy
+					// fitness: use color-data to color score/fitness
 					tip.append("<tr><td><i>" + label + ":</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
 							"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getScoreNameAt(id, node)
 							+ "</td></tr>");
@@ -354,7 +354,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 						+ "</td></tr>" +
 						"<tr><td><i>Link here:</i></td><td>" + formatInStructureAt(node, intergeom) + "</td></tr>");
 			if (intergeom.isInterspecies())
-				tip.append(formatStrategiesAt(node, intergeom, getOpponentInteractionGraph(graph)));
+				tip.append(formatTraitsAt(node, intergeom, getOpponentInteractionGraph(graph)));
 
 			Geometry compgeom = module.getCompetitionGeometry();
 			if (!compgeom.interCompSame) {
@@ -367,7 +367,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 							"<tr><td><i>Compete here:</i></td><td>" + formatInStructureAt(node, compgeom)
 							+ "</td></tr>");
 				if (intergeom.isInterspecies())
-					tip.append(formatStrategiesAt(node, compgeom, getOpponentCompetitionGraph(graph)));
+					tip.append(formatTraitsAt(node, compgeom, getOpponentCompetitionGraph(graph)));
 			}
 			return tip.append("</table>").toString();
 		}
@@ -385,14 +385,14 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 			String[] s = module.getTraitNames();
 			Color[] c = module.getTraitColors();
 			id = module.getID();
-			String names = "<tr><td><i>Strategies:</i></td><td><span style='color:" + ColorMapCSS.Color2Css(c[0]) +
+			String names = "<tr><td><i>Traits:</i></td><td><span style='color:" + ColorMapCSS.Color2Css(c[0]) +
 					"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + s[0];
 			for (int n = 1; n < s.length; n++)
 				names += ", <span style='color:" + ColorMapCSS.Color2Css(c[n]) +
 						"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + s[n];
 			names += "</td></tr>";
 			String density = "";
-			if (type == Data.STRATEGY)
+			if (type == Data.TRAIT)
 				density = "<tr><td><i>Densities:</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
 						"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getTraitNameAt(id, node)
 						+ "</td></tr>";
@@ -468,7 +468,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	}
 
 	/**
-	 * Return a formatted string of the strategies of the opponents at the given
+	 * Return a formatted string of the traits of the opponents at the given
 	 * node. For intra-species interactions and models with identical interaction
 	 * and competition graphs, {@code graph.getGeometry() == geom} holds.
 	 * 
@@ -477,7 +477,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	 * @param graph the graph of the opponent
 	 * @return the formatted string
 	 */
-	private String formatStrategiesAt(int node, Geometry geom, G graph) {
+	private String formatTraitsAt(int node, Geometry geom, G graph) {
 		int nNeighs = geom.kout[node];
 		if (geom.getType() == Geometry.Type.MEANFIELD || nNeighs == 0)
 			return "";

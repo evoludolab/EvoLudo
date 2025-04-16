@@ -65,13 +65,13 @@ import org.evoludo.util.Formatter;
  * environmental differences where individuals occupy rich or poor sites or due
  * to genetic differences, e.g. with weak and strong types. The key distinction
  * between the two scenarios is that in the former case, the offspring only
- * inherits the strategy but not the patch quality, whereas in the latter both
- * the strategy and type are are transmitted to the offspring.
+ * inherits the trait but not the patch quality, whereas in the latter both
+ * the trait and type are are transmitted to the offspring.
  *
  * @author Christoph Hauert
  */
 public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
-		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy, HasS3, HasPhase2D, HasPop2D.Fitness, HasPop3D.Fitness,
+		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasS3, HasPhase2D, HasPop2D.Fitness, HasPop3D.Fitness,
 		HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsStationary {
 
 	/**
@@ -149,7 +149,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 		names[COOPERATE_POOR] = "Poor Cooperator";
 		names[DEFECT_POOR] = "Poor Defector";
 		setTraitNames(names);
-		// trait colors (automatically generates lighter versions for new strategists)
+		// trait colors (automatically generates lighter versions for new traits)
 		Color[] colors = new Color[nTraits];
 		colors[COOPERATE_RICH] = Color.BLUE;
 		colors[DEFECT_RICH] = Color.RED;
@@ -227,7 +227,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 				return ArrayMath.dot(payoffs[DEFECT_POOR], state);
 
 			default: // should not end here
-				throw new Error("Unknown strategy (" + me + ")");
+				throw new Error("Unknown trait (" + me + ")");
 		}
 	}
 
@@ -287,7 +287,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 
 	/**
 	 * The flag to indicate whether a generic {@code 4×4} was provided to for
-	 * the interactions among the four strategy types.
+	 * the interactions among the four traits.
 	 */
 	private boolean init4x4;
 
@@ -296,7 +296,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 	 * {@code 4×4} matrix. For {@code 2×2} matrices, it specifies the
 	 * payoffs for interactions between cooperators and defectors, while for
 	 * {@code 4×4} matrices any generic payoff matrix for interactions among
-	 * four types of strategies is possible.
+	 * four traits is possible.
 	 *
 	 * @param payoffs the payoff matrix
 	 */
@@ -335,7 +335,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 	}
 
 	/**
-	 * Set the feedback between strategic types and patch qualities:
+	 * Set the feedback between traits and patch qualities:
 	 * <ol>
 	 * <li>cooperators restoring poor sites
 	 * <li>defectors degrading rich sites
@@ -358,7 +358,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 		if (feedback == null)
 			return false;
 		// recall:
-		// "--feedback <Cb→g:Dg→b:Cg→b:Db→g> feedback between strategies and patches"
+		// "--feedback <Cb→g:Dg→b:Cg→b:Db→g> feedback between traits and patches"
 		switch (feedback.length) {
 			case 1:
 				Arrays.fill(this.feedback, feedback[0]);
@@ -499,7 +499,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 	 * Command line option to set the {@code 2×2} payoff matrix for
 	 * interactions between cooperators and defectors or the (generic)
 	 * {@code 4×4} payoff matrix for arbitrary interactions between four
-	 * strategic types.
+	 * traits.
 	 */
 	public final CLOption cloPayoffs4x4 = new CLOption("paymatrix", "1,0;1.65,0", EvoLudo.catModule,
 			"--paymatrix <a,b;c,d>   2x2 (or 4x4) payoff matrix", new CLODelegate() {
@@ -590,19 +590,18 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 			});
 
 	/**
-	 * Command line option to set the feedback between strategic types and patch
-	 * quality.
+	 * Command line option to set the feedback between traits and patch quality.
 	 */
 	public final CLOption cloFeedback = new CLOption("feedback", "0,0,0,0", EvoLudo.catModule,
-			"--feedback <Cp→r,Dr→p[,Cr→p,Dp→r]>   feedback between strategies and patches\n"
-					+ "             p→r:  restoration for strategy C and D\n"
-					+ "             r→p:  degradation for strategy C and D",
+			"--feedback <Cp→r,Dr→p[,Cr→p,Dp→r]>   feedback between traits and patches\n"
+					+ "             p→r:  restoration for trait C and D\n"
+					+ "             r→p:  degradation for trait C and D",
 			new CLODelegate() {
 
 				/**
 				 * {@inheritDoc}
 				 * <p>
-				 * Parse the feedback rate/probability at which strategies degrade or restore
+				 * Parse the feedback rate/probability at which traits degrade or restore
 				 * the quality of their patch.
 				 * 
 				 * @param arg the array with degradation and restoration rates/probabilities
@@ -619,7 +618,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 				}
 
 				// recall:
-				// "--feedback <Cb→g:Dg→b:Cg→b:Db→g> feedback between strategies and patches"
+				// "--feedback <Cb→g:Dg→b:Cg→b:Db→g> feedback between traits and patches"
 				@Override
 				public void report(PrintStream output) {
 					output.println(
@@ -697,15 +696,15 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 
 		/**
 		 * Helper method to process environmental asymmetries. Ensures that only
-		 * strategies can be adopted by offspring and processes environmental changes
-		 * through feedback with strategic types.
+		 * traits can be adopted by offspring and processes environmental changes
+		 * through feedback with trait types.
 		 * <p>
-		 * <strong>Important:</strong> This requires that strategies are not yet
+		 * <strong>Important:</strong> This requires that traits are not yet
 		 * committed.
 		 * 
 		 * @param me      the index of the focal individual
-		 * @param changed the flag whether the focal individual changed strategy
-		 * @return {@code true} if strategy and/or patch type has changed
+		 * @param changed the flag whether the focal individual changed trait
+		 * @return {@code true} if trait and/or patch type has changed
 		 */
 		private boolean processEnvironmentalAsymmetryAt(int me, boolean changed) {
 			if (!environmentalAsymmetry)
@@ -713,25 +712,25 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 			int oldtype = getTraitAt(me);
 			if (changed) {
 				int newtype = traitsNext[me] % nTraits;
-				// only strategies can be adopted
-				int newstrat = newtype % 2;
-				changed = (oldtype % 2 != newstrat);
+				// only trait can be adopted
+				int newtrait = newtype % 2;
+				changed = (oldtype % 2 != newtrait);
 				// make sure patch type is preserved
 				int oldpatch = oldtype / 2;
-				traitsNext[me] = oldpatch + oldpatch + newstrat + (changed ? nTraits : 0);
+				traitsNext[me] = oldpatch + oldpatch + newtrait + (changed ? nTraits : 0);
 			}
-			// note: should we allow simultaneous strategy and patch changes? i don't think
+			// note: should we allow simultaneous trait and patch changes? i don't think
 			// so... which approach corresponds to the ODE?
 			// check patch conversion
 			double pFeedback = feedback[oldtype];
 			if (pFeedback > 0.0) {
 				if (pFeedback >= 1.0 || random01() < pFeedback) {
 					// change type of node
-					int oldstrat = oldtype < 2 ? ATBT.COOPERATE : ATBT.DEFECT;
+					int oldtrait = oldtype < 2 ? ATBT.COOPERATE : ATBT.DEFECT;
 					// determine new patch type (old one was GOOD if oldtype is even and will now
 					// turn BAD and vice versa)
 					int newpatch = (oldtype + 1) % 2;
-					traitsNext[me] = newpatch + oldstrat + oldstrat + nTraits;
+					traitsNext[me] = newpatch + oldtrait + oldtrait + nTraits;
 					return true;
 				}
 			}
@@ -807,7 +806,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 			// yp'[t] == (yr[t] ft[[3]] + yp[t] ft[[4]]) xp[t] - (xr[t] ft[[1]] + xp[t]
 			// ft[[2]]) yp[t] - lambda rho yp[t]}
 
-			// restrict to active strategies
+			// restrict to active traits
 			// note float resolution is 1.1920929E-7
 			if (Math.abs(err) > 1e-7 * nActive) {
 				if (active == null) {

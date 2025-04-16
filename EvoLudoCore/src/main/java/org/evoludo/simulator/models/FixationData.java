@@ -49,17 +49,17 @@ public class FixationData {
 	public int mutantNode = -1;
 
 	/**
-	 * The strategy type of the initial mutant.
+	 * The mutant trait.
 	 */
 	public int mutantTrait = -1;
 
 	/**
-	 * The strategy type of the resident.
+	 * The resident trait.
 	 */
 	public int residentTrait = -1;
 
 	/**
-	 * The strategy type that reached fixation.
+	 * The trait that reached fixation.
 	 */
 	public int typeFixed = -1;
 

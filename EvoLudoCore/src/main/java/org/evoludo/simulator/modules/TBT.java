@@ -82,7 +82,7 @@ import org.evoludo.util.Formatter;
  * limited local interactions
  * <p>
  * Similarly, the snowdrift game is characterized by \(T&gt;R&gt;S&gt;P\) and
- * now the best strategy depends on the opponent. Against a cooperator it is
+ * now the best trait depends on the opponent. Against a cooperator it is
  * still better to defect but against a defector it pays to cooperate. The
  * snowdrift game is still a social dilemma because individuals are tempted to
  * move away from mutual cooperation but the dilemma is relaxed because
@@ -92,7 +92,7 @@ import org.evoludo.util.Formatter;
  * @author Christoph Hauert
  */
 public class TBT extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasSDE, HasPDE,
-		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy,
+		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits,
 		HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness,
 		HasHistogram.Degree, HasHistogram.StatisticsProbability, HasHistogram.StatisticsTime,
 		HasHistogram.StatisticsStationary {
@@ -222,7 +222,7 @@ public class TBT extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasS
 				return traitCount[COOPERATE] * payoffs[DEFECT][COOPERATE] + traitCount[DEFECT] * payoffs[DEFECT][DEFECT];
 
 			default: // should not end here
-				throw new Error("Unknown strategy (" + me + ")");
+				throw new Error("Unknown trait (" + me + ")");
 		}
 	}
 
@@ -264,8 +264,8 @@ public class TBT extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasS
 	 * {@code payoff}.
 	 *
 	 * @param payoff the payoff to {@code me}
-	 * @param me     the strategy index of the row player
-	 * @param you    the strategy index of the column player
+	 * @param me     the trait index of the row player
+	 * @param you    the trait index of the column player
 	 */
 	public void setPayoff(double payoff, int me, int you) {
 		if (me < 0 || me > 2 || you < 0 || you > 2)
@@ -276,8 +276,8 @@ public class TBT extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasS
 	/**
 	 * Get the payoff for type {@code me} against type {@code you}.
 	 *
-	 * @param me  the strategy index of the row player
-	 * @param you the strategy index of the column player
+	 * @param me  the trait index of the row player
+	 * @param you the trait index of the column player
 	 * @return the payoff to {@code me}
 	 */
 	public double getPayoff(int me, int you) {
@@ -419,7 +419,7 @@ public class TBT extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasS
 		@Override
 		public void getMeanTraits(double[] mean) {
 			// SQUARE_NEUMANN_2ND geometry for competition results in two disjoint
-			// sublattices; report strategy frequencies in each sublattice separately
+			// sublattices; report trait frequencies in each sublattice separately
 			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
 				super.getMeanTraits(mean);
 				return;
@@ -450,7 +450,7 @@ public class TBT extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasS
 		@Override
 		public void getMeanFitness(double[] mean) {
 			// SQUARE_NEUMANN_2ND geometry for competition results in two disjoint
-			// sublattices; report strategy frequencies in each sublattice separately
+			// sublattices; report trait frequencies in each sublattice separately
 			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
 				super.getMeanFitness(mean);
 				return;

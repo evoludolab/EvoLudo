@@ -106,7 +106,7 @@ public class CDLP extends CDL {
 		names[COOPERATE] = "Cooperator";
 		names[PUNISH] = "Punisher";
 		setTraitNames(names);
-		// trait colors (automatically generates lighter versions for new strategists)
+		// trait colors (automatically generates lighter versions for new traits)
 		Color[] colors = new Color[nTraits];
 		// yellow has too little contrast
 		colors[LONER] = new Color(238, 204, 17); // hex #eecc11
@@ -210,7 +210,7 @@ public class CDLP extends CDL {
 						- (traitCount[LONER] * leniencyLoner + traitCount[DEFECT]) * costPeerPunish;
 
 			default: // should not end here
-				throw new Error("Unknown strategy (" + me + ")");
+				throw new Error("Unknown trait (" + me + ")");
 		}
 	}
 

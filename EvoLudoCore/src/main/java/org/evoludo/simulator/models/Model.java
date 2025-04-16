@@ -254,7 +254,7 @@ public abstract class Model implements CLOProvider {
 			next();
 			timeStep = rf;
 			isRelaxing = false;
-			// reset strategies after relaxation
+			// reset traits after relaxation
 			for (Module mod : species) {
 				IBSPopulation pop = mod.getIBSPopulation();
 				pop.resetTraits();
@@ -610,7 +610,7 @@ public abstract class Model implements CLOProvider {
 	/**
 	 * Calculates and returns the absolute fitness minimum. This is important to
 	 * <ol>
-	 * <li>determine probabilities or rates for adopting the strategy of another
+	 * <li>determine probabilities or rates for adopting the trait of another
 	 * player,
 	 * <li>optimize fitness based picking of individuals, and
 	 * <li>scaling graphical output.
@@ -626,7 +626,7 @@ public abstract class Model implements CLOProvider {
 	/**
 	 * Calculates and returns the absolute fitness maximum. This is important to
 	 * <ol>
-	 * <li>determine probabilities or rates for adopting the strategy of another
+	 * <li>determine probabilities or rates for adopting the trait of another
 	 * player,
 	 * <li>optimize fitness based picking of individuals, and
 	 * <li>scaling graphical output.
@@ -641,14 +641,14 @@ public abstract class Model implements CLOProvider {
 
 	/**
 	 * Returns status message from model. Typically this is a string summarizing the
-	 * current state of the simulation. For example, models with discrete strategy
-	 * sets (such as 2x2 games, see {@link org.evoludo.simulator.modules.TBT})
-	 * return the average frequencies of each strategy type in the population(s),
-	 * see {@link IBSDPopulation}. Similarly, models with continuous strategies
-	 * (such as continuous snowdrift games, see
-	 * {@link org.evoludo.simulator.modules.CSD}) return the mean, minimum and
-	 * maximum trait value(s) in the population(s), see {@link IBSMCPopulation}. The
-	 * status message is displayed along the bottom of the GUI.
+	 * current state of the simulation. For example, models with discrete traits
+	 * (such as 2x2 games, see {@link org.evoludo.simulator.modules.TBT}) return the
+	 * average frequencies of each strategy type in the population(s), see
+	 * {@link IBSDPopulation}. Similarly, models with continuous strategies (such as
+	 * continuous snowdrift games, see {@link org.evoludo.simulator.modules.CSD})
+	 * return the mean, minimum and maximum trait value(s) in the population(s), see
+	 * {@link IBSMCPopulation}. The status message is displayed along the bottom of
+	 * the GUI.
 	 * <p>
 	 * <strong>Note:</strong> if the model runs into difficulties, problems should
 	 * be reported through the logging mechanism. Messages with severity
@@ -1097,8 +1097,8 @@ public abstract class Model implements CLOProvider {
 	 * Command line option to set the number of generations to relax the model from
 	 * the initial configuration. After relaxation the model is assumed to be close
 	 * to its (thermal) equilibrium. In particular, the system should be ready for
-	 * measurements such as the strategy abundances, their fluctuations or the local
-	 * strategy configurations in structured populations.
+	 * measurements such as the trait abundances, their fluctuations or the local
+	 * trait configurations in structured populations.
 	 */
 	public final CLOption cloTimeRelax = new CLOption("timerelax", "0", EvoLudo.catModel,
 			"--timerelax <r>  relaxation time in generations", new CLODelegate() {

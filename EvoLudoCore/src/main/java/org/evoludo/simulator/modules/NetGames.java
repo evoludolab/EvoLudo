@@ -58,7 +58,7 @@ import org.evoludo.util.Formatter;
  * @author Christoph Hauert
  */
 public class NetGames extends Discrete implements Scores, HasIBS,
-		HasPop2D.Strategy, HasPop3D.Strategy, HasMean.Strategy, HasPop2D.Fitness,
+		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasPop2D.Fitness,
 		HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree,
 		HasHistogram.StatisticsStationary {
 

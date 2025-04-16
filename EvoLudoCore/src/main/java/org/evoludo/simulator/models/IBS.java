@@ -88,11 +88,10 @@ public abstract class IBS extends Model {
 
 			/**
 			 * Calculate and return total (accumulated) payoff/score for pairwise
-			 * interactions of the focal individual with trait/strategy {@code me}
-			 * against opponents with different traits/strategies. The respective numbers of
-			 * each of the {@code nTraits} opponent traits/strategies are provided in
-			 * the array {@code tCount}. The payoffs/scores for each of the
-			 * {@code nTraits} opponent traits/strategies must be stored and returned
+			 * interactions of the focal individual with trait {@code me} against opponents
+			 * with different traits. The respective numbers of each of the {@code nTraits}
+			 * opponent traits are provided in the array {@code tCount}. The payoffs/scores
+			 * for each of the {@code nTraits} opponent traits must be stored and returned
 			 * in the array {@code tScore}.
 			 * <p>
 			 * <strong>Important:</strong> must be overridden and implemented in subclasses
@@ -101,9 +100,8 @@ public abstract class IBS extends Model {
 			 * {@link DGroups#groupScores(int[], double[])}.
 			 * 
 			 * @param me         the trait index of the focal individual
-			 * @param traitCount number of opponents with each trait/strategy
-			 * @param traitScore array for returning the scores of each opponent
-			 *                   trait/strategy
+			 * @param traitCount number of opponents with each trait
+			 * @param traitScore array for returning the scores of each opponent trait
 			 * @return score of focal individual {@code me} accumulated over all
 			 *         interactions
 			 */
@@ -111,9 +109,9 @@ public abstract class IBS extends Model {
 
 			/**
 			 * Calculate the average payoff/score in a finite population with the number of
-			 * each trait/strategy provided in {@code count} for pairwise interactions.
-			 * The payoffs/scores for each of the {@code nTraits} traits/strategies
-			 * must be stored and returned in the array {@code traitScores}.
+			 * each trait provided in {@code count} for pairwise interactions. The
+			 * payoffs/scores for each of the {@code nTraits} traits must be stored and
+			 * returned in the array {@code traitScores}.
 			 * <p>
 			 * <strong>Important:</strong> must be overridden and implemented in subclasses
 			 * that define game interactions in well-mixed populations where individuals
@@ -127,9 +125,8 @@ public abstract class IBS extends Model {
 			 * {@link org.evoludo.simulator.models.IBSMCPopulation#check() CXPopulation} for
 			 * an example).
 			 * 
-			 * @param traitCount number of individuals for each trait/strategy
-			 * @param traitScore array for returning the payoffs/scores of each
-			 *                   trait/strategy
+			 * @param traitCount number of individuals for each trait
+			 * @param traitScore array for returning the payoffs/scores of each trait
 			 */
 			public void mixedScores(int[] traitCount, double[] traitScore);
 		}
@@ -142,11 +139,10 @@ public abstract class IBS extends Model {
 
 			/**
 			 * Calculate the payoff/score for interactions in groups consisting of
-			 * traits/strategies with respective numbers given in the array
-			 * {@code tCount}. The interaction group size is given by the sum over
-			 * {@code tCount[i]} for {@code i=0,1,...,nTraits}. The payoffs/scores
-			 * for each of the {@code nTraits} traits/strategies must be stored and
-			 * returned in the array {@code tScore}.
+			 * traits with respective numbers given in the array {@code traitCount}. The
+			 * interaction group size is given by the sum over {@code traitCount[i]} for
+			 * {@code i=0,1,...,nTraits}. The payoffs/scores for each of the {@code nTraits}
+			 * traits must be stored and returned in the array {@code traitScore}.
 			 * <p>
 			 * <strong>Important:</strong> must be overridden and implemented in subclasses
 			 * that define game interactions among groups of individuals (for groups with
@@ -154,25 +150,23 @@ public abstract class IBS extends Model {
 			 * {@link #pairScores(int, int[], double[])}).
 			 * 
 			 * @param traitCount group composition given by the number of individuals with
-			 *                   each trait/strategy
-			 * @param traitScore array for returning the payoffs/scores of each
-			 *                   trait/strategy
+			 *                   each trait
+			 * @param traitScore array for returning the payoffs/scores of each trait
 			 */
 			public void groupScores(int[] traitCount, double[] traitScore);
 
 			/**
 			 * Calculate the average payoff/score in a finite population with the number of
-			 * each trait/strategy provided in {@code count} for interaction groups of
-			 * size {@code n}. The payoffs/scores for each of the {@code nTraits}
-			 * traits/strategies must be stored and returned in the array
-			 * {@code traitScores}.
+			 * each trait provided in {@code count} for interaction groups of size
+			 * {@code n}. The payoffs/scores for each of the {@code nTraits} traits must be
+			 * stored and returned in the array {@code traitScores}.
 			 * 
 			 * <h3>Notes:</h3>
 			 * For payoff calculations:
 			 * <ul>
-			 * <li>each strategy sees one less of its own type in its environment
+			 * <li>each trait sees one less of its own type in its environment
 			 * <li>the size of the environment is {@code nPopulation-1}
-			 * <li>the fact that the payoff of each strategy does not depend on its own type
+			 * <li>the fact that the payoff of each trait does not depend on its own type
 			 * simplifies things
 			 * </ul>
 			 * If explicit calculations of the well-mixed scores are not available,
@@ -188,10 +182,9 @@ public abstract class IBS extends Model {
 			 * {@link #pairScores(int, int[], double[])} or
 			 * {@link #groupScores(int[], double[])}, respectively.
 			 * 
-			 * @param traitCount number of individuals for each trait/strategy
+			 * @param traitCount number of individuals for each trait
 			 * @param n          interaction group size
-			 * @param traitScore array for returning the payoffs/scores of each
-			 *                   trait/strategy
+			 * @param traitScore array for returning the payoffs/scores of each trait
 			 */
 			public void mixedScores(int[] traitCount, int n, double[] traitScore);
 
@@ -211,8 +204,7 @@ public abstract class IBS extends Model {
 			 * single continuous trait. The focal individual has trait {@code me} and the
 			 * traits of its {@code len} interaction partners are given in {@code group}.
 			 * The payoffs/scores for each of the {@code len} opponent
-			 * traits/strategies must be stored and returned in the array
-			 * {@code payoffs}.
+			 * traits must be stored and returned in the array {@code payoffs}.
 			 * 
 			 * <h3>Note:</h3> Only the first {@code len} entries in {@code group} are
 			 * guaranteed to exist and have meaningful values. The population structure may
@@ -279,8 +271,8 @@ public abstract class IBS extends Model {
 			 * {@code group}. The traits they are arranged in the usual manner, i.e. first
 			 * all traits of the first group member then all traits by the second group
 			 * member etc. for a total of {@code len*nTraits} entries. The payoffs/scores
-			 * for each of the {@code len} opponent traits/strategies must be stored
-			 * and returned in the array {@code payoffs}.
+			 * for each of the {@code len} opponent traits must be stored and returned in
+			 * the array {@code payoffs}.
 			 * 
 			 * <h3>Note:</h3> Only the first {@code len} entries in {@code group} are
 			 * guaranteed to exist and have meaningful values. The population structure may
@@ -404,7 +396,7 @@ public abstract class IBS extends Model {
 	 * <ul>
 	 * <li>optimizations can be requested with the command line option
 	 * <code>--optimize</code>, see {@link IBSD#cloOptimize}.</li>
-	 * <li>currently restricted to discrete strategies where homogeneous population
+	 * <li>currently restricted to discrete traits where homogeneous population
 	 * states can be skipped by deterministically introducing new mutant after an
 	 * geometrically (exponentially) distributed waiting time (see
 	 * {@link IBSD}).</li>
@@ -552,7 +544,7 @@ public abstract class IBS extends Model {
 	public void reset() {
 		super.reset();
 		// with optimization, homogeneous populations do not wait for next mutation
-		// currently only relevant for discrete strategies, see IBSD
+		// currently only relevant for discrete traits, see IBSD
 		if (optimizeHomo) {
 			// NOTE: optimizeHomo == false if no mutations or isMultispecies == true
 			double pMutation = species.get(0).getMutation().probability;
@@ -740,7 +732,7 @@ public abstract class IBS extends Model {
 			int nPopTot = 0;
 			double scoreTot = 0.0;
 			double popFrac = 1.0;
-			// reset strategies (colors)
+			// reset traits (colors)
 			for (Module mod : species) {
 				IBSPopulation pop = mod.getIBSPopulation();
 				pop.resetTraits();
@@ -761,7 +753,7 @@ public abstract class IBS extends Model {
 					pop.step();
 					pop.isConsistent();
 				}
-				// commit strategies and reset scores
+				// commit traits and reset scores
 				for (Module mod : species) {
 					IBSPopulation pop = mod.getIBSPopulation();
 					pop.commitTraits(); // also check homogeneity
@@ -772,7 +764,7 @@ public abstract class IBS extends Model {
 					// all scores must be reset before we can re-calculate them
 					pop.resetScores();
 				}
-				// calculate new scores (requires that all strategies are committed and reset)
+				// calculate new scores (requires that all traits are committed and reset)
 				converged = true;
 				for (Module mod : species) {
 					IBSPopulation pop = mod.getIBSPopulation();
@@ -789,7 +781,7 @@ public abstract class IBS extends Model {
 		// asynchronous population update - update one individual at a time
 		double wPopTot = 0.0;
 		double wScoreTot = 0.0;
-		// reset strategies (colors)
+		// reset traits (colors)
 		for (Module mod : species) {
 			IBSPopulation pop = mod.getIBSPopulation();
 			pop.resetTraits();
@@ -1450,7 +1442,7 @@ public abstract class IBS extends Model {
 
 	/**
 	 * Command line option to set the method for choosing references/models among
-	 * the neighbours of a player for updating their strategy.
+	 * the neighbours of a player for updating their trait.
 	 */
 	public final CLOption cloReferences = new CLOption("references", IBSGroup.SamplingType.RANDOM.getKey() + " 1",
 			EvoLudo.catModel,
@@ -1461,7 +1453,7 @@ public abstract class IBS extends Model {
 				 * {@inheritDoc}
 				 * <p>
 				 * Parse method for choosing references/models among the neighbours of a player
-				 * for updating their strategy in a single or multiple populations/species.
+				 * for updating their trait in a single or multiple populations/species.
 				 * <code>arg</code> can be a single value or an array of values with the
 				 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
 				 * <code>arg</code> until all populations/species have the player's references
@@ -2255,7 +2247,7 @@ public abstract class IBS extends Model {
 					success = false;
 				}
 				if (!pop.restoreTraits(pplist)) {
-					logger.warning("restore strategies in " + type + "-model failed (" + name + ").");
+					logger.warning("restore traits in " + type + "-model failed (" + name + ").");
 					success = false;
 				}
 				if (!pop.restoreFitness(pplist)) {
@@ -2274,7 +2266,7 @@ public abstract class IBS extends Model {
 			success = false;
 		}
 		if (!population.restoreTraits(plist)) {
-			logger.warning("restore strategies in " + type + "-model failed.");
+			logger.warning("restore traits in " + type + "-model failed.");
 			success = false;
 		}
 		if (!population.restoreFitness(plist)) {

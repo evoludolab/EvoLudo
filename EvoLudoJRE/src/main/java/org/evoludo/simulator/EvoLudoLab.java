@@ -543,12 +543,12 @@ public class EvoLudoLab extends JFrame
 		// strategies related views
 		Module module = engine.getModule();
 		Model model = engine.getModel();
-		if (module instanceof HasPop2D.Strategy)
+		if (module instanceof HasPop2D.Traits)
 			if (model.isContinuous())
 				addMultiView(new MVPop2D(this, MVPop2D.Data.CSTRAT));
 			else
 				addMultiView(new MVPop2D(this, MVPop2D.Data.DSTRAT));
-		if (module instanceof HasMean.Strategy) {
+		if (module instanceof HasMean.Traits) {
 			if (model.isContinuous())
 				addMultiView(new MVCMean(this));
 			else

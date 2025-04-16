@@ -63,7 +63,7 @@ import org.evoludo.util.Formatter;
  * <p>
  * The population update type can be set via the command line option {@code
  * --popupdate <u> [<p>]} where {@code <u>} is the population update type, and
- * {@code <p>} the fraction of individuals that reassess their strategy.
+ * {@code <p>} the fraction of individuals that reassess their trait.
  * 
  * @author Christoph Hauert
  */

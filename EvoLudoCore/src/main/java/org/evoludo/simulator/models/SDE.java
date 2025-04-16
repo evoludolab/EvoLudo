@@ -208,7 +208,7 @@ public class SDE extends ODE {
 	 * 
 	 * <h3>Implementation Notes:</h3>
 	 * Integration of SDEs can be optimized in 1 and 2 dimensions for replicator
-	 * systems this means 2 or 3 strategies. Currently noise implemented only for
+	 * systems this means 2 or 3 traits. Currently noise implemented only for
 	 * replicator type dynamics.
 	 * 
 	 * @see <a href="http://dx.doi.org/10.1103/PhysRevE.85.041901">Traulsen, A.,
@@ -233,7 +233,7 @@ public class SDE extends ODE {
 		}
 		double mu = mutation[0].probability;
 		switch (nDim) {
-			case 2: // two strategies
+			case 2: // two traits
 				x = yt[0];
 				double b = ((1.0 - mu) * x * (1.0 - x) + mu) * effnoise;
 				double c = Math.sqrt(b);
@@ -257,7 +257,7 @@ public class SDE extends ODE {
 				}
 				break;
 
-			case 3: // two dimensions (or three strategies) - e.g. RSP game
+			case 3: // two dimensions (or three traits) - e.g. RSP game
 				// NOTE: if not replicator equation some adjustments are required (references to
 				// e.g. yt[2] would fail)
 				// 1) stochastic term
@@ -265,15 +265,15 @@ public class SDE extends ODE {
 				double y = yt[1];
 				double x2 = x * x, xy = x * y, y2 = y * y;
 				// B matrix
-				// mutations need careful definition - generate any strategy vs any of the
-				// _other_ strategies.
+				// mutations need careful definition - generate any trait vs any of the
+				// _other_ traits.
 
-				// mutations to any strategy (may result in no change)
+				// mutations to any trait (may result in no change)
 				// double bxx = (x-x2+mu*(x2+(1.0-x-x)/3.0))*noise;
 				// double bxy, byx = bxy = (-xy+mu*(xy-(x+y)/3.0))*noise;
 				// double byy = (y-y2+mu*(y2+(1.0-y-y)/3.0))*noise;
 
-				// mutations to only other strategies
+				// mutations to only other traits
 				double bxx = (x - x2 + mu * ((1.0 - x) * 0.5 + x2)) * effnoise;
 				double bxy, byx = bxy = -(xy + mu * ((x + y) * 0.5 - xy)) * effnoise;
 				double byy = (y - y2 + mu * ((1.0 - y) * 0.5 + y2)) * effnoise;
@@ -331,12 +331,12 @@ public class SDE extends ODE {
 				if (mu > 0.0) {
 					// the deterministic drift term also depends on mutations
 					ArrayMath.multiply(dyt, 1.0 - mu);
-					// mutations to any of the 3 strategies
+					// mutations to any of the 3 traits
 					/*
 					 * double invd = 1.0/3.0; double mudt = mu*dt; double mx = mudt*(invd-yt[0])+nx;
 					 * double my = mudt*(invd-yt[1])+ny;
 					 */
-					// mutations to any of the _other_ 2 strategies
+					// mutations to any of the _other_ 2 traits
 					double mudt = mu * 0.5;
 					double mx = mudt * (1.0 - 3.0 * x) + nx;
 					double my = mudt * (1.0 - 3.0 * y) + ny;
@@ -359,7 +359,7 @@ public class SDE extends ODE {
 				}
 				break;
 
-			default: // any number of strategies
+			default: // any number of traits
 				throw new Error("SDE dimension d>3 not implemented (use SDEN)!");
 		}
 		// polish result
@@ -396,12 +396,12 @@ public class SDE extends ODE {
 		fixData.typeFixed = ArrayMath.maxIndex(yt);
 		int vacant = module.getVacant();
 		if (fixData.typeFixed == vacant) {
-			// closer look is needed - look for what other strategy survived (if any)
+			// closer look is needed - look for what other trait survived (if any)
 			for (int n = 0; n < module.getNTraits(); n++) {
 				if (n == vacant)
 					continue;
 				if (yt[n] > 0) {
-					// no other strategies should be present
+					// no other traits should be present
 					fixData.typeFixed = n;
 					break;
 				}

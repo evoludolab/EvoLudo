@@ -122,7 +122,7 @@ public class Histogram extends AbstractView {
 	@Override
 	public Mode getMode() {
 		switch (type) {
-			case STRATEGY:
+			case TRAIT:
 			case FITNESS:
 			case DEGREE:
 			default:
@@ -145,7 +145,7 @@ public class Histogram extends AbstractView {
 		for (Module pop : species) {
 			int nTraits = pop.getNTraits();
 			switch (type) {
-				case STRATEGY:
+				case TRAIT:
 					// this only makes sense for continuous traits
 					nGraphs += nTraits;
 					break;
@@ -186,7 +186,7 @@ public class Histogram extends AbstractView {
 			for (Module module : species) {
 				int nTraits = module.getNTraits();
 				switch (type) {
-					case STRATEGY:
+					case TRAIT:
 						// this only makes sense for continuous traits
 						for (int n = 0; n < nTraits; n++) {
 							HistoGraph graph = new HistoGraph(this, module, n);
@@ -431,7 +431,7 @@ public class Histogram extends AbstractView {
 				graph.reset();
 
 			switch (type) {
-				case STRATEGY:
+				case TRAIT:
 					// histogram of strategies makes only sense for continuous traits
 					if (data == null || data.length != nTraits || data[0].length != HistoGraph.MAX_BINS)
 						data = new double[nTraits][HistoGraph.MAX_BINS];
@@ -689,7 +689,7 @@ if (maxBins < 0) maxBins = 100;
 
 			// new data available - update histograms
 			switch (type) {
-				case STRATEGY:
+				case TRAIT:
 					double[][] data = null;
 					// cast ok because trait histograms only make sense for continuous models
 					org.evoludo.simulator.models.Continuous cmodel = (org.evoludo.simulator.models.Continuous) model;

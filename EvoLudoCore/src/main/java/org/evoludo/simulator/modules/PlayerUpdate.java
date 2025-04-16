@@ -42,9 +42,8 @@ import org.evoludo.util.Formatter;
 
 /**
  * The implementation of player updates. Player updates are used to update the
- * strategies of individuals in a population through (probabilistic) comparisons
- * with the performance of other members (and their strategies) in the
- * population. 
+ * traits of individuals in a population through (probabilistic) comparisons
+ * with the performance of other members (and their trait) in the population. 
  * <p>
  * The player update type can be set to one of the following:
  * <dl>
@@ -122,10 +121,9 @@ public class PlayerUpdate {
 
 	/**
 	 * Set the noise of the updating process of players. With less noise chances are
-	 * higher to adopt the strategy of individuals even if they perform only
-	 * marginally better. Conversely for large noise payoff differences matter less
-	 * and the updating process is more random. For {@code noise==1} the process is
-	 * neutral.
+	 * higher to adopt the traitof individuals even if they perform only marginally
+	 * better. Conversely for large noise payoff differences matter less and the
+	 * updating process is more random. For {@code noise==1} the process is neutral.
 	 * 
 	 * @param noise the noise when updating the trait
 	 */
@@ -180,7 +178,7 @@ public class PlayerUpdate {
 		switch (type) {
 			case THERMAL: // fermi update
 			case IMITATE: // imitation update
-			case IMITATE_BETTER: // imitation update (better strategies only)
+			case IMITATE_BETTER: // imitation update (better traits only)
 				str += " " + Formatter.formatSci(noise, 6);
 				// XXX add errors to PROPORTIONAL as well as DE models?
 				if (module.model.isIBS())

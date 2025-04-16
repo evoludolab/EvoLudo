@@ -79,13 +79,13 @@ public class S3 extends AbstractView {
 	 */
 	@SuppressWarnings("unchecked")
 	public S3(EvoLudoGWT engine) {
-		super(engine, Data.STRATEGY);
+		super(engine, Data.TRAIT);
 		graphs = (List<S3Graph>) super.graphs;
 	}
 
 	@Override
 	public String getName() {
-		return "Strategies - Simplex S3";
+		return "Traits - Simplex S3";
 	}
 
 	@Override

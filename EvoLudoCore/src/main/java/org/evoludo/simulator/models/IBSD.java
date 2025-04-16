@@ -41,9 +41,9 @@ import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.Formatter;
 
 /**
- * Base class for individual based simulation models, IBS, with discrete
- * traits/strategies. This class deals with optimizations, initialization types
- * and statistics but the heavy lifting is done by the {@link IBS} parent.
+ * Base class for individual based simulation models, IBS, with discrete traits.
+ * This class deals with optimizations, initialization types and statistics but
+ * the heavy lifting is done by the {@link IBS} parent.
  * 
  * @author Christoph Hauert
  */
@@ -51,7 +51,7 @@ public class IBSD extends IBS implements Discrete {
 
 	/**
 	 * Creates a population of individuals for IBS simulations with discrete
-	 * traits/strategies.
+	 * traits.
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
@@ -71,12 +71,12 @@ public class IBSD extends IBS implements Discrete {
 		Module module = species.get(0);
 		int vacant = module.getVacant();
 		if (fixData.typeFixed == vacant) {
-			// closer look is needed - look for what other strategy survived (if any)
+			// closer look is needed - look for what other traits survived (if any)
 			for (int n = 0; n < module.getNTraits(); n++) {
 				if (n == vacant)
 					continue;
 				if (dpop.traitsCount[n] > 0) {
-					// no other strategies should be present
+					// no other traits should be present
 					fixData.typeFixed = n;
 					break;
 				}

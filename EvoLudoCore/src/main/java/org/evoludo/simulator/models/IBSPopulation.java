@@ -56,9 +56,9 @@ import org.evoludo.util.Plist;
  * The core class for individual based simulations. Manages the population,
  * including keeping track of the payoffs and fitness of individuals.
  * <p>
- * <strong>Note:</strong> strategies/traits cannot be handled here because
- * they are represented by {@code int}s in discrete models but {@code double}s
- * in continuous models.
+ * <strong>Note:</strong> traits cannot be handled here because they are
+ * represented by {@code int}s in discrete models but {@code double}s in
+ * continuous models.
  * 
  * @author Christoph Hauert
  * 
@@ -186,42 +186,42 @@ public abstract class IBSPopulation {
 	public abstract void commitTraits();
 
 	/**
-	 * The change of a strategy of the player at {@code index} is stored in a
+	 * The change of a trait of the player at {@code index} is stored in a
 	 * temporary variable and must be committed before proceeding.
 	 * 
-	 * @param index the index of the player that needs to have its new strategy
+	 * @param index the index of the player that needs to have its new trait
 	 *              committed
 	 */
 	public abstract void commitTraitAt(int index);
 
 	/**
 	 * Check if individuals with index <code>a</code> and index <code>b</code> have
-	 * the same strategies.
+	 * the same traits.
 	 *
 	 * @param a the index of first individual
 	 * @param b the index of second individual
-	 * @return <code>true</code> if the two individuals have the same strategies
+	 * @return <code>true</code> if the two individuals have the same traits
 	 */
 	public abstract boolean haveSameTrait(int a, int b);
 
 	/**
-	 * Check if individual with index <code>a</code> has switched strategies.
+	 * Check if individual with index <code>a</code> has switched traits.
 	 * <p>
-	 * <strong>Note:</strong> this test is only meaningful before strategy gets
+	 * <strong>Note:</strong> this test is only meaningful before trait are
 	 * committed.
 	 * 
 	 * @param a index of individual
-	 * @return <code>true</code> if strategy remained the same
+	 * @return <code>true</code> if trait remained unchanged
 	 * 
 	 * @see #commitTraitAt(int)
 	 */
 	public abstract boolean isSameTrait(int a);
 
 	/**
-	 * Swap strategies of individuals with index <code>a</code> and index
+	 * Swap traits of individuals with index <code>a</code> and index
 	 * <code>b</code>.
 	 * <p>
-	 * <strong>Note:</strong> the strategies still need to be committed.
+	 * <strong>Note:</strong> the traits still need to be committed.
 	 *
 	 * @param a the index of first individual
 	 * @param b the index of second individual
@@ -246,10 +246,10 @@ public abstract class IBSPopulation {
 
 	/**
 	 * Adjusts scores of focal individual with index <code>me</code> and its
-	 * neighbors after <code>me</code> changed strategy. Only works if
+	 * neighbors after <code>me</code> changed trait. Only works if
 	 * <code>adjustScores==true</code>.
 	 * <p>
-	 * <strong>Important:</strong> new strategy must not yet have been committed.
+	 * <strong>Important:</strong> new trait must not yet have been committed.
 	 *
 	 * @param me the index of the focal individual
 	 */
@@ -270,7 +270,7 @@ public abstract class IBSPopulation {
 	 * {@code sumFitness}.
 	 * <p>
 	 * <strong>Important:</strong> Use only to adjust scores of individuals that did
-	 * <em>not</em> change strategy.
+	 * <em>not</em> change trait.
 	 * 
 	 * @param index  the index of the individual
 	 * @param before the score before adjustments
@@ -304,7 +304,7 @@ public abstract class IBSPopulation {
 	 * @param me    the index of individual to update
 	 * @param group the array with indices of reference group
 	 * @param size  the size of the reference group
-	 * @return <code>true</code> if strategy changed (signaling score needs to be
+	 * @return <code>true</code> if trait changed (signaling score needs to be
 	 *         reset)
 	 */
 	public boolean updatePlayerBestResponse(int me, int[] group, int size) {
@@ -312,8 +312,8 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * For deterministic updating with multiple strategies (more than two), it must
-	 * be specified which strategy is the preferred one.
+	 * For deterministic updating with multiple traits (more than two), it must
+	 * be specified which trait is the preferred one.
 	 * <p>
 	 * <strong>Summary:</strong> does 'me' prefer 'sample' over 'best'?
 	 *
@@ -329,7 +329,7 @@ public abstract class IBSPopulation {
 	 * Check if site with index <code>index</code> is occupied by an individual or
 	 * vacant.
 	 * <p>
-	 * <strong>Note:</strong> Assumes that strategies are committed.
+	 * <strong>Note:</strong> Assumes that trait <em>are</em> committed.
 	 * 
 	 * @param index the index of the individual/site to check
 	 * @return <code>true</code> if site <code>index</code> is vacant
@@ -342,7 +342,7 @@ public abstract class IBSPopulation {
 	 * Check if site with index <code>index</code> will become vacant in this time
 	 * step.
 	 * <p>
-	 * <strong>Note:</strong> Assumes that strategies are not committed.
+	 * <strong>Note:</strong> Assumes that trait <em>are not</em> committed.
 	 *
 	 * @param index the index of the individual/site to check
 	 * @return <code>true</code> if site <code>index</code> will become vacant
@@ -474,7 +474,7 @@ public abstract class IBSPopulation {
 
 	/**
 	 * Flag to indicate whether scores are reset whenever a player adopts the
-	 * strategy of another (default) or only if an actual strategy change occurred.
+	 * trait of another (default) or only if an actual change of trait occurred.
 	 * 
 	 * @see IBS#cloScoringType
 	 */
@@ -725,7 +725,7 @@ public abstract class IBSPopulation {
 	 * @param b the index of the second individual
 	 */
 	public void updatePlayerSwap(int a, int b) {
-		swapTraits(a, b); // strategy change still needs to be committed
+		swapTraits(a, b); // trait changed; still needs to be committed
 		// fitness accounting:
 		// synchronous: no need to worry about fitness - this is determined afterwards
 		// asynchronous:
@@ -735,7 +735,7 @@ public abstract class IBSPopulation {
 		// recalculate the payoffs
 		if (populationUpdate.isSynchronous()) {
 			// NOTE: this is not efficient because it deals unnecessarily with types and
-			// scores; enough to only copy from scratch to strategies.
+			// scores; enough to only copy from scratch to traits.
 			commitTraitAt(a);
 			commitTraitAt(b);
 			return;
@@ -747,7 +747,7 @@ public abstract class IBSPopulation {
 			adjustGameScoresAt(b);
 			return;
 		}
-		// NOTE: again, commitStrategy is overkill because the composition of the
+		// NOTE: again, commitTrait is overkill because the composition of the
 		// population has not changed; what about interaction counts?
 		commitTraitAt(a);
 		commitTraitAt(b);
@@ -1356,14 +1356,14 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Update individual with index {@code me} and adopt the strategy of individual
+	 * Update individual with index {@code me} and adopt the trait of individual
 	 * with index {@code you}.
 	 * <p>
 	 * <strong>Note:</strong> method must be subclassed to deal with different data
-	 * types of strategies but should also include a call to super.
+	 * types of traits but should also include a call to super.
 	 *
 	 * @param me  the index of the focal individual
-	 * @param you the index of the model individual to adopt strategy from
+	 * @param you the index of the model individual to adopt trait from
 	 * 
 	 * @see IBSDPopulation#updateFromModelAt(int, int)
 	 * @see IBSMCPopulation#updateFromModelAt(int, int)
@@ -1457,7 +1457,7 @@ public abstract class IBSPopulation {
 	 * is true and not {@link Geometry.Type#MEANFIELD}, i.e. if the interaction
 	 * group includes all neighbors but not all other members of the population.
 	 * <li>For pairwise interactions more efficient approaches are possible but
-	 * those require direct access to the stratgies and are hence delegated to
+	 * those require direct access to the trait and are hence delegated to
 	 * subclasses.
 	 * </ol>
 	 * 
@@ -1466,7 +1466,7 @@ public abstract class IBSPopulation {
 	 * @see #adjustPairGameScoresAt(int)
 	 */
 	public void adjustGameScoresAt(int me) {
-		// check first whether an actual strategy change has occurred
+		// check first whether an actual trait change has occurred
 		if (isSameTrait(me)) {
 			commitTraitAt(me);
 			return;
@@ -1481,7 +1481,7 @@ public abstract class IBSPopulation {
 		}
 		if (module.isPairwise()) {
 			// scores of pairwise interactions can be adjusted more efficiently
-			// but this requires access to the actual strategies.
+			// but this requires access to the actual traits.
 			adjustPairGameScoresAt(me);
 			return;
 		}
@@ -1571,12 +1571,12 @@ public abstract class IBSPopulation {
 	 * 
 	 * <h3>Important:</h3>
 	 * <ol>
-	 * <li>Strategies are already committed when adding scores
+	 * <li>Traits are already committed when adding scores
 	 * (<code>incr&gt;0</code>).
-	 * <li>Strategies are <em>not</em> committed when removing scores
+	 * <li>Traits are <em>not</em> committed when removing scores
 	 * (<code>incr&lt;0</code>).
 	 * <li>This routine is never called for the focal site (i.e. the one that may
-	 * have changed strategy and hence where it matters whether strategies are
+	 * have changed trait and hence where it matters whether traits are
 	 * committed).
 	 * <li>{@link #resetScoreAt(int)} deals with the focal site.
 	 * </ol>
@@ -1674,11 +1674,11 @@ public abstract class IBSPopulation {
 	/**
 	 * Reset score of individual at index <code>index</code>.
 	 * <p>
-	 * <strong>Important:</strong> Strategies must not yet have been committed.
+	 * <strong>Important:</strong> traits must not yet have been committed.
 	 * 
 	 * <h3>Discussions/extensions:</h3>
-	 * Revise the entire strategy updating procedure: it's inefficient to first
-	 * reset scores then update strategies then update score...
+	 * Revise the entire trait updating procedure: it's inefficient to first
+	 * reset scores then update traits then update score...
 	 * 
 	 * @param index the index of the individual
 	 */
@@ -1875,7 +1875,7 @@ public abstract class IBSPopulation {
 		}
 		// real time increment based on current fitness
 		switch (populationUpdate.getType()) {
-			case SYNC: // synchronous updates (do not commit strategies)
+			case SYNC: // synchronous updates (do not commit traits)
 				prepareTraits();
 				if (syncFraction >= 1.0) {
 					// no noise, update everyone
@@ -1956,8 +1956,8 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Mutate the strategy of the focal individual with index {@code focal}. The
-	 * mutated strategy is committed and the scores updated.
+	 * Mutate the trait of the focal individual with index {@code focal}. The
+	 * mutated trait is committed and the scores updated.
 	 * 
 	 * @param focal the index of the focal individual
 	 * @return the elapsed time in realtime units
@@ -1966,22 +1966,22 @@ public abstract class IBSPopulation {
 
 	/**
 	 * Consider mutating the trait of the focal individual with index {@code focal}.
-	 * The strategy of the focal individual is stored in the array
-	 * {@code strategies} unless the focal individual switched strategy. In that
-	 * case the current strategy is stored in the array {@code strategyScratch}.
+	 * The trait of the focal individual is stored in the array
+	 * {@code traits} unless the focal individual switched trait. In that
+	 * case the current trait is stored in the array {@code traitsNext}.
 	 * <p>
 	 * <strong>Important:</strong> The trait is not committed regardless of whether
 	 * a mutation occurred.
 	 * 
 	 * @param focal    the index of the focal individual
-	 * @param switched {@code true} if the focal individual switched strategy
+	 * @param switched {@code true} if the focal individual switched trait
 	 * @return {@code true} if the trait of the focal individual changed
 	 */
 	protected abstract boolean maybeMutateAt(int focal, boolean switched);
 
 	/**
 	 * Consider mutating the trait of the parent individual with index
-	 * {@code source}. The mutated strategy is committed and the scores updated.
+	 * {@code source}. The mutated trait is committed and the scores updated.
 	 * 
 	 * @param source the index of the parent individual
 	 * @param dest   the index of the location for the offspring placement
@@ -2118,7 +2118,7 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Perform a single, asynchronous update of the strategy of a randomly selected
+	 * Perform a single, asynchronous update of the trait of a randomly selected
 	 * individual.
 	 */
 	protected void updatePlayerAsync() {
@@ -2126,7 +2126,7 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Update the strategy of the focal individual with index {@code me}.
+	 * Update the trait of the focal individual with index {@code me}.
 	 * 
 	 * @param me the index of the focal individual
 	 */
@@ -2142,11 +2142,11 @@ public abstract class IBSPopulation {
 	 * Update the scores of the focal individual with index {@code me}.
 	 * 
 	 * @param me       the index of the focal individual
-	 * @param switched {@code true} if the focal switched strategy
+	 * @param switched {@code true} if the focal switched trait
 	 */
 	protected void updateScoreAt(int me, boolean switched) {
 		if (adjustScores) {
-			// player switched strategy - adjust scores, commit strategy
+			// player switched trait - adjust scores, commit trait
 			if (switched)
 				adjustGameScoresAt(me);
 			return;
@@ -2231,7 +2231,7 @@ public abstract class IBSPopulation {
 
 	/**
 	 * Perform a single, Moran (imitate) update for a site selected uniformly at
-	 * random. This corresponds to the <em>imitate</em> strategy in Ohtsuki et al.
+	 * random. This corresponds to <em>imitate</em> in Ohtsuki et al.
 	 * Nature 2005.
 	 * 
 	 * @see <a href="http://dx.doi.org/10.1038/nature04605">Ohtsuki, H., Hauert,
@@ -2244,11 +2244,11 @@ public abstract class IBSPopulation {
 
 	/**
 	 * Update the focal individual with index {@code imitator} by comparing its own
-	 * payoff and those of its neighbors. The focal individual imitates the strategy
+	 * payoff and those of its neighbors. The focal individual imitates the trait
 	 * of a neighbour (or keeps its own) with a probability proportional to the
 	 * corresponding individual's fitness (including its own).
 	 *
-	 * @param imitator the index of the individual that reassesses its strategy
+	 * @param imitator the index of the individual that reassesses its trait
 	 */
 	protected void updatePlayerMoranImitateAt(int imitator) {
 		debugFocal = imitator;
@@ -2265,7 +2265,7 @@ public abstract class IBSPopulation {
 	 * their selection of the individuals {@code source} and {@code dest} and then
 	 * call this method, {@code migrateMoran(int, int)}.
 	 * <p>
-	 * <strong>Note:</strong> Moran optimizations for discrete strategies require
+	 * <strong>Note:</strong> Moran optimizations for discrete trait require
 	 * access to this method.
 	 *
 	 * @param source the index of the parent node
@@ -2289,7 +2289,7 @@ public abstract class IBSPopulation {
 			playGameAt(dest);
 			return;
 		}
-		// no actual strategy change occurred - reset score always (default) or only on
+		// no actual trait change occurred - reset score always (default) or only on
 		// actual change?
 		if (playerScoring.equals(ScoringType.RESET_ALWAYS))
 			resetScoreAt(dest);
@@ -2350,7 +2350,7 @@ public abstract class IBSPopulation {
 	/**
 	 * Perform a single update of the individual with index {@code me} using the
 	 * {@code rGroupSize} models in the array {@code refGroup}. Returns
-	 * {@code true} if the individual changed its strategy to signal that the
+	 * {@code true} if the individual changed its trait to signal that the
 	 * focal individual's score will need to be reset.
 	 * 
 	 * @param me         the index of the focal individual
@@ -2367,7 +2367,7 @@ public abstract class IBSPopulation {
 		boolean switched;
 		switch (playerUpdate.getType()) {
 			case BEST_RESPONSE: // best-response update
-				// this makes little sense for continuous strategies - should not happen...
+				// this makes little sense for continuous traits - should not happen...
 				// takes entire population (mean-field) or entire neighborhood into account.
 				// for details check updatePlayerBestReply() in DPopulation.java
 				switched = updatePlayerBestResponse(me, refGroup, rGroupSize);
@@ -2385,7 +2385,7 @@ public abstract class IBSPopulation {
 				switched = updateProportionalAbs(me, refGroup, rGroupSize);
 				break;
 
-			case IMITATE_BETTER: // imitation update (better strategies only)
+			case IMITATE_BETTER: // imitation update (better traits only)
 				switched = updateReplicatorPlus(me, refGroup, rGroupSize);
 				break;
 
@@ -2403,13 +2403,13 @@ public abstract class IBSPopulation {
 		if (maybeMutateAt(me, switched))
 			return true;
 		if (playerScoring.equals(ScoringType.RESET_ON_CHANGE))
-			// signal change only if actual change of strategy occurred
+			// signal change only if actual change of trait occurred
 			return switched && !isSameTrait(me);
 		return switched;
 	}
 
 	/**
-	 * Updates the focal individual with index {@code me} by adopting the strategy
+	 * Updates the focal individual with index {@code me} by adopting the trait
 	 * of the best performing reference individual among the {@code rGroupSize}
 	 * models in the array {@code refGroup}. Returns {@code true} if the individual
 	 * adopted the trait of the reference individual. Does not imply that the trait
@@ -2421,7 +2421,7 @@ public abstract class IBSPopulation {
 	 * <li>If the scores of two reference individuals tie but exceed the focal
 	 * individual's score, expert advice is needed.
 	 * <li>If the focal individual's score is highest but ties with one or more
-	 * reference individuals the focal individual keeps its strategy.
+	 * reference individuals the focal individual keeps its trait.
 	 * <li>For the best update it does not matter whether scores are averaged or
 	 * accumulated.
 	 * </ol>
@@ -2442,7 +2442,7 @@ public abstract class IBSPopulation {
 
 		int bestPlayer = me;
 		// if the individual's score is highest but ties with a reference, the
-		// individual sticks to it's strategy.
+		// individual sticks to it's trait.
 		double bestScore = getFitnessAt(me) + 1e-8;
 		boolean switched = false;
 
@@ -2451,7 +2451,7 @@ public abstract class IBSPopulation {
 			double aScore = getFitnessAt(aPlayer);
 			double bScore = aScore;
 			if (Math.abs(bestScore - bScore) < 1e-8) {
-				// we need some expert advice on which strategy is the preferred one
+				// we need some expert advice on which trait is the preferred one
 				// does 'me' prefer 'aPlayer' over 'bestPlayer'?
 				if (preferredPlayerBest(me, bestPlayer, aPlayer))
 					bScore += 1e-8;
@@ -2471,11 +2471,11 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Updates the focal individual with index {@code me} by adopting the strategy
+	 * Updates the focal individual with index {@code me} by adopting the trait
 	 * of the best performing reference individual among the the {@code rGroupSize}
 	 * models in the array {@code refGroup}. If the scores of two (or more)
 	 * references or the score of the focal individual and one (or more)
-	 * reference(s) tie, then a coin toss decides which strategy to keep/adopt.
+	 * reference(s) tie, then a coin toss decides which trait to keep/adopt.
 	 * Returns {@code true} if the individual adopted the trait of the reference
 	 * individual. Does not imply that the trait changed in discrete modules.
 	 * Whether the individuals score is reset depends on
@@ -2521,7 +2521,7 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Updates the focal individual with index {@code me} by adopting the strategy
+	 * Updates the focal individual with index {@code me} by adopting the trait
 	 * of one reference individual (including itself) among the the
 	 * {@code rGroupSize} models in the array {@code refGroup} with a probability
 	 * proportional to their scores. Returns {@code true} if the individual adopted
@@ -2580,9 +2580,9 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Updates the focal individual with index {@code me} by adopting the strategy
+	 * Updates the focal individual with index {@code me} by adopting the trait
 	 * of one reference individual among the the {@code rGroupSize} models in the
-	 * array {@code refGroup}. The focal individual \(i\) imitates the strategy of a
+	 * array {@code refGroup}. The focal individual \(i\) imitates the trait of a
 	 * <em>better</em> performing reference individual \(j\) with a probability
 	 * proportional to the difference in fitness:
 	 * \[p_{i\to j} = \frac{(f_i-f_j)_+}\alpha,\]
@@ -2604,9 +2604,9 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Updates the focal individual with index {@code me} by adopting the strategy
+	 * Updates the focal individual with index {@code me} by adopting the trait
 	 * of one reference individual among the the {@code rGroupSize} models in the
-	 * array {@code refGroup}. The focal individual \(i\) imitates the strategy of a
+	 * array {@code refGroup}. The focal individual \(i\) imitates the trait of a
 	 * reference individual \(j\) with a probability proportional to the difference
 	 * in fitness:
 	 * \[p_{i\to j} = \frac{f_i-f_j}\alpha\]
@@ -2740,13 +2740,13 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Updates the focal individual with index {@code me} by adopting the strategy
+	 * Updates the focal individual with index {@code me} by adopting the trait
 	 * of one reference individual among the the {@code rGroupSize} models in the
-	 * array {@code refGroup}. The focal individual \(i\) imitates the strategy of a
+	 * array {@code refGroup}. The focal individual \(i\) imitates the trait of a
 	 * reference individual \(j\) with a probability proportional to the difference
 	 * in fitness:
 	 * \[p_{i\to j} = \frac1{1+\exp(-(f_i-f_j)/T)}\]
-	 * where \(T\) denotes the temperature (or noise) in adopting a strategy. In the
+	 * where \(T\) denotes the temperature (or noise) in adopting a trait. In the
 	 * limit \(T\to\infty\) imitation reduces to a coin toss, \(p_{i\to j}=1/2\). In
 	 * contrast, for \(T\to 0\) it converges to the step-function, with
 	 * \(\Theta(x)=1\) for positive \(x\), \(\Theta(x)=0\) for \(x\) negative and
@@ -3365,11 +3365,11 @@ public abstract class IBSPopulation {
 
 	/**
 	 * Check if scores can be adjusted rather than recalculated after an individual
-	 * changed its strategy. This requires that individuals interact with all their
+	 * changed its trait. This requires that individuals interact with all their
 	 * neighbours and that the structure of the population is not well-mixed. Some
 	 * implementations may be able to extend adjustments to other structures. For
 	 * example, adjusting scores is feasible in well-mixed populations for discrete
-	 * traits/strategies.
+	 * traits.
 	 * 
 	 * <h3>Requirements:</h3>
 	 * <dl>
@@ -3379,11 +3379,11 @@ public abstract class IBSPopulation {
 	 * <dt>Geometry.MEANFIELD</dt>
 	 * <dd>interactions with everyone are not feasible (impossible to model
 	 * efficiently), in general, for unstructured populations (subclasses can do
-	 * better, e.g. for discrete strategies it is possible, see
+	 * better, e.g. for discrete trait it is possible, see
 	 * {@link IBSDPopulation#doAdjustScores()}).</dd>
 	 * <dt>playerScoreReset</dt>
-	 * <dd>if scores are reset whenever an individual adopts the strategy of another
-	 * (regardless of whether an actual strategy change occurred) then the expected
+	 * <dd>if scores are reset whenever an individual adopts the trait of another
+	 * (regardless of whether an actual trait change occurred) then the expected
 	 * number of interactions of each individual remains constant over time (even
 	 * though the interaction count may differ for individuals on heterogeneous
 	 * structures).
@@ -3402,7 +3402,7 @@ public abstract class IBSPopulation {
 	 * memory and initialize the interaction and competition structures. If
 	 * structures include random elements, e.g. random regular graphs, a new
 	 * structure is generated. Generate initial configuration. Subclasses must
-	 * override this method to allocate memory for the strategies and call super.
+	 * override this method to allocate memory for the trait and call super.
 	 * 
 	 * @see #check()
 	 * @see Model#reset()
@@ -3498,7 +3498,7 @@ public abstract class IBSPopulation {
 
 	/**
 	 * Initialize the model. All parameters must be consistent. Subclasses must
-	 * override this method to generate the initial strategy configuration and call
+	 * override this method to generate the initial trait configuration and call
 	 * super.
 	 * <p>
 	 * <strong>Note:</strong> Initialization leaves the interaction and competition
@@ -3720,7 +3720,7 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Reset all strategies in preparation of the next update step. Simply an
+	 * Reset all traits in preparation of the next update step. Simply an
 	 * opportunity for customizations in subclasses.
 	 */
 	public void resetTraits() {
@@ -4345,7 +4345,7 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Encode the strategies of all individuals in the IBS model in a
+	 * Encode the traits of all individuals in the IBS model in a
 	 * <code>plist</code> inspired <code>XML</code> string.
 	 * 
 	 * @param plist the {@link java.lang.StringBuilder StringBuilder} to write the
@@ -4356,7 +4356,7 @@ public abstract class IBSPopulation {
 	public abstract void encodeTraits(StringBuilder plist);
 
 	/**
-	 * Restore the strategies of all individuals encoded in the <code>plist</code>
+	 * Restore the traits of all individuals encoded in the <code>plist</code>
 	 * inspired <code>map</code> of {@code key, value}-pairs.
 	 * 
 	 * @param plist the map of {@code key, value}-pairs

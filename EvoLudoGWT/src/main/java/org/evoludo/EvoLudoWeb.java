@@ -1839,20 +1839,20 @@ public class EvoLudoWeb extends Composite
 		// strategies related views
 		Model model = engine.getModel();
 		boolean isODESDE = (model != null && (model.isODE() || model.isSDE()));
-		if (module instanceof HasPop2D.Strategy && !isODESDE)
-			addView(new Pop2D(engine, Data.STRATEGY), oldViews);
-		if (isWebGLSupported && module instanceof HasPop3D.Strategy && !isODESDE)
-			addView(new Pop3D(engine, Data.STRATEGY), oldViews);
+		if (module instanceof HasPop2D.Traits && !isODESDE)
+			addView(new Pop2D(engine, Data.TRAIT), oldViews);
+		if (isWebGLSupported && module instanceof HasPop3D.Traits && !isODESDE)
+			addView(new Pop3D(engine, Data.TRAIT), oldViews);
 		if (module instanceof HasPhase2D)
 			addView(new Phase2D(engine), oldViews);
-		if (module instanceof HasMean.Strategy)
-			addView(new Mean(engine, Data.STRATEGY), oldViews);
+		if (module instanceof HasMean.Traits)
+			addView(new Mean(engine, Data.TRAIT), oldViews);
 		if (module instanceof HasS3)
 			addView(new S3(engine), oldViews);
 		if (module instanceof HasHistogram.Strategy)
-			addView(new Histogram(engine, Data.STRATEGY), oldViews);
+			addView(new Histogram(engine, Data.TRAIT), oldViews);
 		if (module instanceof HasDistribution.Strategy)
-			addView(new Distribution(engine, Data.STRATEGY), oldViews);
+			addView(new Distribution(engine, Data.TRAIT), oldViews);
 		// fitness related views
 		if (module instanceof HasPop2D.Fitness && !isODESDE)
 			addView(new Pop2D(engine, Data.FITNESS), oldViews);

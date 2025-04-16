@@ -310,7 +310,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * <p>
 	 * <strong>Note:</strong> The difference between {@link #init()} and
 	 * {@link #reset()} is that {@link #init()} leaves population structures
-	 * untouched and only initializes the strategies.
+	 * untouched and only initializes the traits.
 	 * 
 	 * @see EvoLudo#modelInit()
 	 * @see MilestoneListener#modelDidInit()
@@ -324,7 +324,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * <p>
 	 * <strong>Note:</strong> The difference between {@link #init()} and
 	 * {@link #reset()} is that {@link #init()} leaves population structures
-	 * untouched and only initializes the strategies.
+	 * untouched and only initializes the traits.
 	 * 
 	 * @see EvoLudo#modelReset()
 	 * @see MilestoneListener#modelDidReset()
@@ -638,7 +638,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * the second set of {@code nTraits} colors depends on the trait type:
 	 * <dl>
 	 * <dt>discrete
-	 * <dd>the colors of individuals that switched strategy since the last update
+	 * <dd>the colors of individuals that switched traits since the last update
 	 * <dt>continuous
 	 * <dd>the colors for the mean &#177; standard deviation, see e.g.
 	 * {@link org.evoludo.simulator.views.Mean}.
@@ -707,9 +707,8 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 			traitColor = cols;
 			return true;
 		}
-		// continuous traits and colors
-		Color[] cColor = new Color[3 * nTraits]; // continuous strategies require colors for min, mean, max of each
-													// trait
+		// continuous traits and colors (means and stddev)
+		Color[] cColor = new Color[3 * nTraits];
 		for (int n = 0; n < nTraits; n++) {
 			Color color = colors[n];
 			cColor[n] = color; // mean

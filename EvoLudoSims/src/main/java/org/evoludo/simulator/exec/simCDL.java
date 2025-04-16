@@ -92,7 +92,7 @@ public class simCDL extends CDL implements ChangeListener {
 	}
 
 	/**
-	 * The initial counts for the different strategies.
+	 * The initial counts for the different traits.
 	 */
 	int[] initcount;
 

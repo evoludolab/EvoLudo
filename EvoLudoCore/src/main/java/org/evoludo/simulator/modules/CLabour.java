@@ -51,8 +51,8 @@ import org.evoludo.simulator.views.HasPop3D;
  * diversification.</em> PLoS Comput. Biol. 17(2): e1008733. 
  * <a href='https://doi.org/10.1371/journal.pcbi.1008733'>doi: 10.1371/journal.pcbi.1008733</a>"
  */
-public class CLabour extends Continuous implements HasIBS.MCPairs, HasPop2D.Strategy,
-		HasPop3D.Strategy, HasMean.Strategy, HasHistogram.Strategy, HasDistribution.Strategy, HasPop2D.Fitness,
+public class CLabour extends Continuous implements HasIBS.MCPairs, HasPop2D.Traits,
+		HasPop3D.Traits, HasMean.Traits, HasHistogram.Strategy, HasDistribution.Strategy, HasPop2D.Fitness,
 		HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree {
 
 	// NOTE: in order to introduce a maximum total investment, this module needs to

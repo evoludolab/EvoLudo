@@ -74,8 +74,8 @@ import org.evoludo.util.Formatter;
  * @author Christoph Hauert
  */
 public class Moran extends Discrete implements Static,
-		IBS.HasIBS, HasODE, HasSDE, HasPDE, HasPop2D.Strategy, HasPop3D.Strategy,
-		HasMean.Strategy, HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness,
+		IBS.HasIBS, HasODE, HasSDE, HasPDE, HasPop2D.Traits, HasPop3D.Traits,
+		HasMean.Traits, HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness,
 		HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsProbability,
 		HasHistogram.StatisticsTime, HasHistogram.StatisticsStationary {
 
@@ -112,7 +112,7 @@ public class Moran extends Discrete implements Static,
 		names[RESIDENT] = "Resident";
 		names[MUTANT] = "Mutant";
 		setTraitNames(names);
-		// trait colors (automatically generates lighter versions for new strategists)
+		// trait colors (automatically generates lighter versions for new traits)
 		Color[] colors = new Color[nTraits];
 		colors[RESIDENT] = Color.BLUE;
 		colors[MUTANT] = Color.RED;

@@ -55,7 +55,7 @@ import org.evoludo.util.Plist;
  * differential equations.
  * <p>
  * <strong>Note:</strong> Currently differential equation models are restricted
- * to discrete strategy sets.
+ * to sets of discrete traits.
  *
  * @author Christoph Hauert
  */
@@ -68,8 +68,8 @@ public class ODE extends Model implements Discrete {
 	public abstract interface HasDE {
 
 		/**
-		 * For replicator dynamics the frequencies of all strategies must sum up to one.
-		 * Hence, for <code>nTraits</code> strategies there are only
+		 * For replicator dynamics the frequencies of all traits must sum up to one.
+		 * Hence, for <code>nTraits</code> traits there are only
 		 * <code>nTraits-1</code> degrees of freedom. <code>dependentTrait</code> marks
 		 * the one that is derived from the others.
 		 *
@@ -80,11 +80,11 @@ public class ODE extends Model implements Discrete {
 		}
 
 		/**
-		 * Calculate the average payoff/score for the frequency of traits/strategies
-		 * specified in the array <code>density</code> for interactions in groups of
-		 * size <code>n</code>. The average payoffs/scores for each of the
-		 * <code>nTraits</code> traits/strategies must be stored and returned in the
-		 * array <code>avgscores</code>.
+		 * Calculate the average payoff/score for the frequency of traits specified in
+		 * the array <code>density</code> for interactions in groups of size
+		 * <code>n</code>. The average payoffs/scores for each of the
+		 * <code>nTraits</code> traits must be stored and returned in the array
+		 * <code>avgscores</code>.
 		 * <p>
 		 * <strong>Note:</strong> needs to be thread safe for parallel processing of
 		 * PDE's.
@@ -102,22 +102,22 @@ public class ODE extends Model implements Discrete {
 		 * overridden in a subclass of {@code ODE}, which may prevent calls to
 		 * {@code avgScores(...)} altogether.
 		 *
-		 * @param density   the frequency/density of each trait/strategy
+		 * @param density   the frequency/density of each trait
 		 * @param n         the size of interaction groups
-		 * @param avgscores the array for storing the average payoffs/scores for each
-		 *                  strategic type
+		 * @param avgscores the array for storing the average payoffs/scores of each
+		 *                  trait
 		 */
 		public default void avgScores(double[] density, int n, double[] avgscores) {
 			avgScores(density, n, avgscores, 0);
 		}
 
 		/**
-		 * Calculate the average payoff/score for the frequency of traits/strategies
-		 * specified in the array <code>density</code> for interactions in groups of
-		 * size <code>n</code> in <em>multi-species interactions</em>. The state of the
+		 * Calculate the average payoff/score for the frequency of traits specified in
+		 * the array <code>density</code> for interactions in groups of size
+		 * <code>n</code> in <em>multi-species interactions</em>. The state of the
 		 * current species starts at index <code>skip</code> and the average
-		 * payoffs/scores for each of its <code>nTraits</code> traits/strategies must be
-		 * stored and returned in the array <code>avgscores</code> starting at index
+		 * payoffs/scores for each of its <code>nTraits</code> traits must be stored and
+		 * returned in the array <code>avgscores</code> starting at index
 		 * <code>skip</code>.
 		 * <p>
 		 * <strong>Note:</strong> needs to be thread safe for parallel processing of
@@ -137,10 +137,10 @@ public class ODE extends Model implements Discrete {
 		 * {@code avgScores(...)} altogether.
 		 *
 		 * 
-		 * @param density   the frequency/density of each trait/strategy
+		 * @param density   the frequency/density of each trait
 		 * @param n         the size of interaction groups
-		 * @param avgscores the array for storing the average payoffs/scores for each
-		 *                  strategic type
+		 * @param avgscores the array for storing the average payoffs/scores of each
+		 *                  trait
 		 * @param skip      the entries to skip in arrays <code>density</code> and
 		 *                  <code>avgscores</code>
 		 */
@@ -995,7 +995,7 @@ public class ODE extends Model implements Discrete {
 					throw new Error("Unknown update method for players (" + put + ")");
 			}
 
-			// restrict to active strategies
+			// restrict to active trait
 			// note float resolution is 1.1920929E-7
 			if (Math.abs(err) > 1e-7 * mod.getNActive()) {
 				boolean[] active = mod.getActiveTraits();
@@ -1050,7 +1050,7 @@ public class ODE extends Model implements Discrete {
 	 */
 	protected double updateEcology(Module mod, double[] state, double[] fitness, int nGroup, int index,
 			double[] change) {
-		// XXX what happens if one strategy is deactivated!?
+		// XXX what happens if one trait is deactivated!?
 		int vacant = mod.getVacant();
 		double err = 0.0;
 		int skip = idxSpecies[index];
@@ -1078,11 +1078,11 @@ public class ODE extends Model implements Discrete {
 	 * calculates the rates of change for each type in species <code>mod</code> for
 	 * the popular choice for 'pairwise comparisons' where the focal player \(i\)
 	 * and one of its neighbours \(j\) are randomly chosen. The focal player \(i\)
-	 * adopts the strategy of player \(j\) with a probability
+	 * adopts the trait of player \(j\) with a probability
 	 * \[p_{i\to j}=\frac1{1+\exp[w(f_i-f_j)]},\]
 	 * where \(w\geq 0\) denotes the selection strength and \(f_i, f_j\) the
 	 * payoffs of individuals \(i\) and \(j\), respectively. The resulting dynamics
-	 * for the frequencies of the different strategic types is then given by
+	 * for the frequencies of the different traits is then given by
 	 * \[
 	 * \begin{align}
 	 * \dot x_i =&amp; \sum_{j=1}^n x_i x_j \left(\frac1{1+\exp[w(f_i-f_j)]} -
@@ -1134,23 +1134,23 @@ public class ODE extends Model implements Discrete {
 
 	/**
 	 * Implementation of player update {@link PlayerUpdate.Type#BEST}. This
-	 * calculates the rate of change individuals adopt the strategy of better
+	 * calculates the rate of change individuals adopt the trait of better
 	 * performing individuals with certainty (and never those of worse performing
 	 * individuals). This calculates the rates of change for each type in species
 	 * <code>mod</code> for the popular choice for 'pairwise comparisons' where the
 	 * focal player \(i\) and one of its neighbours \(j\) are randomly chosen. The
-	 * focal player \(i\) adopts the strategy of player \(j\) if \(f_j&gt;f_i\) but
+	 * focal player \(i\) adopts the trait of player \(j\) if \(f_j&gt;f_i\) but
 	 * never adopts those of a player \(j\) with \(f_j&lt;f_i\), where \(f_i,f_j\)
 	 * denote the fitness of players \(i\) and \(j\), respectively. In case of a tie
-	 * \(f_j=f_i\) the individual sticks to its strategy. More specifically, the
-	 * probability to adopt the strategy of \(j\) is given by
+	 * \(f_j=f_i\) the individual sticks to its trait. More specifically, the
+	 * probability to adopt the trait of \(j\) is given by
 	 * \[p_{i\to j}=\theta(f_j-f_i),\]
 	 * where \(\theta(x)\) denotes the Heaviside step function with
 	 * \(\theta(x)=0\) for \(x&lt;0\), \(\theta(x)=1\) for \(x&gt;0\). In principle
 	 * \(\theta(0)=1/2\) but assuming that players need at least a marginal
-	 * incentive to switch strategies we set \(\theta(0)=0\). In most cases this
+	 * incentive to switch traits we set \(\theta(0)=0\). In most cases this
 	 * choice is inconsequential. The resulting dynamics for the frequencies of the
-	 * different strategic types is then given by
+	 * different traits is then given by
 	 * \[
 	 * \begin{align}
 	 * \dot x_i =&amp; \sum_{j=1}^n x_i x_j \theta[f_j-f_i)].
@@ -1196,12 +1196,12 @@ public class ODE extends Model implements Discrete {
 	 * calculates the rates of change for each type in species <code>mod</code> for
 	 * the popular choice for 'pairwise comparisons' where the focal player \(i\)
 	 * and one of its neighbours \(j\) are randomly chosen. The focal player \(i\)
-	 * adopts the strategy of \(j\) with a probability proportional to the payoff
+	 * adopts the trait of \(j\) with a probability proportional to the payoff
 	 * difference \(f_j - f_i\):
 	 * \[p_{i\to j}=1/2 \left(1 + (f_j-f_i)/(f_j+f_i)\right),\]
 	 * where \(f_i,f_j\) denote the fitness of players \(i\) and \(j\),
 	 * respectively. The resulting dynamics for the frequencies of the different
-	 * strategic types is then given by the standard replicator equation \[
+	 * traits is then given by the standard replicator equation \[
 	 * \begin{align}
 	 * \dot x_i =&amp; x_i (f_i-\bar f)
 	 * \end{align}
@@ -1232,7 +1232,7 @@ public class ODE extends Model implements Discrete {
 	 * This calculates the rates of change for each type in species <code>mod</code>
 	 * for the popular choice for 'pairwise comparisons' where the focal player
 	 * \(i\) and one of its neighbours \(j\) are randomly chosen. The focal player
-	 * \(i\) adopts the strategy of a <em>better performing</em> player \(j\) with a
+	 * \(i\) adopts the trait of a <em>better performing</em> player \(j\) with a
 	 * probability proportional to the payoff difference \(f_j - f_i\):
 	 * \[
 	 * \begin{align}
@@ -1269,7 +1269,7 @@ public class ODE extends Model implements Discrete {
 	 * Helper method to calculate the rate of change for the standard replicator
 	 * dynamics with different amounts of noise arising from the microscopic update
 	 * rule. In the microscopic implementation of the replicator dynamics the noise
-	 * arises from focal individuals \(i\) that adopt the strategy of a neighbour
+	 * arises from focal individuals \(i\) that adopt the trait of a neighbour
 	 * \(j\) with a probability proportional to the payoff difference \(f_j-f_i\),
 	 * where \(f_i, f_j\) refer to the respective payoffs of \(i\) and \(j\).
 	 * However, the noise is cut in half if the focal imitates only better
@@ -1317,7 +1317,7 @@ public class ODE extends Model implements Discrete {
 	 * This calculates the rates of change for each type in species <code>mod</code>
 	 * for a 'pairwise comparison' where the focal player
 	 * \(i\) and one of its neighbours \(j\) are randomly chosen. The focal player
-	 * \(i\) adopts the strategy of a player \(j\) with probability:
+	 * \(i\) adopts the trait of a player \(j\) with probability:
 	 * \[p_{i\to j}=f_j/(f_i+f_j),\]
 	 * where \(f_i, f_j\) refer to the respective payoffs of \(i\) and \(j\). In the
 	 * continuum limit this yields
@@ -1362,14 +1362,14 @@ public class ODE extends Model implements Discrete {
 	 * Implementation of the player update {@link PlayerUpdate.Type#BEST_RESPONSE}.
 	 * This calculates the rates of change for each type in species <code>mod</code>
 	 * for the best-response dynamic where the focal player \(i\) switches to the
-	 * strategy \(j\) that has the highest payoff given the current state of the
+	 * trait \(j\) that has the highest payoff given the current state of the
 	 * population. Note, in contrast to other player updates, such as
 	 * {@link PlayerUpdate.Type#THERMAL} or {@link PlayerUpdate.Type#IMITATE} the
-	 * best-response is an innovative update rule, which means that strategic types
+	 * best-response is an innovative update rule, which means that traits
 	 * that are currently not present in the population can get introduced.
 	 * Consequently, homogeneous states may not be absorbing.
 	 * <p>
-	 * <strong>Note:</strong> inactive strategies are excluded and do not qualify as
+	 * <strong>Note:</strong> inactive traits are excluded and do not qualify as
 	 * a best response.
 	 * <p>
 	 * <strong>IMPORTANT:</strong> needs to be thread safe (must supply memory for
@@ -1423,7 +1423,7 @@ public class ODE extends Model implements Discrete {
 		// completely heuristic... convergence no longer triggered for CDL with
 		// threshold of 1e-4. this should be done in a more systematic manner.
 		// - the second condition already triggers early on whenever approaching
-		// points where another strategy becomes the best response.
+		// points where another trait becomes the best response.
 		if (diff < 1e-3 && diff * dtTry < accuracy) {
 			System.arraycopy(state, skip, change, skip, nTraits);
 		} else {
@@ -1901,7 +1901,7 @@ public class ODE extends Model implements Discrete {
 		plist.append(Plist.encodeKey("Forward", forward));
 		plist.append(Plist.encodeKey("AdjustedDynamics", isAdjustedDynamics));
 		plist.append(Plist.encodeKey("Accuracy", accuracy));
-		encodeStrategies(plist);
+		encodeTraits(plist);
 		encodeFitness(plist);
 	}
 
@@ -1914,8 +1914,8 @@ public class ODE extends Model implements Discrete {
 		isAdjustedDynamics = (Boolean) plist.get("AdjustedDynamics");
 		accuracy = (Double) plist.get("Accuracy");
 		connect = false;
-		if (!restoreStrategies(plist)) {
-			logger.warning("restore strategies in " + type + "-model failed.");
+		if (!restoreTraits(plist)) {
+			logger.warning("restore traits in " + type + "-model failed.");
 			success = false;
 		}
 		if (!restoreFitness(plist)) {
@@ -1930,7 +1930,7 @@ public class ODE extends Model implements Discrete {
 	 * 
 	 * @param plist the string builder for the encoded state
 	 */
-	void encodeStrategies(StringBuilder plist) {
+	void encodeTraits(StringBuilder plist) {
 		plist.append(Plist.encodeKey("State", yt));
 		plist.append(Plist.encodeKey("StateChange", dyt));
 	}
@@ -1941,7 +1941,7 @@ public class ODE extends Model implements Discrete {
 	 * @param plist the encoded state
 	 * @return <code>true</code> if successful
 	 */
-	boolean restoreStrategies(Plist plist) {
+	boolean restoreTraits(Plist plist) {
 		@SuppressWarnings("unchecked")
 		List<Double> state = (List<Double>) plist.get("State");
 		@SuppressWarnings("unchecked")
