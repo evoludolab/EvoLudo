@@ -2247,7 +2247,7 @@ public abstract class IBS extends Model {
 			if (isMultiSpecies)
 				plist.append("<key>" + mod.getName() + "</key>\n" + "<dict>\n");
 			pop.encodeGeometry(plist);
-			pop.encodeStrategies(plist);
+			pop.encodeTraits(plist);
 			pop.encodeFitness(plist);
 			pop.encodeInteractions(plist);
 			if (isMultiSpecies)
@@ -2274,7 +2274,7 @@ public abstract class IBS extends Model {
 					logger.warning("restore interactions in " + type + "-model failed (" + name + ").");
 					success = false;
 				}
-				if (!pop.restoreStrategies(pplist)) {
+				if (!pop.restoreTraits(pplist)) {
 					logger.warning("restore strategies in " + type + "-model failed (" + name + ").");
 					success = false;
 				}
@@ -2293,7 +2293,7 @@ public abstract class IBS extends Model {
 			logger.warning("restore interactions in " + type + "-model failed.");
 			success = false;
 		}
-		if (!population.restoreStrategies(plist)) {
+		if (!population.restoreTraits(plist)) {
 			logger.warning("restore strategies in " + type + "-model failed.");
 			success = false;
 		}

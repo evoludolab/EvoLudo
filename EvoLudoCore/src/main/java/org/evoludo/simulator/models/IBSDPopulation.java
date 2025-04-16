@@ -49,9 +49,9 @@ import org.evoludo.util.Plist;
 
 /**
  * The core class for individual based simulations with discrete
- * traits/strategies. Manages the strategies of the population,
- * while delegating the management of the population and individual fitness as
- * well as simulation steps to super.
+ * traits/strategies. Manages the traits of the population, while delegating the
+ * management of the population and individual fitness as well as simulation
+ * steps to super.
  *
  * @author Christoph Hauert
  * 
@@ -112,7 +112,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * {@link IBSD#cloOptimize}.
 	 * <li>Optimizations destroy the time line of events. Do not use if e.g.
 	 * fixation times are of interest (but fine for fixation probabilities).
-	 * <li>Currently restricted to discrete strategies and structured populations,
+	 * <li>Currently restricted to discrete traits and structured populations,
 	 * where Moran type processes can be optimized by skipping events involving
 	 * individuals of the same type (see
 	 * {@link IBSDPopulation#maybeMutateMoran(int, int)}).
@@ -168,18 +168,17 @@ public class IBSDPopulation extends IBSPopulation {
 	protected boolean[] active;
 
 	/**
-	 * The array with the total scores for each trait/strategic type.
+	 * The array with the total scores for each trait.
 	 */
 	protected double[] accuTypeScores;
 
 	/**
-	 * The array with the total number of individuals of each trait/strategic type.
+	 * The array with the total number of individuals of each trait.
 	 */
 	public int[] traitsCount;
 
 	/**
-	 * The array with the initial number of individuals of each trait/strategic
-	 * type.
+	 * The array with the initial number of individuals of each trait.
 	 */
 	public int[] initCount;
 
@@ -225,12 +224,10 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 		// groupScores have the same maximum length
 		int maxGroup = groupScores.length;
-		if (groupTraits == null || groupTraits.length != maxGroup)
-			groupTraits = new int[maxGroup];
-		if (groupIdxs == null || groupIdxs.length != maxGroup)
-			groupIdxs = new int[maxGroup];
 		if (tmpTraits == null || tmpTraits.length != maxGroup)
 			tmpTraits = new int[maxGroup];
+		if (tmpGroup == null || tmpGroup.length != maxGroup)
+			tmpGroup = new int[maxGroup];
 	}
 
 	/**
@@ -239,7 +236,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * Optimized Moran process: a significant speed boost is achieved when
 	 * restricting events along links that potentially result in an actual change of
 	 * the population composition, i.e. by focussing on those links that connect
-	 * individuals of different strategies/traits. This destroys the time scale.
+	 * individuals of different traits. This destroys the time scale.
 	 * 
 	 * @see #optimizeMoran
 	 */
@@ -357,8 +354,8 @@ public class IBSDPopulation extends IBSPopulation {
 	 * The optimized Moran process for death-Birth and imitation updatating. A
 	 * significant speed boost is achieved when restricting events along links that
 	 * potentially result in an actual change of the population composition, i.e. by
-	 * focussing on those links that connect individuals of different
-	 * strategies/traits. This destroys the time scale.
+	 * focussing on those links that connect individuals of different traits. This
+	 * destroys the time scale.
 	 * 
 	 * @param withSelf the flag to indicate whether to include to focal individual
 	 * 
@@ -490,18 +487,20 @@ public class IBSDPopulation extends IBSPopulation {
 
 	@Override
 	public double mutateAt(int focal) {
-		traitsNext[focal] = mutation.mutate(getTraitAt(focal)) + nTraits;
+		setNextTraitAt(focal, mutation.mutate(getTraitAt(focal)));
 		updateScoreAt(focal, true);
 		return 1.0 / (nPopulation * module.getSpeciesUpdateRate());
 	}
 
 	@Override
 	protected boolean maybeMutateAt(int focal, boolean switched) {
-		int strat = (switched ? traitsNext[focal] : traits[focal]) % nTraits;
+		int trait = (switched ? traitsNext[focal] : traits[focal]) % nTraits;
 		boolean mutate = mutation.doMutate();
-		if (mutate)
-			traitsNext[focal] = mutation.mutate(strat) + nTraits;
-		return switched || mutate;
+		if (mutate) {
+			setNextTraitAt(focal, mutation.mutate(trait));
+			return true;
+		}
+		return switched;
 	}
 
 	@Override
@@ -528,17 +527,17 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	@Override
-	public boolean haveSameStrategy(int a, int b) {
+	public boolean haveSameTrait(int a, int b) {
 		return (getTraitAt(a) == getTraitAt(b));
 	}
 
 	@Override
-	public boolean isSameStrategy(int a) {
+	public boolean isSameTrait(int a) {
 		return (getTraitAt(a) == (traitsNext[a] % nTraits));
 	}
 
 	@Override
-	public void swapStrategies(int a, int b) {
+	public void swapTraits(int a, int b) {
 		traitsNext[a] = traits[b];
 		traitsNext[b] = traits[a];
 	}
@@ -586,8 +585,8 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	/**
-	 * Gets the trait of the individual with index {@code idx}. The trait index is
-	 * in {@code [0,nTraits)}.
+	 * Gets the trait of the individual with index {@code idx}. The trait is
+	 * an index in {@code [0,nTraits)}.
 	 *
 	 * @param idx the index of the individual
 	 * @return the trait of the individual
@@ -599,10 +598,11 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	/**
-	 * Gets the trait of the individual with index {@code idx}. The trait index is
-	 * in {@code [0,nTraits)}.
+	 * Sets the trait of the individual with index {@code idx} to {@code trait}. The
+	 * trait is an index in {@code [0,nTraits)}.
 	 *
-	 * @param idx the index of the individual
+	 * @param idx   the index of the individual
+	 * @param trait the new trait
 	 * @return the trait of the individual
 	 * 
 	 * @see org.evoludo.simulator.modules.Module#nTraits Module.nTraits
@@ -613,7 +613,7 @@ public class IBSDPopulation extends IBSPopulation {
 
 	/**
 	 * Sets the next trait of the individual with index {@code idx} to
-	 * {@code trait}. The trait index is in {@code [0,nTraits)}.
+	 * {@code trait}. The trait is an index in {@code [0,nTraits)}.
 	 * 
 	 * @param idx   the index of the individual
 	 * @param trait the new trait
@@ -700,9 +700,9 @@ public class IBSDPopulation extends IBSPopulation {
 		// mytype and active refer to focal species, while interaction partners
 		// to opponent species
 		int mytype = getTraitAt(me);
-		// constant selection: simply choose active strategy with highest payoff
 		if (module.isStatic()) {
-			double max = typeScores[mytype]; // assumes mytype is active
+			// constant selection: simply choose active trait with highest payoff
+			double max = typeScores[mytype];
 			int newtype = mytype;
 			for (int n = 0; n < nTraits; n++) {
 				if (!active[n])
@@ -720,33 +720,34 @@ public class IBSDPopulation extends IBSPopulation {
 			return false;
 		}
 
-		// frequency dependent selection: determine active strategy with highest payoff
+		// frequency dependent selection: determine active trait with highest payoff
 		if (competition.getType() == Geometry.Type.MEANFIELD) {
 			// well-mixed
-			System.arraycopy(opponent.traitsCount, 0, tmpTraitCount, 0, nTraits);
+			System.arraycopy(opponent.traitsCount, 0, tmpCount, 0, nTraits);
 			if (interaction.isInterspecies()) {
-				// inter-species: focal individual not part of opponents
+				// inter-species: focal individual not part of opponents but include it's
+				// counterpart in opponent population
 				if (module.isPairwise())
-					pairmodule.mixedScores(tmpTraitCount, traitScore);
+					pairmodule.mixedScores(tmpCount, tmpTraitScore);
 				else
-					groupmodule.mixedScores(tmpTraitCount, module.getNGroup(), traitScore);
+					groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpTraitScore);
 			} else {
-				// intra-species: remove focal individual and evaluate performance of all active
-				// strategies
-				tmpTraitCount[mytype]--;
+				// intra-species: remove focal individual and evaluate performance
+				// of all active traits
+				tmpCount[mytype]--;
 				for (int n = 0; n < nTraits; n++) {
 					if (!active[n]) {
-						traitScore[n] = -Double.MAX_VALUE;
+						tmpTraitScore[n] = -Double.MAX_VALUE;
 						continue;
 					}
-					// add candidate strategy to the mix
-					tmpTraitCount[n]++;
+					// add candidate trait to the mix
+					tmpCount[n]++;
 					if (module.isPairwise())
-						pairmodule.mixedScores(tmpTraitCount, tmpTraitScore);
+						pairmodule.mixedScores(tmpCount, tmpScore);
 					else
-						groupmodule.mixedScores(tmpTraitCount, module.getNGroup(), tmpTraitScore);
-					traitScore[n] = tmpTraitScore[n];
-					tmpTraitCount[n]--;
+						groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpScore);
+					tmpTraitScore[n] = tmpScore[n];
+					tmpCount[n]--;
 				}
 			}
 		} else {
@@ -754,44 +755,44 @@ public class IBSDPopulation extends IBSPopulation {
 			if (interaction.isInterspecies()) {
 				// inter-species: focal individual not part of opponents but include it's
 				// counterpart in opponent population
-				size = stripVacancies(group, size, groupTraits, groupIdxs);
-				countTraits(tmpTraitCount, groupTraits, 0, size);
+				size = stripVacancies(group, size, tmpTraits, tmpGroup);
+				countTraits(tmpCount, tmpTraits, 0, size);
 				// RESOLUTION: instead if mytype is not VACANT add it to trait count
 				if (mytype != VACANT)
-					tmpTraitCount[mytype]++;
+					tmpCount[mytype]++;
 				if (module.isPairwise())
-					pairmodule.mixedScores(tmpTraitCount, traitScore);
+					pairmodule.mixedScores(tmpCount, tmpTraitScore);
 				else
-					groupmodule.mixedScores(tmpTraitCount, module.getNGroup(), traitScore);
+					groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpTraitScore);
 			} else {
 				// intra-species: evaluate performance of focal individual for all active
 				// strategies
-				size = stripVacancies(group, size, groupTraits, groupIdxs);
-				countTraits(tmpTraitCount, groupTraits, 0, size);
+				size = stripVacancies(group, size, tmpTraits, tmpGroup);
+				countTraits(tmpCount, tmpTraits, 0, size);
 				for (int n = 0; n < nTraits; n++) {
 					if (!active[n]) {
-						traitScore[n] = -Double.MAX_VALUE;
+						tmpTraitScore[n] = -Double.MAX_VALUE;
 						continue;
 					}
-					// add candidate strategy to the mix
-					tmpTraitCount[n]++;
+					// add candidate trait to the mix
+					tmpCount[n]++;
 					if (module.isPairwise())
-						pairmodule.mixedScores(tmpTraitCount, tmpTraitScore);
+						pairmodule.mixedScores(tmpCount, tmpScore);
 					else
-						groupmodule.mixedScores(tmpTraitCount, module.getNGroup(), tmpTraitScore);
-					traitScore[n] = tmpTraitScore[n];
-					tmpTraitCount[n]--;
+						groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpScore);
+					tmpTraitScore[n] = tmpScore[n];
+					tmpCount[n]--;
 				}
 			}
 		}
-		double max = traitScore[mytype]; // assumes mytype is active
+		double max = tmpTraitScore[mytype];
 		int newtype = mytype;
 		for (int n = 0; n < nTraits; n++) {
 			if (!active[n])
 				continue;
-			// note: if my payoff and highest payoff are tied, keep type
-			if (traitScore[n] > max) {
-				max = traitScore[n];
+			// note: if my payoff and highest payoff are tied, keep mytype
+			if (tmpTraitScore[n] > max) {
+				max = tmpTraitScore[n];
 				newtype = n;
 			}
 		}
@@ -805,15 +806,14 @@ public class IBSDPopulation extends IBSPopulation {
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * Here we introduce the convention of a cyclic preference where strategies with
-	 * lower indices are always preferred. For example, with {@code N} strategic
-	 * types, strategy {@code 0} preferred over {@code 1} preferred over {@code 2}
-	 * ... preferred over {@code N-1} preferred over {@code N} preferred over
-	 * {@code 0}, etc. This convention is arbitrary but seems to make sense for
-	 * systems with cyclic dominance of strategies and such systems are most likely
-	 * to produce evolutionary kaleidoscopes and only for those is this
-	 * deterministic updating of crucial importance. For anything else, these are
-	 * irrelevant quibbles.
+	 * Here we introduce the convention of a cyclic preference where traits with
+	 * lower indices are always preferred. For example, with {@code N} traits, trait
+	 * {@code 0} is preferred over {@code 1} preferred over {@code 2}... preferred
+	 * over {@code N-1} preferred over {@code N} preferred over {@code 0}, etc. This
+	 * convention is arbitrary but makes sense for systems with cyclic dominance of
+	 * traits and such systems are most likely to produce evolutionary kaleidoscopes
+	 * and only for those is this deterministic updating of crucial importance. For
+	 * anything else, these are irrelevant quibbles.
 	 */
 	@Override
 	public boolean preferredPlayerBest(int me, int best, int sample) {
@@ -833,62 +833,51 @@ public class IBSDPopulation extends IBSPopulation {
 	// article.
 	// apparently it is a combination of the following changes which all result in
 	// considerable quantitative changes:
-	// 1) scores are reset whenever a player imitates the strategy of another player
-	// previously the score was reset only when an actual strategy change occurred.
+	// 1) scores are reset whenever a player imitates the trait of another player
+	// previously the score was reset only when an actual trait change occurred.
 	// 2) to get closer to the imitation/replication approach, individuals no longer
 	// always switch if at least one better model is at hand. they rather switch
-	// with some probability and keep their strategy otherwise. this behavior can be
+	// with some probability and keep their trait otherwise. this behavior can be
 	// tuned using the parameter 'switchpref'.
 	// 110620: the parameter 'switchpref' is declared obsolete
 	// 3) in the Complexity article only the focal player was allowed to reassess
-	// its
-	// strategy. in the current terminology this represents a mixture of
-	// asynchronous
-	// updates referring to replication (emphasis on spatial arrangement) and
-	// imitation
-	// (emphasis on games/interactions).
+	// its trait. in the current terminology this represents a mixture of
+	// asynchronous updates referring to replication (emphasis on spatial
+	// arrangement) and imitation (emphasis on games/interactions).
 	//
 	// conclusions
 	// the above change 1) leads to a significant boost of cooperation in public
-	// goods
-	// interactions whereas 2) decreases it (but not as dramatically). the last
-	// point 3)
-	// essentially leads to a change in the time scale.
+	// goods interactions whereas 2) decreases it (but not as dramatically). the
+	// last point 3) essentially leads to a change in the time scale.
 	//
-	// indicate a strategy change only when an actual change occurred and not
+	// indicate a trait change only when an actual change occurred and not
 	// upon imitation of a neighbor.
 
 	/**
-	 * Temporary storage for strategies/traits of individuals in group interactions.
-	 */
-	private int[] groupTraits;
-
-	/**
-	 * Temporary storage for indices of individuals in group interactions.
-	 */
-	private int[] groupIdxs;
-
-	/**
-	 * Temporary storage for strategies/traits of individuals in small sub-group
-	 * interactions.
+	 * Temporary storage for traits of individuals in group interactions.
 	 */
 	private int[] tmpTraits;
 
 	/**
-	 * Temporary storage for the number of each strategy/type in group interactions.
+	 * Temporary storage for indices of individuals in group interactions.
 	 */
-	private int[] tmpTraitCount;
+	private int[] tmpGroup;
 
 	/**
-	 * Temporary storage for the scores of each strategy/type in group interactions.
+	 * Temporary storage for the number of each trait in group interactions.
 	 */
-	private double[] traitScore;
+	private int[] tmpCount;
 
 	/**
-	 * Temporary storage for the scores of each strategy/type prior to the group
-	 * interactions.
+	 * Temporary storage for the scores of each trait in group interactions.
 	 */
 	private double[] tmpTraitScore;
+
+	/**
+	 * Temporary storage for the scores of each trait prior to the group
+	 * interactions.
+	 */
+	private double[] tmpScore;
 
 	/**
 	 * Eliminate vacant sites from the assembled group.
@@ -897,31 +886,32 @@ public class IBSDPopulation extends IBSPopulation {
 	 * reference to {@code Geometry.out[group.focal]} and hence any changes would
 	 * actually alter the geometry!
 	 *
-	 * @param group  the group which potentially includes references to vacant sites
-	 * @param gStrat the array of strategies in the group
-	 * @param gIdxs  the array of indices of the individuals in the group
+	 * @param group   the group which potentially includes references to vacant
+	 *                sites
+	 * @param gTraits the array of strategies in the group
+	 * @param gIdxs   the array of indices of the individuals in the group
 	 */
-	protected void stripGroupVacancies(IBSGroup group, int[] gStrat, int[] gIdxs) {
-		group.nSampled = stripVacancies(group.group, group.nSampled, gStrat, gIdxs);
+	protected void stripGroupVacancies(IBSGroup group, int[] gTraits, int[] gIdxs) {
+		group.nSampled = stripVacancies(group.group, group.nSampled, gTraits, gIdxs);
 		if (VACANT < 0)
 			return;
 		group.group = gIdxs;
 	}
 
 	/**
-	 * Process traits/strategic types while excluding vacant sites.
+	 * Process traits while excluding vacant sites.
 	 * 
 	 * @param groupidx  the array of indices of the individuals in the group
 	 * @param groupsize the size of the group
-	 * @param gStrat    the array to store/return the traits/strategic types
+	 * @param gTraits   the array to store/return the traits
 	 * @param gIdxs     the array to store/return the pruned indexes
 	 * @return the size of the interaction group after pruning
 	 */
-	protected int stripVacancies(int[] groupidx, int groupsize, int[] gStrat, int[] gIdxs) {
+	protected int stripVacancies(int[] groupidx, int groupsize, int[] gTraits, int[] gIdxs) {
 		// minor efficiency gain without VACANT
 		if (VACANT < 0) {
 			for (int i = 0; i < groupsize; i++)
-				gStrat[i] = opponent.getTraitAt(groupidx[i]);
+				gTraits[i] = opponent.getTraitAt(groupidx[i]);
 			return groupsize;
 		}
 		// remove vacant sites
@@ -931,7 +921,7 @@ public class IBSDPopulation extends IBSPopulation {
 			int type = opponent.getTraitAt(gi);
 			if (type == VACANT)
 				continue;
-			gStrat[gSize] = type;
+			gTraits[gSize] = type;
 			gIdxs[gSize++] = gi;
 		}
 		return gSize;
@@ -943,14 +933,14 @@ public class IBSDPopulation extends IBSPopulation {
 		int myType = getTraitAt(me);
 		if (myType == VACANT)
 			return;
-		stripGroupVacancies(group, groupTraits, groupIdxs);
+		stripGroupVacancies(group, tmpTraits, tmpGroup);
 		double myScore;
-		countTraits(tmpTraitCount, groupTraits, 0, group.nSampled);
+		countTraits(tmpCount, tmpTraits, 0, group.nSampled);
 		// for ephemeral scores calculate score of focal only
 		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
 			// isolated individual (note the bookkeeping can be optimized)
-			myScore = pairmodule.pairScores(myType, tmpTraitCount, traitScore);
+			myScore = pairmodule.pairScores(myType, tmpCount, tmpTraitScore);
 			if (ephemeralScores) {
 				// no need to update scores of everyone else
 				resetScoreAt(me);
@@ -961,7 +951,7 @@ public class IBSDPopulation extends IBSPopulation {
 			return;
 		}
 
-		myScore = pairmodule.pairScores(myType, tmpTraitCount, traitScore);
+		myScore = pairmodule.pairScores(myType, tmpCount, tmpTraitScore);
 		if (ephemeralScores) {
 			// no need to update scores of everyone else
 			resetScoreAt(me);
@@ -970,7 +960,7 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 		updateScoreAt(me, myScore, group.nSampled);
 		for (int i = 0; i < group.nSampled; i++)
-			opponent.updateScoreAt(group.group[i], traitScore[groupTraits[i]]);
+			opponent.updateScoreAt(group.group[i], tmpTraitScore[tmpTraits[i]]);
 	}
 
 	@Override
@@ -1001,10 +991,10 @@ public class IBSDPopulation extends IBSPopulation {
 		// count out-neighbors
 		int nIn = 0, nOut = interaction.kout[me];
 		int[] in = null, out = interaction.out[me];
-		Arrays.fill(tmpTraitCount, 0);
+		Arrays.fill(tmpCount, 0);
 		// count traits of (outgoing) opponents
 		for (int n = 0; n < nOut; n++)
-			tmpTraitCount[opponent.getTraitAt(out[n])]++;
+			tmpCount[opponent.getTraitAt(out[n])]++;
 		int u2 = 2;
 		if (!interaction.isUndirected) {
 			// directed graph, count in-neighbors
@@ -1013,13 +1003,13 @@ public class IBSDPopulation extends IBSPopulation {
 			in = interaction.in[me];
 			// add traits of incoming opponents
 			for (int n = 0; n < nIn; n++)
-				tmpTraitCount[opponent.getTraitAt(in[n])]++;
+				tmpCount[opponent.getTraitAt(in[n])]++;
 		}
-		int nInter = nIn + nOut - (VACANT < 0 ? 0 : tmpTraitCount[VACANT]);
+		int nInter = nIn + nOut - (VACANT < 0 ? 0 : tmpCount[VACANT]);
 		// my type has changed otherwise we wouldn't get here
 		// old/newScore are the total accumulated scores
-		double oldScore = u2 * pairmodule.pairScores(oldType, tmpTraitCount, tmpTraitScore);
-		double newScore = u2 * pairmodule.pairScores(newType, tmpTraitCount, traitScore);
+		double oldScore = u2 * pairmodule.pairScores(oldType, tmpCount, tmpScore);
+		double newScore = u2 * pairmodule.pairScores(newType, tmpCount, tmpTraitScore);
 		if (newType == VACANT) {
 			double myScore = scores[me];
 			accuTypeScores[oldType] -= myScore;
@@ -1032,7 +1022,7 @@ public class IBSDPopulation extends IBSPopulation {
 			for (int n = 0; n < nOut; n++) {
 				int you = out[n];
 				int type = opponent.getTraitAt(you);
-				opponent.removeScoreAt(you, u2 * (tmpTraitScore[type] - traitScore[type]), u2);
+				opponent.removeScoreAt(you, u2 * (tmpScore[type] - tmpTraitScore[type]), u2);
 			}
 			// same as !interaction.isUndirected because in != null implies directed graph
 			// (see above)
@@ -1041,7 +1031,7 @@ public class IBSDPopulation extends IBSPopulation {
 					int you = in[n];
 					int type = opponent.getTraitAt(you);
 					// adjust (incoming) opponent's score
-					opponent.removeScoreAt(you, tmpTraitScore[type] - traitScore[type], 1);
+					opponent.removeScoreAt(you, tmpScore[type] - tmpTraitScore[type], 1);
 				}
 			}
 		} else {
@@ -1051,7 +1041,7 @@ public class IBSDPopulation extends IBSPopulation {
 				for (int n = 0; n < nOut; n++) {
 					int you = out[n];
 					int type = opponent.getTraitAt(you);
-					opponent.updateScoreAt(you, u2 * (traitScore[type] - tmpTraitScore[type]), u2);
+					opponent.updateScoreAt(you, u2 * (tmpTraitScore[type] - tmpScore[type]), u2);
 				}
 				// same as !interaction.isUndirected because in != null implies directed graph
 				// (see above)
@@ -1060,7 +1050,7 @@ public class IBSDPopulation extends IBSPopulation {
 						int you = in[n];
 						int type = opponent.getTraitAt(you);
 						// adjust (incoming) opponent's score
-						opponent.updateScoreAt(you, traitScore[type] - tmpTraitScore[type], 1);
+						opponent.updateScoreAt(you, tmpTraitScore[type] - tmpScore[type], 1);
 					}
 				}
 			} else {
@@ -1080,8 +1070,8 @@ public class IBSDPopulation extends IBSPopulation {
 					int type = opponent.getTraitAt(you);
 					if (type == VACANT)
 						continue;
-					newScore = traitScore[type];
-					oldScore = tmpTraitScore[type];
+					newScore = tmpTraitScore[type];
+					oldScore = tmpScore[type];
 					if (playerScoreAveraged) {
 						double iInter = 1.0 / interactions[you];
 						newScore *= iInter;
@@ -1098,8 +1088,8 @@ public class IBSDPopulation extends IBSPopulation {
 						int type = opponent.getTraitAt(you);
 						if (type == VACANT)
 							continue;
-						newScore = traitScore[type];
-						oldScore = tmpTraitScore[type];
+						newScore = tmpTraitScore[type];
+						oldScore = tmpScore[type];
 						if (playerScoreAveraged) {
 							double iInter = 1.0 / interactions[you];
 							newScore *= iInter;
@@ -1119,21 +1109,21 @@ public class IBSDPopulation extends IBSPopulation {
 		int myType = getTraitAt(me);
 		if (myType == VACANT)
 			return;
-		stripGroupVacancies(group, groupTraits, groupIdxs);
-		countTraits(tmpTraitCount, groupTraits, 0, group.nSampled);
+		stripGroupVacancies(group, tmpTraits, tmpGroup);
+		countTraits(tmpCount, tmpTraits, 0, group.nSampled);
 		// for ephemeral scores calculate score of focal only
 		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
 			// isolated individual (note the bookkeeping above is overkill and can be
 			// optimized)
-			tmpTraitCount[myType]++;
-			groupmodule.groupScores(tmpTraitCount, traitScore);
+			tmpCount[myType]++;
+			groupmodule.groupScores(tmpCount, tmpTraitScore);
 			if (ephemeralScores) {
 				resetScoreAt(me);
-				setScoreAt(me, traitScore[myType], 0);
+				setScoreAt(me, tmpTraitScore[myType], 0);
 				return;
 			}
-			updateScoreAt(me, traitScore[myType], 0);
+			updateScoreAt(me, tmpTraitScore[myType], 0);
 			return;
 		}
 
@@ -1146,17 +1136,17 @@ public class IBSDPopulation extends IBSPopulation {
 					double myScore = 0.0;
 					Arrays.fill(smallScores, 0, group.nSampled, 0.0);
 					for (int n = 0; n < group.nSampled; n++) {
-						Arrays.fill(tmpTraitCount, 0);
+						Arrays.fill(tmpCount, 0);
 						for (int i = 0; i < nGroup - 1; i++)
-							tmpTraitCount[groupTraits[(n + i) % group.nSampled]]++;
-						tmpTraitCount[myType]++;
-						groupmodule.groupScores(tmpTraitCount, traitScore);
-						myScore += traitScore[myType];
+							tmpCount[tmpTraits[(n + i) % group.nSampled]]++;
+						tmpCount[myType]++;
+						groupmodule.groupScores(tmpCount, tmpTraitScore);
+						myScore += tmpTraitScore[myType];
 						if (ephemeralScores)
 							continue;
 						for (int i = 0; i < nGroup - 1; i++) {
 							int idx = (n + i) % group.nSampled;
-							smallScores[idx] += traitScore[groupTraits[idx]];
+							smallScores[idx] += tmpTraitScore[tmpTraits[idx]];
 						}
 					}
 					if (ephemeralScores) {
@@ -1174,16 +1164,16 @@ public class IBSDPopulation extends IBSPopulation {
 				//$FALL-THROUGH$
 			case RANDOM:
 				// interact with sampled neighbors
-				tmpTraitCount[myType]++;
-				groupmodule.groupScores(tmpTraitCount, traitScore);
+				tmpCount[myType]++;
+				groupmodule.groupScores(tmpCount, tmpTraitScore);
 				if (ephemeralScores) {
 					resetScoreAt(me);
-					setScoreAt(me, traitScore[myType], 1);
+					setScoreAt(me, tmpTraitScore[myType], 1);
 					return;
 				}
-				updateScoreAt(me, traitScore[myType]);
+				updateScoreAt(me, tmpTraitScore[myType]);
 				for (int i = 0; i < group.nSampled; i++)
-					opponent.updateScoreAt(group.group[i], traitScore[groupTraits[i]]);
+					opponent.updateScoreAt(group.group[i], tmpTraitScore[tmpTraits[i]]);
 				return;
 
 			default:
@@ -1200,7 +1190,7 @@ public class IBSDPopulation extends IBSPopulation {
 			resetScoreAt(me);
 			return;
 		}
-		stripGroupVacancies(group, groupTraits, groupIdxs);
+		stripGroupVacancies(group, tmpTraits, tmpGroup);
 		if (group.nSampled <= 0) {
 			// isolated individual (surrounded by vacant sites) - reset score
 			resetScoreAt(me);
@@ -1213,15 +1203,15 @@ public class IBSDPopulation extends IBSPopulation {
 			double myScore = 0.0;
 			Arrays.fill(smallScores, 0, group.nSampled, 0.0);
 			for (int n = 0; n < group.nSampled; n++) {
-				Arrays.fill(tmpTraitCount, 0);
+				Arrays.fill(tmpCount, 0);
 				for (int i = 0; i < nGroup - 1; i++)
-					tmpTraitCount[groupTraits[(n + i) % group.nSampled]]++;
-				tmpTraitCount[oldtype]++;
-				groupmodule.groupScores(tmpTraitCount, traitScore);
-				myScore += traitScore[oldtype];
+					tmpCount[tmpTraits[(n + i) % group.nSampled]]++;
+				tmpCount[oldtype]++;
+				groupmodule.groupScores(tmpCount, tmpTraitScore);
+				myScore += tmpTraitScore[oldtype];
 				for (int i = 0; i < nGroup - 1; i++) {
 					int idx = (n + i) % group.nSampled;
-					smallScores[idx] += traitScore[groupTraits[idx]];
+					smallScores[idx] += tmpTraitScore[tmpTraits[idx]];
 				}
 			}
 			removeScoreAt(me, myScore, group.nSampled);
@@ -1230,12 +1220,12 @@ public class IBSDPopulation extends IBSPopulation {
 			return;
 		}
 		// interact with full group (random graphs)
-		countTraits(tmpTraitCount, groupTraits, 0, group.nSampled);
-		tmpTraitCount[oldtype]++;
-		groupmodule.groupScores(tmpTraitCount, traitScore);
-		removeScoreAt(me, traitScore[oldtype]);
+		countTraits(tmpCount, tmpTraits, 0, group.nSampled);
+		tmpCount[oldtype]++;
+		groupmodule.groupScores(tmpCount, tmpTraitScore);
+		removeScoreAt(me, tmpTraitScore[oldtype]);
 		for (int i = 0; i < group.nSampled; i++)
-			opponent.removeScoreAt(group.group[i], traitScore[groupTraits[i]]);
+			opponent.removeScoreAt(group.group[i], tmpTraitScore[tmpTraits[i]]);
 	}
 
 	/**
@@ -1247,7 +1237,7 @@ public class IBSDPopulation extends IBSPopulation {
 	public void adjustGameScoresAt(int me) {
 		// check whether an actual strategy change has occurred
 		// NOTE: isSameStrategy() only works before committing strategy!
-		if (isSameStrategy(me)) {
+		if (isSameTrait(me)) {
 			commitTraitAt(me);
 			return;
 		}
@@ -1279,10 +1269,10 @@ public class IBSDPopulation extends IBSPopulation {
 					// store scores for each type in traitScores (including 0.0 for VACANT)
 					int nGroup = module.getNGroup();
 					if (module.isPairwise())
-						pairmodule.mixedScores(opponent.traitsCount, traitScore);
+						pairmodule.mixedScores(opponent.traitsCount, tmpTraitScore);
 					else
-						groupmodule.mixedScores(opponent.traitsCount, nGroup, traitScore);
-					setScoreAt(me, traitScore[newstrat], nGroup * opponent.getPopulationSize());
+						groupmodule.mixedScores(opponent.traitsCount, nGroup, tmpTraitScore);
+					setScoreAt(me, tmpTraitScore[newstrat], nGroup * opponent.getPopulationSize());
 				}
 			}
 		}
@@ -1306,18 +1296,18 @@ public class IBSDPopulation extends IBSPopulation {
 				int unitSize = interaction.hierarchy[interaction.hierarchy.length - 1];
 				for (int unitStart = 0; unitStart < nPopulation; unitStart += unitSize) {
 					// count traits in unit
-					countTraits(tmpTraitCount, traits, unitStart, unitSize);
+					countTraits(tmpCount, traits, unitStart, unitSize);
 					// calculate scores in unit (return in traitScores)
 					if (module.isPairwise())
-						pairmodule.mixedScores(tmpTraitCount, traitScore);
+						pairmodule.mixedScores(tmpCount, tmpTraitScore);
 					else
-						groupmodule.mixedScores(tmpTraitCount, module.getNGroup(), traitScore);
+						groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpTraitScore);
 					int uInter = nMixedInter;
 					if (VACANT >= 0)
-						uInter -= tmpTraitCount[VACANT];
+						uInter -= tmpCount[VACANT];
 					for (int n = unitStart; n < unitStart + unitSize; n++) {
 						int type = getTraitAt(n);
-						setScoreAt(n, traitScore[type], type == VACANT ? 0 : uInter);
+						setScoreAt(n, tmpTraitScore[type], type == VACANT ? 0 : uInter);
 					}
 				}
 				setMaxEffScoreIdx();
@@ -1377,14 +1367,14 @@ public class IBSDPopulation extends IBSPopulation {
 	 *
 	 * @param counts the array to return the number of individuals with each
 	 *               trait/strategy
-	 * @param traits the array with the strategies/traits of he individuals
+	 * @param myTraits the array with the strategies/traits of he individuals
 	 * @param offset the offset into the array {@code traits} to start counting
 	 * @param len    the number of individuals to count
 	 */
-	public void countTraits(int[] counts, int[] traits, int offset, int len) {
+	public void countTraits(int[] counts, int[] myTraits, int offset, int len) {
 		Arrays.fill(counts, 0);
 		for (int n = offset; n < offset + len; n++)
-			counts[traits[n] % nTraits]++;
+			counts[myTraits[n] % nTraits]++;
 	}
 
 	/**
@@ -1621,10 +1611,10 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	@Override
-	public void getInitialTraits(double[] traits) {
+	public void getInitialTraits(double[] inittraits) {
 		double iPop = 1.0 / nPopulation;
 		for (int n = 0; n < nTraits; n++)
-			traits[n] = initCount[n] * iPop;
+			inittraits[n] = initCount[n] * iPop;
 	}
 
 	@Override
@@ -1748,10 +1738,10 @@ public class IBSDPopulation extends IBSPopulation {
 			traits = new int[nPopulation];
 		if (traitsNext == null || traitsNext.length != nPopulation)
 			traitsNext = new int[nPopulation];
-		if (tmpTraitCount == null || tmpTraitCount.length != nTraits)
-			tmpTraitCount = new int[nTraits];
-		if (traitScore == null || traitScore.length != nTraits)
-			traitScore = new double[nTraits];
+		if (tmpCount == null || tmpCount.length != nTraits)
+			tmpCount = new int[nTraits];
+		if (tmpTraitScore == null || tmpTraitScore.length != nTraits)
+			tmpTraitScore = new double[nTraits];
 		if (accuTypeScores == null || accuTypeScores.length != nTraits)
 			accuTypeScores = new double[nTraits];
 		if (initCount == null || initCount.length != nTraits)
@@ -1759,8 +1749,8 @@ public class IBSDPopulation extends IBSPopulation {
 		if (traitsCount == null || traitsCount.length != nTraits)
 			traitsCount = new int[nTraits];
 		// best-response may require temporary memory - this is peanuts, just reserve it
-		if (tmpTraitScore == null || tmpTraitScore.length != nTraits)
-			tmpTraitScore = new double[nTraits];
+		if (tmpScore == null || tmpScore.length != nTraits)
+			tmpScore = new double[nTraits];
 		return doReset;
 	}
 
@@ -2304,7 +2294,7 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	@Override
-	public void encodeStrategies(StringBuilder plist) {
+	public void encodeTraits(StringBuilder plist) {
 		plist.append("<key>Strategies</key>\n<dict>\n");
 		String[] names = module.getTraitNames();
 		for (int n = 0; n < nTraits; n++)
@@ -2314,7 +2304,7 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	@Override
-	public boolean restoreStrategies(Plist plist) {
+	public boolean restoreTraits(Plist plist) {
 		@SuppressWarnings("unchecked")
 		List<Integer> strat = (List<Integer>) plist.get("Configuration");
 		if (strat == null || strat.size() != nPopulation)

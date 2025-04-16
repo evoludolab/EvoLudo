@@ -278,14 +278,14 @@ public class scanCSD extends CSD {
 							// maximum has been reached more precisely, whether mean trait <lowMonoThreshold
 							// or >highMonoThreshold
 							if (g % 1000 == 0) {
-								double mean = Distributions.mean(cpop.strategies);
+								double mean = Distributions.mean(cpop.traits);
 								double tmin = getTraitMin()[0];
 								double tmax = getTraitMax()[0];
 								if (mean < lowMonoThreshold
-										&& ArrayMath.max(cpop.strategies) < tmin + 0.1 * (tmax - tmin))
+										&& ArrayMath.max(cpop.traits) < tmin + 0.1 * (tmax - tmin))
 									break;
 								if (mean > highMonoThreshold
-										&& ArrayMath.min(cpop.strategies) < tmax - 0.1 * (tmax - tmin))
+										&& ArrayMath.min(cpop.traits) < tmax - 0.1 * (tmax - tmin))
 									break;
 							}
 						}
@@ -294,10 +294,10 @@ public class scanCSD extends CSD {
 						// - create histogram (potentially after averaging over several generations)
 						// - calculate statistical quantities (potentially over several generations)
 						double[] statistics = new double[SAMPLES * nPopulation];
-						System.arraycopy(cpop.strategies, 0, statistics, 0, nPopulation);
+						System.arraycopy(cpop.traits, 0, statistics, 0, nPopulation);
 						for (int n = 1; n < SAMPLES; n++) {
 							engine.modelNext();
-							System.arraycopy(cpop.strategies, 0, statistics, n * nPopulation, nPopulation);
+							System.arraycopy(cpop.traits, 0, statistics, n * nPopulation, nPopulation);
 						}
 						double mean = Distributions.mean(statistics);
 						double stdev = Distributions.stdev(statistics, mean);

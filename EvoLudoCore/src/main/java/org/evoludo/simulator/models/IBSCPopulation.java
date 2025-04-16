@@ -107,19 +107,19 @@ public class IBSCPopulation extends IBSMCPopulation {
 	}
 
 	@Override
-	public boolean haveSameStrategy(int a, int b) {
-		return (Math.abs(strategies[a] - strategies[b]) < 1e-8);
+	public boolean haveSameTrait(int a, int b) {
+		return (Math.abs(traits[a] - traits[b]) < 1e-8);
 	}
 
 	@Override
-	public boolean isSameStrategy(int a) {
-		return (Math.abs(strategies[a] - strategiesNext[a]) < 1e-8);
+	public boolean isSameTrait(int a) {
+		return (Math.abs(traits[a] - traitsNext[a]) < 1e-8);
 	}
 
 	@Override
-	public void swapStrategies(int a, int b) {
-		strategiesNext[a] = strategies[b];
-		strategiesNext[b] = strategies[a];
+	public void swapTraits(int a, int b) {
+		traitsNext[a] = traits[b];
+		traitsNext[b] = traits[a];
 	}
 
 	@Override
@@ -136,10 +136,10 @@ public class IBSCPopulation extends IBSMCPopulation {
 			updateScoreAt(me, 0.0);
 			return;
 		}
-		double[] oppstrategies = opponent.strategies;
+		double[] oppstrategies = opponent.traits;
 		for (int i = 0; i < group.nSampled; i++)
-			groupStrat[i] = oppstrategies[group.group[i]];
-		double myScore = pairmodule.pairScores(strategies[me], groupStrat, group.nSampled, groupScores);
+			tmpGroup[i] = oppstrategies[group.group[i]];
+		double myScore = pairmodule.pairScores(traits[me], tmpGroup, group.nSampled, groupScores);
 		if (ephemeralScores) {
 			// no need to update scores of everyone else
 			resetScoreAt(me);
@@ -154,11 +154,11 @@ public class IBSCPopulation extends IBSMCPopulation {
 	@Override
 	public void adjustPairGameScoresAt(int me) {
 		// gather players
-		double[] oppstrategies = opponent.strategies;
+		double[] oppstrategies = opponent.traits;
 		int nIn = 0, nOut = interaction.kout[me];
 		int[] in = null, out = interaction.out[me];
 		for (int n = 0; n < nOut; n++)
-			groupStrat[n] = oppstrategies[out[n]];
+			tmpGroup[n] = oppstrategies[out[n]];
 		int u2 = 2;
 		if (!interaction.isUndirected) {
 			// directed graph, count in-neighbors
@@ -166,11 +166,11 @@ public class IBSCPopulation extends IBSMCPopulation {
 			nIn = interaction.kin[me];
 			in = interaction.in[me];
 			for (int n = 0; n < nIn; n++)
-				groupStrat[nOut + n] = oppstrategies[in[n]];
+				tmpGroup[nOut + n] = oppstrategies[in[n]];
 		}
 		int nInter = nOut + nIn;
-		double oldScore = pairmodule.pairScores(strategies[me], groupStrat, nInter, oldScores);
-		double newScore = pairmodule.pairScores(strategiesNext[me], groupStrat, nInter, groupScores);
+		double oldScore = pairmodule.pairScores(traits[me], tmpGroup, nInter, oldScores);
+		double newScore = pairmodule.pairScores(traitsNext[me], tmpGroup, nInter, groupScores);
 		commitTraitAt(me);
 		if (playerScoreAveraged) {
 			double iInter = 1.0 / nInter;
@@ -205,11 +205,11 @@ public class IBSCPopulation extends IBSMCPopulation {
 			updateScoreAt(group.focal, 0.0);
 			return;
 		}
-		double[] oppstrategies = opponent.strategies;
+		double[] oppstrategies = opponent.traits;
 		for (int i = 0; i < size; i++)
-			groupStrat[i] = oppstrategies[group.group[i]];
+			tmpGroup[i] = oppstrategies[group.group[i]];
 		int me = group.focal;
-		double myStrat = strategies[me];
+		double myStrat = traits[me];
 		// for ephemeral scores calculate score of focal only
 		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 
@@ -223,7 +223,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 					Arrays.fill(smallScores, 0, group.nSampled, 0.0);
 					for (int n = 0; n < group.nSampled; n++) {
 						for (int i = 0; i < nGroup - 1; i++)
-							smallStrat[i] = groupStrat[(n + i) % group.nSampled];
+							smallStrat[i] = tmpGroup[(n + i) % group.nSampled];
 						myScore += groupmodule.groupScores(myStrat, smallStrat, nGroup - 1, groupScores);
 						if (ephemeralScores)
 							continue;
@@ -245,7 +245,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 				//$FALL-THROUGH$
 			case RANDOM:
 				// interact with sampled neighbors
-				double myScore = groupmodule.groupScores(myStrat, groupStrat, group.nSampled, groupScores);
+				double myScore = groupmodule.groupScores(myStrat, tmpGroup, group.nSampled, groupScores);
 				if (ephemeralScores) {
 					resetScoreAt(me);
 					setScoreAt(me, myScore, 1);
@@ -267,10 +267,10 @@ public class IBSCPopulation extends IBSMCPopulation {
 			return;
 
 		double myScore;
-		double myStrat = strategies[group.focal];
-		double[] oppstrategies = opponent.strategies;
+		double myStrat = traits[group.focal];
+		double[] oppstrategies = opponent.traits;
 		for (int i = 0; i < group.nSampled; i++)
-			groupStrat[i] = oppstrategies[group.group[i]];
+			tmpGroup[i] = oppstrategies[group.group[i]];
 
 		int nGroup = module.getNGroup();
 		if (nGroup < group.nSampled + 1) { // interact with part of group sequentially
@@ -278,7 +278,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 			Arrays.fill(smallScores, 0, group.nSampled, 0.0);
 			for (int n = 0; n < group.nSampled; n++) {
 				for (int i = 0; i < nGroup - 1; i++)
-					smallStrat[i] = groupStrat[(n + i) % group.nSampled];
+					smallStrat[i] = tmpGroup[(n + i) % group.nSampled];
 				myScore += groupmodule.groupScores(myStrat, smallStrat, nGroup - 1, groupScores);
 				for (int i = 0; i < nGroup - 1; i++)
 					smallScores[(n + i) % group.nSampled] += groupScores[i];
@@ -289,7 +289,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 			return;
 		}
 		// interact with full group (random graphs)
-		myScore = groupmodule.groupScores(myStrat, groupStrat, group.nSampled, groupScores);
+		myScore = groupmodule.groupScores(myStrat, tmpGroup, group.nSampled, groupScores);
 		removeScoreAt(group.focal, myScore);
 
 		for (int i = 0; i < group.nSampled; i++)
@@ -298,12 +298,12 @@ public class IBSCPopulation extends IBSMCPopulation {
 
 	@Override
 	public void prepareTraits() {
-		System.arraycopy(strategies, 0, strategiesNext, 0, nPopulation);
+		System.arraycopy(traits, 0, traitsNext, 0, nPopulation);
 	}
 
 	@Override
 	public void commitTraitAt(int me) {
-		strategies[me] = strategiesNext[me];
+		traits[me] = traitsNext[me];
 	}
 
 	/**

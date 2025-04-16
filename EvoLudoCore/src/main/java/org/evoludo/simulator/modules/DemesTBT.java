@@ -480,7 +480,7 @@ public class DemesTBT extends TBT {
 		public void adjustGameScoresAt(int me) {
 			// check whether an actual strategy change has occurred
 			// note: isSameStrategy() only works before committing strategy!
-			if (isSameStrategy(me)) {
+			if (isSameTrait(me)) {
 				commitTraitAt(me);
 				return;
 			}

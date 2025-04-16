@@ -828,17 +828,17 @@ public class NetGames extends Discrete implements Scores, HasIBS,
 		}
 
 		@Override
-		public boolean haveSameStrategy(int a, int b) {
+		public boolean haveSameTrait(int a, int b) {
 			return false;
 		}
 
 		@Override
-		public boolean isSameStrategy(int a) {
+		public boolean isSameTrait(int a) {
 			return false;
 		}
 
 		@Override
-		public void swapStrategies(int a, int b) {
+		public void swapTraits(int a, int b) {
 		}
 
 		@Override

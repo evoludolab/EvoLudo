@@ -202,7 +202,7 @@ public abstract class IBSPopulation {
 	 * @param b the index of second individual
 	 * @return <code>true</code> if the two individuals have the same strategies
 	 */
-	public abstract boolean haveSameStrategy(int a, int b);
+	public abstract boolean haveSameTrait(int a, int b);
 
 	/**
 	 * Check if individual with index <code>a</code> has switched strategies.
@@ -215,7 +215,7 @@ public abstract class IBSPopulation {
 	 * 
 	 * @see #commitTraitAt(int)
 	 */
-	public abstract boolean isSameStrategy(int a);
+	public abstract boolean isSameTrait(int a);
 
 	/**
 	 * Swap strategies of individuals with index <code>a</code> and index
@@ -228,7 +228,7 @@ public abstract class IBSPopulation {
 	 * 
 	 * @see #commitTraitAt(int)
 	 */
-	public abstract void swapStrategies(int a, int b);
+	public abstract void swapTraits(int a, int b);
 
 	/**
 	 * Play a pairwise interaction with the individuals in {@code group}.
@@ -725,7 +725,7 @@ public abstract class IBSPopulation {
 	 * @param b the index of the second individual
 	 */
 	public void updatePlayerSwap(int a, int b) {
-		swapStrategies(a, b); // strategy change still needs to be committed
+		swapTraits(a, b); // strategy change still needs to be committed
 		// fitness accounting:
 		// synchronous: no need to worry about fitness - this is determined afterwards
 		// asynchronous:
@@ -741,7 +741,7 @@ public abstract class IBSPopulation {
 			return;
 		}
 		if (adjustScores) {
-			if (haveSameStrategy(a, b))
+			if (haveSameTrait(a, b))
 				return; // nothing to do
 			adjustGameScoresAt(a);
 			adjustGameScoresAt(b);
@@ -1467,7 +1467,7 @@ public abstract class IBSPopulation {
 	 */
 	public void adjustGameScoresAt(int me) {
 		// check first whether an actual strategy change has occurred
-		if (isSameStrategy(me)) {
+		if (isSameTrait(me)) {
 			commitTraitAt(me);
 			return;
 		}
@@ -2275,13 +2275,13 @@ public abstract class IBSPopulation {
 	 */
 	protected void migrateMoran(int source, int dest) {
 		if (adjustScores) {
-			if (haveSameStrategy(source, dest))
+			if (haveSameTrait(source, dest))
 				return;
 			updateFromModelAt(dest, source);
 			adjustGameScoresAt(dest);
 			return;
 		}
-		if (!haveSameStrategy(source, dest)) {
+		if (!haveSameTrait(source, dest)) {
 			// replace 'vacant'
 			updateFromModelAt(dest, source);
 			resetScoreAt(dest);
@@ -2404,7 +2404,7 @@ public abstract class IBSPopulation {
 			return true;
 		if (playerScoring.equals(ScoringType.RESET_ON_CHANGE))
 			// signal change only if actual change of strategy occurred
-			return switched && !isSameStrategy(me);
+			return switched && !isSameTrait(me);
 		return switched;
 	}
 
@@ -4364,7 +4364,7 @@ public abstract class IBSPopulation {
 	 * 
 	 * @see Model#encodeState(StringBuilder)
 	 */
-	public abstract void encodeStrategies(StringBuilder plist);
+	public abstract void encodeTraits(StringBuilder plist);
 
 	/**
 	 * Restore the strategies of all individuals encoded in the <code>plist</code>
@@ -4375,7 +4375,7 @@ public abstract class IBSPopulation {
 	 * 
 	 * @see Model#restoreState(Plist)
 	 */
-	public abstract boolean restoreStrategies(Plist plist);
+	public abstract boolean restoreTraits(Plist plist);
 
 	/**
 	 * Encode the interaction and competition structures of the IBS model in a
