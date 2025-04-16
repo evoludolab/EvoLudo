@@ -993,26 +993,6 @@ public abstract class IBS extends Model {
 	}
 
 	@Override
-	public void getInitialTraits(double[] init) {
-		if (isMultispecies) {
-			int skip = 0;
-			double[] tmp = new double[init.length];
-			for (Module mod : species) {
-				IBSPopulation pop = mod.getIBSPopulation();
-				pop.getInitialTraits(tmp);
-				System.arraycopy(tmp, 0, init, skip, pop.nTraits);
-				skip += pop.nTraits;
-			}
-		} else
-			population.getInitialTraits(init);
-	}
-
-	@Override
-	public void getInitialTraits(int id, double[] init) {
-		getIBSPopulation(id).getInitialTraits(init);
-	}
-
-	@Override
 	public int getNMean() {
 		if (isMultispecies) {
 			int nMean = 0;

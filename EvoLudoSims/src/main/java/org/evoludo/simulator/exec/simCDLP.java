@@ -115,7 +115,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 
 		boolean[] active = getActiveTraits();
 		if (isLinearPGG && initInQ && !active[PUNISH])
-			model.setInitialTraits(findQ(nGroup, getInterest(), getPayLoner()));
+			((org.evoludo.simulator.models.Discrete) model).setInitialTraits(findQ(nGroup, getInterest(), getPayLoner()));
 
 		double[][][] location = null;
 		double[] corner = new double[nTraits];
@@ -174,7 +174,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 					remaining -= acount;
 				}
 				dinit[typ[0]] = remaining + 1;
-				model.setInitialTraits(dinit);
+				((org.evoludo.simulator.models.Discrete) model).setInitialTraits(dinit);
 				engine.modelInit();
 				do {
 					engine.modelNext();

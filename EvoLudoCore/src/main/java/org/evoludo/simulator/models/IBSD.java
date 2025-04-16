@@ -160,6 +160,27 @@ public class IBSD extends IBS implements Discrete {
 	}
 
 	@Override
+	public void getInitialTraits(double[] init) {
+		if (isMultispecies) {
+			int skip = 0;
+			int idx = 0;
+			double[] tmp = new double[init.length];
+			while (idx < nSpecies) {
+				IBSDPopulation pop = getIBSDPopulation(idx++);
+				pop.getInitialTraits(tmp);
+				System.arraycopy(tmp, 0, init, skip, pop.nTraits);
+				skip += pop.nTraits;
+			}
+		} else
+			((IBSDPopulation) population).getInitialTraits(init);
+	}
+
+	@Override
+	public void getInitialTraits(int id, double[] init) {
+		getIBSDPopulation(id).getInitialTraits(init);
+	}
+
+	@Override
 	public boolean setInitialTraits(double[] init) {
 		IBSDPopulation pop = (IBSDPopulation) species.get(0).getIBSPopulation();
 		if (!pop.getInit().clo.isValidKey(Init.Type.FREQUENCY))

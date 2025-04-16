@@ -1610,7 +1610,15 @@ public class IBSDPopulation extends IBSPopulation {
 		return true;
 	}
 
-	@Override
+	/**
+	 * Returns the initial trait(s) of this population in the array {@code init}.
+	 * Used
+	 * by GUI to visualize the initial state of this IBS model.
+	 * 
+	 * @param init the array for returning the initial trait values
+	 * 
+	 * @see Model#getInitialTraits(int, double[])
+	 */
 	public void getInitialTraits(double[] inittraits) {
 		double iPop = 1.0 / nPopulation;
 		for (int n = 0; n < nTraits; n++)

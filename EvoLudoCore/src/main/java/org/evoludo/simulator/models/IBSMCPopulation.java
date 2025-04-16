@@ -672,17 +672,6 @@ public class IBSMCPopulation extends IBSPopulation {
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * <strong>Note:</strong> For continuous modules the IBS model returns the
-	 * concatenated mean and stdev of each trait in {@code traits}.
-	 */
-	@Override
-	public void getInitialTraits(double[] traits) {
-		System.arraycopy(inittrait, 0, traits, 0, 2 * nTraits);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 * <p>
 	 * For continuous traits the first {@code nTraits} entries represent
 	 * the mean of each trait and the second {@code nTraits} entries denote the
 	 * standard deviation.
@@ -731,12 +720,6 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * deviation. Must be of length {@code > 2 * nTraits}.
 	 */
 	private double[] meantrait;
-
-	/**
-	 * The array for storing the mean and standard deviation of the initial state.
-	 * Must be of length {@code > 2 * nTraits}.
-	 */
-	private double[] inittrait;
 
 	@Override
 	public String getStatus() {
@@ -814,8 +797,6 @@ public class IBSMCPopulation extends IBSPopulation {
 	@Override
 	public void init() {
 		super.init();
-		if (inittrait == null || inittrait.length != 2 * nTraits)
-			inittrait = new double[2 * nTraits];
 		int mutidx = -1;
 		for (int s = 0; s < nTraits; s++) {
 			switch (init.type) {
@@ -854,8 +835,6 @@ public class IBSMCPopulation extends IBSPopulation {
 					break;
 			}
 		}
-		// calculate mean and stdev of initial configuration
-		getMeanTraits(inittrait);
 	}
 
 	@Override

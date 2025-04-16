@@ -3727,17 +3727,6 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Returns the initial trait(s) of this population in the array {@code init}.
-	 * Used
-	 * by GUI to visualize the initial state of this IBS model.
-	 * 
-	 * @param init the array for returning the initial trait values
-	 * 
-	 * @see Model#getInitialTraits(int, double[])
-	 */
-	public abstract void getInitialTraits(double[] init);
-
-	/**
 	 * Return the number of mean values for this population (for traits or fitness).
 	 * <p>
 	 * <strong>Note:</strong> The number of mean traits in a model may differ from
