@@ -76,6 +76,7 @@ import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Moran;
 import org.evoludo.simulator.modules.NetGames;
 import org.evoludo.simulator.modules.RSP;
+import org.evoludo.simulator.modules.SIR;
 import org.evoludo.simulator.modules.TBT;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPop2D;
@@ -2239,5 +2240,6 @@ public abstract class EvoLudo
 		addModule(new DemesTBT(this));
 		addModule(new EcoPGG(this));
 		addModule(new NetGames(this));
+		addModule(new SIR(this));
 	}
 }
