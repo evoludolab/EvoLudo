@@ -504,7 +504,7 @@ public class NetGames extends Discrete implements Scores, HasIBS,
 			// free memory that is not needed (strategies not needed as well...)
 			fitness = null;
 			interactions = null;
-			strategiesNext = null;
+			traitsNext = null;
 			tags = null;
 		}
 
@@ -812,19 +812,19 @@ public class NetGames extends Discrete implements Scores, HasIBS,
 		}
 
 		@Override
-		public void resetStrategies() {
+		public void resetTraits() {
 		}
 
 		@Override
-		public void prepareStrategies() {
+		public void prepareTraits() {
 		}
 
 		@Override
-		public void commitStrategies() {
+		public void commitTraits() {
 		}
 
 		@Override
-		public void commitStrategyAt(int index) {
+		public void commitTraitAt(int index) {
 		}
 
 		@Override

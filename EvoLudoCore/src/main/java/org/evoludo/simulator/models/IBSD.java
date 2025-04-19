@@ -67,7 +67,7 @@ public class IBSD extends IBS implements Discrete {
 
 		// collect new statistics sample
 		IBSDPopulation dpop = (IBSDPopulation) population;
-		fixData.typeFixed = ArrayMath.maxIndex(dpop.strategiesTypeCount);
+		fixData.typeFixed = ArrayMath.maxIndex(dpop.traitsCount);
 		Module module = species.get(0);
 		int vacant = module.getVacant();
 		if (fixData.typeFixed == vacant) {
@@ -75,7 +75,7 @@ public class IBSD extends IBS implements Discrete {
 			for (int n = 0; n < module.getNTraits(); n++) {
 				if (n == vacant)
 					continue;
-				if (dpop.strategiesTypeCount[n] > 0) {
+				if (dpop.traitsCount[n] > 0) {
 					// no other strategies should be present
 					fixData.typeFixed = n;
 					break;

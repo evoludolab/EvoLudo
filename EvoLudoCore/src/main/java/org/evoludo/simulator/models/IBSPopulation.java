@@ -173,17 +173,17 @@ public abstract class IBSPopulation {
 	 * Prior to a synchronous update step the current state must be duplicated in
 	 * preparation for processing the next step.
 	 * 
-	 * @see #commitStrategies()
+	 * @see #commitTraits()
 	 */
-	public abstract void prepareStrategies();
+	public abstract void prepareTraits();
 
 	/**
 	 * After a synchronous update step the new state must be copied back to become
 	 * the current state.
 	 * 
-	 * @see #prepareStrategies()
+	 * @see #prepareTraits()
 	 */
-	public abstract void commitStrategies();
+	public abstract void commitTraits();
 
 	/**
 	 * The change of a strategy of the player at {@code index} is stored in a
@@ -192,7 +192,7 @@ public abstract class IBSPopulation {
 	 * @param index the index of the player that needs to have its new strategy
 	 *              committed
 	 */
-	public abstract void commitStrategyAt(int index);
+	public abstract void commitTraitAt(int index);
 
 	/**
 	 * Check if individuals with index <code>a</code> and index <code>b</code> have
@@ -213,7 +213,7 @@ public abstract class IBSPopulation {
 	 * @param a index of individual
 	 * @return <code>true</code> if strategy remained the same
 	 * 
-	 * @see #commitStrategyAt(int)
+	 * @see #commitTraitAt(int)
 	 */
 	public abstract boolean isSameStrategy(int a);
 
@@ -226,7 +226,7 @@ public abstract class IBSPopulation {
 	 * @param a the index of first individual
 	 * @param b the index of second individual
 	 * 
-	 * @see #commitStrategyAt(int)
+	 * @see #commitTraitAt(int)
 	 */
 	public abstract void swapStrategies(int a, int b);
 
@@ -736,8 +736,8 @@ public abstract class IBSPopulation {
 		if (populationUpdate.isSynchronous()) {
 			// NOTE: this is not efficient because it deals unnecessarily with types and
 			// scores; enough to only copy from scratch to strategies.
-			commitStrategyAt(a);
-			commitStrategyAt(b);
+			commitTraitAt(a);
+			commitTraitAt(b);
 			return;
 		}
 		if (adjustScores) {
@@ -749,8 +749,8 @@ public abstract class IBSPopulation {
 		}
 		// NOTE: again, commitStrategy is overkill because the composition of the
 		// population has not changed; what about interaction counts?
-		commitStrategyAt(a);
-		commitStrategyAt(b);
+		commitTraitAt(a);
+		commitTraitAt(b);
 		// shouldn't we re-calculate the scores of the two individuals in their new
 		// location?
 		swapScoresAt(a, b);
@@ -1468,14 +1468,14 @@ public abstract class IBSPopulation {
 	public void adjustGameScoresAt(int me) {
 		// check first whether an actual strategy change has occurred
 		if (isSameStrategy(me)) {
-			commitStrategyAt(me);
+			commitTraitAt(me);
 			return;
 		}
 		// constant selection does not require involved score adjustments;
 		// called only under special circumstances, e.g. with optimizeHomo set;
 		// after committing make sure fitness is updated
 		if (module.isStatic()) {
-			commitStrategyAt(me);
+			commitTraitAt(me);
 			updateScores();
 			return;
 		}
@@ -1499,7 +1499,7 @@ public abstract class IBSPopulation {
 				interGroup.setGroupAt(you, interaction.out[you], interaction.kout[you]);
 				yalpGroupGameAt(interGroup);
 			}
-			commitStrategyAt(me);
+			commitTraitAt(me);
 			// add new scores
 			interGroup.setGroupAt(me, neigh, nNeigh);
 			playGroupGameAt(interGroup);
@@ -1531,7 +1531,7 @@ public abstract class IBSPopulation {
 			interGroup.setGroupAt(you, interaction.in[you], interaction.kin[you]);
 			yalpGroupGameAt(interGroup);
 		}
-		commitStrategyAt(me);
+		commitTraitAt(me);
 		// add new scores
 		neigh = interaction.out[me];
 		nNeigh = interaction.kout[me];
@@ -1876,7 +1876,7 @@ public abstract class IBSPopulation {
 		// real time increment based on current fitness
 		switch (populationUpdate.getType()) {
 			case SYNC: // synchronous updates (do not commit strategies)
-				prepareStrategies();
+				prepareTraits();
 				if (syncFraction >= 1.0) {
 					// no noise, update everyone
 					for (int n = 0; n < nPopulation; n++)
@@ -2000,7 +2000,7 @@ public abstract class IBSPopulation {
 	 * @param focal the index of the individual to update
 	 */
 	public void debugUpdatePopulationAt(int focal) {
-		resetStrategies();
+		resetTraits();
 		switch (populationUpdate.getType()) {
 			case SYNC: // synchronous updating - gets here only in debugging mode
 				debugFocal = focal;
@@ -2135,7 +2135,7 @@ public abstract class IBSPopulation {
 		if (contactmodule == null)
 			updateScoreAt(me, switched);
 		else if (switched)
-			commitStrategyAt(me);
+			commitTraitAt(me);
 	}
 
 	/**
@@ -2152,7 +2152,7 @@ public abstract class IBSPopulation {
 			return;
 		}
 		if (switched)
-			commitStrategyAt(me);
+			commitTraitAt(me);
 		// no need to update ephemeral scores
 		if (playerScoring.equals(ScoringType.EPHEMERAL))
 			return;
@@ -2285,7 +2285,7 @@ public abstract class IBSPopulation {
 			// replace 'vacant'
 			updateFromModelAt(dest, source);
 			resetScoreAt(dest);
-			commitStrategyAt(dest);
+			commitTraitAt(dest);
 			playGameAt(dest);
 			return;
 		}
@@ -3723,7 +3723,7 @@ public abstract class IBSPopulation {
 	 * Reset all strategies in preparation of the next update step. Simply an
 	 * opportunity for customizations in subclasses.
 	 */
-	public void resetStrategies() {
+	public void resetTraits() {
 	}
 
 	/**

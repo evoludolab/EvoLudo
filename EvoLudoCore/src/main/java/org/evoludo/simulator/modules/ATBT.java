@@ -691,8 +691,8 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 		public boolean isMonomorphic() {
 			if (ArrayMath.max(feedback) > 0.0)
 				return super.isMonomorphic();
-			return ((strategiesTypeCount[ATBT.COOPERATE_POOR] + strategiesTypeCount[ATBT.COOPERATE_RICH] == nPopulation)
-					|| (strategiesTypeCount[ATBT.DEFECT_POOR] + strategiesTypeCount[ATBT.DEFECT_RICH] == nPopulation));
+			return ((traitsCount[ATBT.COOPERATE_POOR] + traitsCount[ATBT.COOPERATE_RICH] == nPopulation)
+					|| (traitsCount[ATBT.DEFECT_POOR] + traitsCount[ATBT.DEFECT_RICH] == nPopulation));
 		}
 
 		/**
@@ -712,13 +712,13 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 				return changed;
 			int oldtype = getTraitAt(me);
 			if (changed) {
-				int newtype = strategiesNext[me] % nTraits;
+				int newtype = traitsNext[me] % nTraits;
 				// only strategies can be adopted
 				int newstrat = newtype % 2;
 				changed = (oldtype % 2 != newstrat);
 				// make sure patch type is preserved
 				int oldpatch = oldtype / 2;
-				strategiesNext[me] = oldpatch + oldpatch + newstrat + (changed ? nTraits : 0);
+				traitsNext[me] = oldpatch + oldpatch + newstrat + (changed ? nTraits : 0);
 			}
 			// note: should we allow simultaneous strategy and patch changes? i don't think
 			// so... which approach corresponds to the ODE?
@@ -731,7 +731,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 					// determine new patch type (old one was GOOD if oldtype is even and will now
 					// turn BAD and vice versa)
 					int newpatch = (oldtype + 1) % 2;
-					strategiesNext[me] = newpatch + oldstrat + oldstrat + nTraits;
+					traitsNext[me] = newpatch + oldstrat + oldstrat + nTraits;
 					return true;
 				}
 			}

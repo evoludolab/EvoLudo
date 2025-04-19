@@ -179,17 +179,17 @@ public class simCDLP extends CDLP implements ChangeListener {
 				do {
 					engine.modelNext();
 					if (doBasin) {
-						if (pop.strategiesTypeCount[PUNISH] == 0)
+						if (pop.traitsCount[PUNISH] == 0)
 							continue nextrial;
-						if (pop.strategiesTypeCount[DEFECT] == 0 && //
-								pop.strategiesTypeCount[LONER] == 0) {
-							basin[COOPERATE] += (double) pop.strategiesTypeCount[COOPERATE] / (double) nPopulation;
-							basin[PUNISH] += (double) pop.strategiesTypeCount[PUNISH] / (double) nPopulation;
+						if (pop.traitsCount[DEFECT] == 0 && //
+								pop.traitsCount[LONER] == 0) {
+							basin[COOPERATE] += (double) pop.traitsCount[COOPERATE] / (double) nPopulation;
+							basin[PUNISH] += (double) pop.traitsCount[PUNISH] / (double) nPopulation;
 							continue nextrial;
 						}
 					} else {
 						for (int n = 0; n < nTraits; n++)
-							if (pop.strategiesTypeCount[n] == nPopulation) {
+							if (pop.traitsCount[n] == nPopulation) {
 								corner[n]++;
 								continue nextrial;
 							}
@@ -215,7 +215,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 			double t = 0.0, t2 = 0.0;
 			for (int r = 0; r < timesamples; r++) {
 				engine.modelReset();
-				while (pop.strategiesTypeCount[PUNISH] < threshold) {
+				while (pop.traitsCount[PUNISH] < threshold) {
 					engine.modelNext();
 				}
 				double generation = ibs.getTime();
@@ -235,9 +235,9 @@ public class simCDLP extends CDLP implements ChangeListener {
 		// evolve population
 		startStatistics();
 		for (long g = 0; g < timeStop; g++) {
-			int c = pop.strategiesTypeCount[COOPERATE];
-			int d = pop.strategiesTypeCount[DEFECT];
-			int l = pop.strategiesTypeCount[LONER];
+			int c = pop.traitsCount[COOPERATE];
+			int d = pop.traitsCount[DEFECT];
+			int l = pop.traitsCount[LONER];
 			double generation = ibs.getTime();
 			double t = generation;
 			engine.modelNext();
@@ -246,14 +246,14 @@ public class simCDLP extends CDLP implements ChangeListener {
 				location[c][d][l] += incr;
 
 			for (int n = 0; n < nTraits; n++) {
-				if (pop.strategiesTypeCount[n] >= threshold) {
+				if (pop.traitsCount[n] >= threshold) {
 					corner[n] += incr;
 					break;
 				}
 			}
 
 			for (int n = 0; n < nTraits; n++) {
-				if (pop.strategiesTypeCount[n] == nPopulation) {
+				if (pop.traitsCount[n] == nPopulation) {
 					if (lastfix != n) {
 						// fix is never null but make compiler happy
 						if (fix != null && lastfix >= 0)

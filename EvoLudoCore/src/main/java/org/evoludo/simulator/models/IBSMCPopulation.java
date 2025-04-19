@@ -433,7 +433,7 @@ public class IBSMCPopulation extends IBSPopulation {
 		System.arraycopy(strategiesNext, offset, myTrait, 0, nTraits);
 		double oldScore = pairmodule.pairScores(oldTrait, groupStrat, nInter, oldScores);
 		double newScore = pairmodule.pairScores(myTrait, groupStrat, nInter, groupScores);
-		commitStrategyAt(me);
+		commitTraitAt(me);
 		if (playerScoreAveraged) {
 			double iInter = 1.0 / nInter;
 			newScore *= iInter;
@@ -554,19 +554,19 @@ public class IBSMCPopulation extends IBSPopulation {
 	}
 
 	@Override
-	public void prepareStrategies() {
+	public void prepareTraits() {
 		System.arraycopy(strategies, 0, strategiesNext, 0, nPopulation * nTraits);
 	}
 
 	@Override
-	public void commitStrategies() {
+	public void commitTraits() {
 		double[] swap = strategies;
 		strategies = strategiesNext;
 		strategiesNext = swap;
 	}
 
 	@Override
-	public void commitStrategyAt(int me) {
+	public void commitTraitAt(int me) {
 		int idx = me * nTraits;
 		System.arraycopy(strategiesNext, idx, strategies, idx, nTraits);
 	}
@@ -893,7 +893,7 @@ public class IBSMCPopulation extends IBSPopulation {
 		if (adjustScores) {
 			adjustGameScoresAt(hit); // this also commits strategy
 		} else {
-			commitStrategyAt(hit);
+			commitTraitAt(hit);
 			// when in doubt, recalculate entire board
 			resetScores();
 			updateScores();

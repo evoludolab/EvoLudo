@@ -113,7 +113,7 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 			}
 			engine.modelNext();
 			for (int n = 0; n < nTraits; n++) {
-				if (pop.strategiesTypeCount[n] == nPopulation) {
+				if (pop.traitsCount[n] == nPopulation) {
 					if (lastfix != n) {
 						if (lastfix >= 0)
 							fix[lastfix][n]++;

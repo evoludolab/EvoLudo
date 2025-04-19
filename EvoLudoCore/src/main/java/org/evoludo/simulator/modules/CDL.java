@@ -999,9 +999,9 @@ public class CDL extends Discrete implements Scores,
 							for (int y = m - 1; y < m + 1; y++)
 								for (int x = m - 1; x < m + 1; x++)
 								setTraitAt(z * l2 + y * l + x, CDL.LONER);
-						strategiesTypeCount[CDL.LONER] += 2 * 2 * 2;
-						strategiesTypeCount[CDL.DEFECT] += 4 * 4 * 4 - 2 * 2 * 2;
-						strategiesTypeCount[CDL.COOPERATE] -= 4 * 4 * 4;
+						traitsCount[CDL.LONER] += 2 * 2 * 2;
+						traitsCount[CDL.DEFECT] += 4 * 4 * 4 - 2 * 2 * 2;
+						traitsCount[CDL.COOPERATE] -= 4 * 4 * 4;
 					} else {
 						// odd number of sites - place 5x5x5 cube of D's in the center and a 3x3x3 cube
 						// of loners within
@@ -1013,9 +1013,9 @@ public class CDL extends Discrete implements Scores,
 							for (int y = m - 1; y < m + 2; y++)
 								for (int x = m - 1; x < m + 2; x++)
 								setTraitAt(z * l2 + y * l + x, CDL.LONER);
-						strategiesTypeCount[CDL.LONER] += 3 * 3 * 3;
-						strategiesTypeCount[CDL.DEFECT] += 5 * 5 * 5 - 3 * 3 * 3;
-						strategiesTypeCount[CDL.COOPERATE] -= 5 * 5 * 5;
+						traitsCount[CDL.LONER] += 3 * 3 * 3;
+						traitsCount[CDL.DEFECT] += 5 * 5 * 5 - 3 * 3 * 3;
+						traitsCount[CDL.COOPERATE] -= 5 * 5 * 5;
 					}
 					break;
 
@@ -1035,9 +1035,9 @@ public class CDL extends Discrete implements Scores,
 					for (r = -cells / 2; r <= cells / 2; r++)
 						for (c = -cells / 2; c <= cells / 2; c++)
 							setTraitAt((mid + r) * size + mid + c, CDL.LONER);
-					strategiesTypeCount[CDL.LONER] += 3 * 3;
-					strategiesTypeCount[CDL.DEFECT] += 5 * 5 - 3 * 3;
-					strategiesTypeCount[CDL.COOPERATE] -= 5 * 5;
+					traitsCount[CDL.LONER] += 3 * 3;
+					traitsCount[CDL.DEFECT] += 5 * 5 - 3 * 3;
+					traitsCount[CDL.COOPERATE] -= 5 * 5;
 					break;
 
 				case HONEYCOMB:
@@ -1071,9 +1071,9 @@ public class CDL extends Discrete implements Scores,
 						setTraitAt(mid - size - 2, CDL.DEFECT);
 						setTraitAt(mid + size - 2, CDL.DEFECT);
 					}
-					strategiesTypeCount[CDL.LONER] += 7;
-					strategiesTypeCount[CDL.DEFECT] += 12;
-					strategiesTypeCount[CDL.COOPERATE] -= 19;
+					traitsCount[CDL.LONER] += 7;
+					traitsCount[CDL.DEFECT] += 12;
+					traitsCount[CDL.COOPERATE] -= 19;
 					break;
 
 				case TRIANGULAR:
@@ -1106,9 +1106,9 @@ public class CDL extends Discrete implements Scores,
 					setTraitAt(mid - 4 - size, CDL.DEFECT);
 					setTraitAt(mid + 3 * size, CDL.DEFECT);
 
-					strategiesTypeCount[CDL.LONER] += 13;
-					strategiesTypeCount[CDL.DEFECT] += 9;
-					strategiesTypeCount[CDL.COOPERATE] -= 22;
+					traitsCount[CDL.LONER] += 13;
+					traitsCount[CDL.DEFECT] += 9;
+					traitsCount[CDL.COOPERATE] -= 22;
 					break;
 
 				default:

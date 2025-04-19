@@ -296,7 +296,7 @@ public class DemesTBT extends TBT {
 		 *         heterogeneous
 		 */
 		protected int homoDemes() {
-			if (strategiesTypeCount[DemesTBT.COOPERATE] % sizeDemes != 0)
+			if (traitsCount[DemesTBT.COOPERATE] % sizeDemes != 0)
 				// if number of cooperators is not a multiple of deme size
 				// at least one deme must be heterogeneous
 				return -1;
@@ -348,7 +348,7 @@ public class DemesTBT extends TBT {
 			// check if population is homogeneous or only the deme with a vacancy is
 			// heterogeneous. if so, all other individual are of the same type, i.e. a
 			// random individual can be drawn - no need to check fitness.
-			int ccount = strategiesTypeCount[DemesTBT.COOPERATE];
+			int ccount = traitsCount[DemesTBT.COOPERATE];
 			if (ccount == 0 || ccount == nPopulation || ccount == demeTypeCount[vacantDeme][DemesTBT.COOPERATE]
 					|| nPopulation - ccount == demeTypeCount[vacantDeme][DemesTBT.DEFECT]) {
 				int migrant = random0n(nPopulation - sizeDemes);
@@ -428,26 +428,26 @@ public class DemesTBT extends TBT {
 			if (prevsample >= time)
 				return;
 			double incr = time - prevsample;
-			if (strategiesTypeCount[DemesTBT.COOPERATE] == nPopulation)
+			if (traitsCount[DemesTBT.COOPERATE] == nPopulation)
 				pure[DemesTBT.COOPERATE] += incr;
-			if (strategiesTypeCount[DemesTBT.DEFECT] == nPopulation)
+			if (traitsCount[DemesTBT.DEFECT] == nPopulation)
 				pure[DemesTBT.DEFECT] += incr;
 			prevsample = time;
 		}
 
 		@Override
-		public void commitStrategyAt(int me) {
+		public void commitTraitAt(int me) {
 			int deme = me / sizeDemes;
-			int newstrat = strategiesNext[me];
+			int newstrat = traitsNext[me];
 			int oldtype = getTraitAt(me);
 			demeTypeCount[deme][oldtype]--;
 			demeTypeCount[deme][newstrat % nTraits]++;
-			super.commitStrategyAt(me);
+			super.commitTraitAt(me);
 		}
 
 		@Override
-		public void commitStrategies() {
-			super.commitStrategies();
+		public void commitTraits() {
+			super.commitTraits();
 			for (int d = 0; d < nDemes; d++) {
 				int skip = d * sizeDemes;
 				Arrays.fill(demeTypeCount[d], 0);
@@ -481,10 +481,10 @@ public class DemesTBT extends TBT {
 			// check whether an actual strategy change has occurred
 			// note: isSameStrategy() only works before committing strategy!
 			if (isSameStrategy(me)) {
-				commitStrategyAt(me);
+				commitTraitAt(me);
 				return;
 			}
-			commitStrategyAt(me);
+			commitTraitAt(me);
 			updateMixedMeanScores();
 		}
 	}

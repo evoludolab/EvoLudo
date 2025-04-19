@@ -323,9 +323,9 @@ public class RSP extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasS
 					for (int w = mid - width / 2; w <= mid + width / 2; w++)
 						for (int h = mid - height; h <= mid; h++)
 							setTraitAt(h * size + w, RSP.PAPER);
-					strategiesTypeCount[RSP.ROCK] -= 10 * 20;
-					strategiesTypeCount[RSP.SCISSORS] += 5 * 20;
-					strategiesTypeCount[RSP.PAPER] += 5 * 20;
+					traitsCount[RSP.ROCK] -= 10 * 20;
+					traitsCount[RSP.SCISSORS] += 5 * 20;
+					traitsCount[RSP.PAPER] += 5 * 20;
 					break;
 				case HONEYCOMB:
 					break;

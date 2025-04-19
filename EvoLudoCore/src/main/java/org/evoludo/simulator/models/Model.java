@@ -257,7 +257,7 @@ public abstract class Model implements CLOProvider {
 			// reset strategies after relaxation
 			for (Module mod : species) {
 				IBSPopulation pop = mod.getIBSPopulation();
-				pop.resetStrategies();
+				pop.resetTraits();
 			}
 		}
 		if (hasConverged()) {

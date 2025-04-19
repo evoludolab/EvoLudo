@@ -171,7 +171,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 		int nInter = nOut + nIn;
 		double oldScore = pairmodule.pairScores(strategies[me], groupStrat, nInter, oldScores);
 		double newScore = pairmodule.pairScores(strategiesNext[me], groupStrat, nInter, groupScores);
-		commitStrategyAt(me);
+		commitTraitAt(me);
 		if (playerScoreAveraged) {
 			double iInter = 1.0 / nInter;
 			newScore *= iInter;
@@ -297,12 +297,12 @@ public class IBSCPopulation extends IBSMCPopulation {
 	}
 
 	@Override
-	public void prepareStrategies() {
+	public void prepareTraits() {
 		System.arraycopy(strategies, 0, strategiesNext, 0, nPopulation);
 	}
 
 	@Override
-	public void commitStrategyAt(int me) {
+	public void commitTraitAt(int me) {
 		strategies[me] = strategiesNext[me];
 	}
 

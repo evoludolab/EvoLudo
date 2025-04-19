@@ -676,7 +676,7 @@ public abstract class IBS extends Model {
 			int skip = distrMutation.next();
 			time += skip * norm;
 			realtime += skip * realnorm;
-			population.resetStrategies();
+			population.resetTraits();
 			update();
 			// communicate update
 			engine.fireModelChanged();
@@ -743,7 +743,7 @@ public abstract class IBS extends Model {
 			// reset strategies (colors)
 			for (Module mod : species) {
 				IBSPopulation pop = mod.getIBSPopulation();
-				pop.resetStrategies();
+				pop.resetTraits();
 				popFrac *= pop.getSyncFraction();
 				nPopTot += pop.getPopulationSize();
 				scoreTot += pop.getTotalFitness();
@@ -757,14 +757,14 @@ public abstract class IBS extends Model {
 				// update populations
 				for (Module mod : species) {
 					IBSPopulation pop = mod.getIBSPopulation();
-					pop.prepareStrategies();
+					pop.prepareTraits();
 					pop.step();
 					pop.isConsistent();
 				}
 				// commit strategies and reset scores
 				for (Module mod : species) {
 					IBSPopulation pop = mod.getIBSPopulation();
-					pop.commitStrategies(); // also check homogeneity
+					pop.commitTraits(); // also check homogeneity
 					// TODO: review migration - should be an independent event, independent of
 					// population update
 					// NOTE: should time advance? e.g. based on number of mutants
@@ -792,7 +792,7 @@ public abstract class IBS extends Model {
 		// reset strategies (colors)
 		for (Module mod : species) {
 			IBSPopulation pop = mod.getIBSPopulation();
-			pop.resetStrategies();
+			pop.resetTraits();
 			Module module = pop.getModule();
 			double rate = module.getSpeciesUpdateRate();
 			// determine generation time and real time increments

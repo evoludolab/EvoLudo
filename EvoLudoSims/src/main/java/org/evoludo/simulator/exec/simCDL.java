@@ -486,13 +486,13 @@ public class simCDL extends CDL implements ChangeListener {
 			for (int n = 0; n < nPopulation; n++)
 				todo[n] = n;
 			int nTodo = nPopulation;
-			strategiesTypeCount[CDL.COOPERATE] = initcount[CDL.COOPERATE];
+			traitsCount[CDL.COOPERATE] = initcount[CDL.COOPERATE];
 			for (int n = 0; n < initcount[CDL.COOPERATE]; n++) {
 				int pick = rng.random0n(nTodo);
 				setTraitAt(todo[pick], CDL.COOPERATE);
 				todo[pick] = todo[--nTodo];
 			}
-			strategiesTypeCount[CDL.DEFECT] = initcount[CDL.DEFECT];
+			traitsCount[CDL.DEFECT] = initcount[CDL.DEFECT];
 			for (int n = 0; n < initcount[CDL.DEFECT]; n++) {
 				// logger.info("setStrategyCount: nTodo="+nTodo+",
 				// todo="+ChHFormatter.format(todo));
@@ -500,7 +500,7 @@ public class simCDL extends CDL implements ChangeListener {
 				setTraitAt(todo[pick], CDL.DEFECT);
 				todo[pick] = todo[--nTodo];
 			}
-			strategiesTypeCount[CDL.LONER] = initcount[CDL.LONER];
+			traitsCount[CDL.LONER] = initcount[CDL.LONER];
 			for (int n = 0; n < initcount[CDL.LONER]; n++)
 				setTraitAt(todo[n], CDL.LONER);
 			resetStatistics();
