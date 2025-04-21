@@ -1780,7 +1780,6 @@ public class IBSDPopulation extends IBSPopulation {
 	@Override
 	public void init() {
 		super.init();
-		Arrays.fill(traitsCount, 0);
 		switch (init.type) {
 			case STRIPES:
 				initStripes();
@@ -1949,36 +1948,38 @@ public class IBSDPopulation extends IBSPopulation {
 	 */
 	public void initMono(int monoType, double monoFreq) {
 		monoType = monoType % nTraits;
+		Arrays.fill(traitsCount, 0);
 		if (monoFreq > 1.0 - 1e-8) {
 			Arrays.fill(traits, monoType);
 			traitsCount[monoType] = nPopulation;
-		} else {
-			// monomorphic population with VACANT sites
-			int nMono = 0;
-			for (int n = 0; n < nPopulation; n++) {
-				if (random01() < monoFreq) {
-					setTraitAt(n, monoType);
-					nMono++;
-					continue;
-				}
-				setTraitAt(n, VACANT);
-			}
-			traitsCount[monoType] = nMono;
-			traitsCount[VACANT] = nPopulation - nMono;
-			// check if population exists
-			if (nMono == 0)
-				return;
-			// relax the monomorphic configuration (ignore monoStop)
-			// the actual monomorphic frequency may differ from the requested frequency
-			// this is meaningful even for well-mixed populations
-			boolean mono = module.getMonoStop();
-			module.setMonoStop(false);
-			Model model = engine.getModel();
-			// update required to calculate scores/fitness
-			model.update();
-			model.relax();
-			module.setMonoStop(mono);
+			return;
 		}
+
+		// monomorphic population with VACANT sites
+		int nMono = 0;
+		for (int n = 0; n < nPopulation; n++) {
+			if (random01() < monoFreq) {
+				setTraitAt(n, monoType);
+				nMono++;
+				continue;
+			}
+			setTraitAt(n, VACANT);
+		}
+		traitsCount[monoType] = nMono;
+		traitsCount[VACANT] = nPopulation - nMono;
+		// check if population exists
+		if (nMono == 0)
+			return;
+		// relax the monomorphic configuration (ignore monoStop)
+		// the actual monomorphic frequency may differ from the requested frequency
+		// this is meaningful even for well-mixed populations
+		boolean mono = module.getMonoStop();
+		module.setMonoStop(false);
+		Model model = engine.getModel();
+		// update required to calculate scores/fitness
+		model.update();
+		model.relax();
+		module.setMonoStop(mono);
 	}
 
 	/**
