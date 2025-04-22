@@ -168,19 +168,17 @@ public class PDE extends ODE {
 	protected double linext;
 
 	/**
-	 * The array of diffusion coefficients for each trait.
+	 * The array of diffusion coefficients for each (independent) trait.
 	 * 
 	 * @see #cloPdeDiffusion
-	 * @see #setDiffusion(double[])
 	 */
 	protected double[] diffcoeff;
 
 	/**
 	 * The flag indicating whether preservation of symmetry in the dynamics is
-	 * requested.
-	 * The model may not be able to honour the request because it requires that the
-	 * spatial structure permits preservation of symmetry, i.e. the underlying
-	 * spatial geometry represents a lattice.
+	 * requested. The model may not be able to honour the request because it
+	 * requires that the spatial structure permits preservation of symmetry, i.e.
+	 * the underlying spatial geometry represents a lattice.
 	 * 
 	 * @see #cloPdeSymmetric
 	 * @see #getSymmetric()
@@ -930,36 +928,6 @@ public class PDE extends ODE {
 	}
 
 	/**
-	 * Sets the diffusion coefficients for each trait.
-	 * 
-	 * @param dc the array of diffusion coefficients
-	 * 
-	 * @see #cloPdeDiffusion
-	 */
-	public void setDiffusion(double[] dc) {
-		// the number of traits not yet set - retrieve directly from module
-		int dim = module.getNTraits();
-		if (diffcoeff == null || diffcoeff.length != dim)
-			diffcoeff = new double[dim];
-		if (dc == null) {
-			// set default values for diffusion
-			Arrays.fill(diffcoeff, 1.0);
-			return;
-		}
-		int idx = 0;
-		// the dependent trait not yet set - retrieve directly from module
-		int depTrait = module.getDependent();
-		for (int n = 0; n < dim; n++) {
-			if (n == depTrait) {
-				diffcoeff[n] = 0.0;
-				continue;
-			}
-			diffcoeff[n] = dc[idx % dc.length];
-			idx++;
-		}
-	}
-
-	/**
 	 * Gets the diffusion coefficients for all traits as an array.
 	 * 
 	 * @return the array of diffusion coefficients
@@ -1644,15 +1612,32 @@ public class PDE extends ODE {
 
 	/**
 	 * Command line option to set the diffusion coefficients.
-	 * 
-	 * @see #setDiffusion(double[])
 	 */
 	public final CLOption cloPdeDiffusion = new CLOption("pdeD", "1", EvoLudo.catModel, null,
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					setDiffusion(CLOParser.parseVector(arg));
-					return true;
+					boolean success = true;
+					diffcoeff = CLOParser.parseVector(arg);
+					// number of traits and dependent not yet set - retrieve directly from module
+					int dim = module.getNTraits();
+					int dep = -1;
+					if (module instanceof HasDE)
+						dep = ((HasDE) module).getDependent();
+					if (diffcoeff == null) {
+						logger.warning("invalid diffusion vector: '" + arg + "' - unit diffusion.");
+						diffcoeff = new double[dim];
+						Arrays.fill(diffcoeff, 1.0);
+						success = false;
+					}
+					if (diffcoeff.length != dim) {
+						double[] dc = diffcoeff;
+						diffcoeff = new double[dim];
+						for (int n = 0; n < dim; n++)
+							diffcoeff[n] = dc[n % dc.length];
+					}
+					diffcoeff[dep] = 0.0;
+					return success;
 				}
 
 				@Override

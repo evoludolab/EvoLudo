@@ -57,7 +57,6 @@ public class Advection extends PDE {
 	 * The 2D array of advection coefficients for each trait against all others.
 	 *
 	 * @see #cloPdeAdvection
-	 * @see #setAdvection(double[][])
 	 */
 	protected double[][] advcoeff;
 
@@ -161,13 +160,21 @@ public class Advection extends PDE {
 					ArrayMath.sub(si, sn, delta); // delta = si-ds
 					ArrayMath.add(delta, 1.0); // delta = 1+si-sn; note 1+sn-si=2-delta
 					// loop over traits - advection
+					int jidx = 0;
 					for (int j = 0; j < nDim; j++) {
+						if (j == dependent)
+							continue;
 						double advj = 0.0;
+						int kidx = 0;
 						for (int k = 0; k < nDim; k++) {
+							if (k == dependent)
+								continue;
 							double dk = delta[k] * 0.5;
-							advj += beta[j][k] * (-sn[j] * dk + si[j] * (1.0 - dk));
+							advj += beta[jidx][kidx] * (-sn[j] * dk + si[j] * (1.0 - dk));
+							kidx++;
 						}
 						adv[j] += advj;
+						jidx++;
 					}
 				}
 				ArrayMath.multiply(s, alpha); // s *= alpha
@@ -200,15 +207,23 @@ public class Advection extends PDE {
 				ArrayMath.sub(si, sn, delta); // delta = si-sn
 				ArrayMath.add(delta, 1.0); // delta = 1+si-sn; note 1+sn-si=2-delta
 				// loop over traits - advection
+				int jidx = 0;
 				for (int j = 0; j < nDim; j++) {
+					if (j == dependent)
+						continue;
 					double advj = 0.0;
+					int kidx = 0;
 					for (int k = 0; k < nDim; k++) {
+						if (k == dependent)
+							continue;
 						double dk = delta[k] * 0.5;
-						advj += beta[j][k] * (-sn[j] * dk + si[j] * (1.0 - dk));
+						advj += beta[jidx][kidx] * (-sn[j] * dk + si[j] * (1.0 - dk));
 						// debug outflux of site
 						// outflux[j] += beta[j][k]*sn[j]*dk;
+						kidx++;
 					}
 					adv[j] += advj;
+					jidx++;
 				}
 			}
 			// debug outflux of site
@@ -238,57 +253,6 @@ public class Advection extends PDE {
 	}
 
 	/**
-	 * Sets the advection coefficients for each trait against every other one.
-	 *
-	 * @param ac the 2D array of advection coefficients
-	 *
-	 * @see #cloPdeAdvection
-	 */
-	public void setAdvection(double[][] ac) {
-		// the number of traits not yet set - retrieve directly from module
-		int dim = module.getNTraits();
-		if (advcoeff == null || advcoeff.length != dim || advcoeff[0].length != dim)
-			advcoeff = new double[dim][dim];
-		if (ac == null) {
-			// set default values for advection - no advection
-			for (int i = 0; i < dim; i++)
-				Arrays.fill(advcoeff[i], 0.0);
-			return;
-		}
-
-		switch (dim - ac.length) {
-			case 0: // called from parameter panel
-				for (int n = 0; n < dim; n++)
-					System.arraycopy(ac[n], 0, advcoeff[n], 0, dim);
-				break;
-			case 1: // called from command line parser possibly with dependent variable
-				int idx = 0;
-				int ridx = 0;
-				// the dependent trait not yet set - retrieve directly from module
-				int depTrait = module.getDependent();
-				for (int r = 0; r < dim; r++) {
-					double[] row = advcoeff[r];
-					if (r == depTrait) {
-						Arrays.fill(row, 0.0);
-						continue;
-					}
-					idx = 0;
-					for (int c = 0; c < dim; c++) {
-						if (c == depTrait) {
-							row[c] = 0.0;
-							continue;
-						}
-						row[c] = ac[ridx][idx++];
-					}
-					ridx++;
-				}
-				break;
-			default: // this is more serious
-				throw new Error("Advection matrix improperly specified.");
-		}
-	}
-
-	/**
 	 * Gets the 2D advection array for the advection coefficients of each trait
 	 * against every other one.
 	 *
@@ -298,27 +262,18 @@ public class Advection extends PDE {
 		return advcoeff;
 	}
 
-	/**
-	 * Gets whether the model has non-vanishing advection coefficients. Otherwise
-	 * the numerical integration is simply delegated to {@code super}.
-	 *
-	 * @return {@code true} if advection includes non-zero coefficients
-	 */
-	public boolean doAdvection() {
-		return doAdvection;
-	}
-
 	@Override
 	public void initDiffusion(double deltat) {
 		super.initDiffusion(deltat);
 		if (!doAdvection)
 			return;
 		// initialize beta
-		if (beta == null || beta.length != nDim)
-			beta = new double[nDim][nDim];
+		int dim = dependent < 0 ? nDim : nDim - 1;
+		if (beta == null || beta.length != dim)
+			beta = new double[dim][dim];
 		double invdx = calcInvDeltaX();
 		double invdx2 = invdx * invdx;
-		for (int r = 0; r < nDim; r++)
+		for (int r = 0; r < dim; r++)
 			ArrayMath.multiply(advcoeff[r], deltat * invdx2, beta[r]);
 	}
 
@@ -333,11 +288,10 @@ public class Advection extends PDE {
 		double invdx2 = invdx * invdx;
 		// note: negative advcoeff are meaningful to avoid bad areas; maximal dt depends
 		// on magnitude of advcoeff
-		double maxA = Math.max(ArrayMath.max(advcoeff), Math.abs(ArrayMath.min(advcoeff))) * invdx2;
-		doAdvection = maxA > 0.0;
 		// DEBUG the following seems too conservative (at least for normalized densities
 		// - try without but check whether densities remain in [0,1])
 		if (doAdvection) {
+			double maxA = Math.max(ArrayMath.max(advcoeff), Math.abs(ArrayMath.min(advcoeff))) * invdx2;
 			int maxK = Math.max(space.maxOut, space.maxIn);
 			// threshold of 1 is much to aggressive - this means everyone in one site
 			// migrates! this can introduce artifacts!
@@ -353,19 +307,24 @@ public class Advection extends PDE {
 	/**
 	 * Command line option to set the advection coefficients of every trait against
 	 * all others.
-	 *
-	 * @see #setAdvection(double[][])
 	 */
-	public final CLOption cloPdeAdvection = new CLOption("pdeA", "default", EvoLudo.catModel, null,
+	public final CLOption cloPdeAdvection = new CLOption("pdeA", "none", EvoLudo.catModel, null,
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					if (cloPdeAdvection.isDefault()) {
-						// no advection
-						setAdvection(null);
+					advcoeff = CLOParser.parseMatrix(arg);
+					// dim not yet set - retrieve directly from module
+					int dim = module.getNTraits();
+					if (module.getDependent() >= 0)
+						dim--;
+					if (advcoeff == null || advcoeff.length != dim || advcoeff[0].length != dim) {
+						if (!cloPdeAdvection.isDefault())
+							logger.warning("invalid advection matrix: '" + arg + "' - no advection.");
+						doAdvection = false;
+						advcoeff = null;
 						return true;
 					}
-					setAdvection(CLOParser.parseMatrix(arg));
+					doAdvection = true;
 					return true;
 				}
 
