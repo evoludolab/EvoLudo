@@ -35,7 +35,6 @@ import java.io.PrintStream;
 
 import org.evoludo.geom.Point2D;
 import org.evoludo.math.Combinatorics;
-import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.Model;
@@ -78,13 +77,6 @@ public class EcoPGG extends Discrete implements Payoffs,
 	public static final int COOPERATE = 1;
 
 	/**
-	 * The shared random number generator to ensure reproducibility of results.
-	 * 
-	 * @see EvoLudo#getRNG()
-	 */
-	protected RNGDistribution rng;
-
-	/**
 	 * The multiplication factor of the public good.
 	 */
 	double interest = 3.0;
@@ -111,7 +103,6 @@ public class EcoPGG extends Discrete implements Payoffs,
 	 */
 	public EcoPGG(EvoLudo engine) {
 		super(engine);
-		rng = engine.getRNG();
 	}
 
 	@Override
