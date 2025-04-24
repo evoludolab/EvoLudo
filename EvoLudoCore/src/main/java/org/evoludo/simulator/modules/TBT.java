@@ -194,17 +194,17 @@ public class TBT extends Discrete implements Payoffs, HasIBS.DPairs, HasODE, Has
 	}
 
 	@Override
-	public double getMinGameScore() {
+	public double getMinPayoff() {
 		return ArrayMath.min(payoffs);
 	}
 
 	@Override
-	public double getMaxGameScore() {
+	public double getMaxPayoff() {
 		return ArrayMath.max(payoffs);
 	}
 
 	@Override
-	public double getMonoGameScore(int type) {
+	public double getMonoPayoff(int type) {
 		return payoffs[type][type];
 	}
 

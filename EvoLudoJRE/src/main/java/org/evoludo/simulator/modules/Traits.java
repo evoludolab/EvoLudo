@@ -120,7 +120,7 @@ public class Traits extends Discrete implements
 	}
 
 	@Override
-	public double getMinGameScore() {
+	public double getMinPayoff() {
 		double min = Double.MAX_VALUE;
 		for (int i = 0; i < nTraits; i++)
 			min = Math.min(min, ArrayMath.min(payoff[i]));
@@ -128,7 +128,7 @@ public class Traits extends Discrete implements
 	}
 
 	@Override
-	public double getMaxGameScore() {
+	public double getMaxPayoff() {
 		double max = -Double.MAX_VALUE;
 		for (int i = 0; i < nTraits; i++)
 			max = Math.max(max, ArrayMath.max(payoff[i]));
@@ -136,7 +136,7 @@ public class Traits extends Discrete implements
 	}
 
 	@Override
-	public double getMonoGameScore(int type) {
+	public double getMonoPayoff(int type) {
 		return payoff[type][type];
 	}
 

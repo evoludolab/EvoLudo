@@ -149,19 +149,19 @@ public class EcoPGG extends Discrete implements Payoffs,
 	}
 
 	@Override
-	public double getMinGameScore() {
-		return Math.min(getMonoGameScore(COOPERATE),
-				Math.min(getMonoGameScore(DEFECT), (interest / nGroup - 1.0) * cost));
+	public double getMinPayoff() {
+		return Math.min(getMonoPayoff(COOPERATE),
+				Math.min(getMonoPayoff(DEFECT), (interest / nGroup - 1.0) * cost));
 	}
 
 	@Override
-	public double getMaxGameScore() {
-		return Math.max(getMonoGameScore(COOPERATE),
-				Math.max(getMonoGameScore(DEFECT), interest * (nGroup - 1) / nGroup * cost));
+	public double getMaxPayoff() {
+		return Math.max(getMonoPayoff(COOPERATE),
+				Math.max(getMonoPayoff(DEFECT), interest * (nGroup - 1) / nGroup * cost));
 	}
 
 	@Override
-	public double getMonoGameScore(int type) {
+	public double getMonoPayoff(int type) {
 		switch (type) {
 			case COOPERATE:
 				return (interest - 1.0) * cost;

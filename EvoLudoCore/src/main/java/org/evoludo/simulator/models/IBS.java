@@ -938,14 +938,14 @@ public abstract class IBS extends Model {
 	public double getMinFitness(int id) {
 		Module mod = species.get(id);
 		Map2Fitness map2fit = mod.getMapToFitness();
-		return map2fit.map(mod.getMinGameScore());
+		return map2fit.map(mod.getMinPayoff());
 	}
 
 	@Override
 	public double getMaxFitness(int id) {
 		Module mod = species.get(id);
 		Map2Fitness map2fit = mod.getMapToFitness();
-		return map2fit.map(mod.getMaxGameScore());
+		return map2fit.map(mod.getMaxPayoff());
 	}
 
 	@Override

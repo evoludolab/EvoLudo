@@ -162,15 +162,15 @@ public abstract class Discrete extends Module {
 	 * @param type the index of the trait
 	 * @return payoff/score in monomorphic population with trait {@code type}
 	 */
-	public double getMonoGameScore(int type) {
+	public double getMonoPayoff(int type) {
 		return Double.NaN;
 	}
 
 	@Override
-	public double getMinMonoGameScore() {
+	public double getMinMonoPayoff() {
 		double min = Double.MAX_VALUE;
 		for (int n = 0; n < nTraits; n++) {
-			double monon = getMonoGameScore(n);
+			double monon = getMonoPayoff(n);
 			if (monon < min)
 				min = monon;
 		}
@@ -178,10 +178,10 @@ public abstract class Discrete extends Module {
 	}
 
 	@Override
-	public double getMaxMonoGameScore() {
+	public double getMaxMonoPayoff() {
 		double max = -Double.MAX_VALUE;
 		for (int n = 0; n < nTraits; n++) {
-			double monon = getMonoGameScore(n);
+			double monon = getMonoPayoff(n);
 			if (monon > max)
 				max = monon;
 		}

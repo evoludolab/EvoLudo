@@ -82,12 +82,12 @@ public class IBSC extends IBS implements Continuous {
 
 	@Override
 	public double getMinMonoScore(int id) {
-		return species.get(id).getMinMonoGameScore();
+		return species.get(id).getMinMonoPayoff();
 	}
 
 	@Override
 	public double getMaxMonoScore(int id) {
-		return species.get(id).getMaxMonoGameScore();
+		return species.get(id).getMaxMonoPayoff();
 	}
 
 	@Override

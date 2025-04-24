@@ -127,7 +127,7 @@ public interface Features {
 		 * 
 		 * @see Model#getMinScore(int)
 		 */
-		public abstract double getMinGameScore();
+		public abstract double getMinPayoff();
 
 		/**
 		 * Calculates and returns the maximum payoff/score of an individual. This value
@@ -138,7 +138,7 @@ public interface Features {
 		 * 
 		 * @see Model#getMaxScore(int)
 		 */
-		public abstract double getMaxGameScore();
+		public abstract double getMaxPayoff();
 
 		/**
 		 * Calculates and returns the minimum payoff/score of individuals in monomorphic
@@ -146,7 +146,7 @@ public interface Features {
 		 * 
 		 * @return the minimum payoff/score in monomorphic populations
 		 */
-		public abstract double getMinMonoGameScore();
+		public abstract double getMinMonoPayoff();
 
 		/**
 		 * Calculates and returns the maximum payoff/score of individuals in monomorphic
@@ -154,7 +154,7 @@ public interface Features {
 		 * 
 		 * @return the maximum payoff/score in monomorphic populations
 		 */
-		public abstract double getMaxMonoGameScore();
+		public abstract double getMaxMonoPayoff();
 	}
 
 	/**

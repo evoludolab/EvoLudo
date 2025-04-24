@@ -137,17 +137,17 @@ public class RSP extends Discrete implements Payoffs, HasIBS.DPairs, HasODE, Has
 	}
 
 	@Override
-	public double getMinGameScore() {
+	public double getMinPayoff() {
 		return ArrayMath.min(payoff);
 	}
 
 	@Override
-	public double getMaxGameScore() {
+	public double getMaxPayoff() {
 		return ArrayMath.max(payoff);
 	}
 
 	@Override
-	public double getMonoGameScore(int type) {
+	public double getMonoPayoff(int type) {
 		return payoff[type][type];
 	}
 

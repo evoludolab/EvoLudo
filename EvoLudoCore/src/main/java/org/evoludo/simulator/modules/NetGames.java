@@ -159,7 +159,7 @@ public class NetGames extends Discrete implements Payoffs, HasIBS,
 	}
 
 	@Override
-	public double getMinGameScore() {
+	public double getMinPayoff() {
 		// interaction may still be undefined
 		if (interaction == null)
 			return -1.0;
@@ -173,7 +173,7 @@ public class NetGames extends Discrete implements Payoffs, HasIBS,
 	}
 
 	@Override
-	public double getMaxGameScore() {
+	public double getMaxPayoff() {
 		// interaction may still be undefined
 		if (interaction == null)
 			return 1.0;

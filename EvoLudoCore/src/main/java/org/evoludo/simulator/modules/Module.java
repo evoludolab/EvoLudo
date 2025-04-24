@@ -759,9 +759,9 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the minimum payoff/score
 	 * 
-	 * @see Payoffs#getMinGameScore()
+	 * @see Payoffs#getMinPayoff()
 	 */
-	public double getMinGameScore() {
+	public double getMinPayoff() {
 		throw new UnsupportedOperationException("Implement Payoffs interface");
 	}
 
@@ -770,9 +770,9 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the maximum payoff/score
 	 * 
-	 * @see Payoffs#getMaxGameScore()
+	 * @see Payoffs#getMaxPayoff()
 	 */
-	public double getMaxGameScore() {
+	public double getMaxPayoff() {
 		throw new UnsupportedOperationException("Implement Payoffs interface");
 	}
 
@@ -781,9 +781,9 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the minimum payoff/score
 	 * 
-	 * @see Payoffs#getMinGameScore()
+	 * @see Payoffs#getMinPayoff()
 	 */
-	public double getMinMonoGameScore() {
+	public double getMinMonoPayoff() {
 		throw new UnsupportedOperationException("Implement Payoffs interface");
 	}
 
@@ -792,9 +792,9 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the maximum payoff/score
 	 * 
-	 * @see Payoffs#getMaxGameScore()
+	 * @see Payoffs#getMaxPayoff()
 	 */
-	public double getMaxMonoGameScore() {
+	public double getMaxMonoPayoff() {
 		throw new UnsupportedOperationException("Implement Payoffs interface");
 	}
 
@@ -805,7 +805,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @return {@code true} if all payoffs identical
 	 */
 	public boolean isNeutral() {
-		return (Math.abs(getMaxGameScore() - getMinGameScore()) < 1e-8);
+		return (Math.abs(getMaxPayoff() - getMinPayoff()) < 1e-8);
 	}
 
 	/**

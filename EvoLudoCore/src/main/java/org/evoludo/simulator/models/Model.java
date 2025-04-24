@@ -591,7 +591,7 @@ public abstract class Model implements CLOProvider {
 	 * @param id the id of the population for multi-species models
 	 * @return the minimum score
 	 * 
-	 * @see Module#getMinGameScore()
+	 * @see Module#getMinPayoff()
 	 */
 	public abstract double getMinScore(int id);
 
@@ -603,7 +603,7 @@ public abstract class Model implements CLOProvider {
 	 * @param id the id of the population for multi-species models
 	 * @return the maximum score
 	 * 
-	 * @see Module#getMaxGameScore()
+	 * @see Module#getMaxPayoff()
 	 */
 	public abstract double getMaxScore(int id);
 

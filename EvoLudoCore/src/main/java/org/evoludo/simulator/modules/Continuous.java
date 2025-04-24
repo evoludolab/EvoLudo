@@ -223,7 +223,7 @@ public abstract class Continuous extends Module {
 	 * @see #setExtremalScores()
 	 */
 	@Override
-	public double getMinGameScore() {
+	public double getMinPayoff() {
 		if (!extremalScoresSet)
 			setExtremalScores();
 		return cxMinScore;
@@ -235,7 +235,7 @@ public abstract class Continuous extends Module {
 	 * @see #setExtremalScores()
 	 */
 	@Override
-	public double getMaxGameScore() {
+	public double getMaxPayoff() {
 		if (!extremalScoresSet)
 			setExtremalScores();
 		return cxMaxScore;
@@ -247,7 +247,7 @@ public abstract class Continuous extends Module {
 	 * @see #setExtremalScores()
 	 */
 	@Override
-	public double getMinMonoGameScore() {
+	public double getMinMonoPayoff() {
 		if (!extremalScoresSet)
 			setExtremalScores();
 		return cxMinMonoScore;
@@ -259,7 +259,7 @@ public abstract class Continuous extends Module {
 	 * @see #setExtremalScores()
 	 */
 	@Override
-	public double getMaxMonoGameScore() {
+	public double getMaxMonoPayoff() {
 		if (!extremalScoresSet)
 			setExtremalScores();
 		return cxMaxMonoScore;

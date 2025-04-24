@@ -235,17 +235,17 @@ public class Centipede extends Discrete implements Payoffs, HasIBS.DPairs,
 	}
 
 	@Override
-	public double getMonoGameScore(int trait) {
+	public double getMonoPayoff(int trait) {
 		return getPayFirst(trait, trait) + getPaySecond(trait, trait);
 	}
 
 	@Override
-	public double getMinGameScore() {
+	public double getMinPayoff() {
 		return ArrayMath.min(payFirst) + ArrayMath.min(paySecond);
 	}
 
 	@Override
-	public double getMaxGameScore() {
+	public double getMaxPayoff() {
 		return ArrayMath.max(payFirst) + ArrayMath.max(paySecond);
 	}
 

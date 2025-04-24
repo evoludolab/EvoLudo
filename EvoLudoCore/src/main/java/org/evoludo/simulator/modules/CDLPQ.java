@@ -113,8 +113,8 @@ public class CDLPQ extends CDLP {
 	}
 
 	@Override
-	public double getMinGameScore() {
-		double min = super.getMinGameScore();
+	public double getMinPayoff() {
+		double min = super.getMinPayoff();
 		int[] sample = new int[nTraits];
 		double[] traitScores = new double[nTraits];
 		// one defector and many sanctioners
@@ -137,8 +137,8 @@ public class CDLPQ extends CDLP {
 	 * monomorphic populations of cooperators.
 	 */
 	@Override
-	public double getMonoGameScore(int type) {
-		double mono = super.getMonoGameScore(type == PUNISH || type == SANCTIONING ? COOPERATE : type);
+	public double getMonoPayoff(int type) {
+		double mono = super.getMonoPayoff(type == PUNISH || type == SANCTIONING ? COOPERATE : type);
 		if (type == SANCTIONING)
 			return mono - costPoolPunish;
 		return mono;

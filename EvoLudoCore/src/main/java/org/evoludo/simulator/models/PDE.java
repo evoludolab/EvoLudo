@@ -808,8 +808,8 @@ public class PDE extends ODE {
 		// issues because the range depends on geometry)
 		Module pop = module.getSpecies(id);
 		Map2Fitness map2fit = pop.getMapToFitness();
-		double min = map2fit.map(pop.getMinGameScore());
-		double max = map2fit.map(pop.getMaxGameScore());
+		double min = map2fit.map(pop.getMinPayoff());
+		double max = map2fit.map(pop.getMaxPayoff());
 		double map;
 		if (max - min < 1e-8) {
 			// close enough to neutral

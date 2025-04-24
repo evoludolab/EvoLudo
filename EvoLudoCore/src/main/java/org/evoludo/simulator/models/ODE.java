@@ -494,8 +494,8 @@ public class ODE extends Model implements Discrete {
 					Arrays.fill(invFitRange, 1.0);
 				}
 				Map2Fitness map2fit = mod.getMapToFitness();
-				minFit = map2fit.map(mod.getMinGameScore());
-				maxFit = map2fit.map(mod.getMaxGameScore());
+				minFit = map2fit.map(mod.getMinPayoff());
+				maxFit = map2fit.map(mod.getMaxPayoff());
 				if (maxFit > minFit)
 					invFitRange[idx] = 1.0 / (maxFit - minFit);
 			}
@@ -624,7 +624,7 @@ public class ODE extends Model implements Discrete {
 	@Override
 	public double getMonoScore(int id, int idx) {
 		org.evoludo.simulator.modules.Discrete module = (org.evoludo.simulator.modules.Discrete) species.get(id);
-		return module.getMonoGameScore(idx % module.getNTraits());
+		return module.getMonoPayoff(idx % module.getNTraits());
 	}
 
 	@Override
@@ -662,26 +662,26 @@ public class ODE extends Model implements Discrete {
 
 	@Override
 	public double getMinScore(int id) {
-		return getSpecies(id).getMinGameScore();
+		return getSpecies(id).getMinPayoff();
 	}
 
 	@Override
 	public double getMaxScore(int id) {
-		return getSpecies(id).getMaxGameScore();
+		return getSpecies(id).getMaxPayoff();
 	}
 
 	@Override
 	public double getMinFitness(int id) {
 		Module mod = getSpecies(id);
 		Map2Fitness map2fit = mod.getMapToFitness();
-		return map2fit.map(mod.getMinGameScore());
+		return map2fit.map(mod.getMinPayoff());
 	}
 
 	@Override
 	public double getMaxFitness(int id) {
 		Module mod = getSpecies(id);
 		Map2Fitness map2fit = mod.getMapToFitness();
-		return map2fit.map(mod.getMaxGameScore());
+		return map2fit.map(mod.getMaxPayoff());
 	}
 
 	@Override
@@ -718,8 +718,8 @@ public class ODE extends Model implements Discrete {
 		// needs to be synchronized with GUI (e.g. MVFitness, MVFitHistogram, ...)
 		Module mod = species.get(id);
 		Map2Fitness map2fit = mod.getMapToFitness();
-		double minFit = map2fit.map(mod.getMinGameScore());
-		double maxFit = map2fit.map(mod.getMaxGameScore());
+		double minFit = map2fit.map(mod.getMinPayoff());
+		double maxFit = map2fit.map(mod.getMaxPayoff());
 		double map;
 		if (maxFit - minFit < 1e-8) {
 			// close enough to neutral

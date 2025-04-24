@@ -1547,7 +1547,7 @@ public class IBSDPopulation extends IBSPopulation {
 		if (!playerScoreAveraged && (VACANT >= 0 || !interaction.isRegular))
 			return Double.NaN;
 		// averaged scores or regular interaction geometries without vacant sites
-		double mono = module.getMonoGameScore(type % nTraits);
+		double mono = module.getMonoPayoff(type % nTraits);
 		if (playerScoreAveraged)
 			return mono;
 		// max/min doesn't matter; graph must be regular for accumulated scores
@@ -1919,7 +1919,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 */
 	private double estimateVacantFrequency(int type) {
 		double d = module.getDeathRate();
-		double fit = map2fit.map(module.getMonoGameScore(type % nTraits));
+		double fit = map2fit.map(module.getMonoPayoff(type % nTraits));
 		Geometry geometry = module.getGeometry();
 		if (geometry.getType() == Geometry.Type.MEANFIELD)
 			// carrying capacity is 1.0 - d / fit

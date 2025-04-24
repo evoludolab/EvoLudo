@@ -145,17 +145,17 @@ public class Moran extends Discrete implements Static,
 	}
 
 	@Override
-	public double getMinGameScore() {
+	public double getMinPayoff() {
 		return Math.min(typeScores[RESIDENT], typeScores[MUTANT]);
 	}
 
 	@Override
-	public double getMaxGameScore() {
+	public double getMaxPayoff() {
 		return Math.max(typeScores[RESIDENT], typeScores[MUTANT]);
 	}
 
 	@Override
-	public double getMonoGameScore(int type) {
+	public double getMonoPayoff(int type) {
 		return typeScores[type];
 	}
 

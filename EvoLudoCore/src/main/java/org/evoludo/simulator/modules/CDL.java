@@ -186,10 +186,10 @@ public class CDL extends Discrete implements Payoffs,
 	}
 
 	@Override
-	public double getMinGameScore() {
-		double min = getMonoGameScore(0);
+	public double getMinPayoff() {
+		double min = getMonoPayoff(0);
 		for (int n = 1; n < nTraits; n++)
-			min = Math.min(min, getMonoGameScore(n));
+			min = Math.min(min, getMonoPayoff(n));
 		min = Math.min(min, payLoneCoop);
 		min = Math.min(min, payLoneDefect);
 		// one cooperator and many defectors
@@ -204,10 +204,10 @@ public class CDL extends Discrete implements Payoffs,
 	}
 
 	@Override
-	public double getMaxGameScore() {
-		double max = getMonoGameScore(0);
+	public double getMaxPayoff() {
+		double max = getMonoPayoff(0);
 		for (int n = 1; n < nTraits; n++)
-			max = Math.max(max, getMonoGameScore(n));
+			max = Math.max(max, getMonoPayoff(n));
 		max = Math.max(max, payLoneCoop);
 		max = Math.max(max, payLoneDefect);
 		// many cooperators and one defectors
@@ -222,7 +222,7 @@ public class CDL extends Discrete implements Payoffs,
 	}
 
 	@Override
-	public double getMonoGameScore(int type) {
+	public double getMonoPayoff(int type) {
 		switch (type) {
 			case COOPERATE:
 				return ((othersOnly ? interest(nGroup - 1) : interest(nGroup)) - 1.0) * costCoop;

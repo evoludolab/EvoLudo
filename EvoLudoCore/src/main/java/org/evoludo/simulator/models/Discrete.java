@@ -45,7 +45,7 @@ public interface Discrete {
 	 * @return payoff/score in monomorphic population with trait
 	 *         {@code idx}. Returns {@code NaN} if scores ill defined
 	 * 
-	 * @see org.evoludo.simulator.modules.Discrete#getMonoGameScore(int)
+	 * @see org.evoludo.simulator.modules.Discrete#getMonoPayoff(int)
 	 */
 	public default double getMonoScore(int id, int idx) {
 		return Double.NaN;

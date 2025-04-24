@@ -127,8 +127,8 @@ public class CDLP extends CDL {
 	}
 
 	@Override
-	public double getMinGameScore() {
-		double min = super.getMinGameScore();
+	public double getMinPayoff() {
+		double min = super.getMinPayoff();
 		int[] sample = new int[nTraits];
 		double[] traitScores = new double[nTraits];
 
@@ -167,8 +167,8 @@ public class CDLP extends CDL {
 	 * monomorphic populations of cooperators.
 	 */
 	@Override
-	public double getMonoGameScore(int type) {
-		return super.getMonoGameScore(type == PUNISH ? COOPERATE : type);
+	public double getMonoPayoff(int type) {
+		return super.getMonoPayoff(type == PUNISH ? COOPERATE : type);
 	}
 
 	/**
