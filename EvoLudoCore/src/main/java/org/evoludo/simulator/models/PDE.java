@@ -259,7 +259,7 @@ public class PDE extends ODE {
 	 * <code>dependents[0]</code>, which makes sense as long as this model cannot
 	 * deal with multi-species modules.
 	 * 
-	 * @see Module#getDependent()
+	 * @see HasDE#getDependent()
 	 */
 	protected int dependent = -1;
 

@@ -34,6 +34,7 @@ import java.util.ArrayList;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.ODE.HasDE;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -162,7 +163,7 @@ public class Markers {
 							if (smk.length != nt) {
 								// ok for frequency based modules or with vacant sites
 								int vac = module.getVacant();
-								int dep = module.getDependent();
+								int dep = (module instanceof HasDE ? ((HasDE) module).getDependent() : -1);
 								if (!(smk.length == nt - 1 && (vac >= 0 || dep >= 0))) {
 									mksuccess = false;
 									break;

@@ -146,7 +146,7 @@ public class RungeKutta extends ODE {
 		boolean noDependent = true;
 		boolean allDependent = true;
 		for (Module pop : species) {
-			if (pop.getDependent() >= 0)
+			if (pop instanceof HasDE && ((HasDE) pop).getDependent() >= 0)
 				noDependent = false;
 			else
 				allDependent = false;

@@ -174,6 +174,11 @@ public class EcoPGG extends Discrete implements Scores,
 	}
 
 	@Override
+	public int getDependent() {
+		return VACANT;
+	}
+
+	@Override
 	public Model createPDE() {
 		return new Advection(engine);
 	}

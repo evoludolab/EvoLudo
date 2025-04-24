@@ -46,11 +46,10 @@ import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Markers;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.ODE;
 import org.evoludo.simulator.models.ODE.HasODE;
 import org.evoludo.simulator.models.PDE;
-import org.evoludo.simulator.models.SDE;
 import org.evoludo.simulator.models.PDE.HasPDE;
+import org.evoludo.simulator.models.SDE;
 import org.evoludo.simulator.models.SDE.HasSDE;
 import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.views.HasPhase2D;
@@ -416,26 +415,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * Get the index of dependent type or {@code -1} if Module does not have an
-	 * dependent type.
-	 * <p>
-	 * <strong>Notes:</strong>
-	 * <ul>
-	 * <li>Dependent types are used by replicator type models where the frequencies
-	 * of all types must sum up to one. Currently only used by Discrete modules.
-	 * <li>Density modules do not have dependent types.
-	 * <li>By default use vacant type as the dependent
-	 * </ul>
-	 * 
-	 * @return the index of the vacant type
-	 */
-	public int getDependent() {
-		if (model.isDE() && ((ODE) model).isDensity())
-			return -1;
-		return VACANT;
-	}
-
-	/**
 	 * The number of traits in this module
 	 */
 	protected int nTraits = -1;
@@ -451,7 +430,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * Gets the numberof roles that an individual can adopt. For example the role of
+	 * Gets the number of roles that an individual can adopt. For example the role of
 	 * a proposer or a responder in the Ultimatum game or the first or second movers
 	 * in the Centipede game.
 	 * 

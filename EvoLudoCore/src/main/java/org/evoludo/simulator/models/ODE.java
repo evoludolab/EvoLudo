@@ -70,10 +70,17 @@ public class ODE extends Model implements Discrete {
 		/**
 		 * For replicator dynamics the frequencies of all traits must sum up to one.
 		 * Hence, for <code>nTraits</code> traits there are only
-		 * <code>nTraits-1</code> degrees of freedom. <code>dependentTrait</code> marks
-		 * the one that is derived from the others.
-		 *
-		 * @return the index of the dependent trait or -1 if there is none
+		 * <code>nTraits-1</code> degrees of freedom. The index returned by
+		 * <code>getDependent()</code> marks the one that is derived from the others.
+		 * <p>
+		 * <strong>Notes:</strong>
+		 * <ul>
+		 * <li>Dependent traits are used by replicator type models where the frequencies
+		 * of all types must sum up to one. Currently only used by Discrete modules.
+		 * <li>Density modules do not have dependent traits.
+		 * </ul>
+		 * 
+		 * @return the index of the dependent trait
 		 */
 		public default int getDependent() {
 			return -1;
@@ -359,7 +366,7 @@ public class ODE extends Model implements Discrete {
 	 * i.e. normalized states. The dependent trait is the one that gets derived from
 	 * the changes in all others in order to maintain normalization.
 	 * 
-	 * @see Module#getDependent()
+	 * @see HasODE#getDependent()
 	 */
 	int[] dependents;
 
@@ -477,7 +484,7 @@ public class ODE extends Model implements Discrete {
 		int idx = 0;
 		for (Module mod : species) {
 			doReset |= mod.check();
-			dependents[idx] = mod.getDependent();
+			dependents[idx] = (mod instanceof HasDE ? ((HasDE) mod).getDependent() : -1);
 			int nTraits = mod.getNTraits();
 			idxSpecies[idx] = nDim;
 			rates[idx] = mod.getSpeciesUpdateRate();
