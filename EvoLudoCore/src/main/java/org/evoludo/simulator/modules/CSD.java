@@ -34,6 +34,7 @@ import java.awt.Color;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
+import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasDistribution;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -86,7 +87,7 @@ import org.evoludo.simulator.views.HasPop3D;
  * 
  * @see TBT
  */
-public class CSD extends Continuous implements 
+public class CSD extends Continuous implements Payoffs,
 		HasIBS.CPairs, 
 		HasPop2D.Traits, HasPop3D.Traits, HasPop2D.Fitness, HasPop3D.Fitness,
 		HasMean.Traits, HasMean.Fitness, 

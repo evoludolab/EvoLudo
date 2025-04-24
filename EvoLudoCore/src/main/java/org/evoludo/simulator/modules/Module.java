@@ -755,50 +755,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * Returns the minimum payoff/score of an individual.
-	 * 
-	 * @return the minimum payoff/score
-	 * 
-	 * @see Payoffs#getMinPayoff()
-	 */
-	public double getMinPayoff() {
-		throw new UnsupportedOperationException("Implement Payoffs interface");
-	}
-
-	/**
-	 * Returns the maximum payoff/score of an individual.
-	 * 
-	 * @return the maximum payoff/score
-	 * 
-	 * @see Payoffs#getMaxPayoff()
-	 */
-	public double getMaxPayoff() {
-		throw new UnsupportedOperationException("Implement Payoffs interface");
-	}
-
-	/**
-	 * Returns the minimum payoff/score of an individual in monomorphic populations.
-	 * 
-	 * @return the minimum payoff/score
-	 * 
-	 * @see Payoffs#getMinPayoff()
-	 */
-	public double getMinMonoPayoff() {
-		throw new UnsupportedOperationException("Implement Payoffs interface");
-	}
-
-	/**
-	 * Returns the maximum payoff/score of an individual in monomorphic populations.
-	 * 
-	 * @return the maximum payoff/score
-	 * 
-	 * @see Payoffs#getMaxPayoff()
-	 */
-	public double getMaxMonoPayoff() {
-		throw new UnsupportedOperationException("Implement Payoffs interface");
-	}
-
-	/**
 	 * Reference to Module of opponent. For Modules referring to intra-species
 	 * interactions {@code opponent == this} must hold.
 	 */

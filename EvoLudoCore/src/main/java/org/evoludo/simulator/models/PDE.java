@@ -39,6 +39,7 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
@@ -806,10 +807,11 @@ public class PDE extends ODE {
 		// scores/fitness and whether neutral
 		// the following is not completely water tight (accumulated scores may cause
 		// issues because the range depends on geometry)
-		Module pop = module.getSpecies(id);
-		Map2Fitness map2fit = pop.getMapToFitness();
-		double min = map2fit.map(pop.getMinPayoff());
-		double max = map2fit.map(pop.getMaxPayoff());
+		Module mod = module.getSpecies(id);
+		Map2Fitness map2fit = mod.getMapToFitness();
+		Payoffs pmod = (Payoffs) mod;
+		double min = map2fit.map(pmod.getMinPayoff());
+		double max = map2fit.map(pmod.getMaxPayoff());
 		double map;
 		if (max - min < 1e-8) {
 			// close enough to neutral
@@ -818,7 +820,7 @@ public class PDE extends ODE {
 		} else
 			map = nBins / (max - min);
 		int idx = 0;
-		int vacant = pop.getVacant();
+		int vacant = mod.getVacant();
 		// clear bins
 		for (int n = 0; n < bins.length; n++)
 			Arrays.fill(bins[n], 0.0);

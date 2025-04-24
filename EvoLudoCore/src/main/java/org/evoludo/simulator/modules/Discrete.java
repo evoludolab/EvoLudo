@@ -166,7 +166,12 @@ public abstract class Discrete extends Module {
 		return Double.NaN;
 	}
 
-	@Override
+	/**
+	 * Default implementation of {@link Payoffs#getMinMonoPayoff()}. Only available
+	 * to modules that implement the {@link Payoffs} interface.
+	 * 
+	 * @return the minimum payoff in monomorphic populations
+	 */
 	public double getMinMonoPayoff() {
 		double min = Double.MAX_VALUE;
 		for (int n = 0; n < nTraits; n++) {
@@ -177,7 +182,12 @@ public abstract class Discrete extends Module {
 		return min;
 	}
 
-	@Override
+	/**
+	 * Default implementation of {@link Payoffs#getMaxMonoPayoff()}. Only available
+	 * to modules that implement the {@link Payoffs} interface.
+	 * 
+	 * @return the maximum payoff in monomorphic populations
+	 */
 	public double getMaxMonoPayoff() {
 		double max = -Double.MAX_VALUE;
 		for (int n = 0; n < nTraits; n++) {

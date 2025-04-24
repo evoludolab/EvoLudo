@@ -41,6 +41,7 @@ import org.evoludo.simulator.models.ODE.HasODE;
 import org.evoludo.simulator.models.PDE.HasPDE;
 import org.evoludo.simulator.models.SDE.HasSDE;
 import org.evoludo.simulator.models.SDEN;
+import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
@@ -66,7 +67,7 @@ import org.evoludo.util.Formatter;
  * 
  * @author Christoph Hauert
  */
-public class Traits extends Discrete implements
+public class Traits extends Discrete implements Payoffs,
 		HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness,
 		HasHistogram.Fitness, HasHistogram.Degree {
@@ -80,7 +81,7 @@ public class Traits extends Discrete implements
 	 * 
 	 * @see EvoLudo#getRNG()
 	 */
-	RNGDistribution rng;
+	// RNGDistribution rng;
 
 	double[][] payoff;
 	int payoffType = PAYOFF_CONST;
@@ -121,18 +122,12 @@ public class Traits extends Discrete implements
 
 	@Override
 	public double getMinPayoff() {
-		double min = Double.MAX_VALUE;
-		for (int i = 0; i < nTraits; i++)
-			min = Math.min(min, ArrayMath.min(payoff[i]));
-		return min;
+		return ArrayMath.min(payoff);
 	}
 
 	@Override
 	public double getMaxPayoff() {
-		double max = -Double.MAX_VALUE;
-		for (int i = 0; i < nTraits; i++)
-			max = Math.max(max, ArrayMath.max(payoff[i]));
-		return max;
+		return ArrayMath.max(payoff);
 	}
 
 	@Override
@@ -235,6 +230,7 @@ public class Traits extends Discrete implements
 					break;
 				//$FALL-THROUGH$
 			case PAYOFF_RANDOM:
+				RNGDistribution rng = engine.getRNG();
 				payoff = new double[nTraits][nTraits];
 				for (int i = 0; i < nTraits; i++)
 					for (int j = 0; j < nTraits; j++)

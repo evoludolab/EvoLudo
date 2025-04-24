@@ -2858,7 +2858,7 @@ public abstract class IBSPopulation {
 	 * @return the processed minimum score
 	 */
 	public double getMinScore() {
-		double min = module.getMinPayoff();
+		double min = ((Payoffs) module).getMinPayoff();
 		if (playerScoreAveraged)
 			return min;
 		// accumulated payoffs
@@ -2872,7 +2872,7 @@ public abstract class IBSPopulation {
 	 * @return the processed maximum score
 	 */
 	public double getMaxScore() {
-		double max = module.getMaxPayoff();
+		double max = ((Payoffs) module).getMaxPayoff();
 		if (playerScoreAveraged)
 			return max;
 		// accumulated payoffs

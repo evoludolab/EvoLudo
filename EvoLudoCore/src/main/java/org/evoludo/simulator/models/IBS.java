@@ -42,6 +42,7 @@ import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.modules.SpeciesUpdate;
+import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -938,14 +939,14 @@ public abstract class IBS extends Model {
 	public double getMinFitness(int id) {
 		Module mod = species.get(id);
 		Map2Fitness map2fit = mod.getMapToFitness();
-		return map2fit.map(mod.getMinPayoff());
+		return map2fit.map(((Payoffs) mod).getMinPayoff());
 	}
 
 	@Override
 	public double getMaxFitness(int id) {
 		Module mod = species.get(id);
 		Map2Fitness map2fit = mod.getMapToFitness();
-		return map2fit.map(mod.getMaxPayoff());
+		return map2fit.map(((Payoffs) mod).getMaxPayoff());
 	}
 
 	@Override

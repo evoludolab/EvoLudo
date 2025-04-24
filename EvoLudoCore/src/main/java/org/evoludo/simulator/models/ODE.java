@@ -494,8 +494,9 @@ public class ODE extends Model implements Discrete {
 					Arrays.fill(invFitRange, 1.0);
 				}
 				Map2Fitness map2fit = mod.getMapToFitness();
-				minFit = map2fit.map(mod.getMinPayoff());
-				maxFit = map2fit.map(mod.getMaxPayoff());
+				Payoffs pmod = (Payoffs) mod;
+				minFit = map2fit.map(pmod.getMinPayoff());
+				maxFit = map2fit.map(pmod.getMaxPayoff());
 				if (maxFit > minFit)
 					invFitRange[idx] = 1.0 / (maxFit - minFit);
 			}
@@ -662,26 +663,26 @@ public class ODE extends Model implements Discrete {
 
 	@Override
 	public double getMinScore(int id) {
-		return getSpecies(id).getMinPayoff();
+		return ((Payoffs) getSpecies(id)).getMinPayoff();
 	}
 
 	@Override
 	public double getMaxScore(int id) {
-		return getSpecies(id).getMaxPayoff();
+		return ((Payoffs) getSpecies(id)).getMaxPayoff();
 	}
 
 	@Override
 	public double getMinFitness(int id) {
 		Module mod = getSpecies(id);
 		Map2Fitness map2fit = mod.getMapToFitness();
-		return map2fit.map(mod.getMinPayoff());
+		return map2fit.map(((Payoffs) mod).getMinPayoff());
 	}
 
 	@Override
 	public double getMaxFitness(int id) {
 		Module mod = getSpecies(id);
 		Map2Fitness map2fit = mod.getMapToFitness();
-		return map2fit.map(mod.getMaxPayoff());
+		return map2fit.map(((Payoffs) mod).getMaxPayoff());
 	}
 
 	@Override
@@ -718,8 +719,9 @@ public class ODE extends Model implements Discrete {
 		// needs to be synchronized with GUI (e.g. MVFitness, MVFitHistogram, ...)
 		Module mod = species.get(id);
 		Map2Fitness map2fit = mod.getMapToFitness();
-		double minFit = map2fit.map(mod.getMinPayoff());
-		double maxFit = map2fit.map(mod.getMaxPayoff());
+		Payoffs pmod = (Payoffs) mod;
+		double minFit = map2fit.map(pmod.getMinPayoff());
+		double maxFit = map2fit.map(pmod.getMaxPayoff());
 		double map;
 		if (maxFit - minFit < 1e-8) {
 			// close enough to neutral

@@ -203,7 +203,8 @@ public abstract class Continuous extends Module {
 	@Override
 	public boolean check() {
 		boolean doReset = super.check();
-		setExtremalScores();
+		if (this instanceof Payoffs)
+			setExtremalScores();
 		// verify trait minima and maxima
 		for (int s = 0; s < nTraits; s++) {
 			if (traitMax[s] <= traitMin[s]) {
@@ -218,11 +219,13 @@ public abstract class Continuous extends Module {
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * Default implementation of {@link Payoffs#getMinPayoff()}. Only available
+	 * to modules that implement the {@link Payoffs} interface.
+	 * 
+	 * @return the minimum payoff in monomorphic populations
 	 *
 	 * @see #setExtremalScores()
 	 */
-	@Override
 	public double getMinPayoff() {
 		if (!extremalScoresSet)
 			setExtremalScores();
@@ -230,11 +233,13 @@ public abstract class Continuous extends Module {
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * Default implementation of {@link Payoffs#getMaxPayoff()}. Only available
+	 * to modules that implement the {@link Payoffs} interface.
+	 * 
+	 * @return the minimum payoff in monomorphic populations
 	 *
 	 * @see #setExtremalScores()
 	 */
-	@Override
 	public double getMaxPayoff() {
 		if (!extremalScoresSet)
 			setExtremalScores();
@@ -242,11 +247,11 @@ public abstract class Continuous extends Module {
 	}
 
 	/**
-	 * {@inheritDoc}
-	 *
-	 * @see #setExtremalScores()
+	 * Default implementation of {@link Payoffs#getMinMonoPayoff()}. Only available
+	 * to modules that implement the {@link Payoffs} interface.
+	 * 
+	 * @return the minimum payoff in monomorphic populations
 	 */
-	@Override
 	public double getMinMonoPayoff() {
 		if (!extremalScoresSet)
 			setExtremalScores();
@@ -254,11 +259,11 @@ public abstract class Continuous extends Module {
 	}
 
 	/**
-	 * {@inheritDoc}
-	 *
-	 * @see #setExtremalScores()
+	 * Default implementation of {@link Payoffs#getMaxMonoPayoff()}. Only available
+	 * to modules that implement the {@link Payoffs} interface.
+	 * 
+	 * @return the maximum payoff in monomorphic populations
 	 */
-	@Override
 	public double getMaxMonoPayoff() {
 		if (!extremalScoresSet)
 			setExtremalScores();

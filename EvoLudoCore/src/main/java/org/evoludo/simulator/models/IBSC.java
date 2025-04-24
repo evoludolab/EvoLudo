@@ -33,6 +33,7 @@ package org.evoludo.simulator.models;
 import java.io.PrintStream;
 
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -82,12 +83,12 @@ public class IBSC extends IBS implements Continuous {
 
 	@Override
 	public double getMinMonoScore(int id) {
-		return species.get(id).getMinMonoPayoff();
+		return ((Payoffs) species.get(id)).getMinMonoPayoff();
 	}
 
 	@Override
 	public double getMaxMonoScore(int id) {
-		return species.get(id).getMaxMonoPayoff();
+		return ((Payoffs) species.get(id)).getMaxMonoPayoff();
 	}
 
 	@Override
