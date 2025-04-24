@@ -141,6 +141,16 @@ public interface Features {
 		public abstract double getMaxPayoff();
 
 		/**
+		 * Checks whether dynamic is neutral, i.e. no selection acting on the different
+		 * traits.
+		 * 
+		 * @return {@code true} if all payoffs identical
+		 */
+		public default boolean isNeutral() {
+			return (Math.abs(getMaxPayoff() - getMinPayoff()) < 1e-8);
+		}
+
+		/**
 		 * Calculates and returns the minimum payoff/score of individuals in monomorphic
 		 * populations.
 		 * 

@@ -49,6 +49,7 @@ import org.evoludo.simulator.models.IBSGroup.SamplingType;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.PlayerUpdate;
+import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -2919,11 +2920,11 @@ public abstract class IBSPopulation {
 	 * {@link Module}.
 	 */
 	public void updateMinMaxScores() {
-		if (contactmodule != null)
+		if (!(module instanceof Payoffs))
 			return;
 		minScore = getMinScore();
 		maxScore = getMaxScore();
-		isNeutral = module.isNeutral();
+		isNeutral = ((Payoffs) module).isNeutral();
 		minFitness = map2fit.map(minScore);
 		maxFitness = map2fit.map(maxScore);
 	}

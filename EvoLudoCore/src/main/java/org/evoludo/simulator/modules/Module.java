@@ -799,16 +799,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * Checks whether dynamic is neutral, i.e. no selection acting on the different
-	 * traits.
-	 * 
-	 * @return {@code true} if all payoffs identical
-	 */
-	public boolean isNeutral() {
-		return (Math.abs(getMaxPayoff() - getMinPayoff()) < 1e-8);
-	}
-
-	/**
 	 * Reference to Module of opponent. For Modules referring to intra-species
 	 * interactions {@code opponent == this} must hold.
 	 */
