@@ -371,6 +371,12 @@ public class ODE extends Model implements Discrete {
 	int[] dependents;
 
 	/**
+	 * Convenience variable to indicate whether the model is based on densities.
+	 * This is {@code true} if none of the species has a dependent trait.
+	 */
+	boolean isDensity = false;
+
+	/**
 	 * Array containing the inverse of the fitness range:
 	 * <code>1.0/(maxFitness - minFitness)</code> for each species. This is used to
 	 * normalize imitation rules of players.
@@ -454,18 +460,27 @@ public class ODE extends Model implements Discrete {
 		super.load();
 		initType = new InitType[nSpecies];
 		mutation = new Mutation.Discrete[nSpecies];
+		dependents = new int[nSpecies];
 		int idx = 0;
-		for (Module pop : species)
-			mutation[idx++] = (Mutation.Discrete) pop.getMutation();
+		for (Module mod : species) {
+			mutation[idx] = (Mutation.Discrete) mod.getMutation();
+			dependents[idx] = (mod instanceof HasDE ? ((HasDE) mod).getDependent() : -1);
+			idx++;
+		}
+		isDensity = ArrayMath.max(dependents) < 0;
 	}
 
 	@Override
 	public void unload() {
-		yt = ft = dyt = yout = null;
+		initType = null;
 		mutation = null;
+		dependents = null;
+		yt = ft = dyt = yout = null;
 		staticfit = null;
 		names = null;
-		initType = null;
+		rates = null;
+		invFitRange = null;
+		idxSpecies = null;
 		cloInit.clearKeys();
 		super.unload();
 	}
@@ -476,7 +491,6 @@ public class ODE extends Model implements Discrete {
 		dstate = null;
 		double minFit = Double.MAX_VALUE;
 		double maxFit = -Double.MAX_VALUE;
-		dependents = new int[nSpecies];
 		rates = new double[nSpecies];
 		invFitRange = null;
 		idxSpecies = new int[nSpecies + 1];
@@ -484,7 +498,6 @@ public class ODE extends Model implements Discrete {
 		int idx = 0;
 		for (Module mod : species) {
 			doReset |= mod.check();
-			dependents[idx] = (mod instanceof HasDE ? ((HasDE) mod).getDependent() : -1);
 			int nTraits = mod.getNTraits();
 			idxSpecies[idx] = nDim;
 			rates[idx] = mod.getSpeciesUpdateRate();
@@ -581,16 +594,6 @@ public class ODE extends Model implements Discrete {
 	 */
 	public double getDt() {
 		return dt;
-	}
-
-	/**
-	 * Return whether this DE model tracks frequencies or densities. Returns
-	 * <code>false</code> (i.e. frequency based model) by default.
-	 *
-	 * @return <code>true</code> if state refers to densities.
-	 */
-	public boolean isDensity() {
-		return false;
 	}
 
 	@Override
@@ -909,7 +912,7 @@ public class ODE extends Model implements Discrete {
 	 * @param state the array that needs to be normalized if appropriate
 	 */
 	protected void normalizeState(double[] state) {
-		if (isDensity())
+		if (isDensity)
 			return;
 		// multi-species: normalize sections
 		int idx = 0;
@@ -1463,13 +1466,13 @@ public class ODE extends Model implements Discrete {
 		for (Module pop : species) {
 			int to = from + pop.getNTraits();
 			// omit status for vacant trait in density models
-			int vacant = isDensity() ? from + pop.getVacant() : -1;
+			int vacant = isDensity ? from + pop.getVacant() : -1;
 			String popStatus = "";
 			for (int i = from; i < to; i++) {
 				if (i == vacant)
 					continue;
 				popStatus += (popStatus.length() > 0 ? ", " : "") + names[i] + ": " //
-						+ (isDensity() ? Formatter.format(yt[i], 1)
+						+ (isDensity ? Formatter.format(yt[i], 1)
 								: Formatter.formatPercent(yt[i], 1));
 			}
 			from = to;
@@ -1743,7 +1746,7 @@ public class ODE extends Model implements Discrete {
 				case UNIFORM:
 				default:
 					// uniform distribution is the default. for densities set all to zero.
-					Arrays.fill(y0, start, start + nTraits, isDensity() ? 0.0 : 1.0);
+					Arrays.fill(y0, start, start + nTraits, isDensity ? 0.0 : 1.0);
 					break;
 			}
 			initType[idx] = itype;
@@ -1890,7 +1893,7 @@ public class ODE extends Model implements Discrete {
 		parser.addCLO(cloInit);
 		cloInit.clearKeys();
 		cloInit.addKeys(InitType.values());
-		if (isDensity()) {
+		if (isDensity) {
 			cloInit.removeKey(InitType.RANDOM);
 			cloInit.removeKey(InitType.FREQUENCY);
 		} else {

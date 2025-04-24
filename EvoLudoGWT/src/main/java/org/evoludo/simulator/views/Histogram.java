@@ -49,7 +49,7 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.models.Mode;
-import org.evoludo.simulator.models.ODE;
+import org.evoludo.simulator.models.ODE.HasDE;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
@@ -225,7 +225,7 @@ public class Histogram extends AbstractView {
 							graphs.add(graph);
 							AbstractGraph.GraphStyle style = graph.getStyle();
 							// fixed style attributes
-							if (model.isDE() && ((ODE) model).isDensity()) {
+							if (model.isDE() && ((HasDE) module).getDependent() < 0) {
 								style.yLabel = "density";
 								style.percentY = false;
 								style.yMin = 0.0;
@@ -632,7 +632,7 @@ if (maxBins < 0) maxBins = 100;
 						data = new double[nTraits][nBins];
 					graph.setData(data);
 					if (model.isDE()) {
-						if (((ODE) model).isDensity()) {
+						if (((HasDE) module).getDependent() < 0) {
 							style.xLabel = "density";
 							style.xMin = 0.0;
 							style.xMax = 0.0;

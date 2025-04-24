@@ -384,8 +384,6 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 	public String getTooltipAt(double x, double y) {
 		double buffert = 0.0;
 		double mouset = style.xMin + x * (style.xMax - style.xMin);
-		// boolean hasVacant = !(model instanceof Model.DE && ((Model.DE)
-		// model).isDensity());
 		int vacant = module.getVacant();
 		boolean hasVacant = (vacant >= 0);
 		Iterator<double[]> i = buffer.iterator();

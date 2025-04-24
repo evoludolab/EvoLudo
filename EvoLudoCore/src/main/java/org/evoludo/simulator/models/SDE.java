@@ -114,25 +114,19 @@ public class SDE extends ODE {
 			engine.loadModel(Type.ODE);
 			return true;
 		}
-		if (isDensity()) {
-			logger.warning("SDE model requires fixed population size - revert to ODE.");
+		if (((HasDE) module).getDependent() < 0) {
+			logger.warning("SDE model requires dependent trait - revert to ODE.");
 			engine.loadModel(Type.ODE);
 			return true;
 		}
 		boolean doReset = super.check();
-		if (dependents[0] < 0) {
-			logger.warning(getClass().getSimpleName()
-					+ " - noise only for replicator type dynamics implemented - revert to ODE (no noise)!");
-			engine.loadModel(Type.ODE);
-			return true;
-		}
 		// at this point it is clear that we have a dependent trait
 		int dim = nDim - 1;
 		// only one or two traits acceptable or, alternatively, two or three
 		// traits for replicator dynamics (for SDE but not SDEN)
 		if (!getClass().getSuperclass().equals(SDE.class) && (dim < 1 || dim > 2)) {
 			logger.warning(getClass().getSimpleName()
-					+ " - too many traits (max 2, or 3 for replicator) - revert to ODE!");
+					+ " - too many traits (max 3 incl. dependent) - revert to ODE!");
 			engine.loadModel(Type.ODE);
 			return true;
 		}
