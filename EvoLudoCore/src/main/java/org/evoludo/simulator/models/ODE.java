@@ -38,7 +38,7 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Features.Scores;
+import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
@@ -488,7 +488,7 @@ public class ODE extends Model implements Discrete {
 			int nTraits = mod.getNTraits();
 			idxSpecies[idx] = nDim;
 			rates[idx] = mod.getSpeciesUpdateRate();
-			if (mod instanceof Scores) {
+			if (mod instanceof Payoffs) {
 				if (invFitRange == null || invFitRange.length != nSpecies) {
 					invFitRange = new double[nSpecies];
 					Arrays.fill(invFitRange, 1.0);

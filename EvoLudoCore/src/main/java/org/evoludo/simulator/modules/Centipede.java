@@ -38,7 +38,7 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
-import org.evoludo.simulator.modules.Features.Scores;
+import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
@@ -52,7 +52,7 @@ import org.evoludo.util.Formatter;
 /**
  * The Centipede class provides an EvoLudo module for the centipede game.
  */
-public class Centipede extends Discrete implements Scores, HasIBS.DPairs,
+public class Centipede extends Discrete implements Payoffs, HasIBS.DPairs,
 		HasPop2D.Traits, HasPop2D.Fitness, HasPop3D.Traits, HasPop3D.Fitness,
 		HasS3, HasMean.Traits, HasMean.Fitness {
 

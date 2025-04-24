@@ -42,7 +42,7 @@ import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.ODE.HasODE;
 import org.evoludo.simulator.models.PDE.HasPDE;
 import org.evoludo.simulator.models.SDE.HasSDE;
-import org.evoludo.simulator.modules.Features.Scores;
+import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
@@ -58,7 +58,7 @@ import org.evoludo.util.Formatter;
  * 
  * @author Christoph Hauert
  */
-public class CDL extends Discrete implements Scores, 
+public class CDL extends Discrete implements Payoffs, 
 		HasIBS.DGroups, HasODE, HasSDE, HasPDE, 
 		HasPop2D.Traits, HasPop3D.Traits, HasPop2D.Fitness, HasPop3D.Fitness,
 		HasMean.Traits, HasMean.Fitness, HasS3, 

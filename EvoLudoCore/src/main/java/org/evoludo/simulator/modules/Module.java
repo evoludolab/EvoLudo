@@ -759,7 +759,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the minimum payoff/score
 	 * 
-	 * @see Scores#getMinGameScore()
+	 * @see Payoffs#getMinGameScore()
 	 */
 	public double getMinGameScore() {
 		throw new UnsupportedOperationException("Implement Payoffs interface");
@@ -770,7 +770,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the maximum payoff/score
 	 * 
-	 * @see Scores#getMaxGameScore()
+	 * @see Payoffs#getMaxGameScore()
 	 */
 	public double getMaxGameScore() {
 		throw new UnsupportedOperationException("Implement Payoffs interface");
@@ -781,7 +781,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the minimum payoff/score
 	 * 
-	 * @see Scores#getMinGameScore()
+	 * @see Payoffs#getMinGameScore()
 	 */
 	public double getMinMonoGameScore() {
 		throw new UnsupportedOperationException("Implement Payoffs interface");
@@ -792,7 +792,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the maximum payoff/score
 	 * 
-	 * @see Scores#getMaxGameScore()
+	 * @see Payoffs#getMaxGameScore()
 	 */
 	public double getMaxMonoGameScore() {
 		throw new UnsupportedOperationException("Implement Payoffs interface");

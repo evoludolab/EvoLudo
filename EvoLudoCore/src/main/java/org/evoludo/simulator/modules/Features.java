@@ -96,7 +96,7 @@ public interface Features {
 	 * original Moran process is an example, see
 	 * {@link org.evoludo.simulator.modules.Moran}.
 	 */
-	public interface Static extends Scores {
+	public interface Static extends Payoffs {
 
 		@Override
 		public default boolean isStatic() {
@@ -116,7 +116,7 @@ public interface Features {
 	 * implement. The classical {@code 2x2} games is an example, see
 	 * {@link org.evoludo.simulator.modules.TBT}.
 	 */
-	public interface Scores extends Features {
+	public interface Payoffs extends Features {
 
 		/**
 		 * Calculates and returns the minimum payoff/score of an individual. This value

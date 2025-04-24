@@ -45,7 +45,7 @@ import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.ODE.HasODE;
 import org.evoludo.simulator.models.PDE.HasPDE;
 import org.evoludo.simulator.models.SDE.HasSDE;
-import org.evoludo.simulator.modules.Features.Scores;
+import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
@@ -91,7 +91,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class TBT extends Discrete implements Scores, HasIBS.DPairs, HasODE, HasSDE, HasPDE,
+public class TBT extends Discrete implements Payoffs, HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits,
 		HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness,
 		HasHistogram.Degree, HasHistogram.StatisticsProbability, HasHistogram.StatisticsTime,
