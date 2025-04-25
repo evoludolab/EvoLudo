@@ -36,7 +36,7 @@ import java.io.PrintStream;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Data;
-import org.evoludo.simulator.models.IBS;
+import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.ODE.HasODE;
 import org.evoludo.simulator.models.PDE.HasPDE;
 import org.evoludo.simulator.models.SDE.HasSDE;
@@ -74,7 +74,7 @@ import org.evoludo.util.Formatter;
  * @author Christoph Hauert
  */
 public class Moran extends Discrete implements Static,
-		IBS.HasIBS, HasODE, HasSDE, HasPDE, HasPop2D.Traits, HasPop3D.Traits,
+		HasIBS, HasODE, HasSDE, HasPDE, HasPop2D.Traits, HasPop3D.Traits,
 		HasMean.Traits, HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness,
 		HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsProbability,
 		HasHistogram.StatisticsTime, HasHistogram.StatisticsStationary {
@@ -162,12 +162,6 @@ public class Moran extends Discrete implements Static,
 	@Override
 	public double[] getStaticScores() {
 		return typeScores;
-	}
-
-	@Override
-	public void avgScores(double[] density, int n, double[] avgscores) {
-		avgscores[RESIDENT] = typeScores[RESIDENT];
-		avgscores[MUTANT] = typeScores[MUTANT];
 	}
 
 	/**

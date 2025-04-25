@@ -70,7 +70,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
+public class ATBT extends TBT implements HasIBS.DPairs, HasODE.DPairs, HasSDE, HasPDE,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasS3, HasPhase2D, HasPop2D.Fitness, HasPop3D.Fitness,
 		HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsStationary {
 
@@ -232,7 +232,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 	}
 
 	@Override
-	public void avgScores(double[] density, int n, double[] avgscores) {
+	public void avgScores(double[] density, double[] avgscores) {
 		avgscores[COOPERATE_RICH] = ArrayMath.dot(payoffs[COOPERATE_RICH], density);
 		avgscores[DEFECT_RICH] = ArrayMath.dot(payoffs[DEFECT_RICH], density);
 		avgscores[COOPERATE_POOR] = ArrayMath.dot(payoffs[COOPERATE_POOR], density);
@@ -773,7 +773,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE, HasSDE, HasPDE,
 
 		@Override
 		protected void getDerivatives(double t, double[] state, double[] fitness, double[] change) {
-			avgScores(state, 2, fitness);
+			avgScores(state, fitness);
 			double xr = state[ATBT.COOPERATE_RICH];
 			double xp = state[ATBT.COOPERATE_POOR];
 			double yr = state[ATBT.DEFECT_RICH];

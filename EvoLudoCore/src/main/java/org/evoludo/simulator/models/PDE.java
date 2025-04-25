@@ -79,6 +79,20 @@ public class PDE extends ODE {
 		public default Model createPDE() {
 			return null;
 		}
+
+		/**
+		 * Interface for partial differential equations (PDE) with pairwise
+		 * interactions.
+		 */
+		public interface DPairs extends HasPDE, HasDE.DPairs {
+		}
+
+		/**
+		 * Interface for partial differential equations (PDE) with interactions in
+		 * groups of arbitrary size.
+		 */
+		public interface DGroups extends HasPDE, HasDE.DGroups {
+		}
 	}
 
 	/**

@@ -68,6 +68,20 @@ public class SDE extends ODE {
 		public default Model createSDE() {
 			return null;
 		}
+
+		/**
+		 * Interface for stochastic differential equations (SDE) with pairwise
+		 * interactions.
+		 */
+		public interface DPairs extends HasSDE, HasDE.DPairs {
+		}
+
+		/**
+		 * Interface for stochastic differential equations (SDE) with interactions in
+		 * groups of arbitrary size.
+		 */
+		public interface DGroups extends HasSDE, HasDE.DGroups {
+		}
 	}
 
 	/**

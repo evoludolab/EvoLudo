@@ -38,6 +38,7 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.modules.Features;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
@@ -85,76 +86,41 @@ public class ODE extends Model implements Discrete {
 		public default int getDependent() {
 			return -1;
 		}
-
 		/**
-		 * Calculate the average payoff/score for the frequency of traits specified in
-		 * the array <code>density</code> for interactions in groups of size
-		 * <code>n</code>. The average payoffs/scores for each of the
-		 * <code>nTraits</code> traits must be stored and returned in the array
-		 * <code>avgscores</code>.
-		 * <p>
-		 * <strong>Note:</strong> needs to be thread safe for parallel processing of
-		 * PDE's.
-		 * <p>
-		 * <strong>IMPORTANT:</strong> one of
-		 * <ul>
-		 * <li><code>{@link #avgScores(double[], int, double[])}</code>,
-		 * <li><code>{@link #avgScores(double[], int, double[], int)}</code>, or
-		 * </ul>
-		 * should be implemented in modules that advertise the model types
-		 * <code>ODE, SDE</code> or <code>PDE</code>.
-		 * <p>
-		 * Alternatively, the method
-		 * {@link ODE#getDerivatives(double, double[], double[], double[])} may be
-		 * overridden in a subclass of {@code ODE}, which may prevent calls to
-		 * {@code avgScores(...)} altogether.
-		 *
-		 * @param state  the frequency/density of each trait
-		 * @param n      the size of interaction groups
-		 * @param scores the array for storing the average payoffs/scores of each trait
+		 * Interface for ordinary differential equations (ODE) with pairwise
+		 * interactions.
 		 */
-		public default void avgScores(double[] state, int n, double[] scores) {
-			avgScores(state, n, scores, 0);
+		public interface DPairs extends Features.Pairs {
+
+			/**
+			 * Calculate the average payoff for the frequency of traits specified in
+			 * the array <code>state</code> for pairwise interactions. The average payoffs
+			 * for each of the <code>nTraits</code> traits must be stored and returned in
+			 * the array <code>scores</code>.
+			 *
+			 * @param state  the frequency/density of each trait
+			 * @param scores the array for storing the average payoffs/scores of each trait
+			 */
+			public void avgScores(double[] state, double[] scores);
 		}
 
 		/**
-		 * Calculate the average payoff/score for the frequency of traits specified in
-		 * the array <code>density</code> for interactions in groups of size
-		 * <code>n</code> in <em>multi-species interactions</em>. The state of the
-		 * current species starts at index <code>skip</code> and the average
-		 * payoffs/scores for each of its <code>nTraits</code> traits must be stored and
-		 * returned in the array <code>avgscores</code> starting at index
-		 * <code>skip</code>.
-		 * <p>
-		 * <strong>Note:</strong> needs to be thread safe for parallel processing of
-		 * PDE's.
-		 * <p>
-		 * <strong>IMPORTANT:</strong> one of
-		 * <ul>
-		 * <li><code>{@link #avgScores(double[], int, double[])}</code>,
-		 * <li><code>{@link #avgScores(double[], int, double[], int)}</code>, or
-		 * </ul>
-		 * should be implemented in modules that advertise the model types
-		 * <code>ODE, SDE</code> or <code>PDE</code>.
-		 * <p>
-		 * Alternatively, the method
-		 * {@link ODE#getDerivatives(double, double[], double[], double[])} may be
-		 * overridden in a subclass of {@code ODE}, which may prevent calls to
-		 * {@code avgScores(...)} altogether.
-		 *
-		 * 
-		 * @param state  the frequency/density of each trait
-		 * @param n      the size of interaction groups
-		 * @param scores the array for storing the average payoffs/scores of each trait
-		 * @param skip   the entries to skip in arrays <code>density</code> and
-		 *               <code>avgscores</code>
+		 * Interface for ordinary differential equations (ODE) with interactions in
+		 * groups of arbitrary size.
 		 */
-		public default void avgScores(double[] state, int n, double[] scores, int skip) {
-			if (skip == 0) {
-				avgScores(state, n, scores);
-				return;
-			}
-			throw new Error("avgScores for multi-species interactions not implemented!");
+		public interface DGroups extends Features.Groups {
+
+			/**
+			 * Calculate the average payoff for the frequency of traits specified in
+			 * the array <code>state</code> for interactions in groups of size
+			 * <code>n</code>. The average payoffs for each of the <code>nTraits</code>
+			 * traits must be stored and returned in the array <code>scores</code>.
+			 *
+			 * @param state  the frequency/density of each trait
+			 * @param n      the size of interaction groups
+			 * @param scores the array for storing the average payoffs/scores of each trait
+			 */
+			public void avgScores(double[] state, int n, double[] scores);
 		}
 	}
 
@@ -178,6 +144,20 @@ public class ODE extends Model implements Discrete {
 		public default Model createODE() {
 			return null;
 		}
+
+		/**
+		 * Interface for ordinary differential equations (ODE) with pairwise
+		 * interactions.
+		 */
+		public interface DPairs extends HasODE, HasDE.DPairs {
+		}
+
+		/**
+		 * Interface for ordinary differential equations (ODE) with interactions in
+		 * groups of arbitrary size.
+		 */
+		public interface DGroups extends HasODE, HasDE.DGroups {
+		}
 	}
 
 	/**
@@ -196,8 +176,8 @@ public class ODE extends Model implements Discrete {
 
 	/**
 	 * The attempted size of next step to take. In {@code ODE} this is always
-	 * equal to {@code dt} but for more sophisticated integrators, {@link RungeKutta} for
-	 * example, the attempted step size may get adjusted.
+	 * equal to {@code dt} but for more sophisticated integrators,
+	 * {@link RungeKutta} for example, the attempted step size may get adjusted.
 	 * <p>
 	 * <strong>Important:</strong> always positive regardless of direction of
 	 * integration.
@@ -963,7 +943,10 @@ public class ODE extends Model implements Discrete {
 			if (mod.isStatic()) {
 				System.arraycopy(staticfit, skip, fitness, skip, nTraits);
 			} else {
-				((HasODE) mod).avgScores(state, nGroup, fitness, skip);
+				if (nGroup == 2)
+					((HasODE.DPairs) mod).avgScores(state, fitness);
+				else
+					((HasODE.DGroups) mod).avgScores(state, nGroup, fitness);
 				Map2Fitness map2fit = mod.getMapToFitness();
 				for (int n = skip; n < skip + nTraits; n++)
 					fitness[n] = map2fit.map(fitness[n]);
@@ -1626,7 +1609,8 @@ public class ODE extends Model implements Discrete {
 		/**
 		 * Single mutant in homogeneous resident.
 		 * <p>
-		 * <strong>Note:</strong> Only available for SDE models. Not available for density based models.
+		 * <strong>Note:</strong> Only available for SDE models. Not available for
+		 * density based models.
 		 * 
 		 * @see SDE
 		 */

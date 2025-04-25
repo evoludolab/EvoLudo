@@ -60,7 +60,7 @@ import org.evoludo.util.Formatter;
  * 
  * @author Christoph Hauert
  */
-public class RSP extends Discrete implements Payoffs, HasIBS.DPairs, HasODE, HasSDE, HasPDE,
+public class RSP extends Discrete implements Payoffs, HasIBS.DPairs, HasODE.DPairs, HasSDE, HasPDE,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasS3, HasPop2D.Fitness,
 		HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree,
 		HasHistogram.StatisticsStationary {
@@ -181,7 +181,7 @@ public class RSP extends Discrete implements Payoffs, HasIBS.DPairs, HasODE, Has
 	}
 
 	@Override
-	public void avgScores(double[] density, int n, double[] avgscores) {
+	public void avgScores(double[] density, double[] avgscores) {
 		avgscores[ROCK] = density[ROCK] * payoff[ROCK][ROCK] + density[SCISSORS] * payoff[ROCK][SCISSORS]
 				+ density[PAPER] * payoff[ROCK][PAPER];
 		avgscores[SCISSORS] = density[ROCK] * payoff[SCISSORS][ROCK] + density[SCISSORS] * payoff[SCISSORS][SCISSORS]

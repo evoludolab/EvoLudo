@@ -91,7 +91,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class TBT extends Discrete implements Payoffs, HasIBS.DPairs, HasODE, HasSDE, HasPDE,
+public class TBT extends Discrete implements Payoffs, HasIBS.DPairs, HasODE.DPairs, HasSDE, HasPDE,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits,
 		HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness,
 		HasHistogram.Degree, HasHistogram.StatisticsProbability, HasHistogram.StatisticsTime,
@@ -227,7 +227,7 @@ public class TBT extends Discrete implements Payoffs, HasIBS.DPairs, HasODE, Has
 	}
 
 	@Override
-	public void avgScores(double[] density, int n, double[] avgscores) {
+	public void avgScores(double[] density, double[] avgscores) {
 		avgscores[COOPERATE] = density[COOPERATE] * payoffs[COOPERATE][COOPERATE] + density[DEFECT] * payoffs[COOPERATE][DEFECT];
 		avgscores[DEFECT] = density[COOPERATE] * payoffs[DEFECT][COOPERATE] + density[DEFECT] * payoffs[DEFECT][DEFECT];
 	}

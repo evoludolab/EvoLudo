@@ -59,7 +59,7 @@ import org.evoludo.util.Formatter;
  * @author Christoph Hauert
  */
 public class CDL extends Discrete implements Payoffs, 
-		HasIBS.DGroups, HasODE, HasSDE, HasPDE, 
+		HasIBS.DGroups, HasODE.DGroups, HasSDE, HasPDE, 
 		HasPop2D.Traits, HasPop3D.Traits, HasPop2D.Fitness, HasPop3D.Fitness,
 		HasMean.Traits, HasMean.Fitness, HasS3, 
 		HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsStationary {

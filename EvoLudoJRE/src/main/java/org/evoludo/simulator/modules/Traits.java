@@ -68,7 +68,7 @@ import org.evoludo.util.Formatter;
  * @author Christoph Hauert
  */
 public class Traits extends Discrete implements Payoffs,
-		HasIBS.DPairs, HasODE, HasSDE, HasPDE,
+		HasIBS.DPairs, HasODE.DPairs, HasSDE, HasPDE,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness,
 		HasHistogram.Fitness, HasHistogram.Degree {
 	protected static final int PAYOFF_UNITY = 0;
@@ -146,7 +146,7 @@ public class Traits extends Discrete implements Payoffs,
 	}
 
 	@Override
-	public void avgScores(double[] density, int n, double[] avgscores) {
+	public void avgScores(double[] density, double[] avgscores) {
 		for (int i = 0; i < nTraits; i++)
 			for (int j = 0; j < nTraits; j++)
 				avgscores[i] += density[j] * payoff[i][j];
