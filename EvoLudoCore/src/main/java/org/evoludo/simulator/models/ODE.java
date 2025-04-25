@@ -109,13 +109,12 @@ public class ODE extends Model implements Discrete {
 		 * overridden in a subclass of {@code ODE}, which may prevent calls to
 		 * {@code avgScores(...)} altogether.
 		 *
-		 * @param density   the frequency/density of each trait
-		 * @param n         the size of interaction groups
-		 * @param avgscores the array for storing the average payoffs/scores of each
-		 *                  trait
+		 * @param state  the frequency/density of each trait
+		 * @param n      the size of interaction groups
+		 * @param scores the array for storing the average payoffs/scores of each trait
 		 */
-		public default void avgScores(double[] density, int n, double[] avgscores) {
-			avgScores(density, n, avgscores, 0);
+		public default void avgScores(double[] state, int n, double[] scores) {
+			avgScores(state, n, scores, 0);
 		}
 
 		/**
@@ -144,16 +143,15 @@ public class ODE extends Model implements Discrete {
 		 * {@code avgScores(...)} altogether.
 		 *
 		 * 
-		 * @param density   the frequency/density of each trait
-		 * @param n         the size of interaction groups
-		 * @param avgscores the array for storing the average payoffs/scores of each
-		 *                  trait
-		 * @param skip      the entries to skip in arrays <code>density</code> and
-		 *                  <code>avgscores</code>
+		 * @param state  the frequency/density of each trait
+		 * @param n      the size of interaction groups
+		 * @param scores the array for storing the average payoffs/scores of each trait
+		 * @param skip   the entries to skip in arrays <code>density</code> and
+		 *               <code>avgscores</code>
 		 */
-		public default void avgScores(double[] density, int n, double[] avgscores, int skip) {
+		public default void avgScores(double[] state, int n, double[] scores, int skip) {
 			if (skip == 0) {
-				avgScores(density, n, avgscores);
+				avgScores(state, n, scores);
 				return;
 			}
 			throw new Error("avgScores for multi-species interactions not implemented!");
