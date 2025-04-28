@@ -136,6 +136,11 @@ public class Traits extends Discrete implements Payoffs,
 	}
 
 	@Override
+	public int getDependent() {
+		return -1;
+	}
+
+	@Override
 	public double pairScores(int me, int[] traitCount, double[] traitScore) {
 		double myScore = 0.0;
 		for (int i = 0; i < nTraits; i++) {

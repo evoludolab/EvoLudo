@@ -72,20 +72,22 @@ public class ODE extends Model implements Discrete {
 		 * For replicator dynamics the frequencies of all traits must sum up to one.
 		 * Hence, for <code>nTraits</code> traits there are only
 		 * <code>nTraits-1</code> degrees of freedom. The index returned by
-		 * <code>getDependent()</code> marks the one that is derived from the others.
+		 * <code>getDependent()</code> marks the one rate of change that is derived from
+		 * all the others.
 		 * <p>
 		 * <strong>Notes:</strong>
 		 * <ul>
-		 * <li>Dependent traits are used by replicator type models where the frequencies
-		 * of all types must sum up to one. Currently only used by Discrete modules.
-		 * <li>Density modules do not have dependent traits.
+		 * <li>Dependent traits are used by models where the frequencies of all types
+		 * must sum up to one.
+		 * <li>Density modules do not have dependent traits and {@code getDependent()}
+		 * should return {@code -1}.
+		 * <li>Currently differential equations implementations are only provided for
+		 * Discrete modules.
 		 * </ul>
 		 * 
-		 * @return the index of the dependent trait
+		 * @return the index of the dependent trait (or {@code -1} if there is none)
 		 */
-		public default int getDependent() {
-			return -1;
-		}
+		public int getDependent();
 		/**
 		 * Interface for ordinary differential equations (ODE) with pairwise
 		 * interactions.
