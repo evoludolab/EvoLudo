@@ -56,9 +56,20 @@ public class SIR extends Discrete implements Contact, HasIBS, HasODE, HasSDE, Ha
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasS3, HasHistogram.Degree,
 		HasHistogram.StatisticsProbability, HasHistogram.StatisticsTime, HasHistogram.StatisticsStationary{
 
-	final static int S = 0; // susceptible
-	final static int I = 1; // infected
-	final static int R = 2; // recovered
+	/**
+	 * The index of the susceptible trait/cohort.
+	 */
+	final static int S = 0;
+
+	/**
+	 * The index of the infected trait/cohort.
+	 */
+	final static int I = 1;
+
+	/**
+	 * The index of the recovered trait/cohort.
+	 */
+	final static int R = 2;
 
 	/**
 	 * The transition probability/rate for susceptibles to infected, S -> I.
@@ -66,17 +77,17 @@ public class SIR extends Discrete implements Contact, HasIBS, HasODE, HasSDE, Ha
 	double pSI = 1.0;
 
 	/**
-	 * The transition probability for infected to recovered, I -> R.
+	 * The transition probability/rate for infected to recovered, I -> R.
 	 */
 	double pIR = 0.3;
 
 	/**
-	 * The transition probability for infected to susceptible, I -> S.
+	 * The transition probability/rate for infected to susceptible, I -> S.
 	 */
 	double pIS = 0.0;
 
 	/**
-	 * The transition probability for recovered to susceptible, R -> S.
+	 * The transition probability/rate for recovered to susceptible, R -> S.
 	 */
 	double pRS = 0.7;
 
@@ -200,12 +211,17 @@ public class SIR extends Discrete implements Contact, HasIBS, HasODE, HasSDE, Ha
 
 	@Override
 	public Model createODE() {
-		return new SIR.ODE(engine);
+		return new SIR.DE(engine);
 	}
 
 	@Override
 	public Model createSDE() {
-		return new SIR.SDE(engine);
+		return new SIR.DE(engine);
+	}
+
+	@Override
+	public Model createPDE() {
+		return new SIR.DE(engine);
 	}
 
 	@Override
@@ -213,8 +229,17 @@ public class SIR extends Discrete implements Contact, HasIBS, HasODE, HasSDE, Ha
 		return new SIR.IBSPop(engine, this);
 	}
 
+	/**
+	 * Population for individual based simulations SIR model.
+	 */
 	public class IBSPop extends IBSDPopulation {
 
+		/**
+		 * Constructor for SIR population.
+		 *
+		 * @param engine the pacemaker for running the model
+		 * @param module the module that defines the interactions
+		 */
 		protected IBSPop(EvoLudo engine, SIR module) {
 			super(engine, module);
 		}
@@ -248,52 +273,48 @@ public class SIR extends Discrete implements Contact, HasIBS, HasODE, HasSDE, Ha
 		@Override
 		public boolean checkConvergence() {
 			if (traitsCount[I] == 0 && pRS < 1e-8) {
-				// if R -/> S is not possible and I is extinct
+				// if R -> S is not possible and I is extinct
 				return true;
 			}
 			return super.checkConvergence();
 		}
 	}
 
-	protected void getSIRDerivatives(double t, double[] state, double[] change) {
-		change[S] = state[R] * pRS + state[I] * pIS - state[S] * state[I] * pSI;
-		change[I] = state[S] * state[I] * pSI - state[I] * (pIR + pIS);
-		change[R] = state[I] * pIR - state[R] * pRS;
-	}
+	/**
+	 * Rates of change for the SIR model. The implementation is agnostic to whether
+	 * used for ordinary, stochastic or partial differential equations.
+	 */
+	public class DE extends RungeKutta {
 
-	public class ODE extends RungeKutta {
-
-		protected ODE(EvoLudo engine) {
+		/**
+		 * Constructor for the SIR models based on differential equations.
+		 *
+		 * @param engine the EvoLudo engine
+		 */
+		public DE(EvoLudo engine) {
 			super(engine);
 		}
 
+		/**
+		 * {@inheritDoc}
+		 * <p>
+		 * The SIR model is defined by the following equations:
+		 * <p>
+		 * \begin{align*}
+		 * \frac{dS}{dt} &= R \cdot p_{RS} + I \cdot p_{IS} - S \cdot I \cdot p_{SI} \\
+		 * \frac{dI}{dt} &= S \cdot I \cdot p_{SI} - I \cdot (p_{IR} + p_{IS}) \\
+		 * \frac{dR}{dt} &= I \cdot p_{IR} - R \cdot p_{RS}
+		 * \end{align*}
+		 * <p>
+		 * where \(S\), \(I\), and \(R\) are the densities of susceptible, infected, and
+		 * recovered cohorts of individuals and \(p_{SI}, p_{IR}, p_{RS}\), and
+		 * \(p_{IS}\) are the transition rates between the different cohorts.
+		 */
 		@Override
 		protected void getDerivatives(double t, double[] state, double[] unused, double[] change) {
-			getSIRDerivatives(t, state, change);
-		}
-	}
-
-	public class SDE extends org.evoludo.simulator.models.SDE {
-
-		protected SDE(EvoLudo engine) {
-			super(engine);
-		}
-
-		@Override
-		protected void getDerivatives(double t, double[] state, double[] unused, double[] change) {
-			getSIRDerivatives(t, state, change);
-		}
-	}
-
-	public class PDE extends org.evoludo.simulator.models.PDE {
-
-		protected PDE(EvoLudo engine) {
-			super(engine);
-		}
-
-		@Override
-		protected void getDerivatives(double t, double[] state, double[] unused, double[] change) {
-			getSIRDerivatives(t, state, change);
+			change[S] = state[R] * pRS + state[I] * pIS - state[S] * state[I] * pSI;
+			change[I] = state[S] * state[I] * pSI - state[I] * (pIR + pIS);
+			change[R] = state[I] * pIR - state[R] * pRS;
 		}
 	}
 }
