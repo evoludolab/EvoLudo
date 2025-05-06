@@ -47,6 +47,7 @@ import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.PDE;
+import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
@@ -319,7 +320,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 			String tag = ibs.getTagNameAt(id, node);
 			if (tag != null)
 				tip.append("<tr><td><i>Tag:</i></td><td>" + tag + "</td></tr>");
-			if (!module.isContact()) {
+			if (module instanceof Payoffs) {
 				// with payoff-to-fitness report score first, then fitness (see below)
 				boolean noFitMap = module.getMapToFitness().isMap(Map2Fitness.Map.NONE);
 				String label = (noFitMap ? "Fitness" : "Score");

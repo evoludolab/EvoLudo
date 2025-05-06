@@ -35,7 +35,6 @@ import java.io.PrintStream;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
-import org.evoludo.simulator.modules.Features.Contact;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODE.HasODE;
@@ -52,7 +51,7 @@ import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.Formatter;
 
-public class SIR extends Discrete implements Contact, HasIBS, HasODE, HasSDE, HasPDE,
+public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasS3, HasHistogram.Degree,
 		HasHistogram.StatisticsProbability, HasHistogram.StatisticsTime, HasHistogram.StatisticsStationary{
 

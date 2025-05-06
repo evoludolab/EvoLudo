@@ -250,7 +250,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @see MilestoneListener#moduleLoaded()
 	 */
 	public void load() {
-		if (!isContact()) {
+		if (this instanceof Payoffs) {
 			map2fitness = new Map2Fitness(this, Map2Fitness.Map.NONE);
 			playerUpdate = new PlayerUpdate(this);
 		}
@@ -1619,19 +1619,19 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 
 		boolean anyVacant = false;
 		boolean anyNonVacant = false;
-		boolean allContact = true;
+		boolean anyPayoffs = false;
 		int minTraits = Integer.MAX_VALUE;
 		int maxTraits = -Integer.MAX_VALUE;
 		for (Module mod : species) {
 			boolean hasVacant = (mod.getVacant() >= 0);
 			anyVacant |= hasVacant;
 			anyNonVacant |= !hasVacant;
-			allContact &= mod.isContact();
+			anyPayoffs |= (mod instanceof Payoffs);
 			int nt = mod.getNTraits();
 			minTraits = Math.min(minTraits, nt);
 			maxTraits = Math.min(maxTraits, nt);
 		}
-		if (!allContact) {
+		if (anyPayoffs) {
 			// omit fitness mapping for contact modules
 			map2fitness.clo.addKeys(Map2Fitness.Map.values());
 			parser.addCLO(map2fitness.clo);

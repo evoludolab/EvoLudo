@@ -85,11 +85,6 @@ public abstract class IBSPopulation {
 	protected Module.Static staticmodule;
 
 	/**
-	 * Convenience field for modules with no fitness to avoid casts.
-	 */
-	protected Module.Contact contactmodule;
-
-	/**
 	 * Gets the module associated with this population.
 	 * 
 	 * @return the module associated with this population
@@ -2133,7 +2128,7 @@ public abstract class IBSPopulation {
 	 */
 	public void updatePlayerAsyncAt(int me) {
 		boolean switched = updatePlayerAt(me);
-		if (contactmodule == null)
+		if (module instanceof Payoffs)
 			updateScoreAt(me, switched);
 		else if (switched)
 			commitTraitAt(me);
@@ -2942,7 +2937,6 @@ public abstract class IBSPopulation {
 	 */
 	public boolean check() {
 		staticmodule = module.isStatic() ? (Module.Static) module : null;
-		contactmodule = module.isContact() ? (Module.Contact) module : null;
 		int ot = nTraits;
 		nTraits = module.getNTraits();
 		boolean doReset = (ot != nTraits);
@@ -3114,7 +3108,7 @@ public abstract class IBSPopulation {
 
 		// check competition geometry (may still be undefined at this point)
 		Geometry compgeom = (competition != null ? competition : interaction);
-		if (!module.isContact() // best-response not an option with contact processes
+		if ((module instanceof Payoffs) // best-response not an option with contact processes
 				&& !populationUpdate.isMoran() 
 				&& !populationUpdate.getType().equals(PopulationUpdate.Type.ECOLOGY)) {
 			// Moran type updates ignore playerUpdate
@@ -3192,15 +3186,7 @@ public abstract class IBSPopulation {
 		}
 
 		nMixedInter = -1;
-		if (module.isContact()) {
-			adjustScores = false;
-			playerScoring = ScoringType.NONE;
-			scores = null;
-			fitness = null;
-			interactions = null;
-			typeFitness = null;
-			typeScores = null;
-		} else {
+		if (module instanceof Payoffs) {
 			boolean ephemeralScores;
 			if (module.isStatic()) {
 				adjustScores = true;
@@ -3290,6 +3276,15 @@ public abstract class IBSPopulation {
 				nMixedInter = interaction.hierarchy[interaction.hierarchy.length - 1]
 						- (interaction.isInterspecies() ? 0 : 1);
 			}
+		} else {
+			// module has no payoffs, e.g. contact process
+			adjustScores = false;
+			playerScoring = ScoringType.NONE;
+			scores = null;
+			fitness = null;
+			interactions = null;
+			typeFitness = null;
+			typeScores = null;
 		}
 		if (tags == null || tags.length != nPopulation)
 			tags = new double[nPopulation];

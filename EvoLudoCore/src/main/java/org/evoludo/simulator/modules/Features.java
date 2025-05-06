@@ -40,19 +40,6 @@ import org.evoludo.simulator.models.Model;
 public interface Features {
 
 	/**
-	 * Modules that are based on contact processes should implement the
-	 * {@link Contact} interface and thus return {@code true}. All other modules
-	 * must return {@code false}.
-	 * 
-	 * @return {@code true} if contact process
-	 * 
-	 * @see SIR
-	 */
-	public default boolean isContact() {
-		return false;
-	}
-
-	/**
 	 * Modules that are based on static fitness should implement the {@link Static}
 	 * interface and thus return {@code true}. The {@link Moran} modules is an
 	 * example. All other modules must return {@code false}.
@@ -77,18 +64,6 @@ public interface Features {
 	 */
 	public default boolean isPairwise() {
 		return false;
-	}
-
-	/**
-	 * Interface that all modules based on contact processes should implement. The
-	 * {@link SIR} module is an example.
-	 */
-	public interface Contact extends Features {
-
-		@Override
-		public default boolean isContact() {
-			return true;
-		}
 	}
 
 	/**

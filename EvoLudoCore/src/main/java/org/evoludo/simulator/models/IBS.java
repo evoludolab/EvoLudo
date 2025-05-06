@@ -615,16 +615,16 @@ public abstract class IBS extends Model {
 		// all populations need to be updated/reset before scores can be calculated for
 		// inter-species interactions
 		for (Module mod : species) {
-			if (mod.isContact())
-				continue;
-			IBSPopulation pop = mod.getIBSPopulation();
-			pop.resetScores();
+			if (mod instanceof Payoffs) {
+				IBSPopulation pop = mod.getIBSPopulation();
+				pop.resetScores();
+			}
 		}
 		for (Module mod : species) {
-			if (mod.isContact())
-				continue;
-			IBSPopulation pop = mod.getIBSPopulation();
-			pop.updateScores();
+			if (mod instanceof Payoffs) {
+				IBSPopulation pop = mod.getIBSPopulation();
+				pop.updateScores();
+			}
 		}
 	}
 
@@ -1857,13 +1857,13 @@ public abstract class IBS extends Model {
 		boolean anyVacant = false;
 		boolean anyNonVacant = false;
 		boolean allStatic = true;
-		boolean allContact = true;
+		boolean anyPayoffs = false;
 		for (Module mod : species) {
 			int vacant = mod.getVacant();
 			anyVacant |= vacant >= 0;
 			anyNonVacant |= vacant < 0;
 			allStatic &= mod.isStatic();
-			allContact &= mod.isContact();
+			anyPayoffs |= (mod instanceof Payoffs);
 		}
 		if (anyNonVacant) {
 			// additional options that only make sense without vacant sites
@@ -1877,7 +1877,7 @@ public abstract class IBS extends Model {
 			pup.clo.addKey(PopulationUpdate.Type.ECOLOGY);
 			pup.clo.setDefault(PopulationUpdate.Type.ECOLOGY.getKey());
 		}
-		if (!(allStatic || allContact)) {
+		if (!allStatic || anyPayoffs) {
 			// options that are only meaningful if at least some populations have
 			// (non-static) fitness
 			parser.addCLO(cloAccumulatedScores);
@@ -1890,7 +1890,7 @@ public abstract class IBS extends Model {
 			parser.addCLO(cloGeometryInteraction);
 			parser.addCLO(cloGeometryCompetition);
 		}
-		if (allContact) {
+		if (!anyPayoffs) {
 			// options that do not make sense for contact processes
 			// remove Moran updating
 			CLOption opt = pup.clo;
