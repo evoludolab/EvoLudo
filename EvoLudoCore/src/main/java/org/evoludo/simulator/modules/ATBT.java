@@ -70,7 +70,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class ATBT extends TBT implements HasIBS.DPairs, HasODE.DPairs, HasSDE, HasPDE,
+public class ATBT extends TBT implements HasIBS.DPairs, HasODE.DPairs, HasSDE.DPairs, HasPDE.DPairs,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasS3, HasPhase2D, HasPop2D.Fitness, HasPop3D.Fitness,
 		HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsStationary {
 
@@ -157,7 +157,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE.DPairs, HasSDE, H
 		colors[DEFECT_POOR] = ColorMap.blendColors(Color.RED, Color.BLACK, 0.5);
 		setTraitColors(colors);
 		// allocate
-		game = payoffs;	// reuse payoffs from TBT
+		game = payoffs; // reuse payoffs from TBT
 		environment = new double[nTraits / 2];
 		feedback = new double[nTraits];
 		payoffs = new double[nTraits][nTraits];
@@ -195,7 +195,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE.DPairs, HasSDE, H
 	public double pairScores(int me, int[] traitCount, double[] traitScore) {
 		// need trait counts as double array for dot-product
 		double[] state = new double[] { traitCount[COOPERATE_RICH], traitCount[DEFECT_RICH], traitCount[COOPERATE_POOR],
-			traitCount[DEFECT_POOR] };
+				traitCount[DEFECT_POOR] };
 
 		switch (me) {
 			case COOPERATE_RICH:
@@ -521,7 +521,8 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE.DPairs, HasSDE, H
 				@Override
 				public boolean parse(String arg) {
 					double[][] payMatrix = CLOParser.parseMatrix(arg);
-					if (payMatrix == null || (payMatrix.length != 2 && payMatrix.length != 4) || payMatrix[0].length != payMatrix.length) {
+					if (payMatrix == null || (payMatrix.length != 2 && payMatrix.length != 4)
+							|| payMatrix[0].length != payMatrix.length) {
 						logger.warning("invalid payoffs (" + arg + ") - using '" + cloPayoffs4x4.getDefault() + "'");
 						return false;
 					}

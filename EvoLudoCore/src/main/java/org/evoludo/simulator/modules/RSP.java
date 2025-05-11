@@ -60,7 +60,8 @@ import org.evoludo.util.Formatter;
  * 
  * @author Christoph Hauert
  */
-public class RSP extends Discrete implements Payoffs, HasIBS.DPairs, HasODE.DPairs, HasSDE, HasPDE,
+public class RSP extends Discrete implements Payoffs,
+		HasIBS.DPairs, HasODE.DPairs, HasSDE.DPairs, HasPDE.DPairs,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasS3, HasPop2D.Fitness,
 		HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree,
 		HasHistogram.StatisticsStationary {

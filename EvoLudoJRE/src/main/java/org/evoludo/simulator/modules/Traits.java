@@ -68,7 +68,7 @@ import org.evoludo.util.Formatter;
  * @author Christoph Hauert
  */
 public class Traits extends Discrete implements Payoffs,
-		HasIBS.DPairs, HasODE.DPairs, HasSDE, HasPDE,
+		HasIBS.DPairs, HasODE.DPairs, HasSDE.DPairs, HasPDE.DPairs,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness,
 		HasHistogram.Fitness, HasHistogram.Degree {
 	protected static final int PAYOFF_UNITY = 0;

@@ -53,7 +53,7 @@ import org.evoludo.util.Formatter;
 
 public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasS3, HasHistogram.Degree,
-		HasHistogram.StatisticsProbability, HasHistogram.StatisticsTime, HasHistogram.StatisticsStationary{
+		HasHistogram.StatisticsProbability, HasHistogram.StatisticsTime, HasHistogram.StatisticsStationary {
 
 	/**
 	 * The index of the susceptible trait/cohort.
@@ -96,7 +96,7 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 
 	@Override
 	public String getTitle() {
-		return "Disease spreading";
+		return "Disease dynamics";
 	}
 
 	@Override
@@ -156,18 +156,20 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 					double[] probs = CLOParser.parseVector(arg);
 					switch (probs.length) {
 						case 2:
-							if (engine.getModel().isIBS() && (probs[1] < 0.0 || probs[1] > 1.0 ))
+							double p = probs[1];
+							if (engine.getModel().isIBS() && (p < 0.0 || p > 1.0))
 								break;
-							pIS = probs[1];
+							pIS = p;
 							//$FALL-THROUGH$
 						case 1:
-							if (engine.getModel().isIBS() && (probs[0] < 0.0 || probs[0] > 1.0))
+							p = probs[0];
+							if (engine.getModel().isIBS() && (p < 0.0 || p > 1.0))
 								break;
-							pIR = probs[0];
+							pIR = p;
 							return true;
 						default:
 					}
-					logger.warning("invalid probabilities for I -> R transitions (" + arg + ")");
+					logger.warning("invalid probabilities for I -> R[,S] transitions (" + arg + ")");
 					return false;
 				}
 
@@ -247,7 +249,7 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 		public boolean updatePlayerAt(int me, int[] refGroup, int rGroupSize) {
 			int type = getTraitAt(me);
 			switch (type) {
-				case S:		// S -> I transition
+				case S: // S -> I transition
 					int nI = 0;
 					for (int n = 0; n < rGroupSize; n++) {
 						if ((getTraitAt(refGroup[n])) == I)
@@ -256,11 +258,11 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 					if (nI > 0 && random01() > Combinatorics.pow(1.0 - pSI, nI))
 						return setNextTraitAt(me, I);
 					break;
-				case I:		// I -> R transition
+				case I: // I -> R transition
 					if (pIR > 0.0 && random01() < pIR)
 						return setNextTraitAt(me, R);
 					break;
-				case R:		// R -> S transition
+				case R: // R -> S transition
 					if (pRS > 0.0 && random01() < pRS)
 						return setNextTraitAt(me, S);
 					break;

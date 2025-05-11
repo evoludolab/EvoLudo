@@ -91,7 +91,8 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class TBT extends Discrete implements Payoffs, HasIBS.DPairs, HasODE.DPairs, HasSDE, HasPDE,
+public class TBT extends Discrete implements Payoffs,
+		HasIBS.DPairs, HasODE.DPairs, HasSDE.DPairs, HasPDE.DPairs,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits,
 		HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness, HasHistogram.Fitness,
 		HasHistogram.Degree, HasHistogram.StatisticsProbability, HasHistogram.StatisticsTime,
@@ -214,12 +215,14 @@ public class TBT extends Discrete implements Payoffs, HasIBS.DPairs, HasODE.DPai
 			case COOPERATE:
 				traitScore[COOPERATE] = payoffs[COOPERATE][COOPERATE];
 				traitScore[DEFECT] = payoffs[DEFECT][COOPERATE];
-				return traitCount[COOPERATE] * payoffs[COOPERATE][COOPERATE] + traitCount[DEFECT] * payoffs[COOPERATE][DEFECT];
+				return traitCount[COOPERATE] * payoffs[COOPERATE][COOPERATE]
+						+ traitCount[DEFECT] * payoffs[COOPERATE][DEFECT];
 
 			case DEFECT:
 				traitScore[COOPERATE] = payoffs[COOPERATE][DEFECT];
 				traitScore[DEFECT] = payoffs[DEFECT][DEFECT];
-				return traitCount[COOPERATE] * payoffs[DEFECT][COOPERATE] + traitCount[DEFECT] * payoffs[DEFECT][DEFECT];
+				return traitCount[COOPERATE] * payoffs[DEFECT][COOPERATE]
+						+ traitCount[DEFECT] * payoffs[DEFECT][DEFECT];
 
 			default: // should not end here
 				throw new Error("Unknown trait (" + me + ")");
@@ -228,8 +231,10 @@ public class TBT extends Discrete implements Payoffs, HasIBS.DPairs, HasODE.DPai
 
 	@Override
 	public void avgScores(double[] density, double[] avgscores) {
-		avgscores[COOPERATE] = density[COOPERATE] * payoffs[COOPERATE][COOPERATE] + density[DEFECT] * payoffs[COOPERATE][DEFECT];
-		avgscores[DEFECT] = density[COOPERATE] * payoffs[DEFECT][COOPERATE] + density[DEFECT] * payoffs[DEFECT][DEFECT];
+		avgscores[COOPERATE] = density[COOPERATE] * payoffs[COOPERATE][COOPERATE]
+				+ density[DEFECT] * payoffs[COOPERATE][DEFECT];
+		avgscores[DEFECT] = density[COOPERATE] * payoffs[DEFECT][COOPERATE]
+				+ density[DEFECT] * payoffs[DEFECT][DEFECT];
 	}
 
 	@Override
@@ -438,7 +443,7 @@ public class TBT extends Discrete implements Payoffs, HasIBS.DPairs, HasODE.DPai
 					mean[getTraitAt(n++)]++;
 					mean[nTraits + getTraitAt(n++)]++;
 					continue;
-				} 
+				}
 				mean[nTraits + getTraitAt(n++)]++;
 				mean[getTraitAt(n++)]++;
 			}

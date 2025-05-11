@@ -88,6 +88,7 @@ public class ODE extends Model implements Discrete {
 		 * @return the index of the dependent trait (or {@code -1} if there is none)
 		 */
 		public int getDependent();
+
 		/**
 		 * Interface for ordinary differential equations (ODE) with pairwise
 		 * interactions.
@@ -1684,8 +1685,7 @@ public class ODE extends Model implements Discrete {
 		int idx = 0;
 		int start = 0;
 		boolean parseOk = true;
-		species: 
-		for (Module pop : species) {
+		species: for (Module pop : species) {
 			String inittype = inittypes[idx % inittypes.length];
 			double[] initargs = null;
 			String[] typeargs = inittype.split("\\s+|=");

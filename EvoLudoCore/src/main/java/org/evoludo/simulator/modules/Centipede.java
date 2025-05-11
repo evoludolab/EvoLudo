@@ -52,7 +52,8 @@ import org.evoludo.util.Formatter;
 /**
  * The Centipede class provides an EvoLudo module for the centipede game.
  */
-public class Centipede extends Discrete implements Payoffs, HasIBS.DPairs,
+public class Centipede extends Discrete implements Payoffs,
+		HasIBS.DPairs,
 		HasPop2D.Traits, HasPop2D.Fitness, HasPop3D.Traits, HasPop3D.Fitness,
 		HasS3, HasMean.Traits, HasMean.Fitness {
 
@@ -184,7 +185,7 @@ public class Centipede extends Discrete implements Payoffs, HasIBS.DPairs,
 	/**
 	 * Returns the payoff for the first mover.
 	 * 
-	 * @param meTrait the trait of the first mover
+	 * @param meTrait  the trait of the first mover
 	 * @param youTrait the trait of the second mover
 	 * @return the payoff for the first mover
 	 */
@@ -197,7 +198,7 @@ public class Centipede extends Discrete implements Payoffs, HasIBS.DPairs,
 	/**
 	 * Returns the payoff for the second mover.
 	 * 
-	 * @param meTrait the trait of the second mover
+	 * @param meTrait  the trait of the second mover
 	 * @param youTrait the trait of the first mover
 	 * @return the payoff for the second mover
 	 */
@@ -270,8 +271,8 @@ public class Centipede extends Discrete implements Payoffs, HasIBS.DPairs,
 	}
 
 	/**
-	 * Set the benefit of cooperation, i.e. the benefit provided to the opponent when
-	 * continuing the centipede game for another round.
+	 * Set the benefit of cooperation, i.e. the benefit provided to the opponent
+	 * when continuing the centipede game for another round.
 	 * 
 	 * @param benefit the benefit of cooperation
 	 */
@@ -280,8 +281,8 @@ public class Centipede extends Discrete implements Payoffs, HasIBS.DPairs,
 	}
 
 	/**
-	 * Get the benefit of cooperation, i.e. the benefit provided to the opponent when
-	 * continuing the centipede game for another round.
+	 * Get the benefit of cooperation, i.e. the benefit provided to the opponent
+	 * when continuing the centipede game for another round.
 	 * 
 	 * @return the benefit of cooperation
 	 */
@@ -478,9 +479,9 @@ public class Centipede extends Discrete implements Payoffs, HasIBS.DPairs,
 						meFirst += rng.random0n(irange * 2 + 1) - irange;
 						meFirst = Math.min(Math.max(meFirst, 0), nFirst - 1);
 						return meFirst * nSecond + meSecond;
-						// loop traits around
-						// return ((meFirst + rng.random0n(irange * 2 + 1) - irange + nFirst) % nFirst) * nSecond
-						// 		+ meSecond;
+					// loop traits around
+					// return ((meFirst + rng.random0n(irange * 2 + 1) - irange + nFirst) % nFirst)
+					// * nSecond + meSecond;
 					default:
 						return trait;
 				}
@@ -496,9 +497,9 @@ public class Centipede extends Discrete implements Payoffs, HasIBS.DPairs,
 					meSecond += rng.random0n(irange * 2 + 1) - irange;
 					meSecond = Math.min(Math.max(meSecond, 0), nSecond - 1);
 					return meFirst * nSecond + meSecond;
-					// loop traits around
-					// return meFirst * nSecond
-					// 		+ (meSecond + rng.random0n(irange * 2 + 1) - irange + nSecond) % nSecond;
+				// loop traits around
+				// return meFirst * nSecond
+				// + (meSecond + rng.random0n(irange * 2 + 1) - irange + nSecond) % nSecond;
 				default:
 					return trait;
 			}

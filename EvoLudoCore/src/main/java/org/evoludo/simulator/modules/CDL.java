@@ -58,10 +58,10 @@ import org.evoludo.util.Formatter;
  * 
  * @author Christoph Hauert
  */
-public class CDL extends Discrete implements Payoffs, 
-		HasIBS.DGroups, HasODE.DGroups, HasSDE, HasPDE, 
+public class CDL extends Discrete implements Payoffs,
+		HasIBS.DGroups, HasODE.DGroups, HasSDE.DGroups, HasPDE.DGroups,
 		HasPop2D.Traits, HasPop3D.Traits, HasPop2D.Fitness, HasPop3D.Fitness,
-		HasMean.Traits, HasMean.Fitness, HasS3, 
+		HasMean.Traits, HasMean.Fitness, HasS3,
 		HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsStationary {
 
 	/**
@@ -998,7 +998,7 @@ public class CDL extends Discrete implements Payoffs,
 						for (int z = mz - 1; z < mz + 1; z++)
 							for (int y = m - 1; y < m + 1; y++)
 								for (int x = m - 1; x < m + 1; x++)
-								setTraitAt(z * l2 + y * l + x, CDL.LONER);
+									setTraitAt(z * l2 + y * l + x, CDL.LONER);
 						traitsCount[CDL.LONER] += 2 * 2 * 2;
 						traitsCount[CDL.DEFECT] += 4 * 4 * 4 - 2 * 2 * 2;
 						traitsCount[CDL.COOPERATE] -= 4 * 4 * 4;
@@ -1008,11 +1008,11 @@ public class CDL extends Discrete implements Payoffs,
 						for (int z = mz - 2; z < mz + 3; z++)
 							for (int y = m - 2; y < m + 3; y++)
 								for (int x = m - 2; x < m + 3; x++)
-								setTraitAt(z * l2 + y * l + x, CDL.DEFECT);
+									setTraitAt(z * l2 + y * l + x, CDL.DEFECT);
 						for (int z = mz - 1; z < mz + 2; z++)
 							for (int y = m - 1; y < m + 2; y++)
 								for (int x = m - 1; x < m + 2; x++)
-								setTraitAt(z * l2 + y * l + x, CDL.LONER);
+									setTraitAt(z * l2 + y * l + x, CDL.LONER);
 						traitsCount[CDL.LONER] += 3 * 3 * 3;
 						traitsCount[CDL.DEFECT] += 5 * 5 * 5 - 3 * 3 * 3;
 						traitsCount[CDL.COOPERATE] -= 5 * 5 * 5;

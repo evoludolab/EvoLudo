@@ -60,8 +60,8 @@ import org.evoludo.util.Formatter;
  * 
  * @author Christoph Hauert
  */
-public class EcoPGG extends Discrete implements Payoffs, 
-		HasIBS.DGroups, HasODE.DGroups, HasSDE, HasPDE,
+public class EcoPGG extends Discrete implements Payoffs,
+		HasIBS.DGroups, HasODE.DGroups, HasSDE.DGroups, HasPDE.DGroups,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasS3, HasPhase2D,
 		HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness,
 		HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsStationary {
