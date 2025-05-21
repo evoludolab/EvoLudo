@@ -1652,7 +1652,8 @@ public abstract class EvoLudo
 		}
 		// second, determine feasible --model options for given module
 		cloModel.clearKeys();
-		cloModel.addKeys(activeModule.getModelTypes());
+		Type[] mt = activeModule.getModelTypes();
+		cloModel.addKeys(mt);
 		// third, deal with --model option
 		String modelName = cloModel.getName();
 		// if IBS is not an option, pick first available model as default (which one
@@ -1664,7 +1665,7 @@ public abstract class EvoLudo
 			return null;
 		}
 		// if IBS not an option, pick first model type as default
-		Type defaulttype = (keys.contains(Type.IBS) ? Type.IBS : Type.values()[0]);
+		Type defaulttype = (keys.contains(Type.IBS) ? Type.IBS : mt[0]);
 		Type type = null;
 		nParams = cloarray.length;
 		for (int i = 0; i < nParams; i++) {
