@@ -71,7 +71,7 @@ public abstract class Discrete extends Module {
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	protected Discrete(EvoLudo engine) {
+	public Discrete(EvoLudo engine) {
 		this(engine, null);
 	}
 
@@ -82,7 +82,7 @@ public abstract class Discrete extends Module {
 	 * 
 	 * @param partner the partner species
 	 */
-	protected Discrete(Discrete partner) {
+	public Discrete(Discrete partner) {
 		this(partner.engine, partner);
 	}
 

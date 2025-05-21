@@ -114,7 +114,7 @@ public abstract class Continuous extends Module {
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	protected Continuous(EvoLudo engine) {
+	public Continuous(EvoLudo engine) {
 		this(engine, null);
 	}
 
@@ -125,7 +125,7 @@ public abstract class Continuous extends Module {
 	 * 
 	 * @param partner the partner species
 	 */
-	protected Continuous(Continuous partner) {
+	public Continuous(Continuous partner) {
 		this(partner.engine, partner);
 	}
 
