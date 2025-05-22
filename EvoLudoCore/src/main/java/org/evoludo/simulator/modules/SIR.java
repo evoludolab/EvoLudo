@@ -210,19 +210,101 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 		parser.addCLO(cloResist);
 	}
 
+	/**
+	 * The SIR model is defined by the following equations:
+	 * <p>
+	 * \begin{align*}
+	 * \frac{dS}{dt} &= R \cdot p_{RS} + I \cdot p_{IS} - S \cdot I \cdot p_{SI} \\
+	 * \frac{dI}{dt} &= S \cdot I \cdot p_{SI} - I \cdot (p_{IR} + p_{IS}) \\
+	 * \frac{dR}{dt} &= I \cdot p_{IR} - R \cdot p_{RS}
+	 * \end{align*}
+	 * <p>
+	 * where \(S\), \(I\), and \(R\) are the densities of susceptible, infected, and
+	 * recovered cohorts of individuals and \(p_{SI}, p_{IR}, p_{RS}\), and
+	 * \(p_{IS}\) are the transition rates between the different cohorts.
+	 */
+	void getDerivatives(double t, double[] state, double[] unused, double[] change) {
+		change[S] = state[R] * pRS + state[I] * pIS - state[S] * state[I] * pSI;
+		change[I] = state[S] * state[I] * pSI - state[I] * (pIR + pIS);
+		change[R] = state[I] * pIR - state[R] * pRS;
+	}
+
 	@Override
 	public Model createODE() {
-		return new SIR.DE(engine);
+		return new SIR.ODE(engine);
+	}
+
+	/**
+	 * ODE model for the SIR module.
+	 */
+	public class ODE extends RungeKutta {
+
+		/**
+		 * Constructor for the classic SIR model based on ordinary differential
+		 * equations.
+		 *
+		 * @param engine the EvoLudo engine
+		 */
+		public ODE(EvoLudo engine) {
+			super(engine);
+		}
+
+		@Override
+		protected void getDerivatives(double t, double[] state, double[] unused, double[] change) {
+			SIR.this.getDerivatives(t, state, unused, change);
+		}
 	}
 
 	@Override
 	public Model createSDE() {
-		return new SIR.DE(engine);
+		return new SIR.SDE(engine);
+	}
+
+	/**
+	 * SDE model for the SIR module.
+	 */
+	public class SDE extends org.evoludo.simulator.models.SDE {
+
+		/**
+		 * Constructor for the SIR model in finite populations based on stochastic
+		 * differential equations.
+		 *
+		 * @param engine the EvoLudo engine
+		 */
+		public SDE(EvoLudo engine) {
+			super(engine);
+		}
+
+		@Override
+		protected void getDerivatives(double t, double[] state, double[] unused, double[] change) {
+			SIR.this.getDerivatives(t, state, unused, change);
+		}
 	}
 
 	@Override
 	public Model createPDE() {
-		return new SIR.DE(engine);
+		return new SIR.PDE(engine);
+	}
+
+	/**
+	 * PDE model for the SIR module.
+	 */
+	public class PDE extends org.evoludo.simulator.models.PDE {
+
+		/**
+		 * Constructor for the spatial SIR model based on partial differential
+		 * equations.
+		 *
+		 * @param engine the EvoLudo engine
+		 */
+		public PDE(EvoLudo engine) {
+			super(engine);
+		}
+
+		@Override
+		protected void getDerivatives(double t, double[] state, double[] unused, double[] change) {
+			SIR.this.getDerivatives(t, state, unused, change);
+		}
 	}
 
 	@Override
@@ -231,7 +313,7 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 	}
 
 	/**
-	 * Population for individual based simulations SIR model.
+	 * Population for individual based simulations of the SIR module.
 	 */
 	public class IBSPop extends IBSDPopulation {
 
@@ -278,44 +360,6 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 				return true;
 			}
 			return super.checkConvergence();
-		}
-	}
-
-	/**
-	 * Rates of change for the SIR model. The implementation is agnostic to whether
-	 * used for ordinary, stochastic or partial differential equations.
-	 */
-	public class DE extends RungeKutta {
-
-		/**
-		 * Constructor for the SIR models based on differential equations.
-		 *
-		 * @param engine the EvoLudo engine
-		 */
-		public DE(EvoLudo engine) {
-			super(engine);
-		}
-
-		/**
-		 * {@inheritDoc}
-		 * <p>
-		 * The SIR model is defined by the following equations:
-		 * <p>
-		 * \begin{align*}
-		 * \frac{dS}{dt} &= R \cdot p_{RS} + I \cdot p_{IS} - S \cdot I \cdot p_{SI} \\
-		 * \frac{dI}{dt} &= S \cdot I \cdot p_{SI} - I \cdot (p_{IR} + p_{IS}) \\
-		 * \frac{dR}{dt} &= I \cdot p_{IR} - R \cdot p_{RS}
-		 * \end{align*}
-		 * <p>
-		 * where \(S\), \(I\), and \(R\) are the densities of susceptible, infected, and
-		 * recovered cohorts of individuals and \(p_{SI}, p_{IR}, p_{RS}\), and
-		 * \(p_{IS}\) are the transition rates between the different cohorts.
-		 */
-		@Override
-		protected void getDerivatives(double t, double[] state, double[] unused, double[] change) {
-			change[S] = state[R] * pRS + state[I] * pIS - state[S] * state[I] * pSI;
-			change[I] = state[S] * state[I] * pSI - state[I] * (pIR + pIS);
-			change[R] = state[I] * pIR - state[R] * pRS;
 		}
 	}
 }
