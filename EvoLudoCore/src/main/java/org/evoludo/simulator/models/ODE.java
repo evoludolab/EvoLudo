@@ -1445,6 +1445,10 @@ public class ODE extends Model implements Discrete {
 
 	@Override
 	public String getStatus() {
+		return getStatus(yt);
+	}
+
+	String getStatus(double[] state) {
 		String status = "";
 		int from = 0;
 		for (Module pop : species) {
@@ -1456,8 +1460,8 @@ public class ODE extends Model implements Discrete {
 				if (i == vacant)
 					continue;
 				popStatus += (popStatus.length() > 0 ? ", " : "") + names[i] + ": " //
-						+ (isDensity ? Formatter.format(yt[i], 1)
-								: Formatter.formatPercent(yt[i], 1));
+						+ (isDensity ? Formatter.format(state[i], 1)
+								: Formatter.formatPercent(state[i], 1));
 			}
 			from = to;
 			status += (isMultispecies ? (status.length() > 0 ? "<br/><i>" : "<i>") + pop.getName() + ":</i> " : "")

@@ -862,30 +862,7 @@ public class PDE extends ODE {
 
 	@Override
 	public String getStatus() {
-		String status = "";
-		int idx = 0;
-		int offset = 0;
-		for (Module pop : species) {
-			int dim = pop.getNTraits();
-			int myDep = dependents[idx++];
-			double depFreq = 1.0;
-			String popStatus = "";
-			for (int i = offset; i < offset + dim; i++) {
-				if (i == myDep)
-					continue;
-				double dens = meanDensity[i];
-				popStatus += (popStatus.length() > 0 ? ", " : "") + names[i] + ": " //
-						+ Formatter.formatPercent(dens, 1);
-				depFreq -= dens;
-			}
-			if (myDep >= 0)
-				popStatus += (popStatus.length() > 0 ? ", " : "") + names[offset + myDep] + ": "
-						+ Formatter.formatPercent(depFreq, 1);
-			offset += dim;
-			status += (isMultispecies ? (status.length() > 0 ? "<br/><i>" : "<i>") + pop.getName() + ":</i> " : "")
-					+ popStatus;
-		}
-		return status;
+		return getStatus(meanDensity);
 	}
 
 	@Override
