@@ -51,12 +51,22 @@ public class NativeJS {
 	}
 
 	/**
-	 * JSNI method: Display javascript alert panel - use sparingly.
+	 * JSNI method: Display javascript alert panel. Very intrusive. Use for
+	 * debugging only.
 	 *
 	 * @param msg the message to display
 	 */
 	public static native void alert(String msg) /*-{
 		$wnd.alert(msg);
+	}-*/;
+
+	/**
+	 * JSNI method: log message into JS console.
+	 *
+	 * @param msg the message to log
+	 */
+	public static native void log(String msg) /*-{
+		console.log(msg);
 	}-*/;
 
 	/**
@@ -613,11 +623,6 @@ public class NativeJS {
 	// public final static native String setLocalStorage(String key, String value)
 	// /*-{
 	// return localStorage.setItem(key, value);
-	// }-*/;
-
-	// public static native void logJS(String msg)
-	// /*-{
-	// console.log(msg);
 	// }-*/;
 
 	// /**
