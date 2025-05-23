@@ -719,8 +719,7 @@ public class PDE extends ODE {
 	}
 
 	@Override
-	public synchronized <T> void getTraitData(int ID, T[] colors, ColorMap<T> colorMap) {
-		int idx = 0;
+	public synchronized <T> void getTraitData(int id, T[] colors, ColorMap<T> colorMap) {
 		// XXX autoscale is currently the only option
 		// boolean[] autoScale = pmodel.getAutoScale();
 		// double[] min = pmodel.getMinScale();
@@ -737,20 +736,10 @@ public class PDE extends ODE {
 			colorMap.translate(density, colors);
 			return;
 		}
-		for (int n = 0; n < nDim; n++) {
-			if (n == dependent)
-				continue;
-			// cast should be ok because Gradient2D color map (nDim == 2 without dependent
-			// trait
-			// or nDim > 2 with/out depenent trait). GradientND is subclass of Gradient2D
-			ColorMap.Gradient2D<T> cMap = (ColorMap.Gradient2D<T>) colorMap;
-			// if( autoScale[idx] )
-			cMap.setRange(minDensity[n], maxDensity[n], idx);
-			// else
-			// cMap.setRange(min[n], max[n], idx);
-			idx++;
-		}
-		colorMap.translate(density, colors, dependent);
+		Module mod = module.getSpecies(id);
+		if (mod.getVacant() >= 0)
+			((ColorMap.Gradient2D<T>) colorMap).setRange(minDensity, maxDensity);
+		colorMap.translate(density, colors);
 	}
 
 	@Override
@@ -791,8 +780,8 @@ public class PDE extends ODE {
 		double maxf = -Double.MAX_VALUE;
 		double mind = Double.MAX_VALUE;
 		double maxd = -Double.MAX_VALUE;
-		Module pop = module.getSpecies(id);
-		double nTraits = pop.getNTraits();
+		Module mod = module.getSpecies(id);
+		double nTraits = mod.getNTraits();
 		for (int n = 0; n < nTraits; n++) {
 			if (n == dependent)
 				continue;
@@ -801,7 +790,7 @@ public class PDE extends ODE {
 			mind = Math.min(mind, minDensity[n]);
 			maxd = Math.max(maxd, maxDensity[n]);
 		}
-		if (pop.getVacant() < 0)
+		if (mod.getVacant() < 0)
 			colorMap.setRange(minf * mind, nTraits * maxf * maxd);
 		else
 			colorMap.setRange(minf * mind, (nTraits - 1) * maxf * maxd);

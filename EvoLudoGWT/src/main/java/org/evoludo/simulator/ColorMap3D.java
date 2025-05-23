@@ -347,7 +347,7 @@ public abstract class ColorMap3D extends ColorMap<MeshLambertMaterial> {
 		 * @see #setRange(double[], double[])
 		 */
 		public Gradient2D(java.awt.Color[] colors, int nIncr) {
-			this(colors[0], colors[1], nIncr);
+			this(colors, -1, nIncr);
 		}
 
 		/**
@@ -369,66 +369,14 @@ public abstract class ColorMap3D extends ColorMap<MeshLambertMaterial> {
 		 * <code>[0.0, 1.0]</code> in all dimensions.
 		 *
 		 * @param colors the colors for the three dimensions
-		 * @param idx    the index of the dependent trait
+		 * @param dep    the index of the dependent trait
 		 * @param nIncr  the number of intermediate colors per dimension
 		 * 
 		 * @see #setRange(double, double)
 		 * @see #setRange(double[], double[])
 		 */
-		public Gradient2D(java.awt.Color[] colors, int idx, int nIncr) {
-			this(colors[idx == 0 ? 1 : 0], colors[idx == 0 || idx == 1 ? 2 : 1],
-					idx >= 0 && idx < colors.length ? colors[idx] : java.awt.Color.BLACK, nIncr);
-		}
-
-		/**
-		 * Construct two dimensional color gradient to represent two dimensional data
-		 * values. The first dimension spans colors ranging from black to
-		 * <code>colors[0]</code> and the second dimension from black to
-		 * <code>colors[1]</code>. Each dimension is interpolated with
-		 * <code>steps-1</code> intermediate colors. The resulting gradient spans
-		 * <code>(steps+1)<sup>2</sup></code> colors.
-		 * <p>
-		 * The default range for mapping data values onto the color gradient is
-		 * <code>[0.0, 1.0]</code> in both dimensions.
-		 * 
-		 * @param trait1 the color representing the first trait
-		 * @param trait2 the color representing the second trait
-		 * @param nIncr  the number of intermediate colors per dimension
-		 * 
-		 * @see #setRange(double, double)
-		 * @see #setRange(double[], double[])
-		 */
-		public Gradient2D(java.awt.Color trait1, java.awt.Color trait2, int nIncr) {
-			this(trait1, trait2, java.awt.Color.BLACK, nIncr);
-		}
-
-		/**
-		 * Construct two dimensional color gradient to represent <em>two</em>
-		 * dimensional data with a background color other than black, or, to represent
-		 * <em>three</em> dimensional data values where one data value is dependent on
-		 * the other two.
-		 * <p>
-		 * The color gradient in the first dimension ranges from <code>bg</code> to
-		 * <code>trait1</code> and from <code>bg</code> to <code>trait2</code> in the
-		 * second dimension.
-		 * <p>
-		 * Each dimension is interpolated with <code>steps-1</code> intermediate colors.
-		 * The resulting gradient spans <code>(steps+1)<sup>2</sup></code> colors.
-		 * <p>
-		 * The default range for mapping data values onto the color gradient is
-		 * <code>[0.0, 1.0]</code> in both (all) dimensions.
-		 *
-		 * @param trait1 the color representing the first trait
-		 * @param trait2 the color representing the second trait
-		 * @param bg     the color representing the background (or a third, dependent
-		 *               trait)
-		 * @param nIncr  the number of intermediate colors per dimension
-		 * 
-		 * @see #setRange(double, double)
-		 * @see #setRange(double[], double[])
-		 */
-		public Gradient2D(java.awt.Color trait1, java.awt.Color trait2, java.awt.Color bg, int nIncr) {
-			super(trait1, trait2, bg, new MeshLambertMaterial[nIncr][nIncr]);
+		public Gradient2D(java.awt.Color[] colors, int dep, int nIncr) {
+			super(colors, dep, new MeshLambertMaterial[nIncr][nIncr]);
 		}
 
 		@Override

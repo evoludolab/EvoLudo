@@ -211,7 +211,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 								break;
 							case 2:
 								Color[] traitcolors = module.getTraitColors();
-								cMap = new ColorMapCSS.Gradient2D(traitcolors[0], traitcolors[1], Color.BLACK, 50);
+								cMap = new ColorMapCSS.Gradient2D(traitcolors, 50);
 								break;
 							default:
 								Color[] primaries = new Color[nTraits];
@@ -227,8 +227,12 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 							if (nTraits == 2 && dep >= 0) {
 								int trait = (dep + 1) % nTraits;
 								cMap = new ColorMapCSS.Gradient1D(colors[dep], colors[trait], trait, 100);
-							} else
+							} else {
+								// vacant space does not count as dependent trait for coloring
+								if (module.getVacant() == dep)
+									dep = -1;
 								cMap = new ColorMapCSS.Gradient2D(colors, dep, 100);
+							}
 						} else
 							cMap = new ColorMapCSS.Index(module.getTraitColors(), 220);
 					}

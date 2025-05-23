@@ -182,7 +182,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 								break;
 							case 2:
 								Color[] tColors = module.getTraitColors();
-								cMap = new ColorMap3D.Gradient2D(tColors[0], tColors[1], Color.BLACK, 50);
+								cMap = new ColorMap3D.Gradient2D(tColors, 50);
 								break;
 							default:
 								if (cmt == ColorModelType.DISTANCE) {
@@ -211,8 +211,12 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 							int dep = ((HasDE) module).getDependent();
 							if (nTraits == 2 && dep >= 0)
 								cMap = new ColorMap3D.Gradient1D(colors[dep], colors[(dep + 1) % nTraits], 100);
-							else
+							else {
+								// vacant space does not count as dependent trait for coloring
+								if (module.getVacant() == dep)
+									dep = -1;
 								cMap = new ColorMap3D.Gradient2D(colors, dep, 100);
+							}
 						} else
 							cMap = new ColorMap3D.Index(module.getTraitColors(), (int) (0.75 * 255));
 					}

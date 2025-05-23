@@ -146,21 +146,6 @@ public abstract class ColorMap<T extends Object> {
 	}
 
 	/**
-	 * Translate the <code>data</code> array of <code>double[]</code> multi-trait
-	 * values with dependent trait <code>dep</code> to colors and store the results
-	 * in the <code>color</code> array. The type of the <code>color</code> array
-	 * depends on the implementation.
-	 * 
-	 * @param data  the <code>double[]</code> array to convert to colors
-	 * @param color the array for the resulting colors
-	 * @param dep   index of dependent trait
-	 * @return <code>true</code> if translation successful
-	 */
-	public boolean translate(double[][] data, T[] color, int dep) {
-		throw new Error("ColorMap.translate(double[][], T[], int) not implemented!");
-	}
-
-	/**
 	 * Translate the <code>data1</code> and <code>data2</code> arrays of
 	 * <code>double[]</code> multi-trait values to colors and store the results in
 	 * the <code>color</code> array. The type of the <code>color</code> array
@@ -810,32 +795,48 @@ public abstract class ColorMap<T extends Object> {
 		 */
 		protected double[] map;
 
-		/**
-		 * For internal use only. Construct 2D color gradient running from the
-		 * background color {@code bg} to {@code trait1} in one dimension and from
-		 * {@code bg} to {@code trait2} in the second dimension and store the resulting
-		 * colors of type {@code T} in the provided 2D array {@code gradient}. The
-		 * default range for mapping data values onto the color gradient is
-		 * <code>[0.0, 1.0]<sup>2</sup></code>.
-		 * 
-		 * @param trait1   the color of the first trait
-		 * @param trait2   the color of the second trait
-		 * @param bg       the background color
-		 * @param gradient the array to store the gradient colors
-		 * 
-		 * @see #setRange(double, double)
-		 */
-		protected Gradient2D(java.awt.Color trait1, java.awt.Color trait2, java.awt.Color bg, T[][] gradient) {
-			this(2, gradient.length - 1);
+		int trait1 = 0;
+		int trait2 = 1;
+
+		protected Gradient2D(Color[] colors, int dep, T[][] gradient) {
+			this(dep < 0 ? 2 : 3, gradient.length - 1);
+			switch (dep) {
+				case 0:
+					trait1 = 1;
+					trait2 = 2;
+					break;
+				case 1:
+					trait1 = 0;
+					trait2 = 2;
+					break;
+				default:
+					trait1 = 0;
+					trait2 = 1;
+					break;
+			}
 			this.gradient = gradient;
 			setRange(0.0, 1.0);
 			double w1 = 0.0;
 			double wincr = 1.0 / nGradient;
+			Color color1 = colors[trait1];
+			Color color2 = colors[trait2];
+			// color scheme depends on the presence of a dependent trait
+			if (dep < 0) {
+				// no dependent trait
+				for (int i = 0; i <= nGradient; i++) {
+					Color start = blendColors(color1, Color.BLACK, w1);
+					Color end = addColors(start, color2);
+					interpolateColors(gradient[i], start, 0, end, nGradient);
+					w1 += wincr;
+				}
+				return;
+			}
+			// create color gradient on simplex
 			for (int i = 0; i <= nGradient; i++) {
-				// trait 1
-				Color start = blendColors(trait1, bg, w1);
-				Color end = addColors(start, trait2);
-				interpolateColors(gradient[i], start, 0, end, nGradient);
+				Color colordep = colors[dep];
+				Color start = blendColors(color1, colordep, w1);
+				Color end = blendColors(start, color2, w1);
+				interpolateColors(gradient[i], start, 0, end, nGradient - i);
 				w1 += wincr;
 			}
 		}
@@ -880,10 +881,10 @@ public abstract class ColorMap<T extends Object> {
 		 * @param alpha the transparency of the new color
 		 */
 		public void setColor(double[] value, Color color, int alpha) {
-			int bin0 = binOf(value, 0);
+			int bin0 = binOf(value, trait1);
 			if (bin0 < 0)
 				return;
-			int bin1 = binOf(value, 1);
+			int bin1 = binOf(value, trait2);
 			if (bin1 < 0)
 				return;
 			if (alpha == 255 && color.getAlpha() < 255)
@@ -986,20 +987,7 @@ public abstract class ColorMap<T extends Object> {
 
 		@Override
 		public T translate(double[] data) {
-			return translate(data[0], data[1]);
-		}
-
-		/**
-		 * Helper method to translate the trait values <code>trait1</code> and
-		 * <code>trait2</code> into color gradient.
-		 * 
-		 * @param trait1 the value of the first trait
-		 * @param trait2 the value of the second trait
-		 * @return the gradient Color based on <code>trait1</code> and
-		 *         <code>trait2</code>
-		 */
-		private T translate(double trait1, double trait2) {
-			return gradient[binOf(trait1, 0)][binOf(trait2, 1)];
+			return gradient[binOf(data, trait1)][binOf(data, trait2)];
 		}
 
 		/**
@@ -1023,7 +1011,7 @@ public abstract class ColorMap<T extends Object> {
 			int len = color.length;
 			int idx = 0;
 			for (int n = 0; n < len; n++) {
-				color[n] = gradient[binOf(data[idx], 0)][binOf(data[idx + 1], 1)];
+				color[n] = gradient[binOf(data[idx], trait1)][binOf(data[idx + 1], trait2)];
 				idx += nTraits;
 			}
 			return true;
@@ -1047,39 +1035,17 @@ public abstract class ColorMap<T extends Object> {
 		@Override
 		public boolean translate(double[][] data, T[] color) {
 			int len = color.length;
-			for (int n = 0; n < len; n++) {
-				double[] datan = data[n];
-				color[n] = gradient[binOf(datan, 0)][binOf(datan, 1)];
-			}
-			return true;
-		}
-
-		/**
-		 * {@inheritDoc}
-		 * <p>
-		 * <strong>Implementation:</strong>
-		 * <ol>
-		 * <li>Each entry in <code>data</code> represents a
-		 * multi-dimensional trait value, which is converted to the corresponding
-		 * gradient color and returned in the <code>color</code> array. An example are
-		 * trait densities in PDE models.
-		 * <li>For performance reasons no validity checks on
-		 * <code>data</code>. In particular, all data entries must lie inside the range
-		 * for mapping data values.
-		 * </ol>
-		 * 
-		 * @see PDE
-		 */
-		@Override
-		public boolean translate(double[][] data, T[] color, int dep) {
-			if (dep < 0 || dep >= 2)
-				return translate(data, color);
-			int idx0 = (dep == 0 ? 1 : 0);
-			int idx1 = (dep == 0 || dep == 1 ? 2 : 1);
-			int len = color.length;
-			for (int n = 0; n < len; n++) {
-				double[] datan = data[n];
-				color[n] = gradient[binOf(datan, idx0)][binOf(datan, idx1)];
+			if (nTraits == 2) {
+				// no dependent trait - use auto scaling
+				for (int n = 0; n < len; n++) {
+					double[] datan = data[n];
+					color[n] = gradient[binOf(datan, trait1)][binOf(datan, trait2)];
+				}
+			} else {
+				for (int n = 0; n < len; n++) {
+					double[] datan = data[n];
+					color[n] = gradient[(int)(datan[trait1] * nGradient)][(int)(datan[trait2] * nGradient)];
+				}
 			}
 			return true;
 		}
