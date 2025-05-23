@@ -231,7 +231,7 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 
 	@Override
 	public Model createODE() {
-		return new SIR.ODE(engine);
+		return new SIR.ODE();
 	}
 
 	/**
@@ -242,11 +242,9 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 		/**
 		 * Constructor for the classic SIR model based on ordinary differential
 		 * equations.
-		 *
-		 * @param engine the EvoLudo engine
 		 */
-		public ODE(EvoLudo engine) {
-			super(engine);
+		public ODE() {
+			super(SIR.this.engine);
 		}
 
 		@Override
@@ -257,7 +255,7 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 
 	@Override
 	public Model createSDE() {
-		return new SIR.SDE(engine);
+		return new SIR.SDE();
 	}
 
 	/**
@@ -268,11 +266,9 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 		/**
 		 * Constructor for the SIR model in finite populations based on stochastic
 		 * differential equations.
-		 *
-		 * @param engine the EvoLudo engine
 		 */
-		public SDE(EvoLudo engine) {
-			super(engine);
+		public SDE() {
+			super(SIR.this.engine);
 		}
 
 		@Override
@@ -283,7 +279,7 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 
 	@Override
 	public Model createPDE() {
-		return new SIR.PDE(engine);
+		return new SIR.PDE();
 	}
 
 	/**
@@ -294,11 +290,9 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 		/**
 		 * Constructor for the spatial SIR model based on partial differential
 		 * equations.
-		 *
-		 * @param engine the EvoLudo engine
 		 */
-		public PDE(EvoLudo engine) {
-			super(engine);
+		public PDE() {
+			super(SIR.this.engine);
 		}
 
 		@Override
@@ -309,7 +303,7 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 
 	@Override
 	public IBSDPopulation createIBSPop() {
-		return new SIR.IBSPop(engine, this);
+		return new SIR.IBSPop();
 	}
 
 	/**
@@ -319,12 +313,9 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 
 		/**
 		 * Constructor for SIR population.
-		 *
-		 * @param engine the pacemaker for running the model
-		 * @param module the module that defines the interactions
 		 */
-		protected IBSPop(EvoLudo engine, SIR module) {
-			super(engine, module);
+		protected IBSPop() {
+			super(SIR.this.engine, SIR.this);
 		}
 
 		@Override
