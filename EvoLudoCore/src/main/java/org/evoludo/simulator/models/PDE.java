@@ -1642,13 +1642,13 @@ public class PDE extends ODE {
 					switch (dim) {
 						case 1:
 							// NOT TESTED!
-							descrDiff = "--pdeD <d0>          diffusion for independent variable";
+							descrDiff = "--pdeD <d0>     diffusion for independent variable";
 							break;
 						case 2:
-							descrDiff = "--pdeD <d0,d1>       diffusion for independent variables, with";
+							descrDiff = "--pdeD <d0,d1>  diffusion for independent variables, with";
 							break;
 						case 3:
-							descrDiff = "--pdeD <d0,d1,d2>    diffusion for independent variables, with";
+							descrDiff = "--pdeD <d0,d1,d2>  diffusion for independent variables, with";
 							break;
 						default:
 							descrDiff = "--pdeD <d0,...,d" + (nDim - 1)
@@ -1675,7 +1675,7 @@ public class PDE extends ODE {
 	 */
 	public final CLOption cloPdeSymmetric = new CLOption("pdeSymmetry", "nosymmetry", CLOption.Argument.NONE,
 			EvoLudo.catModel,
-			"--pdeSymmetry        request symmetric diffusion of PDE", new CLODelegate() {
+			"--pdeSymmetry   request symmetric diffusion of PDE", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					setSymmetric(cloPdeSymmetric.isSet());

@@ -53,11 +53,12 @@ import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.ODE.HasDE;
 import org.evoludo.simulator.models.ODE.HasODE;
-import org.evoludo.simulator.models.RungeKutta;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDE.HasPDE;
 import org.evoludo.simulator.models.PDESupervisor;
+import org.evoludo.simulator.models.RungeKutta;
 import org.evoludo.simulator.models.SDE;
 import org.evoludo.simulator.models.SDE.HasSDE;
 import org.evoludo.simulator.models.Type;
@@ -1793,8 +1794,13 @@ public abstract class EvoLudo
 				if (namelen > 0)
 					moduleMsg += "\n       Species: " + name;
 				int nt = mod.getNTraits();
-				for (int n = 0; n < nt; n++)
+				for (int n = 0; n < nt; n++) {
 					moduleMsg += "\n             " + (idx + n) + ": " + mod.getTraitName(n);
+					if (activeModel.isDE()) {
+						if (((HasDE) mod).getDependent() == n)
+							moduleMsg += " (dependent)";
+					}
+				}
 				idx += nt;
 			}
 			catModule.setHeader("Options for module '" + activeModule.getKey() //
