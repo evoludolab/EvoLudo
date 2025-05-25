@@ -399,17 +399,43 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 						+ "</td></tr>";
 			else
 				density = "<tr><td><i>Densities:</i></td><td>" + model.getTraitNameAt(id, node) + "</td></tr>";
-			String fitness = "";
-			if (type == Data.FITNESS)
-				fitness = "<tr><td><i>Fitness:</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
-						"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + model.getFitnessNameAt(id, node);
-			else
-				fitness = "<tr><td><i>Fitness:</i></td><td>" + model.getFitnessNameAt(id, node);
-			fitness += " → "
-					+ Formatter.pretty(
-							ArrayMath.dot(model.getMeanTraitAt(id, node), model.getMeanFitnessAt(id, node)), 3)
-					+ "</td></tr>";
-			tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>" + names + density + fitness);
+			tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>" + names + density);
+			double[] fitness = model.getMeanFitnessAt(id, node);
+			int vac = module.getVacant();
+			if (module instanceof Payoffs) {
+				// with payoff-to-fitness report score first, then fitness (see below)
+				Map2Fitness map = module.getMapToFitness();
+				if (!map.isMap(Map2Fitness.Map.NONE)) {
+					// with fitness map - report scores first
+					tip.append("<tr><td><i>Score:</i></td><td>");
+					for (int i = 0; i < fitness.length; i++) {
+						if (i > 0)
+							tip.append(", ");
+						if (i == vac) {
+							tip.append("-");
+							continue;
+						}
+						tip.append(Formatter.formatFix(map.invmap(fitness[i]), 3));
+					}
+					tip.append("</td></tr>");
+				}
+				tip.append("<tr><td><i>Fitness:</i></td><td>");
+				if (type == Data.FITNESS)
+					tip.append("<span style='color:" + graph.getCSSColorAt(node) +
+							"; font-size:175%; line-height:0.57;'>&#x25A0;</span> ");
+				for (int i = 0; i < fitness.length; i++) {
+					if (i > 0)
+						tip.append(", ");
+					if (i == vac) {
+						tip.append("-");
+						continue;
+					}
+					tip.append(Formatter.formatFix(fitness[i], 3));
+				}
+				tip.append(" → " + Formatter.pretty(
+						ArrayMath.dot(model.getMeanTraitAt(id, node), fitness), 3)
+						+ "</td></tr>");
+			}
 			if (geometry.isUndirected)
 				tip.append(
 						"<tr><td><i>Connections:</i></td><td>" + formatStructureAt(node, geometry) + "</td></tr>");
