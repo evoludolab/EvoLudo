@@ -153,6 +153,8 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 
 				@Override
 				public boolean parse(String arg) {
+					// set default for optional I -> S transition
+					pIS = 0.0;
 					double[] probs = CLOParser.parseVector(arg);
 					switch (probs.length) {
 						case 2:
