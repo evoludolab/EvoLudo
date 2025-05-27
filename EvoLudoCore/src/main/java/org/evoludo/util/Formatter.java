@@ -201,6 +201,20 @@ public class Formatter {
 	}
 
 	/**
+	 * Format an arbitrary number of doubles as String formatted as an array of with
+	 * at most <code>digits</code> decimal places (trailing zeroes are suppressed).
+	 * 
+	 * @param digits  the number of decimal places
+	 * @param aDouble the variable number of doubles to format
+	 * @return formatted <code>double</code> as String
+	 * 
+	 * @see #format(double[], int)
+	 */
+	public static String format(int digits, double... aDouble) {
+		return format(aDouble, digits);
+	}
+
+	/**
 	 * Format array/vector of doubles <code>aVector</code> as String. Elements are
 	 * separated by '{@value #VECTOR_DELIMITER}' and formatted with at most
 	 * <code>digits</code> decimal places (trailing zeroes are suppressed).
