@@ -273,11 +273,9 @@ public class IBSD extends IBS implements Discrete {
 				new CLODelegate() {
 					@Override
 					public boolean parse(String arg) {
-						boolean success = true;
 						String[] inittypes = arg.split(CLOParser.SPECIES_DELIMITER);
 						int idx = 0;
 						Init.Type prevtype = null;
-						boolean isMultiSpecies = (ibs.species.size() > 1);
 						for (Module mod : ibs.species) {
 							IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
 							String itype = inittypes[idx++ % inittypes.length];
@@ -293,19 +291,13 @@ public class IBSD extends IBS implements Discrete {
 							// only uniform or kaleidoscope initializations do not require additional
 							// arguments
 							if (newtype == null || (initargs == null && !(newtype.equals(Init.Type.UNIFORM)
-									|| newtype.equals(Init.Type.KALEIDOSCOPE)))) {
-								ibs.logger.warning(
-										(isMultiSpecies ? mod.getName() + ": " : "") +
-												"init '" + itype + "' unknown!");
-								// default to uniform
-								newtype = Init.Type.UNIFORM;
-								success = false;
-							}
+									|| newtype.equals(Init.Type.KALEIDOSCOPE))))
+								return false;
 							init.type = newtype;
 							init.args = initargs;
 							prevtype = newtype;
 						}
-						return success;
+						return true;
 					}
 
 					@Override
@@ -548,7 +540,6 @@ public class IBSD extends IBS implements Discrete {
 				 */
 				@Override
 				public boolean parse(String arg) {
-					boolean success = true;
 					// reset all optimizations
 					optimizeHomo = false;
 					for (Module mod : species) {
@@ -566,7 +557,6 @@ public class IBSD extends IBS implements Discrete {
 								if (isMultispecies) {
 									logger.warning("homogeneous optimizations require single species - disabled.");
 									optimizeHomo = false;
-									success = false;
 									continue;
 								}
 								optimizeHomo = true;
@@ -588,7 +578,7 @@ public class IBSD extends IBS implements Discrete {
 								break;
 						}
 					}
-					return success;
+					return true;
 				}
 
 				@Override

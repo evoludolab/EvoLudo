@@ -1234,20 +1234,15 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				 */
 				@Override
 				public boolean parse(String arg) {
-					boolean success = true;
 					String[] rates = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
 					for (Module pop : species) {
 						double rate = CLOParser.parseDouble(rates[n++ % rates.length]);
-						if (rate < 0.0) {
-							logger.warning((species.size() > 1 ? pop.getName() + ": " : "")
-									+ "deathrate must be non-negative - using " + pop.getDeathRate() + "!");
-							success = false;
-							continue;
-						}
+						if (rate < 0.0)
+							return false;
 						pop.setDeathRate(rate);
 					}
-					return success;
+					return true;
 				}
 
 				@Override
@@ -1280,20 +1275,15 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				 */
 				@Override
 				public boolean parse(String arg) {
-					boolean success = true;
 					String[] sizes = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
 					for (Module pop : species) {
 						int size = CLOParser.parseInteger(sizes[n++ % sizes.length]);
-						if (size < 1) {
-							logger.warning((species.size() > 1 ? pop.getName() + ": " : "")
-									+ "group size must be positive - using " + pop.getNGroup() + "!");
-							success = false;
-							continue;
-						}
+						if (size < 1) 
+							return false;
 						pop.setNGroup(size);
 					}
-					return success;
+					return true;
 				}
 
 				@Override
@@ -1332,29 +1322,22 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 						pop.setActiveTraits(null);
 					if (!cloTraitDisable.isSet())
 						return true;
-					boolean success = true;
 					String[] disabledtraits = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
 					for (Module pop : species) {
 						int[] dtraits = CLOParser.parseIntVector(disabledtraits[n++ % disabledtraits.length]);
 						int dist = dtraits.length;
 						int mint = model.isContinuous() ? 1 : 2;
-						if (pop.nTraits - mint < dist) {
-							logger.warning("at least '" + mint + "' enabled traits required - enabling all.");
-							success = false;
-							continue;
-						}
+						if (pop.nTraits - mint < dist)
+							return false;
 						for (int t : dtraits) {
-							if (t < 0 || t >= pop.nTraits) {
-								logger.warning("invalid trait index '" + t + "' - ignored.");
-								success = false;
-								continue;
-							}
+							if (t < 0 || t >= pop.nTraits)
+								return false;
 							pop.active[t] = false;
 							pop.nActive--;
 						}
 					}
-					return success;
+					return true;
 				}
 
 				@Override
@@ -1417,11 +1400,8 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					if (!cloTraitColors.isSet())
 						return true;
 					String[] colorsets = arg.split(CLOParser.SPECIES_DELIMITER);
-					if (colorsets == null) {
-						logger.warning("color specification '" + arg + "' not recognized - ignored!");
+					if (colorsets == null)
 						return false;
-					}
-					boolean success = true;
 					int n = 0;
 					for (Module pop : species) {
 						String[] colors = colorsets[n++ % colorsets.length].split(CLOParser.MATRIX_DELIMITER);
@@ -1429,18 +1409,14 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 						for (int i = 0; i < colors.length; i++) {
 							Color newColor = CLOParser.parseColor(colors[i]);
 							// if color was not recognized, choose random color
-							if (newColor == null) {
-								logger.warning(
-										"color specification '" + colors[i] + "' not recognized - replaced by black!");
-								newColor = Color.BLACK;
-								success = false;
-							}
+							if (newColor == null )
+								return false;
 							myColors[i] = newColor;
 						}
 						// setTraitColor deals with missing colors and adding shades
 						pop.setTraitColors(myColors);
 					}
-					return success;
+					return true;
 				}
 
 				@Override
@@ -1503,20 +1479,15 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					// default trait names are set in load()
 					if (!cloTraitNames.isSet())
 						return true;
-					boolean success = true;
 					String[] namespecies = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
 					for (Module pop : species) {
 						String[] names = namespecies[n++ % namespecies.length].split(CLOParser.VECTOR_DELIMITER);
-						if (names.length != nTraits) {
-							logger.warning("incorrect number of trait names specified (" + names.length + " instead of "
-									+ nTraits + ") - ignored.");
-							success = false;
-							continue;
-						}
+						if (names.length != nTraits)
+							return false;
 						pop.setTraitNames(names);
 					}
-					return success;
+					return true;
 				}
 
 				// note: report(...) not overridden because trait names are reported in
@@ -1559,10 +1530,8 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					if (!cloPhase2DAxis.isSet())
 						return true;
 					int[][] phase2daxis = CLOParser.parseIntMatrix(arg);
-					if (phase2daxis == null || phase2daxis.length != 2) {
-						logger.warning("problem parsing '" + arg + "' - ignored!");
+					if (phase2daxis == null || phase2daxis.length != 2)
 						return false;
-					}
 					// cast check should be unnecessary. --phase2daxis should only be available if
 					// module implements at least HasPhase2D (plus some other conditions).
 					if (Module.this instanceof HasPhase2D) {

@@ -34,6 +34,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -254,7 +255,6 @@ public class Map2Fitness {
 				 */
 				@Override
 				public boolean parse(String arg) {
-					boolean success = true;
 					String[] map2fitnessspecies = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
 					ArrayList<? extends Module> species = module.getSpecies();
@@ -262,14 +262,8 @@ public class Map2Fitness {
 						String m = map2fitnessspecies[n++ % map2fitnessspecies.length];
 						Map2Fitness.Map m2fm = (Map2Fitness.Map) clo.match(m);
 						Map2Fitness m2f = mod.getMapToFitness();
-						if (m2fm == null) {
-							module.logger.warning(
-									(species.size() > 1 ? mod.getName() + ": " : "") +
-											"fitness map '" + m + "' unknown - using '"
-											+ m2f.getName() + "'");
-							success = false;
-							continue;
-						}
+						if (m2fm == null)
+							return false;
 						m2f.setMap(m2fm);
 						// parse b and w, if present
 						String[] args = m.split("\\s+|=|,");
@@ -287,7 +281,7 @@ public class Map2Fitness {
 						m2f.setBaseline(b);
 						m2f.setSelection(w);
 					}
-					return success;
+					return true;
 				}
 
 				@Override

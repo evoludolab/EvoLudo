@@ -141,7 +141,6 @@ public class Markers {
 				public boolean parse(String arg) {
 					if (!clo.isSet())
 						return true;
-					boolean success = true;
 					String[] myMarkers = arg.split(CLOParser.MATRIX_DELIMITER);
 					if (markers != null)
 						markers.clear();
@@ -150,7 +149,6 @@ public class Markers {
 					double[] dmk = new double[0];
 					for (String aMarker : myMarkers) {
 						String[] mk = aMarker.split(CLOParser.SPECIES_DELIMITER);
-						boolean mksuccess = true;
 						boolean filled = true;
 						for (int n = 0; n < nSpecies; n++) {
 							double[] smk = CLOParser.parseVector(mk[n]);
@@ -165,8 +163,7 @@ public class Markers {
 								int vac = module.getVacant();
 								int dep = (module instanceof HasDE ? ((HasDE) module).getDependent() : -1);
 								if (!(smk.length == nt - 1 && (vac >= 0 || dep >= 0))) {
-									mksuccess = false;
-									break;
+									return false;
 								}
 								if (dep >= 0)
 									smk = ArrayMath.insert(smk, 1.0 - ArrayMath.norm(smk), dep);
@@ -177,14 +174,9 @@ public class Markers {
 							// now smk.length == nt holds
 							dmk = ArrayMath.merge(dmk, smk);
 						}
-						if (!mksuccess) {
-							model.getLogger().warning("failed to set marker '" + aMarker + "' - ignored.");
-							success = false;
-							continue;
-						}
 						addMarker(dmk, filled);
 					}
-					return success;
+					return true;
 				}
 
 				@Override

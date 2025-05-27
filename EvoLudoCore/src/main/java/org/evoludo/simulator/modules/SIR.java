@@ -131,10 +131,8 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 				@Override
 				public boolean parse(String arg) {
 					double s2i = CLOParser.parseDouble(arg);
-					if (engine.getModel().isIBS() && (s2i < 0.0 || s2i > 1.0)) {
-						logger.warning("invalid probability for S -> I transitions (" + arg + ")");
+					if (engine.getModel().isIBS() && (s2i < 0.0 || s2i > 1.0))
 						return false;
-					}
 					pSI = s2i;
 					return true;
 				}
@@ -171,7 +169,6 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 							return true;
 						default:
 					}
-					logger.warning("invalid probabilities for I -> R[,S] transitions (" + arg + ")");
 					return false;
 				}
 
@@ -190,10 +187,8 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 				@Override
 				public boolean parse(String arg) {
 					double r2s = CLOParser.parseDouble(arg);
-					if (engine.getModel().isIBS() && (r2s < 0.0 || r2s > 1.0)) {
-						logger.warning("invalid probability for R -> S transitions (" + arg + ")");
+					if (engine.getModel().isIBS() && (r2s < 0.0 || r2s > 1.0))
 						return false;
-					}
 					pRS = r2s;
 					return true;
 				}

@@ -1741,10 +1741,8 @@ public class ODE extends Model implements Discrete {
 			idx++;
 			start += nTraits;
 		}
-		if (!parseOk) {
-			logger.warning("parsing of init '" + arg + "' failed - using " + cloInit.getDefault() + ".");
+		if (!parseOk)
 			return false;
-		}
 		return true;
 	}
 

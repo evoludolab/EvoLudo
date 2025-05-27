@@ -549,7 +549,6 @@ public class scanCSD extends CSD {
 							c2Incr = (c2End - c2Start) * 0.1;
 							return true;
 						default:
-							logger.warning("too many arguments for c2 (" + arg + ") - ignored.");
 							return false;
 						case 3:
 							double start = CLOParser.parseDouble(argv[0]);
@@ -561,13 +560,8 @@ public class scanCSD extends CSD {
 								// ignore sign (<0 is meaningless)
 								incr = Math.abs(CLOParser.parseDouble(argv[2].substring(0, argv[2].length() - 1)));
 								if ((Math.abs(end) < Math.abs(start) && incr > 1.0)
-										|| (Math.abs(end) > Math.abs(start) && incr < 1.0)) {
-									logger.warning("invalid logarithmic increment for c2-range ["
-											+ Formatter.format(start, 3) + ", " +
-											Formatter.format(end, 3) + "] (" + incr + (incr < 1.0 ? ">" : "<")
-											+ "1 should hold) - ignored.");
+										|| (Math.abs(end) > Math.abs(start) && incr < 1.0))
 									return false;
-								}
 							} else {
 								// ignore specified sign; set sign of increment based on start and end
 								incr = Math.abs(CLOParser.parseDouble(argv[2]));
@@ -613,7 +607,6 @@ public class scanCSD extends CSD {
 							b1Incr = (b1End - b1Start) * 0.1;
 							return true;
 						default:
-							logger.warning("too many arguments for b1 (" + arg + ") - ignored.");
 							return false;
 						case 3:
 							double start = CLOParser.parseDouble(argv[0]);
@@ -625,13 +618,8 @@ public class scanCSD extends CSD {
 								// ignore sign (<0 is meaningless)
 								incr = Math.abs(CLOParser.parseDouble(argv[2].substring(0, argv[2].length() - 1)));
 								if ((Math.abs(end) < Math.abs(start) && incr > 1.0)
-										|| (Math.abs(end) > Math.abs(start) && incr < 1.0)) {
-									logger.warning("invalid logarithmic increment for b1-range ["
-											+ Formatter.format(start, 3) + ", " +
-											Formatter.format(end, 3) + "] (" + incr + (incr < 1.0 ? ">" : "<")
-											+ "1 should hold) - ignored.");
+										|| (Math.abs(end) > Math.abs(start) && incr < 1.0))
 									return false;
-								}
 							} else {
 								// ignore specified sign; set sign of increment based on start and end
 								incr = Math.abs(CLOParser.parseDouble(argv[2]));
@@ -677,7 +665,6 @@ public class scanCSD extends CSD {
 							b2Incr = (b2End - b2Start) * 0.1;
 							return true;
 						default:
-							logger.warning("too many arguments for b2 (" + arg + ") - ignored.");
 							return false;
 						case 3:
 							double start = CLOParser.parseDouble(argv[0]);
@@ -689,13 +676,8 @@ public class scanCSD extends CSD {
 								// ignore sign (<0 is meaningless)
 								incr = Math.abs(CLOParser.parseDouble(argv[2].substring(0, argv[2].length() - 1)));
 								if ((Math.abs(end) < Math.abs(start) && incr > 1.0)
-										|| (Math.abs(end) > Math.abs(start) && incr < 1.0)) {
-									logger.warning("invalid logarithmic increment for b2-range ["
-											+ Formatter.format(start, 3) + ", " +
-											Formatter.format(end, 3) + "] (" + incr + (incr < 1.0 ? ">" : "<")
-											+ "1 should hold) - ignored.");
+										|| (Math.abs(end) > Math.abs(start) && incr < 1.0))
 									return false;
-								}
 							} else {
 								// ignore specified sign; set sign of increment based on start and end
 								incr = Math.abs(CLOParser.parseDouble(argv[2]));

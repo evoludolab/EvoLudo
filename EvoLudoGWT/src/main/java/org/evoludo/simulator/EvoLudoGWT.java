@@ -629,11 +629,7 @@ public class EvoLudoGWT extends EvoLudo {
 						return true;
 					int[] args = CLOParser.parseIntVector(arg);
 					switch (args.length) {
-						case 0:
-							logger.warning("snap arguments '" + arg + "' unknown - ignored.");
-							return false;
 						default:
-							logger.warning("too many arguments to snap ('" + arg + "') - ignored.");
 							return false;
 						case 2:
 							snapshotAt = args[1];

@@ -246,6 +246,8 @@ public class CLOParser {
 			try {
 				if (!option.parse()) {
 					// parsing failed - try again using default
+					logger.warning("invalid " + option.getName() + " argument (" + option.getArg() + ") - using '"
+								+ option.getDefault() + "'");
 					success = false;
 					option.parseDefault();
 				}

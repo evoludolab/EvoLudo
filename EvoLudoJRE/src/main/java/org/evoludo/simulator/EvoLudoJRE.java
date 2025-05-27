@@ -1192,7 +1192,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						}
 					}
 					setOutput(null);
-					logger.warning("failed to open '" + arg + "' - using stdout.");
+					logger.warning("failed to open '" + arg + "'.");
 					return false;
 				}
 			});
@@ -1224,7 +1224,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						}
 					}
 					setOutput(null);
-					logger.warning("failed to append to '" + arg + "' - using stdout.");
+					logger.warning("failed to append to '" + arg + "'.");
 					return false;
 				}
 			});
@@ -1324,12 +1324,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 					dataTypes = new ArrayList<>();
 					for (String type : dataOutput) {
 						MultiView.DataTypes data = (MultiView.DataTypes) cloData.match(type);
-						if (data == null) {
-							logger.warning(
-									"Data type '" + type + "' not supported by module '" + getModule().getName() + "'");
-							success = false;
-							continue;
-						}
+						if (data == null)
+							return false;
 						if (dataTypes.contains(data))
 							logger.warning("Duplicate data type '" + type + "' or bad match - ignored.");
 						else

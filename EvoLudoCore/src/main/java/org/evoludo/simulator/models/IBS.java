@@ -1347,23 +1347,15 @@ public abstract class IBS extends Model {
 				public boolean parse(String arg) {
 					String[] playerresets = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
-					boolean success = true;
 					for (Module mod : species) {
 						IBSPopulation pop = mod.getIBSPopulation();
 						String rest = playerresets[n++ % playerresets.length];
 						ScoringType st = (ScoringType) cloScoringType.match(rest);
-						if (st == null) {
-							if (success)
-								logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
-										"method to reset scores '" + rest + "' not recognized - using '"
-										+ pop.getPlayerScoring()
-										+ "'");
-							success = false;
-							continue;
-						}
+						if (st == null)
+							return false;
 						pop.setPlayerScoring(st);
 					}
-					return success;
+					return true;
 				}
 
 				@Override
@@ -1398,7 +1390,6 @@ public abstract class IBS extends Model {
 				 */
 				@Override
 				public boolean parse(String arg) {
-					boolean success = true;
 					String[] interactiontypes = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
 					for (Module mod : species) {
@@ -1406,17 +1397,8 @@ public abstract class IBS extends Model {
 						String intertype = interactiontypes[n++ % interactiontypes.length];
 						IBSGroup.SamplingType intt = (IBSGroup.SamplingType) cloInteractions.match(intertype);
 						IBSGroup group = pop.getInterGroup();
-						if (intt == null) {
-							if (success) {
-								IBSGroup.SamplingType st = group.getSampling();
-								logger.warning((isMultispecies ? mod.getName() + ": " : "") + //
-										"interaction type '" + intertype + //
-										"' unknown - using '" + st + //
-										(st == IBSGroup.SamplingType.RANDOM ? " " + group.getNSamples() : "") + "'");
-							}
-							success = false;
-							continue;
-						}
+						if (intt == null)
+							return false;
 						group.setSampling(intt);
 						// parse n, if present
 						String[] args = intertype.split("\\s+|=");
@@ -1425,7 +1407,7 @@ public abstract class IBS extends Model {
 							nInter = CLOParser.parseInteger(args[1]);
 						group.setNSamples(nInter);
 					}
-					return success;
+					return true;
 				}
 
 				@Override
@@ -1464,7 +1446,6 @@ public abstract class IBS extends Model {
 				 */
 				@Override
 				public boolean parse(String arg) {
-					boolean success = true;
 					String[] referencetypes = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
 					for (Module mod : species) {
@@ -1472,17 +1453,8 @@ public abstract class IBS extends Model {
 						String reftype = referencetypes[n++ % referencetypes.length];
 						IBSGroup.SamplingType reft = (IBSGroup.SamplingType) cloReferences.match(reftype);
 						IBSGroup group = pop.getCompGroup();
-						if (reft == null) {
-							if (success) {
-								IBSGroup.SamplingType st = group.getSampling();
-								logger.warning((isMultispecies ? mod.getName() + ": " : "") + //
-										"reference type '" + reftype + //
-										"' unknown - using '" + st + //
-										(st == IBSGroup.SamplingType.RANDOM ? " " + group.getNSamples() : "") + "'");
-							}
-							success = false;
-							continue;
-						}
+						if (reft == null)
+							return false; 
 						group.setSampling(reft);
 						// parse n, if present
 						String[] args = reftype.split("\\s+|=");
@@ -1491,7 +1463,7 @@ public abstract class IBS extends Model {
 							nInter = CLOParser.parseInteger(args[1]);
 						group.setNSamples(nInter);
 					}
-					return success;
+					return true;
 				}
 
 				@Override
@@ -1529,21 +1501,14 @@ public abstract class IBS extends Model {
 				 */
 				@Override
 				public boolean parse(String arg) {
-					boolean success = true;
 					String[] migrationtypes = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
 					for (Module mod : species) {
 						IBSPopulation pop = mod.getIBSPopulation();
 						String migt = migrationtypes[n++ % migrationtypes.length];
 						MigrationType mt = (MigrationType) cloMigration.match(migt);
-						if (mt == null) {
-							if (success)
-								logger.warning((isMultispecies ? mod.getName() + ": " : "")
-										+ "migration type '" + migt
-										+ "' unknown - using '" + pop.getMigrationType() + "'");
-							success = false;
-							continue;
-						}
+						if (mt == null)
+							return false;
 						pop.setMigrationType(mt);
 						if (pop.getMigrationType() == MigrationType.NONE) {
 							pop.setMigrationProb(0.0);
@@ -1557,19 +1522,14 @@ public abstract class IBS extends Model {
 								logger.warning((isMultispecies ? mod.getName() + ": " : "")
 										+ "migration rate too small (" + Formatter.formatSci(mig, 4)
 										+ ") - reverting to no migration");
-								success = false;
 								pop.setMigrationType(MigrationType.NONE);
 								pop.setMigrationProb(0.0);
 							}
 							continue;
 						}
-						logger.warning((isMultispecies ? mod.getName() + ": " : "")
-								+ "no migration rate specified - reverting to no migration");
-						success = false;
-						pop.setMigrationType(MigrationType.NONE);
-						pop.setMigrationProb(0.0);
+						return false;
 					}
-					return success;
+					return true;
 				}
 
 				@Override
@@ -2130,10 +2090,8 @@ public abstract class IBS extends Model {
 						// currently at most a single setting
 						for (String st : args) {
 							stattype = (Statistics.Type) clo.match(st.trim(), 2);
-							if (stattype == null) {
-								ibs.logger.warning("failed to parse statistics options '" + arg + "'!");
+							if (stattype == null)
 								return false;
-							}
 							String[] typeargs = st.split("\\s+|=");
 							resetInterval = typeargs.length > 1 ? CLOParser.parseInteger(typeargs[1]) : 1;
 						}

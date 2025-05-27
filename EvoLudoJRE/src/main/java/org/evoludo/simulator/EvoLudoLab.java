@@ -737,10 +737,8 @@ public class EvoLudoLab extends JFrame
 				@Override
 				public boolean parse(String arg) {
 					int mark = arg.indexOf('x');
-					if (mark < 0) {
-						logger.warning("size '" + arg + "' invalid - ignored.");
+					if (mark < 0)
 						return false;
-					}
 					appWidth = Integer.parseInt(arg.substring(0, mark));
 					appHeight = Integer.parseInt(arg.substring(mark + 1));
 					return true;

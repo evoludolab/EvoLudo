@@ -306,7 +306,6 @@ public abstract class Mutation {
 					 */
 					@Override
 					public boolean parse(String arg) {
-						boolean success = true;
 						String[] mutations = arg.split(CLOParser.SPECIES_DELIMITER);
 						int n = 0;
 						ArrayList<? extends Module> species = module.getSpecies();
@@ -329,24 +328,13 @@ public abstract class Mutation {
 							switch (args.length) {
 								case 3:
 									mut.range = CLOParser.parseDouble(args[2]);
-									if (mut.range < 1.0) {
-										mut.type = Type.NONE;
-										module.logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
-												"mutation range '" + args[2] + "' invalid - using '"
-												+ mut.type + "'");
-										success = false;
-										continue;
-									}
+									if (mut.range < 1.0)
+										return false;
 									//$FALL-THROUGH$
 								case 2:
 									Type mutt = (Type) clo.match(args[1]);
-									if (mutt == null) {
-										module.logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
-												"mutation type '" + args[1] + "' not recognized - using '"
-												+ mut.type + "'");
-										success = false;
-										continue;
-									}
+									if (mutt == null)
+										return false;
 									mut.type = mutt;
 									//$FALL-THROUGH$
 								case 1:
@@ -361,7 +349,7 @@ public abstract class Mutation {
 									// no arguments, stick to defaults
 							}
 						}
-						return success;
+						return true;
 					}
 
 					@Override

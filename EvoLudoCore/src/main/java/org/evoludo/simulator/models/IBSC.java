@@ -160,13 +160,11 @@ public class IBSC extends IBS implements Continuous {
 				"--init <t>      type of initial configuration", new CLODelegate() {
 					@Override
 					public boolean parse(String arg) {
-						boolean success = true;
 						for (Module mod : ibs.species) {
 							IBSMCPopulation cpop = (IBSMCPopulation) mod.getIBSPopulation();
 							String[] inittypes = arg.split(CLOParser.TRAIT_DELIMITER);
 							int nt = mod.getNTraits();
 							Init.Type prevtype = null;
-							boolean isMultiSpecies = (ibs.species.size() > 1);
 							for (int n = 0; n < nt; n++) {
 								String itype = inittypes[n % inittypes.length];
 								double[] initargs = null;
@@ -180,19 +178,14 @@ public class IBSC extends IBS implements Continuous {
 									initargs = CLOParser.parseVector(typeargs[1]);
 								boolean argsOk = (initargs != null && initargs.length >= newtype.nParams);
 								// only uniform initialization does not require additional arguments
-								if (newtype == null || (!newtype.equals(Init.Type.UNIFORM) && !argsOk)) {
-									ibs.logger.warning(
-											(isMultiSpecies ? mod.getName() + ": " : "") +
-													"init '" + itype + "' unknown!");
-									newtype = Init.Type.UNIFORM;
-									success = false;
-								}
+								if (newtype == null || (!newtype.equals(Init.Type.UNIFORM) && !argsOk))
+									return false;
 								init.type = newtype;
 								init.args[n] = initargs;
 								prevtype = newtype;
 							}
 						}
-						return success;
+						return true;
 					}
 
 					@Override

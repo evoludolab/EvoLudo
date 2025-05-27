@@ -1421,12 +1421,8 @@ public class PDE extends ODE {
 		int nt = module.getNTraits();
 		if (y0 == null || y0.length != nt)
 			y0 = new double[nt];
-		if (initType == null || !initType.equals(InitType.RANDOM) && (init == null || init.length != nt)) {
-			initType = InitType.RANDOM;
-			logger.warning("parsing of init '" + arg + //
-					"' failed - using default " + InitType.RANDOM + "'.");
+		if (initType == null || !initType.equals(InitType.RANDOM) && (init == null || init.length != nt))
 			return false;
-		}
 		// init can be null for RANDOM initializations
 		if (init == null)
 			Arrays.fill(y0, 1.0);
@@ -1599,19 +1595,12 @@ public class PDE extends ODE {
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					boolean success = true;
 					diffcoeff = CLOParser.parseVector(arg);
 					// number of traits and dependent not yet set - retrieve directly from module
 					int dim = module.getNTraits();
-					int dep = -1;
-					if (module instanceof HasDE)
-						dep = ((HasDE) module).getDependent();
-					if (diffcoeff == null) {
-						logger.warning("invalid diffusion vector: '" + arg + "' - unit diffusion.");
-						diffcoeff = new double[dim];
-						Arrays.fill(diffcoeff, 1.0);
-						success = false;
-					}
+					int dep = ((HasDE) module).getDependent();
+					if (diffcoeff == null)
+						return false;
 					if (diffcoeff.length != dim) {
 						double[] dc = diffcoeff;
 						diffcoeff = new double[dim];
@@ -1619,7 +1608,7 @@ public class PDE extends ODE {
 							diffcoeff[n] = dc[n % dc.length];
 					}
 					diffcoeff[dep] = 0.0;
-					return success;
+					return true;
 				}
 
 				@Override

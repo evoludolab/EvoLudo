@@ -214,7 +214,6 @@ public class PlayerUpdate {
 				 */
 				@Override
 				public boolean parse(String arg) {
-					boolean success = true;
 					String[] playerupdates = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
 					ArrayList<? extends Module> species = module.getSpecies();
@@ -222,15 +221,8 @@ public class PlayerUpdate {
 						String updt = playerupdates[n++ % playerupdates.length];
 						PlayerUpdate.Type put = (PlayerUpdate.Type) clo.match(updt);
 						PlayerUpdate pu = mod.getPlayerUpdate();
-						if (put == null) {
-							if (success)
-								module.logger.warning((species.size() > 1 ? mod.getName() + ": " : "") + //
-										"player update '" + updt + "' not recognized - using '"
-										+ pu.getType()
-										+ "'");
-							success = false;
-							continue;
-						}
+						if (put == null)
+							return false;
 						pu.setType(put);
 						// parse n, e, if present
 						String[] args = updt.split("\\s+|=|,");
@@ -248,7 +240,7 @@ public class PlayerUpdate {
 						pu.setNoise(nois);
 						pu.setError(err);
 					}
-					return success;
+					return true;
 				}
 
 				@Override

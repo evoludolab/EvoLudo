@@ -192,7 +192,7 @@ public class simTraits extends Traits {
 				@Override
 				public boolean parse(String arg) {
 					popsizes = CLOParser.parseIntVector(arg);
-					return true;
+					return (popsizes != null);
 				}
 			});
 

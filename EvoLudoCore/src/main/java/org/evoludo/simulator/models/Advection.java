@@ -312,18 +312,17 @@ public class Advection extends PDE {
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
+					doAdvection = false;
+					advcoeff = null;
+					if (cloPdeAdvection.isDefault())
+						return true;
 					advcoeff = CLOParser.parseMatrix(arg);
 					// dim not yet set - retrieve directly from module
 					int dim = module.getNTraits();
 					if (module instanceof HasDE && ((HasDE) module).getDependent() >= 0)
 						dim--;
-					if (advcoeff == null || advcoeff.length != dim || advcoeff[0].length != dim) {
-						if (!cloPdeAdvection.isDefault())
-							logger.warning("invalid advection matrix: '" + arg + "' - no advection.");
-						doAdvection = false;
-						advcoeff = null;
-						return true;
-					}
+					if (advcoeff == null || advcoeff.length != dim || advcoeff[0].length != dim)
+						return false;
 					doAdvection = true;
 					return true;
 				}

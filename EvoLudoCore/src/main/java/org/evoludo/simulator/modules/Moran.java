@@ -333,11 +333,8 @@ public class Moran extends Discrete implements Static,
 				@Override
 				public boolean parse(String arg) {
 					double[] fit = CLOParser.parseVector(arg);
-					if (fit.length != 2) {
-						logger.warning("--fitness expects vector of length 2 (instead of '" + arg + "') - using '"
-								+ cloFitness.getDefault() + "'");
+					if (fit.length != 2)
 						return false;
-					}
 					setFitness(fit);
 					return true;
 				}

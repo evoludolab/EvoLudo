@@ -415,7 +415,7 @@ public class NetGames extends Discrete implements Payoffs,
 					String[] colorNames = arg.split(CLOParser.MATRIX_DELIMITER);
 					switch (colorNames.length) {
 						default: // more than three colors - ignore but first three
-							logger.warning("too many colors entries - ignored");
+							logger.warning("too many colors - ignored");
 							return false;
 						case 3:
 							setEgoistColor(CLOParser.parseColor(colorNames[2]));
@@ -427,7 +427,6 @@ public class NetGames extends Discrete implements Payoffs,
 							setAltruistColor(CLOParser.parseColor(colorNames[0]));
 							return true;
 						case 0:
-							logger.warning("malformed colors (" + arg + ") - using '" + cloColors.getDefault() + "'");
 							return false;
 					}
 				}

@@ -743,7 +743,6 @@ public class CDL extends Discrete implements Payoffs,
 							setInterest(r[0], r[1]);
 							return true;
 						default:
-							logger.warning("failed to parse interest (" + arg + ").");
 							return false;
 					}
 				}

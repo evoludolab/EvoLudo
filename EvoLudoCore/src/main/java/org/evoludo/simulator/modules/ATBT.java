@@ -522,10 +522,8 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE.DPairs, HasSDE.DP
 				public boolean parse(String arg) {
 					double[][] payMatrix = CLOParser.parseMatrix(arg);
 					if (payMatrix == null || (payMatrix.length != 2 && payMatrix.length != 4)
-							|| payMatrix[0].length != payMatrix.length) {
-						logger.warning("invalid payoffs (" + arg + ") - using '" + cloPayoffs4x4.getDefault() + "'");
+							|| payMatrix[0].length != payMatrix.length)
 						return false;
-					}
 					setPayoffs(payMatrix);
 					return true;
 				}
@@ -554,12 +552,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE.DPairs, HasSDE.DP
 				 */
 				@Override
 				public boolean parse(String arg) {
-					if (!setEnvironment(CLOParser.parseVector(arg))) {
-						logger.warning(
-								"invalid environment (" + arg + ") - using '" + cloEnvironment.getDefault() + "'");
-						return false;
-					}
-					return true;
+					return setEnvironment(CLOParser.parseVector(arg));
 				}
 
 				@Override
@@ -611,11 +604,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE.DPairs, HasSDE.DP
 				 */
 				@Override
 				public boolean parse(String arg) {
-					if (!setFeedback(CLOParser.parseVector(arg))) {
-						logger.warning("invalid feedback (" + arg + ") - using '" + cloFeedback.getDefault() + "'");
-						return false;
-					}
-					return true;
+					return setFeedback(CLOParser.parseVector(arg));
 				}
 
 				// recall:

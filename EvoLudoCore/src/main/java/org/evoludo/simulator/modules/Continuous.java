@@ -1032,10 +1032,8 @@ public abstract class Continuous extends Module {
 				public boolean parse(String arg) {
 					// getting ready for multiple species - way ahead of its time...
 					String[] speciestraits = arg.split(CLOParser.SPECIES_DELIMITER);
-					if (speciestraits == null) {
-						logger.warning("traitrange specification '" + arg + "' not recognized - ignored!");
+					if (speciestraits == null)
 						return false;
-					}
 					int n = 0;
 					for (Continuous cpop : species) {
 						String[] traitranges = speciestraits[n++ % speciestraits.length]
@@ -1043,11 +1041,8 @@ public abstract class Continuous extends Module {
 						for (int i = 0; i < nTraits; i++) {
 							String trange = traitranges[i % traitranges.length];
 							double[] range = CLOParser.parseVector(trange);
-							if (range == null || range.length < 2 || range[0] > range[1]) {
-								logger.warning("invalid traitrange '" + trange + "' - using [0,1]!");
-								cpop.setTraitRange(0.0, 1.0, i);
-								continue;
-							}
+							if (range == null || range.length < 2 || range[0] > range[1])
+								return false;
 							cpop.setTraitRange(range[0], range[1], i);
 						}
 					}
@@ -1127,10 +1122,8 @@ public abstract class Continuous extends Module {
 						String[] cstfargs = cstf.split("\\s+|=");
 						double[] args;
 						if (type == null) {
-							if (prevtype == null) {
-								logger.warning("costs function type missing!");
+							if (prevtype == null)
 								return false;
-							}
 							type = prevtype;
 							args = CLOParser.parseVector(cstfargs[0]);
 						} else if (type.nParams > 0 && cstfargs.length < 2) {
@@ -1191,10 +1184,8 @@ public abstract class Continuous extends Module {
 						String[] bftfargs = bftf.split("\\s+|=");
 						double[] args;
 						if (type == null) {
-							if (prevtype == null) {
-								logger.warning("benefits function type missing!");
+							if (prevtype == null)
 								return false;
-							}
 							type = prevtype;
 							args = CLOParser.parseVector(bftfargs[0]);
 						} else if (type.nParams > 0 && bftfargs.length < 2) {

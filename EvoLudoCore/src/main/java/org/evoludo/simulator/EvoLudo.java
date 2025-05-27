@@ -2037,7 +2037,6 @@ public abstract class EvoLudo
 						logger.setLevel(Level.INFO);
 						return true;
 					}
-					logger.warning("unknown verbosity '" + arg + "' - using '" + cloVerbose.getDefault() + "'.");
 					return false;
 				}
 			});

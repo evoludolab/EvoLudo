@@ -158,22 +158,14 @@ public class PopulationUpdate {
 				 */
 				@Override
 				public boolean parse(String arg) {
-					boolean success = true;
 					String[] popupdates = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
 					for (Module mod : ibs.species) {
 						IBSPopulation pop = mod.getIBSPopulation();
 						String updt = popupdates[n++ % popupdates.length];
 						PopulationUpdate.Type put = (PopulationUpdate.Type) clo.match(updt);
-						if (put == null) {
-							if (success)
-								ibs.logger.warning((ibs.isMultispecies ? mod.getName() + ": " : "") + //
-										"population update '" + updt + "' not recognized - using '"
-										+ pop.getPopulationUpdate().getType()
-										+ "'");
-							success = false;
-							continue;
-						}
+						if (put == null)
+							return false;
 						pop.getPopulationUpdate().setType(put);
 						if (put != PopulationUpdate.Type.SYNC)
 							continue;
@@ -184,7 +176,7 @@ public class PopulationUpdate {
 							sync = CLOParser.parseDouble(args[1]);
 						pop.setSyncFraction(sync);
 					}
-					return success;
+					return true;
 				}
 
 				@Override

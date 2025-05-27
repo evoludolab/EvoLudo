@@ -147,7 +147,6 @@ public class SpeciesUpdate {
 				 */
 				@Override
 				public boolean parse(String arg) {
-					boolean success = true;
 					String[] specrates = arg.split("\\s+");
 					if (specrates == null || specrates.length == 0) {
 						module.logger.warning("no species update rate provided.");
@@ -159,15 +158,11 @@ public class SpeciesUpdate {
 						rate[i] = spr[i % len];
 					if (specrates.length > 1) {
 						SpeciesUpdate.Type put = (SpeciesUpdate.Type) clo.match(specrates[1]);
-						if (put == null) {
-							put = SpeciesUpdate.Type.SIZE;
-							module.logger.warning("species update type '" + specrates[1] + "' not recognized - using '"
-									+ type + "'");
-							success = false;
-						}
+						if (put == null)
+							return false;
 						setType(put);
 					}
-					return success;
+					return true;
 				}
 
 				@Override
