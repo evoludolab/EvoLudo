@@ -259,9 +259,13 @@ public class Map2Fitness {
 					int n = 0;
 					ArrayList<? extends Module> species = module.getSpecies();
 					for (Module mod : species) {
+						if (!(mod instanceof Payoffs))
+							continue;
+						Map2Fitness m2f = ((Payoffs) mod).getMapToFitness();
+						if (m2f == null) 
+							continue;
 						String m = map2fitnessspecies[n++ % map2fitnessspecies.length];
 						Map2Fitness.Map m2fm = (Map2Fitness.Map) clo.match(m);
-						Map2Fitness m2f = mod.getMapToFitness();
 						if (m2fm == null)
 							return false;
 						m2f.setMap(m2fm);
@@ -288,7 +292,9 @@ public class Map2Fitness {
 				public void report(PrintStream output) {
 					ArrayList<? extends Module> species = module.getSpecies();
 					for (Module mod : species) {
-						Map2Fitness m2f = mod.getMapToFitness();
+						if (!(mod instanceof Payoffs))
+							continue;
+						Map2Fitness m2f = ((Payoffs) mod).getMapToFitness();
 						output.println("# fitnessmap:           " + m2f.getTitle()
 								+ (species.size() > 1 ? " ("
 										+ mod.getName() + ")" : ""));

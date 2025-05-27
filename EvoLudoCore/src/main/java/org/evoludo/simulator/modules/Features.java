@@ -157,6 +157,13 @@ public interface Features {
 		 * @return the maximum payoff/score in monomorphic populations
 		 */
 		public abstract double getMaxMonoPayoff();
+
+		/**
+		 * Gets the score/payoff to fitness map.
+		 * 
+		 * @return the score-to-fitness map
+		 */
+		public abstract Map2Fitness getMapToFitness();
 	}
 
 	/**

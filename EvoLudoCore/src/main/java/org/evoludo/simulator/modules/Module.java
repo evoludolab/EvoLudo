@@ -962,9 +962,11 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	protected Map2Fitness map2fitness;
 
 	/**
-	 * Gets the score/payoff to fitness map.
+	 * Default implementation of Payoffs interface.
 	 * 
 	 * @return the score-to-fitness map
+	 * 
+	 * @see Payoffs#getMapToFitness()
 	 */
 	public Map2Fitness getMapToFitness() {
 		return map2fitness;
@@ -1598,9 +1600,15 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 			maxTraits = Math.min(maxTraits, nt);
 		}
 		if (anyPayoffs) {
-			// omit fitness mapping for contact modules
-			map2fitness.clo.addKeys(Map2Fitness.Map.values());
-			parser.addCLO(map2fitness.clo);
+			for (Module mod : species) {
+				if (!(mod instanceof Payoffs))
+					continue;
+				map2fitness = ((Payoffs) mod).getMap2Fitness();
+				map2fitness.clo.addKeys(Map2Fitness.Map.values());
+				// only add to first species implementing Payoffs
+				parser.addCLO(map2fitness.clo);
+				break;
+			}
 			if (anyNonVacant) {
 				// additional options that only make sense without vacant sites
 				playerUpdate.clo.addKeys(PlayerUpdate.Type.values());
