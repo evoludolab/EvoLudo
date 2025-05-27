@@ -43,6 +43,7 @@ import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
 import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.RingBuffer;
@@ -84,6 +85,11 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 * The map for converting data to phase plane coordinates.
 	 */
 	Data2Phase map;
+
+	/**
+	 * The flag to indicate autoscaling of axis.
+	 */
+	boolean doAutoscale = true;
 
 	/**
 	 * Create new parametric graph for <code>module</code> running in
@@ -157,8 +163,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			if (init == null || init.length != len)
 				init = new double[len];
 			System.arraycopy(buffer.last(), 1, init, 1, len - 1);
-			// now we are finally ready to calculate frame etc.
-			autoscale();
 		} else {
 			double[] last = buffer.last();
 			double lastt = last[0];
@@ -174,9 +178,8 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 					else
 						buffer.append(prependTime2Data(t, data));
 					System.arraycopy(buffer.last(), 1, init, 1, len - 1);
-					return;
 				}
-				if (force || distSq(data, last) > bufferThreshold)
+				else if (force || distSq(data, last) > bufferThreshold)
 					buffer.append(prependTime2Data(t, data));
 			}
 		}
@@ -217,31 +220,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 * @param withMarkers <code>true</code> to mark start and end points
 	 */
 	private void paintPara(boolean withMarkers) {
-		g.save();
-		g.scale(scale, scale);
-		clearCanvas();
-		g.translate(bounds.getX() - viewCorner.x, bounds.getY() - viewCorner.y);
-		g.scale(zoomFactor, zoomFactor);
-		g.save();
-		double h = bounds.getHeight();
-		g.translate(0, h);
-		g.scale(1.0, -1.0);
-
-		// update axis range if necessary
-		style.xMin = Functions.roundDown(Math.min(style.xMin, map.getMinX(buffer)));
-		style.xMax = Functions.roundUp(Math.max(style.xMax, map.getMaxX(buffer)));
-		if (style.percentX) {
-			style.xMin = Math.max(style.xMin, 0.0);
-			style.xMax = Math.min(style.xMax, 1.0);
-		}
-		style.yMin = Functions.roundDown(Math.min(style.yMin, map.getMinY(buffer)));
-		style.yMax = Functions.roundUp(Math.max(style.yMax, map.getMaxY(buffer)));
-		if (style.percentX) {
-			style.yMin = Math.max(style.yMin, 0.0);
-			style.yMax = Math.min(style.yMax, 1.0);
-		}
-		double xScale = bounds.getWidth() / (style.xMax - style.xMin);
-		double yScale = h / (style.yMax - style.yMin);
 		Point2D nextPt = new Point2D();
 		Point2D currPt = new Point2D();
 		String tC = style.trajColor;
@@ -252,7 +230,36 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		if (i.hasNext()) {
 			double[] current = i.next();
 			double ct = current[0];
+			// current is last point added to buffer
 			map.data2Phase(current, currPt);
+			// update axis range if necessary
+			if (doAutoscale) {
+				style.xMin = Functions.roundDown(Math.min(style.xMin, map.getMinX(buffer)));
+				style.xMax = Functions.roundUp(Math.max(style.xMax, map.getMaxX(buffer)));
+				if (style.percentX) {
+					style.xMin = Math.max(style.xMin, 0.0);
+					style.xMax = Math.min(style.xMax, 1.0);
+				}
+				style.yMin = Functions.roundDown(Math.min(style.yMin, map.getMinY(buffer)));
+				style.yMax = Functions.roundUp(Math.max(style.yMax, map.getMaxY(buffer)));
+				if (style.percentX) {
+					style.yMin = Math.max(style.yMin, 0.0);
+					style.yMax = Math.min(style.yMax, 1.0);
+				}
+			}
+
+			double h = bounds.getHeight();
+			g.save();
+			g.scale(scale, scale);
+			clearCanvas();
+			g.translate(bounds.getX() - viewCorner.x, bounds.getY() - viewCorner.y);
+			g.scale(zoomFactor, zoomFactor);
+			g.save();
+			g.translate(0, h);
+			g.scale(1.0, -1.0);
+
+			double xScale = bounds.getWidth() / (style.xMax - style.xMin);
+			double yScale = h / (style.yMax - style.yMin);
 			while (i.hasNext()) {
 				double[] prev = i.next();
 				double pt = prev[0];
@@ -266,31 +273,31 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 				currPt = nextPt;
 				nextPt = swap;
 			}
-		}
-		if (withMarkers) {
-			// mark start and end points of trajectory
-			map.data2Phase(init, currPt);
-			g.setFillStyle(style.startColor);
-			fillCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
-			if (!buffer.isEmpty()) {
-				map.data2Phase(buffer.last(), currPt);
-				g.setFillStyle(style.endColor);
+			if (withMarkers) {
+				// mark start and end points of trajectory
+				map.data2Phase(init, currPt);
+				g.setFillStyle(style.startColor);
 				fillCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
-			}
-		}
-		if (markers != null) {
-			int n = 0;
-			int nMarkers = markers.size();
-			for (double[] mark : markers) {
-				map.data2Phase(mark, currPt);
-				String mcolor = markerColors[n++ % nMarkers];
-				if (mark[0] > 0.0) {
-					g.setFillStyle(mcolor);
+				if (!buffer.isEmpty()) {
+					map.data2Phase(buffer.last(), currPt);
+					g.setFillStyle(style.endColor);
 					fillCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
-				} else {
-					g.setLineWidth(style.lineWidth);
-					g.setStrokeStyle(mcolor);
-					strokeCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
+				}
+			}
+			if (markers != null) {
+				int n = 0;
+				int nMarkers = markers.size();
+				for (double[] mark : markers) {
+					map.data2Phase(mark, currPt);
+					String mcolor = markerColors[n++ % nMarkers];
+					if (mark[0] > 0.0) {
+						g.setFillStyle(mcolor);
+						fillCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
+					} else {
+						g.setLineWidth(style.lineWidth);
+						g.setStrokeStyle(mcolor);
+						strokeCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
+					}
 				}
 			}
 		}
@@ -324,11 +331,25 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 * Automatically adjust the range of both axes to fit the data in the buffer.
 	 */
 	public void autoscale() {
+		if (!doAutoscale)
+			return;
 		map.reset();
-		style.xMin = Functions.roundDown(map.getMinX(buffer));
-		style.xMax = Functions.roundUp(map.getMaxX(buffer));
-		style.yMin = Functions.roundDown(map.getMinY(buffer));
-		style.yMax = Functions.roundUp(map.getMaxY(buffer));
+		double min = map.getMinX(buffer);
+		double max = map.getMaxX(buffer);
+		if (min == max) {
+			min *= 0.99;
+			max /= 0.99;
+		}
+		style.xMin = Functions.roundDown(min);
+		style.xMax = Functions.roundUp(max);
+		min = map.getMinY(buffer);
+		max = map.getMaxY(buffer);
+		if (min == max) {
+			min *= 0.99;
+			max /= 0.99;
+		}
+		style.yMin = Functions.roundDown(min);
+		style.yMax = Functions.roundUp(max);
 	}
 
 	/**
@@ -442,7 +463,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	/**
 	 * The context menu item to autoscale the axis.
 	 */
-	private ContextMenuItem autoscaleMenu;
+	private ContextMenuCheckBoxItem autoscaleMenu;
 
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
@@ -456,17 +477,23 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 				}
 			});
 		}
-		if (autoscaleMenu == null) {
-			autoscaleMenu = new ContextMenuItem("Autoscale axis", new Command() {
-				@Override
-				public void execute() {
-					autoscale();
-					paint(true);
-				}
-			});
-		}
 		menu.add(clearMenu);
-		menu.add(autoscaleMenu);
+		// add autoscale menu if not percent scale
+		if (!(style.percentX || style.percentY)) {
+			if (autoscaleMenu == null) {
+				autoscaleMenu = new ContextMenuCheckBoxItem("Autoscale axis", new Command() {
+					@Override
+					public void execute() {
+						doAutoscale = !autoscaleMenu.isChecked();
+						autoscaleMenu.setChecked(doAutoscale);
+						autoscale();
+						paint(true);
+					}
+				});
+			}
+			autoscaleMenu.setChecked(doAutoscale);
+			menu.add(autoscaleMenu);
+		}
 		super.populateContextMenuAt(menu, x, y);
 	}
 
