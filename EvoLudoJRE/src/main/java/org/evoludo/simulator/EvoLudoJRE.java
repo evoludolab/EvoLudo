@@ -353,7 +353,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		// EvoLudo has its own parser for command line options and expects a single string
 		setCLO(Formatter.format(args, " "));
 		addModule(module);
-		addCLOProvider(module);
 		// parse options
 		parseCLO();
 		// reset model to check and apply all parameters

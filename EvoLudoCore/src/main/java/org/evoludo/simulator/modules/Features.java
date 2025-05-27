@@ -40,6 +40,14 @@ import org.evoludo.simulator.models.Model;
 public interface Features {
 
 	/**
+	 * Returns title of active module, e.g. 2x2 games in
+	 * {@link org.evoludo.simulator.modules.TBT} returns "2x2 Games".
+	 * 
+	 * @return the title of active module
+	 */
+	public abstract String getTitle();
+
+	/**
 	 * Modules that are based on static fitness should implement the {@link Static}
 	 * interface and thus return {@code true}. The {@link Moran} modules is an
 	 * example. All other modules must return {@code false}.
@@ -63,6 +71,15 @@ public interface Features {
 	 * @see Module#setNGroup(int)
 	 */
 	public default boolean isPairwise() {
+		return false;
+	}
+
+	/**
+	 * Returns whether the module implements multiple species.
+	 * 
+	 * @return {@code true} for multiple species
+	 */
+	public default boolean isMultispecies() {
 		return false;
 	}
 
@@ -172,6 +189,19 @@ public interface Features {
 		@Override
 		public default boolean isPairwise() {
 			return getNGroup() == 2;
+		}
+	}
+
+	interface Multispecies extends Features {
+
+		@Override
+		public default String getTitle() {
+			return null;
+		}
+
+		@Override
+		public default boolean isMultispecies() {
+			return true;
 		}
 	}
 }

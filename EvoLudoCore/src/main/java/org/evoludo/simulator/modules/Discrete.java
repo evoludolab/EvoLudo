@@ -251,6 +251,8 @@ public abstract class Discrete extends Module {
 
 	@Override
 	public void collectCLO(CLOParser parser) {
+		if (this instanceof Features.Multispecies)
+			return;
 		super.collectCLO(parser);
 		parser.addCLO(cloMonoStop);
 		parser.addCLO(mutation.clo);

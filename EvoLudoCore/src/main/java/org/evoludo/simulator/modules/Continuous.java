@@ -1226,6 +1226,8 @@ public abstract class Continuous extends Module {
 
 	@Override
 	public void collectCLO(CLOParser parser) {
+		if (this instanceof Features.Multispecies)
+			return;
 		super.collectCLO(parser);
 		parser.addCLO(cloTraitRange);
 		cloCosts.addKeys(Costs.values());

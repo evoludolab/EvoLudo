@@ -236,14 +236,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * Returns title of active module, e.g. 2x2 games in
-	 * {@link org.evoludo.simulator.modules.TBT} returns "2x2 Games".
-	 * 
-	 * @return the title of active module
-	 */
-	public abstract String getTitle();
-
-	/**
 	 * Load new module and perform basic initializations.
 	 * 
 	 * @see EvoLudo#loadModule(String)
@@ -257,6 +249,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		// currently only the Test module uses neither Discrete nor Continuous classes.
 		if (species == null)
 			species = new ArrayList<Module>();
+		engine.addCLOProvider(this);
 		engine.addMilestoneListener(this);
 		if (this instanceof ChangeListener)
 			engine.addChangeListener((ChangeListener) this);
@@ -276,6 +269,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		playerUpdate = null;
 		markers = null;
 		opponent = this;
+		engine.removeCLOProvider(this);
 		engine.removeMilestoneListener(this);
 		if (this instanceof ChangeListener)
 			engine.removeChangeListener((ChangeListener) this);
@@ -1596,6 +1590,9 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 
 	@Override
 	public void collectCLO(CLOParser parser) {
+		if (this instanceof Features.Multispecies)
+			return;
+
 		// prepare command line options
 		if (this instanceof Features.Groups)
 			parser.addCLO(cloNGroup);

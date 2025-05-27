@@ -924,7 +924,6 @@ public abstract class EvoLudo
 		activeModule = newModule;
 		if (rng.isRNGSeedSet())
 			rng.setRNGSeed();
-		addCLOProvider(activeModule);
 		activeModule.load();
 		fireModuleLoaded();
 		return activeModule;
@@ -941,7 +940,6 @@ public abstract class EvoLudo
 	public void unloadModule() {
 		unloadModel(true);
 		if (activeModule != null) {
-			removeCLOProvider(activeModule);
 			for (Iterator<? extends Module> it = activeModule.getSpecies().iterator(); it.hasNext();) {
 				Module mod = it.next();
 				mod.unload();
