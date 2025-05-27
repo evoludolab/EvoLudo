@@ -163,7 +163,7 @@ public interface Features {
 		 * 
 		 * @return the score-to-fitness map
 		 */
-		public abstract Map2Fitness getMapToFitness();
+		public abstract Map2Fitness getMap2Fitness();
 	}
 
 	/**

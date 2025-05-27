@@ -966,9 +966,9 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the score-to-fitness map
 	 * 
-	 * @see Payoffs#getMapToFitness()
+	 * @see Payoffs#getMap2Fitness()
 	 */
-	public Map2Fitness getMapToFitness() {
+	public Map2Fitness getMap2Fitness() {
 		return map2fitness;
 	}
 

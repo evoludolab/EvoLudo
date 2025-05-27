@@ -2941,7 +2941,7 @@ public abstract class IBSPopulation {
 		nTraits = module.getNTraits();
 		boolean doReset = (ot != nTraits);
 		nPopulation = module.getNPopulation();
-		map2fit = module.getMapToFitness();
+		map2fit = module.getMap2Fitness();
 		playerUpdate = module.getPlayerUpdate();
 
 		// check population geometry

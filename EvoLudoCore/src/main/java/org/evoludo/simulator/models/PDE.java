@@ -811,7 +811,7 @@ public class PDE extends ODE {
 		// the following is not completely water tight (accumulated scores may cause
 		// issues because the range depends on geometry)
 		Module mod = module.getSpecies(id);
-		Map2Fitness map2fit = mod.getMapToFitness();
+		Map2Fitness map2fit = mod.getMap2Fitness();
 		Payoffs pmod = (Payoffs) mod;
 		double min = map2fit.map(pmod.getMinPayoff());
 		double max = map2fit.map(pmod.getMaxPayoff());

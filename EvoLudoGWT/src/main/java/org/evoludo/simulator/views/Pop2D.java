@@ -247,7 +247,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 					int tag = graph.getModule().getID();
 					cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
 					if (model.isIBS()) {
-						Map2Fitness map2fit = module.getMapToFitness();
+						Map2Fitness map2fit = module.getMap2Fitness();
 						int id = module.getID();
 						if (module instanceof Discrete) {
 							// mark homogeneous fitness values by pale color

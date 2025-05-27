@@ -261,7 +261,7 @@ public class Map2Fitness {
 					for (Module mod : species) {
 						if (!(mod instanceof Payoffs))
 							continue;
-						Map2Fitness m2f = ((Payoffs) mod).getMapToFitness();
+						Map2Fitness m2f = ((Payoffs) mod).getMap2Fitness();
 						if (m2f == null) 
 							continue;
 						String m = map2fitnessspecies[n++ % map2fitnessspecies.length];
@@ -294,7 +294,7 @@ public class Map2Fitness {
 					for (Module mod : species) {
 						if (!(mod instanceof Payoffs))
 							continue;
-						Map2Fitness m2f = ((Payoffs) mod).getMapToFitness();
+						Map2Fitness m2f = ((Payoffs) mod).getMap2Fitness();
 						output.println("# fitnessmap:           " + m2f.getTitle()
 								+ (species.size() > 1 ? " ("
 										+ mod.getName() + ")" : ""));

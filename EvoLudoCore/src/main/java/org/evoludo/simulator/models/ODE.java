@@ -487,7 +487,7 @@ public class ODE extends Model implements Discrete {
 					invFitRange = new double[nSpecies];
 					Arrays.fill(invFitRange, 1.0);
 				}
-				Map2Fitness map2fit = mod.getMapToFitness();
+				Map2Fitness map2fit = mod.getMap2Fitness();
 				Payoffs pmod = (Payoffs) mod;
 				minFit = map2fit.map(pmod.getMinPayoff());
 				maxFit = map2fit.map(pmod.getMaxPayoff());
@@ -528,7 +528,7 @@ public class ODE extends Model implements Discrete {
 			int nTraits = pop.getNTraits();
 			System.arraycopy(((Module.Static) pop).getStaticScores(), 0, staticfit, skip,
 					nTraits);
-			Map2Fitness map2fit = pop.getMapToFitness();
+			Map2Fitness map2fit = pop.getMap2Fitness();
 			for (int n = 0; n < nTraits; n++)
 				staticfit[skip + n] = map2fit.map(staticfit[skip + n]);
 			skip += nTraits;
@@ -658,14 +658,14 @@ public class ODE extends Model implements Discrete {
 	@Override
 	public double getMinFitness(int id) {
 		Module mod = getSpecies(id);
-		Map2Fitness map2fit = mod.getMapToFitness();
+		Map2Fitness map2fit = mod.getMap2Fitness();
 		return map2fit.map(((Payoffs) mod).getMinPayoff());
 	}
 
 	@Override
 	public double getMaxFitness(int id) {
 		Module mod = getSpecies(id);
-		Map2Fitness map2fit = mod.getMapToFitness();
+		Map2Fitness map2fit = mod.getMap2Fitness();
 		return map2fit.map(((Payoffs) mod).getMaxPayoff());
 	}
 
@@ -702,7 +702,7 @@ public class ODE extends Model implements Discrete {
 		// for neutral selection maxScore==minScore! assume range [score-1, score+1]
 		// needs to be synchronized with GUI (e.g. MVFitness, MVFitHistogram, ...)
 		Module mod = species.get(id);
-		Map2Fitness map2fit = mod.getMapToFitness();
+		Map2Fitness map2fit = mod.getMap2Fitness();
 		Payoffs pmod = (Payoffs) mod;
 		double minFit = map2fit.map(pmod.getMinPayoff());
 		double maxFit = map2fit.map(pmod.getMaxPayoff());
@@ -950,7 +950,7 @@ public class ODE extends Model implements Discrete {
 					((HasODE.DPairs) mod).avgScores(state, fitness);
 				else
 					((HasODE.DGroups) mod).avgScores(state, nGroup, fitness);
-				Map2Fitness map2fit = mod.getMapToFitness();
+				Map2Fitness map2fit = mod.getMap2Fitness();
 				for (int n = skip; n < skip + nTraits; n++)
 					fitness[n] = map2fit.map(fitness[n]);
 			}

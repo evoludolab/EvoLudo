@@ -231,7 +231,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 					int id = graph.getModule().getID();
 					cMap1D.setRange(model.getMinScore(id), model.getMaxScore(id));
 					if (model.isIBS()) {
-						Map2Fitness map2fit = module.getMapToFitness();
+						Map2Fitness map2fit = module.getMap2Fitness();
 						if (cmodel != null) {
 							// hardcoded colors for min/max mono scores
 							cMap1D.setColor(map2fit.map(cmodel.getMinMonoScore(id)),

@@ -768,7 +768,7 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE.DPairs, HasSDE.DP
 			double xp = state[ATBT.COOPERATE_POOR];
 			double yr = state[ATBT.DEFECT_RICH];
 			double yp = state[ATBT.DEFECT_POOR];
-			Map2Fitness map2fit = module.getMapToFitness();
+			Map2Fitness map2fit = module.getMap2Fitness();
 			for (int n = 0; n < nTraits; n++)
 				fitness[n] = map2fit.map(fitness[n]);
 			double fC = xr * fitness[ATBT.COOPERATE_RICH] + xp * fitness[ATBT.COOPERATE_POOR];

@@ -221,7 +221,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 				cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
 				// DEBUG
 				if (engine.getModel().isIBS()) {
-					Map2Fitness map2fit = module.getMapToFitness();
+					Map2Fitness map2fit = module.getMap2Fitness();
 					if (model.isContinuous()) {
 						// cast is save because pop is Continuous
 						org.evoludo.simulator.models.Continuous cmodel = (org.evoludo.simulator.models.Continuous) model;

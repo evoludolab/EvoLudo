@@ -322,7 +322,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 				tip.append("<tr><td><i>Tag:</i></td><td>" + tag + "</td></tr>");
 			if (module instanceof Payoffs) {
 				// with payoff-to-fitness report score first, then fitness (see below)
-				boolean noFitMap = module.getMapToFitness().isMap(Map2Fitness.Map.NONE);
+				boolean noFitMap = module.getMap2Fitness().isMap(Map2Fitness.Map.NONE);
 				String label = (noFitMap ? "Fitness" : "Score");
 				if (type == Data.FITNESS) {
 					// fitness: use color-data to color score/fitness
@@ -404,7 +404,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 			int vac = module.getVacant();
 			if (module instanceof Payoffs) {
 				// with payoff-to-fitness report score first, then fitness (see below)
-				Map2Fitness map = module.getMapToFitness();
+				Map2Fitness map = module.getMap2Fitness();
 				if (!map.isMap(Map2Fitness.Map.NONE)) {
 					// with fitness map - report scores first
 					tip.append("<tr><td><i>Score:</i></td><td>");
