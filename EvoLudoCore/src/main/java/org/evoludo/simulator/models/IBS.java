@@ -1837,7 +1837,7 @@ public abstract class IBS extends Model {
 			pup.clo.addKey(PopulationUpdate.Type.ECOLOGY);
 			pup.clo.setDefault(PopulationUpdate.Type.ECOLOGY.getKey());
 		}
-		if (!allStatic || anyPayoffs) {
+		if (anyPayoffs && !allStatic) {
 			// options that are only meaningful if at least some populations have
 			// (non-static) fitness
 			parser.addCLO(cloAccumulatedScores);
