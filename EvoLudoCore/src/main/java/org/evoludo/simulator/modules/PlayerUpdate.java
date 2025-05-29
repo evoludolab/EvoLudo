@@ -30,11 +30,9 @@
 
 package org.evoludo.simulator.modules;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -241,22 +239,6 @@ public class PlayerUpdate {
 						pu.setError(err);
 					}
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					ArrayList<? extends Module> species = module.getSpecies();
-					boolean isIBS = module.model.isIBS();
-					for (Module mod : species) {
-						if (isIBS) {
-							IBSPopulation ibspop = mod.getIBSPopulation();
-							// skip populations with Moran updates
-							if (ibspop.getPopulationUpdate().isMoran())
-								continue;
-						}
-						output.println("# playerupdate:         " + mod.getPlayerUpdate()
-								+ (species.size() > 1 ? " (" + mod.getName() + ")" : ""));
-					}
 				}
 			});
 

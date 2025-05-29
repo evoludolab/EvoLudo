@@ -30,7 +30,6 @@
 package org.evoludo.simulator.modules;
 
 import java.awt.Color;
-import java.io.PrintStream;
 
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
@@ -49,7 +48,6 @@ import org.evoludo.simulator.views.HasS3;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.Formatter;
 
 public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasS3, HasHistogram.Degree,
@@ -136,11 +134,6 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 					pSI = s2i;
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# infect:             " + Formatter.format(pSI, 4));
-				}
 			});
 
 	/**
@@ -171,11 +164,6 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 					}
 					return false;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# recover:            " + Formatter.format(pIR, 4));
-				}
 			});
 
 	/**
@@ -191,11 +179,6 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 						return false;
 					pRS = r2s;
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# resist:             " + Formatter.format(pRS, 4));
 				}
 			});
 

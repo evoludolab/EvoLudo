@@ -454,11 +454,6 @@ public class simCDLP extends CDLP implements ChangeListener {
 					threshold = CLOParser.parseInteger(arg);
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# threshold:            " + threshold);
-				}
 			});
 
 	/**
@@ -484,11 +479,6 @@ public class simCDLP extends CDLP implements ChangeListener {
 				public boolean parse(String arg) {
 					timesamples = CLOParser.parseInteger(arg);
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println(timesamples > 0 ? "# samples:              " + timesamples : "");
 				}
 			});
 

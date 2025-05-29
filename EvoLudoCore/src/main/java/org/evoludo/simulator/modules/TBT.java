@@ -31,7 +31,6 @@
 package org.evoludo.simulator.modules;
 
 import java.awt.Color;
-import java.io.PrintStream;
 import java.util.Arrays;
 
 import org.evoludo.math.ArrayMath;
@@ -315,11 +314,6 @@ public class TBT extends Discrete implements Payoffs,
 						return false;
 					setPayoffs(payMatrix);
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# paymatrix:            " + Formatter.format(getPayoffs(), 4));
 				}
 			});
 

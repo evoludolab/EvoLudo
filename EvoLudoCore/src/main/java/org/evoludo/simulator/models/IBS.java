@@ -30,19 +30,17 @@
 
 package org.evoludo.simulator.models;
 
-import java.io.PrintStream;
-
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Features;
+import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.modules.SpeciesUpdate;
-import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -1314,16 +1312,6 @@ public abstract class IBS extends Model {
 					}
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (Module mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
-						output.println("# scoring:              " + //
-								(pop.getPlayerScoreAveraged() ? "averaged" : "accumulated") + //
-								(isMultispecies ? " (" + mod.getName() + ")" : ""));
-					}
-				}
 			});
 
 	/**
@@ -1356,15 +1344,6 @@ public abstract class IBS extends Model {
 						pop.setPlayerScoring(st);
 					}
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (Module mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
-						output.println("# resetscores:          " + pop.getPlayerScoring() + //
-								(isMultispecies ? " (" + mod.getName() + ")" : ""));
-					}
 				}
 			});
 
@@ -1409,18 +1388,6 @@ public abstract class IBS extends Model {
 					}
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (Module mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
-						IBSGroup group = pop.getInterGroup();
-						IBSGroup.SamplingType st = group.getSampling();
-						output.println("# interactions:         " + st + //
-								(st == IBSGroup.SamplingType.RANDOM ? " " + group.getNSamples() : "") + //
-								(isMultispecies ? " (" + mod.getName() + ")" : ""));
-					}
-				}
 			});
 
 	/**
@@ -1464,20 +1431,6 @@ public abstract class IBS extends Model {
 						group.setNSamples(nInter);
 					}
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (Module mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
-						if (pop.getPopulationUpdate().isMoran())
-							continue;
-						IBSGroup group = pop.getCompGroup();
-						IBSGroup.SamplingType st = group.getSampling();
-						output.println("# references:           " + st + //
-								(st == IBSGroup.SamplingType.RANDOM ? " " + group.getNSamples() : "") + //
-								(isMultispecies ? " (" + mod.getName() + ")" : ""));
-					}
 				}
 			});
 
@@ -1531,20 +1484,6 @@ public abstract class IBS extends Model {
 					}
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (Module mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
-						MigrationType mig = pop.getMigrationType();
-						output.println("# migration:            " + mig + (isMultispecies ? " ("
-								+ mod.getName() + ")" : ""));
-						if (mig != MigrationType.NONE)
-							output.println("# migrationrate:        " + Formatter.formatSci(pop.getMigrationProb(), 8)
-									+ (isMultispecies ? " ("
-											+ mod.getName() + ")" : ""));
-					}
-				}
 			});
 
 	/**
@@ -1587,20 +1526,6 @@ public abstract class IBS extends Model {
 					}
 					engine.requiresReset(doReset);
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (Module mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
-						Geometry intergeom = pop.getInteractionGeometry();
-						// interaction geometry can be null for pde models
-						if (intergeom == null || intergeom.interCompSame)
-							continue;
-						output.println("# interactiongeometry:  " + intergeom.getType().getTitle() +
-								(isMultispecies ? " (" + mod.getName() + ")" : ""));
-						intergeom.printParams(output);
-					}
 				}
 			});
 
@@ -1645,20 +1570,6 @@ public abstract class IBS extends Model {
 					engine.requiresReset(doReset);
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (Module mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
-						Geometry compgeom = pop.getCompetitionGeometry();
-						// competition geometry can be null for pde models
-						if (compgeom == null || compgeom.interCompSame)
-							continue;
-						output.println("# competitiongeometry: " + compgeom.getType().getTitle() +
-								(isMultispecies ? " (" + mod.getName() + ")" : ""));
-						compgeom.printParams(output);
-					}
-				}
 			});
 
 	/**
@@ -1694,28 +1605,6 @@ public abstract class IBS extends Model {
 					}
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (Module mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
-						Geometry intergeo = pop.getInteractionGeometry();
-						if (intergeo.pRewire > 0.0)
-							output.println((intergeo.interCompSame ? "# structure-rewiring:   " : "# interaction-rewiring: ")
-									+ Formatter.format(intergeo.pRewire, 4)
-									+ (isMultispecies ? " (" + mod.getName() + ")" : ""));
-						if (intergeo.interCompSame)
-							continue;
-						Geometry compgeo = pop.getCompetitionGeometry();
-						// competition geometry can be null for pde models
-						if (compgeo == null || compgeo.interCompSame)
-							continue;
-						if (compgeo.pRewire > 0.0)
-							output.println("# competition-rewiring: " + Formatter.format(compgeo.pRewire, 4) +
-									(isMultispecies ? " (" + mod.getName() + ")" : ""));
-						compgeo.printParams(output);
-					}
-				}
 			});
 
 	/**
@@ -1749,28 +1638,6 @@ public abstract class IBS extends Model {
 						pop.setAddwire(add);
 					}
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (Module mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
-						Geometry intergeo = pop.getCompetitionGeometry();
-						if (intergeo.pRewire > 0.0)
-							output.println((intergeo.interCompSame ? "# structure-add:        " : "# interaction-add:      ")
-									+ Formatter.format(intergeo.pRewire, 4)
-									+ (isMultispecies ? " (" + mod.getName() + ")" : ""));
-						if (intergeo.interCompSame)
-							continue;
-						Geometry compgeo = pop.getCompetitionGeometry();
-						// competition geometry can be null for pde models
-						if (compgeo == null)
-							continue;
-						if (compgeo.pRewire > 0.0)
-							output.println("# competition-add:      " + Formatter.format(compgeo.pRewire, 4) +
-								(isMultispecies ? " (" + mod.getName() + ")" : ""));
-						compgeo.printParams(output);
-					}
 				}
 			});
 
@@ -2096,12 +1963,6 @@ public abstract class IBS extends Model {
 							resetInterval = typeargs.length > 1 ? CLOParser.parseInteger(typeargs[1]) : 1;
 						}
 						return true;
-					}
-
-					@Override
-					public void report(PrintStream ps) {
-						// for customized simulations
-						ps.println("# statistics:           " + Formatter.format(args, Formatter.MATRIX_DELIMITER));
 					}
 
 					@Override

@@ -31,7 +31,6 @@
 package org.evoludo.simulator.modules;
 
 import java.awt.Color;
-import java.io.PrintStream;
 
 import org.evoludo.geom.Point2D;
 import org.evoludo.math.ArrayMath;
@@ -47,7 +46,6 @@ import org.evoludo.simulator.views.S3Map;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.Formatter;
 
 /**
  * The Centipede class provides an EvoLudo module for the centipede game.
@@ -330,11 +328,6 @@ public class Centipede extends Discrete implements Payoffs,
 					setCost(CLOParser.parseDouble(arg));
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# cost:                 " + Formatter.format(getCost(), 4));
-				}
 			});
 
 	/**
@@ -357,11 +350,6 @@ public class Centipede extends Discrete implements Payoffs,
 					setBenefit(CLOParser.parseDouble(arg));
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# benefit:              " + Formatter.format(getBenefit(), 4));
-				}
 			});
 
 	/**
@@ -382,11 +370,6 @@ public class Centipede extends Discrete implements Payoffs,
 				public boolean parse(String arg) {
 					setNodes(CLOParser.parseInteger(arg));
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# nodes:                " + getNodes());
 				}
 			});
 

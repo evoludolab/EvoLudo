@@ -30,7 +30,6 @@
 
 package org.evoludo.simulator.modules;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -1050,22 +1049,6 @@ public abstract class Continuous extends Module {
 				}
 
 				@Override
-				public void report(PrintStream output) {
-					String msg = "";
-					for (Continuous cpop : species) {
-						double[] mins = cpop.getTraitMin();
-						double[] maxs = cpop.getTraitMax();
-						String[] names = cpop.getTraitNames();
-						for (int n = 0; n < nTraits; n++) {
-							msg = "# traitrange:           " + Formatter.format(mins[n], 4) + "-"
-									+ Formatter.format(maxs[n], 4) + //
-									" " + names[n] + (species.size() > 1 && n == 0 ? " (" + cpop.getName() + ")" : "");
-						}
-					}
-					output.println(msg);
-				}
-
-				@Override
 				public String getDescription() {
 					switch (nTraits) {
 						case 1:
@@ -1143,14 +1126,6 @@ public abstract class Continuous extends Module {
 					}
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					String msg = "# costfunction:         " + traits2payoff.formatCosts(0);
-					for (int n = 1; n < nTraits; n++)
-						msg += "\n                        " + traits2payoff.formatCosts(n);
-					output.println(msg);
-				}
 			});
 
 	/**
@@ -1204,14 +1179,6 @@ public abstract class Continuous extends Module {
 						traits2payoff.setBenefitFunction(type, args, n);
 					}
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					String msg = "# benefitfunction:      " + traits2payoff.formatBenefits(0);
-					for (int n = 1; n < nTraits; n++)
-						msg += "\n                        " + traits2payoff.formatBenefits(n);
-					output.println(msg);
 				}
 			});
 

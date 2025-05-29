@@ -30,7 +30,6 @@
 
 package org.evoludo.simulator.modules;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
 
 import org.evoludo.math.ArrayMath;
@@ -353,30 +352,6 @@ public abstract class Mutation {
 					}
 
 					@Override
-					public void report(PrintStream output) {
-						ArrayList<? extends Module> species = module.getSpecies();
-						for (Module mod : species) {
-							Mutation mut = mod.getMutation();
-							if (mut.probability <= 0.0)
-								continue;
-							Type mutt = (Type) mut.type;
-							if (mutt == Type.NONE)
-								continue;
-							output.println("# mutationtype:         " + mutt
-									+ (species.size() > 1 ? " (" + mod.getName() + ")" : ""));
-							output.println("# mutationprob:         " + mut.probability
-									+ (mut.temperature ? " temperature" : " random"));
-							switch (mutt) {
-								case RANGE:
-									output.println("# mutationrange:        " + mut.range);
-									break;
-								default:
-									break;
-							}
-						}
-					}
-
-					@Override
 					public int getKeyPos() {
 						return 1;
 					}
@@ -609,33 +584,6 @@ public abstract class Mutation {
 							}
 						}
 						return success;
-					}
-
-					@Override
-					public void report(PrintStream output) {
-						ArrayList<? extends Module> species = module.getSpecies();
-						for (Module mod : species) {
-							Mutation mut = mod.getMutation();
-							if (mut.probability <= 0.0)
-								continue;
-							Type mutt = (Type) mut.type;
-							if (mutt == Type.NONE)
-								continue;
-							output.println("# mutationtype:         " + mutt
-									+ (species.size() > 1 ? " (" + mod.getName() + ")" : ""));
-							output.println("# mutationprob:         " + mut.probability
-									+ (mut.temperature ? " temperature" : " random"));
-							switch (mutt) {
-								case GAUSSIAN:
-									output.println("# mutationsdev:        " + mut.range);
-									break;
-								case RANGE:
-									output.println("# mutationrange:        " + mut.range);
-									break;
-								default:
-									break;
-							}
-						}
 					}
 
 					@Override

@@ -29,7 +29,6 @@
 //
 package org.evoludo.simulator.modules;
 
-import java.io.PrintStream;
 import java.util.Arrays;
 
 import org.evoludo.simulator.EvoLudo;
@@ -163,11 +162,6 @@ public class SpeciesUpdate {
 						setType(put);
 					}
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# speciesupdate:        " + SpeciesUpdate.this.toString());
 				}
 			});
 

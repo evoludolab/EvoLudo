@@ -31,7 +31,6 @@
 package org.evoludo.simulator.modules;
 
 import java.awt.Color;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.logging.Logger;
@@ -58,7 +57,6 @@ import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.Formatter;
 
 /**
  * Parent class of all EvoLudo modules.
@@ -1044,16 +1042,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				}
 
 				@Override
-				public void report(PrintStream output) {
-					if (species.size() <= 1)
-						return;
-					for (Module pop : species) {
-						output.println("# speciesupdaterate:    "
-								+ Formatter.format(pop.getSpeciesUpdateRate(), 4) + " (" + pop.getName() + ")");
-					}
-				}
-
-				@Override
 				public String getDescription() {
 					String descr = "";
 					int nSpecies = species.size();
@@ -1120,26 +1108,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				}
 
 				@Override
-				public void report(PrintStream output) {
-					if (model.isIBS()) {
-						for (Module pop : species) {
-							if (pop.structure.interCompSame) {
-								output.println("# geometry:             " + pop.structure.getType().getTitle()
-										+ (species.size() > 1 ? " (" + pop.getName() + ")" : ""));
-								pop.structure.printParams(output);
-							}
-						}
-						return;
-					}
-					if (model.isPDE()) {
-						// inter-species PDEs not yet implemented
-						Geometry geo = ((PDE) model).getGeometry();
-						output.println("# pde geometry:         " + geo.getType().getTitle());
-						geo.printParams(output);
-					}
-				}
-
-				@Override
 				public String getDescription() {
 					// // retrieve description
 					// Module mod = modules.get(0);
@@ -1183,14 +1151,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 						n = (n + 1) % sizes.length;
 					}
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					boolean isMultispecies = species.size() > 1;
-					for (Module pop : species)
-						output.println("# populationsize:       " + pop.getNPopulation()
-								+ (isMultispecies ? " (" + pop.getName() + ")" : ""));
 				}
 
 				@Override
@@ -1246,15 +1206,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					}
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (Module pop : species) {
-						output.println(
-								"# deathrate:   " + Formatter.format(pop.getDeathRate(), 4) + (species.size() > 1 ? " ("
-										+ pop.getName() + ")" : ""));
-					}
-				}
 			});
 
 	/**
@@ -1286,13 +1237,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 						pop.setNGroup(size);
 					}
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (Module pop : species)
-						output.println("# groupsize:            " + pop.getNGroup()
-								+ (species.size() > 1 ? " (" + pop.getName() + ")" : ""));
 				}
 			});
 
@@ -1340,25 +1284,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 						}
 					}
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					String msg = "";
-					for (Module pop : species) {
-						if (pop.nTraits == pop.nActive)
-							continue;
-						int count = 0;
-						for (int n = 0; n < pop.nTraits; n++) {
-							if (pop.active[n])
-								continue;
-							msg += pop.getTraitName(n);
-							count++;
-							if (count < pop.nActive)
-								msg += ", ";
-						}
-					}
-					output.println("# disabled traits:      " + (msg.length() > 0 ? msg : "none"));
 				}
 			});
 

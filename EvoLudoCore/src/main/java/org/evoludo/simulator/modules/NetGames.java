@@ -31,7 +31,6 @@
 package org.evoludo.simulator.modules;
 
 import java.awt.Color;
-import java.io.PrintStream;
 import java.util.Arrays;
 
 import org.evoludo.math.ArrayMath;
@@ -343,11 +342,6 @@ public class NetGames extends Discrete implements Payoffs,
 					setRatio(CLOParser.parseDouble(arg));
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# ratio:                " + Formatter.format(getRatio(), 4));
-				}
 			});
 
 	/**
@@ -367,11 +361,6 @@ public class NetGames extends Discrete implements Payoffs,
 				public boolean parse(String arg) {
 					setSelection(CLOParser.parseDouble(arg));
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# selection:            " + Formatter.format(getRatio(), 4));
 				}
 			});
 

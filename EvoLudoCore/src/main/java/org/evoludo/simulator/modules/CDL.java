@@ -31,7 +31,6 @@
 package org.evoludo.simulator.modules;
 
 import java.awt.Color;
-import java.io.PrintStream;
 
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
@@ -51,7 +50,6 @@ import org.evoludo.simulator.views.HasS3;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.Formatter;
 
 /**
  * Cooperation in voluntary (non-linear) public goods interactions.
@@ -746,15 +744,6 @@ public class CDL extends Discrete implements Payoffs,
 							return false;
 					}
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					if (isLinearPGG)
-						output.println("# interest:             " + Formatter.format(getInterest(), 4));
-					else
-						output.println("# interest:             " + Formatter.format(interest(1), 4) + " - "
-								+ Formatter.format(interest(nGroup), 4));
-				}
 			});
 
 	/**
@@ -775,11 +764,6 @@ public class CDL extends Discrete implements Payoffs,
 				public boolean parse(String arg) {
 					setCostCoop(CLOParser.parseDouble(arg));
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# cost:                 " + Formatter.format(getCostCoop(), 4));
 				}
 			});
 
@@ -802,11 +786,6 @@ public class CDL extends Discrete implements Payoffs,
 					setPayLoner(CLOParser.parseDouble(arg));
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# loner:                " + Formatter.format(getPayLoner(), 4));
-				}
 			});
 
 	/**
@@ -827,12 +806,6 @@ public class CDL extends Discrete implements Payoffs,
 				public boolean parse(String arg) {
 					setPayLoneCoop(CLOParser.parseDouble(arg));
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					if (!doSolo)
-						output.println("# lonecooperator:       " + Formatter.format(getPayLoneCoop(), 4));
 				}
 			});
 
@@ -855,12 +828,6 @@ public class CDL extends Discrete implements Payoffs,
 					setPayLoneDefect(CLOParser.parseDouble(arg));
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					if (!doSolo)
-						output.println("# lonedefector:         " + Formatter.format(getPayLoneDefect(), 4));
-				}
 			});
 
 	/**
@@ -882,11 +849,6 @@ public class CDL extends Discrete implements Payoffs,
 				public boolean parse(String arg) {
 					setOthersOnly(cloOthers.isSet());
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# othersonly:           " + getOthersOnly());
 				}
 			});
 
@@ -911,12 +873,6 @@ public class CDL extends Discrete implements Payoffs,
 				public boolean parse(String arg) {
 					setSolo(cloSolo.isSet());
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					if (doSolo)
-						output.println("# sologroups:           " + getSolo());
 				}
 			});
 

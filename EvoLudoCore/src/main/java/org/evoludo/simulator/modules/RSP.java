@@ -31,7 +31,6 @@
 package org.evoludo.simulator.modules;
 
 import java.awt.Color;
-import java.io.PrintStream;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
@@ -52,7 +51,6 @@ import org.evoludo.simulator.views.HasS3;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.Formatter;
 
 /**
  * Cyclical dynamics of the rock-scissors-paper game. A game that children,
@@ -251,11 +249,6 @@ public class RSP extends Discrete implements Payoffs,
 						return false;
 					setPayoffs(payMatrix);
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# paymatrix:            " + Formatter.format(getPayoffs(), 4));
 				}
 			});
 

@@ -30,7 +30,6 @@
 
 package org.evoludo.simulator.models;
 
-import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
 
@@ -1763,11 +1762,6 @@ public class ODE extends Model implements Discrete {
 					setDt(CLOParser.parseDouble(arg));
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# timeincr:             " + Formatter.format(getDt(), 4));
-				}
 			});
 
 	/**
@@ -1787,23 +1781,6 @@ public class ODE extends Model implements Discrete {
 					// PDE models to override it and do their own initialization.
 					return ODE.this.parse(arg);
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					int idx = 0;
-					for (Module pop : species) {
-						InitType itype = initType[idx++];
-						String msg = "# init:                 " + itype;
-						if (itype.equals(InitType.DENSITY) || itype.equals(InitType.FREQUENCY)) {
-							int from = idxSpecies[idx];
-							msg += Formatter.format(Arrays.copyOfRange(y0, from, from + pop.getNTraits()), 4);
-							Arrays.copyOfRange(y0, idxSpecies[idx], pop.getNTraits());
-						}
-						if (species.size() > 1)
-							msg += " (" + pop.getName() + ")";
-						output.println(msg);
-					}
-				}
 			});
 
 	/**
@@ -1820,11 +1797,6 @@ public class ODE extends Model implements Discrete {
 				public boolean parse(String arg) {
 					setAdjustedDynamics(cloAdjustedDynamics.isSet());
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# replicator dynamics:  " + (isAdjustedDynamics ? "adjusted" : "standard"));
 				}
 			});
 
@@ -1845,11 +1817,6 @@ public class ODE extends Model implements Discrete {
 					setAccuracy(CLOParser.parseDouble(arg));
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# accuracy:             " + getAccuracy());
-				}
 			});
 
 	/**
@@ -1862,11 +1829,6 @@ public class ODE extends Model implements Discrete {
 				public boolean parse(String arg) {
 					setTimeReversed(cloTimeReversed.isSet());
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# time:                 " + (isTimeReversed() ? "reversed" : "forward"));
 				}
 			});
 

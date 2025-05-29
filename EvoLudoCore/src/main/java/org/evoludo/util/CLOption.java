@@ -30,7 +30,6 @@
 
 package org.evoludo.util;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -60,15 +59,6 @@ public class CLOption implements Comparable<CLOption> {
 		 * @return <code>true</code> if parsing successful
 		 */
 		public boolean parse(String arg);
-
-		/**
-		 * Report settings of configurable parameters that correspond to this command
-		 * line option (optional implementation).
-		 * 
-		 * @param output the outlet to send reports to
-		 */
-		public default void report(PrintStream output) {
-		}
 
 		/**
 		 * If settings for option are not known upon initialization, an up-to-date
@@ -876,18 +866,6 @@ public class CLOption implements Comparable<CLOption> {
 		if (len > 0)
 			return keydescr.substring(0, len - 1);
 		return keydescr;
-	}
-
-	/**
-	 * Print report for this option to <code>output</code> through delegate. If no
-	 * delegate is available or <code>output == null</code> do nothing.
-	 * 
-	 * @param output the {@link PrintStream} for the output
-	 */
-	public void report(PrintStream output) {
-		if (delegate == null || output == null)
-			return;
-		delegate.report(output);
 	}
 
 	/**

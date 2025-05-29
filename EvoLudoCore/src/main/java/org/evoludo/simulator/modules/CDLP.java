@@ -31,14 +31,12 @@
 package org.evoludo.simulator.modules;
 
 import java.awt.Color;
-import java.io.PrintStream;
 
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.Formatter;
 
 /**
  * Cooperation in voluntary (non-linear) public goods interactions with peer
@@ -455,11 +453,6 @@ public class CDLP extends CDL {
 					setLeniencyCoop(CLOParser.parseDouble(arg));
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# leniencycoop:         " + Formatter.format(getLeniencyCoop(), 4));
-				}
 			});
 
 	/**
@@ -479,11 +472,6 @@ public class CDLP extends CDL {
 				public boolean parse(String arg) {
 					setLeniencyLoner(CLOParser.parseDouble(arg));
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# leniencyloner:        " + Formatter.format(getLeniencyLoner(), 4));
 				}
 			});
 
@@ -505,11 +493,6 @@ public class CDLP extends CDL {
 					setPunishFine(CLOParser.parseDouble(arg));
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# punishment:           " + Formatter.format(getPunishFine(), 4));
-				}
 			});
 
 	/**
@@ -529,11 +512,6 @@ public class CDLP extends CDL {
 				public boolean parse(String arg) {
 					setPunishCost(CLOParser.parseDouble(arg));
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# costpunishment:       " + Formatter.format(getPunishCost(), 4));
 				}
 			});
 

@@ -220,11 +220,6 @@ public class simTraits extends Traits {
 					mintime = CLOParser.parseInteger(arg) * 1000000000L; // convert to nanoseconds
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# mintime:              " + (mintime / 1000000000L) + " sec");
-				}
 			});
 
 	@Override

@@ -1022,7 +1022,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				"! New Record" + "\n# " + activeModule.getTitle() + "\n# " + getVersion() + "\n# today:                "
 						+ (new Date().toString()));
 		output.println("# arguments:            " + parser.getCLO());
-		parser.dumpCLO();
 		output.println("# data:");
 		output.flush();
 	}
@@ -1241,12 +1240,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				public boolean parse(String arg) {
 					// option gets special treatment
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream out) {
-					if (cloRestore.isSet())
-						out.println("# restored:             " + cloRestore.getArg());
 				}
 			});
 

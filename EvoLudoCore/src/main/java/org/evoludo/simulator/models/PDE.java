@@ -30,7 +30,6 @@
 
 package org.evoludo.simulator.models;
 
-import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -1561,11 +1560,6 @@ public class PDE extends ODE {
 					setDiscretization(CLOParser.parseDim(arg));
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# pde discretization:   " + space.size);
-				}
 			});
 
 	/**
@@ -1580,11 +1574,6 @@ public class PDE extends ODE {
 				public boolean parse(String arg) {
 					setLinearExtension(CLOParser.parseDouble(arg));
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# pde linear extension: " + getLinearExtension());
 				}
 			});
 
@@ -1609,17 +1598,6 @@ public class PDE extends ODE {
 					}
 					diffcoeff[dep] = 0.0;
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					double[] diff = getDiffusion();
-					for (int n = 0; n < nDim; n++) {
-						if (n == dependent)
-							output.println("# pde diffusion:        -\t" + names[n] + " (dependent)");
-						else
-							output.println("# pde diffusion:        " + Formatter.format(diff[n], 3) + "\t" + names[n]);
-					}
 				}
 
 				@Override
@@ -1669,12 +1647,6 @@ public class PDE extends ODE {
 				public boolean parse(String arg) {
 					setSymmetric(cloPdeSymmetric.isSet());
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					if (getSymmetric())
-						output.println("# pde dynamics:         preserve symmetry");
 				}
 			});
 

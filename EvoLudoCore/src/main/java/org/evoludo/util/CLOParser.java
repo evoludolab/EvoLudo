@@ -320,18 +320,6 @@ public class CLOParser {
 	}
 
 	/**
-	 * Reports the current setting of every command line option in the
-	 * <code>options</code> list.
-	 * 
-	 * @see CLOption#report(PrintStream)
-	 */
-	public void dumpCLO() {
-		// dump options
-		for (CLOption clo : options)
-			clo.report(output);
-	}
-
-	/**
 	 * Returns a short description of every command line option in the
 	 * <code>options</code> list, including its default value as well as the current
 	 * setting (if different). This string typically serves as a quick help and

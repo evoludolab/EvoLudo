@@ -517,14 +517,6 @@ public class scanCSD extends CSD {
 							return true;
 					}
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println((Double.isNaN(c1Incr) ? "# c1:                   " + Formatter.format(c1Start, 4)
-							: "# c1range:              " + Formatter.format(c1Start, 4) + " - "
-									+ Formatter.format(c1End, 4) +
-									": " + Formatter.format(c1Incr, 4) + (c1Log ? " (logarithmic)" : "")));
-				}
 			});
 
 	/**
@@ -574,14 +566,6 @@ public class scanCSD extends CSD {
 							c2Log = log;
 							return true;
 					}
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println((Double.isNaN(c2Incr) ? "# c2:                   " + Formatter.format(c2Start, 4)
-							: "# c2range:              " + Formatter.format(c2Start, 4) + " - "
-									+ Formatter.format(c2End, 4) +
-									": " + Formatter.format(c2Incr, 4) + (c2Log ? " (logarithmic)" : "")));
 				}
 			});
 
@@ -633,14 +617,6 @@ public class scanCSD extends CSD {
 							return true;
 					}
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println((Double.isNaN(b1Incr) ? "# b1:                   " + Formatter.format(b1Start, 4)
-							: "# b1range:              " + Formatter.format(b1Start, 4) + " - "
-									+ Formatter.format(b1End, 4) +
-									": " + Formatter.format(b1Incr, 4) + (b1Log ? " (logarithmic)" : "")));
-				}
 			});
 
 	/**
@@ -691,14 +667,6 @@ public class scanCSD extends CSD {
 							return true;
 					}
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println((Double.isNaN(b2Incr) ? "# b2:                   " + Formatter.format(b2Start, 4)
-							: "# b2range:              " + Formatter.format(b2Start, 4) + " - "
-									+ Formatter.format(b2End, 4) +
-									": " + Formatter.format(b2Incr, 4) + (b2Log ? " (logarithmic)" : "")));
-				}
 			});
 
 	// public final CLOption cloTimeWindow = new CLOption("timewindow",
@@ -726,11 +694,6 @@ public class scanCSD extends CSD {
 				public boolean parse(String arg) {
 					nBins = CLOParser.parseInteger(arg);
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# bins:                 " + nBins);
 				}
 			});
 

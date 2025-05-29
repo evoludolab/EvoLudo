@@ -30,15 +30,12 @@
 
 package org.evoludo.simulator.models;
 
-import java.io.PrintStream;
-
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.Formatter;
 
 /**
  * Base class for individual based simulation models, IBS, with a single or
@@ -186,18 +183,6 @@ public class IBSC extends IBS implements Continuous {
 							}
 						}
 						return true;
-					}
-
-					@Override
-					public void report(PrintStream output) {
-						boolean isMultiSpecies = (ibs.species.size() > 1);
-						for (Module mod : ibs.species) {
-							IBSMCPopulation cpop = (IBSMCPopulation) mod.getIBSPopulation();
-							Init init = cpop.getInit();
-							output.println("# init:                 " + init.type + " " + //
-									Formatter.format(init.args, 2) + (isMultiSpecies ? " ("
-											+ mod.getName() + ")" : ""));
-						}
 					}
 				});
 

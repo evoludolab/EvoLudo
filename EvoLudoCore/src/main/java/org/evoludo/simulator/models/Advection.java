@@ -30,7 +30,6 @@
 
 package org.evoludo.simulator.models;
 
-import java.io.PrintStream;
 import java.util.Arrays;
 
 import org.evoludo.math.ArrayMath;
@@ -325,28 +324,6 @@ public class Advection extends PDE {
 						return false;
 					doAdvection = true;
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					double[][] adv = getAdvection();
-					for (int n = 0; n < nDim; n++) {
-						if (n == dependent)
-							output.println("# advection:            -\t" + names[n] + " (dependent)");
-						else {
-							String advstring = "";
-							boolean first = true;
-							for (int i = 0; i < nDim; i++) {
-								if (i == dependent)
-									continue;
-								if (!first)
-									advstring += ":";
-								advstring += Formatter.format(adv[n], 3);
-								first = false;
-							}
-							output.println("# advection:            " + advstring + "\t" + names[n]);
-						}
-					}
 				}
 
 				@Override

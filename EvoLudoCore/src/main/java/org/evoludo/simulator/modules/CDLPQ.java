@@ -31,14 +31,12 @@
 package org.evoludo.simulator.modules;
 
 import java.awt.Color;
-import java.io.PrintStream;
 
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.Formatter;
 
 /**
  * Cooperation in voluntary (non-linear) public goods interactions with peer and
@@ -345,11 +343,6 @@ public class CDLPQ extends CDLP {
 					setPoolPunishFine(CLOParser.parseDouble(arg));
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# poolpunishment:       " + Formatter.format(getPoolPunishFine(), 4));
-				}
 			});
 
 	/**
@@ -369,11 +362,6 @@ public class CDLPQ extends CDLP {
 				public boolean parse(String arg) {
 					setPoolPunishCost(CLOParser.parseDouble(arg));
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# poolpunishmentcost:   " + Formatter.format(getPoolPunishCost(), 4));
 				}
 			});
 

@@ -31,7 +31,6 @@
 package org.evoludo.simulator.modules;
 
 import java.awt.Color;
-import java.io.PrintStream;
 
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
@@ -48,7 +47,6 @@ import org.evoludo.simulator.views.HasPop3D;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.Formatter;
 
 /**
  * The module for investigating the evolutionary dynamics in the classical Moran
@@ -337,11 +335,6 @@ public class Moran extends Discrete implements Static,
 						return false;
 					setFitness(fit);
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# fitness:              " + Formatter.format(getFitness(), 4));
 				}
 			});
 

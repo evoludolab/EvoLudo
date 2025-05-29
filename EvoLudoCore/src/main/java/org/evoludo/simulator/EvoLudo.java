@@ -31,7 +31,6 @@
 package org.evoludo.simulator;
 
 import java.awt.Color;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -1861,11 +1860,6 @@ public abstract class EvoLudo
 					// option gets special treatment
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# model:                " + activeModel.getType());
-				}
 			});
 
 	/**
@@ -1882,12 +1876,6 @@ public abstract class EvoLudo
 					}
 					rng.setRNGSeed(Long.parseLong(arg));
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# fixedseed:            " + rng.isRNGSeedSet()
-							+ (rng.isRNGSeedSet() ? " (" + rng.getRNGSeed() + ")" : ""));
 				}
 			});
 

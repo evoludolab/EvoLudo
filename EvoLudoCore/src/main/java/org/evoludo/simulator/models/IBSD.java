@@ -30,8 +30,6 @@
 
 package org.evoludo.simulator.models;
 
-import java.io.PrintStream;
-
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
@@ -301,18 +299,6 @@ public class IBSD extends IBS implements Discrete {
 					}
 
 					@Override
-					public void report(PrintStream output) {
-						boolean isMultiSpecies = (ibs.species.size() > 1);
-						for (Module mod : ibs.species) {
-							IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
-							Init init = dpop.getInit();
-							output.println("# init:                 " + init.type + " " + //
-									Formatter.format(init.args, 2) + (isMultiSpecies ? " ("
-											+ mod.getName() + ")" : ""));
-						}
-					}
-
-					@Override
 					public String getDescription() {
 						String descr = "--init <t>      type of initial configuration:\n" + clo.getDescriptionKey()
 							+ "\n                with r, m indices of resident, mutant traits";
@@ -579,24 +565,6 @@ public class IBSD extends IBS implements Discrete {
 						}
 					}
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					// moran optimization also reported through IBS.cloPopulationUpdate
-					String moran = "";
-					String homo = "";
-					for (Module mod : species) {
-						IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
-						if (dpop.optimizeMoran)
-							moran += (moran.length() > 0 ? ", " : "") + mod.getName();
-					}
-					if (optimizeHomo) {
-						homo = "homo" + (moran.length() > 0 ? ", " : "");
-					}
-					if (homo.length() > 0 || moran.length() > 0)
-						output.println("# optimization:         " + homo
-								+ (moran.length() > 0 ? "moran (" + moran + ")" : ""));
 				}
 			});
 

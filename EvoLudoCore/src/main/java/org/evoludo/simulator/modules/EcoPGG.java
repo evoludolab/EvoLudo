@@ -31,16 +31,15 @@
 package org.evoludo.simulator.modules;
 
 import java.awt.Color;
-import java.io.PrintStream;
 
 import org.evoludo.geom.Point2D;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.Advection;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODE.HasODE;
 import org.evoludo.simulator.models.PDE.HasPDE;
-import org.evoludo.simulator.models.Advection;
 import org.evoludo.simulator.models.SDE.HasSDE;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.BasicTooltipProvider;
@@ -422,11 +421,6 @@ public class EcoPGG extends Discrete implements Payoffs,
 					setInterest(CLOParser.parseDouble(arg));
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# interest:             " + Formatter.format(getInterest(), 4));
-				}
 			});
 
 	/**
@@ -447,11 +441,6 @@ public class EcoPGG extends Discrete implements Payoffs,
 				public boolean parse(String arg) {
 					setCostCoop(CLOParser.parseDouble(arg));
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# cost:                 " + Formatter.format(getCostCoop(), 4));
 				}
 			});
 
@@ -474,11 +463,6 @@ public class EcoPGG extends Discrete implements Payoffs,
 					setPayLoneCoop(CLOParser.parseDouble(arg));
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# lonecoop:             " + Formatter.format(getPayLoneCoop(), 4));
-				}
 			});
 	/**
 	 * Command line option to set the payoff to defectors that failed to find any
@@ -498,11 +482,6 @@ public class EcoPGG extends Discrete implements Payoffs,
 				public boolean parse(String arg) {
 					setPayLoneDefect(CLOParser.parseDouble(arg));
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# lonedefect:           " + Formatter.format(getPayLoneDefect(), 4));
 				}
 			});
 

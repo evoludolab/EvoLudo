@@ -389,11 +389,6 @@ public class simCDL extends CDL implements ChangeListener {
 					nSamples = CLOParser.parseInteger(arg);
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# samples:              " + nSamples);
-				}
 			});
 
 	/**
@@ -405,11 +400,6 @@ public class simCDL extends CDL implements ChangeListener {
 				public boolean parse(String arg) {
 					nSteps = CLOParser.parseInteger(arg);
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# steps:                " + nSteps);
 				}
 			});
 
@@ -425,12 +415,6 @@ public class simCDL extends CDL implements ChangeListener {
 						return true;
 					scanNL = CLOParser.parseVector(arg);
 					return (scanNL != null);
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					if (cloScanNL.isSet())
-						output.println("# scan non-linear PGG:  " + Formatter.format(scanNL, 4));
 				}
 			});
 

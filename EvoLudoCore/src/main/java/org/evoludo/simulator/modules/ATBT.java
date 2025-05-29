@@ -31,7 +31,6 @@
 package org.evoludo.simulator.modules;
 
 import java.awt.Color;
-import java.io.PrintStream;
 import java.util.Arrays;
 
 import org.evoludo.geom.Point2D;
@@ -44,8 +43,8 @@ import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODE.HasODE;
-import org.evoludo.simulator.models.RungeKutta;
 import org.evoludo.simulator.models.PDE.HasPDE;
+import org.evoludo.simulator.models.RungeKutta;
 import org.evoludo.simulator.models.SDE.HasSDE;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasHistogram;
@@ -527,11 +526,6 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE.DPairs, HasSDE.DP
 					setPayoffs(payMatrix);
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# paymatrix:            " + Formatter.format(getPayoffs(), 4));
-				}
 			});
 
 	/**
@@ -554,11 +548,6 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE.DPairs, HasSDE.DP
 				public boolean parse(String arg) {
 					return setEnvironment(CLOParser.parseVector(arg));
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# environment:          " + Formatter.format(getEnvironment(), 4));
-				}
 			});
 
 	/**
@@ -574,12 +563,6 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE.DPairs, HasSDE.DP
 				public boolean parse(String arg) {
 					setEnvironmentalAsymmetry(arg.charAt(0) == 'e');
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println(
-							"# asymmetry:            " + (environmentalAsymmetry ? "environmental" : "genetical"));
 				}
 			});
 
@@ -605,15 +588,6 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE.DPairs, HasSDE.DP
 				@Override
 				public boolean parse(String arg) {
 					return setFeedback(CLOParser.parseVector(arg));
-				}
-
-				// recall:
-				// "--feedback <Cb→g:Dg→b:Cg→b:Db→g> feedback between traits and patches"
-				@Override
-				public void report(PrintStream output) {
-					output.println(
-							"# feedback:             " + Formatter.format(new double[] { feedback[COOPERATE_POOR],
-									feedback[DEFECT_RICH], feedback[COOPERATE_RICH], feedback[DEFECT_POOR] }, 4));
 				}
 			});
 

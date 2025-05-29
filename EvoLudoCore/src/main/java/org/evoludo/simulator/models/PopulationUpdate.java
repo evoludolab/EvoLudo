@@ -30,8 +30,6 @@
 
 package org.evoludo.simulator.models;
 
-import java.io.PrintStream;
-
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
@@ -177,18 +175,6 @@ public class PopulationUpdate {
 						pop.setSyncFraction(sync);
 					}
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					for (Module mod : ibs.species) {
-						IBSPopulation pop = mod.getIBSPopulation();
-						String opt = (pop instanceof IBSDPopulation && ((IBSDPopulation) pop).optimizeMoran
-								? " (optimized)"
-								: "");
-						output.println("# populationupdate:     " + pop.getPopulationUpdate().getType() + opt
-								+ (ibs.isMultispecies ? " (" + mod.getName() + ")" : ""));
-					}
 				}
 			});
 

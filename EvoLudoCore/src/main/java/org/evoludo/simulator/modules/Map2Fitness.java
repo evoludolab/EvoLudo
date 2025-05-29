@@ -30,7 +30,6 @@
 
 package org.evoludo.simulator.modules;
 
-import java.io.PrintStream;
 import java.util.ArrayList;
 
 import org.evoludo.simulator.EvoLudo;
@@ -38,7 +37,6 @@ import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.Formatter;
 
 /**
  * Map scores/payoffs to fitness and vice versa. Enum on steroids. Currently
@@ -286,21 +284,6 @@ public class Map2Fitness {
 						m2f.setSelection(w);
 					}
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					ArrayList<? extends Module> species = module.getSpecies();
-					for (Module mod : species) {
-						if (!(mod instanceof Payoffs))
-							continue;
-						Map2Fitness m2f = ((Payoffs) mod).getMap2Fitness();
-						output.println("# fitnessmap:           " + m2f.getTitle()
-								+ (species.size() > 1 ? " ("
-										+ mod.getName() + ")" : ""));
-						output.println("# basefit:              " + Formatter.format(m2f.getBaseline(), 4));
-						output.println("# selection:            " + Formatter.format(m2f.getSelection(), 4));
-					}
 				}
 			});
 

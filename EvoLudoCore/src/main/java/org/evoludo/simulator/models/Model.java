@@ -31,7 +31,6 @@
 package org.evoludo.simulator.models;
 
 import java.awt.Color;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -1051,11 +1050,6 @@ public abstract class Model implements CLOProvider {
 					setTimeStep(Double.parseDouble(arg));
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# timestep:             " + Formatter.format(getTimeStep(), 4));
-				}
 			});
 
 	/**
@@ -1106,12 +1100,6 @@ public abstract class Model implements CLOProvider {
 				public boolean parse(String arg) {
 					setTimeRelax(CLOParser.parseDouble(arg));
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					if (timeRelax > 0)
-						output.println("# relaxation:           " + Formatter.format(timeRelax, 4));
 				}
 			});
 
@@ -1168,12 +1156,6 @@ public abstract class Model implements CLOProvider {
 					setTimeStop(gens.equals("never") ? Double.POSITIVE_INFINITY : CLOParser.parseDouble(gens));
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					if (timeStop > 0)
-						output.println("# generations:          " + Formatter.format(timeStop, 4));
-				}
 			});
 
 	/**
@@ -1220,12 +1202,6 @@ public abstract class Model implements CLOProvider {
 				public boolean parse(String arg) {
 					setNSamples(cloSamples.isSet() ? CLOParser.parseDouble(arg) : -1.0);
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream ps) {
-					// for customized simulations
-					ps.println("# samples:              " + Formatter.format(nSamples, 4));
 				}
 			});
 

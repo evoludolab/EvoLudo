@@ -30,8 +30,6 @@
 
 package org.evoludo.simulator.modules;
 
-import java.io.PrintStream;
-
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
@@ -49,7 +47,6 @@ import org.evoludo.simulator.views.HasPop3D;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.Formatter;
 
 /**
  * Evolutionary dynamics in populations with {@code d} strategic traits.
@@ -255,12 +252,8 @@ public class Traits extends Discrete implements Payoffs,
 					setNTraits(CLOParser.parseInteger(arg));
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# traitcount:           " + getNTraits());
-				}
 			});
+
 	public final CLOption cloPayoff = new CLOption("paymatrix", "const", EvoLudo.catModule,
 			"--paymatrix <a11,a12,...,a1n;...;an1,an2,...,ann>  nxn payoff matrix", new CLODelegate() {
 				@Override
@@ -283,11 +276,6 @@ public class Traits extends Discrete implements Payoffs,
 						return false;
 					setPayoffs(payMatrix);
 					return true;
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# paymatrix:            " + Formatter.format(getPayoffs(), 4));
 				}
 			});
 

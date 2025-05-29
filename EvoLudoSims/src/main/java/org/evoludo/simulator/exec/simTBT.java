@@ -391,11 +391,6 @@ public class simTBT extends TBT implements ChangeListener {
 					nRuns = CLOParser.parseInteger(arg);
 					return true;
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					output.println("# runs:                 " + nRuns);
-				}
 			});
 
 	/**
@@ -410,12 +405,6 @@ public class simTBT extends TBT implements ChangeListener {
 					scanST = CLOParser.parseVector(arg);
 					return (scanST != null);
 				}
-
-				@Override
-				public void report(PrintStream output) {
-					if (cloScanST.isSet())
-						output.println("# scan S-T-plane:       " + Formatter.format(scanST, 4));
-				}
 			});
 
 	/**
@@ -429,12 +418,6 @@ public class simTBT extends TBT implements ChangeListener {
 						return true;
 					scanDG = CLOParser.parseVector(arg);
 					return (scanDG != null);
-				}
-
-				@Override
-				public void report(PrintStream output) {
-					if (cloScanDG.isSet())
-						output.println("# scan donation game:   " + Formatter.format(scanDG, 4));
 				}
 			});
 
