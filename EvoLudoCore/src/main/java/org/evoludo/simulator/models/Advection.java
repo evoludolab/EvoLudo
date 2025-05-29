@@ -38,6 +38,7 @@ import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 
 /**
@@ -307,7 +308,7 @@ public class Advection extends PDE {
 	 * Command line option to set the advection coefficients of every trait against
 	 * all others.
 	 */
-	public final CLOption cloPdeAdvection = new CLOption("pdeA", "none", EvoLudo.catModel, null,
+	public final CLOption cloPdeAdvection = new CLOption("pdeA", "none", Category.Model, null,
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {

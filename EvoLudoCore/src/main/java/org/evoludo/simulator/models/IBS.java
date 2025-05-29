@@ -45,6 +45,7 @@ import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -1290,7 +1291,7 @@ public abstract class IBS extends Model {
 	 * @see Map2Fitness#setSelection(double)
 	 */
 	public final CLOption cloAccumulatedScores = new CLOption("accuscores", "noaccu", CLOption.Argument.NONE,
-			EvoLudo.catModel,
+			Category.Model,
 			"--accuscores    accumulate scores (instead of averaging)",
 			new CLODelegate() {
 
@@ -1320,7 +1321,7 @@ public abstract class IBS extends Model {
 	 * @see ScoringType
 	 */
 	public final CLOption cloScoringType = new CLOption("resetscores", ScoringType.RESET_ALWAYS.getKey(),
-			CLOption.Argument.REQUIRED, EvoLudo.catModel,
+			CLOption.Argument.REQUIRED, Category.Model,
 			"--resetscores <t>  type for resetting scores t:",
 			new CLODelegate() {
 
@@ -1352,7 +1353,7 @@ public abstract class IBS extends Model {
 	 * or a random subsample.
 	 */
 	public final CLOption cloInteractions = new CLOption("interactions", IBSGroup.SamplingType.ALL.getKey(),
-			EvoLudo.catModel,
+			Category.Model,
 			"--interactions <t [n]> select interaction type t:",
 			new CLODelegate() {
 
@@ -1395,7 +1396,7 @@ public abstract class IBS extends Model {
 	 * the neighbours of a player for updating their trait.
 	 */
 	public final CLOption cloReferences = new CLOption("references", IBSGroup.SamplingType.RANDOM.getKey() + " 1",
-			EvoLudo.catModel,
+			Category.Model,
 			"--references <t [n]> select reference type t:",
 			new CLODelegate() {
 
@@ -1437,7 +1438,7 @@ public abstract class IBS extends Model {
 	/**
 	 * Command line option to set the migration types and probabilities of players.
 	 */
-	public final CLOption cloMigration = new CLOption("migration", "none", EvoLudo.catModel,
+	public final CLOption cloMigration = new CLOption("migration", "none", Category.Model,
 			"--migration <tp>  migration (t type, p probability)",
 			new CLODelegate() {
 
@@ -1494,7 +1495,7 @@ public abstract class IBS extends Model {
 	 * @see #cloGeometryCompetition
 	 * @see Module#cloGeometry
 	 */
-	public final CLOption cloGeometryInteraction = new CLOption("geominter", "M", EvoLudo.catModel,
+	public final CLOption cloGeometryInteraction = new CLOption("geominter", "M", Category.Model,
 			"--geominter <>  interaction geometry (see --geometry)",
 			new CLODelegate() {
 
@@ -1537,7 +1538,7 @@ public abstract class IBS extends Model {
 	 * @see #cloGeometryInteraction
 	 * @see Module#cloGeometry
 	 */
-	public final CLOption cloGeometryCompetition = new CLOption("geomcomp", "M", EvoLudo.catModel,
+	public final CLOption cloGeometryCompetition = new CLOption("geomcomp", "M", Category.Model,
 			"--geomcomp <>   competition geometry (see --geometry)",
 			new CLODelegate() {
 
@@ -1578,7 +1579,7 @@ public abstract class IBS extends Model {
 	 * directed links (where undirected links count as two directed links), which
 	 * potentially breaks undirected ones.
 	 */
-	public final CLOption cloGeometryRewire = new CLOption("rewire", "-1", EvoLudo.catModel,
+	public final CLOption cloGeometryRewire = new CLOption("rewire", "-1", Category.Model,
 			"--rewire <r>    rewire fraction r of graph links",
 			new CLODelegate() {
 
@@ -1612,7 +1613,7 @@ public abstract class IBS extends Model {
 	 * undirected only undirected links are added and if graph is directed only
 	 * directed links are added.
 	 */
-	public final CLOption cloGeometryAddwire = new CLOption("addwire", "-1", EvoLudo.catModel,
+	public final CLOption cloGeometryAddwire = new CLOption("addwire", "-1", Category.Model,
 			"--addwire <a>   add fraction a of graph links",
 			new CLODelegate() {
 
@@ -1645,7 +1646,7 @@ public abstract class IBS extends Model {
 	 * Command line option to enable consistency checks.
 	 */
 	public final CLOption cloConsistency = new CLOption("consistency", "noconsistency", CLOption.Argument.NONE,
-			EvoLudo.catModel,
+			Category.Model,
 			"--consistency   check consistency of scores etc.", new CLODelegate() {
 
 				/**
@@ -1948,7 +1949,7 @@ public abstract class IBS extends Model {
 		/**
 		 * Command line option to customize statistics settings.
 		 */
-		public final CLOption clo = new CLOption("statistics", "reset 1", EvoLudo.catSimulation,
+		public final CLOption clo = new CLOption("statistics", "reset 1", Category.Simulation,
 				null, new CLODelegate() {
 					@Override
 					public boolean parse(String arg) {

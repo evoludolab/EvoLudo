@@ -36,6 +36,7 @@ import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 
 /**
  * Base class for individual based simulation models, IBS, with a single or
@@ -153,7 +154,7 @@ public class IBSC extends IBS implements Continuous {
 		 * 
 		 * @see Type
 		 */
-		public final CLOption clo = new CLOption("init", Init.Type.UNIFORM.getKey(), EvoLudo.catModel,
+		public final CLOption clo = new CLOption("init", Init.Type.UNIFORM.getKey(), Category.Model,
 				"--init <t>      type of initial configuration", new CLODelegate() {
 					@Override
 					public boolean parse(String arg) {

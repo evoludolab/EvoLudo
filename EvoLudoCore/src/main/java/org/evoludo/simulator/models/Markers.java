@@ -33,12 +33,12 @@ package org.evoludo.simulator.models;
 import java.util.ArrayList;
 
 import org.evoludo.math.ArrayMath;
-import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.ODE.HasDE;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 
 /**
  * The class to manage customised markers for graphs.
@@ -118,7 +118,7 @@ public class Markers {
 	 * Command line option to mark points on graphs (ParaGraph, S3Graph, LineGraph
 	 * and HistoGraph). Very convenient to indicate fixed points
 	 */
-	public final CLOption clo = new CLOption("points", "-none", EvoLudo.catGUI, null,
+	public final CLOption clo = new CLOption("points", "-none", Category.GUI, null,
 			new CLODelegate() {
 
 				/**

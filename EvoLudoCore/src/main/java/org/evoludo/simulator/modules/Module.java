@@ -57,6 +57,7 @@ import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 
 /**
  * Parent class of all EvoLudo modules.
@@ -1017,7 +1018,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * Command line option to set the relative rate for updating each
 	 * population/species. Only relevant for multi-species interactions.
 	 */
-	public final CLOption cloSpeciesUpdateRate = new CLOption("speciesupdaterate", "1", EvoLudo.catModule, null,
+	public final CLOption cloSpeciesUpdateRate = new CLOption("speciesupdaterate", "1", Category.Module, null,
 			new CLODelegate() {
 
 				/**
@@ -1073,7 +1074,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @see IBS#cloGeometryInteraction
 	 * @see IBS#cloGeometryCompetition
 	 */
-	public final CLOption cloGeometry = new CLOption("geometry", "M", EvoLudo.catModel, null,
+	public final CLOption cloGeometry = new CLOption("geometry", "M", Category.Model, null,
 			new CLODelegate() {
 
 				/**
@@ -1120,7 +1121,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	/**
 	 * Command line option to set the population size.
 	 */
-	public final CLOption cloNPopulation = new CLOption("popsize", "100", EvoLudo.catModel, null,
+	public final CLOption cloNPopulation = new CLOption("popsize", "100", Category.Model, null,
 			new CLODelegate() {
 
 				/**
@@ -1179,7 +1180,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	/**
 	 * Command line option to set death rate for ecological population updates.
 	 */
-	public final CLOption cloDeathRate = new CLOption("deathrate", "0.5", EvoLudo.catModule,
+	public final CLOption cloDeathRate = new CLOption("deathrate", "0.5", Category.Module,
 			"--deathrate     rate of dying",
 			new CLODelegate() {
 
@@ -1211,7 +1212,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	/**
 	 * Command line option to set the size of interaction groups.
 	 */
-	public final CLOption cloNGroup = new CLOption("groupsize", "2", EvoLudo.catModule,
+	public final CLOption cloNGroup = new CLOption("groupsize", "2", Category.Module,
 			"--groupsize <n>  size of interaction groups",
 			new CLODelegate() {
 
@@ -1245,7 +1246,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * capability needs to add cloTrai to the set of available options. By default
 	 * all traits are activated.
 	 */
-	public final CLOption cloTraitDisable = new CLOption("disable", "none", EvoLudo.catModule,
+	public final CLOption cloTraitDisable = new CLOption("disable", "none", Category.Module,
 			"--disable <d1[" + CLOParser.VECTOR_DELIMITER + "d2...]>  indices of disabled traits.",
 			new CLODelegate() {
 
@@ -1290,7 +1291,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	/**
 	 * Command line option to set the color of traits.
 	 */
-	public final CLOption cloTraitColors = new CLOption("colors", "default", EvoLudo.catGUI, null,
+	public final CLOption cloTraitColors = new CLOption("colors", "default", Category.GUI, null,
 			new CLODelegate() {
 
 				/**
@@ -1386,7 +1387,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	/**
 	 * Command line option to assign trait names.
 	 */
-	public final CLOption cloTraitNames = new CLOption("traitnames", "default", EvoLudo.catModule, null,
+	public final CLOption cloTraitNames = new CLOption("traitnames", "default", Category.Module, null,
 			new CLODelegate() {
 
 				/**
@@ -1450,7 +1451,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * <strong>Note:</strong> option not automatically added. Modules that supports
 	 * multiple traits should load it in {@link #collectCLO(CLOParser)}.
 	 */
-	public final CLOption cloPhase2DAxis = new CLOption("phase2daxis", "-default", EvoLudo.catModule, null,
+	public final CLOption cloPhase2DAxis = new CLOption("phase2daxis", "-default", Category.Module, null,
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {

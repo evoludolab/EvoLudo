@@ -37,6 +37,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 
 /**
@@ -1015,7 +1016,7 @@ public abstract class Continuous extends Module {
 	/**
 	 * Command line option to set the minimum value of each trait.
 	 */
-	public final CLOption cloTraitRange = new CLOption("traitrange", "0,1", EvoLudo.catModule, null,
+	public final CLOption cloTraitRange = new CLOption("traitrange", "0,1", Category.Module, null,
 			new CLODelegate() {
 
 				/**
@@ -1081,7 +1082,7 @@ public abstract class Continuous extends Module {
 	 * 
 	 * @see Costs
 	 */
-	public final CLOption cloCosts = new CLOption("costs", Costs.ME_LINEAR.getKey() + " 1", EvoLudo.catModule,
+	public final CLOption cloCosts = new CLOption("costs", Costs.ME_LINEAR.getKey() + " 1", Category.Module,
 			"--costs <s0 b00[" + CLOParser.VECTOR_DELIMITER + "b01...[" + CLOParser.TRAIT_DELIMITER + //
 					"s1 b10[" + CLOParser.VECTOR_DELIMITER + "b11...]]]>  cost function <si>:",
 			new CLODelegate() {
@@ -1135,7 +1136,7 @@ public abstract class Continuous extends Module {
 	 */
 	public final CLOption cloBenefits = new CLOption("benefits",
 			Benefits.WE_LINEAR.getKey() + " 3",
-			EvoLudo.catModule,
+			Category.Module,
 			"--benefits <s0 b00[" + CLOParser.VECTOR_DELIMITER + "b01...[" + CLOParser.TRAIT_DELIMITER + //
 					"s1 b10[" + CLOParser.VECTOR_DELIMITER + "b11...]]]>  benefit function <si>:",
 			new CLODelegate() {

@@ -44,6 +44,7 @@ import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -1549,7 +1550,7 @@ public class PDE extends ODE {
 	 * 
 	 * @see #setDiscretization(int)
 	 */
-	public final CLOption cloPdeN = new CLOption("pdeN", "5041", EvoLudo.catModel, // 71x71
+	public final CLOption cloPdeN = new CLOption("pdeN", "5041", Category.Model, // 71x71
 			// note: XHTML is very fussy about characters... (both variants below simply
 			// kill the help screen)
 			// "--pdeN <N> discretization PDE (√N bins for lattice side)",
@@ -1568,7 +1569,7 @@ public class PDE extends ODE {
 	 * 
 	 * @see #setLinearExtension(double)
 	 */
-	public final CLOption cloPdeL = new CLOption("pdeL", "100", EvoLudo.catModel,
+	public final CLOption cloPdeL = new CLOption("pdeL", "100", Category.Model,
 			"--pdeL <L>  linear extension of spatial domain of PDE", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1580,7 +1581,7 @@ public class PDE extends ODE {
 	/**
 	 * Command line option to set the diffusion coefficients.
 	 */
-	public final CLOption cloPdeDiffusion = new CLOption("pdeD", "1", EvoLudo.catModel, null,
+	public final CLOption cloPdeDiffusion = new CLOption("pdeD", "1", Category.Model, null,
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1641,7 +1642,7 @@ public class PDE extends ODE {
 	 * @see #setSymmetric(boolean)
 	 */
 	public final CLOption cloPdeSymmetric = new CLOption("pdeSymmetry", "nosymmetry", CLOption.Argument.NONE,
-			EvoLudo.catModel,
+			Category.Model,
 			"--pdeSymmetry   request symmetric diffusion of PDE", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1651,7 +1652,7 @@ public class PDE extends ODE {
 			});
 
 	// public final CLOption cloPdeColorRange = new CLOption("pdecolorrange",
-	// EvoLudo.catGUI,
+	// Category.GUI,
 	// "auto", null,
 	// new CLODelegate() {
 	// @Override

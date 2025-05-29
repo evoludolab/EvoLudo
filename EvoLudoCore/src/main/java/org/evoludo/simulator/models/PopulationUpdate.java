@@ -35,6 +35,7 @@ import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 
 /**
  * The implementation of population updates. Population updates are used to update
@@ -138,7 +139,7 @@ public class PopulationUpdate {
 	 * 
 	 * @see PopulationUpdate.Type
 	 */
-	public final CLOption clo = new CLOption("popupdate", PopulationUpdate.Type.ASYNC.getKey(), EvoLudo.catModel,
+	public final CLOption clo = new CLOption("popupdate", PopulationUpdate.Type.ASYNC.getKey(), Category.Model,
 			"--popupdate <u> [<p>]  population update type; fraction p\n" + //
 					"                for synchronous updates (1=all):",
 			new CLODelegate() {

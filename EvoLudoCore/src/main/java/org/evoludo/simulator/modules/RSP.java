@@ -51,6 +51,7 @@ import org.evoludo.simulator.views.HasS3;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 
 /**
  * Cyclical dynamics of the rock-scissors-paper game. A game that children,
@@ -224,7 +225,7 @@ public class RSP extends Discrete implements Payoffs,
 	/**
 	 * Command line option to set the payoff matrix.
 	 */
-	public final CLOption cloPayoff = new CLOption("paymatrix", "0,1,-1;-1,0,1;1,-1,0", EvoLudo.catModule,
+	public final CLOption cloPayoff = new CLOption("paymatrix", "0,1,-1;-1,0,1;1,-1,0", Category.Module,
 			"--paymatrix <a11,a12,a13;a21,a22,a23;a31,a32,a33>\n" + //
 					"                3x3 payoff matrix",
 			new CLODelegate() {

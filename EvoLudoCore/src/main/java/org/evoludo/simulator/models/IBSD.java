@@ -36,6 +36,7 @@ import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 
 /**
@@ -267,7 +268,7 @@ public class IBSD extends IBS implements Discrete {
 		 * 
 		 * @see Type
 		 */
-		public final CLOption clo = new CLOption("init", Init.Type.UNIFORM.getKey(), EvoLudo.catModel, null,
+		public final CLOption clo = new CLOption("init", Init.Type.UNIFORM.getKey(), Category.Model, null,
 				new CLODelegate() {
 					@Override
 					public boolean parse(String arg) {
@@ -508,7 +509,7 @@ public class IBSD extends IBS implements Discrete {
 	/**
 	 * Command line option to request optimizations.
 	 */
-	public final CLOption cloOptimize = new CLOption("optimize", "none", EvoLudo.catModel,
+	public final CLOption cloOptimize = new CLOption("optimize", "none", Category.Model,
 			"--optimize <t1[,t2,...]>  enable optimizations:", new CLODelegate() {
 
 				/**

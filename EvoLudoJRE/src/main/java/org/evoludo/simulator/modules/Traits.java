@@ -47,6 +47,7 @@ import org.evoludo.simulator.views.HasPop3D;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 
 /**
  * Evolutionary dynamics in populations with {@code d} strategic traits.
@@ -245,7 +246,7 @@ public class Traits extends Discrete implements Payoffs,
 	/*
 	 * command line parsing stuff
 	 */
-	public final CLOption cloTraits = new CLOption("traits", "2", EvoLudo.catModule,
+	public final CLOption cloTraits = new CLOption("traits", "2", Category.Module,
 			"--traits <t>    number of traits", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -254,7 +255,7 @@ public class Traits extends Discrete implements Payoffs,
 				}
 			});
 
-	public final CLOption cloPayoff = new CLOption("paymatrix", "const", EvoLudo.catModule,
+	public final CLOption cloPayoff = new CLOption("paymatrix", "const", Category.Module,
 			"--paymatrix <a11,a12,...,a1n;...;an1,an2,...,ann>  nxn payoff matrix", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {

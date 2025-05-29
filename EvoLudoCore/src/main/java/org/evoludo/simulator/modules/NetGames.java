@@ -49,6 +49,7 @@ import org.evoludo.simulator.views.HasPop3D;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 
 /**
@@ -327,7 +328,7 @@ public class NetGames extends Discrete implements Payoffs,
 	/**
 	 * Command line option to set the cost-to-benefit ratio of cooperation.
 	 */
-	public final CLOption cloRatio = new CLOption("ratio", "1", EvoLudo.catModule,
+	public final CLOption cloRatio = new CLOption("ratio", "1", Category.Module,
 			"--ratio <r>     cost-to-benefit ratio of cooperative act", new CLODelegate() {
 
 				/**
@@ -347,7 +348,7 @@ public class NetGames extends Discrete implements Payoffs,
 	/**
 	 * Command line option to set the cost-to-benefit ratio of cooperation.
 	 */
-	public final CLOption cloSelection = new CLOption("selection", "1", EvoLudo.catModule,
+	public final CLOption cloSelection = new CLOption("selection", "1", Category.Module,
 			"--selection <s>  selection strength", new CLODelegate() {
 
 				/**
@@ -364,7 +365,7 @@ public class NetGames extends Discrete implements Payoffs,
 				}
 			});
 
-	// public final CLOption cloSample = new CLOption("sample", EvoLudo.catGUI,
+	// public final CLOption cloSample = new CLOption("sample", Category.GUI,
 	// "0.01",
 	// "--sampling <s> probability for sampling random member of population",
 	// new CLOSetter() {
@@ -382,7 +383,7 @@ public class NetGames extends Discrete implements Payoffs,
 	 * Command line option to set the colors for altruists, fair players, and
 	 * egoists.
 	 */
-	public final CLOption cloColors = new CLOption("colors", "green;yellow;red", EvoLudo.catGUI,
+	public final CLOption cloColors = new CLOption("colors", "green;yellow;red", Category.GUI,
 			"--colors <a[;f[;e]]>  colors for altruists, fair and egoists\n"
 					+ "                <a:f:e>: color name or '(r,g,b[,a])' tuplet (r,g,b,a in 0-255)",
 			new CLODelegate() {

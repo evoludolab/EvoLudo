@@ -45,6 +45,7 @@ import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.NativeJS;
 
 import com.google.gwt.core.client.Duration;
@@ -569,7 +570,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 * <strong>Note:</strong> for development/debugging only; should be disabled in
 	 * production
 	 */
-	public final CLOption cloMimic = new CLOption("mimic", "auto", catGUI,
+	public final CLOption cloMimic = new CLOption("mimic", "auto", Category.GUI,
 			"--mimic <f1[,f2[...]]> list of GUI features to mimic:\n"
 					+ "          epub: enable ePub mode\n"
 					+ "    standalone: standalone ePub mode\n"
@@ -612,7 +613,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 * of of the layouting procedure for taking snapshots, e.g. with
 	 * <code>capture-website</code>.
 	 */
-	public final CLOption cloSnap = new CLOption("snap", "", CLOption.Argument.OPTIONAL, catGUI,
+	public final CLOption cloSnap = new CLOption("snap", "", CLOption.Argument.OPTIONAL, Category.GUI,
 			"--snap [<s>[,<n>]]  snapshot utility (see capture-website)\n"
 					+ "      (add '<div id=\"snapshot-ready\"></div>' to <body> upon\n"
 					+ "       completion of layout or after max <s> sec and after\n"

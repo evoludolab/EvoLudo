@@ -36,6 +36,7 @@ import org.evoludo.simulator.models.PopulationUpdate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 
 /**
@@ -129,7 +130,7 @@ public class SpeciesUpdate {
 	 * 
 	 * @see PopulationUpdate.Type
 	 */
-	public final CLOption clo = new CLOption("speciesupdate", "1 " + SpeciesUpdate.Type.SIZE.getKey(), EvoLudo.catModule,
+	public final CLOption clo = new CLOption("speciesupdate", "1 " + SpeciesUpdate.Type.SIZE.getKey(), Category.Module,
 			"--speciesupdate <r1,r2,...>[ <t>]  species update rates and type:",
 			new CLODelegate() {
 

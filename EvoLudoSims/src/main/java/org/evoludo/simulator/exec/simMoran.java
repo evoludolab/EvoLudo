@@ -34,7 +34,6 @@ import java.io.PrintStream;
 import java.text.DecimalFormat;
 
 import org.evoludo.math.Distributions;
-import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.models.Mode;
@@ -43,6 +42,7 @@ import org.evoludo.simulator.modules.Moran;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 
 /**
@@ -234,7 +234,7 @@ public class simMoran extends Moran {
 	/**
 	 * Command line option to show the simulation progress.
 	 */
-	final CLOption cloProgress = new CLOption("progress", EvoLudo.catSimulation,
+	final CLOption cloProgress = new CLOption("progress", Category.Simulation,
 			"--progress      print progress reports",
 			new CLODelegate() {
 				@Override

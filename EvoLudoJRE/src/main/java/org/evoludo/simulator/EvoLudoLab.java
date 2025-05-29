@@ -98,6 +98,7 @@ import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 
 public class EvoLudoLab extends JFrame
@@ -731,7 +732,7 @@ public class EvoLudoLab extends JFrame
 	/*
 	 * command line parsing stuff
 	 */
-	public final CLOption cloSize = new CLOption("size", "420x570", EvoLudo.catGUI,
+	public final CLOption cloSize = new CLOption("size", "420x570", Category.GUI,
 			"--size <w>x<h>  size of application window (w: width, h: height)",
 			new CLODelegate() {
 				@Override
@@ -745,7 +746,7 @@ public class EvoLudoLab extends JFrame
 				}
 			});
 
-	public final CLOption cloView = new CLOption("view", "0", EvoLudo.catGUI,
+	public final CLOption cloView = new CLOption("view", "0", Category.GUI,
 			"--view <v>      active view upon launch (v: index or title)",
 			new CLODelegate() {
 				@Override
@@ -755,7 +756,7 @@ public class EvoLudoLab extends JFrame
 				}
 			});
 
-	public final CLOption cloAA = new CLOption("noAA", EvoLudo.catGUI,
+	public final CLOption cloAA = new CLOption("noAA", Category.GUI,
 			"--noAA          disable anti-aliasing",
 			new CLODelegate() {
 				@Override
@@ -768,7 +769,7 @@ public class EvoLudoLab extends JFrame
 				}
 			});
 
-	public final CLOption cloAnimate = new CLOption("animate", EvoLudo.catGUI,
+	public final CLOption cloAnimate = new CLOption("animate", Category.GUI,
 			"--animate       animate progress of laying out networks",
 			new CLODelegate() {
 				@Override
@@ -781,7 +782,7 @@ public class EvoLudoLab extends JFrame
 				}
 			});
 
-	public final CLOption cloTickFont = new CLOption("tickfont", "10", EvoLudo.catGUI, // GraphStyle.FONT_TICK_SIZE
+	public final CLOption cloTickFont = new CLOption("tickfont", "10", Category.GUI, // GraphStyle.FONT_TICK_SIZE
 			"--tickfont [[<n>:]<t>:]<s>  font for tick labels (n: name, t: italic/bold/plain, s: size)",
 			new CLODelegate() {
 				@Override
@@ -791,7 +792,7 @@ public class EvoLudoLab extends JFrame
 				}
 			});
 
-	public final CLOption cloLabelFont = new CLOption("labelfont", "11", EvoLudo.catGUI, // GraphStyle.FONT_LABEL_SIZE
+	public final CLOption cloLabelFont = new CLOption("labelfont", "11", Category.GUI, // GraphStyle.FONT_LABEL_SIZE
 			"--labelfont [[<n>:]<t>:]<s>  font for axis labels (n: name, t: italic/bold/plain, s: size)",
 			new CLODelegate() {
 				@Override
@@ -801,7 +802,7 @@ public class EvoLudoLab extends JFrame
 				}
 			});
 
-	public final CLOption cloLineStroke = new CLOption("linestroke", "0.008", EvoLudo.catGUI, // GraphStyle.LINE_STROKE
+	public final CLOption cloLineStroke = new CLOption("linestroke", "0.008", Category.GUI, // GraphStyle.LINE_STROKE
 			"--linestroke <s>  stroke width of lines",
 			new CLODelegate() {
 				@Override
@@ -811,7 +812,7 @@ public class EvoLudoLab extends JFrame
 				}
 			});
 
-	public final CLOption cloFrameStroke = new CLOption("framestroke", "1", EvoLudo.catGUI, // GraphStyle.FRAME_STROKE
+	public final CLOption cloFrameStroke = new CLOption("framestroke", "1", Category.GUI, // GraphStyle.FRAME_STROKE
 			"--framestroke <s>  stroke width of frames and ticks",
 			new CLODelegate() {
 				@Override
@@ -821,7 +822,7 @@ public class EvoLudoLab extends JFrame
 				}
 			});
 
-	public final CLOption cloBGColorGUI = new CLOption("bgcolorGUI", "(200)", EvoLudo.catGUI,
+	public final CLOption cloBGColorGUI = new CLOption("bgcolorGUI", "(200)", Category.GUI,
 			"--bgcolorGUI <c>  set background color of GUI",
 			new CLODelegate() {
 				@Override
@@ -831,7 +832,7 @@ public class EvoLudoLab extends JFrame
 				}
 			});
 
-	public final CLOption cloGUI = new CLOption("gui", EvoLudo.catGUI,
+	public final CLOption cloGUI = new CLOption("gui", Category.GUI,
 			"--gui           launch legacy java GUI",
 			new CLODelegate() {
 				@Override

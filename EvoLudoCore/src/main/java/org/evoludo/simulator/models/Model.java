@@ -45,6 +45,7 @@ import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -1043,7 +1044,7 @@ public abstract class Model implements CLOProvider {
 	 * Command line option to set the number of generations between reports for
 	 * {@link EvoLudo#modelNext()}.
 	 */
-	public final CLOption cloTimeStep = new CLOption("timestep", "1", EvoLudo.catModel,
+	public final CLOption cloTimeStep = new CLOption("timestep", "1", Category.Model,
 			"--timestep <s>  report frequency in generations", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1094,7 +1095,7 @@ public abstract class Model implements CLOProvider {
 	 * measurements such as the trait abundances, their fluctuations or the local
 	 * trait configurations in structured populations.
 	 */
-	public final CLOption cloTimeRelax = new CLOption("timerelax", "0", EvoLudo.catModel,
+	public final CLOption cloTimeRelax = new CLOption("timerelax", "0", Category.Model,
 			"--timerelax <r>  relaxation time in generations", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1144,7 +1145,7 @@ public abstract class Model implements CLOProvider {
 	 * Command line option to set the number of generations after which to stop the
 	 * model calculations. Model execution can be resumed afterwards.
 	 */
-	public final CLOption cloTimeStop = new CLOption("timestop", "never", EvoLudo.catModel,
+	public final CLOption cloTimeStop = new CLOption("timestop", "never", Category.Model,
 			"--timestop <h>   halt execution after <h> generations", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1196,7 +1197,7 @@ public abstract class Model implements CLOProvider {
 	 * Command line option to set the number of samples to take for statistical
 	 * measurements.
 	 */
-	public final CLOption cloSamples = new CLOption("samples", "unlimited", EvoLudo.catSimulation,
+	public final CLOption cloSamples = new CLOption("samples", "unlimited", Category.Simulation,
 			"--samples <s>   number of samples for statistics", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {

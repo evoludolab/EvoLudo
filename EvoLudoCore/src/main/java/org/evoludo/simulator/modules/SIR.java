@@ -48,6 +48,7 @@ import org.evoludo.simulator.views.HasS3;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 
 public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasS3, HasHistogram.Degree,
@@ -123,7 +124,7 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 	/**
 	 * Command line option to set the transition probability for S -> I.
 	 */
-	public final CLOption cloInfect = new CLOption("infect", "1.0", EvoLudo.catModule,
+	public final CLOption cloInfect = new CLOption("infect", "1.0", Category.Module,
 			"--infect <i>    S -> I", new CLODelegate() {
 
 				@Override
@@ -139,7 +140,7 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 	/**
 	 * Command line option to set the transition probability for I -> R.
 	 */
-	public final CLOption cloRecover = new CLOption("recover", "0.3", EvoLudo.catModule,
+	public final CLOption cloRecover = new CLOption("recover", "0.3", Category.Module,
 			"--recover <r[,s]>  I -> R, [I -> S]", new CLODelegate() {
 
 				@Override
@@ -169,7 +170,7 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 	/**
 	 * Command line option to set the transition probability for R -> S.
 	 */
-	public final CLOption cloResist = new CLOption("resist", "0.7", EvoLudo.catModule,
+	public final CLOption cloResist = new CLOption("resist", "0.7", Category.Module,
 			"--resist <r>    R -> S", new CLODelegate() {
 
 				@Override

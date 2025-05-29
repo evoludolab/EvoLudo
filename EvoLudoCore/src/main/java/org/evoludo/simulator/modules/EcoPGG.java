@@ -52,6 +52,7 @@ import org.evoludo.simulator.views.HasS3;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 
 /**
@@ -406,7 +407,7 @@ public class EcoPGG extends Discrete implements Payoffs,
 	 * Command line option to set the multiplication factor for public good
 	 * interactions.
 	 */
-	public final CLOption cloInterest = new CLOption("interest", "3", EvoLudo.catModule,
+	public final CLOption cloInterest = new CLOption("interest", "3", Category.Module,
 			"--interest <r>  multiplication factor of public good", new CLODelegate() {
 
 				/**
@@ -427,7 +428,7 @@ public class EcoPGG extends Discrete implements Payoffs,
 	 * Command line option to set the cost of cooperation, i.e. contributions to the
 	 * public good.
 	 */
-	public final CLOption cloCost = new CLOption("cost", "1", EvoLudo.catModule,
+	public final CLOption cloCost = new CLOption("cost", "1", Category.Module,
 			"--cost <c>      cost of cooperation", new CLODelegate() {
 
 				/**
@@ -448,7 +449,7 @@ public class EcoPGG extends Discrete implements Payoffs,
 	 * Command line option to set the payoff to cooperators that failed to find any
 	 * interaction partners.
 	 */
-	public final CLOption cloLoneCooperator = new CLOption("lonecooperator", "0", EvoLudo.catModule,
+	public final CLOption cloLoneCooperator = new CLOption("lonecooperator", "0", Category.Module,
 			"--lonecooperator <l>  payoff of lone cooperator", new CLODelegate() {
 
 				/**
@@ -468,7 +469,7 @@ public class EcoPGG extends Discrete implements Payoffs,
 	 * Command line option to set the payoff to defectors that failed to find any
 	 * interaction partners.
 	 */
-	public final CLOption cloLoneDefector = new CLOption("lonedefector", "0", EvoLudo.catModule,
+	public final CLOption cloLoneDefector = new CLOption("lonedefector", "0", Category.Module,
 			"--lonedefector <l>  payoff of lone defector", new CLODelegate() {
 
 				/**

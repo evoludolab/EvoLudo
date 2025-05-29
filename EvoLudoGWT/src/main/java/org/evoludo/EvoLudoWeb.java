@@ -75,6 +75,7 @@ import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.NativeJS;
 import org.evoludo.util.Plist;
 import org.evoludo.util.PlistParser;
@@ -1913,7 +1914,7 @@ public class EvoLudoWeb extends Composite
 	/**
 	 * Command line option to set the data view displayed in the GUI.
 	 */
-	public final CLOption cloView = new CLOption("view", "1", EvoLudo.catGUI,
+	public final CLOption cloView = new CLOption("view", "1", Category.GUI,
 			"--view <v>      active view upon launch (v: index or title)", new CLODelegate() {
 				/**
 				 * {@inheritDoc}
@@ -1944,7 +1945,7 @@ public class EvoLudoWeb extends Composite
 	/**
 	 * Command line option to set the size of the GUI or enter fullscreen.
 	 */
-	public final CLOption cloSize = new CLOption("size", "530,620", EvoLudo.catGUI,
+	public final CLOption cloSize = new CLOption("size", "530,620", Category.GUI,
 			"--size <w,h|fullscreen>  size of GUI, w: width, h: height", new CLODelegate() {
 				/**
 				 * {@inheritDoc}

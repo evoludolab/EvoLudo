@@ -47,6 +47,7 @@ import org.evoludo.simulator.views.MVPop2D;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 
 /**
@@ -467,7 +468,7 @@ public class scanCSD extends CSD {
 	 * Command line option to set the cost parameter {@code c1}, or its range or its
 	 * range to scan.
 	 */
-	public final CLOption cloC1 = new CLOption("c1", "4.56", EvoLudo.catSimulation,
+	public final CLOption cloC1 = new CLOption("c1", "4.56", Category.Simulation,
 			"--c1<l>,<u>[,<i>[l]]  range of c1 cost parameter [l,u], increment i, append l for logarithmic increments",
 			new CLODelegate() {
 				@Override
@@ -523,7 +524,7 @@ public class scanCSD extends CSD {
 	 * Command line option to set the cost parameter {@code c2}, or its range or its
 	 * range to scan.
 	 */
-	public final CLOption cloC2 = new CLOption("c2", "-1.6", EvoLudo.catSimulation,
+	public final CLOption cloC2 = new CLOption("c2", "-1.6", Category.Simulation,
 			"--c2<l>,<u>[,<i>[l]]  range of c2 cost parameter [l,u], increment i, append l for logarithmic increments",
 			new CLODelegate() {
 				@Override
@@ -573,7 +574,7 @@ public class scanCSD extends CSD {
 	 * Command line option to set the benefit parameter {@code b1}, or its range or
 	 * its range to scan.
 	 */
-	public final CLOption cloB1 = new CLOption("b1", "6.0", EvoLudo.catSimulation,
+	public final CLOption cloB1 = new CLOption("b1", "6.0", Category.Simulation,
 			"--b1<l>,<u>[,<i>[l]]  range of b1 benefit parameter [l,u], increment i, append l for logarithmic increments",
 			new CLODelegate() {
 				@Override
@@ -623,7 +624,7 @@ public class scanCSD extends CSD {
 	 * Command line option to set the benefit parameter {@code b2}, or its range or
 	 * its range to scan.
 	 */
-	public final CLOption cloB2 = new CLOption("b2", "-1.4", EvoLudo.catSimulation,
+	public final CLOption cloB2 = new CLOption("b2", "-1.4", Category.Simulation,
 			"--b2<l>,<u>[,<i>[l]]  range of cost parameter [l,u], increment i, append l for logarithmic increments",
 			new CLODelegate() {
 				@Override
@@ -687,7 +688,7 @@ public class scanCSD extends CSD {
 	 * Command line option to set the number of bins for the distribution
 	 * (histogram).
 	 */
-	public final CLOption cloBins = new CLOption("bins", "100", EvoLudo.catSimulation,
+	public final CLOption cloBins = new CLOption("bins", "100", Category.Simulation,
 			"--bins <b>      number of bins for histogram",
 			new CLODelegate() {
 				@Override
@@ -714,7 +715,7 @@ public class scanCSD extends CSD {
 	/**
 	 * The command line option to print the trait distribution.
 	 */
-	public final CLOption cloDistribution = new CLOption("distribution", EvoLudo.catSimulation,
+	public final CLOption cloDistribution = new CLOption("distribution", Category.Simulation,
 			"--distribution  print distributions",
 			new CLODelegate() {
 				@Override
@@ -727,7 +728,7 @@ public class scanCSD extends CSD {
 	/**
 	 * The command line option to set the interval for snapshots.
 	 */
-	public final CLOption cloSnapInterval = new CLOption("snapinterval", "0", EvoLudo.catSimulation,
+	public final CLOption cloSnapInterval = new CLOption("snapinterval", "0", Category.Simulation,
 			"--snapinterval <n>  save snapshot every n generations (-1 only at end)",
 			new CLODelegate() {
 				@Override
@@ -740,7 +741,7 @@ public class scanCSD extends CSD {
 	/**
 	 * Command line option to show the simulation progress.
 	 */
-	public final CLOption cloProgress = new CLOption("progress", EvoLudo.catSimulation,
+	public final CLOption cloProgress = new CLOption("progress", Category.Simulation,
 			"--progress      make noise about progress",
 			new CLODelegate() {
 				@Override

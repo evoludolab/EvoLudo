@@ -42,6 +42,7 @@ import org.evoludo.simulator.modules.CDLP;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 
 /**
@@ -447,7 +448,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 	/**
 	 * Command line option to set the threshold for corner states.
 	 */
-	public final CLOption cloThreshold = new CLOption("threshold", "-1", EvoLudo.catSimulation,
+	public final CLOption cloThreshold = new CLOption("threshold", "-1", Category.Simulation,
 			"--threshold <t>  threshold for corner count", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -460,7 +461,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 	 * Command line option to determine the basin of attraction of punishers and
 	 * cooperators.
 	 */
-	public final CLOption cloBasin = new CLOption("basin", EvoLudo.catSimulation,
+	public final CLOption cloBasin = new CLOption("basin", Category.Simulation,
 			"--basin         basin of attraction - punisher vs. cooperation", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -473,7 +474,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 	 * Command line option to determine the time to reach the threshold of
 	 * punishers.
 	 */
-	public final CLOption cloTime2Punish = new CLOption("time2pun", "-1", EvoLudo.catSimulation,
+	public final CLOption cloTime2Punish = new CLOption("time2pun", "-1", Category.Simulation,
 			"--time2pun <s>  time to reach threshold of punishers, s number of samples", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -485,7 +486,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 	/**
 	 * Command line option to generate a histogram of states visited.
 	 */
-	public final CLOption cloHistogram = new CLOption("histogram", EvoLudo.catSimulation,
+	public final CLOption cloHistogram = new CLOption("histogram", Category.Simulation,
 			"--histogram     generate histogram of states visited", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {

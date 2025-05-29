@@ -71,6 +71,7 @@ import org.evoludo.simulator.views.MultiView;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 import org.evoludo.util.PlistParser;
@@ -1169,7 +1170,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * Command line option to redirect output to file (output overwrites potentially
 	 * existing file).
 	 */
-	public final CLOption cloOutput = new CLOption("output", "stdout", catSimulation,
+	public final CLOption cloOutput = new CLOption("output", "stdout", Category.Simulation,
 			"--output <f>    redirect output to file", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1200,7 +1201,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * Command line option to redirect output to file (appends output to potentially
 	 * existing file).
 	 */
-	public final CLOption cloAppend = new CLOption("append", "stdout", catSimulation,
+	public final CLOption cloAppend = new CLOption("append", "stdout", Category.Simulation,
 			"--append <f>    append output to file", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1234,7 +1235,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * when requesting to save the end state of a simulation run with
 	 * {@code --export}, see {@link #cloExport}.
 	 */
-	public final CLOption cloRestore = new CLOption("restore", "norestore", catSimulation,
+	public final CLOption cloRestore = new CLOption("restore", "norestore", Category.Simulation,
 			"--restore <filename>  restore saved state from file", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1249,7 +1250,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * execution, see {@link #cloRestore}.
 	 */
 	public final CLOption cloExport = new CLOption("export", "evoludo-%d.plist", CLOption.Argument.OPTIONAL,
-			catSimulation,
+			Category.Simulation,
 			"--export [<filename>]  export final state of simulation (%d for generation)", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1305,7 +1306,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	/**
 	 * Command line option to set the data reported by simulations.
 	 */
-	public final CLOption cloData = new CLOption("data", "none", catSimulation,
+	public final CLOption cloData = new CLOption("data", "none", Category.Simulation,
 			"--data <d[,d1,...]>  type of data to report", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1361,7 +1362,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	/**
 	 * Command line option to set the data reported by simulations.
 	 */
-	public final CLOption cloDigits = new CLOption("digits", "4", catSimulation,
+	public final CLOption cloDigits = new CLOption("digits", "4", Category.Simulation,
 			"--digits <d>    precision of data output", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {

@@ -253,6 +253,31 @@ public class CLOption implements Comparable<CLOption> {
 		public String getHeader() {
 			return header;
 		}
+
+		/**
+		 * The category for global options.
+		 */
+		public static final Category Global = new Category("Global options:", 50);
+
+		/**
+		 * The category for user interface specific options.
+		 */
+		public static final CLOption.Category GUI = new CLOption.Category("User interface specific options:", 10);
+
+		/**
+		 * The category for simulation specific options.
+		 */
+		public static final CLOption.Category Simulation = new CLOption.Category("Simulation specific options:", 20);
+
+		/**
+		 * The category for model specific options.
+		 */
+		public static final CLOption.Category Model = new CLOption.Category("Model specific options:", 30);
+
+		/**
+		 * The category for module specific options.
+		 */
+		public static final CLOption.Category Module = new CLOption.Category("Module specific options:", 40);
 	}
 
 	/**

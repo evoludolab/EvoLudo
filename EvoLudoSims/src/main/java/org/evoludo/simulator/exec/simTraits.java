@@ -45,6 +45,7 @@ import org.evoludo.simulator.modules.Traits;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 
 import com.sun.management.OperatingSystemMXBean;
@@ -186,7 +187,7 @@ public class simTraits extends Traits {
 	/**
 	 * Command line option to specify the population sizes.
 	 */
-	public final CLOption cloNPopulations = new CLOption("popsize", "100", EvoLudo.catSimulation,
+	public final CLOption cloNPopulations = new CLOption("popsize", "100", Category.Simulation,
 			"--popsize <n1:n2:...>  array of population sizes",
 			new CLODelegate() {
 				@Override
@@ -199,7 +200,7 @@ public class simTraits extends Traits {
 	/**
 	 * Command line option to show the simulation progress.
 	 */
-	public final CLOption cloProgress = new CLOption("progress", EvoLudo.catSimulation,
+	public final CLOption cloProgress = new CLOption("progress", Category.Simulation,
 			"--progress      make noise about progress",
 			new CLODelegate() {
 				@Override
@@ -212,7 +213,7 @@ public class simTraits extends Traits {
 	/**
 	 * Command line option to set the minimal measurement time.
 	 */
-	public final CLOption cloMinTime = new CLOption("mintime", "60", EvoLudo.catSimulation, // 60 seconds
+	public final CLOption cloMinTime = new CLOption("mintime", "60", Category.Simulation, // 60 seconds
 			"--mintime <t>   minimal measurement time in seconds",
 			new CLODelegate() {
 				@Override

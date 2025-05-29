@@ -37,6 +37,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 
 /**
  * Cooperation in voluntary (non-linear) public goods interactions with peer
@@ -438,7 +439,7 @@ public class CDLP extends CDL {
 	 * cooperators, provided the composition of the interaction group reveals them
 	 * as second-order free riders.
 	 */
-	public final CLOption cloLeniencyCooperators = new CLOption("leniencycoop", "0", EvoLudo.catModule,
+	public final CLOption cloLeniencyCooperators = new CLOption("leniencycoop", "0", Category.Module,
 			"--leniencycoop <l>  leniency for punishing cooperators", new CLODelegate() {
 
 				/**
@@ -458,7 +459,7 @@ public class CDLP extends CDL {
 	/**
 	 * Command line option to set the leniency of peer punishers towards loners.
 	 */
-	public final CLOption cloLeniencyLoners = new CLOption("leniencyloner", "0", EvoLudo.catModule,
+	public final CLOption cloLeniencyLoners = new CLOption("leniencyloner", "0", Category.Module,
 			"--leniencyloner <l>  leniency for punishing loners", new CLODelegate() {
 
 				/**
@@ -478,7 +479,7 @@ public class CDLP extends CDL {
 	/**
 	 * Command line option to set the fine of peer punishment for non-contributors.
 	 */
-	public final CLOption cloPunishment = new CLOption("punishment", "1", EvoLudo.catModule,
+	public final CLOption cloPunishment = new CLOption("punishment", "1", Category.Module,
 			"--punishment <p>  punishment/fine", new CLODelegate() {
 
 				/**
@@ -498,7 +499,7 @@ public class CDLP extends CDL {
 	/**
 	 * Command line option to set the cost of peer punishment.
 	 */
-	public final CLOption cloCostPunish = new CLOption("costpunish", "0.3", EvoLudo.catModule,
+	public final CLOption cloCostPunish = new CLOption("costpunish", "0.3", Category.Module,
 			"--costpunish <c>  cost of punishment", new CLODelegate() {
 
 				/**

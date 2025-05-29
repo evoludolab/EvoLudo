@@ -37,6 +37,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 
 /**
  * Cooperation in voluntary (non-linear) public goods interactions with peer and
@@ -328,7 +329,7 @@ public class CDLPQ extends CDLP {
 	/**
 	 * Command line option to set the fine of pool punishment for non-contributors.
 	 */
-	public final CLOption cloPoolPunish = new CLOption("poolpunish", "1", EvoLudo.catModule,
+	public final CLOption cloPoolPunish = new CLOption("poolpunish", "1", Category.Module,
 			"--poolpunish    pool punishment", new CLODelegate() {
 
 				/**
@@ -348,7 +349,7 @@ public class CDLPQ extends CDLP {
 	/**
 	 * Command line option to set the cost of pool punishment.
 	 */
-	public final CLOption cloCostPoolPunish = new CLOption("costpoolpunish", "0.3", EvoLudo.catModule,
+	public final CLOption cloCostPoolPunish = new CLOption("costpoolpunish", "0.3", Category.Module,
 			"--costpoolpunish  cost of pool punishment", new CLODelegate() {
 
 				/**

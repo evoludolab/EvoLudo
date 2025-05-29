@@ -36,6 +36,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 
 /**
  * Parent class of all EvoLudo modules with discrete sets of traits.
@@ -227,7 +228,7 @@ public abstract class Discrete extends Module {
 	 * Command line option to request that models stop execution when reaching
 	 * monomorphic population states.
 	 */
-	public final CLOption cloMonoStop = new CLOption("monostop", "nostop", CLOption.Argument.NONE, EvoLudo.catModel,
+	public final CLOption cloMonoStop = new CLOption("monostop", "nostop", CLOption.Argument.NONE, Category.Model,
 			"--monostop      stop once population become monomorphic",
 			new CLODelegate() {
 

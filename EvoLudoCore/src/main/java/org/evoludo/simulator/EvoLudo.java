@@ -86,6 +86,7 @@ import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.CLOption.Key;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
@@ -1778,7 +1779,7 @@ public abstract class EvoLudo
 			globalMsg += " for module '" + activeModule.getKey() + "'";
 			if (activeModel != null) {
 				globalMsg += " and model '" + activeModel.getType().getKey() + "'";
-				catModel.setHeader("Options for model '" + activeModel.getType().getKey() + "'");
+				Category.Model.setHeader("Options for model '" + activeModel.getType().getKey() + "'");
 			} else
 				globalMsg += " (select model for more options)";
 			globalMsg += "\n\nGlobal options:";
@@ -1800,11 +1801,11 @@ public abstract class EvoLudo
 				}
 				idx += nt;
 			}
-			catModule.setHeader("Options for module '" + activeModule.getKey() //
+			Category.Module.setHeader("Options for module '" + activeModule.getKey() //
 					+ "' with trait indices and names:" + moduleMsg);
 		} else
 			globalMsg += " (select module and model for more info):";
-		catGlobal.setHeader(globalMsg);
+		Category.Global.setHeader(globalMsg);
 		return parser.helpCLO(true);
 	}
 
@@ -1814,34 +1815,9 @@ public abstract class EvoLudo
 	public abstract void showHelp();
 
 	/**
-	 * The category for global options.
-	 */
-	public static final CLOption.Category catGlobal = new CLOption.Category("Global options:", 50);
-
-	/**
-	 * The category for module specific options.
-	 */
-	public static final CLOption.Category catModule = new CLOption.Category("Module specific options:", 40);
-
-	/**
-	 * The category for model specific options.
-	 */
-	public static final CLOption.Category catModel = new CLOption.Category("Model specific options:", 30);
-
-	/**
-	 * The category for simulation specific options.
-	 */
-	public static final CLOption.Category catSimulation = new CLOption.Category("Simulation specific options:", 20);
-
-	/**
-	 * The category for user interface specific options.
-	 */
-	public static final CLOption.Category catGUI = new CLOption.Category("User interface specific options:", 10);
-
-	/**
 	 * Command line option to set module.
 	 */
-	public final CLOption cloModule = new CLOption("module", null, catGlobal,
+	public final CLOption cloModule = new CLOption("module", null, Category.Global,
 			"--module <m>    select module from:", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1853,7 +1829,7 @@ public abstract class EvoLudo
 	/**
 	 * Command line option to set the type of model (see {@link Type}).
 	 */
-	public final CLOption cloModel = new CLOption("model", Type.IBS.getKey(), catModule,
+	public final CLOption cloModel = new CLOption("model", Type.IBS.getKey(), Category.Module,
 			"--model <m>     model type", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1865,7 +1841,7 @@ public abstract class EvoLudo
 	/**
 	 * Command line option to set seed of random number generator.
 	 */
-	public final CLOption cloSeed = new CLOption("seed", "no seed", CLOption.Argument.OPTIONAL, catModel,
+	public final CLOption cloSeed = new CLOption("seed", "no seed", CLOption.Argument.OPTIONAL, Category.Model,
 			"--seed[=s]      random seed (0)", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1883,7 +1859,7 @@ public abstract class EvoLudo
 	 * Command line option to request that the EvoLudo model immediately starts
 	 * running after loading.
 	 */
-	public final CLOption cloRun = new CLOption("run", catGUI,
+	public final CLOption cloRun = new CLOption("run", Category.GUI,
 			"--run           simulations run after launch", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1898,7 +1874,7 @@ public abstract class EvoLudo
 	/**
 	 * Command line option to set the delay between subsequent updates.
 	 */
-	public final CLOption cloDelay = new CLOption("delay", "" + DELAY_INIT, catGUI, // DELAY_INIT
+	public final CLOption cloDelay = new CLOption("delay", "" + DELAY_INIT, Category.GUI,
 			"--delay <d>     delay between updates (d: delay in msec)", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1915,7 +1891,7 @@ public abstract class EvoLudo
 	 * affects the display in {@link org.evoludo.simulator.views.S3} or
 	 * {@link org.evoludo.simulator.views.Phase2D}.
 	 */
-	public final CLOption cloTrajectoryColor = new CLOption("trajcolor", "black", catGUI,
+	public final CLOption cloTrajectoryColor = new CLOption("trajcolor", "black", Category.GUI,
 			"--trajcolor <c>  color for trajectories\n"
 					+ "           <c>: color name or '(r,g,b[,a])' with r,g,b,a in [0-255]",
 			new CLODelegate() {
@@ -1934,7 +1910,7 @@ public abstract class EvoLudo
 	 * 
 	 * @see ColorModelType
 	 */
-	public final CLOption cloTraitColorScheme = new CLOption("traitcolorscheme", "traits", catGUI,
+	public final CLOption cloTraitColorScheme = new CLOption("traitcolorscheme", "traits", Category.GUI,
 			"--traitcolorscheme <m>  color scheme for traits:", //
 			new CLODelegate() {
 				@Override
@@ -1951,7 +1927,7 @@ public abstract class EvoLudo
 	 * implementation of {@link MersenneTwister} and (2) the performance of
 	 * MersenneTwister compared to {@link java.util.Random}.
 	 */
-	public final CLOption cloRNG = new CLOption("testRNG", catGlobal,
+	public final CLOption cloRNG = new CLOption("testRNG", Category.Global,
 			"--testRNG       test random number generator", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1977,7 +1953,7 @@ public abstract class EvoLudo
 	/**
 	 * Command line option to set verbosity level of logging.
 	 */
-	public final CLOption cloVerbose = new CLOption("verbose", "info", catGlobal,
+	public final CLOption cloVerbose = new CLOption("verbose", "info", Category.Global,
 			"--verbose <l>   level of verbosity with l one of\n" //
 					+ "                all, debug/finest, finer, fine, config,\n" //
 					+ "                info, warning, error, or none",
@@ -2032,7 +2008,7 @@ public abstract class EvoLudo
 	/**
 	 * Command line option to print help message for available command line options.
 	 */
-	public final CLOption cloHelp = new CLOption("help", catGlobal,
+	public final CLOption cloHelp = new CLOption("help", Category.Global,
 			"--help          print this help screen", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {

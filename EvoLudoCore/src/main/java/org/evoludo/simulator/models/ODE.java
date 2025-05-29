@@ -46,6 +46,7 @@ import org.evoludo.simulator.modules.PlayerUpdate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -1755,7 +1756,7 @@ public class ODE extends Model implements Discrete {
 	 * @see #dt
 	 * @see #setDt(double)
 	 */
-	public final CLOption cloDEdt = new CLOption("dt", "0.1", EvoLudo.catModel,
+	public final CLOption cloDEdt = new CLOption("dt", "0.1", Category.Model,
 			"--dt <t>        time increment for ODE/PDE/SDE integration", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1773,7 +1774,7 @@ public class ODE extends Model implements Discrete {
 	 * @see InitType
 	 * @see PDE.InitType
 	 */
-	public final CLOption cloInit = new CLOption("init", InitType.UNIFORM.getKey(), EvoLudo.catModel,
+	public final CLOption cloInit = new CLOption("init", InitType.UNIFORM.getKey(), Category.Model,
 			"--init <t>      type of initial configuration", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1791,7 +1792,7 @@ public class ODE extends Model implements Discrete {
 	 * @see #setAdjustedDynamics(boolean)
 	 */
 	public final CLOption cloAdjustedDynamics = new CLOption("adjusted", "standard", CLOption.Argument.NONE,
-			EvoLudo.catModel,
+			Category.Model,
 			"--adjusted      adjusted replicator dynamics", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1809,7 +1810,7 @@ public class ODE extends Model implements Discrete {
 	 * @see #hasConverged()
 	 * @see #isMonomorphic()
 	 */
-	public final CLOption cloDEAccuracy = new CLOption("accuracy", "0.0001", EvoLudo.catModel,
+	public final CLOption cloDEAccuracy = new CLOption("accuracy", "0.0001", Category.Model,
 			"--accuracy <a>  accuracy for convergence, y(t+dt)-y(t)<a dt",
 			new CLODelegate() {
 				@Override
@@ -1823,7 +1824,7 @@ public class ODE extends Model implements Discrete {
 	 * Command line option to set the number of generations between reports for
 	 * {@link EvoLudo#modelNext()}.
 	 */
-	public final CLOption cloTimeReversed = new CLOption("timereversed", "forward", EvoLudo.catModel,
+	public final CLOption cloTimeReversed = new CLOption("timereversed", "forward", Category.Model,
 			"--timereversed  reverse time", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {

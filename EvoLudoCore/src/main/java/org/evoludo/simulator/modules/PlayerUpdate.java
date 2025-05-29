@@ -36,6 +36,7 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 
 /**
@@ -194,7 +195,7 @@ public class PlayerUpdate {
 	 */
 	public final CLOption clo = new CLOption("playerupdate",
 			PlayerUpdate.Type.IMITATE.getKey() + " 1,0",
-			EvoLudo.catModel,
+			Category.Model,
 			"--playerupdate <u> [<n>[,<e>]] set player update type with\n" + //
 					"                noise n (neutral=1) and error probability e (0):",
 			new CLODelegate() {
