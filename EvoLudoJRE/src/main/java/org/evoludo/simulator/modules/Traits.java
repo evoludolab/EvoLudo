@@ -48,6 +48,7 @@ import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.Formatter;
 
 /**
  * Evolutionary dynamics in populations with {@code d} strategic traits.
@@ -104,18 +105,13 @@ public class Traits extends Discrete implements Payoffs,
 	}
 
 	@Override
-	public String getKey() {
-		return "DT";
-	}
-
-	@Override
 	public String getAuthors() {
 		return "Christoph Hauert";
 	}
 
 	@Override
 	public String getTitle() {
-		return "Random Games with D Types";
+		return "Random Games with D Traits";
 	}
 
 	@Override
@@ -238,6 +234,7 @@ public class Traits extends Discrete implements Payoffs,
 				for (int i = 0; i < nTraits; i++)
 					for (int j = 0; j < nTraits; j++)
 						payoff[i][j] = 2.0 * rng.random01() - 1.0;
+				cloPayoff.setArg("random [" + Formatter.format(payoff, 4) + "]");
 				break;
 			default:
 		}
