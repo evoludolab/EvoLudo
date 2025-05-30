@@ -108,7 +108,7 @@ public class simCDL extends CDL implements ChangeListener {
 		double[][] abstime = null;
 		model.setTimeStep(1.0);
 		engine.modelReset();
-		engine.dumpParameters();
+		engine.writeHeader();
 
 		// TESTING PROBABILITIES AND TIME SCALES
 		// initcount = null;
@@ -240,7 +240,7 @@ public class simCDL extends CDL implements ChangeListener {
 							+ Formatter.format(loc[LONER], 4) + "\t" + Formatter.format(abstime[c][d], 4));
 				}
 			}
-			engine.dumpEnd();
+			engine.writeFooter();
 			engine.exportState();
 			((EvoLudoJRE) engine).exit(0);
 		}
@@ -282,7 +282,7 @@ public class simCDL extends CDL implements ChangeListener {
 					System.err.printf("progress %d/%d done                    \r", done, tot);
 				a += scanNL[2];
 			}
-			engine.dumpEnd();
+			engine.writeFooter();
 			engine.exportState();
 			((EvoLudoJRE) engine).exit(0);
 		}

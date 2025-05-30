@@ -1447,15 +1447,17 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Report all parameter settings to <code>output</code> (currently JRE only).
+	 * Write header of report to <code>output</code> (currently JRE only). The
+	 * information should include items like the version of the EvoLudo code, the
+	 * current date and the string of command line options for reproducibility.
 	 */
-	public void dumpParameters() {
+	public void writeHeader() {
 	}
 
 	/**
 	 * Concluding words for report (currently JRE only).
 	 */
-	public void dumpEnd() {
+	public void writeFooter() {
 	}
 
 	/**

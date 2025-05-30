@@ -219,7 +219,7 @@ public class scanCSD extends CSD {
 		boolean initHigh = false;
 
 		// print header
-		engine.dumpParameters();
+		engine.writeHeader();
 
 		// print result legend
 		out.println("# tend		b1		b2		c1		c2		mean	sdev	type");
@@ -420,7 +420,7 @@ public class scanCSD extends CSD {
 				break;
 			b1 = (b1Log ? b1 * b1Incr : b1 + b1Incr);
 		}
-		engine.dumpEnd();
+		engine.writeFooter();
 		engine.exportState();
 	}
 

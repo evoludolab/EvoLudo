@@ -345,7 +345,7 @@ public class TestEvoLudo implements MilestoneListener {
 				}
 			}
 		}
-		engine.dumpEnd();
+		engine.writeFooter();
 		return true;
 	}
 

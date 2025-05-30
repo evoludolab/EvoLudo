@@ -151,7 +151,7 @@ public class simMoran extends Moran {
 		// END TEST
 
 		// print header
-		engine.dumpParameters();
+		engine.writeHeader();
 		if (engine.cloSeed.isSet()) {
 			// RNG seed is set. now clear seed to obtain reproducible statistics
 			// rather just a single data point repeatedly
@@ -210,7 +210,7 @@ public class simMoran extends Moran {
 				+ Formatter.formatFix(tA1(nPopulation), 8) + "\t"
 				+ Formatter.formatFix(absTotUpdate[0], 8) + " ± " + Formatter.formatFix(Math.sqrt(absTotUpdate[1] / (absTotUpdate[2] - 1)), 8) + "\t"
 				+ Formatter.formatFix(t1(rhoA1, nPopulation), 8));
-		engine.dumpEnd();
+		engine.writeFooter();
 		engine.exportState();
 	}
 

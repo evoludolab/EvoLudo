@@ -131,7 +131,7 @@ public class simTraits extends Traits {
 		playerUpdate.setType(PlayerUpdate.Type.IMITATE);
 		playerUpdate.setNoise(1.0);
 		engine.modelReset();
-		engine.dumpParameters();
+		engine.writeHeader();
 
 		// dry-run to give the JIT a chance to compile the relevant parts
 		setNPopulation(100);
@@ -180,7 +180,7 @@ public class simTraits extends Traits {
 					+ Formatter.format((cpuSDE * 1000.0) / mcSDE, 2) +
 					"\t" + Formatter.formatSci((double) (cpuSims * mcSDE) / (double) (cpuSDE * mcSims), 6));
 		}
-		engine.dumpEnd();
+		engine.writeFooter();
 		engine.exportState();
 	}
 

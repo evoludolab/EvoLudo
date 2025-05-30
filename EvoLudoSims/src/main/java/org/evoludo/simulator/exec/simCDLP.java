@@ -133,7 +133,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 		model.setTimeStep(1.0);
 		engine.modelReset();
 		resetStatistics();
-		engine.dumpParameters();
+		engine.writeHeader();
 		double timeStop = model.getTimeStop();
 
 		// do statistics starting from random initial configurations and determine the
@@ -320,7 +320,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 			}
 		}
 		out.println("# generations @ end: " + Formatter.formatSci(generation, 6));
-		engine.dumpEnd();
+		engine.writeFooter();
 		engine.exportState();
 	}
 

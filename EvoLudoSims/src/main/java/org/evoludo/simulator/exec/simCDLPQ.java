@@ -102,7 +102,7 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 		resetStatistics();
 
 		// print header
-		engine.dumpParameters();
+		engine.writeHeader();
 
 		// evolve population
 		startStatistics();
@@ -145,7 +145,7 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 		out.println(msg);
 
 		out.println("# generations @ end: " + Formatter.formatSci(generation, 6));
-		engine.dumpEnd();
+		engine.writeFooter();
 		engine.exportState();
 	}
 

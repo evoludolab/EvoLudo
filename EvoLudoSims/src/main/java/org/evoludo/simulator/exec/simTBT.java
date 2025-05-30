@@ -124,7 +124,7 @@ public class simTBT extends TBT implements ChangeListener {
 		ibs = (org.evoludo.simulator.models.IBS) model;
 
 		// print header
-		engine.dumpParameters();
+		engine.writeHeader();
 
 		// prepare for several runs
 		mean = new double[nTraits];
@@ -182,7 +182,7 @@ public class simTBT extends TBT implements ChangeListener {
 				r += scanDG[2];
 			}
 			out.println("# generations @ end: " + Formatter.formatSci(ibs.getTime(), 6));
-			engine.dumpEnd();
+			engine.writeFooter();
 			engine.exportState();
 			return;
 		}
@@ -232,7 +232,7 @@ public class simTBT extends TBT implements ChangeListener {
 				s += scanST[2];
 			}
 			out.println("# generations @ end: " + Formatter.formatSci(ibs.getTime(), 6));
-			engine.dumpEnd();
+			engine.writeFooter();
 			engine.exportState();
 			return;
 		}
@@ -293,7 +293,7 @@ public class simTBT extends TBT implements ChangeListener {
 			msg += Formatter.format(meanmean[n] / nRuns, 6) + "\t" + Formatter.format(meanvar[n] / nRuns, 6) + "\t";
 		out.println(msg);
 		out.println("# generations @ end: " + Formatter.formatSci(ibs.getTime(), 6));
-		engine.dumpEnd();
+		engine.writeFooter();
 		engine.exportState();
 	}
 

@@ -421,7 +421,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				}
 			}
 			exportState();
-			dumpEnd();
+			writeFooter();
 			exit(0);
 		}
 		if (dataTypes == null || dataTypes.isEmpty()) {
@@ -472,7 +472,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		long nSamples = (long) model.getNSamples();
 		long samples = 0L;
 		// print settings
-		dumpParameters();
+		writeHeader();
 		// print data legend (for dynamical reports) and initialize variables (for
 		// statistics reports)
 		for (MultiView.DataTypes data : dataTypes) {
@@ -732,7 +732,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			default:
 				throw new Error("Mode not recognized.");
 		}
-		dumpEnd();
+		writeFooter();
 		exit(0);
 	}
 
@@ -1015,11 +1015,11 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	}
 
 	@Override
-	public void dumpParameters() {
+	public void writeHeader() {
 		output.println(
 				// print easily identifiable delimiter to simplify processing of data files
-				// containing
-				// multiple simulation runs - e.g. for graphical representations in MATLAB
+				// containing multiple simulation runs - e.g. for graphical representations in
+				// Mathematica or MATLAB
 				"! New Record" + "\n# " + activeModule.getTitle() + "\n# " + getVersion() + "\n# today:                "
 						+ (new Date().toString()));
 		output.println("# arguments:            " + parser.getCLO());
@@ -1038,7 +1038,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	String exportdir = null;
 
 	@Override
-	public void dumpEnd() {
+	public void writeFooter() {
 		int deltamilli = elapsedTimeMsec();
 		int deltasec = deltamilli / 1000;
 		int deltamin = deltasec / 60;
