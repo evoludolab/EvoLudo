@@ -454,11 +454,18 @@ public class IBSDPopulation extends IBSPopulation {
 	protected double updatePlayerEcologyAt(int me) {
 		debugFocal = me;
 		debugModel = -1;
-		double randomTestVal = random01() * (module.getDeathRate() + maxFitness); // time rescaling
+		int nPop = getPopulationSize();
+		double deathRate = module.getDeathRate();
+		double maxRate = deathRate + maxFitness;
+		double randomTestVal = random01() * maxRate; // time rescaling
 		if (randomTestVal < module.getDeathRate()) {
 			// vacate focal site
-			traitsNext[me] = VACANT + nTraits;
+			traitsNext[me] = VACANT + nTraits; // more efficient than setNextTraitAt(me, VACANT);
 			updateScoreAt(me, true);
+			if (nPop == 1) {
+				// population went extinct, no more events possible
+				return Double.POSITIVE_INFINITY;
+			}
 		} else if (randomTestVal < (module.getDeathRate() + getFitnessAt(me))) {
 			// fill neighbor site if vacant
 			debugModel = pickNeighborSiteAt(me);
@@ -466,12 +473,8 @@ public class IBSDPopulation extends IBSPopulation {
 				maybeMutateMoran(me, debugModel);
 			}
 		}
-		int nPop = getPopulationSize();
-		if (nPop == 0)
-			// population went extinct, no more events possible
-			return Double.POSITIVE_INFINITY;
-		double rate = nPop * (module.getDeathRate() + maxFitness);
-		return RNGDistribution.Exponential.next(rng.getRNG(), rate);
+		// exponentially distributed waiting until the current event occured
+		return RNGDistribution.Exponential.next(rng.getRNG(), nPop * maxRate);
 	}
 
 	@Override
