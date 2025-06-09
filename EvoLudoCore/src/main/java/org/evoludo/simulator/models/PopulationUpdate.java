@@ -118,7 +118,7 @@ public class PopulationUpdate {
 	 * @return {@code true} if update is synchronous
 	 */
 	public boolean isSynchronous() {
-		return (type.equals(Type.SYNC) || type.equals(Type.WRIGHT_FISHER));
+		return (type.equals(Type.SYNC)); // TODO add || type.equals(Type.WRIGHT_FISHER));
 	}
 
 	/**
@@ -221,7 +221,7 @@ public class PopulationUpdate {
 		/**
 		 * Wright-Fisher process (synchronous). (not yet implemented!)
 		 */
-		WRIGHT_FISHER("Wright-Fisher", "Wright-Fisher process (synchronous)"),
+		//TODO add WRIGHT_FISHER("Wright-Fisher", "Wright-Fisher process (synchronous)"),
 
 		/**
 		 * Asynchronous population updates.

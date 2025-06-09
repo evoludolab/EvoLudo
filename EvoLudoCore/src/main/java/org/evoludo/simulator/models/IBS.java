@@ -465,19 +465,13 @@ public abstract class IBS extends Model {
 			// set opponents
 			pop.setOpponentPop(mod.getOpponent().getIBSPopulation());
 		}
-		IBSPopulation pop = species.get(0).getIBSPopulation();
+		Module main = species.get(0);
 		// set shortcut for single species modules
-		population = isMultispecies ? null : pop;
-		cloGeometryInteraction.inheritKeysFrom(pop.getModule().cloGeometry);
-		cloGeometryCompetition.inheritKeysFrom(pop.getModule().cloGeometry);
-		cloMigration.addKeys(MigrationType.values());
-		PopulationUpdate pup = pop.getPopulationUpdate();
-		pup.clo.addKeys(PopulationUpdate.Type.values());
-		// ToDo: further updates to implement or make standard
-		pup.clo.removeKey(PopulationUpdate.Type.WRIGHT_FISHER);
-		pup.clo.removeKey(PopulationUpdate.Type.ECOLOGY);
-		speciesUpdate = new SpeciesUpdate(species.get(0));
-		speciesUpdate.clo.addKeys(SpeciesUpdate.Type.values());
+		population = isMultispecies ? null : main.getIBSPopulation();
+		cloGeometryInteraction.inheritKeysFrom(main.cloGeometry);
+		cloGeometryCompetition.inheritKeysFrom(main.cloGeometry);
+		if (isMultispecies)
+			speciesUpdate = new SpeciesUpdate(main);
 		statisticsSettings = new Statistics(this);
 	}
 
@@ -1669,11 +1663,7 @@ public abstract class IBS extends Model {
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
-		if (species.size() > 1)
-			parser.addCLO(speciesUpdate.clo);
-		IBSPopulation ibs = species.get(0).getIBSPopulation();
-		PopulationUpdate pup = ibs.getPopulationUpdate();
-		parser.addCLO(pup.clo);
+		cloMigration.addKeys(MigrationType.values());
 		parser.addCLO(cloMigration);
 		parser.addCLO(cloGeometryRewire);
 		parser.addCLO(cloGeometryAddwire);
@@ -1686,12 +1676,21 @@ public abstract class IBS extends Model {
 		boolean anyNonVacant = false;
 		boolean allStatic = true;
 		boolean anyPayoffs = false;
+		boolean allPayoffs = true;
 		for (Module mod : species) {
 			int vacant = mod.getVacant();
 			anyVacant |= vacant >= 0;
 			anyNonVacant |= vacant < 0;
 			allStatic &= mod.isStatic();
-			anyPayoffs |= (mod instanceof Payoffs);
+			boolean hasPayoffs = (mod instanceof Payoffs);
+			anyPayoffs |= hasPayoffs;
+			allPayoffs &= hasPayoffs;
+		}
+		if (species.size() > 1) {
+			speciesUpdate.clo.addKeys(SpeciesUpdate.Type.values());
+			if (!allPayoffs)
+				speciesUpdate.clo.removeKey(SpeciesUpdate.Type.FITNESS);
+			parser.addCLO(speciesUpdate.clo);
 		}
 		if (anyNonVacant) {
 			// additional options that only make sense without vacant sites
@@ -1699,12 +1698,19 @@ public abstract class IBS extends Model {
 			cloReferences.clearKeys();
 			cloReferences.addKeys(IBSGroup.SamplingType.values());
 		}
+		IBSPopulation ibs = species.get(0).getIBSPopulation();
+		PopulationUpdate pup = ibs.getPopulationUpdate();
+		// ToDo: further updates to implement or make standard
+		pup.clo.clearKeys();
 		if (anyVacant) {
 			// restrict population updates to those compatible with ecological models
-			pup.clo.clearKeys();
 			pup.clo.addKey(PopulationUpdate.Type.ECOLOGY);
 			pup.clo.setDefault(PopulationUpdate.Type.ECOLOGY.getKey());
+		} else {
+			pup.clo.addKeys(PopulationUpdate.Type.values());
+			pup.clo.removeKey(PopulationUpdate.Type.ECOLOGY);
 		}
+		parser.addCLO(pup.clo);
 		if (anyPayoffs && !allStatic) {
 			// options that are only meaningful if at least some populations have
 			// (non-static) fitness
