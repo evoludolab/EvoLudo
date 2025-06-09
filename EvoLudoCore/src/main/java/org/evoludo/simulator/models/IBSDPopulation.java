@@ -458,7 +458,7 @@ public class IBSDPopulation extends IBSPopulation {
 		double deathRate = module.getDeathRate();
 		double maxRate = deathRate + maxFitness;
 		double randomTestVal = random01() * maxRate; // time rescaling
-		if (randomTestVal < module.getDeathRate()) {
+		if (randomTestVal < deathRate) {
 			// vacate focal site
 			traitsNext[me] = VACANT + nTraits; // more efficient than setNextTraitAt(me, VACANT);
 			updateScoreAt(me, true);
@@ -466,7 +466,7 @@ public class IBSDPopulation extends IBSPopulation {
 				// population went extinct, no more events possible
 				return Double.POSITIVE_INFINITY;
 			}
-		} else if (randomTestVal < (module.getDeathRate() + getFitnessAt(me))) {
+		} else if (randomTestVal < (deathRate + getFitnessAt(me))) {
 			// fill neighbor site if vacant
 			debugModel = pickNeighborSiteAt(me);
 			if (isVacantAt(debugModel)) {
