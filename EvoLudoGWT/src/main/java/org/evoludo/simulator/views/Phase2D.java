@@ -150,7 +150,9 @@ public class Phase2D extends AbstractView {
 		map = ((HasPhase2D) module).getPhase2DMap();
 		if (map != null)
 			graph.setMap(map);
-		map = graph.getMap();
+		else
+			map = graph.getMap();
+		((HasPhase2D) module).setPhase2DMap(map);
 		// set axis labels and range
 		style = graph.getStyle();
 		if (model.isDE() && ((HasDE) module).getDependent() < 0) {
@@ -239,8 +241,12 @@ public class Phase2D extends AbstractView {
 		if (nSpecies > 1) {
 			for (Module mod : species) {
 				int nTraits = mod.getNTraits();
-				if (idx < nTraits)
+				if (idx < nTraits) {
+					if (nTraits == 1 || (nTraits == 2 && mod.getVacant() >= 0))
+						// omit species name for single trait or trait plus vacant
+						return mod.getTraitName(idx);
 					return mod.getName() + ": " + mod.getTraitName(idx);
+				}
 				idx -= nTraits;
 			}
 			// trait not found... should not get here!
@@ -283,8 +289,15 @@ public class Phase2D extends AbstractView {
 				nSpecies = 0;
 			}
 			int totTraits = 0;
-			for (Module mod : species)
-				totTraits += mod.getNTraits();
+			for (Module mod : species) {
+				int vidx = mod.getVacant();
+				int nt = mod.getNTraits();
+				boolean isDensity = (model.isDE() && (((HasDE) module).getDependent() < 0));
+				if (isDensity && nt == 1 | (nt == 2 && vidx >= 0))
+					totTraits++;
+				else
+					totTraits += nt;
+			}
 			if (traitXMenu == null || traitXItems == null || traitXItems.length != totTraits ||
 					traitYMenu == null || traitYItems == null || traitYItems.length != totTraits) {
 				traitXMenu = new ContextMenu(menu);
@@ -293,10 +306,11 @@ public class Phase2D extends AbstractView {
 				traitYItems = new ContextMenuCheckBoxItem[totTraits];
 				int idx = 0;
 				for (Module mod : species) {
-					int vacant = mod.getVacant();
-					int nTraits = mod.getNTraits();
-					if (isMultispecies) {
+					int vidx = mod.getVacant();
+					int nt = mod.getNTraits();
+					if (isMultispecies && !(nt == 1 || (nt == 2 && vidx >= 0))) {
 						// add separator unless it's the first species
+						// or species with single trait or trait plus vacant
 						if (idx > 0) {
 							traitXMenu.addSeparator();
 							traitYMenu.addSeparator();
@@ -317,17 +331,15 @@ public class Phase2D extends AbstractView {
 						traitYMenu.add(speciesName);
 					}
 					boolean isDensity = (model.isDE() && (((HasDE) module).getDependent() < 0));
-					for (int n = 0; n < nTraits; n++) {
+					for (int n = 0; n < nt; n++) {
+						if (isDensity && n == vidx)
+							continue;
 						ContextMenuCheckBoxItem traitXItem = new ContextMenuCheckBoxItem(mod.getTraitName(n), //
-								new TraitCommand(idx, TraitCommand.X_AXIS));
+								new TraitCommand(n, TraitCommand.X_AXIS));
 						traitXMenu.add(traitXItem);
 						ContextMenuCheckBoxItem traitYItem = new ContextMenuCheckBoxItem(mod.getTraitName(n), //
-								new TraitCommand(idx, TraitCommand.Y_AXIS));
+								new TraitCommand(n, TraitCommand.Y_AXIS));
 						traitYMenu.add(traitYItem);
-						if (isDensity && n == vacant) {
-							traitXItem.setEnabled(false);
-							traitYItem.setEnabled(false);
-						}
 						traitXItems[idx] = traitXItem;
 						traitYItems[idx] = traitYItem;
 						idx++;
