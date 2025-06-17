@@ -997,6 +997,7 @@ public class EvoLudoLab extends JFrame
 		EvoLudoJRE engine = new EvoLudoJRE();
 		engine.setCLO(Formatter.format(args, " "));
 		args = engine.getSplitCLO();
+		boolean simOk = false;
 		// first check if legacy java GUI requested
 		for (String arg : args) {
 			if (arg.startsWith("gui")) {
@@ -1009,11 +1010,17 @@ public class EvoLudoLab extends JFrame
 				});
 				return;
 			}
+			if (arg.startsWith("data") || arg.startsWith("export"))
+				simOk = true;
 		}
+		if (!simOk)
+			engine.fatal(
+				"One of the command line options --gui, --data <types> or --export <file> is required.\n"
+				+ "Try --help for more information.");
 		engine.simulation();
 		// should not get here...
 		engine.fatal(
-				"One of the command line options --gui, --data <types> or --export <file> is required.\n"
+				"All warnings in the option string must first be resolved.\n"
 				+ "Try --help for more information.");
 	}
 }
