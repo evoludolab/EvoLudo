@@ -144,7 +144,6 @@ public abstract class IBSPopulation {
 
 		interGroup = new IBSGroup(rng);
 		compGroup = new IBSGroup(rng);
-
 		populationUpdate = new PopulationUpdate((IBS) engine.getModel());
 	}
 
@@ -1390,10 +1389,10 @@ public abstract class IBSPopulation {
 		PopulationUpdate.Type put = populationUpdate.getType();
 		populationUpdate.setType(PopulationUpdate.Type.SYNC);
 		if (module.isPairwise()) {
-			interGroup.pickAt(me, interaction, true);
+			interGroup.pickAt(me, true);
 			playPairGameAt(interGroup);
 		} else {
-			interGroup.pickAt(me, interaction, true);
+			interGroup.pickAt(me, true);
 			playGroupGameAt(interGroup);
 		}
 		populationUpdate.setType(put);
@@ -1421,23 +1420,23 @@ public abstract class IBSPopulation {
 			throw new Error("ERROR: playGameAt(int idx) and adjustScores are incompatible!");
 		}
 		if (module.isPairwise()) {
-			interGroup.pickAt(me, interaction, true);
+			interGroup.pickAt(me, true);
 			playPairGameAt(interGroup);
 			// if undirected, we are done
 			if (interaction.isUndirected)
 				return;
 
 			// directed graph - additionally/separately interact with in-neighbors
-			interGroup.pickAt(me, interaction, false);
+			interGroup.pickAt(me, false);
 			playPairGameAt(interGroup);
 		} else {
-			interGroup.pickAt(me, interaction, true);
+			interGroup.pickAt(me, true);
 			playGroupGameAt(interGroup);
 			// if undirected, we are done
 			if (interaction.isUndirected)
 				return;
 			// directed graph - additionally/separately interact with in-neighbors
-			interGroup.pickAt(me, interaction, false);
+			interGroup.pickAt(me, false);
 			playGroupGameAt(interGroup);
 		}
 	}
@@ -2330,7 +2329,7 @@ public abstract class IBSPopulation {
 		debugFocal = me;
 		// note: choose random neighbor among in-neighbors (those are upstream to serve
 		// as models; this is the opposite for birth-death scenarios)
-		compGroup.pickAt(me, competition, false);
+		compGroup.pickAt(me, false);
 		debugNModels = compGroup.nSampled;
 		debugModels = compGroup.group;
 		debugModel = -1;
@@ -3014,6 +3013,8 @@ public abstract class IBSPopulation {
 		// make sure competiton geometry is set
 		if (competition == null)
 			competition = interaction;
+		interGroup.setGeometry(interaction);
+		compGroup.setGeometry(competition);
 		// set adding of links to geometries
 		if (pAddwire != null) {
 			double prev = interaction.pAddwire;

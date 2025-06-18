@@ -48,6 +48,11 @@ public class IBSGroup {
 	private static int[] loner = new int[0];
 
 	/**
+	 * The geometry associated with this group.
+	 */
+	Geometry geometry;
+
+	/**
 	 * Storage for selected interaction or reference groups.
 	 */
 	private int[] mem;
@@ -84,6 +89,15 @@ public class IBSGroup {
 	public IBSGroup(RNGDistribution rng) {
 		this.rng = rng;
 		self = false;
+	}
+
+	/**
+	 * Set the geometry associated with this group.
+	 * 
+	 * @param geometry the geometry associated with group
+	 */
+	public void setGeometry(Geometry geometry) {
+		this.geometry = geometry;
 	}
 
 	/**
@@ -242,15 +256,14 @@ public class IBSGroup {
 	 * <em>never</em> be manipulated because this would result in permanent changes
 	 * of the population structure.
 	 * 
-	 * @param me   the index of the focal individual
-	 * @param geom the geometry of the population
-	 * @param out  the flag indicating whether to sample the group from the outgoing
-	 *             or incoming neighbours
+	 * @param me         the index of the focal individual
+	 * @param downstream the flag indicating whether to sample the group from the
+	 *                   outgoing (downstream) or incoming (upstream) neighbours
 	 * @return the interaction/reference group (same as {@code group})
 	 * 
 	 * @see #group
 	 */
-	public int[] pickAt(int me, Geometry geom, boolean out) {
+	public int[] pickAt(int me, boolean downstream) {
 		focal = me;
 		switch (samplingType) {
 			case NONE: // speeds things up e.g. for best-response in well-mixed populations
@@ -260,19 +273,19 @@ public class IBSGroup {
 				return null;
 
 			case ALL:
-				if (out) {
-					group = geom.out[focal];
-					nSampled = geom.kout[focal];
+				if (downstream) {
+					group = geometry.out[focal];
+					nSampled = geometry.kout[focal];
 					return group;
 				}
-				group = geom.in[focal];
-				nSampled = geom.kin[focal];
+				group = geometry.in[focal];
+				nSampled = geometry.kin[focal];
 				return group;
 
 			case RANDOM:
-				switch (geom.getType()) {
+				switch (geometry.getType()) {
 					case MEANFIELD:
-						pickRandom(geom.size);
+						pickRandom(geometry.size);
 						return group;
 
 					case HIERARCHY:
@@ -283,13 +296,13 @@ public class IBSGroup {
 						nSampled = 1;
 
 						int level = 0;
-						int maxLevel = geom.hierarchy.length - 1;
-						int unitSize = geom.hierarchy[maxLevel];
+						int maxLevel = geometry.hierarchy.length - 1;
+						int unitSize = geometry.hierarchy[maxLevel];
 						int levelSize = 1;
 						int exclSize = 1;
-						double prob = geom.hierarchyweight;
+						double prob = geometry.hierarchyweight;
 						if (prob > 0.0) {
-							if ((int) Math.rint(geom.connectivity) == unitSize - 1) {
+							if ((int) Math.rint(geometry.connectivity) == unitSize - 1) {
 								// if individuals are connected to all other members of the unit one hierarchy
 								// level is lost.
 								// this applies to well-mixed units as well as e.g. square lattices with moore
@@ -300,22 +313,22 @@ public class IBSGroup {
 							double rand = rng.random01();
 							while (rand < prob && level <= maxLevel) {
 								exclSize = levelSize;
-								levelSize *= geom.hierarchy[maxLevel - level];
+								levelSize *= geometry.hierarchy[maxLevel - level];
 								level++;
-								prob *= geom.hierarchyweight;
+								prob *= geometry.hierarchyweight;
 							}
 						}
 						group = mem;
 						int model;
 						int levelStart, exclStart;
-						switch (geom.subgeometry) {
+						switch (geometry.subgeometry) {
 							case MEANFIELD:
 								if (level == 0) {
 									// pick random neighbour
-									if (out)
-										group[0] = geom.out[focal][rng.random0n(geom.kout[focal])];
+									if (downstream)
+										group[0] = geometry.out[focal][rng.random0n(geometry.kout[focal])];
 									else
-										group[0] = geom.in[focal][rng.random0n(geom.kin[focal])];
+										group[0] = geometry.in[focal][rng.random0n(geometry.kin[focal])];
 									return group;
 								}
 								// with zero hierarchyweight levelSize is still 1 instead of unitSize
@@ -337,14 +350,14 @@ public class IBSGroup {
 							case SQUARE:
 								if (level == 0) {
 									// pick random neighbour
-									if (out)
-										group[0] = geom.out[focal][rng.random0n(geom.kout[focal])];
+									if (downstream)
+										group[0] = geometry.out[focal][rng.random0n(geometry.kout[focal])];
 									else
-										group[0] = geom.in[focal][rng.random0n(geom.kin[focal])];
+										group[0] = geometry.in[focal][rng.random0n(geometry.kin[focal])];
 									return group;
 								}
 								// determine start of focal level
-								int side = (int) Math.sqrt(geom.size);
+								int side = (int) Math.sqrt(geometry.size);
 								int levelSide = (int) Math.sqrt(levelSize);
 								int levelX = ((focal % side) / levelSide) * levelSide;
 								int levelY = ((focal / side) / levelSide) * levelSide;
@@ -371,12 +384,12 @@ public class IBSGroup {
 
 							default:
 								throw new Error(
-										"hierachy geometry '" + geom.subgeometry.getTitle() + "' not supported");
+										"hierachy geometry '" + geometry.subgeometry.getTitle() + "' not supported");
 						}
 
 					default:
-						int[] src = (out ? geom.out[focal] : geom.in[focal]);
-						int len = (out ? geom.kout[focal] : geom.kin[focal]);
+						int[] src = (downstream ? geometry.out[focal] : geometry.in[focal]);
+						int len = (downstream ? geometry.kout[focal] : geometry.kin[focal]);
 						if (len <= nSamples) {
 							nSampled = len;
 							group = src;
