@@ -447,7 +447,7 @@ public class IBSGroup {
 			int aPick = rng.random0n(size - 1);
 			if (aPick >= focal)
 				aPick++;
-			group[0] = rng.random0n(size);
+			group[0] = aPick;
 			return;
 		}
 
