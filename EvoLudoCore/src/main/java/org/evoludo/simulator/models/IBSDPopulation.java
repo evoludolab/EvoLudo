@@ -456,6 +456,8 @@ public class IBSDPopulation extends IBSPopulation {
 		debugModel = -1;
 		int nPop = getPopulationSize();
 		double deathRate = module.getDeathRate();
+		// must use maxFitness to ensure probabilities (at the possible 
+		// expense of no event happening)
 		double maxRate = deathRate + maxFitness;
 		double randomTestVal = random01() * maxRate; // time rescaling
 		if (randomTestVal < deathRate) {
@@ -466,15 +468,20 @@ public class IBSDPopulation extends IBSPopulation {
 				// population went extinct, no more events possible
 				return Double.POSITIVE_INFINITY;
 			}
-		} else if (randomTestVal < (deathRate + getFitnessAt(me))) {
-			// fill neighbor site if vacant
-			debugModel = pickNeighborSiteAt(me);
-			if (isVacantAt(debugModel)) {
-				maybeMutateMoran(me, debugModel);
-			}
+		} else {
+			randomTestVal -= deathRate;
+				if (randomTestVal < getFitnessAt(me)) {
+				// fill neighbor site if vacant
+				debugModel = pickNeighborSiteAt(me);
+				if (isVacantAt(debugModel)) {
+					maybeMutateMoran(me, debugModel);
+				}
+			} else
+				// nothing happened, no time elapsed
+				return 0.0;
 		}
 		// exponentially distributed waiting until the current event occured
-		return RNGDistribution.Exponential.next(rng.getRNG(), nPop * maxRate);
+		return RNGDistribution.Exponential.next(rng.getRNG(), 1.0 / sumFitness);
 	}
 
 	@Override
