@@ -580,8 +580,20 @@ public abstract class IBS extends Model {
 	 */
 	public void init(boolean soft) {
 		super.init();
-		// reset time
+		// realtime meaningless if not all populations have positive minimum fitness
 		realtime = 0.0;
+		for (Module mod : species) {
+			if (mod instanceof Payoffs) {
+				Map2Fitness map2fit = mod.getMap2Fitness();
+				if (map2fit.map(((Payoffs) mod).getMinPayoff()) <= 0.0) {
+					realtime = Double.POSITIVE_INFINITY;
+					break;
+				}
+				continue;
+			}
+			realtime = Double.POSITIVE_INFINITY;
+			break;
+		}
 		connect = false;
 		if (soft) {
 			// signal change to engine without destroying state
@@ -836,6 +848,11 @@ public abstract class IBS extends Model {
 						engine.fatal("unknown event type...");
 				}
 				// advance time and real time (if possible)
+				if (realtime < Double.POSITIVE_INFINITY && dt <= 0.0) {
+					// if no time elapsed, nothing happened
+					n--;
+					continue;
+				}
 				if (debugFocalSpecies.getPopulationUpdate().getType() == PopulationUpdate.Type.ONCE) {
 					time++;
 					realtime = (wScoreTot < 0.0 ? Double.POSITIVE_INFINITY : realtime + 1.0 / wScoreTot);

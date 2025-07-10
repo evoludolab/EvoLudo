@@ -1933,7 +1933,8 @@ public abstract class IBSPopulation {
 				return rincr;
 
 			case ECOLOGY: // ecological updating - varying population sizes
-				return updatePlayerEcology() / uRate;
+				rincr = updatePlayerEcology();
+				return rincr / uRate;
 
 			default:
 				logger.warning("unknown population update type (" + populationUpdate.getType().getKey() + ").");
