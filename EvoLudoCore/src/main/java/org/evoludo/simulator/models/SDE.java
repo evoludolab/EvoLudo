@@ -32,7 +32,6 @@ package org.evoludo.simulator.models;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.views.HasHistogram;
@@ -163,7 +162,6 @@ public class SDE extends ODE {
 		// the presence of mutations).
 		converged = false;
 		connect = true;
-		resetStatisticsSample();
 	}
 
 	@Override
@@ -172,12 +170,6 @@ public class SDE extends ODE {
 		if (mode == Mode.STATISTICS_SAMPLE && statisticsSampleNew) {
 			reset();
 			init();
-			if (fixData.mutantNode < 0) {
-				initStatisticsFailed();
-				engine.requestAction(PendingAction.STATISTIC_FAILED, true);
-				// check if STOP has been requested
-				return engine.isRunning();
-			}
 			initStatisticsSample();
 			update();
 			// debugCheck("next (new sample)");
@@ -429,7 +421,6 @@ public class SDE extends ODE {
 			// this needs to be revised for vacant sites
 			fixData.mutantTrait = ArrayMath.minIndex(y0);
 			fixData.residentTrait = ArrayMath.maxIndex(y0);
-			fixData.mutantNode = 0;
 		}
 	}
 

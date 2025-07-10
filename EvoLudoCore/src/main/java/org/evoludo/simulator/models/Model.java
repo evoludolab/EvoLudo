@@ -174,8 +174,13 @@ public abstract class Model implements CLOProvider {
 	 * @see java.util.logging.Logger
 	 */
 	public boolean check() {
-		if (permitsMode(Mode.STATISTICS_SAMPLE))
+		if (permitsMode(Mode.STATISTICS_SAMPLE)) {
 			fixData = new FixationData();
+			if (getType() == Type.SDE)
+				// the index of the mutant node is meaningless in SDE models
+				// but must be non-negative (indicates an invalid sample)
+				fixData.mutantNode = 0;
+		}
 		else
 			fixData = null;
 		return false;
