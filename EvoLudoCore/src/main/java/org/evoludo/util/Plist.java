@@ -151,7 +151,7 @@ public class Plist extends HashMap<String, Object> {
 	/**
 	 * Compare this plist to {@code plist} but ignore keys in {@code clo}.
 	 * 
-	 * @param plist the dictionary to compare against
+	 * @param plist the reference {@code Plist} to compare against
 	 * @param clo   the collection of keys to skip
 	 * @return the number of differences
 	 */
@@ -159,7 +159,7 @@ public class Plist extends HashMap<String, Object> {
 		skip = clo;
 		nNumerical = 0;
 		nIssues = 0;
-		diffDict(this, plist);
+		diffDict(plist, this);
 		if (nNumerical > 0)
 			reportDiff(nNumerical + " out of " + nIssues + " differences likely numerical rounding issues.");
 		return nIssues;
@@ -168,8 +168,8 @@ public class Plist extends HashMap<String, Object> {
 	/**
 	 * Helper method to compare two plist-dictionaries.
 	 * 
-	 * @param reference the reference plist
-	 * @param plist     the plist to check
+	 * @param reference the reference {@code Plist}
+	 * @param plist     the {@code Plist} to check
 	 */
 	private void diffDict(Plist reference, Plist plist) {
 		// step 1: check if dict reference contains all keys of plist
