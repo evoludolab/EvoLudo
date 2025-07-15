@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10910025.svg)](https://zenodo.org/doi/10.5281/zenodo.14591549)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14591549.svg)](https://zenodo.org/doi/10.5281/zenodo.14591549)
 
 # [*EvoLudo*](https://www.evoludo.org)
 ***Evolutionary Dynamics Simulation Toolkit***
