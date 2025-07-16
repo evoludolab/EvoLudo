@@ -45,21 +45,13 @@ import org.evoludo.math.MersenneTwister;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
-import org.evoludo.simulator.models.IBS;
-import org.evoludo.simulator.models.IBSC;
-import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODE.HasDE;
-import org.evoludo.simulator.models.ODE.HasODE;
 import org.evoludo.simulator.models.PDE;
-import org.evoludo.simulator.models.PDE.HasPDE;
 import org.evoludo.simulator.models.PDESupervisor;
-import org.evoludo.simulator.models.RungeKutta;
-import org.evoludo.simulator.models.SDE;
-import org.evoludo.simulator.models.SDE.HasSDE;
 import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.ATBT;
 import org.evoludo.simulator.modules.CDL;
@@ -68,9 +60,7 @@ import org.evoludo.simulator.modules.CDLPQ;
 import org.evoludo.simulator.modules.CLabour;
 import org.evoludo.simulator.modules.CSD;
 import org.evoludo.simulator.modules.Centipede;
-import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.DemesTBT;
-import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.EcoPGG;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Moran;
@@ -252,81 +242,6 @@ public abstract class EvoLudo
 	protected HashMap<String, Module> modules = new HashMap<String, Module>();
 
 	/**
-	 * Creates ordinary differential equation model for <code>module</code>.
-	 * <p>
-	 * <strong>Note:</strong> by default returns {@link RungeKutta} model.
-	 * Override to provide custom implementation of ODE model.
-	 * 
-	 * @param module the interaction {@link Module}
-	 * @return the ODE model for <code>module</code>
-	 */
-	public Model createODE(Module module) {
-		if (module instanceof HasODE) {
-			Model model = ((HasODE) module).createODE();
-			if (model != null)
-				return model;
-		}
-		return new RungeKutta(this);
-	}
-
-	/**
-	 * Creates stochastic differential equation model for <code>module</code>.
-	 * <p>
-	 * <strong>Note:</strong> by default returns {@link SDE} model.
-	 * Override to provide custom implementation of SDE model.
-	 * 
-	 * @param module the interaction {@link Module}
-	 * @return the SDE model for <code>module</code>
-	 */
-	public Model createSDE(Module module) {
-		if (module instanceof HasSDE) {
-			Model model = ((HasSDE) module).createSDE();
-			if (model != null)
-				return model;
-		}
-		return new SDE(this);
-	}
-
-	/**
-	 * Creates partial differential equation model for <code>module</code>.
-	 * <p>
-	 * <strong>Note:</strong> by default returns {@link PDE} model.
-	 * Override to provide custom implementation of PDE model.
-	 * 
-	 * @param module the interaction {@link Module}
-	 * @return the PDE model for <code>module</code>
-	 */
-	public Model createPDE(Module module) {
-		if (module instanceof HasPDE) {
-			Model model = ((HasPDE) module).createPDE();
-			if (model != null)
-				return model;
-		}
-		return new PDE(this);
-	}
-
-	/**
-	 * Creates individual based simulation model for <code>module</code>.
-	 * <p>
-	 * <strong>Note:</strong> by default returns {@link IBSD} for {@link Discrete}
-	 * models and {@link IBSC} for {@link Continuous} models.
-	 * Override to provide custom implementation of IBS model.
-	 * 
-	 * @param module the interaction {@link Module}
-	 * @return the IBS model for <code>module</code>
-	 */
-	public Model createIBS(Module module) {
-		if (module instanceof IBS.HasIBS) {
-			Model model = ((IBS.HasIBS) module).createIBS();
-			if (model != null)
-				return model;
-		}
-		if (module instanceof Continuous)
-			return new IBSC(this);
-		return new IBSD(this);
-	}
-
-	/**
 	 * Generate 2D network. This is the factory method to provide different
 	 * implementations for GWT and JRE. More specifically, the layouting process in
 	 * GWT uses scheduling (asynchronous execution) to prevent the GUI from
@@ -364,34 +279,28 @@ public abstract class EvoLudo
 	 * registered {@link MilestoneListener}'s of any changes.
 	 *
 	 * @param type the type of {@link Model} to load
-	 * @return <code>true</code> if model type changed
+	 * @return new model or {@code null} if the model type is not supported and
+	 *         no active current model
 	 */
-	public boolean loadModel(Type type) {
+	public Model loadModel(Type type) {
 		if (activeModel != null) {
+			// check if model already loaded
 			if (activeModel.isType(type))
-				return false;
-			// unload previous model
-			unloadModel();
+				return activeModel;
 		}
-		switch (type) {
-			case ODE:
-				activeModel = createODE(activeModule);
-				break;
-			case SDE:
-				activeModel = createSDE(activeModule);
-				break;
-			case PDE:
-				activeModel = createPDE(activeModule);
-				break;
-			case IBS:
-			default:
-				activeModel = createIBS(activeModule);
+		Model newModel = activeModule.createModel(type);
+		if (newModel == null) {
+			logger.warning("model type '" + type + "' not found - keeping '" + activeModel.getType() + "'.");
+			return activeModel;
 		}
+		// unload previous model first
+		unloadModel();
+		activeModel = newModel;
 		addCLOProvider(activeModel);
 		activeModule.setModel(activeModel);
 		activeModel.load();
 		fireModelLoaded();
-		return true;
+		return activeModel;
 	}
 
 	/**
@@ -903,7 +812,8 @@ public abstract class EvoLudo
 	 * unload current module.
 	 *
 	 * @param newModuleKey the key of the module to load
-	 * @return <code>true</code> if new module was loaded
+	 * @return new module or {@code null} if module not found and no active
+	 *         current module
 	 */
 	public Module loadModule(String newModuleKey) {
 		Module newModule = modules.get(newModuleKey);
@@ -1665,8 +1575,7 @@ public abstract class EvoLudo
 				logger.severe("No model found!");
 			return null;
 		}
-		// if IBS not an option, pick first model type as default
-		Type defaulttype = (keys.contains(Type.IBS) ? Type.IBS : mt[0]);
+		Type defaulttype = (Type) cloModel.match(cloModel.getDefault());
 		Type type = null;
 		nParams = cloarray.length;
 		for (int i = 0; i < nParams; i++) {
@@ -1677,16 +1586,20 @@ public abstract class EvoLudo
 				cloarray = ArrayMath.drop(cloarray, i--);
 				nParams--;
 				if (newModel.length() == 0) {
-					logger.warning("model key missing - use " + defaulttype.getKey() + " as default.");
 					type = defaulttype;
+					logger.warning("model key missing - use default type " + type.getKey() + ".");
 					// model key found; no need to continue
 					break;
 				}
 				type = Type.parse(newModel);
 				if (type == null || !keys.contains(type)) {
-					logger.warning("invalid model type " + newModel + " - use " + defaulttype.getKey()
-							+ " as default.");
-					type = defaulttype;
+					if (activeModel != null ) {
+						type = activeModel.getType();
+						logger.warning("invalid model type " + newModel + " - keep current type " + type.getKey() + ".");
+					} else {
+						type = defaulttype;
+						logger.warning("invalid model type " + newModel + " - use default type " + type.getKey() + ".");
+					}
 				}
 				// model key found; no need to continue
 				break;
@@ -1696,10 +1609,15 @@ public abstract class EvoLudo
 			type = defaulttype;
 			if (keys.size() > 1 && !defaulttype.getKey().equals(cloModel.getDefault()))
 				// display warning if multiple models available (suppress if defaults match)
-				logger.warning("model type unspecified - use " + type.getKey() + " as default.");
+				logger.warning("model type unspecified - use default type " + type.getKey() + ".");
 		}
 		// NOTE: currently models cannot be mix'n'matched between species
 		loadModel(type);
+		if (activeModel == null) {
+			if (!helpRequested)
+				logger.severe("Model type '" + type.getKey() + "' not supported!");
+			return null;
+		}
 		// check if cloOptions contain --verbose
 		String verboseName = cloVerbose.getName();
 		for (int i = 0; i < nParams; i++) {

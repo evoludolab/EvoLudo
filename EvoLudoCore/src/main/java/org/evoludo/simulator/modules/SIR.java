@@ -40,6 +40,7 @@ import org.evoludo.simulator.models.ODE.HasODE;
 import org.evoludo.simulator.models.PDE.HasPDE;
 import org.evoludo.simulator.models.RungeKutta;
 import org.evoludo.simulator.models.SDE.HasSDE;
+import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
@@ -211,8 +212,23 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 	}
 
 	@Override
-	public Model createODE() {
-		return new SIR.ODE();
+	public Model createModel(Type type) {
+		switch (type) {
+			case ODE:
+			case RK5:
+			case EM:
+				return new SIR.ODE();
+			case SDE:
+				return new SIR.SDE();
+			case PDE:
+			case PDERD:
+			case PDEADV:
+				return new SIR.PDE();
+			case IBS:
+				return super.createModel(type);
+			default:
+				return null;
+		}
 	}
 
 	/**
@@ -234,11 +250,6 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 		}
 	}
 
-	@Override
-	public Model createSDE() {
-		return new SIR.SDE();
-	}
-
 	/**
 	 * SDE model for the SIR module.
 	 */
@@ -256,11 +267,6 @@ public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
 		protected void getDerivatives(double t, double[] state, double[] unused, double[] change) {
 			SIR.this.getDerivatives(t, state, unused, change);
 		}
-	}
-
-	@Override
-	public Model createPDE() {
-		return new SIR.PDE();
 	}
 
 	/**

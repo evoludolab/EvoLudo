@@ -134,21 +134,6 @@ public class ODE extends Model implements Discrete {
 	public interface HasODE extends HasDE {
 
 		/**
-		 * Provides opportunity for model to supply custom ODE implementation.
-		 * <p>
-		 * <strong>Important:</strong> if the custom ODE implementation involves random
-		 * numbers, the shared random number generator should be used for
-		 * reproducibility
-		 *
-		 * @return the custom ODE model or <code>null</code> to use use default
-		 *
-		 * @see EvoLudo#getRNG()
-		 */
-		public default Model createODE() {
-			return null;
-		}
-
-		/**
 		 * Interface for ordinary differential equations (ODE) with pairwise
 		 * interactions.
 		 */

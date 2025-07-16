@@ -39,15 +39,21 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.models.Advection;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBS;
+import org.evoludo.simulator.models.IBS.HasIBS;
+import org.evoludo.simulator.models.IBSC;
+import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Markers;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.ODE;
 import org.evoludo.simulator.models.ODE.HasODE;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDE.HasPDE;
+import org.evoludo.simulator.models.RungeKutta;
 import org.evoludo.simulator.models.SDE;
 import org.evoludo.simulator.models.SDE.HasSDE;
 import org.evoludo.simulator.models.Type;
@@ -167,6 +173,58 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		species = partner.species;
 		opponent = partner;
 		partner.opponent = this;
+	}
+
+	/**
+	 * Creates a model of type {@code type} for <code>module</code>.
+	 * <p>
+	 * <strong>Note:</strong> Override to provide custom model implementations.
+	 * <p>
+	 * <strong>Important:</strong> any custom model implementations that involve
+	 * random numbers, must use the shared random number generator for
+	 * reproducibility
+	 * 
+	 * @param module the interaction {@link Module}
+	 * @param type   the type of {@link Model} to create
+	 * @return the model for <code>module</code> or {@code null} if the module
+	 *         does not support the requested type
+	 * 
+	 * @see EvoLudo#getRNG()
+	 */
+	public Model createModel(Type type) {
+		// return default model for type
+		switch (type) {
+			case IBS:
+				if (!(this instanceof HasIBS))
+					return null;
+				if (this instanceof Continuous)
+					return new IBSC(engine);
+				return new IBSD(engine);
+			case SDE:
+				if (!(this instanceof HasSDE))
+					return null;
+				return new SDE(engine);
+			case ODE:
+			case RK5:
+				if (!(this instanceof HasODE))
+					return null;
+				return new RungeKutta(engine);
+			case EM:
+				if (!(this instanceof HasODE))
+					return null;
+				return new ODE(engine);
+			case PDEADV:
+				if (!(this instanceof HasPDE))
+					return null;
+				return new Advection(engine);
+			case PDE:
+			case PDERD:
+				if (!(this instanceof HasPDE))
+					return null;
+				return new PDE(engine);
+			default:
+				return null;
+		}
 	}
 
 	/**
@@ -345,12 +403,18 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		ArrayList<Type> types = new ArrayList<>();
 		if (this instanceof IBS.HasIBS)
 			types.add(Type.IBS);
-		if (this instanceof HasODE)
+		if (this instanceof HasODE) {
 			types.add(Type.ODE);
+			types.add(Type.RK5);
+			types.add(Type.EM);
+		}
 		if (this instanceof HasSDE)
 			types.add(Type.SDE);
-		if (this instanceof HasPDE)
+		if (this instanceof HasPDE) {
 			types.add(Type.PDE);
+			types.add(Type.PDERD);
+			types.add(Type.PDEADV);
+		}
 		return types.toArray(new Type[0]);
 	}
 

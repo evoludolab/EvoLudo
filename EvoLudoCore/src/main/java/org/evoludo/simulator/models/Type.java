@@ -47,24 +47,44 @@ import org.evoludo.util.CLOption;
  */
 public enum Type implements CLOption.Key {
 	/**
-	 * Individual based simulation model
+	 * Individual based simulation model.
 	 */
 	IBS("IBS", "individual based simulations"),
 
 	/**
-	 * Ordinary differential equation model
+	 * Ordinary differential equation model, defaults to RK5.
 	 */
 	ODE("ODE", "ordinary differential equations"),
 
 	/**
-	 * Stochastic differential equation model
+	 * Fifth order Runge-Kutta method for ordinary differential equation models.
+	 */
+	RK5("RK5", "Fifth order Runge-Kutta method"),
+
+	/**
+	 * Euler-Maruyama method for ordinary differential equation models.
+	 */
+	EM("EM", "Euler-Maruyama method"),
+
+	/**
+	 * Stochastic differential equation model.
 	 */
 	SDE("SDE", "stochastic differential equations"),
 
 	/**
-	 * Partial differential equation model
+	 * Partial differential equation model, defaults to PDERD (no advection).
 	 */
-	PDE("PDE", "partial differential equations");
+	PDE("PDE", "partial differential equations"),
+
+	/**
+	 * Reaction-diffusion model.
+	 */
+	PDERD("PDERD", "Reaction-diffusion model"),
+
+	/**
+	 * Reaction-diffusion-advection model.
+	 */
+	PDEADV("PDEADV", "Reaction-diffusion-advection model");
 
 	/**
 	 * Identifying key of the model type.
@@ -104,6 +124,42 @@ public enum Type implements CLOption.Key {
 			}
 		}
 		return match;
+	}
+
+	/**
+	 * Check if this model type is an ordinary differential equations model.
+	 * 
+	 * @return {@code true} if this is an ODE model, {@code false} otherwise
+	 */
+	public boolean isODE() {
+		return this == ODE || this == RK5 || this == EM;
+	}
+
+	/**
+	 * Check if this model type is an stochastic differential equations model.
+	 * 
+	 * @return {@code true} if this is an SDE model, {@code false} otherwise
+	 */
+	public boolean isSDE() {
+		return this == SDE;
+	}
+
+	/**
+	 * Check if this model type is an [partial differential equations model.
+	 * 
+	 * @return {@code true} if this is an PDE model, {@code false} otherwise
+	 */
+	public boolean isPDE() {
+		return this == PDE || this == PDERD || this == PDEADV;
+	}
+
+	/**
+	 * Check if this model type is individual based simulations model.
+	 * 
+	 * @return {@code true} if this is an IBS model, {@code false} otherwise
+	 */
+	public boolean isIBS() {
+		return this == IBS;
 	}
 
 	@Override

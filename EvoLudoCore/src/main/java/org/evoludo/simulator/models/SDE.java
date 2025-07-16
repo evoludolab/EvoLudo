@@ -52,23 +52,6 @@ public class SDE extends ODE {
 	public interface HasSDE extends HasDE {
 
 		/**
-		 * Provides opportunity for module to supply custom implementation for
-		 * numerically integrating stochastic differential equations, SDE.
-		 * <p>
-		 * <strong>Important:</strong> if the custom SDE implementation involves random
-		 * numbers, the shared random number generator should be used for
-		 * reproducibility
-		 * 
-		 * @return the custom implementation of the SDE integrator or <code>null</code>
-		 *         to use the default
-		 * 
-		 * @see EvoLudo#getRNG()
-		 */
-		public default Model createSDE() {
-			return null;
-		}
-
-		/**
 		 * Interface for stochastic differential equations (SDE) with pairwise
 		 * interactions.
 		 */

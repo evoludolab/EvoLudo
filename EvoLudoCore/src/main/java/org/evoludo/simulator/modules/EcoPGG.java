@@ -35,9 +35,7 @@ import java.awt.Color;
 import org.evoludo.geom.Point2D;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.Advection;
 import org.evoludo.simulator.models.IBS.HasIBS;
-import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODE.HasODE;
 import org.evoludo.simulator.models.PDE.HasPDE;
 import org.evoludo.simulator.models.SDE.HasSDE;
@@ -167,11 +165,6 @@ public class EcoPGG extends Discrete implements Payoffs,
 	@Override
 	public int getDependent() {
 		return VACANT;
-	}
-
-	@Override
-	public Model createPDE() {
-		return new Advection(engine);
 	}
 
 	/**

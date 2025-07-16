@@ -45,6 +45,7 @@ import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ODE.HasODE;
 import org.evoludo.simulator.models.PDE.HasPDE;
 import org.evoludo.simulator.models.RungeKutta;
+import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.models.SDE.HasSDE;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasHistogram;
@@ -622,12 +623,14 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE.DPairs, HasSDE.DP
 	 */
 	@Override
 	public ATBT.ATBTPop createIBSPop() {
-		return new ATBT.ATBTPop(engine, this);
+		return new ATBT.ATBTPop(this);
 	}
 
 	@Override
-	public Model createODE() {
-		return new ATBT.ODE(engine);
+	public Model createModel(Type type) {
+		if (type.isODE())
+			return new ATBT.ODE();
+		return super.createModel(type);
 	}
 
 	/**
@@ -642,8 +645,8 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE.DPairs, HasSDE.DP
 		 * @param engine the pacemaker for running the model
 		 * @param module the module that defines the game
 		 */
-		protected ATBTPop(EvoLudo engine, ATBT module) {
-			super(engine, module);
+		protected ATBTPop(ATBT module) {
+			super(ATBT.this.engine, module);
 		}
 
 		@Override
@@ -721,8 +724,8 @@ public class ATBT extends TBT implements HasIBS.DPairs, HasODE.DPairs, HasSDE.DP
 		 * 
 		 * @param engine the pacemaker for running the model
 		 */
-		protected ODE(EvoLudo engine) {
-			super(engine);
+		protected ODE() {
+			super(ATBT.this.engine);
 			module = engine.getModule();
 		}
 

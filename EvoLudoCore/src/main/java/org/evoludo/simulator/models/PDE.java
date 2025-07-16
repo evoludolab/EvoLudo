@@ -66,21 +66,6 @@ public class PDE extends ODE {
 	public interface HasPDE extends HasDE {
 
 		/**
-		 * Provides opportunity for model to supply custom PDE implementation.
-		 * <p>
-		 * <strong>Important:</strong> if the custom PDE implementation involves random
-		 * numbers, the shared random number generator should be used for
-		 * reproducibility.
-		 *
-		 * @return custom PDE model or <code>null</code> to use use default
-		 * 
-		 * @see Model#rng
-		 */
-		public default Model createPDE() {
-			return null;
-		}
-
-		/**
 		 * Interface for partial differential equations (PDE) with pairwise
 		 * interactions.
 		 */
