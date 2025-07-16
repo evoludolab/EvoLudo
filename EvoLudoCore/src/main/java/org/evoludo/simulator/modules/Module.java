@@ -1181,7 +1181,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * Command line option to set death rate for ecological population updates.
 	 */
 	public final CLOption cloDeathRate = new CLOption("deathrate", "0.5", Category.Module,
-			"--deathrate     rate of dying",
+			"--deathrate <d>  rate of dying",
 			new CLODelegate() {
 
 				/**
@@ -1189,18 +1189,24 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				 * <p>
 				 * Parse death rate for ecological population updates for a single or multiple
 				 * populations/species. {@code arg} can be a single value or an array of
-				 * values with the separator {@value CLOParser#SPECIES_DELIMITER}. The parser
-				 * cycles through {@code arg} until all populations/species have the death
-				 * rate set.
+				 * values. The parser cycles through {@code arg} until all populations/species
+				 * have the death rate set.
 				 * 
 				 * @param arg (array of) death rate(s)
 				 */
 				@Override
 				public boolean parse(String arg) {
-					String[] rates = arg.split(CLOParser.SPECIES_DELIMITER);
+					double[] rates;
+					// allow vector delimiter as well as species delimiter for multiple species
+					if (arg.contains(CLOParser.SPECIES_DELIMITER))
+						rates = CLOParser.parseVector(arg, CLOParser.SPECIES_DELIMITER);
+					else
+						rates = CLOParser.parseVector(arg);
+					if (rates == null || rates.length == 0)
+						return false;
 					int n = 0;
 					for (Module pop : species) {
-						double rate = CLOParser.parseDouble(rates[n++ % rates.length]);
+						double rate = rates[n++ % rates.length];
 						if (rate < 0.0)
 							return false;
 						pop.setDeathRate(rate);
