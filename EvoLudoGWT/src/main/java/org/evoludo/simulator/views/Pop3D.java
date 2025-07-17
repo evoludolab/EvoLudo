@@ -42,6 +42,7 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model.HasDE;
+import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
@@ -79,7 +80,8 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 
 	@Override
 	protected void allocateGraphs() {
-		if (model.isIBS()) {
+		Type mt = model.getType();
+		if (mt.isIBS()) {
 			// how to deal with distinct interaction/competition geometries?
 			// - currently two separate graphs are shown one for the interaction and the
 			// other for the competition geometry
@@ -126,7 +128,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 			}
 			return;
 		}
-		if (model.isPDE()) {
+		if (mt.isPDE()) {
 			// PDEs currently restricted to single species
 			if (graphs.size() == 1)
 				return;
@@ -159,6 +161,9 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 
 		boolean inter = true;
 		boolean noWarnings = true;
+		Type mt = model.getType();
+		boolean isIBS = mt.isIBS();
+		boolean isPDE = mt.isPDE();
 		for (PopGraph3D graph : graphs) {
 			// update geometries associated with the graphs
 			setGraphGeometry(graph, inter);
@@ -205,7 +210,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 								break;
 						}
 					} else {
-						if (model.isPDE()) {
+						if (isPDE) {
 							int nTraits = module.getNTraits();
 							Color[] colors = module.getTraitColors();
 							int dep = ((HasDE) module).getDependent();
@@ -230,7 +235,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 					// cMap1D.setRange(module.getMinFitness(), module.getMaxFitness());
 					int id = graph.getModule().getID();
 					cMap1D.setRange(model.getMinScore(id), model.getMaxScore(id));
-					if (model.isIBS()) {
+					if (isIBS) {
 						Map2Fitness map2fit = module.getMap2Fitness();
 						if (cmodel != null) {
 							// hardcoded colors for min/max mono scores

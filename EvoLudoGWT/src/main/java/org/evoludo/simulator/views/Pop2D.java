@@ -42,6 +42,7 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model.HasDE;
+import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Map2Fitness;
@@ -83,7 +84,8 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		// revise network layout routines)
 		// - another alternative is to add context menu to toggle between the different
 		// link sets (could be difficult if one is a lattice...)
-		if (model.isIBS()) {
+		Type mt = model.getType();
+		if (mt.isIBS()) {
 			int nGraphs = 0;
 			ArrayList<? extends Module> species = engine.getModule().getSpecies();
 			for (Module module : species)
@@ -122,7 +124,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 			}
 			return;
 		}
-		if (model.isPDE()) {
+		if (mt.isPDE()) {
 			// PDEs currently restricted to single species
 			if (graphs.size() == 1)
 				return;
@@ -152,6 +154,9 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	public void reset(boolean hard) {
 		super.reset(hard);
 		boolean inter = true;
+		Type mt = model.getType();
+		boolean isIBS = mt.isIBS();
+		boolean isPDE = mt.isPDE();
 		for (PopGraph2D graph : graphs) {
 			// update geometries associated with the graphs
 			setGraphGeometry(graph, inter);
@@ -220,7 +225,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 								break;
 						}
 					} else {
-						if (model.isPDE()) {
+						if (isPDE) {
 							int nTraits = module.getNTraits();
 							Color[] colors = module.getTraitColors();
 							int dep = ((HasDE) module).getDependent();
@@ -246,7 +251,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 					// cMap1D.setRange(pop.getMinFitness(), pop.getMaxFitness());
 					int tag = graph.getModule().getID();
 					cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
-					if (model.isIBS()) {
+					if (isIBS) {
 						Map2Fitness map2fit = module.getMap2Fitness();
 						int id = module.getID();
 						if (module instanceof Discrete) {

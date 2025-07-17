@@ -129,7 +129,8 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 				@Override
 				public boolean parse(String arg) {
 					double s2i = CLOParser.parseDouble(arg);
-					if (engine.getModel().isIBS() && (s2i < 0.0 || s2i > 1.0))
+					boolean isIBS = engine.getModel().getType().isIBS();
+					if (isIBS && (s2i < 0.0 || s2i > 1.0))
 						return false;
 					pSI = s2i;
 					return true;
@@ -147,16 +148,17 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 					// set default for optional I -> S transition
 					pIS = 0.0;
 					double[] probs = CLOParser.parseVector(arg);
+					boolean isIBS = engine.getModel().getType().isIBS();
 					switch (probs.length) {
 						case 2:
 							double p = probs[1];
-							if (engine.getModel().isIBS() && (p < 0.0 || p > 1.0))
+							if (isIBS && (p < 0.0 || p > 1.0))
 								break;
 							pIS = p;
 							//$FALL-THROUGH$
 						case 1:
 							p = probs[0];
-							if (engine.getModel().isIBS() && (p < 0.0 || p > 1.0))
+							if (isIBS && (p < 0.0 || p > 1.0))
 								break;
 							pIR = p;
 							return true;
@@ -175,7 +177,8 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 				@Override
 				public boolean parse(String arg) {
 					double r2s = CLOParser.parseDouble(arg);
-					if (engine.getModel().isIBS() && (r2s < 0.0 || r2s > 1.0))
+					boolean isIBS = engine.getModel().getType().isIBS();
+					if (isIBS && (r2s < 0.0 || r2s > 1.0))
 						return false;
 					pRS = r2s;
 					return true;
@@ -213,14 +216,10 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	public Model createModel(Type type) {
 		switch (type) {
 			case ODE:
-			case RK5:
-			case EM:
 				return new SIR.ODE();
 			case SDE:
 				return new SIR.SDE();
 			case PDE:
-			case PDERD:
-			case PDEADV:
 				return new SIR.PDE();
 			case IBS:
 				return super.createModel(type);

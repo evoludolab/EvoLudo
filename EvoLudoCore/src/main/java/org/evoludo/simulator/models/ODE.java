@@ -1442,7 +1442,7 @@ public class ODE extends Model implements Discrete {
 		connect = false;
 		converged = false;
 		// PDE models have their own initialization types
-		if (isPDE())
+		if (type.isPDE())
 			return;
 		int idx = -1;
 		// y0 is initialized except for species with random initial frequencies

@@ -99,7 +99,7 @@ public class simCDL extends CDL implements ChangeListener {
 
 	@Override
 	public void run() {
-		if (!model.isIBS()) {
+		if (!model.getType().isIBS()) {
 			System.err.printf("ERROR: IBS model expected!");
 			return;
 		}
@@ -353,7 +353,7 @@ public class simCDL extends CDL implements ChangeListener {
 	@Override
 	public boolean check() {
 		boolean doReset = super.check();
-		if (model.isODE() && nSamples > 1) {
+		if (model.getType().isODE() && nSamples > 1) {
 			logger.warning("ODE models are deterministic, no point in taking multiple samples.");
 			nSamples = 1;
 		}

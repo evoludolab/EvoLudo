@@ -208,7 +208,7 @@ public class Moran extends Discrete implements Static,
 	public double[] getCustomLevels(Data type, int trait) {
 		// currently reference levels only available for Moran (birth-death) updates
 		// in IBS models (otherwise ibs is null, see reset(Model)
-		if (!model.isIBS() || !getIBSPopulation().getPopulationUpdate().isMoran())
+		if (!model.getType().isIBS() || !getIBSPopulation().getPopulationUpdate().isMoran())
 			return null;
 		// Note:
 		// - return reference levels for fixation probabilities and times based

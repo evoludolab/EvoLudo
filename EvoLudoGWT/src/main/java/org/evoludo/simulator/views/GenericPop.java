@@ -47,6 +47,7 @@ import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.PDE;
+import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
@@ -182,7 +183,8 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	 * 			competition geometry
 	 */
 	void setGraphGeometry(GenericPopGraph<T,N> graph, boolean inter) {
-		if (model.isIBS()) {
+		Type mt = model.getType();
+		if (mt.isIBS()) {
 			Module module = graph.getModule();
 			Geometry igeom = module.getInteractionGeometry();
 			Geometry cgeom = module.getCompetitionGeometry();
@@ -195,7 +197,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 			graph.setGeometry(geo);
 			return;
 		}
-		if (model.isPDE()) {
+		if (mt.isPDE()) {
 			graph.setGeometry(((PDE) model).getGeometry());
 			return;
 		}
@@ -212,7 +214,8 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 
 	@Override
 	public void update(boolean force) {
-		if (model.isIBS() || model.isPDE()) {
+		Type mt = model.getType();
+		if (mt.isIBS() || mt.isPDE()) {
 			// always read data - some nodes may have changed due to user actions
 			double newtime = model.getTime();
 			boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
@@ -271,7 +274,8 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 
 	@Override
 	public void mouseHitNode(int id, int node, boolean alt) {
-		if (model.isIBS())
+		Type mt = model.getType();
+		if (mt.isIBS())
 			((IBS) model).mouseHitNode(id, node, alt);
 	}
 
@@ -287,7 +291,8 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 		if (module.getNSpecies() > 1)
 			tip.append("<tr><td><i>Species:</i></td><td>" + module.getName() + "</td></tr>");
 
-		if (model.isIBS()) {
+		Type mt = model.getType();
+		if (mt.isIBS()) {
 			if (node >= nNodes) {
 				// this can only happen for Geometry.LINEAR
 				int idx = node / nNodes;
@@ -372,7 +377,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 			}
 			return tip.append("</table>").toString();
 		}
-		if (model.isPDE()) {
+		if (mt.isPDE()) {
 			if (node >= nNodes) {
 				// this can only happen for Geometry.LINEAR
 				int idx = node / nNodes;

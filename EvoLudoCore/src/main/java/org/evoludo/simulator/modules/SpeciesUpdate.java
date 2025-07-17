@@ -122,7 +122,8 @@ public class SpeciesUpdate {
 	@Override
 	public String toString() {
 		String str = Formatter.format(rate, 3);
-		return (module.model.isIBS() ? str + " " + type.getKey() : str);
+		boolean isIBS = module.model.getType().isIBS();
+		return (isIBS ? str + " " + type.getKey() : str);
 	}
 
 	/**

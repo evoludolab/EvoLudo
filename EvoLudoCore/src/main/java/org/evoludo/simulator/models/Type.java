@@ -131,6 +131,15 @@ public enum Type implements CLOption.Key {
 	 * 
 	 * @return {@code true} if this is an ODE model, {@code false} otherwise
 	 */
+	public boolean isDE() {
+		return isODE() || isSDE() || isPDE();
+	}
+
+	/**
+	 * Check if this model type is an ordinary differential equations model.
+	 * 
+	 * @return {@code true} if this is an ODE model, {@code false} otherwise
+	 */
 	public boolean isODE() {
 		return this == ODE || this == RK5 || this == EM;
 	}

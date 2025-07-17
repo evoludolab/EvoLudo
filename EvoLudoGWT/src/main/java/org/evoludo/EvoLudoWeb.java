@@ -47,6 +47,7 @@ import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.Console;
@@ -1839,7 +1840,11 @@ public class EvoLudoWeb extends Composite
 		}
 		// strategies related views
 		Model model = engine.getModel();
-		boolean isODESDE = (model != null && (model.isODE() || model.isSDE()));
+		boolean isODESDE = false;
+		if (model != null) {
+			Type mt = model.getType();
+			isODESDE = mt.isODE() || mt.isSDE();
+		}
 		if (module instanceof HasPop2D.Traits && !isODESDE)
 			addView(new Pop2D(engine, Data.TRAIT), oldViews);
 		if (isWebGLSupported && module instanceof HasPop3D.Traits && !isODESDE)

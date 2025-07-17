@@ -43,6 +43,7 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBSC;
 import org.evoludo.simulator.models.Model.HasDE;
+import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
 
@@ -166,7 +167,8 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 						idx++;
 					} else {
 						// discrete module with multiple traits on graph
-						if (model.isDE() && ((HasDE) module).getDependent() < 0) {
+						Type mt = model.getType();
+						if (mt.isDE() && ((HasDE) module).getDependent() < 0) {
 							style.yLabel = "density";
 							style.percentY = false;
 							style.yMin = 0.0;

@@ -39,6 +39,7 @@ import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.PDESupervisorGWT;
+import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
@@ -458,7 +459,8 @@ public class EvoLudoGWT extends EvoLudo {
 	 * @param menu the context menu where entries can be added
 	 */
 	public void populateContextMenu(ContextMenu menu) {
-		if ( activeModel.isODE() || activeModel.isSDE() ) {
+		Type mt = activeModel.getType();
+		if ( mt.isODE() || mt.isSDE() ) {
 			// add time reverse context menu
 			if (timeReverseMenu == null) {
 				timeReverseMenu = new ContextMenuCheckBoxItem("Time reversed", new Command() {
@@ -472,7 +474,7 @@ public class EvoLudoGWT extends EvoLudo {
 			menu.add(timeReverseMenu);
 			timeReverseMenu.setChecked(activeModel.isTimeReversed());
 			timeReverseMenu.setEnabled(activeModel.permitsTimeReversal());
-		} else if (activeModel.isPDE()) {
+		} else if (mt.isPDE()) {
 			// add context menu to allow symmetric diffusion
 			if (symDiffMenu == null) {
 				symDiffMenu = new ContextMenuCheckBoxItem("Symmetric diffusion", new Command() {

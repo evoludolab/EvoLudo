@@ -285,7 +285,7 @@ public abstract class EvoLudo
 	public Model loadModel(Type type) {
 		if (activeModel != null) {
 			// check if model already loaded
-			if (activeModel.isType(type))
+			if (activeModel.getType() == type)
 				return activeModel;
 		}
 		Model newModel = activeModule.createModel(type);
@@ -1714,7 +1714,7 @@ public abstract class EvoLudo
 				int nt = mod.getNTraits();
 				for (int n = 0; n < nt; n++) {
 					moduleMsg += "\n             " + (idx + n) + ": " + mod.getTraitName(n);
-					if (activeModel.isDE()) {
+					if (activeModel.getType().isDE()) {
 						if (((HasDE) mod).getDependent() == n)
 							moduleMsg += " (dependent)";
 					}

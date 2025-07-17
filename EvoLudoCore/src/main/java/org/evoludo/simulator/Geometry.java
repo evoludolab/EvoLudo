@@ -113,7 +113,7 @@ public class Geometry {
 	 */
 	public Geometry(EvoLudo engine, Module popModule, Module oppModule) {
 		this(engine);
-		if (engine.getModel().isIBS()) {
+		if (engine.getModel().getType().isIBS()) {
 			population = popModule.getIBSPopulation();
 			opponent = oppModule.getIBSPopulation();
 		}
@@ -5362,7 +5362,7 @@ public class Geometry {
 				|| clo.isValidKey(Type.CUBE)
 				|| clo.isValidKey(Type.HONEYCOMB) || clo.isValidKey(Type.TRIANGULAR));
 		String descr = "--geometry <>   geometry " //
-				+ (engine.getModel().isIBS() ? "- interaction==competition\n" : "\n") //
+				+ (engine.getModel().getType().isIBS() ? "- interaction==competition\n" : "\n") //
 				+ "      argument: <g><k>" //
 				+ (fixedBoundariesAvailable ? "[f|F]" : "") + " (g type, k neighbours)\n" //
 				+ clo.getDescriptionKey() + "\n      further specifications:" //

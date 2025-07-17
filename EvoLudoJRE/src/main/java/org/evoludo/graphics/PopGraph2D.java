@@ -64,6 +64,7 @@ import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
 
@@ -624,10 +625,11 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	@Override
 	protected boolean mouseDrag(Point loc, int mode, int stage) {
 		Model model = controller.getEngine().getModel();
+		Type mt = model.getType();
 
 		switch( mode ) {
 			case MOUSE_GRAB:
-				if( frame.msg!=null || model.isPDE() )
+				if( frame.msg!=null || mt.isPDE() )
 					return false;
 				switch( stage ) {
 					case MOUSE_DRAG_START:
@@ -670,7 +672,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 
 			case MOUSE_DRAW:
 				int node = -1;
-				if( !canvas.contains(loc) || frame.msg!=null || model.isPDE() )
+				if( !canvas.contains(loc) || frame.msg!=null || mt.isPDE() )
 					return false;
 				switch( stage ) {
 					case MOUSE_DRAG_START:

@@ -631,7 +631,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 					debugSubmenu.add(debugNodeMenu);
 				}
 				debugNodeMenu.setText("Update node @ " + debugNode);
-				debugNodeMenu.setEnabled(controller.getModel().isIBS());
+				debugNodeMenu.setEnabled(controller.getModel().getType().isIBS());
 				debugSubmenuTrigger = menu.add("Debug...", debugSubmenu);
 			}
 			if (debugSubmenuTrigger != null)
