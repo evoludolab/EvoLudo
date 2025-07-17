@@ -36,9 +36,7 @@ import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBS.HasIBS;
-import org.evoludo.simulator.models.ODE.HasODE;
-import org.evoludo.simulator.models.PDE.HasPDE;
-import org.evoludo.simulator.models.SDE.HasSDE;
+import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.modules.Features.Static;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -73,8 +71,9 @@ import org.evoludo.util.CLOption.Category;
  * @author Christoph Hauert
  */
 public class Moran extends Discrete implements Static,
-		HasIBS, HasODE, HasSDE, HasPDE, HasPop2D.Traits, HasPop3D.Traits,
-		HasMean.Traits, HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness,
+		HasIBS, HasDE.RK5, HasDE.EM, HasDE.SDE, HasDE.PDERD, HasDE.PDEADV, 
+		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, 
+		HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness,
 		HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsProbability,
 		HasHistogram.StatisticsTime, HasHistogram.StatisticsStationary {
 

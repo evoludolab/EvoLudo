@@ -62,7 +62,7 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.ODE.HasDE;
+import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;

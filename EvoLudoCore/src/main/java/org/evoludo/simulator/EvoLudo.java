@@ -49,7 +49,7 @@ import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.ODE.HasDE;
+import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.Type;

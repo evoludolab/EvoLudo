@@ -37,7 +37,6 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Features;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
@@ -61,92 +60,6 @@ import org.evoludo.util.Plist;
  * @author Christoph Hauert
  */
 public class ODE extends Model implements Discrete {
-
-	/**
-	 * Methods that every {@link Module} must implement, which advertises numerical
-	 * solutions based on differential equations.
-	 */
-	public abstract interface HasDE {
-
-		/**
-		 * For replicator dynamics the frequencies of all traits must sum up to one.
-		 * Hence, for <code>nTraits</code> traits there are only
-		 * <code>nTraits-1</code> degrees of freedom. The index returned by
-		 * <code>getDependent()</code> marks the one rate of change that is derived from
-		 * all the others.
-		 * <p>
-		 * <strong>Notes:</strong>
-		 * <ul>
-		 * <li>Dependent traits are used by models where the frequencies of all types
-		 * must sum up to one.
-		 * <li>Density modules do not have dependent traits and {@code getDependent()}
-		 * should return {@code -1}.
-		 * <li>Currently differential equations implementations are only provided for
-		 * Discrete modules.
-		 * </ul>
-		 * 
-		 * @return the index of the dependent trait (or {@code -1} if there is none)
-		 */
-		public int getDependent();
-
-		/**
-		 * Interface for ordinary differential equations (ODE) with pairwise
-		 * interactions.
-		 */
-		public interface DPairs extends Features.Pairs {
-
-			/**
-			 * Calculate the average payoff for the frequency of traits specified in
-			 * the array <code>state</code> for pairwise interactions. The average payoffs
-			 * for each of the <code>nTraits</code> traits must be stored and returned in
-			 * the array <code>scores</code>.
-			 *
-			 * @param state  the frequency/density of each trait
-			 * @param scores the array for storing the average payoffs/scores of each trait
-			 */
-			public void avgScores(double[] state, double[] scores);
-		}
-
-		/**
-		 * Interface for ordinary differential equations (ODE) with interactions in
-		 * groups of arbitrary size.
-		 */
-		public interface DGroups extends Features.Groups {
-
-			/**
-			 * Calculate the average payoff for the frequency of traits specified in
-			 * the array <code>state</code> for interactions in groups of size
-			 * <code>n</code>. The average payoffs for each of the <code>nTraits</code>
-			 * traits must be stored and returned in the array <code>scores</code>.
-			 *
-			 * @param state  the frequency/density of each trait
-			 * @param n      the size of interaction groups
-			 * @param scores the array for storing the average payoffs/scores of each trait
-			 */
-			public void avgScores(double[] state, int n, double[] scores);
-		}
-	}
-
-	/**
-	 * Additional methods that must be implemented by {@link Module}s that advertise
-	 * numerical solutions based on <em>ordinary</em> differential equations.
-	 */
-	public interface HasODE extends HasDE {
-
-		/**
-		 * Interface for ordinary differential equations (ODE) with pairwise
-		 * interactions.
-		 */
-		public interface DPairs extends HasODE, HasDE.DPairs {
-		}
-
-		/**
-		 * Interface for ordinary differential equations (ODE) with interactions in
-		 * groups of arbitrary size.
-		 */
-		public interface DGroups extends HasODE, HasDE.DGroups {
-		}
-	}
 
 	/**
 	 * Discretization of time increment for continuous time models. This is the
@@ -932,9 +845,9 @@ public class ODE extends Model implements Discrete {
 				System.arraycopy(staticfit, skip, fitness, skip, nTraits);
 			} else {
 				if (nGroup == 2)
-					((HasODE.DPairs) mod).avgScores(state, fitness);
+					((HasDE.DPairs) mod).avgScores(state, fitness);
 				else
-					((HasODE.DGroups) mod).avgScores(state, nGroup, fitness);
+					((HasDE.DGroups) mod).avgScores(state, nGroup, fitness);
 				Map2Fitness map2fit = mod.getMap2Fitness();
 				for (int n = skip; n < skip + nTraits; n++)
 					fitness[n] = map2fit.map(fitness[n]);

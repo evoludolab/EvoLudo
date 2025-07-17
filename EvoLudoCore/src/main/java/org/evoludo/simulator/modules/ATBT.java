@@ -37,22 +37,14 @@ import org.evoludo.geom.Point2D;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.ODE.HasODE;
-import org.evoludo.simulator.models.PDE.HasPDE;
 import org.evoludo.simulator.models.RungeKutta;
 import org.evoludo.simulator.models.Type;
-import org.evoludo.simulator.models.SDE.HasSDE;
 import org.evoludo.simulator.views.BasicTooltipProvider;
-import org.evoludo.simulator.views.HasHistogram;
-import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPhase2D;
-import org.evoludo.simulator.views.HasPop2D;
-import org.evoludo.simulator.views.HasPop3D;
 import org.evoludo.simulator.views.HasS3;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -71,9 +63,7 @@ import org.evoludo.util.Formatter;
  *
  * @author Christoph Hauert
  */
-public class ATBT extends TBT implements HasIBS.DPairs, HasODE.DPairs, HasSDE.DPairs, HasPDE.DPairs,
-		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasS3, HasPhase2D, HasPop2D.Fitness, HasPop3D.Fitness,
-		HasMean.Fitness, HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsStationary {
+public class ATBT extends TBT implements HasS3, HasPhase2D {
 
 	/**
 	 * The identifier of rich sites: {@code (int) (trait / 2)}.

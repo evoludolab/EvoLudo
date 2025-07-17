@@ -33,7 +33,7 @@ package org.evoludo.simulator.models;
 import java.util.ArrayList;
 
 import org.evoludo.math.ArrayMath;
-import org.evoludo.simulator.models.ODE.HasDE;
+import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;

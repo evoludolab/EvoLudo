@@ -49,13 +49,11 @@ import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Markers;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.ODE;
-import org.evoludo.simulator.models.ODE.HasODE;
 import org.evoludo.simulator.models.PDE;
-import org.evoludo.simulator.models.PDE.HasPDE;
 import org.evoludo.simulator.models.RungeKutta;
 import org.evoludo.simulator.models.SDE;
-import org.evoludo.simulator.models.SDE.HasSDE;
 import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
@@ -192,6 +190,12 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @see EvoLudo#getRNG()
 	 */
 	public Model createModel(Type type) {
+		// default for ODE is RK5, if available
+		if (type == Type.ODE && this instanceof HasDE.RK5)
+			type = Type.RK5;
+		// default for PDE is PDERD, if available
+		else if (type == Type.PDE && this instanceof HasDE.PDERD)
+			type = Type.PDERD;
 		// return default model for type
 		switch (type) {
 			case IBS:
@@ -201,25 +205,23 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					return new IBSC(engine);
 				return new IBSD(engine);
 			case SDE:
-				if (!(this instanceof HasSDE))
+				if (!(this instanceof HasDE.SDE))
 					return null;
 				return new SDE(engine);
-			case ODE:
 			case RK5:
-				if (!(this instanceof HasODE))
+				if (!(this instanceof HasDE.ODE))
 					return null;
 				return new RungeKutta(engine);
 			case EM:
-				if (!(this instanceof HasODE))
+				if (!(this instanceof HasDE.ODE))
 					return null;
 				return new ODE(engine);
 			case PDEADV:
-				if (!(this instanceof HasPDE))
+				if (!(this instanceof HasDE.PDEADV))
 					return null;
 				return new Advection(engine);
-			case PDE:
 			case PDERD:
-				if (!(this instanceof HasPDE))
+				if (!(this instanceof HasDE.PDERD))
 					return null;
 				return new PDE(engine);
 			default:
@@ -403,18 +405,20 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		ArrayList<Type> types = new ArrayList<>();
 		if (this instanceof IBS.HasIBS)
 			types.add(Type.IBS);
-		if (this instanceof HasODE) {
+		if (this instanceof HasDE.ODE)
 			types.add(Type.ODE);
+		if (this instanceof HasDE.RK5)
 			types.add(Type.RK5);
+		if (this instanceof HasDE.EM)
 			types.add(Type.EM);
-		}
-		if (this instanceof HasSDE)
+		if (this instanceof HasDE.SDE)
 			types.add(Type.SDE);
-		if (this instanceof HasPDE) {
+		if (this instanceof HasDE.PDE)
 			types.add(Type.PDE);
+		if (this instanceof HasDE.PDERD)
 			types.add(Type.PDERD);
+		if (this instanceof HasDE.PDEADV)
 			types.add(Type.PDEADV);
-		}
 		return types.toArray(new Type[0]);
 	}
 

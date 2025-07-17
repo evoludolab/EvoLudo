@@ -36,10 +36,8 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.ODE.HasODE;
-import org.evoludo.simulator.models.PDE.HasPDE;
+import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.RungeKutta;
-import org.evoludo.simulator.models.SDE.HasSDE;
 import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -51,7 +49,7 @@ import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.CLOption.Category;
 
-public class SIR extends Discrete implements HasIBS, HasODE, HasSDE, HasPDE,
+public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE.PDE,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasS3, HasHistogram.Degree,
 		HasHistogram.StatisticsProbability, HasHistogram.StatisticsTime, HasHistogram.StatisticsStationary {
 

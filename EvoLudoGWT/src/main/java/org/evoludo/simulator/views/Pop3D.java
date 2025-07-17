@@ -41,7 +41,7 @@ import org.evoludo.simulator.EvoLudo.ColorModelType;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.Data;
-import org.evoludo.simulator.models.ODE.HasDE;
+import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;

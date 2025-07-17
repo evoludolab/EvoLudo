@@ -60,27 +60,6 @@ import org.evoludo.util.Plist;
 public class PDE extends ODE {
 
 	/**
-	 * Methods that every {@link Module} must implement, which advertises numerical
-	 * solutions based on partial differential equations.
-	 */
-	public interface HasPDE extends HasDE {
-
-		/**
-		 * Interface for partial differential equations (PDE) with pairwise
-		 * interactions.
-		 */
-		public interface DPairs extends HasPDE, HasDE.DPairs {
-		}
-
-		/**
-		 * Interface for partial differential equations (PDE) with interactions in
-		 * groups of arbitrary size.
-		 */
-		public interface DGroups extends HasPDE, HasDE.DGroups {
-		}
-	}
-
-	/**
 	 * Convenience variable: module associated with this model (useful as long as
 	 * PDE models are restricted to single species).
 	 */

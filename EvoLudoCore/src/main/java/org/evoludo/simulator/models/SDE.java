@@ -47,26 +47,6 @@ import org.evoludo.util.CLOption;
 public class SDE extends ODE {
 
 	/**
-	 * Interface for modules that implement stochastic differential equations (SDE).
-	 */
-	public interface HasSDE extends HasDE {
-
-		/**
-		 * Interface for stochastic differential equations (SDE) with pairwise
-		 * interactions.
-		 */
-		public interface DPairs extends HasSDE, HasDE.DPairs {
-		}
-
-		/**
-		 * Interface for stochastic differential equations (SDE) with interactions in
-		 * groups of arbitrary size.
-		 */
-		public interface DGroups extends HasSDE, HasDE.DGroups {
-		}
-	}
-
-	/**
 	 * Convenience variable: module associated with this model (useful as long as
 	 * SDE models are restricted to single species).
 	 */

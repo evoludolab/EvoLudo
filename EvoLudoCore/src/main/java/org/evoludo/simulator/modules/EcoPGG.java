@@ -36,9 +36,7 @@ import org.evoludo.geom.Point2D;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS.HasIBS;
-import org.evoludo.simulator.models.ODE.HasODE;
-import org.evoludo.simulator.models.PDE.HasPDE;
-import org.evoludo.simulator.models.SDE.HasSDE;
+import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasHistogram;
@@ -59,7 +57,7 @@ import org.evoludo.util.Formatter;
  * @author Christoph Hauert
  */
 public class EcoPGG extends Discrete implements Payoffs,
-		HasIBS.DGroups, HasODE.DGroups, HasSDE.DGroups, HasPDE.DGroups,
+		HasIBS.DGroups, HasDE.DGroups, HasDE.EM, HasDE.RK5, HasDE.SDE, HasDE.PDERD, HasDE.PDEADV,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasS3, HasPhase2D,
 		HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness,
 		HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsStationary {

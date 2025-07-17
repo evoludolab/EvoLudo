@@ -49,7 +49,7 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.models.Mode;
-import org.evoludo.simulator.models.ODE.HasDE;
+import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
