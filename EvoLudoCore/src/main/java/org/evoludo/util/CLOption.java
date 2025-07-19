@@ -51,11 +51,14 @@ public class CLOption implements Comparable<CLOption> {
 		 * Parse string <code>arg</code> and set configurable parameters that correspond
 		 * to this command line option.
 		 * <p>
-		 * <strong>Note:</strong> should only return <code>false</code> if a warning or
-		 * other information was logged.
+		 * <strong>Note:</strong> returning <code>false</code> triggers a warning about
+		 * which command line option failed to correctly parse. If the parser can
+		 * rectify the issue on the spot this is also acceptable. In that case the
+		 * method should return <code>true</code> and possibly log the fact that
+		 * parameters have been adjusted.
 		 * </p>
 		 * 
-		 * @param arg for parsing by command line option
+		 * @param arg the argument for parsing by command line option
 		 * @return <code>true</code> if parsing successful
 		 */
 		public boolean parse(String arg);

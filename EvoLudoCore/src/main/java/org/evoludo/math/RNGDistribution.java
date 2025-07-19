@@ -262,10 +262,10 @@ public abstract class RNGDistribution {
 
 	/**
 	 * Gaussian distributed random number with mean <code>0</code> and variance
-	 * <code>1</code> (standard Normal distribution). with regular precision (based
+	 * <code>1</code> (standard Normal distribution) with regular precision (based
 	 * on 31bit random integer).
 	 *
-	 * @return random number in <code>[0, 1)</code>
+	 * @return random number in <code>(-Double.MAX_VALUE , Double.MAX_VALUE)</code>
 	 * @see MersenneTwister#nextGaussian()
 	 */
 	public synchronized double nextGaussian() {

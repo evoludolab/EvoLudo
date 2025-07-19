@@ -1093,19 +1093,26 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				 * {@inheritDoc}
 				 * <p>
 				 * Parse relative species update rates for multiple populations/species.
-				 * {@code arg} can be a single value or an array of values with the
-				 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
-				 * {@code arg} until all populations/species have their update rates set.
-				 * 
-				 * @param arg encoded population structure
+				 * {@code arg} can be a single value or an array of values. The parser cycles
+				 * through {@code arg} until all populations/species have their update rates
+				 * set.
 				 */
 				@Override
 				public boolean parse(String arg) {
-					String[] speciesupdaterates = arg.split(CLOParser.SPECIES_DELIMITER);
-					int n = 0;
+					double[] rates;
+					// allow vector delimiter as well as species delimiter for multiple species
+					if (arg.contains(CLOParser.SPECIES_DELIMITER))
+						rates = CLOParser.parseVector(arg, CLOParser.SPECIES_DELIMITER);
+					else
+						rates = CLOParser.parseVector(arg);
+					if (rates == null || rates.length == 0)
+						return false;
+						int n = 0;
 					for (Module pop : species) {
-						pop.setSpeciesUpdateRate(
-								CLOParser.parseDouble(speciesupdaterates[n++ % speciesupdaterates.length]));
+						double rate = rates[n++ % rates.length];
+						if (rate < 0.0)
+							return false;
+						pop.setSpeciesUpdateRate(rate);
 					}
 					return true;
 				}
@@ -1159,7 +1166,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				 * explicitly set on the command line. Moreover, this can also refer to the
 				 * geometry used for PDE models.
 				 * 
-				 * @param arg encoded population structure
+				 * @param arg the encoded population structure
 				 */
 				@Override
 				public boolean parse(String arg) {
@@ -1206,7 +1213,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				 * and the population size is set to {@code n<sup>2</sup>}. The number
 				 * after the 'x' or 'X' is ignored.
 				 * 
-				 * @param arg (array of) population size(s)
+				 * @param arg the (array of) population size(s)
 				 */
 				@Override
 				public boolean parse(String arg) {
@@ -1248,8 +1255,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	/**
 	 * Command line option to set death rate for ecological population updates.
 	 */
-	public final CLOption cloDeathRate = new CLOption("deathrate", "0.5", Category.Module,
-			"--deathrate <d>  rate of dying",
+	public final CLOption cloDeathRate = new CLOption("deathrate", "0.0", Category.Module, null,
 			new CLODelegate() {
 
 				/**
@@ -1260,7 +1266,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				 * values. The parser cycles through {@code arg} until all populations/species
 				 * have the death rate set.
 				 * 
-				 * @param arg (array of) death rate(s)
+				 * @param arg the (array of) death rate(s)
 				 */
 				@Override
 				public boolean parse(String arg) {
@@ -1275,11 +1281,35 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					int n = 0;
 					for (Module pop : species) {
 						double rate = rates[n++ % rates.length];
-						if (rate < 0.0)
-							return false;
-						pop.setDeathRate(rate);
+						// sanity checks
+						if (rate >= 0.0) {
+							pop.setDeathRate(rate);
+							continue;
+						}
+						String sn = pop.getName();
+						logger.warning("death rate" + (sn.isEmpty() ?  "": " of " + sn) + " must be non-negative (changed to 0).");
+						pop.setDeathRate(0.0);
 					}
 					return true;
+				}
+
+				@Override
+				public String getDescription() {
+					String descr = "";
+					int nSpecies = species.size();
+					switch (nSpecies) {
+						case 1:
+							return "--deathrate <d>  rate of dying";
+						case 2:
+							descr = "--deathrate <d0[,d1]>  rates of dying";
+							break;
+						case 3:
+							descr = "--deathrate <d0[,d1,d2]>  rates of dying";
+							break;
+						default:
+							descr = "--deathrate <d0[,...,d" + nSpecies + "]>  rates of dying";
+					}
+					return descr;
 				}
 			});
 
@@ -1299,7 +1329,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				 * {@code arg} until all populations/species have the interaction group
 				 * size set.
 				 * 
-				 * @param arg (array of) interaction group size(s)
+				 * @param arg the (array of) interaction group size(s)
 				 */
 				@Override
 				public boolean parse(String arg) {
@@ -1334,7 +1364,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				 * indices of the traits are given by an array of values with the separator
 				 * {@value CLOParser#VECTOR_DELIMITER}.
 				 * 
-				 * @param arg (array of) array of trait name(s)
+				 * @param arg the (array of) array of trait name(s)
 				 */
 				@Override
 				public boolean parse(String arg) {
@@ -1394,7 +1424,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				 * <dl>
 				 * If the parsing of a color fails it is replaced by black.
 				 * 
-				 * @param arg (array of) array of trait color(s)
+				 * @param arg the (nested) array of trait color(s)
 				 */
 				@Override
 				public boolean parse(String arg) {
@@ -1474,7 +1504,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				 * trait names for each species should be an array of values with the separator
 				 * {@value CLOParser#VECTOR_DELIMITER}.
 				 * 
-				 * @param arg (array of) array of trait name(s)
+				 * @param arg the (array of) array of trait name(s)
 				 */
 				@Override
 				public boolean parse(String arg) {
