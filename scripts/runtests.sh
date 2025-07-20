@@ -23,7 +23,7 @@ LATEST_TEST_JAR=`find ${EVOLUDO_TEST_HOME}/target/ \
 # build project - if needed
 if [[ ${LATEST_JAVA} -nt ${LATEST_TEST_JAR} ]]; then
 	echo "Building EvoLudo test suite..." ;
-	mvn -pl -EvoLudoGWT,-EvoLudoSims clean install ;
+	mvn -pl EvoLudoTest -am clean install ;
 else
 	echo "EvoLudo test suite up to date."
 fi
