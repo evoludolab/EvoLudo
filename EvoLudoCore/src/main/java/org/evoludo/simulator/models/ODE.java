@@ -410,6 +410,12 @@ public class ODE extends Model implements Discrete {
 					+ " - fitness >0 must hold for adjusted dynamics (revert to standard dynamics).");
 			isAdjustedDynamics = false;
 		}
+
+		// check if dynamics mode changed (cannot mix and match density and frequency based dynamics)
+		InitType init = initType[0];
+		boolean isDensityNow = (init == InitType.DENSITY || init == InitType.UNITY);
+		doReset |= (isDensity != isDensityNow);
+		isDensity = isDensityNow;
 		return doReset;
 	}
 
@@ -441,6 +447,16 @@ public class ODE extends Model implements Discrete {
 	@Override
 	public void init() {
 		init(true);
+	}
+
+	/**
+	 * Return mode of differential equations model.
+	 * 
+	 * @return {@code true} for density based model, {@code false} if frequency
+	 *         based.
+	 */
+	public boolean isDensity() {
+		return isDensity;
 	}
 
 	/**
@@ -1485,31 +1501,38 @@ public class ODE extends Model implements Discrete {
 	public enum InitType implements CLOption.Key {
 
 		/**
-		 * Initial densities as specified.
-		 * <p>
-		 * <strong>Note:</strong> Not available for frequency based models.
+		 * Set initial densities as specified. In models that support both density and
+		 * frequency based dynamics, this selects the density based dynamics.
+		 * 
+		 * @see HasDE.DualDynamics
 		 */
 		DENSITY("density", "initial trait densities <d1,...,dn>"),
 
 		/**
-		 * Initial frequencies as specified.
-		 * <p>
-		 * <strong>Note:</strong> Not available for density based models.
+		 * Set initial frequencies as specified. In models that support both density and
+		 * frequency based dynamics, this selects the frequency based dynamics.
+		 * 
+		 * @see HasDE.DualDynamics
 		 */
 		FREQUENCY("frequency", "initial trait frequencies <f1,...,fn>"),
 
 		/**
-		 * Uniform initial frequencies of traits (default; in density modules all
-		 * desnities are set to zero).
+		 * Uniform initial frequencies of traits. Not available in density based models.
 		 */
 		UNIFORM("uniform", "uniform initial frequencies"),
 
 		/**
-		 * Random initial trait frequencies.
-		 * <p>
-		 * <strong>Note:</strong> Not available for density based models.
+		 * Random initial trait frequencies. Not available for density based models.
 		 */
 		RANDOM("random", "random initial frequencies"),
+
+		/**
+		 * Uniform initial trait densities of one. In models that support both density
+		 * and frequency based dynamics, this selects the density based dynamics.
+		 * 
+		 * @see HasDE.DualDynamics
+		 */
+		UNITY("unity", "unit densities"),
 
 		/**
 		 * Single mutant in homogeneous resident.
@@ -1630,9 +1653,10 @@ public class ODE extends Model implements Discrete {
 					break;
 				case RANDOM:
 				case UNIFORM:
+				case UNITY:
 				default:
 					// uniform distribution is the default. for densities set all to zero.
-					Arrays.fill(y0, start, start + nTraits, isDensity ? 0.0 : 1.0);
+					Arrays.fill(y0, start, start + nTraits, 1.0);
 					break;
 			}
 			initType[idx] = itype;
@@ -1740,11 +1764,17 @@ public class ODE extends Model implements Discrete {
 		parser.addCLO(cloInit);
 		cloInit.clearKeys();
 		cloInit.addKeys(InitType.values());
-		if (isDensity) {
-			cloInit.removeKey(InitType.RANDOM);
-			cloInit.removeKey(InitType.FREQUENCY);
-		} else {
-			cloInit.removeKey(InitType.DENSITY);
+		if (!(species.get(0) instanceof HasDE.DualDynamics)) {
+			if (isDensity) {
+				// remove frequency specific initialization options
+				cloInit.removeKey(InitType.RANDOM);
+				cloInit.removeKey(InitType.FREQUENCY);
+				cloInit.removeKey(InitType.UNIFORM);
+			} else {
+				// remove density specific initialization options
+				cloInit.removeKey(InitType.DENSITY);
+				cloInit.removeKey(InitType.UNITY);
+			}
 		}
 		if (!(this instanceof SDE))
 			cloInit.removeKey(InitType.MUTANT);

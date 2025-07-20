@@ -88,6 +88,13 @@ public abstract class Model implements CLOProvider {
 		public int getDependent();
 
 		/**
+		 * Interface for modules that support differential equation models with both
+		 * frequency and density based dynamics.
+		 */
+		public interface DualDynamics {
+		}
+
+		/**
 		 * Interface for differential equation models with pairwise interactions.
 		 */
 		public interface DPairs extends HasDE, Features.Pairs {
