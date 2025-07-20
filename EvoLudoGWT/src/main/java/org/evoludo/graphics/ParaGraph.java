@@ -131,7 +131,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 */
 	public Data2Phase getMap() {
 		if (map == null)
-			map = new TraitMap();
+			setMap(new TraitMap());
 		return map;
 	}
 
