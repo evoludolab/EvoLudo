@@ -2944,14 +2944,6 @@ public abstract class IBSPopulation {
 		map2fit = module.getMap2Fitness();
 		playerUpdate = module.getPlayerUpdate();
 
-		// check population geometry
-		if (nPopulation < 1) {
-			logger.warning("population size " + nPopulation + " is not admissible - set to 100!");
-			module.setNPopulation(100);
-			nPopulation = 100; // keep local copy in sync
-			doReset = true;
-		}
-
 		// check geometries: --geometry set structure, --geominter set interaction and
 		// --geomcomp set competition.
 		// now it is time to amalgamate. the more specific options --geominter,

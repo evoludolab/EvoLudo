@@ -576,7 +576,6 @@ public class IBSD extends IBS implements Discrete {
 		CLOption clo = pop.getInit().clo;
 		clo.clearKeys();
 		clo.addKeys(Init.Type.values());
-		parser.addCLO(clo);
 		// kaleidoscopes are not standard and must be requested/enabled by modules and
 		// their IBSDPopulation implementations.
 		clo.removeKey(Init.Type.KALEIDOSCOPE);
