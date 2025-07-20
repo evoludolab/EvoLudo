@@ -85,15 +85,24 @@ public class SDE extends ODE {
 
 	@Override
 	public boolean check() {
-		if (species.size() > 1) {
-			logger.warning("SDE model for inter-species interactions not (yet?) implemented - revert to ODE.");
-			engine.loadModel(Type.ODE);
-			return true;
-		}
-		if (((HasDE) module).getDependent() < 0) {
-			logger.warning("SDE model requires dependent trait - revert to ODE.");
-			engine.loadModel(Type.ODE);
-			return true;
+		if (nSpecies > 1) {
+			// currently multi-species modules are only acceptable for ecological models
+			for (Module mod : species) {
+				int nt = mod.getNActive();
+				if (nt == 1 || (nt == 2 && mod.getVacant() >= 0))
+					continue;
+				// multiple traits implies evolutionary module - revert to ODE
+				logger.warning("SDE model for multi-species modules requires single trait - revert to ODE.");
+				engine.loadModel(Type.ODE);
+				return true;
+			}
+		} else {
+			// single species module requires dependent trait
+			if (((HasDE) module).getDependent() < 0) {
+				logger.warning("SDE model requires dependent trait - revert to ODE.");
+				engine.loadModel(Type.ODE);
+				return true;
+			}
 		}
 		boolean doReset = super.check();
 		// at this point it is clear that we have a dependent trait
@@ -102,7 +111,7 @@ public class SDE extends ODE {
 		// traits for replicator dynamics (for SDE but not SDEN)
 		if (!getClass().getSuperclass().equals(SDE.class) && (dim < 1 || dim > 2)) {
 			logger.warning(getClass().getSimpleName()
-					+ " - too many traits (max 3 incl. dependent) - revert to ODE!");
+					+ " - max. 3 traits incl. dependent - revert to ODE (use SDEN).");
 			engine.loadModel(Type.ODE);
 			return true;
 		}
@@ -152,16 +161,19 @@ public class SDE extends ODE {
 	public boolean checkConvergence(double dist2) {
 		if (converged)
 			return true;
-		if (mutation[0].probability > 0.0) {
-			// if dist2 is zero (or very small) and (at least) one trait is absent, 
-			// random noise may be invalid (pushing state outside of permissible values)
-			if (dist2 < accuracy && ArrayMath.min(yt) < accuracy)
-				return false;
-			int vacant = module.getVacant();
-			// extinction is absorbing even with mutations
-			converged = (vacant < 0 ? false : (yt[vacant] > 1.0 - accuracy));
-		} else
-			converged = monoStop ? isMonomorphic() : (dependents[0] >= 0 && ArrayMath.max(yt) > 1.0 - accuracy);
+		converged = true;
+		for (Module mod : species) {
+			if (mod.getMutation().probability > 0.0) {
+				// if dist2 is zero (or very small) and (at least) one trait is absent, 
+				// random noise may be invalid (pushing state outside of permissible values)
+				if (dist2 < accuracy && ArrayMath.min(yt) < accuracy)
+					return false;
+				int vacant = mod.getVacant();
+				// extinction is absorbing even with mutations
+				converged &= (vacant < 0 ? false : (yt[vacant] > 1.0 - accuracy));
+			} else
+				converged &= monoStop ? isMonomorphic() : (((HasDE) mod).getDependent() >= 0 && ArrayMath.max(yt) > 1.0 - accuracy);
+		}
 		return converged;
 	}
 
@@ -170,7 +182,7 @@ public class SDE extends ODE {
 	 * white noise is added.
 	 * 
 	 * <h3>Implementation Notes:</h3>
-	 * Integration of SDEs can be optimized in 1 and 2 dimensions for replicator
+	 * Integration of SDEs can be optimized in 1 and 2 dimensions. For replicator
 	 * systems this means 2 or 3 traits. Currently noise implemented only for
 	 * replicator type dynamics.
 	 * 
@@ -185,39 +197,9 @@ public class SDE extends ODE {
 		double sqrtdt = Math.sqrt(stepSize) / stepSize;
 		double x;
 		int idx;
-		double effnoise = 1.0 / module.getNPopulation();
-		// scale noise according effective population size
-		int vacant = module.getVacant();
-		if (vacant >= 0) {
-			double ytv = yt[vacant];
-			if (ytv > 1.0 - 1e-8)
-				return 0.0;
-			effnoise /= (1.0 - ytv);
-		}
-		double mu = mutation[0].probability;
 		switch (nDim) {
 			case 2: // two traits
-				x = yt[0];
-				double b = ((1.0 - mu) * x * (1.0 - x) + mu) * effnoise;
-				double c = Math.sqrt(b);
-				double n = c * rng.nextGaussian() * sqrtdt;
-				dyt[0] += n;
-				dyt[1] -= n;
-				if (mu > 0.0) {
-					yout[0] = yt[0] + step * dyt[0];
-					yout[1] = yt[1] + step * dyt[1];
-				} else {
-					// in the absence of mutations, extinct traits (or species) must not make
-					// a sudden reappearance due to roundoff errors!
-					if (yt[0] > 0.0)
-						yout[0] = yt[0] + step * dyt[0];
-					else
-						yout[0] = 0.0;
-					if (yt[1] > 0.0)
-						yout[1] = yt[1] + step * dyt[1];
-					else
-						yout[1] = 0.0;
-				}
+				process2DNoise(0, step, sqrtdt, mutation[0].probability, getEffectiveNoise(module, 0));
 				break;
 
 			case 3: // two dimensions (or three traits) - e.g. RSP game
@@ -237,6 +219,8 @@ public class SDE extends ODE {
 				// double byy = (y-y2+mu*(y2+(1.0-y-y)/3.0))*noise;
 
 				// mutations to only other traits
+				double mu = mutation[0].probability;
+				double effnoise = getEffectiveNoise(module, 0);
 				double bxx = (x - x2 + mu * ((1.0 - x) * 0.5 + x2)) * effnoise;
 				double bxy, byx = bxy = -(xy + mu * ((x + y) * 0.5 - xy)) * effnoise;
 				double byy = (y - y2 + mu * ((1.0 - y) * 0.5 + y2)) * effnoise;
@@ -322,8 +306,29 @@ public class SDE extends ODE {
 				}
 				break;
 
-			default: // any number of traits
-				throw new Error("SDE dimension d>3 not implemented (use SDEN)!");
+			default: // any number of traits (single traits in multiple species)
+				int skip = 0;
+				if (isDensity) {
+					// effnoise and mu set for first species
+					for (Module mod : species) {
+						double noise = Math.sqrt(getEffectiveNoise(mod, skip)) * rng.nextGaussian() * sqrtdt;
+						// species that went extinct should not make a sudden reappearance
+						if (yt[skip] > 0.0) {
+							dyt[skip] += noise;
+							yout[skip] = yt[skip] + step * dyt[skip];
+						}
+						skip += mod.getNTraits();
+					}
+					break;
+				}
+				// frequency dynamics
+				int id = 0;
+				for (Module mod : species) {
+					// no mutations in ecological processes
+					process2DNoise(id, step, sqrtdt, 0.0, getEffectiveNoise(mod, skip));
+					skip += mod.getNTraits();
+				}
+				break;
 		}
 		// polish result
 		idx = ArrayMath.minIndex(yout);
@@ -349,18 +354,74 @@ public class SDE extends ODE {
 		return ArrayMath.distSq(yout, yt);
 	}
 
+	/**
+	 * Helper method to process noise with two dependent traits.
+	 * 
+	 * @param skip	the start index of the two traits
+	 * @param step	the step size
+	 * @param sqrtdt the square root of the step size
+	 * @param mu	the mutation rate
+	 * @param noise the noise to be processed
+	 */
+	private void process2DNoise(int skip, double step, double sqrtdt, double mu, double noise) {
+		double x = yt[skip];
+		double b = ((1.0 - mu) * x * (1.0 - x) + mu) * noise;
+		double c = Math.sqrt(b);
+		double n = c * rng.nextGaussian() * sqrtdt;
+		dyt[skip] += n;
+		int skip1 = skip + 1;
+		dyt[skip1] -= n;
+		if (mu > 0.0) {
+			yout[skip] = yt[skip] + step * dyt[skip];
+			yout[skip1] = yt[skip1] + step * dyt[skip1];
+		} else {
+			// in the absence of mutations, extinct traits (or species) must not make
+			// a sudden reappearance due to roundoff errors!
+			if (yt[skip] > 0.0)
+				yout[skip] = yt[skip] + step * dyt[skip];
+			else
+				yout[skip] = 0.0;
+			if (yt[skip1] > 0.0)
+				yout[skip1] = yt[skip1] + step * dyt[skip1];
+			else
+				yout[skip1] = 0.0;
+		}
+	}
+
+	/**
+	 * Helper method to determine the effective noise for a given module based on
+	 * the current population size.
+	 * 
+	 * @param mod  the module to determine the effective noise
+	 * @param skip the starting index for the entries in {@code yt} for this module
+	 * @return
+	 */
+	private double getEffectiveNoise(Module mod, int skip) {
+		double effnoise = 1.0 / mod.getNPopulation();
+		// scale noise according effective population size
+		int vacant = skip + mod.getVacant();
+		if (vacant >= 0) {
+			double ytv = yt[vacant];
+			if (ytv > 1.0 - 1e-8)
+				return 0.0;
+			effnoise /= (1.0 - ytv);
+		}
+		return effnoise;
+	}
+
 	@Override
 	public void readStatisticsSample() {
 		super.readStatisticsSample();
-		if (fixData == null)
+		if (fixData == null || nSpecies > 1)
 			return;
 
 		// collect new statistics sample
+		Module mod = engine.getModule();
 		fixData.typeFixed = ArrayMath.maxIndex(yt);
-		int vacant = module.getVacant();
+		int vacant = mod.getVacant();
 		if (fixData.typeFixed == vacant) {
 			// closer look is needed - look for what other trait survived (if any)
-			for (int n = 0; n < module.getNTraits(); n++) {
+			for (int n = 0; n < mod.getNTraits(); n++) {
 				if (n == vacant)
 					continue;
 				if (yt[n] > 0) {
@@ -394,9 +455,12 @@ public class SDE extends ODE {
 	 */
 	@Override
 	public boolean permitsSampleStatistics() {
-		if (!(module instanceof HasHistogram.StatisticsProbability
-				|| module instanceof HasHistogram.StatisticsTime)
-				|| module.getMutation().probability > 0.0)
+		if (nSpecies > 1)
+			return false;
+		Module mod = engine.getModule();
+		if (!(mod instanceof HasHistogram.StatisticsProbability
+				|| mod instanceof HasHistogram.StatisticsTime)
+				|| mod.getMutation().probability > 0.0)
 			return false;
 		// sampling statistics also require:
 		// - mutant initialization (same as temperature in well-mixed populations)
@@ -406,7 +470,11 @@ public class SDE extends ODE {
 
 	@Override
 	public boolean permitsUpdateStatistics() {
-		return (module instanceof HasHistogram.StatisticsTime);
+		for (Module mod : species) {
+			if (!(mod instanceof HasHistogram.StatisticsTime))
+				return false;
+		}
+		return true;
 	}
 
 	@Override
