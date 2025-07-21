@@ -309,7 +309,6 @@ public class SDE extends ODE {
 			default: // any number of traits (single traits in multiple species)
 				int skip = 0;
 				if (isDensity) {
-					// effnoise and mu set for first species
 					for (Module mod : species) {
 						double noise = Math.sqrt(getEffectiveNoise(mod, skip)) * rng.nextGaussian() * sqrtdt;
 						// species that went extinct should not make a sudden reappearance
@@ -322,10 +321,9 @@ public class SDE extends ODE {
 					break;
 				}
 				// frequency dynamics
-				int id = 0;
 				for (Module mod : species) {
 					// no mutations in ecological processes
-					process2DNoise(id, step, sqrtdt, 0.0, getEffectiveNoise(mod, skip));
+					process2DNoise(skip, step, sqrtdt, 0.0, getEffectiveNoise(mod, skip));
 					skip += mod.getNTraits();
 				}
 				break;
