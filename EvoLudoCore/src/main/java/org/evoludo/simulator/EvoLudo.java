@@ -31,12 +31,12 @@
 package org.evoludo.simulator;
 
 import java.awt.Color;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -348,7 +348,7 @@ public abstract class EvoLudo
 	 * List of engine listeners that get notified when the state of the population
 	 * changed, for example after population reset or completed an update step.
 	 */
-	protected List<MilestoneListener> milestoneListeners = new ArrayList<MilestoneListener>();
+	protected Set<MilestoneListener> milestoneListeners = new HashSet<MilestoneListener>();
 
 	/**
 	 * Add a milestone listener to the list of listeners that get notified when the
@@ -357,7 +357,7 @@ public abstract class EvoLudo
 	 * @param newListener the new milestone listener
 	 */
 	public void addMilestoneListener(MilestoneListener newListener) {
-		milestoneListeners.add(0, newListener);
+		milestoneListeners.add(newListener);
 	}
 
 	/**
@@ -374,7 +374,7 @@ public abstract class EvoLudo
 	/**
 	 * List of change listeners that get notified when the model changes.
 	 */
-	protected List<ChangeListener> changeListeners = new ArrayList<ChangeListener>();
+	protected Set<ChangeListener> changeListeners = new HashSet<ChangeListener>();
 
 	/**
 	 * Add a change listener to the list of listeners that get notified when the
@@ -383,7 +383,7 @@ public abstract class EvoLudo
 	 * @param newListener the new change listener
 	 */
 	public void addChangeListener(ChangeListener newListener) {
-		changeListeners.add(0, newListener);
+		changeListeners.add(newListener);
 	}
 
 	/**
