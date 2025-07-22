@@ -195,13 +195,12 @@ public class CLOParser {
 	 * stripped such that each entry starts with the name of the option.
 	 * 
 	 * @param cloargs the String array with command line options
-	 * @return <code>true</code> if parsing successful and <code>false</code> if
-	 *         problems occurred
+	 * @return the number of issues that have occurred durin parsing
 	 */
-	public boolean parseCLO(String[] cloargs) {
+	public int parseCLO(String[] cloargs) {
 		// the entries in cloargs start with the name of the option followed by its
 		// argument(s) which can be separated by ' ' or '='
-		boolean success = true;
+		int issues = 0;
 		nextclo: for (String clo : cloargs) {
 			String[] args = clo.split("\\s+|=");
 			String name = args[0];
@@ -215,7 +214,7 @@ public class CLOParser {
 				switch (opt.getType()) {
 					case REQUIRED:
 						if (args.length < 1) {
-							success = false;
+							issues++;
 							logWarning("option '--" + clo + "' is missing a required argument - ignored.");
 							break;
 						}
@@ -227,7 +226,7 @@ public class CLOParser {
 					default:
 					case NONE:
 						if (arg.length() > 0) {
-							success = false;
+							issues++;
 							logWarning("option '--" + clo + "' does not accept an argument - ignored.");
 							break;
 						}
@@ -236,7 +235,7 @@ public class CLOParser {
 				}
 				continue nextclo;
 			}
-			success = false;
+			issues++;
 			logWarning("option '--" + clo + "' unknown - ignored.");
 		}
 		// apply all options (including default values)
@@ -248,16 +247,16 @@ public class CLOParser {
 					// parsing failed - try again using default
 					logger.warning("invalid " + option.getName() + " argument (" + option.getArg() + ") - using '"
 								+ option.getDefault() + "'");
-					success = false;
+					issues++;
 					option.parseDefault();
 				}
 			} catch (Exception e) {
 				logWarning("option --" + option.getName() + " failed to parse argument '" + option.getArg() + "' ("
 						+ e.getLocalizedMessage() + ").");
-				success = false;
+				issues++;
 			}
 		}
-		return success;
+		return issues;
 	}
 
 	/**

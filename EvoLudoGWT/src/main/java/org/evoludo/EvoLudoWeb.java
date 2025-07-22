@@ -1127,10 +1127,9 @@ public class EvoLudoWeb extends Composite
 		boolean resume;
 
 		/**
-		 * The flag to indicate whether the command line arguments were successfully
-		 * parsed.
+		 * The number of issues that have occurred during parsing
 		 */
-		boolean success;
+		int issues;
 	}
 
 	/**
@@ -1156,7 +1155,7 @@ public class EvoLudoWeb extends Composite
 		guiState.model = engine.getModel();
 		guiState.module = engine.getModule();
 		// parseCLO() does the heavy lifting and configures the GUI
-		guiState.success = engine.parseCLO(new Directive() {
+		guiState.issues = engine.parseCLO(new Directive() {
 			@Override
 			public void execute() {
 				configGUI();
@@ -1192,8 +1191,9 @@ public class EvoLudoWeb extends Composite
 		evoludoDeck.showWidget(activeView);
 		// set selected item in view selector
 		evoludoViews.setSelectedIndex(evoludoDeck.getWidgetIndex(activeView));
-		if (!guiState.success) {
-			displayStatus("Problems parsing arguments - check log for details.", Level.WARNING.intValue() + 1);
+		if (guiState.issues > 1) {
+			// single issue is already displayed in status line
+			displayStatus("Multiple parsing problems (" + guiState.issues + ") - check log for details.", Level.WARNING.intValue() + 1);
 			cloSize.parse();
 		}
 		evoludoSlider.setValue(engine.getDelay());

@@ -396,7 +396,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		setHeadless(true);
 		String[] args = getSplitCLO();
 		// parse options
-		if (!parseCLO(args)) {
+		if (parseCLO(args) > 0) {
 			// problems parsing command line options
 			// return control to caller.
 			return;
@@ -1131,8 +1131,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * </p>
 	 */
 	@Override
-	public boolean parseCLO() {
-		boolean success = super.parseCLO();
+	public int parseCLO() {
+		int issues = super.parseCLO();
 		exitStatus = 0;
 		if (activeModule == null) {
 			// this is fatal - show help and exit
@@ -1141,13 +1141,15 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		}
 		if (plistname == null)
 			// not restoring state - continue
-			return success;
-		if (!success)
+			return issues;
+		if (issues > 0)
 			logger.warning("problems parsing CLO from '" + plistname + "'...");
 		// parseCLO does not reset model - do it now to be ready for restore
 		modelReset();
 		// finish restoring
-		return restoreFromFile();
+		if (!restoreFromFile())
+			issues++;
+		return issues;
 	}
 
 	@Override

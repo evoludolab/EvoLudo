@@ -503,7 +503,7 @@ public class EvoLudoLab extends JFrame
 		engine.setSuspended(false);
 		Model oldModel = engine.getModel();
 		Module oldModule = engine.getModule();
-		boolean parsingSuccess = engine.parseCLO();
+		int parsingIssues = engine.parseCLO();
 		Module module = engine.getModule();
 		setTitle(module.getTitle());
 		// reset is required if module and/or model changed
@@ -525,8 +525,8 @@ public class EvoLudoLab extends JFrame
 			}
 		}
 		activeViews.setView(idx);
-		if (!parsingSuccess)
-			displayStatus("Problems parsing arguments - check log for details.", Level.WARNING.intValue() + 1);
+		if (parsingIssues > 0)
+			displayStatus("Multiple parsing problems (" + parsingIssues + ") - check log for details.", Level.WARNING.intValue() + 1);
 	}
 
 	public void addMultiView(MultiView view) {

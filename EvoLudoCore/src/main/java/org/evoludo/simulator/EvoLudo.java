@@ -1648,12 +1648,11 @@ public abstract class EvoLudo
 	/**
 	 * Parse command line options.
 	 *
-	 * @return <code>true</code> if parsing successful and <code>false</code> if
-	 *         problems occurred
+	 * @return the number of issues that have occurred durin parsing
 	 * 
 	 * @see #parseCLO(String[])
 	 */
-	public boolean parseCLO() {
+	public int parseCLO() {
 		return parseCLO(getSplitCLO());
 	}
 
@@ -1661,13 +1660,12 @@ public abstract class EvoLudo
 	 * Pre-process and parse array of command line arguments.
 	 *
 	 * @param cloarray string array of command line arguments
-	 * @return <code>true</code> if parsing successful and <code>false</code> if
-	 *         problems occurred
+	 * @return the number of issues that have occurred durin parsing
 	 * 
 	 * @see #preprocessCLO(String[])
 	 * @see CLOParser#parseCLO(String[])
 	 */
-	protected boolean parseCLO(String[] cloarray) {
+	protected int parseCLO(String[] cloarray) {
 		parser.setLogger(logger);
 		cloarray = preprocessCLO(cloarray);
 		parser.initCLO();
@@ -1677,14 +1675,14 @@ public abstract class EvoLudo
 			cloarray = ArrayMath.append(cloarray, cloModule.getName() + " " + activeModule.getKey());
 		if (activeModel != null)
 			cloarray = ArrayMath.append(cloarray, cloModel.getName() + " " + activeModel.getType().getKey());
-		boolean success = parser.parseCLO(cloarray);
+		int issues = parser.parseCLO(cloarray);
 		if (reparseCLO) {
 			// start again from scratch
 			reparseCLO = false;
 			parser.initCLO();
 			return parser.parseCLO(cloarray);
 		}
-		return success;
+		return issues;
 	}
 
 	/**

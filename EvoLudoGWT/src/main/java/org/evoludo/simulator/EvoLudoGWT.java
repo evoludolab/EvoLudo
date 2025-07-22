@@ -153,9 +153,9 @@ public class EvoLudoGWT extends EvoLudo {
 	 * parsing completed.
 	 * 
 	 * @param command the command to execute after parsing
-	 * @return <code>true</code> if parsing was successful
+	 * @return the number of issues that have occurred durin parsing
 	 */
-	public boolean parseCLO(Directive command) {
+	public int parseCLO(Directive command) {
 		notifyGUI = command;
 		return parseCLO();
 	}

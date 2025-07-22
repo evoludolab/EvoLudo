@@ -320,8 +320,9 @@ public class TestEvoLudo implements MilestoneListener {
 		// prepend --seed 0 to ensure fixed seed; append --delay 0 to run at full speed.
 		// note, later instances of repeated options take precedence.
 		engine.setCLO("--seed 0 " + stripExport(clo) + " --delay 0");
-		if (!engine.parseCLO()) {
-			logWarning(task + ": parsing issues of command line arguments - review!");
+		int issues = engine.parseCLO();
+		if (issues > 0) {
+			logWarning(task + ": " + issues + " parsing issues with command line arguments - review!");
 			nTestFailures++;
 			nTests++;
 			return false;
