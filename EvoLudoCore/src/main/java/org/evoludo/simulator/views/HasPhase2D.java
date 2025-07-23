@@ -163,7 +163,7 @@ public interface HasPhase2D {
 
 		/**
 		 * Modules may probe whether {@code setTraits} is implemented. If the method
-		 * returns {@code true} the {@code --phase2daxis} command line option is
+		 * returns {@code true} the {@code --phase2daxes} command line option is
 		 * available otherwise not (e.g. when using custom maps such as in module
 		 * {@link org.evoludo.simulator.modules.ATBT ATBT}).
 		 * 
@@ -175,7 +175,7 @@ public interface HasPhase2D {
 
 		/**
 		 * Allows custom implementations to set the traits displayed on phase plane
-		 * axis.
+		 * axes.
 		 * <p>
 		 * In multi-species models the traits are numbered sequentially, i.e. if the
 		 * first species has <code>nTraits</code> then e.g. an index of
@@ -214,21 +214,30 @@ public interface HasPhase2D {
 		 * 
 		 * @return {@code true} if multiple traits can be selected for each axis
 		 * 
-		 * @see #hasFixedAxis()
+		 * @see #hasFixedAxes()
 		 */
 		public default boolean hasMultitrait() {
 			return false;
 		}
 
 		/**
-		 * Return whether axis of the phase plane are customizable.
+		 * Return whether axes of the phase plane are customizable.
 		 * 
-		 * @return {@code true} if axis can be customized
+		 * @return {@code true} if axes can be customized
 		 * 
 		 * @see #hasMultitrait()
 		 */
-		public default boolean hasFixedAxis() {
+		public default boolean hasFixedAxes() {
 			return true;
+		}
+
+		/**
+		 * Set whether axes of the phase plane are customizable. Optional
+		 * implementation. Axes are fixed by default.
+		 * 
+		 * @param hasFixedAxes
+		 */
+		public default void setFixedAxes(boolean hasFixedAxes) {
 		}
 	}
 }

@@ -87,7 +87,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	Data2Phase map;
 
 	/**
-	 * The flag to indicate autoscaling of axis.
+	 * The flag to indicate autoscaling of axes.
 	 */
 	boolean doAutoscale = true;
 
@@ -232,7 +232,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			double ct = current[0];
 			// current is last point added to buffer
 			map.data2Phase(current, currPt);
-			// update axis range if necessary
+			// update axes range if necessary
 			if (doAutoscale) {
 				style.xMin = Functions.roundDown(Math.min(style.xMin, map.getMinX(buffer)));
 				style.xMax = Functions.roundUp(Math.max(style.xMax, map.getMaxX(buffer)));
@@ -444,7 +444,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	}
 
 	/**
-	 * Check if point (in user coordinates but not yet scaled to axis) lies inside
+	 * Check if point (in user coordinates but not yet scaled to axes) lies inside
 	 * of phase plane.
 	 * 
 	 * @param x <code>x</code>-coordinate of point
@@ -461,7 +461,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	private ContextMenuItem clearMenu;
 
 	/**
-	 * The context menu item to autoscale the axis.
+	 * The context menu item to autoscale the axes.
 	 */
 	private ContextMenuCheckBoxItem autoscaleMenu;
 
@@ -481,7 +481,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		// add autoscale menu if not percent scale
 		if (!(style.percentX || style.percentY)) {
 			if (autoscaleMenu == null) {
-				autoscaleMenu = new ContextMenuCheckBoxItem("Autoscale axis", new Command() {
+				autoscaleMenu = new ContextMenuCheckBoxItem("Autoscale axes", new Command() {
 					@Override
 					public void execute() {
 						doAutoscale = !autoscaleMenu.isChecked();
@@ -523,6 +523,8 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 * @see HasPhase2D#getPhase2DMap()
 	 */
 	public class TraitMap implements Data2Phase, BasicTooltipProvider {
+
+		boolean hasFixedAxes = false;
 
 		/**
 		 * Create new trait map.
@@ -590,8 +592,13 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		}
 
 		@Override
-		public boolean hasFixedAxis() {
-			return false;
+		public boolean hasFixedAxes() {
+			return hasFixedAxes;
+		}
+
+		@Override
+		public void setFixedAxes(boolean hasFixedAxes) {
+			this.hasFixedAxes = hasFixedAxes;
 		}
 
 		@Override
@@ -622,7 +629,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			// data is the last/most recent state in buffer (excluding time!)
 			if (stateX.length != 1 || stateY.length != 1)
 				return false;
-			// conversion only possible phase plane axis each represents a single
+			// conversion only possible if each phase plane axis represents a single
 			// dynamical variable, i.e. no aggregates
 			data[stateX[0]] = point.x;
 			data[stateY[0]] = point.y;

@@ -1550,33 +1550,33 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 			});
 
 	/**
-	 * Command line option to set the traits on phase plane axis.
+	 * Command line option to set the traits on phase plane axes.
 	 * <p>
 	 * <strong>Note:</strong> option not automatically added. Modules that supports
 	 * multiple traits should load it in {@link #collectCLO(CLOParser)}.
 	 */
-	public final CLOption cloPhase2DAxis = new CLOption("phase2daxis", "-default", Category.Module, null,
+	public final CLOption cloPhase2DAxes = new CLOption("phase2daxes", "-default", Category.Module, null,
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					if (!cloPhase2DAxis.isSet())
+					if (!cloPhase2DAxes.isSet())
 						return true;
-					int[][] phase2daxis = CLOParser.parseIntMatrix(arg);
-					if (phase2daxis == null || phase2daxis.length != 2)
+					int[][] phase2daxes = CLOParser.parseIntMatrix(arg);
+					if (phase2daxes == null || phase2daxes.length != 2)
 						return false;
-					// cast check should be unnecessary. --phase2daxis should only be available if
+					// cast check should be unnecessary. --phase2daxes should only be available if
 					// module implements at least HasPhase2D (plus some other conditions).
 					if (Module.this instanceof HasPhase2D) {
 						Data2Phase map = ((HasPhase2D) Module.this).getPhase2DMap();
 						if (map != null && map.hasSetTraits())
-							map.setTraits(phase2daxis[0], phase2daxis[1]);
+							map.setTraits(phase2daxes[0], phase2daxes[1]);
 					}
 					return true;
 				}
 
 				@Override
 				public String getDescription() {
-					String descr = "--phase2daxis <t>  indices of traits shown on phase plane axis\n" + //
+					String descr = "--phase2daxes <t>  indices of traits shown on phase plane axes\n" + //
 							"        format: <i0>,<i1>,..." + CLOParser.MATRIX_DELIMITER + //
 							"<j0>,<j1>... with \n" + //
 							"                <in>, <jn> indices of traits on x-/y-axis";
@@ -1602,11 +1602,11 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 			parser.addCLO(cloTraitColors);
 			parser.addCLO(cloTraitNames);
 		}
-		// set traits on axis of phase plane (if implemented by module)
+		// set traits on axes of phase plane (if implemented by module)
 		if (this instanceof HasPhase2D) {
 			Data2Phase map = ((HasPhase2D) Module.this).getPhase2DMap();
 			if (map != null && map.hasSetTraits())
-				parser.addCLO(cloPhase2DAxis);
+				parser.addCLO(cloPhase2DAxes);
 		}
 
 		// multi-species interactions

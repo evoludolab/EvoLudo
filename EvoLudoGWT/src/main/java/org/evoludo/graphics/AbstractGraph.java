@@ -424,7 +424,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected boolean isActive;
 
 	/**
-	 * The bounds of the displaying area. This excludes any frames and/or axis
+	 * The bounds of the displaying area. This excludes any frames and/or axes
 	 * labels.
 	 */
 	protected Rectangle2D bounds = new Rectangle2D();
@@ -985,7 +985,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * Draw the frame of the graph including axis labels, ticks and tick marks, as
+	 * Draw the frame of the graph including axes labels, ticks and tick marks, as
 	 * applicable.
 	 * 
 	 * <h3>Implementation Note:</h3>
@@ -1002,7 +1002,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
-	 * Draw the frame of the graph including axis labels, ticks and tick marks, as
+	 * Draw the frame of the graph including axes labels, ticks and tick marks, as
 	 * applicable, after scaling the canvas by {@code gscale}.
 	 * 
 	 * <h3>Implementation Note:</h3>
@@ -1017,7 +1017,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		g.save();
 		double w = bounds.getWidth();
 		double h = bounds.getHeight();
-		// draw frame and axis
+		// draw frame and axes
 		if (style.showFrame) {
 			g.translate(-style.frameWidth, -style.frameWidth);
 			g.setLineWidth(style.frameWidth);
@@ -1116,7 +1116,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 
 		// x-axis label
 		if (style.showXLabel && style.xLabel != null) {
-			setFont(style.axisLabelFont);
+			setFont(style.axesLabelFont);
 			g.fillText(style.xLabel, (w - g.measureText(style.xLabel).getWidth()) * 0.5,
 					h + ((style.showXTickLabels ? 14 : 0) + (style.showXTicks ? style.tickLength : 0) + 14));
 		}
@@ -1136,7 +1136,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 						.measureText(Formatter.formatFix(-Math.max(Math.abs(style.yMin), Math.abs(style.yMax)), digits))
 						.getWidth() + 16.0;
 
-			setFont(style.axisLabelFont);
+			setFont(style.axesLabelFont);
 			fillTextVertical(style.yLabel, w + tickskip + style.tickLength,
 					(h + g.measureText(style.yLabel).getWidth()) / 2);
 		}
@@ -1947,8 +1947,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * styles, font sizes, ticks, padding, etc.
 	 */
 	public static class GraphStyle {
-		// public AxisStyle x = new AxisStyle();
-		// public AxisStyle y = new AxisStyle();
+		// public AxesStyle x = new AxesStyle();
+		// public AxesStyle y = new AxesStyle();
 
 		/**
 		 * Create a new graph style.
@@ -2235,17 +2235,17 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		public String labelFont = "bold 14px sans-serif";
 
 		/**
-		 * The font for the axis labels as a CSS string.
+		 * The font for the axes labels as a CSS string.
 		 */
-		public String axisLabelFont = "14px sans-serif";
+		public String axesLabelFont = "14px sans-serif";
 
 		/**
-		 * The font for the axis tick labels label as a CSS string.
+		 * The font for the axes tick labels as a CSS string.
 		 */
 		public String ticksLabelFont = "11px sans-serif";
 	}
 
-	// public class AxisStyle {
+	// public class AxesStyle {
 	// public double min = 0.0;
 	// public double max = 1.0;
 

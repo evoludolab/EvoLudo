@@ -152,7 +152,7 @@ public class Phase2D extends AbstractView {
 		else
 			map = graph.getMap();
 		((HasPhase2D) module).setPhase2DMap(map);
-		// set axis labels and range
+		// set axes labels and range
 		GraphStyle style = graph.getStyle();
 		if (model.getType().isDE() && ((ODE) model).isDensity()) {
 			// density model
@@ -271,8 +271,8 @@ public class Phase2D extends AbstractView {
 
 	@Override
 	public void populateContextMenu(ContextMenu menu) {
-		if (!map.hasFixedAxis()) {
-			// add context menu for configuring the phase plane axis
+		if (!map.hasFixedAxes()) {
+			// add context menu for configuring the phase plane axes
 			Module module = engine.getModule();
 			ArrayList<? extends Module> species = module.getSpecies();
 			int nSpecies = species.size();
@@ -384,7 +384,7 @@ public class Phase2D extends AbstractView {
 	private ContextMenu traitYMenu;
 
 	/**
-	 * Command to toggle the inclusion of a trait on the phase plane axis.
+	 * Command to toggle the inclusion of a trait on the phase plane axes.
 	 */
 	public class TraitCommand implements Command {
 
@@ -410,8 +410,7 @@ public class Phase2D extends AbstractView {
 
 		/**
 		 * Construct a new command to toggle the inclusion of a trait on either one of
-		 * the phase plane
-		 * axis.
+		 * the phase plane axes.
 		 * 
 		 * @param trait the index of the trait to show/hide on the axis
 		 * @param axis  the index of the axis

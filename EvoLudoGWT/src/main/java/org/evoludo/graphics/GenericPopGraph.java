@@ -115,7 +115,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		 * its index is {@code node}. At this point the menu already contains entries
 		 * that are relevant for all graphs, e.g. fullscreen and export. Override this
 		 * method to add further, more specialized entries. Finally, the current pane
-		 * will be asked whether it wants to add further entries (e.g. autoscale axis).
+		 * will be asked whether it wants to add further entries (e.g. autoscale axes).
 		 *
 		 * @param menu the context menu
 		 * @param node the index of node

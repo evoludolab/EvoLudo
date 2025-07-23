@@ -57,7 +57,7 @@ import com.google.gwt.user.client.Command;
  * The view to display the distribution of continuous traits. For a single trait
  * the histrogram of trait densities is shown as a heatmap over time. For two
  * traits a 2D distribution is shown and for multiple traits the traits shown
- * along the horizontal and vertical axis can be selected.
+ * along the horizontal and vertical axes can be selected.
  *
  * @author Christoph Hauert
  */
@@ -407,7 +407,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 	private ContextMenu traitYMenu;
 
 	/**
-	 * Command to toggle the inclusion of a trait on the phase plane axis.
+	 * Command to toggle the inclusion of a trait on the phase plane axes.
 	 */
 	public class TraitCommand implements Command {
 
@@ -438,8 +438,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 
 		/**
 		 * Construct a new command to toggle the inclusion of a trait on either one of
-		 * the phase plane
-		 * axis.
+		 * the phase plane axes.
 		 * 
 		 * @param traitItems the list of traits to toggle
 		 * @param idx        the index of the trait to show/hide on the axis
