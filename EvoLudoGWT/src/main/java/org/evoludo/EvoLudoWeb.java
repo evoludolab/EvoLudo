@@ -749,7 +749,11 @@ public class EvoLudoWeb extends Composite
 		activeView = newView;
 		evoludoDeck.showWidget(activeView);
 		// set selected item in view selector
-		evoludoViews.setSelectedIndex(evoludoDeck.getWidgetIndex(activeView));
+		int activeIdx = evoludoDeck.getWidgetIndex(activeView);
+		evoludoViews.setSelectedIndex(activeIdx);
+		// save index of view if not console
+		if (activeIdx != activeViews.size() - 1)
+			viewIdx = activeIdx;
 		// adding a new widget can cause a flurry of activities; wait until they subside
 		// before activation
 		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
@@ -1457,6 +1461,12 @@ public class EvoLudoWeb extends Composite
 	private static boolean hasZipJs = false;
 
 	/**
+	 * The index of the currently active view in the {@code activeViews} list (and
+	 * the {@link #evoludoDeck} widget).
+	 */
+	private int viewIdx = 0;
+
+	/**
 	 * Process {@code keyup} events to allow for <em>non-repeating</em> keyboard
 	 * shortcuts. Use for events where repeating does not make sense, such as
 	 * stopping a model or changing views. For repeating events, such as advancing
@@ -1588,7 +1598,20 @@ public class EvoLudoWeb extends Composite
 			case "8":
 			case "9":
 				// quick view selector
-				changeViewTo(activeViews.values().toArray(new AbstractView[0])[CLOParser.parseInteger(key) - 1]);
+				AbstractView[] allviews = activeViews.values().toArray(new AbstractView[0]);
+				int idx = CLOParser.parseInteger(key);
+				if (idx <= allviews.length)
+					changeViewTo(allviews[idx - 1]);
+				break;
+			case "c":
+				// toggle console
+				allviews = activeViews.values().toArray(new AbstractView[0]);
+				if (evoludoDeck.getWidgetIndex(activeView) == allviews.length - 1)
+					// console is active, switch to previous view
+					changeViewTo(allviews[viewIdx]);
+				else
+					// switch to console
+					changeViewTo(allviews[allviews.length - 1]);
 				break;
 			case "Enter":
 			case " ":
