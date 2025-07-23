@@ -253,7 +253,7 @@ public class ODE extends Model implements Discrete {
 	 * Convenience variable to indicate whether the model is based on densities.
 	 * This is {@code true} if none of the species has a dependent trait.
 	 */
-	boolean isDensity = false;
+	protected boolean isDensity = false;
 
 	/**
 	 * Array containing the inverse of the fitness range:
@@ -343,10 +343,8 @@ public class ODE extends Model implements Discrete {
 		int idx = 0;
 		for (Module mod : species) {
 			mutation[idx] = (Mutation.Discrete) mod.getMutation();
-			dependents[idx] = (mod instanceof HasDE ? ((HasDE) mod).getDependent() : -1);
 			idx++;
 		}
-		isDensity = ArrayMath.max(dependents) < 0;
 	}
 
 	@Override
@@ -416,6 +414,15 @@ public class ODE extends Model implements Discrete {
 		boolean isDensityNow = (init == InitType.DENSITY || init == InitType.UNITY);
 		doReset |= (isDensity != isDensityNow);
 		isDensity = isDensityNow;
+		if (isDensity) {
+			Arrays.fill(dependents, -1);
+		} else {
+			idx = 0;
+			for (Module mod : species) {
+				dependents[idx] = ((HasDE) mod).getDependent();
+				idx++;
+			}
+		}
 		return doReset;
 	}
 

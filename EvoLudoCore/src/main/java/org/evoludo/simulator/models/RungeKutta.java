@@ -63,15 +63,6 @@ public class RungeKutta extends ODE {
 	boolean doEuler = false;
 
 	/**
-	 * <code>true</code> for frequency dynamics. This ensures proper normalization
-	 * of the states. In mutli-species modules this requires that all modules are
-	 * frequency based.
-	 * 
-	 * @see ODE
-	 */
-	boolean isReplicator = false;
-
-	/**
 	 * Constructs a new model for the numerical integration of the system of
 	 * ordinary differential equations representing the dynamics specified by the
 	 * {@link Module} <code>module</code> using the {@link EvoLudo} pacemaker
@@ -141,22 +132,6 @@ public class RungeKutta extends ODE {
 					+ " - Runge-Kutta with fixed time increments requested - revert to Euler method.");
 			doEuler = true;
 		}
-		// in multi-species models currently either all or no species must be frequency
-		// based.
-		boolean noDependent = true;
-		boolean allDependent = true;
-		for (Module pop : species) {
-			if (pop instanceof HasDE && ((HasDE) pop).getDependent() >= 0)
-				noDependent = false;
-			else
-				allDependent = false;
-		}
-		if (!noDependent && !allDependent) {
-			logger.warning(getClass().getSimpleName()
-					+ " - Runge-Kutta currently requires dependent traits either in all or no species - revert to Euler method.");
-			doEuler = true;
-		}
-		isReplicator = allDependent;
 		return doReset;
 	}
 
@@ -326,8 +301,6 @@ public class RungeKutta extends ODE {
 	 * 
 	 * @param h the step to try to take
 	 * @return <code>true</code> if step successful
-	 * 
-	 * @see #isReplicator
 	 */
 	private boolean rkck(double h) {
 		double ytmax, ytmin;
@@ -340,7 +313,7 @@ public class RungeKutta extends ODE {
 			ytmax = Math.max(ytmax, y);
 			ytmin = Math.min(ytmin, y);
 		}
-		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
+		if (!isDensity && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
 		getDerivatives(time + a2 * h, ytmp, ftmp, ak2); // second step.
@@ -352,7 +325,7 @@ public class RungeKutta extends ODE {
 			ytmax = Math.max(ytmax, y);
 			ytmin = Math.min(ytmin, y);
 		}
-		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
+		if (!isDensity && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
 		getDerivatives(time + a3 * h, ytmp, ftmp, ak3); // third step.
@@ -364,7 +337,7 @@ public class RungeKutta extends ODE {
 			ytmax = Math.max(ytmax, y);
 			ytmin = Math.min(ytmin, y);
 		}
-		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
+		if (!isDensity && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
 		getDerivatives(time + a4 * h, ytmp, ftmp, ak4); // fourth step.
@@ -376,7 +349,7 @@ public class RungeKutta extends ODE {
 			ytmax = Math.max(ytmax, y);
 			ytmin = Math.min(ytmin, y);
 		}
-		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
+		if (!isDensity && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
 		getDerivatives(time + a5 * h, ytmp, ftmp, ak5); // fifth step.
@@ -388,7 +361,7 @@ public class RungeKutta extends ODE {
 			ytmax = Math.max(ytmax, y);
 			ytmin = Math.min(ytmin, y);
 		}
-		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
+		if (!isDensity && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
 		getDerivatives(time + a6 * h, ytmp, ftmp, ak6); // sixth step.
@@ -400,7 +373,7 @@ public class RungeKutta extends ODE {
 			ytmax = Math.max(ytmax, y);
 			ytmin = Math.min(ytmin, y);
 		}
-		if (isReplicator && (ytmin < 0.0 || ytmax > 1.0))
+		if (!isDensity && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
 		// estimate error as difference between fourth and fifth order methods.
