@@ -296,12 +296,6 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	}
 
 	/**
-	 * Clear the view.
-	 */
-	public void clear() {
-	}
-
-	/**
 	 * Check if the view has finished layouting its graphs. Currently only
 	 * {@code GenericPop} and its graphs require layouting.
 	 * 

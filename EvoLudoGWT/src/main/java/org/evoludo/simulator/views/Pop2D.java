@@ -144,13 +144,6 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	}
 
 	@Override
-	public void clear() {
-		super.clear();
-		for (PopGraph2D graph : graphs)
-			graph.clearGraph();
-	}
-
-	@Override
 	public void reset(boolean hard) {
 		super.reset(hard);
 		boolean inter = true;

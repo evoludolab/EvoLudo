@@ -151,14 +151,6 @@ public class S3 extends AbstractView {
 	}
 
 	@Override
-	public void clear() {
-		super.clear();
-		for (S3Graph graph : graphs)
-			graph.clearGraph();
-		update();
-	}
-
-	@Override
 	public void reset(boolean hard) {
 		super.reset(hard);
 		int nMean = model.getNMean();

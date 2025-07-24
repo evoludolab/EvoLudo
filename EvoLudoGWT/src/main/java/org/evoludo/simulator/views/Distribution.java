@@ -113,12 +113,6 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 	}
 
 	@Override
-	public void clear() {
-		for (PopGraph2D graph : graphs)
-			graph.clearGraph();
-	}
-
-	@Override
 	protected void allocateGraphs() {
 		ArrayList<? extends Module> species = engine.getModule().getSpecies();
 		int nGraphs = species.size();
