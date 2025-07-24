@@ -791,8 +791,7 @@ public abstract class IBS extends Model {
 		for (Module mod : species) {
 			IBSPopulation pop = mod.getIBSPopulation();
 			pop.resetTraits();
-			Module module = pop.getModule();
-			double rate = module.getSpeciesUpdateRate();
+			double rate = mod.getSpeciesUpdateRate();
 			// determine generation time and real time increments
 			// NOTE: generation time increments based on maximum population sizes and do not
 			// take potentially fluctuating sizes into account (relevant for ecological
@@ -800,7 +799,7 @@ public abstract class IBS extends Model {
 			// wPopTot += pop.getPopulationSize() * rate;
 			// use maximum population size - otherwise the notion of a generation gets
 			// confusing
-			wPopTot += module.getNPopulation() * rate;
+			wPopTot += mod.getNPopulation() * rate;
 			double sum = pop.getTotalFitness();
 			if (wScoreTot >= 0.0 && sum <= 1e-8) {
 				wScoreTot = -1.0;
@@ -1174,7 +1173,7 @@ public abstract class IBS extends Model {
 			case FITNESS:
 				for (Module mod : species) {
 					IBSPopulation pop = mod.getIBSPopulation();
-					double rate = pop.getTotalFitness() * mod.getSpeciesUpdateRate();
+					double rate = pop.getTotalFitness();
 					rates[idx++] = rate;
 					total += rate;
 				}
@@ -1182,7 +1181,7 @@ public abstract class IBS extends Model {
 			case SIZE:
 				for (Module mod : species) {
 					IBSPopulation pop = mod.getIBSPopulation();
-					double rate = pop.getPopulationSize() * mod.getSpeciesUpdateRate();
+					double rate = pop.getPopulationSize();
 					rates[idx++] = rate;
 					total += rate;
 				}
@@ -1757,8 +1756,6 @@ public abstract class IBS extends Model {
 	 * <dt>ephemeral</dt>
 	 * <dd>Determine payoffs/fitness calculated only for updating</dd>
 	 * </dl>
-	 * 
-	 * @see org.evoludo.simulator.modules.Module#speciesUpdateRate
 	 */
 	public static enum ScoringType implements CLOption.Key {
 
@@ -1838,8 +1835,6 @@ public abstract class IBS extends Model {
 	 * <dt>d</dt>
 	 * <dd>death-birth migration (random death, fit migrates).</dd>
 	 * </dl>
-	 * 
-	 * @see org.evoludo.simulator.modules.Module#speciesUpdateRate
 	 */
 	public static enum MigrationType implements CLOption.Key {
 

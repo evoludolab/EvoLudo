@@ -914,32 +914,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * Update rate for this species. Only used in multi-species modules.
-	 */
-	protected double speciesUpdateRate = 1.0;
-
-	/**
-	 * Sets the species update rate to {@code rate}. Only used in multi-species
-	 * modules. Determines the relative rate at which this species is picked as
-	 * compared to others.
-	 * 
-	 * @param rate the update rate of this species
-	 * @return {@code true} if species update rate changed
-	 * 
-	 * @see EvoLudo#modelNext()
-	 */
-	public boolean setSpeciesUpdateRate(double rate) {
-		boolean changed = (Math.abs(speciesUpdateRate - rate) > 1e-8);
-		if (rate <= 0.0) {
-			logger.warning("population update rate must be positive - ignored, using 1.");
-			speciesUpdateRate = 1.0;
-			return changed;
-		}
-		speciesUpdateRate = rate;
-		return changed;
-	}
-
-	/**
 	 * Gets the update rate of this species. Only used in multi-species modules.
 	 * Determines the relative rate at which this species is picked as compared to
 	 * others.
@@ -949,7 +923,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @see EvoLudo#modelNext()
 	 */
 	public double getSpeciesUpdateRate() {
-		return speciesUpdateRate;
+		return 1.0;
 	}
 
 	/**
@@ -1081,66 +1055,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	public int getNGroup() {
 		return nGroup;
 	}
-
-	/**
-	 * Command line option to set the relative rate for updating each
-	 * population/species. Only relevant for multi-species interactions.
-	 */
-	public final CLOption cloSpeciesUpdateRate = new CLOption("speciesupdaterate", "1", Category.Module, null,
-			new CLODelegate() {
-
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Parse relative species update rates for multiple populations/species.
-				 * {@code arg} can be a single value or an array of values. The parser cycles
-				 * through {@code arg} until all populations/species have their update rates
-				 * set.
-				 */
-				@Override
-				public boolean parse(String arg) {
-					double[] rates;
-					// allow vector delimiter as well as species delimiter for multiple species
-					if (arg.contains(CLOParser.SPECIES_DELIMITER))
-						rates = CLOParser.parseVector(arg, CLOParser.SPECIES_DELIMITER);
-					else
-						rates = CLOParser.parseVector(arg);
-					if (rates == null || rates.length == 0)
-						return false;
-						int n = 0;
-					for (Module pop : species) {
-						double rate = rates[n++ % rates.length];
-						if (rate < 0.0)
-							return false;
-						pop.setSpeciesUpdateRate(rate);
-					}
-					return true;
-				}
-
-				@Override
-				public String getDescription() {
-					String descr = "";
-					int nSpecies = species.size();
-					switch (nSpecies) {
-						case 1:
-							// not applicable
-							return null;
-						case 2:
-							descr = "--speciesupdaterate <r0:r1> update rates of population i, with\n";
-							break;
-						case 3:
-							descr = "--speciesupdaterate <r0:r1:r2> update rates of population i, with\n";
-							break;
-						default:
-							descr = "--speciesupdaterate <r0:...:r" + nSpecies
-									+ "> update rates of population i, with\n";
-					}
-					for (int i = 0; i < nSpecies; i++)
-						descr += "            r" + i + ": " + species.get(i).getName() + "\n";
-					descr += "      (loops through update rates)";
-					return descr;
-				}
-			});
 
 	/**
 	 * Command line option to set the geometry (interaction and competition graphs
@@ -1609,12 +1523,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 			Data2Phase map = ((HasPhase2D) Module.this).getPhase2DMap();
 			if (map != null && map.hasSetTraits())
 				parser.addCLO(cloPhase2DAxes);
-		}
-
-		// multi-species interactions
-		if (species.size() > 1) {
-			// individual population update rates only meaningful for multiple species
-			parser.addCLO(cloSpeciesUpdateRate);
 		}
 
 		boolean anyVacant = false;

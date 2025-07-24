@@ -29,15 +29,11 @@
 //
 package org.evoludo.simulator.modules;
 
-import java.util.Arrays;
-
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.PopulationUpdate;
-import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.CLOption.Category;
-import org.evoludo.util.Formatter;
 
 /**
  * The implementation of population updates. Population updates are used to update
@@ -75,19 +71,12 @@ public class SpeciesUpdate {
 	Module module;
 
 	/**
-	 * The rates at which the different species are updated.
-	 */
-	double[] rate;
-
-	/**
 	 * Instantiate new population update for use in IBS {@code model}s.
 	 * 
 	 * @param module the module using this species update
 	 */
 	public SpeciesUpdate(Module module) {
 		this.module = module;
-		rate = new double[module.getNSpecies()];
-		Arrays.fill(rate, 1.0);
 	}
 
 	/**
@@ -121,9 +110,7 @@ public class SpeciesUpdate {
 
 	@Override
 	public String toString() {
-		String str = Formatter.format(rate, 3);
-		boolean isIBS = module.model.getType().isIBS();
-		return (isIBS ? str + " " + type.getKey() : str);
+		return type.getKey();
 	}
 
 	/**
@@ -131,38 +118,23 @@ public class SpeciesUpdate {
 	 * 
 	 * @see PopulationUpdate.Type
 	 */
-	public final CLOption clo = new CLOption("speciesupdate", "1 " + SpeciesUpdate.Type.SIZE.getKey(), Category.Module,
-			"--speciesupdate <r1,r2,...>[ <t>]  species update rates and type:",
+	public final CLOption clo = new CLOption("speciesupdate", SpeciesUpdate.Type.RATE.getKey(), Category.Module,
+			"--speciesupdate <t>  species update type:",
 			new CLODelegate() {
 
 				/**
 				 * {@inheritDoc}
 				 * <p>
-				 * Parse population update types for a single or multiple populations/species.
-				 * <code>arg</code> can be a single value or an array of values with the
-				 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
-				 * <code>arg</code> until all populations/species have the population update
-				 * type set.
+				 * Parse species update types for multiple populations/species.
 				 * 
 				 * @param arg the (array of) update types
 				 */
 				@Override
 				public boolean parse(String arg) {
-					String[] specrates = arg.split("\\s+");
-					if (specrates == null || specrates.length == 0) {
-						module.logger.warning("no species update rate provided.");
+					SpeciesUpdate.Type put = (SpeciesUpdate.Type) clo.match(arg);
+					if (put == null)
 						return false;
-					}
-					double[] spr = CLOParser.parseVector(specrates[0]);
-					int len = spr.length;
-					for (int i=0; i<rate.length; i++)
-						rate[i] = spr[i % len];
-					if (specrates.length > 1) {
-						SpeciesUpdate.Type put = (SpeciesUpdate.Type) clo.match(specrates[1]);
-						if (put == null)
-							return false;
-						setType(put);
-					}
+					setType(put);
 					return true;
 				}
 			});
@@ -185,7 +157,7 @@ public class SpeciesUpdate {
 	public static enum Type implements CLOption.Key {
 
 		/**
-		 * Pick focal species based on population size, weighted by rate.
+		 * Pick focal species based on population size.
 		 */
 		SIZE("size", "pick based on size"), //
 
@@ -201,7 +173,7 @@ public class SpeciesUpdate {
 		UNIFORM("uniform", "pick with uniform probabilities"), //
 
 		/**
-		 * Pick focal species based on population fitness, weighted by rate.
+		 * Pick focal species based on population fitness.
 		 */
 		FITNESS("fitness", "pick based on fitness"), //
 
