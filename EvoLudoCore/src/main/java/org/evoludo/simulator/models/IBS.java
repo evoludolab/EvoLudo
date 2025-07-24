@@ -1339,13 +1339,16 @@ public abstract class IBS extends Model {
 				/**
 				 * {@inheritDoc}
 				 * <p>
-				 * Parse method for resetting the scores of individuals.
+				 * Parse method for resetting the scores of individuals. <code>arg</code> can be
+				 * a single value or an array of values. The parser cycles through
+				 * <code>arg</code> until all populations/species have the scoring type set.
 				 * 
 				 * @param arg the method for resetting the scores.
 				 */
 				@Override
 				public boolean parse(String arg) {
-					String[] playerresets = arg.split(CLOParser.SPECIES_DELIMITER);
+					String[] playerresets = arg.contains(CLOParser.SPECIES_DELIMITER) ? 
+						arg.split(CLOParser.SPECIES_DELIMITER) : arg.split(CLOParser.VECTOR_DELIMITER);
 					int n = 0;
 					for (Module mod : species) {
 						IBSPopulation pop = mod.getIBSPopulation();
@@ -1373,15 +1376,15 @@ public abstract class IBS extends Model {
 				 * <p>
 				 * Parse interactions of players with their neighbours in a single or multiple
 				 * populations/species. <code>arg</code> can be a single value or an array of
-				 * values with the separator {@value CLOParser#SPECIES_DELIMITER}. The parser
-				 * cycles through <code>arg</code> until all populations/species have the player
-				 * interactions set.
+				 * values. The parser cycles through <code>arg</code> until all
+				 * populations/species have the player interactions set.
 				 * 
 				 * @param arg the (array of) interaction(s)
 				 */
 				@Override
 				public boolean parse(String arg) {
-					String[] interactiontypes = arg.split(CLOParser.SPECIES_DELIMITER);
+					String[] interactiontypes = arg.contains(CLOParser.SPECIES_DELIMITER) ? 
+						arg.split(CLOParser.SPECIES_DELIMITER) : arg.split(CLOParser.VECTOR_DELIMITER);
 					int n = 0;
 					for (Module mod : species) {
 						IBSPopulation pop = mod.getIBSPopulation();
@@ -1416,16 +1419,16 @@ public abstract class IBS extends Model {
 				 * <p>
 				 * Parse method for choosing references/models among the neighbours of a player
 				 * for updating their trait in a single or multiple populations/species.
-				 * <code>arg</code> can be a single value or an array of values with the
-				 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
-				 * <code>arg</code> until all populations/species have the player's references
-				 * set.
+				 * <code>arg</code> can be a single value or an array of values. The parser
+				 * cycles through <code>arg</code> until all populations/species have the
+				 * player's references set.
 				 * 
 				 * @param arg the (array of) reference type(s)
 				 */
 				@Override
 				public boolean parse(String arg) {
-					String[] referencetypes = arg.split(CLOParser.SPECIES_DELIMITER);
+					String[] referencetypes = arg.contains(CLOParser.SPECIES_DELIMITER) ? 
+						arg.split(CLOParser.SPECIES_DELIMITER) : arg.split(CLOParser.VECTOR_DELIMITER);
 					int n = 0;
 					for (Module mod : species) {
 						IBSPopulation pop = mod.getIBSPopulation();
@@ -1458,15 +1461,16 @@ public abstract class IBS extends Model {
 				 * <p>
 				 * Parse migration types and probabilities of players in a single or multiple
 				 * populations/species. <code>arg</code> can be a single value or an array of
-				 * values with the separator {@value CLOParser#SPECIES_DELIMITER}. The parser
-				 * cycles through <code>arg</code> until all populations/species have the
-				 * migration types and probabilities of players set.
+				 * values. The parser cycles through <code>arg</code> until all
+				 * populations/species have the migration types and probabilities of players
+				 * set.
 				 * 
 				 * @param arg the (array of) migration type(s) and probability(ies)
 				 */
 				@Override
 				public boolean parse(String arg) {
-					String[] migrationtypes = arg.split(CLOParser.SPECIES_DELIMITER);
+					String[] migrationtypes = arg.contains(CLOParser.SPECIES_DELIMITER) ? 
+						arg.split(CLOParser.SPECIES_DELIMITER) : arg.split(CLOParser.VECTOR_DELIMITER);
 					int n = 0;
 					for (Module mod : species) {
 						IBSPopulation pop = mod.getIBSPopulation();
@@ -1590,8 +1594,8 @@ public abstract class IBS extends Model {
 	 * directed links (where undirected links count as two directed links), which
 	 * potentially breaks undirected ones.
 	 */
-	public final CLOption cloGeometryRewire = new CLOption("rewire", "-1", Category.Model,
-			"--rewire <r>    rewire fraction r of graph links",
+	public final CLOption cloGeometryRewire = new CLOption("rewire", "0", Category.Model,
+			"--rewire <i[,c]>  rewire fraction of links (interaction/competition)",
 			new CLODelegate() {
 
 				/**
@@ -1624,8 +1628,8 @@ public abstract class IBS extends Model {
 	 * undirected only undirected links are added and if graph is directed only
 	 * directed links are added.
 	 */
-	public final CLOption cloGeometryAddwire = new CLOption("addwire", "-1", Category.Model,
-			"--addwire <a>   add fraction a of graph links",
+	public final CLOption cloGeometryAddwire = new CLOption("addwire", "0", Category.Model,
+			"--addwire <i[,c]>  add fraction of links (interaction/competition)",
 			new CLODelegate() {
 
 				/**

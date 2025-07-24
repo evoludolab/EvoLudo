@@ -641,13 +641,32 @@ public class CLOParser {
 	 * @see Integer#parseInt(String)
 	 */
 	public static int[] parseIntVector(String aVector) {
+		return parseIntVector(aVector, VECTOR_DELIMITER);
+	}
+
+	/**
+	 * Parse string <code>aVector</code> as a <code>int[]</code> array. Vector
+	 * entries are separated by <code>separator</code>, which can be any valid
+	 * regular expression. Returns an array of zero length if <code>aVector</code>
+	 * is <code>null</code> or an empty string.
+	 * 
+	 * @param aVector   string to convert to <code>int[]</code>
+	 * @param separator regular expression string used to split <code>aVector</code>
+	 * @return <code>int[]</code> representation of <code>aVector</code> or
+	 *         <code>null</code> if any entry of <code>aVector</code> caused a
+	 *         {@link NumberFormatException}.
+	 * 
+	 * @see String#split(String)
+	 * @see Integer#parseInt(String)
+	 */
+	public static int[] parseIntVector(String aVector, String separator) {
 		if (aVector == null)
 			return new int[0];
 		aVector = aVector.trim();
 		if (aVector.length() == 0)
 			return new int[0];
 
-		String[] entries = aVector.split(VECTOR_DELIMITER);
+		String[] entries = aVector.split(separator);
 		int len = entries.length;
 		int[] result = new int[len];
 		for (int i = 0; i < len; i++)

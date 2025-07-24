@@ -128,9 +128,8 @@ public class Markers {
 				 * translate to markers added to different graphs as appropriate. {@code arg}
 				 * can be a single value or an array of values with the separator
 				 * {@value CLOParser#MATRIX_DELIMITER} for multiple markers. For multiple
-				 * species, the separator is {@value CLOParser#SPECIES_DELIMITER}. The the
-				 * values of each fixed point is given by an array with the separator
-				 * {@value CLOParser#VECTOR_DELIMITER}.
+				 * species, the separator is {@value CLOParser#SPECIES_DELIMITER}. Each point is
+				 * given by an array with the separator {@value CLOParser#VECTOR_DELIMITER}.
 				 * <p>
 				 * <strong>Note:</strong>If one or more entries of the marker are negative
 				 * an open marker is drawn otherwise the point is filled.

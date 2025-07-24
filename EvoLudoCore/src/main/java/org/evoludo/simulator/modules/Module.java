@@ -1203,9 +1203,8 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				 * {@inheritDoc}
 				 * <p>
 				 * Parse population size(s) for a single or multiple populations/species.
-				 * {@code arg} can be a single value or an array of values with the
-				 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
-				 * {@code arg} until all populations/species have their population size
+				 * {@code arg} can be a single value or an array of values. The parser cycles
+				 * through {@code arg} until all populations/species have their population size
 				 * set.
 				 * <p>
 				 * <strong>Note:</strong> For population size specifications of the form
@@ -1217,7 +1216,8 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				 */
 				@Override
 				public boolean parse(String arg) {
-					String[] sizes = arg.split(CLOParser.SPECIES_DELIMITER);
+					String[] sizes = arg.contains(CLOParser.SPECIES_DELIMITER) ? 
+						arg.split(CLOParser.SPECIES_DELIMITER) : arg.split(CLOParser.VECTOR_DELIMITER);
 					int n = 0;
 					for (Module pop : species) {
 						int size = CLOParser.parseDim(sizes[n]);
@@ -1333,14 +1333,16 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				 */
 				@Override
 				public boolean parse(String arg) {
-					String[] sizes = arg.split(CLOParser.SPECIES_DELIMITER);
+					int[] sizes;
+					if (arg.contains(CLOParser.SPECIES_DELIMITER))
+						sizes = CLOParser.parseIntVector(arg, CLOParser.SPECIES_DELIMITER);
+					else
+						sizes = CLOParser.parseIntVector(arg);
+					if (sizes == null || sizes.length == 0)
+						return false;
 					int n = 0;
-					for (Module pop : species) {
-						int size = CLOParser.parseInteger(sizes[n++ % sizes.length]);
-						if (size < 1) 
-							return false;
-						pop.setNGroup(size);
-					}
+					for (Module pop : species)
+						pop.setNGroup(sizes[n++ % sizes.length]);
 					return true;
 				}
 			});

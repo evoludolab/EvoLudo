@@ -148,16 +148,16 @@ public class PopulationUpdate {
 				 * {@inheritDoc}
 				 * <p>
 				 * Parse population update types for a single or multiple populations/species.
-				 * <code>arg</code> can be a single value or an array of values with the
-				 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
-				 * <code>arg</code> until all populations/species have the population update
-				 * type set.
+				 * <code>arg</code> can be a single value or an array of values. The parser
+				 * cycles through <code>arg</code> until all populations/species have the
+				 * population update type set.
 				 * 
 				 * @param arg the (array of) update types
 				 */
 				@Override
 				public boolean parse(String arg) {
-					String[] popupdates = arg.split(CLOParser.SPECIES_DELIMITER);
+					String[] popupdates = arg.contains(CLOParser.SPECIES_DELIMITER) ? 
+						arg.split(CLOParser.SPECIES_DELIMITER) : arg.split(CLOParser.VECTOR_DELIMITER);
 					int n = 0;
 					for (Module mod : ibs.species) {
 						IBSPopulation pop = mod.getIBSPopulation();

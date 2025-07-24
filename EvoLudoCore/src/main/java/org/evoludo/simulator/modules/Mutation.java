@@ -297,16 +297,15 @@ public abstract class Mutation {
 					 * {@inheritDoc}
 					 * <p>
 					 * Parse player update type(s) for a single or multiple populations/species.
-					 * {@code arg} can be a single value or an array of values with the
-					 * separator {@value CLOParser#SPECIES_DELIMITER}. The parser cycles through
-					 * {@code arg} until all populations/species have the player update type
-					 * set.
+					 * {@code arg} can be a single value or an array of values. The parser cycles
+					 * through {@code arg} until all populations/species have mutations set.
 					 * 
 					 * @param arg the (array of) map name(s)
 					 */
 					@Override
 					public boolean parse(String arg) {
-						String[] mutations = arg.split(CLOParser.SPECIES_DELIMITER);
+						String[] mutations = arg.contains(CLOParser.SPECIES_DELIMITER) ? 
+								arg.split(CLOParser.SPECIES_DELIMITER) : arg.split(CLOParser.VECTOR_DELIMITER);
 						int n = 0;
 						ArrayList<? extends Module> species = module.getSpecies();
 						for (Module mod : species) {
