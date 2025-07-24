@@ -401,6 +401,8 @@ public class ODE extends Model implements Discrete {
 			ft = new double[nDim];
 		}
 		names = getMeanNames();
+		connect = false;
+		converged = false;
 
 		if (isAdjustedDynamics && minFit <= 0.0) {
 			// fitness is not guaranteed to be positive
