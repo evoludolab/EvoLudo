@@ -220,6 +220,18 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 * @param withMarkers <code>true</code> to mark start and end points
 	 */
 	private void paintPara(boolean withMarkers) {
+		g.save();
+		g.scale(scale, scale);
+		clearCanvas();
+		g.translate(bounds.getX() - viewCorner.x, bounds.getY() - viewCorner.y);
+		g.scale(zoomFactor, zoomFactor);
+		g.save();
+		double h = bounds.getHeight();
+		g.translate(0, h);
+		g.scale(1.0, -1.0);
+		double xScale = bounds.getWidth() / (style.xMax - style.xMin);
+		double yScale = h / (style.yMax - style.yMin);
+
 		Point2D nextPt = new Point2D();
 		Point2D currPt = new Point2D();
 		String tC = style.trajColor;
@@ -247,19 +259,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 					style.yMax = Math.min(style.yMax, 1.0);
 				}
 			}
-
-			double h = bounds.getHeight();
-			g.save();
-			g.scale(scale, scale);
-			clearCanvas();
-			g.translate(bounds.getX() - viewCorner.x, bounds.getY() - viewCorner.y);
-			g.scale(zoomFactor, zoomFactor);
-			g.save();
-			g.translate(0, h);
-			g.scale(1.0, -1.0);
-
-			double xScale = bounds.getWidth() / (style.xMax - style.xMin);
-			double yScale = h / (style.yMax - style.yMin);
 			while (i.hasNext()) {
 				double[] prev = i.next();
 				double pt = prev[0];
@@ -273,31 +272,31 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 				currPt = nextPt;
 				nextPt = swap;
 			}
-			if (withMarkers) {
-				// mark start and end points of trajectory
-				map.data2Phase(init, currPt);
-				g.setFillStyle(style.startColor);
+		}
+		if (withMarkers) {
+			// mark start and end points of trajectory
+			map.data2Phase(init, currPt);
+			g.setFillStyle(style.startColor);
+			fillCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
+			if (!buffer.isEmpty()) {
+				map.data2Phase(buffer.last(), currPt);
+				g.setFillStyle(style.endColor);
 				fillCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
-				if (!buffer.isEmpty()) {
-					map.data2Phase(buffer.last(), currPt);
-					g.setFillStyle(style.endColor);
-					fillCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
-				}
 			}
-			if (markers != null) {
-				int n = 0;
-				int nMarkers = markers.size();
-				for (double[] mark : markers) {
-					map.data2Phase(mark, currPt);
-					String mcolor = markerColors[n++ % nMarkers];
-					if (mark[0] > 0.0) {
-						g.setFillStyle(mcolor);
-						fillCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
-					} else {
-						g.setLineWidth(style.lineWidth);
-						g.setStrokeStyle(mcolor);
-						strokeCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
-					}
+		}
+		if (markers != null) {
+			int n = 0;
+			int nMarkers = markers.size();
+			for (double[] mark : markers) {
+				map.data2Phase(mark, currPt);
+				String mcolor = markerColors[n++ % nMarkers];
+				if (mark[0] > 0.0) {
+					g.setFillStyle(mcolor);
+					fillCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
+				} else {
+					g.setLineWidth(style.lineWidth);
+					g.setStrokeStyle(mcolor);
+					strokeCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
 				}
 			}
 		}
