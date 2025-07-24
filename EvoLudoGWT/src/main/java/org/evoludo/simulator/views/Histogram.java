@@ -49,7 +49,6 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.models.Mode;
-import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
@@ -185,8 +184,6 @@ public class Histogram extends AbstractView {
 			int nXLabels = 0;
 			destroyGraphs();
 			Type mt = model.getType();
-			boolean isODESDE = mt.isODE() || mt.isSDE();
-			boolean isPDE = mt.isPDE();
 			for (Module module : species) {
 				int nTraits = module.getNTraits();
 				switch (type) {
@@ -229,7 +226,7 @@ public class Histogram extends AbstractView {
 							graphs.add(graph);
 							AbstractGraph.GraphStyle style = graph.getStyle();
 							// fixed style attributes
-							if (isODESDE || isPDE && ((HasDE) module).getDependent() < 0) {
+							if (model.isDensity()) {
 								style.yLabel = "density";
 								style.percentY = false;
 								style.yMin = 0.0;
@@ -259,7 +256,7 @@ public class Histogram extends AbstractView {
 						break;
 
 					case DEGREE:
-						if (isODESDE) {
+						if (mt.isODE() || mt.isSDE()) {
 							// happens for ODE/SDE/PDE - do not show distribution
 							HistoGraph graph = new HistoGraph(this, module, 0);
 							wrapper.add(graph);
@@ -267,7 +264,7 @@ public class Histogram extends AbstractView {
 							break;
 						}
 						nTraits = getDegreeGraphs(module.getInteractionGeometry(), module.getCompetitionGeometry());
-						Geometry inter = (isPDE ? module.getGeometry()
+						Geometry inter = (mt.isPDE() ? module.getGeometry()
 								: module.getInteractionGeometry());
 						String[] labels = getDegreeLabels(nTraits, inter.isUndirected);
 						for (int n = 0; n < nTraits; n++) {
@@ -639,8 +636,8 @@ if (maxBins < 0) maxBins = 100;
 					if (data == null || data.length != nTraits || data[0].length != nBins)
 						data = new double[nTraits][nBins];
 					graph.setData(data);
-					if (isODE || isSDE || isPDE) {
-						if (((HasDE) module).getDependent() < 0) {
+					if (mt.isDE()) {
+						if (model.isDensity()) {
 							style.xLabel = "density";
 							style.xMin = 0.0;
 							style.xMax = 0.0;
@@ -695,9 +692,6 @@ if (maxBins < 0) maxBins = 100;
 		if (Math.abs(timestamp - newtime) > 1e-8) {
 			timestamp = newtime;
 			Type mt = model.getType();
-			boolean isODESDE = mt.isODE() || mt.isSDE();
-			boolean isPDE = mt.isPDE();
-			boolean isIBS = mt.isPDE();
 			// new data available - update histograms
 			switch (type) {
 				case TRAIT:
@@ -731,11 +725,11 @@ if (maxBins < 0) maxBins = 100;
 						Module module = graph.getModule();
 						Geometry inter = module.getInteractionGeometry();
 						Geometry comp = module.getCompetitionGeometry();
-						if (isODESDE) {
+						if (mt.isODE() || mt.isSDE()) {
 							graph.displayMessage(model.getType().getKey() + " model: well-mixed population.");
 							continue;
 						}
-						if (isPDE) {
+						if (mt.isPDE()) {
 							inter = comp = module.getGeometry();
 							if (inter.isRegular) {
 								graph.displayMessage("PDE model: regular structure with degree "
@@ -815,7 +809,7 @@ if (maxBins < 0) maxBins = 100;
 					double[] state = new double[nt];
 					model.getMeanTraits(state);
 					int idx = 0;
-					if (isIBS) {
+					if (mt.isIBS()) {
 						for (HistoGraph sgraph : graphs) {
 							// use the fact that the state is an integer number in IBS
 							// to avoid rounding errors in determining the appropriate bin

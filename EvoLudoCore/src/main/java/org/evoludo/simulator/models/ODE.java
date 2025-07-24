@@ -456,12 +456,7 @@ public class ODE extends Model implements Discrete {
 		init(true);
 	}
 
-	/**
-	 * Return mode of differential equations model.
-	 * 
-	 * @return {@code true} for density based model, {@code false} if frequency
-	 *         based.
-	 */
+	@Override
 	public boolean isDensity() {
 		return isDensity;
 	}

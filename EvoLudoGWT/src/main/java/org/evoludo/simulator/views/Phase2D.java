@@ -39,8 +39,6 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Data;
-import org.evoludo.simulator.models.ODE;
-import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
@@ -154,7 +152,7 @@ public class Phase2D extends AbstractView {
 		((HasPhase2D) module).setPhase2DMap(map);
 		// set axes labels and range
 		GraphStyle style = graph.getStyle();
-		if (model.getType().isDE() && ((ODE) model).isDensity()) {
+		if (model.isDensity()) {
 			// density model
 			style.percentX = false;
 			style.percentY = false;
@@ -288,8 +286,7 @@ public class Phase2D extends AbstractView {
 				nSpecies = 0;
 			}
 			int totTraits = 0;
-			Type mt = model.getType();
-			boolean isDensity = (mt.isDE() ? ((ODE) model).isDensity() : false);
+			boolean isDensity = model.isDensity();
 			for (Module mod : species) {
 				int vidx = mod.getVacant();
 				int nt = mod.getNTraits();

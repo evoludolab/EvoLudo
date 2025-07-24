@@ -508,6 +508,19 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
+	 * Check if the current model performs density based dynamics. The default is
+	 * frequency based dynamics.
+	 * <p>
+	 * <strong>Note:</strong> Currently this only applies to differential equation
+	 * models.
+	 *
+	 * @return {@code true} if the model is density based
+	 */
+	public boolean isDensity() {
+		return false;
+	}
+
+	/**
 	 * Check if the current model settings permit sample statistics. Fixation
 	 * probabilities and times are examples of statistics based on samples.
 	 * 

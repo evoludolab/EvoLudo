@@ -172,7 +172,7 @@ public class SDE extends ODE {
 				// extinction is absorbing even with mutations
 				converged &= (vacant < 0 ? false : (yt[vacant] > 1.0 - accuracy));
 			} else
-				converged &= monoStop ? isMonomorphic() : (((HasDE) mod).getDependent() >= 0 && ArrayMath.max(yt) > 1.0 - accuracy);
+				converged &= monoStop ? isMonomorphic() : (!isDensity && ArrayMath.max(yt) > 1.0 - accuracy);
 		}
 		return converged;
 	}
