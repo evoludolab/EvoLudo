@@ -1167,25 +1167,38 @@ public abstract class IBS extends Model {
 	public IBSPopulation pickFocalSpecies() {
 		if (!isMultispecies)
 			return population;
+		double[] rates = new double[nSpecies];
+		int idx = 0;
+		double total = 0.0;
 		switch (speciesUpdate.getType()) {
 			case FITNESS:
-				double wScoreTot = 0.0;
 				for (Module mod : species) {
 					IBSPopulation pop = mod.getIBSPopulation();
-					wScoreTot += pop.getTotalFitness() * mod.getSpeciesUpdateRate();
+					double rate = pop.getTotalFitness() * mod.getSpeciesUpdateRate();
+					rates[idx++] = rate;
+					total += rate;
 				}
-				return pickFocalSpeciesFitness(wScoreTot);
+				return pickFocalSpecies(rates, total);
 			case SIZE:
-				double wPopTot = 0.0;
 				for (Module mod : species) {
 					IBSPopulation pop = mod.getIBSPopulation();
-					wPopTot += pop.getPopulationSize() * mod.getSpeciesUpdateRate();
+					double rate = pop.getPopulationSize() * mod.getSpeciesUpdateRate();
+					rates[idx++] = rate;
+					total += rate;
 				}
-				return pickFocalSpeciesSize(wPopTot);
+				return pickFocalSpecies(rates, total);
+			case RATE:
+				for (Module mod : species) {
+					IBSPopulation pop = mod.getIBSPopulation();
+					double rate = (pop.getPopulationSize() > 0 ? mod.getSpeciesUpdateRate() : 0.0);
+					rates[idx++] = rate;
+					total += rate;
+				}
+				return pickFocalSpecies(rates, total);
 			case TURNS:
-				return pickFocalSpeciesTurns();
+				return pickFocalSpecies(1);
 			case UNIFORM:
-				return species.get(random0n(nSpecies)).getIBSPopulation();
+				return pickFocalSpecies(random0n(nSpecies));
 			// case SYNC:
 			default:
 				throw new Error("unknown species update type!");
@@ -1193,51 +1206,22 @@ public abstract class IBS extends Model {
 	}
 
 	/**
-	 * Pick species to update with a probability proportional to the size of the
-	 * species weighted by its update rate.
+	 * Pick focal species with a probability proportional to the entries in {@code rates}.
 	 * 
-	 * @param wPopTot the sum of the population sizes weighted by the corresponding
-	 *                species' update rate
-	 * @return the focal population
-	 * 
-	 * @see Module#cloSpeciesUpdateRate
+	 * @param rates the rates with which to pick the focal species
+	 * @param total	the sum of the rates
+	 * @return the focal population or <code>null</code> if all populations extinct
 	 */
-	private IBSPopulation pickFocalSpeciesSize(double wPopTot) {
+	private IBSPopulation pickFocalSpecies(double[] rates, double total) {
 		if (!isMultispecies)
 			return population;
-		double rand = random01() * wPopTot;
-		for (Module mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
-			rand -= pop.getPopulationSize() * mod.getSpeciesUpdateRate();
-			if (rand < 0.0)
-				return pop;
+		double pick = random01() * total;
+		for (int i = 0; i < nSpecies; i++) {
+			if (pick < rates[i])
+				// found focal species
+				return species.get(i).getIBSPopulation();
+			pick -= rates[i];
 		}
-		// should not get here
-		return null;
-	}
-
-	/**
-	 * Pick species to update with a probability proportional to the total fitness
-	 * of the species weighted by its update rate.
-	 * 
-	 * @param wScoreTot the sum of the population sizes weighted by the
-	 *                  corresponding
-	 *                  species' update rate
-	 * @return the focal population
-	 * 
-	 * @see Module#cloSpeciesUpdateRate
-	 */
-	private IBSPopulation pickFocalSpeciesFitness(double wScoreTot) {
-		if (!isMultispecies)
-			return population;
-		double rand = random01() * wScoreTot;
-		for (Module mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
-			rand -= pop.getTotalFitness() * mod.getSpeciesUpdateRate();
-			if (rand < 0.0)
-				return pop;
-		}
-		// should not get here
 		return null;
 	}
 
@@ -1245,19 +1229,25 @@ public abstract class IBS extends Model {
 	 * Index for turn-based-selection to determine which species to pick next.
 	 * Simply cycles through species array.
 	 */
-	private int nextSpeciesIdx = -1;
+	private int nextSpeciesIdx = 0;
 
 	/**
 	 * Pick species for sequential updates, i.e. pick one population after another
-	 * for updating.
+	 * for updating. Extinct populations are skipped.
 	 * 
-	 * @return focal population
+	 * @return the focal population or <code>null</code> all populations extinct
 	 */
-	private IBSPopulation pickFocalSpeciesTurns() {
+	private IBSPopulation pickFocalSpecies(int next) {
 		if (!isMultispecies)
 			return population;
-		nextSpeciesIdx = (nextSpeciesIdx + 1) % nSpecies;
-		return species.get(nextSpeciesIdx).getIBSPopulation();
+		int speciesIdx = nextSpeciesIdx + next;
+		for (int i = 0; i < nSpecies; i++) {
+			nextSpeciesIdx = (speciesIdx + i) % nSpecies;
+			IBSPopulation pop = species.get(nextSpeciesIdx).getIBSPopulation();
+			if (pop.getPopulationSize() > 0)
+				return pop;
+		}
+		return null;
 	}
 
 	/**

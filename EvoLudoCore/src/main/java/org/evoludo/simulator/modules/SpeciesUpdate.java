@@ -185,24 +185,30 @@ public class SpeciesUpdate {
 	public static enum Type implements CLOption.Key {
 
 		/**
-		 * Pick focal species based on population size.
+		 * Pick focal species based on population size, weighted by rate.
 		 */
-		SIZE("size", "pick species based on size"), //
+		SIZE("size", "pick based on size"), //
 
 		/**
-		 * Pick focal species based on population size.
+		 * Pick focal species based on update rate. If all rates are equal this is the
+		 * same as {@code UNIFORM}
 		 */
-		UNIFORM("uniform", "pick species with equal probabilities"), //
+		RATE("rate", "pick based on update rate"), //
 
 		/**
-		 * Pick focal species based on population fitness.
+		 * Pick focal species uniformly at random.
 		 */
-		FITNESS("fitness", "pick species based on fitness"), //
+		UNIFORM("uniform", "pick with uniform probabilities"), //
+
+		/**
+		 * Pick focal species based on population fitness, weighted by rate.
+		 */
+		FITNESS("fitness", "pick based on fitness"), //
 
 		/**
 		 * Pick species sequentially.
 		 */
-		TURNS("turns", "pick species sequentially"); //
+		TURNS("turns", "pick sequentially"); //
 
 		/**
 		 * Simultaneous updates of all species. Not implemented
