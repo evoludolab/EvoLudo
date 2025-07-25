@@ -914,19 +914,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * Gets the update rate of this species. Only used in multi-species modules.
-	 * Determines the relative rate at which this species is picked as compared to
-	 * others.
-	 * 
-	 * @return the species update rate
-	 * 
-	 * @see EvoLudo#modelNext()
-	 */
-	public double getSpeciesUpdateRate() {
-		return 1.0;
-	}
-
-	/**
 	 * The population size.
 	 */
 	protected int nPopulation = 1000;

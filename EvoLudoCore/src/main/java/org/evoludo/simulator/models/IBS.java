@@ -680,20 +680,20 @@ public abstract class IBS extends Model {
 			// generations and hence scores can be assumed to be homogeneous when
 			// the mutant arises.
 			Module module = population.getModule();
-			double realnorm = 1.0 / (population.getTotalFitness() * module.getSpeciesUpdateRate());
+			double realunit = 1.0 / population.getSpeciesUpdateRate();
 			int nPop = module.getNPopulation();
-			double norm = 1.0 / nPop;
-			int skip = distrMutation.next();
-			time += skip * norm;
-			realtime += skip * realnorm;
+			double unit = 1.0 / nPop;
+			// skip time to next event
+			int dt = distrMutation.next();
+			// XXX this can easily skip past requested stops - ignore?
+			time += dt * unit;
+			realtime += RNGDistribution.Exponential.next(rng.getRNG(), dt * realunit);
 			population.resetTraits();
 			update();
 			// communicate update
 			engine.fireModelChanged();
-			// XXX this can easily skip past requested stops - ignore? does not make much
-			// sense anyways.
-			realtime += realnorm;
-			time += norm;
+			realtime += realunit;
+			time += unit;
 			// introduce mutation uniformly at random
 			population.mutateAt(random0n(nPop));
 			return true;
@@ -797,38 +797,21 @@ public abstract class IBS extends Model {
 		}
 
 		// asynchronous population update - update one individual at a time
-		double wPopTot = 0.0;
-		double wScoreTot = 0.0;
+		double nTot = 0.0;
 		// reset traits (colors)
 		for (Module mod : species) {
 			IBSPopulation pop = mod.getIBSPopulation();
 			pop.resetTraits();
-			double rate = mod.getSpeciesUpdateRate();
-			// determine generation time and real time increments
-			// NOTE: generation time increments based on maximum population sizes and do not
-			// take potentially fluctuating sizes into account (relevant for ecological
-			// settings)
-			// wPopTot += pop.getPopulationSize() * rate;
-			// use maximum population size - otherwise the notion of a generation gets
-			// confusing
-			wPopTot += mod.getNPopulation() * rate;
-			double sum = pop.getTotalFitness();
-			if (wScoreTot >= 0.0 && sum <= 1e-8) {
-				wScoreTot = -1.0;
-				continue;
-			}
-			wScoreTot += sum * rate;
+			// NOTE: generation time increments based on maximum population sizes; otherwise
+			// notion of generations gets confusing; for ecological settings realtime might 
+			// be more relevant.
+			nTot += mod.getNPopulation();
 		}
-		// if wPopTot is based on maximum population size, gincr is a constant
-		// TODO: how to define a generation in populations with varying size? realtime
-		// only? in particular, gincr is no longer constant if based on actual
-		// population size.
-		double gincr = 1.0 / wPopTot;
-		// round nUpdates up while trying to avoid rounding errors.
+		// gincr is a constant because based on total maximum population sizes
+		double gincr = 1.0 / nTot;
 		// process at least one update.
-		// note: nUpdates can exceed Integer.MAX_VALUE (notably for large populations,
-		// long relaxation times and high interaction rates of species). however,
-		// switching to long is not an option because of GWT!
+		// NOTE: nUpdates can exceed Integer.MAX_VALUE (notably for large populations and
+		// long relaxation times). switching to long is not an option because of GWT!
 		double dUpdates = Math.max(1.0, Math.ceil(stepDt / gincr - 1e-8));
 		double stepDone = 0.0;
 		double gStart = time;
@@ -845,13 +828,11 @@ public abstract class IBS extends Model {
 					case REPLICATION:
 						dt = debugFocalSpecies.step();
 						break;
-					// uniform mutation event (temperature based mutations
-					// are part of replication events)
+					// uniform mutation event (temperature based mutations are part of replication events)
 					case MUTATION:
 						dt = debugFocalSpecies.mutate();
 						break;
-					// uniform migration events (temperature based migrations
-					// are part of replication events)
+					// uniform migration events (temperature based migrations are part of replication events)
 					// case MIGRATION:
 					// dt = debugFocalSpecies.migrate();
 					// break;
@@ -866,31 +847,16 @@ public abstract class IBS extends Model {
 				}
 				if (debugFocalSpecies.getPopulationUpdate().getType() == PopulationUpdate.Type.ONCE) {
 					time++;
-					realtime = (wScoreTot < 0.0 ? Double.POSITIVE_INFINITY : realtime + 1.0 / wScoreTot);
 					n += debugFocalSpecies.getModule().getNPopulation();
 				} else {
 					time += gincr;
-					realtime = (wScoreTot < 0.0 ? Double.POSITIVE_INFINITY
-							: realtime + 1.0 / (wScoreTot * wScoreTot * dt));
 				}
-				// if wPopTot is based on maximum population size it is a constant
-				// wPopTot = 0.0;
-				wScoreTot = 0.0;
+				realtime += dt;
 				converged = true;
 				for (Module mod : species) {
 					IBSPopulation pop = mod.getIBSPopulation();
 					pop.isConsistent();
 					converged &= pop.checkConvergence();
-					// update generation time and real time increments
-					double rate = mod.getSpeciesUpdateRate();
-					// if wPopTot is based on maximum population size it is a constant
-					// wPopTot += pop.getPopulationSize() * rate;
-					double sum = pop.getTotalFitness();
-					if (wScoreTot >= 0.0 && sum <= 1e-8) {
-						wScoreTot = -1.0;
-						continue;
-					}
-					wScoreTot += sum * rate;
 				}
 				if (converged) {
 					stepSize = n * gincr;
@@ -898,8 +864,6 @@ public abstract class IBS extends Model {
 					time = gStart + Math.abs(stepDone);
 					break updates;
 				}
-				// if wPopTot is based on maximum population size, gincr is a constant
-				// gincr = 1.0 / wPopTot;
 			}
 			stepSize = nUpdates * gincr;
 			stepDone += Math.abs(stepSize);
@@ -1201,7 +1165,7 @@ public abstract class IBS extends Model {
 			case RATE:
 				for (Module mod : species) {
 					IBSPopulation pop = mod.getIBSPopulation();
-					double rate = (pop.getPopulationSize() > 0 ? mod.getSpeciesUpdateRate() : 0.0);
+					double rate = pop.getSpeciesUpdateRate();
 					rates[idx++] = rate;
 					total += rate;
 				}

@@ -1861,7 +1861,7 @@ public abstract class IBSPopulation {
 	public double step() {
 		int[] remain;
 		double rincr;
-		double uRate = module.getSpeciesUpdateRate();
+		double uRate = getSpeciesUpdateRate();
 		if (pMigration > 0.0 && random01() < pMigration) {
 			// migration event
 			rincr = 1.0 / (sumFitness * uRate);
@@ -1940,6 +1940,21 @@ public abstract class IBSPopulation {
 				logger.warning("unknown population update type (" + populationUpdate.getType().getKey() + ").");
 				return 0.0;
 		}
+	}
+
+	/**
+	 * Gets the update rate of this species. Only used in multi-species modules.
+	 * Determines the relative rate at which this species is picked as compared to
+	 * others.
+	 * 
+	 * @return the species update rate
+	 * 
+	 * @see EvoLudo#modelNext()
+	 */
+	public double getSpeciesUpdateRate() {
+		if (module instanceof Payoffs)
+			return getTotalFitness();
+		return getPopulationSize();
 	}
 
 	/**

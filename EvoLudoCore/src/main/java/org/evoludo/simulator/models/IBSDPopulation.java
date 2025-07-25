@@ -498,7 +498,7 @@ public class IBSDPopulation extends IBSPopulation {
 	public double mutateAt(int focal) {
 		setNextTraitAt(focal, mutation.mutate(getTraitAt(focal)));
 		updateScoreAt(focal, true);
-		return 1.0 / (nPopulation * module.getSpeciesUpdateRate());
+		return 1.0 / getSpeciesUpdateRate();
 	}
 
 	@Override

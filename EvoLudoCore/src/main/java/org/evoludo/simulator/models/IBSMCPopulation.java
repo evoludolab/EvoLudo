@@ -257,7 +257,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	@Override
 	public double mutateAt(int focal) {
 		updateScoreAt(focal, mutateAt(focal, false));
-		return 1.0 / (nPopulation * module.getSpeciesUpdateRate());
+		return 1.0 / getSpeciesUpdateRate();
 	}
 
 	@Override

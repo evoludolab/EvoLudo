@@ -225,14 +225,6 @@ public class ODE extends Model implements Discrete {
 	int[] idxSpecies;
 
 	/**
-	 * Array containing the update rates for each species. Determines the relative
-	 * update rate between species, Only relevant in multi-species modules.
-	 * 
-	 * @see Module#getSpeciesUpdateRate()
-	 */
-	double[] rates;
-
-	/**
 	 * Array containing the mutation rates/probabilities for each species.
 	 * 
 	 * @see Module#getMutation()
@@ -355,7 +347,6 @@ public class ODE extends Model implements Discrete {
 		yt = ft = dyt = yout = null;
 		staticfit = null;
 		names = null;
-		rates = null;
 		invFitRange = null;
 		idxSpecies = null;
 		cloInit.clearKeys();
@@ -368,7 +359,6 @@ public class ODE extends Model implements Discrete {
 		dstate = null;
 		double minFit = Double.MAX_VALUE;
 		double maxFit = -Double.MAX_VALUE;
-		rates = new double[nSpecies];
 		invFitRange = null;
 		idxSpecies = new int[nSpecies + 1];
 		nDim = 0;
@@ -377,7 +367,6 @@ public class ODE extends Model implements Discrete {
 			doReset |= mod.check();
 			int nTraits = mod.getNTraits();
 			idxSpecies[idx] = nDim;
-			rates[idx] = mod.getSpeciesUpdateRate();
 			if (mod instanceof Payoffs) {
 				if (invFitRange == null || invFitRange.length != nSpecies) {
 					invFitRange = new double[nSpecies];
@@ -925,15 +914,14 @@ public class ODE extends Model implements Discrete {
 		for (Module pop : species) {
 			int dim = pop.getNTraits();
 			int to = from + dim;
-			double rate = rates[index];
 			if (isAdjustedDynamics) {
 				double fbar = 0.0;
 				for (int i = from; i < to; i++)
 					fbar += state[i] * fitness[i];
-				rate /= fbar;
+				double ifbar = 1.0 / fbar;
+				for (int i = from; i < to; i++)
+					change[i] *= ifbar;
 			}
-			for (int i = from; i < to; i++)
-				change[i] *= rate;
 			mutation[index].mutate(state, change, from, to);
 			from = to;
 			index++;
