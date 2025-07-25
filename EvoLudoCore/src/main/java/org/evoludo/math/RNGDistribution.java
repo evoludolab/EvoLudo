@@ -599,13 +599,13 @@ public abstract class RNGDistribution {
 		 *
 		 * @param rng  the random number generator
 		 * @param mean the mean of the exponential distribution
-		 * @throws IllegalArgumentException if <code>man&le;0</code>
+		 * @throws IllegalArgumentException if <code>mean&le;0</code>
 		 * @see MersenneTwister
 		 */
 		public Exponential(MersenneTwister rng, double mean) throws IllegalArgumentException {
 			super(rng);
-			if (mean <= 0.0)
-				throw new IllegalArgumentException("mean must be >0.");
+			if (mean < 0.0)
+				throw new IllegalArgumentException("mean must be non-negative.");
 			this.mean = mean;
 		}
 
@@ -624,6 +624,8 @@ public abstract class RNGDistribution {
 		 * @return the exponentially distributed random number
 		 */
 		public double next() {
+			if (mean == 0.0)
+				return 0.0;
 			return -Math.log1p(-random01()) * mean;
 		}
 
@@ -647,8 +649,10 @@ public abstract class RNGDistribution {
 		 * @throws IllegalArgumentException if <code>man&le;0</code>
 		 */
 		public static double next(MersenneTwister rng, double mean) {
-			if (mean <= 0.0)
-				throw new IllegalArgumentException("mean must be >0.");
+			if (mean < 0.0)
+				throw new IllegalArgumentException("mean must be non-negative.");
+			if (mean == 0.0)
+				return 0.0;
 			return -Math.log1p(-rng.nextDouble()) * mean;
 		}
 
