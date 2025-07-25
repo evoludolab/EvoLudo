@@ -515,7 +515,7 @@ public class NetGames extends Discrete implements Payoffs,
 		}
 
 		@Override
-		public double step() {
+		public int step() {
 			int focal = random0n(nPopulation);
 			// switch( populationUpdateType ) {
 			// // individual learning - preferentially link to prosperous members of
@@ -526,7 +526,7 @@ public class NetGames extends Discrete implements Payoffs,
 			// case POPULATION_UPDATE_SOCIAL:
 			// }
 			updateFitnessMean();
-			return 1.0 / nPopulation;
+			return 1;
 		}
 
 		/**

@@ -35,7 +35,6 @@ import java.util.List;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
-import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
@@ -451,7 +450,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * </ol>
 	 */
 	@Override
-	protected double updatePlayerEcologyAt(int me) {
+	protected int updatePlayerEcologyAt(int me) {
 		debugFocal = me;
 		debugModel = -1;
 		int nPop = getPopulationSize();
@@ -466,7 +465,7 @@ public class IBSDPopulation extends IBSPopulation {
 			updateScoreAt(me, true);
 			if (nPop == 1) {
 				// population went extinct, no more events possible
-				return Double.POSITIVE_INFINITY;
+				return -1;
 			}
 		} else {
 			randomTestVal -= deathRate;
@@ -478,10 +477,9 @@ public class IBSDPopulation extends IBSPopulation {
 				}
 			} else
 				// nothing happened, no time elapsed
-				return 0.0;
+				return 0;
 		}
-		// exponentially distributed waiting until the current event occured
-		return RNGDistribution.Exponential.next(rng.getRNG(), 1.0 / sumFitness);
+		return 1;
 	}
 
 	@Override
@@ -495,10 +493,10 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	@Override
-	public double mutateAt(int focal) {
+	public int mutateAt(int focal) {
 		setNextTraitAt(focal, mutation.mutate(getTraitAt(focal)));
 		updateScoreAt(focal, true);
-		return 1.0 / getSpeciesUpdateRate();
+		return 1;
 	}
 
 	@Override

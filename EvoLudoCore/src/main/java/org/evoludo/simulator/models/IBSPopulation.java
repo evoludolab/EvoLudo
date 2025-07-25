@@ -1856,17 +1856,14 @@ public abstract class IBSPopulation {
 	 * Everyone else does fine without...
 	 * </ol>
 	 * 
-	 * @return the elapsed time in realtime units
+	 * @return the number of elapsed realtime units
 	 */
-	public double step() {
+	public int step() {
 		int[] remain;
-		double rincr;
-		double uRate = getSpeciesUpdateRate();
 		if (pMigration > 0.0 && random01() < pMigration) {
 			// migration event
-			rincr = 1.0 / (sumFitness * uRate);
 			doMigration();
-			return rincr;
+			return 1;
 		}
 		// real time increment based on current fitness
 		switch (populationUpdate.getType()) {
@@ -1876,8 +1873,7 @@ public abstract class IBSPopulation {
 					// no noise, update everyone
 					for (int n = 0; n < nPopulation; n++)
 						updatePlayerAt(n);
-					rincr = nPopulation / (sumFitness * uRate);
-					return rincr;
+					return nPopulation;
 				}
 				// update only fraction of individuals (at least one but at most once)
 				int nSamples = Math.max(1, (int) (syncFraction * nPopulation + 0.5));
@@ -1890,8 +1886,7 @@ public abstract class IBSPopulation {
 					remain[idx] = remain[n];
 					updatePlayerAt(focal);
 				}
-				rincr = nSamples / (sumFitness * uRate);
-				return rincr;
+				return nSamples;
 
 			// case WRIGHT_FISHER:
 			// return rincr;
@@ -1909,36 +1904,30 @@ public abstract class IBSPopulation {
 				}
 				// last to update
 				updatePlayerAsyncAt(remain[0]);
-				rincr = nPopulation / (sumFitness * uRate);
-				return rincr;
+				return nPopulation;
 
 			case ASYNC: // exclusively the current payoff matters
-				rincr = 1.0 / (sumFitness * uRate);
 				updatePlayerAsync();
-				return rincr;
+				return 1;
 
 			case MORAN_BIRTHDEATH: // moran process - birth-death
-				rincr = 1.0 / (sumFitness * uRate);
 				updatePlayerMoranBirthDeath();
-				return rincr;
+				return 1;
 
 			case MORAN_DEATHBIRTH: // moran process - death-birth
-				rincr = 1.0 / (sumFitness * uRate);
 				updatePlayerMoranDeathBirth();
-				return rincr;
+				return 1;
 
 			case MORAN_IMITATE: // moran process - imitate
-				rincr = 1.0 / (sumFitness * uRate);
 				updatePlayerMoranImitate();
-				return rincr;
+				return 1;
 
 			case ECOLOGY: // ecological updating - varying population sizes
-				rincr = updatePlayerEcology();
-				return rincr / uRate;
+				return updatePlayerEcology();
 
 			default:
 				logger.warning("unknown population update type (" + populationUpdate.getType().getKey() + ").");
-				return 0.0;
+				return -1;
 		}
 	}
 
@@ -1952,7 +1941,7 @@ public abstract class IBSPopulation {
 	 * @see EvoLudo#modelNext()
 	 */
 	public double getSpeciesUpdateRate() {
-		if (module instanceof Payoffs)
+		if (module instanceof Payoffs && minFitness > 0.0)
 			return getTotalFitness();
 		return getPopulationSize();
 	}
@@ -1960,10 +1949,11 @@ public abstract class IBSPopulation {
 	/**
 	 * Perform a mutation event. The focal individual is picked uniformly at random.
 	 * 
-	 * @return the elapsed time in realtime units
+	 * @return the number of elapsed realtime units
 	 */
-	public double mutate() {
-		return mutateAt(pickFocalIndividual());
+	public int mutate() {
+		mutateAt(pickFocalIndividual());
+		return 1;
 	}
 
 	/**
@@ -1971,9 +1961,9 @@ public abstract class IBSPopulation {
 	 * mutated trait is committed and the scores updated.
 	 * 
 	 * @param focal the index of the focal individual
-	 * @return the elapsed time in realtime units
+	 * @return the number of elapsed realtime units
 	 */
-	public abstract double mutateAt(int focal);
+	public abstract int mutateAt(int focal);
 
 	/**
 	 * Consider mutating the trait of the focal individual with index {@code focal}.
@@ -2310,9 +2300,9 @@ public abstract class IBSPopulation {
 	/**
 	 * Perform a single ecological update of an individual selected uniformly at random.
 	 * 
-	 * @return real-time increment
+	 * @return the number of elapsed realtime units
 	 */
-	public double updatePlayerEcology() {
+	public int updatePlayerEcology() {
 		return updatePlayerEcologyAt(pickFocalIndividual());
 	}
 
@@ -2324,9 +2314,9 @@ public abstract class IBSPopulation {
 	 * their own implementations.
 	 *
 	 * @param index the index of the focal site
-	 * @return real-time increment
+	 * @return the number of elapsed realtime units
 	 */
-	protected double updatePlayerEcologyAt(int index) {
+	protected int updatePlayerEcologyAt(int index) {
 		throw new Error("updatePlayerEcologyAt not implemented.");
 	}
 

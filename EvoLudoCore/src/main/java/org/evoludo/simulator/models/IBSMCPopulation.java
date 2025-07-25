@@ -255,9 +255,9 @@ public class IBSMCPopulation extends IBSPopulation {
 	}
 
 	@Override
-	public double mutateAt(int focal) {
+	public int mutateAt(int focal) {
 		updateScoreAt(focal, mutateAt(focal, false));
-		return 1.0 / getSpeciesUpdateRate();
+		return 1;
 	}
 
 	@Override

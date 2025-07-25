@@ -798,6 +798,7 @@ public abstract class IBS extends Model {
 
 		// asynchronous population update - update one individual at a time
 		double nTot = 0.0;
+		double totRate = 0.0;
 		// reset traits (colors)
 		for (Module mod : species) {
 			IBSPopulation pop = mod.getIBSPopulation();
@@ -806,6 +807,7 @@ public abstract class IBS extends Model {
 			// notion of generations gets confusing; for ecological settings realtime might 
 			// be more relevant.
 			nTot += mod.getNPopulation();
+			totRate += pop.getSpeciesUpdateRate();
 		}
 		// gincr is a constant because based on total maximum population sizes
 		double gincr = 1.0 / nTot;
@@ -821,7 +823,7 @@ public abstract class IBS extends Model {
 			int nUpdates = Math.min((int) dUpdates, 1000000000); // 1e9 about half of Integer.MAX_VALUE (2.1e9)
 			for (int n = 0; n < nUpdates; n++) {
 				// update event
-				double dt = 0.0;
+				int dt = 0;
 				debugFocalSpecies = pickFocalSpecies();
 				switch (pickEvent(debugFocalSpecies)) {
 					// standard replication event
@@ -840,7 +842,7 @@ public abstract class IBS extends Model {
 						engine.fatal("unknown event type...");
 				}
 				// advance time and real time (if possible)
-				if (realtime < Double.POSITIVE_INFINITY && dt <= 0.0) {
+				if (dt == 0) {
 					// if no time elapsed, nothing happened
 					n--;
 					continue;
@@ -851,12 +853,15 @@ public abstract class IBS extends Model {
 				} else {
 					time += gincr;
 				}
-				realtime += dt;
 				converged = true;
+				if (dt > 0 && realtime < Double.POSITIVE_INFINITY)
+					realtime += RNGDistribution.Exponential.next(rng.getRNG(), dt / totRate);
+				totRate = 0.0;
 				for (Module mod : species) {
 					IBSPopulation pop = mod.getIBSPopulation();
 					pop.isConsistent();
 					converged &= pop.checkConvergence();
+					totRate += pop.getSpeciesUpdateRate();
 				}
 				if (converged) {
 					stepSize = n * gincr;
