@@ -322,7 +322,7 @@ public class TestEvoLudo implements MilestoneListener {
 		engine.setCLO("--seed 0 " + stripExport(clo) + " --delay 0");
 		int issues = engine.parseCLO();
 		if (issues > 0) {
-			logWarning(task + ": " + issues + " parsing issues with command line arguments - review!");
+			logError(task + ": " + issues + " parsing issues with command line arguments - review!");
 			nTestFailures++;
 			nTests++;
 			return false;
