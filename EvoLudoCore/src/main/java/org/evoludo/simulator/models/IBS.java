@@ -495,12 +495,18 @@ public abstract class IBS extends Model {
 		boolean allSync = true;
 		boolean allAsync = true;
 		boolean noneUnique = true;
+		boolean allPosFitness = true;
 		for (Module mod : species) {
 			IBSPopulation pop = mod.getIBSPopulation();
 			doReset |= pop.check();
 			boolean sync = pop.getPopulationUpdate().isSynchronous();
 			allSync &= sync;
 			allAsync &= !sync;
+			if (mod instanceof Payoffs) {
+				// check if all payoffs are positive
+				if (mod.getMap2Fitness().map(((Payoffs) mod).getMinPayoff()) <= 0.0)
+					allPosFitness = false;
+			}
 			if (!noneUnique)
 				continue;
 			Geometry geom = pop.getInteractionGeometry();
@@ -520,6 +526,12 @@ public abstract class IBS extends Model {
 			for (Module mod : species)
 				mod.getIBSPopulation().getPopulationUpdate().setType(PopulationUpdate.Type.SYNC);
 			doReset = true;
+		}
+		if (isMultispecies && !allPosFitness && speciesUpdate.getType() == SpeciesUpdate.Type.FITNESS) {
+			// fitness based picking of focal species requires positive fitness
+			logger.warning("multispecies models with '" + SpeciesUpdate.Type.FITNESS + "' require positive minimum fitness - switching to '"
+					+ SpeciesUpdate.Type.RATE + "'");
+			speciesUpdate.setType(SpeciesUpdate.Type.RATE);
 		}
 		// update converged flag to account for changes that preclude convergence
 		if (!doReset) {
