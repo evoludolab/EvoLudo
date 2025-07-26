@@ -97,7 +97,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * generate {@code IBSDPopulation}(s).
 	 */
 	@SuppressWarnings("hiding")
-	IBSDPopulation opponent;
+	protected IBSDPopulation opponent;
 
 	/**
 	 * The flag to indicate whether optimizations of Moran processes are requested.

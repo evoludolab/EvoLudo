@@ -62,6 +62,7 @@ import org.evoludo.simulator.modules.CSD;
 import org.evoludo.simulator.modules.Centipede;
 import org.evoludo.simulator.modules.DemesTBT;
 import org.evoludo.simulator.modules.EcoPGG;
+import org.evoludo.simulator.modules.LV;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Moran;
 import org.evoludo.simulator.modules.NetGames;
@@ -2127,5 +2128,6 @@ public abstract class EvoLudo
 		addModule(new EcoPGG(this));
 		addModule(new NetGames(this));
 		addModule(new SIR(this));
+		addModule(new LV(this));
 	}
 }

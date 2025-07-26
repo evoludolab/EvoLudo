@@ -98,7 +98,7 @@ public abstract class IBSPopulation {
 	 * {@code opponent.getModule()==getModule().getOpponent()}. In intra-species
 	 * interactions {@code opponent==this}. Convenience field.
 	 */
-	IBSPopulation opponent;
+	protected IBSPopulation opponent;
 
 	/**
 	 * Logger for keeping track of and reporting events and issues.
@@ -1331,7 +1331,7 @@ public abstract class IBSPopulation {
 	 * @see #pickFitNeighborAt(int)
 	 * @see #updatePlayerMoranBirthDeath()
 	 */
-	protected int pickNeighborSiteAt(int me) {
+	public int pickNeighborSiteAt(int me) {
 		// mean-field
 		if (competition.getType() == Geometry.Type.MEANFIELD)
 			return pickFocalSite(me);

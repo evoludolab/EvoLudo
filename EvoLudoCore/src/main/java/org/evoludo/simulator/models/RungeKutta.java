@@ -237,7 +237,7 @@ public class RungeKutta extends ODE {
 			// no more than a factor of 10.
 			double tnew = time + h;
 			if (tnew == time) {
-				logger.warning("stepsize underflow in ODE method rungeKuttaStep().");
+				logger.warning("stepsize underflow in ODE method RungeKutta.deStep() at time " + time + ".");
 				dtTaken = 0.0;
 				return -1.0;
 			}
