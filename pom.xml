@@ -124,10 +124,12 @@
         <version>3.6.3</version>
         <configuration>
           <!-- Default configuration for all reports -->
+          <aggregate>true</aggregate>
           <noqualifier>all</noqualifier>
           <show>private</show>
           <doctitle>EvoLudo: in silico evolution</doctitle>
           <windowtitle>EvoLudo: in silico evolution</windowtitle>
+          <overview>${basedir}/EvoLudoCore/src/main/javadoc/overview.html</overview>
           <header><![CDATA[
           <script src='https://polyfill.io/v3/polyfill.min.js?features=es6'></script>
           <script id='MathJax-script' async src='https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js'></script>
