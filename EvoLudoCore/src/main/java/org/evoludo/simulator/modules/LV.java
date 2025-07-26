@@ -49,6 +49,14 @@ import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.CLOption.Category;
 
+/**
+ * Lotka-Volterra module for EvoLudo. This module implements the
+ * classic Lotka-Volterra equations for predator-prey dynamics.
+ * It supports both deterministic and stochastic simulations,
+ * as well as individual-based simulations (IBS).
+ * 
+ * @author Christoph Hauert
+ */
 public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDynamics, HasIBS,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasPhase2D {
 
@@ -99,7 +107,7 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 2;	// prey and vacant
+		nTraits = 2; // prey and vacant
 		VACANT = nTraits - 1;
 		predator = new Predator(this);
 		predator.load();
@@ -138,11 +146,8 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 		return VACANT;
 	}
 
-	Data2Phase map;
-
 	@Override
 	public void setPhase2DMap(Data2Phase map) {
-		this.map = map;
 		// by default show PREY on horizontal and PREDATOR on vertical axis
 		// of phase plane; note the nTraits of the host species
 		map.setTraits(new int[] { PREY }, new int[] { nTraits + Predator.PREDATOR });
@@ -154,10 +159,11 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	 */
 	public final CLOption cloPrey = new CLOption("prey", "0.667,-1.333,0.0", Category.Module,
 			"--prey <a0,a1[,a2]>  x' = (a0-dx)*x + a1*x*y - a2*x^2\n" +
-			"		    a0: birth rate\n" +
-			"		    dx: death rate (see --deathrate)\n" +
-			"		    a1: predation rate\n" +
-			"		    a2: competition rate", new CLODelegate() {
+					"		    a0: birth rate\n" +
+					"		    dx: death rate (see --deathrate)\n" +
+					"		    a1: predation rate\n" +
+					"		    a2: competition rate",
+			new CLODelegate() {
 
 				@Override
 				public boolean parse(String arg) {
@@ -180,7 +186,7 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 					return true;
 				}
 			});
-		
+
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
@@ -191,8 +197,8 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	 * The Lotka-Volterra model is defined by the following equations:
 	 * \[
 	 * \begin{align*}
-	 * \frac{dx}{dt} &= x (a_0 - d_x - a_2 x + a_1 y)\\
-	 * \frac{dy}{dt} &= y (b_0 - d_y - b_2 y + b_1 x)
+	 * \frac{dx}{dt} =&amp; x (a_0 - d_x - a_2 x + a_1 y)\\
+	 * \frac{dy}{dt} =&amp; y (b_0 - d_y - b_2 y + b_1 x)
 	 * \end{align*}
 	 * \]
 	 * where \(x\), and \(y\) are the densities of prey and predators, respectively.
@@ -211,8 +217,8 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	 * This yields slightly modified dynamical equations:
 	 * \[
 	 * \begin{align*}
-	 * \frac{dx}{dt} &= x (a_0 (1 - x) - d_x - a_2 x + a_1 y)\\
-	 * \frac{dy}{dt} &= y (b_0 (1 - y) - d_y - b_2 y + b_1 x (1 - y))
+	 * \frac{dx}{dt} =&amp; x (a_0 (1 - x) - d_x - a_2 x + a_1 y)\\
+	 * \frac{dy}{dt} =&amp; y (b_0 (1 - y) - d_y - b_2 y + b_1 x (1 - y))
 	 * \end{align*}
 	 * \]
 	 * <strong>Note:</strong> strictly speaking the second set of dynamical
@@ -220,6 +226,14 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	 * they include a cubic term for increased reproduction mitigated by the other
 	 * species but reduced by competition for space, i.e. \(x y (1-y) p_y\). This
 	 * results in a qualitatively different dynamics.
+	 * 
+	 * @param t         the current time
+	 * @param state     the current state of the system
+	 * @param unused    an unused array (for compatibility with the {@link Payoffs}
+	 *                  interface)
+	 * @param change    the array to store the changes
+	 * @param isDensity the flag indicating if the state is in terms of densities
+	 *                  for frequencies
 	 * 
 	 * @see #rates
 	 * @see Predator#rates
@@ -232,7 +246,7 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 		// NOTE: the cross-terms cause problems for aligning DEs and IBS results
 		if (isDensity) {
 			// density dynamics
-			change[PREY] = 	x * (rx - x * rates[2] + y * rates[1]);
+			change[PREY] = x * (rx - x * rates[2] + y * rates[1]);
 			change[predatorIdx] = y * (ry - y * predator.rates[2] + x * predator.rates[1]);
 			return;
 		}
@@ -271,8 +285,8 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	public class ODE extends RungeKutta {
 
 		/**
-		 * Constructor for the classic Lotka-Volterra model based on ordinary differential
-		 * equations.
+		 * Constructor for the classic Lotka-Volterra model based on ordinary
+		 * differential equations.
 		 */
 		public ODE() {
 			super(LV.this.engine);
@@ -290,8 +304,8 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	public class SDE extends org.evoludo.simulator.models.SDE {
 
 		/**
-		 * Constructor for the classic Lotka-Volterra model based on stochastic differential
-		 * equations.
+		 * Constructor for the classic Lotka-Volterra model based on stochastic
+		 * differential equations.
 		 */
 		public SDE() {
 			super(LV.this.engine);
@@ -304,6 +318,9 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	}
 }
 
+/**
+ * Predator class representing the predator species in the Lotka-Volterra model.
+ */
 class Predator extends Discrete implements Multispecies, HasDE {
 
 	/**
@@ -312,7 +329,7 @@ class Predator extends Discrete implements Multispecies, HasDE {
 	final static int PREDATOR = 0;
 
 	/**
-	 * The reference to the prey species. 
+	 * The reference to the prey species.
 	 */
 	LV prey;
 
@@ -324,7 +341,7 @@ class Predator extends Discrete implements Multispecies, HasDE {
 	/**
 	 * Create a new instance of the phage population.
 	 * 
-	 * @param partner the reference to the partner species
+	 * @param prey the reference to the prey species
 	 */
 	public Predator(LV prey) {
 		super(prey);
@@ -354,10 +371,11 @@ class Predator extends Discrete implements Multispecies, HasDE {
 	 */
 	public final CLOption cloPredator = new CLOption("predator", "-1.0,1.0,0.0", Category.Module,
 			"--predator <b0,b1[,b2]>  y' = (b0-dy)*y + b1*x*y - b2*y^2\n" +
-			"		    b0: birth rate\n" +
-			"		    dy: death rate (see --deathrate)\n" +
-			"		    b1: predation rate\n" +
-			"		    b2: competition rate", new CLODelegate() {
+					"		    b0: birth rate\n" +
+					"		    dy: death rate (see --deathrate)\n" +
+					"		    b1: predation rate\n" +
+					"		    b2: competition rate",
+			new CLODelegate() {
 
 				@Override
 				public boolean parse(String arg) {
@@ -393,21 +411,26 @@ class Predator extends Discrete implements Multispecies, HasDE {
 	}
 }
 
+/**
+ * Individual based simulation implementation of the Lotka-Volterra model.
+ */
 class IBSPop extends IBSDPopulation {
 
 	/**
 	 * The reference to the predator population. If {@code isPredator==true} then
-	 * {@codepredator==this}.
+	 * {@code predator==this}.
 	 */
 	IBSPop predator;
 
 	/**
-	 * The reference to the prey population. If {@code isPredator==false} then {@code prey==this}.
+	 * The reference to the prey population. If {@code isPredator==false} then
+	 * {@code prey==this}.
 	 */
 	IBSPop prey;
 
 	/**
-	 * The flag to indicate whether this is a predator population. Convenience variable.
+	 * The flag to indicate whether this is a predator population. Convenience
+	 * variable.
 	 */
 	final boolean isPredator;
 
@@ -417,7 +440,8 @@ class IBSPop extends IBSDPopulation {
 	double[] rates;
 
 	/**
-	 * The per capita death rate for the predator/prey population. Convenience variable.
+	 * The per capita death rate for the predator/prey population. Convenience
+	 * variable.
 	 */
 	double deathRate;
 
@@ -431,6 +455,7 @@ class IBSPop extends IBSDPopulation {
 	 * Create a new custom implementation for IBS simulations.
 	 * 
 	 * @param engine the pacemaker for running the model
+	 * @param module the reference to the module implementing the model
 	 */
 	protected IBSPop(EvoLudo engine, Discrete module) {
 		super(engine, module);
@@ -450,16 +475,14 @@ class IBSPop extends IBSDPopulation {
 		rates = (isPredator ? ((Predator) module).rates : ((LV) module).rates);
 		deathRate = module.getDeathRate();
 		// focal peer opponent
-		// X	0	0	death, birth:					deathRate + rates[0]
-		// X	X	0	death, competition:				deathRate + rates[2]
-		// X	0	Y	death, birth, predation:		deathRate + rates[0] + Math.abs(rates[1])
-		// X	X	Y	death, competition, predation:	deathRate + rates[2] + Math.abs(rates[1]);
-		// same for Y except
-		// Y	Y	X	death, competition, predation:	deathRate + rates[2] + Math.abs(rates[1]);
+		// X     0    0 death, birth: deathRate + rates[0]
+		// X     X    0 death, competition: deathRate + rates[2]
+		// X     0    Y death, birth, predation: deathRate + rates[0] + |rates[1]|
+		// X     X    Y death, competition, predation: deathRate + rates[2] + |rates[1]|
 		maxRate = deathRate + Math.max(Math.max(Math.max(rates[0], // birth
-						rates[2]), // competition
-						rates[0] + Math.abs(rates[1])), // birth + predation
-						rates[2] + Math.abs(rates[1]));  // competition + predation
+				rates[2]), // competition
+				rates[0] + Math.abs(rates[1])), // birth + predation
+				rates[2] + Math.abs(rates[1])); // competition + predation
 		return doReset;
 	}
 
@@ -505,7 +528,7 @@ class IBSPop extends IBSDPopulation {
 		} else {
 			// focal fails to reproduce due to lack of space
 			focalReproduces = 0.0;
-			// focal may also die due to competition	
+			// focal may also die due to competition
 			focalDies += rates[2];
 		}
 		// predation if random neighbouring opponent site is occupied
@@ -516,7 +539,7 @@ class IBSPop extends IBSDPopulation {
 			focalPredation = Math.abs(rates[1]);
 			// NOTE: the cross-terms cause problems for aligning DEs and IBS results
 			// if (!isPredator)
-			// 	focalPredation += Math.abs(predator.rates[1]);
+			// focalPredation += Math.abs(predator.rates[1]);
 		}
 		double totRate = focalReproduces + focalDies + focalPredation;
 		if (totRate <= 0.0) {
@@ -546,7 +569,7 @@ class IBSPop extends IBSDPopulation {
 			} else {
 				// focal predation: prey dies, predator reproduces if neighbour vacant
 				if (isPredator) {
-					// predator reproduces provided random neighbouring site is vacant 
+					// predator reproduces provided random neighbouring site is vacant
 					if (peerVacant) {
 						setNextTraitAt(peer, Predator.PREDATOR);
 						commitTraitAt(peer);

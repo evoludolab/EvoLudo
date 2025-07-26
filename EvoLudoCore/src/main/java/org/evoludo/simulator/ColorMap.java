@@ -795,9 +795,30 @@ public abstract class ColorMap<T extends Object> {
 		 */
 		protected double[] map;
 
+		/**
+		 * The index of the color for the first trait.
+		 */
 		int trait1 = 0;
+
+		/**
+		 * The index of the color for the second trait.
+		 */
 		int trait2 = 1;
 
+		/**
+		 * Construct a 2D color gradient. With a dependent trait ({@code dep >= 0}) the
+		 * gradient is created on a simplex. While without a dependent trait
+		 * ({@code dep < 0}) the gradient
+		 * is created with black in the corner where both traits are zero. The number of
+		 * shades in the gradient are determined by the dimensions of {@code gradient}.
+		 * <p>
+		 * <strong>Important:</strong> The {@code gradient} array is assumed to be
+		 * square.
+		 * 
+		 * @param colors   the array of trait colors
+		 * @param dep      the index of the dependent trait
+		 * @param gradient the array to store the gradient colors
+		 */
 		protected Gradient2D(Color[] colors, int dep, T[][] gradient) {
 			this(dep < 0 ? 2 : 3, gradient.length - 1);
 			switch (dep) {

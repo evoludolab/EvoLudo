@@ -523,6 +523,9 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 */
 	public class TraitMap implements Data2Phase, BasicTooltipProvider {
 
+		/**
+		 * Flag indicating whether the axes are fixed. The default is fixed axes.
+		 */
 		boolean hasFixedAxes = false;
 
 		/**

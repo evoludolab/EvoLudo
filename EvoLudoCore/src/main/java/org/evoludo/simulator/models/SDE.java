@@ -387,12 +387,12 @@ public class SDE extends ODE {
 	}
 
 	/**
-	 * Helper method to determine the effective noise for a given module based on
-	 * the current population size.
+	 * Helper method to determine the effective demographic noise for a given module
+	 * based on the current population size.
 	 * 
 	 * @param mod  the module to determine the effective noise
 	 * @param skip the starting index for the entries in {@code yt} for this module
-	 * @return
+	 * @return the effective noise for the given module
 	 */
 	private double getEffectiveNoise(Module mod, int skip) {
 		double effnoise = 1.0 / mod.getNPopulation();

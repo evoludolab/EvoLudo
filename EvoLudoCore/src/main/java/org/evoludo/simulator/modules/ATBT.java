@@ -605,12 +605,6 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 		}
 	}
 
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * <strong>Note:</strong> Cannot return more specific type due to subclass
-	 * {@link CG#createIBSPop()}
-	 */
 	@Override
 	public ATBT.ATBTPop createIBSPop() {
 		return new ATBT.ATBTPop(this);
@@ -632,7 +626,6 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 		 * Create a new instance of the IBS model for asymmteric {@code 2×2}
 		 * games.
 		 * 
-		 * @param engine the pacemaker for running the model
 		 * @param module the module that defines the game
 		 */
 		protected ATBTPop(ATBT module) {
@@ -711,8 +704,6 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 		/**
 		 * Constructs a new ODE solver taylored for the integration of asymmetric
 		 * {@code 2×2} games with environmental feedback.
-		 * 
-		 * @param engine the pacemaker for running the model
 		 */
 		protected ODE() {
 			super(ATBT.this.engine);

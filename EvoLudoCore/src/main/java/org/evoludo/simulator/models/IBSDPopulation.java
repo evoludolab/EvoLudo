@@ -610,7 +610,6 @@ public class IBSDPopulation extends IBSPopulation {
 	 *
 	 * @param idx   the index of the individual
 	 * @param trait the new trait
-	 * @return the trait of the individual
 	 * 
 	 * @see org.evoludo.simulator.modules.Module#nTraits Module.nTraits
 	 */
@@ -1618,12 +1617,11 @@ public class IBSDPopulation extends IBSPopulation {
 
 	/**
 	 * Returns the initial trait(s) of this population in the array {@code init}.
-	 * Used
-	 * by GUI to visualize the initial state of this IBS model.
+	 * Used by GUI to visualize the initial state of this IBS model.
 	 * 
-	 * @param init the array for returning the initial trait values
+	 * @param inittraits the array for returning the initial trait values
 	 * 
-	 * @see Model#getInitialTraits(int, double[])
+	 * @see org.evoludo.simulator.models.Discrete#getInitialTraits(int, double[])
 	 */
 	public void getInitialTraits(double[] inittraits) {
 		double iPop = 1.0 / nPopulation;

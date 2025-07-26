@@ -4,7 +4,6 @@ EVOLUDO_PUBLIC="EvoLudo" ;
 EVOLUDO_CORE_HOME="EvoLudoCore" ;
 EVOLUDO_JRE_HOME="EvoLudoJRE" ;
 EVOLUDO_GWT_HOME="EvoLudoGWT" ;
-EVOLUDO_DEV_HOME="EvoLudoGWTDev" ;
 EVOLUDO_TEST_HOME="EvoLudoTest" ;
 EVOLUDO_TEST_TEST="$EVOLUDO_TEST_HOME/tests" ;
 EVOLUDO_DIST="dist" ;
@@ -67,7 +66,7 @@ mkdir -p dist/war ;
 # copy GWT files
 echo "Copying EvoLudo GWT files..." ;
 cp -a "$EVOLUDO_GWT_HOME"/target/EvoLudoGWT*/evoludoweb dist/war/ ;
-cp -a "$EVOLUDO_DEV_HOME"/src/main/webapp/* dist/war/ ;
+cp -a "$EVOLUDO_GWT_HOME"/src/main/webapp/* dist/war/ ;
 
 # copy JRE executable
 echo "Copying EvoLudo JRE executable..." ;

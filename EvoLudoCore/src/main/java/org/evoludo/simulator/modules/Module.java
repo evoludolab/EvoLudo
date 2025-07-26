@@ -182,10 +182,9 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * random numbers, must use the shared random number generator for
 	 * reproducibility
 	 * 
-	 * @param module the interaction {@link Module}
 	 * @param type   the type of {@link Model} to create
 	 * @return the model for <code>module</code> or {@code null} if the module
-	 *         does not support the requested type
+	 *         does not support the requested model type
 	 * 
 	 * @see EvoLudo#getRNG()
 	 */

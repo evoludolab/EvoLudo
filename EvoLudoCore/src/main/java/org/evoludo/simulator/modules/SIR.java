@@ -49,6 +49,23 @@ import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.CLOption.Category;
 
+/**
+ * The SIR module implements the classic Susceptible-Infected-Recovered (SIR)
+ * model of disease dynamics. It simulates the spread of an infectious disease
+ * through a population divided into three cohorts: susceptible (S), infected
+ * (I), and recovered (R). The model is defined by transition
+ * probabilities/rates between these cohorts:
+ * <ul>
+ * <li>S -> I: Susceptible individuals become infected with a certain
+ * probability/rate
+ * <li>I -> R: Infected individuals recover with a certain probability/rate
+ * <li>I -> S: Infected individuals can become susceptible again (optional)
+ * <li>R -> S: Recovered individuals can become susceptible again with a certain
+ * probability/rate
+ * </ul>
+ * 
+ * @author Christoph Hauert
+ */
 public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE.PDE,
 		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, HasS3, HasHistogram.Degree,
 		HasHistogram.StatisticsProbability, HasHistogram.StatisticsTime, HasHistogram.StatisticsStationary {
@@ -88,6 +105,11 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	 */
 	double pRS = 0.7;
 
+	/**
+	 * Create a new SIR module with the given pacemaker.
+	 * 
+	 * @param engine the pacemaker for running the model
+	 */
 	public SIR(EvoLudo engine) {
 		super(engine);
 	}
@@ -197,14 +219,22 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	 * The SIR model is defined by the following equations:
 	 * <p>
 	 * \begin{align*}
-	 * \frac{dS}{dt} &= R \cdot p_{RS} + I \cdot p_{IS} - S \cdot I \cdot p_{SI} \\
-	 * \frac{dI}{dt} &= S \cdot I \cdot p_{SI} - I \cdot (p_{IR} + p_{IS}) \\
-	 * \frac{dR}{dt} &= I \cdot p_{IR} - R \cdot p_{RS}
+	 * \frac{dS}{dt} =&amp; R \cdot p_{RS} + I \cdot p_{IS} - S \cdot I \cdot p_{SI}
+	 * \\
+	 * \frac{dI}{dt} =&amp; S \cdot I \cdot p_{SI} - I \cdot (p_{IR} + p_{IS}) \\
+	 * \frac{dR}{dt} =&amp; I \cdot p_{IR} - R \cdot p_{RS}
 	 * \end{align*}
 	 * <p>
 	 * where \(S\), \(I\), and \(R\) are the densities of susceptible, infected, and
 	 * recovered cohorts of individuals and \(p_{SI}, p_{IR}, p_{RS}\), and
 	 * \(p_{IS}\) are the transition rates between the different cohorts.
+	 * 
+	 * @param t      the current time (not used in this model)
+	 * @param state  the current state of the system, an array containing the
+	 *               densities of the susceptible, infected, and recovered cohorts
+	 * @param unused an unused array (for compatibility with the {@link Payoffs}
+	 *               interface)
+	 * @param change the array to store the changes in the densities of the cohorts
 	 */
 	void getDerivatives(double t, double[] state, double[] unused, double[] change) {
 		change[S] = state[R] * pRS + state[I] * pIS - state[S] * state[I] * pSI;

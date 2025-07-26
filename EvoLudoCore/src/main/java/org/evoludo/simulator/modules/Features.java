@@ -199,6 +199,11 @@ public interface Features {
 		}
 	}
 
+	/**
+	 * All modules that admit multiple species should implement this interface.
+	 * Lotka-Volterra module is an example, see
+	 * {@link org.evoludo.simulator.modules.LV}.
+	 */
 	interface Multispecies extends Features {
 
 		@Override

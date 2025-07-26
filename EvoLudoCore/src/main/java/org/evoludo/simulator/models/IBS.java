@@ -1212,15 +1212,17 @@ public abstract class IBS extends Model {
 	private int nextSpeciesIdx = 0;
 
 	/**
-	 * Pick species for sequential updates, i.e. pick one population after another
-	 * for updating. Extinct populations are skipped.
+	 * Pick next focal species. For a previous focal species with index {@code idx}
+	 * the next focal species is {@code (idx + skip) % nSpecies}. Extinct
+	 * populations are skipped.
 	 * 
+	 * @param skip the number of species to skip
 	 * @return the focal population or <code>null</code> all populations extinct
 	 */
-	private IBSPopulation pickFocalSpecies(int next) {
+	private IBSPopulation pickFocalSpecies(int skip) {
 		if (!isMultispecies)
 			return population;
-		int speciesIdx = nextSpeciesIdx + next;
+		int speciesIdx = nextSpeciesIdx + skip;
 		for (int i = 0; i < nSpecies; i++) {
 			nextSpeciesIdx = (speciesIdx + i) % nSpecies;
 			IBSPopulation pop = species.get(nextSpeciesIdx).getIBSPopulation();

@@ -235,7 +235,7 @@ public interface HasPhase2D {
 		 * Set whether axes of the phase plane are customizable. Optional
 		 * implementation. Axes are fixed by default.
 		 * 
-		 * @param hasFixedAxes
+		 * @param hasFixedAxes {@code true} if axes are fixed
 		 */
 		public default void setFixedAxes(boolean hasFixedAxes) {
 		}

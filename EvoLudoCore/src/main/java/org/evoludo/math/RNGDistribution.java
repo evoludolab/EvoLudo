@@ -1645,10 +1645,26 @@ public abstract class RNGDistribution {
 			return nextHit(weights, random01() * sum);
 		}
 
+		/**
+		 * Static implementation of {@link #nextSum(double[], double)}.
+		 * 
+		 * @param rng     the random number generator
+		 * @param weights the array of weights of the discrete distribution
+		 * @param sum     the sum of all weights
+		 * @return the random integer
+		 */
 		public static int nextSum(MersenneTwister rng, double[] weights, double sum) {
 			return nextHit(weights, rng.nextDouble() * sum);
 		}
 
+		/**
+		 * Helper method for {@link #nextSum(double[], double)} and
+		 * {@link #nextSum(MersenneTwister, double[], double)}.
+		 * 
+		 * @param weights the array of weights of the discrete distribution
+		 * @param hit     the random hit value
+		 * @return the random integer
+		 */
 		static int nextHit(double[] weights, double hit) {
 			int aRand = -1;
 			for (double weight : weights) {
@@ -1693,6 +1709,14 @@ public abstract class RNGDistribution {
 			return nextMax(rng, weights, max);
 		}
 
+		/**
+		 * Static implementation of {@link #nextMax(double[], double)}.
+		 * 
+		 * @param rng     the random number generator
+		 * @param weights the array of weights of the discrete distribution
+		 * @param max     the maximum weight in the array
+		 * @return the random integer
+		 */
 		public static int nextMax(MersenneTwister rng, double[] weights, double max) {
 			int len = weights.length;
 			int aRand = -1;

@@ -145,8 +145,8 @@ public abstract class EvoLudo
 	 * <p>
 	 * <strong>Note:</strong> cannot be <code>static</code> or <code>final</code> to
 	 * allow disabling touch events for debugging (see
-	 * {@link org.evoludo.simulator.EvoLudoGWT#cloGUIFeatures
-	 * EvoLudoGWT.cloGUIFeatures}).
+	 * {@link org.evoludo.simulator.EvoLudoGWT#cloEmulate
+	 * EvoLudoGWT.cloEmulate}).
 	 */
 	public boolean hasTouch = false;
 

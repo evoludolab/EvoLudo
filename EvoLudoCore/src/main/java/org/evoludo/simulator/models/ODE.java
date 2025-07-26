@@ -237,7 +237,7 @@ public class ODE extends Model implements Discrete {
 	 * i.e. normalized states. The dependent trait is the one that gets derived from
 	 * the changes in all others in order to maintain normalization.
 	 * 
-	 * @see HasODE#getDependent()
+	 * @see HasDE#getDependent()
 	 */
 	int[] dependents;
 
@@ -1354,6 +1354,15 @@ public class ODE extends Model implements Discrete {
 		return getStatus(yt);
 	}
 
+	/**
+	 * Returns a string representation of the current state of the model.
+	 * The string contains the trait names and their respective frequencies or
+	 * densities, depending on the type of model. This is a convenience method for
+	 * use by subclasses.
+	 * 
+	 * @param state the current state of the model
+	 * @return a string representation of the current state
+	 */
 	String getStatus(double[] state) {
 		String status = "";
 		int from = 0;

@@ -2881,10 +2881,12 @@ public abstract class IBSPopulation {
 
 	/**
 	 * Process the accumulated {@code score} in this population, taking the
-	 * updating into account.
+	 * updating into account. In heterogeneous networks {@code count} must refer to
+	 * the highest degree for maximum scores and the lowest degree for minimum
+	 * scores.
 	 * 
 	 * @param score the minimum or maximum score
-	 * @param max   {@code true} if score is maximum
+	 * @param count the number of interactions for the score
 	 * @return the processed extremal score
 	 */
 	protected double processScore(double score, int count) {
