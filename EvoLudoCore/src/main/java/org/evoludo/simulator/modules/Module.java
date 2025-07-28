@@ -189,9 +189,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @see EvoLudo#getRNG()
 	 */
 	public Model createModel(Type type) {
-		// differential equations models must implement either pairwise or group interactions
-		if (type.isDE() && !(this instanceof HasDE.DPairs || this instanceof HasDE.DGroups))
-			return null;
 		// default for ODE is RK5, if available
 		if (type == Type.ODE && this instanceof HasDE.RK5)
 			type = Type.RK5;
