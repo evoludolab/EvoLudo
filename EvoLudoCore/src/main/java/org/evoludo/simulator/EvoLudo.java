@@ -145,8 +145,7 @@ public abstract class EvoLudo
 	 * <p>
 	 * <strong>Note:</strong> cannot be <code>static</code> or <code>final</code> to
 	 * allow disabling touch events for debugging (see
-	 * {@link org.evoludo.simulator.EvoLudoGWT#cloEmulate
-	 * EvoLudoGWT.cloEmulate}).
+	 * {@link org.evoludo.simulator.EvoLudoGWT#cloEmulate EvoLudoGWT.cloEmulate}).
 	 */
 	public boolean hasTouch = false;
 
@@ -291,6 +290,10 @@ public abstract class EvoLudo
 		}
 		Model newModel = activeModule.createModel(type);
 		if (newModel == null) {
+			if (activeModel == null) {
+				logger.warning("model type '" + type + "' not supported.");
+				return null;
+			}
 			logger.warning("model type '" + type + "' not found - keeping '" + activeModel.getType() + "'.");
 			return activeModel;
 		}
@@ -1616,7 +1619,7 @@ public abstract class EvoLudo
 		loadModel(type);
 		if (activeModel == null) {
 			if (!helpRequested)
-				logger.severe("Model type '" + type.getKey() + "' not supported!");
+				logger.severe("model type '" + type.getKey() + "' not supported!");
 			return null;
 		}
 		// check if cloOptions contain --verbose
