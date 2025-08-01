@@ -309,7 +309,7 @@ if( data.logy && data.ymin<=0.0 ) data.ymin = 1.0/accuBin;
 	@Override
 	public synchronized boolean getData(HistoData data, int tag) {
 		// check if we need to process data first
-		double now = engine.getModel().getTime();
+		double now = engine.getModel().getUpdates();
 		boolean changed = false;
 //System.out.println("MVDegree - getData: tag="+tag);
 		if( data.timestamp<0.0 || (now-data.timestamp>1e-10 && !isStatic) ) {

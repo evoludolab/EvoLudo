@@ -82,7 +82,7 @@ public class IBSD extends IBS implements Discrete {
 			}
 		}
 		fixData.timeFixed = realtime;
-		fixData.updatesFixed = time;
+		fixData.updatesFixed = updates;
 		fixData.probRead = false;
 		fixData.timeRead = false;
 	}

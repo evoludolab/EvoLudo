@@ -219,7 +219,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 				while (pop.traitsCount[PUNISH] < threshold) {
 					engine.modelNext();
 				}
-				double generation = ibs.getTime();
+				double generation = ibs.getUpdates();
 				t += generation;
 				t2 += generation * generation;
 			}
@@ -239,7 +239,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 			int c = pop.traitsCount[COOPERATE];
 			int d = pop.traitsCount[DEFECT];
 			int l = pop.traitsCount[LONER];
-			double generation = ibs.getTime();
+			double generation = ibs.getUpdates();
 			double t = generation;
 			engine.modelNext();
 			double incr = generation - t;
@@ -265,7 +265,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 				}
 			}
 		}
-		double generation = ibs.getTime();
+		double generation = ibs.getUpdates();
 		double norm = 1.0 / generation;
 		String msg = "# fixation probs\n# \t";
 		for (int n = 0; n < nTraits; n++)
@@ -336,7 +336,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 
 	@Override
 	public synchronized void modelChanged(PendingAction action) {
-		updateStatistics(engine.getModel().getTime());
+		updateStatistics(engine.getModel().getUpdates());
 	}
 
 	@Override
@@ -348,7 +348,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 	 * Start collecting statistics.
 	 */
 	protected void startStatistics() {
-		prevsample = engine.getModel().getTime();
+		prevsample = engine.getModel().getUpdates();
 	}
 
 	/**

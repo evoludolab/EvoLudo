@@ -655,7 +655,7 @@ public class NetGames extends Discrete implements Payoffs,
 		 * Update the mean, minimum, and maximum fitness of individuals.
 		 */
 		public void updateFitnessMean() {
-			double gen = engine.getModel().getTime();
+			double gen = engine.getModel().getUpdates();
 			double p = prevgen >= gen ? 0.0 : prevgen / gen;
 			double q = 1.0 - p;
 			prevgen = gen;

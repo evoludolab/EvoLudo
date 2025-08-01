@@ -421,7 +421,7 @@ public class TBT extends Discrete implements Payoffs,
 				return;
 			}
 
-			double newtime = model.getTime();
+			double newtime = model.getUpdates();
 			if (Math.abs(tsMean - newtime) < model.getTimeStep()) {
 				System.arraycopy(tsTraits, 0, mean, 0, mean.length);
 				return;
@@ -452,7 +452,7 @@ public class TBT extends Discrete implements Payoffs,
 				return;
 			}
 
-			double newtime = model.getTime();
+			double newtime = model.getUpdates();
 			if (Math.abs(tsFit - newtime) < model.getTimeStep()) {
 				System.arraycopy(tsFits, 0, mean, 0, mean.length);
 				return;

@@ -144,7 +144,7 @@ public class MVCTraitHistogram extends MVAbstract implements HistoGraphListener 
 	public boolean getData(HistoData data, int tag) {
 		Model model = engine.getModel();
 		// check if we need to process data first
-		double now = model.getTime();
+		double now = model.getUpdates();
 		if( now-data.timestamp>1e-10 ) {
 			// process data first
 			((org.evoludo.simulator.models.Continuous) model).getTraitHistogramData(0, bins);

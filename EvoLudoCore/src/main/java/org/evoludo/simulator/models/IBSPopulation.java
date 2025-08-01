@@ -1152,7 +1152,7 @@ public abstract class IBSPopulation {
 	protected void debugScores(double hit) {
 		if (!logger.isLoggable(Level.FINE))
 			return;
-		logger.fine("aborted in generation: " + Formatter.format(engine.getModel().getTime(), 2) + "\nscore dump:");
+		logger.fine("aborted in generation: " + Formatter.format(engine.getModel().getUpdates(), 2) + "\nscore dump:");
 		double sum = 0.0;
 		for (int n = 0; n < nPopulation; n++) {
 			double sn = getScoreAt(n);
@@ -3713,7 +3713,7 @@ public abstract class IBSPopulation {
 			}
 		}
 		if (!isConsistent)
-			logger.warning("inconsistency found @ " + engine.getModel().getTime());
+			logger.warning("inconsistency found @ " + engine.getModel().getUpdates());
 	}
 
 	/**

@@ -391,7 +391,7 @@ public abstract class MVAbstract extends JComponent
 	}
 	
 	protected File openSnapshot(String ext) {
-		String pre = module.getKey()+"-"+getFilePrefix()+"-t"+Formatter.format(engine.getModel().getTime(), 2);
+		String pre = module.getKey()+"-"+getFilePrefix()+"-t"+Formatter.format(engine.getModel().getUpdates(), 2);
 		File snapfile = new File(pre+"."+ext);
 		int counter = 0;
 		while( snapfile.exists() ) snapfile = new File(pre+"-"+(counter++)+"."+ext);

@@ -348,7 +348,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 			default:
 				break;
 		}
-		return model.getTime();
+		return model.getUpdates();
 	}
 
 	@Override

@@ -182,7 +182,7 @@ public class S3 extends AbstractView {
 
 	@Override
 	public void update(boolean force) {
-		double newtime = model.getTime();
+		double newtime = model.getUpdates();
 		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
 		for (S3Graph graph : graphs) {
 			if (isNext) {

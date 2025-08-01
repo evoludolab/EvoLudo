@@ -536,7 +536,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			case DYNAMICS:
 				boolean cont = true;
 				while (true) {
-					String time = Formatter.format(model.getTime(), dataDigits);
+					String time = Formatter.format(model.getUpdates(), dataDigits);
 					// report dynamical data
 					for (MultiView.DataTypes data : dataTypes) {
 						switch (data) {
@@ -619,7 +619,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						}
 					}
 					double timeStop = model.getTimeStop();
-					if (!cont || (timeStop > 0.0 && model.getTime() > timeStop))
+					if (!cont || (timeStop > 0.0 && model.getUpdates() > timeStop))
 						break;
 					cont = modelNext();
 				}
@@ -1487,7 +1487,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			template = dir + template;
 		}
 		if (template.contains("%d"))
-			template = String.format(template, (int) activeModel.getTime());
+			template = String.format(template, (int) activeModel.getUpdates());
 		File unique = new File(template);
 		int counter = 0;
 		while (!fileCheck(unique, true) && counter < 100) {
@@ -1609,10 +1609,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		String dir = getExportDir();
 		if (!dir.endsWith(File.separator))
 			dir += File.separator;
-		File snapfile = new File(dir + String.format("evoludo-%d." + ext, (int) activeModel.getTime()));
+		File snapfile = new File(dir + String.format("evoludo-%d." + ext, (int) activeModel.getUpdates()));
 		int counter = 0;
 		while (snapfile.exists() && counter < 1000)
-			snapfile = new File(dir + String.format("evoludo-%d-%d." + ext, (int) activeModel.getTime(), ++counter));
+			snapfile = new File(dir + String.format("evoludo-%d-%d." + ext, (int) activeModel.getUpdates(), ++counter));
 		if (counter >= 1000)
 			return null;
 		return snapfile;

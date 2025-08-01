@@ -550,7 +550,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	 */
 	public Status getStatus() {
 		if (geometry.getType() == Geometry.Type.DYNAMIC && status == Status.HAS_LAYOUT
-				&& Math.abs(engine.getModel().getTime() - timestamp) > 1e-8)
+				&& Math.abs(engine.getModel().getUpdates() - timestamp) > 1e-8)
 			status = Status.ADJUST_LAYOUT;
 		return status;
 	}

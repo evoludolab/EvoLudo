@@ -183,7 +183,7 @@ public class Phase2D extends AbstractView {
 
 	@Override
 	public void update(boolean force) {
-		double newtime = model.getTime();
+		double newtime = model.getUpdates();
 		if (Math.abs(timestamp - newtime) > 1e-8) {
 			model.getMeanTraits(state);
 			graph.addData(newtime, state, force);

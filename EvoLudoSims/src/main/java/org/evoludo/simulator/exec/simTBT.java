@@ -162,7 +162,7 @@ public class simTBT extends TBT implements ChangeListener {
 					converged = engine.modelRelax();
 					model.setTimeRelax(relax);
 				}
-				prevsample = ibs.getTime();
+				prevsample = ibs.getUpdates();
 				if (converged) {
 					// simulations converged already - mean is current state and sdev is zero
 					model.getMeanTraits(getID(), mean);
@@ -181,7 +181,7 @@ public class simTBT extends TBT implements ChangeListener {
 							(int) ((scanDG[1] - scanDG[0]) / scanDG[2] + 1.5));
 				r += scanDG[2];
 			}
-			out.println("# generations @ end: " + Formatter.formatSci(ibs.getTime(), 6));
+			out.println("# generations @ end: " + Formatter.formatSci(ibs.getUpdates(), 6));
 			engine.writeFooter();
 			engine.exportState();
 			return;
@@ -205,7 +205,7 @@ public class simTBT extends TBT implements ChangeListener {
 					engine.modelReset();
 					// relax population
 					converged = engine.modelRelax();
-					prevsample = ibs.getTime();
+					prevsample = ibs.getUpdates();
 					if (converged) {
 						// simulations converged already - mean is current state and sdev is zero
 						model.getMeanTraits(getID(), mean);
@@ -231,7 +231,7 @@ public class simTBT extends TBT implements ChangeListener {
 				}
 				s += scanST[2];
 			}
-			out.println("# generations @ end: " + Formatter.formatSci(ibs.getTime(), 6));
+			out.println("# generations @ end: " + Formatter.formatSci(ibs.getUpdates(), 6));
 			engine.writeFooter();
 			engine.exportState();
 			return;
@@ -248,7 +248,7 @@ public class simTBT extends TBT implements ChangeListener {
 			// relax population
 			converged = engine.modelRelax();
 			// evolve population
-			prevsample = ibs.getTime();
+			prevsample = ibs.getUpdates();
 			double timeStop = model.getTimeStop();
 			if (converged) {
 				// simulations converged already - mean is current state and sdev is zero
@@ -292,7 +292,7 @@ public class simTBT extends TBT implements ChangeListener {
 		for (int n = 0; n < nTraits; n++)
 			msg += Formatter.format(meanmean[n] / nRuns, 6) + "\t" + Formatter.format(meanvar[n] / nRuns, 6) + "\t";
 		out.println(msg);
-		out.println("# generations @ end: " + Formatter.formatSci(ibs.getTime(), 6));
+		out.println("# generations @ end: " + Formatter.formatSci(ibs.getUpdates(), 6));
 		engine.writeFooter();
 		engine.exportState();
 	}
@@ -309,7 +309,7 @@ public class simTBT extends TBT implements ChangeListener {
 
 	@Override
 	public synchronized void modelChanged(PendingAction pending) {
-		double generation = ibs.getTime();
+		double generation = ibs.getUpdates();
 		if (model.isRelaxing() || prevsample >= generation) {
 			return;
 		}
@@ -327,7 +327,7 @@ public class simTBT extends TBT implements ChangeListener {
 
 	@Override
 	public synchronized void modelStopped() {
-		double generation = ibs.getTime();
+		double generation = ibs.getUpdates();
 		if (model.isRelaxing() || prevsample >= generation) {
 			return;
 		}
@@ -478,7 +478,7 @@ public class simTBT extends TBT implements ChangeListener {
 						+ Formatter.format(getPayoff(COOPERATE, DEFECT), 2) + "T"
 						+ Formatter.format(getPayoff(DEFECT, COOPERATE), 2) + "P"
 						+ Formatter.format(getPayoff(DEFECT, DEFECT), 2))
-				+ "-t" + Formatter.format(engine.getModel().getTime(), 2);
+				+ "-t" + Formatter.format(engine.getModel().getUpdates(), 2);
 		File snapfile = new File(pre + "." + ext);
 		int counter = 0;
 		while (snapfile.exists())

@@ -576,7 +576,7 @@ public abstract class EvoLudo
 			// note: unloading a running simulation clears activeModel
 			if (activeModel == null)
 				return;
-			logger.fine("CPU time: " + time + " @ " + Formatter.format(activeModel.getTime(), 3) + ", mean  "
+			logger.fine("CPU time: " + time + " @ " + Formatter.format(activeModel.getUpdates(), 3) + ", mean  "
 					+ Formatter.formatFix(cpuMean, 2) + " +/- "
 					+ Formatter.formatFix(Math.sqrt(cpuVar / (cpuSamples - 1)), 2));
 		}

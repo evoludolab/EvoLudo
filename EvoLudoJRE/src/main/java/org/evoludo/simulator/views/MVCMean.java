@@ -151,7 +151,7 @@ public class MVCMean extends MVAbstract implements StateGraphListener {
 	@Override
 	public void getData(StateData data, int tag) {
 		Model model = engine.getModel();
-		data.time = model.getTime();
+		data.time = model.getUpdates();
 		data.connect = model.getMeanTraits(tag, mean);
 		int idx = 2*tag;
 		double m = mean[idx];

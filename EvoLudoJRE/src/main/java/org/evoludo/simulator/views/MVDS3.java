@@ -85,7 +85,7 @@ public class MVDS3 extends MVAbstract implements StateGraphListener {
 	@Override
 	public void getData(StateData data, int tag) {
 		Model model = engine.getModel();
-		data.time = model.getTime();
+		data.time = model.getUpdates();
 		if( data.isLocal ) {
 			System.arraycopy(model.getMeanTraitAt(tag, localNode), 0, data.state, 0, data.state.length);
 			data.connect = model.isConnected();

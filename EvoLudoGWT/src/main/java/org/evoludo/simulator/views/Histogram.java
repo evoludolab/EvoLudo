@@ -688,7 +688,7 @@ if (maxBins < 0) maxBins = 100;
 		if (!isActive && !doStatistics)
 			return;
 
-		double newtime = model.getTime();
+		double newtime = model.getUpdates();
 		if (Math.abs(timestamp - newtime) > 1e-8) {
 			timestamp = newtime;
 			Type mt = model.getType();

@@ -137,7 +137,7 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 				msg += Formatter.format(fix[n][m] / sum, 4) + "\t";
 			out.println(msg + "(count: " + (int) sum + ")");
 		}
-		double generation = ibs.getTime();
+		double generation = ibs.getUpdates();
 		msg = "# long-term average:      ";
 		for (int n = 0; n < nTraits; n++)
 			msg += Formatter.formatFix(mean[n], 6) + "\t" + Formatter.format(Math.sqrt(var[n] / (generation - 1.0)), 6)
@@ -161,7 +161,7 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 
 	@Override
 	public synchronized void modelChanged(PendingAction action) {
-		updateStatistics(model.getTime());
+		updateStatistics(model.getUpdates());
 	}
 
 	@Override
@@ -173,7 +173,7 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 	 * Start collecting statistics.
 	 */
 	protected void startStatistics() {
-		prevsample = model.getTime();
+		prevsample = model.getUpdates();
 	}
 
 	/**
@@ -270,7 +270,7 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 	 * @return the file for the snapshot
 	 */
 	protected File openSnapshot(String ext) {
-		String pre = getKey() + "-t" + Formatter.format(engine.getModel().getTime(), 2);
+		String pre = getKey() + "-t" + Formatter.format(engine.getModel().getUpdates(), 2);
 		File snapfile = new File(pre + "." + ext);
 		int counter = 0;
 		while (snapfile.exists())

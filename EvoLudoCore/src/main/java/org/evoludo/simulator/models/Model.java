@@ -194,27 +194,57 @@ public abstract class Model implements CLOProvider {
 	protected RNGDistribution rng;
 
 	/**
-	 * Keeps track of the time elapsed. Time is measured in number of generations.
-	 * In IBS models this corresponds to one Monte-Carlo step, such that in a
-	 * population of size <code>N</code> one generation corresponds to
-	 * <code>N</code> updates, which translates to <code>N</code> events (birth,
-	 * death, imitation, etc.).
+	 * Keeps track of the time elapsed, measured based on the rates with which
+	 * events occur. This is the natural unit of time for differential equation
+	 * model. However, in individual based simulations a simpler measure of time
+	 * based on the number of updates is often used. This amounts to a convenient
+	 * measure of time in terms of generations. However, in populations of variable
+	 * size the notion of one generation is hard to define or keeps changing over
+	 * time.
 	 * 
 	 * <strong>Notes:</strong>
 	 * <ol>
-	 * <li><code>generation==0</code> after {@link #reset()} and at the beginning of
+	 * <li><code>time==0</code> after {@link #reset()} and at the beginning of
 	 * a simulation run.
-	 * <li><code>generation</code> is incremented <em>before</em> the next event is
+	 * <li><code>time</code> is incremented <em>before</em> the next event is
 	 * processed, to reflect the time at which the event occurs.
-	 * <li>generally differs from 'real time'.
+	 * <li>generally differs from number of updates.
 	 * <li>may be negative for models that admit time reversal (e.g. integrating ODE
 	 * backwards).
+	 * <li>models may implement only one time measure.
+	 * <li>setting {@code time = Double.POSITIVE_INFINITY} disables time measured
+	 * in terms of updates.
 	 * </ol>
 	 * 
+	 * @see #updates
 	 * @see #permitsTimeReversal()
-	 * @see IBS#realtime
+	 * @see IBS#pickFocalSpecies()
 	 */
-	protected double time = -1.0;
+	protected double time = Double.POSITIVE_INFINITY;
+
+	/**
+	 * Keeps track of the time elapsed, measured in number of updates. One unit of
+	 * time corresponds to one generation or one Monte-Carlo step, such that in a
+	 * population of size <code>N</code> one generation corresponds to
+	 * <code>N</code> updates, which translates to <code>N</code> events (birth,
+	 * death, imitation, etc.). Not all models may use this time measure, but
+	 * it is a common convention in individual-based simulations.
+	 * 
+	 * <strong>Notes:</strong>
+	 * <ol>
+	 * <li><code>updates==0</code> after {@link #reset()} and at the beginning of
+	 * a simulation run.
+	 * <li><code>updates</code> is incremented <em>before</em> the next event is
+	 * processed, to reflect the time at which the event occurs.
+	 * <li>generally differs from 'real time'.
+	 * <li>models may implement only one time measure.
+	 * <li>setting {@code updates = Double.POSITIVE_INFINITY} disables time measured
+	 * in terms of updates.
+	 * </ol>
+	 * 
+	 * @see #time
+	 */
+	protected double updates = Double.POSITIVE_INFINITY;
 
 	/**
 	 * Short-cut to the list of species modules. Convenience field.
@@ -309,7 +339,7 @@ public abstract class Model implements CLOProvider {
 	 * @see MilestoneListener#modelDidReset()
 	 */
 	public void reset() {
-		time = 0.0;
+		updates = 0.0;
 	}
 
 	/**
@@ -318,7 +348,7 @@ public abstract class Model implements CLOProvider {
 	 * @see MilestoneListener#modelDidInit()
 	 */
 	public void init() {
-		time = 0.0;
+		updates = 0.0;
 		converged = false;
 	}
 
@@ -369,10 +399,10 @@ public abstract class Model implements CLOProvider {
 	public boolean relax() {
 		if (hasConverged())
 			return true;
-		if (timeRelax > 0.0 && time < timeRelax) {
+		if (timeRelax > 0.0 && updates < timeRelax) {
 			isRelaxing = true;
 			double rf = timeStep;
-			timeStep = timeRelax - time;
+			timeStep = timeRelax - updates;
 			next();
 			timeStep = rf;
 			isRelaxing = false;
@@ -749,19 +779,42 @@ public abstract class Model implements CLOProvider {
 	public String getCounter() {
 		if (mode == Mode.STATISTICS_SAMPLE) {
 			int failed = getNStatisticsFailed();
-			return "samples: " + getNStatisticsSamples() + (failed > 0 ? " (failed: " + failed + ")" : "");
+			return "Samples: " + getNStatisticsSamples() + (failed > 0 ? " (failed: " + failed + ")" : "");
 		}
-		return "time: " + Formatter.format(getTime(), 2);
+		String counter;
+		if (updates != Double.POSITIVE_INFINITY) {
+			counter = "Updates: " + Formatter.format(updates, 2) + " ";
+			if (time != Double.POSITIVE_INFINITY)
+				counter += "(Time: " + Formatter.format(time, 2) + ")";
+		} else {
+			counter = "Time: " + Formatter.format(time, 2) + " ";
+		}
+		return counter;
 	}
 
 	/**
 	 * Gets the elapsed time in model. Time is measured in generations.
 	 * 
-	 * @return elapsed time
+	 * @return the elapsed time in generations
+	 * 
+	 * @see #updates
+	 */
+	public double getUpdates() {
+		if (updates == Double.POSITIVE_INFINITY)
+			return time;
+		return updates;
+	}
+
+	/**
+	 * Gets the elapsed time in model. Time is measured on the rates at which events happen.
+	 * 
+	 * @return the elapsed time based on rates of events
 	 * 
 	 * @see #time
 	 */
 	public double getTime() {
+		if (time == Double.POSITIVE_INFINITY)
+			return updates;
 		return time;
 	}
 
@@ -1081,14 +1134,14 @@ public abstract class Model implements CLOProvider {
 		// timeStop and timeRelax can be positive or negative
 		if (isTimeReversed()) {
 			// time is 'decreasing' find next smaller milestone
-			double halt = timeStop < time ? timeStop : Double.NEGATIVE_INFINITY;
-			double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax < time) ? timeRelax
+			double halt = timeStop < updates ? timeStop : Double.NEGATIVE_INFINITY;
+			double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax < updates) ? timeRelax
 					: Double.NEGATIVE_INFINITY;
 			return Math.max(halt, relax);
 		}
 		// time is 'increasing'
-		double halt = timeStop > time ? timeStop : Double.POSITIVE_INFINITY;
-		double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax > time) ? timeRelax : Double.POSITIVE_INFINITY;
+		double halt = timeStop > updates ? timeStop : Double.POSITIVE_INFINITY;
+		double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax > updates) ? timeRelax : Double.POSITIVE_INFINITY;
 		return Math.min(halt, relax);
 	}
 

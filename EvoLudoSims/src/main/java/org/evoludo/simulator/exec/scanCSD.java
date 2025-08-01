@@ -261,9 +261,9 @@ public class scanCSD extends CSD {
 
 						// evolve population
 						engine.modelRelax();
-						while (model.getTime() < timeStop) {
+						while (model.getUpdates() < timeStop) {
 							engine.modelNext();
-							int g = (int) model.getTime();
+							int g = (int) model.getUpdates();
 							if (snapinterval > 0 && g % snapinterval == 0) {
 								// save snapshot
 								saveSnapshot();
@@ -357,7 +357,7 @@ public class scanCSD extends CSD {
 
 						// print results
 						// "# b1 b2 c1 c2 mean sdev type"
-						out.println((int) model.getTime() + "\t" + Formatter.format(bparams[0], 4) + "\t"
+						out.println((int) model.getUpdates() + "\t" + Formatter.format(bparams[0], 4) + "\t"
 								+ Formatter.format(bparams[1], 4) + "\t" +
 								Formatter.format(cparams[0], 4) + "\t" + Formatter.format(cparams[1], 4) + "\t" +
 								msg);
@@ -436,7 +436,7 @@ public class scanCSD extends CSD {
 	public void printState(double[] stat, double[] low) {
 		double[] bins = new double[nBins + 1];
 		double scale = nBins;
-		String msg = "# " + (int) engine.getModel().getTime() + ":";
+		String msg = "# " + (int) engine.getModel().getUpdates() + ":";
 		if (low != null) {
 			int nSamples = low.length;
 			double incr = 1.0 / nSamples;
@@ -810,7 +810,7 @@ public class scanCSD extends CSD {
 		// use name of out file as prefix for snapshot - not easily accessible,
 		// postponed
 		String pre = "snap-g" + geom.getType().getKey() + (int) (geom.connectivity) + "-t"
-				+ Formatter.format(engine.getModel().getTime(), 2) +
+				+ Formatter.format(engine.getModel().getUpdates(), 2) +
 				"-n" + Formatter.format(playerUpdate.getNoise(), 3);
 		File snapfile = new File(pre + "." + ext);
 		int counter = 0;

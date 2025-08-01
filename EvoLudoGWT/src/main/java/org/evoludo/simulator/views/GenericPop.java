@@ -217,7 +217,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 		Type mt = model.getType();
 		if (mt.isIBS() || mt.isPDE()) {
 			// always read data - some nodes may have changed due to user actions
-			double newtime = model.getTime();
+			double newtime = model.getUpdates();
 			boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
 			timestamp = newtime;
 			for (G graph : graphs) {

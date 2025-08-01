@@ -119,10 +119,10 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 		double[] mean = new double[totTraits + 1];
 		model.getMeanTraits(mean);
 		System.arraycopy(mean, 0, mean, 1, totTraits);
-		data.time = model.getTime();
+		data.time = model.getUpdates();
 		mean[0] = data.time;
 		Point2D now = new Point2D();
-		data.time = model.getTime();
+		data.time = model.getUpdates();
 		data.connect = map.data2Phase(mean, now);
 		data.now.setLocation(now.x, 1.0-now.y);
 	}

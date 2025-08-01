@@ -203,7 +203,7 @@ public class simCDL extends CDL implements ChangeListener {
 							// stable mixed state
 							ArrayMath.add(fixprob[c][d], state);
 						// running average of absorption/convergence time
-						double time = engine.getModel().getTime();
+						double time = engine.getModel().getUpdates();
 						if (timeStop > 0 && Math.abs(time - timeStop) < 1e-8)
 							// emergency brake triggered
 							abstime[c][d] = Double.POSITIVE_INFINITY;
@@ -271,7 +271,7 @@ public class simCDL extends CDL implements ChangeListener {
 					Arrays.fill(var, 0.0);
 				}
 				String msg = Formatter.format(a, 4) + "\t" + Formatter.format(r, 4);
-				double time = Math.max(engine.getModel().getTime(), timeStop);
+				double time = Math.max(engine.getModel().getUpdates(), timeStop);
 				for (int n = 0; n < nTraits; n++)
 					msg += "\t" + Formatter.format(mean[n], 6) + "\t"
 							+ Formatter.format(Math.sqrt(var[n] / (time - timeRelax - 1.0)), 6);
@@ -300,7 +300,7 @@ public class simCDL extends CDL implements ChangeListener {
 
 	@Override
 	public synchronized void modelChanged(PendingAction action) {
-		updateStatistics(engine.getModel().getTime());
+		updateStatistics(engine.getModel().getUpdates());
 	}
 
 	@Override
@@ -312,7 +312,7 @@ public class simCDL extends CDL implements ChangeListener {
 	 * Start collecting statistics.
 	 */
 	protected void startStatistics() {
-		prevsample = engine.getModel().getTime();
+		prevsample = engine.getModel().getUpdates();
 	}
 
 	/**

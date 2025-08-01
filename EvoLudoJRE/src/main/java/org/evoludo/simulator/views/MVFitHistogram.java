@@ -178,7 +178,7 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
     @Override
 	public boolean getData(HistoData data, int tag) {
 		// check if we need to process data first
-		double now = engine.getModel().getTime();
+		double now = engine.getModel().getUpdates();
 		if( now-data.timestamp>1e-10 ) {
 			// process data first
 			// for neutral selection we have minScore==maxScore in that case Population/DPopulation

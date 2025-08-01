@@ -216,7 +216,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 	@Override
 	public void update(boolean force) {
 		// always read data - some nodes may have changed due to user actions
-		double newtime = model.getTime();
+		double newtime = model.getUpdates();
 		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
 		timestamp = newtime;
 		for (PopGraph2D graph : graphs) {

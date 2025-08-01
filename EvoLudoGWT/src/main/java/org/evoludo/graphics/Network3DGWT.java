@@ -334,7 +334,7 @@ public class Network3DGWT extends Network3D {
 			finishLayout();
 			setStatus(Status.HAS_LAYOUT);
 			isRunning = false;
-			timestamp = engine.getModel().getTime();
+			timestamp = engine.getModel().getUpdates();
 			listener.layoutComplete();
 			return false;
 		}

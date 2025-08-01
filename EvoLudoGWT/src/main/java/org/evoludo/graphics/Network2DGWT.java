@@ -155,7 +155,7 @@ public class Network2DGWT extends Network2D {
 			Model model = engine.getModel();
 			if (model == null)
 				return false;
-			timestamp = model.getTime();
+			timestamp = model.getUpdates();
 			listener.layoutComplete();
 			return false;
 		}

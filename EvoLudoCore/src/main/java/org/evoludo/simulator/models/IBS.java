@@ -686,14 +686,14 @@ public abstract class IBS extends Model {
 			// skip time to next event
 			int dt = distrMutation.next();
 			// XXX this can easily skip past requested stops - ignore?
-			time += dt * unit;
+			updates += dt * unit;
 			realtime += RNGDistribution.Exponential.next(rng.getRNG(), dt * realunit);
 			population.resetTraits();
 			update();
 			// communicate update
 			engine.fireModelChanged();
 			realtime += realunit;
-			time += unit;
+			updates += unit;
 			// introduce mutation uniformly at random
 			population.mutateAt(random0n(nPop));
 			return true;
@@ -701,7 +701,7 @@ public abstract class IBS extends Model {
 		double nextHalt = getNextHalt();
 		// continue if milestone reached in previous step, i.e. deltat < 1e-8
 		double step = timeStep;
-		double incr = Math.abs(nextHalt - time);
+		double incr = Math.abs(nextHalt - updates);
 		if (incr < 1e-8)
 			return false;
 		step = Math.min(step, incr);
@@ -716,7 +716,7 @@ public abstract class IBS extends Model {
 		// multi-species modules with different population sizes or different
 		// update rates.
 		double minIncr = 1.0 / species.get(0).getNPopulation();
-		return (Math.abs(nextHalt - time) >= minIncr);
+		return (Math.abs(nextHalt - updates) >= minIncr);
 	}
 
 	/**
@@ -763,7 +763,7 @@ public abstract class IBS extends Model {
 			for (int f = 0; f < nUpdates; f++) {
 				// advance time and real time (if possible)
 				realtime = (scoreTot <= 1e-8 ? Double.POSITIVE_INFINITY : realtime + nPopTot * popFrac / scoreTot);
-				time += popFrac;
+				updates += popFrac;
 				// update populations
 				for (Module mod : species) {
 					IBSPopulation pop = mod.getIBSPopulation();
@@ -816,7 +816,7 @@ public abstract class IBS extends Model {
 		// long relaxation times). switching to long is not an option because of GWT!
 		double dUpdates = Math.max(1.0, Math.ceil(stepDt / gincr - 1e-8));
 		double stepDone = 0.0;
-		double gStart = time;
+		double gStart = updates;
 		updates:
 		while (dUpdates >= 1.0) {
 			double stepSize = 0.0;
@@ -848,10 +848,10 @@ public abstract class IBS extends Model {
 					continue;
 				}
 				if (debugFocalSpecies.getPopulationUpdate().getType() == PopulationUpdate.Type.ONCE) {
-					time++;
+					updates++;
 					n += debugFocalSpecies.getModule().getNPopulation();
 				} else {
-					time += gincr;
+					updates += gincr;
 				}
 				converged = true;
 				if (dt > 0 && realtime < Double.POSITIVE_INFINITY)
@@ -866,13 +866,13 @@ public abstract class IBS extends Model {
 				if (converged) {
 					stepSize = n * gincr;
 					stepDone += Math.abs(stepSize);
-					time = gStart + Math.abs(stepDone);
+					updates = gStart + Math.abs(stepDone);
 					break updates;
 				}
 			}
 			stepSize = nUpdates * gincr;
 			stepDone += Math.abs(stepSize);
-			time = gStart + Math.abs(stepDone);
+			updates = gStart + Math.abs(stepDone);
 			dUpdates = (stepDt - stepDone) / gincr;
 		}
 		for (Module mod : species) {
@@ -2026,7 +2026,7 @@ public abstract class IBS extends Model {
 
 	@Override
 	public void encodeState(StringBuilder plist) {
-		plist.append(Plist.encodeKey("Generation", getTime()));
+		plist.append(Plist.encodeKey("Generation", getUpdates()));
 		plist.append(Plist.encodeKey("Realtime", getRealtime()));
 		plist.append(Plist.encodeKey("Model", type.toString()));
 		boolean isMultiSpecies = (species.size() > 1);
@@ -2045,7 +2045,7 @@ public abstract class IBS extends Model {
 
 	@Override
 	public boolean restoreState(Plist plist) {
-		time = (Double) plist.get("Generation");
+		updates = (Double) plist.get("Generation");
 		realtime = (Double) plist.get("Realtime");
 		connect = false;
 		boolean success = true;

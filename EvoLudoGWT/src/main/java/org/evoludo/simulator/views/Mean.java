@@ -264,7 +264,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 
 	@Override
 	public void update(boolean force) {
-		double newtime = model.getTime();
+		double newtime = model.getUpdates();
 		Module module = null;
 		boolean cmodel = model.isContinuous();
 		if (Math.abs(timestamp - newtime) > 1e-8) {

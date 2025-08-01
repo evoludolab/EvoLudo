@@ -321,7 +321,7 @@ public class EvoLudoGWT extends EvoLudo {
 		// model may already have been unloaded
 		if (activeModel == null)
 			return;
-		double time = activeModel.getTime();
+		double time = activeModel.getUpdates();
 		double timeStep = activeModel.getTimeStep();
 		Mode mode = activeModel.getMode();
 		if ((mode == Mode.STATISTICS_SAMPLE

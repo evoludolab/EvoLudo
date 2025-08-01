@@ -253,7 +253,7 @@ public class DemesTBT extends TBT {
 
 		@Override
 		public String getStatus() {
-			double gen = engine.getModel().getTime();
+			double gen = engine.getModel().getUpdates();
 			return super.getStatus() + ", pure: "
 					+ (gen > 0.0 ? Formatter.formatPercent((pure[DemesTBT.COOPERATE] + pure[DemesTBT.DEFECT]) / gen, 1)
 							: "0.0%");
@@ -389,7 +389,7 @@ public class DemesTBT extends TBT {
 
 		@Override
 		public synchronized void modelChanged(PendingAction pending) {
-			updateStatistics(engine.getModel().getTime());
+			updateStatistics(engine.getModel().getUpdates());
 		}
 
 		@Override
@@ -406,7 +406,7 @@ public class DemesTBT extends TBT {
 		 * Start collecting statistics.
 		 */
 		protected void startStatistics() {
-			prevsample = engine.getModel().getTime();
+			prevsample = engine.getModel().getUpdates();
 		}
 
 		/**
