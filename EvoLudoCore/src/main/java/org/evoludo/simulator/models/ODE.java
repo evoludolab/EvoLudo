@@ -1788,8 +1788,7 @@ public class ODE extends Model implements Discrete {
 
 	@Override
 	public void encodeState(StringBuilder plist) {
-		plist.append(Plist.encodeKey("Model", type.toString()));
-		plist.append(Plist.encodeKey("Time", time));
+		super.encodeState(plist);
 		plist.append(Plist.encodeKey("Dt", dt));
 		plist.append(Plist.encodeKey("Forward", forward));
 		plist.append(Plist.encodeKey("AdjustedDynamics", isAdjustedDynamics));
@@ -1800,8 +1799,8 @@ public class ODE extends Model implements Discrete {
 
 	@Override
 	public boolean restoreState(Plist plist) {
+		super.restoreState(plist);
 		boolean success = true;
-		time = (Double) plist.get("Time");
 		dt = (Double) plist.get("Dt");
 		forward = (Boolean) plist.get("Forward");
 		isAdjustedDynamics = (Boolean) plist.get("AdjustedDynamics");

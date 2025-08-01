@@ -1384,7 +1384,10 @@ public abstract class Model implements CLOProvider {
 	 * @see org.evoludo.util.Plist
 	 * @see org.evoludo.util.XMLCoder
 	 */
-	public abstract void encodeState(StringBuilder plist);
+	public void encodeState(StringBuilder plist) {
+		plist.append(Plist.encodeKey("Time", time));
+		plist.append(Plist.encodeKey("Model", type.toString()));
+	}
 
 	/**
 	 * Restore the state encoded in the <code>plist</code> inspired <code>map</code>
@@ -1397,5 +1400,9 @@ public abstract class Model implements CLOProvider {
 	 * @see org.evoludo.util.PlistReader
 	 * @see org.evoludo.util.PlistParser
 	 */
-	public abstract boolean restoreState(Plist map);
+	public boolean restoreState(Plist plist) {
+		time = (Double) plist.get("Time");
+		// note: model type already read, otherwise we wouldn't be here
+		return true;
+	}
 }

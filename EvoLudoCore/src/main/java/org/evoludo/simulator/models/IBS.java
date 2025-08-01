@@ -1991,9 +1991,8 @@ public abstract class IBS extends Model {
 
 	@Override
 	public void encodeState(StringBuilder plist) {
-		plist.append(Plist.encodeKey("Generation", getUpdates()));
-		plist.append(Plist.encodeKey("Realtime", getTime()));
-		plist.append(Plist.encodeKey("Model", type.toString()));
+		super.encodeState(plist);
+		plist.append(Plist.encodeKey("Generation", updates));
 		boolean isMultiSpecies = (species.size() > 1);
 		for (Module mod : species) {
 			IBSPopulation pop = mod.getIBSPopulation();
@@ -2010,8 +2009,8 @@ public abstract class IBS extends Model {
 
 	@Override
 	public boolean restoreState(Plist plist) {
+		super.restoreState(plist);
 		updates = (Double) plist.get("Generation");
-		time = (Double) plist.get("Realtime");
 		connect = false;
 		boolean success = true;
 		if (species.size() > 1) {
