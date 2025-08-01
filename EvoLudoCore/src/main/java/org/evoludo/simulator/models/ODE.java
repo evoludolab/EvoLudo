@@ -1759,13 +1759,16 @@ public class ODE extends Model implements Discrete {
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
-		parser.addCLO(cloAdjustedDynamics);
+		Module mod = species.get(0);
+		if (mod instanceof Payoffs)
+			// adjusted dynamics only make sense if individuals have fitness
+			parser.addCLO(cloAdjustedDynamics);
 		parser.addCLO(cloDEAccuracy);
 		parser.addCLO(cloDEdt);
 		parser.addCLO(cloInit);
 		cloInit.clearKeys();
 		cloInit.addKeys(InitType.values());
-		if (!(species.get(0) instanceof HasDE.DualDynamics)) {
+		if (!(mod instanceof HasDE.DualDynamics)) {
 			if (isDensity) {
 				// remove frequency specific initialization options
 				cloInit.removeKey(InitType.RANDOM);
