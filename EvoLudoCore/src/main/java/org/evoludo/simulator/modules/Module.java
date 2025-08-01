@@ -331,7 +331,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		engine.removeMilestoneListener(this);
 		if (this instanceof ChangeListener)
 			engine.removeChangeListener((ChangeListener) this);
-		ibs = null;
+		ibspop = null;
 		interaction = null;
 		competition = null;
 		structure = null;
@@ -425,7 +425,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * The field point to the IBSPopulation that represents this module in
 	 * individual based simulations. {@code null} for all other model types.
 	 */
-	IBSPopulation ibs;
+	IBSPopulation ibspop;
 
 	/**
 	 * Sets the reference to the IBSPopulation that represents this module in
@@ -434,7 +434,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @param ibs the individual based population
 	 */
 	public void setIBSPopulation(IBSPopulation ibs) {
-		this.ibs = ibs;
+		this.ibspop = ibs;
 	}
 
 	/**
@@ -444,7 +444,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @return the IBSPopulation that represents this module or {@code null}
 	 */
 	public IBSPopulation getIBSPopulation() {
-		return ibs;
+		return ibspop;
 	}
 
 	/**

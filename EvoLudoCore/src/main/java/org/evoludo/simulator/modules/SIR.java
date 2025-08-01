@@ -30,9 +30,11 @@
 package org.evoludo.simulator.modules;
 
 import java.awt.Color;
+import java.util.Arrays;
 
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model;
@@ -86,9 +88,10 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	final static int R = 2;
 
 	/**
-	 * The transition probability/rate for susceptibles to infected, S -> I.
+	 * The transition probability/rate for susceptibles to infected, S -> I,
+	 * including seasonal variation {@code pSI = pSI[0] + pSI[1] cos(pSI[2] t)}.
 	 */
-	double pSI = 1.0;
+	double[] pSI = new double[] { 1.0, 0.0, 0.0 };
 
 	/**
 	 * The transition probability/rate for infected to recovered, I -> R.
@@ -142,19 +145,32 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 		return I;
 	}
 
+	private static final double TWOPI = 2.0 * Math.PI;
+
 	/**
 	 * Command line option to set the transition probability for S -> I.
 	 */
 	public final CLOption cloInfect = new CLOption("infect", "1.0", Category.Module,
-			"--infect <i>    S -> I", new CLODelegate() {
+			"--infect <β,[A,ω]>  S -> I, β+A cos(2π ω t)", new CLODelegate() {
 
 				@Override
 				public boolean parse(String arg) {
-					double s2i = CLOParser.parseDouble(arg);
+					double[] s2i = CLOParser.parseVector(arg);
 					boolean isIBS = engine.getModel().getType().isIBS();
-					if (isIBS && (s2i < 0.0 || s2i > 1.0))
-						return false;
-					pSI = s2i;
+					Arrays.fill(pSI, 0.0);
+					switch (s2i.length) {
+						case 3:
+							pSI[2] = s2i[2];
+							pSI[1] = TWOPI * s2i[1];
+							//$FALL-THROUGH$
+						case 1:
+							if (isIBS && (s2i[0] < 0.0 || s2i[0] > 1.0))
+								return false;
+							pSI[0] = s2i[0];
+							break;
+						default:
+							return false;
+					}
 					return true;
 				}
 			});
@@ -237,8 +253,12 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	 * @param change the array to store the changes in the densities of the cohorts
 	 */
 	void getDerivatives(double t, double[] state, double[] unused, double[] change) {
-		change[S] = state[R] * pRS + state[I] * pIS - state[S] * state[I] * pSI;
-		change[I] = state[S] * state[I] * pSI - state[I] * (pIR + pIS);
+		double psi1 = pSI[1];
+		double psi = pSI[0];
+		if (psi1 > 0.0 )
+			psi += psi1 * Math.cos(pSI[2] * t);
+		change[S] = state[R] * pRS + state[I] * pIS - state[S] * state[I] * psi;
+		change[I] = state[S] * state[I] * psi - state[I] * (pIR + pIS);
 		change[R] = state[I] * pIR - state[R] * pRS;
 	}
 
@@ -326,10 +346,17 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	public class IBSPop extends IBSDPopulation {
 
 		/**
+		 * The individual based simulation model for SIR. Convenience variable to avoid
+		 * casts when retrieving the elapsed time with {@code getRealtime()}.
+		 */
+		IBS ibs;
+
+		/**
 		 * Constructor for SIR population.
 		 */
 		protected IBSPop() {
 			super(SIR.this.engine, SIR.this);
+			ibs = (IBS) model;
 		}
 
 		@Override
@@ -340,9 +367,13 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 					int nI = 0;
 					for (int n = 0; n < rGroupSize; n++) {
 						if ((getTraitAt(refGroup[n])) == I)
-							nI++; // short for nI = nI + 1
+							nI++;
 					}
-					if (nI > 0 && random01() > Combinatorics.pow(1.0 - pSI, nI))
+					double psi1 = pSI[1];
+					double psi = pSI[0];
+					if (psi1 > 0.0 )
+						psi += psi1 * Math.cos(pSI[2] * ibs.getRealtime());
+					if (nI > 0 && random01() > Combinatorics.pow(1.0 - psi, nI))
 						return setNextTraitAt(me, I);
 					break;
 				case I: // I -> R transition
