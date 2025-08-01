@@ -87,10 +87,10 @@
             </goals>
             <phase>clean</phase>
             <configuration>
-              <file>${basedir}/lib/gwt-user-ePub-2.11.0.jar</file>
+              <file>${basedir}/lib/gwt-user-epub-2.12.2.jar</file>
               <groupId>org.evoludo</groupId>
               <artifactId>gwt-user-epub</artifactId>
-              <version>2.11.0</version>
+              <version>2.12.2</version>
               <packaging>jar</packaging>
               <generatePom>true</generatePom>
             </configuration>
