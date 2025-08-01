@@ -197,10 +197,13 @@ public abstract class Model implements CLOProvider {
 	 * Keeps track of the time elapsed, measured based on the rates with which
 	 * events occur. This is the natural unit of time for differential equation
 	 * model. However, in individual based simulations a simpler measure of time
-	 * based on the number of updates is often used. This amounts to a convenient
-	 * measure of time in terms of generations. However, in populations of variable
-	 * size the notion of one generation is hard to define or keeps changing over
-	 * time.
+	 * based on the number of generations is often used. However, in populations of
+	 * variable size the notion of one generation is hard to define or keeps
+	 * changing over time. This measure takes the size of the population as well as
+	 * the fitness of its members into account. For example, less time passes
+	 * between reproductive events in large populations with high fitness, while
+	 * more time passes in small populations with low fitness because there are
+	 * fewer reproduction events per unit time.
 	 * 
 	 * <strong>Notes:</strong>
 	 * <ol>
@@ -211,6 +214,8 @@ public abstract class Model implements CLOProvider {
 	 * <li>generally differs from number of updates.
 	 * <li>may be negative for models that admit time reversal (e.g. integrating ODE
 	 * backwards).
+	 * <li>for modules that implement {@code Payoffs} non-negative individual scores
+	 * are required.
 	 * <li>models may implement only one time measure.
 	 * <li>setting {@code time = Double.POSITIVE_INFINITY} disables time measured
 	 * in terms of updates.
@@ -340,6 +345,7 @@ public abstract class Model implements CLOProvider {
 	 */
 	public void reset() {
 		updates = 0.0;
+		time = 0.0;
 	}
 
 	/**
@@ -349,6 +355,7 @@ public abstract class Model implements CLOProvider {
 	 */
 	public void init() {
 		updates = 0.0;
+		time = 0.0;
 		converged = false;
 	}
 
@@ -399,10 +406,13 @@ public abstract class Model implements CLOProvider {
 	public boolean relax() {
 		if (hasConverged())
 			return true;
-		if (timeRelax > 0.0 && updates < timeRelax) {
+		// note: use getUpdates to ensure relaxation works for all models. 
+		// DE models may not have an update count but have time
+		double updt = getUpdates();
+		if (timeRelax > 0.0 && updt < timeRelax) {
 			isRelaxing = true;
 			double rf = timeStep;
-			timeStep = timeRelax - updates;
+			timeStep = timeRelax - updt;
 			next();
 			timeStep = rf;
 			isRelaxing = false;
@@ -806,7 +816,12 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
-	 * Gets the elapsed time in model. Time is measured on the rates at which events happen.
+	 * Returns the elapsed time measured in terms of the rates at which events
+	 * happen. The time increments of microscopic updates depend e.g. on the size or
+	 * the fitness of the population. In large populations with high fitness many
+	 * events happen per unit time and hence the increments are smaller. In contrast
+	 * in small populations with low fitness fewer events happen and consequently
+	 * more time elapses between subsequent events.
 	 * 
 	 * @return the elapsed time based on rates of events
 	 * 
@@ -1132,16 +1147,19 @@ public abstract class Model implements CLOProvider {
 	public double getNextHalt() {
 		// watch out for models that allow time reversal!
 		// timeStop and timeRelax can be positive or negative
+		// note: use getUpdates to ensure relaxation works for all models. 
+		// DE models may not have an update count but have time
+		double updt = getUpdates();
 		if (isTimeReversed()) {
 			// time is 'decreasing' find next smaller milestone
-			double halt = timeStop < updates ? timeStop : Double.NEGATIVE_INFINITY;
-			double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax < updates) ? timeRelax
+			double halt = timeStop < updt ? timeStop : Double.NEGATIVE_INFINITY;
+			double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax < updt) ? timeRelax
 					: Double.NEGATIVE_INFINITY;
 			return Math.max(halt, relax);
 		}
 		// time is 'increasing'
-		double halt = timeStop > updates ? timeStop : Double.POSITIVE_INFINITY;
-		double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax > updates) ? timeRelax : Double.POSITIVE_INFINITY;
+		double halt = timeStop > updt ? timeStop : Double.POSITIVE_INFINITY;
+		double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax > updt) ? timeRelax : Double.POSITIVE_INFINITY;
 		return Math.min(halt, relax);
 	}
 

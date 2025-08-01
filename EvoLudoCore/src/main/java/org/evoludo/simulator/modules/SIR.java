@@ -372,7 +372,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 					double psi1 = pSI[1];
 					double psi = pSI[0];
 					if (psi1 > 0.0 )
-						psi += psi1 * Math.cos(pSI[2] * ibs.getRealtime());
+						psi += psi1 * Math.cos(pSI[2] * ibs.getTime());
 					if (nI > 0 && random01() > Combinatorics.pow(1.0 - psi, nI))
 						return setNextTraitAt(me, I);
 					break;

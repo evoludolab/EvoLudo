@@ -378,18 +378,6 @@ public abstract class IBS extends Model {
 	protected IBSPopulation population;
 
 	/**
-	 * Keeps track of the elapsed time, taking into account the fitness of the
-	 * population. For example, less time passes between reproductive events in
-	 * populations with high fitness, while more time passes in low fitness
-	 * populations because there are fewer reproduction events per unit time. If
-	 * individual scores can be negative {@code realtime} is set to
-	 * {@code Double#POSITIVE_INFINITY} to indicate that the measure is meaningless.
-	 * <p>
-	 * <strong>Note:</strong> Requires non-negative individual scores.
-	 */
-	protected double realtime = -1.0;
-
-	/**
 	 * <code>true</code> if optimizations for homogeneous populations requested.
 	 * <p>
 	 * <strong>Note:</strong>
@@ -593,17 +581,16 @@ public abstract class IBS extends Model {
 	public void init(boolean soft) {
 		super.init();
 		// realtime meaningless if not all populations have positive minimum fitness
-		realtime = 0.0;
 		for (Module mod : species) {
 			if (mod instanceof Payoffs) {
 				Map2Fitness map2fit = mod.getMap2Fitness();
 				if (map2fit.map(((Payoffs) mod).getMinPayoff()) <= 0.0) {
-					realtime = Double.POSITIVE_INFINITY;
+					time = Double.POSITIVE_INFINITY;
 					break;
 				}
 				continue;
 			}
-			realtime = Double.POSITIVE_INFINITY;
+			time = Double.POSITIVE_INFINITY;
 			break;
 		}
 		connect = false;
@@ -687,12 +674,12 @@ public abstract class IBS extends Model {
 			int dt = distrMutation.next();
 			// XXX this can easily skip past requested stops - ignore?
 			updates += dt * unit;
-			realtime += RNGDistribution.Exponential.next(rng.getRNG(), dt * realunit);
+			time += RNGDistribution.Exponential.next(rng.getRNG(), dt * realunit);
 			population.resetTraits();
 			update();
 			// communicate update
 			engine.fireModelChanged();
-			realtime += realunit;
+			time += realunit;
 			updates += unit;
 			// introduce mutation uniformly at random
 			population.mutateAt(random0n(nPop));
@@ -762,7 +749,7 @@ public abstract class IBS extends Model {
 			int nUpdates = Math.max(1, (int) Math.floor(stepDt));
 			for (int f = 0; f < nUpdates; f++) {
 				// advance time and real time (if possible)
-				realtime = (scoreTot <= 1e-8 ? Double.POSITIVE_INFINITY : realtime + nPopTot * popFrac / scoreTot);
+				time = (scoreTot <= 1e-8 ? Double.POSITIVE_INFINITY : time + nPopTot * popFrac / scoreTot);
 				updates += popFrac;
 				// update populations
 				for (Module mod : species) {
@@ -854,8 +841,8 @@ public abstract class IBS extends Model {
 					updates += gincr;
 				}
 				converged = true;
-				if (dt > 0 && realtime < Double.POSITIVE_INFINITY)
-					realtime += RNGDistribution.Exponential.next(rng.getRNG(), dt / totRate);
+				if (dt > 0 && time < Double.POSITIVE_INFINITY)
+					time += RNGDistribution.Exponential.next(rng.getRNG(), dt / totRate);
 				totRate = 0.0;
 				for (Module mod : species) {
 					IBSPopulation pop = mod.getIBSPopulation();
@@ -951,28 +938,6 @@ public abstract class IBS extends Model {
 			return status;
 		}
 		return population.getStatus();
-	}
-
-	@Override
-	public String getCounter() {
-		String counter = super.getCounter();
-		if (mode == Mode.DYNAMICS && Double.isFinite(realtime))
-			return counter + " (" + Formatter.format(realtime, 2) + ")";
-		return counter;
-	}
-
-	/**
-	 * Gets the elapsed time in real time units. The real time increments of
-	 * microscopic updates depends on the fitness of the population. In populations
-	 * with high fitness many events happen per unit time and hence the increments
-	 * are smaller. In contrast in populations with low fitness fewer events happen
-	 * and consequently more time elapses between subsequent events. By default no
-	 * distinction between real time and generation time is made.
-	 * 
-	 * @return elapsed real time
-	 */
-	public double getRealtime() {
-		return realtime;
 	}
 
 	@Override
@@ -2027,7 +1992,7 @@ public abstract class IBS extends Model {
 	@Override
 	public void encodeState(StringBuilder plist) {
 		plist.append(Plist.encodeKey("Generation", getUpdates()));
-		plist.append(Plist.encodeKey("Realtime", getRealtime()));
+		plist.append(Plist.encodeKey("Realtime", getTime()));
 		plist.append(Plist.encodeKey("Model", type.toString()));
 		boolean isMultiSpecies = (species.size() > 1);
 		for (Module mod : species) {
@@ -2046,7 +2011,7 @@ public abstract class IBS extends Model {
 	@Override
 	public boolean restoreState(Plist plist) {
 		updates = (Double) plist.get("Generation");
-		realtime = (Double) plist.get("Realtime");
+		time = (Double) plist.get("Realtime");
 		connect = false;
 		boolean success = true;
 		if (species.size() > 1) {
