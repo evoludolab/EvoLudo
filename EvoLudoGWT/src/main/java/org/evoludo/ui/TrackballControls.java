@@ -30,8 +30,6 @@
 
 package org.evoludo.ui;
 
-import org.evoludo.math.Combinatorics;
-
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.NativeEvent;
@@ -510,15 +508,14 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 		if (!hasZoom)
 			return;
 		event.preventDefault();
-		// wheel resolution is very coarse - how to improve?
-		int dy = -event.getDeltaY();
-		if (dy == 0)
+		double dy = event.getNativeDeltaY();
+		if (dy == 0.0)
 			return;
-		zoomChange = Combinatorics.pow(zoomSpeed, dy);
+		zoomChange = Math.pow(zoomSpeed, -dy);
 		doZoom = true;
 		getWidget().addStyleName(dy < 0 ? "evoludo-cursorZoomIn" : "evoludo-cursorZoomOut");
 		if (!t.isRunning())
-			t.schedule(300);
+			t.schedule(200);
 	}
 
 	/**

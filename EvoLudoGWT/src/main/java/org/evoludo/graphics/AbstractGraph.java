@@ -37,7 +37,6 @@ import org.evoludo.geom.Path2D;
 import org.evoludo.geom.PathIterator;
 import org.evoludo.geom.Point2D;
 import org.evoludo.geom.Rectangle2D;
-import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
@@ -211,7 +210,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		 * 
 		 * @see #zoom(double, int, int)
 		 */
-		public final double ZOOM_INCR = 1.02;
+		public final double ZOOM_INCR = 1.01;
 
 		/**
 		 * The maximum zoom level.
@@ -1701,13 +1700,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		event.preventDefault();
 		int x = event.getX();
 		int y = event.getY();
-		int dz = event.getDeltaY();
-		if (hasMessage || dz == 0)
+		double dz = event.getNativeDeltaY();
+		if (hasMessage || dz == 0.0)
 			return;
-		double zoom = Combinatorics.pow(Zooming.ZOOM_INCR, -dz);
+		double zoom = Math.pow(Zooming.ZOOM_INCR, -dz);
 		zoomer.zoom(zoom, x, y);
 		if (!zoomInertiaTimer.isRunning())
-			zoomInertiaTimer.schedule(200);
+			zoomInertiaTimer.schedule(100);
 	}
 
 	/**
