@@ -30,17 +30,22 @@
 
 package org.evoludo.simulator.exec;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -248,7 +253,7 @@ public class TestEvoLudo implements MilestoneListener {
 						continue;
 					}
 				}
-				dest += SHA_PREFIX + plist.sha256(SHA_EXCLUDE) + ".plist";
+				dest += SHA_PREFIX + sha256(plist, SHA_EXCLUDE) + ".plist";
 				// save new reference
 				if (useCompression) {
 					// with compression
@@ -354,6 +359,43 @@ public class TestEvoLudo implements MilestoneListener {
 			}
 		} else {
 			// unknown extension
+		}
+	}
+
+	public static String sha256(Plist plist, Collection<String> exclude) {
+		HashMap<String, Object> original = new HashMap<>(plist);
+		for (String key : exclude) {
+			if (plist.containsKey(key)) {
+				original.put(key, plist.get(key));
+				plist.replace(key, null);
+			}
+		}
+		String sha = "";
+		try {
+			sha = hashSHA256(plist);
+		} catch (IOException | NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		} finally {
+			// restore original state
+			plist.putAll(original);
+		}
+		return sha;
+	}
+
+	public static String hashSHA256(Object obj) throws IOException, NoSuchAlgorithmException {
+		try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+				ObjectOutputStream oos = new ObjectOutputStream(bos)) {
+			oos.writeObject(obj);
+			oos.flush();
+			byte[] objectBytes = bos.toByteArray();
+
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			byte[] shaHash = digest.digest(objectBytes);
+			StringBuilder sb = new StringBuilder();
+			for (byte b : shaHash) {
+				sb.append(String.format("%02x", b));
+			}
+			return sb.toString();
 		}
 	}
 
@@ -563,7 +605,7 @@ public class TestEvoLudo implements MilestoneListener {
 		if (!skipSHA || idx < 0) {
 			// skip SHA check or no SHA in name
 			String shaReference = name.substring(idx + SHA_PREFIX.length()).replace(".zip", "").replace(".plist", "");
-			String shaResult = result.sha256(SHA_EXCLUDE);
+			String shaResult = sha256(result, SHA_EXCLUDE);
 			if (shaResult.equals(shaReference)) {
 				nTests++;
 				logOk("Testing: " + name.substring(0, idx) + " SHA match!");

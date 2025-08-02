@@ -30,11 +30,6 @@
 
 package org.evoludo.util;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -141,43 +136,6 @@ public class Plist extends HashMap<String, Object> {
 	 */
 	public int getNMinor() {
 		return nNumerical;
-	}
-
-	public String sha256(Collection<String> exclude) {
-		HashMap<String, Object> original = new HashMap<>(this);
-		for (String key : exclude) {
-			if (containsKey(key)) {
-				original.put(key, get(key));
-				replace(key, null);
-			}
-		}
-		String sha = "";
-		try {
-			sha = hashSHA256(this);
-		} catch (IOException | NoSuchAlgorithmException e) {
-			e.printStackTrace();
-		} finally {
-			// restore original state
-			this.putAll(original);
-		}
-		return sha;
-	}
-
-	public static String hashSHA256(Object obj) throws IOException, NoSuchAlgorithmException {
-		try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-				ObjectOutputStream oos = new ObjectOutputStream(bos)) {
-			oos.writeObject(obj);
-			oos.flush();
-			byte[] objectBytes = bos.toByteArray();
-
-			MessageDigest digest = MessageDigest.getInstance("SHA-256");
-			byte[] shaHash = digest.digest(objectBytes);
-			StringBuilder sb = new StringBuilder();
-			for (byte b : shaHash) {
-				sb.append(String.format("%02x", b));
-			}
-			return sb.toString();
-		}
 	}
 
 	/**
