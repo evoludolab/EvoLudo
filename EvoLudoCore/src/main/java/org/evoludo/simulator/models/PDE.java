@@ -282,7 +282,7 @@ public class PDE extends ODE {
 	 */
 	public PDE(EvoLudo engine) {
 		super(engine);
-		type = Type.PDE;
+		type = Type.PDERD;
 	}
 
 	/**

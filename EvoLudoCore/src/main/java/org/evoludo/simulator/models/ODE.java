@@ -323,7 +323,7 @@ public class ODE extends Model implements Discrete {
 	 */
 	public ODE(EvoLudo engine) {
 		super(engine);
-		type = Type.ODE;
+		type = Type.EM;
 	}
 
 	@Override

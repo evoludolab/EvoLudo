@@ -73,6 +73,7 @@ public class RungeKutta extends ODE {
 	 */
 	public RungeKutta(EvoLudo engine) {
 		super(engine);
+		type = Type.RK5;
 	}
 
 	@Override

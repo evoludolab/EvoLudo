@@ -59,17 +59,17 @@ public enum Type implements CLOption.Key {
 	/**
 	 * Fifth order Runge-Kutta method for ordinary differential equation models.
 	 */
-	RK5("RK5", "Fifth order Runge-Kutta method"),
+	RK5("ODERK5", "Fifth order Runge-Kutta method"),
 
 	/**
-	 * Euler-Maruyama method for ordinary differential equation models.
+	 * Euler method for ordinary differential equation models.
 	 */
-	EM("EM", "Euler-Maruyama method"),
+	EM("ODEEM", "Euler method"),
 
 	/**
-	 * Stochastic differential equation model.
+	 * Euler-Maruyama method for stochastic differential equation models.
 	 */
-	SDE("SDE", "stochastic differential equations"),
+	SDE("SDE", "Euler-Maruyama method"),
 
 	/**
 	 * Partial differential equation model, defaults to PDERD (no advection).
