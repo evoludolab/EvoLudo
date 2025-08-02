@@ -40,6 +40,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -74,6 +75,16 @@ import org.evoludo.util.PlistParser;
  * @author Christoph Hauert
  */
 public class TestEvoLudo implements MilestoneListener {
+
+	/**
+	 * List of keys to exclude from test case comparisons.
+	 */
+	static final Collection<String> SHA_EXCLUDE = Arrays.asList("Export date", "Version", "JavaVersion", "CLO");
+
+	/**
+	 * The prefix to mark the beginning of the SHA hash in the filename.
+	 */
+	static final String SHA_PREFIX = "-SHA";
 
 	/**
 	 * Pointer to engine. Engine has EvoLudoJRE class but do not rely on JRE
@@ -132,6 +143,31 @@ public class TestEvoLudo implements MilestoneListener {
 	boolean verbose = false;
 
 	/**
+	 * The flag to indicate whether to skip SHA checks.
+	 */
+	boolean skipSHA = false;
+
+	/**
+	 * The total number of tests.
+	 */
+	int nTests;
+
+	/**
+	 * The number of failed tests.
+	 */
+	int nTestFailures;
+
+	/**
+	 * The number of tests failing with minor errors.
+	 */
+	int nTestMinor;
+
+	/**
+	 * The number of tests with warnings.
+	 */
+	int nTestWarnings;
+
+	/**
 	 * Constructor for TestEvoLudo.
 	 */
 	public TestEvoLudo() {
@@ -174,113 +210,175 @@ public class TestEvoLudo implements MilestoneListener {
 			logWarning("Generating: failed to make directory '" + exportDir.getPath() + "' - skipped.");
 			return;
 		}
-		String list;
-		try {
-			list = new String(Files.readAllBytes(clo.toPath()));
-		} catch (IOException e) {
-			logWarning("Generating: failed to read '" + clo.getName() + "' - skipped.");
-			return;
-		}
-		String[] tests = list.split("\n");
 		int nTest = 0;
-		for (String test : tests) {
-			// skip empty lines or comments (lines starting with '#')
-			if (test.strip().length() < 1 || test.startsWith("#"))
-				continue;
-			if (!runModule("Generating", test))
-				continue;
-			// read result
-			String result = engine.encodeState();
-			Plist plist = PlistParser.parse(result);
-			plist.failfast(true);
-			String export = generateExportFilename(test, ++nTest);
-			// check result against references
-			File current = new File(referencesDir.getPath() + File.separator + filename);
-			File ref = checkReference(current, plist, export);
-			if (ref != null && ref != current)
-				// check passed
-				continue;
-			if (ref == null) {
-				// copy failed test to reports directory
-				try {
-					String zip = "";
-					File src = search(current, export);
-					if (src == null) {
-						zip = ".zip";
-						src = search(current, export + zip);
+		try {
+			Scanner scanner = new Scanner(clo);
+			while (scanner.hasNextLine()) {
+				String cloLine = scanner.nextLine().trim();
+				// skip comments and empty lines
+				if (cloLine.length() < 1 || cloLine.startsWith("#"))
+					continue;
+				// run module
+				if (!runModule("Testing", cloLine)) {
+					nTest++;
+					continue;
+				}
+				// check result against references
+				String result = engine.encodeState();
+				Plist plist = PlistParser.parse(result);
+				String dest = generateBasename(cloLine, ++nTest);
+				File ref = checkReference(referencesDir, plist, dest);
+				if (ref != null && ref != referencesDir)
+					// check passed
+					continue;
+				if (ref == null) {
+					// copy failed test to reports directory
+					try {
+						File src = search(referencesDir, dest);
+						Path dst = new File(reportsDir.getPath() + File.separator +
+								dest + "-old.plist" +
+								(src.getName().endsWith(".zip") ? ".zip" : "")).toPath();
+						Files.move(src.toPath(), dst);
+					} catch (FileAlreadyExistsException e) {
+						logError("file '" + reportsDir + File.separator + dest + "' already exists.");
+						continue;
+					} catch (IOException e) {
+						logError("failed to move '" + referencesDir + File.separator + dest
+								+ "' to '" + reportsDir + File.separator + dest + "'.");
+						continue;
 					}
-					Path dst = new File(reportsDir.getPath() + File.separator 
-							+ export.substring(0, export.lastIndexOf(".plist"))
-							+ "-old.plist" + zip).toPath();
-					Files.move(src.toPath(), dst);
-				} catch (FileAlreadyExistsException e) {
-					logError("file '" + reportsDir + File.separator + export + "' already exists.");
-					continue;
-				} catch (IOException e) {
-					logError("failed to move '" + referencesDir + File.separator + export 
-						+ "' to '" + reportsDir + File.separator + export + "'.");
-					continue;
 				}
+				dest += SHA_PREFIX + plist.sha256(SHA_EXCLUDE) + ".plist";
+				// save new reference
+				if (useCompression) {
+					// with compression
+					ref = exportDir.toPath().resolve(dest + ".zip").toFile();
+					try {
+						ZipOutputStream zos = new ZipOutputStream(
+								new FileOutputStream(ref));
+						zos.putNextEntry(new ZipEntry(dest));
+						zos.write(result.getBytes());
+						zos.finish();
+						zos.close();
+					} catch (FileNotFoundException e) {
+						logError("failed to open '" + dest + "' for writing.");
+						nTestFailures++;
+					} catch (IOException e) {
+						logError("failed to write to '" + dest + "'.");
+						nTestFailures++;
+					}
+				} else {
+					// no compression
+					ref = exportDir.toPath().resolve(dest).toFile();
+					try {
+						FileOutputStream fos = new FileOutputStream(ref);
+						fos.write(result.getBytes());
+						fos.close();
+					} catch (FileNotFoundException e) {
+						logError("failed to open '" + dest + "' for writing.");
+						nTestFailures++;
+					} catch (IOException e) {
+						logError("failed to write to '" + dest + "'.");
+						nTestFailures++;
+					}
+				}
+				String name = ref.getName();
+				int idx = name.indexOf(SHA_PREFIX);
+				logOk(name.substring(0, idx) + ": test generated/updated.");
+				// check test
+				test(ref);
 			}
-			// save new reference
-			if (useCompression) {
-				// with compression
-				ref = exportDir.toPath().resolve(export + ".zip").toFile();
-				try {
-					ZipOutputStream zos = new ZipOutputStream(
-							new FileOutputStream(ref));
-					zos.putNextEntry(new ZipEntry(export));
-					zos.write(result.getBytes());
-					zos.finish();
-					zos.close();
-				} catch (FileNotFoundException e) {
-					logError("failed to open '" + export + "' for writing.");
-					nTestFailures++;
-				} catch (IOException e) {
-					logError("failed to write to '" + export + "'.");
-					nTestFailures++;
-				}
-			} else {
-				// no compression
-				ref = exportDir.toPath().resolve(export).toFile();
-				try {
-					FileOutputStream fos = new FileOutputStream(ref);
-					fos.write(result.getBytes());
-					fos.close();
-				} catch (FileNotFoundException e) {
-					logError("failed to open '" + export + "' for writing.");
-					nTestFailures++;
-				} catch (IOException e) {
-					logError("failed to write to '" + export + "'.");
-					nTestFailures++;
-				}
-			}
-			logOk(ref.getName() + ": test generated/updated.");
-			// check test
-			test(ref);
+			scanner.close();
+		} catch (FileNotFoundException fnfe) {
+			logWarning("file '" + clo + "' not found!");
 		}
 	}
 
 	/**
-	 * Generate export filename from command line options {@code clo} and index
-	 * {@code idx}.
+	 * Test all files in directory {@code dir}. This directory can either contain
+	 * test files or files for generating them. In either case the test output is
+	 * compared to the reference files.
+	 * 
+	 * @param dir the directory with test files
+	 */
+	public void test(File dir) {
+		if (dir.isDirectory()) {
+			File[] tests = dir.listFiles();
+			Arrays.sort(tests);
+			for (File test : tests)
+				test(test);
+			return;
+		}
+		// dir is file
+		String parent = (dir.getParentFile() != null ? dir.getParentFile().getName() + File.separator : "");
+		// test plist or clo files
+		String filename = dir.getName();
+		String ext = filename.substring(filename.lastIndexOf('.'));
+		if (ext.equals(".plist") || ext.equals(".zip")) {
+			String name = dir.getName();
+			int idx = name.indexOf(SHA_PREFIX);
+			logMessage("Testing: '" + parent + name.substring(0, idx) + "'...");
+			Plist reference = engine.readPlist(dir.getAbsolutePath());
+			if (reference == null)
+				return;
+			String clo = (String) reference.get("CLO");
+			// run module
+			if (runModule("Testing", clo)) {
+				Plist result = PlistParser.parse(engine.encodeState());
+				compareRuns(dir, reference, result);
+			}
+		} else if (ext.equals(".clo")) {
+			// derive reference from clo string
+			int nTest = 0;
+			try {
+				Scanner scanner = new Scanner(dir);
+				while (scanner.hasNextLine()) {
+					String clo = scanner.nextLine().trim();
+					// skip comments and empty lines
+					if (clo.length() < 1 || clo.startsWith("#"))
+						continue;
+					// run module
+					if (!runModule("Testing", clo)) {
+						nTest++;
+						continue;
+					}
+					// check result against references
+					Plist result = PlistParser.parse(engine.encodeState());
+					String refname = generateBasename(clo, ++nTest);
+					if (checkReference(referencesDir, result, refname) == referencesDir)
+						logWarning("reference file '" + refname + "' not found - generate references first!");
+				}
+				scanner.close();
+			} catch (FileNotFoundException fnfe) {
+				logWarning("file '" + dir + "' not found!");
+			}
+		} else {
+			// unknown extension
+		}
+	}
+
+	/**
+	 * Generate the base name for tests from command line options {@code clo} and
+	 * index {@code idx}.
 	 * 
 	 * @param clo the command line options
 	 * @param idx the index of the test
-	 * @return the export filename
+	 * @return the base filename
 	 */
-	private String generateExportFilename(String clo, int idx) {
+	private String generateBasename(String clo, int idx) {
 		String module = engine.getModule().getKey();
 		String model = engine.getModel().getType().getKey();
 		int exportIdx = clo.indexOf("--export");
 		if (exportIdx < 0)
-			return module + "-" + idx + "-" + model + ".plist";
+			return module + "-" + idx + "-" + model;
 
 		exportIdx += "--export".length();
 		int exportEnd = clo.indexOf("--", exportIdx);
 		if (exportEnd < 0)
 			exportEnd = clo.length();
-		return clo.substring(exportIdx, exportEnd).strip();
+		String name = clo.substring(exportIdx, exportEnd).strip();
+		name = name.replace(".plist", "").replace(".zip", "");
+		return name;
 	}
 
 	/**
@@ -368,7 +466,7 @@ public class TestEvoLudo implements MilestoneListener {
 		if (verbose)
 			replicate.verbose();
 		// ignore some plist entries
-		int nIssues = replicate.diff(reference, Arrays.asList("Export date", "Version", "JavaVersion", "CLO"));
+		int nIssues = replicate.diff(reference, SHA_EXCLUDE);
 		// check option strings only if some tests failed
 		if (replicate.getNMajor() > 0) {
 			String rclo = (String) reference.get("CLO");
@@ -403,7 +501,9 @@ public class TestEvoLudo implements MilestoneListener {
 				color = ConsoleColors.RED;
 			}
 		}
-		msg = color + "Testing " + refname.getName() + " " + msg;
+		String name = refname.getName();
+		int idx = name.indexOf(SHA_PREFIX);
+		msg = color + "Testing " + name.substring(0, idx) + " " + msg;
 		switch (color) {
 			case GREEN:
 				logOk(msg);
@@ -441,104 +541,37 @@ public class TestEvoLudo implements MilestoneListener {
 	}
 
 	/**
-	 * The total number of tests.
-	 */
-	int nTests;
-
-	/**
-	 * The number of failed tests.
-	 */
-	int nTestFailures;
-
-	/**
-	 * The number of tests failing with minor errors.
-	 */
-	int nTestMinor;
-
-	/**
-	 * The number of tests with warnings.
-	 */
-	int nTestWarnings;
-
-	/**
-	 * Test all files in directory {@code dir}. This directory can either contain
-	 * test files or files for generating them. In either case the test output is
-	 * compared to the reference files.
+	 * Search for reference file with the name base {@code refbasename} (no SHA, no
+	 * extensions) in directory {@code references}. If {@code refbasename} is found
+	 * verify the results in the plist {@code result}.
 	 * 
-	 * @param dir the directory with test files
-	 */
-	public void test(File dir) {
-		if (dir.isDirectory()) {
-			File[] tests = dir.listFiles();
-			Arrays.sort(tests);
-			for (File test : tests)
-				test(test);
-			return;
-		}
-		// dir is file
-		String parent = (dir.getParentFile() != null ? dir.getParentFile().getName() + File.separator : "");
-		// test plist or clo files
-		String filename = dir.getName();
-		String ext = filename.substring(filename.lastIndexOf('.'));
-		if (ext.equals(".plist") || ext.equals(".zip")) {
-			logMessage("Testing: '" + parent + dir.getName() + "'...");
-			Plist reference = engine.readPlist(dir.getAbsolutePath());
-			if (reference == null)
-				return;
-			String clo = (String) reference.get("CLO");
-			// run module
-			if (runModule("Testing", clo)) {
-				Plist result = PlistParser.parse(engine.encodeState());
-				compareRuns(dir, reference, result);
-			}
-		} else if (ext.equals(".clo")) {
-			// derive reference from clo string
-			int nTest = 0;
-			try {
-				Scanner scanner = new Scanner(dir);
-				while (scanner.hasNextLine()) {
-					String clo = scanner.nextLine().trim();
-					// skip comments and empty lines
-					if (clo.length() < 1 || clo.startsWith("#"))
-						continue;
-					// run module
-					if (!runModule("Testing", clo)) {
-						nTest++;
-						continue;
-					}
-					// check result against references
-					Plist result = PlistParser.parse(engine.encodeState());
-					String refname = generateExportFilename(clo, ++nTest);
-					if (checkReference(referencesDir, result, refname) == referencesDir)
-						logWarning("reference file '" + refname + "' not found - generate references first!");
-				}
-				scanner.close();
-			} catch (FileNotFoundException fnfe) {
-				logWarning("file '" + dir + "' not found!");
-			}
-		} else {
-			// unknown extension
-		}
-	}
-
-	/**
-	 * Search for reference file {@code refname} in directory {@code references}. If
-	 * {@code refname} is found verify the results in the plist {@code result}.
-	 * 
-	 * @param references the directory with reference files
-	 * @param result     the {@code Plist} with the results
-	 * @param refname    the name of the reference file (if it exists)
+	 * @param references  the directory with reference files
+	 * @param result      the {@code Plist} with the results
+	 * @param refbasename the base name of the reference file (if it exists)
 	 * @return if verification successful return {@code File} pointing to reference;
 	 *         if unsuccesssful return {@code null}; and if reference file not found
 	 *         return {@code references}
 	 */
-	private File checkReference(File references, Plist result, String refname) {
-		File ref = search(references, refname);
+	private File checkReference(File references, Plist result, String refbasename) {
+		File ref = search(references, refbasename);
 		if (ref == null) {
-			ref = search(references, refname + ".zip");
-			if (ref == null)
-				return references;
+			// no reference file found
+			return references;
 		}
+		String name = ref.getName();
+		int idx = name.indexOf(SHA_PREFIX);
+		if (!skipSHA || idx < 0) {
+			// skip SHA check or no SHA in name
+			String shaReference = name.substring(idx + SHA_PREFIX.length()).replace(".zip", "").replace(".plist", "");
+			String shaResult = result.sha256(SHA_EXCLUDE);
+			if (shaResult.equals(shaReference)) {
+				nTests++;
+				logOk("Testing: " + name.substring(0, idx) + " SHA match!");
+				return ref;
+			}
+			logWarning("Testing: " + name.substring(0, idx) + " SHA mismatch! - comparing plists...");
+		}
+		// compare plists
 		try {
 			Plist reference = engine.readPlist(ref.getAbsolutePath());
 			if (compareRuns(ref, reference, result))
@@ -550,8 +583,8 @@ public class TestEvoLudo implements MilestoneListener {
 	}
 
 	/**
-	 * Recursively search for a file with name {@code search} in directory
-	 * {@code file}.
+	 * Recursively search for a file whose name starts with {@code search} in
+	 * directory {@code file}.
 	 * 
 	 * @param file   the directory to search
 	 * @param search the name of the file to search for
@@ -565,7 +598,11 @@ public class TestEvoLudo implements MilestoneListener {
 					return hit;
 			}
 		}
-		if (search.equals(file.getName()))
+		String name = file.getName();
+		int idx = name.indexOf(SHA_PREFIX);
+		if (idx >= 0)
+			name = name.substring(0, idx);
+		if (name.equals(search))
 			return file;
 		return null;
 	}
@@ -717,6 +754,11 @@ public class TestEvoLudo implements MilestoneListener {
 				verbose = true;
 				continue;
 			}
+			// skip SHA checks
+			if (arg.startsWith("--nosha")) {
+				skipSHA = true;
+				continue;
+			}
 		}
 		if (testsDir == null)
 			testsDir = referencesDir;
@@ -795,6 +837,7 @@ public class TestEvoLudo implements MilestoneListener {
 						"       --compress: compress generated test files\n" + //
 						"       --minor: dump differences for minor failures\n" + //
 						"       --verb: verbose mode\n" + //
+						"       --nosha: disable SHA checks\n" + //
 						"       --help, -h or no arguments: this help screen");
 		engine.exit(0);
 	}
