@@ -60,9 +60,9 @@ import org.evoludo.util.XMLCoder;
 public class TextLogFormatter extends com.google.gwt.logging.client.TextLogFormatter {
 
 	/**
-	 * <code>true</code> if XML/XHTML compliant encoding of log messages desired.
+	 * <code>false</code> if XML/XHTML compliant encoding of log messages desired.
 	 */
-	private boolean isXML = false;
+	private boolean isHTML = true;
 
 	/**
 	 * Construct a new formatter for log messages without XML/XHTML encoding.
@@ -75,26 +75,26 @@ public class TextLogFormatter extends com.google.gwt.logging.client.TextLogForma
 
 	/**
 	 * Construct a new formatter for log messages with XML/XHTML encoding, provided
-	 * that <code>isXML</code> is <code>true</code>.
+	 * that <code>isHTML</code> is <code>false</code>.
 	 * 
 	 * @param showStackTraces <code>true</code> to show stack traces
-	 * @param isXML           <code>true</code> to use XML/XHTML encoding
+	 * @param isHTML           <code>true</code> to use HTML encoding
 	 */
-	public TextLogFormatter(boolean showStackTraces, boolean isXML) {
+	public TextLogFormatter(boolean showStackTraces, boolean isHTML) {
 		super(showStackTraces);
-		this.isXML = isXML;
+		this.isHTML = isHTML;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * If <code>isXML</code> is <code>true</code> the returned string is XML/XHTML
+	 * If <code>isHTML</code> is <code>false</code> the returned string is XML/XHTML
 	 * compliant.
 	 */
 	@Override
 	public String format(LogRecord record) {
 		String msg = super.format(record);
-		if (!isXML)
+		if (isHTML)
 			return msg;
 		return XMLCoder.encode(msg);
 	}

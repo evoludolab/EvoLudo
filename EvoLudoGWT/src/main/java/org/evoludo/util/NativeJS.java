@@ -438,17 +438,12 @@ public class NativeJS {
 	}-*/;
 
 	/**
-	 * JSNI method: Test whether loaded from an XHTML document.
-	 * <p>
-	 * <strong>Note:</strong> GWT interferes here and both
-	 * <code>Document.get().createElement("div").getTagName()=="DIV"</code> as well
-	 * as <code>$doc.createElement("div").tagName == "DIV"</code> falsely (always?)
-	 * return <code>false</code>.
+	 * JSNI method: Test whether loaded from an HTML document.
 	 *
-	 * @return <code>true</code> if XML document
+	 * @return <code>true</code> if HTML document
 	 */
-	public static final native boolean isXML() /*-{
-		return (window.document.createElement("div").tagName == "DIV");
+	public static final native boolean isHTML() /*-{
+		return ($doc.contentType.includes("text/html"));
 	}-*/;
 
 	/**

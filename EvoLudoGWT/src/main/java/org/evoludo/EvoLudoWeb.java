@@ -380,9 +380,9 @@ public class EvoLudoWeb extends Composite
 		// feature declarations with --gui) to make sure log is properly XML encoded (if
 		// needed).
 		boolean isEPub = NativeJS.getEPubReader() != null;
-		XMLCoder.setStrict(engine.isXML);
+		XMLCoder.setStrict(!engine.isHTML);
 		ConsoleLogHandler logHandler = new ConsoleLogHandler();
-		logHandler.setFormatter(new TextLogFormatter(true, isEPub || engine.isXML));
+		logHandler.setFormatter(new TextLogFormatter(true, isEPub || !engine.isHTML));
 		logger.addHandler(logHandler);
 
 		// set command line options
@@ -2332,7 +2332,7 @@ public class EvoLudoWeb extends Composite
 		logger.info("GWT Version: " + GWT.getVersion());
 		logger.info("GUI features: " + //
 				(NativeJS.isWebGLSupported() ? "WebGL " : "") + //
-				(NativeJS.isXML() ? "XML " : "") + //
+				(NativeJS.isHTML() ? "HTML" : "XML ") + //
 				(NativeJS.hasKeys() ? "keyboard " : "") + //
 				(NativeJS.hasMouse() ? "mouse " : "") + //
 				(NativeJS.hasTouch() ? "touch " : "") + //

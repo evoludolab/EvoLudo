@@ -1539,7 +1539,7 @@ public abstract class EvoLudo
 		// now deal with --module option
 		String moduleParam = cloModule.getName();
 		CLOption.Key moduleKey = null;
-		String moduleName = "<missing>";
+		String moduleName = "";
 		for (int i = 0; i < nParams; i++) {
 			String param = cloarray[i];
 			if (param.startsWith(moduleParam)) {
@@ -1562,7 +1562,7 @@ public abstract class EvoLudo
 		}
 		if (moduleKey == null || loadModule(moduleKey.getKey()) == null) {
 			if (!helpRequested)
-				logger.severe("Module '" + moduleName + "' not found!");
+				logger.severe("Use --module to load a module or --help for more information.");
 			return null;
 		}
 		// second, determine feasible --model options for given module

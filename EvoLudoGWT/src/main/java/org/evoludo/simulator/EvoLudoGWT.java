@@ -65,9 +65,9 @@ import com.google.gwt.user.client.Timer;
 public class EvoLudoGWT extends EvoLudo {
 
 	/**
-	 * <code>true</code> if container document is XHTML
+	 * <code>true</code> if container document is HTML
 	 */
-	public boolean isXML = false;
+	public boolean isHTML = true;
 
 	/**
 	 * <code>true</code> if part of an ePub
@@ -426,7 +426,7 @@ public class EvoLudoGWT extends EvoLudo {
 	public void detectGUIFeatures() {
 		isGWT = true;
 		hasTouch = NativeJS.hasTouch();
-		isXML = NativeJS.isXML();
+		isHTML = NativeJS.isHTML();
 		isEPub = (NativeJS.getEPubReader() != null);
 		// IMPORTANT: ibooks (desktop) returns ePubReader for standalone pages as well,
 		// i.e. isEPub is true
