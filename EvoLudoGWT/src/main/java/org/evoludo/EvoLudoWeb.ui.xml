@@ -62,106 +62,72 @@ removed. -->
 	xmlns:g="urn:import:com.google.gwt.user.client.ui"
 	xmlns:e="urn:import:org.evoludo.ui">
 	<ui:style gss="true">
-		.right {
-		display: inline-block;
-		position: absolute;
-		right: 0;
-		}
-
-		.fill {
-		width: 100%;
-		}
-
-		.threequarter, .half, .quarter {
-		display: inline-block;
+	.header {
+		display: flex;
+	}
+	.header_half {
+		flex: 1;
+		font-size: small;
 		margin: 2px;
-		}
-
-		.threequarter {
-		width: calc(75% - 16px);
-		}
-
-		.half {
-		width: calc(50% - 4px);
-		}
-
-		.quarter {
-		width: calc(25% - 3px);
-		}
-
-		.quarter:first-of-type, .half:first-of-type {
-		margin-left: 0;
-		}
-
-		.quarter:last-of-type, .half:last-of-type {
-		margin-right: 0;
-		}
-
-		.clear {
-		margin-top: 4pt;
-		clear: both;
-		}
-
-		.clearfix {
-		clear: both;
-		height: 1px;
-		}
-
-		.deck {
+		text-align: left;
+	}
+	.controls {
+		display: flex;
+	}
+	.control_button, .parameter_button {
+		flex: 1;
+		margin: 2px;
+		text-align: center;
+	}
+	.parameters {
+		display: flex;
+		flex-direction: row;
+	}
+	.parameter_controls {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
+	}
+	.parameter_options {
+		border: 1px solid #ccc;
+		border-radius: 3px;
+		display: flex;
+		flex: 3;
+		font-size: small;
+		margin: 2px;
+		padding: 4px;
+	}
+	.deck {
 		clear: both;
 		margin-top: 4pt;
 		margin-bottom: 4pt;
-		}
-
-		.slider {
+	}
+	.slider {
 		clear: both;
-		}
-
-		.overflow>div {
+	}
+	.overflow>div {
 		overflow: visible !important;
-		}
-
-		.clotext {
-		margin-top: 3px;
-		resize: none;
-		font-size: small;
-		font-family: monospace;
-		padding: 6px;
-		height: 76px;
-		overflow: hidden;
-		overflow-y: scroll;
-		display: inline-block;
-		border: 1px solid #999;
-		border-radius: 3px;
-		}
-
-		.clobutton {
-		margin: 2px 0;
-		}
-
-		.evoludo-Lab {
+	}
+	.evoludo-Lab {
 		position: relative;
 		overflow: hidden;
 		resize: none !important;
-		}
-
-		.noresize {
+	}
+	.noresize {
 		resize: none;
-		}
-
-		.status {
+	}
+	.status {
 		margin-top: 4pt;
 		clear: both;
 		resize: none;
 		font-size: 9pt;
 		height: 21pt;
 		line-height: 1.2;
-		}
-
-		.evoludo-Panel {
+	}
+	.evoludo-Panel {
 		height: 100%;
 		position: relative;
-		}
+	}
 	</ui:style>
 	<g:HTMLPanel ui:field='evoludoPanel'
 		styleName='{style.evoludo-Panel}'>
@@ -174,12 +140,10 @@ removed. -->
 			<g:HeaderPanel ui:field='evoludoLayout'
 				styleName='{style.noresize}'>
 				<!-- header: generations and view selector -->
-				<g:FlowPanel>
-					<g:Label ui:field='evoludoTime'
-						title="Number of generations elapsed" addStyleNames='{style.half}'>time: -</g:Label>
-					<g:ListBox ui:field='evoludoViews' visibleItemCount='1'
-						addStyleNames='{style.half}' />
-					<g:Label styleName='{style.clearfix}'></g:Label>
+				<g:FlowPanel styleName="{style.header}">
+					<g:Label ui:field='evoludoTime' styleName='{style.header_half}'
+						title="Number of generations elapsed">time: -</g:Label>
+					<g:ListBox ui:field='evoludoViews' visibleItemCount='1'  styleName='{style.header_half}'/>
 				</g:FlowPanel>
 
 				<!-- main: deck with canvases -->
@@ -193,22 +157,22 @@ removed. -->
 						addStyleNames='gwt-Slider {style.slider}'></e:Slider>
 
 					<!-- control buttons -->
-					<g:FlowPanel>
+					<g:FlowPanel styleName='{style.controls}'>
 						<g:Button ui:field='evoludoSettings'
 							title="Change simulation parameters"
-							addStyleNames='{style.quarter}'>Settings</g:Button>
+							addStyleNames='{style.control_button}'>Settings</g:Button>
 						<g:Button ui:field='evoludoInitReset'
 							title="Initialize population (press Alt to re-initialize structure)"
-							addStyleNames='{style.quarter}'>Init</g:Button>
+							addStyleNames='{style.control_button}'>Init</g:Button>
 						<g:Button ui:field='evoludoStartStop'
-							title="Start/stop simulations" addStyleNames='{style.quarter}'>Start</g:Button>
+							title="Start/stop simulations" addStyleNames='{style.control_button}'>Start</g:Button>
 						<g:Button ui:field='evoludoStep'
 							title="Advance single simulation step"
-							addStyleNames='{style.quarter}'>Step</g:Button>
+							addStyleNames='{style.control_button}'>Step</g:Button>
 					</g:FlowPanel>
 
 					<!-- parameters -->
-					<g:FlowPanel ui:field='evoludoCLOPanel' visible='false'>
+					<g:FlowPanel ui:field='evoludoCLOPanel' styleName='{style.parameters}' visible='false'>
 						<!-- <textarea> is disabled in Apple Books, let's go with simpler editable
 						div for now...
  				 		<g:TextArea ui:field='evoludoCLO' 
@@ -217,17 +181,17 @@ removed. -->
 				 			styleName='evoludo-CLO {style.threequarter} {style.clotext}'></g:TextArea> -->
 						<g:Label ui:field='evoludoCLO'
 							title="Specify simulation parameters"
-							styleName='evoludo-CLO {style.threequarter} {style.clotext}'></g:Label>
-						<g:FlowPanel styleName='{style.right} {style.quarter}'>
+							styleName='{style.parameter_options}'></g:Label>
+						<g:FlowPanel styleName='{style.parameter_controls}'>
 							<g:Button ui:field='evoludoApply'
 								title="Apply parameters"
-								addStyleNames='{style.fill} {style.clobutton}'>Apply</g:Button>
+								addStyleNames='{style.parameter_button}'>Apply</g:Button>
 							<g:Button ui:field='evoludoDefault'
 								title="Restore default parameters"
-								addStyleNames='{style.fill} {style.clobutton}'>Default</g:Button>
+								addStyleNames='{style.parameter_button}'>Default</g:Button>
 							<g:Button ui:field='evoludoHelp'
 								title="Help on parameter settings"
-								addStyleNames='{style.fill} {style.clobutton}'>Help</g:Button>
+								addStyleNames='{style.parameter_button}'>Help</g:Button>
 						</g:FlowPanel>
 					</g:FlowPanel>
 
