@@ -67,7 +67,11 @@ public class CLOption implements Comparable<CLOption> {
 		 * If settings for option are not known upon initialization, an up-to-date
 		 * description is requested when needed (e.g. if help is requested, typically
 		 * using <code>--help</code> options).
-		 * 
+		 * <p>
+		 * <strong>Note:</strong> the description string may contain any UTF-8
+		 * characters as well as HTML character entities. If necessary they will be
+		 * escaped and converted to UTF-8 for display in XML documents.
+		 *
 		 * @return description of command line option.
 		 */
 		public default String getDescription() {
@@ -174,6 +178,7 @@ public class CLOption implements Comparable<CLOption> {
 		 * 
 		 * @return the title of the command line option
 		 * 
+		 * @see #getDescription()
 		 * @see org.evoludo.simulator.EvoLudo#showHelp()
 		 */
 		public String getTitle();
@@ -181,6 +186,10 @@ public class CLOption implements Comparable<CLOption> {
 		/**
 		 * Optional: long description of purpose of this key. Used in help display.
 		 * Defaults to brief description.
+		 * <p>
+		 * <strong>Note:</strong> the description string may contain any UTF-8
+		 * characters as well as HTML character entities. If necessary they will be
+		 * escaped and converted to UTF-8 for display in XML documents.
 		 * 
 		 * @return the description of the command line option
 		 * 
@@ -200,6 +209,10 @@ public class CLOption implements Comparable<CLOption> {
 
 		/**
 		 * The brief category description. Section header in help screen.
+		 * <p>
+		 * <strong>Note:</strong> the description string may contain any UTF-8
+		 * characters as well as HTML character entities. If necessary they will be
+		 * escaped and converted to UTF-8 for display in XML documents.
 		 */
 		String header;
 
@@ -310,7 +323,11 @@ public class CLOption implements Comparable<CLOption> {
 
 	/**
 	 * the short description of the command line option. May include newline's
-	 * <code>'\n'</code> for basic formatting but no HTML or other formatting.
+	 * <code>'\n'</code> for basic formatting.
+	* <p>
+	* <strong>Note:</strong> the description string may contain any UTF-8
+	* characters as well as HTML character entities. If necessary they will be
+	* escaped and converted to UTF-8 for display in XML documents.
 	 */
 	String description = null;
 
@@ -392,8 +409,14 @@ public class CLOption implements Comparable<CLOption> {
 	 * <code>delegate</code> to process the argument and optionally retrieve the
 	 * description.
 	 * <p>
-	 * <strong>Note:</strong> on the command line option names need to be preceded
-	 * by <code>--</code>, e.g. <code>--help</code>.
+	 * <strong>Notes:</strong>
+	 * <ul>
+	 * <li>on the command line option names need to be preceded by <code>--</code>,
+	 * e.g. <code>--help</code>.</li>
+	 * <li>the description string may contain any UTF-8 characters as well as HTML
+	 * character entities. If necessary they will be escaped and converted to UTF-8
+	 * for display in XML documents.
+	 * </ul>
 	 * 
 	 * @param name        the name of the command line option
 	 * @param description short description of command line option
@@ -409,8 +432,14 @@ public class CLOption implements Comparable<CLOption> {
 	 * as well as the delegate <code>delegate</code> to process the argument and
 	 * optionally retrieve the description.
 	 * <p>
-	 * <strong>Note:</strong> on the command line option names need to be preceded
-	 * by <code>--</code>, e.g. <code>--help</code>.
+	 * <strong>Notes:</strong>
+	 * <ul>
+	 * <li>on the command line option names need to be preceded by <code>--</code>,
+	 * e.g. <code>--help</code>.</li>
+	 * <li>the description string may contain any UTF-8 characters as well as HTML
+	 * character entities. If necessary they will be escaped and converted to UTF-8
+	 * for display in XML documents.
+	 * </ul>
 	 * 
 	 * @param name        the name of the command line option
 	 * @param category    the category of option
@@ -427,8 +456,14 @@ public class CLOption implements Comparable<CLOption> {
 	 * <code>description</code> as well as the delegate <code>delegate</code> to
 	 * process the argument and optionally retrieve the description.
 	 * <p>
-	 * <strong>Note:</strong> on the command line option names need to be preceded
-	 * by <code>--</code>, e.g. <code>--help</code>.
+	 * <strong>Notes:</strong>
+	 * <ul>
+	 * <li>on the command line option names need to be preceded by <code>--</code>,
+	 * e.g. <code>--help</code>.</li>
+	 * <li>the description string may contain any UTF-8 characters as well as HTML
+	 * character entities. If necessary they will be escaped and converted to UTF-8
+	 * for display in XML documents.
+	 * </ul>
 	 * 
 	 * @param name        the name of the command line option
 	 * @param defaultArg  the default argument if option is not specified on command
@@ -447,8 +482,14 @@ public class CLOption implements Comparable<CLOption> {
 	 * <code>delegate</code> to process the argument and optionally retrieve the
 	 * description.
 	 * <p>
-	 * <strong>Note:</strong> on the command line option names need to be preceded
-	 * by <code>--</code>, e.g. <code>--help</code>.
+	 * <strong>Notes:</strong>
+	 * <ul>
+	 * <li>on the command line option names need to be preceded by <code>--</code>,
+	 * e.g. <code>--help</code>.</li>
+	 * <li>the description string may contain any UTF-8 characters as well as HTML
+	 * character entities. If necessary they will be escaped and converted to UTF-8
+	 * for display in XML documents.
+	 * </ul>
 	 * 
 	 * @param name        the name of the command line option
 	 * @param defaultArg  the default argument if option is not specified on command
@@ -466,7 +507,7 @@ public class CLOption implements Comparable<CLOption> {
 	 * {@code type}, which defaults to {@code defaultArg}, as well as the delegate
 	 * <code>delegate</code> to process the argument and retrieve the description.
 	 * <p>
-	 * <strong>Note:</strong>
+	 * <strong>Notes:</strong>
 	 * <ul>
 	 * <li>on the command line option names need to be preceded by <code>--</code>,
 	 * e.g. <code>--help</code>.</li>
@@ -515,8 +556,14 @@ public class CLOption implements Comparable<CLOption> {
 	 * <code>description</code> as well as the delegate <code>delegate</code> to
 	 * process the argument and optionally retrieve the description.
 	 * <p>
-	 * <strong>Note:</strong> on the command line option names need to be preceded
-	 * by <code>--</code>, e.g. <code>--help</code>.
+	 * <strong>Notes:</strong>
+	 * <ul>
+	 * <li>on the command line option names need to be preceded by <code>--</code>,
+	 * e.g. <code>--help</code>.</li>
+	 * <li>the description string may contain any UTF-8 characters as well as HTML
+	 * character entities. If necessary they will be escaped and converted to UTF-8
+	 * for display in XML documents.
+	 * </ul>
 	 * 
 	 * @param name        the name of the command line option
 	 * @param defaultArg  default argument if option is not specified on command
@@ -536,8 +583,13 @@ public class CLOption implements Comparable<CLOption> {
 	 * the delegate <code>delegate</code> to process the argument and optionally
 	 * retrieve the description.
 	 * <p>
-	 * <strong>Note:</strong> on the command line options need to be preceded
-	 * by <code>--</code>, e.g. <code>--help</code>.
+	 * <strong>Notes:</strong>
+	 * <ul>
+	 * <li>on the command line option names need to be preceded by <code>--</code>,
+	 * e.g. <code>--help</code>.</li>
+	 * <li>the description string may contain any UTF-8 characters as well as HTML
+	 * character entities. If necessary they will be escaped and converted to UTF-8
+	 * for display in XML documents.
 	 *
 	 * @param name        name of command line option
 	 * @param defaultArg  default argument if option is not specified on command
@@ -965,6 +1017,10 @@ public class CLOption implements Comparable<CLOption> {
 	 * Retrieve short description of option and include the default as well as the
 	 * current arguments. If no description was provided at initialization, the
 	 * delegate is queried for an up-to-date description.
+	 * <p>
+	 * <strong>Note:</strong> the description string may contain any UTF-8
+	 * characters. If necessary they will be escaped for display in HTML or XML
+	 * documents.
 	 * 
 	 * @return description of option and arguments.
 	 */

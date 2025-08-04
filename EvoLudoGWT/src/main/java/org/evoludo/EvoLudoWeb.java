@@ -380,7 +380,6 @@ public class EvoLudoWeb extends Composite
 		// feature declarations with --gui) to make sure log is properly XML encoded (if
 		// needed).
 		boolean isEPub = NativeJS.getEPubReader() != null;
-		XMLCoder.setStrict(!engine.isHTML);
 		ConsoleLogHandler logHandler = new ConsoleLogHandler();
 		logHandler.setFormatter(new TextLogFormatter(true, isEPub || !engine.isHTML));
 		logger.addHandler(logHandler);
@@ -2329,16 +2328,22 @@ public class EvoLudoWeb extends Composite
 	 */
 	void logFeatures() {
 		logger.info("GWT Version: " + GWT.getVersion());
+		String epub = "";
+		if (NativeJS.isEPub()) {
+			epub = "ePub (";
+			epub += (engine.ePubHasKeys ? "keyboard " : "");
+			epub += (engine.ePubHasMouse ? "mouse " : "");
+			epub += (engine.ePubHasTouch ? "touch " : "");
+			epub = epub.trim();
+			epub += ")";
+		}
 		logger.info("GUI features: " + //
 				(NativeJS.isWebGLSupported() ? "WebGL " : "") + //
-				(NativeJS.isHTML() ? "HTML" : "XML ") + //
+				(NativeJS.isHTML() ? "HTML " : "XML ") + //
 				(NativeJS.hasKeys() ? "keyboard " : "") + //
 				(NativeJS.hasMouse() ? "mouse " : "") + //
 				(NativeJS.hasTouch() ? "touch " : "") + //
-				(NativeJS.isEPub() ? "ePub (" + //
-						(engine.ePubHasKeys ? "keyboard" : "") + //
-						(engine.ePubHasMouse ? "mouse" : "") + //
-						(engine.ePubHasTouch ? "touch" : "") + ")" : ""));
+				epub);
 	}
 
 	/**

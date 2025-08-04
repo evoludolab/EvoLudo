@@ -562,7 +562,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	 * Command line option to set the feedback between traits and patch quality.
 	 */
 	public final CLOption cloFeedback = new CLOption("feedback", "0,0,0,0", Category.Module,
-			"--feedback <Cp→r,Dr→p[,Cr→p,Dp→r]>   feedback between traits and patches\n"
+			"--feedback <Cp→r,Dr→p[,Cr→p,Dp→r]>   feedback traits ⟷ patches\n"
 					+ "             p→r:  restoration for trait C and D\n"
 					+ "             r→p:  degradation for trait C and D",
 			new CLODelegate() {

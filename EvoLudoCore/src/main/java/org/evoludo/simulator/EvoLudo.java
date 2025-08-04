@@ -1308,7 +1308,7 @@ public abstract class EvoLudo
 	/**
 	 * The copyright string.
 	 */
-	public static final String COPYRIGHT = "\u00a9 Christoph Hauert"; // \u00a9 UTF-8 character code for ©
+	public static final String COPYRIGHT = "© Christoph Hauert";
 
 	/**
 	 * Return version string of current model. Version must include reference to git
