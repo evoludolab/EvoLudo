@@ -545,8 +545,7 @@ public class EvoLudoWeb extends Composite
 		removeKeyListeners(this);
 		if (keyListener == this)
 			keyListener = null;
-		// clear and close settings
-		evoludoCLOPanel.setVisible(false);
+		// clear settings
 		evoludoCLO.setText("");
 	}
 
