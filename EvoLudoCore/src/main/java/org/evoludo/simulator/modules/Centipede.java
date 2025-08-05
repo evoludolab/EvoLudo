@@ -36,7 +36,7 @@ import org.evoludo.geom.Point2D;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBS.HasIBS;
+import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;

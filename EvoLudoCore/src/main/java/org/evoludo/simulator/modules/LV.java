@@ -33,10 +33,10 @@ import java.awt.Color;
 import java.util.Arrays;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
+import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.models.RungeKutta;
 import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.Features.Multispecies;

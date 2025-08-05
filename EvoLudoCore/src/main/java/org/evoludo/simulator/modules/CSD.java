@@ -33,7 +33,7 @@ package org.evoludo.simulator.modules;
 import java.awt.Color;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBS.HasIBS;
+import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasDistribution;
 import org.evoludo.simulator.views.HasHistogram;

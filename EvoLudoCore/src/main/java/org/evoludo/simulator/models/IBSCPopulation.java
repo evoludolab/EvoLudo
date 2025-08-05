@@ -33,8 +33,8 @@ package org.evoludo.simulator.models;
 import java.util.Arrays;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBS.ScoringType;
+import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Continuous;
 
 /**

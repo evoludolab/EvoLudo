@@ -34,11 +34,11 @@ import java.awt.Color;
 
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model.HasDE;
+import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
