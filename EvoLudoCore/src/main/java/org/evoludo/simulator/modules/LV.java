@@ -275,7 +275,7 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	}
 
 	@Override
-	public IBSPop createIBSPop() {
+	public IBSPop createIBSPopulation() {
 		return new IBSPop(engine, this);
 	}
 
@@ -406,7 +406,7 @@ class Predator extends Discrete implements Multispecies, HasDE {
 	}
 
 	@Override
-	public IBSPop createIBSPop() {
+	public IBSPop createIBSPopulation() {
 		return new IBSPop(engine, this);
 	}
 }

@@ -150,7 +150,7 @@ public class DemesTBT extends TBT {
 	}
 
 	@Override
-	public DemesTBT.IBSPop createIBSPop() {
+	public DemesTBT.IBSPop createIBSPopulation() {
 		return new DemesTBT.IBSPop(engine, this);
 	}
 

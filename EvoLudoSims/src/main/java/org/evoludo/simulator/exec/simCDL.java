@@ -443,7 +443,7 @@ public class simCDL extends CDL implements ChangeListener {
 	}
 
 	@Override
-	public CDL.IBSPop createIBSPop() {
+	public CDL.IBSPop createIBSPopulation() {
 		return new simCDLIBS(engine, this);
 	}
 

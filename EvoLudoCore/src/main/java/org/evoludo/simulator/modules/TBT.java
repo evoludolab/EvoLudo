@@ -334,7 +334,7 @@ public class TBT extends Discrete implements Payoffs,
 	}
 
 	@Override
-	public IBSDPopulation createIBSPop() {
+	public IBSDPopulation createIBSPopulation() {
 		return new TBT.IBSPop(engine, this);
 	}
 

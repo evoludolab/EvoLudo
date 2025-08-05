@@ -606,7 +606,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	}
 
 	@Override
-	public ATBT.ATBTPop createIBSPop() {
+	public ATBT.ATBTPop createIBSPopulation() {
 		return new ATBT.ATBTPop(this);
 	}
 

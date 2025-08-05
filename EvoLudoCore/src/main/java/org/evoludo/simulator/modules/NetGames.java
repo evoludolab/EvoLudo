@@ -452,7 +452,7 @@ public class NetGames extends Discrete implements Payoffs,
 	}
 
 	@Override
-	public NetGames.IBSPop createIBSPop() {
+	public NetGames.IBSPop createIBSPopulation() {
 		return new NetGames.IBSPop(engine, this);
 	}
 

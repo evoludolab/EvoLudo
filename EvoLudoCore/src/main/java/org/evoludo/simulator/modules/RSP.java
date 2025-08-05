@@ -267,7 +267,7 @@ public class RSP extends Discrete implements Payoffs,
 	}
 
 	@Override
-	public RSP.IBSPop createIBSPop() {
+	public RSP.IBSPop createIBSPopulation() {
 		return new RSP.IBSPop(engine, this);
 	}
 

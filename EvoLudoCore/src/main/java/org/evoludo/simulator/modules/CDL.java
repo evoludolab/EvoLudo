@@ -897,7 +897,7 @@ public class CDL extends Discrete implements Payoffs,
 	}
 
 	@Override
-	public CDL.IBSPop createIBSPop() {
+	public CDL.IBSPop createIBSPopulation() {
 		return new CDL.IBSPop(engine, this);
 	}
 

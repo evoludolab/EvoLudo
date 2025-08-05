@@ -156,7 +156,7 @@ public abstract class IBS extends Model {
 	public void load() {
 		super.load();
 		for (Module mod : species) {
-			IBSPopulation pop = mod.createIBSPop();
+			IBSPopulation pop = mod.createIBSPopulation();
 			if (pop == null) {
 				if (mod instanceof org.evoludo.simulator.modules.Discrete) {
 					pop = new IBSDPopulation(engine, (org.evoludo.simulator.modules.Discrete) mod);

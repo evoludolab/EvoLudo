@@ -336,7 +336,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	}
 
 	@Override
-	public IBSDPopulation createIBSPop() {
+	public IBSDPopulation createIBSPopulation() {
 		return new SIR.IBSPop();
 	}
 

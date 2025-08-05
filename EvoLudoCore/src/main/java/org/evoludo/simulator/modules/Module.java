@@ -452,7 +452,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the custom IBSPopulation or {@code null} to use default.
 	 */
-	public IBSPopulation createIBSPop() {
+	public IBSPopulation createIBSPopulation() {
 		return null;
 	}
 
