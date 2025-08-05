@@ -614,13 +614,18 @@ public class TestEvoLudo implements MilestoneListener {
 			logWarning("Testing: " + name.substring(0, idx) + " SHA mismatch! - comparing plists...");
 		}
 		// compare plists
+		Plist reference;
 		try {
-			Plist reference = engine.readPlist(ref.getAbsolutePath());
-			if (compareRuns(ref, reference, result))
-				return ref;
+			reference = engine.readPlist(ref.getAbsolutePath());
 		} catch (Exception e) {
-			// ignore - comparison failed
+			// failed to read reference file
+			nTests++;
+			nTestFailures++;
+			logError("Testing: failed to read reference file '" + ref.getAbsolutePath() + "'.");
+			return null;
 		}
+		if (compareRuns(ref, reference, result))
+			return ref;
 		return null;
 	}
 
