@@ -253,6 +253,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
+	 * Graphs that support logarithmic scaling on the y-axis should implement this
+	 * interface.
+	 */
+	public interface HasLogScaleY {
+	}
+
+	/**
 	 * Graphs that show trajectories and support exporting their data should
 	 * implement this interface.
 	 */
@@ -776,6 +783,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	ContextMenuItem zoomOutMenu;
 
 	/**
+	 * The menu item to toggle logarithmic scaling on the y-axis.
+	 */
+	ContextMenuCheckBoxItem logYMenu;
+
+	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * Adds buffer size menu and queries the controller to add further
@@ -825,10 +837,36 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			setBufferCapacity(buffer.getCapacity());
 			bufferSizeTrigger = menu.add("Buffer size...", bufferSizeMenu);
 			bufferSizeTrigger.setEnabled(!controller.isRunning());
+			menu.addSeparator();
+		}
+		if (this instanceof HasLogScaleY && style.yMin >= 0.0) {
+			if (logYMenu == null) {
+				logYMenu = new ContextMenuCheckBoxItem("Logarithmic y-axis", new ScheduledCommand() {
+					@Override
+					public void execute() {
+						if (style.logScaleY) {
+							style.logScaleY = false;
+							paint(true);
+							return;
+						}
+						// logscale requested
+						if (style.yMin < 0.0)
+							// ignore request
+							return;
+						style.logScaleY = true;
+						if (style.yMin == 0.0) {
+							// increase to 1% of yMax
+							style.yMin = 0.01 * style.yMax;
+						}
+						paint(true);
+					}
+				});
+			}
+			logYMenu.setChecked(style.logScaleY);
+			menu.add(logYMenu);
 		}
 		if (this instanceof Zooming) {
 			// process zoom context menu entries
-			menu.addSeparator();
 			if (zoomInMenu == null)
 				zoomInMenu = new ContextMenuItem("Zoom in (2x)", new ZoomCommand(2.0));
 			menu.add(zoomInMenu);
@@ -1075,6 +1113,15 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			double frac = 1.0 / yLevels;
 			double incr = frac * h;
 			double level = 0.5 - incr;
+			double ymin;
+			double yrange;
+			if (style.logScaleY) {
+				ymin = Math.log10(style.yMin);
+				yrange = Math.log10(style.yMax) - ymin;
+			} else {
+				ymin = style.yMin;
+				yrange = style.yMax - ymin;
+			}
 			for (int n = 0; n <= yLevels; n++) {
 				level += incr;
 				if (style.showYLevels && n > 0 && n < yLevels) {
@@ -1088,13 +1135,29 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				if (style.showYTickLabels) {
 					setFont(style.ticksLabelFont);
 					g.setFillStyle(style.frameColor);
-					double y = style.yMin + (1.0 - n * frac) * (style.yMax - style.yMin);
-					if (style.percentY)
-						tick = Formatter.formatPercent(y, style.yMax <= 0.01 ? 1 : 0);
+					double yval = ymin + (1.0 - n * frac) * yrange;
+					if (style.logScaleY)
+						yval = Math.pow(10.0, yval);
+					if (style.percentY) {
+						tick = Formatter.formatPretty(100.0 * yval, 2);
+					}
 					else
-						tick = Formatter.format(y, 2);
+						tick = Formatter.formatPretty(yval, 2);
+					String[] numexp = tick.split("\\^");
 					// center tick labels with ticks, except for first label (top most)
-					g.fillText(tick, w + 0.5 + (style.tickLength + 4), level + (n == 0 ? 9 : 4.5));
+					double xpos = w + 0.5 + (style.tickLength + 4);
+					double ypos = level + (n == 0 ? 9 : 4.5);
+					g.fillText(numexp[0], xpos, ypos);
+					xpos += g.measureText(numexp[0]).getWidth();
+					if (numexp.length > 1) {
+						// draw exponent in smaller font
+						setFont(style.ticksLabelFont.replace("11px", "9px"));
+						g.fillText(numexp[1], xpos, ypos - 4.5);
+						xpos += g.measureText(numexp[1]).getWidth();
+						setFont(style.ticksLabelFont);
+					}
+					if (style.percentY)
+						g.fillText("%", xpos, ypos);
 				}
 			}
 		}
@@ -2066,6 +2129,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		 * percent.
 		 */
 		public boolean percentY = false;
+
+		/**
+		 * The flag to indicate whether to use logarithmic scaling on the y-axis.
+		 */
+		public boolean logScaleY = false;
 
 		/**
 		 * The label of the graph (if any).

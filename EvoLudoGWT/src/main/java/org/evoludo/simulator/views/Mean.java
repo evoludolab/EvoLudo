@@ -168,13 +168,9 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 						if (model.isDensity()) {
 							style.yLabel = "density";
 							style.percentY = false;
-							style.yMin = 0.0;
-							style.yMax = 0.0;
 						} else {
 							style.yLabel = "frequency";
 							style.percentY = true;
-							style.yMin = 0.0;
-							style.yMax = 1.0;
 						}
 						Color[] colors = module.getMeanColors();
 						graph.setColors(ColorMapCSS.Color2Css(colors));

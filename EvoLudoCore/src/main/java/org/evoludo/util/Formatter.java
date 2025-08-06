@@ -449,15 +449,15 @@ public class Formatter {
 	 * @param digits  the number of decimal places
 	 * @return the formatted <code>double</code> as HTML string
 	 */
-	private static String prettyFormat(double aDouble, int digits) {
+	private static String prettyFormat(double aDouble, int digits, String pre, String post) {
 		double[] thresh = prettyThresholds[digits];
 		double abs = Math.abs(aDouble);
 		// catch zero
 		if (abs < Double.MIN_VALUE)
-			return myFixFormatters[digits].format(aDouble);
+			return myFormatters[digits].format(aDouble);
 		if (abs > thresh[1] || abs < thresh[0])
-			return mySciFormatters[digits].format(aDouble).replace("E", "⋅10<sup>") + "</sup>";
-		return myFixFormatters[digits].format(aDouble);
+			return mySciFormatters[digits].format(aDouble).replace("E", pre) + post;
+		return myFormatters[digits].format(aDouble);
 	}
 
 	/**
@@ -469,7 +469,19 @@ public class Formatter {
 	 * @return formatted <code>double</code> as HTML string
 	 */
 	public static String pretty(double aDouble, int digits) {
-		return prettyFormat(aDouble, Math.max(Math.min(digits, MAX_DIGITS), 0));
+		return prettyFormat(aDouble, Math.max(Math.min(digits, MAX_DIGITS), 0), "⋅10<sup>", "</sup>");
+	}
+
+	/**
+	 * Same as {@link #formatSci(double, int)} but formatting of exponent
+	 * 'prettyfied' using HTML.
+	 * 
+	 * @param aDouble number to format
+	 * @param digits  number of decimal places
+	 * @return formatted <code>double</code> as HTML string
+	 */
+	public static String formatPretty(double aDouble, int digits) {
+		return prettyFormat(aDouble, Math.max(Math.min(digits, MAX_DIGITS), 0), "⋅10^", "");
 	}
 
 	/**
@@ -487,9 +499,9 @@ public class Formatter {
 		if (len == 0)
 			return "";
 		digits = Math.max(Math.min(digits, MAX_DIGITS), 0);
-		String vecString = prettyFormat(aVector[0], digits);
+		String vecString = prettyFormat(aVector[0], digits, "⋅10<sup>", "</sup>");
 		for (int i = 1; i < len; i++)
-			vecString += VECTOR_DELIMITER + prettyFormat(aVector[i], digits);
+			vecString += VECTOR_DELIMITER + prettyFormat(aVector[i], digits, "⋅10<sup>", "</sup>");
 		return vecString;
 	}
 
