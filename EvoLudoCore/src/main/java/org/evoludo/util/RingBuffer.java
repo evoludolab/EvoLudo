@@ -31,6 +31,7 @@
 package org.evoludo.util;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.ListIterator;
 
@@ -358,6 +359,25 @@ public class RingBuffer<T> implements Iterable<T> {
 	 */
 	public T replace(T entry) {
 		return replace(0, entry);
+	}
+
+	public T min(Comparator<T> cmp) {
+		T min = null;
+		for (T entry : this) {
+			if (min == null || cmp.compare(entry, min) < 0)
+				min = entry;
+		}
+		return min;
+	}
+
+
+	public T max(Comparator<T> cmp) {
+		T max = null;
+		for (T entry : this) {
+			if (max == null || cmp.compare(entry, max) > 0)
+				max = entry;
+		}
+		return max;
 	}
 
 	/**
