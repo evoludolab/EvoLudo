@@ -844,20 +844,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				logYMenu = new ContextMenuCheckBoxItem("Logarithmic y-axis", new ScheduledCommand() {
 					@Override
 					public void execute() {
-						if (style.logScaleY) {
-							style.logScaleY = false;
-							paint(true);
-							return;
-						}
-						// logscale requested
-						if (style.yMin < 0.0)
-							// ignore request
-							return;
-						style.logScaleY = true;
-						if (style.yMin == 0.0) {
-							// increase to 1% of yMax
-							style.yMin = 0.01 * style.yMax;
-						}
+						setLogY(!style.logScaleY);
 						paint(true);
 					}
 				});
@@ -880,6 +867,19 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (menu.getWidgetCount() > 0 && tooltip.isVisible())
 			tooltip.close();
 		controller.populateContextMenu(menu);
+	}
+
+	void setLogY(boolean logY) {
+		if (style.yMin < 0.0 || !logY) {
+			style.logScaleY = false;
+			return;
+		}
+		// log scale requested
+		style.logScaleY = true;
+		if (style.yMin == 0.0) {
+			// increase to 1% of yMax
+			style.yMin = 0.01 * style.yMax;
+		}
 	}
 
 	/**

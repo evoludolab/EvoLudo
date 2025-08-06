@@ -31,6 +31,7 @@
 package org.evoludo.graphics;
 
 import java.awt.Color;
+import java.util.Comparator;
 import java.util.Iterator;
 
 import org.evoludo.geom.Point2D;
@@ -134,6 +135,64 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 		if (max == max)
 			style.yMax = Math.max(style.yMax, Functions.roundUp(max));
 		data[0] = t;
+	}
+
+	@Override
+	void setLogY(boolean logY) {
+		if (!hasHistory()) {
+			super.setLogY(logY);
+			return;
+		}
+		if (style.yMin < 0.0) {
+			// categorically ignore log scale request
+			style.logScaleY = false;
+			if (logY)
+				logger.warning("Log scale requires positive values");
+			return;
+		}
+		double[] min = buffer.min(new Comparator<double[]>() {
+			@Override
+			public int compare(double[] o1, double[] o2) {
+				// ignore time
+				double [] s1 = ArrayMath.drop(o1, 0);
+				double [] s2 = ArrayMath.drop(o2, 0);
+				double m1 = ArrayMath.min(s1);
+				double m2 = ArrayMath.min(s2);
+				// negative values - use linear scale
+				if (!logY || m1 < 0.0 || m2 < 0.0)
+					return Double.compare(m1, m2);
+				// positive values - use log scale
+				if (m1 > 0.0 && m2 > 0.0) {
+					ArrayMath.log10(s1);
+					ArrayMath.log10(s2);
+					m1 = ArrayMath.min(s1);
+					m2 = ArrayMath.min(s2);
+					return Double.compare(m1, m2);
+				}
+				// at least one value is zero - use log scale but ignore zeros
+				m1 = Double.MAX_VALUE;
+				m2 = Double.MAX_VALUE;
+				for (int i=0; i<s1.length; i++) {
+					if (s1[i] > 0.0)
+						m1 = Math.min(m1, Math.log10(s1[i]));
+					if (s2[i] > 0.0)
+						m2 = Math.min(m2, Math.log10(s2[i]));
+				}
+				return Double.compare(m1, m2);
+			}
+		});
+		double bufmin = ArrayMath.min(min);
+		if (bufmin < 0.0) {
+			// categorically ignore log scale request
+			style.logScaleY = false;
+			if (logY)
+				logger.warning("Log scale requires positive values");
+			return;
+		}
+		if (logY && bufmin == 0.0)
+			bufmin = 0.01 * style.yMax;
+		style.yMin = Functions.roundDown(bufmin);
+		style.logScaleY = logY;
 	}
 
 	@Override
