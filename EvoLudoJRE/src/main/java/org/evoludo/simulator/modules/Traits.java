@@ -286,8 +286,10 @@ public class Traits extends Discrete implements Payoffs,
 
 	@Override
 	public Model createModel(Type type) {
-		if (type.isSDE())
-			return new SDEN(engine);
-		return super.createModel(type);
+		if (!type.isSDE())
+			return super.createModel(type);
+		if (model != null && model.getType().isSDE())
+			return model;
+		return new SDEN(engine);
 	}
 }

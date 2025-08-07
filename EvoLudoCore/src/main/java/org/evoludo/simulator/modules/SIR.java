@@ -266,12 +266,20 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	public Model createModel(Type type) {
 		switch (type) {
 			case ODE:
+				if (model != null && model.getType().isODE())
+					return model;
 				return new SIR.ODE();
 			case SDE:
+				if (model != null && model.getType().isSDE())
+					return model;
 				return new SIR.SDE();
 			case PDE:
+				if (model != null && model.getType().isPDE())
+					return model;
 				return new SIR.PDE();
 			case IBS:
+				if (model != null && model.getType().isIBS())
+					return model;
 				return super.createModel(type);
 			default:
 				return null;

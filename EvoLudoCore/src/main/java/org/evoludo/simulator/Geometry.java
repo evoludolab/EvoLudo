@@ -5267,7 +5267,8 @@ public class Geometry {
 			case SUPER_STAR: // super-star
 				int oldPetalsAmplification = superstar_amplification;
 				int oldPetalsCount = superstar_petals;
-				superstar_amplification = 3;
+				if (superstar_amplification < 0 )
+					superstar_amplification = 3;
 				ivec = CLOParser.parseIntVector(sub);
 				switch (ivec.length) {
 					default:

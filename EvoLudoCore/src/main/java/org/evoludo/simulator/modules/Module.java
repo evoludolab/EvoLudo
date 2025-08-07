@@ -189,6 +189,8 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @see EvoLudo#getRNG()
 	 */
 	public Model createModel(Type type) {
+		if (model != null && model.getType() == type)
+			return model;
 		// default for ODE is RK5, if available
 		if (type == Type.ODE && this instanceof HasDE.RK5)
 			type = Type.RK5;

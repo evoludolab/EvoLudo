@@ -289,6 +289,8 @@ public abstract class EvoLudo
 				return activeModel;
 		}
 		Model newModel = activeModule.createModel(type);
+		if (newModel == activeModel)
+			return activeModel;
 		if (newModel == null) {
 			if (activeModel == null) {
 				logger.warning("model type '" + type + "' not supported.");
