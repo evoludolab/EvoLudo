@@ -70,16 +70,41 @@ public class Combinatorics {
 	 * @return {@code x^n}
 	 */
 	private static int powabs(int x, int n) {
-		int x2, x4;
+		int x2, x3, x4, x6, x8;
 
 		switch (n) {
+			case 16:
+				x2 = x * x;
+				x4 = x2 * x2;
+				x8 = x4 * x4;
+				return x8 * x8;
+			case 15:
+				x3 = x * x * x;
+				x6 = x3 * x3;
+				return x3 * x6 * x6;
+			case 14:
+				x2 = x * x;
+				x6 = x2 * x2 * x2;
+				return x2 * x6 * x6;
+			case 13:
+				x3 = x * x * x;
+				x6 = x3 * x3;
+				return x * x6 * x6;
+			case 12:
+				x2 = x * x;
+				x4 = x2 * x2;
+				return x4 * x4 * x4;
+			case 11:
+				x2 = x * x;
+				x4 = x2 * x2;
+				return x * x2 * x4 * x4;
 			case 10:
 				x2 = x * x;
 				x4 = x2 * x2;
 				return x2 * x4 * x4;
 			case 9:
-				x2 = x * x * x;
-				return x2 * x2 * x2;
+				x3 = x * x * x;
+				return x3 * x3 * x3;
 			case 8:
 				x2 = x * x;
 				x2 *= x2;
@@ -88,8 +113,8 @@ public class Combinatorics {
 				x2 = x * x * x;
 				return x * x2 * x2;
 			case 6:
-				x2 = x * x * x;
-				return x2 * x2;
+				x3 = x * x * x;
+				return x3 * x3;
 			case 5:
 				x2 = x * x;
 				return x * x2 * x2;
@@ -109,12 +134,13 @@ public class Combinatorics {
 			default:
 				x2 = x * x;
 				x4 = x2 * x2;
-				int x10 = x2 * x4 * x4;
-				int xn = x10;
-				int exp = 10;
-				while (n - exp > 10) {
-					xn *= x10;
-					exp += 10;
+				x8 = x4 * x4;
+				int x16 = x8 * x8;
+				int xn = x16;
+				int exp = 16;
+				while (n - exp > 16) {
+					xn *= x16;
+					exp += 16;
 				}
 				return xn * powabs(x, n - exp);
 		}
