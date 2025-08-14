@@ -85,6 +85,7 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 			style.yMin = Double.MAX_VALUE;
 			style.yMax = -Double.MAX_VALUE;
 		}
+		setLogY(style.logScaleY);
 		double oldXMin = style.xMin;
 		super.reset();
 		if (buffer == null || buffer.getCapacity() < MIN_BUFFER_SIZE)
