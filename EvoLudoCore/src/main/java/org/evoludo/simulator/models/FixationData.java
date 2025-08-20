@@ -96,13 +96,13 @@ public class FixationData {
 
 	@Override
 	public String toString() {
-		return "{ mutantNode -> " + mutantNode + //
-				", mutantTrait -> " + mutantTrait + //
-				", residentTrait -> " + residentTrait + //
-				", typeFixed -> " + typeFixed + //
-				", updatesFixed -> " + Formatter.format(updatesFixed, 6) + //
-				", timeFixed -> " + Formatter.format(timeFixed, 6) + //
-				", probRead -> " + probRead + //
-				", timeRead -> " + timeRead + " }";
+		return "{ mutantNode → " + mutantNode + //
+				", mutantTrait → " + mutantTrait + //
+				", residentTrait → " + residentTrait + //
+				", typeFixed → " + typeFixed + //
+				", updatesFixed → " + Formatter.format(updatesFixed, 6) + //
+				", timeFixed → " + Formatter.format(timeFixed, 6) + //
+				", probRead → " + probRead + //
+				", timeRead → " + timeRead + " }";
 	}
 }

@@ -1158,7 +1158,7 @@ public abstract class IBSPopulation {
 			double sn = getScoreAt(n);
 			double fn = getFitnessAt(n);
 			String in = module.isStatic() ? "-" : "" + interactions[n];
-			logger.fine("score[" + n + "]=" + Formatter.format(sn, 6) + " -> " + Formatter.format(fn, 6)
+			logger.fine("score[" + n + "]=" + Formatter.format(sn, 6) + " → " + Formatter.format(fn, 6)
 					+ ", interactions[" + n + "]=" + in +
 					", base=" + map2fit.getBaseline() + ", selection=" + map2fit.getSelection());
 			sum += fn;
@@ -4506,7 +4506,7 @@ public abstract class IBSPopulation {
 			pi *= f;
 		}
 		logger.warning(
-				"What the heck are you doing here!!! (rand: " + uRand + ", p: " + p + ", n: " + n + " -> " + sum + ")");
+				"What the heck are you doing here!!! (rand: " + uRand + ", p: " + p + ", n: " + n + " → " + sum + ")");
 		return -1;
 	}
 }

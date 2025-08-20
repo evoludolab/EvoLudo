@@ -58,11 +58,11 @@ import org.evoludo.util.CLOption.Category;
  * (I), and recovered (R). The model is defined by transition
  * probabilities/rates between these cohorts:
  * <ul>
- * <li>S -> I: Susceptible individuals become infected with a certain
+ * <li>S → I: Susceptible individuals become infected with a certain
  * probability/rate
- * <li>I -> R: Infected individuals recover with a certain probability/rate
- * <li>I -> S: Infected individuals can become susceptible again (optional)
- * <li>R -> S: Recovered individuals can become susceptible again with a certain
+ * <li>I → R: Infected individuals recover with a certain probability/rate
+ * <li>I → S: Infected individuals can become susceptible again (optional)
+ * <li>R → S: Recovered individuals can become susceptible again with a certain
  * probability/rate
  * </ul>
  * 
@@ -88,23 +88,23 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	final static int R = 2;
 
 	/**
-	 * The transition probability/rate for susceptibles to infected, S -> I,
+	 * The transition probability/rate for susceptibles to infected, S → I,
 	 * including seasonal variation {@code pSI = pSI[0] + pSI[1] cos(pSI[2] t)}.
 	 */
 	double[] pSI = new double[] { 1.0, 0.0, 0.0 };
 
 	/**
-	 * The transition probability/rate for infected to recovered, I -> R.
+	 * The transition probability/rate for infected to recovered, I → R.
 	 */
 	double pIR = 0.3;
 
 	/**
-	 * The transition probability/rate for infected to susceptible, I -> S.
+	 * The transition probability/rate for infected to susceptible, I → S.
 	 */
 	double pIS = 0.0;
 
 	/**
-	 * The transition probability/rate for recovered to susceptible, R -> S.
+	 * The transition probability/rate for recovered to susceptible, R → S.
 	 */
 	double pRS = 0.7;
 
@@ -148,10 +148,10 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	private static final double TWOPI = 2.0 * Math.PI;
 
 	/**
-	 * Command line option to set the transition probability for S -> I.
+	 * Command line option to set the transition probability for S → I.
 	 */
 	public final CLOption cloInfect = new CLOption("infect", "1.0", Category.Module,
-			"--infect <β,[A,ω]>  S -> I, β+A cos(2π ω t)", new CLODelegate() {
+			"--infect <β,[A,ω]>  S→I: β+A cos(2π ω t)", new CLODelegate() {
 
 				@Override
 				public boolean parse(String arg) {
@@ -176,10 +176,10 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 			});
 
 	/**
-	 * Command line option to set the transition probability for I -> R.
+	 * Command line option to set the transition probability for I → R.
 	 */
 	public final CLOption cloRecover = new CLOption("recover", "0.3", Category.Module,
-			"--recover <r[,s]>  I -> R, [I -> S]", new CLODelegate() {
+			"--recover <r[,s]>  I→R, [I→S]", new CLODelegate() {
 
 				@Override
 				public boolean parse(String arg) {
@@ -207,10 +207,10 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 			});
 
 	/**
-	 * Command line option to set the transition probability for R -> S.
+	 * Command line option to set the transition probability for R → S.
 	 */
 	public final CLOption cloResist = new CLOption("resist", "0.7", Category.Module,
-			"--resist <r>    R -> S", new CLODelegate() {
+			"--resist <r>    R→S", new CLODelegate() {
 
 				@Override
 				public boolean parse(String arg) {
