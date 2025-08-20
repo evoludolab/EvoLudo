@@ -142,7 +142,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 
 	@Override
 	public int getDependent() {
-		return I;
+		return S;
 	}
 
 	private static final double TWOPI = 2.0 * Math.PI;
@@ -252,7 +252,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	 *               interface)
 	 * @param change the array to store the changes in the densities of the cohorts
 	 */
-	void getDerivatives(double t, double[] state, double[] unused, double[] change) {
+	void getDerivatives(double t, double[] state, double[] change) {
 		double psi1 = pSI[1];
 		double psi = pSI[0];
 		if (psi1 > 0.0 )
@@ -301,7 +301,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 
 		@Override
 		protected void getDerivatives(double t, double[] state, double[] unused, double[] change) {
-			SIR.this.getDerivatives(t, state, unused, change);
+			SIR.this.getDerivatives(t, state, change);
 		}
 	}
 
@@ -320,7 +320,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 
 		@Override
 		protected void getDerivatives(double t, double[] state, double[] unused, double[] change) {
-			SIR.this.getDerivatives(t, state, unused, change);
+			SIR.this.getDerivatives(t, state, change);
 		}
 	}
 
@@ -339,7 +339,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 
 		@Override
 		protected void getDerivatives(double t, double[] state, double[] unused, double[] change) {
-			SIR.this.getDerivatives(t, state, unused, change);
+			SIR.this.getDerivatives(t, state, change);
 		}
 	}
 
@@ -381,13 +381,18 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 					double psi = pSI[0];
 					if (psi1 > 0.0 )
 						psi += psi1 * Math.cos(pSI[2] * ibs.getTime());
+					// probability of no infection (1-psi)^nI
 					if (nI > 0 && random01() > Combinatorics.pow(1.0 - psi, nI))
 						return setNextTraitAt(me, I);
 					break;
-				case I: // I -> R transition
-					if (pIR > 0.0 && random01() < pIR)
+				case I: // I -> R, I -> S transition
+					double r = random01();
+					// probability that neither transition happens
+					if (r > (1.0 - pIR) * (1.0 - pIS))
+						break;
+					if (r < pIR / (pIR + pIS))
 						return setNextTraitAt(me, R);
-					break;
+					return setNextTraitAt(me, S);
 				case R: // R -> S transition
 					if (pRS > 0.0 && random01() < pRS)
 						return setNextTraitAt(me, S);
@@ -399,8 +404,8 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 
 		@Override
 		public boolean checkConvergence() {
-			if (traitsCount[I] == 0 && pRS < 1e-8) {
-				// if R -> S is not possible and I is extinct
+			if (traitsCount[I] == 0 && pRS <= 0.0) {
+				// any mixture of R, S is absorbing if R -> S is not possible
 				return true;
 			}
 			return super.checkConvergence();
