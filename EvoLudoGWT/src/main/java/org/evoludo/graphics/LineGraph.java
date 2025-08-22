@@ -192,6 +192,8 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 		}
 		if (logY && bufmin == 0.0)
 			bufmin = 0.01 * style.yMax;
+		if (!logY && bufmin > 0.0 && bufmin < 0.01 * style.yMax)
+			bufmin = 0.0;
 		style.yMin = Functions.roundDown(bufmin);
 		style.logScaleY = logY;
 	}
