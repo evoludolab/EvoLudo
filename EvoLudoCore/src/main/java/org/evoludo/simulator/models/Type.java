@@ -127,6 +127,29 @@ public enum Type implements CLOption.Key {
 	}
 
 	/**
+	 * Check if this model type is the same as the given type. Distinguishes between
+	 * ODE, SDE, PDE, and IBS models but remains agnostic to the implementation
+	 * details.
+	 * 
+	 * @param type the type to compare with
+	 * @return {@code true} if this model type is the same as the given type,
+	 *         {@code false} otherwise
+	 */
+	public boolean isType(Type type) {
+		if (this == type)
+			return true;
+		if (type.isODE())
+			return isODE();
+		if (type.isSDE())
+			return isSDE();
+		if (type.isPDE())
+			return isPDE();
+		if (type.isIBS())
+			return isIBS();
+		return false;
+	}
+
+	/**
 	 * Check if this model type is an ordinary differential equations model.
 	 * 
 	 * @return {@code true} if this is an ODE model, {@code false} otherwise

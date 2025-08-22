@@ -264,22 +264,16 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 
 	@Override
 	public Model createModel(Type type) {
+		if (model != null && model.getType().isType(type))
+			return model;
 		switch (type) {
 			case ODE:
-				if (model != null && model.getType().isODE())
-					return model;
 				return new SIR.ODE();
 			case SDE:
-				if (model != null && model.getType().isSDE())
-					return model;
 				return new SIR.SDE();
 			case PDE:
-				if (model != null && model.getType().isPDE())
-					return model;
 				return new SIR.PDE();
 			case IBS:
-				if (model != null && model.getType().isIBS())
-					return model;
 				return super.createModel(type);
 			default:
 				return null;
@@ -404,11 +398,9 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 
 		@Override
 		public boolean checkConvergence() {
-			if (traitsCount[I] == 0 && pRS <= 0.0) {
-				// any mixture of R, S is absorbing if R -> S is not possible
-				return true;
-			}
-			return super.checkConvergence();
+			if (pRS > 0.0)
+				return (traitsCount[S] == nPopulation);
+			return (traitsCount[I] == 0);
 		}
 	}
 }
