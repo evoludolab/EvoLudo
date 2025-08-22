@@ -115,6 +115,11 @@ public class PDE extends ODE {
 	protected double[][] fitness;
 
 	/**
+	 * The background densities for each trait at initialization.
+	 */
+	double[] background;
+
+	/**
 	 * Type of initial configuration for each species.
 	 * <p>
 	 * <strong>Note:</strong> this variable is deliberately hiding a field from
@@ -700,8 +705,7 @@ public class PDE extends ODE {
 			colorMap.translate(density, colors);
 			return;
 		}
-		Module mod = module.getSpecies(id);
-		if (mod.getVacant() >= 0)
+		if (dependent >= 0)
 			((ColorMap.Gradient2D<T>) colorMap).setRange(minDensity, maxDensity);
 		colorMap.translate(density, colors);
 	}
@@ -1000,7 +1004,6 @@ public class PDE extends ODE {
 	@Override
 	public void init() {
 		super.init();
-		// RD_INIT_SQUARE and RD_INIT_CIRCLE only available on lattices
 		InitType itype = initType;
 		if (!space.isLattice()) {
 			// some initialization types make only sense on lattices
@@ -1019,17 +1022,23 @@ public class PDE extends ODE {
 
 			case PERTURBATION:
 				for (int n = 0; n < space.size; n++)
-					System.arraycopy(y0, 0, density[n], 0, nDim);
-				double[] disturb = new double[nDim];
-				if (dependent >= 0) {
-					// flip frequencies and normalize
-					ArrayMath.multiply(y0, -1.0, disturb);
-					ArrayMath.add(disturb, 1.0);
-					ArrayMath.normalize(disturb);
-				} else {
-					ArrayMath.multiply(y0, 1.2, disturb);
+					System.arraycopy(background, 0, density[n], 0, nDim);
+				switch (space.getType()) {
+					case CUBE:
+						int l = (int) (Math.pow(space.size, 1.0 / 3.0) + 0.5);
+						System.arraycopy(y0, 0, density[(l * l + l + 1) * l / 2], 0, nDim);
+						break;
+					case SQUARE_NEUMANN:
+					case SQUARE_MOORE:
+					case SQUARE:
+					case TRIANGULAR:
+					case HONEYCOMB:
+						l = (int) (Math.sqrt(space.size) + 0.5);
+						System.arraycopy(y0, 0, density[(l + 1) * l / 2], 0, nDim);
+						break;
+					default: // for anything else
+						System.arraycopy(y0, 0, density[space.size / 2], 0, nDim);
 				}
-				System.arraycopy(disturb, 0, density[space.size / 2], 0, nDim);
 				break;
 
 			case RANDOM:
@@ -1058,16 +1067,8 @@ public class PDE extends ODE {
 				//$FALL-THROUGH$
 
 			case SQUARE:
-				if (dependent >= 0) {
-					int len = density[0].length;
-					double[] empty = new double[len];
-					empty[module.VACANT < 0 ? dependent : module.VACANT] = 1.0;
-					for (int n = 0; n < space.size; n++)
-						System.arraycopy(empty, 0, density[n], 0, len);
-				} else {
-					for (int n = 0; n < space.size; n++)
-						Arrays.fill(density[n], 0.0);
-				}
+				for (int n = 0; n < space.size; n++)
+					System.arraycopy(background, 0, density[n], 0, nDim);
 				switch (space.getType()) {
 					case CUBE:
 						int l = 50;
@@ -1090,7 +1091,6 @@ public class PDE extends ODE {
 									System.arraycopy(y0, 0, density[(mz + z) * l2 + (m + y) * l + m + x], 0, nDim);
 								}
 						break;
-
 					case LINEAR:
 						dd = Math.max(2, space.size / 10);
 						dd -= space.size % 2 - dd % 2;
@@ -1098,7 +1098,6 @@ public class PDE extends ODE {
 						for (int n = m; n < m + dd; n++)
 							System.arraycopy(y0, 0, density[n], 0, nDim);
 						break;
-
 					default: // for square, triangular and hexagonal lattices
 						l = (int) Math.floor(Math.sqrt(space.size) + 0.5);
 						m = l / 2;
@@ -1137,17 +1136,13 @@ public class PDE extends ODE {
 							}
 						}
 						break;
-
 					case LINEAR:
 						l = space.size;
 						m = l * 0.5;
 						norm = 1.0 / l;
-						for (int x = 0; x < l; x++) {
-							double dens = Math.exp(-(x - m) * (x - m) * norm);
-							ArrayMath.multiply(y0, dens, density[x]);
-						}
+						for (int x = 0; x < l; x++)
+							scaleDensity(density[x], Math.exp(-(x - m) * (x - m) * norm));
 						break;
-
 					default: // for square, triangular and hexagonal lattices
 						l = (int) Math.floor(Math.sqrt(space.size) + 0.5);
 						m = (l - 1) * 0.5;
@@ -1187,7 +1182,6 @@ public class PDE extends ODE {
 							}
 						}
 						break;
-
 					case LINEAR:
 						l = space.size;
 						m = (l - 1) * 0.5;
@@ -1199,7 +1193,6 @@ public class PDE extends ODE {
 									Math.exp(-(r - m3) * (r - m3) * norm));
 						}
 						break;
-
 					default: // for square, triangular and hexagonal lattices
 						l = (int) Math.floor(Math.sqrt(space.size) + 0.5);
 						m = (l - 1) * 0.5;
@@ -1238,7 +1231,8 @@ public class PDE extends ODE {
 	 * @param scale the scaling factor
 	 */
 	private void scaleDensity(double[] d, double scale) {
-		ArrayMath.multiply(y0, scale, d);
+		for (int n = 0; n < nDim; n++)
+			d[n] = (1.0 - scale) * background[n] + scale * y0[n];
 		if (dependent >= 0)
 			d[dependent] = 1.0 + d[dependent] - ArrayMath.norm(d);
 	}
@@ -1279,7 +1273,7 @@ public class PDE extends ODE {
 	public enum InitType implements CLOption.Key {
 
 		/**
-		 * Uniform/homogeneous distribution of trait densities.
+		 * Uniform/homogeneous distribution of trait densities {@code <d1,...dn>}.
 		 */
 		UNIFORM("uniform", "uniform densities <d1,...,dn>"),
 
@@ -1289,35 +1283,46 @@ public class PDE extends ODE {
 		RANDOM("random", "random densities"),
 
 		/**
-		 * Square in the center with uniform trait densities.
+		 * Square in the center with uniform trait densities {@code <d1,...dn>}. This
+		 * requires a lattice geometry. In modules with empty space the background
+		 * defaults to empty, otherwise the background densities <em>must</em> be
+		 * specified as {@code <b1,...bn>}.
 		 */
-		SQUARE("square", "square in center <d1,...,dn>"),
+		SQUARE("square", "square in center <d1,...,dn[;b1,...,bn]>"),
 
 		/**
-		 * Circle in the center with uniform densities.
+		 * Circle in the center with uniform densities {@code <d1,...dn>}. This requires
+		 * a lattice geometry. In modules with empty space the background defaults to
+		 * empty, otherwise the background densities <em>must</em> be specified as
+		 * {@code <b1,...bn>}.
 		 */
-		CIRCLE("circle", "circle in center <d1,...,dn>"),
+		CIRCLE("circle", "circle in center <d1,...,dn[;b1,...,bn]>"),
 
 		/**
 		 * Perturbation of a spatially homogeneous distribution with densities
-		 * {@code y0}. The perturbation in the center cell has increased densities by a
-		 * factor {@code 1.2}, or, for frequency based models with inverted and
-		 * normalized frequencies.
+		 * {@code <d1,...dn>}. In modules with empty space the background defaults to
+		 * empty, otherwise the background densities <em>must</em> be specified as
+		 * {@code <b1,...bn>}.
 		 */
-		PERTURBATION("perturbation", "perturbation in center <d1,...,dn>"),
+		PERTURBATION("perturbation", "perturbation in center <d1,...,dn[;b1,...,bn]>"),
 
 		/**
-		 * Gaussian density distribution in the center. In 2D lattices this generates a
-		 * sombrero-like distribution. Maximum density is given as specified.
+		 * Gaussian density distribution in the center. This requires a lattice
+		 * geometry. In 2D lattices this generates a sombrero-like distribution. The
+		 * peak density is {@code <d1,...dn>}. In modules with empty space the
+		 * background defaults to empty, otherwise the background densities
+		 * <em>must</em> be specified as {@code <b1,...bn>}.
 		 */
-		GAUSSIAN("sombrero", "sombrero-like distribution <d1,...,dn>"),
+		GAUSSIAN("sombrero", "sombrero-like distribution <d1,...,dn[;b1,...,bn]>"),
 
 		/**
 		 * Ring distribution in the center with Gaussian distributed densities along the
-		 * radius. In 2D lattices this generates a donut-like distribution. Maximum
-		 * density as specified.
+		 * radius. This requires a lattice geometry. In 2D lattices this generates a
+		 * donut-like distribution. The peak density is {@code <d1,...dn>}. In modules
+		 * with empty space the background defaults to empty, otherwise the background
+		 * densities <em>must</em> be specified as {@code <b1,...bn>}.
 		 */
-		RING("ring", "donut-like distribution <d1,...,dn>");
+		RING("ring", "donut-like distribution <d1,...,dn[;b1,...,bn]>");
 
 		/**
 		 * Key of initialization type. Used when parsing command line options.
@@ -1379,22 +1384,42 @@ public class PDE extends ODE {
 		// this is just for a single species - as everything else in PDE models
 		initType = (InitType) cloInit.match(arg);
 		String[] typeargs = arg.split("\\s+|=");
-		double[] init = null;
+		double[][] init = null;
 		if (typeargs.length > 1)
-			init = CLOParser.parseVector(typeargs[1]);
+			init = CLOParser.parseMatrix(typeargs[1]);
 		int nt = module.getNTraits();
-		if (y0 == null || y0.length != nt)
+		if (y0 == null || y0.length != nt) {
 			y0 = new double[nt];
-		if (initType == null || !initType.equals(InitType.RANDOM) && (init == null || init.length != nt))
+			background = new double[nt];
+		}
+		if (initType == null || !initType.equals(InitType.RANDOM) && (init == null || init[0] == null || init[0].length != nt))
 			return false;
 		// init can be null for RANDOM initializations
 		if (init == null)
 			Arrays.fill(y0, 1.0);
 		else
-			System.arraycopy(init, 0, y0, 0, nt);
+			System.arraycopy(init[0], 0, y0, 0, nt);
 		if (dependent >= 0) {
-			// normalize frequencies
+			// normalize initial state
 			ArrayMath.normalize(y0);
+		}
+		// UNIFORM and RANDOM do not need a background
+		if (initType == InitType.UNIFORM || initType == InitType.RANDOM)
+			return true;
+		if (init.length > 1) {
+			// background specified
+			System.arraycopy(init[1], 0, background, 0, nt);
+			if (dependent >= 0) {
+				// normalize background
+				ArrayMath.normalize(background);
+			}
+		} else {
+			int vacant = module.getVacant();
+			if (vacant < 0)
+				return false;
+			// set background to empty
+			Arrays.fill(background, 0.0);
+			background[vacant] = 1.0;
 		}
 		return true;
 	}
