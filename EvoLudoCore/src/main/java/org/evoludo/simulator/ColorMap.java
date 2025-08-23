@@ -403,10 +403,11 @@ public abstract class ColorMap<T extends Object> {
 		 *                 color
 		 */
 		public void interpolateColors(T[] gradient, Color start, int first, Color end, int last) {
-			for (int n = first; n <= last; n++) {
+			for (int n = first; n < last; n++) {
 				double x = (double) (n - first) / (double) (last - first);
 				gradient[n] = color2Color(blendColors(end, start, x));
 			}
+			gradient[last] = color2Color(end);
 		}
 
 		/**
@@ -853,8 +854,8 @@ public abstract class ColorMap<T extends Object> {
 				return;
 			}
 			// create color gradient on simplex
+			Color colordep = colors[dep];
 			for (int i = 0; i <= nGradient; i++) {
-				Color colordep = colors[dep];
 				Color start = blendColors(color1, colordep, w1);
 				Color end = blendColors(start, color2, w1);
 				interpolateColors(gradient[i], start, 0, end, nGradient - i);

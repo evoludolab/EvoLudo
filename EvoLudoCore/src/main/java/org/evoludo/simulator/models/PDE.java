@@ -705,9 +705,9 @@ public class PDE extends ODE {
 			colorMap.translate(density, colors);
 			return;
 		}
-		if (dependent >= 0)
-			((ColorMap.Gradient2D<T>) colorMap).setRange(minDensity, maxDensity);
-		colorMap.translate(density, colors);
+		ColorMap.Gradient2D<T> map = (ColorMap.Gradient2D<T>) colorMap;
+		map.setRange(minDensity, maxDensity, dependent);
+		map.translate(density, colors);
 	}
 
 	@Override
