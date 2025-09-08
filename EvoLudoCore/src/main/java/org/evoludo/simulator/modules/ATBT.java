@@ -428,7 +428,8 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 
 	@Override
 	public Data2Phase getPhase2DMap() {
-		map = new ATBTMap();
+		if (map == null)
+			map = new ATBTMap();
 		return map;
 	}
 

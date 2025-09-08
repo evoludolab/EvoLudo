@@ -347,7 +347,8 @@ public class EcoPGG extends Discrete implements Payoffs,
 
 	@Override
 	public Data2Phase getPhase2DMap() {
-		map = new EcoPGGMap();
+		if (map == null)
+			map = new EcoPGGMap();
 		return map;
 	}
 
