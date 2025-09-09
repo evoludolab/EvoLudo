@@ -303,7 +303,7 @@ public class ODE extends Model implements Discrete {
 	 * @see #hasConverged()
 	 * @see #isMonomorphic()
 	 */
-	double accuracy = 1e-4;
+	protected double accuracy = 1e-4;
 
 	// REVIEW
 	// - implement/check disabled traits

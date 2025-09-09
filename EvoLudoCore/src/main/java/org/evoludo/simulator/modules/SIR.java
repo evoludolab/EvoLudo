@@ -290,14 +290,14 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	 * \(p_{IS}\) are the transition rates between the different cohorts. The
 	 * parameters \(p\) and \(q\) can be used to model non-linear incidence rates.
 	 * 
-	 * @param t      the current time (not used in this model)
-	 * @param state  the current state of the system, an array containing the
-	 *               densities of the susceptible, infected, and recovered cohorts
-	 * @param unused an unused array (for compatibility with the {@link Payoffs}
-	 *               interface)
-	 * @param change the array to store the changes in the densities of the cohorts
+	 * @param t        the current time (not used in this model)
+	 * @param state    the current state of the system, an array containing the
+	 *                 densities of the susceptible, infected, and recovered cohorts
+	 * @param change   the array to store the changes in the densities of the
+	 *                 cohorts
+	 * @param accuracy the numerical accuracy
 	 */
-	void getDerivatives(double t, double[] state, double[] change) {
+	void getDerivatives(double t, double[] state, double[] change, double accuracy) {
 		double psi1 = pSI[1];
 		double psi = pSI[0];
 		if (psi1 > 0.0)
@@ -309,9 +309,23 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 		if (incidence[1] != 1.0)
 			s = Math.pow(s, incidence[1]);
 		psi *= s * i;
-		change[S] = state[R] * pRS + state[I] * pIS - psi;
-		change[I] = psi - state[I] * (pIR + pIS);
-		change[R] = state[I] * pIR - state[R] * pRS;
+		double dx = state[R] * pRS + state[I] * pIS - psi;
+		change[S] = dx;
+		double totDelta = dx;
+		dx = psi - state[I] * (pIR + pIS);
+		totDelta += dx;
+		change[I] = dx;
+		dx = state[I] * pIR - state[R] * pRS;
+		change[R] = dx;
+		totDelta += dx;
+		// with frequencies totDelta is zero (in theory)
+		if (Math.abs(totDelta) > accuracy) {
+			// shift changes to sum up to zero
+			totDelta /= nActive;
+			for (int n = 0; n < nTraits; n++)
+				if (active[n])
+					change[n] -= totDelta;
+		}
 	}
 
 	@Override
@@ -347,7 +361,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 
 		@Override
 		protected void getDerivatives(double t, double[] state, double[] unused, double[] change) {
-			SIR.this.getDerivatives(t, state, change);
+			SIR.this.getDerivatives(t, state, change, accuracy);
 		}
 	}
 
@@ -366,7 +380,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 
 		@Override
 		protected void getDerivatives(double t, double[] state, double[] unused, double[] change) {
-			SIR.this.getDerivatives(t, state, change);
+			SIR.this.getDerivatives(t, state, change, accuracy);
 		}
 	}
 
@@ -385,7 +399,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 
 		@Override
 		protected void getDerivatives(double t, double[] state, double[] unused, double[] change) {
-			SIR.this.getDerivatives(t, state, change);
+			SIR.this.getDerivatives(t, state, change, accuracy);
 		}
 	}
 
