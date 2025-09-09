@@ -152,7 +152,11 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 
 	@Override
 	public int getDependent() {
-		return S;
+		// the preferred dependent is R
+		// if deactivated or no recruitment to R, use S
+		if (!active[R] || pIR <= 0.0)
+			return S;
+		return R;
 	}
 
 	private static final double TWOPI = 2.0 * Math.PI;
@@ -296,7 +300,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	void getDerivatives(double t, double[] state, double[] change) {
 		double psi1 = pSI[1];
 		double psi = pSI[0];
-		if (psi1 > 0.0 )
+		if (psi1 > 0.0)
 			psi += psi1 * Math.cos(pSI[2] * t);
 		double s = state[S];
 		double i = state[I];
@@ -421,7 +425,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 					}
 					double psi1 = pSI[1];
 					double psi = pSI[0];
-					if (psi1 > 0.0 )
+					if (psi1 > 0.0)
 						psi += psi1 * Math.cos(pSI[2] * ibs.getTime());
 					// probability of no infection (1-psi)^nI
 					if (nI > 0 && random01() > Combinatorics.pow(1.0 - psi, nI))
