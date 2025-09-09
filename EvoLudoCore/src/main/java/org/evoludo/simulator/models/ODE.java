@@ -905,11 +905,12 @@ public class ODE extends Model implements Discrete {
 				default:
 					throw new Error("Unknown update method for players (" + put + ")");
 			}
-			// with a dependent trait totDelta should be zero in theory 
-			if (dependents[index] >= 0) {
-				// normalize active traits
-				if (Math.abs(totDelta) > 1e-7 * mod.getNActive()) {
+			// with frequencies totDelta is zero (in theory)
+			if (!isDensity) {
+				// shift changes to sum up to zero
+				if (Math.abs(totDelta) > accuracy) {
 					boolean[] active = mod.getActiveTraits();
+					totDelta /= mod.getNActive();
 					for (int n = 0; n < nTraits; n++)
 						if (active[n])
 							change[skip + n] -= totDelta;
