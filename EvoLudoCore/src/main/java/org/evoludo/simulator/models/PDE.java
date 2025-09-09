@@ -473,7 +473,7 @@ public class PDE extends ODE {
 
 		for (int n = start; n < end; n++) {
 			double[] ytn = density[n];
-			double[] youtn = next[n]; // s is only a short-cut - data written to s is stored in next[]
+			double[] youtn = next[n]; // youtn is only a short-cut - data written to next[]
 			double[] ftn = (hasFit ? fitness[n] : null);
 			getDerivatives(time, ytn, ftn, dytn);
 			ArrayMath.addscale(ytn, dytn, dt, youtn); // youtn = ytn+step*dy
@@ -552,7 +552,6 @@ public class PDE extends ODE {
 
 		if (isSymmetric) {
 			double[][] sort = new double[space.maxIn][];
-			double[] si = new double[nDim];
 			for (int n = start; n < end; n++) {
 				int[] neighs = in[n];
 				int nIn = space.kin[n];
@@ -560,25 +559,20 @@ public class PDE extends ODE {
 				double[] s = density[n]; // next state
 				ArrayMath.multiply(sn, -space.kout[n], s); // s = -k*sn
 				// sort neighbours
-				for (int i = 0; i < nIn; i++) {
-					double[] p = next[neighs[i]];
-					sort[i] = p;
-				}
+				for (int i = 0; i < nIn; i++)
+					sort[i] = next[neighs[i]];
 				// sorting must maintain integrity of densities at neighbouring sites
 				// (sorting based on first element is enough - only equality in the first
 				// density but not the others could still result in an eventual break of
 				// symmetry due to rounding error.)
 				Arrays.sort(sort, 0, nIn, sorting);
 				// loop over neighbours
-				for (int i = 0; i < nIn; i++) {
-					si = sort[i];
-					// diffusion
-					ArrayMath.add(s, si); // s += si
-				}
+				for (int i = 0; i < nIn; i++)
+					ArrayMath.add(s, sort[i]); // s += si
 				ArrayMath.multiply(s, alpha); // s *= alpha
 				ArrayMath.add(s, sn); // s += sn
 				if (dependent >= 0)
-					s[dependent] = 1.0 + s[dependent] - ArrayMath.norm(s);
+					s[dependent] = Math.max(0.0, 1.0 + s[dependent] - ArrayMath.norm(s));
 				// update extrema and mean density
 				minmaxmean(s, minDens, maxDens, meanDens);
 			}
@@ -597,12 +591,9 @@ public class PDE extends ODE {
 			ArrayMath.multiply(s, alpha); // s *= alpha, s is change in density
 			ArrayMath.add(s, ds); // s += ds, new density now in s
 			if (dependent >= 0)
-				s[dependent] = 1.0 + s[dependent] - ArrayMath.norm(s);
+				s[dependent] = Math.max(0.0, 1.0 + s[dependent] - ArrayMath.norm(s));
 			// update extrema and mean density // min_s:
-			// min_dens+(min_kin*min_dens-max_kout*max_dens)*alpha>0
-			minmaxmean(s, minDens, maxDens, meanDens); // max_s:
-														// max_dens+(max_kin*max_dens-min_kout*min_dens)*alpha<1
-														// (with dependent)
+			minmaxmean(s, minDens, maxDens, meanDens);
 		}
 		updateDensity(minDens, maxDens, meanDens);
 	}
@@ -1026,23 +1017,12 @@ public class PDE extends ODE {
 				break;
 
 			case RANDOM:
-				if (dependent >= 0) {
-					for (int n = 0; n < space.size; n++) {
-						double[] ds = density[n]; // ds is only a short-cut - data written to ds is stored in density[]
-						for (int i = 0; i < nDim; i++) {
-							double dsi = rng.random01() * y0[i];
-							ds[i] = dsi;
-						}
-						if (dependent >= 0)
-							ArrayMath.normalize(ds);
-					}
-					break;
-				}
 				for (int n = 0; n < space.size; n++) {
-					double[] ds = density[n]; // ds is only a short-cut - data written to ds is stored in density[]
-					for (int i = 0; i < nDim; i++) {
+					double[] ds = density[n]; // ds is only a short-cut - data written to density[]
+					for (int i = 0; i < nDim; i++)
 						ds[i] = rng.random01() * y0[i];
-					}
+					if (!isDensity)
+						ArrayMath.normalize(ds);
 				}
 				break;
 
@@ -1217,8 +1197,10 @@ public class PDE extends ODE {
 	private void scaleDensity(double[] d, double scale) {
 		for (int n = 0; n < nDim; n++)
 			d[n] = (1.0 - scale) * background[n] + scale * y0[n];
-		if (dependent >= 0)
-			d[dependent] = 1.0 + d[dependent] - ArrayMath.norm(d);
+		if (dependent >= 0) {
+			d[dependent] = Math.max(0.0, 1.0 + d[dependent] - ArrayMath.norm(d));
+			ArrayMath.normalize(d);
+		}
 	}
 
 	/**
