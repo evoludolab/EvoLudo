@@ -252,7 +252,7 @@ public class RungeKutta extends ODE {
 			dtTry = 2.0 * h; // no more than doubling.
 		dtTaken = h;
 
-		// if it's a replicator equation the densities/frequencies must add up to 1
+		// if it's a replicator equation the frequencies must add up to 1
 		// this can be used to improve numerical accuracy.
 		normalizeState(yout);
 

@@ -335,12 +335,19 @@ public class SDE extends ODE {
 			// note, yt[idx]>0 must hold (from previous step) but
 			// sign of dyt[idx] depends on direction of integration
 			step = -yt[idx] / dyt[idx]; // note: dyt[idx]<0 -> step>0
-			// ensure all frequencies are positive - despite roundoff errors
-			for (int i = 0; i < nDim; i++)
-				yout[i] = Math.max(0.0, yt[i] + step * dyt[i]);
+			ArrayMath.addscale(yt, dyt, step, yout);
 			yout[idx] = 0.0; // avoid roundoff errors
 		}
-		normalizeState(yout);
+		if (!isDensity) {
+			idx = ArrayMath.maxIndex(yout);
+			if (yout[idx] > 1.0) {
+				// step too big, resulted in frequencies >1
+				step = (1.0 - yt[idx]) / dyt[idx];
+				ArrayMath.addscale(yt, dyt, step, yout);
+				yout[idx] = 1.0; // avoid roundoff errors
+			}
+			normalizeState(yout);
+		}
 		// the new state is in yout - swap and determine new fitness
 		double[] swap = yt;
 		yt = yout;

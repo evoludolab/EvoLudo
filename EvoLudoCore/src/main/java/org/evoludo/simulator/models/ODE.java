@@ -779,12 +779,19 @@ public class ODE extends Model implements Discrete {
 			// note, yt[idx]>0 must hold (from previous step) but
 			// sign of dyt[idx] depends on direction of integration
 			step = -yt[idx] / dyt[idx];
-			// ensure all frequencies are positive - despite roundoff errors
-			for (int i = 0; i < nDim; i++)
-				yout[i] = Math.max(0.0, yt[i] + step * dyt[i]);
+			ArrayMath.addscale(yt, dyt, step, yout);
 			yout[idx] = 0.0; // avoid roundoff errors
 		}
-		normalizeState(yt);
+		if (!isDensity) {
+			idx = ArrayMath.maxIndex(yout);
+			if (yout[idx] > 1.0) {
+				// step too big, resulted in frequencies >1
+				step = (1.0 - yt[idx]) / dyt[idx];
+				ArrayMath.addscale(yt, dyt, step, yout);
+				yout[idx] = 1.0; // avoid roundoff errors
+			}
+			normalizeState(yt);
+		}
 		// the new state is in yout - swap and determine new fitness
 		double[] swap = yt;
 		yt = yout;
@@ -806,12 +813,10 @@ public class ODE extends Model implements Discrete {
 		if (isDensity)
 			return;
 		// multi-species: normalize sections
-		int idx = 0;
 		int from = 0;
 		for (Module pop : species) {
 			int to = from + pop.getNTraits();
-			if (dependents[idx++] >= 0)
-				ArrayMath.normalize(state, from, to);
+			ArrayMath.normalize(state, from, to);
 			from = to;
 		}
 	}
