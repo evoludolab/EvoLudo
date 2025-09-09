@@ -32,6 +32,7 @@ package org.evoludo.simulator.modules;
 import java.awt.Color;
 import java.util.Arrays;
 
+import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBS;
@@ -107,6 +108,15 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	 * The transition probability/rate for recovered to susceptible, R → S.
 	 */
 	double pRS = 0.7;
+
+	/**
+	 * The incidence power {p, q} for infected and susceptible density, I^p S^q in S
+	 * → I.
+	 * <p>
+	 * <strong>Note:</strong> Note available in IBS models because the incidence
+	 * powers are not straightforward to implement.
+	 */
+	double[] incidence = new double[] { 1.0, 1.0 };
 
 	/**
 	 * Create a new SIR module with the given pacemaker.
@@ -223,27 +233,58 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 				}
 			});
 
+	/**
+	 * Command line option to set the incidence rates for S → I.
+	 */
+	public final CLOption cloIncidence = new CLOption("incidence", "1,1", Category.Module,
+			"--incidence <p[,q]>  S→I at rate I^p [and S^q]", new CLODelegate() {
+
+				@Override
+				public boolean parse(String arg) {
+					double[] incPQ = CLOParser.parseVector(arg);
+					if (incPQ == null || ArrayMath.min(incPQ) < 0.0)
+						return false;
+					switch (incPQ.length) {
+						case 2:
+							incidence[0] = incPQ[0];
+							incidence[1] = incPQ[1];
+							break;
+						case 1:
+							incidence[0] = incPQ[0];
+							incidence[1] = 1.0;
+							break;
+						default:
+							return false;
+					}
+					return true;
+				}
+			});
+
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
 		parser.addCLO(cloInfect);
 		parser.addCLO(cloRecover);
 		parser.addCLO(cloResist);
+		if (!engine.getModel().getType().isIBS())
+			parser.addCLO(cloIncidence);
 	}
 
 	/**
 	 * The SIR model is defined by the following equations:
 	 * <p>
 	 * \begin{align*}
-	 * \frac{dS}{dt} =&amp; R \cdot p_{RS} + I \cdot p_{IS} - S \cdot I \cdot p_{SI}
+	 * \frac{dS}{dt} =&amp; R \cdot p_{RS} + I \cdot p_{IS} - S^q \cdot I^p \cdot
+	 * p_{SI} \\
+	 * \frac{dI}{dt} =&amp; S^q \cdot I^p \cdot p_{SI} - I \cdot (p_{IR} + p_{IS})
 	 * \\
-	 * \frac{dI}{dt} =&amp; S \cdot I \cdot p_{SI} - I \cdot (p_{IR} + p_{IS}) \\
 	 * \frac{dR}{dt} =&amp; I \cdot p_{IR} - R \cdot p_{RS}
 	 * \end{align*}
 	 * <p>
 	 * where \(S\), \(I\), and \(R\) are the densities of susceptible, infected, and
 	 * recovered cohorts of individuals and \(p_{SI}, p_{IR}, p_{RS}\), and
-	 * \(p_{IS}\) are the transition rates between the different cohorts.
+	 * \(p_{IS}\) are the transition rates between the different cohorts. The
+	 * parameters \(p\) and \(q\) can be used to model non-linear incidence rates.
 	 * 
 	 * @param t      the current time (not used in this model)
 	 * @param state  the current state of the system, an array containing the
@@ -257,8 +298,15 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 		double psi = pSI[0];
 		if (psi1 > 0.0 )
 			psi += psi1 * Math.cos(pSI[2] * t);
-		change[S] = state[R] * pRS + state[I] * pIS - state[S] * state[I] * psi;
-		change[I] = state[S] * state[I] * psi - state[I] * (pIR + pIS);
+		double s = state[S];
+		double i = state[I];
+		if (incidence[0] != 1.0)
+			i = Math.pow(i, incidence[0]);
+		if (incidence[1] != 1.0)
+			s = Math.pow(s, incidence[1]);
+		psi *= s * i;
+		change[S] = state[R] * pRS + state[I] * pIS - psi;
+		change[I] = psi - state[I] * (pIR + pIS);
 		change[R] = state[I] * pIR - state[R] * pRS;
 	}
 
