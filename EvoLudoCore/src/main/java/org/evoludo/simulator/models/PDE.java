@@ -476,19 +476,16 @@ public class PDE extends ODE {
 			double[] youtn = next[n]; // s is only a short-cut - data written to s is stored in next[]
 			double[] ftn = (hasFit ? fitness[n] : null);
 			getDerivatives(time, ytn, ftn, dytn);
-			for (int i = 0; i < nDim; i++) {
-				double dyidt = dytn[i] * dt;
-				youtn[i] = ytn[i] + dyidt;
-				// use dyidt to check for convergence; track mean, min and max densities
-				change += dyidt * dyidt;
-				if (!hasFit)
-					continue;
-				// update extrema and mean fitness
-				double ftni = ftn[i];
-				minFit[i] = Math.min(ftni, minFit[i]);
-				maxFit[i] = Math.max(ftni, maxFit[i]);
-				meanFit[i] += ftni;
+			ArrayMath.addscale(ytn, dytn, dt, youtn); // youtn = ytn+step*dy
+			change += ArrayMath.dot(dytn, dytn) * dt * dt;
+			if (!isDensity) {
+				normalizeState(youtn);
 			}
+			if (!hasFit)
+				continue;
+			ArrayMath.min(minFit, ftn);
+			ArrayMath.max(maxFit, ftn);
+			ArrayMath.add(meanFit, ftn);
 		}
 		if (hasFit)
 			updateFitness(minFit, maxFit, meanFit);
