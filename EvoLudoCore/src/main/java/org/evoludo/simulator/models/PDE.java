@@ -352,7 +352,7 @@ public class PDE extends ODE {
 		if (doReset)
 			space.init();
 		// need to init space first
-		doReset = super.check();
+		doReset |= super.check();
 		// shortcut since this is only single species - at least for now
 		dependent = dependents[0];
 		// some careful checking for suitable time steps is required!
