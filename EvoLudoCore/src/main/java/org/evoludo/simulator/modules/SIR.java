@@ -223,8 +223,8 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	/**
 	 * Command line option to set the transition probability for R → S.
 	 */
-	public final CLOption cloResist = new CLOption("resist", "0.7", Category.Module,
-			"--resist <r>    R→S", new CLODelegate() {
+	public final CLOption cloSuscept = new CLOption("suscept", "0.7", Category.Module,
+			"--suscept <r>    R→S", new CLODelegate() {
 
 				@Override
 				public boolean parse(String arg) {
@@ -269,7 +269,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 		super.collectCLO(parser);
 		parser.addCLO(cloInfect);
 		parser.addCLO(cloRecover);
-		parser.addCLO(cloResist);
+		parser.addCLO(cloSuscept);
 		if (!engine.getModel().getType().isIBS())
 			parser.addCLO(cloIncidence);
 	}
