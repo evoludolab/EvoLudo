@@ -363,11 +363,13 @@ public class ODE extends Model implements Discrete {
 		idxSpecies = new int[nSpecies + 1];
 		nDim = 0;
 		int idx = 0;
+		boolean hasPayoffs = false;
 		for (Module mod : species) {
 			doReset |= mod.check();
 			int nTraits = mod.getNTraits();
 			idxSpecies[idx] = nDim;
 			if (mod instanceof Payoffs) {
+				hasPayoffs = true;
 				if (invFitRange == null || invFitRange.length != nSpecies) {
 					invFitRange = new double[nSpecies];
 					Arrays.fill(invFitRange, 1.0);
@@ -387,7 +389,8 @@ public class ODE extends Model implements Discrete {
 			yt = new double[nDim];
 			dyt = new double[nDim];
 			yout = new double[nDim];
-			ft = new double[nDim];
+			if (hasPayoffs)
+				ft = new double[nDim];
 		}
 		names = getMeanNames();
 		connect = false;

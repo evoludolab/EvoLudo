@@ -375,15 +375,16 @@ public class PDE extends ODE {
 		if (space.getType() == Geometry.Type.MEANFIELD)
 			return;
 		space.init();
-		if (fitness == null || fitness.length != space.size || fitness[0].length != nDim) {
-			fitness = new double[space.size][nDim];
+
+		if (density == null || density.length != space.size || density[0].length != nDim) {
 			density = new double[space.size][nDim];
 			next = new double[space.size][nDim];
-		}
-		if (minDensity == null || minDensity.length != nDim) {
 			minDensity = new double[nDim];
 			maxDensity = new double[nDim];
 			meanDensity = new double[nDim];
+		}
+		if (module instanceof Payoffs && (fitness == null || fitness.length != space.size || fitness[0].length != nDim)) {
+			fitness = new double[space.size][nDim];
 			minFitness = new double[nDim];
 			maxFitness = new double[nDim];
 			meanFitness = new double[nDim];
@@ -456,32 +457,41 @@ public class PDE extends ODE {
 	 * @return the accumulated change in state
 	 */
 	public double react(int start, int end) {
-		double[] minFit = new double[nDim];
-		Arrays.fill(minFit, Double.MAX_VALUE);
-		double[] maxFit = new double[nDim];
-		Arrays.fill(maxFit, -Double.MAX_VALUE);
-		double[] meanFit = new double[nDim];
+		boolean hasFit = (module instanceof Payoffs);
+		double[] minFit = null;
+		double[] maxFit = null;
+		double[] meanFit = null;
+		if (hasFit) {
+			minFit = new double[nDim];
+			Arrays.fill(minFit, Double.MAX_VALUE);
+			maxFit = new double[nDim];
+			Arrays.fill(maxFit, -Double.MAX_VALUE);
+			meanFit = new double[nDim];
+		}
 		double[] dy = new double[nDim];
 		double change = 0.0;
 
 		for (int n = start; n < end; n++) {
 			double[] ds = density[n];
 			double[] s = next[n]; // s is only a short-cut - data written to s is stored in next[]
-			double[] f = fitness[n];
+			double[] f = (hasFit ? fitness[n] : null);
 			getDerivatives(time, ds, f, dy);
 			for (int i = 0; i < nDim; i++) {
 				double dyidt = dy[i] * dt;
 				s[i] = ds[i] + dyidt;
+				// use dyidt to check for convergence; track mean, min and max densities
+				change += dyidt * dyidt;
+				if (!hasFit)
+					continue;
 				// update extrema and mean fitness
 				double fit = f[i];
 				minFit[i] = Math.min(fit, minFit[i]);
 				maxFit[i] = Math.max(fit, maxFit[i]);
 				meanFit[i] += fit;
-				// use dyidt to check for convergence; track mean, min and max densities
-				change += dyidt * dyidt;
 			}
 		}
-		updateFitness(minFit, maxFit, meanFit);
+		if (hasFit)
+			updateFitness(minFit, maxFit, meanFit);
 		return change;
 	}
 
