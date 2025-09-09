@@ -736,8 +736,11 @@ public class ArrayMath {
 	 */
 	public static float[] min(float[] a, float[] b) {
 		int dim = a.length;
-		for (int n = 0; n < dim; n++)
-			a[n] = Math.min(a[n], b[n]);
+		for (int n = 0; n < dim; n++) {
+			float bn = b[n];
+			if (bn < a[n])
+				a[n] = bn;
+		}
 		return a;
 	}
 
@@ -750,8 +753,11 @@ public class ArrayMath {
 	 */
 	public static double[] min(double[] a, double[] b) {
 		int dim = a.length;
-		for (int n = 0; n < dim; n++)
-			a[n] = Math.min(a[n], b[n]);
+		for (int n = 0; n < dim; n++) {
+			double bn = b[n];
+			if (bn < a[n])
+				a[n] = bn;
+		}
 		return a;
 	}
 
@@ -991,8 +997,11 @@ public class ArrayMath {
 	 */
 	public static float[] max(float[] a, float[] b) {
 		int dim = a.length;
-		for (int n = 0; n < dim; n++)
-			a[n] = Math.max(a[n], b[n]);
+		for (int n = 0; n < dim; n++) {
+			float bn = b[n];
+			if (bn > a[n])
+				a[n] = bn;
+		}
 		return a;
 	}
 
@@ -1005,8 +1014,11 @@ public class ArrayMath {
 	 */
 	public static double[] max(double[] a, double[] b) {
 		int dim = a.length;
-		for (int n = 0; n < dim; n++)
-			a[n] = Math.max(a[n], b[n]);
+		for (int n = 0; n < dim; n++) {
+			double bn = b[n];
+			if (bn > a[n])
+				a[n] = bn;
+		}
 		return a;
 	}
 
