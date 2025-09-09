@@ -866,45 +866,46 @@ public class ODE extends Model implements Discrete {
 				continue;
 			}
 
-			double err = 0.0;
+			double totDelta = 0.0;
 			PlayerUpdate.Type put = mod.getPlayerUpdate().getType();
 			switch (put) {
 				case THERMAL: // fermi update
-					err = updateThermal(mod, state, fitness, nGroup, index, change);
+					totDelta = updateThermal(mod, state, fitness, nGroup, index, change);
 					break;
 
 				case IMITATE: // same as IMITATE_BETTER in continuum limit
-					err = updateImitate(mod, state, fitness, nGroup, index, change);
+					totDelta = updateImitate(mod, state, fitness, nGroup, index, change);
 					break;
 
 				case IMITATE_BETTER: // replicator update
-					err = updateImitateBetter(mod, state, fitness, nGroup, index, change);
+					totDelta = updateImitateBetter(mod, state, fitness, nGroup, index, change);
 					break;
 
 				case BEST: // imitate the better
 				case BEST_RANDOM: // same as BEST in continuum limit
-					err = updateBest(mod, state, fitness, nGroup, index, change);
+					totDelta = updateBest(mod, state, fitness, nGroup, index, change);
 					break;
 
 				case BEST_RESPONSE: // best-response update
-					err = updateBestResponse(mod, state, fitness, nGroup, index, change);
+					totDelta = updateBestResponse(mod, state, fitness, nGroup, index, change);
 					break;
 
 				case PROPORTIONAL: // proportional update
-					err = updateProportional(mod, state, fitness, nGroup, index, change);
+					totDelta = updateProportional(mod, state, fitness, nGroup, index, change);
 					break;
 
 				default:
 					throw new Error("Unknown update method for players (" + put + ")");
 			}
-
-			// restrict to active trait
-			// note float resolution is 1.1920929E-7
-			if (Math.abs(err) > 1e-7 * mod.getNActive()) {
-				boolean[] active = mod.getActiveTraits();
-				for (int n = 0; n < nTraits; n++)
-					if (active[n])
-						change[skip + n] -= err;
+			// with a dependent trait totDelta should be zero in theory 
+			if (dependents[index] >= 0) {
+				// normalize active traits
+				if (Math.abs(totDelta) > 1e-7 * mod.getNActive()) {
+					boolean[] active = mod.getActiveTraits();
+					for (int n = 0; n < nTraits; n++)
+						if (active[n])
+							change[skip + n] -= totDelta;
+				}
 			}
 			index++;
 		}

@@ -464,29 +464,6 @@ public class PDE extends ODE {
 		double[] dy = new double[nDim];
 		double change = 0.0;
 
-		if (dependent < 0) {
-			for (int n = start; n < end; n++) {
-				double[] ds = density[n];
-				double[] s = next[n]; // s is only a short-cut - data written to s is stored in next[]
-				double[] f = fitness[n];
-				getDerivatives(time, ds, f, dy);
-				for (int i = 0; i < nDim; i++) {
-					double dyidt = dy[i] * dt;
-					s[i] = ds[i] + dyidt;
-					// update extrema and mean fitness
-					double fit = f[i];
-					minFit[i] = Math.min(fit, minFit[i]);
-					maxFit[i] = Math.max(fit, maxFit[i]);
-					meanFit[i] += fit;
-					// use dyidt to check for convergence; track mean, min and max densities
-					change += dyidt * dyidt;
-				}
-			}
-			// supervisor.updateFitness(minFit, maxFit, meanFit, change);
-			updateFitness(minFit, maxFit, meanFit);
-			return change;
-		}
-		// dependent scenario - dependent>0
 		for (int n = start; n < end; n++) {
 			double[] ds = density[n];
 			double[] s = next[n]; // s is only a short-cut - data written to s is stored in next[]
