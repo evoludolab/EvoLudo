@@ -34,11 +34,11 @@ Start exploring the fascinating world of evolutionary dynamics and spatio-tempor
 ## Documentation
 The documentation for the *EvoLudo* simulation toolkit is designed to provide a quick introduction to the source code to rapidly pave the way to run your own simulations or even develop your own custom *EvoLudo* modules. The documentation is divided into multiple parts:
 
-1. A [detailed reference of all *EvoLudo* modules](https://www.evoludo.org/docs/html/Ch11.html), models and visualizations as well as description of the accompanying parameters. 
-2. An [overview of the *EvoLudo* code structure](https://www.evoludo.org/docs/html/Ch12.html)
+1. A [detailed reference of all *EvoLudo* modules](https://www.evoludo.org/docs/reference/Reference.html), models and visualizations as well as description of the accompanying parameters. 
+2. An [overview of the *EvoLudo* code structure](https://www.evoludo.org/docs/reference/Code.html)
 3. A growing collection of step-by-step tutorials to re-create key *EvoLudo* modules, as an easy and hands-on introduction on using *EvoLudo* simulation toolkit.
 
-    1. [Tutorial to re-create the `TBT` module](https://www.evoludo.org/docs/html/Ch13.html) to explore the evolution of cooperation in the prisoner's dilemma, or more general 2x2 games, in structured populations.
+    1. [Tutorial to re-create the `TBT` module](https://www.evoludo.org/docs/tutorial/TBT.html) to explore the evolution of cooperation in the prisoner's dilemma, or more general 2x2 games, in structured populations.
     2. Tutorial to re-create the `SIR` module to explore the disease dynamics in structured population for an epidemiological model of susceptible, infected and recovered individuals (coming soon).
     3. Tutorial to re-create the `LV` module to explore the ecological dynamics of a predator-prey interactions in the Lotka-Volterra model for infinite, finite and structured populations (in preparation).
 
