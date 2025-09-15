@@ -254,6 +254,10 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 		double h = bounds.getHeight();
 		g.translate(w, h);
 		g.scale(1.0, -1.0);
+		g.beginPath();
+		// with -w a small strip on left is not drawn... proper fix needed!
+		g.rect(style.markerSize, 0.0, -(w + 3.0), h);
+		g.clip();
 
 		double ymin;
 		double yrange;
