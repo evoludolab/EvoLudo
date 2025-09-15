@@ -192,6 +192,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		model = engine.getModel();
 		allocateGraphs();
 		isLoaded = true;
+		options = null;
 		return true;
 	}
 
@@ -225,6 +226,30 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		unload();
 		engine.removeMilestoneListener(this);
 		engine.removeChangeListener(this);
+	}
+
+	/**
+	 * The string with view specific options.
+	 * 
+	 * @see org.evoludo.EvoLudoWeb#cloView
+	 */
+	String options;
+
+	/**
+	 * Parse the arguments {@code args} provided to this view. The default
+	 * implementation simply passes {@code args} to all its {@code graphs}.
+	 * 
+	 * @param args the arguments to parse
+	 * @return {@code true} if the arguments were successfully parsed
+	 */
+	public boolean parse(String args) {
+		options = args;
+		if (options == null)
+			return true;
+		boolean ok = true;
+		for (AbstractGraph<?> graph : graphs)
+			ok &= graph.parse(options);
+		return ok;
 	}
 
 	/**
@@ -383,6 +408,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	@Override
 	public void modelDidReset() {
 		reset(true);
+		parse(options);
 	}
 
 	/**

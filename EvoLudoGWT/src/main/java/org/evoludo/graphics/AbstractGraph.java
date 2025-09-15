@@ -544,6 +544,16 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
+	 * Parse the arguments for the graph. Default implementation does nothing.
+	 * 
+	 * @param args the arguments for the graph
+	 * @return {@code true} if parsing was successful
+	 */
+	public boolean parse(String args) {
+		return true;
+	}
+
+	/**
 	 * Perform necessary preparations to show the graph in the GUI. Attaches mouse
 	 * and touch handlers for graphs that implement {@link Zooming} or
 	 * {@link Shifting} interfaces.

@@ -1124,6 +1124,11 @@ public class EvoLudoWeb extends Composite
 		AbstractView view;
 
 		/**
+		 * The arguments for theactive view.
+		 */
+		String args;
+
+		/**
 		 * The flag to indicate whether to resume execution of the model.
 		 */
 		boolean resume;
@@ -1166,21 +1171,32 @@ public class EvoLudoWeb extends Composite
 		updateViews();
 		// process (emulated) ePub restrictions - adds console if possible
 		processEPubSettings();
+		guiState.view = null;
 		if (cloView.isSet()) {
-			// if length of string is 1 or 2, assume an index is given
-			if (initialView.length() < 3) {
-				int idx = Integer.parseInt(initialView) - 1;
-				if (idx >= 0 && idx < activeViews.size())
-					guiState.view = activeViews.values().toArray(new AbstractView[0])[idx];
-			} else {
-				initialView = initialView.replace('_', ' ').trim();
-				for (AbstractView view : activeViews.values()) {
-					if (view.getName() != initialView)
-						continue;
+			// the initialView specification (name or index) may be followed by a space and
+			// a comma-separated list of view specific options
+			String[] iv = initialView.split(" ", 2);
+			// try to interpret first argument as name
+			String name = iv[0].replace('_', ' ').trim();
+			for (AbstractView view : activeViews.values()) {
+				if (view.getName().equals(name)) {
 					guiState.view = view;
 					break;
 				}
 			}
+			if (guiState.view == null) {
+				// try to interpret first argument as index
+				int idx = 0;
+				AbstractView[] av = activeViews.values().toArray(new AbstractView[0]);
+				try {
+					idx = CLOParser.parseInteger(iv[0]);
+				} catch (NumberFormatException e) {
+					// the argument is not a number, ignore and pick first view
+					logger.warning("failed to set view '" + iv[0] + "' - using default.");
+				}
+				guiState.view = av[Math.max(Math.min(idx, av.length), 1) - 1];
+			}
+			guiState.args = iv.length > 1 ? iv[1].trim() : null;
 		}
 		if (guiState.view == null
 			|| (guiState.view != null && !activeViews.containsValue(guiState.view))) {
@@ -1231,6 +1247,7 @@ public class EvoLudoWeb extends Composite
 			engine.restoreState(state);
 		}
 		updateGUI();
+		activeView.parse(guiState.args);
 		activeView.activate();
 	}
 
