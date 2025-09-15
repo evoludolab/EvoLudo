@@ -677,7 +677,16 @@ public class ODE extends Model implements Discrete {
 		while (Math.abs(step - elapsed) > 1e-8) {
 			double nextstep = Math.min(dtTry, step - elapsed);
 			double d2 = deStep(forward ? nextstep : -nextstep);
+			// elapsed may not change if dtTaken is too small
+			double prev = elapsed;
 			elapsed += dtTaken;
+			if (Math.abs(elapsed - prev) <= 1e-16) {
+				// emergency brake - step size too small
+				logger.warning(getClass().getSimpleName()
+						+ ": aborted, step size too small, dt=" + Formatter.formatSci(dtTaken, 5));
+				converged = true;
+				break;
+			}
 			converged = checkConvergence(d2);
 			if (converged)
 				break;
