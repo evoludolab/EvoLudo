@@ -328,8 +328,8 @@ public class EvoLudoGWT extends EvoLudo {
 				|| (mode == Mode.STATISTICS_UPDATE || mode == Mode.DYNAMICS)
 					&& (activeModel.hasConverged() && snapshotAt > time
 							|| Math.abs(time + timeStep - snapshotAt) <= timeStep)) {
+			// signal that snapshot is ready and stop execution
 			gui.snapshotReady();
-			return;
 		}
 		isRunning = false;
 		timer.cancel();
