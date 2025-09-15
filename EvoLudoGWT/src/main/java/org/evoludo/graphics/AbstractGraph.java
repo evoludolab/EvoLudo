@@ -1209,8 +1209,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 						.getWidth() + 16.0;
 
 			setFont(style.axesLabelFont);
-			fillTextVertical(style.yLabel, w + tickskip + style.tickLength,
-					(h + g.measureText(style.yLabel).getWidth()) / 2);
+			String ylabel = style.yLabel;
+			if (style.logScaleY)
+				ylabel += " (log)";
+			// rotate and draw
+			fillTextVertical(ylabel, w + tickskip + style.tickLength,
+					(h + g.measureText(ylabel).getWidth()) / 2);
 		}
 
 		if (style.showLabel && style.label != null) {

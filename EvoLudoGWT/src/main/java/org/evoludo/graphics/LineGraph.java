@@ -47,6 +47,7 @@ import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
+import org.evoludo.util.CLOParser;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.RingBuffer;
 
@@ -77,6 +78,42 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 		super(controller, module);
 		setStylePrimaryName("evoludo-LineGraph");
 		setTooltipProvider(this);
+	}
+
+	@Override
+	public boolean parse(String args) {
+		boolean log = false;
+		boolean auto = true;
+		if (args != null) {
+			for (String arg : args.split(CLOParser.VECTOR_DELIMITER)) {
+				arg = arg.trim();
+				if (arg.startsWith("log")) {
+					log = true;
+					continue;
+				}
+				if (arg.startsWith("xmin")) {
+					style.xMin = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
+					continue;
+				}
+				if (arg.startsWith("xmax")) {
+					style.xMax = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
+					continue;
+				}
+				if (arg.startsWith("ymin")) {
+					style.yMin = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
+					auto = false;
+					continue;
+				}
+				if (arg.startsWith("ymax")) {
+					style.yMax = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
+					auto = false;
+					continue;
+				}
+			}
+		}
+		style.autoscaleY = auto;
+		setLogY(log);
+		return true;
 	}
 
 	@Override
@@ -122,19 +159,21 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 		// time does not count for min/max
 		double t = data[0];
 		data[0] = style.yMin;
-		// dynamically extend range if needed - never reduces range (would need to
-		// consult RingBuffer for this)
 		double min = ArrayMath.min(data);
 		if (min <= 0.0)
 			style.logScaleY = false;
-		// ignore NaN's in data
-		if (min == min)
-			style.yMin = Math.min(style.yMin, Functions.roundDown(min));
-		data[0] = style.yMax;
-		double max = ArrayMath.max(data);
-		// ignore NaN's in data
-		if (max == max)
-			style.yMax = Math.max(style.yMax, Functions.roundUp(max));
+		if (style.autoscaleY) {
+			// dynamically extend range if needed - never reduce (would need to
+			// consult RingBuffer for this)
+			// ignore NaN's in data
+			if (min == min)
+				style.yMin = Math.min(style.yMin, Functions.roundDown(min));
+			data[0] = style.yMax;
+			double max = ArrayMath.max(data);
+			// ignore NaN's in data
+			if (max == max)
+				style.yMax = Math.max(style.yMax, Functions.roundUp(max));
+		}
 		data[0] = t;
 	}
 
@@ -151,6 +190,9 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 				logger.warning("Log scale requires positive values");
 			return;
 		}
+		style.logScaleY = logY;
+		if (!style.autoscaleY)
+			return;
 		double[] min = buffer.min(new Comparator<double[]>() {
 			@Override
 			public int compare(double[] o1, double[] o2) {
@@ -195,7 +237,6 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 		if (!logY && bufmin > 0.0 && bufmin < 0.01 * style.yMax)
 			bufmin = 0.0;
 		style.yMin = Functions.roundDown(bufmin);
-		style.logScaleY = logY;
 	}
 
 	@Override
