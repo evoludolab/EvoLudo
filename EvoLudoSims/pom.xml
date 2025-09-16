@@ -55,6 +55,7 @@
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
           <appendAssemblyId>false</appendAssemblyId>
+          <attach>false</attach>
         </configuration>
         <executions>
           <execution>

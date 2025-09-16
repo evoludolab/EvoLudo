@@ -63,7 +63,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-install-plugin</artifactId>
-        <version>2.5.2</version>
         <executions>
           <execution>
             <id>install-parallax</id>
@@ -121,7 +120,6 @@
             <extraClasspath>${basedir}/../EvoLudoCorePrivate/target/classes/</extraClasspath>
           </webApp>
           <contextXml>${basedir}/src/main/jettyconf/context.xml</contextXml>
-          <packaging>war</packaging>
         </configuration>
       </plugin>
     </plugins>
