@@ -224,7 +224,8 @@ public class EvoLudoGWT extends EvoLudo {
 	Timer timer = new Timer() {
 		@Override
 		public void run() {
-			modelNext();
+			if (!modelNext() || !isRunning)
+				timer.cancel();
 		}
 	};
 
@@ -331,8 +332,6 @@ public class EvoLudoGWT extends EvoLudo {
 			// signal that snapshot is ready and stop execution
 			gui.snapshotReady();
 		}
-		isRunning = false;
-		timer.cancel();
 		super.fireModelStopped();
 	}
 
