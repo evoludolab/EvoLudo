@@ -377,8 +377,22 @@ public class SDE extends ODE {
 		int skip1 = skip + 1;
 		dyt[skip1] -= n;
 		if (mu > 0.0) {
-			yout[skip] = yt[skip] + step * dyt[skip];
-			yout[skip1] = yt[skip1] + step * dyt[skip1];
+			double dy = step * dyt[skip];
+			if (yt[skip] <= 0.0) {
+				dy = Math.max(0.0, dy);
+				yout[skip] = yt[skip] + dy;
+				yout[skip1] = yt[skip1] - dy;
+				return;
+			}
+			double dy1 = step * dyt[skip1];
+			if (yt[skip1] <= 0.0) {
+				dy1 = Math.max(0.0, dy1);
+				yout[skip] = yt[skip] - dy;
+				yout[skip1] = yt[skip1] + dy1;
+				return;
+			}
+			yout[skip] = yt[skip] + dy;
+			yout[skip1] = yt[skip1] + dy1;
 		} else {
 			// in the absence of mutations, extinct traits (or species) must not make
 			// a sudden reappearance due to roundoff errors!
