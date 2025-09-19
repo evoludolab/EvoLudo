@@ -52,6 +52,7 @@ import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDESupervisor;
+import org.evoludo.simulator.models.SampleListener;
 import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.ATBT;
 import org.evoludo.simulator.modules.CDL;
@@ -401,6 +402,32 @@ public abstract class EvoLudo
 	 */
 	public void removeChangeListener(ChangeListener obsoleteListener) {
 		changeListeners.remove(obsoleteListener);
+	}
+
+	/**
+	 * List of change listeners that get notified when the model changes.
+	 */
+	protected Set<SampleListener> sampleListeners = new HashSet<SampleListener>();
+
+	/**
+	 * Add a change listener to the list of listeners that get notified when the
+	 * model changes.
+	 * 
+	 * @param newListener the new change listener
+	 */
+	public void addSampleListener(SampleListener newListener) {
+		sampleListeners.add(newListener);
+	}
+
+	/**
+	 * Remove the change listener from the list of listeners that get notified when
+	 * the model changes.
+	 * 
+	 * @param obsoleteListener the listener to remove from the list of change
+	 *                         listeners
+	 */
+	public void removeSampleListener(SampleListener obsoleteListener) {
+		sampleListeners.remove(obsoleteListener);
 	}
 
 	/**
@@ -920,8 +947,7 @@ public abstract class EvoLudo
 	 * taking snapshots.
 	 */
 	public void layoutComplete() {
-		if (isSuspended())
-			run();
+		run();
 	}
 
 	/**
@@ -955,8 +981,10 @@ public abstract class EvoLudo
 		if (activeModel.getMode() == Mode.STATISTICS_SAMPLE) {
 			fireModelRunning();
 			next();
-		} else
+		} else {
+			isSuspended = true;
 			run();
+		}
 	}
 
 	/**
@@ -1131,6 +1159,25 @@ public abstract class EvoLudo
 	}
 
 	/**
+	 * Called after the population has reached an absorbing state (or has converged
+	 * to an equilibrium state). Notifies all registered
+	 * {@link MilestoneListener}s.
+	 */
+	public synchronized void fireModelSample(boolean success) {
+			// check if new sample completed
+			activeModel.readStatisticsSample();
+			for (SampleListener i : sampleListeners)
+				i.modelSample(success);
+			if (activeModel.getNSamples() == activeModel.getNStatisticsSamples()) {
+				// all samples completed - fire stop instead
+				fireModelStopped();
+				return;
+			}
+			if (isRunning)
+				next();
+	}
+
+	/**
 	 * Called whenever the settings of the model have changed. For example, to
 	 * trigger the range of values or markers in the GUI. Notifies all registered
 	 * {@link MilestoneListener}s.
@@ -1166,15 +1213,11 @@ public abstract class EvoLudo
 					}
 				} else {
 					// mode unchanged
-					if (!isRunning || mode != Mode.STATISTICS_SAMPLE)
+					if (!isRunning || mode == Mode.STATISTICS_SAMPLE)
 						break;
-					// continue running if mode unchanged
-					action = PendingAction.STATISTIC_READY;
 				}
 				//$FALL-THROUGH$
 			case NONE:
-			case STATISTIC_FAILED:
-			case STATISTIC_READY:
 				for (ChangeListener i : changeListeners)
 					i.modelChanged(action);
 				break;
@@ -1240,25 +1283,10 @@ public abstract class EvoLudo
 		// model may already have been unloaded
 		if (activeModel == null)
 			return;
-		switch (activeModel.getMode()) {
-			case DYNAMICS:
-			case STATISTICS_UPDATE:
-			default:
-				isRunning = false;
-				for (MilestoneListener i : milestoneListeners)
-					i.modelStopped();
-				logger.info("Model stopped");
-				break;
-			case STATISTICS_SAMPLE:
-				// check if new sample completed
-				activeModel.readStatisticsSample();
-				// note: calling fireModelChanged doesn't work because STATISTICS_SAMPLE
-				// prevents firing
-				if (pendingAction == PendingAction.NONE)
-					pendingAction = PendingAction.STATISTIC_READY;
-				processPendingAction();
-				break;
-		}
+		isRunning = false;
+		for (MilestoneListener i : milestoneListeners)
+			i.modelStopped();
+		logger.info("Model stopped");
 	}
 
 	/**

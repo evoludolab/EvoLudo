@@ -95,16 +95,6 @@ public class EvoLudoGWT extends EvoLudo {
 	public boolean ePubHasKeys = false;
 
 	/**
-	 * The generation at which to request a snapshot.
-	 */
-	protected double snapshotAt = -Double.MAX_VALUE;
-
-	/**
-	 * The number of samples after which to stop. If negative no limit is set.
-	 */
-	double statisticsAt = -1.0;
-
-	/**
 	 * Create timer to measure execution times since instantiation.
 	 */
 	private final Duration elapsedTime = new Duration();
@@ -180,37 +170,51 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public void layoutComplete() {
-		if (snapshotAt < 0.0) {
-			super.layoutComplete();
-			return;
-		}
-		if (snapshotAt > 0.0) {
-			delay = 1;
+		if (cloSnap.isSet()) {
+			// --snap set
+			double tStop = activeModel.getTimeStop();
+			double nSamples = activeModel.getNSamples();
 			switch (activeModel.getMode()) {
-				case STATISTICS_SAMPLE:
-					activeModel.setNSamples((int) (snapshotAt + 0.5));
-					run();
-					return;
-				case STATISTICS_UPDATE:
 				case DYNAMICS:
-					activeModel.setTimeStop(snapshotAt);
-					if (snapshotAt < activeModel.getTimeStep()) {
-						activeModel.setTimeStep(snapshotAt);
-						activeModel.next();
-						break;
+				case STATISTICS_UPDATE:
+					if (tStop > 0.0) {
+						// run to specified time
+						if (tStop < activeModel.getTimeStep())
+							activeModel.setTimeStep(tStop);
+						// start running - even without --run
+						setSuspended(true);
+					} else {
+						// no stopping time requested: take snapshot now
+						gui.snapshotReady();
+						// don't start running - even if --run provided
+						setSuspended(false);
 					}
-					run();
-					return;
+					if (nSamples > 0.0)
+						logger.warning("--samples found: wrong mode for statistics, use --view option.");
+					break;
+				case STATISTICS_SAMPLE:
+					// run to specified sample count
+					if (nSamples > 0.0) {
+						// start running - even without --run
+						setSuspended(true);
+					} else {
+						// no sample count requested: take snapshot now
+						gui.snapshotReady();
+						// don't start running - even if --run provided
+						setSuspended(false);
+					}
+					if (Double.isFinite(tStop))
+						logger.warning("--timestop found: wrong mode for dynamics, use --view option.");
 				default:
-					throw new Error("layoutComplete(): unknown mode...");
 			}
 		}
-		gui.snapshotReady();
+		super.layoutComplete();
 	}
 
 	@Override
 	public void run() {
-		if (isRunning)
+		// ignore if already running or not suspended
+		if (isRunning || !isSuspended())
 			return;
 		fireModelRunning();
 		// start with an update not the delay
@@ -222,10 +226,21 @@ public class EvoLudoGWT extends EvoLudo {
 	 * Timer for running models.
 	 */
 	Timer timer = new Timer() {
+		boolean processing = false;
+
+		@Override
+		public void cancel() {
+			processing = false;
+			super.cancel();
+		}
+
 		@Override
 		public void run() {
-			if (!modelNext() || !isRunning)
-				timer.cancel();
+			if (!processing) {
+				processing = true;
+				next();
+				processing = false;
+			}
 		}
 	};
 
@@ -233,16 +248,6 @@ public class EvoLudoGWT extends EvoLudo {
 	public void next() {
 		switch (activeModel.getMode()) {
 			case STATISTICS_SAMPLE:
-				int samplesCollected = activeModel.getNStatisticsSamples();
-				if (samplesCollected == statisticsAt) {
-					// requested sample count reached, reset to unlimited
-					statisticsAt = -1.0;
-					if (Math.abs(snapshotAt - samplesCollected) < 1.0)
-						gui.snapshotReady();
-					else
-						requestAction(PendingAction.STOP, true);
-					break;
-				}
 				// non-blocking way for running an arbitrary number of update
 				// steps to obtain one sample
 				scheduleSample();
@@ -266,20 +271,15 @@ public class EvoLudoGWT extends EvoLudo {
 			public boolean execute() {
 				// in unfortunate cases even a single sample can take exceedingly long
 				// times. stop/init/reset need to be able to interrupt.
-				switch (pendingAction) {
-					case NONE:
-					case STATISTIC_READY:
-					case STOP: // finish sample
-						break;
-					default:
-						fireModelStopped();
-						return false;
+				if (pendingAction != PendingAction.NONE) {
+					processPendingAction();
+					return false;
 				}
-				if (activeModel.next()) {
+				if (activeModel.next())
 					return true;
-				}
-				fireModelStopped();
-				return (activeModel.getFixationData().mutantNode < 0);
+				boolean failed = (activeModel.getFixationData().mutantNode < 0);
+				fireModelSample(!failed);
+				return failed;
 			}
 		});
 	}
@@ -304,35 +304,16 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	@Override
-	public synchronized void fireModelReset() {
-		if (activeModel != null)
-			statisticsAt = activeModel.getNSamples();
-		super.fireModelReset();
-	}
-
-	@Override
-	public synchronized void fireSettingsChanged() {
-		if (activeModel != null)
-			statisticsAt = activeModel.getNSamples();
-		super.fireSettingsChanged();
-	}
-
 	public synchronized void fireModelStopped() {
 		// model may already have been unloaded
 		if (activeModel == null)
 			return;
-		double time = activeModel.getUpdates();
-		double timeStep = activeModel.getTimeStep();
-		Mode mode = activeModel.getMode();
-		if ((mode == Mode.STATISTICS_SAMPLE
-					&& Math.abs(snapshotAt - activeModel.getNStatisticsSamples()) < 1.0)
-				|| (mode == Mode.STATISTICS_UPDATE || mode == Mode.DYNAMICS)
-					&& (activeModel.hasConverged() && snapshotAt > time
-							|| Math.abs(time + timeStep - snapshotAt) <= timeStep)) {
-			// signal that snapshot is ready and stop execution
+		super.fireModelStopped();
+		timer.cancel();
+		if (cloSnap.isSet()) {
+			// take snapshot
 			gui.snapshotReady();
 		}
-		super.fireModelStopped();
 	}
 
 	@Override
@@ -615,34 +596,18 @@ public class EvoLudoGWT extends EvoLudo {
 	 * of of the layouting procedure for taking snapshots, e.g. with
 	 * <code>capture-website</code>.
 	 */
-	public final CLOption cloSnap = new CLOption("snap", "", CLOption.Argument.OPTIONAL, Category.GUI,
-			"--snap [<s>[,<n>]]  snapshot utility (see capture-website)\n"
-					+ "      (add '<div id=\"snapshot-ready\"></div>' to <body> upon\n"
-					+ "       completion of layout or after max <s> sec and after\n"
-					+ "       <n> samples or generations, respectively.)",
+	public final CLOption cloSnap = new CLOption("snap", "20", CLOption.Argument.OPTIONAL, Category.GUI,
+			"--snap [<s>]    snapshot utility, timeout <s> secs;\n"
+					+ "				(add '<div id=\"snapshot-ready\"></div>' to <body>\n"
+					+ "				when ready for snapshot, see capture-website docs)\n",
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					if (!cloSnap.isSet()) {
-						snapshotAt = -Double.MAX_VALUE;
+					snapLayoutTimeout = 20000;
+					if (!cloSnap.isSet() || arg.isEmpty())
 						return true;
-					}
-					snapshotAt = 0.0;
-					if (arg.isEmpty())
-						return true;
-					int[] args = CLOParser.parseIntVector(arg);
-					switch (args.length) {
-						default:
-							return false;
-						case 2:
-							snapshotAt = args[1];
-							if (snapshotAt > 0.0)
-								isSuspended = true;
-							//$FALL-THROUGH$
-						case 1:
-							snapLayoutTimeout = args[0] * 1000;
-							return true;
-					}
+					snapLayoutTimeout = Math.max(1, CLOParser.parseInteger(arg)) * 1000;
+					return true;
 				}
 			});
 

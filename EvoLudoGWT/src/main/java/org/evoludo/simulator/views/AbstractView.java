@@ -50,6 +50,7 @@ import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.SampleListener;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.Formatter;
@@ -76,7 +77,7 @@ import com.google.gwt.user.client.ui.RequiresResize;
  * @author Christoph Hauert
  */
 public abstract class AbstractView extends Composite implements RequiresResize, ProvidesResize,
-		AbstractGraph.Controller, MilestoneListener, ChangeListener {
+		AbstractGraph.Controller, MilestoneListener, SampleListener, ChangeListener {
 
 	/**
 	 * The reference to the EvoLudo engine that manages the simulation.
@@ -226,6 +227,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		unload();
 		engine.removeMilestoneListener(this);
 		engine.removeChangeListener(this);
+		engine.removeSampleListener(this);
 	}
 
 	/**
@@ -444,8 +446,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 
 	@Override
 	public void modelChanged(PendingAction action) {
-		if (action == PendingAction.NONE
-				|| action == PendingAction.STATISTIC_READY) {
+		if (action == PendingAction.NONE) {
 			double now = Duration.currentTimeMillis();
 			boolean update = (now - updatetime > MIN_MSEC_BETWEEN_UPDATES);
 			if (update)

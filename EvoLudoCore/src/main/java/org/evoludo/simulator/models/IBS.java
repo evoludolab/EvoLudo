@@ -34,7 +34,6 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
@@ -368,7 +367,6 @@ public abstract class IBS extends Model {
 			init();
 			if (fixData.mutantNode < 0) {
 				initStatisticsFailed();
-				engine.requestAction(PendingAction.STATISTIC_FAILED, true);
 				// check if STOP has been requested
 				return engine.isRunning();
 			}

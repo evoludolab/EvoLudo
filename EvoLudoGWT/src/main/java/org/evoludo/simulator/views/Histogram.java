@@ -112,6 +112,16 @@ public class Histogram extends AbstractView {
 	public Histogram(EvoLudoGWT engine, Data type) {
 		super(engine, type);
 		graphs = (List<HistoGraph>) super.graphs;
+	}	
+
+	@Override
+	public boolean load() {
+		if (!super.load())
+			return false;
+		if (type == Data.STATISTICS_FIXATION_PROBABILITY || type == Data.STATISTICS_FIXATION_TIME)
+			// listen to samples for fixation statistics
+			engine.addSampleListener(this);
+		return true;
 	}
 
 	@Override
@@ -684,6 +694,46 @@ if (maxBins < 0) maxBins = 100;
 	}
 
 	@Override
+	public void modelSample(boolean success) {
+		if (!success)
+			return;
+		
+		// NOTE: not fully ready for multi-species; info which species fixated missing
+		FixationData fixData = model.getFixationData();
+		int initNode = fixData.mutantNode;
+		if (fixData == null || initNode < 0)
+			return;
+		HistoGraph graph = graphs.get(fixData.typeFixed);
+		// new data available - update histograms
+		switch (type) {
+			case STATISTICS_FIXATION_PROBABILITY:
+				if (fixData.probRead )
+					return;
+				graph.addData((int) (fixData.mutantNode * scale2bins));
+				fixData.probRead = true;
+				break;
+			case STATISTICS_FIXATION_TIME:
+				if (fixData.timeRead)
+					return;
+				HistoGraph absorption = graphs.get(graphs.size() - 1);
+				if (doFixtimeDistr(graph.getModule())) {
+					graph.addData(fixData.updatesFixed);
+					absorption.addData(fixData.updatesFixed);
+				} else {
+					graph.addData(initNode, fixData.updatesFixed);
+					absorption.addData(initNode, fixData.updatesFixed);
+				}
+				fixData.timeRead = true;
+				break;
+			default:
+		}
+		if (!isActive)
+			return;
+		for (HistoGraph g : graphs)
+			g.paint(false);
+	}
+
+	@Override
 	public void update(boolean force) {
 		if (!isActive && !doStatistics)
 			return;
@@ -768,40 +818,6 @@ if (maxBins < 0) maxBins = 100;
 							style.xMax = max;
 						}
 					}
-					break;
-
-				// NOTE: not fully ready for multi-species; info which species fixated missing
-				case STATISTICS_FIXATION_PROBABILITY:
-					// always reset timestamp (double processing prevented by fixData.probRead)
-					timestamp = -1.0;
-					FixationData fixData = model.getFixationData();
-					// return if no fixation data available, already processed or invalid
-					if (fixData == null || fixData.probRead || fixData.mutantNode < 0)
-						break;
-					HistoGraph graph = graphs.get(fixData.typeFixed);
-					graph.addData((int) (fixData.mutantNode * scale2bins));
-					fixData.probRead = true;
-					break;
-
-				// NOTE: not fully ready for multi-species; info which species fixated missing
-				case STATISTICS_FIXATION_TIME:
-					// always reset timestamp (double processing prevented by fixData.timeRead)
-					timestamp = -1.0;
-					fixData = model.getFixationData();
-					// return if no fixation data available, already processed or invalid
-					if (fixData == null || fixData.timeRead || fixData.mutantNode < 0)
-						break;
-					int initNode = fixData.mutantNode;
-					graph = graphs.get(fixData.typeFixed);
-					HistoGraph absorption = graphs.get(graphs.size() - 1);
-					if (initNode < 0 || doFixtimeDistr(graph.getModule())) {
-						graph.addData(fixData.updatesFixed);
-						absorption.addData(fixData.updatesFixed);
-					} else {
-						graph.addData(initNode, fixData.updatesFixed);
-						absorption.addData(initNode, fixData.updatesFixed);
-					}
-					fixData.timeRead = true;
 					break;
 
 				case STATISTICS_STATIONARY:

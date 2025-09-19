@@ -323,6 +323,7 @@ public class EvoLudoLab extends JFrame
 				engine.stop();
 				putValue(Action.NAME, "Stop");
 			} else {
+				engine.setSuspended(true);
 				engine.run();
 				putValue(Action.NAME, "Start");
 			}

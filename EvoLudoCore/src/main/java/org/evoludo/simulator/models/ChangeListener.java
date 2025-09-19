@@ -83,17 +83,7 @@ public interface ChangeListener {
 		/**
 		 * Change execution mode of model.
 		 */
-		CHANGE_MODE,
-
-		/**
-		 * Statistic is ready. Make sure to resume calculations.
-		 */
-		STATISTIC_READY,
-
-		/**
-		 * Statistic sample failed.
-		 */
-		STATISTIC_FAILED;
+		CHANGE_MODE;
 
 		/**
 		 * The pending execution mode of the model.

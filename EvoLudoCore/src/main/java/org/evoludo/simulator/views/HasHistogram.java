@@ -33,6 +33,7 @@ package org.evoludo.simulator.views;
 import java.awt.Color;
 
 import org.evoludo.simulator.models.Data;
+import org.evoludo.simulator.models.SampleListener;
 
 /**
  * {@link org.evoludo.simulator.modules.Module Module}s that implement the
@@ -126,7 +127,7 @@ public abstract interface HasHistogram {
 	 * 
 	 * @see org.evoludo.simulator.views.Histogram
 	 */
-	public interface StatisticsProbability extends HasHistogram {
+	public interface StatisticsProbability extends HasHistogram, SampleListener {
 	}
 
 	/**
@@ -136,7 +137,7 @@ public abstract interface HasHistogram {
 	 * 
 	 * @see org.evoludo.simulator.views.Histogram
 	 */
-	public interface StatisticsTime extends HasHistogram {
+	public interface StatisticsTime extends HasHistogram, SampleListener {
 	}
 
 	/**

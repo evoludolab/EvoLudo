@@ -47,6 +47,7 @@ import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.SampleListener;
 import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
@@ -130,7 +131,8 @@ import com.google.gwt.user.client.ui.Widget;
  * Entry point classes define <code>onModuleLoad()</code>.
  */
 public class EvoLudoWeb extends Composite
-		implements HasFullscreenChangeHandlers, FullscreenChangeHandler, MilestoneListener, ChangeListener, CLOProvider, EntryPoint {
+		implements HasFullscreenChangeHandlers, FullscreenChangeHandler, MilestoneListener, ChangeListener,
+		SampleListener, CLOProvider, EntryPoint {
 
 	/**
 	 * <strong>Apple Books (iBook) notes:</strong>
@@ -373,6 +375,7 @@ public class EvoLudoWeb extends Composite
 		engine = new EvoLudoGWT(this);
 		engine.addCLOProvider(this);
 		engine.addMilestoneListener(this);
+		engine.addSampleListener(this);
 		engine.addChangeListener(this);
 		logger = engine.getLogger();
 		logger.setLevel(Level.INFO);
@@ -573,16 +576,6 @@ public class EvoLudoWeb extends Composite
 	@Override
 	public void modelChanged(PendingAction action) {
 		switch (action) {
-			case STATISTIC_READY:
-				// stop if single statistics requested
-				if (engine.isRunning())
-					engine.next();
-				updateStatus();
-				//$FALL-THROUGH$
-			case STATISTIC_FAILED:
-				// always update counter
-				updateCounter();
-				break;
 			case CHANGE_MODE:
 				// reset threshold for status messages after mode change
 				displayStatusThresholdLevel = Level.ALL.intValue();
@@ -596,6 +589,13 @@ public class EvoLudoWeb extends Composite
 		}
 		if (!engine.isRunning())
 			updateGUI();
+	}
+
+	@Override
+	public void modelSample(boolean success) {
+		if (success)
+			updateStatus();
+		updateCounter();
 	}
 
 	@Override
@@ -1156,7 +1156,6 @@ public class EvoLudoWeb extends Composite
 			return;
 		}
 		displayStatusThresholdLevel = Level.ALL.intValue();
-		guiState.view = activeView;
 		guiState.resume = engine.isRunning() || engine.isSuspended();
 		engine.setSuspended(false);
 		guiState.model = engine.getModel();
@@ -1171,7 +1170,7 @@ public class EvoLudoWeb extends Composite
 		updateViews();
 		// process (emulated) ePub restrictions - adds console if possible
 		processEPubSettings();
-		guiState.view = null;
+		guiState.view = activeView;
 		if (cloView.isSet()) {
 			// the initialView specification (name or index) may be followed by a space and
 			// a comma-separated list of view specific options
@@ -1249,6 +1248,8 @@ public class EvoLudoWeb extends Composite
 		updateGUI();
 		activeView.parse(guiState.args);
 		activeView.activate();
+		if (activeView.hasLayout() && engine.isSuspended())
+			engine.run();
 	}
 
 	/**

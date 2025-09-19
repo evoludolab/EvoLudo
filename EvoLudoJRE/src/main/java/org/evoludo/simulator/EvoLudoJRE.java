@@ -250,7 +250,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	public void run() {
 		Thread me = Thread.currentThread();
 		if (!me.getName().equals("Engine")) {
-			if (isRunning)
+			if (isRunning || !isSuspended())
 				return;
 			fireModelRunning();
 			// this is the EDT, check if engine thread alive and kicking
@@ -754,7 +754,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			// times. stop/init/reset need to be able to interrupt.
 			switch (pendingAction) {
 				case NONE:
-				case STATISTIC_READY:
 				case STOP: // finish sample
 					break;
 				default:
