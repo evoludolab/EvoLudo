@@ -513,7 +513,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 				@Override
 				public boolean parse(String arg) {
 					double[][] payMatrix = CLOParser.parseMatrix(arg);
-					if (payMatrix == null || (payMatrix.length != 2 && payMatrix.length != 4)
+					if ((payMatrix.length != 2 && payMatrix.length != 4)
 							|| payMatrix[0].length != payMatrix.length)
 						return false;
 					setPayoffs(payMatrix);

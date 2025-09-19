@@ -309,7 +309,7 @@ public class TBT extends Discrete implements Payoffs,
 				@Override
 				public boolean parse(String arg) {
 					double[][] payMatrix = CLOParser.parseMatrix(arg);
-					if (payMatrix == null || payMatrix.length != 2 || payMatrix[0].length != 2)
+					if (payMatrix.length != 2 || payMatrix[0].length != 2)
 						return false;
 					setPayoffs(payMatrix);
 					return true;

@@ -606,12 +606,11 @@ public class CLOParser {
 
 	/**
 	 * Parse string <code>aVector</code> as a <code>boolean[]</code> array. Vector
-	 * entries are separated by {@value #VECTOR_DELIMITER}.
+	 * entries are separated by {@value #VECTOR_DELIMITER}. Any invalid entries
+	 * default to {@code false}.
 	 * 
 	 * @param aVector string to convert to <code>boolean[]</code>
-	 * @return <code>boolean[]</code> representation of <code>aVector</code> or an
-	 *         empty array <code>boolean[0]</code> if <code>aVector</code> is
-	 *         <code>null</code> or an empty string
+	 * @return <code>boolean[]</code> representation of <code>aVector</code>
 	 * @see Boolean#parseBoolean(String)
 	 */
 	public static boolean[] parseBoolVector(String aVector) {
@@ -621,23 +620,23 @@ public class CLOParser {
 		if (aVector.length() == 0)
 			return new boolean[0];
 
-		String[] elem = aVector.split(VECTOR_DELIMITER);
-		int len = elem.length;
+		String[] entries = aVector.split(VECTOR_DELIMITER);
+		int len = entries.length;
 		boolean[] result = new boolean[len];
 		for (int i = 0; i < len; i++) {
-			result[i] = Boolean.parseBoolean(elem[i]);
+			result[i] = Boolean.parseBoolean(entries[i]);
 		}
 		return result;
 	}
 
 	/**
 	 * Parse string <code>aVector</code> as an <code>int[]</code> array. Vector
-	 * entries are separated by {@value #VECTOR_DELIMITER}.
+	 * entries are separated by {@value #VECTOR_DELIMITER}. Returns an array of zero
+	 * length if <code>aVector</code> is <code>null</code>, an empty string, or any
+	 * entry caused a {@link NumberFormatException}.
 	 * 
 	 * @param aVector string to convert to <code>int[]</code>
-	 * @return <code>int[]</code> representation of <code>aVector</code> or an empty
-	 *         array <code>int[0]</code> if <code>aVector</code> is
-	 *         <code>null</code> or an empty string
+	 * @return <code>int[]</code> representation of <code>aVector</code>
 	 * @see Integer#parseInt(String)
 	 */
 	public static int[] parseIntVector(String aVector) {
@@ -648,13 +647,12 @@ public class CLOParser {
 	 * Parse string <code>aVector</code> as a <code>int[]</code> array. Vector
 	 * entries are separated by <code>separator</code>, which can be any valid
 	 * regular expression. Returns an array of zero length if <code>aVector</code>
-	 * is <code>null</code> or an empty string.
+	 * is <code>null</code>, an empty string, or any entry caused a
+	 * {@link NumberFormatException}.
 	 * 
 	 * @param aVector   string to convert to <code>int[]</code>
 	 * @param separator regular expression string used to split <code>aVector</code>
-	 * @return <code>int[]</code> representation of <code>aVector</code> or
-	 *         <code>null</code> if any entry of <code>aVector</code> caused a
-	 *         {@link NumberFormatException}.
+	 * @return <code>int[]</code> representation of <code>aVector</code>
 	 * 
 	 * @see String#split(String)
 	 * @see Integer#parseInt(String)
@@ -669,20 +667,25 @@ public class CLOParser {
 		String[] entries = aVector.split(separator);
 		int len = entries.length;
 		int[] result = new int[len];
-		for (int i = 0; i < len; i++)
-			result[i] = Integer.parseInt(entries[i]);
+		// note: in GWT Integer.parseInt() does not throw NumberFormatException
+		// without the try-catch-block; instead, execution is quietly aborted...
+		try {
+			for (int i = 0; i < len; i++)
+				result[i] = Integer.parseInt(entries[i]);
+		} catch (Exception e) {
+			return new int[0];
+		}
 		return result;
 	}
 
 	/**
 	 * Parse string <code>aVector</code> as a <code>double[]</code> array. Vector
 	 * entries are separated by {@value #VECTOR_DELIMITER}. Returns an array of zero
-	 * length if <code>aVector</code> is <code>null</code> or an empty string.
+	 * length if <code>aVector</code> is <code>null</code>, an empty string, or any
+	 * entry caused a {@link NumberFormatException}.
 	 * 
 	 * @param aVector string to convert to <code>double[]</code>
-	 * @return <code>double[]</code> representation of <code>aVector</code> or
-	 *         <code>null</code> if any entry of <code>aVector</code> caused a
-	 *         {@link NumberFormatException}.
+	 * @return <code>double[]</code> representation of <code>aVector</code>
 	 * 
 	 * @see #parseVector(String, String)
 	 */
@@ -694,13 +697,12 @@ public class CLOParser {
 	 * Parse string <code>aVector</code> as a <code>double[]</code> array. Vector
 	 * entries are separated by <code>separator</code>, which can be any valid
 	 * regular expression. Returns an array of zero length if <code>aVector</code>
-	 * is <code>null</code> or an empty string.
+	 * is <code>null</code>, an empty string, or any entry caused a
+	 * {@link NumberFormatException}.
 	 * 
 	 * @param aVector   string to convert to <code>double[]</code>
 	 * @param separator regular expression string used to split <code>aVector</code>
-	 * @return <code>double[]</code> representation of <code>aVector</code> or
-	 *         <code>null</code> if any entry of <code>aVector</code> caused a
-	 *         {@link NumberFormatException}.
+	 * @return <code>double[]</code> representation of <code>aVector</code>.
 	 * 
 	 * @see String#split(String)
 	 * @see Double#parseDouble(String)
@@ -721,7 +723,7 @@ public class CLOParser {
 			for (int i = 0; i < len; i++)
 				result[i] = Double.parseDouble(entries[i]);
 		} catch (Exception e) {
-			return null;
+			return new double[0];
 		}
 		return result;
 	}
@@ -730,12 +732,12 @@ public class CLOParser {
 	 * Parse string <code>aMatrix</code> as a <code>int[][]</code> matrix (two
 	 * dimensional array). For each row entries are separated by
 	 * {@value #VECTOR_DELIMITER} and rows are separated by
-	 * {@value #MATRIX_DELIMITER}.
+	 * {@value #MATRIX_DELIMITER}. Returns an empty matrix {@code new int[0][0]}
+	 * if {@code aMatrix} is {@code null}, an empty string, or any entry caused a
+	 * {@link NumberFormatException}.
 	 * 
 	 * @param aMatrix string to convert to <code>int[][]</code>
-	 * @return <code>int[][]</code> representation of <code>aMatrix</code> and
-	 *         <code>null</code> if <code>aMatrix</code> is <code>null</code>, an
-	 *         empty string or any entry caused a {@link NumberFormatException}.
+	 * @return <code>int[][]</code> representation of <code>aMatrix</code>
 	 * @see #parseVector(String)
 	 */
 	public static int[][] parseIntMatrix(String aMatrix) {
@@ -750,8 +752,8 @@ public class CLOParser {
 		int[][] result = new int[len][];
 		for (int i = 0; i < len; i++) {
 			int[] vec = parseIntVector(entries[i]);
-			if (vec == null)
-				return null;
+			if (vec.length == 0)
+				return new int[0][0];
 			result[i] = vec;
 		}
 		return result;
@@ -761,12 +763,12 @@ public class CLOParser {
 	 * Parse string <code>aMatrix</code> as a <code>double[][]</code> matrix (two
 	 * dimensional array). For each row entries are separated by
 	 * {@value #VECTOR_DELIMITER} and rows are separated by
-	 * {@value #MATRIX_DELIMITER}.
+	 * {@value #MATRIX_DELIMITER}. Returns an empty matrix {@code new double[0][0]}
+	 * if {@code aMatrix} is {@code null}, an empty string, or any entry caused a
+	 * {@link NumberFormatException}.
 	 * 
 	 * @param aMatrix string to convert to <code>double[][]</code>
-	 * @return <code>double[][]</code> representation of <code>aMatrix</code> and
-	 *         <code>null</code> if <code>aMatrix</code> is <code>null</code>, an
-	 *         empty string or any entry caused a {@link NumberFormatException}.
+	 * @return <code>double[][]</code> representation of <code>aMatrix</code>.
 	 * @see #parseVector(String)
 	 */
 	public static double[][] parseMatrix(String aMatrix) {
@@ -781,8 +783,8 @@ public class CLOParser {
 		double[][] result = new double[len][];
 		for (int i = 0; i < len; i++) {
 			double[] vec = parseVector(entries[i]);
-			if (vec == null)
-				return null;
+			if (vec.length == 0)
+				return new double[0][0];
 			result[i] = vec;
 		}
 		return result;

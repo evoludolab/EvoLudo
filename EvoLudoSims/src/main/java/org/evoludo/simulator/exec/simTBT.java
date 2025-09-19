@@ -404,7 +404,7 @@ public class simTBT extends TBT implements ChangeListener {
 					if (!cloScanST.isSet())
 						return true;
 					scanST = CLOParser.parseVector(arg);
-					return (scanST != null);
+					return (scanST.length > 0);
 				}
 			});
 
@@ -418,7 +418,7 @@ public class simTBT extends TBT implements ChangeListener {
 					if (!cloScanDG.isSet())
 						return true;
 					scanDG = CLOParser.parseVector(arg);
-					return (scanDG != null);
+					return (scanDG.length > 0);
 				}
 			});
 

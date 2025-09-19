@@ -269,7 +269,7 @@ public class Traits extends Discrete implements Payoffs,
 					}
 					payoffType = PAYOFF_MATRIX;
 					double[][] payMatrix = CLOParser.parseMatrix(arg);
-					if (payMatrix == null)
+					if (payMatrix.length == 0)
 						return false;
 					setPayoffs(payMatrix);
 					return true;

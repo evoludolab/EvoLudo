@@ -174,9 +174,9 @@ public class IBSC extends IBS implements Continuous {
 									initargs = CLOParser.parseVector(typeargs[0]);
 								} else if (typeargs.length > 1)
 									initargs = CLOParser.parseVector(typeargs[1]);
-								boolean argsOk = (initargs != null && initargs.length >= newtype.nParams);
 								// only uniform initialization does not require additional arguments
-								if (newtype == null || (!newtype.equals(Init.Type.UNIFORM) && !argsOk))
+								if (newtype == null || (!newtype.equals(Init.Type.UNIFORM)
+										&& (initargs == null || initargs.length < newtype.nParams)))
 									return false;
 								init.type = newtype;
 								init.args[n] = initargs;

@@ -1041,7 +1041,7 @@ public abstract class Continuous extends Module {
 						for (int i = 0; i < nTraits; i++) {
 							String trange = traitranges[i % traitranges.length];
 							double[] range = CLOParser.parseVector(trange);
-							if (range == null || range.length < 2 || range[0] > range[1])
+							if (range.length < 2 || range[0] > range[1])
 								return false;
 							cpop.setTraitRange(range[0], range[1], i);
 						}

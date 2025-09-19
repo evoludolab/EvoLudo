@@ -317,12 +317,12 @@ public class Advection extends PDE {
 					advcoeff = null;
 					if (cloPdeAdvection.isDefault())
 						return true;
-					advcoeff = CLOParser.parseMatrix(arg);
 					// dim not yet set - retrieve directly from module
 					int dim = module.getNTraits();
 					if (module instanceof HasDE && ((HasDE) module).getDependent() >= 0)
 						dim--;
-					if (advcoeff == null || advcoeff.length != dim || advcoeff[0].length != dim)
+					advcoeff = CLOParser.parseMatrix(arg);
+					if (advcoeff.length != dim || advcoeff[0].length != dim)
 						return false;
 					doAdvection = true;
 					return true;

@@ -1178,7 +1178,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 						rates = CLOParser.parseVector(arg, CLOParser.SPECIES_DELIMITER);
 					else
 						rates = CLOParser.parseVector(arg);
-					if (rates == null || rates.length == 0)
+					if (rates.length == 0)
 						return false;
 					int n = 0;
 					for (Module pop : species) {
@@ -1240,7 +1240,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 						sizes = CLOParser.parseIntVector(arg, CLOParser.SPECIES_DELIMITER);
 					else
 						sizes = CLOParser.parseIntVector(arg);
-					if (sizes == null || sizes.length == 0)
+					if (sizes.length == 0)
 						return false;
 					int n = 0;
 					for (Module pop : species)
@@ -1466,7 +1466,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					if (!cloPhase2DAxes.isSet())
 						return true;
 					int[][] phase2daxes = CLOParser.parseIntMatrix(arg);
-					if (phase2daxes == null || phase2daxes.length != 2)
+					if (phase2daxes.length != 2)
 						return false;
 					// cast check should be unnecessary. --phase2daxes should only be available if
 					// module implements at least HasPhase2D (plus some other conditions).

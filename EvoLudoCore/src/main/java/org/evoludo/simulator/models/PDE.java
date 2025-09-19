@@ -1544,8 +1544,6 @@ public class PDE extends ODE {
 					// number of traits and dependent not yet set - retrieve directly from module
 					int dim = module.getNTraits();
 					int dep = ((HasDE) module).getDependent();
-					if (diffcoeff == null)
-						return false;
 					if (diffcoeff.length != dim) {
 						double[] dc = diffcoeff;
 						diffcoeff = new double[dim];

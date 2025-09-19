@@ -1665,7 +1665,7 @@ public class ODE extends Model implements Discrete {
 					break;
 				case DENSITY:
 				case FREQUENCY:
-					if (initargs == null || initargs.length != nTraits) {
+					if (initargs.length != nTraits) {
 						parseOk = false;
 						break species;
 					}

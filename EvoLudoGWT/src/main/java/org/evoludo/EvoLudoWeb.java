@@ -2005,7 +2005,7 @@ public class EvoLudoWeb extends Composite
 						arg = cloSize.getDefault();
 					}
 					double[] dim = CLOParser.parseVector(arg);
-					if (dim == null || dim.length != 2)
+					if (dim.length != 2)
 						return false;
 					// note: why do we need to set the initial size on the grandparent?
 					fullscreenWidget.setSize((int) dim[0] + "px", (int) dim[1] + "px");

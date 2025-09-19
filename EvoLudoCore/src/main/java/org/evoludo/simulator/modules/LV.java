@@ -168,7 +168,7 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 				@Override
 				public boolean parse(String arg) {
 					double[] args = CLOParser.parseVector(arg);
-					if (args == null || args.length < 1 || args.length > 3)
+					if (args.length < 1 || args.length > 3)
 						return false;
 					if (rates == null || rates.length != 3)
 						rates = new double[3];
@@ -386,7 +386,7 @@ class Predator extends Discrete implements Multispecies, HasDE {
 				@Override
 				public boolean parse(String arg) {
 					double[] args = CLOParser.parseVector(arg);
-					if (args == null || args.length < 1 || args.length > 3)
+					if (args.length < 1 || args.length > 3)
 						return false;
 					if (rates == null || rates.length != 3)
 						rates = new double[3];

@@ -415,7 +415,7 @@ public class simCDL extends CDL implements ChangeListener {
 					if (!cloScanNL.isSet())
 						return true;
 					scanNL = CLOParser.parseVector(arg);
-					return (scanNL != null);
+					return (scanNL.length > 0);
 				}
 			});
 

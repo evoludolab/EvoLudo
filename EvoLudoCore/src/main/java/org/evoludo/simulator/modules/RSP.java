@@ -244,7 +244,7 @@ public class RSP extends Discrete implements Payoffs,
 				@Override
 				public boolean parse(String arg) {
 					double[][] payMatrix = CLOParser.parseMatrix(arg);
-					if (payMatrix == null || payMatrix.length != 3 || payMatrix[0].length != 3)
+					if (payMatrix.length != 3 || payMatrix[0].length != 3)
 						return false;
 					setPayoffs(payMatrix);
 					return true;
