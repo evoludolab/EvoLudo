@@ -618,6 +618,8 @@ public class EvoLudoWeb extends Composite
 	public void modelDidReset() {
 		updateGUI();
 		displayStatus(engine.getVersion());
+		if (snapmarker != null)
+			Document.get().getBody().removeChild(snapmarker);
 	}
 
 	/**
@@ -1249,6 +1251,51 @@ public class EvoLudoWeb extends Composite
 		}
 		updateGUI();
 		activeView.parse(guiState.args);
+		// view needs to be activated to set the mode of the model
+// if no layouting required activation will already trigger the snapshot
+//		activeView.activate();
+		if (engine.cloSnap.isSet()) {
+			// --snap set
+			Model activeModel = engine.getModel();
+			double tStop = activeModel.getTimeStop();
+			double nSamples = activeModel.getNSamples();
+//			switch (activeModel.getMode()) {
+			switch (activeView.getMode()) {
+				case DYNAMICS:
+				case STATISTICS_UPDATE:
+					if (tStop > activeModel.getTime() ) {
+						// run to specified time
+						if (tStop < activeModel.getTimeStep())
+							activeModel.setTimeStep(tStop);
+						// start running - even without --run
+						engine.setSuspended(true);
+					} 
+					// else if (activeView.hasLayout()) {
+					// 	// no stopping time requested: take snapshot now
+					// 	snapshotReady();
+					// 	// don't start running - even if --run provided
+					// 	engine.setSuspended(false);
+					// }
+					if (nSamples > 0.0)
+						logger.warning("--samples found: wrong mode for statistics, use --view option.");
+					break;
+				case STATISTICS_SAMPLE:
+					// run to specified sample count
+					if (nSamples > activeModel.getNStatisticsSamples()) {
+						// start running - even without --run
+						engine.setSuspended(true);
+					} 
+					// else if (activeView.hasLayout()) {
+					// 	// no sample count requested: take snapshot now if view ready
+					// 	snapshotReady();
+					// 	// don't start running - even if --run provided
+					// 	engine.setSuspended(false);
+					// }
+					if (Double.isFinite(tStop))
+						logger.warning("--timestop found: wrong mode for dynamics, use --view option.");
+				default:
+			}
+		}
 		activeView.activate();
 		if (activeView.hasLayout() && engine.isSuspended())
 			engine.run();
@@ -1840,6 +1887,13 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
+	 * Marker element to indicate that a snapshot is ready.
+	 *
+	 * @see EvoLudoGWT#cloSnap
+	 */
+	private DivElement snapmarker = null;
+
+	/**
 	 * Prepare GUI to create a snapshot. Stops running model, updates GUI (buttons
 	 * and view) and adds a marker element with ID <code>snapshot-ready</code> to
 	 * DOM. This is used to control automated snapshots using
@@ -1849,15 +1903,15 @@ public class EvoLudoWeb extends Composite
 	 *      capture-website-cli</a>
 	 */
 	public void snapshotReady() {
-		if (engine.isRunning())
-			engine.setSuspended(true);
+		if (snapmarker != null)
+			return;
 		activeView.update(true);
 		// make sure GUI is in stopped state before taking the snapshot
 		updateGUI();
 		// add div to DOM to signal completion of layout for capture-website
-		DivElement marker = Document.get().createDivElement();
-		marker.setId("snapshot-ready");
-		Document.get().getBody().appendChild(marker);
+		snapmarker = Document.get().createDivElement();
+		snapmarker.setId("snapshot-ready");
+		Document.get().getBody().appendChild(snapmarker);
 	}
 
 	/**

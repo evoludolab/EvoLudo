@@ -1162,19 +1162,23 @@ public abstract class EvoLudo
 	 * Called after the population has reached an absorbing state (or has converged
 	 * to an equilibrium state). Notifies all registered
 	 * {@link MilestoneListener}s.
+	 * 
+	 * @param success <code>true</code> if sample completed successfully
+	 * @return <code>true</code> to continue with next sample
+	 * 
+	 * @see SampleListener
 	 */
-	public synchronized void fireModelSample(boolean success) {
-			// check if new sample completed
-			activeModel.readStatisticsSample();
-			for (SampleListener i : sampleListeners)
-				i.modelSample(success);
-			if (activeModel.getNSamples() == activeModel.getNStatisticsSamples()) {
-				// all samples completed - fire stop instead
-				fireModelStopped();
-				return;
-			}
-			if (isRunning)
-				next();
+	public synchronized boolean fireModelSample(boolean success) {
+		// check if new sample completed
+		activeModel.readStatisticsSample();
+		for (SampleListener i : sampleListeners)
+			i.modelSample(success);
+		if (activeModel.getNSamples() == activeModel.getNStatisticsSamples()) {
+			// all samples completed - fire stop
+			fireModelStopped();
+			return false;
+		}
+		return true;
 	}
 
 	/**

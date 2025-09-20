@@ -170,43 +170,9 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public void layoutComplete() {
-		if (cloSnap.isSet()) {
-			// --snap set
-			double tStop = activeModel.getTimeStop();
-			double nSamples = activeModel.getNSamples();
-			switch (activeModel.getMode()) {
-				case DYNAMICS:
-				case STATISTICS_UPDATE:
-					if (tStop > 0.0) {
-						// run to specified time
-						if (tStop < activeModel.getTimeStep())
-							activeModel.setTimeStep(tStop);
-						// start running - even without --run
-						setSuspended(true);
-					} else {
-						// no stopping time requested: take snapshot now
-						gui.snapshotReady();
-						// don't start running - even if --run provided
-						setSuspended(false);
-					}
-					if (nSamples > 0.0)
-						logger.warning("--samples found: wrong mode for statistics, use --view option.");
-					break;
-				case STATISTICS_SAMPLE:
-					// run to specified sample count
-					if (nSamples > 0.0) {
-						// start running - even without --run
-						setSuspended(true);
-					} else {
-						// no sample count requested: take snapshot now
-						gui.snapshotReady();
-						// don't start running - even if --run provided
-						setSuspended(false);
-					}
-					if (Double.isFinite(tStop))
-						logger.warning("--timestop found: wrong mode for dynamics, use --view option.");
-				default:
-			}
+		if (cloSnap.isSet() && !isSuspended()) {
+			// no stopping time requested: take snapshot now
+			gui.snapshotReady();
 		}
 		super.layoutComplete();
 	}
@@ -217,9 +183,21 @@ public class EvoLudoGWT extends EvoLudo {
 		if (isRunning || !isSuspended())
 			return;
 		fireModelRunning();
-		// start with an update not the delay
-		if (modelNext())
-			timer.scheduleRepeating(delay);
+		switch (activeModel.getMode()) {
+			case STATISTICS_SAMPLE:
+				// non-blocking way for running an arbitrary number of update
+				// steps to obtain one sample
+				scheduleSample();
+				break;
+			case STATISTICS_UPDATE:
+			case DYNAMICS:
+				// start with an update not the delay
+				if (modelNext())
+					timer.scheduleRepeating(delay);
+				break;
+			default:
+				throw new Error("next(): unknown mode...");
+		}
 	}
 
 	/**
@@ -277,9 +255,7 @@ public class EvoLudoGWT extends EvoLudo {
 				}
 				if (activeModel.next())
 					return true;
-				boolean failed = (activeModel.getFixationData().mutantNode < 0);
-				fireModelSample(!failed);
-				return failed;
+				return fireModelSample(activeModel.getFixationData().mutantNode >= 0);
 			}
 		});
 	}
@@ -595,6 +571,9 @@ public class EvoLudoGWT extends EvoLudo {
 	 * Command line option to request that the EvoLudo model signals the completion
 	 * of of the layouting procedure for taking snapshots, e.g. with
 	 * <code>capture-website</code>.
+	 * 
+	 * @see <a href="https://github.com/sindresorhus/capture-website-cli"> Github:
+	 *      capture-website-cli</a>
 	 */
 	public final CLOption cloSnap = new CLOption("snap", "20", CLOption.Argument.OPTIONAL, Category.GUI,
 			"--snap [<s>]    snapshot utility, timeout <s> secs;\n"
