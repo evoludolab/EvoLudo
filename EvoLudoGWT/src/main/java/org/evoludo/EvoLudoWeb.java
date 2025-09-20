@@ -1177,13 +1177,14 @@ public class EvoLudoWeb extends Composite
 			String[] iv = initialView.split(" ", 2);
 			// try to interpret first argument as name
 			String name = iv[0].replace('_', ' ').trim();
+			AbstractView newView = null;
 			for (AbstractView view : activeViews.values()) {
 				if (view.getName().equals(name)) {
-					guiState.view = view;
+					newView = view;
 					break;
 				}
 			}
-			if (guiState.view == null) {
+			if (newView == null) {
 				// try to interpret first argument as index
 				int idx = 0;
 				AbstractView[] av = activeViews.values().toArray(new AbstractView[0]);
@@ -1193,8 +1194,9 @@ public class EvoLudoWeb extends Composite
 					// the argument is not a number, ignore and pick first view
 					logger.warning("failed to set view '" + iv[0] + "' - using default.");
 				}
-				guiState.view = av[Math.max(Math.min(idx, av.length), 1) - 1];
+				newView = av[Math.max(Math.min(idx, av.length), 1) - 1];
 			}
+			guiState.view = newView;
 			guiState.args = iv.length > 1 ? iv[1].trim() : null;
 		}
 		if (guiState.view == null
