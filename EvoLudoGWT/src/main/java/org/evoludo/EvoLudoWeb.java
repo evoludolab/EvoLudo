@@ -570,6 +570,7 @@ public class EvoLudoWeb extends Composite
 				throw new IllegalStateException("Another ePub lab is already running!");
 			runningEPub = this;
 		}
+		displayStatusThresholdLevel = Level.ALL.intValue();
 		updateGUI();
 	}
 
@@ -1252,14 +1253,11 @@ public class EvoLudoWeb extends Composite
 		updateGUI();
 		activeView.parse(guiState.args);
 		// view needs to be activated to set the mode of the model
-// if no layouting required activation will already trigger the snapshot
-//		activeView.activate();
 		if (engine.cloSnap.isSet()) {
 			// --snap set
 			Model activeModel = engine.getModel();
 			double tStop = activeModel.getTimeStop();
 			double nSamples = activeModel.getNSamples();
-//			switch (activeModel.getMode()) {
 			switch (activeView.getMode()) {
 				case DYNAMICS:
 				case STATISTICS_UPDATE:
@@ -1270,12 +1268,6 @@ public class EvoLudoWeb extends Composite
 						// start running - even without --run
 						engine.setSuspended(true);
 					} 
-					// else if (activeView.hasLayout()) {
-					// 	// no stopping time requested: take snapshot now
-					// 	snapshotReady();
-					// 	// don't start running - even if --run provided
-					// 	engine.setSuspended(false);
-					// }
 					if (nSamples > 0.0)
 						logger.warning("--samples found: wrong mode for statistics, use --view option.");
 					break;
@@ -1285,12 +1277,6 @@ public class EvoLudoWeb extends Composite
 						// start running - even without --run
 						engine.setSuspended(true);
 					} 
-					// else if (activeView.hasLayout()) {
-					// 	// no sample count requested: take snapshot now if view ready
-					// 	snapshotReady();
-					// 	// don't start running - even if --run provided
-					// 	engine.setSuspended(false);
-					// }
 					if (Double.isFinite(tStop))
 						logger.warning("--timestop found: wrong mode for dynamics, use --view option.");
 				default:

@@ -204,21 +204,9 @@ public class EvoLudoGWT extends EvoLudo {
 	 * Timer for running models.
 	 */
 	Timer timer = new Timer() {
-		boolean processing = false;
-
-		@Override
-		public void cancel() {
-			processing = false;
-			super.cancel();
-		}
-
 		@Override
 		public void run() {
-			if (!processing) {
-				processing = true;
-				next();
-				processing = false;
-			}
+			next();
 		}
 	};
 
@@ -577,8 +565,8 @@ public class EvoLudoGWT extends EvoLudo {
 	 */
 	public final CLOption cloSnap = new CLOption("snap", "20", CLOption.Argument.OPTIONAL, Category.GUI,
 			"--snap [<s>]    snapshot utility, timeout <s> secs;\n"
-					+ "				(add '<div id=\"snapshot-ready\"></div>' to <body>\n"
-					+ "				when ready for snapshot, see capture-website docs)\n",
+					+ "             (add '<div id=\"snapshot-ready\"></div>' to <body>\n"
+					+ "             when ready for snapshot, see capture-website docs)\n",
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
