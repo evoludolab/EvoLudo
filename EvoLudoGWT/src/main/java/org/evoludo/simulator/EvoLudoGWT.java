@@ -565,8 +565,8 @@ public class EvoLudoGWT extends EvoLudo {
 	 */
 	public final CLOption cloSnap = new CLOption("snap", "20", CLOption.Argument.OPTIONAL, Category.GUI,
 			"--snap [<s>]    snapshot utility, timeout <s> secs;\n"
-					+ "             (add '<div id=\"snapshot-ready\"></div>' to <body>\n"
-					+ "             when ready for snapshot, see capture-website docs)\n",
+					+ "                (add '<div id=\"snapshot-ready\"></div>' to <body>\n"
+					+ "                when ready for snapshot, see capture-website docs)",
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {

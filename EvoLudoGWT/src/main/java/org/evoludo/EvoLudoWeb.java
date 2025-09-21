@@ -1261,10 +1261,11 @@ public class EvoLudoWeb extends Composite
 			switch (activeView.getMode()) {
 				case DYNAMICS:
 				case STATISTICS_UPDATE:
-					if (tStop > activeModel.getTime() ) {
+					double deltat = (tStop - activeModel.getTime()) * (activeModel.isTimeReversed() ? -1.0 : 1.0);
+					if (Double.isFinite(tStop) && deltat > 0.0) {
 						// run to specified time
-						if (tStop < activeModel.getTimeStep())
-							activeModel.setTimeStep(tStop);
+						if (Math.abs(deltat) < activeModel.getTimeStep())
+							activeModel.setTimeStep(deltat);
 						// start running - even without --run
 						engine.setSuspended(true);
 					} 
@@ -2000,8 +2001,7 @@ public class EvoLudoWeb extends Composite
 	/**
 	 * Command line option to set the data view displayed in the GUI.
 	 */
-	public final CLOption cloView = new CLOption("view", "1", Category.GUI,
-			"--view <v>      active view upon launch (v: index or title)", new CLODelegate() {
+	public final CLOption cloView = new CLOption("view", "1", Category.GUI, null, new CLODelegate() {
 				/**
 				 * {@inheritDoc}
 				 * <p>
@@ -2017,7 +2017,7 @@ public class EvoLudoWeb extends Composite
 
 				@Override
 				public String getDescription() {
-					String descr = "--view <v>      select view with index (also on keyboard)";
+					String descr = "--view <v>      select view (v: index or title)";
 					int idx = 1;
 					for (AbstractView view : activeViews.values()) {
 						String keycode = "              " + (idx++) + ": ";
