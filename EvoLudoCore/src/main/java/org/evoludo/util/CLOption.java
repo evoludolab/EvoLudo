@@ -324,10 +324,10 @@ public class CLOption implements Comparable<CLOption> {
 	/**
 	 * the short description of the command line option. May include newline's
 	 * <code>'\n'</code> for basic formatting.
-	* <p>
-	* <strong>Note:</strong> the description string may contain any UTF-8
-	* characters as well as HTML character entities. If necessary they will be
-	* escaped and converted to UTF-8 for display in XML documents.
+	 * <p>
+	 * <strong>Note:</strong> the description string may contain any UTF-8
+	 * characters as well as HTML character entities. If necessary they will be
+	 * escaped and converted to UTF-8 for display in XML documents.
 	 */
 	String description = null;
 
@@ -701,7 +701,7 @@ public class CLOption implements Comparable<CLOption> {
 	 */
 	public Key addKey(String key, String title) {
 		if (keys == null)
-			keys = new HashMap<String, Key>();
+			keys = new HashMap<>();
 		return keys.put(key, new SimpleKey(key, title));
 	}
 
@@ -716,7 +716,7 @@ public class CLOption implements Comparable<CLOption> {
 	 */
 	public Key addKey(Key key) {
 		if (keys == null)
-			keys = new HashMap<String, Key>();
+			keys = new HashMap<>();
 		return keys.put(key.getKey(), key);
 	}
 
@@ -894,7 +894,7 @@ public class CLOption implements Comparable<CLOption> {
 	public Collection<Key> getKeys() {
 		if (keys != null)
 			return keys.values();
-		return new ArrayList<Key>();
+		return new ArrayList<>();
 	}
 
 	/**

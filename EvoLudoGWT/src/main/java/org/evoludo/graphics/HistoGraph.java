@@ -190,7 +190,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	/**
 	 * The list of markers for the histogram.
 	 */
-	private ArrayList<Marker> binmarkers = new ArrayList<Marker>();
+	private ArrayList<Marker> binmarkers = new ArrayList<>();
 
 	/**
 	 * The data array backing the histogram. This may be shared by multiple
@@ -511,7 +511,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		// Math.round involves longs, which are evil in GWT...
 		// double rounded = Math.round(x);
 		// if (Math.abs(x - rounded) < 1e-12)
-		// 	return rounded;
+		// return rounded;
 		return x;
 	}
 

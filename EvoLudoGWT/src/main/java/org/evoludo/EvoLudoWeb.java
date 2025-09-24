@@ -270,7 +270,7 @@ public class EvoLudoWeb extends Composite
 	 * Look-up table for active views. This is the selection shown in
 	 * {@link #evoludoViews}.
 	 */
-	HashMap<String, AbstractView> activeViews = new HashMap<String, AbstractView>();
+	HashMap<String, AbstractView> activeViews = new HashMap<>();
 
 	/**
 	 * By default the first data view is shown. In general this shows the strategies
@@ -581,7 +581,7 @@ public class EvoLudoWeb extends Composite
 				// reset threshold for status messages after mode change
 				displayStatusThresholdLevel = Level.ALL.intValue();
 				//$FALL-THROUGH$
-			case NONE: 
+			case NONE:
 				updateStatus();
 				updateCounter();
 				break;
@@ -1203,7 +1203,7 @@ public class EvoLudoWeb extends Composite
 			guiState.args = iv.length > 1 ? iv[1].trim() : null;
 		}
 		if (guiState.view == null
-			|| (guiState.view != null && !activeViews.containsValue(guiState.view))) {
+				|| (guiState.view != null && !activeViews.containsValue(guiState.view))) {
 			// initial load and view not set (or not found)
 			guiState.view = activeViews.values().toArray(new AbstractView[0])[0];
 		}
@@ -1215,7 +1215,8 @@ public class EvoLudoWeb extends Composite
 		evoludoViews.setSelectedIndex(evoludoDeck.getWidgetIndex(activeView));
 		if (guiState.issues > 1) {
 			// single issue is already displayed in status line
-			displayStatus("Multiple parsing problems (" + guiState.issues + ") - check log for details.", Level.WARNING.intValue() + 1);
+			displayStatus("Multiple parsing problems (" + guiState.issues + ") - check log for details.",
+					Level.WARNING.intValue() + 1);
 			cloSize.parse();
 		}
 		evoludoSlider.setValue(engine.getDelay());
@@ -1268,7 +1269,7 @@ public class EvoLudoWeb extends Composite
 							activeModel.setTimeStep(deltat);
 						// start running - even without --run
 						engine.setSuspended(true);
-					} 
+					}
 					if (nSamples > 0.0)
 						logger.warning("--samples found: wrong mode for statistics, use --view option.");
 					break;
@@ -1277,7 +1278,7 @@ public class EvoLudoWeb extends Composite
 					if (nSamples > activeModel.getNStatisticsSamples()) {
 						// start running - even without --run
 						engine.setSuspended(true);
-					} 
+					}
 					if (Double.isFinite(tStop))
 						logger.warning("--timestop found: wrong mode for dynamics, use --view option.");
 				default:
@@ -1987,7 +1988,7 @@ public class EvoLudoWeb extends Composite
 	 * <code>activeViews</code>. If a view with the same name already exists in
 	 * <code>oldViews</code> it is reused.
 	 *
-	 * @param view to add to active list
+	 * @param view     to add to active list
 	 * @param oldViews list of current views
 	 */
 	private void addView(AbstractView view, HashMap<String, AbstractView> oldViews) {
@@ -2002,31 +2003,31 @@ public class EvoLudoWeb extends Composite
 	 * Command line option to set the data view displayed in the GUI.
 	 */
 	public final CLOption cloView = new CLOption("view", "1", Category.GUI, null, new CLODelegate() {
-				/**
-				 * {@inheritDoc}
-				 * <p>
-				 * Set the initial view of the lab to {@code arg}. The view can be specified as
-				 * an index referring to the list of available data views or as the title of the
-				 * data view with spaces replaced by underscores, '_'.
-				 */
-				@Override
-				public boolean parse(String arg) {
-					initialView = arg;
-					return true;
-				}
+		/**
+		 * {@inheritDoc}
+		 * <p>
+		 * Set the initial view of the lab to {@code arg}. The view can be specified as
+		 * an index referring to the list of available data views or as the title of the
+		 * data view with spaces replaced by underscores, '_'.
+		 */
+		@Override
+		public boolean parse(String arg) {
+			initialView = arg;
+			return true;
+		}
 
-				@Override
-				public String getDescription() {
-					String descr = "--view <v>      select view (v: index or title)";
-					int idx = 1;
-					for (AbstractView view : activeViews.values()) {
-						String keycode = "              " + (idx++) + ": ";
-						int len = keycode.length();
-						descr += "\n" + keycode.substring(len - 16, len) + view.getName();
-					}
-					return descr;
-				}
-			});
+		@Override
+		public String getDescription() {
+			String descr = "--view <v>      select view (v: index or title)";
+			int idx = 1;
+			for (AbstractView view : activeViews.values()) {
+				String keycode = "              " + (idx++) + ": ";
+				int len = keycode.length();
+				descr += "\n" + keycode.substring(len - 16, len) + view.getName();
+			}
+			return descr;
+		}
+	});
 
 	/**
 	 * Command line option to set the size of the GUI or enter fullscreen.

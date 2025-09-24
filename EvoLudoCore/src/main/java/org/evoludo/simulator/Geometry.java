@@ -337,15 +337,15 @@ public class Geometry {
 		 * @see Geometry#initGeometryHierarchical()
 		 */
 		HIERARCHY("H", "hierarchical (meta-)populations",
-				"H[<g>[f]]<n1>[,<n2>[...,<nm>]]w<w> hierarchical\n" //
-						+ "                structure for population geometries g:\n" //
-						+ "                M: well-mixed (default)\n" //
-						+ "                n: square lattice (von neumann)\n" //
-						+ "                m: square lattice (moore)\n" //
-						+ "                append f for fixed boundaries\n" //
-						+ "                n1,...,nm number of units on each level\n" //
-						+ "                total of m+1 levels with nPopulation/(n1*...*nm)\n" //
-						+ "                individuals in last level\n" //
+				"H[<g>[f]]<n1>[,<n2>[...,<nm>]]w<w> hierarchical\n"//
+						+ "                structure for population geometries g:\n"//
+						+ "                M: well-mixed (default)\n"//
+						+ "                n: square lattice (von neumann)\n"//
+						+ "                m: square lattice (moore)\n"//
+						+ "                append f for fixed boundaries\n"//
+						+ "                n1,...,nm number of units on each level\n"//
+						+ "                total of m+1 levels with nPopulation/(n1*...*nm)\n"//
+						+ "                individuals in last level\n"//
 						+ "                w: strength of ties between levels"),
 
 		/**
@@ -355,7 +355,7 @@ public class Geometry {
 		 * 
 		 * @see Geometry#initGeometryLinear()
 		 */
-		LINEAR("l", "linear lattice, 1D", "l<l>[,<r>] linear lattice (l neighbourhood,\n" //
+		LINEAR("l", "linear lattice, 1D", "l<l>[,<r>] linear lattice (l neighbourhood,\n"//
 				+ "                if r!=l asymmetric neighbourhood)"),
 
 		/**
@@ -1256,7 +1256,7 @@ public class Geometry {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
 						logger.warning(name + " geometry '" //
-							+ geometry + "' requires special size - using " + size + "!");
+								+ geometry + "' requires special size - using " + size + "!");
 					doReset = true;
 				}
 				connectivity = (double) (2 * nReservoir * superstar_petals + pnodes) / (double) size;
@@ -1268,7 +1268,7 @@ public class Geometry {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
 						logger.warning(name + " geometry '" //
-							+ geometry + "' requires special size - using " + size + "!");
+								+ geometry + "' requires special size - using " + size + "!");
 					doReset = true;
 				}
 				break;
@@ -1284,7 +1284,7 @@ public class Geometry {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
 						logger.warning(name + " geometry '" //
-							+ geometry + "' requires special size - using " + size + "!");
+								+ geometry + "' requires special size - using " + size + "!");
 					doReset = true;
 				}
 				break;
@@ -1305,7 +1305,7 @@ public class Geometry {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
 						logger.warning(name + " geometry '" //
-							+ geometry + "' requires even integer square size - using " + size + "!");
+								+ geometry + "' requires even integer square size - using " + size + "!");
 					doReset = true;
 				}
 				// check connectivity - must be 1, 4 or 3x3, 5x5, 7x7 etc.
@@ -1331,7 +1331,7 @@ public class Geometry {
 						// show size-change-warning only if an explicit population size was requested
 						if (!engine.getModule().cloNPopulation.isDefault())
 							logger.warning(name + " geometry '" //
-							+ geometry + "' requires integer cube size - using " + size + "!");
+									+ geometry + "' requires integer cube size - using " + size + "!");
 						doReset = true;
 					}
 					// check connectivity - must be 6 or 3x3x3, 5x5x5, 7x7x6 etc.
@@ -1419,7 +1419,7 @@ public class Geometry {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
 						logger.warning(name + " geometry '" //
-						+ geometry + "' requires size 12!");
+								+ geometry + "' requires size 12!");
 					doReset = true;
 				}
 				connectivity = 3.0;
@@ -1429,7 +1429,7 @@ public class Geometry {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
 						logger.warning(name + " geometry '" //
-							+ geometry + "' requires size 14!");
+								+ geometry + "' requires size 14!");
 					doReset = true;
 				}
 				connectivity = 3.0;
@@ -1439,7 +1439,7 @@ public class Geometry {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
 						logger.warning(name + " geometry '" //
-							+ geometry + "' requires size 12!");
+								+ geometry + "' requires size 12!");
 					doReset = true;
 				}
 				connectivity = 5.0;
@@ -1450,7 +1450,7 @@ public class Geometry {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
 						logger.warning(name + " geometry '" //
-						+ geometry + "' requires size 20!");
+								+ geometry + "' requires size 20!");
 					doReset = true;
 				}
 				connectivity = 3.0;
@@ -5267,7 +5267,7 @@ public class Geometry {
 			case SUPER_STAR: // super-star
 				int oldPetalsAmplification = superstar_amplification;
 				int oldPetalsCount = superstar_petals;
-				if (superstar_amplification < 0 )
+				if (superstar_amplification < 0)
 					superstar_amplification = 3;
 				ivec = CLOParser.parseIntVector(sub);
 				switch (ivec.length) {
@@ -5353,7 +5353,8 @@ public class Geometry {
 	}
 
 	/**
-	 * Get the usage description for the command line option <code>--geometry</code>. 
+	 * Get the usage description for the command line option
+	 * <code>--geometry</code>.
 	 * 
 	 * @return the usage description
 	 */
@@ -5508,10 +5509,10 @@ public class Geometry {
 		Plist graph = (Plist) plist.get("Graph");
 		ArrayList<List<Integer>> outlinks = new ArrayList<List<Integer>>(size);
 		ArrayList<ArrayList<Integer>> inlinks = new ArrayList<ArrayList<Integer>>(size);
-		List<Integer> placeholder = new ArrayList<Integer>();
+		List<Integer> placeholder = new ArrayList<>();
 		for (int n = 0; n < size; n++) {
 			outlinks.add(placeholder);
-			inlinks.add(new ArrayList<Integer>());
+			inlinks.add(new ArrayList<>());
 		}
 		for (Iterator<String> i = graph.keySet().iterator(); i.hasNext();) {
 			String idxs = i.next();

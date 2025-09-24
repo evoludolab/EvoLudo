@@ -145,7 +145,7 @@ public class Plist extends HashMap<String, Object> {
 	 * @return the number of differences
 	 */
 	public int diff(Plist plist) {
-		return diff(plist, new ArrayList<String>());
+		return diff(plist, new ArrayList<>());
 	}
 
 	/**

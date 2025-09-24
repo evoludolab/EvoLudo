@@ -99,7 +99,7 @@ public abstract class Discrete extends Module {
 	private Discrete(EvoLudo engine, Discrete partner) {
 		super(engine, partner);
 		if (partner == null) {
-			species = new ArrayList<Discrete>();
+			species = new ArrayList<>();
 			// recall this.species shadows super.species for later convenience
 			super.species = species;
 		} else {

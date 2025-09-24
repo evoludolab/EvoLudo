@@ -228,7 +228,7 @@ public class PlistParser {
 				continue;
 			}
 			if (tag.equals("array")) {
-				List<Object> array = new ArrayList<Object>();
+				List<Object> array = new ArrayList<>();
 				// catch empty arrays
 				if (tag.getValue() == null)
 					parseArray(reader, array);
@@ -329,7 +329,7 @@ public class PlistParser {
 			if (tag.equals("/array"))
 				return;
 			if (tag.equals("array")) {
-				List<Object> subarray = new ArrayList<Object>();
+				List<Object> subarray = new ArrayList<>();
 				// catch empty arrays
 				if (tag.getValue() == null)
 					parseArray(reader, subarray);

@@ -56,14 +56,14 @@ public class CLOParser {
 	 * 
 	 * @see #parseCLO(String[])
 	 */
-	ArrayList<String> parameters = new ArrayList<String>();
+	ArrayList<String> parameters = new ArrayList<>();
 
 	/**
 	 * List of command line options available (after parsing).
 	 * 
 	 * @see #parseCLO(String[])
 	 */
-	List<CLOption> options = new ArrayList<CLOption>();
+	List<CLOption> options = new ArrayList<>();
 
 	/**
 	 * List of providers of command line options.
@@ -246,7 +246,7 @@ public class CLOParser {
 				if (!option.parse()) {
 					// parsing failed - try again using default
 					logger.warning("invalid " + option.getName() + " argument (" + option.getArg() + ") - using '"
-								+ option.getDefault() + "'");
+							+ option.getDefault() + "'");
 					issues++;
 					option.parseDefault();
 				}
@@ -795,7 +795,7 @@ public class CLOParser {
 	 * 
 	 * @see Color
 	 */
-	private static final Map<String, Color> COLOR_KEYS = new HashMap<String, Color>();
+	private static final Map<String, Color> COLOR_KEYS = new HashMap<>();
 	static {
 		// init slide keys
 		COLOR_KEYS.put("black", Color.black);

@@ -286,7 +286,7 @@ public abstract class Mutation {
 		 */
 		public final CLOption clo = new CLOption("mutation", "0.0",
 				Category.Model,
-					"--mutation <p> [temperature|random (default)] [<t> [<r>]]]\n" +
+				"--mutation <p> [temperature|random (default)] [<t> [<r>]]]\n" +
 						"             p: mutation probability\n" + //
 						"       process: reproduction vs cosmic rays\n" + //
 						"             r: mutation range\n" + //
@@ -304,8 +304,9 @@ public abstract class Mutation {
 					 */
 					@Override
 					public boolean parse(String arg) {
-						String[] mutations = arg.contains(CLOParser.SPECIES_DELIMITER) ? 
-								arg.split(CLOParser.SPECIES_DELIMITER) : arg.split(CLOParser.VECTOR_DELIMITER);
+						String[] mutations = arg.contains(CLOParser.SPECIES_DELIMITER)
+								? arg.split(CLOParser.SPECIES_DELIMITER)
+								: arg.split(CLOParser.VECTOR_DELIMITER);
 						int n = 0;
 						ArrayList<? extends Module> species = module.getSpecies();
 						for (Module mod : species) {
@@ -499,7 +500,7 @@ public abstract class Mutation {
 		 */
 		public final CLOption clo = new CLOption("mutation", "0.0",
 				Category.Model,
-					"--mutation <p> [temperature|random (default)] [<t> [<r>]>  with\n" +
+				"--mutation <p> [temperature|random (default)] [<t> [<r>]>  with\n" +
 						"             p: mutation probability\n" + //
 						"             r: mutation range (fraction of interval)\n" + //
 						"       process: reproduction vs cosmic rays\n" + //

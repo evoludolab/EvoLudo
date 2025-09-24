@@ -240,7 +240,7 @@ public abstract class EvoLudo
 	/**
 	 * The lookup table for all available modules.
 	 */
-	protected HashMap<String, Module> modules = new HashMap<String, Module>();
+	protected HashMap<String, Module> modules = new HashMap<>();
 
 	/**
 	 * Generate 2D network. This is the factory method to provide different
@@ -355,7 +355,7 @@ public abstract class EvoLudo
 	 * List of engine listeners that get notified when the state of the population
 	 * changed, for example after population reset or completed an update step.
 	 */
-	protected Set<MilestoneListener> milestoneListeners = new HashSet<MilestoneListener>();
+	protected Set<MilestoneListener> milestoneListeners = new HashSet<>();
 
 	/**
 	 * Add a milestone listener to the list of listeners that get notified when the
@@ -381,7 +381,7 @@ public abstract class EvoLudo
 	/**
 	 * List of change listeners that get notified when the model changes.
 	 */
-	protected Set<ChangeListener> changeListeners = new HashSet<ChangeListener>();
+	protected Set<ChangeListener> changeListeners = new HashSet<>();
 
 	/**
 	 * Add a change listener to the list of listeners that get notified when the
@@ -407,7 +407,7 @@ public abstract class EvoLudo
 	/**
 	 * List of change listeners that get notified when the model changes.
 	 */
-	protected Set<SampleListener> sampleListeners = new HashSet<SampleListener>();
+	protected Set<SampleListener> sampleListeners = new HashSet<>();
 
 	/**
 	 * Add a change listener to the list of listeners that get notified when the
@@ -1631,9 +1631,10 @@ public abstract class EvoLudo
 				}
 				type = Type.parse(newModel);
 				if (type == null || !keys.contains(type)) {
-					if (activeModel != null ) {
+					if (activeModel != null) {
 						type = activeModel.getType();
-						logger.warning("invalid model type " + newModel + " - keep current type " + type.getKey() + ".");
+						logger.warning(
+								"invalid model type " + newModel + " - keep current type " + type.getKey() + ".");
 					} else {
 						type = defaulttype;
 						logger.warning("invalid model type " + newModel + " - use default type " + type.getKey() + ".");

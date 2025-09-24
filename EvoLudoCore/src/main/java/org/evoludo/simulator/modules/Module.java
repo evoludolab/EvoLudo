@@ -182,7 +182,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * random numbers, must use the shared random number generator for
 	 * reproducibility
 	 * 
-	 * @param type   the type of {@link Model} to create
+	 * @param type the type of {@link Model} to create
 	 * @return the model for <code>module</code> or {@code null} if the module
 	 *         does not support the requested model type
 	 * 
@@ -308,7 +308,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		}
 		// currently only the Test module uses neither Discrete nor Continuous classes.
 		if (species == null)
-			species = new ArrayList<Module>();
+			species = new ArrayList<>();
 		engine.addCLOProvider(this);
 		engine.addMilestoneListener(this);
 		if (this instanceof ChangeListener)
@@ -492,9 +492,9 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * Gets the number of roles that an individual can adopt. For example the role of
-	 * a proposer or a responder in the Ultimatum game or the first or second movers
-	 * in the Centipede game.
+	 * Gets the number of roles that an individual can adopt. For example the role
+	 * of a proposer or a responder in the Ultimatum game or the first or second
+	 * movers in the Centipede game.
 	 * 
 	 * @return the number of roles of an individual
 	 */
@@ -661,9 +661,9 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * Gets the colors for the mean values of traits. By default this is the same as the trait
-	 * colors. Opportunity for subclasses to return different sets of colors for
-	 * plotting mean values.
+	 * Gets the colors for the mean values of traits. By default this is the same as
+	 * the trait colors. Opportunity for subclasses to return different sets of
+	 * colors for plotting mean values.
 	 * 
 	 * @return the array of mean value colors
 	 */
@@ -1118,8 +1118,8 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				 */
 				@Override
 				public boolean parse(String arg) {
-					String[] sizes = arg.contains(CLOParser.SPECIES_DELIMITER) ? 
-						arg.split(CLOParser.SPECIES_DELIMITER) : arg.split(CLOParser.VECTOR_DELIMITER);
+					String[] sizes = arg.contains(CLOParser.SPECIES_DELIMITER) ? arg.split(CLOParser.SPECIES_DELIMITER)
+							: arg.split(CLOParser.VECTOR_DELIMITER);
 					int n = 0;
 					for (Module pop : species) {
 						int size = CLOParser.parseDim(sizes[n]);
@@ -1189,7 +1189,8 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 							continue;
 						}
 						String sn = pop.getName();
-						logger.warning("death rate" + (sn.isEmpty() ?  "": " of " + sn) + " must be non-negative (changed to 0).");
+						logger.warning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
+								+ " must be non-negative (changed to 0).");
 						pop.setDeathRate(0.0);
 					}
 					return true;
@@ -1345,7 +1346,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 						for (int i = 0; i < colors.length; i++) {
 							Color newColor = CLOParser.parseColor(colors[i]);
 							// if color was not recognized, choose random color
-							if (newColor == null )
+							if (newColor == null)
 								return false;
 							myColors[i] = newColor;
 						}

@@ -315,7 +315,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 			});
 			if (NativeJS.isFullscreenSupported())
 				tooltip.fullscreenHandler = tooltip.addFullscreenChangeHandler(tooltip);
-			tooltip.participants = new HashMap<FocusPanel, Registration>();
+			tooltip.participants = new HashMap<>();
 			tooltip.addTouchStartHandler(tooltip);
 		}
 		return tooltip;

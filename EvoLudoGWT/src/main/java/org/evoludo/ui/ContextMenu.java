@@ -408,7 +408,7 @@ public class ContextMenu extends FlowPanel
 						contextMenu.close();
 				}
 			}, MouseDownEvent.getType());
-			contextMenu.participants = new HashMap<Listener, Registration>();
+			contextMenu.participants = new HashMap<>();
 		}
 		return contextMenu;
 	}

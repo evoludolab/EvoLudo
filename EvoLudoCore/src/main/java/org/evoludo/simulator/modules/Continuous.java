@@ -141,7 +141,7 @@ public abstract class Continuous extends Module {
 	protected Continuous(EvoLudo engine, Continuous partner) {
 		super(engine, partner);
 		if (partner == null) {
-			species = new ArrayList<Continuous>();
+			species = new ArrayList<>();
 			// recall this.species shadows super.species for later convenience
 			super.species = species;
 		} else {
@@ -1196,10 +1196,10 @@ public abstract class Continuous extends Module {
 		// best-response is not an acceptable update rule for continuous traits -
 		// exclude Population.PLAYER_UPDATE_BEST_RESPONSE
 		playerUpdate.clo.removeKey(PlayerUpdate.Type.BEST_RESPONSE);
-//TODO: implement enabling/disabling traits as in discrete case
-//		// add option to disable traits if >=2 traits
-//		if (nTraits > 1)
-//			parser.addCLO(cloTraitDisable);
+		// TODO: implement enabling/disabling traits as in discrete case
+		// // add option to disable traits if >=2 traits
+		// if (nTraits > 1)
+		// parser.addCLO(cloTraitDisable);
 		parser.addCLO(mutation.clo);
 	}
 
