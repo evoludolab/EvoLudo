@@ -159,7 +159,8 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	/**
-	 * Called when the GUI has finished loading and the dimensions of all elements are known.
+	 * Called when the GUI has finished loading and the dimensions of all elements
+	 * are known.
 	 */
 	public void guiReady() {
 		if (notifyGUI == null)
@@ -282,7 +283,7 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	void processPendingAction() {
-		boolean updateGUI = (pendingAction == PendingAction.STOP 
+		boolean updateGUI = (pendingAction == PendingAction.STOP
 				&& activeModel.getMode() == Mode.STATISTICS_SAMPLE);
 		super.processPendingAction();
 		if (updateGUI)
@@ -324,6 +325,16 @@ public class EvoLudoGWT extends EvoLudo {
 		return cloarray;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * GWT implementation for measuring execution time.
+	 * 
+	 * @see org.evoludo.simulator.EvoLudoGWT#elapsedTimeMsec
+	 *      EvoLudoGWT.elapsedTimeMsec
+	 * @see org.evoludo.simulator.EvoLudoJRE#elapsedTimeMsec
+	 *      EvoLudoJRE.elapsedTimeMsec
+	 */
 	@Override
 	public int elapsedTimeMsec() {
 		return elapsedTime.elapsedMillis();
@@ -405,7 +416,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 */
 	public void populateContextMenu(ContextMenu menu) {
 		Type mt = activeModel.getType();
-		if ( mt.isODE() || mt.isSDE() ) {
+		if (mt.isODE() || mt.isSDE()) {
 			// add time reverse context menu
 			if (timeReverseMenu == null) {
 				timeReverseMenu = new ContextMenuCheckBoxItem("Time reversed", new Command() {

@@ -42,14 +42,11 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.Advection;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBS;
-import org.evoludo.simulator.models.IBSC;
-import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Markers;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
-import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.models.ODE;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.RungeKutta;
@@ -200,11 +197,8 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		// return default model for type
 		switch (type) {
 			case IBS:
-				if (!(this instanceof HasIBS))
-					return null;
-				if (this instanceof Continuous)
-					return new IBSC(engine);
-				return new IBSD(engine);
+				// let subclasses handle IBS
+				return null;
 			case SDE:
 				if (!(this instanceof HasDE.SDE))
 					return null;

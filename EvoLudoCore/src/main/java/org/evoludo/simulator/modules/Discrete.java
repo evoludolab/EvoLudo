@@ -33,6 +33,9 @@ package org.evoludo.simulator.modules;
 import java.util.ArrayList;
 
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.IBSD;
+import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Type;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -107,6 +110,14 @@ public abstract class Discrete extends Module {
 			species = partner.species;
 		}
 		add(this);
+	}
+
+	@Override
+	public Model createModel(Type type) {
+		Model mod = super.createModel(type);
+		if (mod != null)
+			return mod;
+		return new IBSD(engine);
 	}
 
 	/**

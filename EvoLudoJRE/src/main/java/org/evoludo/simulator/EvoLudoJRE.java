@@ -103,6 +103,16 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 */
 	private final long startmsec = System.currentTimeMillis();
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * JRE implementation for measuring execution time.
+	 * 
+	 * @see org.evoludo.simulator.EvoLudoGWT#elapsedTimeMsec
+	 *      EvoLudoGWT.elapsedTimeMsec
+	 * @see org.evoludo.simulator.EvoLudoJRE#elapsedTimeMsec
+	 *      EvoLudoJRE.elapsedTimeMsec
+	 */
 	@Override
 	public int elapsedTimeMsec() {
 		return (int) (System.currentTimeMillis() - startmsec);
@@ -350,8 +360,9 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	public void custom(Module module, String[] args) {
 		setHeadless(true);
 		// prepend --module option (in case not specified)
-		args = ArrayMath.merge(new String[] {"--module", module.getKey()}, args);
-		// EvoLudo has its own parser for command line options and expects a single string
+		args = ArrayMath.merge(new String[] { "--module", module.getKey() }, args);
+		// EvoLudo has its own parser for command line options and expects a single
+		// string
 		setCLO(Formatter.format(args, " "));
 		addModule(module);
 		// parse options
@@ -432,9 +443,9 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		// prepare to run simulations
 		Module module = getModule();
 		Model model = getModel();
-		// request mode based on data types (only one mode allowed and ensured by option parser)
-		Mode mode = (isDynamicsDataType(dataTypes.get(0)) ? 
-				Mode.DYNAMICS : Mode.STATISTICS_SAMPLE);
+		// request mode based on data types (only one mode allowed and ensured by option
+		// parser)
+		Mode mode = (isDynamicsDataType(dataTypes.get(0)) ? Mode.DYNAMICS : Mode.STATISTICS_SAMPLE);
 		if (!model.requestMode(mode)) {
 			// mode not supported
 			logger.info("Mode " + mode + " not supported!");
@@ -680,7 +691,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 								double[] node = fixProb[n];
 								double norm = node[nTraits];
 								if (norm <= 0.0)
-									continue;	// no samples for node n
+									continue; // no samples for node n
 								double inorm = 1.0 / norm;
 								double n0 = node[0] * inorm;
 								double n1 = node[1] * inorm;
@@ -737,7 +748,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	}
 
 	/**
-	 * Generate a single, valid statistics sample. 
+	 * Generate a single, valid statistics sample.
 	 * 
 	 * @return the statistics sample
 	 * 
@@ -800,7 +811,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	static int RESIDENT_NORM = 5;
 
 	/**
-	 * Index of the mean  absorption probability/update/time.
+	 * Index of the mean absorption probability/update/time.
 	 */
 	static int ABSORPTION_MEAN = 6;
 
@@ -836,7 +847,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * <dt>{@code ABSORPTION_VAR}
 	 * <dd>variance of absorption
 	 * <dt>{@code ABSORPTION_NORM}
-	 * <dd>sample count of absorption ({@code meanvar[MUTANT_NORM] + meanvar[RESIDENT_NORM] == meanvar[ABSORPTION_NORM]}
+	 * <dd>sample count of absorption
+	 * ({@code meanvar[MUTANT_NORM] + meanvar[RESIDENT_NORM] == meanvar[ABSORPTION_NORM]}
 	 * must hold)
 	 * </dl>
 	 * 
@@ -897,17 +909,26 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		if (normabs <= 0.0)
 			return; // no samples for node n
 		// trick: to avoid -0 output simply add 0...!
-		output.println(head + Formatter.format(meanvar[MUTANT_MEAN] + 0.0, dataDigits) + " ± " // mutant mean fixation time
-				+ (normut > 1.0 ? Formatter.format(Math.sqrt(meanvar[MUTANT_VAR] / (normut - 1.0)) + 0.0, dataDigits) : "-") + ", " // mutant mean fixation
-																									// sdev
+		output.println(head + Formatter.format(meanvar[MUTANT_MEAN] + 0.0, dataDigits) + " ± " // mutant mean fixation
+																								// time
+				+ (normut > 1.0 ? Formatter.format(Math.sqrt(meanvar[MUTANT_VAR] / (normut - 1.0)) + 0.0, dataDigits)
+						: "-")
+				+ ", " // mutant mean fixation
+				// sdev
 				+ Formatter.format(normut, 0) + "; " // mutant mean fixation samples
 				+ Formatter.format(meanvar[RESIDENT_MEAN] + 0.0, dataDigits) + " ± " // resident mean fixation time
-				+ (normres > 1.0 ? Formatter.format(Math.sqrt(meanvar[RESIDENT_VAR] / (normres - 1.0)) + 0.0, dataDigits) : "-") + ", "  // resident mean
-																									// fixation sdev
+				+ (normres > 1.0
+						? Formatter.format(Math.sqrt(meanvar[RESIDENT_VAR] / (normres - 1.0)) + 0.0, dataDigits)
+						: "-")
+				+ ", " // resident mean
+				// fixation sdev
 				+ Formatter.format(normres, 0) + "; " // mutant mean fixation samples
 				+ Formatter.format(meanvar[ABSORPTION_MEAN] + 0.0, dataDigits) + " ± " // mean absorption time
-				+ (normabs > 1.0 ? Formatter.format(Math.sqrt(meanvar[ABSORPTION_VAR] / (normabs - 1.0)) + 0.0, dataDigits) : "-") + ", " // mean absorption
-																									// sdev
+				+ (normabs > 1.0
+						? Formatter.format(Math.sqrt(meanvar[ABSORPTION_VAR] / (normabs - 1.0)) + 0.0, dataDigits)
+						: "-")
+				+ ", " // mean absorption
+				// sdev
 				+ Formatter.format(normabs, 0)
 				+ tail); // mean absorption samples
 	}

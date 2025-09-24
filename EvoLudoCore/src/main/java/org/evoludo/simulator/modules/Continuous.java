@@ -34,6 +34,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.IBSC;
+import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Type;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -114,7 +117,7 @@ public abstract class Continuous extends Module {
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	public Continuous(EvoLudo engine) {
+	protected Continuous(EvoLudo engine) {
 		this(engine, null);
 	}
 
@@ -125,7 +128,7 @@ public abstract class Continuous extends Module {
 	 * 
 	 * @param partner the partner species
 	 */
-	public Continuous(Continuous partner) {
+	protected Continuous(Continuous partner) {
 		this(partner.engine, partner);
 	}
 
@@ -152,6 +155,14 @@ public abstract class Continuous extends Module {
 		// useful shortcut as long as continuous modules are restricted to single
 		// species
 		population = this;
+	}
+
+	@Override
+	public Model createModel(Type type) {
+		Model mod = super.createModel(type);
+		if (mod != null)
+			return mod;
+		return new IBSC(engine);
 	}
 
 	/**

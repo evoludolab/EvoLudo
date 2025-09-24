@@ -284,10 +284,9 @@ public abstract class EvoLudo
 	 *         no active current model
 	 */
 	public Model loadModel(Type type) {
-		if (activeModel != null) {
-			// check if model already loaded
-			if (activeModel.getType() == type)
-				return activeModel;
+		if (activeModel != null && activeModel.getType() == type) {
+			// model already loaded
+			return activeModel;
 		}
 		Model newModel = activeModule.createModel(type);
 		if (newModel == activeModel)
@@ -1325,19 +1324,6 @@ public abstract class EvoLudo
 	 * @see org.evoludo.simulator.models.PDESupervisorJRE
 	 */
 	public abstract PDESupervisor hirePDESupervisor(PDE charge);
-
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * Hide GWT/JRE differences in measuring execution time.
-	 * 
-	 * @see org.evoludo.simulator.EvoLudoGWT#elapsedTimeMsec
-	 *      EvoLudoGWT.elapsedTimeMsec
-	 * @see org.evoludo.simulator.EvoLudoJRE#elapsedTimeMsec
-	 *      EvoLudoJRE.elapsedTimeMsec
-	 */
-	@Override
-	public abstract int elapsedTimeMsec();
 
 	/**
 	 * The copyright string.
