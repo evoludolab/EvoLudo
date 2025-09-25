@@ -126,7 +126,7 @@ public abstract class EvoLudo
 	 * engine states as well saving the current state of the engine, export its data
 	 * or graphical snapshots.
 	 */
-	public EvoLudo() {
+	protected EvoLudo() {
 		this(true);
 	}
 
@@ -289,14 +289,12 @@ public abstract class EvoLudo
 			return activeModel;
 		}
 		Model newModel = activeModule.createModel(type);
-		if (newModel == activeModel)
-			return activeModel;
 		if (newModel == null) {
 			if (activeModel == null) {
 				logger.warning("model type '" + type + "' not supported.");
 				return null;
 			}
-			logger.warning("model type '" + type + "' not found - keeping '" + activeModel.getType() + "'.");
+			logger.warning("model type '" + type + "' not supported - keeping '" + activeModel.getType() + "'.");
 			return activeModel;
 		}
 		// unload previous model first
@@ -1575,7 +1573,7 @@ public abstract class EvoLudo
 				if (moduleKey != null && !moduleKey.getKey().equals(moduleName))
 					moduleKey = null;
 				// module parameter found; no need to continue
-				cloarray = ArrayMath.drop(cloarray, i--);
+				cloarray = ArrayMath.drop(cloarray, i);
 				nParams--;
 				break;
 			}
@@ -1607,9 +1605,9 @@ public abstract class EvoLudo
 			if (param.startsWith(modelName)) {
 				String newModel = CLOption.stripKey(modelName, param).trim();
 				// remove model option
-				cloarray = ArrayMath.drop(cloarray, i--);
+				cloarray = ArrayMath.drop(cloarray, i);
 				nParams--;
-				if (newModel.length() == 0) {
+				if (newModel.isEmpty()) {
 					type = defaulttype;
 					logger.warning("model key missing - use default type " + type.getKey() + ".");
 					// model key found; no need to continue
@@ -1649,11 +1647,10 @@ public abstract class EvoLudo
 			String param = cloarray[i];
 			if (param.startsWith(verboseName)) {
 				String verbosity = CLOption.stripKey(verboseName, param).trim();
-				if (verbosity.length() == 0) {
+				if (verbosity.isEmpty()) {
 					logger.warning("verbose level missing - ignored.");
 					// remove verbose option
-					cloarray = ArrayMath.drop(cloarray, i--);
-					nParams--;
+					cloarray = ArrayMath.drop(cloarray, i);
 					// verbosity key found; no need to continue
 					break;
 				}
@@ -1728,22 +1725,22 @@ public abstract class EvoLudo
 			globalMsg += "\n\nGlobal options:";
 
 			int idx = 0;
-			String moduleMsg = "";
+			StringBuilder msgBuilder = new StringBuilder();
 			for (Module mod : activeModule.getSpecies()) {
 				String name = mod.getName();
 				int namelen = name.length();
 				if (namelen > 0)
-					moduleMsg += "\n       Species: " + name;
+					msgBuilder.append("\n       Species: ").append(name);
 				int nt = mod.getNTraits();
 				for (int n = 0; n < nt; n++) {
-					moduleMsg += "\n             " + (idx + n) + ": " + mod.getTraitName(n);
-					if (activeModel.getType().isDE()) {
-						if (((HasDE) mod).getDependent() == n)
-							moduleMsg += " (dependent)";
+					msgBuilder.append("\n             ").append(idx + n).append(": ").append(mod.getTraitName(n));
+					if (mod instanceof HasDE && ((HasDE) mod).getDependent() == n) {
+						msgBuilder.append(" (dependent)");
 					}
 				}
 				idx += nt;
 			}
+			String moduleMsg = msgBuilder.toString();
 			Category.Module.setHeader("Options for module '" + activeModule.getKey() //
 					+ "' with trait indices and names:" + moduleMsg);
 		} else

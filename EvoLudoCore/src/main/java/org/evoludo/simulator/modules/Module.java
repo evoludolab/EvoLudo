@@ -622,7 +622,16 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * (static allocation), headless mode for simulations is prevented. In order to
 	 * avoid this, simply allocate and assign the colors in the constructor.
 	 */
-	protected static Color[] defaultColor;
+	protected static Color[] defaultColor = new Color[] {
+			Color.BLUE,
+			Color.RED,
+			Color.GREEN,
+			Color.YELLOW,
+			Color.MAGENTA,
+			Color.ORANGE,
+			Color.PINK,
+			Color.CYAN
+	};;
 
 	/**
 	 * The array with trait colors.
@@ -682,23 +691,8 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * automatically generated as lighter versions of the base colors.
 	 * 
 	 * @param colors the array of colors for the different traits
-	 * @return {@code true} always signal that colors have changed (too
-	 *         difficult and of too little importance to check whether colors
-	 *         remained the same)
 	 */
-	public boolean setTraitColors(Color[] colors) {
-		// assign default colors
-		if (defaultColor == null)
-			defaultColor = new Color[] {
-					Color.BLUE,
-					Color.RED,
-					Color.GREEN,
-					Color.YELLOW,
-					Color.MAGENTA,
-					Color.ORANGE,
-					Color.PINK,
-					Color.CYAN
-			};
+	public void setTraitColors(Color[] colors) {
 		int nTraits2 = nTraits + nTraits;
 		int rColors = 0;
 		if (colors == null) {
@@ -721,26 +715,25 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 			for (int n = 0; n < rColors; n++)
 				colors[nTraits - n] = new Color(rng.random0n(256), rng.random0n(256), rng.random0n(256));
 		}
-
 		// now at least nTraits colors
 		if (this instanceof Discrete) {
 			// discrete traits and colors
 			if (colors.length == nTraits2) {
 				traitColor = colors;
-				return true;
+				return;
 			}
 			Color[] cols = new Color[nTraits2];
 			if (colors.length > nTraits2) {
 				System.arraycopy(colors, 0, cols, 0, nTraits2);
 				traitColor = cols;
-				return true;
+				return;
 			}
 			System.arraycopy(colors, 0, cols, 0, colors.length);
 			for (int n = colors.length; n < nTraits2; n++)
 				// NOTE: Color.brighter() does not work on pure colors.
 				cols[n] = ColorMap.blendColors(colors[n % nTraits], Color.WHITE, 0.333);
 			traitColor = cols;
-			return true;
+			return;
 		}
 		// continuous traits and colors (means and stddev)
 		Color[] cColor = new Color[3 * nTraits];
@@ -753,7 +746,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 			cColor[n + nTraits2] = brighter; // max
 		}
 		traitColor = cColor;
-		return true;
 	}
 
 	/**
