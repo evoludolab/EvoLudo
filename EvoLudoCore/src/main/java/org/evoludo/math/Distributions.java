@@ -312,7 +312,8 @@ public class Distributions {
 		// double s = stdev(x, m1);
 		// same as above but slightly more efficient
 		int n = x.length;
-		double m2 = 0.0, m3 = 0.0;
+		double m2 = 0.0;
+		double m3 = 0.0;
 		for (int i = 0; i < n; i++) {
 			double dx = x[i] - m1;
 			double dx2 = dx * dx;
@@ -350,7 +351,8 @@ public class Distributions {
 		// return m4/pow(s, 4);
 		// same as above but slightly more efficient
 		int n = x.length;
-		double m2 = 0.0, m4 = 0.0;
+		double m2 = 0.0;
+		double m4 = 0.0;
 		for (int i = 0; i < n; i++) {
 			double dx = x[i] - m1;
 			double dx2 = dx * dx;
@@ -401,7 +403,9 @@ public class Distributions {
 		// double k = kurtosis(a, m1)-3.0;
 		// return (g*g+1)/(k+3*(n-1)*(n-1)/((n-2)*(n-3)));
 		// same as above but slightly more efficient
-		double m2 = 0.0, m3 = 0.0, m4 = 0.0;
+		double m2 = 0.0;
+		double m3 = 0.0;
+		double m4 = 0.0;
 		for (int i = 0; i < n; i++) {
 			double dx = x[i] - m1;
 			double dx2 = dx * dx;

@@ -101,7 +101,7 @@ public class RingBuffer<T> implements Iterable<T> {
 		if (capacity < 0)
 			throw new IllegalArgumentException("RingBuffer capacity must be >0!");
 		if (buffer == null) {
-			buffer = new ArrayList<T>(capacity);
+			buffer = new ArrayList<>(capacity);
 			bufferPtr = -1;
 			bufferCapacity = capacity;
 			return;
@@ -174,7 +174,7 @@ public class RingBuffer<T> implements Iterable<T> {
 	 * @return <code>true</code> if ring buffer is empty
 	 */
 	public boolean isEmpty() {
-		return (buffer.size() == 0);
+		return buffer.isEmpty();
 	}
 
 	/**
@@ -370,7 +370,6 @@ public class RingBuffer<T> implements Iterable<T> {
 		return min;
 	}
 
-
 	public T max(Comparator<T> cmp) {
 		T max = null;
 		for (T entry : this) {
@@ -387,13 +386,6 @@ public class RingBuffer<T> implements Iterable<T> {
 	private class BckItr implements Iterator<T> {
 
 		/**
-		 * Creates a new {@code Iterator} over all elements in this buffer starting with
-		 * the most recent entry.
-		 */
-		public BckItr() {
-		}
-
-		/**
 		 * Index of current element in Iterator.
 		 */
 		int cursor = 0;
@@ -405,6 +397,8 @@ public class RingBuffer<T> implements Iterable<T> {
 
 		@Override
 		public T next() {
+			if (!hasNext())
+				throw new java.util.NoSuchElementException("No more elements in RingBuffer iterator.");
 			int size = buffer.size();
 			return buffer.get((bufferPtr - (cursor++) + size) % size);
 		}
@@ -415,13 +409,6 @@ public class RingBuffer<T> implements Iterable<T> {
 	 * entry.
 	 */
 	private class FwdItr implements Iterator<T> {
-
-		/**
-		 * Creates a new {@code Iterator} over all elements in this buffer starting with
-		 * the oldest entry.
-		 */
-		public FwdItr() {
-		}
 
 		/**
 		 * Index of current element in Iterator.
@@ -435,6 +422,8 @@ public class RingBuffer<T> implements Iterable<T> {
 
 		@Override
 		public T next() {
+			if (!hasNext())
+				throw new java.util.NoSuchElementException("No more elements in RingBuffer iterator.");
 			int size = buffer.size();
 			return buffer.get((bufferPtr - (--cursor) + size) % size);
 		}

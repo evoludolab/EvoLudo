@@ -157,7 +157,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	 * The maximum number of links drawn in a graphical representation of the
 	 * network.
 	 */
-	protected int MAX_LINK_COUNT = 10000;
+	protected static final int MAX_LINK_COUNT = 10000;
 
 	/**
 	 * The array with all nodes of this network.
@@ -245,7 +245,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	 * @param engine   the pacemaker for running the model
 	 * @param geometry the structure of the population
 	 */
-	public Network(EvoLudo engine, Geometry geometry) {
+	protected Network(EvoLudo engine, Geometry geometry) {
 		this.engine = engine;
 		this.geometry = geometry;
 		this.status = (geometry.isLattice() ? Status.NO_LAYOUT : Status.NEEDS_LAYOUT);
@@ -650,21 +650,42 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	/**
 	 * Counter for the iterator over all nodes.
 	 */
-	private int iteridx;
-
-	@Override
-	public Iterator<Node> iterator() {
-		iteridx = 0;
-		return this;
-	}
+	private int idx = 0;
 
 	@Override
 	public boolean hasNext() {
-		return (iteridx >= 0 && iteridx < nNodes);
+		return (idx >= 0 && idx < nNodes);
 	}
 
 	@Override
 	public Node next() {
-		return get(iteridx++);
+		if (!hasNext()) {
+			throw new java.util.NoSuchElementException();
+		}
+		return get(idx++);
+	}
+
+	@Override
+	public Iterator<Node> iterator() {
+		return new Iterator<Node>() {
+
+			/**
+			 * Counter for the iterator over all nodes.
+			 */
+			private int iidx = 0;
+
+			@Override
+			public boolean hasNext() {
+				return (iidx >= 0 && iidx < nNodes);
+			}
+
+			@Override
+			public Node next() {
+				if (!hasNext()) {
+					throw new java.util.NoSuchElementException();
+				}
+				return get(iidx++);
+			}
+		};
 	}
 }

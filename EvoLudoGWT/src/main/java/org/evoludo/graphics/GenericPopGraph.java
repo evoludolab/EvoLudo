@@ -186,7 +186,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	 * @param controller the controller of this graph
 	 * @param module     the module backing the graph
 	 */
-	public GenericPopGraph(PopGraphController controller, Module module) {
+	protected GenericPopGraph(PopGraphController controller, Module module) {
 		super(controller, module);
 		label = new Label("Gugus");
 		label.getElement().getStyle().setZIndex(1);
@@ -308,8 +308,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 					if (hasStaticLayout()) {
 						drawLattice();
 						controller.layoutComplete();
-					}
-					else
+					} else
 						layoutNetwork();
 				}
 			});
@@ -320,9 +319,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	public boolean paint(boolean force) {
 		if (super.paint(force))
 			return true;
-		if (!force && !doUpdate())
-			return true;
-		return false;
+		return !force && !doUpdate();
 	}
 
 	/**
@@ -578,24 +575,16 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		}
 		// process shake context menu
 		if (shakeMenu == null) {
-			shakeMenu = new ContextMenuItem("Shake", new Command() {
-				@Override
-				public void execute() {
-					network.shake(GenericPopGraph.this, 0.05);
-				}
-			});
+			shakeMenu = new ContextMenuItem("Shake", () -> network.shake(GenericPopGraph.this, 0.05));
 		}
 		menu.add(shakeMenu);
-		shakeMenu.setEnabled(!hasMessage && !hasStaticLayout());
+		shakeMenu.setEnabled(!hasStaticLayout());
 
 		// process animate context menu
 		if (animateMenu == null) {
-			animateMenu = new ContextMenuCheckBoxItem("Animate layout", new Command() {
-				@Override
-				public void execute() {
-					animate = !animateMenu.isChecked();
-					animateMenu.setChecked(animate);
-				}
+			animateMenu = new ContextMenuCheckBoxItem("Animate layout", () -> {
+				animate = !animateMenu.isChecked();
+				animateMenu.setChecked(animate);
 			});
 		}
 		animateMenu.setChecked(animate);
@@ -605,12 +594,9 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		// add menu to clear buffer (applies only to linear geometry)
 		if (geometry.getType() == Geometry.Type.LINEAR) {
 			if (clearMenu == null) {
-				clearMenu = new ContextMenuItem("Clear", new Command() {
-					@Override
-					public void execute() {
-						clearHistory();
-						paint(true);
-					}
+				clearMenu = new ContextMenuItem("Clear", () -> {
+					clearHistory();
+					paint(true);
 				});
 			}
 			menu.add(clearMenu);
@@ -622,12 +608,8 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 			if (debugNode >= 0 && debugNode < geometry.size) {
 				if (debugSubmenu == null) {
 					debugSubmenu = new ContextMenu(menu);
-					debugNodeMenu = new ContextMenuItem("Update node @ -", new Command() {
-						@Override
-						public void execute() {
-							module.getIBSPopulation().debugUpdatePopulationAt(debugNode);
-						}
-					});
+					debugNodeMenu = new ContextMenuItem("Update node @ -",
+							() -> module.getIBSPopulation().debugUpdatePopulationAt(debugNode));
 					debugSubmenu.add(debugNodeMenu);
 				}
 				debugNodeMenu.setText("Update node @ " + debugNode);

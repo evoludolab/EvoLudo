@@ -55,7 +55,6 @@ import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.DoubleClickEvent;
 import com.google.gwt.event.dom.client.DoubleClickHandler;
 import com.google.gwt.event.dom.client.TouchStartEvent;
-import com.google.gwt.user.client.Command;
 
 /**
  * Parametric graph for displaying trajectories in phase plane. The graph is
@@ -178,8 +177,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 					else
 						buffer.append(prependTime2Data(t, data));
 					System.arraycopy(buffer.last(), 1, init, 1, len - 1);
-				}
-				else if (force || distSq(data, last) > bufferThreshold)
+				} else if (force || distSq(data, last) > bufferThreshold)
 					buffer.append(prependTime2Data(t, data));
 			}
 		}
@@ -266,7 +264,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 				if (!Double.isNaN(ct))
 					strokeLine((nextPt.x - style.xMin) * xScale, (nextPt.y - style.yMin) * yScale, //
 							(currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale);
-				current = prev;
 				ct = pt;
 				Point2D swap = currPt;
 				currPt = nextPt;
@@ -314,7 +311,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	/**
 	 * The minimum distance between two subsequent points in pixels.
 	 */
-	private static double MIN_PIXELS = 3.0;
+	private static final double MIN_PIXELS = 3.0;
 
 	@Override
 	public void calcBounds(int width, int height) {
@@ -366,12 +363,9 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	protected void schedulePaint() {
 		if (paintScheduled)
 			return;
-		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-			@Override
-			public void execute() {
-				paint();
-				paintScheduled = false;
-			}
+		Scheduler.get().scheduleDeferred(() -> {
+			paint();
+			paintScheduled = false;
 		});
 		paintScheduled = true;
 	}
@@ -468,26 +462,20 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		// add menu to clear canvas
 		if (clearMenu == null) {
-			clearMenu = new ContextMenuItem("Clear", new Command() {
-				@Override
-				public void execute() {
-					clearHistory();
-					paint(true);
-				}
+			clearMenu = new ContextMenuItem("Clear", () -> {
+				clearHistory();
+				paint(true);
 			});
 		}
 		menu.add(clearMenu);
 		// add autoscale menu if not percent scale
 		if (!(style.percentX || style.percentY)) {
 			if (autoscaleMenu == null) {
-				autoscaleMenu = new ContextMenuCheckBoxItem("Autoscale axes", new Command() {
-					@Override
-					public void execute() {
-						doAutoscale = !autoscaleMenu.isChecked();
-						autoscaleMenu.setChecked(doAutoscale);
-						autoscale();
-						paint(true);
-					}
+				autoscaleMenu = new ContextMenuCheckBoxItem("Autoscale axes", () -> {
+					doAutoscale = !autoscaleMenu.isChecked();
+					autoscaleMenu.setChecked(doAutoscale);
+					autoscale();
+					paint(true);
 				});
 			}
 			autoscaleMenu.setChecked(doAutoscale);
@@ -507,9 +495,12 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		while (entry.hasNext()) {
 			double[] data = entry.next();
 			map.data2Phase(data, point);
-			export.append(Formatter.format(data[0], 8) + ", " + //
-					Formatter.format(point.x, 8) + ", " + //
-					Formatter.format(point.y, 8) + "\n");
+			export.append(Formatter.format(data[0], 8))
+					.append(", ")
+					.append(Formatter.format(point.x, 8))
+					.append(", ")
+					.append(Formatter.format(point.y, 8))
+					.append("\n");
 		}
 	}
 
@@ -527,12 +518,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		 * Flag indicating whether the axes are fixed. The default is fixed axes.
 		 */
 		boolean hasFixedAxes = false;
-
-		/**
-		 * Create new trait map.
-		 */
-		public TraitMap() {
-		}
 
 		/**
 		 * The array of trait indices that are mapped to the <code>x</code>-axis.

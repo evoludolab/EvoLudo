@@ -31,25 +31,25 @@
 package org.evoludo.simulator;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
-
+import javax.swing.WindowConstants;
 
 public class ParamPanel implements ActionListener {
 
 	EvoLudoLab controller;
 	ParamPanelWindow panel;
-    JTextArea inputCLO;
+	JTextArea inputCLO;
 
 	private static final String CLO_CARD = "CLO";
 
@@ -59,19 +59,20 @@ public class ParamPanel implements ActionListener {
 
 	public void setVisible(boolean visible) {
 		if (panel == null) {
-			if (!visible) return;
+			if (!visible)
+				return;
 			panel = new ParamPanelWindow(this);
 
 			// command line options parameters
 			JPanel cloCard = new JPanel();
 			cloCard.setLayout(new BoxLayout(cloCard, BoxLayout.Y_AXIS));
 			JLabel label = new JLabel("command line options:");
-			label.setAlignmentX(JComponent.LEFT_ALIGNMENT);
+			label.setAlignmentX(Component.LEFT_ALIGNMENT);
 			cloCard.add(label);
 			inputCLO = new JTextArea(12, 40);
 			inputCLO.setLineWrap(true);
 			inputCLO.setWrapStyleWord(true);
-			inputCLO.setAlignmentX(JComponent.LEFT_ALIGNMENT);
+			inputCLO.setAlignmentX(Component.LEFT_ALIGNMENT);
 			cloCard.add(inputCLO);
 			panel.addTab(CLO_CARD, cloCard, "Command line options");
 			panel.pack();
@@ -81,8 +82,9 @@ public class ParamPanel implements ActionListener {
 		panel.setVisible(true);
 	}
 
-    public boolean isVisible() {
-		if( panel==null ) return false;
+	public boolean isVisible() {
+		if (panel == null)
+			return false;
 		return panel.isVisible();
 	}
 
@@ -91,21 +93,21 @@ public class ParamPanel implements ActionListener {
 		/* labels must be at most 8 chars long */
 		String cmd = "Cancel  OK      Revert  Apply   ";
 		String label = e.getActionCommand();
-		switch( cmd.indexOf(label) ) {
-			case 0:		// Cancel
+		switch (cmd.indexOf(label)) {
+			case 0: // Cancel
 				panel.setVisible(false);
 				break;
-			case 16:	// Revert
+			case 16: // Revert
 				inputCLO.setText(controller.getCLO());
 				break;
-			case 8:		// OK
+			case 8: // OK
 				panel.setVisible(false);
 				//$FALL-THROUGH$
 			default:
-			case 24:	// Apply
+			case 24: // Apply
 				controller.getEngine().setCLO(inputCLO.getText());
 				controller.applyCLO();
-			break;
+				break;
 		}
 	}
 }
@@ -122,7 +124,7 @@ class ParamPanelWindow extends JFrame {
 
 		this.controller = controller;
 		setTitle("Parameters");
-		setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+		setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
 		setLayout(new BorderLayout());
 		tabs = new JTabbedPane();
 		add(tabs, BorderLayout.CENTER); // panel showing current card
@@ -145,7 +147,7 @@ class ParamPanelWindow extends JFrame {
 		button.addActionListener(controller);
 		button.setToolTipText("Apply changes, close panel.");
 		panel.add(button);
-		add(panel, BorderLayout.SOUTH);	// panel containing ok/cancel etc buttons
+		add(panel, BorderLayout.SOUTH); // panel containing ok/cancel etc buttons
 	}
 
 	public void addTab(String name, JPanel tab, String descr) {

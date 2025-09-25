@@ -37,7 +37,6 @@ import java.awt.Container;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.ContainerEvent;
 import java.awt.event.ContainerListener;
 import java.awt.event.InputEvent;
@@ -66,7 +65,7 @@ import javax.swing.JPopupMenu;
 import javax.swing.JRootPane;
 import javax.swing.JSlider;
 import javax.swing.KeyStroke;
-import javax.swing.event.ChangeEvent;
+import javax.swing.SwingConstants;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.GraphStyle;
@@ -109,10 +108,14 @@ public class EvoLudoLab extends JFrame
 	boolean paramsVisible = false;
 	ParamPanel params;
 	JSlider evoludoSlider;
-	JButton runStop, resetButton;
+	JButton runStop;
+	JButton resetButton;
 	private final EvoLudoPanel activeViews;
-	JLabel status, counter;
-	private final Action resetAction, runStopAction, stepAction;
+	JLabel status;
+	JLabel counter;
+	private final Action resetAction;
+	private final transient Action runStopAction;
+	private final Action stepAction;
 
 	protected EvoLudoJRE engine;
 	protected Font tickFont;
@@ -152,11 +155,11 @@ public class EvoLudoLab extends JFrame
 		BorderLayout layout = new BorderLayout();
 		setLayout(layout);
 
-		counter = new JLabel("-", JLabel.LEFT);
+		counter = new JLabel("-", SwingConstants.LEFT);
 		counter.setFont(new Font("Default", Font.BOLD, 11));
 		counter.setToolTipText("Number of generations elapsed");
 		counter.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, 4));
-		status = new JLabel("-", JLabel.CENTER);
+		status = new JLabel("-", SwingConstants.CENTER);
 		status.setFont(new Font("Default", Font.PLAIN, 10));
 		status.setToolTipText("Summary of current status");
 		status.setBorder(BorderFactory.createEmptyBorder(0, 4, 0, 4));
@@ -171,7 +174,7 @@ public class EvoLudoLab extends JFrame
 		add(activeViews, BorderLayout.CENTER);
 		panelA = new JPanel(new GridLayout(3, 1, 2, 2));
 		panelA.setOpaque(false);
-		evoludoSlider = new JSlider(JSlider.HORIZONTAL, (int) EvoLudo.DELAY_MIN, (int) EvoLudo.DELAY_MAX,
+		evoludoSlider = new JSlider(SwingConstants.HORIZONTAL, (int) EvoLudo.DELAY_MIN, (int) EvoLudo.DELAY_MAX,
 				(int) (EvoLudo.DELAY_MAX - EvoLudo.DELAY_MIN) / 2);
 		evoludoSlider.setInverted(true);
 		evoludoSlider.setToolTipText("Sets delay between updates (slow - left, fast - right)");
@@ -180,13 +183,10 @@ public class EvoLudoLab extends JFrame
 		panelB.setOpaque(false);
 		panelB.setLayout(new GridLayout(1, 4));
 		JButton button = new JButton("Settings");
-		button.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				if (params == null)
-					params = new ParamPanel(EvoLudoLab.this);
-				params.setVisible(true);
-			}
+		button.addActionListener(e -> {
+			if (params == null)
+				params = new ParamPanel(EvoLudoLab.this);
+			params.setVisible(true);
 		});
 		button.setToolTipText("Change simulation parameters");
 		panelB.add(button);
@@ -472,12 +472,7 @@ public class EvoLudoLab extends JFrame
 	 * options
 	 */
 	protected synchronized void init() {
-		evoludoSlider.addChangeListener(new javax.swing.event.ChangeListener() {
-			@Override
-			public void stateChanged(ChangeEvent e) {
-				engine.setDelay(lin2log(evoludoSlider.getValue()));
-			}
-		});
+		evoludoSlider.addChangeListener(e -> engine.setDelay(lin2log(evoludoSlider.getValue())));
 	}
 
 	/**
@@ -527,7 +522,8 @@ public class EvoLudoLab extends JFrame
 		}
 		activeViews.setView(idx);
 		if (parsingIssues > 0)
-			displayStatus("Multiple parsing problems (" + parsingIssues + ") - check log for details.", Level.WARNING.intValue() + 1);
+			displayStatus("Multiple parsing problems (" + parsingIssues + ") - check log for details.",
+					Level.WARNING.intValue() + 1);
 	}
 
 	public void addMultiView(MultiView view) {
@@ -634,7 +630,7 @@ public class EvoLudoLab extends JFrame
 	}
 
 	public void displayStatus(String msg, int level) {
-		status.setHorizontalAlignment(JLabel.LEFT);
+		status.setHorizontalAlignment(SwingConstants.LEFT);
 		status.setText(msg);
 		status.repaint();
 	}
@@ -939,7 +935,8 @@ public class EvoLudoLab extends JFrame
 	 * the initialization.
 	 */
 	public void exec() {
-		int posX = 50, posY = 10;
+		int posX = 50;
+		int posY = 10;
 
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -970,13 +967,7 @@ public class EvoLudoLab extends JFrame
 		setBounds(posX, posY, appWidth, appHeight);
 		setVisible(true);
 		// start GUI manager in another thread to avoid blocking the EDT
-		new Thread(
-				new Runnable() {
-					@Override
-					public void run() {
-						start();
-					}
-				}, "GUI Manager").start();
+		new Thread(this::start, "GUI Manager").start();
 	}
 
 	/**
@@ -1003,12 +994,7 @@ public class EvoLudoLab extends JFrame
 		for (String arg : args) {
 			if (arg.startsWith("gui")) {
 				engine.setHeadless(false);
-				javax.swing.SwingUtilities.invokeLater(new Runnable() {
-					@Override
-					public void run() {
-						new EvoLudoLab(engine).exec();
-					}
-				});
+				javax.swing.SwingUtilities.invokeLater(() -> new EvoLudoLab(engine).exec());
 				return;
 			}
 			if (arg.startsWith("data") || arg.startsWith("export"))
@@ -1016,12 +1002,12 @@ public class EvoLudoLab extends JFrame
 		}
 		if (!simOk)
 			engine.fatal(
-				"One of the command line options --gui, --data <types> or --export <file> is required.\n"
-				+ "Try --help for more information.");
+					"One of the command line options --gui, --data <types> or --export <file> is required.\n"
+							+ "Try --help for more information.");
 		engine.simulation();
 		// should not get here...
 		engine.fatal(
 				"All warnings in the option string must first be resolved.\n"
-				+ "Try --help for more information.");
+						+ "Try --help for more information.");
 	}
 }

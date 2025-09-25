@@ -30,6 +30,8 @@
 
 package org.evoludo.simulator.models;
 
+import java.util.logging.Level;
+
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
@@ -77,7 +79,6 @@ public class IBSD extends IBS implements Discrete {
 				if (dpop.traitsCount[n] > 0) {
 					// no other traits should be present
 					fixData.typeFixed = n;
-					break;
 				}
 			}
 		}
@@ -100,12 +101,14 @@ public class IBSD extends IBS implements Discrete {
 			return false;
 		// sampling statistics also require:
 		// - mutant or temperature initialization
-		// - no vacant sites or monostop (otherwise extinction is the only absorbing state)
+		// - no vacant sites or monostop (otherwise extinction is the only absorbing
+		// state)
 		for (Module mod : species) {
 			Init.Type itype = ((IBSDPopulation) mod.getIBSPopulation()).getInit().type;
-			if ((itype.equals(Init.Type.MUTANT) || 
-				itype.equals(Init.Type.TEMPERATURE)) &&
-				(mod.getVacant() < 0 || (mod.getVacant() >= 0 && ((org.evoludo.simulator.modules.Discrete) mod).getMonoStop())))
+			if ((itype.equals(Init.Type.MUTANT) ||
+					itype.equals(Init.Type.TEMPERATURE)) &&
+					(mod.getVacant() < 0
+							|| (mod.getVacant() >= 0 && ((org.evoludo.simulator.modules.Discrete) mod).getMonoStop())))
 				continue;
 			return false;
 		}
@@ -138,9 +141,10 @@ public class IBSD extends IBS implements Discrete {
 			}
 			int nPop = module.getNPopulation();
 			if (pMutation < 0.0 || pMutation > 0.1 * nPop) {
-				logger.warning("optimizations for homogeneous states not recommended (mutations in [0, " + (0.1 / nPop)
-						+ ") recommended, now " +
-						Formatter.format(pMutation, 4) + ", proceeding)");
+				if (logger.isLoggable(Level.WARNING))
+					logger.warning(
+							"optimizations for homogeneous states not recommended (mutations in [0, " + (0.1 / nPop)
+									+ ") recommended, now " + Formatter.format(pMutation, 4) + ", proceeding)");
 				doReset = true;
 			}
 		}
@@ -279,7 +283,7 @@ public class IBSD extends IBS implements Discrete {
 							IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
 							String itype = inittypes[idx++ % inittypes.length];
 							double[] initargs = null;
-							String[] typeargs = itype.split("\\s+|=");
+							String[] typeargs = itype.split(CLOParser.SPLIT_ARG_REGEX);
 							Init.Type newtype = (Init.Type) clo.match(itype);
 							Init init = dpop.getInit();
 							if (newtype == null && prevtype != null) {
@@ -302,12 +306,12 @@ public class IBSD extends IBS implements Discrete {
 					@Override
 					public String getDescription() {
 						String descr = "--init <t>      type of initial configuration:\n" + clo.getDescriptionKey()
-							+ "\n                with r, m indices of resident, mutant traits";
+								+ "\n                with r, m indices of resident, mutant traits";
 						boolean noVacant = false;
 						for (Module mod : ibs.species)
 							noVacant |= mod.getVacant() < 0;
 						if (noVacant)
-							return descr.replaceAll("\\[,v\\]", "");
+							return descr.replace("[,v]", "");
 						return descr + "\n                and v frequency of vacant sites";
 					}
 				});
@@ -444,7 +448,7 @@ public class IBSD extends IBS implements Discrete {
 	 * </dl>
 	 * 
 	 */
-	public static enum OptimizationType implements CLOption.Key {
+	public enum OptimizationType implements CLOption.Key {
 
 		/**
 		 * No optimization (default).

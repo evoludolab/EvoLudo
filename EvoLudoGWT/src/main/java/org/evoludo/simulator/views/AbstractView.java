@@ -145,7 +145,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * @param engine the EvoLudo engine
 	 * @param type   the type of data shown in this view
 	 */
-	public AbstractView(EvoLudoGWT engine, Data type) {
+	protected AbstractView(EvoLudoGWT engine, Data type) {
 		this.engine = engine;
 		this.type = type;
 		logger = engine.getLogger();
@@ -628,21 +628,18 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	protected void scheduleUpdate(boolean force) {
 		if (updateScheduled)
 			return;
-		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-			@Override
-			public void execute() {
-				// deferred updates can cause issues if in the mean time the model
-				// has changed and this view is no longer supported. if this is the
-				// case destroyGraphs has been called and graphs is empty.
-				try {
-					// catch errors to prevent the views from crashing GUI
-					if (!graphs.isEmpty())
-						update(force);
-				} catch (Exception e) {
-					logger.severe("Error updating view: " + e.getMessage());
-				}
-				updateScheduled = false;
+		Scheduler.get().scheduleDeferred(() -> {
+			// deferred updates can cause issues if in the mean time the model
+			// has changed and this view is no longer supported. if this is the
+			// case destroyGraphs has been called and graphs is empty.
+			try {
+				// catch errors to prevent the views from crashing GUI
+				if (!graphs.isEmpty())
+					update(force);
+			} catch (Exception e) {
+				logger.severe("Error updating view: " + e.getMessage());
 			}
+			updateScheduled = false;
 		});
 		updateScheduled = true;
 	}
@@ -706,12 +703,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 			exportSubmenuTrigger = contextMenu.add("Export...", exportSubmenu);
 		}
 		if (!isEPub && restoreMenu == null) {
-			restoreMenu = new ContextMenuItem("Restore...", new Command() {
-				@Override
-				public void execute() {
-					engine.restoreFromFile();
-				}
-			});
+			restoreMenu = new ContextMenuItem("Restore...", () -> engine.restoreFromFile());
 		}
 		boolean idle = !engine.isRunning();
 		if (restoreMenu != null) {
@@ -948,15 +940,21 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 			buffer = (RingBuffer<double[]>) newbuffer;
 			String name = graph.getStyle().label;
 			if (name != null)
-				export.append("# " + name + "\n");
-			String legend = "time";
+				export.append("# ")
+						.append(name)
+						.append("\n");
+			StringBuilder legend = new StringBuilder("time");
 			for (int i = 0; i < buffer.getDepth() - 1; i++) {
-				legend += ", " + model.getMeanName(i);
+				legend.append(", ")
+						.append(model.getMeanName(i));
 			}
-			export.append("# " + legend + "\n");
+			export.append("# ")
+					.append(legend)
+					.append("\n");
 			Iterator<double[]> entry = buffer.ordered();
 			while (entry.hasNext()) {
-				export.append(Formatter.format(entry.next(), 8) + "\n");
+				export.append(Formatter.format(entry.next(), 8))
+						.append("\n");
 			}
 		}
 		if (export.length() == header)

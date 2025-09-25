@@ -31,7 +31,7 @@
 package org.evoludo.simulator.models;
 
 import java.awt.Color;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -202,7 +202,7 @@ public abstract class Model implements CLOProvider {
 		 * Modules that offer individual based simulation models with discrete traits
 		 * and pairwise interactions must implement this interface.
 		 */
-		public interface DPairs extends IBS.HasIBS, Features.Pairs {
+		public interface DPairs extends HasIBS, Features.Pairs {
 
 			/**
 			 * Calculate and return total (accumulated) payoff/score for pairwise
@@ -316,7 +316,7 @@ public abstract class Model implements CLOProvider {
 		 * Modules that offer individual based simulation models with continuous traits
 		 * and pairwise interactions must implement this interface.
 		 */
-		interface CPairs extends IBS.HasIBS, Features.Pairs {
+		interface CPairs extends HasIBS, Features.Pairs {
 			/**
 			 * Calculate the payoff/score for modules with interactions in pairs and a
 			 * single continuous trait. The focal individual has trait {@code me} and the
@@ -381,7 +381,7 @@ public abstract class Model implements CLOProvider {
 		 * Modules that offer individual based simulation models with multiple
 		 * continuous traits and pairwise interactions must implement this interface.
 		 */
-		interface MCPairs extends IBS.HasIBS, Features.Pairs {
+		interface MCPairs extends HasIBS, Features.Pairs {
 			/**
 			 * Calculate the payoff/score for modules with interactions in pairs and
 			 * multiple continuous traits. The focal individual has traits {@code me} and
@@ -409,7 +409,7 @@ public abstract class Model implements CLOProvider {
 			 *                     member
 			 * @return the total (accumulated) payoff/score for the focal individual
 			 */
-			public double pairScores(double me[], double[] groupTraits, int len, double[] groupPayoffs);
+			public double pairScores(double[] me, double[] groupTraits, int len, double[] groupPayoffs);
 		}
 
 		/**
@@ -445,7 +445,7 @@ public abstract class Model implements CLOProvider {
 			 *                member
 			 * @return the payoff/score for the focal individual
 			 */
-			public double groupScores(double me[], double[] group, int len, double[] payoffs);
+			public double groupScores(double[] me, double[] group, int len, double[] payoffs);
 		}
 	}
 
@@ -527,7 +527,7 @@ public abstract class Model implements CLOProvider {
 	/**
 	 * Short-cut to the list of species modules. Convenience field.
 	 */
-	protected ArrayList<? extends Module> species;
+	protected List<? extends Module> species;
 
 	/**
 	 * The number of species in multi-species models.
@@ -559,7 +559,7 @@ public abstract class Model implements CLOProvider {
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	public Model(EvoLudo engine) {
+	protected Model(EvoLudo engine) {
 		this.engine = engine;
 		logger = engine.getLogger();
 	}
@@ -605,8 +605,7 @@ public abstract class Model implements CLOProvider {
 				// the index of the mutant node is meaningless in SDE models
 				// but must be non-negative (indicates an invalid sample)
 				fixData.mutantNode = 0;
-		}
-		else
+		} else
 			fixData = null;
 		return false;
 	}
@@ -679,7 +678,7 @@ public abstract class Model implements CLOProvider {
 	public boolean relax() {
 		if (hasConverged())
 			return true;
-		// note: use getUpdates to ensure relaxation works for all models. 
+		// note: use getUpdates to ensure relaxation works for all models.
 		// DE models may not have an update count but have time
 		double updt = getUpdates();
 		if (timeRelax > 0.0 && updt < timeRelax) {
@@ -1420,7 +1419,7 @@ public abstract class Model implements CLOProvider {
 	public double getNextHalt() {
 		// watch out for models that allow time reversal!
 		// timeStop and timeRelax can be positive or negative
-		// note: use getUpdates to ensure relaxation works for all models. 
+		// note: use getUpdates to ensure relaxation works for all models.
 		// DE models may not have an update count but have time
 		double updt = getUpdates();
 		if (isTimeReversed()) {

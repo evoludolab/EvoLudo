@@ -45,13 +45,13 @@ public class FullscreenChangeEvent extends DomEvent<FullscreenChangeHandler> {
 	/**
 	 * Name of fullscreenchange event with prefix added if needed.
 	 */
-	public static final String FULLSCREEN = _jsPrefix() + "fullscreenchange";
+	public static final String FULLSCREEN = jsPrefix() + "fullscreenchange";
 
 	/**
 	 * Event type for fullscreenchange events. Represents the meta-data associated
 	 * with this event.
 	 */
-	private static final Type<FullscreenChangeHandler> TYPE = new Type<FullscreenChangeHandler>(FULLSCREEN,
+	private static final Type<FullscreenChangeHandler> TYPE = new Type<>(FULLSCREEN,
 			new FullscreenChangeEvent());
 
 	/**
@@ -71,7 +71,8 @@ public class FullscreenChangeEvent extends DomEvent<FullscreenChangeHandler> {
 	protected FullscreenChangeEvent() {
 	}
 
-	// NOTE: apparently it is not possible to simply add custom methods here... e.g. public boolean isFullscreen()
+	// NOTE: apparently it is not possible to simply add custom methods here... e.g.
+	// public boolean isFullscreen()
 
 	@Override
 	public final Type<FullscreenChangeHandler> getAssociatedType() {
@@ -89,7 +90,7 @@ public class FullscreenChangeEvent extends DomEvent<FullscreenChangeHandler> {
 	 * 
 	 * @return browser specific javascript prefix
 	 */
-	private static native String _jsPrefix()
+	private static native String jsPrefix()
 	/*-{
 		var styles = $wnd.getComputedStyle($doc.documentElement, '');
 		return (Array.prototype.slice.call(styles).join('').match(

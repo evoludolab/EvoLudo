@@ -231,7 +231,8 @@ public class CDLP extends CDL {
 		}
 
 		// non-linear interest precludes use of super
-		double shareC, shareD;
+		double shareC;
+		double shareD;
 		if (othersOnly) {
 			int k = Math.max(0, x + w - 1);
 			shareC = k * costCoop * interest(k) / (n - 1);

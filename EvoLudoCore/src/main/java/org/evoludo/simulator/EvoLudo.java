@@ -1543,11 +1543,10 @@ public abstract class EvoLudo
 	protected String[] preprocessCLO(String[] cloarray) {
 		if (cloarray == null)
 			return null;
-		int nParams = cloarray.length;
 		// first, deal with --help option
 		boolean helpRequested = false;
 		String helpName = cloHelp.getName();
-		for (int i = 0; i < nParams; i++) {
+		for (int i = 0; i < cloarray.length; i++) {
 			String param = cloarray[i];
 			if (param.startsWith(helpName)) {
 				helpRequested = true;
@@ -1558,7 +1557,7 @@ public abstract class EvoLudo
 		String moduleParam = cloModule.getName();
 		CLOption.Key moduleKey = null;
 		String moduleName = "";
-		for (int i = 0; i < nParams; i++) {
+		for (int i = 0; i < cloarray.length; i++) {
 			String param = cloarray[i];
 			if (param.startsWith(moduleParam)) {
 				String[] moduleArgs = param.split("[\\s+,=]");
@@ -1574,7 +1573,6 @@ public abstract class EvoLudo
 					moduleKey = null;
 				// module parameter found; no need to continue
 				cloarray = ArrayMath.drop(cloarray, i);
-				nParams--;
 				break;
 			}
 		}
@@ -1599,14 +1597,12 @@ public abstract class EvoLudo
 		}
 		Type defaulttype = (Type) cloModel.match(cloModel.getDefault());
 		Type type = null;
-		nParams = cloarray.length;
-		for (int i = 0; i < nParams; i++) {
+		for (int i = 0; i < cloarray.length; i++) {
 			String param = cloarray[i];
 			if (param.startsWith(modelName)) {
 				String newModel = CLOption.stripKey(modelName, param).trim();
 				// remove model option
 				cloarray = ArrayMath.drop(cloarray, i);
-				nParams--;
 				if (newModel.isEmpty()) {
 					type = defaulttype;
 					logger.warning("model key missing - use default type " + type.getKey() + ".");
@@ -1643,7 +1639,7 @@ public abstract class EvoLudo
 		}
 		// check if cloOptions contain --verbose
 		String verboseName = cloVerbose.getName();
-		for (int i = 0; i < nParams; i++) {
+		for (int i = 0; i < cloarray.length; i++) {
 			String param = cloarray[i];
 			if (param.startsWith(verboseName)) {
 				String verbosity = CLOption.stripKey(verboseName, param).trim();
@@ -1725,22 +1721,26 @@ public abstract class EvoLudo
 			globalMsg += "\n\nGlobal options:";
 
 			int idx = 0;
-			StringBuilder msgBuilder = new StringBuilder();
+			StringBuilder sb = new StringBuilder();
 			for (Module mod : activeModule.getSpecies()) {
 				String name = mod.getName();
 				int namelen = name.length();
 				if (namelen > 0)
-					msgBuilder.append("\n       Species: ").append(name);
+					sb.append("\n       Species: ")
+							.append(name);
 				int nt = mod.getNTraits();
 				for (int n = 0; n < nt; n++) {
-					msgBuilder.append("\n             ").append(idx + n).append(": ").append(mod.getTraitName(n));
+					sb.append("\n             ")
+							.append(idx + n)
+							.append(": ")
+							.append(mod.getTraitName(n));
 					if (mod instanceof HasDE && ((HasDE) mod).getDependent() == n) {
-						msgBuilder.append(" (dependent)");
+						sb.append(" (dependent)");
 					}
 				}
 				idx += nt;
 			}
-			String moduleMsg = msgBuilder.toString();
+			String moduleMsg = sb.toString();
 			Category.Module.setHeader("Options for module '" + activeModule.getKey() //
 					+ "' with trait indices and names:" + moduleMsg);
 		} else
@@ -2016,7 +2016,7 @@ public abstract class EvoLudo
 	 * 
 	 * @see #cloTraitColorScheme
 	 */
-	public static enum ColorModelType implements CLOption.Key {
+	public enum ColorModelType implements CLOption.Key {
 
 		/**
 		 * Each trait refers to a color channel. At most three traits for

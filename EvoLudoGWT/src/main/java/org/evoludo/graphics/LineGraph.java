@@ -59,7 +59,8 @@ import com.google.gwt.user.client.Command;
  * 
  * @author Christoph Hauert
  */
-public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zooming, HasLogScaleY, BasicTooltipProvider {
+public class LineGraph extends AbstractGraph<double[]>
+		implements Shifting, Zooming, HasLogScaleY, BasicTooltipProvider {
 
 	/**
 	 * The default number of (time) steps shown on this graph.
@@ -107,7 +108,6 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 				if (arg.startsWith("ymax")) {
 					style.yMax = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
 					auto = false;
-					continue;
 				}
 			}
 		}
@@ -197,8 +197,8 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 			@Override
 			public int compare(double[] o1, double[] o2) {
 				// ignore time
-				double [] s1 = ArrayMath.drop(o1, 0);
-				double [] s2 = ArrayMath.drop(o2, 0);
+				double[] s1 = ArrayMath.drop(o1, 0);
+				double[] s2 = ArrayMath.drop(o2, 0);
 				double m1 = ArrayMath.min(s1);
 				double m2 = ArrayMath.min(s2);
 				// negative values - use linear scale
@@ -215,7 +215,7 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 				// at least one value is zero - use log scale but ignore zeros
 				m1 = Double.MAX_VALUE;
 				m2 = Double.MAX_VALUE;
-				for (int i=0; i<s1.length; i++) {
+				for (int i = 0; i < s1.length; i++) {
 					if (s1[i] > 0.0)
 						m1 = Math.min(m1, Math.log10(s1[i]));
 					if (s2[i] > 0.0)
@@ -356,12 +356,9 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 	protected void schedulePaint() {
 		if (paintScheduled)
 			return;
-		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-			@Override
-			public void execute() {
-				paint();
-				paintScheduled = false;
-			}
+		Scheduler.get().scheduleDeferred(() -> {
+			paint();
+			paintScheduled = false;
 		});
 		paintScheduled = true;
 	}
@@ -528,14 +525,22 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 		double yval = ymin + y * yrange;
 		if (style.logScaleY)
 			yval = Math.pow(10.0, yval);
-		String tip = "<table style='border-collapse:collapse;border-spacing:0;'>" +
-				(style.label != null ? "<tr><td><b>" + style.label + "</b></td></tr>" : "") +
-				"<tr><td style='text-align:right'><i>" + style.xLabel + ":</i></td><td>" +
-				Formatter.format(mouset, 2) + "</td></tr>" +
-				"<tr><td style='text-align:right'><i>" + style.yLabel + ":</i></td><td>" +
-				(style.percentY ? Formatter.formatPercent(yval, 1)
-						: Formatter.format(yval, 2))
-				+ "</td></tr>";
+		StringBuilder tip = new StringBuilder();
+		tip.append("<table style='border-collapse:collapse;border-spacing:0;'>");
+		if (style.label != null)
+			tip.append("<tr><td><b>")
+					.append(style.label)
+					.append("</b></td></tr>");
+		tip.append("<tr><td style='text-align:right'><i>")
+				.append(style.xLabel)
+				.append(":</i></td><td>")
+				.append(Formatter.format(mouset, 2))
+				.append("</td></tr>");
+		tip.append("<tr><td style='text-align:right'><i>")
+				.append(style.yLabel)
+				.append(":</i></td><td>")
+				.append(style.percentY ? Formatter.formatPercent(yval, 1) : Formatter.format(yval, 2))
+				.append("</td></tr>");
 		if (i.hasNext()) {
 			double[] current = i.next();
 			int len = current.length;
@@ -548,17 +553,21 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 					continue;
 				}
 				double fx = 1.0 - (mouset - buffert) / dt;
-				tip += "<tr><td colspan='2'><hr/></td></tr><tr><td style='text-align:right'><i>" + style.xLabel +
-						":</i></td><td>" + Formatter.format(current[0] - fx * dt, 2) + "</td></tr>";
+				tip.append("<tr><td colspan='2'><hr/></td></tr><tr><td style='text-align:right'><i>")
+						.append(style.xLabel)
+						.append(":</i></td><td>")
+						.append(Formatter.format(current[0] - fx * dt, 2)).append("</td></tr>");
 				Color[] colors = module.getMeanColors();
 				if (module instanceof Continuous) {
 					double inter = interpolate(current[1], prev[1], fx);
-					tip += "<tr><td style='text-align:right'><i style='color:"
-							+ ColorMapCSS.Color2Css(colors[0]) + ";'>mean:</i></td><td>" +
-							(style.percentY ? Formatter.formatPercent(inter, 2) : Formatter.format(inter, 2));
+					tip.append("<tr><td style='text-align:right'><i style='color:")
+							.append(ColorMapCSS.Color2Css(colors[0]))
+							.append(";'>mean:</i></td><td>")
+							.append(style.percentY ? Formatter.formatPercent(inter, 2) : Formatter.format(inter, 2));
 					double sdev = inter - interpolate(current[2], prev[2], fx); // data: mean, mean-sdev, mean+sdev
-					tip += " ± " + (style.percentY ? Formatter.formatPercent(sdev, 2) : Formatter.format(sdev, 2))
-							+ "</td></tr>";
+					tip.append(" ± ")
+							.append(style.percentY ? Formatter.formatPercent(sdev, 2) : Formatter.format(sdev, 2))
+							.append("</td></tr>");
 				} else {
 					// len includes time
 					for (int n = 0; n < len - 1; n++) {
@@ -577,20 +586,25 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 						}
 						if (name == null)
 							continue;
-						tip += "<tr><td style='text-align:right'><i style='color:" + ColorMapCSS.Color2Css(color)
-								+ ";'>" + name + ":</i></td><td>";
+						tip.append("<tr><td style='text-align:right'><i style='color:")
+								.append(ColorMapCSS.Color2Css(color)).append(";'>")
+								.append(name)
+								.append(":</i></td><td>");
 						// deal with NaN's
 						if (prev[n1] == prev[n1] && current[n1] == current[n1]) {
-							tip += (style.percentY ? Formatter.formatPercent(interpolate(current[n1], prev[n1], fx), 2)
-									: Formatter.format(interpolate(current[n1], prev[n1], fx), 2)) + "</td></tr>";
+							tip.append(
+									style.percentY ? Formatter.formatPercent(interpolate(current[n1], prev[n1], fx), 2)
+											: Formatter.format(interpolate(current[n1], prev[n1], fx), 2))
+									.append("</td></tr>");
 						} else
-							tip += "-</td></tr>";
+							tip.append("-</td></tr>");
 					}
 				}
 				break;
 			}
 		}
-		return tip + "</table>";
+		tip.append("</table>");
+		return tip.toString();
 	}
 
 	/**

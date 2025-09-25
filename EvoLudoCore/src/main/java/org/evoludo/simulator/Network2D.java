@@ -62,7 +62,7 @@ public abstract class Network2D extends Network {
 	 * @param engine   the pacemaker for running the model
 	 * @param geometry the structure of the population
 	 */
-	public Network2D(EvoLudo engine, Geometry geometry) {
+	protected Network2D(EvoLudo engine, Geometry geometry) {
 		// network is shared between different graphs - cannot set listener here!
 		super(engine, geometry);
 	}
@@ -269,7 +269,8 @@ public abstract class Network2D extends Network {
 		if (geometry.isDynamic) {
 			// on dynamic networks radius needs to be set as well
 			// the radius of the nodes is scaled by their degree
-			int kin, kout;
+			int kin;
+			int kout;
 			double unitradius = Math.pow(0.8 / nNodes, 0.25);
 			double pnorm = 0.0;
 			double nnorm = 0.0;

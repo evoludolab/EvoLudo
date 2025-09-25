@@ -42,15 +42,10 @@ import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.dom.client.Style.VerticalAlign;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.event.dom.client.DomEvent;
 import com.google.gwt.event.dom.client.KeyCodes;
 import com.google.gwt.event.dom.client.MouseDownEvent;
-import com.google.gwt.event.dom.client.MouseDownHandler;
-import com.google.gwt.event.dom.client.MouseOutEvent;
-import com.google.gwt.event.dom.client.MouseOutHandler;
-import com.google.gwt.event.dom.client.MouseOverEvent;
-import com.google.gwt.event.dom.client.MouseOverHandler;
 import com.google.gwt.event.dom.client.TouchMoveEvent;
-import com.google.gwt.event.dom.client.TouchMoveHandler;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.Event;
 import com.google.gwt.user.client.ui.FocusPanel;
@@ -105,18 +100,8 @@ public class EvoLudoTrigger extends PushButton {
 				style.setLeft(50, Unit.PCT);
 				panel.setWidget(lab);
 				popup.add(panel);
-				panel.addMouseOverHandler(new MouseOverHandler() {
-					@Override
-					public void onMouseOver(MouseOverEvent moe) {
-						mouseOverLab = true;
-					}
-				});
-				panel.addMouseOutHandler(new MouseOutHandler() {
-					@Override
-					public void onMouseOut(MouseOutEvent moe) {
-						mouseOverLab = false;
-					}
-				});
+				panel.addMouseOverHandler(moe -> mouseOverLab = true);
+				panel.addMouseOutHandler(moe -> mouseOverLab = false);
 				popup.show();
 			}
 		});
@@ -148,21 +133,13 @@ public class EvoLudoTrigger extends PushButton {
 		 */
 		public LightboxPanel() {
 			DOM.sinkEvents(getElement(), Event.ONKEYDOWN);
-			addBitlessDomHandler(new MouseDownHandler() {
-				@Override
-				public void onMouseDown(MouseDownEvent event) {
-					if (mouseOverLab || event.getNativeButton() != NativeEvent.BUTTON_LEFT || ContextMenu.isShowing()
-							|| NativeJS.isFullscreen())
-						return;
-					close();
-				}
+			addBitlessDomHandler(event -> {
+				if (mouseOverLab || event.getNativeButton() != NativeEvent.BUTTON_LEFT || ContextMenu.isShowing()
+						|| NativeJS.isFullscreen())
+					return;
+				close();
 			}, MouseDownEvent.getType());
-			addBitlessDomHandler(new TouchMoveHandler() {
-				@Override
-				public void onTouchMove(TouchMoveEvent event) {
-					event.preventDefault();
-				}
-			}, TouchMoveEvent.getType());
+			addBitlessDomHandler(DomEvent::preventDefault, TouchMoveEvent.getType());
 		}
 
 		@Override

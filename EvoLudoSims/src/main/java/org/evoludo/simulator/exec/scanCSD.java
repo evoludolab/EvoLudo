@@ -198,12 +198,12 @@ public class scanCSD extends CSD {
 	/**
 	 * The index of the mean trait.
 	 */
-	public final int TRAIT_MEAN = 0;
+	public static final int TRAIT_MEAN = 0;
 
 	/**
 	 * The index of the standard deviation.
 	 */
-	public final int TRAIT_SDEV = 1;
+	public static final int TRAIT_SDEV = 1;
 
 	@Override
 	public void run() {
@@ -222,7 +222,7 @@ public class scanCSD extends CSD {
 		engine.writeHeader();
 
 		// print result legend
-		out.println("# tend		b1		b2		c1		c2		mean	sdev	type");
+		out.println("# tend\tb1\tb2\tc1\tc2\tmean\tsdev\ttype");
 
 		long prev = progress ? System.currentTimeMillis() : 0L;
 		final int SAMPLES = 11;
@@ -233,7 +233,8 @@ public class scanCSD extends CSD {
 		// 2*sdev is too conservative
 		double lowMonoThreshold = Math.max(0.01, 2.0 * sdev);
 		double highMonoThreshold = 1.0 - lowMonoThreshold;
-		double lowmean = -1.0, lowstdev = -1.0;
+		double lowmean = -1.0;
+		double lowstdev = -1.0;
 		double[] lowstatistics = null;
 		double b1 = b1Start;
 		boolean isBistable = false;
@@ -398,7 +399,6 @@ public class scanCSD extends CSD {
 						// ENDDEBUG
 						// reset stuff
 						initHigh = false;
-						statistics = null;
 						lowmean = -1;
 						lowstdev = -1;
 						lowstatistics = null;
@@ -485,9 +485,6 @@ public class scanCSD extends CSD {
 							c1End = CLOParser.parseDouble(argv[1]);
 							c1Incr = (c1End - c1Start) * 0.1;
 							return true;
-						default:
-							logger.warning("too many arguments for c1 (" + arg + ") - ignored.");
-							return false;
 						case 3:
 							double start = CLOParser.parseDouble(argv[0]);
 							double end = CLOParser.parseDouble(argv[1]);
@@ -516,6 +513,9 @@ public class scanCSD extends CSD {
 							c1Incr = incr;
 							c1Log = log;
 							return true;
+						default:
+							logger.warning("too many arguments for c1 (" + arg + ") - ignored.");
+							return false;
 					}
 				}
 			});
@@ -591,8 +591,6 @@ public class scanCSD extends CSD {
 							b1End = CLOParser.parseDouble(argv[1]);
 							b1Incr = (b1End - b1Start) * 0.1;
 							return true;
-						default:
-							return false;
 						case 3:
 							double start = CLOParser.parseDouble(argv[0]);
 							double end = CLOParser.parseDouble(argv[1]);
@@ -616,6 +614,8 @@ public class scanCSD extends CSD {
 							b1Incr = incr;
 							b1Log = log;
 							return true;
+						default:
+							return false;
 					}
 				}
 			});
@@ -641,8 +641,6 @@ public class scanCSD extends CSD {
 							b2End = CLOParser.parseDouble(argv[1]);
 							b2Incr = (b2End - b2Start) * 0.1;
 							return true;
-						default:
-							return false;
 						case 3:
 							double start = CLOParser.parseDouble(argv[0]);
 							double end = CLOParser.parseDouble(argv[1]);
@@ -666,6 +664,8 @@ public class scanCSD extends CSD {
 							b2Incr = incr;
 							b2Log = log;
 							return true;
+						default:
+							return false;
 					}
 				}
 			});
@@ -697,20 +697,6 @@ public class scanCSD extends CSD {
 					return true;
 				}
 			});
-
-	// public final CLOption cloClassify = new CLOption("classify",
-	// EvoLudo.catSimulation, "noclassify",
-	// "--classify classify type of dynamics",
-	// new CLOSetter() {
-	// @Override
-	// public void parse(String arg) {
-	// classify = cloClassify.isSet();
-	// }
-	// @Override
-	// public void report() {
-	// // nothing to report - setting affects only GUI
-	// }
-	// });
 
 	/**
 	 * The command line option to print the trait distribution.

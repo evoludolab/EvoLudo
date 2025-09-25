@@ -185,7 +185,9 @@ public class RungeKutta extends ODE {
 	 * Helper variables and temporary storage for errors, states and fitness when
 	 * calculating derivatives for different steps.
 	 */
-	private double[] yerr, ytmp, ftmp;
+	private double[] yerr;
+	private double[] ytmp;
+	private double[] ftmp;
 
 	/**
 	 * {@inheritDoc}
@@ -268,21 +270,45 @@ public class RungeKutta extends ODE {
 	/**
 	 * More magic numbers from Numerical Recipes in C.
 	 */
-	private static final double a2 = 0.2, a3 = 0.3, a4 = 0.6, a5 = 1, a6 = 0.875;
-	private static final double b21 = 0.2, b31 = 3.0 / 40.0, b32 = 9.0 / 40.0, b41 = 0.3, b42 = -0.9, b43 = 1.2;
-	private static final double b51 = -11.0 / 54.0, b52 = 2.5, b53 = -70.0 / 27.0, b54 = 35.0 / 27.0;
-	private static final double b61 = 1631.0 / 55296.0, b62 = 175.0 / 512.0, b63 = 575.0 / 13824.0,
-			b64 = 44275.0 / 110592.0, b65 = 253.0 / 4096.0;
-	private static final double c1 = 37.0 / 378.0, c3 = 250.0 / 621.0, c4 = 125.0 / 594.0, c6 = 512.0 / 1771.0,
-			dc5 = -277.0 / 14336.0;
-	private static final double dc1 = c1 - 2825.0 / 27648.0, dc3 = c3 - 18575.0 / 48384.0, dc4 = c4 - 13525.0 / 55296.0,
-			dc6 = c6 - 0.25;
+	private static final double A2 = 0.2;
+	private static final double A3 = 0.3;
+	private static final double A4 = 0.6;
+	private static final double A5 = 1;
+	private static final double A6 = 0.875;
+	private static final double B21 = 0.2;
+	private static final double B31 = 3.0 / 40.0;
+	private static final double B32 = 9.0 / 40.0;
+	private static final double B41 = 0.3;
+	private static final double B42 = -0.9;
+	private static final double B43 = 1.2;
+	private static final double B51 = -11.0 / 54.0;
+	private static final double B52 = 2.5;
+	private static final double B53 = -70.0 / 27.0;
+	private static final double B54 = 35.0 / 27.0;
+	private static final double B61 = 1631.0 / 55296.0;
+	private static final double B62 = 175.0 / 512.0;
+	private static final double B63 = 575.0 / 13824.0;
+	private static final double B64 = 44275.0 / 110592.0;
+	private static final double B65 = 253.0 / 4096.0;
+	private static final double C1 = 37.0 / 378.0;
+	private static final double C3 = 250.0 / 621.0;
+	private static final double C4 = 125.0 / 594.0;
+	private static final double C6 = 512.0 / 1771.0;
+	private static final double DC5 = -277.0 / 14336.0;
+	private static final double DC1 = C1 - 2825.0 / 27648.0;
+	private static final double DC3 = C3 - 18575.0 / 48384.0;
+	private static final double DC4 = C4 - 13525.0 / 55296.0;
+	private static final double DC6 = C6 - 0.25;
 
 	/**
 	 * Temporary variables for intermediate results required to implement the
 	 * fifth-order Cash-Karp Runge-Kutta method.
 	 */
-	private double[] ak2, ak3, ak4, ak5, ak6;
+	private double[] ak2;
+	private double[] ak3;
+	private double[] ak4;
+	private double[] ak5;
+	private double[] ak6;
 
 	/**
 	 * Given values for n variables y[1..n] and their derivatives dydx[1..n] known
@@ -304,12 +330,13 @@ public class RungeKutta extends ODE {
 	 * @return <code>true</code> if step successful
 	 */
 	private boolean rkck(double h) {
-		double ytmax, ytmin;
+		double ytmax;
+		double ytmin;
 
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) { // first step.
-			double y = yt[i] + b21 * h * dyt[i];
+			double y = yt[i] + B21 * h * dyt[i];
 			ytmp[i] = y;
 			ytmax = Math.max(ytmax, y);
 			ytmin = Math.min(ytmin, y);
@@ -317,11 +344,11 @@ public class RungeKutta extends ODE {
 		if (!isDensity && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(time + a2 * h, ytmp, ftmp, ak2); // second step.
+		getDerivatives(time + A2 * h, ytmp, ftmp, ak2); // second step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) {
-			double y = yt[i] + h * (b31 * dyt[i] + b32 * ak2[i]);
+			double y = yt[i] + h * (B31 * dyt[i] + B32 * ak2[i]);
 			ytmp[i] = y;
 			ytmax = Math.max(ytmax, y);
 			ytmin = Math.min(ytmin, y);
@@ -329,11 +356,11 @@ public class RungeKutta extends ODE {
 		if (!isDensity && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(time + a3 * h, ytmp, ftmp, ak3); // third step.
+		getDerivatives(time + A3 * h, ytmp, ftmp, ak3); // third step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) {
-			double y = yt[i] + h * (b41 * dyt[i] + b42 * ak2[i] + b43 * ak3[i]);
+			double y = yt[i] + h * (B41 * dyt[i] + B42 * ak2[i] + B43 * ak3[i]);
 			ytmp[i] = y;
 			ytmax = Math.max(ytmax, y);
 			ytmin = Math.min(ytmin, y);
@@ -341,11 +368,11 @@ public class RungeKutta extends ODE {
 		if (!isDensity && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(time + a4 * h, ytmp, ftmp, ak4); // fourth step.
+		getDerivatives(time + A4 * h, ytmp, ftmp, ak4); // fourth step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) {
-			double y = yt[i] + h * (b51 * dyt[i] + b52 * ak2[i] + b53 * ak3[i] + b54 * ak4[i]);
+			double y = yt[i] + h * (B51 * dyt[i] + B52 * ak2[i] + B53 * ak3[i] + B54 * ak4[i]);
 			ytmp[i] = y;
 			ytmax = Math.max(ytmax, y);
 			ytmin = Math.min(ytmin, y);
@@ -353,11 +380,11 @@ public class RungeKutta extends ODE {
 		if (!isDensity && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(time + a5 * h, ytmp, ftmp, ak5); // fifth step.
+		getDerivatives(time + A5 * h, ytmp, ftmp, ak5); // fifth step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) {
-			double y = yt[i] + h * (b61 * dyt[i] + b62 * ak2[i] + b63 * ak3[i] + b64 * ak4[i] + b65 * ak5[i]);
+			double y = yt[i] + h * (B61 * dyt[i] + B62 * ak2[i] + B63 * ak3[i] + B64 * ak4[i] + B65 * ak5[i]);
 			ytmp[i] = y;
 			ytmax = Math.max(ytmax, y);
 			ytmin = Math.min(ytmin, y);
@@ -365,11 +392,11 @@ public class RungeKutta extends ODE {
 		if (!isDensity && (ytmin < 0.0 || ytmax > 1.0))
 			return false;
 
-		getDerivatives(time + a6 * h, ytmp, ftmp, ak6); // sixth step.
+		getDerivatives(time + A6 * h, ytmp, ftmp, ak6); // sixth step.
 		ytmax = -Double.MAX_VALUE;
 		ytmin = Double.MAX_VALUE;
 		for (int i = 0; i < nDim; i++) { // accumulate increments with proper weights.
-			double y = yt[i] + h * (c1 * dyt[i] + c3 * ak3[i] + c4 * ak4[i] + c6 * ak6[i]);
+			double y = yt[i] + h * (C1 * dyt[i] + C3 * ak3[i] + C4 * ak4[i] + C6 * ak6[i]);
 			yout[i] = y;
 			ytmax = Math.max(ytmax, y);
 			ytmin = Math.min(ytmin, y);
@@ -379,7 +406,7 @@ public class RungeKutta extends ODE {
 
 		// estimate error as difference between fourth and fifth order methods.
 		for (int i = 0; i < nDim; i++)
-			yerr[i] = h * (dc1 * dyt[i] + dc3 * ak3[i] + dc4 * ak4[i] + dc5 * ak5[i] + dc6 * ak6[i]);
+			yerr[i] = h * (DC1 * dyt[i] + DC3 * ak3[i] + DC4 * ak4[i] + DC5 * ak5[i] + DC6 * ak6[i]);
 		return true;
 	}
 }

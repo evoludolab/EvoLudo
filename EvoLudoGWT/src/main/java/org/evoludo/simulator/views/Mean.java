@@ -38,6 +38,7 @@ import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.Shifter;
 import org.evoludo.graphics.AbstractGraph.Zoomer;
 import org.evoludo.graphics.LineGraph;
+import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Data;
@@ -99,7 +100,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 
 	@Override
 	protected void allocateGraphs() {
-		ArrayList<? extends Module> species = engine.getModule().getSpecies();
+		List<? extends Module> species = engine.getModule().getSpecies();
 		int nGraphs = 0;
 		// multiple line graphs for multi-species interactions and in case of multiple
 		// traits for continuous traits
@@ -177,7 +178,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 						String[] mcolors = new String[colors.length];
 						int n = 0;
 						for (Color color : colors)
-							mcolors[n++] = ColorMapCSS.Color2Css(ColorMapCSS.addAlpha(color, 100));
+							mcolors[n++] = ColorMapCSS.Color2Css(ColorMap.addAlpha(color, 100));
 						graph.setMarkers(module.getMarkers(), mcolors);
 					}
 					break;
@@ -220,15 +221,15 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 						String[] monoColors = new String[fitcolors.length];
 						int n = 0;
 						for (Color color : fitcolors)
-							monoColors[n++] = ColorMapCSS.Color2Css(ColorMapCSS.addAlpha(color, 100));
+							monoColors[n++] = ColorMapCSS.Color2Css(ColorMap.addAlpha(color, 100));
 						ArrayList<double[]> marker = new ArrayList<>();
 						marker.add(monoScores);
 						graph.setMarkers(marker, monoColors);
 					}
 					break;
-					default:
-						throw new IllegalArgumentException("Unknown data type: " + type);
-				}
+				default:
+					throw new IllegalArgumentException("Unknown data type: " + type);
+			}
 			if (nSpecies > 1)
 				style.label = module.getName();
 			style.xLabel = "time";

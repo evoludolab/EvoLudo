@@ -166,7 +166,7 @@ public class IBSC extends IBS implements Continuous {
 							for (int n = 0; n < nt; n++) {
 								String itype = inittypes[n % inittypes.length];
 								double[] initargs = null;
-								String[] typeargs = itype.split("\\s+|=");
+								String[] typeargs = itype.split(CLOParser.SPLIT_ARG_REGEX);
 								Init.Type newtype = (Init.Type) clo.match(itype);
 								Init init = cpop.getInit();
 								if (newtype == null && prevtype != null) {

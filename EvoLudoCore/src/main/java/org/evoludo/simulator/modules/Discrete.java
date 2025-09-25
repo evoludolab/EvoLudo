@@ -75,7 +75,7 @@ public abstract class Discrete extends Module {
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	public Discrete(EvoLudo engine) {
+	protected Discrete(EvoLudo engine) {
 		this(engine, null);
 	}
 
@@ -86,7 +86,7 @@ public abstract class Discrete extends Module {
 	 * 
 	 * @param partner the partner species
 	 */
-	public Discrete(Discrete partner) {
+	protected Discrete(Discrete partner) {
 		this(partner.engine, partner);
 	}
 
@@ -141,12 +141,12 @@ public abstract class Discrete extends Module {
 			case 2:
 				// start naming species (if needed)
 				for (Discrete pop : species) {
-					if (pop.getName().length() < 1)
+					if (pop.getName().isEmpty())
 						pop.setName("Species-" + pop.ID);
 				}
 				break;
 			default:
-				if (dpop.getName().length() < 1)
+				if (dpop.getName().isEmpty())
 					dpop.setName("Species-" + dpop.ID);
 		}
 		return true;

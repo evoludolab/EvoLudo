@@ -89,13 +89,18 @@ public class CLOParser {
 	protected PrintStream output = System.out;
 
 	/**
+	 * The regular expression to split the command line arguments for parsing.
+	 */
+	public static final String SPLIT_ARG_REGEX = "\\s+|=";
+
+	/**
 	 * New command line option parser. Register <code>provider</code> for supplying
 	 * options through the {@link CLOParser} interface.
 	 * 
 	 * @param provider of command line options
 	 */
 	public CLOParser(CLOProvider provider) {
-		this(new HashSet<CLOProvider>(Collections.singleton(provider)));
+		this(new HashSet<>(Collections.singleton(provider)));
 	}
 
 	/**
@@ -202,7 +207,7 @@ public class CLOParser {
 		// argument(s) which can be separated by ' ' or '='
 		int issues = 0;
 		nextclo: for (String clo : cloargs) {
-			String[] args = clo.split("\\s+|=");
+			String[] args = clo.split(SPLIT_ARG_REGEX);
 			String name = args[0];
 			// find matching option
 			for (CLOption opt : options) {
@@ -221,16 +226,16 @@ public class CLOParser {
 						opt.setArg(arg);
 						break;
 					case OPTIONAL:
-						opt.setArg(arg.length() > 0 ? arg : null);
+						opt.setArg(arg.isEmpty() ? null : arg);
 						break;
 					default:
 					case NONE:
-						if (arg.length() > 0) {
-							issues++;
-							logWarning("option '--" + clo + "' does not accept an argument - ignored.");
+						if (arg.isEmpty()) {
+							opt.setArg(null);
 							break;
 						}
-						opt.setArg(null);
+						issues++;
+						logWarning("option '--" + clo + "' does not accept an argument - ignored.");
 						break;
 				}
 				continue nextclo;
@@ -291,18 +296,15 @@ public class CLOParser {
 			cmd.append(" --");
 			cmd.append(clo.getName());
 			switch (clo.getType()) {
-				// case NONE:
-				default:
-					continue;
 				case OPTIONAL:
 					if (!clo.isSet())
 						break;
-					cmd.append(" " + clo.getArg());
-					continue;
+					//$FALL-THROUGH$
 				case REQUIRED:
 					cmd.append(" " + clo.getArg());
-					continue;
-
+					// case NONE:
+					// $FALL-THROUGH$
+				default:
 			}
 		}
 		return cmd.toString();
@@ -349,7 +351,7 @@ public class CLOParser {
 			}
 			// process options with category cat
 			if (categories && nextcat != null)
-				help.append("\n" + nextcat.getHeader() + "\n");
+				help.append("\n").append(nextcat.getHeader()).append("\n");
 			// in last round look for options without any category
 			for (CLOption option : options) {
 				if (categories && option.category != nextcat)
@@ -358,7 +360,7 @@ public class CLOParser {
 				String descr = option.getDescription();
 				if (descr == null)
 					continue; // skip
-				help.append(descr + "\n");
+				help.append(descr).append("\n");
 			}
 			priority = nextpriority;
 		} while (nextpriority > Integer.MIN_VALUE);
@@ -584,7 +586,7 @@ public class CLOParser {
 	 * @see Float#parseFloat(String)
 	 */
 	public static float parseFloat(String aFloat) {
-		if (aFloat == null || aFloat.length() == 0)
+		if (aFloat == null || aFloat.isEmpty())
 			return 0f;
 		return Float.parseFloat(aFloat);
 	}
@@ -599,7 +601,7 @@ public class CLOParser {
 	 * @see Double#parseDouble(String)
 	 */
 	public static double parseDouble(String aDouble) {
-		if (aDouble == null || aDouble.length() == 0)
+		if (aDouble == null || aDouble.isEmpty())
 			return 0.0;
 		return Double.parseDouble(aDouble);
 	}
@@ -617,7 +619,7 @@ public class CLOParser {
 		if (aVector == null)
 			return new boolean[0];
 		aVector = aVector.trim();
-		if (aVector.length() == 0)
+		if (aVector.isEmpty())
 			return new boolean[0];
 
 		String[] entries = aVector.split(VECTOR_DELIMITER);
@@ -661,7 +663,7 @@ public class CLOParser {
 		if (aVector == null)
 			return new int[0];
 		aVector = aVector.trim();
-		if (aVector.length() == 0)
+		if (aVector.isEmpty())
 			return new int[0];
 
 		String[] entries = aVector.split(separator);
@@ -711,7 +713,7 @@ public class CLOParser {
 		if (aVector == null)
 			return new double[0];
 		aVector = aVector.trim();
-		if (aVector.length() == 0)
+		if (aVector.isEmpty())
 			return new double[0];
 
 		String[] entries = aVector.split(separator);
@@ -744,7 +746,7 @@ public class CLOParser {
 		if (aMatrix == null)
 			return new int[0][0];
 		aMatrix = aMatrix.trim();
-		if (aMatrix.length() == 0)
+		if (aMatrix.isEmpty())
 			return new int[0][0];
 
 		String[] entries = aMatrix.split(MATRIX_DELIMITER);
@@ -775,7 +777,7 @@ public class CLOParser {
 		if (aMatrix == null)
 			return new double[0][0];
 		aMatrix = aMatrix.trim();
-		if (aMatrix.length() == 0)
+		if (aMatrix.isEmpty())
 			return new double[0][0];
 
 		String[] entries = aMatrix.split(MATRIX_DELIMITER);

@@ -76,7 +76,7 @@ public class CLOption implements Comparable<CLOption> {
 		 */
 		public default String getDescription() {
 			return null;
-		};
+		}
 
 		/**
 		 * Optional: position of key in the list of arguments. Used in help display.
@@ -931,13 +931,15 @@ public class CLOption implements Comparable<CLOption> {
 	public String getDescriptionKey() {
 		if (keys == null || inheritedKeys)
 			return "";
-		String keydescr = "";
+		StringBuilder keydescr = new StringBuilder();
 		for (Key key : keys.values()) {
 			String descr = key.getDescription();
 			// align ':' for better readability
 			String aKey = "             " + key.getKey() + ": ";
 			int keylen = aKey.length();
-			keydescr += aKey.substring(keylen - 16, keylen) + (descr == null ? key.getTitle() : descr) + "\n";
+			keydescr.append(aKey.substring(keylen - 16, keylen))
+					.append(descr == null ? key.getTitle() : descr)
+					.append("\n");
 			// keydescr += " " + key.getKey() + ": " + (descr == null ? key.getTitle() :
 			// descr) + "\n";
 		}
@@ -945,7 +947,7 @@ public class CLOption implements Comparable<CLOption> {
 		int len = keydescr.length();
 		if (len > 0)
 			return keydescr.substring(0, len - 1);
-		return keydescr;
+		return keydescr.toString();
 	}
 
 	/**
@@ -1031,10 +1033,9 @@ public class CLOption implements Comparable<CLOption> {
 			myDescr = delegate.getDescription();
 		} else {
 			String descr = getDescriptionKey();
-			if (descr.length() > 0)
-				myDescr = description + "\n" + descr;
-			else
-				myDescr = description;
+			myDescr = description;
+			if (!descr.isEmpty())
+				myDescr += "\n" + descr;
 		}
 		if (type == Argument.NONE)
 			return myDescr + "\n      (current: " + (isSet() ? "" : "not ") + "set)";
@@ -1086,5 +1087,20 @@ public class CLOption implements Comparable<CLOption> {
 	@Override
 	public int compareTo(CLOption opt) {
 		return name.compareTo(opt.getName());
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null || getClass() != obj.getClass())
+			return false;
+		CLOption other = (CLOption) obj;
+		return name.equals(other.name);
+	}
+
+	@Override
+	public int hashCode() {
+		return name.hashCode();
 	}
 }

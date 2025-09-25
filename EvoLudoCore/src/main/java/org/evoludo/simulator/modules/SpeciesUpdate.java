@@ -36,8 +36,8 @@ import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.CLOption.Category;
 
 /**
- * The implementation of population updates. Population updates are used to update
- * the population size and composition of individuals.
+ * The implementation of population updates. Population updates are used to
+ * update the population size and composition of individuals.
  * <p>
  * The population update type can be set to one of the following:
  * <dl>
@@ -57,9 +57,10 @@ import org.evoludo.util.CLOption.Category;
  * <dd>Asynchronous updates (non-constant population size).
  * </dl>
  * <p>
- * The population update type can be set via the command line option {@code
- * --popupdate <u> [<p>]} where {@code <u>} is the population update type, and
- * {@code <p>} the fraction of individuals that reassess their trait.
+ * The population update type can be set via the command line option
+ * {@code --popupdate <u> [&gt;p&lt;]} where {@code <u>} is the population
+ * update type, and {@code &gt;p&lt;} the fraction of individuals that reassess
+ * their trait.
  * 
  * @author Christoph Hauert
  */
@@ -154,7 +155,7 @@ public class SpeciesUpdate {
 	 * For <em>size</em> and <em>fitness</em> selection is also proportional to the
 	 * update rate of each species.
 	 */
-	public static enum Type implements CLOption.Key {
+	public enum Type implements CLOption.Key {
 
 		/**
 		 * Pick focal species based on population size.

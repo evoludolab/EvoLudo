@@ -30,7 +30,6 @@
 
 package org.evoludo.simulator.views;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
@@ -199,13 +198,14 @@ public class Phase2D extends AbstractView {
 	 */
 	private String getXAxisLabel() {
 		int[] traitX = map.getTraitsX();
-		String xName = getTraitName(traitX[0]);
+		StringBuilder xName = new StringBuilder(getTraitName(traitX[0]));
 		int nx = traitX.length;
 		if (nx > 1) {
 			for (int n = 1; n < nx; n++)
-				xName += "+" + getTraitName(traitX[n]);
+				xName.append("+").append(getTraitName(traitX[n]));
 		}
-		return xName + (graph.getStyle().percentX ? " frequency" : " density");
+		xName.append(graph.getStyle().percentX ? " frequency" : " density");
+		return xName.toString();
 	}
 
 	/**
@@ -215,13 +215,14 @@ public class Phase2D extends AbstractView {
 	 */
 	private String getYAxisLabel() {
 		int[] traitY = map.getTraitsY();
-		String yName = getTraitName(traitY[0]);
+		StringBuilder yName = new StringBuilder(getTraitName(traitY[0]));
 		int ny = traitY.length;
 		if (ny > 1) {
 			for (int n = 1; n < ny; n++)
-				yName += "+" + getTraitName(traitY[n]);
+				yName.append("+").append(getTraitName(traitY[n]));
 		}
-		return yName + (graph.getStyle().percentY ? " frequency" : " density");
+		yName.append(graph.getStyle().percentY ? " frequency" : " density");
+		return yName.toString();
 	}
 
 	/**
@@ -233,7 +234,7 @@ public class Phase2D extends AbstractView {
 	 */
 	private String getTraitName(int idx) {
 		Module module = engine.getModule();
-		ArrayList<? extends Module> species = module.getSpecies();
+		List<? extends Module> species = module.getSpecies();
 		int nSpecies = species.size();
 		if (nSpecies > 1) {
 			for (Module mod : species) {
@@ -256,13 +257,11 @@ public class Phase2D extends AbstractView {
 	public boolean setInitialState(double[] init) {
 		// no further processing should be needed - just forward to module and engine
 		Module module = engine.getModule();
-		if (module instanceof Discrete) {
-			// note: setInitialTraits requires different arguments for discrete and
-			// continuous modules
-			if (((org.evoludo.simulator.models.Discrete) model).setInitialTraits(init)) {
-				engine.modelInit();
-				return true;
-			}
+		// note: setInitialTraits requires different arguments for discrete and
+		// continuous modules
+		if (module instanceof Discrete && ((org.evoludo.simulator.models.Discrete) model).setInitialTraits(init)) {
+			engine.modelInit();
+			return true;
 		}
 		return false;
 	}
@@ -272,25 +271,22 @@ public class Phase2D extends AbstractView {
 		if (!map.hasFixedAxes()) {
 			// add context menu for configuring the phase plane axes
 			Module module = engine.getModule();
-			ArrayList<? extends Module> species = module.getSpecies();
+			List<? extends Module> species = module.getSpecies();
 			int nSpecies = species.size();
 			boolean isMultispecies = nSpecies > 1;
 			// no menu entries if single species and less than 3 traits
-			if (!isMultispecies) {
-				if (module.getNTraits() < 3) {
-					traitXMenu = traitYMenu = null;
-					traitXItems = traitYItems = null;
-					return;
-				}
-				// in multi-species models the menu includes species names
-				nSpecies = 0;
+			if (!isMultispecies && module.getNTraits() < 3) {
+				traitXMenu = traitYMenu = null;
+				traitXItems = traitYItems = null;
+				return;
 			}
+			// in multi-species models the menu includes species names
 			int totTraits = 0;
 			boolean isDensity = model.isDensity();
 			for (Module mod : species) {
 				int vidx = mod.getVacant();
 				int nt = mod.getNTraits();
-				if (isDensity && nt == 1 | (nt == 2 && vidx >= 0))
+				if (isDensity && nt == 1 || (nt == 2 && vidx >= 0))
 					totTraits++;
 				else
 					totTraits += nt;

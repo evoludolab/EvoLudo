@@ -120,8 +120,13 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 		 * References to all event handlers relevant for handling tooltips registered
 		 * with the listener widget.
 		 */
-		HandlerRegistration mouseOverHandler, mouseOutHandler, mouseMoveHandler, mouseWheelHandler, touchStartHandler,
-				touchMoveHandler, touchEndHandler;
+		HandlerRegistration mouseOverHandler;
+		HandlerRegistration mouseOutHandler;
+		HandlerRegistration mouseMoveHandler;
+		HandlerRegistration mouseWheelHandler;
+		HandlerRegistration touchStartHandler;
+		HandlerRegistration touchMoveHandler;
+		HandlerRegistration touchEndHandler;
 
 		/**
 		 * Provider of tooltips for this listener widget.
@@ -191,7 +196,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 * @see #DEFAULT_OFFSET_X
 	 * @see #setOffset(int, int)
 	 */
-	private int offsetX = DEFAULT_OFFSET_X;
+	private double offsetX = DEFAULT_OFFSET_X;
 
 	/**
 	 * Default vertical offset of tooltip relative to the coordinates of the pointer
@@ -210,7 +215,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 * @see #DEFAULT_OFFSET_X
 	 * @see #setOffset(int, int)
 	 */
-	private int offsetY = DEFAULT_OFFSET_Y;
+	private double offsetY = DEFAULT_OFFSET_Y;
 
 	/**
 	 * Default delay before showing the tooltip (in milliseconds) after the pointer
@@ -245,13 +250,13 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 * Horizontal offset for tooltip placement relative to tap that triggered it.
 	 * Negative offsets shift to the left.
 	 */
-	protected static final int TOUCH_SHIFT_X = -3;
+	protected static final double TOUCH_SHIFT_X = -3;
 
 	/**
 	 * Vertical offset for tooltip placement relative to tap that triggered it.
 	 * Negative offsets shift to the top.
 	 */
-	protected static final int TOUCH_SHIFT_Y = 0;
+	protected static final double TOUCH_SHIFT_Y = 0;
 
 	/**
 	 * <code>true</code> if touch events are processed.
@@ -263,7 +268,8 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 * widget. This allows to update the tooltip without user interaction. For
 	 * example while hovering over an item that changes over time.
 	 */
-	private int x, y;
+	private int x;
+	private int y;
 
 	/**
 	 * Reference to style of tooltip. Most important to control positioning of

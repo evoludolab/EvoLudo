@@ -55,7 +55,7 @@ public abstract class Network3D extends Network {
 	 * @param engine   the pacemaker for running the model
 	 * @param geometry the structure of the population
 	 */
-	public Network3D(EvoLudo engine, Geometry geometry) {
+	protected Network3D(EvoLudo engine, Geometry geometry) {
 		// network is shared between different graphs - cannot set listener here!
 		super(engine, geometry);
 		setAccuracy(1e-5);

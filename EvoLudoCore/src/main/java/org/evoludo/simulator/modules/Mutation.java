@@ -30,7 +30,7 @@
 
 package org.evoludo.simulator.modules;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
@@ -308,7 +308,7 @@ public abstract class Mutation {
 								? arg.split(CLOParser.SPECIES_DELIMITER)
 								: arg.split(CLOParser.VECTOR_DELIMITER);
 						int n = 0;
-						ArrayList<? extends Module> species = module.getSpecies();
+						List<? extends Module> species = module.getSpecies();
 						for (Module mod : species) {
 							String mutts = mutations[n++ % mutations.length];
 							String[] args = mutts.split("\\s+|=|,");
@@ -319,11 +319,9 @@ public abstract class Mutation {
 							mut.range = 0.0;
 							mut.type = Type.NONE;
 							// deal with optional temperature|random flag first
-							if (args.length > 1) {
-								if (args[1].toLowerCase().startsWith("t")) {
-									mut.temperature = true;
-									args = ArrayMath.drop(args, 1);
-								}
+							if (args.length > 1 && args[1].toLowerCase().startsWith("t")) {
+								mut.temperature = true;
+								args = ArrayMath.drop(args, 1);
 							}
 							switch (args.length) {
 								case 3:
@@ -372,7 +370,7 @@ public abstract class Mutation {
 		 * where traits have a metric.
 		 * </dl>
 		 */
-		public static enum Type implements CLOption.Key {
+		public enum Type implements CLOption.Key {
 
 			/**
 			 * No mutations. This is the default
@@ -523,7 +521,7 @@ public abstract class Mutation {
 						boolean success = true;
 						String[] mutations = arg.split(CLOParser.SPECIES_DELIMITER);
 						int n = 0;
-						ArrayList<? extends Module> species = module.getSpecies();
+						List<? extends Module> species = module.getSpecies();
 						for (Module mod : species) {
 							String mutts = mutations[n++ % mutations.length];
 							String[] args = mutts.split("\\s+|=|,");
@@ -608,7 +606,7 @@ public abstract class Mutation {
 		 * a range {@code t &pm; r}.
 		 * </dl>
 		 */
-		public static enum Type implements CLOption.Key {
+		public enum Type implements CLOption.Key {
 
 			/**
 			 * No mutations. This is the default

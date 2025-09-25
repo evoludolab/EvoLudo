@@ -278,12 +278,7 @@ public class Network3DGWT extends Network3D {
 		doLayoutPrep();
 		layout = new Duration();
 		prevLayout = Integer.MIN_VALUE;
-		Scheduler.get().scheduleFixedDelay(new Scheduler.RepeatingCommand() {
-			@Override
-			public boolean execute() {
-				return doLayoutStep();
-			}
-		}, 5);
+		Scheduler.get().scheduleFixedDelay(this::doLayoutStep, 5);
 	}
 
 	/**

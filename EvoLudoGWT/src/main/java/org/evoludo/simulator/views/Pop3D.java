@@ -31,7 +31,7 @@
 package org.evoludo.simulator.views;
 
 import java.awt.Color;
-import java.util.ArrayList;
+import java.util.List;
 
 import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.graphics.PopGraph3D;
@@ -90,7 +90,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 			// - another alternative is to add context menu to toggle between the different
 			// link sets (could be difficult if one is a lattice...)
 			int nGraphs = 0;
-			ArrayList<? extends Module> species = engine.getModule().getSpecies();
+			List<? extends Module> species = engine.getModule().getSpecies();
 			for (Module module : species)
 				nGraphs += Geometry.displayUniqueGeometry(module) ? 1 : 2;
 
@@ -364,6 +364,5 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 	@Override
 	protected ExportType[] exportTypes() {
 		return new ExportType[] { ExportType.PNG };
-		// return new ExportType[] { ExportType.SVG, ExportType.PNG };
 	}
 }

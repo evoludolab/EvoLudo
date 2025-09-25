@@ -453,7 +453,8 @@ public class ContextMenu extends FlowPanel
 	 */
 	public ContextMenu(ContextMenu parent) {
 		this();
-		assert parent != null;
+		if (parent == null)
+			throw new IllegalArgumentException("Parent menu cannot be null.");
 		parentMenu = parent;
 	}
 
@@ -808,12 +809,6 @@ public class ContextMenu extends FlowPanel
 	public class TouchTimer extends Timer {
 
 		/**
-		 * Constructs a new timer for touch events.
-		 */
-		public TouchTimer() {
-		}
-
-		/**
 		 * Horizontal position of touch event scheduled to trigger context menu
 		 * (relative to browser window).
 		 */
@@ -934,12 +929,7 @@ public class ContextMenu extends FlowPanel
 	public HandlerRegistration addFullscreenChangeHandler(FullscreenChangeHandler handler) {
 		String eventname = NativeJS.fullscreenChangeEventName();
 		NativeJS.addFullscreenChangeHandler(eventname, handler);
-		return new HandlerRegistration() {
-			@Override
-			public void removeHandler() {
-				NativeJS.removeFullscreenChangeHandler(eventname, handler);
-			}
-		};
+		return () -> NativeJS.removeFullscreenChangeHandler(eventname, handler);
 	}
 
 	/**

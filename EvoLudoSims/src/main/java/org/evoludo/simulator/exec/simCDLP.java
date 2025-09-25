@@ -116,7 +116,8 @@ public class simCDLP extends CDLP implements ChangeListener {
 
 		boolean[] active = getActiveTraits();
 		if (isLinearPGG && initInQ && !active[PUNISH])
-			((org.evoludo.simulator.models.Discrete) model).setInitialTraits(findQ(nGroup, getInterest(), getPayLoner()));
+			((org.evoludo.simulator.models.Discrete) model)
+					.setInitialTraits(findQ(nGroup, getInterest(), getPayLoner()));
 
 		double[][][] location = null;
 		double[] corner = new double[nTraits];
@@ -179,18 +180,19 @@ public class simCDLP extends CDLP implements ChangeListener {
 				engine.modelInit();
 				do {
 					engine.modelNext();
+					int[] tCounts = pop.getTraitsCount();
 					if (doBasin) {
-						if (pop.traitsCount[PUNISH] == 0)
+						if (tCounts[PUNISH] == 0)
 							continue nextrial;
-						if (pop.traitsCount[DEFECT] == 0 && //
-								pop.traitsCount[LONER] == 0) {
-							basin[COOPERATE] += (double) pop.traitsCount[COOPERATE] / (double) nPopulation;
-							basin[PUNISH] += (double) pop.traitsCount[PUNISH] / (double) nPopulation;
+						if (tCounts[DEFECT] == 0 && //
+								tCounts[LONER] == 0) {
+							basin[COOPERATE] += (double) tCounts[COOPERATE] / (double) nPopulation;
+							basin[PUNISH] += (double) tCounts[PUNISH] / (double) nPopulation;
 							continue nextrial;
 						}
 					} else {
 						for (int n = 0; n < nTraits; n++)
-							if (pop.traitsCount[n] == nPopulation) {
+							if (tCounts[n] == nPopulation) {
 								corner[n]++;
 								continue nextrial;
 							}
@@ -203,20 +205,22 @@ public class simCDLP extends CDLP implements ChangeListener {
 						+ Formatter.format(basin[PUNISH] / timeStop, 6) + "\t"
 						+ Formatter.format((basin[COOPERATE] + basin[PUNISH]) / timeStop, 6));
 			} else {
-				String msg = "# absorbtion probabilities for each corner from random initial configuration\n"
-						+ Formatter.format(corner[0] / timeStop, 6);
+				StringBuilder msg = new StringBuilder(
+						"# absorbtion probabilities for each corner from random initial configuration\n");
+				msg.append(Formatter.format(corner[0] / timeStop, 6));
 				for (int n = 1; n < nTraits; n++)
-					msg += "\t" + Formatter.format(corner[n] / timeStop, 6);
+					msg.append("\t").append(Formatter.format(corner[n] / timeStop, 6));
 				out.println(msg);
 			}
 			return;
 		}
 
 		if (timesamples > 0) {
-			double t = 0.0, t2 = 0.0;
+			double t = 0.0;
+			double t2 = 0.0;
 			for (int r = 0; r < timesamples; r++) {
 				engine.modelReset();
-				while (pop.traitsCount[PUNISH] < threshold) {
+				while (pop.getTraitsCount()[PUNISH] < threshold) {
 					engine.modelNext();
 				}
 				double generation = ibs.getUpdates();
@@ -235,10 +239,11 @@ public class simCDLP extends CDLP implements ChangeListener {
 
 		// evolve population
 		startStatistics();
+		int[] tCounts = pop.getTraitsCount();
 		for (long g = 0; g < timeStop; g++) {
-			int c = pop.traitsCount[COOPERATE];
-			int d = pop.traitsCount[DEFECT];
-			int l = pop.traitsCount[LONER];
+			int c = tCounts[COOPERATE];
+			int d = tCounts[DEFECT];
+			int l = tCounts[LONER];
 			double generation = ibs.getUpdates();
 			double t = generation;
 			engine.modelNext();
@@ -247,61 +252,64 @@ public class simCDLP extends CDLP implements ChangeListener {
 				location[c][d][l] += incr;
 
 			for (int n = 0; n < nTraits; n++) {
-				if (pop.traitsCount[n] >= threshold) {
+				if (tCounts[n] >= threshold) {
 					corner[n] += incr;
 					break;
 				}
 			}
 
 			for (int n = 0; n < nTraits; n++) {
-				if (pop.traitsCount[n] == nPopulation) {
-					if (lastfix != n) {
-						// fix is never null but make compiler happy
-						if (fix != null && lastfix >= 0)
-							fix[lastfix][n]++;
-						lastfix = n;
-						break;
-					}
+				if (tCounts[n] == nPopulation && lastfix != n) {
+					// fix is never null but make compiler happy
+					if (fix != null && lastfix >= 0)
+						fix[lastfix][n]++;
+					lastfix = n;
+					break;
 				}
 			}
 		}
 		double generation = ibs.getUpdates();
 		double norm = 1.0 / generation;
-		String msg = "# fixation probs\n# \t";
+		StringBuilder sb = new StringBuilder("# fixation probs\n# \t");
 		for (int n = 0; n < nTraits; n++)
-			msg += getTraitName(n) + "\t";
-		out.println(msg);
+			sb.append(getTraitName(n)).append("\t");
+		out.println(sb.toString());
 		// fix is never null but make compiler happy
 		if (fix != null) {
+			sb = new StringBuilder();
 			for (int n = 0; n < nTraits; n++) {
-				msg = "# " + getTraitName(n) + ":\t";
+				sb.append("# ").append(getTraitName(n)).append(":\t");
 				double sum = 0.0;
 				for (int m = 0; m < nTraits; m++)
 					sum += fix[n][m];
 				for (int m = 0; m < nTraits; m++)
-					msg += Formatter.format(fix[n][m] / sum, 4) + "\t";
-				out.println(msg + "(count: " + (int) sum + ")");
+					sb.append(Formatter.format(fix[n][m] / sum, 4)).append("\t");
+				sb.append("(count: ").append((int) sum).append(")");
+				out.println(sb);
 			}
 		}
-		msg = "# corners (" + threshold + " threshold): ";
+		sb = new StringBuilder("# corners (" + threshold + " threshold): ");
 		for (int n = 0; n < nTraits; n++)
-			msg += Formatter.formatFix(corner[n] * norm, 6) + "\t";
+			sb.append(Formatter.formatFix(corner[n] * norm, 6)).append("\t");
 		/*
 		 * System.out.println("# corners ("+threshold+" threshold):"); if( doLocation )
 		 * System.out.print("# "); for( int n=0; n<nTraits; n++ )
 		 * System.out.print(ChHFormatter.format(corner[n]*norm, 4)+"\t");
 		 */
-		out.println(msg);
-		msg = "# long-term average:      ";
-		for (int n = 0; n < nTraits; n++)
-			msg += Formatter.formatFix(mean[n], 6) + "\t" + Formatter.format(Math.sqrt(var[n] / (generation - 1.0)), 6)
-					+ "\t";
+		out.println(sb);
+		sb = new StringBuilder("# long-term average:      ");
+		for (int n = 0; n < nTraits; n++) {
+			sb.append(Formatter.formatFix(mean[n], 6));
+			sb.append("\t");
+			sb.append(Formatter.format(Math.sqrt(variance[n] / (generation - 1.0)), 6));
+			sb.append("\t");
+		}
 		/*
 		 * System.out.println("\n# long-term average:"); double[] avg =
 		 * getStrategyTypeMean(); for( int n=0; n<nTraits; n++ )
 		 * System.out.print(ChHFormatter.format(avg[n]/(double)nPopulation, 4)+"\t");
 		 */
-		out.println(msg);
+		out.println(sb);
 		if (location != null) {
 			out.println("c\td\tl\tp\tfreq");
 			for (int i = 0; i <= nPopulation; i++) { // punishers
@@ -327,7 +335,9 @@ public class simCDLP extends CDLP implements ChangeListener {
 	/**
 	 * Temporary variables for fixation probabilities and absorption times.
 	 */
-	double[] mean, var, state;
+	double[] mean;
+	double[] variance;
+	double[] state;
 
 	/**
 	 * Time of previous sample.
@@ -357,13 +367,13 @@ public class simCDLP extends CDLP implements ChangeListener {
 	protected void resetStatistics() {
 		if (mean == null)
 			mean = new double[nTraits];
-		if (var == null)
-			var = new double[nTraits];
+		if (variance == null)
+			variance = new double[nTraits];
 		if (state == null)
 			state = new double[nTraits];
 		prevsample = Double.MAX_VALUE;
 		Arrays.fill(mean, 0.0);
-		Arrays.fill(var, 0.0);
+		Arrays.fill(variance, 0.0);
 	}
 
 	/**
@@ -381,7 +391,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 		for (int n = 0; n < nTraits; n++) {
 			double delta = state[n] - mean[n];
 			mean[n] += wn * delta;
-			var[n] += w * delta * (state[n] - mean[n]);
+			variance[n] += w * delta * (state[n] - mean[n]);
 		}
 		prevsample = time;
 	}
@@ -412,7 +422,6 @@ public class simCDLP extends CDLP implements ChangeListener {
 				flow = fmid;
 			} else {
 				zhigh = zmid;
-				fhigh = fmid;
 			}
 		}
 		q[LONER] = (zlow + zhigh) / 2.0;
@@ -442,7 +451,11 @@ public class simCDLP extends CDLP implements ChangeListener {
 	 * @return the sign of the value
 	 */
 	private double sign(double x) {
-		return x > 0.0 ? 1.0 : (x < 0.0 ? 0.0 : 0.5);
+		if (x > 0.0)
+			return 1.0;
+		if (x < 0.0)
+			return 0.0;
+		return 0.5;
 	}
 
 	/**

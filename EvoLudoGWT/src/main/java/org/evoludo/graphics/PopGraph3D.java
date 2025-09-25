@@ -230,7 +230,8 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		// geometries that have special/fixed layout
 		switch (type) {
 			case CUBE:
-				int side, zdim;
+				int side;
+				int zdim;
 				// NOVA settings
 				if (geometry.size == 25000) {
 					zdim = 10;
@@ -569,7 +570,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			raycaster.set(vector, dir);
 		}
 		List<Raycaster.Intersect> intersects = raycaster.intersectObjects(spheres, false);
-		if (intersects.size() == 0)
+		if (intersects.isEmpty())
 			return FINDNODEAT_OUT_OF_BOUNDS;
 		return Integer.parseInt(intersects.get(0).object.getName());
 	}
@@ -692,12 +693,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	public class Pop3DScene extends AnimatedScene implements RequiresResize {
 
 		/**
-		 * Create a new 3D scene.
-		 */
-		public Pop3DScene() {
-		}
-
-		/**
 		 * The control for rotating and zooming the scene.
 		 */
 		TrackballControls control;
@@ -735,13 +730,13 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 				return null;
 			return super.getCanvas();
 		}
-	
+
 		@Override
 		public void init(RenderingPanel renderingPanel, AnimationUpdateHandler animationUpdateHandler) {
 			super.init(renderingPanel, animationUpdateHandler);
 			this.renderingPanel = renderingPanel;
 		}
-	
+
 		/**
 		 * Positions the camera. The camera position is shared between different views
 		 * of the 3D graph, e.g. view of the strategies and view of fitnesses.
@@ -785,7 +780,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 				// orthographic projection
 				if (graph3DCamera instanceof OrthographicCamera)
 					return;
-				graph3DCamera = new OrthographicCamera(width, height, 
+				graph3DCamera = new OrthographicCamera(width, height,
 						-10000, // near
 						10000 // far
 				);

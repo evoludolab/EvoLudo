@@ -167,10 +167,10 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 	 */
 	public static Slider wrap(com.google.gwt.dom.client.Element element) {
 		// Assert that the element is attached.
-		assert Document.get().getBody().isOrHasChild(element);
+		if (!Document.get().getBody().isOrHasChild(element))
+			throw new IllegalArgumentException("Element must be attached to the document.");
 
 		Slider slider = new Slider(element);
-
 		// Mark it attached and remember it for cleanup.
 		slider.onAttach();
 		RootPanel.detachOnWindowClose(slider);

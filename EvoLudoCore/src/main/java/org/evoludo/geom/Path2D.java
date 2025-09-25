@@ -126,7 +126,7 @@ public class Path2D {
 		return Arrays.copyOf(oldPointTypes, newSize);
 	}
 
-	double doubleCoords[];
+	double[] doubleCoords;
 
 	/**
 	 * Constructs a new empty double precision {@code Path2D} object
@@ -209,7 +209,7 @@ public class Path2D {
 
 	double[] cloneCoordsDouble(AffineTransform at) {
 		// trim arrays:
-		double ret[];
+		double[] ret;
 		if (at == null) {
 			ret = Arrays.copyOf(doubleCoords, numCoords);
 		} else {
@@ -395,7 +395,7 @@ public class Path2D {
 	 * @since 1.6
 	 */
 	public final void append(Iterator pi, boolean connect) {
-		double coords[] = new double[6];
+		double[] coords = new double[6];
 		while (!pi.isDone()) {
 			switch (pi.currentSegment(coords)) {
 				case SEG_MOVETO:
@@ -482,7 +482,10 @@ public class Path2D {
 	 * @evoludo.impl {@code getBounds()} is not implemented
 	 */
 	public final synchronized Rectangle2D getBounds2D() {
-		double x1, y1, x2, y2;
+		double x1;
+		double y1;
+		double x2;
+		double y2;
 		int i = numCoords;
 		if (i > 0) {
 			y1 = y2 = doubleCoords[--i];
@@ -557,7 +560,7 @@ public class Path2D {
 		int pointIdx;
 		Path2D path;
 
-		static final int curvecoords[] = { 2, 2, 4, 6, 0 };
+		static final int[] curvecoords = { 2, 2, 4, 6, 0 };
 
 		/**
 		 * Constructs a new path iterator object from an arbitrary
@@ -570,7 +573,7 @@ public class Path2D {
 			this.doubleCoords = path.doubleCoords;
 		}
 
-		double doubleCoords[];
+		double[] doubleCoords;
 
 		/**
 		 * Returns the coordinates and type of the current path segment in
@@ -748,34 +751,50 @@ public class Path2D {
 
 	@Override
 	public String toString() {
-		String msg = "[path=" + numTypes + ": ";
+		StringBuilder msg = new StringBuilder("[path=" + numTypes + ": ");
 		int npoints = Math.min(numTypes, 10);
 		int idx = 0;
 		for (int n = 0; n < npoints; n++) {
 			switch (pointTypes[n]) {
 				case SEG_MOVETO:
-					msg += " (" + doubleCoords[idx++] + "," + doubleCoords[idx++] + ")";
+					msg.append(" (")
+							.append(doubleCoords[idx++])
+							.append(",")
+							.append(doubleCoords[idx++])
+							.append(")");
 					break;
 				case SEG_LINETO:
-					msg += "-(" + doubleCoords[idx++] + "," + doubleCoords[idx++] + ")";
+					msg.append("-(")
+							.append(doubleCoords[idx++])
+							.append(",")
+							.append(doubleCoords[idx++])
+							.append(")");
 					break;
 				case SEG_QUADTO:
-					msg += "2(" + doubleCoords[idx++] + "," + doubleCoords[idx++] + "," + doubleCoords[idx++] + ","
-							+ doubleCoords[idx++] + ")";
+					msg.append("2(")
+							.append(doubleCoords[idx++]).append(",")
+							.append(doubleCoords[idx++]).append(",")
+							.append(doubleCoords[idx++]).append(",")
+							.append(doubleCoords[idx++]).append(")");
 					break;
 				case SEG_CUBICTO:
-					msg += "3(" + doubleCoords[idx++] + "," + doubleCoords[idx++] + "," + doubleCoords[idx++] + ","
-							+ doubleCoords[idx++] + "," + doubleCoords[idx++] + "," + doubleCoords[idx++] + ")";
+					msg.append("3(")
+							.append(doubleCoords[idx++]).append(",")
+							.append(doubleCoords[idx++]).append(",")
+							.append(doubleCoords[idx++]).append(",")
+							.append(doubleCoords[idx++]).append(",")
+							.append(doubleCoords[idx++]).append(",")
+							.append(doubleCoords[idx++]).append(")");
 					break;
 				case SEG_CLOSE:
-					msg += ": ";
+					msg.append(": ");
 					break;
 				default:
 					/* NOTREACHED */
 			}
 		}
 		if (npoints < numTypes)
-			msg += "...";
-		return msg + "]";
+			msg.append("...");
+		return msg.append("]").toString();
 	}
 }

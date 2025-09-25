@@ -206,7 +206,7 @@ public class S3Map implements BasicTooltipProvider {
 	 * </ol>
 	 * 
 	 * @param s3 the data array indicating a point on the simplex
-	 * @param p the cartesian coordinates of the point on the simplex
+	 * @param p  the cartesian coordinates of the point on the simplex
 	 * @return the point {@code p}
 	 * 
 	 * @see #setOrder(int[])
@@ -267,10 +267,13 @@ public class S3Map implements BasicTooltipProvider {
 	@Override
 	public String getTooltipAt(double sx, double sy) {
 		s32Data(sx, sy, tip);
-		String msg = "<table>";
+		StringBuilder msg = new StringBuilder("<table>");
 		for (int i = 0; i < 3; i++)
-			msg += "<tr><td style='text-align:right'><i>" + names[i] + ":</i></td><td>" //
-					+ Formatter.formatPercent(tip[i], 2) + "</td></tr>";
-		return msg + "</table>";
+			msg.append("<tr><td style='text-align:right'><i>")
+					.append(names[i])
+					.append(":</i></td><td>")
+					.append(Formatter.formatPercent(tip[i], 2))
+					.append("</td></tr>");
+		return msg.append("</table>").toString();
 	}
 }

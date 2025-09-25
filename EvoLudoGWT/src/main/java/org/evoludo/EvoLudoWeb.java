@@ -242,9 +242,14 @@ public class EvoLudoWeb extends Composite
 	protected EvoLogHandler logEvoHandler;
 
 	/**
-	 * Reference to registration of drag'n'drop handlers (if one was installed).
+	 * Reference to registration of drag'n'drop handlers.
 	 */
-	HandlerRegistration dragEnterHandler, dragLeaveHandler;
+	HandlerRegistration dragEnterHandler;
+
+	/**
+	 * Reference to registration of drag'n'drop handlers.
+	 */
+	HandlerRegistration dragLeaveHandler;
 
 	/**
 	 * The reference to the fullscreen event handler.
@@ -431,7 +436,7 @@ public class EvoLudoWeb extends Composite
 			Element labElement = labs.getItem(n);
 			HTMLPanel lab = HTMLPanel.wrap(labElement);
 			String id = labElement.getId();
-			if (id == null || id.length() == 0) {
+			if (id == null || id.isEmpty()) {
 				id = HTMLPanel.createUniqueId();
 				labElement.setId(id);
 			}
@@ -444,7 +449,7 @@ public class EvoLudoWeb extends Composite
 			String clo = Window.Location.getParameter("clo");
 			if (clo != null) {
 				clo = clo.trim();
-				if (clo.length() > 0) {
+				if (!clo.isEmpty()) {
 					if (clo.charAt(0) == '"' || clo.charAt(0) == '“' || clo.charAt(0) == "'".charAt(0))
 						clo = clo.substring(1);
 					if (clo.charAt(clo.length() - 1) == '"' || clo.charAt(clo.length() - 1) == '”'
@@ -464,7 +469,7 @@ public class EvoLudoWeb extends Composite
 			Element triggerElement = triggers.getItem(n);
 			HTMLPanel trigger = HTMLPanel.wrap(triggerElement);
 			String id = triggerElement.getId();
-			if (id == null || id.length() == 0) {
+			if (id == null || id.isEmpty()) {
 				id = HTMLPanel.createUniqueId();
 				triggerElement.setId(id);
 			}
@@ -490,7 +495,7 @@ public class EvoLudoWeb extends Composite
 
 		String clo = engine.getCLO();
 		// clo may have been set from the URL or as an HTML attribute
-		if (clo == null || clo.length() == 0) {
+		if (clo == null || clo.isEmpty()) {
 			RootPanel root = RootPanel.get(elementID);
 			if (root != null)
 				clo = root.getElement().getAttribute("data-clo").trim();
@@ -1094,7 +1099,7 @@ public class EvoLudoWeb extends Composite
 			return;
 		}
 		String href = root.getElement().getAttribute("data-href").trim();
-		if (href.length() == 0) {
+		if (href.isEmpty()) {
 			logger.severe("Failed to open standalone lab (invalid reference).");
 			return;
 		}
@@ -2188,7 +2193,7 @@ public class EvoLudoWeb extends Composite
 		int width = placeholder.getOffsetWidth();
 		int height = placeholder.getOffsetHeight();
 		String id = wrap.getAttribute("id");
-		if (id == null || id.length() == 0) {
+		if (id == null || id.isEmpty()) {
 			id = HTMLPanel.createUniqueId();
 			wrap.setAttribute("id", id);
 		}
@@ -2240,9 +2245,7 @@ public class EvoLudoWeb extends Composite
 		int yTop = getAbsoluteTop();
 		if (view.contains(xTop, yTop))
 			return true;
-		if (view.contains(xTop + getOffsetWidth(), yTop + getOffsetHeight()))
-			return true;
-		return false;
+		return view.contains((double) xTop + getOffsetWidth(), (double) yTop + getOffsetHeight());
 	}
 
 	/**
@@ -2256,7 +2259,7 @@ public class EvoLudoWeb extends Composite
 	public static void insertEPubEvoLudoLab(Element placeholder, String url) {
 		Element wrap = placeholder.getParentElement();
 		String id = wrap.getAttribute("id");
-		if (id == null || id.length() == 0) {
+		if (id == null || id.isEmpty()) {
 			id = HTMLPanel.createUniqueId();
 			wrap.setAttribute("id", id);
 		}

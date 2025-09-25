@@ -30,8 +30,6 @@
 
 package org.evoludo.simulator;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -46,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Properties;
+import java.util.logging.Level;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipInputStream;
 
@@ -156,12 +155,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		setHeadless(true);
 		// allocate a coalescing timer for poking the engine in regular intervals
 		// note: timer needs to be ready before parsing command line options
-		timer = new Timer(0, new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent evt) {
-				poke();
-			}
-		});
+		timer = new Timer(0, evt -> poke());
 		launchEngine();
 		// add modules that require JRE (e.g. due to libraries)
 		if (loadModules)
@@ -183,12 +177,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 
 	@Override
 	public void execute(Directive directive) {
-		executeThread = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				directive.execute();
-			}
-		}, "Execute");
+		executeThread = new Thread(directive::execute, "Execute");
 		executeThread.start();
 	}
 
@@ -755,9 +744,9 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * @see EvoLudoGWT#scheduleSample()
 	 */
 	public FixationData generateSample() {
-		if (activeModel.getMode() != Mode.STATISTICS_SAMPLE) {
-			if (!activeModel.requestMode(Mode.STATISTICS_SAMPLE))
-				return null;
+		if (activeModel.getMode() != Mode.STATISTICS_SAMPLE &&
+				!activeModel.requestMode(Mode.STATISTICS_SAMPLE)) {
+			return null;
 		}
 		FixationData fix;
 		do {
@@ -783,47 +772,47 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	/**
 	 * Index of the mutants mean fixation probability/updates/time.
 	 */
-	static int MUTANT_MEAN = 0;
+	private static final int MUTANT_MEAN = 0;
 
 	/**
 	 * Index of the mutants variance of fixation probability/updates/times.
 	 */
-	static int MUTANT_VAR = 1;
+	private static final int MUTANT_VAR = 1;
 
 	/**
 	 * Index of the number of samples for the mutants mean and variance.
 	 */
-	static int MUTANT_NORM = 2;
+	private static final int MUTANT_NORM = 2;
 
 	/**
 	 * Index of the residents mean fixation probability/updates/time.
 	 */
-	static int RESIDENT_MEAN = 3;
+	private static final int RESIDENT_MEAN = 3;
 
 	/**
 	 * Index of the residents variance of fixation probability/updates/times.
 	 */
-	static int RESIDENT_VAR = 4;
+	private static final int RESIDENT_VAR = 4;
 
 	/**
 	 * Index of the number of samples for the residents mean and variance.
 	 */
-	static int RESIDENT_NORM = 5;
+	private static final int RESIDENT_NORM = 5;
 
 	/**
 	 * Index of the mean absorption probability/update/time.
 	 */
-	static int ABSORPTION_MEAN = 6;
+	private static final int ABSORPTION_MEAN = 6;
 
 	/**
 	 * Index of the variance of the mean absorption probability/updates/time.
 	 */
-	static int ABSORPTION_VAR = 7;
+	private static final int ABSORPTION_VAR = 7;
 
 	/**
 	 * Index of the the number of samples for absorption probability/updates/time.
 	 */
-	static int ABSORPTION_NORM = 8;
+	private static final int ABSORPTION_NORM = 8;
 
 	/**
 	 * Helper method to calculate running mean and variance for fixation
@@ -1101,7 +1090,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				plistname = CLOption.stripKey(restoreName, param).trim();
 				cloarray = ArrayMath.drop(cloarray, i--);
 				nParams--;
-				if (plistname.length() == 0) {
+				if (plistname.isEmpty()) {
 					plistname = null;
 					logger.warning("file name to restore state missing - ignored.");
 					break;
@@ -1136,7 +1125,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	@Override
 	public boolean restoreFromFile() {
 		boolean success = restoreState(plist);
-		if (!success)
+		if (!success && logger.isLoggable(Level.WARNING))
 			logger.warning("failed to restore state in '" + plistname + "'");
 		plistname = null;
 		return success;
@@ -1162,7 +1151,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		if (plistname == null)
 			// not restoring state - continue
 			return issues;
-		if (issues > 0)
+		if (issues > 0 && logger.isLoggable(Level.WARNING))
 			logger.warning("problems parsing CLO from '" + plistname + "'...");
 		// parseCLO does not reset model - do it now to be ready for restore
 		modelReset();
@@ -1214,7 +1203,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						}
 					}
 					setOutput(null);
-					logger.warning("failed to open '" + arg + "'.");
+					if (logger.isLoggable(Level.WARNING))
+						logger.warning("failed to open '" + arg + "'.");
 					return false;
 				}
 			});
@@ -1246,7 +1236,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						}
 					}
 					setOutput(null);
-					logger.warning("failed to append to '" + arg + "'.");
+					if (logger.isLoggable(Level.WARNING))
+						logger.warning("failed to append to '" + arg + "'.");
 					return false;
 				}
 			});
@@ -1372,7 +1363,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 									+ type.getKey() + "'");
 							i.remove();
 							success = false;
-							continue;
 						}
 					}
 					dataTypes.trimToSize();

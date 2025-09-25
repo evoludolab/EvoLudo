@@ -34,7 +34,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.file.FileAlreadyExistsException;
@@ -187,12 +186,7 @@ public class TestEvoLudo implements MilestoneListener {
 	 */
 	public void generate() {
 		if (generator.isDirectory()) {
-			File[] gens = generator.listFiles(new FilenameFilter() {
-				@Override
-				public boolean accept(File dir, String name) {
-					return name.endsWith(".clo");
-				}
-			});
+			File[] gens = generator.listFiles((dir, name) -> name.endsWith(".clo"));
 			for (File f : gens)
 				generate(f);
 		} else {
@@ -221,7 +215,7 @@ public class TestEvoLudo implements MilestoneListener {
 			while (scanner.hasNextLine()) {
 				String cloLine = scanner.nextLine().trim();
 				// skip comments and empty lines
-				if (cloLine.length() < 1 || cloLine.startsWith("#"))
+				if (cloLine.isEmpty() || cloLine.startsWith("#"))
 					continue;
 				// run module
 				if (!runModule("Testing", cloLine)) {
@@ -340,7 +334,7 @@ public class TestEvoLudo implements MilestoneListener {
 				while (scanner.hasNextLine()) {
 					String clo = scanner.nextLine().trim();
 					// skip comments and empty lines
-					if (clo.length() < 1 || clo.startsWith("#"))
+					if (clo.isEmpty() || clo.startsWith("#"))
 						continue;
 					// run module
 					if (!runModule("Testing", clo)) {
@@ -733,7 +727,7 @@ public class TestEvoLudo implements MilestoneListener {
 				System.out.print("Do you really want to generate new reference data (yes/No): ");
 				String confirmation = scanner.nextLine();
 				scanner.close();
-				if (!confirmation.toLowerCase().equals("yes")) {
+				if (!confirmation.equalsIgnoreCase("yes")) {
 					logError("Generation of reference data aborted.");
 					engine.exit(-1);
 				}
@@ -804,7 +798,6 @@ public class TestEvoLudo implements MilestoneListener {
 			// skip SHA checks
 			if (arg.startsWith("--nosha")) {
 				skipSHA = true;
-				continue;
 			}
 		}
 		if (testsDir == null)

@@ -31,7 +31,6 @@
 package org.evoludo.simulator.views;
 
 import java.awt.Color;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
@@ -77,7 +76,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 	/**
 	 * The maximum number of bins for the trait histograms.
 	 */
-	protected int MAX_BINS = 100;
+	protected static final int MAX_BINS = 100;
 
 	/**
 	 * The storage to accommodate the trait histograms.
@@ -114,7 +113,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 
 	@Override
 	protected void allocateGraphs() {
-		ArrayList<? extends Module> species = engine.getModule().getSpecies();
+		List<? extends Module> species = engine.getModule().getSpecies();
 		int nGraphs = species.size();
 		if (graphs.size() != nGraphs) {
 			destroyGraphs();
@@ -146,7 +145,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 		for (PopGraph2D graph : graphs) {
 			Module module = graph.getModule();
 			int nTraits = module.getNTraits();
-			PopGraph2D.GraphStyle style = graph.getStyle();
+			AbstractGraph.GraphStyle style = graph.getStyle();
 			switch (type) {
 				default:
 				case FITNESS:
@@ -229,7 +228,8 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 				case TRAIT:
 					// process data first
 					// casts ok because trait histograms make sense only for continuous models
-					((org.evoludo.simulator.models.Continuous) model).get2DTraitHistogramData(graph.getModule().getID(), bins, traitXIdx,
+					((org.evoludo.simulator.models.Continuous) model).get2DTraitHistogramData(graph.getModule().getID(),
+							bins, traitXIdx,
 							traitYIdx);
 					ColorMap.Gradient1D<String> cMap = (ColorMap.Gradient1D<String>) graph.getColorMap();
 					cMap.setRange(0.0, ArrayMath.max(bins));

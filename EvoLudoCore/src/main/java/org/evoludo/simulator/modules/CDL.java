@@ -928,10 +928,14 @@ public class CDL extends Discrete implements Payoffs,
 				return;
 			}
 			initMono(CDL.COOPERATE);
-			int r, c, mid, size;
+			int r;
+			int c;
+			int mid;
+			int size;
 			switch (getInteractionGeometry().getType()) {
 				case CUBE:
-					int l, mz;
+					int l;
+					int mz;
 					if (nPopulation == 25000) {
 						l = 50;
 						mz = 5; // 10/2

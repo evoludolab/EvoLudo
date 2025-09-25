@@ -164,13 +164,13 @@ public class SDE extends ODE {
 		converged = true;
 		for (Module mod : species) {
 			if (mod.getMutation().probability > 0.0) {
-				// if dist2 is zero (or very small) and (at least) one trait is absent, 
+				// if dist2 is zero (or very small) and (at least) one trait is absent,
 				// random noise may be invalid (pushing state outside of permissible values)
 				if (dist2 < accuracy && ArrayMath.min(yt) < accuracy)
 					return false;
 				int vacant = mod.getVacant();
 				// extinction is absorbing even with mutations
-				converged &= (vacant < 0 ? false : (yt[vacant] > 1.0 - accuracy));
+				converged &= (vacant >= 0 && yt[vacant] > 1.0 - accuracy);
 			} else
 				converged &= monoStop ? isMonomorphic() : (!isDensity && ArrayMath.max(yt) > 1.0 - accuracy);
 		}
@@ -208,7 +208,9 @@ public class SDE extends ODE {
 				// 1) stochastic term
 				x = yt[0];
 				double y = yt[1];
-				double x2 = x * x, xy = x * y, y2 = y * y;
+				double x2 = x * x;
+				double xy = x * y;
+				double y2 = y * y;
 				// B matrix
 				// mutations need careful definition - generate any trait vs any of the
 				// _other_ traits.
@@ -222,7 +224,8 @@ public class SDE extends ODE {
 				double mu = mutation[0].probability;
 				double effnoise = getEffectiveNoise(module, 0);
 				double bxx = (x - x2 + mu * ((1.0 - x) * 0.5 + x2)) * effnoise;
-				double bxy, byx = bxy = -(xy + mu * ((x + y) * 0.5 - xy)) * effnoise;
+				double bxy = -(xy + mu * ((x + y) * 0.5 - xy)) * effnoise;
+				double byx = bxy;
 				double byy = (y - y2 + mu * ((1.0 - y) * 0.5 + y2)) * effnoise;
 
 				// eigenvalues of B
@@ -231,8 +234,12 @@ public class SDE extends ODE {
 				// B has real, non-negative eigenvalues
 				double discr = Math.max(0.0, trB2 * trB2 - detB); // discriminant must be non-negative
 				double root = Math.sqrt(discr);
-				double e1 = trB2 + root, e2 = trB2 - root;
-				double u1, u2, v1, v2;
+				double e1 = trB2 + root;
+				double e2 = trB2 - root;
+				double u1;
+				double u2;
+				double v1;
+				double v2;
 				// avoid problems due to roundoff errors
 				if (yt[2] <= 0.0 || e2 < 0.0)
 					e2 = 0.0;
@@ -265,7 +272,8 @@ public class SDE extends ODE {
 				double sqrte2 = Math.sqrt(e2);
 				// C matrix
 				double cxx = sqrte1 * u1 * u1 + sqrte2 * v1 * v1;
-				double cxy, cyx = cxy = sqrte1 * u1 * u2 + sqrte2 * v1 * v2;
+				double cxy = sqrte1 * u1 * u2 + sqrte2 * v1 * v2;
+				double cyx = cxy;
 				double cyy = sqrte1 * u2 * u2 + sqrte2 * v2 * v2;
 
 				// noise (note this scales with sqrt(dt) - for efficiency applied here)
@@ -362,11 +370,11 @@ public class SDE extends ODE {
 	/**
 	 * Helper method to process noise with two dependent traits.
 	 * 
-	 * @param skip	the start index of the two traits
-	 * @param step	the step size
+	 * @param skip   the start index of the two traits
+	 * @param step   the step size
 	 * @param sqrtdt the square root of the step size
-	 * @param mu	the mutation rate
-	 * @param noise the noise to be processed
+	 * @param mu     the mutation rate
+	 * @param noise  the noise to be processed
 	 */
 	private void process2DNoise(int skip, double step, double sqrtdt, double mu, double noise) {
 		double x = yt[skip];
@@ -441,9 +449,7 @@ public class SDE extends ODE {
 		if (fixData.typeFixed == vacant) {
 			// closer look is needed - look for what other trait survived (if any)
 			for (int n = 0; n < mod.getNTraits(); n++) {
-				if (n == vacant)
-					continue;
-				if (yt[n] > 0) {
+				if (n != vacant && yt[n] > 0) {
 					// no other traits should be present
 					fixData.typeFixed = n;
 					break;
@@ -499,6 +505,8 @@ public class SDE extends ODE {
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
+		// mutant initialization and statistics is ok for SDE's
+		cloInit.addKey(InitType.MUTANT);
 		// SDE's currently are restricted to single species modules and implement
 		// mutation to other types only (including ALL as well should be fairly straight
 		// forward, though).

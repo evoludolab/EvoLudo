@@ -40,12 +40,10 @@ import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.RingBuffer;
 
-import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.event.dom.client.ContextMenuEvent;
 import com.google.gwt.event.dom.client.ContextMenuHandler;
 import com.google.gwt.event.shared.HandlerRegistration;
-import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.Widget;
 
@@ -63,12 +61,6 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 	 * of messsages is unlimited. The buffer is displayed in a HTML widget.
 	 */
 	public static class Log extends HTML implements ContextMenu.Listener {
-
-		/**
-		 * Constructs a new log.
-		 */
-		public Log() {
-		}
 
 		/**
 		 * The default capacity of the log buffer.
@@ -286,40 +278,23 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		// add menu to clear canvas
-		if (clearMenu == null) {
-			clearMenu = new ContextMenuItem("Clear", new Command() {
-				@Override
-				public void execute() {
-					clearLog();
-				}
-			});
-		}
+		if (clearMenu == null)
+			clearMenu = new ContextMenuItem("Clear", this::clearLog);
 		menu.add(clearMenu);
 		if (bufferSizeMenu == null) {
 			bufferSizeMenu = new ContextMenu(menu);
 			bufferSizeMenu.add(new ContextMenuCheckBoxItem("1k", //
-					new ScheduledCommand() {
-						@Override
-						public void execute() {
-							setLogCapacity(1000);
-							log.show();
-						}
+					() -> {
+						setLogCapacity(1000);
+						log.show();
 					}));
-			bufferSizeMenu.add(new ContextMenuCheckBoxItem("10k", //
-					new ScheduledCommand() {
-						@Override
-						public void execute() {
-							setLogCapacity(10000);
-							log.show();
-						}
+			bufferSizeMenu.add(new ContextMenuCheckBoxItem("10k",
+					() -> {
+						setLogCapacity(10000);
+						log.show();
 					}));
 			bufferSizeMenu.add(new ContextMenuCheckBoxItem("unlimited", //
-					new ScheduledCommand() {
-						@Override
-						public void execute() {
-							setLogCapacity(0);
-						}
-					}));
+					() -> setLogCapacity(0)));
 			setLogCapacity(log.buffer.getCapacity());
 		}
 		menu.add("Buffer size...", bufferSizeMenu);

@@ -494,6 +494,10 @@ public abstract class RNGDistribution {
 		 *      Standard error</a>
 		 */
 		public static void test(MersenneTwister rng, Logger logger, Chronometer clock) {
+			if (!logger.isLoggable(Level.INFO)) {
+				logger.severe("log level of at last INFO required for Uniform tests.");
+				return;
+			}
 			double min = -10.0;
 			double max = 10.0;
 			double irange = 1.0 / (max - min);
@@ -524,8 +528,15 @@ public abstract class RNGDistribution {
 				double refn = cdf(high, min, max) * nSamples;
 				int binn = bins[n];
 				if (verbose)
-					buffer.append("[" + (int) (low * 100.0) * 0.01 + ", " + (int) (high * 100.0) * 0.01 + "): " + binn
-							+ " (" + (int) ((refn - refn1) * 100.0) * 0.01 + ")\n");
+					buffer.append("[")
+							.append((int) (low * 100.0) * 0.01)
+							.append(", ")
+							.append((int) (high * 100.0) * 0.01)
+							.append("): ")
+							.append(binn)
+							.append(" (")
+							.append((int) ((refn - refn1) * 100.0) * 0.01)
+							.append(")\n");
 				double d = binn - (refn - refn1);
 				m1 += d;
 				m2 += d * d;
@@ -675,6 +686,10 @@ public abstract class RNGDistribution {
 		 *      Standard error</a>
 		 */
 		public static void test(MersenneTwister rng, Logger logger, Chronometer clock) {
+			if (!logger.isLoggable(Level.INFO)) {
+				logger.severe("log level of at last INFO required for Exponential tests.");
+				return;
+			}
 			double mean = 10.0;
 			double range = 20.0 * mean;
 			RNGDistribution.Exponential exponential = new Exponential(rng, mean);
@@ -705,8 +720,15 @@ public abstract class RNGDistribution {
 				double refn = cdf(high, mean) * nSamples;
 				int binn = bins[n];
 				if (verbose)
-					buffer.append("[" + (int) (low * 100.0) * 0.01 + ", " + (int) (high * 100.0) * 0.01 + "): " + binn
-							+ " (" + (int) ((refn - refn1) * 100.0) * 0.01 + ")\n");
+					buffer.append("[")
+							.append((int) (low * 100.0) * 0.01)
+							.append(", ")
+							.append((int) (high * 100.0) * 0.01)
+							.append("): ")
+							.append(binn)
+							.append(" (")
+							.append((int) ((refn - refn1) * 100.0) * 0.01)
+							.append(")\n");
 				double d = binn - (refn - refn1);
 				m1 += d;
 				m2 += d * d;
@@ -870,6 +892,10 @@ public abstract class RNGDistribution {
 		 *      Standard error</a>
 		 */
 		public static void test(MersenneTwister rng, Logger logger, Chronometer clock) {
+			if (!logger.isLoggable(Level.INFO)) {
+				logger.severe("log level of at last INFO required for Normal tests.");
+				return;
+			}
 			double mean = 10.0;
 			double stdev = 3.0;
 			double range = 8.0 * stdev;
@@ -905,8 +931,15 @@ public abstract class RNGDistribution {
 				double refn = cdf(high, mean, stdev) * nSamples;
 				int binn = bins[n];
 				if (verbose)
-					buffer.append("[" + (int) (low * 100.0) * 0.01 + ", " + (int) (high * 100.0) * 0.01 + "): " + binn
-							+ " (" + (int) ((refn - refn1) * 100.0) * 0.01 + ")\n");
+					buffer.append("[")
+							.append((int) (low * 100.0) * 0.01)
+							.append(", ")
+							.append((int) (high * 100.0) * 0.01)
+							.append("): ")
+							.append(binn)
+							.append(" (")
+							.append((int) ((refn - refn1) * 100.0) * 0.01)
+							.append(")\n");
 				double d = binn - (refn - refn1);
 				m1 += d;
 				m2 += d * d;
@@ -1097,7 +1130,9 @@ public abstract class RNGDistribution {
 				return Math.max((int) Math.ceil(-Math.log1p(-uRand) * mean), 1);
 
 			// binary search - start at expected value
-			int xmin = 0, xmax = cdf.length - 1, x = (int) mean;
+			int xmin = 0;
+			int xmax = cdf.length - 1;
+			int x = (int) mean;
 
 			while (xmax - xmin > 1) {
 				if (uRand > cdf[x]) {
@@ -1168,6 +1203,10 @@ public abstract class RNGDistribution {
 		 * @param clock  the stop watch
 		 */
 		public static void test(MersenneTwister rng, Logger logger, Chronometer clock) {
+			if (!logger.isLoggable(Level.INFO)) {
+				logger.severe("log level of at last INFO required for Geometric tests.");
+				return;
+			}
 			double mean = 7.5;
 			double p = 1.0 / mean;
 			RNGDistribution.Geometric geometric = new Geometric(rng, p);
@@ -1195,7 +1234,12 @@ public abstract class RNGDistribution {
 			for (int n = 0; n < nBins - 1; n++) {
 				int binn = bins[n];
 				if (verbose)
-					buffer.append((n + 1) + ": " + binn + " (" + (int) (pmfn * 100.0) * 0.01 + ")\n");
+					buffer.append(n + 1)
+							.append(": ")
+							.append(binn)
+							.append(" (")
+							.append((int) (pmfn * 100.0) * 0.01)
+							.append(")\n");
 				double d = binn - pmfn;
 				m1 += d;
 				m2 += d * d;
@@ -1337,7 +1381,9 @@ public abstract class RNGDistribution {
 			double uRand = random01();
 
 			// binary search - start at expected value
-			int xmin = 0, xmax = cdf.length - 1, x = (int) mean;
+			int xmin = 0;
+			int xmax = cdf.length - 1;
+			int x = (int) mean;
 
 			while (xmax - xmin > 1) {
 				if (uRand > cdf[x]) {
@@ -1413,6 +1459,10 @@ public abstract class RNGDistribution {
 		 * @param clock  the stop watch
 		 */
 		public static void test(MersenneTwister rng, Logger logger, Chronometer clock) {
+			if (!logger.isLoggable(Level.INFO)) {
+				logger.severe("log level of at last INFO required for Binomial tests.");
+				return;
+			}
 			double p = 0.2;
 			int n = 100;
 			RNGDistribution.Binomial binomial = new Binomial(rng, p, n);
@@ -1441,7 +1491,12 @@ public abstract class RNGDistribution {
 				int bini = bins[i];
 				double pmfn = piqni * comb;
 				if (verbose)
-					buffer.append(i + ": " + bini + " (" + (int) (pmfn * 100.0) * 0.01 + ")\n");
+					buffer.append(i)
+							.append(": ")
+							.append(bini)
+							.append(" (")
+							.append((int) (pmfn * 100.0) * 0.01)
+							.append(")\n");
 				double d = bini - pmfn;
 				m1 += d;
 				m2 += d * d;
@@ -1749,7 +1804,11 @@ public abstract class RNGDistribution {
 		 * @param clock  the stop watch
 		 */
 		public static void test(MersenneTwister rng, Logger logger, Chronometer clock) {
-			RNGDistribution.Gillespie gillespie = new Gillespie();
+			if (!logger.isLoggable(Level.INFO)) {
+				logger.severe("log level of at last INFO required for Gillespie tests.");
+				return;
+			}
+			RNGDistribution.Gillespie gillespie = new Gillespie(rng);
 			int nBins = THRESHOLD_SIZE;
 			// initialize array with random weights
 			double[] weights = new double[nBins];
@@ -1784,10 +1843,14 @@ public abstract class RNGDistribution {
 				StringBuilder buffer = new StringBuilder();
 				buffer.append("Weighted Distribution:\nbin: non-optimized optimized (expected)\n");
 				for (int n = 0; n < nBins; n++)
-					buffer.append(
-							n + ": " + Formatter.format(noopt[n], 6) + " " + //
-									Formatter.format(opt[n], 6) + //
-									" (" + Formatter.format(weights[n], 6) + ")\n");
+					buffer.append(n)
+							.append(": ")
+							.append(Formatter.format(noopt[n], 6))
+							.append(" ")
+							.append(Formatter.format(opt[n], 6))
+							.append(" (")
+							.append(Formatter.format(weights[n], 6))
+							.append(")\n");
 				logger.info(buffer.toString());
 			}
 			double m1no = 0.0;

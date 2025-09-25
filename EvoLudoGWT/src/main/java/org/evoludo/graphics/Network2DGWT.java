@@ -92,12 +92,7 @@ public class Network2DGWT extends Network2D {
 		doLayoutPrep();
 		layout = new Duration();
 		prevLayout = Integer.MIN_VALUE;
-		Scheduler.get().scheduleIncremental(new Scheduler.RepeatingCommand() {
-			@Override
-			public boolean execute() {
-				return doLayoutStep();
-			}
-		});
+		Scheduler.get().scheduleIncremental(this::doLayoutStep);
 	}
 
 	/**

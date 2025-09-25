@@ -197,13 +197,12 @@ public class S3 extends AbstractView {
 	@Override
 	public boolean setInitialState(double[] init) {
 		Module module = engine.getModule();
-		if (module instanceof Discrete) {
-			// note: setInitialTraits requires different arguments for discrete and
-			// continuous modules
-			if (((org.evoludo.simulator.models.Discrete) model).setInitialTraits(init)) {
-				engine.modelInit();
-				return true;
-			}
+		// note: setInitialTraits requires different arguments for discrete and
+		// continuous modules
+		if (module instanceof Discrete &&
+				((org.evoludo.simulator.models.Discrete) model).setInitialTraits(init)) {
+			engine.modelInit();
+			return true;
 		}
 		return false;
 	}

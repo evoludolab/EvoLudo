@@ -35,6 +35,7 @@ import java.awt.CardLayout;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -53,7 +54,8 @@ public class EvoLudoPanel extends JPanel implements ItemListener {
 
 	ArrayList<MultiView> views;
 	MultiView activeView;
-	int count, active = -1;
+	int count;
+	int active = -1;
 	JComboBox<String> viewChoice;
 	CardLayout dealer;
 	JPanel cards;
@@ -178,7 +180,7 @@ public class EvoLudoPanel extends JPanel implements ItemListener {
 		dealer.show(cards, activeView.getName());
 	}
 
-	public ArrayList<MultiView> getViews() {
+	public List<MultiView> getViews() {
 		return views;
 	}
 

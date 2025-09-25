@@ -395,11 +395,7 @@ public class Centipede extends Discrete implements Payoffs,
 		 */
 		public CentiMap(int role) {
 			super(role, role == 0 ? "First mover" : "Second mover");
-			super.setNames(new String[] { "0", "1", "2" });
-		}
-
-		@Override
-		public void setNames(String[] names) {
+			setNames(new String[] { "0", "1", "2" });
 		}
 
 		@Override

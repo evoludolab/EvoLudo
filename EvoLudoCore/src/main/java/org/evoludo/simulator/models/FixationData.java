@@ -38,12 +38,6 @@ import org.evoludo.util.Formatter;
 public class FixationData {
 
 	/**
-	 * Creates a new fixation data structure.
-	 */
-	public FixationData() {
-	}
-
-	/**
 	 * The index of the node (location) where the initial mutant arose.
 	 */
 	public int mutantNode = -1;

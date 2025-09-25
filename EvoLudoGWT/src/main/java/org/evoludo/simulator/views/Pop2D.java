@@ -31,8 +31,9 @@
 package org.evoludo.simulator.views;
 
 import java.awt.Color;
-import java.util.ArrayList;
+import java.util.List;
 
+import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
@@ -74,7 +75,6 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		super(engine, type);
 	}
 
-
 	@Override
 	protected void allocateGraphs() {
 		// how to deal with distinct interaction/competition geometries?
@@ -87,7 +87,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		Type mt = model.getType();
 		if (mt.isIBS()) {
 			int nGraphs = 0;
-			ArrayList<? extends Module> species = engine.getModule().getSpecies();
+			List<? extends Module> species = engine.getModule().getSpecies();
 			for (Module module : species)
 				nGraphs += Geometry.displayUniqueGeometry(module) ? 1 : 2;
 
@@ -156,7 +156,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 			inter = !inter;
 			Geometry geometry = graph.getGeometry();
 			Module module = graph.getModule();
-			PopGraph2D.GraphStyle style = graph.getStyle();
+			AbstractGraph.GraphStyle style = graph.getStyle();
 			if (geometry.getType() == Geometry.Type.LINEAR) {
 				// frame, ticks, labels needed
 				style.xLabel = "nodes";

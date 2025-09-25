@@ -298,7 +298,8 @@ public class RSP extends Discrete implements Payoffs,
 				return;
 			}
 			initMono(RSP.ROCK);
-			int mid, size;
+			int mid;
+			int size;
 			switch (interaction.getType()) {
 				case SQUARE_NEUMANN:
 				case SQUARE_NEUMANN_2ND:
@@ -307,7 +308,8 @@ public class RSP extends Discrete implements Payoffs,
 					size = (int) Math.floor(Math.sqrt(nPopulation) + 0.5);
 					mid = size / 2;
 					/* border around center */
-					int width = 20, height = 5;
+					int width = 20;
+					int height = 5;
 					for (int w = mid - width / 2; w <= mid + width / 2; w++)
 						for (int h = mid; h <= mid + height; h++)
 							setTraitAt(h * size + w, RSP.SCISSORS);

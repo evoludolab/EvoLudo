@@ -31,6 +31,7 @@
 package org.evoludo.simulator.models;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.models.Model.HasDE;
@@ -55,7 +56,7 @@ public class Markers {
 	/**
 	 * The list of markers on graphs. For example to mark fixed points.
 	 */
-	ArrayList<double[]> markers = new ArrayList<>(5);
+	ArrayList<double[]> markerList = new ArrayList<>(5);
 
 	/**
 	 * Instantiate new population update for use in IBS {@code model}s.
@@ -101,7 +102,7 @@ public class Markers {
 	 */
 	public boolean addMarker(double[] aMark, boolean filled) {
 		// important: data buffers for ParaGraph & co store time in first element
-		return markers.add(ArrayMath.insert(aMark, filled ? 1.0 : -1.0, 0));
+		return markerList.add(ArrayMath.insert(aMark, filled ? 1.0 : -1.0, 0));
 	}
 
 	/**
@@ -110,8 +111,8 @@ public class Markers {
 	 * 
 	 * @return the list of markers
 	 */
-	public ArrayList<double[]> getMarkers() {
-		return markers;
+	public List<double[]> getMarkers() {
+		return markerList;
 	}
 
 	/**
@@ -141,8 +142,8 @@ public class Markers {
 					if (!clo.isSet())
 						return true;
 					String[] myMarkers = arg.split(CLOParser.MATRIX_DELIMITER);
-					if (markers != null)
-						markers.clear();
+					if (markerList != null)
+						markerList.clear();
 					// model loaded but not yet initialized; getNMean() etc not yet available
 					int nSpecies = model.getNSpecies();
 					double[] dmk = new double[0];
@@ -183,11 +184,10 @@ public class Markers {
 					String multi = "";
 					if (model.getNSpecies() > 1)
 						multi = "[" + CLOParser.SPECIES_DELIMITER + "<j0>,...]";
-					String descr = "--points <p>    values of fixed points\n" + //
+					return "--points <p>    values of fixed points\n" + //
 							"        format: <i0>,<i1>,..." + multi + "[" + CLOParser.MATRIX_DELIMITER
 							+ "<k0>,<k1>...] with \n" + //
 							"                <nm> values of fixed point(s)";
-					return descr;
 				}
 			});
 }

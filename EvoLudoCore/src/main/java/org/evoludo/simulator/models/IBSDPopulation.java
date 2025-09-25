@@ -32,6 +32,7 @@ package org.evoludo.simulator.models;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
@@ -173,12 +174,12 @@ public class IBSDPopulation extends IBSPopulation {
 	/**
 	 * The array with the total number of individuals of each trait.
 	 */
-	public int[] traitsCount;
+	protected int[] traitsCount;
 
 	/**
 	 * The array with the initial number of individuals of each trait.
 	 */
-	public int[] initCount;
+	protected int[] initCount;
 
 	@Override
 	public int getPopulationSize() {
@@ -419,12 +420,6 @@ public class IBSDPopulation extends IBSPopulation {
 	static class link {
 
 		/**
-		 * Construct a new link.
-		 */
-		public link() {
-		}
-
-		/**
 		 * The index of the individual at the tail end of the link.
 		 */
 		int source;
@@ -455,7 +450,7 @@ public class IBSDPopulation extends IBSPopulation {
 		debugModel = -1;
 		int nPop = getPopulationSize();
 		double deathRate = module.getDeathRate();
-		// must use maxFitness to ensure probabilities (at the possible 
+		// must use maxFitness to ensure probabilities (at the possible
 		// expense of no event happening)
 		double maxRate = deathRate + maxFitness;
 		double randomTestVal = random01() * maxRate; // time rescaling
@@ -469,7 +464,7 @@ public class IBSDPopulation extends IBSPopulation {
 			}
 		} else {
 			randomTestVal -= deathRate;
-				if (randomTestVal < getFitnessAt(me)) {
+			if (randomTestVal < getFitnessAt(me)) {
 				// fill neighbor site if vacant
 				debugModel = pickNeighborSiteAt(me);
 				if (isVacantAt(debugModel)) {
@@ -631,7 +626,7 @@ public class IBSDPopulation extends IBSPopulation {
 		int next = trait % nTraits;
 		if (!active[next])
 			return false;
-		traitsNext[idx] = nTraits + next; 
+		traitsNext[idx] = nTraits + next;
 		return getTraitAt(idx) != next;
 	}
 
@@ -995,8 +990,10 @@ public class IBSDPopulation extends IBSPopulation {
 		int newType = traitsNext[me] % nTraits;
 		commitTraitAt(me);
 		// count out-neighbors
-		int nIn = 0, nOut = interaction.kout[me];
-		int[] in = null, out = interaction.out[me];
+		int nIn = 0;
+		int nOut = interaction.kout[me];
+		int[] out = interaction.out[me];
+		int[] in = null;
 		Arrays.fill(tmpCount, 0);
 		// count traits of (outgoing) opponents
 		for (int n = 0; n < nOut; n++)
@@ -1453,14 +1450,16 @@ public class IBSDPopulation extends IBSPopulation {
 		double accScores = 0.0;
 		for (int n = 0; n < nTraits; n++) {
 			if (checkTraitCount[n] != traitsCount[n]) {
-				logger.warning("accounting issue: trait count of " + module.getTraitName(n) + " is "
-						+ checkTraitCount[n] + " but traitCount[" + n + "]="
-						+ traitsCount[n]);
+				if (logger.isLoggable(Level.WARNING))
+					logger.warning("accounting issue: trait count of " + module.getTraitName(n) + " is "
+							+ checkTraitCount[n] + " but traitCount[" + n + "]="
+							+ traitsCount[n]);
 				passed = false;
 			}
 			if (Math.abs(checkAccuTypeScores[n] - accuTypeScores[n]) > 1e-8) {
-				logger.warning("accounting issue: accumulated scores of trait " + module.getTraitName(n) + " is "
-						+ checkAccuTypeScores[n] + " but accuTypeScores[" + n + "]=" + accuTypeScores[n]);
+				if (logger.isLoggable(Level.WARNING))
+					logger.warning("accounting issue: accumulated scores of trait " + module.getTraitName(n) + " is "
+							+ checkAccuTypeScores[n] + " but accuTypeScores[" + n + "]=" + accuTypeScores[n]);
 				passed = false;
 			}
 			accTrait += traitsCount[n];
@@ -1469,12 +1468,15 @@ public class IBSDPopulation extends IBSPopulation {
 			accScores += accuTypeScores[n];
 		}
 		if (nPopulation != accTrait) {
-			logger.warning("accounting issue: sum of trait types is " + accTrait + " but nPopulation=" + nPopulation);
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning(
+						"accounting issue: sum of trait types is " + accTrait + " but nPopulation=" + nPopulation);
 			passed = false;
 		}
 		if (Math.abs(checkScores - accScores) > 1e-8) {
-			logger.warning("accounting issue: sum of scores is " + checkScores + " but accuTypeScores add up to "
-					+ accScores + " (" + Formatter.format(accuTypeScores, 8) + ")");
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning("accounting issue: sum of scores is " + checkScores + " but accuTypeScores add up to "
+						+ accScores + " (" + Formatter.format(accuTypeScores, 8) + ")");
 			passed = false;
 		}
 		// do not yet set isConsistent to false because this prevents the test in super
@@ -1565,7 +1567,8 @@ public class IBSDPopulation extends IBSPopulation {
 	public void getFitnessHistogramData(double[][] bins) {
 		int nBins = bins[0].length;
 		int maxBin = nBins - 1;
-		double map, min = minScore;
+		double map;
+		double min = minScore;
 		if (isNeutral) {
 			map = nBins * 0.5;
 			min--;
@@ -1676,16 +1679,18 @@ public class IBSDPopulation extends IBSPopulation {
 
 	@Override
 	public String getStatus() {
-		String status = "";
+		StringBuilder status = new StringBuilder();
 		double norm = 1.0 / nPopulation;
 		String[] names = module.getTraitNames();
 		for (int i = 0; i < nTraits; i++) {
 			if (active != null && !active[i])
 				continue;
-			status += (status.length() > 0 ? ", " : "") + names[i] + ": "
-					+ Formatter.formatPercent(traitsCount[i] * norm, 1);
+			if (status.length() > 0)
+				status.append(", ");
+			status.append(names[i]).append(": ")
+					.append(Formatter.formatPercent(traitsCount[i] * norm, 1));
 		}
-		return status;
+		return status.toString();
 	}
 
 	@Override
@@ -1931,7 +1936,8 @@ public class IBSDPopulation extends IBSPopulation {
 			// carrying capacity is 1.0 - d / fit
 			return d / fit;
 		double k1 = geometry.avgOut - 1.0;
-		// carrying capacity on a k-regular graph is 1.0 - (k - 1) * d / (fit * (k - 1) - d)
+		// carrying capacity on a k-regular graph is 1.0 - (k - 1) * d / (fit * (k - 1)
+		// - d)
 		return Math.min(Math.max(k1 * d / (fit * k1 - d), 0.0), 1.0);
 	}
 
@@ -1945,7 +1951,8 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	/**
-	 * Initialize monomorphic population with trait {@code monoType}. If the module admits
+	 * Initialize monomorphic population with trait {@code monoType}. If the module
+	 * admits
 	 * vacant sites the frequency of individuals with the monomorphic trait is set
 	 * to {@code monoFreq}.
 	 * 

@@ -31,6 +31,7 @@ package org.evoludo.simulator.modules;
 
 import java.awt.Color;
 import java.util.Arrays;
+import java.util.logging.Level;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBSDPopulation;
@@ -155,14 +156,24 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	}
 
 	/**
+	 * Error message templates for invalid birth parameter.
+	 */
+	static final String BIRTH_ERROR = "birth rate of %s must be non-negative (changed to 0).";
+
+	/**
+	 * Error message templates for invalid competition parameter.
+	 */
+	static final String COMPETITION_ERROR = "competition rate of %s must be non-negative (changed to 0).";
+
+	/**
 	 * Command line option to set the prey parameters.
 	 */
 	public final CLOption cloPrey = new CLOption("prey", "0.667,-1.333,0.0", Category.Module,
 			"--prey <a0,a1[,a2]>  x' = (a0-dx)*x + a1*x*y - a2*x^2\n" +
-					"		    a0: birth rate\n" +
-					"		    dx: death rate (see --deathrate)\n" +
-					"		    a1: predation rate\n" +
-					"		    a2: competition rate",
+					"           a0: birth rate\n" +
+					"           dx: death rate (see --deathrate)\n" +
+					"           a1: predation rate\n" +
+					"           a2: competition rate",
 			new CLODelegate() {
 
 				@Override
@@ -177,11 +188,13 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 					// sanity checks
 					if (rates[0] < 0.0) {
 						rates[0] = 0.0; // birth rate must be non-negative
-						logger.warning("birth rate of " + getName() + " must be non-negative (changed to 0).");
+						if (logger.isLoggable(Level.WARNING))
+							logger.warning(BIRTH_ERROR.replace("%s", getName()));
 					}
 					if (rates[2] < 0.0) {
 						rates[2] = 0.0; // competition rate must be non-negative
-						logger.warning("competition rate of " + getName() + " must be non-negative (changed to 0).");
+						if (logger.isLoggable(Level.WARNING))
+							logger.warning(COMPETITION_ERROR.replace("%s", getName()));
 					}
 					return true;
 				}
@@ -377,10 +390,10 @@ class Predator extends Discrete implements Multispecies, HasDE {
 	 */
 	public final CLOption cloPredator = new CLOption("predator", "-1.0,1.0,0.0", Category.Module,
 			"--predator <b0,b1[,b2]>  y' = (b0-dy)*y + b1*x*y - b2*y^2\n" +
-					"		    b0: birth rate\n" +
-					"		    dy: death rate (see --deathrate)\n" +
-					"		    b1: predation rate\n" +
-					"		    b2: competition rate",
+					"           b0: birth rate\n" +
+					"           dy: death rate (see --deathrate)\n" +
+					"           b1: predation rate\n" +
+					"           b2: competition rate",
 			new CLODelegate() {
 
 				@Override
@@ -395,11 +408,13 @@ class Predator extends Discrete implements Multispecies, HasDE {
 					// sanity checks
 					if (rates[0] < 0.0) {
 						rates[0] = 0.0; // birth rate must be non-negative
-						logger.warning("birth rate of " + getName() + " must be non-negative (changed to 0).");
+						if (logger.isLoggable(Level.WARNING))
+							logger.warning(LV.BIRTH_ERROR.replace("%s", getName()));
 					}
 					if (rates[2] < 0.0) {
 						rates[2] = 0.0; // competition rate must be non-negative
-						logger.warning("competition rate of " + getName() + " must be non-negative (changed to 0).");
+						if (logger.isLoggable(Level.WARNING))
+							logger.warning(LV.COMPETITION_ERROR.replace("%s", getName()));
 					}
 					return true;
 				}
@@ -569,7 +584,8 @@ class IBSPop extends IBSDPopulation {
 			randomTestVal -= focalReproduces;
 			if (randomTestVal < focalDies) {
 				// focal dies spontaneously or due to competition: vacate focal site
-				traitsNext[me] = VACANT + nTraits; // more efficient than setNextTraitAt(me, VACANT);
+				// more efficient than setNextTraitAt
+				traitsNext[me] = VACANT + nTraits;
 				commitTraitAt(me);
 				isExtinct = (getPopulationSize() == 0);
 			} else {
@@ -581,8 +597,8 @@ class IBSPop extends IBSDPopulation {
 						commitTraitAt(peer);
 					}
 				} else {
-					// prey dies
-					traitsNext[me] = VACANT + nTraits; // more efficient than setNextTraitAt(me, VACANT);
+					// prey dies; more efficient than setNextTraitAt
+					traitsNext[me] = VACANT + nTraits;
 					commitTraitAt(me);
 					isExtinct = (getPopulationSize() == 0);
 				}

@@ -31,6 +31,7 @@
 package org.evoludo.simulator.models;
 
 import java.util.Arrays;
+import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
@@ -135,7 +136,6 @@ public class Advection extends PDE {
 
 		if (isSymmetric) {
 			double[][] sort = new double[space.maxIn][];
-			double[] si = new double[nDim];
 			for (int n = start; n < end; n++) {
 				int[] neighs = in[n];
 				int nIn = space.kin[n];
@@ -155,7 +155,7 @@ public class Advection extends PDE {
 				Arrays.sort(sort, 0, nIn, sorting);
 				// loop over neighbours
 				for (int i = 0; i < nIn; i++) {
-					si = sort[i];
+					double[] si = sort[i];
 					// diffusion
 					ArrayMath.add(s, si); // s += si
 					ArrayMath.sub(si, sn, delta); // delta = si-ds
@@ -298,8 +298,9 @@ public class Advection extends PDE {
 			// migrates! this can introduce artifacts!
 			if (dt < 1e-5 || nDim * maxA * maxK * dt > 0.5) {
 				double deltat = Math.max(0.5 / (nDim * maxA * maxK), Double.MIN_VALUE);
-				logger.info("PDE time scale adjusted (advection): dt=" + Formatter.formatSci(deltat, 4)
-						+ " (was dt=" + Formatter.formatSci(dt, 4) + ").");
+				if (logger.isLoggable(Level.INFO))
+					logger.info("PDE time scale adjusted (advection): dt=" + Formatter.formatSci(deltat, 4)
+							+ " (was dt=" + Formatter.formatSci(dt, 4) + ").");
 				dt = deltat;
 			}
 		}
@@ -330,36 +331,52 @@ public class Advection extends PDE {
 
 				@Override
 				public String getDescription() {
-					String descr;
+					StringBuilder descr = new StringBuilder();
 					int dim = nDim;
 					if (dependent >= 0)
 						dim--;
 					switch (dim) {
 						case 1:
 							// SINGLE DIM NOT TESTED!
-							descr = "--pdeA <a0>          advection to its own type\n";
+							descr.append("--pdeA <a0>          advection to its own type\n");
 							break;
 						case 2:
-							descr = "--pdeA <a00,a01;a10,a11> 2x2 matrix for advection aij of type i\n      towards j (aij>0, or away aij<0), with\n";
+							descr.append(
+									"--pdeA <a00,a01;a10,a11> 2x2 matrix for advection aij of type i\n" +
+											"      towards j (aij>0, or away aij<0), with\n");
 							break;
 						case 3:
-							descr = "--pdeA <a00,...;a10,...;a20,...> 3x3 matrix for advection aij of type i\n      towards j (aij>0, or away aij<0), with\n";
+							descr.append(
+									"--pdeA <a00,...;a10,...;a20,...> 3x3 matrix for advection aij of type i\n" +
+											"      towards j (aij>0, or away aij<0), with\n");
 							break;
 						default:
 							int d1 = nDim - 1;
-							descr = "--pdeA <a00,...;...;a" + d1 + "0,...> " + d1 + "x" + d1
-									+ " advection aij of type i\n      towards j (aij>0, or away aij<0), with\n";
+							descr.append("--pdeA <a00,...;...;a")
+									.append(d1)
+									.append("0,...> ")
+									.append(d1)
+									.append("x")
+									.append(d1)
+									.append(" advection aij of type i\n" +
+											"      towards j (aij>0, or away aij<0), with\n");
 					}
 					int idx = 0;
 					for (int n = 0; n < nDim; n++) {
 						if (n == dependent) {
-							descr += "         " + names[n] + " (dependent)\n";
+							descr.append("         ")
+									.append(names[n])
+									.append(" (dependent)\n");
 							continue;
 						}
-						descr += "      " + (idx++) + ": " + names[n] + "\n";
+						descr.append("      ")
+								.append(idx++)
+								.append(": ")
+								.append(names[n])
+								.append("\n");
 					}
-					descr += "      advection: ai=Ai/(2*dx^2)";
-					return descr;
+					descr.append("      advection: ai=Ai/(2*dx^2)");
+					return descr.toString();
 				}
 			});
 

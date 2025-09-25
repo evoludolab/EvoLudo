@@ -383,7 +383,8 @@ public class PDE extends ODE {
 			maxDensity = new double[nDim];
 			meanDensity = new double[nDim];
 		}
-		if (module instanceof Payoffs && (fitness == null || fitness.length != space.size || fitness[0].length != nDim)) {
+		if (module instanceof Payoffs
+				&& (fitness == null || fitness.length != space.size || fitness[0].length != nDim)) {
 			fitness = new double[space.size][nDim];
 			minFitness = new double[nDim];
 			maxFitness = new double[nDim];
@@ -771,8 +772,8 @@ public class PDE extends ODE {
 		for (int n = 0; n < bins.length; n++)
 			Arrays.fill(bins[n], 0.0);
 		for (int n = 0; n < discretization; n++) {
-			double f[] = fitness[n];
-			double d[] = density[n];
+			double[] f = fitness[n];
+			double[] d = density[n];
 			idx = 0;
 			for (int i = 0; i < nDim; i++) {
 				if (i == vacant)
@@ -980,11 +981,10 @@ public class PDE extends ODE {
 	public void init() {
 		super.init();
 		InitType itype = initType;
-		if (!space.isLattice()) {
-			// some initialization types make only sense on lattices
-			if (itype == InitType.CIRCLE || itype == InitType.SQUARE || itype == InitType.GAUSSIAN
-					|| itype == InitType.RING)
-				itype = InitType.UNIFORM;
+		// some initialization types make only sense on lattices
+		if (!space.isLattice() && (itype == InitType.CIRCLE || itype == InitType.SQUARE || itype == InitType.GAUSSIAN
+				|| itype == InitType.RING)) {
+			itype = InitType.UNIFORM;
 		}
 
 		boolean isCircular = false;
@@ -1094,8 +1094,8 @@ public class PDE extends ODE {
 							double z2 = (z - mz) * (z - mz);
 							for (int y = 0; y < l; y++) {
 								double y2 = (y - m) * (y - m);
-								for (int x = 0; x < l; x++) 
-									scaleDensity(density[z * l2 + y * l + x], 
+								for (int x = 0; x < l; x++)
+									scaleDensity(density[z * l2 + y * l + x],
 											Math.exp(-((x - m) * (x - m) + y2 + z2) * norm));
 							}
 						}
@@ -1113,8 +1113,8 @@ public class PDE extends ODE {
 						norm = 1.0 / l;
 						for (int y = 0; y < l; y++) {
 							double y2 = (y - m) * (y - m);
-							for (int x = 0; x < l; x++) 
-								scaleDensity(density[y * l + x], 
+							for (int x = 0; x < l; x++)
+								scaleDensity(density[y * l + x],
 										Math.exp(-((x - m) * (x - m) + y2) * norm));
 						}
 				}
@@ -1140,7 +1140,7 @@ public class PDE extends ODE {
 								double y2 = (y - m) * (y - m);
 								for (int x = 0; x < l; x++) {
 									double r = Math.pow((x - m) * (x - m) + y2 + z2, 1.0 / 3.0);
-									scaleDensity(density[z * l2 + y * l + x], 
+									scaleDensity(density[z * l2 + y * l + x],
 											Math.exp(-(r - m3) * (r - m3) * norm));
 								}
 							}
@@ -1153,7 +1153,7 @@ public class PDE extends ODE {
 						norm = 1.0 / l;
 						for (int x = 0; x < l; x++) {
 							double r = Math.abs(x - m);
-							scaleDensity(density[x], 
+							scaleDensity(density[x],
 									Math.exp(-(r - m3) * (r - m3) * norm));
 						}
 						break;
@@ -1166,7 +1166,7 @@ public class PDE extends ODE {
 							double y2 = (y - m) * (y - m);
 							for (int x = 0; x < l; x++) {
 								double r = Math.sqrt((x - m) * (x - m) + y2);
-								scaleDensity(density[y * l + x], 
+								scaleDensity(density[y * l + x],
 										Math.exp(-(r - m3) * (r - m3) * norm));
 							}
 						}
@@ -1219,7 +1219,8 @@ public class PDE extends ODE {
 	 * <dd>Circle in the center with uniform densities given by {@link ODE#y0}.
 	 * <dt>DISTURBANCE
 	 * <dd>Spatially homogeneous distribution given by {@link ODE#y0} with a
-	 * perturbation in the center cell with densities {@code 1.2*y0}, or, for frequency
+	 * perturbation in the center cell with densities {@code 1.2*y0}, or, for
+	 * frequency
 	 * based models with inverted and normalized frequencies.
 	 * <dt>GAUSSIAN
 	 * <dd>Gaussian density distribution in the center. In 2D lattices this
@@ -1349,7 +1350,7 @@ public class PDE extends ODE {
 	public boolean parse(String arg) {
 		// this is just for a single species - as everything else in PDE models
 		initType = (InitType) cloInit.match(arg);
-		String[] typeargs = arg.split("\\s+|=");
+		String[] typeargs = arg.split(CLOParser.SPLIT_ARG_REGEX);
 		double[][] init = null;
 		if (typeargs.length > 1)
 			init = CLOParser.parseMatrix(typeargs[1]);
@@ -1358,7 +1359,8 @@ public class PDE extends ODE {
 			y0 = new double[nt];
 			background = new double[nt];
 		}
-		if (initType == null || !initType.equals(InitType.RANDOM) && (init == null || init[0] == null || init[0].length != nt))
+		if (initType == null
+				|| !initType.equals(InitType.RANDOM) && (init == null || init[0] == null || init[0].length != nt))
 			return false;
 		// init can be null for RANDOM initializations
 		if (init == null)
@@ -1556,35 +1558,35 @@ public class PDE extends ODE {
 
 				@Override
 				public String getDescription() {
-					String descrDiff;
+					StringBuilder descrDiff = new StringBuilder();
 					int dim = nDim;
 					if (dependent >= 0)
 						dim--;
 					switch (dim) {
 						case 1:
 							// NOT TESTED!
-							descrDiff = "--pdeD <d0>     diffusion for independent variable";
+							descrDiff.append("--pdeD <d0>     diffusion for independent variable");
 							break;
 						case 2:
-							descrDiff = "--pdeD <d0,d1>  diffusion for independent variables, with";
+							descrDiff.append("--pdeD <d0,d1>  diffusion for independent variables, with");
 							break;
 						case 3:
-							descrDiff = "--pdeD <d0,d1,d2>  diffusion for independent variables, with";
+							descrDiff.append("--pdeD <d0,d1,d2>  diffusion for independent variables, with");
 							break;
 						default:
-							descrDiff = "--pdeD <d0,...,d" + (nDim - 1)
-									+ ">  diffusion for independent variables, with";
+							descrDiff.append("--pdeD <d0,...,d").append(nDim - 1)
+									.append(">  diffusion for independent variables, with");
 					}
 					int idx = 0;
 					for (int n = 0; n < nDim; n++) {
 						if (n == dependent) {
-							descrDiff += "\n          " + names[n] + " (dependent)";
+							descrDiff.append("\n          ").append(names[n]).append(" (dependent)");
 							continue;
 						}
-						descrDiff += "\n      d" + (idx++) + ": " + names[n];
+						descrDiff.append("\n      d").append(idx++).append(": ").append(names[n]);
 					}
-					descrDiff += "\n      diffusion: di=Di/(2*dx^2)";
-					return descrDiff;
+					descrDiff.append("\n      diffusion: di=Di/(2*dx^2)");
+					return descrDiff.toString();
 				}
 			});
 

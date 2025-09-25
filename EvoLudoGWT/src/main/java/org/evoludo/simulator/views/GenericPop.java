@@ -105,7 +105,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	 * @param type   the type of data to display
 	 */
 	@SuppressWarnings("unchecked")
-	public GenericPop(EvoLudoGWT engine, Data type) {
+	protected GenericPop(EvoLudoGWT engine, Data type) {
 		super(engine, type);
 		graphs = (List<G>) super.graphs;
 		tag = (this instanceof Pop2D) ? "2D" : "3D";
@@ -180,9 +180,9 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	 * 
 	 * @param graph the graph to assign the geometry
 	 * @param inter {@code true} for interaction geometry, {@code false} for
-	 * 			competition geometry
+	 *              competition geometry
 	 */
-	void setGraphGeometry(GenericPopGraph<T,N> graph, boolean inter) {
+	void setGraphGeometry(GenericPopGraph<T, N> graph, boolean inter) {
 		Type mt = model.getType();
 		if (mt.isIBS()) {
 			Module module = graph.getModule();
@@ -391,12 +391,18 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 			String[] s = module.getTraitNames();
 			Color[] c = module.getTraitColors();
 			id = module.getID();
-			String names = "<tr><td><i>Traits:</i></td><td><span style='color:" + ColorMapCSS.Color2Css(c[0]) +
-					"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + s[0];
+			StringBuilder sb = new StringBuilder();
+			sb.append("<tr><td><i>Traits:</i></td><td><span style='color:")
+					.append(ColorMapCSS.Color2Css(c[0]))
+					.append("; font-size:175%; line-height:0.57;'>&#x25A0;</span> ")
+					.append(s[0]);
 			for (int n = 1; n < s.length; n++)
-				names += ", <span style='color:" + ColorMapCSS.Color2Css(c[n]) +
-						"; font-size:175%; line-height:0.57;'>&#x25A0;</span> " + s[n];
-			names += "</td></tr>";
+				sb.append(", <span style='color:")
+						.append(ColorMapCSS.Color2Css(c[n]))
+						.append("; font-size:175%; line-height:0.57;'>&#x25A0;</span> ")
+						.append(s[n]);
+			sb.append("</td></tr>");
+			String names = sb.toString();
 			String density = "";
 			if (type == Data.TRAIT)
 				density = "<tr><td><i>Densities:</i></td><td><span style='color:" + graph.getCSSColorAt(node) +
@@ -468,7 +474,8 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 			if (oppGraph == graph)
 				continue;
 			Module oppModule = oppGraph.getModule();
-			//XXX this should work but somehow the pointers are different even though the objects appear to be the same...
+			// XXX this should work but somehow the pointers are different even though the
+			// objects appear to be the same...
 			// if (oppModule == opponent && oppGraph.getGeometry() == oppInter)
 			if (oppModule == opponent && oppGraph.getGeometry().name == oppInter.name)
 				return oppGraph;
@@ -491,7 +498,8 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 			if (oppGraph == graph)
 				continue;
 			Module oppModule = oppGraph.getModule();
-			//XXX this should work but somehow the pointers are different even though the objects appear to be the same...
+			// XXX this should work but somehow the pointers are different even though the
+			// objects appear to be the same...
 			// if (oppModule == opponent && oppGraph.getGeometry() == oppComp)
 			if (oppModule == opponent && oppGraph.getGeometry().name == oppComp.name)
 				return oppGraph;
@@ -514,16 +522,21 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 		if (geom.getType() == Geometry.Type.MEANFIELD || nNeighs == 0)
 			return "";
 		int[] neigh = geom.out[node];
-		String msg = "<tr><td><i style='padding-left:2em'>" + graph.getGeometry().getName() + ":</i></td>" +
-				"<td>[<span style='color:" + graph.getCSSColorAt(neigh[0])
-				+ "; font-size:175%; line-height:0.57;'>&#x25A0;</span>";
+		StringBuilder msg = new StringBuilder();
+		msg.append("<tr><td><i style='padding-left:2em'>")
+				.append(graph.getGeometry().getName())
+				.append(":</i></td><td>[<span style='color:")
+				.append(graph.getCSSColorAt(neigh[0]))
+				.append("; font-size:175%; line-height:0.57;'>&#x25A0;</span>");
 		int disp = Math.min(nNeighs, 10);
 		for (int n = 1; n < disp; n++)
-			msg += "<span style='color:" + graph.getCSSColorAt(neigh[n])
-					+ "; font-size:175%; line-height:0.57;'>&nbsp;&#x25A0;</span>";
+			msg.append("<span style='color:")
+					.append(graph.getCSSColorAt(neigh[n]))
+					.append("; font-size:175%; line-height:0.57;'>&nbsp;&#x25A0;</span>");
 		if (disp < nNeighs)
-			msg += " ...";
-		return msg + "]</td></tr>";
+			msg.append(" ...");
+		msg.append("]</td></tr>");
+		return msg.toString();
 	}
 
 	/**
@@ -572,21 +585,22 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	private static String formatStructureAt(int[] links, int k, Geometry.Type type) {
 		if (type == Geometry.Type.MEANFIELD)
 			return "all";
-		String msg;
+		StringBuilder msg;
 		switch (k) {
 			case 0:
 				return "none";
 			case 1:
 				return "1 [" + links[0] + "]";
 			default:
-				msg = k + " [" + links[0];
+				msg = new StringBuilder();
+				msg.append(k).append(" [").append(links[0]);
 				int disp = Math.min(k, 10);
 				for (int n = 1; n < disp; n++)
-					msg += " " + links[n];
+					msg.append(" ").append(links[n]);
 				if (disp < k)
-					msg += " ...";
-				msg += "]";
+					msg.append(" ...");
+				msg.append("]");
 		}
-		return msg;
+		return msg.toString();
 	}
 }

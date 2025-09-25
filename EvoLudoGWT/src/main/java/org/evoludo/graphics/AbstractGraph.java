@@ -30,7 +30,7 @@
 
 package org.evoludo.graphics;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 import org.evoludo.geom.Path2D;
@@ -412,7 +412,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * Markers for decorating the graph.
 	 */
-	protected ArrayList<double[]> markers;
+	protected List<double[]> markers;
 
 	/**
 	 * The array of colors used for markers.
@@ -704,7 +704,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * 
 	 * @param markers the list of markers
 	 */
-	public void setMarkers(ArrayList<double[]> markers) {
+	public void setMarkers(List<double[]> markers) {
 		setMarkers(markers, null);
 	}
 
@@ -714,7 +714,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @param markers the list of markers
 	 * @param colors  the list of custom colors
 	 */
-	public void setMarkers(ArrayList<double[]> markers, String[] colors) {
+	public void setMarkers(List<double[]> markers, String[] colors) {
 		if (colors == null)
 			colors = new String[] { "rgb(0,0,0,0.4)" };
 		this.markers = markers;
@@ -765,11 +765,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * The context menu to set the buffer size for graphs with historical data.
 	 */
 	private ContextMenu bufferSizeMenu;
-
-	/**
-	 * The context menu item which triggers the buffer size context menu.
-	 */
-	private ContextMenuItem bufferSizeTrigger;
 
 	/**
 	 * The flag to indicate whether the graph supports zoom. The default is no
@@ -845,7 +840,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 						}));
 			}
 			setBufferCapacity(buffer.getCapacity());
-			bufferSizeTrigger = menu.add("Buffer size...", bufferSizeMenu);
+			ContextMenuItem bufferSizeTrigger = menu.add("Buffer size...", bufferSizeMenu);
 			bufferSizeTrigger.setEnabled(!controller.isRunning());
 			menu.addSeparator();
 		}
@@ -920,9 +915,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (x < 0 || x > element.getOffsetWidth())
 			return false;
 		y -= element.getAbsoluteTop();
-		if (y < 0 || y > element.getOffsetHeight())
-			return false;
-		return true;
+		return (y >= 0 && y <= element.getOffsetHeight());
 	}
 
 	/**
@@ -973,6 +966,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		calcBounds(width, height);
 		return true;
 	}
+
 	/**
 	 * Calculate bounds of drawing area.
 	 * 
@@ -980,7 +974,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @param height the height of the drawing area
 	 */
 	public void calcBounds(int width, int height) {
-		bounds.set(style.minPadding, style.minPadding, width - 2 * style.minPadding, height - 2 * style.minPadding);
+		bounds.set(style.minPadding, style.minPadding, width - 2.0 * style.minPadding, height - 2.0 * style.minPadding);
 		if (style.showFrame) {
 			double f = style.frameWidth;
 			double f2 = f + f;
@@ -1150,8 +1144,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 						yval = Math.pow(10.0, yval);
 					if (style.percentY) {
 						tick = Formatter.formatPretty(100.0 * yval, 2);
-					}
-					else
+					} else
 						tick = Formatter.formatPretty(yval, 2);
 					String[] numexp = tick.split("\\^");
 					// center tick labels with ticks, except for first label (top most)
@@ -1196,7 +1189,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (style.showYLabel && style.yLabel != null) {
 			setFont(style.ticksLabelFont);
 			int digits = 2;
-			double tickskip = -1.0;
+			double tickskip;
 			if (style.percentY) {
 				if (style.yMax <= 1.0)
 					digits = 1;
@@ -1217,6 +1210,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 					(h + g.measureText(ylabel).getWidth()) / 2);
 		}
 
+		final String PX_SANS_SERIF = "px sans-serif";
 		if (style.showLabel && style.label != null) {
 			// adjust label font size to graph; 5% of height with minimum 10px and max 20px
 			int labelFontSize = (int) Math.min(20, Math.max(10, bounds.getHeight() * 0.05));
@@ -1224,11 +1218,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			if (gscale > 0.0) {
 				g.save();
 				g.scale(1.0 / gscale, 1.0 / gscale);
-				setFont("bold " + labelFontSize + "px sans-serif");
+				setFont("bold " + labelFontSize + PX_SANS_SERIF);
 				g.fillText(style.label, 4, (int) (labelFontSize * 1.2));
 				g.restore();
 			} else {
-				setFont("bold " + labelFontSize + "px sans-serif");
+				setFont("bold " + labelFontSize + PX_SANS_SERIF);
 				g.fillText(style.label, 4, (int) (labelFontSize * 1.2));
 			}
 		}
@@ -1258,7 +1252,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	protected void setFont(String cssfont) {
 		// adjust size
-		int idx, start = cssfont.length();
+		int idx;
+		int start = cssfont.length();
 		for (idx = 0; idx < start; idx++) {
 			if (Character.isDigit(cssfont.charAt(idx))) {
 				start = idx;
@@ -1673,7 +1668,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	@Override
 	public void onMouseOut(MouseOutEvent event) {
 		leftMouseButton = false;
-		element.removeClassName("evoludo-cursorMoveView");
+		element.removeClassName(CURSOR_MOVE_VIEW);
 		if (mouseMoveHandler != null) {
 			mouseMoveHandler.removeHandler();
 			mouseMoveHandler = null;
@@ -1700,6 +1695,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 	}
 
+	protected static final String CURSOR_MOVE_VIEW = "evoludo-cursorMoveView";
+
 	/**
 	 * {@inheritDoc}
 	 * <p>
@@ -1717,7 +1714,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void onMouseUp(MouseUpEvent event) {
 		if (event.getNativeButton() == NativeEvent.BUTTON_LEFT) {
 			leftMouseButton = false;
-			element.removeClassName("evoludo-cursorMoveView");
+			element.removeClassName(CURSOR_MOVE_VIEW);
 			if (mouseMoveHandler != null) {
 				mouseMoveHandler.removeHandler();
 				mouseMoveHandler = null;
@@ -1744,7 +1741,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void onMouseMove(MouseMoveEvent event) {
 		if (leftMouseButton) {
 			// shift view
-			element.addClassName("evoludo-cursorMoveView");
+			element.addClassName(CURSOR_MOVE_VIEW);
 			int x = event.getX();
 			int y = event.getY();
 			shifter.shift(mouseX - x, mouseY - y);
@@ -1852,7 +1849,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			}
 			if (touchMoveHandler == null)
 				touchMoveHandler = addTouchMoveHandler(this);
-			return;
 		}
 	}
 
@@ -2101,7 +2097,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			}
 			if (xRange < 0.0) {
 				xMin = xMax + xRange;
-				return;
 			}
 		}
 
@@ -2118,7 +2113,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			}
 			if (yRange < 0.0) {
 				yMin = yMax + yRange;
-				return;
 			}
 		}
 

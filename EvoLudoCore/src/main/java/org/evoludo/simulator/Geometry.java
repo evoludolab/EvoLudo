@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.evoludo.math.ArrayMath;
@@ -1103,7 +1104,8 @@ public class Geometry {
 	 */
 	public boolean check() {
 		boolean doReset = false;
-		int side, side2; // helper variables for lattice structures
+		int side; // helper variable for lattice structures
+		int side2; // helper variable for lattice structures
 
 		// most graphs are undirected
 		isUndirected = true;
@@ -1112,7 +1114,8 @@ public class Geometry {
 				connectivity = (size - 1);
 				superstar_amplification = 1;
 				if (pRewire > 0.0 || pAddwire > 0.0) {
-					logger.warning("cannot add or rewire links for '" + geometry + "' - ignored!");
+					if (logger.isLoggable(Level.WARNING))
+						logger.warning("cannot add or rewire links for '" + geometry + "' - ignored!");
 					pRewire = 0.0;
 					pAddwire = 0.0;
 				}
@@ -1136,8 +1139,9 @@ public class Geometry {
 					// fall back on subgeometry
 					if (subgeometry == Type.MEANFIELD || subgeometry == Type.COMPLETE || hierarchyweight <= 0.0) {
 						geometry = subgeometry;
-						logger.warning("hierarchies must encompass ≥2 levels - collapsed to geometry '"
-								+ geometry + "'!");
+						if (logger.isLoggable(Level.WARNING))
+							logger.warning("hierarchies must encompass ≥2 levels - collapsed to geometry '"
+									+ geometry + "'!");
 						return check();
 					}
 					// maintain single hierarchy
@@ -1146,8 +1150,9 @@ public class Geometry {
 				}
 				if (nHierarchy != rawhierarchy.length) {
 					// one or more hierarchies collapsed
-					logger.warning("hierarchy levels must include >1 units - hierarchies collapsed to "
-							+ (nHierarchy + 1) + " levels!");
+					if (logger.isLoggable(Level.WARNING))
+						logger.warning("hierarchy levels must include >1 units - hierarchies collapsed to "
+								+ (nHierarchy + 1) + " levels!");
 				}
 				if (hierarchy == null || hierarchy.length != nHierarchy + 1)
 					hierarchy = new int[nHierarchy + 1];
@@ -1189,8 +1194,9 @@ public class Geometry {
 						break;
 					// NOTE: hierarchical stars might be interesting as well... stronger amplifiers?
 					default:
-						logger.warning("subgeometry '" + subgeometry
-								+ "' not supported - well-mixed structure forced!");
+						if (logger.isLoggable(Level.WARNING))
+							logger.warning("subgeometry '" + subgeometry
+									+ "' not supported - well-mixed structure forced!");
 						doReset = true;
 						//$FALL-THROUGH$
 					case COMPLETE:
@@ -1207,7 +1213,7 @@ public class Geometry {
 				hierarchy[nHierarchy] = nIndiv;
 				if (setSize(prod * nIndiv)) {
 					// show size-change-warning only if an explicit population size was requested
-					if (!engine.getModule().cloNPopulation.isDefault())
+					if (!engine.getModule().cloNPopulation.isDefault() && logger.isLoggable(Level.WARNING))
 						logger.warning(name + " geometry '" //
 								+ geometry + "' with levels " + Formatter.format(hierarchy)
 								+ " requires population size of " + size + "!");
@@ -2110,7 +2116,8 @@ public class Geometry {
 				nodea = todo[++idxa];
 				a -= degree - kout[nodea];
 			}
-			int idxb = 0, nodeb = todo[idxb];
+			int idxb = 0;
+			int nodeb = todo[idxb];
 			b -= degree - kout[nodeb];
 			while (b >= 0) {
 				nodeb = todo[++idxb];

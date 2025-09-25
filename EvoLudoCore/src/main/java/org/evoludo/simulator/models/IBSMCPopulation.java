@@ -343,6 +343,9 @@ public class IBSMCPopulation extends IBSPopulation {
 	@Override
 	protected boolean doAdjustScores() {
 		switch (playerScoring) {
+			case RESET_ON_CHANGE:
+				// if scores are reset only on an actual trait change, scores
+				// can never be adjusted
 			case EPHEMERAL:
 				// for ephemeral scoring, scores are never adjusted
 				return false;
@@ -355,10 +358,6 @@ public class IBSMCPopulation extends IBSPopulation {
 								interaction.subgeometry == Geometry.Type.MEANFIELD))
 					return false;
 				return interGroup.isSampling(IBSGroup.SamplingType.ALL);
-			case RESET_ON_CHANGE:
-				// if scores are reset only on an actual trait change, scores
-				// can never be adjusted
-				return false;
 		}
 	}
 
@@ -412,8 +411,10 @@ public class IBSMCPopulation extends IBSPopulation {
 		// gather players
 		double[] opptraits = opponent.traits;
 		int oppntraits = opponent.nTraits;
-		int nIn = 0, nOut = interaction.kout[me];
-		int[] in = null, out = interaction.out[me];
+		int nIn = 0;
+		int nOut = interaction.kout[me];
+		int[] in = null;
+		int[] out = interaction.out[me];
 		for (int n = 0; n < nOut; n++)
 			System.arraycopy(opptraits, out[n] * oppntraits, tmpGroup, n * oppntraits, oppntraits);
 		int u2 = 2;
@@ -656,17 +657,22 @@ public class IBSMCPopulation extends IBSPopulation {
 
 	@Override
 	public String getTraitNameAt(int index) {
-		String aName = "";
+		StringBuilder aName = new StringBuilder();
 		int idx = index * nTraits;
 		String[] names = module.getTraitNames();
 		for (int i = 0; i < (nTraits - 1); i++) {
-			aName += names[i] + " → "
-					+ Formatter.format(traits[idx + i] * (traitMax[i] - traitMin[i]) + traitMin[i], 3) + ", ";
+			aName.append(names[i])
+					.append(" → ")
+					.append(Formatter.format(traits[idx + i] * (traitMax[i] - traitMin[i]) + traitMin[i], 3))
+					.append(", ");
 		}
-		aName += names[nTraits - 1] + " → " + Formatter.format(
-				traits[idx + nTraits - 1] * (traitMax[nTraits - 1] - traitMin[nTraits - 1]) + traitMin[nTraits - 1],
-				3);
-		return aName;
+		aName.append(names[nTraits - 1])
+				.append(" → ")
+				.append(Formatter.format(
+						traits[idx + nTraits - 1] * (traitMax[nTraits - 1] - traitMin[nTraits - 1])
+								+ traitMin[nTraits - 1],
+						3));
+		return aName.toString();
 	}
 
 	/**
@@ -680,18 +686,19 @@ public class IBSMCPopulation extends IBSPopulation {
 	public void getMeanTraits(double[] mean) {
 		for (int i = 0; i < nTraits; i++) {
 			int idx = i;
-			double avg = 0.0, var = 0.0;
+			double avg = 0.0;
+			double variance = 0.0;
 			for (int n = 1; n <= nPopulation; n++) {
 				double aTrait = traits[idx];
 				double delta = aTrait - avg;
 				avg += delta / n;
-				var += delta * (aTrait - avg);
+				variance += delta * (aTrait - avg);
 				idx += nTraits;
 			}
 			double scale = traitMax[i] - traitMin[i];
 			double shift = traitMin[i];
 			mean[i] = avg * scale + shift;
-			mean[i + nTraits] = Math.sqrt(var / (nPopulation - 1)) * scale;
+			mean[i + nTraits] = Math.sqrt(variance / (nPopulation - 1)) * scale;
 		}
 	}
 
@@ -704,15 +711,16 @@ public class IBSMCPopulation extends IBSPopulation {
 	 */
 	@Override
 	public void getMeanFitness(double[] mean) {
-		double avg = 0.0, var = 0.0;
+		double avg = 0.0;
+		double variance = 0.0;
 		for (int n = 0; n < nPopulation; n++) {
 			double aScore = scores[n];
 			double delta = aScore - avg;
 			avg += delta / (n + 1);
-			var += delta * (aScore - avg);
+			variance += delta * (aScore - avg);
 		}
 		mean[0] = avg;
-		mean[1] = Math.sqrt(var / (nPopulation - 1));
+		mean[1] = Math.sqrt(variance / (nPopulation - 1));
 	}
 
 	/**
@@ -725,12 +733,21 @@ public class IBSMCPopulation extends IBSPopulation {
 	public String getStatus() {
 		getMeanTraits(meantrait);
 		String[] names = module.getTraitNames();
-		String status = names[0] + " mean: " + Formatter.formatFix(meantrait[0], 3) + " ± "
-				+ Formatter.formatFix(meantrait[nTraits], 3);
-		for (int i = 1; i < nTraits; i++)
-			status += "; " + names[i] + " mean: " + Formatter.formatFix(meantrait[i], 3) + " ± "
-					+ Formatter.formatFix(meantrait[i + nTraits], 3);
-		return status;
+		StringBuilder status = new StringBuilder();
+		status.append(names[0])
+				.append(" mean: ")
+				.append(Formatter.formatFix(meantrait[0], 3))
+				.append(" ± ")
+				.append(Formatter.formatFix(meantrait[nTraits], 3));
+		for (int i = 1; i < nTraits; i++) {
+			status.append("; ")
+					.append(names[i])
+					.append(" mean: ")
+					.append(Formatter.formatFix(meantrait[i], 3))
+					.append(" ± ")
+					.append(Formatter.formatFix(meantrait[i + nTraits], 3));
+		}
+		return status.toString();
 	}
 
 	@Override

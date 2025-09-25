@@ -33,6 +33,8 @@ package org.evoludo.simulator.modules;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.evoludo.math.RNGDistribution;
@@ -47,6 +49,7 @@ import org.evoludo.simulator.models.Markers;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
+import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.models.ODE;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.RungeKutta;
@@ -143,7 +146,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the list of markers
 	 */
-	public ArrayList<double[]> getMarkers() {
+	public List<double[]> getMarkers() {
 		return markers.getMarkers();
 	}
 
@@ -255,7 +258,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the list with all species
 	 */
-	public ArrayList<? extends Module> getSpecies() {
+	public List<? extends Module> getSpecies() {
 		return species;
 	}
 
@@ -398,7 +401,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 */
 	public Type[] getModelTypes() {
 		ArrayList<Type> types = new ArrayList<>();
-		if (this instanceof IBS.HasIBS)
+		if (this instanceof HasIBS)
 			types.add(Type.IBS);
 		if (this instanceof HasDE.ODE)
 			types.add(Type.ODE);
@@ -631,7 +634,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 			Color.ORANGE,
 			Color.PINK,
 			Color.CYAN
-	};;
+	};
 
 	/**
 	 * The array with trait colors.
@@ -1073,10 +1076,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 
 				@Override
 				public String getDescription() {
-					// // retrieve description
-					// Module mod = modules.get(0);
-					// return
-					// (mod.getGeometry()==null?mod.getInteractionGeometry().usage():mod.getGeometry().usage());
 					return structure.usage();
 				}
 			});
@@ -1133,10 +1132,11 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 						default:
 							descr = "--popsize <n0,...,n" + nSpecies + ">  size ni of population i, with\n";
 					}
+					StringBuilder sb = new StringBuilder(descr);
 					for (int i = 0; i < nSpecies; i++)
-						descr += "            n" + i + ": " + species.get(i).getName() + "\n";
-					descr += "                (or nixni, niXni e.g. for lattices)";
-					return descr;
+						sb.append("            n").append(i).append(": ").append(species.get(i).getName()).append("\n");
+					sb.append("                (or nixni, niXni e.g. for lattices)");
+					return sb.toString();
 				}
 			});
 
@@ -1174,9 +1174,11 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 							pop.setDeathRate(rate);
 							continue;
 						}
-						String sn = pop.getName();
-						logger.warning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
-								+ " must be non-negative (changed to 0).");
+						if (logger.isLoggable(Level.WARNING)) {
+							String sn = pop.getName();
+							logger.warning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
+									+ " must be non-negative (changed to 0).");
+						}
 						pop.setDeathRate(0.0);
 					}
 					return true;
@@ -1363,19 +1365,22 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					}
 					descr += "\n        ci, ni: color name or (r,g,b) triplet (in 0-255) with i:";
 					int idx = 0;
+					StringBuilder sb = new StringBuilder(descr);
 					for (Module pop : species) {
 						nt = pop.getNTraits();
 						for (int n = 0; n < nt; n++) {
 							String aTrait = "              " + (idx++) + ": ";
 							int traitlen = aTrait.length();
-							descr += "\n" + aTrait.substring(traitlen - 16, traitlen)
-									+ (species.size() > 1 ? pop.getName() + "." : "") + pop.getTraitName(n);
+							sb.append("\n")
+									.append(aTrait.substring(traitlen - 16, traitlen))
+									.append(species.size() > 1 ? pop.getName() + "." : "")
+									.append(pop.getTraitName(n));
 						}
 					}
 					if (species.size() > 1)
-						descr += "\n      settings for multi-species separated by '" + CLOParser.SPECIES_DELIMITER
-								+ "'";
-					return descr;
+						sb.append("\n      settings for multi-species separated by '" + CLOParser.SPECIES_DELIMITER
+								+ "'");
+					return sb.toString();
 				}
 			});
 

@@ -118,11 +118,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			data = new String[geometry.size];
 	}
 
-	/**
-	 * Update the graph.
-	 * 
-	 * @param isNext {@code true} if the state has changed
-	 */
+	@Override
 	public void update(boolean isNext) {
 		if (buffer != null) {
 			// add copy of data array to buffer

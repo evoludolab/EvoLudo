@@ -483,11 +483,15 @@ public class TBT extends Discrete implements Payoffs,
 				return super.getStatus();
 
 			getMeanTraits(tsTraits);
-			String status = "";
-			for (int i = 0; i < 2 * nTraits; i++)
-				status += (status.length() > 0 ? ", " : "") + module.getTraitName(i) + ": "
-						+ Formatter.formatPercent(tsTraits[i], 1);
-			return status;
+			StringBuilder status = new StringBuilder();
+			for (int i = 0; i < 2 * nTraits; i++) {
+				if (status.length() > 0) {
+					status.append(", ");
+				}
+				status.append(module.getTraitName(i)).append(": ")
+						.append(Formatter.formatPercent(tsTraits[i], 1));
+			}
+			return status.toString();
 		}
 
 		@Override
@@ -503,7 +507,8 @@ public class TBT extends Discrete implements Payoffs,
 			initMono(TBT.COOPERATE);
 			switch (interaction.getType()) {
 				case CUBE:
-					int l, mz;
+					int l;
+					int mz;
 					if (nPopulation == 25000) {
 						l = 50;
 						mz = 5; // 10/2

@@ -240,8 +240,16 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	/**
 	 * Mouse and touch handlers to control the view of the 3D scene.
 	 */
-	private HandlerRegistration mouseWheelHandler, mouseDownHandler, mouseMoveHandler, mouseUpHandler,
-			touchStartHandler, touchMoveHandler, touchEndHandler;
+	private HandlerRegistration mouseWheelHandler;
+	private HandlerRegistration mouseDownHandler;
+	private HandlerRegistration mouseMoveHandler;
+	private HandlerRegistration mouseUpHandler;
+	private HandlerRegistration touchStartHandler;
+	private HandlerRegistration touchMoveHandler;
+	private HandlerRegistration touchEndHandler;
+
+	protected static final String CURSOR_MOVE_VIEW = "evoludo-cursorMoveView";
+	protected static final String CURSOR_ROTATE_VIEW = "evoludo-cursorRotate";
 
 	/**
 	 * Creates a new instance of TrackballControls for the 3D scene displayed in
@@ -468,7 +476,6 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 		if (camera instanceof OrthographicCamera) {
 			camera.getScale().set(1.0, 1.0, 1.0);
 			camera.updateMatrix();
-			return;
 		}
 	}
 
@@ -548,8 +555,8 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 		if (event.getNativeButton() != NativeEvent.BUTTON_LEFT)
 			return;
 		isDragging = false;
-		getWidget().removeStyleName("evoludo-cursorRotate");
-		getWidget().removeStyleName("evoludo-cursorMoveView");
+		getWidget().removeStyleName(CURSOR_ROTATE_VIEW);
+		getWidget().removeStyleName(CURSOR_MOVE_VIEW);
 	}
 
 	/**
@@ -569,13 +576,13 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 				return;
 			panEnd = getMouseOnScreen(event.getX(), event.getY());
 			doPan = true;
-			getWidget().addStyleName("evoludo-cursorMoveView");
+			getWidget().addStyleName(CURSOR_MOVE_VIEW);
 		} else {
 			if (!hasRotate)
 				return;
 			rotateEnd = getMouseProjectionOnBall(event.getX(), event.getY());
 			doRotate = true;
-			getWidget().addStyleName("evoludo-cursorRotate");
+			getWidget().addStyleName(CURSOR_ROTATE_VIEW);
 		}
 	}
 
@@ -711,7 +718,6 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 			int x = touch.getRelativeX(ref);
 			int y = touch.getRelativeY(ref);
 			rotateStart = getMouseProjectionOnBall(x, y);
-			return;
 		}
 	}
 
@@ -825,7 +831,6 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 			else if (zoom < 0.05)
 				camera.getScale().set(0.05, 0.05, 0.05);
 			camera.updateMatrix();
-			return;
 		}
 	}
 

@@ -31,6 +31,7 @@
 package org.evoludo.util;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Iterator over tags in <code>plist</code>-string.
@@ -153,7 +154,9 @@ public class PlistReader implements Iterator<PlistTag> {
 
 	@Override
 	public boolean hasNext() {
-		String name, attributes = null, value = null;
+		String name;
+		String attributes = null;
+		String value = null;
 		boolean closing = false;
 		tag = null;
 		if (done)
@@ -205,6 +208,9 @@ public class PlistReader implements Iterator<PlistTag> {
 
 	@Override
 	public PlistTag next() {
+		if (tag == null && !hasNext()) {
+			throw new NoSuchElementException("No more elements in PlistReader.");
+		}
 		return tag;
 	}
 

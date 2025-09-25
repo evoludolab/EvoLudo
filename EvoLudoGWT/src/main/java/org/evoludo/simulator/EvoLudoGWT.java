@@ -51,10 +51,8 @@ import org.evoludo.util.NativeJS;
 
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.core.client.Scheduler.RepeatingCommand;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
-import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.Timer;
 
 /**
@@ -124,12 +122,7 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public void execute(Directive directive) {
-		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-			@Override
-			public void execute() {
-				directive.execute();
-			}
-		});
+		Scheduler.get().scheduleDeferred(directive::execute);
 	}
 
 	/**
@@ -233,19 +226,16 @@ public class EvoLudoGWT extends EvoLudo {
 	 * Schedule the next sample.
 	 */
 	private void scheduleSample() {
-		Scheduler.get().scheduleIncremental(new RepeatingCommand() {
-			@Override
-			public boolean execute() {
-				// in unfortunate cases even a single sample can take exceedingly long
-				// times. stop/init/reset need to be able to interrupt.
-				if (pendingAction != PendingAction.NONE) {
-					processPendingAction();
-					return false;
-				}
-				if (activeModel.next())
-					return true;
-				return fireModelSample(activeModel.getFixationData().mutantNode >= 0);
+		Scheduler.get().scheduleIncremental(() -> {
+			// in unfortunate cases even a single sample can take exceedingly long
+			// times. stop/init/reset need to be able to interrupt.
+			if (pendingAction != PendingAction.NONE) {
+				processPendingAction();
+				return false;
 			}
+			if (activeModel.next())
+				return true;
+			return fireModelSample(activeModel.getFixationData().mutantNode >= 0);
 		});
 	}
 
@@ -253,12 +243,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 * Schedule the next step.
 	 */
 	private void scheduleStep() {
-		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-			@Override
-			public void execute() {
-				modelNext();
-			}
-		});
+		Scheduler.get().scheduleDeferred(() -> modelNext());
 	}
 
 	@Override
@@ -311,15 +296,13 @@ public class EvoLudoGWT extends EvoLudo {
 			return new String[] { cloHelp.getName() };
 		// check and remove --export option
 		String exportName = "export";
-		int nParams = cloarray.length;
-		for (int i = 0; i < nParams; i++) {
+		for (int i = 0; i < cloarray.length; i++) {
 			String param = cloarray[i];
 			if (param.startsWith(exportName)) {
 				// see --export option in EvoLudoJRE.java
 				// remove --export option and file name
-				cloarray = ArrayMath.drop(cloarray, i--);
-				nParams--;
-				continue;
+				cloarray = ArrayMath.drop(cloarray, i);
+				break;
 			}
 		}
 		return cloarray;
@@ -419,12 +402,8 @@ public class EvoLudoGWT extends EvoLudo {
 		if (mt.isODE() || mt.isSDE()) {
 			// add time reverse context menu
 			if (timeReverseMenu == null) {
-				timeReverseMenu = new ContextMenuCheckBoxItem("Time reversed", new Command() {
-					@Override
-					public void execute() {
-						activeModel.setTimeReversed(!activeModel.isTimeReversed());
-					}
-				});
+				timeReverseMenu = new ContextMenuCheckBoxItem("Time reversed",
+						() -> activeModel.setTimeReversed(!activeModel.isTimeReversed()));
 			}
 			menu.addSeparator();
 			menu.add(timeReverseMenu);
@@ -433,13 +412,10 @@ public class EvoLudoGWT extends EvoLudo {
 		} else if (mt.isPDE()) {
 			// add context menu to allow symmetric diffusion
 			if (symDiffMenu == null) {
-				symDiffMenu = new ContextMenuCheckBoxItem("Symmetric diffusion", new Command() {
-					@Override
-					public void execute() {
-						PDE pde = (PDE) activeModel;
-						pde.setSymmetric(!pde.isSymmetric());
-						pde.check();
-					}
+				symDiffMenu = new ContextMenuCheckBoxItem("Symmetric diffusion", () -> {
+					PDE pde = (PDE) activeModel;
+					pde.setSymmetric(!pde.isSymmetric());
+					pde.check();
 				});
 			}
 			menu.addSeparator();
@@ -451,12 +427,7 @@ public class EvoLudoGWT extends EvoLudo {
 		}
 		// process fullscreen context menu
 		if (fullscreenMenu == null && NativeJS.isFullscreenSupported()) {
-			fullscreenMenu = new ContextMenuCheckBoxItem("Full screen", new Command() {
-				@Override
-				public void execute() {
-					setFullscreen(!NativeJS.isFullscreen());
-				}
-			});
+			fullscreenMenu = new ContextMenuCheckBoxItem("Full screen", () -> setFullscreen(!NativeJS.isFullscreen()));
 		}
 		if (NativeJS.isFullscreenSupported()) {
 			menu.addSeparator();

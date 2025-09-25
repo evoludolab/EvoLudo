@@ -57,7 +57,7 @@ public class Plist extends HashMap<String, Object> {
 	/**
 	 * The list of keys to skip when comparing two plists.
 	 */
-	Collection<String> skip;
+	private transient Collection<String> skip;
 
 	/**
 	 * The flag to indicate if the comparison should fail fast, i.e. after first
@@ -278,8 +278,6 @@ public class Plist extends HashMap<String, Object> {
 		if (reference.size() != array.size()) {
 			processDiff(
 					"arrays differ in size\n(me: " + array.size() + ", ref: " + reference.size() + ")");
-			if (failFast)
-				return;
 			return;
 		}
 		int i = -1;

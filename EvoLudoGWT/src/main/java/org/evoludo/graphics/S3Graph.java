@@ -54,7 +54,6 @@ import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.DoubleClickEvent;
 import com.google.gwt.event.dom.client.DoubleClickHandler;
 import com.google.gwt.event.dom.client.TouchStartEvent;
-import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.ui.Widget;
 
 /**
@@ -139,7 +138,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			return;
 		this.map = map;
 		if (map instanceof BasicTooltipProvider)
-			setTooltipProvider((BasicTooltipProvider) map);
+			setTooltipProvider(map);
 	}
 
 	/**
@@ -156,7 +155,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		super.reset();
 		if (buffer == null || buffer.getCapacity() < MIN_BUFFER_SIZE)
 			buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
-		colors = ColorMapCSS.Color2Css(map.getColors());		
+		colors = ColorMapCSS.Color2Css(map.getColors());
 		paint(true);
 	}
 
@@ -274,7 +273,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 				prevPt.y *= h;
 				if (!Double.isNaN(ct))
 					strokeLine(prevPt.x, prevPt.y, currPt.x, currPt.y);
-				current = prev;
 				ct = pt;
 				Point2D swap = currPt;
 				currPt = prevPt;
@@ -333,7 +331,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	/**
 	 * The minimum distance between two subsequent points in pixels.
 	 */
-	private static double MIN_PIXELS = 3.0;
+	private static final double MIN_PIXELS = 3.0;
 
 	@Override
 	public void calcBounds(int width, int height) {
@@ -353,7 +351,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			setFont(style.labelFont);
 			// lower left & right
 			int xshift = (int) (Math.max(g.measureText(map.getName(HasS3.CORNER_LEFT)).getWidth(),
-					Math.max(g.measureText(map.getName(HasS3.CORNER_RIGHT)).getWidth(), 
+					Math.max(g.measureText(map.getName(HasS3.CORNER_RIGHT)).getWidth(),
 							g.measureText(map.getName(HasS3.CORNER_TOP)).getWidth()))
 					* 0.5 + 0.5);
 			int yshift = 20;
@@ -585,17 +583,17 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @return <code>true</code> if inside
 	 */
 	protected boolean inside(double sx, double sy) {
-		final Point2D e0 = new Point2D(0.0, 0.0);
-		final Point2D e2 = new Point2D(1.0, 0.0);
-		final Point2D e1 = new Point2D(0.5, 1.0);
+		final Point2D c0 = new Point2D(0.0, 0.0);
+		final Point2D c2 = new Point2D(1.0, 0.0);
+		final Point2D c1 = new Point2D(0.5, 1.0);
 		Point2D p = new Point2D(sx, sy);
-		boolean inside = (Segment2D.orientation(e0, e1, p) >= 0);
+		boolean inside = (Segment2D.orientation(c0, c1, p) >= 0);
 		if (!inside)
 			return false;
-		inside &= (Segment2D.orientation(e1, e2, p) >= 0);
+		inside &= (Segment2D.orientation(c1, c2, p) >= 0);
 		if (!inside)
 			return false;
-		return inside && (Segment2D.orientation(e2, e0, p) >= 0);
+		return (Segment2D.orientation(c2, c0, p) >= 0);
 	}
 
 	/**
@@ -622,12 +620,9 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		// add menu to clear canvas
 		if (clearMenu == null) {
-			clearMenu = new ContextMenuItem("Clear", new Command() {
-				@Override
-				public void execute() {
-					clearHistory();
-					paint(true);
-				}
+			clearMenu = new ContextMenuItem("Clear", () -> {
+				clearHistory();
+				paint(true);
 			});
 		}
 		menu.addSeparator();
@@ -635,29 +630,26 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 
 		// process swap order context menu
 		if (swapOrderMenu == null) {
-			swapOrderMenu = new ContextMenuItem("Swap Order", new Command() {
-				@Override
-				public void execute() {
-					int swap;
-					int[] order = map.getOrder();
-					String[] names = map.getNames();
-					String label = swapOrderMenu.getText();
-					if (label.startsWith("Swap " + names[order[0]])) {
-						swap = order[0];
-						order[0] = order[1];
-						order[1] = swap;
-					} else if (label.startsWith("Swap " + names[order[1]])) {
-						swap = order[1];
-						order[1] = order[2];
-						order[2] = swap;
-					} else {
-						swap = order[2];
-						order[2] = order[0];
-						order[0] = swap;
-					}
-					map.setOrder(order);
-					paint(true);
+			swapOrderMenu = new ContextMenuItem("Swap Order", () -> {
+				int swap;
+				int[] order = map.getOrder();
+				String[] names = map.getNames();
+				String label = swapOrderMenu.getText();
+				if (label.startsWith("Swap " + names[order[0]])) {
+					swap = order[0];
+					order[0] = order[1];
+					order[1] = swap;
+				} else if (label.startsWith("Swap " + names[order[1]])) {
+					swap = order[1];
+					order[1] = order[2];
+					order[2] = swap;
+				} else {
+					swap = order[2];
+					order[2] = order[0];
+					order[0] = swap;
 				}
+				map.setOrder(order);
+				paint(true);
 			});
 		}
 		menu.add(swapOrderMenu);
@@ -681,21 +673,18 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			if (setTraitMenu == null) {
 				setTraitMenu = new ContextMenu(menu);
 				for (String name : names)
-					setTraitMenu.add(new ContextMenuItem(name, new Command() {
-						@Override
-						public void execute() {
-							Iterator<Widget> items = setTraitMenu.iterator();
-							int idx = 0;
-							while (items.hasNext()) {
-								ContextMenuItem item = (ContextMenuItem) items.next();
-								if (item.getText().equals(name)) {
-									order[cornerIdx] = idx;
-									break;
-								}
-								idx++;
+					setTraitMenu.add(new ContextMenuItem(name, () -> {
+						Iterator<Widget> items = setTraitMenu.iterator();
+						int idx = 0;
+						while (items.hasNext()) {
+							ContextMenuItem item = (ContextMenuItem) items.next();
+							if (item.getText().equals(name)) {
+								order[cornerIdx] = idx;
+								break;
 							}
-							paint(true);
+							idx++;
 						}
+						paint(true);
 					}));
 			}
 			cornerIdx = closestCorner(x, y);
@@ -766,10 +755,14 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		Iterator<double[]> entry = buffer.ordered();
 		while (entry.hasNext()) {
 			double[] s3 = entry.next();
-			export.append(Formatter.format(s3[0], 8) + ", " + //
-					Formatter.format(s3[order[0] + 1], 8) + ", " + //
-					Formatter.format(s3[order[1] + 1], 8) + ", " + //
-					Formatter.format(s3[order[2] + 1], 8) + "\n");
+			export.append(Formatter.format(s3[0], 8))
+					.append(", ")
+					.append(Formatter.format(s3[order[0] + 1], 8))
+					.append(", ")
+					.append(Formatter.format(s3[order[1] + 1], 8))
+					.append(", ")
+					.append(Formatter.format(s3[order[2] + 1], 8))
+					.append("\n");
 		}
 	}
 }

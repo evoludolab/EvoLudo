@@ -40,7 +40,7 @@ public class Combinatorics {
 	/**
 	 * Ensure non-instantiability with private default constructor
 	 */
-	public Combinatorics() {
+	private Combinatorics() {
 	}
 
 	/**
@@ -70,7 +70,11 @@ public class Combinatorics {
 	 * @return {@code x^n}
 	 */
 	private static int powabs(int x, int n) {
-		int x2, x3, x4, x6, x8;
+		int x2;
+		int x3;
+		int x4;
+		int x6;
+		int x8;
 
 		switch (n) {
 			case 16:
@@ -170,7 +174,11 @@ public class Combinatorics {
 	 * @return {@code x^n}
 	 */
 	private static double powabs(double x, int n) {
-		double x2, x3, x4, x6, x8;
+		double x2;
+		double x3;
+		double x4;
+		double x6;
+		double x8;
 		if (n < 0) {
 			x = 1.0 / x;
 			n = -n;

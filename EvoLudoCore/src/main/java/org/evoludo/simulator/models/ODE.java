@@ -32,11 +32,14 @@ package org.evoludo.simulator.models;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.Model.HasDE;
+import org.evoludo.simulator.modules.Features;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
@@ -203,7 +206,7 @@ public class ODE extends Model implements Discrete {
 	 * 
 	 * @see #cloInit
 	 */
-	protected InitType initType[];
+	protected InitType[] initType;
 
 	/**
 	 * Array containing indices that delimit individual species in the ODE state
@@ -358,7 +361,6 @@ public class ODE extends Model implements Discrete {
 		boolean doReset = super.check();
 		dstate = null;
 		double minFit = Double.MAX_VALUE;
-		double maxFit = -Double.MAX_VALUE;
 		invFitRange = null;
 		idxSpecies = new int[nSpecies + 1];
 		nDim = 0;
@@ -377,7 +379,7 @@ public class ODE extends Model implements Discrete {
 				Map2Fitness map2fit = mod.getMap2Fitness();
 				Payoffs pmod = (Payoffs) mod;
 				minFit = map2fit.map(pmod.getMinPayoff());
-				maxFit = map2fit.map(pmod.getMaxPayoff());
+				double maxFit = map2fit.map(pmod.getMaxPayoff());
 				if (maxFit > minFit)
 					invFitRange[idx] = 1.0 / (maxFit - minFit);
 			}
@@ -403,7 +405,8 @@ public class ODE extends Model implements Discrete {
 			isAdjustedDynamics = false;
 		}
 
-		// check if dynamics mode changed (cannot mix and match density and frequency based dynamics)
+		// check if dynamics mode changed (cannot mix and match density and frequency
+		// based dynamics)
 		InitType init = initType[0];
 		boolean isDensityNow = (init == InitType.DENSITY || init == InitType.UNITY);
 		doReset |= (isDensity != isDensityNow);
@@ -431,7 +434,7 @@ public class ODE extends Model implements Discrete {
 			if (staticfit == null || staticfit.length != nDim)
 				staticfit = new double[nDim];
 			int nTraits = pop.getNTraits();
-			System.arraycopy(((Module.Static) pop).getStaticScores(), 0, staticfit, skip,
+			System.arraycopy(((Features.Static) pop).getStaticScores(), 0, staticfit, skip,
 					nTraits);
 			Map2Fitness map2fit = pop.getMap2Fitness();
 			for (int n = 0; n < nTraits; n++)
@@ -468,8 +471,9 @@ public class ODE extends Model implements Discrete {
 	public void setDt(double deltat) {
 		deltat = Math.max(0.0, deltat);
 		if (deltat == 0.0) {
-			logger.warning(getClass().getSimpleName() + " - time step must be >0 (dt=" + Formatter.formatSci(dt, 5)
-					+ " kept; requested dt=" + Formatter.formatSci(deltat, 5) + " ignored).");
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning(getClass().getSimpleName() + " - time step must be >0 (dt=" + Formatter.formatSci(dt, 5)
+						+ " kept; requested dt=" + Formatter.formatSci(deltat, 5) + " ignored).");
 			return;
 		}
 		dt = deltat;
@@ -682,8 +686,9 @@ public class ODE extends Model implements Discrete {
 			elapsed += dtTaken;
 			if (Math.abs(elapsed - prev) <= 1e-16) {
 				// emergency brake - step size too small
-				logger.warning(getClass().getSimpleName()
-						+ ": aborted, step size too small, dt=" + Formatter.formatSci(dtTaken, 5));
+				if (logger.isLoggable(Level.WARNING))
+					logger.warning(getClass().getSimpleName()
+							+ ": aborted, step size too small, dt=" + Formatter.formatSci(dtTaken, 5));
 				converged = true;
 				break;
 			}
@@ -883,7 +888,7 @@ public class ODE extends Model implements Discrete {
 				continue;
 			}
 
-			double totDelta = 0.0;
+			double totDelta;
 			PlayerUpdate.Type put = mod.getPlayerUpdate().getType();
 			switch (put) {
 				case THERMAL: // fermi update
@@ -915,15 +920,13 @@ public class ODE extends Model implements Discrete {
 					throw new Error("Unknown update method for players (" + put + ")");
 			}
 			// with frequencies totDelta is zero (in theory)
-			if (!isDensity) {
+			if (!isDensity && Math.abs(totDelta) > accuracy) {
 				// shift changes to sum up to zero
-				if (Math.abs(totDelta) > accuracy) {
-					boolean[] active = mod.getActiveTraits();
-					totDelta /= mod.getNActive();
-					for (int n = 0; n < nTraits; n++)
-						if (active[n])
-							change[skip + n] -= totDelta;
-				}
+				boolean[] active = mod.getActiveTraits();
+				totDelta /= mod.getNActive();
+				for (int n = 0; n < nTraits; n++)
+					if (active[n])
+						change[skip + n] -= totDelta;
 			}
 			index++;
 		}
@@ -1349,7 +1352,7 @@ public class ODE extends Model implements Discrete {
 			System.arraycopy(state, skip, change, skip, nTraits);
 		} else {
 			if (nMax > 1) {
-				double norm = 1.0 / nMax;
+				double norm = 1.0 / nMax; // sonarcube doesn't know 1>0...
 				for (int i = skip; i < end; i++)
 					change[i] *= norm;
 			}
@@ -1383,25 +1386,35 @@ public class ODE extends Model implements Discrete {
 	 * @return a string representation of the current state
 	 */
 	String getStatus(double[] state) {
-		String status = "";
+		StringBuilder sb = new StringBuilder();
 		int from = 0;
 		for (Module pop : species) {
 			int to = from + pop.getNTraits();
 			// omit status for vacant trait in density models
 			int vacant = isDensity ? from + pop.getVacant() : -1;
-			String popStatus = "";
+			StringBuilder psb = new StringBuilder();
 			for (int i = from; i < to; i++) {
 				if (i == vacant)
 					continue;
-				popStatus += (popStatus.length() > 0 ? ", " : "") + names[i] + ": " //
-						+ (isDensity ? Formatter.format(state[i], 1)
+				if (psb.length() > 0) {
+					psb.append(", ");
+				}
+				psb.append(names[i]).append(": ")
+						.append(isDensity ? Formatter.format(state[i], 1)
 								: Formatter.formatPercent(state[i], 1));
 			}
 			from = to;
-			status += (isMultispecies ? (status.length() > 0 ? "<br/><i>" : "<i>") + pop.getName() + ":</i> " : "")
-					+ popStatus;
+			if (isMultispecies) {
+				if (sb.length() > 0) {
+					sb.append("<br/><i");
+				} else {
+					sb.append("<i");
+				}
+				sb.append(">").append(pop.getName()).append(":</i> ");
+			}
+			sb.append(psb.toString());
 		}
-		return status;
+		return sb.toString();
 	}
 
 	/**
@@ -1633,7 +1646,7 @@ public class ODE extends Model implements Discrete {
 		species: for (Module pop : species) {
 			String inittype = inittypes[idx % inittypes.length];
 			double[] initargs = null;
-			String[] typeargs = inittype.split("\\s+|=");
+			String[] typeargs = inittype.split(CLOParser.SPLIT_ARG_REGEX);
 			InitType itype = (InitType) cloInit.match(inittype);
 			// if matching of inittype failed assume it was omitted; use previous type
 			if (itype == null) {
@@ -1683,9 +1696,7 @@ public class ODE extends Model implements Discrete {
 			idx++;
 			start += nTraits;
 		}
-		if (!parseOk)
-			return false;
-		return true;
+		return parseOk;
 	}
 
 	/**
@@ -1798,9 +1809,8 @@ public class ODE extends Model implements Discrete {
 				cloInit.removeKey(InitType.DENSITY);
 				cloInit.removeKey(InitType.UNITY);
 			}
-		}
-		if (!(this instanceof SDE))
 			cloInit.removeKey(InitType.MUTANT);
+		}
 		if (permitsTimeReversal())
 			parser.addCLO(cloTimeReversed);
 	}
@@ -1826,11 +1836,13 @@ public class ODE extends Model implements Discrete {
 		accuracy = (Double) plist.get("Accuracy");
 		connect = false;
 		if (!restoreTraits(plist)) {
-			logger.warning("restore traits in " + type + "-model failed.");
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning("restore traits in " + type + "-model failed.");
 			success = false;
 		}
 		if (!restoreFitness(plist)) {
-			logger.warning("restore fitness in " + type + "-model failed.");
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning("restore fitness in " + type + "-model failed.");
 			success = false;
 		}
 		return success;

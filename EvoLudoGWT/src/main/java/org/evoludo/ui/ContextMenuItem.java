@@ -110,7 +110,8 @@ public class ContextMenuItem extends Label
 	 */
 	public ContextMenuItem(String name, ContextMenu child) {
 		this(name, (Scheduler.ScheduledCommand) null);
-		assert child != null;
+		if (child == null)
+			throw new IllegalArgumentException("child submenu must not be null");
 		childMenu = child;
 		addStyleName("submenu");
 	}
@@ -223,7 +224,6 @@ public class ContextMenuItem extends Label
 			int y = getAbsoluteTop() - childMenu.getAbsoluteTop() + event.getY();
 			if (y < 0 || y > childMenu.getOffsetHeight()) {
 				closeNow();
-				return;
 			}
 		}
 	}

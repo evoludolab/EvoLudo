@@ -440,13 +440,6 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	 */
 	public class ATBTMap implements Data2Phase, BasicTooltipProvider {
 
-		/**
-		 * Constructs a new map to translate between population states and the phase
-		 * plane.
-		 */
-		public ATBTMap() {
-		}
-
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {
 			// NOTE: data[0] is time!
@@ -677,16 +670,14 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 			// so... which approach corresponds to the ODE?
 			// check patch conversion
 			double pFeedback = feedback[oldtype];
-			if (pFeedback > 0.0) {
-				if (pFeedback >= 1.0 || random01() < pFeedback) {
-					// change type of node
-					int oldtrait = oldtype < 2 ? ATBT.COOPERATE : ATBT.DEFECT;
-					// determine new patch type (old one was GOOD if oldtype is even and will now
-					// turn BAD and vice versa)
-					int newpatch = (oldtype + 1) % 2;
-					traitsNext[me] = newpatch + oldtrait + oldtrait + nTraits;
-					return true;
-				}
+			if (pFeedback > 0.0 && (pFeedback >= 1.0 || random01() < pFeedback)) {
+				// change type of node
+				int oldtrait = oldtype < 2 ? TBT.COOPERATE : TBT.DEFECT;
+				// determine new patch type (old one was GOOD if oldtype is even and will now
+				// turn BAD and vice versa)
+				int newpatch = (oldtype + 1) % 2;
+				traitsNext[me] = newpatch + oldtrait + oldtrait + nTraits;
+				return true;
 			}
 			return changed;
 		}

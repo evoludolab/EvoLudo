@@ -335,10 +335,11 @@ public class MersenneTwister {
 	/**
 	 * The array for the state vector
 	 */
-	private int mt[]; // the array for the state vector
+	private int[] mt; // the array for the state vector
 
 	/**
-	 * The current index for the state vector. {@code mti == N+1} means {@code mt[N]} is not initialized.
+	 * The current index for the state vector. {@code mti == N+1} means
+	 * {@code mt[N]} is not initialized.
 	 */
 	private int mti;
 
@@ -346,7 +347,8 @@ public class MersenneTwister {
 	// private static final long GOOD_SEED = 4357;
 
 	/**
-	 * Gaussian random numbers are generated in pairs. This is the second of the two.
+	 * Gaussian random numbers are generated in pairs. This is the second of the
+	 * two.
 	 */
 	private double __nextNextGaussian;
 
@@ -362,7 +364,7 @@ public class MersenneTwister {
 	 * 
 	 * @return <code>plist</code> string encoding state of random number generator
 	 */
-	synchronized public String encodeState() {
+	public synchronized String encodeState() {
 		StringBuilder plist = new StringBuilder();
 		plist.append(Plist.encodeKey("mt", mt));
 		plist.append(Plist.encodeKey("mti", mti));
@@ -379,7 +381,7 @@ public class MersenneTwister {
 	 * @param plist encoded state of random number generator
 	 * @return <code>true</code> if state successfully restored
 	 */
-	synchronized public boolean restoreState(Plist plist) {
+	public synchronized boolean restoreState(Plist plist) {
 		@SuppressWarnings("unchecked")
 		List<Integer> rmt = (List<Integer>) plist.get("mt");
 		if (rmt == null || rmt.size() != N)
@@ -412,7 +414,7 @@ public class MersenneTwister {
 	 * @param other another {@link MersenneTwister}
 	 * @return <code>true</code> the two {@link MersenneTwister}'s are identical.
 	 */
-	synchronized public boolean stateEquals(MersenneTwister other) {
+	public synchronized boolean stateEquals(MersenneTwister other) {
 		if (other == this)
 			return true;
 		if (other == null)
@@ -472,7 +474,7 @@ public class MersenneTwister {
 	 * 
 	 * @param seed the seed for the random number generator
 	 */
-	synchronized public void setSeed(long seed) {
+	public synchronized void setSeed(long seed) {
 		// Due to a bug in java.util.Random clear up to 1.2, we're
 		// doing our own Gaussian variable.
 		__haveNextNextGaussian = false;
@@ -505,14 +507,13 @@ public class MersenneTwister {
 	 * 
 	 * @param array of integers for seeding the random number generator
 	 */
-	synchronized public void setSeed(int[] array) {
+	public synchronized void setSeed(int[] array) {
 		if (array.length == 0)
 			throw new IllegalArgumentException("Array length must be greater than zero");
-		int i, j, k;
+		int i = 1;
+		int j = 0;
+		int k = (N > array.length ? N : array.length);
 		setSeed(19650218L);
-		i = 1;
-		j = 0;
-		k = (N > array.length ? N : array.length);
 		int mtmti1 = mt[0];
 		for (; k != 0; k--) {
 			// ChH: orig mt[i] = (mt[i] ^ ((mt[i-1] ^ (mt[i-1] >>> 30)) * 1664525)) +
@@ -564,11 +565,12 @@ public class MersenneTwister {
 	 * @see <a href= "https://create.stephan-brumme.com/mersenne-twister/">
 	 *      https://create.stephan-brumme.com/mersenne-twister/</a>
 	 */
-	synchronized private void twist() {
+	private synchronized void twist() {
 		if (mti < N)
 			return;
 		// generate N words at one time
-		int y, kk;
+		int y;
+		int kk;
 		for (kk = 0; kk < N - M; kk++) {
 			y = (mt[kk] & UPPER_MASK) | (mt[kk + 1] & LOWER_MASK);
 			mt[kk] = mt[kk + M] ^ (y >>> 1) ^ ((y & 0x1) * MATRIX_A);
@@ -614,7 +616,7 @@ public class MersenneTwister {
 	 * 
 	 * @return random <code>int</code> in <code>[0, 2^<sup>32</sup>-1]</code>
 	 */
-	synchronized public int nextInt() {
+	public synchronized int nextInt() {
 		return (nextUInt() >>> 1);
 	}
 
@@ -626,7 +628,7 @@ public class MersenneTwister {
 	 * 
 	 * @throws IllegalArgumentException if <code>n &le; 0</code>
 	 */
-	synchronized public int nextInt(int n) {
+	public synchronized int nextInt(int n) {
 		if (n <= 1) {
 			if (n == 1)
 				return 0;
@@ -657,7 +659,8 @@ public class MersenneTwister {
 			return (nextUInt() >>> (32 - log2)) & BIT32_MASK;
 		}
 
-		int bits, val;
+		int bits;
+		int val;
 		do {
 			bits = nextInt();
 			val = bits % n;
@@ -667,7 +670,7 @@ public class MersenneTwister {
 			// numbers are doubles and overflows are handled differently.
 			// ChH: check overflow in an JRE/GWT agnostic manner:
 			// val <= n-1 must hold
-			// bits + (n-1-val) may result in overflow, which manifests itself 
+			// bits + (n-1-val) may result in overflow, which manifests itself
 			// by a negative result
 			// check against Integer.MAX_VALUE instead
 		} while (Integer.MAX_VALUE - bits < n - 1 - val);
@@ -700,7 +703,7 @@ public class MersenneTwister {
 	 * @return random <code>long</code> integer in <code>[0,
 	 *         2^<sup>63</sup>-1]</code>
 	 */
-	synchronized public long nextLong() {
+	public synchronized long nextLong() {
 		// ChH: looks like this returns an unacceptable 'unsigned' long...
 		// int y = nextUInt();
 		// int z = nextUInt();
@@ -724,7 +727,7 @@ public class MersenneTwister {
 	 * 
 	 * @throws IllegalArgumentException if <code>n &le; 0</code>
 	 */
-	synchronized public long nextLong(long n) {
+	public synchronized long nextLong(long n) {
 		if (n <= 1) {
 			if (n == 1)
 				return 0L;
@@ -745,7 +748,8 @@ public class MersenneTwister {
 			return (nextULong() >>> (64 - log2));
 		}
 
-		long bits, val;
+		long bits;
+		long val;
 		do {
 			bits = nextLong();
 			val = bits % n;
@@ -765,7 +769,7 @@ public class MersenneTwister {
 	 * 
 	 * @return random <code>short</code> integer in <code>[0, 65536)</code>
 	 */
-	synchronized public short nextShort() {
+	public synchronized short nextShort() {
 		return (short) (nextUInt() >>> 16);
 	}
 
@@ -777,7 +781,7 @@ public class MersenneTwister {
 	 * 
 	 * @return random <code>short</code> integer in <code>[0, 65536)</code>
 	 */
-	synchronized public char nextChar() {
+	public synchronized char nextChar() {
 		return (char) (nextUInt() >>> 16);
 	}
 
@@ -786,7 +790,7 @@ public class MersenneTwister {
 	 * 
 	 * @return random <code>short</code> integer in <code>[0, 16)</code>
 	 */
-	synchronized public byte nextByte() {
+	public synchronized byte nextByte() {
 		return (byte) (nextUInt() >>> 24);
 	}
 
@@ -796,7 +800,7 @@ public class MersenneTwister {
 	 * @param bytes random bytes stored here
 	 * @see #nextByte()
 	 */
-	synchronized public void nextBytes(byte[] bytes) {
+	public synchronized void nextBytes(byte[] bytes) {
 		for (int x = 0; x < bytes.length; x++)
 			bytes[x] = nextByte();
 	}
@@ -806,7 +810,7 @@ public class MersenneTwister {
 	 * 
 	 * @return <code>true</code> with 50% chance
 	 */
-	synchronized public boolean nextBoolean() {
+	public synchronized boolean nextBoolean() {
 		return (nextUInt() >>> 31) != 0;
 	}
 
@@ -827,7 +831,7 @@ public class MersenneTwister {
 	 * @throws IllegalArgumentException if <code>probability&lt;0</code> or
 	 *                                  <code>probability&gt;1</code>
 	 */
-	synchronized public boolean nextBoolean(float probability) {
+	public synchronized boolean nextBoolean(float probability) {
 		if (probability < 0f || probability > 1f)
 			throw new IllegalArgumentException("probability must be between 0.0 and 1.0 inclusive.");
 		if (probability == 0f)
@@ -853,7 +857,7 @@ public class MersenneTwister {
 	 * @throws IllegalArgumentException if <code>probability&lt;0</code> or
 	 *                                  <code>probability&gt;1</code>
 	 */
-	synchronized public boolean nextBoolean(double probability) {
+	public synchronized boolean nextBoolean(double probability) {
 		if (probability < 0.0 || probability > 1.0)
 			throw new IllegalArgumentException("probability must be between 0.0 and 1.0 inclusive.");
 		if (probability == 0.0)
@@ -878,7 +882,7 @@ public class MersenneTwister {
 	 * 
 	 * @return random high-precision <code>double</code> in <code>[0, 1)</code>
 	 */
-	synchronized public double nextDoubleHigh() {
+	public synchronized double nextDoubleHigh() {
 		int y = nextUInt();
 		int z = nextUInt();
 		// ChH: long's are killers for GWT performance
@@ -906,7 +910,7 @@ public class MersenneTwister {
 	 * 
 	 * @return random <code>double</code> in <code>[0, 1)</code>
 	 */
-	synchronized public double nextDouble() {
+	public synchronized double nextDouble() {
 		return nextInt() * TWO_TO_NEG31; // rand/(2^31)
 	}
 
@@ -924,7 +928,7 @@ public class MersenneTwister {
 	 * 
 	 * @return random double in <code>[0, 1]</code>
 	 */
-	synchronized public double nextDoubleClosed() {
+	public synchronized double nextDoubleClosed() {
 		return nextInt() * INV_TWO_TO_31M1; // rand/(2^31- 1)
 	}
 
@@ -942,7 +946,7 @@ public class MersenneTwister {
 	 * 
 	 * @return random <code>double</code> in <code>(0, 1)</code>
 	 */
-	synchronized public double nextDoubleOpen() {
+	public synchronized double nextDoubleOpen() {
 		return (nextInt() + 0.5) * TWO_TO_NEG31; // (rand+0.5)/(2^31)
 	}
 
@@ -959,7 +963,7 @@ public class MersenneTwister {
 	 * 
 	 * @return random <code>float</code> in <code>[0, 1)</code>
 	 */
-	synchronized public float nextFloat() {
+	public synchronized float nextFloat() {
 		return nextInt() * TWO_TO_NEG31f;
 	}
 
@@ -970,7 +974,7 @@ public class MersenneTwister {
 	 * 
 	 * @see #stateEquals(MersenneTwister)
 	 */
-	synchronized public void clearGaussian() {
+	public synchronized void clearGaussian() {
 		__haveNextNextGaussian = false;
 	}
 
@@ -980,12 +984,14 @@ public class MersenneTwister {
 	 * 
 	 * @return random number
 	 */
-	synchronized public double nextGaussian() {
+	public synchronized double nextGaussian() {
 		if (__haveNextNextGaussian) {
 			__haveNextNextGaussian = false;
 			return __nextNextGaussian;
 		}
-		double v1, v2, s;
+		double v1;
+		double v2;
+		double s;
 		do {
 			// int y = nextUInt();
 			// int z = nextUInt();
@@ -1027,7 +1033,7 @@ public class MersenneTwister {
 	 */
 	// @Override
 	@SuppressWarnings("all")
-	synchronized public MersenneTwister clone() {
+	public synchronized MersenneTwister clone() {
 		MersenneTwister clone = new MersenneTwister();
 		System.arraycopy(this.mt, 0, clone.mt, 0, N);
 		clone.mti = this.mti;
@@ -1234,7 +1240,7 @@ public class MersenneTwister {
 	 * 
 	 * @param args command line arguments - ignored
 	 */
-	public static void main(String args[]) {
+	public static void main(String[] args) {
 		Logger logger = Logger.getLogger(MersenneTwister.class.getName());
 		StopWatch clock = new StopWatch();
 
@@ -1253,7 +1259,7 @@ public class MersenneTwister {
 			if (j % 8 == 7)
 				logProgress();
 		}
-		if (!(j % 8 == 7))
+		if (j % 8 != 7)
 			logProgress();
 
 		logProgress("\nGrab 1000 booleans of increasing probability using nextBoolean(double)");
@@ -1263,7 +1269,7 @@ public class MersenneTwister {
 			if (j % 8 == 7)
 				logProgress();
 		}
-		if (!(j % 8 == 7))
+		if (j % 8 != 7)
 			logProgress();
 
 		logProgress("\nGrab 1000 booleans of increasing probability using nextBoolean(float)");
@@ -1273,7 +1279,7 @@ public class MersenneTwister {
 			if (j % 8 == 7)
 				logProgress();
 		}
-		if (!(j % 8 == 7))
+		if (j % 8 != 7)
 			logProgress();
 
 		byte[] bytes = new byte[1000];
@@ -1285,7 +1291,7 @@ public class MersenneTwister {
 			if (j % 16 == 15)
 				logProgress();
 		}
-		if (!(j % 16 == 15))
+		if (j % 16 != 15)
 			logProgress();
 
 		byte b;
@@ -1298,7 +1304,7 @@ public class MersenneTwister {
 			if (j % 16 == 15)
 				logProgress();
 		}
-		if (!(j % 16 == 15))
+		if (j % 16 != 15)
 			logProgress();
 
 		logProgress("\nGrab the first 1000 shorts");
@@ -1308,7 +1314,7 @@ public class MersenneTwister {
 			if (j % 8 == 7)
 				logProgress();
 		}
-		if (!(j % 8 == 7))
+		if (j % 8 != 7)
 			logProgress();
 
 		logProgress("\nGrab the first 1000 ints");
@@ -1318,7 +1324,7 @@ public class MersenneTwister {
 			if (j % 4 == 3)
 				logProgress();
 		}
-		if (!(j % 4 == 3))
+		if (j % 4 != 3)
 			logProgress();
 
 		logProgress("\nGrab the first 1000 ints of different sizes");
@@ -1332,7 +1338,7 @@ public class MersenneTwister {
 			if (j % 4 == 3)
 				logProgress();
 		}
-		if (!(j % 4 == 3))
+		if (j % 4 != 3)
 			logProgress();
 
 		logProgress("\nGrab the first 1000 longs");
@@ -1342,7 +1348,7 @@ public class MersenneTwister {
 			if (j % 3 == 2)
 				logProgress();
 		}
-		if (!(j % 3 == 2))
+		if (j % 3 != 2)
 			logProgress();
 
 		logProgress("\nGrab the first 1000 longs of different sizes");
@@ -1356,7 +1362,7 @@ public class MersenneTwister {
 			if (j % 4 == 3)
 				logProgress();
 		}
-		if (!(j % 4 == 3))
+		if (j % 4 != 3)
 			logProgress();
 
 		logProgress("\nGrab the first 1000 floats");
@@ -1366,7 +1372,7 @@ public class MersenneTwister {
 			if (j % 4 == 3)
 				logProgress();
 		}
-		if (!(j % 4 == 3))
+		if (j % 4 != 3)
 			logProgress();
 
 		logProgress("\nGrab the first 1000 doubles");
@@ -1376,7 +1382,7 @@ public class MersenneTwister {
 			if (j % 3 == 2)
 				logProgress();
 		}
-		if (!(j % 3 == 2))
+		if (j % 3 != 2)
 			logProgress();
 
 		logProgress("\nGrab the first 1000 gaussian doubles");
@@ -1386,7 +1392,7 @@ public class MersenneTwister {
 			if (j % 3 == 2)
 				logProgress();
 		}
-		if (!(j % 3 == 2))
+		if (j % 3 != 2)
 			logProgress();
 	}
 }
