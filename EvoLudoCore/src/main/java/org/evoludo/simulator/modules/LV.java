@@ -68,7 +68,7 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	/**
 	 * The index of the prey.
 	 */
-	final static int PREY = 0;
+	static final int PREY = 0;
 
 	/**
 	 * The reaction rates for prey reproduction, predation, and competition.
@@ -332,7 +332,7 @@ class Predator extends Discrete implements Multispecies, HasDE {
 	/**
 	 * The index of the predator.
 	 */
-	final static int PREDATOR = 0;
+	static final int PREDATOR = 0;
 
 	/**
 	 * The reference to the prey species.
@@ -481,10 +481,10 @@ class IBSPop extends IBSDPopulation {
 		rates = (isPredator ? ((Predator) module).rates : ((LV) module).rates);
 		deathRate = module.getDeathRate();
 		// focal peer opponent
-		// X     0    0 death, birth: deathRate + rates[0]
-		// X     X    0 death, competition: deathRate + rates[2]
-		// X     0    Y death, birth, predation: deathRate + rates[0] + |rates[1]|
-		// X     X    Y death, competition, predation: deathRate + rates[2] + |rates[1]|
+		// X 0 0 death, birth: deathRate + rates[0]
+		// X X 0 death, competition: deathRate + rates[2]
+		// X 0 Y death, birth, predation: deathRate + rates[0] + |rates[1]|
+		// X X Y death, competition, predation: deathRate + rates[2] + |rates[1]|
 		maxRate = deathRate + Math.max(Math.max(Math.max(rates[0], // birth
 				rates[2]), // competition
 				rates[0] + Math.abs(rates[1])), // birth + predation

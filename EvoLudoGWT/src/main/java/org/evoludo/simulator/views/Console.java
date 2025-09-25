@@ -73,7 +73,7 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 		/**
 		 * The default capacity of the log buffer.
 		 */
-		public final static int DEFAULT_CAPACITY = 1000;
+		public static final int DEFAULT_CAPACITY = 1000;
 
 		/**
 		 * The buffer to store the log messages.

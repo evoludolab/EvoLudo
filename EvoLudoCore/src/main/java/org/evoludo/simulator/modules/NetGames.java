@@ -85,17 +85,17 @@ public class NetGames extends Discrete implements Payoffs,
 	/**
 	 * The color index of altruists.
 	 */
-	public final static int TYPE_ALTRUIST = 2;
+	public static final int TYPE_ALTRUIST = 2;
 
 	/**
 	 * The color index of fair players.
 	 */
-	public final static int TYPE_FAIR = 1;
+	public static final int TYPE_FAIR = 1;
 
 	/**
 	 * The color index of egoists.
 	 */
-	public final static int TYPE_EGOIST = 0;
+	public static final int TYPE_EGOIST = 0;
 
 	/**
 	 * Create a new instance of the module for cooperation in dynamical networks,

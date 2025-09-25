@@ -264,7 +264,7 @@ public class Network3DGWT extends Network3D {
 	 * GUI. This is used to throttle the animated layout process to a default of at
 	 * most 20 updates per second.
 	 */
-	protected final static int MIN_DELAY_ANIMATE_MSEC = 50;
+	protected static final int MIN_DELAY_ANIMATE_MSEC = 50;
 
 	@Override
 	public void doLayout(LayoutListener ll) {

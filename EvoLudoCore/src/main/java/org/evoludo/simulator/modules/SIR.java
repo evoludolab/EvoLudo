@@ -76,17 +76,17 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	/**
 	 * The index of the susceptible trait/cohort.
 	 */
-	final static int S = 0;
+	static final int S = 0;
 
 	/**
 	 * The index of the infected trait/cohort.
 	 */
-	final static int I = 1;
+	static final int I = 1;
 
 	/**
 	 * The index of the recovered trait/cohort.
 	 */
-	final static int R = 2;
+	static final int R = 2;
 
 	/**
 	 * The transition probability/rate for susceptibles to infected, S → I,

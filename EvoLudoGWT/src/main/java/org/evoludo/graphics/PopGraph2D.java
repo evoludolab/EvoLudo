@@ -93,7 +93,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * The maximum size of a linear graph. This affects memory allocation to retain
 	 * the history of the graph.
 	 */
-	public final static int MAX_LINEAR_SIZE = 500;
+	public static final int MAX_LINEAR_SIZE = 500;
 
 	@Override
 	public void setGeometry(Geometry geometry) {
@@ -288,17 +288,17 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 					xshift = 0.0;
 					for (int w = 0; w < side; w++) {
 						// if (h % 2 == w % 2)
-						// 	// sub-lattice 1
-						// 	g.setFillStyle(sub1map.get(data[row + w]));
+						// // sub-lattice 1
+						// g.setFillStyle(sub1map.get(data[row + w]));
 						// else
-						// 	// sub-lattice 2
-						// 	g.setFillStyle(sub2map.get(data[row + w]));
+						// // sub-lattice 2
+						// g.setFillStyle(sub2map.get(data[row + w]));
 						g.setFillStyle(data[row + w]);
 						if (h % 2 == w % 2)
 							fillRect(xshift, yshift, dw, dh);
 						else
-							fillCircle(xshift + dw2, yshift + dw2, dw2);	
-							// fillRect(xshift + 0.5, yshift + 0.5, dw - 1.0, dh - 1.0);
+							fillCircle(xshift + dw2, yshift + dw2, dw2);
+						// fillRect(xshift + 0.5, yshift + 0.5, dw - 1.0, dh - 1.0);
 						xshift += dw;
 					}
 					yshift -= dh;

@@ -130,18 +130,18 @@ public abstract class Network2D extends Network {
 	/**
 	 * The baseline size of the 2D universe.
 	 */
-	public final static double R = 10.0;
+	public static final double R = 10.0;
 
 	/**
 	 * The inverse size of the baseline 2D universe. Convenience constant.
 	 */
-	protected final static double IR = 1.0 / R;
+	protected static final double IR = 1.0 / R;
 
 	/**
 	 * The inverse squared size of the baseline 2D universe,
 	 * {@code 1/R<sup>2</sup>}. Convenience constant.
 	 */
-	protected final static double IR2 = IR * IR;
+	protected static final double IR2 = IR * IR;
 
 	@Override
 	public double relax(int nodeidx) {
@@ -336,10 +336,10 @@ public abstract class Network2D extends Network {
 				}
 				return;
 			}
-// TODO: the procedure below looks dangerous. randomly pick nodes and neighbours
-// probably not worth worrying about double picking of links because this
-// should apply only if there are many to begin with...
-// add context menu to adjust fraction of visible links
+			// TODO: the procedure below looks dangerous. randomly pick nodes and neighbours
+			// probably not worth worrying about double picking of links because this
+			// should apply only if there are many to begin with...
+			// add context menu to adjust fraction of visible links
 			// draw only fraction of undirected links
 			// this is pretty memory intensive - hopefully it works...
 			int[] idxs = new int[nLinks];
