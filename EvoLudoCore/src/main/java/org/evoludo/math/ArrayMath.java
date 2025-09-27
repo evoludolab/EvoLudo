@@ -526,13 +526,13 @@ public class ArrayMath {
 	 * Find minimum element in boolean array/vector <code>a</code>.
 	 * 
 	 * @param a the <code>boolean[]</code> array
-	 * @return <code>true</code> if all elements are <code>true</code> and
-	 *         <code>false</code> if at least one element is <code>false</code>
+	 * @return <code>true</code> if all elements are <code>false</code> and
+	 *         <code>false</code> if at least one element is <code>true</code>
 	 */
 	public static boolean min(boolean[] a) {
 		int dim = a.length;
 		for (int n = 0; n < dim; n++)
-			if (!a[n])
+			if (a[n])
 				return false;
 		return true;
 	}
@@ -787,8 +787,8 @@ public class ArrayMath {
 	 * Find maximum element in boolean array/vector <code>a</code>.
 	 * 
 	 * @param a the <code>boolean[]</code> array
-	 * @return <code>false</code> if all elements are <code>false</code> and
-	 *         <code>true</code> if at least one element is <code>true</code>
+	 * @return <code>true</code> if all elements are <code>true</code> and
+	 *         <code>false</code> if at least one element is <code>false</code>
 	 */
 	public static boolean max(boolean[] a) {
 		int dim = a.length;

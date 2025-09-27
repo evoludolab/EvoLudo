@@ -4528,8 +4528,7 @@ public class Geometry {
 	public boolean isGraphConnected() {
 		boolean[] check = new boolean[size];
 		Arrays.fill(check, false);
-		isGraphConnected(0, check);
-		return ArrayMath.min(check);
+		return isGraphConnected(0, check);
 	}
 
 	/**
@@ -4556,7 +4555,7 @@ public class Geometry {
 			if (!check[nn])
 				isGraphConnected(nn, check);
 		}
-		return ArrayMath.min(check);
+		return ArrayMath.max(check);
 	}
 
 	/**
