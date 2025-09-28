@@ -824,7 +824,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		 */
 		@Override
 		protected void onUpdate(double duration) {
-			if (isActive) {
+			if (view.isActive()) {
 				control.update();
 				getRenderer().render(getScene(), graph3DCamera);
 				return;

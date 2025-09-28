@@ -365,11 +365,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected Module module;
 
 	/**
-	 * The flag to indicate whether the graph is live (visible, activated).
-	 */
-	protected boolean isActive;
-
-	/**
 	 * The bounds of the displaying area. This excludes any frames and/or axes
 	 * labels.
 	 */
@@ -501,7 +496,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @see #deactivate()
 	 */
 	public void activate() {
-		isActive = true;
 		if (this instanceof Zooming) {
 			boolean isEPub = NativeJS.isEPub();
 			// important: ibooks (desktop) returns ePubReader for standalone pages as well,
@@ -561,7 +555,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (touchStartHandler != null)
 			touchStartHandler.removeHandler();
 		touchStartHandler = null;
-		isActive = false;
 	}
 
 	@Override
@@ -633,7 +626,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @return {@code true} if painting skipped
 	 */
 	public boolean paint(boolean force) {
-		if (!isActive || hasMessage)
+		if (!view.isActive() || hasMessage)
 			return true;
 		tooltip.update();
 		return false;

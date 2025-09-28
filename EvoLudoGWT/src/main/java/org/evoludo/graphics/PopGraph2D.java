@@ -42,7 +42,6 @@ import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
-import org.evoludo.simulator.views.Pop2D;
 import org.evoludo.util.RingBuffer;
 
 import com.google.gwt.core.client.JsArray;
@@ -611,7 +610,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			displayMessage("Population size to large!");
 		} else {
 			// lazy allocation of memory for colors
-			if (isActive && (data == null || data.length != geometry.size))
+			if (view.isActive() && (data == null || data.length != geometry.size))
 				data = new String[geometry.size];
 		}
 	}

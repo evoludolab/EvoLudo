@@ -251,7 +251,7 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	 * @param isNext {@code true} if the state has changed
 	 */
 	public void update(boolean isNext) {
-		if (!isActive || noGraph || hasMessage)
+		if (!view.isActive() || noGraph || hasMessage)
 			return;
 		if (invalidated || (isNext && geometry.isDynamic)) {
 			// defer layouting to allow 3D view to be up and running
