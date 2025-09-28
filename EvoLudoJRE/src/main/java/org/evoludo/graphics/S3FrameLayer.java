@@ -83,70 +83,74 @@ public class S3FrameLayer extends FrameLayer {
 	protected void initGraphRect(Rectangle bounds) {
 		// determine size of graph/canvas
 		int top = MARGIN, bottom = MARGIN, left = MARGIN, right = MARGIN;
-		if( labels.size()>=3 ) {
-			int margin = style.labelMetrics.getHeight()+style.gapAxisLabel;
+		if (labels.size() >= 3) {
+			int margin = style.labelMetrics.getHeight() + style.gapAxisLabel;
 			top += margin;
 			bottom += margin;
 			int maxwidth = -Integer.MAX_VALUE;
-			for( Iterator<GraphLabel> i = labels.iterator(); i.hasNext(); ) {
+			for (Iterator<GraphLabel> i = labels.iterator(); i.hasNext();) {
 				maxwidth = Math.max(maxwidth, style.labelMetrics.stringWidth(i.next().label));
 			}
 			maxwidth /= 2;
 			left += maxwidth;
 			right += maxwidth;
 		}
-		if( xaxis.majorTicks>=0 ) {
-			int margin = style.tickMajorLength+style.tickMetrics.getHeight()+style.gapTickLabel;
+		if (xaxis.majorTicks >= 0) {
+			int margin = style.tickMajorLength + style.tickMetrics.getHeight() + style.gapTickLabel;
 			left = Math.max(left, margin);
 			right = Math.max(right, margin);
 			top += style.tickMetrics.getHeight();
 			bottom += margin;
-		}
-		else if( xaxis.minorTicks>0 ) {
+		} else if (xaxis.minorTicks > 0) {
 			int margin = style.tickMinorLength;
 			left = Math.max(left, margin);
 			right = Math.max(right, margin);
 			bottom += margin;
 		}
-		int height = bounds.height-top-bottom;
-		int width = Math.min(bounds.width-left-right, (int)(height*1.15470053838));	// 2/sqrt(3) to obtain an equilateral triangle
-		int nx = Math.max(1, xaxis.majorTicks+1)*(xaxis.minorTicks+1);
-		width -= width%nx;
-		left += (bounds.width-width-left-right)/2;
-		top += (bounds.height-height-top-bottom)/2;
-		canvas.setBounds(bounds.x+left, bounds.y+top, width, height);
+		int height = bounds.height - top - bottom;
+		int width = Math.min(bounds.width - left - right, (int) (height * 1.15470053838)); // 2/sqrt(3) to obtain an
+																							// equilateral triangle
+		int nx = Math.max(1, xaxis.majorTicks + 1) * (xaxis.minorTicks + 1);
+		width -= width % nx;
+		left += (bounds.width - width - left - right) / 2;
+		top += (bounds.height - height - top - bottom) / 2;
+		canvas.setBounds(bounds.x + left, bounds.y + top, width, height);
 	}
 
 	@Override
 	protected void formatAxisLabels() {
 		axisLabels.clear();
-		if( labels.size()>=3 ) {
+		if (labels.size() >= 3) {
 			// the labels only need proper positioning
-			int ylshift = canvas.height+style.gapAxisLabel+style.labelMetrics.getHeight()-style.labelMetrics.getDescent()-1;
-			if( xaxis.majorTicks>=0 ) ylshift += style.tickMajorLength+style.gapTickLabel+style.tickMetrics.getHeight();
-			else if( xaxis.minorTicks>0 ) ylshift += style.tickMajorLength;
+			int ylshift = canvas.height + style.gapAxisLabel + style.labelMetrics.getHeight()
+					- style.labelMetrics.getDescent() - 1;
+			if (xaxis.majorTicks >= 0)
+				ylshift += style.tickMajorLength + style.gapTickLabel + style.tickMetrics.getHeight();
+			else if (xaxis.minorTicks > 0)
+				ylshift += style.tickMajorLength;
 			GraphLabel label = labels.get(order[0]);
-			label.setLocation(-style.labelMetrics.stringWidth(label.label)/2, ylshift);
+			label.setLocation(-style.labelMetrics.stringWidth(label.label) / 2, ylshift);
 			label = labels.get(order[1]);
-			label.setLocation(canvas.width-style.labelMetrics.stringWidth(label.label)/2, ylshift);
+			label.setLocation(canvas.width - style.labelMetrics.stringWidth(label.label) / 2, ylshift);
 			label = labels.get(order[2]);
-			label.setLocation((canvas.width-style.labelMetrics.stringWidth(label.label))/2, -style.labelMetrics.getHeight());
+			label.setLocation((canvas.width - style.labelMetrics.stringWidth(label.label)) / 2,
+					-style.labelMetrics.getHeight());
 		}
 	}
 
 	@Override
 	protected void formatGrid() {
 		grid.reset();
-		if( xaxis.grid>0 ) {
-			double xfincr = (double)canvas.width/(double)(xaxis.grid+xaxis.grid+2);
-			double yfincr = (double)canvas.height/(double)(xaxis.grid+1);
-			for( int i=1; i<=xaxis.grid; i++ ) {
-				int xi = (int)(i*xfincr);
-				int yi = (int)(i*yfincr);
-				grid.moveTo(canvas.x+xi+xi, canvas.y+canvas.height);
-				grid.lineTo(canvas.x+xi, canvas.y+canvas.height-yi);
-				grid.lineTo(canvas.x+canvas.width-xi, canvas.y+canvas.height-yi);
-				grid.lineTo(canvas.x+canvas.width-xi-xi, canvas.y+canvas.height);
+		if (xaxis.grid > 0) {
+			double xfincr = (double) canvas.width / (double) (xaxis.grid + xaxis.grid + 2);
+			double yfincr = (double) canvas.height / (double) (xaxis.grid + 1);
+			for (int i = 1; i <= xaxis.grid; i++) {
+				int xi = (int) (i * xfincr);
+				int yi = (int) (i * yfincr);
+				grid.moveTo(canvas.x + xi + xi, canvas.y + canvas.height);
+				grid.lineTo(canvas.x + xi, canvas.y + canvas.height - yi);
+				grid.lineTo(canvas.x + canvas.width - xi, canvas.y + canvas.height - yi);
+				grid.lineTo(canvas.x + canvas.width - xi - xi, canvas.y + canvas.height);
 			}
 		}
 	}
@@ -154,82 +158,80 @@ public class S3FrameLayer extends FrameLayer {
 	@Override
 	protected void formatTicks() {
 		// format bottom axis
-		int nx = Math.max(1, xaxis.majorTicks+1)*(xaxis.minorTicks+1);
-		int yshift = canvas.height+canvas.y;
+		int nx = Math.max(1, xaxis.majorTicks + 1) * (xaxis.minorTicks + 1);
+		int yshift = canvas.height + canvas.y;
 		int xshift = canvas.x;
-		int xincr = canvas.width/nx;
-		if( xaxis.majorTicks>=0 ) {
+		int xincr = canvas.width / nx;
+		if (xaxis.majorTicks >= 0) {
 			frame.moveTo(xshift, yshift);
-			frame.lineTo(xshift, yshift+style.tickMajorLength);
+			frame.lineTo(xshift, yshift + style.tickMajorLength);
 			xshift += xincr;
 
-			for( int i=0; i<=xaxis.majorTicks; i++ ) {
-				for( int j=0; j<xaxis.minorTicks; j++ ) {
+			for (int i = 0; i <= xaxis.majorTicks; i++) {
+				for (int j = 0; j < xaxis.minorTicks; j++) {
 					frame.moveTo(xshift, yshift);
-					frame.lineTo(xshift, yshift+style.tickMinorLength);
+					frame.lineTo(xshift, yshift + style.tickMinorLength);
 					xshift += xincr;
 				}
 				frame.moveTo(xshift, yshift);
-				frame.lineTo(xshift, yshift+style.tickMajorLength);
+				frame.lineTo(xshift, yshift + style.tickMajorLength);
 				xshift += xincr;
 			}
-		}
-		else {
-			if( xaxis.minorTicks>0 )
-				for( int j=0; j<=(xaxis.minorTicks+1); j++ ) {
+		} else {
+			if (xaxis.minorTicks > 0)
+				for (int j = 0; j <= (xaxis.minorTicks + 1); j++) {
 					frame.moveTo(xshift, yshift);
-					frame.lineTo(xshift, yshift+style.tickMajorLength);
+					frame.lineTo(xshift, yshift + style.tickMajorLength);
 					xshift += xincr;
 				}
 		}
 
 		// format sides of isoceles triangle
 		xshift = canvas.x;
-		yshift = canvas.y+canvas.height;
-		double len = Math.sqrt(canvas.height*canvas.height+canvas.width*canvas.width/4);
-		int ty = (int)(canvas.width/(len+len)*(style.tickMajorLength+1)+0.5);
-		int tx = (int)(canvas.height/len*(style.tickMajorLength+1)+0.5);
-		int my = (int)(canvas.width/(len+len)*(style.tickMinorLength)+0.5);
-		int mx = (int)(canvas.height/len*(style.tickMinorLength)+0.5);
-		double xfincr = (double)canvas.width/(double)(nx+nx);
-		double yfincr = (double)canvas.height/(double)nx;
-		if( xaxis.majorTicks>=0 ) {
+		yshift = canvas.y + canvas.height;
+		double len = Math.sqrt(canvas.height * canvas.height + canvas.width * canvas.width / 4);
+		int ty = (int) (canvas.width / (len + len) * (style.tickMajorLength + 1) + 0.5);
+		int tx = (int) (canvas.height / len * (style.tickMajorLength + 1) + 0.5);
+		int my = (int) (canvas.width / (len + len) * (style.tickMinorLength) + 0.5);
+		int mx = (int) (canvas.height / len * (style.tickMinorLength) + 0.5);
+		double xfincr = (double) canvas.width / (double) (nx + nx);
+		double yfincr = (double) canvas.height / (double) nx;
+		if (xaxis.majorTicks >= 0) {
 			frame.moveTo(xshift, yshift);
-			frame.lineTo(xshift-tx, yshift-ty);
-			frame.moveTo(canvas.x+canvas.x+canvas.width-xshift, yshift);
-			frame.lineTo(canvas.x+canvas.x+canvas.width-xshift+tx, yshift-ty);
-			xshift = (int)(canvas.x+xfincr);
-			yshift = (int)(canvas.y+canvas.height-yfincr);
+			frame.lineTo(xshift - tx, yshift - ty);
+			frame.moveTo(canvas.x + canvas.x + canvas.width - xshift, yshift);
+			frame.lineTo(canvas.x + canvas.x + canvas.width - xshift + tx, yshift - ty);
+			xshift = (int) (canvas.x + xfincr);
+			yshift = (int) (canvas.y + canvas.height - yfincr);
 			int m = 2;
 
-			for( int i=0; i<=xaxis.majorTicks; i++ ) {
-				for( int j=0; j<xaxis.minorTicks; j++ ) {
+			for (int i = 0; i <= xaxis.majorTicks; i++) {
+				for (int j = 0; j < xaxis.minorTicks; j++) {
 					frame.moveTo(xshift, yshift);
-					frame.lineTo(xshift-mx, yshift-my);
-					frame.moveTo(canvas.x+canvas.x+canvas.width-xshift, yshift);
-					frame.lineTo(canvas.x+canvas.x+canvas.width-xshift+mx, yshift-my);
-					xshift = (int)(canvas.x+m*xfincr);
-					yshift = (int)(canvas.y+canvas.height-m*yfincr);
+					frame.lineTo(xshift - mx, yshift - my);
+					frame.moveTo(canvas.x + canvas.x + canvas.width - xshift, yshift);
+					frame.lineTo(canvas.x + canvas.x + canvas.width - xshift + mx, yshift - my);
+					xshift = (int) (canvas.x + m * xfincr);
+					yshift = (int) (canvas.y + canvas.height - m * yfincr);
 					m++;
 				}
 				frame.moveTo(xshift, yshift);
-				frame.lineTo(xshift-tx, yshift-ty);
-				frame.moveTo(canvas.x+canvas.x+canvas.width-xshift, yshift);
-				frame.lineTo(canvas.x+canvas.x+canvas.width-xshift+tx, yshift-ty);
-				xshift = (int)(canvas.x+m*xfincr);
-				yshift = (int)(canvas.y+canvas.height-m*yfincr);
+				frame.lineTo(xshift - tx, yshift - ty);
+				frame.moveTo(canvas.x + canvas.x + canvas.width - xshift, yshift);
+				frame.lineTo(canvas.x + canvas.x + canvas.width - xshift + tx, yshift - ty);
+				xshift = (int) (canvas.x + m * xfincr);
+				yshift = (int) (canvas.y + canvas.height - m * yfincr);
 				m++;
 			}
-		}
-		else {
-			if( xaxis.minorTicks>0 )
-				for( int j=0; j<=(xaxis.minorTicks+1); j++ ) {
-					xshift = (int)(canvas.x+j*xfincr);
-					yshift = (int)(canvas.y+canvas.height-j*yfincr);
+		} else {
+			if (xaxis.minorTicks > 0)
+				for (int j = 0; j <= (xaxis.minorTicks + 1); j++) {
+					xshift = (int) (canvas.x + j * xfincr);
+					yshift = (int) (canvas.y + canvas.height - j * yfincr);
 					frame.moveTo(xshift, yshift);
-					frame.lineTo(xshift-tx, yshift-ty);
-					frame.moveTo(canvas.x+canvas.x+canvas.width-xshift, yshift);
-					frame.lineTo(canvas.x+canvas.x+canvas.width-xshift+tx, yshift-ty);
+					frame.lineTo(xshift - tx, yshift - ty);
+					frame.moveTo(canvas.x + canvas.x + canvas.width - xshift, yshift);
+					frame.lineTo(canvas.x + canvas.x + canvas.width - xshift + tx, yshift - ty);
 				}
 		}
 		formatTickLabels();
@@ -238,49 +240,55 @@ public class S3FrameLayer extends FrameLayer {
 	@Override
 	protected synchronized void formatTickLabels() {
 		tickLabels.clear();
-		int yshift = canvas.y+canvas.height;
-		int ylshift = yshift+style.tickMajorLength+style.gapTickLabel+style.tickMetrics.getHeight();
+		int yshift = canvas.y + canvas.height;
+		int ylshift = yshift + style.tickMajorLength + style.gapTickLabel + style.tickMetrics.getHeight();
 		int xshift = canvas.x;
-		if( xaxis.majorTicks>=0 ) {
+		if (xaxis.majorTicks >= 0) {
 
 			// bottom tick labels
-			int xincr = canvas.width/(xaxis.majorTicks+1);
-			double xstep = (xaxis.upper-xaxis.lower)/(xaxis.majorTicks+1);
+			int xincr = canvas.width / (xaxis.majorTicks + 1);
+			double xstep = (xaxis.upper - xaxis.lower) / (xaxis.majorTicks + 1);
 			double xtick = xaxis.lower;
 			tickLabels.add(new GraphLabel(xaxis.formatter.format(xtick), xshift, ylshift));
 			xshift += xincr;
 
-			for( int i=0; i<=xaxis.majorTicks; i++ ) {
+			for (int i = 0; i <= xaxis.majorTicks; i++) {
 				xtick += xstep;
 				String label = xaxis.formatter.format(xtick);
-				if( i==xaxis.majorTicks ) tickLabels.add(new GraphLabel(label, xshift-style.tickMetrics.stringWidth(label), ylshift));
-				else tickLabels.add(new GraphLabel(label, xshift-2*style.tickMetrics.stringWidth(label)/3, ylshift));
+				if (i == xaxis.majorTicks)
+					tickLabels.add(new GraphLabel(label, xshift - style.tickMetrics.stringWidth(label), ylshift));
+				else
+					tickLabels
+							.add(new GraphLabel(label, xshift - 2 * style.tickMetrics.stringWidth(label) / 3, ylshift));
 				xshift += xincr;
 			}
 
 			// labels along sides of isoceles triangle
 			xshift = canvas.x;
-			yshift = canvas.y+canvas.height;
-			double len = Math.sqrt(canvas.height*canvas.height+canvas.width*canvas.width/4);
-			double xfincr = (double)canvas.width/(double)(xaxis.majorTicks+xaxis.majorTicks+2);
-			double yfincr = (double)canvas.height/(double)(xaxis.majorTicks+1);
-			int ty = (int)(canvas.width/(len+len)*(style.tickMajorLength+2+style.gapTickLabel)+0.5)-style.tickMetrics.getHeight()/2;
-			int tx = (int)(canvas.height/len*(style.tickMajorLength+2+style.gapTickLabel)+0.5);
+			yshift = canvas.y + canvas.height;
+			double len = Math.sqrt(canvas.height * canvas.height + canvas.width * canvas.width / 4);
+			double xfincr = (double) canvas.width / (double) (xaxis.majorTicks + xaxis.majorTicks + 2);
+			double yfincr = (double) canvas.height / (double) (xaxis.majorTicks + 1);
+			int ty = (int) (canvas.width / (len + len) * (style.tickMajorLength + 2 + style.gapTickLabel) + 0.5)
+					- style.tickMetrics.getHeight() / 2;
+			int tx = (int) (canvas.height / len * (style.tickMajorLength + 2 + style.gapTickLabel) + 0.5);
 			xtick = xaxis.lower;
 			String label = xaxis.formatter.format(xaxis.max);
-			tickLabels.add(new GraphLabel(label, xshift-tx-style.tickMetrics.stringWidth(label), yshift-ty));
-			tickLabels.add(new GraphLabel(xaxis.formatter.format(xtick), canvas.x+canvas.x+canvas.width-xshift+tx, yshift-ty));
-			xshift = (int)(canvas.x+xfincr);
-			yshift = (int)(canvas.y+canvas.height-yfincr);
+			tickLabels.add(new GraphLabel(label, xshift - tx - style.tickMetrics.stringWidth(label), yshift - ty));
+			tickLabels.add(new GraphLabel(xaxis.formatter.format(xtick),
+					canvas.x + canvas.x + canvas.width - xshift + tx, yshift - ty));
+			xshift = (int) (canvas.x + xfincr);
+			yshift = (int) (canvas.y + canvas.height - yfincr);
 			int m = 2;
 
-			for( int i=0; i<=xaxis.majorTicks; i++ ) {
+			for (int i = 0; i <= xaxis.majorTicks; i++) {
 				xtick += xstep;
-				label = xaxis.formatter.format(xaxis.max-(xtick-xaxis.lower));
-				tickLabels.add(new GraphLabel(label, xshift-tx-style.tickMetrics.stringWidth(label), yshift-ty));
-				tickLabels.add(new GraphLabel(xaxis.formatter.format(xtick), canvas.x+canvas.x+canvas.width-xshift+tx, yshift-ty));
-				xshift = (int)(canvas.x+m*xfincr);
-				yshift = (int)(canvas.y+canvas.height-m*yfincr);
+				label = xaxis.formatter.format(xaxis.max - (xtick - xaxis.lower));
+				tickLabels.add(new GraphLabel(label, xshift - tx - style.tickMetrics.stringWidth(label), yshift - ty));
+				tickLabels.add(new GraphLabel(xaxis.formatter.format(xtick),
+						canvas.x + canvas.x + canvas.width - xshift + tx, yshift - ty));
+				xshift = (int) (canvas.x + m * xfincr);
+				yshift = (int) (canvas.y + canvas.height - m * yfincr);
 				m++;
 			}
 		}
@@ -290,16 +298,18 @@ public class S3FrameLayer extends FrameLayer {
 		double d0 = Line2D.ptSegDistSq(e0.x, e0.y, e1.x, e1.y, p.x, p.y);
 		double d1 = Line2D.ptSegDistSq(e1.x, e1.y, e2.x, e2.y, p.x, p.y);
 		double d2 = Line2D.ptSegDistSq(e2.x, e2.y, e0.x, e0.y, p.x, p.y);
-		if( d0>d1 ) {
-			if( d1>d2 ) return 2;
+		if (d0 > d1) {
+			if (d1 > d2)
+				return 2;
 			return 1;
 		}
-		if( d0>d2 ) return 2;
+		if (d0 > d2)
+			return 2;
 		return 0;
 	}
 
 	private static void S3ToCartesian(double l, double d, double c, Point p, Rectangle canvas) {
-		p.x = (int)((d-l+1.0)*0.5*canvas.width+canvas.x);
-		p.y = (int)((1.0-c)*canvas.height+canvas.y);
+		p.x = (int) ((d - l + 1.0) * 0.5 * canvas.width + canvas.x);
+		p.y = (int) ((1.0 - c) * canvas.height + canvas.y);
 	}
 }

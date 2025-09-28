@@ -41,30 +41,30 @@ public class GraphStyle {
 
 	private final Component component;
 
-	public Font	tickFont = defaultTickFont;
-	private double	tickFontSize = FONT_TICK_SIZE;
-	FontMetrics	tickMetrics;
+	public Font tickFont = defaultTickFont;
+	private double tickFontSize = FONT_TICK_SIZE;
+	FontMetrics tickMetrics;
 
-	public Font	labelFont = defaultLabelFont;
-	private double	labelFontSize = FONT_LABEL_SIZE;
-	FontMetrics	labelMetrics;
+	public Font labelFont = defaultLabelFont;
+	private double labelFontSize = FONT_LABEL_SIZE;
+	FontMetrics labelMetrics;
 
-	public Font		menuFont = defaultMenuFont;
+	public Font menuFont = defaultMenuFont;
 
-	protected double	lineStrokeWidth = LINE_STROKE;
-	public Stroke	lineStroke = defaultLineStroke;
+	protected double lineStrokeWidth = LINE_STROKE;
+	public Stroke lineStroke = defaultLineStroke;
 
-	protected double	frameStrokeWidth = FRAME_STROKE;
-	public Stroke	frameStroke = defaultFrameStroke;
+	protected double frameStrokeWidth = FRAME_STROKE;
+	public Stroke frameStroke = defaultFrameStroke;
 
-	public Color	background = Color.white;
-	public Color	zoomframe = new Color(255, 127, 127);
-	public Color	gridcolor = new Color(160, 160, 160);
+	public Color background = Color.white;
+	public Color zoomframe = new Color(255, 127, 127);
+	public Color gridcolor = new Color(160, 160, 160);
 
-	public int	tickMajorLength = TICK_MAJOR_LENGTH;
-	public int	tickMinorLength = TICK_MINOR_LENGTH;
-	public int	gapTickLabel = GAP_TICK_LABEL;
-	public int	gapAxisLabel = GAP_AXIS_LABEL;
+	public int tickMajorLength = TICK_MAJOR_LENGTH;
+	public int tickMinorLength = TICK_MINOR_LENGTH;
+	public int gapTickLabel = GAP_TICK_LABEL;
+	public int gapAxisLabel = GAP_AXIS_LABEL;
 
 	static final int TICK_MAJOR_LENGTH = 4;
 	static final int TICK_MINOR_LENGTH = 2;
@@ -77,11 +77,13 @@ public class GraphStyle {
 	public static final double LINE_STROKE = 0.008;
 	public static final double FRAME_STROKE = 1.0;
 
-	public static Font	defaultMenuFont = new Font("Default", Font.PLAIN, FONT_MENU_SIZE);
-	public static Font	defaultTickFont = new Font("Default", Font.PLAIN, FONT_TICK_SIZE);
-	public static Font	defaultLabelFont = new Font("Default", Font.BOLD, FONT_LABEL_SIZE);
-	public static Stroke	defaultLineStroke = new BasicStroke((float)LINE_STROKE, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-	public static Stroke	defaultFrameStroke = new BasicStroke((float)FRAME_STROKE, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+	public static Font defaultMenuFont = new Font("Default", Font.PLAIN, FONT_MENU_SIZE);
+	public static Font defaultTickFont = new Font("Default", Font.PLAIN, FONT_TICK_SIZE);
+	public static Font defaultLabelFont = new Font("Default", Font.BOLD, FONT_LABEL_SIZE);
+	public static Stroke defaultLineStroke = new BasicStroke((float) LINE_STROKE, BasicStroke.CAP_ROUND,
+			BasicStroke.JOIN_ROUND);
+	public static Stroke defaultFrameStroke = new BasicStroke((float) FRAME_STROKE, BasicStroke.CAP_ROUND,
+			BasicStroke.JOIN_ROUND);
 
 	public GraphStyle(Component component) {
 		this.component = component;
@@ -90,31 +92,35 @@ public class GraphStyle {
 	}
 
 	public void setLabelFont(Font font) {
-		if( font==null ) return;
-//		if( font.getFontName().equals(labelFont.getFontName()) ) return;
+		if (font == null)
+			return;
+		// if( font.getFontName().equals(labelFont.getFontName()) ) return;
 		labelFontSize = font.getSize2D();
-		labelFont = font.deriveFont((float)(labelFontSize*zoom));
+		labelFont = font.deriveFont((float) (labelFontSize * zoom));
 		labelMetrics = component.getFontMetrics(labelFont);
 	}
 
 	public void setTickFont(Font font) {
-		if( font==null ) return;
-//		if( font.getFontName().equals(tickFont.getFontName()) ) return;
+		if (font == null)
+			return;
+		// if( font.getFontName().equals(tickFont.getFontName()) ) return;
 		tickFontSize = font.getSize2D();
-		tickFont = font.deriveFont((float)(tickFontSize*zoom));
+		tickFont = font.deriveFont((float) (tickFontSize * zoom));
 		tickMetrics = component.getFontMetrics(tickFont);
 	}
 
 	public void setLineStroke(double width) {
-		if( width<=0.0 ) return;
+		if (width <= 0.0)
+			return;
 		lineStrokeWidth = width;
-		lineStroke = new BasicStroke((float)lineStrokeWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+		lineStroke = new BasicStroke((float) lineStrokeWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
 	}
 
 	public void setFrameStroke(double width) {
-		if( width<=0.0 ) return;
+		if (width <= 0.0)
+			return;
 		frameStrokeWidth = width;
-		frameStroke = new BasicStroke((float)frameStrokeWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+		frameStroke = new BasicStroke((float) frameStrokeWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
 	}
 
 	private double zoom = 1.0;
@@ -122,12 +128,13 @@ public class GraphStyle {
 
 	// reset zoom
 	public void zoom() {
-		tickFont = tickFont.deriveFont((float)tickFontSize);
-		labelFont = labelFont.deriveFont((float)labelFontSize);
+		tickFont = tickFont.deriveFont((float) tickFontSize);
+		labelFont = labelFont.deriveFont((float) labelFontSize);
 		tickMetrics = component.getFontMetrics(tickFont);
 		labelMetrics = component.getFontMetrics(labelFont);
-//		lineStroke = new BasicStroke(lineStrokeWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-		frameStroke = new BasicStroke((float)frameStrokeWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+		// lineStroke = new BasicStroke(lineStrokeWidth, BasicStroke.CAP_ROUND,
+		// BasicStroke.JOIN_ROUND);
+		frameStroke = new BasicStroke((float) frameStrokeWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
 		tickMajorLength = TICK_MAJOR_LENGTH;
 		tickMinorLength = TICK_MINOR_LENGTH;
 		gapTickLabel = GAP_TICK_LABEL;
@@ -142,21 +149,23 @@ public class GraphStyle {
 
 	public void zoom(double xs, double ys) {
 		// zoom font etc less to maintain an optically balanced appearance
-		zoom *= (1.0+Math.min(xs, ys))*0.5;
-		zoomStroke *= (1.0+Math.min(xs, ys))*0.25;	// strokes must scale even less
-		if( zoom<=1.0 ) {
+		zoom *= (1.0 + Math.min(xs, ys)) * 0.5;
+		zoomStroke *= (1.0 + Math.min(xs, ys)) * 0.25; // strokes must scale even less
+		if (zoom <= 1.0) {
 			zoom();
 			return;
 		}
-		tickFont = tickFont.deriveFont((float)(tickFontSize*zoom));
-		labelFont = labelFont.deriveFont((float)(labelFontSize*zoom));
+		tickFont = tickFont.deriveFont((float) (tickFontSize * zoom));
+		labelFont = labelFont.deriveFont((float) (labelFontSize * zoom));
 		tickMetrics = component.getFontMetrics(tickFont);
 		labelMetrics = component.getFontMetrics(labelFont);
-//		lineStroke = new BasicStroke(lineStrokeWidth*zoomStroke, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-		frameStroke = new BasicStroke((float)(frameStrokeWidth*zoomStroke), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
-		tickMajorLength = Math.max(TICK_MAJOR_LENGTH, (int)(TICK_MAJOR_LENGTH*zoom+0.5));
-		tickMinorLength = Math.max(TICK_MINOR_LENGTH, (int)(TICK_MINOR_LENGTH*zoom+0.5));
-		gapTickLabel = Math.max(GAP_TICK_LABEL, (int)(GAP_TICK_LABEL*zoom+0.5));
-		gapAxisLabel = Math.max(GAP_AXIS_LABEL, (int)(GAP_AXIS_LABEL*zoom+0.5));
+		// lineStroke = new BasicStroke(lineStrokeWidth*zoomStroke,
+		// BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+		frameStroke = new BasicStroke((float) (frameStrokeWidth * zoomStroke), BasicStroke.CAP_ROUND,
+				BasicStroke.JOIN_ROUND);
+		tickMajorLength = Math.max(TICK_MAJOR_LENGTH, (int) (TICK_MAJOR_LENGTH * zoom + 0.5));
+		tickMinorLength = Math.max(TICK_MINOR_LENGTH, (int) (TICK_MINOR_LENGTH * zoom + 0.5));
+		gapTickLabel = Math.max(GAP_TICK_LABEL, (int) (GAP_TICK_LABEL * zoom + 0.5));
+		gapAxisLabel = Math.max(GAP_AXIS_LABEL, (int) (GAP_AXIS_LABEL * zoom + 0.5));
 	}
 }

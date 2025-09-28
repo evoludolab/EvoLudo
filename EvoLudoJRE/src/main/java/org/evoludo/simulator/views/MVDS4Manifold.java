@@ -60,7 +60,7 @@ public class MVDS4Manifold extends MVAbstract implements StateGraphListener {
 
 	@Override
 	public void reset(boolean clear) {
-		if( graphs.size()>0 ) {
+		if (graphs.size() > 0) {
 			super.reset(clear);
 			return;
 		}
@@ -73,7 +73,8 @@ public class MVDS4Manifold extends MVAbstract implements StateGraphListener {
 		y.showLabel = false;
 		y.max = 1.0;
 		y.min = 0.0;
-		JScrollPane scroll = new JScrollPane(graph, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		JScrollPane scroll = new JScrollPane(graph, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
+				ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		scroll.getViewport().setOpaque(false);
 		scroll.setOpaque(false);
 		graph.setOpaque(false);
@@ -89,7 +90,7 @@ public class MVDS4Manifold extends MVAbstract implements StateGraphListener {
 	@Override
 	public void initCustomMenu(JPopupMenu menu, AbstractGraph owner) {
 		super.initCustomMenu(menu, owner);
-//		initCMShowLocalDynamics(menu, owner);
+		// initCMShowLocalDynamics(menu, owner);
 		initCMTimeReversed(menu, owner);
 	}
 
@@ -97,33 +98,34 @@ public class MVDS4Manifold extends MVAbstract implements StateGraphListener {
 	public void getData(StateData data, int tag) {
 		Model model = engine.getModel();
 		data.time = model.getUpdates();
-		if( data.isLocal ) {
+		if (data.isLocal) {
 			System.arraycopy(model.getMeanTraitAt(tag, localNode), 0, data.state, 0, data.state.length);
-			data.connect = model.isConnected();			
-		}
-		else
+			data.connect = model.isConnected();
+		} else
 			data.connect = model.getMeanTraits(tag, data.state);
 		state2coord(data.state, data.now);
 		wk = S4Wk(data.state);
 	}
 
-// retire setting of initial state in projection of S4 (outdated JRE and only used for punishing models)
+	// retire setting of initial state in projection of S4 (outdated JRE and only
+	// used for punishing models)
 	// @Override
 	// public void setState(double[] loc, int tag) {
-	// 	((Discrete)module).setInit(coord2state(new Point2D(loc[0], loc[1])));
-	// 	engine.modelReinit();
+	// ((Discrete)module).setInit(coord2state(new Point2D(loc[0], loc[1])));
+	// engine.modelReinit();
 	// }
 
 	// @Override
 	// public String getToolTipText(Point2D loc, int tag) {
-	// 	String[] names = module.getTraitNames();
-	// 	double[] state = coord2state(loc);
-	// 	String toolTip = "<html>";
-	// 	for( int i=0; i<4; i++ )
-	// 		toolTip += "<i>"+names[i]+":</i> "+Formatter.format(state[i]*100.0, 2)+"%<br>";
-	// 	double wki = S4Wk(((Discrete)module).getInit());
-	// 	toolTip += "<i>W<sub>k</sub> :</i> "+Formatter.format(wki, 4);
-	// 	return toolTip;
+	// String[] names = module.getTraitNames();
+	// double[] state = coord2state(loc);
+	// String toolTip = "<html>";
+	// for( int i=0; i<4; i++ )
+	// toolTip += "<i>"+names[i]+":</i> "+Formatter.format(state[i]*100.0,
+	// 2)+"%<br>";
+	// double wki = S4Wk(((Discrete)module).getInit());
+	// toolTip += "<i>W<sub>k</sub> :</i> "+Formatter.format(wki, 4);
+	// return toolTip;
 	// }
 
 	@Override
@@ -140,7 +142,7 @@ public class MVDS4Manifold extends MVAbstract implements StateGraphListener {
 	@Override
 	public void update(boolean updateGUI) {
 		super.update(updateGUI);
-		if( updateGUI )
+		if (updateGUI)
 			updateWK();
 	}
 
@@ -151,62 +153,65 @@ public class MVDS4Manifold extends MVAbstract implements StateGraphListener {
 	}
 
 	private void updateWK() {
-		if( wk!=wk ) wk = 0.0;	// catch NaN from 0/0
-		wklabel.setText("K="+Formatter.format(wk, 2));
+		if (wk != wk)
+			wk = 0.0; // catch NaN from 0/0
+		wklabel.setText("K=" + Formatter.format(wk, 2));
 	}
 
 	// COORDINATE CONVERSION UTILITIES
-	// recall: V - COOP_REWARD = 0; X - COOP_NONE = 3; W - DEFECT_REWARD = 1; Y - DEFECT_NONE = 2;
+	// recall: V - COOP_REWARD = 0; X - COOP_NONE = 3; W - DEFECT_REWARD = 1; Y -
+	// DEFECT_NONE = 2;
 
 	private static double S4Wk(double[] s) {
-		return s[1]*s[3]/(s[0]*s[2]);
+		return s[1] * s[3] / (s[0] * s[2]);
 	}
 
 	private Point2D state2coord(double[] s, Point2D p) {
-		p.x = (s[1]+s[2]-s[0]-s[3]+1.0)/2.0;
-		p.y = (1.0-(s[2]+s[3]-s[0]-s[1]))/2.0;
+		p.x = (s[1] + s[2] - s[0] - s[3] + 1.0) / 2.0;
+		p.y = (1.0 - (s[2] + s[3] - s[0] - s[1])) / 2.0;
 		return p;
 	}
 
-// 	private double[] coord2state(Point2D p) {
-// 		double[] init = ((Discrete)module).getInit();
-// 		double wki = 1.0/S4Wk(init);	// here we use Y*V/(X*W)
-// 		double[] s = new double[4];
-// 		// threshold was 1e-8, which is apparently too small for floats!
-// 		if( Math.abs(wki-1.0)<1e-6 ) {
-// 			// manifold as good as Wk=1
-// 			s[0] = p.y*(1.0-p.x);
-// 			s[1] = p.x*p.y;
-// 			s[2] = s[1]*(1.0-p.y)/(s[0]+s[1]);
-// 			s[3] = s[0]*(1.0-p.y)/(s[0]+s[1]);
-// 			return s;
-// 		}
-// 		double wks = wki*(1.0-p.x-p.y);
-// 		double sqr = Math.sqrt(4.0*(wki-1.0)*p.x*p.y+(p.x+p.y+wks)*(p.x+p.y+wks));
-// 		double b1 = p.x-p.y+wki*(1.0-p.x+p.y);
-// 		double b2 = -p.x-p.y-wks;
-// 		double i2wk1 = 1.0/(2.0*(wki-1.0));
-// 		s[0] = (b1-sqr)*i2wk1;
-// 		s[1] = (b2+sqr)*i2wk1;
-// 		s[2] = wki*s[1]*(1.0-p.y)/(s[0]+wki*s[1]);
-// 		s[3] = s[0]*(1.0-p.y)/(s[0]+wki*s[1]);
-// 		// check if inside simplex - exclude 0 and 1 to avoid complications
-// 		if( s[0]>0.0 && s[0]<1.0 && s[1]>0.0 && s[1]<1.0 
-// 			&& s[2]>0.0 && s[2]<1.0 && s[3]>0.0 && s[3]<1.0 )
-// 			return s;
-			
-// 		s[0] = (b1+sqr)*i2wk1;
-// 		s[1] = (b2-sqr)*i2wk1;
-// 		s[2] = wki*s[1]*(1.0-p.y)/(s[0]+wki*s[1]);
-// 		s[3] = s[0]*(1.0-p.y)/(s[0]+wki*s[1]);
-// 		// check if inside simplex - exclude 0 and 1 to avoid complications
-// 		if( s[0]>0.0 && s[0]<1.0 && s[1]>0.0 && s[1]<1.0 
-// 			&& s[2]>0.0 && s[2]<1.0 && s[3]>0.0 && s[3]<1.0 )
-// 			return s;
+	// private double[] coord2state(Point2D p) {
+	// double[] init = ((Discrete)module).getInit();
+	// double wki = 1.0/S4Wk(init); // here we use Y*V/(X*W)
+	// double[] s = new double[4];
+	// // threshold was 1e-8, which is apparently too small for floats!
+	// if( Math.abs(wki-1.0)<1e-6 ) {
+	// // manifold as good as Wk=1
+	// s[0] = p.y*(1.0-p.x);
+	// s[1] = p.x*p.y;
+	// s[2] = s[1]*(1.0-p.y)/(s[0]+s[1]);
+	// s[3] = s[0]*(1.0-p.y)/(s[0]+s[1]);
+	// return s;
+	// }
+	// double wks = wki*(1.0-p.x-p.y);
+	// double sqr = Math.sqrt(4.0*(wki-1.0)*p.x*p.y+(p.x+p.y+wks)*(p.x+p.y+wks));
+	// double b1 = p.x-p.y+wki*(1.0-p.x+p.y);
+	// double b2 = -p.x-p.y-wks;
+	// double i2wk1 = 1.0/(2.0*(wki-1.0));
+	// s[0] = (b1-sqr)*i2wk1;
+	// s[1] = (b2+sqr)*i2wk1;
+	// s[2] = wki*s[1]*(1.0-p.y)/(s[0]+wki*s[1]);
+	// s[3] = s[0]*(1.0-p.y)/(s[0]+wki*s[1]);
+	// // check if inside simplex - exclude 0 and 1 to avoid complications
+	// if( s[0]>0.0 && s[0]<1.0 && s[1]>0.0 && s[1]<1.0
+	// && s[2]>0.0 && s[2]<1.0 && s[3]>0.0 && s[3]<1.0 )
+	// return s;
 
-// System.out.println("failed... wk="+S4Wk(s)+" s=("+s[0]+", "+s[1]+", "+s[2]+", "+s[3]+")");
-// 		logger.warning("initial point not in simplex - how can this happen?!");
-// 		System.arraycopy(init, 0, s, 0, 4);
-// 		return s;
-// 	}
+	// s[0] = (b1+sqr)*i2wk1;
+	// s[1] = (b2-sqr)*i2wk1;
+	// s[2] = wki*s[1]*(1.0-p.y)/(s[0]+wki*s[1]);
+	// s[3] = s[0]*(1.0-p.y)/(s[0]+wki*s[1]);
+	// // check if inside simplex - exclude 0 and 1 to avoid complications
+	// if( s[0]>0.0 && s[0]<1.0 && s[1]>0.0 && s[1]<1.0
+	// && s[2]>0.0 && s[2]<1.0 && s[3]>0.0 && s[3]<1.0 )
+	// return s;
+
+	// System.out.println("failed... wk="+S4Wk(s)+" s=("+s[0]+", "+s[1]+", "+s[2]+",
+	// "+s[3]+")");
+	// logger.warning("initial point not in simplex - how can this happen?!");
+	// System.arraycopy(init, 0, s, 0, 4);
+	// return s;
+	// }
 }

@@ -44,5 +44,5 @@ public interface PopListener extends GraphListener {
 
 	public boolean mouseHitNode(int node, int tag);
 
-//	public boolean mouseHitNode(int node, int refnode, int tag);
+	// public boolean mouseHitNode(int node, int refnode, int tag);
 }

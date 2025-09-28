@@ -55,15 +55,15 @@ public class MVC2Distr extends MVAbstract implements PopListener {
 
 	private static final long serialVersionUID = 20110423L;
 
-	double[]		bins;
-	int			nData;
-	String		ylabel = "time";
-	protected	ColorMap<Color> colorMap;
+	double[] bins;
+	int nData;
+	String ylabel = "time";
+	protected ColorMap<Color> colorMap;
 	@SuppressWarnings("hiding")
 	protected Continuous module;
 	protected PopGraph2D graph;
 
-    public MVC2Distr(EvoLudoLab lab) {
+	public MVC2Distr(EvoLudoLab lab) {
 		super(lab);
 		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 	}
@@ -79,12 +79,13 @@ public class MVC2Distr extends MVAbstract implements PopListener {
 		graphs.clear();
 		nData = module.getNTraits();
 		// requires exactly 2 traits
-// note: this requires further attention - HISTO_BINS might disappear in favor of a dynamic approach
-		bins = new double[HistoGraph.HISTO_BINS*HistoGraph.HISTO_BINS];
+		// note: this requires further attention - HISTO_BINS might disappear in favor
+		// of a dynamic approach
+		bins = new double[HistoGraph.HISTO_BINS * HistoGraph.HISTO_BINS];
 		// requires exactly 2 traits
-        Geometry geometry = new Geometry(engine);
-        geometry.setType(Geometry.Type.SQUARE);
-        geometry.size = HistoGraph.HISTO_BINS*HistoGraph.HISTO_BINS;
+		Geometry geometry = new Geometry(engine);
+		geometry.setType(Geometry.Type.SQUARE);
+		geometry.size = HistoGraph.HISTO_BINS * HistoGraph.HISTO_BINS;
 		graph = new PopGraph2D(this, geometry, module);
 		GraphAxis x = graph.getXAxis();
 		x.label = module.getTraitName(0);
@@ -104,7 +105,8 @@ public class MVC2Distr extends MVAbstract implements PopListener {
 		y.grid = 0;
 		y.majorTicks = 3;
 		y.minorTicks = 1;
-		JScrollPane scroll = new JScrollPane(graph, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		JScrollPane scroll = new JScrollPane(graph, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
+				ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		scroll.getViewport().setOpaque(false);
 		scroll.setOpaque(false);
 		graph.setOpaque(false);
@@ -115,32 +117,32 @@ public class MVC2Distr extends MVAbstract implements PopListener {
 	@Override
 	public void reset(boolean clear) {
 		int nPanes = module.getNTraits();
-		if( nPanes!=nData )
+		if (nPanes != nData)
 			initGraphs();
 		super.reset(clear);
 	}
-	
+
 	// a chance to customize and touch up the graphics
 	@Override
 	public void polish(Graphics2D plot, AbstractGraph agraph) {
 		// add diagonal line
 		plot.setPaint(Color.red);
 		Rectangle canvas = graph.canvas;
-		plot.drawLine(canvas.x, canvas.y+canvas.height, canvas.x+canvas.width, canvas.y);
+		plot.drawLine(canvas.x, canvas.y + canvas.height, canvas.x + canvas.width, canvas.y);
 	}
 
 	// IMPLEMENT PopListener - alternative location to set axis specs
 	@Override
-	public boolean	verifyXAxis(GraphAxis x, int tag) {
+	public boolean verifyXAxis(GraphAxis x, int tag) {
 		boolean changed = false;
-// requires exactly 2 traits
+		// requires exactly 2 traits
 		double min = module.getTraitMin()[0];
-		if( Math.abs(x.min-min)>1e-8 ) {
+		if (Math.abs(x.min - min) > 1e-8) {
 			x.min = min;
 			changed = true;
 		}
 		double max = module.getTraitMax()[0];
-		if( Math.abs(x.max-max)>1e-8 ) {
+		if (Math.abs(x.max - max) > 1e-8) {
 			x.max = max;
 			changed = true;
 		}
@@ -148,16 +150,16 @@ public class MVC2Distr extends MVAbstract implements PopListener {
 	}
 
 	@Override
-	public boolean	verifyYAxis(GraphAxis y, int tag) {
+	public boolean verifyYAxis(GraphAxis y, int tag) {
 		boolean changed = false;
-// requires exactly 2 traits
+		// requires exactly 2 traits
 		double min = module.getTraitMin()[1];
-		if( Math.abs(y.min-min)>1e-8 ) {
+		if (Math.abs(y.min - min) > 1e-8) {
 			y.min = min;
 			changed = true;
 		}
 		double max = module.getTraitMax()[1];
-		if( Math.abs(y.max-max)>1e-8 ) {
+		if (Math.abs(y.max - max) > 1e-8) {
 			y.max = max;
 			changed = true;
 		}
@@ -166,19 +168,19 @@ public class MVC2Distr extends MVAbstract implements PopListener {
 
 	// implement PopListener - mostly done in MVAbstract
 
-    @Override
+	@Override
 	public void initColor(int tag) {
 		colorMap = new ColorMapJRE.Gradient1D(new Color[] { Color.WHITE, Color.BLACK, Color.RED }, 100);
 	}
 
-    @Override
+	@Override
 	public double getData(Color[] data, int tag) {
 		Model model = engine.getModel();
 		// check if we need to process data first
 		double now = model.getUpdates();
-		if( now-timestamp>1e-8 ) {
+		if (now - timestamp > 1e-8) {
 			// process data first
-//			((CXPopulation)population).getTraitDensityData(data, colorMap, bins, true);
+			// ((CXPopulation)population).getTraitDensityData(data, colorMap, bins, true);
 			((org.evoludo.simulator.models.Continuous) model).get2DTraitHistogramData(0, bins, 0, 1);
 			// translate data into colors
 			timestamp = now;
@@ -187,43 +189,45 @@ public class MVC2Distr extends MVAbstract implements PopListener {
 		return now;
 	}
 
-    @Override
+	@Override
 	public String getInfoAt(Network2D network, int node, int tag) {
-		if( node<0 )
+		if (node < 0)
 			return null;
-//		PopGraph2D graph = (PopGraph2D)graphs.get(tag);
-		int xBin = node%HistoGraph.HISTO_BINS;
+		// PopGraph2D graph = (PopGraph2D)graphs.get(tag);
+		int xBin = node % HistoGraph.HISTO_BINS;
 		GraphAxis x = graph.getXAxis();
-		double xDelta = (x.max-x.min)/HistoGraph.HISTO_BINS;
-		double xLow = x.min+xBin*xDelta;
-		int yBin = node/HistoGraph.HISTO_BINS;
+		double xDelta = (x.max - x.min) / HistoGraph.HISTO_BINS;
+		double xLow = x.min + xBin * xDelta;
+		int yBin = node / HistoGraph.HISTO_BINS;
 		GraphAxis y = graph.getYAxis();
-		double yDelta = (y.max-y.min)/HistoGraph.HISTO_BINS;
-		double yLow = y.min+yBin*yDelta;
-// note: 'density' and '%' should not be hardwired...
-		return "<html><i>"+x.label+":</i> ["+x.formatter.format(xLow)+", "+x.formatter.format(xLow+xDelta)+")"+
-			   "<br><i>"+y.label+":</i> ["+y.formatter.format(yLow)+", "+y.formatter.format(yLow+yDelta)+")"+
-			   "<br><i>density:</i> "+x.formatter.format(100.0*bins[node])+"%";
+		double yDelta = (y.max - y.min) / HistoGraph.HISTO_BINS;
+		double yLow = y.min + yBin * yDelta;
+		// note: 'density' and '%' should not be hardwired...
+		return "<html><i>" + x.label + ":</i> [" + x.formatter.format(xLow) + ", " + x.formatter.format(xLow + xDelta)
+				+ ")" +
+				"<br><i>" + y.label + ":</i> [" + y.formatter.format(yLow) + ", " + y.formatter.format(yLow + yDelta)
+				+ ")" +
+				"<br><i>density:</i> " + x.formatter.format(100.0 * bins[node]) + "%";
 	}
 
-    @Override
+	@Override
 	protected String getFilePrefix() {
 		return "distr2D";
 	}
 
 	// implement MultiViewPanel - mostly done in MVAbstract
-    @Override
+	@Override
 	public String getName() {
 		return "Trait - Distribution 2D";
 	}
 
-    @Override
+	@Override
 	public boolean mouseHitNode(int node, int tag) {
 		return false;
 	}
 
-//    @Override
-//	public boolean mouseHitNode(int node, int refnode, int tag) {
-//		return false;
-//	}
+	// @Override
+	// public boolean mouseHitNode(int node, int refnode, int tag) {
+	// return false;
+	// }
 }

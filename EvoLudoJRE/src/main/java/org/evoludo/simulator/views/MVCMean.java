@@ -78,7 +78,7 @@ public class MVCMean extends MVAbstract implements StateGraphListener {
 		x.label = xLabelText;
 		x.showLabel = false;
 		x.max = 0.0;
-		x.min = 1.0;	// min>max forces recalculation
+		x.min = 1.0; // min>max forces recalculation
 		x.step = -engine.getModel().getTimeStep();
 		x.grid = 0;
 		x.majorTicks = 3;
@@ -95,54 +95,56 @@ public class MVCMean extends MVAbstract implements StateGraphListener {
 		graph.setAlignmentX(Component.CENTER_ALIGNMENT);
 		// insert graph before xLabel
 		Component[] comps = getComponents();
-		for( int c=0; c<getComponentCount(); c++ ) {
-			if( comps[c]!=xLabel )
+		for (int c = 0; c < getComponentCount(); c++) {
+			if (comps[c] != xLabel)
 				continue;
 			// add space between graphs
-			if( getComponentCount()>1 )
+			if (getComponentCount() > 1)
 				add(Box.createVerticalStrut(4), c++);
 			add(graph, c);
 			break;
 		}
 		graphs.add(graph);
 	}
-	
+
 	@Override
 	public void reset(boolean clear) {
 		nData = module.getNTraits();
 		int nGraphs = graphs.size();
-		if( nData==nGraphs ) {
+		if (nData == nGraphs) {
 			super.reset(clear);
 			return;
 		}
-		if( nData<nGraphs )
-			for(int n=nGraphs; n>nData; n--)
+		if (nData < nGraphs)
+			for (int n = nGraphs; n > nData; n--)
 				remove(graphs.remove(nData));
 		else {
-			// invalidate layout of existing graphs - otherwise the newly added graphs will have height zero!
-			for(int n=0; n<nGraphs; n++)
+			// invalidate layout of existing graphs - otherwise the newly added graphs will
+			// have height zero!
+			for (int n = 0; n < nGraphs; n++)
 				graphs.get(n).setSize(0, 0);
-			for(int n=nGraphs; n<nData; n++)
+			for (int n = nGraphs; n < nData; n++)
 				addGraph(n);
 		}
-		if( mean==null || mean.length!=2*nData )
-			mean = new double[2*nData];
+		if (mean == null || mean.length != 2 * nData)
+			mean = new double[2 * nData];
 		super.reset(true);
 	}
 
 	@Override
 	public void initStyle(GraphStyle style, AbstractGraph owner) {
 		super.initStyle(style, owner);
-		if( nData==1 )
+		if (nData == 1)
 			return;
 		xLabel.setFont(style.labelFont);
-		xLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, getFontMetrics(style.labelFont).stringWidth(xLabelText)));
+		xLabel.setBorder(
+				BorderFactory.createEmptyBorder(0, 0, 0, getFontMetrics(style.labelFont).stringWidth(xLabelText)));
 	}
 
 	/*
 	 * implement GraphListener - mostly done in MVAbstract
 	 */
-// note: this is hackish... simply return 3 for min, max, mean
+	// note: this is hackish... simply return 3 for min, max, mean
 	@Override
 	public int getNData(int tag) {
 		return 3;
@@ -153,21 +155,21 @@ public class MVCMean extends MVAbstract implements StateGraphListener {
 		Model model = engine.getModel();
 		data.time = model.getUpdates();
 		data.connect = model.getMeanTraits(tag, mean);
-		int idx = 2*tag;
+		int idx = 2 * tag;
 		double m = mean[idx];
-		double s = mean[idx+1];
+		double s = mean[idx + 1];
 		data.state[0] = m;
-		data.state[1] = m-s;
-		data.state[2] = m+s;
+		data.state[1] = m - s;
+		data.state[2] = m + s;
 	}
 
 	@Override
-	public boolean	verifyXAxis(GraphAxis x, int tag) {
+	public boolean verifyXAxis(GraphAxis x, int tag) {
 		boolean changed = false;
 		double step = -engine.getModel().getTimeStep();
-		if( Math.abs(x.step-step)>1e-8 ) {
-			double steps = (x.max-x.min)/x.step;
-			x.min = x.max-steps*step;
+		if (Math.abs(x.step - step) > 1e-8) {
+			double steps = (x.max - x.min) / x.step;
+			x.min = x.max - steps * step;
 			x.step = step;
 			changed = true;
 		}
@@ -175,15 +177,15 @@ public class MVCMean extends MVAbstract implements StateGraphListener {
 	}
 
 	@Override
-	public boolean	verifyYAxis(GraphAxis y, int tag) {
+	public boolean verifyYAxis(GraphAxis y, int tag) {
 		boolean changed = false;
 		double min = module.getTraitMin()[tag];
-		if( Math.abs(y.min-min)>1e-8 ) {
+		if (Math.abs(y.min - min) > 1e-8) {
 			y.min = min;
 			changed = true;
 		}
 		double max = module.getTraitMax()[tag];
-		if( Math.abs(y.max-max)>1e-8 ) {
+		if (Math.abs(y.max - max) > 1e-8) {
 			y.max = max;
 			changed = true;
 		}

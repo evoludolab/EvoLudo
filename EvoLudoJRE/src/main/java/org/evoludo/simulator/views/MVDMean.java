@@ -47,7 +47,7 @@ public class MVDMean extends MVAbstract implements StateGraphListener {
 
 	@Override
 	public void reset(boolean clear) {
-		if( graphs.size()>0 ) {
+		if (graphs.size() > 0) {
 			super.reset(clear);
 			return;
 		}
@@ -57,7 +57,7 @@ public class MVDMean extends MVAbstract implements StateGraphListener {
 		x.label = "time";
 		x.showLabel = true;
 		x.max = 0.0;
-		x.min = 1.0;	// min>max forces recalculation
+		x.min = 1.0; // min>max forces recalculation
 		x.step = -engine.getModel().getTimeStep();
 		x.grid = 0;
 		x.majorTicks = 3;

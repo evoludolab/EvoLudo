@@ -54,9 +54,9 @@ public class MVDS3 extends MVAbstract implements StateGraphListener {
 
 	@Override
 	public void reset(boolean clear) {
-		if( graphs.size()>0 ) {
+		if (graphs.size() > 0) {
 			active = null;
-			if( module.getNTraits() != module.getNActive() )
+			if (module.getNTraits() != module.getNActive())
 				active = module.getActiveTraits();
 			super.reset(clear);
 			return;
@@ -66,7 +66,8 @@ public class MVDS3 extends MVAbstract implements StateGraphListener {
 		x.grid = 2;
 		x.majorTicks = 2;
 		x.minorTicks = 1;
-		JScrollPane scroll = new JScrollPane(graph, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		JScrollPane scroll = new JScrollPane(graph, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
+				ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		scroll.getViewport().setOpaque(false);
 		scroll.setOpaque(false);
 		graph.setOpaque(false);
@@ -78,7 +79,7 @@ public class MVDS3 extends MVAbstract implements StateGraphListener {
 	@Override
 	public void initCustomMenu(JPopupMenu menu, AbstractGraph owner) {
 		super.initCustomMenu(menu, owner);
-//		initCMShowLocalDynamics(menu, owner);
+		// initCMShowLocalDynamics(menu, owner);
 		initCMTimeReversed(menu, owner);
 	}
 
@@ -86,27 +87,26 @@ public class MVDS3 extends MVAbstract implements StateGraphListener {
 	public void getData(StateData data, int tag) {
 		Model model = engine.getModel();
 		data.time = model.getUpdates();
-		if( data.isLocal ) {
+		if (data.isLocal) {
 			System.arraycopy(model.getMeanTraitAt(tag, localNode), 0, data.state, 0, data.state.length);
 			data.connect = model.isConnected();
-		}
-		else
+		} else
 			data.connect = model.getMeanTraits(tag, data.state);
-		if( active!=null ) {
+		if (active != null) {
 			int n = 0, i = 0;
-			while( n<Math.min(3, module.getNActive()) ) {
-				if( active[i] )
+			while (n < Math.min(3, module.getNActive())) {
+				if (active[i])
 					data.state[n++] = data.state[i];
 				i++;
 			}
 		}
 	}
 
-// retire setting of initial state in S3 (outdated JRE)
+	// retire setting of initial state in S3 (outdated JRE)
 	// @Override
 	// public void setState(double[] state, int tag) {
-	// 	((Discrete)module).setInit(state);
-	// 	engine.modelReinit();
+	// ((Discrete)module).setInit(state);
+	// engine.modelReinit();
 	// }
 
 	@Override
@@ -122,11 +122,11 @@ public class MVDS3 extends MVAbstract implements StateGraphListener {
 
 	// COORDINATE CONVERSION UTILITIES
 
-//	private double[] coord2state(Point2D p) {
-//		double[] s = new double[3];
-//		s[2] = 1.0-p.y;
-//		s[1] = p.x-s[2]*0.5;
-//		s[0] = 1.0-s[1]-s[2];
-//		return s;
-//	}
+	// private double[] coord2state(Point2D p) {
+	// double[] s = new double[3];
+	// s[2] = 1.0-p.y;
+	// s[1] = p.x-s[2]*0.5;
+	// s[0] = 1.0-s[1]-s[2];
+	// return s;
+	// }
 }

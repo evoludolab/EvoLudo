@@ -57,9 +57,9 @@ public class MVConsole extends JComponent implements MultiView {
 
 	private static final long serialVersionUID = 20110423L;
 
-	EvoLudoLab  lab;
-	Logger		logger;
-	private final JTextPane	text;
+	EvoLudoLab lab;
+	Logger logger;
+	private final JTextPane text;
 	private final JPopupMenu menu = new JPopupMenu();
 	private static final Color transparent = new Color(0, 0, 0, 0);
 	private static final AttributeSet message, debug, warning, error;
@@ -76,7 +76,8 @@ public class MVConsole extends JComponent implements MultiView {
 
 	protected static final String MENU_CLEAR = "clear";
 
-// note: specified in GraphStyle as the default - how do we access this information here?
+	// note: specified in GraphStyle as the default - how do we access this
+	// information here?
 	private static final Font menuFont = new Font("Default", Font.PLAIN, 11);
 
 	public MVConsole(EvoLudoLab lab) {
@@ -87,13 +88,12 @@ public class MVConsole extends JComponent implements MultiView {
 		text = new JTextPane();
 		text.setMargin(new Insets(4, 6, 4, 6));
 		text.setFont(menuFont);
-		JScrollPane scroll = new JScrollPane(text, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		JScrollPane scroll = new JScrollPane(text, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
+				JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		scroll.setBorder(
-			BorderFactory.createCompoundBorder(
-				BorderFactory.createMatteBorder(6, 8, 6, 8, transparent),
-				BorderFactory.createMatteBorder(1, 1, 1, 1, Color.gray)
-			)
-		);
+				BorderFactory.createCompoundBorder(
+						BorderFactory.createMatteBorder(6, 8, 6, 8, transparent),
+						BorderFactory.createMatteBorder(1, 1, 1, 1, Color.gray)));
 		scroll.setBackground(transparent);
 		ActionHandler handler = new ActionHandler();
 		JMenuItem menuItem = new JMenuItem("Clear");
@@ -104,15 +104,15 @@ public class MVConsole extends JComponent implements MultiView {
 		text.setComponentPopupMenu(menu);
 		add(scroll, BorderLayout.CENTER);
 		clear();
-		setToolTipText(null);	// no tooltips - individual components may have their own.
+		setToolTipText(null); // no tooltips - individual components may have their own.
 	}
 
 	public class ActionHandler implements ActionListener {
-	
+
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			String cmd = e.getActionCommand();
-			if( cmd.equals(MENU_CLEAR) ) {
+			if (cmd.equals(MENU_CLEAR)) {
 				clear();
 				return;
 			}
@@ -129,30 +129,28 @@ public class MVConsole extends JComponent implements MultiView {
 	public void log(Level level, String msg) {
 		String pretty = msg;
 		AttributeSet attr = message;
-		if( level==Level.WARNING ) {
-			pretty = "WARNING: "+msg;
+		if (level == Level.WARNING) {
+			pretty = "WARNING: " + msg;
 			attr = warning;
-		}
-		else if( level==Level.SEVERE ) {
-			pretty = "ERROR: "+msg;
+		} else if (level == Level.SEVERE) {
+			pretty = "ERROR: " + msg;
 			attr = error;
-		}
-		else if( level==Level.FINE || level==Level.FINER || level==Level.FINEST ) {
-			pretty = "DEBUG: "+msg;
+		} else if (level == Level.FINE || level == Level.FINER || level == Level.FINEST) {
+			pretty = "DEBUG: " + msg;
 			attr = debug;
 		}
 		text.setEditable(true);
-		// abuse of Level.CONFIG for progress reports (GWT does not support custom levels)
-		if( !level.equals(Level.CONFIG) ) {
+		// abuse of Level.CONFIG for progress reports (GWT does not support custom
+		// levels)
+		if (!level.equals(Level.CONFIG)) {
 			pretty += "\n";
-		}
-		else {
+		} else {
 			// replace last line
 			int len = text.getDocument().getLength();
 			try {
 				String content = text.getDocument().getText(0, len);
 				int idx = Math.max(0, content.lastIndexOf('\n'));
-				text.getDocument().remove(idx, len-idx);
+				text.getDocument().remove(idx, len - idx);
 			} catch (BadLocationException e) {
 				// shouldn't happen...
 			}
@@ -187,23 +185,34 @@ public class MVConsole extends JComponent implements MultiView {
 	}
 
 	// on Max OS X the java focus system is strange/buggy...
-	// at least close menu if applet/application loses focus - this is non-standard behavior
+	// at least close menu if applet/application loses focus - this is non-standard
+	// behavior
 	@Override
 	public void setContextMenuEnabled(boolean enabled) {
-		if( !enabled && menu.isVisible() ) menu.setVisible(false);
+		if (!enabled && menu.isVisible())
+			menu.setVisible(false);
 	}
 
 	/*
 	 * implement MultiViewPanel - and ignore.
 	 */
 	@Override
-	public void parametersChanged(boolean didReset) { }
+	public void parametersChanged(boolean didReset) {
+	}
+
 	@Override
-	public void reset(boolean clear) { }
+	public void reset(boolean clear) {
+	}
+
 	@Override
-	public void init() { }
+	public void init() {
+	}
+
 	@Override
-	public void update(boolean updateGUI) { }
+	public void update(boolean updateGUI) {
+	}
+
 	@Override
-	public void end() { }
+	public void end() {
+	}
 }

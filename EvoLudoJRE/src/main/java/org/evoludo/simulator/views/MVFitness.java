@@ -51,7 +51,7 @@ public class MVFitness extends MVAbstract implements StateGraphListener {
 
 	@Override
 	public void reset(boolean clear) {
-		if( graphs.size()>0 ) {
+		if (graphs.size() > 0) {
 			super.reset(clear);
 			return;
 		}
@@ -61,7 +61,7 @@ public class MVFitness extends MVAbstract implements StateGraphListener {
 		x.label = "time";
 		x.showLabel = true;
 		x.max = 0.0;
-		x.min = 1.0;	// min>max forces recalculation
+		x.min = 1.0; // min>max forces recalculation
 		x.step = -engine.getModel().getTimeStep();
 		x.grid = 0;
 		x.majorTicks = 3;
@@ -80,10 +80,10 @@ public class MVFitness extends MVAbstract implements StateGraphListener {
 	@Override
 	public int getNData(int tag) {
 		// continuous strategies require 3 (for min, mean and max of fitness)
-		if( engine.getModel().isContinuous() )
+		if (engine.getModel().isContinuous())
 			return 3;
 		// discrete strategies require nTraits+1 (for each strategy and population mean)
-		return super.getNData(tag)+1;
+		return super.getNData(tag) + 1;
 	}
 
 	@Override
@@ -91,57 +91,61 @@ public class MVFitness extends MVAbstract implements StateGraphListener {
 		Color[] c = module.getTraitColors();
 		int n = getNData(tag);
 		Color[] colors = new Color[n];
-		System.arraycopy(c, 0, colors, 0, n-1);
-		colors[n-1] = meanFitColor;
+		System.arraycopy(c, 0, colors, 0, n - 1);
+		colors[n - 1] = meanFitColor;
 		return colors;
 	}
 
-//101118 this is problematic - here we assume a 1:1 mapping between traits and mono scores... needs careful redesign! at least we now check the monoscorescount.
+	// 101118 this is problematic - here we assume a 1:1 mapping between traits and
+	// mono scores... needs careful redesign! at least we now check the
+	// monoscorescount.
 	@Override
-	public boolean	verifyYThresholds(FrameLayer frame, int tag) {
+	public boolean verifyYThresholds(FrameLayer frame, int tag) {
 		Model model = engine.getModel();
 		// no y-thresholds for continuous traits
-		if( model.isContinuous() )
+		if (model.isContinuous())
 			return false;
 		Color[] colors = getColors(tag);
 		boolean changed = false;
 		int n = module.getNTraits();
 		// cast is save because pop is not Continuous
 		org.evoludo.simulator.models.Discrete dmodel = (org.evoludo.simulator.models.Discrete) model;
-		for( int i=0; i<n; i++ ) {
-			changed |= frame.updateYThreshold(i, 
-				dmodel.getMonoScore(module.getID(), i), 
-				new Color(Math.max(colors[i].getRed(), 127), 
-						Math.max(colors[i].getGreen(), 127), 
-						Math.max(colors[i].getBlue(), 127)));
+		for (int i = 0; i < n; i++) {
+			changed |= frame.updateYThreshold(i,
+					dmodel.getMonoScore(module.getID(), i),
+					new Color(Math.max(colors[i].getRed(), 127),
+							Math.max(colors[i].getGreen(), 127),
+							Math.max(colors[i].getBlue(), 127)));
 		}
 		return changed;
 	}
 
-/* really adjust x-axis upon changing report frequency?
-	public boolean	verifyXAxis(GraphAxis x, int tag) {
-		boolean changed = false;
-		double step = -population.getReportFreq();
-		if( Math.abs(x.step-step)>1e-8 ) {
-			double steps = (x.max-x.min)/x.step;
-			x.min = x.max-steps*step;
-			x.step = step;
-			changed = true;
-		}
-		return changed;
-	}*/
+	/*
+	 * really adjust x-axis upon changing report frequency?
+	 * public boolean verifyXAxis(GraphAxis x, int tag) {
+	 * boolean changed = false;
+	 * double step = -population.getReportFreq();
+	 * if( Math.abs(x.step-step)>1e-8 ) {
+	 * double steps = (x.max-x.min)/x.step;
+	 * x.min = x.max-steps*step;
+	 * x.step = step;
+	 * changed = true;
+	 * }
+	 * return changed;
+	 * }
+	 */
 
 	@Override
-	public boolean	verifyYAxis(GraphAxis y, int tag) {
+	public boolean verifyYAxis(GraphAxis y, int tag) {
 		boolean changed = false;
 		Model model = engine.getModel();
 		double min = model.getMinScore(tag);
-		if( Math.abs(y.min-min)>1e-8 ) {
+		if (Math.abs(y.min - min) > 1e-8) {
 			y.min = min;
 			changed = true;
 		}
 		double max = model.getMaxScore(tag);
-		if( Math.abs(y.max-max)>1e-8 ) {
+		if (Math.abs(y.max - max) > 1e-8) {
 			y.max = max;
 			changed = true;
 		}

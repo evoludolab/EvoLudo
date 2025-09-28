@@ -34,22 +34,22 @@ import java.text.DecimalFormat;
 
 public class GraphAxis {
 
-	public double	min = 0.0;
-	public double	lower = 0.0;
-	public double	max = 1.0;
-	public double	upper = 1.0;
-	public double	step = 0.0;
-	public int		steps = 0;
-//	public double	iRange = 1.0;
-	public int		grid = 0;
-	public int		majorTicks = -1;
-	public int		minorTicks = 0;
-	public boolean	logScale = false;
-	public String	unit = "";
-	public DecimalFormat	formatter = new DecimalFormat("0.##");
-	public String	label;
-	public boolean	showLabel = false;
-	public boolean	enabled = true;
+	public double min = 0.0;
+	public double lower = 0.0;
+	public double max = 1.0;
+	public double upper = 1.0;
+	public double step = 0.0;
+	public int steps = 0;
+	// public double iRange = 1.0;
+	public int grid = 0;
+	public int majorTicks = -1;
+	public int minorTicks = 0;
+	public boolean logScale = false;
+	public String unit = "";
+	public DecimalFormat formatter = new DecimalFormat("0.##");
+	public String label;
+	public boolean showLabel = false;
+	public boolean enabled = true;
 
 	public void restore() {
 		lower = min;
