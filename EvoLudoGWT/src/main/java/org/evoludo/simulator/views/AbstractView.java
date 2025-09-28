@@ -769,26 +769,18 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 
 		// process exports context menu (suppress in ePub, regardless of whether a
 		// standalone lab or not)
-		ExportType[] types = exportTypes();
-		boolean isEPub = engine.isEPub;
-		if (!isEPub && types != null && exportSubmenu == null) {
-			int nTypes = types.length;
+		if (!engine.isEPub) {
 			exportSubmenu = new ContextMenu(contextMenu);
-			// always include option to export current state
 			exportSubmenu.add(new ContextMenuItem(ExportType.STATE.toString(), new ExportCommand(ExportType.STATE)));
-			for (int n = 0; n < nTypes; n++) {
-				ExportType t = types[n];
-				if (t == ExportType.STATE)
-					continue;
-				exportSubmenu.add(new ContextMenuItem(t.toString(), new ExportCommand(t)));
+			for (ExportType e : exportTypes()) {
+				if (e == ExportType.STATE)
+					continue; // always included
+				exportSubmenu.add(new ContextMenuItem(e.toString(), new ExportCommand(e)));
 			}
-		}
-		if (exportSubmenu != null) {
 			contextMenu.addSeparator();
 			exportSubmenuTrigger = contextMenu.add("Export...", exportSubmenu);
-		}
-		if (!isEPub && restoreMenu == null) {
-			restoreMenu = new ContextMenuItem("Restore...", () -> engine.restoreFromFile());
+			if (restoreMenu == null)
+				restoreMenu = new ContextMenuItem("Restore...", () -> engine.restoreFromFile());
 		}
 		boolean idle = !engine.isRunning();
 		if (restoreMenu != null) {
@@ -889,7 +881,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * @return the list of viable export types
 	 */
 	protected ExportType[] exportTypes() {
-		return null;
+		return new ExportType[0];
 	}
 
 	/**
