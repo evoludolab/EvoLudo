@@ -2273,7 +2273,7 @@ public class ArrayMath {
 	 */
 	public static boolean[] clone(boolean[] orig) {
 		if (orig == null)
-			return null;
+			return new boolean[0];
 		int len = orig.length;
 		boolean[] clone = new boolean[len];
 		System.arraycopy(orig, 0, clone, 0, len);
@@ -2288,7 +2288,7 @@ public class ArrayMath {
 	 */
 	public static int[] clone(int[] orig) {
 		if (orig == null)
-			return null;
+			return new int[0];
 		int len = orig.length;
 		int[] clone = new int[len];
 		System.arraycopy(orig, 0, clone, 0, len);
@@ -2303,7 +2303,7 @@ public class ArrayMath {
 	 */
 	public static double[] clone(double[] orig) {
 		if (orig == null)
-			return null;
+			return new double[0];
 		int len = orig.length;
 		double[] clone = new double[len];
 		System.arraycopy(orig, 0, clone, 0, len);
@@ -2318,7 +2318,7 @@ public class ArrayMath {
 	 */
 	public static double[][] clone(double[][] orig) {
 		if (orig == null)
-			return null;
+			return new double[0][0];
 		int len = orig.length;
 		double[][] clone = new double[len][];
 		for (int i = 0; i < len; i++)
