@@ -280,22 +280,22 @@ public abstract class EvoLudo
 	 * registered {@link MilestoneListener}'s of any changes.
 	 *
 	 * @param type the type of {@link Model} to load
-	 * @return new model or {@code null} if the model type is not supported and
-	 *         no active current model
 	 */
-	public Model loadModel(Type type) {
+	public void loadModel(Type type) {
 		if (activeModel != null && activeModel.getType() == type) {
 			// model already loaded
-			return activeModel;
+			return;
 		}
 		Model newModel = activeModule.createModel(type);
 		if (newModel == null) {
-			if (activeModel == null) {
-				logger.warning("model type '" + type + "' not supported.");
-				return null;
+			if (logger.isLoggable(Level.WARNING)) {
+				String msg = "model type '" + type + "' not supported.";
+				if (activeModel == null)
+					logger.warning(msg);
+				else
+					logger.warning(msg + " keeping '" + activeModel.getType() + "'.");
 			}
-			logger.warning("model type '" + type + "' not supported - keeping '" + activeModel.getType() + "'.");
-			return activeModel;
+			return;
 		}
 		// unload previous model first
 		unloadModel();
@@ -304,7 +304,6 @@ public abstract class EvoLudo
 		activeModule.setModel(activeModel);
 		activeModel.load();
 		fireModelLoaded();
-		return activeModel;
 	}
 
 	/**
