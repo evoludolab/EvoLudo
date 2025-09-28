@@ -705,7 +705,7 @@ public abstract class EvoLudo
 	 * The command line options (raw string provided in URL, HTML tag, TextArea or
 	 * command line)
 	 */
-	protected String clo;
+	protected String clo = "";
 
 	/**
 	 * Get the raw command line options, as provided in URL, HTML tag, settings
@@ -724,8 +724,6 @@ public abstract class EvoLudo
 	 * @return array command line options and arguments
 	 */
 	public String[] getSplitCLO() {
-		if (clo == null)
-			return null;
 		// strip all whitespace at start and end
 		String[] args = clo.trim().split("\\s+--");
 		// strip '--' from first argument
@@ -740,7 +738,9 @@ public abstract class EvoLudo
 	 * @param clo the new command line option string
 	 */
 	public void setCLO(String clo) {
-		this.clo = clo;
+		if (clo == null)
+			clo = "";
+		this.clo = clo.trim();
 	}
 
 	/**
