@@ -40,6 +40,7 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network3D;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.views.Pop3D;
 import org.evoludo.ui.TrackballControls;
 
 import com.google.gwt.core.client.Duration;
@@ -151,11 +152,11 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * <dd>the message element (3D text).</dd>
 	 * </dl>
 	 * 
-	 * @param controller the controller of this graph
-	 * @param module     the module backing the graph
+	 * @param view   the view of this graph
+	 * @param module the module backing the graph
 	 */
-	public PopGraph3D(PopGraphController controller, Module module) {
-		super(controller, module);
+	public PopGraph3D(Pop3D view, Module module) {
+		super(view, module);
 		setStylePrimaryName("evoludo-PopGraph3D");
 		// PopGraph3D cannot use wrapper - transfer all widgets to graphPanel3D
 		// (except canvas) and make this the wrapper

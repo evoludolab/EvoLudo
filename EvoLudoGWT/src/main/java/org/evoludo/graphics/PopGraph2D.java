@@ -41,6 +41,8 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.views.AbstractView;
+import org.evoludo.simulator.views.Pop2D;
 import org.evoludo.util.RingBuffer;
 
 import com.google.gwt.core.client.JsArray;
@@ -80,11 +82,11 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * <dd>the label element.</dd>
 	 * </dl>
 	 * 
-	 * @param controller the controller of this graph
-	 * @param module     the module backing the graph
+	 * @param view   the view of this graph
+	 * @param module the module backing the graph
 	 */
-	public PopGraph2D(PopGraphController controller, Module module) {
-		super(controller, module);
+	public PopGraph2D(AbstractView view, Module module) {
+		super(view, module);
 		setStylePrimaryName("evoludo-PopGraph2D");
 		label.setStyleName("evoludo-Label2D");
 	}

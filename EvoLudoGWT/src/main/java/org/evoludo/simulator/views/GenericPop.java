@@ -35,7 +35,6 @@ import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.GenericPopGraph;
-import org.evoludo.graphics.GenericPopGraph.PopGraphController;
 import org.evoludo.graphics.TooltipProvider;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
@@ -74,7 +73,7 @@ import org.evoludo.util.Formatter;
  * @param <G> type of graph
  */
 public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph<T, N>> extends AbstractView
-		implements PopGraphController, TooltipProvider.Index {
+		implements TooltipProvider.Index {
 
 	/**
 	 * The list of graphs that display the time series data.

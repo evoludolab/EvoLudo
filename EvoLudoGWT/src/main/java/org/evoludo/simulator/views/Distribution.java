@@ -35,7 +35,6 @@ import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
-import org.evoludo.graphics.GenericPopGraph;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.graphics.TooltipProvider;
 import org.evoludo.math.ArrayMath;
@@ -60,7 +59,7 @@ import com.google.gwt.user.client.Command;
  *
  * @author Christoph Hauert
  */
-public class Distribution extends AbstractView implements GenericPopGraph.PopGraphController, TooltipProvider.Index {
+public class Distribution extends AbstractView implements TooltipProvider.Index {
 
 	/**
 	 * The list of graphs that display the trajectories in 2D phase planes.

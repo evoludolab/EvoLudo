@@ -45,6 +45,7 @@ import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
+import org.evoludo.simulator.views.Mean;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.CLOParser;
@@ -68,15 +69,15 @@ public class LineGraph extends AbstractGraph<double[]>
 	protected double steps = DEFAULT_STEPS;
 
 	/**
-	 * Create new line graph for {@code controller}. The {@code id} is used to
+	 * Create new line graph for {@code view}. The {@code id} is used to
 	 * distinguish different graphs of the same module to visualize different
 	 * components of the data and represents the index of the data column.
 	 * 
-	 * @param controller the controller of this graph
-	 * @param module     the module backing the graph
+	 * @param view   the view of this graph
+	 * @param module the module backing the graph
 	 */
-	public LineGraph(Controller controller, Module module) {
-		super(controller, module);
+	public LineGraph(Mean view, Module module) {
+		super(view, module);
 		setStylePrimaryName("evoludo-LineGraph");
 		setTooltipProvider(this);
 	}
@@ -575,7 +576,7 @@ public class LineGraph extends AbstractGraph<double[]>
 							continue;
 						String name;
 						Color color;
-						Data type = controller.getType();
+						Data type = view.getType();
 						int n1 = n + 1;
 						if (n1 == len - 1 && type == Data.FITNESS) {
 							name = "average";

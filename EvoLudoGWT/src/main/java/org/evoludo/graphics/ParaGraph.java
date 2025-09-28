@@ -41,6 +41,7 @@ import org.evoludo.math.Functions;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasPhase2D;
+import org.evoludo.simulator.views.Phase2D;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
@@ -92,13 +93,13 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 
 	/**
 	 * Create new parametric graph for <code>module</code> running in
-	 * <code>controller</code>.
+	 * <code>view</code>.
 	 * 
-	 * @param controller the controller of this graph
-	 * @param module     the module backing the graph
+	 * @param view   the view of this graph
+	 * @param module the module backing the graph
 	 */
-	public ParaGraph(Controller controller, Module module) {
-		super(controller, module);
+	public ParaGraph(Phase2D view, Module module) {
+		super(view, module);
 		setStylePrimaryName("evoludo-ParaGraph");
 		buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
 	}
@@ -404,7 +405,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		double[] state = new double[len - 1];
 		System.arraycopy(last, 1, state, 0, len - 1);
 		map.phase2Data(new Point2D(ux, uy), state);
-		controller.setInitialState(state);
+		view.setInitialState(state);
 	}
 
 	// CHECK!

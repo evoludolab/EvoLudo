@@ -42,6 +42,7 @@ import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasS3;
+import org.evoludo.simulator.views.S3;
 import org.evoludo.simulator.views.S3Map;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
@@ -110,14 +111,14 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 
 	/**
 	 * Create a new simplex \(S_3\) graph for {@code module} running in {@code
-	 * controller} with the specified {@code role}.
+	 * view} with the specified {@code role}.
 	 * 
-	 * @param controller the controller of this graph
-	 * @param module     the module backing the graph
-	 * @param role       the role of the data
+	 * @param view   the view of this graph
+	 * @param module the module backing the graph
+	 * @param role   the role of the data
 	 */
-	public S3Graph(Controller controller, Module module, int role) {
-		super(controller, module);
+	public S3Graph(S3 view, Module module, int role) {
+		super(view, module);
 		this.role = role;
 		setStylePrimaryName("evoludo-S3Graph");
 	}
@@ -557,7 +558,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		// convert to user coordinates
 		double[] s3 = new double[3];
 		map.s32Data(scaledX(x), scaledY(y), s3);
-		controller.setInitialState(s3);
+		view.setInitialState(s3);
 	}
 
 	// tool tips

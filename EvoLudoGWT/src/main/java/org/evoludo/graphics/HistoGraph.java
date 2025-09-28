@@ -37,6 +37,7 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
+import org.evoludo.simulator.views.Histogram;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.util.Formatter;
@@ -244,15 +245,15 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 
 	/**
 	 * Create new histogram graph for <code>module</code> running in
-	 * <code>controller</code>. The row is used to identify data entries that apply
+	 * <code>view</code>. The row is used to identify data entries that apply
 	 * to this histogram and represents the index of the data row.
 	 * 
-	 * @param controller the controller of this graph
-	 * @param module     the module backing the graph
-	 * @param row        the index of the data row
+	 * @param view   the view of this graph
+	 * @param module the module backing the graph
+	 * @param row    the index of the data row
 	 */
-	public HistoGraph(Controller controller, Module module, int row) {
-		super(controller, module);
+	public HistoGraph(Histogram view, Module module, int row) {
+		super(view, module);
 		this.row = row;
 		setStylePrimaryName("evoludo-HistoGraph");
 		setTooltipProvider(this);
@@ -706,7 +707,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		final String TABLE_CELL_NEXT = ":</i></td><td>";
 		StringBuilder tip = new StringBuilder(
 				style.showLabel && style.label != null ? "<b>" + style.label + "</b><br/>" : "");
-		switch (controller.getType()) {
+		switch (view.getType()) {
 			case DEGREE:
 				if (Math.abs(style.xMax - (nBins - 1)) < 1e-6) {
 					tip.append(TABLE_STYLE);

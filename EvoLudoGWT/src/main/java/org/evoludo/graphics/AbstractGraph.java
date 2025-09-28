@@ -37,9 +37,8 @@ import org.evoludo.geom.Path2D;
 import org.evoludo.geom.PathIterator;
 import org.evoludo.geom.Point2D;
 import org.evoludo.geom.Rectangle2D;
-import org.evoludo.simulator.models.Data;
-import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
@@ -107,65 +106,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		implements MouseOutHandler, MouseWheelHandler, MouseDownHandler, MouseUpHandler, MouseMoveHandler, //
 		TouchStartHandler, TouchEndHandler, TouchMoveHandler, //
 		RequiresResize, Tooltip.Provider, ContextMenu.Listener, ContextMenu.Provider {
-
-	/**
-	 * The base interface for communicating with the controller of all graphs.
-	 */
-	public interface Controller {
-
-		/**
-		 * Get the type of data visualized on the graph.
-		 * 
-		 * @return the data type
-		 */
-		public Data getType();
-
-		/**
-		 * Get the type of the model supplying the data visualized on the graph.
-		 * 
-		 * @return the model type
-		 */
-		public Model getModel();
-
-		/**
-		 * Get the logger for returning progress, problems and messages to user.
-		 * 
-		 * @return the logger for messages
-		 */
-		public Logger getLogger();
-
-		/**
-		 * Notifies the controller of the completion of the layouting process.
-		 */
-		public void layoutComplete();
-
-		/**
-		 * Checks if the controller is busy running calculations.
-		 * 
-		 * @return {@code true} if calculations are running
-		 */
-		public boolean isRunning();
-
-		/**
-		 * Opportunity for the controller to add functionality to the context menu
-		 * (optional implementation).
-		 *
-		 * @param menu the context menu
-		 */
-		public default void populateContextMenu(ContextMenu menu) {
-		}
-
-		/**
-		 * Notifies the controller that the user requested setting a new initial
-		 * configuration {@code init} (optional implementation).
-		 * 
-		 * @param init the new initial configuration
-		 * @return {@code true} if the request was honoured
-		 */
-		public default boolean setInitialState(double[] init) {
-			return false;
-		}
-	}
 
 	/**
 	 * Graphs that support shifting should implement this interface. Basic shifting
@@ -329,9 +269,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected Point2D viewCorner;
 
 	/**
-	 * The controller of this graph.
+	 * The view of this graph.
 	 */
-	protected Controller controller;
+	protected AbstractView view;
 
 	/**
 	 * The controller for shifting this graph.
@@ -493,13 +433,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * tooltip and context menu. Use the CSS class {@code evoludo-Canvas2D} for
 	 * custom formatting of the canvas element.
 	 * 
-	 * @param controller the controller of this graph
-	 * @param module     the module backing the graph
+	 * @param view   the view of this graph
+	 * @param module the module backing the graph
 	 */
-	protected AbstractGraph(Controller controller, Module module) {
-		this.controller = controller;
+	protected AbstractGraph(AbstractView view, Module module) {
+		this.view = view;
 		this.module = module;
-		logger = controller.getLogger();
+		logger = view.getLogger();
 		wrapper = new LayoutPanel();
 		if (this instanceof Zooming) {
 			viewCorner = new Point2D();
@@ -510,13 +450,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 					element.removeClassName("evoludo-cursorZoomOut");
 				}
 			};
-			zoomer = (Zoomer) (controller instanceof Zoomer ? controller : this);
+			zoomer = (Zoomer) (view instanceof Zoomer ? view : this);
 		}
 		if (this instanceof Shifting) {
 			// Zooming may already have taken care of this
 			if (viewCorner == null)
 				viewCorner = new Point2D();
-			shifter = (Shifter) (controller instanceof Shifter ? controller : this);
+			shifter = (Shifter) (view instanceof Shifter ? view : this);
 		}
 
 		markerColors = new String[] { "rgb(0,0,0,0.4)" };
@@ -795,10 +735,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * Adds buffer size menu and queries the controller to add further
+	 * Adds buffer size menu and queries the view to add further
 	 * functionality.
 	 * 
-	 * @see Controller#populateContextMenu(ContextMenu)
+	 * @see AbstractView#populateContextMenu(ContextMenu)
 	 */
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
@@ -841,7 +781,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			}
 			setBufferCapacity(buffer.getCapacity());
 			ContextMenuItem bufferSizeTrigger = menu.add("Buffer size...", bufferSizeMenu);
-			bufferSizeTrigger.setEnabled(!controller.isRunning());
+			bufferSizeTrigger.setEnabled(!view.isRunning());
 			menu.addSeparator();
 		}
 		if (this instanceof HasLogScaleY && style.yMin >= 0.0) {
@@ -871,7 +811,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 		if (menu.getWidgetCount() > 0 && tooltip.isVisible())
 			tooltip.close();
-		controller.populateContextMenu(menu);
+		view.populateContextMenu(menu);
 	}
 
 	void setLogY(boolean logY) {
