@@ -651,6 +651,9 @@ public abstract class EvoLudo
 	 */
 	public final boolean modelNext() {
 		startCPUSample();
+		// make sure model has not been unloaded
+		if (activeModel == null)
+			return false;
 		if (activeModel.useScheduling()) {
 			activeModel.next();
 			return true;
