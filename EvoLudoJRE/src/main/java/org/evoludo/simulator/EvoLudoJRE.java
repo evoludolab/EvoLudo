@@ -1116,10 +1116,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			}
 		}
 		// once restore is checked pre-processing of command line arguments can proceed
-		cloarray = super.preprocessCLO(cloarray);
-		if (cloarray == null)
-			return new String[] { cloHelp.getName() };
-		return cloarray;
+		return super.preprocessCLO(cloarray);
 	}
 
 	@Override

@@ -292,8 +292,6 @@ public class EvoLudoGWT extends EvoLudo {
 	protected String[] preprocessCLO(String[] cloarray) {
 		// once module is loaded pre-processing of command line arguments can proceed
 		cloarray = super.preprocessCLO(cloarray);
-		if (cloarray == null)
-			return new String[] { cloHelp.getName() };
 		// check and remove --export option
 		String exportName = "export";
 		for (int i = 0; i < cloarray.length; i++) {

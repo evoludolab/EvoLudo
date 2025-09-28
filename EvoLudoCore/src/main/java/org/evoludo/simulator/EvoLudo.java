@@ -1544,8 +1544,6 @@ public abstract class EvoLudo
 	 *      EvoLudoGWT#preprocessCLO(String[])
 	 */
 	protected String[] preprocessCLO(String[] cloarray) {
-		if (cloarray == null)
-			return null;
 		// first, deal with --help option
 		boolean helpRequested = false;
 		String helpName = cloHelp.getName();
@@ -1567,7 +1565,7 @@ public abstract class EvoLudo
 				if (moduleArgs == null || moduleArgs.length < 2) {
 					if (!helpRequested)
 						logger.severe("module key missing");
-					return null;
+					return helpCLO;
 				}
 				moduleName = moduleArgs[1];
 				moduleKey = cloModule.match(moduleName);
@@ -1582,7 +1580,7 @@ public abstract class EvoLudo
 		if (moduleKey == null || loadModule(moduleKey.getKey()) == null) {
 			if (!helpRequested)
 				logger.severe("Use --module to load a module or --help for more information.");
-			return null;
+			return helpCLO;
 		}
 		// second, determine feasible --model options for given module
 		cloModel.clearKeys();
@@ -1596,7 +1594,7 @@ public abstract class EvoLudo
 		if (keys.isEmpty()) {
 			if (!helpRequested)
 				logger.severe("No model found!");
-			return null;
+			return helpCLO;
 		}
 		Type defaulttype = (Type) cloModel.match(cloModel.getDefault());
 		Type type = null;
@@ -1638,7 +1636,7 @@ public abstract class EvoLudo
 		if (activeModel == null) {
 			if (!helpRequested)
 				logger.severe("model type '" + type.getKey() + "' not supported!");
-			return null;
+			return helpCLO;
 		}
 		// check if cloOptions contain --verbose
 		String verboseName = cloVerbose.getName();
@@ -1662,7 +1660,7 @@ public abstract class EvoLudo
 			}
 		}
 		if (helpRequested)
-			return null;
+			return helpCLO;
 		return cloarray;
 	}
 
@@ -1961,6 +1959,12 @@ public abstract class EvoLudo
 					return true;
 				}
 			});
+
+	/**
+	 * Replacement command line option for serious parsing failures to display help
+	 * screen.
+	 */
+	public final String[] helpCLO = new String[] { cloHelp.getName() };
 
 	/**
 	 * {@inheritDoc}
