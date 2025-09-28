@@ -762,12 +762,7 @@ public class EvoLudoWeb extends Composite
 			viewIdx = activeIdx;
 		// adding a new widget can cause a flurry of activities; wait until they subside
 		// before activation
-		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-			@Override
-			public void execute() {
-				activeView.activate();
-			}
-		});
+		Scheduler.get().scheduleDeferred(() -> activeView.activate());
 		updateGUI();
 	}
 
@@ -861,12 +856,9 @@ public class EvoLudoWeb extends Composite
 	void toggleSettings() {
 		// toggle visibility of field for command line parameters
 		evoludoCLOPanel.setVisible(!evoludoCLOPanel.isVisible());
-		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-			@Override
-			public void execute() {
-				evoludoLayout.onResize();
-				NativeJS.focusOn(evoludoCLO.getElement());
-			}
+		Scheduler.get().scheduleDeferred(() -> {
+			evoludoLayout.onResize();
+			NativeJS.focusOn(evoludoCLO.getElement());
 		});
 	}
 
@@ -1335,17 +1327,14 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoDefault")
 	public void onDefaultClick(ClickEvent event) {
-		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-			@Override
-			public void execute() {
-				if (defaultCLO == null) {
-					revertCLO();
-					return;
-				}
-				evoludoCLO.setText(defaultCLO);
-				engine.setCLO(defaultCLO);
-				applyCLO();
+		Scheduler.get().scheduleDeferred(() -> {
+			if (defaultCLO == null) {
+				revertCLO();
+				return;
 			}
+			evoludoCLO.setText(defaultCLO);
+			engine.setCLO(defaultCLO);
+			applyCLO();
 		});
 	}
 

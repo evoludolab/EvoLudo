@@ -255,15 +255,12 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 			return;
 		if (invalidated || (isNext && geometry.isDynamic)) {
 			// defer layouting to allow 3D view to be up and running
-			Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-				@Override
-				public void execute() {
-					if (hasStaticLayout()) {
-						drawLattice();
-						view.layoutComplete();
-					} else
-						layoutNetwork();
-				}
+			Scheduler.get().scheduleDeferred(() -> {
+				if (hasStaticLayout()) {
+					drawLattice();
+					view.layoutComplete();
+				} else
+					layoutNetwork();
 			});
 		}
 	}

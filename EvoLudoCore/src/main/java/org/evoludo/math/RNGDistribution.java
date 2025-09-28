@@ -1520,18 +1520,6 @@ public abstract class RNGDistribution {
 	}
 
 	/**
-	 * The interface to execute commands in a manner that is agnostic to the
-	 * implementation details regarding GWT or JRE environments.
-	 */
-	public interface TestCommand {
-
-		/**
-		 * The command to execute.
-		 */
-		public void execute();
-	}
-
-	/**
 	 * Gillespie algorithm for selecting integers with support
 	 * <code>{0,1,2,3,..., n}</code> but with different weights.
 	 * <p>

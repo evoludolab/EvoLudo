@@ -747,36 +747,24 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			if (bufferSizeMenu == null) {
 				bufferSizeMenu = new ContextMenu(menu);
 				bufferSizeMenu.add(new ContextMenuCheckBoxItem("5k", //
-						new ScheduledCommand() {
-							@Override
-							public void execute() {
-								setBufferCapacity(5000);
-								paint(true);
-							}
+						(ScheduledCommand) () -> {
+							setBufferCapacity(5000);
+							paint(true);
 						}));
 				bufferSizeMenu.add(new ContextMenuCheckBoxItem("10k", //
-						new ScheduledCommand() {
-							@Override
-							public void execute() {
-								setBufferCapacity(10000);
-								paint(true);
-							}
+						(ScheduledCommand) () -> {
+							setBufferCapacity(10000);
+							paint(true);
 						}));
 				bufferSizeMenu.add(new ContextMenuCheckBoxItem("50k", //
-						new ScheduledCommand() {
-							@Override
-							public void execute() {
-								setBufferCapacity(50000);
-								paint(true);
-							}
+						(ScheduledCommand) () -> {
+							setBufferCapacity(50000);
+							paint(true);
 						}));
 				bufferSizeMenu.add(new ContextMenuCheckBoxItem("100k", //
-						new ScheduledCommand() {
-							@Override
-							public void execute() {
-								setBufferCapacity(100000);
-								paint(true);
-							}
+						(ScheduledCommand) () -> {
+							setBufferCapacity(100000);
+							paint(true);
 						}));
 			}
 			setBufferCapacity(buffer.getCapacity());
@@ -786,12 +774,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 		if (this instanceof HasLogScaleY && style.yMin >= 0.0) {
 			if (logYMenu == null) {
-				logYMenu = new ContextMenuCheckBoxItem("Logarithmic y-axis", new ScheduledCommand() {
-					@Override
-					public void execute() {
-						setLogY(!style.logScaleY);
-						paint(true);
-					}
+				logYMenu = new ContextMenuCheckBoxItem("Logarithmic y-axis", (ScheduledCommand) () -> {
+					setLogY(!style.logScaleY);
+					paint(true);
 				});
 			}
 			logYMenu.setChecked(style.logScaleY);

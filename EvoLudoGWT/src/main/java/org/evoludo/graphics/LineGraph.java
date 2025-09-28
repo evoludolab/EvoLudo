@@ -53,7 +53,6 @@ import org.evoludo.util.Formatter;
 import org.evoludo.util.RingBuffer;
 
 import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.user.client.Command;
 
 /**
  * Graph to visualize time series data. The graph can be shifted and zoomed.
@@ -629,12 +628,9 @@ public class LineGraph extends AbstractGraph<double[]>
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		// add menu to clear canvas
 		if (clearMenu == null) {
-			clearMenu = new ContextMenuItem("Clear", new Command() {
-				@Override
-				public void execute() {
-					clearHistory();
-					paint(true);
-				}
+			clearMenu = new ContextMenuItem("Clear", () -> {
+				clearHistory();
+				paint(true);
 			});
 		}
 		menu.addSeparator();

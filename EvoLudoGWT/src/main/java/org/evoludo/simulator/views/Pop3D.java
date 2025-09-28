@@ -48,8 +48,6 @@ import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
 
-import com.google.gwt.user.client.Command;
-
 import thothbot.parallax.core.shared.materials.MeshLambertMaterial;
 
 /**
@@ -302,14 +300,11 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 
 		// process perspective context menu
 		if (projectionMenu == null) {
-			projectionMenu = new ContextMenuCheckBoxItem("Parallel projection", new Command() {
-				@Override
-				public void execute() {
-					boolean isOrthographic = !projectionMenu.isChecked();
-					for (PopGraph3D graph : graphs)
-						graph.setOrthographic(isOrthographic);
-					projectionMenu.setChecked(isOrthographic);
-				}
+			projectionMenu = new ContextMenuCheckBoxItem("Parallel projection", () -> {
+				boolean isOrtho = !projectionMenu.isChecked();
+				for (PopGraph3D graph : graphs)
+					graph.setOrthographic(isOrtho);
+				projectionMenu.setChecked(isOrtho);
 			});
 		}
 		menu.add(projectionMenu);
@@ -318,14 +313,11 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 
 		// process anaglyph context menu
 		if (anaglyphMenu == null) {
-			anaglyphMenu = new ContextMenuCheckBoxItem("Anaglyph 3D", new Command() {
-				@Override
-				public void execute() {
-					boolean isAnaglyph = !anaglyphMenu.isChecked();
-					for (PopGraph3D graph : graphs)
-						graph.setAnaglyph(isAnaglyph);
-					anaglyphMenu.setChecked(isAnaglyph);
-				}
+			anaglyphMenu = new ContextMenuCheckBoxItem("Anaglyph 3D", () -> {
+				boolean anaglyph = !anaglyphMenu.isChecked();
+				for (PopGraph3D graph : graphs)
+					graph.setAnaglyph(anaglyph);
+				anaglyphMenu.setChecked(anaglyph);
 			});
 		}
 		menu.add(anaglyphMenu);
@@ -336,14 +328,11 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		if (graphs.size() == 1) {
 			// VR only makes sense with a single graph
 			if (vrMenu == null) {
-				vrMenu = new ContextMenuCheckBoxItem("Virtual reality (β)", new Command() {
-					@Override
-					public void execute() {
-						boolean isVR = !vrMenu.isChecked();
-						for (PopGraph3D graph : graphs)
-							graph.setVR(isVR);
-						vrMenu.setChecked(isVR);
-					}
+				vrMenu = new ContextMenuCheckBoxItem("Virtual reality (β)", () -> {
+					boolean vr = !vrMenu.isChecked();
+					for (PopGraph3D graph : graphs)
+						graph.setVR(vr);
+					vrMenu.setChecked(vr);
 				});
 			}
 			menu.add(vrMenu);
