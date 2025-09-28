@@ -841,25 +841,28 @@ public abstract class EvoLudo
 
 	/**
 	 * Load new module with key <code>newModuleKey</code>. If necessary first
-	 * unload current module.
+	 * unload current module. Upon successful loading of a new module the method
+	 * returns {@code true}. If <code>newModuleKey</code> is not found but an active
+	 * module is present, the active module is kept and the method returns
+	 * {@code true}. Without an active module the method returns {@code false}.
 	 *
 	 * @param newModuleKey the key of the module to load
-	 * @return new module or {@code null} if module not found and no active
-	 *         current module
+	 * @return false if <code>newModuleKey</code> not found and no active module
+	 *         present; true otherwise
 	 */
-	public Module loadModule(String newModuleKey) {
+	public boolean loadModule(String newModuleKey) {
 		Module newModule = modules.get(newModuleKey);
 		if (newModule == null) {
-			if (activeModule != null) {
+			if (activeModule == null)
+				return false;
+			if (logger.isLoggable(Level.WARNING))
 				logger.warning("module '" + newModuleKey + "' not found - keeping '" + activeModule.getKey() + "'.");
-				return activeModule; // leave as is
-			}
-			return null;
+			return true;
 		}
 		// check if newModule is different
 		if (activeModule != null) {
 			if (activeModule == newModule) {
-				return activeModule;
+				return true;
 			}
 			unloadModule();
 		}
@@ -868,7 +871,7 @@ public abstract class EvoLudo
 			rng.setRNGSeed();
 		activeModule.load();
 		fireModuleLoaded();
-		return activeModule;
+		return true;
 	}
 
 	/**
@@ -1576,7 +1579,7 @@ public abstract class EvoLudo
 				break;
 			}
 		}
-		if (moduleKey == null || loadModule(moduleKey.getKey()) == null) {
+		if (moduleKey == null || !loadModule(moduleKey.getKey())) {
 			if (!helpRequested)
 				logger.severe("Use --module to load a module or --help for more information.");
 			return helpCLO;
