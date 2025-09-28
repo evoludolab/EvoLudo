@@ -67,11 +67,6 @@ public class S3 extends AbstractView {
 	protected double[] state;
 
 	/**
-	 * The initial state of the model. The start point of the current trajectory.
-	 */
-	protected double[] init;
-
-	/**
 	 * Construct a new view to display the time series data of the current EvoLudo
 	 * model as a trajectory in a \(S_3\) simplex.
 	 * 
@@ -147,7 +142,6 @@ public class S3 extends AbstractView {
 	public void unload() {
 		super.unload();
 		state = null;
-		init = null;
 	}
 
 	@Override
@@ -156,8 +150,6 @@ public class S3 extends AbstractView {
 		int nMean = model.getNMean();
 		if (state == null || state.length != nMean)
 			state = new double[nMean];
-		if (init == null || init.length != nMean)
-			init = new double[nMean];
 		for (S3Graph graph : graphs) {
 			S3Map map = graph.getMap();
 			Module module = graph.getModule();

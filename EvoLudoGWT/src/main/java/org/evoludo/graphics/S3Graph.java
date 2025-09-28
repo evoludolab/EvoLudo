@@ -155,9 +155,8 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	public void reset() {
 		super.reset();
 		if (buffer == null || buffer.getCapacity() < MIN_BUFFER_SIZE)
-			buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
+			buffer = new RingBuffer<double[]>(DEFAULT_BUFFER_SIZE);
 		colors = ColorMapCSS.Color2Css(map.getColors());
-		paint(true);
 	}
 
 	/**
@@ -184,7 +183,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		if (buffer.isEmpty()) {
 			buffer.append(prependTime2Data(t, data));
 			int len = data.length;
-			if (init == null || init.length != len)
+			if (init == null || init.length != len + 1)
 				init = new double[len + 1]; // add time
 			System.arraycopy(buffer.last(), 1, init, 1, len);
 		} else {
