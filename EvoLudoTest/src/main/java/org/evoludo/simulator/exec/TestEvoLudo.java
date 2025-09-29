@@ -318,7 +318,7 @@ public class TestEvoLudo implements MilestoneListener {
 			int idx = name.indexOf(SHA_PREFIX);
 			logMessage("Testing: '" + parent + name.substring(0, idx) + "'...");
 			Plist reference = engine.readPlist(dir.getAbsolutePath());
-			if (reference == null)
+			if (reference.isEmpty())
 				return;
 			String clo = (String) reference.get("CLO");
 			// run module

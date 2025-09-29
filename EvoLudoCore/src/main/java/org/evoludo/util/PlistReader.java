@@ -40,6 +40,9 @@ import java.util.NoSuchElementException;
  */
 public class PlistReader implements Iterator<PlistTag> {
 
+	static final String DOCTYPE_TAG = "<!DOCTYPE";
+	static final String XML_TAG = "<?xml";
+
 	/**
 	 * Number of lines read in <code>plist</code>-string.
 	 */
@@ -113,7 +116,7 @@ public class PlistReader implements Iterator<PlistTag> {
 		String name;
 		String attributes;
 		// read preamble
-		int start = line.indexOf("<?xml");
+		int start = line.indexOf(XML_TAG);
 		int end = line.indexOf("?>");
 		if (start >= 0 && end > start) {
 			// read attributes of xml tag
@@ -121,10 +124,11 @@ public class PlistReader implements Iterator<PlistTag> {
 			// parse version
 			line = line.substring(end + "?>".length()).trim();
 		}
-		start = line.indexOf("<!DOCTYPE");
-		end = line.indexOf('>', "<!DOCTYPE".length());
+		start = line.indexOf(DOCTYPE_TAG);
+		int sidx = DOCTYPE_TAG.length();
+		end = line.indexOf('>', sidx);
 		if (start >= 0 && end > start) {
-			attributes = line.substring(start + "<!DOCTYPE".length(), end).trim();
+			attributes = line.substring(start + sidx, end).trim();
 			// parse doctype
 			int idx = attributes.indexOf(' ');
 			root = attributes.substring(0, idx);

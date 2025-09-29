@@ -32,13 +32,13 @@ package org.evoludo.util;
 
 /**
  * Entry in <code>plist</code>-string. Every <code>plist</code> comes in
- * <code>&lt;key&gt;</code> and <code>plist</code> element pairs.
+ * {@code <key>} and <code>plist</code> element pairs.
  * 
  * @author Christoph Hauert
  */
 public class PlistTag {
 	/**
-	 * The name of <code>&lt;key&gt;</code> tag.
+	 * The name of {@code <key>} tag.
 	 */
 	String tag;
 
@@ -53,10 +53,10 @@ public class PlistTag {
 	String attributes;
 
 	/**
-	 * Create a <code>plist</code> entry with <code>&lt;key&gt;</code> name
+	 * Create a <code>plist</code> entry with {@code <key>} name
 	 * <code>tag</code> without attributes associated with <code>value</code>.
 	 * 
-	 * @param tag   the name of <code>&lt;key&gt;</code>
+	 * @param tag   the name of {@code <key>}
 	 * @param value the value the entry
 	 */
 	public PlistTag(String tag, String value) {
@@ -64,11 +64,11 @@ public class PlistTag {
 	}
 
 	/**
-	 * Create a <code>plist</code> entry with <code>&lt;key&gt;</code> name
+	 * Create a <code>plist</code> entry with name {@code <key>}
 	 * <code>tag</code> and <code>attributes</code> associated with
 	 * <code>value</code>.
 	 * 
-	 * @param tag        the name of <code>&lt;key&gt;</code>
+	 * @param tag        the name of {@code <key>}
 	 * @param attributes the attributes of the entry
 	 * @param value      the value the entry
 	 */
@@ -79,19 +79,7 @@ public class PlistTag {
 	}
 
 	/**
-	 * Compares the <code>&lt;key&gt;</code> names of <code>anothertag</code> with
-	 * this one.
-	 * 
-	 * @param anothertag another <code>plist</code> entry
-	 * @return <code>true</code> if <code>this</code> and <code>anothertag</code>
-	 *         have the same the <code>&lt;key&gt;</code>
-	 */
-	public boolean equals(String anothertag) {
-		return tag.equals(anothertag);
-	}
-
-	/**
-	 * The name (<code>&lt;key&gt;</code>) of this <code>plist</code> entry.
+	 * The {@code <key>}, name of this <code>plist</code> entry.
 	 * 
 	 * @return the name
 	 */

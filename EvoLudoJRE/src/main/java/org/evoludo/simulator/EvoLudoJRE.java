@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.nio.file.Files;
@@ -1096,7 +1097,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 					break;
 				}
 				plist = readPlist(plistname);
-				if (plist == null)
+				if (plist.isEmpty())
 					continue;
 				String restoreOptions = (String) plist.get("CLO");
 				if (restoreOptions == null) {
@@ -1417,49 +1418,33 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * @return the parsed content of the PLIST file
 	 */
 	public Plist readPlist(String name) {
-		if (name.endsWith(".zip")) {
-			// assume compressed file
-			StringBuilder content = new StringBuilder();
-			try {
-				ZipInputStream zis = new ZipInputStream(new FileInputStream(name));
-				// process first entry in zip file
-				zis.getNextEntry();
-				BufferedReader in = new BufferedReader(new InputStreamReader(zis));
+		String content;
+		if (name.endsWith(".zip") || name.endsWith(".gz")) {
+			StringBuilder sb = new StringBuilder();
+			try (InputStream cs = name.endsWith(".zip")
+					? new ZipInputStream(new FileInputStream(name))
+					: new GZIPInputStream(new FileInputStream(name));
+					BufferedReader in = new BufferedReader(new InputStreamReader(cs))) {
+				if (cs instanceof ZipInputStream)
+					((ZipInputStream) cs).getNextEntry();
 				String line;
 				while ((line = in.readLine()) != null)
-					content.append(line);
-				in.close();
-				zis.close();
+					sb.append(line);
 			} catch (Exception e) {
 				logger.warning("failed to read state in '" + name + "'");
+				return new Plist();
 			}
-			return PlistParser.parse(content.toString());
-		}
-		// keep for compatibility
-		if (name.endsWith(".gz")) {
-			// assume compressed file
-			StringBuilder content = new StringBuilder();
+			content = sb.toString();
+		} else {
 			try {
-				GZIPInputStream gis = new GZIPInputStream(new FileInputStream(name));
-				BufferedReader in = new BufferedReader(new InputStreamReader(gis));
-				String line;
-				while ((line = in.readLine()) != null)
-					content.append(line);
-				in.close();
-				gis.close();
+				content = new String(Files.readAllBytes(Paths.get(name)));
 			} catch (Exception e) {
 				logger.warning("failed to read state in '" + name + "'");
+				// e.printStackTrace(); // for debugging
+				return new Plist();
 			}
-			return PlistParser.parse(content.toString());
 		}
-		try {
-			String content = new String(Files.readAllBytes(Paths.get(name)));
-			return PlistParser.parse(content);
-		} catch (Exception e) {
-			logger.warning("failed to read state in '" + name + "'");
-			// e.printStackTrace(); // for debugging
-			return null;
-		}
+		return PlistParser.parse(content);
 	}
 
 	/**
@@ -1497,11 +1482,12 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			template = String.format(template, (int) activeModel.getUpdates());
 		File unique = new File(template);
 		int counter = 0;
-		while (!fileCheck(unique, true) && counter < 100) {
+		final int MAX_RETRIES = 100;
+		while (!fileCheck(unique, true) && counter < MAX_RETRIES) {
 			unique = new File(template.substring(0, template.lastIndexOf('.')) + "-" + (++counter) + "." + extension);
 		}
 		// check if emergency brake was pulled
-		if (counter >= 1000)
+		if (counter >= MAX_RETRIES)
 			return null;
 		return unique;
 	}

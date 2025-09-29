@@ -31,8 +31,8 @@
 package org.evoludo.util;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * Basic parser for <code>plist</code>-files.
@@ -103,77 +103,77 @@ public class PlistParser {
 	// }
 
 	/**
-	 * Parse the contents of <code>plist</code>-file supplied as a String and return
-	 * a Map with key and object associations. The parses processes the following
+	 * Parses the contents of a <code>plist</code> file supplied as a String and
+	 * returns
+	 * a {@link Plist} with key and object associations. The parser processes the
+	 * following
 	 * <code>plist</code> elements:
 	 * <dl>
-	 * <dt>&lt;key&gt;</dt>
+	 * <dt>{@code <key>}</dt>
 	 * <dd>Name of tag: any valid String.</dd>
-	 * <dt>&lt;dict&gt;</dt>
+	 * <dt>{@code <dict>}</dt>
 	 * <dd>Dictionary: Alternating <code>&lt;key&gt;</code> tags and
 	 * <code>plist</code> elements (excluding <code>&lt;key&gt;</code>). Can be
 	 * empty.</dd>
-	 * <dt>&lt;array&gt;</dt>
+	 * <dt>{@code <array>}</dt>
 	 * <dd>Array: Can contain any number of identical child <code>plist</code>
 	 * elements (excluding <code>&lt;key&gt;</code>). Can be empty.</dd>
-	 * <dt>&lt;string&gt;</dt>
+	 * <dt>{@code <string>}</dt>
 	 * <dd>UTF-8 encoded string.</dd>
-	 * <dt>&lt;real&gt;</dt>
+	 * <dt>{@code <real>}</dt>
 	 * <dd>Floating point number: if the string ends with '{@code L}' it is assumed
-	 * to be a double encoded as a long. <br>
+	 * to be a double encoded as a long.
+	 * <p>
 	 * <strong>Important:</strong>
 	 * <ul>
-	 * <li>using long to encode floating point numbers is not part of the
+	 * <li>Using long to encode floating point numbers is not part of the
 	 * <code>plist</code> specification. However, only bitwise encoding can
-	 * guarantee faithful writing and restoring of floating point numbers.
-	 * <li>cannot use {@link Double#valueOf(String)} because not implemented by GWT.
+	 * guarantee faithful writing and restoring of floating point numbers.</li>
+	 * <li>Cannot use {@link Double#valueOf(String)} because it is not implemented
+	 * by GWT.</li>
 	 * </ul>
 	 * </dd>
-	 * <dt>&lt;integer&gt;</dt>
+	 * <dt>{@code <integer>}</dt>
 	 * <dd>Integer number: any string that {@link Integer#parseInt(String)} can
-	 * process, i.e. limited to 32bits.</dd>
-	 * <dt>&lt;true/&gt;, &lt;false/&gt;</dt>
-	 * <dd>Boolean numbers: tag represents the boolean values <code>true</code> and
+	 * process, i.e., limited to 32 bits.</dd>
+	 * <dt>{@code <true/>}, {@code <false/>}</dt>
+	 * <dd>Boolean values: tag represents the boolean values <code>true</code> and
 	 * <code>false</code>.</dd>
 	 * </dl>
 	 * <p>
-	 * Not implemented are currently:
+	 * <strong>Not currently implemented:</strong>
 	 * </p>
 	 * <dl>
-	 * <dt>&lt;data&gt;</dt>
+	 * <dt>{@code <data>}</dt>
 	 * <dd>Base64 encoded data.</dd>
-	 * <dt>&lt;date&gt;</dt>
+	 * <dt>{@code <date>}</dt>
 	 * <dd>ISO 8601 formatted string.</dd>
 	 * </dl>
 	 * <p>
-	 * <em>Note:</em> Invalid or unknown tags trigger error message on standard out.
+	 * <em>Note:</em> Invalid or unknown tags trigger an error message on standard
+	 * error.
 	 * </p>
-	 * 
-	 * @param string contents of <code>plist</code>-file
-	 * @return map with key and element associations
+	 *
+	 * @param string contents of the <code>plist</code> file
+	 * @return a {@link Plist} with key and element associations
 	 */
 	public static Plist parse(String string) {
 		Plist plist = new Plist();
 		PlistReader reader = new PlistReader(string);
 		while (reader.hasNext()) {
 			PlistTag tag = reader.next();
-			if (tag.equals("plist")) {
-				// check version of plist specifications? - see attributes of reader
-				continue;
-			}
-			if (tag.equals("dict")) {
-				parseDict(reader, plist);
-				continue;
-			}
-			if (tag.equals("/plist"))
+			String name = tag.getTag();
+			if (name.equals("/" + TAG_PLIST))
 				break;
-			// all other tags should not be encountered when parsing <plist>
-			System.err.println((new Date().toString()) + " - PlistParser, line " + reader.getLine() + ": unknown tag '"
-					+ tag.getTag() + "' - ignored.");
+			if (name.equals(TAG_PLIST)) {
+				// check version of plist specifications? - see attributes of reader
+			} else if (name.equals(TAG_DICT)) {
+				parseDict(reader, plist);
+			} else {
+				// no other tags should be encountered when parsing <plist>
+				logInvalidTagWarning(reader.getLine(), name, TAG_PLIST);
+			}
 		}
-		// reader.close();
-		if (plist.isEmpty())
-			return null;
 		return plist;
 	}
 
@@ -196,67 +196,63 @@ public class PlistParser {
 		String key = null;
 		while (reader.hasNext()) {
 			PlistTag tag = reader.next();
-			if (tag.equals("key")) {
+			String name = tag.getTag();
+			if (name.equals(TAG_KEY)) {
 				key = tag.getValue();
 				continue;
 			}
-			if (tag.equals("string")) {
+			if (name.equals(TAG_STRING)) {
 				String string = tag.getValue();
 				if (key == null) {
-					System.err.println((new Date().toString()) + " - PlistParser, line " + reader.getLine()
-							+ ": no key found for <string> '" + string + "' - ignored.");
+					logNoKeyWarning(reader.getLine(), TAG_STRING, string);
 					continue;
 				}
 				dict.put(key, XMLCoder.decode(string));
 				key = null;
 				continue;
 			}
-			if (tag.equals("/dict"))
+			if (name.equals("/" + TAG_DICT))
 				return;
-			if (tag.equals("dict")) {
+			if (name.equals(TAG_DICT)) {
 				Plist subdict = new Plist();
 				// catch empty dicts
 				if (tag.getValue() == null)
 					parseDict(reader, subdict);
 				if (key == null) {
-					System.err.println((new Date().toString()) + " - PlistParser, line " + reader.getLine()
-							+ ": no key found for <dict> - ignored.");
+					logNoKeyWarning(reader.getLine(), TAG_DICT);
 					continue;
 				}
 				dict.put(key, subdict);
 				key = null;
 				continue;
 			}
-			if (tag.equals("array")) {
+			if (name.equals(TAG_ARRAY)) {
 				List<Object> array = new ArrayList<>();
 				// catch empty arrays
 				if (tag.getValue() == null)
 					parseArray(reader, array);
 				if (key == null) {
-					System.err.println((new Date().toString()) + " - PlistParser, line " + reader.getLine()
-							+ ": no key found for <array> - ignored.");
+					logNoKeyWarning(reader.getLine(), TAG_ARRAY);
 					continue;
 				}
 				dict.put(key, array);
 				key = null;
 				continue;
 			}
-			if (tag.equals("integer")) {
+			if (name.equals(TAG_INTEGER)) {
 				String integer = tag.getValue();
 				if (key == null) {
-					System.err.println((new Date().toString()) + " - PlistParser, line " + reader.getLine()
-							+ ": no key found for <integer> '" + integer + "' - ignored.");
+					logNoKeyWarning(reader.getLine(), TAG_INTEGER, integer);
 					continue;
 				}
 				dict.put(key, Integer.parseInt(integer));
 				key = null;
 				continue;
 			}
-			if (tag.equals("real")) {
+			if (name.equals(TAG_REAL)) {
 				String real = tag.getValue();
 				if (key == null) {
-					System.err.println((new Date().toString()) + " - PlistParser, line " + reader.getLine()
-							+ ": no key found for <real> '" + real + "' - ignored.");
+					logNoKeyWarning(reader.getLine(), TAG_REAL, real);
 					continue;
 				}
 				// dict.put(key, Double.valueOf(real));
@@ -267,32 +263,28 @@ public class PlistParser {
 				key = null;
 				continue;
 			}
-			if (tag.equals("true")) {
+			if (name.equals(TAG_TRUE)) {
 				if (key == null) {
-					System.err.println((new Date().toString()) + " - PlistParser, line " + reader.getLine()
-							+ ": no key found for <true/> - ignored.");
+					logNoKeyWarning(reader.getLine(), TAG_TRUE + "/");
 					continue;
 				}
-				dict.put(key, Boolean.parseBoolean("true"));
+				dict.put(key, Boolean.parseBoolean(TAG_TRUE));
 				key = null;
 				continue;
 			}
-			if (tag.equals("false")) {
+			if (name.equals(TAG_FALSE)) {
 				if (key == null) {
-					System.err.println((new Date().toString()) + " - PlistParser, line " + reader.getLine()
-							+ ": no key found for <false/> - ignored.");
+					logNoKeyWarning(reader.getLine(), TAG_FALSE + "/");
 					continue;
 				}
-				dict.put(key, Boolean.parseBoolean("false"));
+				dict.put(key, Boolean.parseBoolean(TAG_FALSE));
 				key = null;
 				continue;
 			}
 			// no other tags should be encountered when parsing <dict>
-			System.err.println((new Date().toString()) + " - PlistParser, line " + reader.getLine() + ": unknown tag "
-					+ tag.getTag() + " - ignored.");
+			logInvalidTagWarning(reader.getLine(), name, TAG_DICT);
 		}
-		System.err.println(
-				(new Date().toString()) + " - PlistParser, line " + reader.getLine() + ": </dict> missing - failed.");
+		logClosingTagWarning(reader.getLine(), TAG_DICT);
 	}
 
 	/**
@@ -300,7 +292,7 @@ public class PlistParser {
 	 * <code>plist</code>-string provided by <code>reader</code> and writes all
 	 * elements to the list <code>array</code>.
 	 * <p>
-	 * <em>Note:</em> Invalid or unknown tags trigger error message on standard out.
+	 * <em>Note:</em> Invalid or unknown tags trigger log warnings and errors.
 	 * </p>
 	 * 
 	 * @param reader iterator over <code>plist</code> tags
@@ -309,16 +301,16 @@ public class PlistParser {
 	protected static void parseArray(PlistReader reader, List<Object> array) {
 		while (reader.hasNext()) {
 			PlistTag tag = reader.next();
-			if (tag.equals("key")) {
-				System.err.println((new Date().toString()) + " - PlistParser, line " + reader.getLine()
-						+ ": <array> should not contain <key> - ignored.");
+			String name = tag.getTag();
+			if (name.equals(TAG_KEY)) {
+				logInvalidTagWarning(reader.getLine(), TAG_KEY, TAG_ARRAY);
 				continue;
 			}
-			if (tag.equals("string")) {
+			if (name.equals(TAG_STRING)) {
 				array.add(XMLCoder.decode(tag.getValue()));
 				continue;
 			}
-			if (tag.equals("dict")) {
+			if (name.equals(TAG_DICT)) {
 				Plist dict = new Plist();
 				// catch empty dicts
 				if (tag.getValue() == null)
@@ -326,9 +318,9 @@ public class PlistParser {
 				array.add(dict);
 				continue;
 			}
-			if (tag.equals("/array"))
+			if (name.equals("/" + TAG_ARRAY))
 				return;
-			if (tag.equals("array")) {
+			if (name.equals(TAG_ARRAY)) {
 				List<Object> subarray = new ArrayList<>();
 				// catch empty arrays
 				if (tag.getValue() == null)
@@ -336,11 +328,11 @@ public class PlistParser {
 				array.add(subarray);
 				continue;
 			}
-			if (tag.equals("integer")) {
+			if (name.equals(TAG_INTEGER)) {
 				array.add(Integer.parseInt(tag.getValue()));
 				continue;
 			}
-			if (tag.equals("real")) {
+			if (name.equals(TAG_REAL)) {
 				// array.add(Double.valueOf(tag.getValue()));
 				String real = tag.getValue();
 				if (real.endsWith("L"))
@@ -349,19 +341,52 @@ public class PlistParser {
 					array.add(Double.parseDouble(real));
 				continue;
 			}
-			if (tag.equals("true")) {
-				array.add(Boolean.parseBoolean("true"));
+			if (name.equals(TAG_TRUE)) {
+				array.add(Boolean.parseBoolean(TAG_TRUE));
 				continue;
 			}
-			if (tag.equals("false")) {
-				array.add(Boolean.parseBoolean("false"));
+			if (name.equals(TAG_FALSE)) {
+				array.add(Boolean.parseBoolean(TAG_FALSE));
 				continue;
 			}
 			// no other tags should be encountered when parsing <array>
-			System.err.println((new Date().toString()) + " - PlistParser, line " + reader.getLine() + ": unknown tag "
-					+ tag.getTag() + " - ignored.");
+			logInvalidTagWarning(reader.getLine(), name, TAG_ARRAY);
 		}
-		System.err.println(
-				(new Date().toString()) + " - PlistParser, line " + reader.getLine() + ": </array> missing - failed.");
+		logClosingTagWarning(reader.getLine(), TAG_ARRAY);
+	}
+
+	private static final String TAG_PLIST = "plist";
+	private static final String TAG_DICT = "dict";
+	private static final String TAG_ARRAY = "array";
+	private static final String TAG_STRING = "string";
+	private static final String TAG_INTEGER = "integer";
+	private static final String TAG_REAL = "real";
+	private static final String TAG_TRUE = "true";
+	private static final String TAG_FALSE = "false";
+	private static final String TAG_KEY = "key";
+
+	private static final String MSG_LINE = "line ";
+	private static final String MSG_IGNORE = " - ignored.";
+
+	private static final Logger LOGGER = Logger.getLogger(PlistParser.class.getName());
+
+	private static void logNoKeyWarning(int line, String tag, String value) {
+		if (LOGGER.isLoggable(java.util.logging.Level.WARNING))
+			LOGGER.warning(MSG_LINE + line + ": no key found for <" + tag + "> '" + value + "'" + MSG_IGNORE);
+	}
+
+	private static void logNoKeyWarning(int line, String tag) {
+		if (LOGGER.isLoggable(java.util.logging.Level.WARNING))
+			LOGGER.warning(MSG_LINE + line + ": no key found for <" + tag + ">" + MSG_IGNORE);
+	}
+
+	private static void logClosingTagWarning(int line, String tag) {
+		if (LOGGER.isLoggable(java.util.logging.Level.WARNING))
+			LOGGER.warning(MSG_LINE + line + ": closing tag </" + tag + "> missing" + MSG_IGNORE);
+	}
+
+	private static void logInvalidTagWarning(int line, String tag, String context) {
+		if (LOGGER.isLoggable(java.util.logging.Level.WARNING))
+			LOGGER.warning(MSG_LINE + line + ": invalid tag <" + tag + "> in <" + context + ">" + MSG_IGNORE);
 	}
 }
