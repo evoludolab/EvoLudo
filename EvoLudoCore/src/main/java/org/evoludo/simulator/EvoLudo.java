@@ -69,6 +69,7 @@ import org.evoludo.simulator.modules.NetGames;
 import org.evoludo.simulator.modules.RSP;
 import org.evoludo.simulator.modules.SIR;
 import org.evoludo.simulator.modules.TBT;
+import org.evoludo.simulator.modules.EcoMoran;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
@@ -1383,6 +1384,8 @@ public abstract class EvoLudo
 	 */
 	public abstract void exportState();
 
+	public abstract void exportState(String filename);
+
 	/**
 	 * Encode current state of EvoLudo model as XML string (plist format).
 	 *
@@ -2127,6 +2130,7 @@ public abstract class EvoLudo
 		addModule(new Centipede(this));
 		addModule(new CSD(this));
 		addModule(new CLabour(this));
+		addModule(new EcoMoran(this));
 		addModule(new DemesTBT(this));
 		addModule(new EcoPGG(this));
 		addModule(new NetGames(this));

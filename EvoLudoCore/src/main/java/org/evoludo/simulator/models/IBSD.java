@@ -387,9 +387,15 @@ public class IBSD extends IBS implements Discrete {
 			KALEIDOSCOPE("kaleidoscope", "evolutionary kaleidoscopes"),
 
 			/**
+			 * Specific number of each population.
+			 */
+			NUMBER("number", "number of each population"),
+			/**
 			 * Stripes of different traits. Requires square lattice geometry.
 			 */
 			STRIPES("stripes", "stripes of traits");
+
+			
 
 			/**
 			 * Key of initialization type. Used when parsing command line options.

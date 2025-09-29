@@ -30,7 +30,9 @@
 
 package org.evoludo.simulator.models;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.evoludo.math.ArrayMath;
@@ -1828,6 +1830,9 @@ public class IBSDPopulation extends IBSPopulation {
 			case KALEIDOSCOPE:
 				initKaleidoscope();
 				break;
+
+			case NUMBER:
+				initNumber();
 		}
 		if (ArrayMath.norm(traitsCount) != nPopulation)
 			// fatal does not return control
@@ -1857,6 +1862,28 @@ public class IBSDPopulation extends IBSPopulation {
 			setTraitAt(n, aTrait);
 			traitsCount[aTrait]++;
 		}
+	}
+
+	protected void initNumber() {
+		Arrays.fill(strategiesTypeCount, 0);
+		// different traits active
+		List<Integer> strategyInds = new ArrayList<>();
+        for (int i = 0; i < nPopulation; i++) {
+            strategyInds.add(i);
+        }
+		Collections.shuffle(strategyInds);
+
+		for (int aStrat =0;aStrat<init.args.length; aStrat++){
+			int popNumber = (int) init.args[aStrat];
+			List<Integer> specStrategyInds = new ArrayList<>(strategyInds.subList(0, popNumber));
+			strategyInds.subList(0, popNumber).clear();
+
+			for (int strategyInd: specStrategyInds){
+				strategies[strategyInd]=aStrat;
+				strategiesTypeCount[aStrat]++;
+			}
+		}
+	
 	}
 
 	/**

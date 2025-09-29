@@ -148,6 +148,24 @@
             </goals>
           </execution>
           <execution>
+            <id>simEMoran</id>
+            <configuration>
+              <finalName>simEMoran.${evoludo.commit}</finalName>
+              <archive>
+                <manifest>
+                  <mainClass>org.evoludo.simulator.exec.simEMoran</mainClass>
+                </manifest>
+              </archive>
+              <descriptorRefs>
+                <descriptorRef>jar-with-dependencies</descriptorRef>
+              </descriptorRefs>
+            </configuration>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+          <execution>
             <id>simTBT</id>
             <configuration>
               <finalName>simTBT.${evoludo.commit}</finalName>
