@@ -161,7 +161,7 @@ public class PlistReader implements Iterator<PlistTag> {
 		String name;
 		String attributes = null;
 		String value = null;
-		boolean closing = false;
+		boolean selfclosing = false;
 		tag = null;
 		if (done)
 			return false;
@@ -182,13 +182,13 @@ public class PlistReader implements Iterator<PlistTag> {
 		int end = line.indexOf('>') + 1;
 		int tagend = end - 1;
 		if (line.charAt(tagend - 1) == '/') {
-			closing = true;
+			selfclosing = true;
 			tagend--;
 		}
 		name = line.substring(1, tagend).trim();
 
 		// is this an opening tag
-		if (!closing && name.charAt(0) != '/') {
+		if (!selfclosing && name.charAt(0) != '/') {
 			// check attributes
 			int arg = name.indexOf(' ');
 			if (arg > 0) {
@@ -204,7 +204,7 @@ public class PlistReader implements Iterator<PlistTag> {
 				end = close + closingtag.length();
 			}
 		}
-		tag = new PlistTag(name, attributes, value);
+		tag = new PlistTag(name, attributes, value, selfclosing);
 		line = line.substring(end).trim();
 		// if( line.indexOf("</"+root+">")>0 ) done = true;
 		return true;

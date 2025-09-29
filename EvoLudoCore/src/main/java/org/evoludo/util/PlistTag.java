@@ -53,6 +53,11 @@ public class PlistTag {
 	String attributes;
 
 	/**
+	 * Indicates if this tag is self-closing.
+	 */
+	boolean selfClosing;
+
+	/**
 	 * Create a <code>plist</code> entry with {@code <key>} name
 	 * <code>tag</code> without attributes associated with <code>value</code>.
 	 * 
@@ -73,9 +78,24 @@ public class PlistTag {
 	 * @param value      the value the entry
 	 */
 	public PlistTag(String tag, String attributes, String value) {
+		this(tag, attributes, value, false);
+	}
+
+	/**
+	 * Create a <code>plist</code> entry with name {@code <key>}
+	 * <code>tag</code> and <code>attributes</code> associated with
+	 * <code>value</code>.
+	 * 
+	 * @param tag         the name of {@code <key>}
+	 * @param attributes  the attributes of the entry
+	 * @param value       the value the entry
+	 * @param selfClosing <code>true</code> if tag is self-closing
+	 */
+	public PlistTag(String tag, String attributes, String value, boolean selfClosing) {
 		this.tag = tag;
 		this.value = value;
 		this.attributes = attributes;
+		this.selfClosing = selfClosing;
 	}
 
 	/**
@@ -112,5 +132,14 @@ public class PlistTag {
 	 */
 	public String getAttributes() {
 		return attributes;
+	}
+
+	/**
+	 * Check if this tag is self-closing.
+	 * 
+	 * @return <code>true</code> if tag is self-closing
+	 */
+	public boolean isSelfClosing() {
+		return selfClosing;
 	}
 }

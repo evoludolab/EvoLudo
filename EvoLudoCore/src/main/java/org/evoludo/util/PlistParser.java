@@ -112,12 +112,12 @@ public class PlistParser {
 	 * <dt>{@code <key>}</dt>
 	 * <dd>Name of tag: any valid String.</dd>
 	 * <dt>{@code <dict>}</dt>
-	 * <dd>Dictionary: Alternating <code>&lt;key&gt;</code> tags and
-	 * <code>plist</code> elements (excluding <code>&lt;key&gt;</code>). Can be
+	 * <dd>Dictionary: Alternating {@code <key>} tags and
+	 * <code>plist</code> elements (excluding {@code <key>}). Can be
 	 * empty.</dd>
 	 * <dt>{@code <array>}</dt>
 	 * <dd>Array: Can contain any number of identical child <code>plist</code>
-	 * elements (excluding <code>&lt;key&gt;</code>). Can be empty.</dd>
+	 * elements (excluding {@code <key>}). Can be empty.</dd>
 	 * <dt>{@code <string>}</dt>
 	 * <dd>UTF-8 encoded string.</dd>
 	 * <dt>{@code <real>}</dt>
@@ -178,113 +178,72 @@ public class PlistParser {
 	}
 
 	/**
-	 * Parses a dictionary entry, <code>&lt;dict&gt;</code>, in the
+	 * Parses a dictionary entry, {@code <dict>}, in the
 	 * <code>plist</code>-string provided by <code>reader</code> and writes
-	 * <code>&lt;key&gt;</code> and <code>plist</code> element pairs to the lookup
+	 * {@code <key>} and <code>plist</code> element pairs to the lookup
 	 * table <code>dict</code>. Note, dictionaries may contain
-	 * <code>&lt;dict&gt;</code> elements, which results in recursive calls to this
+	 * {@code <dict>} elements, which results in recursive calls to this
 	 * method.
 	 * <p>
 	 * <em>Note:</em> Invalid or unknown tags trigger error message on standard out.
 	 * </p>
 	 * 
 	 * @param reader iterator over <code>plist</code> tags
-	 * @param dict   map for storing all pairs of <code>&lt;key&gt;</code> and
+	 * @param dict   map for storing all pairs of {@code <key>} and
 	 *               <code>plist</code> element pairs.
 	 */
-	protected static void parseDict(PlistReader reader, Plist dict) {
+	protected static Plist parseDict(PlistReader reader, Plist dict) {
 		String key = null;
 		while (reader.hasNext()) {
 			PlistTag tag = reader.next();
 			String name = tag.getTag();
-			if (name.equals(TAG_KEY)) {
-				key = tag.getValue();
-				continue;
-			}
-			if (name.equals(TAG_STRING)) {
-				String string = tag.getValue();
-				if (key == null) {
-					logNoKeyWarning(reader.getLine(), TAG_STRING, string);
+			switch (name) {
+				case "/" + TAG_DICT:
+					return dict;
+				case TAG_KEY:
+					key = tag.getValue();
 					continue;
-				}
-				dict.put(key, XMLCoder.decode(string));
-				key = null;
-				continue;
+				case TAG_STRING:
+					store(reader, dict, key, XMLCoder.decode(tag.getValue()));
+					break;
+				case TAG_DICT:
+					if (tag.isSelfClosing()) {
+						// ignore empty dict
+						break;
+					}
+					store(reader, dict, key, parseDict(reader, new Plist()));
+					break;
+				case TAG_ARRAY:
+					if (tag.isSelfClosing()) {
+						// ignore empty array
+						break;
+					}
+					store(reader, dict, key, parseArray(reader, new ArrayList<>()));
+					break;
+				case TAG_INTEGER:
+					if (tag.isSelfClosing()) {
+						// ignore empty dict
+						break;
+					}
+					store(reader, dict, key, Integer.parseInt(tag.getValue()));
+					break;
+				case TAG_REAL:
+					store(reader, dict, key, parseReal(tag.getValue()));
+					break;
+				case TAG_TRUE:
+					store(reader, dict, key, Boolean.TRUE);
+					break;
+				case TAG_FALSE:
+					store(reader, dict, key, Boolean.FALSE);
+					break;
+				default:
+					logInvalidTagWarning(reader.getLine(), name, TAG_DICT);
+					break;
 			}
-			if (name.equals("/" + TAG_DICT))
-				return;
-			if (name.equals(TAG_DICT)) {
-				Plist subdict = new Plist();
-				// catch empty dicts
-				if (tag.getValue() == null)
-					parseDict(reader, subdict);
-				if (key == null) {
-					logNoKeyWarning(reader.getLine(), TAG_DICT);
-					continue;
-				}
-				dict.put(key, subdict);
-				key = null;
-				continue;
-			}
-			if (name.equals(TAG_ARRAY)) {
-				List<Object> array = new ArrayList<>();
-				// catch empty arrays
-				if (tag.getValue() == null)
-					parseArray(reader, array);
-				if (key == null) {
-					logNoKeyWarning(reader.getLine(), TAG_ARRAY);
-					continue;
-				}
-				dict.put(key, array);
-				key = null;
-				continue;
-			}
-			if (name.equals(TAG_INTEGER)) {
-				String integer = tag.getValue();
-				if (key == null) {
-					logNoKeyWarning(reader.getLine(), TAG_INTEGER, integer);
-					continue;
-				}
-				dict.put(key, Integer.parseInt(integer));
-				key = null;
-				continue;
-			}
-			if (name.equals(TAG_REAL)) {
-				String real = tag.getValue();
-				if (key == null) {
-					logNoKeyWarning(reader.getLine(), TAG_REAL, real);
-					continue;
-				}
-				// dict.put(key, Double.valueOf(real));
-				if (real.endsWith("L"))
-					dict.put(key, Double.longBitsToDouble(Long.valueOf(real.substring(0, real.length() - 1))));
-				else
-					dict.put(key, Double.parseDouble(real));
-				key = null;
-				continue;
-			}
-			if (name.equals(TAG_TRUE)) {
-				if (key == null) {
-					logNoKeyWarning(reader.getLine(), TAG_TRUE + "/");
-					continue;
-				}
-				dict.put(key, Boolean.parseBoolean(TAG_TRUE));
-				key = null;
-				continue;
-			}
-			if (name.equals(TAG_FALSE)) {
-				if (key == null) {
-					logNoKeyWarning(reader.getLine(), TAG_FALSE + "/");
-					continue;
-				}
-				dict.put(key, Boolean.parseBoolean(TAG_FALSE));
-				key = null;
-				continue;
-			}
-			// no other tags should be encountered when parsing <dict>
-			logInvalidTagWarning(reader.getLine(), name, TAG_DICT);
+			key = null;
 		}
 		logClosingTagWarning(reader.getLine(), TAG_DICT);
+		return dict;
 	}
 
 	/**
@@ -298,61 +257,72 @@ public class PlistParser {
 	 * @param reader iterator over <code>plist</code> tags
 	 * @param array  list for storing the array of <code>plist</code> elements.
 	 */
-	protected static void parseArray(PlistReader reader, List<Object> array) {
+	protected static List<Object> parseArray(PlistReader reader, List<Object> array) {
 		while (reader.hasNext()) {
 			PlistTag tag = reader.next();
 			String name = tag.getTag();
-			if (name.equals(TAG_KEY)) {
-				logInvalidTagWarning(reader.getLine(), TAG_KEY, TAG_ARRAY);
-				continue;
+			switch (name) {
+				case "/" + TAG_ARRAY:
+					return array;
+				case TAG_STRING:
+					array.add(XMLCoder.decode(tag.getValue()));
+					break;
+				case TAG_DICT:
+					if (tag.isSelfClosing()) {
+						// ignore empty dict
+						break;
+					}
+					Plist subdict = new Plist();
+					if (tag.getValue() == null)
+						parseDict(reader, subdict);
+					array.add(subdict);
+					break;
+				case TAG_ARRAY:
+					if (tag.isSelfClosing()) {
+						// ignore empty array
+						break;
+					}
+					List<Object> subarray = new ArrayList<>();
+					if (tag.getValue() == null)
+						parseArray(reader, subarray);
+					array.add(subarray);
+					break;
+				case TAG_INTEGER:
+					array.add(Integer.parseInt(tag.getValue()));
+					break;
+				case TAG_REAL:
+					array.add(parseReal(tag.getValue()));
+					break;
+				case TAG_TRUE:
+					array.add(Boolean.parseBoolean(TAG_TRUE));
+					break;
+				case TAG_FALSE:
+					array.add(Boolean.parseBoolean(TAG_FALSE));
+					break;
+				default:
+					logInvalidTagWarning(reader.getLine(), name, TAG_ARRAY);
+					break;
 			}
-			if (name.equals(TAG_STRING)) {
-				array.add(XMLCoder.decode(tag.getValue()));
-				continue;
-			}
-			if (name.equals(TAG_DICT)) {
-				Plist dict = new Plist();
-				// catch empty dicts
-				if (tag.getValue() == null)
-					parseDict(reader, dict);
-				array.add(dict);
-				continue;
-			}
-			if (name.equals("/" + TAG_ARRAY))
-				return;
-			if (name.equals(TAG_ARRAY)) {
-				List<Object> subarray = new ArrayList<>();
-				// catch empty arrays
-				if (tag.getValue() == null)
-					parseArray(reader, subarray);
-				array.add(subarray);
-				continue;
-			}
-			if (name.equals(TAG_INTEGER)) {
-				array.add(Integer.parseInt(tag.getValue()));
-				continue;
-			}
-			if (name.equals(TAG_REAL)) {
-				// array.add(Double.valueOf(tag.getValue()));
-				String real = tag.getValue();
-				if (real.endsWith("L"))
-					array.add(Double.longBitsToDouble(Long.valueOf(real.substring(0, real.length() - 1))));
-				else
-					array.add(Double.parseDouble(real));
-				continue;
-			}
-			if (name.equals(TAG_TRUE)) {
-				array.add(Boolean.parseBoolean(TAG_TRUE));
-				continue;
-			}
-			if (name.equals(TAG_FALSE)) {
-				array.add(Boolean.parseBoolean(TAG_FALSE));
-				continue;
-			}
-			// no other tags should be encountered when parsing <array>
-			logInvalidTagWarning(reader.getLine(), name, TAG_ARRAY);
 		}
 		logClosingTagWarning(reader.getLine(), TAG_ARRAY);
+		return array;
+	}
+
+	private static double parseReal(String real) {
+		if (real.endsWith("L"))
+			return Double.longBitsToDouble(Long.valueOf(real.substring(0, real.length() - 1)));
+		return Double.parseDouble(real);
+	}
+
+	private static void store(PlistReader reader, Plist dict, String key, Object value) {
+		if (key == null) {
+			if (LOGGER.isLoggable(java.util.logging.Level.WARNING))
+				LOGGER.warning(MSG_LINE + reader.getLine() + ": key missing for '"
+						+ (value == null ? "null" : value.getClass().getSimpleName())
+						+ "'" + MSG_IGNORE);
+			return;
+		}
+		dict.put(key, value);
 	}
 
 	private static final String TAG_PLIST = "plist";
@@ -369,16 +339,6 @@ public class PlistParser {
 	private static final String MSG_IGNORE = " - ignored.";
 
 	private static final Logger LOGGER = Logger.getLogger(PlistParser.class.getName());
-
-	private static void logNoKeyWarning(int line, String tag, String value) {
-		if (LOGGER.isLoggable(java.util.logging.Level.WARNING))
-			LOGGER.warning(MSG_LINE + line + ": no key found for <" + tag + "> '" + value + "'" + MSG_IGNORE);
-	}
-
-	private static void logNoKeyWarning(int line, String tag) {
-		if (LOGGER.isLoggable(java.util.logging.Level.WARNING))
-			LOGGER.warning(MSG_LINE + line + ": no key found for <" + tag + ">" + MSG_IGNORE);
-	}
 
 	private static void logClosingTagWarning(int line, String tag) {
 		if (LOGGER.isLoggable(java.util.logging.Level.WARNING))
