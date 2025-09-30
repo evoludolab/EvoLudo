@@ -208,17 +208,17 @@ public class PlistParser {
 					break;
 				case TAG_DICT:
 					if (tag.isSelfClosing()) {
-						// ignore empty dict
-						break;
+						store(reader, dict, key, new Plist());
+					} else {
+						store(reader, dict, key, parseDict(reader, new Plist()));
 					}
-					store(reader, dict, key, parseDict(reader, new Plist()));
 					break;
 				case TAG_ARRAY:
 					if (tag.isSelfClosing()) {
-						// ignore empty array
-						break;
+						store(reader, dict, key, new ArrayList<>());
+					} else {
+						store(reader, dict, key, parseArray(reader, new ArrayList<>()));
 					}
-					store(reader, dict, key, parseArray(reader, new ArrayList<>()));
 					break;
 				case TAG_INTEGER:
 					if (tag.isSelfClosing()) {
@@ -264,26 +264,23 @@ public class PlistParser {
 			switch (name) {
 				case "/" + TAG_ARRAY:
 					return array;
+				case "/" + TAG_DICT:
+				case "/" + TAG_PLIST:
+				case TAG_KEY:
+					reader.pushTag(tag);
+					return array;
 				case TAG_STRING:
 					array.add(XMLCoder.decode(tag.getValue()));
 					break;
 				case TAG_DICT:
-					if (tag.isSelfClosing()) {
-						// ignore empty dict
-						break;
-					}
 					Plist subdict = new Plist();
-					if (tag.getValue() == null)
+					if (!tag.isSelfClosing() && tag.getValue() == null)
 						parseDict(reader, subdict);
 					array.add(subdict);
 					break;
 				case TAG_ARRAY:
-					if (tag.isSelfClosing()) {
-						// ignore empty array
-						break;
-					}
 					List<Object> subarray = new ArrayList<>();
-					if (tag.getValue() == null)
+					if (!tag.isSelfClosing() && tag.getValue() == null)
 						parseArray(reader, subarray);
 					array.add(subarray);
 					break;

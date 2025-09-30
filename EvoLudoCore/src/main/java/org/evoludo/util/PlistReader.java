@@ -69,6 +69,11 @@ public class PlistReader implements Iterator<PlistTag> {
 	PlistTag tag;
 
 	/**
+	 * Buffered tag to return on the next {@link #next()} call.
+	 */
+	PlistTag buffered;
+
+	/**
 	 * <code>true</code> if no processing has occurred yet. In particular this means
 	 * that the header has not yet been parsed.
 	 * 
@@ -158,6 +163,11 @@ public class PlistReader implements Iterator<PlistTag> {
 
 	@Override
 	public boolean hasNext() {
+		if (buffered != null) {
+			tag = buffered;
+			buffered = null;
+			return true;
+		}
 		String name;
 		String attributes = null;
 		String value = null;
@@ -169,7 +179,7 @@ public class PlistReader implements Iterator<PlistTag> {
 		skipComments();
 
 		// sanity check
-		if (line.charAt(0) != '<') {
+		if (line.isEmpty() || line.charAt(0) != '<') {
 			done = true;
 			return false;
 		}
@@ -239,11 +249,16 @@ public class PlistReader implements Iterator<PlistTag> {
 		return read;
 	}
 
+	void pushTag(PlistTag aTag) {
+		if (aTag == null)
+			return;
+		buffered = aTag;
+		done = false;
+	}
+
 	// NOTE: reading an actual plist-file is not compatible with GWT. This closes
-	// the
-	// buffer provided by a BufferedReader object and leaves us with a stale
-	// PlistReader
-	// object that cannot easily be re-animated...
+	// the buffer provided by a BufferedReader object and leaves us with a stale
+	// PlistReader object that cannot easily be re-animated...
 	//
 	// /**
 	// * Close buffer that provided <code>plist</code>-string.
