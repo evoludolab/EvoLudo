@@ -357,17 +357,24 @@ public class MersenneTwister {
 	private double nextGaussian;
 
 	/**
+	 * Constants for encoding and restoring state in plist.
+	 */
+	private static final String ENCODE_MT = "mt";
+	private static final String ENCODE_MTI = "mti";
+	private static final String ENCODE_NEXT_GAUSSIAN = "nextGaussian";
+
+	/**
 	 * Encode state of random number generator as <code>plist</code> for saving.
 	 * 
 	 * @return <code>plist</code> string encoding state of random number generator
 	 */
 	public synchronized String encodeState() {
 		StringBuilder plist = new StringBuilder();
-		plist.append(Plist.encodeKey("mt", mt));
-		plist.append(Plist.encodeKey("mti", mti));
+		plist.append(Plist.encodeKey(ENCODE_MT, mt));
+		plist.append(Plist.encodeKey(ENCODE_MTI, mti));
 		// encode nextGaussian only if one available
 		if (!Double.isNaN(nextGaussian))
-			plist.append(Plist.encodeKey("__nextNextGaussian", nextGaussian));
+			plist.append(Plist.encodeKey(ENCODE_NEXT_GAUSSIAN, nextGaussian));
 		return plist.toString();
 	}
 
@@ -380,14 +387,14 @@ public class MersenneTwister {
 	 */
 	public synchronized boolean restoreState(Plist plist) {
 		@SuppressWarnings("unchecked")
-		List<Integer> rmt = (List<Integer>) plist.get("mt");
+		List<Integer> rmt = (List<Integer>) plist.get(ENCODE_MT);
 		if (rmt == null || rmt.size() != N)
 			return false;
 		for (int n = 0; n < N; n++)
 			mt[n] = rmt.get(n);
-		mti = (Integer) plist.get("mti");
+		mti = (Integer) plist.get(ENCODE_MTI);
 		// check if nextGaussian available
-		Double nextGauss = (Double) plist.get("__nextNextGaussian");
+		Double nextGauss = (Double) plist.get(ENCODE_NEXT_GAUSSIAN);
 		nextGaussian = (nextGauss == null ? Double.NaN : nextGauss);
 		return true;
 	}
