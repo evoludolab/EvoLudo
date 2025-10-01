@@ -68,6 +68,7 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
+          <release>${java.version.lts}</release>
           <excludes>
             <exclude>**/run/*.java</exclude>
           </excludes>

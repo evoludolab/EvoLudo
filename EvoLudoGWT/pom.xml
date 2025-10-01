@@ -49,6 +49,13 @@
   <build>
     <plugins>
       <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <release>${java.version.gwt}</release>
+        </configuration>
+      </plugin>
+
+      <plugin>
         <groupId>io.github.git-commit-id</groupId>
         <artifactId>git-commit-id-maven-plugin</artifactId>
         <configuration>
