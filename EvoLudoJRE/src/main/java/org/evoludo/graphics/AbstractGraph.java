@@ -74,10 +74,7 @@ import org.evoludo.geom.Point2D;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.modules.Module;
 
-public abstract class AbstractGraph extends JLayeredPane implements ActionListener, GlassLayerListener /*
-																										 * ,
-																										 * PopupMenuListener
-																										 */ {
+public abstract class AbstractGraph extends JLayeredPane implements ActionListener, GlassLayerListener {
 
 	private static final long serialVersionUID = 20110423L;
 
@@ -120,9 +117,9 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 	public static final String CUSTOM_MENU_TOGGLE_LOCAL = "local";
 	public static final String CUSTOM_MENU_SET_LOCAL_NODE = "node";
 	public static final String CUSTOM_MENU_TOGGLE_TIME = "time";
-	protected static Integer LAYER_CANVAS = 10;
-	protected static Integer LAYER_FRAME = 20;
-	protected static Integer LAYER_GLASS = 30;
+	protected static final Integer LAYER_CANVAS = 10;
+	protected static final Integer LAYER_FRAME = 20;
+	protected static final Integer LAYER_GLASS = 30;
 
 	// <jf
 	public static final int FINDNODEAT_BLOCKED = -3;
@@ -130,7 +127,7 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 	public static final int FINDNODEAT_OUT_OF_BOUNDS = -1;
 	// jf>
 
-	public AbstractGraph(GraphListener controller, Module module) {
+	protected AbstractGraph(GraphListener controller, Module module) {
 		this.controller = controller;
 		this.module = module;
 		setLayout(new OverlayLayout(this));
@@ -438,14 +435,6 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 		g2.translate(-canvas.x, -canvas.y);
 	}
 
-	protected void resized(Dimension oldSize, Dimension newSize) {
-		initGraph();
-		// this is rather draconic...
-		// reset(true);
-		calcBounds();
-		repaint();
-	}
-
 	protected void calcBounds() {
 		if (frame != null)
 			frame.init(getBounds());
@@ -575,7 +564,6 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 		if (cmd.equals(CUSTOM_MENU_TOGGLE_TIME)) {
 			timeReversed = ((JCheckBoxMenuItem) e.getSource()).getState();
 			controller.setTimeReversed(timeReversed);
-			return;
 		}
 	}
 
@@ -608,13 +596,9 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 		zoom(s, s);
 	}
 
-	public void zoom(double xs, double ys) {
-		zoom(xs, ys, true);
-	}
-
 	private final Dimension zoomSize = new Dimension(-1, -1);
 
-	public void zoom(double xs, double ys, boolean center) {
+	public void zoom(double xs, double ys) {
 		if (!hasViewport) {
 			if (frame != null) {
 				GraphAxis x = frame.xaxis;
@@ -631,8 +615,10 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 		Dimension viewsize = viewport.getExtentSize();
 		zoomSize.setSize((int) (mysize.width * xs + 0.5), (int) (mysize.height * ys + 0.5));
 		Point loc = new Point(viewport.getViewPosition());
-		loc.x = Math.max(0, (int) ((loc.x + viewsize.width / 2) * xs + 0.5) - viewsize.width / 2);
-		loc.y = Math.max(0, (int) ((loc.y + viewsize.height / 2) * xs + 0.5) - viewsize.height / 2);
+		double halfWidth = viewsize.width / 2.0;
+		double halfHeight = viewsize.height / 2.0;
+		loc.x = (int) Math.max(0.0, (loc.x + halfWidth) * xs + 0.5 - halfWidth);
+		loc.y = (int) Math.max(0.0, (loc.y + halfHeight) * xs + 0.5 - halfHeight);
 		style.zoom(xs, ys);
 		// this will issue a component resized event, which will then take care of
 		// resetting the view etc...
@@ -712,7 +698,14 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 	}
 
 	// <jf override if you can
-	public int findNodeAt(Point loc) {
+	/**
+	 * Find the node at the given location. Override in subclasses to implement.
+	 * 
+	 * @param location the point to check for nodes
+	 * @return node index or negative value indicating no node/error condition
+	 */
+	public int findNodeAt(Point location) {
+		// Parameter 'location' is part of the API contract for subclasses
 		return FINDNODEAT_UNIMPLEMENTED;
 	}
 	// jf>
@@ -783,10 +776,10 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 			Dimension newSize = getSize();
 			if (newSize.width == dim.width && newSize.height == dim.height)
 				return;
-			Dimension oldSize = new Dimension(dim);
 			dim.setSize(newSize);
-
-			resized(oldSize, newSize);
+			initGraph();
+			calcBounds();
+			repaint();
 		}
 	}
 
@@ -849,7 +842,7 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 						Math.min(Math.max(portrect.y - (mouse.y - currRect.y), 0), portsize.height - portrect.height)));
 	}
 
-	protected void zoomView(MouseEvent e) {
+	protected void zoomView() {
 		if (frame == null)
 			return;
 		Dimension vvs = viewport.getExtentSize();
@@ -912,7 +905,8 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 	protected void zoomRange() {
 		if (frame == null)
 			return;
-		GraphAxis x = frame.xaxis, y = frame.yaxis;
+		GraphAxis x = frame.xaxis;
+		GraphAxis y = frame.yaxis;
 		double old = (x.upper - x.lower) / canvas.width;
 		double range = (drawRect.width + 1) * old;
 		double order = Combinatorics.pow(10.0, (int) Math.floor(Math.log10(range)));
@@ -1030,7 +1024,7 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 						return;
 					}
 					if (hasViewport) {
-						zoomView(e);
+						zoomView();
 						repaint();
 						return;
 					}
