@@ -510,8 +510,6 @@ public class LineGraph extends AbstractGraph<double[]>
 	public String getTooltipAt(double x, double y) {
 		double buffert = 0.0;
 		double mouset = style.xMin + x * (style.xMax - style.xMin);
-		int vacant = module.getVacantIdx();
-		boolean hasVacant = (vacant >= 0);
 		double ymin;
 		double yrange;
 		if (style.logScaleY) {
@@ -571,8 +569,6 @@ public class LineGraph extends AbstractGraph<double[]>
 				} else {
 					// len includes time
 					for (int n = 0; n < len - 1; n++) {
-						if (!hasVacant && n == vacant)
-							continue;
 						String name;
 						Color color;
 						Data type = view.getType();
@@ -591,13 +587,14 @@ public class LineGraph extends AbstractGraph<double[]>
 								.append(name)
 								.append(":</i></td><td>");
 						// deal with NaN's
-						if (prev[n1] == prev[n1] && current[n1] == current[n1]) {
+						if (Double.isNaN(prev[n1]) || Double.isNaN(current[n1])) {
+							tip.append("-");
+						} else {
 							tip.append(
 									style.percentY ? Formatter.formatPercent(interpolate(current[n1], prev[n1], fx), 2)
-											: Formatter.format(interpolate(current[n1], prev[n1], fx), 2))
-									.append("</td></tr>");
-						} else
-							tip.append("-</td></tr>");
+											: Formatter.format(interpolate(current[n1], prev[n1], fx), 2));
+						}
+						tip.append("</td></tr>");
 					}
 				}
 				break;
