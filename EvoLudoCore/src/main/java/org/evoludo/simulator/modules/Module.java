@@ -469,7 +469,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the index of the vacant type
 	 */
-	public int getVacant() {
+	public int getVacantIdx() {
 		return VACANT;
 	}
 
@@ -1511,7 +1511,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		int minTraits = Integer.MAX_VALUE;
 		int maxTraits = -Integer.MAX_VALUE;
 		for (Module mod : species) {
-			boolean hasVacant = (mod.getVacant() >= 0);
+			boolean hasVacant = (mod.getVacantIdx() >= 0);
 			anyVacant |= hasVacant;
 			anyNonVacant |= !hasVacant;
 			anyPayoffs |= (mod instanceof Payoffs);

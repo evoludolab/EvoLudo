@@ -227,7 +227,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 								cMap = new ColorMapCSS.Gradient1D(colors[dep], colors[trait], trait, 100);
 							} else {
 								// vacant space does not count as dependent trait for coloring
-								if (module.getVacant() == dep)
+								if (module.getVacantIdx() == dep)
 									dep = -1;
 								cMap = new ColorMapCSS.Gradient2D(colors, dep, 100);
 							}

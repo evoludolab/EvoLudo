@@ -734,7 +734,7 @@ public class PDE extends ODE {
 			mind = Math.min(mind, minDensity[n]);
 			maxd = Math.max(maxd, maxDensity[n]);
 		}
-		if (mod.getVacant() < 0)
+		if (mod.getVacantIdx() < 0)
 			colorMap.setRange(minf * mind, nTraits * maxf * maxd);
 		else
 			colorMap.setRange(minf * mind, (nTraits - 1) * maxf * maxd);
@@ -767,7 +767,7 @@ public class PDE extends ODE {
 		} else
 			map = nBins / (max - min);
 		int idx = 0;
-		int vacant = mod.getVacant();
+		int vacant = mod.getVacantIdx();
 		// clear bins
 		for (int n = 0; n < bins.length; n++)
 			Arrays.fill(bins[n], 0.0);
@@ -1382,7 +1382,7 @@ public class PDE extends ODE {
 				ArrayMath.normalize(background);
 			}
 		} else {
-			int vacant = module.getVacant();
+			int vacant = module.getVacantIdx();
 			if (vacant < 0)
 				return false;
 			// set background to empty

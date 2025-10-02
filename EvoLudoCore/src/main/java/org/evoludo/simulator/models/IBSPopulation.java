@@ -137,7 +137,7 @@ public abstract class IBSPopulation {
 		this.module = module;
 		// initialize helper variables
 		nTraits = module.getNTraits();
-		VACANT = module.getVacant();
+		VACANT = module.getVacantIdx();
 
 		// get shared random number generator
 		rng = engine.getRNG();
@@ -386,7 +386,7 @@ public abstract class IBSPopulation {
 	 * The index of vacant sites or {@code -1} if module does not support vacancies.
 	 * Convenience field.
 	 * 
-	 * @see Module#getVacant()
+	 * @see Module#getVacantIdx()
 	 */
 	protected int VACANT = -1;
 

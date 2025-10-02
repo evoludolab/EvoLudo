@@ -198,7 +198,7 @@ public class SDEN extends SDE {
 		// effective noise may vary for populations of variable size
 		double effnoise = 1.0 / module.getNPopulation();
 		// scale noise according effective population size
-		int vacant = module.getVacant();
+		int vacant = module.getVacantIdx();
 		if (vacant >= 0) {
 			double ytv = yt[vacant];
 			if (ytv > 1.0 - 1e-8)

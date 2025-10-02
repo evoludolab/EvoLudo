@@ -510,7 +510,7 @@ public class LineGraph extends AbstractGraph<double[]>
 	public String getTooltipAt(double x, double y) {
 		double buffert = 0.0;
 		double mouset = style.xMin + x * (style.xMax - style.xMin);
-		int vacant = module.getVacant();
+		int vacant = module.getVacantIdx();
 		boolean hasVacant = (vacant >= 0);
 		double ymin;
 		double yrange;

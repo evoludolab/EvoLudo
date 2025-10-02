@@ -160,7 +160,7 @@ public class Markers {
 							int nt = module.getNTraits();
 							if (smk.length != nt) {
 								// ok for frequency based modules or with vacant sites
-								int vac = module.getVacant();
+								int vac = module.getVacantIdx();
 								int dep = (module instanceof HasDE ? ((HasDE) module).getDependent() : -1);
 								if (!(smk.length == nt - 1 && (vac >= 0 || dep >= 0))) {
 									return false;

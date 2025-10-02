@@ -240,7 +240,7 @@ public class Phase2D extends AbstractView {
 			for (Module mod : species) {
 				int nTraits = mod.getNTraits();
 				if (idx < nTraits) {
-					if (nTraits == 1 || (nTraits == 2 && mod.getVacant() >= 0))
+					if (nTraits == 1 || (nTraits == 2 && mod.getVacantIdx() >= 0))
 						// omit species name for single trait or trait plus vacant
 						return mod.getTraitName(idx);
 					return mod.getName() + ": " + mod.getTraitName(idx);
@@ -284,7 +284,7 @@ public class Phase2D extends AbstractView {
 			int totTraits = 0;
 			boolean isDensity = model.isDensity();
 			for (Module mod : species) {
-				int vidx = mod.getVacant();
+				int vidx = mod.getVacantIdx();
 				int nt = mod.getNTraits();
 				if (isDensity && nt == 1 || (nt == 2 && vidx >= 0))
 					totTraits++;
@@ -299,7 +299,7 @@ public class Phase2D extends AbstractView {
 				traitYItems = new ContextMenuCheckBoxItem[totTraits];
 				int idx = 0;
 				for (Module mod : species) {
-					int vidx = mod.getVacant();
+					int vidx = mod.getVacantIdx();
 					int nt = mod.getNTraits();
 					if (isMultispecies && !(nt == 1 || (nt == 2 && vidx >= 0))) {
 						// add separator unless it's the first species

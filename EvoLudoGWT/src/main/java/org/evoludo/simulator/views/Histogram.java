@@ -162,7 +162,7 @@ public class Histogram extends AbstractView {
 						nGraphs++;
 					else {
 						nGraphs += nTraits;
-						if (pop.getVacant() >= 0)
+						if (pop.getVacantIdx() >= 0)
 							nGraphs--;
 					}
 					break;
@@ -178,7 +178,7 @@ public class Histogram extends AbstractView {
 				case STATISTICS_FIXATION_PROBABILITY:
 					nGraphs += nTraits;
 					// no graph for vacant trait if monostop
-					if (pop.getVacant() >= 0 && pop instanceof Discrete && ((Discrete) pop).getMonoStop())
+					if (pop.getVacantIdx() >= 0 && pop instanceof Discrete && ((Discrete) pop).getMonoStop())
 						nGraphs--;
 					break;
 				default:
@@ -218,7 +218,7 @@ public class Histogram extends AbstractView {
 
 					case FITNESS:
 						nTraits = (model.isContinuous() ? 1 : nTraits);
-						int vacant = module.getVacant();
+						int vacant = module.getVacantIdx();
 						int paneIdx = 0;
 						int bottomPaneIdx = nTraits - 1;
 						if (vacant >= 0 && vacant == nTraits - 1)
@@ -303,7 +303,7 @@ public class Histogram extends AbstractView {
 					case STATISTICS_FIXATION_PROBABILITY:
 						bottomPaneIdx = nTraits - 1;
 						// no graph for vacant trait if monostop
-						int skip = module.getVacant();
+						int skip = module.getVacantIdx();
 						if (skip >= 0 &&
 								module instanceof Discrete &&
 								((Discrete) module).getMonoStop() &&
@@ -341,7 +341,7 @@ public class Histogram extends AbstractView {
 					case STATISTICS_FIXATION_TIME:
 						bottomPaneIdx = nTraits;
 						// no graph for vacant trait if monostop
-						skip = module.getVacant();
+						skip = module.getVacantIdx();
 						if (skip >= 0 &&
 								skip == bottomPaneIdx &&
 								module instanceof Discrete &&
@@ -431,7 +431,7 @@ public class Histogram extends AbstractView {
 			boolean newPop = (oldmod != module);
 			if (newPop)
 				data = graph.getData();
-			int vacant = module.getVacant();
+			int vacant = module.getVacantIdx();
 			int nTraits = module.getNTraits();
 			Color[] colors = module.getTraitColors();
 			if (hard)
@@ -927,7 +927,7 @@ public class Histogram extends AbstractView {
 					sb.append(isMultispecies ? module.getName() + "." : "")
 							.append(graph.getStyle().label)
 							.append(": ");
-					int skip = module.getVacant();
+					int skip = module.getVacantIdx();
 					if (skip >= 0 &&
 							skip == idx &&
 							module instanceof Discrete &&

@@ -628,7 +628,7 @@ public class ODE extends Model implements Discrete {
 		} else
 			map = nBins / (maxFit - minFit);
 		int idx = 0;
-		int vacant = mod.getVacant();
+		int vacant = mod.getVacantIdx();
 		// fill bins
 		int offset = idxSpecies[id];
 		int dim = idxSpecies[id + 1] - offset;
@@ -745,7 +745,7 @@ public class ODE extends Model implements Discrete {
 		int from = 0;
 		for (Module pop : species) {
 			int to = from + pop.getNTraits();
-			if (!isMonomorphic(from, to, dependents[idx], pop.VACANT))
+			if (!isMonomorphic(from, to, dependents[idx], pop.getVacantIdx()))
 				return false;
 			from = to;
 			idx++;
@@ -883,7 +883,7 @@ public class ODE extends Model implements Discrete {
 				for (int n = skip; n < skip + nTraits; n++)
 					fitness[n] = map2fit.map(fitness[n]);
 			}
-			if (mod.getVacant() >= 0) {
+			if (mod.getVacantIdx() >= 0) {
 				updateEcology(mod, state, fitness, nGroup, index, change);
 				continue;
 			}
@@ -975,7 +975,7 @@ public class ODE extends Model implements Discrete {
 	protected double updateEcology(Module mod, double[] state, double[] fitness, int nGroup, int index,
 			double[] change) {
 		// XXX what happens if one trait is deactivated!?
-		int vacant = mod.getVacant();
+		int vacant = mod.getVacantIdx();
 		double err = 0.0;
 		int skip = idxSpecies[index];
 		int end = skip + mod.getNTraits();
@@ -1391,7 +1391,7 @@ public class ODE extends Model implements Discrete {
 		for (Module pop : species) {
 			int to = from + pop.getNTraits();
 			// omit status for vacant trait in density models
-			int vacant = isDensity ? from + pop.getVacant() : -1;
+			int vacant = isDensity ? from + pop.getVacantIdx() : -1;
 			StringBuilder psb = new StringBuilder();
 			for (int i = from; i < to; i++) {
 				if (i == vacant)

@@ -70,7 +70,7 @@ public class IBSD extends IBS implements Discrete {
 		IBSDPopulation dpop = (IBSDPopulation) population;
 		fixData.typeFixed = ArrayMath.maxIndex(dpop.traitsCount);
 		Module module = species.get(0);
-		int vacant = module.getVacant();
+		int vacant = module.getVacantIdx();
 		if (fixData.typeFixed == vacant) {
 			// closer look is needed - look for what other traits survived (if any)
 			for (int n = 0; n < module.getNTraits(); n++) {
@@ -107,8 +107,9 @@ public class IBSD extends IBS implements Discrete {
 			Init.Type itype = ((IBSDPopulation) mod.getIBSPopulation()).getInit().type;
 			if ((itype.equals(Init.Type.MUTANT) ||
 					itype.equals(Init.Type.TEMPERATURE)) &&
-					(mod.getVacant() < 0
-							|| (mod.getVacant() >= 0 && ((org.evoludo.simulator.modules.Discrete) mod).getMonoStop())))
+					(mod.getVacantIdx() < 0
+							|| (mod.getVacantIdx() >= 0
+									&& ((org.evoludo.simulator.modules.Discrete) mod).getMonoStop())))
 				continue;
 			return false;
 		}
@@ -309,7 +310,7 @@ public class IBSD extends IBS implements Discrete {
 								+ "\n                with r, m indices of resident, mutant traits";
 						boolean noVacant = false;
 						for (Module mod : ibs.species)
-							noVacant |= mod.getVacant() < 0;
+							noVacant |= mod.getVacantIdx() < 0;
 						if (noVacant)
 							return descr.replace("[,v]", "");
 						return descr + "\n                and v frequency of vacant sites";

@@ -101,7 +101,7 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 	public void reset(boolean clear) {
 		nData = engine.getModel().isContinuous() ? 1 : module.getNTraits();
 		int nGraphs = graphs.size();
-		int vacant = module.getVacant();
+		int vacant = module.getVacantIdx();
 		if (vacant >= 0)
 			nData--;
 		if (nData == nGraphs) {

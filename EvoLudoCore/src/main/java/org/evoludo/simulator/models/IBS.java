@@ -1373,7 +1373,7 @@ public abstract class IBS extends Model {
 		boolean anyPayoffs = false;
 		boolean allPayoffs = true;
 		for (Module mod : species) {
-			int vacant = mod.getVacant();
+			int vacant = mod.getVacantIdx();
 			anyVacant |= vacant >= 0;
 			anyNonVacant |= vacant < 0;
 			allStatic &= mod.isStatic();

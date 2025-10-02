@@ -216,7 +216,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 								cMap = new ColorMap3D.Gradient1D(colors[dep], colors[(dep + 1) % nTraits], 100);
 							else {
 								// vacant space does not count as dependent trait for coloring
-								if (module.getVacant() == dep)
+								if (module.getVacantIdx() == dep)
 									dep = -1;
 								cMap = new ColorMap3D.Gradient2D(colors, dep, 100);
 							}

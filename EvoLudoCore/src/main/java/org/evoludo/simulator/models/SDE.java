@@ -89,7 +89,7 @@ public class SDE extends ODE {
 			// currently multi-species modules are only acceptable for ecological models
 			for (Module mod : species) {
 				int nt = mod.getNActive();
-				if (nt == 1 || (nt == 2 && mod.getVacant() >= 0))
+				if (nt == 1 || (nt == 2 && mod.getVacantIdx() >= 0))
 					continue;
 				// multiple traits implies evolutionary module - revert to ODE
 				logger.warning("SDE model for multi-species modules requires single trait - revert to ODE.");
@@ -168,7 +168,7 @@ public class SDE extends ODE {
 				// random noise may be invalid (pushing state outside of permissible values)
 				if (dist2 < accuracy && ArrayMath.min(yt) < accuracy)
 					return false;
-				int vacant = mod.getVacant();
+				int vacant = mod.getVacantIdx();
 				// extinction is absorbing even with mutations
 				converged &= (vacant >= 0 && yt[vacant] > 1.0 - accuracy);
 			} else
@@ -426,7 +426,7 @@ public class SDE extends ODE {
 	private double getEffectiveNoise(Module mod, int skip) {
 		double effnoise = 1.0 / mod.getNPopulation();
 		// scale noise according effective population size
-		int vacant = skip + mod.getVacant();
+		int vacant = skip + mod.getVacantIdx();
 		if (vacant >= 0) {
 			double ytv = yt[vacant];
 			if (ytv > 1.0 - 1e-8)
@@ -445,7 +445,7 @@ public class SDE extends ODE {
 		// collect new statistics sample
 		Module mod = engine.getModule();
 		fixData.typeFixed = ArrayMath.maxIndex(yt);
-		int vacant = mod.getVacant();
+		int vacant = mod.getVacantIdx();
 		if (fixData.typeFixed == vacant) {
 			// closer look is needed - look for what other trait survived (if any)
 			for (int n = 0; n < mod.getNTraits(); n++) {

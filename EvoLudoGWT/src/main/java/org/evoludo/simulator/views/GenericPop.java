@@ -411,7 +411,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 				density = "<tr><td><i>Densities:</i></td><td>" + model.getTraitNameAt(id, node) + "</td></tr>";
 			tip.append("<tr><td><i>Node:</i></td><td>" + node + "</td></tr>" + names + density);
 			if (module instanceof Payoffs) {
-				int vac = module.getVacant();
+				int vac = module.getVacantIdx();
 				double[] fitness = model.getMeanFitnessAt(id, node);
 				// with payoff-to-fitness report score first, then fitness (see below)
 				Map2Fitness map = module.getMap2Fitness();

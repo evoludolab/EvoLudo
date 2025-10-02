@@ -158,7 +158,7 @@ public abstract class Mutation {
 			if (type == Type.NONE)
 				// no mutations
 				return trait;
-			int vacant = module.getVacant();
+			int vacant = module.getVacantIdx();
 			if (trait == vacant)
 				// vacant trait cannot mutate
 				return trait;
