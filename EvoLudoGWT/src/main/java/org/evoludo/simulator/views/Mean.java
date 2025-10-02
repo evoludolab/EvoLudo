@@ -105,7 +105,9 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 		// multiple line graphs for multi-species interactions and in case of multiple
 		// traits for continuous traits
 		for (Module module : species) {
-			if (model.isContinuous())
+			// only one graph per species for fitness data
+			// but separate graphs for multiple continuous traits
+			if (model.isContinuous() && type != Data.FITNESS)
 				nGraphs += module.getNTraits();
 			else
 				nGraphs++;
