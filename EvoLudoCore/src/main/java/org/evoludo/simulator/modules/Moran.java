@@ -71,8 +71,8 @@ import org.evoludo.util.CLOption.Category;
  * @author Christoph Hauert
  */
 public class Moran extends Discrete implements Static,
-		HasIBS, HasDE.RK5, HasDE.EM, HasDE.SDE, HasDE.PDERD, HasDE.PDEADV, 
-		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits, 
+		HasIBS, HasDE.RK5, HasDE.EM, HasDE.SDE, HasDE.PDERD, HasDE.PDEADV,
+		HasPop2D.Traits, HasPop3D.Traits, HasMean.Traits,
 		HasPop2D.Fitness, HasPop3D.Fitness, HasMean.Fitness,
 		HasHistogram.Fitness, HasHistogram.Degree, HasHistogram.StatisticsProbability,
 		HasHistogram.StatisticsTime, HasHistogram.StatisticsStationary {
@@ -99,22 +99,16 @@ public class Moran extends Discrete implements Static,
 	 */
 	public Moran(EvoLudo engine) {
 		super(engine);
+		setNTraits(2);
 	}
 
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 2;
 		// trait names
-		String[] names = new String[nTraits];
-		names[RESIDENT] = "Resident";
-		names[MUTANT] = "Mutant";
-		setTraitNames(names);
+		setTraitNames(new String[] { "Resident", "Mutant" });
 		// trait colors (automatically generates lighter versions for new traits)
-		Color[] colors = new Color[nTraits];
-		colors[RESIDENT] = Color.BLUE;
-		colors[MUTANT] = Color.RED;
-		setTraitColors(colors);
+		setTraitColors(new Color[] { Color.BLUE, Color.RED });
 		// default scores
 		typeScores = new double[nTraits];
 		typeScores[RESIDENT] = 1.0;

@@ -90,26 +90,17 @@ public class RSP extends Discrete implements Payoffs,
 	 */
 	public RSP(EvoLudo engine) {
 		super(engine);
+		setNTraits(3);
 	}
 
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 3;
-		// trait names
-		String[] names = new String[nTraits];
-		names[ROCK] = "Rock";
-		names[SCISSORS] = "Scissors";
-		names[PAPER] = "Paper";
-		setTraitNames(names);
-		// trait colors (automatically generates lighter versions for new traits)
-		Color[] colors = new Color[nTraits];
-		colors[ROCK] = Color.BLUE;
-		// yellow has too little contrast
-		colors[SCISSORS] = new Color(238, 204, 17); // hex #eecc11
-		colors[PAPER] = Color.RED;
-		setTraitColors(colors);
-		// allocate memory
+		// trait names (optional)
+		setTraitNames(new String[] { "Rock", "Scissors", "Paper" });
+		// trait colors (optional)
+		setTraitColors(new Color[] { Color.BLUE, new Color(238, 204, 17), Color.RED });
+		// payoffs (local storage)
 		payoff = new double[nTraits][nTraits];
 	}
 

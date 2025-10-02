@@ -140,25 +140,16 @@ public class CDL extends Discrete implements Payoffs,
 	 */
 	public CDL(EvoLudo engine) {
 		super(engine);
+		setNTraits(3); // loners, defectors, cooperators
 	}
 
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 3;
-		// trait names
-		String[] names = new String[nTraits];
-		names[LONER] = "Loner";
-		names[DEFECT] = "Defector";
-		names[COOPERATE] = "Cooperator";
-		setTraitNames(names);
-		// trait colors (automatically generates lighter versions for new traits)
-		Color[] colors = new Color[nTraits];
-		// yellow has too little contrast
-		colors[LONER] = new Color(238, 204, 17); // hex #eecc11
-		colors[DEFECT] = Color.RED;
-		colors[COOPERATE] = Color.BLUE;
-		setTraitColors(colors);
+		// trait names (optional)
+		setTraitNames(new String[] { "Loner", "Defector", "Cooperator" });
+		// trait colors (optional)
+		setTraitColors(new Color[] { new Color(238, 204, 17), Color.RED, Color.BLUE });
 	}
 
 	@Override

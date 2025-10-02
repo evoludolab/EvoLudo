@@ -101,12 +101,12 @@ public class CSD extends Continuous implements Payoffs,
 	 */
 	public CSD(EvoLudo engine) {
 		super(engine);
+		setNTraits(1); // continuous investment level
 	}
 
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 1;
 		// trait names
 		setTraitNames(new String[] { "Investment" });
 		// trait colors (automatically generates lighter versions for min and max)

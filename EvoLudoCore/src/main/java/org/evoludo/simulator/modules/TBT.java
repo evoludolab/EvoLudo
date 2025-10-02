@@ -119,25 +119,17 @@ public class TBT extends Discrete implements Payoffs,
 	 */
 	public TBT(EvoLudo engine) {
 		super(engine);
+		setNTraits(2); // cooperators, defectors and empty sites
 	}
 
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 2;
-		// trait names
-		String[] names = new String[nTraits];
-		names[DEFECT] = "Defector";
-		names[COOPERATE] = "Cooperator";
-		setTraitNames(names);
-		// trait colors
-		Color[] colors = new Color[2 * nTraits];
-		colors[DEFECT] = Color.RED;
-		colors[COOPERATE] = Color.BLUE;
-		colors[DEFECT + nTraits] = Color.YELLOW;
-		colors[COOPERATE + nTraits] = Color.GREEN;
-		setTraitColors(colors);
-		// payoffs
+		// trait names (optional)
+		setTraitNames(new String[] { "Cooperator", "Defector" });
+		// trait colors (optional)
+		setTraitColors(new Color[] { Color.BLUE, Color.RED, Color.GREEN, Color.YELLOW });
+		// payoffs (local storage)
 		payoffs = new double[nTraits][nTraits];
 	}
 

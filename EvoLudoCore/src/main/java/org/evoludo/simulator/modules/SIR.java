@@ -125,6 +125,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	 */
 	public SIR(EvoLudo engine) {
 		super(engine);
+		setNTraits(3);
 	}
 
 	@Override
@@ -135,19 +136,10 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 3;
-		// optional
-		String[] names = new String[nTraits];
-		names[S] = "Susceptible";
-		names[I] = "Infected";
-		names[R] = "Recovered";
-		setTraitNames(names);
-		// optional
-		Color[] colors = new Color[nTraits];
-		colors[S] = Color.GREEN;
-		colors[I] = Color.RED;
-		colors[R] = Color.BLUE;
-		setTraitColors(colors);
+		// trait names (optional)
+		setTraitNames(new String[] { "Susceptible", "Infected", "Recovered" });
+		// trait colors (optional)
+		setTraitColors(new Color[] { Color.GREEN, Color.RED, Color.BLUE });
 	}
 
 	@Override

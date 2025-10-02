@@ -76,29 +76,17 @@ public class CDLPQ extends CDLP {
 	 */
 	public CDLPQ(EvoLudo engine) {
 		super(engine);
+		setNTraits(5); // loners, defectors, cooperators, peer- and pool-punishers
 	}
 
 	@Override
 	public void load() {
 		super.load(); // CDL/CDLP sets names and colors already but no harm in it
 		nTraits = 5;
-		// trait names
-		String[] names = new String[nTraits];
-		names[LONER] = "Loner";
-		names[DEFECT] = "Defector";
-		names[COOPERATE] = "Cooperator";
-		names[PUNISH] = "Peer-punisher";
-		names[SANCTIONING] = "Sanctioner";
-		setTraitNames(names);
-		// trait colors (automatically generates lighter versions for new traits)
-		Color[] colors = new Color[nTraits];
-		// yellow has too little contrast
-		colors[LONER] = new Color(238, 204, 17); // hex #eecc11
-		colors[DEFECT] = Color.RED;
-		colors[COOPERATE] = Color.BLUE;
-		colors[PUNISH] = Color.GREEN;
-		colors[SANCTIONING] = Color.MAGENTA;
-		setTraitColors(colors);
+		// trait names (optional)
+		setTraitNames(new String[] { "Loner", "Defector", "Cooperator", "Peer-punisher", "Sanctioner" });
+		// trait colors (optional)
+		setTraitColors(new Color[] { new Color(238, 204, 17), Color.RED, Color.BLUE, Color.GREEN, Color.MAGENTA });
 	}
 
 	@Override

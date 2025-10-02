@@ -127,27 +127,19 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	 */
 	public ATBT(EvoLudo engine) {
 		super(engine);
+		setNTraits(4);
 	}
 
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 4;
-		// trait names
-		String[] names = new String[nTraits];
-		names[COOPERATE_RICH] = "Rich Cooperator";
-		names[DEFECT_RICH] = "Rich Defector";
-		names[COOPERATE_POOR] = "Poor Cooperator";
-		names[DEFECT_POOR] = "Poor Defector";
-		setTraitNames(names);
-		// trait colors (automatically generates lighter versions for new traits)
-		Color[] colors = new Color[nTraits];
-		colors[COOPERATE_RICH] = Color.BLUE;
-		colors[DEFECT_RICH] = Color.RED;
-		colors[COOPERATE_POOR] = ColorMap.blendColors(Color.BLUE, Color.BLACK, 0.5);
-		colors[DEFECT_POOR] = ColorMap.blendColors(Color.RED, Color.BLACK, 0.5);
-		setTraitColors(colors);
-		// allocate
+		// trait names (optional)
+		setTraitNames(new String[] { "Rich Cooperator", "Rich Defector", "Poor Cooperator", "Poor Defector" });
+		// trait colors (optional)
+		setTraitColors(new Color[] { Color.BLUE, Color.RED,
+				ColorMap.blendColors(Color.BLUE, Color.BLACK, 0.5),
+				ColorMap.blendColors(Color.RED, Color.BLACK, 0.5) });
+		// allocate local storage
 		game = payoffs; // reuse payoffs from TBT
 		environment = new double[nTraits / 2];
 		feedback = new double[nTraits];

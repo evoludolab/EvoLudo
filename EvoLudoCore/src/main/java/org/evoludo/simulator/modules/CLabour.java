@@ -75,19 +75,15 @@ public class CLabour extends Continuous implements Payoffs,
 	 */
 	public CLabour(EvoLudo engine) {
 		super(engine);
+		setNTraits(2); // two traits
 	}
 
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 2;
-		// trait names
-		setTraitNames(new String[] { "Trait 1", "Trait 2" });
 		// trait colors (automatically generates lighter versions for min and max)
-		setTraitColors(new Color[] { Color.GREEN, // trait 1
-				Color.RED // trait 2
-		});
-		// alloc
+		setTraitColors(new Color[] { Color.GREEN, Color.RED });
+		// opponent traits (local storage)
 		you = new double[nTraits];
 	}
 

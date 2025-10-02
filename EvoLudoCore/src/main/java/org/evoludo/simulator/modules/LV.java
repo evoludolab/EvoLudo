@@ -114,17 +114,10 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	@Override
 	public void load() {
 		super.load();
-		setNTraits(2, VACANT); // prey and empty sites
-		// optional
-		String[] names = new String[nTraits];
-		names[PREY] = "Prey";
-		names[VACANT] = "Vacant";
-		setTraitNames(names);
-		// optional
-		Color[] colors = new Color[nTraits];
-		colors[PREY] = Color.BLUE;
-		colors[VACANT] = Color.LIGHT_GRAY;
-		setTraitColors(colors);
+		// trait names (optional)
+		setTraitNames(new String[] { "Prey" });
+		// trait colors (optional)
+		setTraitColors(new Color[] { Color.BLUE });
 		predator = new Predator(this);
 		predator.load();
 	}
@@ -377,16 +370,10 @@ class Predator extends Discrete implements Multispecies, HasDE {
 	@Override
 	public void load() {
 		super.load();
-		// trait names
-		String[] names = new String[nTraits];
-		names[PREDATOR] = "Predator";
-		names[LV.VACANT] = "Vacant";
-		setTraitNames(names);
-		// trait colors (automatically generates lighter versions for new strategists)
-		Color[] colors = new Color[nTraits];
-		colors[PREDATOR] = Color.RED;
-		colors[LV.VACANT] = Color.LIGHT_GRAY;
-		setTraitColors(colors);
+		// trait names (optional)
+		setTraitNames(new String[] { "Predator" });
+		// trait colors (optional)
+		setTraitColors(new Color[] { Color.RED });
 	}
 
 	@Override

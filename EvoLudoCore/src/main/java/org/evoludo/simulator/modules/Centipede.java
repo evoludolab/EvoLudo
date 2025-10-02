@@ -100,15 +100,15 @@ public class Centipede extends Discrete implements Payoffs,
 	 */
 	public Centipede(EvoLudo engine) {
 		super(engine);
+		setNTraits(1); // initially advertise a single trait
 	}
 
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 1;
-		// trait names
+		// trait names (optional)
 		setTraitNames(new String[] { "(0,0)" });
-		// trait colors
+		// trait colors (optional)
 		setTraitColors(new Color[] { Color.BLACK });
 	}
 

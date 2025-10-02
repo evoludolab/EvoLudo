@@ -111,17 +111,9 @@ public class EcoPGG extends Discrete implements Payoffs,
 	public void load() {
 		super.load();
 		// trait names
-		String[] names = new String[nTraits];
-		names[COOPERATE] = "Cooperator";
-		names[DEFECT] = "Defector";
-		names[VACANT] = "Vacant";
-		setTraitNames(names);
+		setTraitNames(new String[] { "Defector", "Cooperator" });
 		// trait colors (automatically generates lighter versions for new strategists)
-		Color[] colors = new Color[nTraits];
-		colors[COOPERATE] = Color.BLUE;
-		colors[DEFECT] = Color.RED;
-		colors[VACANT] = Color.LIGHT_GRAY;
-		setTraitColors(colors);
+		setTraitColors(new Color[] { Color.RED, Color.BLUE });
 	}
 
 	@Override
