@@ -104,12 +104,12 @@ public class EcoPGG extends Discrete implements Payoffs,
 	 */
 	public EcoPGG(EvoLudo engine) {
 		super(engine);
+		setNTraits(3, VACANT); // cooperators, defectors and empty sites
 	}
 
 	@Override
 	public void load() {
 		super.load();
-		setNTraits(3, VACANT); // cooperators, defectors and empty sites
 		// trait names
 		String[] names = new String[nTraits];
 		names[COOPERATE] = "Cooperator";

@@ -90,7 +90,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @param name the new name of the species
 	 */
-	public void setName(String name) {
+	public final void setName(String name) {
 		this.name = name;
 	}
 
@@ -518,7 +518,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @param nTraits the number of traits
 	 */
-	public void setNTraits(int nTraits) {
+	public final void setNTraits(int nTraits) {
 		setNTraits(nTraits, -1);
 	}
 
@@ -528,7 +528,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @param nTraits   the number of traits
 	 * @param vacantIdx the index of the vacant type
 	 */
-	public void setNTraits(int nTraits, int vacantIdx) {
+	public final void setNTraits(int nTraits, int vacantIdx) {
 		// prevent requesting re-parsing of CLOs on initial load
 		if (this.nTraits > 0 && (this.nTraits != nTraits))
 			engine.requestParseCLO();
