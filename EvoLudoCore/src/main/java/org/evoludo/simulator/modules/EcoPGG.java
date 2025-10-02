@@ -73,6 +73,11 @@ public class EcoPGG extends Discrete implements Payoffs,
 	public static final int COOPERATE = 1;
 
 	/**
+	 * The trait (and index) value of defectors.
+	 */
+	public static final int VACANT = 2;
+
+	/**
 	 * The multiplication factor of the public good.
 	 */
 	double interest = 3.0;
@@ -104,8 +109,7 @@ public class EcoPGG extends Discrete implements Payoffs,
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 3;
-		VACANT = 2;
+		setNTraits(3, VACANT); // cooperators, defectors and empty sites
 		// trait names
 		String[] names = new String[nTraits];
 		names[COOPERATE] = "Cooperator";

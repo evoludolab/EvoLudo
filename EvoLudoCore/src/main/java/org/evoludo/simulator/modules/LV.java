@@ -72,6 +72,11 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	static final int PREY = 0;
 
 	/**
+	 * The index of vacant sites. Both species use the same index.
+	 */
+	static final int VACANT = 1;
+
+	/**
 	 * The reaction rates for prey reproduction, predation, and competition.
 	 */
 	double[] rates;
@@ -108,10 +113,7 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 2; // prey and vacant
-		VACANT = nTraits - 1;
-		predator = new Predator(this);
-		predator.load();
+		setNTraits(2, VACANT); // prey and empty sites
 		// optional
 		String[] names = new String[nTraits];
 		names[PREY] = "Prey";
@@ -122,6 +124,8 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 		colors[PREY] = Color.BLUE;
 		colors[VACANT] = Color.LIGHT_GRAY;
 		setTraitColors(colors);
+		predator = new Predator(this);
+		predator.load();
 	}
 
 	@Override
@@ -269,7 +273,7 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 		change[VACANT] = -delta;
 		delta = y * (ry - y * (predator.rates[0] + predator.rates[2]) + x * (1.0 - y) * predator.rates[1]);
 		change[predatorIdx] = delta;
-		change[nTraits + predator.VACANT] = -delta;
+		change[nTraits + VACANT] = -delta;
 	}
 
 	@Override
@@ -366,23 +370,22 @@ class Predator extends Discrete implements Multispecies, HasDE {
 		super(prey);
 		this.prey = prey;
 		setName("Predator");
-		setNTraits(2); // predator plus empty sites
-		VACANT = nTraits - 1;
+		setNTraits(2, LV.VACANT); // predators and empty sites
 		// trait names
 		String[] names = new String[nTraits];
 		names[PREDATOR] = "Predator";
-		names[VACANT] = "Vacant";
+		names[LV.VACANT] = "Vacant";
 		setTraitNames(names);
 		// trait colors (automatically generates lighter versions for new strategists)
 		Color[] colors = new Color[nTraits];
 		colors[PREDATOR] = Color.RED;
-		colors[VACANT] = Color.LIGHT_GRAY;
+		colors[LV.VACANT] = Color.LIGHT_GRAY;
 		setTraitColors(colors);
 	}
 
 	@Override
 	public int getDependent() {
-		return VACANT;
+		return LV.VACANT;
 	}
 
 	/**

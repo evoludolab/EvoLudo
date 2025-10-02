@@ -268,7 +268,7 @@ public abstract class Discrete extends Module {
 		super.collectCLO(parser);
 		parser.addCLO(cloMonoStop);
 		// mutations only make sense for species with multiple traits (excluding vacant)
-		if (this instanceof Features.Payoffs && (nTraits > 2 || (nTraits == 2 && VACANT < 0)))
+		if (this instanceof Features.Payoffs && (nTraits > 2 || (nTraits == 2 && !hasVacant())))
 			parser.addCLO(mutation.clo);
 	}
 }
