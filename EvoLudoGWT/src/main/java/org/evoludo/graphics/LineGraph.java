@@ -165,13 +165,11 @@ public class LineGraph extends AbstractGraph<double[]>
 		if (style.autoscaleY) {
 			// dynamically extend range if needed - never reduce (would need to
 			// consult RingBuffer for this)
-			// ignore NaN's in data
-			if (min == min)
+			if (!Double.isNaN(min))
 				style.yMin = Math.min(style.yMin, Functions.roundDown(min));
 			data[0] = style.yMax;
 			double max = ArrayMath.max(data);
-			// ignore NaN's in data
-			if (max == max)
+			if (!Double.isNaN(max))
 				style.yMax = Math.max(style.yMax, Functions.roundUp(max));
 		}
 		data[0] = t;
@@ -193,36 +191,33 @@ public class LineGraph extends AbstractGraph<double[]>
 		style.logScaleY = logY;
 		if (!style.autoscaleY)
 			return;
-		double[] min = buffer.min(new Comparator<double[]>() {
-			@Override
-			public int compare(double[] o1, double[] o2) {
-				// ignore time
-				double[] s1 = ArrayMath.drop(o1, 0);
-				double[] s2 = ArrayMath.drop(o2, 0);
-				double m1 = ArrayMath.min(s1);
-				double m2 = ArrayMath.min(s2);
-				// negative values - use linear scale
-				if (!logY || m1 < 0.0 || m2 < 0.0)
-					return Double.compare(m1, m2);
-				// positive values - use log scale
-				if (m1 > 0.0 && m2 > 0.0) {
-					ArrayMath.log10(s1);
-					ArrayMath.log10(s2);
-					m1 = ArrayMath.min(s1);
-					m2 = ArrayMath.min(s2);
-					return Double.compare(m1, m2);
-				}
-				// at least one value is zero - use log scale but ignore zeros
-				m1 = Double.MAX_VALUE;
-				m2 = Double.MAX_VALUE;
-				for (int i = 0; i < s1.length; i++) {
-					if (s1[i] > 0.0)
-						m1 = Math.min(m1, Math.log10(s1[i]));
-					if (s2[i] > 0.0)
-						m2 = Math.min(m2, Math.log10(s2[i]));
-				}
+		double[] min = buffer.min((o1, o2) -> {
+			// ignore time
+			double[] s1 = ArrayMath.drop(o1, 0);
+			double[] s2 = ArrayMath.drop(o2, 0);
+			double m1 = ArrayMath.min(s1);
+			double m2 = ArrayMath.min(s2);
+			// negative values - use linear scale
+			if (!logY || m1 < 0.0 || m2 < 0.0)
+				return Double.compare(m1, m2);
+			// positive values - use log scale
+			if (m1 > 0.0 && m2 > 0.0) {
+				ArrayMath.log10(s1);
+				ArrayMath.log10(s2);
+				m1 = ArrayMath.min(s1);
+				m2 = ArrayMath.min(s2);
 				return Double.compare(m1, m2);
 			}
+			// at least one value is zero - use log scale but ignore zeros
+			m1 = Double.MAX_VALUE;
+			m2 = Double.MAX_VALUE;
+			for (int i = 0; i < s1.length; i++) {
+				if (s1[i] > 0.0)
+					m1 = Math.min(m1, Math.log10(s1[i]));
+				if (s2[i] > 0.0)
+					m2 = Math.min(m2, Math.log10(s2[i]));
+			}
+			return Double.compare(m1, m2);
 		});
 		double bufmin = ArrayMath.min(min);
 		if (bufmin < 0.0) {
