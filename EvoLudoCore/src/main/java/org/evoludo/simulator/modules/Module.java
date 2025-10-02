@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
@@ -456,6 +457,16 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
+	 * The default name of the vacant type (empty site).
+	 */
+	public static final String VACANT_NAME = "Vacant";
+
+	/**
+	 * The default name of the vacant type (empty site).
+	 */
+	public static final Color VACANT_COLOR = Color.GRAY;
+
+	/**
 	 * The index for the vacant type (empty site) or {@code -1} if Module does not
 	 * admit empty sites.
 	 */
@@ -627,15 +638,32 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @param names the names of the traits
 	 */
 	public void setTraitNames(String[] names) {
-		if (traitName == null || traitName.length != nTraits)
+		if (traitName == null || !(traitName.length == nTraits || (traitName.length == nTraits - 1 && hasVacant())))
 			traitName = new String[nTraits];
 		int idx = 0;
 		if (names != null) {
-			for (String n : names)
+			for (String n : names) {
+				if (n == null) {
+					traitName[idx++] = nameTrait(idx);
+					continue;
+				}
 				traitName[idx++] = n.replace('_', ' ').trim();
+			}
 		}
 		for (int i = idx; i < nTraits; i++)
-			traitName[i] = "Trait " + (char) ('A' + i - idx);
+			traitName[i] = nameTrait(idx++);
+	}
+
+	/**
+	 * Get default name for trait with index {@code trait}.
+	 * 
+	 * @param trait the index of the trait
+	 * @return the default name for the trait
+	 */
+	private String nameTrait(int trait) {
+		if (trait == vacantIdx)
+			return VACANT_NAME;
+		return "Trait " + (char) ('A' + trait);
 	}
 
 	/**
@@ -698,15 +726,19 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * Sets trait colors specified in {@code colors}. If less than {@code nTraits}
-	 * colors are specified, additional traits are colored using the default colors.
-	 * If still not enough, random colors are generated. Both {@link Discrete} and
-	 * {@link Continuous} modules require {@code 2*nTraits} colors. The meaning of
-	 * the second set of {@code nTraits} colors depends on the trait type:
+	 * Sets trait colors specified in {@code colors}. If {@code colors} is
+	 * {@code null} default colors are used until exhausted and then complemented by
+	 * random colors. Otherwise the number of colors must equal {@code nTraits} or
+	 * {@code 2 * nTraits}. For modules that have vacant sites, the length may be
+	 * {@code nTraits - 1} or {@code 2 * (nTraits - 1)}, respectively. In the latter
+	 * case the default colors for vacant sites are used.
+	 * <p>
+	 * <strong>Note:</strong>The meaning of the second set of {@code nTraits} colors
+	 * depends on the module type:
 	 * <dl>
-	 * <dt>discrete
+	 * <dt>Discrete
 	 * <dd>the colors of individuals that switched traits since the last update
-	 * <dt>continuous
+	 * <dt>Continuous
 	 * <dd>the colors for the mean &#177; standard deviation, see e.g.
 	 * {@link org.evoludo.simulator.views.Mean}.
 	 * </dl>
@@ -714,61 +746,52 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * automatically generated as lighter versions of the base colors.
 	 * 
 	 * @param colors the array of colors for the different traits
+	 * @return {@code true} if colors successfuly set
+	 * 
+	 * @see #defaultColor
+	 * @see #VACANT_COLOR
 	 */
-	public void setTraitColors(Color[] colors) {
-		int nTraits2 = nTraits + nTraits;
-		int rColors = 0;
+	public boolean setTraitColors(Color[] colors) {
 		if (colors == null) {
 			colors = new Color[nTraits];
 			System.arraycopy(defaultColor, 0, colors, 0, Math.min(nTraits, defaultColor.length));
-			rColors = nTraits - defaultColor.length;
-		} else if (colors.length < nTraits) {
-			// add default colors
-			Color[] cols = new Color[nTraits];
-			System.arraycopy(colors, 0, cols, 0, colors.length);
-			System.arraycopy(defaultColor, 0, cols, colors.length,
-					Math.min(nTraits - colors.length, defaultColor.length));
-			colors = cols;
-			rColors = nTraits - colors.length - defaultColor.length;
-		}
-		if (rColors > 0) {
-			// add random colors if needed - do not use the shared RNG to prevent
-			// interfering with reproducibility
-			RNGDistribution rng = new RNGDistribution.Uniform();
-			for (int n = 0; n < rColors; n++)
-				colors[nTraits - n] = new Color(rng.random0n(256), rng.random0n(256), rng.random0n(256));
-		}
-		// now at least nTraits colors
-		if (this instanceof Discrete) {
-			// discrete traits and colors
-			if (colors.length == nTraits2) {
-				traitColor = colors;
-				return;
+			if (nTraits > defaultColor.length) {
+				// add random colors if needed - do not use the shared RNG to prevent
+				// interfering with reproducibility
+				RNGDistribution rng = new RNGDistribution.Uniform();
+				for (int n = defaultColor.length; n < nTraits; n++)
+					colors[n] = new Color(rng.random0n(256), rng.random0n(256), rng.random0n(256));
 			}
-			Color[] cols = new Color[nTraits2];
-			if (colors.length > nTraits2) {
-				System.arraycopy(colors, 0, cols, 0, nTraits2);
-				traitColor = cols;
-				return;
-			}
-			System.arraycopy(colors, 0, cols, 0, colors.length);
-			for (int n = colors.length; n < nTraits2; n++)
+		}
+		if (!(colors.length == nTraits || colors.length == 2 * nTraits
+				|| (hasVacant() && (colors.length == nTraits - 1
+						|| colors.length == 2 * (nTraits - 1)))))
+			return false;
+		if (hasVacant()) {
+			// insert vacant color
+			if (colors.length == 2 * (nTraits - 1))
+				colors = ArrayMath.insert(colors, ColorMap.blendColors(VACANT_COLOR, Color.WHITE, 0.333),
+						nTraits + vacantIdx);
+			colors = ArrayMath.insert(colors, VACANT_COLOR, vacantIdx);
+		}
+		// now the color array is guaranteed to be of length nTraits or 2 * nTraits
+		if (colors.length == nTraits) {
+			Color[] cols = new Color[nTraits * 2];
+			System.arraycopy(colors, 0, cols, 0, nTraits);
+			// generate lighter versions for switched colors
+			for (int n = nTraits; n < 2 * nTraits; n++)
 				// NOTE: Color.brighter() does not work on pure colors.
 				cols[n] = ColorMap.blendColors(colors[n % nTraits], Color.WHITE, 0.333);
-			traitColor = cols;
-			return;
+			colors = cols;
 		}
-		// continuous traits and colors (means and stddev)
-		Color[] cColor = new Color[3 * nTraits];
-		for (int n = 0; n < nTraits; n++) {
-			Color color = colors[n];
-			cColor[n] = color; // mean
-			// NOTE: Color.brighter() does not work on pure colors.
-			Color brighter = ColorMap.blendColors(color, Color.WHITE, 0.333);
-			cColor[n + nTraits] = brighter; // min
-			cColor[n + nTraits2] = brighter; // max
-		}
-		traitColor = cColor;
+		traitColor = colors;
+		// now the color array is guaranteed to be of length 2 * nTraits
+		if (this instanceof Discrete)
+			return true;
+		// for Continuous traits the second and third set of nTraits colors are for
+		// mean -/+ stddev. simply duplicate the second set.
+		traitColor = ArrayMath.merge(colors, ArrayMath.drop(colors, 0, nTraits));
+		return true;
 	}
 
 	/**
@@ -1348,7 +1371,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					if (colorsets == null)
 						return false;
 					int n = 0;
-					for (Module pop : species) {
+					for (Module mod : species) {
 						String[] colors = colorsets[n++ % colorsets.length].split(CLOParser.MATRIX_DELIMITER);
 						Color[] myColors = new Color[colors.length];
 						for (int i = 0; i < colors.length; i++) {
@@ -1359,7 +1382,8 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 							myColors[i] = newColor;
 						}
 						// setTraitColor deals with missing colors and adding shades
-						pop.setTraitColors(myColors);
+						if (!mod.setTraitColors(myColors))
+							return false;
 					}
 					return true;
 				}
@@ -1386,15 +1410,15 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					descr += "\n        ci, ni: color name or (r,g,b) triplet (in 0-255) with i:";
 					int idx = 0;
 					StringBuilder sb = new StringBuilder(descr);
-					for (Module pop : species) {
-						nt = pop.getNTraits();
+					for (Module mod : species) {
+						nt = mod.getNTraits();
 						for (int n = 0; n < nt; n++) {
 							String aTrait = "              " + (idx++) + ": ";
 							int traitlen = aTrait.length();
 							sb.append("\n")
 									.append(aTrait.substring(traitlen - 16, traitlen))
-									.append(species.size() > 1 ? pop.getName() + "." : "")
-									.append(pop.getTraitName(n));
+									.append(species.size() > 1 ? mod.getName() + "." : "")
+									.append(mod.getTraitName(n));
 						}
 					}
 					if (species.size() > 1)
