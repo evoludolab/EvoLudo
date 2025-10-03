@@ -1,19 +1,44 @@
 {
-    // See https://go.microsoft.com/fwlink/?LinkId=733558
-    // for the documentation about the tasks.json format
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "GWT devmode",
-            "type": "shell",
-            "command": "mvn gwt:devmode",
-            "group": "build"
-        },
-        {
-            "label": "GWT codeserver",
-            "type": "shell",
-            "command": "mvn gwt:codeserver -pl . -am",
-            "group": "build"
-        },
-    ],
- }
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Show javac warnings",
+      "type": "shell",
+      "command": "mvn",
+      "args": [
+        "clean",
+        "compile",
+        "-Dmaven.compiler.showWarnings=true",
+        "-Dmaven.compiler.showDeprecation=true"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": {
+        "owner": "java",
+        "fileLocation": "absolute",
+        "pattern": {
+          "regexp": "^\\[(WARNING|ERROR)\\]\\s+(.+\\.java):\\[(\\d+),(\\d+)\\]\\s+(.*)$",
+          "severity": 1,
+          "file": 2,
+          "line": 3,
+          "column": 4,
+          "message": 5
+        }
+      }
+    },
+    {
+      "label": "GWT devmode",
+      "type": "shell",
+      "command": "mvn gwt:devmode",
+      "group": "build"
+    },
+    {
+      "label": "GWT codeserver",
+      "type": "shell",
+      "command": "mvn gwt:codeserver -pl . -am",
+      "group": "build"
+    }
+  ]
+}

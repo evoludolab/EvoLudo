@@ -45,7 +45,7 @@
     
     <!-- Java version properties -->
     <java.version.lts>21</java.version.lts>
-    <java.version.gwt>17</java.version.gwt>
+    <java.version.gwt>11</java.version.gwt>
   </properties>
 
   <dependencyManagement>
@@ -285,7 +285,7 @@
           <version>1.0.1</version>
           <extensions>true</extensions>
           <configuration>
-            <sourceLevel>11</sourceLevel>
+            <sourceLevel>${java.version.gwt}</sourceLevel>
             <failOnError>true</failOnError>
           </configuration>
         </plugin>
