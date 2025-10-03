@@ -50,7 +50,7 @@ public interface MultiView {
 	public boolean isActive();
 
 	public default void setModule(Module module) {
-	};
+	}
 
 	public void reset(boolean clear);
 

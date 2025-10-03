@@ -3607,8 +3607,9 @@ public class Geometry {
 		int[] degrees = new int[size];
 		Arrays.fill(degrees, (int) connectivity);
 		int trials = 0;
-		while (!initGeometryDegreeDistr(degrees) && ++trials < MAX_TRIALS)
-			;
+		while (!initGeometryDegreeDistr(degrees) && ++trials < MAX_TRIALS) {
+			// loop body intentionally left empty
+		}
 		if (trials >= MAX_TRIALS) {
 			// reset sets size=-1
 			int mysize = size;
@@ -4580,46 +4581,54 @@ public class Geometry {
 
 		int[] aout = out[a];
 		int ai = -1;
-		while (aout[++ai] != an)
-			;
+		while (aout[++ai] != an) {
+			// loop until found
+		}
 		aout[ai] = bn;
 		int[] bout = out[b];
 		int bi = -1;
-		while (bout[++bi] != bn)
-			;
+		while (bout[++bi] != bn) {
+			// loop until found
+		}
 		bout[bi] = an;
 
 		int[] ain = in[a];
 		ai = -1;
-		while (ain[++ai] != an)
-			;
+		while (ain[++ai] != an) {
+			// loop until found
+		}
 		ain[ai] = bn;
 		int[] bin = in[b];
 		bi = -1;
-		while (bin[++bi] != bn)
-			;
+		while (bin[++bi] != bn) {
+			// loop until found
+		}
 		bin[bi] = an;
 
 		aout = out[an];
 		ai = -1;
-		while (aout[++ai] != a)
-			;
+		while (aout[++ai] != a) {
+			// loop until found
+		}
 		aout[ai] = b;
 		bout = out[bn];
 		bi = -1;
-		while (bout[++bi] != b)
-			;
+		while (bout[++bi] != b) {
+			// loop until found
+		}
 		bout[bi] = a;
 
 		ain = in[an];
 		ai = -1;
-		while (ain[++ai] != a)
-			;
+		while (ain[++ai] != a) {
+			// loop until found
+		}
 		ain[ai] = b;
 		bin = in[bn];
 		bi = -1;
-		while (bin[++bi] != b)
-			;
+		while (bin[++bi] != b) {
+			// loop until found
+		}
 		bin[bi] = a;
 
 		return true;

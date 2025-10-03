@@ -61,13 +61,11 @@ import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
 import javax.swing.JRootPane;
 import javax.swing.JSlider;
 import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 
-import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.ToggleAntiAliasingAction;
 import org.evoludo.simulator.models.ChangeListener;
@@ -921,9 +919,6 @@ public class EvoLudoLab extends JFrame
 
 	public Color getBackgroundGUI() {
 		return bgcolorGUI;
-	}
-
-	public void showCustomMenu(JPopupMenu menu, AbstractGraph owner) {
 	}
 
 	public String getCLO() {

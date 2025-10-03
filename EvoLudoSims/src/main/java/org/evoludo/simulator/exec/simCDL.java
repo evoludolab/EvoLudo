@@ -191,8 +191,9 @@ public class simCDL extends CDL implements ChangeListener {
 					((org.evoludo.simulator.models.Discrete) model).setInitialTraits(dinit);
 					for (int s = 1; s <= nSamples; s++) {
 						engine.modelReset();
-						while (engine.modelNext())
-							;
+						while (engine.modelNext()) {
+							// loop until converged (or timeend reached)
+						}
 						// if timeStop was reached, ODE, SDE or simulations may not yet have been
 						// absorbed in particular if interior fixed point is attractor
 						model.getMeanTraits(getID(), state);
@@ -264,8 +265,9 @@ public class simCDL extends CDL implements ChangeListener {
 				boolean converged = engine.modelRelax();
 				startStatistics();
 				if (!converged) {
-					while (engine.modelNext())
-						;
+					while (engine.modelNext()) {
+						// loop until converged (or timeend reached)
+					}
 				}
 				if (model.hasConverged()) {
 					// model converged (ODE only with mu>0) - mean is current state and sdev is zero

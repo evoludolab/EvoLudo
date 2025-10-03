@@ -40,7 +40,6 @@ import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.modules.Module;
-import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasS3;
 import org.evoludo.simulator.views.S3;
 import org.evoludo.simulator.views.S3Map;
@@ -138,8 +137,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		if (map == null)
 			return;
 		this.map = map;
-		if (map instanceof BasicTooltipProvider)
-			setTooltipProvider(map);
+		setTooltipProvider(map);
 	}
 
 	/**

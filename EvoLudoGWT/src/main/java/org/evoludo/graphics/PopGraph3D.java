@@ -538,6 +538,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * @param node the index of the node
 	 * @return the color of the node
 	 */
+	@Override
 	public String getCSSColorAt(int node) {
 		return "#" + data[node].getColor().getHexString();
 	}

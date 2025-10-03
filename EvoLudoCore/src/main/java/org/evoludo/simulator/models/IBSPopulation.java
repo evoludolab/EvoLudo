@@ -1730,8 +1730,9 @@ public abstract class IBSPopulation {
 		}
 		int start = -1;
 		// find first non-vacant site
-		while (isVacantAt(++start))
-			;
+		while (isVacantAt(++start)) {
+			// loop until found
+		}
 		maxEffScoreIdx = start;
 	}
 

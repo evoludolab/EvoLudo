@@ -390,8 +390,7 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_DEFAULT);
 	}
 
-	protected void plot(Graphics2D g) {
-	}
+	protected abstract void plot(Graphics2D g);
 
 	@Override
 	protected void paintComponent(Graphics g) {

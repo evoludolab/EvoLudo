@@ -621,6 +621,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param node the index of the node
 	 * @return the color of the node
 	 */
+	@Override
 	public String getCSSColorAt(int node) {
 		return data[node];
 	}
@@ -632,6 +633,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param y the {@code y}-coordinate of the location
 	 * @return the index of the node
 	 */
+	@Override
 	public int findNodeAt(int x, int y) {
 		// no network may have been initialized (e.g. for ODE/SDE models)
 		if (hasMessage || network == null || invalidated || network.isStatus(Status.LAYOUT_IN_PROGRESS))

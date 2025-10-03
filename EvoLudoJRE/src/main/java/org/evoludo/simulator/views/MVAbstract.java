@@ -313,7 +313,6 @@ public abstract class MVAbstract extends JComponent
 				localMenu.setText("Local dynamics @ " + localNode);
 			}
 		}
-		lab.showCustomMenu(menu, owner);
 	}
 
 	@Override

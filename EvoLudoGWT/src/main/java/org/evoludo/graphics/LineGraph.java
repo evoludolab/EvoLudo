@@ -31,7 +31,6 @@
 package org.evoludo.graphics;
 
 import java.awt.Color;
-import java.util.Comparator;
 import java.util.Iterator;
 
 import org.evoludo.geom.Point2D;

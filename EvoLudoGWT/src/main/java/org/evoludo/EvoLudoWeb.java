@@ -1194,7 +1194,12 @@ public class EvoLudoWeb extends Composite
 					// the argument is not a number, ignore and pick first view
 					logger.warning("failed to set view '" + iv[0] + "' - using default.");
 				}
-				newView = av[Math.max(Math.min(idx, av.length), 1) - 1];
+				// Ensure idx is within bounds [1, av.length]
+				if (idx < 1)
+					idx = 1;
+				if (idx > av.length)
+					idx = av.length;
+				newView = av[idx - 1];
 			}
 			guiState.view = newView;
 			guiState.args = iv.length > 1 ? iv[1].trim() : null;
@@ -1278,6 +1283,7 @@ public class EvoLudoWeb extends Composite
 					}
 					if (Double.isFinite(tStop))
 						logger.warning("--timestop found: wrong mode for dynamics, use --view option.");
+					break;
 				default:
 			}
 		}

@@ -1349,8 +1349,9 @@ public class IBSDPopulation extends IBSPopulation {
 				}
 				int idx = -1;
 				if (maxEffScoreIdx >= 0) {
-					while (getTraitAt(++idx) != mxTrait)
-						;
+					while (getTraitAt(++idx) != mxTrait) {
+						// loop until found
+					}
 					maxEffScoreIdx = idx;
 				}
 				break;

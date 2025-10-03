@@ -42,23 +42,24 @@ public class Line2D {
 	/**
 	 * The slope of the straight line.
 	 * <p>
-	 * Note: for vertical lines slope is {@code Double.NaN}
+	 * Note: for vertical lines slope is {@code Double.POSITIVE_INFINITY} or
+	 * {@code Double.POSITIVE_INFINITY}.
 	 */
-	public double m;
+	double m;
 
 	/**
 	 * The <code>y</code>-intercept of the straight line.
 	 * <p>
 	 * Note: for vertical lines this is the <code>x</code>-intercept.
 	 */
-	public double b;
+	double b;
 
 	/**
 	 * Create a new 2D line with the slope and <code>y</code>-intercept of zero
 	 * (corresponding to the <code>x</code>-axis).
 	 */
 	public Line2D() {
-		this(0.0, 0.0);
+		initialize(this, 0, 0);
 	}
 
 	/**
@@ -67,7 +68,7 @@ public class Line2D {
 	 * @param l the 2D line to copy
 	 */
 	public Line2D(Line2D l) {
-		this(l.m, l.b);
+		initialize(this, l.m, l.b);
 	}
 
 	/**
@@ -78,17 +79,7 @@ public class Line2D {
 	 * @param b the <code>y</code>-intercept
 	 */
 	public Line2D(double m, double b) {
-		set(m, b);
-	}
-
-	/**
-	 * Create a new 2D line with <code>origin</code> and <code>direction</code>.
-	 * 
-	 * @param origin    the starting point
-	 * @param direction the direction
-	 */
-	public Line2D(Point2D origin, Vector2D direction) {
-		set(origin, direction);
+		initialize(this, m, b);
 	}
 
 	/**
@@ -98,7 +89,71 @@ public class Line2D {
 	 * @param p2 the second point
 	 */
 	public Line2D(Point2D p1, Point2D p2) {
-		set(p1, p2);
+		initialize(this, getSlope(p1, p2), getYIntercept(p1, p2));
+	}
+
+	/**
+	 * Helper method to prevent {@code this-escape} warnings.
+	 */
+	protected static void initialize(Line2D line, double m, double b) {
+		line.m = m;
+		line.b = b;
+	}
+
+	/**
+	 * Calculate the slope of a line running through points {@code p1} and
+	 * {@code p2}.
+	 * 
+	 * @param p1 the first point
+	 * @param p2 the second point
+	 * @return the slope of the line
+	 */
+	public static double getSlope(Point2D p1, Point2D p2) {
+		return getSlope(p1.x, p1.y, p2.x, p2.y);
+	}
+
+	/**
+	 * Calculate the slope of a line running through points {@code (x1,y1)} and
+	 * {@code (x2,y2)}.
+	 * 
+	 * @param x1 the <code>x</code>-coordinate of first point
+	 * @param y1 the <code>y</code>-coordinate of first point
+	 * @param x2 the <code>x</code>-coordinate of second point
+	 * @param y2 the <code>y</code>-coordinate of second point
+	 * @return the slope of the line
+	 */
+	public static double getSlope(double x1, double y1, double x2, double y2) {
+		if (x1 == x2)
+			// vertical line
+			return (y2 > y1 ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY);
+		return (y2 - y1) / (x2 - x1);
+	}
+
+	/**
+	 * Calculate the slope of a line running through points {@code p1} and
+	 * {@code p2}.
+	 * 
+	 * @param p1 the first point
+	 * @param p2 the second point
+	 * @return the slope of the line
+	 */
+	public static double getYIntercept(Point2D p1, Point2D p2) {
+		return getYIntercept(p1.x, p1.y, p2.x, p2.y);
+	}
+
+	/**
+	 * Calculate the slope of a line running through points {@code p1} and
+	 * {@code p2}.
+	 * 
+	 * @param p1 the first point
+	 * @param p2 the second point
+	 * @return the slope of the line
+	 */
+	public static double getYIntercept(double x1, double y1, double x2, double y2) {
+		double slope = getSlope(x1, y1, x2, y2);
+		if (!Double.isFinite(slope))
+			return Double.NaN;
+		return y1 - slope * x1;
 	}
 
 	/**
@@ -109,8 +164,8 @@ public class Line2D {
 	 * @param direction the direction of the line
 	 * @return the new line
 	 */
-	public Line2D set(Point2D point, Vector2D direction) {
-		return set(point.x, point.y, point.x + direction.x, point.y + direction.y);
+	public void set(Point2D point, Vector2D direction) {
+		set(point.x, point.y, point.x + direction.x, point.y + direction.y);
 	}
 
 	/**
@@ -119,12 +174,9 @@ public class Line2D {
 	 * 
 	 * @param m the slope
 	 * @param b the <code>y</code>-intercept
-	 * @return the new line
 	 */
-	public Line2D set(double m, double b) {
-		this.m = m;
-		this.b = b;
-		return this;
+	public void set(double m, double b) {
+		initialize(this, m, b);
 	}
 
 	/**
@@ -132,10 +184,9 @@ public class Line2D {
 	 * 
 	 * @param p1 the first point on the line
 	 * @param p2 the second point on the line
-	 * @return the new line
 	 */
-	public Line2D set(Point2D p1, Point2D p2) {
-		return set(p1.x, p1.y, p2.x, p2.y);
+	public void set(Point2D p1, Point2D p2) {
+		set(p1.x, p1.y, p2.x, p2.y);
 	}
 
 	/**
@@ -151,25 +202,17 @@ public class Line2D {
 	}
 
 	/**
-	 * Set the line to pass through points <code>(x1,y1)</code> and
-	 * <code>(x2,y2)</code>.
+	 * Set the slope {@code m} and y-intercept {@code b} of the line passing through
+	 * points <code>(x1,y1)</code> and <code>(x2,y2)</code>.
 	 * 
 	 * @param x1 the <code>x</code>-coordinate of first point
 	 * @param y1 the <code>y</code>-coordinate of first point
 	 * @param x2 the <code>x</code>-coordinate of second point
 	 * @param y2 the <code>y</code>-coordinate of second point
-	 * @return the new line
 	 */
-	public Line2D set(double x1, double y1, double x2, double y2) {
-		if (Double.compare(x1, x2) == 0) {
-			// vertical line
-			m = Double.NaN;
-			b = x1;
-		} else {
-			m = (y2 - y1) / (x2 - x1);
-			b = y1 - m * x1;
-		}
-		return this;
+	public void set(double x1, double y1, double x2, double y2) {
+		m = getSlope(x1, y1, x2, y2);
+		b = getYIntercept(x1, y1, x2, y2);
 	}
 
 	/**
@@ -273,7 +316,7 @@ public class Line2D {
 	 * @return <code>true</code> if the line is vertical
 	 */
 	public boolean vertical() {
-		return (m != m);
+		return (Double.isInfinite(m));
 	}
 
 	/**

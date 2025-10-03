@@ -167,8 +167,9 @@ public class simTBT extends TBT implements ChangeListener {
 					// simulations converged already - mean is current state and sdev is zero
 					model.getMeanTraits(getID(), mean);
 				} else {
-					while ((converged = !engine.modelNext()))
-						;
+					while ((converged = !engine.modelNext())) {
+						// loop until converged (or timeend reached)
+					}
 				}
 				sb.setLength(0);
 				sb.append(Formatter.format(r, 3));
@@ -215,8 +216,9 @@ public class simTBT extends TBT implements ChangeListener {
 						// simulations converged already - mean is current state and sdev is zero
 						model.getMeanTraits(getID(), mean);
 					} else {
-						while (engine.modelNext())
-							;
+						while (engine.modelNext()) {
+							// loop until converged (or timeend reached)
+						}
 					}
 					sb.setLength(0);
 					sb.append(Formatter.format(s, 2))

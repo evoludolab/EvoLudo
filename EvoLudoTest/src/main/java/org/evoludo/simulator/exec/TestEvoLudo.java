@@ -404,11 +404,12 @@ public class TestEvoLudo implements MilestoneListener {
 	private String generateBasename(String clo, int idx) {
 		String module = engine.getModule().getKey();
 		String model = engine.getModel().getType().getKey();
-		int exportIdx = clo.indexOf("--export");
+		String cloName = "--" + engine.cloExport.getName();
+		int exportIdx = clo.indexOf(cloName);
 		if (exportIdx < 0)
 			return module + "-" + idx + "-" + model;
 
-		exportIdx += "--export".length();
+		exportIdx += cloName.length();
 		int exportEnd = clo.indexOf("--", exportIdx);
 		if (exportEnd < 0)
 			exportEnd = clo.length();
@@ -425,9 +426,10 @@ public class TestEvoLudo implements MilestoneListener {
 	 */
 	private String stripExport(String clo) {
 		int expidx;
-		while ((expidx = clo.indexOf("--export")) >= 0) {
+		String cloName = "--" + engine.cloExport.getName();
+		while ((expidx = clo.indexOf(cloName)) >= 0) {
 			String stripped = clo.substring(0, expidx).trim();
-			int expendidx = clo.indexOf("--", expidx + "--export".length());
+			int expendidx = clo.indexOf("--", expidx + cloName.length());
 			if (expendidx >= 0)
 				stripped += " " + clo.substring(expendidx);
 			clo = stripped;
