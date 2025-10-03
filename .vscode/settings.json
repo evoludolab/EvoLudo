@@ -14,7 +14,7 @@
             "path": "/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home"
         }
     ],
-    "[java]": {
+   "[java]": {
         "editor.defaultFormatter": "redhat.java",
         "editor.formatOnSave": true
     }
