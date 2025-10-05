@@ -501,30 +501,38 @@ public class Path2D {
 	 * @evoludo.impl {@code getBounds()} is not implemented
 	 */
 	public final synchronized Rectangle2D getBounds2D() {
-		double x1;
-		double y1;
-		double x2;
-		double y2;
-		int i = numCoords;
-		if (i > 0) {
-			y1 = y2 = doubleCoords[--i];
-			x1 = x2 = doubleCoords[--i];
-			while (i > 0) {
-				double y = doubleCoords[--i];
-				double x = doubleCoords[--i];
-				if (x < x1)
-					x1 = x;
-				if (y < y1)
-					y1 = y;
-				if (x > x2)
-					x2 = x;
-				if (y > y2)
-					y2 = y;
-			}
-		} else {
-			x1 = y1 = x2 = y2 = 0.0;
+		if (numCoords <= 0)
+			return new Rectangle2D(0.0, 0.0, 0.0, 0.0);
+		double[] bounds = findMinMaxCoords(doubleCoords, numCoords);
+		return new Rectangle2D(bounds[0], bounds[1], bounds[2] - bounds[0], bounds[3] - bounds[1]);
+	}
+
+	/**
+	 * Helper method to find min/max x and y coordinates in the array.
+	 * 
+	 * @param coords the coordinates array
+	 * @param length the number of coordinates to consider
+	 * @return array of {minX, minY, maxX, maxY}
+	 */
+	private static double[] findMinMaxCoords(double[] coords, int length) {
+		int i = length;
+		double y1 = coords[--i];
+		double y2 = y1;
+		double x1 = coords[--i];
+		double x2 = x1;
+		while (i > 0) {
+			double y = coords[--i];
+			double x = coords[--i];
+			if (x < x1)
+				x1 = x;
+			if (y < y1)
+				y1 = y;
+			if (x > x2)
+				x2 = x;
+			if (y > y2)
+				y2 = y;
 		}
-		return new Rectangle2D(x1, y1, x2 - x1, y2 - y1);
+		return new double[] { x1, y1, x2, y2 };
 	}
 
 	/**
@@ -702,7 +710,7 @@ public class Path2D {
 	 * @see #getWindingRule
 	 * @since 1.6
 	 */
-	public final void setWindingRule(int rule) {
+	public final synchronized void setWindingRule(int rule) {
 		if (rule != WIND_EVEN_ODD && rule != WIND_NON_ZERO) {
 			throw new IllegalArgumentException("winding rule must be " +
 					"WIND_EVEN_ODD or " +
@@ -725,10 +733,10 @@ public class Path2D {
 			return null;
 		}
 		if (pointTypes[numTypes - 1] == SEG_CLOSE) {
-			loop: for (int i = numTypes - 2; i > 0; i--) {
+			for (int i = numTypes - 2; i > 0; i--) {
 				switch (pointTypes[i]) {
 					case SEG_MOVETO:
-						break loop;
+						return getPoint(index - 2);
 					case SEG_LINETO:
 						index -= 2;
 						break;

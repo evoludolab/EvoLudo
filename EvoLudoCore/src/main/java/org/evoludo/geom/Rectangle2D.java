@@ -44,22 +44,22 @@ public class Rectangle2D {
 	/**
 	 * The right segment of the rectangle.
 	 */
-	public Segment2D right;
+	Segment2D right;
 
 	/**
 	 * The top segment of the rectangle.
 	 */
-	public Segment2D top;
+	Segment2D top;
 
 	/**
 	 * The left segment of the rectangle.
 	 */
-	public Segment2D left;
+	Segment2D left;
 
 	/**
 	 * The bottom segment of the rectangle.
 	 */
-	public Segment2D bottom;
+	Segment2D bottom;
 
 	/**
 	 * The origin of the rectangle (lower left corner).
@@ -218,10 +218,9 @@ public class Rectangle2D {
 	 * @return <code>true</code> if the point lies inside
 	 */
 	public boolean contains(double px, double py) {
-		if (width <= 0.0 || height <= 0.0 || px < origin.x || py < origin.y || px > origin.x + width
-				|| py > origin.y + height)
-			return false;
-		return true;
+		return !(width <= 0.0 || height <= 0.0 ||
+				px < origin.x || py < origin.y ||
+				px > origin.x + width || py > origin.y + height);
 	}
 
 	/**

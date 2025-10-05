@@ -312,7 +312,7 @@ public class Combinatorics {
 	/**
 	 * Efficient calculation of
 	 * \[\dfrac{\binom{n}{k}}{\binom{m}{k}}=\frac{n!(m-k)!}{m!(n-k)!},\]
-	 * or {@code Binomial[n,k]/Binomial[m,k]} for <em>Mathematica:</em>, while
+	 * or {@code Binomial[n,k]/Binomial[m,k]} for <em>Mathematica</em>, while
 	 * reducing the risk of numerical overflow.
 	 * <p>
 	 * Note, this is the same as {@code H2(n, 0, m-n, k)} with {@code m&gt;n}.
@@ -330,7 +330,7 @@ public class Combinatorics {
 		if (n < k || k < 0)
 			return 0.0;
 		if (m < k)
-			return 1.0 / 0.0;
+			return Double.NaN;
 		if (n == m)
 			return 1.0;
 		double frac = (double) n / (double) m;

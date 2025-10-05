@@ -348,7 +348,7 @@ public class MersenneTwister {
 	private int mti;
 
 	// a good initial seed (of int size, though stored in a long)
-	// private static final long GOOD_SEED = 4357;
+	private static final long GOOD_SEED = 4357;
 
 	/**
 	 * Gaussian random numbers are generated in pairs. This is the second of the
@@ -516,18 +516,11 @@ public class MersenneTwister {
 		mt.mt[0] = (int) (seed & BIT32_MASK);
 		int mtmti1 = mt.mt[0];
 		for (mt.mti = 1; mt.mti < N; mt.mti++) {
-			// ChH: orig mt[mti] = (1812433253 * (mt[mti-1] ^ (mt[mti-1] >>> 30)) + mti);
-			// ChH: optimized mtmti1 = mt[mti-1];
-			// mtmti1 = (1812433253 * (mtmti1 ^ (mtmti1 >>> 30)) + mti);
-			// mt[mti] = mtmti1;
 			int s = mtmti1 ^ (mtmti1 >>> 30);
 			// check if mask needed - might be only in rare cases
 			mtmti1 = ((((((s & 0xffff0000) >>> 16) * 1812433253) << 16) + (s & 0x0000ffff) * 1812433253) + mt.mti)
 					& BIT32_MASK;
 			mt.mt[mt.mti] = mtmti1;
-			// In previous versions, MSBs of the seed affect only MSBs of the array mt[].
-			// 2002/01/09 modified by Makoto Matsumoto
-			// mt[mti] &= BIT32_MASK; // for <=32 bit machines
 		}
 	}
 
@@ -555,9 +548,6 @@ public class MersenneTwister {
 
 		int mtmti1 = mt.mt[0];
 		for (; k != 0; k--) {
-			// ChH: orig mt[i] = (mt[i] ^ ((mt[i-1] ^ (mt[i-1] >>> 30)) * 1664525)) +
-			// array[j] + j; /* non linear */
-			// mt[i] &= BIT32_MASK; /* for WORDSIZE > 32 machines */
 			// avoid multiplication overflow: split 32 bits into 2x 16 bits and process them
 			// individually
 			int s = mtmti1 ^ (mtmti1 >>> 30);
@@ -577,9 +567,6 @@ public class MersenneTwister {
 		}
 		mtmti1 = mt.mt[i - 1];
 		for (k = N - 1; k != 0; k--) {
-			// ChH: orig mt[i] = (mt[i] ^ ((mt[i-1] ^ (mt[i-1] >>> 30)) * 1566083941)) - i;
-			// /* non linear */
-			// mt[i] &= BIT32_MASK; /* for WORDSIZE > 32 machines */
 			// avoid multiplication overflow: split 32 bits into 2x 16 bits and process them
 			// individually
 			int s = mtmti1 ^ (mtmti1 >>> 30);
@@ -679,14 +666,8 @@ public class MersenneTwister {
 		if ((n & -n) == n) {
 			// i.e., n is a power of 2
 			// ChH: GWT does not look kindly on long - eliminate!
-			// return (int)((n * (long)nextInt()) >> 31);
 			// avoid multiplication overflow: split 32 bits into 2x 16 bits and process them
 			// individually
-			// int s = nextInt();
-			// seems ok but uses lower bits somehow this does not seem to be a good strategy
-			// (worth looking into?)
-			// return (((((s & 0xffff0000) >>> 16) * n) << 16) +
-			// (s & 0x0000ffff) * n) & (n-1);
 			// calc log_2(n)
 			int log2 = 1;
 			n = n >>> 2;
@@ -694,7 +675,7 @@ public class MersenneTwister {
 				log2++;
 				n = n >>> 1;
 			}
-			// note: cannot shift by 32bit (apparently turns into nop...); log2>0 must hold;
+			// note: cannot shift by 32bit (apparently turns into nop...), log2>0 must hold
 			// n=1 caught at start
 			// check if mask needed - might be only in rare cases
 			return (nextUInt() >>> (32 - log2)) & BIT32_MASK;
@@ -706,7 +687,6 @@ public class MersenneTwister {
 			bits = nextInt();
 			val = bits % n;
 			// note: the while-loop essentially checks for an integer overflow.
-			// } while (bits - val + (n - 1) < 0);
 			// in GWT/JavaScript this needs to be done explicitly because all
 			// numbers are doubles and overflows are handled differently.
 			// ChH: check overflow in an JRE/GWT agnostic manner:
@@ -745,10 +725,6 @@ public class MersenneTwister {
 	 *         2^<sup>63</sup>-1]</code>
 	 */
 	public synchronized long nextLong() {
-		// ChH: looks like this returns an unacceptable 'unsigned' long...
-		// int y = nextUInt();
-		// int z = nextUInt();
-		// return (((long)y) << 32) + z;
 		return (nextULong() >>> 1);
 	}
 
@@ -784,7 +760,7 @@ public class MersenneTwister {
 				log2++;
 				n = n >>> 1;
 			}
-			// note: cannot shift by 32bit (apparently turns into nop...); log2>0 must hold;
+			// note: cannot shift by 32bit (apparently turns into nop...), log2>0 must hold
 			// n=1 caught at start
 			return (nextULong() >>> (64 - log2));
 		}
@@ -879,7 +855,6 @@ public class MersenneTwister {
 			return false; // fix half-open issues
 		else if (probability == 1f)
 			return true; // fix half-open issues
-		// return (nextUInt() >>> 8) / ((float)(1 << 24)) < probability;
 		return (nextUInt() >>> 8) * TWO_TO_NEG24 < probability;
 	}
 
@@ -924,10 +899,6 @@ public class MersenneTwister {
 	public synchronized double nextDoubleHigh() {
 		int y = nextUInt();
 		int z = nextUInt();
-		// ChH: long's are killers for GWT performance
-		// return ((((long)(y >>> 5)) << 26) + (z >>> 6)) / (double)(1L << 53);
-		// return (y >>> 5)*(67108864.0/9007199254740992.0) + (z >>>
-		// 6)*(1.0/9007199254740992.0);
 		return (y >>> 5) * TWO_TO_NEG27 + (z >>> 6) * TWO_TO_NEG53;
 	}
 
@@ -1017,23 +988,10 @@ public class MersenneTwister {
 		double v2;
 		double s;
 		do {
-			// int y = nextUInt();
-			// int z = nextUInt();
-			// int a = nextUInt();
-			// int b = nextUInt();
-			// /* derived from nextDouble documentation in jdk 1.2 docs, see top */
-			// v1 = 2 * (((((long)(y >>> 6)) << 27) + (z >>> 5)) / (double)(1L << 53)) - 1;
-			// v2 = 2 * (((((long)(a >>> 6)) << 27) + (b >>> 5)) / (double)(1L << 53)) - 1;
-			// ChH: long's are killers for GWT performance
-			// return ((((long)(y >>> 5)) << 26) + (z >>> 6)) / (double)(1L << 53);
 			v1 = (nextUInt() >>> 5) * TWO_TO_NEG25 + (nextUInt() >>> 6) * TWO_TO_NEG52 - 1;
 			v2 = (nextUInt() >>> 5) * TWO_TO_NEG25 + (nextUInt() >>> 6) * TWO_TO_NEG52 - 1;
 			s = v1 * v1 + v2 * v2;
 		} while (s >= 1 || s == 0);
-		// ChH: benefits of StrictMath not transparent... Math.sqrt/log delegate to
-		// StrictMath.sqrt/log, which delegate to public static native double
-		// sqrt/log(double a)...
-		// double multiplier = StrictMath.sqrt(-2 * StrictMath.log(s)/s);
 		double multiplier = Math.sqrt(-2.0 * Math.log(s) / s);
 		nextGaussian = v2 * multiplier;
 		return v1 * multiplier;
@@ -1093,11 +1051,6 @@ public class MersenneTwister {
 	private static void logProgress(String msg) {
 		buffer.append(msg + '\n');
 	}
-
-	/*
-	 * private long uInt(int i) { // must explicitly specify long mask - casting
-	 * BIT32_MASK to long does not work! return (i & 0xffffffffL); }
-	 */
 
 	/**
 	 * Tests if generated random numbers comply with reference
@@ -1181,11 +1134,9 @@ public class MersenneTwister {
 	 * @param nSamples number of samples for testing speed
 	 */
 	public static void testSpeed(Logger logger, Chronometer clock, int nSamples) {
-		final long SEED = 4357;
-
 		logProgress("Check speed of MersenneTwister (comparison to java.util.Random)");
 
-		Random rr = new Random(SEED);
+		Random rr = new Random(GOOD_SEED);
 		int xx = 0;
 		int ms = clock.elapsedTimeMsec();
 		logProgress("Testing Random().nextInt(): ");
@@ -1194,7 +1145,7 @@ public class MersenneTwister {
 		int random = clock.elapsedTimeMsec() - ms;
 		logProgress(random + "msec for " + Formatter.formatSci(nSamples, 0) + " samples (checksum: " + xx + ").");
 
-		MersenneTwister r = new MersenneTwister(SEED);
+		MersenneTwister r = new MersenneTwister(GOOD_SEED);
 		xx = 0;
 		ms = clock.elapsedTimeMsec();
 		logProgress("Testing MersenneTwister().nextInt(): ");

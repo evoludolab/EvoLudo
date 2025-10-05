@@ -1207,7 +1207,7 @@ public abstract class EvoLudo
 		pendingAction = PendingAction.NONE;
 		switch (action) {
 			case CHANGE_MODE:
-				Mode mode = action.mode;
+				Mode mode = action.getMode();
 				if (activeModel.setMode(mode)) {
 					// mode changed
 					if (mode == Mode.STATISTICS_SAMPLE) {

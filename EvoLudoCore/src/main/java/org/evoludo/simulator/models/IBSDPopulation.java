@@ -153,7 +153,7 @@ public class IBSDPopulation extends IBSPopulation {
 	/**
 	 * The array of individual traits.
 	 */
-	private int[] traits;
+	int[] traits;
 
 	/**
 	 * The array for temporarily storing traits during updates.

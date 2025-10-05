@@ -1473,7 +1473,6 @@ public abstract class RNGDistribution {
 			double msStart = clock.elapsedTimeMsec();
 			for (int i = 0; i < nSamples; i++) {
 				int idx = binomial.next();
-				// int idx = Binomial.next(rng, p, n);
 				bins[idx]++;
 			}
 			double msEnd = clock.elapsedTimeMsec();
@@ -1873,81 +1872,4 @@ public abstract class RNGDistribution {
 			logger.severe("Test of Gillespie algorithm failed...");
 		}
 	}
-
-	// NOTE: the test uses GWT specifics for measuring time
-	// (com.google.gwt.core.client.Duration) and for reporting
-	// (com.google.gwt.core.client.GWT.log)
-	// public void test() {
-	// test(10000, 10000000);
-	// }
-	//
-	// public void test(int nBins, int nSamples) {
-	// String msg = "Testing performance of random number generator:
-	// nBins="+ChHFormatter.formatSci(nBins, 1)+
-	// ", nSamples="+ChHFormatter.formatSci(nSamples, 1);
-	// com.google.gwt.core.client.GWT.log(msg);
-	// System.out.println(msg);
-	//
-	// double[] bins = new double[nBins];
-	// com.google.gwt.core.client.Duration start = new
-	// com.google.gwt.core.client.Duration();
-	// for( int n=0; n<nSamples; n++ ) {
-	// double rand = random01();
-	// bins[(int)(rand*nBins)]++;
-	// }
-	// double end = start.elapsedMillis();
-	// double min = ChHMath.min(bins);
-	// double max = ChHMath.max(bins);
-	// ChHMath.normalize(bins);
-	// double mean = ChHMath.mean(bins);
-	// double var = ChHMath.variance(bins, mean);
-	// String result = "random01: mean="+ChHFormatter.format(mean, 6)+" +/-
-	// "+ChHFormatter.format(Math.sqrt(var), 6)+
-	// " ("+ChHFormatter.format(1.0/Math.sqrt(nBins), 6)+")"+
-	// ", min="+ChHFormatter.format(min, 0)+", max="+ChHFormatter.format(max, 0)+",
-	// time="+ChHFormatter.format(end/1000.0, 3)+"s";
-	// com.google.gwt.core.client.GWT.log(result);
-	// System.out.println(result);
-	//
-	// java.util.Arrays.fill(bins, 0.0);
-	// start = new com.google.gwt.core.client.Duration();
-	// for( int n=0; n<nSamples; n++ ) {
-	// double rand = random01d();
-	// bins[(int)(rand*nBins)]++;
-	// }
-	// end = start.elapsedMillis();
-	// min = ChHMath.min(bins);
-	// max = ChHMath.max(bins);
-	// ChHMath.normalize(bins);
-	// mean = ChHMath.mean(bins);
-	// var = ChHMath.variance(bins, mean);
-	// result = "random01d: mean="+ChHFormatter.format(mean, 6)+" +/-
-	// "+ChHFormatter.format(Math.sqrt(var), 6)+
-	// " ("+ChHFormatter.format(1.0/Math.sqrt(nBins), 6)+")"+
-	// ", min="+ChHFormatter.format(min, 0)+", max="+ChHFormatter.format(max, 0)+",
-	// time="+ChHFormatter.format(end/1000.0, 3)+"s";
-	// com.google.gwt.core.client.GWT.log(result);
-	// System.out.println(result);
-	//
-	//
-	// java.util.Arrays.fill(bins, 0.0);
-	// start = new com.google.gwt.core.client.Duration();
-	// for( int n=0; n<nSamples; n++ ) {
-	// int rand = random0n(nBins);
-	// bins[rand]++;
-	// }
-	// end = start.elapsedMillis();
-	// min = ChHMath.min(bins);
-	// max = ChHMath.max(bins);
-	// ChHMath.normalize(bins);
-	// mean = ChHMath.mean(bins);
-	// var = ChHMath.variance(bins, mean);
-	// result = "random0n: mean="+ChHFormatter.format(mean, 6)+" +/-
-	// "+ChHFormatter.format(Math.sqrt(var), 6)+
-	// " ("+ChHFormatter.format(1.0/Math.sqrt(nBins), 6)+")"+
-	// ", min="+ChHFormatter.format(min, 0)+", max="+ChHFormatter.format(max, 0)+",
-	// time="+ChHFormatter.format(end/1000.0, 3)+"s";
-	// com.google.gwt.core.client.GWT.log(result);
-	// System.out.println(result);
-	// }
 }

@@ -88,7 +88,18 @@ public interface ChangeListener {
 		/**
 		 * The pending execution mode of the model.
 		 */
-		public Mode mode;
+		Mode mode;
+
+		/**
+		 * Return the requested execution mode.
+		 * 
+		 * @return the requested mode
+		 */
+		public Mode getMode() {
+			if (this != CHANGE_MODE)
+				return null;
+			return mode;
+		}
 	}
 
 	/**
