@@ -255,6 +255,7 @@
             <compilerArgs>
               <arg>-Xlint:all</arg>
               <arg>-Xlint:-serial</arg>
+              <arg>-Xlint:-fallthrough</arg> <!-- IDE's are better at handling fall-through's with annotations -->
             </compilerArgs>
             <showDeprecation>true</showDeprecation>
             <showWarnings>true</showWarnings>
