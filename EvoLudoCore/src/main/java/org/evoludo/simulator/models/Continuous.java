@@ -41,7 +41,7 @@ public interface Continuous {
 	 * @param id the id of the population for multi-species models
 	 * @return the array with the minimum trait values
 	 */
-	public double[] getTraitMin(int id);
+	public double[] getTraitRangeMin(int id);
 
 	/**
 	 * Gets the maximum trait values in this module.
@@ -49,7 +49,7 @@ public interface Continuous {
 	 * @param id the id of the population for multi-species models
 	 * @return the array with the maximum trait values
 	 */
-	public double[] getTraitMax(int id);
+	public double[] getTraitRangeMax(int id);
 
 	/**
 	 * Calculates and returns minimum score in monomorphic population. This depends

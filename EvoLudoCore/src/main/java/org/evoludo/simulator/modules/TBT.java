@@ -405,18 +405,17 @@ public class TBT extends Discrete implements Payoffs,
 		}
 
 		@Override
-		public void getMeanTraits(double[] mean) {
+		public double[] getMeanTraits(double[] mean) {
 			// SQUARE_NEUMANN_2ND geometry for competition results in two disjoint
 			// sublattices; report trait frequencies in each sublattice separately
 			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
-				super.getMeanTraits(mean);
-				return;
+				return super.getMeanTraits(mean);
 			}
 
 			double newtime = model.getUpdates();
 			if (Math.abs(tsMean - newtime) < model.getTimeStep()) {
 				System.arraycopy(tsTraits, 0, mean, 0, mean.length);
-				return;
+				return mean;
 			}
 			int n = 0;
 			Arrays.fill(mean, 0);
@@ -433,21 +432,21 @@ public class TBT extends Discrete implements Payoffs,
 			ArrayMath.multiply(mean, 2.0 / nPopulation);
 			System.arraycopy(mean, 0, tsTraits, 0, mean.length);
 			tsMean = newtime;
+			return mean;
 		}
 
 		@Override
-		public void getMeanFitness(double[] mean) {
+		public double[] getMeanFitness(double[] mean) {
 			// SQUARE_NEUMANN_2ND geometry for competition results in two disjoint
 			// sublattices; report trait frequencies in each sublattice separately
 			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
-				super.getMeanFitness(mean);
-				return;
+				return super.getMeanFitness(mean);
 			}
 
 			double newtime = model.getUpdates();
 			if (Math.abs(tsFit - newtime) < model.getTimeStep()) {
 				System.arraycopy(tsFits, 0, mean, 0, mean.length);
-				return;
+				return mean;
 			}
 			int n = 0;
 			Arrays.fill(mean, 0);
@@ -467,6 +466,7 @@ public class TBT extends Discrete implements Payoffs,
 			ArrayMath.multiply(mean, 2.0 / nPopulation);
 			System.arraycopy(mean, 0, tsFits, 0, mean.length);
 			tsFit = newtime;
+			return mean;
 		}
 
 		@Override

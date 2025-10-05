@@ -688,17 +688,19 @@ public class NetGames extends Discrete implements Payoffs,
 		}
 
 		@Override
-		public void getMeanTraits(double[] mean) {
+		public double[] getMeanTraits(double[] mean) {
 			interaction.evaluate();
 			mean[0] = interaction.avgTot; // avg. activity
 			mean[1] = interaction.avgOut; // avg. cooperativity
+			return mean;
 		}
 
 		@Override
-		public void getMeanFitness(double[] meanscores) {
+		public double[] getMeanFitness(double[] meanscores) {
 			meanscores[0] = performance[1]; // min
 			meanscores[1] = performance[2]; // max
 			meanscores[2] = performance[0]; // mean
+			return meanscores;
 		}
 
 		@Override

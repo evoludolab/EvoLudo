@@ -1634,10 +1634,11 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	@Override
-	public void getMeanTraits(double[] mean) {
+	public double[] getMeanTraits(double[] mean) {
 		double iPop = 1.0 / nPopulation;
 		for (int n = 0; n < nTraits; n++)
 			mean[n] = traitsCount[n] * iPop;
+		return mean;
 	}
 
 	@Override
@@ -1646,7 +1647,7 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	@Override
-	public void getMeanFitness(double[] mean) {
+	public double[] getMeanFitness(double[] mean) {
 		double sum = 0.0;
 		for (int n = 0; n < nTraits; n++) {
 			if (n == VACANT)
@@ -1660,6 +1661,7 @@ public class IBSDPopulation extends IBSPopulation {
 			mean[n] = count == 0 ? Double.NaN : accuTypeScores[n] / count;
 		}
 		mean[nTraits] = sum / getPopulationSize();
+		return mean;
 	}
 
 	/**

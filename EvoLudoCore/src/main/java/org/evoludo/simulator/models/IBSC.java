@@ -70,13 +70,13 @@ public class IBSC extends IBS implements Continuous {
 	}
 
 	@Override
-	public double[] getTraitMin(int id) {
-		return getIBSMCPopulation(id).getTraitMin();
+	public double[] getTraitRangeMin(int id) {
+		return getIBSMCPopulation(id).getTraitRangeMin();
 	}
 
 	@Override
-	public double[] getTraitMax(int id) {
-		return getIBSMCPopulation(id).getTraitMax();
+	public double[] getTraitRangeMax(int id) {
+		return getIBSMCPopulation(id).getTraitRangeMax();
 	}
 
 	@Override

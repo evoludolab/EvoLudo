@@ -3766,10 +3766,11 @@ public abstract class IBSPopulation {
 	 * by GUI to visualize the current state of this IBS model.
 	 * 
 	 * @param mean the array for returning the trait values
+	 * @return the array {@code mean} containing the mean trait values
 	 * 
 	 * @see Model#getMeanTraits(int, double[])
 	 */
-	public abstract void getMeanTraits(double[] mean);
+	public abstract double[] getMeanTraits(double[] mean);
 
 	/**
 	 * Returns the traits of all individuals in this population coded as colors in
@@ -3794,10 +3795,11 @@ public abstract class IBSPopulation {
 	 * series was started through {@link #init()} or {@link #reset()}.
 	 * 
 	 * @param mean the array for storing the mean fitness values
+	 * @return the array {@code mean} containing the mean fitness values
 	 * 
 	 * @see Model#getMeanFitness(int, double[])
 	 */
-	public abstract void getMeanFitness(double[] mean);
+	public abstract double[] getMeanFitness(double[] mean);
 
 	/**
 	 * Returns the fitness of all individuals in this population coded as colors in

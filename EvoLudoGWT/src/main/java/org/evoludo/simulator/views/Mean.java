@@ -156,8 +156,8 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 						// continuous module with single trait on graph (single species, for now)
 						style.yLabel = model.getMeanName(idx);
 						style.percentY = false;
-						style.yMin = cmodel.getTraitMin(0)[idx];
-						style.yMax = cmodel.getTraitMax(0)[idx];
+						style.yMin = cmodel.getTraitRangeMin(0)[idx];
+						style.yMax = cmodel.getTraitRangeMax(0)[idx];
 						Color color = module.getMeanColors()[idx];
 						String[] traitcolors = new String[3];
 						traitcolors[0] = ColorMapCSS.Color2Css(color); // mean
