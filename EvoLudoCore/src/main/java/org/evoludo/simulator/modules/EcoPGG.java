@@ -357,16 +357,18 @@ public class EcoPGG extends Discrete implements Payoffs,
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {
 			// NOTE: data[0] is time!
-			point.x = 1.0 - data[VACANT + 1];
-			point.y = Math.min(1.0, 1.0 - data[DEFECT + 1] / (1.0 - data[VACANT + 1]));
+			point.set(1.0 - data[VACANT + 1],
+					Math.min(1.0, 1.0 - data[DEFECT + 1] / (1.0 - data[VACANT + 1])));
 			return true;
 		}
 
 		@Override
 		public boolean phase2Data(Point2D point, double[] data) {
-			data[VACANT] = 1.0 - point.x;
-			data[DEFECT] = point.x * (1.0 - point.y);
-			data[COOPERATE] = point.x * point.y;
+			double x = point.getX();
+			double y = point.getY();
+			data[VACANT] = 1.0 - x;
+			data[DEFECT] = x * (1.0 - y);
+			data[COOPERATE] = x * y;
 			return true;
 		}
 

@@ -222,7 +222,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		g.save();
 		g.scale(scale, scale);
 		clearCanvas();
-		g.translate(bounds.getX() - viewCorner.x, bounds.getY() - viewCorner.y);
+		g.translate(bounds.getX() - viewCorner.getX(), bounds.getY() - viewCorner.getY());
 		g.scale(zoomFactor, zoomFactor);
 		g.save();
 		double h = bounds.getHeight();
@@ -263,8 +263,8 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 				double pt = prev[0];
 				map.data2Phase(prev, nextPt);
 				if (!Double.isNaN(ct))
-					strokeLine((nextPt.x - style.xMin) * xScale, (nextPt.y - style.yMin) * yScale, //
-							(currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale);
+					strokeLine((nextPt.getX() - style.xMin) * xScale, (nextPt.getY() - style.yMin) * yScale, //
+							(currPt.getX() - style.xMin) * xScale, (currPt.getY() - style.yMin) * yScale);
 				ct = pt;
 				Point2D swap = currPt;
 				currPt = nextPt;
@@ -275,11 +275,12 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			// mark start and end points of trajectory
 			map.data2Phase(init, currPt);
 			g.setFillStyle(style.startColor);
-			fillCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
+			fillCircle((currPt.getX() - style.xMin) * xScale, (currPt.getY() - style.yMin) * yScale, style.markerSize);
 			if (!buffer.isEmpty()) {
 				map.data2Phase(buffer.last(), currPt);
 				g.setFillStyle(style.endColor);
-				fillCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
+				fillCircle((currPt.getX() - style.xMin) * xScale, (currPt.getY() - style.yMin) * yScale,
+						style.markerSize);
 			}
 		}
 		if (markers != null) {
@@ -290,11 +291,13 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 				String mcolor = markerColors[n++ % nMarkers];
 				if (mark[0] > 0.0) {
 					g.setFillStyle(mcolor);
-					fillCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
+					fillCircle((currPt.getX() - style.xMin) * xScale, (currPt.getY() - style.yMin) * yScale,
+							style.markerSize);
 				} else {
 					g.setLineWidth(style.lineWidth);
 					g.setStrokeStyle(mcolor);
-					strokeCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
+					strokeCircle((currPt.getX() - style.xMin) * xScale, (currPt.getY() - style.yMin) * yScale,
+							style.markerSize);
 				}
 			}
 		}
@@ -394,8 +397,8 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 * @param y the {@code y}-coordinate on screen
 	 */
 	private void processInitXY(double x, double y) {
-		int sx = (int) ((viewCorner.x + x - bounds.getX()) / zoomFactor + 0.5);
-		int sy = (int) ((viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5);
+		int sx = (int) ((viewCorner.getX() + x - bounds.getX()) / zoomFactor + 0.5);
+		int sy = (int) ((viewCorner.getY() + y - bounds.getY()) / zoomFactor + 0.5);
 		if (!inside(sx, sy))
 			return;
 		double ux = style.xMin + sx / bounds.getWidth() * (style.xMax - style.xMin);
@@ -424,8 +427,8 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 
 	@Override
 	public String getTooltipAt(int x, int y) {
-		int sx = (int) ((viewCorner.x + x - bounds.getX()) / zoomFactor + 0.5);
-		int sy = (int) ((viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5);
+		int sx = (int) ((viewCorner.getX() + x - bounds.getX()) / zoomFactor + 0.5);
+		int sy = (int) ((viewCorner.getY() + y - bounds.getY()) / zoomFactor + 0.5);
 		if (!inside(sx, sy))
 			return null;
 		double ux = style.xMin + sx / bounds.getWidth() * (style.xMax - style.xMin);
@@ -498,9 +501,9 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			map.data2Phase(data, point);
 			export.append(Formatter.format(data[0], 8))
 					.append(", ")
-					.append(Formatter.format(point.x, 8))
+					.append(Formatter.format(point.getX(), 8))
 					.append(", ")
-					.append(Formatter.format(point.y, 8))
+					.append(Formatter.format(point.getY(), 8))
 					.append("\n");
 		}
 	}
@@ -592,22 +595,23 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {
 			// NOTE: data[0] is time
-			point.x = data[stateX[0] + 1];
+			double x = data[stateX[0] + 1];
 			int nx = stateX.length;
 			if (nx > 1) {
 				for (int n = 1; n < nx; n++)
-					point.x += data[stateX[n] + 1];
+					x += data[stateX[n] + 1];
 			}
-			minX = Math.min(minX, point.x);
-			maxX = Math.max(maxX, point.x);
-			point.y = data[stateY[0] + 1];
+			minX = Math.min(minX, x);
+			maxX = Math.max(maxX, x);
+			double y = data[stateY[0] + 1];
 			int ny = stateY.length;
 			if (ny > 1) {
 				for (int n = 1; n < ny; n++)
-					point.y += data[stateY[n] + 1];
+					y += data[stateY[n] + 1];
 			}
-			minY = Math.min(minY, point.y);
-			maxY = Math.max(maxY, point.y);
+			minY = Math.min(minY, y);
+			maxY = Math.max(maxY, y);
+			point.set(x, y);
 			return true;
 		}
 
@@ -619,8 +623,8 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 				return false;
 			// conversion only possible if each phase plane axis represents a single
 			// dynamical variable, i.e. no aggregates
-			data[stateX[0]] = point.x;
-			data[stateY[0]] = point.y;
+			data[stateX[0]] = point.getX();
+			data[stateY[0]] = point.getY();
 			return true;
 		}
 

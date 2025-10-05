@@ -78,10 +78,10 @@ public class GlassLayer extends JComponent {
 		int xshift = canvas.x - margin + 1;
 		int yshift = canvas.y - margin + 1;
 		Point2D s = view.getStart();
-		g.fillOval(xshift + (int) s.x, yshift + (int) s.y, RADIUS, RADIUS);
+		g.fillOval(xshift + (int) s.getX(), yshift + (int) s.getY(), RADIUS, RADIUS);
 		g.setColor(Color.red);
 		Point2D p = view.getState();
-		g.fillOval(xshift + (int) p.x, yshift + (int) p.y, RADIUS, RADIUS);
+		g.fillOval(xshift + (int) p.getX(), yshift + (int) p.getY(), RADIUS, RADIUS);
 	}
 
 	@Override

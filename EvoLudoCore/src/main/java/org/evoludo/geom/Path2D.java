@@ -285,6 +285,15 @@ public class Path2D {
 	}
 
 	/**
+	 * Adds point {@code pt} to the path by moving to the specified location.
+	 *
+	 * @param pt the specified point
+	 */
+	public final synchronized void moveTo(Point2D pt) {
+		moveTo(pt.getX(), pt.getY());
+	}
+
+	/**
 	 * Adds a point to the path by moving to the specified
 	 * coordinates specified in double precision.
 	 *
@@ -302,6 +311,16 @@ public class Path2D {
 			doubleCoords[numCoords++] = x;
 			doubleCoords[numCoords++] = y;
 		}
+	}
+
+	/**
+	 * Adds point {@code pt} to the path by drawing a stright line to the specified
+	 * location.
+	 *
+	 * @param pt the specified point
+	 */
+	public final synchronized void lineTo(Point2D pt) {
+		lineTo(pt.getX(), pt.getY());
 	}
 
 	/**

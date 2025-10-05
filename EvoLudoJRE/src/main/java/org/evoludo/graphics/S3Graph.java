@@ -138,7 +138,7 @@ public class S3Graph extends AbstractGraph {
 		data.reset();
 		if (doSVG) {
 			S3ToCartesian(data.state, q);
-			svgPlot.moveTo(q.x, q.y);
+			svgPlot.moveTo(q.getX(), q.getY());
 		}
 		super.reinit();
 	}
@@ -166,7 +166,7 @@ public class S3Graph extends AbstractGraph {
 		super.clear();
 		if (doSVG) {
 			S3ToCartesian(data.state, q);
-			svgPlot.moveTo(q.x, q.y);
+			svgPlot.moveTo(q.getX(), q.getY());
 		}
 	}
 
@@ -187,7 +187,7 @@ public class S3Graph extends AbstractGraph {
 		S3ToCartesian(data.state, q);
 		if (data.time <= timestamp) {
 			if (doSVG)
-				svgPlot.moveTo(q.x, q.y);
+				svgPlot.moveTo(q.getX(), q.getY());
 			return; // up to date
 		}
 		timestamp = data.time;
@@ -198,13 +198,13 @@ public class S3Graph extends AbstractGraph {
 			// S3ToCartesian(data.state, q);
 			g2d.setStroke(style.lineStroke);
 			g2d.setColor(Color.black);
-			g2d.drawLine((int) p.x, (int) p.y, (int) q.x, (int) q.y);
+			g2d.drawLine((int) p.getX(), (int) p.getY(), (int) q.getX(), (int) q.getY());
 			if (doSVG)
-				svgPlot.lineTo(q.x, q.y);
+				svgPlot.lineTo(q.getX(), q.getY());
 			return;
 		}
 		if (doSVG)
-			svgPlot.moveTo(q.x, q.y);
+			svgPlot.moveTo(q.getX(), q.getY());
 	}
 
 	// set initial frequency with double-click
@@ -275,8 +275,8 @@ public class S3Graph extends AbstractGraph {
 
 	private Point2D S3ToCartesian(double[] s3, Point2D pt) {
 		// c: s3[2], d: s3[1], l: s3[0]
-		pt.x = (s3[order[1]] - s3[order[0]] + 1.0) * 0.5 * canvas.width;
-		pt.y = (1.0 - s3[order[2]]) * canvas.height;
+		pt.set((s3[order[1]] - s3[order[0]] + 1.0) * 0.5 * canvas.width,
+				(1.0 - s3[order[2]]) * canvas.height);
 		return pt;
 	}
 

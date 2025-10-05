@@ -435,8 +435,8 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {
 			// NOTE: data[0] is time!
-			point.x = data[COOPERATE_RICH + 1] + data[COOPERATE_POOR + 1];
-			point.y = data[COOPERATE_RICH + 1] + data[DEFECT_RICH + 1];
+			point.set(data[COOPERATE_RICH + 1] + data[COOPERATE_POOR + 1],
+					data[COOPERATE_RICH + 1] + data[DEFECT_RICH + 1]);
 			return true;
 		}
 
@@ -444,10 +444,12 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 		public boolean phase2Data(Point2D point, double[] data) {
 			// mapping: xr=x*a+m, xp=x(1-a)-m, yr=(1-x)a-m, yp=(1-x)(1-a)+m
 			// assume no linkage, i.e. m=0
-			data[COOPERATE_RICH] = point.x * point.y;
-			data[COOPERATE_POOR] = point.x * (1.0 - point.y);
-			data[DEFECT_RICH] = (1.0 - point.x) * point.y;
-			data[DEFECT_POOR] = (1.0 - point.x) * (1.0 - point.y);
+			double x = point.getX();
+			double y = point.getY();
+			data[COOPERATE_RICH] = x * y;
+			data[COOPERATE_POOR] = x * (1.0 - y);
+			data[DEFECT_RICH] = (1.0 - x) * y;
+			data[DEFECT_POOR] = (1.0 - x) * (1.0 - y);
 			return true;
 		}
 

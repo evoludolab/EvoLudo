@@ -79,7 +79,7 @@ public class ParaGraph extends AbstractGraph {
 		((StateGraphListener) controller).getData(data, id);
 		data.reset();
 		if (doSVG)
-			svgPlot.moveTo(data.now.x * canvas.width, data.now.y * canvas.height);
+			svgPlot.moveTo(data.now.getX() * canvas.width, data.now.getY() * canvas.height);
 		super.reinit();
 	}
 
@@ -97,7 +97,7 @@ public class ParaGraph extends AbstractGraph {
 	public void clear() {
 		super.clear();
 		if (doSVG)
-			svgPlot.moveTo(data.now.x * canvas.width, data.now.y * canvas.height);
+			svgPlot.moveTo(data.now.getX() * canvas.width, data.now.getY() * canvas.height);
 	}
 
 	@Override
@@ -110,21 +110,23 @@ public class ParaGraph extends AbstractGraph {
 	public void plot(Graphics2D g2d) {
 		if (data.time <= timestamp) {
 			if (doSVG)
-				svgPlot.moveTo(data.now.x * canvas.width, data.now.y * canvas.height);
+				svgPlot.moveTo(data.now.getX() * canvas.width, data.now.getY() * canvas.height);
 			return; // up to date
 		}
 		timestamp = data.time;
 		if (data.connect) {
 			g2d.setStroke(style.lineStroke);
 			g2d.setColor(Color.black);
-			double x = data.now.x * canvas.width, y = data.now.y * canvas.height;
-			g2d.drawLine((int) (data.then.x * canvas.width), (int) (data.then.y * canvas.height), (int) x, (int) y);
+			double x = data.now.getX() * canvas.width;
+			double y = data.now.getY() * canvas.height;
+			g2d.drawLine((int) (data.then.getX() * canvas.width), (int) (data.then.getY() * canvas.height), (int) x,
+					(int) y);
 			if (doSVG)
 				svgPlot.lineTo(x, y);
 			return;
 		}
 		if (doSVG)
-			svgPlot.moveTo(data.now.x * canvas.width, data.now.y * canvas.height);
+			svgPlot.moveTo(data.now.getX() * canvas.width, data.now.getY() * canvas.height);
 	}
 
 	// set initial frequency with double-click
@@ -166,15 +168,15 @@ public class ParaGraph extends AbstractGraph {
 
 	@Override
 	public Point2D getState() {
-		s.x = (int) (data.now.x * canvas.width);
-		s.y = (int) (data.now.y * canvas.height);
+		s.set((int) (data.now.getX() * canvas.width),
+				(int) (data.now.getY() * canvas.height));
 		return s;
 	}
 
 	@Override
 	public Point2D getStart() {
-		s.x = (int) (data.origin.x * canvas.width);
-		s.y = (int) (data.origin.y * canvas.height);
+		s.set((int) (data.origin.getX() * canvas.width),
+				(int) (data.origin.getY() * canvas.height));
 		return s;
 	}
 }

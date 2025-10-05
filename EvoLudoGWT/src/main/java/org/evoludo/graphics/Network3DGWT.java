@@ -138,7 +138,7 @@ public class Network3DGWT extends Network3D {
 					int[] neighs = geometry.out[i];
 					int nn = geometry.kout[i];
 					Node3D fp = nodes[i];
-					Vector3 focal = new Vector3(fp.x, fp.y, fp.z);
+					Vector3 focal = new Vector3(fp.getX(), fp.getY(), fp.getZ());
 					for (int j = 0; j < nn; j++) {
 						int k = neighs[j];
 						// check if link was already drawn
@@ -146,7 +146,7 @@ public class Network3DGWT extends Network3D {
 							continue;
 						lines.add(focal);
 						Node3D np = nodes[k];
-						lines.add(new Vector3(np.x, np.y, np.z));
+						lines.add(new Vector3(np.getX(), np.getY(), np.getZ()));
 					}
 				}
 			} else {
@@ -172,9 +172,9 @@ public class Network3DGWT extends Network3D {
 						nodeidx -= k;
 					}
 					Node3D ap = nodes[a];
-					lines.add(new Vector3(ap.x, ap.y, ap.z));
+					lines.add(new Vector3(ap.getX(), ap.getY(), ap.getZ()));
 					Node3D bp = nodes[geometry.out[a][nodeidx]];
-					lines.add(new Vector3(bp.x, bp.y, bp.z));
+					lines.add(new Vector3(bp.getX(), bp.getY(), bp.getZ()));
 				}
 			}
 		} else {
@@ -187,7 +187,7 @@ public class Network3DGWT extends Network3D {
 					int[] neighs = geometry.out[i];
 					int nn = geometry.kout[i];
 					Node3D fp = nodes[i];
-					Vector3 focal = new Vector3(fp.x, fp.y, fp.z);
+					Vector3 focal = new Vector3(fp.getX(), fp.getY(), fp.getZ());
 					for (int j = 0; j < nn; j++) {
 						int k = neighs[j];
 						if (geometry.isNeighborOf(k, i)) {
@@ -197,7 +197,7 @@ public class Network3DGWT extends Network3D {
 							// draw link in black
 							lines.add(focal);
 							Node3D np = nodes[k];
-							lines.add(new Vector3(np.x, np.y, np.z));
+							lines.add(new Vector3(np.getX(), np.getY(), np.getZ()));
 							colors.add(ColorMap3D.UNDIRECTED);
 							colors.add(ColorMap3D.UNDIRECTED);
 							continue;
@@ -205,7 +205,7 @@ public class Network3DGWT extends Network3D {
 						// directed link - draw link with bright tip
 						lines.add(focal);
 						Node3D np = nodes[k];
-						lines.add(new Vector3(np.x, np.y, np.z));
+						lines.add(new Vector3(np.getX(), np.getY(), np.getZ()));
 						colors.add(ColorMap3D.DIRECTED_SRC);
 						colors.add(ColorMap3D.DIRECTED_DST);
 					}
@@ -235,9 +235,9 @@ public class Network3DGWT extends Network3D {
 					}
 					// draw all links as directed ones
 					Node3D ap = nodes[a];
-					lines.add(new Vector3(ap.x, ap.y, ap.z));
+					lines.add(new Vector3(ap.getX(), ap.getY(), ap.getZ()));
 					Node3D bp = nodes[geometry.out[a][nodeidx]];
-					lines.add(new Vector3(bp.z, bp.y, bp.z));
+					lines.add(new Vector3(bp.getX(), bp.getY(), bp.getZ()));
 					colors.add(ColorMap3D.DIRECTED_SRC);
 					colors.add(ColorMap3D.DIRECTED_DST);
 				}

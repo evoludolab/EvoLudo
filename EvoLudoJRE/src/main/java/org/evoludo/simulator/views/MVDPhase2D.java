@@ -125,7 +125,7 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 		Point2D now = new Point2D();
 		data.time = model.getUpdates();
 		data.connect = map.data2Phase(mean, now);
-		data.now.setLocation(now.x, 1.0 - now.y);
+		data.now.setLocation(now.getX(), 1.0 - now.getY());
 	}
 
 	// retire setting of initial state in phase planes (outdated JRE)
@@ -184,7 +184,7 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 	@Override
 	public String getToolTipText(Point2D loc, int tag) {
 		if (map instanceof BasicTooltipProvider)
-			return "<html>" + ((BasicTooltipProvider) map).getTooltipAt(loc.x, loc.y);
+			return "<html>" + ((BasicTooltipProvider) map).getTooltipAt(loc.getX(), loc.getY());
 		return null;
 	}
 
@@ -204,16 +204,18 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {
 			// NOTE: data[0] is time!
-			point.x = 1.0 - data[3];
-			point.y = Math.min(1.0, 1.0 - data[1] / (1.0 - data[3]));
+			point.set(1.0 - data[3],
+					Math.min(1.0, 1.0 - data[1] / (1.0 - data[3])));
 			return true;
 		}
 
 		@Override
 		public boolean phase2Data(Point2D point, double[] data) {
-			data[2] = 1.0 - point.x;
-			data[1] = point.x * (1.0 - point.y);
-			data[0] = point.x * point.y;
+			double x = point.getX();
+			double y = point.getY();
+			data[2] = 1.0 - x;
+			data[1] = x * (1.0 - y);
+			data[0] = x * y;
 			return true;
 		}
 

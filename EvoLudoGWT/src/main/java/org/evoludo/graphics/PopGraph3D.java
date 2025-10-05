@@ -441,10 +441,8 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		for (Mesh mesh : spheres) {
 			Node3D node = nodes[k];
 			Vector3 vec = mesh.getPosition();
-			vec.setX(node.x);
-			vec.setY(node.y);
-			vec.setZ(node.z);
-			double radius = 2.0 * node.r / Network3D.UNIVERSE_RADIUS;
+			vec.set(node.getX(), node.getY(), node.getZ());
+			double radius = 2.0 * node.getR() / Network3D.UNIVERSE_RADIUS;
 			vec = mesh.getScale();
 			vec.setX(radius);
 			vec.setY(radius);

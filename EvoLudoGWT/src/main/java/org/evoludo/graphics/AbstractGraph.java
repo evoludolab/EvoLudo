@@ -33,6 +33,7 @@ package org.evoludo.graphics;
 import java.util.List;
 import java.util.logging.Logger;
 
+import org.evoludo.geom.Node2D;
 import org.evoludo.geom.Path2D;
 import org.evoludo.geom.PathIterator;
 import org.evoludo.geom.Point2D;
@@ -858,8 +859,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @return the converted coordinates
 	 */
 	public Point2D convertToScaledCoordinates(int x, int y, Point2D dest) {
-		dest.x = (x - element.getOffsetLeft() - bounds.getX() - 0.5) / bounds.getWidth();
-		dest.y = 1.0 - (y - element.getOffsetTop() - bounds.getY()) / bounds.getHeight();
+		dest.set((x - element.getOffsetLeft() - bounds.getX() - 0.5) / bounds.getWidth(),
+				1.0 - (y - element.getOffsetTop() - bounds.getY()) / bounds.getHeight());
 		return dest;
 	}
 
@@ -1308,6 +1309,24 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
+	 * Draw the outline of the 2D node.
+	 * 
+	 * @param node the node to draw
+	 */
+	protected void strokeCircle(Node2D node) {
+		strokeCircle(node.getX(), node.getY(), node.getR());
+	}
+
+	/**
+	 * Draw the outline of a circle at {@code point} with {@code radius}.
+	 * 
+	 * @param point the node to draw
+	 */
+	protected void strokeCircle(Point2D point, double radius) {
+		strokeCircle(point.getX(), point.getY(), radius);
+	}
+
+	/**
 	 * Draw the circle with the center at {@code (x,y)} and radius {@code radius}.
 	 * 
 	 * @param x      the {@code x}-coordinate of the center
@@ -1317,6 +1336,24 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected void strokeCircle(double x, double y, double radius) {
 		sketchCircle(x, y, radius);
 		g.stroke();
+	}
+
+	/**
+	 * Draw the filled 2D node.
+	 * 
+	 * @param node the node to draw
+	 */
+	protected void fillCircle(Node2D node) {
+		fillCircle(node.getX(), node.getY(), node.getR());
+	}
+
+	/**
+	 * Draw a filled circle at {@code point} with {@code radius}.
+	 * 
+	 * @param point the node to draw
+	 */
+	protected void fillCircle(Point2D point, double radius) {
+		fillCircle(point.getX(), point.getY(), radius);
 	}
 
 	/**
@@ -1343,6 +1380,16 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		g.beginPath();
 		g.arc(x, y, radius, 0.0, TWOPI, true);
 		g.closePath();
+	}
+
+	/**
+	 * Draw a line from point {@code a} to {@code b)}.
+	 * 
+	 * @param a the start point
+	 * @param b the end point
+	 */
+	protected void strokeLine(Point2D a, Point2D b) {
+		strokeLine(a.getX(), a.getY(), b.getX(), b.getY());
 	}
 
 	/**
@@ -1470,10 +1517,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	public void zoom() {
 		zoomFactor = 1.0;
-		if (viewCorner != null) {
-			viewCorner.x = 0.0;
-			viewCorner.y = 0.0;
-		}
+		if (viewCorner != null)
+			viewCorner.set(0.0, 0.0);
 	}
 
 	/**
@@ -1508,9 +1553,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void zoom(double zoom, int x, int y) {
 		if (hasMessage)
 			return;
-		zoom(zoom, (viewCorner.x + x - bounds.getX()) / (bounds.getWidth() *
+		zoom(zoom, (viewCorner.getX() + x - bounds.getX()) / (bounds.getWidth() *
 				zoomFactor),
-				(viewCorner.y + y - bounds.getY()) / (bounds.getHeight() * zoomFactor));
+				(viewCorner.getY() + y - bounds.getY()) / (bounds.getHeight() * zoomFactor));
 	}
 
 	/**
@@ -1534,9 +1579,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			return;
 		double w = bounds.getWidth();
 		double h = bounds.getHeight();
-		viewCorner.set(Math.min(w * (newZoomFactor - 1.0), Math.max(0, viewCorner.x +
+		viewCorner.set(Math.min(w * (newZoomFactor - 1.0), Math.max(0, viewCorner.getX() +
 				w * dz * fx)),
-				Math.min(h * (newZoomFactor - 1.0), Math.max(0, viewCorner.y + h * dz *
+				Math.min(h * (newZoomFactor - 1.0), Math.max(0, viewCorner.getY() + h * dz *
 						fy)));
 		zoomFactor = newZoomFactor;
 		if (zoomInertiaTimer.isRunning())
@@ -1556,8 +1601,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void shift(int dx, int dy) {
 		if (hasMessage)
 			return;
-		viewCorner.set(Math.min(getOffsetWidth() * (zoomFactor - 1.0), Math.max(0, viewCorner.x + dx)),
-				Math.min(getOffsetHeight() * (zoomFactor - 1.0), Math.max(0, viewCorner.y + dy)));
+		viewCorner.set(Math.min(getOffsetWidth() * (zoomFactor - 1.0), Math.max(0, viewCorner.getX() + dx)),
+				Math.min(getOffsetHeight() * (zoomFactor - 1.0), Math.max(0, viewCorner.getY() + dy)));
 		paint(true);
 	}
 

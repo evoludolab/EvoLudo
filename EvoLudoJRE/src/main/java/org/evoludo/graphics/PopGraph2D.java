@@ -657,7 +657,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 					case MOUSE_DRAG_DRAW:
 						Node2D myNode = network.get(refnode);
 						double rr = network.getRadius();
-						double r = myNode.r * 0.5; // radius is actually the diameter...
+						double r = myNode.getR() * 0.5; // radius is actually the diameter...
 						double iscale = (rr + rr) / canvas.width; // same as height in this case
 						// clip mouse position relative to interior of canvas
 						loc.x = Math.max(0, Math.min(canvas.width, loc.x - canvas.x));
@@ -665,8 +665,8 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 						double dx = (mouse.x - loc.x) * iscale;
 						double dy = (mouse.y - loc.y) * iscale;
 						rr -= r;
-						double x = Math.max(-rr, Math.min(myNode.x - dx, rr));
-						double y = Math.max(-rr, Math.min(myNode.y - dy, rr));
+						double x = Math.max(-rr, Math.min(myNode.getX() - dx, rr));
+						double y = Math.max(-rr, Math.min(myNode.getY() - dy, rr));
 						myNode.set(x, y);
 						mouse.setLocation(loc);
 						repaint();
@@ -990,8 +990,9 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 						current = next;
 					}
 					Node2D node = nodes[k];
-					double rr2 = node.r + node.r;
-					circle.setFrame(node.x - node.r, node.y - node.r, rr2, rr2);
+					double rk = node.getR();
+					double rr2 = rk + rk;
+					circle.setFrame(node.getX() - rk, node.getY() - rk, rr2, rr2);
 					g.fill(circle);
 				}
 				g.setTransform(at);
@@ -1158,7 +1159,8 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 				// in order to get the top node we need to start from the back
 				for (int k = nNodes - 1; k >= 0; k--) {
 					Node2D hit = nodes[k];
-					if (mousecoord.distance2(hit) <= hit.r * hit.r)
+					double rk = hit.getR();
+					if (mousecoord.distance2(hit) <= rk * rk)
 						return k;
 				}
 				return FINDNODEAT_OUT_OF_BOUNDS;

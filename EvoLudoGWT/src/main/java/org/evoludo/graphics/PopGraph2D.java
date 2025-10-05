@@ -358,8 +358,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				g.setFillStyle(next);
 				current = next;
 			}
-			Node2D node = nodes[k];
-			fillCircle(node.x, node.y, node.r);
+			fillCircle(nodes[k]);
 		}
 		g.restore();
 		drawFrame(0, 0, su);
@@ -377,7 +376,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		g.save();
 		g.scale(scale, scale);
 		clearCanvas();
-		g.translate(bounds.getX() - viewCorner.x, bounds.getY() - viewCorner.y);
+		g.translate(bounds.getX() - viewCorner.getX(), bounds.getY() - viewCorner.getY());
 		g.scale(zoomFactor, zoomFactor);
 		return true;
 	}
@@ -647,8 +646,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		if (!bounds.contains(x, y))
 			return FINDNODEAT_OUT_OF_BOUNDS;
 
-		int sx = (int) ((viewCorner.x + x - bounds.getX()) / zoomFactor + 0.5);
-		int sy = (int) ((viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5);
+		int sx = (int) ((viewCorner.getX() + x - bounds.getX()) / zoomFactor + 0.5);
+		int sy = (int) ((viewCorner.getY() + y - bounds.getY()) / zoomFactor + 0.5);
 
 		Geometry.Type type = geometry.getType();
 		if (isHierarchy)
@@ -738,9 +737,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				// drawn later (on top)
 				// in order to get the top node we need to start from the back
 				for (int k = network.nNodes - 1; k >= 0; k--) {
-					Node2D hit = nodes[k];
-					rr = hit.r;
-					if (mousecoord.distance2(hit) <= rr * rr)
+					if (nodes[k].isHit(mousecoord))
 						return k;
 				}
 				return FINDNODEAT_OUT_OF_BOUNDS;
@@ -919,8 +916,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 					yaspect = 1.0;
 				}
 				Node2D node = network.get(nodeidx);
-				node.set(Math.max(-rr * xaspect + node.r, Math.min(rr * xaspect - node.r, node.x - dx * iscale)),
-						Math.max(-rr * yaspect + node.r, Math.min(rr * yaspect - node.r, node.y - dy * iscale)));
+				double r = node.getR();
+				node.set(Math.max(-rr * xaspect + r, Math.min(rr * xaspect - r, node.getX() - dx * iscale)),
+						Math.max(-rr * yaspect + r, Math.min(rr * yaspect - r, node.getY() - dy * iscale)));
 				network.linkNodes();
 				drawNetwork();
 				return;

@@ -245,7 +245,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		g.save();
 		g.scale(scale, scale);
 		clearCanvas();
-		g.translate(bounds.getX() - viewCorner.x, bounds.getY() - viewCorner.y);
+		g.translate(bounds.getX() - viewCorner.getX(), bounds.getY() - viewCorner.getY());
 		g.scale(zoomFactor, zoomFactor);
 
 		Point2D prevPt = new Point2D();
@@ -261,16 +261,14 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			double[] current = i.next();
 			double ct = current[0];
 			map.data2S3(current, currPt);
-			currPt.x *= w;
-			currPt.y *= h;
+			currPt.scale(w, h);
 			while (i.hasNext()) {
 				double[] prev = i.next();
 				double pt = prev[0];
 				map.data2S3(prev, prevPt);
-				prevPt.x *= w;
-				prevPt.y *= h;
+				prevPt.scale(w, h);
 				if (!Double.isNaN(ct))
-					strokeLine(prevPt.x, prevPt.y, currPt.x, currPt.y);
+					strokeLine(prevPt, currPt);
 				ct = pt;
 				Point2D swap = currPt;
 				currPt = prevPt;
@@ -281,11 +279,11 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		if (withMarkers) {
 			g.setFillStyle(style.startColor);
 			map.data2S3(init, prevPt);
-			fillCircle(prevPt.x * w, prevPt.y * h, style.markerSize);
+			fillCircle(prevPt.scale(w, h), style.markerSize);
 			if (!buffer.isEmpty()) {
 				g.setFillStyle(style.endColor);
 				map.data2S3(buffer.last(), currPt);
-				fillCircle(currPt.x * w, currPt.y * h, style.markerSize);
+				fillCircle(currPt.scale(w, h), style.markerSize);
 			}
 		}
 		if (markers != null) {
@@ -296,11 +294,11 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 				String mcolor = markerColors[n++ % nMarkers];
 				if (mark[0] > 0.0) {
 					g.setFillStyle(mcolor);
-					fillCircle(currPt.x * w, currPt.y * h, style.markerSize);
+					fillCircle(currPt.scale(w, h), style.markerSize);
 				} else {
 					g.setLineWidth(style.lineWidth);
 					g.setStrokeStyle(mcolor);
-					strokeCircle(currPt.x * w, currPt.y * h, style.markerSize);
+					strokeCircle(currPt.scale(w, h), style.markerSize);
 				}
 			}
 		}
@@ -371,18 +369,15 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		w = bounds.getWidth();
 		h = bounds.getHeight();
 		map.data2S3(1.0, 0.0, 0.0, e0);
-		e0.x *= w;
-		e0.y *= h;
+		e0.scale(w, h);
 		map.data2S3(0.0, 1.0, 0.0, e1);
-		e1.x *= w;
-		e1.y *= h;
+		e1.scale(w, h);
 		map.data2S3(0.0, 0.0, 1.0, e2);
-		e2.x *= w;
-		e2.y *= h;
+		e2.scale(w, h);
 		outline.reset();
-		outline.moveTo(e0.x, e0.y);
-		outline.lineTo(e1.x, e1.y);
-		outline.lineTo(e2.x, e2.y);
+		outline.moveTo(e0);
+		outline.lineTo(e1);
+		outline.lineTo(e2);
 		outline.closePath();
 		// outline.lineTo(e0.x, e0.y);
 		// store point only if it is estimated to be at least a few pixels from the
@@ -402,15 +397,9 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		double w = bounds.getWidth();
 		double h = bounds.getHeight();
 		if (style.showFrame) {
-			g.beginPath();
-			g.moveTo(e0.x, e0.y);
-			g.lineTo(e1.x, e1.y);
-			g.lineTo(e2.x, e2.y);
-			g.lineTo(e0.x, e0.y);
-			g.closePath();
 			g.setLineWidth(style.frameWidth);
 			g.setStrokeStyle(style.frameColor);
-			g.stroke();
+			stroke(outline);
 		}
 		if (style.showXLevels) {
 			g.setLineWidth(style.frameWidth);
@@ -422,13 +411,13 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			for (int l = 1; l < sLevels; l++) {
 				map.data2S3(x, 1.0 - x, 0.0, start);
 				map.data2S3(0.0, 1.0 - x, x, end);
-				strokeLine(start.x * w, start.y * h, end.x * w, end.y * h);
+				strokeLine(start.scale(w, h), end.scale(w, h));
 				map.data2S3(0.0, x, 1.0 - x, start);
 				map.data2S3(x, 0.0, 1.0 - x, end);
-				strokeLine(start.x * w, start.y * h, end.x * w, end.y * h);
+				strokeLine(start.scale(w, h), end.scale(w, h));
 				map.data2S3(1.0 - x, 0.0, x, start);
 				map.data2S3(1.0 - x, x, 0.0, end);
-				strokeLine(start.x * w, start.y * h, end.x * w, end.y * h);
+				strokeLine(start.scale(w, h), end.scale(w, h));
 				x += iLevels;
 			}
 		}
@@ -449,24 +438,29 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 				else
 					tick = Formatter.format(1.0 - x, 2);
 				map.data2S3(x, 1.0 - x, 0.0, loc);
-				loc.x *= w;
-				loc.y *= h;
-				strokeLine(loc.x, loc.y, loc.x, loc.y + style.tickLength);
+				loc.scale(w, h);
+				double lx = loc.getX();
+				double ly = loc.getY();
+				strokeLine(lx, ly, lx, ly + style.tickLength);
 				if (style.showXTickLabels)
 					// center tick labels with ticks
-					g.fillText(tick, loc.x - g.measureText(tick).getWidth() * 0.5, loc.y + style.tickLength + 12.5);
+					g.fillText(tick, lx - g.measureText(tick).getWidth() * 0.5, ly + style.tickLength + 12.5);
 				map.data2S3(0.0, x, 1.0 - x, loc);
-				loc.x *= w;
-				loc.y *= h;
-				strokeLine(loc.x, loc.y, loc.x + tx, loc.y - ty);
+				loc.scale(w, h);
+				lx = loc.getX();
+				ly = loc.getY();
+				loc.shift(tx, -ty);
+				strokeLine(lx, ly, loc.getX(), loc.getY());
 				if (style.showXTickLabels)
-					g.fillText(tick, loc.x + tx + 6, loc.y - ty + 3);
+					g.fillText(tick, loc.getX() + 6, loc.getY() + 3);
 				map.data2S3(1.0 - x, 0.0, x, loc);
-				loc.x *= w;
-				loc.y *= h;
-				strokeLine(loc.x, loc.y, loc.x - tx, loc.y - ty);
+				loc.scale(w, h);
+				lx = loc.getX();
+				ly = loc.getY();
+				loc.shift(-tx, -ty);
+				strokeLine(lx, ly, loc.getX(), loc.getY());
 				if (style.showXTickLabels)
-					g.fillText(tick, loc.x - tx - (g.measureText(tick).getWidth() + 6), loc.y - ty + 3);
+					g.fillText(tick, loc.getX() - (g.measureText(tick).getWidth() + 6), loc.getY() + 3);
 				x += iLevels;
 			}
 		}
@@ -481,22 +475,19 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			g.setFillStyle(colors[order[0]]);
 			Point2D loc = new Point2D();
 			map.data2S3(1.0, 0.0, 0.0, loc);
-			loc.x *= w;
-			loc.y *= h;
+			loc.scale(w, h);
 			String label = map.getName(HasS3.CORNER_LEFT);
-			g.fillText(label, loc.x - g.measureText(label).getWidth() * 0.5, loc.y + yshift);
+			g.fillText(label, loc.getX() - g.measureText(label).getWidth() * 0.5, loc.getY() + yshift);
 			g.setFillStyle(colors[order[1]]);
 			map.data2S3(0.0, 1.0, 0.0, loc);
-			loc.x *= w;
-			loc.y *= h;
+			loc.scale(w, h);
 			label = map.getName(HasS3.CORNER_RIGHT);
-			g.fillText(label, loc.x - g.measureText(label).getWidth() * 0.5, loc.y + yshift);
+			g.fillText(label, loc.getX() - g.measureText(label).getWidth() * 0.5, loc.getY() + yshift);
 			g.setFillStyle(colors[order[2]]);
 			map.data2S3(0.0, 0.0, 1.0, loc);
-			loc.x *= w;
-			loc.y *= h;
+			loc.scale(w, h);
 			label = map.getName(HasS3.CORNER_TOP);
-			g.fillText(label, loc.x - g.measureText(label).getWidth() * 0.5, loc.y - 14.5);
+			g.fillText(label, loc.getX() - g.measureText(label).getWidth() * 0.5, loc.getY() - 14.5);
 		}
 		if (style.label != null) {
 			g.setFillStyle(style.labelColor);
@@ -530,7 +521,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @return the scaled coordinate
 	 */
 	double scaledX(double x) {
-		return ((viewCorner.x + x - bounds.getX()) / zoomFactor + 0.5) / (bounds.getWidth() - 1.0);
+		return ((viewCorner.getX() + x - bounds.getX()) / zoomFactor + 0.5) / (bounds.getWidth() - 1.0);
 	}
 
 	/**
@@ -541,7 +532,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @return the scaled coordinate
 	 */
 	double scaledY(double y) {
-		return 1.0 - ((viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5) / (bounds.getHeight() - 1.0);
+		return 1.0 - ((viewCorner.getY() + y - bounds.getY()) / zoomFactor + 0.5) / (bounds.getHeight() - 1.0);
 	}
 
 	/**

@@ -234,11 +234,10 @@ public class S3Map implements BasicTooltipProvider {
 	 */
 	public Point2D data2S3(double s1, double s2, double s3, Point2D p) {
 		// top (c): s3, right (d): s2, left (l): s1
-		p.x = s2 - s1; // [-1, 1]
-		p.y = (s3 - s2 - s1 + 1.0) * 0.5 - 1.0 / 3.0; // [-1/3, 2/3]
+		// x in [-1, 1]; y in [-1/3, 2/3]
+		p.set(s2 - s1, (s3 - s2 - s1 + 1.0) * 0.5 - 1.0 / 3.0);
 		p.scale(s1 + s2 + s3);
-		p.x = (p.x + 1.0) * 0.5;
-		p.y = 2.0 / 3.0 - p.y;
+		p.set((p.getX() + 1.0) * 0.5, 2.0 / 3.0 - p.getY());
 		return p;
 	}
 

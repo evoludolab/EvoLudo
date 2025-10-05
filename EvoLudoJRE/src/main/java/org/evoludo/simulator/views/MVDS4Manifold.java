@@ -167,8 +167,8 @@ public class MVDS4Manifold extends MVAbstract implements StateGraphListener {
 	}
 
 	private Point2D state2coord(double[] s, Point2D p) {
-		p.x = (s[1] + s[2] - s[0] - s[3] + 1.0) / 2.0;
-		p.y = (1.0 - (s[2] + s[3] - s[0] - s[1])) / 2.0;
+		p.set((s[1] + s[2] - s[0] - s[3] + 1.0) / 2.0,
+				(1.0 - (s[2] + s[3] - s[0] - s[1])) / 2.0);
 		return p;
 	}
 
