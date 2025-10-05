@@ -1085,17 +1085,14 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 
 		// draw custom y-axis levels
-		if (style.customYLevels != null) {
-			for (int n = 0; n < style.customYLevels.length; n++) {
-				double level = style.customYLevels[n];
-				if (level > style.yMax || level < style.yMin)
-					continue;
-				// would be nice to draw a dashed line but that seems to be more difficult than
-				// expected...
-				g.setStrokeStyle(style.customLevelColor);
-				level = 0.5 + (1.0 - (level - style.yMin) / (style.yMax - style.yMin)) * h;
-				strokeLine(0.5, level, w, level);
-			}
+		for (double level : style.customYLevels) {
+			if (level > style.yMax || level < style.yMin)
+				continue;
+			// would be nice to draw a dashed line but that seems to be more difficult than
+			// expected...
+			g.setStrokeStyle(style.customLevelColor);
+			level = 0.5 + (1.0 - (level - style.yMin) / (style.yMax - style.yMin)) * h;
+			strokeLine(0.5, level, w, level);
 		}
 
 		// x-axis label
@@ -2183,12 +2180,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		/**
 		 * The array with {@code x}-values to draw custom vertical levels.
 		 */
-		public double[] customXLevels = null;
+		public double[] customXLevels = new double[0];
 
 		/**
 		 * The array with {@code y}-values to draw custom horizontal levels.
 		 */
-		public double[] customYLevels = null;
+		public double[] customYLevels = new double[0];
 
 		/**
 		 * The stroke width of the frame.
@@ -2208,7 +2205,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		/**
 		 * The dashing pattern for a dashed line.
 		 */
-		public int[] solidLine = new int[] {};
+		public int[] solidLine = new int[0];
 
 		/**
 		 * The dashing pattern for a dashed line.

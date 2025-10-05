@@ -203,7 +203,7 @@ public class Moran extends Discrete implements Static,
 		// currently reference levels only available for Moran (birth-death) updates
 		// in IBS models (otherwise ibs is null, see reset(Model)
 		if (!model.getType().isIBS() || !getIBSPopulation().getPopulationUpdate().isMoran())
-			return null;
+			return new double[0];
 		// Note:
 		// - return reference levels for fixation probabilities and times based
 		// on analytical calculations for the Moran process
@@ -213,7 +213,7 @@ public class Moran extends Discrete implements Static,
 			case STATISTICS_FIXATION_TIME:
 				return getReferenceTime(trait);
 			default:
-				return null;
+				return new double[0];
 		}
 	}
 
@@ -285,7 +285,7 @@ public class Moran extends Discrete implements Static,
 			// calculate reference fixation times
 			// numerical evaluations take too long for large populations
 			if (nPopulation > 500)
-				return null;
+				return new double[0];
 			double[] init = new double[nTraits];
 			((org.evoludo.simulator.models.Discrete) model).getInitialTraits(init);
 			int m = (int) (init[MUTANT] * nPopulation);

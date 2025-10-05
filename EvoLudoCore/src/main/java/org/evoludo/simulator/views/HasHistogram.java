@@ -65,7 +65,7 @@ public abstract interface HasHistogram {
 	 * @return the array of levels for reference
 	 */
 	public default double[] getCustomLevels(Data type, int idx) {
-		return null;
+		return new double[0];
 	}
 
 	/**

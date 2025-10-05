@@ -611,7 +611,7 @@ public class Histogram extends AbstractView {
 						style.yLabel = "probability";
 						style.percentY = true;
 						graph.enableAutoscaleYMenu(true);
-						style.customYLevels = null;
+						style.customYLevels = new double[0];
 					} else {
 						if (doStatistics) {
 							if (data == null || data.length != 2 * (nTraits + 1) || data[0].length != nNode)
