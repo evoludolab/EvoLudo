@@ -194,7 +194,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * 
 	 * @see #optimizeMoran
 	 */
-	private link[] activeLinks;
+	private Link[] activeLinks;
 
 	/**
 	 * {@inheritDoc}
@@ -213,9 +213,9 @@ public class IBSDPopulation extends IBSPopulation {
 		if (optimizeMoran && populationUpdate.isMoran()) {
 			int nLinks = (int) (competition.avgOut * nPopulation + 0.5);
 			if (activeLinks == null || activeLinks.length != nLinks) {
-				activeLinks = new link[nLinks];
+				activeLinks = new Link[nLinks];
 				for (int n = 0; n < nLinks; n++)
-					activeLinks[n] = new link();
+					activeLinks[n] = new Link();
 			}
 		} else {
 			// conserve memory
@@ -417,7 +417,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * 
 	 * @see IBSDPopulation#optimizeMoran
 	 */
-	static class link {
+	static class Link {
 
 		/**
 		 * The index of the individual at the tail end of the link.
@@ -456,7 +456,7 @@ public class IBSDPopulation extends IBSPopulation {
 		double randomTestVal = random01() * maxRate; // time rescaling
 		if (randomTestVal < deathRate) {
 			// vacate focal site
-			traitsNext[me] = VACANT + nTraits; // more efficient than setNextTraitAt(me, VACANT);
+			traitsNext[me] = VACANT + nTraits; // more efficient than setNextTraitAt(me, VACANT)
 			updateScoreAt(me, true);
 			if (nPop == 1) {
 				// population went extinct, no more events possible
@@ -1777,17 +1777,17 @@ public class IBSDPopulation extends IBSPopulation {
 	@Override
 	protected boolean doAdjustScores() {
 		switch (playerScoring) {
-			case RESET_ALWAYS:
-			default:
-				// if resetting scores after every update, scores can be adjusted
-				// when interacting all neighbours
-				return interGroup.isSampling(IBSGroup.SamplingType.ALL);
 			case EPHEMERAL:
 				// for ephemeral scoring, scores are never adjusted
 			case RESET_ON_CHANGE:
 				// if scores are reset only on an actual trait change, scores
 				// can never be adjusted
 				return false;
+			case RESET_ALWAYS:
+			default:
+				// if resetting scores after every update, scores can be adjusted
+				// when interacting all neighbours
+				return interGroup.isSampling(IBSGroup.SamplingType.ALL);
 		}
 	}
 

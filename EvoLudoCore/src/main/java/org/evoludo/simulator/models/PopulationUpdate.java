@@ -124,7 +124,7 @@ public class PopulationUpdate {
 	 * @return {@code true} if update is synchronous
 	 */
 	public boolean isSynchronous() {
-		return (type.equals(Type.SYNC)); // TODO add || type.equals(Type.WRIGHT_FISHER));
+		return (type.equals(Type.SYNC)); // TODO add || type.equals(Type.WRIGHT_FISHER))
 	}
 
 	/**

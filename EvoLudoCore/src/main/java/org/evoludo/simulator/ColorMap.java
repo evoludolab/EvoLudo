@@ -93,7 +93,7 @@ public abstract class ColorMap<T extends Object> {
 	 * @return <code>true</code> if translation successful
 	 */
 	public boolean translate(int[] data, T[] color) {
-		throw new Error("ColorMap.translate(int[], T[]) not implemented!");
+		throw new UnsupportedOperationException("ColorMap.translate(int[], T[]) not implemented!");
 	}
 
 	/**
@@ -104,7 +104,7 @@ public abstract class ColorMap<T extends Object> {
 	 * @return the color object
 	 */
 	public T translate(double[] data) {
-		throw new Error("ColorMap.translate(double[]) not implemented!");
+		throw new UnsupportedOperationException("ColorMap.translate(double[]) not implemented!");
 	}
 
 	/**
@@ -123,7 +123,7 @@ public abstract class ColorMap<T extends Object> {
 	 * @return <code>true</code> if translation successful
 	 */
 	public boolean translate(double[] data, T[] color) {
-		throw new Error("ColorMap.translate(double[], T[]) not implemented!");
+		throw new UnsupportedOperationException("ColorMap.translate(double[], T[]) not implemented!");
 	}
 
 	/**
@@ -136,7 +136,7 @@ public abstract class ColorMap<T extends Object> {
 	 * @return <code>true</code> if translation successful
 	 */
 	public boolean translate(double[][] data, T[] color) {
-		throw new Error("ColorMap.translate(double[][], T[]) not implemented!");
+		throw new UnsupportedOperationException("ColorMap.translate(double[][], T[]) not implemented!");
 	}
 
 	/**
@@ -156,7 +156,7 @@ public abstract class ColorMap<T extends Object> {
 	 * @return <code>true</code> if translation successful
 	 */
 	public boolean translate(double[][] data1, double[][] data2, T[] color) {
-		throw new Error("ColorMap.translate(double[][], double[][], T[]) not implemented!");
+		throw new UnsupportedOperationException("ColorMap.translate(double[][], double[][], T[]) not implemented!");
 	}
 
 	/**
@@ -426,7 +426,7 @@ public abstract class ColorMap<T extends Object> {
 		 * @return the color object
 		 */
 		public T translate(double data) {
-			throw new Error("ColorMap.translate(double) not implemented!");
+			throw new UnsupportedOperationException("ColorMap.translate(double) not implemented!");
 		}
 	}
 

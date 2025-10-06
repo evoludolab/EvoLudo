@@ -82,37 +82,31 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	@Override
 	public boolean parse(String args) {
-		boolean log = false;
-		boolean auto = true;
-		if (args != null) {
-			for (String arg : args.split(CLOParser.VECTOR_DELIMITER)) {
-				arg = arg.trim();
-				if (arg.startsWith("log")) {
-					log = true;
-					continue;
-				}
-				if (arg.startsWith("xmin")) {
-					style.xMin = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
-					continue;
-				}
-				if (arg.startsWith("xmax")) {
-					style.xMax = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
-					continue;
-				}
-				if (arg.startsWith("ymin")) {
-					style.yMin = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
-					auto = false;
-					continue;
-				}
-				if (arg.startsWith("ymax")) {
-					style.yMax = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
-					auto = false;
-				}
+		// set defaults
+		style.autoscaleY = true;
+		setLogY(false);
+		if (args != null)
+			parseArgs(args);
+		return true;
+	}
+
+	private void parseArgs(String args) {
+		for (String arg : args.split(CLOParser.VECTOR_DELIMITER)) {
+			arg = arg.trim();
+			if (arg.startsWith("log")) {
+				setLogY(true);
+			} else if (arg.startsWith("xmin")) {
+				style.xMin = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
+			} else if (arg.startsWith("xmax")) {
+				style.xMax = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
+			} else if (arg.startsWith("ymin")) {
+				style.yMin = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
+				style.autoscaleY = false;
+			} else if (arg.startsWith("ymax")) {
+				style.yMax = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
+				style.autoscaleY = false;
 			}
 		}
-		style.autoscaleY = auto;
-		setLogY(log);
-		return true;
 	}
 
 	@Override
@@ -181,49 +175,16 @@ public class LineGraph extends AbstractGraph<double[]>
 			return;
 		}
 		if (style.yMin < 0.0) {
-			// categorically ignore log scale request
-			style.logScaleY = false;
-			if (logY)
-				logger.warning("Log scale requires positive values");
+			noLogY();
 			return;
 		}
 		style.logScaleY = logY;
 		if (!style.autoscaleY)
 			return;
-		double[] min = buffer.min((o1, o2) -> {
-			// ignore time
-			double[] s1 = ArrayMath.drop(o1, 0);
-			double[] s2 = ArrayMath.drop(o2, 0);
-			double m1 = ArrayMath.min(s1);
-			double m2 = ArrayMath.min(s2);
-			// negative values - use linear scale
-			if (!logY || m1 < 0.0 || m2 < 0.0)
-				return Double.compare(m1, m2);
-			// positive values - use log scale
-			if (m1 > 0.0 && m2 > 0.0) {
-				ArrayMath.log10(s1);
-				ArrayMath.log10(s2);
-				m1 = ArrayMath.min(s1);
-				m2 = ArrayMath.min(s2);
-				return Double.compare(m1, m2);
-			}
-			// at least one value is zero - use log scale but ignore zeros
-			m1 = Double.MAX_VALUE;
-			m2 = Double.MAX_VALUE;
-			for (int i = 0; i < s1.length; i++) {
-				if (s1[i] > 0.0)
-					m1 = Math.min(m1, Math.log10(s1[i]));
-				if (s2[i] > 0.0)
-					m2 = Math.min(m2, Math.log10(s2[i]));
-			}
-			return Double.compare(m1, m2);
-		});
+		double[] min = buffer.min(this::compareData);
 		double bufmin = ArrayMath.min(min);
 		if (bufmin < 0.0) {
-			// categorically ignore log scale request
-			style.logScaleY = false;
-			if (logY)
-				logger.warning("Log scale requires positive values");
+			noLogY();
 			return;
 		}
 		if (logY && bufmin == 0.0)
@@ -231,6 +192,35 @@ public class LineGraph extends AbstractGraph<double[]>
 		if (!logY && bufmin > 0.0 && bufmin < 0.01 * style.yMax)
 			bufmin = 0.0;
 		style.yMin = Functions.roundDown(bufmin);
+	}
+
+	private void noLogY() {
+		if (style.logScaleY)
+			logger.warning("Log scale requires positive values");
+		style.logScaleY = false;
+	}
+
+	/**
+	 * Compare two data arrays based on their minimum value (ignoring first entry,
+	 * time). Returns a negative integer, zero, or a positive integer if the minimum
+	 * of the first argument is less than, equal to, or greater than the second,
+	 * respectively.
+	 * 
+	 * @param o1 the first data array
+	 * @param o2 the second data array
+	 * @return a negative integer, zero, or a positive integer
+	 */
+	private int compareData(double[] o1, double[] o2) {
+		// ignore time
+		double t = o1[0];
+		o1[0] = Double.MAX_VALUE;
+		double m1 = ArrayMath.min(o1);
+		o1[0] = t;
+		t = o2[0];
+		o2[0] = Double.MAX_VALUE;
+		double m2 = ArrayMath.min(o2);
+		o2[0] = t;
+		return Double.compare(m1, m2);
 	}
 
 	@Override

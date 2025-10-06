@@ -222,6 +222,8 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 
 	@Override
 	public void update(boolean force) {
+		// no regular updates required
+		// see log.show() to update display
 	}
 
 	/**

@@ -839,7 +839,7 @@ public abstract class IBSPopulation {
 		int pick = random0n(nTot);
 		if (pick + pick > nTot) {
 			pick = nTot - pick - 1;
-			// start search at tail; cannot stop halfway;
+			// start search at tail, cannot stop halfway
 			// vacancies may be concentrated at tail
 			for (int n = nPopulation - 1; n >= 0; n--) {
 				if (isVacantAt(n))
@@ -852,7 +852,7 @@ public abstract class IBSPopulation {
 				}
 			}
 		} else {
-			// start search at head; cannot stop halfway;
+			// start search at head, cannot stop halfway
 			// vacancies may be concentrated at head
 			for (int n = 0; n < nPopulation; n++) {
 				if (isVacantAt(n))
@@ -1007,8 +1007,7 @@ public abstract class IBSPopulation {
 				// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
 				if (excl == maxEffScoreIdx) {
 					// excluding the maximum score can cause issues if it is much larger than the
-					// rest;
-					// need to find the second largest fitness value (note using
+					// rest. need to find the second largest fitness value (note using
 					// mapToFitness(maxScore)
 					// may be even worse because most candidates are rejected
 					double mScore = map2fit.map(second(maxEffScoreIdx));
@@ -1068,8 +1067,7 @@ public abstract class IBSPopulation {
 			// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
 			if (excl == maxEffScoreIdx) {
 				// excluding the maximum score can cause issues if it is much larger than the
-				// rest;
-				// need to find the second largest fitness value (note using
+				// rest, need to find the second largest fitness value (note using
 				// mapToFitness(maxScore)
 				// may be even worse because most candidates are rejected
 				double mScore = map2fit.map(second(maxEffScoreIdx));
@@ -1468,8 +1466,8 @@ public abstract class IBSPopulation {
 			commitTraitAt(me);
 			return;
 		}
-		// constant selection does not require involved score adjustments;
-		// called only under special circumstances, e.g. with optimizeHomo set;
+		// constant selection does not require involved score adjustments
+		// called only under special circumstances, e.g. with optimizeHomo set
 		// after committing make sure fitness is updated
 		if (module.isStatic()) {
 			commitTraitAt(me);
@@ -2808,11 +2806,8 @@ public abstract class IBSPopulation {
 			}
 		} else { // some noise
 			double inoise = 1.0 / noise;
-			// the increased accuracy of {@code Math.expm1(x)} for {@code x} near {@code 0}
-			// is not so
-			// important but hopefully this also means the accuracy is more symmetrical for
-			// {@code x}
-			// and {@code 1/x}
+			// the increased accuracy of Math.expm1(x) for x near 0 is not so important but
+			// hopefully this also means the accuracy is more symmetrical for x and 1/x
 			aProb = Math.min(1.0 - error, Math.max(error,
 					1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[0]) - myFitness) * inoise))));
 			norm = aProb;
@@ -3115,7 +3110,7 @@ public abstract class IBSPopulation {
 		}
 		if (interaction.getType() == Geometry.Type.CUBE && interGroup.isSampling(IBSGroup.SamplingType.ALL) &&
 				nGroup > 2 && nGroup <= interaction.connectivity) {
-			// Group.SAMPLING_ALL only works with pairwise interactions or all neighbors;
+			// Group.SAMPLING_ALL only works with pairwise interactions or all neighbors
 			// restrictions do not apply for PDE's
 			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 			if (logger.isLoggable(Level.WARNING))

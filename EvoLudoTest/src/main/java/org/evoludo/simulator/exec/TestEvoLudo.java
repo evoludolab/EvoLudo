@@ -36,6 +36,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.io.PrintStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -100,6 +101,11 @@ public class TestEvoLudo implements MilestoneListener {
 	 * Logger for keeping track of and reporting events and issues.
 	 */
 	Logger logger;
+
+	/**
+	 * The output stream for logging messages.
+	 */
+	PrintStream output = System.out;
 
 	/**
 	 * Directory containing tests or for storing generated tests.
@@ -177,6 +183,7 @@ public class TestEvoLudo implements MilestoneListener {
 	public TestEvoLudo() {
 		engine = new EvoLudoJRE();
 		logger = engine.getLogger();
+		logger.setLevel(Level.ALL);
 		// register as Model.MilestoneListener to receive milestone notifications
 		engine.addMilestoneListener(this);
 	}
@@ -653,7 +660,7 @@ public class TestEvoLudo implements MilestoneListener {
 	@Override
 	public synchronized void modelStopped() {
 		isRunning = false;
-		notify();
+		notifyAll();
 	}
 
 	/**
@@ -905,7 +912,7 @@ public class TestEvoLudo implements MilestoneListener {
 		if (logger.isLoggable(Level.INFO))
 			logger.info(msg);
 		else
-			System.out.println(msg);
+			output.println(msg);
 	}
 
 	/**
@@ -917,7 +924,7 @@ public class TestEvoLudo implements MilestoneListener {
 		if (logger.isLoggable(Level.INFO))
 			logger.info(ConsoleColors.BLACK_BOLD + msg + ConsoleColors.RESET);
 		else
-			System.out.println(ConsoleColors.BLACK_BOLD + msg + ConsoleColors.RESET);
+			output.println(ConsoleColors.BLACK_BOLD + msg + ConsoleColors.RESET);
 	}
 
 	/**
@@ -929,7 +936,7 @@ public class TestEvoLudo implements MilestoneListener {
 		if (logger.isLoggable(Level.INFO))
 			logger.info(ConsoleColors.GREEN + msg + ConsoleColors.RESET);
 		else
-			System.out.println(ConsoleColors.GREEN + msg + ConsoleColors.RESET);
+			output.println(ConsoleColors.GREEN + msg + ConsoleColors.RESET);
 	}
 
 	/**
@@ -941,7 +948,7 @@ public class TestEvoLudo implements MilestoneListener {
 		if (logger.isLoggable(Level.WARNING))
 			logger.warning(ConsoleColors.YELLOW + msg + ConsoleColors.RESET);
 		else
-			System.out.println(ConsoleColors.YELLOW + "WARNING: " + msg + ConsoleColors.RESET);
+			output.println(ConsoleColors.YELLOW + "WARNING: " + msg + ConsoleColors.RESET);
 	}
 
 	/**
@@ -953,7 +960,7 @@ public class TestEvoLudo implements MilestoneListener {
 		if (logger.isLoggable(Level.SEVERE))
 			logger.severe(ConsoleColors.RED + msg + ConsoleColors.RESET);
 		else
-			System.out.println(ConsoleColors.RED + "ERROR: " + msg + ConsoleColors.RESET);
+			output.println(ConsoleColors.RED + "ERROR: " + msg + ConsoleColors.RESET);
 	}
 
 	/**

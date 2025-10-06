@@ -1788,12 +1788,10 @@ public abstract class EvoLudo
 			"--seed [<s>]    set random seed (0)", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					if (!cloSeed.isSet()) {
-						// set default
+					if (cloSeed.isSet())
+						rng.setRNGSeed(cloSeed.isDefault() ? 0L : Long.parseLong(arg));
+					else
 						rng.clearRNGSeed();
-						return true;
-					}
-					rng.setRNGSeed(cloSeed.isDefault() ? 0L : Long.parseLong(arg));
 					return true;
 				}
 			});
@@ -1807,9 +1805,8 @@ public abstract class EvoLudo
 				@Override
 				public boolean parse(String arg) {
 					// by default do not interfere - i.e. leave simulations running if possible
-					if (!cloRun.isSet())
-						return true;
-					setSuspended(true);
+					if (cloRun.isSet())
+						setSuspended(true);
 					return true;
 				}
 			});
@@ -1821,9 +1818,6 @@ public abstract class EvoLudo
 			"--delay <d>     delay between updates (d: delay in msec)", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					// by default do not interfere - i.e. leave delay as is
-					if (!cloDelay.isSet())
-						return true;
 					setDelay(Integer.parseInt(arg));
 					return true;
 				}
@@ -1874,21 +1868,21 @@ public abstract class EvoLudo
 			"--testRNG       test random number generator", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					if (!cloRNG.isSet())
-						return true;
-					// test of RNG requested
-					logger.info("Testing MersenneTwister...");
-					int start = elapsedTimeMsec();
-					MersenneTwister.testCorrectness(logger);
-					MersenneTwister.testSpeed(logger, EvoLudo.this, 10000000);
-					int lap = elapsedTimeMsec();
-					logger.info("MersenneTwister tests done: " + ((lap - start) / 1000.0) + " sec.");
-					MersenneTwister mt = rng.getRNG();
-					RNGDistribution.Uniform.test(mt, logger, EvoLudo.this);
-					RNGDistribution.Exponential.test(mt, logger, EvoLudo.this);
-					RNGDistribution.Normal.test(mt, logger, EvoLudo.this);
-					RNGDistribution.Geometric.test(mt, logger, EvoLudo.this);
-					RNGDistribution.Binomial.test(mt, logger, EvoLudo.this);
+					if (cloRNG.isSet()) {
+						// test of RNG requested
+						logger.info("Testing MersenneTwister...");
+						int start = elapsedTimeMsec();
+						MersenneTwister.testCorrectness(logger);
+						MersenneTwister.testSpeed(logger, EvoLudo.this, 10000000);
+						int lap = elapsedTimeMsec();
+						logger.info("MersenneTwister tests done: " + ((lap - start) / 1000.0) + " sec.");
+						MersenneTwister mt = rng.getRNG();
+						RNGDistribution.Uniform.test(mt, logger, EvoLudo.this);
+						RNGDistribution.Exponential.test(mt, logger, EvoLudo.this);
+						RNGDistribution.Normal.test(mt, logger, EvoLudo.this);
+						RNGDistribution.Geometric.test(mt, logger, EvoLudo.this);
+						RNGDistribution.Binomial.test(mt, logger, EvoLudo.this);
+					}
 					return true;
 				}
 			});

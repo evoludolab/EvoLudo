@@ -308,11 +308,9 @@ public class DemesTBT extends TBT {
 				int ccount = demeTypeCount[d][org.evoludo.simulator.modules.TBT.COOPERATE];
 				if (ccount == 0)
 					continue;
-				if (ccount == sizeDemes) {
-					nA++;
-					continue;
-				}
-				return -1;
+				if (ccount != sizeDemes)
+					return -1;
+				nA++;
 			}
 			return nA;
 		}

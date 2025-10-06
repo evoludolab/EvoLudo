@@ -339,4 +339,22 @@ public class Network3DGWT extends Network3D {
 		}
 		return isRunning;
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (!super.equals(obj))
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Network3DGWT other = (Network3DGWT) obj;
+		return links.equals(other.links);
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result + ((links == null) ? 0 : links.hashCode());
+		return result;
+	}
 }

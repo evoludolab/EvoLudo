@@ -1587,6 +1587,9 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		if (minTraits > 2 || (anyNonVacant && minTraits > 1))
 			parser.addCLO(cloTraitDisable);
 
+		// add markers, fixed points in particular
+		parser.addCLO(markers.clo);
+
 		if (model == null)
 			return;
 		// population size option only acceptable for IBS and SDE models
@@ -1601,8 +1604,5 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 			cloGeometry.removeKey(Geometry.Type.SQUARE_NEUMANN_2ND);
 			parser.addCLO(cloGeometry);
 		}
-
-		// add markers, fixed points in particular
-		parser.addCLO(markers.clo);
 	}
 }

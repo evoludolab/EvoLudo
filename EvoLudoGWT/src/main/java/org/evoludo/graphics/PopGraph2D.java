@@ -164,7 +164,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			return;
 		invalidated = false;
 		// helper variables
-		double xshift, yshift;
+		double xshift;
+		double yshift;
 		int row;
 		Geometry.Type type = geometry.getType();
 		if (isHierarchy)
@@ -458,7 +459,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		dw = 0;
 		dh = 0;
 		dR = 0;
-		double bHeight, bWidth;
+		double bHeight;
+		double bWidth;
 		int diameter;
 		Geometry.Type type = geometry.getType();
 		isHierarchy = (type == Geometry.Type.HIERARCHY);
@@ -736,7 +738,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				// in the undesirable case that nodes overlap, nodes with a higher index are
 				// drawn later (on top)
 				// in order to get the top node we need to start from the back
-				for (int k = network.nNodes - 1; k >= 0; k--) {
+				for (int k = network.size() - 1; k >= 0; k--) {
 					if (nodes[k].isHit(mousecoord))
 						return k;
 				}

@@ -368,7 +368,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 				if (node >= nNodes) {
 					// this can only happen for Geometry.LINEAR
 					double t = (node / nNodes) * engine.getModel().getTimeStep();
-					if (network.timestamp < t)
+					if (network.getTimestamp() < t)
 						return null;
 					return "<html><i>Node:</i> " + (node % nNodes) + "<br><i>Time:</i> " + Formatter.format(-t, 2);
 				}
@@ -392,7 +392,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 				if (node >= nNodes) {
 					// this can only happen for Geometry.LINEAR
 					double t = (node / nNodes) * engine.getModel().getTimeStep();
-					if (network.timestamp < t)
+					if (network.getTimestamp() < t)
 						return null;
 					return "<html><i>Node:</i> " + (node % nNodes) + "<br><i>Time:</i> " + Formatter.format(-t, 2);
 				}

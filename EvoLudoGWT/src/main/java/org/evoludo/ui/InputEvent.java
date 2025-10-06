@@ -68,6 +68,7 @@ public class InputEvent extends DomEvent<InputHandler> {
 	protected InputEvent() {
 	}
 
+	@SuppressWarnings("java:S4144")
 	@Override
 	public final Type<InputHandler> getAssociatedType() {
 		return TYPE;

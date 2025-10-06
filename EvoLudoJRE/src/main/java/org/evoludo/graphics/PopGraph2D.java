@@ -157,11 +157,11 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 			setMessage("No representation for geometry!");
 			return;
 		}
-		if (network.nLinks * fLinks > MAX_LINK_COUNT) {
-			setMessage("Too many links to draw\n(" + Formatter.formatPercent(fLinks, 0) + " out of " + network.nLinks
-					+ ")");
+		if (network.getNLinks() * fLinks > MAX_LINK_COUNT) {
+			setMessage(
+					"Too many links to draw\n(" + Formatter.formatPercent(fLinks, 0) + " out of " + network.getNLinks()
+							+ ")");
 			network.getLinks().reset();
-			return;
 		}
 	}
 
@@ -371,9 +371,10 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	protected void changeVisibleLinkFraction(double newFraction) {
 		double oldfLinks = fLinks;
 		fLinks = newFraction;
-		if (network.nLinks * oldfLinks > MAX_LINK_COUNT) {
+		int nLinks = network.getNLinks();
+		if (nLinks * oldfLinks > MAX_LINK_COUNT) {
 			// check if things only get worse - or at least not substantially better
-			if (network.nLinks * fLinks > MAX_LINK_COUNT)
+			if (nLinks * fLinks > MAX_LINK_COUNT)
 				return;
 			// no, things are getting better but we may need a new layout
 			clearMessage();
@@ -382,7 +383,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 			network.doLayout(this);
 			return;
 		}
-		if (network.nLinks * fLinks > MAX_LINK_COUNT) {
+		if (nLinks * fLinks > MAX_LINK_COUNT) {
 			setMessage("Too many links to draw");
 			network.getLinks().reset();
 			clear();
@@ -440,7 +441,6 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		if (canvas == null)
 			canvas = new Rectangle();
 		canvas.setBounds(myCanvas);
-		network.timestamp = ((PopListener) controller).getData(colors, module.getID());
 		if (network.getStatus().requiresLayout())
 			network.doLayout(this);
 		drawLinks(g2d, canvas);
@@ -570,9 +570,8 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		int id = module.getID();
 		boolean isDynamic = geometry.getType() == Geometry.Type.DYNAMIC;
 		if (isDynamic) {
-			if (timestamp < network.timestamp) {
+			if (timestamp < network.getTimestamp()) {
 				// time stamp expired - get data
-				network.timestamp = ((PopListener) controller).getData(colors, id);
 				// invalidate network layout
 				if (network.isStatus(Status.HAS_LAYOUT))
 					network.setStatus(Status.ADJUST_LAYOUT);
@@ -584,12 +583,11 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		}
 		if (frame.msg != null)
 			return; // no need to fetch data
-		network.timestamp = ((PopListener) controller).getData(colors, id);
 		if (network.getStatus().requiresLayout())
 			network.doLayout(this);
 		// dynamically update tooltip info
 		if (gtip != null && gtip.isShowing()) {
-			if (isDynamic && infoloc != null)
+			if (infoloc != null)
 				// confirm focus node - may have shifted
 				infonode = findNodeAt(infoloc);
 			gtip.setTipText(((PopListener) controller).getInfoAt(network, infonode, id));
@@ -612,7 +610,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		controller.polish(g2d, this);
 		if (network.isStatus(Status.LAYOUT_IN_PROGRESS))
 			return;
-		timestamp = network.timestamp;
+		timestamp = network.getTimestamp();
 	}
 
 	// tool tips
@@ -1042,7 +1040,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 
 	// drawLinks is static to simplify taking snapshots programmatically
 	public void drawLinks(Graphics2D g, Rectangle canvasRect) {
-		if (network.nLinks > 0) {
+		if (network.getNLinks() > 0) {
 			g.setStroke(style.lineStroke);
 			drawLinks(g, canvasRect, network.getLinks(), network.getRadius());
 		}
@@ -1073,7 +1071,6 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 			case TRIANGULAR:
 				side = (int) (Math.sqrt(nNodes) + 0.5);
 				dw2 = width / (side + 1);
-				dw = 2 * dw2;
 				dh = height / side;
 
 				r = (y - 1) / dh;

@@ -179,32 +179,56 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 */
 	public void addData(double t, double[] data, boolean force) {
 		if (buffer.isEmpty()) {
-			buffer.append(prependTime2Data(t, data));
-			int len = data.length;
-			if (init == null || init.length != len + 1)
-				init = new double[len + 1]; // add time
-			System.arraycopy(buffer.last(), 1, init, 1, len);
-		} else {
-			double[] last = buffer.last();
-			double lastt = last[0];
-			int len = last.length - 1;
-			if (Math.abs(t - lastt) < 1e-8) {
-				buffer.replace(prependTime2Data(t, data));
-				System.arraycopy(last, 1, init, 1, len);
-			} else {
-				if (Double.isNaN(t)) {
-					// new starting point
-					if (Double.isNaN(lastt))
-						buffer.replace(prependTime2Data(t, data));
-					else
-						buffer.append(prependTime2Data(t, data));
-					System.arraycopy(buffer.last(), 1, init, 1, len);
-					return;
-				}
-				if (force || distSq(data, last) > bufferThreshold)
-					buffer.append(prependTime2Data(t, data));
-			}
+			handleEmptyBuffer(t, data);
+			return;
 		}
+		double[] last = buffer.last();
+		double lastt = last[0];
+		if (Math.abs(t - lastt) < 1e-8) {
+			buffer.replace(prependTime2Data(t, data));
+			System.arraycopy(last, 1, init, 1, last.length - 1);
+			return;
+		}
+		if (Double.isNaN(t)) {
+			handleNaNTime(t, data, lastt);
+			return;
+		}
+		if (force || distSq(data, last) > bufferThreshold) {
+			buffer.append(prependTime2Data(t, data));
+		}
+	}
+
+	/**
+	 * Handle the case that the buffer is empty. Add data to the buffer and set the
+	 * initial state.
+	 * 
+	 * @param t    the time at which the data is recorded
+	 * @param data the data to add
+	 */
+	private void handleEmptyBuffer(double t, double[] data) {
+		buffer.append(prependTime2Data(t, data));
+		int len = data.length;
+		if (init == null || init.length != len + 1)
+			init = new double[len + 1]; // add time
+		System.arraycopy(buffer.last(), 0, init, 0, len);
+	}
+
+	/**
+	 * Handle the case that the time {@code t} is {@code NaN}. If the last time in
+	 * the buffer is also {@code NaN} the last data point is replaced by the new
+	 * data, otherwise the new data is appended to the buffer. The initial state is
+	 * updated accordingly.
+	 * 
+	 * @param t     the time of the data
+	 * @param data  the data to add
+	 * @param lastt the time of the last data point in the buffer
+	 */
+	private void handleNaNTime(double t, double[] data, double lastt) {
+		if (Double.isNaN(lastt))
+			buffer.replace(prependTime2Data(t, data));
+		else
+			buffer.append(prependTime2Data(t, data));
+		System.arraycopy(buffer.last(), 0, init, 0, data.length);
 	}
 
 	/**
@@ -340,8 +364,9 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		}
 		if (style.showXTickLabels) {
 			setFont(style.ticksLabelFont);
-			int tik2 = (int) (g.measureText(Formatter.format((style.xMax - style.xMin) / Math.PI, 2)).getWidth() * 0.5);
-			bounds.adjust(tik2, 0, -tik2 - tik2, -14);
+			double tik = (int) g.measureText(Formatter.format((style.xMax - style.xMin) / Math.PI, 2)).getWidth();
+			double tik2 = tik * 0.5;
+			bounds.adjust(tik2, 0, -tik, -14);
 		}
 		if (style.showLabel) {
 			setFont(style.labelFont);
@@ -379,7 +404,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		outline.lineTo(e1);
 		outline.lineTo(e2);
 		outline.closePath();
-		// outline.lineTo(e0.x, e0.y);
 		// store point only if it is estimated to be at least a few pixels from the
 		// previous point
 		bufferThreshold = MIN_PIXELS * scale / Math.max(bounds.getWidth(), bounds.getHeight());
@@ -607,7 +631,16 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
-		// add menu to clear canvas
+		addClearMenu(menu);
+		addSwapOrderMenu(menu, x, y);
+		addSetTraitMenu(menu, x, y);
+		super.populateContextMenuAt(menu, x, y);
+	}
+
+	/**
+	 * Helper method to process the clear context menu.
+	 */
+	private void addClearMenu(ContextMenu menu) {
 		if (clearMenu == null) {
 			clearMenu = new ContextMenuItem("Clear", () -> {
 				clearHistory();
@@ -616,26 +649,27 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		}
 		menu.addSeparator();
 		menu.add(clearMenu);
+	}
 
-		// process swap order context menu
+	private static final String SWAP_MENU_LABEL = "Swap Order";
+	private static final String SWAP_MENU = "Swap ";
+	private static final String SWAP_MENU_ARROW = " \u2194 ";
+
+	/**
+	 * Helper method to process the swap order submenu logic of the context menu.
+	 */
+	private void addSwapOrderMenu(ContextMenu menu, int x, int y) {
 		if (swapOrderMenu == null) {
-			swapOrderMenu = new ContextMenuItem("Swap Order", () -> {
-				int swap;
+			swapOrderMenu = new ContextMenuItem(SWAP_MENU_LABEL, () -> {
 				int[] order = map.getOrder();
 				String[] names = map.getNames();
 				String label = swapOrderMenu.getText();
-				if (label.startsWith("Swap " + names[order[0]])) {
-					swap = order[0];
-					order[0] = order[1];
-					order[1] = swap;
-				} else if (label.startsWith("Swap " + names[order[1]])) {
-					swap = order[1];
-					order[1] = order[2];
-					order[2] = swap;
+				if (label.startsWith(SWAP_MENU + names[order[0]])) {
+					swapOrder(order, 0, 1);
+				} else if (label.startsWith(SWAP_MENU + names[order[1]])) {
+					swapOrder(order, 1, 2);
 				} else {
-					swap = order[2];
-					order[2] = order[0];
-					order[0] = swap;
+					swapOrder(order, 2, 0);
 				}
 				map.setOrder(order);
 				paint(true);
@@ -646,47 +680,51 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		String[] names = map.getNames();
 		switch (closestEdge(x, y)) {
 			case HasS3.EDGE_LEFT:
-				swapOrderMenu.setText("Swap " + names[order[0]] + " \u2194 " + names[order[1]]);
+				swapOrderMenu.setText(SWAP_MENU + names[order[0]] + SWAP_MENU_ARROW + names[order[1]]);
 				break;
 			case HasS3.EDGE_RIGHT:
-				swapOrderMenu.setText("Swap " + names[order[1]] + " \u2194 " + names[order[2]]);
+				swapOrderMenu.setText(SWAP_MENU + names[order[1]] + SWAP_MENU_ARROW + names[order[2]]);
 				break;
-			// case HasS3.EDGE_BOTTOM:
 			default:
-				swapOrderMenu.setText("Swap " + names[order[2]] + " \u2194 " + names[order[0]]);
+				swapOrderMenu.setText(SWAP_MENU + names[order[2]] + SWAP_MENU_ARROW + names[order[0]]);
 				break;
 		}
+	}
 
-		// process set strategy context menu for >3 traits (plus time)
-		if (buffer.getDepth() > 4) {
-			if (setTraitMenu == null) {
-				setTraitMenu = new ContextMenu(menu);
-				for (String name : names)
-					setTraitMenu.add(new ContextMenuItem(name, () -> {
-						Iterator<Widget> items = setTraitMenu.iterator();
-						int idx = 0;
-						while (items.hasNext()) {
-							ContextMenuItem item = (ContextMenuItem) items.next();
-							if (item.getText().equals(name)) {
-								order[cornerIdx] = idx;
-								break;
-							}
-							idx++;
+	private void swapOrder(int[] order, int i, int j) {
+		int temp = order[i];
+		order[i] = order[j];
+		order[j] = temp;
+	}
+
+	private void addSetTraitMenu(ContextMenu menu, int x, int y) {
+		if (buffer.getDepth() <= 4)
+			return;
+		int[] order = map.getOrder();
+		String[] names = map.getNames();
+		if (setTraitMenu == null) {
+			setTraitMenu = new ContextMenu(menu);
+			for (String name : names)
+				setTraitMenu.add(new ContextMenuItem(name, () -> {
+					Iterator<Widget> items = setTraitMenu.iterator();
+					int idx = 0;
+					while (items.hasNext()) {
+						ContextMenuItem item = (ContextMenuItem) items.next();
+						if (item.getText().equals(name)) {
+							order[cornerIdx] = idx;
+							break;
 						}
-						paint(true);
-					}));
-			}
-			cornerIdx = closestCorner(x, y);
-			menu.add("Set trait '" + names[order[cornerIdx]] + "' to ...", setTraitMenu);
-			// enable all traits
-			for (Widget item : setTraitMenu)
-				((ContextMenuItem) item).setEnabled(true);
-			// disable already visible traits
-			for (int t : order)
-				((ContextMenuItem) setTraitMenu.getWidget(t)).setEnabled(false);
+						idx++;
+					}
+					paint(true);
+				}));
 		}
-
-		super.populateContextMenuAt(menu, x, y);
+		cornerIdx = closestCorner(x, y);
+		menu.add("Set trait '" + names[order[cornerIdx]] + "' to ...", setTraitMenu);
+		for (Widget item : setTraitMenu)
+			((ContextMenuItem) item).setEnabled(true);
+		for (int t : order)
+			((ContextMenuItem) setTraitMenu.getWidget(t)).setEnabled(false);
 	}
 
 	/**

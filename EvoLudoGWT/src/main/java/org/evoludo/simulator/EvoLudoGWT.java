@@ -424,10 +424,10 @@ public class EvoLudoGWT extends EvoLudo {
 			symDiffMenu.setEnabled(space.isRegular || space.isLattice());
 		}
 		// process fullscreen context menu
-		if (fullscreenMenu == null && NativeJS.isFullscreenSupported()) {
-			fullscreenMenu = new ContextMenuCheckBoxItem("Full screen", () -> setFullscreen(!NativeJS.isFullscreen()));
-		}
 		if (NativeJS.isFullscreenSupported()) {
+			if (fullscreenMenu == null)
+				fullscreenMenu = new ContextMenuCheckBoxItem("Full screen",
+						() -> setFullscreen(!NativeJS.isFullscreen()));
 			menu.addSeparator();
 			menu.add(fullscreenMenu);
 			fullscreenMenu.setChecked(NativeJS.isFullscreen());
@@ -550,9 +550,6 @@ public class EvoLudoGWT extends EvoLudo {
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					snapLayoutTimeout = 20000;
-					if (!cloSnap.isSet() || arg.isEmpty())
-						return true;
 					snapLayoutTimeout = Math.max(1, CLOParser.parseInteger(arg)) * 1000;
 					return true;
 				}

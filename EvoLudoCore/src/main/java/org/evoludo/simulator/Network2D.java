@@ -288,7 +288,7 @@ public abstract class Network2D extends Network {
 			}
 		}
 		// prepare graph for display:
-		// (1) shift center of mass into origin;
+		// (1) shift center of mass into origin
 		// (2) rescale size of graph
 		Point2D com = new Point2D();
 		double maxRad = -Double.MAX_VALUE;
@@ -454,5 +454,24 @@ public abstract class Network2D extends Network {
 	@Override
 	public Node2D get(int index) {
 		return nodes[index];
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (!super.equals(obj))
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Network2D other = (Network2D) obj;
+		// Compare links
+		return links.equals(other.links);
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result + links.hashCode();
+		return result;
 	}
 }

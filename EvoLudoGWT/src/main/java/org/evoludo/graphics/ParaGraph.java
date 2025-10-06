@@ -157,31 +157,59 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 */
 	public void addData(double t, double[] data, boolean force) {
 		if (buffer.isEmpty()) {
-			buffer.append(prependTime2Data(t, data));
-			double[] last = buffer.last();
-			int len = last.length;
-			if (init == null || init.length != len)
-				init = new double[len];
-			System.arraycopy(buffer.last(), 1, init, 1, len - 1);
-		} else {
-			double[] last = buffer.last();
-			double lastt = last[0];
-			int len = last.length;
-			if (Math.abs(t - lastt) < 1e-8) {
-				buffer.replace(prependTime2Data(t, data));
-				System.arraycopy(data, 0, init, 1, len - 1);
-			} else {
-				if (Double.isNaN(t)) {
-					// new starting point
-					if (Double.isNaN(lastt))
-						buffer.replace(prependTime2Data(t, data));
-					else
-						buffer.append(prependTime2Data(t, data));
-					System.arraycopy(buffer.last(), 1, init, 1, len - 1);
-				} else if (force || distSq(data, last) > bufferThreshold)
-					buffer.append(prependTime2Data(t, data));
-			}
+			handleEmptyBuffer(t, data);
+			return;
 		}
+		double[] last = buffer.last();
+		double lastt = last[0];
+		int len = last.length;
+		if (Math.abs(t - lastt) < 1e-8) {
+			buffer.replace(prependTime2Data(t, data));
+			System.arraycopy(data, 0, init, 1, len - 1);
+			return;
+		}
+		if (Double.isNaN(t)) {
+			handleNaNTime(lastt, t, data, len);
+			return;
+		}
+		if (force || distSq(data, last) > bufferThreshold) {
+			buffer.append(prependTime2Data(t, data));
+		}
+	}
+
+	/**
+	 * Handle the case that the buffer is empty. Add data to the buffer and set the
+	 * initial state.
+	 * 
+	 * @param t    the time at which the data is recorded
+	 * @param data the data to add
+	 */
+	private void handleEmptyBuffer(double t, double[] data) {
+		buffer.append(prependTime2Data(t, data));
+		double[] last = buffer.last();
+		int len = last.length;
+		if (init == null || init.length != len)
+			init = new double[len];
+		System.arraycopy(buffer.last(), 0, init, 0, len);
+	}
+
+	/**
+	 * Handle the case that the time {@code t} is {@code NaN}. If the last time in
+	 * the buffer is also {@code NaN} the last data point is replaced by the new
+	 * data, otherwise the new data is appended to the buffer. The initial state is
+	 * updated accordingly.
+	 * 
+	 * @param t     the time of the data
+	 * @param data  the data to add
+	 * @param lastt the time of the last data point in the buffer
+	 */
+	private void handleNaNTime(double lastt, double t, double[] data, int len) {
+		// new starting point
+		if (Double.isNaN(lastt))
+			buffer.replace(prependTime2Data(t, data));
+		else
+			buffer.append(prependTime2Data(t, data));
+		System.arraycopy(buffer.last(), 0, init, 0, len);
 	}
 
 	/**

@@ -66,7 +66,7 @@ public abstract class Mutation {
 	 * 
 	 * @param module the map to use as template
 	 */
-	public Mutation(Module module) {
+	protected Mutation(Module module) {
 		this.module = module;
 		rng = module.engine.getRNG();
 	}
@@ -258,7 +258,6 @@ public abstract class Mutation {
 					break;
 				case RANGE:
 					// mutations to any of the _other_ traits at most range traits away
-					dim = to - from;
 					int irange = (int) range;
 					mu1 = 1.0 - probability;
 					for (int i = from; i < to; i++) {
@@ -532,11 +531,9 @@ public abstract class Mutation {
 							mut.range = 0.0;
 							mut.type = Type.NONE;
 							// deal with optional temperature|random flag first
-							if (args.length > 1) {
-								if (args[1].toLowerCase().startsWith("t")) {
-									mut.temperature = true;
-									args = ArrayMath.drop(args, 1);
-								}
+							if (args.length > 1 && args[1].toLowerCase().startsWith("t")) {
+								mut.temperature = true;
+								args = ArrayMath.drop(args, 1);
 							}
 							switch (args.length) {
 								case 3:

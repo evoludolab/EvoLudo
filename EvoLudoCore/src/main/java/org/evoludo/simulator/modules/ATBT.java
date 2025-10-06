@@ -741,7 +741,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 			// yr'[t] == (yr[t] ft[[3]] + yp[t] ft[[4]]) xr[t] - (xr[t] ft[[1]] + xp[t]
 			// ft[[2]]) yr[t] + lambda rho yp[t],
 			// yp'[t] == (yr[t] ft[[3]] + yp[t] ft[[4]]) xp[t] - (xr[t] ft[[1]] + xp[t]
-			// ft[[2]]) yp[t] - lambda rho yp[t]}
+			// ft[[2]]) yp[t] - lambda rho yp[t]
 
 			// restrict to active traits
 			// note float resolution is 1.1920929E-7

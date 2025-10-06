@@ -425,10 +425,11 @@ public class Formatter {
 		int len = aMatrix.length;
 		if (len == 0)
 			return "";
-		String matString = formatSci(aMatrix[0], digits);
+		StringBuilder sb = new StringBuilder();
+		sb.append(formatSci(aMatrix[0], digits));
 		for (int i = 1; i < len; i++)
-			matString += MATRIX_DELIMITER + formatSci(aMatrix[i], digits);
-		return matString;
+			sb.append(MATRIX_DELIMITER).append(formatSci(aMatrix[i], digits));
+		return sb.toString();
 	}
 
 	/**

@@ -74,6 +74,7 @@ public class FullscreenChangeEvent extends DomEvent<FullscreenChangeHandler> {
 	// NOTE: apparently it is not possible to simply add custom methods here... e.g.
 	// public boolean isFullscreen()
 
+	@SuppressWarnings("java:S4144")
 	@Override
 	public final Type<FullscreenChangeHandler> getAssociatedType() {
 		return TYPE;

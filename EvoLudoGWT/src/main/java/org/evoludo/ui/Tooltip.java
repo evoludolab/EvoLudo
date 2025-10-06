@@ -59,8 +59,6 @@ import com.google.gwt.event.dom.client.TouchStartHandler;
 import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
-import com.google.gwt.user.client.Window.ScrollEvent;
-import com.google.gwt.user.client.Window.ScrollHandler;
 import com.google.gwt.user.client.ui.FocusPanel;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.RootPanel;
@@ -89,6 +87,7 @@ import com.google.gwt.user.client.ui.RootPanel;
  * 
  * @author Christoph Hauert
  */
+@SuppressWarnings("java:S110")
 public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, MouseMoveHandler, MouseWheelHandler,
 		TouchStartHandler, TouchMoveHandler, TouchEndHandler, FullscreenChangeHandler, HasFullscreenChangeHandlers {
 
@@ -313,12 +312,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 			tooltip = new Tooltip();
 			RootPanel.get().add(tooltip);
 			tooltip.style.setPosition(Position.FIXED);
-			Window.addWindowScrollHandler(new ScrollHandler() {
-				@Override
-				public void onWindowScroll(ScrollEvent event) {
-					tooltip.close();
-				}
-			});
+			Window.addWindowScrollHandler(event -> tooltip.close());
 			if (NativeJS.isFullscreenSupported())
 				tooltip.fullscreenHandler = tooltip.addFullscreenChangeHandler(tooltip);
 			tooltip.participants = new HashMap<>();
@@ -361,11 +355,11 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	public void show() {
 		if (isVisible()) {
 			// update location
-			_show();
+			doShow();
 			return;
 		}
 		if (delayShow <= 0) {
-			_show();
+			doShow();
 			return;
 		}
 		if (delayShowTimer.isRunning())
@@ -379,7 +373,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	private Timer delayShowTimer = new Timer() {
 		@Override
 		public void run() {
-			_show();
+			doShow();
 		}
 	};
 
@@ -396,7 +390,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	/**
 	 * Helper method: show tooltip now and set timeout timer.
 	 */
-	private void _show() {
+	private void doShow() {
 		if (!NativeJS.hasFocus()) {
 			close();
 			return;
@@ -435,7 +429,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 * 
 	 * @param origin the FocusPanel with tooltips.
 	 */
-	private void _update(FocusPanel origin) {
+	private void doUpdate(FocusPanel origin) {
 		if (!NativeJS.hasFocus()) {
 			close();
 			return;
@@ -567,7 +561,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 		x = event.getClientX();
 		y = event.getClientY();
 		touchEvent = false;
-		_update((FocusPanel) src);
+		doUpdate((FocusPanel) src);
 	}
 
 	/**
@@ -590,7 +584,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 		y = touch.getClientY();
 		touchEvent = true;
 		assert src instanceof FocusPanel;
-		_update((FocusPanel) src);
+		doUpdate((FocusPanel) src);
 		// default passes the touch event to mouse handlers,
 		// which is good, but also does selection and magnifying
 		// stuff that gets confusing... does not seem to interfere
@@ -624,12 +618,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	public HandlerRegistration addFullscreenChangeHandler(FullscreenChangeHandler handler) {
 		String eventname = NativeJS.fullscreenChangeEventName();
 		NativeJS.addFullscreenChangeHandler(eventname, handler);
-		return new HandlerRegistration() {
-			@Override
-			public void removeHandler() {
-				NativeJS.removeFullscreenChangeHandler(eventname, handler);
-			}
-		};
+		return () -> NativeJS.removeFullscreenChangeHandler(eventname, handler);
 	}
 
 	/**

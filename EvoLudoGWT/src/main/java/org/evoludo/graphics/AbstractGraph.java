@@ -736,37 +736,48 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
-		// add menu to set buffer size for graphs with history
-		if (hasHistory()) {
-			if (bufferSizeMenu == null) {
-				bufferSizeMenu = new ContextMenu(menu);
-				bufferSizeMenu.add(new ContextMenuCheckBoxItem("5k", //
-						(ScheduledCommand) () -> {
-							setBufferCapacity(5000);
-							paint(true);
-						}));
-				bufferSizeMenu.add(new ContextMenuCheckBoxItem("10k", //
-						(ScheduledCommand) () -> {
-							setBufferCapacity(10000);
-							paint(true);
-						}));
-				bufferSizeMenu.add(new ContextMenuCheckBoxItem("50k", //
-						(ScheduledCommand) () -> {
-							setBufferCapacity(50000);
-							paint(true);
-						}));
-				bufferSizeMenu.add(new ContextMenuCheckBoxItem("100k", //
-						(ScheduledCommand) () -> {
-							setBufferCapacity(100000);
-							paint(true);
-						}));
-			}
-			setBufferCapacity(buffer.getCapacity());
-			ContextMenuItem bufferSizeTrigger = menu.add("Buffer size...", bufferSizeMenu);
-			bufferSizeTrigger.setEnabled(!view.isRunning());
-			menu.addSeparator();
+		addBufferSizeMenu(menu);
+		addLogScaleMenu(menu);
+		addZoomMenu(menu);
+		if (menu.getWidgetCount() > 0 && tooltip.isVisible())
+			tooltip.close();
+		view.populateContextMenu(menu);
+	}
+
+	private void addBufferSizeMenu(ContextMenu menu) {
+		if (!hasHistory())
+			return;
+		if (bufferSizeMenu == null) {
+			bufferSizeMenu = new ContextMenu(menu);
+			bufferSizeMenu.add(new ContextMenuCheckBoxItem("5k", //
+					(ScheduledCommand) () -> {
+						setBufferCapacity(5000);
+						paint(true);
+					}));
+			bufferSizeMenu.add(new ContextMenuCheckBoxItem("10k", //
+					(ScheduledCommand) () -> {
+						setBufferCapacity(10000);
+						paint(true);
+					}));
+			bufferSizeMenu.add(new ContextMenuCheckBoxItem("50k", //
+					(ScheduledCommand) () -> {
+						setBufferCapacity(50000);
+						paint(true);
+					}));
+			bufferSizeMenu.add(new ContextMenuCheckBoxItem("100k", //
+					(ScheduledCommand) () -> {
+						setBufferCapacity(100000);
+						paint(true);
+					}));
 		}
-		if (this instanceof HasLogScaleY && style.yMin >= 0.0) {
+		setBufferCapacity(buffer.getCapacity());
+		ContextMenuItem bufferSizeTrigger = menu.add("Buffer size...", bufferSizeMenu);
+		bufferSizeTrigger.setEnabled(!view.isRunning());
+		menu.addSeparator();
+	}
+
+	private void addLogScaleMenu(ContextMenu menu) {
+		if (this instanceof HasLogScaleY) {
 			if (logYMenu == null) {
 				logYMenu = new ContextMenuCheckBoxItem("Logarithmic y-axis", (ScheduledCommand) () -> {
 					setLogY(!style.logScaleY);
@@ -774,10 +785,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				});
 			}
 			logYMenu.setChecked(style.logScaleY);
+			logYMenu.setEnabled(style.yMin >= 0.0);
 			menu.add(logYMenu);
 		}
+	}
+
+	private void addZoomMenu(ContextMenu menu) {
 		if (this instanceof Zooming) {
-			// process zoom context menu entries
 			if (zoomInMenu == null)
 				zoomInMenu = new ContextMenuItem("Zoom in (2x)", new ZoomCommand(2.0));
 			menu.add(zoomInMenu);
@@ -788,9 +802,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				zoomResetMenu = new ContextMenuItem("Reset zoom", new ZoomCommand(0.0));
 			menu.add(zoomResetMenu);
 		}
-		if (menu.getWidgetCount() > 0 && tooltip.isVisible())
-			tooltip.close();
-		view.populateContextMenu(menu);
 	}
 
 	void setLogY(boolean logY) {
@@ -899,12 +910,25 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			double f2 = f + f;
 			bounds.adjust(f, f, -f2, -f2);
 		}
+		adjustBoundsForLabels();
+		String font = g.getFont();
+		adjustBoundsForTickLabels(font);
+		g.setFont(font);
+		if (style.showXTicks)
+			bounds.adjust(0, 0, 0, -(style.tickLength + 2));
+		if (style.showYTicks)
+			bounds.adjust(0, 0, -(style.tickLength + 2), 0);
+	}
+
+	private void adjustBoundsForLabels() {
 		if (style.showXLabel && style.xLabel != null)
 			bounds.adjust(0, 0, 0, -20); // 14px for font size plus some padding
 		// something does not add up but at least this improves results
 		if (style.showYLabel && style.yLabel != null)
 			bounds.adjust(0, 0, -12, 0);
-		String font = g.getFont();
+	}
+
+	private void adjustBoundsForTickLabels(String font) {
 		// NOTE: must process tick labels because otherwise widths might end up
 		// different in views with multiple graphs
 		if (style.showXTickLabels)
@@ -937,11 +961,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			}
 			bounds.adjust(0, 0, -4, 0);
 		}
-		g.setFont(font);
-		if (style.showXTicks)
-			bounds.adjust(0, 0, 0, -(style.tickLength + 2));
-		if (style.showYTicks)
-			bounds.adjust(0, 0, -(style.tickLength + 2), 0);
 	}
 
 	/**
@@ -1474,10 +1493,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		clearCanvas();
 		g.setFillStyle("#000");
 		g.setFont("12px sans-serif");
-		// size font to fill approx 66% of linewidth (max. 24px)
-		// g.setFont(Math.min((int)(12.0*0.666*width/g.measureText(msg).getWidth()),
-		// 24)+"px sans-serif");
-		// g.fillText(msg, (width-g.measureText(msg).getWidth())/2, height/2);
 		// center text in bounds
 		double w = bounds.getWidth();
 		// size font to fill approx 80% of linewidth (max. 20px)
@@ -1494,7 +1509,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * Clear the message.
 	 */
 	public void clearMessage() {
-		// clearCanvas();
 		hasMessage = false;
 	}
 

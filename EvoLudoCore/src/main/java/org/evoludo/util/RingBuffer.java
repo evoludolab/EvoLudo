@@ -107,31 +107,41 @@ public class RingBuffer<T> implements Iterable<T> {
 			return;
 		}
 		if (bufferCapacity > capacity) {
-			if (bufferPtr + capacity < bufferCapacity) {
-				for (int n = 0; n < bufferPtr; n++)
-					buffer.remove(0);
-				if (capacity < buffer.size()) {
-					int count = buffer.size() - capacity;
-					for (int n = 0; n < count; n++)
-						buffer.remove(capacity);
-				}
-				bufferPtr = -1;
-			} else {
-				int idx = (bufferPtr + capacity) % bufferCapacity;
-				int count = bufferPtr - idx;
-				for (int n = 0; n < count; n++)
-					buffer.remove(idx);
-				bufferPtr = idx;
-			}
-			buffer.trimToSize();
-			bufferCapacity = capacity;
+			shrinkBuffer(capacity);
 		} else if (bufferCapacity < capacity) {
-			// grow buffer - rotate elements such that most recent is in position 0
-			for (int n = 0; n < bufferPtr; n++)
-				buffer.add(buffer.remove(0));
-			bufferPtr = (isEmpty() ? -1 : 0);
-			bufferCapacity = capacity;
+			growBuffer(capacity);
 		}
+	}
+
+	private void shrinkBuffer(int capacity) {
+		if (bufferPtr + capacity < bufferCapacity) {
+			// remove oldest entries
+			for (int n = 0; n < bufferPtr; n++)
+				buffer.remove(0);
+			// remove excess entries
+			if (capacity < buffer.size()) {
+				int count = buffer.size() - capacity;
+				for (int n = 0; n < count; n++)
+					buffer.remove(capacity);
+			}
+			bufferPtr = -1;
+		} else {
+			int idx = (bufferPtr + capacity) % bufferCapacity;
+			int count = bufferPtr - idx;
+			for (int n = 0; n < count; n++)
+				buffer.remove(idx);
+			bufferPtr = idx;
+		}
+		buffer.trimToSize();
+		bufferCapacity = capacity;
+	}
+
+	private void growBuffer(int capacity) {
+		// rotate to most recent entry at index 0
+		for (int n = 0; n < bufferPtr; n++)
+			buffer.add(buffer.remove(0));
+		bufferPtr = (isEmpty() ? -1 : 0);
+		bufferCapacity = capacity;
 	}
 
 	/**

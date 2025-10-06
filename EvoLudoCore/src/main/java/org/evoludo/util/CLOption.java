@@ -940,8 +940,6 @@ public class CLOption implements Comparable<CLOption> {
 			keydescr.append(aKey.substring(keylen - 16, keylen))
 					.append(descr == null ? key.getTitle() : descr)
 					.append("\n");
-			// keydescr += " " + key.getKey() + ": " + (descr == null ? key.getTitle() :
-			// descr) + "\n";
 		}
 
 		int len = keydescr.length();

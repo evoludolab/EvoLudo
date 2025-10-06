@@ -54,6 +54,7 @@ import com.google.gwt.core.client.Scheduler.ScheduledCommand;
  * 
  * @see ContextMenu
  */
+@SuppressWarnings("java:S110")
 public class ContextMenuCheckBoxItem extends ContextMenuItem {
 
 	/**

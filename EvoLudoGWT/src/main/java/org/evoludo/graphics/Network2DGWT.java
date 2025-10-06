@@ -124,7 +124,6 @@ public class Network2DGWT extends Network2D {
 		int nLinksDone = 0;
 		for (int n = nextLayoutNode; n < nNodes; n++) {
 			potential += relax(n);
-			// potential += nodes[n].relax(1.0/(MAX_RELAX-nIteration));
 			nLinksDone += geometry.kout[n];
 			if (nLinksDone > MAX_LINKS_PER_STEP) {
 				nextLayoutNode = n + 1;
@@ -140,9 +139,6 @@ public class Network2DGWT extends Network2D {
 		prevAdjust = Math.min(prevAdjust, adjust);
 		int elapsed = layout.elapsedMillis();
 		if (adjust < accuracy || elapsed > layoutTimeout) { // layoutTimeout provides emergency exit
-			// GWT.log("layout done:
-			// time="+ChHFormatter.format(layout.elapsedMillis()*0.001, 3)+"s,
-			// iterations="+nIteration);
 			finishLayout();
 			setStatus(Status.HAS_LAYOUT);
 			isRunning = false;
@@ -160,4 +156,15 @@ public class Network2DGWT extends Network2D {
 		}
 		return isRunning;
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return super.equals(obj);
+	}
+
+	@Override
+	public int hashCode() {
+		return super.hashCode();
+	}
+
 }

@@ -72,7 +72,6 @@ import org.evoludo.ui.FullscreenChangeHandler;
 import org.evoludo.ui.HasFullscreenChangeHandlers;
 import org.evoludo.ui.InputEvent;
 import org.evoludo.ui.Slider;
-import org.evoludo.ui.TextLogFormatter;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
@@ -82,6 +81,7 @@ import org.evoludo.util.NativeJS;
 import org.evoludo.util.Plist;
 import org.evoludo.util.PlistParser;
 import org.evoludo.util.XMLCoder;
+import org.evoludo.util.XMLLogFormatter;
 
 import com.google.gwt.canvas.client.Canvas;
 import com.google.gwt.core.client.Duration;
@@ -389,7 +389,7 @@ public class EvoLudoWeb extends Composite
 		// needed).
 		boolean isEPub = NativeJS.getEPubReader() != null;
 		ConsoleLogHandler logHandler = new ConsoleLogHandler();
-		logHandler.setFormatter(new TextLogFormatter(true, isEPub || !engine.isHTML));
+		logHandler.setFormatter(new XMLLogFormatter(true, isEPub || !engine.isHTML));
 		logger.addHandler(logHandler);
 
 		// set command line options
@@ -534,13 +534,9 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void moduleLoaded() {
-		// NOTE: at this point engine and GUI can be out of sync - better wait for reset
-		// to update views
-		// for (AbstractView view : activeViews.values())
-		// view.load();
 		// assume that some kind of keys are always present, i.e. always add listener
 		// for e.g. 'Alt' but key shortcuts only if not ePub
-		addKeyListeners(this);
+		addKeyListener(this);
 		if (popup != null)
 			keyListener = this;
 	}
@@ -549,7 +545,7 @@ public class EvoLudoWeb extends Composite
 	public void moduleUnloaded() {
 		activeView = null;
 		evoludoViews.setSelectedIndex(-1);
-		removeKeyListeners(this);
+		removeKeyListener(this);
 		if (keyListener == this)
 			keyListener = null;
 		// clear settings
@@ -1422,12 +1418,12 @@ public class EvoLudoWeb extends Composite
 		// reporting...
 		if (level < displayStatusThresholdLevel)
 			return;
-		if (level >= Level.SEVERE.intValue() && level >= displayStatusThresholdLevel) {
+		if (level >= Level.SEVERE.intValue()) {
 			evoludoStatus.setHTML("<span style='color:red'><b>Error:</b> " + msg + "</span>");
 			displayStatusThresholdLevel = level;
 			return;
 		}
-		if (level >= Level.WARNING.intValue() && level >= displayStatusThresholdLevel) {
+		if (level >= Level.WARNING.intValue()) {
 			evoludoStatus.setHTML("<span style='color:orange'><b>Warning:</b> " + msg + "</span>");
 			displayStatusThresholdLevel = level;
 			return;
@@ -1452,6 +1448,7 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoOverlay")
 	public void onDragOver(DragOverEvent doe) {
+		// method needed for the DropHandler to work
 	}
 
 	/**
@@ -2097,7 +2094,7 @@ public class EvoLudoWeb extends Composite
 	 *
 	 * @param evoludo GUI controller that handles the key events
 	 */
-	private final native void addKeyListeners(EvoLudoWeb evoludo) /*-{
+	private final native void addKeyListener(EvoLudoWeb evoludo) /*-{
 		// store key listener helpers in $wnd.EvoLudoUtils
 		if (!$wnd.EvoLudoUtils) {
 			$wnd.EvoLudoUtils = new Object();
@@ -2139,7 +2136,7 @@ public class EvoLudoWeb extends Composite
 	 *
 	 * @param evoludo GUI controller that handles the key events
 	 */
-	private final native void removeKeyListeners(EvoLudoWeb evoludo) /*-{
+	private final native void removeKeyListener(EvoLudoWeb evoludo) /*-{
 		if (!$wnd.EvoLudoUtils)
 			return;
 		var id = evoludo.@org.evoludo.EvoLudoWeb::elementID;

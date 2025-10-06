@@ -28,11 +28,9 @@
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
-package org.evoludo.ui;
+package org.evoludo.util;
 
 import java.util.logging.LogRecord;
-
-import org.evoludo.util.XMLCoder;
 
 /**
  * Formats LogRecords into XML/XHTML compliant text
@@ -51,25 +49,25 @@ import org.evoludo.util.XMLCoder;
  * <p>
  * Thus, instead of extending
  * {@link com.google.gwt.logging.client.ConsoleLogHandler} to implement
- * formatting acceptable to XHTML, this extends
+ * formatting acceptable to XML, this extends
  * {@link com.google.gwt.logging.client.TextLogFormatter} instead.
  * 
  * @author Christoph Hauert
  *
  */
-public class TextLogFormatter extends com.google.gwt.logging.client.TextLogFormatter {
+public class XMLLogFormatter extends com.google.gwt.logging.client.TextLogFormatter {
 
 	/**
 	 * <code>false</code> if XML/XHTML compliant encoding of log messages desired.
 	 */
-	private boolean isHTML = true;
+	private boolean isXML = true;
 
 	/**
 	 * Construct a new formatter for log messages without XML/XHTML encoding.
 	 * 
 	 * @param showStackTraces <code>true</code> to show stack traces
 	 */
-	public TextLogFormatter(boolean showStackTraces) {
+	public XMLLogFormatter(boolean showStackTraces) {
 		this(showStackTraces, false);
 	}
 
@@ -78,11 +76,11 @@ public class TextLogFormatter extends com.google.gwt.logging.client.TextLogForma
 	 * that <code>isHTML</code> is <code>false</code>.
 	 * 
 	 * @param showStackTraces <code>true</code> to show stack traces
-	 * @param isHTML           <code>true</code> to use HTML encoding
+	 * @param isHTML          <code>true</code> to use HTML encoding
 	 */
-	public TextLogFormatter(boolean showStackTraces, boolean isHTML) {
+	public XMLLogFormatter(boolean showStackTraces, boolean isHTML) {
 		super(showStackTraces);
-		this.isHTML = isHTML;
+		this.isXML = isHTML;
 	}
 
 	/**
@@ -92,10 +90,10 @@ public class TextLogFormatter extends com.google.gwt.logging.client.TextLogForma
 	 * compliant.
 	 */
 	@Override
-	public String format(LogRecord record) {
-		String msg = super.format(record);
-		if (isHTML)
-			return msg;
-		return XMLCoder.encode(msg);
+	public String format(LogRecord event) {
+		String msg = super.format(event);
+		if (isXML)
+			return XMLCoder.encode(msg);
+		return msg;
 	}
 }

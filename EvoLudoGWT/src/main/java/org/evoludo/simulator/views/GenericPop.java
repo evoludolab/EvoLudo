@@ -261,14 +261,12 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	 */
 	@Override
 	public boolean keyDownHandler(String key) {
-		switch (key) {
-			case "s":
-				for (G graph : graphs)
-					graph.getNetwork().shake(graph, 0.05);
-				return true;
-			default:
-				return super.keyDownHandler(key);
+		if ("s".equals(key)) {
+			for (G graph : graphs)
+				graph.getNetwork().shake(graph, 0.05);
+			return true;
 		}
+		return super.keyDownHandler(key);
 	}
 
 	@Override
@@ -497,10 +495,10 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 			if (oppGraph == graph)
 				continue;
 			Module oppModule = oppGraph.getModule();
-			// XXX this should work but somehow the pointers are different even though the
+			// this should work but somehow the pointers are different even though the
 			// objects appear to be the same...
 			// if (oppModule == opponent && oppGraph.getGeometry() == oppComp)
-			if (oppModule == opponent && oppGraph.getGeometry().name == oppComp.name)
+			if (oppModule == opponent && oppGraph.getGeometry().name.equals(oppComp.name))
 				return oppGraph;
 		}
 		return null;

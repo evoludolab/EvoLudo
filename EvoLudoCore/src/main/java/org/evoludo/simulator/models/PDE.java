@@ -306,19 +306,7 @@ public class PDE extends ODE {
 			supervisor = engine.hirePDESupervisor(this);
 		module = engine.getModule();
 		space = module.createGeometry();
-		sorting = new Comparator<double[]>() {
-
-			/**
-			 * {@inheritDoc}
-			 * <p>
-			 * Sort arrays of {@code double}s simply based on the their first component.
-			 * Good enough for our purposes.
-			 */
-			@Override
-			public int compare(double[] o1, double[] o2) {
-				return (int) Math.signum(o1[0] - o2[0]);
-			}
-		};
+		sorting = (o1, o2) -> (int) Math.signum(o1[0] - o2[0]);
 	}
 
 	@Override

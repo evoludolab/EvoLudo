@@ -277,7 +277,7 @@ public class MVCDistr extends MVAbstract implements PopListener {
 
 	@Override
 	public String getInfoAt(Network2D network, int node, int tag) {
-		int nNodes = network.nNodes;
+		int nNodes = network.size();
 
 		if (node < 0)
 			return null;

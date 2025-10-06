@@ -131,7 +131,7 @@ public class ContextMenuItem extends Label
 				if (!childMenu.isAutoClose())
 					closeNow();
 			} else if (!childMenu.isAutoOpen()) {
-				_open();
+				openSubmenu();
 			}
 			return;
 		}
@@ -142,7 +142,7 @@ public class ContextMenuItem extends Label
 	/**
 	 * Open submenu.
 	 */
-	private void _open() {
+	private void openSubmenu() {
 		childMenu.setOffset(-2, -2);
 		childMenu.showAt(getElement().getAbsoluteLeft() + getOffsetWidth() - Window.getScrollLeft(),
 				getElement().getAbsoluteTop() - Window.getScrollTop());
@@ -160,7 +160,7 @@ public class ContextMenuItem extends Label
 		if (!isEnabled || childMenu == null)
 			return false;
 		if (hasSubmenu() && childMenu.isAutoOpen())
-			_open();
+			openSubmenu();
 		return true;
 	}
 

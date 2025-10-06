@@ -301,7 +301,7 @@ public class CLOParser {
 						break;
 					//$FALL-THROUGH$
 				case REQUIRED:
-					cmd.append(" " + clo.getArg());
+					cmd.append(" ").append(clo.getArg());
 					// case NONE:
 					// $FALL-THROUGH$
 				default:

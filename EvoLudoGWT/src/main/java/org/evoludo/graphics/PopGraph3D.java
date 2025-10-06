@@ -198,7 +198,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			data[0] = new MeshLambertMaterial();
 		}
 		// cannot yet start animation - kills scene
-		// graph3DScene.run();
+		// graph3DScene.run()
 		// 3D graphs do not implement Shifting interface. Add mouse listeners here.
 		mouseDownHandler = addMouseDownHandler(this);
 		mouseUpHandler = addMouseUpHandler(this);
@@ -272,7 +272,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 				shift = (side - 1) * 0.5 * incr;
 				int hLevels = 0;
 				int[] hPeriods = new int[0];
-				int HIERARCHY_GAP = 8; // unit gap in units?
+				final int HIERARCHY_GAP = 8; // unit gap in units?
 				// for hierarchical structures add gap between units
 				if (isHierarchy) {
 					hLevels = geometry.hierarchy.length - 1;
@@ -367,7 +367,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 				shift = (size2 - 0.5) * 0.5 * hincr;
 				double vshift = (side - 1.25) * 0.75 * vincr;
 				initUniverse(new SphereGeometry(radius, 16, 12));
-				// initUniverse(new TetrahedronGeometry(radius * 2, 0));
+				// initUniverse(new TetrahedronGeometry(radius * 2, 0))
 				meshes = spheres.iterator();
 				// even nodes
 				posj = -vshift;
@@ -427,8 +427,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 
 	@Override
 	protected void drawNetwork() {
-		// if (!network.isStatus(Status.HAS_LAYOUT) || geometry.isDynamic)
-		// network.doLayout(this);
 		if (invalidated) {
 			initUniverse(new SphereGeometry(50, 16, 12));
 			if (network.isStatus(Status.HAS_LAYOUT))

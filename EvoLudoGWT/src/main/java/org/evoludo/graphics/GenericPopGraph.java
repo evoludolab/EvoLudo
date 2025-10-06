@@ -80,6 +80,11 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		implements Network.LayoutListener, Zooming, DoubleClickHandler {
 
 	/**
+	 * The CSS class name for changing the cursor when hovering over a node.
+	 */
+	public static final String EVOLUDO_CURSOR_NODE = "evoludo-cursorPointNode";
+
+	/**
 	 * The structure of the population.
 	 */
 	protected Geometry geometry;
@@ -359,17 +364,17 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 			return null;
 		int node = findNodeAt(x, y);
 		if (node < 0) {
-			element.removeClassName("evoludo-cursorPointNode");
+			element.removeClassName(EVOLUDO_CURSOR_NODE);
 			return null;
 		}
-		element.addClassName("evoludo-cursorPointNode");
+		element.addClassName(EVOLUDO_CURSOR_NODE);
 		if (tooltipProvider instanceof TooltipProvider.Index)
 			return ((TooltipProvider.Index) tooltipProvider).getTooltipAt(this, node);
 		// last resort, try basic tooltip provider
 		if (tooltipProvider != null)
 			return tooltipProvider.getTooltipAt(node);
 		// false alarm
-		element.addClassName("evoludo-cursorPointNode");
+		element.addClassName(EVOLUDO_CURSOR_NODE);
 		return null;
 	}
 
@@ -523,14 +528,30 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 			super.populateContextMenuAt(menu, x, y);
 			return;
 		}
-		// process shake context menu
+		addShakeMenu(menu);
+		addAnimateMenu(menu);
+		addClearMenu(menu);
+		// process debug node update
+		addDebugSubmenu(menu, x, y);
+
+		super.populateContextMenuAt(menu, x, y);
+	}
+
+	/**
+	 * Helper method to process the debug submenu logic for context menu.
+	 */
+	private void addShakeMenu(ContextMenu menu) {
 		if (shakeMenu == null) {
 			shakeMenu = new ContextMenuItem("Shake", () -> network.shake(GenericPopGraph.this, 0.05));
 		}
 		menu.add(shakeMenu);
 		shakeMenu.setEnabled(!hasStaticLayout());
+	}
 
-		// process animate context menu
+	/**
+	 * Helper method to process the debug submenu logic for context menu.
+	 */
+	private void addAnimateMenu(ContextMenu menu) {
 		if (animateMenu == null) {
 			animateMenu = new ContextMenuCheckBoxItem("Animate layout", () -> {
 				animate = !animateMenu.isChecked();
@@ -540,36 +561,46 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		animateMenu.setChecked(animate);
 		menu.add(animateMenu);
 		animateMenu.setEnabled(!hasMessage && !hasStaticLayout());
+	}
 
+	/**
+	 * Helper method to process the clear context menu.
+	 */
+	private void addClearMenu(ContextMenu menu) {
 		// add menu to clear buffer (applies only to linear geometry)
-		if (geometry.getType() == Geometry.Type.LINEAR) {
-			if (clearMenu == null) {
-				clearMenu = new ContextMenuItem("Clear", () -> {
-					clearHistory();
-					paint(true);
-				});
-			}
-			menu.add(clearMenu);
+		if (!hasHistory()) {
+			clearMenu = null;
+			return;
 		}
-
-		// process debug node update
-		if (isDebugEnabled) {
-			int debugNode = findNodeAt(x, y);
-			if (debugNode >= 0 && debugNode < geometry.size) {
-				if (debugSubmenu == null) {
-					debugSubmenu = new ContextMenu(menu);
-					debugNodeMenu = new ContextMenuItem("Update node @ -",
-							() -> module.getIBSPopulation().debugUpdatePopulationAt(debugNode));
-					debugSubmenu.add(debugNodeMenu);
-				}
-				debugNodeMenu.setText("Update node @ " + debugNode);
-				debugNodeMenu.setEnabled(view.getModel().getType().isIBS());
-				debugSubmenuTrigger = menu.add("Debug...", debugSubmenu);
-			}
-			if (debugSubmenuTrigger != null)
-				debugSubmenuTrigger.setEnabled(!view.isRunning());
+		if (clearMenu == null) {
+			clearMenu = new ContextMenuItem("Clear", () -> {
+				clearHistory();
+				paint(true);
+			});
 		}
+		menu.add(clearMenu);
+	}
 
-		super.populateContextMenuAt(menu, x, y);
+	/**
+	 * Helper method to process the debug submenu logic for context menu.
+	 */
+	private void addDebugSubmenu(ContextMenu menu, int x, int y) {
+		if (!isDebugEnabled) {
+			return;
+		}
+		int debugNode = findNodeAt(x, y);
+		if (debugNode >= 0 && debugNode < geometry.size) {
+			if (debugSubmenu == null) {
+				debugSubmenu = new ContextMenu(menu);
+				debugNodeMenu = new ContextMenuItem("Update node @ -",
+						() -> module.getIBSPopulation().debugUpdatePopulationAt(debugNode));
+				debugSubmenu.add(debugNodeMenu);
+			}
+			debugNodeMenu.setText("Update node @ " + debugNode);
+			debugNodeMenu.setEnabled(view.getModel().getType().isIBS());
+			debugSubmenuTrigger = menu.add("Debug...", debugSubmenu);
+		}
+		if (debugSubmenuTrigger != null)
+			debugSubmenuTrigger.setEnabled(!view.isRunning());
 	}
 }

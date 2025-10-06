@@ -270,4 +270,14 @@ public abstract class Network3D extends Network {
 	public Node3D get(int index) {
 		return nodes[index];
 	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return super.equals(obj);
+	}
+
+	@Override
+	public int hashCode() {
+		return super.hashCode();
+	}
 }

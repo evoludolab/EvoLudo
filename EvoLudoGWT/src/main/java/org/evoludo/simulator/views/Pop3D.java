@@ -291,14 +291,35 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 	@Override
 	public void populateContextMenu(ContextMenu menu) {
 		menu.addSeparator();
-		boolean hasMessage = false;
-		for (PopGraph3D graph : graphs)
-			hasMessage |= graph.hasMessage();
-		boolean isOrthographic = graphs.get(0).isOrthographic();
-		boolean isAnaglyph = graphs.get(0).isAnaglyph();
-		boolean isVR = graphs.get(0).isVR();
+		boolean multiGraph = graphs.size() > 1;
+		PopGraph3D graph = graphs.get(0);
+		boolean isOrthographic = graph.isOrthographic();
+		boolean isAnaglyph = graph.isAnaglyph();
+		boolean isVR = graph.isVR();
+		// projections synchronized across graphs.
+		addProjectionMenu(menu);
+		projectionMenu.setChecked(isOrthographic);
+		projectionMenu.setEnabled(!(isAnaglyph || isVR));
+		// anaglyph and VR modes are mutually exclusive
+		// only available for a single graph
+		if (!multiGraph) {
+			addAnaglyphMenu(menu);
+			addVRMenu(menu);
+			anaglyphMenu.setChecked(isAnaglyph);
+			anaglyphMenu.setEnabled(!isOrthographic);
+			vrMenu.setChecked(isVR);
+			vrMenu.setEnabled(!isOrthographic);
+		}
+		super.populateContextMenu(menu);
+	}
 
-		// process perspective context menu
+	/**
+	 * Add the menu item to select parallel projection of the graph instead of the
+	 * default perspective projection.
+	 * 
+	 * @param menu the context menu to which the item is added
+	 */
+	private void addProjectionMenu(ContextMenu menu) {
 		if (projectionMenu == null) {
 			projectionMenu = new ContextMenuCheckBoxItem("Parallel projection", () -> {
 				boolean isOrtho = !projectionMenu.isChecked();
@@ -308,10 +329,15 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 			});
 		}
 		menu.add(projectionMenu);
-		projectionMenu.setChecked(isOrthographic);
-		projectionMenu.setEnabled(!(isAnaglyph || isVR) && !hasMessage);
+	}
 
-		// process anaglyph context menu
+	/**
+	 * Add the menu item to select anaglyph projection of the 3D space for a
+	 * representation of the graph suitable for colored 3D glasses.
+	 * 
+	 * @param menu the context menu to which the item is added
+	 */
+	private void addAnaglyphMenu(ContextMenu menu) {
 		if (anaglyphMenu == null) {
 			anaglyphMenu = new ContextMenuCheckBoxItem("Anaglyph 3D", () -> {
 				boolean anaglyph = !anaglyphMenu.isChecked();
@@ -321,12 +347,16 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 			});
 		}
 		menu.add(anaglyphMenu);
-		anaglyphMenu.setChecked(isAnaglyph);
-		anaglyphMenu.setEnabled(!isOrthographic && !hasMessage);
+	}
 
-		// process virtual reality context menu
+	/**
+	 * Add the menu item to select stereo projection of the 3D space for a virtual
+	 * reality representation of the graph.
+	 * 
+	 * @param menu the context menu to which the item is added
+	 */
+	private void addVRMenu(ContextMenu menu) {
 		if (graphs.size() == 1) {
-			// VR only makes sense with a single graph
 			if (vrMenu == null) {
 				vrMenu = new ContextMenuCheckBoxItem("Virtual reality (β)", () -> {
 					boolean vr = !vrMenu.isChecked();
@@ -336,18 +366,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 				});
 			}
 			menu.add(vrMenu);
-			vrMenu.setChecked(isVR);
-			vrMenu.setEnabled(!isOrthographic && !hasMessage);
 		}
-
-		// anaglyph and VR not possible for parallel projection
-		if (isOrthographic) {
-			for (PopGraph3D graph : graphs) {
-				graph.setAnaglyph(false);
-				graph.setVR(false);
-			}
-		}
-		super.populateContextMenu(menu);
 	}
 
 	@Override

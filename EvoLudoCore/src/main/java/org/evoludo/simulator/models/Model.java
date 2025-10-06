@@ -1197,7 +1197,7 @@ public abstract class Model implements CLOProvider {
 	 * @return array of mean trait values
 	 */
 	public double[] getMeanTraitAt(int id, int idx) {
-		return null;
+		throw new UnsupportedOperationException("getMeanTraitAt not implemented");
 	}
 
 	/**
@@ -1213,7 +1213,7 @@ public abstract class Model implements CLOProvider {
 	 * @return description of traits at <code>idx</code>
 	 */
 	public String getTraitNameAt(int id, int idx) {
-		return null;
+		throw new UnsupportedOperationException("getTraitNameAt not implemented");
 	}
 
 	/**
@@ -1275,7 +1275,7 @@ public abstract class Model implements CLOProvider {
 	 * @return the array of mean fitness values
 	 */
 	public double[] getMeanFitnessAt(int id, int idx) {
-		return null;
+		throw new UnsupportedOperationException("getMeanFitnessAt not implemented");
 	}
 
 	/**
@@ -1574,12 +1574,10 @@ public abstract class Model implements CLOProvider {
 			"--timestop <h>   halt execution after <h> generations", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					if (cloTimeStop.isSet()) {
+					if (cloTimeStop.getDefault().equals(arg))
+						setTimeStop(Double.POSITIVE_INFINITY);
+					else
 						setTimeStop(CLOParser.parseDouble(arg));
-						return true;
-					}
-					String gens = cloTimeStop.getDefault();
-					setTimeStop(gens.equals("never") ? Double.POSITIVE_INFINITY : CLOParser.parseDouble(gens));
 					return true;
 				}
 			});

@@ -40,8 +40,6 @@ import com.google.gwt.dom.client.Style.Position;
 import com.google.gwt.dom.client.Style.TextAlign;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.dom.client.Style.VerticalAlign;
-import com.google.gwt.event.dom.client.ClickEvent;
-import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.DomEvent;
 import com.google.gwt.event.dom.client.KeyCodes;
 import com.google.gwt.event.dom.client.MouseDownEvent;
@@ -60,6 +58,7 @@ import com.google.gwt.user.client.ui.SimplePanel;
  * 
  * @author Christoph Hauert
  */
+@SuppressWarnings("java:S110")
 public class EvoLudoTrigger extends PushButton {
 
 	/**
@@ -78,32 +77,29 @@ public class EvoLudoTrigger extends PushButton {
 	 * @param id the id of the element
 	 */
 	public EvoLudoTrigger(final String id) {
-		addClickHandler(new ClickHandler() {
-			@Override
-			public void onClick(ClickEvent event) {
-				if (popup != null) {
-					// NOTE: onLoad will be called automatically - do not call explicitly as it will
-					// cause trouble with 3D stuff
-					popup.show();
-					return;
-				}
-				popup = new LightboxPanel();
-				EvoLudoWeb lab = new EvoLudoWeb(id, popup);
-				FocusPanel panel = new FocusPanel();
-				panel.addStyleName("evoludo-simulation");
-				Style style = panel.getElement().getStyle();
-				style.setProperty("borderRadius", "5px");
-				style.setProperty("borderWidth", "thick");
-				style.setPosition(Position.ABSOLUTE);
-				style.setProperty("transform", "translate(-50%, -35%)");
-				style.setTop(33, Unit.PCT);
-				style.setLeft(50, Unit.PCT);
-				panel.setWidget(lab);
-				popup.add(panel);
-				panel.addMouseOverHandler(moe -> mouseOverLab = true);
-				panel.addMouseOutHandler(moe -> mouseOverLab = false);
+		addClickHandler(event -> {
+			if (popup != null) {
+				// NOTE: onLoad will be called automatically - do not call explicitly as it will
+				// cause trouble with 3D stuff
 				popup.show();
+				return;
 			}
+			popup = new LightboxPanel();
+			EvoLudoWeb lab = new EvoLudoWeb(id, popup);
+			FocusPanel panel = new FocusPanel();
+			panel.addStyleName("evoludo-simulation");
+			Style style = panel.getElement().getStyle();
+			style.setProperty("borderRadius", "5px");
+			style.setProperty("borderWidth", "thick");
+			style.setPosition(Position.ABSOLUTE);
+			style.setProperty("transform", "translate(-50%, -35%)");
+			style.setTop(33, Unit.PCT);
+			style.setLeft(50, Unit.PCT);
+			panel.setWidget(lab);
+			popup.add(panel);
+			panel.addMouseOverHandler(moe -> mouseOverLab = true);
+			panel.addMouseOutHandler(moe -> mouseOverLab = false);
+			popup.show();
 		});
 		Image logo = new Image(Resources.INSTANCE.logoSmall());
 		getElement().appendChild(logo.getElement());
