@@ -129,79 +129,86 @@ import com.google.gwt.user.client.ui.Widget;
 
 /**
  * Entry point classes define <code>onModuleLoad()</code>.
+ * <p>
+ * EvoLudoWeb is the main class for EvoLudo's web interface. It is instantiated
+ * either through GWT's module loading mechanism or through trigger buttons.
+ * <p>
+ * <strong>ePub notes:</strong>
+ * <ol>
+ * <li>buttons do not work in ePub's and hence
+ * trigger-'buttons' must be provided as anchor elements.</li>
+ * </ol>
+ * <p>
+ * <strong>Apple Books:</strong>
+ * <ol>
+ * <li>challenges for passing information to non-linear page (clo parameters)
+ * <ul>
+ * <li>parameters and hash cleared from url before opening non-linear page</li>
+ * <li>non-linear page has no opener, referrer, parent to link to calling
+ * document</li>
+ * <li>no need to read data-clo of triggers because parameters cannot be
+ * reliably transmitted to popup lab; besides, it would be much easier to simply
+ * append the data to the URL.</li>
+ * <li>localStorage does not reliably work (>=2sec delay is required between
+ * setting the local variable and opening EvoLudoLab.xhtml...)
+ * <li>changes to localStorage do not fire storage events</li>
+ * </ul>
+ * <strong>Solution:</strong> programmatically create individual XHTML pages for
+ * each lab, which includes the correct parameters in the data-clo tag, and link
+ * to that page.</li>
+ * <li>need to do something about touch events on desktop...
+ * <ul>
+ * <li>attaching touch handlers to triggers does nothing</li>
+ * <li>Apple's TouchEvents.js patch does not play nicely with GWT</li>
+ * <li>patch seems to prevent marking/highlighting of text passages. worth
+ * verifying and filing bug report with Apple if this is indeed the case?</li>
+ * </ul>
+ * <strong>Solution:</strong> inject script TouchEventsGWT.js for iBooks without
+ * touch-events to patch the patch. this could probably be done in a JSNI
+ * routine.</li>
+ * <li>events in ePubs:
+ * <ul>
+ * <li>iBooks does not fire 'wheel' or 'scroll' events (i.e. zooming does not
+ * work) for labs in the flow of the text; no point in adding them to the
+ * canvas(es). however, ok in non-linear labs!</li>
+ * <li>key events are sent (at least) to all labs in current chapter (isShowing
+ * does not work because it's impossible (?) to determine current page
+ * visible...); do not process key events for labs in the flow of the text
+ * (except maybe 'Alt'?). however, ok in non-linear labs!</li>
+ * <li>check for full screen capabilities causes flicker in iBooks (ugly...);
+ * seems to be related to key event handing (never observed for context menu);
+ * should be resolved by disabling key handler;</li>
+ * </ul>
+ * <strong>Solution:</strong> for labs in text flow 'wheel', 'key' and
+ * 'fullscreen' events disabled ('Alt' still processed, if ePub has
+ * 'key-events') but not in standalone labs. As a consequence, labs in text also
+ * do not include console (impossible to scroll...).</li>
+ * <li>use different GUI elements in ePub
+ * <ul>
+ * <li>parameters in <code>evoludoCLO</code> text area are not read-only but
+ * essentially impossible to enter or edit anything; parameters should be
+ * read-only (mark with grey text color or similar); disable 'Apply' button,
+ * change 'Default' button to 'Standalone/External' lab opening a non-linear
+ * page or redirecting to evoludo.org, respectively (use 'Alt' key).</li>
+ * </ul>
+ * <strong>Solution:</strong> <code>evoludoCLO</code> is read only for labs in
+ * text flow. 'Apply' and 'Help' buttons disabled (no console to display help
+ * text because of scrolling issues). 'Default' button is repurposed to open
+ * standalone lab.</li>
+ * <li>Clicks on button text do work for starting simulations but not for
+ * stopping them... clicking on the button next to its text works as expected.
+ * </ol>
+ * <p>
+ * <strong>Adobe Digital Editions</strong>
+ * <ol>
+ * <li>non-linear pages are appended to the end, which makes returning to the
+ * corresponding text location impossible (somehow a marker should be set to
+ * allow using the back button).</li>
+ * </ol>
  */
 public class EvoLudoWeb extends Composite
 		implements HasFullscreenChangeHandlers, FullscreenChangeHandler, MilestoneListener, ChangeListener,
 		SampleListener, CLOProvider, EntryPoint {
-
-	/**
-	 * <strong>Apple Books (iBook) notes:</strong>
-	 * <ol>
-	 * <li>challenges for passing information to non-linear page (clo parameters)
-	 * <ul>
-	 * <li>parameters and hash cleared from url before opening non-linear page</li>
-	 * <li>non-linear page has no opener, referrer, parent to link to calling
-	 * document</li>
-	 * <li>no need to read data-clo of triggers because parameters cannot be
-	 * reliably transmitted to popup lab; besides, it would be much easier to simply
-	 * append the data to the URL.</li>
-	 * <li>localStorage does not reliably work (>=2sec delay is required between
-	 * setting the local variable and opening EvoLudoLab.xhtml...)
-	 * <li>changes to localStorage do not fire storage events</li>
-	 * </ul>
-	 * <strong>Solution:</strong> programmatically create individual XHTML pages for
-	 * each lab, which includes the correct parameters in the data-clo tag, and link
-	 * to that page.</li>
-	 * <li>need to do something about touch events on desktop...
-	 * <ul>
-	 * <li>attaching touch handlers to triggers does nothing</li>
-	 * <li>Apple's TouchEvents.js patch does not play nicely with GWT</li>
-	 * <li>patch seems to prevent marking/highlighting of text passages. worth
-	 * verifying and filing bug report with Apple if this is indeed the case?</li>
-	 * </ul>
-	 * <strong>Solution:</strong> inject script TouchEventsGWT.js for iBooks without
-	 * touch-events to patch the patch. this could probably be done in a JSNI
-	 * routine.</li>
-	 * <li>events in ePubs:
-	 * <ul>
-	 * <li>iBooks does not fire 'wheel' or 'scroll' events (i.e. zooming does not
-	 * work) for labs in the flow of the text; no point in adding them to the
-	 * canvas(es). however, ok in non-linear labs!</li>
-	 * <li>key events are sent (at least) to all labs in current chapter (isShowing
-	 * does not work because it's impossible (?) to determine current page
-	 * visible...); do not process key events for labs in the flow of the text
-	 * (except maybe 'Alt'?). however, ok in non-linear labs!</li>
-	 * <li>check for full screen capabilities causes flicker in iBooks (ugly...);
-	 * seems to be related to key event handing (never observed for context menu);
-	 * should be resolved by disabling key handler;</li>
-	 * </ul>
-	 * <strong>Solution:</strong> for labs in text flow 'wheel', 'key' and
-	 * 'fullscreen' events disabled ('Alt' still processed, if ePub has
-	 * 'key-events') but not in standalone labs. As a consequence, labs in text also
-	 * do not include console (impossible to scroll...).</li>
-	 * <li>use different GUI elements in ePub
-	 * <ul>
-	 * <li>parameters in <code>evoludoCLO</code> text area are not read-only but
-	 * essentially impossible to enter or edit anything; parameters should be
-	 * read-only (mark with grey text color or similar); disable 'Apply' button,
-	 * change 'Default' button to 'Standalone/External' lab opening a non-linear
-	 * page or redirecting to evoludo.org, respectively (use 'Alt' key).</li>
-	 * </ul>
-	 * <strong>Solution:</strong> <code>evoludoCLO</code> is read only for labs in
-	 * text flow. 'Apply' and 'Help' buttons disabled (no console to display help
-	 * text because of scrolling issues). 'Default' button is repurposed to open
-	 * standalone lab.</li>
-	 * <li>Clicks on button text do work for starting simulations but not for
-	 * stopping them... clicking on the button next to its text works as expected.
-	 * </ol>
-	 *
-	 * <strong>ePub notes:</strong>
-	 * <ol>
-	 * <li>Adobe Digital Editions: non-linear pages are appended to the end, which
-	 * makes returning to the corresponding text location impossible (somehow a
-	 * marker should be set to allow using the back button).</li>
-	 * </ol>
-	 */
 
 	/**
 	 * GWT magic to define GUI elements (see {@literal EvoLudoWeb.ui.xml}).
@@ -354,13 +361,9 @@ public class EvoLudoWeb extends Composite
 		if (id != null)
 			elementID = id;
 		RootPanel root = RootPanel.get(elementID);
-		if (root == null) {
-			// element does not exist - should we create it and attach to DOM? or simply
-			// fail?
-			initWidget(new Label("Element with ID '" + elementID + "' does not exist!"));
-			isWebGLSupported = false;
-			return;
-		}
+		if (root == null)
+			throw new IllegalArgumentException("Element with ID '" + elementID + "' does not exist!");
+
 		initWidget(uiBinder.createAndBindUi(this));
 		// hide overlay
 		evoludoOverlay.setVisible(false);
@@ -375,26 +378,9 @@ public class EvoLudoWeb extends Composite
 		// canvas is supported, now check if WebGL is supported as well
 		isWebGLSupported = NativeJS.isWebGLSupported();
 
-		// instantiate engine early so that logging can be set up; EvoLudo console is
-		// added later
-		engine = new EvoLudoGWT(this);
-		engine.addCLOProvider(this);
-		engine.addMilestoneListener(this);
-		engine.addSampleListener(this);
-		engine.addChangeListener(this);
-		logger = engine.getLogger();
-		logger.setLevel(Level.INFO);
-		// note: log handler needs to know whether this is an ePub (regardless of any
-		// feature declarations with --gui) to make sure log is properly XML encoded (if
-		// needed).
-		boolean isEPub = NativeJS.getEPubReader() != null;
-		ConsoleLogHandler logHandler = new ConsoleLogHandler();
-		logHandler.setFormatter(new XMLLogFormatter(true, isEPub || !engine.isHTML));
-		logger.addHandler(logHandler);
-
 		// set command line options
 		evoludoCLO.getElement().setAttribute("contenteditable", "true");
-		engine.setCLO(clo);
+		evoludoCLO.setText(clo != null ? clo : "");
 
 		// layout speed controls - GWT has no slider...
 		// but we can construct one from HTML5!
@@ -403,12 +389,6 @@ public class EvoLudoWeb extends Composite
 		// note: the {}-place holders interfere with UiBinder...
 		evoludoSlider.setTitle("Set delay between updates ({max} - {min}msec); now at {value}msec");
 
-		viewConsole = new Console(engine);
-		logEvoHandler = new EvoLogHandler(viewConsole);
-		logger.addHandler(logEvoHandler);
-		logger.setLevel(Level.INFO);
-		logger.info(engine.getVersion());
-		logFeatures();
 		// add full screen change handler
 		if (NativeJS.isFullscreenSupported())
 			fullscreenHandler = addFullscreenChangeHandler(this);
@@ -430,39 +410,84 @@ public class EvoLudoWeb extends Composite
 		Resources.INSTANCE.css().ensureInjected();
 		// process DOM and replace all div's with class evoludo-simulation by an
 		// interactive lab
+		processEvoLudoLabs();
+		// process DOM and replace all div's with class evoludo-trigger-html by a
+		// trigger button
+		processEvoLudoTriggers();
+	}
+
+	/**
+	 * Process DOM and add/allocate an EvoLudo lab whenever a {@code <div>} element
+	 * with <code>class="evoludo-simulation"</code> is found.
+	 * <p>
+	 * The first lab found is passed any command line options specified in the URL
+	 * (parameter <code>clo</code>). Any subsequent labs need to specify command
+	 * line options through the <code>data-clo</code> attribute.
+	 */
+	private void processEvoLudoLabs() {
 		NodeList<Element> labs = NativeJS.querySelectorAll("div.evoludo-simulation");
 		int nLabs = labs.getLength();
 		for (int n = 0; n < nLabs; n++) {
 			Element labElement = labs.getItem(n);
-			HTMLPanel lab = HTMLPanel.wrap(labElement);
-			String id = labElement.getId();
-			if (id == null || id.isEmpty()) {
-				id = HTMLPanel.createUniqueId();
-				labElement.setId(id);
-			}
-			// check if options have been provided in URL (works only if there is
-			// just a single lab on the page).
-			if (nLabs > 1) {
-				lab.add(new EvoLudoWeb(id, (String) null));
-				continue;
-			}
-			String clo = Window.Location.getParameter("clo");
-			if (clo != null) {
-				clo = clo.trim();
-				if (!clo.isEmpty()) {
-					if (clo.charAt(0) == '"' || clo.charAt(0) == '“' || clo.charAt(0) == "'".charAt(0))
-						clo = clo.substring(1);
-					if (clo.charAt(clo.length() - 1) == '"' || clo.charAt(clo.length() - 1) == '”'
-							|| clo.charAt(clo.length() - 1) == "'".charAt(0))
-						clo = clo.substring(0, clo.length() - 1);
-					// converts + (and %2B) into spaces to prevent troubles (e.g. for geometries)
-					// clo = URL.decodeQueryString(clo);
-				}
-			}
-			lab.add(new EvoLudoWeb(id, clo));
+			String clo = (n == 0 ? getCLOFromURL() : null);
+			addEvoLudoToDOM(labElement, clo);
 		}
-		// process DOM and replace all div's with class evoludo-trigger-html by a
-		// trigger button
+	}
+
+	/**
+	 * Add an EvoLudo lab to the DOM element with the given ID. If the ID is
+	 * {@code null} or empty,
+	 * a unique ID is generated. If {@code clo} is {@code null} or empty, the
+	 * {@code data-clo} attribute
+	 * is read and used to set the command line options for the lab.
+	 * 
+	 * @param panel the HTML panel to which the lab is added
+	 * @param id    the ID of the lab element
+	 * @param clo   the command line options for the lab
+	 */
+	private void addEvoLudoToDOM(Element labElement, String clo) {
+		HTMLPanel panel = HTMLPanel.wrap(labElement);
+		String id = labElement.getId();
+		if (id == null || id.isEmpty())
+			id = HTMLPanel.createUniqueId();
+		labElement.setId(id);
+		if (clo != null && !clo.isEmpty())
+			labElement.setAttribute("data-clo", clo);
+		EvoLudoWeb lab = new EvoLudoWeb(id, clo);
+		panel.add(lab);
+	}
+
+	/**
+	 * Extract command line options from URL parameter {@code clo}.
+	 * 
+	 * @return the command line options
+	 */
+	private String getCLOFromURL() {
+		String clo = Window.Location.getParameter("clo");
+		if (clo != null) {
+			clo = clo.trim();
+			if (!clo.isEmpty()) {
+				if (clo.charAt(0) == '"' || clo.charAt(0) == '“' || clo.charAt(0) == "'".charAt(0))
+					clo = clo.substring(1);
+				if (clo.charAt(clo.length() - 1) == '"' || clo.charAt(clo.length() - 1) == '”'
+						|| clo.charAt(clo.length() - 1) == "'".charAt(0))
+					clo = clo.substring(0, clo.length() - 1);
+				// converts + (and %2B) into spaces to prevent troubles (e.g. for geometries)
+				// clo = URL.decodeQueryString(clo);
+			}
+		}
+		return clo;
+	}
+
+	/**
+	 * Process DOM and replace all {@code <div>} elements with
+	 * <code>class="evoludo-trigger-html"</code> by a button that triggers a popup
+	 * EvoLudo lab.
+	 * <p>
+	 * <strong>Note:</strong> buttons do not work in ePub's and hence
+	 * trigger-'buttons' must be provided as anchor elements.
+	 */
+	private void processEvoLudoTriggers() {
 		NodeList<Element> triggers = NativeJS.querySelectorAll("div.evoludo-trigger-html");
 		int nTriggers = triggers.getLength();
 		for (int n = 0; n < nTriggers; n++) {
@@ -488,6 +513,10 @@ public class EvoLudoWeb extends Composite
 	@Override
 	public void onLoad() {
 		super.onLoad();
+		setupEngine();
+		setupLogger(engine);
+		setupConsole(logger);
+
 		// now evoludoPanel is attached and we can set the grandparent as the
 		// fullscreen element
 		fullscreenWidget = evoludoPanel.getParent().getParent();
@@ -504,6 +533,56 @@ public class EvoLudoWeb extends Composite
 		applyCLO();
 		// save initial set of parameters as default
 		defaultCLO = clo;
+	}
+
+	/**
+	 * Create EvoLudo engine and load modules.
+	 */
+	private void setupEngine() {
+		if (engine != null)
+			return;
+		engine = new EvoLudoGWT(this);
+		engine.loadModules();
+		engine.addCLOProvider(this);
+		engine.addMilestoneListener(this);
+		engine.addSampleListener(this);
+		engine.addChangeListener(this);
+		engine.setCLO(evoludoCLO.getText().trim());
+	}
+
+	/**
+	 * Retrieve the logger and setup the log handler.
+	 * 
+	 * @param engine the EvoLudo engine
+	 */
+	private void setupLogger(EvoLudoGWT engine) {
+		if (logger != null)
+			return;
+		logger = engine.getLogger();
+		logger.setLevel(Level.INFO);
+		// note: log handler needs to know whether this is an ePub (regardless of any
+		// feature declarations with --gui) to make sure log is properly XML encoded (if
+		// needed).
+		boolean isEPub = NativeJS.getEPubReader() != null;
+		ConsoleLogHandler logHandler = new ConsoleLogHandler();
+		logHandler.setFormatter(new XMLLogFormatter(true, isEPub || !engine.isHTML));
+		logger.addHandler(logHandler);
+	}
+
+	/**
+	 * Setup the EvoLudo console to display log messages.
+	 * 
+	 * @param logger the logger instance
+	 */
+	private void setupConsole(Logger logger) {
+		if (viewConsole != null)
+			return;
+		viewConsole = new Console(engine);
+		logEvoHandler = new EvoLogHandler(viewConsole);
+		logger.addHandler(logEvoHandler);
+		logger.setLevel(Level.INFO);
+		logger.info(engine.getVersion());
+		logFeatures();
 	}
 
 	/**

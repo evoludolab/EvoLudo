@@ -152,12 +152,13 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * @see #custom(Module, String[])
 	 */
 	public EvoLudoJRE(boolean loadModules) {
-		super(loadModules);
+		super();
 		setHeadless(true);
 		// allocate a coalescing timer for poking the engine in regular intervals
 		// note: timer needs to be ready before parsing command line options
 		timer = new Timer(0, evt -> poke());
 		launchEngine();
+		loadModules();
 		// add modules that require JRE (e.g. due to libraries)
 		if (loadModules)
 			addModule(new Traits(this));

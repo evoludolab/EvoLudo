@@ -458,6 +458,7 @@ public class TestEvoLudo implements MilestoneListener {
 	 * @return {@code true} if the module ran successfully
 	 */
 	private boolean runModule(String task, String clo) {
+		engine.addCLOProvider(engine);
 		engine.unloadModule();
 		// set command line options of test to generate
 		// prepend --seed 0 to ensure fixed seed; append --delay 0 to run at full speed.

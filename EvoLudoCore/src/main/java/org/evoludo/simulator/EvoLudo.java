@@ -127,7 +127,8 @@ public abstract class EvoLudo
 	 * or graphical snapshots.
 	 */
 	protected EvoLudo() {
-		this(true);
+		logger = Logger.getLogger(EvoLudo.class.getName() + "-" + ID);
+		parser = new CLOParser(this);
 	}
 
 	/**
@@ -2126,17 +2127,10 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Constructor to instantiate a new EvoLudo controller. If
-	 * {@code loadModules == true}, load all available modules. Otherwise a
-	 * specific module needs to be loaded by the caller.
-	 * 
-	 * @param loadModules the flag to indicate whether to load modules
+	 * Load all available modules. Specific modules are the responsibility of the
+	 * caller.
 	 */
-	protected EvoLudo(boolean loadModules) {
-		logger = Logger.getLogger(EvoLudo.class.getName() + "-" + ID);
-		parser = new CLOParser(this);
-		if (!loadModules)
-			return;
+	public void loadModules() {
 		// load all available modules
 		addModule(new Moran(this));
 		addModule(new TBT(this));
