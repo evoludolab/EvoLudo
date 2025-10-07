@@ -75,7 +75,9 @@ public class Segment2D extends Line2D {
 	 * @param p2 the end point
 	 */
 	public Segment2D(Point2D p1, Point2D p2) {
-		this(p1.x, p1.y, p2.x, p2.y);
+		super(p1, p2);
+		this.p1 = p1;
+		this.p2 = p2;
 	}
 
 	/**
@@ -88,9 +90,7 @@ public class Segment2D extends Line2D {
 	 * @param y2 the <code>y</code>-coordinate of end point
 	 */
 	public Segment2D(double x1, double y1, double x2, double y2) {
-		this.p1 = new Point2D();
-		this.p2 = new Point2D();
-		set(x1, y1, x2, y2);
+		this(new Point2D(x1, y1), new Point2D(x2, y2));
 	}
 
 	/**

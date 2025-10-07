@@ -51,6 +51,12 @@ public class ContextMenuSeparator extends Label {
 	 * Creates a new separator to structure entries in context menus.
 	 */
 	public ContextMenuSeparator() {
+		// the actual layout of the menu separator is controlled via CSS
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
 		setStyleName("gwt-ContextMenuSeparator");
 	}
 }

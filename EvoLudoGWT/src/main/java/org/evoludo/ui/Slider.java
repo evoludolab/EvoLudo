@@ -111,7 +111,7 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 	/**
 	 * Reference to slider. The &lt;input&gt; element.
 	 */
-	protected HTML slider;
+	protected HTML html;
 
 	/**
 	 * Title of slider. This string is displayed as the slider's tooltip and is
@@ -135,27 +135,67 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 	 * 
 	 * @see #SLIDER_MIN
 	 */
-	protected double min = SLIDER_MIN;
+	protected double min;
 
 	/**
 	 * Maximum value of slider.
 	 * 
 	 * @see #SLIDER_MAX
 	 */
-	protected double max = SLIDER_MAX;
+	protected double max;
+
+	/**
+	 * Initial value of slider.
+	 */
+	protected double init;
 
 	/**
 	 * Number of steps between minimum and maximum value of slider.
 	 * 
 	 * @see #SLIDER_STEPS
 	 */
-	protected int steps = SLIDER_STEPS;
+	protected int steps;
 
 	/**
 	 * Helper variable to the logarithm of the slider range. Reduces calls to the
 	 * fairly expensive {@link Math#log(double)}.
 	 */
 	protected double logRange = -1.0;
+
+	/**
+	 * The change event handler registration.
+	 */
+	ChangeHandler changeHandler;
+
+	/**
+	 * The input event handler registration.
+	 */
+	HandlerRegistration inputRegistration;
+
+	/**
+	 * The click event handler registration.
+	 */
+	HandlerRegistration clickRegistration;
+
+	/**
+	 * The touch start event handler registration.
+	 */
+	HandlerRegistration touchStartRegistration;
+
+	/**
+	 * The touch end event handler registration.
+	 */
+	HandlerRegistration touchEndRegistration;
+
+	/**
+	 * The touch move event handler registration.
+	 */
+	HandlerRegistration touchMoveRegistration;
+
+	/**
+	 * The change event handler registration.
+	 */
+	HandlerRegistration changeRegistration;
 
 	/**
 	 * Creates a Slider widget that wraps an existing &lt;input&gt; element. This
@@ -173,6 +213,7 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 		Slider slider = new Slider(element);
 		// Mark it attached and remember it for cleanup.
 		slider.onAttach();
+		// the deprecation of detachOnWindowClose is a GWT issue - wait for their fix...
 		RootPanel.detachOnWindowClose(slider);
 
 		return slider;
@@ -195,8 +236,7 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 	 * @param handler the change handler
 	 */
 	public Slider(ChangeHandler handler) {
-		this(SLIDER_MIN, SLIDER_MAX);
-		addChangeHandler(handler);
+		this(SLIDER_MIN, SLIDER_MAX, handler);
 	}
 
 	/**
@@ -220,8 +260,7 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 	 * @param handler the change handler
 	 */
 	public Slider(double min, double max, ChangeHandler handler) {
-		this(min, max, (min + max) / 2, SLIDER_STEPS);
-		addChangeHandler(handler);
+		this(min, max, (min + max) / 2, SLIDER_STEPS, handler);
 	}
 
 	/**
@@ -233,23 +272,30 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 	 * @param init  the initial value
 	 * @param steps the number of steps
 	 */
-	@SuppressWarnings("deprecation")
 	public Slider(double min, double max, double init, int steps) {
-		slider = new HTML("<input class='gwt-Slider' style='width:100%' type='range' min='" + SLIDER_MIN + "' max='"
+		this(min, max, init, steps, null);
+	}
+
+	/**
+	 * Creates a slider ranging from <code>min</code> to <code>max</code> with
+	 * <code>steps</code> increments and initial value <code>init</code>.
+	 * 
+	 * @param min   the minimum value
+	 * @param max   the maximum value
+	 * @param init  the initial value
+	 * @param steps the number of steps
+	 */
+	public Slider(double min, double max, double init, int steps, ChangeHandler handler) {
+		html = new HTML("<input class='gwt-Slider' style='width:100%' type='range' min='" + SLIDER_MIN + "' max='"
 				+ SLIDER_MAX + "' step='" + ((SLIDER_MAX - SLIDER_MIN) / SLIDER_STEPS) + "' value='"
 				+ ((SLIDER_MAX + SLIDER_MIN) / 2) + "' />");
-		// the setElement business is a GWT issue - ignore here...
-		setElement(slider.getElement());
-		setStyleName("gwt-Slider");
-		addChangeHandler(this);
-		addInputHandler(this);
-		addClickHandler(this);
-		addTouchStartHandler(this);
-		addTouchEndHandler(this);
-		addTouchMoveHandler(this);
-		setRange(min, max);
-		setSteps(steps);
-		setValue(init);
+		// the deprecated setElement is a GWT issue - wait for their fix...
+		setElement(html.getElement());
+		this.changeHandler = (handler == null ? this : handler);
+		this.min = min;
+		this.max = max;
+		this.init = init;
+		this.steps = steps;
 	}
 
 	/**
@@ -264,8 +310,7 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 	 * @param handler the change handler
 	 */
 	public Slider(int min, int max, int init, int steps, ChangeHandler handler) {
-		this(min, max, init, steps);
-		addChangeHandler(handler);
+		this((double) min, (double) max, (double) init, steps, handler);
 	}
 
 	/**
@@ -279,13 +324,46 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 		InputElement.as(element);
 	}
 
+	@Override
+	protected void onLoad() {
+		super.onLoad();
+		setStyleName("gwt-Slider");
+		// set range may already have been called - careful with reversed sliders
+		setRange(getMin(), getMax());
+		setSteps(steps);
+		setValue(init);
+		inputRegistration = addInputHandler(this);
+		clickRegistration = addClickHandler(this);
+		touchStartRegistration = addTouchStartHandler(this);
+		touchEndRegistration = addTouchEndHandler(this);
+		touchMoveRegistration = addTouchMoveHandler(this);
+		changeRegistration = addChangeHandler(changeHandler);
+	}
+
+	@Override
+	protected void onUnload() {
+		super.onUnload();
+		if (inputRegistration != null)
+			inputRegistration.removeHandler();
+		if (clickRegistration != null)
+			clickRegistration.removeHandler();
+		if (touchStartRegistration != null)
+			touchStartRegistration.removeHandler();
+		if (touchEndRegistration != null)
+			touchEndRegistration.removeHandler();
+		if (touchMoveRegistration != null)
+			touchMoveRegistration.removeHandler();
+		if (changeRegistration != null)
+			changeRegistration.removeHandler();
+	}
+
 	/**
 	 * Get the input element underlying the slider.
 	 * 
 	 * @return the {@link InputElement}
 	 */
 	protected InputElement getInputElement() {
-		return InputElement.as(DOM.getFirstChild(slider.getElement()));
+		return InputElement.as(DOM.getFirstChild(html.getElement()));
 	}
 
 	/**
@@ -304,17 +382,35 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 		double pos = (value - left) / (right - left);
 		reversed = (left > right);
 		if (reversed) {
-			this.min = right;
-			this.max = left;
+			min = right;
+			max = left;
 		} else {
-			this.min = left;
-			this.max = right;
+			min = left;
+			max = right;
 		}
 		InputElement input = getInputElement();
-		input.setAttribute("min", String.valueOf(this.min));
-		input.setAttribute("max", String.valueOf(this.max));
-		input.setValue(String.valueOf(this.min + pos * (this.max - this.min)));
-		_update();
+		input.setAttribute("min", String.valueOf(min));
+		input.setAttribute("max", String.valueOf(max));
+		input.setValue(String.valueOf(min + pos * (max - min)));
+		update();
+	}
+
+	/**
+	 * Get the minimum value of the slider.
+	 * 
+	 * @return the minimum value
+	 */
+	public double getMin() {
+		return (reversed ? max : min);
+	}
+
+	/**
+	 * Get the maximum value of the slider.
+	 * 
+	 * @return the maximum value
+	 */
+	public double getMax() {
+		return (reversed ? min : max);
 	}
 
 	/**
@@ -343,20 +439,18 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 			throw new IllegalArgumentException("min and max of logarithmic range must be both positive.");
 		// possible to work with logarithmic scales for min<0 and max<0 by
 		// reinterpreting range - worth the hassle?
-		// if( max*min<=0.0 ) throw new IllegalArgumentException("logarithmic range
-		// cannot include zero.");
+		// if( max*min<=0.0 )
+		// throw new IllegalArgumentException("logarithmic range cannot include zero.");
 
 		double newLogBase = Math.log(base);
+		// logBase == -1 for linear sliders
 		if (Math.abs(logBase - newLogBase) < 1e-8)
 			return;
-		double value = getValue();
 		// process change of base
-		// if( logBase<0.0 ) {
-		// // slider was linear
-		// }
+		double value = getValue();
 		logBase = newLogBase;
 		setValue(value);
-		_update();
+		update();
 	}
 
 	/**
@@ -369,14 +463,14 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 		// process change of base
 		logBase = -1.0;
 		setValue(value);
-		_update();
+		update();
 	}
 
 	/**
 	 * Updates the <code>logRange</code> if needed as well as the tooltip of the
 	 * slider.
 	 */
-	private void _update() {
+	private void update() {
 		if (logBase > 0.0)
 			logRange = (Math.log(max) - Math.log(min)) / logBase;
 		updateTitle();
@@ -450,12 +544,11 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 	protected void updateTitle() {
 		if (title == null)
 			return;
-		// unfortunately GWT does not implement String.format (or any more advanced
-		// formatters)...
+		// unfortunately GWT does not implement String.format...
 		// getElement().setTitle(String.format(title, getValue()));
-		String tooltip = title.replaceAll("{min}", String.valueOf(min));
-		tooltip = tooltip.replaceAll("{max}", String.valueOf(max));
-		tooltip = tooltip.replaceAll("{value}", String.valueOf((int) (getValue() + 0.5)));
+		String tooltip = title.replace("{min}", String.valueOf(min));
+		tooltip = tooltip.replace("{max}", String.valueOf(max));
+		tooltip = tooltip.replace("{value}", String.valueOf((int) (getValue() + 0.5)));
 		getElement().setTitle(tooltip);
 	}
 

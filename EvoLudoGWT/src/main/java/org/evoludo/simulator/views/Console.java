@@ -159,7 +159,7 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 		log.setStylePrimaryName("evoludo-Log");
 		wrapper.add(log);
 		contextMenu = ContextMenu.sharedContextMenu();
-		contextMenu.add(log, this);
+		contextMenu.addListenerWithProvider(log, this);
 	}
 
 	@Override

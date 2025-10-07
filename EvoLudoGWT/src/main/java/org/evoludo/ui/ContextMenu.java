@@ -93,6 +93,8 @@ import com.google.gwt.user.client.ui.RootPanel;
  * <dt>.gwt-ContextMenu</dt>
  * <dd>the context menu element.</dd>
  * </dl>
+ * Use shared instance to create top level context menu,
+ * {@link #sharedContextMenu()}.
  * 
  * @author Christoph Hauert
  */
@@ -346,6 +348,16 @@ public class ContextMenu extends FlowPanel
 	protected HashMap<Listener, Registration> participants;
 
 	/**
+	 * The handler of mouse over events.
+	 */
+	HandlerRegistration mouseOverHandler;
+
+	/**
+	 * The handler of mouse out events.
+	 */
+	HandlerRegistration mouseOutHandler;
+
+	/**
 	 * Reference to the parent menu. This is <code>null</code> for the shared, top
 	 * level context menu.
 	 */
@@ -426,6 +438,11 @@ public class ContextMenu extends FlowPanel
 	 * menu, {@link #sharedContextMenu()}.
 	 */
 	protected ContextMenu() {
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
 		setStyleName("gwt-ContextMenu");
 		style = getElement().getStyle();
 		style.setDisplay(Display.BLOCK);
@@ -433,9 +450,27 @@ public class ContextMenu extends FlowPanel
 		style.clearRight();
 		style.clearBottom();
 		style.clearWidth();
-		addDomHandler(this, MouseOverEvent.getType());
-		addDomHandler(this, MouseOutEvent.getType());
+		mouseOverHandler = addDomHandler(this, MouseOverEvent.getType());
+		mouseOutHandler = addDomHandler(this, MouseOutEvent.getType());
 		close();
+	}
+
+	@Override
+	protected void onUnload() {
+		super.onUnload();
+		if (fullscreenChangeHandler != null) {
+			fullscreenChangeHandler.removeHandler();
+			fullscreenChangeHandler = null;
+		}
+		if (mouseOverHandler != null) {
+			mouseOverHandler.removeHandler();
+			mouseOverHandler = null;
+		}
+		if (mouseOutHandler != null) {
+			mouseOutHandler.removeHandler();
+			mouseOutHandler = null;
+		}
+		style = null;
 	}
 
 	/**
@@ -458,11 +493,24 @@ public class ContextMenu extends FlowPanel
 	 * Register a new <code>listener</code> widget for context menu requests and
 	 * associate with the <code>provider</code> of the context menu.
 	 * 
-	 * @param listener widget sporting a context menu
-	 * @param provider provides context menu entries for this listener widget
+	 * @param listener the widget sporting a context menu
+	 * @param provider the provider of context menu entries
 	 */
-	public void add(Listener listener, Provider provider) {
+	public void addListenerWithProvider(Listener listener, Provider provider) {
 		participants.put(listener, new Registration(listener, provider));
+	}
+
+	/**
+	 * Remove a previously registered <code>listener</code> widget from context menu
+	 * requests.
+	 * 
+	 * @param listener the widget to remove
+	 */
+	public void removeListener(Listener listener) {
+		Registration registration = participants.get(listener);
+		if (registration != null)
+			registration.removeHandler();
+		participants.remove(listener);
 	}
 
 	/**
@@ -549,6 +597,9 @@ public class ContextMenu extends FlowPanel
 		if (childMenu == null)
 			return;
 		remove(childMenu);
+		if (isMouseOver)
+			cancelHideTimer();
+		childMenu.onUnload();
 		childMenu = null;
 	}
 

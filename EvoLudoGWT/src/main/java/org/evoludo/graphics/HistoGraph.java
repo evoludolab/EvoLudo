@@ -52,6 +52,7 @@ import org.evoludo.util.Formatter;
  * 
  * @author Christoph Hauert
  */
+@SuppressWarnings("java:S110")
 public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipProvider {
 
 	/**
@@ -255,6 +256,11 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	public HistoGraph(Histogram view, Module module, int row) {
 		super(view, module);
 		this.row = row;
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
 		setStylePrimaryName("evoludo-HistoGraph");
 		setTooltipProvider(this);
 	}
@@ -693,7 +699,8 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		int bar = getBinAt(x, y);
 		if (bar < 0)
 			return null;
-		return tooltipProvider.getTooltipAt(bar);
+		BasicTooltipProvider provider = tooltipProvider != null ? tooltipProvider : this;
+		return provider.getTooltipAt(bar);
 	}
 
 	@Override

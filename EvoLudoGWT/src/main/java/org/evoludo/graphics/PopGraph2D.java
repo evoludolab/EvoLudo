@@ -66,6 +66,7 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
  *
  * @author Christoph Hauert
  */
+@SuppressWarnings("java:S110")
 public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Shifting {
 
 	/**

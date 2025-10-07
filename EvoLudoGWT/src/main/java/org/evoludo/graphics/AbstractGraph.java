@@ -456,6 +456,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 
 		markerColors = new String[] { "rgb(0,0,0,0.4)" };
+		add(wrapper);
+		element = getElement();
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
 		// most graphs use canvas - allocate it here (this is unnecessary for e.g.
 		// PopGraph3D but since this is the only exception so far it will have to remove
 		// canvas again)
@@ -464,11 +471,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		g = canvas.getContext2d().cast();
 		wrapper.add(canvas);
 		canvas.getParent().getElement().getStyle().setHeight(100, Unit.PCT);
-		add(wrapper);
-		element = getElement();
 		scale = NativeJS.getDevicePixelRatio();
 		contextMenu = ContextMenu.sharedContextMenu();
-		contextMenu.add(this, this);
+		contextMenu.addListenerWithProvider(this, this);
 		tooltip = Tooltip.sharedTooltip();
 		tooltip.add(this, this);
 		// no delays - at least for debugging...
@@ -477,6 +482,15 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		// note: testing/debugging touch events with ibooks on iOS is a bit of a pain.
 		// provide access to logger for minimal feedback through status line.
 		// tooltip.logger = logger;
+	}
+
+	@Override
+	protected void onUnload() {
+		super.onUnload();
+		if (canvas != null)
+			canvas.removeFromParent();
+		canvas = null;
+		contextMenu.remove(this);
 	}
 
 	/**

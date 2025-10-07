@@ -73,6 +73,7 @@ import com.google.gwt.event.dom.client.TouchStartEvent;
  * 
  * @author Christoph Hauert
  */
+@SuppressWarnings("java:S110")
 public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shifting, HasTrajectory, //
 		DoubleClickHandler {
 

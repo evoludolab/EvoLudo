@@ -95,6 +95,7 @@ import thothbot.parallax.plugins.effects.Stereo;
  * 
  * @author Christoph Hauert
  */
+@SuppressWarnings("java:S110")
 public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGWT> implements Context3dErrorHandler {
 
 	/**

@@ -70,6 +70,7 @@ import com.google.gwt.user.client.ui.Widget;
  *
  * @author Christoph Hauert
  */
+@SuppressWarnings("java:S110")
 public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shifting, HasTrajectory, //
 		DoubleClickHandler {
 

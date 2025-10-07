@@ -58,6 +58,7 @@ import com.google.gwt.core.client.Scheduler;
  * 
  * @author Christoph Hauert
  */
+@SuppressWarnings("java:S110")
 public class LineGraph extends AbstractGraph<double[]>
 		implements Shifting, Zooming, HasLogScaleY, BasicTooltipProvider {
 
@@ -76,7 +77,12 @@ public class LineGraph extends AbstractGraph<double[]>
 	 */
 	public LineGraph(Mean view, Module module) {
 		super(view, module);
-		setStylePrimaryName("evoludo-LineGraph");
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
+		setStylePrimaryName("evoludo-HistoGraph");
 		setTooltipProvider(this);
 	}
 

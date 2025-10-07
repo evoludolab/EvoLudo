@@ -76,6 +76,7 @@ import com.google.gwt.user.client.ui.Label;
  * @see Network2DGWT
  * @see Network3DGWT
  */
+@SuppressWarnings("java:S110")
 public abstract class GenericPopGraph<T, N extends Network> extends AbstractGraph<T[]>
 		implements Network.LayoutListener, Zooming, DoubleClickHandler {
 
@@ -150,6 +151,11 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 		label.getElement().getStyle().setZIndex(1);
 		label.setVisible(false);
 		wrapper.add(label);
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
 		if (view instanceof TooltipProvider.Index)
 			setTooltipProvider((TooltipProvider.Index) view);
 	}
