@@ -4433,15 +4433,6 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Set the seed of the random number generator for competition simulation runs.
-	 *
-	 * @param s the seed for random number generator
-	 */
-	public void srandom(long s) {
-		rng.setRNGSeed(s);
-	}
-
-	/**
 	 * Draw a uniformly distributed random integer number from the closed interval
 	 * {@code [0, n]}.
 	 *

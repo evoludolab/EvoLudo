@@ -506,8 +506,8 @@ public abstract class EvoLudo
 		if (activeModel == null)
 			return;
 		// reset random number generator if seed was specified
-		if (rng.isRNGSeedSet())
-			rng.setRNGSeed();
+		if (rng.isSeedSet())
+			rng.reset();
 		// check consistency of parameters in models
 		modelCheck();
 		for (Module mod : activeModule.getSpecies())
@@ -867,8 +867,8 @@ public abstract class EvoLudo
 			unloadModule();
 		}
 		activeModule = newModule;
-		if (rng.isRNGSeedSet())
-			rng.setRNGSeed();
+		if (rng.isSeedSet())
+			rng.reset();
 		activeModule.load();
 		fireModuleLoaded();
 		return true;
@@ -1789,9 +1789,9 @@ public abstract class EvoLudo
 				@Override
 				public boolean parse(String arg) {
 					if (cloSeed.isSet())
-						rng.setRNGSeed(cloSeed.isDefault() ? 0L : Long.parseLong(arg));
+						rng.setSeed(cloSeed.isDefault() ? 0L : Long.parseLong(arg));
 					else
-						rng.clearRNGSeed();
+						rng.clearSeed();
 					return true;
 				}
 			});

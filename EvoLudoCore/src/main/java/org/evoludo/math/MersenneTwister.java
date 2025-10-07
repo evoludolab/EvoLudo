@@ -347,7 +347,19 @@ public class MersenneTwister {
 	 */
 	private int mti;
 
-	// a good initial seed (of int size, though stored in a long)
+	/**
+	 * The seed used for the random number generator.
+	 */
+	private Long seed;
+
+	/**
+	 * The standard initial seed (looks like a birthday?!)
+	 */
+	private static final long STANDARD_SEED = 19650218L;
+
+	/**
+	 * A good initial seed (of int size, though stored in a long)
+	 */
 	private static final long GOOD_SEED = 4357;
 
 	/**
@@ -462,8 +474,8 @@ public class MersenneTwister {
 	 * <h3>Implementation Notes:</h3>
 	 * <ol>
 	 * <li>This method delegates to
-	 * {@link #initializeWithSeed(MersenneTwister, long)}
-	 * to perform the actual initialization.
+	 * {@link #initializeWithSeed(MersenneTwister, long)} to perform the actual
+	 * initialization.
 	 * <li>Writing java code that GWT can translate into <em>equivalent</em>
 	 * JavaScript turns out to be challenging. Stephan Brumme's JavaScript
 	 * implementation supplied the essential tricks. For details see <a href=
@@ -495,6 +507,24 @@ public class MersenneTwister {
 	}
 
 	/**
+	 * Returns the seed of the random number generator.
+	 * 
+	 * @return the seed of the random number generator
+	 */
+	public synchronized long getSeed() {
+		return seed;
+	}
+
+	/**
+	 * Resets the random number generator to its initial state.
+	 */
+	public void reset() {
+		if (seed == null)
+			throw new IllegalStateException("No seed available for reset!");
+		initializeWithSeed(this, seed);
+	}
+
+	/**
 	 * Static helper method to initialize a MersenneTwister with a long seed.
 	 * This avoids this-escape warnings when called from constructors.
 	 * Contains the core Mersenne Twister initialization algorithm.
@@ -522,6 +552,7 @@ public class MersenneTwister {
 					& BIT32_MASK;
 			mt.mt[mt.mti] = mtmti1;
 		}
+		mt.seed = seed;
 	}
 
 	/**
@@ -544,7 +575,7 @@ public class MersenneTwister {
 		int k = (N > array.length ? N : array.length);
 
 		// First initialize with the standard seed
-		initializeWithSeed(mt, 19650218L);
+		initializeWithSeed(mt, STANDARD_SEED);
 
 		int mtmti1 = mt.mt[0];
 		for (; k != 0; k--) {
@@ -582,6 +613,7 @@ public class MersenneTwister {
 			}
 		}
 		mt.mt[0] = 0x80000000; /* MSB is 1; assuring non-zero initial array */
+		mt.seed = null;
 	}
 
 	/**

@@ -155,7 +155,7 @@ public class simCDL extends CDL implements ChangeListener {
 		if (nSteps > 0) {
 			// even if seed was set, we need to clear the flag here otherwise subsequent
 			// calls to modelReset() will keep generating the same initial configuration!
-			engine.getRNG().clearRNGSeed();
+			engine.getRNG().clearSeed();
 			double incr = Math.max(1.0, nPopulation / (double) nSteps);
 			int dim = (int) (nPopulation / incr + 0.5);
 			fixprob = new double[dim + 1][dim + 1][nTraits];

@@ -631,7 +631,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				if (cloSeed.isSet()) {
 					// initial state set. now clear seed to obtain reproducible statistics
 					// rather just a single data point repeatedly
-					rng.clearRNGSeed();
+					rng.clearSeed();
 
 				}
 				isRunning = true;

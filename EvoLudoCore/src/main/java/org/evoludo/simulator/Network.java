@@ -269,8 +269,8 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 		// set RNG seed if simulations have seed set. this ensures reproducibility of
 		// visual output
 		RNGDistribution simrng = engine.getRNG();
-		if (simrng.isRNGSeedSet())
-			rng.setRNGSeed(simrng.getRNGSeed());
+		if (simrng.isSeedSet())
+			rng.setSeed(simrng.getSeed());
 		setRadius(1.0);
 		int snapTimeout = engine.getSnapLayoutTimeout();
 		if (snapTimeout > 0)

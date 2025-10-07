@@ -84,11 +84,6 @@ public abstract class RNGDistribution {
 	protected MersenneTwister rng;
 
 	/**
-	 * Seed for random number generator.
-	 */
-	protected long seed = -1L;
-
-	/**
 	 * <code>true</code> if seed was set.
 	 */
 	protected boolean seedSet = false;
@@ -110,8 +105,6 @@ public abstract class RNGDistribution {
 	 */
 	protected RNGDistribution(MersenneTwister rng) {
 		this.rng = (rng == null ? new MersenneTwister(new Date().getTime()) : rng);
-		if (seedSet)
-			setRNGSeed(seed);
 	}
 
 	/**
@@ -280,10 +273,9 @@ public abstract class RNGDistribution {
 	 * @param seed for random number generator
 	 * @see MersenneTwister#setSeed(long)
 	 */
-	public void setRNGSeed(long seed) {
+	public void setSeed(long seed) {
 		this.seedSet = true;
-		this.seed = Math.abs(seed) & (0xffffffff);
-		setRNGSeed();
+		rng.setSeed(Math.abs(seed) & (0xffffffff));
 	}
 
 	/**
@@ -291,8 +283,8 @@ public abstract class RNGDistribution {
 	 * 
 	 * @see MersenneTwister#setSeed(long)
 	 */
-	public void setRNGSeed() {
-		rng.setSeed(seed);
+	public void reset() {
+		rng.reset();
 	}
 
 	/**
@@ -303,16 +295,14 @@ public abstract class RNGDistribution {
 	 * @return seed of random number generator or <code>-1L</code> if seed has not
 	 *         been set
 	 */
-	public long getRNGSeed() {
-		if (!seedSet)
-			return -1L;
-		return seed;
+	public long getSeed() {
+		return rng.getSeed();
 	}
 
 	/**
 	 * Clear seed for random number generator.
 	 */
-	public void clearRNGSeed() {
+	public void clearSeed() {
 		seedSet = false;
 	}
 
@@ -321,7 +311,7 @@ public abstract class RNGDistribution {
 	 * 
 	 * @return <code>true</code> if seed set
 	 */
-	public boolean isRNGSeedSet() {
+	public boolean isSeedSet() {
 		return seedSet;
 	}
 
@@ -350,7 +340,6 @@ public abstract class RNGDistribution {
 	 * @param clone cloned <code>RNGDistribution</code>
 	 */
 	protected void clone(RNGDistribution clone) {
-		clone.seed = this.seed;
 		clone.seedSet = this.seedSet;
 		clone.testSamples = this.testSamples;
 	}
@@ -1055,7 +1044,50 @@ public abstract class RNGDistribution {
 		 */
 		public Geometric(MersenneTwister rng, double p) {
 			super(rng);
-			setProbability(p);
+			initialize(this, p);
+		}
+
+		/**
+		 * Helper method to prevent {@code this-escape} warnings.
+		 * 
+		 * @param rng the geometric distribution to initialize
+		 * @param p   the success probability of single trial
+		 * @throws IllegalArgumentException if <code>p&le;0</code> or
+		 *                                  <code>p&ge;1</code>
+		 */
+		protected static void initialize(Geometric rng, double p) throws IllegalArgumentException {
+			if (p <= 0.0 || p >= 1.0)
+				throw new IllegalArgumentException("success probability must be in (0, 1).");
+			rng.p = p;
+			if (rng.cdf != null && Math.abs(rng.cdf[1] - p) < 1e-8) {
+				// success probability did not change - nothing to do
+				return;
+			}
+			if (p < 1e-4) {
+				// p too small, use exponential distribution as an approximation
+				// adjust mean accordingly
+				rng.cdf = null;
+				rng.mean = Math.floor(1.0 / p + 0.5);
+				return;
+			}
+			rng.mean = 1.0 / p;
+			int bins = (int) (50.0 * rng.mean + 0.5);
+			double prod = p;
+			double q = 1.0 - p;
+			if (rng.cdf == null || rng.cdf.length != bins) {
+				rng.cdf = new double[bins];
+			}
+			rng.cdf[0] = 0.0;
+			rng.cdf[1] = p;
+			for (int i = 2; i < bins - 1; i++) {
+				prod *= q;
+				rng.cdf[i] = rng.cdf[i - 1] + prod;
+			}
+			if (rng.cdf[bins - 2] < 0.9999) {
+				System.out.println("WARNING: deviation too big... (" + Formatter.format(rng.cdf[bins - 2], 6)
+						+ ">0.999 should hold)!");
+			}
+			rng.cdf[bins - 1] = 1.0;
 		}
 
 		/**
@@ -1073,38 +1105,7 @@ public abstract class RNGDistribution {
 		 *                                  <code>p&ge;1</code>
 		 */
 		public void setProbability(double p) throws IllegalArgumentException {
-			if (p <= 0.0 || p >= 1.0)
-				throw new IllegalArgumentException("success probability must be in (0, 1).");
-			this.p = p;
-			if (cdf != null && Math.abs(cdf[1] - p) < 1e-8) {
-				// success probability did not change - nothing to do
-				return;
-			}
-			if (p < 1e-4) {
-				// p too small, use exponential distribution as an approximation
-				// adjust mean accordingly
-				cdf = null;
-				mean = Math.floor(1.0 / p + 0.5);
-				return;
-			}
-			mean = 1.0 / p;
-			int bins = (int) (50.0 * mean + 0.5);
-			double prod = p;
-			double q = 1.0 - p;
-			if (cdf == null || cdf.length != bins) {
-				cdf = new double[bins];
-			}
-			cdf[0] = 0.0;
-			cdf[1] = p;
-			for (int i = 2; i < bins - 1; i++) {
-				prod *= q;
-				cdf[i] = cdf[i - 1] + prod;
-			}
-			if (cdf[bins - 2] < 0.9999) {
-				System.out.println("WARNING: deviation too big... (" + Formatter.format(cdf[bins - 2], 6)
-						+ ">0.999 should hold)!");
-			}
-			cdf[bins - 1] = 1.0;
+			initialize(this, p);
 		}
 
 		/**
@@ -1315,7 +1316,40 @@ public abstract class RNGDistribution {
 		 */
 		public Binomial(MersenneTwister rng, double p, int n) throws IllegalArgumentException {
 			super(rng);
-			setProbabilityTrials(p, n);
+			initialize(this, p, n);
+		}
+
+		/**
+		 * Helper method to prevent {@code this-escape} warnings.
+		 * 
+		 * @param rng the binomial distribution to initialize
+		 * @param p   success probability of single trial
+		 * @param n   number of trials
+		 * @throws IllegalArgumentException if <code>p&le;0</code>, <code>p&ge;1</code>
+		 *                                  or <code>n&lt;0</code>
+		 */
+		protected static void initialize(Binomial rng, double p, int n) throws IllegalArgumentException {
+			if (p <= 0.0 || p >= 1.0)
+				throw new IllegalArgumentException("success probability must be in (0, 1).");
+			if (n < 0)
+				throw new IllegalArgumentException("number of trials must be >=0.");
+
+			rng.p = p;
+			rng.mean = p * n;
+			if (rng.cdf == null || rng.cdf.length != n + 1) {
+				rng.cdf = new double[n + 1];
+			}
+			double piqni = Combinatorics.pow(1.0 - p, n);
+			rng.cdf[0] = piqni;
+			double piq = p / (1.0 - p);
+			double comb = n;
+			double ni = n - 1;
+			for (int i = 1; i < n; i++) {
+				piqni *= piq;
+				rng.cdf[i] = rng.cdf[i - 1] + comb * piqni;
+				comb *= (ni--) / (i + 1);
+			}
+			rng.cdf[n] = 1.0;
 		}
 
 		/**
@@ -1329,27 +1363,7 @@ public abstract class RNGDistribution {
 		 *                                  or <code>n&lt;0</code>
 		 */
 		public void setProbabilityTrials(double p, int n) throws IllegalArgumentException {
-			if (p <= 0.0 || p >= 1.0)
-				throw new IllegalArgumentException("success probability must be in (0, 1).");
-			if (n < 0)
-				throw new IllegalArgumentException("number of trials must be >=0.");
-
-			this.p = p;
-			mean = p * n;
-			if (cdf == null || cdf.length != n + 1) {
-				cdf = new double[n + 1];
-			}
-			double piqni = Combinatorics.pow(1.0 - p, n);
-			cdf[0] = piqni;
-			double piq = p / (1.0 - p);
-			double comb = n;
-			double ni = n - 1;
-			for (int i = 1; i < n; i++) {
-				piqni *= piq;
-				cdf[i] = cdf[i - 1] + comb * piqni;
-				comb *= (ni--) / (i + 1);
-			}
-			cdf[n] = 1.0;
+			initialize(this, p, n);
 		}
 
 		/**
