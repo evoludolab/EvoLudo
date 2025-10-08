@@ -60,6 +60,7 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 	 * messages are discarded. If the buffer capacity is set to {@code 0} the number
 	 * of messsages is unlimited. The buffer is displayed in a HTML widget.
 	 */
+	@SuppressWarnings("java:S110")
 	public static class Log extends HTML implements ContextMenu.Listener {
 
 		/**
@@ -134,6 +135,23 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 	 */
 	public Console(EvoLudoGWT engine) {
 		super(engine, Data.UNDEFINED);
+		log = new Log();
+		wrapper.add(log);
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
+		log.setStylePrimaryName("evoludo-Log");
+		contextMenu = ContextMenu.sharedContextMenu();
+		contextMenu.addListenerWithProvider(log, this);
+	}
+
+	@Override
+	protected void onUnload() {
+		log.setStylePrimaryName("evoludo-Log");
+		contextMenu.removeListener(log);
+		super.onUnload();
 	}
 
 	@Override
@@ -150,16 +168,6 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 	public void clearLog() {
 		log.clear();
 		log(Level.INFO, engine.getVersion());
-	}
-
-	@Override
-	public void createWidget() {
-		super.createWidget();
-		log = new Log();
-		log.setStylePrimaryName("evoludo-Log");
-		wrapper.add(log);
-		contextMenu = ContextMenu.sharedContextMenu();
-		contextMenu.addListenerWithProvider(log, this);
 	}
 
 	@Override

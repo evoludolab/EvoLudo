@@ -142,6 +142,10 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	/**
 	 * The constructor for the abstract view.
 	 * 
+	 * @evoludo.note A {@code LayoutPanel} instead of a {@code FlowPanel} would be a
+	 *               nice way to continue the onResize cascade but incompatible with
+	 *               current implementation of context menu and tooltips
+	 * 
 	 * @param engine the EvoLudo engine
 	 * @param type   the type of data shown in this view
 	 */
@@ -149,21 +153,9 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		this.engine = engine;
 		this.type = type;
 		logger = engine.getLogger();
-		createWidget();
-		initWidget(wrapper);
-	}
-
-	/**
-	 * Create the widget that will contain the graphical representations of the
-	 * data.
-	 * 
-	 * @evoludo.note LayoutPanel would be a nice way to continue the onResize
-	 *               cascade but incompatible with current implementation of context
-	 *               menu and tooltips
-	 */
-	public void createWidget() {
 		wrapper = new FlowPanel();
 		wrapper.getElement().getStyle().setPosition(Position.RELATIVE);
+		initWidget(wrapper);
 	}
 
 	/**
@@ -769,7 +761,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 
 		// process exports context menu (suppress in ePub, regardless of whether a
 		// standalone lab or not)
-		if (!engine.isEPub) {
+		if (!EvoLudoGWT.isEPub) {
 			exportSubmenu = new ContextMenu(contextMenu);
 			exportSubmenu.add(new ContextMenuItem(ExportType.STATE.toString(), new ExportCommand(ExportType.STATE)));
 			for (ExportType e : exportTypes()) {
