@@ -147,17 +147,24 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 	 */
 	protected GenericPopGraph(AbstractView view, Module module) {
 		super(view, module);
-		label = new Label("Gugus");
-		label.getElement().getStyle().setZIndex(1);
-		label.setVisible(false);
-		wrapper.add(label);
 	}
 
 	@Override
 	protected void onLoad() {
 		super.onLoad();
+		label = new Label("Gugus");
+		label.getElement().getStyle().setZIndex(1);
+		label.setVisible(false);
+		wrapper.add(label);
 		if (view instanceof TooltipProvider.Index)
 			setTooltipProvider((TooltipProvider.Index) view);
+	}
+
+	@Override
+	protected void onUnload() {
+		wrapper.remove(label);
+		label = null;
+		super.onUnload();
 	}
 
 	@Override

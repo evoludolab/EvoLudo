@@ -600,7 +600,6 @@ public class EvoLudoWeb extends Composite
 	 */
 	@Override
 	public void onUnload() {
-		super.onUnload();
 		// clear command line options to ensure they are reset to the original
 		// values should the same model get loaded again.
 		// note: this clears command line options set via URL but it does not seem
@@ -609,6 +608,7 @@ public class EvoLudoWeb extends Composite
 		engine.setCLO(null);
 		engine.requestAction(PendingAction.SHUTDOWN, true);
 		viewConsole.clearLog();
+		super.onUnload();
 	}
 
 	@Override

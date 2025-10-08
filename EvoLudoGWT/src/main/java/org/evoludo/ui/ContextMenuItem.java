@@ -146,7 +146,6 @@ public class ContextMenuItem extends Label
 
 	@Override
 	protected void onUnload() {
-		super.onUnload();
 		if (clickHandler != null)
 			clickHandler.removeHandler();
 		if (contextMenuHandler != null)
@@ -157,6 +156,7 @@ public class ContextMenuItem extends Label
 			if (mouseOutHandler != null)
 				mouseOutHandler.removeHandler();
 		}
+		super.onUnload();
 	}
 
 	/**

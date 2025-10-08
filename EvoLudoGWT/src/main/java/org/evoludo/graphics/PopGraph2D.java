@@ -87,6 +87,11 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	public PopGraph2D(AbstractView view, Module module) {
 		super(view, module);
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
 		setStylePrimaryName("evoludo-PopGraph2D");
 		label.setStyleName("evoludo-Label2D");
 	}

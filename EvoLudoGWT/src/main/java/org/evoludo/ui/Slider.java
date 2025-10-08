@@ -342,7 +342,6 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 
 	@Override
 	protected void onUnload() {
-		super.onUnload();
 		if (inputRegistration != null)
 			inputRegistration.removeHandler();
 		if (clickRegistration != null)
@@ -355,6 +354,7 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 			touchMoveRegistration.removeHandler();
 		if (changeRegistration != null)
 			changeRegistration.removeHandler();
+		super.onUnload();
 	}
 
 	/**

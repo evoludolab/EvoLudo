@@ -158,7 +158,12 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 */
 	public PopGraph3D(Pop3D view, Module module) {
 		super(view, module);
-		setStylePrimaryName("evoludo-PopGraph3D");
+		canvas = null;
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
 		// PopGraph3D cannot use wrapper - transfer all widgets to graphPanel3D
 		// (except canvas) and make this the wrapper
 		graph3DPanel = new RenderingPanel();
@@ -167,14 +172,16 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 				continue;
 			graph3DPanel.add(widget);
 		}
-		canvas = null;
 		wrapper.clear();
 		remove(wrapper);
+		wrapper = graph3DPanel;
+		setStylePrimaryName("evoludo-PopGraph3D");
 		// background color - apparently cannot be simply set using CSS
 		graph3DPanel.setBackground(0x444444);
 		graph3DPanel.setStylePrimaryName("evoludo-Canvas3D");
 		graph3DPanel.addCanvas3dErrorHandler(this);
-		graph3DScene = new Pop3DScene();
+		if (graph3DScene == null)
+			graph3DScene = new Pop3DScene();
 		graph3DPanel.setAnimatedScene(graph3DScene);
 		label.setStyleName("evoludo-Label3D");
 		// adding message label on demand later on causes trouble...
@@ -184,7 +191,16 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		graph3DPanel.add(msgLabel);
 		add(graph3DPanel);
 		element = graph3DPanel.getElement();
-		wrapper = graph3DPanel;
+	}
+
+	@Override
+	protected void onUnload() {
+		graph3DPanel.remove(msgLabel);
+		msgLabel = null;
+		remove(graph3DPanel);
+		graph3DPanel = null;
+		element = null;
+		super.onUnload();
 	}
 
 	@Override
@@ -746,11 +762,11 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			if (geometry == null)
 				return;
 			Camera newWorldView = network.getWorldView();
-			if (graph3DCamera != null && newWorldView == graph3DCamera)
+			if (graph3DCamera != null && control != null && newWorldView == graph3DCamera)
 				return;
 			// new camera is needed if graph3DCamera==null or of different type than
 			// newWorldView
-			if (graph3DCamera == null
+			if (graph3DCamera == null || control == null
 					|| ((graph3DCamera instanceof OrthographicCamera) != (newWorldView instanceof OrthographicCamera)))
 				setOrtho(newWorldView instanceof OrthographicCamera);
 			if (newWorldView != null && graph3DCamera != null) {
@@ -799,8 +815,9 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			graph3DCamera.getPosition().setZ(400);
 			network.setWorldView(graph3DCamera);
 			if (control != null)
-				control.dispose();
+				control.unload();
 			control = new TrackballControls(graph3DCamera, getCanvas());
+			control.load();
 			control.setPanSpeed(0.2);
 			control.setDynamicDampingFactor(0.12);
 		}
@@ -856,6 +873,8 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	@Override
 	public void onResize() {
 		super.onResize();
+		if (graph3DScene.getCanvas() == null)
+			return;
 		graph3DScene.onResize();
 		graph3DPanel.forceLayout();
 	}

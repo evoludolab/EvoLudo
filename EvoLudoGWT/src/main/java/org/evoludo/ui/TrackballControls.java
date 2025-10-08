@@ -272,25 +272,32 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 		rotateEnd = new Vector3();
 		panStart = new Vector2();
 		panEnd = new Vector2();
+	}
 
+	/**
+	 * Initialize and register mouse and touch handlers.
+	 */
+	public void load() {
+		Widget widget = getWidget();
+		// register mouse handlers
 		mouseWheelHandler = widget.addDomHandler(this, MouseWheelEvent.getType());
 		mouseDownHandler = widget.addDomHandler(this, MouseDownEvent.getType());
 		mouseMoveHandler = widget.addDomHandler(this, MouseMoveEvent.getType());
 		mouseUpHandler = widget.addDomHandler(this, MouseUpEvent.getType());
-
+		// register touch handlers
 		touchStartHandler = widget.addDomHandler(this, TouchStartEvent.getType());
 		touchMoveHandler = widget.addDomHandler(this, TouchMoveEvent.getType());
 		touchEndHandler = widget.addDomHandler(this, TouchEndEvent.getType());
-
+		// set initial eye distance
 		initialDistance = getObject().getPosition().length();
 		// set radius
 		onResize();
 	}
 
 	/**
-	 * Free resources.
+	 * Remove mouse and touch handlers.
 	 */
-	public void dispose() {
+	public void unload() {
 		if (mouseWheelHandler != null)
 			mouseWheelHandler.removeHandler();
 		if (mouseDownHandler != null)

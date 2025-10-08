@@ -436,7 +436,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		this.view = view;
 		this.module = module;
 		logger = view.getLogger();
-		wrapper = new LayoutPanel();
 		if (this instanceof Zooming) {
 			viewCorner = new Point2D();
 			zoomInertiaTimer = new Timer() {
@@ -456,13 +455,14 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 
 		markerColors = new String[] { "rgb(0,0,0,0.4)" };
-		add(wrapper);
-		element = getElement();
 	}
 
 	@Override
 	protected void onLoad() {
 		super.onLoad();
+		wrapper = new LayoutPanel();
+		add(wrapper);
+		element = getElement();
 		// most graphs use canvas - allocate it here (this is unnecessary for e.g.
 		// PopGraph3D but since this is the only exception so far it will have to remove
 		// canvas again)
@@ -486,11 +486,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 
 	@Override
 	protected void onUnload() {
-		super.onUnload();
 		if (canvas != null)
 			canvas.removeFromParent();
 		canvas = null;
 		contextMenu.remove(this);
+		remove(wrapper);
+		wrapper = null;
+		super.onUnload();
 	}
 
 	/**

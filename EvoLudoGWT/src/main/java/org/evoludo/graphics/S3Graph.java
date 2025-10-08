@@ -120,6 +120,11 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	public S3Graph(S3 view, Module module, int role) {
 		super(view, module);
 		this.role = role;
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
 		setStylePrimaryName("evoludo-S3Graph");
 	}
 

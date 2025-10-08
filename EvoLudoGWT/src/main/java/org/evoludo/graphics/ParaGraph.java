@@ -101,6 +101,11 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 */
 	public ParaGraph(Phase2D view, Module module) {
 		super(view, module);
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
 		setStylePrimaryName("evoludo-ParaGraph");
 		buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
 	}

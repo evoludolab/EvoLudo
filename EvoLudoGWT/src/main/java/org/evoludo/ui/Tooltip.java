@@ -326,6 +326,11 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 * {@link #sharedTooltip()}.
 	 */
 	protected Tooltip() {
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
 		setHTML("tooltip");
 		setStyleName("gwt-Tooltip");
 		style = getElement().getStyle();
@@ -335,6 +340,12 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 		style.clearBottom();
 		style.clearWidth();
 		close();
+	}
+
+	@Override
+	protected void onUnload() {
+		style = null;
+		super.onUnload();
 	}
 
 	/**

@@ -457,7 +457,6 @@ public class ContextMenu extends FlowPanel
 
 	@Override
 	protected void onUnload() {
-		super.onUnload();
 		if (fullscreenChangeHandler != null) {
 			fullscreenChangeHandler.removeHandler();
 			fullscreenChangeHandler = null;
@@ -471,6 +470,7 @@ public class ContextMenu extends FlowPanel
 			mouseOutHandler = null;
 		}
 		style = null;
+		super.onUnload();
 	}
 
 	/**
