@@ -127,7 +127,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	 */
 	public ATBT(EvoLudo engine) {
 		super(engine);
-		setNTraits(4);
+		nTraits = 4;
 	}
 
 	@Override

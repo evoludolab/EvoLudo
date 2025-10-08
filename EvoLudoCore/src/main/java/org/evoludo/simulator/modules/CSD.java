@@ -101,7 +101,7 @@ public class CSD extends Continuous implements Payoffs,
 	 */
 	public CSD(EvoLudo engine) {
 		super(engine);
-		setNTraits(1); // continuous investment level
+		nTraits = 1; // continuous investment level
 	}
 
 	@Override

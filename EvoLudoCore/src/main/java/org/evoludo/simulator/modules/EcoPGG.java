@@ -104,7 +104,8 @@ public class EcoPGG extends Discrete implements Payoffs,
 	 */
 	public EcoPGG(EvoLudo engine) {
 		super(engine);
-		setNTraits(3, VACANT); // cooperators, defectors and empty sites
+		nTraits = 3; // cooperators, defectors and empty sites
+		vacantIdx = VACANT;
 	}
 
 	@Override

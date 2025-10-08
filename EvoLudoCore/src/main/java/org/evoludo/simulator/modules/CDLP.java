@@ -92,7 +92,7 @@ public class CDLP extends CDL {
 	 */
 	public CDLP(EvoLudo engine) {
 		super(engine);
-		setNTraits(4); // loners, defectors, cooperators, punishers
+		nTraits = 4; // loners, defectors, cooperators, punishers
 	}
 
 	@Override

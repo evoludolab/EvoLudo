@@ -75,7 +75,7 @@ public class CLabour extends Continuous implements Payoffs,
 	 */
 	public CLabour(EvoLudo engine) {
 		super(engine);
-		setNTraits(2); // two traits
+		nTraits = 2; // two investment traits
 	}
 
 	@Override

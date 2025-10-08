@@ -99,7 +99,7 @@ public class Moran extends Discrete implements Static,
 	 */
 	public Moran(EvoLudo engine) {
 		super(engine);
-		setNTraits(2);
+		nTraits = 2; // residents and mutants
 	}
 
 	@Override

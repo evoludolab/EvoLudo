@@ -119,7 +119,7 @@ public class TBT extends Discrete implements Payoffs,
 	 */
 	public TBT(EvoLudo engine) {
 		super(engine);
-		setNTraits(2); // cooperators, defectors and empty sites
+		nTraits = 2; // cooperators and defectors
 	}
 
 	@Override

@@ -90,7 +90,7 @@ public class RSP extends Discrete implements Payoffs,
 	 */
 	public RSP(EvoLudo engine) {
 		super(engine);
-		setNTraits(3);
+		nTraits = 3; // rock, scissors, paper
 	}
 
 	@Override

@@ -100,7 +100,7 @@ public class Centipede extends Discrete implements Payoffs,
 	 */
 	public Centipede(EvoLudo engine) {
 		super(engine);
-		setNTraits(1); // initially advertise a single trait
+		nTraits = 1; // initially advertise a single trait
 	}
 
 	@Override
@@ -395,7 +395,16 @@ public class Centipede extends Discrete implements Payoffs,
 		 */
 		public CentiMap(int role) {
 			super(role, role == 0 ? "First mover" : "Second mover");
-			setNames(new String[] { "0", "1", "2" });
+		}
+
+		@Override
+		public String[] getNames() {
+			String[] names = super.getNames();
+			if (names == null) {
+				names = new String[] { "0", "1", "2" };
+				setNames(names);
+			}
+			return names;
 		}
 
 		@Override

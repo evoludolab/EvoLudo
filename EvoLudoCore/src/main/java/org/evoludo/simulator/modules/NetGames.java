@@ -110,7 +110,7 @@ public class NetGames extends Discrete implements Payoffs,
 	 */
 	public NetGames(EvoLudo engine) {
 		super(engine);
-		setNTraits(2); // cooperativity and activity
+		nTraits = 2; // cooperativity and activity
 	}
 
 	@Override

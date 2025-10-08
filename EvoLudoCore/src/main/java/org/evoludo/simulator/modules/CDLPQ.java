@@ -76,7 +76,7 @@ public class CDLPQ extends CDLP {
 	 */
 	public CDLPQ(EvoLudo engine) {
 		super(engine);
-		setNTraits(5); // loners, defectors, cooperators, peer- and pool-punishers
+		nTraits = 5; // loners, defectors, cooperators, peer- and pool-punishers
 	}
 
 	@Override

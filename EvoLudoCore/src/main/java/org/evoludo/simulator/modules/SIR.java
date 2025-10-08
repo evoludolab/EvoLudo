@@ -125,7 +125,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	 */
 	public SIR(EvoLudo engine) {
 		super(engine);
-		setNTraits(3);
+		nTraits = 3; // S, I, and R
 	}
 
 	@Override

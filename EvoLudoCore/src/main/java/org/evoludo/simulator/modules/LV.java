@@ -102,8 +102,8 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	 */
 	public LV(EvoLudo engine) {
 		super(engine);
-		setName("Prey");
-		setNTraits(2, VACANT); // prey and empty sites
+		nTraits = 2; // prey and empty sites
+		vacantIdx = VACANT;
 	}
 
 	@Override
@@ -114,6 +114,8 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	@Override
 	public void load() {
 		super.load();
+		// set species name
+		setName("Prey");
 		// trait names (optional)
 		setTraitNames(new String[] { "Prey" });
 		// trait colors (optional)
@@ -363,13 +365,15 @@ class Predator extends Discrete implements Multispecies, HasDE {
 	public Predator(LV prey) {
 		super(prey);
 		this.prey = prey;
-		setName("Predator");
-		setNTraits(2, LV.VACANT); // predators and empty sites
+		nTraits = 2; // predators and empty sites
+		vacantIdx = LV.VACANT;
 	}
 
 	@Override
 	public void load() {
 		super.load();
+		// set species name
+		setName("Predator");
 		// trait names (optional)
 		setTraitNames(new String[] { "Predator" });
 		// trait colors (optional)

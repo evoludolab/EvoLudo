@@ -470,7 +470,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * The index for the vacant type (empty site) or {@code -1} if Module does not
 	 * admit empty sites.
 	 */
-	private int vacantIdx = -1;
+	protected int vacantIdx = -1;
 
 	/**
 	 * Get the index for the vacant type or {@code -1} if Module does not admit
@@ -529,7 +529,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @param nTraits the number of traits
 	 */
-	public final void setNTraits(int nTraits) {
+	public void setNTraits(int nTraits) {
 		setNTraits(nTraits, -1);
 	}
 
@@ -539,7 +539,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @param nTraits   the number of traits
 	 * @param vacantIdx the index of the vacant type
 	 */
-	public final void setNTraits(int nTraits, int vacantIdx) {
+	public void setNTraits(int nTraits, int vacantIdx) {
 		// prevent requesting re-parsing of CLOs on initial load
 		if (this.nTraits > 0 && (this.nTraits != nTraits))
 			engine.requestParseCLO();
