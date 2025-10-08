@@ -770,15 +770,13 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		 */
 		private void setOrtho(boolean doOrthographic) {
 			Canvas3d c3d = getCanvas();
-			int width = c3d.getWidth();
-			int height = c3d.getHeight();
-			if (width == 0 || height == 0)
+			if (c3d == null || c3d.getWidth() == 0 || c3d.getHeight() == 0)
 				return;
 			if (doOrthographic) {
 				// orthographic projection
 				if (graph3DCamera instanceof OrthographicCamera)
 					return;
-				graph3DCamera = new OrthographicCamera(width, height,
+				graph3DCamera = new OrthographicCamera(c3d.getWidth(), c3d.getHeight(),
 						-10000, // near
 						10000 // far
 				);
@@ -822,8 +820,10 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		@Override
 		protected void onUpdate(double duration) {
 			if (view.isActive()) {
-				control.update();
-				getRenderer().render(getScene(), graph3DCamera);
+				if (control != null) {
+					control.update();
+					getRenderer().render(getScene(), graph3DCamera);
+				}
 				return;
 			}
 			stop();
