@@ -619,9 +619,12 @@ public class EvoLudoWeb extends Composite
 	@Override
 	public void modelDidReset() {
 		updateGUI();
-		displayStatus(engine.getVersion());
+		// show version after reset but do not overwrite warnings and errors`
+		displayStatus(engine.getVersion(), Level.INFO.intValue() + 1);
 		if (snapmarker != null)
 			Document.get().getBody().removeChild(snapmarker);
+		// reset threshold for status messages after reset
+		displayStatusThresholdLevel = Level.ALL.intValue();
 	}
 
 	/**
@@ -930,7 +933,6 @@ public class EvoLudoWeb extends Composite
 		displayStatus(action + " pending. Waiting for engine to stop...");
 		displayStatusThresholdLevel = Level.ALL.intValue();
 		engine.requestAction(action.equals("Reset") ? PendingAction.RESET : PendingAction.INIT);
-		updateGUI();
 	}
 
 	/**
@@ -1249,7 +1251,6 @@ public class EvoLudoWeb extends Composite
 			displayStatus("Restoring state...");
 			engine.restoreState(state);
 		}
-		updateGUI();
 		activeView.parse(guiState.args);
 		// view needs to be activated to set the mode of the model
 		if (engine.cloSnap.isSet()) {
