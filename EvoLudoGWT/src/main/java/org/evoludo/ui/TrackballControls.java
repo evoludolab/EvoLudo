@@ -525,7 +525,7 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 		double dy = event.getNativeDeltaY();
 		if (dy == 0.0)
 			return;
-		zoomChange = Math.pow(zoomSpeed, -dy);
+		zoomChange = Math.pow(zoomSpeed, dy);
 		doZoom = true;
 		getWidget().addStyleName(dy < 0 ? "evoludo-cursorZoomIn" : "evoludo-cursorZoomOut");
 		if (!t.isRunning())
