@@ -65,32 +65,32 @@ public class EvoLudoGWT extends EvoLudo {
 	/**
 	 * <code>true</code> if container document is HTML
 	 */
-	public boolean isHTML = true;
+	public static boolean isHTML = true;
 
 	/**
 	 * <code>true</code> if part of an ePub
 	 */
-	public boolean isEPub = false;
+	public static boolean isEPub = false;
 
 	/**
 	 * <code>true</code> if standalone EvoLudo lab in ePub
 	 */
-	public boolean ePubStandalone = false;
+	public static boolean ePubStandalone = false;
 
 	/**
 	 * <code>true</code> if ePub has mouse device
 	 */
-	public boolean ePubHasMouse = false;
+	public static boolean ePubHasMouse = false;
 
 	/**
 	 * <code>true</code> if ePub has touch device
 	 */
-	public boolean ePubHasTouch = false;
+	public static boolean ePubHasTouch = false;
 
 	/**
 	 * <code>true</code> if ePub has keyboard device
 	 */
-	public boolean ePubHasKeys = false;
+	public static boolean ePubHasKeys = false;
 
 	/**
 	 * Create timer to measure execution times since instantiation.
@@ -359,7 +359,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 *
 	 * @see NativeJS#ePubReaderHasFeature(String)
 	 */
-	public void detectGUIFeatures() {
+	public static void detectGUIFeatures() {
 		isGWT = true;
 		hasTouch = NativeJS.hasTouch();
 		isHTML = NativeJS.isHTML();

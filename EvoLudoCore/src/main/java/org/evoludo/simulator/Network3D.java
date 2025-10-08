@@ -58,7 +58,7 @@ public abstract class Network3D extends Network {
 	protected Network3D(EvoLudo engine, Geometry geometry) {
 		// network is shared between different graphs - cannot set listener here!
 		super(engine, geometry);
-		setAccuracy(1e-5);
+		accuracy = 1e-5;
 	}
 
 	@Override

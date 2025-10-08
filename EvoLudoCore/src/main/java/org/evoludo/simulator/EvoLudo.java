@@ -128,7 +128,6 @@ public abstract class EvoLudo
 	 */
 	protected EvoLudo() {
 		logger = Logger.getLogger(EvoLudo.class.getName() + "-" + ID);
-		parser = new CLOParser(this);
 	}
 
 	/**
@@ -149,7 +148,7 @@ public abstract class EvoLudo
 	 * allow disabling touch events for debugging (see
 	 * {@link org.evoludo.simulator.EvoLudoGWT#cloEmulate EvoLudoGWT.cloEmulate}).
 	 */
-	public boolean hasTouch = false;
+	public static boolean hasTouch = false;
 
 	/**
 	 * The loggers of each EvoLudo lab instance need to have unique names to keep
@@ -1512,6 +1511,8 @@ public abstract class EvoLudo
 	public void addCLOProvider(CLOProvider provider) {
 		if (provider == null)
 			return;
+		if (parser == null)
+			parser = new CLOParser(this);
 		parser.addCLOProvider(provider);
 	}
 

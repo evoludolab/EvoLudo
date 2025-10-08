@@ -65,12 +65,7 @@ public abstract class Network2D extends Network {
 	protected Network2D(EvoLudo engine, Geometry geometry) {
 		// network is shared between different graphs - cannot set listener here!
 		super(engine, geometry);
-	}
-
-	@Override
-	public void reset() {
-		super.reset();
-		setAccuracy(1e-4);
+		accuracy = 1e-4;
 	}
 
 	/**

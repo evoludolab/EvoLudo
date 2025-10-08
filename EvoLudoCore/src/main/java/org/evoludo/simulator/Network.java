@@ -566,35 +566,6 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	}
 
 	/**
-	 * Set the accuracy of the layouting process to {@code accuracy}.
-	 * 
-	 * @param accuracy the accuracy of the layouting process
-	 */
-	public void setAccuracy(double accuracy) {
-		this.accuracy = accuracy;
-	}
-
-	/**
-	 * Get the desired accuracy of the layouting process.
-	 *
-	 * @return the accuracy of the layouting process
-	 */
-	public double getAccuracy() {
-		return accuracy;
-	}
-
-	/**
-	 * Adjusts the accuracy of the layouting process by a factor {@code adjust}. For
-	 * {@code adjust>1} the layouting process becomes more forgiving and less
-	 * forgiving for {@code adjust<1}.
-	 *
-	 * @param adjust the factor to adjust the accuracy
-	 */
-	public void adjustAccuracy(double adjust) {
-		accuracy *= adjust;
-	}
-
-	/**
 	 * Get the timestamp of the last time the layouting process has completed.
 	 * 
 	 * @return the timestamp

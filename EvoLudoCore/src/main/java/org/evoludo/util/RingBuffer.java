@@ -84,7 +84,9 @@ public class RingBuffer<T> implements Iterable<T> {
 	 * @throws IllegalArgumentException if <code>capacity&le;0</code>
 	 */
 	public RingBuffer(int capacity) throws IllegalArgumentException {
-		setCapacity(capacity);
+		buffer = new ArrayList<>(capacity);
+		bufferPtr = -1;
+		bufferCapacity = capacity;
 	}
 
 	/**
@@ -100,12 +102,6 @@ public class RingBuffer<T> implements Iterable<T> {
 	public void setCapacity(int capacity) throws IllegalArgumentException {
 		if (capacity < 0)
 			throw new IllegalArgumentException("RingBuffer capacity must be >0!");
-		if (buffer == null) {
-			buffer = new ArrayList<>(capacity);
-			bufferPtr = -1;
-			bufferCapacity = capacity;
-			return;
-		}
 		if (bufferCapacity > capacity) {
 			shrinkBuffer(capacity);
 		} else if (bufferCapacity < capacity) {
