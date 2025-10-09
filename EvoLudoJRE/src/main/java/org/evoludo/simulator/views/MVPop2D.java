@@ -478,7 +478,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 	// to us
 	// }
 
-	public static BufferedImage getSnapshot(EvoLudo engine, Module module, int width, int height) {
+	public static BufferedImage getSnapshot(EvoLudo engine, Module<?> module, int width, int height) {
 		BufferedImage snapimage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g2 = snapimage.createGraphics();
 		MVPop2D mvpop = new MVPop2D(null, engine.getModel().isContinuous() ? Data.CSTRAT : Data.DSTRAT);
@@ -500,7 +500,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 	 * @param height   of snapshot
 	 * @param snapfile file for saving snapshot
 	 */
-	public static void exportSnapshotPNG(EvoLudo engine, Module module, int width, int height, File snapfile) {
+	public static void exportSnapshotPNG(EvoLudo engine, Module<?> module, int width, int height, File snapfile) {
 		BufferedImage snapimage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g2 = snapimage.createGraphics();
 		MVPop2D mvpop = new MVPop2D(null, engine.getModel().isContinuous() ? Data.CSTRAT : Data.DSTRAT);
@@ -530,7 +530,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 	 * @param snapfile   file for saving snapshot
 	 * @param compressed <code>true</code> to compress snapshot
 	 */
-	public static void exportSnapshotSVG(EvoLudo engine, Module module, int width, int height, File snapfile,
+	public static void exportSnapshotSVG(EvoLudo engine, Module<?> module, int width, int height, File snapfile,
 			boolean compressed) {
 		Properties props = new Properties();
 		MVPop2D mvpop = new MVPop2D(null, engine.getModel().isContinuous() ? Data.CSTRAT : Data.DSTRAT);

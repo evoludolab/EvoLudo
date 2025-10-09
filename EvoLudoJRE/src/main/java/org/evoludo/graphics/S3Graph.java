@@ -56,7 +56,7 @@ public class S3Graph extends AbstractGraph {
 	private final int[] order = new int[] { 0, 1, 2 };
 	int role = -1;
 
-	public S3Graph(StateGraphListener controller, Module module, int role) {
+	public S3Graph(StateGraphListener controller, Module<?> module, int role) {
 		super(controller, module);
 		this.role = role;
 		hasHistory = true;

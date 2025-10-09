@@ -117,7 +117,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * @param module the module backing the graph
 	 * @param role   the role of the data
 	 */
-	public S3Graph(S3 view, Module module, int role) {
+	public S3Graph(S3 view, Module<?> module, int role) {
 		super(view, module);
 		this.role = role;
 	}

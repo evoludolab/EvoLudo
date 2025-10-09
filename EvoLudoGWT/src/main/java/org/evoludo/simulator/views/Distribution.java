@@ -113,11 +113,11 @@ public class Distribution extends AbstractView implements TooltipProvider.Index 
 
 	@Override
 	protected void allocateGraphs() {
-		List<? extends Module> species = engine.getModule().getSpecies();
+		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		int nGraphs = species.size();
 		if (graphs.size() != nGraphs) {
 			destroyGraphs();
-			for (Module module : species) {
+			for (Module<?> module : species) {
 				PopGraph2D graph = new PopGraph2D(this, module);
 				graph.setDebugEnabled(false);
 				wrapper.add(graph);
@@ -143,7 +143,7 @@ public class Distribution extends AbstractView implements TooltipProvider.Index 
 	public void reset(boolean hard) {
 		super.reset(hard);
 		for (PopGraph2D graph : graphs) {
-			Module module = graph.getModule();
+			Module<?> module = graph.getModule();
 			int nTraits = module.getNTraits();
 			AbstractGraph.GraphStyle style = graph.getStyle();
 			switch (type) {
@@ -307,7 +307,7 @@ public class Distribution extends AbstractView implements TooltipProvider.Index 
 			return null;
 		GraphStyle style = graph.getStyle();
 		int nBins = MAX_BINS;
-		Module module = engine.getModule();
+		Module<?> module = engine.getModule();
 		int nTraits = module.getNTraits();
 		if (nTraits == 1) {
 			int bar = node % nBins;
@@ -333,7 +333,7 @@ public class Distribution extends AbstractView implements TooltipProvider.Index 
 
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int node) {
-		Module module = engine.getModule();
+		Module<?> module = engine.getModule();
 		int nTraits = module.getNTraits();
 		// ignore if less than 3 traits
 		if (nTraits < 3) {

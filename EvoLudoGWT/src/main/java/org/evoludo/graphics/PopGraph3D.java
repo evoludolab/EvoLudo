@@ -156,7 +156,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * @param view   the view of this graph
 	 * @param module the module backing the graph
 	 */
-	public PopGraph3D(Pop3D view, Module module) {
+	public PopGraph3D(Pop3D view, Module<?> module) {
 		super(view, module);
 		canvas = null;
 	}

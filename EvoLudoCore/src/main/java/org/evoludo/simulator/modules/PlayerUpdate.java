@@ -73,14 +73,14 @@ public class PlayerUpdate {
 	/**
 	 * The module that is using this player update.
 	 */
-	Module module;
+	Module<?> module;
 
 	/**
 	 * Instantiate new player update for use in {@code module}.
 	 * 
 	 * @param module the module using this player update
 	 */
-	public PlayerUpdate(Module module) {
+	public PlayerUpdate(Module<?> module) {
 		this.module = module;
 	}
 
@@ -215,8 +215,8 @@ public class PlayerUpdate {
 				public boolean parse(String arg) {
 					String[] playerupdates = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
-					List<? extends Module> species = module.getSpecies();
-					for (Module mod : species) {
+					List<? extends Module<?>> species = module.getSpecies();
+					for (Module<?> mod : species) {
 						String updt = playerupdates[n++ % playerupdates.length];
 						PlayerUpdate.Type put = (PlayerUpdate.Type) clo.match(updt);
 						PlayerUpdate pu = mod.getPlayerUpdate();

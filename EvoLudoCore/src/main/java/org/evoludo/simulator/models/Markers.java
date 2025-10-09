@@ -156,7 +156,7 @@ public class Markers {
 								filled = false;
 								ArrayMath.abs(smk);
 							}
-							Module module = model.getSpecies(n);
+							Module<?> module = model.getSpecies(n);
 							int nt = module.getNTraits();
 							if (smk.length != nt) {
 								// ok for frequency based modules or with vacant sites

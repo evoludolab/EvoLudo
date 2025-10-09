@@ -63,7 +63,7 @@ public class PDE extends ODE {
 	 * Convenience variable: module associated with this model (useful as long as
 	 * PDE models are restricted to single species).
 	 */
-	protected Module module;
+	protected Module<?> module;
 
 	/**
 	 * The supervisor for the integration of the reaction-diffusion process. This
@@ -712,7 +712,7 @@ public class PDE extends ODE {
 		double maxf = -Double.MAX_VALUE;
 		double mind = Double.MAX_VALUE;
 		double maxd = -Double.MAX_VALUE;
-		Module mod = module.getSpecies(id);
+		Module<?> mod = module.getSpecies(id);
 		double nTraits = mod.getNTraits();
 		for (int n = 0; n < nTraits; n++) {
 			if (n == dependent)
@@ -742,7 +742,7 @@ public class PDE extends ODE {
 		// scores/fitness and whether neutral
 		// the following is not completely water tight (accumulated scores may cause
 		// issues because the range depends on geometry)
-		Module mod = module.getSpecies(id);
+		Module<?> mod = module.getSpecies(id);
 		Map2Fitness map2fit = mod.getMap2Fitness();
 		Payoffs pmod = (Payoffs) mod;
 		double min = map2fit.map(pmod.getMinPayoff());
@@ -1671,7 +1671,7 @@ public class PDE extends ODE {
 	public boolean restoreState(Plist plist) {
 		boolean success = super.restoreState(plist);
 		if (species.size() > 1) {
-			for (Module pop : species) {
+			for (Module<?> pop : species) {
 				Plist pplist = (Plist) plist.get(pop.getName());
 				if (!restoreGeometry(pplist)) {
 					logger.warning("restore geometry in " + type + "-model failed (" + pop.getName() + ").");

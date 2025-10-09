@@ -76,7 +76,7 @@ public abstract class MVAbstract extends JComponent
 	/**
 	 * The module associated with this graph.
 	 */
-	protected Module module;
+	protected Module<?> module;
 	protected EvoLudoLab lab;
 	protected EvoLudoJRE engine;
 
@@ -697,7 +697,7 @@ public abstract class MVAbstract extends JComponent
 	// }
 
 	@Override
-	public void setModule(org.evoludo.simulator.modules.Module module) {
+	public void setModule(Module<?> module) {
 		this.module = module;
 	}
 

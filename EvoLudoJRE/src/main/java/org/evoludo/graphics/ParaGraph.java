@@ -49,7 +49,7 @@ public class ParaGraph extends AbstractGraph {
 	private String[] names;
 	protected Data2Phase map;
 
-	public ParaGraph(StateGraphListener controller, Module module) {
+	public ParaGraph(StateGraphListener controller, Module<?> module) {
 		super(controller, module);
 		hasHistory = true;
 		frame = new FrameLayer(style);

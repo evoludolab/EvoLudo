@@ -50,7 +50,7 @@ public class SDE extends ODE {
 	 * Convenience variable: module associated with this model (useful as long as
 	 * SDE models are restricted to single species).
 	 */
-	protected Module module;
+	protected Module<?> module;
 
 	/**
 	 * Constructs a new model for the numerical integration of the system of
@@ -87,7 +87,7 @@ public class SDE extends ODE {
 	public boolean check() {
 		if (nSpecies > 1) {
 			// currently multi-species modules are only acceptable for ecological models
-			for (Module mod : species) {
+			for (Module<?> mod : species) {
 				int nt = mod.getNActive();
 				if (nt == 1 || (nt == 2 && mod.getVacantIdx() >= 0))
 					continue;
@@ -162,7 +162,7 @@ public class SDE extends ODE {
 		if (converged)
 			return true;
 		converged = true;
-		for (Module mod : species) {
+		for (Module<?> mod : species) {
 			if (mod.getMutation().probability > 0.0) {
 				// if dist2 is zero (or very small) and (at least) one trait is absent,
 				// random noise may be invalid (pushing state outside of permissible values)
@@ -317,7 +317,7 @@ public class SDE extends ODE {
 			default: // any number of traits (single traits in multiple species)
 				int skip = 0;
 				if (isDensity) {
-					for (Module mod : species) {
+					for (Module<?> mod : species) {
 						double noise = Math.sqrt(getEffectiveNoise(mod, skip)) * rng.nextGaussian() * sqrtdt;
 						// species that went extinct should not make a sudden reappearance
 						if (yt[skip] > 0.0) {
@@ -329,7 +329,7 @@ public class SDE extends ODE {
 					break;
 				}
 				// frequency dynamics
-				for (Module mod : species) {
+				for (Module<?> mod : species) {
 					// no mutations in ecological processes
 					process2DNoise(skip, step, sqrtdt, 0.0, getEffectiveNoise(mod, skip));
 					skip += mod.getNTraits();
@@ -423,7 +423,7 @@ public class SDE extends ODE {
 	 * @param skip the starting index for the entries in {@code yt} for this module
 	 * @return the effective noise for the given module
 	 */
-	private double getEffectiveNoise(Module mod, int skip) {
+	private double getEffectiveNoise(Module<?> mod, int skip) {
 		double effnoise = 1.0 / mod.getNPopulation();
 		// scale noise according effective population size
 		int vacant = skip + mod.getVacantIdx();
@@ -443,7 +443,7 @@ public class SDE extends ODE {
 			return;
 
 		// collect new statistics sample
-		Module mod = engine.getModule();
+		Module<?> mod = engine.getModule();
 		fixData.typeFixed = ArrayMath.maxIndex(yt);
 		int vacant = mod.getVacantIdx();
 		if (fixData.typeFixed == vacant) {
@@ -482,7 +482,7 @@ public class SDE extends ODE {
 	public boolean permitsSampleStatistics() {
 		if (nSpecies > 1)
 			return false;
-		Module mod = engine.getModule();
+		Module<?> mod = engine.getModule();
 		if (!(mod instanceof HasHistogram.StatisticsProbability
 				|| mod instanceof HasHistogram.StatisticsTime)
 				|| mod.getMutation().probability > 0.0)
@@ -495,7 +495,7 @@ public class SDE extends ODE {
 
 	@Override
 	public boolean permitsUpdateStatistics() {
-		for (Module mod : species) {
+		for (Module<?> mod : species) {
 			if (!(mod instanceof HasHistogram.StatisticsTime))
 				return false;
 		}

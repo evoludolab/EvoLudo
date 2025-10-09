@@ -43,9 +43,10 @@ import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.LineGraph;
 import org.evoludo.graphics.StateData;
 import org.evoludo.graphics.StateGraphListener;
-import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.modules.Continuous;
+import org.evoludo.simulator.modules.Module;
 
 public class MVCMean extends MVAbstract implements StateGraphListener {
 
@@ -67,7 +68,7 @@ public class MVCMean extends MVAbstract implements StateGraphListener {
 	}
 
 	@Override
-	public void setModule(org.evoludo.simulator.modules.Module module) {
+	public void setModule(Module<?> module) {
 		this.module = (Continuous) module;
 		super.module = module;
 	}

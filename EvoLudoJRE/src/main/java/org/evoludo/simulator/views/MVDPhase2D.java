@@ -115,7 +115,7 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 	public void getData(StateData data, int tag) {
 		Model model = engine.getModel();
 		int totTraits = 0;
-		for (Module mod : module.getSpecies())
+		for (Module<?> mod : module.getSpecies())
 			totTraits += mod.getNTraits();
 		double[] mean = new double[totTraits + 1];
 		model.getMeanTraits(mean);
@@ -133,7 +133,7 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 	// public void setState(double[] loc) {
 	// Point2D xy = new Point2D(loc[0], 1.0 - loc[1]);
 	// int totTraits = 0;
-	// for (Module mod : module.getSpecies())
+	// for (Module<?> mod : module.getSpecies())
 	// totTraits += mod.getNTraits();
 	// double[] init = new double[totTraits];
 	// map.phase2Data(xy, init);
@@ -166,10 +166,10 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 	}
 
 	private String getTraitName(int idx) {
-		List<? extends Module> species = module.getSpecies();
+		List<? extends Module<?>> species = module.getSpecies();
 		int nSpecies = species.size();
 		if (nSpecies > 1) {
-			for (Module mod : species) {
+			for (Module<?> mod : species) {
 				int nTraits = mod.getNTraits();
 				if (idx < nTraits)
 					return mod.getName() + ": " + mod.getTraitName(idx);
@@ -247,10 +247,10 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 		}
 
 		protected String getTraitName(int idx) {
-			List<? extends Module> species = module.getSpecies();
+			List<? extends Module<?>> species = module.getSpecies();
 			int nSpecies = species.size();
 			if (nSpecies > 1) {
-				for (Module mod : species) {
+				for (Module<?> mod : species) {
 					int nTraits = mod.getNTraits();
 					if (idx < nTraits)
 						return mod.getName() + ": " + mod.getTraitName(idx);

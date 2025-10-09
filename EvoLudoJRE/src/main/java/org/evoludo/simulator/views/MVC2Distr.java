@@ -51,6 +51,7 @@ import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Continuous;
+import org.evoludo.simulator.modules.Module;
 
 public class MVC2Distr extends MVAbstract implements PopListener {
 
@@ -70,7 +71,7 @@ public class MVC2Distr extends MVAbstract implements PopListener {
 	}
 
 	@Override
-	public void setModule(org.evoludo.simulator.modules.Module module) {
+	public void setModule(Module<?> module) {
 		this.module = (Continuous) module;
 		super.module = module;
 	}

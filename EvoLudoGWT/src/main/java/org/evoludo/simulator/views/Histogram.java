@@ -147,12 +147,12 @@ public class Histogram extends AbstractView {
 
 	@Override
 	protected void allocateGraphs() {
-		List<? extends Module> species = engine.getModule().getSpecies();
+		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		isMultispecies = (species.size() > 1);
 		degreeProcessed = false;
 		doStatistics = false;
 		int nGraphs = 0;
-		for (Module pop : species) {
+		for (Module<?> pop : species) {
 			int nTraits = pop.getNTraits();
 			switch (type) {
 				case TRAIT:
@@ -192,7 +192,7 @@ public class Histogram extends AbstractView {
 			int nXLabels = 0;
 			destroyGraphs();
 			Type mt = model.getType();
-			for (Module module : species) {
+			for (Module<?> module : species) {
 				int nTraits = module.getNTraits();
 				switch (type) {
 					case TRAIT:
@@ -419,7 +419,7 @@ public class Histogram extends AbstractView {
 	@Override
 	public void reset(boolean hard) {
 		super.reset(hard);
-		Module module = null;
+		Module<?> module = null;
 		double[][] data = null;
 		int idx = 0;
 		Type mt = model.getType();
@@ -428,7 +428,7 @@ public class Histogram extends AbstractView {
 		boolean isPDE = mt.isPDE();
 		for (HistoGraph graph : graphs) {
 			AbstractGraph.GraphStyle style = graph.getStyle();
-			Module oldmod = module;
+			Module<?> oldmod = module;
 			module = graph.getModule();
 			boolean newPop = (oldmod != module);
 			if (newPop)
@@ -675,7 +675,7 @@ public class Histogram extends AbstractView {
 		super.modelSettings();
 		int idx = 0;
 		for (HistoGraph graph : graphs) {
-			Module module = graph.getModule();
+			Module<?> module = graph.getModule();
 			AbstractGraph.GraphStyle style = graph.getStyle();
 			style.customYLevels = ((HasHistogram) module).getCustomLevels(type, idx++);
 		}
@@ -769,7 +769,7 @@ public class Histogram extends AbstractView {
 					double min = 0.0;
 					double max = 0.0;
 					for (HistoGraph graph : graphs) {
-						Module module = graph.getModule();
+						Module<?> module = graph.getModule();
 						Geometry inter = module.getInteractionGeometry();
 						Geometry comp = module.getCompetitionGeometry();
 						if (mt.isODE() || mt.isSDE()) {
@@ -875,7 +875,7 @@ public class Histogram extends AbstractView {
 	 * @param module the module of the graph
 	 * @return {@code true} to show the fixation time distribution
 	 */
-	private boolean doFixtimeDistr(Module module) {
+	private boolean doFixtimeDistr(Module<?> module) {
 		return (module.getNPopulation() > graphs.get(0).getMaxBins() || model.getType().isSDE());
 	}
 
@@ -902,7 +902,7 @@ public class Histogram extends AbstractView {
 				StringBuilder sb = new StringBuilder("Avg. fix. prob: ");
 				int idx = 0;
 				for (HistoGraph graph : graphs) {
-					Module module = graph.getModule();
+					Module<?> module = graph.getModule();
 					if (idx > 0)
 						sb.append(", ");
 					sb.append(isMultispecies ? module.getName() + "." : "")
@@ -922,7 +922,7 @@ public class Histogram extends AbstractView {
 						logger.warning("Average fixation times not available!");
 						return "";
 					}
-					Module module = graph.getModule();
+					Module<?> module = graph.getModule();
 					int nTraits = module.getNTraits();
 					if (idx > 0)
 						sb.append(", ");
@@ -1234,10 +1234,10 @@ public class Histogram extends AbstractView {
 			default:
 				return;
 		}
-		Module module = null;
+		Module<?> module = null;
 		int idx = -1;
 		for (HistoGraph graph : graphs) {
-			Module newMod = graph.getModule();
+			Module<?> newMod = graph.getModule();
 			idx++;
 			if (module != newMod) {
 				module = newMod;

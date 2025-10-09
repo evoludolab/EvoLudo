@@ -527,7 +527,7 @@ public abstract class Model implements CLOProvider {
 	/**
 	 * Short-cut to the list of species modules. Convenience field.
 	 */
-	protected List<? extends Module> species;
+	protected List<? extends Module<?>> species;
 
 	/**
 	 * The number of species in multi-species models.
@@ -690,7 +690,7 @@ public abstract class Model implements CLOProvider {
 			isRelaxing = false;
 			if (type == Type.IBS) {
 				// reset traits after relaxation in IBS models
-				for (Module mod : species) {
+				for (Module<?> mod : species) {
 					IBSPopulation pop = mod.getIBSPopulation();
 					pop.resetTraits();
 				}
@@ -734,7 +734,7 @@ public abstract class Model implements CLOProvider {
 	 * @param id the species identifier
 	 * @return the species
 	 */
-	public Module getSpecies(int id) {
+	public Module<?> getSpecies(int id) {
 		if (id < 0 || id >= nSpecies)
 			return null;
 		return species.get(id);
@@ -1132,7 +1132,7 @@ public abstract class Model implements CLOProvider {
 		int nMean = getNMean();
 		String[] names = new String[nMean];
 		int skip = 0;
-		for (Module mod : species) {
+		for (Module<?> mod : species) {
 			int nt = mod.getNTraits();
 			System.arraycopy(mod.getTraitNames(), 0, names, skip, nt);
 			skip += nt;
@@ -1148,7 +1148,7 @@ public abstract class Model implements CLOProvider {
 	 * @return the name of mean trait with index {@code index}
 	 */
 	public String getMeanName(int index) {
-		for (Module mod : species) {
+		for (Module<?> mod : species) {
 			int nt = mod.getNTraits();
 			if (index < nt) {
 				if (mod.getActiveTraits()[index])
@@ -1634,7 +1634,7 @@ public abstract class Model implements CLOProvider {
 		parser.addCLO(cloTimeStep);
 		parser.addCLO(cloTimeStop);
 		parser.addCLO(cloTimeRelax);
-		Module module = getSpecies(0);
+		Module<?> module = getSpecies(0);
 		// cannot use permitsSampleStatistics and permitsUpdateStatistics because
 		// they also check parameters that have not yet been set
 		if (module instanceof HasHistogram.StatisticsProbability

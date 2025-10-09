@@ -44,6 +44,7 @@ import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Continuous;
+import org.evoludo.simulator.modules.Module;
 
 public class MVCTraitHistogram extends MVAbstract implements HistoGraphListener {
 
@@ -60,7 +61,7 @@ public class MVCTraitHistogram extends MVAbstract implements HistoGraphListener 
 	}
 
 	@Override
-	public void setModule(org.evoludo.simulator.modules.Module module) {
+	public void setModule(Module<?> module) {
 		this.module = (Continuous) module;
 		super.module = module;
 	}

@@ -101,7 +101,7 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 	protected JToolTip gtip;
 	protected int tooltipInitial;
 	protected int tooltipDismiss;
-	Module module;
+	Module<?> module;
 	protected boolean hasViewport = false;
 	protected boolean zoomInOut = true;
 	protected boolean zoomReset = true;
@@ -127,7 +127,7 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 	public static final int FINDNODEAT_OUT_OF_BOUNDS = -1;
 	// jf>
 
-	protected AbstractGraph(GraphListener controller, Module module) {
+	protected AbstractGraph(GraphListener controller, Module<?> module) {
 		this.controller = controller;
 		this.module = module;
 		setLayout(new OverlayLayout(this));
@@ -150,7 +150,7 @@ public abstract class AbstractGraph extends JLayeredPane implements ActionListen
 	 * 
 	 * @return the module
 	 */
-	public Module getModule() {
+	public Module<?> getModule() {
 		return module;
 	}
 

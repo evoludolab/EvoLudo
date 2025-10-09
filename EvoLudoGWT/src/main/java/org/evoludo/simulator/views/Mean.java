@@ -101,11 +101,11 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 
 	@Override
 	protected void allocateGraphs() {
-		List<? extends Module> species = engine.getModule().getSpecies();
+		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		int nGraphs = 0;
 		// multiple line graphs for multi-species interactions and in case of multiple
 		// traits for continuous traits
-		for (Module module : species) {
+		for (Module<?> module : species) {
 			// only one graph per species for fitness data
 			// but separate graphs for multiple continuous traits
 			if (model.isContinuous() && type != Data.FITNESS)
@@ -117,7 +117,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 		if (graphs.size() != nGraphs) {
 			destroyGraphs();
 			// one graph per discrete species or continuous trait
-			for (Module module : species) {
+			for (Module<?> module : species) {
 				LineGraph graph = new LineGraph(this, module);
 				wrapper.add(graph);
 				graphs.add(graph);
@@ -148,7 +148,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 		int idx = 0;
 		for (LineGraph graph : graphs) {
 			AbstractGraph.GraphStyle style = graph.getStyle();
-			Module module = graph.getModule();
+			Module<?> module = graph.getModule();
 
 			switch (type) {
 				case TRAIT:
@@ -265,12 +265,12 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 	@Override
 	public void update(boolean force) {
 		double newtime = model.getUpdates();
-		Module module = null;
+		Module<?> module = null;
 		boolean cmodel = model.isContinuous();
 		if (Math.abs(timestamp - newtime) > 1e-8) {
 			int idx = 0;
 			for (LineGraph graph : graphs) {
-				Module nod = graph.getModule();
+				Module<?> nod = graph.getModule();
 				boolean newmod = module != nod;
 				module = nod;
 				int id = module.getID();

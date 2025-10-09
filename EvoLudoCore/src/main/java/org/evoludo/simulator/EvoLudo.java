@@ -240,7 +240,7 @@ public abstract class EvoLudo
 	/**
 	 * The lookup table for all available modules.
 	 */
-	protected HashMap<String, Module> modules = new HashMap<>();
+	protected HashMap<String, Module<?>> modules = new HashMap<>();
 
 	/**
 	 * Generate 2D network. This is the factory method to provide different
@@ -466,7 +466,7 @@ public abstract class EvoLudo
 			setSuspended(false);
 		// check module first; model may contact module
 		boolean doReset = false;
-		for (Module mod : activeModule.getSpecies())
+		for (Module<?> mod : activeModule.getSpecies())
 			doReset |= mod.check();
 		Type type = activeModel.getType();
 		doReset |= activeModel.check();
@@ -510,7 +510,7 @@ public abstract class EvoLudo
 			rng.reset();
 		// check consistency of parameters in models
 		modelCheck();
-		for (Module mod : activeModule.getSpecies())
+		for (Module<?> mod : activeModule.getSpecies())
 			mod.reset();
 		activeModel.reset();
 		resetRequested = false;
@@ -537,7 +537,7 @@ public abstract class EvoLudo
 	 * @param quiet set to {@code true} to skip notifying listeners
 	 */
 	public final void modelInit(boolean quiet) {
-		for (Module mod : activeModule.getSpecies())
+		for (Module<?> mod : activeModule.getSpecies())
 			mod.init();
 		activeModel.init();
 		activeModel.update();
@@ -851,7 +851,7 @@ public abstract class EvoLudo
 	 *         present; true otherwise
 	 */
 	public boolean loadModule(String newModuleKey) {
-		Module newModule = modules.get(newModuleKey);
+		Module<?> newModule = modules.get(newModuleKey);
 		if (newModule == null) {
 			if (activeModule == null)
 				return false;
@@ -885,8 +885,8 @@ public abstract class EvoLudo
 	public void unloadModule() {
 		unloadModel(true);
 		if (activeModule != null) {
-			for (Iterator<? extends Module> it = activeModule.getSpecies().iterator(); it.hasNext();) {
-				Module mod = it.next();
+			for (Iterator<? extends Module<?>> it = activeModule.getSpecies().iterator(); it.hasNext();) {
+				Module<?> mod = it.next();
 				mod.unload();
 				if (mod != activeModule)
 					it.remove();
@@ -899,14 +899,14 @@ public abstract class EvoLudo
 	/**
 	 * The active module.
 	 */
-	protected Module activeModule;
+	protected Module<?> activeModule;
 
 	/**
 	 * Gets the active {@link Module}.
 	 * 
 	 * @return the active module
 	 */
-	public Module getModule() {
+	public Module<?> getModule() {
 		return activeModule;
 	}
 
@@ -917,7 +917,7 @@ public abstract class EvoLudo
 	 *
 	 * @param module the module to add to lookup table
 	 */
-	public void addModule(Module module) {
+	public void addModule(Module<?> module) {
 		String key = module.getKey();
 		modules.put(key, module);
 		cloModule.addKey(key, module.getTitle());
@@ -1727,7 +1727,7 @@ public abstract class EvoLudo
 
 			int idx = 0;
 			StringBuilder sb = new StringBuilder();
-			for (Module mod : activeModule.getSpecies()) {
+			for (Module<?> mod : activeModule.getSpecies()) {
 				String name = mod.getName();
 				int namelen = name.length();
 				if (namelen > 0)

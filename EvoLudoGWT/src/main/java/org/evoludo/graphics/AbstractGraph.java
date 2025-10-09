@@ -363,7 +363,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * The module backing the graph.
 	 */
-	protected Module module;
+	protected Module<?> module;
 
 	/**
 	 * The bounds of the displaying area. This excludes any frames and/or axes
@@ -432,7 +432,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @param view   the view of this graph
 	 * @param module the module backing the graph
 	 */
-	protected AbstractGraph(AbstractView view, Module module) {
+	protected AbstractGraph(AbstractView view, Module<?> module) {
 		this.view = view;
 		this.module = module;
 		logger = view.getLogger();
@@ -632,7 +632,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * 
 	 * @return the module
 	 */
-	public Module getModule() {
+	public Module<?> getModule() {
 		return module;
 	}
 

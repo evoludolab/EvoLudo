@@ -496,9 +496,9 @@ public class EvoLudoLab extends JFrame
 		boolean resume = engine.isSuspended();
 		engine.setSuspended(false);
 		Model oldModel = engine.getModel();
-		Module oldModule = engine.getModule();
+		Module<?> oldModule = engine.getModule();
 		int parsingIssues = engine.parseCLO();
-		Module module = engine.getModule();
+		Module<?> module = engine.getModule();
 		setTitle(module.getTitle());
 		// reset is required if module and/or model changed
 		if (module != oldModule || engine.getModel() != oldModel) {
@@ -537,7 +537,7 @@ public class EvoLudoLab extends JFrame
 		activeViews.clear();
 		// model is loaded, now get GUI ready.
 		// strategies related views
-		Module module = engine.getModule();
+		Module<?> module = engine.getModule();
 		Model model = engine.getModel();
 		if (module instanceof HasPop2D.Traits)
 			if (model.isContinuous())

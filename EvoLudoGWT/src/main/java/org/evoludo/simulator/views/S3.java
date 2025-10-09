@@ -86,7 +86,7 @@ public class S3 extends AbstractView {
 
 	@Override
 	protected void allocateGraphs() {
-		Module module = engine.getModule();
+		Module<?> module = engine.getModule();
 		int nRoles = module.getNRoles();
 		if (graphs.size() != nRoles) {
 			destroyGraphs();
@@ -153,7 +153,7 @@ public class S3 extends AbstractView {
 			state = new double[nMean];
 		for (S3Graph graph : graphs) {
 			S3Map map = graph.getMap();
-			Module module = graph.getModule();
+			Module<?> module = graph.getModule();
 			graph.setMarkers(module.getMarkers());
 			graph.getStyle().trajColor = ColorMapCSS.Color2Css(module.getTrajectoryColor());
 			map.setNames(module.getTraitNames());
@@ -189,7 +189,7 @@ public class S3 extends AbstractView {
 
 	@Override
 	public boolean setInitialState(double[] init) {
-		Module module = engine.getModule();
+		Module<?> module = engine.getModule();
 		// note: setInitialTraits requires different arguments for discrete and
 		// continuous modules
 		if (module instanceof Discrete &&

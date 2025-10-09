@@ -184,7 +184,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	void setGraphGeometry(GenericPopGraph<T, N> graph, boolean inter) {
 		Type mt = model.getType();
 		if (mt.isIBS()) {
-			Module module = graph.getModule();
+			Module<?> module = graph.getModule();
 			Geometry igeom = module.getInteractionGeometry();
 			Geometry cgeom = module.getCompetitionGeometry();
 			Geometry geo = inter ? igeom : cgeom;
@@ -282,7 +282,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 		G graph = (G) agraph;
 		Geometry geometry = graph.getGeometry();
 		int nNodes = geometry.size;
-		Module module = graph.getModule();
+		Module<?> module = graph.getModule();
 		int id;
 		StringBuilder tip = new StringBuilder("<table style='border-collapse:collapse;border-spacing:0;'>");
 		if (module.getNSpecies() > 1)
@@ -464,13 +464,13 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	 * @return the interaction graph of the opponent
 	 */
 	private G getOpponentInteractionGraph(G graph) {
-		Module module = graph.getModule();
-		Module opponent = module.getOpponent();
+		Module<?> module = graph.getModule();
+		Module<?> opponent = module.getOpponent();
 		Geometry oppInter = opponent.getInteractionGeometry();
 		for (G oppGraph : graphs) {
 			if (oppGraph == graph)
 				continue;
-			Module oppModule = oppGraph.getModule();
+			Module<?> oppModule = oppGraph.getModule();
 			// XXX this should work but somehow the pointers are different even though the
 			// objects appear to be the same...
 			// if (oppModule == opponent && oppGraph.getGeometry() == oppInter)
@@ -488,13 +488,13 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	 * @return the competition graph of the opponent
 	 */
 	private G getOpponentCompetitionGraph(G graph) {
-		Module module = graph.getModule();
-		Module opponent = module.getOpponent();
+		Module<?> module = graph.getModule();
+		Module<?> opponent = module.getOpponent();
 		Geometry oppComp = opponent.getCompetitionGeometry();
 		for (G oppGraph : graphs) {
 			if (oppGraph == graph)
 				continue;
-			Module oppModule = oppGraph.getModule();
+			Module<?> oppModule = oppGraph.getModule();
 			// this should work but somehow the pointers are different even though the
 			// objects appear to be the same...
 			// if (oppModule == opponent && oppGraph.getGeometry() == oppComp)

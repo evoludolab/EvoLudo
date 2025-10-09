@@ -75,7 +75,7 @@ public class LineGraph extends AbstractGraph<double[]>
 	 * @param view   the view of this graph
 	 * @param module the module backing the graph
 	 */
-	public LineGraph(Mean view, Module module) {
+	public LineGraph(Mean view, Module<?> module) {
 		super(view, module);
 	}
 

@@ -289,7 +289,7 @@ public class LineGraph extends AbstractGraph {
 	private final LineQueue svgQueue = new LineQueue();
 	int row = -1;
 
-	public LineGraph(StateGraphListener controller, Module module, int row) {
+	public LineGraph(StateGraphListener controller, Module<?> module, int row) {
 		super(controller, module);
 		this.row = row;
 		frame = new FrameLayer(style);

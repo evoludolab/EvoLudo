@@ -99,7 +99,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 * @param view   the view of this graph
 	 * @param module the module backing the graph
 	 */
-	public ParaGraph(Phase2D view, Module module) {
+	public ParaGraph(Phase2D view, Module<?> module) {
 		super(view, module);
 	}
 

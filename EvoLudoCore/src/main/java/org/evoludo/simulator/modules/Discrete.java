@@ -46,19 +46,7 @@ import org.evoludo.util.CLOption.Category;
  * 
  * @author Christoph Hauert
  */
-public abstract class Discrete extends Module {
-
-	/**
-	 * The list {@code species} contains references to each species in this
-	 * module. It deliberately shadows {@link Module#species} to simplify
-	 * bookkeeping. During instantiation {@link Module#species} and
-	 * {@code species} are linked to represent one and the same list.
-	 * 
-	 * @see #Discrete(EvoLudo, Discrete)
-	 * @see Module#species
-	 */
-	@SuppressWarnings("hiding")
-	ArrayList<Discrete> species;
+public abstract class Discrete extends Module<Discrete> {
 
 	/**
 	 * The mutation operator for discrete traits.
@@ -88,6 +76,7 @@ public abstract class Discrete extends Module {
 	 */
 	protected Discrete(Discrete partner) {
 		this(partner.engine, partner);
+		add(this);
 	}
 
 	/**
@@ -103,11 +92,7 @@ public abstract class Discrete extends Module {
 		super(engine, partner);
 		if (partner == null) {
 			species = new ArrayList<>();
-			// recall this.species shadows super.species for later convenience
-			super.species = species;
-		} else {
-			// link ArrayList<Discrete> shadows
-			species = partner.species;
+			// No more shadowing or linking needed
 		}
 		add(this);
 	}

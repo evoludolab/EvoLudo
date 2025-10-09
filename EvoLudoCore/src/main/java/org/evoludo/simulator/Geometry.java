@@ -99,7 +99,7 @@ public class Geometry {
 	 * @param engine the pacemaker for running the model
 	 * @param module the module with interaction parameters
 	 */
-	public Geometry(EvoLudo engine, Module module) {
+	public Geometry(EvoLudo engine, Module<?> module) {
 		this(engine, module, module);
 	}
 
@@ -112,7 +112,7 @@ public class Geometry {
 	 * @param popModule the module with interaction parameters
 	 * @param oppModule the module of the opponent
 	 */
-	public Geometry(EvoLudo engine, Module popModule, Module oppModule) {
+	public Geometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		this(engine);
 		if (engine.getModel().getType().isIBS()) {
 			population = popModule.getIBSPopulation();
@@ -999,7 +999,7 @@ public class Geometry {
 	 * 
 	 * @see #displayUniqueGeometry(Geometry, Geometry)
 	 */
-	public static boolean displayUniqueGeometry(Module module) {
+	public static boolean displayUniqueGeometry(Module<?> module) {
 		return displayUniqueGeometry(module.getInteractionGeometry(), module.getCompetitionGeometry());
 	}
 

@@ -69,7 +69,7 @@ import org.evoludo.util.CLOption.Category;
  * 
  * @author Christoph Hauert
  */
-public abstract class Module implements Features, MilestoneListener, CLOProvider, Runnable {
+public abstract class Module<T extends Module<T>> implements Features, MilestoneListener, CLOProvider, Runnable {
 
 	/**
 	 * The name of the species. Mainly used in multi-species modules.
@@ -118,7 +118,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * the species list <em>CANNOT</em> be static! Otherwise it is impossible to run
 	 * multiple instances of modules/models concurrently!
 	 */
-	ArrayList<? extends Module> species;
+	ArrayList<T> species;
 
 	/**
 	 * In multi-species modules each species is represented by a Module, see
@@ -160,18 +160,19 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @param partner the module of the partner species or {@code null} for single
 	 *                species modules
 	 */
-	protected Module(EvoLudo engine, Module partner) {
+	@SuppressWarnings("unchecked")
+	protected Module(EvoLudo engine, T partner) {
 		this.engine = engine;
 		logger = engine.getLogger();
 		if (partner == null) {
 			ID = 0;
-			opponent = this;
+			opponent = (T) this;
 			return;
 		}
 		ID = partner.species.size();
 		species = partner.species;
 		opponent = partner;
-		partner.opponent = this;
+		partner.opponent = (T) this;
 	}
 
 	/**
@@ -236,10 +237,37 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 */
 	public void setModel(Model model) {
 		markers = new Markers(model);
-		for (Module pop : species) {
+		for (T pop : species) {
 			pop.model = model;
 			pop.markers = markers;
 		}
+	}
+
+	/**
+	 * Reference to Module of opponent. For Modules referring to intra-species
+	 * interactions {@code opponent == this} must hold.
+	 */
+	T opponent;
+
+	/**
+	 * Gets the opponent of this module/population. By default, for intra-species
+	 * interactions, simply returns this module/population, i.e
+	 * {@code opponent == this}.
+	 * 
+	 * @return the opponent of this population
+	 */
+	public T getOpponent() {
+		return opponent;
+	}
+
+	/**
+	 * Sets the opponent of this module/population. By default, for intra-species
+	 * interactions, {@code opponent == this} holds.
+	 * 
+	 * @param opponent the opponent of this population
+	 */
+	public void setOpponent(T opponent) {
+		this.opponent = opponent;
 	}
 
 	/**
@@ -248,7 +276,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @param idx the index of species to retrieve
 	 * @return the module of species
 	 */
-	public Module getSpecies(int idx) {
+	public T getSpecies(int idx) {
 		if (idx < 0 || idx >= species.size())
 			return null;
 		return species.get(idx);
@@ -259,7 +287,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the list with all species
 	 */
-	public List<? extends Module> getSpecies() {
+	public List<T> getSpecies() {
 		return species;
 	}
 
@@ -326,7 +354,10 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		map2fitness = null;
 		playerUpdate = null;
 		markers = null;
-		opponent = this;
+		// in multispecies modules reset opponent to this in order to allow
+		// freeing the memory of the other species. loading the module again
+		// will regenerate the other species.
+		opponent = (T) this;
 		engine.removeCLOProvider(this);
 		engine.removeMilestoneListener(this);
 		if (this instanceof ChangeListener)
@@ -838,41 +869,14 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * as {@link org.evoludo.simulator.views.Pop2D} or
 	 * {@link org.evoludo.simulator.views.Pop3D}. By default no changes are made.
 	 * 
-	 * @param <T>      the type of the color map
+	 * @param <M>      the type of the color map
 	 * @param colorMap the color map
 	 * @return the processed color map
 	 * 
 	 * @see org.evoludo.simulator.ColorMap
 	 */
-	public <T> ColorMap<T> processColorMap(ColorMap<T> colorMap) {
+	public <M> ColorMap<M> processColorMap(ColorMap<M> colorMap) {
 		return colorMap;
-	}
-
-	/**
-	 * Reference to Module of opponent. For Modules referring to intra-species
-	 * interactions {@code opponent == this} must hold.
-	 */
-	Module opponent;
-
-	/**
-	 * Gets the opponent of this module/population. By default, for intra-species
-	 * interactions, simply returns this module/population, i.e
-	 * {@code opponent == this}.
-	 * 
-	 * @return the opponent of this population
-	 */
-	public Module getOpponent() {
-		return opponent;
-	}
-
-	/**
-	 * Sets the opponent of this module/population. By default, for intra-species
-	 * interactions, {@code opponent == this} holds.
-	 * 
-	 * @param opponent the opponent of this population
-	 */
-	public void setOpponent(Module opponent) {
-		this.opponent = opponent;
 	}
 
 	/**
@@ -1109,7 +1113,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
 					boolean doReset = false;
 					int n = 0;
-					for (Module pop : species) {
+					for (T pop : species) {
 						Geometry geom = pop.createGeometry();
 						doReset |= geom.parse(geomargs[n++ % geomargs.length]);
 					}
@@ -1149,7 +1153,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					String[] sizes = arg.contains(CLOParser.SPECIES_DELIMITER) ? arg.split(CLOParser.SPECIES_DELIMITER)
 							: arg.split(CLOParser.VECTOR_DELIMITER);
 					int n = 0;
-					for (Module pop : species) {
+					for (T pop : species) {
 						int size = CLOParser.parseDim(sizes[n]);
 						if (size < 1)
 							continue;
@@ -1210,7 +1214,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					if (rates.length == 0)
 						return false;
 					int n = 0;
-					for (Module pop : species) {
+					for (T pop : species) {
 						double rate = rates[n++ % rates.length];
 						// sanity checks
 						if (rate >= 0.0) {
@@ -1275,7 +1279,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					if (sizes.length == 0)
 						return false;
 					int n = 0;
-					for (Module pop : species)
+					for (T pop : species)
 						pop.setNGroup(sizes[n++ % sizes.length]);
 					return true;
 				}
@@ -1305,13 +1309,13 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				@Override
 				public boolean parse(String arg) {
 					// activate all traits
-					for (Module pop : species)
+					for (T pop : species)
 						pop.setActiveTraits(null);
 					if (!cloTraitDisable.isSet())
 						return true;
 					String[] disabledtraits = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
-					for (Module pop : species) {
+					for (T pop : species) {
 						int[] dtraits = CLOParser.parseIntVector(disabledtraits[n++ % disabledtraits.length]);
 						int dist = dtraits.length;
 						int mint = model.isContinuous() ? 1 : 2;
@@ -1371,7 +1375,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					if (colorsets == null)
 						return false;
 					int n = 0;
-					for (Module mod : species) {
+					for (T mod : species) {
 						String[] colors = colorsets[n++ % colorsets.length].split(CLOParser.MATRIX_DELIMITER);
 						Color[] myColors = new Color[colors.length];
 						for (int i = 0; i < colors.length; i++) {
@@ -1392,7 +1396,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				public String getDescription() {
 					String descr;
 					int nt = -Integer.MAX_VALUE;
-					for (Module pop : species)
+					for (T pop : species)
 						nt = Math.max(nt, pop.getNTraits());
 
 					switch (nt) {
@@ -1410,7 +1414,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					descr += "\n        ci, ni: color name or (r,g,b) triplet (in 0-255) with i:";
 					int idx = 0;
 					StringBuilder sb = new StringBuilder(descr);
-					for (Module mod : species) {
+					for (T mod : species) {
 						nt = mod.getNTraits();
 						for (int n = 0; n < nt; n++) {
 							String aTrait = "              " + (idx++) + ": ";
@@ -1453,7 +1457,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 						return true;
 					String[] namespecies = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
-					for (Module pop : species) {
+					for (T pop : species) {
 						String[] names = namespecies[n++ % namespecies.length].split(CLOParser.VECTOR_DELIMITER);
 						if (names.length != nTraits)
 							return false;
@@ -1469,7 +1473,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				public String getDescription() {
 					String descr;
 					int nt = -Integer.MAX_VALUE;
-					for (Module pop : species)
+					for (T pop : species)
 						nt = Math.max(nt, pop.getNTraits());
 
 					switch (nt) {
@@ -1554,7 +1558,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		boolean anyPayoffs = false;
 		int minTraits = Integer.MAX_VALUE;
 		int maxTraits = -Integer.MAX_VALUE;
-		for (Module mod : species) {
+		for (T mod : species) {
 			boolean hasVacant = (mod.getVacantIdx() >= 0);
 			anyVacant |= hasVacant;
 			anyNonVacant |= !hasVacant;
@@ -1564,7 +1568,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 			maxTraits = Math.min(maxTraits, nt);
 		}
 		if (anyPayoffs) {
-			for (Module mod : species) {
+			for (T mod : species) {
 				if (!(mod instanceof Payoffs))
 					continue;
 				map2fitness = ((Payoffs) mod).getMap2Fitness();

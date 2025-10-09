@@ -1183,7 +1183,7 @@ public class EvoLudoWeb extends Composite
 		/**
 		 * The active module.
 		 */
-		Module module;
+		Module<?> module;
 
 		/**
 		 * The active model.
@@ -1308,7 +1308,7 @@ public class EvoLudoWeb extends Composite
 	 */
 	private void configGUI() {
 		// reset is required if module and/or model changed
-		Module newModule = engine.getModule();
+		Module<?> newModule = engine.getModule();
 		Model newModel = engine.getModel();
 		if (newModule == null || newModule != guiState.module || newModel != guiState.model) {
 			engine.modelReset(true);
@@ -1992,7 +1992,7 @@ public class EvoLudoWeb extends Composite
 		HashMap<String, AbstractView> oldViews = activeViews;
 		activeViews = new HashMap<>();
 		evoludoDeck.clear();
-		Module module = engine.getModule();
+		Module<?> module = engine.getModule();
 		if (module == null) {
 			// no module loaded; show console only
 			addView(viewConsole, oldViews);

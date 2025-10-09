@@ -69,7 +69,7 @@ public class IBSD extends IBS implements DModel {
 		// collect new statistics sample
 		IBSDPopulation dpop = (IBSDPopulation) population;
 		fixData.typeFixed = ArrayMath.maxIndex(dpop.traitsCount);
-		Module module = species.get(0);
+		Module<?> module = species.get(0);
 		int vacant = module.getVacantIdx();
 		if (fixData.typeFixed == vacant) {
 			// closer look is needed - look for what other traits survived (if any)
@@ -103,7 +103,7 @@ public class IBSD extends IBS implements DModel {
 		// - mutant or temperature initialization
 		// - no vacant sites or monostop (otherwise extinction is the only absorbing
 		// state)
-		for (Module mod : species) {
+		for (Module<?> mod : species) {
 			Init.Type itype = ((IBSDPopulation) mod.getIBSPopulation()).getInit().type;
 			if ((itype.equals(Init.Type.MUTANT) ||
 					itype.equals(Init.Type.TEMPERATURE)) &&
@@ -133,7 +133,7 @@ public class IBSD extends IBS implements DModel {
 						"optimizations for homogeneous states disabled (incompatible with variable population sizes).");
 				doReset = true;
 			}
-			Module module = population.getModule();
+			Module<?> module = population.getModule();
 			double pMutation = module.getMutation().probability;
 			if (pMutation <= 0.0) {
 				optimizeHomo = false;
@@ -195,7 +195,7 @@ public class IBSD extends IBS implements DModel {
 
 		int skip = 0;
 		boolean success = true;
-		for (Module mod : species) {
+		for (Module<?> mod : species) {
 			IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
 			double[] tmp = new double[dpop.nTraits];
 			System.arraycopy(init, skip, tmp, 0, dpop.nTraits);
@@ -280,7 +280,7 @@ public class IBSD extends IBS implements DModel {
 						String[] inittypes = arg.split(CLOParser.SPECIES_DELIMITER);
 						int idx = 0;
 						Init.Type prevtype = null;
-						for (Module mod : ibs.species) {
+						for (Module<?> mod : ibs.species) {
 							IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
 							String itype = inittypes[idx++ % inittypes.length];
 							double[] initargs = null;
@@ -309,7 +309,7 @@ public class IBSD extends IBS implements DModel {
 						String descr = "--init <t>      type of initial configuration:\n" + clo.getDescriptionKey()
 								+ "\n                with r, m indices of resident, mutant traits";
 						boolean noVacant = false;
-						for (Module mod : ibs.species)
+						for (Module<?> mod : ibs.species)
 							noVacant |= mod.getVacantIdx() < 0;
 						if (noVacant)
 							return descr.replace("[,v]", "");
@@ -534,7 +534,7 @@ public class IBSD extends IBS implements DModel {
 				public boolean parse(String arg) {
 					// reset all optimizations
 					optimizeHomo = false;
-					for (Module mod : species) {
+					for (Module<?> mod : species) {
 						IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
 						dpop.optimizeMoran = false;
 					}
@@ -554,14 +554,14 @@ public class IBSD extends IBS implements DModel {
 								optimizeHomo = true;
 								break;
 							case MORAN:
-								for (Module mod : species) {
+								for (Module<?> mod : species) {
 									IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
 									dpop.optimizeMoran = true;
 								}
 								break;
 							case NONE:
 								optimizeHomo = false;
-								for (Module mod : species) {
+								for (Module<?> mod : species) {
 									IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
 									dpop.optimizeMoran = false;
 								}

@@ -49,22 +49,7 @@ import org.evoludo.util.Formatter;
  * 
  * @author Christoph Hauert
  */
-public abstract class Continuous extends Module {
-
-	/**
-	 * The list {@code species} contains references to each species in this
-	 * module. It deliberately shadows {@link Module#species} to simplify
-	 * bookkeeping. During instantiation {@link Module#species} and
-	 * {@code species} are linked to represent one and the same list.
-	 * <p>
-	 * <strong>IMPORTANT:</strong> currently continuous models support only a single
-	 * species.
-	 *
-	 * @see #Continuous(EvoLudo, Continuous)
-	 * @see Module#species
-	 */
-	@SuppressWarnings("hiding")
-	ArrayList<Continuous> species;
+public abstract class Continuous extends Module<Continuous> {
 
 	/**
 	 * Shortcut for species.get(0) as long as continuous modules are restricted to a
@@ -146,16 +131,10 @@ public abstract class Continuous extends Module {
 		super(engine, partner);
 		if (partner == null) {
 			species = new ArrayList<>();
-			// recall this.species shadows super.species for later convenience
-			super.species = species;
-		} else {
-			// link ArrayList<Discrete> shadows
-			species = partner.species;
 		}
-		add(this);
-		// useful shortcut as long as continuous modules are restricted to single
-		// species
+		// shortcut while continuous modules are restricted to single species
 		population = this;
+		add(this);
 	}
 
 	@Override
@@ -1372,7 +1351,8 @@ public abstract class Continuous extends Module {
 	 *                    calculate minimum
 	 * @return the minimum or maximum score
 	 */
-	private double findExtrema(double[] resTrait, double[] mutTrait, int[] resIdx, int[] mutIdx, double[][] resInterval,
+	private double findExtrema(double[] resTrait, double[] mutTrait, int[] resIdx, int[] mutIdx,
+			double[][] resInterval,
 			double[][] mutInterval, double[] resScale, double[] mutScale, int[] resMax, int[] mutMax, double scoreMax,
 			int trait, double minmax) {
 

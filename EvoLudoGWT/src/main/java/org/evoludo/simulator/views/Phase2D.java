@@ -109,7 +109,7 @@ public class Phase2D extends AbstractView {
 		int nStates = model.getNMean();
 		if (state == null || state.length != nStates)
 			state = new double[nStates];
-		Module module = engine.getModule();
+		Module<?> module = engine.getModule();
 		if (graphs.size() != 1) {
 			graph = new ParaGraph(this, module);
 			wrapper.add(graph);
@@ -141,7 +141,7 @@ public class Phase2D extends AbstractView {
 	public void reset(boolean hard) {
 		super.reset(hard);
 
-		Module module = engine.getModule();
+		Module<?> module = engine.getModule();
 		graph.setMarkers(module.getMarkers());
 		// set map for converting data to phase plane coordinates
 		map = ((HasPhase2D) module).getPhase2DMap();
@@ -234,11 +234,11 @@ public class Phase2D extends AbstractView {
 	 * @return the name of the trait
 	 */
 	private String getTraitName(int idx) {
-		Module module = engine.getModule();
-		List<? extends Module> species = module.getSpecies();
+		Module<?> module = engine.getModule();
+		List<? extends Module<?>> species = module.getSpecies();
 		int nSpecies = species.size();
 		if (nSpecies > 1) {
-			for (Module mod : species) {
+			for (Module<?> mod : species) {
 				int nTraits = mod.getNTraits();
 				if (idx < nTraits) {
 					if (nTraits == 1 || (nTraits == 2 && mod.getVacantIdx() >= 0))
@@ -257,7 +257,7 @@ public class Phase2D extends AbstractView {
 	@Override
 	public boolean setInitialState(double[] init) {
 		// no further processing should be needed - just forward to module and engine
-		Module module = engine.getModule();
+		Module<?> module = engine.getModule();
 		// note: setInitialTraits requires different arguments for discrete and
 		// continuous modules
 		if (module instanceof Discrete && ((DModel) model).setInitialTraits(init)) {
@@ -271,8 +271,8 @@ public class Phase2D extends AbstractView {
 	public void populateContextMenu(ContextMenu menu) {
 		if (!map.hasFixedAxes()) {
 			// add context menu for configuring the phase plane axes
-			Module module = engine.getModule();
-			List<? extends Module> species = module.getSpecies();
+			Module<?> module = engine.getModule();
+			List<? extends Module<?>> species = module.getSpecies();
 			int nSpecies = species.size();
 			boolean isMultispecies = nSpecies > 1;
 			// no menu entries if single species and less than 3 traits
@@ -284,7 +284,7 @@ public class Phase2D extends AbstractView {
 			// in multi-species models the menu includes species names
 			int totTraits = 0;
 			boolean isDensity = model.isDensity();
-			for (Module mod : species) {
+			for (Module<?> mod : species) {
 				int vidx = mod.getVacantIdx();
 				int nt = mod.getNTraits();
 				if (isDensity && nt == 1 || (nt == 2 && vidx >= 0))
@@ -299,7 +299,7 @@ public class Phase2D extends AbstractView {
 				traitYMenu = new ContextMenu(menu);
 				traitYItems = new ContextMenuCheckBoxItem[totTraits];
 				int idx = 0;
-				for (Module mod : species) {
+				for (Module<?> mod : species) {
 					int vidx = mod.getVacantIdx();
 					int nt = mod.getNTraits();
 					if (isMultispecies && !(nt == 1 || (nt == 2 && vidx >= 0))) {

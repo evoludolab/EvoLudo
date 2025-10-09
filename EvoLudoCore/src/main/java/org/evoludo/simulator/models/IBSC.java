@@ -158,7 +158,7 @@ public class IBSC extends IBS implements CModel {
 				"--init <t>      type of initial configuration", new CLODelegate() {
 					@Override
 					public boolean parse(String arg) {
-						for (Module mod : ibs.species) {
+						for (Module<?> mod : ibs.species) {
 							IBSMCPopulation cpop = (IBSMCPopulation) mod.getIBSPopulation();
 							String[] inittypes = arg.split(CLOParser.TRAIT_DELIMITER);
 							int nt = mod.getNTraits();

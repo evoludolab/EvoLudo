@@ -109,7 +109,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	protected static final String MENU_LINK_ALL = "100";
 	protected static final int MAX_LINK_COUNT = 10000;
 
-	public PopGraph2D(PopListener controller, Geometry geometry, Module module) {
+	public PopGraph2D(PopListener controller, Geometry geometry, Module<?> module) {
 		super(controller, module);
 		this.geometry = geometry;
 

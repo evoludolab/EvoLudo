@@ -49,7 +49,7 @@ public interface MultiView {
 
 	public boolean isActive();
 
-	public default void setModule(Module module) {
+	public default void setModule(Module<?> module) {
 	}
 
 	public void reset(boolean clear);
@@ -170,7 +170,7 @@ public interface MultiView {
 	 * 
 	 * @see org.evoludo.simulator.EvoLudoLab#updateViews
 	 */
-	public static DataTypes[] getAvailableDataTypes(Module module, Model model) {
+	public static DataTypes[] getAvailableDataTypes(Module<?> module, Model model) {
 		ArrayList<DataTypes> dataOutputs = new ArrayList<>();
 		// query available views to deduce the data types to report
 		// individual data

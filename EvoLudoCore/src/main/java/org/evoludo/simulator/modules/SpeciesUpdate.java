@@ -69,14 +69,14 @@ public class SpeciesUpdate {
 	/**
 	 * The module that is using this species update.
 	 */
-	Module module;
+	Module<?> module;
 
 	/**
 	 * Instantiate new population update for use in IBS {@code model}s.
 	 * 
 	 * @param module the module using this species update
 	 */
-	public SpeciesUpdate(Module module) {
+	public SpeciesUpdate(Module<?> module) {
 		this.module = module;
 	}
 

@@ -253,7 +253,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	 * @param module the module backing the graph
 	 * @param row    the index of the data row
 	 */
-	public HistoGraph(Histogram view, Module module, int row) {
+	public HistoGraph(Histogram view, Module<?> module, int row) {
 		super(view, module);
 		this.row = row;
 	}

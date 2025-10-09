@@ -67,7 +67,7 @@ public class HistoGraph extends AbstractGraph {
 	protected static final String MENU_LOG_SCALE_X = "xlog";
 	protected static final String MENU_LOG_SCALE_Y = "ylog";
 
-	public HistoGraph(GraphListener controller, Module module, int row) {
+	public HistoGraph(GraphListener controller, Module<?> module, int row) {
 		super(controller, module);
 		this.row = row;
 		data = new HistoData();

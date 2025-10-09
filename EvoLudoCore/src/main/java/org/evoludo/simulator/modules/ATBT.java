@@ -687,7 +687,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 		 * Convenience variable: module associated with this model (useful for single
 		 * species).
 		 */
-		protected Module module;
+		protected Module<?> module;
 
 		/**
 		 * Constructs a new ODE solver taylored for the integration of asymmetric

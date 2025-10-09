@@ -78,7 +78,7 @@ public abstract class IBSPopulation {
 	/**
 	 * The module associated with this population.
 	 */
-	protected Module module;
+	protected Module<?> module;
 
 	/**
 	 * Convenience field for static modules to avoid casts.
@@ -90,7 +90,7 @@ public abstract class IBSPopulation {
 	 * 
 	 * @return the module associated with this population
 	 */
-	public Module getModule() {
+	public Module<?> getModule() {
 		return module;
 	}
 
@@ -130,7 +130,7 @@ public abstract class IBSPopulation {
 	 * @param engine the pacemaker for running the model
 	 * @param module the module that defines the game
 	 */
-	protected IBSPopulation(EvoLudo engine, Module module) {
+	protected IBSPopulation(EvoLudo engine, Module<?> module) {
 		this.engine = engine;
 		logger = engine.getLogger();
 		opponent = this;

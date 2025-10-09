@@ -336,7 +336,7 @@ public class ODE extends Model implements DModel {
 		mutation = new Mutation.Discrete[nSpecies];
 		dependents = new int[nSpecies];
 		int idx = 0;
-		for (Module mod : species) {
+		for (Module<?> mod : species) {
 			mutation[idx] = (Mutation.Discrete) mod.getMutation();
 			idx++;
 		}
@@ -366,7 +366,7 @@ public class ODE extends Model implements DModel {
 		nDim = 0;
 		int idx = 0;
 		boolean hasPayoffs = false;
-		for (Module mod : species) {
+		for (Module<?> mod : species) {
 			doReset |= mod.check();
 			int nTraits = mod.getNTraits();
 			idxSpecies[idx] = nDim;
@@ -415,7 +415,7 @@ public class ODE extends Model implements DModel {
 			Arrays.fill(dependents, -1);
 		} else {
 			idx = 0;
-			for (Module mod : species) {
+			for (Module<?> mod : species) {
 				dependents[idx] = ((HasDE) mod).getDependent();
 				idx++;
 			}
@@ -427,7 +427,7 @@ public class ODE extends Model implements DModel {
 	public void reset() {
 		int skip = 0;
 		staticfit = null;
-		for (Module pop : species) {
+		for (Module<?> pop : species) {
 			if (!pop.isStatic())
 				continue;
 			// allocate memory after the first population with static fitness is found
@@ -571,14 +571,14 @@ public class ODE extends Model implements DModel {
 
 	@Override
 	public double getMinFitness(int id) {
-		Module mod = getSpecies(id);
+		Module<?> mod = getSpecies(id);
 		Map2Fitness map2fit = mod.getMap2Fitness();
 		return map2fit.map(((Payoffs) mod).getMinPayoff());
 	}
 
 	@Override
 	public double getMaxFitness(int id) {
-		Module mod = getSpecies(id);
+		Module<?> mod = getSpecies(id);
 		Map2Fitness map2fit = mod.getMap2Fitness();
 		return map2fit.map(((Payoffs) mod).getMaxPayoff());
 	}
@@ -615,7 +615,7 @@ public class ODE extends Model implements DModel {
 		int maxBin = nBins - 1;
 		// for neutral selection maxScore==minScore! assume range [score-1, score+1]
 		// needs to be synchronized with GUI (e.g. MVFitness, MVFitHistogram, ...)
-		Module mod = species.get(id);
+		Module<?> mod = species.get(id);
 		Map2Fitness map2fit = mod.getMap2Fitness();
 		Payoffs pmod = (Payoffs) mod;
 		double minFit = map2fit.map(pmod.getMinPayoff());
@@ -743,7 +743,7 @@ public class ODE extends Model implements DModel {
 	public boolean isMonomorphic() {
 		int idx = 0;
 		int from = 0;
-		for (Module pop : species) {
+		for (Module<?> pop : species) {
 			int to = from + pop.getNTraits();
 			if (!isMonomorphic(from, to, dependents[idx], pop.getVacantIdx()))
 				return false;
@@ -828,7 +828,7 @@ public class ODE extends Model implements DModel {
 			return;
 		// multi-species: normalize sections
 		int from = 0;
-		for (Module pop : species) {
+		for (Module<?> pop : species) {
 			int to = from + pop.getNTraits();
 			ArrayMath.normalize(state, from, to);
 			from = to;
@@ -868,7 +868,7 @@ public class ODE extends Model implements DModel {
 	protected void getDerivatives(double t, double[] state, double[] fitness, double[] change) {
 		dstate = state;
 		int index = 0;
-		for (Module mod : species) {
+		for (Module<?> mod : species) {
 			int nGroup = mod.getNGroup();
 			int nTraits = mod.getNTraits();
 			int skip = idxSpecies[index];
@@ -933,7 +933,7 @@ public class ODE extends Model implements DModel {
 		dstate = null;
 		index = 0;
 		int from = 0;
-		for (Module pop : species) {
+		for (Module<?> pop : species) {
 			int dim = pop.getNTraits();
 			int to = from + dim;
 			if (isAdjustedDynamics) {
@@ -972,7 +972,7 @@ public class ODE extends Model implements DModel {
 	 *                population
 	 * @return the total change (should be zero in theory)
 	 */
-	protected double updateEcology(Module mod, double[] state, double[] fitness, int nGroup, int index,
+	protected double updateEcology(Module<?> mod, double[] state, double[] fitness, int nGroup, int index,
 			double[] change) {
 		// XXX what happens if one trait is deactivated!?
 		int vacant = mod.getVacantIdx();
@@ -1030,7 +1030,7 @@ public class ODE extends Model implements DModel {
 	 *      the social contract: the emergence of sanctioning systems for collective
 	 *      action, Dyn. Games &amp; Appl. 1, 149-171</a>
 	 */
-	protected double updateThermal(Module mod, double[] state, double[] fitness, int nGroup, int index,
+	protected double updateThermal(Module<?> mod, double[] state, double[] fitness, int nGroup, int index,
 			double[] change) {
 		// no scaling seems required for comparisons with simulations
 		double noise = mod.getPlayerUpdate().getNoise();
@@ -1096,7 +1096,8 @@ public class ODE extends Model implements DModel {
 	 *                population
 	 * @return the total change (should be zero in theory)
 	 */
-	protected double updateBest(Module mod, double[] state, double[] fitness, int nGroup, int index, double[] change) {
+	protected double updateBest(Module<?> mod, double[] state, double[] fitness, int nGroup, int index,
+			double[] change) {
 		int skip = idxSpecies[index];
 		int end = skip + mod.getNTraits();
 		double err = 0.0;
@@ -1146,7 +1147,7 @@ public class ODE extends Model implements DModel {
 	 *                population
 	 * @return the total change (should be zero in theory)
 	 */
-	protected double updateImitate(Module mod, double[] state, double[] fitness, int nGroup, int index,
+	protected double updateImitate(Module<?> mod, double[] state, double[] fitness, int nGroup, int index,
 			double[] change) {
 		return updateReplicate(mod, state, fitness, nGroup, index, change, mod.getPlayerUpdate().getNoise());
 	}
@@ -1184,7 +1185,7 @@ public class ODE extends Model implements DModel {
 	 *                population
 	 * @return the total change (should be zero in theory)
 	 */
-	protected double updateImitateBetter(Module mod, double[] state, double[] fitness, int nGroup, int index,
+	protected double updateImitateBetter(Module<?> mod, double[] state, double[] fitness, int nGroup, int index,
 			double[] change) {
 		return updateReplicate(mod, state, fitness, nGroup, index, change, 0.5 * mod.getPlayerUpdate().getNoise());
 	}
@@ -1210,7 +1211,7 @@ public class ODE extends Model implements DModel {
 	 * @param noise   the noise arising from probabilistical updates
 	 * @return the total change (should be zero in theory)
 	 */
-	private double updateReplicate(Module mod, double[] state, double[] fitness, int nGroup, int index,
+	private double updateReplicate(Module<?> mod, double[] state, double[] fitness, int nGroup, int index,
 			double[] change, double noise) {
 		// if noise becomes very small, this should recover PLAYER_UPDATE_BEST
 		if (noise <= 0.0)
@@ -1261,7 +1262,7 @@ public class ODE extends Model implements DModel {
 	 *                population
 	 * @return the total change (should be zero in theory)
 	 */
-	protected double updateProportional(Module mod, double[] state, double[] fitness, int nGroup, int index,
+	protected double updateProportional(Module<?> mod, double[] state, double[] fitness, int nGroup, int index,
 			double[] change) {
 		int skip = idxSpecies[index];
 		int end = skip + mod.getNTraits();
@@ -1309,7 +1310,7 @@ public class ODE extends Model implements DModel {
 	 *                population
 	 * @return the total change (should be zero in theory)
 	 */
-	protected double updateBestResponse(Module mod, double[] state, double[] fitness, int nGroup, int index,
+	protected double updateBestResponse(Module<?> mod, double[] state, double[] fitness, int nGroup, int index,
 			double[] change) {
 		int nTraits = mod.getNTraits();
 		int skip = idxSpecies[index];
@@ -1388,7 +1389,7 @@ public class ODE extends Model implements DModel {
 	String getStatus(double[] state) {
 		StringBuilder sb = new StringBuilder();
 		int from = 0;
-		for (Module pop : species) {
+		for (Module<?> pop : species) {
 			int to = from + pop.getNTraits();
 			// omit status for vacant trait in density models
 			int vacant = isDensity ? from + pop.getVacantIdx() : -1;
@@ -1496,7 +1497,7 @@ public class ODE extends Model implements DModel {
 		int idx = -1;
 		// y0 is initialized except for species with random initial frequencies
 		if (doRandom) {
-			for (Module pop : species) {
+			for (Module<?> pop : species) {
 				if (!initType[++idx].equals(InitType.RANDOM))
 					continue;
 				int dim = pop.getNTraits();
@@ -1634,7 +1635,7 @@ public class ODE extends Model implements DModel {
 	public boolean parse(String arg) {
 		// nDim and idxSpecies not yet initialized
 		int dim = 0;
-		for (Module pop : species)
+		for (Module<?> pop : species)
 			dim += pop.getNTraits();
 		if (y0 == null || y0.length != dim)
 			y0 = new double[dim];
@@ -1643,7 +1644,7 @@ public class ODE extends Model implements DModel {
 		int idx = 0;
 		int start = 0;
 		boolean parseOk = true;
-		species: for (Module pop : species) {
+		species: for (Module<?> pop : species) {
 			String inittype = inittypes[idx % inittypes.length];
 			double[] initargs = null;
 			String[] typeargs = inittype.split(CLOParser.SPLIT_ARG_REGEX);
@@ -1789,7 +1790,7 @@ public class ODE extends Model implements DModel {
 	@Override
 	public void collectCLO(CLOParser parser) {
 		super.collectCLO(parser);
-		Module mod = species.get(0);
+		Module<?> mod = species.get(0);
 		if (mod instanceof Payoffs)
 			// adjusted dynamics only make sense if individuals have fitness
 			parser.addCLO(cloAdjustedDynamics);

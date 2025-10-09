@@ -443,7 +443,7 @@ public class Centipede extends Discrete implements Payoffs,
 		 * 
 		 * @param module the module that defines the Centipede game
 		 */
-		public CentiMutations(Module module) {
+		public CentiMutations(Module<?> module) {
 			super(module);
 		}
 

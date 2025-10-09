@@ -90,15 +90,15 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 			// - another alternative is to add context menu to toggle between the different
 			// link sets (could be difficult if one is a lattice...)
 			int nGraphs = 0;
-			List<? extends Module> species = engine.getModule().getSpecies();
-			for (Module module : species)
+			List<? extends Module<?>> species = engine.getModule().getSpecies();
+			for (Module<?> module : species)
 				nGraphs += Geometry.displayUniqueGeometry(module) ? 1 : 2;
 
 			if (graphs.size() == nGraphs)
 				return;
 
 			destroyGraphs();
-			for (Module module : species) {
+			for (Module<?> module : species) {
 				PopGraph3D graph = new PopGraph3D(this, module);
 				wrapper.add(graph);
 				graphs.add(graph);
@@ -134,7 +134,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 				return;
 
 			destroyGraphs();
-			Module module = engine.getModule();
+			Module<?> module = engine.getModule();
 			PopGraph3D graph = new PopGraph3D(this, module);
 			// debugging not available for DE's
 			graph.setDebugEnabled(false);
@@ -169,7 +169,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 			setGraphGeometry(graph, inter);
 			inter = !inter;
 			ColorMap<MeshLambertMaterial> cMap = null;
-			Module module = graph.getModule();
+			Module<?> module = graph.getModule();
 			switch (type) {
 				case TRAIT:
 					if (cmodel != null) {

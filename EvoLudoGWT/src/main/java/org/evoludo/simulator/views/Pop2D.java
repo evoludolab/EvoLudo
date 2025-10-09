@@ -89,14 +89,14 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		Type mt = model.getType();
 		if (mt.isIBS()) {
 			int nGraphs = 0;
-			List<? extends Module> species = engine.getModule().getSpecies();
-			for (Module module : species)
+			List<? extends Module<?>> species = engine.getModule().getSpecies();
+			for (Module<?> module : species)
 				nGraphs += Geometry.displayUniqueGeometry(module) ? 1 : 2;
 
 			if (graphs.size() == nGraphs)
 				return;
 			destroyGraphs();
-			for (Module module : species) {
+			for (Module<?> module : species) {
 				PopGraph2D graph = new PopGraph2D(this, module);
 				wrapper.add(graph);
 				graphs.add(graph);
@@ -132,7 +132,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 				return;
 
 			destroyGraphs();
-			Module module = engine.getModule();
+			Module<?> module = engine.getModule();
 			PopGraph2D graph = new PopGraph2D(this, module);
 			// debugging not available for DE's
 			graph.setDebugEnabled(false);
@@ -157,7 +157,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 			setGraphGeometry(graph, inter);
 			inter = !inter;
 			Geometry geometry = graph.getGeometry();
-			Module module = graph.getModule();
+			Module<?> module = graph.getModule();
 			AbstractGraph.GraphStyle style = graph.getStyle();
 			if (geometry.getType() == Geometry.Type.LINEAR) {
 				// frame, ticks, labels needed
