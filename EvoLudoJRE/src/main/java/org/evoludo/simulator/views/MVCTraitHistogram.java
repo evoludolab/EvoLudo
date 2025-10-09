@@ -41,6 +41,7 @@ import org.evoludo.graphics.HistoData;
 import org.evoludo.graphics.HistoGraph;
 import org.evoludo.graphics.HistoGraphListener;
 import org.evoludo.simulator.EvoLudoLab;
+import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Continuous;
 
@@ -152,7 +153,7 @@ public class MVCTraitHistogram extends MVAbstract implements HistoGraphListener 
 		double now = model.getUpdates();
 		if (now - data.timestamp > 1e-10) {
 			// process data first
-			((org.evoludo.simulator.models.Continuous) model).getTraitHistogramData(0, bins);
+			((CModel) model).getTraitHistogramData(0, bins);
 			// convert to percentages - also need to keep track of maxima
 			for (int n = 0; n < nData; n++) {
 				int nBins = bins[n].length;

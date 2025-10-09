@@ -42,6 +42,7 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Module;
@@ -227,7 +228,7 @@ public class Distribution extends AbstractView implements TooltipProvider.Index 
 				case TRAIT:
 					// process data first
 					// casts ok because trait histograms make sense only for continuous models
-					((org.evoludo.simulator.models.Continuous) model).get2DTraitHistogramData(graph.getModule().getID(),
+					((CModel) model).get2DTraitHistogramData(graph.getModule().getID(),
 							bins, traitXIdx,
 							traitYIdx);
 					ColorMap.Gradient1D<String> cMap = (ColorMap.Gradient1D<String>) graph.getColorMap();

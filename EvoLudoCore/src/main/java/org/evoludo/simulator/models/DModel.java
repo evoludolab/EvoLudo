@@ -33,7 +33,7 @@ package org.evoludo.simulator.models;
 /**
  * Common interface for all models with discrete sets of traits.
  */
-public interface Discrete {
+public interface DModel {
 
 	/**
 	 * Calculate and return the payoff/score of individuals in monomorphic

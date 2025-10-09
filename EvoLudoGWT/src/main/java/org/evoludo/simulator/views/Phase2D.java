@@ -37,6 +37,7 @@ import org.evoludo.graphics.ParaGraph;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
+import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
@@ -259,7 +260,7 @@ public class Phase2D extends AbstractView {
 		Module module = engine.getModule();
 		// note: setInitialTraits requires different arguments for discrete and
 		// continuous modules
-		if (module instanceof Discrete && ((org.evoludo.simulator.models.Discrete) model).setInitialTraits(init)) {
+		if (module instanceof Discrete && ((DModel) model).setInitialTraits(init)) {
 			engine.modelInit();
 			return true;
 		}

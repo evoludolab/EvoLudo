@@ -48,6 +48,7 @@ import org.evoludo.simulator.ColorMapJRE;
 import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Continuous;
 
@@ -181,7 +182,7 @@ public class MVC2Distr extends MVAbstract implements PopListener {
 		if (now - timestamp > 1e-8) {
 			// process data first
 			// ((CXPopulation)population).getTraitDensityData(data, colorMap, bins, true);
-			((org.evoludo.simulator.models.Continuous) model).get2DTraitHistogramData(0, bins, 0, 1);
+			((CModel) model).get2DTraitHistogramData(0, bins, 0, 1);
 			// translate data into colors
 			timestamp = now;
 		}

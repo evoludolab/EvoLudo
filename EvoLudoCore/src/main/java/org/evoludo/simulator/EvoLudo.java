@@ -1986,7 +1986,7 @@ public abstract class EvoLudo
 		parser.addCLO(cloRNG);
 		// option for trait color schemes only makes sense for modules with multiple
 		// continuous traits that have 2D/3D visualizations
-		if (activeModel instanceof org.evoludo.simulator.models.Continuous //
+		if (activeModel instanceof org.evoludo.simulator.models.CModel //
 				&& activeModule.getNTraits() > 1 //
 				&& (activeModule instanceof HasPop2D || activeModule instanceof HasPop3D)) {
 			parser.addCLO(cloTraitColorScheme);

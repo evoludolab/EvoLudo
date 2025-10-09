@@ -38,6 +38,7 @@ import org.evoludo.graphics.LineGraph;
 import org.evoludo.graphics.StateData;
 import org.evoludo.graphics.StateGraphListener;
 import org.evoludo.simulator.EvoLudoLab;
+import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Model;
 
 public class MVFitness extends MVAbstract implements StateGraphListener {
@@ -109,7 +110,7 @@ public class MVFitness extends MVAbstract implements StateGraphListener {
 		boolean changed = false;
 		int n = module.getNTraits();
 		// cast is save because pop is not Continuous
-		org.evoludo.simulator.models.Discrete dmodel = (org.evoludo.simulator.models.Discrete) model;
+		DModel dmodel = (DModel) model;
 		for (int i = 0; i < n; i++) {
 			changed |= frame.updateYThreshold(i,
 					dmodel.getMonoScore(module.getID(), i),

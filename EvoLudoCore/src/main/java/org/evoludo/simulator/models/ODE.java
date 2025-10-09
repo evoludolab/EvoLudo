@@ -62,7 +62,7 @@ import org.evoludo.util.Plist;
  *
  * @author Christoph Hauert
  */
-public class ODE extends Model implements Discrete {
+public class ODE extends Model implements DModel {
 
 	/**
 	 * Discretization of time increment for continuous time models. This is the

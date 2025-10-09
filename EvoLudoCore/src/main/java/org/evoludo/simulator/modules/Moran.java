@@ -255,7 +255,7 @@ public class Moran extends Discrete implements Static,
 		if (rhoAi < 0.0) {
 			// calculate reference fixation probabilities
 			double[] init = new double[nTraits];
-			((org.evoludo.simulator.models.Discrete) model).getInitialTraits(init);
+			((org.evoludo.simulator.models.DModel) model).getInitialTraits(init);
 			int m = (int) (init[MUTANT] * nPopulation);
 			m = Math.min(Math.max(m, 1), nPopulation - 1);
 			if (nPopulation > 1000)
@@ -287,7 +287,7 @@ public class Moran extends Discrete implements Static,
 			if (nPopulation > 500)
 				return new double[0];
 			double[] init = new double[nTraits];
-			((org.evoludo.simulator.models.Discrete) model).getInitialTraits(init);
+			((org.evoludo.simulator.models.DModel) model).getInitialTraits(init);
 			int m = (int) (init[MUTANT] * nPopulation);
 			m = Math.min(Math.max(m, 1), nPopulation - 1);
 			double rhoA1 = rhoA(1, nPopulation);

@@ -37,6 +37,8 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.models.ChangeListener;
+import org.evoludo.simulator.models.DModel;
+import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.modules.CDLP;
 import org.evoludo.util.CLOParser;
@@ -110,13 +112,13 @@ public class simCDLP extends CDLP implements ChangeListener {
 			System.err.printf("ERROR: IBS model expected!");
 			return;
 		}
-		org.evoludo.simulator.models.IBS ibs = (org.evoludo.simulator.models.IBS) model;
+		IBS ibs = (IBS) model;
 		IBSDPopulation pop = (IBSDPopulation) getIBSPopulation();
 		out = ((EvoLudoJRE) engine).getOutput();
 
 		boolean[] active = getActiveTraits();
 		if (isLinearPGG && initInQ && !active[PUNISH])
-			((org.evoludo.simulator.models.Discrete) model)
+			((DModel) model)
 					.setInitialTraits(findQ(nGroup, getInterest(), getPayLoner()));
 
 		double[][][] location = null;
@@ -176,7 +178,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 					remaining -= acount;
 				}
 				dinit[typ[0]] = remaining + 1;
-				((org.evoludo.simulator.models.Discrete) model).setInitialTraits(dinit);
+				((DModel) model).setInitialTraits(dinit);
 				engine.modelInit();
 				do {
 					engine.modelNext();

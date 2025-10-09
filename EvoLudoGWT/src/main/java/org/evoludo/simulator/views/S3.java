@@ -36,6 +36,7 @@ import org.evoludo.graphics.AbstractGraph.GraphStyle;
 import org.evoludo.graphics.S3Graph;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
+import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
@@ -192,7 +193,7 @@ public class S3 extends AbstractView {
 		// note: setInitialTraits requires different arguments for discrete and
 		// continuous modules
 		if (module instanceof Discrete &&
-				((org.evoludo.simulator.models.Discrete) model).setInitialTraits(init)) {
+				((DModel) model).setInitialTraits(init)) {
 			engine.modelInit();
 			return true;
 		}

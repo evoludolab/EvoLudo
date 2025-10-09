@@ -33,7 +33,7 @@ package org.evoludo.simulator.models;
 /**
  * Common interface for all models with continuous traits.
  */
-public interface Continuous {
+public interface CModel {
 
 	/**
 	 * Gets the minimum trait values in this module.

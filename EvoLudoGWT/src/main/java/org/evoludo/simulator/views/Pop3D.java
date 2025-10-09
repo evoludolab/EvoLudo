@@ -40,6 +40,8 @@ import org.evoludo.simulator.ColorMap3D;
 import org.evoludo.simulator.EvoLudo.ColorModelType;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.models.CModel;
+import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Type;
@@ -150,12 +152,12 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		super.reset(hard);
 		// IMPORTANT: to avoid problems with WebGL and 3D rendering, each graph needs to
 		// have its own color map
-		org.evoludo.simulator.models.Continuous cmodel = null;
-		org.evoludo.simulator.models.Discrete dmodel = null;
+		CModel cmodel = null;
+		DModel dmodel = null;
 		if (model.isContinuous())
-			cmodel = (org.evoludo.simulator.models.Continuous) model;
+			cmodel = (CModel) model;
 		else
-			dmodel = (org.evoludo.simulator.models.Discrete) model;
+			dmodel = (DModel) model;
 
 		boolean inter = true;
 		boolean noWarnings = true;

@@ -47,6 +47,8 @@ import org.evoludo.graphics.HistoGraph;
 import org.evoludo.graphics.HistoGraphListener;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudoLab;
+import org.evoludo.simulator.models.CModel;
+import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Model;
 
 public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
@@ -162,7 +164,7 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 		if (model.isContinuous()) {
 			Color tcolor = module.getTraitColors()[tag];
 			// cast is save because pop is Continuous
-			org.evoludo.simulator.models.Continuous cmodel = (org.evoludo.simulator.models.Continuous) model;
+			CModel cmodel = (CModel) model;
 			// for continuous strategies we have a single histogram and may want to mark
 			// several bins
 			boolean changed = frame.updateMarkedBin(0, cmodel.getMinMonoScore(module.getID()), tcolor.darker());
@@ -170,7 +172,7 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 			return changed;
 		}
 		// cast is save because pop is not Continuous
-		org.evoludo.simulator.models.Discrete dmodel = (org.evoludo.simulator.models.Discrete) model;
+		DModel dmodel = (DModel) model;
 		// for discrete strategies we have different histograms and mark only a single
 		// bin
 		return frame.updateMarkedBin(0,

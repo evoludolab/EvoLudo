@@ -41,6 +41,8 @@ import org.evoludo.simulator.EvoLudo.ColorModelType;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.models.CModel;
+import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Type;
@@ -253,7 +255,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 							int nMono = module.getNTraits();
 							for (int n = 0; n < nMono; n++) {
 								// cast is save because pop is Discrete
-								org.evoludo.simulator.models.Discrete dmodel = (org.evoludo.simulator.models.Discrete) model;
+								DModel dmodel = (DModel) model;
 								double mono = dmodel.getMonoScore(id, n);
 								if (Double.isNaN(mono))
 									continue;
@@ -266,7 +268,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 						}
 						if (module instanceof Continuous) {
 							// cast is save because pop is Continuous
-							org.evoludo.simulator.models.Continuous cmodel = (org.evoludo.simulator.models.Continuous) model;
+							CModel cmodel = (CModel) model;
 							// hardcoded colors for min/max mono scores
 							cMap1D.setColor(map2fit.map(cmodel.getMinMonoScore(id)),
 									ColorMap.addAlpha(Color.BLUE.darker(), 220));

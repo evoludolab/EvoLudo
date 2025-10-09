@@ -45,7 +45,7 @@ import org.evoludo.util.CLOption.Category;
  * 
  * @author Christoph Hauert
  */
-public class IBSC extends IBS implements Continuous {
+public class IBSC extends IBS implements CModel {
 
 	/**
 	 * Creates a population of individuals for IBS simulations with continuous

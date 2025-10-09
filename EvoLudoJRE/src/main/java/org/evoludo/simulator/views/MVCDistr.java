@@ -47,6 +47,7 @@ import org.evoludo.simulator.ColorMapJRE;
 import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Continuous;
 
@@ -268,7 +269,7 @@ public class MVCDistr extends MVAbstract implements PopListener {
 		double now = model.getUpdates();
 		if (now - timestamp > 1e-8) {
 			// process data first
-			((org.evoludo.simulator.models.Continuous) model).getTraitHistogramData(0, bins);
+			((CModel) model).getTraitHistogramData(0, bins);
 			timestamp = now;
 		}
 		colorMap.translate(bins[tag], data);

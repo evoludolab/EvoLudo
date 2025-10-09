@@ -60,6 +60,8 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.models.CModel;
+import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
@@ -226,13 +228,13 @@ public class MVPop2D extends MVAbstract implements PopListener {
 					Map2Fitness map2fit = module.getMap2Fitness();
 					if (model.isContinuous()) {
 						// cast is save because pop is Continuous
-						org.evoludo.simulator.models.Continuous cmodel = (org.evoludo.simulator.models.Continuous) model;
+						CModel cmodel = (CModel) model;
 						// hardcoded colors for min/max mono scores
 						cMap1D.setColor(map2fit.map(cmodel.getMinMonoScore(tag)), Color.BLUE.darker());
 						cMap1D.setColor(map2fit.map(cmodel.getMaxMonoScore(tag)), Color.BLUE.brighter());
 					} else {
 						// cast is save because pop is Discrete
-						org.evoludo.simulator.models.Discrete dmodel = (org.evoludo.simulator.models.Discrete) model;
+						DModel dmodel = (DModel) model;
 						// mark homogeneous fitness values by pale color
 						int nMono = module.getNTraits();
 						for (int n = 0; n < nMono; n++)

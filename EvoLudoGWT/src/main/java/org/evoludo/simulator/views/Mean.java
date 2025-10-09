@@ -41,6 +41,7 @@ import org.evoludo.graphics.LineGraph;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
+import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBSC;
 import org.evoludo.simulator.modules.Discrete;
@@ -214,7 +215,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 					style.yLabel = "payoffs";
 					if (module instanceof Discrete) {
 						// cast is save because module is Discrete
-						org.evoludo.simulator.models.Discrete dmodel = (org.evoludo.simulator.models.Discrete) model;
+						DModel dmodel = (DModel) model;
 						double[] monoScores = new double[nMean + 1];
 						// the first entry is for dashed (>0) and dotted (<0) lines
 						monoScores[0] = 1.0;

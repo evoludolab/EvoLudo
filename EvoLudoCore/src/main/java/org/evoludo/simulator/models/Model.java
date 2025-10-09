@@ -938,7 +938,7 @@ public abstract class Model implements CLOProvider {
 	 * @return <code>true</code> if traits are continuous
 	 */
 	public boolean isContinuous() {
-		return this instanceof Continuous;
+		return this instanceof CModel;
 	}
 
 	/**

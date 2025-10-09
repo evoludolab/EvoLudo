@@ -1625,7 +1625,7 @@ public class IBSDPopulation extends IBSPopulation {
 	 * 
 	 * @param inittraits the array for returning the initial trait values
 	 * 
-	 * @see org.evoludo.simulator.models.Discrete#getInitialTraits(int, double[])
+	 * @see org.evoludo.simulator.models.DModel#getInitialTraits(int, double[])
 	 */
 	public void getInitialTraits(double[] inittraits) {
 		double iPop = 1.0 / nPopulation;
