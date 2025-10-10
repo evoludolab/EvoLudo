@@ -164,15 +164,49 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	protected Module(EvoLudo engine, T partner) {
 		this.engine = engine;
 		logger = engine.getLogger();
+		T mod = (T) this;
 		if (partner == null) {
 			ID = 0;
-			opponent = (T) this;
+			opponent = mod;
 			return;
 		}
 		ID = partner.species.size();
 		species = partner.species;
 		opponent = partner;
-		partner.opponent = (T) this;
+		partner.opponent = mod;
+		add(mod);
+	}
+
+	/**
+	 * Add {@code pop} to list of species. Duplicate entries are ignored.
+	 * Allocate new list if necessary. Assign generic name to species if none
+	 * provided.
+	 *
+	 * @param pop the module to add to species list.
+	 * @return {@code true} if {@code dpop} successfully added;
+	 *         {@code false} adding failed or already included in list.
+	 */
+	public boolean add(T pop) {
+		// do not add duplicates
+		if (species.contains(pop))
+			return false;
+		if (!species.add(pop))
+			return false;
+		switch (species.size()) {
+			case 1:
+				break;
+			case 2:
+				// start naming species (if needed)
+				for (T mod : species) {
+					if (mod.getName().isEmpty())
+						mod.setName("Species-" + mod.ID);
+				}
+				break;
+			default:
+				if (pop.getName().isEmpty())
+					pop.setName("Species-" + pop.ID);
+		}
+		return true;
 	}
 
 	/**

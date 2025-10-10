@@ -31,6 +31,7 @@
 package org.evoludo.simulator.modules;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBSD;
@@ -90,11 +91,8 @@ public abstract class Discrete extends Module<Discrete> {
 	 */
 	private Discrete(EvoLudo engine, Discrete partner) {
 		super(engine, partner);
-		if (partner == null) {
-			species = new ArrayList<>();
-			// No more shadowing or linking needed
-		}
-		add(this);
+		if (partner == null)
+			species = new ArrayList<>(Collections.singleton(this));
 	}
 
 	@Override
@@ -103,38 +101,6 @@ public abstract class Discrete extends Module<Discrete> {
 		if (mod != null)
 			return mod;
 		return new IBSD(engine);
-	}
-
-	/**
-	 * Add {@code dpop} to list of species. Duplicate entries are ignored.
-	 * Allocate new list if necessary. Assign generic name to species if none
-	 * provided.
-	 *
-	 * @param dpop the module to add to species list.
-	 * @return {@code true} if {@code dpop} successfully added;
-	 *         {@code false} adding failed or already included in list.
-	 */
-	public boolean add(Discrete dpop) {
-		// do not add duplicates
-		if (species.contains(dpop))
-			return false;
-		if (!species.add(dpop))
-			return false;
-		switch (species.size()) {
-			case 1:
-				break;
-			case 2:
-				// start naming species (if needed)
-				for (Discrete pop : species) {
-					if (pop.getName().isEmpty())
-						pop.setName("Species-" + pop.ID);
-				}
-				break;
-			default:
-				if (dpop.getName().isEmpty())
-					dpop.setName("Species-" + dpop.ID);
-		}
-		return true;
 	}
 
 	@Override

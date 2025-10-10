@@ -32,6 +32,8 @@ package org.evoludo.simulator.modules;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.logging.Level;
 
 import org.evoludo.simulator.EvoLudo;
@@ -129,12 +131,10 @@ public abstract class Continuous extends Module<Continuous> {
 	 */
 	protected Continuous(EvoLudo engine, Continuous partner) {
 		super(engine, partner);
-		if (partner == null) {
-			species = new ArrayList<>();
-		}
+		if (partner == null)
+			species = new ArrayList<>(Collections.singleton(this));
 		// shortcut while continuous modules are restricted to single species
 		population = this;
-		add(this);
 	}
 
 	@Override
@@ -143,38 +143,6 @@ public abstract class Continuous extends Module<Continuous> {
 		if (mod != null)
 			return mod;
 		return new IBSC(engine);
-	}
-
-	/**
-	 * Add {@code cpop} to list of species. Duplicate entries are ignored.
-	 * Allocate new list if necessary. Assign generic name to species if none
-	 * provided.
-	 *
-	 * @param cpop the module to add to species list.
-	 * @return {@code true} if {@code dpop} successfully added;
-	 *         {@code false} adding failed or already included in list.
-	 */
-	public boolean add(Continuous cpop) {
-		// do not add duplicates
-		if (species.contains(cpop))
-			return false;
-		if (!species.add(cpop))
-			return false;
-		switch (species.size()) {
-			case 1:
-				break;
-			case 2:
-				// start naming species (if needed)
-				for (Module pop : species) {
-					if (pop.getName().isEmpty())
-						pop.setName("Species-" + pop.ID);
-				}
-				break;
-			default:
-				if (cpop.getName().isEmpty())
-					cpop.setName("Species-" + cpop.ID);
-		}
-		return true;
 	}
 
 	@Override
