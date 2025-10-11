@@ -1581,7 +1581,7 @@ public class ODE extends Model implements DModel {
 		/**
 		 * Key of initialization type. Used when parsing command line options.
 		 * 
-		 * @see InitType#parse(String)
+		 * @see #parse(String)
 		 */
 		String key;
 

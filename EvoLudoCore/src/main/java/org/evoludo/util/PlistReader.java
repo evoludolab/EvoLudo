@@ -40,7 +40,14 @@ import java.util.NoSuchElementException;
  */
 public class PlistReader implements Iterator<PlistTag> {
 
+	/**
+	 * Tag identifying DOCTYPE declaration.
+	 */
 	static final String DOCTYPE_TAG = "<!DOCTYPE";
+
+	/**
+	 * Tag identifying start of XML declaration.
+	 */
 	static final String XML_TAG = "<?xml";
 
 	/**
@@ -249,6 +256,11 @@ public class PlistReader implements Iterator<PlistTag> {
 		return read;
 	}
 
+	/**
+	 * Push a tag to the stream and return it on the next {@link #next()} call.
+	 * 
+	 * @param aTag the tag to push back
+	 */
 	void pushTag(PlistTag aTag) {
 		if (aTag == null)
 			return;

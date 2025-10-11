@@ -1663,7 +1663,7 @@ public abstract class Model implements CLOProvider {
 	 * Restore the state encoded in the <code>plist</code> inspired <code>map</code>
 	 * of {@code key, value}-pairs.
 	 * 
-	 * @param map the map of {@code key, value}-pairs
+	 * @param plist the map of {@code key, value}-pairs
 	 * @return <code>true</code> if successful
 	 * 
 	 * @see org.evoludo.util.Plist

@@ -38,6 +38,14 @@ import org.evoludo.util.Formatter;
 public class FixationData {
 
 	/**
+	 * Default constructor for FixationData. A container for fields relevant to
+	 * fixation data.
+	 */
+	public FixationData() {
+		// empty default constructor
+	}
+
+	/**
 	 * The index of the node (location) where the initial mutant arose.
 	 */
 	public int mutantNode = -1;

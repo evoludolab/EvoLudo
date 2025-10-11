@@ -547,7 +547,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * @param menu the context menu
 	 * @param node the index of node
 	 * 
-	 * @see Controller#populateContextMenu(ContextMenu)
+	 * @see AbstractView#populateContextMenu(ContextMenu)
 	 */
 	public void populateContextMenuAt(ContextMenu menu, int node) {
 	}
@@ -751,7 +751,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * Opportunity for the controller to add functionality to the context menu
 	 * (optional implementation).
 	 *
-	 * @param menu the context menu
+	 * @param contextMenu the context menu
 	 */
 	public void populateContextMenu(ContextMenu contextMenu) {
 		// models may also like to add entries to context menu

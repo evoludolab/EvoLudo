@@ -420,6 +420,15 @@ public class IBSDPopulation extends IBSPopulation {
 	static class Link {
 
 		/**
+		 * Empty default constructor for a Link. A class to keep track of the source,
+		 * destination and fitness of the individual at tail end for optimizations
+		 * focussing on domain interfaces at the expense of loosing the time scale.
+		 */
+		Link() {
+			// fields are initialized to their default values (0, 0, 0.0)
+		}
+
+		/**
 		 * The index of the individual at the tail end of the link.
 		 */
 		int source;

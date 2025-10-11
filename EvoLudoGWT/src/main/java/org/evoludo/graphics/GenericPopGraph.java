@@ -552,6 +552,8 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 
 	/**
 	 * Helper method to process the debug submenu logic for context menu.
+	 * 
+	 * @param menu the context menu to which the shake menu is added
 	 */
 	private void addShakeMenu(ContextMenu menu) {
 		if (shakeMenu == null) {
@@ -563,6 +565,8 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 
 	/**
 	 * Helper method to process the debug submenu logic for context menu.
+	 * 
+	 * @param menu the context menu to which the animate menu is added
 	 */
 	private void addAnimateMenu(ContextMenu menu) {
 		if (animateMenu == null) {
@@ -578,6 +582,8 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 
 	/**
 	 * Helper method to process the clear context menu.
+	 * 
+	 * @param menu the context menu to which the clear menu is added
 	 */
 	private void addClearMenu(ContextMenu menu) {
 		// add menu to clear buffer (applies only to linear geometry)
@@ -596,6 +602,10 @@ public abstract class GenericPopGraph<T, N extends Network> extends AbstractGrap
 
 	/**
 	 * Helper method to process the debug submenu logic for context menu.
+	 * 
+	 * @param menu the context menu to which the debug submenu is added
+	 * @param x    the x-coordinate of the mouse when the context menu was invoked
+	 * @param y    the y-coordinate of the mouse when the context menu was invoked
 	 */
 	private void addDebugSubmenu(ContextMenu menu, int x, int y) {
 		if (!isDebugEnabled) {

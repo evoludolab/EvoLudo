@@ -151,6 +151,9 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 		return R;
 	}
 
+	/**
+	 * Useful constant for converting between angular frequency and period.
+	 */
 	private static final double TWOPI = 2.0 * Math.PI;
 
 	/**

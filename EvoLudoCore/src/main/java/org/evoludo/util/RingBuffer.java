@@ -96,11 +96,11 @@ public class RingBuffer<T> implements Iterable<T> {
 	 * discarded. After setting the capacity the size of the buffer is at most
 	 * <code>capacity</code>.
 	 * 
-	 * @param capacity maximum number of entries
+	 * @param capacity the maximum number of entries
 	 * @throws IllegalArgumentException if <code>capacity&le;0</code>
 	 */
 	public void setCapacity(int capacity) throws IllegalArgumentException {
-		if (capacity < 0)
+		if (capacity <= 0)
 			throw new IllegalArgumentException("RingBuffer capacity must be >0!");
 		if (bufferCapacity > capacity) {
 			shrinkBuffer(capacity);
@@ -109,6 +109,11 @@ public class RingBuffer<T> implements Iterable<T> {
 		}
 	}
 
+	/**
+	 * Shrink buffer to <code>capacity</code>. Remove oldest entries if necessary.
+	 * 
+	 * @param capacity the new capacity
+	 */
 	private void shrinkBuffer(int capacity) {
 		if (bufferPtr + capacity < bufferCapacity) {
 			// remove oldest entries
@@ -132,6 +137,12 @@ public class RingBuffer<T> implements Iterable<T> {
 		bufferCapacity = capacity;
 	}
 
+	/**
+	 * Grow buffer to <code>capacity</code>. If the current buffer size exceeds the
+	 * new capacity, oldest entries are removed.
+	 * 
+	 * @param capacity the new capacity
+	 */
 	private void growBuffer(int capacity) {
 		// rotate to most recent entry at index 0
 		for (int n = 0; n < bufferPtr; n++)
@@ -367,6 +378,13 @@ public class RingBuffer<T> implements Iterable<T> {
 		return replace(0, entry);
 	}
 
+	/**
+	 * Return the minimum entry in this buffer according to the comparator
+	 * <code>cmp</code>.
+	 * 
+	 * @param cmp the comparator to determine the order
+	 * @return the minimum entry or <code>null</code> if buffer is empty
+	 */
 	public T min(Comparator<T> cmp) {
 		T min = null;
 		for (T entry : this) {
@@ -376,6 +394,13 @@ public class RingBuffer<T> implements Iterable<T> {
 		return min;
 	}
 
+	/**
+	 * Return the maximum entry in this buffer according to the comparator
+	 * <code>cmp</code>.
+	 * 
+	 * @param cmp the comparator to determine the order
+	 * @return the maximum entry or <code>null</code> if buffer is empty
+	 */
 	public T max(Comparator<T> cmp) {
 		T max = null;
 		for (T entry : this) {

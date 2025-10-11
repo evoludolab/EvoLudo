@@ -164,6 +164,10 @@ public class DemesTBT extends TBT {
 		 * The distribution for migration events.
 		 */
 		protected RNGDistribution.Geometric distrMigration;
+
+		/**
+		 * The distribution for mutant-migration events.
+		 */
 		protected RNGDistribution.Geometric distrMutationMigration;
 
 		/**

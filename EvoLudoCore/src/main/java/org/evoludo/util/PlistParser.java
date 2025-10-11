@@ -191,6 +191,7 @@ public class PlistParser {
 	 * @param reader iterator over <code>plist</code> tags
 	 * @param dict   map for storing all pairs of {@code <key>} and
 	 *               <code>plist</code> element pairs.
+	 * @return the filled dictionary {@code dict}
 	 */
 	protected static Plist parseDict(PlistReader reader, Plist dict) {
 		String key = null;
@@ -256,6 +257,7 @@ public class PlistParser {
 	 * 
 	 * @param reader iterator over <code>plist</code> tags
 	 * @param array  list for storing the array of <code>plist</code> elements.
+	 * @return the filled array {@code array}
 	 */
 	protected static List<Object> parseArray(PlistReader reader, List<Object> array) {
 		while (reader.hasNext()) {
@@ -305,12 +307,28 @@ public class PlistParser {
 		return array;
 	}
 
+	/**
+	 * Parses a real number from a string. If the string ends with 'L' it is
+	 * assumed to be bitstring of a double encoded as a long.
+	 * 
+	 * @param real the string representation of the real number
+	 * @return the parsed double value
+	 */
 	private static double parseReal(String real) {
 		if (real.endsWith("L"))
 			return Double.longBitsToDouble(Long.valueOf(real.substring(0, real.length() - 1)));
 		return Double.parseDouble(real);
 	}
 
+	/**
+	 * Stores the key-value pair in the dictionary. If the key is null, a warning is
+	 * logged and the value is ignored.
+	 * 
+	 * @param reader the plist reader
+	 * @param dict   the dictionary to store the value in
+	 * @param key    the key for the value
+	 * @param value  the value to store
+	 */
 	private static void store(PlistReader reader, Plist dict, String key, Object value) {
 		if (key == null) {
 			if (LOGGER.isLoggable(java.util.logging.Level.WARNING))
@@ -322,26 +340,87 @@ public class PlistParser {
 		dict.put(key, value);
 	}
 
+	/**
+	 * Tag for parsing a string representing a plist file.
+	 */
 	private static final String TAG_PLIST = "plist";
+
+	/**
+	 * Tag for parsing a {@code dict} entry in a string representing a plist file.
+	 */
 	private static final String TAG_DICT = "dict";
+
+	/**
+	 * Tag for parsing a {@code array} entry in a string representing a plist file.
+	 */
 	private static final String TAG_ARRAY = "array";
+
+	/**
+	 * Tag for parsing a {@code string} entry in a string representing a plist file.
+	 */
 	private static final String TAG_STRING = "string";
+
+	/**
+	 * Tag for parsing a {@code integer} entry in a string representing a plist
+	 * file.
+	 */
 	private static final String TAG_INTEGER = "integer";
+
+	/**
+	 * Tag for parsing a {@code real} entry in a string representing a plist file.
+	 */
 	private static final String TAG_REAL = "real";
+
+	/**
+	 * Tag for parsing a {@code true} entry in a string representing a plist file.
+	 */
 	private static final String TAG_TRUE = "true";
+
+	/**
+	 * Tag for parsing a {@code false} entry in a string representing a plist file.
+	 */
 	private static final String TAG_FALSE = "false";
+
+	/**
+	 * Tag for parsing a {@code key} entry in a string representing a plist file.
+	 */
 	private static final String TAG_KEY = "key";
 
+	/**
+	 * Helper string for formatting log messages a particular line of the plist
+	 * file.
+	 */
 	private static final String MSG_LINE = "line ";
+
+	/**
+	 * Helper string for formatting log messages that invalid or missing closing
+	 * tags are ignored.
+	 */
 	private static final String MSG_IGNORE = " - ignored.";
 
+	/**
+	 * The logger for logging warnings and errors.
+	 */
 	private static final Logger LOGGER = Logger.getLogger(PlistParser.class.getName());
 
+	/**
+	 * Logs a warning that the closing tag is missing.
+	 * 
+	 * @param line the line number
+	 * @param tag  the tag name
+	 */
 	private static void logClosingTagWarning(int line, String tag) {
 		if (LOGGER.isLoggable(java.util.logging.Level.WARNING))
 			LOGGER.warning(MSG_LINE + line + ": closing tag </" + tag + "> missing" + MSG_IGNORE);
 	}
 
+	/**
+	 * Logs a warning that the tag is invalid in the given context.
+	 * 
+	 * @param line    the line number
+	 * @param tag     the tag name
+	 * @param context the context in which the tag is invalid
+	 */
 	private static void logInvalidTagWarning(int line, String tag, String context) {
 		if (LOGGER.isLoggable(java.util.logging.Level.WARNING))
 			LOGGER.warning(MSG_LINE + line + ": invalid tag <" + tag + "> in <" + context + ">" + MSG_IGNORE);

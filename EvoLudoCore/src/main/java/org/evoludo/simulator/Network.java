@@ -70,7 +70,6 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 		 * desired accuracy has been achieved or if the maximum computational time for
 		 * the layouting process has been reached.
 		 * 
-		 * @see Network#setAccuracy(double)
 		 * @see Network#layoutTimeout
 		 */
 		public void layoutComplete();

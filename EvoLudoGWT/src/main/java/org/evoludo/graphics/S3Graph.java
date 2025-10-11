@@ -645,6 +645,8 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 
 	/**
 	 * Helper method to process the clear context menu.
+	 * 
+	 * @param menu the context menu to populate
 	 */
 	private void addClearMenu(ContextMenu menu) {
 		if (clearMenu == null) {
@@ -657,12 +659,27 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		menu.add(clearMenu);
 	}
 
+	/**
+	 * The label of the swap order menu item.
+	 */
 	private static final String SWAP_MENU_LABEL = "Swap Order";
+
+	/**
+	 * The prefix of the swap order menu item.
+	 */
 	private static final String SWAP_MENU = "Swap ";
+
+	/**
+	 * The arrow symbol used in the swap order menu item.
+	 */
 	private static final String SWAP_MENU_ARROW = " \u2194 ";
 
 	/**
 	 * Helper method to process the swap order submenu logic of the context menu.
+	 * 
+	 * @param menu the context menu to populate
+	 * @param x    the <code>x</code>-coordinate of the mouse pointer
+	 * @param y    the <code>y</code>-coordinate of the mouse pointer
 	 */
 	private void addSwapOrderMenu(ContextMenu menu, int x, int y) {
 		if (swapOrderMenu == null) {
@@ -697,12 +714,28 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		}
 	}
 
+	/**
+	 * Helper method to swap two entries in the order array.
+	 * 
+	 * @param order the order array
+	 * @param i     the index of the first entry
+	 * @param j     the index of the second entry
+	 */
 	private void swapOrder(int[] order, int i, int j) {
 		int temp = order[i];
 		order[i] = order[j];
 		order[j] = temp;
 	}
 
+	/**
+	 * Helper method to process the select traits submenu. For modules with more
+	 * than three traits, a submenu is created to allow the user to select the
+	 * trait for each corner.
+	 * 
+	 * @param menu the context menu to populate
+	 * @param x    the <code>x</code>-coordinate of the mouse pointer
+	 * @param y    the <code>y</code>-coordinate of the mouse pointer
+	 */
 	private void addSetTraitMenu(ContextMenu menu, int x, int y) {
 		if (buffer.getDepth() <= 4)
 			return;

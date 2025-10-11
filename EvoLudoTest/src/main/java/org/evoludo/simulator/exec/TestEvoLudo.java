@@ -363,6 +363,14 @@ public class TestEvoLudo implements MilestoneListener {
 		}
 	}
 
+	/**
+	 * Compute the SHA-256 hash of the {@code plist}, excluding the keys in
+	 * {@code exclude}.
+	 * 
+	 * @param plist   the property list to hash
+	 * @param exclude the keys to exclude from the hash
+	 * @return the SHA-256 hash as a hexadecimal string
+	 */
 	public static String sha256(Plist plist, Collection<String> exclude) {
 		HashMap<String, Object> original = new HashMap<>(plist);
 		for (String key : exclude) {
@@ -383,6 +391,14 @@ public class TestEvoLudo implements MilestoneListener {
 		return sha;
 	}
 
+	/**
+	 * Compute SHA-256 hash of serializable object {@code obj}.
+	 * 
+	 * @param obj the object to hash
+	 * @return the SHA-256 hash as a hexadecimal string
+	 * @throws IOException              if an I/O error occurs
+	 * @throws NoSuchAlgorithmException if SHA-256 is not supported
+	 */
 	public static String hashSHA256(Object obj) throws IOException, NoSuchAlgorithmException {
 		try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
 				ObjectOutputStream oos = new ObjectOutputStream(bos)) {

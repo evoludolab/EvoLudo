@@ -63,18 +63,58 @@ public class Plist extends HashMap<String, Object> {
 	static final int N_REPEAT = 3;
 
 	/**
-	 * String constants for plist generation.
+	 * String constant for opening an {@code array} during plist generation.
 	 */
 	static final String ARRAY_OPEN = "<array>\n";
+
+	/**
+	 * String constant for closing an {@code array} during plist generation.
+	 */
 	static final String ARRAY_CLOSE = "</array>\n";
+
+	/**
+	 * String constant for opening an {@code integer} entry during plist generation.
+	 */
 	static final String INTEGER_OPEN = "<integer>";
+
+	/**
+	 * String constant for closing an {@code integer} entry during plist generation.
+	 */
 	static final String INTEGER_CLOSE = "</integer>\n";
+
+	/**
+	 * String constant for opening an {@code integer} entry during plist generation.
+	 */
 	static final String KEY_OPEN = "<key>";
+
+	/**
+	 * String constant for closing an {@code key} entry during plist generation.
+	 */
 	static final String KEY_CLOSE = "</key>\n";
+
+	/**
+	 * String constant for opening an {@code real} entry during plist generation.
+	 */
 	static final String REAL_OPEN = "<real>";
+
+	/**
+	 * String constant for closing an {@code real} entry during plist generation.
+	 */
 	static final String REAL_CLOSE = "L</real>\n";
+
+	/**
+	 * String constant for opening an {@code string} entry during plist generation.
+	 */
 	static final String STRING_OPEN = "<string>";
+
+	/**
+	 * String constant for closing an {@code string} entry during plist generation.
+	 */
 	static final String STRING_CLOSE = "</string>\n";
+
+	/**
+	 * String constant for reporting differences in keys.
+	 */
 	static final String DIFF_KEY = "key '";
 
 	/**
@@ -197,6 +237,7 @@ public class Plist extends HashMap<String, Object> {
 	 * 
 	 * @param reference the reference {@code Plist}
 	 * @param plist     the {@code Plist} to check
+	 * @param skip      the collection of keys to skip
 	 */
 	private void diffDict(Plist reference, Plist plist, Collection<String> skip) {
 		// step 1: check if dict reference contains all keys of plist
@@ -300,6 +341,7 @@ public class Plist extends HashMap<String, Object> {
 	 * 
 	 * @param reference the reference array
 	 * @param array     the array to check
+	 * @param skip      the collection of keys to skip
 	 */
 	private void diffArray(List<Object> reference, List<Object> array, Collection<String> skip) {
 		if (reference.size() != array.size()) {

@@ -96,6 +96,19 @@ public class LineGraph extends AbstractGraph<double[]>
 		return true;
 	}
 
+	/**
+	 * Parse command line options for the graph. The following options are
+	 * recognized:
+	 * <ul>
+	 * <li>{@code log}: enable logarithmic scaling on the y-axis
+	 * <li>{@code xmin <value>}: set the minimum x-axis value
+	 * <li>{@code xmax <value>}: set the maximum x-axis value
+	 * <li>{@code ymin <value>}: set the minimum y-axis value
+	 * <li>{@code ymax <value>}: set the maximum y-axis value
+	 * </ul>
+	 * 
+	 * @param args the command line arguments (comma separated, no spaces)
+	 */
 	private void parseArgs(String args) {
 		for (String arg : args.split(CLOParser.VECTOR_DELIMITER)) {
 			arg = arg.trim();
@@ -200,6 +213,9 @@ public class LineGraph extends AbstractGraph<double[]>
 		style.yMin = Functions.roundDown(bufmin);
 	}
 
+	/**
+	 * Helper method to disable log scale on {@code y}-axis and issue warning.
+	 */
 	private void noLogY() {
 		if (style.logScaleY)
 			logger.warning("Log scale requires positive values");

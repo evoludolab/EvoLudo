@@ -119,7 +119,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * Graphs that support shifting of their view should implement this interface.
 	 * Basic shifting is provided by {@link AbstractGraph} and is automatically
-	 * enabled unless {@link AbstractGraph#controller} is an instance of
+	 * enabled unless {@link AbstractView} is an instance of
 	 * {@code Shifter}.
 	 */
 	public interface Shifter {
@@ -175,7 +175,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * Graphs that support zooming should implement this interface. Basic zooming is
 	 * provided by {@link AbstractGraph} and is automatically enabled unless
-	 * {@link AbstractGraph#controller} is an instance of {@code Zoomer}.
+	 * {@link AbstractView} is an instance of {@code Zoomer}.
 	 */
 	public interface Zoomer {
 
@@ -760,6 +760,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		view.populateContextMenu(menu);
 	}
 
+	/**
+	 * Add buffer size menu item to context menu if graph supports historical data.
+	 * 
+	 * @param menu the context menu to populate
+	 */
 	private void addBufferSizeMenu(ContextMenu menu) {
 		if (!hasHistory())
 			return;
@@ -792,6 +797,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		menu.addSeparator();
 	}
 
+	/**
+	 * Add logarithmic scale menu item to context menu if graph supports log scale
+	 * on
+	 * {@code y}-axis.
+	 * 
+	 * @param menu the context menu to populate
+	 */
 	private void addLogScaleMenu(ContextMenu menu) {
 		if (this instanceof HasLogScaleY) {
 			if (logYMenu == null) {
@@ -806,6 +818,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 	}
 
+	/**
+	 * Add zoom menu items to context menu if graph supports zooming.
+	 * 
+	 * @param menu the context menu to populate
+	 */
 	private void addZoomMenu(ContextMenu menu) {
 		if (this instanceof Zooming) {
 			if (zoomInMenu == null)
@@ -820,6 +837,14 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 	}
 
+	/**
+	 * Set the {@code y}-axis to logarithmic scale if {@code logY} is {@code true}
+	 * and if {@code yMin &ge; 0}. If {@code yMin == 0} it is increased to
+	 * {@code 0.01 * yMax}. If {@code yMin < 0} logarithmic scale requests are
+	 * ignored.
+	 * 
+	 * @param logY {@code true} to set logarithmic scale on {@code y}-axis
+	 */
 	void setLogY(boolean logY) {
 		if (style.yMin < 0.0 || !logY) {
 			style.logScaleY = false;
@@ -936,6 +961,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			bounds.adjust(0, 0, -(style.tickLength + 2), 0);
 	}
 
+	/**
+	 * Adjust bounds to make room for axes labels.
+	 */
 	private void adjustBoundsForLabels() {
 		if (style.showXLabel && style.xLabel != null)
 			bounds.adjust(0, 0, 0, -20); // 14px for font size plus some padding
@@ -944,6 +972,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			bounds.adjust(0, 0, -12, 0);
 	}
 
+	/**
+	 * Adjust bounds to make room for tick labels.
+	 * 
+	 * @param font the CSS specification of the font to use for tick labels
+	 */
 	private void adjustBoundsForTickLabels(String font) {
 		// NOTE: must process tick labels because otherwise widths might end up
 		// different in views with multiple graphs
@@ -1352,7 +1385,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * Draw the outline of a circle at {@code point} with {@code radius}.
 	 * 
-	 * @param point the node to draw
+	 * @param point  the node to draw
+	 * @param radius the radius of the circle
 	 */
 	protected void strokeCircle(Point2D point, double radius) {
 		strokeCircle(point.getX(), point.getY(), radius);
@@ -1382,7 +1416,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * Draw a filled circle at {@code point} with {@code radius}.
 	 * 
-	 * @param point the node to draw
+	 * @param point  the node to draw
+	 * @param radius the radius of the circle
 	 */
 	protected void fillCircle(Point2D point, double radius) {
 		fillCircle(point.getX(), point.getY(), radius);
@@ -1658,7 +1693,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	@Override
 	public void onMouseOut(MouseOutEvent event) {
 		leftMouseButton = false;
-		element.removeClassName(CURSOR_MOVE_VIEW);
+		element.removeClassName(CSS_CURSOR_MOVE_VIEW);
 		if (mouseMoveHandler != null) {
 			mouseMoveHandler.removeHandler();
 			mouseMoveHandler = null;
@@ -1685,7 +1720,10 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		}
 	}
 
-	protected static final String CURSOR_MOVE_VIEW = "evoludo-cursorMoveView";
+	/**
+	 * The CSS class name for the view movement cursor.
+	 */
+	protected static final String CSS_CURSOR_MOVE_VIEW = "evoludo-cursorMoveView";
 
 	/**
 	 * {@inheritDoc}
@@ -1704,7 +1742,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void onMouseUp(MouseUpEvent event) {
 		if (event.getNativeButton() == NativeEvent.BUTTON_LEFT) {
 			leftMouseButton = false;
-			element.removeClassName(CURSOR_MOVE_VIEW);
+			element.removeClassName(CSS_CURSOR_MOVE_VIEW);
 			if (mouseMoveHandler != null) {
 				mouseMoveHandler.removeHandler();
 				mouseMoveHandler = null;
@@ -1731,7 +1769,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void onMouseMove(MouseMoveEvent event) {
 		if (leftMouseButton) {
 			// shift view
-			element.addClassName(CURSOR_MOVE_VIEW);
+			element.addClassName(CSS_CURSOR_MOVE_VIEW);
 			int x = event.getX();
 			int y = event.getY();
 			shifter.shift(mouseX - x, mouseY - y);

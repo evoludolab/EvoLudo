@@ -206,6 +206,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * Get trait {@code d} of individual with index {@code idx}.
 	 * 
 	 * @param idx the index of the individual
+	 * @param d   the trait index
 	 * @return the trait of the individual
 	 */
 	public double getTraitAt(int idx, int d) {
@@ -227,7 +228,9 @@ public class IBSMCPopulation extends IBSPopulation {
 	/**
 	 * Get trait {@code d} of individual with index {@code idx}.
 	 * 
-	 * @param idx the index of the individual
+	 * @param idx   the index of the individual
+	 * @param d     the trait index
+	 * @param trait the trait of the individual
 	 * @return the trait of the individual
 	 */
 	public void setTraitAt(int idx, int d, double trait) {
@@ -266,8 +269,8 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * Set the trait array of individual with index {@code idx} to array
 	 * {@code idxtraits}.
 	 * 
-	 * @param idx the index of the individual
-	 * @idxtraits the traits of the individual
+	 * @param idx       the index of the individual
+	 * @param idxtraits the traits of the individual
 	 */
 	public void setTraitsAt(int idx, double[] idxtraits) {
 		if (nTraits == 1)
@@ -843,6 +846,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * array {@code max}. The array must be of length {@code >= nTraits}.
 	 * 
 	 * @param max the array to store the maximal trait values
+	 * @return the array with the maximal trait values (same as input)
 	 */
 	public double[] getMaxTraits(double[] max) {
 		if (nTraits == 1) {

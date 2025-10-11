@@ -280,10 +280,11 @@ public class Slider extends FocusWidget implements HasChangeHandlers, ChangeHand
 	 * Creates a slider ranging from <code>min</code> to <code>max</code> with
 	 * <code>steps</code> increments and initial value <code>init</code>.
 	 * 
-	 * @param min   the minimum value
-	 * @param max   the maximum value
-	 * @param init  the initial value
-	 * @param steps the number of steps
+	 * @param min     the minimum value
+	 * @param max     the maximum value
+	 * @param init    the initial value
+	 * @param steps   the number of steps
+	 * @param handler the change handler
 	 */
 	public Slider(double min, double max, double init, int steps, ChangeHandler handler) {
 		html = new HTML("<input class='gwt-Slider' style='width:100%' type='range' min='" + SLIDER_MIN + "' max='"

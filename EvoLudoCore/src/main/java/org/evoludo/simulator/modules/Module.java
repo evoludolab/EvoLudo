@@ -67,6 +67,8 @@ import org.evoludo.util.CLOption.Category;
 /**
  * Parent class of all EvoLudo modules.
  * 
+ * @param <T> the type of the module (self-referential generic)
+ * 
  * @author Christoph Hauert
  */
 public abstract class Module<T extends Module<T>> implements Features, MilestoneListener, CLOProvider, Runnable {
@@ -381,6 +383,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * @see EvoLudo#unloadModule()
 	 * @see MilestoneListener#moduleUnloaded()
 	 */
+	@SuppressWarnings("unchecked")
 	public void unload() {
 		traitName = null;
 		traitColor = null;

@@ -391,6 +391,13 @@ public class ContextMenu extends FlowPanel
 		return contextMenu;
 	}
 
+	/**
+	 * Setup location of context menu in DOM. If fullscreen is supported, the
+	 * context
+	 * menu is added to the fullscreen element, otherwise to the {@link RootPanel}.
+	 * 
+	 * @param menu the context menu
+	 */
 	private static void setupContextMenuLocation(ContextMenu menu) {
 		Element fs = NativeJS.getFullscreenElement();
 		if (fs != null) {
@@ -401,6 +408,11 @@ public class ContextMenu extends FlowPanel
 		menu.style.setPosition(Position.FIXED);
 	}
 
+	/**
+	 * Setup handlers to manage context menu visibility.
+	 * 
+	 * @param menu the context menu
+	 */
 	private static void setupContextMenuHandlers(ContextMenu menu) {
 		if (NativeJS.isFullscreenSupported()) {
 			menu.fullscreenChangeHandler = menu.addFullscreenChangeHandler(menu);

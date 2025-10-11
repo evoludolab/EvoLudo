@@ -93,7 +93,12 @@ public class Line2D {
 	}
 
 	/**
-	 * Helper method to prevent {@code this-escape} warnings.
+	 * Initialize the line with the given slope and y-intercept. Helper method to
+	 * prevent {@code this-escape} warnings.
+	 * 
+	 * @param line the line to initialize
+	 * @param m    the slope
+	 * @param b    the y-intercept
 	 */
 	protected static void initialize(Line2D line, double m, double b) {
 		line.m = m;
@@ -135,7 +140,7 @@ public class Line2D {
 	 * 
 	 * @param p1 the first point
 	 * @param p2 the second point
-	 * @return the slope of the line
+	 * @return the {@code y}-intercept of the line
 	 */
 	public static double getYIntercept(Point2D p1, Point2D p2) {
 		return getYIntercept(p1.x, p1.y, p2.x, p2.y);
@@ -145,9 +150,11 @@ public class Line2D {
 	 * Calculate the slope of a line running through points {@code p1} and
 	 * {@code p2}.
 	 * 
-	 * @param p1 the first point
-	 * @param p2 the second point
-	 * @return the slope of the line
+	 * @param x1 the <code>x</code>-coordinate of first point
+	 * @param y1 the <code>y</code>-coordinate of first point
+	 * @param x2 the <code>x</code>-coordinate of second point
+	 * @param y2 the <code>y</code>-coordinate of second point
+	 * @return the {@code y}-intercept of the line
 	 */
 	public static double getYIntercept(double x1, double y1, double x2, double y2) {
 		double slope = getSlope(x1, y1, x2, y2);
@@ -162,7 +169,6 @@ public class Line2D {
 	 * 
 	 * @param point     the point on the line
 	 * @param direction the direction of the line
-	 * @return the new line
 	 */
 	public void set(Point2D point, Vector2D direction) {
 		set(point.x, point.y, point.x + direction.x, point.y + direction.y);

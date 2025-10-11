@@ -441,9 +441,8 @@ public class EvoLudoWeb extends Composite
 	 * {@code data-clo} attribute
 	 * is read and used to set the command line options for the lab.
 	 * 
-	 * @param panel the HTML panel to which the lab is added
-	 * @param id    the ID of the lab element
-	 * @param clo   the command line options for the lab
+	 * @param labElement the DOM element representing the lab
+	 * @param clo        the command line options for the lab
 	 */
 	private void addEvoLudoToDOM(Element labElement, String clo) {
 		HTMLPanel panel = HTMLPanel.wrap(labElement);

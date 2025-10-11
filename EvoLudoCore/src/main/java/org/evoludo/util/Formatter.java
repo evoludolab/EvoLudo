@@ -458,6 +458,8 @@ public class Formatter {
 	 * 
 	 * @param aDouble the number to format
 	 * @param digits  the number of decimal places
+	 * @param pre     the prefix for the exponent
+	 * @param post    the postfix for the exponent
 	 * @return the formatted <code>double</code> as HTML string
 	 */
 	private static String prettyFormat(double aDouble, int digits, String pre, String post) {

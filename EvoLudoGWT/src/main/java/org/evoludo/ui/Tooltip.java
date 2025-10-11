@@ -116,15 +116,45 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	protected class Registration implements HandlerRegistration {
 
 		/**
-		 * References to all event handlers relevant for handling tooltips registered
+		 * Reference to mouse over event handler for handling tooltips registered
 		 * with the listener widget.
 		 */
 		HandlerRegistration mouseOverHandler;
+
+		/**
+		 * Reference to mouse over event handler for handling tooltips registered
+		 * with the listener widget.
+		 */
 		HandlerRegistration mouseOutHandler;
+
+		/**
+		 * Reference to mouse move event handler for handling tooltips registered
+		 * with the listener widget.
+		 */
 		HandlerRegistration mouseMoveHandler;
+
+		/**
+		 * Reference to mouse wheel event handler for handling tooltips registered
+		 * with the listener widget.
+		 */
 		HandlerRegistration mouseWheelHandler;
+
+		/**
+		 * Reference to touch start event handler for handling tooltips registered
+		 * with the listener widget.
+		 */
 		HandlerRegistration touchStartHandler;
+
+		/**
+		 * Reference to touch move event handler for handling tooltips registered
+		 * with the listener widget.
+		 */
 		HandlerRegistration touchMoveHandler;
+
+		/**
+		 * Reference to touch end event handler for handling tooltips registered
+		 * with the listener widget.
+		 */
 		HandlerRegistration touchEndHandler;
 
 		/**
@@ -263,11 +293,17 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	protected boolean touchEvent = false;
 
 	/**
-	 * Coordinates of current tooltip location (relative to <code>listener</code>
-	 * widget. This allows to update the tooltip without user interaction. For
-	 * example while hovering over an item that changes over time.
+	 * {@code x}-coordinates of current tooltip location (relative to
+	 * {@code listener} widget. This allows to update the tooltip without user
+	 * interaction. For example while hovering over an item that changes over time.
 	 */
 	private int x;
+
+	/**
+	 * {@code y}-coordinates of current tooltip location (relative to
+	 * {@code listener} widget. This allows to update the tooltip without user
+	 * interaction. For example while hovering over an item that changes over time.
+	 */
 	private int y;
 
 	/**

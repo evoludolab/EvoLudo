@@ -590,6 +590,7 @@ public class CLOption implements Comparable<CLOption> {
 	 * <li>the description string may contain any UTF-8 characters as well as HTML
 	 * character entities. If necessary they will be escaped and converted to UTF-8
 	 * for display in XML documents.
+	 * </ul>
 	 *
 	 * @param name        name of command line option
 	 * @param defaultArg  default argument if option is not specified on command

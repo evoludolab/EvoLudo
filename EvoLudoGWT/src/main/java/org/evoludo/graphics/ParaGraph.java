@@ -205,9 +205,10 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 * data, otherwise the new data is appended to the buffer. The initial state is
 	 * updated accordingly.
 	 * 
+	 * @param lastt the time of the last data point in the buffer
 	 * @param t     the time of the data
 	 * @param data  the data to add
-	 * @param lastt the time of the last data point in the buffer
+	 * @param len   the length of the data array (including time)
 	 */
 	private void handleNaNTime(double lastt, double t, double[] data, int len) {
 		// new starting point

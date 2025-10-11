@@ -238,18 +238,49 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	private Vector2 panEnd;
 
 	/**
-	 * Mouse and touch handlers to control the view of the 3D scene.
+	 * Reference to mouse wheel event handler for interacting with 3D view.
 	 */
 	private HandlerRegistration mouseWheelHandler;
+
+	/**
+	 * Reference to mouse down event handler for interacting with 3D view.
+	 */
 	private HandlerRegistration mouseDownHandler;
+
+	/**
+	 * Reference to mouse move event handler for interacting with 3D view.
+	 */
 	private HandlerRegistration mouseMoveHandler;
+
+	/**
+	 * Reference to mouse up event handler for interacting with 3D view.
+	 */
 	private HandlerRegistration mouseUpHandler;
+
+	/**
+	 * Reference to touch start event handler for interacting with 3D view.
+	 */
 	private HandlerRegistration touchStartHandler;
+
+	/**
+	 * Reference to touch move event handler for interacting with 3D view.
+	 */
 	private HandlerRegistration touchMoveHandler;
+
+	/**
+	 * Reference to touch end event handler for interacting with 3D view.
+	 */
 	private HandlerRegistration touchEndHandler;
 
-	protected static final String CURSOR_MOVE_VIEW = "evoludo-cursorMoveView";
-	protected static final String CURSOR_ROTATE_VIEW = "evoludo-cursorRotate";
+	/**
+	 * CSS class name for changing the cursor while panning the view.
+	 */
+	protected static final String CSS_CURSOR_MOVE_VIEW = "evoludo-cursorMoveView";
+
+	/**
+	 * CSS class name for changing the cursor while rotating the view.
+	 */
+	protected static final String CSS_CURSOR_ROTATE_VIEW = "evoludo-cursorRotate";
 
 	/**
 	 * Creates a new instance of TrackballControls for the 3D scene displayed in
@@ -562,8 +593,8 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 		if (event.getNativeButton() != NativeEvent.BUTTON_LEFT)
 			return;
 		isDragging = false;
-		getWidget().removeStyleName(CURSOR_ROTATE_VIEW);
-		getWidget().removeStyleName(CURSOR_MOVE_VIEW);
+		getWidget().removeStyleName(CSS_CURSOR_ROTATE_VIEW);
+		getWidget().removeStyleName(CSS_CURSOR_MOVE_VIEW);
 	}
 
 	/**
@@ -583,13 +614,13 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 				return;
 			panEnd = getMouseOnScreen(event.getX(), event.getY());
 			doPan = true;
-			getWidget().addStyleName(CURSOR_MOVE_VIEW);
+			getWidget().addStyleName(CSS_CURSOR_MOVE_VIEW);
 		} else {
 			if (!hasRotate)
 				return;
 			rotateEnd = getMouseProjectionOnBall(event.getX(), event.getY());
 			doRotate = true;
-			getWidget().addStyleName(CURSOR_ROTATE_VIEW);
+			getWidget().addStyleName(CSS_CURSOR_ROTATE_VIEW);
 		}
 	}
 
