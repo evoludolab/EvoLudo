@@ -57,7 +57,6 @@ public class IBSCPopulation extends IBSMCPopulation {
 	 * 
 	 * @see HasIBS.CPairs
 	 */
-	@SuppressWarnings("hiding")
 	protected HasIBS.CPairs pairmodule;
 
 	/**
@@ -67,22 +66,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 	 * 
 	 * @see HasIBS.CGroups
 	 */
-	@SuppressWarnings("hiding")
 	protected HasIBS.CGroups groupmodule;
-
-	/**
-	 * The interaction partner/opponent of this population
-	 * {@code opponent.getModule()==getModule().getOpponent()}. In intra-species
-	 * interactions {@code opponent==this}. Convenience field.
-	 * <p>
-	 * <strong>Note:</strong> This deliberately hides
-	 * {@link IBSPopulation#opponent}. The two variables point to the same object
-	 * but this setup avoids unnecessary casts because only
-	 * {@link org.evoludo.simulator.modules.Discrete Discrete} modules
-	 * generate {@code IBSDPopulation}(s).
-	 */
-	@SuppressWarnings("hiding")
-	IBSCPopulation opponent;
 
 	/**
 	 * Temporary storage for the traits of the focal individual. This deliberately
@@ -100,7 +84,6 @@ public class IBSCPopulation extends IBSMCPopulation {
 	 */
 	public IBSCPopulation(EvoLudo engine, Continuous module) {
 		super(engine, module);
-		opponent = this;
 		if (module instanceof HasIBS.CPairs)
 			pairmodule = (HasIBS.CPairs) module;
 		if (module instanceof HasIBS.CGroups)
@@ -108,9 +91,11 @@ public class IBSCPopulation extends IBSMCPopulation {
 	}
 
 	@Override
-	public void setOpponentPop(IBSPopulation opponent) {
+	public void setOpponentPop(IBSPopulation<?, ?> opponent) {
+		if (!(opponent instanceof IBSCPopulation)) {
+			throw new IllegalArgumentException("opponent must be IBSCPopulation");
+		}
 		super.setOpponentPop(opponent);
-		this.opponent = (IBSCPopulation) super.opponent;
 	}
 
 	@Override

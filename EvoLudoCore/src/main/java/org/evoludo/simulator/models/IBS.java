@@ -100,7 +100,7 @@ public abstract class IBS extends Model {
 	 * Short-cut to {@code species.get(0).getIBSPopulation()} for single species
 	 * models; {@code null} in multi-species models. Convenience field.
 	 */
-	protected IBSPopulation population;
+	protected IBSPopulation<?, ?> population;
 
 	/**
 	 * <code>true</code> if optimizations for homogeneous populations requested.
@@ -155,7 +155,7 @@ public abstract class IBS extends Model {
 	public void load() {
 		super.load();
 		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.createIBSPopulation();
+			IBSPopulation<?, ?> pop = mod.createIBSPopulation();
 			if (pop == null) {
 				if (mod instanceof org.evoludo.simulator.modules.Discrete) {
 					pop = new IBSDPopulation(engine, (org.evoludo.simulator.modules.Discrete) mod);
@@ -174,7 +174,7 @@ public abstract class IBS extends Model {
 		}
 		// now that all populations are instantiated, we can assign opponents
 		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			// set opponents
 			pop.setOpponentPop(mod.getOpponent().getIBSPopulation());
 		}
@@ -210,7 +210,7 @@ public abstract class IBS extends Model {
 		boolean noneUnique = true;
 		boolean allPosFitness = true;
 		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			doReset |= pop.check();
 			boolean sync = pop.getPopulationUpdate().isSynchronous();
 			allSync &= sync;
@@ -249,7 +249,7 @@ public abstract class IBS extends Model {
 		// update converged flag to account for changes that preclude convergence
 		if (!doReset) {
 			for (Module<?> mod : species) {
-				IBSPopulation pop = mod.getIBSPopulation();
+				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 				converged &= pop.checkConvergence();
 			}
 		}
@@ -276,7 +276,7 @@ public abstract class IBS extends Model {
 		// if any population uses ephemeral payoffs a dummy random number
 		// generator is needed for the display
 		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			if (pop.getPlayerScoring().equals(ScoringType.EPHEMERAL)) {
 				ephrng = rng.clone();
 				break;
@@ -284,7 +284,7 @@ public abstract class IBS extends Model {
 		}
 		nextSpeciesIdx = -1;
 		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			pop.reset();
 		}
 	}
@@ -328,14 +328,14 @@ public abstract class IBS extends Model {
 		}
 		// initialize all populations
 		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			pop.init();
 		}
 		// check for convergence separately because initialization may want to
 		// relax the configuration, which could result in convergence
 		converged = true;
 		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			converged &= pop.checkConvergence();
 		}
 	}
@@ -346,13 +346,13 @@ public abstract class IBS extends Model {
 		// inter-species interactions
 		for (Module<?> mod : species) {
 			if (mod instanceof Payoffs) {
-				IBSPopulation pop = mod.getIBSPopulation();
+				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 				pop.resetScores();
 			}
 		}
 		for (Module<?> mod : species) {
 			if (mod instanceof Payoffs) {
-				IBSPopulation pop = mod.getIBSPopulation();
+				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 				pop.updateScores();
 			}
 		}
@@ -434,7 +434,7 @@ public abstract class IBS extends Model {
 	/**
 	 * Pointer to focal species for debugging.
 	 */
-	IBSPopulation debugFocalSpecies;
+	IBSPopulation<?, ?> debugFocalSpecies;
 
 	/**
 	 * Advances the IBS model by a step of size {@code stepDt}. The actual time
@@ -465,7 +465,7 @@ public abstract class IBS extends Model {
 			double popFrac = 1.0;
 			// reset traits (colors)
 			for (Module<?> mod : species) {
-				IBSPopulation pop = mod.getIBSPopulation();
+				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 				pop.resetTraits();
 				popFrac *= pop.getSyncFraction();
 				nPopTot += pop.getPopulationSize();
@@ -479,14 +479,14 @@ public abstract class IBS extends Model {
 				updates += popFrac;
 				// update populations
 				for (Module<?> mod : species) {
-					IBSPopulation pop = mod.getIBSPopulation();
+					IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 					pop.prepareTraits();
 					pop.step();
 					pop.isConsistent();
 				}
 				// commit traits and reset scores
 				for (Module<?> mod : species) {
-					IBSPopulation pop = mod.getIBSPopulation();
+					IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 					pop.commitTraits(); // also check homogeneity
 					// TODO: review migration - should be an independent event, independent of
 					// population update
@@ -498,7 +498,7 @@ public abstract class IBS extends Model {
 				// calculate new scores (requires that all traits are committed and reset)
 				converged = true;
 				for (Module<?> mod : species) {
-					IBSPopulation pop = mod.getIBSPopulation();
+					IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 					pop.updateScores();
 					converged &= pop.checkConvergence();
 					scoreTot += pop.getTotalFitness();
@@ -514,7 +514,7 @@ public abstract class IBS extends Model {
 		double totRate = 0.0;
 		// reset traits (colors)
 		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			pop.resetTraits();
 			// NOTE: generation time increments based on maximum population sizes; otherwise
 			// notion of generations gets confusing; for ecological settings realtime might
@@ -573,7 +573,7 @@ public abstract class IBS extends Model {
 					time += RNGDistribution.Exponential.next(rng.getRNG(), dt / totRate);
 				totRate = 0.0;
 				for (Module<?> mod : species) {
-					IBSPopulation pop = mod.getIBSPopulation();
+					IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 					pop.isConsistent();
 					converged &= pop.checkConvergence();
 					totRate += pop.getSpeciesUpdateRate();
@@ -591,7 +591,7 @@ public abstract class IBS extends Model {
 			dUpdates = (stepDt - stepDone) / gincr;
 		}
 		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			if (!pop.playerScoring.equals(ScoringType.EPHEMERAL))
 				continue;
 			// recalculate scores of entire population for display
@@ -626,7 +626,7 @@ public abstract class IBS extends Model {
 	 * 
 	 * @return the {@code IBSPopulation}
 	 */
-	IBSPopulation getIBSPopulation(int id) {
+	IBSPopulation<?, ?> getIBSPopulation(int id) {
 		return getSpecies(id).getIBSPopulation();
 	}
 
@@ -659,7 +659,7 @@ public abstract class IBS extends Model {
 		if (isMultispecies) {
 			StringBuilder sb = new StringBuilder();
 			for (Module<?> mod : species) {
-				IBSPopulation pop = mod.getIBSPopulation();
+				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 				if (sb.length() > 0) {
 					sb.append("<br/><i>");
 				} else {
@@ -694,7 +694,7 @@ public abstract class IBS extends Model {
 			int skip = 0;
 			double[] tmp = new double[mean.length];
 			for (Module<?> mod : species) {
-				IBSPopulation pop = mod.getIBSPopulation();
+				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 				pop.getMeanTraits(tmp);
 				System.arraycopy(tmp, 0, mean, skip, pop.nTraits);
 				skip += pop.nTraits;
@@ -726,7 +726,7 @@ public abstract class IBS extends Model {
 			int skip = 0;
 			double[] tmp = new double[mean.length];
 			for (Module<?> mod : species) {
-				IBSPopulation pop = mod.getIBSPopulation();
+				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 				pop.getMeanFitness(tmp);
 				int nt = mod.getNTraits();
 				System.arraycopy(tmp, 0, mean, skip, nt);
@@ -806,7 +806,7 @@ public abstract class IBS extends Model {
 	 * @return <code>false</code> if no actions taken
 	 */
 	public boolean mouseHitNode(int id, int hit, boolean alt) {
-		IBSPopulation pop = getIBSPopulation(id);
+		IBSPopulation<?, ?> pop = getIBSPopulation(id);
 		if (!pop.mouseHitNode(hit, alt)) {
 			// nothing changed
 			return false;
@@ -841,7 +841,7 @@ public abstract class IBS extends Model {
 	 * 
 	 * @see SpeciesUpdate.Type
 	 */
-	public IBSPopulation pickFocalSpecies() {
+	public IBSPopulation<?, ?> pickFocalSpecies() {
 		if (!isMultispecies)
 			return population;
 		double[] rates = new double[nSpecies];
@@ -850,7 +850,7 @@ public abstract class IBS extends Model {
 		switch (speciesUpdate.getType()) {
 			case FITNESS:
 				for (Module<?> mod : species) {
-					IBSPopulation pop = mod.getIBSPopulation();
+					IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 					double rate = pop.getTotalFitness();
 					rates[idx++] = rate;
 					total += rate;
@@ -858,7 +858,7 @@ public abstract class IBS extends Model {
 				return pickFocalSpecies(rates, total);
 			case SIZE:
 				for (Module<?> mod : species) {
-					IBSPopulation pop = mod.getIBSPopulation();
+					IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 					double rate = pop.getPopulationSize();
 					rates[idx++] = rate;
 					total += rate;
@@ -866,7 +866,7 @@ public abstract class IBS extends Model {
 				return pickFocalSpecies(rates, total);
 			case RATE:
 				for (Module<?> mod : species) {
-					IBSPopulation pop = mod.getIBSPopulation();
+					IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 					double rate = pop.getSpeciesUpdateRate();
 					rates[idx++] = rate;
 					total += rate;
@@ -890,7 +890,7 @@ public abstract class IBS extends Model {
 	 * @param total the sum of the rates
 	 * @return the focal population or <code>null</code> if all populations extinct
 	 */
-	private IBSPopulation pickFocalSpecies(double[] rates, double total) {
+	private IBSPopulation<?, ?> pickFocalSpecies(double[] rates, double total) {
 		if (!isMultispecies)
 			return population;
 		double pick = random01() * total;
@@ -917,13 +917,13 @@ public abstract class IBS extends Model {
 	 * @param skip the number of species to skip
 	 * @return the focal population or <code>null</code> all populations extinct
 	 */
-	private IBSPopulation pickFocalSpecies(int skip) {
+	private IBSPopulation<?, ?> pickFocalSpecies(int skip) {
 		if (!isMultispecies)
 			return population;
 		int speciesIdx = nextSpeciesIdx + skip;
 		for (int i = 0; i < nSpecies; i++) {
 			nextSpeciesIdx = (speciesIdx + i) % nSpecies;
-			IBSPopulation pop = species.get(nextSpeciesIdx).getIBSPopulation();
+			IBSPopulation<?, ?> pop = species.get(nextSpeciesIdx).getIBSPopulation();
 			if (pop.getPopulationSize() > 0)
 				return pop;
 		}
@@ -936,7 +936,7 @@ public abstract class IBS extends Model {
 	 * @param pop the focal population
 	 * @return the next event
 	 */
-	protected Event pickEvent(IBSPopulation pop) {
+	protected Event pickEvent(IBSPopulation<?, ?> pop) {
 		Mutation mu = pop.module.getMutation();
 		if (mu.temperature || mu.probability <= 0.0 || random01() > mu.probability)
 			return Event.REPLICATION;
@@ -989,7 +989,7 @@ public abstract class IBS extends Model {
 				public boolean parse(String arg) {
 					// default is to average scores
 					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						pop.setPlayerScoreAveraged(!cloAccumulatedScores.isSet());
 					}
 					return true;
@@ -1022,7 +1022,7 @@ public abstract class IBS extends Model {
 							: arg.split(CLOParser.VECTOR_DELIMITER);
 					int n = 0;
 					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						String rest = playerresets[n++ % playerresets.length];
 						ScoringType st = (ScoringType) cloScoringType.match(rest);
 						if (st == null)
@@ -1059,7 +1059,7 @@ public abstract class IBS extends Model {
 							: arg.split(CLOParser.VECTOR_DELIMITER);
 					int n = 0;
 					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						String intertype = interactiontypes[n++ % interactiontypes.length];
 						IBSGroup.SamplingType intt = (IBSGroup.SamplingType) cloInteractions.match(intertype);
 						IBSGroup group = pop.getInterGroup();
@@ -1104,7 +1104,7 @@ public abstract class IBS extends Model {
 							: arg.split(CLOParser.VECTOR_DELIMITER);
 					int n = 0;
 					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						String reftype = referencetypes[n++ % referencetypes.length];
 						IBSGroup.SamplingType reft = (IBSGroup.SamplingType) cloReferences.match(reftype);
 						IBSGroup group = pop.getCompGroup();
@@ -1147,7 +1147,7 @@ public abstract class IBS extends Model {
 							: arg.split(CLOParser.VECTOR_DELIMITER);
 					int n = 0;
 					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						String migt = migrationtypes[n++ % migrationtypes.length];
 						MigrationType mt = (MigrationType) cloMigration.match(migt);
 						if (mt == null)
@@ -1209,7 +1209,7 @@ public abstract class IBS extends Model {
 					boolean doReset = false;
 					int n = 0;
 					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						// creates new interaction geometry if null or equal to getGeometry()
 						Geometry geom = pop.createInteractionGeometry();
 						doReset |= geom.parse(geomargs[n++ % geomargs.length]);
@@ -1252,7 +1252,7 @@ public abstract class IBS extends Model {
 					boolean doReset = false;
 					int n = 0;
 					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						// creates new competition geometry if null or equal to getGeometry()
 						Geometry geom = pop.createCompetitionGeometry();
 						doReset |= geom.parse(geomargs[n++ % geomargs.length]);
@@ -1289,7 +1289,7 @@ public abstract class IBS extends Model {
 					String[] rewireargs = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
 					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						double[] rewire = CLOParser.parseVector(rewireargs[n++ % rewireargs.length]);
 						pop.setRewire(rewire);
 					}
@@ -1323,7 +1323,7 @@ public abstract class IBS extends Model {
 					String[] addargs = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
 					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						double[] add = CLOParser.parseVector(addargs[n++ % addargs.length]);
 						pop.setAddwire(add);
 					}
@@ -1348,7 +1348,7 @@ public abstract class IBS extends Model {
 				@Override
 				public boolean parse(String arg) {
 					for (Module<?> mod : species) {
-						IBSPopulation pop = mod.getIBSPopulation();
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						pop.setConsistencyCheck(cloConsistency.isSet());
 					}
 					return true;
@@ -1393,7 +1393,7 @@ public abstract class IBS extends Model {
 			cloReferences.clearKeys();
 			cloReferences.addKeys(IBSGroup.SamplingType.values());
 		}
-		IBSPopulation ibs = species.get(0).getIBSPopulation();
+		IBSPopulation<?, ?> ibs = species.get(0).getIBSPopulation();
 		PopulationUpdate pup = ibs.getPopulationUpdate();
 		// ToDo: further updates to implement or make standard
 		pup.clo.clearKeys();
@@ -1732,7 +1732,7 @@ public abstract class IBS extends Model {
 		plist.append(Plist.encodeKey("Generation", updates));
 		boolean isMultiSpecies = (species.size() > 1);
 		for (Module<?> mod : species) {
-			IBSPopulation pop = mod.getIBSPopulation();
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			if (isMultiSpecies)
 				plist.append("<key>" + mod.getName() + "</key>\n" + "<dict>\n");
 			pop.encodeGeometry(plist);
@@ -1752,7 +1752,7 @@ public abstract class IBS extends Model {
 		boolean success = true;
 		if (species.size() > 1) {
 			for (Module<?> mod : species) {
-				IBSPopulation pop = mod.getIBSPopulation();
+				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 				String name = mod.getName();
 				Plist pplist = (Plist) plist.get(name);
 				if (!pop.restoreGeometry(pplist)) {

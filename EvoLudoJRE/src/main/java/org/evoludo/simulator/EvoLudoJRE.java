@@ -582,7 +582,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 								if (model instanceof IBS) {
 									boolean isMultispecies = (module.getNSpecies() > 1);
 									for (Module<?> mod : module.getSpecies()) {
-										IBSPopulation pop = mod.getIBSPopulation();
+										IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 										output.println(time + ",\t" + data.getKey()
 												+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
 												+ pop.getScores(dataDigits));
@@ -598,7 +598,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 								if (model instanceof IBS) {
 									boolean isMultispecies = (module.getNSpecies() > 1);
 									for (Module<?> mod : module.getSpecies()) {
-										IBSPopulation pop = mod.getIBSPopulation();
+										IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 										output.println(time + ",\t" + data.getKey()
 												+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
 												+ pop.getFitness(dataDigits));

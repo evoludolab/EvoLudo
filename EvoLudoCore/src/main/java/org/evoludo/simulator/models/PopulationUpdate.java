@@ -167,7 +167,7 @@ public class PopulationUpdate {
 							: arg.split(CLOParser.VECTOR_DELIMITER);
 					int n = 0;
 					for (Module<?> mod : ibs.species) {
-						IBSPopulation pop = mod.getIBSPopulation();
+						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 						String updt = popupdates[n++ % popupdates.length];
 						PopulationUpdate.Type put = (PopulationUpdate.Type) clo.match(updt);
 						if (put == null)

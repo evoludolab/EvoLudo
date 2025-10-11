@@ -493,7 +493,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * The field point to the IBSPopulation that represents this module in
 	 * individual based simulations. {@code null} for all other model types.
 	 */
-	IBSPopulation ibspop;
+	IBSPopulation<?, ?> ibspop;
 
 	/**
 	 * Sets the reference to the IBSPopulation that represents this module in
@@ -501,7 +501,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * 
 	 * @param ibs the individual based population
 	 */
-	public void setIBSPopulation(IBSPopulation ibs) {
+	public void setIBSPopulation(IBSPopulation<?, ?> ibs) {
 		this.ibspop = ibs;
 	}
 
@@ -511,7 +511,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * 
 	 * @return the IBSPopulation that represents this module or {@code null}
 	 */
-	public IBSPopulation getIBSPopulation() {
+	public IBSPopulation<?, ?> getIBSPopulation() {
 		return ibspop;
 	}
 
@@ -520,7 +520,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * 
 	 * @return the custom IBSPopulation or {@code null} to use default.
 	 */
-	public IBSPopulation createIBSPopulation() {
+	public IBSPopulation<?, ?> createIBSPopulation() {
 		return null;
 	}
 

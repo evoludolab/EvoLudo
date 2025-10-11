@@ -68,7 +68,7 @@ import org.evoludo.util.Plist;
  * @see IBSMCPopulation
  * @see IBSCPopulation
  */
-public abstract class IBSPopulation {
+public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation<?, ?>> {
 
 	/**
 	 * The pacemaker of all models. Interface with the outside world.
@@ -78,7 +78,7 @@ public abstract class IBSPopulation {
 	/**
 	 * The module associated with this population.
 	 */
-	protected Module<?> module;
+	protected M module;
 
 	/**
 	 * Convenience field for static modules to avoid casts.
@@ -90,7 +90,7 @@ public abstract class IBSPopulation {
 	 * 
 	 * @return the module associated with this population
 	 */
-	public Module<?> getModule() {
+	public M getModule() {
 		return module;
 	}
 
@@ -99,7 +99,7 @@ public abstract class IBSPopulation {
 	 * {@code opponent.getModule()==getModule().getOpponent()}. In intra-species
 	 * interactions {@code opponent==this}. Convenience field.
 	 */
-	protected IBSPopulation opponent;
+	protected P opponent;
 
 	/**
 	 * Logger for keeping track of and reporting events and issues.
@@ -130,10 +130,11 @@ public abstract class IBSPopulation {
 	 * @param engine the pacemaker for running the model
 	 * @param module the module that defines the game
 	 */
-	protected IBSPopulation(EvoLudo engine, Module<?> module) {
+	@SuppressWarnings("unchecked")
+	protected IBSPopulation(EvoLudo engine, M module) {
 		this.engine = engine;
 		logger = engine.getLogger();
-		opponent = this;
+		opponent = (P) this;
 		this.module = module;
 		// initialize helper variables
 		nTraits = module.getNTraits();
@@ -153,8 +154,9 @@ public abstract class IBSPopulation {
 	 * 
 	 * @param opponent the interaction partner/opponent
 	 */
-	public void setOpponentPop(IBSPopulation opponent) {
-		this.opponent = opponent;
+	@SuppressWarnings("unchecked")
+	public void setOpponentPop(IBSPopulation<?, ?> opponent) {
+		this.opponent = (opponent == null) ? (P) this : (P) opponent;
 	}
 
 	/**

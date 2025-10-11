@@ -691,7 +691,7 @@ public abstract class Model implements CLOProvider {
 			if (type == Type.IBS) {
 				// reset traits after relaxation in IBS models
 				for (Module<?> mod : species) {
-					IBSPopulation pop = mod.getIBSPopulation();
+					IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 					pop.resetTraits();
 				}
 			}

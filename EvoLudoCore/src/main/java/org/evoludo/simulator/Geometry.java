@@ -66,13 +66,13 @@ public class Geometry {
 	/**
 	 * The IBS population that has this geometry.
 	 */
-	IBSPopulation population;
+	IBSPopulation<?, ?> population;
 
 	/**
 	 * The IBS population representing the opponent. For intra-species interactions
 	 * {@code population==opponent} holds.
 	 */
-	public IBSPopulation opponent;
+	IBSPopulation<?, ?> opponent;
 
 	/**
 	 * Logger for keeping track of and reporting events and issues.
@@ -925,7 +925,7 @@ public class Geometry {
 	 * 
 	 * @return the opponent population
 	 */
-	public IBSPopulation getOpponent() {
+	public IBSPopulation<?, ?> getOpponent() {
 		return opponent;
 	}
 
@@ -5087,7 +5087,7 @@ public class Geometry {
 	 * @return the derived interaction geometry or {@code null} if it cannot be
 	 *         derived
 	 */
-	public Geometry deriveInteractionGeometry(IBSPopulation opp) {
+	public Geometry deriveInteractionGeometry(IBSPopulation<?, ?> opp) {
 		// this is competition geometry (hence population==opponent)
 		if (!interCompSame)
 			return null; // impossible to derive interaction geometry

@@ -58,18 +58,7 @@ import org.evoludo.util.Plist;
  * @see IBSPopulation
  * @see IBSCPopulation
  */
-public class IBSMCPopulation extends IBSPopulation {
-
-	/**
-	 * The continuous module associated with this model.
-	 * <p>
-	 * <strong>Note:</strong> This deliberately hides {@link IBSPopulation#module}.
-	 * The two variables point to the same object but this setup avoids unnecessary
-	 * casts because only {@link Continuous} modules generate
-	 * {@code IBSCPopulation}(s).
-	 */
-	@SuppressWarnings("hiding")
-	protected Continuous module;
+public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> {
 
 	/**
 	 * For pairwise interaction modules {@code module==pairmodule} holds and
@@ -90,20 +79,6 @@ public class IBSMCPopulation extends IBSPopulation {
 	protected HasIBS.MCGroups groupmodule;
 
 	/**
-	 * The interaction partner/opponent of this population
-	 * {@code opponent.getModule()==getModule().getOpponent()}. In intra-species
-	 * interactions {@code opponent==this}. Convenience field.
-	 * <p>
-	 * <strong>Note:</strong> This deliberately hides
-	 * {@link IBSPopulation#opponent}. The two variables point to the same object
-	 * but this setup avoids unnecessary casts because only
-	 * {@link org.evoludo.simulator.modules.Discrete Discrete} modules
-	 * generate {@code IBSDPopulation}(s).
-	 */
-	@SuppressWarnings("hiding")
-	IBSMCPopulation opponent;
-
-	/**
 	 * The mutation parameters.
 	 */
 	protected Mutation.Continuous mutation;
@@ -117,13 +92,7 @@ public class IBSMCPopulation extends IBSPopulation {
 	 */
 	public IBSMCPopulation(EvoLudo engine, Continuous module) {
 		super(engine, module);
-		// deal with module cast - pairmodule and groupmodule have to wait because
-		// nGroup requires parsing of command line options (see check())
-		// important: cannot deal with casting shadowed opponent here because for
-		// mutli-species modules all species need to be loaded first.
-		this.module = module;
 		mutation = module.getMutation();
-		opponent = this;
 		if (module instanceof HasIBS.MCPairs)
 			pairmodule = (HasIBS.MCPairs) module;
 		if (module instanceof HasIBS.MCGroups)
@@ -132,9 +101,11 @@ public class IBSMCPopulation extends IBSPopulation {
 	}
 
 	@Override
-	public void setOpponentPop(IBSPopulation opponent) {
+	public void setOpponentPop(IBSPopulation<?, ?> opponent) {
+		if (!(opponent instanceof IBSMCPopulation)) {
+			throw new IllegalArgumentException("opponent must be IBSMCPopulation");
+		}
 		super.setOpponentPop(opponent);
-		this.opponent = (IBSMCPopulation) super.opponent;
 	}
 
 	@Override

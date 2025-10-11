@@ -56,18 +56,7 @@ import org.evoludo.util.Plist;
  * 
  * @see IBSPopulation
  */
-public class IBSDPopulation extends IBSPopulation {
-
-	/**
-	 * The discrete module associated with this model.
-	 * <p>
-	 * <strong>Note:</strong> This deliberately hides {@link IBSPopulation#module}.
-	 * The two variables point to the same object but this setup avoids unnecessary
-	 * casts because only {@link Discrete} modules generate
-	 * {@code IBSDPopulation}(s).
-	 */
-	@SuppressWarnings("hiding")
-	protected Discrete module;
+public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 
 	/**
 	 * For pairwise interaction modules {@code module==pairmodule} holds and
@@ -86,19 +75,6 @@ public class IBSDPopulation extends IBSPopulation {
 	 * @see HasIBS.DGroups
 	 */
 	protected HasIBS.DGroups groupmodule;
-
-	/**
-	 * The interaction partner/opponent of this population
-	 * {@code opponent.getModule()==getModule().getOpponent()}. In intra-species
-	 * interactions {@code opponent==this}. Convenience field.
-	 * <p>
-	 * <strong>Note:</strong> This deliberately hides
-	 * {@link IBSPopulation#opponent}. The two variables point to the same object
-	 * but this setup avoids unnecessary casts because only {@link Discrete} modules
-	 * generate {@code IBSDPopulation}(s).
-	 */
-	@SuppressWarnings("hiding")
-	protected IBSDPopulation opponent;
 
 	/**
 	 * The flag to indicate whether optimizations of Moran processes are requested.
@@ -132,10 +108,6 @@ public class IBSDPopulation extends IBSPopulation {
 	 */
 	public IBSDPopulation(EvoLudo engine, Discrete module) {
 		super(engine, module);
-		// important: cannot deal with casting shadowed opponent here because for
-		// multi-species modules all species need to be loaded first.
-		opponent = this;
-		this.module = module;
 		mutation = module.getMutation();
 		if (module instanceof HasIBS.DPairs)
 			pairmodule = (HasIBS.DPairs) module;
@@ -145,9 +117,11 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	@Override
-	public void setOpponentPop(IBSPopulation opponent) {
+	public void setOpponentPop(IBSPopulation<?, ?> opponent) {
+		if (!(opponent instanceof IBSDPopulation)) {
+			throw new IllegalArgumentException("opponent must be IBSDPopulation");
+		}
 		super.setOpponentPop(opponent);
-		this.opponent = (IBSDPopulation) super.opponent;
 	}
 
 	/**
