@@ -891,7 +891,6 @@ public abstract class EvoLudo
 				if (mod != activeModule)
 					it.remove();
 			}
-			activeModule = null;
 		}
 		fireModuleUnloaded();
 	}
@@ -1238,6 +1237,10 @@ public abstract class EvoLudo
 				modelReset();
 				break;
 			case SHUTDOWN:
+				if (isRunning) {
+					isRunning = false;
+					pendingAction = PendingAction.STOP;
+				}
 				unloadModule();
 				break;
 			default:

@@ -229,7 +229,8 @@ public class EvoLudoGWT extends EvoLudo {
 		Scheduler.get().scheduleIncremental(() -> {
 			// in unfortunate cases even a single sample can take exceedingly long
 			// times. stop/init/reset need to be able to interrupt.
-			if (pendingAction != PendingAction.NONE) {
+			// make sure active model has not been unloaded in the meantime
+			if (activeModel == null || pendingAction != PendingAction.NONE) {
 				processPendingAction();
 				return false;
 			}
@@ -269,7 +270,7 @@ public class EvoLudoGWT extends EvoLudo {
 	@Override
 	void processPendingAction() {
 		boolean updateGUI = (pendingAction == PendingAction.STOP
-				&& activeModel.getMode() == Mode.STATISTICS_SAMPLE);
+				&& activeModel != null && activeModel.getMode() == Mode.STATISTICS_SAMPLE);
 		super.processPendingAction();
 		if (updateGUI)
 			gui.modelStopped();
