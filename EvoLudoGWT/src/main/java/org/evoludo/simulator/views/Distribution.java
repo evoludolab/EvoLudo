@@ -60,18 +60,7 @@ import com.google.gwt.user.client.Command;
  *
  * @author Christoph Hauert
  */
-public class Distribution extends AbstractView implements TooltipProvider.Index {
-
-	/**
-	 * The list of graphs that display the trajectories in 2D phase planes.
-	 * 
-	 * @evoludo.impl {@code List<ParaGraph> graphs} is deliberately hiding
-	 *               {@code List<AbstractGraph> graphs} from the superclass because
-	 *               it saves a lot of ugly casting. Note that the two fields point
-	 *               to one and the same object.
-	 */
-	@SuppressWarnings("hiding")
-	protected List<PopGraph2D> graphs;
+public class Distribution extends AbstractView<PopGraph2D> implements TooltipProvider.Index {
 
 	/**
 	 * The maximum number of bins for the trait histograms.
@@ -100,10 +89,8 @@ public class Distribution extends AbstractView implements TooltipProvider.Index 
 	 * @param engine the pacemaker for running the model
 	 * @param type   the type of data to display
 	 */
-	@SuppressWarnings("unchecked")
 	public Distribution(EvoLudoGWT engine, Data type) {
 		super(engine, type);
-		graphs = (List<PopGraph2D>) super.graphs;
 	}
 
 	@Override

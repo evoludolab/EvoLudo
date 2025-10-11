@@ -33,6 +33,7 @@ package org.evoludo.simulator.views;
 import java.util.ListIterator;
 import java.util.logging.Level;
 
+import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.ui.ContextMenu;
@@ -52,7 +53,7 @@ import com.google.gwt.user.client.ui.Widget;
  *
  * @author Christoph Hauert
  */
-public class Console extends AbstractView implements ContextMenu.Provider {
+public class Console extends AbstractView<AbstractGraph<?>> implements ContextMenu.Provider {
 
 	/**
 	 * The console log widget. The log is implemented as a ring buffer to store a

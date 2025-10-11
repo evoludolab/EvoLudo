@@ -76,7 +76,7 @@ import com.google.gwt.user.client.ui.RequiresResize;
  *
  * @author Christoph Hauert
  */
-public abstract class AbstractView extends Composite implements RequiresResize, ProvidesResize,
+public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite implements RequiresResize, ProvidesResize,
 		MilestoneListener, SampleListener, ChangeListener {
 
 	/**
@@ -102,7 +102,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	/**
 	 * The list of graphs that are displayed in this view.
 	 */
-	protected List<? extends AbstractGraph<?>> graphs = new ArrayList<>();
+	protected final List<G> graphs;
 
 	/**
 	 * The number of rows of graphs in this view.
@@ -153,6 +153,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		this.engine = engine;
 		this.type = type;
 		logger = engine.getLogger();
+		this.graphs = new ArrayList<>();
 		wrapper = new FlowPanel();
 		wrapper.getElement().getStyle().setPosition(Position.RELATIVE);
 		initWidget(wrapper);
@@ -241,7 +242,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		if (options == null)
 			return true;
 		boolean ok = true;
-		for (AbstractGraph<?> graph : graphs)
+		for (G graph : graphs)
 			ok &= graph.parse(options);
 		return ok;
 	}
@@ -261,7 +262,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * Destroy all graphs in this view and free up resources.
 	 */
 	protected void destroyGraphs() {
-		for (AbstractGraph<?> graph : graphs) {
+		for (G graph : graphs) {
 			graph.deactivate();
 			graph.removeFromParent();
 		}
@@ -304,13 +305,13 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		if (isActive)
 			return;
 		isActive = true;
-		for (AbstractGraph<?> graph : graphs)
+		for (G graph : graphs)
 			graph.activate();
 		update(true);
 		if (!setMode(getMode())) {
 			// this is should not happen because view should not be available
 			// if mode is not supported, see EvoLudoWeb#updateViews()
-			for (AbstractGraph<?> graph : graphs)
+			for (G graph : graphs)
 				graph.displayMessage("Mode '" + getMode() + "'' not supported");
 		}
 		layoutComplete();
@@ -322,7 +323,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 */
 	public void deactivate() {
 		isActive = false;
-		for (AbstractGraph<?> graph : graphs)
+		for (G graph : graphs)
 			graph.deactivate();
 	}
 
@@ -409,7 +410,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	public void moduleRestored() {
 		timestamp = -Double.MAX_VALUE;
 		updatetime = -1.0;
-		for (AbstractGraph<?> graph : graphs)
+		for (G graph : graphs)
 			graph.reset();
 	}
 
@@ -561,7 +562,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * @see AbstractGraph.Shifter#shift(int, int)
 	 */
 	public void shift(int dx, int dy) {
-		for (AbstractGraph<?> graph : graphs) {
+		for (G graph : graphs) {
 			if (graph instanceof Shifter)
 				((Shifter) graph).shift(dx, dy);
 		}
@@ -578,7 +579,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * @see AbstractGraph.Zoomer#zoom(double, int, int)
 	 */
 	public void zoom(double zoom, int x, int y) {
-		for (AbstractGraph<?> graph : graphs) {
+		for (G graph : graphs) {
 			if (graph instanceof Zoomer)
 				((Zoomer) graph).zoom(zoom, x, y);
 		}
@@ -664,7 +665,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	public void onResize() {
 		if (getOffsetWidth() == 0 || getOffsetHeight() == 0)
 			return;
-		for (AbstractGraph<?> graph : graphs)
+		for (G graph : graphs)
 			graph.onResize();
 		engine.guiReady();
 		if (isActive)
@@ -679,7 +680,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * @param height the height of the view
 	 */
 	public void setBounds(int width, int height) {
-		for (AbstractGraph<?> graph : graphs)
+		for (G graph : graphs)
 			graph.calcBounds(width, height);
 	}
 
@@ -723,10 +724,8 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * @param y the y-coordinate
 	 * @return the graph at the coordinates {@code (x,y)}
 	 */
-	public AbstractGraph<?> getGraphAt(int x, int y) {
-		if (graphs == null)
-			return null;
-		for (AbstractGraph<?> graph : graphs)
+	public G getGraphAt(int x, int y) {
+		for (G graph : graphs)
 			if (graph.contains(x, y))
 				return graph;
 		return null;
@@ -951,7 +950,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		int hOffset = 0;
 		int vOffset = 0;
 		int count = 0;
-		for (AbstractGraph<?> graph : graphs) {
+		for (G graph : graphs) {
 			ctx.save();
 			ctx.translate(hOffset, vOffset);
 			graph.export(ctx);
@@ -999,7 +998,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		int header = export.length();
 		// focus on Mean for now
 		RingBuffer<double[]> buffer = null;
-		for (AbstractGraph<?> graph : graphs) {
+		for (G graph : graphs) {
 			RingBuffer<?> newbuffer = graph.getBuffer();
 			if (newbuffer == null || newbuffer.isEmpty() || newbuffer == buffer)
 				continue;
@@ -1040,7 +1039,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	protected void exportTrajData() {
 		StringBuilder export = exportDataHeader();
 		int header = export.length();
-		for (AbstractGraph<?> graph : graphs) {
+		for (G graph : graphs) {
 			if (!(graph instanceof HasTrajectory))
 				continue;
 			((HasTrajectory) graph).exportTrajectory(export);

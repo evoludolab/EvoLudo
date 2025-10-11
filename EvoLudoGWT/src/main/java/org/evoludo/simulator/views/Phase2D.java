@@ -54,18 +54,7 @@ import com.google.gwt.user.client.Command;
  * 
  * @author Christoph Hauert
  */
-public class Phase2D extends AbstractView {
-
-	/**
-	 * The list of graphs that display the trajectories in 2D phase planes.
-	 * 
-	 * @evoludo.impl {@code List<ParaGraph> graphs} is deliberately hiding
-	 *               {@code List<AbstractGraph> graphs} from the superclass because
-	 *               it saves a lot of ugly casting. Note that the two fields point
-	 *               to one and the same object.
-	 */
-	@SuppressWarnings("hiding")
-	protected List<ParaGraph> graphs;
+public class Phase2D extends AbstractView<ParaGraph> {
 
 	/**
 	 * The graph that displays the trajectory in a 2D phase plane.
@@ -92,10 +81,8 @@ public class Phase2D extends AbstractView {
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	@SuppressWarnings("unchecked")
 	public Phase2D(EvoLudoGWT engine) {
 		super(engine, Data.UNDEFINED);
-		graphs = (List<ParaGraph>) super.graphs;
 	}
 
 	@Override

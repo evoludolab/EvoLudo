@@ -272,7 +272,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * The view of this graph.
 	 */
-	protected AbstractView view;
+	protected final AbstractView<?> view;
 
 	/**
 	 * The controller for shifting this graph.
@@ -432,7 +432,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @param view   the view of this graph
 	 * @param module the module backing the graph
 	 */
-	protected AbstractGraph(AbstractView view, Module<?> module) {
+	protected AbstractGraph(AbstractView<?> view, Module<?> module) {
 		this.view = view;
 		this.module = module;
 		logger = view.getLogger();

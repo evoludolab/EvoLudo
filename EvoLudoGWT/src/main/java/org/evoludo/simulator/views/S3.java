@@ -49,18 +49,7 @@ import org.evoludo.simulator.modules.Module;
  *
  * @author Christoph Hauert
  */
-public class S3 extends AbstractView {
-
-	/**
-	 * The list of graphs that display the trajectories in 2D phase planes.
-	 * 
-	 * @evoludo.impl {@code List<S3Graph> graphs} is deliberately hiding
-	 *               {@code List<AbstractGraph> graphs} from the superclass because
-	 *               it saves a lot of ugly casting. Note that the two fields point
-	 *               to one and the same object.
-	 */
-	@SuppressWarnings("hiding")
-	protected List<S3Graph> graphs;
+public class S3 extends AbstractView<S3Graph> {
 
 	/**
 	 * The current state of the model. The end point of the current trajectory.
@@ -73,10 +62,8 @@ public class S3 extends AbstractView {
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	@SuppressWarnings("unchecked")
 	public S3(EvoLudoGWT engine) {
 		super(engine, Data.TRAIT);
-		graphs = (List<S3Graph>) super.graphs;
 	}
 
 	@Override

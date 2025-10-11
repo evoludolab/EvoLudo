@@ -85,7 +85,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param view   the view of this graph
 	 * @param module the module backing the graph
 	 */
-	public PopGraph2D(AbstractView view, Module<?> module) {
+	public PopGraph2D(AbstractView<?> view, Module<?> module) {
 		super(view, module);
 	}
 

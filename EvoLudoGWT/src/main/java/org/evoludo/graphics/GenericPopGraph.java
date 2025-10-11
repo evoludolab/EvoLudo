@@ -145,7 +145,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 * @param view   the view of this graph
 	 * @param module the module backing the graph
 	 */
-	protected GenericPopGraph(AbstractView view, Module<?> module) {
+	protected GenericPopGraph(AbstractView<?> view, Module<?> module) {
 		super(view, module);
 	}
 

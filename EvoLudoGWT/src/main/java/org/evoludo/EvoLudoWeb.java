@@ -30,7 +30,9 @@
 
 package org.evoludo;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -282,7 +284,7 @@ public class EvoLudoWeb extends Composite
 	 * Look-up table for active views. This is the selection shown in
 	 * {@link #evoludoViews}.
 	 */
-	HashMap<String, AbstractView> activeViews = new HashMap<>();
+	HashMap<String, AbstractView<?>> activeViews = new HashMap<>();
 
 	/**
 	 * By default the first data view is shown. In general this shows the strategies
@@ -293,7 +295,7 @@ public class EvoLudoWeb extends Composite
 	/**
 	 * Currently visible view
 	 */
-	AbstractView activeView;
+	AbstractView<?> activeView;
 
 	/**
 	 * The transparent backdrop of popup EvoLudo labs is stored here to reuse.
@@ -805,7 +807,7 @@ public class EvoLudoWeb extends Composite
 	 * 
 	 * @param newView new view of model data to display
 	 */
-	protected void changeViewTo(AbstractView newView) {
+	protected void changeViewTo(AbstractView<?> newView) {
 		changeViewTo(newView, false);
 	}
 
@@ -821,7 +823,7 @@ public class EvoLudoWeb extends Composite
 	 * @param force   if {@code true} the view is re-activated even if it didn't
 	 *                change
 	 */
-	protected void changeViewTo(AbstractView newView, boolean force) {
+	protected void changeViewTo(AbstractView<?> newView, boolean force) {
 		if (!force && newView == activeView)
 			return;
 
@@ -1197,7 +1199,7 @@ public class EvoLudoWeb extends Composite
 		/**
 		 * The active view.
 		 */
-		AbstractView view;
+		AbstractView<?> view;
 
 		/**
 		 * The arguments for theactive view.
@@ -1247,14 +1249,15 @@ public class EvoLudoWeb extends Composite
 		// process (emulated) ePub restrictions - adds console if possible
 		processEPubSettings();
 		guiState.view = activeView;
+		List<AbstractView<?>> availableViews = new ArrayList<>(activeViews.values());
 		if (cloView.isSet()) {
 			// the initialView specification (name or index) may be followed by a space and
 			// a comma-separated list of view specific options
 			String[] iv = initialView.split(" ", 2);
 			// try to interpret first argument as name
 			String name = iv[0].replace('_', ' ').trim();
-			AbstractView newView = null;
-			for (AbstractView view : activeViews.values()) {
+			AbstractView<?> newView = null;
+			for (AbstractView<?> view : availableViews) {
 				if (view.getName().equals(name)) {
 					newView = view;
 					break;
@@ -1263,7 +1266,6 @@ public class EvoLudoWeb extends Composite
 			if (newView == null) {
 				// try to interpret first argument as index
 				int idx = 0;
-				AbstractView[] av = activeViews.values().toArray(new AbstractView[0]);
 				try {
 					idx = CLOParser.parseInteger(iv[0]);
 				} catch (NumberFormatException e) {
@@ -1273,17 +1275,19 @@ public class EvoLudoWeb extends Composite
 				// Ensure idx is within bounds [1, av.length]
 				if (idx < 1)
 					idx = 1;
-				if (idx > av.length)
-					idx = av.length;
-				newView = av[idx - 1];
+				int size = availableViews.size();
+				if (idx > size)
+					idx = size;
+				if (!availableViews.isEmpty())
+					newView = availableViews.get(idx - 1);
 			}
 			guiState.view = newView;
 			guiState.args = iv.length > 1 ? iv[1].trim() : null;
 		}
-		if (guiState.view == null
-				|| (guiState.view != null && !activeViews.containsValue(guiState.view))) {
+		if (guiState.view == null || !activeViews.containsValue(guiState.view)) {
 			// initial load and view not set (or not found)
-			guiState.view = activeViews.values().toArray(new AbstractView[0])[0];
+			// pick first available view (at least the console has to be in the list)
+			guiState.view = availableViews.get(0);
 		}
 		if (guiState.view != activeView && activeView != null)
 			activeView.deactivate();
@@ -1376,7 +1380,7 @@ public class EvoLudoWeb extends Composite
 		// set of available views may have changed (e.g. statistics)
 		int width = activeView.getOffsetWidth();
 		int height = activeView.getOffsetHeight();
-		for (AbstractView view : activeViews.values()) {
+		for (AbstractView<?> view : activeViews.values()) {
 			boolean loaded = view.load();
 			view.setBounds(width, height);
 			if (loaded)
@@ -1727,20 +1731,20 @@ public class EvoLudoWeb extends Composite
 			case "8":
 			case "9":
 				// quick view selector
-				AbstractView[] allviews = activeViews.values().toArray(new AbstractView[0]);
+				java.util.List<AbstractView<?>> allviews = new java.util.ArrayList<>(activeViews.values());
 				int idx = CLOParser.parseInteger(key);
-				if (idx <= allviews.length)
-					changeViewTo(allviews[idx - 1]);
+				if (idx <= allviews.size())
+					changeViewTo(allviews.get(idx - 1));
 				break;
 			case "c":
 				// toggle console
-				allviews = activeViews.values().toArray(new AbstractView[0]);
-				if (evoludoDeck.getWidgetIndex(activeView) == allviews.length - 1)
+				allviews = new java.util.ArrayList<>(activeViews.values());
+				if (evoludoDeck.getWidgetIndex(activeView) == allviews.size() - 1)
 					// console is active, switch to previous view
-					changeViewTo(allviews[viewIdx]);
+					changeViewTo(allviews.get(viewIdx));
 				else
 					// switch to console
-					changeViewTo(allviews[allviews.length - 1]);
+					changeViewTo(allviews.get(allviews.size() - 1));
 				break;
 			case "Enter":
 			case " ":
@@ -1988,7 +1992,7 @@ public class EvoLudoWeb extends Composite
 	 * {@link #processEPubSettings}).
 	 */
 	protected void updateViews() {
-		HashMap<String, AbstractView> oldViews = activeViews;
+		HashMap<String, AbstractView<?>> oldViews = activeViews;
 		activeViews = new HashMap<>();
 		evoludoDeck.clear();
 		Module<?> module = engine.getModule();
@@ -2050,12 +2054,12 @@ public class EvoLudoWeb extends Composite
 		// note: console may be removed for (simulated) ePub modes
 		addView(viewConsole, oldViews);
 		// unload views that are no longer available
-		for (AbstractView view : oldViews.values())
+		for (AbstractView<?> view : oldViews.values())
 			view.dispose();
 		oldViews.clear();
 		// update view selector
 		evoludoViews.clear();
-		for (AbstractView view : activeViews.values())
+		for (AbstractView<?> view : activeViews.values())
 			evoludoViews.addItem(view.getName());
 	}
 
@@ -2067,7 +2071,7 @@ public class EvoLudoWeb extends Composite
 	 * @param view     to add to active list
 	 * @param oldViews list of current views
 	 */
-	private void addView(AbstractView view, HashMap<String, AbstractView> oldViews) {
+	private void addView(AbstractView<?> view, HashMap<String, AbstractView<?>> oldViews) {
 		String name = view.getName();
 		if (oldViews.containsKey(name))
 			view = oldViews.remove(name);
@@ -2096,7 +2100,7 @@ public class EvoLudoWeb extends Composite
 		public String getDescription() {
 			String descr = "--view <v>      select view (v: index or title)";
 			int idx = 1;
-			for (AbstractView view : activeViews.values()) {
+			for (AbstractView<?> view : activeViews.values()) {
 				String keycode = "              " + (idx++) + ": ";
 				int len = keycode.length();
 				descr += "\n" + keycode.substring(len - 16, len) + view.getName();

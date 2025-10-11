@@ -67,18 +67,7 @@ import com.google.gwt.core.client.Duration;
  *
  * @author Christoph Hauert
  */
-public class Histogram extends AbstractView {
-
-	/**
-	 * The list of graphs that display the time series data.
-	 * 
-	 * @evoludo.impl {@code List<HistoGraph> graphs} is deliberately hiding
-	 *               {@code List<AbstractGraph> graphs} from the superclass because
-	 *               it saves a lot of ugly casting. Note that the two fields point
-	 *               to one and the same object.
-	 */
-	@SuppressWarnings("hiding")
-	protected List<HistoGraph> graphs;
+public class Histogram extends AbstractView<HistoGraph> {
 
 	/**
 	 * The scaling factor to map the data onto bins.
@@ -108,10 +97,8 @@ public class Histogram extends AbstractView {
 	 * @param engine the pacemaker for running the model
 	 * @param type   the type of data to display
 	 */
-	@SuppressWarnings("unchecked")
 	public Histogram(EvoLudoGWT engine, Data type) {
 		super(engine, type);
-		graphs = (List<HistoGraph>) super.graphs;
 	}
 
 	@Override

@@ -56,18 +56,7 @@ import org.evoludo.simulator.modules.Module;
  *
  * @author Christoph Hauert
  */
-public class Mean extends AbstractView implements Shifter, Zoomer {
-
-	/**
-	 * The list of graphs that display the time series data.
-	 * 
-	 * @evoludo.impl {@code List<LineGraph> graphs} is deliberately hiding
-	 *               {@code List<AbstractGraph> graphs} from the superclass because
-	 *               it saves a lot of ugly casting. Note that the two fields point
-	 *               to one and the same object.
-	 */
-	@SuppressWarnings("hiding")
-	protected List<LineGraph> graphs;
+public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 
 	/**
 	 * The state of the model at the current time.
@@ -81,10 +70,8 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 	 * @param engine the pacemaker for running the model
 	 * @param type   the type of data to display
 	 */
-	@SuppressWarnings("unchecked")
 	public Mean(EvoLudoGWT engine, Data type) {
 		super(engine, type);
-		graphs = (List<LineGraph>) super.graphs;
 	}
 
 	@Override

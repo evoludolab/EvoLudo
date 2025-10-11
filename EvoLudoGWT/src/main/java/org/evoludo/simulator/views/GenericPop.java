@@ -31,7 +31,6 @@
 package org.evoludo.simulator.views;
 
 import java.awt.Color;
-import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.GenericPopGraph;
@@ -72,19 +71,8 @@ import org.evoludo.util.Formatter;
  * @param <N> type of network
  * @param <G> type of graph
  */
-public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGraph<T, N>> extends AbstractView
+public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGraph<T, N>> extends AbstractView<G>
 		implements TooltipProvider.Index {
-
-	/**
-	 * The list of graphs that display the time series data.
-	 * 
-	 * @evoludo.impl {@code List<G> graphs} is deliberately hiding
-	 *               {@code List<AbstractGraph> graphs} from the superclass because
-	 *               it saves a lot of ugly casting. Note that the two fields point
-	 *               to one and the same object.
-	 */
-	@SuppressWarnings("hiding")
-	protected List<G> graphs;
 
 	/**
 	 * The index of the node that was hit by the mouse.
@@ -103,10 +91,8 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 * @param engine the pacemaker for running the model
 	 * @param type   the type of data to display
 	 */
-	@SuppressWarnings("unchecked")
 	protected GenericPop(EvoLudoGWT engine, Data type) {
 		super(engine, type);
-		graphs = (List<G>) super.graphs;
 		tag = (this instanceof Pop2D) ? "2D" : "3D";
 	}
 
