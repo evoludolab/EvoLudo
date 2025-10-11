@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Show javac warnings",
+      "label": "Javac warnings",
       "type": "shell",
       "command": "mvn",
       "args": [
@@ -25,6 +25,33 @@
           "line": 3,
           "column": 4,
           "message": 5
+        }
+       }
+    },
+    {
+      "label": "Javadoc warnings",
+      "type": "shell",
+      "command": "mvn",
+      "args": [
+        "-Pjavadoc-warnings",
+        "javadoc:aggregate"
+      ],
+      "group": "build",
+      "problemMatcher": {
+        "owner": "javadoc",
+        "source": "javadoc",
+        "fileLocation": "absolute",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^\\[INFO\\]\\s+---\\s+maven-javadoc-plugin",
+          "endsPattern": "^\\[INFO\\]\\s+BUILD\\s+(?:SUCCESS|FAILURE)"
+        },
+        "pattern": {
+          "regexp": "^\\[(?:WARNING|ERROR)\\]\\s+(.+\\.java):(\\d+):\\s+(warning|error)(?:[:\\s-]+)(.*)$",
+          "severity": 3,
+          "file": 1,
+          "line": 2,
+          "message": 4
         }
       }
     },

@@ -157,11 +157,11 @@
           </bottom>
           <!-- JDK 11 needed to generate docs with frames -->
           <!-- <javadocExecutable>${javadoc.exe}</javadocExecutable> -->
-          <!-- accessibility throws errors about headers out of sequence but at the same time
+          <!-- 1) accessibility throws errors about headers out of sequence but at the same time
                javadoc does not appear to offer any way to format longer text, e.g. for more
-               comprehensive introductions to a class. reference throws errors for unresolved
-               references, e.g. those to classes in other modules. this can only be verified 
-               at the time of aggregating the documentation. -->
+               comprehensive introductions to a class. 
+               2) reference throws errors for unresolved references, e.g. those to classes in 
+               other modules. this can only be verified at the time of aggregating the documentation. -->
           <doclint>all,-accessibility,-reference</doclint>
           <tags>
             <tag>
@@ -392,6 +392,37 @@
         <module>EvoLudoTest</module>
         <module>EvoLudoSims</module>
       </modules>
+    </profile>
+
+    <profile>
+      <id>javadoc-warnings</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <aggregate>true</aggregate>
+              <show>private</show>
+              <quiet>false</quiet>
+              <verbose>true</verbose>
+              <failOnWarnings>false</failOnWarnings>
+              <!-- 1) accessibility throws errors about headers out of sequence but at the same time
+                  javadoc does not appear to offer any way to format longer text, e.g. for more
+                  comprehensive introductions to a class. 
+                  2) reference throws errors for unresolved references, e.g. those to classes in 
+                  other modules. this can only be verified at the time of aggregating the documentation. -->
+              <doclint>all,-accessibility,-reference</doclint>
+              <additionalJOptions>
+                <additionalJOption>-Xmaxwarns</additionalJOption>
+                <additionalJOption>9999</additionalJOption>
+                <additionalJOption>-Xdoclint:all,-accessibility,-reference</additionalJOption>
+                <additionalJOption>--allow-script-in-comments</additionalJOption>
+              </additionalJOptions>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 </project>
