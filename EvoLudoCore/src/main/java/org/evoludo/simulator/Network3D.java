@@ -39,15 +39,7 @@ import org.evoludo.geom.Vector3D;
  *
  * @author Christoph Hauert
  */
-public abstract class Network3D extends Network {
-
-	/**
-	 * The array with all nodes of this network. This deliberately overrides
-	 * {@code super.nodes}. The two arrays are identical but saves a ton of
-	 * unnecesary casts.
-	 */
-	@SuppressWarnings("hiding")
-	protected Node3D[] nodes = null;
+public abstract class Network3D extends Network<Node3D> {
 
 	/**
 	 * Create a new network in 3D for the given engine and geometry.
@@ -65,7 +57,6 @@ public abstract class Network3D extends Network {
 	public void initNodes(double pnorm, double nnorm, double unitradius) {
 		if (nodes == null || nodes.length != nNodes) {
 			nodes = new Node3D[nNodes];
-			super.nodes = this.nodes;
 			for (int k = 0; k < nNodes; k++)
 				nodes[k] = new Node3D();
 		}

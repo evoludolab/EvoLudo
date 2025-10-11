@@ -72,7 +72,7 @@ import org.evoludo.util.Formatter;
  * @param <N> type of network
  * @param <G> type of graph
  */
-public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph<T, N>> extends AbstractView
+public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGraph<T, N>> extends AbstractView
 		implements TooltipProvider.Index {
 
 	/**
@@ -144,7 +144,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 		// check if all graphs have layout
 		for (G graph : graphs) {
 			// graph may not have a network (e.g. for ODE/SDE models)
-			Network net = graph.getNetwork();
+			Network<?> net = graph.getNetwork();
 			if (net == null)
 				continue;
 			Status status = net.getStatus();
@@ -166,7 +166,7 @@ public abstract class GenericPop<T, N extends Network, G extends GenericPopGraph
 	protected void destroyGraphs() {
 		// super takes care of removing graphs, just deal with networks here
 		for (G graph : graphs) {
-			Network net = graph.getNetwork();
+			Network<?> net = graph.getNetwork();
 			if (net != null)
 				net.cancelLayout();
 			graph.invalidate();

@@ -77,7 +77,7 @@ import com.google.gwt.user.client.ui.Label;
  * @see Network3DGWT
  */
 @SuppressWarnings("java:S110")
-public abstract class GenericPopGraph<T, N extends Network> extends AbstractGraph<T[]>
+public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractGraph<T[]>
 		implements Network.LayoutListener, Zooming, DoubleClickHandler {
 
 	/**

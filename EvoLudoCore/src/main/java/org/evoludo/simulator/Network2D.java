@@ -41,20 +41,12 @@ import org.evoludo.geom.Vector2D;
  *
  * @author Christoph Hauert
  */
-public abstract class Network2D extends Network {
+public abstract class Network2D extends Network<Node2D> {
 
 	/**
 	 * The links in this network.
 	 */
 	protected Path2D links = new Path2D();
-
-	/**
-	 * The array with all nodes of this network. This deliberately overrides
-	 * {@code super.nodes}. The two arrays are identical but saves a ton of
-	 * unnecesary casts.
-	 */
-	@SuppressWarnings("hiding")
-	protected Node2D[] nodes = null;
 
 	/**
 	 * Create a new network in 2D for the given engine and geometry.
@@ -81,7 +73,6 @@ public abstract class Network2D extends Network {
 	public void initNodes(double pnorm, double nnorm, double unitradius) {
 		if (nodes == null || nodes.length != nNodes) {
 			nodes = new Node2D[nNodes];
-			super.nodes = this.nodes;
 			for (int k = 0; k < nNodes; k++)
 				nodes[k] = new Node2D();
 		}

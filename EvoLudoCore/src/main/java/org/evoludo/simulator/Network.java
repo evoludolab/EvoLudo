@@ -48,7 +48,7 @@ import org.evoludo.math.RNGDistribution;
  * @see Network2D
  * @see Network3D
  */
-public abstract class Network extends AbstractList<Node> implements Iterator<Node> {
+public abstract class Network<N extends Node> extends AbstractList<N> implements Iterator<N> {
 
 	/**
 	 * Interface for GUI elements that are interested in receiving updates regarding
@@ -162,7 +162,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	/**
 	 * The array with all nodes of this network.
 	 */
-	protected Node[] nodes = null;
+	protected N[] nodes = null;
 
 	/**
 	 * The structure of the population.
@@ -494,7 +494,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 		if (status.equals(Status.NO_LAYOUT) || status.equals(Status.HAS_MESSAGE))
 			return; // nothing to shake (lattice)
 		double scaledquake = quake * radius;
-		for (Node node : nodes)
+		for (N node : nodes)
 			node.shake(scaledquake);
 		setStatus(Status.ADJUST_LAYOUT);
 		doLayout(ll);
@@ -509,7 +509,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	public void scaleRadiusTo(double newradius) {
 		double scale = newradius / this.radius;
 		this.radius = newradius;
-		for (Node node : nodes)
+		for (N node : nodes)
 			node.scaleR(scale);
 	}
 
@@ -606,8 +606,8 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	}
 
 	@Override
-	public Node set(int index, Node element) {
-		Node old = nodes[index];
+	public N set(int index, N element) {
+		N old = nodes[index];
 		nodes[index] = element;
 		return old;
 	}
@@ -641,7 +641,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	}
 
 	@Override
-	public Node next() {
+	public N next() {
 		if (!hasNext()) {
 			throw new java.util.NoSuchElementException();
 		}
@@ -649,8 +649,8 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	}
 
 	@Override
-	public Iterator<Node> iterator() {
-		return new Iterator<Node>() {
+	public Iterator<N> iterator() {
+		return new Iterator<N>() {
 
 			/**
 			 * Counter for the iterator over all nodes.
@@ -663,7 +663,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 			}
 
 			@Override
-			public Node next() {
+			public N next() {
 				if (!hasNext()) {
 					throw new java.util.NoSuchElementException();
 				}
@@ -678,7 +678,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 			return true;
 		if (obj == null || getClass() != obj.getClass())
 			return false;
-		Network other = (Network) obj;
+		Network<?> other = (Network<?>) obj;
 		// Compare relevant fields for equality
 		if (nNodes != other.nNodes)
 			return false;
