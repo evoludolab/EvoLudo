@@ -316,7 +316,7 @@ public abstract class Model implements CLOProvider {
 		 * Modules that offer individual based simulation models with continuous traits
 		 * and pairwise interactions must implement this interface.
 		 */
-		interface CPairs extends HasIBS, Features.Pairs {
+		interface CPairs extends MCPairs {
 			/**
 			 * Calculate the payoff/score for modules with interactions in pairs and a
 			 * single continuous trait. The focal individual has trait {@code me} and the
@@ -336,12 +336,19 @@ public abstract class Model implements CLOProvider {
 			 * 
 			 * @param me           the trait of the focal individual
 			 * @param groupTraits  the traits of the group members
-			 * @param len          the number of memebrs in the group
+			 * @param len          the number of members in the group
 			 * @param groupPayoffs the array for returning the payoffs/scores for each group
 			 *                     member
 			 * @return the total (accumulated) payoff/score for the focal individual
 			 */
 			public double pairScores(double me, double[] groupTraits, int len, double[] groupPayoffs);
+
+			@Override
+			default double pairScores(double[] me, double[] groupTraits, int len, double[] groupPayoffs) {
+				if (me.length != 1)
+					throw new IllegalArgumentException("single-trait pairScores expects exactly one trait");
+				return pairScores(me[0], groupTraits, len, groupPayoffs);
+			}
 		}
 
 		/**
@@ -404,7 +411,7 @@ public abstract class Model implements CLOProvider {
 			 * 
 			 * @param me           the trait of the focal individual
 			 * @param groupTraits  the traits of the group members
-			 * @param len          the number of memebrs in the group
+			 * @param len          the number of members in the group
 			 * @param groupPayoffs the array for returning the payoffs/scores for each group
 			 *                     member
 			 * @return the total (accumulated) payoff/score for the focal individual
@@ -440,7 +447,7 @@ public abstract class Model implements CLOProvider {
 			 * 
 			 * @param me      the traits of the focal individual
 			 * @param group   the traits of the group members
-			 * @param len     the number of memebrs in the group
+			 * @param len     the number of members in the group
 			 * @param payoffs the array for returning the payoffs/scores for each group
 			 *                member
 			 * @return the payoff/score for the focal individual
