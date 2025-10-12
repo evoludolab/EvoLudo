@@ -72,7 +72,6 @@ public class IBSCPopulation extends IBSMCPopulation {
 	 * Temporary storage for the traits of the focal individual. This deliberately
 	 * hides the array of the same name in {@code IBSMCPopulation}.
 	 */
-	@SuppressWarnings("hiding")
 	double myTrait;
 
 	/**
@@ -114,6 +113,13 @@ public class IBSCPopulation extends IBSMCPopulation {
 		traitsNext[b] = traits[a];
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Continuous modules with multiple traits never get here.
+	 * 
+	 * @see IBSMCPopulation#playPairGameAt(int)
+	 */
 	@Override
 	public void playPairGameAt(IBSGroup group) {
 		int me = group.focal;
@@ -143,6 +149,13 @@ public class IBSCPopulation extends IBSMCPopulation {
 			opponent.updateScoreAt(group.group[i], groupScores[i]);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Continuous modules with multiple traits never get here.
+	 * 
+	 * @see IBSMCPopulation#adjustPairGameScoresAt(int)
+	 */
 	@Override
 	public void adjustPairGameScoresAt(int me) {
 		// gather players
@@ -192,6 +205,13 @@ public class IBSCPopulation extends IBSMCPopulation {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Continuous modules with multiple traits never get here.
+	 * 
+	 * @see IBSMCPopulation#playGroupGameAt(int)
+	 */
 	@Override
 	public void playGroupGameAt(IBSGroup group) {
 		int size = group.nSampled;
@@ -255,6 +275,13 @@ public class IBSCPopulation extends IBSMCPopulation {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Continuous modules with multiple traits never get here.
+	 * 
+	 * @see IBSMCPopulation#yalpGroupGameAt(int)
+	 */
 	@Override
 	public void yalpGroupGameAt(IBSGroup group) {
 		if (group.nSampled <= 0)

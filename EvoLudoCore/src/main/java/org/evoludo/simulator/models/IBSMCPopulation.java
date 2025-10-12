@@ -252,34 +252,34 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	/**
 	 * The array for temporarily storing traits during updates.
 	 */
-	protected double[] traitsNext;
+	double[] traitsNext;
 
 	/**
 	 * Temporary storage for traits of individuals in group interactions.
 	 */
-	protected double[] tmpGroup;
+	double[] tmpGroup;
 
 	/**
 	 * Temporary storage for traits of individuals in small sub-group interactions.
 	 */
-	protected double[] smallTrait;
+	double[] smallTrait;
 
 	/**
 	 * Temporary storage for the traits of the focal individual.
 	 */
-	protected double[] myTrait;
+	double[] myTraits;
 
 	/**
 	 * Temporary storage for the traits of the focal individual before
 	 * the update. Used for adjusting scores.
 	 */
-	protected double[] oldTrait;
+	double[] oldTraits;
 
 	/**
 	 * Temporary storage for the scores of each participant prior to group
 	 * interactions.
 	 */
-	protected double[] oldScores;
+	double[] oldScores;
 
 	@Override
 	public void updateFromModelAt(int index, int modelPlayer) {
@@ -397,7 +397,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		int oppntraits = opponent.nTraits;
 		for (int i = 0; i < group.nSampled; i++)
 			System.arraycopy(opptraits, group.group[i] * oppntraits, tmpGroup, i * oppntraits, oppntraits);
-		System.arraycopy(traits, group.focal * nTraits, myTrait, 0, nTraits);
+		System.arraycopy(traits, group.focal * nTraits, myTraits, 0, nTraits);
 	}
 
 	@Override
@@ -437,6 +437,13 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		updateFitnessAt(index);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Continuous modules with a single trait never get here.
+	 * 
+	 * @see IBSCPopulation#playPairGameAt(int)
+	 */
 	@Override
 	public void playPairGameAt(IBSGroup group) {
 		int me = group.focal;
@@ -453,7 +460,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 			return;
 		}
 		gatherPlayers(group);
-		double myScore = pairmodule.pairScores(myTrait, tmpGroup, group.nSampled,
+		double myScore = pairmodule.pairScores(myTraits, tmpGroup, group.nSampled,
 				groupScores);
 		if (ephemeralScores) {
 			// no need to update scores of everyone else
@@ -466,6 +473,13 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 			opponent.updateScoreAt(group.group[i], groupScores[i]);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Continuous modules with a single trait never get here.
+	 * 
+	 * @see IBSCPopulation#adjustPairGameScoresAt(int)
+	 */
 	@Override
 	public void adjustPairGameScoresAt(int me) {
 		// gather players
@@ -488,10 +502,10 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		}
 		int nInter = nOut + nIn;
 		int offset = me * nTraits;
-		System.arraycopy(traits, offset, oldTrait, 0, nTraits);
-		System.arraycopy(traitsNext, offset, myTrait, 0, nTraits);
-		double oldScore = pairmodule.pairScores(oldTrait, tmpGroup, nInter, oldScores);
-		double newScore = pairmodule.pairScores(myTrait, tmpGroup, nInter, groupScores);
+		System.arraycopy(traits, offset, oldTraits, 0, nTraits);
+		System.arraycopy(traitsNext, offset, myTraits, 0, nTraits);
+		double oldScore = pairmodule.pairScores(oldTraits, tmpGroup, nInter, oldScores);
+		double newScore = pairmodule.pairScores(myTraits, tmpGroup, nInter, groupScores);
 		commitTraitAt(me);
 		if (playerScoreAveraged) {
 			double iInter = 1.0 / nInter;
@@ -519,6 +533,13 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Continuous modules with a single trait never get here.
+	 * 
+	 * @see IBSCPopulation#playGroupGameAt(int)
+	 */
 	@Override
 	public void playGroupGameAt(IBSGroup group) {
 		int me = group.focal;
@@ -546,7 +567,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 						for (int i = 0; i < nGroup - 1; i++)
 							System.arraycopy(tmpGroup, ((n + i) % group.nSampled) * nTraits, smallTrait, i * nTraits,
 									nTraits);
-						myScore += groupmodule.groupScores(myTrait, smallTrait, nGroup - 1, groupScores);
+						myScore += groupmodule.groupScores(myTraits, smallTrait, nGroup - 1, groupScores);
 						if (ephemeralScores)
 							continue;
 						for (int i = 0; i < nGroup - 1; i++)
@@ -567,7 +588,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 				//$FALL-THROUGH$
 			case RANDOM:
 				// interact with sampled neighbors
-				double myScore = groupmodule.groupScores(myTrait, tmpGroup, group.nSampled, groupScores);
+				double myScore = groupmodule.groupScores(myTraits, tmpGroup, group.nSampled, groupScores);
 				if (ephemeralScores) {
 					resetScoreAt(me);
 					setScoreAt(me, myScore, 1);
@@ -583,6 +604,13 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * Continuous modules with a single trait never get here.
+	 * 
+	 * @see IBSCPopulation#yalpGroupGameAt(int)
+	 */
 	@Override
 	public void yalpGroupGameAt(IBSGroup group) {
 		double myScore;
@@ -596,7 +624,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 				for (int i = 0; i < nGroup - 1; i++)
 					System.arraycopy(tmpGroup, ((n + i) % group.nSampled) * nTraits, smallTrait, i * nTraits,
 							nTraits);
-				myScore += groupmodule.groupScores(myTrait, smallTrait, nGroup - 1, groupScores);
+				myScore += groupmodule.groupScores(myTraits, smallTrait, nGroup - 1, groupScores);
 				for (int i = 0; i < nGroup - 1; i++)
 					smallScores[(n + i) % group.nSampled] += groupScores[i];
 			}
@@ -606,7 +634,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 			return;
 		}
 		// interact with full group (random graphs)
-		myScore = groupmodule.groupScores(myTrait, tmpGroup, group.nSampled, groupScores);
+		myScore = groupmodule.groupScores(myTraits, tmpGroup, group.nSampled, groupScores);
 		removeScoreAt(group.focal, myScore);
 		for (int i = 0; i < group.nSampled; i++)
 			opponent.removeScoreAt(group.group[i], groupScores[i]);
@@ -931,8 +959,8 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 			traits = new double[nPopulation * nTraits];
 		if (traitsNext == null || traitsNext.length != nPopulation * nTraits)
 			traitsNext = new double[nPopulation * nTraits];
-		if (myTrait == null || myTrait.length != nTraits)
-			myTrait = new double[nTraits];
+		if (myTraits == null || myTraits.length != nTraits)
+			myTraits = new double[nTraits];
 
 		return doReset;
 	}
@@ -1019,12 +1047,12 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		if (meantrait == null || meantrait.length != 2 * nTraits)
 			meantrait = new double[2 * nTraits];
 		if (adjustScores) {
-			if (oldTrait == null || oldTrait.length != nTraits)
-				oldTrait = new double[nTraits];
+			if (oldTraits == null || oldTraits.length != nTraits)
+				oldTraits = new double[nTraits];
 			if (oldScores == null || oldScores.length != maxGroup)
 				oldScores = new double[maxGroup];
 		} else {
-			oldTrait = null;
+			oldTraits = null;
 			oldScores = null;
 		}
 	}
