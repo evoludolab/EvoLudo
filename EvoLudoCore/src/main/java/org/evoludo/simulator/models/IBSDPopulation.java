@@ -1810,6 +1810,7 @@ public class IBSDPopulation extends IBSPopulation {
 				int mutant = initMutant();
 				FixationData fix = engine.getModel().getFixationData();
 				if (fix != null) {
+					fix.popSize = getPopulationSize();
 					fix.mutantNode = mutant;
 					fix.mutantTrait = (mutant < 0 ? mutant : getTraitAt(mutant));
 					fix.residentTrait = (int) init.args[1];
@@ -1831,8 +1832,8 @@ public class IBSDPopulation extends IBSPopulation {
 				initKaleidoscope();
 				break;
 
-			case NUMBER:
-				initNumber();
+			// case NUMBER:
+			// 	initNumber();
 		}
 		if (ArrayMath.norm(traitsCount) != nPopulation)
 			// fatal does not return control
@@ -1864,27 +1865,27 @@ public class IBSDPopulation extends IBSPopulation {
 		}
 	}
 
-	protected void initNumber() {
-		Arrays.fill(strategiesTypeCount, 0);
-		// different traits active
-		List<Integer> strategyInds = new ArrayList<>();
-        for (int i = 0; i < nPopulation; i++) {
-            strategyInds.add(i);
-        }
-		Collections.shuffle(strategyInds);
+	// protected void initNumber() {
+	// 	Arrays.fill(strategiesTypeCount, 0);
+	// 	// different traits active
+	// 	List<Integer> strategyInds = new ArrayList<>();
+    //     for (int i = 0; i < nPopulation; i++) {
+    //         strategyInds.add(i);
+    //     }
+	// 	Collections.shuffle(strategyInds);
 
-		for (int aStrat =0;aStrat<init.args.length; aStrat++){
-			int popNumber = (int) init.args[aStrat];
-			List<Integer> specStrategyInds = new ArrayList<>(strategyInds.subList(0, popNumber));
-			strategyInds.subList(0, popNumber).clear();
+	// 	for (int aStrat =0;aStrat<init.args.length; aStrat++){
+	// 		int popNumber = (int) init.args[aStrat];
+	// 		List<Integer> specStrategyInds = new ArrayList<>(strategyInds.subList(0, popNumber));
+	// 		strategyInds.subList(0, popNumber).clear();
 
-			for (int strategyInd: specStrategyInds){
-				strategies[strategyInd]=aStrat;
-				strategiesTypeCount[aStrat]++;
-			}
-		}
+	// 		for (int strategyInd: specStrategyInds){
+	// 			strategies[strategyInd]=aStrat;
+	// 			strategiesTypeCount[aStrat]++;
+	// 		}
+	// 	}
 	
-	}
+	// }
 
 	/**
 	 * Initial configuration with trait frequencies as specified in arguments.
@@ -2051,7 +2052,7 @@ public class IBSDPopulation extends IBSPopulation {
 			initMono(residentType, monoFreq);
 			// check if resident population went extinct or a single survivor
 			// check if resident population went extinct or only a single survivor
-			if (traitsCount[VACANT] >= nPopulation - 1)
+			if (traitsCount[VACANT] >= nPopulation)
 				return -1;
 			// change trait of random resident to a mutant
 			int idx = random0n(getPopulationSize());

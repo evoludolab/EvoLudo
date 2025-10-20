@@ -37,16 +37,19 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.evoludo.math.Distributions;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.models.ChangeListener;
+import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.IBSPopulation;
+import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.modules.EcoMoran;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
+import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -60,7 +63,7 @@ import org.evoludo.util.Plist;
  *      <a href='http://dx.doi.org/10.1038/nature03204'>doi:
  *      10.1038/nature03204</a>"
  */
-public class simEMoran extends EcoMoran implements ChangeListener {
+public class simEMoranFix extends EcoMoran {
 
 	/**
 	 * The number of samples for statistics.
@@ -79,76 +82,79 @@ public class simEMoran extends EcoMoran implements ChangeListener {
 	
 
 	/**
+	 * The EvoLudoJRE engine for running the simulation. This is a convenience field
+	 * that saves us casting engine to EvoLudoJRE every time we need to access its
+	 * methods.
+	 */
+	EvoLudoJRE jrengine;
+
+	/**
 	 * Create a new simulation to investigate fixation probabilities and times in
 	 * the Moran process.
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	public simEMoran(EvoLudo engine) {
+	public simEMoranFix(EvoLudoJRE engine) {
 		super(engine);
+		out = engine.getOutput();
+		jrengine = engine;
 	}
-
-	private List<String> statuses;
-	private List<String> geometries;
-	private List<String> allTimes;
-
-	private String successString = "1";
 
 	@Override
 	public void run() {
 		
-		
-        // Simulate single pop
+		model.requestMode(Mode.STATISTICS_SAMPLE);
+		long nextReport = -1;
+		long msecStart = System.currentTimeMillis();
 
-        out = ((EvoLudoJRE) engine).getOutput();
-        
-        // assumes IBS simulations
-		IBSDPopulation pop = (IBSDPopulation) getIBSPopulation();
-		nSamples  = (int) engine.getModel().getTimeStop();
-		allTimes = new ArrayList<>();
-		
-        // // print header
-        // engine.dumpParameters();
+		if (progress)
+			nextReport = 10;
+
+		engine.writeHeader();
+		out = jrengine.getOutput();
+		if (engine.cloSeed.isSet()) {
+			// RNG seed is set. now clear seed to obtain reproducible statistics
+			// rather just a single data point repeatedly
+			engine.getRNG().clearRNGSeed();
+		}
+
+		long nSamples = (long) engine.getModel().getNSamples();
+		double[][] fixProb = new double[nPopulation][2];
 
 		// evolve population
-		statuses = new ArrayList<>();
-		geometries = new ArrayList<>();
-
 		for (long r = 1; r <= nSamples; r++) {
-			engine.modelNext();
-			// statuses.add(engine.getModel().getStatus());
-			// geometries.add(Double.toString(engine.getModule().getIBSPopulation().getFitnessAt(1)));
+			FixationData fixData = jrengine.generateSample();
+			int typeFixed = (fixData.typeFixed == fixData.mutantTrait ? 0 : 1);
+			fixProb[fixData.popSize-1][typeFixed]++;
+
+			if (progress && nextReport == r) {
+				out.println("# runs: " + r + ", " + msecToString(System.currentTimeMillis() - msecStart));
+				nextReport *= 10;
+			}
+		}
+		double meanFix = 0.0;
+		double unweightedSamples = 0.0;
+		out.println("Population Size, Number Mutant Fixed, Number Resident Fixed");
+		double weightedSamples = 0.0;
+		double nodeSamples;
+		for (int n = 1; n < nPopulation+1; n++) {
 			
-			// geometries.add(values.get(0));
+			double[] node = fixProb[n-1];
+			out.println(n+", "+node[0]+", "+ node[1]);
+			nodeSamples = node[0]+node[1];
+			if (nodeSamples==0){
+				continue;
+			}
+			weightedSamples+=nodeSamples*n;
+			unweightedSamples+=nodeSamples;
+			meanFix +=node[0]*n;
 		}
-		// engine.dumpEnd();
-
-		for (String status : statuses) {
-			out.println(status);
-		}
-		for (String geometry : geometries) {
-			out.println(geometry);
-		}
-		for (String time : allTimes) {
-			out.println(time);
-		}
-
-        // Initial state:
-		// nSamples = 50;
-		// String[] splitCLO = engine.getSplitCLO();
-		// String geometry = splitCLO[3].replace(' ','_');
-		// String deathrate = splitCLO[9].replace(' ','_');
-		// for (long r = 1; r <= nSamples; r++) {
-		// 	while (engine.getModel().hasConverged()){
-		// 		engine.modelReset();
-		// 	}
-		// 	engine.exportState("init_"+geometry+"_"+deathrate+"_repeat_"+r+".plist");
-		// 	engine.modelReset();
-		// }
-		// engine.dumpEnd();
-
-
-
+		meanFix/=weightedSamples;
+		out.println("Overal weighted fixation probability: "+meanFix);
+		out.println("Number of samples: "+unweightedSamples);
+		out.flush();
+		engine.writeFooter();
+		engine.exportState();
 	}
 
 	/**
@@ -207,90 +213,30 @@ public class simEMoran extends EcoMoran implements ChangeListener {
 	// 			}
 	// 		});
 
-	// /**
-	//  * Command line option to show the simulation progress.
-	//  */
-	// final CLOption cloProgress = new CLOption("progress", EvoLudo.catSimulation,
-	// 		"--progress      print progress reports",
-	// 		new CLODelegate() {
-	// 			@Override
-	// 			public boolean parse(String arg) {
-	// 				progress = cloProgress.isSet();
-	// 				return true;
-	// 			}
-	// 		});
+	/**
+	 * Command line option to show the simulation progress.
+	 */
+	final CLOption cloProgress = new CLOption("progress", Category.Simulation,
+			"--progress      print progress reports",
+			new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
+					progress = cloProgress.isSet();
+					return true;
+				}
+			});
 
 	@Override
 	public void collectCLO(CLOParser parser) {
 		// prepare command line options
 		// parser.addCLO(cloSamples);
-		// parser.addCLO(cloProgress);
+		parser.addCLO(cloProgress);
 
 		super.collectCLO(parser);
-		// parser.removeCLO("timeend");
 	}
 
 	public static void main(String[] args) {
 		EvoLudoJRE engine = new EvoLudoJRE(false);
-		engine.custom(new simEMoran(engine), args);
-	}
-
-	/**
-	 * Time of previous sample.
-	 */
-	double prevsample;
-	@Override
-	public synchronized void modelChanged(PendingAction pending) {
-		double generation = model.getTime();
-		if (model.isRelaxing() || prevsample >= generation) {
-			return;
-		}
-		prevsample = generation;
-
-		String scores = engine.getModule().getIBSPopulation().getScores(2);
-		List<String> values = Arrays.stream(scores.split(","))
-						.map(String::trim)
-						.collect(Collectors.toList());
-		int[][] outNodes = engine.getModule().getGeometry().out;
-		double nvv = 0.0;
-		double nav = 0.0;
-		double naa = 0.0;
-		double na = 0.0;
-		for (int n = 0; n < values.size(); n++){
-			String node = values.get(n);
-			if (node.equals(successString)){
-				na++;
-			}
-			for (int adj: outNodes[n]){
-				String adjNode = values.get(adj);
-				if (node.equals(successString)){
-					if (adjNode.equals(successString)){
-						naa++;
-					}
-					else {
-						nav++;
-					}
-				}
-				else {
-					if (adjNode.equals(successString)){
-						nav++;
-					}
-					else {
-						nvv++;
-					}
-				}
-				// for (int trip: outNodes[adj]){
-				// 	String tripNode = values.get(trip);
-				// 	int sumval = 
-				// 	if (trip!=n){
-				// 		if 
-				// 	}
-				// }
-			}
-		}
-
-		geometries.add("Nav "+String.valueOf(nav));
-		statuses.add("Na "+String.valueOf(na));
-		allTimes.add("Time: "+String.valueOf(generation));
+		engine.custom(new simEMoranFix(engine), args);
 	}
 }
