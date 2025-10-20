@@ -32,8 +32,13 @@ package org.evoludo.simulator.modules;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.logging.Level;
 
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.IBSC;
+import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Type;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -45,22 +50,7 @@ import org.evoludo.util.Formatter;
  * 
  * @author Christoph Hauert
  */
-public abstract class Continuous extends Module {
-
-	/**
-	 * The list {@code species} contains references to each species in this
-	 * module. It deliberately shadows {@link Module#species} to simplify
-	 * bookkeeping. During instantiation {@link Module#species} and
-	 * {@code species} are linked to represent one and the same list.
-	 * <p>
-	 * <strong>IMPORTANT:</strong> currently continuous models support only a single
-	 * species.
-	 *
-	 * @see #Continuous(EvoLudo, Continuous)
-	 * @see Module#species
-	 */
-	@SuppressWarnings("hiding")
-	ArrayList<Continuous> species;
+public abstract class Continuous extends Module<Continuous> {
 
 	/**
 	 * Shortcut for species.get(0) as long as continuous modules are restricted to a
@@ -114,7 +104,7 @@ public abstract class Continuous extends Module {
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	public Continuous(EvoLudo engine) {
+	protected Continuous(EvoLudo engine) {
 		this(engine, null);
 	}
 
@@ -125,7 +115,7 @@ public abstract class Continuous extends Module {
 	 * 
 	 * @param partner the partner species
 	 */
-	public Continuous(Continuous partner) {
+	protected Continuous(Continuous partner) {
 		this(partner.engine, partner);
 	}
 
@@ -140,50 +130,18 @@ public abstract class Continuous extends Module {
 	 */
 	protected Continuous(EvoLudo engine, Continuous partner) {
 		super(engine, partner);
-		if (partner == null) {
-			species = new ArrayList<Continuous>();
-			// recall this.species shadows super.species for later convenience
-			super.species = species;
-		} else {
-			// link ArrayList<Discrete> shadows
-			species = partner.species;
-		}
-		add(this);
-		// useful shortcut as long as continuous modules are restricted to single
-		// species
+		if (partner == null)
+			species = new ArrayList<>(Collections.singleton(this));
+		// shortcut while continuous modules are restricted to single species
 		population = this;
 	}
 
-	/**
-	 * Add {@code cpop} to list of species. Duplicate entries are ignored.
-	 * Allocate new list if necessary. Assign generic name to species if none
-	 * provided.
-	 *
-	 * @param cpop the module to add to species list.
-	 * @return {@code true} if {@code dpop} successfully added;
-	 *         {@code false} adding failed or already included in list.
-	 */
-	public boolean add(Continuous cpop) {
-		// do not add duplicates
-		if (species.contains(cpop))
-			return false;
-		if (!species.add(cpop))
-			return false;
-		switch (species.size()) {
-			case 1:
-				break;
-			case 2:
-				// start naming species (if needed)
-				for (Module pop : species) {
-					if (pop.getName().length() < 1)
-						pop.setName("Species-" + pop.ID);
-				}
-				break;
-			default:
-				if (cpop.getName().length() < 1)
-					cpop.setName("Species-" + cpop.ID);
-		}
-		return true;
+	@Override
+	public Model createModel(Type type) {
+		Model mod = super.createModel(type);
+		if (mod != null)
+			return mod;
+		return new IBSC(engine);
 	}
 
 	@Override
@@ -209,8 +167,9 @@ public abstract class Continuous extends Module {
 		for (int s = 0; s < nTraits; s++) {
 			if (traitMax[s] <= traitMin[s]) {
 				// set to default
-				logger.warning("invalid trait range [" + Formatter.format(traitMin[s], 4) + ", "
-						+ Formatter.format(traitMax[s], 4) + "] for trait " + s + " - reset to [0, 1]!");
+				if (logger.isLoggable(Level.WARNING))
+					logger.warning("invalid trait range [" + Formatter.format(traitMin[s], 4) + ", "
+							+ Formatter.format(traitMax[s], 4) + "] for trait " + s + " - reset to [0, 1]!");
 				setTraitRange(0.0, 1.0, s);
 				doReset = true;
 			}
@@ -316,12 +275,6 @@ public abstract class Continuous extends Module {
 	 * benefit functions.
 	 */
 	public class Traits2Payoff {
-
-		/**
-		 * Constructs a new map for converting traits into oayoffs.
-		 */
-		public Traits2Payoff() {
-		}
 
 		/**
 		 * The array of cost functions, one for each trait.
@@ -1041,7 +994,7 @@ public abstract class Continuous extends Module {
 						for (int i = 0; i < nTraits; i++) {
 							String trange = traitranges[i % traitranges.length];
 							double[] range = CLOParser.parseVector(trange);
-							if (range == null || range.length < 2 || range[0] > range[1])
+							if (range.length < 2 || range[0] > range[1])
 								return false;
 							cpop.setTraitRange(range[0], range[1], i);
 						}
@@ -1062,17 +1015,19 @@ public abstract class Continuous extends Module {
 									+ "             0: " + getTraitName(0) + "\n" //
 									+ "             1: " + getTraitName(1);
 						default:
-							String descr = "--traitrange <min0" + CLOParser.VECTOR_DELIMITER + "max0[" //
-									+ CLOParser.TRAIT_DELIMITER + "..."
-									+ CLOParser.TRAIT_DELIMITER + "min" + (nTraits - 1)
-									+ CLOParser.VECTOR_DELIMITER + "max" + (nTraits - 1) //
-									+ "]>  range of traits, with";
+							StringBuilder descr = new StringBuilder();
+							descr.append("--traitrange <min0").append(CLOParser.VECTOR_DELIMITER).append("max0[")
+									.append(CLOParser.TRAIT_DELIMITER).append("...")
+									.append(CLOParser.TRAIT_DELIMITER).append("min").append(nTraits - 1)
+									.append(CLOParser.VECTOR_DELIMITER).append("max").append(nTraits - 1)
+									.append("]>  range of traits, with");
 							for (int n = 0; n < nTraits; n++) {
 								String aTrait = "              " + n + ": ";
 								int traitlen = aTrait.length();
-								descr += "\n" + aTrait.substring(traitlen - 16, traitlen) + getTraitName(n);
+								descr.append("\n").append(aTrait.substring(traitlen - 16, traitlen))
+										.append(getTraitName(n));
 							}
-							return descr;
+							return descr.toString();
 					}
 				}
 			});
@@ -1103,7 +1058,7 @@ public abstract class Continuous extends Module {
 					for (int n = 0; n < nTraits; n++) {
 						String cstf = cstfs[n % cstfs.length];
 						Costs type = (Costs) cloCosts.match(cstf);
-						String[] cstfargs = cstf.split("\\s+|=");
+						String[] cstfargs = cstf.split(CLOParser.SPLIT_ARG_REGEX);
 						double[] args;
 						if (type == null) {
 							if (prevtype == null)
@@ -1111,15 +1066,17 @@ public abstract class Continuous extends Module {
 							type = prevtype;
 							args = CLOParser.parseVector(cstfargs[0]);
 						} else if (type.nParams > 0 && cstfargs.length < 2) {
-							logger.warning(
-									"costs function type '" + type + " requires " + type.nParams + " arguments!");
+							if (logger.isLoggable(Level.WARNING))
+								logger.warning(
+										"costs function type '" + type + " requires " + type.nParams + " arguments!");
 							return false;
 						} else
 							args = CLOParser.parseVector(cstfargs[1]);
 						prevtype = type;
 						if (args.length != type.nParams) {
-							logger.warning("costs function type '" + type + " requires " + type.nParams
-									+ " costs but found '" + Formatter.format(args, 2) + "'!");
+							if (logger.isLoggable(Level.WARNING))
+								logger.warning("costs function type '" + type + " requires " + type.nParams
+										+ " costs but found '" + Formatter.format(args, 2) + "'!");
 							if (args.length < type.nParams)
 								return false;
 						}
@@ -1157,7 +1114,7 @@ public abstract class Continuous extends Module {
 					for (int n = 0; n < nTraits; n++) {
 						String bftf = bftfs[n % bftfs.length];
 						Benefits type = (Benefits) cloBenefits.match(bftf);
-						String[] bftfargs = bftf.split("\\s+|=");
+						String[] bftfargs = bftf.split(CLOParser.SPLIT_ARG_REGEX);
 						double[] args;
 						if (type == null) {
 							if (prevtype == null)
@@ -1165,15 +1122,18 @@ public abstract class Continuous extends Module {
 							type = prevtype;
 							args = CLOParser.parseVector(bftfargs[0]);
 						} else if (type.nParams > 0 && bftfargs.length < 2) {
-							logger.warning(
-									"benefits function type '" + type + " requires " + type.nParams + " arguments!");
+							if (logger.isLoggable(Level.WARNING))
+								logger.warning(
+										"benefits function type '" + type + " requires " + type.nParams
+												+ " arguments!");
 							return false;
 						} else
 							args = CLOParser.parseVector(bftfargs[1]);
 						prevtype = type;
 						if (args.length != type.nParams) {
-							logger.warning("benefits function type '" + type + " requires " + type.nParams
-									+ " arguments but found '" + Formatter.format(args, 2) + "'!");
+							if (logger.isLoggable(Level.WARNING))
+								logger.warning("benefits function type '" + type + " requires " + type.nParams
+										+ " arguments but found '" + Formatter.format(args, 2) + "'!");
 							if (args.length < type.nParams)
 								return false;
 						}
@@ -1196,10 +1156,10 @@ public abstract class Continuous extends Module {
 		// best-response is not an acceptable update rule for continuous traits -
 		// exclude Population.PLAYER_UPDATE_BEST_RESPONSE
 		playerUpdate.clo.removeKey(PlayerUpdate.Type.BEST_RESPONSE);
-//TODO: implement enabling/disabling traits as in discrete case
-//		// add option to disable traits if >=2 traits
-//		if (nTraits > 1)
-//			parser.addCLO(cloTraitDisable);
+		// TODO: implement enabling/disabling traits as in discrete case
+		// // add option to disable traits if >=2 traits
+		// if (nTraits > 1)
+		// parser.addCLO(cloTraitDisable);
 		parser.addCLO(mutation.clo);
 	}
 
@@ -1358,7 +1318,8 @@ public abstract class Continuous extends Module {
 	 *                    calculate minimum
 	 * @return the minimum or maximum score
 	 */
-	private double findExtrema(double[] resTrait, double[] mutTrait, int[] resIdx, int[] mutIdx, double[][] resInterval,
+	private double findExtrema(double[] resTrait, double[] mutTrait, int[] resIdx, int[] mutIdx,
+			double[][] resInterval,
 			double[][] mutInterval, double[] resScale, double[] mutScale, int[] resMax, int[] mutMax, double scoreMax,
 			int trait, double minmax) {
 

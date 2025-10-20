@@ -30,7 +30,6 @@
 
 package org.evoludo.simulator.views;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
@@ -38,6 +37,7 @@ import org.evoludo.graphics.ParaGraph;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
+import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
@@ -109,7 +109,7 @@ public class Phase2D extends AbstractView {
 		int nStates = model.getNMean();
 		if (state == null || state.length != nStates)
 			state = new double[nStates];
-		Module module = engine.getModule();
+		Module<?> module = engine.getModule();
 		if (graphs.size() != 1) {
 			graph = new ParaGraph(this, module);
 			wrapper.add(graph);
@@ -141,7 +141,7 @@ public class Phase2D extends AbstractView {
 	public void reset(boolean hard) {
 		super.reset(hard);
 
-		Module module = engine.getModule();
+		Module<?> module = engine.getModule();
 		graph.setMarkers(module.getMarkers());
 		// set map for converting data to phase plane coordinates
 		map = ((HasPhase2D) module).getPhase2DMap();
@@ -183,7 +183,7 @@ public class Phase2D extends AbstractView {
 
 	@Override
 	public void update(boolean force) {
-		double newtime = model.getTime();
+		double newtime = model.getUpdates();
 		if (Math.abs(timestamp - newtime) > 1e-8) {
 			model.getMeanTraits(state);
 			graph.addData(newtime, state, force);
@@ -199,13 +199,14 @@ public class Phase2D extends AbstractView {
 	 */
 	private String getXAxisLabel() {
 		int[] traitX = map.getTraitsX();
-		String xName = getTraitName(traitX[0]);
+		StringBuilder xName = new StringBuilder(getTraitName(traitX[0]));
 		int nx = traitX.length;
 		if (nx > 1) {
 			for (int n = 1; n < nx; n++)
-				xName += "+" + getTraitName(traitX[n]);
+				xName.append("+").append(getTraitName(traitX[n]));
 		}
-		return xName + (graph.getStyle().percentX ? " frequency" : " density");
+		xName.append(graph.getStyle().percentX ? " frequency" : " density");
+		return xName.toString();
 	}
 
 	/**
@@ -215,13 +216,14 @@ public class Phase2D extends AbstractView {
 	 */
 	private String getYAxisLabel() {
 		int[] traitY = map.getTraitsY();
-		String yName = getTraitName(traitY[0]);
+		StringBuilder yName = new StringBuilder(getTraitName(traitY[0]));
 		int ny = traitY.length;
 		if (ny > 1) {
 			for (int n = 1; n < ny; n++)
-				yName += "+" + getTraitName(traitY[n]);
+				yName.append("+").append(getTraitName(traitY[n]));
 		}
-		return yName + (graph.getStyle().percentY ? " frequency" : " density");
+		yName.append(graph.getStyle().percentY ? " frequency" : " density");
+		return yName.toString();
 	}
 
 	/**
@@ -232,14 +234,14 @@ public class Phase2D extends AbstractView {
 	 * @return the name of the trait
 	 */
 	private String getTraitName(int idx) {
-		Module module = engine.getModule();
-		ArrayList<? extends Module> species = module.getSpecies();
+		Module<?> module = engine.getModule();
+		List<? extends Module<?>> species = module.getSpecies();
 		int nSpecies = species.size();
 		if (nSpecies > 1) {
-			for (Module mod : species) {
+			for (Module<?> mod : species) {
 				int nTraits = mod.getNTraits();
 				if (idx < nTraits) {
-					if (nTraits == 1 || (nTraits == 2 && mod.getVacant() >= 0))
+					if (nTraits == 1 || (nTraits == 2 && mod.getVacantIdx() >= 0))
 						// omit species name for single trait or trait plus vacant
 						return mod.getTraitName(idx);
 					return mod.getName() + ": " + mod.getTraitName(idx);
@@ -255,14 +257,12 @@ public class Phase2D extends AbstractView {
 	@Override
 	public boolean setInitialState(double[] init) {
 		// no further processing should be needed - just forward to module and engine
-		Module module = engine.getModule();
-		if (module instanceof Discrete) {
-			// note: setInitialTraits requires different arguments for discrete and
-			// continuous modules
-			if (((org.evoludo.simulator.models.Discrete) model).setInitialTraits(init)) {
-				engine.modelInit();
-				return true;
-			}
+		Module<?> module = engine.getModule();
+		// note: setInitialTraits requires different arguments for discrete and
+		// continuous modules
+		if (module instanceof Discrete && ((DModel) model).setInitialTraits(init)) {
+			engine.modelInit();
+			return true;
 		}
 		return false;
 	}
@@ -271,26 +271,23 @@ public class Phase2D extends AbstractView {
 	public void populateContextMenu(ContextMenu menu) {
 		if (!map.hasFixedAxes()) {
 			// add context menu for configuring the phase plane axes
-			Module module = engine.getModule();
-			ArrayList<? extends Module> species = module.getSpecies();
+			Module<?> module = engine.getModule();
+			List<? extends Module<?>> species = module.getSpecies();
 			int nSpecies = species.size();
 			boolean isMultispecies = nSpecies > 1;
 			// no menu entries if single species and less than 3 traits
-			if (!isMultispecies) {
-				if (module.getNTraits() < 3) {
-					traitXMenu = traitYMenu = null;
-					traitXItems = traitYItems = null;
-					return;
-				}
-				// in multi-species models the menu includes species names
-				nSpecies = 0;
+			if (!isMultispecies && module.getNTraits() < 3) {
+				traitXMenu = traitYMenu = null;
+				traitXItems = traitYItems = null;
+				return;
 			}
+			// in multi-species models the menu includes species names
 			int totTraits = 0;
 			boolean isDensity = model.isDensity();
-			for (Module mod : species) {
-				int vidx = mod.getVacant();
+			for (Module<?> mod : species) {
+				int vidx = mod.getVacantIdx();
 				int nt = mod.getNTraits();
-				if (isDensity && nt == 1 | (nt == 2 && vidx >= 0))
+				if (isDensity && nt == 1 || (nt == 2 && vidx >= 0))
 					totTraits++;
 				else
 					totTraits += nt;
@@ -302,8 +299,8 @@ public class Phase2D extends AbstractView {
 				traitYMenu = new ContextMenu(menu);
 				traitYItems = new ContextMenuCheckBoxItem[totTraits];
 				int idx = 0;
-				for (Module mod : species) {
-					int vidx = mod.getVacant();
+				for (Module<?> mod : species) {
+					int vidx = mod.getVacantIdx();
 					int nt = mod.getNTraits();
 					if (isMultispecies && !(nt == 1 || (nt == 2 && vidx >= 0))) {
 						// add separator unless it's the first species

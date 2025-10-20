@@ -30,7 +30,7 @@
 
 package org.evoludo.simulator.views;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
@@ -62,7 +62,7 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 
 	@Override
 	public void reset(boolean clear) {
-		if( graphs.size()>0 ) {
+		if (!graphs.isEmpty()) {
 			super.reset(clear);
 			return;
 		}
@@ -92,8 +92,9 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 		y.min = 0.0;
 		y.majorTicks = 3;
 		y.minorTicks = 1;
-		
-		JScrollPane scroll = new JScrollPane(graph, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+		JScrollPane scroll = new JScrollPane(graph, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
+				ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		scroll.getViewport().setOpaque(false);
 		scroll.setOpaque(false);
 		graph.setOpaque(false);
@@ -106,7 +107,7 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 	@Override
 	public void initCustomMenu(JPopupMenu menu, AbstractGraph owner) {
 		super.initCustomMenu(menu, owner);
-//		initCMShowLocalDynamics(menu, owner);
+		// initCMShowLocalDynamics(menu, owner);
 		initCMTimeReversed(menu, owner);
 	}
 
@@ -114,63 +115,63 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 	public void getData(StateData data, int tag) {
 		Model model = engine.getModel();
 		int totTraits = 0;
-		for (Module mod : module.getSpecies()) 
+		for (Module<?> mod : module.getSpecies())
 			totTraits += mod.getNTraits();
 		double[] mean = new double[totTraits + 1];
 		model.getMeanTraits(mean);
 		System.arraycopy(mean, 0, mean, 1, totTraits);
-		data.time = model.getTime();
+		data.time = model.getUpdates();
 		mean[0] = data.time;
 		Point2D now = new Point2D();
-		data.time = model.getTime();
+		data.time = model.getUpdates();
 		data.connect = map.data2Phase(mean, now);
-		data.now.setLocation(now.x, 1.0-now.y);
+		data.now.setLocation(now.getX(), 1.0 - now.getY());
 	}
 
-// retire setting of initial state in phase planes (outdated JRE)
+	// retire setting of initial state in phase planes (outdated JRE)
 	// @Override
 	// public void setState(double[] loc) {
-	// 	Point2D xy = new Point2D(loc[0], 1.0 - loc[1]);
-	// 	int totTraits = 0;
-	// 	for (Module mod : module.getSpecies()) 
-	// 		totTraits += mod.getNTraits();
-	// 	double[] init = new double[totTraits];
-	// 	map.phase2Data(xy, init);
-	// 	((Discrete)module).setInit(init);
-	// 	// check required to transfer initial frequencies to ODE/SDE/PDE
-	// 	engine.modelCheck();
-	// 	engine.modelReinit();
+	// Point2D xy = new Point2D(loc[0], 1.0 - loc[1]);
+	// int totTraits = 0;
+	// for (Module<?> mod : module.getSpecies())
+	// totTraits += mod.getNTraits();
+	// double[] init = new double[totTraits];
+	// map.phase2Data(xy, init);
+	// ((Discrete)module).setInit(init);
+	// // check required to transfer initial frequencies to ODE/SDE/PDE
+	// engine.modelCheck();
+	// engine.modelReinit();
 	// }
 
 	private String getXAxisLabel() {
 		int[] traitX = map.getTraitsX();
-		String xName = getTraitName(traitX[0]);
+		StringBuilder xLabel = new StringBuilder(getTraitName(traitX[0]));
 		int nx = traitX.length;
 		if (nx > 1) {
 			for (int n = 1; n < nx; n++)
-				xName += "+" + getTraitName(traitX[n]);
+				xLabel.append("+").append(getTraitName(traitX[n]));
 		}
-		return xName;
+		return xLabel.toString();
 	}
 
 	private String getYAxisLabel() {
 		int[] traitY = map.getTraitsY();
-		String yName = getTraitName(traitY[0]);
+		StringBuilder yLabel = new StringBuilder(getTraitName(traitY[0]));
 		int ny = traitY.length;
 		if (ny > 1) {
 			for (int n = 1; n < ny; n++)
-				yName += "+" + getTraitName(traitY[n]);
+				yLabel.append("+").append(getTraitName(traitY[n]));
 		}
-		return yName;
+		return yLabel.toString();
 	}
 
 	private String getTraitName(int idx) {
-		ArrayList<? extends Module> species = module.getSpecies();
+		List<? extends Module<?>> species = module.getSpecies();
 		int nSpecies = species.size();
 		if (nSpecies > 1) {
-			for (Module mod : species) {
+			for (Module<?> mod : species) {
 				int nTraits = mod.getNTraits();
-				if (idx < nTraits)					
+				if (idx < nTraits)
 					return mod.getName() + ": " + mod.getTraitName(idx);
 				idx -= nTraits;
 			}
@@ -183,7 +184,7 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 	@Override
 	public String getToolTipText(Point2D loc, int tag) {
 		if (map instanceof BasicTooltipProvider)
-			return "<html>" + ((BasicTooltipProvider) map).getTooltipAt(loc.x, loc.y);
+			return "<html>" + ((BasicTooltipProvider) map).getTooltipAt(loc.getX(), loc.getY());
 		return null;
 	}
 
@@ -203,16 +204,18 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {
 			// NOTE: data[0] is time!
-			point.x = 1.0 - data[3];
-			point.y = Math.min(1.0, 1.0 - data[1] / (1.0 - data[3]));
+			point.set(1.0 - data[3],
+					Math.min(1.0, 1.0 - data[1] / (1.0 - data[3])));
 			return true;
 		}
 
 		@Override
 		public boolean phase2Data(Point2D point, double[] data) {
-			data[2] = 1.0 - point.x;
-			data[1] = point.x * (1.0 - point.y);
-			data[0] = point.x * point.y;
+			double x = point.getX();
+			double y = point.getY();
+			data[2] = 1.0 - x;
+			data[1] = x * (1.0 - y);
+			data[0] = x * y;
 			return true;
 		}
 
@@ -233,20 +236,23 @@ public class MVDPhase2D extends MVAbstract implements StateGraphListener {
 			tip += "<tr><td style='text-align:right'><i>" + getYAxisLabel() //
 					+ ":</i></td><td>" + Formatter.formatPercent(y, 2) + "</td></tr>";
 			tip += "<tr><td colspan='2' style='font-size:1pt'><hr/></td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + getTraitName(2) + ":</i></td><td>" + Formatter.formatPercent(1.0 - x, 2) + "</td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + getTraitName(1) + ":</i></td><td>" + Formatter.formatPercent(x * (1.0 - y), 2) + "</td></tr>";
-			tip += "<tr><td style='text-align:right'><i>" + getTraitName(0) + ":</i></td><td>" + Formatter.formatPercent(x * y, 2) + "</td></tr>";
+			tip += "<tr><td style='text-align:right'><i>" + getTraitName(2) + ":</i></td><td>"
+					+ Formatter.formatPercent(1.0 - x, 2) + "</td></tr>";
+			tip += "<tr><td style='text-align:right'><i>" + getTraitName(1) + ":</i></td><td>"
+					+ Formatter.formatPercent(x * (1.0 - y), 2) + "</td></tr>";
+			tip += "<tr><td style='text-align:right'><i>" + getTraitName(0) + ":</i></td><td>"
+					+ Formatter.formatPercent(x * y, 2) + "</td></tr>";
 			tip += "</table>";
 			return tip;
 		}
 
 		protected String getTraitName(int idx) {
-			ArrayList<? extends Module> species = module.getSpecies();
+			List<? extends Module<?>> species = module.getSpecies();
 			int nSpecies = species.size();
 			if (nSpecies > 1) {
-				for (Module mod : species) {
+				for (Module<?> mod : species) {
 					int nTraits = mod.getNTraits();
-					if (idx < nTraits)					
+					if (idx < nTraits)
 						return mod.getName() + ": " + mod.getTraitName(idx);
 					idx -= nTraits;
 				}

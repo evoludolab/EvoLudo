@@ -73,12 +73,6 @@ import thothbot.parallax.core.shared.math.Color;
 public abstract class ColorMap3D extends ColorMap<MeshLambertMaterial> {
 
 	/**
-	 * Constructs a new color map.
-	 */
-	public ColorMap3D() {
-	}
-
-	/**
 	 * The color black.
 	 */
 	public static final Color BLACK = Color2Color(java.awt.Color.BLACK);

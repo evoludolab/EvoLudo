@@ -62,163 +62,163 @@ public class Color {
 	/**
 	 * The color white. In the default sRGB space.
 	 */
-	public final static Color white = new Color(255, 255, 255);
+	public static final Color white = new Color(255, 255, 255);
 
 	/**
 	 * The color white. In the default sRGB space.
 	 * 
 	 * @since 1.4
 	 */
-	public final static Color WHITE = white;
+	public static final Color WHITE = white;
 
 	/**
 	 * The color light gray. In the default sRGB space.
 	 */
-	public final static Color lightGray = new Color(192, 192, 192);
+	public static final Color lightGray = new Color(192, 192, 192);
 
 	/**
 	 * The color light gray. In the default sRGB space.
 	 * 
 	 * @since 1.4
 	 */
-	public final static Color LIGHT_GRAY = lightGray;
+	public static final Color LIGHT_GRAY = lightGray;
 
 	/**
 	 * The color gray. In the default sRGB space.
 	 */
-	public final static Color gray = new Color(128, 128, 128);
+	public static final Color gray = new Color(128, 128, 128);
 
 	/**
 	 * The color gray. In the default sRGB space.
 	 * 
 	 * @since 1.4
 	 */
-	public final static Color GRAY = gray;
+	public static final Color GRAY = gray;
 
 	/**
 	 * The color dark gray. In the default sRGB space.
 	 */
-	public final static Color darkGray = new Color(64, 64, 64);
+	public static final Color darkGray = new Color(64, 64, 64);
 
 	/**
 	 * The color dark gray. In the default sRGB space.
 	 * 
 	 * @since 1.4
 	 */
-	public final static Color DARK_GRAY = darkGray;
+	public static final Color DARK_GRAY = darkGray;
 
 	/**
 	 * The color black. In the default sRGB space.
 	 */
-	public final static Color black = new Color(0, 0, 0);
+	public static final Color black = new Color(0, 0, 0);
 
 	/**
 	 * The color black. In the default sRGB space.
 	 * 
 	 * @since 1.4
 	 */
-	public final static Color BLACK = black;
+	public static final Color BLACK = black;
 
 	/**
 	 * The color red. In the default sRGB space.
 	 */
-	public final static Color red = new Color(255, 0, 0);
+	public static final Color red = new Color(255, 0, 0);
 
 	/**
 	 * The color red. In the default sRGB space.
 	 * 
 	 * @since 1.4
 	 */
-	public final static Color RED = red;
+	public static final Color RED = red;
 
 	/**
 	 * The color pink. In the default sRGB space.
 	 */
-	public final static Color pink = new Color(255, 175, 175);
+	public static final Color pink = new Color(255, 175, 175);
 
 	/**
 	 * The color pink. In the default sRGB space.
 	 * 
 	 * @since 1.4
 	 */
-	public final static Color PINK = pink;
+	public static final Color PINK = pink;
 
 	/**
 	 * The color orange. In the default sRGB space.
 	 */
-	public final static Color orange = new Color(255, 200, 0);
+	public static final Color orange = new Color(255, 200, 0);
 
 	/**
 	 * The color orange. In the default sRGB space.
 	 * 
 	 * @since 1.4
 	 */
-	public final static Color ORANGE = orange;
+	public static final Color ORANGE = orange;
 
 	/**
 	 * The color yellow. In the default sRGB space.
 	 */
-	public final static Color yellow = new Color(255, 255, 0);
+	public static final Color yellow = new Color(255, 255, 0);
 
 	/**
 	 * The color yellow. In the default sRGB space.
 	 * 
 	 * @since 1.4
 	 */
-	public final static Color YELLOW = yellow;
+	public static final Color YELLOW = yellow;
 
 	/**
 	 * The color green. In the default sRGB space.
 	 */
-	public final static Color green = new Color(0, 255, 0);
+	public static final Color green = new Color(0, 255, 0);
 
 	/**
 	 * The color green. In the default sRGB space.
 	 * 
 	 * @since 1.4
 	 */
-	public final static Color GREEN = green;
+	public static final Color GREEN = green;
 
 	/**
 	 * The color magenta. In the default sRGB space.
 	 */
-	public final static Color magenta = new Color(255, 0, 255);
+	public static final Color magenta = new Color(255, 0, 255);
 
 	/**
 	 * The color magenta. In the default sRGB space.
 	 * 
 	 * @since 1.4
 	 */
-	public final static Color MAGENTA = magenta;
+	public static final Color MAGENTA = magenta;
 
 	/**
 	 * The color cyan. In the default sRGB space.
 	 */
-	public final static Color cyan = new Color(0, 255, 255);
+	public static final Color cyan = new Color(0, 255, 255);
 
 	/**
 	 * The color cyan. In the default sRGB space.
 	 * 
 	 * @since 1.4
 	 */
-	public final static Color CYAN = cyan;
+	public static final Color CYAN = cyan;
 
 	/**
 	 * The color blue. In the default sRGB space.
 	 */
-	public final static Color blue = new Color(0, 0, 255);
+	public static final Color blue = new Color(0, 0, 255);
 
 	/**
 	 * The color blue. In the default sRGB space.
 	 * 
 	 * @since 1.4
 	 */
-	public final static Color BLUE = blue;
+	public static final Color BLUE = blue;
 
 	/**
 	 * The normalization factor.
 	 */
-	private final static double INV255 = 1.0 / 255.0;
+	private static final double INV255 = 1.0 / 255.0;
 
 	/**
 	 * The color value.
@@ -238,7 +238,7 @@ public class Color {
 	 * @see #getRGBColorComponents
 	 * @see #getRGBComponents
 	 */
-	private double frgbvalue[] = null;
+	private double[] frgbvalue = null;
 
 	/**
 	 * The color value in the native <code>ColorSpace</code> as
@@ -250,7 +250,7 @@ public class Color {
 	 * @see #getRGBColorComponents
 	 * @see #getRGBComponents
 	 */
-	private double fvalue[] = null;
+	private double[] fvalue = null;
 
 	/**
 	 * The alpha value as a <code>double</code> component. If <code>frgbvalue</code>
@@ -428,7 +428,7 @@ public class Color {
 	 * @see #getRGB
 	 */
 	public int getBlue() {
-		return (getRGB() >> 0) & 0xFF;
+		return getRGB() & 0xFF;
 	}
 
 	/**
@@ -662,7 +662,7 @@ public class Color {
 					break;
 			}
 		}
-		return 0xff000000 | (r << 16) | (g << 8) | (b << 0);
+		return 0xff000000 | (r << 16) | (g << 8) | b;
 	}
 
 	/**
@@ -688,7 +688,9 @@ public class Color {
 	 * @since JDK1.0
 	 */
 	public static double[] RGBtoHSB(int r, int g, int b, double[] hsbvals) {
-		double hue, saturation, brightness;
+		double hue;
+		double saturation;
+		double brightness;
 		if (hsbvals == null) {
 			hsbvals = new double[3];
 		}
@@ -835,9 +837,7 @@ public class Color {
 		} else {
 			f = compArray;
 		}
-		for (int i = 0; i < n; i++) {
-			f[i] = fvalue[i];
-		}
+		System.arraycopy(fvalue, 0, f, 0, n);
 		f[n] = falpha;
 		return f;
 	}
@@ -866,9 +866,7 @@ public class Color {
 		} else {
 			f = compArray;
 		}
-		for (int i = 0; i < n; i++) {
-			f[i] = fvalue[i];
-		}
+		System.arraycopy(fvalue, 0, f, 0, n);
 		return f;
 	}
 }

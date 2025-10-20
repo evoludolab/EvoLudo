@@ -59,17 +59,17 @@ public enum Type implements CLOption.Key {
 	/**
 	 * Fifth order Runge-Kutta method for ordinary differential equation models.
 	 */
-	RK5("RK5", "Fifth order Runge-Kutta method"),
+	RK5("ODERK5", "Fifth order Runge-Kutta method"),
 
 	/**
-	 * Euler-Maruyama method for ordinary differential equation models.
+	 * Euler method for ordinary differential equation models.
 	 */
-	EM("EM", "Euler-Maruyama method"),
+	EM("ODEEM", "Euler method"),
 
 	/**
-	 * Stochastic differential equation model.
+	 * Euler-Maruyama method for stochastic differential equation models.
 	 */
-	SDE("SDE", "stochastic differential equations"),
+	SDE("SDE", "Euler-Maruyama method"),
 
 	/**
 	 * Partial differential equation model, defaults to PDERD (no advection).
@@ -124,6 +124,29 @@ public enum Type implements CLOption.Key {
 			}
 		}
 		return match;
+	}
+
+	/**
+	 * Check if this model type is the same as the given type. Distinguishes between
+	 * ODE, SDE, PDE, and IBS models but remains agnostic to the implementation
+	 * details.
+	 * 
+	 * @param type the type to compare with
+	 * @return {@code true} if this model type is the same as the given type,
+	 *         {@code false} otherwise
+	 */
+	public boolean isType(Type type) {
+		if (this == type)
+			return true;
+		if (type.isODE())
+			return isODE();
+		if (type.isSDE())
+			return isSDE();
+		if (type.isPDE())
+			return isPDE();
+		if (type.isIBS())
+			return isIBS();
+		return false;
 	}
 
 	/**

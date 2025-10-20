@@ -40,17 +40,17 @@ public class Point3D implements Point {
 	/**
 	 * The {@code x}-coordinate of the point.
 	 */
-	public double x;
+	double x;
 
 	/**
 	 * The {@code y}-coordinate of the point.
 	 */
-	public double y;
+	double y;
 
 	/**
 	 * The {@code z}-coordinate of the point.
 	 */
-	public double z;
+	double z;
 
 	/**
 	 * Create a new 3D point with coordinates {@code (0,0,0)}.
@@ -277,7 +277,7 @@ public class Point3D implements Point {
 
 	/**
 	 * Calculate the distance between the two 3D points {@code p} and {@code q}:
-	 * \(\sqrt{(p.x-q.x)^2+(p.y-q.y)^2+(p.z-q.z)^2}\). 
+	 * \(\sqrt{(p.x-q.x)^2+(p.y-q.y)^2+(p.z-q.z)^2}\).
 	 * <p>
 	 * For computational efficiency the fairly expensive square-roots calculations
 	 * should be avoided whenever possible.

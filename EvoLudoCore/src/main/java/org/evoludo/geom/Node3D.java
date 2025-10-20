@@ -40,7 +40,7 @@ public class Node3D extends Point3D implements Node {
 	/**
 	 * The radius {@code r} of 3D node.
 	 */
-	public double r;
+	double r;
 
 	/**
 	 * Create a new 3D node at {@code (0,0,0)} with radius {@code r=0}.
@@ -121,6 +121,25 @@ public class Node3D extends Point3D implements Node {
 	public Node3D scaleR(double scale) {
 		r *= scale;
 		return this;
+	}
+
+	/**
+	 * Check it point {@code hit} lies inside of node.
+	 * 
+	 * @param hit the point to check
+	 * @return {@code true} if inside
+	 */
+	public boolean isHit(Point3D hit) {
+		double dx = hit.x - x;
+		if (dx > r)
+			return false;
+		double dy = hit.y - y;
+		if (dy > r)
+			return false;
+		double dz = hit.z - z;
+		if (dz > r)
+			return false;
+		return (dx * dx + dy * dy + dz * dz < r * r);
 	}
 
 	/**

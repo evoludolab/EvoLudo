@@ -30,7 +30,7 @@
 
 package org.evoludo.simulator.modules;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
@@ -51,7 +51,7 @@ public abstract class Mutation {
 	/**
 	 * The module using this mutation.
 	 */
-	Module module;
+	Module<?> module;
 
 	/**
 	 * Convenience field: the shared random number generator to ensure
@@ -66,7 +66,7 @@ public abstract class Mutation {
 	 * 
 	 * @param module the map to use as template
 	 */
-	public Mutation(Module module) {
+	protected Mutation(Module<?> module) {
 		this.module = module;
 		rng = module.engine.getRNG();
 	}
@@ -136,7 +136,7 @@ public abstract class Mutation {
 		 * 
 		 * @param module the module using this mutation
 		 */
-		public Discrete(Module module) {
+		public Discrete(Module<?> module) {
 			super(module);
 			// add all keys by default
 			clo.addKeys(Type.values());
@@ -158,7 +158,7 @@ public abstract class Mutation {
 			if (type == Type.NONE)
 				// no mutations
 				return trait;
-			int vacant = module.getVacant();
+			int vacant = module.getVacantIdx();
 			if (trait == vacant)
 				// vacant trait cannot mutate
 				return trait;
@@ -258,7 +258,6 @@ public abstract class Mutation {
 					break;
 				case RANGE:
 					// mutations to any of the _other_ traits at most range traits away
-					dim = to - from;
 					int irange = (int) range;
 					mu1 = 1.0 - probability;
 					for (int i = from; i < to; i++) {
@@ -286,7 +285,7 @@ public abstract class Mutation {
 		 */
 		public final CLOption clo = new CLOption("mutation", "0.0",
 				Category.Model,
-					"--mutation <p> [temperature|random (default)] [<t> [<r>]]]\n" +
+				"--mutation <p> [temperature|random (default)] [<t> [<r>]]]\n" +
 						"             p: mutation probability\n" + //
 						"       process: reproduction vs cosmic rays\n" + //
 						"             r: mutation range\n" + //
@@ -304,11 +303,12 @@ public abstract class Mutation {
 					 */
 					@Override
 					public boolean parse(String arg) {
-						String[] mutations = arg.contains(CLOParser.SPECIES_DELIMITER) ? 
-								arg.split(CLOParser.SPECIES_DELIMITER) : arg.split(CLOParser.VECTOR_DELIMITER);
+						String[] mutations = arg.contains(CLOParser.SPECIES_DELIMITER)
+								? arg.split(CLOParser.SPECIES_DELIMITER)
+								: arg.split(CLOParser.VECTOR_DELIMITER);
 						int n = 0;
-						ArrayList<? extends Module> species = module.getSpecies();
-						for (Module mod : species) {
+						List<? extends Module<?>> species = module.getSpecies();
+						for (Module<?> mod : species) {
 							String mutts = mutations[n++ % mutations.length];
 							String[] args = mutts.split("\\s+|=|,");
 							Mutation mut = mod.getMutation();
@@ -318,11 +318,9 @@ public abstract class Mutation {
 							mut.range = 0.0;
 							mut.type = Type.NONE;
 							// deal with optional temperature|random flag first
-							if (args.length > 1) {
-								if (args[1].toLowerCase().startsWith("t")) {
-									mut.temperature = true;
-									args = ArrayMath.drop(args, 1);
-								}
+							if (args.length > 1 && args[1].toLowerCase().startsWith("t")) {
+								mut.temperature = true;
+								args = ArrayMath.drop(args, 1);
 							}
 							switch (args.length) {
 								case 3:
@@ -371,7 +369,7 @@ public abstract class Mutation {
 		 * where traits have a metric.
 		 * </dl>
 		 */
-		public static enum Type implements CLOption.Key {
+		public enum Type implements CLOption.Key {
 
 			/**
 			 * No mutations. This is the default
@@ -446,7 +444,7 @@ public abstract class Mutation {
 		 * 
 		 * @param module the module using this mutation
 		 */
-		public Continuous(Module module) {
+		public Continuous(Module<?> module) {
 			super(module);
 			// add all keys by default
 			clo.addKeys(Type.values());
@@ -499,7 +497,7 @@ public abstract class Mutation {
 		 */
 		public final CLOption clo = new CLOption("mutation", "0.0",
 				Category.Model,
-					"--mutation <p> [temperature|random (default)] [<t> [<r>]>  with\n" +
+				"--mutation <p> [temperature|random (default)] [<t> [<r>]>  with\n" +
 						"             p: mutation probability\n" + //
 						"             r: mutation range (fraction of interval)\n" + //
 						"       process: reproduction vs cosmic rays\n" + //
@@ -522,8 +520,8 @@ public abstract class Mutation {
 						boolean success = true;
 						String[] mutations = arg.split(CLOParser.SPECIES_DELIMITER);
 						int n = 0;
-						ArrayList<? extends Module> species = module.getSpecies();
-						for (Module mod : species) {
+						List<? extends Module<?>> species = module.getSpecies();
+						for (Module<?> mod : species) {
 							String mutts = mutations[n++ % mutations.length];
 							String[] args = mutts.split("\\s+|=|,");
 							Mutation mut = mod.getMutation();
@@ -533,11 +531,9 @@ public abstract class Mutation {
 							mut.range = 0.0;
 							mut.type = Type.NONE;
 							// deal with optional temperature|random flag first
-							if (args.length > 1) {
-								if (args[1].toLowerCase().startsWith("t")) {
-									mut.temperature = true;
-									args = ArrayMath.drop(args, 1);
-								}
+							if (args.length > 1 && args[1].toLowerCase().startsWith("t")) {
+								mut.temperature = true;
+								args = ArrayMath.drop(args, 1);
 							}
 							switch (args.length) {
 								case 3:
@@ -607,7 +603,7 @@ public abstract class Mutation {
 		 * a range {@code t &pm; r}.
 		 * </dl>
 		 */
-		public static enum Type implements CLOption.Key {
+		public enum Type implements CLOption.Key {
 
 			/**
 			 * No mutations. This is the default

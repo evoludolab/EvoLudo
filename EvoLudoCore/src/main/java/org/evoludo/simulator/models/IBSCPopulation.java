@@ -33,8 +33,8 @@ package org.evoludo.simulator.models;
 import java.util.Arrays;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBS.ScoringType;
+import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Continuous;
 
 /**
@@ -162,8 +162,10 @@ public class IBSCPopulation extends IBSMCPopulation {
 	public void adjustPairGameScoresAt(int me) {
 		// gather players
 		double[] opptraits = opponent.traits;
-		int nIn = 0, nOut = interaction.kout[me];
-		int[] in = null, out = interaction.out[me];
+		int nIn = 0;
+		int nOut = interaction.kout[me];
+		int[] in = null;
+		int[] out = interaction.out[me];
 		for (int n = 0; n < nOut; n++)
 			tmpGroup[n] = opptraits[out[n]];
 		int u2 = 2;

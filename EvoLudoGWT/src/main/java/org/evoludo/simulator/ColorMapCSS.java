@@ -61,12 +61,6 @@ import org.evoludo.util.Formatter;
 public abstract class ColorMapCSS extends ColorMap<String> {
 
 	/**
-	 * Constructs a new color map.
-	 */
-	public ColorMapCSS() {
-	}
-
-	/**
 	 * Convert Color to CSS style string. For colors with transparency, the output
 	 * is of the form <code>rgba(<span style="color:red;">r</span>, 
 	 * <span style="color:green;">g</span>, 

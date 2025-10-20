@@ -67,12 +67,16 @@ public class CLOption implements Comparable<CLOption> {
 		 * If settings for option are not known upon initialization, an up-to-date
 		 * description is requested when needed (e.g. if help is requested, typically
 		 * using <code>--help</code> options).
-		 * 
+		 * <p>
+		 * <strong>Note:</strong> the description string may contain any UTF-8
+		 * characters as well as HTML character entities. If necessary they will be
+		 * escaped and converted to UTF-8 for display in XML documents.
+		 *
 		 * @return description of command line option.
 		 */
 		public default String getDescription() {
 			return null;
-		};
+		}
 
 		/**
 		 * Optional: position of key in the list of arguments. Used in help display.
@@ -174,6 +178,7 @@ public class CLOption implements Comparable<CLOption> {
 		 * 
 		 * @return the title of the command line option
 		 * 
+		 * @see #getDescription()
 		 * @see org.evoludo.simulator.EvoLudo#showHelp()
 		 */
 		public String getTitle();
@@ -181,6 +186,10 @@ public class CLOption implements Comparable<CLOption> {
 		/**
 		 * Optional: long description of purpose of this key. Used in help display.
 		 * Defaults to brief description.
+		 * <p>
+		 * <strong>Note:</strong> the description string may contain any UTF-8
+		 * characters as well as HTML character entities. If necessary they will be
+		 * escaped and converted to UTF-8 for display in XML documents.
 		 * 
 		 * @return the description of the command line option
 		 * 
@@ -200,6 +209,10 @@ public class CLOption implements Comparable<CLOption> {
 
 		/**
 		 * The brief category description. Section header in help screen.
+		 * <p>
+		 * <strong>Note:</strong> the description string may contain any UTF-8
+		 * characters as well as HTML character entities. If necessary they will be
+		 * escaped and converted to UTF-8 for display in XML documents.
 		 */
 		String header;
 
@@ -310,7 +323,11 @@ public class CLOption implements Comparable<CLOption> {
 
 	/**
 	 * the short description of the command line option. May include newline's
-	 * <code>'\n'</code> for basic formatting but no HTML or other formatting.
+	 * <code>'\n'</code> for basic formatting.
+	 * <p>
+	 * <strong>Note:</strong> the description string may contain any UTF-8
+	 * characters as well as HTML character entities. If necessary they will be
+	 * escaped and converted to UTF-8 for display in XML documents.
 	 */
 	String description = null;
 
@@ -392,8 +409,14 @@ public class CLOption implements Comparable<CLOption> {
 	 * <code>delegate</code> to process the argument and optionally retrieve the
 	 * description.
 	 * <p>
-	 * <strong>Note:</strong> on the command line option names need to be preceded
-	 * by <code>--</code>, e.g. <code>--help</code>.
+	 * <strong>Notes:</strong>
+	 * <ul>
+	 * <li>on the command line option names need to be preceded by <code>--</code>,
+	 * e.g. <code>--help</code>.</li>
+	 * <li>the description string may contain any UTF-8 characters as well as HTML
+	 * character entities. If necessary they will be escaped and converted to UTF-8
+	 * for display in XML documents.
+	 * </ul>
 	 * 
 	 * @param name        the name of the command line option
 	 * @param description short description of command line option
@@ -409,8 +432,14 @@ public class CLOption implements Comparable<CLOption> {
 	 * as well as the delegate <code>delegate</code> to process the argument and
 	 * optionally retrieve the description.
 	 * <p>
-	 * <strong>Note:</strong> on the command line option names need to be preceded
-	 * by <code>--</code>, e.g. <code>--help</code>.
+	 * <strong>Notes:</strong>
+	 * <ul>
+	 * <li>on the command line option names need to be preceded by <code>--</code>,
+	 * e.g. <code>--help</code>.</li>
+	 * <li>the description string may contain any UTF-8 characters as well as HTML
+	 * character entities. If necessary they will be escaped and converted to UTF-8
+	 * for display in XML documents.
+	 * </ul>
 	 * 
 	 * @param name        the name of the command line option
 	 * @param category    the category of option
@@ -427,8 +456,14 @@ public class CLOption implements Comparable<CLOption> {
 	 * <code>description</code> as well as the delegate <code>delegate</code> to
 	 * process the argument and optionally retrieve the description.
 	 * <p>
-	 * <strong>Note:</strong> on the command line option names need to be preceded
-	 * by <code>--</code>, e.g. <code>--help</code>.
+	 * <strong>Notes:</strong>
+	 * <ul>
+	 * <li>on the command line option names need to be preceded by <code>--</code>,
+	 * e.g. <code>--help</code>.</li>
+	 * <li>the description string may contain any UTF-8 characters as well as HTML
+	 * character entities. If necessary they will be escaped and converted to UTF-8
+	 * for display in XML documents.
+	 * </ul>
 	 * 
 	 * @param name        the name of the command line option
 	 * @param defaultArg  the default argument if option is not specified on command
@@ -447,8 +482,14 @@ public class CLOption implements Comparable<CLOption> {
 	 * <code>delegate</code> to process the argument and optionally retrieve the
 	 * description.
 	 * <p>
-	 * <strong>Note:</strong> on the command line option names need to be preceded
-	 * by <code>--</code>, e.g. <code>--help</code>.
+	 * <strong>Notes:</strong>
+	 * <ul>
+	 * <li>on the command line option names need to be preceded by <code>--</code>,
+	 * e.g. <code>--help</code>.</li>
+	 * <li>the description string may contain any UTF-8 characters as well as HTML
+	 * character entities. If necessary they will be escaped and converted to UTF-8
+	 * for display in XML documents.
+	 * </ul>
 	 * 
 	 * @param name        the name of the command line option
 	 * @param defaultArg  the default argument if option is not specified on command
@@ -466,7 +507,7 @@ public class CLOption implements Comparable<CLOption> {
 	 * {@code type}, which defaults to {@code defaultArg}, as well as the delegate
 	 * <code>delegate</code> to process the argument and retrieve the description.
 	 * <p>
-	 * <strong>Note:</strong>
+	 * <strong>Notes:</strong>
 	 * <ul>
 	 * <li>on the command line option names need to be preceded by <code>--</code>,
 	 * e.g. <code>--help</code>.</li>
@@ -515,8 +556,14 @@ public class CLOption implements Comparable<CLOption> {
 	 * <code>description</code> as well as the delegate <code>delegate</code> to
 	 * process the argument and optionally retrieve the description.
 	 * <p>
-	 * <strong>Note:</strong> on the command line option names need to be preceded
-	 * by <code>--</code>, e.g. <code>--help</code>.
+	 * <strong>Notes:</strong>
+	 * <ul>
+	 * <li>on the command line option names need to be preceded by <code>--</code>,
+	 * e.g. <code>--help</code>.</li>
+	 * <li>the description string may contain any UTF-8 characters as well as HTML
+	 * character entities. If necessary they will be escaped and converted to UTF-8
+	 * for display in XML documents.
+	 * </ul>
 	 * 
 	 * @param name        the name of the command line option
 	 * @param defaultArg  default argument if option is not specified on command
@@ -536,8 +583,14 @@ public class CLOption implements Comparable<CLOption> {
 	 * the delegate <code>delegate</code> to process the argument and optionally
 	 * retrieve the description.
 	 * <p>
-	 * <strong>Note:</strong> on the command line options need to be preceded
-	 * by <code>--</code>, e.g. <code>--help</code>.
+	 * <strong>Notes:</strong>
+	 * <ul>
+	 * <li>on the command line option names need to be preceded by <code>--</code>,
+	 * e.g. <code>--help</code>.</li>
+	 * <li>the description string may contain any UTF-8 characters as well as HTML
+	 * character entities. If necessary they will be escaped and converted to UTF-8
+	 * for display in XML documents.
+	 * </ul>
 	 *
 	 * @param name        name of command line option
 	 * @param defaultArg  default argument if option is not specified on command
@@ -649,7 +702,7 @@ public class CLOption implements Comparable<CLOption> {
 	 */
 	public Key addKey(String key, String title) {
 		if (keys == null)
-			keys = new HashMap<String, Key>();
+			keys = new HashMap<>();
 		return keys.put(key, new SimpleKey(key, title));
 	}
 
@@ -664,7 +717,7 @@ public class CLOption implements Comparable<CLOption> {
 	 */
 	public Key addKey(Key key) {
 		if (keys == null)
-			keys = new HashMap<String, Key>();
+			keys = new HashMap<>();
 		return keys.put(key.getKey(), key);
 	}
 
@@ -842,7 +895,7 @@ public class CLOption implements Comparable<CLOption> {
 	public Collection<Key> getKeys() {
 		if (keys != null)
 			return keys.values();
-		return new ArrayList<Key>();
+		return new ArrayList<>();
 	}
 
 	/**
@@ -879,21 +932,21 @@ public class CLOption implements Comparable<CLOption> {
 	public String getDescriptionKey() {
 		if (keys == null || inheritedKeys)
 			return "";
-		String keydescr = "";
+		StringBuilder keydescr = new StringBuilder();
 		for (Key key : keys.values()) {
 			String descr = key.getDescription();
 			// align ':' for better readability
 			String aKey = "             " + key.getKey() + ": ";
 			int keylen = aKey.length();
-			keydescr += aKey.substring(keylen - 16, keylen) + (descr == null ? key.getTitle() : descr) + "\n";
-			// keydescr += " " + key.getKey() + ": " + (descr == null ? key.getTitle() :
-			// descr) + "\n";
+			keydescr.append(aKey.substring(keylen - 16, keylen))
+					.append(descr == null ? key.getTitle() : descr)
+					.append("\n");
 		}
 
 		int len = keydescr.length();
 		if (len > 0)
 			return keydescr.substring(0, len - 1);
-		return keydescr;
+		return keydescr.toString();
 	}
 
 	/**
@@ -965,6 +1018,10 @@ public class CLOption implements Comparable<CLOption> {
 	 * Retrieve short description of option and include the default as well as the
 	 * current arguments. If no description was provided at initialization, the
 	 * delegate is queried for an up-to-date description.
+	 * <p>
+	 * <strong>Note:</strong> the description string may contain any UTF-8
+	 * characters. If necessary they will be escaped for display in HTML or XML
+	 * documents.
 	 * 
 	 * @return description of option and arguments.
 	 */
@@ -975,10 +1032,9 @@ public class CLOption implements Comparable<CLOption> {
 			myDescr = delegate.getDescription();
 		} else {
 			String descr = getDescriptionKey();
-			if (descr.length() > 0)
-				myDescr = description + "\n" + descr;
-			else
-				myDescr = description;
+			myDescr = description;
+			if (!descr.isEmpty())
+				myDescr += "\n" + descr;
 		}
 		if (type == Argument.NONE)
 			return myDescr + "\n      (current: " + (isSet() ? "" : "not ") + "set)";
@@ -1030,5 +1086,20 @@ public class CLOption implements Comparable<CLOption> {
 	@Override
 	public int compareTo(CLOption opt) {
 		return name.compareTo(opt.getName());
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null || getClass() != obj.getClass())
+			return false;
+		CLOption other = (CLOption) obj;
+		return name.equals(other.name);
+	}
+
+	@Override
+	public int hashCode() {
+		return name.hashCode();
 	}
 }

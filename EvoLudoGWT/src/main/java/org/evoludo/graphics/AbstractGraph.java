@@ -30,17 +30,16 @@
 
 package org.evoludo.graphics;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
+import org.evoludo.geom.Node2D;
 import org.evoludo.geom.Path2D;
 import org.evoludo.geom.PathIterator;
 import org.evoludo.geom.Point2D;
 import org.evoludo.geom.Rectangle2D;
-import org.evoludo.math.Combinatorics;
-import org.evoludo.simulator.models.Data;
-import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
@@ -110,65 +109,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		RequiresResize, Tooltip.Provider, ContextMenu.Listener, ContextMenu.Provider {
 
 	/**
-	 * The base interface for communicating with the controller of all graphs.
-	 */
-	public interface Controller {
-
-		/**
-		 * Get the type of data visualized on the graph.
-		 * 
-		 * @return the data type
-		 */
-		public Data getType();
-
-		/**
-		 * Get the type of the model supplying the data visualized on the graph.
-		 * 
-		 * @return the model type
-		 */
-		public Model getModel();
-
-		/**
-		 * Get the logger for returning progress, problems and messages to user.
-		 * 
-		 * @return the logger for messages
-		 */
-		public Logger getLogger();
-
-		/**
-		 * Notifies the controller of the completion of the layouting process.
-		 */
-		public void layoutComplete();
-
-		/**
-		 * Checks if the controller is busy running calculations.
-		 * 
-		 * @return {@code true} if calculations are running
-		 */
-		public boolean isRunning();
-
-		/**
-		 * Opportunity for the controller to add functionality to the context menu
-		 * (optional implementation).
-		 *
-		 * @param menu the context menu
-		 */
-		public default void populateContextMenu(ContextMenu menu) {
-		}
-
-		/**
-		 * Notifies the controller that the user requested setting a new initial
-		 * configuration {@code init} (optional implementation).
-		 * 
-		 * @param init the new initial configuration
-		 * @return {@code true} if the request was honoured
-		 */
-		public default boolean setInitialState(double[] init) {
-			return false;
-		}
-	}
-
-	/**
 	 * Graphs that support shifting should implement this interface. Basic shifting
 	 * capabilities are handled by {@link AbstractGraph}.
 	 */
@@ -179,7 +119,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * Graphs that support shifting of their view should implement this interface.
 	 * Basic shifting is provided by {@link AbstractGraph} and is automatically
-	 * enabled unless {@link AbstractGraph#controller} is an instance of
+	 * enabled unless {@link AbstractView} is an instance of
 	 * {@code Shifter}.
 	 */
 	public interface Shifter {
@@ -211,7 +151,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		 * 
 		 * @see #zoom(double, int, int)
 		 */
-		public final double ZOOM_INCR = 1.02;
+		public final double ZOOM_INCR = 1.01;
 
 		/**
 		 * The maximum zoom level.
@@ -235,7 +175,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * Graphs that support zooming should implement this interface. Basic zooming is
 	 * provided by {@link AbstractGraph} and is automatically enabled unless
-	 * {@link AbstractGraph#controller} is an instance of {@code Zoomer}.
+	 * {@link AbstractView} is an instance of {@code Zoomer}.
 	 */
 	public interface Zoomer {
 
@@ -251,6 +191,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		 * @see #onTouchMove(TouchMoveEvent)
 		 */
 		public void zoom(double zoom, int x, int y);
+	}
+
+	/**
+	 * Graphs that support logarithmic scaling on the y-axis should implement this
+	 * interface.
+	 */
+	public interface HasLogScaleY {
 	}
 
 	/**
@@ -323,9 +270,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected Point2D viewCorner;
 
 	/**
-	 * The controller of this graph.
+	 * The view of this graph.
 	 */
-	protected Controller controller;
+	protected AbstractView view;
 
 	/**
 	 * The controller for shifting this graph.
@@ -406,7 +353,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * Markers for decorating the graph.
 	 */
-	protected ArrayList<double[]> markers;
+	protected List<double[]> markers;
 
 	/**
 	 * The array of colors used for markers.
@@ -416,12 +363,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	/**
 	 * The module backing the graph.
 	 */
-	protected Module module;
-
-	/**
-	 * The flag to indicate whether the graph is live (visible, activated).
-	 */
-	protected boolean isActive;
+	protected Module<?> module;
 
 	/**
 	 * The bounds of the displaying area. This excludes any frames and/or axes
@@ -487,14 +429,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * tooltip and context menu. Use the CSS class {@code evoludo-Canvas2D} for
 	 * custom formatting of the canvas element.
 	 * 
-	 * @param controller the controller of this graph
-	 * @param module     the module backing the graph
+	 * @param view   the view of this graph
+	 * @param module the module backing the graph
 	 */
-	protected AbstractGraph(Controller controller, Module module) {
-		this.controller = controller;
+	protected AbstractGraph(AbstractView view, Module<?> module) {
+		this.view = view;
 		this.module = module;
-		logger = controller.getLogger();
-		wrapper = new LayoutPanel();
+		logger = view.getLogger();
 		if (this instanceof Zooming) {
 			viewCorner = new Point2D();
 			zoomInertiaTimer = new Timer() {
@@ -504,16 +445,24 @@ public abstract class AbstractGraph<B> extends FocusPanel
 					element.removeClassName("evoludo-cursorZoomOut");
 				}
 			};
-			zoomer = (Zoomer) (controller instanceof Zoomer ? controller : this);
+			zoomer = (Zoomer) (view instanceof Zoomer ? view : this);
 		}
 		if (this instanceof Shifting) {
 			// Zooming may already have taken care of this
 			if (viewCorner == null)
 				viewCorner = new Point2D();
-			shifter = (Shifter) (controller instanceof Shifter ? controller : this);
+			shifter = (Shifter) (view instanceof Shifter ? view : this);
 		}
 
 		markerColors = new String[] { "rgb(0,0,0,0.4)" };
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
+		wrapper = new LayoutPanel();
+		add(wrapper);
+		element = getElement();
 		// most graphs use canvas - allocate it here (this is unnecessary for e.g.
 		// PopGraph3D but since this is the only exception so far it will have to remove
 		// canvas again)
@@ -522,11 +471,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		g = canvas.getContext2d().cast();
 		wrapper.add(canvas);
 		canvas.getParent().getElement().getStyle().setHeight(100, Unit.PCT);
-		add(wrapper);
-		element = getElement();
 		scale = NativeJS.getDevicePixelRatio();
 		contextMenu = ContextMenu.sharedContextMenu();
-		contextMenu.add(this, this);
+		contextMenu.addListenerWithProvider(this, this);
 		tooltip = Tooltip.sharedTooltip();
 		tooltip.add(this, this);
 		// no delays - at least for debugging...
@@ -537,6 +484,27 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		// tooltip.logger = logger;
 	}
 
+	@Override
+	protected void onUnload() {
+		if (canvas != null)
+			canvas.removeFromParent();
+		canvas = null;
+		contextMenu.remove(this);
+		remove(wrapper);
+		wrapper = null;
+		super.onUnload();
+	}
+
+	/**
+	 * Parse the arguments for the graph. Default implementation does nothing.
+	 * 
+	 * @param args the arguments for the graph
+	 * @return {@code true} if parsing was successful
+	 */
+	public boolean parse(String args) {
+		return true;
+	}
+
 	/**
 	 * Perform necessary preparations to show the graph in the GUI. Attaches mouse
 	 * and touch handlers for graphs that implement {@link Zooming} or
@@ -545,7 +513,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @see #deactivate()
 	 */
 	public void activate() {
-		isActive = true;
 		if (this instanceof Zooming) {
 			boolean isEPub = NativeJS.isEPub();
 			// important: ibooks (desktop) returns ePubReader for standalone pages as well,
@@ -605,7 +572,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (touchStartHandler != null)
 			touchStartHandler.removeHandler();
 		touchStartHandler = null;
-		isActive = false;
 	}
 
 	@Override
@@ -666,7 +632,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * 
 	 * @return the module
 	 */
-	public Module getModule() {
+	public Module<?> getModule() {
 		return module;
 	}
 
@@ -677,7 +643,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @return {@code true} if painting skipped
 	 */
 	public boolean paint(boolean force) {
-		if (!isActive || hasMessage)
+		if (!view.isActive() || hasMessage)
 			return true;
 		tooltip.update();
 		return false;
@@ -688,7 +654,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * 
 	 * @param markers the list of markers
 	 */
-	public void setMarkers(ArrayList<double[]> markers) {
+	public void setMarkers(List<double[]> markers) {
 		setMarkers(markers, null);
 	}
 
@@ -698,7 +664,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @param markers the list of markers
 	 * @param colors  the list of custom colors
 	 */
-	public void setMarkers(ArrayList<double[]> markers, String[] colors) {
+	public void setMarkers(List<double[]> markers, String[] colors) {
 		if (colors == null)
 			colors = new String[] { "rgb(0,0,0,0.4)" };
 		this.markers = markers;
@@ -751,11 +717,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	private ContextMenu bufferSizeMenu;
 
 	/**
-	 * The context menu item which triggers the buffer size context menu.
-	 */
-	private ContextMenuItem bufferSizeTrigger;
-
-	/**
 	 * The flag to indicate whether the graph supports zoom. The default is no
 	 * support.
 	 */
@@ -777,59 +738,93 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	ContextMenuItem zoomOutMenu;
 
 	/**
+	 * The menu item to toggle logarithmic scaling on the y-axis.
+	 */
+	ContextMenuCheckBoxItem logYMenu;
+
+	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * Adds buffer size menu and queries the controller to add further
+	 * Adds buffer size menu and queries the view to add further
 	 * functionality.
 	 * 
-	 * @see Controller#populateContextMenu(ContextMenu)
+	 * @see AbstractView#populateContextMenu(ContextMenu)
 	 */
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
-		// add menu to set buffer size for graphs with history
-		if (hasHistory()) {
-			if (bufferSizeMenu == null) {
-				bufferSizeMenu = new ContextMenu(menu);
-				bufferSizeMenu.add(new ContextMenuCheckBoxItem("5k", //
-						new ScheduledCommand() {
-							@Override
-							public void execute() {
-								setBufferCapacity(5000);
-								paint(true);
-							}
-						}));
-				bufferSizeMenu.add(new ContextMenuCheckBoxItem("10k", //
-						new ScheduledCommand() {
-							@Override
-							public void execute() {
-								setBufferCapacity(10000);
-								paint(true);
-							}
-						}));
-				bufferSizeMenu.add(new ContextMenuCheckBoxItem("50k", //
-						new ScheduledCommand() {
-							@Override
-							public void execute() {
-								setBufferCapacity(50000);
-								paint(true);
-							}
-						}));
-				bufferSizeMenu.add(new ContextMenuCheckBoxItem("100k", //
-						new ScheduledCommand() {
-							@Override
-							public void execute() {
-								setBufferCapacity(100000);
-								paint(true);
-							}
-						}));
-			}
-			setBufferCapacity(buffer.getCapacity());
-			bufferSizeTrigger = menu.add("Buffer size...", bufferSizeMenu);
-			bufferSizeTrigger.setEnabled(!controller.isRunning());
+		addBufferSizeMenu(menu);
+		addLogScaleMenu(menu);
+		addZoomMenu(menu);
+		if (menu.getWidgetCount() > 0 && tooltip.isVisible())
+			tooltip.close();
+		view.populateContextMenu(menu);
+	}
+
+	/**
+	 * Add buffer size menu item to context menu if graph supports historical data.
+	 * 
+	 * @param menu the context menu to populate
+	 */
+	private void addBufferSizeMenu(ContextMenu menu) {
+		if (!hasHistory())
+			return;
+		if (bufferSizeMenu == null) {
+			bufferSizeMenu = new ContextMenu(menu);
+			bufferSizeMenu.add(new ContextMenuCheckBoxItem("5k", //
+					(ScheduledCommand) () -> {
+						setBufferCapacity(5000);
+						paint(true);
+					}));
+			bufferSizeMenu.add(new ContextMenuCheckBoxItem("10k", //
+					(ScheduledCommand) () -> {
+						setBufferCapacity(10000);
+						paint(true);
+					}));
+			bufferSizeMenu.add(new ContextMenuCheckBoxItem("50k", //
+					(ScheduledCommand) () -> {
+						setBufferCapacity(50000);
+						paint(true);
+					}));
+			bufferSizeMenu.add(new ContextMenuCheckBoxItem("100k", //
+					(ScheduledCommand) () -> {
+						setBufferCapacity(100000);
+						paint(true);
+					}));
 		}
+		setBufferCapacity(buffer.getCapacity());
+		ContextMenuItem bufferSizeTrigger = menu.add("Buffer size...", bufferSizeMenu);
+		bufferSizeTrigger.setEnabled(!view.isRunning());
+		menu.addSeparator();
+	}
+
+	/**
+	 * Add logarithmic scale menu item to context menu if graph supports log scale
+	 * on
+	 * {@code y}-axis.
+	 * 
+	 * @param menu the context menu to populate
+	 */
+	private void addLogScaleMenu(ContextMenu menu) {
+		if (this instanceof HasLogScaleY) {
+			if (logYMenu == null) {
+				logYMenu = new ContextMenuCheckBoxItem("Logarithmic y-axis", (ScheduledCommand) () -> {
+					setLogY(!style.logScaleY);
+					paint(true);
+				});
+			}
+			logYMenu.setChecked(style.logScaleY);
+			logYMenu.setEnabled(style.yMin >= 0.0);
+			menu.add(logYMenu);
+		}
+	}
+
+	/**
+	 * Add zoom menu items to context menu if graph supports zooming.
+	 * 
+	 * @param menu the context menu to populate
+	 */
+	private void addZoomMenu(ContextMenu menu) {
 		if (this instanceof Zooming) {
-			// process zoom context menu entries
-			menu.addSeparator();
 			if (zoomInMenu == null)
 				zoomInMenu = new ContextMenuItem("Zoom in (2x)", new ZoomCommand(2.0));
 			menu.add(zoomInMenu);
@@ -840,9 +835,27 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				zoomResetMenu = new ContextMenuItem("Reset zoom", new ZoomCommand(0.0));
 			menu.add(zoomResetMenu);
 		}
-		if (menu.getWidgetCount() > 0 && tooltip.isVisible())
-			tooltip.close();
-		controller.populateContextMenu(menu);
+	}
+
+	/**
+	 * Set the {@code y}-axis to logarithmic scale if {@code logY} is {@code true}
+	 * and if {@code yMin &ge; 0}. If {@code yMin == 0} it is increased to
+	 * {@code 0.01 * yMax}. If {@code yMin < 0} logarithmic scale requests are
+	 * ignored.
+	 * 
+	 * @param logY {@code true} to set logarithmic scale on {@code y}-axis
+	 */
+	void setLogY(boolean logY) {
+		if (style.yMin < 0.0 || !logY) {
+			style.logScaleY = false;
+			return;
+		}
+		// log scale requested
+		style.logScaleY = true;
+		if (style.yMin == 0.0) {
+			// increase to 1% of yMax
+			style.yMin = 0.01 * style.yMax;
+		}
 	}
 
 	/**
@@ -873,9 +886,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (x < 0 || x > element.getOffsetWidth())
 			return false;
 		y -= element.getAbsoluteTop();
-		if (y < 0 || y > element.getOffsetHeight())
-			return false;
-		return true;
+		return (y >= 0 && y <= element.getOffsetHeight());
 	}
 
 	/**
@@ -900,8 +911,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @return the converted coordinates
 	 */
 	public Point2D convertToScaledCoordinates(int x, int y, Point2D dest) {
-		dest.x = (x - element.getOffsetLeft() - bounds.getX() - 0.5) / bounds.getWidth();
-		dest.y = 1.0 - (y - element.getOffsetTop() - bounds.getY()) / bounds.getHeight();
+		dest.set((x - element.getOffsetLeft() - bounds.getX() - 0.5) / bounds.getWidth(),
+				1.0 - (y - element.getOffsetTop() - bounds.getY()) / bounds.getHeight());
 		return dest;
 	}
 
@@ -926,6 +937,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		calcBounds(width, height);
 		return true;
 	}
+
 	/**
 	 * Calculate bounds of drawing area.
 	 * 
@@ -933,18 +945,39 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * @param height the height of the drawing area
 	 */
 	public void calcBounds(int width, int height) {
-		bounds.set(style.minPadding, style.minPadding, width - 2 * style.minPadding, height - 2 * style.minPadding);
+		bounds.set(style.minPadding, style.minPadding, width - 2.0 * style.minPadding, height - 2.0 * style.minPadding);
 		if (style.showFrame) {
 			double f = style.frameWidth;
 			double f2 = f + f;
 			bounds.adjust(f, f, -f2, -f2);
 		}
+		adjustBoundsForLabels();
+		String font = g.getFont();
+		adjustBoundsForTickLabels(font);
+		g.setFont(font);
+		if (style.showXTicks)
+			bounds.adjust(0, 0, 0, -(style.tickLength + 2));
+		if (style.showYTicks)
+			bounds.adjust(0, 0, -(style.tickLength + 2), 0);
+	}
+
+	/**
+	 * Adjust bounds to make room for axes labels.
+	 */
+	private void adjustBoundsForLabels() {
 		if (style.showXLabel && style.xLabel != null)
 			bounds.adjust(0, 0, 0, -20); // 14px for font size plus some padding
 		// something does not add up but at least this improves results
 		if (style.showYLabel && style.yLabel != null)
 			bounds.adjust(0, 0, -12, 0);
-		String font = g.getFont();
+	}
+
+	/**
+	 * Adjust bounds to make room for tick labels.
+	 * 
+	 * @param font the CSS specification of the font to use for tick labels
+	 */
+	private void adjustBoundsForTickLabels(String font) {
 		// NOTE: must process tick labels because otherwise widths might end up
 		// different in views with multiple graphs
 		if (style.showXTickLabels)
@@ -977,11 +1010,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			}
 			bounds.adjust(0, 0, -4, 0);
 		}
-		g.setFont(font);
-		if (style.showXTicks)
-			bounds.adjust(0, 0, 0, -(style.tickLength + 2));
-		if (style.showYTicks)
-			bounds.adjust(0, 0, -(style.tickLength + 2), 0);
 	}
 
 	/**
@@ -1076,6 +1104,15 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			double frac = 1.0 / yLevels;
 			double incr = frac * h;
 			double level = 0.5 - incr;
+			double ymin;
+			double yrange;
+			if (style.logScaleY) {
+				ymin = Math.log10(style.yMin);
+				yrange = Math.log10(style.yMax) - ymin;
+			} else {
+				ymin = style.yMin;
+				yrange = style.yMax - ymin;
+			}
 			for (int n = 0; n <= yLevels; n++) {
 				level += incr;
 				if (style.showYLevels && n > 0 && n < yLevels) {
@@ -1089,29 +1126,41 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				if (style.showYTickLabels) {
 					setFont(style.ticksLabelFont);
 					g.setFillStyle(style.frameColor);
-					double y = style.yMin + (1.0 - n * frac) * (style.yMax - style.yMin);
-					if (style.percentY)
-						tick = Formatter.formatPercent(y, style.yMax <= 0.01 ? 1 : 0);
-					else
-						tick = Formatter.format(y, 2);
+					double yval = ymin + (1.0 - n * frac) * yrange;
+					if (style.logScaleY)
+						yval = Math.pow(10.0, yval);
+					if (style.percentY) {
+						tick = Formatter.formatPretty(100.0 * yval, 2);
+					} else
+						tick = Formatter.formatPretty(yval, 2);
+					String[] numexp = tick.split("\\^");
 					// center tick labels with ticks, except for first label (top most)
-					g.fillText(tick, w + 0.5 + (style.tickLength + 4), level + (n == 0 ? 9 : 4.5));
+					double xpos = w + 0.5 + (style.tickLength + 4);
+					double ypos = level + (n == 0 ? 9 : 4.5);
+					g.fillText(numexp[0], xpos, ypos);
+					xpos += g.measureText(numexp[0]).getWidth();
+					if (numexp.length > 1) {
+						// draw exponent in smaller font
+						setFont(style.ticksLabelFont.replace("11px", "9px"));
+						g.fillText(numexp[1], xpos, ypos - 4.5);
+						xpos += g.measureText(numexp[1]).getWidth();
+						setFont(style.ticksLabelFont);
+					}
+					if (style.percentY)
+						g.fillText("%", xpos, ypos);
 				}
 			}
 		}
 
 		// draw custom y-axis levels
-		if (style.customYLevels != null) {
-			for (int n = 0; n < style.customYLevels.length; n++) {
-				double level = style.customYLevels[n];
-				if (level > style.yMax || level < style.yMin)
-					continue;
-				// would be nice to draw a dashed line but that seems to be more difficult than
-				// expected...
-				g.setStrokeStyle(style.customLevelColor);
-				level = 0.5 + (1.0 - (level - style.yMin) / (style.yMax - style.yMin)) * h;
-				strokeLine(0.5, level, w, level);
-			}
+		for (double level : style.customYLevels) {
+			if (level > style.yMax || level < style.yMin)
+				continue;
+			// would be nice to draw a dashed line but that seems to be more difficult than
+			// expected...
+			g.setStrokeStyle(style.customLevelColor);
+			level = 0.5 + (1.0 - (level - style.yMin) / (style.yMax - style.yMin)) * h;
+			strokeLine(0.5, level, w, level);
 		}
 
 		// x-axis label
@@ -1124,7 +1173,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		if (style.showYLabel && style.yLabel != null) {
 			setFont(style.ticksLabelFont);
 			int digits = 2;
-			double tickskip = -1.0;
+			double tickskip;
 			if (style.percentY) {
 				if (style.yMax <= 1.0)
 					digits = 1;
@@ -1137,10 +1186,15 @@ public abstract class AbstractGraph<B> extends FocusPanel
 						.getWidth() + 16.0;
 
 			setFont(style.axesLabelFont);
-			fillTextVertical(style.yLabel, w + tickskip + style.tickLength,
-					(h + g.measureText(style.yLabel).getWidth()) / 2);
+			String ylabel = style.yLabel;
+			if (style.logScaleY)
+				ylabel += " (log)";
+			// rotate and draw
+			fillTextVertical(ylabel, w + tickskip + style.tickLength,
+					(h + g.measureText(ylabel).getWidth()) / 2);
 		}
 
+		final String PX_SANS_SERIF = "px sans-serif";
 		if (style.showLabel && style.label != null) {
 			// adjust label font size to graph; 5% of height with minimum 10px and max 20px
 			int labelFontSize = (int) Math.min(20, Math.max(10, bounds.getHeight() * 0.05));
@@ -1148,11 +1202,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			if (gscale > 0.0) {
 				g.save();
 				g.scale(1.0 / gscale, 1.0 / gscale);
-				setFont("bold " + labelFontSize + "px sans-serif");
+				setFont("bold " + labelFontSize + PX_SANS_SERIF);
 				g.fillText(style.label, 4, (int) (labelFontSize * 1.2));
 				g.restore();
 			} else {
-				setFont("bold " + labelFontSize + "px sans-serif");
+				setFont("bold " + labelFontSize + PX_SANS_SERIF);
 				g.fillText(style.label, 4, (int) (labelFontSize * 1.2));
 			}
 		}
@@ -1182,7 +1236,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	protected void setFont(String cssfont) {
 		// adjust size
-		int idx, start = cssfont.length();
+		int idx;
+		int start = cssfont.length();
 		for (idx = 0; idx < start; idx++) {
 			if (Character.isDigit(cssfont.charAt(idx))) {
 				start = idx;
@@ -1319,6 +1374,25 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
+	 * Draw the outline of the 2D node.
+	 * 
+	 * @param node the node to draw
+	 */
+	protected void strokeCircle(Node2D node) {
+		strokeCircle(node.getX(), node.getY(), node.getR());
+	}
+
+	/**
+	 * Draw the outline of a circle at {@code point} with {@code radius}.
+	 * 
+	 * @param point  the node to draw
+	 * @param radius the radius of the circle
+	 */
+	protected void strokeCircle(Point2D point, double radius) {
+		strokeCircle(point.getX(), point.getY(), radius);
+	}
+
+	/**
 	 * Draw the circle with the center at {@code (x,y)} and radius {@code radius}.
 	 * 
 	 * @param x      the {@code x}-coordinate of the center
@@ -1328,6 +1402,25 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	protected void strokeCircle(double x, double y, double radius) {
 		sketchCircle(x, y, radius);
 		g.stroke();
+	}
+
+	/**
+	 * Draw the filled 2D node.
+	 * 
+	 * @param node the node to draw
+	 */
+	protected void fillCircle(Node2D node) {
+		fillCircle(node.getX(), node.getY(), node.getR());
+	}
+
+	/**
+	 * Draw a filled circle at {@code point} with {@code radius}.
+	 * 
+	 * @param point  the node to draw
+	 * @param radius the radius of the circle
+	 */
+	protected void fillCircle(Point2D point, double radius) {
+		fillCircle(point.getX(), point.getY(), radius);
 	}
 
 	/**
@@ -1354,6 +1447,16 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		g.beginPath();
 		g.arc(x, y, radius, 0.0, TWOPI, true);
 		g.closePath();
+	}
+
+	/**
+	 * Draw a line from point {@code a} to {@code b)}.
+	 * 
+	 * @param a the start point
+	 * @param b the end point
+	 */
+	protected void strokeLine(Point2D a, Point2D b) {
+		strokeLine(a.getX(), a.getY(), b.getX(), b.getY());
 	}
 
 	/**
@@ -1441,10 +1544,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		clearCanvas();
 		g.setFillStyle("#000");
 		g.setFont("12px sans-serif");
-		// size font to fill approx 66% of linewidth (max. 24px)
-		// g.setFont(Math.min((int)(12.0*0.666*width/g.measureText(msg).getWidth()),
-		// 24)+"px sans-serif");
-		// g.fillText(msg, (width-g.measureText(msg).getWidth())/2, height/2);
 		// center text in bounds
 		double w = bounds.getWidth();
 		// size font to fill approx 80% of linewidth (max. 20px)
@@ -1461,7 +1560,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 * Clear the message.
 	 */
 	public void clearMessage() {
-		// clearCanvas();
 		hasMessage = false;
 	}
 
@@ -1481,10 +1579,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	 */
 	public void zoom() {
 		zoomFactor = 1.0;
-		if (viewCorner != null) {
-			viewCorner.x = 0.0;
-			viewCorner.y = 0.0;
-		}
+		if (viewCorner != null)
+			viewCorner.set(0.0, 0.0);
 	}
 
 	/**
@@ -1519,9 +1615,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void zoom(double zoom, int x, int y) {
 		if (hasMessage)
 			return;
-		zoom(zoom, (viewCorner.x + x - bounds.getX()) / (bounds.getWidth() *
+		zoom(zoom, (viewCorner.getX() + x - bounds.getX()) / (bounds.getWidth() *
 				zoomFactor),
-				(viewCorner.y + y - bounds.getY()) / (bounds.getHeight() * zoomFactor));
+				(viewCorner.getY() + y - bounds.getY()) / (bounds.getHeight() * zoomFactor));
 	}
 
 	/**
@@ -1545,9 +1641,9 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			return;
 		double w = bounds.getWidth();
 		double h = bounds.getHeight();
-		viewCorner.set(Math.min(w * (newZoomFactor - 1.0), Math.max(0, viewCorner.x +
+		viewCorner.set(Math.min(w * (newZoomFactor - 1.0), Math.max(0, viewCorner.getX() +
 				w * dz * fx)),
-				Math.min(h * (newZoomFactor - 1.0), Math.max(0, viewCorner.y + h * dz *
+				Math.min(h * (newZoomFactor - 1.0), Math.max(0, viewCorner.getY() + h * dz *
 						fy)));
 		zoomFactor = newZoomFactor;
 		if (zoomInertiaTimer.isRunning())
@@ -1567,8 +1663,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void shift(int dx, int dy) {
 		if (hasMessage)
 			return;
-		viewCorner.set(Math.min(getOffsetWidth() * (zoomFactor - 1.0), Math.max(0, viewCorner.x + dx)),
-				Math.min(getOffsetHeight() * (zoomFactor - 1.0), Math.max(0, viewCorner.y + dy)));
+		viewCorner.set(Math.min(getOffsetWidth() * (zoomFactor - 1.0), Math.max(0, viewCorner.getX() + dx)),
+				Math.min(getOffsetHeight() * (zoomFactor - 1.0), Math.max(0, viewCorner.getY() + dy)));
 		paint(true);
 	}
 
@@ -1597,7 +1693,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	@Override
 	public void onMouseOut(MouseOutEvent event) {
 		leftMouseButton = false;
-		element.removeClassName("evoludo-cursorMoveView");
+		element.removeClassName(CSS_CURSOR_MOVE_VIEW);
 		if (mouseMoveHandler != null) {
 			mouseMoveHandler.removeHandler();
 			mouseMoveHandler = null;
@@ -1625,6 +1721,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
+	 * The CSS class name for the view movement cursor.
+	 */
+	protected static final String CSS_CURSOR_MOVE_VIEW = "evoludo-cursorMoveView";
+
+	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * Cancel all interactions with the graph and reset node and mouse information.
@@ -1641,7 +1742,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void onMouseUp(MouseUpEvent event) {
 		if (event.getNativeButton() == NativeEvent.BUTTON_LEFT) {
 			leftMouseButton = false;
-			element.removeClassName("evoludo-cursorMoveView");
+			element.removeClassName(CSS_CURSOR_MOVE_VIEW);
 			if (mouseMoveHandler != null) {
 				mouseMoveHandler.removeHandler();
 				mouseMoveHandler = null;
@@ -1668,7 +1769,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	public void onMouseMove(MouseMoveEvent event) {
 		if (leftMouseButton) {
 			// shift view
-			element.addClassName("evoludo-cursorMoveView");
+			element.addClassName(CSS_CURSOR_MOVE_VIEW);
 			int x = event.getX();
 			int y = event.getY();
 			shifter.shift(mouseX - x, mouseY - y);
@@ -1701,13 +1802,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		event.preventDefault();
 		int x = event.getX();
 		int y = event.getY();
-		int dz = event.getDeltaY();
-		if (hasMessage || dz == 0)
+		double dz = event.getNativeDeltaY();
+		if (hasMessage || dz == 0.0)
 			return;
-		double zoom = Combinatorics.pow(Zooming.ZOOM_INCR, -dz);
+		double zoom = Math.pow(Zooming.ZOOM_INCR, -dz);
 		zoomer.zoom(zoom, x, y);
 		if (!zoomInertiaTimer.isRunning())
-			zoomInertiaTimer.schedule(200);
+			zoomInertiaTimer.schedule(100);
 	}
 
 	/**
@@ -1776,7 +1877,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			}
 			if (touchMoveHandler == null)
 				touchMoveHandler = addTouchMoveHandler(this);
-			return;
 		}
 	}
 
@@ -2025,7 +2125,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			}
 			if (xRange < 0.0) {
 				xMin = xMax + xRange;
-				return;
 			}
 		}
 
@@ -2042,7 +2141,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			}
 			if (yRange < 0.0) {
 				yMin = yMax + yRange;
-				return;
 			}
 		}
 
@@ -2067,6 +2165,11 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		 * percent.
 		 */
 		public boolean percentY = false;
+
+		/**
+		 * The flag to indicate whether to use logarithmic scaling on the y-axis.
+		 */
+		public boolean logScaleY = false;
 
 		/**
 		 * The label of the graph (if any).
@@ -2145,12 +2248,12 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		/**
 		 * The array with {@code x}-values to draw custom vertical levels.
 		 */
-		public double[] customXLevels = null;
+		public double[] customXLevels = new double[0];
 
 		/**
 		 * The array with {@code y}-values to draw custom horizontal levels.
 		 */
-		public double[] customYLevels = null;
+		public double[] customYLevels = new double[0];
 
 		/**
 		 * The stroke width of the frame.
@@ -2170,7 +2273,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		/**
 		 * The dashing pattern for a dashed line.
 		 */
-		public int[] solidLine = new int[] {};
+		public int[] solidLine = new int[0];
 
 		/**
 		 * The dashing pattern for a dashed line.

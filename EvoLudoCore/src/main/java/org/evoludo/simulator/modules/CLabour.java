@@ -33,7 +33,7 @@ package org.evoludo.simulator.modules;
 import java.awt.Color;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBS.HasIBS;
+import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasDistribution;
 import org.evoludo.simulator.views.HasHistogram;
@@ -75,19 +75,15 @@ public class CLabour extends Continuous implements Payoffs,
 	 */
 	public CLabour(EvoLudo engine) {
 		super(engine);
+		nTraits = 2; // two investment traits
 	}
 
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 2;
-		// trait names
-		setTraitNames(new String[] { "Trait 1", "Trait 2" });
 		// trait colors (automatically generates lighter versions for min and max)
-		setTraitColors(new Color[] { Color.GREEN, // trait 1
-				Color.RED // trait 2
-		});
-		// alloc
+		setTraitColors(new Color[] { Color.GREEN, Color.RED });
+		// opponent traits (local storage)
 		you = new double[nTraits];
 	}
 

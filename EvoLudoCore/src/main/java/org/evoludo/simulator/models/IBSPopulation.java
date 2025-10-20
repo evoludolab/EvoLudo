@@ -49,6 +49,7 @@ import org.evoludo.simulator.models.IBSGroup.SamplingType;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.PlayerUpdate;
+import org.evoludo.simulator.modules.Features;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
@@ -77,19 +78,19 @@ public abstract class IBSPopulation {
 	/**
 	 * The module associated with this population.
 	 */
-	protected Module module;
+	protected Module<?> module;
 
 	/**
 	 * Convenience field for static modules to avoid casts.
 	 */
-	protected Module.Static staticmodule;
+	protected Features.Static staticmodule;
 
 	/**
 	 * Gets the module associated with this population.
 	 * 
 	 * @return the module associated with this population
 	 */
-	public Module getModule() {
+	public Module<?> getModule() {
 		return module;
 	}
 
@@ -129,14 +130,14 @@ public abstract class IBSPopulation {
 	 * @param engine the pacemaker for running the model
 	 * @param module the module that defines the game
 	 */
-	protected IBSPopulation(EvoLudo engine, Module module) {
+	protected IBSPopulation(EvoLudo engine, Module<?> module) {
 		this.engine = engine;
 		logger = engine.getLogger();
 		opponent = this;
 		this.module = module;
 		// initialize helper variables
 		nTraits = module.getNTraits();
-		VACANT = module.getVacant();
+		VACANT = module.getVacantIdx();
 
 		// get shared random number generator
 		rng = engine.getRNG();
@@ -385,7 +386,7 @@ public abstract class IBSPopulation {
 	 * The index of vacant sites or {@code -1} if module does not support vacancies.
 	 * Convenience field.
 	 * 
-	 * @see Module#getVacant()
+	 * @see Module#getVacantIdx()
 	 */
 	protected int VACANT = -1;
 
@@ -838,7 +839,7 @@ public abstract class IBSPopulation {
 		int pick = random0n(nTot);
 		if (pick + pick > nTot) {
 			pick = nTot - pick - 1;
-			// start search at tail; cannot stop halfway;
+			// start search at tail, cannot stop halfway
 			// vacancies may be concentrated at tail
 			for (int n = nPopulation - 1; n >= 0; n--) {
 				if (isVacantAt(n))
@@ -851,7 +852,7 @@ public abstract class IBSPopulation {
 				}
 			}
 		} else {
-			// start search at head; cannot stop halfway;
+			// start search at head, cannot stop halfway
 			// vacancies may be concentrated at head
 			for (int n = 0; n < nPopulation; n++) {
 				if (isVacantAt(n))
@@ -881,7 +882,7 @@ public abstract class IBSPopulation {
 	 * @return the index of the picked individual
 	 */
 	public int pickFocalIndividual(int excl) {
-		if( VACANT < 0)
+		if (VACANT < 0)
 			return pickFocalSite(excl);
 		if (excl < 0 || excl > nPopulation)
 			return pickFocalIndividual();
@@ -1006,8 +1007,7 @@ public abstract class IBSPopulation {
 				// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
 				if (excl == maxEffScoreIdx) {
 					// excluding the maximum score can cause issues if it is much larger than the
-					// rest;
-					// need to find the second largest fitness value (note using
+					// rest. need to find the second largest fitness value (note using
 					// mapToFitness(maxScore)
 					// may be even worse because most candidates are rejected
 					double mScore = map2fit.map(second(maxEffScoreIdx));
@@ -1049,11 +1049,12 @@ public abstract class IBSPopulation {
 					return n;
 			}
 			// last resort...
-			if (excl == nPopulation - 1)
+			if (excl == nPopulation - 1) {
 				if (hit < 1e-6 && getFitnessAt(nPopulation - 2) > 1e-6)
 					return nPopulation - 2;
-				else if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
+				if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
 					return nPopulation - 1;
+			}
 			debugScores(hit);
 			engine.fatal("pickFitFocalIndividual(int) failed to pick individual...");
 			// fatal does not return control
@@ -1066,8 +1067,7 @@ public abstract class IBSPopulation {
 			// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
 			if (excl == maxEffScoreIdx) {
 				// excluding the maximum score can cause issues if it is much larger than the
-				// rest;
-				// need to find the second largest fitness value (note using
+				// rest, need to find the second largest fitness value (note using
 				// mapToFitness(maxScore)
 				// may be even worse because most candidates are rejected
 				double mScore = map2fit.map(second(maxEffScoreIdx));
@@ -1152,13 +1152,13 @@ public abstract class IBSPopulation {
 	protected void debugScores(double hit) {
 		if (!logger.isLoggable(Level.FINE))
 			return;
-		logger.fine("aborted in generation: " + Formatter.format(engine.getModel().getTime(), 2) + "\nscore dump:");
+		logger.fine("aborted in generation: " + Formatter.format(engine.getModel().getUpdates(), 2) + "\nscore dump:");
 		double sum = 0.0;
 		for (int n = 0; n < nPopulation; n++) {
 			double sn = getScoreAt(n);
 			double fn = getFitnessAt(n);
 			String in = module.isStatic() ? "-" : "" + interactions[n];
-			logger.fine("score[" + n + "]=" + Formatter.format(sn, 6) + " -> " + Formatter.format(fn, 6)
+			logger.fine("score[" + n + "]=" + Formatter.format(sn, 6) + " → " + Formatter.format(fn, 6)
 					+ ", interactions[" + n + "]=" + in +
 					", base=" + map2fit.getBaseline() + ", selection=" + map2fit.getSelection());
 			sum += fn;
@@ -1466,8 +1466,8 @@ public abstract class IBSPopulation {
 			commitTraitAt(me);
 			return;
 		}
-		// constant selection does not require involved score adjustments;
-		// called only under special circumstances, e.g. with optimizeHomo set;
+		// constant selection does not require involved score adjustments
+		// called only under special circumstances, e.g. with optimizeHomo set
 		// after committing make sure fitness is updated
 		if (module.isStatic()) {
 			commitTraitAt(me);
@@ -1728,8 +1728,9 @@ public abstract class IBSPopulation {
 		}
 		int start = -1;
 		// find first non-vacant site
-		while (isVacantAt(++start))
-			;
+		while (isVacantAt(++start)) {
+			// loop until found
+		}
 		maxEffScoreIdx = start;
 	}
 
@@ -2081,28 +2082,29 @@ public abstract class IBSPopulation {
 		// + getTraitNameAt(you) + " " + you + " (" + getScoreAt(you) + ")");
 		// // jf>
 		if (logger.isLoggable(Level.FINE) && debugFocal >= 0) {
-			String msg = "focal:" + formatInfoAt(debugFocal, -1) + ", ";
+			StringBuilder sb = new StringBuilder();
+			sb.append("focal:").append(formatInfoAt(debugFocal, -1)).append(", ");
 			switch (debugNModels) {
 				case -1:
 				case 0:
 					if (debugModel >= 0)
-						msg += "target:" + formatInfoAt(debugModel, -1);
+						sb.append("target:").append(formatInfoAt(debugModel, -1));
 					break;
 				case 1:
 					int idx = debugModels[0];
-					msg += "model:" + formatInfoAt(idx, debugModel);
+					sb.append("model:").append(formatInfoAt(idx, debugModel));
 					break;
 				default:
-					msg += "models:";
+					sb.append("models:");
 					for (int n = 0; n < debugNModels - 1; n++) {
 						idx = debugModels[n];
-						msg += formatInfoAt(idx, debugModel) + ",";
+						sb.append(formatInfoAt(idx, debugModel)).append(',');
 					}
-					msg += formatInfoAt(debugModels[debugNModels - 1], debugModel);
+					sb.append(formatInfoAt(debugModels[debugNModels - 1], debugModel));
 			}
 			if (!debugSame)
-				msg += " changed";
-			logger.fine(msg);
+				sb.append(" changed");
+			logger.fine(sb.toString());
 		}
 	}
 
@@ -2298,7 +2300,8 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Perform a single ecological update of an individual selected uniformly at random.
+	 * Perform a single ecological update of an individual selected uniformly at
+	 * random.
 	 * 
 	 * @return the number of elapsed realtime units
 	 */
@@ -2507,12 +2510,10 @@ public abstract class IBSPopulation {
 				switched = true;
 				continue;
 			}
-			if (Math.abs(aScore - bestScore) < 1e-8) {
+			if (Math.abs(aScore - bestScore) < 1e-8 && random01() < 0.5) {
 				// equal scores - switch with probability 50%
-				if (random01() < 0.5) {
-					bestPlayer = aPlayer;
-					switched = true;
-				}
+				bestPlayer = aPlayer;
+				switched = true;
 			}
 		}
 		if (!switched)
@@ -2660,7 +2661,9 @@ public abstract class IBSPopulation {
 		}
 
 		double myFitness = getFitnessAt(me);
-		double aProb, nProb, norm;
+		double aProb;
+		double nProb;
+		double norm;
 		double noise = playerUpdate.getNoise();
 		double error = playerUpdate.getError();
 		double equalProb = betterOnly ? error : 0.5;
@@ -2774,7 +2777,9 @@ public abstract class IBSPopulation {
 		}
 
 		double myFitness = getFitnessAt(me);
-		double aProb, nProb, norm;
+		double aProb;
+		double nProb;
+		double norm;
 		double noise = playerUpdate.getNoise();
 		double error = playerUpdate.getError();
 		// generalize update to competition among arbitrary numbers of players
@@ -2801,11 +2806,8 @@ public abstract class IBSPopulation {
 			}
 		} else { // some noise
 			double inoise = 1.0 / noise;
-			// the increased accuracy of {@code Math.expm1(x)} for {@code x} near {@code 0}
-			// is not so
-			// important but hopefully this also means the accuracy is more symmetrical for
-			// {@code x}
-			// and {@code 1/x}
+			// the increased accuracy of Math.expm1(x) for x near 0 is not so important but
+			// hopefully this also means the accuracy is more symmetrical for x and 1/x
 			aProb = Math.min(1.0 - error, Math.max(error,
 					1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[0]) - myFitness) * inoise))));
 			norm = aProb;
@@ -2843,11 +2845,17 @@ public abstract class IBSPopulation {
 			}
 		}
 		// should not get here!
-		String msg = "Report: myScore=" + myFitness + ", nProb=" + nProb + ", norm=" + norm + ", choice=" + choice
-				+ "\nCumulative probabilities: ";
-		for (int i = 0; i < rGroupSize; i++)
-			msg += cProbs[i] + "\t";
-		logger.fine(msg);
+		if (logger.isLoggable(Level.FINE)) {
+			StringBuilder sb = new StringBuilder();
+			sb.append("Report: myScore=").append(myFitness)
+					.append(", nProb=").append(nProb)
+					.append(", norm=").append(norm)
+					.append(", choice=").append(choice)
+					.append("\nCumulative probabilities: ");
+			for (int i = 0; i < rGroupSize; i++)
+				sb.append(cProbs[i]).append('\t');
+			logger.fine(sb.toString());
+		}
 		throw new Error("Problem in updateThermal()...");
 	}
 
@@ -2943,7 +2951,7 @@ public abstract class IBSPopulation {
 	 * @see #reset()
 	 */
 	public boolean check() {
-		staticmodule = module.isStatic() ? (Module.Static) module : null;
+		staticmodule = module.isStatic() ? (Features.Static) module : null;
 		int ot = nTraits;
 		nTraits = module.getNTraits();
 		boolean doReset = (ot != nTraits);
@@ -3095,33 +3103,37 @@ public abstract class IBSPopulation {
 			// particular (internal)
 			// arrangement of the neighbors.
 			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
-			logger.warning("square " + name + " geometry has incompatible interaction pattern and neighborhood size" +
-					" - using random sampling of interaction partners!");
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning(
+						"square " + name + " geometry has incompatible interaction pattern and neighborhood size" +
+								" - using random sampling of interaction partners!");
 		}
 		if (interaction.getType() == Geometry.Type.CUBE && interGroup.isSampling(IBSGroup.SamplingType.ALL) &&
 				nGroup > 2 && nGroup <= interaction.connectivity) {
-			// Group.SAMPLING_ALL only works with pairwise interactions or all neighbors;
+			// Group.SAMPLING_ALL only works with pairwise interactions or all neighbors
 			// restrictions do not apply for PDE's
 			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
-			logger.warning("cubic " + name + " geometry has incompatible interaction pattern and neighborhood size" +
-					" - using random sampling of interaction partners!");
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning(
+						"cubic " + name + " geometry has incompatible interaction pattern and neighborhood size" +
+								" - using random sampling of interaction partners!");
 		}
 
 		// check competition geometry (may still be undefined at this point)
 		Geometry compgeom = (competition != null ? competition : interaction);
 		if ((module instanceof Payoffs) // best-response not an option with contact processes
-				&& !populationUpdate.isMoran() 
+				&& !populationUpdate.isMoran()
 				&& !populationUpdate.getType().equals(PopulationUpdate.Type.ECOLOGY)) {
 			// Moran type updates ignore playerUpdate
-			if (compgeom.getType() == Geometry.Type.MEANFIELD && compGroup.isSampling(IBSGroup.SamplingType.ALL)) {
+			if (compgeom.getType() == Geometry.Type.MEANFIELD && compGroup.isSampling(IBSGroup.SamplingType.ALL)
+					&& playerUpdate.getType() != PlayerUpdate.Type.BEST_RESPONSE) {
 				// 010320 using everyone as a reference in mean-field simulations is not
 				// feasible - except for best-response
 				// ecological updates are based on births and deaths rather than references
-				if (playerUpdate.getType() != PlayerUpdate.Type.BEST_RESPONSE) {
+				if (logger.isLoggable(Level.WARNING))
 					logger.warning("reference type (" + compGroup.getSampling()
 							+ ") unfeasible in well-mixed populations!");
-					compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
-				}
+				compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 			}
 			// best-response in well-mixed populations should skip sampling of references
 			if (compgeom.getType() == Geometry.Type.MEANFIELD
@@ -3150,18 +3162,17 @@ public abstract class IBSPopulation {
 		}
 		// combinations of unstructured and structured populations in inter-species
 		// interactions require more attention. exclude for now.
-		if (getInteractionGeometry().isInterspecies() && opponent.getInteractionGeometry() != null) {
+		if (getInteractionGeometry().isInterspecies() && opponent.getInteractionGeometry() != null &&
+				(getInteractionGeometry().getType() != opponent.getInteractionGeometry().getType()) &&
+				(getInteractionGeometry().getType() == Geometry.Type.MEANFIELD ||
+						opponent.getInteractionGeometry().getType() == Geometry.Type.MEANFIELD)) {
 			// opponent not yet ready; check will be repeated for opponent
-			if ((getInteractionGeometry().getType() != opponent.getInteractionGeometry().getType()) &&
-					(getInteractionGeometry().getType() == Geometry.Type.MEANFIELD ||
-							opponent.getInteractionGeometry().getType() == Geometry.Type.MEANFIELD)) {
-				logger.warning(
-						"interspecies interactions combining well-mixed and structured populations not (yet) tested"
-								+ " - well-mixed structure forced!");
-				getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
-				opponent.getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
-				doReset = true;
-			}
+			logger.warning(
+					"interspecies interactions combining well-mixed and structured populations not (yet) tested"
+							+ " - well-mixed structure forced!");
+			getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
+			opponent.getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
+			doReset = true;
 		}
 
 		if (pMigration < 1e-10)
@@ -3418,11 +3429,12 @@ public abstract class IBSPopulation {
 		if (populationUpdate.isMoran()) {
 			// avoid negative fitness for Moran type updates
 			if (minFitness < 0.0) {
-				logger.warning("Moran updates require fitness>=0 (score range [" + Formatter.format(minScore, 6)
-						+ ", " + Formatter.format(maxScore, 6) + "]; " + "fitness range ["
-						+ Formatter.format(minFitness, 6) + ", " + Formatter.format(maxFitness, 6) + "]).\n"
-						+ "Changed baseline fitness to " + map2fit.getBaseline()
-						+ (!map2fit.isMap(Map2Fitness.Map.STATIC) ? " with static payoff-to-fitness map" : ""));
+				if (logger.isLoggable(Level.WARNING))
+					logger.warning("Moran updates require fitness>=0 (score range [" + Formatter.format(minScore, 6)
+							+ ", " + Formatter.format(maxScore, 6) + "]; " + "fitness range ["
+							+ Formatter.format(minFitness, 6) + ", " + Formatter.format(maxFitness, 6) + "]).\n"
+							+ "Changed baseline fitness to " + map2fit.getBaseline()
+							+ (!map2fit.isMap(Map2Fitness.Map.STATIC) ? " with static payoff-to-fitness map" : ""));
 				// just change to something meaningful
 				map2fit.setMap(Map2Fitness.Map.STATIC);
 				map2fit.setBaseline(-minFitness);
@@ -3448,8 +3460,10 @@ public abstract class IBSPopulation {
 			// note: the maximum selection strength may be significantly higher if
 			// populations,
 			// on average, are unable to achieve the highest individual payoffs
-			logger.warning("selection strength too strong (numerical overflow) - reduced to (conservative) maximum of "
-					+ Formatter.format(map2fit.getSelection(), 4));
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning(
+						"selection strength too strong (numerical overflow) - reduced to (conservative) maximum of "
+								+ Formatter.format(map2fit.getSelection(), 4));
 			updateMinMaxScores();
 		}
 
@@ -3547,7 +3561,7 @@ public abstract class IBSPopulation {
 	 * code.
 	 */
 	public void isConsistent() {
-		if (!isConsistent)
+		if (!isConsistent || !logger.isLoggable(Level.WARNING))
 			return;
 		// universal consistency checks
 		for (int n = 0; n < nPopulation; n++) {
@@ -3573,14 +3587,16 @@ public abstract class IBSPopulation {
 			}
 			if (interactionsn == 0) {
 				if (scoren > 1e-12) {
-					logger.warning("scoring issue @ " + n + ": score=" + scoren + " of isolated site should be zero");
+					logger.warning(
+							"scoring issue @ " + n + ": score=" + scoren + " of isolated site should be zero");
 					isConsistent = false;
 				}
 				continue;
 			}
 			if (scoren + 1e-12 < minScore || scoren - 1e-12 > maxScore) {
 				logger.warning(
-						"scoring issue @ " + n + ": score=" + scoren + " not in [" + minScore + ", " + maxScore + "]");
+						"scoring issue @ " + n + ": score=" + scoren + " not in [" + minScore + ", " + maxScore
+								+ "]");
 				isConsistent = false;
 			}
 			double fitn = getFitnessAt(n);
@@ -3618,8 +3634,9 @@ public abstract class IBSPopulation {
 						isConsistent = false;
 					}
 					if (Math.abs(typeScores[n] - typeScoresStore[n]) > 1e-12) {
-						logger.warning("scoring issue for trait " + n + ": score=" + typeScoresStore[n] + " instead of "
-								+ typeScores[n]);
+						logger.warning(
+								"scoring issue for trait " + n + ": score=" + typeScoresStore[n] + " instead of "
+										+ typeScores[n]);
 						isConsistent = false;
 					}
 					typeFitness[n] = map2fit.map(typeScores[n]);
@@ -3713,7 +3730,7 @@ public abstract class IBSPopulation {
 			}
 		}
 		if (!isConsistent)
-			logger.warning("inconsistency found @ " + engine.getModel().getTime());
+			logger.warning("inconsistency found @ " + engine.getModel().getUpdates());
 	}
 
 	/**
@@ -3744,10 +3761,11 @@ public abstract class IBSPopulation {
 	 * by GUI to visualize the current state of this IBS model.
 	 * 
 	 * @param mean the array for returning the trait values
+	 * @return the array {@code mean} containing the mean trait values
 	 * 
 	 * @see Model#getMeanTraits(int, double[])
 	 */
-	public abstract void getMeanTraits(double[] mean);
+	public abstract double[] getMeanTraits(double[] mean);
 
 	/**
 	 * Returns the traits of all individuals in this population coded as colors in
@@ -3772,10 +3790,11 @@ public abstract class IBSPopulation {
 	 * series was started through {@link #init()} or {@link #reset()}.
 	 * 
 	 * @param mean the array for storing the mean fitness values
+	 * @return the array {@code mean} containing the mean fitness values
 	 * 
 	 * @see Model#getMeanFitness(int, double[])
 	 */
-	public abstract void getMeanFitness(double[] mean);
+	public abstract double[] getMeanFitness(double[] mean);
 
 	/**
 	 * Returns the fitness of all individuals in this population coded as colors in
@@ -3846,7 +3865,8 @@ public abstract class IBSPopulation {
 		// for neutral selection maxScore==minScore!
 		// in that case assume range [score-1, score+1]
 		// needs to be synchronized with GUI (e.g. MVFitness, MVFitHistogram, ...)
-		double map, min = minScore;
+		double min = minScore;
+		double map;
 		if (isNeutral) {
 			map = nBins * 0.5;
 			min--;
@@ -3874,10 +3894,10 @@ public abstract class IBSPopulation {
 	 */
 	public String getScores(int digits) {
 		if (hasLookupTable) {
-			StringBuffer buf = new StringBuffer();
+			StringBuilder buf = new StringBuilder();
 			buf.append(Formatter.format(getScoreAt(0), digits));
 			for (int n = 1; n < nPopulation; n++)
-				buf.append(Formatter.VECTOR_DELIMITER + " " + Formatter.format(getScoreAt(n), digits));
+				buf.append(Formatter.VECTOR_DELIMITER).append(" ").append(Formatter.format(getScoreAt(n), digits));
 			return buf.toString();
 		}
 		return Formatter.format(scores, digits);
@@ -3904,10 +3924,10 @@ public abstract class IBSPopulation {
 	 */
 	public String getFitness(int digits) {
 		if (hasLookupTable) {
-			StringBuffer buf = new StringBuffer();
+			StringBuilder buf = new StringBuilder();
 			buf.append(Formatter.format(getFitnessAt(0), digits));
 			for (int n = 1; n < nPopulation; n++)
-				buf.append(Formatter.VECTOR_DELIMITER + " " + Formatter.format(getFitnessAt(n), digits));
+				buf.append(Formatter.VECTOR_DELIMITER).append(" ").append(Formatter.format(getFitnessAt(n), digits));
 			return buf.toString();
 		}
 		return Formatter.format(fitness, digits);
@@ -4413,15 +4433,6 @@ public abstract class IBSPopulation {
 	}
 
 	/**
-	 * Set the seed of the random number generator for competition simulation runs.
-	 *
-	 * @param s the seed for random number generator
-	 */
-	public void srandom(long s) {
-		rng.setRNGSeed(s);
-	}
-
-	/**
 	 * Draw a uniformly distributed random integer number from the closed interval
 	 * {@code [0, n]}.
 	 *
@@ -4505,8 +4516,11 @@ public abstract class IBSPopulation {
 				return i;
 			pi *= f;
 		}
-		logger.warning(
-				"What the heck are you doing here!!! (rand: " + uRand + ", p: " + p + ", n: " + n + " -> " + sum + ")");
+		if (logger.isLoggable(Level.WARNING)) {
+			StringBuilder sb = new StringBuilder("What the heck are you doing here!!! (rand: ");
+			sb.append(uRand).append(", p: ").append(p).append(", n: ").append(n).append(" → ").append(sum).append(")");
+			logger.warning(sb.toString());
+		}
 		return -1;
 	}
 }

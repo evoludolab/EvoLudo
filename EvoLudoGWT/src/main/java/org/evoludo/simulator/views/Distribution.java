@@ -31,12 +31,10 @@
 package org.evoludo.simulator.views;
 
 import java.awt.Color;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
-import org.evoludo.graphics.GenericPopGraph;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.graphics.TooltipProvider;
 import org.evoludo.math.ArrayMath;
@@ -44,6 +42,7 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Module;
@@ -61,7 +60,7 @@ import com.google.gwt.user.client.Command;
  *
  * @author Christoph Hauert
  */
-public class Distribution extends AbstractView implements GenericPopGraph.PopGraphController, TooltipProvider.Index {
+public class Distribution extends AbstractView implements TooltipProvider.Index {
 
 	/**
 	 * The list of graphs that display the trajectories in 2D phase planes.
@@ -77,7 +76,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 	/**
 	 * The maximum number of bins for the trait histograms.
 	 */
-	protected int MAX_BINS = 100;
+	protected static final int MAX_BINS = 100;
 
 	/**
 	 * The storage to accommodate the trait histograms.
@@ -114,11 +113,11 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 
 	@Override
 	protected void allocateGraphs() {
-		ArrayList<? extends Module> species = engine.getModule().getSpecies();
+		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		int nGraphs = species.size();
 		if (graphs.size() != nGraphs) {
 			destroyGraphs();
-			for (Module module : species) {
+			for (Module<?> module : species) {
 				PopGraph2D graph = new PopGraph2D(this, module);
 				graph.setDebugEnabled(false);
 				wrapper.add(graph);
@@ -144,9 +143,9 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 	public void reset(boolean hard) {
 		super.reset(hard);
 		for (PopGraph2D graph : graphs) {
-			Module module = graph.getModule();
+			Module<?> module = graph.getModule();
 			int nTraits = module.getNTraits();
-			PopGraph2D.GraphStyle style = graph.getStyle();
+			AbstractGraph.GraphStyle style = graph.getStyle();
 			switch (type) {
 				default:
 				case FITNESS:
@@ -216,7 +215,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 	@Override
 	public void update(boolean force) {
 		// always read data - some nodes may have changed due to user actions
-		double newtime = model.getTime();
+		double newtime = model.getUpdates();
 		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
 		timestamp = newtime;
 		for (PopGraph2D graph : graphs) {
@@ -229,7 +228,8 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 				case TRAIT:
 					// process data first
 					// casts ok because trait histograms make sense only for continuous models
-					((org.evoludo.simulator.models.Continuous) model).get2DTraitHistogramData(graph.getModule().getID(), bins, traitXIdx,
+					((CModel) model).get2DTraitHistogramData(graph.getModule().getID(),
+							bins, traitXIdx,
 							traitYIdx);
 					ColorMap.Gradient1D<String> cMap = (ColorMap.Gradient1D<String>) graph.getColorMap();
 					cMap.setRange(0.0, ArrayMath.max(bins));
@@ -307,7 +307,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 			return null;
 		GraphStyle style = graph.getStyle();
 		int nBins = MAX_BINS;
-		Module module = engine.getModule();
+		Module<?> module = engine.getModule();
 		int nTraits = module.getNTraits();
 		if (nTraits == 1) {
 			int bar = node % nBins;
@@ -333,7 +333,7 @@ public class Distribution extends AbstractView implements GenericPopGraph.PopGra
 
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int node) {
-		Module module = engine.getModule();
+		Module<?> module = engine.getModule();
 		int nTraits = module.getNTraits();
 		// ignore if less than 3 traits
 		if (nTraits < 3) {

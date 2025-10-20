@@ -72,12 +72,6 @@ import org.evoludo.simulator.models.PDE;
 public abstract class ColorMap<T extends Object> {
 
 	/**
-	 * Constructs a new color map.
-	 */
-	public ColorMap() {
-	}
-
-	/**
 	 * Useful constant for converting <code>int</code> representations of color
 	 * channels (<code>0-255</code>) to floating point representations
 	 * (<code>0-1</code>).
@@ -99,7 +93,7 @@ public abstract class ColorMap<T extends Object> {
 	 * @return <code>true</code> if translation successful
 	 */
 	public boolean translate(int[] data, T[] color) {
-		throw new Error("ColorMap.translate(int[], T[]) not implemented!");
+		throw new UnsupportedOperationException("ColorMap.translate(int[], T[]) not implemented!");
 	}
 
 	/**
@@ -110,7 +104,7 @@ public abstract class ColorMap<T extends Object> {
 	 * @return the color object
 	 */
 	public T translate(double[] data) {
-		throw new Error("ColorMap.translate(double[]) not implemented!");
+		throw new UnsupportedOperationException("ColorMap.translate(double[]) not implemented!");
 	}
 
 	/**
@@ -129,7 +123,7 @@ public abstract class ColorMap<T extends Object> {
 	 * @return <code>true</code> if translation successful
 	 */
 	public boolean translate(double[] data, T[] color) {
-		throw new Error("ColorMap.translate(double[], T[]) not implemented!");
+		throw new UnsupportedOperationException("ColorMap.translate(double[], T[]) not implemented!");
 	}
 
 	/**
@@ -142,7 +136,7 @@ public abstract class ColorMap<T extends Object> {
 	 * @return <code>true</code> if translation successful
 	 */
 	public boolean translate(double[][] data, T[] color) {
-		throw new Error("ColorMap.translate(double[][], T[]) not implemented!");
+		throw new UnsupportedOperationException("ColorMap.translate(double[][], T[]) not implemented!");
 	}
 
 	/**
@@ -162,7 +156,7 @@ public abstract class ColorMap<T extends Object> {
 	 * @return <code>true</code> if translation successful
 	 */
 	public boolean translate(double[][] data1, double[][] data2, T[] color) {
-		throw new Error("ColorMap.translate(double[][], double[][], T[]) not implemented!");
+		throw new UnsupportedOperationException("ColorMap.translate(double[][], double[][], T[]) not implemented!");
 	}
 
 	/**
@@ -236,7 +230,10 @@ public abstract class ColorMap<T extends Object> {
 		if (colors.length < n)
 			return Color.WHITE;
 		// assume that weights are normalized to avoid overhead
-		double red = 0.0, green = 0.0, blue = 0.0, alpha = 0.0;
+		double red = 0.0;
+		double green = 0.0;
+		double blue = 0.0;
+		double alpha = 0.0;
 		for (int i = 0; i < n; i++) {
 			double w = weights[i];
 			Color ci = colors[i];
@@ -380,13 +377,7 @@ public abstract class ColorMap<T extends Object> {
 	 * @see org.evoludo.simulator.ColorMap3D ColorMap3D
 	 * @see "Also consult GWT emulation of Color in org.evoludo.emulate.java.awt.Color"
 	 */
-	public static abstract class Gradient<T> extends ColorMap<T> {
-
-		/**
-		 * Constructs a new gradient color map.
-		 */
-		public Gradient() {
-		}
+	public abstract static class Gradient<T> extends ColorMap<T> {
 
 		/**
 		 * Utility method for creating a smooth gradient ranging from color
@@ -403,10 +394,11 @@ public abstract class ColorMap<T extends Object> {
 		 *                 color
 		 */
 		public void interpolateColors(T[] gradient, Color start, int first, Color end, int last) {
-			for (int n = first; n <= last; n++) {
+			for (int n = first; n < last; n++) {
 				double x = (double) (n - first) / (double) (last - first);
 				gradient[n] = color2Color(blendColors(end, start, x));
 			}
+			gradient[last] = color2Color(end);
 		}
 
 		/**
@@ -434,7 +426,7 @@ public abstract class ColorMap<T extends Object> {
 		 * @return the color object
 		 */
 		public T translate(double data) {
-			throw new Error("ColorMap.translate(double) not implemented!");
+			throw new UnsupportedOperationException("ColorMap.translate(double) not implemented!");
 		}
 	}
 
@@ -452,7 +444,7 @@ public abstract class ColorMap<T extends Object> {
 	 * @see org.evoludo.simulator.ColorMap3D
 	 * @see "Also consult GWT emulation of Color in org.evoludo.emulate.java.awt.Color"
 	 */
-	public static abstract class Hue<T> extends Gradient1D<T> {
+	public abstract static class Hue<T> extends Gradient1D<T> {
 
 		/**
 		 * Construct a new Hue color map, starting at a hue of <code>0.0</code> (red) up
@@ -533,7 +525,7 @@ public abstract class ColorMap<T extends Object> {
 	 * @see org.evoludo.simulator.ColorMap3D ColorMap3D
 	 * @see "Also consult GWT emulation of Color in org.evoludo.emulate.java.awt.Color"
 	 */
-	public static abstract class Gradient1D<T> extends Gradient<T> {
+	public abstract static class Gradient1D<T> extends Gradient<T> {
 
 		/**
 		 * Reference to pre-allocated gradient colors.
@@ -765,7 +757,7 @@ public abstract class ColorMap<T extends Object> {
 	 * @see org.evoludo.simulator.ColorMap3D ColorMap3D
 	 * @see "Also consult GWT emulation of Color in org.evoludo.emulate.java.awt.Color"
 	 */
-	public static abstract class Gradient2D<T> extends Gradient<T> {
+	public abstract static class Gradient2D<T> extends Gradient<T> {
 
 		/**
 		 * Reference to pre-allocated gradient colors.
@@ -853,8 +845,8 @@ public abstract class ColorMap<T extends Object> {
 				return;
 			}
 			// create color gradient on simplex
+			Color colordep = colors[dep];
 			for (int i = 0; i <= nGradient; i++) {
-				Color colordep = colors[dep];
 				Color start = blendColors(color1, colordep, w1);
 				Color end = blendColors(start, color2, w1);
 				interpolateColors(gradient[i], start, 0, end, nGradient - i);
@@ -1065,7 +1057,7 @@ public abstract class ColorMap<T extends Object> {
 			} else {
 				for (int n = 0; n < len; n++) {
 					double[] datan = data[n];
-					color[n] = gradient[(int)(datan[trait1] * nGradient)][(int)(datan[trait2] * nGradient)];
+					color[n] = gradient[(int) (datan[trait1] * nGradient)][(int) (datan[trait2] * nGradient)];
 				}
 			}
 			return true;
@@ -1115,7 +1107,7 @@ public abstract class ColorMap<T extends Object> {
 		 * @see #setRange(double, double)
 		 * @see #setRange(double[], double[])
 		 */
-		public GradientND(Color[] colors) {
+		protected GradientND(Color[] colors) {
 			this(colors.length);
 			traits = Arrays.copyOf(colors, nTraits);
 		}
@@ -1139,7 +1131,7 @@ public abstract class ColorMap<T extends Object> {
 		 * @see #setRange(double, double)
 		 * @see #setRange(double[], double[])
 		 */
-		public GradientND(Color[] colors, Color bg) {
+		protected GradientND(Color[] colors, Color bg) {
 			this(colors);
 			if (bg != null)
 				this.bg = bg;
@@ -1165,7 +1157,7 @@ public abstract class ColorMap<T extends Object> {
 		 * @see #setRange(double, double)
 		 * @see #setRange(double[], double[])
 		 */
-		public GradientND(Color[] colors, int idx) {
+		protected GradientND(Color[] colors, int idx) {
 			this(idx < 0 || idx >= colors.length ? colors.length : colors.length - 1);
 			traits = new Color[nTraits];
 			int trait = 0;
@@ -1217,7 +1209,7 @@ public abstract class ColorMap<T extends Object> {
 			int idx = 0;
 			for (int n = 0; n < len; n++) {
 				System.arraycopy(data, idx, datan, 0, nTraits);
-				color[n] = translate(datan);
+				color[n] = super.translate(datan);
 				idx += nTraits;
 			}
 			return true;
@@ -1242,7 +1234,7 @@ public abstract class ColorMap<T extends Object> {
 		public boolean translate(double[][] data, T[] color) {
 			int len = color.length;
 			for (int n = 0; n < len; n++)
-				color[n] = translate(data[n]);
+				color[n] = super.translate(data[n]);
 			return true;
 		}
 

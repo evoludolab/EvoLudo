@@ -39,6 +39,7 @@ import com.google.gwt.event.dom.client.MouseOutEvent;
 import com.google.gwt.event.dom.client.MouseOutHandler;
 import com.google.gwt.event.dom.client.MouseOverEvent;
 import com.google.gwt.event.dom.client.MouseOverHandler;
+import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.HasEnabled;
 import com.google.gwt.user.client.ui.Label;
@@ -79,6 +80,26 @@ public class ContextMenuItem extends Label
 	private ContextMenu childMenu = null;
 
 	/**
+	 * The handler of mouse over events to open submenu.
+	 */
+	HandlerRegistration mouseOverHandler;
+
+	/**
+	 * The handler of mouse out events to close submenu.
+	 */
+	HandlerRegistration mouseOutHandler;
+
+	/**
+	 * The handler of click events.
+	 */
+	HandlerRegistration clickHandler;
+
+	/**
+	 * The handler of context menu events.
+	 */
+	HandlerRegistration contextMenuHandler;
+
+	/**
 	 * Flag to indicate whether menu item is enabled.
 	 */
 	private boolean isEnabled = true;
@@ -93,11 +114,6 @@ public class ContextMenuItem extends Label
 	public ContextMenuItem(String name, Scheduler.ScheduledCommand cmd) {
 		super(name, false);
 		this.cmd = cmd;
-		setStyleName("gwt-ContextMenuItem");
-		addMouseOverHandler(this);
-		addMouseOutHandler(this);
-		addClickHandler(this);
-		addDomHandler(this, ContextMenuEvent.getType());
 	}
 
 	/**
@@ -110,9 +126,37 @@ public class ContextMenuItem extends Label
 	 */
 	public ContextMenuItem(String name, ContextMenu child) {
 		this(name, (Scheduler.ScheduledCommand) null);
-		assert child != null;
+		if (child == null)
+			throw new IllegalArgumentException("child submenu must not be null");
 		childMenu = child;
-		addStyleName("submenu");
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
+		setStyleName("gwt-ContextMenuItem");
+		clickHandler = addClickHandler(this);
+		contextMenuHandler = addDomHandler(this, ContextMenuEvent.getType());
+		if (hasSubmenu()) {
+			mouseOverHandler = addDomHandler(this, MouseOverEvent.getType());
+			mouseOutHandler = addDomHandler(this, MouseOutEvent.getType());
+			addStyleName("submenu");
+		}
+	}
+
+	@Override
+	protected void onUnload() {
+		if (clickHandler != null)
+			clickHandler.removeHandler();
+		if (contextMenuHandler != null)
+			contextMenuHandler.removeHandler();
+		if (hasSubmenu()) {
+			if (mouseOverHandler != null)
+				mouseOverHandler.removeHandler();
+			if (mouseOutHandler != null)
+				mouseOutHandler.removeHandler();
+		}
+		super.onUnload();
 	}
 
 	/**
@@ -130,7 +174,7 @@ public class ContextMenuItem extends Label
 				if (!childMenu.isAutoClose())
 					closeNow();
 			} else if (!childMenu.isAutoOpen()) {
-				_open();
+				openSubmenu();
 			}
 			return;
 		}
@@ -141,7 +185,10 @@ public class ContextMenuItem extends Label
 	/**
 	 * Open submenu.
 	 */
-	private void _open() {
+	private void openSubmenu() {
+		if (childMenu == null || !isEnabled)
+			return;
+		childMenu.onLoad();
 		childMenu.setOffset(-2, -2);
 		childMenu.showAt(getElement().getAbsoluteLeft() + getOffsetWidth() - Window.getScrollLeft(),
 				getElement().getAbsoluteTop() - Window.getScrollTop());
@@ -159,7 +206,7 @@ public class ContextMenuItem extends Label
 		if (!isEnabled || childMenu == null)
 			return false;
 		if (hasSubmenu() && childMenu.isAutoOpen())
-			_open();
+			openSubmenu();
 		return true;
 	}
 
@@ -223,7 +270,6 @@ public class ContextMenuItem extends Label
 			int y = getAbsoluteTop() - childMenu.getAbsoluteTop() + event.getY();
 			if (y < 0 || y > childMenu.getOffsetHeight()) {
 				closeNow();
-				return;
 			}
 		}
 	}
@@ -238,7 +284,10 @@ public class ContextMenuItem extends Label
 	public void onMouseOver(MouseOverEvent event) {
 		if (!hasSubmenu())
 			((ContextMenu) getParent()).closeChildMenu();
-		open();
+		if (!childMenu.isAttached())
+			open();
+		else
+			childMenu.cancelHideTimer();
 	}
 
 	/**

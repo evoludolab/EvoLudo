@@ -86,6 +86,9 @@ public class Functions {
 		if (magnitude == 0)
 			return Math.floor(value);
 		double factor = Combinatorics.pow(10.0, magnitude);
+		// prevent returning NaN for very small magnitudes
+		if (factor == 0.0)
+			return Double.MIN_VALUE;
 		return Math.floor(value / factor) * factor;
 	}
 
@@ -109,7 +112,7 @@ public class Functions {
 				magnitude++;
 			}
 		} else {
-			while (value <= 0.1) {
+			while (value <= 1.0) {
 				value *= 10.0;
 				magnitude--;
 			}

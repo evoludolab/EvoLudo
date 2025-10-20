@@ -50,6 +50,7 @@ import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.SampleListener;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.Formatter;
@@ -76,7 +77,7 @@ import com.google.gwt.user.client.ui.RequiresResize;
  * @author Christoph Hauert
  */
 public abstract class AbstractView extends Composite implements RequiresResize, ProvidesResize,
-		AbstractGraph.Controller, MilestoneListener, ChangeListener {
+		MilestoneListener, SampleListener, ChangeListener {
 
 	/**
 	 * The reference to the EvoLudo engine that manages the simulation.
@@ -141,28 +142,20 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	/**
 	 * The constructor for the abstract view.
 	 * 
+	 * @evoludo.note A {@code LayoutPanel} instead of a {@code FlowPanel} would be a
+	 *               nice way to continue the onResize cascade but incompatible with
+	 *               current implementation of context menu and tooltips
+	 * 
 	 * @param engine the EvoLudo engine
 	 * @param type   the type of data shown in this view
 	 */
-	public AbstractView(EvoLudoGWT engine, Data type) {
+	protected AbstractView(EvoLudoGWT engine, Data type) {
 		this.engine = engine;
 		this.type = type;
 		logger = engine.getLogger();
-		createWidget();
-		initWidget(wrapper);
-	}
-
-	/**
-	 * Create the widget that will contain the graphical representations of the
-	 * data.
-	 * 
-	 * @evoludo.note LayoutPanel would be a nice way to continue the onResize
-	 *               cascade but incompatible with current implementation of context
-	 *               menu and tooltips
-	 */
-	public void createWidget() {
 		wrapper = new FlowPanel();
 		wrapper.getElement().getStyle().setPosition(Position.RELATIVE);
+		initWidget(wrapper);
 	}
 
 	/**
@@ -192,6 +185,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		model = engine.getModel();
 		allocateGraphs();
 		isLoaded = true;
+		options = null;
 		return true;
 	}
 
@@ -225,6 +219,31 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		unload();
 		engine.removeMilestoneListener(this);
 		engine.removeChangeListener(this);
+		engine.removeSampleListener(this);
+	}
+
+	/**
+	 * The string with view specific options.
+	 * 
+	 * @see org.evoludo.EvoLudoWeb#cloView
+	 */
+	String options;
+
+	/**
+	 * Parse the arguments {@code args} provided to this view. The default
+	 * implementation simply passes {@code args} to all its {@code graphs}.
+	 * 
+	 * @param args the arguments to parse
+	 * @return {@code true} if the arguments were successfully parsed
+	 */
+	public boolean parse(String args) {
+		options = args;
+		if (options == null)
+			return true;
+		boolean ok = true;
+		for (AbstractGraph<?> graph : graphs)
+			ok &= graph.parse(options);
+		return ok;
 	}
 
 	/**
@@ -250,17 +269,29 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		gRows = gCols = 1;
 	}
 
-	@Override
+	/**
+	 * Get the type of data visualized on the graph.
+	 *
+	 * @return the data type
+	 */
 	public Data getType() {
 		return type;
 	}
 
-	@Override
+	/**
+	 * Get the type of the model supplying the data visualized on the graph.
+	 *
+	 * @return the model type
+	 */
 	public Model getModel() {
 		return model;
 	}
 
-	@Override
+	/**
+	 * Get the logger for returning progress, problems and messages to user.
+	 *
+	 * @return the logger for messages
+	 */
 	public Logger getLogger() {
 		return logger;
 	}
@@ -308,7 +339,9 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 		return true;
 	}
 
-	@Override
+	/**
+	 * Notification of the completion of the layouting process.
+	 */
 	public void layoutComplete() {
 		// some views (currently only networks) may require more involved layouting and
 		// report completion once done.
@@ -383,6 +416,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	@Override
 	public void modelDidReset() {
 		reset(true);
+		parse(options);
 	}
 
 	/**
@@ -418,8 +452,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 
 	@Override
 	public void modelChanged(PendingAction action) {
-		if (action == PendingAction.NONE
-				|| action == PendingAction.STATISTIC_READY) {
+		if (action == PendingAction.NONE) {
 			double now = Duration.currentTimeMillis();
 			boolean update = (now - updatetime > MIN_MSEC_BETWEEN_UPDATES);
 			if (update)
@@ -448,9 +481,75 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 */
 	public abstract void update(boolean force);
 
-	@Override
+	/**
+	 * Checks if the controller is busy running calculations.
+	 *
+	 * @return {@code true} if calculations are running
+	 */
+	public boolean isActive() {
+		return isActive;
+	}
+
+	/**
+	 * Checks if the controller is busy running calculations.
+	 *
+	 * @return {@code true} if calculations are running
+	 */
 	public boolean isRunning() {
 		return engine.isRunning();
+	}
+
+	/**
+	 * Notifies the controller that the user requested setting a new initial
+	 * configuration {@code init} (optional implementation).
+	 *
+	 * @param init the new initial configuration
+	 * @return {@code true} if the request was honoured
+	 */
+	public boolean setInitialState(double[] init) {
+		return false;
+	}
+
+	/**
+	 * Notifies the controller that the mouse/tap has hit node with index
+	 * {@code node} on the graph with the tag {@code id}.
+	 * 
+	 * @param id   the id of the graph
+	 * @param node the index of the node that was hit
+	 */
+	public void mouseHitNode(int id, int node) {
+		mouseHitNode(id, node, false);
+	}
+
+	/**
+	 * Notifies the controller that the mouse/tap has hit node with index
+	 * {@code node} on the graph with the tag {@code id}. The flag {@code alt}
+	 * indicates whether the {@code alt}-modifier was pressed (optional
+	 * implementation).
+	 * 
+	 * @param id   the id of the graph
+	 * @param node the index of the node that was hit
+	 * @param alt  {@code true} if the {@code alt}-key was pressed
+	 */
+	public void mouseHitNode(int id, int node, boolean alt) {
+	}
+
+	/**
+	 * Opportunity for the controller to add functionality to the context menu
+	 * (optional implementation). Additional entries should be added to
+	 * {@code menu}. If the context menu was opened while the mouse was over a node
+	 * its index is {@code node}. At this point the menu already contains entries
+	 * that are relevant for all graphs, e.g. fullscreen and export. Override this
+	 * method to add further, more specialized entries. Finally, the current pane
+	 * will be asked whether it wants to add further entries (e.g. autoscale axes)
+	 * (optional implementation).
+	 *
+	 * @param menu the context menu
+	 * @param node the index of node
+	 * 
+	 * @see AbstractView#populateContextMenu(ContextMenu)
+	 */
+	public void populateContextMenuAt(ContextMenu menu, int node) {
 	}
 
 	/**
@@ -601,21 +700,18 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	protected void scheduleUpdate(boolean force) {
 		if (updateScheduled)
 			return;
-		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-			@Override
-			public void execute() {
-				// deferred updates can cause issues if in the mean time the model
-				// has changed and this view is no longer supported. if this is the
-				// case destroyGraphs has been called and graphs is empty.
-				try {
-					// catch errors to prevent the views from crashing GUI
-					if (!graphs.isEmpty())
-						update(force);
-				} catch (Exception e) {
-					logger.severe("Error updating view: " + e.getMessage());
-				}
-				updateScheduled = false;
+		Scheduler.get().scheduleDeferred(() -> {
+			// deferred updates can cause issues if in the mean time the model
+			// has changed and this view is no longer supported. if this is the
+			// case destroyGraphs has been called and graphs is empty.
+			try {
+				// catch errors to prevent the views from crashing GUI
+				if (!graphs.isEmpty())
+					update(force);
+			} catch (Exception e) {
+				logger.severe("Error updating view: " + e.getMessage());
 			}
+			updateScheduled = false;
 		});
 		updateScheduled = true;
 	}
@@ -651,7 +747,12 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 */
 	protected ContextMenu exportSubmenu;
 
-	@Override
+	/**
+	 * Opportunity for the controller to add functionality to the context menu
+	 * (optional implementation).
+	 *
+	 * @param contextMenu the context menu
+	 */
 	public void populateContextMenu(ContextMenu contextMenu) {
 		// models may also like to add entries to context menu
 		// IMPORTANT: cannot query model directly due to interference with java
@@ -660,31 +761,18 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 
 		// process exports context menu (suppress in ePub, regardless of whether a
 		// standalone lab or not)
-		ExportType[] types = exportTypes();
-		boolean isEPub = engine.isEPub;
-		if (!isEPub && types != null && exportSubmenu == null) {
-			int nTypes = types.length;
+		if (!EvoLudoGWT.isEPub) {
 			exportSubmenu = new ContextMenu(contextMenu);
-			// always include option to export current state
 			exportSubmenu.add(new ContextMenuItem(ExportType.STATE.toString(), new ExportCommand(ExportType.STATE)));
-			for (int n = 0; n < nTypes; n++) {
-				ExportType t = types[n];
-				if (t == ExportType.STATE)
-					continue;
-				exportSubmenu.add(new ContextMenuItem(t.toString(), new ExportCommand(t)));
+			for (ExportType e : exportTypes()) {
+				if (e == ExportType.STATE)
+					continue; // always included
+				exportSubmenu.add(new ContextMenuItem(e.toString(), new ExportCommand(e)));
 			}
-		}
-		if (exportSubmenu != null) {
 			contextMenu.addSeparator();
 			exportSubmenuTrigger = contextMenu.add("Export...", exportSubmenu);
-		}
-		if (!isEPub && restoreMenu == null) {
-			restoreMenu = new ContextMenuItem("Restore...", new Command() {
-				@Override
-				public void execute() {
-					engine.restoreFromFile();
-				}
-			});
+			if (restoreMenu == null)
+				restoreMenu = new ContextMenuItem("Restore...", () -> engine.restoreFromFile());
 		}
 		boolean idle = !engine.isRunning();
 		if (restoreMenu != null) {
@@ -785,7 +873,7 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 	 * @return the list of viable export types
 	 */
 	protected ExportType[] exportTypes() {
-		return null;
+		return new ExportType[0];
 	}
 
 	/**
@@ -921,15 +1009,21 @@ public abstract class AbstractView extends Composite implements RequiresResize, 
 			buffer = (RingBuffer<double[]>) newbuffer;
 			String name = graph.getStyle().label;
 			if (name != null)
-				export.append("# " + name + "\n");
-			String legend = "time";
+				export.append("# ")
+						.append(name)
+						.append("\n");
+			StringBuilder legend = new StringBuilder("time");
 			for (int i = 0; i < buffer.getDepth() - 1; i++) {
-				legend += ", " + model.getMeanName(i);
+				legend.append(", ")
+						.append(model.getMeanName(i));
 			}
-			export.append("# " + legend + "\n");
+			export.append("# ")
+					.append(legend)
+					.append("\n");
 			Iterator<double[]> entry = buffer.ordered();
 			while (entry.hasNext()) {
-				export.append(Formatter.format(entry.next(), 8) + "\n");
+				export.append(Formatter.format(entry.next(), 8))
+						.append("\n");
 			}
 		}
 		if (export.length() == header)

@@ -33,19 +33,19 @@ package org.evoludo.graphics;
 import org.evoludo.geom.Point2D;
 
 public class StateData {
-	public int		nStates;
-	public double[]	state;
-	public double[]	pastState;
-	public double[]	start;
-	public double	time;
-	public double	pastTime;
-	public boolean	connect;
-	public boolean	isLocal = false;
-	public int		localNode = -1;
+	public int nStates;
+	public double[] state;
+	public double[] pastState;
+	public double[] start;
+	public double time;
+	public double pastTime;
+	public boolean connect;
+	public boolean isLocal = false;
+	public int localNode = -1;
 
-	public Point2D	now = new Point2D();
-	public Point2D	then = new Point2D();
-	public Point2D	origin = new Point2D();
+	public Point2D now = new Point2D();
+	public Point2D then = new Point2D();
+	public Point2D origin = new Point2D();
 
 	public void init(int len) {
 		nStates = len;
@@ -59,7 +59,7 @@ public class StateData {
 		System.arraycopy(state, 0, pastState, 0, nStates);
 		then.setLocation(now);
 		origin.setLocation(now);
-connect = false;
+		connect = false;
 	}
 
 	public void next() {
@@ -67,7 +67,7 @@ connect = false;
 		pastState = state;
 		state = swap;
 		pastTime = time;
-		Point2D	past = now;
+		Point2D past = now;
 		now = then;
 		then = past;
 	}

@@ -40,12 +40,10 @@ import org.evoludo.ui.ContextMenuCheckBoxItem;
 import org.evoludo.ui.ContextMenuItem;
 import org.evoludo.util.RingBuffer;
 
-import com.google.gwt.core.client.Scheduler.ScheduledCommand;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.event.dom.client.ContextMenuEvent;
 import com.google.gwt.event.dom.client.ContextMenuHandler;
 import com.google.gwt.event.shared.HandlerRegistration;
-import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.Widget;
 
@@ -62,18 +60,13 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 	 * messages are discarded. If the buffer capacity is set to {@code 0} the number
 	 * of messsages is unlimited. The buffer is displayed in a HTML widget.
 	 */
+	@SuppressWarnings("java:S110")
 	public static class Log extends HTML implements ContextMenu.Listener {
-
-		/**
-		 * Constructs a new log.
-		 */
-		public Log() {
-		}
 
 		/**
 		 * The default capacity of the log buffer.
 		 */
-		public final static int DEFAULT_CAPACITY = 1000;
+		public static final int DEFAULT_CAPACITY = 1000;
 
 		/**
 		 * The buffer to store the log messages.
@@ -142,6 +135,23 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 	 */
 	public Console(EvoLudoGWT engine) {
 		super(engine, Data.UNDEFINED);
+		log = new Log();
+		wrapper.add(log);
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
+		log.setStylePrimaryName("evoludo-Log");
+		contextMenu = ContextMenu.sharedContextMenu();
+		contextMenu.addListenerWithProvider(log, this);
+	}
+
+	@Override
+	protected void onUnload() {
+		log.setStylePrimaryName("evoludo-Log");
+		contextMenu.removeListener(log);
+		super.onUnload();
 	}
 
 	@Override
@@ -158,16 +168,6 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 	public void clearLog() {
 		log.clear();
 		log(Level.INFO, engine.getVersion());
-	}
-
-	@Override
-	public void createWidget() {
-		super.createWidget();
-		log = new Log();
-		log.setStylePrimaryName("evoludo-Log");
-		wrapper.add(log);
-		contextMenu = ContextMenu.sharedContextMenu();
-		contextMenu.add(log, this);
 	}
 
 	@Override
@@ -230,6 +230,8 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 
 	@Override
 	public void update(boolean force) {
+		// no regular updates required
+		// see log.show() to update display
 	}
 
 	/**
@@ -286,40 +288,23 @@ public class Console extends AbstractView implements ContextMenu.Provider {
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		// add menu to clear canvas
-		if (clearMenu == null) {
-			clearMenu = new ContextMenuItem("Clear", new Command() {
-				@Override
-				public void execute() {
-					clearLog();
-				}
-			});
-		}
+		if (clearMenu == null)
+			clearMenu = new ContextMenuItem("Clear", this::clearLog);
 		menu.add(clearMenu);
 		if (bufferSizeMenu == null) {
 			bufferSizeMenu = new ContextMenu(menu);
 			bufferSizeMenu.add(new ContextMenuCheckBoxItem("1k", //
-					new ScheduledCommand() {
-						@Override
-						public void execute() {
-							setLogCapacity(1000);
-							log.show();
-						}
+					() -> {
+						setLogCapacity(1000);
+						log.show();
 					}));
-			bufferSizeMenu.add(new ContextMenuCheckBoxItem("10k", //
-					new ScheduledCommand() {
-						@Override
-						public void execute() {
-							setLogCapacity(10000);
-							log.show();
-						}
+			bufferSizeMenu.add(new ContextMenuCheckBoxItem("10k",
+					() -> {
+						setLogCapacity(10000);
+						log.show();
 					}));
 			bufferSizeMenu.add(new ContextMenuCheckBoxItem("unlimited", //
-					new ScheduledCommand() {
-						@Override
-						public void execute() {
-							setLogCapacity(0);
-						}
-					}));
+					() -> setLogCapacity(0)));
 			setLogCapacity(log.buffer.getCapacity());
 		}
 		menu.add("Buffer size...", bufferSizeMenu);

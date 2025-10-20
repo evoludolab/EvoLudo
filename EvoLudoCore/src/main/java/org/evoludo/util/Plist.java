@@ -35,6 +35,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.evoludo.math.Combinatorics;
 
@@ -47,17 +48,8 @@ import org.evoludo.math.Combinatorics;
  * 
  * @author Christoph Hauert
  */
+@SuppressWarnings("serial")
 public class Plist extends HashMap<String, Object> {
-
-	/**
-	 * Required for serializable classes.
-	 */
-	private static final long serialVersionUID = 1L;
-
-	/**
-	 * The list of keys to skip when comparing two plists.
-	 */
-	Collection<String> skip;
 
 	/**
 	 * The flag to indicate if the comparison should fail fast, i.e. after first
@@ -69,6 +61,61 @@ public class Plist extends HashMap<String, Object> {
 	 * The number of repeated messages to report before skipping further messages.
 	 */
 	static final int N_REPEAT = 3;
+
+	/**
+	 * String constant for opening an {@code array} during plist generation.
+	 */
+	static final String ARRAY_OPEN = "<array>\n";
+
+	/**
+	 * String constant for closing an {@code array} during plist generation.
+	 */
+	static final String ARRAY_CLOSE = "</array>\n";
+
+	/**
+	 * String constant for opening an {@code integer} entry during plist generation.
+	 */
+	static final String INTEGER_OPEN = "<integer>";
+
+	/**
+	 * String constant for closing an {@code integer} entry during plist generation.
+	 */
+	static final String INTEGER_CLOSE = "</integer>\n";
+
+	/**
+	 * String constant for opening an {@code integer} entry during plist generation.
+	 */
+	static final String KEY_OPEN = "<key>";
+
+	/**
+	 * String constant for closing an {@code key} entry during plist generation.
+	 */
+	static final String KEY_CLOSE = "</key>\n";
+
+	/**
+	 * String constant for opening an {@code real} entry during plist generation.
+	 */
+	static final String REAL_OPEN = "<real>";
+
+	/**
+	 * String constant for closing an {@code real} entry during plist generation.
+	 */
+	static final String REAL_CLOSE = "L</real>\n";
+
+	/**
+	 * String constant for opening an {@code string} entry during plist generation.
+	 */
+	static final String STRING_OPEN = "<string>";
+
+	/**
+	 * String constant for closing an {@code string} entry during plist generation.
+	 */
+	static final String STRING_CLOSE = "</string>\n";
+
+	/**
+	 * String constant for reporting differences in keys.
+	 */
+	static final String DIFF_KEY = "key '";
 
 	/**
 	 * Construct a new plist.
@@ -145,24 +192,44 @@ public class Plist extends HashMap<String, Object> {
 	 * @return the number of differences
 	 */
 	public int diff(Plist plist) {
-		return diff(plist, new ArrayList<String>());
+		return diff(plist, new ArrayList<>());
 	}
 
 	/**
 	 * Compare this plist to {@code plist} but ignore keys in {@code clo}.
 	 * 
 	 * @param plist the reference {@code Plist} to compare against
-	 * @param clo   the collection of keys to skip
+	 * @param skip  the collection of keys to skip
 	 * @return the number of differences
 	 */
-	public int diff(Plist plist, Collection<String> clo) {
-		skip = clo;
+	public int diff(Plist plist, Collection<String> skip) {
 		nNumerical = 0;
 		nIssues = 0;
-		diffDict(plist, this);
+		diffDict(plist, this, skip);
 		if (nNumerical > 0)
 			reportDiff(nNumerical + " out of " + nIssues + " differences likely numerical rounding issues.");
 		return nIssues;
+	}
+
+	/**
+	 * Override hashCode to only use the actual plist content (HashMap entries).
+	 * This ensures hash stability regardless of internal state fields.
+	 */
+	@Override
+	public int hashCode() {
+		return super.hashCode();
+	}
+
+	/**
+	 * Override equals for consistency with hashCode.
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (!(obj instanceof Plist))
+			return false;
+		return super.equals(obj);
 	}
 
 	/**
@@ -170,34 +237,36 @@ public class Plist extends HashMap<String, Object> {
 	 * 
 	 * @param reference the reference {@code Plist}
 	 * @param plist     the {@code Plist} to check
+	 * @param skip      the collection of keys to skip
 	 */
-	private void diffDict(Plist reference, Plist plist) {
+	private void diffDict(Plist reference, Plist plist, Collection<String> skip) {
 		// step 1: check if dict reference contains all keys of plist
 		for (String key : plist.keySet()) {
 			if (skip.contains(key) || reference.containsKey(key))
 				continue;
-			processDiff("key '" + key + "' missing in reference.");
+			processDiff(DIFF_KEY + key + "' missing in reference.");
 			if (failFast)
 				return;
 		}
 		// step 2: check if dict plist contains all keys of reference
-		for (String key : reference.keySet()) {
+		for (Map.Entry<String, Object> entry : reference.entrySet()) {
+			String key = entry.getKey();
 			if (skip.contains(key))
 				continue;
 			if (!plist.containsKey(key)) {
 				if (reference == this)
 					continue;
-				processDiff("key '" + key + "' missing in plist.");
+				processDiff(DIFF_KEY + key + "' missing in plist.");
 				if (failFast)
 					return;
 				continue;
 			}
 			// step 3: compare entries this
-			Object val = reference.get(key);
+			Object val = entry.getValue();
 			Object pval = plist.get(key);
 			if (val.getClass() != pval.getClass()) {
-				processDiff("key '" + key + "' values class differs\n(me: " + pval.getClass()
-						+ ", ref: " + val.getClass() + ")");
+				processDiff(DIFF_KEY + key + "' values class differs\n"
+						+ diffMeRef(pval.getClass(), val.getClass()));
 				if (failFast)
 					return;
 				continue;
@@ -205,10 +274,10 @@ public class Plist extends HashMap<String, Object> {
 			if (val instanceof Plist) {
 				int before = nIssues;
 				// entry is dict
-				diffDict((Plist) val, (Plist) pval);
+				diffDict((Plist) val, (Plist) pval, skip);
 				if (before == nIssues)
 					continue;
-				reportDiff("key '" + key + "' dicts differ.");
+				reportDiff(DIFF_KEY + key + "' dicts differ.");
 				if (failFast)
 					return;
 				continue;
@@ -220,10 +289,10 @@ public class Plist extends HashMap<String, Object> {
 				List<Object> lval = (List<Object>) val;
 				@SuppressWarnings("unchecked")
 				List<Object> lpval = (List<Object>) pval;
-				diffArray(lval, lpval);
+				diffArray(lval, lpval, skip);
 				if (before == nIssues)
 					continue;
-				reportDiff("key '" + key + "' arrays differ.");
+				reportDiff(DIFF_KEY + key + "' arrays differ.");
 				if (failFast)
 					return;
 				continue;
@@ -231,7 +300,7 @@ public class Plist extends HashMap<String, Object> {
 			if (val instanceof String) {
 				if (((String) val).equals(pval))
 					continue;
-				processDiff("key '" + key + "' strings differ\n(me: " + pval + ", ref: " + val + ")");
+				processDiff(DIFF_KEY + key + "' strings differ\n" + diffMeRef(pval, val));
 				if (failFast)
 					return;
 				continue;
@@ -239,7 +308,7 @@ public class Plist extends HashMap<String, Object> {
 			if (val instanceof Integer) {
 				if (((Integer) val).equals(pval))
 					continue;
-				processDiff("key '" + key + "' integers differ\n(me: " + pval + ", ref: " + val + ")");
+				processDiff(DIFF_KEY + key + "' integers differ\n" + diffMeRef(pval, val));
 				if (failFast)
 					return;
 				continue;
@@ -248,8 +317,7 @@ public class Plist extends HashMap<String, Object> {
 				if (((Double) val).equals(pval))
 					continue;
 				checkRounding((Double) val, (Double) pval);
-				processDiff("key '" + key + "' reals differ\n(me: " + pval + ", ref: " + val + ", Δ: "
-						+ ((Double) pval - (Double) val) + ")");
+				processDiff(DIFF_KEY + key + "' reals differ\n" + diffMeRefDelta((Double) pval, (Double) val));
 				if (failFast)
 					return;
 				continue;
@@ -257,12 +325,12 @@ public class Plist extends HashMap<String, Object> {
 			if (val instanceof Boolean) {
 				if (((Boolean) val).equals(pval))
 					continue;
-				processDiff("key '" + key + "' booleans differ\n(me: " + pval + ", ref: " + val + ")");
+				processDiff(DIFF_KEY + key + "' booleans differ\n" + diffMeRef(pval, val));
 				if (failFast)
 					return;
 				continue;
 			}
-			processDiff("key '" + key + "' unknown value type (class: " + val.getClass() + ")");
+			processDiff(DIFF_KEY + key + "' unknown value type (class: " + val.getClass() + ")");
 			if (failFast)
 				return;
 		}
@@ -273,13 +341,12 @@ public class Plist extends HashMap<String, Object> {
 	 * 
 	 * @param reference the reference array
 	 * @param array     the array to check
+	 * @param skip      the collection of keys to skip
 	 */
-	private void diffArray(List<Object> reference, List<Object> array) {
+	private void diffArray(List<Object> reference, List<Object> array, Collection<String> skip) {
 		if (reference.size() != array.size()) {
 			processDiff(
-					"arrays differ in size\n(me: " + array.size() + ", ref: " + reference.size() + ")");
-			if (failFast)
-				return;
+					"arrays differ in size\n" + diffMeRef(array.size(), reference.size()));
 			return;
 		}
 		int i = -1;
@@ -287,14 +354,14 @@ public class Plist extends HashMap<String, Object> {
 			Object pele = array.get(++i);
 			if (ele.getClass() != pele.getClass()) {
 				processDiff(
-						"array classes differ\n(me: " + pele.getClass() + ", ref: " + ele.getClass() + ")");
+						"array classes differ\n" + diffMeRef(pele.getClass(), ele.getClass()));
 				if (failFast)
 					return;
 				continue;
 			}
 			if (ele instanceof Plist) {
 				// entry is dict
-				diffDict((Plist) ele, (Plist) pele);
+				diffDict((Plist) ele, (Plist) pele, skip);
 				continue;
 			}
 			if (ele instanceof List) {
@@ -303,14 +370,13 @@ public class Plist extends HashMap<String, Object> {
 				List<Object> lele = (List<Object>) ele;
 				@SuppressWarnings("unchecked")
 				List<Object> lpele = (List<Object>) pele;
-				diffArray(lele, lpele);
+				diffArray(lele, lpele, skip);
 				continue;
 			}
 			if (ele instanceof String) {
 				if (((String) ele).equals(pele))
 					continue;
-				processDiff(
-						"array string[" + i + "] differs\n(me: " + pele + ", ref: " + ele + ")");
+				processDiff(diffArray("string", i) + diffMeRef(pele, ele));
 				if (failFast)
 					return;
 				continue;
@@ -318,8 +384,7 @@ public class Plist extends HashMap<String, Object> {
 			if (ele instanceof Integer) {
 				if (((Integer) ele).equals(pele))
 					continue;
-				processDiff(
-						"array integer[" + i + "] differs\n(me: " + pele + ", ref: " + ele + ")");
+				processDiff(diffArray("integer", i) + diffMeRef(pele, ele));
 				if (failFast)
 					return;
 				continue;
@@ -328,8 +393,7 @@ public class Plist extends HashMap<String, Object> {
 				if (((Double) ele).equals(pele))
 					continue;
 				checkRounding((Double) ele, (Double) pele);
-				processDiff("array real[" + i + "] differs\n(me: " + pele + ", ref: " + ele + ", Δ: "
-						+ ((Double) pele - (Double) ele) + ")");
+				processDiff(diffArray("real", i) + diffMeRefDelta((Double) pele, (Double) ele));
 				if (failFast)
 					return;
 				continue;
@@ -337,8 +401,7 @@ public class Plist extends HashMap<String, Object> {
 			if (ele instanceof Boolean) {
 				if (((Boolean) ele).equals(pele))
 					continue;
-				processDiff(
-						"array boolean[" + i + "] differs\n(me: " + pele + ", ref: " + ele + ")");
+				processDiff(diffArray("boolean", i) + diffMeRef(pele, ele));
 				if (failFast)
 					return;
 				continue;
@@ -451,7 +514,7 @@ public class Plist extends HashMap<String, Object> {
 	 * @return encoded String
 	 */
 	public static String encodeKey(String key, boolean bool) {
-		return "<key>" + key + "</key>\n<" + (bool ? "true" : "false") + "/>\n";
+		return KEY_OPEN + key + KEY_CLOSE + "<" + (bool ? "true" : "false") + "/>\n";
 	}
 
 	/**
@@ -462,7 +525,7 @@ public class Plist extends HashMap<String, Object> {
 	 * @return encoded String
 	 */
 	public static String encodeKey(String key, int integer) {
-		return "<key>" + key + "</key>\n<integer>" + integer + "</integer>\n";
+		return KEY_OPEN + key + KEY_CLOSE + INTEGER_OPEN + integer + INTEGER_CLOSE;
 	}
 
 	/**
@@ -481,9 +544,7 @@ public class Plist extends HashMap<String, Object> {
 	 * @return encoded String
 	 */
 	public static String encodeKey(String key, double real) {
-		// return "<key>" + key + "</key>\n<real>" + Double.toHexString(real) +
-		// "</real>\n";
-		return "<key>" + key + "</key>\n<real>" + Long.toString(Double.doubleToLongBits(real)) + "L</real>\n";
+		return KEY_OPEN + key + KEY_CLOSE + REAL_OPEN + Long.toString(Double.doubleToLongBits(real)) + REAL_CLOSE;
 	}
 
 	/**
@@ -494,7 +555,7 @@ public class Plist extends HashMap<String, Object> {
 	 * @return encoded String
 	 */
 	public static String encodeKey(String key, String string) {
-		return "<key>" + key + "</key>\n<string>" + XMLCoder.encode(string) + "</string>\n";
+		return KEY_OPEN + key + KEY_CLOSE + STRING_OPEN + XMLCoder.encode(string) + STRING_CLOSE;
 	}
 
 	/**
@@ -505,7 +566,7 @@ public class Plist extends HashMap<String, Object> {
 	 * @return encoded String
 	 */
 	public static String encodeKey(String key, int[] array) {
-		return "<key>" + key + "</key>\n" + encodeArray(array);
+		return KEY_OPEN + key + KEY_CLOSE + encodeArray(array);
 	}
 
 	/**
@@ -518,7 +579,7 @@ public class Plist extends HashMap<String, Object> {
 	 * @return encoded String
 	 */
 	public static String encodeKey(String key, int[] array, int len) {
-		return "<key>" + key + "</key>\n" + encodeArray(array, len);
+		return KEY_OPEN + key + KEY_CLOSE + encodeArray(array, len);
 	}
 
 	/**
@@ -532,7 +593,7 @@ public class Plist extends HashMap<String, Object> {
 	 * @return encoded String
 	 */
 	public static String encodeKey(String key, double[] array) {
-		return "<key>" + key + "</key>\n" + encodeArray(array);
+		return KEY_OPEN + key + KEY_CLOSE + encodeArray(array);
 	}
 
 	/**
@@ -548,7 +609,7 @@ public class Plist extends HashMap<String, Object> {
 	 * @return encoded String
 	 */
 	public static String encodeKey(String key, double[] array, int len) {
-		return "<key>" + key + "</key>\n" + encodeArray(array, len);
+		return KEY_OPEN + key + KEY_CLOSE + encodeArray(array, len);
 	}
 
 	/**
@@ -563,7 +624,7 @@ public class Plist extends HashMap<String, Object> {
 	 * @return encoded String
 	 */
 	public static String encodeKey(String key, double[][] matrix) {
-		return "<key>" + key + "</key>\n" + encodeArray(matrix);
+		return KEY_OPEN + key + KEY_CLOSE + encodeArray(matrix);
 	}
 
 	/**
@@ -574,7 +635,7 @@ public class Plist extends HashMap<String, Object> {
 	 * @return encoded String
 	 */
 	public static String encodeKey(String key, String[] array) {
-		return "<key>" + key + "</key>\n" + encodeArray(array);
+		return KEY_OPEN + key + KEY_CLOSE + encodeArray(array);
 	}
 
 	/**
@@ -587,7 +648,7 @@ public class Plist extends HashMap<String, Object> {
 	 * @return encoded String
 	 */
 	public static String encodeKey(String key, String[] array, int len) {
-		return "<key>" + key + "</key>\n" + encodeArray(array, len);
+		return KEY_OPEN + key + KEY_CLOSE + encodeArray(array, len);
 	}
 
 	/**
@@ -597,10 +658,12 @@ public class Plist extends HashMap<String, Object> {
 	 * @return encoded String
 	 */
 	private static String encodeArray(int[] array) {
-		StringBuilder plist = new StringBuilder("<array>\n");
+		StringBuilder plist = new StringBuilder(ARRAY_OPEN);
 		for (int a : array)
-			plist.append("<integer>" + a + "</integer>\n");
-		return plist.append("</array>\n").toString();
+			plist.append(INTEGER_OPEN)
+					.append(a)
+					.append(INTEGER_CLOSE);
+		return plist.append(ARRAY_CLOSE).toString();
 	}
 
 	/**
@@ -612,10 +675,12 @@ public class Plist extends HashMap<String, Object> {
 	 * @return encoded String
 	 */
 	private static String encodeArray(int[] array, int len) {
-		StringBuilder plist = new StringBuilder("<array>\n");
+		StringBuilder plist = new StringBuilder(ARRAY_OPEN);
 		for (int n = 0; n < len; n++)
-			plist.append("<integer>" + array[n] + "</integer>\n");
-		return plist.append("</array>\n").toString();
+			plist.append(INTEGER_OPEN)
+					.append(array[n])
+					.append(INTEGER_CLOSE);
+		return plist.append(ARRAY_CLOSE).toString();
 	}
 
 	/**
@@ -628,10 +693,12 @@ public class Plist extends HashMap<String, Object> {
 	 * @return encoded String
 	 */
 	private static String encodeArray(double[] array) {
-		StringBuilder plist = new StringBuilder("<array>\n");
+		StringBuilder plist = new StringBuilder(ARRAY_OPEN);
 		for (double a : array)
-			plist.append("<real>" + Long.toString(Double.doubleToLongBits(a)) + "L</real>\n");
-		return plist.append("</array>\n").toString();
+			plist.append(REAL_OPEN)
+					.append(Long.toString(Double.doubleToLongBits(a)))
+					.append(REAL_CLOSE);
+		return plist.append(ARRAY_CLOSE).toString();
 	}
 
 	/**
@@ -646,10 +713,12 @@ public class Plist extends HashMap<String, Object> {
 	 * @return encoded String
 	 */
 	private static String encodeArray(double[] array, int len) {
-		StringBuilder plist = new StringBuilder("<array>\n");
+		StringBuilder plist = new StringBuilder(ARRAY_OPEN);
 		for (int n = 0; n < len; n++)
-			plist.append("<real>" + Long.toString(Double.doubleToLongBits(array[n])) + "L</real>\n");
-		return plist.append("</array>\n").toString();
+			plist.append(REAL_OPEN)
+					.append(Long.toString(Double.doubleToLongBits(array[n])))
+					.append(REAL_CLOSE);
+		return plist.append(ARRAY_CLOSE).toString();
 	}
 
 	/**
@@ -659,10 +728,10 @@ public class Plist extends HashMap<String, Object> {
 	 * @return encoded String
 	 */
 	private static String encodeArray(double[][] array) {
-		StringBuilder plist = new StringBuilder("<array>\n");
+		StringBuilder plist = new StringBuilder(ARRAY_OPEN);
 		for (double[] a : array)
 			plist.append(encodeArray(a));
-		return plist.append("</array>\n").toString();
+		return plist.append(ARRAY_CLOSE).toString();
 	}
 
 	/**
@@ -672,10 +741,12 @@ public class Plist extends HashMap<String, Object> {
 	 * @return encoded String
 	 */
 	private static String encodeArray(String[] array) {
-		StringBuilder plist = new StringBuilder("<array>\n");
+		StringBuilder plist = new StringBuilder(ARRAY_OPEN);
 		for (String a : array)
-			plist.append("<string>" + XMLCoder.encode(a) + "</string>\n");
-		return plist.append("</array>\n").toString();
+			plist.append(STRING_OPEN)
+					.append(XMLCoder.encode(a))
+					.append(STRING_CLOSE);
+		return plist.append(ARRAY_CLOSE).toString();
 	}
 
 	/**
@@ -687,10 +758,47 @@ public class Plist extends HashMap<String, Object> {
 	 * @return encoded String
 	 */
 	private static String encodeArray(String[] array, int len) {
-		StringBuilder plist = new StringBuilder("<array>\n");
+		StringBuilder plist = new StringBuilder(ARRAY_OPEN);
 		for (int n = 0; n < len; n++)
-			plist.append("<string>" + XMLCoder.encode(array[n]) + "</string>\n");
-		return plist.append("</array>\n").toString();
+			plist.append(STRING_OPEN)
+					.append(XMLCoder.encode(array[n]))
+					.append(STRING_CLOSE);
+		return plist.append(ARRAY_CLOSE).toString();
+	}
+
+	/**
+	 * Helper method for formatting output of differences in plists.
+	 * 
+	 * @param me  the object that failed comparison
+	 * @param ref the reference object
+	 * @return formatted string with the difference
+	 */
+	private String diffMeRef(Object me, Object ref) {
+		return "(me: " + me + ", ref: " + ref + ")\n";
+	}
+
+	/**
+	 * Helper method for formatting output of differences in plists optimized for
+	 * {@code Double} to also show the numerical difference.
+	 * 
+	 * @param me  the object that failed comparison
+	 * @param ref the reference object
+	 * @return formatted string
+	 */
+	private String diffMeRefDelta(Double me, Double ref) {
+		return "(me: " + me + ", ref: " + ref + ", Δ: "
+				+ (me - ref) + ")";
+	}
+
+	/**
+	 * Helper method for formatting output of differences in arrays.
+	 * 
+	 * @param type the type of the array
+	 * @param idx  the index of the entry
+	 * @return formatted string
+	 */
+	private String diffArray(String type, int idx) {
+		return "array " + type + "[" + idx + "] differs\n";
 	}
 
 	/**
@@ -701,11 +809,6 @@ public class Plist extends HashMap<String, Object> {
 	 * @return <code>int[]</code> array
 	 */
 	public static int[] list2int(List<Integer> list) {
-		// int[] array = new int[list.size()];
-		// int idx = 0;
-		// for (Integer i : list)
-		// array[idx++] = i;
-		// return array;
 		return list.stream().mapToInt(Integer::intValue).toArray();
 	}
 
@@ -717,11 +820,6 @@ public class Plist extends HashMap<String, Object> {
 	 * @return <code>double[]</code> array
 	 */
 	public static double[] list2double(List<Double> list) {
-		// double[] array = new double[list.size()];
-		// int idx = 0;
-		// for (Double d : list)
-		// array[idx++] = d;
-		// return array;
 		return list.stream().mapToDouble(Double::doubleValue).toArray();
 	}
 }

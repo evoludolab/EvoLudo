@@ -40,12 +40,12 @@ public class Point2D implements Point {
 	/**
 	 * The {@code x}-coordinate of the point.
 	 */
-	public double x;
+	double x;
 
 	/**
 	 * The {@code y}-coordinate of the point.
 	 */
-	public double y;
+	double y;
 
 	/**
 	 * Create a new 2D point with coordinates {@code (0,0)}.
@@ -221,7 +221,7 @@ public class Point2D implements Point {
 	}
 
 	/**
-	 * Calculate the distance from the origin {@code (0,0)}: \(\sqrt{x^2+y^2}\). 
+	 * Calculate the distance from the origin {@code (0,0)}: \(\sqrt{x^2+y^2}\).
 	 * <p>
 	 * For computational efficiency the fairly expensive square-roots calculations
 	 * should be avoided whenever possible.
@@ -245,7 +245,7 @@ public class Point2D implements Point {
 
 	/**
 	 * Calculate the distance between the two 2D points {@code p} and {@code q}:
-	 * \(\sqrt{(p.x-q.x)^2+(p.y-q.y)^2}\). 
+	 * \(\sqrt{(p.x-q.x)^2+(p.y-q.y)^2}\).
 	 * <p>
 	 * For computational efficiency the fairly expensive square-roots calculations
 	 * should be avoided whenever possible.

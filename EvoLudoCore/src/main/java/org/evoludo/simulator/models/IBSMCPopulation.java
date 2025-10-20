@@ -33,12 +33,13 @@ package org.evoludo.simulator.models;
 import java.util.Arrays;
 import java.util.List;
 
+import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSC.Init;
+import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.util.Formatter;
@@ -149,17 +150,17 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * <strong>Note:</strong> Internally traits are always scaled to
 	 * <code>[0, 1]</code>.
 	 * 
-	 * @see Continuous#getTraitMin()
+	 * @see #getTraitRangeMin()
 	 */
-	protected double[] traitMin;
+	protected double[] traitRangeMin;
 
 	/**
 	 * Get the minima for all traits.
 	 *
 	 * @return the array with the trait minima
 	 */
-	public double[] getTraitMin() {
-		return traitMin;
+	public double[] getTraitRangeMin() {
+		return traitRangeMin;
 	}
 
 	/**
@@ -169,17 +170,17 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * <strong>Note:</strong> Internally traits are always scaled to
 	 * <code>[0, 1]</code>.
 	 * 
-	 * @see Continuous#getTraitMin()
+	 * @see #getTraitRangeMax()
 	 */
-	protected double[] traitMax;
+	protected double[] traitRangeMax;
 
 	/**
 	 * Get the maxima for all traits.
 	 *
 	 * @return the array with the trait maxima
 	 */
-	public double[] getTraitMax() {
-		return traitMax;
+	public double[] getTraitRangeMax() {
+		return traitRangeMax;
 	}
 
 	/**
@@ -187,7 +188,95 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * at {@code traits[i * nTraits]} through
 	 * {@code traits[(i + 1) * nTraits - 1]}
 	 */
-	public double[] traits;
+	double[] traits;
+
+	/**
+	 * Get the trait of individual with index {@code idx}.
+	 * 
+	 * @param idx the index of the individual
+	 * @return the trait of the individual
+	 */
+	public double getTraitAt(int idx) {
+		if (nTraits > 1)
+			throw new UnsupportedOperationException("use getTraitsAt(idx) instead.");
+		return traits[idx];
+	}
+
+	/**
+	 * Get trait {@code d} of individual with index {@code idx}.
+	 * 
+	 * @param idx the index of the individual
+	 * @param d   the trait index
+	 * @return the trait of the individual
+	 */
+	public double getTraitAt(int idx, int d) {
+		return traits[idx * nTraits + d];
+	}
+
+	/**
+	 * Set the trait of individual with index {@code idx} to {@code trait}.
+	 * 
+	 * @param idx   the index of the individual
+	 * @param trait the trait of the individual
+	 */
+	public void setTraitAt(int idx, double trait) {
+		if (nTraits > 1)
+			throw new UnsupportedOperationException("use setTraitsAt(idx) instead.");
+		traits[idx] = trait;
+	}
+
+	/**
+	 * Get trait {@code d} of individual with index {@code idx}.
+	 * 
+	 * @param idx   the index of the individual
+	 * @param d     the trait index
+	 * @param trait the trait of the individual
+	 * @return the trait of the individual
+	 */
+	public void setTraitAt(int idx, int d, double trait) {
+		traits[idx * nTraits + d] = trait;
+	}
+
+	/**
+	 * Get the trait array of individual with index {@code idx}. Allocates array to
+	 * store the trait values.
+	 * 
+	 * @param idx the index of the individual
+	 * @return the traits of the individual
+	 */
+	public double[] getTraitsAt(int idx) {
+		if (nTraits == 1)
+			throw new UnsupportedOperationException("use getTraitAt(idx) instead.");
+		return getTraitsAt(idx, new double[nTraits]);
+	}
+
+	/**
+	 * Get the trait array of individual with index {@code idx}. Stores the trait
+	 * values in the array {@code idxtraits}.
+	 * 
+	 * @param idx       the index of the individual
+	 * @param idxtraits the array for storing the traits
+	 * @return the traits of the individual
+	 */
+	public double[] getTraitsAt(int idx, double[] idxtraits) {
+		if (nTraits == 1)
+			throw new UnsupportedOperationException("use getTraitAt(idx) instead.");
+		System.arraycopy(traits, idx, idxtraits, 0, nTraits);
+		return idxtraits;
+	}
+
+	/**
+	 * Set the trait array of individual with index {@code idx} to array
+	 * {@code idxtraits}.
+	 * 
+	 * @param idx       the index of the individual
+	 * @param idxtraits the traits of the individual
+	 */
+	public void setTraitsAt(int idx, double[] idxtraits) {
+		if (nTraits == 1)
+			throw new UnsupportedOperationException("use setTraitAt(idx) instead.");
+		System.arraycopy(idxtraits, 0, traits, idx, nTraits);
+	}
 
 	/**
 	 * The array for temporarily storing traits during updates.
@@ -343,6 +432,9 @@ public class IBSMCPopulation extends IBSPopulation {
 	@Override
 	protected boolean doAdjustScores() {
 		switch (playerScoring) {
+			case RESET_ON_CHANGE:
+				// if scores are reset only on an actual trait change, scores
+				// can never be adjusted
 			case EPHEMERAL:
 				// for ephemeral scoring, scores are never adjusted
 				return false;
@@ -355,10 +447,6 @@ public class IBSMCPopulation extends IBSPopulation {
 								interaction.subgeometry == Geometry.Type.MEANFIELD))
 					return false;
 				return interGroup.isSampling(IBSGroup.SamplingType.ALL);
-			case RESET_ON_CHANGE:
-				// if scores are reset only on an actual trait change, scores
-				// can never be adjusted
-				return false;
 		}
 	}
 
@@ -412,8 +500,10 @@ public class IBSMCPopulation extends IBSPopulation {
 		// gather players
 		double[] opptraits = opponent.traits;
 		int oppntraits = opponent.nTraits;
-		int nIn = 0, nOut = interaction.kout[me];
-		int[] in = null, out = interaction.out[me];
+		int nIn = 0;
+		int nOut = interaction.kout[me];
+		int[] in = null;
+		int[] out = interaction.out[me];
 		for (int n = 0; n < nOut; n++)
 			System.arraycopy(opptraits, out[n] * oppntraits, tmpGroup, n * oppntraits, oppntraits);
 		int u2 = 2;
@@ -656,17 +746,23 @@ public class IBSMCPopulation extends IBSPopulation {
 
 	@Override
 	public String getTraitNameAt(int index) {
-		String aName = "";
+		StringBuilder aName = new StringBuilder();
 		int idx = index * nTraits;
 		String[] names = module.getTraitNames();
 		for (int i = 0; i < (nTraits - 1); i++) {
-			aName += names[i] + " → "
-					+ Formatter.format(traits[idx + i] * (traitMax[i] - traitMin[i]) + traitMin[i], 3) + ", ";
+			aName.append(names[i])
+					.append(" → ")
+					.append(Formatter.format(traits[idx + i] * (traitRangeMax[i] - traitRangeMin[i]) + traitRangeMin[i],
+							3))
+					.append(", ");
 		}
-		aName += names[nTraits - 1] + " → " + Formatter.format(
-				traits[idx + nTraits - 1] * (traitMax[nTraits - 1] - traitMin[nTraits - 1]) + traitMin[nTraits - 1],
-				3);
-		return aName;
+		aName.append(names[nTraits - 1])
+				.append(" → ")
+				.append(Formatter.format(
+						traits[idx + nTraits - 1] * (traitRangeMax[nTraits - 1] - traitRangeMin[nTraits - 1])
+								+ traitRangeMin[nTraits - 1],
+						3));
+		return aName.toString();
 	}
 
 	/**
@@ -677,22 +773,100 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * standard deviation.
 	 */
 	@Override
-	public void getMeanTraits(double[] mean) {
+	public double[] getMeanTraits(double[] mean) {
 		for (int i = 0; i < nTraits; i++) {
 			int idx = i;
-			double avg = 0.0, var = 0.0;
+			double avg = 0.0;
+			double variance = 0.0;
 			for (int n = 1; n <= nPopulation; n++) {
 				double aTrait = traits[idx];
 				double delta = aTrait - avg;
 				avg += delta / n;
-				var += delta * (aTrait - avg);
+				variance += delta * (aTrait - avg);
 				idx += nTraits;
 			}
-			double scale = traitMax[i] - traitMin[i];
-			double shift = traitMin[i];
+			double scale = traitRangeMax[i] - traitRangeMin[i];
+			double shift = traitRangeMin[i];
 			mean[i] = avg * scale + shift;
-			mean[i + nTraits] = Math.sqrt(var / (nPopulation - 1)) * scale;
+			mean[i + nTraits] = Math.sqrt(variance / (nPopulation - 1)) * scale;
 		}
+		return mean;
+	}
+
+	/**
+	 * Gets the minimal value of each trait in the population and stores it in the
+	 * array {@code min}. The array must be of length {@code >= nTraits}.
+	 * 
+	 * @return the array with the minimal trait values (same as input)
+	 */
+	public double[] getMinTraits() {
+		return getMinTraits(new double[nTraits]);
+	}
+
+	/**
+	 * Gets the minimal value of each trait in the population and stores it in the
+	 * array {@code min}. The array must be of length {@code >= nTraits}.
+	 * 
+	 * @param min the array to store the minimal trait values
+	 * @return the array with the minimal trait values (same as input)
+	 */
+	public double[] getMinTraits(double[] min) {
+		if (nTraits == 1) {
+			min[0] = ArrayMath.min(traits);
+			return min;
+		}
+		for (int i = 0; i < nTraits; i++) {
+			int idx = i;
+			double m = Double.MAX_VALUE;
+			for (int n = 0; n < nPopulation; n++) {
+				double aTrait = traits[idx];
+				if (aTrait < m)
+					m = aTrait;
+				idx += nTraits;
+			}
+			double scale = traitRangeMax[i] - traitRangeMin[i];
+			double shift = traitRangeMin[i];
+			min[i] = m * scale + shift;
+		}
+		return min;
+	}
+
+	/**
+	 * Gets the maximal value of each trait in the population and stores it in the
+	 * array {@code max}.
+	 * 
+	 * @return the array with the maximal trait values (same as input)
+	 */
+	public double[] getMaxTraits() {
+		return getMaxTraits(new double[nTraits]);
+	}
+
+	/**
+	 * Gets the maximal value of each trait in the population and stores it in the
+	 * array {@code max}. The array must be of length {@code >= nTraits}.
+	 * 
+	 * @param max the array to store the maximal trait values
+	 * @return the array with the maximal trait values (same as input)
+	 */
+	public double[] getMaxTraits(double[] max) {
+		if (nTraits == 1) {
+			max[0] = ArrayMath.max(traits);
+			return max;
+		}
+		for (int i = 0; i < nTraits; i++) {
+			int idx = i;
+			double m = -Double.MAX_VALUE;
+			for (int n = 0; n < nPopulation; n++) {
+				double aTrait = traits[idx];
+				if (aTrait > m)
+					m = aTrait;
+				idx += nTraits;
+			}
+			double scale = traitRangeMax[i] - traitRangeMin[i];
+			double shift = traitRangeMin[i];
+			max[i] = m * scale + shift;
+		}
+		return max;
 	}
 
 	/**
@@ -703,16 +877,32 @@ public class IBSMCPopulation extends IBSPopulation {
 	 * standard deviation.
 	 */
 	@Override
-	public void getMeanFitness(double[] mean) {
-		double avg = 0.0, var = 0.0;
+	public double[] getMeanFitness(double[] mean) {
+		double avg = 0.0;
+		double variance = 0.0;
 		for (int n = 0; n < nPopulation; n++) {
 			double aScore = scores[n];
 			double delta = aScore - avg;
 			avg += delta / (n + 1);
-			var += delta * (aScore - avg);
+			variance += delta * (aScore - avg);
 		}
 		mean[0] = avg;
-		mean[1] = Math.sqrt(var / (nPopulation - 1));
+		mean[1] = Math.sqrt(variance / (nPopulation - 1));
+		return mean;
+	}
+
+	/**
+	 * Adds the traits of all individuals to the array {@code state}. The array must
+	 * be
+	 * of length {@code nPopulation * nTraits}.
+	 * 
+	 * @param state the array to store the traits
+	 */
+	public void addState(double[] state) {
+		if (state == null || state.length != nPopulation * nTraits)
+			throw new IllegalArgumentException(
+					"state is null or state length != nPopulation * nTraits ");
+		ArrayMath.add(state, traits, state);
 	}
 
 	/**
@@ -725,20 +915,29 @@ public class IBSMCPopulation extends IBSPopulation {
 	public String getStatus() {
 		getMeanTraits(meantrait);
 		String[] names = module.getTraitNames();
-		String status = names[0] + " mean: " + Formatter.formatFix(meantrait[0], 3) + " ± "
-				+ Formatter.formatFix(meantrait[nTraits], 3);
-		for (int i = 1; i < nTraits; i++)
-			status += "; " + names[i] + " mean: " + Formatter.formatFix(meantrait[i], 3) + " ± "
-					+ Formatter.formatFix(meantrait[i + nTraits], 3);
-		return status;
+		StringBuilder status = new StringBuilder();
+		status.append(names[0])
+				.append(" mean: ")
+				.append(Formatter.formatFix(meantrait[0], 3))
+				.append(" ± ")
+				.append(Formatter.formatFix(meantrait[nTraits], 3));
+		for (int i = 1; i < nTraits; i++) {
+			status.append("; ")
+					.append(names[i])
+					.append(" mean: ")
+					.append(Formatter.formatFix(meantrait[i], 3))
+					.append(" ± ")
+					.append(Formatter.formatFix(meantrait[i + nTraits], 3));
+		}
+		return status.toString();
 	}
 
 	@Override
 	public boolean check() {
 		boolean doReset = false;
 		doReset |= super.check();
-		traitMin = module.getTraitMin();
-		traitMax = module.getTraitMax();
+		traitRangeMin = module.getTraitMin();
+		traitRangeMax = module.getTraitMax();
 
 		// check interaction geometry
 		if (interaction.getType() == Geometry.Type.MEANFIELD && interGroup.isSampling(IBSGroup.SamplingType.ALL)) {
@@ -808,30 +1007,30 @@ public class IBSMCPopulation extends IBSPopulation {
 
 				case MONO:
 					// initArgs contains monomorphic trait
-					double mono = Math.min(Math.max(init.args[s][0], traitMin[s]), traitMax[s]);
-					double scaledmono = (mono - traitMin[s]) / (traitMax[s] - traitMin[s]);
+					double mono = Math.min(Math.max(init.args[s][0], traitRangeMin[s]), traitRangeMax[s]);
+					double scaledmono = (mono - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
 					for (int n = s; n < nPopulation * nTraits; n += nTraits)
 						traits[n] = scaledmono;
 					break;
 
 				case GAUSSIAN:
-					double mean = Math.min(Math.max(init.args[s][0], traitMin[s]), traitMax[s]);
-					double sdev = Math.min(Math.max(init.args[s][1], traitMin[s]), traitMax[s]);
-					double scaledmean = (mean - traitMin[s]) / (traitMax[s] - traitMin[s]);
-					double scaledsdev = sdev / (traitMax[s] - traitMin[s]);
+					double mean = Math.min(Math.max(init.args[s][0], traitRangeMin[s]), traitRangeMax[s]);
+					double sdev = Math.min(Math.max(init.args[s][1], traitRangeMin[s]), traitRangeMax[s]);
+					double scaledmean = (mean - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
+					double scaledsdev = sdev / (traitRangeMax[s] - traitRangeMin[s]);
 					for (int n = s; n < nPopulation * nTraits; n += nTraits)
 						traits[n] = Math.min(1.0, Math.max(0.0, randomGaussian(scaledmean, scaledsdev)));
 					break;
 
 				case MUTANT:
-					double resident = Math.min(Math.max(init.args[s][0], traitMin[s]), traitMax[s]);
-					double scaledresident = (resident - traitMin[s]) / (traitMax[s] - traitMin[s]);
+					double resident = Math.min(Math.max(init.args[s][0], traitRangeMin[s]), traitRangeMax[s]);
+					double scaledresident = (resident - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
 					for (int n = s; n < nPopulation * nTraits; n += nTraits)
 						traits[n] = scaledresident;
 					if (mutidx < 0)
 						mutidx = random0n(nPopulation);
-					double mut = Math.min(Math.max(init.args[s][1], traitMin[s]), traitMax[s]);
-					traits[mutidx] = (mut - traitMin[s]) / (traitMax[s] - traitMin[s]);
+					double mut = Math.min(Math.max(init.args[s][1], traitRangeMin[s]), traitRangeMax[s]);
+					traits[mutidx] = (mut - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
 					break;
 			}
 		}

@@ -56,14 +56,14 @@ public class CLOParser {
 	 * 
 	 * @see #parseCLO(String[])
 	 */
-	ArrayList<String> parameters = new ArrayList<String>();
+	ArrayList<String> parameters = new ArrayList<>();
 
 	/**
 	 * List of command line options available (after parsing).
 	 * 
 	 * @see #parseCLO(String[])
 	 */
-	List<CLOption> options = new ArrayList<CLOption>();
+	List<CLOption> options = new ArrayList<>();
 
 	/**
 	 * List of providers of command line options.
@@ -89,13 +89,18 @@ public class CLOParser {
 	protected PrintStream output = System.out;
 
 	/**
+	 * The regular expression to split the command line arguments for parsing.
+	 */
+	public static final String SPLIT_ARG_REGEX = "\\s+|=";
+
+	/**
 	 * New command line option parser. Register <code>provider</code> for supplying
 	 * options through the {@link CLOParser} interface.
 	 * 
 	 * @param provider of command line options
 	 */
 	public CLOParser(CLOProvider provider) {
-		this(new HashSet<CLOProvider>(Collections.singleton(provider)));
+		this(new HashSet<>(Collections.singleton(provider)));
 	}
 
 	/**
@@ -202,7 +207,7 @@ public class CLOParser {
 		// argument(s) which can be separated by ' ' or '='
 		int issues = 0;
 		nextclo: for (String clo : cloargs) {
-			String[] args = clo.split("\\s+|=");
+			String[] args = clo.split(SPLIT_ARG_REGEX);
 			String name = args[0];
 			// find matching option
 			for (CLOption opt : options) {
@@ -221,16 +226,16 @@ public class CLOParser {
 						opt.setArg(arg);
 						break;
 					case OPTIONAL:
-						opt.setArg(arg.length() > 0 ? arg : null);
+						opt.setArg(arg.isEmpty() ? null : arg);
 						break;
 					default:
 					case NONE:
-						if (arg.length() > 0) {
-							issues++;
-							logWarning("option '--" + clo + "' does not accept an argument - ignored.");
+						if (arg.isEmpty()) {
+							opt.setArg(null);
 							break;
 						}
-						opt.setArg(null);
+						issues++;
+						logWarning("option '--" + clo + "' does not accept an argument - ignored.");
 						break;
 				}
 				continue nextclo;
@@ -246,7 +251,7 @@ public class CLOParser {
 				if (!option.parse()) {
 					// parsing failed - try again using default
 					logger.warning("invalid " + option.getName() + " argument (" + option.getArg() + ") - using '"
-								+ option.getDefault() + "'");
+							+ option.getDefault() + "'");
 					issues++;
 					option.parseDefault();
 				}
@@ -291,18 +296,15 @@ public class CLOParser {
 			cmd.append(" --");
 			cmd.append(clo.getName());
 			switch (clo.getType()) {
-				// case NONE:
-				default:
-					continue;
 				case OPTIONAL:
 					if (!clo.isSet())
 						break;
-					cmd.append(" " + clo.getArg());
-					continue;
+					//$FALL-THROUGH$
 				case REQUIRED:
-					cmd.append(" " + clo.getArg());
-					continue;
-
+					cmd.append(" ").append(clo.getArg());
+					// case NONE:
+					// $FALL-THROUGH$
+				default:
 			}
 		}
 		return cmd.toString();
@@ -349,7 +351,7 @@ public class CLOParser {
 			}
 			// process options with category cat
 			if (categories && nextcat != null)
-				help.append("\n" + nextcat.getHeader() + "\n");
+				help.append("\n").append(nextcat.getHeader()).append("\n");
 			// in last round look for options without any category
 			for (CLOption option : options) {
 				if (categories && option.category != nextcat)
@@ -358,7 +360,7 @@ public class CLOParser {
 				String descr = option.getDescription();
 				if (descr == null)
 					continue; // skip
-				help.append(descr + "\n");
+				help.append(descr).append("\n");
 			}
 			priority = nextpriority;
 		} while (nextpriority > Integer.MIN_VALUE);
@@ -584,7 +586,7 @@ public class CLOParser {
 	 * @see Float#parseFloat(String)
 	 */
 	public static float parseFloat(String aFloat) {
-		if (aFloat == null || aFloat.length() == 0)
+		if (aFloat == null || aFloat.isEmpty())
 			return 0f;
 		return Float.parseFloat(aFloat);
 	}
@@ -599,45 +601,44 @@ public class CLOParser {
 	 * @see Double#parseDouble(String)
 	 */
 	public static double parseDouble(String aDouble) {
-		if (aDouble == null || aDouble.length() == 0)
+		if (aDouble == null || aDouble.isEmpty())
 			return 0.0;
 		return Double.parseDouble(aDouble);
 	}
 
 	/**
 	 * Parse string <code>aVector</code> as a <code>boolean[]</code> array. Vector
-	 * entries are separated by {@value #VECTOR_DELIMITER}.
+	 * entries are separated by {@value #VECTOR_DELIMITER}. Any invalid entries
+	 * default to {@code false}.
 	 * 
 	 * @param aVector string to convert to <code>boolean[]</code>
-	 * @return <code>boolean[]</code> representation of <code>aVector</code> or an
-	 *         empty array <code>boolean[0]</code> if <code>aVector</code> is
-	 *         <code>null</code> or an empty string
+	 * @return <code>boolean[]</code> representation of <code>aVector</code>
 	 * @see Boolean#parseBoolean(String)
 	 */
 	public static boolean[] parseBoolVector(String aVector) {
 		if (aVector == null)
 			return new boolean[0];
 		aVector = aVector.trim();
-		if (aVector.length() == 0)
+		if (aVector.isEmpty())
 			return new boolean[0];
 
-		String[] elem = aVector.split(VECTOR_DELIMITER);
-		int len = elem.length;
+		String[] entries = aVector.split(VECTOR_DELIMITER);
+		int len = entries.length;
 		boolean[] result = new boolean[len];
 		for (int i = 0; i < len; i++) {
-			result[i] = Boolean.parseBoolean(elem[i]);
+			result[i] = Boolean.parseBoolean(entries[i]);
 		}
 		return result;
 	}
 
 	/**
 	 * Parse string <code>aVector</code> as an <code>int[]</code> array. Vector
-	 * entries are separated by {@value #VECTOR_DELIMITER}.
+	 * entries are separated by {@value #VECTOR_DELIMITER}. Returns an array of zero
+	 * length if <code>aVector</code> is <code>null</code>, an empty string, or any
+	 * entry caused a {@link NumberFormatException}.
 	 * 
 	 * @param aVector string to convert to <code>int[]</code>
-	 * @return <code>int[]</code> representation of <code>aVector</code> or an empty
-	 *         array <code>int[0]</code> if <code>aVector</code> is
-	 *         <code>null</code> or an empty string
+	 * @return <code>int[]</code> representation of <code>aVector</code>
 	 * @see Integer#parseInt(String)
 	 */
 	public static int[] parseIntVector(String aVector) {
@@ -648,13 +649,12 @@ public class CLOParser {
 	 * Parse string <code>aVector</code> as a <code>int[]</code> array. Vector
 	 * entries are separated by <code>separator</code>, which can be any valid
 	 * regular expression. Returns an array of zero length if <code>aVector</code>
-	 * is <code>null</code> or an empty string.
+	 * is <code>null</code>, an empty string, or any entry caused a
+	 * {@link NumberFormatException}.
 	 * 
 	 * @param aVector   string to convert to <code>int[]</code>
 	 * @param separator regular expression string used to split <code>aVector</code>
-	 * @return <code>int[]</code> representation of <code>aVector</code> or
-	 *         <code>null</code> if any entry of <code>aVector</code> caused a
-	 *         {@link NumberFormatException}.
+	 * @return <code>int[]</code> representation of <code>aVector</code>
 	 * 
 	 * @see String#split(String)
 	 * @see Integer#parseInt(String)
@@ -663,26 +663,31 @@ public class CLOParser {
 		if (aVector == null)
 			return new int[0];
 		aVector = aVector.trim();
-		if (aVector.length() == 0)
+		if (aVector.isEmpty())
 			return new int[0];
 
 		String[] entries = aVector.split(separator);
 		int len = entries.length;
 		int[] result = new int[len];
-		for (int i = 0; i < len; i++)
-			result[i] = Integer.parseInt(entries[i]);
+		// note: in GWT Integer.parseInt() does not throw NumberFormatException
+		// without the try-catch-block; instead, execution is quietly aborted...
+		try {
+			for (int i = 0; i < len; i++)
+				result[i] = Integer.parseInt(entries[i]);
+		} catch (Exception e) {
+			return new int[0];
+		}
 		return result;
 	}
 
 	/**
 	 * Parse string <code>aVector</code> as a <code>double[]</code> array. Vector
 	 * entries are separated by {@value #VECTOR_DELIMITER}. Returns an array of zero
-	 * length if <code>aVector</code> is <code>null</code> or an empty string.
+	 * length if <code>aVector</code> is <code>null</code>, an empty string, or any
+	 * entry caused a {@link NumberFormatException}.
 	 * 
 	 * @param aVector string to convert to <code>double[]</code>
-	 * @return <code>double[]</code> representation of <code>aVector</code> or
-	 *         <code>null</code> if any entry of <code>aVector</code> caused a
-	 *         {@link NumberFormatException}.
+	 * @return <code>double[]</code> representation of <code>aVector</code>
 	 * 
 	 * @see #parseVector(String, String)
 	 */
@@ -694,13 +699,12 @@ public class CLOParser {
 	 * Parse string <code>aVector</code> as a <code>double[]</code> array. Vector
 	 * entries are separated by <code>separator</code>, which can be any valid
 	 * regular expression. Returns an array of zero length if <code>aVector</code>
-	 * is <code>null</code> or an empty string.
+	 * is <code>null</code>, an empty string, or any entry caused a
+	 * {@link NumberFormatException}.
 	 * 
 	 * @param aVector   string to convert to <code>double[]</code>
 	 * @param separator regular expression string used to split <code>aVector</code>
-	 * @return <code>double[]</code> representation of <code>aVector</code> or
-	 *         <code>null</code> if any entry of <code>aVector</code> caused a
-	 *         {@link NumberFormatException}.
+	 * @return <code>double[]</code> representation of <code>aVector</code>.
 	 * 
 	 * @see String#split(String)
 	 * @see Double#parseDouble(String)
@@ -709,7 +713,7 @@ public class CLOParser {
 		if (aVector == null)
 			return new double[0];
 		aVector = aVector.trim();
-		if (aVector.length() == 0)
+		if (aVector.isEmpty())
 			return new double[0];
 
 		String[] entries = aVector.split(separator);
@@ -721,7 +725,7 @@ public class CLOParser {
 			for (int i = 0; i < len; i++)
 				result[i] = Double.parseDouble(entries[i]);
 		} catch (Exception e) {
-			return null;
+			return new double[0];
 		}
 		return result;
 	}
@@ -730,19 +734,19 @@ public class CLOParser {
 	 * Parse string <code>aMatrix</code> as a <code>int[][]</code> matrix (two
 	 * dimensional array). For each row entries are separated by
 	 * {@value #VECTOR_DELIMITER} and rows are separated by
-	 * {@value #MATRIX_DELIMITER}.
+	 * {@value #MATRIX_DELIMITER}. Returns an empty matrix {@code new int[0][0]}
+	 * if {@code aMatrix} is {@code null}, an empty string, or any entry caused a
+	 * {@link NumberFormatException}.
 	 * 
 	 * @param aMatrix string to convert to <code>int[][]</code>
-	 * @return <code>int[][]</code> representation of <code>aMatrix</code> and
-	 *         <code>null</code> if <code>aMatrix</code> is <code>null</code>, an
-	 *         empty string or any entry caused a {@link NumberFormatException}.
+	 * @return <code>int[][]</code> representation of <code>aMatrix</code>
 	 * @see #parseVector(String)
 	 */
 	public static int[][] parseIntMatrix(String aMatrix) {
 		if (aMatrix == null)
 			return new int[0][0];
 		aMatrix = aMatrix.trim();
-		if (aMatrix.length() == 0)
+		if (aMatrix.isEmpty())
 			return new int[0][0];
 
 		String[] entries = aMatrix.split(MATRIX_DELIMITER);
@@ -750,8 +754,8 @@ public class CLOParser {
 		int[][] result = new int[len][];
 		for (int i = 0; i < len; i++) {
 			int[] vec = parseIntVector(entries[i]);
-			if (vec == null)
-				return null;
+			if (vec.length == 0)
+				return new int[0][0];
 			result[i] = vec;
 		}
 		return result;
@@ -761,19 +765,19 @@ public class CLOParser {
 	 * Parse string <code>aMatrix</code> as a <code>double[][]</code> matrix (two
 	 * dimensional array). For each row entries are separated by
 	 * {@value #VECTOR_DELIMITER} and rows are separated by
-	 * {@value #MATRIX_DELIMITER}.
+	 * {@value #MATRIX_DELIMITER}. Returns an empty matrix {@code new double[0][0]}
+	 * if {@code aMatrix} is {@code null}, an empty string, or any entry caused a
+	 * {@link NumberFormatException}.
 	 * 
 	 * @param aMatrix string to convert to <code>double[][]</code>
-	 * @return <code>double[][]</code> representation of <code>aMatrix</code> and
-	 *         <code>null</code> if <code>aMatrix</code> is <code>null</code>, an
-	 *         empty string or any entry caused a {@link NumberFormatException}.
+	 * @return <code>double[][]</code> representation of <code>aMatrix</code>.
 	 * @see #parseVector(String)
 	 */
 	public static double[][] parseMatrix(String aMatrix) {
 		if (aMatrix == null)
 			return new double[0][0];
 		aMatrix = aMatrix.trim();
-		if (aMatrix.length() == 0)
+		if (aMatrix.isEmpty())
 			return new double[0][0];
 
 		String[] entries = aMatrix.split(MATRIX_DELIMITER);
@@ -781,8 +785,8 @@ public class CLOParser {
 		double[][] result = new double[len][];
 		for (int i = 0; i < len; i++) {
 			double[] vec = parseVector(entries[i]);
-			if (vec == null)
-				return null;
+			if (vec.length == 0)
+				return new double[0][0];
 			result[i] = vec;
 		}
 		return result;
@@ -793,7 +797,7 @@ public class CLOParser {
 	 * 
 	 * @see Color
 	 */
-	private static final Map<String, Color> COLOR_KEYS = new HashMap<String, Color>();
+	private static final Map<String, Color> COLOR_KEYS = new HashMap<>();
 	static {
 		// init slide keys
 		COLOR_KEYS.put("black", Color.black);

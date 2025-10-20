@@ -30,7 +30,7 @@
 
 package org.evoludo.simulator.modules;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Features.Payoffs;
@@ -84,7 +84,7 @@ public class Map2Fitness {
 	/**
 	 * The module that is using this fitness mapping.
 	 */
-	Module module;
+	Module<?> module;
 
 	/**
 	 * Baseline fitness for map.
@@ -107,7 +107,7 @@ public class Map2Fitness {
 	 * @param module the module using this mapping
 	 * @param map    the map to use as template
 	 */
-	public Map2Fitness(Module module, Map map) {
+	public Map2Fitness(Module<?> module, Map map) {
 		this.module = module;
 		this.map = map;
 	}
@@ -256,12 +256,12 @@ public class Map2Fitness {
 				public boolean parse(String arg) {
 					String[] map2fitnessspecies = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
-					ArrayList<? extends Module> species = module.getSpecies();
-					for (Module mod : species) {
+					List<? extends Module<?>> species = module.getSpecies();
+					for (Module<?> mod : species) {
 						if (!(mod instanceof Payoffs))
 							continue;
 						Map2Fitness m2f = ((Payoffs) mod).getMap2Fitness();
-						if (m2f == null) 
+						if (m2f == null)
 							continue;
 						String m = map2fitnessspecies[n++ % map2fitnessspecies.length];
 						Map2Fitness.Map m2fm = (Map2Fitness.Map) clo.match(m);

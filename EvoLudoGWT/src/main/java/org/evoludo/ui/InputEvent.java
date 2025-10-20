@@ -49,7 +49,7 @@ public class InputEvent extends DomEvent<InputHandler> {
 	 * Event type for input events. Represents the meta-data associated with this
 	 * event.
 	 */
-	private static final Type<InputHandler> TYPE = new Type<InputHandler>(INPUT, new InputEvent());
+	private static final Type<InputHandler> TYPE = new Type<>(INPUT, new InputEvent());
 
 	/**
 	 * Gets the event type associated with input events.
@@ -68,6 +68,7 @@ public class InputEvent extends DomEvent<InputHandler> {
 	protected InputEvent() {
 	}
 
+	@SuppressWarnings("java:S4144")
 	@Override
 	public final Type<InputHandler> getAssociatedType() {
 		return TYPE;

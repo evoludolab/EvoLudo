@@ -270,10 +270,10 @@ public class PDESupervisorJRE extends PDESupervisor {
 		 * {@code end}. The worker reports to the {@code boss} and retrieves data
 		 * for processing from {@code charge}.
 		 * 
-		 * @param boss	the reference to the boss
+		 * @param boss   the reference to the boss
 		 * @param charge the reference to the charge
-		 * @param start the first unit processed byt this worker
-		 * @param end   the last unit processed byt this worker
+		 * @param start  the first unit processed byt this worker
+		 * @param end    the last unit processed byt this worker
 		 */
 		public RDWorker(PDESupervisorJRE boss, PDE charge, int start, int end) {
 			this.boss = boss;

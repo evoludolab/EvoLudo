@@ -92,27 +92,18 @@ public class CDLP extends CDL {
 	 */
 	public CDLP(EvoLudo engine) {
 		super(engine);
+		nTraits = 4; // loners, defectors, cooperators, punishers
 	}
 
 	@Override
 	public void load() {
 		super.load(); // CDL sets names and colors already but no harm in it
 		nTraits = 4;
-		// trait names
-		String[] names = new String[nTraits];
-		names[LONER] = "Loner";
-		names[DEFECT] = "Defector";
-		names[COOPERATE] = "Cooperator";
-		names[PUNISH] = "Punisher";
-		setTraitNames(names);
-		// trait colors (automatically generates lighter versions for new traits)
-		Color[] colors = new Color[nTraits];
-		// yellow has too little contrast
-		colors[LONER] = new Color(238, 204, 17); // hex #eecc11
-		colors[DEFECT] = Color.RED;
-		colors[COOPERATE] = Color.BLUE;
-		colors[PUNISH] = Color.GREEN;
-		setTraitColors(colors);
+		// trait names (optional)
+		setTraitNames(new String[] { "Loner", "Defector", "Cooperator", "Punisher" });
+		// trait colors (optional)
+		// yellow for loners has too little contrast
+		setTraitColors(new Color[] { new Color(238, 204, 17), Color.RED, Color.BLUE, Color.GREEN });
 	}
 
 	@Override
@@ -231,7 +222,8 @@ public class CDLP extends CDL {
 		}
 
 		// non-linear interest precludes use of super
-		double shareC, shareD;
+		double shareC;
+		double shareD;
 		if (othersOnly) {
 			int k = Math.max(0, x + w - 1);
 			shareC = k * costCoop * interest(k) / (n - 1);
@@ -533,7 +525,7 @@ public class CDLP extends CDL {
 	 * for {@code CDLP} - use default IBS model.
 	 */
 	@Override
-	public CDL.IBSPop createIBSPop() {
+	public CDL.IBSPop createIBSPopulation() {
 		return null;
 	}
 }

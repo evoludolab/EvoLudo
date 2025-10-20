@@ -49,7 +49,6 @@ import com.google.gwt.event.dom.client.HasTouchEndHandlers;
 import com.google.gwt.event.dom.client.HasTouchMoveHandlers;
 import com.google.gwt.event.dom.client.HasTouchStartHandlers;
 import com.google.gwt.event.dom.client.MouseDownEvent;
-import com.google.gwt.event.dom.client.MouseDownHandler;
 import com.google.gwt.event.dom.client.MouseOutEvent;
 import com.google.gwt.event.dom.client.MouseOutHandler;
 import com.google.gwt.event.dom.client.MouseOverEvent;
@@ -65,8 +64,6 @@ import com.google.gwt.event.dom.client.TouchStartHandler;
 import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
-import com.google.gwt.user.client.Window.ScrollEvent;
-import com.google.gwt.user.client.Window.ScrollHandler;
 import com.google.gwt.user.client.ui.FlowPanel;
 import com.google.gwt.user.client.ui.RootPanel;
 
@@ -96,9 +93,12 @@ import com.google.gwt.user.client.ui.RootPanel;
  * <dt>.gwt-ContextMenu</dt>
  * <dd>the context menu element.</dd>
  * </dl>
+ * Use shared instance to create top level context menu,
+ * {@link #sharedContextMenu()}.
  * 
  * @author Christoph Hauert
  */
+@SuppressWarnings("java:S110")
 public class ContextMenu extends FlowPanel
 		implements ContextMenuHandler, MouseOverHandler, MouseOutHandler, TouchStartHandler, TouchEndHandler,
 		TouchMoveHandler, TouchCancelHandler, FullscreenChangeHandler, HasFullscreenChangeHandlers {
@@ -348,6 +348,16 @@ public class ContextMenu extends FlowPanel
 	protected HashMap<Listener, Registration> participants;
 
 	/**
+	 * The handler of mouse over events.
+	 */
+	HandlerRegistration mouseOverHandler;
+
+	/**
+	 * The handler of mouse out events.
+	 */
+	HandlerRegistration mouseOutHandler;
+
+	/**
 	 * Reference to the parent menu. This is <code>null</code> for the shared, top
 	 * level context menu.
 	 */
@@ -374,43 +384,53 @@ public class ContextMenu extends FlowPanel
 	public static ContextMenu sharedContextMenu() {
 		if (contextMenu == null) {
 			contextMenu = new ContextMenu();
-			// context menu needs to be added in different places of the DOM
-			// depending on whether fullscreen mode is active
-			Element fs = NativeJS.getFullscreenElement();
-			if (fs != null)
-				fs.appendChild(contextMenu.getElement());
-			else
-				RootPanel.get().add(contextMenu);
-			contextMenu.style.setPosition(Position.FIXED);
-			// add fullscreen change handler to shared instance of context menu
-			if (NativeJS.isFullscreenSupported())
-				contextMenu.fullscreenChangeHandler = contextMenu.addFullscreenChangeHandler(contextMenu);
-			// add window scroll change handler to shared instance of context menu
-			Window.addWindowScrollHandler(new ScrollHandler() {
-				@Override
-				public void onWindowScroll(ScrollEvent event) {
-					if (contextMenu.isVisible())
-						contextMenu.close();
-				}
-			});
-			// add mouse down handler to root panel to close context menu if
-			// autoClose==false and mouse currently not over context (sub)menu
-			RootPanel.get().addDomHandler(new MouseDownHandler() {
-				@Override
-				public void onMouseDown(MouseDownEvent event) {
-					if (!contextMenu.isVisible())
-						return; // context menu not visible - nothing to do
-					// IMPORTANT: here is potential for race conditions between contextMenu
-					// and its submenus! if mouse is over submenu let submenu handle event
-					if (contextMenu.childMenu != null && contextMenu.childMenu.isMouseOver)
-						return; // submenu visible and mouse over - let submenu handle event
-					if (!contextMenu.isMouseOver && !contextMenu.isAutoHide())
-						contextMenu.close();
-				}
-			}, MouseDownEvent.getType());
-			contextMenu.participants = new HashMap<Listener, Registration>();
+			setupContextMenuLocation(contextMenu);
+			setupContextMenuHandlers(contextMenu);
+			contextMenu.participants = new HashMap<>();
 		}
 		return contextMenu;
+	}
+
+	/**
+	 * Setup location of context menu in DOM. If fullscreen is supported, the
+	 * context
+	 * menu is added to the fullscreen element, otherwise to the {@link RootPanel}.
+	 * 
+	 * @param menu the context menu
+	 */
+	private static void setupContextMenuLocation(ContextMenu menu) {
+		Element fs = NativeJS.getFullscreenElement();
+		if (fs != null) {
+			fs.appendChild(menu.getElement());
+		} else {
+			RootPanel.get().add(menu);
+		}
+		menu.style.setPosition(Position.FIXED);
+	}
+
+	/**
+	 * Setup handlers to manage context menu visibility.
+	 * 
+	 * @param menu the context menu
+	 */
+	private static void setupContextMenuHandlers(ContextMenu menu) {
+		if (NativeJS.isFullscreenSupported()) {
+			menu.fullscreenChangeHandler = menu.addFullscreenChangeHandler(menu);
+		}
+		Window.addWindowScrollHandler(event -> {
+			if (menu.isVisible())
+				menu.close();
+		});
+		RootPanel.get().addDomHandler(event -> {
+			if (!menu.isVisible())
+				return; // context menu not visible - nothing to do
+			// IMPORTANT: here is potential for race conditions between contextMenu
+			// and its submenus! if mouse is over submenu let submenu handle event
+			if (menu.childMenu != null && menu.childMenu.isMouseOver)
+				return; // submenu visible and mouse over - let submenu handle event
+			if (!menu.isMouseOver && !menu.isAutoHide())
+				menu.close();
+		}, MouseDownEvent.getType());
 	}
 
 	/**
@@ -430,6 +450,11 @@ public class ContextMenu extends FlowPanel
 	 * menu, {@link #sharedContextMenu()}.
 	 */
 	protected ContextMenu() {
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
 		setStyleName("gwt-ContextMenu");
 		style = getElement().getStyle();
 		style.setDisplay(Display.BLOCK);
@@ -437,9 +462,27 @@ public class ContextMenu extends FlowPanel
 		style.clearRight();
 		style.clearBottom();
 		style.clearWidth();
-		addDomHandler(this, MouseOverEvent.getType());
-		addDomHandler(this, MouseOutEvent.getType());
+		mouseOverHandler = addDomHandler(this, MouseOverEvent.getType());
+		mouseOutHandler = addDomHandler(this, MouseOutEvent.getType());
 		close();
+	}
+
+	@Override
+	protected void onUnload() {
+		if (fullscreenChangeHandler != null) {
+			fullscreenChangeHandler.removeHandler();
+			fullscreenChangeHandler = null;
+		}
+		if (mouseOverHandler != null) {
+			mouseOverHandler.removeHandler();
+			mouseOverHandler = null;
+		}
+		if (mouseOutHandler != null) {
+			mouseOutHandler.removeHandler();
+			mouseOutHandler = null;
+		}
+		style = null;
+		super.onUnload();
 	}
 
 	/**
@@ -453,7 +496,8 @@ public class ContextMenu extends FlowPanel
 	 */
 	public ContextMenu(ContextMenu parent) {
 		this();
-		assert parent != null;
+		if (parent == null)
+			throw new IllegalArgumentException("Parent menu cannot be null.");
 		parentMenu = parent;
 	}
 
@@ -461,11 +505,24 @@ public class ContextMenu extends FlowPanel
 	 * Register a new <code>listener</code> widget for context menu requests and
 	 * associate with the <code>provider</code> of the context menu.
 	 * 
-	 * @param listener widget sporting a context menu
-	 * @param provider provides context menu entries for this listener widget
+	 * @param listener the widget sporting a context menu
+	 * @param provider the provider of context menu entries
 	 */
-	public void add(Listener listener, Provider provider) {
+	public void addListenerWithProvider(Listener listener, Provider provider) {
 		participants.put(listener, new Registration(listener, provider));
+	}
+
+	/**
+	 * Remove a previously registered <code>listener</code> widget from context menu
+	 * requests.
+	 * 
+	 * @param listener the widget to remove
+	 */
+	public void removeListener(Listener listener) {
+		Registration registration = participants.get(listener);
+		if (registration != null)
+			registration.removeHandler();
+		participants.remove(listener);
 	}
 
 	/**
@@ -501,8 +558,8 @@ public class ContextMenu extends FlowPanel
 	 * @param y vertical position of context menu
 	 */
 	protected void showAt(int x, int y) {
-		style.setLeft(x + offsetX, Unit.PX);
-		style.setTop(y + offsetY, Unit.PX);
+		style.setLeft((double) x + offsetX, Unit.PX);
+		style.setTop((double) y + offsetY, Unit.PX);
 		setVisible(true);
 	}
 
@@ -552,6 +609,9 @@ public class ContextMenu extends FlowPanel
 		if (childMenu == null)
 			return;
 		remove(childMenu);
+		if (isMouseOver)
+			cancelHideTimer();
+		childMenu.onUnload();
 		childMenu = null;
 	}
 
@@ -808,12 +868,6 @@ public class ContextMenu extends FlowPanel
 	public class TouchTimer extends Timer {
 
 		/**
-		 * Constructs a new timer for touch events.
-		 */
-		public TouchTimer() {
-		}
-
-		/**
 		 * Horizontal position of touch event scheduled to trigger context menu
 		 * (relative to browser window).
 		 */
@@ -881,8 +935,8 @@ public class ContextMenu extends FlowPanel
 		touchTimer.save((Listener) src, touch.getClientX(), touch.getClientY());
 		touchTimer.schedule(longTouch);
 		// NOTE: this prevents scrolling of console
-		// event.stopPropagation();
-		// event.preventDefault();
+		// event.stopPropagation()
+		// event.preventDefault()
 	}
 
 	/**
@@ -934,12 +988,7 @@ public class ContextMenu extends FlowPanel
 	public HandlerRegistration addFullscreenChangeHandler(FullscreenChangeHandler handler) {
 		String eventname = NativeJS.fullscreenChangeEventName();
 		NativeJS.addFullscreenChangeHandler(eventname, handler);
-		return new HandlerRegistration() {
-			@Override
-			public void removeHandler() {
-				NativeJS.removeFullscreenChangeHandler(eventname, handler);
-			}
-		};
+		return () -> NativeJS.removeFullscreenChangeHandler(eventname, handler);
 	}
 
 	/**

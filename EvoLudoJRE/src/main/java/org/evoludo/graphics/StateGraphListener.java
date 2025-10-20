@@ -34,11 +34,11 @@ import org.evoludo.geom.Point2D;
 
 public interface StateGraphListener extends GraphListener {
 
-	public void	getData(StateData data, int tag);
+	public void getData(StateData data, int tag);
 
 	public String getToolTipText(Point2D loc, int tag);
 
-//	public void setLabels(java.util.List<GraphLabel> labels, int tag);
+	// public void setLabels(java.util.List<GraphLabel> labels, int tag);
 
-	public void	setState(double[] state);
+	public void setState(double[] state);
 }

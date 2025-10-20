@@ -44,6 +44,7 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
+          <release>${java.version.lts}</release>
           <includes>
             <include>**/org/evoludo/simulator/exec/*.java</include>
           </includes>
@@ -55,6 +56,7 @@
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
           <appendAssemblyId>false</appendAssemblyId>
+          <attach>false</attach>
         </configuration>
         <executions>
           <execution>

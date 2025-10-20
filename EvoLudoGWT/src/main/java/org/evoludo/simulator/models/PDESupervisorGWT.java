@@ -84,49 +84,46 @@ public class PDESupervisorGWT extends PDESupervisor {
 		final double acc2 = acc * acc;
 		final double acc2dt2 = acc2 * dt * dt;
 		charge.initDiffusion(dt);
-		Scheduler.get().scheduleIncremental(new Scheduler.RepeatingCommand() {
-			@Override
-			public boolean execute() {
-				// check if emergency brake was pulled (e.g. when unloading running model)
-				if (!inProgress)
-					return false;
-				double timeRemain = timeStop - charge.getTime();
-				boolean cont = true;
-				double change = Double.MAX_VALUE;
-				if (timeRemain > charge.getDt()) {
-					diffuse();
-					change = react();
-					// at this point, fitness and density are synchronized
-					// the new density distribution is in 'next'
-					cont = charge.incrementTime(dt);
-					if (!cont) {
-						engine.modelNextDone(false);
-						inProgress = false;
-						return false;
-					}
-					if (change > acc2dt2)
-						return true;
-					charge.setConverged();
+		Scheduler.get().scheduleIncremental(() -> {
+			// check if emergency brake was pulled (e.g. when unloading running model)
+			if (!inProgress)
+				return false;
+			double timeRemain = timeStop - charge.getTime();
+			boolean cont = true;
+			double change = Double.MAX_VALUE;
+			if (timeRemain > charge.getDt()) {
+				diffuse();
+				change = react();
+				// at this point, fitness and density are synchronized
+				// the new density distribution is in 'next'
+				cont = charge.incrementTime(dt);
+				if (!cont) {
 					engine.modelNextDone(false);
 					inProgress = false;
 					return false;
 				}
-				// update remainder (if necessary)
-				if (timeRemain > 1e-6) {
-					charge.initDiffusion(timeRemain);
-					diffuse();
-					change = react();
-					cont = charge.incrementTime(timeRemain);
-				}
-				boolean converged = !(change > acc2 * timeRemain * timeRemain);
-				if (converged) {
-					charge.setConverged();
-					cont = false;
-				}
-				engine.modelNextDone(cont);
+				if (change > acc2dt2)
+					return true;
+				charge.setConverged();
+				engine.modelNextDone(false);
 				inProgress = false;
 				return false;
 			}
+			// update remainder (if necessary)
+			if (timeRemain > 1e-6) {
+				charge.initDiffusion(timeRemain);
+				diffuse();
+				change = react();
+				cont = charge.incrementTime(timeRemain);
+			}
+			boolean converged = (change <= acc2 * timeRemain * timeRemain);
+			if (converged) {
+				charge.setConverged();
+				cont = false;
+			}
+			engine.modelNextDone(cont);
+			inProgress = false;
+			return false;
 		});
 		return true;
 	}

@@ -31,6 +31,7 @@
 package org.evoludo.simulator;
 
 import java.util.AbstractList;
+import java.util.Arrays;
 import java.util.Iterator;
 
 import org.evoludo.geom.Node;
@@ -69,7 +70,6 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 		 * desired accuracy has been achieved or if the maximum computational time for
 		 * the layouting process has been reached.
 		 * 
-		 * @see Network#setAccuracy(double)
 		 * @see Network#layoutTimeout
 		 */
 		public void layoutComplete();
@@ -143,7 +143,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	 * The number of nodes in the network. Convenience variable. This must remain in
 	 * sync with {@code geometry.size} and {@code nodes.length}.
 	 */
-	public int nNodes = -1;
+	protected int nNodes = 0;
 
 	/**
 	 * The number of links in the network. If networks has too many links only some
@@ -151,13 +151,13 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	 * 
 	 * @see #MAX_LINK_COUNT
 	 */
-	public int nLinks = -1;
+	protected int nLinks = 0;
 
 	/**
 	 * The maximum number of links drawn in a graphical representation of the
 	 * network.
 	 */
-	protected int MAX_LINK_COUNT = 10000;
+	protected static final int MAX_LINK_COUNT = 10000;
 
 	/**
 	 * The array with all nodes of this network.
@@ -172,7 +172,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	/**
 	 * The timestamp of the last time the layouting process has completed.
 	 */
-	public double timestamp = -1.0;
+	protected double timestamp = -1.0;
 
 	/**
 	 * The desired accuracy of the layouting process. The layouting process stops if
@@ -245,7 +245,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	 * @param engine   the pacemaker for running the model
 	 * @param geometry the structure of the population
 	 */
-	public Network(EvoLudo engine, Geometry geometry) {
+	protected Network(EvoLudo engine, Geometry geometry) {
 		this.engine = engine;
 		this.geometry = geometry;
 		this.status = (geometry.isLattice() ? Status.NO_LAYOUT : Status.NEEDS_LAYOUT);
@@ -268,8 +268,8 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 		// set RNG seed if simulations have seed set. this ensures reproducibility of
 		// visual output
 		RNGDistribution simrng = engine.getRNG();
-		if (simrng.isRNGSeedSet())
-			rng.setRNGSeed(simrng.getRNGSeed());
+		if (simrng.isSeedSet())
+			rng.setSeed(simrng.getSeed());
 		setRadius(1.0);
 		int snapTimeout = engine.getSnapLayoutTimeout();
 		if (snapTimeout > 0)
@@ -290,7 +290,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 			case HONEYCOMB:
 			case TRIANGULAR:
 				setStatus(Status.NO_LAYOUT);
-				nLinks = -1;
+				nLinks = 0;
 				break;
 			case MEANFIELD:
 				nLinks = 0;
@@ -418,9 +418,8 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	 * Calculate the potential energy based on attraction to its neighbours for the
 	 * node with index {@code nodeidx}. Return the net attraction (overall direction
 	 * and magnitude) acting on it in {@link #attraction}.
-	 * 
-	 * <h3>ToDo:</h3>
-	 * Prevent nodes from overlapping.
+	 * <p>
+	 * TODO: Prevent nodes from overlapping.
 	 * 
 	 * @param nodeidx the index of the node to relax
 	 * @return the potential energy of the node
@@ -550,7 +549,7 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	 */
 	public Status getStatus() {
 		if (geometry.getType() == Geometry.Type.DYNAMIC && status == Status.HAS_LAYOUT
-				&& Math.abs(engine.getModel().getTime() - timestamp) > 1e-8)
+				&& Math.abs(engine.getModel().getUpdates() - timestamp) > 1e-8)
 			status = Status.ADJUST_LAYOUT;
 		return status;
 	}
@@ -566,38 +565,18 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	}
 
 	/**
-	 * Set the accuracy of the layouting process to {@code accuracy}.
+	 * Get the timestamp of the last time the layouting process has completed.
 	 * 
-	 * @param accuracy the accuracy of the layouting process
+	 * @return the timestamp
 	 */
-	public void setAccuracy(double accuracy) {
-		this.accuracy = accuracy;
-	}
-
-	/**
-	 * Get the desired accuracy of the layouting process.
-	 *
-	 * @return the accuracy of the layouting process
-	 */
-	public double getAccuracy() {
-		return accuracy;
-	}
-
-	/**
-	 * Adjusts the accuracy of the layouting process by a factor {@code adjust}. For
-	 * {@code adjust>1} the layouting process becomes more forgiving and less
-	 * forgiving for {@code adjust<1}.
-	 *
-	 * @param adjust the factor to adjust the accuracy
-	 */
-	public void adjustAccuracy(double adjust) {
-		accuracy *= adjust;
+	public double getTimestamp() {
+		return timestamp;
 	}
 
 	@Override
 	public void clear() {
-		nLinks = -1;
-		nNodes = -1;
+		nLinks = 0;
+		nNodes = 0;
 		// set status to lattice
 		setStatus(Status.NO_LAYOUT);
 		// opportunity to free memory
@@ -608,9 +587,13 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 		return nNodes;
 	}
 
-	@Override
-	public boolean isEmpty() {
-		return nNodes <= 0;
+	/**
+	 * Get the number of links in the network.
+	 * 
+	 * @return the number of links
+	 */
+	public int getNLinks() {
+		return nLinks;
 	}
 
 	@Override
@@ -650,21 +633,74 @@ public abstract class Network extends AbstractList<Node> implements Iterator<Nod
 	/**
 	 * Counter for the iterator over all nodes.
 	 */
-	private int iteridx;
-
-	@Override
-	public Iterator<Node> iterator() {
-		iteridx = 0;
-		return this;
-	}
+	private int idx = 0;
 
 	@Override
 	public boolean hasNext() {
-		return (iteridx >= 0 && iteridx < nNodes);
+		return (idx >= 0 && idx < nNodes);
 	}
 
 	@Override
 	public Node next() {
-		return get(iteridx++);
+		if (!hasNext()) {
+			throw new java.util.NoSuchElementException();
+		}
+		return get(idx++);
+	}
+
+	@Override
+	public Iterator<Node> iterator() {
+		return new Iterator<Node>() {
+
+			/**
+			 * Counter for the iterator over all nodes.
+			 */
+			private int iidx = 0;
+
+			@Override
+			public boolean hasNext() {
+				return (iidx >= 0 && iidx < nNodes);
+			}
+
+			@Override
+			public Node next() {
+				if (!hasNext()) {
+					throw new java.util.NoSuchElementException();
+				}
+				return get(iidx++);
+			}
+		};
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null || getClass() != obj.getClass())
+			return false;
+		Network other = (Network) obj;
+		// Compare relevant fields for equality
+		if (nNodes != other.nNodes)
+			return false;
+		if (nLinks != other.nLinks)
+			return false;
+		if (Double.compare(radius, other.radius) != 0)
+			return false;
+		if (geometry != null ? !geometry.equals(other.geometry) : other.geometry != null)
+			return false;
+		// Compare nodes array if needed
+		return Arrays.equals(nodes, other.nodes);
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = Integer.hashCode(nNodes);
+		result = prime * result + Integer.hashCode(nLinks);
+		long temp = Double.doubleToLongBits(radius);
+		result = prime * result + (int) (temp ^ (temp >>> 32));
+		result = prime * result + (geometry != null ? geometry.hashCode() : 0);
+		result = prime * result + Arrays.hashCode(nodes);
+		return result;
 	}
 }

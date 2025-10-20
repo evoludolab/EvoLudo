@@ -31,8 +31,9 @@
 package org.evoludo.simulator.views;
 
 import java.awt.Color;
-import java.util.ArrayList;
+import java.util.List;
 
+import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
@@ -40,6 +41,8 @@ import org.evoludo.simulator.EvoLudo.ColorModelType;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.models.CModel;
+import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Type;
@@ -74,7 +77,6 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		super(engine, type);
 	}
 
-
 	@Override
 	protected void allocateGraphs() {
 		// how to deal with distinct interaction/competition geometries?
@@ -87,14 +89,14 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		Type mt = model.getType();
 		if (mt.isIBS()) {
 			int nGraphs = 0;
-			ArrayList<? extends Module> species = engine.getModule().getSpecies();
-			for (Module module : species)
+			List<? extends Module<?>> species = engine.getModule().getSpecies();
+			for (Module<?> module : species)
 				nGraphs += Geometry.displayUniqueGeometry(module) ? 1 : 2;
 
 			if (graphs.size() == nGraphs)
 				return;
 			destroyGraphs();
-			for (Module module : species) {
+			for (Module<?> module : species) {
 				PopGraph2D graph = new PopGraph2D(this, module);
 				wrapper.add(graph);
 				graphs.add(graph);
@@ -130,7 +132,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 				return;
 
 			destroyGraphs();
-			Module module = engine.getModule();
+			Module<?> module = engine.getModule();
 			PopGraph2D graph = new PopGraph2D(this, module);
 			// debugging not available for DE's
 			graph.setDebugEnabled(false);
@@ -155,8 +157,8 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 			setGraphGeometry(graph, inter);
 			inter = !inter;
 			Geometry geometry = graph.getGeometry();
-			Module module = graph.getModule();
-			PopGraph2D.GraphStyle style = graph.getStyle();
+			Module<?> module = graph.getModule();
+			AbstractGraph.GraphStyle style = graph.getStyle();
 			if (geometry.getType() == Geometry.Type.LINEAR) {
 				// frame, ticks, labels needed
 				style.xLabel = "nodes";
@@ -227,7 +229,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 								cMap = new ColorMapCSS.Gradient1D(colors[dep], colors[trait], trait, 100);
 							} else {
 								// vacant space does not count as dependent trait for coloring
-								if (module.getVacant() == dep)
+								if (module.getVacantIdx() == dep)
 									dep = -1;
 								cMap = new ColorMapCSS.Gradient2D(colors, dep, 100);
 							}
@@ -253,7 +255,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 							int nMono = module.getNTraits();
 							for (int n = 0; n < nMono; n++) {
 								// cast is save because pop is Discrete
-								org.evoludo.simulator.models.Discrete dmodel = (org.evoludo.simulator.models.Discrete) model;
+								DModel dmodel = (DModel) model;
 								double mono = dmodel.getMonoScore(id, n);
 								if (Double.isNaN(mono))
 									continue;
@@ -266,7 +268,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 						}
 						if (module instanceof Continuous) {
 							// cast is save because pop is Continuous
-							org.evoludo.simulator.models.Continuous cmodel = (org.evoludo.simulator.models.Continuous) model;
+							CModel cmodel = (CModel) model;
 							// hardcoded colors for min/max mono scores
 							cMap1D.setColor(map2fit.map(cmodel.getMinMonoScore(id)),
 									ColorMap.addAlpha(Color.BLUE.darker(), 220));

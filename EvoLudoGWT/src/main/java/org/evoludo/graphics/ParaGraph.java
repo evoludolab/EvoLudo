@@ -41,6 +41,7 @@ import org.evoludo.math.Functions;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasPhase2D;
+import org.evoludo.simulator.views.Phase2D;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
@@ -55,7 +56,6 @@ import com.google.gwt.dom.client.Touch;
 import com.google.gwt.event.dom.client.DoubleClickEvent;
 import com.google.gwt.event.dom.client.DoubleClickHandler;
 import com.google.gwt.event.dom.client.TouchStartEvent;
-import com.google.gwt.user.client.Command;
 
 /**
  * Parametric graph for displaying trajectories in phase plane. The graph is
@@ -73,6 +73,7 @@ import com.google.gwt.user.client.Command;
  * 
  * @author Christoph Hauert
  */
+@SuppressWarnings("java:S110")
 public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shifting, HasTrajectory, //
 		DoubleClickHandler {
 
@@ -93,13 +94,18 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 
 	/**
 	 * Create new parametric graph for <code>module</code> running in
-	 * <code>controller</code>.
+	 * <code>view</code>.
 	 * 
-	 * @param controller the controller of this graph
-	 * @param module     the module backing the graph
+	 * @param view   the view of this graph
+	 * @param module the module backing the graph
 	 */
-	public ParaGraph(Controller controller, Module module) {
-		super(controller, module);
+	public ParaGraph(Phase2D view, Module<?> module) {
+		super(view, module);
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
 		setStylePrimaryName("evoludo-ParaGraph");
 		buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
 	}
@@ -157,32 +163,60 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 */
 	public void addData(double t, double[] data, boolean force) {
 		if (buffer.isEmpty()) {
-			buffer.append(prependTime2Data(t, data));
-			double[] last = buffer.last();
-			int len = last.length;
-			if (init == null || init.length != len)
-				init = new double[len];
-			System.arraycopy(buffer.last(), 1, init, 1, len - 1);
-		} else {
-			double[] last = buffer.last();
-			double lastt = last[0];
-			int len = last.length;
-			if (Math.abs(t - lastt) < 1e-8) {
-				buffer.replace(prependTime2Data(t, data));
-				System.arraycopy(data, 0, init, 1, len - 1);
-			} else {
-				if (Double.isNaN(t)) {
-					// new starting point
-					if (Double.isNaN(lastt))
-						buffer.replace(prependTime2Data(t, data));
-					else
-						buffer.append(prependTime2Data(t, data));
-					System.arraycopy(buffer.last(), 1, init, 1, len - 1);
-				}
-				else if (force || distSq(data, last) > bufferThreshold)
-					buffer.append(prependTime2Data(t, data));
-			}
+			handleEmptyBuffer(t, data);
+			return;
 		}
+		double[] last = buffer.last();
+		double lastt = last[0];
+		int len = last.length;
+		if (Math.abs(t - lastt) < 1e-8) {
+			buffer.replace(prependTime2Data(t, data));
+			System.arraycopy(data, 0, init, 1, len - 1);
+			return;
+		}
+		if (Double.isNaN(t)) {
+			handleNaNTime(lastt, t, data, len);
+			return;
+		}
+		if (force || distSq(data, last) > bufferThreshold) {
+			buffer.append(prependTime2Data(t, data));
+		}
+	}
+
+	/**
+	 * Handle the case that the buffer is empty. Add data to the buffer and set the
+	 * initial state.
+	 * 
+	 * @param t    the time at which the data is recorded
+	 * @param data the data to add
+	 */
+	private void handleEmptyBuffer(double t, double[] data) {
+		buffer.append(prependTime2Data(t, data));
+		double[] last = buffer.last();
+		int len = last.length;
+		if (init == null || init.length != len)
+			init = new double[len];
+		System.arraycopy(buffer.last(), 0, init, 0, len);
+	}
+
+	/**
+	 * Handle the case that the time {@code t} is {@code NaN}. If the last time in
+	 * the buffer is also {@code NaN} the last data point is replaced by the new
+	 * data, otherwise the new data is appended to the buffer. The initial state is
+	 * updated accordingly.
+	 * 
+	 * @param lastt the time of the last data point in the buffer
+	 * @param t     the time of the data
+	 * @param data  the data to add
+	 * @param len   the length of the data array (including time)
+	 */
+	private void handleNaNTime(double lastt, double t, double[] data, int len) {
+		// new starting point
+		if (Double.isNaN(lastt))
+			buffer.replace(prependTime2Data(t, data));
+		else
+			buffer.append(prependTime2Data(t, data));
+		System.arraycopy(buffer.last(), 0, init, 0, len);
 	}
 
 	/**
@@ -223,7 +257,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		g.save();
 		g.scale(scale, scale);
 		clearCanvas();
-		g.translate(bounds.getX() - viewCorner.x, bounds.getY() - viewCorner.y);
+		g.translate(bounds.getX() - viewCorner.getX(), bounds.getY() - viewCorner.getY());
 		g.scale(zoomFactor, zoomFactor);
 		g.save();
 		double h = bounds.getHeight();
@@ -264,9 +298,8 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 				double pt = prev[0];
 				map.data2Phase(prev, nextPt);
 				if (!Double.isNaN(ct))
-					strokeLine((nextPt.x - style.xMin) * xScale, (nextPt.y - style.yMin) * yScale, //
-							(currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale);
-				current = prev;
+					strokeLine((nextPt.getX() - style.xMin) * xScale, (nextPt.getY() - style.yMin) * yScale, //
+							(currPt.getX() - style.xMin) * xScale, (currPt.getY() - style.yMin) * yScale);
 				ct = pt;
 				Point2D swap = currPt;
 				currPt = nextPt;
@@ -277,11 +310,12 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 			// mark start and end points of trajectory
 			map.data2Phase(init, currPt);
 			g.setFillStyle(style.startColor);
-			fillCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
+			fillCircle((currPt.getX() - style.xMin) * xScale, (currPt.getY() - style.yMin) * yScale, style.markerSize);
 			if (!buffer.isEmpty()) {
 				map.data2Phase(buffer.last(), currPt);
 				g.setFillStyle(style.endColor);
-				fillCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
+				fillCircle((currPt.getX() - style.xMin) * xScale, (currPt.getY() - style.yMin) * yScale,
+						style.markerSize);
 			}
 		}
 		if (markers != null) {
@@ -292,11 +326,13 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 				String mcolor = markerColors[n++ % nMarkers];
 				if (mark[0] > 0.0) {
 					g.setFillStyle(mcolor);
-					fillCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
+					fillCircle((currPt.getX() - style.xMin) * xScale, (currPt.getY() - style.yMin) * yScale,
+							style.markerSize);
 				} else {
 					g.setLineWidth(style.lineWidth);
 					g.setStrokeStyle(mcolor);
-					strokeCircle((currPt.x - style.xMin) * xScale, (currPt.y - style.yMin) * yScale, style.markerSize);
+					strokeCircle((currPt.getX() - style.xMin) * xScale, (currPt.getY() - style.yMin) * yScale,
+							style.markerSize);
 				}
 			}
 		}
@@ -314,7 +350,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	/**
 	 * The minimum distance between two subsequent points in pixels.
 	 */
-	private static double MIN_PIXELS = 3.0;
+	private static final double MIN_PIXELS = 3.0;
 
 	@Override
 	public void calcBounds(int width, int height) {
@@ -366,12 +402,9 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	protected void schedulePaint() {
 		if (paintScheduled)
 			return;
-		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-			@Override
-			public void execute() {
-				paint();
-				paintScheduled = false;
-			}
+		Scheduler.get().scheduleDeferred(() -> {
+			paint();
+			paintScheduled = false;
 		});
 		paintScheduled = true;
 	}
@@ -399,8 +432,8 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	 * @param y the {@code y}-coordinate on screen
 	 */
 	private void processInitXY(double x, double y) {
-		int sx = (int) ((viewCorner.x + x - bounds.getX()) / zoomFactor + 0.5);
-		int sy = (int) ((viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5);
+		int sx = (int) ((viewCorner.getX() + x - bounds.getX()) / zoomFactor + 0.5);
+		int sy = (int) ((viewCorner.getY() + y - bounds.getY()) / zoomFactor + 0.5);
 		if (!inside(sx, sy))
 			return;
 		double ux = style.xMin + sx / bounds.getWidth() * (style.xMax - style.xMin);
@@ -410,7 +443,7 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		double[] state = new double[len - 1];
 		System.arraycopy(last, 1, state, 0, len - 1);
 		map.phase2Data(new Point2D(ux, uy), state);
-		controller.setInitialState(state);
+		view.setInitialState(state);
 	}
 
 	// CHECK!
@@ -429,8 +462,8 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 
 	@Override
 	public String getTooltipAt(int x, int y) {
-		int sx = (int) ((viewCorner.x + x - bounds.getX()) / zoomFactor + 0.5);
-		int sy = (int) ((viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5);
+		int sx = (int) ((viewCorner.getX() + x - bounds.getX()) / zoomFactor + 0.5);
+		int sy = (int) ((viewCorner.getY() + y - bounds.getY()) / zoomFactor + 0.5);
 		if (!inside(sx, sy))
 			return null;
 		double ux = style.xMin + sx / bounds.getWidth() * (style.xMax - style.xMin);
@@ -468,26 +501,20 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		// add menu to clear canvas
 		if (clearMenu == null) {
-			clearMenu = new ContextMenuItem("Clear", new Command() {
-				@Override
-				public void execute() {
-					clearHistory();
-					paint(true);
-				}
+			clearMenu = new ContextMenuItem("Clear", () -> {
+				clearHistory();
+				paint(true);
 			});
 		}
 		menu.add(clearMenu);
 		// add autoscale menu if not percent scale
 		if (!(style.percentX || style.percentY)) {
 			if (autoscaleMenu == null) {
-				autoscaleMenu = new ContextMenuCheckBoxItem("Autoscale axes", new Command() {
-					@Override
-					public void execute() {
-						doAutoscale = !autoscaleMenu.isChecked();
-						autoscaleMenu.setChecked(doAutoscale);
-						autoscale();
-						paint(true);
-					}
+				autoscaleMenu = new ContextMenuCheckBoxItem("Autoscale axes", () -> {
+					doAutoscale = !autoscaleMenu.isChecked();
+					autoscaleMenu.setChecked(doAutoscale);
+					autoscale();
+					paint(true);
 				});
 			}
 			autoscaleMenu.setChecked(doAutoscale);
@@ -507,9 +534,12 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		while (entry.hasNext()) {
 			double[] data = entry.next();
 			map.data2Phase(data, point);
-			export.append(Formatter.format(data[0], 8) + ", " + //
-					Formatter.format(point.x, 8) + ", " + //
-					Formatter.format(point.y, 8) + "\n");
+			export.append(Formatter.format(data[0], 8))
+					.append(", ")
+					.append(Formatter.format(point.getX(), 8))
+					.append(", ")
+					.append(Formatter.format(point.getY(), 8))
+					.append("\n");
 		}
 	}
 
@@ -527,12 +557,6 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		 * Flag indicating whether the axes are fixed. The default is fixed axes.
 		 */
 		boolean hasFixedAxes = false;
-
-		/**
-		 * Create new trait map.
-		 */
-		public TraitMap() {
-		}
 
 		/**
 		 * The array of trait indices that are mapped to the <code>x</code>-axis.
@@ -606,22 +630,23 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {
 			// NOTE: data[0] is time
-			point.x = data[stateX[0] + 1];
+			double x = data[stateX[0] + 1];
 			int nx = stateX.length;
 			if (nx > 1) {
 				for (int n = 1; n < nx; n++)
-					point.x += data[stateX[n] + 1];
+					x += data[stateX[n] + 1];
 			}
-			minX = Math.min(minX, point.x);
-			maxX = Math.max(maxX, point.x);
-			point.y = data[stateY[0] + 1];
+			minX = Math.min(minX, x);
+			maxX = Math.max(maxX, x);
+			double y = data[stateY[0] + 1];
 			int ny = stateY.length;
 			if (ny > 1) {
 				for (int n = 1; n < ny; n++)
-					point.y += data[stateY[n] + 1];
+					y += data[stateY[n] + 1];
 			}
-			minY = Math.min(minY, point.y);
-			maxY = Math.max(maxY, point.y);
+			minY = Math.min(minY, y);
+			maxY = Math.max(maxY, y);
+			point.set(x, y);
 			return true;
 		}
 
@@ -633,8 +658,8 @@ public class ParaGraph extends AbstractGraph<double[]> implements Zooming, Shift
 				return false;
 			// conversion only possible if each phase plane axis represents a single
 			// dynamical variable, i.e. no aggregates
-			data[stateX[0]] = point.x;
-			data[stateY[0]] = point.y;
+			data[stateX[0]] = point.getX();
+			data[stateY[0]] = point.getY();
 			return true;
 		}
 

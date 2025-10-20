@@ -38,6 +38,7 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.models.ChangeListener;
+import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.modules.CDL;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -61,11 +62,6 @@ public class simCDL extends CDL implements ChangeListener {
 	 * The flag to indicate whether to show progress.
 	 */
 	boolean progress = false;
-
-	/**
-	 * The number of samples for fixation probabilities.
-	 */
-	int nSamples = 100;
 
 	/**
 	 * The number of steps for initial frequencies.
@@ -160,19 +156,25 @@ public class simCDL extends CDL implements ChangeListener {
 		if (nSteps > 0) {
 			// even if seed was set, we need to clear the flag here otherwise subsequent
 			// calls to modelReset() will keep generating the same initial configuration!
-			engine.getRNG().clearRNGSeed();
+			engine.getRNG().clearSeed();
 			double incr = Math.max(1.0, nPopulation / (double) nSteps);
 			int dim = (int) (nPopulation / incr + 0.5);
 			fixprob = new double[dim + 1][dim + 1][nTraits];
 			abstime = new double[dim + 1][dim + 1];
 			state = new double[nTraits];
-			int tot = (dim + 1) * (dim + 2) / 2, done = 0;
+			int tot = (dim + 1) * (dim + 2) / 2;
+			int done = 0;
 			initcount = new int[nTraits];
 			resetStatistics();
+			int nSamples = (int) model.getNSamples();
+			if (model.getType().isODE() && model.getNSamples() > 1) {
+				logger.warning("ODE models are deterministic, no point in taking multiple samples.");
+				nSamples = 1;
+			}
 			for (int c = dim; c >= 0; c--) {
 				for (int d = dim - c; d >= 0; d--) {
 					double[] dinit = new double[nTraits];
-					((org.evoludo.simulator.models.Discrete) model).getInitialTraits(dinit);
+					((DModel) model).getInitialTraits(dinit);
 					if (dim == 0) {
 						initcount[COOPERATE] = (int) (dinit[COOPERATE] * nPopulation + 0.5);
 						initcount[DEFECT] = (int) (dinit[DEFECT] * nPopulation + 0.5);
@@ -187,11 +189,12 @@ public class simCDL extends CDL implements ChangeListener {
 						initcount[(LONER + 1) % nTraits]--;
 					}
 					ArrayMath.copy(initcount, dinit);
-					((org.evoludo.simulator.models.Discrete) model).setInitialTraits(dinit);
+					((DModel) model).setInitialTraits(dinit);
 					for (int s = 1; s <= nSamples; s++) {
 						engine.modelReset();
-						while (engine.modelNext())
-							;
+						while (engine.modelNext()) {
+							// loop until converged (or timeend reached)
+						}
 						// if timeStop was reached, ODE, SDE or simulations may not yet have been
 						// absorbed in particular if interior fixed point is attractor
 						model.getMeanTraits(getID(), state);
@@ -203,7 +206,7 @@ public class simCDL extends CDL implements ChangeListener {
 							// stable mixed state
 							ArrayMath.add(fixprob[c][d], state);
 						// running average of absorption/convergence time
-						double time = engine.getModel().getTime();
+						double time = engine.getModel().getUpdates();
 						if (timeStop > 0 && Math.abs(time - timeStop) < 1e-8)
 							// emergency brake triggered
 							abstime[c][d] = Double.POSITIVE_INFINITY;
@@ -222,7 +225,7 @@ public class simCDL extends CDL implements ChangeListener {
 				for (int d = dim - c; d >= 0; d--) {
 					double[] loc = fixprob[c][d];
 					double[] dinit = new double[nTraits];
-					((org.evoludo.simulator.models.Discrete) model).getInitialTraits(dinit);
+					((DModel) model).getInitialTraits(dinit);
 					if (dim == 0) {
 						count[COOPERATE] = (int) (dinit[COOPERATE] * nPopulation + 0.5);
 						count[DEFECT] = (int) (dinit[DEFECT] * nPopulation + 0.5);
@@ -246,10 +249,11 @@ public class simCDL extends CDL implements ChangeListener {
 		}
 		if (scanNL != null) {
 			mean = new double[nTraits];
-			var = new double[nTraits];
+			variance = new double[nTraits];
 			state = new double[nTraits];
 			progress |= (logger.getLevel().intValue() <= Level.FINE.intValue());
-			int tot = (int) ((scanNL[1] - scanNL[0]) / scanNL[2]) + 1, done = 0;
+			int tot = (int) ((scanNL[1] - scanNL[0]) / scanNL[2]) + 1;
+			int done = 0;
 			timeStop += timeRelax;
 			out.println("# average frequencies\n# a\tr\tL\tD\tC\tT");
 			double a = scanNL[0];
@@ -262,20 +266,24 @@ public class simCDL extends CDL implements ChangeListener {
 				boolean converged = engine.modelRelax();
 				startStatistics();
 				if (!converged) {
-					while (engine.modelNext())
-						;
+					while (engine.modelNext()) {
+						// loop until converged (or timeend reached)
+					}
 				}
 				if (model.hasConverged()) {
 					// model converged (ODE only with mu>0) - mean is current state and sdev is zero
 					model.getMeanTraits(getID(), mean);
-					Arrays.fill(var, 0.0);
+					Arrays.fill(variance, 0.0);
 				}
-				String msg = Formatter.format(a, 4) + "\t" + Formatter.format(r, 4);
-				double time = Math.max(engine.getModel().getTime(), timeStop);
-				for (int n = 0; n < nTraits; n++)
-					msg += "\t" + Formatter.format(mean[n], 6) + "\t"
-							+ Formatter.format(Math.sqrt(var[n] / (time - timeRelax - 1.0)), 6);
-				out.println(msg);
+				StringBuilder sb = new StringBuilder();
+				sb.append(Formatter.format(a, 4)).append("\t").append(Formatter.format(r, 4));
+				double time = Math.max(engine.getModel().getUpdates(), timeStop);
+				for (int n = 0; n < nTraits; n++) {
+					sb.append("\t").append(Formatter.format(mean[n], 6))
+							.append("\t")
+							.append(Formatter.format(Math.sqrt(variance[n] / (time - timeRelax - 1.0)), 6));
+				}
+				out.println(sb.toString());
 				out.flush();
 				done++;
 				if (progress)
@@ -291,7 +299,11 @@ public class simCDL extends CDL implements ChangeListener {
 	/**
 	 * Temporary variables for fixation probabilities and absorption times.
 	 */
-	double[] mean, var, state, meanmean, meanvar;
+	double[] mean;
+	double[] variance;
+	double[] state;
+	double[] meanmean;
+	double[] meanvar;
 
 	/**
 	 * Time of previous sample.
@@ -300,7 +312,7 @@ public class simCDL extends CDL implements ChangeListener {
 
 	@Override
 	public synchronized void modelChanged(PendingAction action) {
-		updateStatistics(engine.getModel().getTime());
+		updateStatistics(engine.getModel().getUpdates());
 	}
 
 	@Override
@@ -312,7 +324,7 @@ public class simCDL extends CDL implements ChangeListener {
 	 * Start collecting statistics.
 	 */
 	protected void startStatistics() {
-		prevsample = engine.getModel().getTime();
+		prevsample = engine.getModel().getUpdates();
 	}
 
 	/**
@@ -321,13 +333,13 @@ public class simCDL extends CDL implements ChangeListener {
 	protected void resetStatistics() {
 		if (mean == null)
 			mean = new double[nTraits];
-		if (var == null)
-			var = new double[nTraits];
+		if (variance == null)
+			variance = new double[nTraits];
 		if (state == null)
 			state = new double[nTraits];
 		prevsample = Double.MAX_VALUE;
 		Arrays.fill(mean, 0.0);
-		Arrays.fill(var, 0.0);
+		Arrays.fill(variance, 0.0);
 	}
 
 	/**
@@ -345,19 +357,9 @@ public class simCDL extends CDL implements ChangeListener {
 		for (int n = 0; n < nTraits; n++) {
 			double delta = state[n] - mean[n];
 			mean[n] += wn * delta;
-			var[n] += w * delta * (state[n] - mean[n]);
+			variance[n] += w * delta * (state[n] - mean[n]);
 		}
 		prevsample = time;
-	}
-
-	@Override
-	public boolean check() {
-		boolean doReset = super.check();
-		if (model.getType().isODE() && nSamples > 1) {
-			logger.warning("ODE models are deterministic, no point in taking multiple samples.");
-			nSamples = 1;
-		}
-		return doReset;
 	}
 
 	/*
@@ -379,18 +381,6 @@ public class simCDL extends CDL implements ChangeListener {
 	 * 
 	 * private double sign(double x) { return x>0.0?1.0:(x<0.0?0.0:0.5); }
 	 */
-
-	/**
-	 * Command line option to set the number of samples for fixation probabilities.
-	 */
-	public final CLOption cloNSamples = new CLOption("samples", "100", Category.Simulation,
-			"--samples       number of samples for fixation probs", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					nSamples = CLOParser.parseInteger(arg);
-					return true;
-				}
-			});
 
 	/**
 	 * Command line option to set the number of steps for initial frequencies.
@@ -415,7 +405,7 @@ public class simCDL extends CDL implements ChangeListener {
 					if (!cloScanNL.isSet())
 						return true;
 					scanNL = CLOParser.parseVector(arg);
-					return (scanNL != null);
+					return (scanNL.length > 0);
 				}
 			});
 
@@ -433,7 +423,6 @@ public class simCDL extends CDL implements ChangeListener {
 
 	@Override
 	public void collectCLO(CLOParser parser) {
-		parser.addCLO(cloNSamples);
 		parser.addCLO(cloNSteps);
 		parser.addCLO(cloScanNL);
 		parser.addCLO(cloProgress);
@@ -443,7 +432,7 @@ public class simCDL extends CDL implements ChangeListener {
 	}
 
 	@Override
-	public CDL.IBSPop createIBSPop() {
+	public CDL.IBSPop createIBSPopulation() {
 		return new simCDLIBS(engine, this);
 	}
 

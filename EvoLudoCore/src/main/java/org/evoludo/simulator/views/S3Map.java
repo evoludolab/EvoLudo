@@ -206,7 +206,7 @@ public class S3Map implements BasicTooltipProvider {
 	 * </ol>
 	 * 
 	 * @param s3 the data array indicating a point on the simplex
-	 * @param p the cartesian coordinates of the point on the simplex
+	 * @param p  the cartesian coordinates of the point on the simplex
 	 * @return the point {@code p}
 	 * 
 	 * @see #setOrder(int[])
@@ -234,11 +234,10 @@ public class S3Map implements BasicTooltipProvider {
 	 */
 	public Point2D data2S3(double s1, double s2, double s3, Point2D p) {
 		// top (c): s3, right (d): s2, left (l): s1
-		p.x = s2 - s1; // [-1, 1]
-		p.y = (s3 - s2 - s1 + 1.0) * 0.5 - 1.0 / 3.0; // [-1/3, 2/3]
+		// x in [-1, 1]; y in [-1/3, 2/3]
+		p.set(s2 - s1, (s3 - s2 - s1 + 1.0) * 0.5 - 1.0 / 3.0);
 		p.scale(s1 + s2 + s3);
-		p.x = (p.x + 1.0) * 0.5;
-		p.y = 2.0 / 3.0 - p.y;
+		p.set((p.getX() + 1.0) * 0.5, 2.0 / 3.0 - p.getY());
 		return p;
 	}
 
@@ -267,10 +266,13 @@ public class S3Map implements BasicTooltipProvider {
 	@Override
 	public String getTooltipAt(double sx, double sy) {
 		s32Data(sx, sy, tip);
-		String msg = "<table>";
+		StringBuilder msg = new StringBuilder("<table>");
 		for (int i = 0; i < 3; i++)
-			msg += "<tr><td style='text-align:right'><i>" + names[i] + ":</i></td><td>" //
-					+ Formatter.formatPercent(tip[i], 2) + "</td></tr>";
-		return msg + "</table>";
+			msg.append("<tr><td style='text-align:right'><i>")
+					.append(names[i])
+					.append(":</i></td><td>")
+					.append(Formatter.formatPercent(tip[i], 2))
+					.append("</td></tr>");
+		return msg.append("</table>").toString();
 	}
 }

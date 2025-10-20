@@ -23,7 +23,7 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <release>21</release>
+          <release>${java.version.lts}</release>
           <!-- <excludes>
             <exclude>**/run/*.java</exclude>
           </excludes> -->
@@ -43,6 +43,7 @@
             <descriptorRef>jar-with-dependencies</descriptorRef>
           </descriptorRefs>
           <appendAssemblyId>false</appendAssemblyId>
+          <attach>false</attach>
           <archive>
             <manifest>
               <mainClass>org.evoludo.simulator.exec.TestEvoLudo</mainClass>

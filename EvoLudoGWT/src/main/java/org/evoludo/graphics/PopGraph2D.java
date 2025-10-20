@@ -41,6 +41,7 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.util.RingBuffer;
 
 import com.google.gwt.core.client.JsArray;
@@ -65,6 +66,7 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
  *
  * @author Christoph Hauert
  */
+@SuppressWarnings("java:S110")
 public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Shifting {
 
 	/**
@@ -80,11 +82,16 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * <dd>the label element.</dd>
 	 * </dl>
 	 * 
-	 * @param controller the controller of this graph
-	 * @param module     the module backing the graph
+	 * @param view   the view of this graph
+	 * @param module the module backing the graph
 	 */
-	public PopGraph2D(PopGraphController controller, Module module) {
-		super(controller, module);
+	public PopGraph2D(AbstractView view, Module<?> module) {
+		super(view, module);
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
 		setStylePrimaryName("evoludo-PopGraph2D");
 		label.setStyleName("evoludo-Label2D");
 	}
@@ -93,7 +100,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * The maximum size of a linear graph. This affects memory allocation to retain
 	 * the history of the graph.
 	 */
-	public final static int MAX_LINEAR_SIZE = 500;
+	public static final int MAX_LINEAR_SIZE = 500;
 
 	@Override
 	public void setGeometry(Geometry geometry) {
@@ -118,11 +125,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			data = new String[geometry.size];
 	}
 
-	/**
-	 * Update the graph.
-	 * 
-	 * @param isNext {@code true} if the state has changed
-	 */
+	@Override
 	public void update(boolean isNext) {
 		if (buffer != null) {
 			// add copy of data array to buffer
@@ -167,7 +170,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			return;
 		invalidated = false;
 		// helper variables
-		double xshift, yshift;
+		double xshift;
+		double yshift;
 		int row;
 		Geometry.Type type = geometry.getType();
 		if (isHierarchy)
@@ -288,17 +292,17 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 					xshift = 0.0;
 					for (int w = 0; w < side; w++) {
 						// if (h % 2 == w % 2)
-						// 	// sub-lattice 1
-						// 	g.setFillStyle(sub1map.get(data[row + w]));
+						// // sub-lattice 1
+						// g.setFillStyle(sub1map.get(data[row + w]));
 						// else
-						// 	// sub-lattice 2
-						// 	g.setFillStyle(sub2map.get(data[row + w]));
+						// // sub-lattice 2
+						// g.setFillStyle(sub2map.get(data[row + w]));
 						g.setFillStyle(data[row + w]);
 						if (h % 2 == w % 2)
 							fillRect(xshift, yshift, dw, dh);
 						else
-							fillCircle(xshift + dw2, yshift + dw2, dw2);	
-							// fillRect(xshift + 0.5, yshift + 0.5, dw - 1.0, dh - 1.0);
+							fillCircle(xshift + dw2, yshift + dw2, dw2);
+						// fillRect(xshift + 0.5, yshift + 0.5, dw - 1.0, dh - 1.0);
 						xshift += dw;
 					}
 					yshift -= dh;
@@ -361,8 +365,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				g.setFillStyle(next);
 				current = next;
 			}
-			Node2D node = nodes[k];
-			fillCircle(node.x, node.y, node.r);
+			fillCircle(nodes[k]);
 		}
 		g.restore();
 		drawFrame(0, 0, su);
@@ -380,7 +383,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		g.save();
 		g.scale(scale, scale);
 		clearCanvas();
-		g.translate(bounds.getX() - viewCorner.x, bounds.getY() - viewCorner.y);
+		g.translate(bounds.getX() - viewCorner.getX(), bounds.getY() - viewCorner.getY());
 		g.scale(zoomFactor, zoomFactor);
 		return true;
 	}
@@ -462,7 +465,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		dw = 0;
 		dh = 0;
 		dR = 0;
-		double bHeight, bWidth;
+		double bHeight;
+		double bWidth;
 		int diameter;
 		Geometry.Type type = geometry.getType();
 		isHierarchy = (type == Geometry.Type.HIERARCHY);
@@ -613,7 +617,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			displayMessage("Population size to large!");
 		} else {
 			// lazy allocation of memory for colors
-			if (isActive && (data == null || data.length != geometry.size))
+			if (view.isActive() && (data == null || data.length != geometry.size))
 				data = new String[geometry.size];
 		}
 	}
@@ -624,6 +628,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param node the index of the node
 	 * @return the color of the node
 	 */
+	@Override
 	public String getCSSColorAt(int node) {
 		return data[node];
 	}
@@ -635,6 +640,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * @param y the {@code y}-coordinate of the location
 	 * @return the index of the node
 	 */
+	@Override
 	public int findNodeAt(int x, int y) {
 		// no network may have been initialized (e.g. for ODE/SDE models)
 		if (hasMessage || network == null || invalidated || network.isStatus(Status.LAYOUT_IN_PROGRESS))
@@ -648,8 +654,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		if (!bounds.contains(x, y))
 			return FINDNODEAT_OUT_OF_BOUNDS;
 
-		int sx = (int) ((viewCorner.x + x - bounds.getX()) / zoomFactor + 0.5);
-		int sy = (int) ((viewCorner.y + y - bounds.getY()) / zoomFactor + 0.5);
+		int sx = (int) ((viewCorner.getX() + x - bounds.getX()) / zoomFactor + 0.5);
+		int sy = (int) ((viewCorner.getY() + y - bounds.getY()) / zoomFactor + 0.5);
 
 		Geometry.Type type = geometry.getType();
 		if (isHierarchy)
@@ -738,10 +744,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				// in the undesirable case that nodes overlap, nodes with a higher index are
 				// drawn later (on top)
 				// in order to get the top node we need to start from the back
-				for (int k = network.nNodes - 1; k >= 0; k--) {
-					Node2D hit = nodes[k];
-					rr = hit.r;
-					if (mousecoord.distance2(hit) <= rr * rr)
+				for (int k = network.size() - 1; k >= 0; k--) {
+					if (nodes[k].isHit(mousecoord))
 						return k;
 				}
 				return FINDNODEAT_OUT_OF_BOUNDS;
@@ -920,8 +924,9 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 					yaspect = 1.0;
 				}
 				Node2D node = network.get(nodeidx);
-				node.set(Math.max(-rr * xaspect + node.r, Math.min(rr * xaspect - node.r, node.x - dx * iscale)),
-						Math.max(-rr * yaspect + node.r, Math.min(rr * yaspect - node.r, node.y - dy * iscale)));
+				double r = node.getR();
+				node.set(Math.max(-rr * xaspect + r, Math.min(rr * xaspect - r, node.getX() - dx * iscale)),
+						Math.max(-rr * yaspect + r, Math.min(rr * yaspect - r, node.getY() - dy * iscale)));
 				network.linkNodes();
 				drawNetwork();
 				return;

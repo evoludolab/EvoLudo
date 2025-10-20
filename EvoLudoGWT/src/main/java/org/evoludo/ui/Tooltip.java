@@ -59,8 +59,6 @@ import com.google.gwt.event.dom.client.TouchStartHandler;
 import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
-import com.google.gwt.user.client.Window.ScrollEvent;
-import com.google.gwt.user.client.Window.ScrollHandler;
 import com.google.gwt.user.client.ui.FocusPanel;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.RootPanel;
@@ -89,6 +87,7 @@ import com.google.gwt.user.client.ui.RootPanel;
  * 
  * @author Christoph Hauert
  */
+@SuppressWarnings("java:S110")
 public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, MouseMoveHandler, MouseWheelHandler,
 		TouchStartHandler, TouchMoveHandler, TouchEndHandler, FullscreenChangeHandler, HasFullscreenChangeHandlers {
 
@@ -117,11 +116,46 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	protected class Registration implements HandlerRegistration {
 
 		/**
-		 * References to all event handlers relevant for handling tooltips registered
+		 * Reference to mouse over event handler for handling tooltips registered
 		 * with the listener widget.
 		 */
-		HandlerRegistration mouseOverHandler, mouseOutHandler, mouseMoveHandler, mouseWheelHandler, touchStartHandler,
-				touchMoveHandler, touchEndHandler;
+		HandlerRegistration mouseOverHandler;
+
+		/**
+		 * Reference to mouse over event handler for handling tooltips registered
+		 * with the listener widget.
+		 */
+		HandlerRegistration mouseOutHandler;
+
+		/**
+		 * Reference to mouse move event handler for handling tooltips registered
+		 * with the listener widget.
+		 */
+		HandlerRegistration mouseMoveHandler;
+
+		/**
+		 * Reference to mouse wheel event handler for handling tooltips registered
+		 * with the listener widget.
+		 */
+		HandlerRegistration mouseWheelHandler;
+
+		/**
+		 * Reference to touch start event handler for handling tooltips registered
+		 * with the listener widget.
+		 */
+		HandlerRegistration touchStartHandler;
+
+		/**
+		 * Reference to touch move event handler for handling tooltips registered
+		 * with the listener widget.
+		 */
+		HandlerRegistration touchMoveHandler;
+
+		/**
+		 * Reference to touch end event handler for handling tooltips registered
+		 * with the listener widget.
+		 */
+		HandlerRegistration touchEndHandler;
 
 		/**
 		 * Provider of tooltips for this listener widget.
@@ -191,7 +225,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 * @see #DEFAULT_OFFSET_X
 	 * @see #setOffset(int, int)
 	 */
-	private int offsetX = DEFAULT_OFFSET_X;
+	private double offsetX = DEFAULT_OFFSET_X;
 
 	/**
 	 * Default vertical offset of tooltip relative to the coordinates of the pointer
@@ -210,7 +244,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 * @see #DEFAULT_OFFSET_X
 	 * @see #setOffset(int, int)
 	 */
-	private int offsetY = DEFAULT_OFFSET_Y;
+	private double offsetY = DEFAULT_OFFSET_Y;
 
 	/**
 	 * Default delay before showing the tooltip (in milliseconds) after the pointer
@@ -245,13 +279,13 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 * Horizontal offset for tooltip placement relative to tap that triggered it.
 	 * Negative offsets shift to the left.
 	 */
-	protected static final int TOUCH_SHIFT_X = -3;
+	protected static final double TOUCH_SHIFT_X = -3;
 
 	/**
 	 * Vertical offset for tooltip placement relative to tap that triggered it.
 	 * Negative offsets shift to the top.
 	 */
-	protected static final int TOUCH_SHIFT_Y = 0;
+	protected static final double TOUCH_SHIFT_Y = 0;
 
 	/**
 	 * <code>true</code> if touch events are processed.
@@ -259,11 +293,18 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	protected boolean touchEvent = false;
 
 	/**
-	 * Coordinates of current tooltip location (relative to <code>listener</code>
-	 * widget. This allows to update the tooltip without user interaction. For
-	 * example while hovering over an item that changes over time.
+	 * {@code x}-coordinates of current tooltip location (relative to
+	 * {@code listener} widget. This allows to update the tooltip without user
+	 * interaction. For example while hovering over an item that changes over time.
 	 */
-	private int x, y;
+	private int x;
+
+	/**
+	 * {@code y}-coordinates of current tooltip location (relative to
+	 * {@code listener} widget. This allows to update the tooltip without user
+	 * interaction. For example while hovering over an item that changes over time.
+	 */
+	private int y;
 
 	/**
 	 * Reference to style of tooltip. Most important to control positioning of
@@ -307,15 +348,10 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 			tooltip = new Tooltip();
 			RootPanel.get().add(tooltip);
 			tooltip.style.setPosition(Position.FIXED);
-			Window.addWindowScrollHandler(new ScrollHandler() {
-				@Override
-				public void onWindowScroll(ScrollEvent event) {
-					tooltip.close();
-				}
-			});
+			Window.addWindowScrollHandler(event -> tooltip.close());
 			if (NativeJS.isFullscreenSupported())
 				tooltip.fullscreenHandler = tooltip.addFullscreenChangeHandler(tooltip);
-			tooltip.participants = new HashMap<FocusPanel, Registration>();
+			tooltip.participants = new HashMap<>();
 			tooltip.addTouchStartHandler(tooltip);
 		}
 		return tooltip;
@@ -326,6 +362,11 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 * {@link #sharedTooltip()}.
 	 */
 	protected Tooltip() {
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
 		setHTML("tooltip");
 		setStyleName("gwt-Tooltip");
 		style = getElement().getStyle();
@@ -335,6 +376,12 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 		style.clearBottom();
 		style.clearWidth();
 		close();
+	}
+
+	@Override
+	protected void onUnload() {
+		style = null;
+		super.onUnload();
 	}
 
 	/**
@@ -355,11 +402,11 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	public void show() {
 		if (isVisible()) {
 			// update location
-			_show();
+			doShow();
 			return;
 		}
 		if (delayShow <= 0) {
-			_show();
+			doShow();
 			return;
 		}
 		if (delayShowTimer.isRunning())
@@ -373,7 +420,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	private Timer delayShowTimer = new Timer() {
 		@Override
 		public void run() {
-			_show();
+			doShow();
 		}
 	};
 
@@ -390,7 +437,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	/**
 	 * Helper method: show tooltip now and set timeout timer.
 	 */
-	private void _show() {
+	private void doShow() {
 		if (!NativeJS.hasFocus()) {
 			close();
 			return;
@@ -429,7 +476,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	 * 
 	 * @param origin the FocusPanel with tooltips.
 	 */
-	private void _update(FocusPanel origin) {
+	private void doUpdate(FocusPanel origin) {
 		if (!NativeJS.hasFocus()) {
 			close();
 			return;
@@ -561,7 +608,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 		x = event.getClientX();
 		y = event.getClientY();
 		touchEvent = false;
-		_update((FocusPanel) src);
+		doUpdate((FocusPanel) src);
 	}
 
 	/**
@@ -584,7 +631,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 		y = touch.getClientY();
 		touchEvent = true;
 		assert src instanceof FocusPanel;
-		_update((FocusPanel) src);
+		doUpdate((FocusPanel) src);
 		// default passes the touch event to mouse handlers,
 		// which is good, but also does selection and magnifying
 		// stuff that gets confusing... does not seem to interfere
@@ -618,12 +665,7 @@ public class Tooltip extends HTML implements MouseOverHandler, MouseOutHandler, 
 	public HandlerRegistration addFullscreenChangeHandler(FullscreenChangeHandler handler) {
 		String eventname = NativeJS.fullscreenChangeEventName();
 		NativeJS.addFullscreenChangeHandler(eventname, handler);
-		return new HandlerRegistration() {
-			@Override
-			public void removeHandler() {
-				NativeJS.removeFullscreenChangeHandler(eventname, handler);
-			}
-		};
+		return () -> NativeJS.removeFullscreenChangeHandler(eventname, handler);
 	}
 
 	/**

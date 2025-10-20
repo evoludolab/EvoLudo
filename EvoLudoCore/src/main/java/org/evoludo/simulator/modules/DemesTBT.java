@@ -150,19 +150,25 @@ public class DemesTBT extends TBT {
 	}
 
 	@Override
-	public DemesTBT.IBSPop createIBSPop() {
+	public DemesTBT.IBSPop createIBSPopulation() {
 		return new DemesTBT.IBSPop(engine, this);
 	}
 
 	/**
-	 * Custom implemenation for individual based simulations in deme structured populations.
+	 * Custom implemenation for individual based simulations in deme structured
+	 * populations.
 	 */
 	public class IBSPop extends TBT.IBSPop implements MilestoneListener, ChangeListener {
 
 		/**
 		 * The distribution for migration events.
 		 */
-		protected RNGDistribution.Geometric distrMigration, distrMutationMigration;
+		protected RNGDistribution.Geometric distrMigration;
+
+		/**
+		 * The distribution for mutant-migration events.
+		 */
+		protected RNGDistribution.Geometric distrMutationMigration;
 
 		/**
 		 * The time spent in homogenous states.
@@ -253,9 +259,9 @@ public class DemesTBT extends TBT {
 
 		@Override
 		public String getStatus() {
-			double gen = engine.getModel().getTime();
+			double gen = engine.getModel().getUpdates();
 			return super.getStatus() + ", pure: "
-					+ (gen > 0.0 ? Formatter.formatPercent((pure[DemesTBT.COOPERATE] + pure[DemesTBT.DEFECT]) / gen, 1)
+					+ (gen > 0.0 ? Formatter.formatPercent((pure[TBT.COOPERATE] + pure[TBT.DEFECT]) / gen, 1)
 							: "0.0%");
 		}
 
@@ -296,21 +302,19 @@ public class DemesTBT extends TBT {
 		 *         heterogeneous
 		 */
 		protected int homoDemes() {
-			if (traitsCount[DemesTBT.COOPERATE] % sizeDemes != 0)
+			if (traitsCount[org.evoludo.simulator.modules.TBT.COOPERATE] % sizeDemes != 0)
 				// if number of cooperators is not a multiple of deme size
 				// at least one deme must be heterogeneous
 				return -1;
 
 			int nA = 0;
 			for (int d = 0; d < nDemes; d++) {
-				int ccount = demeTypeCount[d][DemesTBT.COOPERATE];
+				int ccount = demeTypeCount[d][org.evoludo.simulator.modules.TBT.COOPERATE];
 				if (ccount == 0)
 					continue;
-				if (ccount == sizeDemes) {
-					nA++;
-					continue;
-				}
-				return -1;
+				if (ccount != sizeDemes)
+					return -1;
+				nA++;
 			}
 			return nA;
 		}
@@ -348,9 +352,10 @@ public class DemesTBT extends TBT {
 			// check if population is homogeneous or only the deme with a vacancy is
 			// heterogeneous. if so, all other individual are of the same type, i.e. a
 			// random individual can be drawn - no need to check fitness.
-			int ccount = traitsCount[DemesTBT.COOPERATE];
-			if (ccount == 0 || ccount == nPopulation || ccount == demeTypeCount[vacantDeme][DemesTBT.COOPERATE]
-					|| nPopulation - ccount == demeTypeCount[vacantDeme][DemesTBT.DEFECT]) {
+			int ccount = traitsCount[TBT.COOPERATE];
+			if (ccount == 0 || ccount == nPopulation
+					|| ccount == demeTypeCount[vacantDeme][TBT.COOPERATE]
+					|| nPopulation - ccount == demeTypeCount[vacantDeme][TBT.DEFECT]) {
 				int migrant = random0n(nPopulation - sizeDemes);
 				if (migrant >= start)
 					migrant += sizeDemes;
@@ -365,8 +370,9 @@ public class DemesTBT extends TBT {
 			// decrease interval slightly to prevent roundoff errors
 			double hit = random01() * (sumFitness - vacantFitness - 1e-6);
 			for (int n = 0; n < nPopulation; n++) {
+				// skip destination deme by adjusting loop counter
 				if (n == start)
-					n += sizeDemes;
+					n += sizeDemes; // NOSONAR
 				hit -= getFitnessAt(n);
 				if (hit < 0.0) {
 					migrateMoran(n, vacant);
@@ -389,7 +395,7 @@ public class DemesTBT extends TBT {
 
 		@Override
 		public synchronized void modelChanged(PendingAction pending) {
-			updateStatistics(engine.getModel().getTime());
+			updateStatistics(engine.getModel().getUpdates());
 		}
 
 		@Override
@@ -406,7 +412,7 @@ public class DemesTBT extends TBT {
 		 * Start collecting statistics.
 		 */
 		protected void startStatistics() {
-			prevsample = engine.getModel().getTime();
+			prevsample = engine.getModel().getUpdates();
 		}
 
 		/**
@@ -428,10 +434,10 @@ public class DemesTBT extends TBT {
 			if (prevsample >= time)
 				return;
 			double incr = time - prevsample;
-			if (traitsCount[DemesTBT.COOPERATE] == nPopulation)
-				pure[DemesTBT.COOPERATE] += incr;
-			if (traitsCount[DemesTBT.DEFECT] == nPopulation)
-				pure[DemesTBT.DEFECT] += incr;
+			if (traitsCount[org.evoludo.simulator.modules.TBT.COOPERATE] == nPopulation)
+				pure[org.evoludo.simulator.modules.TBT.COOPERATE] += incr;
+			if (traitsCount[org.evoludo.simulator.modules.TBT.DEFECT] == nPopulation)
+				pure[org.evoludo.simulator.modules.TBT.DEFECT] += incr;
 			prevsample = time;
 		}
 

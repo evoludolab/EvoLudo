@@ -31,6 +31,7 @@
 package org.evoludo.util;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.ListIterator;
 
@@ -83,7 +84,9 @@ public class RingBuffer<T> implements Iterable<T> {
 	 * @throws IllegalArgumentException if <code>capacity&le;0</code>
 	 */
 	public RingBuffer(int capacity) throws IllegalArgumentException {
-		setCapacity(capacity);
+		buffer = new ArrayList<>(capacity);
+		bufferPtr = -1;
+		bufferCapacity = capacity;
 	}
 
 	/**
@@ -93,44 +96,59 @@ public class RingBuffer<T> implements Iterable<T> {
 	 * discarded. After setting the capacity the size of the buffer is at most
 	 * <code>capacity</code>.
 	 * 
-	 * @param capacity maximum number of entries
+	 * @param capacity the maximum number of entries
 	 * @throws IllegalArgumentException if <code>capacity&le;0</code>
 	 */
 	public void setCapacity(int capacity) throws IllegalArgumentException {
-		if (capacity < 0)
+		if (capacity <= 0)
 			throw new IllegalArgumentException("RingBuffer capacity must be >0!");
-		if (buffer == null) {
-			buffer = new ArrayList<T>(capacity);
-			bufferPtr = -1;
-			bufferCapacity = capacity;
-			return;
-		}
 		if (bufferCapacity > capacity) {
-			if (bufferPtr + capacity < bufferCapacity) {
-				for (int n = 0; n < bufferPtr; n++)
-					buffer.remove(0);
-				if (capacity < buffer.size()) {
-					int count = buffer.size() - capacity;
-					for (int n = 0; n < count; n++)
-						buffer.remove(capacity);
-				}
-				bufferPtr = -1;
-			} else {
-				int idx = (bufferPtr + capacity) % bufferCapacity;
-				int count = bufferPtr - idx;
-				for (int n = 0; n < count; n++)
-					buffer.remove(idx);
-				bufferPtr = idx;
-			}
-			buffer.trimToSize();
-			bufferCapacity = capacity;
+			shrinkBuffer(capacity);
 		} else if (bufferCapacity < capacity) {
-			// grow buffer - rotate elements such that most recent is in position 0
-			for (int n = 0; n < bufferPtr; n++)
-				buffer.add(buffer.remove(0));
-			bufferPtr = (isEmpty() ? -1 : 0);
-			bufferCapacity = capacity;
+			growBuffer(capacity);
 		}
+	}
+
+	/**
+	 * Shrink buffer to <code>capacity</code>. Remove oldest entries if necessary.
+	 * 
+	 * @param capacity the new capacity
+	 */
+	private void shrinkBuffer(int capacity) {
+		if (bufferPtr + capacity < bufferCapacity) {
+			// remove oldest entries
+			for (int n = 0; n < bufferPtr; n++)
+				buffer.remove(0);
+			// remove excess entries
+			if (capacity < buffer.size()) {
+				int count = buffer.size() - capacity;
+				for (int n = 0; n < count; n++)
+					buffer.remove(capacity);
+			}
+			bufferPtr = -1;
+		} else {
+			int idx = (bufferPtr + capacity) % bufferCapacity;
+			int count = bufferPtr - idx;
+			for (int n = 0; n < count; n++)
+				buffer.remove(idx);
+			bufferPtr = idx;
+		}
+		buffer.trimToSize();
+		bufferCapacity = capacity;
+	}
+
+	/**
+	 * Grow buffer to <code>capacity</code>. If the current buffer size exceeds the
+	 * new capacity, oldest entries are removed.
+	 * 
+	 * @param capacity the new capacity
+	 */
+	private void growBuffer(int capacity) {
+		// rotate to most recent entry at index 0
+		for (int n = 0; n < bufferPtr; n++)
+			buffer.add(buffer.remove(0));
+		bufferPtr = (isEmpty() ? -1 : 0);
+		bufferCapacity = capacity;
 	}
 
 	/**
@@ -173,7 +191,7 @@ public class RingBuffer<T> implements Iterable<T> {
 	 * @return <code>true</code> if ring buffer is empty
 	 */
 	public boolean isEmpty() {
-		return (buffer.size() == 0);
+		return buffer.isEmpty();
 	}
 
 	/**
@@ -361,17 +379,42 @@ public class RingBuffer<T> implements Iterable<T> {
 	}
 
 	/**
+	 * Return the minimum entry in this buffer according to the comparator
+	 * <code>cmp</code>.
+	 * 
+	 * @param cmp the comparator to determine the order
+	 * @return the minimum entry or <code>null</code> if buffer is empty
+	 */
+	public T min(Comparator<T> cmp) {
+		T min = null;
+		for (T entry : this) {
+			if (min == null || cmp.compare(entry, min) < 0)
+				min = entry;
+		}
+		return min;
+	}
+
+	/**
+	 * Return the maximum entry in this buffer according to the comparator
+	 * <code>cmp</code>.
+	 * 
+	 * @param cmp the comparator to determine the order
+	 * @return the maximum entry or <code>null</code> if buffer is empty
+	 */
+	public T max(Comparator<T> cmp) {
+		T max = null;
+		for (T entry : this) {
+			if (max == null || cmp.compare(entry, max) > 0)
+				max = entry;
+		}
+		return max;
+	}
+
+	/**
 	 * Iterates backwards over all elements in this buffer starting with the most
 	 * recent entry.
 	 */
 	private class BckItr implements Iterator<T> {
-
-		/**
-		 * Creates a new {@code Iterator} over all elements in this buffer starting with
-		 * the most recent entry.
-		 */
-		public BckItr() {
-		}
 
 		/**
 		 * Index of current element in Iterator.
@@ -385,6 +428,8 @@ public class RingBuffer<T> implements Iterable<T> {
 
 		@Override
 		public T next() {
+			if (!hasNext())
+				throw new java.util.NoSuchElementException("No more elements in RingBuffer iterator.");
 			int size = buffer.size();
 			return buffer.get((bufferPtr - (cursor++) + size) % size);
 		}
@@ -395,13 +440,6 @@ public class RingBuffer<T> implements Iterable<T> {
 	 * entry.
 	 */
 	private class FwdItr implements Iterator<T> {
-
-		/**
-		 * Creates a new {@code Iterator} over all elements in this buffer starting with
-		 * the oldest entry.
-		 */
-		public FwdItr() {
-		}
 
 		/**
 		 * Index of current element in Iterator.
@@ -415,6 +453,8 @@ public class RingBuffer<T> implements Iterable<T> {
 
 		@Override
 		public T next() {
+			if (!hasNext())
+				throw new java.util.NoSuchElementException("No more elements in RingBuffer iterator.");
 			int size = buffer.size();
 			return buffer.get((bufferPtr - (--cursor) + size) % size);
 		}

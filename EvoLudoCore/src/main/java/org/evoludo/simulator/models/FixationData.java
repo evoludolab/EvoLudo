@@ -38,9 +38,11 @@ import org.evoludo.util.Formatter;
 public class FixationData {
 
 	/**
-	 * Creates a new fixation data structure.
+	 * Default constructor for FixationData. A container for fields relevant to
+	 * fixation data.
 	 */
 	public FixationData() {
+		// empty default constructor
 	}
 
 	/**
@@ -97,13 +99,13 @@ public class FixationData {
 
 	@Override
 	public String toString() {
-		return "{ mutantNode -> " + mutantNode + //
-				", mutantTrait -> " + mutantTrait + //
-				", residentTrait -> " + residentTrait + //
-				", typeFixed -> " + typeFixed + //
-				", updatesFixed -> " + Formatter.format(updatesFixed, 6) + //
-				", timeFixed -> " + Formatter.format(timeFixed, 6) + //
-				", probRead -> " + probRead + //
-				", timeRead -> " + timeRead + " }";
+		return "{ mutantNode → " + mutantNode + //
+				", mutantTrait → " + mutantTrait + //
+				", residentTrait → " + residentTrait + //
+				", typeFixed → " + typeFixed + //
+				", updatesFixed → " + Formatter.format(updatesFixed, 6) + //
+				", timeFixed → " + Formatter.format(timeFixed, 6) + //
+				", probRead → " + probRead + //
+				", timeRead → " + timeRead + " }";
 	}
 }

@@ -33,8 +33,11 @@ package org.evoludo.simulator.modules;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
@@ -42,14 +45,12 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.Advection;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBS;
-import org.evoludo.simulator.models.IBS.HasIBS;
-import org.evoludo.simulator.models.IBSC;
-import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Markers;
 import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
+import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.models.ODE;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.RungeKutta;
@@ -66,9 +67,11 @@ import org.evoludo.util.CLOption.Category;
 /**
  * Parent class of all EvoLudo modules.
  * 
+ * @param <T> the type of the module (self-referential generic)
+ * 
  * @author Christoph Hauert
  */
-public abstract class Module implements Features, MilestoneListener, CLOProvider, Runnable {
+public abstract class Module<T extends Module<T>> implements Features, MilestoneListener, CLOProvider, Runnable {
 
 	/**
 	 * The name of the species. Mainly used in multi-species modules.
@@ -90,7 +93,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @param name the new name of the species
 	 */
-	public void setName(String name) {
+	public final void setName(String name) {
 		this.name = name;
 	}
 
@@ -117,7 +120,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * the species list <em>CANNOT</em> be static! Otherwise it is impossible to run
 	 * multiple instances of modules/models concurrently!
 	 */
-	ArrayList<? extends Module> species;
+	ArrayList<T> species;
 
 	/**
 	 * In multi-species modules each species is represented by a Module, see
@@ -146,7 +149,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the list of markers
 	 */
-	public ArrayList<double[]> getMarkers() {
+	public List<double[]> getMarkers() {
 		return markers.getMarkers();
 	}
 
@@ -159,18 +162,53 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @param partner the module of the partner species or {@code null} for single
 	 *                species modules
 	 */
-	protected Module(EvoLudo engine, Module partner) {
+	@SuppressWarnings("unchecked")
+	protected Module(EvoLudo engine, T partner) {
 		this.engine = engine;
 		logger = engine.getLogger();
+		T mod = (T) this;
 		if (partner == null) {
 			ID = 0;
-			opponent = this;
+			opponent = mod;
 			return;
 		}
 		ID = partner.species.size();
 		species = partner.species;
 		opponent = partner;
-		partner.opponent = this;
+		partner.opponent = mod;
+		add(mod);
+	}
+
+	/**
+	 * Add {@code pop} to list of species. Duplicate entries are ignored.
+	 * Allocate new list if necessary. Assign generic name to species if none
+	 * provided.
+	 *
+	 * @param pop the module to add to species list.
+	 * @return {@code true} if {@code dpop} successfully added;
+	 *         {@code false} adding failed or already included in list.
+	 */
+	public boolean add(T pop) {
+		// do not add duplicates
+		if (species.contains(pop))
+			return false;
+		if (!species.add(pop))
+			return false;
+		switch (species.size()) {
+			case 1:
+				break;
+			case 2:
+				// start naming species (if needed)
+				for (T mod : species) {
+					if (mod.getName().isEmpty())
+						mod.setName("Species-" + mod.ID);
+				}
+				break;
+			default:
+				if (pop.getName().isEmpty())
+					pop.setName("Species-" + pop.ID);
+		}
+		return true;
 	}
 
 	/**
@@ -182,13 +220,15 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * random numbers, must use the shared random number generator for
 	 * reproducibility
 	 * 
-	 * @param type   the type of {@link Model} to create
+	 * @param type the type of {@link Model} to create
 	 * @return the model for <code>module</code> or {@code null} if the module
 	 *         does not support the requested model type
 	 * 
 	 * @see EvoLudo#getRNG()
 	 */
 	public Model createModel(Type type) {
+		if (model != null && model.getType() == type)
+			return model;
 		// default for ODE is RK5, if available
 		if (type == Type.ODE && this instanceof HasDE.RK5)
 			type = Type.RK5;
@@ -198,11 +238,8 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		// return default model for type
 		switch (type) {
 			case IBS:
-				if (!(this instanceof HasIBS))
-					return null;
-				if (this instanceof Continuous)
-					return new IBSC(engine);
-				return new IBSD(engine);
+				// let subclasses handle IBS
+				return null;
 			case SDE:
 				if (!(this instanceof HasDE.SDE))
 					return null;
@@ -236,10 +273,37 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 */
 	public void setModel(Model model) {
 		markers = new Markers(model);
-		for (Module pop : species) {
+		for (T pop : species) {
 			pop.model = model;
 			pop.markers = markers;
 		}
+	}
+
+	/**
+	 * Reference to Module of opponent. For Modules referring to intra-species
+	 * interactions {@code opponent == this} must hold.
+	 */
+	T opponent;
+
+	/**
+	 * Gets the opponent of this module/population. By default, for intra-species
+	 * interactions, simply returns this module/population, i.e
+	 * {@code opponent == this}.
+	 * 
+	 * @return the opponent of this population
+	 */
+	public T getOpponent() {
+		return opponent;
+	}
+
+	/**
+	 * Sets the opponent of this module/population. By default, for intra-species
+	 * interactions, {@code opponent == this} holds.
+	 * 
+	 * @param opponent the opponent of this population
+	 */
+	public void setOpponent(T opponent) {
+		this.opponent = opponent;
 	}
 
 	/**
@@ -248,7 +312,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @param idx the index of species to retrieve
 	 * @return the module of species
 	 */
-	public Module getSpecies(int idx) {
+	public T getSpecies(int idx) {
 		if (idx < 0 || idx >= species.size())
 			return null;
 		return species.get(idx);
@@ -259,7 +323,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the list with all species
 	 */
-	public ArrayList<? extends Module> getSpecies() {
+	public List<T> getSpecies() {
 		return species;
 	}
 
@@ -306,7 +370,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		}
 		// currently only the Test module uses neither Discrete nor Continuous classes.
 		if (species == null)
-			species = new ArrayList<Module>();
+			species = new ArrayList<>();
 		engine.addCLOProvider(this);
 		engine.addMilestoneListener(this);
 		if (this instanceof ChangeListener)
@@ -319,6 +383,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @see EvoLudo#unloadModule()
 	 * @see MilestoneListener#moduleUnloaded()
 	 */
+	@SuppressWarnings("unchecked")
 	public void unload() {
 		traitName = null;
 		traitColor = null;
@@ -326,12 +391,15 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		map2fitness = null;
 		playerUpdate = null;
 		markers = null;
-		opponent = this;
+		// in multispecies modules reset opponent to this in order to allow
+		// freeing the memory of the other species. loading the module again
+		// will regenerate the other species.
+		opponent = (T) this;
 		engine.removeCLOProvider(this);
 		engine.removeMilestoneListener(this);
 		if (this instanceof ChangeListener)
 			engine.removeChangeListener((ChangeListener) this);
-		ibs = null;
+		ibspop = null;
 		interaction = null;
 		competition = null;
 		structure = null;
@@ -402,7 +470,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 */
 	public Type[] getModelTypes() {
 		ArrayList<Type> types = new ArrayList<>();
-		if (this instanceof IBS.HasIBS)
+		if (this instanceof HasIBS)
 			types.add(Type.IBS);
 		if (this instanceof HasDE.ODE)
 			types.add(Type.ODE);
@@ -425,7 +493,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * The field point to the IBSPopulation that represents this module in
 	 * individual based simulations. {@code null} for all other model types.
 	 */
-	IBSPopulation ibs;
+	IBSPopulation ibspop;
 
 	/**
 	 * Sets the reference to the IBSPopulation that represents this module in
@@ -434,7 +502,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @param ibs the individual based population
 	 */
 	public void setIBSPopulation(IBSPopulation ibs) {
-		this.ibs = ibs;
+		this.ibspop = ibs;
 	}
 
 	/**
@@ -444,7 +512,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @return the IBSPopulation that represents this module or {@code null}
 	 */
 	public IBSPopulation getIBSPopulation() {
-		return ibs;
+		return ibspop;
 	}
 
 	/**
@@ -452,15 +520,25 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the custom IBSPopulation or {@code null} to use default.
 	 */
-	public IBSPopulation createIBSPop() {
+	public IBSPopulation createIBSPopulation() {
 		return null;
 	}
+
+	/**
+	 * The default name of the vacant type (empty site).
+	 */
+	public static final String VACANT_NAME = "Vacant";
+
+	/**
+	 * The default name of the vacant type (empty site).
+	 */
+	public static final Color VACANT_COLOR = Color.GRAY;
 
 	/**
 	 * The index for the vacant type (empty site) or {@code -1} if Module does not
 	 * admit empty sites.
 	 */
-	public int VACANT = -1;
+	protected int vacantIdx = -1;
 
 	/**
 	 * Get the index for the vacant type or {@code -1} if Module does not admit
@@ -470,8 +548,17 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * 
 	 * @return the index of the vacant type
 	 */
-	public int getVacant() {
-		return VACANT;
+	public int getVacantIdx() {
+		return vacantIdx;
+	}
+
+	/**
+	 * Check if module admits vacant type (empty sites).
+	 * 
+	 * @return {@code true} if module admits vacant sites
+	 */
+	public boolean hasVacant() {
+		return vacantIdx >= 0;
 	}
 
 	/**
@@ -490,9 +577,9 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * Gets the number of roles that an individual can adopt. For example the role of
-	 * a proposer or a responder in the Ultimatum game or the first or second movers
-	 * in the Centipede game.
+	 * Gets the number of roles that an individual can adopt. For example the role
+	 * of a proposer or a responder in the Ultimatum game or the first or second
+	 * movers in the Centipede game.
 	 * 
 	 * @return the number of roles of an individual
 	 */
@@ -511,10 +598,21 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @param nTraits the number of traits
 	 */
 	public void setNTraits(int nTraits) {
+		setNTraits(nTraits, -1);
+	}
+
+	/**
+	 * Sets the number of traits and the index of the vacant type (empty site).
+	 * 
+	 * @param nTraits   the number of traits
+	 * @param vacantIdx the index of the vacant type
+	 */
+	public void setNTraits(int nTraits, int vacantIdx) {
 		// prevent requesting re-parsing of CLOs on initial load
-		if (this.nTraits > 0 && this.nTraits != nTraits)
+		if (this.nTraits > 0 && (this.nTraits != nTraits))
 			engine.requestParseCLO();
 		this.nTraits = nTraits;
+		this.vacantIdx = vacantIdx;
 	}
 
 	/**
@@ -608,15 +706,32 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * @param names the names of the traits
 	 */
 	public void setTraitNames(String[] names) {
-		if (traitName == null || traitName.length != nTraits)
+		if (traitName == null || !(traitName.length == nTraits || (traitName.length == nTraits - 1 && hasVacant())))
 			traitName = new String[nTraits];
 		int idx = 0;
 		if (names != null) {
-			for (String n : names)
+			for (String n : names) {
+				if (n == null) {
+					traitName[idx++] = nameTrait(idx);
+					continue;
+				}
 				traitName[idx++] = n.replace('_', ' ').trim();
+			}
 		}
 		for (int i = idx; i < nTraits; i++)
-			traitName[i] = "Trait " + (char) ('A' + i - idx);
+			traitName[i] = nameTrait(idx++);
+	}
+
+	/**
+	 * Get default name for trait with index {@code trait}.
+	 * 
+	 * @param trait the index of the trait
+	 * @return the default name for the trait
+	 */
+	private String nameTrait(int trait) {
+		if (trait == vacantIdx)
+			return VACANT_NAME;
+		return "Trait " + (char) ('A' + trait);
 	}
 
 	/**
@@ -626,7 +741,16 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * (static allocation), headless mode for simulations is prevented. In order to
 	 * avoid this, simply allocate and assign the colors in the constructor.
 	 */
-	protected static Color[] defaultColor;
+	protected static Color[] defaultColor = new Color[] {
+			Color.BLUE,
+			Color.RED,
+			Color.GREEN,
+			Color.YELLOW,
+			Color.MAGENTA,
+			Color.ORANGE,
+			Color.PINK,
+			Color.CYAN
+	};
 
 	/**
 	 * The array with trait colors.
@@ -659,9 +783,9 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * Gets the colors for the mean values of traits. By default this is the same as the trait
-	 * colors. Opportunity for subclasses to return different sets of colors for
-	 * plotting mean values.
+	 * Gets the colors for the mean values of traits. By default this is the same as
+	 * the trait colors. Opportunity for subclasses to return different sets of
+	 * colors for plotting mean values.
 	 * 
 	 * @return the array of mean value colors
 	 */
@@ -670,15 +794,19 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	}
 
 	/**
-	 * Sets trait colors specified in {@code colors}. If less than {@code nTraits}
-	 * colors are specified, additional traits are colored using the default colors.
-	 * If still not enough, random colors are generated. Both {@link Discrete} and
-	 * {@link Continuous} modules require {@code 2*nTraits} colors. The meaning of
-	 * the second set of {@code nTraits} colors depends on the trait type:
+	 * Sets trait colors specified in {@code colors}. If {@code colors} is
+	 * {@code null} default colors are used until exhausted and then complemented by
+	 * random colors. Otherwise the number of colors must equal {@code nTraits} or
+	 * {@code 2 * nTraits}. For modules that have vacant sites, the length may be
+	 * {@code nTraits - 1} or {@code 2 * (nTraits - 1)}, respectively. In the latter
+	 * case the default colors for vacant sites are used.
+	 * <p>
+	 * <strong>Note:</strong>The meaning of the second set of {@code nTraits} colors
+	 * depends on the module type:
 	 * <dl>
-	 * <dt>discrete
+	 * <dt>Discrete
 	 * <dd>the colors of individuals that switched traits since the last update
-	 * <dt>continuous
+	 * <dt>Continuous
 	 * <dd>the colors for the mean &#177; standard deviation, see e.g.
 	 * {@link org.evoludo.simulator.views.Mean}.
 	 * </dl>
@@ -686,77 +814,51 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * automatically generated as lighter versions of the base colors.
 	 * 
 	 * @param colors the array of colors for the different traits
-	 * @return {@code true} always signal that colors have changed (too
-	 *         difficult and of too little importance to check whether colors
-	 *         remained the same)
+	 * @return {@code true} if colors successfuly set
+	 * 
+	 * @see #defaultColor
+	 * @see #VACANT_COLOR
 	 */
 	public boolean setTraitColors(Color[] colors) {
-		// assign default colors
-		if (defaultColor == null)
-			defaultColor = new Color[] {
-					Color.BLUE,
-					Color.RED,
-					Color.GREEN,
-					Color.YELLOW,
-					Color.MAGENTA,
-					Color.ORANGE,
-					Color.PINK,
-					Color.CYAN
-			};
-		int nTraits2 = nTraits + nTraits;
-		int rColors = 0;
 		if (colors == null) {
 			colors = new Color[nTraits];
 			System.arraycopy(defaultColor, 0, colors, 0, Math.min(nTraits, defaultColor.length));
-			rColors = nTraits - defaultColor.length;
-		} else if (colors.length < nTraits) {
-			// add default colors
-			Color[] cols = new Color[nTraits];
-			System.arraycopy(colors, 0, cols, 0, colors.length);
-			System.arraycopy(defaultColor, 0, cols, colors.length,
-					Math.min(nTraits - colors.length, defaultColor.length));
-			colors = cols;
-			rColors = nTraits - colors.length - defaultColor.length;
-		}
-		if (rColors > 0) {
-			// add random colors if needed - do not use the shared RNG to prevent
-			// interfering with reproducibility
-			RNGDistribution rng = new RNGDistribution.Uniform();
-			for (int n = 0; n < rColors; n++)
-				colors[nTraits - n] = new Color(rng.random0n(256), rng.random0n(256), rng.random0n(256));
-		}
-
-		// now at least nTraits colors
-		if (this instanceof Discrete) {
-			// discrete traits and colors
-			if (colors.length == nTraits2) {
-				traitColor = colors;
-				return true;
+			if (nTraits > defaultColor.length) {
+				// add random colors if needed - do not use the shared RNG to prevent
+				// interfering with reproducibility
+				RNGDistribution rng = new RNGDistribution.Uniform();
+				for (int n = defaultColor.length; n < nTraits; n++)
+					colors[n] = new Color(rng.random0n(256), rng.random0n(256), rng.random0n(256));
 			}
-			Color[] cols = new Color[nTraits2];
-			if (colors.length > nTraits2) {
-				System.arraycopy(colors, 0, cols, 0, nTraits2);
-				traitColor = cols;
-				return true;
-			}
-			System.arraycopy(colors, 0, cols, 0, colors.length);
-			for (int n = colors.length; n < nTraits2; n++)
+		}
+		if (!(colors.length == nTraits || colors.length == 2 * nTraits
+				|| (hasVacant() && (colors.length == nTraits - 1
+						|| colors.length == 2 * (nTraits - 1)))))
+			return false;
+		if (hasVacant()) {
+			// insert vacant color
+			if (colors.length == 2 * (nTraits - 1))
+				colors = ArrayMath.insert(colors, ColorMap.blendColors(VACANT_COLOR, Color.WHITE, 0.333),
+						nTraits + vacantIdx);
+			colors = ArrayMath.insert(colors, VACANT_COLOR, vacantIdx);
+		}
+		// now the color array is guaranteed to be of length nTraits or 2 * nTraits
+		if (colors.length == nTraits) {
+			Color[] cols = new Color[nTraits * 2];
+			System.arraycopy(colors, 0, cols, 0, nTraits);
+			// generate lighter versions for switched colors
+			for (int n = nTraits; n < 2 * nTraits; n++)
 				// NOTE: Color.brighter() does not work on pure colors.
 				cols[n] = ColorMap.blendColors(colors[n % nTraits], Color.WHITE, 0.333);
-			traitColor = cols;
+			colors = cols;
+		}
+		traitColor = colors;
+		// now the color array is guaranteed to be of length 2 * nTraits
+		if (this instanceof Discrete)
 			return true;
-		}
-		// continuous traits and colors (means and stddev)
-		Color[] cColor = new Color[3 * nTraits];
-		for (int n = 0; n < nTraits; n++) {
-			Color color = colors[n];
-			cColor[n] = color; // mean
-			// NOTE: Color.brighter() does not work on pure colors.
-			Color brighter = ColorMap.blendColors(color, Color.WHITE, 0.333);
-			cColor[n + nTraits] = brighter; // min
-			cColor[n + nTraits2] = brighter; // max
-		}
-		traitColor = cColor;
+		// for Continuous traits the second and third set of nTraits colors are for
+		// mean -/+ stddev. simply duplicate the second set.
+		traitColor = ArrayMath.merge(colors, ArrayMath.drop(colors, 0, nTraits));
 		return true;
 	}
 
@@ -804,41 +906,14 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 	 * as {@link org.evoludo.simulator.views.Pop2D} or
 	 * {@link org.evoludo.simulator.views.Pop3D}. By default no changes are made.
 	 * 
-	 * @param <T>      the type of the color map
+	 * @param <M>      the type of the color map
 	 * @param colorMap the color map
 	 * @return the processed color map
 	 * 
 	 * @see org.evoludo.simulator.ColorMap
 	 */
-	public <T> ColorMap<T> processColorMap(ColorMap<T> colorMap) {
+	public <M> ColorMap<M> processColorMap(ColorMap<M> colorMap) {
 		return colorMap;
-	}
-
-	/**
-	 * Reference to Module of opponent. For Modules referring to intra-species
-	 * interactions {@code opponent == this} must hold.
-	 */
-	Module opponent;
-
-	/**
-	 * Gets the opponent of this module/population. By default, for intra-species
-	 * interactions, simply returns this module/population, i.e
-	 * {@code opponent == this}.
-	 * 
-	 * @return the opponent of this population
-	 */
-	public Module getOpponent() {
-		return opponent;
-	}
-
-	/**
-	 * Sets the opponent of this module/population. By default, for intra-species
-	 * interactions, {@code opponent == this} holds.
-	 * 
-	 * @param opponent the opponent of this population
-	 */
-	public void setOpponent(Module opponent) {
-		this.opponent = opponent;
 	}
 
 	/**
@@ -1075,7 +1150,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
 					boolean doReset = false;
 					int n = 0;
-					for (Module pop : species) {
+					for (T pop : species) {
 						Geometry geom = pop.createGeometry();
 						doReset |= geom.parse(geomargs[n++ % geomargs.length]);
 					}
@@ -1085,10 +1160,6 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 
 				@Override
 				public String getDescription() {
-					// // retrieve description
-					// Module mod = modules.get(0);
-					// return
-					// (mod.getGeometry()==null?mod.getInteractionGeometry().usage():mod.getGeometry().usage());
 					return structure.usage();
 				}
 			});
@@ -1116,10 +1187,10 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				 */
 				@Override
 				public boolean parse(String arg) {
-					String[] sizes = arg.contains(CLOParser.SPECIES_DELIMITER) ? 
-						arg.split(CLOParser.SPECIES_DELIMITER) : arg.split(CLOParser.VECTOR_DELIMITER);
+					String[] sizes = arg.contains(CLOParser.SPECIES_DELIMITER) ? arg.split(CLOParser.SPECIES_DELIMITER)
+							: arg.split(CLOParser.VECTOR_DELIMITER);
 					int n = 0;
-					for (Module pop : species) {
+					for (T pop : species) {
 						int size = CLOParser.parseDim(sizes[n]);
 						if (size < 1)
 							continue;
@@ -1145,10 +1216,11 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 						default:
 							descr = "--popsize <n0,...,n" + nSpecies + ">  size ni of population i, with\n";
 					}
+					StringBuilder sb = new StringBuilder(descr);
 					for (int i = 0; i < nSpecies; i++)
-						descr += "            n" + i + ": " + species.get(i).getName() + "\n";
-					descr += "                (or nixni, niXni e.g. for lattices)";
-					return descr;
+						sb.append("            n").append(i).append(": ").append(species.get(i).getName()).append("\n");
+					sb.append("                (or nixni, niXni e.g. for lattices)");
+					return sb.toString();
 				}
 			});
 
@@ -1176,18 +1248,21 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 						rates = CLOParser.parseVector(arg, CLOParser.SPECIES_DELIMITER);
 					else
 						rates = CLOParser.parseVector(arg);
-					if (rates == null || rates.length == 0)
+					if (rates.length == 0)
 						return false;
 					int n = 0;
-					for (Module pop : species) {
+					for (T pop : species) {
 						double rate = rates[n++ % rates.length];
 						// sanity checks
 						if (rate >= 0.0) {
 							pop.setDeathRate(rate);
 							continue;
 						}
-						String sn = pop.getName();
-						logger.warning("death rate" + (sn.isEmpty() ?  "": " of " + sn) + " must be non-negative (changed to 0).");
+						if (logger.isLoggable(Level.WARNING)) {
+							String sn = pop.getName();
+							logger.warning("death rate" + (sn.isEmpty() ? "" : " of " + sn)
+									+ " must be non-negative (changed to 0).");
+						}
 						pop.setDeathRate(0.0);
 					}
 					return true;
@@ -1238,10 +1313,10 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 						sizes = CLOParser.parseIntVector(arg, CLOParser.SPECIES_DELIMITER);
 					else
 						sizes = CLOParser.parseIntVector(arg);
-					if (sizes == null || sizes.length == 0)
+					if (sizes.length == 0)
 						return false;
 					int n = 0;
-					for (Module pop : species)
+					for (T pop : species)
 						pop.setNGroup(sizes[n++ % sizes.length]);
 					return true;
 				}
@@ -1271,13 +1346,13 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				@Override
 				public boolean parse(String arg) {
 					// activate all traits
-					for (Module pop : species)
+					for (T pop : species)
 						pop.setActiveTraits(null);
 					if (!cloTraitDisable.isSet())
 						return true;
 					String[] disabledtraits = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
-					for (Module pop : species) {
+					for (T pop : species) {
 						int[] dtraits = CLOParser.parseIntVector(disabledtraits[n++ % disabledtraits.length]);
 						int dist = dtraits.length;
 						int mint = model.isContinuous() ? 1 : 2;
@@ -1337,18 +1412,19 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					if (colorsets == null)
 						return false;
 					int n = 0;
-					for (Module pop : species) {
+					for (T mod : species) {
 						String[] colors = colorsets[n++ % colorsets.length].split(CLOParser.MATRIX_DELIMITER);
 						Color[] myColors = new Color[colors.length];
 						for (int i = 0; i < colors.length; i++) {
 							Color newColor = CLOParser.parseColor(colors[i]);
 							// if color was not recognized, choose random color
-							if (newColor == null )
+							if (newColor == null)
 								return false;
 							myColors[i] = newColor;
 						}
 						// setTraitColor deals with missing colors and adding shades
-						pop.setTraitColors(myColors);
+						if (!mod.setTraitColors(myColors))
+							return false;
 					}
 					return true;
 				}
@@ -1357,7 +1433,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				public String getDescription() {
 					String descr;
 					int nt = -Integer.MAX_VALUE;
-					for (Module pop : species)
+					for (T pop : species)
 						nt = Math.max(nt, pop.getNTraits());
 
 					switch (nt) {
@@ -1374,19 +1450,22 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					}
 					descr += "\n        ci, ni: color name or (r,g,b) triplet (in 0-255) with i:";
 					int idx = 0;
-					for (Module pop : species) {
-						nt = pop.getNTraits();
+					StringBuilder sb = new StringBuilder(descr);
+					for (T mod : species) {
+						nt = mod.getNTraits();
 						for (int n = 0; n < nt; n++) {
 							String aTrait = "              " + (idx++) + ": ";
 							int traitlen = aTrait.length();
-							descr += "\n" + aTrait.substring(traitlen - 16, traitlen)
-									+ (species.size() > 1 ? pop.getName() + "." : "") + pop.getTraitName(n);
+							sb.append("\n")
+									.append(aTrait.substring(traitlen - 16, traitlen))
+									.append(species.size() > 1 ? mod.getName() + "." : "")
+									.append(mod.getTraitName(n));
 						}
 					}
 					if (species.size() > 1)
-						descr += "\n      settings for multi-species separated by '" + CLOParser.SPECIES_DELIMITER
-								+ "'";
-					return descr;
+						sb.append("\n      settings for multi-species separated by '" + CLOParser.SPECIES_DELIMITER
+								+ "'");
+					return sb.toString();
 				}
 			});
 
@@ -1415,7 +1494,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 						return true;
 					String[] namespecies = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
-					for (Module pop : species) {
+					for (T pop : species) {
 						String[] names = namespecies[n++ % namespecies.length].split(CLOParser.VECTOR_DELIMITER);
 						if (names.length != nTraits)
 							return false;
@@ -1431,7 +1510,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 				public String getDescription() {
 					String descr;
 					int nt = -Integer.MAX_VALUE;
-					for (Module pop : species)
+					for (T pop : species)
 						nt = Math.max(nt, pop.getNTraits());
 
 					switch (nt) {
@@ -1464,7 +1543,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 					if (!cloPhase2DAxes.isSet())
 						return true;
 					int[][] phase2daxes = CLOParser.parseIntMatrix(arg);
-					if (phase2daxes == null || phase2daxes.length != 2)
+					if (phase2daxes.length != 2)
 						return false;
 					// cast check should be unnecessary. --phase2daxes should only be available if
 					// module implements at least HasPhase2D (plus some other conditions).
@@ -1516,8 +1595,8 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		boolean anyPayoffs = false;
 		int minTraits = Integer.MAX_VALUE;
 		int maxTraits = -Integer.MAX_VALUE;
-		for (Module mod : species) {
-			boolean hasVacant = (mod.getVacant() >= 0);
+		for (T mod : species) {
+			boolean hasVacant = (mod.getVacantIdx() >= 0);
 			anyVacant |= hasVacant;
 			anyNonVacant |= !hasVacant;
 			anyPayoffs |= (mod instanceof Payoffs);
@@ -1526,7 +1605,7 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 			maxTraits = Math.min(maxTraits, nt);
 		}
 		if (anyPayoffs) {
-			for (Module mod : species) {
+			for (T mod : species) {
 				if (!(mod instanceof Payoffs))
 					continue;
 				map2fitness = ((Payoffs) mod).getMap2Fitness();
@@ -1549,6 +1628,9 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 		if (minTraits > 2 || (anyNonVacant && minTraits > 1))
 			parser.addCLO(cloTraitDisable);
 
+		// add markers, fixed points in particular
+		parser.addCLO(markers.clo);
+
 		if (model == null)
 			return;
 		// population size option only acceptable for IBS and SDE models
@@ -1563,8 +1645,5 @@ public abstract class Module implements Features, MilestoneListener, CLOProvider
 			cloGeometry.removeKey(Geometry.Type.SQUARE_NEUMANN_2ND);
 			parser.addCLO(cloGeometry);
 		}
-
-		// add markers, fixed points in particular
-		parser.addCLO(markers.clo);
 	}
 }

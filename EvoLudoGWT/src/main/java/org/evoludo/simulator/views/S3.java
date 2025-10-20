@@ -36,6 +36,7 @@ import org.evoludo.graphics.AbstractGraph.GraphStyle;
 import org.evoludo.graphics.S3Graph;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
+import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
@@ -67,11 +68,6 @@ public class S3 extends AbstractView {
 	protected double[] state;
 
 	/**
-	 * The initial state of the model. The start point of the current trajectory.
-	 */
-	protected double[] init;
-
-	/**
 	 * Construct a new view to display the time series data of the current EvoLudo
 	 * model as a trajectory in a \(S_3\) simplex.
 	 * 
@@ -90,7 +86,7 @@ public class S3 extends AbstractView {
 
 	@Override
 	protected void allocateGraphs() {
-		Module module = engine.getModule();
+		Module<?> module = engine.getModule();
 		int nRoles = module.getNRoles();
 		if (graphs.size() != nRoles) {
 			destroyGraphs();
@@ -147,7 +143,6 @@ public class S3 extends AbstractView {
 	public void unload() {
 		super.unload();
 		state = null;
-		init = null;
 	}
 
 	@Override
@@ -156,11 +151,9 @@ public class S3 extends AbstractView {
 		int nMean = model.getNMean();
 		if (state == null || state.length != nMean)
 			state = new double[nMean];
-		if (init == null || init.length != nMean)
-			init = new double[nMean];
 		for (S3Graph graph : graphs) {
 			S3Map map = graph.getMap();
-			Module module = graph.getModule();
+			Module<?> module = graph.getModule();
 			graph.setMarkers(module.getMarkers());
 			graph.getStyle().trajColor = ColorMapCSS.Color2Css(module.getTrajectoryColor());
 			map.setNames(module.getTraitNames());
@@ -182,7 +175,7 @@ public class S3 extends AbstractView {
 
 	@Override
 	public void update(boolean force) {
-		double newtime = model.getTime();
+		double newtime = model.getUpdates();
 		boolean isNext = (Math.abs(timestamp - newtime) > 1e-8);
 		for (S3Graph graph : graphs) {
 			if (isNext) {
@@ -196,14 +189,13 @@ public class S3 extends AbstractView {
 
 	@Override
 	public boolean setInitialState(double[] init) {
-		Module module = engine.getModule();
-		if (module instanceof Discrete) {
-			// note: setInitialTraits requires different arguments for discrete and
-			// continuous modules
-			if (((org.evoludo.simulator.models.Discrete) model).setInitialTraits(init)) {
-				engine.modelInit();
-				return true;
-			}
+		Module<?> module = engine.getModule();
+		// note: setInitialTraits requires different arguments for discrete and
+		// continuous modules
+		if (module instanceof Discrete &&
+				((DModel) model).setInitialTraits(init)) {
+			engine.modelInit();
+			return true;
 		}
 		return false;
 	}

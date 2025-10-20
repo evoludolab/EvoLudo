@@ -38,7 +38,8 @@ import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.CLOption.Category;
 
 /**
- * The implementation of population updates. Population updates are used to update
+ * The implementation of population updates. Population updates are used to
+ * update
  * the population size and composition of individuals.
  * <p>
  * The population update type can be set to one of the following:
@@ -60,8 +61,13 @@ import org.evoludo.util.CLOption.Category;
  * </dl>
  * <p>
  * The population update type can be set via the command line option {@code
- * --popupdate <u> [<p>]} where {@code <u>} is the population update type, and
- * {@code <p>} the fraction of individuals that reassess their trait.
+ * --popupdate <u> [
+<p>
+]} where {@code <u>} is the population update type, and
+ * {@code 
+ * 
+<p>
+ * } the fraction of individuals that reassess their trait.
  * 
  * @author Christoph Hauert
  */
@@ -118,7 +124,7 @@ public class PopulationUpdate {
 	 * @return {@code true} if update is synchronous
 	 */
 	public boolean isSynchronous() {
-		return (type.equals(Type.SYNC)); // TODO add || type.equals(Type.WRIGHT_FISHER));
+		return (type.equals(Type.SYNC)); // TODO add || type.equals(Type.WRIGHT_FISHER))
 	}
 
 	/**
@@ -156,10 +162,11 @@ public class PopulationUpdate {
 				 */
 				@Override
 				public boolean parse(String arg) {
-					String[] popupdates = arg.contains(CLOParser.SPECIES_DELIMITER) ? 
-						arg.split(CLOParser.SPECIES_DELIMITER) : arg.split(CLOParser.VECTOR_DELIMITER);
+					String[] popupdates = arg.contains(CLOParser.SPECIES_DELIMITER)
+							? arg.split(CLOParser.SPECIES_DELIMITER)
+							: arg.split(CLOParser.VECTOR_DELIMITER);
 					int n = 0;
-					for (Module mod : ibs.species) {
+					for (Module<?> mod : ibs.species) {
 						IBSPopulation pop = mod.getIBSPopulation();
 						String updt = popupdates[n++ % popupdates.length];
 						PopulationUpdate.Type put = (PopulationUpdate.Type) clo.match(updt);
@@ -169,7 +176,7 @@ public class PopulationUpdate {
 						if (put != PopulationUpdate.Type.SYNC)
 							continue;
 						// parse p, if present
-						String[] args = updt.split("\\s+|=");
+						String[] args = updt.split(CLOParser.SPLIT_ARG_REGEX);
 						double sync = 1.0;
 						if (args.length > 1)
 							sync = CLOParser.parseDouble(args[1]);
@@ -207,7 +214,7 @@ public class PopulationUpdate {
 	 * @see PopulationUpdate#clo
 	 * @see IBSPopulation#setSyncFraction(double)
 	 */
-	public static enum Type implements CLOption.Key {
+	public enum Type implements CLOption.Key {
 
 		/**
 		 * Synchronized population updates. The number of individuals that reassess
@@ -221,7 +228,8 @@ public class PopulationUpdate {
 		/**
 		 * Wright-Fisher process (synchronous). (not yet implemented!)
 		 */
-		//TODO add WRIGHT_FISHER("Wright-Fisher", "Wright-Fisher process (synchronous)"),
+		// TODO add WRIGHT_FISHER("Wright-Fisher", "Wright-Fisher process
+		// (synchronous)"),
 
 		/**
 		 * Asynchronous population updates.

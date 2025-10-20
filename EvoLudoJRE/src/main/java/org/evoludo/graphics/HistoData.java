@@ -34,17 +34,17 @@ import java.util.Arrays;
 
 public class HistoData {
 
-	public double[]	state = new double[0];
-//	public int		bins = HistoGraph.HISTO_BINS;
-	public int		bins = 0;
-	public int		binwidth;
-	public double	xmin = 0.0;
-	public double	xmax = 1.0;
-	public double	ymin = 0.0;
-	public double	ymax = 1.0;
-	public double	timestamp = -1.0;
-	public boolean	logx = false;
-	public boolean	logy = false;
+	public double[] state = new double[0];
+	// public int bins = HistoGraph.HISTO_BINS;
+	public int bins = 0;
+	public int binwidth;
+	public double xmin = 0.0;
+	public double xmax = 1.0;
+	public double ymin = 0.0;
+	public double ymax = 1.0;
+	public double timestamp = -1.0;
+	public boolean logx = false;
+	public boolean logy = false;
 
 	public void reset() {
 		timestamp = -1.0;

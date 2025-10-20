@@ -88,7 +88,7 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 	@Override
 	public void run() {
 		if (!model.getType().isIBS()) {
-			System.err.printf("ERROR: IBS model expected!");
+			System.err.print("ERROR: IBS model expected!");
 			return;
 		}
 		org.evoludo.simulator.models.IBS ibs = (org.evoludo.simulator.models.IBS) model;
@@ -113,36 +113,46 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 				saveSnapshot(AbstractGraph.SNAPSHOT_PNG);
 			}
 			engine.modelNext();
+			int[] tCount = pop.getTraitsCount();
 			for (int n = 0; n < nTraits; n++) {
-				if (pop.traitsCount[n] == nPopulation) {
-					if (lastfix != n) {
-						if (lastfix >= 0)
-							fix[lastfix][n]++;
-						lastfix = n;
-						break;
-					}
+				if (tCount[n] == nPopulation && lastfix != n) {
+					if (lastfix >= 0)
+						fix[lastfix][n]++;
+					lastfix = n;
+					break;
 				}
 			}
 		}
-		String msg = "# fixation probs\n# \t";
+		StringBuilder sb = new StringBuilder("# fixation probs\n# \t");
 		for (int n = 0; n < nTraits; n++)
-			msg += getTraitName(n) + "\t";
-		out.println(msg);
+			sb.append(getTraitName(n)).append("\t");
+		out.println(sb.toString());
+		sb = new StringBuilder();
 		for (int n = 0; n < nTraits; n++) {
-			msg = "# " + getTraitName(n) + ":\t";
+			sb.append("# ").append(getTraitName(n)).append(":\t");
 			double sum = 0.0;
 			for (int m = 0; m < nTraits; m++)
 				sum += fix[n][m];
-			for (int m = 0; m < nTraits; m++)
-				msg += Formatter.format(fix[n][m] / sum, 4) + "\t";
-			out.println(msg + "(count: " + (int) sum + ")");
+			for (int m = 0; m < nTraits; m++) {
+				if (sum != 0.0) {
+					sb.append(Formatter.format(fix[n][m] / sum, 4));
+				} else {
+					sb.append("NaN");
+				}
+				sb.append("\t");
+			}
+			sb.append("(count: ").append((int) sum).append(")");
+			out.println(sb);
 		}
-		double generation = ibs.getTime();
-		msg = "# long-term average:      ";
-		for (int n = 0; n < nTraits; n++)
-			msg += Formatter.formatFix(mean[n], 6) + "\t" + Formatter.format(Math.sqrt(var[n] / (generation - 1.0)), 6)
-					+ "\t";
-		out.println(msg);
+		double generation = ibs.getUpdates();
+		sb = new StringBuilder("# long-term average:      ");
+		for (int n = 0; n < nTraits; n++) {
+			sb.append(Formatter.formatFix(mean[n], 6));
+			sb.append("\t");
+			sb.append(Formatter.format(Math.sqrt(variance[n] / (generation - 1.0)), 6));
+			sb.append("\t");
+		}
+		out.println(sb);
 
 		out.println("# generations @ end: " + Formatter.formatSci(generation, 6));
 		engine.writeFooter();
@@ -152,7 +162,9 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 	/**
 	 * Temporary variables for fixation probabilities and absorption times.
 	 */
-	double[] mean, var, state;
+	double[] mean;
+	double[] variance;
+	double[] state;
 
 	/**
 	 * Time of previous sample.
@@ -161,7 +173,7 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 
 	@Override
 	public synchronized void modelChanged(PendingAction action) {
-		updateStatistics(model.getTime());
+		updateStatistics(model.getUpdates());
 	}
 
 	@Override
@@ -173,7 +185,7 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 	 * Start collecting statistics.
 	 */
 	protected void startStatistics() {
-		prevsample = model.getTime();
+		prevsample = model.getUpdates();
 	}
 
 	/**
@@ -182,13 +194,13 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 	protected void resetStatistics() {
 		if (mean == null)
 			mean = new double[nTraits];
-		if (var == null)
-			var = new double[nTraits];
+		if (variance == null)
+			variance = new double[nTraits];
 		if (state == null)
 			state = new double[nTraits];
 		prevsample = Double.MAX_VALUE;
 		Arrays.fill(mean, 0.0);
-		Arrays.fill(var, 0.0);
+		Arrays.fill(variance, 0.0);
 	}
 
 	/**
@@ -206,7 +218,7 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 		for (int n = 0; n < nTraits; n++) {
 			double delta = state[n] - mean[n];
 			mean[n] += wn * delta;
-			var[n] += w * delta * (state[n] - mean[n]);
+			variance[n] += w * delta * (state[n] - mean[n]);
 		}
 		prevsample = time;
 	}
@@ -270,7 +282,7 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 	 * @return the file for the snapshot
 	 */
 	protected File openSnapshot(String ext) {
-		String pre = getKey() + "-t" + Formatter.format(engine.getModel().getTime(), 2);
+		String pre = getKey() + "-t" + Formatter.format(engine.getModel().getUpdates(), 2);
 		File snapfile = new File(pre + "." + ext);
 		int counter = 0;
 		while (snapfile.exists())

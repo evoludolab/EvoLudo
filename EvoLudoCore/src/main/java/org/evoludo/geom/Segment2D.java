@@ -44,12 +44,12 @@ public class Segment2D extends Line2D {
 	/**
 	 * The first point of the line segment.
 	 */
-	public Point2D p1;
+	Point2D p1;
 
 	/**
 	 * The second point of the line segment.
 	 */
-	public Point2D p2;
+	Point2D p2;
 
 	/**
 	 * Create a new empty 2D line with coordinates <code>(0,0)</code> and zero
@@ -75,7 +75,9 @@ public class Segment2D extends Line2D {
 	 * @param p2 the end point
 	 */
 	public Segment2D(Point2D p1, Point2D p2) {
-		this(p1.x, p1.y, p2.x, p2.y);
+		super(p1, p2);
+		this.p1 = p1;
+		this.p2 = p2;
 	}
 
 	/**
@@ -88,9 +90,7 @@ public class Segment2D extends Line2D {
 	 * @param y2 the <code>y</code>-coordinate of end point
 	 */
 	public Segment2D(double x1, double y1, double x2, double y2) {
-		this.p1 = new Point2D();
-		this.p2 = new Point2D();
-		set(x1, y1, x2, y2);
+		this(new Point2D(x1, y1), new Point2D(x2, y2));
 	}
 
 	/**
@@ -98,14 +98,12 @@ public class Segment2D extends Line2D {
 	 * 
 	 * @param p1 the first point
 	 * @param p2 the second point
-	 * @return the new line segment
 	 */
 	@Override
-	public Segment2D set(Point2D p1, Point2D p2) {
+	public void set(Point2D p1, Point2D p2) {
 		super.set(p1, p2);
 		this.p1.set(p1);
 		this.p2.set(p2);
-		return this;
 	}
 
 	/**
@@ -116,14 +114,12 @@ public class Segment2D extends Line2D {
 	 * @param y1 the <code>y</code>-coordinate of starting point
 	 * @param x2 the <code>x</code>-coordinate of end point
 	 * @param y2 the <code>y</code>-coordinate of end point
-	 * @return the new line segment
 	 */
 	@Override
-	public Segment2D set(double x1, double y1, double x2, double y2) {
+	public void set(double x1, double y1, double x2, double y2) {
 		super.set(x1, y1, x2, y2);
 		p1.set(x1, y1);
 		p2.set(x2, y2);
-		return this;
 	}
 
 	@Override
@@ -229,28 +225,12 @@ public class Segment2D extends Line2D {
 		int o3 = orientation(s.p1, s.p2, p1);
 		int o4 = orientation(s.p1, s.p2, p2);
 
-		// general case
-		if (o1 != o2 && o3 != o4)
-			return true;
-
-		// special cases:
-		// segments are collinear and s.p1 lies on this segment
-		if (o1 == 0 && contains(p1, s.p1, p2))
-			return true;
-
-		// segments are collinear and s.p2 lies on this segment
-		if (o2 == 0 && contains(p1, s.p2, p2))
-			return true;
-
-		// segments are collinear and p1 lies on segment s
-		if (o3 == 0 && contains(s.p1, p1, s.p2))
-			return true;
-
-		// segments are collinear and p2 lies on segment s
-		if (o4 == 0 && contains(s.p1, p2, s.p2))
-			return true;
-
-		return false; // Doesn't fall in any of the above cases
+		// return true if any of the intersection conditions are met
+		return (o1 != o2 && o3 != o4)
+				|| (o1 == 0 && contains(p1, s.p1, p2))
+				|| (o2 == 0 && contains(p1, s.p2, p2))
+				|| (o3 == 0 && contains(s.p1, p1, s.p2))
+				|| (o4 == 0 && contains(s.p1, p2, s.p2));
 	}
 
 	/**

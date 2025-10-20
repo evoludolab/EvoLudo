@@ -156,7 +156,8 @@ public class simTraits extends Traits {
 			pop.getPopulationUpdate().setType(PopulationUpdate.Type.ASYNC);
 			engine.modelReset();
 			long cpuBefore = osMBean.getProcessCpuTime(); // time in nanoseconds
-			long cpuSims, mcSims = 0;
+			long cpuSims;
+			long mcSims = 0;
 			while ((cpuSims = osMBean.getProcessCpuTime() - cpuBefore) < mintime) {
 				for (long g = 1; g <= 1000; g++)
 					engine.modelNext();
@@ -166,7 +167,8 @@ public class simTraits extends Traits {
 			engine.loadModel(Type.SDE);
 			engine.modelReset();
 			cpuBefore = osMBean.getProcessCpuTime(); // time in nanoseconds
-			long cpuSDE, mcSDE = 0;
+			long cpuSDE;
+			long mcSDE = 0;
 			while ((cpuSDE = osMBean.getProcessCpuTime() - cpuBefore) < mintime) {
 				for (long g = 1; g <= 1000; g++)
 					engine.modelNext();
@@ -193,7 +195,7 @@ public class simTraits extends Traits {
 				@Override
 				public boolean parse(String arg) {
 					popsizes = CLOParser.parseIntVector(arg);
-					return (popsizes != null);
+					return (popsizes.length > 0);
 				}
 			});
 

@@ -22,5 +22,10 @@ scratch/
 # ignore Xcode
 *.xcodeproj
 
+# ignore eclipse settings
+.settings/
+.classpath
+.project
+
 # ignore reference and report files for tests
 test/reports/

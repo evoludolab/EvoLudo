@@ -33,15 +33,14 @@ package org.evoludo.graphics;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import org.evoludo.ui.ContextMenu;
-import org.evoludo.ui.ContextMenuCheckBoxItem;
-import org.evoludo.util.Formatter;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Functions;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
-
-import com.google.gwt.user.client.Command;
+import org.evoludo.simulator.views.Histogram;
+import org.evoludo.ui.ContextMenu;
+import org.evoludo.ui.ContextMenuCheckBoxItem;
+import org.evoludo.util.Formatter;
 
 /**
  * Histogram graph for displaying data in bins. The data is stored in a 2D array
@@ -53,6 +52,7 @@ import com.google.gwt.user.client.Command;
  * 
  * @author Christoph Hauert
  */
+@SuppressWarnings("java:S110")
 public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipProvider {
 
 	/**
@@ -190,7 +190,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	/**
 	 * The list of markers for the histogram.
 	 */
-	private ArrayList<Marker> binmarkers = new ArrayList<Marker>();
+	private ArrayList<Marker> binmarkers = new ArrayList<>();
 
 	/**
 	 * The data array backing the histogram. This may be shared by multiple
@@ -246,16 +246,21 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 
 	/**
 	 * Create new histogram graph for <code>module</code> running in
-	 * <code>controller</code>. The row is used to identify data entries that apply
+	 * <code>view</code>. The row is used to identify data entries that apply
 	 * to this histogram and represents the index of the data row.
 	 * 
-	 * @param controller the controller of this graph
-	 * @param module     the module backing the graph
-	 * @param row        the index of the data row
+	 * @param view   the view of this graph
+	 * @param module the module backing the graph
+	 * @param row    the index of the data row
 	 */
-	public HistoGraph(Controller controller, Module module, int row) {
-		super(controller, module);
+	public HistoGraph(Histogram view, Module<?> module, int row) {
+		super(view, module);
 		this.row = row;
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
 		setStylePrimaryName("evoludo-HistoGraph");
 		setTooltipProvider(this);
 	}
@@ -511,7 +516,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		// Math.round involves longs, which are evil in GWT...
 		// double rounded = Math.round(x);
 		// if (Math.abs(x - rounded) < 1e-12)
-		// 	return rounded;
+		// return rounded;
 		return x;
 	}
 
@@ -576,7 +581,8 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 			// max is fairly easy; if max gets reduced a global check for new maximum is
 			// required; graph would
 			// need to keep track of bin index that contains the maximum.
-			double yMax = -Double.MAX_VALUE, yMin = Double.MAX_VALUE;
+			double yMax = -Double.MAX_VALUE;
+			double yMin = Double.MAX_VALUE;
 			if (normIdx >= 0) {
 				norm = data[normIdx];
 				boolean nodata = true;
@@ -608,9 +614,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 				yLevels = (int) autoscale[autoscaleidx][2];
 			} else {
 				// round yMax up to 'nice' boundary
-				if (yMax > style.yMax)
-					style.yMax = Functions.roundUp(yMax);
-				else if (yMax < 0.8 * style.yMax)
+				if (yMax > style.yMax || yMax < 0.8 * style.yMax)
 					style.yMax = Functions.roundUp(yMax);
 
 				if (normIdx < 0) {
@@ -618,9 +622,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 					if (!isNormalized)
 						yMin /= nSamples;
 				}
-				if (yMin < style.yMin)
-					style.yMin = Functions.roundDown(yMin);
-				else if (yMin > 1.25 * style.yMin)
+				if (yMin < style.yMin || yMin > 1.25 * style.yMin)
 					style.yMin = Functions.roundDown(yMin);
 			}
 		}
@@ -697,45 +699,51 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		int bar = getBinAt(x, y);
 		if (bar < 0)
 			return null;
-		return tooltipProvider.getTooltipAt(bar);
+		BasicTooltipProvider provider = tooltipProvider != null ? tooltipProvider : this;
+		return provider.getTooltipAt(bar);
 	}
 
 	@Override
 	public String getTooltipAt(int bar) {
 		// note label is null for undirected graph with the same interaction and
 		// competition graphs
+		final String TABLE_STYLE = "<table style='border-collapse:collapse;border-spacing:0;'>";
+		final String TABLE_ROW_END = "</td></tr>";
+		final String TABLE_END = TABLE_ROW_END + "</table>";
+		final String TABLE_ROW_START = "<tr><td><i>";
+		final String TABLE_CELL_NEXT = ":</i></td><td>";
 		StringBuilder tip = new StringBuilder(
 				style.showLabel && style.label != null ? "<b>" + style.label + "</b><br/>" : "");
-		switch (controller.getType()) {
+		switch (view.getType()) {
 			case DEGREE:
 				if (Math.abs(style.xMax - (nBins - 1)) < 1e-6) {
-					tip.append("<table style='border-collapse:collapse;border-spacing:0;'>");
-					tip.append("<tr><td><i>" + style.xLabel + ":</i></td><td>" + bar + "</td></tr>");
-					tip.append("<tr><td><i>" + style.yLabel + ":</i></td><td>"
-							+ Formatter.formatPercent(data[row][bar], 2) + "</td></tr></table>");
+					tip.append(TABLE_STYLE);
+					tip.append(TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT + bar + TABLE_ROW_END);
+					tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT
+							+ Formatter.formatPercent(data[row][bar], 2) + TABLE_END);
 					break;
 				}
 				//$FALL-THROUGH$
 			case TRAIT:
 			case FITNESS:
-				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>");
-				tip.append("<tr><td><i>" + style.xLabel + ":</i></td><td>["
+				tip.append(TABLE_STYLE);
+				tip.append(TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT + "["
 						+ Formatter.format(style.xMin + bar * (style.xMax - style.xMin) / nBins, 2) +
 						", " + Formatter.format(style.xMin + (bar + 1) * (style.xMax - style.xMin) / nBins, 2)
-						+ ")</td></tr>");
-				tip.append("<tr><td><i>" + style.yLabel + ":</i></td><td>" + Formatter.formatPercent(data[row][bar], 2)
-						+ "</td></tr>");
+						+ ")" + TABLE_ROW_END);
+				tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT + Formatter.formatPercent(data[row][bar], 2)
+						+ TABLE_ROW_END);
 				String note = getNoteAt(bar);
 				if (note != null)
-					tip.append("<tr><td><i>Note:</i></td><td>" + note + "</td></tr>");
+					tip.append(TABLE_ROW_START + "Note" + TABLE_CELL_NEXT + note + TABLE_ROW_END);
 				tip.append("</table>");
 				break;
 			case STATISTICS_FIXATION_PROBABILITY:
-				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>");
-				tip.append("<tr><td><i>" + style.xLabel + ":</i></td>");
+				tip.append(TABLE_STYLE);
+				tip.append(TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT);
 				int binSize = (int) ((style.xMax + 1) / nBins);
 				if (binSize == 1)
-					tip.append("<td>" + bar + "</td></tr>");
+					tip.append(bar + TABLE_ROW_END);
 				else {
 					int start = bar * binSize;
 					int end = start + binSize - 1;
@@ -744,23 +752,23 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 						end = Math.max(end, (int) style.xMax);
 					}
 					String separator = (end - start > 1) ? "-" : ",";
-					tip.append("<td>[" + start + separator + end + "]</td></tr>");
+					tip.append("[" + start + separator + end + "]" + TABLE_ROW_END);
 				}
 				int nTraits = data.length - 1;
 				double norm = data[nTraits][bar];
-				tip.append("<tr><td><i>samples:</i></td><td>" + (int) norm + "</td></tr>");
+				tip.append(TABLE_ROW_START + "samples" + TABLE_CELL_NEXT + (int) norm + TABLE_ROW_END);
 				if (style.percentY)
-					tip.append("<tr><td><i>" + style.yLabel + ":</i></td><td>"
+					tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT
 							+ (norm > 0.0 ? Formatter.formatPercent(data[row][bar] / norm, 2) : "0") +
-							"</td></tr></table>");
+							TABLE_END);
 				else
-					tip.append("<tr><td><i>" + style.yLabel + ":</i></td><td>"
+					tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT
 							+ (norm > 0.0 ? Formatter.format(data[row][bar] / norm, 2) : "0") +
-							"</td></tr></table>");
+							TABLE_END);
 				break;
 			case STATISTICS_FIXATION_TIME:
-				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>" +
-						"<tr><td><i>" + style.xLabel + ":</i></td><td>");
+				tip.append(TABLE_STYLE +
+						TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT);
 				int nPop = module.getNPopulation();
 				if (nPop > data[0].length) {
 					tip.append("[" + Formatter.format(style.xMin + (double) bar / nBins * (style.xMax - style.xMin), 2)
@@ -768,23 +776,23 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 							Formatter.format(style.xMin + (double) (bar + 1) / nBins * (style.xMax - style.xMin), 2)
 							+ ")");
 				} else {
-					tip.append(bar + "</td></tr>" +
-							"<tr><td><i>samples:</i></td><td>" + (int) getSamples(bar));
+					tip.append(bar + TABLE_ROW_END +
+							TABLE_ROW_START + "samples" + TABLE_CELL_NEXT + (int) getSamples(bar));
 				}
-				tip.append("</td></tr><tr><td><i>" + style.yLabel + ":</i></td>");
+				tip.append(TABLE_ROW_END + TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT);
 				if (style.percentY)
-					tip.append("<td>" + Formatter.formatPercent(getData(bar), 2) + "</td>");
+					tip.append(Formatter.formatPercent(getData(bar), 2) + "</td>");
 				else
-					tip.append("<td>" + Formatter.format(getData(bar), 2) + "</td>");
+					tip.append(Formatter.format(getData(bar), 2) + "</td>");
 				tip.append("</tr></table>");
 				break;
 			case STATISTICS_STATIONARY:
-				tip.append("<table style='border-collapse:collapse;border-spacing:0;'>" + //
-						"<tr><td><i>" + style.xLabel + ":</i></td>");
+				tip.append(TABLE_STYLE + //
+						TABLE_ROW_START + style.xLabel + TABLE_CELL_NEXT);
 				nPop = module.getNPopulation();
 				binSize = (nPop + 1) / MAX_BINS + 1;
 				if (binSize == 1)
-					tip.append("<td>" + bar + "</td></tr>");
+					tip.append(bar + TABLE_ROW_END);
 				else {
 					int start = bar * binSize;
 					int end = start + binSize - 1;
@@ -794,10 +802,10 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 						end = Math.max(end, nPop);
 					}
 					String separator = (end - start > 1) ? "-" : ",";
-					tip.append("<td>[" + start + separator + end + "]</td></tr>");
+					tip.append("[" + start + separator + end + "]" + TABLE_ROW_END);
 				}
-				tip.append("<tr><td><i>" + style.yLabel + ":</i></td><td>"
-						+ Formatter.formatPercent(data[row][bar] / getSamples(), 2) + "</td></tr></table>");
+				tip.append(TABLE_ROW_START + style.yLabel + TABLE_CELL_NEXT
+						+ Formatter.formatPercent(data[row][bar] / getSamples(), 2) + TABLE_END);
 				break;
 			default:
 				break;
@@ -829,12 +837,8 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		// process autoscale context menu
 		if (autoscaleYMenu == null) {
-			autoscaleYMenu = new ContextMenuCheckBoxItem("Autoscale y-axis", new Command() {
-				@Override
-				public void execute() {
-					style.autoscaleY = !style.autoscaleY;
-				}
-			});
+			autoscaleYMenu = new ContextMenuCheckBoxItem("Autoscale y-axis",
+					() -> style.autoscaleY = !style.autoscaleY);
 		}
 		autoscaleYMenu.setChecked(style.autoscaleY);
 		autoscaleYMenu.setEnabled(enableAutoscaleYMenu);

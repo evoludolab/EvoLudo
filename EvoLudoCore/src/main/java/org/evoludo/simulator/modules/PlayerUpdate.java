@@ -30,7 +30,7 @@
 
 package org.evoludo.simulator.modules;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.util.CLOParser;
@@ -42,7 +42,7 @@ import org.evoludo.util.Formatter;
 /**
  * The implementation of player updates. Player updates are used to update the
  * traits of individuals in a population through (probabilistic) comparisons
- * with the performance of other members (and their trait) in the population. 
+ * with the performance of other members (and their trait) in the population.
  * <p>
  * The player update type can be set to one of the following:
  * <dl>
@@ -73,14 +73,14 @@ public class PlayerUpdate {
 	/**
 	 * The module that is using this player update.
 	 */
-	Module module;
+	Module<?> module;
 
 	/**
 	 * Instantiate new player update for use in {@code module}.
 	 * 
 	 * @param module the module using this player update
 	 */
-	public PlayerUpdate(Module module) {
+	public PlayerUpdate(Module<?> module) {
 		this.module = module;
 	}
 
@@ -157,7 +157,7 @@ public class PlayerUpdate {
 	 * @param error the error when adopting the trait
 	 */
 	public void setError(double error) {
-		error = Math.max(0.0, error);
+		this.error = Math.max(0.0, error);
 	}
 
 	/**
@@ -215,8 +215,8 @@ public class PlayerUpdate {
 				public boolean parse(String arg) {
 					String[] playerupdates = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
-					ArrayList<? extends Module> species = module.getSpecies();
-					for (Module mod : species) {
+					List<? extends Module<?>> species = module.getSpecies();
+					for (Module<?> mod : species) {
 						String updt = playerupdates[n++ % playerupdates.length];
 						PlayerUpdate.Type put = (PlayerUpdate.Type) clo.match(updt);
 						PlayerUpdate pu = mod.getPlayerUpdate();
@@ -263,7 +263,7 @@ public class PlayerUpdate {
 	 * <dd>Fermi/thermal update
 	 * </dl>
 	 */
-	public static enum Type implements CLOption.Key {
+	public enum Type implements CLOption.Key {
 
 		/**
 		 * best wins (equal - stay)

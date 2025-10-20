@@ -35,11 +35,11 @@ import java.awt.Color;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model.HasDE;
+import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -90,26 +90,17 @@ public class RSP extends Discrete implements Payoffs,
 	 */
 	public RSP(EvoLudo engine) {
 		super(engine);
+		nTraits = 3; // rock, scissors, paper
 	}
 
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 3;
-		// trait names
-		String[] names = new String[nTraits];
-		names[ROCK] = "Rock";
-		names[SCISSORS] = "Scissors";
-		names[PAPER] = "Paper";
-		setTraitNames(names);
-		// trait colors (automatically generates lighter versions for new traits)
-		Color[] colors = new Color[nTraits];
-		colors[ROCK] = Color.BLUE;
-		// yellow has too little contrast
-		colors[SCISSORS] = new Color(238, 204, 17); // hex #eecc11
-		colors[PAPER] = Color.RED;
-		setTraitColors(colors);
-		// allocate memory
+		// trait names (optional)
+		setTraitNames(new String[] { "Rock", "Scissors", "Paper" });
+		// trait colors (optional)
+		setTraitColors(new Color[] { Color.BLUE, new Color(238, 204, 17), Color.RED });
+		// payoffs (local storage)
 		payoff = new double[nTraits][nTraits];
 	}
 
@@ -244,7 +235,7 @@ public class RSP extends Discrete implements Payoffs,
 				@Override
 				public boolean parse(String arg) {
 					double[][] payMatrix = CLOParser.parseMatrix(arg);
-					if (payMatrix == null || payMatrix.length != 3 || payMatrix[0].length != 3)
+					if (payMatrix.length != 3 || payMatrix[0].length != 3)
 						return false;
 					setPayoffs(payMatrix);
 					return true;
@@ -267,7 +258,7 @@ public class RSP extends Discrete implements Payoffs,
 	}
 
 	@Override
-	public RSP.IBSPop createIBSPop() {
+	public RSP.IBSPop createIBSPopulation() {
 		return new RSP.IBSPop(engine, this);
 	}
 
@@ -298,7 +289,8 @@ public class RSP extends Discrete implements Payoffs,
 				return;
 			}
 			initMono(RSP.ROCK);
-			int mid, size;
+			int mid;
+			int size;
 			switch (interaction.getType()) {
 				case SQUARE_NEUMANN:
 				case SQUARE_NEUMANN_2ND:
@@ -307,7 +299,8 @@ public class RSP extends Discrete implements Payoffs,
 					size = (int) Math.floor(Math.sqrt(nPopulation) + 0.5);
 					mid = size / 2;
 					/* border around center */
-					int width = 20, height = 5;
+					int width = 20;
+					int height = 5;
 					for (int w = mid - width / 2; w <= mid + width / 2; w++)
 						for (int h = mid; h <= mid + height; h++)
 							setTraitAt(h * size + w, RSP.SCISSORS);

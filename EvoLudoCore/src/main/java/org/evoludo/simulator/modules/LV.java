@@ -31,12 +31,13 @@ package org.evoludo.simulator.modules;
 
 import java.awt.Color;
 import java.util.Arrays;
+import java.util.logging.Level;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
+import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.models.RungeKutta;
 import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.Features.Multispecies;
@@ -68,7 +69,12 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	/**
 	 * The index of the prey.
 	 */
-	final static int PREY = 0;
+	static final int PREY = 0;
+
+	/**
+	 * The index of vacant sites. Both species use the same index.
+	 */
+	static final int VACANT = 1;
 
 	/**
 	 * The reaction rates for prey reproduction, predation, and competition.
@@ -96,7 +102,8 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	 */
 	public LV(EvoLudo engine) {
 		super(engine);
-		setName("Prey");
+		nTraits = 2; // prey and empty sites
+		vacantIdx = VACANT;
 	}
 
 	@Override
@@ -107,20 +114,14 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 2; // prey and vacant
-		VACANT = nTraits - 1;
+		// set species name
+		setName("Prey");
+		// trait names (optional)
+		setTraitNames(new String[] { "Prey" });
+		// trait colors (optional)
+		setTraitColors(new Color[] { Color.BLUE });
 		predator = new Predator(this);
 		predator.load();
-		// optional
-		String[] names = new String[nTraits];
-		names[PREY] = "Prey";
-		names[VACANT] = "Vacant";
-		setTraitNames(names);
-		// optional
-		Color[] colors = new Color[nTraits];
-		colors[PREY] = Color.BLUE;
-		colors[VACANT] = Color.LIGHT_GRAY;
-		setTraitColors(colors);
 	}
 
 	@Override
@@ -155,20 +156,30 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	}
 
 	/**
+	 * Error message templates for invalid birth parameter.
+	 */
+	static final String BIRTH_ERROR = "birth rate of %s must be non-negative (changed to 0).";
+
+	/**
+	 * Error message templates for invalid competition parameter.
+	 */
+	static final String COMPETITION_ERROR = "competition rate of %s must be non-negative (changed to 0).";
+
+	/**
 	 * Command line option to set the prey parameters.
 	 */
 	public final CLOption cloPrey = new CLOption("prey", "0.667,-1.333,0.0", Category.Module,
 			"--prey <a0,a1[,a2]>  x' = (a0-dx)*x + a1*x*y - a2*x^2\n" +
-					"		    a0: birth rate\n" +
-					"		    dx: death rate (see --deathrate)\n" +
-					"		    a1: predation rate\n" +
-					"		    a2: competition rate",
+					"           a0: birth rate\n" +
+					"           dx: death rate (see --deathrate)\n" +
+					"           a1: predation rate\n" +
+					"           a2: competition rate",
 			new CLODelegate() {
 
 				@Override
 				public boolean parse(String arg) {
 					double[] args = CLOParser.parseVector(arg);
-					if (args == null || args.length < 1 || args.length > 3)
+					if (args.length < 1 || args.length > 3)
 						return false;
 					if (rates == null || rates.length != 3)
 						rates = new double[3];
@@ -177,11 +188,13 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 					// sanity checks
 					if (rates[0] < 0.0) {
 						rates[0] = 0.0; // birth rate must be non-negative
-						logger.warning("birth rate of " + getName() + " must be non-negative (changed to 0).");
+						if (logger.isLoggable(Level.WARNING))
+							logger.warning(BIRTH_ERROR.replace("%s", getName()));
 					}
 					if (rates[2] < 0.0) {
 						rates[2] = 0.0; // competition rate must be non-negative
-						logger.warning("competition rate of " + getName() + " must be non-negative (changed to 0).");
+						if (logger.isLoggable(Level.WARNING))
+							logger.warning(COMPETITION_ERROR.replace("%s", getName()));
 					}
 					return true;
 				}
@@ -256,18 +269,24 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 		change[VACANT] = -delta;
 		delta = y * (ry - y * (predator.rates[0] + predator.rates[2]) + x * (1.0 - y) * predator.rates[1]);
 		change[predatorIdx] = delta;
-		change[nTraits + predator.VACANT] = -delta;
+		change[nTraits + VACANT] = -delta;
 	}
 
 	@Override
 	public Model createModel(Type type) {
 		switch (type) {
 			case ODE:
+				if (model != null && model.getType().isODE())
+					return model;
 				return new LV.ODE();
 			case SDE:
+				if (model != null && model.getType().isSDE())
+					return model;
 				return new LV.SDE();
 			// case PDE: not yet ready for multiple species
 			case IBS:
+				if (model != null && model.getType().isIBS())
+					return model;
 				return super.createModel(type);
 			default:
 				return null;
@@ -275,7 +294,7 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	}
 
 	@Override
-	public IBSPop createIBSPop() {
+	public IBSPop createIBSPopulation() {
 		return new IBSPop(engine, this);
 	}
 
@@ -326,7 +345,7 @@ class Predator extends Discrete implements Multispecies, HasDE {
 	/**
 	 * The index of the predator.
 	 */
-	final static int PREDATOR = 0;
+	static final int PREDATOR = 0;
 
 	/**
 	 * The reference to the prey species.
@@ -346,24 +365,24 @@ class Predator extends Discrete implements Multispecies, HasDE {
 	public Predator(LV prey) {
 		super(prey);
 		this.prey = prey;
+		nTraits = 2; // predators and empty sites
+		vacantIdx = LV.VACANT;
+	}
+
+	@Override
+	public void load() {
+		super.load();
+		// set species name
 		setName("Predator");
-		setNTraits(2); // predator plus empty sites
-		VACANT = nTraits - 1;
-		// trait names
-		String[] names = new String[nTraits];
-		names[PREDATOR] = "Predator";
-		names[VACANT] = "Vacant";
-		setTraitNames(names);
-		// trait colors (automatically generates lighter versions for new strategists)
-		Color[] colors = new Color[nTraits];
-		colors[PREDATOR] = Color.RED;
-		colors[VACANT] = Color.LIGHT_GRAY;
-		setTraitColors(colors);
+		// trait names (optional)
+		setTraitNames(new String[] { "Predator" });
+		// trait colors (optional)
+		setTraitColors(new Color[] { Color.RED });
 	}
 
 	@Override
 	public int getDependent() {
-		return VACANT;
+		return LV.VACANT;
 	}
 
 	/**
@@ -371,16 +390,16 @@ class Predator extends Discrete implements Multispecies, HasDE {
 	 */
 	public final CLOption cloPredator = new CLOption("predator", "-1.0,1.0,0.0", Category.Module,
 			"--predator <b0,b1[,b2]>  y' = (b0-dy)*y + b1*x*y - b2*y^2\n" +
-					"		    b0: birth rate\n" +
-					"		    dy: death rate (see --deathrate)\n" +
-					"		    b1: predation rate\n" +
-					"		    b2: competition rate",
+					"           b0: birth rate\n" +
+					"           dy: death rate (see --deathrate)\n" +
+					"           b1: predation rate\n" +
+					"           b2: competition rate",
 			new CLODelegate() {
 
 				@Override
 				public boolean parse(String arg) {
 					double[] args = CLOParser.parseVector(arg);
-					if (args == null || args.length < 1 || args.length > 3)
+					if (args.length < 1 || args.length > 3)
 						return false;
 					if (rates == null || rates.length != 3)
 						rates = new double[3];
@@ -389,11 +408,13 @@ class Predator extends Discrete implements Multispecies, HasDE {
 					// sanity checks
 					if (rates[0] < 0.0) {
 						rates[0] = 0.0; // birth rate must be non-negative
-						logger.warning("birth rate of " + getName() + " must be non-negative (changed to 0).");
+						if (logger.isLoggable(Level.WARNING))
+							logger.warning(LV.BIRTH_ERROR.replace("%s", getName()));
 					}
 					if (rates[2] < 0.0) {
 						rates[2] = 0.0; // competition rate must be non-negative
-						logger.warning("competition rate of " + getName() + " must be non-negative (changed to 0).");
+						if (logger.isLoggable(Level.WARNING))
+							logger.warning(LV.COMPETITION_ERROR.replace("%s", getName()));
 					}
 					return true;
 				}
@@ -406,7 +427,7 @@ class Predator extends Discrete implements Multispecies, HasDE {
 	}
 
 	@Override
-	public IBSPop createIBSPop() {
+	public IBSPop createIBSPopulation() {
 		return new IBSPop(engine, this);
 	}
 }
@@ -475,10 +496,10 @@ class IBSPop extends IBSDPopulation {
 		rates = (isPredator ? ((Predator) module).rates : ((LV) module).rates);
 		deathRate = module.getDeathRate();
 		// focal peer opponent
-		// X     0    0 death, birth: deathRate + rates[0]
-		// X     X    0 death, competition: deathRate + rates[2]
-		// X     0    Y death, birth, predation: deathRate + rates[0] + |rates[1]|
-		// X     X    Y death, competition, predation: deathRate + rates[2] + |rates[1]|
+		// X 0 0 death, birth: deathRate + rates[0]
+		// X X 0 death, competition: deathRate + rates[2]
+		// X 0 Y death, birth, predation: deathRate + rates[0] + |rates[1]|
+		// X X Y death, competition, predation: deathRate + rates[2] + |rates[1]|
 		maxRate = deathRate + Math.max(Math.max(Math.max(rates[0], // birth
 				rates[2]), // competition
 				rates[0] + Math.abs(rates[1])), // birth + predation
@@ -563,7 +584,8 @@ class IBSPop extends IBSDPopulation {
 			randomTestVal -= focalReproduces;
 			if (randomTestVal < focalDies) {
 				// focal dies spontaneously or due to competition: vacate focal site
-				traitsNext[me] = VACANT + nTraits; // more efficient than setNextTraitAt(me, VACANT);
+				// more efficient than setNextTraitAt
+				traitsNext[me] = VACANT + nTraits;
 				commitTraitAt(me);
 				isExtinct = (getPopulationSize() == 0);
 			} else {
@@ -575,8 +597,8 @@ class IBSPop extends IBSDPopulation {
 						commitTraitAt(peer);
 					}
 				} else {
-					// prey dies
-					traitsNext[me] = VACANT + nTraits; // more efficient than setNextTraitAt(me, VACANT);
+					// prey dies; more efficient than setNextTraitAt
+					traitsNext[me] = VACANT + nTraits;
 					commitTraitAt(me);
 					isExtinct = (getPopulationSize() == 0);
 				}

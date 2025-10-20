@@ -31,10 +31,12 @@
 package org.evoludo.geom;
 
 /**
- * Interface representing a (network) node in 2D or 3D space with a position and a radius.
+ * Interface representing a (network) node in 2D or 3D space with a position and
+ * a radius.
  * 
  * <h3>Work in progress...</h3>
- * Rudimentary implementation, taylored to the current needs. Could be made more useful/powerful.
+ * Rudimentary implementation, taylored to the current needs. Could be made more
+ * useful/powerful.
  * 
  * @author Christoph Hauert
  * 

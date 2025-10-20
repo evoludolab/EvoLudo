@@ -59,12 +59,6 @@ import java.awt.Color;
 public abstract class ColorMapJRE extends ColorMap<Color> {
 
 	/**
-	 * Constructs a new color map.
-	 */
-	public ColorMapJRE() {
-	}
-
-	/**
 	 * Associates integer indices with colors.
 	 */
 	public static class Index extends ColorMap.Index<Color> {
@@ -217,7 +211,7 @@ public abstract class ColorMapJRE extends ColorMap<Color> {
 		public Gradient1D(Color start, Color end, int trait, int nIncr) {
 			super(new Color[] { start, end }, trait, new Color[nIncr]);
 		}
-		
+
 		@Override
 		public Color color2Color(Color color) {
 			return color;

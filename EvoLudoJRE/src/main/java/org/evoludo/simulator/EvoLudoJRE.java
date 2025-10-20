@@ -30,13 +30,12 @@
 
 package org.evoludo.simulator;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.nio.file.Files;
@@ -46,6 +45,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Properties;
+import java.util.logging.Level;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipInputStream;
 
@@ -103,6 +103,16 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 */
 	private final long startmsec = System.currentTimeMillis();
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * JRE implementation for measuring execution time.
+	 * 
+	 * @see org.evoludo.simulator.EvoLudoGWT#elapsedTimeMsec
+	 *      EvoLudoGWT.elapsedTimeMsec
+	 * @see org.evoludo.simulator.EvoLudoJRE#elapsedTimeMsec
+	 *      EvoLudoJRE.elapsedTimeMsec
+	 */
 	@Override
 	public int elapsedTimeMsec() {
 		return (int) (System.currentTimeMillis() - startmsec);
@@ -142,17 +152,13 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * @see #custom(Module, String[])
 	 */
 	public EvoLudoJRE(boolean loadModules) {
-		super(loadModules);
+		super();
 		setHeadless(true);
 		// allocate a coalescing timer for poking the engine in regular intervals
 		// note: timer needs to be ready before parsing command line options
-		timer = new Timer(0, new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent evt) {
-				poke();
-			}
-		});
+		timer = new Timer(0, evt -> poke());
 		launchEngine();
+		loadModules();
 		// add modules that require JRE (e.g. due to libraries)
 		if (loadModules)
 			addModule(new Traits(this));
@@ -173,12 +179,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 
 	@Override
 	public void execute(Directive directive) {
-		executeThread = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				directive.execute();
-			}
-		}, "Execute");
+		executeThread = new Thread(directive::execute, "Execute");
 		executeThread.start();
 	}
 
@@ -250,7 +251,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	public void run() {
 		Thread me = Thread.currentThread();
 		if (!me.getName().equals("Engine")) {
-			if (isRunning)
+			if (isRunning || !isSuspended())
 				return;
 			fireModelRunning();
 			// this is the EDT, check if engine thread alive and kicking
@@ -347,11 +348,12 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * @param module the custom module to run
 	 * @param args   the command line options
 	 */
-	public void custom(Module module, String[] args) {
+	public void custom(Module<?> module, String[] args) {
 		setHeadless(true);
 		// prepend --module option (in case not specified)
-		args = ArrayMath.merge(new String[] {"--module", module.getKey()}, args);
-		// EvoLudo has its own parser for command line options and expects a single string
+		args = ArrayMath.merge(new String[] { "--module", module.getKey() }, args);
+		// EvoLudo has its own parser for command line options and expects a single
+		// string
 		setCLO(Formatter.format(args, " "));
 		addModule(module);
 		// parse options
@@ -430,11 +432,11 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			return;
 		}
 		// prepare to run simulations
-		Module module = getModule();
+		Module<?> module = getModule();
 		Model model = getModel();
-		// request mode based on data types (only one mode allowed and ensured by option parser)
-		Mode mode = (isDynamicsDataType(dataTypes.get(0)) ? 
-				Mode.DYNAMICS : Mode.STATISTICS_SAMPLE);
+		// request mode based on data types (only one mode allowed and ensured by option
+		// parser)
+		Mode mode = (isDynamicsDataType(dataTypes.get(0)) ? Mode.DYNAMICS : Mode.STATISTICS_SAMPLE);
 		if (!model.requestMode(mode)) {
 			// mode not supported
 			logger.info("Mode " + mode + " not supported!");
@@ -447,7 +449,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		// allocate storage and initialize helper variables
 		int totTraits = 0;
 		boolean isContinuous = model.isContinuous();
-		for (Module specie : module.getSpecies()) {
+		for (Module<?> specie : module.getSpecies()) {
 			int nt = specie.getNTraits();
 			totTraits += nt;
 		}
@@ -455,7 +457,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		double[] meanfit = isContinuous ? new double[2 * totTraits] : new double[totTraits + 1];
 		String[] traitNames = new String[totTraits];
 		int offset = 0;
-		for (Module specie : module.getSpecies()) {
+		for (Module<?> specie : module.getSpecies()) {
 			String[] tnames = specie.getTraitNames();
 			int nt = specie.getNTraits();
 			System.arraycopy(tnames, 0, traitNames, offset, nt);
@@ -536,7 +538,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			case DYNAMICS:
 				boolean cont = true;
 				while (true) {
-					String time = Formatter.format(model.getTime(), dataDigits);
+					String time = Formatter.format(model.getUpdates(), dataDigits);
 					// report dynamical data
 					for (MultiView.DataTypes data : dataTypes) {
 						switch (data) {
@@ -553,7 +555,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 							case TRAITS:
 								if (model instanceof IBSD) {
 									boolean isMultispecies = (module.getNSpecies() > 1);
-									for (Module mod : module.getSpecies()) {
+									for (Module<?> mod : module.getSpecies()) {
 										IBSDPopulation pop = (IBSDPopulation) mod.getIBSPopulation();
 										output.println(time + ",\t" + data.getKey()
 												+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
@@ -563,7 +565,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 								}
 								if (model instanceof IBSC) {
 									boolean isMultispecies = (module.getNSpecies() > 1);
-									for (Module mod : module.getSpecies()) {
+									for (Module<?> mod : module.getSpecies()) {
 										IBSMCPopulation pop = (IBSMCPopulation) mod.getIBSPopulation();
 										output.println(time + ",\t" + data.getKey()
 												+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
@@ -579,7 +581,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 							case SCORES:
 								if (model instanceof IBS) {
 									boolean isMultispecies = (module.getNSpecies() > 1);
-									for (Module mod : module.getSpecies()) {
+									for (Module<?> mod : module.getSpecies()) {
 										IBSPopulation pop = mod.getIBSPopulation();
 										output.println(time + ",\t" + data.getKey()
 												+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
@@ -595,7 +597,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 							case FITNESS:
 								if (model instanceof IBS) {
 									boolean isMultispecies = (module.getNSpecies() > 1);
-									for (Module mod : module.getSpecies()) {
+									for (Module<?> mod : module.getSpecies()) {
 										IBSPopulation pop = mod.getIBSPopulation();
 										output.println(time + ",\t" + data.getKey()
 												+ (isMultispecies ? "\t" + mod.getName() : "") + ",\t"
@@ -619,7 +621,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						}
 					}
 					double timeStop = model.getTimeStop();
-					if (!cont || (timeStop > 0.0 && model.getTime() > timeStop))
+					if (!cont || (timeStop > 0.0 && model.getUpdates() > timeStop))
 						break;
 					cont = modelNext();
 				}
@@ -630,7 +632,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				if (cloSeed.isSet()) {
 					// initial state set. now clear seed to obtain reproducible statistics
 					// rather just a single data point repeatedly
-					rng.clearRNGSeed();
+					rng.clearSeed();
 
 				}
 				isRunning = true;
@@ -680,7 +682,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 								double[] node = fixProb[n];
 								double norm = node[nTraits];
 								if (norm <= 0.0)
-									continue;	// no samples for node n
+									continue; // no samples for node n
 								double inorm = 1.0 / norm;
 								double n0 = node[0] * inorm;
 								double n1 = node[1] * inorm;
@@ -737,16 +739,16 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	}
 
 	/**
-	 * Generate a single, valid statistics sample. 
+	 * Generate a single, valid statistics sample.
 	 * 
 	 * @return the statistics sample
 	 * 
 	 * @see EvoLudoGWT#scheduleSample()
 	 */
 	public FixationData generateSample() {
-		if (activeModel.getMode() != Mode.STATISTICS_SAMPLE) {
-			if (!activeModel.requestMode(Mode.STATISTICS_SAMPLE))
-				return null;
+		if (activeModel.getMode() != Mode.STATISTICS_SAMPLE &&
+				!activeModel.requestMode(Mode.STATISTICS_SAMPLE)) {
+			return null;
 		}
 		FixationData fix;
 		do {
@@ -754,7 +756,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			// times. stop/init/reset need to be able to interrupt.
 			switch (pendingAction) {
 				case NONE:
-				case STATISTIC_READY:
 				case STOP: // finish sample
 					break;
 				default:
@@ -773,47 +774,47 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	/**
 	 * Index of the mutants mean fixation probability/updates/time.
 	 */
-	static int MUTANT_MEAN = 0;
+	private static final int MUTANT_MEAN = 0;
 
 	/**
 	 * Index of the mutants variance of fixation probability/updates/times.
 	 */
-	static int MUTANT_VAR = 1;
+	private static final int MUTANT_VAR = 1;
 
 	/**
 	 * Index of the number of samples for the mutants mean and variance.
 	 */
-	static int MUTANT_NORM = 2;
+	private static final int MUTANT_NORM = 2;
 
 	/**
 	 * Index of the residents mean fixation probability/updates/time.
 	 */
-	static int RESIDENT_MEAN = 3;
+	private static final int RESIDENT_MEAN = 3;
 
 	/**
 	 * Index of the residents variance of fixation probability/updates/times.
 	 */
-	static int RESIDENT_VAR = 4;
+	private static final int RESIDENT_VAR = 4;
 
 	/**
 	 * Index of the number of samples for the residents mean and variance.
 	 */
-	static int RESIDENT_NORM = 5;
+	private static final int RESIDENT_NORM = 5;
 
 	/**
-	 * Index of the mean  absorption probability/update/time.
+	 * Index of the mean absorption probability/update/time.
 	 */
-	static int ABSORPTION_MEAN = 6;
+	private static final int ABSORPTION_MEAN = 6;
 
 	/**
 	 * Index of the variance of the mean absorption probability/updates/time.
 	 */
-	static int ABSORPTION_VAR = 7;
+	private static final int ABSORPTION_VAR = 7;
 
 	/**
 	 * Index of the the number of samples for absorption probability/updates/time.
 	 */
-	static int ABSORPTION_NORM = 8;
+	private static final int ABSORPTION_NORM = 8;
 
 	/**
 	 * Helper method to calculate running mean and variance for fixation
@@ -837,7 +838,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * <dt>{@code ABSORPTION_VAR}
 	 * <dd>variance of absorption
 	 * <dt>{@code ABSORPTION_NORM}
-	 * <dd>sample count of absorption ({@code meanvar[MUTANT_NORM] + meanvar[RESIDENT_NORM] == meanvar[ABSORPTION_NORM]}
+	 * <dd>sample count of absorption
+	 * ({@code meanvar[MUTANT_NORM] + meanvar[RESIDENT_NORM] == meanvar[ABSORPTION_NORM]}
 	 * must hold)
 	 * </dl>
 	 * 
@@ -898,17 +900,26 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		if (normabs <= 0.0)
 			return; // no samples for node n
 		// trick: to avoid -0 output simply add 0...!
-		output.println(head + Formatter.format(meanvar[MUTANT_MEAN] + 0.0, dataDigits) + " ± " // mutant mean fixation time
-				+ (normut > 1.0 ? Formatter.format(Math.sqrt(meanvar[MUTANT_VAR] / (normut - 1.0)) + 0.0, dataDigits) : "-") + ", " // mutant mean fixation
-																									// sdev
+		output.println(head + Formatter.format(meanvar[MUTANT_MEAN] + 0.0, dataDigits) + " ± " // mutant mean fixation
+																								// time
+				+ (normut > 1.0 ? Formatter.format(Math.sqrt(meanvar[MUTANT_VAR] / (normut - 1.0)) + 0.0, dataDigits)
+						: "-")
+				+ ", " // mutant mean fixation
+				// sdev
 				+ Formatter.format(normut, 0) + "; " // mutant mean fixation samples
 				+ Formatter.format(meanvar[RESIDENT_MEAN] + 0.0, dataDigits) + " ± " // resident mean fixation time
-				+ (normres > 1.0 ? Formatter.format(Math.sqrt(meanvar[RESIDENT_VAR] / (normres - 1.0)) + 0.0, dataDigits) : "-") + ", "  // resident mean
-																									// fixation sdev
+				+ (normres > 1.0
+						? Formatter.format(Math.sqrt(meanvar[RESIDENT_VAR] / (normres - 1.0)) + 0.0, dataDigits)
+						: "-")
+				+ ", " // resident mean
+				// fixation sdev
 				+ Formatter.format(normres, 0) + "; " // mutant mean fixation samples
 				+ Formatter.format(meanvar[ABSORPTION_MEAN] + 0.0, dataDigits) + " ± " // mean absorption time
-				+ (normabs > 1.0 ? Formatter.format(Math.sqrt(meanvar[ABSORPTION_VAR] / (normabs - 1.0)) + 0.0, dataDigits) : "-") + ", " // mean absorption
-																									// sdev
+				+ (normabs > 1.0
+						? Formatter.format(Math.sqrt(meanvar[ABSORPTION_VAR] / (normabs - 1.0)) + 0.0, dataDigits)
+						: "-")
+				+ ", " // mean absorption
+				// sdev
 				+ Formatter.format(normabs, 0)
 				+ tail); // mean absorption samples
 	}
@@ -1081,13 +1092,13 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				plistname = CLOption.stripKey(restoreName, param).trim();
 				cloarray = ArrayMath.drop(cloarray, i--);
 				nParams--;
-				if (plistname.length() == 0) {
+				if (plistname.isEmpty()) {
 					plistname = null;
 					logger.warning("file name to restore state missing - ignored.");
 					break;
 				}
 				plist = readPlist(plistname);
-				if (plist == null)
+				if (plist.isEmpty())
 					continue;
 				String restoreOptions = (String) plist.get("CLO");
 				if (restoreOptions == null) {
@@ -1107,16 +1118,13 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			}
 		}
 		// once restore is checked pre-processing of command line arguments can proceed
-		cloarray = super.preprocessCLO(cloarray);
-		if (cloarray == null)
-			return new String[] { cloHelp.getName() };
-		return cloarray;
+		return super.preprocessCLO(cloarray);
 	}
 
 	@Override
 	public boolean restoreFromFile() {
 		boolean success = restoreState(plist);
-		if (!success)
+		if (!success && logger.isLoggable(Level.WARNING))
 			logger.warning("failed to restore state in '" + plistname + "'");
 		plistname = null;
 		return success;
@@ -1142,7 +1150,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		if (plistname == null)
 			// not restoring state - continue
 			return issues;
-		if (issues > 0)
+		if (issues > 0 && logger.isLoggable(Level.WARNING))
 			logger.warning("problems parsing CLO from '" + plistname + "'...");
 		// parseCLO does not reset model - do it now to be ready for restore
 		modelReset();
@@ -1194,7 +1202,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						}
 					}
 					setOutput(null);
-					logger.warning("failed to open '" + arg + "'.");
+					if (logger.isLoggable(Level.WARNING))
+						logger.warning("failed to open '" + arg + "'.");
 					return false;
 				}
 			});
@@ -1226,7 +1235,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						}
 					}
 					setOutput(null);
-					logger.warning("failed to append to '" + arg + "'.");
+					if (logger.isLoggable(Level.WARNING))
+						logger.warning("failed to append to '" + arg + "'.");
 					return false;
 				}
 			});
@@ -1352,7 +1362,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 									+ type.getKey() + "'");
 							i.remove();
 							success = false;
-							continue;
 						}
 					}
 					dataTypes.trimToSize();
@@ -1410,49 +1419,33 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * @return the parsed content of the PLIST file
 	 */
 	public Plist readPlist(String name) {
-		if (name.endsWith(".zip")) {
-			// assume compressed file
-			StringBuilder content = new StringBuilder();
-			try {
-				ZipInputStream zis = new ZipInputStream(new FileInputStream(name));
-				// process first entry in zip file
-				zis.getNextEntry();
-				BufferedReader in = new BufferedReader(new InputStreamReader(zis));
+		String content;
+		if (name.endsWith(".zip") || name.endsWith(".gz")) {
+			StringBuilder sb = new StringBuilder();
+			try (InputStream cs = name.endsWith(".zip")
+					? new ZipInputStream(new FileInputStream(name))
+					: new GZIPInputStream(new FileInputStream(name));
+					BufferedReader in = new BufferedReader(new InputStreamReader(cs))) {
+				if (cs instanceof ZipInputStream)
+					((ZipInputStream) cs).getNextEntry();
 				String line;
 				while ((line = in.readLine()) != null)
-					content.append(line);
-				in.close();
-				zis.close();
+					sb.append(line);
 			} catch (Exception e) {
 				logger.warning("failed to read state in '" + name + "'");
+				return new Plist();
 			}
-			return PlistParser.parse(content.toString());
-		}
-		// keep for compatibility
-		if (name.endsWith(".gz")) {
-			// assume compressed file
-			StringBuilder content = new StringBuilder();
+			content = sb.toString();
+		} else {
 			try {
-				GZIPInputStream gis = new GZIPInputStream(new FileInputStream(name));
-				BufferedReader in = new BufferedReader(new InputStreamReader(gis));
-				String line;
-				while ((line = in.readLine()) != null)
-					content.append(line);
-				in.close();
-				gis.close();
+				content = new String(Files.readAllBytes(Paths.get(name)));
 			} catch (Exception e) {
 				logger.warning("failed to read state in '" + name + "'");
+				// e.printStackTrace(); // for debugging
+				return new Plist();
 			}
-			return PlistParser.parse(content.toString());
 		}
-		try {
-			String content = new String(Files.readAllBytes(Paths.get(name)));
-			return PlistParser.parse(content);
-		} catch (Exception e) {
-			logger.warning("failed to read state in '" + name + "'");
-			// e.printStackTrace(); // for debugging
-			return null;
-		}
+		return PlistParser.parse(content);
 	}
 
 	/**
@@ -1487,14 +1480,15 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			template = dir + template;
 		}
 		if (template.contains("%d"))
-			template = String.format(template, (int) activeModel.getTime());
+			template = String.format(template, (int) activeModel.getUpdates());
 		File unique = new File(template);
 		int counter = 0;
-		while (!fileCheck(unique, true) && counter < 100) {
+		final int MAX_RETRIES = 100;
+		while (!fileCheck(unique, true) && counter < MAX_RETRIES) {
 			unique = new File(template.substring(0, template.lastIndexOf('.')) + "-" + (++counter) + "." + extension);
 		}
 		// check if emergency brake was pulled
-		if (counter >= 1000)
+		if (counter >= MAX_RETRIES)
 			return null;
 		return unique;
 	}
@@ -1610,10 +1604,10 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 		String dir = getExportDir();
 		if (!dir.endsWith(File.separator))
 			dir += File.separator;
-		File snapfile = new File(dir + String.format("evoludo-%d." + ext, (int) activeModel.getTime()));
+		File snapfile = new File(dir + String.format("evoludo-%d." + ext, (int) activeModel.getUpdates()));
 		int counter = 0;
 		while (snapfile.exists() && counter < 1000)
-			snapfile = new File(dir + String.format("evoludo-%d-%d." + ext, (int) activeModel.getTime(), ++counter));
+			snapfile = new File(dir + String.format("evoludo-%d-%d." + ext, (int) activeModel.getUpdates(), ++counter));
 		if (counter >= 1000)
 			return null;
 		return snapfile;
