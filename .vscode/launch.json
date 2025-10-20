@@ -5,7 +5,31 @@
     "version": "0.2.0",
     "configurations": [
         {
-			"name": "GWT EvoLudo (localhost)",
+            "type": "java",
+            "name": "simEMoranFix",
+            "request": "launch",
+            "mainClass": "org.evoludo.simulator.exec.simEMoranFix",
+            "projectName": "EvoLudoSims",
+            "args": "--monostop --module eMoran --popupdate e --geometry M --mutation 0 --popsize 50 --timerelax 10 --init mutant 1,0 --fitness 1,2 --deathrate 0.05 --output test.txt --samples 100 --seed 1"
+        },
+        {
+            "type": "java",
+            "name": "simEMoran",
+            "request": "launch",
+            "mainClass": "org.evoludo.simulator.exec.simEMoran",
+            "projectName": "EvoLudoSims",
+            "args": "--seed 7 --delay 0 --timestep 0 --popsize 1000 --popupdate e --mutation 0 --geometry M --fitness 1,1 --deathrate 0.1 --init frequency 0.001,0,0.999 --timestop 10000 --timerelax 0 --data traitmean --output test.txt"
+        },
+        {
+            "type": "java",
+            "name": "simMoran",
+            "request": "launch",
+            "mainClass": "org.evoludo.simulator.exec.simMoran",
+            "projectName": "EvoLudoSims",
+            "args": "--module Moran --popupdate Bd --geometry M --mutation 0 --popsize 50 --init mutant 1,0 --fitness 1,2 --output test.txt --samples 10"
+        },
+        {
+            "name": "GWT EvoLudo (localhost)",
             "type": "chrome",
             "request": "launch",
             // "trace": {
@@ -45,7 +69,7 @@
 			}
         },
         {
-			"name": "GWT EvoLudo (10.0.0.10)",
+            "name": "GWT EvoLudo (10.0.0.10)",
             "type": "chrome",
             "request": "launch",
             "url": "http://10.0.0.10:8888/TestEvoLudo.html",
@@ -140,7 +164,7 @@
             "type": "java",
             "request": "launch",
             "mainClass": "${workspaceFolder}/EvoLudoTest/src/main/java/org/evoludo/simulator/exec/TestEvoludo.java",
-            "args": "--tests ${workspaceFolder}/EvoLudoTest/tests/generators --references ${workspaceFolder}/EvoLudoTest/tests/references --reports ${workspaceFolder}/EvoLudoTest/tests/reports"
-        },
+            "args": "--tests ${workspaceFolder}/EvoLudoTest/tests/generators --references ${workspaceFolder}/EvoLudoTest/tests/references/current --reports ${workspaceFolder}/EvoLudoTest/tests/reports"
+        }
     ]
 }
