@@ -32,26 +32,14 @@ package org.evoludo.simulator.exec;
 
 import java.io.PrintStream;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.evoludo.math.Distributions;
-import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoJRE;
-import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.models.FixationData;
-import org.evoludo.simulator.models.IBSDPopulation;
-import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.modules.EcoMoran;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
 import org.evoludo.util.CLOption.Category;
-import org.evoludo.util.Formatter;
-import org.evoludo.util.Plist;
 
 /**
  * Simulations to investigate the Moran process on graph structured populations.
@@ -79,7 +67,6 @@ public class simEMoranFix extends EcoMoran {
 	 * The output stream. Defaults to {@code System.out}.
 	 */
 	PrintStream out;
-	
 
 	/**
 	 * The EvoLudoJRE engine for running the simulation. This is a convenience field
@@ -102,7 +89,7 @@ public class simEMoranFix extends EcoMoran {
 
 	@Override
 	public void run() {
-		
+
 		model.requestMode(Mode.STATISTICS_SAMPLE);
 		long nextReport = -1;
 		long msecStart = System.currentTimeMillis();
@@ -112,11 +99,6 @@ public class simEMoranFix extends EcoMoran {
 
 		engine.writeHeader();
 		out = jrengine.getOutput();
-		if (engine.cloSeed.isSet()) {
-			// RNG seed is set. now clear seed to obtain reproducible statistics
-			// rather just a single data point repeatedly
-			engine.getRNG().clearRNGSeed();
-		}
 
 		long nSamples = (long) engine.getModel().getNSamples();
 		double[][] fixProb = new double[nPopulation][2];
@@ -125,7 +107,7 @@ public class simEMoranFix extends EcoMoran {
 		for (long r = 1; r <= nSamples; r++) {
 			FixationData fixData = jrengine.generateSample();
 			int typeFixed = (fixData.typeFixed == fixData.mutantTrait ? 0 : 1);
-			fixProb[fixData.popSize-1][typeFixed]++;
+			fixProb[fixData.popSize - 1][typeFixed]++;
 
 			if (progress && nextReport == r) {
 				out.println("# runs: " + r + ", " + msecToString(System.currentTimeMillis() - msecStart));
@@ -137,21 +119,21 @@ public class simEMoranFix extends EcoMoran {
 		out.println("Population Size, Number Mutant Fixed, Number Resident Fixed");
 		double weightedSamples = 0.0;
 		double nodeSamples;
-		for (int n = 1; n < nPopulation+1; n++) {
-			
-			double[] node = fixProb[n-1];
-			out.println(n+", "+node[0]+", "+ node[1]);
-			nodeSamples = node[0]+node[1];
-			if (nodeSamples==0){
+		for (int n = 1; n < nPopulation + 1; n++) {
+
+			double[] node = fixProb[n - 1];
+			out.println(n + ", " + node[0] + ", " + node[1]);
+			nodeSamples = node[0] + node[1];
+			if (nodeSamples == 0) {
 				continue;
 			}
-			weightedSamples+=nodeSamples*n;
-			unweightedSamples+=nodeSamples;
-			meanFix +=node[0]*n;
+			weightedSamples += nodeSamples * n;
+			unweightedSamples += nodeSamples;
+			meanFix += node[0] * n;
 		}
-		meanFix/=weightedSamples;
-		out.println("Overal weighted fixation probability: "+meanFix);
-		out.println("Number of samples: "+unweightedSamples);
+		meanFix /= weightedSamples;
+		out.println("Overall weighted fixation probability: " + meanFix);
+		out.println("Number of samples: " + unweightedSamples);
 		out.flush();
 		engine.writeFooter();
 		engine.exportState();
@@ -197,21 +179,22 @@ public class simEMoranFix extends EcoMoran {
 	/**
 	 * Command line option for setting the number of samples for statistics.
 	 */
-	// final CLOption cloSamples = new CLOption("samples", "100000", EvoLudo.catSimulation, // 10^5
-	// 		"--samples <s>   number of samples",
-	// 		new CLODelegate() {
-	// 			@Override
-	// 			public boolean parse(String arg) {
-	// 				setNSamples(CLOParser.parseLong(arg));
-	// 				return true;
-	// 			}
+	// final CLOption cloSamples = new CLOption("samples", "100000",
+	// EvoLudo.catSimulation, // 10^5
+	// "--samples <s> number of samples",
+	// new CLODelegate() {
+	// @Override
+	// public boolean parse(String arg) {
+	// setNSamples(CLOParser.parseLong(arg));
+	// return true;
+	// }
 
-	// 			@Override
-	// 			public void report(PrintStream output) {
-	// 				// output.println("# samples: "+activeModel.getNStatisticsSamples());
-	// 				output.println("# samples:              " + engine.getModel().getNStatisticsSamples());
-	// 			}
-	// 		});
+	// @Override
+	// public void report(PrintStream output) {
+	// // output.println("# samples: "+activeModel.getNStatisticsSamples());
+	// output.println("# samples: " + engine.getModel().getNStatisticsSamples());
+	// }
+	// });
 
 	/**
 	 * Command line option to show the simulation progress.

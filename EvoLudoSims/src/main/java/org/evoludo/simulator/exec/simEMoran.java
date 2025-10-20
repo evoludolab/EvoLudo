@@ -76,7 +76,6 @@ public class simEMoran extends EcoMoran implements ChangeListener {
 	 * The output stream. Defaults to {@code System.out}.
 	 */
 	PrintStream out;
-	
 
 	/**
 	 * Create a new simulation to investigate fixation probabilities and times in
@@ -96,19 +95,18 @@ public class simEMoran extends EcoMoran implements ChangeListener {
 
 	@Override
 	public void run() {
-		
-		
-        // Simulate single pop
 
-        out = ((EvoLudoJRE) engine).getOutput();
-        
-        // assumes IBS simulations
+		// Simulate single pop
+
+		out = ((EvoLudoJRE) engine).getOutput();
+
+		// assumes IBS simulations
 		IBSDPopulation pop = (IBSDPopulation) getIBSPopulation();
-		nSamples  = (int) engine.getModel().getTimeStop();
+		nSamples = (int) engine.getModel().getTimeStop();
 		allTimes = new ArrayList<>();
-		
-        // // print header
-        // engine.dumpParameters();
+
+		// // print header
+		// engine.dumpParameters();
 
 		// evolve population
 		statuses = new ArrayList<>();
@@ -118,7 +116,7 @@ public class simEMoran extends EcoMoran implements ChangeListener {
 			engine.modelNext();
 			// statuses.add(engine.getModel().getStatus());
 			// geometries.add(Double.toString(engine.getModule().getIBSPopulation().getFitnessAt(1)));
-			
+
 			// geometries.add(values.get(0));
 		}
 		// engine.dumpEnd();
@@ -132,40 +130,7 @@ public class simEMoran extends EcoMoran implements ChangeListener {
 		for (String time : allTimes) {
 			out.println(time);
 		}
-
-        // Initial state:
-		// nSamples = 50;
-		// String[] splitCLO = engine.getSplitCLO();
-		// String geometry = splitCLO[3].replace(' ','_');
-		// String deathrate = splitCLO[9].replace(' ','_');
-		// for (long r = 1; r <= nSamples; r++) {
-		// 	while (engine.getModel().hasConverged()){
-		// 		engine.modelReset();
-		// 	}
-		// 	engine.exportState("init_"+geometry+"_"+deathrate+"_repeat_"+r+".plist");
-		// 	engine.modelReset();
-		// }
-		// engine.dumpEnd();
-
-
-
-	}
-
-	/**
-	 * Helper method to convert milliseconds to a more readable string
-	 * representation in the format 'HH:mm:ss.ss'.
-	 * 
-	 * @param msec the time in milliseconds
-	 * @return the formatted string
-	 */
-	private String msecToString(long msec) {
-		long sec = msec / 1000;
-		long min = sec / 60;
-		sec %= 60;
-		long hour = min / 60;
-		min %= 60;
-		DecimalFormat twodigits = new DecimalFormat("00");
-		return hour + ":" + twodigits.format(min) + ":" + twodigits.format(sec);
+		out.flush();
 	}
 
 	/**
@@ -191,34 +156,35 @@ public class simEMoran extends EcoMoran implements ChangeListener {
 	/**
 	 * Command line option for setting the number of samples for statistics.
 	 */
-	// final CLOption cloSamples = new CLOption("samples", "100000", EvoLudo.catSimulation, // 10^5
-	// 		"--samples <s>   number of samples",
-	// 		new CLODelegate() {
-	// 			@Override
-	// 			public boolean parse(String arg) {
-	// 				setNSamples(CLOParser.parseLong(arg));
-	// 				return true;
-	// 			}
+	// final CLOption cloSamples = new CLOption("samples", "100000",
+	// EvoLudo.catSimulation, // 10^5
+	// "--samples <s> number of samples",
+	// new CLODelegate() {
+	// @Override
+	// public boolean parse(String arg) {
+	// setNSamples(CLOParser.parseLong(arg));
+	// return true;
+	// }
 
-	// 			@Override
-	// 			public void report(PrintStream output) {
-	// 				// output.println("# samples: "+activeModel.getNStatisticsSamples());
-	// 				output.println("# samples:              " + engine.getModel().getNStatisticsSamples());
-	// 			}
-	// 		});
+	// @Override
+	// public void report(PrintStream output) {
+	// // output.println("# samples: "+activeModel.getNStatisticsSamples());
+	// output.println("# samples: " + engine.getModel().getNStatisticsSamples());
+	// }
+	// });
 
 	// /**
-	//  * Command line option to show the simulation progress.
-	//  */
+	// * Command line option to show the simulation progress.
+	// */
 	// final CLOption cloProgress = new CLOption("progress", EvoLudo.catSimulation,
-	// 		"--progress      print progress reports",
-	// 		new CLODelegate() {
-	// 			@Override
-	// 			public boolean parse(String arg) {
-	// 				progress = cloProgress.isSet();
-	// 				return true;
-	// 			}
-	// 		});
+	// "--progress print progress reports",
+	// new CLODelegate() {
+	// @Override
+	// public boolean parse(String arg) {
+	// progress = cloProgress.isSet();
+	// return true;
+	// }
+	// });
 
 	@Override
 	public void collectCLO(CLOParser parser) {
@@ -239,6 +205,7 @@ public class simEMoran extends EcoMoran implements ChangeListener {
 	 * Time of previous sample.
 	 */
 	double prevsample;
+
 	@Override
 	public synchronized void modelChanged(PendingAction pending) {
 		double generation = model.getTime();
@@ -249,48 +216,38 @@ public class simEMoran extends EcoMoran implements ChangeListener {
 
 		String scores = engine.getModule().getIBSPopulation().getScores(2);
 		List<String> values = Arrays.stream(scores.split(","))
-						.map(String::trim)
-						.collect(Collectors.toList());
+				.map(String::trim)
+				.collect(Collectors.toList());
 		int[][] outNodes = engine.getModule().getGeometry().out;
 		double nvv = 0.0;
 		double nav = 0.0;
 		double naa = 0.0;
 		double na = 0.0;
-		for (int n = 0; n < values.size(); n++){
+		for (int n = 0; n < values.size(); n++) {
 			String node = values.get(n);
-			if (node.equals(successString)){
+			if (node.equals(successString)) {
 				na++;
 			}
-			for (int adj: outNodes[n]){
+			for (int adj : outNodes[n]) {
 				String adjNode = values.get(adj);
-				if (node.equals(successString)){
-					if (adjNode.equals(successString)){
+				if (node.equals(successString)) {
+					if (adjNode.equals(successString)) {
 						naa++;
-					}
-					else {
+					} else {
 						nav++;
 					}
-				}
-				else {
-					if (adjNode.equals(successString)){
+				} else {
+					if (adjNode.equals(successString)) {
 						nav++;
-					}
-					else {
+					} else {
 						nvv++;
 					}
 				}
-				// for (int trip: outNodes[adj]){
-				// 	String tripNode = values.get(trip);
-				// 	int sumval = 
-				// 	if (trip!=n){
-				// 		if 
-				// 	}
-				// }
 			}
 		}
 
-		geometries.add("Nav "+String.valueOf(nav));
-		statuses.add("Na "+String.valueOf(na));
-		allTimes.add("Time: "+String.valueOf(generation));
+		geometries.add("Nav " + String.valueOf(nav));
+		statuses.add("Na " + String.valueOf(na));
+		allTimes.add("Time: " + String.valueOf(generation));
 	}
 }
