@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.evoludo.math.ArrayMath;
@@ -98,7 +99,7 @@ public class Geometry {
 	 * @param engine the pacemaker for running the model
 	 * @param module the module with interaction parameters
 	 */
-	public Geometry(EvoLudo engine, Module module) {
+	public Geometry(EvoLudo engine, Module<?> module) {
 		this(engine, module, module);
 	}
 
@@ -111,7 +112,7 @@ public class Geometry {
 	 * @param popModule the module with interaction parameters
 	 * @param oppModule the module of the opponent
 	 */
-	public Geometry(EvoLudo engine, Module popModule, Module oppModule) {
+	public Geometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		this(engine);
 		if (engine.getModel().getType().isIBS()) {
 			population = popModule.getIBSPopulation();
@@ -337,15 +338,15 @@ public class Geometry {
 		 * @see Geometry#initGeometryHierarchical()
 		 */
 		HIERARCHY("H", "hierarchical (meta-)populations",
-				"H[<g>[f]]<n1>[,<n2>[...,<nm>]]w<w> hierarchical\n" //
-						+ "                structure for population geometries g:\n" //
-						+ "                M: well-mixed (default)\n" //
-						+ "                n: square lattice (von neumann)\n" //
-						+ "                m: square lattice (moore)\n" //
-						+ "                append f for fixed boundaries\n" //
-						+ "                n1,...,nm number of units on each level\n" //
-						+ "                total of m+1 levels with nPopulation/(n1*...*nm)\n" //
-						+ "                individuals in last level\n" //
+				"H[<g>[f]]<n1>[,<n2>[...,<nm>]]w<w> hierarchical\n"//
+						+ "                structure for population geometries g:\n"//
+						+ "                M: well-mixed (default)\n"//
+						+ "                n: square lattice (von neumann)\n"//
+						+ "                m: square lattice (moore)\n"//
+						+ "                append f for fixed boundaries\n"//
+						+ "                n1,...,nm number of units on each level\n"//
+						+ "                total of m+1 levels with nPopulation/(n1*...*nm)\n"//
+						+ "                individuals in last level\n"//
 						+ "                w: strength of ties between levels"),
 
 		/**
@@ -355,7 +356,7 @@ public class Geometry {
 		 * 
 		 * @see Geometry#initGeometryLinear()
 		 */
-		LINEAR("l", "linear lattice, 1D", "l<l>[,<r>] linear lattice (l neighbourhood,\n" //
+		LINEAR("l", "linear lattice, 1D", "l<l>[,<r>] linear lattice (l neighbourhood,\n"//
 				+ "                if r!=l asymmetric neighbourhood)"),
 
 		/**
@@ -998,7 +999,7 @@ public class Geometry {
 	 * 
 	 * @see #displayUniqueGeometry(Geometry, Geometry)
 	 */
-	public static boolean displayUniqueGeometry(Module module) {
+	public static boolean displayUniqueGeometry(Module<?> module) {
 		return displayUniqueGeometry(module.getInteractionGeometry(), module.getCompetitionGeometry());
 	}
 
@@ -1103,7 +1104,8 @@ public class Geometry {
 	 */
 	public boolean check() {
 		boolean doReset = false;
-		int side, side2; // helper variables for lattice structures
+		int side; // helper variable for lattice structures
+		int side2; // helper variable for lattice structures
 
 		// most graphs are undirected
 		isUndirected = true;
@@ -1112,7 +1114,8 @@ public class Geometry {
 				connectivity = (size - 1);
 				superstar_amplification = 1;
 				if (pRewire > 0.0 || pAddwire > 0.0) {
-					logger.warning("cannot add or rewire links for '" + geometry + "' - ignored!");
+					if (logger.isLoggable(Level.WARNING))
+						logger.warning("cannot add or rewire links for '" + geometry + "' - ignored!");
 					pRewire = 0.0;
 					pAddwire = 0.0;
 				}
@@ -1136,8 +1139,9 @@ public class Geometry {
 					// fall back on subgeometry
 					if (subgeometry == Type.MEANFIELD || subgeometry == Type.COMPLETE || hierarchyweight <= 0.0) {
 						geometry = subgeometry;
-						logger.warning("hierarchies must encompass ≥2 levels - collapsed to geometry '"
-								+ geometry + "'!");
+						if (logger.isLoggable(Level.WARNING))
+							logger.warning("hierarchies must encompass ≥2 levels - collapsed to geometry '"
+									+ geometry + "'!");
 						return check();
 					}
 					// maintain single hierarchy
@@ -1146,8 +1150,9 @@ public class Geometry {
 				}
 				if (nHierarchy != rawhierarchy.length) {
 					// one or more hierarchies collapsed
-					logger.warning("hierarchy levels must include >1 units - hierarchies collapsed to "
-							+ (nHierarchy + 1) + " levels!");
+					if (logger.isLoggable(Level.WARNING))
+						logger.warning("hierarchy levels must include >1 units - hierarchies collapsed to "
+								+ (nHierarchy + 1) + " levels!");
 				}
 				if (hierarchy == null || hierarchy.length != nHierarchy + 1)
 					hierarchy = new int[nHierarchy + 1];
@@ -1189,8 +1194,9 @@ public class Geometry {
 						break;
 					// NOTE: hierarchical stars might be interesting as well... stronger amplifiers?
 					default:
-						logger.warning("subgeometry '" + subgeometry
-								+ "' not supported - well-mixed structure forced!");
+						if (logger.isLoggable(Level.WARNING))
+							logger.warning("subgeometry '" + subgeometry
+									+ "' not supported - well-mixed structure forced!");
 						doReset = true;
 						//$FALL-THROUGH$
 					case COMPLETE:
@@ -1207,7 +1213,7 @@ public class Geometry {
 				hierarchy[nHierarchy] = nIndiv;
 				if (setSize(prod * nIndiv)) {
 					// show size-change-warning only if an explicit population size was requested
-					if (!engine.getModule().cloNPopulation.isDefault())
+					if (!engine.getModule().cloNPopulation.isDefault() && logger.isLoggable(Level.WARNING))
 						logger.warning(name + " geometry '" //
 								+ geometry + "' with levels " + Formatter.format(hierarchy)
 								+ " requires population size of " + size + "!");
@@ -1256,7 +1262,7 @@ public class Geometry {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
 						logger.warning(name + " geometry '" //
-							+ geometry + "' requires special size - using " + size + "!");
+								+ geometry + "' requires special size - using " + size + "!");
 					doReset = true;
 				}
 				connectivity = (double) (2 * nReservoir * superstar_petals + pnodes) / (double) size;
@@ -1268,7 +1274,7 @@ public class Geometry {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
 						logger.warning(name + " geometry '" //
-							+ geometry + "' requires special size - using " + size + "!");
+								+ geometry + "' requires special size - using " + size + "!");
 					doReset = true;
 				}
 				break;
@@ -1284,7 +1290,7 @@ public class Geometry {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
 						logger.warning(name + " geometry '" //
-							+ geometry + "' requires special size - using " + size + "!");
+								+ geometry + "' requires special size - using " + size + "!");
 					doReset = true;
 				}
 				break;
@@ -1305,7 +1311,7 @@ public class Geometry {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
 						logger.warning(name + " geometry '" //
-							+ geometry + "' requires even integer square size - using " + size + "!");
+								+ geometry + "' requires even integer square size - using " + size + "!");
 					doReset = true;
 				}
 				// check connectivity - must be 1, 4 or 3x3, 5x5, 7x7 etc.
@@ -1331,7 +1337,7 @@ public class Geometry {
 						// show size-change-warning only if an explicit population size was requested
 						if (!engine.getModule().cloNPopulation.isDefault())
 							logger.warning(name + " geometry '" //
-							+ geometry + "' requires integer cube size - using " + size + "!");
+									+ geometry + "' requires integer cube size - using " + size + "!");
 						doReset = true;
 					}
 					// check connectivity - must be 6 or 3x3x3, 5x5x5, 7x7x6 etc.
@@ -1419,7 +1425,7 @@ public class Geometry {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
 						logger.warning(name + " geometry '" //
-						+ geometry + "' requires size 12!");
+								+ geometry + "' requires size 12!");
 					doReset = true;
 				}
 				connectivity = 3.0;
@@ -1429,7 +1435,7 @@ public class Geometry {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
 						logger.warning(name + " geometry '" //
-							+ geometry + "' requires size 14!");
+								+ geometry + "' requires size 14!");
 					doReset = true;
 				}
 				connectivity = 3.0;
@@ -1439,7 +1445,7 @@ public class Geometry {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
 						logger.warning(name + " geometry '" //
-							+ geometry + "' requires size 12!");
+								+ geometry + "' requires size 12!");
 					doReset = true;
 				}
 				connectivity = 5.0;
@@ -1450,7 +1456,7 @@ public class Geometry {
 					// show size-change-warning only if an explicit population size was requested
 					if (!engine.getModule().cloNPopulation.isDefault())
 						logger.warning(name + " geometry '" //
-						+ geometry + "' requires size 20!");
+								+ geometry + "' requires size 20!");
 					doReset = true;
 				}
 				connectivity = 3.0;
@@ -2110,7 +2116,8 @@ public class Geometry {
 				nodea = todo[++idxa];
 				a -= degree - kout[nodea];
 			}
-			int idxb = 0, nodeb = todo[idxb];
+			int idxb = 0;
+			int nodeb = todo[idxb];
 			b -= degree - kout[nodeb];
 			while (b >= 0) {
 				nodeb = todo[++idxb];
@@ -3600,8 +3607,9 @@ public class Geometry {
 		int[] degrees = new int[size];
 		Arrays.fill(degrees, (int) connectivity);
 		int trials = 0;
-		while (!initGeometryDegreeDistr(degrees) && ++trials < MAX_TRIALS)
-			;
+		while (!initGeometryDegreeDistr(degrees) && ++trials < MAX_TRIALS) {
+			// loop body intentionally left empty
+		}
 		if (trials >= MAX_TRIALS) {
 			// reset sets size=-1
 			int mysize = size;
@@ -4521,8 +4529,7 @@ public class Geometry {
 	public boolean isGraphConnected() {
 		boolean[] check = new boolean[size];
 		Arrays.fill(check, false);
-		isGraphConnected(0, check);
-		return ArrayMath.min(check);
+		return isGraphConnected(0, check);
 	}
 
 	/**
@@ -4549,7 +4556,7 @@ public class Geometry {
 			if (!check[nn])
 				isGraphConnected(nn, check);
 		}
-		return ArrayMath.min(check);
+		return ArrayMath.max(check);
 	}
 
 	/**
@@ -4574,46 +4581,54 @@ public class Geometry {
 
 		int[] aout = out[a];
 		int ai = -1;
-		while (aout[++ai] != an)
-			;
+		while (aout[++ai] != an) {
+			// loop until found
+		}
 		aout[ai] = bn;
 		int[] bout = out[b];
 		int bi = -1;
-		while (bout[++bi] != bn)
-			;
+		while (bout[++bi] != bn) {
+			// loop until found
+		}
 		bout[bi] = an;
 
 		int[] ain = in[a];
 		ai = -1;
-		while (ain[++ai] != an)
-			;
+		while (ain[++ai] != an) {
+			// loop until found
+		}
 		ain[ai] = bn;
 		int[] bin = in[b];
 		bi = -1;
-		while (bin[++bi] != bn)
-			;
+		while (bin[++bi] != bn) {
+			// loop until found
+		}
 		bin[bi] = an;
 
 		aout = out[an];
 		ai = -1;
-		while (aout[++ai] != a)
-			;
+		while (aout[++ai] != a) {
+			// loop until found
+		}
 		aout[ai] = b;
 		bout = out[bn];
 		bi = -1;
-		while (bout[++bi] != b)
-			;
+		while (bout[++bi] != b) {
+			// loop until found
+		}
 		bout[bi] = a;
 
 		ain = in[an];
 		ai = -1;
-		while (ain[++ai] != a)
-			;
+		while (ain[++ai] != a) {
+			// loop until found
+		}
 		ain[ai] = b;
 		bin = in[bn];
 		bi = -1;
-		while (bin[++bi] != b)
-			;
+		while (bin[++bi] != b) {
+			// loop until found
+		}
 		bin[bi] = a;
 
 		return true;
@@ -5267,7 +5282,8 @@ public class Geometry {
 			case SUPER_STAR: // super-star
 				int oldPetalsAmplification = superstar_amplification;
 				int oldPetalsCount = superstar_petals;
-				superstar_amplification = 3;
+				if (superstar_amplification < 0)
+					superstar_amplification = 3;
 				ivec = CLOParser.parseIntVector(sub);
 				switch (ivec.length) {
 					default:
@@ -5352,7 +5368,8 @@ public class Geometry {
 	}
 
 	/**
-	 * Get the usage description for the command line option <code>--geometry</code>. 
+	 * Get the usage description for the command line option
+	 * <code>--geometry</code>.
 	 * 
 	 * @return the usage description
 	 */
@@ -5507,10 +5524,10 @@ public class Geometry {
 		Plist graph = (Plist) plist.get("Graph");
 		ArrayList<List<Integer>> outlinks = new ArrayList<List<Integer>>(size);
 		ArrayList<ArrayList<Integer>> inlinks = new ArrayList<ArrayList<Integer>>(size);
-		List<Integer> placeholder = new ArrayList<Integer>();
+		List<Integer> placeholder = new ArrayList<>();
 		for (int n = 0; n < size; n++) {
 			outlinks.add(placeholder);
-			inlinks.add(new ArrayList<Integer>());
+			inlinks.add(new ArrayList<>());
 		}
 		for (Iterator<String> i = graph.keySet().iterator(); i.hasNext();) {
 			String idxs = i.next();

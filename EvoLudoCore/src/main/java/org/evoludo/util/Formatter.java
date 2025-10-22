@@ -131,10 +131,11 @@ public class Formatter {
 		int len = aVector.length;
 		if (len == 0)
 			return "";
-		String vecString = aVector[0].toString();
+		StringBuilder sb = new StringBuilder();
+		sb.append(aVector[0].toString());
 		for (int i = 1; i < len; i++)
-			vecString += delimiter + aVector[i];
-		return vecString;
+			sb.append(delimiter).append(aVector[i]);
+		return sb.toString();
 	}
 
 	/**
@@ -160,10 +161,11 @@ public class Formatter {
 		int len = aVector.length;
 		if (len == 0)
 			return "";
-		String vecString = format(aVector[0]);
+		StringBuilder sb = new StringBuilder();
+		sb.append(format(aVector[0]));
 		for (int i = 1; i < len; i++)
-			vecString += VECTOR_DELIMITER + format(aVector[i]);
-		return vecString;
+			sb.append(VECTOR_DELIMITER).append(format(aVector[i]));
+		return sb.toString();
 	}
 
 	/**
@@ -180,10 +182,11 @@ public class Formatter {
 		int len = aMatrix.length;
 		if (len == 0)
 			return "";
-		String matString = format(aMatrix[0]);
+		StringBuilder sb = new StringBuilder();
+		sb.append(format(aMatrix[0]));
 		for (int i = 1; i < len; i++)
-			matString += MATRIX_DELIMITER + format(aMatrix[i]);
-		return matString;
+			sb.append(MATRIX_DELIMITER).append(format(aMatrix[i]));
+		return sb.toString();
 	}
 
 	/**
@@ -230,10 +233,11 @@ public class Formatter {
 		if (len == 0)
 			return "";
 		digits = Math.max(Math.min(digits, MAX_DIGITS), 0);
-		String vecString = (myFormatters[digits]).format(aVector[0]);
+		StringBuilder sb = new StringBuilder();
+		sb.append((myFormatters[digits]).format(aVector[0]));
 		for (int i = 1; i < len; i++)
-			vecString += VECTOR_DELIMITER + (myFormatters[digits]).format(aVector[i]);
-		return vecString;
+			sb.append(VECTOR_DELIMITER).append((myFormatters[digits]).format(aVector[i]));
+		return sb.toString();
 	}
 
 	/**
@@ -252,10 +256,11 @@ public class Formatter {
 		int len = aMatrix.length;
 		if (len == 0)
 			return "";
-		String matString = format(aMatrix[0], digits);
+		StringBuilder sb = new StringBuilder();
+		sb.append(format(aMatrix[0], digits));
 		for (int i = 1; i < len; i++)
-			matString += MATRIX_DELIMITER + format(aMatrix[i], digits);
-		return matString;
+			sb.append(MATRIX_DELIMITER).append(format(aMatrix[i], digits));
+		return sb.toString();
 	}
 
 	/**
@@ -274,10 +279,11 @@ public class Formatter {
 		if (len == 0)
 			return "";
 		digits = Math.max(Math.min(digits, MAX_DIGITS), 0);
-		String vecString = (myFormatters[digits]).format(aVector[0]);
+		StringBuilder sb = new StringBuilder();
+		sb.append((myFormatters[digits]).format(aVector[0]));
 		for (int i = 1; i < len; i++)
-			vecString += VECTOR_DELIMITER + (myFormatters[digits]).format(aVector[i]);
-		return vecString;
+			sb.append(VECTOR_DELIMITER).append((myFormatters[digits]).format(aVector[i]));
+		return sb.toString();
 	}
 
 	/**
@@ -296,10 +302,11 @@ public class Formatter {
 		int len = aMatrix.length;
 		if (len == 0)
 			return "";
-		String matString = format(aMatrix[0], digits);
+		StringBuilder sb = new StringBuilder();
+		sb.append(format(aMatrix[0], digits));
 		for (int i = 1; i < len; i++)
-			matString += MATRIX_DELIMITER + format(aMatrix[i], digits);
-		return matString;
+			sb.append(MATRIX_DELIMITER).append(format(aMatrix[i], digits));
+		return sb.toString();
 	}
 
 	/**
@@ -332,10 +339,11 @@ public class Formatter {
 		if (len == 0)
 			return "";
 		digits = Math.max(Math.min(digits, MAX_DIGITS), 0);
-		String vecString = (myFixFormatters[digits]).format(aVector[0]);
+		StringBuilder sb = new StringBuilder();
+		sb.append((myFixFormatters[digits]).format(aVector[0]));
 		for (int i = 1; i < len; i++)
-			vecString += VECTOR_DELIMITER + (myFixFormatters[digits]).format(aVector[i]);
-		return vecString;
+			sb.append(VECTOR_DELIMITER).append((myFixFormatters[digits]).format(aVector[i]));
+		return sb.toString();
 	}
 
 	/**
@@ -354,10 +362,11 @@ public class Formatter {
 		int len = aMatrix.length;
 		if (len == 0)
 			return "";
-		String matString = formatFix(aMatrix[0], digits);
+		StringBuilder sb = new StringBuilder();
+		sb.append(formatFix(aMatrix[0], digits));
 		for (int i = 1; i < len; i++)
-			matString += MATRIX_DELIMITER + formatFix(aMatrix[i], digits);
-		return matString;
+			sb.append(MATRIX_DELIMITER).append(formatFix(aMatrix[i], digits));
+		return sb.toString();
 	}
 
 	/**
@@ -392,10 +401,11 @@ public class Formatter {
 		if (len == 0)
 			return "";
 		digits = Math.max(Math.min(digits, MAX_DIGITS), 0);
-		String vecString = (mySciFormatters[digits]).format(aVector[0]);
+		StringBuilder sb = new StringBuilder();
+		sb.append((mySciFormatters[digits]).format(aVector[0]));
 		for (int i = 1; i < len; i++)
-			vecString += VECTOR_DELIMITER + (mySciFormatters[digits]).format(aVector[i]);
-		return vecString;
+			sb.append(VECTOR_DELIMITER).append((mySciFormatters[digits]).format(aVector[i]));
+		return sb.toString();
 	}
 
 	/**
@@ -415,10 +425,11 @@ public class Formatter {
 		int len = aMatrix.length;
 		if (len == 0)
 			return "";
-		String matString = formatSci(aMatrix[0], digits);
+		StringBuilder sb = new StringBuilder();
+		sb.append(formatSci(aMatrix[0], digits));
 		for (int i = 1; i < len; i++)
-			matString += MATRIX_DELIMITER + formatSci(aMatrix[i], digits);
-		return matString;
+			sb.append(MATRIX_DELIMITER).append(formatSci(aMatrix[i], digits));
+		return sb.toString();
 	}
 
 	/**
@@ -447,17 +458,19 @@ public class Formatter {
 	 * 
 	 * @param aDouble the number to format
 	 * @param digits  the number of decimal places
+	 * @param pre     the prefix for the exponent
+	 * @param post    the postfix for the exponent
 	 * @return the formatted <code>double</code> as HTML string
 	 */
-	private static String prettyFormat(double aDouble, int digits) {
+	private static String prettyFormat(double aDouble, int digits, String pre, String post) {
 		double[] thresh = prettyThresholds[digits];
 		double abs = Math.abs(aDouble);
 		// catch zero
 		if (abs < Double.MIN_VALUE)
-			return myFixFormatters[digits].format(aDouble);
+			return myFormatters[digits].format(aDouble);
 		if (abs > thresh[1] || abs < thresh[0])
-			return mySciFormatters[digits].format(aDouble).replace("E", "⋅10<sup>") + "</sup>";
-		return myFixFormatters[digits].format(aDouble);
+			return mySciFormatters[digits].format(aDouble).replace("E", pre) + post;
+		return myFormatters[digits].format(aDouble);
 	}
 
 	/**
@@ -469,7 +482,19 @@ public class Formatter {
 	 * @return formatted <code>double</code> as HTML string
 	 */
 	public static String pretty(double aDouble, int digits) {
-		return prettyFormat(aDouble, Math.max(Math.min(digits, MAX_DIGITS), 0));
+		return prettyFormat(aDouble, Math.max(Math.min(digits, MAX_DIGITS), 0), "⋅10<sup>", "</sup>");
+	}
+
+	/**
+	 * Same as {@link #formatSci(double, int)} but formatting of exponent
+	 * 'prettyfied' using HTML.
+	 * 
+	 * @param aDouble number to format
+	 * @param digits  number of decimal places
+	 * @return formatted <code>double</code> as HTML string
+	 */
+	public static String formatPretty(double aDouble, int digits) {
+		return prettyFormat(aDouble, Math.max(Math.min(digits, MAX_DIGITS), 0), "⋅10^", "");
 	}
 
 	/**
@@ -487,10 +512,11 @@ public class Formatter {
 		if (len == 0)
 			return "";
 		digits = Math.max(Math.min(digits, MAX_DIGITS), 0);
-		String vecString = prettyFormat(aVector[0], digits);
+		StringBuilder sb = new StringBuilder();
+		sb.append(prettyFormat(aVector[0], digits, "⋅10<sup>", "</sup>"));
 		for (int i = 1; i < len; i++)
-			vecString += VECTOR_DELIMITER + prettyFormat(aVector[i], digits);
-		return vecString;
+			sb.append(VECTOR_DELIMITER).append(prettyFormat(aVector[i], digits, "⋅10<sup>", "</sup>"));
+		return sb.toString();
 	}
 
 	/**
@@ -507,10 +533,11 @@ public class Formatter {
 		int len = aMatrix.length;
 		if (len == 0)
 			return "";
-		String matString = pretty(aMatrix[0], digits);
+		StringBuilder sb = new StringBuilder();
+		sb.append(pretty(aMatrix[0], digits));
 		for (int i = 1; i < len; i++)
-			matString += MATRIX_DELIMITER + pretty(aMatrix[i], digits);
-		return matString;
+			sb.append(MATRIX_DELIMITER).append(pretty(aMatrix[i], digits));
+		return sb.toString();
 	}
 
 	/**

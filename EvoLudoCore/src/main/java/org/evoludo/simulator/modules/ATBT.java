@@ -127,27 +127,19 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	 */
 	public ATBT(EvoLudo engine) {
 		super(engine);
+		nTraits = 4;
 	}
 
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 4;
-		// trait names
-		String[] names = new String[nTraits];
-		names[COOPERATE_RICH] = "Rich Cooperator";
-		names[DEFECT_RICH] = "Rich Defector";
-		names[COOPERATE_POOR] = "Poor Cooperator";
-		names[DEFECT_POOR] = "Poor Defector";
-		setTraitNames(names);
-		// trait colors (automatically generates lighter versions for new traits)
-		Color[] colors = new Color[nTraits];
-		colors[COOPERATE_RICH] = Color.BLUE;
-		colors[DEFECT_RICH] = Color.RED;
-		colors[COOPERATE_POOR] = ColorMap.blendColors(Color.BLUE, Color.BLACK, 0.5);
-		colors[DEFECT_POOR] = ColorMap.blendColors(Color.RED, Color.BLACK, 0.5);
-		setTraitColors(colors);
-		// allocate
+		// trait names (optional)
+		setTraitNames(new String[] { "Rich Cooperator", "Rich Defector", "Poor Cooperator", "Poor Defector" });
+		// trait colors (optional)
+		setTraitColors(new Color[] { Color.BLUE, Color.RED,
+				ColorMap.blendColors(Color.BLUE, Color.BLACK, 0.5),
+				ColorMap.blendColors(Color.RED, Color.BLACK, 0.5) });
+		// allocate local storage
 		game = payoffs; // reuse payoffs from TBT
 		environment = new double[nTraits / 2];
 		feedback = new double[nTraits];
@@ -428,7 +420,8 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 
 	@Override
 	public Data2Phase getPhase2DMap() {
-		map = new ATBTMap();
+		if (map == null)
+			map = new ATBTMap();
 		return map;
 	}
 
@@ -439,18 +432,11 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	 */
 	public class ATBTMap implements Data2Phase, BasicTooltipProvider {
 
-		/**
-		 * Constructs a new map to translate between population states and the phase
-		 * plane.
-		 */
-		public ATBTMap() {
-		}
-
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {
 			// NOTE: data[0] is time!
-			point.x = data[COOPERATE_RICH + 1] + data[COOPERATE_POOR + 1];
-			point.y = data[COOPERATE_RICH + 1] + data[DEFECT_RICH + 1];
+			point.set(data[COOPERATE_RICH + 1] + data[COOPERATE_POOR + 1],
+					data[COOPERATE_RICH + 1] + data[DEFECT_RICH + 1]);
 			return true;
 		}
 
@@ -458,10 +444,12 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 		public boolean phase2Data(Point2D point, double[] data) {
 			// mapping: xr=x*a+m, xp=x(1-a)-m, yr=(1-x)a-m, yp=(1-x)(1-a)+m
 			// assume no linkage, i.e. m=0
-			data[COOPERATE_RICH] = point.x * point.y;
-			data[COOPERATE_POOR] = point.x * (1.0 - point.y);
-			data[DEFECT_RICH] = (1.0 - point.x) * point.y;
-			data[DEFECT_POOR] = (1.0 - point.x) * (1.0 - point.y);
+			double x = point.getX();
+			double y = point.getY();
+			data[COOPERATE_RICH] = x * y;
+			data[COOPERATE_POOR] = x * (1.0 - y);
+			data[DEFECT_RICH] = (1.0 - x) * y;
+			data[DEFECT_POOR] = (1.0 - x) * (1.0 - y);
 			return true;
 		}
 
@@ -512,7 +500,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 				@Override
 				public boolean parse(String arg) {
 					double[][] payMatrix = CLOParser.parseMatrix(arg);
-					if (payMatrix == null || (payMatrix.length != 2 && payMatrix.length != 4)
+					if ((payMatrix.length != 2 && payMatrix.length != 4)
 							|| payMatrix[0].length != payMatrix.length)
 						return false;
 					setPayoffs(payMatrix);
@@ -562,7 +550,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	 * Command line option to set the feedback between traits and patch quality.
 	 */
 	public final CLOption cloFeedback = new CLOption("feedback", "0,0,0,0", Category.Module,
-			"--feedback <Cp→r,Dr→p[,Cr→p,Dp→r]>   feedback between traits and patches\n"
+			"--feedback <Cp→r,Dr→p[,Cr→p,Dp→r]>   feedback traits ⟷ patches\n"
 					+ "             p→r:  restoration for trait C and D\n"
 					+ "             r→p:  degradation for trait C and D",
 			new CLODelegate() {
@@ -606,15 +594,17 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	}
 
 	@Override
-	public ATBT.ATBTPop createIBSPop() {
+	public ATBT.ATBTPop createIBSPopulation() {
 		return new ATBT.ATBTPop(this);
 	}
 
 	@Override
 	public Model createModel(Type type) {
-		if (type.isODE())
-			return new ATBT.ODE();
-		return super.createModel(type);
+		if (!type.isODE())
+			return super.createModel(type);
+		if (model != null && model.getType().isODE())
+			return model;
+		return new ATBT.ODE();
 	}
 
 	/**
@@ -674,16 +664,14 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 			// so... which approach corresponds to the ODE?
 			// check patch conversion
 			double pFeedback = feedback[oldtype];
-			if (pFeedback > 0.0) {
-				if (pFeedback >= 1.0 || random01() < pFeedback) {
-					// change type of node
-					int oldtrait = oldtype < 2 ? ATBT.COOPERATE : ATBT.DEFECT;
-					// determine new patch type (old one was GOOD if oldtype is even and will now
-					// turn BAD and vice versa)
-					int newpatch = (oldtype + 1) % 2;
-					traitsNext[me] = newpatch + oldtrait + oldtrait + nTraits;
-					return true;
-				}
+			if (pFeedback > 0.0 && (pFeedback >= 1.0 || random01() < pFeedback)) {
+				// change type of node
+				int oldtrait = oldtype < 2 ? TBT.COOPERATE : TBT.DEFECT;
+				// determine new patch type (old one was GOOD if oldtype is even and will now
+				// turn BAD and vice versa)
+				int newpatch = (oldtype + 1) % 2;
+				traitsNext[me] = newpatch + oldtrait + oldtrait + nTraits;
+				return true;
 			}
 			return changed;
 		}
@@ -699,7 +687,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 		 * Convenience variable: module associated with this model (useful for single
 		 * species).
 		 */
-		protected Module module;
+		protected Module<?> module;
 
 		/**
 		 * Constructs a new ODE solver taylored for the integration of asymmetric
@@ -753,7 +741,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 			// yr'[t] == (yr[t] ft[[3]] + yp[t] ft[[4]]) xr[t] - (xr[t] ft[[1]] + xp[t]
 			// ft[[2]]) yr[t] + lambda rho yp[t],
 			// yp'[t] == (yr[t] ft[[3]] + yp[t] ft[[4]]) xp[t] - (xr[t] ft[[1]] + xp[t]
-			// ft[[2]]) yp[t] - lambda rho yp[t]}
+			// ft[[2]]) yp[t] - lambda rho yp[t]
 
 			// restrict to active traits
 			// note float resolution is 1.1920929E-7

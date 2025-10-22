@@ -43,13 +43,13 @@ public class ParaGraph extends AbstractGraph {
 
 	private static final long serialVersionUID = 20110423L;
 
-	public int		nStates = -1;
-	private final StateData	data = new StateData();
-	private Color[]	colors;
+	public int nStates = -1;
+	private final StateData data = new StateData();
+	private Color[] colors;
 	private String[] names;
 	protected Data2Phase map;
 
-	public ParaGraph(StateGraphListener controller, Module module) {
+	public ParaGraph(StateGraphListener controller, Module<?> module) {
 		super(controller, module);
 		hasHistory = true;
 		frame = new FrameLayer(style);
@@ -69,21 +69,21 @@ public class ParaGraph extends AbstractGraph {
 	}
 
 	// 100531 this is adapted from S3Graph - check if needed!
-    @Override
+	@Override
 	public void reinit() {
 		int id = module.getID();
 		colors = controller.getColors(id);
 		frame.setLabels(names, colors, id);
-// note: this is a bit overkill... but seems necessary to deal with labels...
+		// note: this is a bit overkill... but seems necessary to deal with labels...
 		frame.init(getBounds());
-		((StateGraphListener)controller).getData(data, id);
+		((StateGraphListener) controller).getData(data, id);
 		data.reset();
-		if( doSVG )
-			svgPlot.moveTo(data.now.x*canvas.width, data.now.y*canvas.height);
+		if (doSVG)
+			svgPlot.moveTo(data.now.getX() * canvas.width, data.now.getY() * canvas.height);
 		super.reinit();
 	}
 
-    @Override
+	@Override
 	public void reset(boolean clear) {
 		int id = module.getID();
 		nStates = controller.getNData(id);
@@ -96,77 +96,87 @@ public class ParaGraph extends AbstractGraph {
 	@Override
 	public void clear() {
 		super.clear();
-		if( doSVG )
-			svgPlot.moveTo(data.now.x*canvas.width, data.now.y*canvas.height);
+		if (doSVG)
+			svgPlot.moveTo(data.now.getX() * canvas.width, data.now.getY() * canvas.height);
 	}
 
 	@Override
 	protected void prepare() {
 		data.next();
-		((StateGraphListener)controller).getData(data, module.getID());
+		((StateGraphListener) controller).getData(data, module.getID());
 	}
 
 	@Override
 	public void plot(Graphics2D g2d) {
-		if( data.time<=timestamp ) {
-			if( doSVG )
-				svgPlot.moveTo(data.now.x*canvas.width, data.now.y*canvas.height);
-			return;	// up to date
+		if (data.time <= timestamp) {
+			if (doSVG)
+				svgPlot.moveTo(data.now.getX() * canvas.width, data.now.getY() * canvas.height);
+			return; // up to date
 		}
 		timestamp = data.time;
-		if( data.connect ) {
+		if (data.connect) {
 			g2d.setStroke(style.lineStroke);
 			g2d.setColor(Color.black);
-			double x = data.now.x*canvas.width, y = data.now.y*canvas.height;
-			g2d.drawLine((int)(data.then.x*canvas.width), (int)(data.then.y*canvas.height), (int)x, (int)y);
-			if( doSVG ) svgPlot.lineTo(x, y);
+			double x = data.now.getX() * canvas.width;
+			double y = data.now.getY() * canvas.height;
+			g2d.drawLine((int) (data.then.getX() * canvas.width), (int) (data.then.getY() * canvas.height), (int) x,
+					(int) y);
+			if (doSVG)
+				svgPlot.lineTo(x, y);
 			return;
 		}
-		if( doSVG )
-			svgPlot.moveTo(data.now.x*canvas.width, data.now.y*canvas.height);
+		if (doSVG)
+			svgPlot.moveTo(data.now.getX() * canvas.width, data.now.getY() * canvas.height);
 	}
 
 	// set initial frequency with double-click
 	@Override
 	protected void mouseClick(Point loc, int count) {
-		if( count<2 || !canvas.contains(loc) ) return;
-//		l.setLocation((double)(loc.x-canvas.x)/(double)canvas.width, (double)(loc.y-canvas.y)/(double)canvas.height);
-//		((StateGraphListener)controller).setState(l, tag);
-		((StateGraphListener)controller).setState(new double[] { (double)(loc.x-canvas.x)/(double)canvas.width, 
-				(double)(loc.y-canvas.y)/(double)canvas.height });
+		if (count < 2 || !canvas.contains(loc))
+			return;
+		// l.setLocation((double)(loc.x-canvas.x)/(double)canvas.width,
+		// (double)(loc.y-canvas.y)/(double)canvas.height);
+		// ((StateGraphListener)controller).setState(l, tag);
+		((StateGraphListener) controller).setState(new double[] { (double) (loc.x - canvas.x) / (double) canvas.width,
+				(double) (loc.y - canvas.y) / (double) canvas.height });
 		reset(false);
 	}
 
 	// tool tips
 	private final Point2D l = new Point2D();
+
 	@Override
 	public String getToolTipText(MouseEvent event) {
 		Point loc = event.getPoint();
-		if( !canvas.contains(loc) ) return null;
+		if (!canvas.contains(loc))
+			return null;
 
-		l.setLocation((double)(loc.x-canvas.x)/(double)canvas.width, (double)(loc.y-canvas.y)/(double)canvas.height);
-		return ((StateGraphListener)controller).getToolTipText(l, module.getID());
+		l.setLocation((double) (loc.x - canvas.x) / (double) canvas.width,
+				(double) (loc.y - canvas.y) / (double) canvas.height);
+		return ((StateGraphListener) controller).getToolTipText(l, module.getID());
 	}
 
 	@Override
 	protected int getSnapshotFormat() {
-		if( doSVG ) return SNAPSHOT_SVG;
+		if (doSVG)
+			return SNAPSHOT_SVG;
 		return SNAPSHOT_PNG;
 	}
 
 	// IMPLEMENT GLASS LAYER LISTENER
 	private final Point2D s = new Point2D();
-    @Override
+
+	@Override
 	public Point2D getState() {
-		s.x = (int)(data.now.x*canvas.width);
-		s.y = (int)(data.now.y*canvas.height);
+		s.set((int) (data.now.getX() * canvas.width),
+				(int) (data.now.getY() * canvas.height));
 		return s;
 	}
 
-    @Override
+	@Override
 	public Point2D getStart() {
-		s.x = (int)(data.origin.x*canvas.width);
-		s.y = (int)(data.origin.y*canvas.height);
+		s.set((int) (data.origin.getX() * canvas.width),
+				(int) (data.origin.getY() * canvas.height));
 		return s;
 	}
 }

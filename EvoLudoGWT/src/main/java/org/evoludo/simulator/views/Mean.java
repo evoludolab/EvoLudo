@@ -38,8 +38,10 @@ import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.Shifter;
 import org.evoludo.graphics.AbstractGraph.Zoomer;
 import org.evoludo.graphics.LineGraph;
+import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
+import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBSC;
 import org.evoludo.simulator.modules.Discrete;
@@ -99,12 +101,14 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 
 	@Override
 	protected void allocateGraphs() {
-		ArrayList<? extends Module> species = engine.getModule().getSpecies();
+		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		int nGraphs = 0;
 		// multiple line graphs for multi-species interactions and in case of multiple
 		// traits for continuous traits
-		for (Module module : species) {
-			if (model.isContinuous())
+		for (Module<?> module : species) {
+			// only one graph per species for fitness data
+			// but separate graphs for multiple continuous traits
+			if (model.isContinuous() && type != Data.FITNESS)
 				nGraphs += module.getNTraits();
 			else
 				nGraphs++;
@@ -113,7 +117,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 		if (graphs.size() != nGraphs) {
 			destroyGraphs();
 			// one graph per discrete species or continuous trait
-			for (Module module : species) {
+			for (Module<?> module : species) {
 				LineGraph graph = new LineGraph(this, module);
 				wrapper.add(graph);
 				graphs.add(graph);
@@ -144,7 +148,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 		int idx = 0;
 		for (LineGraph graph : graphs) {
 			AbstractGraph.GraphStyle style = graph.getStyle();
-			Module module = graph.getModule();
+			Module<?> module = graph.getModule();
 
 			switch (type) {
 				case TRAIT:
@@ -153,8 +157,8 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 						// continuous module with single trait on graph (single species, for now)
 						style.yLabel = model.getMeanName(idx);
 						style.percentY = false;
-						style.yMin = cmodel.getTraitMin(0)[idx];
-						style.yMax = cmodel.getTraitMax(0)[idx];
+						style.yMin = cmodel.getTraitRangeMin(0)[idx];
+						style.yMax = cmodel.getTraitRangeMax(0)[idx];
 						Color color = module.getMeanColors()[idx];
 						String[] traitcolors = new String[3];
 						traitcolors[0] = ColorMapCSS.Color2Css(color); // mean
@@ -168,20 +172,16 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 						if (model.isDensity()) {
 							style.yLabel = "density";
 							style.percentY = false;
-							style.yMin = 0.0;
-							style.yMax = 0.0;
 						} else {
 							style.yLabel = "frequency";
 							style.percentY = true;
-							style.yMin = 0.0;
-							style.yMax = 1.0;
 						}
 						Color[] colors = module.getMeanColors();
 						graph.setColors(ColorMapCSS.Color2Css(colors));
 						String[] mcolors = new String[colors.length];
 						int n = 0;
 						for (Color color : colors)
-							mcolors[n++] = ColorMapCSS.Color2Css(ColorMapCSS.addAlpha(color, 100));
+							mcolors[n++] = ColorMapCSS.Color2Css(ColorMap.addAlpha(color, 100));
 						graph.setMarkers(module.getMarkers(), mcolors);
 					}
 					break;
@@ -215,7 +215,7 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 					style.yLabel = "payoffs";
 					if (module instanceof Discrete) {
 						// cast is save because module is Discrete
-						org.evoludo.simulator.models.Discrete dmodel = (org.evoludo.simulator.models.Discrete) model;
+						DModel dmodel = (DModel) model;
 						double[] monoScores = new double[nMean + 1];
 						// the first entry is for dashed (>0) and dotted (<0) lines
 						monoScores[0] = 1.0;
@@ -224,15 +224,15 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 						String[] monoColors = new String[fitcolors.length];
 						int n = 0;
 						for (Color color : fitcolors)
-							monoColors[n++] = ColorMapCSS.Color2Css(ColorMapCSS.addAlpha(color, 100));
+							monoColors[n++] = ColorMapCSS.Color2Css(ColorMap.addAlpha(color, 100));
 						ArrayList<double[]> marker = new ArrayList<>();
 						marker.add(monoScores);
 						graph.setMarkers(marker, monoColors);
 					}
 					break;
-					default:
-						throw new IllegalArgumentException("Unknown data type: " + type);
-				}
+				default:
+					throw new IllegalArgumentException("Unknown data type: " + type);
+			}
 			if (nSpecies > 1)
 				style.label = module.getName();
 			style.xLabel = "time";
@@ -264,13 +264,13 @@ public class Mean extends AbstractView implements Shifter, Zoomer {
 
 	@Override
 	public void update(boolean force) {
-		double newtime = model.getTime();
-		Module module = null;
+		double newtime = model.getUpdates();
+		Module<?> module = null;
 		boolean cmodel = model.isContinuous();
 		if (Math.abs(timestamp - newtime) > 1e-8) {
 			int idx = 0;
 			for (LineGraph graph : graphs) {
-				Module nod = graph.getModule();
+				Module<?> nod = graph.getModule();
 				boolean newmod = module != nod;
 				module = nod;
 				int id = module.getID();

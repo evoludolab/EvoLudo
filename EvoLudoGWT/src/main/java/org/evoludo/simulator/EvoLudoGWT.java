@@ -51,10 +51,8 @@ import org.evoludo.util.NativeJS;
 
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.core.client.Scheduler.RepeatingCommand;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
-import com.google.gwt.user.client.Command;
 import com.google.gwt.user.client.Timer;
 
 /**
@@ -65,44 +63,34 @@ import com.google.gwt.user.client.Timer;
 public class EvoLudoGWT extends EvoLudo {
 
 	/**
-	 * <code>true</code> if container document is XHTML
+	 * <code>true</code> if container document is HTML
 	 */
-	public boolean isXML = false;
+	public static boolean isHTML = true;
 
 	/**
 	 * <code>true</code> if part of an ePub
 	 */
-	public boolean isEPub = false;
+	public static boolean isEPub = false;
 
 	/**
 	 * <code>true</code> if standalone EvoLudo lab in ePub
 	 */
-	public boolean ePubStandalone = false;
+	public static boolean ePubStandalone = false;
 
 	/**
 	 * <code>true</code> if ePub has mouse device
 	 */
-	public boolean ePubHasMouse = false;
+	public static boolean ePubHasMouse = false;
 
 	/**
 	 * <code>true</code> if ePub has touch device
 	 */
-	public boolean ePubHasTouch = false;
+	public static boolean ePubHasTouch = false;
 
 	/**
 	 * <code>true</code> if ePub has keyboard device
 	 */
-	public boolean ePubHasKeys = false;
-
-	/**
-	 * The generation at which to request a snapshot.
-	 */
-	protected double snapshotAt = -Double.MAX_VALUE;
-
-	/**
-	 * The number of samples after which to stop. If negative no limit is set.
-	 */
-	double statisticsAt = -1.0;
+	public static boolean ePubHasKeys = false;
 
 	/**
 	 * Create timer to measure execution times since instantiation.
@@ -134,12 +122,7 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public void execute(Directive directive) {
-		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-			@Override
-			public void execute() {
-				directive.execute();
-			}
-		});
+		Scheduler.get().scheduleDeferred(directive::execute);
 	}
 
 	/**
@@ -169,7 +152,8 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	/**
-	 * Called when the GUI has finished loading and the dimensions of all elements are known.
+	 * Called when the GUI has finished loading and the dimensions of all elements
+	 * are known.
 	 */
 	public void guiReady() {
 		if (notifyGUI == null)
@@ -180,42 +164,34 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public void layoutComplete() {
-		if (snapshotAt < 0.0) {
-			super.layoutComplete();
-			return;
+		if (cloSnap.isSet() && !isSuspended()) {
+			// no stopping time requested: take snapshot now
+			gui.snapshotReady();
 		}
-		if (snapshotAt > 0.0) {
-			delay = 1;
-			switch (activeModel.getMode()) {
-				case STATISTICS_SAMPLE:
-					activeModel.setNSamples((int) (snapshotAt + 0.5));
-					run();
-					return;
-				case STATISTICS_UPDATE:
-				case DYNAMICS:
-					activeModel.setTimeStop(snapshotAt);
-					if (snapshotAt < activeModel.getTimeStep()) {
-						activeModel.setTimeStep(snapshotAt);
-						activeModel.next();
-						break;
-					}
-					run();
-					return;
-				default:
-					throw new Error("layoutComplete(): unknown mode...");
-			}
-		}
-		gui.snapshotReady();
+		super.layoutComplete();
 	}
 
 	@Override
 	public void run() {
-		if (isRunning)
+		// ignore if already running or not suspended
+		if (isRunning || !isSuspended())
 			return;
 		fireModelRunning();
-		// start with an update not the delay
-		if (modelNext())
-			timer.scheduleRepeating(delay);
+		switch (activeModel.getMode()) {
+			case STATISTICS_SAMPLE:
+				// non-blocking way for running an arbitrary number of update
+				// steps to obtain one sample
+				scheduleSample();
+				break;
+			case STATISTICS_UPDATE:
+			case DYNAMICS:
+				// start with an update not the delay
+				if (modelNext())
+					timer.scheduleRepeating(delay);
+				break;
+			default:
+				throw new Error("next(): unknown mode...");
+		}
 	}
 
 	/**
@@ -224,8 +200,7 @@ public class EvoLudoGWT extends EvoLudo {
 	Timer timer = new Timer() {
 		@Override
 		public void run() {
-			if (!modelNext() || !isRunning)
-				timer.cancel();
+			next();
 		}
 	};
 
@@ -233,16 +208,6 @@ public class EvoLudoGWT extends EvoLudo {
 	public void next() {
 		switch (activeModel.getMode()) {
 			case STATISTICS_SAMPLE:
-				int samplesCollected = activeModel.getNStatisticsSamples();
-				if (samplesCollected == statisticsAt) {
-					// requested sample count reached, reset to unlimited
-					statisticsAt = -1.0;
-					if (Math.abs(snapshotAt - samplesCollected) < 1.0)
-						gui.snapshotReady();
-					else
-						requestAction(PendingAction.STOP, true);
-					break;
-				}
 				// non-blocking way for running an arbitrary number of update
 				// steps to obtain one sample
 				scheduleSample();
@@ -261,26 +226,16 @@ public class EvoLudoGWT extends EvoLudo {
 	 * Schedule the next sample.
 	 */
 	private void scheduleSample() {
-		Scheduler.get().scheduleIncremental(new RepeatingCommand() {
-			@Override
-			public boolean execute() {
-				// in unfortunate cases even a single sample can take exceedingly long
-				// times. stop/init/reset need to be able to interrupt.
-				switch (pendingAction) {
-					case NONE:
-					case STATISTIC_READY:
-					case STOP: // finish sample
-						break;
-					default:
-						fireModelStopped();
-						return false;
-				}
-				if (activeModel.next()) {
-					return true;
-				}
-				fireModelStopped();
-				return (activeModel.getFixationData().mutantNode < 0);
+		Scheduler.get().scheduleIncremental(() -> {
+			// in unfortunate cases even a single sample can take exceedingly long
+			// times. stop/init/reset need to be able to interrupt.
+			if (pendingAction != PendingAction.NONE) {
+				processPendingAction();
+				return false;
 			}
+			if (activeModel.next())
+				return true;
+			return fireModelSample(activeModel.getFixationData().mutantNode >= 0);
 		});
 	}
 
@@ -288,12 +243,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 * Schedule the next step.
 	 */
 	private void scheduleStep() {
-		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-			@Override
-			public void execute() {
-				modelNext();
-			}
-		});
+		Scheduler.get().scheduleDeferred(() -> modelNext());
 	}
 
 	@Override
@@ -304,40 +254,21 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	@Override
-	public synchronized void fireModelReset() {
-		if (activeModel != null)
-			statisticsAt = activeModel.getNSamples();
-		super.fireModelReset();
-	}
-
-	@Override
-	public synchronized void fireSettingsChanged() {
-		if (activeModel != null)
-			statisticsAt = activeModel.getNSamples();
-		super.fireSettingsChanged();
-	}
-
 	public synchronized void fireModelStopped() {
 		// model may already have been unloaded
 		if (activeModel == null)
 			return;
-		double time = activeModel.getTime();
-		double timeStep = activeModel.getTimeStep();
-		Mode mode = activeModel.getMode();
-		if ((mode == Mode.STATISTICS_SAMPLE
-					&& Math.abs(snapshotAt - activeModel.getNStatisticsSamples()) < 1.0)
-				|| (mode == Mode.STATISTICS_UPDATE || mode == Mode.DYNAMICS)
-					&& (activeModel.hasConverged() && snapshotAt > time
-							|| Math.abs(time + timeStep - snapshotAt) <= timeStep)) {
-			gui.snapshotReady();
-			return;
-		}
 		super.fireModelStopped();
+		timer.cancel();
+		if (cloSnap.isSet()) {
+			// take snapshot
+			gui.snapshotReady();
+		}
 	}
 
 	@Override
 	void processPendingAction() {
-		boolean updateGUI = (pendingAction == PendingAction.STOP 
+		boolean updateGUI = (pendingAction == PendingAction.STOP
 				&& activeModel.getMode() == Mode.STATISTICS_SAMPLE);
 		super.processPendingAction();
 		if (updateGUI)
@@ -361,24 +292,30 @@ public class EvoLudoGWT extends EvoLudo {
 	protected String[] preprocessCLO(String[] cloarray) {
 		// once module is loaded pre-processing of command line arguments can proceed
 		cloarray = super.preprocessCLO(cloarray);
-		if (cloarray == null)
-			return new String[] { cloHelp.getName() };
 		// check and remove --export option
 		String exportName = "export";
-		int nParams = cloarray.length;
-		for (int i = 0; i < nParams; i++) {
+		for (int i = 0; i < cloarray.length; i++) {
 			String param = cloarray[i];
 			if (param.startsWith(exportName)) {
 				// see --export option in EvoLudoJRE.java
 				// remove --export option and file name
-				cloarray = ArrayMath.drop(cloarray, i--);
-				nParams--;
-				continue;
+				cloarray = ArrayMath.drop(cloarray, i);
+				break;
 			}
 		}
 		return cloarray;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * GWT implementation for measuring execution time.
+	 * 
+	 * @see org.evoludo.simulator.EvoLudoGWT#elapsedTimeMsec
+	 *      EvoLudoGWT.elapsedTimeMsec
+	 * @see org.evoludo.simulator.EvoLudoJRE#elapsedTimeMsec
+	 *      EvoLudoJRE.elapsedTimeMsec
+	 */
 	@Override
 	public int elapsedTimeMsec() {
 		return elapsedTime.elapsedMillis();
@@ -422,10 +359,10 @@ public class EvoLudoGWT extends EvoLudo {
 	 *
 	 * @see NativeJS#ePubReaderHasFeature(String)
 	 */
-	public void detectGUIFeatures() {
+	public static void detectGUIFeatures() {
 		isGWT = true;
 		hasTouch = NativeJS.hasTouch();
-		isXML = NativeJS.isXML();
+		isHTML = NativeJS.isHTML();
 		isEPub = (NativeJS.getEPubReader() != null);
 		// IMPORTANT: ibooks (desktop) returns ePubReader for standalone pages as well,
 		// i.e. isEPub is true
@@ -460,15 +397,11 @@ public class EvoLudoGWT extends EvoLudo {
 	 */
 	public void populateContextMenu(ContextMenu menu) {
 		Type mt = activeModel.getType();
-		if ( mt.isODE() || mt.isSDE() ) {
+		if (mt.isODE() || mt.isSDE()) {
 			// add time reverse context menu
 			if (timeReverseMenu == null) {
-				timeReverseMenu = new ContextMenuCheckBoxItem("Time reversed", new Command() {
-					@Override
-					public void execute() {
-						activeModel.setTimeReversed(!activeModel.isTimeReversed());
-					}
-				});
+				timeReverseMenu = new ContextMenuCheckBoxItem("Time reversed",
+						() -> activeModel.setTimeReversed(!activeModel.isTimeReversed()));
 			}
 			menu.addSeparator();
 			menu.add(timeReverseMenu);
@@ -477,13 +410,10 @@ public class EvoLudoGWT extends EvoLudo {
 		} else if (mt.isPDE()) {
 			// add context menu to allow symmetric diffusion
 			if (symDiffMenu == null) {
-				symDiffMenu = new ContextMenuCheckBoxItem("Symmetric diffusion", new Command() {
-					@Override
-					public void execute() {
-						PDE pde = (PDE) activeModel;
-						pde.setSymmetric(!pde.isSymmetric());
-						pde.check();
-					}
+				symDiffMenu = new ContextMenuCheckBoxItem("Symmetric diffusion", () -> {
+					PDE pde = (PDE) activeModel;
+					pde.setSymmetric(!pde.isSymmetric());
+					pde.check();
 				});
 			}
 			menu.addSeparator();
@@ -494,15 +424,10 @@ public class EvoLudoGWT extends EvoLudo {
 			symDiffMenu.setEnabled(space.isRegular || space.isLattice());
 		}
 		// process fullscreen context menu
-		if (fullscreenMenu == null && NativeJS.isFullscreenSupported()) {
-			fullscreenMenu = new ContextMenuCheckBoxItem("Full screen", new Command() {
-				@Override
-				public void execute() {
-					setFullscreen(!NativeJS.isFullscreen());
-				}
-			});
-		}
 		if (NativeJS.isFullscreenSupported()) {
+			if (fullscreenMenu == null)
+				fullscreenMenu = new ContextMenuCheckBoxItem("Full screen",
+						() -> setFullscreen(!NativeJS.isFullscreen()));
 			menu.addSeparator();
 			menu.add(fullscreenMenu);
 			fullscreenMenu.setChecked(NativeJS.isFullscreen());
@@ -633,35 +558,19 @@ public class EvoLudoGWT extends EvoLudo {
 	 * Command line option to request that the EvoLudo model signals the completion
 	 * of of the layouting procedure for taking snapshots, e.g. with
 	 * <code>capture-website</code>.
+	 * 
+	 * @see <a href="https://github.com/sindresorhus/capture-website-cli"> Github:
+	 *      capture-website-cli</a>
 	 */
-	public final CLOption cloSnap = new CLOption("snap", "", CLOption.Argument.OPTIONAL, Category.GUI,
-			"--snap [<s>[,<n>]]  snapshot utility (see capture-website)\n"
-					+ "      (add '<div id=\"snapshot-ready\"></div>' to <body> upon\n"
-					+ "       completion of layout or after max <s> sec and after\n"
-					+ "       <n> samples or generations, respectively.)",
+	public final CLOption cloSnap = new CLOption("snap", "20", CLOption.Argument.OPTIONAL, Category.GUI,
+			"--snap [<s>]    snapshot utility, timeout <s> secs;\n"
+					+ "                (add '<div id=\"snapshot-ready\"></div>' to <body>\n"
+					+ "                when ready for snapshot, see capture-website docs)",
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					if (!cloSnap.isSet()) {
-						snapshotAt = -Double.MAX_VALUE;
-						return true;
-					}
-					snapshotAt = 0.0;
-					if (arg.isEmpty())
-						return true;
-					int[] args = CLOParser.parseIntVector(arg);
-					switch (args.length) {
-						default:
-							return false;
-						case 2:
-							snapshotAt = args[1];
-							if (snapshotAt > 0.0)
-								isSuspended = true;
-							//$FALL-THROUGH$
-						case 1:
-							snapLayoutTimeout = args[0] * 1000;
-							return true;
-					}
+					snapLayoutTimeout = Math.max(1, CLOParser.parseInteger(arg)) * 1000;
+					return true;
 				}
 			});
 

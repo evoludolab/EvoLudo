@@ -52,7 +52,7 @@ public class Network2DJRE extends Network2D implements Runnable {
 	public void doLayout(LayoutListener ll) {
 		if (!status.requiresLayout())
 			return;
-//		doLayout(ll, true);		// default should be to compute layout in separate thread
+		// doLayout(ll, true); // default should be to compute layout in separate thread
 		doLayout(ll, false);
 	}
 
@@ -141,7 +141,8 @@ public class Network2DJRE extends Network2D implements Runnable {
 		potential += result;
 		if (--pending > 0)
 			return;
-//System.out.println("Network2DJRE workerComplete: pending="+pending+", potential="+potential+", result="+result);
+		// System.out.println("Network2DJRE workerComplete: pending="+pending+",
+		// potential="+potential+", result="+result);
 		notify();
 	}
 

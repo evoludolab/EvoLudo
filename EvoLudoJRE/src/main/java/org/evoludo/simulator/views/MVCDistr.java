@@ -47,8 +47,10 @@ import org.evoludo.simulator.ColorMapJRE;
 import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Continuous;
+import org.evoludo.simulator.modules.Module;
 
 /**
  *
@@ -58,113 +60,121 @@ public class MVCDistr extends MVAbstract implements PopListener {
 
 	private static final long serialVersionUID = 20110423L;
 
-	double[][]	bins;
-	int			nData;
-	String		ylabel = "time";
-	protected	ColorMap<Color> colorMap;
+	double[][] bins;
+	int nData;
+	String ylabel = "time";
+	protected ColorMap<Color> colorMap;
 	@SuppressWarnings("hiding")
 	protected Continuous module;
 
-/* NOTE: this requires some work... may not be happening...
- - everything needs to be wrapped in the same scroll - scrolls for each graph are strange; how does this affect zoom operations?
- - if individual scrolls turn out to be the better way, we need to be careful when removing graphs!
- - below is a first sketch to align the initialization with all other classes
+	/*
+	 * NOTE: this requires some work... may not be happening...
+	 * - everything needs to be wrapped in the same scroll - scrolls for each graph
+	 * are strange; how does this affect zoom operations?
+	 * - if individual scrolls turn out to be the better way, we need to be careful
+	 * when removing graphs!
+	 * - below is a first sketch to align the initialization with all other classes
+	 * 
+	 * String yLabelText = "time";
+	 * JLabel yLabel;
+	 * 
+	 * public MVCDistr(EvoLudoLab lab, Population population) {
+	 * super(lab, population);
+	 * setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+	 * yLabel = new JLabel(yLabelText, SwingConstants.RIGHT);
+	 * yLabel.setAlignmentY(Component.CENTER_ALIGNMENT);
+	 * add(yLabel);
+	 * }
+	 * 
+	 * private void alloc() {
+	 * if( bins==null || bins.length!=nData ) {
+	 * bins = new double[nData][];
+	 * for( int n=0; n<nData; n++ ) bins[n] = new double[HistoGraph.HISTO_BINS];
+	 * }
+	 * }
+	 * 
+	 * private void addGraph(int tag) {
+	 * PopGraph graph = new PopGraph(this, null, tag);
+	 * GraphAxis x = graph.getXAxis();
+	 * x.label = ((CXPopulation)population).getTraitName(tag);
+	 * x.showLabel = true;
+	 * x.min = ((CXPopulation)population).getTraitMin(tag);
+	 * x.max = ((CXPopulation)population).getTraitMax(tag);
+	 * x.grid = 0;
+	 * x.majorTicks = 3;
+	 * x.minorTicks = 1;
+	 * GraphAxis y = graph.getYAxis();
+	 * y.label = ylabel;
+	 * y.showLabel = false;
+	 * y.max = 0.0;
+	 * y.min = 10.0; // this is just to achieve better layout
+	 * y.step = -population.getReportFreq();
+	 * y.majorTicks = 4;
+	 * y.minorTicks = 1;
+	 * y.formatter = new DecimalFormat("0.#");
+	 * y.grid = 0;
+	 * JScrollPane scroll = new JScrollPane(graph,
+	 * ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
+	 * ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+	 * scroll.getViewport().setOpaque(false);
+	 * scroll.setOpaque(false);
+	 * graph.setOpaque(false);
+	 * // assist the layout manager...
+	 * scroll.setAlignmentY(Component.CENTER_ALIGNMENT);
+	 * // insert graph before xLabel
+	 * Component[] comps = getComponents();
+	 * for( int c=0; c<getComponentCount(); c++ ) {
+	 * if( comps[c]!=yLabel ) continue;
+	 * add(Box.createHorizontalStrut(4), c);
+	 * add(scroll, c);
+	 * break;
+	 * }
+	 * graphs.add(graph);
+	 * }
+	 * 
+	 * @Override
+	 * public void reset(boolean clear) {
+	 * nData = population.getTraitCount();
+	 * int nGraphs = graphs.size();
+	 * if( nData==nGraphs ) {
+	 * for( java.util.ListIterator<AbstractGraph> i = graphs.listIterator();
+	 * i.hasNext(); ) {
+	 * AbstractGraph graph = i.next();
+	 * GraphAxis x = graph.getXAxis();
+	 * x.min = ((CXPopulation)population).getTraitMin(graph.tag);
+	 * x.max = ((CXPopulation)population).getTraitMax(graph.tag);
+	 * }
+	 * super.reset(clear);
+	 * return;
+	 * }
+	 * if( nData<nGraphs )
+	 * for(int n=nGraphs; n>nData; n--) remove(graphs.remove(nData));
+	 * else {
+	 * // invalidate layout of existing graphs - otherwise the newly added graphs
+	 * will have height zero!
+	 * for(int n=0; n<nGraphs; n++) graphs.get(n).setSize(0, 0);
+	 * for(int n=nGraphs; n<nData; n++) addGraph(n);
+	 * }
+	 * // note: java 1.7 requires acquiring a tree lock before calling validateTree
+	 * - is this the right approach? shouldn't validate be called instead?
+	 * // synchronized( getTreeLock() ) { validateTree(); }
+	 * alloc();
+	 * super.reset(true);
+	 * }
+	 */
 
-	String		yLabelText = "time";
-	JLabel		yLabel;
-
-	public MVCDistr(EvoLudoLab lab, Population population) {
-		super(lab, population);
-		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
-		yLabel = new JLabel(yLabelText, SwingConstants.RIGHT);
-		yLabel.setAlignmentY(Component.CENTER_ALIGNMENT);
-		add(yLabel);
-	}
-	
-	private void alloc() {
-		if( bins==null || bins.length!=nData ) {
-			bins = new double[nData][];
-			for( int n=0; n<nData; n++ ) bins[n] = new double[HistoGraph.HISTO_BINS];
-		}
-	}
-	
-	private void addGraph(int tag) {
-		PopGraph graph = new PopGraph(this, null, tag);
-		GraphAxis x = graph.getXAxis();
-		x.label = ((CXPopulation)population).getTraitName(tag);
-		x.showLabel = true;
-		x.min = ((CXPopulation)population).getTraitMin(tag);
-		x.max = ((CXPopulation)population).getTraitMax(tag);
-		x.grid = 0;
-		x.majorTicks = 3;
-		x.minorTicks = 1;
-		GraphAxis y = graph.getYAxis();
-		y.label = ylabel;
-		y.showLabel = false;
-		y.max = 0.0;
-		y.min = 10.0;	// this is just to achieve better layout
-		y.step = -population.getReportFreq();
-		y.majorTicks = 4;
-		y.minorTicks = 1;
-		y.formatter = new DecimalFormat("0.#");
-		y.grid = 0;
-		JScrollPane scroll = new JScrollPane(graph, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-		scroll.getViewport().setOpaque(false);
-		scroll.setOpaque(false);
-		graph.setOpaque(false);
-		// assist the layout manager...
-		scroll.setAlignmentY(Component.CENTER_ALIGNMENT);
-		// insert graph before xLabel
-		Component[] comps = getComponents();
-		for( int c=0; c<getComponentCount(); c++ ) {
-			if( comps[c]!=yLabel ) continue;
-			add(Box.createHorizontalStrut(4), c);
-			add(scroll, c);
-			break;
-		}
-		graphs.add(graph);
-	}
-	
-	@Override
-	public void reset(boolean clear) {
-		nData = population.getTraitCount();
-		int nGraphs = graphs.size();
-		if( nData==nGraphs ) {
-			for( java.util.ListIterator<AbstractGraph> i = graphs.listIterator(); i.hasNext(); ) {
-				AbstractGraph graph = i.next();
-				GraphAxis x = graph.getXAxis();
-				x.min = ((CXPopulation)population).getTraitMin(graph.tag);
-				x.max = ((CXPopulation)population).getTraitMax(graph.tag);
-			}
-			super.reset(clear);
-			return;
-		}
-		if( nData<nGraphs )
-			for(int n=nGraphs; n>nData; n--) remove(graphs.remove(nData));
-		else {
-			// invalidate layout of existing graphs - otherwise the newly added graphs will have height zero!
-			for(int n=0; n<nGraphs; n++) graphs.get(n).setSize(0, 0);
-			for(int n=nGraphs; n<nData; n++) addGraph(n);
-		}
-// note: java 1.7 requires acquiring a tree lock before calling validateTree - is this the right approach? shouldn't validate be called instead?
-//		synchronized( getTreeLock() ) { validateTree(); }
-		alloc();
-		super.reset(true);
-	}
-*/
-
-    public MVCDistr(EvoLudoLab lab) {
+	public MVCDistr(EvoLudoLab lab) {
 		super(lab);
 		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 	}
 
 	@Override
-	public void setModule(org.evoludo.simulator.modules.Module module) {
+	public void setModule(Module<?> module) {
 		this.module = (Continuous) module;
 		super.module = module;
 	}
 
-   protected void initGraphs() {
+	protected void initGraphs() {
 		removeAll();
 		graphs.clear();
 		nData = module.getNTraits();
@@ -172,11 +182,11 @@ public class MVCDistr extends MVAbstract implements PopListener {
 		double[] min = module.getTraitMin();
 		double[] max = module.getTraitMax();
 		Model model = engine.getModel();
-		for( int n=0; n<nData; n++ ) {
-            Geometry geometry = new Geometry(engine);
-            geometry.setType(Geometry.Type.LINEAR);
-            geometry.size = HistoGraph.HISTO_BINS;
-            PopGraph2D graph = new PopGraph2D(this, geometry, module);
+		for (int n = 0; n < nData; n++) {
+			Geometry geometry = new Geometry(engine);
+			geometry.setType(Geometry.Type.LINEAR);
+			geometry.size = HistoGraph.HISTO_BINS;
+			PopGraph2D graph = new PopGraph2D(this, geometry, module);
 			bins[n] = new double[HistoGraph.HISTO_BINS];
 			GraphAxis x = graph.getXAxis();
 			x.label = module.getTraitName(n);
@@ -189,43 +199,46 @@ public class MVCDistr extends MVAbstract implements PopListener {
 			GraphAxis y = graph.getYAxis();
 			y.label = ylabel;
 			y.showLabel = true;
-			if( nData>1 && n!=nData-1 ) y.showLabel = false;
+			if (nData > 1 && n != nData - 1)
+				y.showLabel = false;
 			y.max = 0.0;
-			y.min = 10.0;	// this is just to achieve better layout
+			y.min = 10.0; // this is just to achieve better layout
 			y.step = -model.getTimeStep();
 			y.majorTicks = 4;
 			y.minorTicks = 1;
 			y.formatter = new DecimalFormat("0.#");
 			y.grid = 0;
-			JScrollPane scroll = new JScrollPane(graph, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+			JScrollPane scroll = new JScrollPane(graph, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
+					ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 			scroll.getViewport().setOpaque(false);
 			scroll.setOpaque(false);
 			graph.setOpaque(false);
 			add(scroll);
 			graphs.add(graph);
-			if( nData>1 && n!=nData-1 ) add(Box.createHorizontalStrut(4));
+			if (nData > 1 && n != nData - 1)
+				add(Box.createHorizontalStrut(4));
 		}
 	}
 
 	@Override
 	public void reset(boolean clear) {
 		int nPanes = module.getNTraits();
-		if( nPanes!=nData )
+		if (nPanes != nData)
 			initGraphs();
 		super.reset(clear);
 	}
-	
+
 	// IMPLEMENT PopListener - alternative location to set axis specs
 	@Override
-	public boolean	verifyXAxis(GraphAxis x, int tag) {
+	public boolean verifyXAxis(GraphAxis x, int tag) {
 		boolean changed = false;
 		double min = module.getTraitMin()[tag];
-		if( Math.abs(x.min-min)>1e-8 ) {
+		if (Math.abs(x.min - min) > 1e-8) {
 			x.min = min;
 			changed = true;
 		}
 		double max = module.getTraitMax()[tag];
-		if( Math.abs(x.max-max)>1e-8 ) {
+		if (Math.abs(x.max - max) > 1e-8) {
 			x.max = max;
 			changed = true;
 		}
@@ -233,10 +246,10 @@ public class MVCDistr extends MVAbstract implements PopListener {
 	}
 
 	@Override
-	public boolean	verifyYAxis(GraphAxis y, int tag) {
+	public boolean verifyYAxis(GraphAxis y, int tag) {
 		boolean changed = false;
 		double step = -engine.getModel().getTimeStep();
-		if( Math.abs(y.step-step)>1e-8 ) {
+		if (Math.abs(y.step - step) > 1e-8) {
 			y.step = step;
 			changed = true;
 		}
@@ -245,65 +258,69 @@ public class MVCDistr extends MVAbstract implements PopListener {
 
 	// implement PopListener - mostly done in MVAbstract
 
-    @Override
+	@Override
 	public void initColor(int tag) {
 		colorMap = new ColorMapJRE.Gradient1D(new Color[] { Color.WHITE, Color.BLACK, Color.RED }, 100);
 	}
 
-    @Override
+	@Override
 	public double getData(Color[] data, int tag) {
 		Model model = engine.getModel();
 		// check if we need to process data first
-    	double now = model.getTime();
-		if( now-timestamp>1e-8 ) {
+		double now = model.getUpdates();
+		if (now - timestamp > 1e-8) {
 			// process data first
-			((org.evoludo.simulator.models.Continuous) model).getTraitHistogramData(0, bins);
+			((CModel) model).getTraitHistogramData(0, bins);
 			timestamp = now;
 		}
 		colorMap.translate(bins[tag], data);
 		return now;
 	}
 
-    @Override
-   	public String getInfoAt(Network2D network, int node, int tag) {
-    	int nNodes = network.nNodes;
-   
-		if( node<0 ) return null;
-		PopGraph2D graph = (PopGraph2D)graphs.get(tag);
-		int xBin = node%nNodes;
+	@Override
+	public String getInfoAt(Network2D network, int node, int tag) {
+		int nNodes = network.size();
+
+		if (node < 0)
+			return null;
+		PopGraph2D graph = (PopGraph2D) graphs.get(tag);
+		int xBin = node % nNodes;
 		GraphAxis x = graph.getXAxis();
-		double xDelta = (x.max-x.min)/nNodes;
-		double xLow = x.min+xBin*xDelta;
-		int yBin = node/nNodes;
+		double xDelta = (x.max - x.min) / nNodes;
+		double xLow = x.min + xBin * xDelta;
+		int yBin = node / nNodes;
 		GraphAxis y = graph.getYAxis();
 		double yDelta = engine.getModel().getTimeStep();
-		double yHigh = y.max-yBin*yDelta;
-		String info = "<html><i>"+y.label+":</i> ("+y.formatter.format(yHigh)+", "+y.formatter.format(yHigh-yDelta)+"]"+
-					  "<br><i>"+x.label+":</i> ["+x.formatter.format(xLow)+", "+x.formatter.format(xLow+xDelta)+")";
+		double yHigh = y.max - yBin * yDelta;
+		String info = "<html><i>" + y.label + ":</i> (" + y.formatter.format(yHigh) + ", "
+				+ y.formatter.format(yHigh - yDelta) + "]" +
+				"<br><i>" + x.label + ":</i> [" + x.formatter.format(xLow) + ", " + x.formatter.format(xLow + xDelta)
+				+ ")";
 		// only the first row returns more detailed information
-		if( yBin>0 ) return info;
-// note: 'density' and '%' should not be hardwired...
-		return info+"<br><i>density:</i> "+x.formatter.format(100.0*bins[tag][xBin])+"%";
+		if (yBin > 0)
+			return info;
+		// note: 'density' and '%' should not be hardwired...
+		return info + "<br><i>density:</i> " + x.formatter.format(100.0 * bins[tag][xBin]) + "%";
 	}
 
-    @Override
+	@Override
 	protected String getFilePrefix() {
 		return "distr";
 	}
 
 	// implement MultiViewPanel - mostly done in MVAbstract
-    @Override
+	@Override
 	public String getName() {
 		return "Trait - Distribution";
 	}
 
-    @Override
+	@Override
 	public boolean mouseHitNode(int node, int tag) {
 		return false;
 	}
 
-//    @Override
-//	public boolean mouseHitNode(int node, int refnode, int tag) {
-//		return false;
-//	}
+	// @Override
+	// public boolean mouseHitNode(int node, int refnode, int tag) {
+	// return false;
+	// }
 }

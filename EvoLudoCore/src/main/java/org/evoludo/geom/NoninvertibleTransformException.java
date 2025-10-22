@@ -36,7 +36,6 @@ package org.evoludo.geom;
  * the inverse of an {@link AffineTransform} object but the
  * {@code AffineTransform} is in a non-invertible state.
  * <p>
- *
  * Adapted from java.awt.geom.NoninvertibleTransformException. Generally made
  * more GWT friendly.
  * 
@@ -44,12 +43,15 @@ package org.evoludo.geom;
  */
 
 public class NoninvertibleTransformException extends java.lang.Exception {
+
+	/**
+	 * Use serialVersionUID for interoperability.
+	 */
 	private static final long serialVersionUID = 6137225240503990466L;
 
 	/**
-	 * Constructs an instance of
-	 * {@code NoninvertibleTransformException}
-	 * with the specified detail message.
+	 * Constructs an instance of {@code NoninvertibleTransformException} with the
+	 * specified detail message.
 	 * 
 	 * @param s the detail message
 	 * @since 1.2

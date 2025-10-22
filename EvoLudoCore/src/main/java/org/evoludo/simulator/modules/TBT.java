@@ -37,11 +37,11 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model.HasDE;
+import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -119,25 +119,17 @@ public class TBT extends Discrete implements Payoffs,
 	 */
 	public TBT(EvoLudo engine) {
 		super(engine);
+		nTraits = 2; // cooperators and defectors
 	}
 
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 2;
-		// trait names
-		String[] names = new String[nTraits];
-		names[DEFECT] = "Defector";
-		names[COOPERATE] = "Cooperator";
-		setTraitNames(names);
-		// trait colors
-		Color[] colors = new Color[2 * nTraits];
-		colors[DEFECT] = Color.RED;
-		colors[COOPERATE] = Color.BLUE;
-		colors[DEFECT + nTraits] = Color.YELLOW;
-		colors[COOPERATE + nTraits] = Color.GREEN;
-		setTraitColors(colors);
-		// payoffs
+		// trait names (optional)
+		setTraitNames(new String[] { "Cooperator", "Defector" });
+		// trait colors (optional)
+		setTraitColors(new Color[] { Color.BLUE, Color.RED, Color.GREEN, Color.YELLOW });
+		// payoffs (local storage)
 		payoffs = new double[nTraits][nTraits];
 	}
 
@@ -309,7 +301,7 @@ public class TBT extends Discrete implements Payoffs,
 				@Override
 				public boolean parse(String arg) {
 					double[][] payMatrix = CLOParser.parseMatrix(arg);
-					if (payMatrix == null || payMatrix.length != 2 || payMatrix[0].length != 2)
+					if (payMatrix.length != 2 || payMatrix[0].length != 2)
 						return false;
 					setPayoffs(payMatrix);
 					return true;
@@ -334,7 +326,7 @@ public class TBT extends Discrete implements Payoffs,
 	}
 
 	@Override
-	public IBSDPopulation createIBSPop() {
+	public IBSDPopulation createIBSPopulation() {
 		return new TBT.IBSPop(engine, this);
 	}
 
@@ -413,18 +405,17 @@ public class TBT extends Discrete implements Payoffs,
 		}
 
 		@Override
-		public void getMeanTraits(double[] mean) {
+		public double[] getMeanTraits(double[] mean) {
 			// SQUARE_NEUMANN_2ND geometry for competition results in two disjoint
 			// sublattices; report trait frequencies in each sublattice separately
 			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
-				super.getMeanTraits(mean);
-				return;
+				return super.getMeanTraits(mean);
 			}
 
-			double newtime = model.getTime();
+			double newtime = model.getUpdates();
 			if (Math.abs(tsMean - newtime) < model.getTimeStep()) {
 				System.arraycopy(tsTraits, 0, mean, 0, mean.length);
-				return;
+				return mean;
 			}
 			int n = 0;
 			Arrays.fill(mean, 0);
@@ -441,21 +432,21 @@ public class TBT extends Discrete implements Payoffs,
 			ArrayMath.multiply(mean, 2.0 / nPopulation);
 			System.arraycopy(mean, 0, tsTraits, 0, mean.length);
 			tsMean = newtime;
+			return mean;
 		}
 
 		@Override
-		public void getMeanFitness(double[] mean) {
+		public double[] getMeanFitness(double[] mean) {
 			// SQUARE_NEUMANN_2ND geometry for competition results in two disjoint
 			// sublattices; report trait frequencies in each sublattice separately
 			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
-				super.getMeanFitness(mean);
-				return;
+				return super.getMeanFitness(mean);
 			}
 
-			double newtime = model.getTime();
+			double newtime = model.getUpdates();
 			if (Math.abs(tsFit - newtime) < model.getTimeStep()) {
 				System.arraycopy(tsFits, 0, mean, 0, mean.length);
-				return;
+				return mean;
 			}
 			int n = 0;
 			Arrays.fill(mean, 0);
@@ -475,6 +466,7 @@ public class TBT extends Discrete implements Payoffs,
 			ArrayMath.multiply(mean, 2.0 / nPopulation);
 			System.arraycopy(mean, 0, tsFits, 0, mean.length);
 			tsFit = newtime;
+			return mean;
 		}
 
 		@Override
@@ -483,11 +475,15 @@ public class TBT extends Discrete implements Payoffs,
 				return super.getStatus();
 
 			getMeanTraits(tsTraits);
-			String status = "";
-			for (int i = 0; i < 2 * nTraits; i++)
-				status += (status.length() > 0 ? ", " : "") + module.getTraitName(i) + ": "
-						+ Formatter.formatPercent(tsTraits[i], 1);
-			return status;
+			StringBuilder status = new StringBuilder();
+			for (int i = 0; i < 2 * nTraits; i++) {
+				if (status.length() > 0) {
+					status.append(", ");
+				}
+				status.append(module.getTraitName(i)).append(": ")
+						.append(Formatter.formatPercent(tsTraits[i], 1));
+			}
+			return status.toString();
 		}
 
 		@Override
@@ -503,7 +499,8 @@ public class TBT extends Discrete implements Payoffs,
 			initMono(TBT.COOPERATE);
 			switch (interaction.getType()) {
 				case CUBE:
-					int l, mz;
+					int l;
+					int mz;
 					if (nPopulation == 25000) {
 						l = 50;
 						mz = 5; // 10/2

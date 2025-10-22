@@ -47,15 +47,17 @@ import org.evoludo.graphics.HistoGraph;
 import org.evoludo.graphics.HistoGraphListener;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudoLab;
+import org.evoludo.simulator.models.CModel;
+import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Model;
 
 public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 
 	private static final long serialVersionUID = 20110423L;
 
-	double[][]	bins;
-	double[]		max;
-	int		nData = -1;
+	double[][] bins;
+	double[] max;
+	int nData = -1;
 	static final String xLabelText = "fitness";
 	private final JLabel xLabel;
 
@@ -65,19 +67,20 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 		xLabel.setAlignmentX(0.5f);
 		add(xLabel);
 	}
-	
+
 	private void alloc() {
-		if( bins==null || bins.length!=nData ) {
+		if (bins == null || bins.length != nData) {
 			bins = new double[nData][];
 			max = new double[nData];
-			for( int n=0; n<nData; n++ ) bins[n] = new double[HistoGraph.HISTO_BINS];
+			for (int n = 0; n < nData; n++)
+				bins[n] = new double[HistoGraph.HISTO_BINS];
 		}
 	}
 
 	private void addGraph() {
 		HistoGraph graph = new HistoGraph(this, module, graphs.size());
 		GraphAxis x = graph.getXAxis();
-		x.label = xLabelText;	// this is needed for tooltips
+		x.label = xLabelText; // this is needed for tooltips
 		x.showLabel = false;
 		x.grid = 0;
 		x.majorTicks = 3;
@@ -86,8 +89,9 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 		graph.setAlignmentX(Component.CENTER_ALIGNMENT);
 		// insert graph before xLabel
 		Component[] comps = getComponents();
-		for( int c=0; c<getComponentCount(); c++ ) {
-			if( comps[c]!=xLabel ) continue;
+		for (int c = 0; c < getComponentCount(); c++) {
+			if (comps[c] != xLabel)
+				continue;
 			add(Box.createVerticalStrut(4), c);
 			add(graph, c);
 			break;
@@ -97,25 +101,25 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 
 	@Override
 	public void reset(boolean clear) {
-		nData = engine.getModel().isContinuous()?1:module.getNTraits();
+		nData = engine.getModel().isContinuous() ? 1 : module.getNTraits();
 		int nGraphs = graphs.size();
-		int vacant = module.getVacant();
+		int vacant = module.getVacantIdx();
 		if (vacant >= 0)
 			nData--;
-		if( nData==nGraphs ) {
+		if (nData == nGraphs) {
 			super.reset(clear);
 			return;
 		}
 
-		if( nData<nGraphs ) {
-            for(int n=nGraphs; n>nData; n--)
-            	remove(graphs.remove(nData));
-        }
-		else {
-			// invalidate layout of existing graphs - otherwise the newly added graphs will have height zero!
-			for(int n=0; n<nGraphs; n++)
+		if (nData < nGraphs) {
+			for (int n = nGraphs; n > nData; n--)
+				remove(graphs.remove(nData));
+		} else {
+			// invalidate layout of existing graphs - otherwise the newly added graphs will
+			// have height zero!
+			for (int n = 0; n < nGraphs; n++)
 				graphs.get(n).setSize(0, 0);
-			for(int n=nGraphs; n<nData; n++)
+			for (int n = nGraphs; n < nData; n++)
 				addGraph();
 		}
 		alloc();
@@ -126,77 +130,82 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 	public void initStyle(GraphStyle style, AbstractGraph owner) {
 		super.initStyle(style, owner);
 		xLabel.setFont(style.labelFont);
-		xLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, getFontMetrics(style.labelFont).stringWidth(xLabelText)));
+		xLabel.setBorder(
+				BorderFactory.createEmptyBorder(0, 0, 0, getFontMetrics(style.labelFont).stringWidth(xLabelText)));
 	}
 
 	// implement HistoGraphListener - mostly done in MVAbstract
 	@Override
-	public boolean	verifyXAxis(GraphAxis x, int tag) {
+	public boolean verifyXAxis(GraphAxis x, int tag) {
 		boolean changed = false;
 		Model model = engine.getModel();
 		double min = model.getMinScore(tag);
-		if( Math.abs(x.min-min)>1e-8 ) {
+		if (Math.abs(x.min - min) > 1e-8) {
 			x.min = min;
 			changed = true;
 		}
 		double m = model.getMaxScore(tag);
-		if( Math.abs(x.max-m)>1e-8 ) {
+		if (Math.abs(x.max - m) > 1e-8) {
 			x.max = m;
 			changed = true;
 		}
-		if( m-min<1e-6 ) {
-			x.min = min-1.0;
-			x.max = m+1.0;
+		if (m - min < 1e-6) {
+			x.min = min - 1.0;
+			x.max = m + 1.0;
 			changed = true;
 		}
 		return changed;
 	}
 
 	@Override
-	public boolean	verifyMarkedBins(HistoFrameLayer frame, int tag) {
+	public boolean verifyMarkedBins(HistoFrameLayer frame, int tag) {
 		Color[] colors = getColors(tag);
 		Model model = engine.getModel();
-		if( model.isContinuous() ) {
+		if (model.isContinuous()) {
 			Color tcolor = module.getTraitColors()[tag];
 			// cast is save because pop is Continuous
-			org.evoludo.simulator.models.Continuous cmodel = (org.evoludo.simulator.models.Continuous) model;
-			// for continuous strategies we have a single histogram and may want to mark several bins
+			CModel cmodel = (CModel) model;
+			// for continuous strategies we have a single histogram and may want to mark
+			// several bins
 			boolean changed = frame.updateMarkedBin(0, cmodel.getMinMonoScore(module.getID()), tcolor.darker());
 			changed |= frame.updateMarkedBin(1, cmodel.getMaxMonoScore(module.getID()), tcolor.brighter());
 			return changed;
 		}
 		// cast is save because pop is not Continuous
-		org.evoludo.simulator.models.Discrete dmodel = (org.evoludo.simulator.models.Discrete) model;
-		// for discrete strategies we have different histograms and mark only a single bin
-		return frame.updateMarkedBin(0, 
-				dmodel.getMonoScore(module.getID(), tag), 
-				new Color(Math.max(colors[tag].getRed(), 127), 
-						Math.max(colors[tag].getGreen(), 127), 
+		DModel dmodel = (DModel) model;
+		// for discrete strategies we have different histograms and mark only a single
+		// bin
+		return frame.updateMarkedBin(0,
+				dmodel.getMonoScore(module.getID(), tag),
+				new Color(Math.max(colors[tag].getRed(), 127),
+						Math.max(colors[tag].getGreen(), 127),
 						Math.max(colors[tag].getBlue(), 127)));
 	}
 
-    @Override
+	@Override
 	public boolean getData(HistoData data, int tag) {
 		// check if we need to process data first
-		double now = engine.getModel().getTime();
-		if( now-data.timestamp>1e-10 ) {
+		double now = engine.getModel().getUpdates();
+		if (now - data.timestamp > 1e-10) {
 			// process data first
-			// for neutral selection we have minScore==maxScore in that case Population/DPopulation
+			// for neutral selection we have minScore==maxScore in that case
+			// Population/DPopulation
 			// assumes an interval of [score-1, score+1]
-			// note: first argument of getFitnessHistogramData is the species id but since JRE doesn't 
+			// note: first argument of getFitnessHistogramData is the species id but since
+			// JRE doesn't
 			// deal with multiple species this can be hardcoded to 0.
 			engine.getModel().getFitnessHistogramData(0, bins);
-			for( int n=0; n<nData; n++ ) {
+			for (int n = 0; n < nData; n++) {
 				double maxBin = 0.0, accuBin = 0.0;
 				double[] myBins = bins[n];
 				int nBins = myBins.length;
-				for( int i=0; i<nBins; i++ ) {
+				for (int i = 0; i < nBins; i++) {
 					double aBin = myBins[i];
 					maxBin = Math.max(maxBin, aBin);
 					accuBin += aBin;
 				}
-				double norm = 100.0/accuBin;
-				max[n] = maxBin*norm;
+				double norm = 100.0 / accuBin;
+				max[n] = maxBin * norm;
 				ArrayMath.multiply(myBins, norm);
 			}
 		}
@@ -204,14 +213,14 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 		data.state = bins[tag];
 		data.bins = HistoGraph.HISTO_BINS;
 		data.ymax = max[tag];
-// note: should indicate if scales changed?
+		// note: should indicate if scales changed?
 		return false;
 	}
 
 	// no need to display info
 	@Override
 	public String getName(int tag) {
-		if( engine.getModel().isContinuous() )
+		if (engine.getModel().isContinuous())
 			return null;
 		return super.getName(tag);
 	}
@@ -219,7 +228,7 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 	// use default color
 	@Override
 	public Color getColor(int tag) {
-		if( engine.getModel().isContinuous() )
+		if (engine.getModel().isContinuous())
 			return null;
 		return super.getColor(tag);
 	}
@@ -230,7 +239,7 @@ public class MVFitHistogram extends MVAbstract implements HistoGraphListener {
 	}
 
 	// implement MultiViewPanel - mostly done in MVAbstract
-    @Override
+	@Override
 	public String getName() {
 		return "Fitness - Histogram";
 	}

@@ -32,5 +32,5 @@ package org.evoludo.graphics;
 
 public interface HistoGraphListener extends GraphListener {
 
-	public boolean	getData(HistoData data, int tag);
+	public boolean getData(HistoData data, int tag);
 }

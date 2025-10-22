@@ -155,7 +155,7 @@ public class simMoran extends Moran {
 		if (engine.cloSeed.isSet()) {
 			// RNG seed is set. now clear seed to obtain reproducible statistics
 			// rather just a single data point repeatedly
-			engine.getRNG().clearRNGSeed();
+			engine.getRNG().clearSeed();
 		}
 
 		long nSamples = (long) engine.getModel().getNSamples();
@@ -204,11 +204,14 @@ public class simMoran extends Moran {
 		double rhoA1 = rhoA(1, nPopulation);
 		out.println("# r\tfixation prob\t(well-mixed)\tfixation time\t(well-mixed)\tabsorbtion time\t(well-mixed)");
 		out.println(Formatter.formatFix(getFitness()[MUTANT], 2) + "\t"
-				+ Formatter.formatFix(meanFix, 8) + " ± " + Formatter.formatFix(Math.sqrt(varFix / (count - 1.0)), 8) + "\t"
+				+ Formatter.formatFix(meanFix, 8) + " ± " + Formatter.formatFix(Math.sqrt(varFix / (count - 1.0)), 8)
+				+ "\t"
 				+ Formatter.formatFix(rhoA1, 8) + "\t"
-				+ Formatter.formatFix(fixTotUpdate[0][0], 8) + " ± " + Formatter.formatFix(Math.sqrt(fixTotUpdate[0][1] / (fixTotUpdate[0][2] - 1)), 8) + "\t"
+				+ Formatter.formatFix(fixTotUpdate[0][0], 8) + " ± "
+				+ Formatter.formatFix(Math.sqrt(fixTotUpdate[0][1] / (fixTotUpdate[0][2] - 1)), 8) + "\t"
 				+ Formatter.formatFix(tA1(nPopulation), 8) + "\t"
-				+ Formatter.formatFix(absTotUpdate[0], 8) + " ± " + Formatter.formatFix(Math.sqrt(absTotUpdate[1] / (absTotUpdate[2] - 1)), 8) + "\t"
+				+ Formatter.formatFix(absTotUpdate[0], 8) + " ± "
+				+ Formatter.formatFix(Math.sqrt(absTotUpdate[1] / (absTotUpdate[2] - 1)), 8) + "\t"
 				+ Formatter.formatFix(t1(rhoA1, nPopulation), 8));
 		engine.writeFooter();
 		engine.exportState();

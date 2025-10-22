@@ -31,7 +31,7 @@
 package org.evoludo.simulator.views;
 
 import java.awt.Color;
-import java.util.ArrayList;
+import java.util.List;
 
 import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.graphics.PopGraph3D;
@@ -40,6 +40,8 @@ import org.evoludo.simulator.ColorMap3D;
 import org.evoludo.simulator.EvoLudo.ColorModelType;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.models.CModel;
+import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Type;
@@ -47,8 +49,6 @@ import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
-
-import com.google.gwt.user.client.Command;
 
 import thothbot.parallax.core.shared.materials.MeshLambertMaterial;
 
@@ -90,15 +90,15 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 			// - another alternative is to add context menu to toggle between the different
 			// link sets (could be difficult if one is a lattice...)
 			int nGraphs = 0;
-			ArrayList<? extends Module> species = engine.getModule().getSpecies();
-			for (Module module : species)
+			List<? extends Module<?>> species = engine.getModule().getSpecies();
+			for (Module<?> module : species)
 				nGraphs += Geometry.displayUniqueGeometry(module) ? 1 : 2;
 
 			if (graphs.size() == nGraphs)
 				return;
 
 			destroyGraphs();
-			for (Module module : species) {
+			for (Module<?> module : species) {
 				PopGraph3D graph = new PopGraph3D(this, module);
 				wrapper.add(graph);
 				graphs.add(graph);
@@ -134,7 +134,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 				return;
 
 			destroyGraphs();
-			Module module = engine.getModule();
+			Module<?> module = engine.getModule();
 			PopGraph3D graph = new PopGraph3D(this, module);
 			// debugging not available for DE's
 			graph.setDebugEnabled(false);
@@ -152,12 +152,12 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		super.reset(hard);
 		// IMPORTANT: to avoid problems with WebGL and 3D rendering, each graph needs to
 		// have its own color map
-		org.evoludo.simulator.models.Continuous cmodel = null;
-		org.evoludo.simulator.models.Discrete dmodel = null;
+		CModel cmodel = null;
+		DModel dmodel = null;
 		if (model.isContinuous())
-			cmodel = (org.evoludo.simulator.models.Continuous) model;
+			cmodel = (CModel) model;
 		else
-			dmodel = (org.evoludo.simulator.models.Discrete) model;
+			dmodel = (DModel) model;
 
 		boolean inter = true;
 		boolean noWarnings = true;
@@ -169,7 +169,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 			setGraphGeometry(graph, inter);
 			inter = !inter;
 			ColorMap<MeshLambertMaterial> cMap = null;
-			Module module = graph.getModule();
+			Module<?> module = graph.getModule();
 			switch (type) {
 				case TRAIT:
 					if (cmodel != null) {
@@ -218,7 +218,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 								cMap = new ColorMap3D.Gradient1D(colors[dep], colors[(dep + 1) % nTraits], 100);
 							else {
 								// vacant space does not count as dependent trait for coloring
-								if (module.getVacant() == dep)
+								if (module.getVacantIdx() == dep)
 									dep = -1;
 								cMap = new ColorMap3D.Gradient2D(colors, dep, 100);
 							}
@@ -293,77 +293,86 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 	@Override
 	public void populateContextMenu(ContextMenu menu) {
 		menu.addSeparator();
-		boolean hasMessage = false;
-		for (PopGraph3D graph : graphs)
-			hasMessage |= graph.hasMessage();
-		boolean isOrthographic = graphs.get(0).isOrthographic();
-		boolean isAnaglyph = graphs.get(0).isAnaglyph();
-		boolean isVR = graphs.get(0).isVR();
+		boolean multiGraph = graphs.size() > 1;
+		PopGraph3D graph = graphs.get(0);
+		boolean isOrthographic = graph.isOrthographic();
+		boolean isAnaglyph = graph.isAnaglyph();
+		boolean isVR = graph.isVR();
+		// projections synchronized across graphs.
+		addProjectionMenu(menu);
+		projectionMenu.setChecked(isOrthographic);
+		projectionMenu.setEnabled(!(isAnaglyph || isVR));
+		// anaglyph and VR modes are mutually exclusive
+		// only available for a single graph
+		if (!multiGraph) {
+			addAnaglyphMenu(menu);
+			addVRMenu(menu);
+			anaglyphMenu.setChecked(isAnaglyph);
+			anaglyphMenu.setEnabled(!isOrthographic);
+			vrMenu.setChecked(isVR);
+			vrMenu.setEnabled(!isOrthographic);
+		}
+		super.populateContextMenu(menu);
+	}
 
-		// process perspective context menu
+	/**
+	 * Add the menu item to select parallel projection of the graph instead of the
+	 * default perspective projection.
+	 * 
+	 * @param menu the context menu to which the item is added
+	 */
+	private void addProjectionMenu(ContextMenu menu) {
 		if (projectionMenu == null) {
-			projectionMenu = new ContextMenuCheckBoxItem("Parallel projection", new Command() {
-				@Override
-				public void execute() {
-					boolean isOrthographic = !projectionMenu.isChecked();
-					for (PopGraph3D graph : graphs)
-						graph.setOrthographic(isOrthographic);
-					projectionMenu.setChecked(isOrthographic);
-				}
+			projectionMenu = new ContextMenuCheckBoxItem("Parallel projection", () -> {
+				boolean isOrtho = !projectionMenu.isChecked();
+				for (PopGraph3D graph : graphs)
+					graph.setOrthographic(isOrtho);
+				projectionMenu.setChecked(isOrtho);
 			});
 		}
 		menu.add(projectionMenu);
-		projectionMenu.setChecked(isOrthographic);
-		projectionMenu.setEnabled(!(isAnaglyph || isVR) && !hasMessage);
+	}
 
-		// process anaglyph context menu
+	/**
+	 * Add the menu item to select anaglyph projection of the 3D space for a
+	 * representation of the graph suitable for colored 3D glasses.
+	 * 
+	 * @param menu the context menu to which the item is added
+	 */
+	private void addAnaglyphMenu(ContextMenu menu) {
 		if (anaglyphMenu == null) {
-			anaglyphMenu = new ContextMenuCheckBoxItem("Anaglyph 3D", new Command() {
-				@Override
-				public void execute() {
-					boolean isAnaglyph = !anaglyphMenu.isChecked();
-					for (PopGraph3D graph : graphs)
-						graph.setAnaglyph(isAnaglyph);
-					anaglyphMenu.setChecked(isAnaglyph);
-				}
+			anaglyphMenu = new ContextMenuCheckBoxItem("Anaglyph 3D", () -> {
+				boolean anaglyph = !anaglyphMenu.isChecked();
+				for (PopGraph3D graph : graphs)
+					graph.setAnaglyph(anaglyph);
+				anaglyphMenu.setChecked(anaglyph);
 			});
 		}
 		menu.add(anaglyphMenu);
-		anaglyphMenu.setChecked(isAnaglyph);
-		anaglyphMenu.setEnabled(!isOrthographic && !hasMessage);
+	}
 
-		// process virtual reality context menu
+	/**
+	 * Add the menu item to select stereo projection of the 3D space for a virtual
+	 * reality representation of the graph.
+	 * 
+	 * @param menu the context menu to which the item is added
+	 */
+	private void addVRMenu(ContextMenu menu) {
 		if (graphs.size() == 1) {
-			// VR only makes sense with a single graph
 			if (vrMenu == null) {
-				vrMenu = new ContextMenuCheckBoxItem("Virtual reality (β)", new Command() {
-					@Override
-					public void execute() {
-						boolean isVR = !vrMenu.isChecked();
-						for (PopGraph3D graph : graphs)
-							graph.setVR(isVR);
-						vrMenu.setChecked(isVR);
-					}
+				vrMenu = new ContextMenuCheckBoxItem("Virtual reality (β)", () -> {
+					boolean vr = !vrMenu.isChecked();
+					for (PopGraph3D graph : graphs)
+						graph.setVR(vr);
+					vrMenu.setChecked(vr);
 				});
 			}
 			menu.add(vrMenu);
-			vrMenu.setChecked(isVR);
-			vrMenu.setEnabled(!isOrthographic && !hasMessage);
 		}
-
-		// anaglyph and VR not possible for parallel projection
-		if (isOrthographic) {
-			for (PopGraph3D graph : graphs) {
-				graph.setAnaglyph(false);
-				graph.setVR(false);
-			}
-		}
-		super.populateContextMenu(menu);
 	}
 
 	@Override
 	protected ExportType[] exportTypes() {
 		return new ExportType[] { ExportType.PNG };
-		// return new ExportType[] { ExportType.SVG, ExportType.PNG };
 	}
 }

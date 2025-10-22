@@ -44,7 +44,7 @@ public class ToggleAntiAliasingAction extends AbstractAction {
 	private static final long serialVersionUID = 20110423L;
 	private static ToggleAntiAliasingAction taaa;
 	private static boolean doAntiAliasing = false;
-	private static final java.util.List<AbstractGraph> aaListeners =	new ArrayList<AbstractGraph>();
+	private static final java.util.List<AbstractGraph> aaListeners = new ArrayList<>();
 
 	// ensure non-instantiability of ToggleAntiAliasingAction
 	private ToggleAntiAliasingAction() {
@@ -55,7 +55,8 @@ public class ToggleAntiAliasingAction extends AbstractAction {
 	}
 
 	public static ToggleAntiAliasingAction sharedInstance() {
-		if( taaa==null ) taaa = new ToggleAntiAliasingAction();
+		if (taaa == null)
+			taaa = new ToggleAntiAliasingAction();
 		return taaa;
 	}
 
@@ -78,14 +79,14 @@ public class ToggleAntiAliasingAction extends AbstractAction {
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if( !(e.getSource() instanceof JCheckBoxMenuItem) ) {
+		if (!(e.getSource() instanceof JCheckBoxMenuItem)) {
 			// event not triggered by menu (e.g. keypress) - toggle state
 			setAntiAliasing(!doAntiAliasing);
-		}
-		else
-			doAntiAliasing = (Boolean)getValue(Action.SELECTED_KEY);
-		for( Iterator<AbstractGraph> i = aaListeners.iterator(); i.hasNext(); ) {
-// note: this is obscure - it should notify listeneres that antialiasing changed!
+		} else
+			doAntiAliasing = (Boolean) getValue(Action.SELECTED_KEY);
+		for (Iterator<AbstractGraph> i = aaListeners.iterator(); i.hasNext();) {
+			// note: this is obscure - it should notify listeneres that antialiasing
+			// changed!
 			i.next().clear();
 		}
 	}

@@ -39,11 +39,11 @@ public class GraphLabel extends Point {
 
 	private static final long serialVersionUID = 20110423L;
 
-	String	label = "";
-	Color	color = Color.black;
+	String label = "";
+	Color color = Color.black;
 	AffineTransform at;
-	boolean	vertical = false;
-	Font	font;
+	boolean vertical = false;
+	Font font;
 
 	public GraphLabel(String label, int x, int y) {
 		this(label, x, y, Color.black);

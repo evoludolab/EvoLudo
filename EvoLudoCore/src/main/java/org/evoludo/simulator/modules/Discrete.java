@@ -31,8 +31,12 @@
 package org.evoludo.simulator.modules;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.IBSD;
+import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.Type;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.CLODelegate;
@@ -43,19 +47,7 @@ import org.evoludo.util.CLOption.Category;
  * 
  * @author Christoph Hauert
  */
-public abstract class Discrete extends Module {
-
-	/**
-	 * The list {@code species} contains references to each species in this
-	 * module. It deliberately shadows {@link Module#species} to simplify
-	 * bookkeeping. During instantiation {@link Module#species} and
-	 * {@code species} are linked to represent one and the same list.
-	 * 
-	 * @see #Discrete(EvoLudo, Discrete)
-	 * @see Module#species
-	 */
-	@SuppressWarnings("hiding")
-	ArrayList<Discrete> species;
+public abstract class Discrete extends Module<Discrete> {
 
 	/**
 	 * The mutation operator for discrete traits.
@@ -72,7 +64,7 @@ public abstract class Discrete extends Module {
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	public Discrete(EvoLudo engine) {
+	protected Discrete(EvoLudo engine) {
 		this(engine, null);
 	}
 
@@ -83,8 +75,9 @@ public abstract class Discrete extends Module {
 	 * 
 	 * @param partner the partner species
 	 */
-	public Discrete(Discrete partner) {
+	protected Discrete(Discrete partner) {
 		this(partner.engine, partner);
+		add(this);
 	}
 
 	/**
@@ -98,47 +91,16 @@ public abstract class Discrete extends Module {
 	 */
 	private Discrete(EvoLudo engine, Discrete partner) {
 		super(engine, partner);
-		if (partner == null) {
-			species = new ArrayList<Discrete>();
-			// recall this.species shadows super.species for later convenience
-			super.species = species;
-		} else {
-			// link ArrayList<Discrete> shadows
-			species = partner.species;
-		}
-		add(this);
+		if (partner == null)
+			species = new ArrayList<>(Collections.singleton(this));
 	}
 
-	/**
-	 * Add {@code dpop} to list of species. Duplicate entries are ignored.
-	 * Allocate new list if necessary. Assign generic name to species if none
-	 * provided.
-	 *
-	 * @param dpop the module to add to species list.
-	 * @return {@code true} if {@code dpop} successfully added;
-	 *         {@code false} adding failed or already included in list.
-	 */
-	public boolean add(Discrete dpop) {
-		// do not add duplicates
-		if (species.contains(dpop))
-			return false;
-		if (!species.add(dpop))
-			return false;
-		switch (species.size()) {
-			case 1:
-				break;
-			case 2:
-				// start naming species (if needed)
-				for (Discrete pop : species) {
-					if (pop.getName().length() < 1)
-						pop.setName("Species-" + pop.ID);
-				}
-				break;
-			default:
-				if (dpop.getName().length() < 1)
-					dpop.setName("Species-" + dpop.ID);
-		}
-		return true;
+	@Override
+	public Model createModel(Type type) {
+		Model mod = super.createModel(type);
+		if (mod != null)
+			return mod;
+		return new IBSD(engine);
 	}
 
 	@Override
@@ -257,7 +219,7 @@ public abstract class Discrete extends Module {
 		super.collectCLO(parser);
 		parser.addCLO(cloMonoStop);
 		// mutations only make sense for species with multiple traits (excluding vacant)
-		if (nTraits > 2 || (nTraits == 2 && VACANT < 0))
+		if (this instanceof Features.Payoffs && (nTraits > 2 || (nTraits == 2 && !hasVacant())))
 			parser.addCLO(mutation.clo);
 	}
 }

@@ -50,7 +50,7 @@ public class GlassLayer extends JComponent {
 
 	public static final int RADIUS = 5;
 
-	public static int margin = (RADIUS+1)/2;
+	public static int margin = (RADIUS + 1) / 2;
 
 	public GlassLayer(FrameLayer frame, GlassLayerListener view) {
 		canvas = frame.canvas;
@@ -64,24 +64,24 @@ public class GlassLayer extends JComponent {
 
 	@Override
 	public void paintComponent(Graphics g) {
-		if( isClear || view.hasMessage() ) { 
+		if (isClear || view.hasMessage()) {
 			isClear = false;
 			return;
 		}
-//frame.style.prepare((Graphics2D)g);
-Graphics2D g2 = (Graphics2D)g;
-if( ToggleAntiAliasingAction.sharedInstance().getAntiAliasing() )
-	g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-else
-	g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_DEFAULT);
+		// frame.style.prepare((Graphics2D)g);
+		Graphics2D g2 = (Graphics2D) g;
+		if (ToggleAntiAliasingAction.sharedInstance().getAntiAliasing())
+			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		else
+			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_DEFAULT);
 		g.setColor(Color.green);
-		int xshift = canvas.x-margin+1;
-		int yshift = canvas.y-margin+1;
+		int xshift = canvas.x - margin + 1;
+		int yshift = canvas.y - margin + 1;
 		Point2D s = view.getStart();
-		g.fillOval(xshift+(int)s.x, yshift+(int)s.y, RADIUS, RADIUS);
+		g.fillOval(xshift + (int) s.getX(), yshift + (int) s.getY(), RADIUS, RADIUS);
 		g.setColor(Color.red);
 		Point2D p = view.getState();
-		g.fillOval(xshift+(int)p.x, yshift+(int)p.y, RADIUS, RADIUS);
+		g.fillOval(xshift + (int) p.getX(), yshift + (int) p.getY(), RADIUS, RADIUS);
 	}
 
 	@Override

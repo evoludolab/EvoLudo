@@ -33,9 +33,9 @@ package org.evoludo.simulator.modules;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
+import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.models.SDEN;
 import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.Features.Payoffs;
@@ -269,7 +269,7 @@ public class Traits extends Discrete implements Payoffs,
 					}
 					payoffType = PAYOFF_MATRIX;
 					double[][] payMatrix = CLOParser.parseMatrix(arg);
-					if (payMatrix == null)
+					if (payMatrix.length == 0)
 						return false;
 					setPayoffs(payMatrix);
 					return true;
@@ -286,8 +286,10 @@ public class Traits extends Discrete implements Payoffs,
 
 	@Override
 	public Model createModel(Type type) {
-		if (type.isSDE())
-			return new SDEN(engine);
-		return super.createModel(type);
+		if (!type.isSDE())
+			return super.createModel(type);
+		if (model != null && model.getType().isSDE())
+			return model;
+		return new SDEN(engine);
 	}
 }

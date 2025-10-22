@@ -36,7 +36,7 @@ import org.evoludo.geom.Point2D;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBS.HasIBS;
+import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
@@ -100,15 +100,15 @@ public class Centipede extends Discrete implements Payoffs,
 	 */
 	public Centipede(EvoLudo engine) {
 		super(engine);
+		nTraits = 1; // initially advertise a single trait
 	}
 
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 1;
-		// trait names
+		// trait names (optional)
 		setTraitNames(new String[] { "(0,0)" });
-		// trait colors
+		// trait colors (optional)
 		setTraitColors(new Color[] { Color.BLACK });
 	}
 
@@ -395,11 +395,16 @@ public class Centipede extends Discrete implements Payoffs,
 		 */
 		public CentiMap(int role) {
 			super(role, role == 0 ? "First mover" : "Second mover");
-			super.setNames(new String[] { "0", "1", "2" });
 		}
 
 		@Override
-		public void setNames(String[] names) {
+		public String[] getNames() {
+			String[] names = super.getNames();
+			if (names == null) {
+				names = new String[] { "0", "1", "2" };
+				setNames(names);
+			}
+			return names;
 		}
 
 		@Override
@@ -438,7 +443,7 @@ public class Centipede extends Discrete implements Payoffs,
 		 * 
 		 * @param module the module that defines the Centipede game
 		 */
-		public CentiMutations(Module module) {
+		public CentiMutations(Module<?> module) {
 			super(module);
 		}
 

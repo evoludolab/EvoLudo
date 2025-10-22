@@ -1,19 +1,71 @@
 {
-    // See https://go.microsoft.com/fwlink/?LinkId=733558
-    // for the documentation about the tasks.json format
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "GWT devmode",
-            "type": "shell",
-            "command": "mvn gwt:devmode",
-            "group": "build"
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Javac warnings",
+      "type": "shell",
+      "command": "mvn",
+      "args": [
+        "clean",
+        "compile",
+        "-Dmaven.compiler.showWarnings=true",
+        "-Dmaven.compiler.showDeprecation=true"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": {
+        "owner": "java",
+        "fileLocation": "absolute",
+        "pattern": {
+          "regexp": "^\\[(WARNING|ERROR)\\]\\s+(.+\\.java):\\[(\\d+),(\\d+)\\]\\s+(.*)$",
+          "severity": 1,
+          "file": 2,
+          "line": 3,
+          "column": 4,
+          "message": 5
+        }
+       }
+    },
+    {
+      "label": "Javadoc warnings",
+      "type": "shell",
+      "command": "mvn",
+      "args": [
+        "-Pjavadoc-warnings",
+        "javadoc:aggregate"
+      ],
+      "group": "build",
+      "problemMatcher": {
+        "owner": "javadoc",
+        "source": "javadoc",
+        "fileLocation": "absolute",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^\\[INFO\\]\\s+---\\s+maven-javadoc-plugin",
+          "endsPattern": "^\\[INFO\\]\\s+BUILD\\s+(?:SUCCESS|FAILURE)"
         },
-        {
-            "label": "GWT codeserver",
-            "type": "shell",
-            "command": "mvn gwt:codeserver -pl . -am",
-            "group": "build"
-        },
-    ],
- }
+        "pattern": {
+          "regexp": "^\\[(?:WARNING|ERROR)\\]\\s+(.+\\.java):(\\d+):\\s+(warning|error)(?:[:\\s-]+)(.*)$",
+          "severity": 3,
+          "file": 1,
+          "line": 2,
+          "message": 4
+        }
+      }
+    },
+    {
+      "label": "GWT devmode",
+      "type": "shell",
+      "command": "mvn gwt:devmode",
+      "group": "build"
+    },
+    {
+      "label": "GWT codeserver",
+      "type": "shell",
+      "command": "mvn gwt:codeserver -pl . -am",
+      "group": "build"
+    }
+  ]
+}

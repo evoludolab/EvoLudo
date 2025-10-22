@@ -38,9 +38,9 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Geometry.Type;
-import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.IBSGroup;
+import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -85,17 +85,22 @@ public class NetGames extends Discrete implements Payoffs,
 	/**
 	 * The color index of altruists.
 	 */
-	public final static int TYPE_ALTRUIST = 2;
+	public static final int TYPE_ALTRUIST = 2;
 
 	/**
 	 * The color index of fair players.
 	 */
-	public final static int TYPE_FAIR = 1;
+	public static final int TYPE_FAIR = 1;
 
 	/**
 	 * The color index of egoists.
 	 */
-	public final static int TYPE_EGOIST = 0;
+	public static final int TYPE_EGOIST = 0;
+
+	/**
+	 * The colors for altruists, fair players, and egoists.
+	 */
+	Color[] typeColor;
 
 	/**
 	 * Create a new instance of the module for cooperation in dynamical networks,
@@ -105,23 +110,23 @@ public class NetGames extends Discrete implements Payoffs,
 	 */
 	public NetGames(EvoLudo engine) {
 		super(engine);
+		nTraits = 2; // cooperativity and activity
 	}
 
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 2;
-		// trait names
-		String[] names = new String[nTraits];
-		names[0] = "Cooperativity";
-		names[1] = "Activity";
-		setTraitNames(names);
-		// trait colors
-		Color[] colors = new Color[3];
-		colors[TYPE_EGOIST] = Color.RED;
-		colors[TYPE_FAIR] = Color.YELLOW;
-		colors[TYPE_ALTRUIST] = Color.GREEN;
-		setTraitColors(colors);
+		// trait names (optional)
+		setTraitNames(new String[] { "Cooperativity", "Activity" });
+		// type colors; different from trait colors because we have three types
+		// (egoists, fair, altruists) but only two traits (cooperativity, activity)
+		typeColor = new Color[] { Color.RED, Color.YELLOW, Color.GREEN };
+	}
+
+	@Override
+	public void unload() {
+		super.unload();
+		typeColor = null;
 	}
 
 	@Override
@@ -150,9 +155,9 @@ public class NetGames extends Discrete implements Payoffs,
 		if (colorMap instanceof ColorMap.Index) {
 			ColorMap.Gradient1D<T> cMap1D = ((ColorMap.Index<T>) colorMap).toGradient1D(500);
 			cMap1D.setGradient(
-					new Color[] { ColorMap.addAlpha(traitColor[0], 220), //
-							ColorMap.addAlpha(traitColor[1], 220), //
-							ColorMap.addAlpha(traitColor[2], 220) });
+					new Color[] { ColorMap.addAlpha(typeColor[0], 220), //
+							ColorMap.addAlpha(typeColor[1], 220), //
+							ColorMap.addAlpha(typeColor[2], 220) });
 			cMap1D.setRange(-1.0, 1.0);
 			return cMap1D;
 		}
@@ -266,7 +271,7 @@ public class NetGames extends Discrete implements Payoffs,
 	 * @param altruist the new color of altruists
 	 */
 	public void setAltruistColor(Color altruist) {
-		traitColor[TYPE_ALTRUIST] = altruist;
+		typeColor[TYPE_ALTRUIST] = altruist;
 		// note, resetting the GUI would be enough
 		engine.requiresReset(true);
 	}
@@ -278,7 +283,7 @@ public class NetGames extends Discrete implements Payoffs,
 	 * @return the color of altruists
 	 */
 	public Color getAltruistColor() {
-		return traitColor[TYPE_ALTRUIST];
+		return typeColor[TYPE_ALTRUIST];
 	}
 
 	/**
@@ -288,7 +293,7 @@ public class NetGames extends Discrete implements Payoffs,
 	 * @param fair the new color of fair individuals
 	 */
 	public void setFairColor(Color fair) {
-		traitColor[TYPE_FAIR] = fair;
+		typeColor[TYPE_FAIR] = fair;
 		// note, resetting the GUI would be enough
 		engine.requiresReset(true);
 	}
@@ -300,7 +305,7 @@ public class NetGames extends Discrete implements Payoffs,
 	 * @return the color of fair individuals
 	 */
 	public Color getFairColor() {
-		return traitColor[TYPE_FAIR];
+		return typeColor[TYPE_FAIR];
 	}
 
 	/**
@@ -310,7 +315,7 @@ public class NetGames extends Discrete implements Payoffs,
 	 * @param egoist the new color of egoists
 	 */
 	public void setEgoistColor(Color egoist) {
-		traitColor[TYPE_EGOIST] = egoist;
+		typeColor[TYPE_EGOIST] = egoist;
 		// note, resetting the GUI would be enough
 		engine.requiresReset(true);
 	}
@@ -322,7 +327,7 @@ public class NetGames extends Discrete implements Payoffs,
 	 * @return the color of egoists
 	 */
 	public Color getEgoistColor() {
-		return traitColor[TYPE_EGOIST];
+		return typeColor[TYPE_EGOIST];
 	}
 
 	/**
@@ -404,9 +409,6 @@ public class NetGames extends Discrete implements Payoffs,
 				public boolean parse(String arg) {
 					String[] colorNames = arg.split(CLOParser.MATRIX_DELIMITER);
 					switch (colorNames.length) {
-						default: // more than three colors - ignore but first three
-							logger.warning("too many colors - ignored");
-							return false;
 						case 3:
 							setEgoistColor(CLOParser.parseColor(colorNames[2]));
 							//$FALL-THROUGH$
@@ -417,6 +419,9 @@ public class NetGames extends Discrete implements Payoffs,
 							setAltruistColor(CLOParser.parseColor(colorNames[0]));
 							return true;
 						case 0:
+							return false;
+						default: // more than three colors - ignore but first three
+							logger.warning("too many colors - ignored");
 							return false;
 					}
 				}
@@ -452,7 +457,7 @@ public class NetGames extends Discrete implements Payoffs,
 	}
 
 	@Override
-	public NetGames.IBSPop createIBSPop() {
+	public NetGames.IBSPop createIBSPopulation() {
 		return new NetGames.IBSPop(engine, this);
 	}
 
@@ -655,7 +660,7 @@ public class NetGames extends Discrete implements Payoffs,
 		 * Update the mean, minimum, and maximum fitness of individuals.
 		 */
 		public void updateFitnessMean() {
-			double gen = engine.getModel().getTime();
+			double gen = engine.getModel().getUpdates();
 			double p = prevgen >= gen ? 0.0 : prevgen / gen;
 			double q = 1.0 - p;
 			prevgen = gen;
@@ -683,17 +688,19 @@ public class NetGames extends Discrete implements Payoffs,
 		}
 
 		@Override
-		public void getMeanTraits(double[] mean) {
+		public double[] getMeanTraits(double[] mean) {
 			interaction.evaluate();
 			mean[0] = interaction.avgTot; // avg. activity
 			mean[1] = interaction.avgOut; // avg. cooperativity
+			return mean;
 		}
 
 		@Override
-		public void getMeanFitness(double[] meanscores) {
+		public double[] getMeanFitness(double[] meanscores) {
 			meanscores[0] = performance[1]; // min
 			meanscores[1] = performance[2]; // max
 			meanscores[2] = performance[0]; // mean
+			return meanscores;
 		}
 
 		@Override

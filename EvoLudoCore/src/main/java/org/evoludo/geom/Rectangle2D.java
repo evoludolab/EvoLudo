@@ -44,22 +44,22 @@ public class Rectangle2D {
 	/**
 	 * The right segment of the rectangle.
 	 */
-	public Segment2D right;
+	Segment2D right;
 
 	/**
 	 * The top segment of the rectangle.
 	 */
-	public Segment2D top;
+	Segment2D top;
 
 	/**
 	 * The left segment of the rectangle.
 	 */
-	public Segment2D left;
+	Segment2D left;
 
 	/**
 	 * The bottom segment of the rectangle.
 	 */
-	public Segment2D bottom;
+	Segment2D bottom;
 
 	/**
 	 * The origin of the rectangle (lower left corner).
@@ -103,11 +103,26 @@ public class Rectangle2D {
 	 * @param height the height of rectangle
 	 */
 	public Rectangle2D(double x, double y, double width, double height) {
-		right = new Segment2D();
-		top = new Segment2D();
-		left = new Segment2D();
-		bottom = new Segment2D();
-		set(x, y, width, height);
+		initialize(this, x, y, width, height);
+	}
+
+	/**
+	 * Helper method to prevent {@code this-escape} warnings.
+	 * 
+	 * @param self   the rectangle to initialize
+	 * @param x      the x-coordinate of the lower left corner
+	 * @param y      the y-coordinate of the lower left corner
+	 * @param width  the width of the rectangle
+	 * @param height the height of the rectangle
+	 */
+	protected static void initialize(Rectangle2D self, double x, double y, double width, double height) {
+		self.right = new Segment2D(x + width, y, x + width, y + height);
+		self.top = new Segment2D(x, y + height, x + width, y + height);
+		self.left = new Segment2D(x, y, x, y + height);
+		self.bottom = new Segment2D(x, y, x + width, y);
+		self.origin = self.bottom.p1;
+		self.width = width;
+		self.height = height;
 	}
 
 	/**
@@ -121,13 +136,7 @@ public class Rectangle2D {
 	 * @return the new rectangle
 	 */
 	public Rectangle2D set(double x, double y, double width, double height) {
-		right.set(x + width, y, x + width, y + height);
-		top.set(x, y + height, x + width, y + height);
-		left.set(x, y, x, y + height);
-		bottom.set(x, y, x + width, y);
-		origin = bottom.p1;
-		this.width = width;
-		this.height = height;
+		initialize(this, x, y, width, height);
 		return this;
 	}
 
@@ -218,10 +227,9 @@ public class Rectangle2D {
 	 * @return <code>true</code> if the point lies inside
 	 */
 	public boolean contains(double px, double py) {
-		if (width <= 0.0 || height <= 0.0 || px < origin.x || py < origin.y || px > origin.x + width
-				|| py > origin.y + height)
-			return false;
-		return true;
+		return !(width <= 0.0 || height <= 0.0 ||
+				px < origin.x || py < origin.y ||
+				px > origin.x + width || py > origin.y + height);
 	}
 
 	/**

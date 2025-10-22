@@ -45,69 +45,69 @@ public interface GraphListener {
 
 	public void initStyle(GraphStyle style, AbstractGraph owner);
 
-//	public void		setLocalDynamics(boolean isLocalDynamics);
+	// public void setLocalDynamics(boolean isLocalDynamics);
 
-	public void		setLocalNode(int localNode);
+	public void setLocalNode(int localNode);
 
-	public int		getLocalNode();
+	public int getLocalNode();
 
-	public void		setTimeReversed(boolean reversed);
+	public void setTimeReversed(boolean reversed);
 
-	public Color	getColor(int tag);
+	public Color getColor(int tag);
 
-	public Color[]	getColors(int tag);
+	public Color[] getColors(int tag);
 
-	public String	getName(int tag);
+	public String getName(int tag);
 
 	public String[] getNames(int tag);
 
-//	public String[] getActiveNames(int tag);
+	// public String[] getActiveNames(int tag);
 
 	public boolean[] getActives(int tag);
 
 	public int getActiveCount(int tag);
-	
-	public int		getNData(int tag);
 
-	public boolean	getData(double[] data, int tag);
+	public int getNData(int tag);
 
-	public double[]	getData(int tag);
+	public boolean getData(double[] data, int tag);
 
-	public boolean	isRunning();
+	public double[] getData(int tag);
 
-	public boolean	hasSVG();
+	public boolean isRunning();
 
-	public void		saveSnapshot(int tag, boolean inViewport, int format);
+	public boolean hasSVG();
 
-	public void		exportState();
+	public void saveSnapshot(int tag, boolean inViewport, int format);
 
-// menu stuff - experimental
-//	public void		initCustomMenu(JPopupMenu menu, int tag);
-//	public void		resetCustomMenu(JPopupMenu menu, int tag);
+	public void exportState();
 
-	public void		initCustomMenu(JPopupMenu menu, AbstractGraph owner);
+	// menu stuff - experimental
+	// public void initCustomMenu(JPopupMenu menu, int tag);
+	// public void resetCustomMenu(JPopupMenu menu, int tag);
 
-	public void		resetCustomMenu(JPopupMenu menu, AbstractGraph owner);
+	public void initCustomMenu(JPopupMenu menu, AbstractGraph owner);
 
-	public void		showCustomMenu(JPopupMenu menu, Point loc, AbstractGraph owner);
+	public void resetCustomMenu(JPopupMenu menu, AbstractGraph owner);
+
+	public void showCustomMenu(JPopupMenu menu, Point loc, AbstractGraph owner);
 
 	// e.g. track changes of payoffs in fitness histograms
-	public default boolean	verifyXAxis(GraphAxis x, int tag) {
+	public default boolean verifyXAxis(GraphAxis x, int tag) {
 		return false;
 	}
 
 	// e.g. track changes of payoffs in mean fitness plot
-	public default boolean	verifyYAxis(GraphAxis y, int tag) {
+	public default boolean verifyYAxis(GraphAxis y, int tag) {
 		return false;
 	}
 
 	// e.g. track changes of payoffs in mean fitness plot
-	public default boolean	verifyYThresholds(FrameLayer frame, int tag)  {
+	public default boolean verifyYThresholds(FrameLayer frame, int tag) {
 		return false;
 	}
 
 	// e.g. track changes of payoffs in fitness histogram plot
-	public default boolean	verifyMarkedBins(HistoFrameLayer frame, int tag)  {
+	public default boolean verifyMarkedBins(HistoFrameLayer frame, int tag) {
 		return false;
 	}
 

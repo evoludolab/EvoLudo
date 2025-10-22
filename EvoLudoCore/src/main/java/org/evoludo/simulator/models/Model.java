@@ -31,7 +31,7 @@
 package org.evoludo.simulator.models;
 
 import java.awt.Color;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -177,6 +177,279 @@ public abstract class Model implements CLOProvider {
 	}
 
 	/**
+	 * Modules that offer individual based simulation models must implement this
+	 * interface.
+	 */
+	public interface HasIBS {
+
+		/**
+		 * Provides opportunity for module to supply custom implementation of individual
+		 * based simulations, IBS.
+		 * <p>
+		 * <strong>Important:</strong> if the custom IBS implementation involves random
+		 * numbers, the shared random number generator must be used for reproducibility.
+		 * 
+		 * @return the custom implementation of the IBS or <code>null</code> to use the
+		 *         default
+		 * 
+		 * @see EvoLudo#getRNG()
+		 */
+		public default Model createIBS() {
+			return null;
+		}
+
+		/**
+		 * Modules that offer individual based simulation models with discrete traits
+		 * and pairwise interactions must implement this interface.
+		 */
+		public interface DPairs extends HasIBS, Features.Pairs {
+
+			/**
+			 * Calculate and return total (accumulated) payoff/score for pairwise
+			 * interactions of the focal individual with trait {@code me} against opponents
+			 * with different traits. The respective numbers of each of the {@code nTraits}
+			 * opponent traits are provided in the array {@code tCount}. The payoffs/scores
+			 * for each of the {@code nTraits} opponent traits must be stored and returned
+			 * in the array {@code tScore}.
+			 * <p>
+			 * <strong>Important:</strong> must be overridden and implemented in subclasses
+			 * that define game interactions between pairs of individuals
+			 * ({@code nGroup=2}, {@code pairwise=true}), otherwise see
+			 * {@link DGroups#groupScores(int[], double[])}.
+			 * 
+			 * @param me         the trait index of the focal individual
+			 * @param traitCount number of opponents with each trait
+			 * @param traitScore array for returning the scores of each opponent trait
+			 * @return score of focal individual {@code me} accumulated over all
+			 *         interactions
+			 */
+			public double pairScores(int me, int[] traitCount, double[] traitScore);
+
+			/**
+			 * Calculate the average payoff/score in a finite population with the number of
+			 * each trait provided in {@code count} for pairwise interactions. The
+			 * payoffs/scores for each of the {@code nTraits} traits must be stored and
+			 * returned in the array {@code traitScores}.
+			 * <p>
+			 * <strong>Important:</strong> must be overridden and implemented in subclasses
+			 * that define game interactions in well-mixed populations where individuals
+			 * interact with everyone else. Computationally it is not feasible to cover this
+			 * scenario with {@link #pairScores(int, int[], double[])} or
+			 * {@link DGroups#groupScores(int[], double[])}, respectively.
+			 * <p>
+			 * <strong>Note:</strong> If explicit calculations of the well-mixed scores are
+			 * not available, interactions with everyone in well-mixed populations should
+			 * checked for and excluded with a warning in {@link #check()} (see
+			 * {@link org.evoludo.simulator.models.IBSMCPopulation#check() CXPopulation} for
+			 * an example).
+			 * 
+			 * @param traitCount number of individuals for each trait
+			 * @param traitScore array for returning the payoffs/scores of each trait
+			 */
+			public void mixedScores(int[] traitCount, double[] traitScore);
+		}
+
+		/**
+		 * Modules that offer individual based simulation models with discrete traits
+		 * and interactions in groups must implement this interface.
+		 */
+		interface DGroups extends DPairs, Features.Groups {
+
+			/**
+			 * Calculate the payoff/score for interactions in groups consisting of
+			 * traits with respective numbers given in the array {@code traitCount}. The
+			 * interaction group size is given by the sum over {@code traitCount[i]} for
+			 * {@code i=0,1,...,nTraits}. The payoffs/scores for each of the {@code nTraits}
+			 * traits must be stored and returned in the array {@code traitScore}.
+			 * <p>
+			 * <strong>Important:</strong> must be overridden and implemented in subclasses
+			 * that define game interactions among groups of individuals (for groups with
+			 * sizes {@code nGroup&gt;2}, otherwise see
+			 * {@link #pairScores(int, int[], double[])}).
+			 * 
+			 * @param traitCount group composition given by the number of individuals with
+			 *                   each trait
+			 * @param traitScore array for returning the payoffs/scores of each trait
+			 */
+			public void groupScores(int[] traitCount, double[] traitScore);
+
+			/**
+			 * Calculate the average payoff/score in a finite population with the number of
+			 * each trait provided in {@code count} for interaction groups of size
+			 * {@code n}. The payoffs/scores for each of the {@code nTraits} traits must be
+			 * stored and returned in the array {@code traitScores}.
+			 * 
+			 * <h3>Notes:</h3>
+			 * For payoff calculations:
+			 * <ul>
+			 * <li>each trait sees one less of its own type in its environment
+			 * <li>the size of the environment is {@code nPopulation-1}
+			 * <li>the fact that the payoff of each trait does not depend on its own type
+			 * simplifies things
+			 * </ul>
+			 * If explicit calculations of the well-mixed scores are not available,
+			 * interactions with everyone in well-mixed populations should be checked for
+			 * and excluded with a warning in {@link #check()} (see
+			 * {@link org.evoludo.simulator.models.IBSMCPopulation#check() IBSMCPopulation}
+			 * for an example).
+			 * 
+			 * <h3>Important:</h3>
+			 * Must be overridden and implemented in subclasses that define game
+			 * interactions in well-mixed populations where individuals interact with
+			 * everyone else. Computationally it is not feasible to cover this scenario with
+			 * {@link #pairScores(int, int[], double[])} or
+			 * {@link #groupScores(int[], double[])}, respectively.
+			 * 
+			 * @param traitCount number of individuals for each trait
+			 * @param n          interaction group size
+			 * @param traitScore array for returning the payoffs/scores of each trait
+			 */
+			public void mixedScores(int[] traitCount, int n, double[] traitScore);
+
+			@Override
+			public default void mixedScores(int[] traitCount, double[] traitScore) {
+				mixedScores(traitCount, 2, traitScore);
+			}
+		}
+
+		/**
+		 * Modules that offer individual based simulation models with continuous traits
+		 * and pairwise interactions must implement this interface.
+		 */
+		interface CPairs extends HasIBS, Features.Pairs {
+			/**
+			 * Calculate the payoff/score for modules with interactions in pairs and a
+			 * single continuous trait. The focal individual has trait {@code me} and the
+			 * traits of its {@code len} interaction partners are given in {@code group}.
+			 * The payoffs/scores for each of the {@code len} opponent
+			 * traits must be stored and returned in the array {@code payoffs}.
+			 * 
+			 * <h3>Note:</h3> Only the first {@code len} entries in {@code group} are
+			 * guaranteed to exist and have meaningful values. The population structure may
+			 * restrict the size of the interaction group. {@code len&le;nGroup} always
+			 * holds.
+			 * 
+			 * <h3>Important:</h3> must be overridden and implemented in subclasses that
+			 * define game interactions between pairs of individuals
+			 * ({@code nGroup=2}, {@code pairwise=true}), otherwise see
+			 * {@link CGroups#groupScores(double, double[], int, double[])}.
+			 * 
+			 * @param me           the trait of the focal individual
+			 * @param groupTraits  the traits of the group members
+			 * @param len          the number of memebrs in the group
+			 * @param groupPayoffs the array for returning the payoffs/scores for each group
+			 *                     member
+			 * @return the total (accumulated) payoff/score for the focal individual
+			 */
+			public double pairScores(double me, double[] groupTraits, int len, double[] groupPayoffs);
+		}
+
+		/**
+		 * Modules that offer individual based simulation models with continuous traits
+		 * and interactions in groups must implement this interface.
+		 */
+		interface CGroups extends CPairs, Features.Groups {
+
+			/**
+			 * Calculate the payoff/score for modules with interactions in groups and a
+			 * single continuous trait. The focal individual has trait {@code me} and the
+			 * traits of its {@code len} interaction partners are given in {@code group}.
+			 * The payoffs/scores for each of the {@code len} participants must be
+			 * stored and returned in the array {@code payoffs}.
+			 * 
+			 * <h3>Note:</h3> Only the first {@code len*nTraits} entries in {@code group}
+			 * are guaranteed to exist and have meaningful values. The population structure
+			 * may restrict the size of the interaction group. {@code len&le;nGroup} always
+			 * holds.
+			 * 
+			 * <h3>Important:</h3> Must be overridden and implemented in subclasses that
+			 * define game interactions among groups of individuals with multiple continuous
+			 * traits (for groups with sizes {@code nGroup&gt;2}, otherwise see
+			 * {@link #pairScores(double, double[], int, double[])}).
+			 * 
+			 * @param me           the trait of the focal individual
+			 * @param groupTraits  the traits of the group members
+			 * @param len          the number of members in the group
+			 * @param groupPayoffs the array for returning the payoffs/scores for each group
+			 *                     member
+			 * @return the payoff/score for the focal individual
+			 */
+			public double groupScores(double me, double[] groupTraits, int len, double[] groupPayoffs);
+		}
+
+		/**
+		 * Modules that offer individual based simulation models with multiple
+		 * continuous traits and pairwise interactions must implement this interface.
+		 */
+		interface MCPairs extends HasIBS, Features.Pairs {
+			/**
+			 * Calculate the payoff/score for modules with interactions in pairs and
+			 * multiple continuous traits. The focal individual has traits {@code me} and
+			 * the traits of its {@code len} interaction partners are given in
+			 * {@code group}. The traits they are arranged in the usual manner, i.e. first
+			 * all traits of the first group member then all traits by the second group
+			 * member etc. for a total of {@code len*nTraits} entries. The payoffs/scores
+			 * for each of the {@code len} opponent traits must be stored and returned in
+			 * the array {@code payoffs}.
+			 * 
+			 * <h3>Note:</h3> Only the first {@code len} entries in {@code group} are
+			 * guaranteed to exist and have meaningful values. The population structure may
+			 * restrict the size of the interaction group. {@code len&le;nGroup} always
+			 * holds.
+			 * 
+			 * <h3>Important:</h3> must be overridden and implemented in subclasses that
+			 * define game interactions between pairs of individuals
+			 * ({@code nGroup=2}, {@code pairwise=true}), otherwise see
+			 * {@link MCGroups#groupScores(double, double[], int, double[])}.
+			 * 
+			 * @param me           the trait of the focal individual
+			 * @param groupTraits  the traits of the group members
+			 * @param len          the number of memebrs in the group
+			 * @param groupPayoffs the array for returning the payoffs/scores for each group
+			 *                     member
+			 * @return the total (accumulated) payoff/score for the focal individual
+			 */
+			public double pairScores(double[] me, double[] groupTraits, int len, double[] groupPayoffs);
+		}
+
+		/**
+		 * Modules that offer individual based simulation models with continuous traits
+		 * and interactions in groups must implement this interface.
+		 */
+		interface MCGroups extends CGroups {
+
+			/**
+			 * Calculate the payoff/score for modules with interactions in groups and
+			 * multiple single continuous traits. The focal individual has traits {@code me}
+			 * and the traits of its {@code len} interaction partners are given in
+			 * {@code group}. The traits they are arranged in the usual manner, i.e. first
+			 * all traits of the first group member then all traits by the second group
+			 * member etc. for a total of {@code len*nTraits} entries. The payoffs/scores
+			 * for each of the {@code len} participants must be stored and returned in
+			 * the array {@code payoffs}.
+			 * 
+			 * <h3>Note:</h3> Only the first {@code len*nTraits} entries in {@code group}
+			 * are guaranteed to exist and have meaningful values. The population structure
+			 * may restrict the size of the interaction group. {@code len&le;nGroup} always
+			 * holds.
+			 * 
+			 * <h3>Important:</h3> must be overridden and implemented in subclasses that
+			 * define game interactions among groups of individuals with multiple continuous
+			 * traits (for groups with sizes {@code nGroup&gt;2}, otherwise see
+			 * {@link CPairs#pairScores(double, double[], int, double[])}).
+			 * 
+			 * @param me      the traits of the focal individual
+			 * @param group   the traits of the group members
+			 * @param len     the number of memebrs in the group
+			 * @param payoffs the array for returning the payoffs/scores for each group
+			 *                member
+			 * @return the payoff/score for the focal individual
+			 */
+			public double groupScores(double[] me, double[] group, int len, double[] payoffs);
+		}
+	}
+
+	/**
 	 * The pacemaker of all models. Interface with the outside world.
 	 */
 	protected EvoLudo engine;
@@ -194,32 +467,67 @@ public abstract class Model implements CLOProvider {
 	protected RNGDistribution rng;
 
 	/**
-	 * Keeps track of the time elapsed. Time is measured in number of generations.
-	 * In IBS models this corresponds to one Monte-Carlo step, such that in a
-	 * population of size <code>N</code> one generation corresponds to
-	 * <code>N</code> updates, which translates to <code>N</code> events (birth,
-	 * death, imitation, etc.).
+	 * Keeps track of the time elapsed, measured based on the rates with which
+	 * events occur. This is the natural unit of time for differential equation
+	 * model. However, in individual based simulations a simpler measure of time
+	 * based on the number of generations is often used. However, in populations of
+	 * variable size the notion of one generation is hard to define or keeps
+	 * changing over time. This measure takes the size of the population as well as
+	 * the fitness of its members into account. For example, less time passes
+	 * between reproductive events in large populations with high fitness, while
+	 * more time passes in small populations with low fitness because there are
+	 * fewer reproduction events per unit time.
 	 * 
 	 * <strong>Notes:</strong>
 	 * <ol>
-	 * <li><code>generation==0</code> after {@link #reset()} and at the beginning of
+	 * <li><code>time==0</code> after {@link #reset()} and at the beginning of
 	 * a simulation run.
-	 * <li><code>generation</code> is incremented <em>before</em> the next event is
+	 * <li><code>time</code> is incremented <em>before</em> the next event is
 	 * processed, to reflect the time at which the event occurs.
-	 * <li>generally differs from 'real time'.
+	 * <li>generally differs from number of updates.
 	 * <li>may be negative for models that admit time reversal (e.g. integrating ODE
 	 * backwards).
+	 * <li>for modules that implement {@code Payoffs} non-negative individual scores
+	 * are required.
+	 * <li>models may implement only one time measure.
+	 * <li>setting {@code time = Double.POSITIVE_INFINITY} disables time measured
+	 * in terms of updates.
 	 * </ol>
 	 * 
+	 * @see #updates
 	 * @see #permitsTimeReversal()
-	 * @see IBS#realtime
+	 * @see IBS#pickFocalSpecies()
 	 */
-	protected double time = -1.0;
+	protected double time = Double.POSITIVE_INFINITY;
+
+	/**
+	 * Keeps track of the time elapsed, measured in number of updates. One unit of
+	 * time corresponds to one generation or one Monte-Carlo step, such that in a
+	 * population of size <code>N</code> one generation corresponds to
+	 * <code>N</code> updates, which translates to <code>N</code> events (birth,
+	 * death, imitation, etc.). Not all models may use this time measure, but
+	 * it is a common convention in individual-based simulations.
+	 * 
+	 * <strong>Notes:</strong>
+	 * <ol>
+	 * <li><code>updates==0</code> after {@link #reset()} and at the beginning of
+	 * a simulation run.
+	 * <li><code>updates</code> is incremented <em>before</em> the next event is
+	 * processed, to reflect the time at which the event occurs.
+	 * <li>generally differs from 'real time'.
+	 * <li>models may implement only one time measure.
+	 * <li>setting {@code updates = Double.POSITIVE_INFINITY} disables time measured
+	 * in terms of updates.
+	 * </ol>
+	 * 
+	 * @see #time
+	 */
+	protected double updates = Double.POSITIVE_INFINITY;
 
 	/**
 	 * Short-cut to the list of species modules. Convenience field.
 	 */
-	protected ArrayList<? extends Module> species;
+	protected List<? extends Module<?>> species;
 
 	/**
 	 * The number of species in multi-species models.
@@ -251,7 +559,7 @@ public abstract class Model implements CLOProvider {
 	 * 
 	 * @param engine the pacemaker for running the model
 	 */
-	public Model(EvoLudo engine) {
+	protected Model(EvoLudo engine) {
 		this.engine = engine;
 		logger = engine.getLogger();
 	}
@@ -297,8 +605,7 @@ public abstract class Model implements CLOProvider {
 				// the index of the mutant node is meaningless in SDE models
 				// but must be non-negative (indicates an invalid sample)
 				fixData.mutantNode = 0;
-		}
-		else
+		} else
 			fixData = null;
 		return false;
 	}
@@ -309,6 +616,7 @@ public abstract class Model implements CLOProvider {
 	 * @see MilestoneListener#modelDidReset()
 	 */
 	public void reset() {
+		updates = 0.0;
 		time = 0.0;
 	}
 
@@ -318,6 +626,7 @@ public abstract class Model implements CLOProvider {
 	 * @see MilestoneListener#modelDidInit()
 	 */
 	public void init() {
+		updates = 0.0;
 		time = 0.0;
 		converged = false;
 	}
@@ -369,16 +678,19 @@ public abstract class Model implements CLOProvider {
 	public boolean relax() {
 		if (hasConverged())
 			return true;
-		if (timeRelax > 0.0 && time < timeRelax) {
+		// note: use getUpdates to ensure relaxation works for all models.
+		// DE models may not have an update count but have time
+		double updt = getUpdates();
+		if (timeRelax > 0.0 && updt < timeRelax) {
 			isRelaxing = true;
 			double rf = timeStep;
-			timeStep = timeRelax - time;
+			timeStep = timeRelax - updt;
 			next();
 			timeStep = rf;
 			isRelaxing = false;
 			if (type == Type.IBS) {
 				// reset traits after relaxation in IBS models
-				for (Module mod : species) {
+				for (Module<?> mod : species) {
 					IBSPopulation pop = mod.getIBSPopulation();
 					pop.resetTraits();
 				}
@@ -422,7 +734,7 @@ public abstract class Model implements CLOProvider {
 	 * @param id the species identifier
 	 * @return the species
 	 */
-	public Module getSpecies(int id) {
+	public Module<?> getSpecies(int id) {
 		if (id < 0 || id >= nSpecies)
 			return null;
 		return species.get(id);
@@ -626,7 +938,7 @@ public abstract class Model implements CLOProvider {
 	 * @return <code>true</code> if traits are continuous
 	 */
 	public boolean isContinuous() {
-		return this instanceof Continuous;
+		return this instanceof CModel;
 	}
 
 	/**
@@ -749,19 +1061,47 @@ public abstract class Model implements CLOProvider {
 	public String getCounter() {
 		if (mode == Mode.STATISTICS_SAMPLE) {
 			int failed = getNStatisticsFailed();
-			return "samples: " + getNStatisticsSamples() + (failed > 0 ? " (failed: " + failed + ")" : "");
+			return "Samples: " + getNStatisticsSamples() + (failed > 0 ? " (failed: " + failed + ")" : "");
 		}
-		return "time: " + Formatter.format(getTime(), 2);
+		String counter;
+		if (updates != Double.POSITIVE_INFINITY) {
+			counter = "Updates: " + Formatter.format(updates, 2) + " ";
+			if (time != Double.POSITIVE_INFINITY)
+				counter += "(Time: " + Formatter.format(time, 2) + ")";
+		} else {
+			counter = "Time: " + Formatter.format(time, 2) + " ";
+		}
+		return counter;
 	}
 
 	/**
 	 * Gets the elapsed time in model. Time is measured in generations.
 	 * 
-	 * @return elapsed time
+	 * @return the elapsed time in generations
+	 * 
+	 * @see #updates
+	 */
+	public double getUpdates() {
+		if (updates == Double.POSITIVE_INFINITY)
+			return time;
+		return updates;
+	}
+
+	/**
+	 * Returns the elapsed time measured in terms of the rates at which events
+	 * happen. The time increments of microscopic updates depend e.g. on the size or
+	 * the fitness of the population. In large populations with high fitness many
+	 * events happen per unit time and hence the increments are smaller. In contrast
+	 * in small populations with low fitness fewer events happen and consequently
+	 * more time elapses between subsequent events.
+	 * 
+	 * @return the elapsed time based on rates of events
 	 * 
 	 * @see #time
 	 */
 	public double getTime() {
+		if (time == Double.POSITIVE_INFINITY)
+			return updates;
 		return time;
 	}
 
@@ -792,7 +1132,7 @@ public abstract class Model implements CLOProvider {
 		int nMean = getNMean();
 		String[] names = new String[nMean];
 		int skip = 0;
-		for (Module mod : species) {
+		for (Module<?> mod : species) {
 			int nt = mod.getNTraits();
 			System.arraycopy(mod.getTraitNames(), 0, names, skip, nt);
 			skip += nt;
@@ -808,7 +1148,7 @@ public abstract class Model implements CLOProvider {
 	 * @return the name of mean trait with index {@code index}
 	 */
 	public String getMeanName(int index) {
-		for (Module mod : species) {
+		for (Module<?> mod : species) {
 			int nt = mod.getNTraits();
 			if (index < nt) {
 				if (mod.getActiveTraits()[index])
@@ -857,7 +1197,7 @@ public abstract class Model implements CLOProvider {
 	 * @return array of mean trait values
 	 */
 	public double[] getMeanTraitAt(int id, int idx) {
-		return null;
+		throw new UnsupportedOperationException("getMeanTraitAt not implemented");
 	}
 
 	/**
@@ -873,7 +1213,7 @@ public abstract class Model implements CLOProvider {
 	 * @return description of traits at <code>idx</code>
 	 */
 	public String getTraitNameAt(int id, int idx) {
-		return null;
+		throw new UnsupportedOperationException("getTraitNameAt not implemented");
 	}
 
 	/**
@@ -935,7 +1275,7 @@ public abstract class Model implements CLOProvider {
 	 * @return the array of mean fitness values
 	 */
 	public double[] getMeanFitnessAt(int id, int idx) {
-		return null;
+		throw new UnsupportedOperationException("getMeanFitnessAt not implemented");
 	}
 
 	/**
@@ -1079,16 +1419,19 @@ public abstract class Model implements CLOProvider {
 	public double getNextHalt() {
 		// watch out for models that allow time reversal!
 		// timeStop and timeRelax can be positive or negative
+		// note: use getUpdates to ensure relaxation works for all models.
+		// DE models may not have an update count but have time
+		double updt = getUpdates();
 		if (isTimeReversed()) {
 			// time is 'decreasing' find next smaller milestone
-			double halt = timeStop < time ? timeStop : Double.NEGATIVE_INFINITY;
-			double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax < time) ? timeRelax
+			double halt = timeStop < updt ? timeStop : Double.NEGATIVE_INFINITY;
+			double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax < updt) ? timeRelax
 					: Double.NEGATIVE_INFINITY;
 			return Math.max(halt, relax);
 		}
 		// time is 'increasing'
-		double halt = timeStop > time ? timeStop : Double.POSITIVE_INFINITY;
-		double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax > time) ? timeRelax : Double.POSITIVE_INFINITY;
+		double halt = timeStop > updt ? timeStop : Double.POSITIVE_INFINITY;
+		double relax = (Math.abs(timeRelax) > 1e-8 && timeRelax > updt) ? timeRelax : Double.POSITIVE_INFINITY;
 		return Math.min(halt, relax);
 	}
 
@@ -1231,12 +1574,10 @@ public abstract class Model implements CLOProvider {
 			"--timestop <h>   halt execution after <h> generations", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					if (cloTimeStop.isSet()) {
+					if (cloTimeStop.getDefault().equals(arg))
+						setTimeStop(Double.POSITIVE_INFINITY);
+					else
 						setTimeStop(CLOParser.parseDouble(arg));
-						return true;
-					}
-					String gens = cloTimeStop.getDefault();
-					setTimeStop(gens.equals("never") ? Double.POSITIVE_INFINITY : CLOParser.parseDouble(gens));
 					return true;
 				}
 			});
@@ -1293,7 +1634,7 @@ public abstract class Model implements CLOProvider {
 		parser.addCLO(cloTimeStep);
 		parser.addCLO(cloTimeStop);
 		parser.addCLO(cloTimeRelax);
-		Module module = getSpecies(0);
+		Module<?> module = getSpecies(0);
 		// cannot use permitsSampleStatistics and permitsUpdateStatistics because
 		// they also check parameters that have not yet been set
 		if (module instanceof HasHistogram.StatisticsProbability
@@ -1313,18 +1654,25 @@ public abstract class Model implements CLOProvider {
 	 * @see org.evoludo.util.Plist
 	 * @see org.evoludo.util.XMLCoder
 	 */
-	public abstract void encodeState(StringBuilder plist);
+	public void encodeState(StringBuilder plist) {
+		plist.append(Plist.encodeKey("Time", time));
+		plist.append(Plist.encodeKey("Model", type.toString()));
+	}
 
 	/**
 	 * Restore the state encoded in the <code>plist</code> inspired <code>map</code>
 	 * of {@code key, value}-pairs.
 	 * 
-	 * @param map the map of {@code key, value}-pairs
+	 * @param plist the map of {@code key, value}-pairs
 	 * @return <code>true</code> if successful
 	 * 
 	 * @see org.evoludo.util.Plist
 	 * @see org.evoludo.util.PlistReader
 	 * @see org.evoludo.util.PlistParser
 	 */
-	public abstract boolean restoreState(Plist map);
+	public boolean restoreState(Plist plist) {
+		time = (Double) plist.get("Time");
+		// note: model type already read, otherwise we wouldn't be here
+		return true;
+	}
 }

@@ -139,7 +139,7 @@ public class NativeJS {
 	 *
 	 * @return the pixel ratio of device
 	 */
-	public final static native int getDevicePixelRatio()
+	public static final native int getDevicePixelRatio()
 	/*-{
 		return $wnd.devicePixelRatio || 1;
 	}-*/;
@@ -181,7 +181,7 @@ public class NativeJS {
 	 * 
 	 * @return {@code true} if the document is in fullscreen mode
 	 */
-	public final static native boolean isFullscreen()
+	public static final native boolean isFullscreen()
 	/*-{
 		if (($doc.fullscreenElement != null)
 				|| ($doc.mozFullScreenElement != null)
@@ -200,7 +200,7 @@ public class NativeJS {
 	 *
 	 * @return fullscreen element or <code>null</code>
 	 */
-	public final static native Element getFullscreenElement()
+	public static final native Element getFullscreenElement()
 	/*-{
 		if ($doc.fullscreenElement != null)
 			return $doc.fullscreenElement;
@@ -260,7 +260,8 @@ public class NativeJS {
 	 * 
 	 * @evoludo.impl The JSNI routine works reasonably well with Safari but not with
 	 *               all other browsers because aspects of the fullscreen API are
-	 *               interpreted differently, see {@link #fullscreenChangeEventName()}.
+	 *               interpreted differently, see
+	 *               {@link #fullscreenChangeEventName()}.
 	 * 
 	 * @param eventname the name of the fullscreen change event
 	 * @param handler   the handler to add
@@ -438,17 +439,12 @@ public class NativeJS {
 	}-*/;
 
 	/**
-	 * JSNI method: Test whether loaded from an XHTML document.
-	 * <p>
-	 * <strong>Note:</strong> GWT interferes here and both
-	 * <code>Document.get().createElement("div").getTagName()=="DIV"</code> as well
-	 * as <code>$doc.createElement("div").tagName == "DIV"</code> falsely (always?)
-	 * return <code>false</code>.
+	 * JSNI method: Test whether loaded from an HTML document.
 	 *
-	 * @return <code>true</code> if XML document
+	 * @return <code>true</code> if HTML document
 	 */
-	public static final native boolean isXML() /*-{
-		return (window.document.createElement("div").tagName == "DIV");
+	public static final native boolean isHTML() /*-{
+		return ($doc.contentType.includes("text/html"));
 	}-*/;
 
 	/**
@@ -456,7 +452,7 @@ public class NativeJS {
 	 * 
 	 * @return <code>true</code> if ePub reading system.
 	 */
-	public final static native boolean isEPub()
+	public static final native boolean isEPub()
 	/*-{
 		var epub = $wnd.navigator.epubReadingSystem
 				|| window.navigator.epubReadingSystem
@@ -482,7 +478,7 @@ public class NativeJS {
 	 * @return identification string of ePub reading system or <code>null</code> if
 	 *         no reading system or reading system unknown
 	 */
-	public final static native String getEPubReader()
+	public static final native String getEPubReader()
 	/*-{
 		var epub = $wnd.navigator.epubReadingSystem
 				|| window.navigator.epubReadingSystem
@@ -525,7 +521,7 @@ public class NativeJS {
 	 * @param feature the ePub feature to test
 	 * @return <code>true</code> if feature supported
 	 */
-	public final static native boolean ePubReaderHasFeature(String feature)
+	public static final native boolean ePubReaderHasFeature(String feature)
 	/*-{
 		var epub = $wnd.navigator.epubReadingSystem;
 		if (!epub)
@@ -562,8 +558,8 @@ public class NativeJS {
 	}-*/;
 
 	// /*
-	//  * some potentially useful (but currently unused) javascript snippets
-	//  */
+	// * some potentially useful (but currently unused) javascript snippets
+	// */
 
 	// /**
 	// * open new window displaying data url

@@ -70,13 +70,13 @@ import org.freehep.graphicsio.svg.SVGGraphics2D;
 
 public abstract class MVAbstract extends JComponent
 		implements MultiView, GraphListener, ActionListener {
-	
+
 	private static final long serialVersionUID = 20110423L;
-	
+
 	/**
 	 * The module associated with this graph.
 	 */
-	protected Module module;
+	protected Module<?> module;
 	protected EvoLudoLab lab;
 	protected EvoLudoJRE engine;
 
@@ -95,8 +95,9 @@ public abstract class MVAbstract extends JComponent
 		return logger;
 	}
 
-// note: maybe we can do some optimization because the majority of panes will only have one graph, which makes this a bit of an overkill...
-	protected ArrayList<AbstractGraph>	graphs = new ArrayList<AbstractGraph>();
+	// note: maybe we can do some optimization because the majority of panes will
+	// only have one graph, which makes this a bit of an overkill...
+	protected ArrayList<AbstractGraph> graphs = new ArrayList<>();
 
 	public ArrayList<AbstractGraph> getGraphs() {
 		return graphs;
@@ -109,42 +110,43 @@ public abstract class MVAbstract extends JComponent
 	// NOTE: subclasses must implement at least one of getData()
 	// public abstract boolean getData(double data[], int tag);
 	// public abstract double[] getData(int tag);
-	
+
 	public MVAbstract(EvoLudoLab lab) {
-		this.lab  = lab;
+		this.lab = lab;
 		engine = lab.getEngine();
 		logger = engine.getLogger();
 
 		// check if freehep graphics libraries are available
 		try {
 			@SuppressWarnings("unused")
-			Class<?> cls = Class.forName ("org.freehep.graphics2d.VectorGraphics");
+			Class<?> cls = Class.forName("org.freehep.graphics2d.VectorGraphics");
 			hasSVG = true;
-		}
-		catch( ClassNotFoundException e ) {
+		} catch (ClassNotFoundException e) {
 			// ignore exception - freehep graphics libraries seem missing
 			engine.getLogger().warning("freehep library not found - disabling vector graphics export.");
 		}
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 	}
-	
-    @Override
+
+	@Override
 	public boolean hasSVG() {
 		return hasSVG;
 	}
-	
+
 	// a chance to customize and touch up the graphics
-    @Override
+	@Override
 	public void polish(Graphics2D plot, AbstractGraph graph) {
 	}
-	
+
 	/*
 	 * implement GraphListener - override as appropriate
 	 */
 	// take care of style changes
-// note: fonts and antialiasing are not set when instantiating the classes - delete/rewrite and do it here!
-//if called from reset then this is ok for antialiasing but not for fonts - screws zooming up!
-    @Override
+	// note: fonts and antialiasing are not set when instantiating the classes -
+	// delete/rewrite and do it here!
+	// if called from reset then this is ok for antialiasing but not for fonts -
+	// screws zooming up!
+	@Override
 	public void initStyle(GraphStyle style, AbstractGraph owner) {
 		// do not set fonts directly because this could screw up zoomed views!
 		style.setLabelFont(lab.getLabelFont());
@@ -152,52 +154,55 @@ public abstract class MVAbstract extends JComponent
 		style.setLineStroke(lab.getLineStroke());
 		style.setFrameStroke(lab.getFrameStroke());
 	}
-	
-// note: custom menu stuff should be part of views not of graphs...
-// graph listeners should do the initialization and updating!
+
+	// note: custom menu stuff should be part of views not of graphs...
+	// graph listeners should do the initialization and updating!
 	private JCheckBoxMenuItem localMenu, timeMenu;
 	private JMenuItem nodeMenu;
 	private JPopupMenu.Separator customSeparator = new JPopupMenu.Separator();
-	
+
 	protected static int localNode = -1;
-	
+
 	private boolean menuShowLocal = false;
 	private boolean menuSetLocal = false;
 	private boolean menuTime = false;
-	
-	//<jf
+
+	// <jf
 	protected static final String CUSTOM_MENU_TOGGLE_DEBUG = "TDebug";
-	
+
 	protected static final String CUSTOM_MENU_DEBUG_UPDATE_AT = "DebugAt";
-	//jf>
-	
+	// jf>
+
 	@Override
 	public void actionPerformed(ActionEvent e) {
 	}
-	
-    @Override
-	public void initCustomMenu(JPopupMenu menu, AbstractGraph owner) {	}
-	
-//	protected void initCMShowLocalDynamics(JPopupMenu menu, ActionListener handler) {
-//		menu.add(customSeparator);
-//		localMenu = new JCheckBoxMenuItem("Local dynamics @ -", false);
-//		localMenu.setActionCommand(AbstractGraph.CUSTOM_MENU_TOGGLE_LOCAL);
-//		localMenu.addActionListener(handler);
-//		localMenu.setFont(menu.getFont());
-//		menu.add(localMenu);
-//		menuShowLocal = true;
-//	}
-	
-//	protected void initCMSetLocalDynamics(JPopupMenu menu, ActionListener handler) {
-//		menu.add(customSeparator);
-//		nodeMenu = new JMenuItem("Set location @ -");
-//		nodeMenu.setActionCommand(AbstractGraph.CUSTOM_MENU_SET_LOCAL_NODE);
-//		nodeMenu.addActionListener(handler);
-//		nodeMenu.setFont(menu.getFont());
-//		menu.add(nodeMenu);
-//		menuSetLocal = true;
-//	}
-	
+
+	@Override
+	public void initCustomMenu(JPopupMenu menu, AbstractGraph owner) {
+	}
+
+	// protected void initCMShowLocalDynamics(JPopupMenu menu, ActionListener
+	// handler) {
+	// menu.add(customSeparator);
+	// localMenu = new JCheckBoxMenuItem("Local dynamics @ -", false);
+	// localMenu.setActionCommand(AbstractGraph.CUSTOM_MENU_TOGGLE_LOCAL);
+	// localMenu.addActionListener(handler);
+	// localMenu.setFont(menu.getFont());
+	// menu.add(localMenu);
+	// menuShowLocal = true;
+	// }
+
+	// protected void initCMSetLocalDynamics(JPopupMenu menu, ActionListener
+	// handler) {
+	// menu.add(customSeparator);
+	// nodeMenu = new JMenuItem("Set location @ -");
+	// nodeMenu.setActionCommand(AbstractGraph.CUSTOM_MENU_SET_LOCAL_NODE);
+	// nodeMenu.addActionListener(handler);
+	// nodeMenu.setFont(menu.getFont());
+	// menu.add(nodeMenu);
+	// menuSetLocal = true;
+	// }
+
 	protected void initCMTimeReversed(JPopupMenu menu, ActionListener handler) {
 		if (!engine.getModel().permitsTimeReversal())
 			return;
@@ -209,42 +214,51 @@ public abstract class MVAbstract extends JComponent
 		menu.add(timeMenu);
 		menuTime = true;
 	}
-	
-// note: for now only deal with local dynamics menu
-    @Override
+
+	// note: for now only deal with local dynamics menu
+	@Override
 	public void resetCustomMenu(JPopupMenu menu, AbstractGraph owner) {
-		if( !menuShowLocal && !menuSetLocal && !menuTime ) return;
-		
+		if (!menuShowLocal && !menuSetLocal && !menuTime)
+			return;
+
 		int idx;
-		switch( engine.getModel().getType() ) {
+		switch (engine.getModel().getType()) {
 			case PDE:
 				hideAllCM(menu);
-				if( menuShowLocal ) {
+				if (menuShowLocal) {
 					idx = menu.getComponentIndex(localMenu);
-					if( idx>=0 ) menu.getComponent(idx).setVisible(true);
+					if (idx >= 0)
+						menu.getComponent(idx).setVisible(true);
 				}
-				if( menuSetLocal ) {
+				if (menuSetLocal) {
 					idx = menu.getComponentIndex(nodeMenu);
-					if( idx>=0 ) menu.getComponent(idx).setVisible(true);
+					if (idx >= 0)
+						menu.getComponent(idx).setVisible(true);
 				}
-// note: does this always hide the right separator? can we group menu items, to enable/disable them all at once?
-				if( menuShowLocal || menuSetLocal ) {
+				// note: does this always hide the right separator? can we group menu items, to
+				// enable/disable them all at once?
+				if (menuShowLocal || menuSetLocal) {
 					idx = menu.getComponentIndex(customSeparator);
-					if( idx>=0 ) menu.getComponent(idx).setVisible(true);
+					if (idx >= 0)
+						menu.getComponent(idx).setVisible(true);
 				}
 				break;
 			case ODE:
 				hideAllCM(menu);
-				// ODE's allow to reverse the time. this is impossible in stochastic or diffusive systems
+				// ODE's allow to reverse the time. this is impossible in stochastic or
+				// diffusive systems
 				// because information is lost as time progresses.
-				if( menuTime ) {
+				if (menuTime) {
 					idx = menu.getComponentIndex(timeMenu);
-					if( idx>=0 ) menu.getComponent(idx).setVisible(true);
+					if (idx >= 0)
+						menu.getComponent(idx).setVisible(true);
 				}
-// note: does this always hide the right separator? can we group menu items, to enable/disable them all at once?
-				if( menuTime ) {
+				// note: does this always hide the right separator? can we group menu items, to
+				// enable/disable them all at once?
+				if (menuTime) {
 					idx = menu.getComponentIndex(customSeparator);
-					if( idx>=0 ) menu.getComponent(idx).setVisible(true);
+					if (idx >= 0)
+						menu.getComponent(idx).setVisible(true);
 				}
 				break;
 			case IBS:
@@ -252,27 +266,32 @@ public abstract class MVAbstract extends JComponent
 				hideAllCM(menu);
 		}
 	}
-	
+
 	private void hideAllCM(JPopupMenu menu) {
 		int idx;
-		if( menuShowLocal ) {
+		if (menuShowLocal) {
 			idx = menu.getComponentIndex(localMenu);
-			if( idx>=0 ) menu.getComponent(idx).setVisible(false);
+			if (idx >= 0)
+				menu.getComponent(idx).setVisible(false);
 		}
-		if( menuSetLocal ) {
+		if (menuSetLocal) {
 			idx = menu.getComponentIndex(nodeMenu);
-			if( idx>=0 ) menu.getComponent(idx).setVisible(false);
+			if (idx >= 0)
+				menu.getComponent(idx).setVisible(false);
 		}
-		if( menuTime ) {
+		if (menuTime) {
 			idx = menu.getComponentIndex(timeMenu);
-			if( idx>=0 ) menu.getComponent(idx).setVisible(false);
+			if (idx >= 0)
+				menu.getComponent(idx).setVisible(false);
 		}
-// note: does this always hide the right separator? can we group menu items, to enable/disable them all at once?
+		// note: does this always hide the right separator? can we group menu items, to
+		// enable/disable them all at once?
 		idx = menu.getComponentIndex(customSeparator);
-		if( idx>=0 ) menu.getComponent(idx).setVisible(false);
+		if (idx >= 0)
+			menu.getComponent(idx).setVisible(false);
 	}
-	
-    @Override
+
+	@Override
 	public void showCustomMenu(JPopupMenu menu, Point loc, AbstractGraph owner) {
 		Model model = engine.getModel();
 		Type mt = model.getType();
@@ -294,148 +313,153 @@ public abstract class MVAbstract extends JComponent
 				localMenu.setText("Local dynamics @ " + localNode);
 			}
 		}
-		lab.showCustomMenu(menu, owner);
 	}
 
-    @Override
+	@Override
 	public void setLocalNode(int localNode) {
 		MVAbstract.localNode = localNode;
 	}
-	
-    @Override
+
+	@Override
 	public int getLocalNode() {
 		return localNode;
 	}
-	
-    @Override
-	public void	setTimeReversed(boolean reversed) {
+
+	@Override
+	public void setTimeReversed(boolean reversed) {
 		engine.getModel().setTimeReversed(reversed);
 	}
-	
-    @Override
+
+	@Override
 	public int getNData(int tag) {
 		return module.getNTraits();
 	}
-	
-    @Override
+
+	@Override
 	public Color[] getColors(int tag) {
 		return module.getTraitColors();
 	}
-	
+
 	public Color[] getActiveColors(int tag) {
 		Color[] all = getColors(tag);
 		boolean[] active = module.getActiveTraits();
 		int nActive = active.length;
-		if( nActive==all.length ) return all;
+		if (nActive == all.length)
+			return all;
 		Color[] some = new Color[nActive];
 		int n = 0;
-		for( int i=0; i<nActive; i++ ) {
-			if( !active[i] ) continue;
+		for (int i = 0; i < nActive; i++) {
+			if (!active[i])
+				continue;
 			some[n++] = all[i];
 		}
 		return some;
 	}
-	
-    @Override
+
+	@Override
 	public Color getColor(int tag) {
 		return module.getTraitColors()[tag];
 	}
-	
+
 	@Override
 	public int getActiveCount(int tag) {
 		return module.getNActive();
 	}
-			
-    @Override
+
+	@Override
 	public boolean[] getActives(int tag) {
-    	boolean[] active = module.getActiveTraits();
-    	if (active == null) {
-    		active = new boolean[module.getNTraits()];
-    		Arrays.fill(active, true);
-    	}
-    	return active;
+		boolean[] active = module.getActiveTraits();
+		if (active == null) {
+			active = new boolean[module.getNTraits()];
+			Arrays.fill(active, true);
+		}
+		return active;
 	}
-	
-    @Override
+
+	@Override
 	public String[] getNames(int tag) {
 		return module.getTraitNames();
 	}
-	
-    @Override
+
+	@Override
 	public String getName(int tag) {
 		return module.getTraitName(tag);
 	}
-	
+
 	// NOTE: at least one getData variant must be overridden in subclass
-    @Override
+	@Override
 	public boolean getData(double data[], int tag) {
 		return false;
 	}
-	
-    @Override
+
+	@Override
 	public double[] getData(int tag) {
 		return null;
 	}
 
 	public void setState(double[] state) {
-// note: need to decide how to set the state... setState(Point2D) does not work for S3Graphs...
+		// note: need to decide how to set the state... setState(Point2D) does not work
+		// for S3Graphs...
 	}
-	
+
 	public String getToolTipText(Point2D loc, int tag) {
 		return null;
 	}
-	
-    @Override
+
+	@Override
 	public boolean isRunning() {
 		return lab.isRunning();
 	}
-	
+
 	protected File openSnapshot(String ext) {
-		String pre = module.getKey()+"-"+getFilePrefix()+"-t"+Formatter.format(engine.getModel().getTime(), 2);
-		File snapfile = new File(pre+"."+ext);
+		String pre = module.getKey() + "-" + getFilePrefix() + "-t"
+				+ Formatter.format(engine.getModel().getUpdates(), 2);
+		File snapfile = new File(pre + "." + ext);
 		int counter = 0;
-		while( snapfile.exists() ) snapfile = new File(pre+"-"+(counter++)+"."+ext);
+		while (snapfile.exists())
+			snapfile = new File(pre + "-" + (counter++) + "." + ext);
 		return snapfile;
 	}
-	
-    /**
-     * forward export request to engine
-     */
-    @Override
+
+	/**
+	 * forward export request to engine
+	 */
+	@Override
 	public void exportState() {
 		engine.exportState(null);
 	}
 
 	private ExportVectorGraphics evg = null;
 
-// note: should ask all graphs about their preferred format - if they don't agree, default to PNG - at least if !inViewport
-    @Override
+	// note: should ask all graphs about their preferred format - if they don't
+	// agree, default to PNG - at least if !inViewport
+	@Override
 	public void saveSnapshot(int tag, boolean inViewport, int format) {
-		switch( format ) {
+		switch (format) {
 			case AbstractGraph.SNAPSHOT_NONE:
-				return;	// do not waste our time
+				return; // do not waste our time
 			case AbstractGraph.SNAPSHOT_EPS:
 			case AbstractGraph.SNAPSHOT_PDF:
 			case AbstractGraph.SNAPSHOT_SVG:
-				if( hasSVG() ) {
-					if( evg==null ) evg = new ExportVectorGraphics();
-				}
-				else {
+				if (hasSVG()) {
+					if (evg == null)
+						evg = new ExportVectorGraphics();
+				} else {
 					format = AbstractGraph.SNAPSHOT_PNG;
 					evg = null;
 				}
 				break;
 			case AbstractGraph.SNAPSHOT_PNG:
-				break;		// now we are talking
+				break; // now we are talking
 			default:
-				logger.warning("unknown file format ("+format+")");
+				logger.warning("unknown file format (" + format + ")");
 				return;
 		}
-		
-		switch( format ) {
+
+		switch (format) {
 			case AbstractGraph.SNAPSHOT_PNG:
 				BufferedImage snapimage;
-				if( inViewport ) {
+				if (inViewport) {
 					// JScrollView found - write only current graph
 					AbstractGraph snapgraph = graphs.get(tag);
 					Dimension size = snapgraph.getSize();
@@ -444,12 +468,11 @@ public abstract class MVAbstract extends JComponent
 					// use paint because the target is PNG
 					snapgraph.paintAll(g2);
 					g2.dispose();
-				}
-				else {
+				} else {
 					Dimension size = getSize();
 					snapimage = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
 					Graphics2D g2 = snapimage.createGraphics();
-					for( AbstractGraph snapgraph : graphs ) {
+					for (AbstractGraph snapgraph : graphs) {
 						Point loc = snapgraph.getLocation();
 						g2.translate(loc.x, loc.y);
 						// use paint because the target is PNG
@@ -461,34 +484,37 @@ public abstract class MVAbstract extends JComponent
 				File snapfile = openSnapshot("png");
 				try {
 					ImageIO.write(snapimage, "PNG", snapfile);
-				}
-				catch( IOException x ) {
-					logger.warning("writing image to "+snapfile.getAbsolutePath()+" failed!");
+				} catch (IOException x) {
+					logger.warning("writing image to " + snapfile.getAbsolutePath() + " failed!");
 					return;
 				}
-				logger.info("image written to "+snapfile.getAbsolutePath());
+				logger.info("image written to " + snapfile.getAbsolutePath());
 				return;
 
 			case AbstractGraph.SNAPSHOT_SVG:
 				evg.exportSVG(tag, inViewport);
 				return;
-				
+
 			case AbstractGraph.SNAPSHOT_PDF:
 				evg.exportPDF(tag, inViewport);
 				return;
-				
+
 			case AbstractGraph.SNAPSHOT_EPS:
 				evg.exportEPS(tag, inViewport);
 				return;
-				
+
 			default:
-				logger.warning("unknown file format ("+format+")");
+				logger.warning("unknown file format (" + format + ")");
 		}
 	}
 
-	/* for some reason the vector graphics routines need to be 'shielded' from the rest of the
-	 * code because otherwise runtime exceptions concerning missing classes will be thrown
-	 * if the freehep libraries are missing - somehow instantiation of MV classes fails...
+	/*
+	 * for some reason the vector graphics routines need to be 'shielded' from the
+	 * rest of the
+	 * code because otherwise runtime exceptions concerning missing classes will be
+	 * thrown
+	 * if the freehep libraries are missing - somehow instantiation of MV classes
+	 * fails...
 	 * this seems error prone and rewritten in robust manner!
 	 */
 	public class ExportVectorGraphics {
@@ -496,8 +522,8 @@ public abstract class MVAbstract extends JComponent
 		void exportSVG(int tag, boolean inViewport) {
 			File snapfile = openSnapshot("svg");
 			Properties props = new Properties();
-			props.setProperty(SVGGraphics2D.TITLE, "Generated by EvoLudoLabs \u00a9 Christoph Hauert");
-			if( inViewport ) {
+			props.setProperty(SVGGraphics2D.TITLE, "Generated by EvoLudo \u00a9 Christoph Hauert");
+			if (inViewport) {
 				// JScrollView found - write only current graph
 				AbstractGraph snapgraph = graphs.get(tag);
 				try {
@@ -508,19 +534,18 @@ public abstract class MVAbstract extends JComponent
 					snapgraph.printAll(vg2);
 					vg2.endExport();
 					vg2.dispose();
-				}
-				catch( IOException x ) {
-					logger.warning("writing image to "+snapfile.getAbsolutePath()+" failed!");
+				} catch (IOException x) {
+					logger.warning("writing image to " + snapfile.getAbsolutePath() + " failed!");
 					return;
 				}
-				logger.info("image written to "+snapfile.getAbsolutePath());
+				logger.info("image written to " + snapfile.getAbsolutePath());
 				return;
 			}
 			try {
 				VectorGraphics vg2 = new SVGGraphics2D(snapfile, getSize());
 				vg2.setProperties(props);
 				vg2.startExport();
-				for( AbstractGraph snapgraph : graphs ) {
+				for (AbstractGraph snapgraph : graphs) {
 					Point loc = snapgraph.getLocation();
 					vg2.translate(loc.x, loc.y);
 					// use print for high resolution output of PDF
@@ -529,23 +554,23 @@ public abstract class MVAbstract extends JComponent
 				}
 				vg2.endExport();
 				vg2.dispose();
-			}
-			catch( IOException x ) {
-				logger.warning("writing SVG graphics to "+snapfile.getAbsolutePath()+" failed!");
+			} catch (IOException x) {
+				logger.warning("writing SVG graphics to " + snapfile.getAbsolutePath() + " failed!");
 				return;
 			}
-			logger.info("SVG graphics written to "+snapfile.getAbsolutePath());
+			logger.info("SVG graphics written to " + snapfile.getAbsolutePath());
 		}
 
 		void exportPDF(int tag, boolean inViewport) {
 			File snapfile = openSnapshot("pdf");
 			Properties props = new Properties();
-			// NOTE: pdf is not fully implemented - failed to set custom size, background white
-			//props.setProperty(PDFGraphics2D.PAGE_SIZE, "600, 480");
+			// NOTE: pdf is not fully implemented - failed to set custom size, background
+			// white
+			// props.setProperty(PDFGraphics2D.PAGE_SIZE, "600, 480");
 			props.setProperty(PDFGraphics2D.AUTHOR, "EvoLudoLabs \u00a9 Christoph Hauert");
 			props.setProperty(PDFGraphics2D.PAGE_MARGINS, "0, 0, 0, 0");
 			props.setProperty(PDFGraphics2D.TRANSPARENT, "true");
-			if( inViewport ) {
+			if (inViewport) {
 				// JScrollView found - write only current graph
 				AbstractGraph snapgraph = graphs.get(tag);
 				try {
@@ -556,19 +581,18 @@ public abstract class MVAbstract extends JComponent
 					snapgraph.printAll(vg2);
 					vg2.endExport();
 					vg2.dispose();
-				}
-				catch( IOException x ) {
-					logger.warning("writing PDF graphics to "+snapfile.getAbsolutePath()+" failed!");
+				} catch (IOException x) {
+					logger.warning("writing PDF graphics to " + snapfile.getAbsolutePath() + " failed!");
 					return;
 				}
-				logger.info("PDF graphics written to "+snapfile.getAbsolutePath());
+				logger.info("PDF graphics written to " + snapfile.getAbsolutePath());
 				return;
 			}
 			try {
 				VectorGraphics vg2 = new PDFGraphics2D(snapfile, getSize());
 				vg2.setProperties(props);
 				vg2.startExport();
-				for( AbstractGraph snapgraph : graphs ) {
+				for (AbstractGraph snapgraph : graphs) {
 					Point loc = snapgraph.getLocation();
 					vg2.translate(loc.x, loc.y);
 					// use print for high resolution output of PDF
@@ -577,22 +601,22 @@ public abstract class MVAbstract extends JComponent
 				}
 				vg2.endExport();
 				vg2.dispose();
-			}
-			catch( IOException x ) {
-				logger.warning("writing PDF graphics to "+snapfile.getAbsolutePath()+" failed!");
+			} catch (IOException x) {
+				logger.warning("writing PDF graphics to " + snapfile.getAbsolutePath() + " failed!");
 				return;
 			}
-			logger.info("PDF graphics written to "+snapfile.getAbsolutePath());
+			logger.info("PDF graphics written to " + snapfile.getAbsolutePath());
 		}
-	
+
 		void exportEPS(int tag, boolean inViewport) {
 			File snapfile = openSnapshot("eps");
 			Properties props = new Properties();
-			//NOTE: eps is not fully implemented - transparent background failed
-			//props.setProperty(PSGraphics2D.CUSTOM_PAGE_SIZE, "300, 240");
-			//props.setProperty(PSGraphics2D.AUTHOR, "EvoLudoLabs \u00a9 Christoph Hauert");
-			//props.setProperty(PSGraphics2D.TRANSPARENT, "true");
-			if( inViewport ) {
+			// NOTE: eps is not fully implemented - transparent background failed
+			// props.setProperty(PSGraphics2D.CUSTOM_PAGE_SIZE, "300, 240");
+			// props.setProperty(PSGraphics2D.AUTHOR, "EvoLudoLabs \u00a9 Christoph
+			// Hauert");
+			// props.setProperty(PSGraphics2D.TRANSPARENT, "true");
+			if (inViewport) {
 				// JScrollView found - write only current graph
 				AbstractGraph snapgraph = graphs.get(tag);
 				try {
@@ -603,19 +627,18 @@ public abstract class MVAbstract extends JComponent
 					snapgraph.printAll(vg2);
 					vg2.endExport();
 					vg2.dispose();
-				}
-				catch( IOException x ) {
-					logger.warning("writing EPS graphics to "+snapfile.getAbsolutePath()+" failed!");
+				} catch (IOException x) {
+					logger.warning("writing EPS graphics to " + snapfile.getAbsolutePath() + " failed!");
 					return;
 				}
-				logger.info("EPS graphics written to "+snapfile.getAbsolutePath());
+				logger.info("EPS graphics written to " + snapfile.getAbsolutePath());
 				return;
 			}
 			try {
 				VectorGraphics vg2 = new PSGraphics2D(snapfile, getSize());
 				vg2.setProperties(props);
 				vg2.startExport();
-				for( AbstractGraph snapgraph : graphs ) {
+				for (AbstractGraph snapgraph : graphs) {
 					Point loc = snapgraph.getLocation();
 					vg2.translate(loc.x, loc.y);
 					// use print for high resolution output of PDF
@@ -624,102 +647,102 @@ public abstract class MVAbstract extends JComponent
 				}
 				vg2.endExport();
 				vg2.dispose();
-			}
-			catch( IOException x ) {
-				logger.warning("writing EPS graphics to "+snapfile.getAbsolutePath()+" failed!");
+			} catch (IOException x) {
+				logger.warning("writing EPS graphics to " + snapfile.getAbsolutePath() + " failed!");
 				return;
 			}
-			logger.info("EPS graphics written to "+snapfile.getAbsolutePath());
+			logger.info("EPS graphics written to " + snapfile.getAbsolutePath());
 		}
 	}
 
 	protected String getFilePrefix() {
 		return "snap";
 	}
-	
+
 	/*
 	 * implement MultiViewPanel (partially)
 	 */
-	
-    @Override
+
+	@Override
 	public boolean isActive() {
 		return isActive;
 	}
-	
-    @Override
+
+	@Override
 	public void activate() {
-		if( isActive )
-			return;	// already active
+		if (isActive)
+			return; // already active
 		isActive = true;
 		viewWillGetActive();
 	}
-	
-    @Override
+
+	@Override
 	public void deactivate() {
-		if( !isActive )
-			return;	// already deactive
+		if (!isActive)
+			return; // already deactive
 		isActive = false;
-		for( AbstractGraph graph : graphs )
+		for (AbstractGraph graph : graphs)
 			graph.deactivate();
 	}
-	
+
 	protected void viewWillGetActive() {
-		for( AbstractGraph graph : graphs )
+		for (AbstractGraph graph : graphs)
 			graph.activate();
 		repaint();
 	}
 
-//	@Override
-//	public void setPopulation(Population population) {
-//		this.population = population;
-//	}
+	// @Override
+	// public void setPopulation(Population population) {
+	// this.population = population;
+	// }
 
 	@Override
-	public void setModule(org.evoludo.simulator.modules.Module module) {
+	public void setModule(Module<?> module) {
 		this.module = module;
 	}
 
 	@Override
 	public void reset(boolean clear) {
 		timestamp = -1.0;
-		for( AbstractGraph graph : graphs )
+		for (AbstractGraph graph : graphs)
 			graph.reset(clear);
 		int nPop = module.getNPopulation();
-		if( localNode<0 || localNode>=nPop )
-			localNode = nPop/2;
+		if (localNode < 0 || localNode >= nPop)
+			localNode = nPop / 2;
 		// revalidate layout as things may have changed after changing parameters
 		validate();
 	}
-	
+
 	@Override
 	public void init() {
 		timestamp = -1.0;
-		for( AbstractGraph graph : graphs )
+		for (AbstractGraph graph : graphs)
 			graph.reinit();
 	}
 
 	@Override
 	public void update(boolean updateGUI) {
-		for( AbstractGraph graph : graphs )
+		for (AbstractGraph graph : graphs)
 			graph.next(isActive, updateGUI);
 	}
 
 	@Override
 	public void end() {
-		for( AbstractGraph graph : graphs )
+		for (AbstractGraph graph : graphs)
 			graph.end();
 	}
 
-    @Override
+	@Override
 	public void parametersChanged(boolean didReset) {
-    	if( !didReset )
-    		init();
+		if (!didReset)
+			init();
 	}
-	
-	// this is an annoying workaround to close the context menu when the java applet/application becomes deactivated
-    @Override
+
+	// this is an annoying workaround to close the context menu when the java
+	// applet/application becomes deactivated
+	@Override
 	public void setContextMenuEnabled(boolean enabled) {
-		for( AbstractGraph graph : graphs )
+		for (AbstractGraph graph : graphs)
 			graph.setContextMenuEnabled(enabled);
 	}
 }

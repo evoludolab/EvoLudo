@@ -30,8 +30,6 @@
 
 package org.evoludo.ui;
 
-import org.evoludo.math.Combinatorics;
-
 import com.google.gwt.core.client.JsArray;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.NativeEvent;
@@ -240,10 +238,49 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 	private Vector2 panEnd;
 
 	/**
-	 * Mouse and touch handlers to control the view of the 3D scene.
+	 * Reference to mouse wheel event handler for interacting with 3D view.
 	 */
-	private HandlerRegistration mouseWheelHandler, mouseDownHandler, mouseMoveHandler, mouseUpHandler,
-			touchStartHandler, touchMoveHandler, touchEndHandler;
+	private HandlerRegistration mouseWheelHandler;
+
+	/**
+	 * Reference to mouse down event handler for interacting with 3D view.
+	 */
+	private HandlerRegistration mouseDownHandler;
+
+	/**
+	 * Reference to mouse move event handler for interacting with 3D view.
+	 */
+	private HandlerRegistration mouseMoveHandler;
+
+	/**
+	 * Reference to mouse up event handler for interacting with 3D view.
+	 */
+	private HandlerRegistration mouseUpHandler;
+
+	/**
+	 * Reference to touch start event handler for interacting with 3D view.
+	 */
+	private HandlerRegistration touchStartHandler;
+
+	/**
+	 * Reference to touch move event handler for interacting with 3D view.
+	 */
+	private HandlerRegistration touchMoveHandler;
+
+	/**
+	 * Reference to touch end event handler for interacting with 3D view.
+	 */
+	private HandlerRegistration touchEndHandler;
+
+	/**
+	 * CSS class name for changing the cursor while panning the view.
+	 */
+	protected static final String CSS_CURSOR_MOVE_VIEW = "evoludo-cursorMoveView";
+
+	/**
+	 * CSS class name for changing the cursor while rotating the view.
+	 */
+	protected static final String CSS_CURSOR_ROTATE_VIEW = "evoludo-cursorRotate";
 
 	/**
 	 * Creates a new instance of TrackballControls for the 3D scene displayed in
@@ -266,25 +303,32 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 		rotateEnd = new Vector3();
 		panStart = new Vector2();
 		panEnd = new Vector2();
+	}
 
+	/**
+	 * Initialize and register mouse and touch handlers.
+	 */
+	public void load() {
+		Widget widget = getWidget();
+		// register mouse handlers
 		mouseWheelHandler = widget.addDomHandler(this, MouseWheelEvent.getType());
 		mouseDownHandler = widget.addDomHandler(this, MouseDownEvent.getType());
 		mouseMoveHandler = widget.addDomHandler(this, MouseMoveEvent.getType());
 		mouseUpHandler = widget.addDomHandler(this, MouseUpEvent.getType());
-
+		// register touch handlers
 		touchStartHandler = widget.addDomHandler(this, TouchStartEvent.getType());
 		touchMoveHandler = widget.addDomHandler(this, TouchMoveEvent.getType());
 		touchEndHandler = widget.addDomHandler(this, TouchEndEvent.getType());
-
+		// set initial eye distance
 		initialDistance = getObject().getPosition().length();
 		// set radius
 		onResize();
 	}
 
 	/**
-	 * Free resources.
+	 * Remove mouse and touch handlers.
 	 */
-	public void dispose() {
+	public void unload() {
 		if (mouseWheelHandler != null)
 			mouseWheelHandler.removeHandler();
 		if (mouseDownHandler != null)
@@ -470,7 +514,6 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 		if (camera instanceof OrthographicCamera) {
 			camera.getScale().set(1.0, 1.0, 1.0);
 			camera.updateMatrix();
-			return;
 		}
 	}
 
@@ -510,15 +553,14 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 		if (!hasZoom)
 			return;
 		event.preventDefault();
-		// wheel resolution is very coarse - how to improve?
-		int dy = -event.getDeltaY();
-		if (dy == 0)
+		double dy = event.getNativeDeltaY();
+		if (dy == 0.0)
 			return;
-		zoomChange = Combinatorics.pow(zoomSpeed, dy);
+		zoomChange = Math.pow(zoomSpeed, dy);
 		doZoom = true;
 		getWidget().addStyleName(dy < 0 ? "evoludo-cursorZoomIn" : "evoludo-cursorZoomOut");
 		if (!t.isRunning())
-			t.schedule(300);
+			t.schedule(200);
 	}
 
 	/**
@@ -551,8 +593,8 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 		if (event.getNativeButton() != NativeEvent.BUTTON_LEFT)
 			return;
 		isDragging = false;
-		getWidget().removeStyleName("evoludo-cursorRotate");
-		getWidget().removeStyleName("evoludo-cursorMoveView");
+		getWidget().removeStyleName(CSS_CURSOR_ROTATE_VIEW);
+		getWidget().removeStyleName(CSS_CURSOR_MOVE_VIEW);
 	}
 
 	/**
@@ -572,13 +614,13 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 				return;
 			panEnd = getMouseOnScreen(event.getX(), event.getY());
 			doPan = true;
-			getWidget().addStyleName("evoludo-cursorMoveView");
+			getWidget().addStyleName(CSS_CURSOR_MOVE_VIEW);
 		} else {
 			if (!hasRotate)
 				return;
 			rotateEnd = getMouseProjectionOnBall(event.getX(), event.getY());
 			doRotate = true;
-			getWidget().addStyleName("evoludo-cursorRotate");
+			getWidget().addStyleName(CSS_CURSOR_ROTATE_VIEW);
 		}
 	}
 
@@ -714,7 +756,6 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 			int x = touch.getRelativeX(ref);
 			int y = touch.getRelativeY(ref);
 			rotateStart = getMouseProjectionOnBall(x, y);
-			return;
 		}
 	}
 
@@ -828,7 +869,6 @@ public class TrackballControls extends Controls implements MouseWheelHandler, Mo
 			else if (zoom < 0.05)
 				camera.getScale().set(0.05, 0.05, 0.05);
 			camera.updateMatrix();
-			return;
 		}
 	}
 

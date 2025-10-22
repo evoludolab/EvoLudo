@@ -35,8 +35,8 @@ import java.awt.Color;
 import org.evoludo.geom.Point2D;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.Model.HasDE;
+import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasHistogram;
@@ -73,6 +73,11 @@ public class EcoPGG extends Discrete implements Payoffs,
 	public static final int COOPERATE = 1;
 
 	/**
+	 * The trait (and index) value of defectors.
+	 */
+	public static final int VACANT = 2;
+
+	/**
 	 * The multiplication factor of the public good.
 	 */
 	double interest = 3.0;
@@ -99,25 +104,17 @@ public class EcoPGG extends Discrete implements Payoffs,
 	 */
 	public EcoPGG(EvoLudo engine) {
 		super(engine);
+		nTraits = 3; // cooperators, defectors and empty sites
+		vacantIdx = VACANT;
 	}
 
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 3;
-		VACANT = 2;
 		// trait names
-		String[] names = new String[nTraits];
-		names[COOPERATE] = "Cooperator";
-		names[DEFECT] = "Defector";
-		names[VACANT] = "Vacant";
-		setTraitNames(names);
+		setTraitNames(new String[] { "Defector", "Cooperator" });
 		// trait colors (automatically generates lighter versions for new strategists)
-		Color[] colors = new Color[nTraits];
-		colors[COOPERATE] = Color.BLUE;
-		colors[DEFECT] = Color.RED;
-		colors[VACANT] = Color.LIGHT_GRAY;
-		setTraitColors(colors);
+		setTraitColors(new Color[] { Color.RED, Color.BLUE });
 	}
 
 	@Override
@@ -347,7 +344,8 @@ public class EcoPGG extends Discrete implements Payoffs,
 
 	@Override
 	public Data2Phase getPhase2DMap() {
-		map = new EcoPGGMap();
+		if (map == null)
+			map = new EcoPGGMap();
 		return map;
 	}
 
@@ -360,16 +358,18 @@ public class EcoPGG extends Discrete implements Payoffs,
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {
 			// NOTE: data[0] is time!
-			point.x = 1.0 - data[VACANT + 1];
-			point.y = Math.min(1.0, 1.0 - data[DEFECT + 1] / (1.0 - data[VACANT + 1]));
+			point.set(1.0 - data[VACANT + 1],
+					Math.min(1.0, 1.0 - data[DEFECT + 1] / (1.0 - data[VACANT + 1])));
 			return true;
 		}
 
 		@Override
 		public boolean phase2Data(Point2D point, double[] data) {
-			data[VACANT] = 1.0 - point.x;
-			data[DEFECT] = point.x * (1.0 - point.y);
-			data[COOPERATE] = point.x * point.y;
+			double x = point.getX();
+			double y = point.getY();
+			data[VACANT] = 1.0 - x;
+			data[DEFECT] = x * (1.0 - y);
+			data[COOPERATE] = x * y;
 			return true;
 		}
 

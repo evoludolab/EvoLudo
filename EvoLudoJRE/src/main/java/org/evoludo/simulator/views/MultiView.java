@@ -41,27 +41,28 @@ import org.evoludo.util.CLOption;
 
 public interface MultiView {
 
-	public String	getName();
+	public String getName();
 
-	public void		activate();
-	
-	public void		deactivate();
-	
-	public boolean	isActive();
+	public void activate();
 
-	public default void	setModule(Module module) { };
+	public void deactivate();
 
-	public void		reset(boolean clear);
-	
-	public void		init();
-	
-	public void		update(boolean updateGUI);
-	
-	public void		end();
-	
-	public void		parametersChanged(boolean didReset);
-	
-	public void		setContextMenuEnabled(boolean enabled);
+	public boolean isActive();
+
+	public default void setModule(Module<?> module) {
+	}
+
+	public void reset(boolean clear);
+
+	public void init();
+
+	public void update(boolean updateGUI);
+
+	public void end();
+
+	public void parametersChanged(boolean didReset);
+
+	public void setContextMenuEnabled(boolean enabled);
 
 	public enum DataTypes implements CLOption.Key {
 
@@ -169,7 +170,7 @@ public interface MultiView {
 	 * 
 	 * @see org.evoludo.simulator.EvoLudoLab#updateViews
 	 */
-	public static DataTypes[] getAvailableDataTypes(Module module, Model model) {
+	public static DataTypes[] getAvailableDataTypes(Module<?> module, Model model) {
 		ArrayList<DataTypes> dataOutputs = new ArrayList<>();
 		// query available views to deduce the data types to report
 		// individual data

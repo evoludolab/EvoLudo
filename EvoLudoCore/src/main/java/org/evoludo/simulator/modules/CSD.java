@@ -33,7 +33,7 @@ package org.evoludo.simulator.modules;
 import java.awt.Color;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBS.HasIBS;
+import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasDistribution;
 import org.evoludo.simulator.views.HasHistogram;
@@ -101,12 +101,12 @@ public class CSD extends Continuous implements Payoffs,
 	 */
 	public CSD(EvoLudo engine) {
 		super(engine);
+		nTraits = 1; // continuous investment level
 	}
 
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 1;
 		// trait names
 		setTraitNames(new String[] { "Investment" });
 		// trait colors (automatically generates lighter versions for min and max)

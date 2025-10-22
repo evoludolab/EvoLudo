@@ -40,7 +40,7 @@ public class Node2D extends Point2D implements Node {
 	/**
 	 * The radius {@code r} of the 2D node.
 	 */
-	public double r;
+	double r;
 
 	/**
 	 * Create a new 2D node at {@code (0,0)} with radius {@code r=0}.
@@ -119,6 +119,22 @@ public class Node2D extends Point2D implements Node {
 	public Node2D scaleR(double scale) {
 		r *= scale;
 		return this;
+	}
+
+	/**
+	 * Check it point {@code hit} lies inside of node.
+	 * 
+	 * @param hit the point to check
+	 * @return {@code true} if inside
+	 */
+	public boolean isHit(Point2D hit) {
+		double dx = hit.x - x;
+		if (dx > r)
+			return false;
+		double dy = hit.y - y;
+		if (dy > r)
+			return false;
+		return (dx * dx + dy * dy < r * r);
 	}
 
 	/**

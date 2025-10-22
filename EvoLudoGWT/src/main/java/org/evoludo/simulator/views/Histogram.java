@@ -31,7 +31,6 @@
 package org.evoludo.simulator.views;
 
 import java.awt.Color;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -46,6 +45,8 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.models.CModel;
+import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.models.Mode;
@@ -59,7 +60,6 @@ import org.evoludo.util.Formatter;
 import org.evoludo.util.NativeJS;
 
 import com.google.gwt.core.client.Duration;
-import com.google.gwt.user.client.Command;
 
 /**
  * The view to display a histogram of various quantities of the current EvoLudo
@@ -115,6 +115,16 @@ public class Histogram extends AbstractView {
 	}
 
 	@Override
+	public boolean load() {
+		if (!super.load())
+			return false;
+		if (type == Data.STATISTICS_FIXATION_PROBABILITY || type == Data.STATISTICS_FIXATION_TIME)
+			// listen to samples for fixation statistics
+			engine.addSampleListener(this);
+		return true;
+	}
+
+	@Override
 	public String getName() {
 		return type.toString();
 	}
@@ -122,27 +132,27 @@ public class Histogram extends AbstractView {
 	@Override
 	public Mode getMode() {
 		switch (type) {
-			case TRAIT:
-			case FITNESS:
-			case DEGREE:
-			default:
-				return Mode.DYNAMICS;
 			case STATISTICS_FIXATION_PROBABILITY:
 			case STATISTICS_FIXATION_TIME:
 				return Mode.STATISTICS_SAMPLE;
 			case STATISTICS_STATIONARY:
 				return Mode.STATISTICS_UPDATE;
+			case TRAIT:
+			case FITNESS:
+			case DEGREE:
+			default:
+				return Mode.DYNAMICS;
 		}
 	}
 
 	@Override
 	protected void allocateGraphs() {
-		ArrayList<? extends Module> species = engine.getModule().getSpecies();
+		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		isMultispecies = (species.size() > 1);
 		degreeProcessed = false;
 		doStatistics = false;
 		int nGraphs = 0;
-		for (Module pop : species) {
+		for (Module<?> pop : species) {
 			int nTraits = pop.getNTraits();
 			switch (type) {
 				case TRAIT:
@@ -154,7 +164,7 @@ public class Histogram extends AbstractView {
 						nGraphs++;
 					else {
 						nGraphs += nTraits;
-						if (pop.getVacant() >= 0)
+						if (pop.getVacantIdx() >= 0)
 							nGraphs--;
 					}
 					break;
@@ -170,10 +180,8 @@ public class Histogram extends AbstractView {
 				case STATISTICS_FIXATION_PROBABILITY:
 					nGraphs += nTraits;
 					// no graph for vacant trait if monostop
-					if (pop.getVacant() >= 0) {
-						if (pop instanceof Discrete && ((Discrete) pop).getMonoStop())
-							nGraphs--;
-					}
+					if (pop.getVacantIdx() >= 0 && pop instanceof Discrete && ((Discrete) pop).getMonoStop())
+						nGraphs--;
 					break;
 				default:
 					nGraphs = Integer.MIN_VALUE;
@@ -184,7 +192,7 @@ public class Histogram extends AbstractView {
 			int nXLabels = 0;
 			destroyGraphs();
 			Type mt = model.getType();
-			for (Module module : species) {
+			for (Module<?> module : species) {
 				int nTraits = module.getNTraits();
 				switch (type) {
 					case TRAIT:
@@ -212,7 +220,7 @@ public class Histogram extends AbstractView {
 
 					case FITNESS:
 						nTraits = (model.isContinuous() ? 1 : nTraits);
-						int vacant = module.getVacant();
+						int vacant = module.getVacantIdx();
 						int paneIdx = 0;
 						int bottomPaneIdx = nTraits - 1;
 						if (vacant >= 0 && vacant == nTraits - 1)
@@ -297,15 +305,12 @@ public class Histogram extends AbstractView {
 					case STATISTICS_FIXATION_PROBABILITY:
 						bottomPaneIdx = nTraits - 1;
 						// no graph for vacant trait if monostop
-						int skip = module.getVacant();
-						if (skip >= 0) {
-							// module has vacancies - check if monostop set (requires Discrete too)
-							if (!(module instanceof Discrete))
-								skip = -1;
-							else if (!((Discrete) module).getMonoStop())
-								skip = -1;
-							else if (skip == bottomPaneIdx)
-								bottomPaneIdx--;
+						int skip = module.getVacantIdx();
+						if (skip >= 0 &&
+								module instanceof Discrete &&
+								((Discrete) module).getMonoStop() &&
+								skip == bottomPaneIdx) {
+							bottomPaneIdx--;
 						}
 						for (int n = 0; n < nTraits; n++) {
 							if (n == skip)
@@ -338,13 +343,12 @@ public class Histogram extends AbstractView {
 					case STATISTICS_FIXATION_TIME:
 						bottomPaneIdx = nTraits;
 						// no graph for vacant trait if monostop
-						skip = module.getVacant();
-						if (skip >= 0) {
-							// module has vacancies - check if monostop set (requires Discrete too)
-							if (!(module instanceof Discrete))
-								skip = -1;
-							else if (!((Discrete) module).getMonoStop())
-								skip = -1;
+						skip = module.getVacantIdx();
+						if (skip >= 0 &&
+								skip == bottomPaneIdx &&
+								module instanceof Discrete &&
+								((Discrete) module).getMonoStop()) {
+							bottomPaneIdx--;
 						}
 						for (int n = 0; n <= nTraits; n++) {
 							if (n == skip)
@@ -411,11 +415,11 @@ public class Histogram extends AbstractView {
 				graph.setSize(width + "%", height + (graph.getStyle().showXLabel ? xaxisdeco : 0) + "%");
 		}
 	}
-	
+
 	@Override
 	public void reset(boolean hard) {
 		super.reset(hard);
-		Module module = null;
+		Module<?> module = null;
 		double[][] data = null;
 		int idx = 0;
 		Type mt = model.getType();
@@ -424,12 +428,12 @@ public class Histogram extends AbstractView {
 		boolean isPDE = mt.isPDE();
 		for (HistoGraph graph : graphs) {
 			AbstractGraph.GraphStyle style = graph.getStyle();
-			Module oldmod = module;
+			Module<?> oldmod = module;
 			module = graph.getModule();
 			boolean newPop = (oldmod != module);
 			if (newPop)
 				data = graph.getData();
-			int vacant = module.getVacant();
+			int vacant = module.getVacantIdx();
 			int nTraits = module.getNTraits();
 			Color[] colors = module.getTraitColors();
 			if (hard)
@@ -442,7 +446,7 @@ public class Histogram extends AbstractView {
 						data = new double[nTraits][HistoGraph.MAX_BINS];
 					graph.setData(data);
 					graph.clearMarkers();
-					ArrayList<double[]> markers = module.getMarkers();
+					List<double[]> markers = module.getMarkers();
 					if (markers != null) {
 						for (double[] mark : markers)
 							graph.addMarker(mark[idx + 1], ColorMapCSS.Color2Css(colors[idx]), null,
@@ -483,7 +487,7 @@ public class Histogram extends AbstractView {
 					style.yMax = 1.0;
 					if (module instanceof Discrete) {
 						// cast is save because pop is Discrete
-						org.evoludo.simulator.models.Discrete dmodel = (org.evoludo.simulator.models.Discrete) model;
+						DModel dmodel = (DModel) model;
 						style.label = (isMultispecies ? module.getName() + ": " : "") + module.getTraitName(idx);
 						Color tColor = colors[idx];
 						style.graphColor = ColorMapCSS.Color2Css(tColor);
@@ -497,7 +501,7 @@ public class Histogram extends AbstractView {
 					}
 					if (module instanceof Continuous) {
 						// cast is save because pop is Continuous
-						org.evoludo.simulator.models.Continuous cmodel = (org.evoludo.simulator.models.Continuous) model;
+						CModel cmodel = (org.evoludo.simulator.models.CModel) model;
 						Color tcolor = colors[idx];
 						graph.addMarker(cmodel.getMinMonoScore(module.getID()),
 								ColorMapCSS.Color2Css(ColorMap.blendColors(tcolor, Color.BLACK, 0.5)),
@@ -516,7 +520,8 @@ public class Histogram extends AbstractView {
 						graph.setData(null);
 						break;
 					}
-					Geometry inter, comp;
+					Geometry inter;
+					Geometry comp;
 					if (isPDE) {
 						inter = comp = module.getGeometry();
 					} else {
@@ -548,14 +553,15 @@ public class Histogram extends AbstractView {
 					if (doStatistics) {
 						int nNode;
 						if (isSDE)
-							nNode = 1;	// only one 'node' in SDE
+							nNode = 1; // only one 'node' in SDE
 						else {
 							nNode = module.getNPopulation();
 							style.xMax = nNode - 1;
 						}
 						int maxBins = graph.getMaxBins();
-if (maxBins < 0) maxBins = 100;
-						if (data == null 
+						if (maxBins < 0)
+							maxBins = 100;
+						if (data == null
 								|| data.length != nTraits + 1
 								|| nNode > maxBins
 								|| (nNode <= maxBins && data[0].length != nNode)) {
@@ -607,7 +613,7 @@ if (maxBins < 0) maxBins = 100;
 						style.yLabel = "probability";
 						style.percentY = true;
 						graph.enableAutoscaleYMenu(true);
-						style.customYLevels = null;
+						style.customYLevels = new double[0];
 					} else {
 						if (doStatistics) {
 							if (data == null || data.length != 2 * (nTraits + 1) || data[0].length != nNode)
@@ -669,7 +675,7 @@ if (maxBins < 0) maxBins = 100;
 		super.modelSettings();
 		int idx = 0;
 		for (HistoGraph graph : graphs) {
-			Module module = graph.getModule();
+			Module<?> module = graph.getModule();
 			AbstractGraph.GraphStyle style = graph.getStyle();
 			style.customYLevels = ((HasHistogram) module).getCustomLevels(type, idx++);
 		}
@@ -684,11 +690,51 @@ if (maxBins < 0) maxBins = 100;
 	}
 
 	@Override
+	public void modelSample(boolean success) {
+		if (!success)
+			return;
+
+		// NOTE: not fully ready for multi-species; info which species fixated missing
+		FixationData fixData = model.getFixationData();
+		int initNode = fixData.mutantNode;
+		if (initNode < 0)
+			return;
+		HistoGraph graph = graphs.get(fixData.typeFixed);
+		// new data available - update histograms
+		switch (type) {
+			case STATISTICS_FIXATION_PROBABILITY:
+				if (fixData.probRead)
+					return;
+				graph.addData((int) (fixData.mutantNode * scale2bins));
+				fixData.probRead = true;
+				break;
+			case STATISTICS_FIXATION_TIME:
+				if (fixData.timeRead)
+					return;
+				HistoGraph absorption = graphs.get(graphs.size() - 1);
+				if (doFixtimeDistr(graph.getModule())) {
+					graph.addData(fixData.updatesFixed);
+					absorption.addData(fixData.updatesFixed);
+				} else {
+					graph.addData(initNode, fixData.updatesFixed);
+					absorption.addData(initNode, fixData.updatesFixed);
+				}
+				fixData.timeRead = true;
+				break;
+			default:
+		}
+		if (!isActive)
+			return;
+		for (HistoGraph g : graphs)
+			g.paint(false);
+	}
+
+	@Override
 	public void update(boolean force) {
 		if (!isActive && !doStatistics)
 			return;
 
-		double newtime = model.getTime();
+		double newtime = model.getUpdates();
 		if (Math.abs(timestamp - newtime) > 1e-8) {
 			timestamp = newtime;
 			Type mt = model.getType();
@@ -697,7 +743,7 @@ if (maxBins < 0) maxBins = 100;
 				case TRAIT:
 					double[][] data = null;
 					// cast ok because trait histograms only make sense for continuous models
-					org.evoludo.simulator.models.Continuous cmodel = (org.evoludo.simulator.models.Continuous) model;
+					CModel cmodel = (CModel) model;
 					for (HistoGraph graph : graphs) {
 						double[][] graphdata = graph.getData();
 						if (data != graphdata) {
@@ -720,9 +766,10 @@ if (maxBins < 0) maxBins = 100;
 
 				case DEGREE:
 					data = null;
-					double min = 0.0, max = 0.0;
+					double min = 0.0;
+					double max = 0.0;
 					for (HistoGraph graph : graphs) {
-						Module module = graph.getModule();
+						Module<?> module = graph.getModule();
 						Geometry inter = module.getInteractionGeometry();
 						Geometry comp = module.getCompetitionGeometry();
 						if (mt.isODE() || mt.isSDE()) {
@@ -768,40 +815,6 @@ if (maxBins < 0) maxBins = 100;
 							style.xMax = max;
 						}
 					}
-					break;
-
-				// NOTE: not fully ready for multi-species; info which species fixated missing
-				case STATISTICS_FIXATION_PROBABILITY:
-					// always reset timestamp (double processing prevented by fixData.probRead)
-					timestamp = -1.0;
-					FixationData fixData = model.getFixationData();
-					// return if no fixation data available, already processed or invalid
-					if (fixData == null || fixData.probRead || fixData.mutantNode < 0)
-						break;
-					HistoGraph graph = graphs.get(fixData.typeFixed);
-					graph.addData((int) (fixData.mutantNode * scale2bins));
-					fixData.probRead = true;
-					break;
-
-				// NOTE: not fully ready for multi-species; info which species fixated missing
-				case STATISTICS_FIXATION_TIME:
-					// always reset timestamp (double processing prevented by fixData.timeRead)
-					timestamp = -1.0;
-					fixData = model.getFixationData();
-					// return if no fixation data available, already processed or invalid
-					if (fixData == null || fixData.timeRead || fixData.mutantNode < 0)
-						break;
-					int initNode = fixData.mutantNode;
-					graph = graphs.get(fixData.typeFixed);
-					HistoGraph absorption = graphs.get(graphs.size() - 1);
-					if (initNode < 0 || doFixtimeDistr(graph.getModule())) {
-						graph.addData(fixData.updatesFixed);
-						absorption.addData(fixData.updatesFixed);
-					} else {
-						graph.addData(initNode, fixData.updatesFixed);
-						absorption.addData(initNode, fixData.updatesFixed);
-					}
-					fixData.timeRead = true;
 					break;
 
 				case STATISTICS_STATIONARY:
@@ -862,14 +875,9 @@ if (maxBins < 0) maxBins = 100;
 	 * @param module the module of the graph
 	 * @return {@code true} to show the fixation time distribution
 	 */
-	private boolean doFixtimeDistr(Module module) {
+	private boolean doFixtimeDistr(Module<?> module) {
 		return (module.getNPopulation() > graphs.get(0).getMaxBins() || model.getType().isSDE());
 	}
-
-	/**
-	 * The time of the last update.
-	 */
-	protected double updatetime = -1.0;
 
 	/**
 	 * The status of the view.
@@ -891,19 +899,22 @@ if (maxBins < 0) maxBins = 100;
 		switch (type) {
 			case STATISTICS_FIXATION_PROBABILITY:
 				int nSam = Math.max(model.getNStatisticsSamples(), 1);
-				status = "Avg. fix. prob: ";
+				StringBuilder sb = new StringBuilder("Avg. fix. prob: ");
 				int idx = 0;
 				for (HistoGraph graph : graphs) {
-					Module module = graph.getModule();
+					Module<?> module = graph.getModule();
 					if (idx > 0)
-						status += ", ";
-					status += (isMultispecies ? module.getName() + "." : "") + module.getTraitName(idx++) + ": " +
-							Formatter.formatFix(graph.getSamples() / nSam, 4);
+						sb.append(", ");
+					sb.append(isMultispecies ? module.getName() + "." : "")
+							.append(module.getTraitName(idx++))
+							.append(": ")
+							.append(Formatter.formatFix(graph.getSamples() / nSam, 4));
 				}
+				status = sb.toString();
 				return status;
 
 			case STATISTICS_FIXATION_TIME:
-				status = "Avg. fix. time: ";
+				sb = new StringBuilder("Avg. fix. time: ");
 				idx = 0;
 				for (HistoGraph graph : graphs) {
 					double[][] data = graph.getData();
@@ -911,32 +922,33 @@ if (maxBins < 0) maxBins = 100;
 						logger.warning("Average fixation times not available!");
 						return "";
 					}
-					Module module = graph.getModule();
+					Module<?> module = graph.getModule();
 					int nTraits = module.getNTraits();
 					if (idx > 0)
-						status += ", ";
-					status += (isMultispecies ? module.getName() + "." : "")
-							+ graph.getStyle().label + ": ";
-					int skip = module.getVacant();
-					if (skip >= 0) {
-						// module has vacancies - check if monostop set (requires Discrete too)
-						if (!(module instanceof Discrete))
-							skip = -1;
-						else if (!((Discrete) module).getMonoStop())
-							skip = -1;
-						if (skip == idx)
-							idx++;
+						sb.append(", ");
+					sb.append(isMultispecies ? module.getName() + "." : "")
+							.append(graph.getStyle().label)
+							.append(": ");
+					int skip = module.getVacantIdx();
+					if (skip >= 0 &&
+							skip == idx &&
+							module instanceof Discrete &&
+							((Discrete) module).getMonoStop()) {
+						idx++;
 					}
 					if (doFixtimeDistr(module)) {
 						double mean = Distributions.distrMean(data[idx]);
 						double sdev = Distributions.distrStdev(data[idx], mean);
 						GraphStyle style = graph.getStyle();
-						status += Formatter.formatFix(style.xMin + mean * (style.xMax - style.xMin), 2) + " ± " +
-								Formatter.formatFix(sdev * (style.xMax - style.xMin), 2);
+						sb.append(Formatter.formatFix(style.xMin + mean * (style.xMax - style.xMin), 2))
+								.append(" ± ")
+								.append(Formatter.formatFix(sdev * (style.xMax - style.xMin), 2));
 						idx++;
 						continue;
 					}
-					double sx = 0.0, sx2 = 0.0, sw = 0.0;
+					double sx = 0.0;
+					double sx2 = 0.0;
+					double sw = 0.0;
 					// note: the +1 accounts for the fact that there is an additional graph for
 					// the absorption time.
 					double[] dat = data[idx];
@@ -952,14 +964,15 @@ if (maxBins < 0) maxBins = 100;
 						sw += w;
 					}
 					if (sw <= 0.0)
-						status += "0.0000 ± 0.0000";
+						sb.append("0.0000 ± 0.0000");
 					else {
 						double mean = sx / sw;
-						status += Formatter.formatFix(mean, 4) + " ± "
-								+ Formatter.formatFix(Math.sqrt(sx2 / sw - mean * mean), 4);
+						sb.append(Formatter.formatFix(mean, 4)).append(" ± ")
+								.append(Formatter.formatFix(Math.sqrt(sx2 / sw - mean * mean), 4));
 					}
 					idx++;
 				}
+				status = sb.toString();
 				return status;
 
 			case STATISTICS_STATIONARY:
@@ -1175,14 +1188,11 @@ if (maxBins < 0) maxBins = 100;
 		if (type == Data.STATISTICS_STATIONARY) {
 			// add menu to clear canvas
 			if (clearMenu == null) {
-				clearMenu = new ContextMenuItem("Clear", new Command() {
-					@Override
-					public void execute() {
-						for (HistoGraph graph : graphs)
-							graph.clearData();
-						timestamp = -1.0;
-						update();
-					}
+				clearMenu = new ContextMenuItem("Clear", () -> {
+					for (HistoGraph graph : graphs)
+						graph.clearData();
+					timestamp = -1.0;
+					update();
 				});
 			}
 			menu.addSeparator();
@@ -1210,41 +1220,41 @@ if (maxBins < 0) maxBins = 100;
 	protected void exportStatData() {
 		// NOTE: consider exporting more data (e.g. overall fix probs/times, sdev,
 		// sample count); initial configuration for statistics, structure
-		String export;
+		StringBuilder export = new StringBuilder();
 		switch (type) {
 			case STATISTICS_FIXATION_PROBABILITY:
-				export = "# fixation probability\n";
+				export.append("# fixation probability\n");
 				break;
 			case STATISTICS_FIXATION_TIME:
-				export = "# fixation time\n";
+				export.append("# fixation time\n");
 				break;
 			case STATISTICS_STATIONARY:
-				export = "# stationary distribution\n";
+				export.append("# stationary distribution\n");
 				break;
 			default:
 				return;
 		}
-		Module module = null;
+		Module<?> module = null;
 		int idx = -1;
 		for (HistoGraph graph : graphs) {
-			Module newMod = graph.getModule();
+			Module<?> newMod = graph.getModule();
 			idx++;
 			if (module != newMod) {
 				module = newMod;
 				if (isMultispecies)
-					export += "# species: " + module.getName() + "\n";
+					export.append("# species: ").append(module.getName()).append("\n");
 			}
-			export += "# trait: " + model.getMeanName(idx) + "\n";
+			export.append("# trait: ").append(model.getMeanName(idx)).append("\n");
 			double[][] data = graph.getData();
 			if (data == null) {
-				export += "# no data available\n";
+				export.append("# no data available\n");
 				continue;
 			}
-			export += "# node,\tdata\n";
+			export.append("# node,\tdata\n");
 			int nData = data[idx].length;
 			for (int n = 0; n < nData; n++)
-				export += graph.bin2x(n) + ",\t" + graph.getData(n) + "\n";
+				export.append(graph.bin2x(n)).append(",\t").append(graph.getData(n)).append("\n");
 		}
-		NativeJS.export("data:text/csv;base64," + NativeJS.b64encode(export), "evoludo_stat.csv");
+		NativeJS.export("data:text/csv;base64," + NativeJS.b64encode(export.toString()), "evoludo_stat.csv");
 	}
 }

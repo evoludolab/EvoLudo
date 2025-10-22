@@ -52,6 +52,7 @@ import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDESupervisor;
+import org.evoludo.simulator.models.SampleListener;
 import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.ATBT;
 import org.evoludo.simulator.modules.CDL;
@@ -126,8 +127,8 @@ public abstract class EvoLudo
 	 * engine states as well saving the current state of the engine, export its data
 	 * or graphical snapshots.
 	 */
-	public EvoLudo() {
-		this(true);
+	protected EvoLudo() {
+		logger = Logger.getLogger(EvoLudo.class.getName() + "-" + ID);
 	}
 
 	/**
@@ -148,7 +149,7 @@ public abstract class EvoLudo
 	 * allow disabling touch events for debugging (see
 	 * {@link org.evoludo.simulator.EvoLudoGWT#cloEmulate EvoLudoGWT.cloEmulate}).
 	 */
-	public boolean hasTouch = false;
+	public static boolean hasTouch = false;
 
 	/**
 	 * The loggers of each EvoLudo lab instance need to have unique names to keep
@@ -240,7 +241,7 @@ public abstract class EvoLudo
 	/**
 	 * The lookup table for all available modules.
 	 */
-	protected HashMap<String, Module> modules = new HashMap<String, Module>();
+	protected HashMap<String, Module<?>> modules = new HashMap<>();
 
 	/**
 	 * Generate 2D network. This is the factory method to provide different
@@ -280,23 +281,22 @@ public abstract class EvoLudo
 	 * registered {@link MilestoneListener}'s of any changes.
 	 *
 	 * @param type the type of {@link Model} to load
-	 * @return new model or {@code null} if the model type is not supported and
-	 *         no active current model
 	 */
-	public Model loadModel(Type type) {
-		if (activeModel != null) {
-			// check if model already loaded
-			if (activeModel.getType() == type)
-				return activeModel;
+	public void loadModel(Type type) {
+		if (activeModel != null && activeModel.getType() == type) {
+			// model already loaded
+			return;
 		}
 		Model newModel = activeModule.createModel(type);
 		if (newModel == null) {
-			if (activeModel == null) {
-				logger.warning("model type '" + type + "' not supported.");
-				return null;
+			if (logger.isLoggable(Level.WARNING)) {
+				String msg = "model type '" + type + "' not supported.";
+				if (activeModel == null)
+					logger.warning(msg);
+				else
+					logger.warning(msg + " keeping '" + activeModel.getType() + "'.");
 			}
-			logger.warning("model type '" + type + "' not found - keeping '" + activeModel.getType() + "'.");
-			return activeModel;
+			return;
 		}
 		// unload previous model first
 		unloadModel();
@@ -305,7 +305,6 @@ public abstract class EvoLudo
 		activeModule.setModel(activeModel);
 		activeModel.load();
 		fireModelLoaded();
-		return activeModel;
 	}
 
 	/**
@@ -353,7 +352,7 @@ public abstract class EvoLudo
 	 * List of engine listeners that get notified when the state of the population
 	 * changed, for example after population reset or completed an update step.
 	 */
-	protected Set<MilestoneListener> milestoneListeners = new HashSet<MilestoneListener>();
+	protected Set<MilestoneListener> milestoneListeners = new HashSet<>();
 
 	/**
 	 * Add a milestone listener to the list of listeners that get notified when the
@@ -379,7 +378,7 @@ public abstract class EvoLudo
 	/**
 	 * List of change listeners that get notified when the model changes.
 	 */
-	protected Set<ChangeListener> changeListeners = new HashSet<ChangeListener>();
+	protected Set<ChangeListener> changeListeners = new HashSet<>();
 
 	/**
 	 * Add a change listener to the list of listeners that get notified when the
@@ -400,6 +399,32 @@ public abstract class EvoLudo
 	 */
 	public void removeChangeListener(ChangeListener obsoleteListener) {
 		changeListeners.remove(obsoleteListener);
+	}
+
+	/**
+	 * List of change listeners that get notified when the model changes.
+	 */
+	protected Set<SampleListener> sampleListeners = new HashSet<>();
+
+	/**
+	 * Add a change listener to the list of listeners that get notified when the
+	 * model changes.
+	 * 
+	 * @param newListener the new change listener
+	 */
+	public void addSampleListener(SampleListener newListener) {
+		sampleListeners.add(newListener);
+	}
+
+	/**
+	 * Remove the change listener from the list of listeners that get notified when
+	 * the model changes.
+	 * 
+	 * @param obsoleteListener the listener to remove from the list of change
+	 *                         listeners
+	 */
+	public void removeSampleListener(SampleListener obsoleteListener) {
+		sampleListeners.remove(obsoleteListener);
 	}
 
 	/**
@@ -442,7 +467,7 @@ public abstract class EvoLudo
 			setSuspended(false);
 		// check module first; model may contact module
 		boolean doReset = false;
-		for (Module mod : activeModule.getSpecies())
+		for (Module<?> mod : activeModule.getSpecies())
 			doReset |= mod.check();
 		Type type = activeModel.getType();
 		doReset |= activeModel.check();
@@ -482,11 +507,11 @@ public abstract class EvoLudo
 		if (activeModel == null)
 			return;
 		// reset random number generator if seed was specified
-		if (rng.isRNGSeedSet())
-			rng.setRNGSeed();
+		if (rng.isSeedSet())
+			rng.reset();
 		// check consistency of parameters in models
 		modelCheck();
-		for (Module mod : activeModule.getSpecies())
+		for (Module<?> mod : activeModule.getSpecies())
 			mod.reset();
 		activeModel.reset();
 		resetRequested = false;
@@ -513,7 +538,7 @@ public abstract class EvoLudo
 	 * @param quiet set to {@code true} to skip notifying listeners
 	 */
 	public final void modelInit(boolean quiet) {
-		for (Module mod : activeModule.getSpecies())
+		for (Module<?> mod : activeModule.getSpecies())
 			mod.init();
 		activeModel.init();
 		activeModel.update();
@@ -577,7 +602,7 @@ public abstract class EvoLudo
 			// note: unloading a running simulation clears activeModel
 			if (activeModel == null)
 				return;
-			logger.fine("CPU time: " + time + " @ " + Formatter.format(activeModel.getTime(), 3) + ", mean  "
+			logger.fine("CPU time: " + time + " @ " + Formatter.format(activeModel.getUpdates(), 3) + ", mean  "
 					+ Formatter.formatFix(cpuMean, 2) + " +/- "
 					+ Formatter.formatFix(Math.sqrt(cpuVar / (cpuSamples - 1)), 2));
 		}
@@ -626,6 +651,9 @@ public abstract class EvoLudo
 	 */
 	public final boolean modelNext() {
 		startCPUSample();
+		// make sure model has not been unloaded
+		if (activeModel == null)
+			return false;
 		if (activeModel.useScheduling()) {
 			activeModel.next();
 			return true;
@@ -677,7 +705,7 @@ public abstract class EvoLudo
 	 * The command line options (raw string provided in URL, HTML tag, TextArea or
 	 * command line)
 	 */
-	protected String clo;
+	protected String clo = "";
 
 	/**
 	 * Get the raw command line options, as provided in URL, HTML tag, settings
@@ -696,8 +724,6 @@ public abstract class EvoLudo
 	 * @return array command line options and arguments
 	 */
 	public String[] getSplitCLO() {
-		if (clo == null)
-			return null;
 		// strip all whitespace at start and end
 		String[] args = clo.trim().split("\\s+--");
 		// strip '--' from first argument
@@ -712,7 +738,9 @@ public abstract class EvoLudo
 	 * @param clo the new command line option string
 	 */
 	public void setCLO(String clo) {
-		this.clo = clo;
+		if (clo == null)
+			clo = "";
+		this.clo = clo.trim();
 	}
 
 	/**
@@ -814,34 +842,37 @@ public abstract class EvoLudo
 
 	/**
 	 * Load new module with key <code>newModuleKey</code>. If necessary first
-	 * unload current module.
+	 * unload current module. Upon successful loading of a new module the method
+	 * returns {@code true}. If <code>newModuleKey</code> is not found but an active
+	 * module is present, the active module is kept and the method returns
+	 * {@code true}. Without an active module the method returns {@code false}.
 	 *
 	 * @param newModuleKey the key of the module to load
-	 * @return new module or {@code null} if module not found and no active
-	 *         current module
+	 * @return false if <code>newModuleKey</code> not found and no active module
+	 *         present; true otherwise
 	 */
-	public Module loadModule(String newModuleKey) {
-		Module newModule = modules.get(newModuleKey);
+	public boolean loadModule(String newModuleKey) {
+		Module<?> newModule = modules.get(newModuleKey);
 		if (newModule == null) {
-			if (activeModule != null) {
+			if (activeModule == null)
+				return false;
+			if (logger.isLoggable(Level.WARNING))
 				logger.warning("module '" + newModuleKey + "' not found - keeping '" + activeModule.getKey() + "'.");
-				return activeModule; // leave as is
-			}
-			return null;
+			return true;
 		}
 		// check if newModule is different
 		if (activeModule != null) {
 			if (activeModule == newModule) {
-				return activeModule;
+				return true;
 			}
 			unloadModule();
 		}
 		activeModule = newModule;
-		if (rng.isRNGSeedSet())
-			rng.setRNGSeed();
+		if (rng.isSeedSet())
+			rng.reset();
 		activeModule.load();
 		fireModuleLoaded();
-		return activeModule;
+		return true;
 	}
 
 	/**
@@ -855,8 +886,8 @@ public abstract class EvoLudo
 	public void unloadModule() {
 		unloadModel(true);
 		if (activeModule != null) {
-			for (Iterator<? extends Module> it = activeModule.getSpecies().iterator(); it.hasNext();) {
-				Module mod = it.next();
+			for (Iterator<? extends Module<?>> it = activeModule.getSpecies().iterator(); it.hasNext();) {
+				Module<?> mod = it.next();
 				mod.unload();
 				if (mod != activeModule)
 					it.remove();
@@ -869,14 +900,14 @@ public abstract class EvoLudo
 	/**
 	 * The active module.
 	 */
-	protected Module activeModule;
+	protected Module<?> activeModule;
 
 	/**
 	 * Gets the active {@link Module}.
 	 * 
 	 * @return the active module
 	 */
-	public Module getModule() {
+	public Module<?> getModule() {
 		return activeModule;
 	}
 
@@ -887,7 +918,7 @@ public abstract class EvoLudo
 	 *
 	 * @param module the module to add to lookup table
 	 */
-	public void addModule(Module module) {
+	public void addModule(Module<?> module) {
 		String key = module.getKey();
 		modules.put(key, module);
 		cloModule.addKey(key, module.getTitle());
@@ -919,8 +950,7 @@ public abstract class EvoLudo
 	 * taking snapshots.
 	 */
 	public void layoutComplete() {
-		if (isSuspended())
-			run();
+		run();
 	}
 
 	/**
@@ -954,8 +984,10 @@ public abstract class EvoLudo
 		if (activeModel.getMode() == Mode.STATISTICS_SAMPLE) {
 			fireModelRunning();
 			next();
-		} else
+		} else {
+			isSuspended = true;
 			run();
+		}
 	}
 
 	/**
@@ -1130,6 +1162,29 @@ public abstract class EvoLudo
 	}
 
 	/**
+	 * Called after the population has reached an absorbing state (or has converged
+	 * to an equilibrium state). Notifies all registered
+	 * {@link MilestoneListener}s.
+	 * 
+	 * @param success <code>true</code> if sample completed successfully
+	 * @return <code>true</code> to continue with next sample
+	 * 
+	 * @see SampleListener
+	 */
+	public synchronized boolean fireModelSample(boolean success) {
+		// check if new sample completed
+		activeModel.readStatisticsSample();
+		for (SampleListener i : sampleListeners)
+			i.modelSample(success);
+		if (activeModel.getNSamples() == activeModel.getNStatisticsSamples()) {
+			// all samples completed - fire stop
+			fireModelStopped();
+			return false;
+		}
+		return true;
+	}
+
+	/**
 	 * Called whenever the settings of the model have changed. For example, to
 	 * trigger the range of values or markers in the GUI. Notifies all registered
 	 * {@link MilestoneListener}s.
@@ -1153,7 +1208,7 @@ public abstract class EvoLudo
 		pendingAction = PendingAction.NONE;
 		switch (action) {
 			case CHANGE_MODE:
-				Mode mode = action.mode;
+				Mode mode = action.getMode();
 				if (activeModel.setMode(mode)) {
 					// mode changed
 					if (mode == Mode.STATISTICS_SAMPLE) {
@@ -1165,15 +1220,11 @@ public abstract class EvoLudo
 					}
 				} else {
 					// mode unchanged
-					if (!isRunning || mode != Mode.STATISTICS_SAMPLE)
+					if (!isRunning || mode == Mode.STATISTICS_SAMPLE)
 						break;
-					// continue running if mode unchanged
-					action = PendingAction.STATISTIC_READY;
 				}
 				//$FALL-THROUGH$
 			case NONE:
-			case STATISTIC_FAILED:
-			case STATISTIC_READY:
 				for (ChangeListener i : changeListeners)
 					i.modelChanged(action);
 				break;
@@ -1239,25 +1290,10 @@ public abstract class EvoLudo
 		// model may already have been unloaded
 		if (activeModel == null)
 			return;
-		switch (activeModel.getMode()) {
-			case DYNAMICS:
-			case STATISTICS_UPDATE:
-			default:
-				isRunning = false;
-				for (MilestoneListener i : milestoneListeners)
-					i.modelStopped();
-				logger.info("Model stopped");
-				break;
-			case STATISTICS_SAMPLE:
-				// check if new sample completed
-				activeModel.readStatisticsSample();
-				// note: calling fireModelChanged doesn't work because STATISTICS_SAMPLE
-				// prevents firing
-				if (pendingAction == PendingAction.NONE)
-					pendingAction = PendingAction.STATISTIC_READY;
-				processPendingAction();
-				break;
-		}
+		isRunning = false;
+		for (MilestoneListener i : milestoneListeners)
+			i.modelStopped();
+		logger.info("Model stopped");
 	}
 
 	/**
@@ -1294,22 +1330,9 @@ public abstract class EvoLudo
 	public abstract PDESupervisor hirePDESupervisor(PDE charge);
 
 	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * Hide GWT/JRE differences in measuring execution time.
-	 * 
-	 * @see org.evoludo.simulator.EvoLudoGWT#elapsedTimeMsec
-	 *      EvoLudoGWT.elapsedTimeMsec
-	 * @see org.evoludo.simulator.EvoLudoJRE#elapsedTimeMsec
-	 *      EvoLudoJRE.elapsedTimeMsec
-	 */
-	@Override
-	public abstract int elapsedTimeMsec();
-
-	/**
 	 * The copyright string.
 	 */
-	public static final String COPYRIGHT = "\u00a9 Christoph Hauert"; // \u00a9 UTF-8 character code for ©
+	public static final String COPYRIGHT = "© Christoph Hauert";
 
 	/**
 	 * Return version string of current model. Version must include reference to git
@@ -1491,6 +1514,8 @@ public abstract class EvoLudo
 	public void addCLOProvider(CLOProvider provider) {
 		if (provider == null)
 			return;
+		if (parser == null)
+			parser = new CLOParser(this);
 		parser.addCLOProvider(provider);
 	}
 
@@ -1526,13 +1551,10 @@ public abstract class EvoLudo
 	 *      EvoLudoGWT#preprocessCLO(String[])
 	 */
 	protected String[] preprocessCLO(String[] cloarray) {
-		if (cloarray == null)
-			return null;
-		int nParams = cloarray.length;
 		// first, deal with --help option
 		boolean helpRequested = false;
 		String helpName = cloHelp.getName();
-		for (int i = 0; i < nParams; i++) {
+		for (int i = 0; i < cloarray.length; i++) {
 			String param = cloarray[i];
 			if (param.startsWith(helpName)) {
 				helpRequested = true;
@@ -1542,15 +1564,15 @@ public abstract class EvoLudo
 		// now deal with --module option
 		String moduleParam = cloModule.getName();
 		CLOption.Key moduleKey = null;
-		String moduleName = "<missing>";
-		for (int i = 0; i < nParams; i++) {
+		String moduleName = "";
+		for (int i = 0; i < cloarray.length; i++) {
 			String param = cloarray[i];
 			if (param.startsWith(moduleParam)) {
 				String[] moduleArgs = param.split("[\\s+,=]");
 				if (moduleArgs == null || moduleArgs.length < 2) {
 					if (!helpRequested)
 						logger.severe("module key missing");
-					return null;
+					return helpCLO;
 				}
 				moduleName = moduleArgs[1];
 				moduleKey = cloModule.match(moduleName);
@@ -1558,15 +1580,14 @@ public abstract class EvoLudo
 				if (moduleKey != null && !moduleKey.getKey().equals(moduleName))
 					moduleKey = null;
 				// module parameter found; no need to continue
-				cloarray = ArrayMath.drop(cloarray, i--);
-				nParams--;
+				cloarray = ArrayMath.drop(cloarray, i);
 				break;
 			}
 		}
-		if (moduleKey == null || loadModule(moduleKey.getKey()) == null) {
+		if (moduleKey == null || !loadModule(moduleKey.getKey())) {
 			if (!helpRequested)
-				logger.severe("Module '" + moduleName + "' not found!");
-			return null;
+				logger.severe("Use --module to load a module or --help for more information.");
+			return helpCLO;
 		}
 		// second, determine feasible --model options for given module
 		cloModel.clearKeys();
@@ -1580,19 +1601,17 @@ public abstract class EvoLudo
 		if (keys.isEmpty()) {
 			if (!helpRequested)
 				logger.severe("No model found!");
-			return null;
+			return helpCLO;
 		}
 		Type defaulttype = (Type) cloModel.match(cloModel.getDefault());
 		Type type = null;
-		nParams = cloarray.length;
-		for (int i = 0; i < nParams; i++) {
+		for (int i = 0; i < cloarray.length; i++) {
 			String param = cloarray[i];
 			if (param.startsWith(modelName)) {
 				String newModel = CLOption.stripKey(modelName, param).trim();
 				// remove model option
-				cloarray = ArrayMath.drop(cloarray, i--);
-				nParams--;
-				if (newModel.length() == 0) {
+				cloarray = ArrayMath.drop(cloarray, i);
+				if (newModel.isEmpty()) {
 					type = defaulttype;
 					logger.warning("model key missing - use default type " + type.getKey() + ".");
 					// model key found; no need to continue
@@ -1600,9 +1619,10 @@ public abstract class EvoLudo
 				}
 				type = Type.parse(newModel);
 				if (type == null || !keys.contains(type)) {
-					if (activeModel != null ) {
+					if (activeModel != null) {
 						type = activeModel.getType();
-						logger.warning("invalid model type " + newModel + " - keep current type " + type.getKey() + ".");
+						logger.warning(
+								"invalid model type " + newModel + " - keep current type " + type.getKey() + ".");
 					} else {
 						type = defaulttype;
 						logger.warning("invalid model type " + newModel + " - use default type " + type.getKey() + ".");
@@ -1623,19 +1643,18 @@ public abstract class EvoLudo
 		if (activeModel == null) {
 			if (!helpRequested)
 				logger.severe("model type '" + type.getKey() + "' not supported!");
-			return null;
+			return helpCLO;
 		}
 		// check if cloOptions contain --verbose
 		String verboseName = cloVerbose.getName();
-		for (int i = 0; i < nParams; i++) {
+		for (int i = 0; i < cloarray.length; i++) {
 			String param = cloarray[i];
 			if (param.startsWith(verboseName)) {
 				String verbosity = CLOption.stripKey(verboseName, param).trim();
-				if (verbosity.length() == 0) {
+				if (verbosity.isEmpty()) {
 					logger.warning("verbose level missing - ignored.");
 					// remove verbose option
-					cloarray = ArrayMath.drop(cloarray, i--);
-					nParams--;
+					cloarray = ArrayMath.drop(cloarray, i);
 					// verbosity key found; no need to continue
 					break;
 				}
@@ -1648,7 +1667,7 @@ public abstract class EvoLudo
 			}
 		}
 		if (helpRequested)
-			return null;
+			return helpCLO;
 		return cloarray;
 	}
 
@@ -1710,22 +1729,26 @@ public abstract class EvoLudo
 			globalMsg += "\n\nGlobal options:";
 
 			int idx = 0;
-			String moduleMsg = "";
-			for (Module mod : activeModule.getSpecies()) {
+			StringBuilder sb = new StringBuilder();
+			for (Module<?> mod : activeModule.getSpecies()) {
 				String name = mod.getName();
 				int namelen = name.length();
 				if (namelen > 0)
-					moduleMsg += "\n       Species: " + name;
+					sb.append("\n       Species: ")
+							.append(name);
 				int nt = mod.getNTraits();
 				for (int n = 0; n < nt; n++) {
-					moduleMsg += "\n             " + (idx + n) + ": " + mod.getTraitName(n);
-					if (activeModel.getType().isDE()) {
-						if (((HasDE) mod).getDependent() == n)
-							moduleMsg += " (dependent)";
+					sb.append("\n             ")
+							.append(idx + n)
+							.append(": ")
+							.append(mod.getTraitName(n));
+					if (mod instanceof HasDE && ((HasDE) mod).getDependent() == n) {
+						sb.append(" (dependent)");
 					}
 				}
 				idx += nt;
 			}
+			String moduleMsg = sb.toString();
 			Category.Module.setHeader("Options for module '" + activeModule.getKey() //
 					+ "' with trait indices and names:" + moduleMsg);
 		} else
@@ -1770,12 +1793,10 @@ public abstract class EvoLudo
 			"--seed [<s>]    set random seed (0)", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					if (!cloSeed.isSet()) {
-						// set default
-						rng.clearRNGSeed();
-						return true;
-					}
-					rng.setRNGSeed(cloSeed.isDefault() ? 0L : Long.parseLong(arg));
+					if (cloSeed.isSet())
+						rng.setSeed(cloSeed.isDefault() ? 0L : Long.parseLong(arg));
+					else
+						rng.clearSeed();
 					return true;
 				}
 			});
@@ -1789,9 +1810,8 @@ public abstract class EvoLudo
 				@Override
 				public boolean parse(String arg) {
 					// by default do not interfere - i.e. leave simulations running if possible
-					if (!cloRun.isSet())
-						return true;
-					setSuspended(true);
+					if (cloRun.isSet())
+						setSuspended(true);
 					return true;
 				}
 			});
@@ -1803,9 +1823,6 @@ public abstract class EvoLudo
 			"--delay <d>     delay between updates (d: delay in msec)", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					// by default do not interfere - i.e. leave delay as is
-					if (!cloDelay.isSet())
-						return true;
 					setDelay(Integer.parseInt(arg));
 					return true;
 				}
@@ -1856,21 +1873,21 @@ public abstract class EvoLudo
 			"--testRNG       test random number generator", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					if (!cloRNG.isSet())
-						return true;
-					// test of RNG requested
-					logger.info("Testing MersenneTwister...");
-					int start = elapsedTimeMsec();
-					MersenneTwister.testCorrectness(logger);
-					MersenneTwister.testSpeed(logger, EvoLudo.this, 10000000);
-					int lap = elapsedTimeMsec();
-					logger.info("MersenneTwister tests done: " + ((lap - start) / 1000.0) + " sec.");
-					MersenneTwister mt = rng.getRNG();
-					RNGDistribution.Uniform.test(mt, logger, EvoLudo.this);
-					RNGDistribution.Exponential.test(mt, logger, EvoLudo.this);
-					RNGDistribution.Normal.test(mt, logger, EvoLudo.this);
-					RNGDistribution.Geometric.test(mt, logger, EvoLudo.this);
-					RNGDistribution.Binomial.test(mt, logger, EvoLudo.this);
+					if (cloRNG.isSet()) {
+						// test of RNG requested
+						logger.info("Testing MersenneTwister...");
+						int start = elapsedTimeMsec();
+						MersenneTwister.testCorrectness(logger);
+						MersenneTwister.testSpeed(logger, EvoLudo.this, 10000000);
+						int lap = elapsedTimeMsec();
+						logger.info("MersenneTwister tests done: " + ((lap - start) / 1000.0) + " sec.");
+						MersenneTwister mt = rng.getRNG();
+						RNGDistribution.Uniform.test(mt, logger, EvoLudo.this);
+						RNGDistribution.Exponential.test(mt, logger, EvoLudo.this);
+						RNGDistribution.Normal.test(mt, logger, EvoLudo.this);
+						RNGDistribution.Geometric.test(mt, logger, EvoLudo.this);
+						RNGDistribution.Binomial.test(mt, logger, EvoLudo.this);
+					}
 					return true;
 				}
 			});
@@ -1945,6 +1962,12 @@ public abstract class EvoLudo
 			});
 
 	/**
+	 * Replacement command line option for serious parsing failures to display help
+	 * screen.
+	 */
+	public final String[] helpCLO = new String[] { cloHelp.getName() };
+
+	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * <strong>Note:</strong> In contrast to other providers of command line
@@ -1966,7 +1989,7 @@ public abstract class EvoLudo
 		parser.addCLO(cloRNG);
 		// option for trait color schemes only makes sense for modules with multiple
 		// continuous traits that have 2D/3D visualizations
-		if (activeModel instanceof org.evoludo.simulator.models.Continuous //
+		if (activeModel instanceof org.evoludo.simulator.models.CModel //
 				&& activeModule.getNTraits() > 1 //
 				&& (activeModule instanceof HasPop2D || activeModule instanceof HasPop3D)) {
 			parser.addCLO(cloTraitColorScheme);
@@ -2001,7 +2024,7 @@ public abstract class EvoLudo
 	 * 
 	 * @see #cloTraitColorScheme
 	 */
-	public static enum ColorModelType implements CLOption.Key {
+	public enum ColorModelType implements CLOption.Key {
 
 		/**
 		 * Each trait refers to a color channel. At most three traits for
@@ -2108,17 +2131,10 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Constructor to instantiate a new EvoLudo controller. If
-	 * {@code loadModules == true}, load all available modules. Otherwise a
-	 * specific module needs to be loaded by the caller.
-	 * 
-	 * @param loadModules the flag to indicate whether to load modules
+	 * Load all available modules. Specific modules are the responsibility of the
+	 * caller.
 	 */
-	protected EvoLudo(boolean loadModules) {
-		logger = Logger.getLogger(EvoLudo.class.getName() + "-" + ID);
-		parser = new CLOParser(this);
-		if (!loadModules)
-			return;
+	public void loadModules() {
 		// load all available modules
 		addModule(new Moran(this));
 		addModule(new TBT(this));

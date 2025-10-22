@@ -320,7 +320,8 @@ public class IBSGroup {
 						}
 						group = mem;
 						int model;
-						int levelStart, exclStart;
+						int levelStart;
+						int exclStart;
 						switch (geometry.subgeometry) {
 							case MEANFIELD:
 								if (level == 0) {
@@ -467,7 +468,7 @@ public class IBSGroup {
 		int max1 = size - 1;
 		nextpick: while (n < nSampled) {
 			int aPick = rng.random0n(max1);
-			if (!self && aPick >= focal)
+			if (aPick >= focal)
 				aPick++;
 			// sample without replacement
 			for (int i = 0; i < n; i++)
@@ -491,7 +492,7 @@ public class IBSGroup {
 	 * @see org.evoludo.simulator.models.IBS#cloInteractions
 	 * @see org.evoludo.simulator.models.IBS#cloReferences
 	 */
-	public static enum SamplingType implements CLOption.Key {
+	public enum SamplingType implements CLOption.Key {
 		/**
 		 * No sampling. Not user selectable.
 		 */

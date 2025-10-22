@@ -198,12 +198,12 @@ public class scanCSD extends CSD {
 	/**
 	 * The index of the mean trait.
 	 */
-	public final int TRAIT_MEAN = 0;
+	public static final int TRAIT_MEAN = 0;
 
 	/**
 	 * The index of the standard deviation.
 	 */
-	public final int TRAIT_SDEV = 1;
+	public static final int TRAIT_SDEV = 1;
 
 	@Override
 	public void run() {
@@ -222,7 +222,7 @@ public class scanCSD extends CSD {
 		engine.writeHeader();
 
 		// print result legend
-		out.println("# tend		b1		b2		c1		c2		mean	sdev	type");
+		out.println("# tend\tb1\tb2\tc1\tc2\tmean\tsdev\ttype");
 
 		long prev = progress ? System.currentTimeMillis() : 0L;
 		final int SAMPLES = 11;
@@ -233,7 +233,8 @@ public class scanCSD extends CSD {
 		// 2*sdev is too conservative
 		double lowMonoThreshold = Math.max(0.01, 2.0 * sdev);
 		double highMonoThreshold = 1.0 - lowMonoThreshold;
-		double lowmean = -1.0, lowstdev = -1.0;
+		double lowmean = -1.0;
+		double lowstdev = -1.0;
 		double[] lowstatistics = null;
 		double b1 = b1Start;
 		boolean isBistable = false;
@@ -261,9 +262,9 @@ public class scanCSD extends CSD {
 
 						// evolve population
 						engine.modelRelax();
-						while (model.getTime() < timeStop) {
+						while (model.getUpdates() < timeStop) {
 							engine.modelNext();
-							int g = (int) model.getTime();
+							int g = (int) model.getUpdates();
 							if (snapinterval > 0 && g % snapinterval == 0) {
 								// save snapshot
 								saveSnapshot();
@@ -279,14 +280,15 @@ public class scanCSD extends CSD {
 							// maximum has been reached more precisely, whether mean trait <lowMonoThreshold
 							// or >highMonoThreshold
 							if (g % 1000 == 0) {
-								double mean = Distributions.mean(cpop.traits);
+								double[] tmp = new double[2 * nTraits];
+								double mean = cpop.getMeanTraits(tmp)[0];
 								double tmin = getTraitMin()[0];
 								double tmax = getTraitMax()[0];
 								if (mean < lowMonoThreshold
-										&& ArrayMath.max(cpop.traits) < tmin + 0.1 * (tmax - tmin))
+										&& cpop.getMaxTraits(tmp)[0] < tmin + 0.1 * (tmax - tmin))
 									break;
 								if (mean > highMonoThreshold
-										&& ArrayMath.min(cpop.traits) < tmax - 0.1 * (tmax - tmin))
+										&& cpop.getMinTraits(tmp)[0] < tmax - 0.1 * (tmax - tmin))
 									break;
 							}
 						}
@@ -294,12 +296,13 @@ public class scanCSD extends CSD {
 						String msg;
 						// - create histogram (potentially after averaging over several generations)
 						// - calculate statistical quantities (potentially over several generations)
-						double[] statistics = new double[SAMPLES * nPopulation];
-						System.arraycopy(cpop.traits, 0, statistics, 0, nPopulation);
+						double[] statistics = new double[nPopulation];
+						cpop.addState(statistics);
 						for (int n = 1; n < SAMPLES; n++) {
 							engine.modelNext();
-							System.arraycopy(cpop.traits, 0, statistics, n * nPopulation, nPopulation);
+							cpop.addState(statistics);
 						}
+						ArrayMath.multiply(statistics, 1.0 / SAMPLES);
 						double mean = Distributions.mean(statistics);
 						double stdev = Distributions.stdev(statistics, mean);
 						if (snapinterval < 0)
@@ -357,7 +360,7 @@ public class scanCSD extends CSD {
 
 						// print results
 						// "# b1 b2 c1 c2 mean sdev type"
-						out.println((int) model.getTime() + "\t" + Formatter.format(bparams[0], 4) + "\t"
+						out.println((int) model.getUpdates() + "\t" + Formatter.format(bparams[0], 4) + "\t"
 								+ Formatter.format(bparams[1], 4) + "\t" +
 								Formatter.format(cparams[0], 4) + "\t" + Formatter.format(cparams[1], 4) + "\t" +
 								msg);
@@ -398,7 +401,6 @@ public class scanCSD extends CSD {
 						// ENDDEBUG
 						// reset stuff
 						initHigh = false;
-						statistics = null;
 						lowmean = -1;
 						lowstdev = -1;
 						lowstatistics = null;
@@ -436,7 +438,7 @@ public class scanCSD extends CSD {
 	public void printState(double[] stat, double[] low) {
 		double[] bins = new double[nBins + 1];
 		double scale = nBins;
-		String msg = "# " + (int) engine.getModel().getTime() + ":";
+		String msg = "# " + (int) engine.getModel().getUpdates() + ":";
 		if (low != null) {
 			int nSamples = low.length;
 			double incr = 1.0 / nSamples;
@@ -485,9 +487,6 @@ public class scanCSD extends CSD {
 							c1End = CLOParser.parseDouble(argv[1]);
 							c1Incr = (c1End - c1Start) * 0.1;
 							return true;
-						default:
-							logger.warning("too many arguments for c1 (" + arg + ") - ignored.");
-							return false;
 						case 3:
 							double start = CLOParser.parseDouble(argv[0]);
 							double end = CLOParser.parseDouble(argv[1]);
@@ -516,6 +515,9 @@ public class scanCSD extends CSD {
 							c1Incr = incr;
 							c1Log = log;
 							return true;
+						default:
+							logger.warning("too many arguments for c1 (" + arg + ") - ignored.");
+							return false;
 					}
 				}
 			});
@@ -591,8 +593,6 @@ public class scanCSD extends CSD {
 							b1End = CLOParser.parseDouble(argv[1]);
 							b1Incr = (b1End - b1Start) * 0.1;
 							return true;
-						default:
-							return false;
 						case 3:
 							double start = CLOParser.parseDouble(argv[0]);
 							double end = CLOParser.parseDouble(argv[1]);
@@ -616,6 +616,8 @@ public class scanCSD extends CSD {
 							b1Incr = incr;
 							b1Log = log;
 							return true;
+						default:
+							return false;
 					}
 				}
 			});
@@ -641,8 +643,6 @@ public class scanCSD extends CSD {
 							b2End = CLOParser.parseDouble(argv[1]);
 							b2Incr = (b2End - b2Start) * 0.1;
 							return true;
-						default:
-							return false;
 						case 3:
 							double start = CLOParser.parseDouble(argv[0]);
 							double end = CLOParser.parseDouble(argv[1]);
@@ -666,6 +666,8 @@ public class scanCSD extends CSD {
 							b2Incr = incr;
 							b2Log = log;
 							return true;
+						default:
+							return false;
 					}
 				}
 			});
@@ -697,20 +699,6 @@ public class scanCSD extends CSD {
 					return true;
 				}
 			});
-
-	// public final CLOption cloClassify = new CLOption("classify",
-	// EvoLudo.catSimulation, "noclassify",
-	// "--classify classify type of dynamics",
-	// new CLOSetter() {
-	// @Override
-	// public void parse(String arg) {
-	// classify = cloClassify.isSet();
-	// }
-	// @Override
-	// public void report() {
-	// // nothing to report - setting affects only GUI
-	// }
-	// });
 
 	/**
 	 * The command line option to print the trait distribution.
@@ -810,7 +798,7 @@ public class scanCSD extends CSD {
 		// use name of out file as prefix for snapshot - not easily accessible,
 		// postponed
 		String pre = "snap-g" + geom.getType().getKey() + (int) (geom.connectivity) + "-t"
-				+ Formatter.format(engine.getModel().getTime(), 2) +
+				+ Formatter.format(engine.getModel().getUpdates(), 2) +
 				"-n" + Formatter.format(playerUpdate.getNoise(), 3);
 		File snapfile = new File(pre + "." + ext);
 		int counter = 0;

@@ -40,6 +40,7 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network3D;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.views.Pop3D;
 import org.evoludo.ui.TrackballControls;
 
 import com.google.gwt.core.client.Duration;
@@ -94,6 +95,7 @@ import thothbot.parallax.plugins.effects.Stereo;
  * 
  * @author Christoph Hauert
  */
+@SuppressWarnings("java:S110")
 public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGWT> implements Context3dErrorHandler {
 
 	/**
@@ -151,12 +153,17 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * <dd>the message element (3D text).</dd>
 	 * </dl>
 	 * 
-	 * @param controller the controller of this graph
-	 * @param module     the module backing the graph
+	 * @param view   the view of this graph
+	 * @param module the module backing the graph
 	 */
-	public PopGraph3D(PopGraphController controller, Module module) {
-		super(controller, module);
-		setStylePrimaryName("evoludo-PopGraph3D");
+	public PopGraph3D(Pop3D view, Module<?> module) {
+		super(view, module);
+		canvas = null;
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
 		// PopGraph3D cannot use wrapper - transfer all widgets to graphPanel3D
 		// (except canvas) and make this the wrapper
 		graph3DPanel = new RenderingPanel();
@@ -165,14 +172,16 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 				continue;
 			graph3DPanel.add(widget);
 		}
-		canvas = null;
 		wrapper.clear();
 		remove(wrapper);
+		wrapper = graph3DPanel;
+		setStylePrimaryName("evoludo-PopGraph3D");
 		// background color - apparently cannot be simply set using CSS
 		graph3DPanel.setBackground(0x444444);
 		graph3DPanel.setStylePrimaryName("evoludo-Canvas3D");
 		graph3DPanel.addCanvas3dErrorHandler(this);
-		graph3DScene = new Pop3DScene();
+		if (graph3DScene == null)
+			graph3DScene = new Pop3DScene();
 		graph3DPanel.setAnimatedScene(graph3DScene);
 		label.setStyleName("evoludo-Label3D");
 		// adding message label on demand later on causes trouble...
@@ -182,7 +191,16 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		graph3DPanel.add(msgLabel);
 		add(graph3DPanel);
 		element = graph3DPanel.getElement();
-		wrapper = graph3DPanel;
+	}
+
+	@Override
+	protected void onUnload() {
+		graph3DPanel.remove(msgLabel);
+		msgLabel = null;
+		remove(graph3DPanel);
+		graph3DPanel = null;
+		element = null;
+		super.onUnload();
 	}
 
 	@Override
@@ -197,7 +215,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			data[0] = new MeshLambertMaterial();
 		}
 		// cannot yet start animation - kills scene
-		// graph3DScene.run();
+		// graph3DScene.run()
 		// 3D graphs do not implement Shifting interface. Add mouse listeners here.
 		mouseDownHandler = addMouseDownHandler(this);
 		mouseUpHandler = addMouseUpHandler(this);
@@ -230,7 +248,8 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		// geometries that have special/fixed layout
 		switch (type) {
 			case CUBE:
-				int side, zdim;
+				int side;
+				int zdim;
 				// NOVA settings
 				if (geometry.size == 25000) {
 					zdim = 10;
@@ -270,7 +289,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 				shift = (side - 1) * 0.5 * incr;
 				int hLevels = 0;
 				int[] hPeriods = new int[0];
-				int HIERARCHY_GAP = 8; // unit gap in units?
+				final int HIERARCHY_GAP = 8; // unit gap in units?
 				// for hierarchical structures add gap between units
 				if (isHierarchy) {
 					hLevels = geometry.hierarchy.length - 1;
@@ -365,7 +384,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 				shift = (size2 - 0.5) * 0.5 * hincr;
 				double vshift = (side - 1.25) * 0.75 * vincr;
 				initUniverse(new SphereGeometry(radius, 16, 12));
-				// initUniverse(new TetrahedronGeometry(radius * 2, 0));
+				// initUniverse(new TetrahedronGeometry(radius * 2, 0))
 				meshes = spheres.iterator();
 				// even nodes
 				posj = -vshift;
@@ -425,8 +444,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 
 	@Override
 	protected void drawNetwork() {
-		// if (!network.isStatus(Status.HAS_LAYOUT) || geometry.isDynamic)
-		// network.doLayout(this);
 		if (invalidated) {
 			initUniverse(new SphereGeometry(50, 16, 12));
 			if (network.isStatus(Status.HAS_LAYOUT))
@@ -439,10 +456,8 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		for (Mesh mesh : spheres) {
 			Node3D node = nodes[k];
 			Vector3 vec = mesh.getPosition();
-			vec.setX(node.x);
-			vec.setY(node.y);
-			vec.setZ(node.z);
-			double radius = 2.0 * node.r / Network3D.UNIVERSE_RADIUS;
+			vec.set(node.getX(), node.getY(), node.getZ());
+			double radius = 2.0 * node.getR() / Network3D.UNIVERSE_RADIUS;
 			vec = mesh.getScale();
 			vec.setX(radius);
 			vec.setY(radius);
@@ -536,6 +551,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	 * @param node the index of the node
 	 * @return the color of the node
 	 */
+	@Override
 	public String getCSSColorAt(int node) {
 		return "#" + data[node].getColor().getHexString();
 	}
@@ -569,7 +585,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			raycaster.set(vector, dir);
 		}
 		List<Raycaster.Intersect> intersects = raycaster.intersectObjects(spheres, false);
-		if (intersects.size() == 0)
+		if (intersects.isEmpty())
 			return FINDNODEAT_OUT_OF_BOUNDS;
 		return Integer.parseInt(intersects.get(0).object.getName());
 	}
@@ -692,12 +708,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	public class Pop3DScene extends AnimatedScene implements RequiresResize {
 
 		/**
-		 * Create a new 3D scene.
-		 */
-		public Pop3DScene() {
-		}
-
-		/**
 		 * The control for rotating and zooming the scene.
 		 */
 		TrackballControls control;
@@ -735,13 +745,13 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 				return null;
 			return super.getCanvas();
 		}
-	
+
 		@Override
 		public void init(RenderingPanel renderingPanel, AnimationUpdateHandler animationUpdateHandler) {
 			super.init(renderingPanel, animationUpdateHandler);
 			this.renderingPanel = renderingPanel;
 		}
-	
+
 		/**
 		 * Positions the camera. The camera position is shared between different views
 		 * of the 3D graph, e.g. view of the strategies and view of fitnesses.
@@ -752,11 +762,11 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			if (geometry == null)
 				return;
 			Camera newWorldView = network.getWorldView();
-			if (graph3DCamera != null && newWorldView == graph3DCamera)
+			if (graph3DCamera != null && control != null && newWorldView == graph3DCamera)
 				return;
 			// new camera is needed if graph3DCamera==null or of different type than
 			// newWorldView
-			if (graph3DCamera == null
+			if (graph3DCamera == null || control == null
 					|| ((graph3DCamera instanceof OrthographicCamera) != (newWorldView instanceof OrthographicCamera)))
 				setOrtho(newWorldView instanceof OrthographicCamera);
 			if (newWorldView != null && graph3DCamera != null) {
@@ -777,15 +787,13 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		 */
 		private void setOrtho(boolean doOrthographic) {
 			Canvas3d c3d = getCanvas();
-			int width = c3d.getWidth();
-			int height = c3d.getHeight();
-			if (width == 0 || height == 0)
+			if (c3d == null || c3d.getWidth() == 0 || c3d.getHeight() == 0)
 				return;
 			if (doOrthographic) {
 				// orthographic projection
 				if (graph3DCamera instanceof OrthographicCamera)
 					return;
-				graph3DCamera = new OrthographicCamera(width, height, 
+				graph3DCamera = new OrthographicCamera(c3d.getWidth(), c3d.getHeight(),
 						-10000, // near
 						10000 // far
 				);
@@ -807,8 +815,9 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			graph3DCamera.getPosition().setZ(400);
 			network.setWorldView(graph3DCamera);
 			if (control != null)
-				control.dispose();
+				control.unload();
 			control = new TrackballControls(graph3DCamera, getCanvas());
+			control.load();
 			control.setPanSpeed(0.2);
 			control.setDynamicDampingFactor(0.12);
 		}
@@ -828,9 +837,11 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		 */
 		@Override
 		protected void onUpdate(double duration) {
-			if (isActive) {
-				control.update();
-				getRenderer().render(getScene(), graph3DCamera);
+			if (view.isActive()) {
+				if (control != null) {
+					control.update();
+					getRenderer().render(getScene(), graph3DCamera);
+				}
 				return;
 			}
 			stop();
@@ -862,6 +873,8 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	@Override
 	public void onResize() {
 		super.onResize();
+		if (graph3DScene.getCanvas() == null)
+			return;
 		graph3DScene.onResize();
 		graph3DPanel.forceLayout();
 	}

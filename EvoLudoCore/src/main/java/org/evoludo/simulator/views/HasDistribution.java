@@ -75,12 +75,13 @@ public abstract interface HasDistribution {
 	 * {@link org.evoludo.simulator.modules.CLabour CLabour}, shows a 2D density
 	 * distribution.
 	 * <p>
-	 * <strong> Note:</strong> this requires a continuous model, which implements the method
-	 * {@link org.evoludo.simulator.models.Continuous#getTraitHistogramData
+	 * <strong> Note:</strong> this requires a continuous model, which implements
+	 * the method
+	 * {@link org.evoludo.simulator.models.CModel#getTraitHistogramData
 	 * getTraitHistogramData}.
 	 * 
 	 * @see HasDistribution
-	 * @see org.evoludo.simulator.models.Continuous
+	 * @see org.evoludo.simulator.models.CModel
 	 * 
 	 * @author Christoph Hauert
 	 */

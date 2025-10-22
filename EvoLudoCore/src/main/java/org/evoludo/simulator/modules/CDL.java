@@ -34,11 +34,11 @@ import java.awt.Color;
 
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.models.IBS.HasIBS;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model.HasDE;
+import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -140,25 +140,16 @@ public class CDL extends Discrete implements Payoffs,
 	 */
 	public CDL(EvoLudo engine) {
 		super(engine);
+		nTraits = 3; // loners, defectors, cooperators
 	}
 
 	@Override
 	public void load() {
 		super.load();
-		nTraits = 3;
-		// trait names
-		String[] names = new String[nTraits];
-		names[LONER] = "Loner";
-		names[DEFECT] = "Defector";
-		names[COOPERATE] = "Cooperator";
-		setTraitNames(names);
-		// trait colors (automatically generates lighter versions for new traits)
-		Color[] colors = new Color[nTraits];
-		// yellow has too little contrast
-		colors[LONER] = new Color(238, 204, 17); // hex #eecc11
-		colors[DEFECT] = Color.RED;
-		colors[COOPERATE] = Color.BLUE;
-		setTraitColors(colors);
+		// trait names (optional)
+		setTraitNames(new String[] { "Loner", "Defector", "Cooperator" });
+		// trait colors (optional)
+		setTraitColors(new Color[] { new Color(238, 204, 17), Color.RED, Color.BLUE });
 	}
 
 	@Override
@@ -897,7 +888,7 @@ public class CDL extends Discrete implements Payoffs,
 	}
 
 	@Override
-	public CDL.IBSPop createIBSPop() {
+	public CDL.IBSPop createIBSPopulation() {
 		return new CDL.IBSPop(engine, this);
 	}
 
@@ -928,10 +919,14 @@ public class CDL extends Discrete implements Payoffs,
 				return;
 			}
 			initMono(CDL.COOPERATE);
-			int r, c, mid, size;
+			int r;
+			int c;
+			int mid;
+			int size;
 			switch (getInteractionGeometry().getType()) {
 				case CUBE:
-					int l, mz;
+					int l;
+					int mz;
 					if (nPopulation == 25000) {
 						l = 50;
 						mz = 5; // 10/2

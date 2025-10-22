@@ -45,7 +45,7 @@ import org.evoludo.util.CLOption.Category;
  * 
  * @author Christoph Hauert
  */
-public class IBSC extends IBS implements Continuous {
+public class IBSC extends IBS implements CModel {
 
 	/**
 	 * Creates a population of individuals for IBS simulations with continuous
@@ -70,13 +70,13 @@ public class IBSC extends IBS implements Continuous {
 	}
 
 	@Override
-	public double[] getTraitMin(int id) {
-		return getIBSMCPopulation(id).getTraitMin();
+	public double[] getTraitRangeMin(int id) {
+		return getIBSMCPopulation(id).getTraitRangeMin();
 	}
 
 	@Override
-	public double[] getTraitMax(int id) {
-		return getIBSMCPopulation(id).getTraitMax();
+	public double[] getTraitRangeMax(int id) {
+		return getIBSMCPopulation(id).getTraitRangeMax();
 	}
 
 	@Override
@@ -158,7 +158,7 @@ public class IBSC extends IBS implements Continuous {
 				"--init <t>      type of initial configuration", new CLODelegate() {
 					@Override
 					public boolean parse(String arg) {
-						for (Module mod : ibs.species) {
+						for (Module<?> mod : ibs.species) {
 							IBSMCPopulation cpop = (IBSMCPopulation) mod.getIBSPopulation();
 							String[] inittypes = arg.split(CLOParser.TRAIT_DELIMITER);
 							int nt = mod.getNTraits();
@@ -166,7 +166,7 @@ public class IBSC extends IBS implements Continuous {
 							for (int n = 0; n < nt; n++) {
 								String itype = inittypes[n % inittypes.length];
 								double[] initargs = null;
-								String[] typeargs = itype.split("\\s+|=");
+								String[] typeargs = itype.split(CLOParser.SPLIT_ARG_REGEX);
 								Init.Type newtype = (Init.Type) clo.match(itype);
 								Init init = cpop.getInit();
 								if (newtype == null && prevtype != null) {
@@ -174,9 +174,9 @@ public class IBSC extends IBS implements Continuous {
 									initargs = CLOParser.parseVector(typeargs[0]);
 								} else if (typeargs.length > 1)
 									initargs = CLOParser.parseVector(typeargs[1]);
-								boolean argsOk = (initargs != null && initargs.length >= newtype.nParams);
 								// only uniform initialization does not require additional arguments
-								if (newtype == null || (!newtype.equals(Init.Type.UNIFORM) && !argsOk))
+								if (newtype == null || (!newtype.equals(Init.Type.UNIFORM)
+										&& (initargs == null || initargs.length < newtype.nParams)))
 									return false;
 								init.type = newtype;
 								init.args[n] = initargs;

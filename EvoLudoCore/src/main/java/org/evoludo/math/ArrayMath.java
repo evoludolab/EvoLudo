@@ -526,13 +526,13 @@ public class ArrayMath {
 	 * Find minimum element in boolean array/vector <code>a</code>.
 	 * 
 	 * @param a the <code>boolean[]</code> array
-	 * @return <code>true</code> if all elements are <code>true</code> and
-	 *         <code>false</code> if at least one element is <code>false</code>
+	 * @return <code>true</code> if all elements are <code>false</code> and
+	 *         <code>false</code> if at least one element is <code>true</code>
 	 */
 	public static boolean min(boolean[] a) {
 		int dim = a.length;
 		for (int n = 0; n < dim; n++)
-			if (!a[n])
+			if (a[n])
 				return false;
 		return true;
 	}
@@ -736,8 +736,11 @@ public class ArrayMath {
 	 */
 	public static float[] min(float[] a, float[] b) {
 		int dim = a.length;
-		for (int n = 0; n < dim; n++)
-			a[n] = Math.min(a[n], b[n]);
+		for (int n = 0; n < dim; n++) {
+			float bn = b[n];
+			if (bn < a[n])
+				a[n] = bn;
+		}
 		return a;
 	}
 
@@ -750,8 +753,11 @@ public class ArrayMath {
 	 */
 	public static double[] min(double[] a, double[] b) {
 		int dim = a.length;
-		for (int n = 0; n < dim; n++)
-			a[n] = Math.min(a[n], b[n]);
+		for (int n = 0; n < dim; n++) {
+			double bn = b[n];
+			if (bn < a[n])
+				a[n] = bn;
+		}
 		return a;
 	}
 
@@ -781,8 +787,8 @@ public class ArrayMath {
 	 * Find maximum element in boolean array/vector <code>a</code>.
 	 * 
 	 * @param a the <code>boolean[]</code> array
-	 * @return <code>false</code> if all elements are <code>false</code> and
-	 *         <code>true</code> if at least one element is <code>true</code>
+	 * @return <code>true</code> if all elements are <code>true</code> and
+	 *         <code>false</code> if at least one element is <code>false</code>
 	 */
 	public static boolean max(boolean[] a) {
 		int dim = a.length;
@@ -991,8 +997,11 @@ public class ArrayMath {
 	 */
 	public static float[] max(float[] a, float[] b) {
 		int dim = a.length;
-		for (int n = 0; n < dim; n++)
-			a[n] = Math.max(a[n], b[n]);
+		for (int n = 0; n < dim; n++) {
+			float bn = b[n];
+			if (bn > a[n])
+				a[n] = bn;
+		}
 		return a;
 	}
 
@@ -1005,8 +1014,11 @@ public class ArrayMath {
 	 */
 	public static double[] max(double[] a, double[] b) {
 		int dim = a.length;
-		for (int n = 0; n < dim; n++)
-			a[n] = Math.max(a[n], b[n]);
+		for (int n = 0; n < dim; n++) {
+			double bn = b[n];
+			if (bn > a[n])
+				a[n] = bn;
+		}
 		return a;
 	}
 
@@ -2261,7 +2273,7 @@ public class ArrayMath {
 	 */
 	public static boolean[] clone(boolean[] orig) {
 		if (orig == null)
-			return null;
+			return new boolean[0];
 		int len = orig.length;
 		boolean[] clone = new boolean[len];
 		System.arraycopy(orig, 0, clone, 0, len);
@@ -2276,7 +2288,7 @@ public class ArrayMath {
 	 */
 	public static int[] clone(int[] orig) {
 		if (orig == null)
-			return null;
+			return new int[0];
 		int len = orig.length;
 		int[] clone = new int[len];
 		System.arraycopy(orig, 0, clone, 0, len);
@@ -2291,7 +2303,7 @@ public class ArrayMath {
 	 */
 	public static double[] clone(double[] orig) {
 		if (orig == null)
-			return null;
+			return new double[0];
 		int len = orig.length;
 		double[] clone = new double[len];
 		System.arraycopy(orig, 0, clone, 0, len);
@@ -2306,7 +2318,7 @@ public class ArrayMath {
 	 */
 	public static double[][] clone(double[][] orig) {
 		if (orig == null)
-			return null;
+			return new double[0][0];
 		int len = orig.length;
 		double[][] clone = new double[len][];
 		for (int i = 0; i < len; i++)

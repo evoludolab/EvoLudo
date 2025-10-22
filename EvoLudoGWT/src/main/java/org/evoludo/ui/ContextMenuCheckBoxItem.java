@@ -54,6 +54,7 @@ import com.google.gwt.core.client.Scheduler.ScheduledCommand;
  * 
  * @see ContextMenu
  */
+@SuppressWarnings("java:S110")
 public class ContextMenuCheckBoxItem extends ContextMenuItem {
 
 	/**
@@ -63,28 +64,20 @@ public class ContextMenuCheckBoxItem extends ContextMenuItem {
 
 	/**
 	 * Create new menu item with check box and the title <code>text</code>.
-	 * Initially the menu item is not active (unchecked). Clicking the menu item
-	 * executes <code>cmd</code>.
+	 * Initially the menu item is not checked. Clicking the menu item executes
+	 * <code>cmd</code>.
 	 * 
 	 * @param text title of menu item
 	 * @param cmd  command to execute when clicked
 	 */
 	public ContextMenuCheckBoxItem(String text, ScheduledCommand cmd) {
-		this(text, false, cmd);
+		super(text, cmd);
 	}
 
-	/**
-	 * Create new menu item with check box and the title <code>text</code>.
-	 * Initially the menu item is active if <code>checked==true</code>. Clicking the
-	 * menu item executes <code>cmd</code>.
-	 * 
-	 * @param text    title of menu item
-	 * @param checked <code>true</code> if initial state is active (checked)
-	 * @param cmd     command to execute when clicked
-	 */
-	public ContextMenuCheckBoxItem(String text, boolean checked, ScheduledCommand cmd) {
-		super(text, cmd);
-		setChecked(checked);
+	@Override
+	protected void onLoad() {
+		super.onLoad();
+		setChecked(isChecked);
 	}
 
 	/**

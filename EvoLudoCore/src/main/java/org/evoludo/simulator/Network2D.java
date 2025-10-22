@@ -62,15 +62,10 @@ public abstract class Network2D extends Network {
 	 * @param engine   the pacemaker for running the model
 	 * @param geometry the structure of the population
 	 */
-	public Network2D(EvoLudo engine, Geometry geometry) {
+	protected Network2D(EvoLudo engine, Geometry geometry) {
 		// network is shared between different graphs - cannot set listener here!
 		super(engine, geometry);
-	}
-
-	@Override
-	public void reset() {
-		super.reset();
-		setAccuracy(1e-4);
+		accuracy = 1e-4;
 	}
 
 	/**
@@ -130,18 +125,18 @@ public abstract class Network2D extends Network {
 	/**
 	 * The baseline size of the 2D universe.
 	 */
-	public final static double R = 10.0;
+	public static final double R = 10.0;
 
 	/**
 	 * The inverse size of the baseline 2D universe. Convenience constant.
 	 */
-	protected final static double IR = 1.0 / R;
+	protected static final double IR = 1.0 / R;
 
 	/**
 	 * The inverse squared size of the baseline 2D universe,
 	 * {@code 1/R<sup>2</sup>}. Convenience constant.
 	 */
-	protected final static double IR2 = IR * IR;
+	protected static final double IR2 = IR * IR;
 
 	@Override
 	public double relax(int nodeidx) {
@@ -269,7 +264,8 @@ public abstract class Network2D extends Network {
 		if (geometry.isDynamic) {
 			// on dynamic networks radius needs to be set as well
 			// the radius of the nodes is scaled by their degree
-			int kin, kout;
+			int kin;
+			int kout;
 			double unitradius = Math.pow(0.8 / nNodes, 0.25);
 			double pnorm = 0.0;
 			double nnorm = 0.0;
@@ -287,12 +283,12 @@ public abstract class Network2D extends Network {
 			}
 		}
 		// prepare graph for display:
-		// (1) shift center of mass into origin;
+		// (1) shift center of mass into origin
 		// (2) rescale size of graph
 		Point2D com = new Point2D();
 		double maxRad = -Double.MAX_VALUE;
 		for (Node2D node : nodes) {
-			maxRad = Math.max(maxRad, node.r);
+			maxRad = Math.max(maxRad, node.getR());
 			com.shift(node);
 		}
 		com.scale(-1.0 / nNodes);
@@ -330,16 +326,16 @@ public abstract class Network2D extends Network {
 						if (b < n)
 							continue;
 						Node2D nodeB = nodes[b];
-						links.moveTo(nodeA.x, nodeA.y);
-						links.lineTo(nodeB.x, nodeB.y);
+						links.moveTo(nodeA);
+						links.lineTo(nodeB);
 					}
 				}
 				return;
 			}
-// TODO: the procedure below looks dangerous. randomly pick nodes and neighbours
-// probably not worth worrying about double picking of links because this
-// should apply only if there are many to begin with...
-// add context menu to adjust fraction of visible links
+			// TODO: the procedure below looks dangerous. randomly pick nodes and neighbours
+			// probably not worth worrying about double picking of links because this
+			// should apply only if there are many to begin with...
+			// add context menu to adjust fraction of visible links
 			// draw only fraction of undirected links
 			// this is pretty memory intensive - hopefully it works...
 			int[] idxs = new int[nLinks];
@@ -363,8 +359,8 @@ public abstract class Network2D extends Network {
 				Node2D nodeA = nodes[a];
 				int[] neigh = geometry.out[a];
 				Node2D nodeB = nodes[neigh[idx]];
-				links.moveTo(nodeA.x, nodeA.y);
-				links.lineTo(nodeB.x, nodeB.y);
+				links.moveTo(nodeA);
+				links.lineTo(nodeB);
 			}
 			return;
 		}
@@ -385,22 +381,24 @@ public abstract class Network2D extends Network {
 						if (b < n)
 							continue;
 						Node2D nodeB = nodes[b];
-						links.moveTo(nodeA.x, nodeA.y);
-						links.lineTo(nodeB.x, nodeB.y);
+						links.moveTo(nodeA);
+						links.lineTo(nodeB);
 						continue;
 					}
 					// directed link - add arrow
 					Node2D nodeB = nodes[b];
-					links.moveTo(nodeA.x, nodeA.y);
-					links.lineTo(nodeB.x, nodeB.y);
+					links.moveTo(nodeA);
+					links.lineTo(nodeB);
 					link.set(nodeB, nodeA);
-					link.normalize(0.5 * nodeB.r);
+					link.normalize(0.5 * nodeB.getR());
 					tip.add(nodeB, link);
 					// note: arrows that scale with size of tail node are a bit confusing
 					link.normalize(arrowsize);
-					links.moveTo(tip.x + link.x - 0.3 * link.y, tip.y + link.y + 0.3 * link.x);
-					links.lineTo(tip.x, tip.y);
-					links.lineTo(tip.x + link.x + 0.3 * link.y, tip.y + link.y - 0.3 * link.x);
+					links.moveTo(tip.getX() + link.getX() - 0.3 * link.getY(),
+							tip.getY() + link.getY() + 0.3 * link.getX());
+					links.lineTo(tip);
+					links.lineTo(tip.getX() + link.getX() + 0.3 * link.getY(),
+							tip.getY() + link.getY() - 0.3 * link.getX());
 				}
 			}
 			return;
@@ -430,16 +428,16 @@ public abstract class Network2D extends Network {
 			int[] neigh = geometry.out[a];
 			int b = neigh[idx];
 			Node2D nodeB = nodes[b];
-			links.moveTo(nodeA.x, nodeA.y);
-			links.lineTo(nodeB.x, nodeB.y);
+			links.moveTo(nodeA);
+			links.lineTo(nodeB);
 			link.set(nodeB, nodeA);
-			link.normalize(0.5 * nodeB.r);
+			link.normalize(0.5 * nodeB.getR());
 			tip.add(nodeB, link);
 			// note: arrows that scale with size of tail node are a bit confusing
 			link.normalize(arrowsize);
-			links.moveTo(tip.x + link.x - 0.3 * link.y, tip.y + link.y + 0.3 * link.x);
-			links.lineTo(tip.x, tip.y);
-			links.lineTo(tip.x + link.x + 0.3 * link.y, tip.y + link.y - 0.3 * link.x);
+			links.moveTo(tip.getX() + link.getX() - 0.3 * link.getY(), tip.getY() + link.getY() + 0.3 * link.getX());
+			links.lineTo(tip);
+			links.lineTo(tip.getX() + link.getX() + 0.3 * link.getY(), tip.getY() + link.getY() - 0.3 * link.getX());
 		}
 	}
 
@@ -451,5 +449,24 @@ public abstract class Network2D extends Network {
 	@Override
 	public Node2D get(int index) {
 		return nodes[index];
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (!super.equals(obj))
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Network2D other = (Network2D) obj;
+		// Compare links
+		return links.equals(other.links);
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result + links.hashCode();
+		return result;
 	}
 }

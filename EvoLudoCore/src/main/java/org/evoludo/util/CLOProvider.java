@@ -73,6 +73,5 @@ public interface CLOProvider {
 	 * @see CLOParser#removeCLO(CLOption)
 	 */
 	public default void adjustCLO(CLOParser parser) {
-		return;
 	}
 }

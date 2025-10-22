@@ -126,7 +126,7 @@ public class Path2D {
 		return Arrays.copyOf(oldPointTypes, newSize);
 	}
 
-	double doubleCoords[];
+	double[] doubleCoords;
 
 	/**
 	 * Constructs a new empty double precision {@code Path2D} object
@@ -209,7 +209,7 @@ public class Path2D {
 
 	double[] cloneCoordsDouble(AffineTransform at) {
 		// trim arrays:
-		double ret[];
+		double[] ret;
 		if (at == null) {
 			ret = Arrays.copyOf(doubleCoords, numCoords);
 		} else {
@@ -285,6 +285,15 @@ public class Path2D {
 	}
 
 	/**
+	 * Adds point {@code pt} to the path by moving to the specified location.
+	 *
+	 * @param pt the specified point
+	 */
+	public final synchronized void moveTo(Point2D pt) {
+		moveTo(pt.getX(), pt.getY());
+	}
+
+	/**
 	 * Adds a point to the path by moving to the specified
 	 * coordinates specified in double precision.
 	 *
@@ -302,6 +311,16 @@ public class Path2D {
 			doubleCoords[numCoords++] = x;
 			doubleCoords[numCoords++] = y;
 		}
+	}
+
+	/**
+	 * Adds point {@code pt} to the path by drawing a stright line to the specified
+	 * location.
+	 *
+	 * @param pt the specified point
+	 */
+	public final synchronized void lineTo(Point2D pt) {
+		lineTo(pt.getX(), pt.getY());
 	}
 
 	/**
@@ -395,7 +414,7 @@ public class Path2D {
 	 * @since 1.6
 	 */
 	public final void append(Iterator pi, boolean connect) {
-		double coords[] = new double[6];
+		double[] coords = new double[6];
 		while (!pi.isDone()) {
 			switch (pi.currentSegment(coords)) {
 				case SEG_MOVETO:
@@ -482,27 +501,38 @@ public class Path2D {
 	 * @evoludo.impl {@code getBounds()} is not implemented
 	 */
 	public final synchronized Rectangle2D getBounds2D() {
-		double x1, y1, x2, y2;
-		int i = numCoords;
-		if (i > 0) {
-			y1 = y2 = doubleCoords[--i];
-			x1 = x2 = doubleCoords[--i];
-			while (i > 0) {
-				double y = doubleCoords[--i];
-				double x = doubleCoords[--i];
-				if (x < x1)
-					x1 = x;
-				if (y < y1)
-					y1 = y;
-				if (x > x2)
-					x2 = x;
-				if (y > y2)
-					y2 = y;
-			}
-		} else {
-			x1 = y1 = x2 = y2 = 0.0;
+		if (numCoords <= 0)
+			return new Rectangle2D(0.0, 0.0, 0.0, 0.0);
+		double[] bounds = findMinMaxCoords(doubleCoords, numCoords);
+		return new Rectangle2D(bounds[0], bounds[1], bounds[2] - bounds[0], bounds[3] - bounds[1]);
+	}
+
+	/**
+	 * Helper method to find min/max x and y coordinates in the array.
+	 * 
+	 * @param coords the coordinates array
+	 * @param length the number of coordinates to consider
+	 * @return array of {minX, minY, maxX, maxY}
+	 */
+	private static double[] findMinMaxCoords(double[] coords, int length) {
+		int i = length;
+		double y1 = coords[--i];
+		double y2 = y1;
+		double x1 = coords[--i];
+		double x2 = x1;
+		while (i > 0) {
+			double y = coords[--i];
+			double x = coords[--i];
+			if (x < x1)
+				x1 = x;
+			if (y < y1)
+				y1 = y;
+			if (x > x2)
+				x2 = x;
+			if (y > y2)
+				y2 = y;
 		}
-		return new Rectangle2D(x1, y1, x2 - x1, y2 - y1);
+		return new double[] { x1, y1, x2, y2 };
 	}
 
 	/**
@@ -557,7 +587,7 @@ public class Path2D {
 		int pointIdx;
 		Path2D path;
 
-		static final int curvecoords[] = { 2, 2, 4, 6, 0 };
+		static final int[] curvecoords = { 2, 2, 4, 6, 0 };
 
 		/**
 		 * Constructs a new path iterator object from an arbitrary
@@ -570,7 +600,7 @@ public class Path2D {
 			this.doubleCoords = path.doubleCoords;
 		}
 
-		double doubleCoords[];
+		double[] doubleCoords;
 
 		/**
 		 * Returns the coordinates and type of the current path segment in
@@ -680,7 +710,7 @@ public class Path2D {
 	 * @see #getWindingRule
 	 * @since 1.6
 	 */
-	public final void setWindingRule(int rule) {
+	public final synchronized void setWindingRule(int rule) {
 		if (rule != WIND_EVEN_ODD && rule != WIND_NON_ZERO) {
 			throw new IllegalArgumentException("winding rule must be " +
 					"WIND_EVEN_ODD or " +
@@ -703,10 +733,10 @@ public class Path2D {
 			return null;
 		}
 		if (pointTypes[numTypes - 1] == SEG_CLOSE) {
-			loop: for (int i = numTypes - 2; i > 0; i--) {
+			for (int i = numTypes - 2; i > 0; i--) {
 				switch (pointTypes[i]) {
 					case SEG_MOVETO:
-						break loop;
+						return getPoint(index - 2);
 					case SEG_LINETO:
 						index -= 2;
 						break;
@@ -748,34 +778,50 @@ public class Path2D {
 
 	@Override
 	public String toString() {
-		String msg = "[path=" + numTypes + ": ";
+		StringBuilder msg = new StringBuilder("[path=" + numTypes + ": ");
 		int npoints = Math.min(numTypes, 10);
 		int idx = 0;
 		for (int n = 0; n < npoints; n++) {
 			switch (pointTypes[n]) {
 				case SEG_MOVETO:
-					msg += " (" + doubleCoords[idx++] + "," + doubleCoords[idx++] + ")";
+					msg.append(" (")
+							.append(doubleCoords[idx++])
+							.append(",")
+							.append(doubleCoords[idx++])
+							.append(")");
 					break;
 				case SEG_LINETO:
-					msg += "-(" + doubleCoords[idx++] + "," + doubleCoords[idx++] + ")";
+					msg.append("-(")
+							.append(doubleCoords[idx++])
+							.append(",")
+							.append(doubleCoords[idx++])
+							.append(")");
 					break;
 				case SEG_QUADTO:
-					msg += "2(" + doubleCoords[idx++] + "," + doubleCoords[idx++] + "," + doubleCoords[idx++] + ","
-							+ doubleCoords[idx++] + ")";
+					msg.append("2(")
+							.append(doubleCoords[idx++]).append(",")
+							.append(doubleCoords[idx++]).append(",")
+							.append(doubleCoords[idx++]).append(",")
+							.append(doubleCoords[idx++]).append(")");
 					break;
 				case SEG_CUBICTO:
-					msg += "3(" + doubleCoords[idx++] + "," + doubleCoords[idx++] + "," + doubleCoords[idx++] + ","
-							+ doubleCoords[idx++] + "," + doubleCoords[idx++] + "," + doubleCoords[idx++] + ")";
+					msg.append("3(")
+							.append(doubleCoords[idx++]).append(",")
+							.append(doubleCoords[idx++]).append(",")
+							.append(doubleCoords[idx++]).append(",")
+							.append(doubleCoords[idx++]).append(",")
+							.append(doubleCoords[idx++]).append(",")
+							.append(doubleCoords[idx++]).append(")");
 					break;
 				case SEG_CLOSE:
-					msg += ": ";
+					msg.append(": ");
 					break;
 				default:
 					/* NOTREACHED */
 			}
 		}
 		if (npoints < numTypes)
-			msg += "...";
-		return msg + "]";
+			msg.append("...");
+		return msg.append("]").toString();
 	}
 }

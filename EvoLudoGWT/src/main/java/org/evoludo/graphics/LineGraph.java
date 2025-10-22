@@ -34,6 +34,7 @@ import java.awt.Color;
 import java.util.Iterator;
 
 import org.evoludo.geom.Point2D;
+import org.evoludo.graphics.AbstractGraph.HasLogScaleY;
 import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.math.ArrayMath;
@@ -43,20 +44,23 @@ import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.BasicTooltipProvider;
+import org.evoludo.simulator.views.Mean;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
+import org.evoludo.util.CLOParser;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.RingBuffer;
 
 import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.user.client.Command;
 
 /**
  * Graph to visualize time series data. The graph can be shifted and zoomed.
  * 
  * @author Christoph Hauert
  */
-public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zooming, BasicTooltipProvider {
+@SuppressWarnings("java:S110")
+public class LineGraph extends AbstractGraph<double[]>
+		implements Shifting, Zooming, HasLogScaleY, BasicTooltipProvider {
 
 	/**
 	 * The default number of (time) steps shown on this graph.
@@ -64,31 +68,78 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 	protected double steps = DEFAULT_STEPS;
 
 	/**
-	 * Create new line graph for {@code controller}. The {@code id} is used to
+	 * Create new line graph for {@code view}. The {@code id} is used to
 	 * distinguish different graphs of the same module to visualize different
 	 * components of the data and represents the index of the data column.
 	 * 
-	 * @param controller the controller of this graph
-	 * @param module     the module backing the graph
+	 * @param view   the view of this graph
+	 * @param module the module backing the graph
 	 */
-	public LineGraph(Controller controller, Module module) {
-		super(controller, module);
-		setStylePrimaryName("evoludo-LineGraph");
+	public LineGraph(Mean view, Module<?> module) {
+		super(view, module);
+	}
+
+	@Override
+	protected void onLoad() {
+		super.onLoad();
+		setStylePrimaryName("evoludo-HistoGraph");
 		setTooltipProvider(this);
 	}
 
-	// note: labels, yMin and yMax etc. must be set at this point to calculate
-	// bounds
+	@Override
+	public boolean parse(String args) {
+		// set defaults
+		style.autoscaleY = true;
+		setLogY(false);
+		if (args != null)
+			parseArgs(args);
+		return true;
+	}
+
+	/**
+	 * Parse command line options for the graph. The following options are
+	 * recognized:
+	 * <ul>
+	 * <li>{@code log}: enable logarithmic scaling on the y-axis
+	 * <li>{@code xmin <value>}: set the minimum x-axis value
+	 * <li>{@code xmax <value>}: set the maximum x-axis value
+	 * <li>{@code ymin <value>}: set the minimum y-axis value
+	 * <li>{@code ymax <value>}: set the maximum y-axis value
+	 * </ul>
+	 * 
+	 * @param args the command line arguments (comma separated, no spaces)
+	 */
+	private void parseArgs(String args) {
+		for (String arg : args.split(CLOParser.VECTOR_DELIMITER)) {
+			arg = arg.trim();
+			if (arg.startsWith("log")) {
+				setLogY(true);
+			} else if (arg.startsWith("xmin")) {
+				style.xMin = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
+			} else if (arg.startsWith("xmax")) {
+				style.xMax = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
+			} else if (arg.startsWith("ymin")) {
+				style.yMin = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
+				style.autoscaleY = false;
+			} else if (arg.startsWith("ymax")) {
+				style.yMax = Double.parseDouble(arg.substring(arg.indexOf(" ") + 1).trim());
+				style.autoscaleY = false;
+			}
+		}
+	}
+
 	@Override
 	public void reset() {
-		double oldMin = style.xMin;
-		style.xMin = Functions.roundDown(style.xMin + 0.5);
-		if (style.xMax - style.xMin < 1e-6)
-			style.xMin = style.xMax - 1.0;
+		if (style.autoscaleY) {
+			style.yMin = Double.MAX_VALUE;
+			style.yMax = -Double.MAX_VALUE;
+		}
+		setLogY(style.logScaleY);
+		double oldXMin = style.xMin;
 		super.reset();
 		if (buffer == null || buffer.getCapacity() < MIN_BUFFER_SIZE)
 			buffer = new RingBuffer<double[]>(Math.max((int) bounds.getWidth(), DEFAULT_BUFFER_SIZE));
-		setSteps(steps * (style.xMax - style.xMin) / (style.xMax - oldMin));
+		setSteps(steps * (style.xMax - style.xMin) / (style.xMax - oldXMin));
 	}
 
 	/**
@@ -120,17 +171,78 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 		// time does not count for min/max
 		double t = data[0];
 		data[0] = style.yMin;
-		// dynamically extend range if needed - never reduces range (would need to
-		// consult RingBuffer for this)
 		double min = ArrayMath.min(data);
-		// ignore NaN's in data
-		if (min == min)
-			style.yMin = Math.min(style.yMin, min);
-		double max = ArrayMath.max(data);
-		// ignore NaN's in data
-		if (max == max)
-			style.yMax = Math.max(style.yMax, max);
+		if (min <= 0.0)
+			style.logScaleY = false;
+		if (style.autoscaleY) {
+			// dynamically extend range if needed - never reduce (would need to
+			// consult RingBuffer for this)
+			if (!Double.isNaN(min))
+				style.yMin = Math.min(style.yMin, Functions.roundDown(min));
+			data[0] = style.yMax;
+			double max = ArrayMath.max(data);
+			if (!Double.isNaN(max))
+				style.yMax = Math.max(style.yMax, Functions.roundUp(max));
+		}
 		data[0] = t;
+	}
+
+	@Override
+	void setLogY(boolean logY) {
+		if (!hasHistory()) {
+			super.setLogY(logY);
+			return;
+		}
+		if (style.yMin < 0.0) {
+			noLogY();
+			return;
+		}
+		style.logScaleY = logY;
+		if (!style.autoscaleY)
+			return;
+		double[] min = buffer.min(this::compareData);
+		double bufmin = ArrayMath.min(min);
+		if (bufmin < 0.0) {
+			noLogY();
+			return;
+		}
+		if (logY && bufmin == 0.0)
+			bufmin = 0.01 * style.yMax;
+		if (!logY && bufmin > 0.0 && bufmin < 0.01 * style.yMax)
+			bufmin = 0.0;
+		style.yMin = Functions.roundDown(bufmin);
+	}
+
+	/**
+	 * Helper method to disable log scale on {@code y}-axis and issue warning.
+	 */
+	private void noLogY() {
+		if (style.logScaleY)
+			logger.warning("Log scale requires positive values");
+		style.logScaleY = false;
+	}
+
+	/**
+	 * Compare two data arrays based on their minimum value (ignoring first entry,
+	 * time). Returns a negative integer, zero, or a positive integer if the minimum
+	 * of the first argument is less than, equal to, or greater than the second,
+	 * respectively.
+	 * 
+	 * @param o1 the first data array
+	 * @param o2 the second data array
+	 * @return a negative integer, zero, or a positive integer
+	 */
+	private int compareData(double[] o1, double[] o2) {
+		// ignore time
+		double t = o1[0];
+		o1[0] = Double.MAX_VALUE;
+		double m1 = ArrayMath.min(o1);
+		o1[0] = t;
+		t = o2[0];
+		o2[0] = Double.MAX_VALUE;
+		double m2 = ArrayMath.min(o2);
+		o2[0] = t;
+		return Double.compare(m1, m2);
 	}
 
 	@Override
@@ -148,8 +260,21 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 		double h = bounds.getHeight();
 		g.translate(w, h);
 		g.scale(1.0, -1.0);
+		g.beginPath();
+		// with -w a small strip on left is not drawn... proper fix needed!
+		g.rect(style.markerSize, 0.0, -(w + 3.0), h);
+		g.clip();
 
-		double yScale = h / (style.yMax - style.yMin);
+		double ymin;
+		double yrange;
+		if (style.logScaleY) {
+			ymin = Math.log10(style.yMin);
+			yrange = Math.log10(style.yMax) - ymin;
+		} else {
+			ymin = style.yMin;
+			yrange = style.yMax - ymin;
+		}
+		double yScale = h / yrange;
 		Iterator<double[]> i = buffer.iterator();
 		int nLines = buffer.getDepth() - 1;
 		if (i.hasNext()) {
@@ -161,7 +286,8 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 				// suppress markers if view is shifted and 0 invisible
 				for (int n = 0; n < nLines; n++) {
 					g.setFillStyle(colors[n]);
-					fillCircle(start, (current[n + 1] - style.yMin) * yScale, style.markerSize);
+					double y = (style.logScaleY ? Math.log10(current[n + 1]) : current[n + 1]) - ymin;
+					fillCircle(start, y * yScale, style.markerSize);
 				}
 			}
 			double end = start;
@@ -177,8 +303,15 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 				if (start < 0.0) {
 					for (int n = 0; n < nLines; n++) {
 						setStrokeStyleAt(n);
-						double pi = prev[n + 1] - style.yMin;
-						double ci = current[n + 1] - style.yMin;
+						double pi;
+						double ci;
+						if (style.logScaleY) {
+							pi = Math.log10(prev[n + 1]) - ymin;
+							ci = Math.log10(current[n + 1]) - ymin;
+						} else {
+							pi = prev[n + 1] - ymin;
+							ci = current[n + 1] - ymin;
+						}
 						if (start >= -w && end <= 0.0) {
 							strokeLine(start, pi * yScale, end, ci * yScale);
 							continue;
@@ -186,6 +319,8 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 						double s = Math.max(-w, start);
 						double e = Math.min(0, end);
 						double m = (ci - pi) / (end - start);
+						if (style.logScaleY)
+							m = Math.log10(m);
 						strokeLine(s, (pi + m * (s - start)) * yScale, e, (ci - m * (end - e)) * yScale);
 					}
 					if (start <= -w)
@@ -199,7 +334,7 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 			for (double[] mark : markers) {
 				g.setLineDash(mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
 				for (int n = 0; n < nLines; n++) {
-					double mn = (mark[n + 1] - style.yMin) * yScale;
+					double mn = (style.logScaleY ? Math.log10(mark[n + 1]) : mark[n + 1]) - ymin;
 					g.setStrokeStyle(markerColors[n % markerColors.length]);
 					strokeLine(-w, mn, 0.0, mn);
 				}
@@ -227,12 +362,9 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 	protected void schedulePaint() {
 		if (paintScheduled)
 			return;
-		Scheduler.get().scheduleDeferred(new Scheduler.ScheduledCommand() {
-			@Override
-			public void execute() {
-				paint();
-				paintScheduled = false;
-			}
+		Scheduler.get().scheduleDeferred(() -> {
+			paint();
+			paintScheduled = false;
 		});
 		paintScheduled = true;
 	}
@@ -384,17 +516,35 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 	public String getTooltipAt(double x, double y) {
 		double buffert = 0.0;
 		double mouset = style.xMin + x * (style.xMax - style.xMin);
-		int vacant = module.getVacant();
-		boolean hasVacant = (vacant >= 0);
+		double ymin;
+		double yrange;
+		if (style.logScaleY) {
+			ymin = Math.log10(style.yMin);
+			yrange = Math.log10(style.yMax) - ymin;
+		} else {
+			ymin = style.yMin;
+			yrange = style.yMax - ymin;
+		}
 		Iterator<double[]> i = buffer.iterator();
-		String tip = "<table style='border-collapse:collapse;border-spacing:0;'>" +
-				(style.label != null ? "<tr><td><b>" + style.label + "</b></td></tr>" : "") +
-				"<tr><td style='text-align:right'><i>" + style.xLabel + ":</i></td><td>" +
-				Formatter.format(mouset, 2) + "</td></tr>" +
-				"<tr><td style='text-align:right'><i>" + style.yLabel + ":</i></td><td>" +
-				(style.percentY ? Formatter.formatPercent(style.yMin + y * (style.yMax - style.yMin), 1)
-						: Formatter.format(style.yMin + y * (style.yMax - style.yMin), 2))
-				+ "</td></tr>";
+		double yval = ymin + y * yrange;
+		if (style.logScaleY)
+			yval = Math.pow(10.0, yval);
+		StringBuilder tip = new StringBuilder();
+		tip.append("<table style='border-collapse:collapse;border-spacing:0;'>");
+		if (style.label != null)
+			tip.append("<tr><td><b>")
+					.append(style.label)
+					.append("</b></td></tr>");
+		tip.append("<tr><td style='text-align:right'><i>")
+				.append(style.xLabel)
+				.append(":</i></td><td>")
+				.append(Formatter.format(mouset, 2))
+				.append("</td></tr>");
+		tip.append("<tr><td style='text-align:right'><i>")
+				.append(style.yLabel)
+				.append(":</i></td><td>")
+				.append(style.percentY ? Formatter.formatPercent(yval, 1) : Formatter.format(yval, 2))
+				.append("</td></tr>");
 		if (i.hasNext()) {
 			double[] current = i.next();
 			int len = current.length;
@@ -407,25 +557,27 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 					continue;
 				}
 				double fx = 1.0 - (mouset - buffert) / dt;
-				tip += "<tr><td colspan='2'><hr/></td></tr><tr><td style='text-align:right'><i>" + style.xLabel +
-						":</i></td><td>" + Formatter.format(current[0] - fx * dt, 2) + "</td></tr>";
+				tip.append("<tr><td colspan='2'><hr/></td></tr><tr><td style='text-align:right'><i>")
+						.append(style.xLabel)
+						.append(":</i></td><td>")
+						.append(Formatter.format(current[0] - fx * dt, 2)).append("</td></tr>");
 				Color[] colors = module.getMeanColors();
 				if (module instanceof Continuous) {
 					double inter = interpolate(current[1], prev[1], fx);
-					tip += "<tr><td style='text-align:right'><i style='color:"
-							+ ColorMapCSS.Color2Css(colors[0]) + ";'>mean:</i></td><td>" +
-							(style.percentY ? Formatter.formatPercent(inter, 2) : Formatter.format(inter, 2));
+					tip.append("<tr><td style='text-align:right'><i style='color:")
+							.append(ColorMapCSS.Color2Css(colors[0]))
+							.append(";'>mean:</i></td><td>")
+							.append(style.percentY ? Formatter.formatPercent(inter, 2) : Formatter.format(inter, 2));
 					double sdev = inter - interpolate(current[2], prev[2], fx); // data: mean, mean-sdev, mean+sdev
-					tip += " ± " + (style.percentY ? Formatter.formatPercent(sdev, 2) : Formatter.format(sdev, 2))
-							+ "</td></tr>";
+					tip.append(" ± ")
+							.append(style.percentY ? Formatter.formatPercent(sdev, 2) : Formatter.format(sdev, 2))
+							.append("</td></tr>");
 				} else {
 					// len includes time
 					for (int n = 0; n < len - 1; n++) {
-						if (!hasVacant && n == vacant)
-							continue;
 						String name;
 						Color color;
-						Data type = controller.getType();
+						Data type = view.getType();
 						int n1 = n + 1;
 						if (n1 == len - 1 && type == Data.FITNESS) {
 							name = "average";
@@ -436,20 +588,26 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 						}
 						if (name == null)
 							continue;
-						tip += "<tr><td style='text-align:right'><i style='color:" + ColorMapCSS.Color2Css(color)
-								+ ";'>" + name + ":</i></td><td>";
+						tip.append("<tr><td style='text-align:right'><i style='color:")
+								.append(ColorMapCSS.Color2Css(color)).append(";'>")
+								.append(name)
+								.append(":</i></td><td>");
 						// deal with NaN's
-						if (prev[n1] == prev[n1] && current[n1] == current[n1]) {
-							tip += (style.percentY ? Formatter.formatPercent(interpolate(current[n1], prev[n1], fx), 2)
-									: Formatter.format(interpolate(current[n1], prev[n1], fx), 2)) + "</td></tr>";
-						} else
-							tip += "-</td></tr>";
+						if (Double.isNaN(prev[n1]) || Double.isNaN(current[n1])) {
+							tip.append("-");
+						} else {
+							tip.append(
+									style.percentY ? Formatter.formatPercent(interpolate(current[n1], prev[n1], fx), 2)
+											: Formatter.format(interpolate(current[n1], prev[n1], fx), 2));
+						}
+						tip.append("</td></tr>");
 					}
 				}
 				break;
 			}
 		}
-		return tip + "</table>";
+		tip.append("</table>");
+		return tip.toString();
 	}
 
 	/**
@@ -473,12 +631,9 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		// add menu to clear canvas
 		if (clearMenu == null) {
-			clearMenu = new ContextMenuItem("Clear", new Command() {
-				@Override
-				public void execute() {
-					clearHistory();
-					paint(true);
-				}
+			clearMenu = new ContextMenuItem("Clear", () -> {
+				clearHistory();
+				paint(true);
 			});
 		}
 		menu.addSeparator();
@@ -486,39 +641,5 @@ public class LineGraph extends AbstractGraph<double[]> implements Shifting, Zoom
 		super.populateContextMenuAt(menu, x, y);
 		zoomInMenu.setText("Zoom in x-axis (2x)");
 		zoomOutMenu.setText("Zoom out x-axis (0.5x)");
-	}
-
-	/**
-	 * The command to change the zoom level.
-	 */
-	public class ZoomCommand implements Command {
-
-		/**
-		 * The zoom level.
-		 */
-		double zoom = -1.0;
-
-		/**
-		 * Create new zoom command.
-		 */
-		public ZoomCommand() {
-		}
-
-		/**
-		 * Create new zoom command with the specified zoom level.
-		 * 
-		 * @param zoom the zoom level
-		 */
-		public ZoomCommand(double zoom) {
-			this.zoom = Math.max(0.0, zoom);
-		}
-
-		@Override
-		public void execute() {
-			if (zoom < 0.0)
-				zoom();
-			else
-				zoom(zoom, 0.5, 0.5);
-		}
 	}
 }

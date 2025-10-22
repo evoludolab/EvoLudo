@@ -82,7 +82,7 @@
 <tr><th>Ecological Public Goods (PDE)</th><td><div class="evoludo-trigger-html"
 	data-clo="--module ePGG --run --delay 100 --pdeN 61x --model PDE --geometry nf --colors red;green;black --timestep 1 --pdeD 2,1 --init circle 1,1,8 --fitnessmap static --cost 1.0 --interest 2.34 --groupsize 8 --deathrate 1.2 --dt 0.1 --pdeL 200"></div>
 <th>Ecological Public Goods (PDE, advection)</th><td><div class="evoludo-trigger-html"
-	data-clo="--module ePGG --run --pdeA 0,0;10,10 --pdeN 61x --pdeL 200 --pdeD 0,0 --interest 2.4 --cost 1.0 --deathrate 1.2 --init ring 1,1,8 --model PDE --timestep 1 --dt 0.1 --groupsize 8 --geometry nf --fitnessmap static --colors red;green;black --pdeSymmetry"></div>
+	data-clo="--module ePGG --run --pdeA 0,0;10,10 --pdeN 61x --pdeL 200 --pdeD 0,0 --interest 2.4 --cost 1.0 --deathrate 1.2 --init ring 1,1,8 --model PDEADV --timestep 1 --dt 0.1 --groupsize 8 --geometry nf --fitnessmap static --colors red;green;black --pdeSymmetry"></div>
 </tr>
 <tr><th>Continuous Snowdrift Game</th><td><div class="evoludo-trigger-html"
 	data-clo="--module cSD --run --view Traits_-_Distribution --delay 200 --timestep 20 --popsize 500 --popupdate async --playerupdate imitate 0.1 --geometry M --interactions random 1 --references random 1 --benefits 11 6,-1.4 --costs 1 4.56,-1.6 --init gaussian 0.2,0.05 --mutation 0.01 gaussian 0.01"></div>

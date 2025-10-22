@@ -30,6 +30,8 @@
 
 package org.evoludo.simulator.models;
 
+import java.util.logging.Level;
+
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
@@ -46,7 +48,7 @@ import org.evoludo.util.Formatter;
  * 
  * @author Christoph Hauert
  */
-public class IBSD extends IBS implements Discrete {
+public class IBSD extends IBS implements DModel {
 
 	/**
 	 * Creates a population of individuals for IBS simulations with discrete
@@ -67,8 +69,8 @@ public class IBSD extends IBS implements Discrete {
 		// collect new statistics sample
 		IBSDPopulation dpop = (IBSDPopulation) population;
 		fixData.typeFixed = ArrayMath.maxIndex(dpop.traitsCount);
-		Module module = species.get(0);
-		int vacant = module.getVacant();
+		Module<?> module = species.get(0);
+		int vacant = module.getVacantIdx();
 		if (fixData.typeFixed == vacant) {
 			// closer look is needed - look for what other traits survived (if any)
 			for (int n = 0; n < module.getNTraits(); n++) {
@@ -77,12 +79,11 @@ public class IBSD extends IBS implements Discrete {
 				if (dpop.traitsCount[n] > 0) {
 					// no other traits should be present
 					fixData.typeFixed = n;
-					break;
 				}
 			}
 		}
-		fixData.timeFixed = realtime;
-		fixData.updatesFixed = time;
+		fixData.timeFixed = time;
+		fixData.updatesFixed = updates;
 		fixData.probRead = false;
 		fixData.timeRead = false;
 	}
@@ -100,12 +101,15 @@ public class IBSD extends IBS implements Discrete {
 			return false;
 		// sampling statistics also require:
 		// - mutant or temperature initialization
-		// - no vacant sites or monostop (otherwise extinction is the only absorbing state)
-		for (Module mod : species) {
+		// - no vacant sites or monostop (otherwise extinction is the only absorbing
+		// state)
+		for (Module<?> mod : species) {
 			Init.Type itype = ((IBSDPopulation) mod.getIBSPopulation()).getInit().type;
-			if ((itype.equals(Init.Type.MUTANT) || 
-				itype.equals(Init.Type.TEMPERATURE)) &&
-				(mod.getVacant() < 0 || (mod.getVacant() >= 0 && ((org.evoludo.simulator.modules.Discrete) mod).getMonoStop())))
+			if ((itype.equals(Init.Type.MUTANT) ||
+					itype.equals(Init.Type.TEMPERATURE)) &&
+					(mod.getVacantIdx() < 0
+							|| (mod.getVacantIdx() >= 0
+									&& ((org.evoludo.simulator.modules.Discrete) mod).getMonoStop())))
 				continue;
 			return false;
 		}
@@ -129,7 +133,7 @@ public class IBSD extends IBS implements Discrete {
 						"optimizations for homogeneous states disabled (incompatible with variable population sizes).");
 				doReset = true;
 			}
-			Module module = population.getModule();
+			Module<?> module = population.getModule();
 			double pMutation = module.getMutation().probability;
 			if (pMutation <= 0.0) {
 				optimizeHomo = false;
@@ -138,9 +142,10 @@ public class IBSD extends IBS implements Discrete {
 			}
 			int nPop = module.getNPopulation();
 			if (pMutation < 0.0 || pMutation > 0.1 * nPop) {
-				logger.warning("optimizations for homogeneous states not recommended (mutations in [0, " + (0.1 / nPop)
-						+ ") recommended, now " +
-						Formatter.format(pMutation, 4) + ", proceeding)");
+				if (logger.isLoggable(Level.WARNING))
+					logger.warning(
+							"optimizations for homogeneous states not recommended (mutations in [0, " + (0.1 / nPop)
+									+ ") recommended, now " + Formatter.format(pMutation, 4) + ", proceeding)");
 				doReset = true;
 			}
 		}
@@ -190,7 +195,7 @@ public class IBSD extends IBS implements Discrete {
 
 		int skip = 0;
 		boolean success = true;
-		for (Module mod : species) {
+		for (Module<?> mod : species) {
 			IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
 			double[] tmp = new double[dpop.nTraits];
 			System.arraycopy(init, skip, tmp, 0, dpop.nTraits);
@@ -275,11 +280,11 @@ public class IBSD extends IBS implements Discrete {
 						String[] inittypes = arg.split(CLOParser.SPECIES_DELIMITER);
 						int idx = 0;
 						Init.Type prevtype = null;
-						for (Module mod : ibs.species) {
+						for (Module<?> mod : ibs.species) {
 							IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
 							String itype = inittypes[idx++ % inittypes.length];
 							double[] initargs = null;
-							String[] typeargs = itype.split("\\s+|=");
+							String[] typeargs = itype.split(CLOParser.SPLIT_ARG_REGEX);
 							Init.Type newtype = (Init.Type) clo.match(itype);
 							Init init = dpop.getInit();
 							if (newtype == null && prevtype != null) {
@@ -302,12 +307,12 @@ public class IBSD extends IBS implements Discrete {
 					@Override
 					public String getDescription() {
 						String descr = "--init <t>      type of initial configuration:\n" + clo.getDescriptionKey()
-							+ "\n                with r, m indices of resident, mutant traits";
+								+ "\n                with r, m indices of resident, mutant traits";
 						boolean noVacant = false;
-						for (Module mod : ibs.species)
-							noVacant |= mod.getVacant() < 0;
+						for (Module<?> mod : ibs.species)
+							noVacant |= mod.getVacantIdx() < 0;
 						if (noVacant)
-							return descr.replaceAll("\\[,v\\]", "");
+							return descr.replace("[,v]", "");
 						return descr + "\n                and v frequency of vacant sites";
 					}
 				});
@@ -450,7 +455,7 @@ public class IBSD extends IBS implements Discrete {
 	 * </dl>
 	 * 
 	 */
-	public static enum OptimizationType implements CLOption.Key {
+	public enum OptimizationType implements CLOption.Key {
 
 		/**
 		 * No optimization (default).
@@ -535,7 +540,7 @@ public class IBSD extends IBS implements Discrete {
 				public boolean parse(String arg) {
 					// reset all optimizations
 					optimizeHomo = false;
-					for (Module mod : species) {
+					for (Module<?> mod : species) {
 						IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
 						dpop.optimizeMoran = false;
 					}
@@ -555,14 +560,14 @@ public class IBSD extends IBS implements Discrete {
 								optimizeHomo = true;
 								break;
 							case MORAN:
-								for (Module mod : species) {
+								for (Module<?> mod : species) {
 									IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
 									dpop.optimizeMoran = true;
 								}
 								break;
 							case NONE:
 								optimizeHomo = false;
-								for (Module mod : species) {
+								for (Module<?> mod : species) {
 									IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
 									dpop.optimizeMoran = false;
 								}

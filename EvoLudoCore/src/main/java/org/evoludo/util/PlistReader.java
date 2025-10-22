@@ -31,6 +31,7 @@
 package org.evoludo.util;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Iterator over tags in <code>plist</code>-string.
@@ -38,6 +39,16 @@ import java.util.Iterator;
  * @author Christoph Hauert
  */
 public class PlistReader implements Iterator<PlistTag> {
+
+	/**
+	 * Tag identifying DOCTYPE declaration.
+	 */
+	static final String DOCTYPE_TAG = "<!DOCTYPE";
+
+	/**
+	 * Tag identifying start of XML declaration.
+	 */
+	static final String XML_TAG = "<?xml";
 
 	/**
 	 * Number of lines read in <code>plist</code>-string.
@@ -63,6 +74,11 @@ public class PlistReader implements Iterator<PlistTag> {
 	 * Next tag.
 	 */
 	PlistTag tag;
+
+	/**
+	 * Buffered tag to return on the next {@link #next()} call.
+	 */
+	PlistTag buffered;
 
 	/**
 	 * <code>true</code> if no processing has occurred yet. In particular this means
@@ -112,7 +128,7 @@ public class PlistReader implements Iterator<PlistTag> {
 		String name;
 		String attributes;
 		// read preamble
-		int start = line.indexOf("<?xml");
+		int start = line.indexOf(XML_TAG);
 		int end = line.indexOf("?>");
 		if (start >= 0 && end > start) {
 			// read attributes of xml tag
@@ -120,10 +136,11 @@ public class PlistReader implements Iterator<PlistTag> {
 			// parse version
 			line = line.substring(end + "?>".length()).trim();
 		}
-		start = line.indexOf("<!DOCTYPE");
-		end = line.indexOf('>', "<!DOCTYPE".length());
+		start = line.indexOf(DOCTYPE_TAG);
+		int sidx = DOCTYPE_TAG.length();
+		end = line.indexOf('>', sidx);
 		if (start >= 0 && end > start) {
-			attributes = line.substring(start + "<!DOCTYPE".length(), end).trim();
+			attributes = line.substring(start + sidx, end).trim();
 			// parse doctype
 			int idx = attributes.indexOf(' ');
 			root = attributes.substring(0, idx);
@@ -153,8 +170,15 @@ public class PlistReader implements Iterator<PlistTag> {
 
 	@Override
 	public boolean hasNext() {
-		String name, attributes = null, value = null;
-		boolean closing = false;
+		if (buffered != null) {
+			tag = buffered;
+			buffered = null;
+			return true;
+		}
+		String name;
+		String attributes = null;
+		String value = null;
+		boolean selfclosing = false;
 		tag = null;
 		if (done)
 			return false;
@@ -162,7 +186,7 @@ public class PlistReader implements Iterator<PlistTag> {
 		skipComments();
 
 		// sanity check
-		if (line.charAt(0) != '<') {
+		if (line.isEmpty() || line.charAt(0) != '<') {
 			done = true;
 			return false;
 		}
@@ -175,13 +199,13 @@ public class PlistReader implements Iterator<PlistTag> {
 		int end = line.indexOf('>') + 1;
 		int tagend = end - 1;
 		if (line.charAt(tagend - 1) == '/') {
-			closing = true;
+			selfclosing = true;
 			tagend--;
 		}
 		name = line.substring(1, tagend).trim();
 
 		// is this an opening tag
-		if (!closing && name.charAt(0) != '/') {
+		if (!selfclosing && name.charAt(0) != '/') {
 			// check attributes
 			int arg = name.indexOf(' ');
 			if (arg > 0) {
@@ -197,7 +221,7 @@ public class PlistReader implements Iterator<PlistTag> {
 				end = close + closingtag.length();
 			}
 		}
-		tag = new PlistTag(name, attributes, value);
+		tag = new PlistTag(name, attributes, value, selfclosing);
 		line = line.substring(end).trim();
 		// if( line.indexOf("</"+root+">")>0 ) done = true;
 		return true;
@@ -205,6 +229,9 @@ public class PlistReader implements Iterator<PlistTag> {
 
 	@Override
 	public PlistTag next() {
+		if (tag == null && !hasNext()) {
+			throw new NoSuchElementException("No more elements in PlistReader.");
+		}
 		return tag;
 	}
 
@@ -229,11 +256,21 @@ public class PlistReader implements Iterator<PlistTag> {
 		return read;
 	}
 
+	/**
+	 * Push a tag to the stream and return it on the next {@link #next()} call.
+	 * 
+	 * @param aTag the tag to push back
+	 */
+	void pushTag(PlistTag aTag) {
+		if (aTag == null)
+			return;
+		buffered = aTag;
+		done = false;
+	}
+
 	// NOTE: reading an actual plist-file is not compatible with GWT. This closes
-	// the
-	// buffer provided by a BufferedReader object and leaves us with a stale
-	// PlistReader
-	// object that cannot easily be re-animated...
+	// the buffer provided by a BufferedReader object and leaves us with a stale
+	// PlistReader object that cannot easily be re-animated...
 	//
 	// /**
 	// * Close buffer that provided <code>plist</code>-string.

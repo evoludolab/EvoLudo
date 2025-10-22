@@ -31,6 +31,7 @@
 package org.evoludo.simulator.models;
 
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.modules.Features.Payoffs;
 
 /**
  * Supervisor of reaction-diffusion processes. Coordinates calculations of the
@@ -75,6 +76,7 @@ public class PDESupervisor {
 	 * Unload the supervisor and free resources.
 	 */
 	public void unload() {
+		// no clean up necessary in default implementation
 	}
 
 	/**
@@ -145,9 +147,14 @@ public class PDESupervisor {
 	 * @return the accumulated total change in state
 	 */
 	protected synchronized double react() {
-		charge.resetFitness();
-		double change = charge.react(0, nUnits);
-		charge.normalizeMeanFitness();
+		double change;
+		if (charge.module instanceof Payoffs) {
+			charge.resetFitness();
+			change = charge.react(0, nUnits);
+			charge.normalizeMeanFitness();
+		} else {
+			change = charge.react(0, nUnits);
+		}
 		return change;
 	}
 
