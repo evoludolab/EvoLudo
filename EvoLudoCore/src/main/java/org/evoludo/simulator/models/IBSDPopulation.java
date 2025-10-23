@@ -480,6 +480,9 @@ public class IBSDPopulation extends IBSPopulation {
 				debugModel = pickNeighborSiteAt(me);
 				if (isVacantAt(debugModel)) {
 					maybeMutateMoran(me, debugModel);
+				} 
+				else {
+					return 0; // nothing happened, no time elapsed
 				}
 			} else
 				// nothing happened, no time elapsed
@@ -1850,7 +1853,7 @@ public class IBSDPopulation extends IBSPopulation {
 				break;
 
 			// case NUMBER:
-			// 	initNumber();
+			// initNumber();
 		}
 		if (ArrayMath.norm(traitsCount) != nPopulation)
 			// fatal does not return control
@@ -1883,25 +1886,26 @@ public class IBSDPopulation extends IBSPopulation {
 	}
 
 	// protected void initNumber() {
-	// 	Arrays.fill(strategiesTypeCount, 0);
-	// 	// different traits active
-	// 	List<Integer> strategyInds = new ArrayList<>();
-    //     for (int i = 0; i < nPopulation; i++) {
-    //         strategyInds.add(i);
-    //     }
-	// 	Collections.shuffle(strategyInds);
+	// Arrays.fill(strategiesTypeCount, 0);
+	// // different traits active
+	// List<Integer> strategyInds = new ArrayList<>();
+	// for (int i = 0; i < nPopulation; i++) {
+	// strategyInds.add(i);
+	// }
+	// Collections.shuffle(strategyInds);
 
-	// 	for (int aStrat =0;aStrat<init.args.length; aStrat++){
-	// 		int popNumber = (int) init.args[aStrat];
-	// 		List<Integer> specStrategyInds = new ArrayList<>(strategyInds.subList(0, popNumber));
-	// 		strategyInds.subList(0, popNumber).clear();
+	// for (int aStrat =0;aStrat<init.args.length; aStrat++){
+	// int popNumber = (int) init.args[aStrat];
+	// List<Integer> specStrategyInds = new ArrayList<>(strategyInds.subList(0,
+	// popNumber));
+	// strategyInds.subList(0, popNumber).clear();
 
-	// 		for (int strategyInd: specStrategyInds){
-	// 			strategies[strategyInd]=aStrat;
-	// 			strategiesTypeCount[aStrat]++;
-	// 		}
-	// 	}
-	
+	// for (int strategyInd: specStrategyInds){
+	// strategies[strategyInd]=aStrat;
+	// strategiesTypeCount[aStrat]++;
+	// }
+	// }
+
 	// }
 
 	/**
