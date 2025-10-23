@@ -452,6 +452,8 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				debugModel = pickNeighborSiteAt(me);
 				if (isVacantAt(debugModel)) {
 					maybeMutateMoran(me, debugModel);
+				} else {
+					return 0; // nothing happened, no time elapsed
 				}
 			} else
 				// nothing happened, no time elapsed
