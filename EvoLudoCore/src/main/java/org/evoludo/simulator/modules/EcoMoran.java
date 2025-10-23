@@ -1,7 +1,7 @@
 //
 // EvoLudo Project
 //
-// Copyright 2010 Christoph Hauert
+// Copyright 2010-2025 Christoph Hauert
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,21 +18,17 @@
 // For publications in any form, you are kindly requested to attribute the
 // author and project as follows:
 //
-//	Hauert, Christoph (<year>) EvoLudo Project, http://www.evoludo.org
-//			(doi: <doi>[, <version>])
+//	Hauert, Christoph (<year>) EvoLudo Project, https://www.evoludo.org
+//			(doi: 10.5281/zenodo.14591549 [, <version>])
 //
-//	<doi>:	digital object identifier of the downloaded release (or the
-//			most recent release if downloaded from github.com),
-//	<year>:	year of release (or download), and
-//	[, <version>]: optional version number (as reported in output header
+//	<year>:    year of release (or download), and
+//	<version>: optional version number (as reported in output header
 //			or GUI console) to simplify replication of reported results.
 //
 // The formatting may be adjusted to comply with publisher requirements.
 //
 
 package org.evoludo.simulator.modules;
-
-import java.awt.Color;
 
 import org.evoludo.geom.Point2D;
 import org.evoludo.simulator.EvoLudo;
@@ -51,6 +47,11 @@ import org.evoludo.util.Formatter;
 public class EcoMoran extends Moran implements HasPhase2D, HasS3 {
 
 	/**
+	 * The index for the vacant type.
+	 */
+	static final int VACANT = 2;
+
+	/**
 	 * The mean number of individuals of each type.
 	 */
 	double[] mean;
@@ -62,32 +63,18 @@ public class EcoMoran extends Moran implements HasPhase2D, HasS3 {
 	 */
 	public EcoMoran(EvoLudo engine) {
 		super(engine);
+		nTraits = 3; // residents, mutants and empty sites
+		vacantIdx = VACANT;
 	}
 
 	@Override
 	public void load() {
-		super.load(); // Moran sets names, colors and scores already but no harm in it
-		nTraits = 3;
-		VACANT = 2;
-		// trait names
-		String[] names = new String[nTraits];
-		names[RESIDENT] = "Resident";
-		names[MUTANT] = "Mutant";
-		names[VACANT] = "Vacant";
-		setTraitNames(names);
-		// trait colors (automatically generates lighter versions for new strategists)
-		Color[] colors = new Color[nTraits];
-		colors[RESIDENT] = Color.BLUE;
-		colors[MUTANT] = Color.RED;
-		colors[VACANT] = Color.LIGHT_GRAY;
-		setTraitColors(colors);
+		// super sets names and colors
+		super.load(); // Moran sets names, colors and scores already
+		// just add default score for vacant sites
+		typeScores[VACANT] = Double.NaN;
 		// local storage
 		mean = new double[nTraits];
-		// default scores
-		typeScores = new double[nTraits];
-		typeScores[RESIDENT] = 1.0;
-		typeScores[MUTANT] = 2.0;
-		typeScores[VACANT] = Double.NaN;
 	}
 
 	@Override
@@ -101,30 +88,16 @@ public class EcoMoran extends Moran implements HasPhase2D, HasS3 {
 		return "eMoran";
 	}
 
-	// @Override
-	// public String getInfo() {
-	// 	return "Title: " + getTitle() + "\nAuthor: Christoph Hauert\nMoran process with variable population sizes.";
-	// }
+	@Override
+	public String getAuthors() {
+		return "George Berry & Christoph Hauert";
+	}
 
 	@Override
 	public String getTitle() {
 		return "Ecological Moran process";
 	}
 
-	// @Override
-	// public String getVersion() {
-	// 	return "v1.0 March 2021";
-	// }
-
-	/**
-	 * {@inheritDoc}
-	 * 
-	 * @evoludo.impl EcoMoran needs to override this method even though
-	 *               {@code VACANT}
-	 *               is the default dependent. The superclass {@code Moran}
-	 *               dedicates
-	 *               {@code RESIDENT} as the dependent.
-	 */
 	@Override
 	public int getDependent() {
 		return VACANT;
@@ -149,7 +122,8 @@ public class EcoMoran extends Moran implements HasPhase2D, HasS3 {
 
 	@Override
 	public Data2Phase getPhase2DMap() {
-		map = new EcoMoranMap();
+		if (map == null)
+			map = new EcoMoranMap();
 		return map;
 	}
 
@@ -163,16 +137,18 @@ public class EcoMoran extends Moran implements HasPhase2D, HasS3 {
 		@Override
 		public boolean data2Phase(double[] data, Point2D point) {
 			// NOTE: data[0] is time!
-			point.x = 1.0 - data[VACANT + 1];
-			point.y = Math.min(1.0, 1.0 - data[RESIDENT + 1] / (1.0 - data[VACANT + 1]));
+			point.set(1.0 - data[VACANT + 1],
+					Math.min(1.0, 1.0 - data[RESIDENT + 1] / (1.0 - data[VACANT + 1])));
 			return true;
 		}
 
 		@Override
 		public boolean phase2Data(Point2D point, double[] data) {
-			data[VACANT] = 1.0 - point.x;
-			data[RESIDENT] = point.x * (1.0 - point.y);
-			data[MUTANT] = point.x * point.y;
+			double x = point.getX();
+			double y = point.getY();
+			data[VACANT] = 1.0 - x;
+			data[RESIDENT] = x * (1.0 - y);
+			data[MUTANT] = x * y;
 			return true;
 		}
 
