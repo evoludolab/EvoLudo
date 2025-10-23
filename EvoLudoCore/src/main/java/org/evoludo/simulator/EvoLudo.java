@@ -1692,6 +1692,8 @@ public abstract class EvoLudo
 	 * @see CLOParser#parseCLO(String[])
 	 */
 	protected int parseCLO(String[] cloarray) {
+		if (parser == null)
+			parser = new CLOParser(this);
 		parser.setLogger(logger);
 		cloarray = preprocessCLO(cloarray);
 		parser.initCLO();
