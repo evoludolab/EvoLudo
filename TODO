@@ -13,6 +13,7 @@ BUGS:
 - aspect ratios of active 3D views in multiple labs on same page interfere (low priority, highly unlikely scenario)
 
 TODO:
+- implement DEs for single type with vacancies
 - improve reported score for progress of network layouting
 - move generation of degree histograms to Geometry
 - resolve issues with geometries in GenericPop.getOpponentInteraction/CompetitionGraph()
