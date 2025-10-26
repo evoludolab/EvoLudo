@@ -110,26 +110,6 @@
       </plugin>
 
       <plugin>
-        <groupId>net.ltgt.gwt.maven</groupId>
-        <artifactId>gwt-maven-plugin</artifactId>
-        <inherited>false</inherited>
-        <configuration>
-          <devmodeArgs>
-            <arg>-bindAddress</arg>
-            <arg>${evoludo.server}</arg>
-            <arg>-startupUrl</arg>
-            <arg>${evoludo.startup}</arg>
-            <arg>-port</arg>
-            <arg>${evoludo.jettyPort}</arg>
-          </devmodeArgs>
-          <style>PRETTY</style>
-          <launcherDir>${basedir}/EvoLudoGWT/target/EvoLudoGWT-${project.version}</launcherDir>
-          <devmodeWorkDir>${basedir}/EvoLudoGWT/target/gwt/devmode/work</devmodeWorkDir>
-          <warDir>${basedir}/EvoLudoGWT/target/EvoLudoGWT-${project.version}</warDir>
-        </configuration>
-      </plugin>
-
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <version>3.6.3</version>
@@ -288,6 +268,19 @@
           <configuration>
             <sourceLevel>${java.version.gwt}</sourceLevel>
             <failOnError>true</failOnError>
+            <!-- Centralized devmode configuration for all modules using GWT -->
+            <devmodeArgs>
+              <arg>-bindAddress</arg>
+              <arg>${evoludo.server}</arg>
+              <arg>-startupUrl</arg>
+              <arg>${evoludo.startup}</arg>
+              <arg>-port</arg>
+              <arg>${evoludo.jettyPort}</arg>
+            </devmodeArgs>
+            <!-- Ensure outputs are written in the module, not at root -->
+            <launcherDir>${project.build.directory}/EvoLudoGWT-${project.version}</launcherDir>
+            <devmodeWorkDir>${project.build.directory}/gwt/devmode/work</devmodeWorkDir>
+            <warDir>${project.build.directory}/EvoLudoGWT-${project.version}</warDir>
           </configuration>
         </plugin>
 
@@ -391,6 +384,17 @@
         <module>EvoLudoGWT</module>
         <module>EvoLudoTest</module>
         <module>EvoLudoSims</module>
+      </modules>
+    </profile>
+
+    <!-- Convenience profile to run GWT goals from the repo root -->
+    <profile>
+      <id>gwt</id>
+      <build>
+        <defaultGoal>gwt:devmode</defaultGoal>
+      </build>
+      <modules>
+        <module>EvoLudoGWT</module>
       </modules>
     </profile>
 

@@ -111,8 +111,6 @@
           <moduleName>org.evoludo.EvoLudoWeb</moduleName>
           <relocateSuperSource>true</relocateSuperSource>
           <style>${gwt.style}</style>
-          <!-- no longer needed after merging EvoLudoGWT and EvoLudoGWTDev modules -->
-          <!-- <skipModule>true</skipModule> -->
         </configuration>
       </plugin>
 
@@ -140,6 +138,28 @@
   </build>
 
   <profiles>
+    <!-- Enable with -Pgwt; binds devmode after compile to ensure deps resolved -->
+    <profile>
+      <id>gwt</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>net.ltgt.gwt.maven</groupId>
+            <artifactId>gwt-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>run-devmode</id>
+                <phase>compile</phase>
+                <goals>
+                  <goal>devmode</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
     <profile>
       <id>private</id>
       <activation>
