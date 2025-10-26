@@ -54,8 +54,128 @@ import org.evoludo.util.RingBuffer;
 import com.google.gwt.core.client.Scheduler;
 
 /**
- * Graph to visualize time series data. The graph can be shifted and zoomed.
+ * LineGraph visualizes time series data as one or more line plots inside a
+ * resizable, pannable and zoomable canvas. It extends AbstractGraph<double[]>
+ * and implements interactions for shifting and zooming (Shifting, Zooming),
+ * optional logarithmic y-axis scaling (HasLogScaleY) and provides tooltips
+ * (BasicTooltipProvider).
+ *
+ * <h3>Concepts and data layout:</h3>
+ * <ul>
+ * <li>Each element stored in the internal RingBuffer is a double[] whose
+ * first element is the time stamp and subsequent elements are the values
+ * to plot for each line (index 1..n). Some modules use a specific
+ * layout (e.g. mean, mean-sdev, mean+sdev).</li>
+ * <li>The graph maintains an x-range [xMin, xMax] and a y-range [yMin,
+ * yMax] via the Style object. The x-range is expressed in the same time
+ * units as the first element of the data arrays. The buffer capacity and
+ * style.xIncr determine the maximum historical range available for panning
+ * (the absolute bounds are [absMin, absMax] where absMax is hard-coded to
+ * 0.0 and absMin = absMax - capacity*xIncr).</li>
+ * <li>The graph can operate with autoscaling for the y-axis (style.autoscaleY)
+ * or with fixed y-limits. When autoscale is enabled, added data updates
+ * yMin/yMax to at least cover observed values; ranges are expanded but
+ * never shrunk automatically.</li>
+ * <li>Logarithmic y-scaling is supported (style.logScaleY), but it requires
+ * strictly positive values; if negative or zero values are present the
+ * graph disables log-scaling and issues a warning. When autoscaling and
+ * log-scaling interact, small positive minima are adjusted to a fraction
+ * of the maximum to avoid log(0).</li>
+ * </ul>
+ *
+ * <h3>Main behaviors and responsibilities:</h3>
+ * <ul>
+ * <li>Construction: create a LineGraph with a Mean view and a Module that
+ * supplies trait names, colors and data semantics.</li>
+ * <li>Parsing: parse(String args) accepts a comma-separated argument string
+ * (no spaces around commas) and recognizes options: {@code log},
+ * {@code xmin <value>}, {@code xmax <value>}, {@code ymin <value>},
+ * {@code ymax <value>}. ymin/ymax disable autoscale when specified.</li>
+ * <li>Data ingestion: addData(double t, double[] data) prepends time and
+ * delegates to addData(double[]). addData(double[]) appends the data
+ * array into the RingBuffer (the caller must ensure the first element is
+ * time and the array is not modified afterwards). addData updates the
+ * autoscaled y-range and may disable log-scaling if non-positive values
+ * are encountered.</li>
+ * <li>Resetting/initialization: reset() prepares the buffer, initializes
+ * autoscaled y-range and recomputes the number of steps along x relative
+ * to the current view. Buffer size is at least DEFAULT_BUFFER_SIZE or the
+ * view width, and steps are clamped between 1 and buffer capacity.</li>
+ * <li>Painting: paint(boolean force) renders the lines, optional markers and
+ * axes frame. The method clips drawing to the plotting area, supports
+ * linear or log y-scaling, and draws colored lines and markers using the
+ * module-provided color scheme. Painting is scheduled on the UI thread
+ * using schedulePaint() to coalesce multiple requests.</li>
+ * <li>Interaction:
+ * <ul>
+ * <li>shift(dx, dy) pans the x-range in multiples of style.xIncr. Small
+ * mouse/touch deltas that do not exceed a single increment are
+ * accumulated until sufficient movement occurs. Shifting respects the
+ * absolute data bounds determined by the buffer capacity.</li>
+ * <li>zoom() resets the view to a default zoom focused on the latest
+ * data (xMax = 0.0 and xMin = xMax - max(1, DEFAULT_STEPS*xIncr)).</li>
+ * <li>zoom(double zoom, double x, double y) zooms around the right-hand
+ * end (xMax is treated as the reference) and enforces a minimum
+ * number of steps (MIN_STEPS). Zooming also snaps bounds to integer
+ * multiples of style.xIncr and clamps to the available history.</li>
+ * </ul>
+ * </li>
+ * <li>Tooltips: getTooltipAt(int x,int y) converts pixel coordinates to
+ * normalized plotting coordinates and delegates to getTooltipAt(double x,
+ * double y). The tooltip builder searches the buffer to interpolate the
+ * time and values at the requested x position and returns an HTML table
+ * with the x-value, y-value and per-trait values (or mean ± sdev when
+ * applicable). Tooltips are suppressed while the left mouse button is
+ * held and when the point lies outside bounds.</li>
+ * <li>Context menu: populateContextMenuAt adds a "Clear" action that clears
+ * the graph history and triggers an immediate repaint.</li>
+ * </ul>
+ *
+ * <h3>Fields of interest (summary):</h3>
+ * <ul>
+ * <li>steps: number of steps shown along the x-axis (clamped to [1,
+ * buffer.capacity]).</li>
+ * <li>buffer: RingBuffer<double[]> storing historical data arrays (time +
+ * values).</li>
+ * <li>style: visual and interaction configuration (xMin/xMax/yMin/yMax,
+ * xIncr, autoscaleY, logScaleY, markerSize, lineWidth, etc.).</li>
+ * <li>paintScheduled: coalesces deferred paint requests.</li>
+ * <li>pinchScale / pinch: state used for touch pinch gestures (scale and
+ * center).</li>
+ * </ul>
+ *
+ * <h3>Important implementation notes and caveats:</h3>
+ * <ul>
+ * <li>The buffer stores references to the provided double[] objects for
+ * performance — callers must not modify arrays after passing them to
+ * addData(double[]).</li>
+ * <li>Log-scaling requires strictly positive y-values. If negative or zero
+ * values exist the graph will disable log-scale and emit a warning.</li>
+ * <li>Painting occurs on the UI thread and is scheduled via GWT Scheduler;
+ * callers should avoid heavy synchronous work on the UI thread during
+ * paint() to keep the UI responsive.</li>
+ * <li>Precision: x- and y-axis snapping to style.xIncr is used to keep numeric
+ * bounds aligned with the data grid; floating point rounding may occur
+ * when snapping or computing steps.</li>
+ * </ul>
  * 
+ * <p>
+ * This class is intended for use within the EvoLudo UI framework and relies
+ * on the surrounding infrastructure (Style, RingBuffer, Module, Mean view,
+ * drawing context MyContext2d and Scheduler). It focuses on correctness of
+ * visualization, responsive UI updates via scheduled paints and robust handling
+ * of autoscaling and log-scaling edge cases.
+ *
+ * <h3>Usage example (conceptual):</h3>
+ * 
+ * <pre>
+ *   LineGraph g = new LineGraph(meanView, module);
+ *   g.parse("ymin 0.0,ymax 1.0"); // configure
+ *   g.addData(t, new double[]{t, v1, v2, ...});
+ *   g.zoom(2.0, sx, sy); // zoom in
+ *   // tooltips and context menu are integrated into the hosting UI
+ * </pre>
+ *
  * @author Christoph Hauert
  */
 @SuppressWarnings("java:S110")
@@ -247,17 +367,21 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	@Override
 	public boolean paint(boolean force) {
+		// keep this method small — delegate detailed drawing to helpers
 		if (super.paint(force))
 			return true;
 		if (!force && !doUpdate())
 			return true;
+
 		g.save();
 		g.scale(scale, scale);
 		clearCanvas();
 		g.translate(bounds.getX(), bounds.getY());
 		g.save();
+
 		double w = bounds.getWidth();
 		double h = bounds.getHeight();
+
 		g.translate(w, h);
 		g.scale(1.0, -1.0);
 		g.beginPath();
@@ -265,6 +389,25 @@ public class LineGraph extends AbstractGraph<double[]>
 		g.rect(style.markerSize, 0.0, -(w + 3.0), h);
 		g.clip();
 
+		// compute y transform and draw content
+		double[] yinfo = computeYScale(h);
+		int nLines = Math.max(0, buffer.getDepth() - 1);
+		drawLines(w, yinfo, nLines);
+		drawMarkers(w, yinfo[0], nLines);
+
+		g.restore();
+		drawFrame(4, 4);
+		g.restore();
+		return false;
+	}
+
+	/**
+	 * Compute y-axis scale info: [ymin, yrange, yScale]
+	 * 
+	 * @param h the height of the plotting area
+	 * @return an array containing [ymin, yScale]
+	 */
+	private double[] computeYScale(double h) {
 		double ymin;
 		double yrange;
 		if (style.logScaleY) {
@@ -274,77 +417,127 @@ public class LineGraph extends AbstractGraph<double[]>
 			ymin = style.yMin;
 			yrange = style.yMax - ymin;
 		}
-		double yScale = h / yrange;
-		Iterator<double[]> i = buffer.iterator();
-		int nLines = buffer.getDepth() - 1;
-		if (i.hasNext()) {
-			double[] current = i.next();
-			g.setLineWidth(style.lineWidth);
-			double xScale = w / (style.xMax - style.xMin);
-			double start = -style.xMax * xScale;
-			if (start <= 0.0) {
-				// suppress markers if view is shifted and 0 invisible
-				for (int n = 0; n < nLines; n++) {
-					g.setFillStyle(colors[n]);
-					double y = (style.logScaleY ? Math.log10(current[n + 1]) : current[n + 1]) - ymin;
-					fillCircle(start, y * yScale, style.markerSize);
-				}
-			}
-			double end = start;
-			while (i.hasNext()) {
-				double[] prev = i.next();
-				if (current[0] <= prev[0]) {
-					current = prev;
-					end = start;
-					continue;
-				}
+		double yScale = (yrange == 0.0) ? 1.0 : h / yrange;
+		return new double[] { ymin, yScale };
+	}
+
+	/**
+	 * Draw the line plots and (suppressed) markers at the newest sample.
+	 * 
+	 * @param width  the width of the plotting area
+	 * @param yinfo  the y-axis transform info
+	 * @param nLines the number of lines to draw
+	 */
+	private void drawLines(double width, double[] yinfo, int nLines) {
+		Iterator<double[]> it = buffer.iterator();
+		if (!it.hasNext() || nLines <= 0)
+			return;
+
+		double[] current = it.next();
+		g.setLineWidth(style.lineWidth);
+		double xScale = width / (style.xMax - style.xMin);
+		double start = -style.xMax * xScale;
+
+		// draw markers for the newest sample if visible
+		if (start <= 0.0) {
+			drawLatestMarkers(start, current, nLines, yinfo);
+		}
+
+		double end = start;
+		while (it.hasNext()) {
+			double[] prev = it.next();
+			if (current[0] > prev[0]) {
 				double delta = (prev[0] - current[0]) * xScale;
 				start += delta;
 				if (start < 0.0) {
-					for (int n = 0; n < nLines; n++) {
-						setStrokeStyleAt(n);
-						double pi;
-						double ci;
-						if (style.logScaleY) {
-							pi = Math.log10(prev[n + 1]) - ymin;
-							ci = Math.log10(current[n + 1]) - ymin;
-						} else {
-							pi = prev[n + 1] - ymin;
-							ci = current[n + 1] - ymin;
-						}
-						if (start >= -w && end <= 0.0) {
-							strokeLine(start, pi * yScale, end, ci * yScale);
-							continue;
-						}
-						double s = Math.max(-w, start);
-						double e = Math.min(0, end);
-						double m = (ci - pi) / (end - start);
-						if (style.logScaleY)
-							m = Math.log10(m);
-						strokeLine(s, (pi + m * (s - start)) * yScale, e, (ci - m * (end - e)) * yScale);
-					}
-					if (start <= -w)
+					drawSegmentClipped(start, end, prev, current, nLines, yinfo, width);
+					if (start <= -width)
 						break;
 				}
-				current = prev;
 				end = start;
 			}
+			current = prev;
 		}
-		if (markers != null) {
-			for (double[] mark : markers) {
-				g.setLineDash(mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
-				for (int n = 0; n < nLines; n++) {
-					double mn = (style.logScaleY ? Math.log10(mark[n + 1]) : mark[n + 1]) - ymin;
-					g.setStrokeStyle(markerColors[n % markerColors.length]);
-					strokeLine(-w, mn, 0.0, mn);
-				}
-				g.setLineDash(style.solidLine);
+	}
+
+	/**
+	 * Draw markers for the newest sample (extracted helper).
+	 * 
+	 * @param start   the starting x-coordinate
+	 * @param current the current data array
+	 * @param nLines  the number of lines to draw
+	 * @param yinfo   the y-axis transform info
+	 */
+	private void drawLatestMarkers(double start, double[] current, int nLines, double[] yinfo) {
+		for (int n = 0; n < nLines; n++) {
+			g.setFillStyle(colors[n]);
+			double y = (style.logScaleY ? Math.log10(current[n + 1]) : current[n + 1]) - yinfo[0];
+			fillCircle(start, y * yinfo[1], style.markerSize);
+		}
+	}
+
+	/**
+	 * Draw a historical segment between 'start' and 'end', handling clipping
+	 * against the visible window (-w .. 0) and log/linear y transforms.
+	 * 
+	 * @param start   the starting x-coordinate of the segme
+	 * @param end     the ending x-coordinate of
+	 * @param prev    the previous data array
+	 * @param current the current data array
+	 * @param nLines  the number of lines to draw
+	 * @param yinfo   the y-axis transform info
+	 * @param w       the width of the plotting area
+	 */
+	private void drawSegmentClipped(double start, double end,
+			double[] prev, double[] current, int nLines,
+			double[] yinfo, double width) {
+		double ymin = yinfo[0];
+		double yScale = yinfo[1];
+		for (int n = 0; n < nLines; n++) {
+			setStrokeStyleAt(n);
+			double pi;
+			double ci;
+			if (style.logScaleY) {
+				pi = Math.log10(prev[n + 1]) - ymin;
+				ci = Math.log10(current[n + 1]) - ymin;
+			} else {
+				pi = prev[n + 1] - ymin;
+				ci = current[n + 1] - ymin;
+			}
+			// fully inside visible area
+			if (start >= -width && end <= 0.0) {
+				strokeLine(start, pi * yScale, end, ci * yScale);
+			} else {
+				double s = Math.max(-width, start);
+				double e = Math.min(0, end);
+				double denom = (end - start);
+				double m = (denom == 0.0) ? 0.0 : (ci - pi) / denom;
+				if (style.logScaleY && m > 0.0)
+					m = Math.log10(m);
+				strokeLine(s, (pi + m * (s - start)) * yScale, e, (ci - m * (end - e)) * yScale);
 			}
 		}
-		g.restore();
-		drawFrame(4, 4);
-		g.restore();
-		return false;
+	}
+
+	/**
+	 * Draw horizontal marker lines (if any) using the same y transform.
+	 * 
+	 * @param width  the width of the plotting area
+	 * @param ymin   the minimum y-value
+	 * @param nLines the number of lines to draw
+	 */
+	private void drawMarkers(double width, double ymin, int nLines) {
+		if (markers == null || nLines <= 0)
+			return;
+		for (double[] mark : markers) {
+			g.setLineDash(mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
+			for (int n = 0; n < nLines; n++) {
+				double mn = (style.logScaleY ? Math.log10(mark[n + 1]) : mark[n + 1]) - ymin;
+				g.setStrokeStyle(markerColors[n % markerColors.length]);
+				strokeLine(-width, mn, 0.0, mn);
+			}
+			g.setLineDash(style.solidLine);
+		}
 	}
 
 	/**
@@ -514,7 +707,6 @@ public class LineGraph extends AbstractGraph<double[]>
 
 	@Override
 	public String getTooltipAt(double x, double y) {
-		double buffert = 0.0;
 		double mouset = style.xMin + x * (style.xMax - style.xMin);
 		double ymin;
 		double yrange;
@@ -525,89 +717,152 @@ public class LineGraph extends AbstractGraph<double[]>
 			ymin = style.yMin;
 			yrange = style.yMax - ymin;
 		}
-		Iterator<double[]> i = buffer.iterator();
+
 		double yval = ymin + y * yrange;
 		if (style.logScaleY)
 			yval = Math.pow(10.0, yval);
-		StringBuilder tip = new StringBuilder();
-		tip.append("<table style='border-collapse:collapse;border-spacing:0;'>");
-		if (style.label != null)
-			tip.append("<tr><td><b>")
-					.append(style.label)
-					.append("</b></td></tr>");
-		tip.append("<tr><td style='text-align:right'><i>")
-				.append(style.xLabel)
-				.append(":</i></td><td>")
-				.append(Formatter.format(mouset, 2))
-				.append("</td></tr>");
-		tip.append("<tr><td style='text-align:right'><i>")
-				.append(style.yLabel)
-				.append(":</i></td><td>")
-				.append(style.percentY ? Formatter.formatPercent(yval, 1) : Formatter.format(yval, 2))
-				.append("</td></tr>");
-		if (i.hasNext()) {
-			double[] current = i.next();
-			int len = current.length;
-			while (i.hasNext()) {
-				double[] prev = i.next();
-				double dt = current[0] - prev[0];
-				buffert -= Math.max(0.0, dt);
-				if (buffert > mouset) {
-					current = prev;
-					continue;
-				}
-				double fx = 1.0 - (mouset - buffert) / dt;
-				tip.append("<tr><td colspan='2'><hr/></td></tr><tr><td style='text-align:right'><i>")
-						.append(style.xLabel)
-						.append(":</i></td><td>")
-						.append(Formatter.format(current[0] - fx * dt, 2)).append("</td></tr>");
-				Color[] colors = module.getMeanColors();
-				if (module instanceof Continuous) {
-					double inter = interpolate(current[1], prev[1], fx);
-					tip.append("<tr><td style='text-align:right'><i style='color:")
-							.append(ColorMapCSS.Color2Css(colors[0]))
-							.append(";'>mean:</i></td><td>")
-							.append(style.percentY ? Formatter.formatPercent(inter, 2) : Formatter.format(inter, 2));
-					double sdev = inter - interpolate(current[2], prev[2], fx); // data: mean, mean-sdev, mean+sdev
-					tip.append(" ± ")
-							.append(style.percentY ? Formatter.formatPercent(sdev, 2) : Formatter.format(sdev, 2))
-							.append("</td></tr>");
-				} else {
-					// len includes time
-					for (int n = 0; n < len - 1; n++) {
-						String name;
-						Color color;
-						Data type = view.getType();
-						int n1 = n + 1;
-						if (n1 == len - 1 && type == Data.FITNESS) {
-							name = "average";
-							color = Color.BLACK;
-						} else {
-							name = module.getTraitName(n);
-							color = colors[n];
-						}
-						if (name == null)
-							continue;
-						tip.append("<tr><td style='text-align:right'><i style='color:")
-								.append(ColorMapCSS.Color2Css(color)).append(";'>")
-								.append(name)
-								.append(":</i></td><td>");
-						// deal with NaN's
-						if (Double.isNaN(prev[n1]) || Double.isNaN(current[n1])) {
-							tip.append("-");
-						} else {
-							tip.append(
-									style.percentY ? Formatter.formatPercent(interpolate(current[n1], prev[n1], fx), 2)
-											: Formatter.format(interpolate(current[n1], prev[n1], fx), 2));
-						}
-						tip.append("</td></tr>");
-					}
-				}
-				break;
-			}
-		}
-		tip.append("</table>");
+
+		StringBuilder tip = new StringBuilder(TABLE_STYLE);
+		appendTipHeader(tip, mouset, yval);
+		appendTipInterpolation(tip, mouset);
+		tip.append(TABLE_END);
 		return tip.toString();
+	}
+
+	/**
+	 * Build and append the static header rows (label, x and y rows) to the tooltip.
+	 */
+	private void appendTipHeader(StringBuilder tip, double mouset, double yval) {
+		if (style.label != null) {
+			tip.append(TABLE_ROW_START)
+					.append(style.label)
+					.append(TABLE_ROW_END);
+		}
+		tip.append(TABLE_ROW_START_RIGHT)
+				.append(style.xLabel)
+				.append(TABLE_CELL_NEXT)
+				.append(Formatter.format(mouset, 2))
+				.append(TABLE_ROW_END);
+		tip.append(TABLE_ROW_START_RIGHT)
+				.append(style.yLabel)
+				.append(TABLE_CELL_NEXT)
+				.append(style.percentY ? Formatter.formatPercent(yval, 1) : Formatter.format(yval, 2))
+				.append(TABLE_ROW_END);
+	}
+
+	/**
+	 * Scan the buffer and determine the two surrounding samples and the
+	 * interpolation factor for the supplied mouse time.
+	 * 
+	 * @param mouset the mouse time
+	 * @return the interpolated data array (time + values) or null if not found
+	 */
+	private double[] findInterpolationForMouse(double mouset) {
+		Iterator<double[]> it = buffer.iterator();
+		double accum = 0.0;
+		if (!it.hasNext())
+			return new double[0];
+		double[] current = it.next();
+		while (it.hasNext()) {
+			double[] prev = it.next();
+			double dt = current[0] - prev[0];
+			accum -= Math.max(0.0, dt);
+			if (accum <= mouset) {
+				double fx = 1.0 - (mouset - accum) / dt;
+				double[] inter = new double[current.length];
+				inter[0] = current[0] - fx * dt;
+				for (int n = 1; n < inter.length; n++) {
+					inter[n] = interpolate(current[n], prev[n], fx);
+				}
+				return inter;
+				// return new InterpResult(current, prev, fx, time);
+			}
+			current = prev;
+		}
+		return new double[0];
+	}
+
+	/**
+	 * Append interpolated values (either Continuous mean±sdev or trait values)
+	 * to the tooltip builder using the precomputed interpolation result.
+	 * 
+	 * @param tip    the tooltip builder
+	 * @param mouset the mouse time
+	 */
+	private void appendTipInterpolation(StringBuilder tip, double mouset) {
+		double[] inter = findInterpolationForMouse(mouset);
+		if (inter.length == 0)
+			return;
+		// time row
+		tip.append(TABLE_SEPARATOR)
+				.append(TABLE_ROW_START_RIGHT)
+				.append(style.xLabel)
+				.append(TABLE_CELL_NEXT)
+				// .append(Formatter.format(r.time, 2))
+				.append(Formatter.format(inter[0], 2))
+				.append(TABLE_ROW_END);
+
+		Color[] colors = module.getMeanColors();
+		if (module instanceof Continuous) {
+			appendTipContinuous(tip, inter, colors);
+			return;
+		}
+		appendTipTraits(tip, inter, colors);
+	}
+
+	/**
+	 * Append mean ± sdev row for Continuous modules.
+	 * 
+	 * @param tip    the tooltip builder
+	 * @param inter  the interpolated data array
+	 * @param colors the colors for each trait
+	 */
+	private void appendTipContinuous(StringBuilder tip, double[] inter, Color[] colors) {
+		tip.append(TABLE_ROW_START_COLOR)
+				.append(ColorMapCSS.Color2Css(colors[0]))
+				.append(";'>mean")
+				.append(TABLE_CELL_NEXT)
+				.append(style.percentY ? Formatter.formatPercent(inter[1], 2) : Formatter.format(inter[1], 2));
+		tip.append(" ± ")
+				.append(style.percentY ? Formatter.formatPercent(inter[2], 2) : Formatter.format(inter[2], 2))
+				.append(TABLE_ROW_END); // mean, mean-sdev, mean+sdev
+	}
+
+	/**
+	 * Append individual trait rows for non-Continuous modules.
+	 * 
+	 * @param tip    the tooltip builder
+	 * @param inter  the interpolated data array
+	 * @param colors the colors for each trait
+	 */
+	private void appendTipTraits(StringBuilder tip, double[] inter, Color[] colors) {
+		// N.B. length includes time at index 0
+		int len = inter.length;
+		Data type = view.getType();
+		for (int n = 0; n < len - 1; n++) {
+			int n1 = n + 1;
+			String name;
+			Color color;
+			if (n1 == len - 1 && type == Data.FITNESS) {
+				name = "average";
+				color = Color.BLACK;
+			} else {
+				name = module.getTraitName(n);
+				color = colors[n];
+			}
+			if (name == null)
+				continue;
+			tip.append(TABLE_ROW_START_COLOR)
+					.append(ColorMapCSS.Color2Css(color)).append(";'>")
+					.append(name)
+					.append(TABLE_CELL_NEXT);
+			if (Double.isNaN(inter[n1])) {
+				tip.append("-");
+			} else {
+				tip.append(style.percentY ? Formatter.formatPercent(inter[n1], 2) : Formatter.format(inter[n1], 2));
+			}
+			tip.append(TABLE_ROW_END);
+		}
 	}
 
 	/**

@@ -850,31 +850,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		return provider.getTooltipAt(bar);
 	}
 
-	/**
-	 * Table style for tooltips.
-	 */
-	private static final String TABLE_STYLE = "<table style='border-collapse:collapse;border-spacing:0;'>";
-
-	/**
-	 * Table row end for tooltips.
-	 */
-	private static final String TABLE_ROW_END = "</td></tr>";
-
-	/**
-	 * Table end for tooltips.
-	 */
-	private static final String TABLE_END = TABLE_ROW_END + "</table>";
-
-	/**
-	 * Table row start for tooltips.
-	 */
-	private static final String TABLE_ROW_START = "<tr><td><i>";
-
-	/**
-	 * Table cell separator for tooltips.
-	 */
-	private static final String TABLE_CELL_NEXT = ":</i></td><td>";
-
 	@Override
 	public String getTooltipAt(int bar) {
 		// note label is null for undirected graph with the same interaction and
@@ -938,7 +913,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 		String note = getNoteAt(bar);
 		if (note != null)
 			tip.append(TABLE_ROW_START + "Note" + TABLE_CELL_NEXT + note + TABLE_ROW_END);
-		tip.append("</table>");
+		tip.append(TABLE_END);
 	}
 
 	/**

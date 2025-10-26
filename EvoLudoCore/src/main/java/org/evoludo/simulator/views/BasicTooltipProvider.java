@@ -45,6 +45,46 @@ package org.evoludo.simulator.views;
 public interface BasicTooltipProvider {
 
 	/**
+	 * Table style for tooltips.
+	 */
+	static final String TABLE_STYLE = "<table style='border-collapse:collapse;border-spacing:0;'>";
+
+	/**
+	 * Table row end for tooltips.
+	 */
+	static final String TABLE_ROW_END = "</td></tr>";
+
+	/**
+	 * Table end for tooltips.
+	 */
+	static final String TABLE_END = "</table>";
+
+	/**
+	 * Table row separator for tooltips.
+	 */
+	static final String TABLE_SEPARATOR = "<tr><td colspan='2'><hr/></td></tr>";
+
+	/**
+	 * Table row start for tooltips.
+	 */
+	static final String TABLE_ROW_START = "<tr><td><i>";
+
+	/**
+	 * Table row start for tooltips, right aligned.
+	 */
+	static final String TABLE_ROW_START_RIGHT = "<tr><td style='text-align:right'><i>";
+
+	/**
+	 * Table row start for tooltips, right aligned with color.
+	 */
+	static final String TABLE_ROW_START_COLOR = "<tr><td style='text-align:right'><i style='color:";
+
+	/**
+	 * Table cell separator for tooltips.
+	 */
+	static final String TABLE_CELL_NEXT = ":</i></td><td>";
+
+	/**
 	 * Get the tooltip at the scaled coordinates {@code (x,y)} with the origin in
 	 * the lower left corner of the graph.
 	 * 
