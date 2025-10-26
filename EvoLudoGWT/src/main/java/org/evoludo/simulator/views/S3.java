@@ -30,8 +30,6 @@
 
 package org.evoludo.simulator.views;
 
-import java.util.List;
-
 import org.evoludo.graphics.AbstractGraph.GraphStyle;
 import org.evoludo.graphics.S3Graph;
 import org.evoludo.simulator.ColorMapCSS;
@@ -77,44 +75,10 @@ public class S3 extends AbstractView<S3Graph> {
 		int nRoles = module.getNRoles();
 		if (graphs.size() != nRoles) {
 			destroyGraphs();
-			int[] order = new int[3];
 			for (int role = 0; role < nRoles; role++) {
-				S3Graph graph = new S3Graph(this, module, role);
+				S3Graph graph = createS3Graph(module, role);
 				wrapper.add(graph);
 				graphs.add(graph);
-				GraphStyle style = graph.getStyle();
-				style.showLabel = true;
-				style.showXTicks = true;
-				style.showXTickLabels = true;
-				style.showXLevels = true;
-				style.showXLabel = true;
-				style.showYTicks = style.showXTicks;
-				style.showYTickLabels = false;
-				style.showYLabel = false;
-				style.showYLevels = false;
-				// set map for converting data to S3 coordinates
-				S3Map map = ((HasS3) module).getS3Map(role);
-				if (map == null)
-					map = new S3Map(); // no roles by default
-				map.setNames(module.getTraitNames());
-				map.setColors(module.getTraitColors());
-				graph.setMap(map);
-				style.label = map.getLabel();
-				// show first three active traits
-				boolean[] active = module.getActiveTraits();
-				int idx = 0;
-				for (int n = 0; n < active.length; n++) {
-					if (!active[n])
-						continue;
-					order[idx++] = n;
-					if (idx == 3)
-						break;
-				}
-				if (idx != 3)
-					// less than 3 active traits
-					graph.displayMessage("Simplex S3 view requires at least 3 active traits!");
-				else
-					map.setOrder(order);
 			}
 			// arrange graphs horizontally
 			gRows = 1;
@@ -124,6 +88,48 @@ public class S3 extends AbstractView<S3Graph> {
 			for (S3Graph graph : graphs)
 				graph.setSize(width + "%", height + "%");
 		}
+	}
+
+	/**
+	 * Helper method to create and configure an S3Graph for a given role.
+	 */
+	private S3Graph createS3Graph(Module<?> module, int role) {
+		S3Graph graph = new S3Graph(this, module, role);
+		GraphStyle style = graph.getStyle();
+		style.showLabel = true;
+		style.showXTicks = true;
+		style.showXTickLabels = true;
+		style.showXLevels = true;
+		style.showXLabel = true;
+		style.showYTicks = style.showXTicks;
+		style.showYTickLabels = false;
+		style.showYLabel = false;
+		style.showYLevels = false;
+		// set map for converting data to S3 coordinates
+		S3Map map = ((HasS3) module).getS3Map(role);
+		if (map == null)
+			map = new S3Map(); // no roles by default
+		map.setNames(module.getTraitNames());
+		map.setColors(module.getTraitColors());
+		graph.setMap(map);
+		style.label = map.getLabel();
+		// show first three active traits
+		boolean[] active = module.getActiveTraits();
+		int[] order = new int[3];
+		int idx = 0;
+		for (int n = 0; n < active.length; n++) {
+			if (active[n]) {
+				order[idx++] = n;
+				if (idx == 3)
+					break;
+			}
+		}
+		if (idx != 3)
+			// less than 3 active traits
+			graph.displayMessage("Simplex S3 view requires at least 3 active traits!");
+		else
+			map.setOrder(order);
+		return graph;
 	}
 
 	@Override
