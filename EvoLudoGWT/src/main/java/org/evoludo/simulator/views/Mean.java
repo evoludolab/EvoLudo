@@ -34,9 +34,9 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.evoludo.graphics.AbstractGraph;
 import org.evoludo.graphics.AbstractGraph.Shifter;
 import org.evoludo.graphics.AbstractGraph.Zoomer;
+import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.LineGraph;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
@@ -134,7 +134,7 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		// index of trait in continuous models
 		int idx = 0;
 		for (LineGraph graph : graphs) {
-			AbstractGraph.GraphStyle style = graph.getStyle();
+			GraphStyle style = graph.getStyle();
 			Module<?> module = graph.getModule();
 
 			switch (type) {

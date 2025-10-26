@@ -34,7 +34,7 @@ import java.awt.Color;
 import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
-import org.evoludo.graphics.AbstractGraph.GraphStyle;
+import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.graphics.TooltipProvider;
 import org.evoludo.math.ArrayMath;
@@ -132,7 +132,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		for (PopGraph2D graph : graphs) {
 			Module<?> module = graph.getModule();
 			int nTraits = module.getNTraits();
-			AbstractGraph.GraphStyle style = graph.getStyle();
+			GraphStyle style = graph.getStyle();
 			switch (type) {
 				default:
 				case FITNESS:

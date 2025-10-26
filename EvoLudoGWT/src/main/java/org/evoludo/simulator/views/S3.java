@@ -30,7 +30,7 @@
 
 package org.evoludo.simulator.views;
 
-import org.evoludo.graphics.AbstractGraph.GraphStyle;
+import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.S3Graph;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;

@@ -35,7 +35,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.evoludo.graphics.AbstractGraph;
-import org.evoludo.graphics.AbstractGraph.GraphStyle;
+import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.HistoGraph;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
@@ -188,7 +188,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 							HistoGraph graph = new HistoGraph(this, module, n);
 							wrapper.add(graph);
 							graphs.add(graph);
-							AbstractGraph.GraphStyle style = graph.getStyle();
+							GraphStyle style = graph.getStyle();
 							// fixed style attributes
 							style.yLabel = "frequency";
 							style.percentY = true;
@@ -219,7 +219,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 							boolean bottomPane = (n == bottomPaneIdx);
 							wrapper.add(graph);
 							graphs.add(graph);
-							AbstractGraph.GraphStyle style = graph.getStyle();
+							GraphStyle style = graph.getStyle();
 							// fixed style attributes
 							if (model.isDensity()) {
 								style.yLabel = "density";
@@ -267,7 +267,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 							boolean bottomPane = (n == nTraits - 1);
 							wrapper.add(graph);
 							graphs.add(graph);
-							AbstractGraph.GraphStyle style = graph.getStyle();
+							GraphStyle style = graph.getStyle();
 							// fixed style attributes
 							style.yLabel = "frequency";
 							style.percentY = true;
@@ -307,7 +307,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 							graph.setNormalized(nTraits);
 							wrapper.add(graph);
 							graphs.add(graph);
-							AbstractGraph.GraphStyle style = graph.getStyle();
+							GraphStyle style = graph.getStyle();
 							// fixed style attributes
 							style.yLabel = "probability";
 							style.percentY = true;
@@ -345,7 +345,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 							graph.setNormalized(n + nTraits + 1);
 							wrapper.add(graph);
 							graphs.add(graph);
-							AbstractGraph.GraphStyle style = graph.getStyle();
+							GraphStyle style = graph.getStyle();
 							// fixed style attributes
 							style.yLabel = "frequency";
 							style.percentY = true;
@@ -371,7 +371,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 							graph.setNormalized(false);
 							wrapper.add(graph);
 							graphs.add(graph);
-							AbstractGraph.GraphStyle style = graph.getStyle();
+							GraphStyle style = graph.getStyle();
 							// fixed style attributes
 							style.yLabel = "visits";
 							style.percentY = true;
@@ -414,7 +414,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		boolean isSDE = mt.isSDE();
 		boolean isPDE = mt.isPDE();
 		for (HistoGraph graph : graphs) {
-			AbstractGraph.GraphStyle style = graph.getStyle();
+			GraphStyle style = graph.getStyle();
 			Module<?> oldmod = module;
 			module = graph.getModule();
 			boolean newPop = (oldmod != module);
@@ -663,7 +663,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		int idx = 0;
 		for (HistoGraph graph : graphs) {
 			Module<?> module = graph.getModule();
-			AbstractGraph.GraphStyle style = graph.getStyle();
+			GraphStyle style = graph.getStyle();
 			style.customYLevels = ((HasHistogram) module).getCustomLevels(type, idx++);
 		}
 	}

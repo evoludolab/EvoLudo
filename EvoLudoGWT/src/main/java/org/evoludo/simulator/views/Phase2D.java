@@ -32,7 +32,7 @@ package org.evoludo.simulator.views;
 
 import java.util.List;
 
-import org.evoludo.graphics.AbstractGraph.GraphStyle;
+import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.ParaGraph;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMapCSS;

@@ -87,14 +87,202 @@ import com.google.gwt.user.client.ui.RequiresResize;
 import com.google.gwt.user.client.ui.Widget;
 
 /**
- * The base class for all graphical representations. The class provides the
- * basic functionality for drawing graphs, handling mouse and touch events,
- * and displaying tooltips and context menus. It also provides the default
- * implementations for zooming and shifting the view of the graph.
- * 
+ * Abstract base class for 2D graphs rendered into a Canvas within the UI.
+ * <p>
+ * This class encapsulates common functionality required by a variety of
+ * concrete graph implementations: managing the canvas and its high-DPI scaling,
+ * calculating drawing bounds, handling user interactions (mouse and touch) for
+ * panning and zooming, integrating with shared UI utilities (tooltip and
+ * context menu), buffering historical data, and providing a comprehensive set
+ * of drawing helpers for frames, axes, ticks, levels, markers and primitive
+ * shapes.
+ * </p>
+ *
+ * <h2>Generic parameter</h2>
+ * <p>
+ * The type parameter &lt;B&gt; denotes the element type stored in an optional
+ * RingBuffer used for graphs that maintain historical data (for example
+ * time-series or trajectory graphs).
+ * </p>
+ *
+ * <h2>Primary responsibilities</h2>
+ * <ul>
+ * <li>Allocate and manage a Canvas element and a wrapped 2D rendering context
+ * (MyContext2d) tuned for device pixel ratio (retina/high-DPI) support.
+ * </li>
+ * <li>Compute and maintain drawing bounds that leave room for frames, labels,
+ * ticks and tick labels while exposing helper methods to draw full graph
+ * frames (axes, tick marks, tick labels, grid levels and custom levels).
+ * </li>
+ * <li>Provide a pluggable styling model (GraphStyle) and helpers to render
+ * axes labels, graph title, and common primitives (lines, circles, filled
+ * paths, rectangles and vertical text).
+ * </li>
+ * <li>Offer a unified interaction model for shifting (panning) and zooming
+ * including mouse drag, mouse wheel, single- and multi-touch gestures,
+ * pinch-to-zoom, and inertial visual feedback via CSS classes and a
+ * scheduled timer.
+ * </li>
+ * <li>Integrate with shared UI widgets: Tooltip (for hover/touch info) and
+ * ContextMenu (for buffer size, log-scale and zoom actions). Subclasses
+ * and the owning AbstractView can extend and populate the context menu.
+ * </li>
+ * <li>Maintain an optional RingBuffer<B> for historical data and provide a
+ * small context menu for configuring buffer capacity. Subclasses may
+ * implement exporting of trajectory/history data when relevant.
+ * </li>
+ * </ul>
+ *
+ * <h2>Interfaces and Extension Points</h2>
+ * <p>
+ * AbstractGraph provides inner interfaces that concrete graphs and/or their
+ * containing view may implement to customize interaction behavior:
+ * </p>
+ * <ul>
+ * <li>Shifting — marker indicating the graph supports shifting. Implementing
+ * classes can provide custom shift behavior by implementing Shifter,
+ * and can optionally override mouse/touch handlers if they need finer
+ * control.</li>
+ * <li>Shifter — single method shift(int dx, int dy) used by the base class
+ * to move the view corner when panning. The default implementation in
+ * AbstractGraph updates the viewCorner constrained to valid extents.</li>
+ * <li>Zooming — marker indicating the graph supports zooming. It extends
+ * Zoomer and MouseWheelHandler. It documents a default ZOOM_INCR and
+ * ZOOM_MAX. Implementations can override zoom behaviour; otherwise the
+ * base-class provides sensible defaults.</li>
+ * <li>Zoomer — single method zoom(double zoom, int x, int y) used to apply
+ * zoom centered on a particular screen coordinate. Subclasses or the
+ * containing view can provide custom coordinate-space or content-level
+ * behavior by implementing Zoomer.</li>
+ * <li>HasLogScaleY — marker for graphs that may support logarithmic Y
+ * scaling; the graph will enable/disable the log-y context menu item
+ * appropriately.</li>
+ * <li>HasTrajectory — marker for graphs that can export trajectories; such
+ * graphs should implement an exportTrajectory(StringBuilder) routine.</li>
+ * </ul>
+ *
+ * <h2>Lifecycle</h2>
+ * <p>
+ * Typical lifecycle methods:
+ * </p>
+ * <ul>
+ * <li>onLoad() — allocates the LayoutPanel wrapper and Canvas, obtains shared
+ * Tooltip and ContextMenu instances and configures them, and sets the
+ * rendering scale based on device pixel ratio.</li>
+ * <li>onUnload() — removes and nulls references to DOM components and
+ * unregisters from shared widgets.</li>
+ * <li>activate() — attaches mouse and touch handlers for zooming and
+ * shifting depending on which interfaces are implemented and on the
+ * environment (e.g. special handling for ePub readers).</li>
+ * <li>deactivate() — removes all registered input handlers, closes tooltip
+ * and context menu, and cancels transient state.</li>
+ * <li>onResize() — closes transient UI (tooltip/context menu), updates the
+ * canvas coordinate space and recalculates drawing bounds.</li>
+ * </ul>
+ *
+ * <h2>Interaction semantics</h2>
+ * <ul>
+ * <li>Mouse wheel: zooms with inertia. The wheel delta is converted to a
+ * multiplicative zoom factor (ZOOM_INCR ^ -deltaY) and the zoom center
+ * is the current mouse position. A CSS class is briefly applied while
+ * inertia is present.</li>
+ * <li>Mouse drag with left button: initiates panning (shifting) of the
+ * viewport when the graph implements Shifting. A CSS class is applied
+ * to indicate view movement while dragging.</li>
+ * <li>Touch: short taps and long touches are distinguished. Long single
+ * touches allow panning; two-finger long touches initiate pinch-to-zoom
+ * with the center of the pinch used as zoom focus. Touch handlers
+ * preventDefault() for panning and pinch gestures to avoid scrolling the
+ * page when interacting with the graph.</li>
+ * <li>All interactions are no-ops when a textual message is shown on the
+ * graph (hasMessage flag) to avoid conflicting updates.</li>
+ * </ul>
+ *
+ * <h2>Canvas & scaling</h2>
+ * <p>
+ * The canvas coordinate space is scaled by the detected device pixel ratio to
+ * support crisp rendering on high-DPI displays. updateCanvas() sets both the
+ * CSS pixel size and the coordinate space (scaled) size; note that setting
+ * these properties clears the canvas, so callers should repaint after resizing.
+ * </p>
+ *
+ * <h2>Painting and Helpers</h2>
+ * <p>
+ * Subclasses must implement export(MyContext2d) and typically override paint()
+ * to perform actual rendering. AbstractGraph provides:
+ * </p>
+ * <ul>
+ * <li>Utility primitives for drawing and filling complex paths efficiently
+ * (sketch/stroke/fill) with segmentation to avoid freezing the UI.</li>
+ * <li>Convenience methods for drawing frames, axis labels, ticks, tick
+ * labels (including percent/log formatting), grid levels, and custom
+ * level lines.</li>
+ * <li>Primitives for circles, lines, rectangles and vertical text.</li>
+ * <li>Coordinate conversion helpers to map browser coordinates to scaled
+ * [0..1] coordinates relative to the drawing bounds
+ * (convertToScaledCoordinates).</li>
+ * </ul>
+ *
+ * <h2>Bounds and layout</h2>
+ * <p>
+ * calcBounds computes the inner drawing rectangle available for graph content,
+ * factoring in style-determined padding, frame width, label space, tick length
+ * and tick label widths. adjustBoundsForLabels() and
+ * adjustBoundsForTickLabels()
+ * are used to reserve space for axis and tick labels. The bounds are used by
+ * frame and drawing methods to position elements consistently.
+ * </p>
+ *
+ * <h2>History & buffering</h2>
+ * <p>
+ * When a RingBuffer&lt;B&gt; is present, hasHistory() returns true and a small
+ * buffer-size submenu is added to the context menu to select capacities (5k,
+ * 10k, 50k, 100k). Subclasses that maintain historical data should manage
+ * insertion into the buffer and may use prependTime2Data helper to attach a
+ * timestamp to stored data points.
+ * </p>
+ *
+ * <h2>Tooltips and context menu</h2>
+ * <p>
+ * A shared Tooltip instance is used to provide hover/touch information. Context
+ * menu population is extensible — AbstractGraph populates buffer-size, log-Y
+ * toggle and zoom items when applicable and then delegates to the owning
+ * AbstractView for additional items.
+ * </p>
+ *
+ * <h2>Messages</h2>
+ * <p>
+ * displayMessage(String) can be used to render a centered textual message on
+ * the graph (e.g. "No Data" or "Paused"). When a message is displayed most
+ * interaction handlers become inert and painting/updates are suppressed until
+ * the message is cleared via clearMessage().
+ * </p>
+ *
+ * <h2>Utilities & Helper classes</h2>
+ * <ul>
+ * <li>MyContext2d — a thin subclass of Context2d that exposes setLineDash for
+ * dashed lines.</li>
+ * <li>ZoomCommand — small Command implementation used by context menu items
+ * to apply zoom factors.</li>
+ * </ul>
+ *
+ * <h2>Notes and implementation details</h2>
+ * <ul>
+ * <li>Drawing very large paths is split into segments (MAX_SEGEMENTS) and
+ * periodically closed/stroked to avoid performance bottlenecks and UI
+ * freezing.</li>
+ * <li>Many protected helper methods are provided so subclasses can reuse the
+ * standardized rendering behavior and visuals defined by GraphStyle.</li>
+ * <li>AbstractGraph intentionally separates coordinate-space transforms (via
+ * viewCorner and zoomFactor) from content rendering so subclasses can
+ * assume painting inside normalized bounds and apply their own content
+ * transforms as needed.</li>
+ * </ul>
+ *
  * @author Christoph Hauert
  * 
- * @param <B> the type of buffer backing the graph: typically this is
+ * @param <B> the type of buffer backing the graph (may be null if the
+ *            graph does not use a RingBuffer): typically this is
  *            {@code double[]} but in some cases {@code Color[]},
  *            {@code String[]} or
  *            {@link thothbot.parallax.core.shared.materials.MeshLambertMaterial
@@ -102,7 +290,18 @@ import com.google.gwt.user.client.ui.Widget;
  *            {@link org.evoludo.simulator.views.Pop2D Pop2D},
  *            {@link org.evoludo.graphics.PopGraph2D PopGraph2D} or
  *            {@link org.evoludo.graphics.PopGraph3D PopGraph3D}, respectively.
+ * 
+ * @see #activate()
+ * @see #deactivate()
+ * @see #paint()
+ * @see #zoom()
+ * @see #shift(int,int)
+ * @see AbstractGraph.Shifting
+ * @see AbstractGraph.Shifter
+ * @see AbstractGraph.Zooming
+ * @see AbstractGraph.Zoomer
  */
+@SuppressWarnings("java:S110")
 public abstract class AbstractGraph<B> extends FocusPanel
 		implements MouseOutHandler, MouseWheelHandler, MouseDownHandler, MouseUpHandler, MouseMoveHandler, //
 		TouchStartHandler, TouchEndHandler, TouchMoveHandler, //
@@ -952,9 +1151,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			bounds.adjust(f, f, -f2, -f2);
 		}
 		adjustBoundsForLabels();
-		String font = g.getFont();
-		adjustBoundsForTickLabels(font);
-		g.setFont(font);
+		adjustBoundsForTickLabels();
 		if (style.showXTicks)
 			bounds.adjust(0, 0, 0, -(style.tickLength + 2));
 		if (style.showYTicks)
@@ -974,14 +1171,13 @@ public abstract class AbstractGraph<B> extends FocusPanel
 
 	/**
 	 * Adjust bounds to make room for tick labels.
-	 * 
-	 * @param font the CSS specification of the font to use for tick labels
 	 */
-	private void adjustBoundsForTickLabels(String font) {
+	private void adjustBoundsForTickLabels() {
 		// NOTE: must process tick labels because otherwise widths might end up
 		// different in views with multiple graphs
 		if (style.showXTickLabels)
 			bounds.adjust(0, 0, 0, -14); // 10px for font size plus some padding
+		String font = g.getFont();
 		setFont(style.ticksLabelFont);
 		double tik2 = Math.max(g.measureText(Formatter.formatFix(style.xMax, 2)).getWidth(),
 				g.measureText(Formatter.formatFix(style.xMin, 2)).getWidth()) * 0.5;
@@ -1010,6 +1206,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			}
 			bounds.adjust(0, 0, -4, 0);
 		}
+		g.setFont(font);
 	}
 
 	/**
@@ -1045,172 +1242,209 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		g.save();
 		double w = bounds.getWidth();
 		double h = bounds.getHeight();
-		// draw frame and axes
-		if (style.showFrame) {
-			g.translate(-style.frameWidth, -style.frameWidth);
-			g.setLineWidth(style.frameWidth);
-			g.setStrokeStyle(style.frameColor);
-			// NOTE: without the 0.5 the lines are at least 2px thick...
-			g.strokeRect(0.5, 0.5, w, h);
-		}
-		// draw x-levels
-		String tick;
-		if (xLevels > 0) {
-			double frac = 1.0 / xLevels;
-			double incr = frac * w;
-			double level = 0.5 - incr;
-			g.setLineWidth(style.levelWidth);
-			for (int n = 0; n <= xLevels; n++) {
-				level += incr;
-				if (style.showXLevels && n > 0 && n < yLevels) {
-					g.setStrokeStyle(style.levelColor);
-					strokeLine(level, 0, level, h);
-				}
-				if (style.showXTicks) {
-					g.setStrokeStyle(style.frameColor);
-					strokeLine(level, h + 0.5, level, h + 0.5 + style.tickLength);
-				}
-				if (style.showXTickLabels) {
-					setFont(style.ticksLabelFont);
-					g.setFillStyle(style.frameColor);
-					double x = style.xMin + n * frac * (style.xMax - style.xMin);
-					if (style.percentX)
-						tick = Formatter.formatPercent(x, 0);
-					else
-						tick = Formatter.format(x, 2);
-					// center tick labels with ticks, except for first label (left most)
-					g.fillText(tick, level - (n > 0 ? g.measureText(tick).getWidth() * 0.5 : 2.0),
-							h + (style.tickLength + 12.5));
-				}
-			}
-		}
 
-		// draw custom x-axis levels
-		if (style.customXLevels != null) {
-			for (int n = 0; n < style.customXLevels.length; n++) {
-				double level = style.customXLevels[n];
-				if (level > style.xMax || level < style.xMin)
-					continue;
-				// would be nice to draw a dashed line but that seems to be more difficult than
-				// expected...
-				g.setStrokeStyle(style.customLevelColor);
-				level = 0.5 + (level - style.xMin) / (style.xMax - style.xMin) * w;
+		drawFrameBorder(w, h);
+		drawXLevels(xLevels, w, h);
+		drawCustomXLevels(w, h);
+		drawYLevels(yLevels, w, h);
+		drawCustomYLevels(w, h);
+		drawXAxisLabel(w, h);
+		drawYAxisLabel(w, h);
+		drawGraphLabel(gscale);
+
+		g.restore();
+	}
+
+	private void drawFrameBorder(double w, double h) {
+		if (!style.showFrame)
+			return;
+		g.translate(-style.frameWidth, -style.frameWidth);
+		g.setLineWidth(style.frameWidth);
+		g.setStrokeStyle(style.frameColor);
+		// NOTE: without the 0.5 the lines are at least 2px thick...
+		g.strokeRect(0.5, 0.5, w, h);
+	}
+
+	private void drawXLevels(int xLevels, double w, double h) {
+		if (xLevels <= 0)
+			return;
+		double frac = 1.0 / xLevels;
+		double incr = frac * w;
+		double level = 0.5 - incr;
+		g.setLineWidth(style.levelWidth);
+		for (int n = 0; n <= xLevels; n++) {
+			level += incr;
+			if (style.showXLevels && n > 0 && n < xLevels) {
+				g.setStrokeStyle(style.levelColor);
 				strokeLine(level, 0, level, h);
 			}
-		}
-
-		// draw y-levels
-		if (yLevels > 0) {
-			double frac = 1.0 / yLevels;
-			double incr = frac * h;
-			double level = 0.5 - incr;
-			double ymin;
-			double yrange;
-			if (style.logScaleY) {
-				ymin = Math.log10(style.yMin);
-				yrange = Math.log10(style.yMax) - ymin;
-			} else {
-				ymin = style.yMin;
-				yrange = style.yMax - ymin;
+			if (style.showXTicks) {
+				g.setStrokeStyle(style.frameColor);
+				strokeLine(level, h + 0.5, level, h + 0.5 + style.tickLength);
 			}
-			for (int n = 0; n <= yLevels; n++) {
-				level += incr;
-				if (style.showYLevels && n > 0 && n < yLevels) {
-					g.setStrokeStyle(style.levelColor);
-					strokeLine(0.5, level, w, level);
-				}
-				if (style.showYTicks) {
-					g.setStrokeStyle(style.frameColor);
-					strokeLine(w + 0.5, level, w + 0.5 + style.tickLength, level);
-				}
-				if (style.showYTickLabels) {
-					setFont(style.ticksLabelFont);
-					g.setFillStyle(style.frameColor);
-					double yval = ymin + (1.0 - n * frac) * yrange;
-					if (style.logScaleY)
-						yval = Math.pow(10.0, yval);
-					if (style.percentY) {
-						tick = Formatter.formatPretty(100.0 * yval, 2);
-					} else
-						tick = Formatter.formatPretty(yval, 2);
-					String[] numexp = tick.split("\\^");
-					// center tick labels with ticks, except for first label (top most)
-					double xpos = w + 0.5 + (style.tickLength + 4);
-					double ypos = level + (n == 0 ? 9 : 4.5);
-					g.fillText(numexp[0], xpos, ypos);
-					xpos += g.measureText(numexp[0]).getWidth();
-					if (numexp.length > 1) {
-						// draw exponent in smaller font
-						setFont(style.ticksLabelFont.replace("11px", "9px"));
-						g.fillText(numexp[1], xpos, ypos - 4.5);
-						xpos += g.measureText(numexp[1]).getWidth();
-						setFont(style.ticksLabelFont);
-					}
-					if (style.percentY)
-						g.fillText("%", xpos, ypos);
-				}
+			if (style.showXTickLabels) {
+				setFont(style.ticksLabelFont);
+				g.setFillStyle(style.frameColor);
+				double xval = style.xMin + n * frac * (style.xMax - style.xMin);
+				String tick = style.percentX ? Formatter.formatPercent(xval, 0) : Formatter.format(xval, 2);
+				// center tick labels with ticks, except for first label (left most)
+				double xpos = level - (n > 0 ? g.measureText(tick).getWidth() * 0.5 : 2.0);
+				g.fillText(tick, xpos, h + (style.tickLength + 12.5));
 			}
 		}
+	}
 
-		// draw custom y-axis levels
+	private void drawCustomXLevels(double w, double h) {
+		if (style.customXLevels == null)
+			return;
+		for (double cx : style.customXLevels) {
+			if (cx > style.xMax || cx < style.xMin)
+				continue;
+			g.setStrokeStyle(style.customLevelColor);
+			double level = 0.5 + (cx - style.xMin) / (style.xMax - style.xMin) * w;
+			strokeLine(level, 0, level, h);
+		}
+	}
+
+	/**
+	 * Draw the y-levels including ticks and tick labels.
+	 * 
+	 * @param yLevels the number of horizontal levels
+	 * @param w       the width of the graph
+	 * @param h       the height of the graph
+	 */
+	private void drawYLevels(int yLevels, double w, double h) {
+		if (yLevels <= 0)
+			return;
+		double frac = 1.0 / yLevels;
+		double incr = frac * h;
+		double level = 0.5 - incr;
+		double[] range = computeYRange();
+		double ymin = range[0];
+		double yrange = range[1];
+
+		for (int n = 0; n <= yLevels; n++) {
+			level += incr;
+			if (style.showYLevels && n > 0 && n < yLevels) {
+				g.setStrokeStyle(style.levelColor);
+				strokeLine(0.5, level, w, level);
+			}
+			if (style.showYTicks) {
+				g.setStrokeStyle(style.frameColor);
+				strokeLine(w + 0.5, level, w + 0.5 + style.tickLength, level);
+			}
+			if (style.showYTickLabels) {
+				double yval = computeYVal(n, frac, yrange, ymin);
+				drawYTickLabel(w, level, n, yval);
+			}
+		}
+	}
+
+	/**
+	 * Compute the (possibly logarithmic) y-range for tick computations.
+	 * 
+	 * @return array {ymin, yrange}
+	 */
+	private double[] computeYRange() {
+		double ymin;
+		double yrange;
+		if (style.logScaleY) {
+			ymin = Math.log10(style.yMin);
+			yrange = Math.log10(style.yMax) - ymin;
+		} else {
+			ymin = style.yMin;
+			yrange = style.yMax - ymin;
+		}
+		return new double[] { ymin, yrange };
+	}
+
+	/**
+	 * Compute the y-value for tick number n.
+	 */
+	private double computeYVal(int n, double frac, double yrange, double ymin) {
+		double yval = ymin + (1.0 - n * frac) * yrange;
+		if (style.logScaleY)
+			yval = Math.pow(10.0, yval);
+		return yval;
+	}
+
+	/**
+	 * Draw the y-axis tick label at the specified screen level.
+	 */
+	private void drawYTickLabel(double w, double level, int n, double yval) {
+		setFont(style.ticksLabelFont);
+		g.setFillStyle(style.frameColor);
+		String tick = style.percentY ? Formatter.formatPretty(100.0 * yval, 2) : Formatter.formatPretty(yval, 2);
+		String[] numexp = tick.split("\\^");
+		double xpos = w + 0.5 + (style.tickLength + 4);
+		double ypos = level + (n == 0 ? 9 : 4.5);
+		g.fillText(numexp[0], xpos, ypos);
+		xpos += g.measureText(numexp[0]).getWidth();
+		if (numexp.length > 1) {
+			setFont(style.ticksLabelFont.replace("11px", "9px"));
+			g.fillText(numexp[1], xpos, ypos - 4.5);
+			xpos += g.measureText(numexp[1]).getWidth();
+			setFont(style.ticksLabelFont);
+		}
+		if (style.percentY)
+			g.fillText("%", xpos, ypos);
+	}
+
+	private void drawCustomYLevels(double w, double h) {
 		for (double level : style.customYLevels) {
 			if (level > style.yMax || level < style.yMin)
 				continue;
-			// would be nice to draw a dashed line but that seems to be more difficult than
-			// expected...
 			g.setStrokeStyle(style.customLevelColor);
-			level = 0.5 + (1.0 - (level - style.yMin) / (style.yMax - style.yMin)) * h;
-			strokeLine(0.5, level, w, level);
+			double ypos = 0.5 + (1.0 - (level - style.yMin) / (style.yMax - style.yMin)) * h;
+			strokeLine(0.5, ypos, w, ypos);
 		}
+	}
 
+	private void drawXAxisLabel(double w, double h) {
 		// x-axis label
-		if (style.showXLabel && style.xLabel != null) {
-			setFont(style.axesLabelFont);
-			g.fillText(style.xLabel, (w - g.measureText(style.xLabel).getWidth()) * 0.5,
-					h + ((style.showXTickLabels ? 14 : 0) + (style.showXTicks ? style.tickLength : 0) + 14));
-		}
+		if (!style.showXLabel || style.xLabel == null)
+			return;
+		setFont(style.axesLabelFont);
+		double xpos = (w - g.measureText(style.xLabel).getWidth()) * 0.5;
+		double ypos = h + ((style.showXTickLabels ? 14 : 0) + (style.showXTicks ? style.tickLength : 0) + 14);
+		g.fillText(style.xLabel, xpos, ypos);
+	}
+
+	private void drawYAxisLabel(double w, double h) {
 		// y-axis label
-		if (style.showYLabel && style.yLabel != null) {
-			setFont(style.ticksLabelFont);
-			int digits = 2;
-			double tickskip;
-			if (style.percentY) {
-				if (style.yMax <= 1.0)
-					digits = 1;
-				else
-					digits = 0;
-				tickskip = g.measureText(Formatter.formatPercent(100, digits)).getWidth();
-			} else
-				tickskip = g
-						.measureText(Formatter.formatFix(-Math.max(Math.abs(style.yMin), Math.abs(style.yMax)), digits))
-						.getWidth() + 16.0;
-
-			setFont(style.axesLabelFont);
-			String ylabel = style.yLabel;
-			if (style.logScaleY)
-				ylabel += " (log)";
-			// rotate and draw
-			fillTextVertical(ylabel, w + tickskip + style.tickLength,
-					(h + g.measureText(ylabel).getWidth()) / 2);
+		if (!style.showYLabel || style.yLabel == null)
+			return;
+		setFont(style.ticksLabelFont);
+		int digits = 2;
+		double tickskip;
+		if (style.percentY) {
+			digits = style.yMax <= 1.0 ? 1 : 0;
+			tickskip = g.measureText(Formatter.formatPercent(100, digits)).getWidth();
+		} else {
+			String sample = Formatter.formatFix(-Math.max(Math.abs(style.yMin), Math.abs(style.yMax)), digits);
+			tickskip = g.measureText(sample).getWidth() + 16.0;
 		}
+		setFont(style.axesLabelFont);
+		String ylabel = style.yLabel + (style.logScaleY ? " (log)" : "");
+		fillTextVertical(ylabel, w + tickskip + style.tickLength, (h + g.measureText(ylabel).getWidth()) / 2);
+	}
 
+	private void drawGraphLabel(double gscale) {
 		final String PX_SANS_SERIF = "px sans-serif";
-		if (style.showLabel && style.label != null) {
-			// adjust label font size to graph; 5% of height with minimum 10px and max 20px
-			int labelFontSize = (int) Math.min(20, Math.max(10, bounds.getHeight() * 0.05));
-			g.setFillStyle(style.labelColor);
-			if (gscale > 0.0) {
-				g.save();
-				g.scale(1.0 / gscale, 1.0 / gscale);
-				setFont("bold " + labelFontSize + PX_SANS_SERIF);
-				g.fillText(style.label, 4, (int) (labelFontSize * 1.2));
-				g.restore();
-			} else {
-				setFont("bold " + labelFontSize + PX_SANS_SERIF);
-				g.fillText(style.label, 4, (int) (labelFontSize * 1.2));
-			}
+		if (!style.showLabel || style.label == null)
+			return;
+		int labelFontSize = (int) Math.min(20, Math.max(10, bounds.getHeight() * 0.05));
+		g.setFillStyle(style.labelColor);
+		if (gscale > 0.0) {
+			g.save();
+			g.scale(1.0 / gscale, 1.0 / gscale);
+			setFont("bold " + labelFontSize + PX_SANS_SERIF);
+			g.fillText(style.label, 4, (int) (labelFontSize * 1.2));
+			g.restore();
+		} else {
+			setFont("bold " + labelFontSize + PX_SANS_SERIF);
+			g.fillText(style.label, 4, (int) (labelFontSize * 1.2));
 		}
-		g.restore();
 	}
 
 	/**
@@ -1868,8 +2102,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 					int y1 = touch1.getRelativeY(element);
 					pinchX = (x0 + x1) / 2;
 					pinchY = (y0 + y1) / 2;
-					int dX = x0 - x1;
-					int dY = y0 - y1;
+					double dX = (double) x0 - x1;
+					double dY = (double) y0 - y1;
 					pinchDist = Math.sqrt(dX * dX + dY * dY);
 					break;
 				default:
@@ -1946,8 +2180,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 				Touch touch1 = touches.get(1);
 				int x1 = touch1.getClientX();
 				int y1 = touch1.getClientY();
-				double dX = x0 - x1;
-				double dY = y0 - y1;
+				double dX = (double) x0 - x1;
+				double dY = (double) y0 - y1;
 				double dist = Math.sqrt(dX * dX + dY * dY);
 				zoom(dist / pinchDist, pinchX, pinchY);
 				pinchDist = dist;
@@ -2040,312 +2274,6 @@ public abstract class AbstractGraph<B> extends FocusPanel
 		/*-{
 			this.setLineDash(segments);
 		}-*/;
-	}
-
-	/**
-	 * The style features for graphs. This is a collection of settings for line
-	 * styles, font sizes, ticks, padding, etc.
-	 */
-	public static class GraphStyle {
-		// public AxesStyle x = new AxesStyle();
-		// public AxesStyle y = new AxesStyle();
-
-		/**
-		 * Create a new graph style.
-		 */
-		public GraphStyle() {
-		}
-
-		/**
-		 * The minimum padding (in pixels) between boundaries of the HTML element and
-		 * the graph.
-		 */
-		public int minPadding = 4;
-
-		/**
-		 * The tick length in pixels.
-		 */
-		public int tickLength = 6;
-
-		/**
-		 * The radius of marker points.
-		 */
-		public double markerSize = 3.0;
-
-		/**
-		 * The color to mark start of trajectory.
-		 */
-		public String startColor = "#0f0";
-
-		/**
-		 * The color to mark end of trajectory.
-		 */
-		public String endColor = "#f00";
-
-		/**
-		 * The minimum value of the {@code x}-axis.
-		 */
-		public double xMin = 0.0;
-
-		/**
-		 * The maximum value of the {@code x}-axis.
-		 */
-		public double xMax = 1.0;
-
-		/**
-		 * The {@code x}-axis increments.
-		 */
-		public double xIncr = 0.0;
-
-		/**
-		 * The minimum value of the {@code y}-axis.
-		 */
-		public double yMin = 0.0;
-
-		/**
-		 * The maximum value of the {@code y}-axis.
-		 */
-		public double yMax = 1.0;
-
-		/**
-		 * The {@code x}-axis increments.
-		 */
-		public double yIncr = 0.0;
-
-		/**
-		 * Set the range of the horizontal axis to {@code xSteps * xIncr}.
-		 * 
-		 * @param xSteps the number of horizontal steps
-		 */
-		public void setXRange(int xSteps) {
-			double xRange = xSteps * xIncr;
-			if (xRange > 0.0) {
-				xMax = xMin + xRange;
-				return;
-			}
-			if (xRange < 0.0) {
-				xMin = xMax + xRange;
-			}
-		}
-
-		/**
-		 * Set the range of the vertical axis to {@code ySteps * yIncr}.
-		 * 
-		 * @param ySteps the number of vertical steps
-		 */
-		public void setYRange(int ySteps) {
-			double yRange = ySteps * yIncr;
-			if (yRange > 0.0) {
-				yMax = yMin + yRange;
-				return;
-			}
-			if (yRange < 0.0) {
-				yMin = yMax + yRange;
-			}
-		}
-
-		/**
-		 * The flag to indicate whether to auto-scale the horizontal axis.
-		 */
-		public boolean autoscaleX = true;
-
-		/**
-		 * The flag to indicate whether to auto-scale the vertical axis.
-		 */
-		public boolean autoscaleY = true;
-
-		/**
-		 * The flag to indicate whether tick marks along the horizontal axis are in
-		 * percent.
-		 */
-		public boolean percentX = false;
-
-		/**
-		 * The flag to indicate whether tick marks along the vertical axis are in
-		 * percent.
-		 */
-		public boolean percentY = false;
-
-		/**
-		 * The flag to indicate whether to use logarithmic scaling on the y-axis.
-		 */
-		public boolean logScaleY = false;
-
-		/**
-		 * The label of the graph (if any).
-		 */
-		public String label;
-
-		/**
-		 * The {@code x}-axis label of the graph (if any).
-		 */
-		public String xLabel;
-
-		/**
-		 * The {@code y}-axis label of the graph (if any).
-		 */
-		public String yLabel;
-
-		/**
-		 * The flag to indicate whether to show the graph label.
-		 */
-		public boolean showLabel = true;
-
-		/**
-		 * The flag to indicate whether to show the {@code x}-axis label.
-		 */
-		public boolean showXLabel = true;
-
-		/**
-		 * The flag to indicate whether to show the {@code y}-axis label.
-		 */
-		public boolean showYLabel = true;
-
-		/**
-		 * The flag to indicate whether to show tick labels along the horizontal axis.
-		 */
-		public boolean showXTickLabels = true;
-
-		/**
-		 * The flag to indicate whether to show tick labels along the vertical axis.
-		 */
-		public boolean showYTickLabels = true;
-
-		/**
-		 * The flag to indicate whether to show the frame of the graph.
-		 */
-		public boolean showFrame = true;
-
-		/**
-		 * The flag to indicate whether to show decorations of the frame (ticks and
-		 * labels).
-		 * <p>
-		 * <strong>Note:</strong> somewhat hackish... used to force showing axes for 2D
-		 * histograms (as opposed to plain frame for e.g. lattices)
-		 */
-		public boolean showDecoratedFrame = false;
-
-		/**
-		 * The flag to indicate whether vertical levels are shown.
-		 */
-		public boolean showXLevels = true;
-
-		/**
-		 * The flag to indicate whether horizontal levels are shown.
-		 */
-		public boolean showYLevels = true;
-
-		/**
-		 * The flag to indicate whether tick labels along the horizontal axis are shown.
-		 */
-		public boolean showXTicks = true;
-
-		/**
-		 * The flag to indicate whether tick labels along the vertical axis are shown.
-		 */
-		public boolean showYTicks = true;
-
-		/**
-		 * The array with {@code x}-values to draw custom vertical levels.
-		 */
-		public double[] customXLevels = new double[0];
-
-		/**
-		 * The array with {@code y}-values to draw custom horizontal levels.
-		 */
-		public double[] customYLevels = new double[0];
-
-		/**
-		 * The stroke width of the frame.
-		 */
-		public double frameWidth = 1.0;
-
-		/**
-		 * The stroke width of the levels.
-		 */
-		public double levelWidth = 0.8;
-
-		/**
-		 * The stroke width of lines on the graph.
-		 */
-		public double lineWidth = 1.4;
-
-		/**
-		 * The dashing pattern for a dashed line.
-		 */
-		public int[] solidLine = new int[0];
-
-		/**
-		 * The dashing pattern for a dashed line.
-		 */
-		public int[] dashedLine = new int[] { 10, 15 };
-
-		/**
-		 * The dashing pattern for a dotted line.
-		 */
-		public int[] dottedLine = new int[] { 2, 5 };
-
-		/**
-		 * The stroke width of links on the graph.
-		 */
-		public double linkWidth = 0.02;
-
-		/**
-		 * The color of the frame.
-		 */
-		public String frameColor = "#000";
-
-		/**
-		 * The color of the levels.
-		 */
-		public String levelColor = "#bbb";
-
-		/**
-		 * The color of the custom levels.
-		 */
-		public String customLevelColor = "#b00";
-
-		/**
-		 * The backgorund color of the graph.
-		 */
-		public String bgColor = "#fff";
-
-		/**
-		 * The color of the label of the graph.
-		 */
-		public String labelColor = "#000";
-
-		/**
-		 * The color for drawing the graph.
-		 */
-		public String graphColor = "#000";
-
-		/**
-		 * The color of links on the graph.
-		 */
-		public String linkColor = "#000";
-
-		/**
-		 * The color of trajectories.
-		 * 
-		 * @see org.evoludo.simulator.EvoLudo#cloTrajectoryColor
-		 */
-		public String trajColor = "#000";
-
-		/**
-		 * The font for the graph label as a CSS string.
-		 */
-		public String labelFont = "bold 14px sans-serif";
-
-		/**
-		 * The font for the axes labels as a CSS string.
-		 */
-		public String axesLabelFont = "14px sans-serif";
-
-		/**
-		 * The font for the axes tick labels as a CSS string.
-		 */
-		public String ticksLabelFont = "11px sans-serif";
 	}
 
 	// public class AxesStyle {

@@ -33,7 +33,7 @@ package org.evoludo.simulator.views;
 import java.awt.Color;
 import java.util.List;
 
-import org.evoludo.graphics.AbstractGraph;
+import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
@@ -158,7 +158,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 			inter = !inter;
 			Geometry geometry = graph.getGeometry();
 			Module<?> module = graph.getModule();
-			AbstractGraph.GraphStyle style = graph.getStyle();
+			GraphStyle style = graph.getStyle();
 			if (geometry.getType() == Geometry.Type.LINEAR) {
 				// frame, ticks, labels needed
 				style.xLabel = "nodes";
