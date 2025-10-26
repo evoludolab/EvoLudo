@@ -40,7 +40,6 @@ import java.util.logging.Logger;
 
 import org.evoludo.geom.Rectangle2D;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.EvoLudo.Directive;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.EvoLudoTrigger;
 import org.evoludo.simulator.Resources;
@@ -274,11 +273,6 @@ public class EvoLudoWeb extends Composite
 	 * ID of element in DOM that contains the EvoLudo lab.
 	 */
 	String elementID = "EvoLudoWeb";
-
-	/**
-	 * Default set of parameters as specified for the initial invocation.
-	 */
-	private String defaultCLO;
 
 	/**
 	 * Look-up table for active views. This is the selection shown in
@@ -532,8 +526,6 @@ public class EvoLudoWeb extends Composite
 		}
 		engine.setCLO(clo);
 		applyCLO();
-		// save initial set of parameters as default
-		defaultCLO = clo;
 	}
 
 	/**
@@ -1239,12 +1231,7 @@ public class EvoLudoWeb extends Composite
 		guiState.model = engine.getModel();
 		guiState.module = engine.getModule();
 		// parseCLO() does the heavy lifting and configures the GUI
-		guiState.issues = engine.parseCLO(new Directive() {
-			@Override
-			public void execute() {
-				configGUI();
-			}
-		});
+		guiState.issues = engine.parseCLO(() -> configGUI());
 		updateViews();
 		// process (emulated) ePub restrictions - adds console if possible
 		processEPubSettings();
@@ -1413,12 +1400,16 @@ public class EvoLudoWeb extends Composite
 	@UiHandler("evoludoDefault")
 	public void onDefaultClick(ClickEvent event) {
 		Scheduler.get().scheduleDeferred(() -> {
-			if (defaultCLO == null) {
+			String clo = null;
+			RootPanel root = RootPanel.get(elementID);
+			if (root != null)
+				clo = root.getElement().getAttribute("data-clo").trim();
+			if (clo == null || clo.isEmpty()) {
 				revertCLO();
 				return;
 			}
-			evoludoCLO.setText(defaultCLO);
-			engine.setCLO(defaultCLO);
+			evoludoCLO.setText(clo);
+			engine.setCLO(clo);
 			applyCLO();
 		});
 	}
@@ -2400,32 +2391,37 @@ public class EvoLudoWeb extends Composite
 	 * are disabled (or enabled otherwise).
 	 */
 	protected void processEPubSettings() {
-		// ePubs (iBook) prevents scrolling; disable console
-		if (!EvoLudoGWT.isEPub || EvoLudoGWT.ePubStandalone) {
-			// make sure console is present; if necessary add and load it
-			if (activeViews.put(viewConsole.getName(), viewConsole) == null) {
-				viewConsole.load();
-				evoludoViews.addItem(viewConsole.getName());
-			}
-		} else {
-			// make sure console is absent; if necessary remove and unload it
-			if (activeViews.remove(viewConsole.getName()) != null) {
-				viewConsole.unload();
-				// console is likely the last view in the list, hence start checking at end
-				for (int n = evoludoViews.getItemCount() - 1; n >= 0; n--) {
-					if (evoludoViews.getItemText(n).equals(viewConsole.getName())) {
-						evoludoViews.removeItem(n);
-						break;
-					}
-				}
-			}
-		}
 		// nonlinear content in Apple Books (i.e. all interactive labs) do not report
 		// as ePubs on iOS (at least for iPad) but as expected on macOS. On both
 		// platforms TextFields are disabled through shadow DOM.
 		boolean editCLO = !EvoLudoGWT.isEPub || EvoLudoGWT.ePubStandalone;
-		// evoludoCLO.setEnabled(editCLO);
-		// evoludoCLO.setReadOnly(!editCLO);
+		updateConsoleView(editCLO);
+		updateCLOControls(editCLO);
+		updateDropHandlers(editCLO);
+	}
+
+	private void updateConsoleView(boolean editCLO) {
+		if (editCLO) {
+			// ensure console is present
+			if (activeViews.put(viewConsole.getName(), viewConsole) == null) {
+				viewConsole.load();
+				evoludoViews.addItem(viewConsole.getName());
+			}
+			return;
+		}
+		// ensure console is absent
+		if (activeViews.remove(viewConsole.getName()) != null) {
+			viewConsole.unload();
+			for (int n = evoludoViews.getItemCount() - 1; n >= 0; n--) {
+				if (evoludoViews.getItemText(n).equals(viewConsole.getName())) {
+					evoludoViews.removeItem(n);
+					break;
+				}
+			}
+		}
+	}
+
+	private void updateCLOControls(boolean editCLO) {
 		evoludoCLO.setTitle(editCLO ? "Specify simulation parameters"
 				: "Current simulation parameters (open standalone lab to modify)");
 		evoludoApply.setText(editCLO ? "Apply" : "Standalone");
@@ -2434,32 +2430,31 @@ public class EvoLudoWeb extends Composite
 		evoludoHelp.setEnabled(editCLO);
 		evoludoSettings.setTitle(editCLO ? "Change simulation parameters" : "Review simulation parameters");
 		logEvoHandler.setLevel(editCLO ? logger.getLevel() : Level.OFF);
+	}
 
-		// add drop handler to read parameters
-		if (editCLO) {
-			if (dragEnterHandler == null)
-				dragEnterHandler = addDomHandler(new DragEnterHandler() {
-					@Override
-					public void onDragEnter(DragEnterEvent event) {
-						if (engine.isRunning()) {
-							evoludoOverlay.setVisible(false);
-							displayStatus("Stop lab for drag'n'drop restore.", Level.WARNING.intValue());
-							return;
-						}
-						// event.getDataTransfer() does not list files (only that files are dragged)
-						// cannot check whether the drag'n'drop looks promising
-						evoludoOverlay.setVisible(true);
+	private void updateDropHandlers(boolean editCLO) {
+		if (!editCLO)
+			return;
+		if (dragEnterHandler == null)
+			dragEnterHandler = addDomHandler(new DragEnterHandler() {
+				@Override
+				public void onDragEnter(DragEnterEvent event) {
+					if (engine.isRunning()) {
+						evoludoOverlay.setVisible(false);
+						displayStatus("Stop lab for drag'n'drop restore.", Level.WARNING.intValue());
+						return;
 					}
-				}, DragEnterEvent.getType());
-			if (dragLeaveHandler == null)
-				dragLeaveHandler = addDomHandler(new DragLeaveHandler() {
-					@Override
-					public void onDragLeave(DragLeaveEvent event) {
-						if (!evoludoOverlay.isVisible() && displayStatusThresholdLevel <= Level.WARNING.intValue())
-							displayStatusThresholdLevel = Level.ALL.intValue();
-					}
-				}, DragLeaveEvent.getType());
-		}
+					evoludoOverlay.setVisible(true);
+				}
+			}, DragEnterEvent.getType());
+		if (dragLeaveHandler == null)
+			dragLeaveHandler = addDomHandler(new DragLeaveHandler() {
+				@Override
+				public void onDragLeave(DragLeaveEvent event) {
+					if (!evoludoOverlay.isVisible() && displayStatusThresholdLevel <= Level.WARNING.intValue())
+						displayStatusThresholdLevel = Level.ALL.intValue();
+				}
+			}, DragLeaveEvent.getType());
 	}
 
 	/**
@@ -2532,17 +2527,21 @@ public class EvoLudoWeb extends Composite
 			if (console == null)
 				return;
 			String log = record.getMessage();
-			// do some minimal formatting for console
-			boolean preformatted = false;
-			if (log.startsWith("<pre>")) {
-				// remove tags - assumes entire message is wrapped
-				log = log.replaceAll("<.*pre>", "");
-				preformatted = true;
+			int preBegin;
+			int preEnd = 0;
+			// encode all text inside <pre>...</pre> tags
+			while ((preBegin = log.indexOf("<pre>", preEnd)) >= 0) {
+				preBegin += "<pre>".length();
+				// preformatted component found, preserve formatting
+				preEnd = log.indexOf("</pre>");
+				if (preEnd < 0)
+					preEnd = log.length();
+				String pre = log.substring(preBegin, preEnd);
+				log = log.substring(0, preBegin) + XMLCoder.encode(pre) + log.substring(preEnd + "</pre>".length());
 			}
-			log = XMLCoder.encode(log);
-			// add formatting for console
-			if (preformatted)
-				log = "<pre>" + log + "</pre>";
+			// TODO: check if HTML tags are allowed in epubs
+			// if (engine.isEPub)
+			// log = XMLCoder.encode(log);
 			console.log(record.getLevel(), log);
 		}
 
