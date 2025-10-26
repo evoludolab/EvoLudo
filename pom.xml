@@ -278,9 +278,10 @@
               <arg>${evoludo.jettyPort}</arg>
             </devmodeArgs>
             <!-- Ensure outputs are written in the module, not at root -->
-            <launcherDir>${project.build.directory}/EvoLudoGWT-${project.version}</launcherDir>
-            <devmodeWorkDir>${project.build.directory}/gwt/devmode/work</devmodeWorkDir>
-            <warDir>${project.build.directory}/EvoLudoGWT-${project.version}</warDir>
+            <!-- Place launcher/war/devmode outputs inside the EvoLudoGWT module target -->
+            <launcherDir>${basedir}/EvoLudoGWT/target/EvoLudoGWT-${project.version}</launcherDir>
+            <devmodeWorkDir>${basedir}/EvoLudoGWT/target/gwt/devmode/work</devmodeWorkDir>
+            <warDir>${basedir}/EvoLudoGWT/target/EvoLudoGWT-${project.version}</warDir>
           </configuration>
         </plugin>
 
@@ -363,7 +364,7 @@
                 <webApp>
                   <resourceBases>
                     <resourceBase>${basedir}/src/main/webapp</resourceBase>
-                    <resourceBase>${basedir}/../target/gwt/launcherDir/</resourceBase>
+                    <resourceBase>${basedir}/EvoLudoGWT/target/gwt/launcherDir/</resourceBase>
                   </resourceBases>
                 </webApp>
               </configuration>
@@ -392,6 +393,8 @@
       <id>gwt</id>
       <build>
         <defaultGoal>gwt:devmode</defaultGoal>
+        <!-- Redirect build output to target folder inside the EvoLudoGWT module -->
+        <directory>${basedir}/EvoLudoGWT/target</directory>
       </build>
       <modules>
         <module>EvoLudoGWT</module>
