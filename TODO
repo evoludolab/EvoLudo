@@ -7,6 +7,8 @@ TASKS:
 - javadoc for EvoLudoJRE module
 
 BUGS:
+- PopGraph2D/3D: fitness views don't work for multi-species with fitness map set (just payoffs are ok)
+- clear status line when clicking apply
 - Distribution, RingBuffer: resizing issues when changing size of view (loses most recent instead of oldest entries)
 - JRE and GWT do not return the same results with identical parameters even though they should... see exercise 13.19
 - switching directly from 3D fitness view to 3D strategy view shows up empty; resizing lab or switching to another view and back to 3d strategy view restores content (reduce calls to allocateGraphs).

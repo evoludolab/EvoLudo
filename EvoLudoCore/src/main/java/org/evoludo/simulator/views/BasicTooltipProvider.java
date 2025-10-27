@@ -85,6 +85,13 @@ public interface BasicTooltipProvider {
 	static final String TABLE_CELL_NEXT = ":</i></td><td>";
 
 	/**
+	 * Table cell separator for tooltips with color.
+	 */
+	static final String TABLE_CELL_NEXT_COLOR = TABLE_CELL_NEXT + "<span style='color:";
+
+	static final String TABLE_CELL_BULLET = "; font-size:175%; line-height:0.57;'>&#x25A0;</span> ";
+
+	/**
 	 * Get the tooltip at the scaled coordinates {@code (x,y)} with the origin in
 	 * the lower left corner of the graph.
 	 * 
