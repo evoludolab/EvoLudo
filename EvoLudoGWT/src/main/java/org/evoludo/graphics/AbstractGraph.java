@@ -624,6 +624,26 @@ public abstract class AbstractGraph<B> extends FocusPanel
 	}
 
 	/**
+	 * CSS class applied when the user is grabbing a node.
+	 */
+	static final String CURSOR_GRAB_NODE_CLASS = "evoludo-cursorGrabNode";
+
+	/**
+	 * CSS class applied when the user is dragging a node.
+	 */
+	static final String CURSOR_MOVE_NODE_CLASS = "evoludo-cursorMoveNode";
+
+	/**
+	 * CSS class applied when the user is zooming in.
+	 */
+	static final String CURSOR_ZOOM_IN_CLASS = "evoludo-cursorZoomIn";
+
+	/**
+	 * CSS class applied when the user is zooming out.
+	 */
+	static final String CURSOR_ZOOM_OUT_CLASS = "evoludo-cursorZoomOut";
+
+	/**
 	 * Create the base class for graphs. Allocates the canvas, retrieves the shared
 	 * tooltip and context menu. Use the CSS class {@code evoludo-Canvas2D} for
 	 * custom formatting of the canvas element.
@@ -640,8 +660,8 @@ public abstract class AbstractGraph<B> extends FocusPanel
 			zoomInertiaTimer = new Timer() {
 				@Override
 				public void run() {
-					element.removeClassName("evoludo-cursorZoomIn");
-					element.removeClassName("evoludo-cursorZoomOut");
+					element.removeClassName(CURSOR_ZOOM_IN_CLASS);
+					element.removeClassName(CURSOR_ZOOM_OUT_CLASS);
 				}
 			};
 			zoomer = (Zoomer) (view instanceof Zoomer ? view : this);
@@ -1881,7 +1901,7 @@ public abstract class AbstractGraph<B> extends FocusPanel
 						fy)));
 		zoomFactor = newZoomFactor;
 		if (zoomInertiaTimer.isRunning())
-			element.addClassName(dz > 0 ? "evoludo-cursorZoomIn" : "evoludo-cursorZoomOut");
+			element.addClassName(dz > 0 ? CURSOR_ZOOM_IN_CLASS : CURSOR_ZOOM_OUT_CLASS);
 		paint(true);
 	}
 
