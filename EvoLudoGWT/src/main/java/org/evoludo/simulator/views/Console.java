@@ -177,6 +177,16 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 	}
 
 	/**
+	 * String constant for opening a colored HTML span.
+	 */
+	static final String SPAN_OPEN = "<span style='color:";
+
+	/**
+	 * String constant for closing an HTML span.
+	 */
+	static final String SPAN_CLOSE = "</span>";
+
+	/**
 	 * Log message in console. The output is prettified by coloring messages
 	 * according to their severity:
 	 * <dl>
@@ -202,27 +212,29 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 	 * @param level the severity level of the message
 	 */
 	public void log(Level level, String msg) {
-		String pretty = msg;
+		StringBuilder sb = new StringBuilder();
 		if (level == Level.SEVERE)
-			pretty = "<span style='color:red;'><b>ERROR:</b> " + msg + "</span>";
+			sb.append(SPAN_OPEN).append("red;'><b>ERROR:</b> ").append(msg).append(SPAN_CLOSE);
 		else if (level == Level.WARNING)
-			pretty = "<span style='color:orange;'><b>Warning:</b> " + msg + "</span>";
+			sb.append(SPAN_OPEN).append("orange;'><b>Warning:</b> ").append(msg).append(SPAN_CLOSE);
 		else if (level == Level.FINE || level == Level.FINER || level == Level.FINEST)
-			pretty = "<span style='color:blue;'>DEBUG: " + msg + "</span>";
+			sb.append(SPAN_OPEN).append("blue;'><b>DEBUG:</b> ").append(msg).append(SPAN_CLOSE);
+		else
+			sb.append(msg);
 		Element ele = log.getElement();
 		int scroll = ele.getScrollHeight();
 		int top = ele.getScrollTop();
 		if (log.buffer.getCapacity() == 0) {
 			// unlimited log messages
 			if (level != Level.CONFIG)
-				pretty += "<br/>";
-			log.setHTML(log.getHTML() + pretty);
+				sb.append("<br/>");
+			log.setHTML(log.getHTML() + sb.toString());
 		} else {
 			// abuse of Level.CONFIG for progress (GWT does not support custom levels)
 			if (level != Level.CONFIG)
-				log.add(pretty);
+				log.add(sb.toString());
 			else
-				log.replace(pretty);
+				log.replace(sb.toString());
 			if (scroll - top - ele.getClientHeight() < 1)
 				ele.setScrollTop(scroll);
 			log.show();
