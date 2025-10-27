@@ -1149,13 +1149,15 @@ public abstract class Continuous extends Module<Continuous> {
 			return;
 		super.collectCLO(parser);
 		parser.addCLO(cloTraitRange);
-		cloCosts.addKeys(Costs.values());
-		parser.addCLO(cloCosts);
-		cloBenefits.addKeys(Benefits.values());
-		parser.addCLO(cloBenefits);
-		// best-response is not an acceptable update rule for continuous traits -
-		// exclude Population.PLAYER_UPDATE_BEST_RESPONSE
-		playerUpdate.clo.removeKey(PlayerUpdate.Type.BEST_RESPONSE);
+		if (this instanceof Payoffs) {
+			cloCosts.addKeys(Costs.values());
+			parser.addCLO(cloCosts);
+			cloBenefits.addKeys(Benefits.values());
+			parser.addCLO(cloBenefits);
+			// best-response is not an acceptable update rule for continuous traits -
+			// exclude Population.PLAYER_UPDATE_BEST_RESPONSE
+			playerUpdate.clo.removeKey(PlayerUpdate.Type.BEST_RESPONSE);
+		}
 		// TODO: implement enabling/disabling traits as in discrete case
 		// // add option to disable traits if >=2 traits
 		// if (nTraits > 1)
