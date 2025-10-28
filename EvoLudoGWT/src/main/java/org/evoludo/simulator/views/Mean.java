@@ -433,6 +433,6 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 
 	@Override
 	protected ExportType[] exportTypes() {
-		return new ExportType[] { ExportType.SVG, ExportType.PNG, ExportType.MEAN_DATA };
+		return new ExportType[] { ExportType.SVG, ExportType.PNG, ExportType.CSV_MEAN };
 	}
 }

@@ -76,7 +76,8 @@ import com.google.gwt.user.client.ui.RequiresResize;
  *
  * @author Christoph Hauert
  */
-public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite implements RequiresResize, ProvidesResize,
+public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
+		implements RequiresResize, ProvidesResize,
 		MilestoneListener, SampleListener, ChangeListener {
 
 	/**
@@ -638,7 +639,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 				break;
 			case "C":
 				// export csv data (if supported)
-				if (!hasExportType(ExportType.STAT_DATA))
+				if (!hasExportType(ExportType.CSV_STAT))
 					return false;
 				exportStatData();
 				break;
@@ -826,17 +827,17 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		/**
 		 * Statistics data as a comma separated list, {@code csv}
 		 */
-		STAT_DATA("Statistics (csv)"),
+		CSV_STAT("Statistics (csv)"),
 
 		/**
 		 * Trajectory data as a comma separated list, {@code csv} (not yet implemented).
 		 */
-		TRAJ_DATA("Trajectory (csv)"),
+		CSV_TRAJ("Trajectory (csv)"),
 
 		/**
 		 * Mean state data as a comma separated list, {@code csv} (not yet implemented).
 		 */
-		MEAN_DATA("Mean state (csv)"),
+		CSV_MEAN("Mean state (csv)"),
 
 		/**
 		 * Current state of simulation, {@code plist}
@@ -888,13 +889,13 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 			case PNG:
 				exportPNG();
 				break;
-			case STAT_DATA:
+			case CSV_STAT:
 				exportStatData();
 				break;
-			case MEAN_DATA:
+			case CSV_MEAN:
 				exportMeanData();
 				break;
-			case TRAJ_DATA:
+			case CSV_TRAJ:
 				exportTrajData();
 				break;
 			case STATE:
@@ -979,7 +980,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * Export the statistics data.
 	 * <p>
 	 * <strong>Important:</strong> Must be overridden by subclasses that return
-	 * {@link ExportType#STAT_DATA} among their export data types.
+	 * {@link ExportType#CSV_STAT} among their export data types.
 	 * 
 	 * @see #exportTypes()
 	 */

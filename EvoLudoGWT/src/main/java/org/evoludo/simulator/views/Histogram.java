@@ -1196,7 +1196,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			case STATISTICS_FIXATION_PROBABILITY:
 			case STATISTICS_FIXATION_TIME:
 			case STATISTICS_STATIONARY:
-				return new ExportType[] { ExportType.SVG, ExportType.PNG, ExportType.STAT_DATA };
+				return new ExportType[] { ExportType.SVG, ExportType.PNG, ExportType.CSV_STAT };
 			case DEGREE:
 			default:
 				return new ExportType[] { ExportType.SVG, ExportType.PNG };
