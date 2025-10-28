@@ -256,85 +256,122 @@ public class Phase2D extends AbstractView<ParaGraph> {
 
 	@Override
 	public void populateContextMenu(ContextMenu menu) {
-		if (!map.hasFixedAxes()) {
-			// add context menu for configuring the phase plane axes
-			Module<?> module = engine.getModule();
-			List<? extends Module<?>> species = module.getSpecies();
-			int nSpecies = species.size();
-			boolean isMultispecies = nSpecies > 1;
-			// no menu entries if single species and less than 3 traits
-			if (!isMultispecies && module.getNTraits() < 3) {
-				traitXMenu = traitYMenu = null;
-				traitXItems = traitYItems = null;
-				return;
-			}
-			// in multi-species models the menu includes species names
-			int totTraits = 0;
-			boolean isDensity = model.isDensity();
-			for (Module<?> mod : species) {
-				int vidx = mod.getVacantIdx();
-				int nt = mod.getNTraits();
-				if (isDensity && nt == 1 || (nt == 2 && vidx >= 0))
-					totTraits++;
-				else
-					totTraits += nt;
-			}
-			if (traitXMenu == null || traitXItems == null || traitXItems.length != totTraits ||
-					traitYMenu == null || traitYItems == null || traitYItems.length != totTraits) {
-				traitXMenu = new ContextMenu(menu);
-				traitXItems = new ContextMenuCheckBoxItem[totTraits];
-				traitYMenu = new ContextMenu(menu);
-				traitYItems = new ContextMenuCheckBoxItem[totTraits];
-				int idx = 0;
-				for (Module<?> mod : species) {
-					int vidx = mod.getVacantIdx();
-					int nt = mod.getNTraits();
-					if (isMultispecies && !(nt == 1 || (nt == 2 && vidx >= 0))) {
-						// add separator unless it's the first species
-						// or species with single trait or trait plus vacant
-						if (idx > 0) {
-							traitXMenu.addSeparator();
-							traitYMenu.addSeparator();
-						}
-						// add species name as disabled menu entry
-						ContextMenuItem speciesName = new ContextMenuItem(mod.getName(),
-								(Scheduler.ScheduledCommand) null);
-						speciesName.getElement().getStyle()
-								.setFontWeight(com.google.gwt.dom.client.Style.FontWeight.BOLD);
-						speciesName.setEnabled(false);
-						traitXMenu.add(speciesName);
-						// cannot add same item to two menus...
-						speciesName = new ContextMenuItem(mod.getName(),
-								(Scheduler.ScheduledCommand) null);
-						speciesName.getElement().getStyle()
-								.setFontWeight(com.google.gwt.dom.client.Style.FontWeight.BOLD);
-						speciesName.setEnabled(false);
-						traitYMenu.add(speciesName);
-					}
-					for (int n = 0; n < nt; n++) {
-						if (isDensity && n == vidx)
-							continue;
-						ContextMenuCheckBoxItem traitXItem = new ContextMenuCheckBoxItem(mod.getTraitName(n), //
-								new TraitCommand(n, TraitCommand.X_AXIS));
-						traitXMenu.add(traitXItem);
-						ContextMenuCheckBoxItem traitYItem = new ContextMenuCheckBoxItem(mod.getTraitName(n), //
-								new TraitCommand(n, TraitCommand.Y_AXIS));
-						traitYMenu.add(traitYItem);
-						traitXItems[idx] = traitXItem;
-						traitYItems[idx] = traitYItem;
-						idx++;
-					}
-				}
-				for (int n : map.getTraitsX())
-					traitXItems[n].setChecked(true);
-				for (int n : map.getTraitsY())
-					traitYItems[n].setChecked(true);
-			}
-			menu.addSeparator();
-			menu.add("X-axis trait...", traitXMenu);
-			menu.add("Y-axis trait...", traitYMenu);
+		if (map.hasFixedAxes()) {
+			super.populateContextMenu(menu);
+			return;
 		}
+		// add context menu for configuring the phase plane axes
+		Module<?> module = engine.getModule();
+		List<? extends Module<?>> species = module.getSpecies();
+		int nSpecies = species.size();
+		boolean isMultispecies = nSpecies > 1;
+		// no menu entries if single species and less than 3 traits
+		if (!isMultispecies && module.getNTraits() < 3) {
+			traitXMenu = traitYMenu = null;
+			traitXItems = traitYItems = null;
+			super.populateContextMenu(menu);
+			return;
+		}
+		buildTraitMenus(menu, species, isMultispecies);
+		menu.addSeparator();
+		menu.add("X-axis trait...", traitXMenu);
+		menu.add("Y-axis trait...", traitYMenu);
 		super.populateContextMenu(menu);
+	}
+
+	/**
+	 * Build or update trait selection sub-menus for the X and Y axes.
+	 * 
+	 * @param parent         the parent context menu
+	 * @param species        the list of species modules
+	 * @param isMultispecies whether multiple species are present
+	 */
+	private void buildTraitMenus(ContextMenu parent, List<? extends Module<?>> species, boolean isMultispecies) {
+		int totTraits = computeTotalTraits(species, model.isDensity());
+		if (traitXMenu == null || traitXItems == null || traitXItems.length != totTraits ||
+				traitYMenu == null || traitYItems == null || traitYItems.length != totTraits) {
+			traitXMenu = new ContextMenu(parent);
+			traitYMenu = new ContextMenu(parent);
+			traitXItems = new ContextMenuCheckBoxItem[totTraits];
+			traitYItems = new ContextMenuCheckBoxItem[totTraits];
+			populateTraitItems(species, isMultispecies);
+			// restore checked state from map
+			for (int n : map.getTraitsX())
+				traitXItems[n].setChecked(true);
+			for (int n : map.getTraitsY())
+				traitYItems[n].setChecked(true);
+		}
+	}
+
+	/**
+	 * Compute total number of trait entries that will appear in the trait menus.
+	 * 
+	 * @param species   the list of species modules
+	 * @param isDensity whether the model is a density model
+	 * @return the total number of trait entries
+	 */
+	private int computeTotalTraits(List<? extends Module<?>> species, boolean isDensity) {
+		int totTraits = 0;
+		for (Module<?> mod : species) {
+			int vidx = mod.getVacantIdx();
+			int nt = mod.getNTraits();
+			if (isDensity && nt == 1 || (nt == 2 && vidx >= 0))
+				totTraits++;
+			else
+				totTraits += nt;
+		}
+		return totTraits;
+	}
+
+	/**
+	 * Populate the trait menu items and optional species headers.
+	 * 
+	 * @param species        the list of species modules
+	 * @param isMultispecies whether multiple species are present
+	 */
+	private void populateTraitItems(List<? extends Module<?>> species, boolean isMultispecies) {
+		int idx = 0;
+		for (Module<?> mod : species) {
+			int vidx = mod.getVacantIdx();
+			int nt = mod.getNTraits();
+			if (isMultispecies && !(nt == 1 || (nt == 2 && vidx >= 0))) {
+				// add separator unless it's the first species
+				// or species with single trait or trait plus vacant
+				if (idx > 0) {
+					traitXMenu.addSeparator();
+					traitYMenu.addSeparator();
+				}
+				addDisabledSpeciesName(mod, traitXMenu);
+				addDisabledSpeciesName(mod, traitYMenu);
+			}
+			for (int n = 0; n < nt; n++) {
+				if (model.isDensity() && n == vidx)
+					continue;
+				ContextMenuCheckBoxItem traitXItem = new ContextMenuCheckBoxItem(mod.getTraitName(n),
+						new TraitCommand(n, TraitCommand.X_AXIS));
+				traitXMenu.add(traitXItem);
+				ContextMenuCheckBoxItem traitYItem = new ContextMenuCheckBoxItem(mod.getTraitName(n),
+						new TraitCommand(n, TraitCommand.Y_AXIS));
+				traitYMenu.add(traitYItem);
+				traitXItems[idx] = traitXItem;
+				traitYItems[idx] = traitYItem;
+				idx++;
+			}
+		}
+	}
+
+	/**
+	 * Add a disabled menu entry used as species header.
+	 * 
+	 * @param mod  the species module
+	 * @param menu the context menu to populate
+	 */
+	private void addDisabledSpeciesName(Module<?> mod, ContextMenu menu) {
+		ContextMenuItem speciesName = new ContextMenuItem(mod.getName(), (Scheduler.ScheduledCommand) null);
+		speciesName.getElement().getStyle()
+				.setFontWeight(com.google.gwt.dom.client.Style.FontWeight.BOLD);
+		speciesName.setEnabled(false);
+		menu.add(speciesName);
 	}
 
 	@Override
