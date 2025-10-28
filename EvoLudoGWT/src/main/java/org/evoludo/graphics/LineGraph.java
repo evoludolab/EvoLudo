@@ -185,7 +185,12 @@ public class LineGraph extends AbstractGraph<double[]>
 	/**
 	 * The default number of (time) steps shown on this graph.
 	 */
-	protected double steps = DEFAULT_STEPS;
+	double steps = DEFAULT_STEPS;
+
+	/**
+	 * The number of lines to plot.
+	 */
+	int nLines;
 
 	/**
 	 * Create new line graph for {@code view}. The {@code id} is used to
@@ -246,6 +251,21 @@ public class LineGraph extends AbstractGraph<double[]>
 				style.autoscaleY = false;
 			}
 		}
+	}
+
+	@Override
+	public void setColors(String[] colors) {
+		super.setColors(colors);
+		nLines = colors.length;
+	}
+
+	/**
+	 * Get the number of lines plotted in this graph.
+	 * 
+	 * @return the number of lines
+	 */
+	public int getNLines() {
+		return nLines;
 	}
 
 	@Override
@@ -391,7 +411,6 @@ public class LineGraph extends AbstractGraph<double[]>
 
 		// compute y transform and draw content
 		double[] yinfo = computeYScale(h);
-		int nLines = Math.max(0, buffer.getDepth() - 1);
 		drawLines(w, yinfo, nLines);
 		drawMarkers(w, yinfo[0], nLines);
 

@@ -44,17 +44,39 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBSC;
-import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
 
 /**
- * The view to display graphs with time series data. Typically this is used to
- * track the mean fitness or configuration of the current EvoLudo model.
- * <p>
- * The view is interactive and allows to shift the time axis and to zoom in and
- * out. For multiple graphs the zooming and shifting is synchronized.
+ * A view that displays time-series plots of mean trait values or mean fitness
+ * for the current EvoLudo model using one or more LineGraph panels.
+ *
+ * <h3>Responsibilities</h3>
+ * <ul>
+ * <li>Create and manage the set of {@link LineGraph} panels appropriate for the
+ * current model configuration (one panel per discrete species, or one
+ * panel per continuous trait when the model is continuous).</li>
+ * <li>Configure visual style for each graph (labels, y-range, colors,
+ * markers) depending on whether the data represents TRAIT or FITNESS and
+ * whether the underlying model is continuous or discrete.</li>
+ * <li>Collect mean values from the model and push them to the graphs on
+ * updates; supports both mean +/- standard deviation (continuous) and
+ * per-trait frequencies/mean payoffs (discrete).</li>
+ * <li>Manage zooming and shifting of displayed window of time series data.</li>
+ * <li>Handle layout, sizing and resetting of graphs when model settings
+ * change.</li>
+ * </ul>
+ *
+ * <h3>Exports</h3>
+ * Supports exporting graphs as SVG and PNG as well as exporting the mean time
+ * series data as CSV).
  *
  * @author Christoph Hauert
+ * 
+ * @see org.evoludo.simulator.views.AbstractView
+ * @see org.evoludo.simulator.views.LineGraph
+ * @see org.evoludo.simulator.model.Data
+ * @see org.evoludo.simulator.model.DModel
+ * @see org.evoludo.simulator.model.IBSC
  */
 public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 
@@ -95,26 +117,17 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		for (Module<?> module : species) {
 			// only one graph per species for fitness data
 			// but separate graphs for multiple continuous traits
-			if (model.isContinuous() && type != Data.FITNESS)
+			if (model.isContinuous() && type == Data.TRAIT)
 				nGraphs += module.getNTraits();
 			else
 				nGraphs++;
 		}
 		// if the number of graphs has changed, destroy and recreate them
-		if (graphs.size() != nGraphs) {
+		if (nGraphs > 0 && graphs.size() != nGraphs) {
 			destroyGraphs();
 			// one graph per discrete species or continuous trait
 			for (Module<?> module : species) {
-				LineGraph graph = new LineGraph(this, module);
-				wrapper.add(graph);
-				graphs.add(graph);
-				if (!model.isContinuous())
-					continue;
-				for (int n = 1; n < module.getNTraits(); n++) {
-					graph = new LineGraph(this, module);
-					wrapper.add(graph);
-					graphs.add(graph);
-				}
+				addLineGraph(module);
 			}
 			// arrange graphs vertically
 			gRows = nGraphs;
@@ -125,116 +138,200 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 		}
 	}
 
+	/**
+	 * Create and register the LineGraph(s) for a single module: one graph for the
+	 * module, and additional graphs for extra traits when the model is continuous.
+	 */
+	private void addLineGraph(Module<?> module) {
+		LineGraph graph = new LineGraph(this, module);
+		wrapper.add(graph);
+		graphs.add(graph);
+		if (!model.isContinuous())
+			return;
+		for (int n = 1; n < module.getNTraits(); n++) {
+			graph = new LineGraph(this, module);
+			wrapper.add(graph);
+			graphs.add(graph);
+		}
+	}
+
 	@Override
 	public void reset(boolean hard) {
 		super.reset(hard);
-		int nSpecies = model.getNSpecies();
-		IBSC cmodel = model.isContinuous() ? (IBSC) model : null;
-		int nMean = model.getNMean();
-		// index of trait in continuous models
-		int idx = 0;
-		for (LineGraph graph : graphs) {
-			GraphStyle style = graph.getStyle();
-			Module<?> module = graph.getModule();
+		int idx = 0; // index of trait in continuous models
 
+		for (LineGraph graph : graphs) {
 			switch (type) {
 				case TRAIT:
-					state = new double[nMean];
-					if (cmodel != null) {
-						// continuous module with single trait on graph (single species, for now)
-						style.yLabel = model.getMeanName(idx);
-						style.percentY = false;
-						style.yMin = cmodel.getTraitRangeMin(0)[idx];
-						style.yMax = cmodel.getTraitRangeMax(0)[idx];
-						Color color = module.getMeanColors()[idx];
-						String[] traitcolors = new String[3];
-						traitcolors[0] = ColorMapCSS.Color2Css(color); // mean
-						traitcolors[1] = ColorMapCSS
-								.Color2Css(color == Color.BLACK ? Color.LIGHT_GRAY : color.darker()); // min
-						traitcolors[2] = traitcolors[1]; // max
-						graph.setColors(traitcolors);
+					if (model.isContinuous()) {
+						setupCTraitGraph(graph, idx);
 						idx++;
 					} else {
-						// discrete module with multiple traits on graph
-						if (model.isDensity()) {
-							style.yLabel = "density";
-							style.percentY = false;
-						} else {
-							style.yLabel = "frequency";
-							style.percentY = true;
-						}
-						Color[] colors = module.getMeanColors();
-						graph.setColors(ColorMapCSS.Color2Css(colors));
-						String[] mcolors = new String[colors.length];
-						int n = 0;
-						for (Color color : colors)
-							mcolors[n++] = ColorMapCSS.Color2Css(ColorMap.addAlpha(color, 100));
-						graph.setMarkers(module.getMarkers(), mcolors);
+						setupDTraitGraph(graph);
 					}
 					break;
+
 				case FITNESS:
-					Color[] fitcolors;
-					int id = module.getID();
-					state = new double[nMean + 1];
-					if (cmodel != null) {
-						// hardcoded color: black for mean, light gray for mean +/- sdev
-						fitcolors = new Color[] { Color.BLACK, Color.LIGHT_GRAY, Color.LIGHT_GRAY };
-					} else {
-						// one 'state' more for the average fitness
-						fitcolors = new Color[nMean + 1];
-						System.arraycopy(module.getMeanColors(), 0, fitcolors, 0, nMean);
-						fitcolors[nMean] = Color.BLACK;
-					}
-					graph.setColors(ColorMapCSS.Color2Css(fitcolors));
-					double min = model.getMinScore(id);
-					double max = model.getMaxScore(id);
-					if (max - min < 1e-8) {
-						min -= 1.0;
-						max += 1.0;
-					}
-					if (Math.abs(min - style.yMin) > 1e-8 || Math.abs(max - style.yMax) > 1e-8) {
-						style.yMin = min;
-						style.yMax = max;
-						hard = true;
-					}
-					if (nSpecies > 1)
-						style.label = module.getName();
-					style.yLabel = "payoffs";
-					if (module instanceof Discrete) {
-						// cast is save because module is Discrete
-						DModel dmodel = (DModel) model;
-						double[] monoScores = new double[nMean + 1];
-						// the first entry is for dashed (>0) and dotted (<0) lines
-						monoScores[0] = 1.0;
-						for (int n = 0; n < nMean; n++)
-							monoScores[n + 1] = dmodel.getMonoScore(module.getID(), n);
-						String[] monoColors = new String[fitcolors.length];
-						int n = 0;
-						for (Color color : fitcolors)
-							monoColors[n++] = ColorMapCSS.Color2Css(ColorMap.addAlpha(color, 100));
-						ArrayList<double[]> marker = new ArrayList<>();
-						marker.add(monoScores);
-						graph.setMarkers(marker, monoColors);
-					}
+					if (model.isContinuous())
+						setupCFitGraph(graph);
+					else
+						// note: leave nState alone because of multi-species modules!
+						setupDFitGraph(graph);
+					hard |= setFitRange(graph);
 					break;
+
 				default:
 					throw new IllegalArgumentException("Unknown data type: " + type);
 			}
-			if (nSpecies > 1)
-				style.label = module.getName();
-			style.xLabel = "time";
-			style.showXLevels = false;
-			double rFreq = model.getTimeStep();
-			if (Math.abs(style.xIncr - rFreq) > 1e-8) {
-				style.xIncr = rFreq;
-				style.xMin = -graph.getSteps() * style.xIncr;
-				hard = true;
-			}
-			style.xMax = 0.0;
-			if (hard)
-				graph.reset();
+			finishGraphSetup(graph, hard);
 		}
 		update(hard);
+	}
+
+	/**
+	 * Configure a graph style and colors for a discrete module (multiple traits).
+	 * 
+	 * @param graph the graph to configure
+	 */
+	private void setupDTraitGraph(LineGraph graph) {
+		GraphStyle style = graph.getStyle();
+		if (model.isDensity()) {
+			style.yLabel = "density";
+			style.percentY = false;
+		} else {
+			style.yLabel = "frequency";
+			style.percentY = true;
+		}
+		Module<?> module = graph.getModule();
+		Color[] colors = module.getMeanColors();
+		graph.setColors(ColorMapCSS.Color2Css(colors));
+		String[] mcolors = new String[colors.length];
+		int i = 0;
+		for (Color color : colors)
+			mcolors[i++] = ColorMapCSS.Color2Css(ColorMap.addAlpha(color, 100));
+		graph.setMarkers(module.getMarkers(), mcolors);
+	}
+
+	/**
+	 * Configure a graph style and colors for a single continuous trait.
+	 * 
+	 * @param graph the graph to configure
+	 * @param idx   the index of the trait
+	 */
+	private void setupCTraitGraph(LineGraph graph, int idx) {
+		GraphStyle style = graph.getStyle();
+		style.yLabel = model.getMeanName(idx);
+		style.percentY = false;
+		IBSC cmodel = (IBSC) model;
+		style.yMin = cmodel.getTraitRangeMin(0)[idx];
+		style.yMax = cmodel.getTraitRangeMax(0)[idx];
+		Module<?> module = graph.getModule();
+		Color color = module.getMeanColors()[idx];
+		String[] traitcolors = new String[3];
+		traitcolors[0] = ColorMapCSS.Color2Css(color); // mean
+		traitcolors[1] = ColorMapCSS.Color2Css(color == Color.BLACK ? Color.LIGHT_GRAY : color.darker()); // min
+		traitcolors[2] = traitcolors[1]; // max
+		graph.setColors(traitcolors);
+	}
+
+	/**
+	 * Set the y-range for fitness graphs; returns true if the range changed.
+	 * 
+	 * @param graph the graph to configure
+	 * @return <code>true</code> if the y-range changed
+	 */
+	private boolean setFitRange(LineGraph graph) {
+		Module<?> module = graph.getModule();
+		int id = module.getID();
+		double min = model.getMinScore(id);
+		double max = model.getMaxScore(id);
+		if (max - min < 1e-8) {
+			min -= 1.0;
+			max += 1.0;
+		}
+		GraphStyle style = graph.getStyle();
+		boolean rangeChanged = Math.abs(min - style.yMin) > 1e-8 || Math.abs(max - style.yMax) > 1e-8;
+		if (rangeChanged) {
+			style.yMin = min;
+			style.yMax = max;
+		}
+		style.yLabel = "payoffs";
+		return rangeChanged;
+	}
+
+	/**
+	 * Configure a graph style and colors for fitness in discrete models.
+	 * 
+	 * @param graph  the graph to configure
+	 * @param nState the number of states (traits)
+	 */
+	private void setupDFitGraph(LineGraph graph) {
+		Color[] fitcolors;
+		Module<?> module = graph.getModule();
+		int nState = module.getNTraits();
+
+		// one 'state' more for the average fitness
+		fitcolors = new Color[nState + 1]; // +1 for average fitness
+		System.arraycopy(module.getMeanColors(), 0, fitcolors, 0, nState);
+		fitcolors[nState] = Color.BLACK;
+		graph.setColors(ColorMapCSS.Color2Css(fitcolors));
+
+		// cast is safe because module is Discrete
+		DModel dmodel = (DModel) model;
+		// nState = nMean + 1 for fitness
+		double[] monoScores = new double[nState + 1];
+		// the first entry is for dashed (>0) and dotted (<0) lines
+		monoScores[0] = 1.0;
+		for (int n = 0; n < nState; n++)
+			monoScores[n + 1] = dmodel.getMonoScore(module.getID(), n);
+		String[] monoColors = new String[nState + 1];
+		int k = 0;
+		for (Color color : fitcolors)
+			monoColors[k++] = ColorMapCSS.Color2Css(ColorMap.addAlpha(color, 100));
+		ArrayList<double[]> marker = new ArrayList<>();
+		marker.add(monoScores);
+		graph.setMarkers(marker, monoColors);
+	}
+
+	/**
+	 * Configure a graph style and colors for fitness in continuous models.
+	 * 
+	 * @param graph the graph to configure
+	 */
+	private void setupCFitGraph(LineGraph graph) {
+		// hardcoded color: black for mean, light gray for mean +/- sdev
+		Color[] fitcolors = new Color[] { Color.BLACK, Color.LIGHT_GRAY, Color.LIGHT_GRAY };
+		graph.setColors(ColorMapCSS.Color2Css(fitcolors));
+	}
+
+	/**
+	 * Finalize the setup of a graph (x-label, x-range, module label).
+	 * 
+	 * @param graph  the graph to configure
+	 * @param nState the number of states (traits) plus one for average fitness
+	 * @param hard   if true, forces a hard reset of the graph
+	 */
+	private void finishGraphSetup(LineGraph graph, boolean hard) {
+		int nState = graph.getNLines();
+		if (state == null || state.length != nState)
+			state = new double[nState];
+		GraphStyle style = graph.getStyle();
+		int nSpecies = model.getNSpecies();
+		if (nSpecies > 1) {
+			Module<?> module = graph.getModule();
+			style.label = module.getName();
+		}
+		style.xLabel = "time";
+		style.showXLevels = false;
+		double rFreq = model.getTimeStep();
+		if (Math.abs(style.xIncr - rFreq) > 1e-8) {
+			style.xIncr = rFreq;
+			style.xMin = -graph.getSteps() * style.xIncr;
+			hard = true;
+		}
+		style.xMax = 0.0;
+		if (hard)
+			graph.reset();
 	}
 
 	@Override
@@ -253,61 +350,10 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 	public void update(boolean force) {
 		double newtime = model.getUpdates();
 		Module<?> module = null;
-		boolean cmodel = model.isContinuous();
 		if (Math.abs(timestamp - newtime) > 1e-8) {
 			int idx = 0;
 			for (LineGraph graph : graphs) {
-				Module<?> nod = graph.getModule();
-				boolean newmod = module != nod;
-				module = nod;
-				int id = module.getID();
-				int nState = model.getNMean(id);
-				switch (type) {
-					case TRAIT:
-						if (newmod) {
-							idx = 0;
-							model.getMeanTraits(id, state);
-						}
-						// mean cannot be null here
-						double[] data;
-						if (cmodel) {
-							data = new double[4];
-							double m = state[idx];
-							double s = state[idx + nState];
-							data[1] = m;
-							data[2] = m - s;
-							data[3] = m + s;
-							idx++;
-						} else {
-							data = new double[nState + 1];
-							System.arraycopy(state, 0, data, 1, nState);
-						}
-						data[0] = newtime;
-						graph.addData(data);
-						break;
-					case FITNESS:
-						if (newmod)
-							model.getMeanFitness(id, state);
-						// module cannot be null here but make compiler happy
-						if (cmodel) {
-							// fitness graph has only a single panel
-							data = new double[4];
-							double m = state[0];
-							double s = state[1];
-							data[1] = m;
-							data[2] = m - s;
-							data[3] = m + s;
-						} else {
-							// +1 for time, +1 for average
-							data = new double[nState + 1 + 1];
-							System.arraycopy(state, 0, data, 1, nState + 1);
-						}
-						data[0] = newtime;
-						graph.addData(data);
-						break;
-					default:
-						break;
-				}
+				idx = updateGraph(graph, module, idx, newtime);
 			}
 		}
 		if (isActive) {
@@ -315,6 +361,74 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 				graph.paint(force);
 		}
 		timestamp = newtime;
+	}
+
+	private int updateGraph(LineGraph graph, Module<?> module, int idx, double newtime) {
+		Module<?> nod = graph.getModule();
+		boolean newmod = module != nod;
+		module = nod;
+		int id = module.getID();
+		int nState = model.getNMean(id);
+		double[] data;
+		switch (type) {
+			case TRAIT:
+				if (newmod) {
+					model.getMeanTraits(id, state);
+					idx = 0;
+				}
+				if (model.isContinuous())
+					data = updateCTraitGraph(nState, idx++);
+				else
+					data = updateDTraitGraph(nState);
+				break;
+			case FITNESS:
+				if (newmod)
+					model.getMeanFitness(id, state);
+				if (model.isContinuous())
+					data = updateCFitGraph();
+				else
+					data = updateDFitGraph(nState);
+				break;
+			default:
+				throw new IllegalArgumentException("Unknown data type: " + type);
+		}
+		data[0] = newtime;
+		graph.addData(data);
+		return idx;
+	}
+
+	private double[] updateDTraitGraph(int nState) {
+		double[] data = new double[nState + 1];
+		System.arraycopy(state, 0, data, 1, nState);
+		return data;
+	}
+
+	private double[] updateCTraitGraph(int nState, int idx) {
+		double[] data = new double[4];
+		double m = state[idx];
+		double s = state[idx + nState];
+		data[1] = m;
+		data[2] = m - s;
+		data[3] = m + s;
+		return data;
+	}
+
+	private double[] updateDFitGraph(int nState) {
+		// +1 for time, +1 for average
+		double[] data = new double[nState + 1 + 1];
+		System.arraycopy(state, 0, data, 1, nState + 1);
+		return data;
+	}
+
+	private double[] updateCFitGraph() {
+		// fitness graph has only a single panel
+		double[] data = new double[4];
+		double m = state[0];
+		double s = state[1];
+		data[1] = m;
+		data[2] = m - s;
+		data[3] = m + s;
+		return data;
 	}
 
 	@Override
