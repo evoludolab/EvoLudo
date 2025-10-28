@@ -1495,10 +1495,15 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		// consulted
 		if (getPopulationSize() == 0)
 			return true;
-		boolean absorbed = isMonomorphic() && (mutation.probability <= 0.0);
-		// has absorbed if monomorphic and no vacant sites or if stop requested on
-		// monomorphic states
-		return (absorbed && (VACANT < 0 || module.getMonoStop()));
+		// has absorbed if no muations and one of
+		// - monomorphic and no vacant sites
+		// - stop requested on monomorphic states
+		// - death rate zero and no vacant sites
+		return (mutation.probability <= 0.0 &&
+				((isMonomorphic() && (VACANT < 0 || module.getMonoStop())) ||
+						(VACANT >= 0
+								&& module.getDeathRate() <= 0.0
+								&& traitsCount[VACANT] == 0)));
 	}
 
 	@Override
