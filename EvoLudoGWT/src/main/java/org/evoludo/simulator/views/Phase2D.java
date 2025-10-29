@@ -50,9 +50,93 @@ import com.google.gwt.core.client.Scheduler;
 import com.google.gwt.user.client.Command;
 
 /**
- * The view to display time series of data as a trajectory in a 2D phase plane.
- * 
+ * Phase2D is a view that renders the model's mean trait trajectory in a
+ * two‑dimensional phase plane. It wraps a single ParaGraph instance to display
+ * a continuous trajectory over time and provides interactive controls to
+ * configure which traits appear on the horizontal (X) and vertical (Y) axes.
+ *
+ * <h3>Responsibilities</h3>
+ * <ul>
+ * <li>Obtain the current model state (mean traits) and forward it to the
+ * {@code ParaGraph} for plotting as a time‑stamped trajectory point.</li>
+ * <li>Manage a Data2Phase mapping object that transforms the model's state
+ * vector into X/Y coordinates (the map may be supplied by the module or created
+ * by the graph and propagated back to the module).</li>
+ * <li>Configure graph appearance (axis labels, percent/density formatting,
+ * colors, markers) according to module and model settings (e.g., density vs.
+ * frequency).</li>
+ * <li>Provide a context menu for selecting which trait(s) are summed into each
+ * axis, including support for multi‑trait axes, species headers for
+ * multispecies modules, and handling of "vacant" trait indices or reduced
+ * entries for density models.</li>
+ * <li>Support export of visualizations and trajectory data (SVG, PNG and CSV
+ * trajectories).</li>
+ * <li>Handle initialization and reset semantics for both continuous and
+ * discrete models (forwarding initial trait values to the underlying module
+ * where required).</li>
+ * </ul>
+ *
+ * <h3>Key behavioral notes</h3>
+ * <ul>
+ * <li>Only a single ParaGraph is allocated and used by this view; the protected
+ * {@code graph} field is a convenient reference to that single graph.</li>
+ * <li>When {@link #reset(boolean)} is called the view ensures the ParaGraph
+ * receives: markers from the module, the chosen {@code Data2Phase} map, axis
+ * labels and percent/density flags, and the configured trajectory color. A hard
+ * reset will clear the graph.</li>
+ * <li>The {@code Data2Phase} map determines which trait indices contribute to
+ * each axis and whether axes are fixed. If the map does not provide axis
+ * labels, the view synthesizes labels from trait names (and species names when
+ * appropriate).</li>
+ * <li>Trait labeling logic handles multispecies modules by prepending species
+ * names where useful, and by collapsing or omitting names in the common cases
+ * of single trait species or species with a trait + vacant index pair.</li>
+ * <li>Context menu construction skips trait selection when axes are fixed. For
+ * configurable axes it computes the compact list of menu entries (accounting
+ * for density models that omit vacant indices), optionally inserts disabled
+ * species header items, and builds checkbox items representing each selectable
+ * trait. Selection state is synchronized back to the {@code Data2Phase}
+ * map.</li>
+ * <li>Trait toggling is implemented by an inner {@code TraitCommand} which
+ * updates the map's trait lists (adding, replacing, or removing indices as
+ * appropriate), enforces at least one selected trait per axis, and updates the
+ * menu checked states.</li>
+ * <li>{@link #update(boolean)} only adds a new point to the ParaGraph when the
+ * model's update counter has changed; it forwards the current mean traits and
+ * repaints the graph.</li>
+ * <li>{@link #setInitialState(double[])} forwards initial trait values to the
+ * module for discrete models; when successful it triggers model initialization
+ * through the engine.</li>
+ * </ul>
+ *
+ * <h3>Integration notes</h3>
+ * <ul>
+ * <li>The view interacts with an {@code EvoLudoGWT} engine to obtain the
+ * current Module and the associated model (for retrieving mean traits, update
+ * counts and settings).</li>
+ * <li>The module may be multi‑species; the view queries the module for species
+ * modules, trait counts, trait names and vacant indices to construct menus and
+ * labels.</li>
+ * <li>The ParaGraph and Data2Phase types are central collaborators: the graph
+ * is the visual component that draws trajectories and axes, while the map
+ * encapsulates projection and axis configuration logic.</li>
+ * </ul>
+ *
+ * <h3>Export support</h3>
+ * The view advertises three export types: SVG, PNG and CSV of the trajectory
+ * data.
+ *
+ * <h3>Usage</h3>
+ * Place the view into the application's UI container; call {@code reset(hard)}
+ * after model or module changes to synchronize graph settings, and rely on the
+ * engine's pacemaker to drive periodic {@code update} calls to append
+ * trajectory points.
+ *
  * @author Christoph Hauert
+ *
+ * @see ParaGraph
+ * @see Data2Phase
+ * @see EvoLudoGWT
  */
 public class Phase2D extends AbstractView<ParaGraph> {
 

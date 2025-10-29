@@ -1001,9 +1001,8 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		RingBuffer<double[]> buffer = null;
 		for (G graph : graphs) {
 			RingBuffer<?> newbuffer = graph.getBuffer();
-			if (newbuffer == null || newbuffer.isEmpty() || newbuffer == buffer)
-				continue;
-			if (!(newbuffer.first() instanceof double[]))
+			if (newbuffer == null || newbuffer.isEmpty() ||
+					newbuffer == buffer || !(newbuffer.first() instanceof double[]))
 				continue;
 			// cast is safe because of the instanceof check
 			buffer = (RingBuffer<double[]>) newbuffer;
