@@ -1459,12 +1459,12 @@ public class EvoLudoWeb extends Composite
 		engine.setSuspended(false);
 		guiState.model = engine.getModel();
 		guiState.module = engine.getModule();
+		guiState.view = activeView;
 		// parseCLO() does the heavy lifting and configures the GUI
 		guiState.issues = engine.parseCLO(this::configGUI);
 		updateViews();
 		// process (emulated) ePub restrictions - adds console if possible
 		processEPubSettings();
-		guiState.view = activeView;
 		List<AbstractView<?>> availableViews = new ArrayList<>(activeViews.values());
 		if (cloView.isSet()) {
 			// the initialView specification (name or index) may be followed by a space and
