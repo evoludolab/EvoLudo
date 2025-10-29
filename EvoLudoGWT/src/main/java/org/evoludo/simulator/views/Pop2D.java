@@ -146,6 +146,12 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	}
 
 	@Override
+	public void modelSettings() {
+		super.modelSettings();
+		reset(false);
+	}
+
+	@Override
 	public void reset(boolean hard) {
 		super.reset(hard);
 		boolean inter = true;
@@ -243,9 +249,8 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 									ColorMap.addAlpha(Color.YELLOW, 220), ColorMap.addAlpha(Color.RED, 220) },
 							500);
 					cMap = cMap1D;
-					// cMap1D.setRange(pop.getMinFitness(), pop.getMaxFitness());
 					int tag = graph.getModule().getID();
-					cMap1D.setRange(model.getMinScore(tag), model.getMaxScore(tag));
+					cMap1D.setRange(model.getMinFitness(tag), model.getMaxFitness(tag));
 					if (isIBS) {
 						Map2Fitness map2fit = module.getMap2Fitness();
 						int id = module.getID();

@@ -148,6 +148,12 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 	}
 
 	@Override
+	public void modelSettings() {
+		super.modelSettings();
+		reset(false);
+	}
+
+	@Override
 	public void reset(boolean hard) {
 		super.reset(hard);
 		// IMPORTANT: to avoid problems with WebGL and 3D rendering, each graph needs to
@@ -232,9 +238,8 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 									ColorMap.addAlpha(Color.YELLOW, 220), ColorMap.addAlpha(Color.RED, 220) },
 							500);
 					cMap = cMap1D;
-					// cMap1D.setRange(module.getMinFitness(), module.getMaxFitness());
 					int id = graph.getModule().getID();
-					cMap1D.setRange(model.getMinScore(id), model.getMaxScore(id));
+					cMap1D.setRange(model.getMinFitness(id), model.getMaxFitness(id));
 					if (isIBS) {
 						Map2Fitness map2fit = module.getMap2Fitness();
 						if (cmodel != null) {
