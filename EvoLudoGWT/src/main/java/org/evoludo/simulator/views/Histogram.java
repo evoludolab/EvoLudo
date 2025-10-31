@@ -543,7 +543,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 							nNode = 1; // only one 'node' in SDE
 						else {
 							nNode = module.getNPopulation();
-							style.xMax = nNode - 1;
+							style.xMax = nNode - 1.0;
 						}
 						int maxBins = graph.getMaxBins();
 						if (maxBins < 0)
@@ -595,7 +595,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 						graph.setNormalized(false);
 						graph.setNormalized(-1);
 						style.xMin = 0.0;
-						style.xMax = Functions.roundUp(nNode / 4);
+						style.xMax = Functions.roundUp(nNode * 0.25);
 						style.xLabel = "fixation time";
 						style.yLabel = "probability";
 						style.percentY = true;
@@ -610,7 +610,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 							graph.clearData();
 						}
 						style.xMin = 0.0;
-						style.xMax = nNode - 1;
+						style.xMax = nNode - 1.0;
 						style.xLabel = "node";
 						style.yLabel = "time";
 						style.percentY = false;
@@ -725,109 +725,156 @@ public class Histogram extends AbstractView<HistoGraph> {
 		if (Math.abs(timestamp - newtime) > 1e-8) {
 			timestamp = newtime;
 			Type mt = model.getType();
-			// new data available - update histograms
 			switch (type) {
 				case TRAIT:
-					double[][] data = null;
-					// cast ok because trait histograms only make sense for continuous models
-					CModel cmodel = (CModel) model;
-					for (HistoGraph graph : graphs) {
-						double[][] graphdata = graph.getData();
-						if (data != graphdata) {
-							data = graphdata;
-							cmodel.getTraitHistogramData(graph.getModule().getID(), data);
-						}
-					}
+					updateTrait();
 					break;
-
-				case FITNESS: // same as STRATEGY except for call to retrieve data
-					data = null;
-					for (HistoGraph graph : graphs) {
-						double[][] graphdata = graph.getData();
-						if (data != graphdata) {
-							data = graphdata;
-							model.getFitnessHistogramData(graph.getModule().getID(), data);
-						}
-					}
+				case FITNESS:
+					updateFitness();
 					break;
-
 				case DEGREE:
-					data = null;
-					double min = 0.0;
-					double max = 0.0;
-					for (HistoGraph graph : graphs) {
-						Module<?> module = graph.getModule();
-						Geometry inter = module.getInteractionGeometry();
-						Geometry comp = module.getCompetitionGeometry();
-						if (mt.isODE() || mt.isSDE()) {
-							graph.displayMessage(model.getType().getKey() + " model: well-mixed population.");
-							continue;
-						}
-						if (mt.isPDE()) {
-							inter = comp = module.getGeometry();
-							if (inter.isRegular) {
-								graph.displayMessage("PDE model: regular structure with degree "
-										+ (int) (inter.connectivity + 0.5) + ".");
-								continue;
-							}
-							if (inter.isLattice()) {
-								graph.displayMessage("PDE model: lattice structure with degree "
-										+ (int) (inter.connectivity + 0.5) +
-										(inter.fixedBoundary ? " (fixed" : " (periodic") + " boundaries).");
-								continue;
-							}
-						}
-						if (!degreeProcessed || (inter != null && inter.isDynamic)
-								|| (comp != null && comp.isDynamic)) {
-							double[][] graphdata = graph.getData();
-							if (data != graphdata && inter != null && comp != null) {
-								data = graphdata;
-								// find min and max for degree distribution on dynamic graphs
-								int bincount;
-								if (inter.isUndirected)
-									bincount = maxDegree(Math.max(inter.maxOut, comp.maxOut));
-								else
-									bincount = maxDegree(Math.max(inter.maxTot, comp.maxTot));
-								min = 0.0;
-								max = bincount;
-								bincount = Math.min(bincount, HistoGraph.MAX_BINS);
-								if (bincount != data[0].length) {
-									data = new double[data.length][bincount];
-									graph.setData(data);
-								}
-								getDegreeHistogramData(data, inter, comp);
-							}
-							GraphStyle style = graph.getStyle();
-							style.xMin = min;
-							style.xMax = max;
-						}
-					}
+					updateDegree(mt);
 					break;
-
 				case STATISTICS_STATIONARY:
-					int nt = model.getNMean();
-					double[] state = new double[nt];
-					model.getMeanTraits(state);
-					int idx = 0;
-					if (mt.isIBS()) {
-						for (HistoGraph sgraph : graphs) {
-							// use the fact that the state is an integer number in IBS
-							// to avoid rounding errors in determining the appropriate bin
-							int nPop = sgraph.getModule().getNPopulation();
-							sgraph.addData((int) ((int) (state[idx++] * nPop + 0.5) * scale2bins));
-						}
-					} else {
-						for (HistoGraph sgraph : graphs)
-							sgraph.addData((int) (state[idx++] * scale2bins));
-					}
+					updateStationary(mt);
 					break;
-
 				default:
 					break;
 			}
 		}
+
 		for (HistoGraph graph : graphs)
 			graph.paint(force);
+	}
+
+	/**
+	 * Update trait histograms (continuous models).
+	 */
+	private void updateTrait() {
+		double[][] data = null;
+		CModel cmodel = (CModel) model;
+		for (HistoGraph graph : graphs) {
+			double[][] graphdata = graph.getData();
+			if (data != graphdata) {
+				data = graphdata;
+				cmodel.getTraitHistogramData(graph.getModule().getID(), data);
+			}
+		}
+	}
+
+	/**
+	 * Update fitness histograms.
+	 */
+	private void updateFitness() {
+		double[][] data = null;
+		for (HistoGraph graph : graphs) {
+			double[][] graphdata = graph.getData();
+			if (data != graphdata) {
+				data = graphdata;
+				model.getFitnessHistogramData(graph.getModule().getID(), data);
+			}
+		}
+	}
+
+	/**
+	 * Update degree histograms, delegating to getDegreeHistogramData where needed.
+	 * 
+	 * @param mt the type of the current model
+	 */
+	private void updateDegree(Type mt) {
+		double[][] data = null;
+		for (HistoGraph graph : graphs) {
+			Module<?> module = graph.getModule();
+			Geometry inter = module.getInteractionGeometry();
+			Geometry comp = module.getCompetitionGeometry();
+
+			boolean needsUpdate = !degreeProcessed
+					|| (inter != null && inter.isDynamic)
+					|| (comp != null && comp.isDynamic);
+
+			double[][] graphdata = graph.getData();
+			if ((mt.isDE() && handleDEGraph(graph, mt, module))
+					|| !needsUpdate
+					|| graphdata == null
+					|| inter == null
+					|| comp == null) {
+				continue;
+			}
+
+			// initialize or reuse data buffer and compute histogram if buffer changed
+			if (data != graphdata) {
+				data = ensureDegreeData(graph, inter, comp, graphdata);
+			}
+		}
+	}
+
+	/**
+	 * Handle messaging for DE/PDE models; returns true if a message was set on the
+	 * graph and further processing should be skipped.
+	 */
+	private boolean handleDEGraph(HistoGraph graph, Type mt, Module<?> module) {
+		if (mt.isPDE()) {
+			Geometry inter = module.getGeometry();
+			inter = (inter == null ? module.getInteractionGeometry() : inter);
+			if (inter.isRegular) {
+				graph.displayMessage("PDE model: regular structure with degree "
+						+ (int) (inter.connectivity + 0.5) + ".");
+			} else if (inter.isLattice()) {
+				graph.displayMessage("PDE model: lattice structure with degree "
+						+ (int) (inter.connectivity + 0.5) +
+						(inter.fixedBoundary ? " (fixed" : " (periodic") + " boundaries).");
+			}
+		} else {
+			graph.displayMessage(model.getType().getKey() + " model: well-mixed population.");
+		}
+		return graph.hasMessage();
+	}
+
+	/**
+	 * Ensure the provided data buffer is sized appropriately for the given
+	 * interaction/competition geometries, update the histogram data and set axis
+	 * limits on the graph; returns the (possibly new) data buffer.
+	 */
+	private double[][] ensureDegreeData(HistoGraph graph, Geometry inter, Geometry comp, double[][] data) {
+		int bincount;
+		if (inter.isUndirected)
+			bincount = maxDegree(Math.max(inter.maxOut, comp.maxOut));
+		else
+			bincount = maxDegree(Math.max(inter.maxTot, comp.maxTot));
+		double min = 0.0;
+		double max = bincount;
+		bincount = Math.min(bincount, HistoGraph.MAX_BINS);
+		if (bincount != data[0].length) {
+			data = new double[data.length][bincount];
+			graph.setData(data);
+		}
+		getDegreeHistogramData(data, inter, comp);
+		GraphStyle style = graph.getStyle();
+		style.xMin = min;
+		style.xMax = max;
+		return data;
+	}
+
+	/**
+	 * Update stationary statistics histograms.
+	 * 
+	 * @param mt the type of the current model
+	 */
+	private void updateStationary(Type mt) {
+		int nt = model.getNMean();
+		double[] state = new double[nt];
+		model.getMeanTraits(state);
+		int idx = 0;
+		if (mt.isIBS()) {
+			for (HistoGraph sgraph : graphs) {
+				int nPop = sgraph.getModule().getNPopulation();
+				sgraph.addData((int) ((int) (state[idx++] * nPop + 0.5) * scale2bins));
+			}
+		} else {
+			for (HistoGraph sgraph : graphs) {
+				sgraph.addData((int) (state[idx++] * scale2bins));
+			}
+		}
 	}
 
 	/**
@@ -885,81 +932,11 @@ public class Histogram extends AbstractView<HistoGraph> {
 
 		switch (type) {
 			case STATISTICS_FIXATION_PROBABILITY:
-				int nSam = Math.max(model.getNStatisticsSamples(), 1);
-				StringBuilder sb = new StringBuilder("Avg. fix. prob: ");
-				int idx = 0;
-				for (HistoGraph graph : graphs) {
-					Module<?> module = graph.getModule();
-					if (idx > 0)
-						sb.append(", ");
-					sb.append(isMultispecies ? module.getName() + "." : "")
-							.append(module.getTraitName(idx++))
-							.append(": ")
-							.append(Formatter.formatFix(graph.getSamples() / nSam, 4));
-				}
-				status = sb.toString();
+				status = getFixationProbabilityStatus();
 				return status;
 
 			case STATISTICS_FIXATION_TIME:
-				sb = new StringBuilder("Avg. fix. time: ");
-				idx = 0;
-				for (HistoGraph graph : graphs) {
-					double[][] data = graph.getData();
-					if (data == null) {
-						logger.warning("Average fixation times not available!");
-						return "";
-					}
-					Module<?> module = graph.getModule();
-					int nTraits = module.getNTraits();
-					if (idx > 0)
-						sb.append(", ");
-					sb.append(isMultispecies ? module.getName() + "." : "")
-							.append(graph.getStyle().label)
-							.append(": ");
-					int skip = module.getVacantIdx();
-					if (skip >= 0 &&
-							skip == idx &&
-							module instanceof Discrete &&
-							((Discrete) module).getMonoStop()) {
-						idx++;
-					}
-					if (doFixtimeDistr(module)) {
-						double mean = Distributions.distrMean(data[idx]);
-						double sdev = Distributions.distrStdev(data[idx], mean);
-						GraphStyle style = graph.getStyle();
-						sb.append(Formatter.formatFix(style.xMin + mean * (style.xMax - style.xMin), 2))
-								.append(" ± ")
-								.append(Formatter.formatFix(sdev * (style.xMax - style.xMin), 2));
-						idx++;
-						continue;
-					}
-					double sx = 0.0;
-					double sx2 = 0.0;
-					double sw = 0.0;
-					// note: the +1 accounts for the fact that there is an additional graph for
-					// the absorption time.
-					double[] dat = data[idx];
-					double[] sam = data[idx + nTraits + 1];
-					int nDat = dat.length;
-					for (int n = 0; n < nDat; n++) {
-						double w = sam[n];
-						if (w <= 0.0)
-							continue;
-						double x = dat[n];
-						sx += x;
-						sx2 += x * x / w;
-						sw += w;
-					}
-					if (sw <= 0.0)
-						sb.append("0.0000 ± 0.0000");
-					else {
-						double mean = sx / sw;
-						sb.append(Formatter.formatFix(mean, 4)).append(" ± ")
-								.append(Formatter.formatFix(Math.sqrt(sx2 / sw - mean * mean), 4));
-					}
-					idx++;
-				}
-				status = sb.toString();
+				status = getFixationTimeStatus();
 				return status;
 
 			case STATISTICS_STATIONARY:
@@ -974,6 +951,108 @@ public class Histogram extends AbstractView<HistoGraph> {
 	}
 
 	/**
+	 * Build status string for fixation probabilities.
+	 */
+	private String getFixationProbabilityStatus() {
+		int nSamp = model.getNStatisticsSamples();
+		StringBuilder sb = new StringBuilder("Avg. fix. prob: ");
+		int idx = 0;
+		for (HistoGraph graph : graphs) {
+			Module<?> module = graph.getModule();
+			if (idx > 0)
+				sb.append(", ");
+			sb.append(isMultispecies ? module.getName() + "." : "")
+					.append(module.getTraitName(idx++))
+					.append(": ");
+			if (nSamp <= 0)
+				sb.append("-");
+			else
+				sb.append(Formatter.formatFix(graph.getSamples() / nSamp, 4));
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * Build status string for fixation times.
+	 */
+	private String getFixationTimeStatus() {
+		StringBuilder sb = new StringBuilder("Avg. fix. time: ");
+		int idx = 0;
+		for (HistoGraph graph : graphs) {
+			double[][] data = graph.getData();
+			if (data == null) {
+				logger.warning("Average fixation times not available!");
+				return "";
+			}
+			Module<?> module = graph.getModule();
+			int nTraits = module.getNTraits();
+			if (idx > 0)
+				sb.append(", ");
+			sb.append(isMultispecies ? module.getName() + "." : "")
+					.append(graph.getStyle().label)
+					.append(": ");
+			int skip = module.getVacantIdx();
+			if (skip >= 0 &&
+					skip == idx &&
+					module instanceof Discrete &&
+					((Discrete) module).getMonoStop()) {
+				idx++;
+			}
+			if (doFixtimeDistr(module))
+				sb.append(formatDistributionMean(data[idx], graph.getStyle()));
+			else
+				// weighted average over nodes
+				sb.append(formatWeightedMean(data[idx], data[idx + nTraits + 1]));
+			idx++;
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * Format mean ± sdev for a distribution stored in data (assumed normalized
+	 * counts).
+	 * 
+	 * @param dist  the distribution data
+	 * @param style the graph style for scaling
+	 * @return the formatted string
+	 */
+	private String formatDistributionMean(double[] dist, GraphStyle style) {
+		double mean = Distributions.distrMean(dist);
+		double sdev = Distributions.distrStdev(dist, mean);
+		return Formatter.formatFix(style.xMin + mean * (style.xMax - style.xMin), 2)
+				+ " ± " + Formatter.formatFix(sdev * (style.xMax - style.xMin), 2);
+	}
+
+	/**
+	 * Compute weighted mean ± sdev from node-wise times (dat) and sample counts
+	 * (sam).
+	 * 
+	 * @param dat the data array
+	 * @param sam the sample counts
+	 * @return the formatted string
+	 */
+	private String formatWeightedMean(double[] dat, double[] sam) {
+		double sx = 0.0;
+		double sx2 = 0.0;
+		double sw = 0.0;
+		int nDat = dat.length;
+		for (int n = 0; n < nDat; n++) {
+			double w = sam[n];
+			if (w <= 0.0)
+				continue;
+			double x = dat[n];
+			sx += x;
+			sx2 += x * x / w;
+			sw += w;
+		}
+		if (sw <= 0.0)
+			return "0.0000 ± 0.0000";
+		double mean = sx / sw;
+		double sdev = Math.sqrt(sx2 / sw - mean * mean);
+		return Formatter.formatFix(mean, 4) + " ± " + Formatter.formatFix(sdev, 4);
+	}
+
+	/**
 	 * Calculate the maximum degree for displaying the degree distribution. This
 	 * rounds {@code max} up to {@code 10, 20, 50, 100, 200, 500, 1000} etc.
 	 * 
@@ -984,7 +1063,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		// determine range and number of bins required
 		// range starts at 1 up to 10, 20, 50, 100, 200, 500, 1000 etc.
 		// the number of bins is at most 100
-		int order = (int) Math.max(10, Combinatorics.pow(10, (int) Math.floor(Math.log10(max + 1))));
+		int order = (int) Math.max(10, Combinatorics.pow(10, (int) Math.floor(Math.log10(max + 1.0))));
 		switch (max / order) {
 			default:
 			case 0:
