@@ -167,31 +167,43 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * Count how many graphs are required for a single module based on current
 	 * Data type and module settings.
 	 */
-	private int countGraphsForModule(Module<?> pop) {
-		int nTraits = pop.getNTraits();
+	private int countGraphsForModule(Module<?> module) {
+		int nGraphs = module.getNTraits();
 		switch (type) {
 			case TRAIT:
-				return nTraits;
+				return nGraphs;
 			case FITNESS:
 				if (model.isContinuous())
 					return 1;
-				int nt = nTraits;
-				if (pop.getVacantIdx() >= 0)
-					nt--;
-				return nt;
+				if (module.getVacantIdx() >= 0)
+					return nGraphs - 1;
+				return nGraphs;
 			case DEGREE:
-				return getDegreeGraphs(pop.getInteractionGeometry(), pop.getCompetitionGeometry());
+				Type mt = model.getType();
+				Geometry inter;
+				Geometry comp;
+				if (mt.isDE()) {
+					if (mt.isPDE()) {
+						inter = comp = module.getGeometry();
+					} else
+						return 1;
+
+				} else {
+					inter = module.getInteractionGeometry();
+					comp = module.getCompetitionGeometry();
+				}
+				return getNDegreeGraphs(inter, comp);
 			case STATISTICS_STATIONARY:
-				return nTraits;
+				return nGraphs;
 			case STATISTICS_FIXATION_TIME:
 				// one extra graph for absorption times + one per trait (vacant may be skipped)
 				// handled below by subtracting vacant where appropriate; approximate here
-				return 1 + nTraits;
+				return nGraphs + 1;
 			case STATISTICS_FIXATION_PROBABILITY:
 				// one per trait (vacant may be skipped)
-				return nTraits;
+				return nGraphs;
 			default:
-				return 0;
+				throw new IllegalArgumentException("Unknown histogram type: " + type);
 		}
 	}
 
@@ -304,7 +316,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			return 0;
 		}
 		int nXLabels = 0;
-		int nTraits = getDegreeGraphs(module.getInteractionGeometry(), module.getCompetitionGeometry());
+		int nTraits = getNDegreeGraphs(module.getInteractionGeometry(), module.getCompetitionGeometry());
 		Geometry inter = (mt.isPDE() ? module.getGeometry() : module.getInteractionGeometry());
 		String[] labels = getDegreeLabels(nTraits, inter.isUndirected);
 		for (int n = 0; n < nTraits; n++) {
@@ -406,74 +418,70 @@ public class Histogram extends AbstractView<HistoGraph> {
 	public void reset(boolean hard) {
 		super.reset(hard);
 		Module<?> module = null;
-		double[][] data = null;
 		int idx = 0;
 		Type mt = model.getType();
 		boolean isSDE = mt.isSDE();
 
 		for (HistoGraph graph : graphs) {
 			GraphStyle style = graph.getStyle();
-			Module<?> oldmod = module;
 			module = graph.getModule();
-			boolean newPop = (oldmod != module);
-			if (newPop)
-				data = graph.getData();
-			int nTraits = module.getNTraits();
+			int nTraits = countGraphsForModule(module);
 			Color[] colors = module.getTraitColors();
 			if (hard)
 				graph.reset();
 
 			switch (type) {
 				case TRAIT:
-					hard |= resetTrait(graph, data, module, idx, nTraits, colors, style);
+					hard |= resetTrait(graph, module, idx, nTraits, colors, style);
 					break;
 
 				case FITNESS:
-					hard |= resetFitness(graph, data, module, idx, nTraits, colors, style);
+					hard |= resetFitness(graph, module, idx, nTraits, colors, style);
 					break;
 
 				case DEGREE:
-					resetDegree(graph, data, module, mt, style);
+					resetDegree(graph, module, mt, style);
 					break;
 
 				case STATISTICS_FIXATION_PROBABILITY:
-					resetFixationProbability(graph, data, module, idx, nTraits, isSDE, colors, style);
+					resetFixationProbability(graph, module, idx, nTraits, isSDE, colors, style);
 					break;
 
 				case STATISTICS_FIXATION_TIME:
-					resetFixationTime(graph, data, module, idx, nTraits, colors, style);
+					resetFixationTime(graph, module, idx, nTraits, colors, style);
 					break;
 
 				case STATISTICS_STATIONARY:
-					resetStationary(graph, data, module, idx, nTraits, mt, colors, style);
+					resetStationary(graph, module, idx, nTraits, mt, colors, style);
 					break;
 
 				default:
-					// nothing to do
+					throw new IllegalArgumentException("Unknown histogram type: " + type);
 			}
-			data = graph.getData();
 			idx++;
 		}
 		update(hard);
 	}
 
 	/**
-	 * Ensure the histogram buffer matches the requested dimensions, allocating a
-	 * new array if necessary.
+	 * Allocate the histogram buffer if necessary.
+	 * 
+	 * @param graph the histogram graph
+	 * @param rows  the required number of rows
+	 * @param cols  the required number of columns
 	 */
-	private double[][] ensureData(double[][] data, int rows, int cols) {
+	private void allocData(HistoGraph graph, int rows, int cols) {
 		if (rows < 0 || cols < 0)
 			throw new IllegalArgumentException("Histogram dimensions must be non-negative.");
+		double[][] data = graph.getData();
 		if (data == null || data.length != rows || (rows > 0 && data[0].length != cols))
-			return new double[rows][cols];
-		return data;
+			graph.setData(new double[rows][cols]);
 	}
 
-	private boolean resetTrait(HistoGraph graph, double[][] data, Module<?> module, int idx, int nTraits,
+	private boolean resetTrait(HistoGraph graph, Module<?> module, int idx, int nTraits,
 			Color[] colors, GraphStyle style) {
 		// histogram of strategies makes only sense for continuous traits
-		data = ensureData(data, nTraits, HistoGraph.MAX_BINS);
-		graph.setData(data);
+		allocData(graph, nTraits, HistoGraph.MAX_BINS);
 		graph.clearMarkers();
 		List<double[]> markers = module.getMarkers();
 		if (markers != null) {
@@ -499,15 +507,10 @@ public class Histogram extends AbstractView<HistoGraph> {
 		return hard;
 	}
 
-	private boolean resetFitness(HistoGraph graph, double[][] data, Module<?> module, int idx, int nTraits,
+	private boolean resetFitness(HistoGraph graph, Module<?> module, int idx, int nTraits,
 			Color[] colors, GraphStyle style) {
-		int vacant = module.getVacantIdx();
 		graph.clearMarkers();
-		nTraits = (model.isContinuous() ? 1 : nTraits);
-		if (vacant >= 0)
-			nTraits--;
-		data = ensureData(data, nTraits, HistoGraph.MAX_BINS);
-		graph.setData(data);
+		allocData(graph, nTraits, HistoGraph.MAX_BINS);
 		double min = model.getMinScore(module.getID());
 		double max = model.getMaxScore(module.getID());
 		boolean hard = false;
@@ -546,7 +549,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 		return hard;
 	}
 
-	private void resetDegree(HistoGraph graph, double[][] data, Module<?> module, Type mt, GraphStyle style) {
+	private void resetDegree(HistoGraph graph, Module<?> module, Type mt,
+			GraphStyle style) {
 		if (mt.isODE() || mt.isSDE()) {
 			graph.setData(null);
 			return;
@@ -559,10 +563,9 @@ public class Histogram extends AbstractView<HistoGraph> {
 			inter = module.getInteractionGeometry();
 			comp = module.getCompetitionGeometry();
 		}
-		int rows = getDegreeGraphs(inter, comp);
+		int rows = getNDegreeGraphs(inter, comp);
 		int cols = getDegreeBins(inter, comp);
-		data = ensureData(data, rows, cols);
-		graph.setData(data);
+		allocData(graph, rows, cols);
 		style.yMin = 0.0;
 		style.yMax = 1.0;
 		style.xMin = 0.0;
@@ -572,7 +575,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			style.xMax = maxDegree(Math.max(inter.maxTot, comp.maxTot));
 	}
 
-	private void resetFixationProbability(HistoGraph graph, double[][] data, Module<?> module, int idx,
+	private void resetFixationProbability(HistoGraph graph, Module<?> module, int idx,
 			int nTraits, boolean isSDE, Color[] colors, GraphStyle style) {
 		checkStatistics();
 		style.yMin = 0.0;
@@ -597,16 +600,15 @@ public class Histogram extends AbstractView<HistoGraph> {
 			while (bins > maxBins) {
 				bins = nNode / ++binSize;
 			}
-			data = ensureData(data, nTraits + 1, bins);
+			allocData(graph, nTraits + 1, bins);
 			scale2bins = 1.0 / binSize;
-			graph.setData(data);
 			style.customYLevels = ((HasHistogram) module).getCustomLevels(type, idx);
 		} else {
 			graph.clearData();
 		}
 	}
 
-	private void resetFixationTime(HistoGraph graph, double[][] data, Module<?> module, int idx, int nTraits,
+	private void resetFixationTime(HistoGraph graph, Module<?> module, int idx, int nTraits,
 			Color[] colors, GraphStyle style) {
 		checkStatistics();
 		int nNode = module.getNPopulation();
@@ -623,8 +625,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		if (doFixtimeDistr(module)) {
 			if (doStatistics) {
 				int maxBins = graph.getMaxBins() * (HistoGraph.MIN_BIN_WIDTH + 1) / (HistoGraph.MIN_BIN_WIDTH + 2);
-				data = ensureData(data, nTraits + 1, maxBins);
-				graph.setData(data);
+				allocData(graph, nTraits + 1, maxBins);
 			} else {
 				graph.clearData();
 			}
@@ -639,8 +640,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			style.customYLevels = new double[0];
 		} else {
 			if (doStatistics) {
-				data = ensureData(data, 2 * (nTraits + 1), nNode);
-				graph.setData(data);
+				allocData(graph, 2 * (nTraits + 1), nNode);
 			} else {
 				graph.clearData();
 			}
@@ -652,18 +652,16 @@ public class Histogram extends AbstractView<HistoGraph> {
 			graph.enableAutoscaleYMenu(false);
 			style.customYLevels = ((HasHistogram) module).getCustomLevels(type, idx);
 		}
-		graph.setData(data);
 	}
 
-	private void resetStationary(HistoGraph graph, double[][] data, Module<?> module, int idx, int nTraits,
+	private void resetStationary(HistoGraph graph, Module<?> module, int idx, int nTraits,
 			Type mt, Color[] colors, GraphStyle style) {
 		style.label = (isMultispecies ? module.getName() + ": " : "") + module.getTraitName(idx);
 		int nNode = module.getNPopulation();
 		// determine the number of bins with maximum of MAX_BINS
 		binSize = (nNode + 1) / HistoGraph.MAX_BINS + 1;
 		int nBins = (nNode + 1) / binSize;
-		data = ensureData(data, nTraits, nBins);
-		graph.setData(data);
+		allocData(graph, nTraits, nBins);
 		if (mt.isDE()) {
 			if (model.isDensity()) {
 				style.xLabel = "density";
@@ -1174,7 +1172,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param comp  the competition geometry
 	 * @return the number of histograms required
 	 */
-	private int getDegreeGraphs(Geometry inter, Geometry comp) {
+	private int getNDegreeGraphs(Geometry inter, Geometry comp) {
 		if (inter == null)
 			return 1;
 		int nGraphs = 1;
