@@ -137,7 +137,6 @@ public class Histogram extends AbstractView<HistoGraph> {
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		isMultispecies = (species.size() > 1);
 		degreeProcessed = false;
-		doStatistics = false;
 
 		// Count required graphs
 		int nGraphs = 0;
@@ -577,40 +576,35 @@ public class Histogram extends AbstractView<HistoGraph> {
 
 	private void resetFixationProbability(HistoGraph graph, Module<?> module, int idx,
 			int nTraits, boolean isSDE, Color[] colors, GraphStyle style) {
-		checkStatistics();
 		style.yMin = 0.0;
 		style.yMax = 1.0;
 		style.xMin = 0;
 		style.xMax = 1;
 		style.label = module.getTraitName(idx);
 		style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
-		if (doStatistics) {
-			int nNode;
-			if (isSDE)
-				nNode = 1; // only one 'node' in SDE
-			else {
-				nNode = module.getNPopulation();
-				style.xMax = nNode - 1.0;
-			}
-			int maxBins = graph.getMaxBins();
-			if (maxBins < 0)
-				maxBins = 100;
-			binSize = 1;
-			int bins = nNode;
-			while (bins > maxBins) {
-				bins = nNode / ++binSize;
-			}
-			allocData(graph, nTraits + 1, bins);
-			scale2bins = 1.0 / binSize;
-			style.customYLevels = ((HasHistogram) module).getCustomLevels(type, idx);
-		} else {
-			graph.clearData();
+		int nNode;
+		if (isSDE)
+			nNode = 1; // only one 'node' in SDE
+		else {
+			nNode = module.getNPopulation();
+			style.xMax = nNode - 1.0;
 		}
+		int maxBins = graph.getMaxBins();
+		if (maxBins < 0)
+			maxBins = 100;
+		binSize = 1;
+		int bins = nNode;
+		while (bins > maxBins) {
+			bins = nNode / ++binSize;
+		}
+		allocData(graph, nTraits + 1, bins);
+		scale2bins = 1.0 / binSize;
+		style.customYLevels = ((HasHistogram) module).getCustomLevels(type, idx);
+		graph.clearData();
 	}
 
 	private void resetFixationTime(HistoGraph graph, Module<?> module, int idx, int nTraits,
 			Color[] colors, GraphStyle style) {
-		checkStatistics();
 		int nNode = module.getNPopulation();
 		style.yMin = 0.0;
 		style.yMax = 1.0;
@@ -623,12 +617,9 @@ public class Histogram extends AbstractView<HistoGraph> {
 			style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
 		}
 		if (doFixtimeDistr(module)) {
-			if (doStatistics) {
-				int maxBins = graph.getMaxBins() * (HistoGraph.MIN_BIN_WIDTH + 1) / (HistoGraph.MIN_BIN_WIDTH + 2);
-				allocData(graph, nTraits + 1, maxBins);
-			} else {
-				graph.clearData();
-			}
+			int maxBins = graph.getMaxBins() * (HistoGraph.MIN_BIN_WIDTH + 1) / (HistoGraph.MIN_BIN_WIDTH + 2);
+			allocData(graph, nTraits + 1, maxBins);
+			graph.clearData();
 			graph.setNormalized(false);
 			graph.setNormalized(-1);
 			style.xMin = 0.0;
@@ -639,11 +630,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 			graph.enableAutoscaleYMenu(true);
 			style.customYLevels = new double[0];
 		} else {
-			if (doStatistics) {
-				allocData(graph, 2 * (nTraits + 1), nNode);
-			} else {
-				graph.clearData();
-			}
+			allocData(graph, 2 * (nTraits + 1), nNode);
+			graph.clearData();
 			style.xMin = 0.0;
 			style.xMax = nNode - 1.0;
 			style.xLabel = "node";
@@ -744,7 +732,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 
 	@Override
 	public void update(boolean force) {
-		if (!isActive && !doStatistics)
+		if (!isActive && getMode() == Mode.DYNAMICS)
 			return;
 
 		double newtime = model.getUpdates();
@@ -901,31 +889,6 @@ public class Histogram extends AbstractView<HistoGraph> {
 				sgraph.addData((int) (state[idx++] * scale2bins));
 			}
 		}
-	}
-
-	/**
-	 * The flag to indicate whether the view is in statistics mode.
-	 */
-	private boolean doStatistics = false;
-
-	/**
-	 * Check the mode of the view.
-	 * 
-	 * @return {@code true} if the view is in statistics mode
-	 */
-	private boolean checkStatistics() {
-		doStatistics = false;
-		if (!model.permitsMode(Mode.STATISTICS_SAMPLE)
-				|| model.getFixationData() == null) {
-			for (HistoGraph graph : graphs)
-				graph.displayMessage("Fixation: incompatible settings");
-			model.resetStatisticsSample();
-		} else {
-			for (HistoGraph graph : graphs)
-				graph.clearMessage();
-			doStatistics = true;
-		}
-		return doStatistics;
 	}
 
 	/**
