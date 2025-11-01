@@ -111,7 +111,26 @@
           <moduleName>org.evoludo.EvoLudoWeb</moduleName>
           <relocateSuperSource>true</relocateSuperSource>
           <style>${gwt.style}</style>
+          <compilerArgs>
+            <arg>-optimize</arg>
+            <arg>${gwt.optimize}</arg>
+          </compilerArgs>
         </configuration>
+        <executions>
+          <execution>
+            <id>devmode</id>
+            <goals>
+              <goal>devmode</goal>
+            </goals>
+            <configuration>
+              <style>${gwt.style.devmode}</style>
+              <compilerArgs>
+                <arg>-optimize</arg>
+                <arg>${gwt.optimize.devmode}</arg>
+              </compilerArgs>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
@@ -153,6 +172,13 @@
                 <goals>
                   <goal>devmode</goal>
                 </goals>
+                <configuration>
+                  <style>${gwt.style.devmode}</style>
+                  <compilerArgs>
+                    <arg>-optimize</arg>
+                    <arg>${gwt.optimize.devmode}</arg>
+                  </compilerArgs>
+                </configuration>
               </execution>
             </executions>
           </plugin>
