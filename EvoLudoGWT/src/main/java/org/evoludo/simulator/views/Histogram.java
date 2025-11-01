@@ -409,9 +409,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 		double[][] data = null;
 		int idx = 0;
 		Type mt = model.getType();
-		boolean isODE = mt.isODE();
 		boolean isSDE = mt.isSDE();
-		boolean isPDE = mt.isPDE();
+
 		for (HistoGraph graph : graphs) {
 			GraphStyle style = graph.getStyle();
 			Module<?> oldmod = module;
@@ -419,7 +418,6 @@ public class Histogram extends AbstractView<HistoGraph> {
 			boolean newPop = (oldmod != module);
 			if (newPop)
 				data = graph.getData();
-			int vacant = module.getVacantIdx();
 			int nTraits = module.getNTraits();
 			Color[] colors = module.getTraitColors();
 			if (hard)
@@ -427,233 +425,264 @@ public class Histogram extends AbstractView<HistoGraph> {
 
 			switch (type) {
 				case TRAIT:
-					// histogram of strategies makes only sense for continuous traits
-					if (data == null || data.length != nTraits || data[0].length != HistoGraph.MAX_BINS)
-						data = new double[nTraits][HistoGraph.MAX_BINS];
-					graph.setData(data);
-					graph.clearMarkers();
-					List<double[]> markers = module.getMarkers();
-					if (markers != null) {
-						for (double[] mark : markers)
-							graph.addMarker(mark[idx + 1], ColorMapCSS.Color2Css(colors[idx]), null,
-									mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
-					}
-					Continuous cmod = (Continuous) module;
-					double min = cmod.getTraitMin()[idx];
-					double max = cmod.getTraitMax()[idx];
-					if (Math.abs(min - style.xMin) > 1e-6 || Math.abs(max - style.xMax) > 1e-6) {
-						style.xMin = min;
-						style.xMax = max;
-						hard = true;
-					}
-					style.yMin = 0.0;
-					style.yMax = 1.0;
-					style.xLabel = module.getTraitName(idx);
-					style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
-					if (isMultispecies)
-						style.label = module.getName() + ": " + module.getTraitName(idx);
+					hard |= resetTrait(graph, data, module, idx, nTraits, colors, style);
 					break;
 
 				case FITNESS:
-					graph.clearMarkers();
-					nTraits = (model.isContinuous() ? 1 : nTraits);
-					if (vacant >= 0)
-						nTraits--;
-					if (data == null || data.length != nTraits || data[0].length != HistoGraph.MAX_BINS)
-						data = new double[nTraits][HistoGraph.MAX_BINS];
-					graph.setData(data);
-					min = model.getMinScore(module.getID());
-					max = model.getMaxScore(module.getID());
-					if (Math.abs(min - style.xMin) > 1e-6 || Math.abs(max - style.xMax) > 1e-6) {
-						style.xMin = min;
-						style.xMax = max;
-						hard = true;
-					}
-					style.yMin = 0.0;
-					style.yMax = 1.0;
-					if (module instanceof Discrete) {
-						// cast is save because pop is Discrete
-						DModel dmodel = (DModel) model;
-						style.label = (isMultispecies ? module.getName() + ": " : "") + module.getTraitName(idx);
-						Color tColor = colors[idx];
-						style.graphColor = ColorMapCSS.Color2Css(tColor);
-						double mono = dmodel.getMonoScore(module.getID(), idx);
-						if (Double.isNaN(mono))
-							break;
-						graph.addMarker(mono,
-								ColorMapCSS.Color2Css(ColorMap.blendColors(tColor, Color.WHITE, 0.5)),
-								"monomorphic payoff");
-						break;
-					}
-					if (module instanceof Continuous) {
-						// cast is save because pop is Continuous
-						CModel cmodel = (org.evoludo.simulator.models.CModel) model;
-						Color tcolor = colors[idx];
-						graph.addMarker(cmodel.getMinMonoScore(module.getID()),
-								ColorMapCSS.Color2Css(ColorMap.blendColors(tcolor, Color.BLACK, 0.5)),
-								"minimum monomorphic payoff");
-						graph.addMarker(cmodel.getMaxMonoScore(module.getID()),
-								ColorMapCSS.Color2Css(ColorMap.blendColors(tcolor, Color.WHITE, 0.5)),
-								"maximum monomorphic payoff");
-						style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
-						break;
-					}
-					// unknown population type - do not mark any fitness values
+					hard |= resetFitness(graph, data, module, idx, nTraits, colors, style);
 					break;
 
 				case DEGREE:
-					if (isODE || isSDE) {
-						graph.setData(null);
-						break;
-					}
-					Geometry inter;
-					Geometry comp;
-					if (isPDE) {
-						inter = comp = module.getGeometry();
-					} else {
-						inter = module.getInteractionGeometry();
-						comp = module.getCompetitionGeometry();
-					}
-					int rows = getDegreeGraphs(inter, comp);
-					int cols = getDegreeBins(inter, comp);
-					if (data == null || data.length != rows || data[0].length != cols)
-						data = new double[rows][cols];
-					graph.setData(data);
-					style.yMin = 0.0;
-					style.yMax = 1.0;
-					style.xMin = 0.0;
-					if (inter.isUndirected)
-						style.xMax = maxDegree(Math.max(inter.maxOut, comp.maxOut));
-					else
-						style.xMax = maxDegree(Math.max(inter.maxTot, comp.maxTot));
+					resetDegree(graph, data, module, mt, style);
 					break;
 
 				case STATISTICS_FIXATION_PROBABILITY:
-					checkStatistics();
-					style.yMin = 0.0;
-					style.yMax = 1.0;
-					style.xMin = 0;
-					style.xMax = 1;
-					style.label = module.getTraitName(idx);
-					style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
-					if (doStatistics) {
-						int nNode;
-						if (isSDE)
-							nNode = 1; // only one 'node' in SDE
-						else {
-							nNode = module.getNPopulation();
-							style.xMax = nNode - 1.0;
-						}
-						int maxBins = graph.getMaxBins();
-						if (maxBins < 0)
-							maxBins = 100;
-						if (data == null
-								|| data.length != nTraits + 1
-								|| nNode > maxBins
-								|| (nNode <= maxBins && data[0].length != nNode)) {
-							binSize = 1;
-							int bins = nNode;
-							while (bins > maxBins) {
-								bins = nNode / ++binSize;
-							}
-							// allocate memory for data if size changed
-							if (data == null || data.length != nTraits + 1 || data[0].length != bins)
-								data = new double[nTraits + 1][bins];
-							scale2bins = 1.0 / binSize;
-						}
-						graph.setData(data);
-						style.customYLevels = ((HasHistogram) module).getCustomLevels(type, idx);
-					} else {
-						graph.clearData();
-					}
+					resetFixationProbability(graph, data, module, idx, nTraits, isSDE, colors, style);
 					break;
 
 				case STATISTICS_FIXATION_TIME:
-					checkStatistics();
-					int nNode = module.getNPopulation();
-					style.yMin = 0.0;
-					style.yMax = 1.0;
-					// last graph is for absorption times
-					if (idx < graphs.size() - 1) {
-						style.label = module.getTraitName(idx);
-						style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
-					} else {
-						style.label = "Absorbtion";
-						style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
-					}
-					if (doFixtimeDistr(module)) {
-						if (doStatistics) {
-							int maxBins = graph.getMaxBins() * (HistoGraph.MIN_BIN_WIDTH + 1)
-									/ (HistoGraph.MIN_BIN_WIDTH + 2);
-							if (data == null || data.length != nTraits + 1 || data[0].length != maxBins)
-								data = new double[nTraits + 1][maxBins];
-							graph.setData(data);
-						} else {
-							graph.clearData();
-						}
-						graph.setNormalized(false);
-						graph.setNormalized(-1);
-						style.xMin = 0.0;
-						style.xMax = Functions.roundUp(nNode * 0.25);
-						style.xLabel = "fixation time";
-						style.yLabel = "probability";
-						style.percentY = true;
-						graph.enableAutoscaleYMenu(true);
-						style.customYLevels = new double[0];
-					} else {
-						if (doStatistics) {
-							if (data == null || data.length != 2 * (nTraits + 1) || data[0].length != nNode)
-								data = new double[2 * (nTraits + 1)][nNode];
-							graph.setData(data);
-						} else {
-							graph.clearData();
-						}
-						style.xMin = 0.0;
-						style.xMax = nNode - 1.0;
-						style.xLabel = "node";
-						style.yLabel = "time";
-						style.percentY = false;
-						graph.enableAutoscaleYMenu(false);
-						style.customYLevels = ((HasHistogram) module).getCustomLevels(type, idx);
-					}
-					graph.setData(data);
+					resetFixationTime(graph, data, module, idx, nTraits, colors, style);
 					break;
 
 				case STATISTICS_STATIONARY:
-					style.label = (isMultispecies ? module.getName() + ": " : "") + module.getTraitName(idx);
-					nNode = module.getNPopulation();
-					// determine the number of bins with maximum of MAX_BINS
-					binSize = (nNode + 1) / HistoGraph.MAX_BINS + 1;
-					int nBins = (nNode + 1) / binSize;
-					if (data == null || data.length != nTraits || data[0].length != nBins)
-						data = new double[nTraits][nBins];
-					graph.setData(data);
-					if (mt.isDE()) {
-						if (model.isDensity()) {
-							style.xLabel = "density";
-							style.xMin = 0.0;
-							style.xMax = 0.0;
-						} else {
-							style.xLabel = "frequency";
-							style.xMin = 0.0;
-							style.xMax = 1.0;
-							style.percentX = true;
-						}
-						scale2bins = nBins;
-					} else {
-						style.xLabel = "strategy count";
-						style.xMin = 0.0;
-						style.xMax = nNode;
-						scale2bins = 1.0 / binSize;
-					}
-					style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
+					resetStationary(graph, data, module, idx, nTraits, mt, colors, style);
 					break;
 
 				default:
+					// nothing to do
 			}
+			data = graph.getData();
 			idx++;
 		}
 		update(hard);
+	}
+
+	/**
+	 * Ensure the histogram buffer matches the requested dimensions, allocating a
+	 * new array if necessary.
+	 */
+	private double[][] ensureData(double[][] data, int rows, int cols) {
+		if (rows < 0 || cols < 0)
+			throw new IllegalArgumentException("Histogram dimensions must be non-negative.");
+		if (data == null || data.length != rows || (rows > 0 && data[0].length != cols))
+			return new double[rows][cols];
+		return data;
+	}
+
+	private boolean resetTrait(HistoGraph graph, double[][] data, Module<?> module, int idx, int nTraits,
+			Color[] colors, GraphStyle style) {
+		// histogram of strategies makes only sense for continuous traits
+		data = ensureData(data, nTraits, HistoGraph.MAX_BINS);
+		graph.setData(data);
+		graph.clearMarkers();
+		List<double[]> markers = module.getMarkers();
+		if (markers != null) {
+			for (double[] mark : markers)
+				graph.addMarker(mark[idx + 1], ColorMapCSS.Color2Css(colors[idx]), null,
+						mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
+		}
+		Continuous cmod = (Continuous) module;
+		double min = cmod.getTraitMin()[idx];
+		double max = cmod.getTraitMax()[idx];
+		boolean hard = false;
+		if (Math.abs(min - style.xMin) > 1e-6 || Math.abs(max - style.xMax) > 1e-6) {
+			style.xMin = min;
+			style.xMax = max;
+			hard = true;
+		}
+		style.yMin = 0.0;
+		style.yMax = 1.0;
+		style.xLabel = module.getTraitName(idx);
+		style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
+		if (isMultispecies)
+			style.label = module.getName() + ": " + module.getTraitName(idx);
+		return hard;
+	}
+
+	private boolean resetFitness(HistoGraph graph, double[][] data, Module<?> module, int idx, int nTraits,
+			Color[] colors, GraphStyle style) {
+		int vacant = module.getVacantIdx();
+		graph.clearMarkers();
+		nTraits = (model.isContinuous() ? 1 : nTraits);
+		if (vacant >= 0)
+			nTraits--;
+		data = ensureData(data, nTraits, HistoGraph.MAX_BINS);
+		graph.setData(data);
+		double min = model.getMinScore(module.getID());
+		double max = model.getMaxScore(module.getID());
+		boolean hard = false;
+		if (Math.abs(min - style.xMin) > 1e-6 || Math.abs(max - style.xMax) > 1e-6) {
+			style.xMin = min;
+			style.xMax = max;
+			hard = true;
+		}
+		style.yMin = 0.0;
+		style.yMax = 1.0;
+		if (module instanceof Discrete) {
+			DModel dmodel = (DModel) model;
+			style.label = (isMultispecies ? module.getName() + ": " : "") + module.getTraitName(idx);
+			Color tColor = colors[idx];
+			style.graphColor = ColorMapCSS.Color2Css(tColor);
+			double mono = dmodel.getMonoScore(module.getID(), idx);
+			if (!Double.isNaN(mono))
+				graph.addMarker(mono,
+						ColorMapCSS.Color2Css(ColorMap.blendColors(tColor, Color.WHITE, 0.5)),
+						"monomorphic payoff");
+			return hard;
+		}
+		if (module instanceof Continuous) {
+			CModel cmodel = (org.evoludo.simulator.models.CModel) model;
+			Color tcolor = colors[idx];
+			graph.addMarker(cmodel.getMinMonoScore(module.getID()),
+					ColorMapCSS.Color2Css(ColorMap.blendColors(tcolor, Color.BLACK, 0.5)),
+					"minimum monomorphic payoff");
+			graph.addMarker(cmodel.getMaxMonoScore(module.getID()),
+					ColorMapCSS.Color2Css(ColorMap.blendColors(tcolor, Color.WHITE, 0.5)),
+					"maximum monomorphic payoff");
+			style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
+			return hard;
+		}
+		// unknown population type - do not mark any fitness values
+		return hard;
+	}
+
+	private void resetDegree(HistoGraph graph, double[][] data, Module<?> module, Type mt, GraphStyle style) {
+		if (mt.isODE() || mt.isSDE()) {
+			graph.setData(null);
+			return;
+		}
+		Geometry inter;
+		Geometry comp;
+		if (mt.isPDE()) {
+			inter = comp = module.getGeometry();
+		} else {
+			inter = module.getInteractionGeometry();
+			comp = module.getCompetitionGeometry();
+		}
+		int rows = getDegreeGraphs(inter, comp);
+		int cols = getDegreeBins(inter, comp);
+		data = ensureData(data, rows, cols);
+		graph.setData(data);
+		style.yMin = 0.0;
+		style.yMax = 1.0;
+		style.xMin = 0.0;
+		if (inter.isUndirected)
+			style.xMax = maxDegree(Math.max(inter.maxOut, comp.maxOut));
+		else
+			style.xMax = maxDegree(Math.max(inter.maxTot, comp.maxTot));
+	}
+
+	private void resetFixationProbability(HistoGraph graph, double[][] data, Module<?> module, int idx,
+			int nTraits, boolean isSDE, Color[] colors, GraphStyle style) {
+		checkStatistics();
+		style.yMin = 0.0;
+		style.yMax = 1.0;
+		style.xMin = 0;
+		style.xMax = 1;
+		style.label = module.getTraitName(idx);
+		style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
+		if (doStatistics) {
+			int nNode;
+			if (isSDE)
+				nNode = 1; // only one 'node' in SDE
+			else {
+				nNode = module.getNPopulation();
+				style.xMax = nNode - 1.0;
+			}
+			int maxBins = graph.getMaxBins();
+			if (maxBins < 0)
+				maxBins = 100;
+			binSize = 1;
+			int bins = nNode;
+			while (bins > maxBins) {
+				bins = nNode / ++binSize;
+			}
+			data = ensureData(data, nTraits + 1, bins);
+			scale2bins = 1.0 / binSize;
+			graph.setData(data);
+			style.customYLevels = ((HasHistogram) module).getCustomLevels(type, idx);
+		} else {
+			graph.clearData();
+		}
+	}
+
+	private void resetFixationTime(HistoGraph graph, double[][] data, Module<?> module, int idx, int nTraits,
+			Color[] colors, GraphStyle style) {
+		checkStatistics();
+		int nNode = module.getNPopulation();
+		style.yMin = 0.0;
+		style.yMax = 1.0;
+		// last graph is for absorption times
+		if (idx < graphs.size() - 1) {
+			style.label = module.getTraitName(idx);
+			style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
+		} else {
+			style.label = "Absorbtion";
+			style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
+		}
+		if (doFixtimeDistr(module)) {
+			if (doStatistics) {
+				int maxBins = graph.getMaxBins() * (HistoGraph.MIN_BIN_WIDTH + 1) / (HistoGraph.MIN_BIN_WIDTH + 2);
+				data = ensureData(data, nTraits + 1, maxBins);
+				graph.setData(data);
+			} else {
+				graph.clearData();
+			}
+			graph.setNormalized(false);
+			graph.setNormalized(-1);
+			style.xMin = 0.0;
+			style.xMax = Functions.roundUp(nNode * 0.25);
+			style.xLabel = "fixation time";
+			style.yLabel = "probability";
+			style.percentY = true;
+			graph.enableAutoscaleYMenu(true);
+			style.customYLevels = new double[0];
+		} else {
+			if (doStatistics) {
+				data = ensureData(data, 2 * (nTraits + 1), nNode);
+				graph.setData(data);
+			} else {
+				graph.clearData();
+			}
+			style.xMin = 0.0;
+			style.xMax = nNode - 1.0;
+			style.xLabel = "node";
+			style.yLabel = "time";
+			style.percentY = false;
+			graph.enableAutoscaleYMenu(false);
+			style.customYLevels = ((HasHistogram) module).getCustomLevels(type, idx);
+		}
+		graph.setData(data);
+	}
+
+	private void resetStationary(HistoGraph graph, double[][] data, Module<?> module, int idx, int nTraits,
+			Type mt, Color[] colors, GraphStyle style) {
+		style.label = (isMultispecies ? module.getName() + ": " : "") + module.getTraitName(idx);
+		int nNode = module.getNPopulation();
+		// determine the number of bins with maximum of MAX_BINS
+		binSize = (nNode + 1) / HistoGraph.MAX_BINS + 1;
+		int nBins = (nNode + 1) / binSize;
+		data = ensureData(data, nTraits, nBins);
+		graph.setData(data);
+		if (mt.isDE()) {
+			if (model.isDensity()) {
+				style.xLabel = "density";
+				style.xMin = 0.0;
+				style.xMax = 0.0;
+			} else {
+				style.xLabel = "frequency";
+				style.xMin = 0.0;
+				style.xMax = 1.0;
+				style.percentX = true;
+			}
+			scale2bins = nBins;
+		} else {
+			style.xLabel = "strategy count";
+			style.xMin = 0.0;
+			style.xMax = nNode;
+			scale2bins = 1.0 / binSize;
+		}
+		style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
 	}
 
 	@Override
