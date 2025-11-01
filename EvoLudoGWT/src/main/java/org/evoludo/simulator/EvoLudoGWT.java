@@ -189,8 +189,6 @@ public class EvoLudoGWT extends EvoLudo {
 				if (modelNext())
 					timer.scheduleRepeating(delay);
 				break;
-			default:
-				throw new Error("next(): unknown mode...");
 		}
 	}
 
@@ -235,8 +233,11 @@ public class EvoLudoGWT extends EvoLudo {
 				return false;
 			}
 			if (activeModel.next())
-				return true;
-			return fireModelSample(activeModel.getFixationData().mutantNode >= 0);
+				return true; // continue sampling
+			// sample completed
+			boolean failed = (activeModel.getFixationData().mutantNode < 0);
+			// continue if running multiple samples or sampling failed
+			return fireModelSample(!failed) || failed;
 		});
 	}
 

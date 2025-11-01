@@ -1179,7 +1179,7 @@ public abstract class EvoLudo
 			fireModelStopped();
 			return false;
 		}
-		return true;
+		return isRunning;
 	}
 
 	/**
