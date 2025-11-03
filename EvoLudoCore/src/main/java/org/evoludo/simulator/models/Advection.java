@@ -130,67 +130,32 @@ public class Advection extends PDE {
 		double[] maxDens = new double[nDim];
 		Arrays.fill(maxDens, -Double.MAX_VALUE);
 		double[] meanDens = new double[nDim];
-		int[][] in = space.in;
 		double[] delta = new double[nDim];
 		double[] adv = new double[nDim];
 
 		if (isSymmetric) {
-			double[][] sort = new double[space.maxIn][];
-			for (int n = start; n < end; n++) {
-				int[] neighs = in[n];
-				int nIn = space.kin[n];
-				double[] sn = next[n]; // current state of focal site sn
-				double[] s = density[n]; // next state
-				ArrayMath.multiply(sn, -space.kout[n], s);
-				Arrays.fill(adv, 0.0);
-				// sort neighbours
-				for (int i = 0; i < nIn; i++) {
-					double[] p = next[neighs[i]];
-					sort[i] = p;
-				}
-				// sorting must maintain integrity of densities at neighbouring sites
-				// (sorting based on first element is enough - only equality in the first
-				// density but not the others could still result in an eventual break of
-				// symmetry due to rounding error.)
-				Arrays.sort(sort, 0, nIn, sorting);
-				// loop over neighbours
-				for (int i = 0; i < nIn; i++) {
-					double[] si = sort[i];
-					// diffusion
-					ArrayMath.add(s, si); // s += si
-					ArrayMath.sub(si, sn, delta); // delta = si-ds
-					ArrayMath.add(delta, 1.0); // delta = 1+si-sn; note 1+sn-si=2-delta
-					// loop over traits - advection
-					int jidx = 0;
-					for (int j = 0; j < nDim; j++) {
-						if (j == dependent)
-							continue;
-						double advj = 0.0;
-						int kidx = 0;
-						for (int k = 0; k < nDim; k++) {
-							if (k == dependent)
-								continue;
-							double dk = delta[k] * 0.5;
-							advj += beta[jidx][kidx] * (-sn[j] * dk + si[j] * (1.0 - dk));
-							kidx++;
-						}
-						adv[j] += advj;
-						jidx++;
-					}
-				}
-				ArrayMath.multiply(s, alpha); // s *= alpha
-				ArrayMath.add(s, sn); // s += sn
-				ArrayMath.add(s, adv); // s += adv
-				if (dependent >= 0)
-					s[dependent] = 1.0 + s[dependent] - ArrayMath.norm(s);
-				// update extrema and mean density
-				minmaxmean(s, minDens, maxDens, meanDens);
-			}
-			updateDensity(minDens, maxDens, meanDens);
-			return;
+			diffuseSymmetric(start, end, minDens, maxDens, meanDens, delta, adv);
+		} else {
+			diffuseStandard(start, end, minDens, maxDens, meanDens, delta, adv);
 		}
+		updateDensity(minDens, maxDens, meanDens);
+	}
 
-		// diffusion & advection
+	/**
+	 * Process sites in the symmetric case (neighbour ordering must be sorted).
+	 * 
+	 * @param start    the starting site index
+	 * @param end      the ending site index
+	 * @param minDens  the minimum densities (updated)
+	 * @param maxDens  the maximum densities (updated)
+	 * @param meanDens the mean densities (updated)
+	 * @param delta    helper array to store differences
+	 * @param adv      helper array to store advection contributions
+	 */
+	private void diffuseSymmetric(int start, int end, double[] minDens, double[] maxDens,
+			double[] meanDens, double[] delta, double[] adv) {
+		int[][] in = space.in;
+		double[][] sort = new double[space.maxIn][];
 		for (int n = start; n < end; n++) {
 			int[] neighs = in[n];
 			int nIn = space.kin[n];
@@ -198,59 +163,98 @@ public class Advection extends PDE {
 			double[] s = density[n]; // next state
 			ArrayMath.multiply(sn, -space.kout[n], s);
 			Arrays.fill(adv, 0.0);
-			// loop over neighbours
-			// debug outflux of site
-			// double[] outflux = new double[dim];
+			// collect neighbours
 			for (int i = 0; i < nIn; i++) {
-				double[] si = next[neighs[i]]; // current state of neighbour i, si
+				sort[i] = next[neighs[i]];
+			}
+			// maintain deterministic order for symmetric case
+			Arrays.sort(sort, 0, nIn, sorting);
+			// accumulate contributions from sorted neighbours
+			for (int i = 0; i < nIn; i++) {
+				double[] si = sort[i];
 				// diffusion
 				ArrayMath.add(s, si); // s += si
+				// advection contribution from this neighbour
 				ArrayMath.sub(si, sn, delta); // delta = si-sn
-				ArrayMath.add(delta, 1.0); // delta = 1+si-sn; note 1+sn-si=2-delta
-				// loop over traits - advection
-				int jidx = 0;
-				for (int j = 0; j < nDim; j++) {
-					if (j == dependent)
-						continue;
-					double advj = 0.0;
-					int kidx = 0;
-					for (int k = 0; k < nDim; k++) {
-						if (k == dependent)
-							continue;
-						double dk = delta[k] * 0.5;
-						advj += beta[jidx][kidx] * (-sn[j] * dk + si[j] * (1.0 - dk));
-						// debug outflux of site
-						// outflux[j] += beta[j][k]*sn[j]*dk;
-						kidx++;
-					}
-					adv[j] += advj;
-					jidx++;
-				}
+				ArrayMath.add(delta, 1.0); // delta = 1+si-sn
+				addAdvectionContribution(sn, si, delta, adv);
 			}
-			// debug outflux of site
-			// for( int j=0; j<dim; j++ ) {
-			// if( outflux[j]>sn[j] ) {
-			// double[] dest = new double[dim];
-			// com.google.gwt.core.client.GWT.log("ALERT @ "+n+":
-			// diff="+ChHFormatter.formatSci(ChHMath.sub(sn, outflux, dest), 4)+
-			// ", state="+ChHFormatter.format(sn,4)+",
-			// flux="+ChHFormatter.formatSci(outflux,4));
-			// com.google.gwt.core.client.GWT.log("time="+time+",
-			// beta="+ChHFormatter.format(beta, 4)+", delta="+ChHFormatter.format(delta, 4)+
-			// ", sn="+ChHFormatter.format(sn, 4));
-			// break;
-			// }
-			// }
-			// end debug
+			// finalize site
+			ArrayMath.multiply(s, alpha); // s *= alpha
+			ArrayMath.add(s, sn); // s += sn
+			ArrayMath.add(s, adv); // s += adv
+			if (dependent >= 0)
+				s[dependent] = 1.0 + s[dependent] - ArrayMath.norm(s);
+			minmaxmean(s, minDens, maxDens, meanDens);
+		}
+	}
+
+	/**
+	 * Process sites in the general (asymmetric) case.
+	 * 
+	 * @param start    the starting site index
+	 * @param end      the ending site index
+	 * @param minDens  the minimum densities (updated)
+	 * @param maxDens  the maximum densities (updated)
+	 * @param meanDens the mean densities (updated)
+	 * @param delta    helper array to store differences
+	 * @param adv      helper array to store advection contributions
+	 */
+	private void diffuseStandard(int start, int end, double[] minDens, double[] maxDens,
+			double[] meanDens, double[] delta, double[] adv) {
+		int[][] in = space.in;
+		for (int n = start; n < end; n++) {
+			int[] neighs = in[n];
+			int nIn = space.kin[n];
+			double[] sn = next[n]; // current state of focal site sn
+			double[] s = density[n]; // next state
+			ArrayMath.multiply(sn, -space.kout[n], s);
+			Arrays.fill(adv, 0.0);
+			for (int i = 0; i < nIn; i++) {
+				double[] si = next[neighs[i]]; // neighbour state
+				// diffusion
+				ArrayMath.add(s, si); // s += si
+				// advection contribution from this neighbour
+				ArrayMath.sub(si, sn, delta); // delta = si-sn
+				ArrayMath.add(delta, 1.0); // delta = 1+si-sn
+				addAdvectionContribution(sn, si, delta, adv);
+			}
+			// finalize site
 			ArrayMath.multiply(s, alpha);
 			ArrayMath.add(s, sn);
 			ArrayMath.add(s, adv);
 			if (dependent >= 0)
 				s[dependent] = 1.0 + s[dependent] - ArrayMath.norm(s);
-			// update extrema and mean density
 			minmaxmean(s, minDens, maxDens, meanDens);
 		}
-		updateDensity(minDens, maxDens, meanDens);
+	}
+
+	/**
+	 * Adds the advection contribution of a single neighbor (si) to the accumulator
+	 * adv for the focal site with state sn using precomputed delta = 1 + si - sn.
+	 * 
+	 * @param sn    the state of the focal site
+	 * @param si    the state of the neighboring site
+	 * @param delta the precomputed delta = 1 + si - sn
+	 * @param adv   the advection accumulator for the focal site
+	 */
+	private void addAdvectionContribution(double[] sn, double[] si, double[] delta, double[] adv) {
+		int jidx = 0;
+		for (int j = 0; j < nDim; j++) {
+			if (j == dependent)
+				continue;
+			double advj = 0.0;
+			int kidx = 0;
+			for (int k = 0; k < nDim; k++) {
+				if (k == dependent)
+					continue;
+				double dk = delta[k] * 0.5;
+				advj += beta[jidx][kidx] * (-sn[j] * dk + si[j] * (1.0 - dk));
+				kidx++;
+			}
+			adv[j] += advj;
+			jidx++;
+		}
 	}
 
 	/**
