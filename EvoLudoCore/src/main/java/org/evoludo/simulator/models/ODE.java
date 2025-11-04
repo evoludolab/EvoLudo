@@ -39,6 +39,7 @@ import org.evoludo.math.Functions;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Model.HasDE;
+import org.evoludo.simulator.models.ODEInitialize.InitType;
 import org.evoludo.simulator.modules.Features;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
@@ -63,6 +64,8 @@ import org.evoludo.util.Plist;
  * @author Christoph Hauert
  */
 public class ODE extends Model implements DModel {
+
+	private final ODEInitialize initializer;
 
 	/**
 	 * Discretization of time increment for continuous time models. This is the
@@ -327,6 +330,7 @@ public class ODE extends Model implements DModel {
 	public ODE(EvoLudo engine) {
 		super(engine);
 		type = Type.EM;
+		initializer = new ODEInitialize(this);
 	}
 
 	@Override
@@ -1566,136 +1570,7 @@ public class ODE extends Model implements DModel {
 	 * 
 	 */
 	private void init(boolean doRandom) {
-		time = 0.0;
-		dtTry = dt;
-		connect = false;
-		converged = false;
-		// PDE models have their own initialization types
-		if (type.isPDE())
-			return;
-		int idx = -1;
-		// y0 is initialized except for species with random initial frequencies
-		if (doRandom) {
-			for (Module<?> pop : species) {
-				if (!initType[++idx].equals(InitType.RANDOM))
-					continue;
-				int dim = pop.getNTraits();
-				int from = idxSpecies[idx];
-				for (int n = 0; n < dim; n++)
-					y0[from + n] = rng.random01();
-			}
-		}
-		System.arraycopy(y0, 0, yt, 0, nDim);
-		normalizeState(yt);
-	}
-
-	/**
-	 * Types of initial configurations. Currently this model supports the following
-	 * density distributions:
-	 * <dl>
-	 * <dt>DENSITY
-	 * <dd>Initial densities as specified in {@link #cloInit} (density modules).
-	 * <dt>FREQUENCY
-	 * <dd>Initial frequencies as specified in {@link #cloInit} (frequency
-	 * modules).
-	 * <dt>UNIFORM
-	 * <dd>Uniform frequencies of traits (default; in density modules all densities
-	 * are set to zero).
-	 * <dt>RANDOM
-	 * <dd>Random initial trait frequencies. <br>
-	 * <strong>Note:</strong> Not available for density based models.
-	 * </dl>
-	 * 
-	 * @see #cloInit
-	 * @see #parse(String)
-	 * @see PDE.InitType
-	 * @see PDE#parse(String)
-	 */
-	public enum InitType implements CLOption.Key {
-
-		/**
-		 * Set initial densities as specified. In models that support both density and
-		 * frequency based dynamics, this selects the density based dynamics.
-		 * 
-		 * @see HasDE.DualDynamics
-		 */
-		DENSITY("density", "initial trait densities <d1,...,dn>"),
-
-		/**
-		 * Set initial frequencies as specified. In models that support both density and
-		 * frequency based dynamics, this selects the frequency based dynamics.
-		 * 
-		 * @see HasDE.DualDynamics
-		 */
-		FREQUENCY("frequency", "initial trait frequencies <f1,...,fn>"),
-
-		/**
-		 * Uniform initial frequencies of traits. Not available in density based models.
-		 */
-		UNIFORM("uniform", "uniform initial frequencies"),
-
-		/**
-		 * Random initial trait frequencies. Not available for density based models.
-		 */
-		RANDOM("random", "random initial frequencies"),
-
-		/**
-		 * Uniform initial trait densities of one. In models that support both density
-		 * and frequency based dynamics, this selects the density based dynamics.
-		 * 
-		 * @see HasDE.DualDynamics
-		 */
-		UNITY("unity", "unit densities"),
-
-		/**
-		 * Single mutant in homogeneous resident.
-		 * <p>
-		 * <strong>Note:</strong> Only available for SDE models. Not available for
-		 * density based models.
-		 * 
-		 * @see SDE
-		 */
-		MUTANT("mutant", "single mutant");
-
-		/**
-		 * Key of initialization type. Used when parsing command line options.
-		 * 
-		 * @see #parse(String)
-		 */
-		String key;
-
-		/**
-		 * Brief description of initialization type for help display.
-		 * 
-		 * @see EvoLudo#getCLOHelp()
-		 */
-		String title;
-
-		/**
-		 * Instantiate new initialization type.
-		 * 
-		 * @param key   identifier for parsing of command line option
-		 * @param title summary of geometry
-		 */
-		InitType(String key, String title) {
-			this.key = key;
-			this.title = title;
-		}
-
-		@Override
-		public String getKey() {
-			return key;
-		}
-
-		@Override
-		public String getTitle() {
-			return title;
-		}
-
-		@Override
-		public String toString() {
-			return key;
-		}
+		initializer.init(doRandom);
 	}
 
 	/**
@@ -1704,7 +1579,7 @@ public class ODE extends Model implements DModel {
 	 * <p>
 	 * <strong>Note:</strong> Not possible to perform parsing in {@code CLODelegate}
 	 * of {@link #cloInit} because PDE model provide their own
-	 * {@link PDE.InitType}s.
+	 * {@link PDEInitialize.Type}s.
 	 * 
 	 * @param arg the arguments to parse
 	 * @return {@code true} if parsing successful
@@ -1712,113 +1587,7 @@ public class ODE extends Model implements DModel {
 	 * @see InitType
 	 */
 	public boolean parse(String arg) {
-		String[] inittypes = arg.split(CLOParser.SPECIES_DELIMITER);
-		int idx = 0;
-		int start = 0;
-		for (Module<?> pop : species) {
-			String inittype = inittypes[idx % inittypes.length];
-			String[] typeargs = inittype.split(CLOParser.SPLIT_ARG_REGEX);
-			InitType itype = (InitType) cloInit.match(inittype);
-			String iargs = null;
-			// if matching of inittype failed assume it was omitted; use previous type
-			if (itype == null) {
-				// if no previous match, give up
-				if (idx == 0)
-					return false;
-				itype = initType[idx - 1];
-				iargs = typeargs[0];
-			} else if (typeargs.length > 1)
-				iargs = typeargs[1];
-			int nTraits = pop.getNTraits();
-			switch (itype) {
-				case MUTANT:
-					if (processMutant(pop, iargs, start))
-						return false;
-					break;
-				case DENSITY:
-				case FREQUENCY:
-					if (!processDensity(pop, iargs, start))
-						return false;
-					break;
-				case RANDOM:
-				case UNIFORM:
-				case UNITY:
-					// uniform distribution is the default. for densities set all to zero.
-					double[] popinit = new double[nTraits];
-					Arrays.fill(popinit, 1.0);
-					appendY0(popinit, start);
-					break;
-				default:
-					throw new IllegalArgumentException("unknown initialization type: " + itype);
-			}
-			initType[idx] = itype;
-			idx++;
-			start += nTraits;
-		}
-		return true;
-	}
-
-	/**
-	 * Process mutant initialization type.
-	 * 
-	 * @param pop   the population module
-	 * @param iargs the initialization arguments
-	 * @param start the starting index in the population vector
-	 * @return {@code true} if processing was successful
-	 */
-	private boolean processMutant(Module<?> pop, String iargs, int start) {
-		// SDE models only (no population size in ODE)
-		double[] initargs = CLOParser.parseVector(iargs);
-		if (initargs == null || initargs.length < 1)
-			return false;
-		// initargs contains the index of the mutant (and resident) trait
-		int nt = pop.getNTraits();
-		int mutantType = (int) initargs[0];
-		int len = initargs.length;
-		int residentType;
-		if (len > 1)
-			residentType = (int) initargs[1];
-		else
-			residentType = (mutantType + 1) % nt;
-		double[] popinit = new double[nt];
-		popinit[mutantType] = 1.0 / pop.getNPopulation();
-		popinit[residentType] = 1.0 - popinit[mutantType];
-		appendY0(popinit, start);
-		return true;
-	}
-
-	/**
-	 * Process density or frequency initialization type.
-	 * 
-	 * @param pop   the population module
-	 * @param iargs the initialization arguments
-	 * @param start the starting index in the population vector
-	 * @return {@code true} if processing was successful
-	 */
-	private boolean processDensity(Module<?> pop, String iargs, int start) {
-		double[] initargs = CLOParser.parseVector(iargs);
-		if (initargs == null || initargs.length != pop.getNTraits())
-			return false;
-		appendY0(initargs, start);
-		return true;
-	}
-
-	/**
-	 * Append initial population configuration {@code popinit} to {@code y0} or
-	 * insert at position {@code start} if {@link #y0} is already allocated.
-	 * 
-	 * @param popinit initial population configuration
-	 * @param start   position to insert {@code popinit}
-	 */
-	private void appendY0(double[] popinit, int start) {
-		if (y0 == null)
-			y0 = new double[popinit.length];
-		if (y0.length < start + popinit.length) {
-			double[] newY0 = new double[start + popinit.length];
-			System.arraycopy(y0, 0, newY0, 0, y0.length);
-			y0 = newY0;
-		}
-		System.arraycopy(popinit, 0, y0, start, popinit.length);
+		return initializer.parse(arg);
 	}
 
 	/**
@@ -1847,7 +1616,7 @@ public class ODE extends Model implements DModel {
 	 * configurations.
 	 * 
 	 * @see InitType
-	 * @see PDE.InitType
+	 * @see PDEInitialize.Type
 	 */
 	public final CLOption cloInit = new CLOption("init", InitType.UNIFORM.getKey(), Category.Model,
 			"--init <t>      type of initial configuration", new CLODelegate() {

@@ -1018,7 +1018,7 @@ public class PDE extends ODE {
 	 * @param arg the arguments to parse
 	 * @return {@code true} if parsing successful
 	 * 
-	 * @see ODE.InitType
+	 * @see ODEInitialize.InitType
 	 * @see PDEInitialize.Type
 	 */
 	@Override

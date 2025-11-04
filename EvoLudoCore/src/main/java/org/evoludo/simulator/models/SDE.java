@@ -32,6 +32,7 @@ package org.evoludo.simulator.models;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.ODEInitialize.InitType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.views.HasHistogram;
