@@ -54,6 +54,11 @@ public class PDESupervisorGWT extends PDESupervisor {
 		super(engine, charge);
 	}
 
+	@Override
+	public boolean useScheduling() {
+		return true;
+	}
+
 	/**
 	 * <code>true</code> if calculations are already in progress. This prevents the
 	 * concurrent scheduling of redundant tasks.

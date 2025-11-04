@@ -51,7 +51,6 @@ import org.evoludo.util.NativeJS;
 
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.Scheduler;
-import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.user.client.Timer;
 
@@ -61,36 +60,6 @@ import com.google.gwt.user.client.Timer;
  * @author Christoph Hauert
  */
 public class EvoLudoGWT extends EvoLudo {
-
-	/**
-	 * <code>true</code> if container document is HTML
-	 */
-	public static boolean isHTML = true;
-
-	/**
-	 * <code>true</code> if part of an ePub
-	 */
-	public static boolean isEPub = false;
-
-	/**
-	 * <code>true</code> if standalone EvoLudo lab in ePub
-	 */
-	public static boolean ePubStandalone = false;
-
-	/**
-	 * <code>true</code> if ePub has mouse device
-	 */
-	public static boolean ePubHasMouse = false;
-
-	/**
-	 * <code>true</code> if ePub has touch device
-	 */
-	public static boolean ePubHasTouch = false;
-
-	/**
-	 * <code>true</code> if ePub has keyboard device
-	 */
-	public static boolean ePubHasKeys = false;
 
 	/**
 	 * Create timer to measure execution times since instantiation.
@@ -109,7 +78,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 */
 	public EvoLudoGWT(EvoLudoWeb gui) {
 		this.gui = gui;
-		detectGUIFeatures();
+		isGWT = true;
 	}
 
 	/**
@@ -356,27 +325,6 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	/**
-	 * Use JSNI helper methods to query and detect features of the execution
-	 * environment.
-	 *
-	 * @see NativeJS#ePubReaderHasFeature(String)
-	 */
-	public static void detectGUIFeatures() {
-		isGWT = true;
-		hasTouch = NativeJS.hasTouch();
-		isHTML = NativeJS.isHTML();
-		isEPub = (NativeJS.getEPubReader() != null);
-		// IMPORTANT: ibooks (desktop) returns ePubReader for standalone pages as well,
-		// i.e. isEPub is true
-		// however, ibooks (ios) does not report as an ePubReader for standalone pages,
-		// i.e. isEPub is false
-		ePubStandalone = (Document.get().getElementById("evoludo-standalone") != null);
-		ePubHasKeys = NativeJS.ePubReaderHasFeature("keyboard-events");
-		ePubHasMouse = NativeJS.ePubReaderHasFeature("mouse-events");
-		ePubHasTouch = NativeJS.ePubReaderHasFeature("touch-events");
-	}
-
-	/**
 	 * The context menu item to reverse time.
 	 */
 	private ContextMenuCheckBoxItem timeReverseMenu;
@@ -494,50 +442,6 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	/**
-	 * Command line option to mimic ePub modes and to disable device capabilities.
-	 * <p>
-	 * <strong>Note:</strong> for development/debugging only; should be disabled in
-	 * production
-	 */
-	public final CLOption cloEmulate = new CLOption("emulate", "auto", Category.GUI,
-			"--emulate <f1[,f2[...]]> list of GUI features to emulate:\n"
-					+ "          epub: enable ePub mode\n"
-					+ "    standalone: standalone ePub mode\n"
-					+ "        nokeys: disable key events (if available)\n"
-					+ "       nomouse: disable mouse events (if available)\n"
-					+ "       notouch: disable touch events (if available)",
-			new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					// set/reset defaults
-					detectGUIFeatures();
-					if (!cloEmulate.isSet())
-						return true;
-					// simulate ePub mode
-					if (arg.contains("epub"))
-						isEPub = true;
-					// simulate standalone lab in ePub
-					if (arg.contains("standalone")) {
-						ePubStandalone = true;
-						isEPub = true;
-						ePubHasKeys = NativeJS.hasKeys();
-						ePubHasMouse = NativeJS.hasMouse();
-						ePubHasTouch = NativeJS.hasTouch();
-					}
-					// disable keys (if available)
-					if (ePubHasKeys && arg.contains("nokeys"))
-						ePubHasKeys = false;
-					// disable mouse (if available)
-					if (ePubHasMouse && arg.contains("nomouse"))
-						ePubHasMouse = false;
-					// disable touch (if available)
-					if (ePubHasTouch && arg.contains("notouch"))
-						ePubHasTouch = false;
-					return true;
-				}
-			});
-
-	/**
 	 * Command line option to request that the EvoLudo model signals the completion
 	 * of of the layouting procedure for taking snapshots, e.g. with
 	 * <code>capture-website</code>.
@@ -559,7 +463,6 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public void collectCLO(CLOParser prsr) {
-		parser.addCLO(cloEmulate);
 		parser.addCLO(cloSnap);
 		super.collectCLO(prsr);
 	}

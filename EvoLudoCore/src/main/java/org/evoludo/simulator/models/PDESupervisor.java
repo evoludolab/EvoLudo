@@ -95,6 +95,17 @@ public class PDESupervisor {
 	}
 
 	/**
+	 * Indicates whether scheduling is used to advance the PDE model. Subclasses may
+	 * override this method to indicate whether scheduling is used to avoid blocking
+	 * the GUI.
+	 * 
+	 * @return <code>true</code> if scheduling is used; <code>false</code> otherwise
+	 */
+	public boolean useScheduling() {
+		return false;
+	}
+
+	/**
 	 * Advances the PDE model by a time step of <code>stepDt</code>. Subclasses may
 	 * override this method to implement optimizations. For example, GWT uses
 	 * scheduling to avoid blocking the GUI.

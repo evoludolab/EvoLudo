@@ -38,6 +38,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
+import org.evoludo.EvoLudoWeb.EvoLogHandler;
 import org.evoludo.geom.Rectangle2D;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoGWT;
@@ -381,7 +382,41 @@ public class EvoLudoWeb extends Composite
 	 * Reference to running engine in ePubs (to conserve resources only one lab can
 	 * be running at a time)
 	 */
-	public static EvoLudoWeb runningEPub;
+	static EvoLudoWeb runningEPub;
+
+	/**
+	 * Flag indicating whether this lab is running in an ePub reader.
+	 */
+	private boolean isEPub = false;
+
+	/**
+	 * <code>true</code> if standalone EvoLudo lab in ePub
+	 */
+	static boolean ePubStandalone = false;
+
+	/**
+	 * <code>true</code> if ePub has mouse device
+	 */
+	static boolean ePubHasMouse = false;
+
+	/**
+	 * <code>true</code> if ePub has touch device
+	 */
+	static boolean ePubHasTouch = false;
+
+	/**
+	 * <code>true</code> if ePub has keyboard device
+	 */
+	static boolean ePubHasKeys = false;
+
+	/**
+	 * The flag to indicate whether the current device/program supports touch events
+	 * <p>
+	 * <strong>Note:</strong> cannot be <code>static</code> or <code>final</code> to
+	 * allow disabling touch events for debugging (see
+	 * {@link org.evoludo.simulator.EvoLudoGWT#cloEmulate EvoLudoGWT.cloEmulate}).
+	 */
+	public static boolean hasTouch = false;
 
 	/**
 	 * Controller. Manages the interface with the outside world.
@@ -711,9 +746,9 @@ public class EvoLudoWeb extends Composite
 		// note: log handler needs to know whether this is an ePub (regardless of any
 		// feature declarations with --gui) to make sure log is properly XML encoded (if
 		// needed).
-		boolean isEPub = NativeJS.getEPubReader() != null;
+		isEPub = NativeJS.getEPubReader() != null;
 		ConsoleLogHandler logHandler = new ConsoleLogHandler();
-		logHandler.setFormatter(new XMLLogFormatter(true, isEPub || !EvoLudoGWT.isHTML));
+		logHandler.setFormatter(new XMLLogFormatter(true, isEPub || NativeJS.isHTML()));
 		logger.addHandler(logHandler);
 	}
 
@@ -793,7 +828,7 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelRunning() {
-		if (EvoLudoGWT.isEPub) {
+		if (isEPub) {
 			if (runningEPub != null)
 				throw new IllegalStateException("Another ePub lab is already running!");
 			runningEPub = this;
@@ -829,7 +864,7 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelStopped() {
-		if (EvoLudoGWT.isEPub) {
+		if (isEPub) {
 			if (runningEPub == null)
 				throw new IllegalStateException("Running ePub lab not found!");
 			if (runningEPub == this)
@@ -1957,7 +1992,7 @@ public class EvoLudoWeb extends Composite
 		if (key.equals(KEY_SHIFT))
 			// shift-key does not count as handled
 			isShiftDown = false;
-		if (EvoLudoGWT.isEPub && !EvoLudoGWT.ePubStandalone)
+		if (isEPub && !ePubStandalone)
 			// in ePub text flow only "Alt" key is acceptable and does not count as handled
 			return false;
 		boolean cloActive = NativeJS.isElementActive(evoludoCLO.getElement());
@@ -2013,7 +2048,7 @@ public class EvoLudoWeb extends Composite
 				break;
 			case KEY_ESCAPE:
 				// ignore "Escape" for ePubs
-				if (EvoLudoGWT.isEPub)
+				if (isEPub)
 					return false;
 				// stop running simulation
 				if (engine.isRunning()) {
@@ -2044,7 +2079,7 @@ public class EvoLudoWeb extends Composite
 				break;
 			case "E":
 				// export state (suppress in ePub's)
-				if (EvoLudoGWT.isEPub || engine.isRunning())
+				if (isEPub || engine.isRunning())
 					return false;
 				engine.exportState();
 				break;
@@ -2483,11 +2518,73 @@ public class EvoLudoWeb extends Composite
 				}
 			});
 
+	/**
+	 * Command line option to mimic ePub modes and to disable device capabilities.
+	 * <p>
+	 * <strong>Note:</strong> for development/debugging only; should be disabled in
+	 * production
+	 */
+	public final CLOption cloEmulate = new CLOption("emulate", "auto", Category.GUI,
+			"--emulate <f1[,f2[...]]> list of GUI features to emulate:\n"
+					+ "          epub: enable ePub mode\n"
+					+ "    standalone: standalone ePub mode\n"
+					+ "        nokeys: disable key events (if available)\n"
+					+ "       nomouse: disable mouse events (if available)\n"
+					+ "       notouch: disable touch events (if available)",
+			new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
+					// set/reset defaults
+					detectGUIFeatures();
+					if (!cloEmulate.isSet())
+						return true;
+					// simulate ePub mode
+					if (arg.contains("epub"))
+						isEPub = true;
+					// simulate standalone lab in ePub
+					if (arg.contains("standalone")) {
+						ePubStandalone = true;
+						isEPub = true;
+						ePubHasKeys = NativeJS.hasKeys();
+						ePubHasMouse = NativeJS.hasMouse();
+						ePubHasTouch = NativeJS.hasTouch();
+					}
+					// disable keys (if available)
+					if (ePubHasKeys && arg.contains("nokeys"))
+						ePubHasKeys = false;
+					// disable mouse (if available)
+					if (ePubHasMouse && arg.contains("nomouse"))
+						ePubHasMouse = false;
+					// disable touch (if available)
+					if (ePubHasTouch && arg.contains("notouch"))
+						ePubHasTouch = false;
+					return true;
+				}
+			});
+
 	@Override
 	public void collectCLO(CLOParser parser) {
-		// prepare command line options
+		parser.addCLO(cloEmulate);
 		parser.addCLO(cloView);
 		parser.addCLO(cloSize);
+	}
+
+	/**
+	 * Use JSNI helper methods to query and detect features of the execution
+	 * environment.
+	 *
+	 * @see NativeJS#ePubReaderHasFeature(String)
+	 */
+	public static void detectGUIFeatures() {
+		hasTouch = NativeJS.hasTouch();
+		// IMPORTANT: ibooks (desktop) returns ePubReader for standalone pages as well,
+		// i.e. isEPub is true
+		// however, ibooks (ios) does not report as an ePubReader for standalone pages,
+		// i.e. isEPub is false
+		ePubStandalone = (Document.get().getElementById("evoludo-standalone") != null);
+		ePubHasKeys = NativeJS.ePubReaderHasFeature("keyboard-events");
+		ePubHasMouse = NativeJS.ePubReaderHasFeature("mouse-events");
+		ePubHasTouch = NativeJS.ePubReaderHasFeature("touch-events");
 	}
 
 	@Override
@@ -2639,7 +2736,7 @@ public class EvoLudoWeb extends Composite
 	 */
 	public boolean isShowing() {
 		// skip test in ePubs - always evaluates to true...
-		if (EvoLudoGWT.isEPub)
+		if (isEPub)
 			return true;
 		if (keyListener != null)
 			// with key listener no further test necessary; return true if we are the
@@ -2736,7 +2833,7 @@ public class EvoLudoWeb extends Composite
 		// nonlinear content in Apple Books (i.e. all interactive labs) do not report
 		// as ePubs on iOS (at least for iPad) but as expected on macOS. On both
 		// platforms TextFields are disabled through shadow DOM.
-		boolean editCLO = !EvoLudoGWT.isEPub || EvoLudoGWT.ePubStandalone;
+		boolean editCLO = !isEPub || ePubStandalone;
 		updateConsoleView(editCLO);
 		updateCLOControls(editCLO);
 		updateDropHandlers(editCLO);
@@ -2809,9 +2906,9 @@ public class EvoLudoWeb extends Composite
 		sb.append(NativeJS.hasTouch() ? "touch " : "");
 		if (NativeJS.isEPub()) {
 			sb.append("ePub (");
-			sb.append(EvoLudoGWT.ePubHasKeys ? "keyboard " : "");
-			sb.append(EvoLudoGWT.ePubHasMouse ? "mouse " : "");
-			sb.append(EvoLudoGWT.ePubHasTouch ? "touch " : "");
+			sb.append(ePubHasKeys ? "keyboard " : "");
+			sb.append(ePubHasMouse ? "mouse " : "");
+			sb.append(ePubHasTouch ? "touch " : "");
 			sb.append(")");
 		}
 		logger.info(sb.toString());

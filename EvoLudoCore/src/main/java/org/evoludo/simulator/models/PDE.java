@@ -412,7 +412,7 @@ public class PDE extends ODE {
 
 	@Override
 	public boolean useScheduling() {
-		return EvoLudo.isGWT;
+		return supervisor.useScheduling();
 	}
 
 	/**

@@ -141,16 +141,7 @@ public abstract class EvoLudo
 	 * <code>true</code> when running as GWT application; <code>false</code> for JRE
 	 * applications.
 	 */
-	public static boolean isGWT = false;
-
-	/**
-	 * The flag to indicate whether the current device/program supports touch events
-	 * <p>
-	 * <strong>Note:</strong> cannot be <code>static</code> or <code>final</code> to
-	 * allow disabling touch events for debugging (see
-	 * {@link org.evoludo.simulator.EvoLudoGWT#cloEmulate EvoLudoGWT.cloEmulate}).
-	 */
-	public static boolean hasTouch = false;
+	static boolean isGWT = false;
 
 	/**
 	 * The loggers of each EvoLudo lab instance need to have unique names to keep
