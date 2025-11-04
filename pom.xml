@@ -35,17 +35,19 @@
     <evoludo.server>localhost</evoludo.server>
     <evoludo.startup>TestEvoLudo.html</evoludo.startup>
     <evoludo.jettyPort>8888</evoludo.jettyPort>
+    <evoludo.webappDirectory>${project.basedir}/src/main/webapp</evoludo.webappDirectory>
     <evoludo.commit default-value="unknown">${git.commit.id.describe}</evoludo.commit>
     <evoludo.build default-value="">${git.build.time}</evoludo.build>
     <evoludo.engineModule default-value="EvoLudoCore"></evoludo.engineModule>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <!-- <javadoc.exe>/Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/javadoc</javadoc.exe> -->
+    <!--
+    <javadoc.exe>/Library/Java/JavaVirtualMachines/jdk-11.0.2.jdk/Contents/Home/bin/javadoc</javadoc.exe> -->
     <gwt.style>OBFUSCATED</gwt.style>
     <gwt.optimize>9</gwt.optimize>
     <gwt.style.devmode>PRETTY</gwt.style.devmode>
     <gwt.optimize.devmode>0</gwt.optimize.devmode>
-    
+
     <!-- Java version properties -->
     <java.version.lts>21</java.version.lts>
     <java.version.gwt>11</java.version.gwt>
@@ -238,7 +240,8 @@
             <compilerArgs>
               <arg>-Xlint:all</arg>
               <arg>-Xlint:-serial</arg>
-              <arg>-Xlint:-fallthrough</arg> <!-- IDE's are better at handling fall-through's with annotations -->
+              <!-- IDE's are better at handling fall-through's with annotations -->
+              <arg>-Xlint:-fallthrough</arg>
             </compilerArgs>
             <showDeprecation>true</showDeprecation>
             <showWarnings>true</showWarnings>

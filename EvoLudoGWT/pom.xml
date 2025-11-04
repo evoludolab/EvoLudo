@@ -60,7 +60,8 @@
         <artifactId>git-commit-id-maven-plugin</artifactId>
         <configuration>
           <generateGitPropertiesFile>true</generateGitPropertiesFile>
-          <generateGitPropertiesFilename>${project.basedir}/src/main/java/org/evoludo/simulator/Git.properties</generateGitPropertiesFilename>
+          <generateGitPropertiesFilename>
+            ${project.basedir}/src/main/java/org/evoludo/simulator/Git.properties</generateGitPropertiesFilename>
           <gitDescribe>
             <dirty>*</dirty>
           </gitDescribe>
@@ -115,6 +116,7 @@
             <arg>-optimize</arg>
             <arg>${gwt.optimize}</arg>
           </compilerArgs>
+          <webappDirectory>${evoludo.webappDirectory}</webappDirectory>
         </configuration>
         <executions>
           <execution>
@@ -150,7 +152,7 @@
     <resources>
       <resource>
         <filtering>true</filtering>
-        <directory>${project.basedir}/src/main/webapp</directory>
+        <directory>${evoludo.webappDirectory}</directory>
         <targetPath>${project.build.directory}/EvoLudoGWT-${project.version}</targetPath>
       </resource>
     </resources>
@@ -193,6 +195,9 @@
           <exists>../EvoLudoCorePrivate/pom.xml</exists>
         </file>
       </activation>
+      <properties>
+        <evoludo.webappDirectory>${project.basedir}/../EvoLudoGWTPrivate/src/main/webapp</evoludo.webappDirectory>
+      </properties>
       <dependencies>
         <dependency>
           <groupId>${project.groupId}</groupId>
@@ -215,7 +220,7 @@
           <artifactId>EvoLudoCore</artifactId>
           <version>${project.version}</version>
           <classifier>sources</classifier>
-          </dependency>
+        </dependency>
       </dependencies>
     </profile>
     <profile>
@@ -234,7 +239,7 @@
           <artifactId>EvoLudoCore</artifactId>
           <version>${project.version}</version>
           <classifier>sources</classifier>
-          </dependency>
+        </dependency>
       </dependencies>
     </profile>
   </profiles>
