@@ -343,16 +343,11 @@ import com.google.gwt.user.client.ui.Widget;
  *
  * @implSpec
  *           This class is designed to be a single, self-contained controller
- *           per DOM
- *           container element. It expects to run within the GWT environment and
- *           to
- *           co-operate with EvoLudoGWT, the Model/Module abstraction, and
- *           various
- *           AbstractView subclasses. It uses JSNI for some browser integration
- *           and
- *           therefore relies on the presence of the window object and typical
- *           browser
- *           DOM APIs.
+ *           per DOM container element. It expects to run within the GWT
+ *           environment and to co-operate with EvoLudoGWT, the Model/Module
+ *           abstraction, and various AbstractView subclasses. It uses JSNI for
+ *           some browser integration and therefore relies on the presence of
+ *           the window object and typical browser DOM APIs.
  *
  * @see EvoLudoGWT
  * @see AbstractView
@@ -408,15 +403,6 @@ public class EvoLudoWeb extends Composite
 	 * <code>true</code> if ePub has keyboard device
 	 */
 	static boolean ePubHasKeys = false;
-
-	/**
-	 * The flag to indicate whether the current device/program supports touch events
-	 * <p>
-	 * <strong>Note:</strong> cannot be <code>static</code> or <code>final</code> to
-	 * allow disabling touch events for debugging (see
-	 * {@link org.evoludo.simulator.EvoLudoGWT#cloEmulate EvoLudoGWT.cloEmulate}).
-	 */
-	public static boolean hasTouch = false;
 
 	/**
 	 * Controller. Manages the interface with the outside world.
@@ -800,7 +786,7 @@ public class EvoLudoWeb extends Composite
 		// for e.g. 'Alt' but key shortcuts only if not ePub
 		addKeyListener(this);
 		if (popup != null)
-			keyListener = this;
+			setKeyListener(this);
 	}
 
 	@Override
@@ -809,9 +795,18 @@ public class EvoLudoWeb extends Composite
 		evoludoViews.setSelectedIndex(-1);
 		removeKeyListener(this);
 		if (keyListener == this)
-			keyListener = null;
+			setKeyListener(null);
 		// clear settings
 		evoludoCLO.setText("");
+	}
+
+	/**
+	 * Set the key listener for the EvoLudoWeb instance.
+	 * 
+	 * @param keyListener the key listener
+	 */
+	static void setKeyListener(EvoLudoWeb keyListener) {
+		EvoLudoWeb.keyListener = keyListener;
 	}
 
 	@Override
@@ -831,10 +826,19 @@ public class EvoLudoWeb extends Composite
 		if (isEPub) {
 			if (runningEPub != null)
 				throw new IllegalStateException("Another ePub lab is already running!");
-			runningEPub = this;
+			setRunningEPub(this);
 		}
 		displayStatusThresholdLevel = Level.ALL.intValue();
 		updateGUI();
+	}
+
+	/**
+	 * Set the currently running ePub lab.
+	 * 
+	 * @param lab the running ePub lab
+	 */
+	static void setRunningEPub(EvoLudoWeb lab) {
+		runningEPub = lab;
 	}
 
 	@Override
@@ -868,7 +872,7 @@ public class EvoLudoWeb extends Composite
 			if (runningEPub == null)
 				throw new IllegalStateException("Running ePub lab not found!");
 			if (runningEPub == this)
-				runningEPub = null;
+				setRunningEPub(null);
 		}
 		updateGUI();
 	}
@@ -1825,11 +1829,7 @@ public class EvoLudoWeb extends Composite
 			return;
 		}
 		// load decompressor, just in case
-		if (!hasZipJs) {
-			// script (hopefully) needs to be injected only once
-			ScriptInjector.fromString(Resources.INSTANCE.zip().getText()).inject();
-			hasZipJs = true;
-		}
+		loadZipJs();
 		NativeJS.handleDnD(data, this);
 		evoludoOverlay.setVisible(false);
 		displayStatus("Processing drag'n'drop...");
@@ -1844,7 +1844,8 @@ public class EvoLudoWeb extends Composite
 	public void restoreFromString(String filename, String content) {
 		Plist parsed = PlistParser.parse(content);
 		if (parsed == null) {
-			logger.severe("failed to parse contents of file '" + filename + "'.");
+			if (logger.isLoggable(Level.SEVERE))
+				logger.severe("failed to parse contents of file '" + filename + "'.");
 			return;
 		}
 		engine.setCLO((String) (parsed.get("CLO")));
@@ -1857,6 +1858,17 @@ public class EvoLudoWeb extends Composite
 	 * already been loaded.
 	 */
 	private static boolean hasZipJs = false;
+
+	/**
+	 * Ensures ZIP JavaScript is loaded exactly once across all instances.
+	 * Thread-safe and idempotent.
+	 */
+	private static void loadZipJs() {
+		if (!hasZipJs) {
+			ScriptInjector.fromString(Resources.INSTANCE.zip().getText()).inject();
+			hasZipJs = true;
+		}
+	}
 
 	/**
 	 * The index of the currently active view in the {@code activeViews} list (and
@@ -2576,7 +2588,6 @@ public class EvoLudoWeb extends Composite
 	 * @see NativeJS#ePubReaderHasFeature(String)
 	 */
 	public static void detectGUIFeatures() {
-		hasTouch = NativeJS.hasTouch();
 		// IMPORTANT: ibooks (desktop) returns ePubReader for standalone pages as well,
 		// i.e. isEPub is true
 		// however, ibooks (ios) does not report as an ePubReader for standalone pages,

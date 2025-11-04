@@ -1202,21 +1202,8 @@ public abstract class EvoLudo
 		pendingAction = PendingAction.NONE;
 		switch (action) {
 			case CHANGE_MODE:
-				Mode mode = action.getMode();
-				if (activeModel.setMode(mode)) {
-					// mode changed
-					if (mode == Mode.STATISTICS_SAMPLE) {
-						// do not notify listeners, preserve statistics
-						modelReset(true);
-					} else {
-						// stop running
-						isRunning = false;
-					}
-				} else {
-					// mode unchanged
-					if (!isRunning || mode == Mode.STATISTICS_SAMPLE)
-						break;
-				}
+				if (processChangeMode(action))
+					break;
 				//$FALL-THROUGH$
 			case NONE:
 				for (ChangeListener i : changeListeners)
@@ -1241,6 +1228,31 @@ public abstract class EvoLudo
 				break;
 			default:
 		}
+	}
+
+	/**
+	 * Process change of mode request.
+	 * 
+	 * @param action the pending action
+	 * @return <code>true</code> if mode unchanged
+	 */
+	boolean processChangeMode(PendingAction action) {
+		Mode mode = action.getMode();
+		if (activeModel.setMode(mode)) {
+			// mode changed
+			if (mode == Mode.STATISTICS_SAMPLE) {
+				// do not notify listeners, preserve statistics
+				modelReset(true);
+			} else {
+				// stop running
+				isRunning = false;
+			}
+		} else {
+			// mode unchanged
+			if (!isRunning || mode == Mode.STATISTICS_SAMPLE)
+				return true;
+		}
+		return false;
 	}
 
 	/**
@@ -1548,51 +1560,89 @@ public abstract class EvoLudo
 	 */
 	protected String[] preprocessCLO(String[] cloarray) {
 		// first, deal with --help option
-		boolean helpRequested = false;
+		boolean helpRequested = containsHelpOption(cloarray);
+
+		// handle module option (preprocessing requires module to be loaded early)
+		cloarray = handleModuleOption(cloarray, helpRequested);
+
+		// determine feasible --model options for given module
+		cloModel.clearKeys();
+		Type[] mt = activeModule.getModelTypes();
+		cloModel.addKeys(mt);
+
+		// handle model option
+		cloarray = handleModelOption(cloarray, helpRequested);
+
+		// handle verbose option early so parsing reports use desired logging level
+		cloarray = handleVerboseOption(cloarray);
+
+		return cloarray;
+	}
+
+	/**
+	 * Check whether the help option is present.
+	 * 
+	 * @param cloarray array of command line arguments
+	 * @return <code>true</code> if help option is present
+	 */
+	private boolean containsHelpOption(String[] cloarray) {
 		String helpName = cloHelp.getName();
-		for (int i = 0; i < cloarray.length; i++) {
-			String param = cloarray[i];
-			if (param.startsWith(helpName)) {
-				helpRequested = true;
-				break;
-			}
+		for (String param : cloarray) {
+			if (param.startsWith(helpName))
+				return true;
 		}
-		// now deal with --module option
+		return false;
+	}
+
+	/**
+	 * Handle the --module option. Returns modified cloarray or null to indicate
+	 * that helpCLO should be returned to caller.
+	 * 
+	 * @param cloarray      array of command line arguments
+	 * @param helpRequested <code>true</code> if help option was requested
+	 * @return possibly modified cloarray
+	 */
+	private String[] handleModuleOption(String[] cloarray, boolean helpRequested) {
 		String moduleParam = cloModule.getName();
 		CLOption.Key moduleKey = null;
 		String moduleName = "";
 		for (int i = 0; i < cloarray.length; i++) {
 			String param = cloarray[i];
-			if (param.startsWith(moduleParam)) {
-				String[] moduleArgs = param.split("[\\s+,=]");
-				if (moduleArgs == null || moduleArgs.length < 2) {
-					if (!helpRequested)
-						logger.severe("module key missing");
-					return helpCLO;
-				}
-				moduleName = moduleArgs[1];
-				moduleKey = cloModule.match(moduleName);
-				// exact match required
-				if (moduleKey != null && !moduleKey.getKey().equals(moduleName))
-					moduleKey = null;
-				// module parameter found; no need to continue
-				cloarray = ArrayMath.drop(cloarray, i);
-				break;
+			if (!param.startsWith(moduleParam))
+				continue;
+			String[] moduleArgs = param.split("[\\s+,=]");
+			if (moduleArgs == null || moduleArgs.length < 2) {
+				if (!helpRequested)
+					logger.severe("module key missing");
+				return helpCLO;
 			}
+			moduleName = moduleArgs[1];
+			moduleKey = cloModule.match(moduleName);
+			// exact match required
+			if (moduleKey != null && !moduleKey.getKey().equals(moduleName))
+				moduleKey = null;
+			// remove the processed module option
+			cloarray = ArrayMath.drop(cloarray, i);
+			break;
 		}
 		if (moduleKey == null || !loadModule(moduleKey.getKey())) {
 			if (!helpRequested)
 				logger.severe("Use --module to load a module or --help for more information.");
 			return helpCLO;
 		}
-		// second, determine feasible --model options for given module
-		cloModel.clearKeys();
-		Type[] mt = activeModule.getModelTypes();
-		cloModel.addKeys(mt);
-		// third, deal with --model option
+		return cloarray;
+	}
+
+	/**
+	 * Handle the --model option. Returns modified cloarray or null to indicate
+	 * that helpCLO should be returned to caller.
+	 * 
+	 * @param cloarray      array of command line arguments
+	 * @param helpRequested <code>true</code> if help option was requested
+	 * @return possibly modified cloarray
+	 */
+	private String[] handleModelOption(String[] cloarray, boolean helpRequested) {
 		String modelName = cloModel.getName();
-		// if IBS is not an option, pick first available model as default (which one
-		// remains unspecified)
 		Collection<Key> keys = cloModel.getKeys();
 		if (keys.isEmpty()) {
 			if (!helpRequested)
@@ -1603,35 +1653,35 @@ public abstract class EvoLudo
 		Type type = null;
 		for (int i = 0; i < cloarray.length; i++) {
 			String param = cloarray[i];
-			if (param.startsWith(modelName)) {
-				String newModel = CLOption.stripKey(modelName, param).trim();
-				// remove model option
-				cloarray = ArrayMath.drop(cloarray, i);
-				if (newModel.isEmpty()) {
-					type = defaulttype;
+			if (!param.startsWith(modelName))
+				continue;
+			String newModel = CLOption.stripKey(modelName, param).trim();
+			// remove model option
+			cloarray = ArrayMath.drop(cloarray, i);
+			if (newModel.isEmpty()) {
+				type = defaulttype;
+				if (!helpRequested)
 					logger.warning("model key missing - use default type " + type.getKey() + ".");
-					// model key found; no need to continue
-					break;
-				}
-				type = Type.parse(newModel);
-				if (type == null || !keys.contains(type)) {
-					if (activeModel != null) {
-						type = activeModel.getType();
-						logger.warning(
-								"invalid model type " + newModel + " - keep current type " + type.getKey() + ".");
-					} else {
-						type = defaulttype;
-						logger.warning("invalid model type " + newModel + " - use default type " + type.getKey() + ".");
-					}
-				}
-				// model key found; no need to continue
 				break;
 			}
+			type = Type.parse(newModel);
+			if (type == null || !keys.contains(type)) {
+				if (activeModel != null) {
+					type = activeModel.getType();
+					if (!helpRequested)
+						logger.warning(
+								"invalid model type " + newModel + " - keep current type " + type.getKey() + ".");
+				} else {
+					type = defaulttype;
+					if (!helpRequested)
+						logger.warning("invalid model type " + newModel + " - use default type " + type.getKey() + ".");
+				}
+			}
+			break;
 		}
 		if (type == null) {
 			type = defaulttype;
-			if (keys.size() > 1 && !defaulttype.getKey().equals(cloModel.getDefault()))
-				// display warning if multiple models available (suppress if defaults match)
+			if (keys.size() > 1 && !defaulttype.getKey().equals(cloModel.getDefault()) && !helpRequested)
 				logger.warning("model type unspecified - use default type " + type.getKey() + ".");
 		}
 		// NOTE: currently models cannot be mix'n'matched between species
@@ -1641,29 +1691,34 @@ public abstract class EvoLudo
 				logger.severe("model type '" + type.getKey() + "' not supported!");
 			return helpCLO;
 		}
-		// check if cloOptions contain --verbose
+		return cloarray;
+	}
+
+	/**
+	 * Process the {@code --verbose} option early so that logging level is set for
+	 * subsequent parsing.
+	 * 
+	 * @param cloarray array of command line arguments
+	 * @return possibly modified cloarray
+	 */
+	private String[] handleVerboseOption(String[] cloarray) {
 		String verboseName = cloVerbose.getName();
 		for (int i = 0; i < cloarray.length; i++) {
 			String param = cloarray[i];
-			if (param.startsWith(verboseName)) {
-				String verbosity = CLOption.stripKey(verboseName, param).trim();
-				if (verbosity.isEmpty()) {
-					logger.warning("verbose level missing - ignored.");
-					// remove verbose option
-					cloarray = ArrayMath.drop(cloarray, i);
-					// verbosity key found; no need to continue
-					break;
-				}
-				// parse --verbose first to set logging level already for processing of command
-				// line arguments; gets processed again with all others but no harm in it
-				cloVerbose.setArg(verbosity);
-				cloVerbose.parse();
-				// verbosity key found; no need to continue
-				break;
+			if (!param.startsWith(verboseName))
+				continue;
+			String verbosity = CLOption.stripKey(verboseName, param).trim();
+			if (verbosity.isEmpty()) {
+				logger.warning("verbose level missing - ignored.");
+				// remove verbose option
+				return ArrayMath.drop(cloarray, i);
 			}
+			// parse --verbose first to set logging level already for processing of command
+			// line arguments; gets processed again with all others but no harm in it
+			cloVerbose.setArg(verbosity);
+			cloVerbose.parse();
+			break;
 		}
-		if (helpRequested)
-			return helpCLO;
 		return cloarray;
 	}
 
@@ -2135,15 +2190,15 @@ public abstract class EvoLudo
 		addModule(new Moran(this));
 		addModule(new TBT(this));
 		addModule(new ATBT(this));
+		addModule(new DemesTBT(this));
 		addModule(new RSP(this));
 		addModule(new CDL(this));
 		addModule(new CDLP(this));
 		addModule(new CDLPQ(this));
 		addModule(new Centipede(this));
+		addModule(new EcoPGG(this));
 		addModule(new CSD(this));
 		addModule(new CLabour(this));
-		addModule(new DemesTBT(this));
-		addModule(new EcoPGG(this));
 		addModule(new NetGames(this));
 		addModule(new SIR(this));
 		addModule(new LV(this));
