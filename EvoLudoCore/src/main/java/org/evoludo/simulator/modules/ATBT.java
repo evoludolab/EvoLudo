@@ -210,7 +210,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 				return ArrayMath.dot(payoffs[DEFECT_POOR], state);
 
 			default: // should not end here
-				throw new Error("Unknown trait (" + me + ")");
+				throw new UnsupportedOperationException("Unknown trait (" + me + ")");
 		}
 	}
 

@@ -1165,7 +1165,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				return;
 
 			default:
-				throw new Error("Unknown interaction type (" + interGroup.getSampling() + ")");
+				throw new UnsupportedOperationException("Unknown interaction type (" + interGroup.getSampling() + ")");
 		}
 	}
 
@@ -1342,7 +1342,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				break;
 
 			default:
-				throw new Error("updateMixedMeanScores: invalid interaction geometry");
+				throw new UnsupportedOperationException("Invalid interaction geometry: " + interaction.getType());
 		}
 	}
 

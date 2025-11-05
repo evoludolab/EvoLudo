@@ -1453,7 +1453,7 @@ public abstract class RNGDistribution {
 			// last resort
 			if (cum < 1.0 && rnd < 1.0)
 				return n;
-			throw new Error("this is not happening... probability: " + p + ", trials: " + n
+			throw new IllegalStateException("this is not happening... probability: " + p + ", trials: " + n
 					+ ", cumulative probability: " + cum + ", random number: " + rnd);
 		}
 

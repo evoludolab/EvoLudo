@@ -577,7 +577,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 									output.println("How to best report trait distribution in PDE?");
 									break;
 								}
-								throw new Error("This never happens.");
+								throw new IllegalStateException("This never happens.");
 							case SCORES:
 								if (model instanceof IBS) {
 									boolean isMultispecies = (module.getNSpecies() > 1);
@@ -593,7 +593,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 									output.println("How to best report score distribution in PDE?");
 									break;
 								}
-								throw new Error("This never happens.");
+								throw new IllegalStateException("This never happens.");
 							case FITNESS:
 								if (model instanceof IBS) {
 									boolean isMultispecies = (module.getNSpecies() > 1);
@@ -609,7 +609,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 									output.println("How to best report fitness distribution in PDE?");
 									break;
 								}
-								throw new Error("This never happens.");
+								throw new IllegalStateException("This never happens.");
 							// case FITHISTOGRAM:
 							// break;
 							// case HISTOGRAM:
@@ -661,7 +661,8 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 								fixData.timeRead = true;
 								break;
 							default:
-								throw new Error("Statistics for " + data.getKey() + " not supported!");
+								throw new UnsupportedOperationException(
+										"Statistics for " + data.getKey() + " not supported!");
 						}
 					}
 					isRunning = (samples < nSamples);
@@ -725,14 +726,15 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 							printTimeStat(fixTotTime, "# overall:\t", tail);
 							break;
 						default:
-							throw new Error("Statistics for " + data.getKey() + " not supported!");
+							throw new UnsupportedOperationException(
+									"Statistics for " + data.getKey() + " not supported!");
 					}
 				}
 				break;
 			case STATISTICS_UPDATE:
-				throw new Error("Mode " + Mode.STATISTICS_UPDATE + " not implemented.");
+				throw new UnsupportedOperationException("Mode " + Mode.STATISTICS_UPDATE + " not implemented.");
 			default:
-				throw new Error("Mode not recognized.");
+				throw new UnsupportedOperationException("Mode not recognized.");
 		}
 		writeFooter();
 		exit(0);

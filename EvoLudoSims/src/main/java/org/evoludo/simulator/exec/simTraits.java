@@ -123,7 +123,7 @@ public class simTraits extends Traits {
 					ManagementFactory.OPERATING_SYSTEM_MXBEAN_NAME,
 					OperatingSystemMXBean.class);
 		} catch (IOException e) {
-			throw new Error("failed to initialize timing system - " + e.getMessage() + ".");
+			throw new IllegalStateException("failed to initialize timing system - " + e.getMessage() + ".");
 		}
 
 		model.setTimeStep(1.0);

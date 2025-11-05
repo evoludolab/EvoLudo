@@ -600,7 +600,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 				return;
 
 			default:
-				throw new Error("Unknown interaction type (" + interGroup.getSampling() + ")");
+				throw new UnsupportedOperationException("Unknown interaction type (" + interGroup.getSampling() + ")");
 		}
 	}
 

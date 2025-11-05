@@ -290,7 +290,7 @@ public class IBSGroup {
 
 					case HIERARCHY:
 						if (nSamples != 1) {
-							throw new Error(
+							throw new UnsupportedOperationException(
 									"sampling of groups (≥2) in hierarchical structures not (yet) implemented!");
 						}
 						nSampled = 1;
@@ -384,7 +384,7 @@ public class IBSGroup {
 								return group;
 
 							default:
-								throw new Error(
+								throw new UnsupportedOperationException(
 										"hierachy geometry '" + geometry.subgeometry.getTitle() + "' not supported");
 						}
 
@@ -426,7 +426,7 @@ public class IBSGroup {
 						return group;
 				}
 			default:
-				throw new Error("Unknown group sampling (type: " + samplingType + ")!");
+				throw new UnsupportedOperationException("Unknown group sampling (type: " + samplingType + ")!");
 		}
 	}
 

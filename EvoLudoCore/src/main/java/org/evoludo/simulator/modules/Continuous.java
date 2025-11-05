@@ -562,7 +562,7 @@ public abstract class Continuous extends Module<Continuous> {
 					return c[0] * myinv + c[1] * yourinv + c[2] * myinv * yourinv;
 
 				default: // this is bad
-					throw new Error("Unknown cost function type (" + costs[trait] + ")");
+					throw new UnsupportedOperationException("Unknown cost function type (" + costs[trait] + ")");
 			}
 		}
 
@@ -637,7 +637,7 @@ public abstract class Continuous extends Module<Continuous> {
 					return b[0] * myinv + b[1] * yourinv + b[2] * myinv * yourinv;
 
 				default: // this is bad
-					throw new Error("Unknown benefit function type (" + benefits[trait] + ")");
+					throw new UnsupportedOperationException("Unknown benefit function type (" + benefits[trait] + ")");
 			}
 		}
 	}

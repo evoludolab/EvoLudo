@@ -165,7 +165,7 @@ public class RSP extends Discrete implements Payoffs,
 						+ traitCount[PAPER] * payoff[PAPER][PAPER];
 
 			default: // should not end here
-				throw new Error("Unknown trait (" + me + ")");
+				throw new UnsupportedOperationException("Unknown trait (" + me + ")");
 		}
 	}
 
@@ -317,7 +317,7 @@ public class RSP extends Discrete implements Payoffs,
 					break;
 				default:
 					// should never get here - check made sure of it.
-					throw new Error("geometry incompatible with kaleidoscopes!");
+					throw new UnsupportedOperationException("geometry incompatible with kaleidoscopes!");
 			}
 		}
 	}

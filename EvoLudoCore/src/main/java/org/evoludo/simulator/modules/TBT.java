@@ -215,7 +215,7 @@ public class TBT extends Discrete implements Payoffs,
 						+ traitCount[DEFECT] * payoffs[DEFECT][DEFECT];
 
 			default: // should not end here
-				throw new Error("Unknown trait (" + me + ")");
+				throw new UnsupportedOperationException("Unknown trait (" + me + ")");
 		}
 	}
 
@@ -575,7 +575,7 @@ public class TBT extends Discrete implements Payoffs,
 
 				default:
 					// should never get here - check made sure of it.
-					throw new Error("geometry incompatible with kaleidoscopes!");
+					throw new UnsupportedOperationException("geometry incompatible with kaleidoscopes!");
 			}
 		}
 	}

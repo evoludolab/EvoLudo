@@ -153,7 +153,7 @@ public class CDLPQ extends CDLP {
 				return mypayoff + v * traitScore[SANCTIONING];
 
 			default: // should not end here
-				throw new Error("Unknown trait (" + me + ")");
+				throw new UnsupportedOperationException("Unknown trait (" + me + ")");
 		}
 	}
 

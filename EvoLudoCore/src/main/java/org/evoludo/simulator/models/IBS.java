@@ -878,7 +878,7 @@ public abstract class IBS extends Model {
 				return pickFocalSpecies(random0n(nSpecies));
 			// case SYNC:
 			default:
-				throw new Error("unknown species update type!");
+				throw new UnsupportedOperationException("Unknown species update type!");
 		}
 	}
 

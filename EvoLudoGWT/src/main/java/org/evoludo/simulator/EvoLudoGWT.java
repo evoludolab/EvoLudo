@@ -185,7 +185,7 @@ public class EvoLudoGWT extends EvoLudo {
 				scheduleStep();
 				break;
 			default:
-				throw new Error("next(): unknown mode...");
+				throw new UnsupportedOperationException("Unknown mode: " + activeModel.getMode());
 		}
 	}
 

@@ -306,7 +306,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 *         reset)
 	 */
 	public boolean updatePlayerBestResponse(int me, int[] group, int size) {
-		throw new Error("Best-response dynamics ill defined!");
+		throw new UnsupportedOperationException("Best-response dynamics ill defined!");
 	}
 
 	/**
@@ -678,7 +678,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 					doDiffusionMigration();
 				break;
 			default: // should never get here
-				throw new Error("Unknown migration type (" + migrationType + ")");
+				throw new UnsupportedOperationException("Unknown migration type (" + migrationType + ")");
 		}
 		return nMigrants;
 	}
@@ -700,7 +700,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				doDiffusionMigration();
 				break;
 			default: // should never get here
-				throw new Error("Unknown migration type (" + migrationType + ")");
+				throw new UnsupportedOperationException("Unknown migration type (" + migrationType + ")");
 		}
 	}
 
@@ -1239,8 +1239,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			}
 			// should not get here
 			debugScores(hit);
-			throw new Error(
-					"drawFitNeighborAt(int) failed to pick neighbour... (" + hit + ", sum: " + totFitness + ")");
+			throw new IllegalStateException(
+					"Failed to pick neighbour... (" + hit + ", sum: " + totFitness + ")");
 		}
 
 		// vacancies require some extra care
@@ -1289,7 +1289,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		}
 		// should not get here
 		debugScores(hit);
-		throw new Error("drawFitNeighborAt(int) failed to pick neighbour... (" + hit + ", sum: " + totFitness + ")");
+		throw new IllegalStateException("Failed to pick neighbour... (" + hit + ", sum: " + totFitness + ")");
 	}
 
 	/**
@@ -1419,7 +1419,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// any graph - interact with out-neighbors
 		// same as earlier approach to undirected graphs
 		if (adjustScores) {
-			throw new Error("ERROR: playGameAt(int idx) and adjustScores are incompatible!");
+			throw new IllegalStateException("playGameAt(int idx) and adjustScores are incompatible!");
 		}
 		if (module.isPairwise()) {
 			interGroup.pickAt(me, true);
@@ -2322,7 +2322,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @return the number of elapsed realtime units
 	 */
 	protected int updatePlayerEcologyAt(int index) {
-		throw new Error("updatePlayerEcologyAt not implemented.");
+		throw new UnsupportedOperationException("updatePlayerEcologyAt not implemented.");
 	}
 
 	/**
@@ -2404,7 +2404,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				break;
 
 			default:
-				throw new Error("Unknown update method for players (" + playerUpdate + ")");
+				throw new UnsupportedOperationException("Unknown update method for players (" + playerUpdate + ")");
 		}
 		if (maybeMutateAt(me, switched))
 			return true;
@@ -2580,7 +2580,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			choice -= bin;
 		}
 		// should not get here!
-		throw new Error("Problem in updateProportionalAbs()...");
+		throw new IllegalStateException("Problem in updateProportionalAbs()...");
 	}
 
 	/**
@@ -2717,7 +2717,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				}
 			} else {
 				// not ready for unbounded accumulated payoffs... check() should catch this
-				throw new Error("cannot handle unbounded accumulated scores");
+				throw new UnsupportedOperationException("cannot handle unbounded accumulated scores");
 			}
 		}
 		if (norm <= 0.0)
@@ -2742,7 +2742,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			}
 		}
 		/* should not get here! */
-		throw new Error("Problem in " + (betterOnly ? "updateReplicatorPlus()..." : "updateReplicatorHalf()..."));
+		throw new IllegalStateException(
+				"Problem in " + (betterOnly ? "updateReplicatorPlus()..." : "updateReplicatorHalf()..."));
 	}
 
 	/**
@@ -2858,7 +2859,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				sb.append(cProbs[i]).append('\t');
 			logger.fine(sb.toString());
 		}
-		throw new Error("Problem in updateThermal()...");
+		throw new IllegalStateException("Problem in updateThermal()...");
 	}
 
 	/**
@@ -2924,7 +2925,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			return score;
 		}
 		// not ready for unbounded accumulated payoffs... check() should catch this
-		throw new Error("cannot handle unbounded accumulated scores");
+		throw new IllegalStateException("cannot handle unbounded accumulated scores");
 	}
 
 	/**
@@ -3442,7 +3443,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				map2fit.setBaseline(-minFitness);
 				updateMinMaxScores();
 				if (minFitness < 0.0) {
-					throw new Error("Adjustment of selection failed... (minimal fitness: "
+					throw new IllegalStateException("Adjustment of selection failed... (minimal fitness: "
 							+ Formatter.format(minScore, 6) + " should be positive)");
 				}
 			}

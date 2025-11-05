@@ -380,7 +380,7 @@ public class DemesTBT extends TBT {
 				}
 			}
 			// last resort
-			throw new Error("Dispersal failed... (" + hit + ")");
+			throw new IllegalStateException("Dispersal failed... (" + hit + ")");
 		}
 
 		@Override

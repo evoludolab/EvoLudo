@@ -246,7 +246,7 @@ public class EcoPGG extends Discrete implements Payoffs,
 						traitCount[VACANT] * payLoneDefect;
 
 			default: // should not end here
-				throw new Error("Unknown strategy (" + me + ")");
+				throw new UnsupportedOperationException("Unknown strategy (" + me + ")");
 		}
 	}
 

@@ -1503,7 +1503,7 @@ public class Geometry {
 			default:
 				// last resort: try engine - maybe new implementations provide new geometries
 				if (!population.checkGeometry(this))
-					throw new Error("Unknown geometry");
+					throw new UnsupportedOperationException("Unknown geometry");
 		}
 		if (pRewire > 0.0) {
 			switch ((int) (connectivity + 1e-6)) {
@@ -1622,7 +1622,7 @@ public class Geometry {
 			default:
 				// last resort: try engine - maybe new implementations provide new geometries
 				if (!population.generateGeometry(this))
-					throw new Error("Unknown geometry");
+					throw new UnsupportedOperationException("Unknown geometry");
 		}
 		isValid = true;
 		evaluated = false;
@@ -4146,7 +4146,7 @@ public class Geometry {
 				}
 			}
 			// we should not arrive here - scream!
-			throw new Error("Emergency in scale-free network creation...");
+			throw new IllegalStateException("Emergency in scale-free network creation...");
 		}
 		rewireUndirected(pKlemm);
 	}
@@ -4352,7 +4352,7 @@ public class Geometry {
 							continue; // there is hope...
 					// this looks bad - try node we just came from
 					if (kout[in[to][len - 1]] == size - 1) {
-						throw new Error("Rewiring troubles - giving up...");
+						throw new IllegalStateException("Rewiring troubles - giving up...");
 					}
 					// let's go back - can this fail?
 					from = in[to][len - 1];

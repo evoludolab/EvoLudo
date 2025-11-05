@@ -270,7 +270,7 @@ public class CDL extends Discrete implements Payoffs,
 				return x * r1 * 0.5 * costCoop + /* + y * 0.0 */ +z * payLoneDefect;
 
 			default: // should not end here
-				throw new Error("Unknown trait (" + me + ")");
+				throw new UnsupportedOperationException("Unknown trait (" + me + ")");
 		}
 	}
 
@@ -1062,7 +1062,7 @@ public class CDL extends Discrete implements Payoffs,
 
 				default:
 					// should never get here - check made sure of it.
-					throw new Error("geometry incompatible with kaleidoscopes!");
+					throw new UnsupportedOperationException("geometry incompatible with kaleidoscopes!");
 			}
 		}
 	}

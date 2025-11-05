@@ -790,7 +790,7 @@ public class NetGames extends Discrete implements Payoffs,
 		@Override
 		public boolean generateGeometry(Geometry geom) {
 			if (geom.getType() != Type.DYNAMIC)
-				throw new Error("NetGames: Unknown geometry (" + geom.getType() + ")");
+				throw new UnsupportedOperationException("Unknown geometry (" + geom.getType() + ")");
 			geom.isRewired = false;
 			geom.isUndirected = false;
 			geom.isRegular = false;
