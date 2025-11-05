@@ -365,10 +365,7 @@ public class ODE extends Model implements DModel {
 		boolean doReset = super.check();
 		dstate = null;
 		doReset |= evaluateSpecies();
-
 		names = getMeanNames();
-		connect = false;
-		converged = false;
 
 		// check if dynamics mode changed (cannot mix and match density and frequency
 		// based dynamics)
@@ -471,6 +468,12 @@ public class ODE extends Model implements DModel {
 
 	@Override
 	public void init() {
+		super.init();
+		dtTry = dt;
+		// force re-initialization to disable updates in favour of time
+		updates = Double.POSITIVE_INFINITY;
+		if (type.isPDE())
+			return; // PDE models handle initialization themselves
 		init(true);
 	}
 
@@ -1571,6 +1574,7 @@ public class ODE extends Model implements DModel {
 	 */
 	private void init(boolean doRandom) {
 		initializer.init(doRandom);
+		normalizeState(yt);
 	}
 
 	/**

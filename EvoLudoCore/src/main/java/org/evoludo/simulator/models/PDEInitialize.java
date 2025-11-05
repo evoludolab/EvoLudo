@@ -31,7 +31,6 @@
 package org.evoludo.simulator.models;
 
 import org.evoludo.math.ArrayMath;
-import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.util.CLOption;
@@ -85,27 +84,22 @@ import org.evoludo.util.CLOption;
  * @see Type
  * @see #init(double[][], double[], Geometry)
  */
-class PDEInitialize {
+class PDEInitialize extends ODEInitialize {
 
-	private Geometry space;
-	private PDEInitialize.Type type;
-	private double[] background;
-	private double[] y0;
-	private int dependent;
-	private RNGDistribution rng;
+	private final PDE pde;
 
-	public PDEInitialize(Geometry space, PDEInitialize.Type type, double[] y0, double[] background, int dependentIdx,
-			RNGDistribution rng) {
-		this.space = space;
-		this.type = type;
-		this.y0 = y0;
-		this.background = background;
-		this.dependent = dependentIdx;
-		this.rng = rng;
+	PDEInitialize(PDE pde) {
+		super(pde);
+		this.pde = pde;
 	}
 
 	public void init(double[][] density) {
-		switch (type) {
+		Geometry space = pde.space;
+		// double[] y0 = pde.y0;
+		double[] y0 = new double[pde.nDim];
+		System.arraycopy(pde.y0, 0, y0, 0, pde.nDim);
+
+		switch (pde.initType) {
 			default:
 			case UNIFORM:
 				initUniform(density, y0, space);
@@ -134,7 +128,7 @@ class PDEInitialize {
 	private void initPerturbation(double[][] density, double[] y0, Geometry space) {
 		int nDim = y0.length;
 		for (int n = 0; n < space.size; n++)
-			System.arraycopy(background, 0, density[n], 0, nDim);
+			System.arraycopy(pde.background, 0, density[n], 0, nDim);
 		switch (space.getType()) {
 			case CUBE: {
 				int l = (int) (Math.pow(space.size, 1.0 / 3.0) + 0.5);
@@ -160,8 +154,8 @@ class PDEInitialize {
 		for (int n = 0; n < space.size; n++) {
 			double[] ds = density[n]; // ds is only a short-cut - data written to density[]
 			for (int i = 0; i < nDim; i++)
-				ds[i] = rng.random01() * y0[i];
-			if (dependent >= 0)
+				ds[i] = pde.rng.random01() * y0[i];
+			if (pde.dependent >= 0)
 				ArrayMath.normalize(ds);
 		}
 	}
@@ -222,13 +216,13 @@ class PDEInitialize {
 	 * @param dest the destination array
 	 */
 	void apply(int x, int l, double[] y0, double[][] dest) {
-		switch (type) {
+		switch (pde.initType) {
 			case CIRCLE:
 			case SQUARE:
 				int m = l / 2;
 				int l10 = l / 10;
 				if (x < m - l10 || x > m + l10)
-					y0 = background;
+					y0 = pde.background;
 				System.arraycopy(y0, 0, dest[x], 0, y0.length);
 				break;
 			case GAUSSIAN:
@@ -257,19 +251,19 @@ class PDEInitialize {
 	 * @param dest the destination array
 	 */
 	void apply(int x, int y, int l, double[] y0, double[][] dest) {
-		switch (type) {
+		switch (pde.initType) {
 			case CIRCLE:
 				int m = l / 2;
 				int r2 = Math.max(1, l * l / 100); // (l/10)^2
 				if ((x - m) * (x - m) + (y - m) * (y - m) > r2)
-					y0 = background;
+					y0 = pde.background;
 				System.arraycopy(y0, 0, dest[y * l + x], 0, y0.length);
 				break;
 			case SQUARE:
 				m = l / 2;
 				int l10 = l / 10;
 				if (x < m - l10 || x > m + l10 || y < m - l10 || y > m + l10)
-					y0 = background;
+					y0 = pde.background;
 				System.arraycopy(y0, 0, dest[y * l + x], 0, y0.length);
 				break;
 			case GAUSSIAN:
@@ -302,12 +296,12 @@ class PDEInitialize {
 	 * @param dest the destination array
 	 */
 	void apply(int x, int y, int z, int l, int lz, double[] y0, double[][] dest) {
-		switch (type) {
+		switch (pde.initType) {
 			case CIRCLE:
 				int m = l / 2;
 				double r3 = l * l * l * 0.001; // (l/10)^3
 				if ((x - m) * (x - m) + (y - m) * (y - m) + (z - m) * (z - m) > r3)
-					y0 = background;
+					y0 = pde.background;
 				System.arraycopy(y0, 0, dest[(z * l + y) * l + x], 0, y0.length);
 				break;
 			case SQUARE:
@@ -315,7 +309,7 @@ class PDEInitialize {
 				int l10 = l / 10;
 				int lz10 = lz / 10;
 				if (x < m - l10 || x > m + l10 || y < m - l10 || y > m + l10 || z < m - lz10 || z > m + lz10)
-					y0 = background;
+					y0 = pde.background;
 				System.arraycopy(y0, 0, dest[(z * l + y) * l + x], 0, y0.length);
 				break;
 			case GAUSSIAN:
@@ -349,9 +343,9 @@ class PDEInitialize {
 	 */
 	private void scaleDensity(double[] y0, double scale, double[] d) {
 		for (int n = 0; n < y0.length; n++)
-			d[n] = (1.0 - scale) * background[n] + scale * y0[n];
-		if (dependent >= 0) {
-			d[dependent] = Math.max(0.0, 1.0 + d[dependent] - ArrayMath.norm(d));
+			d[n] = (1.0 - scale) * pde.background[n] + scale * y0[n];
+		if (pde.dependent >= 0) {
+			d[pde.dependent] = Math.max(0.0, 1.0 + d[pde.dependent] - ArrayMath.norm(d));
 			ArrayMath.normalize(d);
 		}
 	}

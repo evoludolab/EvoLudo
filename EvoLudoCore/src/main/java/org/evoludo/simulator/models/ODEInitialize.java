@@ -52,13 +52,6 @@ class ODEInitialize {
 	}
 
 	void init(boolean doRandom) {
-		ode.time = 0.0;
-		ode.dtTry = ode.dt;
-		ode.connect = false;
-		ode.converged = false;
-		// PDE models have their own initialization types
-		if (ode.type.isPDE())
-			return;
 		int idx = -1;
 		// y0 is initialized except for species with random initial frequencies
 		if (doRandom) {
@@ -72,7 +65,6 @@ class ODEInitialize {
 			}
 		}
 		System.arraycopy(ode.y0, 0, ode.yt, 0, ode.nDim);
-		ode.normalizeState(ode.yt);
 	}
 
 	boolean parse(String arg) {

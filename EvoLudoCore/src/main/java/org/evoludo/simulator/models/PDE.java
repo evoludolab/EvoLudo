@@ -120,6 +120,8 @@ public class PDE extends ODE {
 	 */
 	double[] background;
 
+	private final PDEInitialize initializer;
+
 	/**
 	 * Type of initial configuration for each species.
 	 * <p>
@@ -289,6 +291,7 @@ public class PDE extends ODE {
 	public PDE(EvoLudo engine) {
 		super(engine);
 		type = Type.PDERD;
+		initializer = new PDEInitialize(this);
 	}
 
 	/**
@@ -1004,7 +1007,7 @@ public class PDE extends ODE {
 	@Override
 	public void init() {
 		super.init();
-		new PDEInitialize(space, initType, y0, background, dependent, rng).init(density);
+		initializer.init(density);
 	}
 
 	/**

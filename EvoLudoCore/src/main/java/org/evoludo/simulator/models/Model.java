@@ -623,8 +623,7 @@ public abstract class Model implements CLOProvider {
 	 * @see MilestoneListener#modelDidReset()
 	 */
 	public void reset() {
-		updates = 0.0;
-		time = 0.0;
+		resetState();
 	}
 
 	/**
@@ -633,9 +632,14 @@ public abstract class Model implements CLOProvider {
 	 * @see MilestoneListener#modelDidInit()
 	 */
 	public void init() {
+		resetState();
+	}
+
+	private void resetState() {
 		updates = 0.0;
 		time = 0.0;
 		converged = false;
+		connect = false;
 	}
 
 	/**
