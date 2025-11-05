@@ -304,7 +304,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			return;
 		}
 		if (Double.isNaN(t)) {
-			handleNaNTime(t, data, lastt);
+			handleNaNTime(data, lastt);
 			return;
 		}
 		if (force || distSq(data, last) > bufferThreshold) {
@@ -324,7 +324,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		int len = data.length;
 		if (init == null || init.length != len + 1)
 			init = new double[len + 1]; // add time
-		System.arraycopy(buffer.last(), 0, init, 0, len);
+		System.arraycopy(buffer.last(), 0, init, 0, len + 1);
 	}
 
 	/**
@@ -333,15 +333,15 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 * data, otherwise the new data is appended to the buffer. The initial state is
 	 * updated accordingly.
 	 * 
-	 * @param t     the time of the data
 	 * @param data  the data to add
 	 * @param lastt the time of the last data point in the buffer
 	 */
-	private void handleNaNTime(double t, double[] data, double lastt) {
+	private void handleNaNTime(double[] data, double lastt) {
+		double[] add = prependTime2Data(Double.NaN, data);
 		if (Double.isNaN(lastt))
-			buffer.replace(prependTime2Data(t, data));
+			buffer.replace(add);
 		else
-			buffer.append(prependTime2Data(t, data));
+			buffer.append(add);
 		System.arraycopy(buffer.last(), 0, init, 0, data.length);
 	}
 
