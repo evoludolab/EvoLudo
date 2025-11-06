@@ -320,7 +320,7 @@ public class Advection extends PDE {
 				public boolean parse(String arg) {
 					doAdvection = false;
 					advcoeff = null;
-					if (cloPdeAdvection.isDefault())
+					if (!cloPdeAdvection.isSet())
 						return true;
 					// dim not yet set - retrieve directly from module
 					int dim = module.getNTraits();

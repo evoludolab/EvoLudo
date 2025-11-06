@@ -456,7 +456,8 @@ public class EvoLudoGWT extends EvoLudo {
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					snapLayoutTimeout = Math.max(1, CLOParser.parseInteger(arg)) * 1000;
+					if (cloSnap.isSet())
+						snapLayoutTimeout = Math.max(1, CLOParser.parseInteger(arg)) * 1000;
 					return true;
 				}
 			});

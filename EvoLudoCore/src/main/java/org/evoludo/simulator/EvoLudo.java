@@ -1840,12 +1840,12 @@ public abstract class EvoLudo
 	/**
 	 * Command line option to set seed of random number generator.
 	 */
-	public final CLOption cloSeed = new CLOption("seed", "no seed", CLOption.Argument.OPTIONAL, Category.Model,
+	public final CLOption cloSeed = new CLOption("seed", "0", CLOption.Argument.OPTIONAL, Category.Model,
 			"--seed [<s>]    set random seed (0)", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					if (cloSeed.isSet())
-						rng.setSeed(cloSeed.isDefault() ? 0L : Long.parseLong(arg));
+						rng.setSeed(Long.parseLong(arg));
 					else
 						rng.clearSeed();
 					return true;

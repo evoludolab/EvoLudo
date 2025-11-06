@@ -1024,7 +1024,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 */
 	public void setOutput(PrintStream output) {
 		this.output = (output == null ? System.out : output);
-		parser.setOutput(this.output);
 	}
 
 	@Override
@@ -1273,7 +1272,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 						return true;
 					}
 					exportname = arg;
-					if (!cloExport.isDefault())
+					if (cloExport.isSet())
 						return true;
 					// arg is default; prefer --append or --output file name (with extension plist
 					// added or substituted)
@@ -1324,7 +1323,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			"--data <d[,d1,...]>  type of data to report", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					if (cloData.isDefault() || cloData.getDefault().equals(arg)) {
+					if (!cloData.isSet() || cloData.getDefault().equals(arg)) {
 						return true; // no default
 					}
 					boolean success = true;

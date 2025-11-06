@@ -1213,7 +1213,7 @@ public class Geometry {
 				hierarchy[nHierarchy] = nIndiv;
 				if (setSize(prod * nIndiv)) {
 					// show size-change-warning only if an explicit population size was requested
-					if (!engine.getModule().cloNPopulation.isDefault() && logger.isLoggable(Level.WARNING))
+					if (engine.getModule().cloNPopulation.isSet() && logger.isLoggable(Level.WARNING))
 						logger.warning(name + " geometry '" //
 								+ geometry + "' with levels " + Formatter.format(hierarchy)
 								+ " requires population size of " + size + "!");
@@ -1260,7 +1260,7 @@ public class Geometry {
 				int nReservoir = (size - 1 - pnodes) / superstar_petals;
 				if (setSize(nReservoir * superstar_petals + pnodes + 1)) {
 					// show size-change-warning only if an explicit population size was requested
-					if (!engine.getModule().cloNPopulation.isDefault())
+					if (engine.getModule().cloNPopulation.isSet())
 						logger.warning(name + " geometry '" //
 								+ geometry + "' requires special size - using " + size + "!");
 					doReset = true;
@@ -1272,7 +1272,7 @@ public class Geometry {
 				int unit = (int) Math.floor(Math.pow(size, 0.25));
 				if (setSize(unit * unit * (1 + unit * (1 + unit)))) {
 					// show size-change-warning only if an explicit population size was requested
-					if (!engine.getModule().cloNPopulation.isDefault())
+					if (engine.getModule().cloNPopulation.isSet())
 						logger.warning(name + " geometry '" //
 								+ geometry + "' requires special size - using " + size + "!");
 					doReset = true;
@@ -1288,7 +1288,7 @@ public class Geometry {
 				double alpha = 3.0 * lnunit / Math.log(1.0 + epsilon);
 				if (setSize((int) (unit + (1 + alpha) * unit23 + 0.5))) {
 					// show size-change-warning only if an explicit population size was requested
-					if (!engine.getModule().cloNPopulation.isDefault())
+					if (engine.getModule().cloNPopulation.isSet())
 						logger.warning(name + " geometry '" //
 								+ geometry + "' requires special size - using " + size + "!");
 					doReset = true;
@@ -1309,7 +1309,7 @@ public class Geometry {
 				side2 = side * side;
 				if (setSize(side2)) {
 					// show size-change-warning only if an explicit population size was requested
-					if (!engine.getModule().cloNPopulation.isDefault())
+					if (engine.getModule().cloNPopulation.isSet())
 						logger.warning(name + " geometry '" //
 								+ geometry + "' requires even integer square size - using " + size + "!");
 					doReset = true;
@@ -1335,7 +1335,7 @@ public class Geometry {
 					int side3 = side * side * side;
 					if (setSize(side3)) {
 						// show size-change-warning only if an explicit population size was requested
-						if (!engine.getModule().cloNPopulation.isDefault())
+						if (engine.getModule().cloNPopulation.isSet())
 							logger.warning(name + " geometry '" //
 									+ geometry + "' requires integer cube size - using " + size + "!");
 						doReset = true;
@@ -1365,7 +1365,7 @@ public class Geometry {
 					side2 = side * side;
 					if (setSize(side2)) {
 						// show size-change-warning only if an explicit population size was requested
-						if (!engine.getModule().cloNPopulation.isDefault())
+						if (engine.getModule().cloNPopulation.isSet())
 							logger.warning(name + " geometry '" //
 									+ geometry + "' requires even integer square size - using " + size
 									+ "!");
@@ -1388,7 +1388,7 @@ public class Geometry {
 					side2 = side * side;
 					if (setSize(side2)) {
 						// show size-change-warning only if an explicit population size was requested
-						if (!engine.getModule().cloNPopulation.isDefault())
+						if (engine.getModule().cloNPopulation.isSet())
 							logger.warning(name + " geometry '" //
 									+ geometry + "' requires even integer square size - using " + size
 									+ "!");
@@ -1410,7 +1410,7 @@ public class Geometry {
 				if ((size * nConn) % 2 == 1) {
 					if (setSize(size + 1)) {
 						// show size-change-warning only if an explicit population size was requested
-						if (!engine.getModule().cloNPopulation.isDefault())
+						if (engine.getModule().cloNPopulation.isSet())
 							logger.warning(name + " geometry '" //
 									+ geometry + "' requires even (directed) link count - set size to " + size
 									+ "!");
@@ -1423,7 +1423,7 @@ public class Geometry {
 			case FRANKLIN:
 				if (setSize(12)) {
 					// show size-change-warning only if an explicit population size was requested
-					if (!engine.getModule().cloNPopulation.isDefault())
+					if (engine.getModule().cloNPopulation.isSet())
 						logger.warning(name + " geometry '" //
 								+ geometry + "' requires size 12!");
 					doReset = true;
@@ -1433,7 +1433,7 @@ public class Geometry {
 			case HEAWOOD:
 				if (setSize(14)) {
 					// show size-change-warning only if an explicit population size was requested
-					if (!engine.getModule().cloNPopulation.isDefault())
+					if (engine.getModule().cloNPopulation.isSet())
 						logger.warning(name + " geometry '" //
 								+ geometry + "' requires size 14!");
 					doReset = true;
@@ -1443,7 +1443,7 @@ public class Geometry {
 			case ICOSAHEDRON:
 				if (setSize(12)) {
 					// show size-change-warning only if an explicit population size was requested
-					if (!engine.getModule().cloNPopulation.isDefault())
+					if (engine.getModule().cloNPopulation.isSet())
 						logger.warning(name + " geometry '" //
 								+ geometry + "' requires size 12!");
 					doReset = true;
@@ -1454,7 +1454,7 @@ public class Geometry {
 			case DESARGUES:
 				if (setSize(20)) {
 					// show size-change-warning only if an explicit population size was requested
-					if (!engine.getModule().cloNPopulation.isDefault())
+					if (engine.getModule().cloNPopulation.isSet())
 						logger.warning(name + " geometry '" //
 								+ geometry + "' requires size 20!");
 					doReset = true;
