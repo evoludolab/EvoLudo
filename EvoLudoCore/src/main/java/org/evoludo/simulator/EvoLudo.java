@@ -1843,8 +1843,8 @@ public abstract class EvoLudo
 	public final CLOption cloSeed = new CLOption("seed", "0", CLOption.Argument.OPTIONAL, Category.Model,
 			"--seed [<s>]    set random seed (0)", new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					if (cloSeed.isSet())
+				public boolean parse(String arg, boolean isSet) {
+					if (isSet)
 						rng.setSeed(Long.parseLong(arg));
 					else
 						rng.clearSeed();
@@ -1859,9 +1859,9 @@ public abstract class EvoLudo
 	public final CLOption cloRun = new CLOption("run", Category.GUI,
 			"--run           simulations run after launch", new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
+				public boolean parse(boolean isSet) {
 					// by default do not interfere - i.e. leave simulations running if possible
-					if (cloRun.isSet())
+					if (isSet)
 						setSuspended(true);
 					return true;
 				}
@@ -1923,8 +1923,8 @@ public abstract class EvoLudo
 	public final CLOption cloRNG = new CLOption("testRNG", Category.Global,
 			"--testRNG       test random number generator", new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					if (cloRNG.isSet()) {
+				public boolean parse(boolean isSet) {
+					if (isSet) {
 						// test of RNG requested
 						logger.info("Testing MersenneTwister...");
 						int start = elapsedTimeMsec();
@@ -2004,10 +2004,9 @@ public abstract class EvoLudo
 	public final CLOption cloHelp = new CLOption("help", Category.Global,
 			"--help          print this help screen", new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					if (cloHelp.isSet()) {
+				public boolean parse(boolean isSet) {
+					if (isSet)
 						showHelp();
-					}
 					return true;
 				}
 			});

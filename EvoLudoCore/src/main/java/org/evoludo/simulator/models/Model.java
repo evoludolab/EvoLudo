@@ -1631,11 +1631,11 @@ public abstract class Model implements CLOProvider {
 	 * Command line option to set the number of samples to take for statistical
 	 * measurements.
 	 */
-	public final CLOption cloSamples = new CLOption("samples", "unlimited", Category.Simulation,
+	public final CLOption cloSamples = new CLOption("samples", "-1", Category.Simulation,
 			"--samples <s>   number of samples for statistics", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					setNSamples(cloSamples.isSet() ? CLOParser.parseDouble(arg) : -1.0);
+					setNSamples(CLOParser.parseDouble(arg));
 					return true;
 				}
 			});

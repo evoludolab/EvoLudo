@@ -257,8 +257,7 @@ public class CLOParser {
 					logWarning(OPTION_PREFIX + clo + " is missing a required argument - ignored.");
 					return 1;
 				}
-				opt.setArg(arg);
-				return 0;
+				//$FALL-THROUGH$
 			case OPTIONAL:
 				opt.setArg(arg);
 				return 0;
@@ -279,8 +278,9 @@ public class CLOParser {
 	 */
 	private void logParseFailure(CLOption opt) {
 		if (opt.isSet()) {
-			logWarning(OPTION_PREFIX + opt.getName() + " failed to parse argument '" + opt.getArg()
-					+ "' - using default '" + opt.getDefault() + "'.");
+			String da = opt.getDefault();
+			logWarning(OPTION_PREFIX + opt.getName() + " failed to parse argument '" + opt.getArg() +
+					(da == null ? "'." : "' - using default '" + da + "'."));
 		} else {
 			logError(OPTION_PREFIX + opt.getName() + " failed to parse default argument '" + opt.getDefault() + "'.");
 		}

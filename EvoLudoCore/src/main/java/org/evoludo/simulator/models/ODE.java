@@ -1639,12 +1639,12 @@ public class ODE extends Model implements DModel {
 	 * @see #isAdjustedDynamics
 	 * @see #setAdjustedDynamics(boolean)
 	 */
-	public final CLOption cloAdjustedDynamics = new CLOption("adjusted", "standard", CLOption.Argument.NONE,
-			Category.Model,
-			"--adjusted      adjusted replicator dynamics", new CLODelegate() {
+	public final CLOption cloAdjustedDynamics = new CLOption("adjusted", Category.Model,
+			"--adjusted      adjusted replicator dynamics",
+			new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					setAdjustedDynamics(cloAdjustedDynamics.isSet());
+				public boolean parse(boolean isSet) {
+					setAdjustedDynamics(isSet);
 					return true;
 				}
 			});
@@ -1659,8 +1659,7 @@ public class ODE extends Model implements DModel {
 	 * @see #isMonomorphic()
 	 */
 	public final CLOption cloDEAccuracy = new CLOption("accuracy", "0.0001", Category.Model,
-			"--accuracy <a>  accuracy for convergence, y(t+dt)-y(t)<a dt",
-			new CLODelegate() {
+			"--accuracy <a>  accuracy for convergence, y(t+dt)-y(t)<a dt", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					setAccuracy(CLOParser.parseDouble(arg));
@@ -1672,11 +1671,11 @@ public class ODE extends Model implements DModel {
 	 * Command line option to set the number of generations between reports for
 	 * {@link EvoLudo#modelNext()}.
 	 */
-	public final CLOption cloTimeReversed = new CLOption("timereversed", "forward", Category.Model,
+	public final CLOption cloTimeReversed = new CLOption("timereversed", Category.Model,
 			"--timereversed  reverse time", new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					setTimeReversed(cloTimeReversed.isSet());
+				public boolean parse(boolean isSet) {
+					setTimeReversed(isSet);
 					return true;
 				}
 			});

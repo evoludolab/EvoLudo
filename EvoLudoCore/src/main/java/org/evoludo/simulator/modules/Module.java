@@ -1327,7 +1327,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * capability needs to add cloTrai to the set of available options. By default
 	 * all traits are activated.
 	 */
-	public final CLOption cloTraitDisable = new CLOption("disable", "none", Category.Module,
+	public final CLOption cloTraitDisable = new CLOption("disable", null, Category.Module,
 			"--disable <d1[" + CLOParser.VECTOR_DELIMITER + "d2...]>  indices of disabled traits.",
 			new CLODelegate() {
 
@@ -1348,7 +1348,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 					// activate all traits
 					for (T pop : species)
 						pop.setActiveTraits(null);
-					if (!cloTraitDisable.isSet())
+					if (arg == null)
 						return true;
 					String[] disabledtraits = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
@@ -1372,7 +1372,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	/**
 	 * Command line option to set the color of traits.
 	 */
-	public final CLOption cloTraitColors = new CLOption("colors", "default", Category.GUI, null,
+	public final CLOption cloTraitColors = new CLOption("colors", null, Category.GUI, null,
 			new CLODelegate() {
 
 				/**
@@ -1406,7 +1406,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 				@Override
 				public boolean parse(String arg) {
 					// default colors are set in load()
-					if (!cloTraitColors.isSet())
+					if (arg == null)
 						return true;
 					String[] colorsets = arg.split(CLOParser.SPECIES_DELIMITER);
 					if (colorsets == null)
@@ -1472,7 +1472,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	/**
 	 * Command line option to assign trait names.
 	 */
-	public final CLOption cloTraitNames = new CLOption("traitnames", "default", Category.Module, null,
+	public final CLOption cloTraitNames = new CLOption("traitnames", null, Category.Module, null,
 			new CLODelegate() {
 
 				/**
@@ -1490,7 +1490,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 				@Override
 				public boolean parse(String arg) {
 					// default trait names are set in load()
-					if (!cloTraitNames.isSet())
+					if (arg == null)
 						return true;
 					String[] namespecies = arg.split(CLOParser.SPECIES_DELIMITER);
 					int n = 0;
@@ -1536,11 +1536,11 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * <strong>Note:</strong> option not automatically added. Modules that supports
 	 * multiple traits should load it in {@link #collectCLO(CLOParser)}.
 	 */
-	public final CLOption cloPhase2DAxes = new CLOption("phase2daxes", "-default", Category.Module, null,
+	public final CLOption cloPhase2DAxes = new CLOption("phase2daxes", null, Category.Module, null,
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					if (!cloPhase2DAxes.isSet())
+					if (arg == null)
 						return true;
 					int[][] phase2daxes = CLOParser.parseIntMatrix(arg);
 					if (phase2daxes.length != 2)

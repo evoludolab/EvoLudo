@@ -119,7 +119,7 @@ public class Markers {
 	 * Command line option to mark points on graphs (ParaGraph, S3Graph, LineGraph
 	 * and HistoGraph). Very convenient to indicate fixed points
 	 */
-	public final CLOption clo = new CLOption("points", "-none", Category.GUI, null,
+	public final CLOption clo = new CLOption("points", null, Category.GUI, null,
 			new CLODelegate() {
 
 				/**
@@ -139,7 +139,7 @@ public class Markers {
 				 */
 				@Override
 				public boolean parse(String arg) {
-					if (!clo.isSet())
+					if (arg == null)
 						return true;
 					String[] myMarkers = arg.split(CLOParser.MATRIX_DELIMITER);
 					if (markerList != null)

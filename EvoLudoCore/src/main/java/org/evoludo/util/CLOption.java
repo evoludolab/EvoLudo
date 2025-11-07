@@ -49,7 +49,8 @@ public class CLOption implements Comparable<CLOption> {
 
 		/**
 		 * Parse string <code>arg</code> and set configurable parameters that correspond
-		 * to this command line option.
+		 * to this command line option. The delegate for options with
+		 * {@code Argument.NONE} must implement this method.
 		 * <p>
 		 * <strong>Note:</strong> returning <code>false</code> triggers a warning about
 		 * which command line option failed to correctly parse. If the parser can
@@ -58,20 +59,16 @@ public class CLOption implements Comparable<CLOption> {
 		 * parameters have been adjusted.
 		 * 
 		 * @param isSet {@code true} if option was set on command line
-		 * @return // The above code is a comment in Java. It is denoted by "//" and is
-		 *         used to provide
-		 *         // explanations or notes within the code that are not executed by the
-		 *         compiler. In this
-		 *         // case, the comment is simply stating "true".
-		 *         {@code true} if parsing successful
+		 * @return {@code true} if parsing successful
 		 */
 		public default boolean parse(boolean isSet) {
-			return false;
+			throw new UnsupportedOperationException("parse(boolean) not implemented");
 		}
 
 		/**
 		 * Parse string <code>arg</code> and set configurable parameters that correspond
-		 * to this command line option.
+		 * to this command line option. The delegate for options with
+		 * {@code Argument.REQUIRED} must implement this method.
 		 * <p>
 		 * <strong>Note:</strong> returning <code>false</code> triggers a warning about
 		 * which command line option failed to correctly parse. If the parser can
@@ -79,31 +76,31 @@ public class CLOption implements Comparable<CLOption> {
 		 * method should return {@code true} and possibly log the fact that
 		 * parameters have been adjusted.
 		 * 
-		 * @param arg   the argument for parsing by command line option
-		 * @param isSet {@code true} if option was set on command line
+		 * @param arg       the argument for parsing by command line option
+		 * @param isDefault {@code true} if arg is default
+		 * @return {@code true} if parsing successful
+		 */
+		public default boolean parse(String arg) {
+			throw new UnsupportedOperationException("parse(String) not implemented");
+		}
+
+		/**
+		 * Parse string <code>arg</code> and set configurable parameters that correspond
+		 * to this command line option. The delegate for options with
+		 * {@code Argument.OPTIONAL} must implement this method.
+		 * <p>
+		 * <strong>Note:</strong> returning <code>false</code> triggers a warning about
+		 * which command line option failed to correctly parse. If the parser can
+		 * rectify the issue on the spot this is also acceptable. In that case the
+		 * method should return {@code true} and possibly log the fact that
+		 * parameters have been adjusted.
+		 * 
+		 * @param arg       the argument for parsing by command line option
+		 * @param isDefault {@code true} if arg is default
 		 * @return {@code true} if parsing successful
 		 */
 		public default boolean parse(String arg, boolean isSet) {
-			throw new UnsupportedOperationException("CLODelegate: parse(String, boolean) not implemented");
-		}
-
-		/**
-		 * Parse string <code>arg</code> and set configurable parameters that correspond
-		 * to this command line option.
-		 * <p>
-		 * <strong>Note:</strong> returning <code>false</code> triggers a warning about
-		 * which command line option failed to correctly parse. If the parser can
-		 * rectify the issue on the spot this is also acceptable. In that case the
-		 * method should return {@code true} and possibly log the fact that
-		 * parameters have been adjusted.
-		 * 
-		 * @param arg the argument for parsing by command line option
-		 * @return {@code true} if parsing successful
-		 * @deprecated Use {@link #parse(String, boolean)} instead
-		 */
-		@Deprecated
-		public default boolean parse(String arg) throws IllegalArgumentException {
-			return parse(arg, false);
+			throw new UnsupportedOperationException("parse(String, boolean) not implemented");
 		}
 
 		/**
@@ -680,52 +677,34 @@ public class CLOption implements Comparable<CLOption> {
 	 * @return {@code true} on successful parsing of argument
 	 */
 	public boolean parse() {
-		boolean success = false;
+		boolean isSet = isSet();
 		switch (type) {
 			case NONE:
-				success = delegate.parse(isSet());
-				break;
+				return delegate.parse(isSet);
 			case OPTIONAL:
-				if (!isSet()) // skip optional argument if not set
-					break;
-				//$FALL-THROUGH$
+				return parse(true);
 			case REQUIRED:
-				try {
-					success = delegate.parse(getArg(), isSet());
-				} catch (Exception e) {
-					success = false;
-					// TODO support legacy code: remove after deprecated parsers have been removed
-					if (e instanceof UnsupportedOperationException)
-						break;
-				}
-				if ((!success && !isSet()) || success)
-					// if parsing successful or default already tried, return
-					return success;
-				try {
-					success = delegate.parse(getDefault(), false);
-				} catch (Exception e) {
-					success = false;
-				}
-				break;
+				return parse(false);
+			default:
+				return false;
 		}
-		// TODO legacy code: remove after deprecated parsers have been removed
-		if (isSet()) {
+	}
+
+	private boolean parse(boolean isOptional) {
+		boolean isSet = isSet();
+		try {
+			if (isOptional)
+				return delegate.parse(getArg(), isSet);
+			return delegate.parse(getArg());
+		} catch (Exception e) {
 			try {
-				// success = delegate.parse(this, getArg());
-				success = delegate.parse(getArg());
-			} catch (Exception e) {
-				success = false;
+				if (isOptional)
+					return delegate.parse(getDefault(), isSet);
+				return delegate.parse(getDefault());
+			} catch (Exception ex) {
+				return false;
 			}
 		}
-		if (success)
-			return true;
-		try {
-			// success = delegate.parse(this, getDefault());
-			success = delegate.parse(getDefault());
-		} catch (Exception e) {
-			success = false;
-		}
-		return success;
 	}
 
 	/**

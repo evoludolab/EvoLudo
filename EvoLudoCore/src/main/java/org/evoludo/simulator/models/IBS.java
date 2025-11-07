@@ -986,11 +986,11 @@ public abstract class IBS extends Model {
 				 * @param arg ignored
 				 */
 				@Override
-				public boolean parse(String arg) {
+				public boolean parse(boolean isSet) {
 					// default is to average scores
 					for (Module<?> mod : species) {
 						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
-						pop.setPlayerScoreAveraged(!cloAccumulatedScores.isSet());
+						pop.setPlayerScoreAveraged(!isSet);
 					}
 					return true;
 				}
@@ -1184,7 +1184,7 @@ public abstract class IBS extends Model {
 	 * @see #cloGeometryCompetition
 	 * @see Module#cloGeometry
 	 */
-	public final CLOption cloGeometryInteraction = new CLOption("geominter", "M", Category.Model,
+	public final CLOption cloGeometryInteraction = new CLOption("geominter", null, Category.Model,
 			"--geominter <>  interaction geometry (see --geometry)",
 			new CLODelegate() {
 
@@ -1203,7 +1203,7 @@ public abstract class IBS extends Model {
 				public boolean parse(String arg) {
 					// only act if option has been explicitly specified - otherwise cloGeometry will
 					// take care of this
-					if (!cloGeometryInteraction.isSet())
+					if (arg == null)
 						return true;
 					String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
 					boolean doReset = false;
@@ -1227,7 +1227,7 @@ public abstract class IBS extends Model {
 	 * @see #cloGeometryInteraction
 	 * @see Module#cloGeometry
 	 */
-	public final CLOption cloGeometryCompetition = new CLOption("geomcomp", "M", Category.Model,
+	public final CLOption cloGeometryCompetition = new CLOption("geomcomp", null, Category.Model,
 			"--geomcomp <>   competition geometry (see --geometry)",
 			new CLODelegate() {
 
@@ -1246,7 +1246,7 @@ public abstract class IBS extends Model {
 				public boolean parse(String arg) {
 					// only act if option has been explicitly specified - otherwise cloGeometry will
 					// take care of this
-					if (!cloGeometryCompetition.isSet())
+					if (arg == null)
 						return true;
 					String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
 					boolean doReset = false;
@@ -1346,10 +1346,10 @@ public abstract class IBS extends Model {
 				 * @param arg the ignored argument
 				 */
 				@Override
-				public boolean parse(String arg) {
+				public boolean parse(boolean isSet) {
 					for (Module<?> mod : species) {
 						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
-						pop.setConsistencyCheck(cloConsistency.isSet());
+						pop.setConsistencyCheck(isSet);
 					}
 					return true;
 				}

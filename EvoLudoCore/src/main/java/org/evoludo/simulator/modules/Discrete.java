@@ -190,7 +190,7 @@ public abstract class Discrete extends Module<Discrete> {
 	 * Command line option to request that models stop execution when reaching
 	 * monomorphic population states.
 	 */
-	public final CLOption cloMonoStop = new CLOption("monostop", "nostop", CLOption.Argument.NONE, Category.Model,
+	public final CLOption cloMonoStop = new CLOption("monostop", Category.Model,
 			"--monostop      stop once population become monomorphic",
 			new CLODelegate() {
 
@@ -200,14 +200,14 @@ public abstract class Discrete extends Module<Discrete> {
 				 * If option is provided, models are requested to stop execution once a
 				 * monomorphic state is reached.
 				 * 
-				 * @param arg no argument required
+				 * @param isSet {@code true} if option is provided
 				 */
 				@Override
-				public boolean parse(String arg) {
+				public boolean parse(boolean isSet) {
 					// default is to continue with monomorphic populations (unless it's an absorbing
 					// state)
 					for (Discrete dpop : species)
-						dpop.setMonoStop(cloMonoStop.isSet());
+						dpop.setMonoStop(isSet);
 					return true;
 				}
 			});

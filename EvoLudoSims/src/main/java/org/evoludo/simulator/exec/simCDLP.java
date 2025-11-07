@@ -479,8 +479,8 @@ public class simCDLP extends CDLP implements ChangeListener {
 	public final CLOption cloBasin = new CLOption("basin", Category.Simulation,
 			"--basin         basin of attraction - punisher vs. cooperation", new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					doBasin = cloBasin.isSet();
+				public boolean parse(boolean isSet) {
+					doBasin = isSet;
 					return true;
 				}
 			});
@@ -504,8 +504,8 @@ public class simCDLP extends CDLP implements ChangeListener {
 	public final CLOption cloHistogram = new CLOption("histogram", Category.Simulation,
 			"--histogram     generate histogram of states visited", new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					doLocation = cloHistogram.isSet();
+				public boolean parse(boolean isSet) {
+					doLocation = isSet;
 					return true;
 				}
 			});

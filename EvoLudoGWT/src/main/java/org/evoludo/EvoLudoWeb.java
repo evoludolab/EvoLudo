@@ -2536,7 +2536,7 @@ public class EvoLudoWeb extends Composite
 	 * <strong>Note:</strong> for development/debugging only; should be disabled in
 	 * production
 	 */
-	public final CLOption cloEmulate = new CLOption("emulate", "auto", Category.GUI,
+	public final CLOption cloEmulate = new CLOption("emulate", null, Category.GUI,
 			"--emulate <f1[,f2[...]]> list of GUI features to emulate:\n"
 					+ "          epub: enable ePub mode\n"
 					+ "    standalone: standalone ePub mode\n"
@@ -2548,7 +2548,7 @@ public class EvoLudoWeb extends Composite
 				public boolean parse(String arg) {
 					// set/reset defaults
 					detectGUIFeatures();
-					if (!cloEmulate.isSet())
+					if (arg == null)
 						return true;
 					// simulate ePub mode
 					if (arg.contains("epub"))

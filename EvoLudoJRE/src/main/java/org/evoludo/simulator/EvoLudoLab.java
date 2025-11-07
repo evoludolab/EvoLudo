@@ -755,9 +755,9 @@ public class EvoLudoLab extends JFrame
 			"--noAA          disable anti-aliasing",
 			new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
+				public boolean parse(boolean isSet) {
 					// by default do not interfere - i.e. leave AA as is
-					if (cloAA.isSet())
+					if (!isSet)
 						return true;
 					ToggleAntiAliasingAction.sharedInstance().setAntiAliasing(true);
 					return true;
@@ -768,9 +768,9 @@ public class EvoLudoLab extends JFrame
 			"--animate       animate progress of laying out networks",
 			new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
+				public boolean parse(boolean isSet) {
 					// by default do not interfere - i.e. leave animation setting as is
-					if (!cloAnimate.isSet())
+					if (!isSet)
 						return true;
 					doAnimateLayout = true;
 					return true;

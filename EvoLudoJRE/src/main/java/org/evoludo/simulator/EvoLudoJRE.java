@@ -633,7 +633,6 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 					// initial state set. now clear seed to obtain reproducible statistics
 					// rather just a single data point repeatedly
 					rng.clearSeed();
-
 				}
 				isRunning = true;
 				while (isRunning) {
@@ -1181,14 +1180,14 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * Command line option to redirect output to file (output overwrites potentially
 	 * existing file).
 	 */
-	public final CLOption cloOutput = new CLOption("output", "stdout", Category.Simulation,
+	public final CLOption cloOutput = new CLOption("output", null, Category.Simulation,
 			"--output <f>    redirect output to file", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					// --append option takes precedence; ignore --output setting
 					if (cloAppend.isSet())
 						return true;
-					if (!cloOutput.isSet()) {
+					if (arg == null) {
 						setOutput(null);
 						return true;
 					}
@@ -1213,12 +1212,12 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * Command line option to redirect output to file (appends output to potentially
 	 * existing file).
 	 */
-	public final CLOption cloAppend = new CLOption("append", "stdout", Category.Simulation,
+	public final CLOption cloAppend = new CLOption("append", null, Category.Simulation,
 			"--append <f>    append output to file", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					// --append option takes precedence; ignore --output setting
-					if (!cloAppend.isSet()) {
+					if (arg == null) {
 						if (cloOutput.isSet())
 							return true;
 						// if neither --append nor --output are set use default stdout
@@ -1266,25 +1265,11 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			Category.Simulation,
 			"--export [<filename>]  export final state of simulation (%d for generation)", new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					if (!cloExport.isSet()) {
+				public boolean parse(String arg, boolean isSet) {
+					if (isSet)
+						exportname = arg;
+					else
 						exportname = null;
-						return true;
-					}
-					exportname = arg;
-					if (cloExport.isSet())
-						return true;
-					// arg is default; prefer --append or --output file name (with extension plist
-					// added or substituted)
-					if (cloAppend.isSet()) {
-						exportname = cloAppend.getArg();
-						return true;
-					}
-					if (cloOutput.isSet()) {
-						exportname = cloOutput.getArg();
-						return true;
-					}
-					// use default
 					return true;
 				}
 			});
@@ -1319,13 +1304,13 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	/**
 	 * Command line option to set the data reported by simulations.
 	 */
-	public final CLOption cloData = new CLOption("data", "none", Category.Simulation,
+	public final CLOption cloData = new CLOption("data", null, Category.Simulation,
 			"--data <d[,d1,...]>  type of data to report", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
-					if (!cloData.isSet() || cloData.getDefault().equals(arg)) {
+					if (arg == null || arg.isEmpty())
 						return true; // no default
-					}
+
 					boolean success = true;
 					String[] dataOutput = arg.split(CLOParser.VECTOR_DELIMITER);
 					dataTypes = new ArrayList<>();
@@ -1544,8 +1529,15 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 
 	@Override
 	public void exportState() {
-		if (exportname == null)
-			return;
+		if (cloExport.isSet() && exportname.equals(cloExport.getDefault())) {
+			// arg is default; prefer --append or --output file name (with extension plist
+			// added or substituted)
+			if (cloAppend.isSet()) {
+				exportname = cloAppend.getArg();
+			} else if (cloOutput.isSet()) {
+				exportname = cloOutput.getArg();
+			}
+		}
 		exportState(exportname);
 	}
 

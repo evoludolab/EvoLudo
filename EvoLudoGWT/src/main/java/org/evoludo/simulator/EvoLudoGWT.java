@@ -455,8 +455,8 @@ public class EvoLudoGWT extends EvoLudo {
 					+ "                when ready for snapshot, see capture-website docs)",
 			new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					if (cloSnap.isSet())
+				public boolean parse(String arg, boolean isSet) {
+					if (isSet)
 						snapLayoutTimeout = Math.max(1, CLOParser.parseInteger(arg)) * 1000;
 					return true;
 				}

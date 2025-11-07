@@ -314,21 +314,23 @@ public class Advection extends PDE {
 	 * Command line option to set the advection coefficients of every trait against
 	 * all others.
 	 */
-	public final CLOption cloPdeAdvection = new CLOption("pdeA", "none", Category.Model, null,
+	public final CLOption cloPdeAdvection = new CLOption("pdeA", null, Category.Model, null,
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					doAdvection = false;
 					advcoeff = null;
-					if (!cloPdeAdvection.isSet())
+					if (arg == null)
 						return true;
 					// dim not yet set - retrieve directly from module
 					int dim = module.getNTraits();
 					if (module instanceof HasDE && ((HasDE) module).getDependent() >= 0)
 						dim--;
 					advcoeff = CLOParser.parseMatrix(arg);
-					if (advcoeff.length != dim || advcoeff[0].length != dim)
+					if (advcoeff.length != dim || advcoeff[0].length != dim) {
+						advcoeff = null;
 						return false;
+					}
 					doAdvection = true;
 					return true;
 				}

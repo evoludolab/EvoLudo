@@ -415,8 +415,8 @@ public class simCDL extends CDL implements ChangeListener {
 	public final CLOption cloProgress = new CLOption("progress", Category.Simulation,
 			"--progress      make noise about progress", new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					progress = cloProgress.isSet();
+				public boolean parse(boolean isSet) {
+					progress = isSet;
 					return true;
 				}
 			});

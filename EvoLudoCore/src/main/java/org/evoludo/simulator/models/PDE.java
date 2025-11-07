@@ -1292,12 +1292,11 @@ public class PDE extends ODE {
 	 * 
 	 * @see #setSymmetric(boolean)
 	 */
-	public final CLOption cloPdeSymmetric = new CLOption("pdeSymmetry", "nosymmetry", CLOption.Argument.NONE,
-			Category.Model,
+	public final CLOption cloPdeSymmetric = new CLOption("pdeSymmetry", Category.Model,
 			"--pdeSymmetry   request symmetric diffusion of PDE", new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					setSymmetric(cloPdeSymmetric.isSet());
+				public boolean parse(boolean isSet) {
+					setSymmetric(isSet);
 					return true;
 				}
 			});

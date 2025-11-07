@@ -241,8 +241,8 @@ public class simMoran extends Moran {
 			"--progress      print progress reports",
 			new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					progress = cloProgress.isSet();
+				public boolean parse(boolean isSet) {
+					progress = isSet;
 					return true;
 				}
 			});

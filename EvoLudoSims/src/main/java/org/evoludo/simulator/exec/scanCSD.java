@@ -707,8 +707,8 @@ public class scanCSD extends CSD {
 			"--distribution  print distributions",
 			new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					printDistr = cloDistribution.isSet();
+				public boolean parse(boolean isSet) {
+					printDistr = isSet;
 					return true;
 				}
 			});
@@ -733,8 +733,8 @@ public class scanCSD extends CSD {
 			"--progress      make noise about progress",
 			new CLODelegate() {
 				@Override
-				public boolean parse(String arg) {
-					progress = cloProgress.isSet();
+				public boolean parse(boolean isSet) {
+					progress = isSet;
 					return true;
 				}
 			});
