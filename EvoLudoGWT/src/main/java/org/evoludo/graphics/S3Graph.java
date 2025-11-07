@@ -300,7 +300,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 		double lastt = last[0];
 		if (Math.abs(t - lastt) < 1e-8) {
 			buffer.replace(prependTime2Data(t, data));
-			System.arraycopy(last, 1, init, 1, last.length - 1);
+			System.arraycopy(last, 0, init, 0, last.length);
 			return;
 		}
 		if (Double.isNaN(t)) {
