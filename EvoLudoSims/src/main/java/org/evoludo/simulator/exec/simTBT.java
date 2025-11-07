@@ -45,10 +45,10 @@ import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.modules.TBT;
 import org.evoludo.simulator.views.MVPop2D;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 
 /**
@@ -364,7 +364,7 @@ public class simTBT extends TBT implements ChangeListener {
 	/**
 	 * Command line option to show the simulation progress.
 	 */
-	public final CLOption cloProgress = new CLOption("progress", Category.Simulation,
+	public final CLOption cloProgress = new CLOption("progress", CLOCategory.Simulation,
 			"--progress      make noise about progress", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -376,7 +376,7 @@ public class simTBT extends TBT implements ChangeListener {
 	/**
 	 * Command line option to set the interval for taking snapshots.
 	 */
-	public final CLOption cloSnapInterval = new CLOption("snapinterval", "0", Category.Simulation,
+	public final CLOption cloSnapInterval = new CLOption("snapinterval", "0", CLOCategory.Simulation,
 			"--snapinterval <n>  save snapshot every n generations (-1 only at end)", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -388,7 +388,7 @@ public class simTBT extends TBT implements ChangeListener {
 	/**
 	 * Command line option to set the prefix for snapshot filenames.
 	 */
-	public final CLOption cloSnapPrefix = new CLOption("snapprefix", "", Category.Simulation,
+	public final CLOption cloSnapPrefix = new CLOption("snapprefix", "", CLOCategory.Simulation,
 			"--snapprefix <s>  set prefix for snapshot filename", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -400,7 +400,7 @@ public class simTBT extends TBT implements ChangeListener {
 	/**
 	 * Command line option to set the number of runs.
 	 */
-	public final CLOption cloRuns = new CLOption("runs", "1", Category.Simulation,
+	public final CLOption cloRuns = new CLOption("runs", "1", CLOCategory.Simulation,
 			"--runs <r>      number of repetitions", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -412,7 +412,7 @@ public class simTBT extends TBT implements ChangeListener {
 	/**
 	 * Command line option to scan the S-T-plane.
 	 */
-	public final CLOption cloScanST = new CLOption("scan", "-1,2,0.05", Category.Simulation,
+	public final CLOption cloScanST = new CLOption("scan", "-1,2,0.05", CLOCategory.Simulation,
 			"--scan <start,end,incr>  scan S-T-plane", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -426,7 +426,7 @@ public class simTBT extends TBT implements ChangeListener {
 	/**
 	 * Command line option to scan the donation game.
 	 */
-	public final CLOption cloScanDG = new CLOption("scanDG", "0,0.2,0.02", Category.Simulation,
+	public final CLOption cloScanDG = new CLOption("scanDG", "0,0.2,0.02", CLOCategory.Simulation,
 			"--scanDG <start,end,incr>  scan cost-to-benefit ratios in the donation game", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {

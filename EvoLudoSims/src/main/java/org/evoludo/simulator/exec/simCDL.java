@@ -40,10 +40,10 @@ import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.modules.CDL;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 
 /**
@@ -385,7 +385,7 @@ public class simCDL extends CDL implements ChangeListener {
 	/**
 	 * Command line option to set the number of steps for initial frequencies.
 	 */
-	public final CLOption cloNSteps = new CLOption("steps", "0", Category.Simulation,
+	public final CLOption cloNSteps = new CLOption("steps", "0", CLOCategory.Simulation,
 			"--steps         number of steps for initial frequencies", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -398,7 +398,7 @@ public class simCDL extends CDL implements ChangeListener {
 	 * Command line option to set the range and increments for scanning
 	 * non-linearities.
 	 */
-	public final CLOption cloScanNL = new CLOption("scanNL", "-2.5,2.5,0.5", Category.Simulation,
+	public final CLOption cloScanNL = new CLOption("scanNL", "-2.5,2.5,0.5", CLOCategory.Simulation,
 			"--scanNL <start,end,incr>  scan non-linearity of PGG", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -412,7 +412,7 @@ public class simCDL extends CDL implements ChangeListener {
 	/**
 	 * Command line option to show the simulation progress.
 	 */
-	public final CLOption cloProgress = new CLOption("progress", Category.Simulation,
+	public final CLOption cloProgress = new CLOption("progress", CLOCategory.Simulation,
 			"--progress      make noise about progress", new CLODelegate() {
 				@Override
 				public boolean parse(boolean isSet) {

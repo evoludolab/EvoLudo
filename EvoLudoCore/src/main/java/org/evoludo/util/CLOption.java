@@ -43,92 +43,6 @@ import java.util.HashMap;
 public class CLOption implements Comparable<CLOption> {
 
 	/**
-	 * Interface to process command line arguments
-	 */
-	public interface CLODelegate {
-
-		/**
-		 * Parse string <code>arg</code> and set configurable parameters that correspond
-		 * to this command line option. The delegate for options with
-		 * {@code Argument.NONE} must implement this method.
-		 * <p>
-		 * <strong>Note:</strong> returning <code>false</code> triggers a warning about
-		 * which command line option failed to correctly parse. If the parser can
-		 * rectify the issue on the spot this is also acceptable. In that case the
-		 * method should return {@code true} and possibly log the fact that
-		 * parameters have been adjusted.
-		 * 
-		 * @param isSet {@code true} if option was set on command line
-		 * @return {@code true} if parsing successful
-		 */
-		public default boolean parse(boolean isSet) {
-			throw new UnsupportedOperationException("parse(boolean) not implemented");
-		}
-
-		/**
-		 * Parse string <code>arg</code> and set configurable parameters that correspond
-		 * to this command line option. The delegate for options with
-		 * {@code Argument.REQUIRED} must implement this method.
-		 * <p>
-		 * <strong>Note:</strong> returning <code>false</code> triggers a warning about
-		 * which command line option failed to correctly parse. If the parser can
-		 * rectify the issue on the spot this is also acceptable. In that case the
-		 * method should return {@code true} and possibly log the fact that
-		 * parameters have been adjusted.
-		 * 
-		 * @param arg       the argument for parsing by command line option
-		 * @param isDefault {@code true} if arg is default
-		 * @return {@code true} if parsing successful
-		 */
-		public default boolean parse(String arg) {
-			throw new UnsupportedOperationException("parse(String) not implemented");
-		}
-
-		/**
-		 * Parse string <code>arg</code> and set configurable parameters that correspond
-		 * to this command line option. The delegate for options with
-		 * {@code Argument.OPTIONAL} must implement this method.
-		 * <p>
-		 * <strong>Note:</strong> returning <code>false</code> triggers a warning about
-		 * which command line option failed to correctly parse. If the parser can
-		 * rectify the issue on the spot this is also acceptable. In that case the
-		 * method should return {@code true} and possibly log the fact that
-		 * parameters have been adjusted.
-		 * 
-		 * @param arg       the argument for parsing by command line option
-		 * @param isDefault {@code true} if arg is default
-		 * @return {@code true} if parsing successful
-		 */
-		public default boolean parse(String arg, boolean isSet) {
-			throw new UnsupportedOperationException("parse(String, boolean) not implemented");
-		}
-
-		/**
-		 * If settings for option are not known upon initialization, an up-to-date
-		 * description is requested when needed (e.g. if help is requested, typically
-		 * using <code>--help</code> option).
-		 * <p>
-		 * <strong>Note:</strong> the description string may contain any UTF-8
-		 * characters as well as HTML character entities. If necessary they will be
-		 * escaped and converted to UTF-8 for display in XML documents.
-		 *
-		 * @return description of command line option.
-		 */
-		public default String getDescription() {
-			return null;
-		}
-
-		/**
-		 * Optional: position of key in the list of arguments. Used in help display.
-		 * 
-		 * @return the position of the key
-		 */
-		public default int getKeyPos() {
-			return 0;
-		}
-	}
-
-	/**
 	 * Types of command line options:
 	 * <dl>
 	 * <dt>REQUIRED</dt>
@@ -242,101 +156,6 @@ public class CLOption implements Comparable<CLOption> {
 	}
 
 	/**
-	 * Handle different categories of options. This is mostly used to provide a more
-	 * readable and useful help screen for options organized in categories.
-	 */
-	public static class Category {
-
-		/**
-		 * The brief category description. Section header in help screen.
-		 * <p>
-		 * <strong>Note:</strong> the description string may contain any UTF-8
-		 * characters as well as HTML character entities. If necessary they will be
-		 * escaped and converted to UTF-8 for display in XML documents.
-		 */
-		String header;
-
-		/**
-		 * The priority of this category. Higher priorities are printed first.
-		 */
-		int priority;
-
-		/**
-		 * Create a new category with the header {@code header}. The priority is set to
-		 * {@code 0}.
-		 * 
-		 * @param header the header of the category
-		 */
-		public Category(String header) {
-			this(header, 0);
-		}
-
-		/**
-		 * Create a new category with {@code header} and {@code priority}.
-		 * 
-		 * @param header   the header of the category
-		 * @param priority the priority of the category
-		 */
-		public Category(String header, int priority) {
-			this.header = header;
-			this.priority = priority;
-		}
-
-		/**
-		 * Get the priority of this category. Parameters are grouped by priority in help
-		 * display.
-		 * 
-		 * @return the priority
-		 */
-		public int getPriority() {
-			return priority;
-		}
-
-		/**
-		 * Set the header of category for help display.
-		 * 
-		 * @param header the header
-		 */
-		public void setHeader(String header) {
-			this.header = header;
-		}
-
-		/**
-		 * Get the header of category for help display.
-		 * 
-		 * @return the header
-		 */
-		public String getHeader() {
-			return header;
-		}
-
-		/**
-		 * The category for global options.
-		 */
-		public static final Category Global = new Category("Global options:", 50);
-
-		/**
-		 * The category for user interface specific options.
-		 */
-		public static final CLOption.Category GUI = new CLOption.Category("User interface specific options:", 10);
-
-		/**
-		 * The category for simulation specific options.
-		 */
-		public static final CLOption.Category Simulation = new CLOption.Category("Simulation specific options:", 20);
-
-		/**
-		 * The category for model specific options.
-		 */
-		public static final CLOption.Category Model = new CLOption.Category("Model specific options:", 30);
-
-		/**
-		 * The category for module specific options.
-		 */
-		public static final CLOption.Category Module = new CLOption.Category("Module specific options:", 40);
-	}
-
-	/**
 	 * The name of the command line option (required).
 	 */
 	final String name;
@@ -349,7 +168,7 @@ public class CLOption implements Comparable<CLOption> {
 	/**
 	 * The category of the command line option. Used to structure the help screen.
 	 */
-	final Category category;
+	final CLOCategory category;
 
 	/**
 	 * the short description of the command line option. May include newline's
@@ -424,7 +243,7 @@ public class CLOption implements Comparable<CLOption> {
 	 * @param category the category of option
 	 * @param delegate delegate for processing command line argument
 	 */
-	public CLOption(String name, Category category, CLODelegate delegate) {
+	public CLOption(String name, CLOCategory category, CLODelegate delegate) {
 		this(name, null, Argument.NONE, category, null, delegate);
 	}
 
@@ -471,7 +290,7 @@ public class CLOption implements Comparable<CLOption> {
 	 * @param description short description of command line option
 	 * @param delegate    delegate for processing command line argument
 	 */
-	public CLOption(String name, Category category, String description, CLODelegate delegate) {
+	public CLOption(String name, CLOCategory category, String description, CLODelegate delegate) {
 		this(name, null, Argument.NONE, category, description, delegate);
 	}
 
@@ -523,7 +342,7 @@ public class CLOption implements Comparable<CLOption> {
 	 * @param description short description of command line option
 	 * @param delegate    delegate for processing command line argument
 	 */
-	public CLOption(String name, String defaultArg, Category category, String description, CLODelegate delegate) {
+	public CLOption(String name, String defaultArg, CLOCategory category, String description, CLODelegate delegate) {
 		this(name, defaultArg, Argument.REQUIRED, category, description, delegate);
 	}
 
@@ -571,7 +390,7 @@ public class CLOption implements Comparable<CLOption> {
 	 * @param category   the category of option
 	 * @param delegate   delegate for processing command line argument
 	 */
-	public CLOption(String name, String defaultArg, Argument type, Category category, CLODelegate delegate) {
+	public CLOption(String name, String defaultArg, Argument type, CLOCategory category, CLODelegate delegate) {
 		this(name, defaultArg, type, category, null, delegate);
 	}
 
@@ -625,7 +444,7 @@ public class CLOption implements Comparable<CLOption> {
 	 * @param description short description of command line option
 	 * @param delegate    delegate for processing command line argument
 	 */
-	public CLOption(String name, String defaultArg, Argument type, Category category, String description,
+	public CLOption(String name, String defaultArg, Argument type, CLOCategory category, String description,
 			CLODelegate delegate) {
 		this.name = name;
 		this.type = type;

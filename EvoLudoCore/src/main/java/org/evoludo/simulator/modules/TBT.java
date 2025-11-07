@@ -47,10 +47,10 @@ import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 
 /**
@@ -283,7 +283,7 @@ public class TBT extends Discrete implements Payoffs,
 	 * Command line option to set the {@code 2×2} payoff matrix for
 	 * interactions between cooperators and defectors.
 	 */
-	public final CLOption cloPayoffs = new CLOption("paymatrix", "3,0;5,1", Category.Module,
+	public final CLOption cloPayoffs = new CLOption("paymatrix", "3,0;5,1", CLOCategory.Module,
 			"--paymatrix <a,b;c,d>  2x2 payoff matrix", new CLODelegate() {
 
 				/**

@@ -362,7 +362,7 @@ public class CLOParser {
 	private void appendCategorizedHelp(StringBuilder help) {
 		int priority = Integer.MAX_VALUE;
 		int nextpriority;
-		CLOption.Category nextcat;
+		CLOCategory nextcat;
 		do {
 			nextcat = findNextCategory(priority);
 			nextpriority = (nextcat == null ? Integer.MIN_VALUE : nextcat.priority);
@@ -381,11 +381,11 @@ public class CLOParser {
 	 * @param priority the current priority threshold
 	 * @return the next category or null if none found
 	 */
-	private CLOption.Category findNextCategory(int priority) {
+	private CLOCategory findNextCategory(int priority) {
 		int nextpriority = Integer.MIN_VALUE;
-		CLOption.Category nextcat = null;
+		CLOCategory nextcat = null;
 		for (CLOption option : options) {
-			CLOption.Category cat = option.category;
+			CLOCategory cat = option.category;
 			int p = (cat == null ? 0 : cat.priority);
 			if (p >= priority || p <= nextpriority)
 				continue;
@@ -401,7 +401,7 @@ public class CLOParser {
 	 * @param help     the StringBuilder to append to
 	 * @param category the category to filter by (null for uncategorized options)
 	 */
-	private void appendOptionsForCategory(StringBuilder help, CLOption.Category category) {
+	private void appendOptionsForCategory(StringBuilder help, CLOCategory category) {
 		for (CLOption option : options) {
 			if (option.category != category)
 				continue;

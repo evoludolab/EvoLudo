@@ -32,10 +32,10 @@ package org.evoludo.simulator.models;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 
 /**
  * The implementation of population updates. Population updates are used to
@@ -145,7 +145,7 @@ public class PopulationUpdate {
 	 * 
 	 * @see PopulationUpdate.Type
 	 */
-	public final CLOption clo = new CLOption("popupdate", PopulationUpdate.Type.ASYNC.getKey(), Category.Model,
+	public final CLOption clo = new CLOption("popupdate", PopulationUpdate.Type.ASYNC.getKey(), CLOCategory.Model,
 			"--popupdate <u> [<p>]  population update type; fraction p\n" + //
 					"                for synchronous updates (1=all):",
 			new CLODelegate() {

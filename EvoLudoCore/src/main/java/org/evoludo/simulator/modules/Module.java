@@ -58,11 +58,11 @@ import org.evoludo.simulator.models.SDE;
 import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 
 /**
  * Parent class of all EvoLudo modules.
@@ -1124,7 +1124,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * @see IBS#cloGeometryInteraction
 	 * @see IBS#cloGeometryCompetition
 	 */
-	public final CLOption cloGeometry = new CLOption("geometry", "M", Category.Model, null,
+	public final CLOption cloGeometry = new CLOption("geometry", "M", CLOCategory.Model, null,
 			new CLODelegate() {
 
 				/**
@@ -1167,7 +1167,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	/**
 	 * Command line option to set the population size.
 	 */
-	public final CLOption cloNPopulation = new CLOption("popsize", "100", Category.Model, null,
+	public final CLOption cloNPopulation = new CLOption("popsize", "100", CLOCategory.Model, null,
 			new CLODelegate() {
 
 				/**
@@ -1227,7 +1227,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	/**
 	 * Command line option to set death rate for ecological population updates.
 	 */
-	public final CLOption cloDeathRate = new CLOption("deathrate", "0.0", Category.Module, null,
+	public final CLOption cloDeathRate = new CLOption("deathrate", "0.0", CLOCategory.Module, null,
 			new CLODelegate() {
 
 				/**
@@ -1291,7 +1291,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	/**
 	 * Command line option to set the size of interaction groups.
 	 */
-	public final CLOption cloNGroup = new CLOption("groupsize", "2", Category.Module,
+	public final CLOption cloNGroup = new CLOption("groupsize", "2", CLOCategory.Module,
 			"--groupsize <n>  size of interaction groups",
 			new CLODelegate() {
 
@@ -1327,7 +1327,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * capability needs to add cloTrai to the set of available options. By default
 	 * all traits are activated.
 	 */
-	public final CLOption cloTraitDisable = new CLOption("disable", null, Category.Module,
+	public final CLOption cloTraitDisable = new CLOption("disable", null, CLOCategory.Module,
 			"--disable <d1[" + CLOParser.VECTOR_DELIMITER + "d2...]>  indices of disabled traits.",
 			new CLODelegate() {
 
@@ -1372,7 +1372,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	/**
 	 * Command line option to set the color of traits.
 	 */
-	public final CLOption cloTraitColors = new CLOption("colors", null, Category.GUI, null,
+	public final CLOption cloTraitColors = new CLOption("colors", null, CLOCategory.GUI, null,
 			new CLODelegate() {
 
 				/**
@@ -1472,7 +1472,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	/**
 	 * Command line option to assign trait names.
 	 */
-	public final CLOption cloTraitNames = new CLOption("traitnames", null, Category.Module, null,
+	public final CLOption cloTraitNames = new CLOption("traitnames", null, CLOCategory.Module, null,
 			new CLODelegate() {
 
 				/**
@@ -1536,7 +1536,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * <strong>Note:</strong> option not automatically added. Modules that supports
 	 * multiple traits should load it in {@link #collectCLO(CLOParser)}.
 	 */
-	public final CLOption cloPhase2DAxes = new CLOption("phase2daxes", null, Category.Module, null,
+	public final CLOption cloPhase2DAxes = new CLOption("phase2daxes", null, CLOCategory.Module, null,
 			new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {

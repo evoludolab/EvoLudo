@@ -38,7 +38,6 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-import org.evoludo.EvoLudoWeb.EvoLogHandler;
 import org.evoludo.geom.Rectangle2D;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoGWT;
@@ -74,11 +73,11 @@ import org.evoludo.ui.FullscreenChangeHandler;
 import org.evoludo.ui.HasFullscreenChangeHandlers;
 import org.evoludo.ui.InputEvent;
 import org.evoludo.ui.Slider;
+import org.evoludo.util.CLOCategory;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.NativeJS;
 import org.evoludo.util.Plist;
 import org.evoludo.util.PlistParser;
@@ -2475,7 +2474,7 @@ public class EvoLudoWeb extends Composite
 	/**
 	 * Command line option to set the data view displayed in the GUI.
 	 */
-	public final CLOption cloView = new CLOption("view", "1", Category.GUI, null, new CLODelegate() {
+	public final CLOption cloView = new CLOption("view", "1", CLOCategory.GUI, null, new CLODelegate() {
 		/**
 		 * {@inheritDoc}
 		 * <p>
@@ -2505,7 +2504,7 @@ public class EvoLudoWeb extends Composite
 	/**
 	 * Command line option to set the size of the GUI or enter fullscreen.
 	 */
-	public final CLOption cloSize = new CLOption("size", "530,620", Category.GUI,
+	public final CLOption cloSize = new CLOption("size", "530,620", CLOCategory.GUI,
 			"--size <w,h|fullscreen>  size of GUI, w: width, h: height", new CLODelegate() {
 				/**
 				 * {@inheritDoc}
@@ -2536,7 +2535,7 @@ public class EvoLudoWeb extends Composite
 	 * <strong>Note:</strong> for development/debugging only; should be disabled in
 	 * production
 	 */
-	public final CLOption cloEmulate = new CLOption("emulate", null, Category.GUI,
+	public final CLOption cloEmulate = new CLOption("emulate", null, CLOCategory.GUI,
 			"--emulate <f1[,f2[...]]> list of GUI features to emulate:\n"
 					+ "          epub: enable ePub mode\n"
 					+ "    standalone: standalone ePub mode\n"

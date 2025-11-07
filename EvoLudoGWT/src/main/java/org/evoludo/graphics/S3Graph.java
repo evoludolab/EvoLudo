@@ -810,11 +810,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 	 */
 	private ContextMenu setTraitMenu;
 
-	/**
-	 * The index of the corner closest to the mouse pointer.
-	 */
-	private int cornerIdx = -1;
-
 	@Override
 	public void populateContextMenuAt(ContextMenu menu, int x, int y) {
 		addClearMenu(menu);
@@ -921,6 +916,7 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 			return;
 		int[] order = map.getOrder();
 		String[] names = map.getNames();
+		int cornerIdx = closestCorner(x, y);
 		if (setTraitMenu == null) {
 			setTraitMenu = new ContextMenu(menu);
 			for (String name : names)
@@ -938,7 +934,6 @@ public class S3Graph extends AbstractGraph<double[]> implements Zooming, Shiftin
 					paint(true);
 				}));
 		}
-		cornerIdx = closestCorner(x, y);
 		menu.add("Set trait '" + names[order[cornerIdx]] + "' to ...", setTraitMenu);
 		for (Widget item : setTraitMenu)
 			((ContextMenuItem) item).setEnabled(true);

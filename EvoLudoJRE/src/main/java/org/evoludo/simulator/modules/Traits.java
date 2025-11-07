@@ -43,10 +43,10 @@ import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 
 /**
@@ -242,7 +242,7 @@ public class Traits extends Discrete implements Payoffs,
 	/*
 	 * command line parsing stuff
 	 */
-	public final CLOption cloTraits = new CLOption("traits", "2", Category.Module,
+	public final CLOption cloTraits = new CLOption("traits", "2", CLOCategory.Module,
 			"--traits <t>    number of traits", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -251,7 +251,7 @@ public class Traits extends Discrete implements Payoffs,
 				}
 			});
 
-	public final CLOption cloPayoff = new CLOption("paymatrix", "const", Category.Module,
+	public final CLOption cloPayoff = new CLOption("paymatrix", "const", CLOCategory.Module,
 			"--paymatrix <a11,a12,...,a1n;...;an1,an2,...,ann>  nxn payoff matrix", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {

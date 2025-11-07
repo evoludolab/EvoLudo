@@ -34,10 +34,10 @@ import java.util.List;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Features.Payoffs;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 
 /**
  * Map scores/payoffs to fitness and vice versa. Enum on steroids. Currently
@@ -236,7 +236,7 @@ public class Map2Fitness {
 	/**
 	 * Command line option to set the payoff/score to fitness map.
 	 */
-	public final CLOption clo = new CLOption("fitnessmap", "none", Category.Module,
+	public final CLOption clo = new CLOption("fitnessmap", "none", CLOCategory.Module,
 			"--fitnessmap <m> [<b>[,<w>]]  payoff-to-fitness, baseline b [1]\n" + //
 					"                and selection strength w [1]:",
 			new CLODelegate() {

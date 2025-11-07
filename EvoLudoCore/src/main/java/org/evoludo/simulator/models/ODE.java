@@ -46,10 +46,10 @@ import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.modules.PlayerUpdate;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -1604,7 +1604,7 @@ public class ODE extends Model implements DModel {
 	 * @see #dt
 	 * @see #setDt(double)
 	 */
-	public final CLOption cloDEdt = new CLOption("dt", "0.1", Category.Model,
+	public final CLOption cloDEdt = new CLOption("dt", "0.1", CLOCategory.Model,
 			"--dt <t>        time increment for ODE/PDE/SDE integration", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1622,7 +1622,7 @@ public class ODE extends Model implements DModel {
 	 * @see InitType
 	 * @see PDEInitialize.Type
 	 */
-	public final CLOption cloInit = new CLOption("init", InitType.UNIFORM.getKey(), Category.Model,
+	public final CLOption cloInit = new CLOption("init", InitType.UNIFORM.getKey(), CLOCategory.Model,
 			"--init <t>      type of initial configuration", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1639,7 +1639,7 @@ public class ODE extends Model implements DModel {
 	 * @see #isAdjustedDynamics
 	 * @see #setAdjustedDynamics(boolean)
 	 */
-	public final CLOption cloAdjustedDynamics = new CLOption("adjusted", Category.Model,
+	public final CLOption cloAdjustedDynamics = new CLOption("adjusted", CLOCategory.Model,
 			"--adjusted      adjusted replicator dynamics",
 			new CLODelegate() {
 				@Override
@@ -1658,7 +1658,7 @@ public class ODE extends Model implements DModel {
 	 * @see #hasConverged()
 	 * @see #isMonomorphic()
 	 */
-	public final CLOption cloDEAccuracy = new CLOption("accuracy", "0.0001", Category.Model,
+	public final CLOption cloDEAccuracy = new CLOption("accuracy", "0.0001", CLOCategory.Model,
 			"--accuracy <a>  accuracy for convergence, y(t+dt)-y(t)<a dt", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1671,7 +1671,7 @@ public class ODE extends Model implements DModel {
 	 * Command line option to set the number of generations between reports for
 	 * {@link EvoLudo#modelNext()}.
 	 */
-	public final CLOption cloTimeReversed = new CLOption("timereversed", Category.Model,
+	public final CLOption cloTimeReversed = new CLOption("timereversed", CLOCategory.Model,
 			"--timereversed  reverse time", new CLODelegate() {
 				@Override
 				public boolean parse(boolean isSet) {

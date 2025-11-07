@@ -45,10 +45,10 @@ import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.modules.CDLPQ;
 import org.evoludo.simulator.views.MVPop2D;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 
 /**
@@ -226,7 +226,7 @@ public class simCDLPQ extends CDLPQ implements ChangeListener {
 	/**
 	 * Command line option to set the interval for taking snapshots.
 	 */
-	public final CLOption cloSnapInterval = new CLOption("snapinterval", "1000", Category.Simulation,
+	public final CLOption cloSnapInterval = new CLOption("snapinterval", "1000", CLOCategory.Simulation,
 			"--snapinterval <n>  save snapshot every n generations", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {

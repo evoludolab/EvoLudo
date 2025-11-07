@@ -43,10 +43,10 @@ import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.NativeJS;
 
 import com.google.gwt.core.client.Duration;
@@ -449,7 +449,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 * @see <a href="https://github.com/sindresorhus/capture-website-cli"> Github:
 	 *      capture-website-cli</a>
 	 */
-	public final CLOption cloSnap = new CLOption("snap", "20", CLOption.Argument.OPTIONAL, Category.GUI,
+	public final CLOption cloSnap = new CLOption("snap", "20", CLOption.Argument.OPTIONAL, CLOCategory.GUI,
 			"--snap [<s>]    snapshot utility, timeout <s> secs;\n"
 					+ "                (add '<div id=\"snapshot-ready\"></div>' to <body>\n"
 					+ "                when ready for snapshot, see capture-website docs)",

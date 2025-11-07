@@ -47,10 +47,10 @@ import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
 import org.evoludo.simulator.views.HasS3;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 
 /**
  * The SIR module implements the classic Susceptible-Infected-Recovered (SIR)
@@ -159,7 +159,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	/**
 	 * Command line option to set the transition probability for S → I.
 	 */
-	public final CLOption cloInfect = new CLOption("infect", "1.0", Category.Module,
+	public final CLOption cloInfect = new CLOption("infect", "1.0", CLOCategory.Module,
 			"--infect <β,[A,ω]>  S→I: β+A cos(2π ω t)", new CLODelegate() {
 
 				@Override
@@ -187,7 +187,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	/**
 	 * Command line option to set the transition probability for I → R.
 	 */
-	public final CLOption cloRecover = new CLOption("recover", "0.3", Category.Module,
+	public final CLOption cloRecover = new CLOption("recover", "0.3", CLOCategory.Module,
 			"--recover <r[,s]>  I→R, [I→S]", new CLODelegate() {
 
 				@Override
@@ -218,7 +218,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	/**
 	 * Command line option to set the transition probability for R → S.
 	 */
-	public final CLOption cloSuscept = new CLOption("suscept", "0.7", Category.Module,
+	public final CLOption cloSuscept = new CLOption("suscept", "0.7", CLOCategory.Module,
 			"--suscept <r>    R→S", new CLODelegate() {
 
 				@Override
@@ -235,7 +235,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	/**
 	 * Command line option to set the incidence rates for S → I.
 	 */
-	public final CLOption cloIncidence = new CLOption("incidence", "1,1", Category.Module,
+	public final CLOption cloIncidence = new CLOption("incidence", "1,1", CLOCategory.Module,
 			"--incidence <p[,q]>  S→I at rate I^p [and S^q]", new CLODelegate() {
 
 				@Override

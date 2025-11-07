@@ -40,10 +40,10 @@ import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.modules.SpeciesUpdate;
 import org.evoludo.simulator.views.HasHistogram;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -972,7 +972,7 @@ public abstract class IBS extends Model {
 	 * @see Map2Fitness#setSelection(double)
 	 */
 	public final CLOption cloAccumulatedScores = new CLOption("accuscores", "noaccu", CLOption.Argument.NONE,
-			Category.Model,
+			CLOCategory.Model,
 			"--accuscores    accumulate scores (instead of averaging)",
 			new CLODelegate() {
 
@@ -1002,7 +1002,7 @@ public abstract class IBS extends Model {
 	 * @see ScoringType
 	 */
 	public final CLOption cloScoringType = new CLOption("resetscores", ScoringType.RESET_ALWAYS.getKey(),
-			CLOption.Argument.REQUIRED, Category.Model,
+			CLOption.Argument.REQUIRED, CLOCategory.Model,
 			"--resetscores <t>  type for resetting scores t:",
 			new CLODelegate() {
 
@@ -1038,7 +1038,7 @@ public abstract class IBS extends Model {
 	 * or a random subsample.
 	 */
 	public final CLOption cloInteractions = new CLOption("interactions", IBSGroup.SamplingType.ALL.getKey(),
-			Category.Model,
+			CLOCategory.Model,
 			"--interactions <t [n]> select interaction type t:",
 			new CLODelegate() {
 
@@ -1082,7 +1082,7 @@ public abstract class IBS extends Model {
 	 * the neighbours of a player for updating their trait.
 	 */
 	public final CLOption cloReferences = new CLOption("references", IBSGroup.SamplingType.RANDOM.getKey() + " 1",
-			Category.Model,
+			CLOCategory.Model,
 			"--references <t [n]> select reference type t:",
 			new CLODelegate() {
 
@@ -1125,7 +1125,7 @@ public abstract class IBS extends Model {
 	/**
 	 * Command line option to set the migration types and probabilities of players.
 	 */
-	public final CLOption cloMigration = new CLOption("migration", "none", Category.Model,
+	public final CLOption cloMigration = new CLOption("migration", "none", CLOCategory.Model,
 			"--migration <tp>  migration (t type, p probability)",
 			new CLODelegate() {
 
@@ -1184,7 +1184,7 @@ public abstract class IBS extends Model {
 	 * @see #cloGeometryCompetition
 	 * @see Module#cloGeometry
 	 */
-	public final CLOption cloGeometryInteraction = new CLOption("geominter", null, Category.Model,
+	public final CLOption cloGeometryInteraction = new CLOption("geominter", null, CLOCategory.Model,
 			"--geominter <>  interaction geometry (see --geometry)",
 			new CLODelegate() {
 
@@ -1227,7 +1227,7 @@ public abstract class IBS extends Model {
 	 * @see #cloGeometryInteraction
 	 * @see Module#cloGeometry
 	 */
-	public final CLOption cloGeometryCompetition = new CLOption("geomcomp", null, Category.Model,
+	public final CLOption cloGeometryCompetition = new CLOption("geomcomp", null, CLOCategory.Model,
 			"--geomcomp <>   competition geometry (see --geometry)",
 			new CLODelegate() {
 
@@ -1268,7 +1268,7 @@ public abstract class IBS extends Model {
 	 * directed links (where undirected links count as two directed links), which
 	 * potentially breaks undirected ones.
 	 */
-	public final CLOption cloGeometryRewire = new CLOption("rewire", "0", Category.Model,
+	public final CLOption cloGeometryRewire = new CLOption("rewire", "0", CLOCategory.Model,
 			"--rewire <i[,c]>  rewire fraction of links (interaction/competition)",
 			new CLODelegate() {
 
@@ -1302,7 +1302,7 @@ public abstract class IBS extends Model {
 	 * undirected only undirected links are added and if graph is directed only
 	 * directed links are added.
 	 */
-	public final CLOption cloGeometryAddwire = new CLOption("addwire", "0", Category.Model,
+	public final CLOption cloGeometryAddwire = new CLOption("addwire", "0", CLOCategory.Model,
 			"--addwire <i[,c]>  add fraction of links (interaction/competition)",
 			new CLODelegate() {
 
@@ -1335,7 +1335,7 @@ public abstract class IBS extends Model {
 	 * Command line option to enable consistency checks.
 	 */
 	public final CLOption cloConsistency = new CLOption("consistency", "noconsistency", CLOption.Argument.NONE,
-			Category.Model,
+			CLOCategory.Model,
 			"--consistency   check consistency of scores etc.", new CLODelegate() {
 
 				/**
@@ -1646,7 +1646,7 @@ public abstract class IBS extends Model {
 		/**
 		 * Command line option to customize statistics settings.
 		 */
-		public final CLOption clo = new CLOption("statistics", "reset 1", Category.Simulation,
+		public final CLOption clo = new CLOption("statistics", "reset 1", CLOCategory.Simulation,
 				null, new CLODelegate() {
 					@Override
 					public boolean parse(String arg) {

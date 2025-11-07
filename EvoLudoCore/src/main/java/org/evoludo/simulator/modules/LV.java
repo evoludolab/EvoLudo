@@ -45,10 +45,10 @@ import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 
 /**
  * Lotka-Volterra module for EvoLudo. This module implements the
@@ -168,7 +168,7 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	/**
 	 * Command line option to set the prey parameters.
 	 */
-	public final CLOption cloPrey = new CLOption("prey", "0.667,-1.333,0.0", Category.Module,
+	public final CLOption cloPrey = new CLOption("prey", "0.667,-1.333,0.0", CLOCategory.Module,
 			"--prey <a0,a1[,a2]>  x' = (a0-dx)*x + a1*x*y - a2*x^2\n" +
 					"           a0: birth rate\n" +
 					"           dx: death rate (see --deathrate)\n" +
@@ -388,7 +388,7 @@ class Predator extends Discrete implements Multispecies, HasDE {
 	/**
 	 * Command line option to set the predator parameters.
 	 */
-	public final CLOption cloPredator = new CLOption("predator", "-1.0,1.0,0.0", Category.Module,
+	public final CLOption cloPredator = new CLOption("predator", "-1.0,1.0,0.0", CLOCategory.Module,
 			"--predator <b0,b1[,b2]>  y' = (b0-dy)*y + b1*x*y - b2*y^2\n" +
 					"           b0: birth rate\n" +
 					"           dy: death rate (see --deathrate)\n" +

@@ -42,10 +42,10 @@ import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 
 /**
  * The module for investigating the evolutionary dynamics in the classical Moran
@@ -320,7 +320,7 @@ public class Moran extends Discrete implements Static,
 	/**
 	 * Command line option to set the fitness values for residents and mutants.
 	 */
-	public final CLOption cloFitness = new CLOption("fitness", "1,2", Category.Module,
+	public final CLOption cloFitness = new CLOption("fitness", "1,2", CLOCategory.Module,
 			"--fitness <r,m>  fitness of resident, mutant", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {

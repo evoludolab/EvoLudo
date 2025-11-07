@@ -35,10 +35,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -76,11 +74,11 @@ import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
 import org.evoludo.simulator.views.HasS3;
+import org.evoludo.util.CLOCategory;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
 import org.evoludo.util.CLOption.Key;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
@@ -1774,7 +1772,7 @@ public abstract class EvoLudo
 			globalMsg += " for module '" + activeModule.getKey() + "'";
 			if (activeModel != null) {
 				globalMsg += " and model '" + activeModel.getType().getKey() + "'";
-				Category.Model.setHeader("Options for model '" + activeModel.getType().getKey() + "'");
+				CLOCategory.Model.setHeader("Options for model '" + activeModel.getType().getKey() + "'");
 			} else
 				globalMsg += " (select model for more options)";
 			globalMsg += "\n\nGlobal options:";
@@ -1800,11 +1798,11 @@ public abstract class EvoLudo
 				idx += nt;
 			}
 			String moduleMsg = sb.toString();
-			Category.Module.setHeader("Options for module '" + activeModule.getKey() //
+			CLOCategory.Module.setHeader("Options for module '" + activeModule.getKey() //
 					+ "' with trait indices and names:" + moduleMsg);
 		} else
 			globalMsg += " (select module and model for more info):";
-		Category.Global.setHeader(globalMsg);
+		CLOCategory.Global.setHeader(globalMsg);
 		return parser.helpCLO(true);
 	}
 
@@ -1816,7 +1814,7 @@ public abstract class EvoLudo
 	/**
 	 * Command line option to set module.
 	 */
-	public final CLOption cloModule = new CLOption("module", null, Category.Global,
+	public final CLOption cloModule = new CLOption("module", null, CLOCategory.Global,
 			"--module <m>    select module from:", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1828,7 +1826,7 @@ public abstract class EvoLudo
 	/**
 	 * Command line option to set the type of model (see {@link Type}).
 	 */
-	public final CLOption cloModel = new CLOption("model", Type.IBS.getKey(), Category.Module,
+	public final CLOption cloModel = new CLOption("model", Type.IBS.getKey(), CLOCategory.Module,
 			"--model <m>     model type", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1840,7 +1838,7 @@ public abstract class EvoLudo
 	/**
 	 * Command line option to set seed of random number generator.
 	 */
-	public final CLOption cloSeed = new CLOption("seed", "0", CLOption.Argument.OPTIONAL, Category.Model,
+	public final CLOption cloSeed = new CLOption("seed", "0", CLOption.Argument.OPTIONAL, CLOCategory.Model,
 			"--seed [<s>]    set random seed (0)", new CLODelegate() {
 				@Override
 				public boolean parse(String arg, boolean isSet) {
@@ -1856,7 +1854,7 @@ public abstract class EvoLudo
 	 * Command line option to request that the EvoLudo model immediately starts
 	 * running after loading.
 	 */
-	public final CLOption cloRun = new CLOption("run", Category.GUI,
+	public final CLOption cloRun = new CLOption("run", CLOCategory.GUI,
 			"--run           simulations run after launch", new CLODelegate() {
 				@Override
 				public boolean parse(boolean isSet) {
@@ -1870,7 +1868,7 @@ public abstract class EvoLudo
 	/**
 	 * Command line option to set the delay between subsequent updates.
 	 */
-	public final CLOption cloDelay = new CLOption("delay", "" + DELAY_INIT, Category.GUI,
+	public final CLOption cloDelay = new CLOption("delay", "" + DELAY_INIT, CLOCategory.GUI,
 			"--delay <d>     delay between updates (d: delay in msec)", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
@@ -1884,7 +1882,7 @@ public abstract class EvoLudo
 	 * affects the display in {@link org.evoludo.simulator.views.S3} or
 	 * {@link org.evoludo.simulator.views.Phase2D}.
 	 */
-	public final CLOption cloTrajectoryColor = new CLOption("trajcolor", "black", Category.GUI,
+	public final CLOption cloTrajectoryColor = new CLOption("trajcolor", "black", CLOCategory.GUI,
 			"--trajcolor <c>  color for trajectories\n"
 					+ "           <c>: color name or '(r,g,b[,a])' with r,g,b,a in [0-255]",
 			new CLODelegate() {
@@ -1903,7 +1901,7 @@ public abstract class EvoLudo
 	 * 
 	 * @see ColorModelType
 	 */
-	public final CLOption cloTraitColorScheme = new CLOption("traitcolorscheme", "traits", Category.GUI,
+	public final CLOption cloTraitColorScheme = new CLOption("traitcolorscheme", "traits", CLOCategory.GUI,
 			"--traitcolorscheme <m>  color scheme for traits:", //
 			new CLODelegate() {
 				@Override
@@ -1920,7 +1918,7 @@ public abstract class EvoLudo
 	 * implementation of {@link MersenneTwister} and (2) the performance of
 	 * MersenneTwister compared to {@link java.util.Random}.
 	 */
-	public final CLOption cloRNG = new CLOption("testRNG", Category.Global,
+	public final CLOption cloRNG = new CLOption("testRNG", CLOCategory.Global,
 			"--testRNG       test random number generator", new CLODelegate() {
 				@Override
 				public boolean parse(boolean isSet) {
@@ -1946,7 +1944,7 @@ public abstract class EvoLudo
 	/**
 	 * Command line option to set verbosity level of logging.
 	 */
-	public final CLOption cloVerbose = new CLOption("verbose", "info", Category.Global,
+	public final CLOption cloVerbose = new CLOption("verbose", "info", CLOCategory.Global,
 			"--verbose <l>   level of verbosity with l one of\n" //
 					+ "                all, debug/finest, finer, fine, config,\n" //
 					+ "                info, warning, error, or none",
@@ -2001,7 +1999,7 @@ public abstract class EvoLudo
 	/**
 	 * Command line option to print help message for available command line options.
 	 */
-	public final CLOption cloHelp = new CLOption("help", Category.Global,
+	public final CLOption cloHelp = new CLOption("help", CLOCategory.Global,
 			"--help          print this help screen", new CLODelegate() {
 				@Override
 				public boolean parse(boolean isSet) {

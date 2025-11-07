@@ -39,10 +39,10 @@ import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.Moran;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 
 /**
@@ -237,7 +237,7 @@ public class simMoran extends Moran {
 	/**
 	 * Command line option to show the simulation progress.
 	 */
-	final CLOption cloProgress = new CLOption("progress", Category.Simulation,
+	final CLOption cloProgress = new CLOption("progress", CLOCategory.Simulation,
 			"--progress      print progress reports",
 			new CLODelegate() {
 				@Override

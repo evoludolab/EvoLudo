@@ -43,10 +43,10 @@ import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
 import org.evoludo.simulator.views.HasS3;
 import org.evoludo.simulator.views.S3Map;
+import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.CLODelegate;
-import org.evoludo.util.CLOption.Category;
+import org.evoludo.util.CLOCategory;
 
 /**
  * The Centipede class provides an EvoLudo module for the centipede game.
@@ -314,7 +314,7 @@ public class Centipede extends Discrete implements Payoffs,
 	 * Command line option to set the cost of cooperation, i.e. the costs incurring
 	 * to the player when continuing the centipede game for another round.
 	 */
-	public final CLOption cloCost = new CLOption("cost", "1", Category.Module,
+	public final CLOption cloCost = new CLOption("cost", "1", CLOCategory.Module,
 			"--cost <c>      cost of cooperation", new CLODelegate() {
 
 				/**
@@ -336,7 +336,7 @@ public class Centipede extends Discrete implements Payoffs,
 	 * provided to the opponent when continuing the centipede game for another
 	 * round.
 	 */
-	public final CLOption cloBenefit = new CLOption("benefit", "3", Category.Module,
+	public final CLOption cloBenefit = new CLOption("benefit", "3", CLOCategory.Module,
 			"--benefit <b>   benefit of cooperation", new CLODelegate() {
 
 				/**
@@ -357,7 +357,7 @@ public class Centipede extends Discrete implements Payoffs,
 	 * Command line option to set the maximum number of decision nodes for the
 	 * centipede game.
 	 */
-	public final CLOption cloNodes = new CLOption("nodes", "4", Category.Module,
+	public final CLOption cloNodes = new CLOption("nodes", "4", CLOCategory.Module,
 			"--nodes <n>     number of decision nodes", new CLODelegate() {
 
 				/**
