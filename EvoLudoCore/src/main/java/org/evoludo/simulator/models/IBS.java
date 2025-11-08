@@ -30,6 +30,8 @@
 
 package org.evoludo.simulator.models;
 
+import java.util.logging.Level;
+
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
@@ -271,19 +273,7 @@ public abstract class IBS extends Model {
 	 */
 	public void init(boolean soft) {
 		super.init();
-		// realtime meaningless if not all populations have positive minimum fitness
-		for (Module<?> mod : species) {
-			if (mod instanceof Payoffs) {
-				Map2Fitness map2fit = mod.getMap2Fitness();
-				if (map2fit.map(((Payoffs) mod).getMinPayoff()) <= 0.0) {
-					time = Double.POSITIVE_INFINITY;
-					break;
-				}
-				continue;
-			}
-			time = Double.POSITIVE_INFINITY;
-			break;
-		}
+		initTime();
 		connect = false;
 		if (soft) {
 			// signal change to engine without destroying state
@@ -302,6 +292,25 @@ public abstract class IBS extends Model {
 		for (Module<?> mod : species) {
 			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			converged &= pop.checkConvergence();
+		}
+	}
+
+	/**
+	 * Initializes the simulation time. Measuring real time is meaningless if not
+	 * all populations have positive minimum fitness.
+	 */
+	private void initTime() {
+		updates = 0.0;
+		time = 0.0;
+		for (Module<?> mod : species) {
+			if (mod instanceof Payoffs) {
+				Payoffs pay = (Payoffs) mod;
+				Map2Fitness map2fit = pay.getMap2Fitness();
+				if (map2fit.map(pay.getMinPayoff()) > 0.0)
+					continue;
+			}
+			time = Double.POSITIVE_INFINITY;
+			return;
 		}
 	}
 
@@ -1093,13 +1102,14 @@ public abstract class IBS extends Model {
 							continue;
 						}
 						String keyarg = CLOption.stripKey(mt, arg);
-						if (keyarg.length() > 0) {
+						if (!keyarg.isEmpty()) {
 							pop.setMigrationProb(CLOParser.parseDouble(keyarg));
 							double mig = pop.getMigrationProb();
 							if (mig < 1e-8) {
-								logger.warning((isMultispecies ? mod.getName() + ": " : "")
-										+ "migration rate too small (" + Formatter.formatSci(mig, 4)
-										+ ") - reverting to no migration");
+								if (logger.isLoggable(Level.WARNING))
+									logger.warning((isMultispecies ? mod.getName() + ": " : "")
+											+ "migration rate too small (" + Formatter.formatSci(mig, 4)
+											+ ") - reverting to no migration");
 								pop.setMigrationType(MigrationType.NONE);
 								pop.setMigrationProb(0.0);
 							}
@@ -1138,18 +1148,18 @@ public abstract class IBS extends Model {
 				public boolean parse(String arg) {
 					// only act if option has been explicitly specified - otherwise cloGeometry will
 					// take care of this
-					if (arg == null)
-						return true;
-					String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
-					boolean doReset = false;
-					int n = 0;
-					for (Module<?> mod : species) {
-						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
-						// creates new interaction geometry if null or equal to getGeometry()
-						Geometry geom = pop.createInteractionGeometry();
-						doReset |= geom.parse(geomargs[n++ % geomargs.length]);
+					if (arg != null) {
+						String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
+						boolean doReset = false;
+						int n = 0;
+						for (Module<?> mod : species) {
+							IBSPopulation<?, ?> pop = mod.getIBSPopulation();
+							// creates new interaction geometry if null or equal to getGeometry()
+							Geometry geom = pop.createInteractionGeometry();
+							doReset |= geom.parse(geomargs[n++ % geomargs.length]);
+						}
+						engine.requiresReset(doReset);
 					}
-					engine.requiresReset(doReset);
 					return true;
 				}
 			});
@@ -1181,18 +1191,18 @@ public abstract class IBS extends Model {
 				public boolean parse(String arg) {
 					// only act if option has been explicitly specified - otherwise cloGeometry will
 					// take care of this
-					if (arg == null)
-						return true;
-					String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
-					boolean doReset = false;
-					int n = 0;
-					for (Module<?> mod : species) {
-						IBSPopulation<?, ?> pop = mod.getIBSPopulation();
-						// creates new competition geometry if null or equal to getGeometry()
-						Geometry geom = pop.createCompetitionGeometry();
-						doReset |= geom.parse(geomargs[n++ % geomargs.length]);
+					if (arg != null) {
+						String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
+						boolean doReset = false;
+						int n = 0;
+						for (Module<?> mod : species) {
+							IBSPopulation<?, ?> pop = mod.getIBSPopulation();
+							// creates new competition geometry if null or equal to getGeometry()
+							Geometry geom = pop.createCompetitionGeometry();
+							doReset |= geom.parse(geomargs[n++ % geomargs.length]);
+						}
+						engine.requiresReset(doReset);
 					}
-					engine.requiresReset(doReset);
 					return true;
 				}
 			});
@@ -1377,7 +1387,7 @@ public abstract class IBS extends Model {
 	 * <dd>Determine payoffs/fitness calculated only for updating</dd>
 	 * </dl>
 	 */
-	public static enum ScoringType implements CLOption.Key {
+	public enum ScoringType implements CLOption.Key {
 
 		/**
 		 * Reset when <em>changing</em> trait (only after updating from reference model
@@ -1600,8 +1610,7 @@ public abstract class IBS extends Model {
 
 					@Override
 					public String getDescription() {
-						String descr = "--statistics <s>  settings:\n" + clo.getDescriptionKey();
-						return descr;
+						return "--statistics <s>  settings:\n" + clo.getDescriptionKey();
 					}
 				});
 
@@ -1669,7 +1678,8 @@ public abstract class IBS extends Model {
 		for (Module<?> mod : species) {
 			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			if (isMultiSpecies)
-				plist.append("<key>" + mod.getName() + "</key>\n" + "<dict>\n");
+				plist.append("<key>").append(mod.getName()).append("</key>\n")
+						.append("<dict>\n");
 			pop.encodeGeometry(plist);
 			pop.encodeTraits(plist);
 			pop.encodeFitness(plist);
@@ -1691,19 +1701,20 @@ public abstract class IBS extends Model {
 				String name = mod.getName();
 				Plist pplist = (Plist) plist.get(name);
 				if (!pop.restoreGeometry(pplist)) {
-					logger.warning("restore geometry failed (" + name + ").");
+					if (logger.isLoggable(Level.WARNING))
+						logger.warning("restore geometry failed (" + name + ").");
 					success = false;
 				}
 				if (!pop.restoreInteractions(pplist)) {
-					logger.warning("restore interactions in " + type + "-model failed (" + name + ").");
+					logRestoreWarning("interactions", name);
 					success = false;
 				}
 				if (!pop.restoreTraits(pplist)) {
-					logger.warning("restore traits in " + type + "-model failed (" + name + ").");
+					logRestoreWarning("traits", name);
 					success = false;
 				}
 				if (!pop.restoreFitness(pplist)) {
-					logger.warning("restore fitness in " + type + "-model failed (" + name + ").");
+					logRestoreWarning("fitness", name);
 					success = false;
 				}
 			}
@@ -1714,18 +1725,24 @@ public abstract class IBS extends Model {
 			success = false;
 		}
 		if (!population.restoreInteractions(plist)) {
-			logger.warning("restore interactions in " + type + "-model failed.");
+			logRestoreWarning("interactions", null);
 			success = false;
 		}
 		if (!population.restoreTraits(plist)) {
-			logger.warning("restore traits in " + type + "-model failed.");
+			logRestoreWarning("traits", null);
 			success = false;
 		}
 		if (!population.restoreFitness(plist)) {
-			logger.warning("restore fitness in " + type + "-model failed.");
+			logRestoreWarning("fitness", null);
 			success = false;
 		}
 		return success;
+	}
+
+	private void logRestoreWarning(String what, String name) {
+		if (logger.isLoggable(Level.WARNING))
+			logger.warning("restore " + what + " in " + type.getKey() + "-model failed"
+					+ (name != null ? " (" + name + ")." : "."));
 	}
 
 	/**
