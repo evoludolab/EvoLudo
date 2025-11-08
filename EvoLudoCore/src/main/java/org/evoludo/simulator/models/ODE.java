@@ -466,16 +466,14 @@ public class ODE extends Model implements DModel {
 		monoStop = ((org.evoludo.simulator.modules.Discrete) species.get(0)).getMonoStop();
 	}
 
-	@Override
-	public void init() {
-		super.init();
-		dtTry = dt;
-		// force re-initialization to disable updates in favour of time
-		updates = Double.POSITIVE_INFINITY;
-		if (type.isPDE())
-			return; // PDE models handle initialization themselves
-		init(true);
-	}
+    @Override
+    public void init() {
+        super.init();
+        dtTry = dt;
+        if (type.isPDE())
+            return; // PDE models handle initialization themselves
+        init(true);
+    }
 
 	@Override
 	public boolean isDensity() {

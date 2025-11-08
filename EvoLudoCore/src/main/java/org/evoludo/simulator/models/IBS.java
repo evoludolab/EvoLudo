@@ -58,6 +58,29 @@ import org.evoludo.util.Plist;
  */
 public abstract class IBS extends Model {
 
+	/**
+	 * Keeps track of the time elapsed, measured in number of updates. One unit of
+	 * time corresponds to one generation or one Monte-Carlo step, such that in a
+	 * population of size <code>N</code> one generation corresponds to
+	 * <code>N</code> updates, which translates to <code>N</code> events (birth,
+	 * death, imitation, etc.).
+	 * <p>
+	 * <strong>Notes:</strong>
+	 * <ol>
+	 * <li><code>updates==0</code> after {@link #reset()} and at the beginning of
+	 * a simulation run.
+	 * <li><code>updates</code> is incremented <em>before</em> the next event is
+	 * processed, to reflect the time at which the event occurs.
+	 * <li>generally differs from 'real time'.
+	 * <li>models may implement only one time measure.
+	 * <li>setting {@code updates = Double.POSITIVE_INFINITY} disables time measured
+	 * in terms of updates.
+	 * </ol>
+	 * 
+	 * @see Model#time
+	 */
+	protected double updates;
+
 	@Override
 	public boolean permitsSampleStatistics() {
 		if (species == null)
@@ -273,7 +296,8 @@ public abstract class IBS extends Model {
 	 */
 	public void init(boolean soft) {
 		super.init();
-		initTime();
+		updates = 0.0;
+		time = (positiveMinFitness() ? 0.0 : Double.POSITIVE_INFINITY);
 		connect = false;
 		if (soft) {
 			// signal change to engine without destroying state
@@ -296,22 +320,41 @@ public abstract class IBS extends Model {
 	}
 
 	/**
-	 * Initializes the simulation time. Measuring real time is meaningless if not
-	 * all populations have positive minimum fitness.
+	 * Checks whether all species have positive minimum fitness.
+	 * 
+	 * @return {@code true} if all species have positive minimum fitness
 	 */
-	private void initTime() {
-		updates = 0.0;
-		time = 0.0;
-		for (Module<?> mod : species) {
-			if (mod instanceof Payoffs) {
-				Payoffs pay = (Payoffs) mod;
-				Map2Fitness map2fit = pay.getMap2Fitness();
-				if (map2fit.map(pay.getMinPayoff()) > 0.0)
-					continue;
-			}
-			time = Double.POSITIVE_INFINITY;
-			return;
+	private boolean positiveMinFitness() {
+		for (int n = 0; n < nSpecies; n++) {
+			if (getMinFitness(n) <= 0.0)
+				return false;
 		}
+		return true;
+	}
+
+	@Override
+	public double getUpdates() {
+		return updates;
+	}
+
+	@Override
+	public double getTime() {
+		if (time == Double.POSITIVE_INFINITY)
+			return updates;
+		return time;
+	}
+
+	@Override
+	public String getCounter() {
+		// Let Model handle samples and time formatting.
+		if (mode == Mode.STATISTICS_SAMPLE)
+			return super.getCounter();
+		double u = getUpdates();
+		String timePart = super.getCounter().trim(); // e.g. "Time: 12.34"
+		if (u != Double.POSITIVE_INFINITY) {
+			return "Updates: " + Formatter.format(u, 2) + (timePart.isEmpty() ? "" : " (" + timePart + ")");
+		}
+		return timePart + " ";
 	}
 
 	@Override

@@ -501,35 +501,11 @@ public abstract class Model implements CLOProvider {
 	 * in terms of updates.
 	 * </ol>
 	 * 
-	 * @see #updates
+	 * @see IBS#updates
 	 * @see #permitsTimeReversal()
 	 * @see IBS#pickFocalSpecies()
 	 */
 	protected double time = Double.POSITIVE_INFINITY;
-
-	/**
-	 * Keeps track of the time elapsed, measured in number of updates. One unit of
-	 * time corresponds to one generation or one Monte-Carlo step, such that in a
-	 * population of size <code>N</code> one generation corresponds to
-	 * <code>N</code> updates, which translates to <code>N</code> events (birth,
-	 * death, imitation, etc.). Not all models may use this time measure, but
-	 * it is a common convention in individual-based simulations.
-	 * 
-	 * <strong>Notes:</strong>
-	 * <ol>
-	 * <li><code>updates==0</code> after {@link #reset()} and at the beginning of
-	 * a simulation run.
-	 * <li><code>updates</code> is incremented <em>before</em> the next event is
-	 * processed, to reflect the time at which the event occurs.
-	 * <li>generally differs from 'real time'.
-	 * <li>models may implement only one time measure.
-	 * <li>setting {@code updates = Double.POSITIVE_INFINITY} disables time measured
-	 * in terms of updates.
-	 * </ol>
-	 * 
-	 * @see #time
-	 */
-	protected double updates = Double.POSITIVE_INFINITY;
 
 	/**
 	 * Short-cut to the list of species modules. Convenience field.
@@ -636,7 +612,6 @@ public abstract class Model implements CLOProvider {
 	}
 
 	private void resetState() {
-		updates = 0.0;
 		time = 0.0;
 		converged = false;
 		connect = false;
@@ -745,6 +720,7 @@ public abstract class Model implements CLOProvider {
 	 * @param id the species identifier
 	 * @return the species
 	 */
+	@SuppressWarnings("java:S1452") // impossible to specify generic type here
 	public Module<?> getSpecies(int id) {
 		if (id < 0 || id >= nSpecies)
 			return null;
@@ -1074,28 +1050,20 @@ public abstract class Model implements CLOProvider {
 			int failed = getNStatisticsFailed();
 			return "Samples: " + getNStatisticsSamples() + (failed > 0 ? " (failed: " + failed + ")" : "");
 		}
-		String counter;
-		if (updates != Double.POSITIVE_INFINITY) {
-			counter = "Updates: " + Formatter.format(updates, 2) + " ";
-			if (time != Double.POSITIVE_INFINITY)
-				counter += "(Time: " + Formatter.format(time, 2) + ")";
-		} else {
-			counter = "Time: " + Formatter.format(time, 2) + " ";
-		}
-		return counter;
+		double t = getTime();
+		return "Time: " + Formatter.format(t, 2) + " ";
 	}
 
 	/**
-	 * Gets the elapsed time in model. Time is measured in generations.
+	 * Gets the elapsed time in model. Time is measured in generations. By default,
+	 * non-IBS models do not track updates.
 	 * 
 	 * @return the elapsed time in generations
 	 * 
-	 * @see #updates
+	 * @see IBS#updates
 	 */
 	public double getUpdates() {
-		if (updates == Double.POSITIVE_INFINITY)
-			return time;
-		return updates;
+		return time;
 	}
 
 	/**
@@ -1111,8 +1079,7 @@ public abstract class Model implements CLOProvider {
 	 * @see #time
 	 */
 	public double getTime() {
-		if (time == Double.POSITIVE_INFINITY)
-			return updates;
+		// Default models track time directly; IBS overrides if needed.
 		return time;
 	}
 
