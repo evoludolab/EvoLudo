@@ -171,11 +171,11 @@ public class SDEN extends SDE {
 		// super may change the model to ODE
 		if (engine.getModel() != this)
 			return doReset;
-		if (nDim > 3 && (mutation[0].type == Mutation.Discrete.Type.NONE || mutation[0].probability <= 0.0)) {
+		if (nDim > 3 && (mutation[0].type == Mutation.Discrete.Type.NONE || mutation[0].getProbability() <= 0.0)) {
 			mutation[0].type = Mutation.Discrete.Type.OTHER;
-			mutation[0].probability = 1.0 / module.getNPopulation();
+			mutation[0].setProbability(1.0 / module.getNPopulation());
 			engine.getLogger().warning("non-zero mutation rate required for n>3 traits, changed to "
-					+ Formatter.formatSci(mutation[0].probability, 2) + ".");
+					+ Formatter.formatSci(mutation[0].getProbability(), 2) + ".");
 		}
 		return doReset;
 	}
@@ -206,7 +206,7 @@ public class SDEN extends SDE {
 			effnoise /= (1.0 - ytv);
 		}
 		// SDE's only support single species at this time
-		double mu = mutation[0].probability;
+		double mu = mutation[0].getProbability();
 		// NOTE: if not replicator equation some adjustments are required (references to
 		// e.g. yt[2] would fail)
 		int d1 = nDim - 1;

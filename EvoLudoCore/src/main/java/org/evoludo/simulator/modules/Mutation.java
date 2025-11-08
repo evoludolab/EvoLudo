@@ -82,7 +82,25 @@ public abstract class Mutation {
 	/**
 	 * The probability of mutations.
 	 */
-	public double probability;
+	double probability;
+
+	/**
+	 * Get the probability of mutations.
+	 * 
+	 * @return the mutation probability
+	 */
+	public double getProbability() {
+		return probability;
+	}
+
+	/**
+	 * Set the probability of mutations.
+	 * 
+	 * @param probability the mutation probability
+	 */
+	public void setProbability(double probability) {
+		this.probability = probability;
+	}
 
 	/**
 	 * The range of mutations.

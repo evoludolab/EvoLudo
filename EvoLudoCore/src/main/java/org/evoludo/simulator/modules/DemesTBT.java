@@ -201,7 +201,7 @@ public class DemesTBT extends TBT {
 			// are disabled but we may still want to optimize migration.
 			// TODO this is a bit of a hack, should add another optimization key for
 			// migrations
-			optimizeMigration = ((IBSD) engine.getModel()).optimizeHomo;
+			optimizeMigration = optimizeHomo;
 			boolean doReset = super.check();
 			nTraits = module.getNTraits();
 			if (!(interaction.getType() == Geometry.Type.MEANFIELD || (interaction.getType() == Geometry.Type.HIERARCHY

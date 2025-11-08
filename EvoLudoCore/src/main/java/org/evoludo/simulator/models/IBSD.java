@@ -122,36 +122,6 @@ public class IBSD extends IBS implements DModel {
 		cloOptimize.clearKeys();
 	}
 
-	@Override
-	public boolean check() {
-		boolean doReset = super.check();
-		// NOTE: optimizeHomo is disabled for multi-species (see cloOptimize)
-		if (optimizeHomo) {
-			if (population.populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY) {
-				optimizeHomo = false;
-				logger.warning(
-						"optimizations for homogeneous states disabled (incompatible with variable population sizes).");
-				doReset = true;
-			}
-			Module<?> module = population.getModule();
-			double pMutation = module.getMutation().probability;
-			if (pMutation <= 0.0) {
-				optimizeHomo = false;
-				logger.warning("optimizations for homogeneous states disabled (small mutations required).");
-				doReset = true;
-			}
-			int nPop = module.getNPopulation();
-			if (pMutation < 0.0 || pMutation > 0.1 * nPop) {
-				if (logger.isLoggable(Level.WARNING))
-					logger.warning(
-							"optimizations for homogeneous states not recommended (mutations in [0, " + (0.1 / nPop)
-									+ ") recommended, now " + Formatter.format(pMutation, 4) + ", proceeding)");
-				doReset = true;
-			}
-		}
-		return doReset;
-	}
-
 	/**
 	 * Helper routine to retrieve the {@link IBSDPopulation} associated with module
 	 * with {@code id}.
@@ -533,11 +503,6 @@ public class IBSD extends IBS implements DModel {
 				@Override
 				public boolean parse(String arg) {
 					// reset all optimizations
-					optimizeHomo = false;
-					for (Module<?> mod : species) {
-						IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
-						dpop.optimizeMoran = false;
-					}
 					// process requested optimizations
 					String[] optis = arg.split(CLOParser.VECTOR_DELIMITER);
 					for (int n = 0; n < optis.length; n++) {
@@ -550,7 +515,10 @@ public class IBSD extends IBS implements DModel {
 									logger.warning("homogeneous optimizations require single species - disabled.");
 									continue;
 								}
-								optimizeHomo = true;
+								for (Module<?> mod : species) {
+									IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
+									dpop.optimizeHomo = true;
+								}
 								break;
 							case MORAN:
 								for (Module<?> mod : species) {
@@ -559,13 +527,12 @@ public class IBSD extends IBS implements DModel {
 								}
 								break;
 							case NONE:
-								optimizeHomo = false;
+							default: // no optimizations
 								for (Module<?> mod : species) {
 									IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
 									dpop.optimizeMoran = false;
+									dpop.optimizeHomo = false;
 								}
-								break;
-							default:
 								break;
 						}
 					}

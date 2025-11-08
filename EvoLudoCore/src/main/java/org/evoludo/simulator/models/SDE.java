@@ -164,7 +164,7 @@ public class SDE extends ODE {
 			return true;
 		converged = true;
 		for (Module<?> mod : species) {
-			if (mod.getMutation().probability > 0.0) {
+			if (mod.getMutation().getProbability() > 0.0) {
 				// if dist2 is zero (or very small) and (at least) one trait is absent,
 				// random noise may be invalid (pushing state outside of permissible values)
 				if (dist2 < accuracy && ArrayMath.min(yt) < accuracy)
@@ -199,7 +199,7 @@ public class SDE extends ODE {
 
 		switch (nDim) {
 			case 2:
-				process2Traits(0, step, sqrtdt, mutation[0].probability, getEffectiveNoise(module, 0));
+				process2Traits(0, step, sqrtdt, mutation[0].getProbability(), getEffectiveNoise(module, 0));
 				break;
 
 			case 3:
@@ -303,7 +303,7 @@ public class SDE extends ODE {
 		double y2 = y * y;
 
 		// mutations to only other traits
-		double mu = mutation[0].probability;
+		double mu = mutation[0].getProbability();
 		double effnoise = getEffectiveNoise(module, 0);
 		double bxx = (x - x2 + mu * ((1.0 - x) * 0.5 + x2)) * effnoise;
 		double bxy = -(xy + mu * ((x + y) * 0.5 - xy)) * effnoise;
@@ -490,7 +490,7 @@ public class SDE extends ODE {
 		Module<?> mod = engine.getModule();
 		if (!(mod instanceof HasHistogram.StatisticsProbability
 				|| mod instanceof HasHistogram.StatisticsTime)
-				|| mod.getMutation().probability > 0.0)
+				|| mod.getMutation().getProbability() > 0.0)
 			return false;
 		// sampling statistics also require:
 		// - mutant initialization (same as temperature in well-mixed populations)

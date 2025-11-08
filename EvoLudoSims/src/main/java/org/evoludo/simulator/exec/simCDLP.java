@@ -126,7 +126,8 @@ public class simCDLP extends CDLP implements ChangeListener {
 		int[][] fix = null;
 		int lastfix = -1;
 
-		if (mutation.probability > 0.0) {
+		double pMutation = mutation.getProbability();
+		if (pMutation > 0.0) {
 			fix = new int[nTraits][nTraits];
 			if (threshold < 0 || threshold > nPopulation)
 				threshold = nPopulation;
@@ -141,7 +142,7 @@ public class simCDLP extends CDLP implements ChangeListener {
 
 		// do statistics starting from random initial configurations and determine the
 		// probablility to end in each of the four corners
-		if (mutation.probability < 1e-10) {
+		if (pMutation < 1e-10) {
 			double[] dinit = new double[nTraits];
 			// form random initial configuration of population - restrict to interior
 			int[] types = new int[] { COOPERATE, DEFECT, LONER, PUNISH };

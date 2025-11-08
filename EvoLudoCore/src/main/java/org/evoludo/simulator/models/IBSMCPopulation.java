@@ -41,7 +41,6 @@ import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSC.Init;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Continuous;
-import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -77,11 +76,6 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	 * @see HasIBS.MCGroups
 	 */
 	protected HasIBS.MCGroups groupmodule;
-
-	/**
-	 * The mutation parameters.
-	 */
-	protected Mutation.Continuous mutation;
 
 	/**
 	 * Creates a population of individuals with multiple continuous traits for IBS

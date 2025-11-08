@@ -43,7 +43,6 @@ import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.modules.Discrete;
-import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -94,11 +93,6 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 * </ol>
 	 */
 	protected boolean optimizeMoran = false;
-
-	/**
-	 * The mutation parameters.
-	 */
-	protected Mutation.Discrete mutation;
 
 	/**
 	 * Creates a population of individuals with discrete traits for IBS simulations.
@@ -1490,20 +1484,15 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 
 	@Override
 	public boolean checkConvergence() {
-		// with vacant sites the only absorbing state is extinction
-		// alternatively, mutation rates do not matter hence super needs not be
-		// consulted
-		if (getPopulationSize() == 0)
+		if (!super.checkConvergence())
+			return false;
+		// population is monomorphic, no mutations and no optimizations for homogeneous
+		// states
+		if (getPopulationSize() == 0 || VACANT < 0 || module.getMonoStop())
+			// extinct
 			return true;
-		// has absorbed if no muations and one of
-		// - monomorphic and no vacant sites
-		// - stop requested on monomorphic states
-		// - death rate zero and no vacant sites
-		return (mutation.probability <= 0.0 &&
-				((isMonomorphic() && (VACANT < 0 || module.getMonoStop())) ||
-						(VACANT >= 0
-								&& module.getDeathRate() <= 0.0
-								&& traitsCount[VACANT] == 0)));
+		// death rate zero and no vacant sites
+		return (module.getDeathRate() <= 0.0 && traitsCount[VACANT] == 0);
 	}
 
 	@Override
@@ -1697,7 +1686,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				optimizeMoran = false;
 				logger.warning("optimizations require Moran-type updates - disabled.");
 				doReset = true;
-			} else if (mutation.probability > 0.0) {
+			} else if (mutation.getProbability() > 0.0) {
 				optimizeMoran = false;
 				logger.warning("optimized Moran-type updates are incompatible with mutations - disabled.");
 				doReset = true;

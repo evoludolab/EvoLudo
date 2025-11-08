@@ -61,7 +61,7 @@ public abstract class IBS extends Model {
 		if (species == null)
 			return false;
 		for (Module<?> mod : species) {
-			if (mod.getMutation().probability > 0.0 || !(mod instanceof HasHistogram.StatisticsProbability
+			if (mod.getMutation().getProbability() > 0.0 || !(mod instanceof HasHistogram.StatisticsProbability
 					|| mod instanceof HasHistogram.StatisticsTime))
 				return false;
 		}
@@ -89,35 +89,10 @@ public abstract class IBS extends Model {
 	protected RNGDistribution ephrng;
 
 	/**
-	 * Geometric (exponential) waiting time distribution for optimizations of
-	 * homogeneous populations.
-	 * 
-	 * @see IBSD#cloOptimize
-	 */
-	protected RNGDistribution.Geometric distrMutation;
-
-	/**
 	 * Short-cut to {@code species.get(0).getIBSPopulation()} for single species
 	 * models; {@code null} in multi-species models. Convenience field.
 	 */
 	protected IBSPopulation<?, ?> population;
-
-	/**
-	 * <code>true</code> if optimizations for homogeneous populations requested.
-	 * <p>
-	 * <strong>Note:</strong>
-	 * <ul>
-	 * <li>optimizations can be requested with the command line option
-	 * <code>--optimize</code>, see {@link IBSD#cloOptimize}.</li>
-	 * <li>currently restricted to discrete traits where homogeneous population
-	 * states can be skipped by deterministically introducing new mutant after an
-	 * geometrically (exponentially) distributed waiting time (see
-	 * {@link IBSD}).</li>
-	 * <li>requires small mutation rates.</li>
-	 * <li>does not work for variable population sizes.</li>
-	 * </ul>
-	 */
-	public boolean optimizeHomo = false;
 
 	/**
 	 * Flag to indicate whether the population updates are synchronous. In
@@ -263,16 +238,6 @@ public abstract class IBS extends Model {
 	@Override
 	public void reset() {
 		super.reset();
-		// with optimization, homogeneous populations do not wait for next mutation
-		// currently only relevant for discrete traits, see IBSD
-		if (optimizeHomo) {
-			// NOTE: optimizeHomo == false if no mutations or isMultispecies == true
-			double pMutation = species.get(0).getMutation().probability;
-			if (distrMutation == null)
-				distrMutation = new RNGDistribution.Geometric(rng.getRNG(), pMutation);
-			else
-				distrMutation.setProbability(pMutation);
-		}
 		// if any population uses ephemeral payoffs a dummy random number
 		// generator is needed for the display
 		for (Module<?> mod : species) {
@@ -377,38 +342,8 @@ public abstract class IBS extends Model {
 			return true;
 		}
 		// convergence only signaled without mutations
-		if (converged && !optimizeHomo) {
+		if (converged) {
 			return false;
-		}
-		// this implies single species
-		// (otherwise optimizeHomo == false and population == null)
-		if (optimizeHomo && population.isMonomorphic()) {
-			engine.fireModelRunning();
-			// optimize waiting time in homogeneous states by advancing time and
-			// deterministically introduce new mutant (currently single species only)
-			// optimizeHomo also requires that mutations are rare (otherwise this
-			// optimization is pointless); more specifically mutation rates
-			// <0.1/nPopulation such that mutations occur less than every 10
-			// generations and hence scores can be assumed to be homogeneous when
-			// the mutant arises.
-			Module<?> module = population.getModule();
-			double realunit = 1.0 / population.getSpeciesUpdateRate();
-			int nPop = module.getNPopulation();
-			double unit = 1.0 / nPop;
-			// skip time to next event
-			int dt = distrMutation.next();
-			// XXX this can easily skip past requested stops - ignore?
-			updates += dt * unit;
-			time += RNGDistribution.Exponential.next(rng.getRNG(), dt * realunit);
-			population.resetTraits();
-			update();
-			// communicate update
-			engine.fireModelChanged();
-			time += realunit;
-			updates += unit;
-			// introduce mutation uniformly at random
-			population.mutateAt(random0n(nPop));
-			return true;
 		}
 		double nextHalt = getNextHalt();
 		// continue if milestone reached in previous step, i.e. deltat < 1e-8
@@ -428,7 +363,7 @@ public abstract class IBS extends Model {
 		// multi-species modules with different population sizes or different
 		// update rates.
 		double minIncr = 1.0 / species.get(0).getNPopulation();
-		return (Math.abs(nextHalt - updates) >= minIncr);
+		return (updates > nextHalt || Math.abs(nextHalt - updates) >= minIncr);
 	}
 
 	/**
@@ -563,10 +498,10 @@ public abstract class IBS extends Model {
 					continue;
 				}
 				if (debugFocalSpecies.getPopulationUpdate().getType() == PopulationUpdate.Type.ONCE) {
-					updates++;
+					updates += dt;
 					n += debugFocalSpecies.getModule().getNPopulation();
 				} else {
-					updates += gincr;
+					updates += dt * gincr;
 				}
 				converged = true;
 				if (dt > 0 && time < Double.POSITIVE_INFINITY)
@@ -938,7 +873,7 @@ public abstract class IBS extends Model {
 	 */
 	protected Event pickEvent(IBSPopulation<?, ?> pop) {
 		Mutation mu = pop.module.getMutation();
-		if (mu.temperature || mu.probability <= 0.0 || random01() > mu.probability)
+		if (mu.temperature || mu.getProbability() <= 0.0 || random01() > mu.getProbability())
 			return Event.REPLICATION;
 		return Event.MUTATION;
 	}

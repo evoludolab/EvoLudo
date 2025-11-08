@@ -48,6 +48,7 @@ import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSGroup.SamplingType;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.modules.PlayerUpdate;
 import org.evoludo.simulator.modules.Features;
 import org.evoludo.simulator.modules.Features.Payoffs;
@@ -375,7 +376,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 *
 	 * @return {@code true} if converged.
 	 */
-	public abstract boolean checkConvergence();
+	public boolean checkConvergence() {
+		return isMonomorphic() && mutation.getProbability() <= 0.0 && !optimizeHomo;
+	}
 
 	/**
 	 * The update type of players. Convenience field.
@@ -1371,6 +1374,28 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
+	 * The mutation parameters.
+	 */
+	protected Mutation mutation;
+
+	/**
+	 * <code>true</code> if optimizations for homogeneous populations requested.
+	 * <p>
+	 * <strong>Note:</strong>
+	 * <ul>
+	 * <li>optimizations can be requested with the command line option
+	 * <code>--optimize</code>, see {@link IBSD#cloOptimize}.</li>
+	 * <li>currently restricted to discrete traits where homogeneous population
+	 * states can be skipped by deterministically introducing new mutant after an
+	 * geometrically (exponentially) distributed waiting time (see
+	 * {@link IBSD}).</li>
+	 * <li>requires small mutation rates.</li>
+	 * <li>does not work for variable population sizes.</li>
+	 * </ul>
+	 */
+	protected boolean optimizeHomo = false;
+
+	/**
 	 * Update the score of individual {@code me}.
 	 * <p>
 	 * After initialization and for synchronized population updating this method is
@@ -1863,6 +1888,27 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	public int step() {
 		int[] remain;
+		// this implies single species
+		// (otherwise optimizeHomo == false and population == null)
+		if (optimizeHomo && isMonomorphic()) {
+			// optimize waiting time in homogeneous states by advancing time and
+			// deterministically introduce new mutant (currently single species only)
+			// optimizeHomo also requires that mutations are rare (otherwise this
+			// optimization is pointless); more specifically mutation rates
+			// <0.1/nPopulation such that mutations occur less than every 10
+			// generations and hence scores can be assumed to be homogeneous when
+			// the mutant arises.
+			// skip time to next event
+			int dt = RNGDistribution.Geometric.next(rng.getRNG(), mutation.getProbability());
+			resetTraits();
+			resetScores();
+			updateScores();
+			// communicate update
+			engine.fireModelChanged();
+			// introduce mutation uniformly at random
+			mutateAt(pickFocalIndividual());
+			return dt + 1;
+		}
 		if (pMigration > 0.0 && random01() < pMigration) {
 			// migration event
 			doMigration();
@@ -3310,6 +3356,30 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 
 		if (VACANT >= 0 && nGroup > 2)
 			logger.warning("group interactions with vacant sites have NOT been tested...");
+
+		if (optimizeHomo) {
+			if (populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY) {
+				optimizeHomo = false;
+				logger.warning(
+						"optimizations for homogeneous states disabled (incompatible with variable population sizes).");
+				doReset = true;
+			}
+			double pMutation = mutation.getProbability();
+			if (pMutation <= 0.0) {
+				optimizeHomo = false;
+				logger.warning("optimizations for homogeneous states disabled (small mutations required).");
+				doReset = true;
+			}
+			if (pMutation < 0.0 || pMutation > 0.1 * nPopulation) {
+				if (logger.isLoggable(Level.WARNING))
+					logger.warning(
+							"optimizations for homogeneous states not recommended (mutations in [0, "
+									+ (0.1 / nPopulation)
+									+ ") recommended, now " + Formatter.format(pMutation, 4)
+									+ ", proceeding)");
+				doReset = true;
+			}
+		}
 
 		return doReset;
 	}
