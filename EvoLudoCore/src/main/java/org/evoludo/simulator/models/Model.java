@@ -611,7 +611,11 @@ public abstract class Model implements CLOProvider {
 		resetState();
 	}
 
-	private void resetState() {
+	/**
+	 * Reset the internal state of this model; called by {@link #reset()} and
+	 * {@link #init()}.
+	 */
+	protected void resetState() {
 		time = 0.0;
 		converged = false;
 		connect = false;
