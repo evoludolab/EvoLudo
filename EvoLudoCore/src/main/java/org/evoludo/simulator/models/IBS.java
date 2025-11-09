@@ -455,32 +455,35 @@ public abstract class IBS extends Model {
 		return isSynchronous ? ibsStepSync(stepDt) : ibsStepAsync(stepDt);
 	}
 
-	// Synchronous population updates
+	/**
+	 * Advances the IBS model by a step of size {@code stepDt}. This corresponds to
+	 * {@code nTotal * stepDt} individual updates, where {@code nTotal} is the total
+	 * population size across all species. The actual number of updates may be less
+	 * than {@code stepDt} if the simulation has converged.
+	 * 
+	 * @param stepDt the time increment requested for advancing the IBS model
+	 * @return <code>true</code> if <code>ibsStep(double)</code> can be called
+	 *         again.
+	 */
 	private boolean ibsStepSync(double stepDt) {
-		int nPopTot = 0;
-		double scoreTot = 0.0;
-		double popFrac = 1.0;
-		// reset traits (colors)
-		for (Module<?> mod : species) {
-			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
-			pop.resetTraits();
-			popFrac *= pop.getSyncFraction();
-			nPopTot += pop.getPopulationSize();
-			scoreTot += pop.getTotalFitness();
-		}
+		// reset traits and collect totals based on current populations
+		double totRate = resetTraits();
+		double gincr = 1.0 / nTotal;
 		// nUpdates measured in generations
 		int nUpdates = Math.max(1, (int) Math.floor(stepDt));
 		for (int f = 0; f < nUpdates; f++) {
-			// advance time and real time (if possible)
-			time = (scoreTot <= 1e-8 ? Double.POSITIVE_INFINITY : time + nPopTot * popFrac / scoreTot);
-			updates += popFrac;
 			// update populations
+			int dt = 0;
 			for (Module<?> mod : species) {
 				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 				pop.prepareTraits();
-				pop.step();
+				dt = pop.step();
 				pop.isConsistent();
 			}
+			// advance time and real time (if possible)
+			updates += dt * gincr;
+			if (time < Double.POSITIVE_INFINITY)
+				time += RNGDistribution.Exponential.next(rng.getRNG(), dt / totRate);
 			// commit traits and reset scores
 			for (Module<?> mod : species) {
 				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
@@ -493,13 +496,7 @@ public abstract class IBS extends Model {
 				pop.resetScores();
 			}
 			// calculate new scores (requires that all traits are committed and reset)
-			converged = true;
-			for (Module<?> mod : species) {
-				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
-				pop.updateScores();
-				converged &= pop.checkConvergence();
-				scoreTot += pop.getTotalFitness();
-			}
+			totRate = updateScores();
 			if (converged)
 				return false;
 		}
@@ -575,8 +572,8 @@ public abstract class IBS extends Model {
 	}
 
 	/**
-	 * Checks for consistency (if requested) and convergence across all species and
-	 * returns the total update rate.
+	 * For <em>asynchronous</em> updates, updates the scores for all populations,
+	 * checks convergence across all species and returns the total update rate.
 	 * 
 	 * @return the total update rate across all species
 	 */
@@ -586,6 +583,24 @@ public abstract class IBS extends Model {
 		for (Module<?> mod : species) {
 			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 			pop.isConsistent();
+			converged &= pop.checkConvergence();
+			totRate += pop.getSpeciesUpdateRate();
+		}
+		return totRate;
+	}
+
+	/**
+	 * For <em>synchronous</em> updates, updates the scores for all populations,
+	 * checks convergence across all species and returns the total update rate.
+	 * 
+	 * @return the total update rate across all species
+	 */
+	private double updateScores() {
+		converged = true;
+		double totRate = 0.0;
+		for (Module<?> mod : species) {
+			IBSPopulation<?, ?> pop = mod.getIBSPopulation();
+			pop.updateScores();
 			converged &= pop.checkConvergence();
 			totRate += pop.getSpeciesUpdateRate();
 		}
@@ -611,11 +626,11 @@ public abstract class IBS extends Model {
 				// if no time elapsed, nothing happened
 				if (debugFocalSpecies.getPopulationUpdate().getType() == PopulationUpdate.Type.ONCE) {
 					updates += dt;
-					n += debugFocalSpecies.getModule().getNPopulation();
+					n += debugFocalSpecies.getPopulationSize();
 				} else {
 					updates += dt * gincr;
 				}
-				if (dt > 0 && time < Double.POSITIVE_INFINITY)
+				if (time < Double.POSITIVE_INFINITY)
 					time += RNGDistribution.Exponential.next(rng.getRNG(), dt / totRate);
 				totRate = checkConvergence();
 				if (converged)

@@ -1920,40 +1920,84 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				prepareTraits();
 				if (syncFraction >= 1.0) {
 					// no noise, update everyone
-					for (int n = 0; n < nPopulation; n++)
+					if (VACANT < 0) {
+						// no vacancies, all updated
+						for (int n = 0; n < nPopulation; n++)
+							updatePlayerAt(n);
+						return nPopulation;
+					}
+					int nUpdates = 0;
+					for (int n = 0; n < nPopulation; n++) {
+						if (isVacantAt(n))
+							continue;
 						updatePlayerAt(n);
-					return nPopulation;
+						nUpdates++;
+					}
+					return nUpdates;
 				}
 				// update only fraction of individuals (at least one but at most once)
-				int nSamples = Math.max(1, (int) (syncFraction * nPopulation + 0.5));
-				remain = new int[nPopulation];
+				int nRemain = nPopulation;
+				remain = new int[nRemain];
 				for (int n = 0; n < nPopulation; n++)
 					remain[n] = n;
-				for (int n = nPopulation - 1; n >= nPopulation - nSamples; n--) {
-					int idx = random0n(n);
-					int focal = remain[idx];
-					remain[idx] = remain[n];
-					updatePlayerAt(focal);
+				int nSamples = Math.max(1, (int) (syncFraction * nPopulation + 0.5));
+				int nEnd = nPopulation - nSamples;
+				if (VACANT < 0) {
+					while (nRemain > nEnd) {
+						int idx = random0n(nRemain);
+						int focal = remain[idx];
+						remain[idx] = remain[--nRemain];
+						updatePlayerAsyncAt(focal);
+					}
+					return nSamples;
 				}
-				return nSamples;
+				int nUpdates = 0;
+				while (nRemain > nEnd) {
+					int idx = random0n(nRemain);
+					int focal = remain[idx];
+					remain[idx] = remain[--nRemain];
+					if (isVacantAt(focal))
+						continue;
+					updatePlayerAt(focal);
+					nUpdates++;
+				}
+				return nUpdates;
 
 			// case WRIGHT_FISHER:
 			// return rincr;
 
 			case ONCE: // asynchronous updates (every individual once)
-				int nRemain = nPopulation;
+				nRemain = nPopulation;
 				remain = new int[nRemain];
 				for (int n = 0; n < nRemain; n++)
 					remain[n] = n;
+				if (VACANT < 0) {
+					while (nRemain > 0) {
+						int idx = random0n(nRemain);
+						int focal = remain[idx];
+						remain[idx] = remain[--nRemain];
+						updatePlayerAsyncAt(focal);
+					}
+					// last to update
+					updatePlayerAsyncAt(remain[0]);
+					return nPopulation;
+				}
+				nUpdates = 0;
 				while (nRemain > 0) {
 					int idx = random0n(nRemain);
 					int focal = remain[idx];
 					remain[idx] = remain[--nRemain];
+					if (isVacantAt(focal))
+						continue;
 					updatePlayerAsyncAt(focal);
+					nUpdates++;
 				}
 				// last to update
-				updatePlayerAsyncAt(remain[0]);
-				return nPopulation;
+				if (!isVacantAt(remain[0])) {
+					updatePlayerAsyncAt(remain[0]);
+					nUpdates++;
+				}
+				return nUpdates;
 
 			case ASYNC: // exclusively the current payoff matters
 				updatePlayerAsync();
