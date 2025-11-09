@@ -566,7 +566,7 @@ class IBSPop extends IBSDPopulation {
 		if (totRate <= 0.0) {
 			// this implies deathRate == 0. converged if at maximum population size
 			// and opponent extinct.
-			if (traitsCount[VACANT] == 0 && opponent.getPopulationSize() == 0)
+			if (traitsCount[LV.VACANT] == 0 && opponent.getPopulationSize() == 0)
 				return -1;
 			return 0;
 		}
@@ -585,7 +585,7 @@ class IBSPop extends IBSDPopulation {
 			if (randomTestVal < focalDies) {
 				// focal dies spontaneously or due to competition: vacate focal site
 				// more efficient than setNextTraitAt
-				traitsNext[me] = VACANT + nTraits;
+				traitsNext[me] = LV.VACANT + nTraits;
 				commitTraitAt(me);
 				isExtinct = (getPopulationSize() == 0);
 			} else {
@@ -598,7 +598,7 @@ class IBSPop extends IBSDPopulation {
 					}
 				} else {
 					// prey dies; more efficient than setNextTraitAt
-					traitsNext[me] = VACANT + nTraits;
+					traitsNext[me] = LV.VACANT + nTraits;
 					commitTraitAt(me);
 					isExtinct = (getPopulationSize() == 0);
 				}
@@ -612,7 +612,7 @@ class IBSPop extends IBSDPopulation {
 		if (init == null || init.length != nTraits)
 			return false;
 		// adjust vacant when setting initial frequencies through double click
-		init[VACANT] = 1.0 - init[0];
+		init[LV.VACANT] = 1.0 - init[0];
 		return super.setInitialTraits(init);
 	}
 }

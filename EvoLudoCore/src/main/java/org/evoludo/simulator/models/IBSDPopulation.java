@@ -151,9 +151,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 
 	@Override
 	public int getPopulationSize() {
-		if (VACANT < 0)
+		if (vacantIdx < 0)
 			return nPopulation;
-		return nPopulation - traitsCount[VACANT];
+		return nPopulation - traitsCount[vacantIdx];
 	}
 
 	/**
@@ -433,7 +433,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		double randomTestVal = random01() * maxRate; // time rescaling
 		if (randomTestVal < deathRate) {
 			// vacate focal site
-			traitsNext[me] = VACANT + nTraits; // more efficient than setNextTraitAt(me, VACANT)
+			traitsNext[me] = vacantIdx + nTraits; // more efficient than setNextTraitAt(me, VACANT)
 			updateScoreAt(me, true);
 			if (nPop == 1) {
 				// population went extinct, no more events possible
@@ -527,7 +527,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	public void updateScoreAt(int index, double newscore, int incr) {
 		int type = getTraitAt(index);
 		// since site at index has not changed, nothing needs to be done if it is vacant
-		if (type == VACANT)
+		if (type == vacantIdx)
 			return;
 		accuTypeScores[type] -= getScoreAt(index);
 		super.updateScoreAt(index, newscore, incr);
@@ -538,7 +538,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	public void setScoreAt(int index, double newscore, int inter) {
 		super.setScoreAt(index, newscore, inter);
 		int type = getTraitAt(index);
-		if (type == VACANT)
+		if (type == vacantIdx)
 			return;
 		accuTypeScores[type] += getScoreAt(index);
 	}
@@ -624,8 +624,8 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 
 		super.resetScores();
 		Arrays.fill(accuTypeScores, 0.0);
-		if (VACANT >= 0)
-			accuTypeScores[VACANT] = Double.NaN;
+		if (vacantIdx >= 0)
+			accuTypeScores[vacantIdx] = Double.NaN;
 	}
 
 	/**
@@ -640,7 +640,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		if (module.isStatic()) {
 			sumFitness = 0.0;
 			for (int n = 0; n < nTraits; n++) {
-				if (n == VACANT) {
+				if (n == vacantIdx) {
 					accuTypeScores[n] = Double.NaN;
 					continue;
 				}
@@ -738,7 +738,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				size = stripVacancies(group, size, tmpTraits, tmpGroup);
 				countTraits(tmpCount, tmpTraits, 0, size);
 				// RESOLUTION: instead if mytype is not VACANT add it to trait count
-				if (mytype != VACANT)
+				if (mytype != vacantIdx)
 					tmpCount[mytype]++;
 				if (module.isPairwise())
 					pairmodule.mixedScores(tmpCount, tmpTraitScore);
@@ -873,7 +873,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 */
 	protected void stripGroupVacancies(IBSGroup group, int[] gTraits, int[] gIdxs) {
 		group.nSampled = stripVacancies(group.group, group.nSampled, gTraits, gIdxs);
-		if (VACANT < 0)
+		if (vacantIdx < 0)
 			return;
 		group.group = gIdxs;
 	}
@@ -889,7 +889,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 */
 	protected int stripVacancies(int[] groupidx, int groupsize, int[] gTraits, int[] gIdxs) {
 		// minor efficiency gain without VACANT
-		if (VACANT < 0) {
+		if (vacantIdx < 0) {
 			for (int i = 0; i < groupsize; i++)
 				gTraits[i] = opponent.getTraitAt(groupidx[i]);
 			return groupsize;
@@ -899,7 +899,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		for (int i = 0; i < groupsize; i++) {
 			int gi = groupidx[i];
 			int type = opponent.getTraitAt(gi);
-			if (type == VACANT)
+			if (type == vacantIdx)
 				continue;
 			gTraits[gSize] = type;
 			gIdxs[gSize++] = gi;
@@ -911,7 +911,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	public void playPairGameAt(IBSGroup group) {
 		int me = group.focal;
 		int myType = getTraitAt(me);
-		if (myType == VACANT)
+		if (myType == vacantIdx)
 			return;
 		stripGroupVacancies(group, tmpTraits, tmpGroup);
 		double myScore;
@@ -987,12 +987,12 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			for (int n = 0; n < nIn; n++)
 				tmpCount[opponent.getTraitAt(in[n])]++;
 		}
-		int nInter = nIn + nOut - (VACANT < 0 ? 0 : tmpCount[VACANT]);
+		int nInter = nIn + nOut - (vacantIdx < 0 ? 0 : tmpCount[vacantIdx]);
 		// my type has changed otherwise we wouldn't get here
 		// old/newScore are the total accumulated scores
 		double oldScore = u2 * pairmodule.pairScores(oldType, tmpCount, tmpScore);
 		double newScore = u2 * pairmodule.pairScores(newType, tmpCount, tmpTraitScore);
-		if (newType == VACANT) {
+		if (newType == vacantIdx) {
 			double myScore = scores[me];
 			accuTypeScores[oldType] -= myScore;
 			scores[me] = 0.0;
@@ -1017,7 +1017,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				}
 			}
 		} else {
-			if (oldType == VACANT) {
+			if (oldType == vacantIdx) {
 				updateScoreAt(me, newScore, u2 * nInter);
 				// neighbors gained one interaction partner - adjust (outgoing) opponent's score
 				for (int n = 0; n < nOut; n++) {
@@ -1050,7 +1050,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				for (int n = 0; n < nOut; n++) {
 					int you = out[n];
 					int type = opponent.getTraitAt(you);
-					if (type == VACANT)
+					if (type == vacantIdx)
 						continue;
 					newScore = tmpTraitScore[type];
 					oldScore = tmpScore[type];
@@ -1068,7 +1068,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 					for (int n = 0; n < nIn; n++) {
 						int you = in[n];
 						int type = opponent.getTraitAt(you);
-						if (type == VACANT)
+						if (type == vacantIdx)
 							continue;
 						newScore = tmpTraitScore[type];
 						oldScore = tmpScore[type];
@@ -1089,7 +1089,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	public void playGroupGameAt(IBSGroup group) {
 		int me = group.focal;
 		int myType = getTraitAt(me);
-		if (myType == VACANT)
+		if (myType == vacantIdx)
 			return;
 		stripGroupVacancies(group, tmpTraits, tmpGroup);
 		countTraits(tmpCount, tmpTraits, 0, group.nSampled);
@@ -1167,7 +1167,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	public void yalpGroupGameAt(IBSGroup group) {
 		int me = group.focal;
 		int newtype = traitsNext[me] % nTraits;
-		if (newtype == VACANT || group.nSampled <= 0) {
+		if (newtype == vacantIdx || group.nSampled <= 0) {
 			// isolated individual or vacant site - reset score
 			resetScoreAt(me);
 			return;
@@ -1244,7 +1244,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				// XXX combinations of structured and unstructured populations require more
 				// attention
 				int newtrait = getTraitAt(me);
-				if (newtrait == VACANT) {
+				if (newtrait == vacantIdx) {
 					resetScoreAt(me);
 				} else {
 					// update score of 'me' based on opponent population
@@ -1285,11 +1285,11 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 					else
 						groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpTraitScore);
 					int uInter = nMixedInter;
-					if (VACANT >= 0)
-						uInter -= tmpCount[VACANT];
+					if (vacantIdx >= 0)
+						uInter -= tmpCount[vacantIdx];
 					for (int n = unitStart; n < unitStart + unitSize; n++) {
 						int type = getTraitAt(n);
-						setScoreAt(n, tmpTraitScore[type], type == VACANT ? 0 : uInter);
+						setScoreAt(n, tmpTraitScore[type], type == vacantIdx ? 0 : uInter);
 					}
 				}
 				setMaxEffScoreIdx();
@@ -1305,7 +1305,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				int mxTrait = -Integer.MAX_VALUE;
 				sumFitness = 0.0;
 				for (int n = 0; n < nTraits; n++) {
-					if (n == VACANT) {
+					if (n == vacantIdx) {
 						typeScores[n] = 0.0;
 						accuTypeScores[n] = Double.NaN;
 					}
@@ -1443,7 +1443,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				passed = false;
 			}
 			accTrait += traitsCount[n];
-			if (n == VACANT)
+			if (n == vacantIdx)
 				continue;
 			accScores += accuTypeScores[n];
 		}
@@ -1474,7 +1474,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			return true;
 		// monomorphic
 		for (int n = 0; n < nTraits; n++) {
-			if (n == VACANT)
+			if (n == vacantIdx)
 				continue;
 			if (traitsCount[n] == popSize)
 				return true;
@@ -1488,25 +1488,25 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			return false;
 		// population is monomorphic, no mutations and no optimizations for homogeneous
 		// states
-		if (getPopulationSize() == 0 || VACANT < 0 || module.getMonoStop())
+		if (getPopulationSize() == 0 || vacantIdx < 0 || module.getMonoStop())
 			// extinct
 			return true;
 		// death rate zero and no vacant sites
-		return (module.getDeathRate() <= 0.0 && traitsCount[VACANT] == 0);
+		return (module.getDeathRate() <= 0.0 && traitsCount[vacantIdx] == 0);
 	}
 
 	@Override
 	public boolean isVacantAt(int index) {
-		if (VACANT < 0)
+		if (vacantIdx < 0)
 			return false;
-		return getTraitAt(index) == VACANT;
+		return getTraitAt(index) == vacantIdx;
 	}
 
 	@Override
 	public boolean becomesVacantAt(int index) {
-		if (VACANT < 0)
+		if (vacantIdx < 0)
 			return false;
-		return traitsNext[index] % nTraits == VACANT;
+		return traitsNext[index] % nTraits == vacantIdx;
 	}
 
 	@Override
@@ -1533,7 +1533,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		// for accumulated payoffs this makes only sense with adjustScores, without
 		// VACANT and for regular interaction geometries otherwise individuals may
 		// have different scores even in homogeneous populations
-		if (!playerScoreAveraged && (VACANT >= 0 || !interaction.isRegular))
+		if (!playerScoreAveraged && (vacantIdx >= 0 || !interaction.isRegular))
 			return Double.NaN;
 		// averaged scores or regular interaction geometries without vacant sites
 		double mono = module.getMonoPayoff(type % nTraits);
@@ -1562,10 +1562,10 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		int bin;
 		for (int n = 0; n < nPopulation; n++) {
 			int pane = getTraitAt(n);
-			if (pane == VACANT)
+			if (pane == vacantIdx)
 				continue;
 			// this should never hold as VACANT should be the last 'trait'
-			if (VACANT >= 0 && pane > VACANT)
+			if (vacantIdx >= 0 && pane > vacantIdx)
 				pane--;
 			bin = (int) ((getScoreAt(n) - min) * map);
 			// XXX accumulated payoffs are a problem - should rescale x-axis; at least
@@ -1575,7 +1575,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		}
 		double norm = 1.0 / nPopulation;
 		for (int n = 0; n < nTraits; n++) {
-			if (n == VACANT)
+			if (n == vacantIdx)
 				continue;
 			ArrayMath.multiply(bins[idx++], norm);
 		}
@@ -1629,7 +1629,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	public double[] getMeanFitness(double[] mean) {
 		double sum = 0.0;
 		for (int n = 0; n < nTraits; n++) {
-			if (n == VACANT)
+			if (n == vacantIdx)
 				continue;
 			sum += accuTypeScores[n];
 			// this returns NaN if no traits of type n present
@@ -1886,7 +1886,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		// initArgs contains the index of the monomorphic trait
 		int monoType = (int) init.args[0];
 		double monoFreq = 1.0;
-		if (VACANT >= 0) {
+		if (vacantIdx >= 0) {
 			// if present the second argument indicates the frequency of vacant sites
 			// if not use estimate for carrying capacity
 			monoFreq = (init.args.length > 1 ? Math.max(0.0, 1.0 - init.args[1])
@@ -1958,10 +1958,10 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				nMono++;
 				continue;
 			}
-			setTraitAt(n, VACANT);
+			setTraitAt(n, vacantIdx);
 		}
 		traitsCount[monoType] = nMono;
-		traitsCount[VACANT] = nPopulation - nMono;
+		traitsCount[vacantIdx] = nPopulation - nMono;
 		// check if population exists
 		if (nMono == 0)
 			return;
@@ -1995,12 +1995,12 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		else
 			residentType = (mutantType + 1) % nTraits;
 		int loc;
-		if (VACANT >= 0) {
+		if (vacantIdx >= 0) {
 			// if present the third argument indicates the frequency of vacant sites
 			// if not use estimate for carrying capacity
 			double monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2])
 					: 1.0 - estimateVacantFrequency(residentType));
-			if (residentType == VACANT && monoFreq < 1.0 - 1e-8) {
+			if (residentType == vacantIdx && monoFreq < 1.0 - 1e-8) {
 				// problem encountered
 				init.type = Init.Type.UNIFORM;
 				logger.warning("review " + init.clo.getName() + //
@@ -2013,7 +2013,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			initMono(residentType, monoFreq);
 			// check if resident population went extinct or a single survivor
 			// check if resident population went extinct or only a single survivor
-			if (traitsCount[VACANT] >= nPopulation - 1)
+			if (traitsCount[vacantIdx] >= nPopulation - 1)
 				return -1;
 			// change trait of random resident to a mutant
 			int idx = random0n(getPopulationSize());
@@ -2053,7 +2053,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		setTraitAt(mutant, residentType);
 		// pick parent uniformly at random (everyone has the same fitness)
 		int parent;
-		if (VACANT < 0)
+		if (vacantIdx < 0)
 			parent = random0n(nPopulation);
 		else {
 			int idx = random0n(getPopulationSize());
@@ -2072,7 +2072,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			return -1;
 		int idx = competition.out[parent][random0n(nneighs)];
 		if (isVacantAt(idx)) {
-			traitsCount[VACANT]--;
+			traitsCount[vacantIdx]--;
 			// number of residents unchanged, initMono decreased it
 			traitsCount[residentType % nTraits]++;
 		}
@@ -2285,13 +2285,13 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			Arrays.fill(accuTypeScores, 0.0);
 			for (int n = 0; n < nPopulation; n++) {
 				int type = getTraitAt(n);
-				if (type == VACANT)
+				if (type == vacantIdx)
 					continue;
 				accuTypeScores[type] += getScoreAt(n);
 			}
 		}
-		if (VACANT >= 0)
-			accuTypeScores[VACANT] = Double.NaN;
+		if (vacantIdx >= 0)
+			accuTypeScores[vacantIdx] = Double.NaN;
 		return true;
 	}
 

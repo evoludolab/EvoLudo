@@ -139,7 +139,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		this.module = module;
 		// initialize helper variables
 		nTraits = module.getNTraits();
-		VACANT = module.getVacantIdx();
+		vacantIdx = module.getVacantIdx();
 
 		// get shared random number generator
 		rng = engine.getRNG();
@@ -393,7 +393,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * 
 	 * @see Module#getVacantIdx()
 	 */
-	protected int VACANT = -1;
+	protected int vacantIdx = -1;
 
 	/**
 	 * The number of traits in module. Convenience field.
@@ -825,54 +825,140 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @return the index of the picked individual
 	 */
 	public int pickFocalIndividual() {
-		if (VACANT < 0)
+		if (vacantIdx < 0)
 			return pickFocalSite();
-		return pickFocal(-1);
+		return pickFocalSkipVacant();
+	}
+
+	/**
+	 * Pick a focal individual uniformly at random but skipping vacant sites.
+	 * 
+	 * @return the index of the picked individual
+	 */
+	private int pickFocalSkipVacant() {
+		int nTot = getPopulationSize();
+		int pick = random0n(nTot);
+		if (pick + pick > nTot) {
+			pick = nTot - pick - 1;
+			return pickFocalTail(pick);
+		}
+		return pickFocalHead(pick);
 	}
 
 	/**
 	 * Pick a focal individual uniformly at random but excluding the individual with
-	 * index <code>excl</code>. Helper method.
+	 * index <code>excl</code>.
 	 * 
 	 * @param excl the index of the excluded individual
 	 * @return the index of the picked individual
 	 */
-	private int pickFocal(int excl) {
-		int nTot = getPopulationSize();
-		if (excl >= 0)
-			nTot--;
+	private int pickFocalSkipVacant(int excl) {
+		int nTot = getPopulationSize() - 1;
 		int pick = random0n(nTot);
 		if (pick + pick > nTot) {
 			pick = nTot - pick - 1;
-			// start search at tail, cannot stop halfway
-			// vacancies may be concentrated at tail
-			for (int n = nPopulation - 1; n >= 0; n--) {
-				if (isVacantAt(n))
-					continue;
-				pick--;
-				if (pick < 0) {
-					if (n == excl)
-						continue;
-					return n;
-				}
-			}
-		} else {
-			// start search at head, cannot stop halfway
-			// vacancies may be concentrated at head
-			for (int n = 0; n < nPopulation; n++) {
-				if (isVacantAt(n))
-					continue;
-				pick--;
-				if (pick < 0) {
-					if (n == excl)
-						continue;
-					return n;
-				}
-			}
+			return pickFocalTail(pick, excl);
 		}
-		engine.fatal("pickFocal() failed to pick individual...");
+		return pickFocalHead(pick, excl);
+	}
+
+	/**
+	 * Pick a focal individual uniformly at random starting from head.
+	 * 
+	 * @param pick the pick index
+	 * @return the index of the picked individual
+	 */
+	private int pickFocalHead(int pick) {
+		// start search at head, cannot stop halfway
+		// vacancies may be concentrated at tail
+		for (int n = 0; n < nPopulation; n++) {
+			if (!isVacantAt(n) && --pick < 0)
+				return n;
+		}
+		return pickFailed();
+	}
+
+	/**
+	 * Pick a focal individual uniformly at random starting from head, excluding
+	 * individual <code>excl</code>.
+	 * 
+	 * @param pick the pick index
+	 * @param excl the index of the excluded individual
+	 * @return the index of the picked individual
+	 */
+	private int pickFocalHead(int pick, int excl) {
+		// start search at head, cannot stop halfway
+		// vacancies may be concentrated at tail
+		for (int n = 0; n < excl; n++) {
+			if (!isVacantAt(n) && --pick < 0)
+				return n;
+		}
+		// two loops avoid repeated n != excl checks
+		for (int n = excl + 1; n < nPopulation; n++) {
+			if (!isVacantAt(n) && --pick < 0)
+				return n;
+		}
+		return pickFailed();
+	}
+
+	/**
+	 * Pick a focal individual uniformly at random starting from tail.
+	 * 
+	 * @param pick the pick index
+	 * @return the index of the picked individual
+	 */
+	private int pickFocalTail(int pick) {
+		// start search at tail, cannot stop halfway
+		// vacancies may be concentrated at head
+		for (int n = nPopulation - 1; n >= 0; n--) {
+			if (!isVacantAt(n) && --pick < 0)
+				return n;
+		}
+		return pickFailed();
+	}
+
+	/**
+	 * Pick a focal individual uniformly at random starting from tail, excluding
+	 * individual <code>excl</code>.
+	 * 
+	 * @param pick the pick index
+	 * @param excl the index of the excluded individual
+	 * @return the index of the picked individual
+	 */
+	private int pickFocalTail(int pick, int excl) {
+		// start search at tail, cannot stop halfway
+		// vacancies may be concentrated at head
+		for (int n = nPopulation - 1; n > excl; n--) {
+			if (!isVacantAt(n) && --pick < 0)
+				return n;
+		}
+		// two loops avoid repeated n != excl checks
+		for (int n = excl - 1; n >= 0; n--) {
+			if (!isVacantAt(n) && --pick < 0)
+				return n;
+		}
+		return pickFailed();
+	}
+
+	/**
+	 * Handle failed pick.
+	 * 
+	 * @return never returns control
+	 */
+	private int pickFailed() {
+		engine.fatal("failed to pick individual...");
 		// fatal does not return control
 		return -1;
+	}
+
+	/**
+	 * Handle failed pick and report details about failure.
+	 * 
+	 * @return never returns control
+	 */
+	private int pickFailed(double remainder) {
+		debugScores(remainder);
+		return pickFailed();
 	}
 
 	/**
@@ -887,11 +973,11 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @return the index of the picked individual
 	 */
 	public int pickFocalIndividual(int excl) {
-		if (VACANT < 0)
+		if (vacantIdx < 0)
 			return pickFocalSite(excl);
 		if (excl < 0 || excl > nPopulation)
-			return pickFocalIndividual();
-		return pickFocal(excl);
+			return pickFocalSkipVacant();
+		return pickFocalSkipVacant(excl);
 	}
 
 	/**
@@ -920,40 +1006,71 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (isNeutral)
 			return pickFocalIndividual();
 
-		if (VACANT < 0) {
-			if (nPopulation >= 100) {
-				// optimization of gillespie algorithm to prevent bookkeeping (at the expense of
-				// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
-				double mScore;
-				// note: for constant selection maxEffScoreIdx is never set; using the
-				// effective current maximum score makes this optimization more efficient
-				if (maxEffScoreIdx < 0)
-					mScore = maxFitness;
-				else
-					mScore = getFitnessAt(maxEffScoreIdx);
-				int aRand = -1;
-				do {
-					aRand = random0n(nPopulation);
-				} while (random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
-				return aRand;
-			}
-			// standard, non-optimized version
-			double hit = random01() * sumFitness;
-			for (int n = 0; n < nPopulation; n++) {
-				hit -= getFitnessAt(n);
-				if (hit < 0.0)
-					return n;
-			}
-			if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
-				return nPopulation - 1;
-			debugScores(hit);
-			engine.fatal("pickFitFocalIndividual() failed to pick individual...");
-			// fatal does not return control
-			return -1;
-		}
+		if (vacantIdx < 0)
+			return pickFitFocalNoVacant();
+		return pickFitFocalSkipVacant();
+	}
 
+	/**
+	 * Threshold population size for using the Gillespie optimization for picking
+	 * individuals proportional to fitness.
+	 */
+	private static final int GILLESPIE_OPTIMIZATION_THRESHOLD = 100;
+
+	/**
+	 * Draws the index of a member of the population with a probability proportional
+	 * to fitness but assuming no vacant sites.
+	 * <p>
+	 * <strong>Note:</strong> scores must be <code>&ge;0</code>
+	 * <p>
+	 * <strong>Important:</strong> This method is highly time sensitive. Any
+	 * optimization effort is worth making.
+	 * 
+	 * @return the index of the picked member
+	 */
+	private int pickFitFocalNoVacant() {
+		if (nPopulation >= GILLESPIE_OPTIMIZATION_THRESHOLD) {
+			// optimization of gillespie algorithm to prevent bookkeeping (at the expense of
+			// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
+			double mScore;
+			// note: for constant selection maxEffScoreIdx is never set; using the
+			// effective current maximum score makes this optimization more efficient
+			if (maxEffScoreIdx < 0)
+				mScore = maxFitness;
+			else
+				mScore = getFitnessAt(maxEffScoreIdx);
+			int aRand = -1;
+			do {
+				aRand = random0n(nPopulation);
+			} while (random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
+			return aRand;
+		}
+		// standard, non-optimized version
+		double hit = random01() * sumFitness;
+		for (int n = 0; n < nPopulation; n++) {
+			hit -= getFitnessAt(n);
+			if (hit < 0.0)
+				return n;
+		}
+		if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
+			return nPopulation - 1;
+		return pickFailed(hit);
+	}
+
+	/**
+	 * Draws the index of a member of the population with a probability proportional
+	 * to fitness but assuming vacant sites.
+	 * <p>
+	 * <strong>Note:</strong> scores must be <code>&ge;0</code>
+	 * <p>
+	 * <strong>Important:</strong> This method is highly time sensitive. Any
+	 * optimization effort is worth making.
+	 * 
+	 * @return the index of the picked member
+	 */
+	private int pickFitFocalSkipVacant() {
 		// vacancies require some extra care
-		if (nPopulation >= 100) {
+		if (nPopulation >= GILLESPIE_OPTIMIZATION_THRESHOLD) {
 			// optimization of gillespie algorithm to prevent bookkeeping (at the expense of
 			// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
 			double mScore;
@@ -979,10 +1096,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (hit <= 0.0)
 				return n;
 		}
-		debugScores(hit);
-		engine.fatal("pickFitFocalIndividual() failed to pick individual...");
-		// fatal does not return control
-		return -1;
+		if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
+			return nPopulation - 1;
+		return pickFailed(hit);
 	}
 
 	/**
@@ -1005,95 +1121,68 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (isNeutral)
 			return pickFocalIndividual(excl);
 
-		if (VACANT < 0) {
-			// note: review threshold for optimizations (see pickFitFocalIndividual above)
-			if (nPopulation >= 100) {
-				// optimization of gillespie algorithm to prevent bookkeeping (at the expense of
-				// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
-				if (excl == maxEffScoreIdx) {
-					// excluding the maximum score can cause issues if it is much larger than the
-					// rest. need to find the second largest fitness value (note using
-					// mapToFitness(maxScore)
-					// may be even worse because most candidates are rejected
-					double mScore = map2fit.map(second(maxEffScoreIdx));
-					int aRand = -1;
-					do {
-						aRand = random0n(nPopulation - 1);
-						if (aRand >= excl)
-							aRand++;
-					} while (random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
-					return aRand;
-				}
+		if (vacantIdx < 0)
+			return pickFitFocalNoVacant(excl);
+		return pickFitFocalSkipVacant(excl);
+	}
 
-				double mScore;
-				// note: for constant selection maxEffScoreIdx is never set
-				// using the effective current maximum score makes this optimization more
-				// efficient
-				if (maxEffScoreIdx < 0)
-					mScore = maxFitness;
-				else
-					mScore = getFitnessAt(maxEffScoreIdx);
-				int aRand = -1;
-				do {
-					aRand = random0n(nPopulation - 1);
-					if (aRand >= excl)
-						aRand++;
-				} while (random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
-				return aRand;
-			}
-			double hit = random01() * (sumFitness - getFitnessAt(excl));
-			// two loops prevent repeated checks concerning excl
-			for (int n = 0; n < excl; n++) {
-				hit -= getFitnessAt(n);
-				if (hit < 0.0)
-					return n;
-			}
-			for (int n = excl + 1; n < nPopulation; n++) {
-				hit -= getFitnessAt(n);
-				if (hit < 0.0)
-					return n;
-			}
-			// last resort...
-			if (excl == nPopulation - 1) {
-				if (hit < 1e-6 && getFitnessAt(nPopulation - 2) > 1e-6)
-					return nPopulation - 2;
-				if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
-					return nPopulation - 1;
-			}
-			debugScores(hit);
-			engine.fatal("pickFitFocalIndividual(int) failed to pick individual...");
-			// fatal does not return control
-			return -1;
+	/**
+	 * Draws the index of a member of the population with a probability proportional
+	 * to fitness but assuming no vacant sites.
+	 * <p>
+	 * <strong>Note:</strong> scores must be <code>&ge;0</code>
+	 * <p>
+	 * <strong>Important:</strong> This method is highly time sensitive. Any
+	 * optimization effort is worth making.
+	 * 
+	 * @param excl the index of the member that should be excluded from picking
+	 * @return the index of the picked member
+	 */
+	private int pickFitFocalNoVacant(int excl) {
+		if (nPopulation >= GILLESPIE_OPTIMIZATION_THRESHOLD)
+			return pickFitFocalNoVacantGillespieOptimized(excl);
+		// standard, non-optimized version
+		double hit = random01() * (sumFitness - getFitnessAt(excl));
+		// two loops prevent repeated checks concerning excl
+		for (int n = 0; n < excl; n++) {
+			hit -= getFitnessAt(n);
+			if (hit < 0.0)
+				return n;
 		}
+		for (int n = excl + 1; n < nPopulation; n++) {
+			hit -= getFitnessAt(n);
+			if (hit < 0.0)
+				return n;
+		}
+		// last resort...
+		if (excl == nPopulation - 1) {
+			if (hit < 1e-6 && getFitnessAt(nPopulation - 2) > 1e-6)
+				return nPopulation - 2;
+			if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
+				return nPopulation - 1;
+		}
+		return pickFailed(hit);
+	}
 
-		// vacancies require some extra care
-		if (nPopulation >= 100) {
-			// optimization of gillespie algorithm to prevent bookkeeping (at the expense of
-			// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
-			if (excl == maxEffScoreIdx) {
-				// excluding the maximum score can cause issues if it is much larger than the
-				// rest, need to find the second largest fitness value (note using
-				// mapToFitness(maxScore)
-				// may be even worse because most candidates are rejected
-				double mScore = map2fit.map(second(maxEffScoreIdx));
-				int aRand = -1;
-				do {
-					aRand = random0n(nPopulation - 1);
-					if (aRand >= excl)
-						aRand++;
-				} while (isVacantAt(aRand) || random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is
-																							// ok
-				return aRand;
-			}
-
-			double mScore;
-			// note: for constant selection maxEffScoreIdx is never set
-			// using the effective current maximum score makes this optimization more
-			// efficient
-			if (maxEffScoreIdx < 0)
-				mScore = maxFitness;
-			else
-				mScore = getFitnessAt(maxEffScoreIdx);
+	/**
+	 * Draws the index of a member of the population with a probability proportional
+	 * to fitness but assuming no vacant sites.
+	 * <p>
+	 * <strong>Note:</strong> scores must be <code>&ge;0</code>
+	 * <p>
+	 * <strong>Important:</strong> This method is highly time sensitive. Any
+	 * optimization effort is worth making.
+	 * 
+	 * @param excl the index of the member that should be excluded from picking
+	 * @return the index of the picked member
+	 */
+	private int pickFitFocalNoVacantGillespieOptimized(int excl) {
+		if (excl == maxEffScoreIdx) {
+			// excluding the maximum score can cause issues if it is much larger than the
+			// rest. need to find the second largest fitness value (note using
+			// mapToFitness(maxScore)
+			// may be even worse because most candidates are rejected
+			double mScore = map2fit.map(second(maxEffScoreIdx));
 			int aRand = -1;
 			do {
 				aRand = random0n(nPopulation - 1);
@@ -1102,6 +1191,40 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			} while (random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
 			return aRand;
 		}
+
+		double mScore;
+		// note: for constant selection maxEffScoreIdx is never set
+		// using the effective current maximum score makes this optimization more
+		// efficient
+		if (maxEffScoreIdx < 0)
+			mScore = maxFitness;
+		else
+			mScore = getFitnessAt(maxEffScoreIdx);
+		int aRand = -1;
+		do {
+			aRand = random0n(nPopulation - 1);
+			if (aRand >= excl)
+				aRand++;
+		} while (random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
+		return aRand;
+	}
+
+	/**
+	 * Draws the index of a member of the population with a probability proportional
+	 * to fitness but assuming vacant sites.
+	 * <p>
+	 * <strong>Note:</strong> scores must be <code>&ge;0</code>
+	 * <p>
+	 * <strong>Important:</strong> This method is highly time sensitive. Any
+	 * optimization effort is worth making.
+	 * 
+	 * @param excl the index of the member that should be excluded from picking
+	 * @return the index of the picked member
+	 */
+	private int pickFitFocalSkipVacant(int excl) {
+		// vacancies require some extra care
+		if (nPopulation >= GILLESPIE_OPTIMIZATION_THRESHOLD)
+			pickFitFocalSkipVacantGillespieOptimized(excl);
 		double hit = random01() * (sumFitness - getFitnessAt(excl));
 		// two loops prevent repeated checks concerning excl
 		for (int n = 0; n < excl; n++) {
@@ -1118,10 +1241,54 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (hit <= 0.0)
 				return n;
 		}
-		debugScores(hit);
-		engine.fatal("pickFitFocalIndividual(int) failed to pick individual...");
-		// fatal does not return control
-		return -1;
+		return pickFailed(hit);
+	}
+
+	/**
+	 * Draws the index of a member of the population with a probability proportional
+	 * to fitness but assuming vacant sites.
+	 * <p>
+	 * <strong>Note:</strong> scores must be <code>&ge;0</code>
+	 * <p>
+	 * <strong>Important:</strong> This method is highly time sensitive. Any
+	 * optimization effort is worth making.
+	 * 
+	 * @param excl the index of the member that should be excluded from picking
+	 * @return the index of the picked member
+	 */
+	private int pickFitFocalSkipVacantGillespieOptimized(int excl) {
+		// optimization of gillespie algorithm to prevent bookkeeping (at the expense of
+		// drawing more random numbers) see e.g. http://arxiv.org/pdf/1109.3627.pdf
+		if (excl == maxEffScoreIdx) {
+			// excluding the maximum score can cause issues if it is much larger than the
+			// rest, need to find the second largest fitness value (note using
+			// mapToFitness(maxScore)
+			// may be even worse because most candidates are rejected
+			double mScore = map2fit.map(second(maxEffScoreIdx));
+			int aRand = -1;
+			do {
+				aRand = random0n(nPopulation - 1);
+				if (aRand >= excl)
+					aRand++;
+			} while (isVacantAt(aRand) || random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
+			return aRand;
+		}
+
+		double mScore;
+		// note: for constant selection maxEffScoreIdx is never set
+		// using the effective current maximum score makes this optimization more
+		// efficient
+		if (maxEffScoreIdx < 0)
+			mScore = maxFitness;
+		else
+			mScore = getFitnessAt(maxEffScoreIdx);
+		int aRand = -1;
+		do {
+			aRand = random0n(nPopulation - 1);
+			if (aRand >= excl)
+				aRand++;
+		} while (random01() * mScore > getFitnessAt(aRand)); // note: if < holds aRand is ok
+		return aRand;
 	}
 
 	/**
@@ -1204,48 +1371,80 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			return pickFitFocalIndividual(me);
 		}
 
-		if (VACANT < 0) {
-			// structured population
-			debugModels = competition.in[me];
-			debugNModels = competition.kin[me];
-			double totFitness = 0.0;
-			double myFit = 0.0;
-			if (withSelf) {
-				if (debugNModels == 0)
-					return me;
-				myFit = getFitnessAt(me);
-				totFitness = myFit;
-			} else {
-				switch (debugNModels) {
-					case 0:
-						// no upstream neighbour
-						return -1;
-					case 1:
-						return debugModels[0];
-					default:
-				}
-			}
-			for (int n = 0; n < debugNModels; n++)
-				totFitness += getFitnessAt(debugModels[n]);
+		if (vacantIdx < 0)
+			return pickFitNeighborNoVacantAt(me, withSelf);
+		return pickFitNeighborSkipVacantAt(me, withSelf);
+	}
 
-			// negligible fitness, pick uniformly at random; same as neutral above
-			if (totFitness <= 1e-8)
-				return pickNeutralNeighbourAt(me, withSelf);
-
-			double hit = random01() * totFitness - myFit;
-			if (hit < 0.0)
+	/**
+	 * Pick a neighbour of the focal individual {@code me} with probability
+	 * proportional to their fitness assuming no vacant sites. If the flag
+	 * {@code withSelf==true} then the focal individual is included in the picking.
+	 *
+	 * @param me       the index of the focal individual
+	 * @param withSelf the flag whether to include self
+	 * @return the index of a neighbour
+	 */
+	private int pickFitNeighborNoVacantAt(int me, boolean withSelf) {
+		double totFitness = 0.0;
+		double myFit = 0.0;
+		if (withSelf) {
+			if (debugNModels == 0)
 				return me;
-			for (int n = 0; n < debugNModels; n++) {
-				hit -= getFitnessAt(debugModels[n]);
-				if (hit < 0.0)
-					return debugModels[n];
-			}
-			// should not get here
-			debugScores(hit);
-			throw new IllegalStateException(
-					"Failed to pick neighbour... (" + hit + ", sum: " + totFitness + ")");
+			myFit = getFitnessAt(me);
+			totFitness = myFit;
 		}
+		totFitness += totFitnessNoVacant(me);
+		// negligible fitness, pick uniformly at random; same as neutral above
+		if (totFitness <= 1e-8)
+			return pickNeutralNeighbourAt(me, withSelf);
 
+		double hit = random01() * totFitness - myFit;
+		if (hit < 0.0)
+			return me;
+		for (int n = 0; n < debugNModels; n++) {
+			hit -= getFitnessAt(debugModels[n]);
+			if (hit < 0.0)
+				return debugModels[n];
+		}
+		// should not get here
+		return pickFailed(hit);
+	}
+
+	/**
+	 * Compute total fitness of neighbours of individual {@code me} assuming no
+	 * vacant sites.
+	 * 
+	 * @param me the index of the focal individual
+	 * @return the total fitness of neighbours
+	 */
+	private double totFitnessNoVacant(int me) {
+		debugModels = competition.in[me];
+		debugNModels = competition.kin[me];
+		double totFitness = 0.0;
+		switch (debugNModels) {
+			case 0:
+				// no upstream neighbour
+				return -1;
+			case 1:
+				return debugModels[0];
+			default:
+		}
+		for (int n = 0; n < debugNModels; n++)
+			totFitness += getFitnessAt(debugModels[n]);
+		return totFitness;
+	}
+
+	/**
+	 * Pick a neighbour of the focal individual {@code me} with probability
+	 * proportional to their fitness assuming vacant sites. If the flag
+	 * {@code withSelf==true} then the focal individual is included in the picking.
+	 *
+	 * @param me       the index of the focal individual
+	 * @param withSelf the flag whether to include self
+	 * @return the index of a neighbour
+	 */
+	private int pickFitNeighborSkipVacantAt(int me, boolean withSelf) {
 		// vacancies require some extra care
 		debugModels = competition.in[me];
 		debugNModels = competition.kin[me];
@@ -1256,25 +1455,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				return me;
 			myFit = getFitnessAt(me);
 			totFitness = myFit;
-		} else {
-			switch (debugNModels) {
-				case 0:
-					return -1;
-				case 1:
-					int neigh = debugModels[0];
-					if (isVacantAt(neigh))
-						return -1;
-					return neigh;
-				default:
-			}
 		}
-		for (int n = 0; n < debugNModels; n++) {
-			int neigh = debugModels[n];
-			if (isVacantAt(neigh))
-				continue;
-			totFitness += getFitnessAt(neigh);
-		}
-
+		totFitness += totFitnessSkipVacant(me);
 		// negligible fitness, pick uniformly at random; same as neutral above
 		if (totFitness <= 1e-8)
 			return pickNeutralNeighbourAt(me, withSelf);
@@ -1291,8 +1473,38 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				return neigh;
 		}
 		// should not get here
-		debugScores(hit);
-		throw new IllegalStateException("Failed to pick neighbour... (" + hit + ", sum: " + totFitness + ")");
+		return pickFailed(hit);
+	}
+
+	/**
+	 * Compute total fitness of neighbours of individual {@code me} assuming vacant
+	 * sites.
+	 * 
+	 * @param me the index of the focal individual
+	 * @return the total fitness of neighbours
+	 */
+	private double totFitnessSkipVacant(int me) {
+		// vacancies require some extra care
+		debugModels = competition.in[me];
+		debugNModels = competition.kin[me];
+		double totFitness = 0.0;
+		switch (debugNModels) {
+			case 0:
+				return -1;
+			case 1:
+				int neigh = debugModels[0];
+				if (isVacantAt(neigh))
+					return -1;
+				return neigh;
+			default:
+		}
+		for (int n = 0; n < debugNModels; n++) {
+			int neigh = debugModels[n];
+			if (isVacantAt(neigh))
+				continue;
+			totFitness += getFitnessAt(neigh);
+		}
+		return totFitness;
 	}
 
 	/**
@@ -1748,7 +1960,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (interactions != null)
 			Arrays.fill(interactions, 0);
 		sumFitness = 0.0;
-		if (VACANT < 0 || getPopulationSize() == 0) {
+		if (vacantIdx < 0 || getPopulationSize() == 0) {
 			// no vacancies or no population
 			maxEffScoreIdx = 0;
 			return;
@@ -1887,141 +2099,149 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @return the number of elapsed realtime units
 	 */
 	public int step() {
-		int[] remain;
-		// this implies single species
-		// (otherwise optimizeHomo == false and population == null)
 		if (optimizeHomo && isMonomorphic()) {
-			// optimize waiting time in homogeneous states by advancing time and
-			// deterministically introduce new mutant (currently single species only)
-			// optimizeHomo also requires that mutations are rare (otherwise this
-			// optimization is pointless); more specifically mutation rates
-			// <0.1/nPopulation such that mutations occur less than every 10
-			// generations and hence scores can be assumed to be homogeneous when
-			// the mutant arises.
-			// skip time to next event
-			int dt = RNGDistribution.Geometric.next(rng.getRNG(), mutation.getProbability());
-			resetTraits();
-			resetScores();
-			updateScores();
-			// communicate update
-			engine.fireModelChanged();
-			// introduce mutation uniformly at random
-			mutateAt(pickFocalIndividual());
-			return dt + 1;
+			return optimizeHomo();
 		}
 		if (pMigration > 0.0 && random01() < pMigration) {
-			// migration event
 			doMigration();
 			return 1;
 		}
-		// real time increment based on current fitness
 		switch (populationUpdate.getType()) {
-			case SYNC: // synchronous updates (do not commit traits)
+			case SYNC:
 				prepareTraits();
-				if (syncFraction >= 1.0) {
-					// no noise, update everyone
-					if (VACANT < 0) {
-						// no vacancies, all updated
-						for (int n = 0; n < nPopulation; n++)
-							updatePlayerAt(n);
-						return nPopulation;
-					}
-					int nUpdates = 0;
-					for (int n = 0; n < nPopulation; n++) {
-						if (isVacantAt(n))
-							continue;
-						updatePlayerAt(n);
-						nUpdates++;
-					}
-					return nUpdates;
-				}
-				// update only fraction of individuals (at least one but at most once)
-				int nRemain = nPopulation;
-				remain = new int[nRemain];
-				for (int n = 0; n < nPopulation; n++)
-					remain[n] = n;
-				int nSamples = Math.max(1, (int) (syncFraction * nPopulation + 0.5));
-				int nEnd = nPopulation - nSamples;
-				if (VACANT < 0) {
-					while (nRemain > nEnd) {
-						int idx = random0n(nRemain);
-						int focal = remain[idx];
-						remain[idx] = remain[--nRemain];
-						updatePlayerAsyncAt(focal);
-					}
-					return nSamples;
-				}
-				int nUpdates = 0;
-				while (nRemain > nEnd) {
-					int idx = random0n(nRemain);
-					int focal = remain[idx];
-					remain[idx] = remain[--nRemain];
-					if (isVacantAt(focal))
-						continue;
-					updatePlayerAt(focal);
-					nUpdates++;
-				}
-				return nUpdates;
-
-			// case WRIGHT_FISHER:
-			// return rincr;
-
-			case ONCE: // asynchronous updates (every individual once)
-				nRemain = nPopulation;
-				remain = new int[nRemain];
-				for (int n = 0; n < nRemain; n++)
-					remain[n] = n;
-				if (VACANT < 0) {
-					while (nRemain > 0) {
-						int idx = random0n(nRemain);
-						int focal = remain[idx];
-						remain[idx] = remain[--nRemain];
-						updatePlayerAsyncAt(focal);
-					}
-					// last to update
-					updatePlayerAsyncAt(remain[0]);
-					return nPopulation;
-				}
-				nUpdates = 0;
-				while (nRemain > 0) {
-					int idx = random0n(nRemain);
-					int focal = remain[idx];
-					remain[idx] = remain[--nRemain];
-					if (isVacantAt(focal))
-						continue;
-					updatePlayerAsyncAt(focal);
-					nUpdates++;
-				}
-				// last to update
-				if (!isVacantAt(remain[0])) {
-					updatePlayerAsyncAt(remain[0]);
-					nUpdates++;
-				}
-				return nUpdates;
-
-			case ASYNC: // exclusively the current payoff matters
+				if (syncFraction >= 1.0)
+					return updateSyncAll();
+				return updateSyncFraction();
+			case ONCE:
+				return updateOnce();
+			case ASYNC:
 				updatePlayerAsync();
 				return 1;
-
-			case MORAN_BIRTHDEATH: // moran process - birth-death
+			case MORAN_BIRTHDEATH:
 				updatePlayerMoranBirthDeath();
 				return 1;
-
-			case MORAN_DEATHBIRTH: // moran process - death-birth
+			case MORAN_DEATHBIRTH:
 				updatePlayerMoranDeathBirth();
 				return 1;
-
-			case MORAN_IMITATE: // moran process - imitate
+			case MORAN_IMITATE:
 				updatePlayerMoranImitate();
 				return 1;
-
-			case ECOLOGY: // ecological updating - varying population sizes
+			case ECOLOGY:
 				return updatePlayerEcology();
-
 			default:
 				logger.warning("unknown population update type (" + populationUpdate.getType().getKey() + ").");
 				return -1;
 		}
+	}
+
+	/**
+	 * Optimize homogeneous population states by skipping to the next mutation
+	 * event.
+	 * 
+	 * @return the number of elapsed realtime units
+	 */
+	private int optimizeHomo() {
+		int dt = RNGDistribution.Geometric.next(rng.getRNG(), mutation.getProbability());
+		resetTraits();
+		resetScores();
+		updateScores();
+		engine.fireModelChanged();
+		mutateAt(pickFocalIndividual());
+		return dt + 1;
+	}
+
+	/**
+	 * Update all individuals in the population synchronously.
+	 * 
+	 * @return the number of elapsed realtime units
+	 */
+	private int updateSyncAll() {
+		if (vacantIdx < 0) {
+			for (int n = 0; n < nPopulation; n++)
+				updatePlayerAt(n);
+			return nPopulation;
+		}
+		int nUpdates = 0;
+		for (int n = 0; n < nPopulation; n++) {
+			if (isVacantAt(n))
+				continue;
+			updatePlayerAt(n);
+			nUpdates++;
+		}
+		return nUpdates;
+	}
+
+	/**
+	 * Update a fraction of individuals in the population synchronously.
+	 * 
+	 * @return the number of elapsed realtime units
+	 */
+	private int updateSyncFraction() {
+		int nRemain = nPopulation;
+		int[] remain = new int[nRemain];
+		for (int n = 0; n < nPopulation; n++)
+			remain[n] = n;
+		int nSamples = Math.max(1, (int) (syncFraction * nPopulation + 0.5));
+		int nEnd = nPopulation - nSamples;
+		if (vacantIdx < 0) {
+			while (nRemain > nEnd) {
+				int idx = random0n(nRemain);
+				int focal = remain[idx];
+				remain[idx] = remain[--nRemain];
+				updatePlayerAsyncAt(focal);
+			}
+			return nSamples;
+		}
+		int nUpdates = 0;
+		while (nRemain > nEnd) {
+			int idx = random0n(nRemain);
+			int focal = remain[idx];
+			remain[idx] = remain[--nRemain];
+			if (isVacantAt(focal))
+				continue;
+			updatePlayerAt(focal);
+			nUpdates++;
+		}
+		return nUpdates;
+	}
+
+	/**
+	 * Update all individuals in the population once asynchronously.
+	 * 
+	 * @return the number of elapsed realtime units
+	 */
+	private int updateOnce() {
+		int nRemain = nPopulation;
+		int[] remain = new int[nRemain];
+		for (int n = 0; n < nRemain; n++)
+			remain[n] = n;
+		if (vacantIdx < 0) {
+			// no vacancies
+			while (nRemain > 0) {
+				int idx = random0n(nRemain);
+				int focal = remain[idx];
+				remain[idx] = remain[--nRemain];
+				updatePlayerAsyncAt(focal);
+			}
+			updatePlayerAsyncAt(remain[0]);
+			return nPopulation;
+		}
+		// with vacant sites
+		int nUpdates = 0;
+		while (nRemain > 0) {
+			int idx = random0n(nRemain);
+			int focal = remain[idx];
+			remain[idx] = remain[--nRemain];
+			if (isVacantAt(focal))
+				continue;
+			updatePlayerAsyncAt(focal);
+			nUpdates++;
+		}
+		if (!isVacantAt(remain[0])) {
+			updatePlayerAsyncAt(remain[0]);
+			nUpdates++;
+		}
+		return nUpdates;
 	}
 
 	/**
@@ -3398,7 +3618,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (!interaction.isUndirected && !module.isStatic())
 			logger.warning("interactions on directed graphs have received very limited testing...");
 
-		if (VACANT >= 0 && nGroup > 2)
+		if (vacantIdx >= 0 && nGroup > 2)
 			logger.warning("group interactions with vacant sites have NOT been tested...");
 
 		if (optimizeHomo) {
@@ -3745,7 +3965,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 					engine.getModel().update(); // initialize typeScores/typeFitness
 				}
 				for (int n = 0; n < nTraits; n++) {
-					if (n == VACANT && typeScores[n] != typeScoresStore[n]) {
+					if (n == vacantIdx && typeScores[n] != typeScoresStore[n]) {
 						logger.warning("scoring issue for vacant trait " + n + ": score=" + typeScoresStore[n]
 								+ " instead of " + typeScores[n] + " (NaN)");
 						isConsistent = false;
@@ -3929,7 +4149,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	public <T> void getFitnessData(T[] colors, ColorMap.Gradient1D<T> colorMap) {
 		if (hasLookupTable) {
-			if (VACANT < 0) {
+			if (vacantIdx < 0) {
 				for (int n = 0; n < nPopulation; n++)
 					colors[n] = colorMap.translate(getFitnessAt(n));
 				return;
@@ -3945,7 +4165,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			}
 			return;
 		}
-		if (VACANT < 0) {
+		if (vacantIdx < 0) {
 			colorMap.translate(fitness, colors);
 			return;
 		}
