@@ -2960,76 +2960,19 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	private boolean updateReplicator(int me, int[] refGroup, int rGroupSize, boolean betterOnly) {
 		// neutral case
-		if (isNeutral) {
-			// return if betterOnly because no one is better
-			if (betterOnly)
-				return false;
-			// choose random neighbor or individual itself
-			int hit = random0n(rGroupSize + 1);
-			if (hit == rGroupSize)
-				return false;
-			updateFromModelAt(me, refGroup[hit]);
-			return true;
-		}
+		if (isNeutral)
+			return updateReplicatorNeutral(me, refGroup, rGroupSize, betterOnly);
 
 		double myFitness = getFitnessAt(me);
-		double aProb;
-		double nProb;
-		double norm;
 		double noise = playerUpdate.getNoise();
-		double error = playerUpdate.getError();
-		double equalProb = betterOnly ? error : 0.5;
+		double nProb;
 		// generalize update to competition among arbitrary numbers of players
-		if (noise <= 0.0) { // zero noise
-			double aDiff = getFitnessAt(refGroup[0]) - myFitness;
-			if (aDiff > 0.0)
-				aProb = 1.0 - error;
-			else
-				aProb = (aDiff < 0.0 ? error : equalProb);
-			norm = aProb;
-			nProb = 1.0 - aProb;
-			if (rGroupSize > 1) {
-				cProbs[0] = aProb;
-				for (int i = 1; i < rGroupSize; i++) {
-					aDiff = getFitnessAt(refGroup[i]) - myFitness;
-					if (aDiff > 0.0)
-						aProb = 1.0 - error;
-					else
-						aProb = (aDiff < 0.0 ? error : equalProb);
-					cProbs[i] = cProbs[i - 1] + aProb;
-					nProb *= 1.0 - aProb;
-					norm += aProb;
-				}
-			}
-		} else { // some noise
-			double inoise = 1.0 / noise;
-			double shift = 0.0;
-			if (!betterOnly) {
-				inoise *= 0.5;
-				shift = 0.5;
-			}
-			if (playerScoreAveraged || adjustScores || playerScoring.equals(ScoringType.EPHEMERAL)) {
-				inoise /= (maxFitness - minFitness);
-				// generalize update to competition among arbitrary numbers of players
-				aProb = Math.min(1.0 - error,
-						Math.max(error, (getFitnessAt(refGroup[0]) - myFitness) * inoise + shift));
-				norm = aProb;
-				nProb = 1.0 - aProb;
-				if (rGroupSize > 1) {
-					cProbs[0] = aProb;
-					for (int i = 1; i < rGroupSize; i++) {
-						aProb = Math.min(1.0 - error,
-								Math.max(error, (getFitnessAt(refGroup[i]) - myFitness) * inoise + shift));
-						cProbs[i] = cProbs[i - 1] + aProb;
-						nProb *= 1.0 - aProb;
-						norm += aProb;
-					}
-				}
-			} else {
-				// not ready for unbounded accumulated payoffs... check() should catch this
-				throw new UnsupportedOperationException("cannot handle unbounded accumulated scores");
-			}
-		}
+		if (noise <= 0.0) // zero noise
+			nProb = updateReplicatorNoNoise(refGroup, rGroupSize, myFitness, betterOnly);
+		else // some noise
+			nProb = updateReplicatorNoise(refGroup, rGroupSize, myFitness, betterOnly);
+		double norm = cProbs[rGroupSize - 1];
+
 		if (norm <= 0.0)
 			return false;
 
@@ -3043,8 +2986,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			return true;
 		}
 
-		norm = (1.0 - nProb) / norm;
-		for (int i = 0; i < rGroupSize; i++) {
+		for (int i = 1; i < rGroupSize; i++) {
 			// normalize cumulative probabilities only if and when needed
 			if (choice < cProbs[i] * norm) {
 				updateFromModelAt(me, refGroup[i]);
@@ -3054,6 +2996,108 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		/* should not get here! */
 		throw new IllegalStateException(
 				"Problem in " + (betterOnly ? "updateReplicatorPlus()..." : "updateReplicatorHalf()..."));
+	}
+
+	/**
+	 * Replicator type update in the neutral case.
+	 * 
+	 * @param me         the index of the focal individual
+	 * @param refGroup   the group of reference individuals
+	 * @param rGroupSize the number of reference individuals
+	 * @param betterOnly the flag to indicate whether only better performing
+	 *                   reference individuals are considered
+	 * @return {@code true} if trait of reference adopted
+	 */
+	private boolean updateReplicatorNeutral(int me, int[] refGroup, int rGroupSize, boolean betterOnly) {
+		// return if betterOnly because no one is better
+		if (betterOnly)
+			return false;
+		// choose random neighbor or individual itself
+		int hit = random0n(rGroupSize + 1);
+		if (hit == rGroupSize)
+			return false;
+		updateFromModelAt(me, refGroup[hit]);
+		return true;
+
+	}
+
+	/**
+	 * Replicator type update without noise.
+	 * 
+	 * @param refGroup   the group of reference individuals
+	 * @param rGroupSize the number of reference individuals
+	 * @param myFitness  the fitness of the focal individual
+	 * @param betterOnly the flag to indicate whether only better performing
+	 *                   reference individuals are considered
+	 * @return the probability of no adoption
+	 */
+	private double updateReplicatorNoNoise(int[] refGroup, int rGroupSize, double myFitness, boolean betterOnly) {
+		double error = playerUpdate.getError();
+		double aProb;
+		double equalProb = betterOnly ? error : 0.5;
+		double aDiff = getFitnessAt(refGroup[0]) - myFitness;
+		if (aDiff > 0.0)
+			aProb = 1.0 - error;
+		else if (aDiff < 0.0)
+			aProb = error;
+		else
+			aProb = equalProb;
+		double nProb = 1.0 - aProb;
+		cProbs[0] = aProb;
+		if (rGroupSize > 1) {
+			for (int i = 1; i < rGroupSize; i++) {
+				aDiff = getFitnessAt(refGroup[i]) - myFitness;
+				if (aDiff > 0.0)
+					aProb = 1.0 - error;
+				else if (aDiff < 0.0)
+					aProb = error;
+				else
+					aProb = equalProb;
+				cProbs[i] = cProbs[i - 1] + aProb;
+				nProb *= 1.0 - aProb;
+			}
+		}
+		return nProb;
+	}
+
+	/**
+	 * Replicator type update with noise.
+	 * 
+	 * @param refGroup   the group of reference individuals
+	 * @param rGroupSize the number of reference individuals
+	 * @param myFitness  the fitness of the focal individual
+	 * @param betterOnly the flag to indicate whether only better performing
+	 *                   reference individuals are considered
+	 * @return the probability of no adoption
+	 */
+	private double updateReplicatorNoise(int[] refGroup, int rGroupSize, double myFitness, boolean betterOnly) {
+		if (playerScoreAveraged || adjustScores || playerScoring.equals(ScoringType.EPHEMERAL)) {
+			double error = playerUpdate.getError();
+			double noise = playerUpdate.getNoise();
+			double inoise = (noise <= 0.0 ? 1.0 : 1.0 / noise);
+			double shift = 0.0;
+			if (!betterOnly) {
+				inoise *= 0.5;
+				shift = 0.5;
+			}
+			inoise /= (maxFitness - minFitness);
+			// generalize update to competition among arbitrary numbers of players
+			double aProb = Math.min(1.0 - error,
+					Math.max(error, (getFitnessAt(refGroup[0]) - myFitness) * inoise + shift));
+			double nProb = 1.0 - aProb;
+			cProbs[0] = aProb;
+			if (rGroupSize > 1) {
+				for (int i = 1; i < rGroupSize; i++) {
+					aProb = Math.min(1.0 - error,
+							Math.max(error, (getFitnessAt(refGroup[i]) - myFitness) * inoise + shift));
+					cProbs[i] = cProbs[i - 1] + aProb;
+					nProb *= 1.0 - aProb;
+				}
+			}
+			return nProb;
+		}
+		// not ready for unbounded accumulated payoffs... check() should catch this
+		throw new UnsupportedOperationException("cannot handle unbounded accumulated scores");
 	}
 
 	/**
