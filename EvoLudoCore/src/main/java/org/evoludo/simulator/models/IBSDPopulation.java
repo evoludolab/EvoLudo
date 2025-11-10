@@ -1411,10 +1411,8 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 
 	@Override
 	public void isConsistent() {
-		if (!isConsistent)
+		if (nIssues != 0)
 			return;
-		// assume innocence until found guilty
-		boolean passed = true;
 		double checkScores = 0.0;
 		double[] checkAccuTypeScores = new double[nTraits];
 		int[] checkTraitCount = new int[nTraits];
@@ -1434,13 +1432,13 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 					logger.warning("accounting issue: trait count of " + module.getTraitName(n) + " is "
 							+ checkTraitCount[n] + " but traitCount[" + n + "]="
 							+ traitsCount[n]);
-				passed = false;
+				nIssues += 1;
 			}
 			if (Math.abs(checkAccuTypeScores[n] - accuTypeScores[n]) > 1e-8) {
 				if (logger.isLoggable(Level.WARNING))
 					logger.warning("accounting issue: accumulated scores of trait " + module.getTraitName(n) + " is "
 							+ checkAccuTypeScores[n] + " but accuTypeScores[" + n + "]=" + accuTypeScores[n]);
-				passed = false;
+				nIssues += 1;
 			}
 			accTrait += traitsCount[n];
 			if (n == vacantIdx)
@@ -1451,19 +1449,17 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			if (logger.isLoggable(Level.WARNING))
 				logger.warning(
 						"accounting issue: sum of trait types is " + accTrait + " but nPopulation=" + nPopulation);
-			passed = false;
+			nIssues += 1;
 		}
 		if (Math.abs(checkScores - accScores) > 1e-8) {
 			if (logger.isLoggable(Level.WARNING))
 				logger.warning("accounting issue: sum of scores is " + checkScores + " but accuTypeScores add up to "
 						+ accScores + " (" + Formatter.format(accuTypeScores, 8) + ")");
-			passed = false;
+			nIssues += 1;
 		}
 		// do not yet set isConsistent to false because this prevents the test in super
 		// to run
 		super.isConsistent();
-		// super may have already set isConsistent to false; add our assesement
-		isConsistent &= passed;
 	}
 
 	@Override

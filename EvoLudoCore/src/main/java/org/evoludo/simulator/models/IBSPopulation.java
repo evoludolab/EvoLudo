@@ -3957,15 +3957,15 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			for (int n = 0; n < nPopulation; n++)
 				tags[n] = n;
 		// if flagged as inconsistent, no (further) checks are performed
-		isConsistent = consistencyCheckRequested;
+		nIssues = (consistencyCheckRequested ? 0 : -1);
 	}
 
 	/**
-	 * The flag to indicate whether the state of the IBS model is consistent.
+	 * The number of concistency issues encountered in the state of the IBS model.
 	 * 
 	 * @see #isConsistent()
 	 */
-	boolean isConsistent;
+	int nIssues;
 
 	/**
 	 * The flag to indicate whether consistency checks on the state of the IBS model
@@ -3994,176 +3994,204 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * code.
 	 */
 	public void isConsistent() {
-		if (!isConsistent || !logger.isLoggable(Level.WARNING))
+		// nIssues < 0 means consistency checks disabled
+		// nIssues > 0 means inconsistencies already found
+		if (nIssues != 0 || !logger.isLoggable(Level.WARNING))
 			return;
-		// universal consistency checks
-		for (int n = 0; n < nPopulation; n++) {
-			double scoren = getScoreAt(n);
-			if (Double.isNaN(scoren)) {
-				logger.warning("scoring issue @ " + n + ": score=" + scoren + " is NaN...");
-				isConsistent = false;
-				continue;
-			}
-			int interactionsn = getInteractionsAt(n);
-			if (isVacantAt(n)) {
-				if (scoren > 1e-12) {
-					logger.warning("scoring issue @ " + n + ": score=" + scoren + " of vacant site should be zero");
-					isConsistent = false;
-				}
-				if (interactionsn != -1) {
-					// vacant sites and static modules have an interaction count of -1
-					logger.warning("interactions issue @ " + n + ": interactions=" + interactionsn
-							+ " of vacant site should be -1");
-					isConsistent = false;
-				}
-				continue;
-			}
-			if (interactionsn == 0) {
-				if (scoren > 1e-12) {
-					logger.warning(
-							"scoring issue @ " + n + ": score=" + scoren + " of isolated site should be zero");
-					isConsistent = false;
-				}
-				continue;
-			}
-			if (scoren + 1e-12 < minScore || scoren - 1e-12 > maxScore) {
-				logger.warning(
-						"scoring issue @ " + n + ": score=" + scoren + " not in [" + minScore + ", " + maxScore
-								+ "]");
-				isConsistent = false;
-			}
-			double fitn = getFitnessAt(n);
-			if (fitn + 1e-12 < minFitness || fitn - 1e-12 > maxFitness) {
-				logger.warning(
-						"scoring issue @ " + n + ": fitness=" + fitn + " not in [" + minFitness + ", " + maxFitness
-								+ "]");
-				isConsistent = false;
-			}
-			if (Math.abs(map2fit.map(scoren) - fitn) > 1e-12) {
-				logger.warning(
-						"scoring issue @ " + n + ": score=" + scoren + " maps to " + map2fit.map(scoren)
-								+ " instead of fitness=" + fitn);
-				isConsistent = false;
-			}
-		}
+		if (module instanceof Payoffs)
+			checkConsistentFitness();
+		// TODO consistency checks for geometries & interactions
+		// interaction.isConsistent();
+		// if (!interaction.interCompSame)
+		// competition.isConsistent();
+	}
+
+	/**
+	 * Check consistency of scores and fitness values for modules that implement
+	 * Payoffs.
+	 */
+	protected void checkConsistentFitness() {
+		for (int n = 0; n < nPopulation; n++)
+			checkIndividualConsistency(n);
+
 		if (adjustScores) {
-			// recalculate scores/fitness
-			if (hasLookupTable) {
-				double[] typeScoresStore = typeScores;
-				double[] typeFitnessStore = ArrayMath.clone(typeFitness);
-				Arrays.fill(typeFitness, Double.MAX_VALUE);
-				double sumFitnessStore = sumFitness;
-				if (!module.isStatic()) {
-					// don't destroy static scores
-					typeScoresStore = ArrayMath.clone(typeScores);
-					Arrays.fill(typeScores, Double.MAX_VALUE);
-					sumFitness = 0.0;
-					engine.getModel().update(); // initialize typeScores/typeFitness
-				}
-				for (int n = 0; n < nTraits; n++) {
-					if (n == vacantIdx && typeScores[n] != typeScoresStore[n]) {
-						logger.warning("scoring issue for vacant trait " + n + ": score=" + typeScoresStore[n]
-								+ " instead of " + typeScores[n] + " (NaN)");
-						isConsistent = false;
-					}
-					if (Math.abs(typeScores[n] - typeScoresStore[n]) > 1e-12) {
-						logger.warning(
-								"scoring issue for trait " + n + ": score=" + typeScoresStore[n] + " instead of "
-										+ typeScores[n]);
-						isConsistent = false;
-					}
-					typeFitness[n] = map2fit.map(typeScores[n]);
-					if (Math.abs(typeFitness[n] - typeFitnessStore[n]) > 1e-12) {
-						logger.warning(
-								"fitness issue for trait " + n + ": fitness=" + typeFitnessStore[n] + " instead of "
-										+ typeFitness[n]);
-						isConsistent = false;
-					}
-					if (Math.abs(map2fit.map(typeScores[n]) - typeFitness[n]) > 1e-12) {
-						logger.warning(
-								"scoring issue for trait " + n + ": score=" + typeScores[n] + " maps to "
-										+ map2fit.map(typeScores[n])
-										+ " instead of fitness=" + typeFitness[n]);
-						isConsistent = false;
-					}
-				}
-				if (Math.abs(sumFitness - sumFitnessStore) > 1e-12) {
-					logger.warning("accounting issue: sum of fitness is " + sumFitnessStore
-							+ " instead of recalculated fitness " + sumFitness);
-					isConsistent = false;
-				}
-				double checkFitness = 0.0;
-				for (int n = 0; n < nPopulation; n++)
-					checkFitness += getFitnessAt(n);
-				if (Math.abs(sumFitness - checkFitness) > Combinatorics.pow(10,
-						-11 + Functions.magnitude(sumFitness))) {
-					logger.warning(
-							"accounting issue: fitness sums to " + checkFitness + " instead of sumFitness=" + sumFitness
-									+
-									" (delta=" + Math.abs(sumFitness - checkFitness) + ", max="
-									+ Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness)) + ")");
-					isConsistent = false;
-				}
-				// restore data
-				typeScores = typeScoresStore;
-				typeFitness = typeFitnessStore;
-				sumFitness = sumFitnessStore;
-			} else {
-				// no lookup tables
-				double[] scoresStore = scores;
-				scores = new double[nPopulation];
-				double[] fitnessStore = fitness;
-				fitness = new double[nPopulation];
-				double sumFitnessStore = sumFitness;
-				engine.getModel().update();
-				for (int n = 0; n < nPopulation; n++) {
-					if (Math.abs(scores[n] - scoresStore[n]) > 1e-12) {
-						logger.warning(
-								"scoring issue @ " + n + ": score=" + scoresStore[n] + " instead of " + scores[n]);
-						isConsistent = false;
-					}
-					if (Math.abs(fitness[n] - fitnessStore[n]) > 1e-12) {
-						logger.warning(
-								"fitness issue @ " + n + ": fitness=" + fitnessStore[n] + " instead of " + fitness[n]);
-						isConsistent = false;
-					}
-					if (Math.abs(map2fit.map(scores[n]) - fitness[n]) > 1e-12) {
-						logger.warning(
-								"scoring issue @ " + n + ": score=" + scores[n] + " maps to " + map2fit.map(scores[n])
-										+ " instead of fitness=" + fitness[n]);
-						isConsistent = false;
-					}
-				}
-				if (Math.abs(sumFitness - sumFitnessStore) > 1e-12) {
-					logger.warning("accounting issue: sum of fitness is " + sumFitnessStore
-							+ " instead of recalculated fitness " + sumFitness);
-					isConsistent = false;
-				}
-				double checkFitness = ArrayMath.norm(fitness);
-				if (Math.abs(sumFitness - checkFitness) > 1e-12) {
-					logger.warning(
-							"accounting issue: sum of fitness is " + checkFitness + " instead of sumFitness="
-									+ sumFitness);
-					isConsistent = false;
-				}
-				// restore data
-				scores = scoresStore;
-				fitness = fitnessStore;
-				sumFitness = sumFitnessStore;
-			}
+			if (hasLookupTable)
+				checkLookupTableConsistency();
+			else
+				checkAdjustScoresConsistency();
+
 		} else {
-			// no adjust scores
-			double checkFitness = 0.0;
-			// fitness array may not exist
-			for (int n = 0; n < nPopulation; n++)
-				checkFitness += getFitnessAt(n);
-			if (Math.abs(checkFitness - sumFitness) > 1e-8) {
-				logger.warning("accounting issue: sum of fitness is " + checkFitness + " but sumFitness=" + sumFitness);
-				isConsistent = false;
-			}
+			checkNoAdjustScoresConsistency();
 		}
-		if (!isConsistent)
-			logger.warning("inconsistency found @ " + engine.getModel().getUpdates());
+
+		if (nIssues > 0)
+			logger.warning(nIssues + " inconsistencies found @ " + engine.getModel().getUpdates());
+	}
+
+	/**
+	 * Check consistency of scores for a single individual.
+	 * 
+	 * @param n the index of the individual
+	 */
+	private void checkIndividualConsistency(int n) {
+		double scoren = getScoreAt(n);
+		if (Double.isNaN(scoren))
+			logScoringIssue(n, scoren, "is NaN...");
+
+		if (isVacantAt(n) && scoren > 1e-12)
+			logScoringIssue(n, scoren, "of vacant site should be zero");
+		// check score range
+		if (scoren + 1e-12 < minScore || scoren - 1e-12 > maxScore)
+			logScoringIssue(n, scoren, "not in [" + minScore + ", " + maxScore + "]");
+		// check fitness
+		double fitn = getFitnessAt(n);
+		if (fitn + 1e-12 < minFitness || fitn - 1e-12 > maxFitness)
+			logScoringIssue(n, fitn, "not in [" + minFitness + ", " + maxFitness + "]");
+		if (Math.abs(map2fit.map(scoren) - fitn) > 1e-12)
+			logMapIssue(n, scoren, fitn);
+	}
+
+	/**
+	 * Check consistency of scores when using lookup tables.
+	 */
+	private void checkLookupTableConsistency() {
+		double[] typeScoresStore = typeScores;
+		double[] typeFitnessStore = ArrayMath.clone(typeFitness);
+		Arrays.fill(typeFitness, Double.MAX_VALUE);
+		double sumFitnessStore = sumFitness;
+
+		if (!module.isStatic()) {
+			typeScoresStore = ArrayMath.clone(typeScores);
+			Arrays.fill(typeScores, Double.MAX_VALUE);
+			sumFitness = 0.0;
+			engine.getModel().update();
+		}
+
+		checkTraitScores(typeScoresStore, typeFitnessStore);
+		checkFitnessSum(sumFitnessStore);
+
+		// restore data
+		typeScores = typeScoresStore;
+		typeFitness = typeFitnessStore;
+		sumFitness = sumFitnessStore;
+	}
+
+	/**
+	 * Check consistency of scores for all traits.
+	 * 
+	 * @param typeScoresStore  the stored type scores
+	 * @param typeFitnessStore the stored type fitness
+	 */
+	private void checkTraitScores(double[] typeScoresStore, double[] typeFitnessStore) {
+		for (int n = 0; n < nTraits; n++) {
+			if (n == vacantIdx && typeScores[n] != typeScoresStore[n])
+				logScoringIssue(n, typeScoresStore[n], "instead of " + typeScores[n] + " (NaN)");
+			if (Math.abs(typeScores[n] - typeScoresStore[n]) > 1e-12)
+				logScoringIssue(n, typeScoresStore[n], typeScores[n]);
+
+			typeFitness[n] = map2fit.map(typeScores[n]);
+			if (Math.abs(typeFitness[n] - typeFitnessStore[n]) > 1e-12)
+				logFitnessIssue(n, typeFitnessStore[n], typeFitness[n]);
+			if (Math.abs(map2fit.map(typeScores[n]) - typeFitness[n]) > 1e-12)
+				logMapIssue(n, typeScores[n], typeFitness[n]);
+		}
+	}
+
+	/**
+	 * Check consistency of total fitness.
+	 * 
+	 * @param sumFitnessStore the stored fitness sum
+	 */
+	private void checkFitnessSum(double sumFitnessStore) {
+		if (Math.abs(sumFitness - sumFitnessStore) > 1e-12)
+			logAccountingIssue(sumFitnessStore, sumFitness);
+
+		double checkFitness = 0.0;
+		for (int n = 0; n < nPopulation; n++)
+			checkFitness += getFitnessAt(n);
+
+		if (Math.abs(sumFitness - checkFitness) > Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness)))
+			logAccountingIssue(sumFitnessStore, sumFitness, "(delta=" + Math.abs(sumFitness - checkFitness) + ", max="
+					+ Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness)) + ")");
+	}
+
+	/**
+	 * Check consistency when not using lookup tables.
+	 */
+	private void checkAdjustScoresConsistency() {
+		double[] scoresStore = scores;
+		scores = new double[nPopulation];
+		double[] fitnessStore = fitness;
+		fitness = new double[nPopulation];
+		double sumFitnessStore = sumFitness;
+
+		engine.getModel().update();
+
+		for (int n = 0; n < nPopulation; n++) {
+			if (Math.abs(scores[n] - scoresStore[n]) > 1e-12)
+				logScoringIssue(n, scoresStore[n], scores[n]);
+			if (Math.abs(fitness[n] - fitnessStore[n]) > 1e-12)
+				logFitnessIssue(n, fitnessStore[n], fitness[n]);
+			if (Math.abs(map2fit.map(scores[n]) - fitness[n]) > 1e-12)
+				logMapIssue(n, scores[n], fitness[n]);
+		}
+
+		if (Math.abs(sumFitness - sumFitnessStore) > 1e-12)
+			logAccountingIssue(sumFitnessStore, sumFitness);
+
+		double checkFitness = ArrayMath.norm(fitness);
+		if (Math.abs(sumFitness - checkFitness) > 1e-12)
+			logAccountingIssue(checkFitness, sumFitness);
+
+		// restore data
+		scores = scoresStore;
+		fitness = fitnessStore;
+		sumFitness = sumFitnessStore;
+	}
+
+	/**
+	 * Check consistency when scores are not adjusted.
+	 */
+	private void checkNoAdjustScoresConsistency() {
+		double checkFitness = 0.0;
+		for (int n = 0; n < nPopulation; n++)
+			checkFitness += getFitnessAt(n);
+		if (Math.abs(checkFitness - sumFitness) > 1e-8)
+			logAccountingIssue(checkFitness, sumFitness);
+	}
+
+	private void logScoringIssue(int idx, double actual, String issue) {
+		if (logger.isLoggable(Level.WARNING))
+			logger.warning("score issue @ " + idx + ": score=" + actual + " " + issue);
+		nIssues++;
+	}
+
+	private void logScoringIssue(int idx, double actual, double expected) {
+		logScoringIssue(idx, actual, "instead of " + expected);
+	}
+
+	private void logMapIssue(int idx, double actual, double expected) {
+		if (logger.isLoggable(Level.WARNING))
+			logger.warning("map issue @ " + idx + ": score=" + actual + " maps to " + map2fit.map(actual)
+					+ " instead of " + expected);
+		nIssues++;
+	}
+
+	private void logFitnessIssue(int idx, double actual, double expected) {
+		if (logger.isLoggable(Level.WARNING))
+			logger.warning("fit issue @ " + idx + ": fitness=" + actual + " instead of " + expected);
+		nIssues++;
+	}
+
+	private void logAccountingIssue(double actual, double expected) {
+		logAccountingIssue(actual, expected, "");
+	}
+
+	private void logAccountingIssue(double actual, double expected, String issue) {
+		if (logger.isLoggable(Level.WARNING))
+			logger.warning(
+					"accounting issue: sum of fitness is " + actual + " instead of fitness " + expected + " " + issue);
+		nIssues++;
 	}
 
 	/**
@@ -4381,10 +4409,11 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			return "-";
 		// for strong selection fitness can be huge - use scientific notation if >10^7
 		double fiti = getFitnessAt(idx);
-		return fiti > 1e7
-				? (pretty ? (Formatter.formatSci(fiti, 4).replace("E", "⋅10<sup>") + "</sup>")
-						: Formatter.formatSci(fiti, 4))
-				: Formatter.format(fiti, 4);
+		if (fiti <= 1e7)
+			return Formatter.format(fiti, 4);
+		if (pretty)
+			return Formatter.formatSci(fiti, 4).replace("E", "⋅10<sup>") + "</sup>";
+		return Formatter.formatSci(fiti, 4);
 	}
 
 	/**
@@ -4866,17 +4895,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
-	 * Draw a uniformly distributed random integer number from the closed interval
-	 * {@code [0, n]}.
-	 *
-	 * @param n the upper limit of interval (inclusive)
-	 * @return the random integer number in <code>[0, n]</code>.
-	 */
-	public int random0N(int n) {
-		return rng.random0N(n);
-	}
-
-	/**
 	 * Draw a uniformly distributed random integer number from the semi-closed
 	 * interval {@code [0, n)}.
 	 *
@@ -4895,18 +4913,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	public double random01() {
 		return rng.random01();
-	}
-
-	/**
-	 * Draw a uniformly distributed random {@code double} from the semi-closed
-	 * interval {@code [0, 1)} with maximal 53bit resolution.
-	 * <p>
-	 * <strong>Note:</strong> takes twice as long as regular precision.
-	 *
-	 * @return the random number in <code>[0, 1)</code>.
-	 */
-	public double random01d() {
-		return rng.random01d();
 	}
 
 	/**
