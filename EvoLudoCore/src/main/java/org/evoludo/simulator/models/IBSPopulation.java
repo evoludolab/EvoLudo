@@ -875,6 +875,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (!isVacantAt(n) && --pick < 0)
 				return n;
 		}
+		// should not get here, does not return control
 		return pickFailed();
 	}
 
@@ -898,6 +899,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (!isVacantAt(n) && --pick < 0)
 				return n;
 		}
+		// should not get here, does not return control
 		return pickFailed();
 	}
 
@@ -914,6 +916,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (!isVacantAt(n) && --pick < 0)
 				return n;
 		}
+		// should not get here, does not return control
 		return pickFailed();
 	}
 
@@ -937,6 +940,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (!isVacantAt(n) && --pick < 0)
 				return n;
 		}
+		// should not get here, does not return control
 		return pickFailed();
 	}
 
@@ -958,6 +962,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	private int pickFailed(double remainder) {
 		debugScores(remainder);
+		// does not return control
 		return pickFailed();
 	}
 
@@ -1054,6 +1059,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		}
 		if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
 			return nPopulation - 1;
+		// should not get here, does not return control
 		return pickFailed(hit);
 	}
 
@@ -1098,6 +1104,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		}
 		if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
 			return nPopulation - 1;
+		// should not get here, does not return control
 		return pickFailed(hit);
 	}
 
@@ -1161,6 +1168,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (hit < 1e-6 && getFitnessAt(nPopulation - 1) > 1e-6)
 				return nPopulation - 1;
 		}
+		// should not get here, does not return control
 		return pickFailed(hit);
 	}
 
@@ -1241,6 +1249,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (hit <= 0.0)
 				return n;
 		}
+		// should not get here, does not return control
 		return pickFailed(hit);
 	}
 
@@ -1407,7 +1416,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (hit < 0.0)
 				return debugModels[n];
 		}
-		// should not get here
+		// should not get here, does not return control
 		return pickFailed(hit);
 	}
 
@@ -1472,7 +1481,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			if (hit < 0.0)
 				return neigh;
 		}
-		// should not get here
+		// should not get here, does not return control
 		return pickFailed(hit);
 	}
 
@@ -3133,53 +3142,13 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			return true;
 		}
 
-		double myFitness = getFitnessAt(me);
-		double aProb;
 		double nProb;
-		double norm;
-		double noise = playerUpdate.getNoise();
-		double error = playerUpdate.getError();
 		// generalize update to competition among arbitrary numbers of players
-		if (noise <= 0.0) { // zero noise
-			double aDiff = getFitnessAt(refGroup[0]) - myFitness;
-			if (aDiff > 0.0)
-				aProb = 1.0 - error;
-			else
-				aProb = (aDiff < 0.0 ? error : 0.5);
-			norm = aProb;
-			nProb = 1.0 - aProb;
-			if (rGroupSize > 1) {
-				cProbs[0] = aProb;
-				for (int i = 1; i < rGroupSize; i++) {
-					aDiff = getFitnessAt(refGroup[i]) - myFitness;
-					if (aDiff > 0)
-						aProb = 1.0 - error;
-					else
-						aProb = (aDiff < 0.0 ? error : 0.5);
-					cProbs[i] = cProbs[i - 1] + aProb;
-					nProb *= 1.0 - aProb;
-					norm += aProb;
-				}
-			}
-		} else { // some noise
-			double inoise = 1.0 / noise;
-			// the increased accuracy of Math.expm1(x) for x near 0 is not so important but
-			// hopefully this also means the accuracy is more symmetrical for x and 1/x
-			aProb = Math.min(1.0 - error, Math.max(error,
-					1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[0]) - myFitness) * inoise))));
-			norm = aProb;
-			nProb = 1.0 - aProb;
-			if (rGroupSize > 1) {
-				cProbs[0] = aProb;
-				for (int i = 1; i < rGroupSize; i++) {
-					aProb = Math.min(1.0 - error, Math.max(error,
-							1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[i]) - myFitness) * inoise))));
-					cProbs[i] = cProbs[i - 1] + aProb;
-					nProb *= 1.0 - aProb;
-					norm += aProb;
-				}
-			}
-		}
+		if (playerUpdate.getNoise() <= 0.0) // zero noise
+			nProb = updateThermalNoNoise(me, refGroup, rGroupSize);
+		else // some noise
+			nProb = updateThermalNoise(me, refGroup, rGroupSize);
+		double norm = cProbs[rGroupSize - 1];
 		if (norm <= 0.0)
 			return false;
 
@@ -3193,27 +3162,110 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			return true;
 		}
 
-		norm = (1.0 - nProb) / norm;
-		for (int i = 0; i < rGroupSize; i++) {
+		for (int i = 1; i < rGroupSize; i++) {
 			// normalize cumulative probabilities only if and when needed
 			if (choice < cProbs[i] * norm) {
 				updateFromModelAt(me, refGroup[i]);
 				return true;
 			}
 		}
-		// should not get here!
-		if (logger.isLoggable(Level.FINE)) {
-			StringBuilder sb = new StringBuilder();
-			sb.append("Report: myScore=").append(myFitness)
-					.append(", nProb=").append(nProb)
-					.append(", norm=").append(norm)
-					.append(", choice=").append(choice)
-					.append("\nCumulative probabilities: ");
-			for (int i = 0; i < rGroupSize; i++)
-				sb.append(cProbs[i]).append('\t');
-			logger.fine(sb.toString());
+		// should not get here! doesn't return
+		return updateFailed(me, rGroupSize, nProb, norm, choice);
+	}
+
+	/**
+	 * Thermal update without noise.
+	 * 
+	 * @param me         the index of the focal individual
+	 * @param refGroup   the group of reference individuals
+	 * @param rGroupSize the number of reference individuals
+	 * @return the probability of no adoption
+	 */
+	private double updateThermalNoNoise(int me, int[] refGroup, int rGroupSize) {
+		double aProb;
+		double error = playerUpdate.getError();
+		double myFitness = getFitnessAt(me);
+		double aDiff = getFitnessAt(refGroup[0]) - myFitness;
+		if (aDiff > 0.0)
+			aProb = 1.0 - error;
+		else
+			aProb = (aDiff < 0.0 ? error : 0.5);
+		double nProb = 1.0 - aProb;
+		cProbs[0] = aProb;
+		if (rGroupSize > 1) {
+			for (int i = 1; i < rGroupSize; i++) {
+				aDiff = getFitnessAt(refGroup[i]) - myFitness;
+				if (aDiff > 0)
+					aProb = 1.0 - error;
+				else
+					aProb = (aDiff < 0.0 ? error : 0.5);
+				cProbs[i] = cProbs[i - 1] + aProb;
+				nProb *= 1.0 - aProb;
+			}
 		}
-		throw new IllegalStateException("Problem in updateThermal()...");
+		return nProb;
+	}
+
+	/**
+	 * Thermal update with noise.
+	 * 
+	 * @param me         the index of the focal individual
+	 * @param refGroup   the group of reference individuals
+	 * @param rGroupSize the number of reference individuals
+	 * @return the probability of no adoption
+	 */
+	private double updateThermalNoise(int me, int[] refGroup, int rGroupSize) {
+		double noise = playerUpdate.getNoise();
+		double error = playerUpdate.getError();
+		double inoise = 1.0 / noise;
+		double myFitness = getFitnessAt(me);
+		// the increased accuracy of Math.expm1(x) for x near 0 is not so important but
+		// hopefully this also means the accuracy is more symmetrical for x and 1/x
+		double aProb = Math.min(1.0 - error, Math.max(error,
+				1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[0]) - myFitness) * inoise))));
+		double nProb = 1.0 - aProb;
+		cProbs[0] = aProb;
+		if (rGroupSize > 1) {
+			for (int i = 1; i < rGroupSize; i++) {
+				aProb = Math.min(1.0 - error, Math.max(error,
+						1.0 / (2.0 + Math.expm1(-(getFitnessAt(refGroup[i]) - myFitness) * inoise))));
+				cProbs[i] = cProbs[i - 1] + aProb;
+				nProb *= 1.0 - aProb;
+			}
+		}
+		return nProb;
+	}
+
+	/**
+	 * Handle failed pick and report details about failure.
+	 * 
+	 * @return never returns control
+	 */
+	private boolean updateFailed(int me, int rGroupSize, double nProb, double norm, double choice) {
+		debugUpdate(me, rGroupSize, nProb, norm, choice);
+		engine.fatal("failed to pick individual...");
+		// does not get here,
+		return false;
+	}
+
+	/**
+	 * Log report if updating failed to shed better light on what might be the root
+	 * cause for the failure.
+	 * 
+	 * @param me the index of the focal individual
+	 */
+	protected void debugUpdate(int me, int rGroupSize, double nProb, double norm, double choice) {
+		if (!logger.isLoggable(Level.FINE))
+			return;
+		StringBuilder sb = new StringBuilder();
+		sb.append("Report: myScore=").append(getFitnessAt(me))
+				.append(", nProb=").append(nProb)
+				.append(", norm=").append(norm)
+				.append(", choice=").append(choice)
+				.append("\nCumulative probabilities: ");
+		for (int i = 0; i < rGroupSize; i++)
+			sb.append(cProbs[i]).append('\t');
+		logger.fine(sb.toString());
 	}
 
 	/**
