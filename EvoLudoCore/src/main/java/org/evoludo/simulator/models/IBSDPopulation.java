@@ -215,65 +215,69 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		}
 		// for two traits, we need to consider only the nodes of the rarer type but
 		// both in- as well as out-links
-		if (nTraits == 2) {
-			int rareType = (traitsCount[1] < traitsCount[0] ? 1 : 0);
+		if (nTraits == 2)
+			optimizeMoran2Traits();
+		else
+			optimizeMoranNTraits();
+	}
 
-			// create list of active links
-			// birth-death: keep track of all nodes that have different downstream neighbors
-			int nact = 0;
-			double totscore = 0.0;
-			for (int n = 0; n < nPopulation; n++) {
-				int type = getTraitAt(n);
-				if (type != rareType)
-					continue;
-				// check out-neighbors
-				int[] neighs = competition.out[n];
-				int no = competition.kout[n];
-				for (int i = 0; i < no; i++) {
-					int aneigh = neighs[i];
-					if (getTraitAt(aneigh) == type)
-						continue;
-					activeLinks[nact].source = n;
-					activeLinks[nact].destination = aneigh;
-					double ascore = getFitnessAt(n) / no;
-					activeLinks[nact].fitness = ascore;
-					totscore += ascore;
-					nact++;
-				}
-				// check in-neighbors
-				neighs = competition.in[n];
-				int ni = competition.kin[n];
-				for (int i = 0; i < ni; i++) {
-					int aneigh = neighs[i];
-					if (getTraitAt(aneigh) == type)
-						continue;
-					activeLinks[nact].source = aneigh;
-					activeLinks[nact].destination = n;
-					double ascore = getFitnessAt(aneigh) / (competition.kout[aneigh]);
-					activeLinks[nact].fitness = ascore;
-					totscore += ascore;
-					nact++;
-				}
-			}
-			if (nact == 0)
-				return; // nothing to do!
-
-			double hit = random01() * totscore;
-			for (int i = 0; i < nact; i++) {
-				hit -= activeLinks[i].fitness;
-				if (hit <= 0.0) {
-					debugModel = activeLinks[i].destination;
-					debugFocal = activeLinks[i].source;
-					maybeMutateMoran(debugFocal, debugModel);
-					break;
-				}
-			}
-			return;
-		}
-
-		// default, more than two traits - check all nodes
+	/**
+	 * Optimized Moran process for two traits: a significant speed boost is achieved
+	 * when restricting events along links that potentially result in an actual
+	 * change
+	 * of the population composition, i.e. by focussing on those links that connect
+	 * individuals of different traits. This destroys the time scale.
+	 */
+	public void optimizeMoran2Traits() {
+		int rareType = (traitsCount[1] < traitsCount[0] ? 1 : 0);
 		// create list of active links
 		// birth-death: keep track of all nodes that have different downstream neighbors
+		int nact = 0;
+		double totscore = 0.0;
+		for (int n = 0; n < nPopulation; n++) {
+			int type = getTraitAt(n);
+			if (type != rareType)
+				continue;
+			// check out-neighbors
+			int[] neighs = competition.out[n];
+			int no = competition.kout[n];
+			for (int i = 0; i < no; i++) {
+				int aneigh = neighs[i];
+				if (getTraitAt(aneigh) == type)
+					continue;
+				activeLinks[nact].source = n;
+				activeLinks[nact].destination = aneigh;
+				double ascore = getFitnessAt(n) / no;
+				activeLinks[nact].fitness = ascore;
+				totscore += ascore;
+				nact++;
+			}
+			// check in-neighbors
+			neighs = competition.in[n];
+			int ni = competition.kin[n];
+			for (int i = 0; i < ni; i++) {
+				int aneigh = neighs[i];
+				if (getTraitAt(aneigh) == type)
+					continue;
+				activeLinks[nact].source = aneigh;
+				activeLinks[nact].destination = n;
+				double ascore = getFitnessAt(aneigh) / (competition.kout[aneigh]);
+				activeLinks[nact].fitness = ascore;
+				totscore += ascore;
+				nact++;
+			}
+		}
+		pickLinkMoran(totscore, nact);
+	}
+
+	/**
+	 * Optimized Moran process for more than two traits: a significant speed boost
+	 * is
+	 * achieved when restricting events along links that potentially result in an
+	 * actual change of the population composition, i.e. by focussing on those links
+	 * that connect individuals of different traits. This destroys the time scale.
+	 */
+	public void optimizeMoranNTraits() {
 		int nact = 0;
 		double totscore = 0.0;
 		for (int n = 0; n < nPopulation; n++) {
@@ -292,6 +296,10 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				nact++;
 			}
 		}
+		pickLinkMoran(totscore, nact);
+	}
+
+	private void pickLinkMoran(double totscore, int nact) {
 		if (nact == 0)
 			return; // nothing to do!
 

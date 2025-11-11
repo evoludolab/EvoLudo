@@ -4699,19 +4699,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		return false;
 	}
 
-	// private long linkCount(Geometry geom) {
-	// long outcount = 0, incount = 0;
-	// for( int n=0; n<nPopulation; n++ ) {
-	// outcount += geom.kout[n];
-	// incount += geom.kin[n];
-	// }
-	// if( outcount != incount ) {
-	// logger.severe("ALARM: some links point to nirvana!? ("+incount+",
-	// "+outcount+")");
-	// }
-	// return outcount;
-	// }
-
 	/**
 	 * Called from GUI if node/individual with index {@code idx} received a mouse
 	 * click or tap.
