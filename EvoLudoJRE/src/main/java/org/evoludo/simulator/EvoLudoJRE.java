@@ -766,6 +766,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				fireModelChanged();
 			}
 			fireModelStopped();
+			fireModelSample(activeModel.getFixationData().mutantNode >= 0);
 			fix = activeModel.getFixationData();
 		} while (fix.mutantNode < 0);
 		return fix;
