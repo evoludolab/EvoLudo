@@ -565,6 +565,7 @@ public abstract class Model implements CLOProvider {
 	 * @see MilestoneListener#modelUnloaded()
 	 */
 	public void unload() {
+		resetStatisticsSample();
 		rng = null;
 		species = null;
 	}
