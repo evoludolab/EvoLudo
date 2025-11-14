@@ -1576,7 +1576,7 @@ public class ODE extends Model implements DModel {
 		 * 
 		 * @see SDE
 		 */
-		MUTANT("mutant", "single mutant");
+		MUTANT("mutant", "single mutant, <m,r[,v]>");
 
 		/**
 		 * Key of initialization type. Used when parsing command line options.
@@ -1663,19 +1663,40 @@ public class ODE extends Model implements DModel {
 			int nTraits = pop.getNTraits();
 			switch (itype) {
 				case MUTANT:
-					// SDE models only (no vacant sites)
-					// initargs contains the index of the resident and mutant traits
-					int mutantType = (int) initargs[0];
-					int len = initargs.length;
-					int residentType;
-					if (len > 1)
-						residentType = (int) initargs[1];
-					else
-						residentType = (mutantType + 1) % nTraits;
+					int mutantType;
+					int residentType = -1;
+					int vacantType = pop.getVacantIdx();
+					double vacantFreq = 0.0;
+					switch (initargs.length) {
+						case 3:
+							// vacant frequency
+							if (vacantType < 0) {
+								parseOk = false;
+							} else {
+								vacantFreq = Math.min(Math.max(initargs[2], 0.0), 1.0);
+							}
+							//$FALL-THROUGH$
+						case 2:
+							residentType = (int) initargs[1];
+							//$FALL-THROUGH$
+						case 1:
+							mutantType = (int) initargs[0];
+							if (residentType < 0)
+								residentType = (mutantType + 1) % nTraits;
+							break;
+						default:
+							parseOk = false;
+							break species;
+					}
 					// set all initial frequencies to zero
 					Arrays.fill(y0, start, start + nTraits, 0.0);
-					y0[mutantType] = 1.0 / pop.getNPopulation();
-					y0[residentType] = 1.0 - y0[mutantType];
+					y0[start + mutantType] = 1.0 / pop.getNPopulation();
+					if (vacantType >= 0) {
+						y0[start + vacantType] = vacantFreq;
+						y0[start + residentType] = Math.max(1.0 - vacantFreq - y0[start + mutantType], 0.0);
+					} else {
+						y0[start + residentType] = 1.0 - y0[start + mutantType];
+					}
 					break;
 				case DENSITY:
 				case FREQUENCY:
@@ -1729,12 +1750,24 @@ public class ODE extends Model implements DModel {
 	 * @see PDE.InitType
 	 */
 	public final CLOption cloInit = new CLOption("init", InitType.UNIFORM.getKey(), Category.Model,
-			"--init <t>      type of initial configuration", new CLODelegate() {
+			null, new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					// parsing must be 'outsourced' to ODE class to enable
 					// PDE models to override it and do their own initialization.
 					return ODE.this.parse(arg);
+				}
+
+				@Override
+				public String getDescription() {
+					String descr = "--init <t>      type of initial configuration:\n" + cloInit.getDescriptionKey()
+							+ "\n                with r, m indices of resident, mutant traits";
+					boolean noVacant = false;
+					for (Module<?> mod : species)
+						noVacant |= mod.getVacantIdx() < 0;
+					if (noVacant)
+						return descr.replace("[,v]", "");
+					return descr + "\n                and v frequency of vacant sites";
 				}
 			});
 
