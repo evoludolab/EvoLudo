@@ -164,31 +164,32 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	}
 
 	@Override
-	protected void allocateGraphs() {
+	protected boolean allocateGraphs() {
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		int nGraphs = species.size();
-		if (graphs.size() != nGraphs) {
-			destroyGraphs();
-			for (Module<?> module : species) {
-				PopGraph2D graph = new PopGraph2D(this, module);
-				graph.setDebugEnabled(false);
-				wrapper.add(graph);
-				graphs.add(graph);
-				// even if nGraphs did not change, the geometries associated with the graphs
-				// still need to be updated
-				graph.setGeometry(createGeometry(module.getNTraits()));
-			}
-			gRows = species.size();
-			if (gRows * gCols == 2) {
-				// always arrange horizontally if only two graphs
-				gRows = 1;
-				gCols = 2;
-			}
-			int width = 100 / gCols;
-			int height = 100 / gRows;
-			for (PopGraph2D graph : graphs)
-				graph.setSize(width + "%", height + "%");
+		if (graphs.size() == nGraphs)
+			return false;
+		destroyGraphs();
+		for (Module<?> module : species) {
+			PopGraph2D graph = new PopGraph2D(this, module);
+			graph.setDebugEnabled(false);
+			wrapper.add(graph);
+			graphs.add(graph);
+			// even if nGraphs did not change, the geometries associated with the graphs
+			// still need to be updated
+			graph.setGeometry(createGeometry(module.getNTraits()));
 		}
+		gRows = species.size();
+		if (gRows * gCols == 2) {
+			// always arrange horizontally if only two graphs
+			gRows = 1;
+			gCols = 2;
+		}
+		int width = 100 / gCols;
+		int height = 100 / gRows;
+		for (PopGraph2D graph : graphs)
+			graph.setSize(width + "%", height + "%");
+		return true;
 	}
 
 	@Override

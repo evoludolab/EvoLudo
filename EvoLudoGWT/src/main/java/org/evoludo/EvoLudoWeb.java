@@ -1629,6 +1629,11 @@ public class EvoLudoWeb extends Composite
 	 * Helper method to update the views after the command line options have been
 	 * applied. Ensures that all views are loaded, the correct sizes applied and the
 	 * content reset.
+	 * <p>
+	 * <strong>Note:</strong> many views need to know their size to adjust, for
+	 * exmple, buffer sizes or data storage for statistics. However, only views that
+	 * have been added to the DOM have valid sizes. For this reason the dimensions
+	 * of the active view are passed to all other views.
 	 */
 	private void loadViews() {
 		// set of available views may have changed (e.g. statistics)
@@ -1636,7 +1641,8 @@ public class EvoLudoWeb extends Composite
 		int height = activeView.getOffsetHeight();
 		for (AbstractView<?> view : activeViews.values()) {
 			boolean loaded = view.load();
-			view.setBounds(width, height);
+			if (view != activeView)
+				view.setBounds(width, height);
 			if (loaded)
 				view.reset(false);
 		}

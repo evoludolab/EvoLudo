@@ -253,10 +253,12 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * {@code calcBounds(int, int)} is triggered through {@code setBounds(int, int)}
 	 * to properly calculate the layout.
 	 * 
+	 * @return {@code true} if graphs were (re)allocated
+	 * 
 	 * @see #load()
 	 * @see #setBounds(int, int)
 	 */
-	protected abstract void allocateGraphs();
+	protected abstract boolean allocateGraphs();
 
 	/**
 	 * Destroy all graphs in this view and free up resources.
@@ -391,7 +393,12 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	public void reset(boolean hard) {
 		timestamp = -Double.MAX_VALUE;
 		updatetime = -1.0;
-		allocateGraphs();
+		if (allocateGraphs()) {
+			int with = getOffsetWidth();
+			int height = getOffsetHeight();
+			if (with > 0 && height > 0)
+				setBounds(with, height);
+		}
 	}
 
 	@Override

@@ -266,21 +266,22 @@ public class Histogram extends AbstractView<HistoGraph> {
 	}
 
 	@Override
-	protected void allocateGraphs() {
+	protected boolean allocateGraphs() {
 		int nGraphs = countGraphs();
-		if (graphs.size() != nGraphs) {
-			destroyGraphs();
-			degreeProcessed = false;
-			int nXLabels = createGraphs();
-			// arrange histograms vertically
-			gRows = nGraphs;
-			int width = 100 / gCols;
-			int xaxisdeco = 5; // estimate of height of x-axis decorations in %
-								// unfortunately GWT chokes on CSS calc()
-			int height = (100 - nXLabels * xaxisdeco) / gRows;
-			for (HistoGraph graph : graphs)
-				graph.setSize(width + "%", height + (graph.getStyle().showXLabel ? xaxisdeco : 0) + "%");
-		}
+		if (graphs.size() == nGraphs)
+			return false;
+		destroyGraphs();
+		degreeProcessed = false;
+		int nXLabels = createGraphs();
+		// arrange histograms vertically
+		gRows = nGraphs;
+		int width = 100 / gCols;
+		int xaxisdeco = 5; // estimate of height of x-axis decorations in %
+							// unfortunately GWT chokes on CSS calc()
+		int height = (100 - nXLabels * xaxisdeco) / gRows;
+		for (HistoGraph graph : graphs)
+			graph.setSize(width + "%", height + (graph.getStyle().showXLabel ? xaxisdeco : 0) + "%");
+		return true;
 	}
 
 	/**
@@ -458,17 +459,10 @@ public class Histogram extends AbstractView<HistoGraph> {
 			nGraphs--;
 			skip = vacant;
 		}
-		// int bottomPaneIdx = nTraits - 1;
-		// // no graph for vacant trait if monostop
-		// int skip = module.getVacantIdx();
-		// if (skip >= 0 && module instanceof Discrete && ((Discrete)
-		// module).getMonoStop() && skip == bottomPaneIdx)
-		// bottomPaneIdx--;
 		for (int n = 0; n < nTraits; n++) {
 			if (n == skip)
 				continue;
 			HistoGraph graph = new HistoGraph(this, module, n);
-			// boolean bottomPane = (n == bottomPaneIdx);
 			graph.setNormalized(nTraits);
 			wrapper.add(graph);
 			graphs.add(graph);
@@ -497,17 +491,10 @@ public class Histogram extends AbstractView<HistoGraph> {
 			nGraphs--;
 			skip = vacant;
 		}
-		// int bottomPaneIdx = nTraits;
-		// // no graph for vacant trait if monostop
-		// int skip = module.getVacantIdx();
-		// if (skip >= 0 && skip == bottomPaneIdx && module instanceof Discrete &&
-		// ((Discrete) module).getMonoStop())
-		// bottomPaneIdx--;
 		for (int n = 0; n <= nTraits; n++) {
 			if (n == skip)
 				continue;
 			HistoGraph graph = new HistoGraph(this, module, n);
-			// boolean bottomPane = (n == bottomPaneIdx);
 			graph.setNormalized(n + nTraits + 1);
 			wrapper.add(graph);
 			graphs.add(graph);
@@ -829,7 +816,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 					int nNode = (isODE ? 1 : module.getNPopulation());
 					int maxBins = graph.getMaxBins();
 					if (maxBins < 0)
-						maxBins = 100;
+						maxBins = HistoGraph.MAX_BINS;
 					if (data == null
 							|| data.length != nTraits + 1
 							|| nNode > maxBins
@@ -865,8 +852,9 @@ public class Histogram extends AbstractView<HistoGraph> {
 						style.label = "Absorbtion";
 						style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
 					}
+					maxBins = graph.getMaxBins();
 					if (doFixtimeDistr(module)) {
-						maxBins = graph.getMaxBins() * (HistoGraph.MIN_BIN_WIDTH + 1)
+						maxBins *= (HistoGraph.MIN_BIN_WIDTH + 1)
 								/ (HistoGraph.MIN_BIN_WIDTH + 2);
 						if (data == null || data.length != nTraits + 1 || data[0].length != maxBins)
 							data = new double[nTraits + 1][maxBins];
@@ -892,7 +880,6 @@ public class Histogram extends AbstractView<HistoGraph> {
 						graph.enableAutoscaleYMenu(false);
 						style.customYLevels = ((HasHistogram) module).getCustomLevels(type, idx);
 					}
-					graph.setData(data);
 					applyFixationTimeStyle(graph, idx, nTraits);
 					model.resetStatisticsSample();
 					break;
@@ -931,12 +918,10 @@ public class Histogram extends AbstractView<HistoGraph> {
 			}
 			idx++;
 		}
-		update(hard);
 	}
 
 	@Override
 	public void modelSettings() {
-		// allocateGraphs();
 		// check if settings changed the number of graphs
 		if (graphs.size() != countGraphs()) {
 			// hard reset required
@@ -1164,7 +1149,10 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @return {@code true} to show the fixation time distribution
 	 */
 	private boolean doFixtimeDistr(Module<?> module) {
-		return (module.getNPopulation() > graphs.get(0).getMaxBins() || model.getType().isSDE());
+		if (model.getType().isSDE())
+			return true;
+		int maxBins = graphs.get(0).getMaxBins();
+		return (maxBins > 0 && module.getNPopulation() > maxBins);
 	}
 
 	/**

@@ -70,24 +70,25 @@ public class S3 extends AbstractView<S3Graph> {
 	}
 
 	@Override
-	protected void allocateGraphs() {
+	protected boolean allocateGraphs() {
 		Module<?> module = engine.getModule();
 		int nRoles = module.getNRoles();
-		if (graphs.size() != nRoles) {
-			destroyGraphs();
-			for (int role = 0; role < nRoles; role++) {
-				S3Graph graph = createS3Graph(module, role);
-				wrapper.add(graph);
-				graphs.add(graph);
-			}
-			// arrange graphs horizontally
-			gRows = 1;
-			gCols = nRoles;
-			int width = 100 / gCols;
-			int height = 100 / gRows;
-			for (S3Graph graph : graphs)
-				graph.setSize(width + "%", height + "%");
+		if (graphs.size() == nRoles)
+			return false;
+		destroyGraphs();
+		for (int role = 0; role < nRoles; role++) {
+			S3Graph graph = createS3Graph(module, role);
+			wrapper.add(graph);
+			graphs.add(graph);
 		}
+		// arrange graphs horizontally
+		gRows = 1;
+		gCols = nRoles;
+		int width = 100 / gCols;
+		int height = 100 / gRows;
+		for (S3Graph graph : graphs)
+			graph.setSize(width + "%", height + "%");
+		return true;
 	}
 
 	/**

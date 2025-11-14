@@ -175,31 +175,33 @@ public class Phase2D extends AbstractView<ParaGraph> {
 	}
 
 	@Override
-	protected void allocateGraphs() {
+	protected boolean allocateGraphs() {
 		GraphStyle style;
 		int nStates = model.getNMean();
 		if (state == null || state.length != nStates)
 			state = new double[nStates];
 		Module<?> module = engine.getModule();
-		if (graphs.size() != 1) {
-			graph = new ParaGraph(this, module);
-			wrapper.add(graph);
-			graphs.add(graph);
-			style = graph.getStyle();
-			style.showLabel = true;
-			style.showXTicks = true;
-			style.showXTickLabels = true;
-			style.showXLevels = false;
-			style.showYTicks = true;
-			style.showYTickLabels = true;
-			style.showYLevels = false;
-			// arrange graphs vertically (currently only one)
-			gRows = 1;
-			gCols = 1;
-			int width = 100 / gCols;
-			int height = 100 / gRows;
-			graph.setSize(width + "%", height + "%");
-		}
+		if (graphs.size() == 1)
+			return false;
+		destroyGraphs();
+		graph = new ParaGraph(this, module);
+		wrapper.add(graph);
+		graphs.add(graph);
+		style = graph.getStyle();
+		style.showLabel = true;
+		style.showXTicks = true;
+		style.showXTickLabels = true;
+		style.showXLevels = false;
+		style.showYTicks = true;
+		style.showYTickLabels = true;
+		style.showYLevels = false;
+		// arrange graphs vertically (currently only one)
+		gRows = 1;
+		gCols = 1;
+		int width = 100 / gCols;
+		int height = 100 / gRows;
+		graph.setSize(width + "%", height + "%");
+		return true;
 	}
 
 	@Override

@@ -172,8 +172,9 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 	}
 
 	@Override
-	protected void allocateGraphs() {
+	protected boolean allocateGraphs() {
 		// console entertains no graphs
+		return false;
 	}
 
 	/**

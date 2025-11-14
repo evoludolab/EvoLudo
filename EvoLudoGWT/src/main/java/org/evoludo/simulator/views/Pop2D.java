@@ -165,22 +165,21 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	}
 
 	@Override
-	protected void allocateGraphs() {
+	protected boolean allocateGraphs() {
 		Type mt = model.getType();
-		if (mt.isIBS()) {
-			allocateIBSGraphs();
-			return;
-		}
-		if (mt.isPDE()) {
-			allocatePDEGraph();
-		}
+		if (mt.isIBS())
+			return allocateIBSGraphs();
+
+		if (mt.isPDE())
+			return allocatePDEGraph();
+		return false;
 	}
 
 	/**
 	 * Allocate graphs for individual‑based spatial models. This method creates
 	 * separate graphs for interaction and competition geometries.
 	 */
-	private void allocateIBSGraphs() {
+	private boolean allocateIBSGraphs() {
 		// how to deal with distinct interaction/competition geometries?
 		// - currently two separate graphs are shown one for the interaction and the
 		// other for the competition geometry
@@ -194,7 +193,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 			nGraphs += Geometry.displayUniqueGeometry(module) ? 1 : 2;
 
 		if (graphs.size() == nGraphs)
-			return;
+			return false;
 		destroyGraphs();
 		for (Module<?> module : species) {
 			PopGraph2D graph = new PopGraph2D(this, module);
@@ -221,18 +220,17 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 			graph.setSize(width + "%", height + "%");
 			setGraphGeometry(graph, inter);
 			inter = !inter;
-			if (isActive)
-				graph.activate();
 		}
+		return true;
 	}
 
 	/**
 	 * Allocate graph for PDE models. Currently restricted to single species.
 	 */
-	private void allocatePDEGraph() {
+	private boolean allocatePDEGraph() {
 		// PDEs currently restricted to single species
 		if (graphs.size() == 1)
-			return;
+			return false;
 
 		destroyGraphs();
 		Module<?> module = engine.getModule();
@@ -243,8 +241,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		graphs.add(graph);
 		graph.setSize("100%", "100%");
 		setGraphGeometry(graph, true);
-		if (isActive)
-			graph.activate();
+		return true;
 	}
 
 	@Override

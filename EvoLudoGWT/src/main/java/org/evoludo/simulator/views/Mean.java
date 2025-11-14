@@ -109,7 +109,7 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 	}
 
 	@Override
-	protected void allocateGraphs() {
+	protected boolean allocateGraphs() {
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		int nGraphs = 0;
 		// multiple line graphs for multi-species interactions and in case of multiple
@@ -123,19 +123,20 @@ public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 				nGraphs++;
 		}
 		// if the number of graphs has changed, destroy and recreate them
-		if (nGraphs > 0 && graphs.size() != nGraphs) {
-			destroyGraphs();
-			// one graph per discrete species or continuous trait
-			for (Module<?> module : species) {
-				addLineGraph(module);
-			}
-			// arrange graphs vertically
-			gRows = nGraphs;
-			int width = 100 / gCols;
-			int height = 100 / gRows;
-			for (LineGraph graph : graphs)
-				graph.setSize(width + "%", height + "%");
+		if (graphs.size() == nGraphs)
+			return false;
+		destroyGraphs();
+		// one graph per discrete species or continuous trait
+		for (Module<?> module : species) {
+			addLineGraph(module);
 		}
+		// arrange graphs vertically
+		gRows = nGraphs;
+		int width = 100 / gCols;
+		int height = 100 / gRows;
+		for (LineGraph graph : graphs)
+			graph.setSize(width + "%", height + "%");
+		return true;
 	}
 
 	/**
