@@ -81,4 +81,14 @@ public enum Mode {
 	public String toString() {
 		return id;
 	}
+
+	/**
+	 * Checks if the mode is a statistics mode.
+	 * 
+	 * @return {@code true} if the mode is a statistics mode, {@code false}
+	 *         otherwise
+	 */
+	public boolean isStatistics() {
+		return this == STATISTICS_SAMPLE || this == STATISTICS_UPDATE;
+	}
 }

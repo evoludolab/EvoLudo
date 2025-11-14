@@ -271,7 +271,6 @@ public class Histogram extends AbstractView<HistoGraph> {
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		isMultispecies = (species.size() > 1);
 		degreeProcessed = false;
-		doStatistics = false;
 		int nGraphs = 0;
 		for (Module<?> pop : species) {
 			int nTraits = pop.getNTraits();
@@ -664,48 +663,43 @@ public class Histogram extends AbstractView<HistoGraph> {
 					break;
 
 				case STATISTICS_FIXATION_PROBABILITY:
-					checkStatistics();
 					style.yMin = 0.0;
 					style.yMax = 1.0;
 					style.xMin = 0;
 					style.xMax = 1;
 					style.label = module.getTraitName(idx);
 					style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
-					if (doStatistics) {
-						int nNode;
-						if (isSDE)
-							nNode = 1; // only one 'node' in SDE
-						else {
-							nNode = module.getNPopulation();
-							style.xMax = nNode - 1.0;
-						}
-						int maxBins = graph.getMaxBins();
-						if (maxBins < 0)
-							maxBins = 100;
-						if (data == null
-								|| data.length != nTraits + 1
-								|| nNode > maxBins
-								|| (nNode <= maxBins && data[0].length != nNode)) {
-							binSize = 1;
-							int bins = nNode;
-							while (bins > maxBins) {
-								bins = nNode / ++binSize;
-							}
-							// allocate memory for data if size changed
-							if (data == null || data.length != nTraits + 1 || data[0].length != bins)
-								data = new double[nTraits + 1][bins];
-							scale2bins = 1.0 / binSize;
-						}
-						graph.setData(data);
-						style.customYLevels = ((HasHistogram) module).getCustomLevels(type, idx);
-					} else {
-						graph.clearData();
+					int nNode;
+					if (isSDE)
+						nNode = 1; // only one 'node' in SDE
+					else {
+						nNode = module.getNPopulation();
+						style.xMax = nNode - 1.0;
 					}
+					int maxBins = graph.getMaxBins();
+					if (maxBins < 0)
+						maxBins = 100;
+					if (data == null
+							|| data.length != nTraits + 1
+							|| nNode > maxBins
+							|| (nNode <= maxBins && data[0].length != nNode)) {
+						binSize = 1;
+						int bins = nNode;
+						while (bins > maxBins) {
+							bins = nNode / ++binSize;
+						}
+						// allocate memory for data if size changed
+						if (data == null || data.length != nTraits + 1 || data[0].length != bins)
+							data = new double[nTraits + 1][bins];
+						scale2bins = 1.0 / binSize;
+					}
+					graph.setData(data);
+					style.customYLevels = ((HasHistogram) module).getCustomLevels(type, idx);
+					model.resetStatisticsSample();
 					break;
 
 				case STATISTICS_FIXATION_TIME:
-					checkStatistics();
-					int nNode = module.getNPopulation();
+					nNode = module.getNPopulation();
 					style.yMin = 0.0;
 					style.yMax = 1.0;
 					// last graph is for absorption times
@@ -717,15 +711,11 @@ public class Histogram extends AbstractView<HistoGraph> {
 						style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
 					}
 					if (doFixtimeDistr(module)) {
-						if (doStatistics) {
-							int maxBins = graph.getMaxBins() * (HistoGraph.MIN_BIN_WIDTH + 1)
-									/ (HistoGraph.MIN_BIN_WIDTH + 2);
-							if (data == null || data.length != nTraits + 1 || data[0].length != maxBins)
-								data = new double[nTraits + 1][maxBins];
-							graph.setData(data);
-						} else {
-							graph.clearData();
-						}
+						maxBins = graph.getMaxBins() * (HistoGraph.MIN_BIN_WIDTH + 1)
+								/ (HistoGraph.MIN_BIN_WIDTH + 2);
+						if (data == null || data.length != nTraits + 1 || data[0].length != maxBins)
+							data = new double[nTraits + 1][maxBins];
+						graph.setData(data);
 						graph.setNormalized(false);
 						graph.setNormalized(-1);
 						style.xMin = 0.0;
@@ -736,13 +726,9 @@ public class Histogram extends AbstractView<HistoGraph> {
 						graph.enableAutoscaleYMenu(true);
 						style.customYLevels = new double[0];
 					} else {
-						if (doStatistics) {
-							if (data == null || data.length != 2 * (nTraits + 1) || data[0].length != nNode)
-								data = new double[2 * (nTraits + 1)][nNode];
-							graph.setData(data);
-						} else {
-							graph.clearData();
-						}
+						if (data == null || data.length != 2 * (nTraits + 1) || data[0].length != nNode)
+							data = new double[2 * (nTraits + 1)][nNode];
+						graph.setData(data);
 						style.xMin = 0.0;
 						style.xMax = nNode - 1.0;
 						style.xLabel = "node";
@@ -752,6 +738,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 						style.customYLevels = ((HasHistogram) module).getCustomLevels(type, idx);
 					}
 					graph.setData(data);
+					model.resetStatisticsSample();
 					break;
 
 				case STATISTICS_STATIONARY:
@@ -852,13 +839,12 @@ public class Histogram extends AbstractView<HistoGraph> {
 
 	@Override
 	public void update(boolean force) {
-		if (!isActive && !doStatistics)
+		if (!isActive)
 			return;
 
 		double newtime = model.getUpdates();
 		if (Math.abs(timestamp - newtime) > 1e-8) {
 			timestamp = newtime;
-			Type mt = model.getType();
 			switch (type) {
 				case TRAIT:
 					updateTrait();
@@ -867,10 +853,10 @@ public class Histogram extends AbstractView<HistoGraph> {
 					updateFitness();
 					break;
 				case DEGREE:
-					updateDegree(mt);
+					updateDegree();
 					break;
 				case STATISTICS_STATIONARY:
-					updateStationary(mt);
+					updateStationary();
 					break;
 				default:
 					break;
@@ -912,11 +898,10 @@ public class Histogram extends AbstractView<HistoGraph> {
 
 	/**
 	 * Update degree histograms, delegating to getDegreeHistogramData where needed.
-	 * 
-	 * @param mt the type of the current model
 	 */
-	private void updateDegree(Type mt) {
+	private void updateDegree() {
 		double[][] data = null;
+		Type mt = model.getType();
 		for (HistoGraph graph : graphs) {
 			Module<?> module = graph.getModule();
 			Geometry inter = module.getInteractionGeometry();
@@ -991,15 +976,13 @@ public class Histogram extends AbstractView<HistoGraph> {
 
 	/**
 	 * Update stationary statistics histograms.
-	 * 
-	 * @param mt the type of the current model
 	 */
-	private void updateStationary(Type mt) {
+	private void updateStationary() {
 		int nt = model.getNMean();
 		double[] state = new double[nt];
 		model.getMeanTraits(state);
 		int idx = 0;
-		if (mt.isIBS()) {
+		if (model.getType().isIBS()) {
 			for (HistoGraph sgraph : graphs) {
 				int nPop = sgraph.getModule().getNPopulation();
 				sgraph.addData((int) ((int) (state[idx++] * nPop + 0.5) * scale2bins));
@@ -1009,31 +992,6 @@ public class Histogram extends AbstractView<HistoGraph> {
 				sgraph.addData((int) (state[idx++] * scale2bins));
 			}
 		}
-	}
-
-	/**
-	 * The flag to indicate whether the view is in statistics mode.
-	 */
-	private boolean doStatistics = false;
-
-	/**
-	 * Check the mode of the view.
-	 * 
-	 * @return {@code true} if the view is in statistics mode
-	 */
-	private boolean checkStatistics() {
-		doStatistics = false;
-		if (!model.permitsMode(Mode.STATISTICS_SAMPLE)
-				|| model.getFixationData() == null) {
-			for (HistoGraph graph : graphs)
-				graph.displayMessage("Fixation: incompatible settings");
-			model.resetStatisticsSample();
-		} else {
-			for (HistoGraph graph : graphs)
-				graph.clearMessage();
-			doStatistics = true;
-		}
-		return doStatistics;
 	}
 
 	/**
