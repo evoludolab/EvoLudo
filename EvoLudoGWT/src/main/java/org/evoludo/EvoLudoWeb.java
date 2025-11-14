@@ -1589,12 +1589,13 @@ public class EvoLudoWeb extends Composite
 		}
 		activeView.parse(guiState.args);
 		// view needs to be activated to set the mode of the model
+		activeView.activate();
 		if (engine.cloSnap.isSet()) {
 			// --snap set
 			Model activeModel = engine.getModel();
 			double tStop = activeModel.getTimeStop();
 			double nSamples = activeModel.getNSamples();
-			switch (activeView.getMode()) {
+			switch (activeModel.getMode()) {
 				case DYNAMICS:
 				case STATISTICS_UPDATE:
 					double deltat = (tStop - activeModel.getTime()) * (activeModel.isTimeReversed() ? -1.0 : 1.0);
@@ -1620,7 +1621,6 @@ public class EvoLudoWeb extends Composite
 				default:
 			}
 		}
-		activeView.activate();
 		if (activeView.hasLayout() && engine.isSuspended())
 			engine.run();
 	}
@@ -2431,9 +2431,6 @@ public class EvoLudoWeb extends Composite
 				addView(new Histogram(engine, Data.STATISTICS_FIXATION_PROBABILITY), oldViews);
 			if (module instanceof HasHistogram.StatisticsTime)
 				addView(new Histogram(engine, Data.STATISTICS_FIXATION_TIME), oldViews);
-		} else {
-			if (activeView != null && activeView.getMode() == Mode.STATISTICS_SAMPLE)
-				logger.warning("sampling statistics not supported for current settings!");
 		}
 		if (model != null && model.permitsMode(Mode.STATISTICS_UPDATE)
 				&& module instanceof HasHistogram.StatisticsStationary) {

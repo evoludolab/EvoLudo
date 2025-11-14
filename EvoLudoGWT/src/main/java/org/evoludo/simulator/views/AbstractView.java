@@ -48,7 +48,6 @@ import org.evoludo.simulator.Resources;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.MilestoneListener;
-import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.SampleListener;
 import org.evoludo.ui.ContextMenu;
@@ -309,12 +308,6 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		for (G graph : graphs)
 			graph.activate();
 		update(true);
-		if (!setMode(getMode())) {
-			// this is should not happen because view should not be available
-			// if mode is not supported, see EvoLudoWeb#updateViews()
-			for (G graph : graphs)
-				graph.displayMessage("Mode '" + getMode() + "'' not supported");
-		}
 		layoutComplete();
 	}
 
@@ -350,38 +343,6 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		if (!hasLayout())
 			return;
 		engine.layoutComplete();
-	}
-
-	/**
-	 * Get the mode of this view. The graphical visualizations can request different
-	 * modes for running the model. The default mode is {@link Mode#DYNAMICS} to
-	 * generate a time series of the states of the model. Some views may digest data
-	 * and, for example, show statistics such as fixation probabilities or times, in
-	 * which case the mode {@link Mode#STATISTICS_SAMPLE} or
-	 * {@link Mode#STATISTICS_UPDATE} should be requested.
-	 * 
-	 * @return the mode of this view
-	 * 
-	 * @see Mode
-	 */
-	public Mode getMode() {
-		return Mode.DYNAMICS;
-	}
-
-	/**
-	 * Set the mode of the model to {@code mode}. Does nothing if the model does not
-	 * support the requested mode.
-	 * 
-	 * @param mode the mode to set
-	 * @return {@code true} if the mode was successfully set
-	 */
-	public boolean setMode(Mode mode) {
-		// if no module specified there is no model either
-		if (model == null)
-			return false;
-		if (model.getMode() == mode)
-			return true;
-		return model.requestMode(mode);
 	}
 
 	/**

@@ -254,19 +254,16 @@ public class Histogram extends AbstractView<HistoGraph> {
 	}
 
 	@Override
-	public Mode getMode() {
-		switch (type) {
-			case STATISTICS_FIXATION_PROBABILITY:
-			case STATISTICS_FIXATION_TIME:
-				return Mode.STATISTICS_SAMPLE;
-			case STATISTICS_STATIONARY:
-				return Mode.STATISTICS_UPDATE;
-			case TRAIT:
-			case FITNESS:
-			case DEGREE:
-			default:
-				return Mode.DYNAMICS;
+	public void activate() {
+		if (isActive)
+			return;
+		if (!model.requestMode(type.getMode())) {
+			// this is should not happen because view should not be available
+			// if mode is not supported, see EvoLudoWeb#updateViews()
+			for (HistoGraph graph : graphs)
+				graph.displayMessage("Mode '" + type.getMode() + "'' not supported");
 		}
+		super.activate();
 	}
 
 	@Override
