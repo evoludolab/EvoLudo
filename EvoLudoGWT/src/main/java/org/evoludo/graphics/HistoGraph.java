@@ -641,20 +641,6 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	}
 
 	@Override
-	public boolean displayMessage(String msg) {
-		message = msg;
-		if (!super.displayMessage(message))
-			return false;
-		// add frame
-		g.save();
-		g.scale(scale, scale);
-		g.translate(bounds.getX(), bounds.getY());
-		drawFrame(4, 4);
-		g.restore();
-		return true;
-	}
-
-	@Override
 	public void clearMessage() {
 		super.clearMessage();
 		message = null;

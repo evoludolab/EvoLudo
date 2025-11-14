@@ -104,10 +104,7 @@ public class IBSD extends IBS implements DModel {
 		for (Module<?> mod : species) {
 			Init.Type itype = ((IBSDPopulation) mod.getIBSPopulation()).getInit().type;
 			if ((itype.equals(Init.Type.MUTANT) ||
-					itype.equals(Init.Type.TEMPERATURE)) &&
-					(mod.getVacantIdx() < 0
-							|| (mod.getVacantIdx() >= 0
-									&& ((org.evoludo.simulator.modules.Discrete) mod).getMonoStop())))
+					itype.equals(Init.Type.TEMPERATURE)))
 				continue;
 			return false;
 		}
