@@ -49,7 +49,6 @@ import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.FixationData;
-import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
@@ -268,12 +267,33 @@ public class Histogram extends AbstractView<HistoGraph> {
 
 	@Override
 	protected void allocateGraphs() {
+		degreeProcessed = false;
+		int nGraphs = countGraphs();
+
+		if (graphs.size() != nGraphs) {
+			destroyGraphs();
+			int nXLabels = createGraphs();
+			// arrange histograms vertically
+			gRows = nGraphs;
+			int width = 100 / gCols;
+			int xaxisdeco = 5; // estimate of height of x-axis decorations in %
+								// unfortunately GWT chokes on CSS calc()
+			int height = (100 - nXLabels * xaxisdeco) / gRows;
+			for (HistoGraph graph : graphs)
+				graph.setSize(width + "%", height + (graph.getStyle().showXLabel ? xaxisdeco : 0) + "%");
+		}
+	}
+
+	/**
+	 * Count how many graphs are required based on current {@link Data} type and
+	 * module settings.
+	 */
+	private int countGraphs() {
+		int nGraphs = 0;
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		isMultispecies = (species.size() > 1);
-		degreeProcessed = false;
-		int nGraphs = 0;
-		for (Module<?> pop : species) {
-			int nTraits = pop.getNTraits();
+		for (Module<?> mod : species) {
+			int nTraits = mod.getNTraits();
 			switch (type) {
 				case TRAIT:
 					// this only makes sense for continuous traits
@@ -284,12 +304,12 @@ public class Histogram extends AbstractView<HistoGraph> {
 						nGraphs++;
 					else {
 						nGraphs += nTraits;
-						if (pop.getVacantIdx() >= 0)
+						if (mod.getVacantIdx() >= 0)
 							nGraphs--;
 					}
 					break;
 				case DEGREE:
-					nGraphs += getDegreeGraphs(pop.getInteractionGeometry(), pop.getCompetitionGeometry());
+					nGraphs += getDegreeGraphs(mod.getInteractionGeometry(), mod.getCompetitionGeometry());
 					break;
 				case STATISTICS_STATIONARY:
 					nGraphs += nTraits;
@@ -300,240 +320,272 @@ public class Histogram extends AbstractView<HistoGraph> {
 				case STATISTICS_FIXATION_PROBABILITY:
 					nGraphs += nTraits;
 					// no graph for vacant trait if monostop
-					if (pop.getVacantIdx() >= 0 && pop instanceof Discrete && ((Discrete) pop).getMonoStop())
+					if (mod.getVacantIdx() >= 0 && mod instanceof Discrete && ((Discrete) mod).getMonoStop())
 						nGraphs--;
 					break;
 				default:
 					nGraphs = Integer.MIN_VALUE;
 			}
 		}
+		return nGraphs;
+	}
 
-		if (graphs.size() != nGraphs) {
-			int nXLabels = 0;
-			destroyGraphs();
-			Type mt = model.getType();
-			for (Module<?> module : species) {
-				int nTraits = module.getNTraits();
-				switch (type) {
-					case TRAIT:
-						// this only makes sense for continuous traits
-						for (int n = 0; n < nTraits; n++) {
-							HistoGraph graph = new HistoGraph(this, module, n);
-							wrapper.add(graph);
-							graphs.add(graph);
-							GraphStyle style = graph.getStyle();
-							// fixed style attributes
-							style.yLabel = "frequency";
-							style.percentY = true;
-							style.showYLabel = true;
-							style.showYTickLabels = true;
-							style.showXTicks = true;
-							style.showYTicks = true;
-							style.showXLevels = false;
-							style.showYLevels = true;
-							style.showLabel = isMultispecies;
-							style.showXLabel = true;
-							style.showXTickLabels = true;
-							nXLabels++;
-						}
-						break;
-
-					case FITNESS:
-						nTraits = (model.isContinuous() ? 1 : nTraits);
-						int vacant = module.getVacantIdx();
-						int paneIdx = 0;
-						int bottomPaneIdx = nTraits - 1;
-						if (vacant >= 0 && vacant == nTraits - 1)
-							bottomPaneIdx--;
-						for (int n = 0; n < nTraits; n++) {
-							if (n == vacant)
-								continue;
-							HistoGraph graph = new HistoGraph(this, module, paneIdx++);
-							boolean bottomPane = (n == bottomPaneIdx);
-							wrapper.add(graph);
-							graphs.add(graph);
-							GraphStyle style = graph.getStyle();
-							// fixed style attributes
-							if (model.isDensity()) {
-								style.yLabel = "density";
-								style.percentY = false;
-								style.yMin = 0.0;
-								style.yMax = 0.0;
-							} else {
-								style.yLabel = "frequency";
-								style.percentY = true;
-								style.yMin = 0.0;
-								style.yMax = 1.0;
-							}
-							style.showYLabel = true;
-							style.showYTickLabels = true;
-							style.showXTicks = true;
-							style.showYTicks = true;
-							style.showXLevels = false;
-							style.showYLevels = true;
-							style.xLabel = "payoffs";
-							style.showXLabel = bottomPane; // show only on bottom panel
-							style.showXTickLabels = bottomPane;
-							if (model.isContinuous())
-								style.showLabel = isMultispecies;
-							else
-								style.showLabel = true;
-							if (bottomPane)
-								nXLabels++;
-						}
-						break;
-
-					case DEGREE:
-						if (mt.isODE() || mt.isSDE()) {
-							// happens for ODE/SDE/PDE - do not show distribution
-							HistoGraph graph = new HistoGraph(this, module, 0);
-							wrapper.add(graph);
-							graphs.add(graph);
-							break;
-						}
-						nTraits = getDegreeGraphs(module.getInteractionGeometry(), module.getCompetitionGeometry());
-						Geometry inter = (mt.isPDE() ? module.getGeometry()
-								: module.getInteractionGeometry());
-						String[] labels = getDegreeLabels(nTraits, inter.isUndirected);
-						for (int n = 0; n < nTraits; n++) {
-							HistoGraph graph = new HistoGraph(this, module, n);
-							boolean bottomPane = (n == nTraits - 1);
-							wrapper.add(graph);
-							graphs.add(graph);
-							GraphStyle style = graph.getStyle();
-							// fixed style attributes
-							style.yLabel = "frequency";
-							style.percentY = true;
-							style.showYLabel = true;
-							style.showYTickLabels = true;
-							style.showXTicks = true;
-							style.showYTicks = true;
-							style.showXLevels = false;
-							style.showYLevels = true;
-							style.xLabel = "degree";
-							style.showXLabel = false;
-							style.showXTickLabels = false;
-							style.label = labels[n];
-							style.showXLabel = bottomPane;
-							style.showXTickLabels = bottomPane;
-							style.graphColor = "#444";
-							if (bottomPane)
-								nXLabels++;
-						}
-						break;
-
-					case STATISTICS_FIXATION_PROBABILITY:
-						bottomPaneIdx = nTraits - 1;
-						// no graph for vacant trait if monostop
-						int skip = module.getVacantIdx();
-						if (skip >= 0 &&
-								module instanceof Discrete &&
-								((Discrete) module).getMonoStop() &&
-								skip == bottomPaneIdx) {
-							bottomPaneIdx--;
-						}
-						for (int n = 0; n < nTraits; n++) {
-							if (n == skip)
-								continue;
-							HistoGraph graph = new HistoGraph(this, module, n);
-							boolean bottomPane = (n == bottomPaneIdx);
-							graph.setNormalized(nTraits);
-							wrapper.add(graph);
-							graphs.add(graph);
-							GraphStyle style = graph.getStyle();
-							// fixed style attributes
-							style.yLabel = "probability";
-							style.percentY = true;
-							style.autoscaleY = true;
-							style.showYLabel = true;
-							style.showYTickLabels = true;
-							style.showXTicks = true;
-							style.showYTicks = true;
-							style.showXLevels = false;
-							style.showYLevels = true;
-							style.xLabel = "node";
-							style.showLabel = true;
-							style.showXLabel = bottomPane; // show only on bottom panel
-							style.showXTickLabels = bottomPane;
-							if (bottomPane)
-								nXLabels++;
-						}
-						break;
-
-					case STATISTICS_FIXATION_TIME:
-						bottomPaneIdx = nTraits;
-						// no graph for vacant trait if monostop
-						skip = module.getVacantIdx();
-						if (skip >= 0 &&
-								skip == bottomPaneIdx &&
-								module instanceof Discrete &&
-								((Discrete) module).getMonoStop()) {
-							bottomPaneIdx--;
-						}
-						for (int n = 0; n <= nTraits; n++) {
-							if (n == skip)
-								continue;
-							HistoGraph graph = new HistoGraph(this, module, n);
-							boolean bottomPane = (n == bottomPaneIdx);
-							graph.setNormalized(n + nTraits + 1);
-							wrapper.add(graph);
-							graphs.add(graph);
-							GraphStyle style = graph.getStyle();
-							// fixed style attributes
-							style.yLabel = "frequency";
-							style.percentY = true;
-							style.showYLabel = true;
-							style.showYTickLabels = true;
-							style.showXTicks = true;
-							style.showYTicks = true;
-							style.showXLevels = false;
-							style.showYLevels = true;
-							style.showLabel = true;
-							style.showXLabel = bottomPane; // show only on bottom panel
-							style.showXTickLabels = bottomPane;
-							style.autoscaleY = true;
-							if (bottomPane)
-								nXLabels++;
-						}
-						break;
-
-					case STATISTICS_STATIONARY:
-						for (int n = 0; n < nTraits; n++) {
-							HistoGraph graph = new HistoGraph(this, module, n);
-							boolean bottomPane = (n == nTraits - 1);
-							graph.setNormalized(false);
-							wrapper.add(graph);
-							graphs.add(graph);
-							GraphStyle style = graph.getStyle();
-							// fixed style attributes
-							style.yLabel = "visits";
-							style.percentY = true;
-							style.autoscaleY = true;
-							style.showYLabel = true;
-							style.showYTickLabels = true;
-							style.showXTicks = true;
-							style.showYTicks = true;
-							style.showXLevels = false;
-							style.showYLevels = true;
-							style.showLabel = true;
-							style.showXLabel = bottomPane; // show only on bottom panel
-							style.showXTickLabels = bottomPane;
-							if (bottomPane)
-								nXLabels++;
-						}
-						break;
-					default:
-				}
+	/**
+	 * Create and configure graphs for a single module; returns the number of
+	 * x-label rows that should be considered when computing layout.
+	 * 
+	 * @param module the module for which graphs are to be created
+	 * @return the number of x-label rows created
+	 */
+	private int createGraphs() {
+		List<? extends Module<?>> species = engine.getModule().getSpecies();
+		int nXLabels = 0;
+		for (Module<?> module : species) {
+			switch (type) {
+				case TRAIT:
+					nXLabels += addTraitGraphs(module);
+					break;
+				case FITNESS:
+					nXLabels += addFitnessGraphs(module);
+					break;
+				case DEGREE:
+					nXLabels += addDegreeGraphs(module);
+					break;
+				case STATISTICS_FIXATION_PROBABILITY:
+					nXLabels += addFixationProbabilityGraphs(module);
+					break;
+				case STATISTICS_FIXATION_TIME:
+					nXLabels += addFixationTimeGraphs(module);
+					break;
+				case STATISTICS_STATIONARY:
+					nXLabels += addStationaryGraphs(module);
+					break;
+				default:
 			}
-			// arrange histograms vertically
-			gRows = nGraphs;
-			int width = 100 / gCols;
-			int xaxisdeco = 5; // estimate of height of x-axis decorations in %
-								// unfortunately GWT chokes on CSS calc()
-			int height = (100 - nXLabels * xaxisdeco) / gRows;
-			for (HistoGraph graph : graphs)
-				graph.setSize(width + "%", height + (graph.getStyle().showXLabel ? xaxisdeco : 0) + "%");
 		}
+		return nXLabels;
+	}
+
+	/**
+	 * Apply default style settings to the given graph style.
+	 * 
+	 * @param style the graph style to modify
+	 */
+	private void applyDefaultStyle(GraphStyle style) {
+		style.yLabel = "frequency";
+		style.percentY = true;
+		style.autoscaleY = false;
+		style.showYLabel = true;
+		style.showYTickLabels = true;
+		style.showXTicks = true;
+		style.showYTicks = true;
+		style.showXLevels = false;
+		style.showYLevels = true;
+		style.showLabel = false;
+		style.showXLabel = false;
+		style.showXTickLabels = false;
+	}
+
+	/**
+	 * Add trait graphs for the given module.
+	 * 
+	 * @param module the module to consider
+	 * @return the number of x-label rows added
+	 */
+	private int addTraitGraphs(Module<?> module) {
+		int nXLabels = 0;
+		int nTraits = module.getNTraits();
+		for (int n = 0; n < nTraits; n++) {
+			HistoGraph graph = new HistoGraph(this, module, n);
+			wrapper.add(graph);
+			graphs.add(graph);
+			GraphStyle style = graph.getStyle();
+			applyDefaultStyle(style);
+			style.showLabel = isMultispecies;
+			style.showXLabel = true;
+			style.showXTickLabels = true;
+			nXLabels++;
+		}
+		return nXLabels;
+	}
+
+	/**
+	 * Add fitness graphs for the given module.
+	 * 
+	 * @param module the module to consider
+	 * @return the number of x-label rows added
+	 */
+	private int addFitnessGraphs(Module<?> module) {
+		int nXLabels = 0;
+		int nTraits = (model.isContinuous() ? 1 : module.getNTraits());
+		int vacant = module.getVacantIdx();
+		int paneIdx = 0;
+		int bottomPaneIdx = nTraits - 1;
+		if (vacant >= 0 && vacant == nTraits - 1)
+			bottomPaneIdx--;
+		for (int n = 0; n < nTraits; n++) {
+			if (n == vacant)
+				continue;
+			HistoGraph graph = new HistoGraph(this, module, paneIdx++);
+			boolean bottomPane = (n == bottomPaneIdx);
+			wrapper.add(graph);
+			graphs.add(graph);
+			GraphStyle style = graph.getStyle();
+			applyDefaultStyle(style);
+			if (model.isDensity()) {
+				style.yLabel = "density";
+				style.percentY = false;
+				style.yMin = 0.0;
+				style.yMax = 0.0;
+			} else {
+				style.yMin = 0.0;
+				style.yMax = 1.0;
+			}
+			style.xLabel = "payoffs";
+			style.showXLabel = bottomPane; // show only on bottom panel
+			style.showXTickLabels = bottomPane;
+			if (model.isContinuous())
+				style.showLabel = isMultispecies;
+			else
+				style.showLabel = true;
+			if (bottomPane)
+				nXLabels++;
+		}
+		return nXLabels;
+	}
+
+	/**
+	 * Add degree graphs for the given module.
+	 * 
+	 * @param module the module to consider
+	 * @return the number of x-label rows added
+	 */
+	private int addDegreeGraphs(Module<?> module) {
+		Type mt = model.getType();
+		if (mt.isODE() || mt.isSDE()) {
+			HistoGraph graph = new HistoGraph(this, module, 0);
+			wrapper.add(graph);
+			graphs.add(graph);
+			return 0;
+		}
+		int nXLabels = 0;
+		int nTraits = getDegreeGraphs(module.getInteractionGeometry(), module.getCompetitionGeometry());
+		Geometry inter = (mt.isPDE() ? module.getGeometry() : module.getInteractionGeometry());
+		String[] labels = getDegreeLabels(nTraits, inter.isUndirected);
+		for (int n = 0; n < nTraits; n++) {
+			HistoGraph graph = new HistoGraph(this, module, n);
+			boolean bottomPane = (n == nTraits - 1);
+			wrapper.add(graph);
+			graphs.add(graph);
+			GraphStyle style = graph.getStyle();
+			applyDefaultStyle(style);
+			style.xLabel = "degree";
+			style.label = labels[n];
+			style.showXLabel = bottomPane;
+			style.showXTickLabels = bottomPane;
+			style.graphColor = "#444";
+			if (bottomPane)
+				nXLabels++;
+		}
+		return nXLabels;
+	}
+
+	/**
+	 * Add fixation probability graphs for the given module.
+	 * 
+	 * @param module the module to consider
+	 * @return the number of x-label rows added
+	 */
+	private int addFixationProbabilityGraphs(Module<?> module) {
+		int nXLabels = 0;
+		int nTraits = module.getNTraits();
+		int bottomPaneIdx = nTraits - 1;
+		// no graph for vacant trait if monostop
+		int skip = module.getVacantIdx();
+		if (skip >= 0 && module instanceof Discrete && ((Discrete) module).getMonoStop() && skip == bottomPaneIdx)
+			bottomPaneIdx--;
+		for (int n = 0; n < nTraits; n++) {
+			if (n == skip)
+				continue;
+			HistoGraph graph = new HistoGraph(this, module, n);
+			boolean bottomPane = (n == bottomPaneIdx);
+			graph.setNormalized(nTraits);
+			wrapper.add(graph);
+			graphs.add(graph);
+			GraphStyle style = graph.getStyle();
+			applyDefaultStyle(style);
+			style.yLabel = "probability";
+			style.autoscaleY = true;
+			style.xLabel = "node";
+			style.showLabel = true;
+			style.showXLabel = bottomPane; // show only on bottom panel
+			style.showXTickLabels = bottomPane;
+			if (bottomPane)
+				nXLabels++;
+		}
+		return nXLabels;
+	}
+
+	/**
+	 * Add fixation time graphs for the given module.
+	 * 
+	 * @param module the module to consider
+	 * @return the number of x-label rows added
+	 */
+	private int addFixationTimeGraphs(Module<?> module) {
+		int nXLabels = 0;
+		int nTraits = module.getNTraits();
+		int bottomPaneIdx = nTraits;
+		// no graph for vacant trait if monostop
+		int skip = module.getVacantIdx();
+		if (skip >= 0 && skip == bottomPaneIdx && module instanceof Discrete && ((Discrete) module).getMonoStop())
+			bottomPaneIdx--;
+		for (int n = 0; n <= nTraits; n++) {
+			if (n == skip)
+				continue;
+			HistoGraph graph = new HistoGraph(this, module, n);
+			boolean bottomPane = (n == bottomPaneIdx);
+			graph.setNormalized(n + nTraits + 1);
+			wrapper.add(graph);
+			graphs.add(graph);
+			GraphStyle style = graph.getStyle();
+			applyDefaultStyle(style);
+			style.showLabel = true;
+			style.showXLabel = bottomPane; // show only on bottom panel
+			style.showXTickLabels = bottomPane;
+			style.autoscaleY = true;
+			if (bottomPane)
+				nXLabels++;
+		}
+		return nXLabels;
+	}
+
+	/**
+	 * Add stationary distribution graphs for the given module.
+	 * 
+	 * @param module the module to consider
+	 * @return the number of x-label rows added
+	 */
+	private int addStationaryGraphs(Module<?> module) {
+		int nXLabels = 0;
+		int nTraits = module.getNTraits();
+		for (int n = 0; n < nTraits; n++) {
+			HistoGraph graph = new HistoGraph(this, module, n);
+			boolean bottomPane = (n == nTraits - 1);
+			graph.setNormalized(false);
+			wrapper.add(graph);
+			graphs.add(graph);
+			GraphStyle style = graph.getStyle();
+			applyDefaultStyle(style);
+			style.yLabel = "visits";
+			style.autoscaleY = true;
+			style.showLabel = true;
+			style.showXLabel = bottomPane; // show only on bottom panel
+			style.showXTickLabels = bottomPane;
+			if (bottomPane)
+				nXLabels++;
+		}
+		return nXLabels;
 	}
 
 	@Override
@@ -1306,35 +1358,6 @@ public class Histogram extends AbstractView<HistoGraph> {
 				throw new IllegalArgumentException("unvalid number of degree distributions");
 		}
 	}
-
-	/*
-	 * @Override
-	 * public boolean verifyMarkedBins(HistoFrameLayer frame, int tag) {
-	 * int nMarked = population.getMonoScoreCount();
-	 * if( nMarked==0 ) return false;
-	 * Color[] colors = getColors(tag);
-	 * if( population.isContinuous() ) {
-	 * // for continuous strategies we have a single histogram and may want to mark
-	 * several bins
-	 * boolean changed = false;
-	 * for( int n=0; n<nMarked; n++ ) {
-	 * changed |= frame.updateMarkedBin(n,
-	 * population.getMonoScore(n),
-	 * new Color(Math.max(colors[n].getRed(), 127),
-	 * Math.max(colors[n].getGreen(), 127),
-	 * Math.max(colors[n].getBlue(), 127)));
-	 * }
-	 * return changed;
-	 * }
-	 * // for discrete strategies we have different histograms and mark only a
-	 * single bin
-	 * return frame.updateMarkedBin(0,
-	 * population.getMonoScore(tag),
-	 * new Color(Math.max(colors[tag].getRed(), 127),
-	 * Math.max(colors[tag].getGreen(), 127),
-	 * Math.max(colors[tag].getBlue(), 127)));
-	 * }
-	 */
 
 	/**
 	 * The clear context menu.
