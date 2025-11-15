@@ -758,6 +758,8 @@ public abstract class Model implements CLOProvider {
 	public boolean requestMode(Mode newmode) {
 		if (!permitsMode(newmode))
 			return false;
+		if (this.mode == newmode)
+			return true;
 		PendingAction.CHANGE_MODE.mode = newmode;
 		engine.requestAction(PendingAction.CHANGE_MODE);
 		return true;
