@@ -88,7 +88,7 @@ class ODEInitialize {
 			int nTraits = pop.getNTraits();
 			switch (itype) {
 				case MUTANT:
-					if (processMutant(pop, iargs, start))
+					if (!processMutant(pop, iargs, start))
 						return false;
 					break;
 				case DENSITY:
