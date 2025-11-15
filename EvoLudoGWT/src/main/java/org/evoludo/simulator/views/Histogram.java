@@ -278,9 +278,22 @@ public class Histogram extends AbstractView<HistoGraph> {
 		int width = 100 / gCols;
 		int xaxisdeco = 5; // estimate of height of x-axis decorations in %
 							// unfortunately GWT chokes on CSS calc()
-		int height = (100 - nXLabels * xaxisdeco) / gRows;
-		for (HistoGraph graph : graphs)
-			graph.setSize(width + "%", height + (graph.getStyle().showXLabel ? xaxisdeco : 0) + "%");
+		int graphheight = (100 - nXLabels * xaxisdeco) / gRows;
+		int remainder = 100;
+		int idx = 0;
+		for (HistoGraph graph : graphs) {
+			int thisheight;
+			if (++idx == graphs.size()) {
+				// last graph takes the remainder
+				thisheight = remainder;
+			} else {
+				thisheight = graphheight;
+				if (graph.getStyle().showXLabel)
+					thisheight += xaxisdeco;
+				remainder -= thisheight;
+			}
+			graph.setSize(width + "%", thisheight + "%");
+		}
 		return true;
 	}
 
@@ -482,7 +495,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	private int addFixationTimeGraphs(Module<?> module) {
 		int nXLabels = 0;
 		int nTraits = module.getNTraits();
-		int nGraphs = nTraits;
+		int nGraphs = nTraits + 1; // +1 for absorption time histogram
 		int skip = -1;
 		int vacant = module.getVacantIdx();
 		// no graph for vacant trait if monostop
@@ -498,7 +511,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			graph.setNormalized(n + nTraits + 1);
 			wrapper.add(graph);
 			graphs.add(graph);
-			applyFixationTimeStyle(graph, n, nGraphs);
+			applyFixationTimeStyle(graph, n, nGraphs, false);
 			if (n == nGraphs - 1)
 				nXLabels++;
 		}
@@ -520,7 +533,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			graph.setNormalized(false);
 			wrapper.add(graph);
 			graphs.add(graph);
-			applyStationaryStyle(graph);
+			applyStationaryStyle(graph, n, nTraits);
 			if (bottomPane)
 				nXLabels++;
 		}
@@ -601,6 +614,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			style.yMin = 0.0;
 			style.yMax = 1.0;
 		}
+		style.autoscaleY = true;
 		style.xLabel = "payoffs";
 		boolean bottomPane = (n == nGraphs - 1);
 		style.showXLabel = bottomPane; // show only on bottom panel
@@ -619,8 +633,6 @@ public class Histogram extends AbstractView<HistoGraph> {
 			style.xMax = max;
 			hard = true;
 		}
-		style.yMin = 0.0;
-		style.yMax = 1.0;
 		Color[] colors = module.getTraitColors();
 		if (module instanceof Discrete) {
 			// cast is save because pop is Discrete
@@ -721,7 +733,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param n       the index of the graph
 	 * @param nGraphs the total number of graphs
 	 */
-	private void applyFixationTimeStyle(HistoGraph graph, int n, int nGraphs) {
+	private void applyFixationTimeStyle(HistoGraph graph, int n, int nGraphs, boolean isDistribution) {
 		GraphStyle style = graph.getStyle();
 		applyDefaultStyle(style);
 		style.showLabel = true;
@@ -729,9 +741,37 @@ public class Histogram extends AbstractView<HistoGraph> {
 		style.showXLabel = bottomPane; // show only on bottom panel
 		style.showXTickLabels = bottomPane;
 		style.autoscaleY = true;
+		style.yMin = 0.0;
+		style.yMax = 1.0;
+		Module<?> module = graph.getModule();
+		int nPop = module.getNPopulation();
+		// last graph is for absorption times
+		if (bottomPane) {
+			style.label = "Absorbtion";
+			style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
+		} else {
+			Color[] colors = module.getTraitColors();
+			style.label = module.getTraitName(n);
+			style.graphColor = ColorMapCSS.Color2Css(colors[n]);
+		}
+		if (isDistribution) {
+			style.xMin = 0.0;
+			style.xMax = Functions.roundUp(nPop * 0.25);
+			style.xLabel = "fixation time";
+			style.yLabel = "probability";
+			style.percentY = true;
+			style.customYLevels = new double[0];
+		} else {
+			style.xMin = 0.0;
+			style.xMax = nPop - 1.0;
+			style.xLabel = "node";
+			style.yLabel = "time";
+			style.percentY = false;
+			style.customYLevels = ((HasHistogram) module).getCustomLevels(type, n);
+		}
 	}
 
-	private void applyStationaryStyle(HistoGraph graph) {
+	private void applyStationaryStyle(HistoGraph graph, int n, int nGraphs) {
 		GraphStyle style = graph.getStyle();
 		applyDefaultStyle(style);
 		style.yLabel = "visits";
@@ -739,6 +779,29 @@ public class Histogram extends AbstractView<HistoGraph> {
 		style.showLabel = true;
 		style.showXLabel = true;
 		style.showXTickLabels = true;
+		Module<?> module = graph.getModule();
+		int nNode = module.getNPopulation();
+		if (model.getType().isDE()) {
+			if (model.isDensity()) {
+				style.xLabel = "density";
+				style.xMin = 0.0;
+				style.xMax = 0.0;
+			} else {
+				style.xLabel = "frequency";
+				style.xMin = 0.0;
+				style.xMax = 1.0;
+				style.percentX = true;
+			}
+			scale2bins = graph.getData()[0].length;
+		} else {
+			style.xLabel = "strategy count";
+			style.xMin = 0.0;
+			style.xMax = nNode;
+			scale2bins = 1.0 / binSize;
+		}
+		Color[] colors = module.getTraitColors();
+		style.graphColor = ColorMapCSS.Color2Css(colors[n]);
+		style.label = (isMultispecies ? module.getName() + ": " : "") + module.getTraitName(n);
 	}
 
 	@Override
@@ -842,50 +905,30 @@ public class Histogram extends AbstractView<HistoGraph> {
 
 				case STATISTICS_FIXATION_TIME:
 					nNode = module.getNPopulation();
-					style.yMin = 0.0;
-					style.yMax = 1.0;
-					// last graph is for absorption times
-					if (idx < graphs.size() - 1) {
-						style.label = module.getTraitName(idx);
-						style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
-					} else {
-						style.label = "Absorbtion";
-						style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
-					}
 					maxBins = graph.getMaxBins();
-					if (doFixtimeDistr(module)) {
+					nGraphs = nTraits + 1;
+					boolean doFixtimeDistr = doFixtimeDistr(module);
+					if (doFixtimeDistr) {
 						maxBins *= (HistoGraph.MIN_BIN_WIDTH + 1)
 								/ (HistoGraph.MIN_BIN_WIDTH + 2);
-						if (data == null || data.length != nTraits + 1 || data[0].length != maxBins)
-							data = new double[nTraits + 1][maxBins];
-						graph.setData(data);
+						if (data == null || data.length != nGraphs || data[0].length != maxBins)
+							data = new double[nGraphs][maxBins];
 						graph.setNormalized(false);
 						graph.setNormalized(-1);
-						style.xMin = 0.0;
-						style.xMax = Functions.roundUp(nNode * 0.25);
-						style.xLabel = "fixation time";
-						style.yLabel = "probability";
-						style.percentY = true;
-						graph.enableAutoscaleYMenu(true);
-						style.customYLevels = new double[0];
 					} else {
-						if (data == null || data.length != 2 * (nTraits + 1) || data[0].length != nNode)
-							data = new double[2 * (nTraits + 1)][nNode];
-						graph.setData(data);
-						style.xMin = 0.0;
-						style.xMax = nNode - 1.0;
-						style.xLabel = "node";
-						style.yLabel = "time";
-						style.percentY = false;
-						graph.enableAutoscaleYMenu(false);
-						style.customYLevels = ((HasHistogram) module).getCustomLevels(type, idx);
+						if (data == null || data.length != 2 * (nGraphs) || data[0].length != nNode)
+							data = new double[2 * nGraphs][nNode];
 					}
-					applyFixationTimeStyle(graph, idx, nTraits);
+					graph.setData(data);
+					graph.enableAutoscaleYMenu(doFixtimeDistr);
+					// no graph for vacant trait if monostop
+					if (module.getVacantIdx() >= 0 && module instanceof Discrete && ((Discrete) module).getMonoStop())
+						nGraphs--;
+					applyFixationTimeStyle(graph, idx, nGraphs, doFixtimeDistr);
 					model.resetStatisticsSample();
 					break;
 
 				case STATISTICS_STATIONARY:
-					style.label = (isMultispecies ? module.getName() + ": " : "") + module.getTraitName(idx);
 					nNode = module.getNPopulation();
 					// determine the number of bins with maximum of MAX_BINS
 					binSize = (nNode + 1) / HistoGraph.MAX_BINS + 1;
@@ -893,25 +936,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 					if (data == null || data.length != nTraits || data[0].length != nBins)
 						data = new double[nTraits][nBins];
 					graph.setData(data);
-					if (mt.isDE()) {
-						if (model.isDensity()) {
-							style.xLabel = "density";
-							style.xMin = 0.0;
-							style.xMax = 0.0;
-						} else {
-							style.xLabel = "frequency";
-							style.xMin = 0.0;
-							style.xMax = 1.0;
-							style.percentX = true;
-						}
-						scale2bins = nBins;
-					} else {
-						style.xLabel = "strategy count";
-						style.xMin = 0.0;
-						style.xMax = nNode;
-						scale2bins = 1.0 / binSize;
-					}
-					style.graphColor = ColorMapCSS.Color2Css(colors[idx]);
+					applyStationaryStyle(graph, idx, nTraits);
 					break;
 
 				default:
@@ -924,7 +949,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	public void modelSettings() {
 		// check if settings changed the number of graphs
 		if (graphs.size() != countGraphs()) {
-			// hard reset required
+			// reallocate graphs
 			reset(true);
 			return;
 		}
