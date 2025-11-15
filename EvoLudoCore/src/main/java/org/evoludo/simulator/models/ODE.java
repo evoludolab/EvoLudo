@@ -466,14 +466,14 @@ public class ODE extends Model implements DModel {
 		monoStop = ((org.evoludo.simulator.modules.Discrete) species.get(0)).getMonoStop();
 	}
 
-    @Override
-    public void init() {
-        super.init();
-        dtTry = dt;
-        if (type.isPDE())
-            return; // PDE models handle initialization themselves
-        init(true);
-    }
+	@Override
+	public void init() {
+		super.init();
+		dtTry = dt;
+		if (type.isPDE())
+			return; // PDE models handle initialization themselves
+		init(true);
+	}
 
 	@Override
 	public boolean isDensity() {
@@ -1469,13 +1469,13 @@ public class ODE extends Model implements DModel {
 			int to = from + pop.getNTraits();
 			// omit status for vacant trait in density models
 			int vacant = isDensity ? from + pop.getVacantIdx() : -1;
-			from = to;
 			if (isMultispecies) {
 				if (sb.length() > 0)
 					sb.append("<br/>");
 				sb.append("<i>").append(pop.getName()).append(":</i> ");
 			}
 			buildModelStatus(sb, state, from, to, vacant);
+			from = to;
 		}
 		return sb.toString();
 	}
