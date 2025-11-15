@@ -882,6 +882,11 @@ public class EvoLudoWeb extends Composite
 	}
 
 	@Override
+	public void modelSettings() {
+		updateGUI();
+	}
+
+	@Override
 	public void modelDidReset() {
 		updateGUI();
 		// show version after reset but do not overwrite warnings and errors`
