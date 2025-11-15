@@ -805,141 +805,229 @@ public class Histogram extends AbstractView<HistoGraph> {
 	@Override
 	public void reset(boolean hard) {
 		super.reset(hard);
-		Module<?> module = null;
+		switch (type) {
+			case TRAIT:
+				hard |= resetTraitGraphs();
+				break;
+			case FITNESS:
+				hard |= resetFitnessGraphs();
+				break;
+			case DEGREE:
+				resetDegreeGraphs();
+				break;
+			case STATISTICS_FIXATION_PROBABILITY:
+				resetFixationProbabilityGraphs();
+				break;
+			case STATISTICS_FIXATION_TIME:
+				resetFixationTimeGraphs();
+				break;
+			case STATISTICS_STATIONARY:
+				resetStationaryGraphs();
+				break;
+			default:
+				throw new IllegalArgumentException("Unknown data type: " + type);
+		}
+		if (hard) {
+			for (HistoGraph graph : graphs)
+				graph.reset();
+		}
+	}
+
+	/**
+	 * Reset trait graphs.
+	 * 
+	 * @return {@code true} if hard reset is required
+	 */
+	private boolean resetTraitGraphs() {
+		Module<?> oldmod = null;
+		double[][] data = null;
+		int idx = 0;
+		boolean hard = false;
+		for (HistoGraph graph : graphs) {
+			graph.clearMarkers();
+			GraphStyle style = graph.getStyle();
+			Module<?> module = graph.getModule();
+			boolean newPop = (oldmod != module);
+			oldmod = module;
+			if (newPop)
+				data = graph.getData();
+			int nTraits = module.getNTraits();
+			Color[] colors = module.getTraitColors();
+			List<double[]> markers = module.getMarkers();
+			if (markers != null) {
+				for (double[] mark : markers)
+					graph.addMarker(mark[idx + 1], ColorMapCSS.Color2Css(colors[idx]), null,
+							mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
+			}
+			if (newPop || data == null || data.length != nTraits || data[0].length != HistoGraph.MAX_BINS)
+				data = new double[nTraits][HistoGraph.MAX_BINS];
+			graph.setData(data);
+			hard |= applyTraitStyle(graph, idx);
+			idx++;
+		}
+		return hard;
+	}
+
+	/**
+	 * Reset fitness graphs.
+	 * 
+	 * @return {@code true} if hard reset is required
+	 */
+	private boolean resetFitnessGraphs() {
+		Module<?> oldmod = null;
+		double[][] data = null;
+		int idx = 0;
+		boolean hard = false;
+		for (HistoGraph graph : graphs) {
+			graph.clearMarkers();
+			Module<?> module = graph.getModule();
+			boolean newPop = (oldmod != module);
+			oldmod = module;
+			if (newPop)
+				data = graph.getData();
+			int nTraits = (model.isContinuous() ? 1 : module.getNTraits());
+			int vacant = module.getVacantIdx();
+			if (vacant >= 0)
+				nTraits--;
+			if (newPop || data == null || data.length != nTraits || data[0].length != HistoGraph.MAX_BINS)
+				data = new double[nTraits][HistoGraph.MAX_BINS];
+			graph.setData(data);
+			hard |= applyFitnessStyle(graph, idx, nTraits);
+			idx++;
+		}
+		return hard;
+	}
+
+	/**
+	 * Reset degree graphs.
+	 */
+	private void resetDegreeGraphs() {
+		Module<?> oldmod = null;
 		double[][] data = null;
 		int idx = 0;
 		Type mt = model.getType();
-		boolean isODE = mt.isODE();
-		boolean isSDE = mt.isSDE();
+		boolean isOSDE = mt.isODE() || mt.isSDE();
 		boolean isPDE = mt.isPDE();
 		for (HistoGraph graph : graphs) {
-			GraphStyle style = graph.getStyle();
-			Module<?> oldmod = module;
-			module = graph.getModule();
+			Module<?> module = graph.getModule();
+			if (oldmod != module)
+				data = graph.getData();
+			oldmod = module;
+			if (isOSDE) {
+				graph.setData(null);
+				continue;
+			}
+			Geometry inter;
+			Geometry comp;
+			if (isPDE) {
+				inter = comp = module.getGeometry();
+			} else {
+				inter = module.getInteractionGeometry();
+				comp = module.getCompetitionGeometry();
+			}
+			int rows = getDegreeGraphs(inter, comp);
+			int cols = getDegreeBins(inter, comp);
+			if (data == null || data.length != rows || data[0].length != cols)
+				data = new double[rows][cols];
+			graph.setData(data);
+			applyDegreeStyle(graph, idx, rows);
+			idx++;
+		}
+	}
+
+	/**
+	 * Reset fixation probability graphs.
+	 */
+	private void resetFixationProbabilityGraphs() {
+		Module<?> oldmod = null;
+		double[][] data = null;
+		int idx = 0;
+		boolean isSDE = model.getType().isSDE();
+		for (HistoGraph graph : graphs) {
+			Module<?> module = graph.getModule();
 			boolean newPop = (oldmod != module);
+			oldmod = module;
 			if (newPop)
 				data = graph.getData();
-			int vacant = module.getVacantIdx();
 			int nTraits = module.getNTraits();
-			Color[] colors = module.getTraitColors();
-			if (hard)
-				graph.reset();
-
-			switch (type) {
-				case TRAIT:
-					// histogram of strategies makes only sense for continuous traits
-					if (data == null || data.length != nTraits || data[0].length != HistoGraph.MAX_BINS)
-						data = new double[nTraits][HistoGraph.MAX_BINS];
-					graph.setData(data);
-					graph.clearMarkers();
-					List<double[]> markers = module.getMarkers();
-					if (markers != null) {
-						for (double[] mark : markers)
-							graph.addMarker(mark[idx + 1], ColorMapCSS.Color2Css(colors[idx]), null,
-									mark[0] > 0.0 ? style.dashedLine : style.dottedLine);
-					}
-					hard = applyTraitStyle(graph, idx);
-					break;
-
-				case FITNESS:
-					graph.clearMarkers();
-					nTraits = (model.isContinuous() ? 1 : nTraits);
-					if (vacant >= 0)
-						nTraits--;
-					if (data == null || data.length != nTraits || data[0].length != HistoGraph.MAX_BINS)
-						data = new double[nTraits][HistoGraph.MAX_BINS];
-					graph.setData(data);
-					hard = applyFitnessStyle(graph, idx, nTraits);
-					break;
-
-				case DEGREE:
-					if (isODE || isSDE) {
-						graph.setData(null);
-						break;
-					}
-					Geometry inter;
-					Geometry comp;
-					if (isPDE) {
-						inter = comp = module.getGeometry();
-					} else {
-						inter = module.getInteractionGeometry();
-						comp = module.getCompetitionGeometry();
-					}
-					int rows = getDegreeGraphs(inter, comp);
-					int cols = getDegreeBins(inter, comp);
-					if (data == null || data.length != rows || data[0].length != cols)
-						data = new double[rows][cols];
-					graph.setData(data);
-					applyDegreeStyle(graph, idx, rows);
-					break;
-
-				case STATISTICS_FIXATION_PROBABILITY:
-					int nPop = (isODE ? 1 : module.getNPopulation());
-					int maxBins = graph.getMaxBins();
-					if (maxBins <= 0)
-						maxBins = Math.min(nPop, HistoGraph.MAX_BINS);
-					if (data == null
-							|| data.length != nTraits + 1
-							|| nPop > maxBins
-							|| (nPop <= maxBins && data[0].length != nPop)) {
-						binSize = 1;
-						int bins = nPop;
-						while (bins > maxBins) {
-							bins = nPop / ++binSize;
-						}
-						// allocate memory for data if size changed
-						if (data == null || data.length != nTraits + 1 || data[0].length != bins)
-							data = new double[nTraits + 1][bins];
-						scale2bins = 1.0 / binSize;
-					}
-					graph.setData(data);
-					int nGraphs = nTraits;
-					// no graph for vacant trait if monostop
-					if (module.getVacantIdx() >= 0 && module instanceof Discrete && ((Discrete) module).getMonoStop())
-						nGraphs--;
-					applyFixationProbabilityStyle(graph, idx, nGraphs);
-					model.resetStatisticsSample();
-					break;
-
-				case STATISTICS_FIXATION_TIME:
-					nPop = module.getNPopulation();
-					maxBins = graph.getMaxBins();
-					nGraphs = nTraits + 1;
-					boolean doFixtimeDistr = doFixtimeDistr(module);
-					if (doFixtimeDistr) {
-						maxBins *= (HistoGraph.MIN_BIN_WIDTH + 1)
-								/ (HistoGraph.MIN_BIN_WIDTH + 2);
-						if (data == null || data.length != nGraphs || data[0].length != maxBins)
-							data = new double[nGraphs][maxBins];
-						graph.setNormalized(false);
-						graph.setNormalized(-1);
-					} else {
-						if (data == null || data.length != 2 * (nGraphs) || data[0].length != nPop)
-							data = new double[2 * nGraphs][nPop];
-					}
-					graph.setData(data);
-					graph.enableAutoscaleYMenu(doFixtimeDistr);
-					// no graph for vacant trait if monostop
-					if (module.getVacantIdx() >= 0 && module instanceof Discrete && ((Discrete) module).getMonoStop())
-						nGraphs--;
-					applyFixationTimeStyle(graph, idx, nGraphs, doFixtimeDistr);
-					model.resetStatisticsSample();
-					break;
-
-				case STATISTICS_STATIONARY:
-					nPop = module.getNPopulation();
-					// determine the number of bins with maximum of MAX_BINS
-					binSize = (nPop + 1) / HistoGraph.MAX_BINS + 1;
-					int nBins = (nPop + 1) / binSize;
-					if (data == null || data.length != nTraits || data[0].length != nBins)
-						data = new double[nTraits][nBins];
-					scale2bins = nBins;
-					graph.setData(data);
-					applyStationaryStyle(graph, idx);
-					break;
-
-				default:
+			int nPop = (isSDE ? 1 : module.getNPopulation());
+			int maxBins = graph.getMaxBins();
+			if (maxBins <= 0)
+				maxBins = Math.min(nPop, HistoGraph.MAX_BINS);
+			binSize = 1;
+			int bins = nPop;
+			while (bins > maxBins) {
+				bins = nPop / ++binSize;
 			}
+			// allocate memory for data if size changed
+			if (data == null || data.length != nTraits + 1 || data[0].length != bins)
+				data = new double[nTraits + 1][bins];
+			scale2bins = 1.0 / binSize;
+			graph.setData(data);
+			int nGraphs = nTraits;
+			// no graph for vacant trait if monostop
+			if (module.getVacantIdx() >= 0 && module instanceof Discrete && ((Discrete) module).getMonoStop())
+				nGraphs--;
+			applyFixationProbabilityStyle(graph, idx, nGraphs);
+			model.resetStatisticsSample();
+			idx++;
+		}
+	}
+
+	/**
+	 * Reset fixation time graphs. Depending on the population size either the
+	 * fixation times are show for each node or as a distribution.
+	 */
+	private void resetFixationTimeGraphs() {
+		Module<?> oldmod = null;
+		double[][] data = null;
+		int idx = 0;
+		for (HistoGraph graph : graphs) {
+			Module<?> module = graph.getModule();
+			boolean newPop = (oldmod != module);
+			oldmod = module;
+			if (newPop)
+				data = graph.getData();
+			int nTraits = module.getNTraits();
+			int nPop = module.getNPopulation();
+			boolean doFixtimeDistr = doFixtimeDistr(module);
+			if (doFixtimeDistr) {
+				int maxBins = graph.getMaxBins();
+				maxBins *= (HistoGraph.MIN_BIN_WIDTH + 1)
+						/ (HistoGraph.MIN_BIN_WIDTH + 2);
+				if (data == null || data.length != nTraits + 1 || data[0].length != maxBins)
+					data = new double[nTraits + 1][maxBins];
+				graph.setNormalized(false);
+				graph.setNormalized(-1);
+			} else {
+				if (data == null || data.length != 2 * (nTraits + 1) || data[0].length != nPop)
+					data = new double[2 * (nTraits + 1)][nPop];
+			}
+			graph.setData(data);
+			applyFixationTimeStyle(graph, idx, nTraits + 1, doFixtimeDistr);
+			model.resetStatisticsSample();
+			idx++;
+		}
+	}
+
+	/**
+	 * Reset stationary distribution graphs.
+	 */
+	private void resetStationaryGraphs() {
+		Module<?> oldmod = null;
+		double[][] data = null;
+		int idx = 0;
+		for (HistoGraph graph : graphs) {
+			Module<?> module = graph.getModule();
+			boolean newPop = (oldmod != module);
+			oldmod = module;
+			if (newPop)
+				data = graph.getData();
+			int nTraits = module.getNTraits();
+			if (data == null || data.length != nTraits || data[0].length != HistoGraph.MAX_BINS)
+				data = new double[nTraits][HistoGraph.MAX_BINS];
+			graph.setData(data);
+			applyStationaryStyle(graph, idx);
 			idx++;
 		}
 	}
