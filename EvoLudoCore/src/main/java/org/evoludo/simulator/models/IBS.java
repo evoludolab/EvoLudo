@@ -631,6 +631,11 @@ public abstract class IBS extends Model {
 				totRate = checkConvergence();
 				if (converged)
 					return n;
+			} else if (dt < 0) {
+				// indicates extinction of a species
+				checkConvergence();
+				if (converged)
+					return n;
 			}
 		}
 		return nUpdates;
