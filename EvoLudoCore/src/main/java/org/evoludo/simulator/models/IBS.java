@@ -346,22 +346,17 @@ public abstract class IBS extends Model {
 
 	@Override
 	public double getTime() {
-		if (time == Double.POSITIVE_INFINITY)
-			return updates;
 		return time;
 	}
 
 	@Override
 	public String getCounter() {
-		// Let Model handle samples and time formatting.
 		if (mode == Mode.STATISTICS_SAMPLE)
 			return super.getCounter();
-		double u = getUpdates();
-		String timePart = super.getCounter().trim(); // e.g. "Time: 12.34"
-		if (u != Double.POSITIVE_INFINITY) {
-			return "Updates: " + Formatter.format(u, 2) + (timePart.isEmpty() ? "" : " (" + timePart + ")");
-		}
-		return timePart + " ";
+		String upd = "Updates: " + Formatter.format(getUpdates(), 2);
+		if (time < Double.POSITIVE_INFINITY)
+			return super.getCounter() + " (" + upd + ")";
+		return upd;
 	}
 
 	@Override

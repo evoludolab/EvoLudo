@@ -1056,7 +1056,7 @@ public abstract class Model implements CLOProvider {
 			return "Samples: " + getNStatisticsSamples() + (failed > 0 ? " (failed: " + failed + ")" : "");
 		}
 		double t = getTime();
-		return "Time: " + Formatter.format(t, 2) + " ";
+		return "Time: " + Formatter.formatFix(t, 2) + " ";
 	}
 
 	/**
