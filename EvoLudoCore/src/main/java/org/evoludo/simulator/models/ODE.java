@@ -1621,12 +1621,24 @@ public class ODE extends Model implements DModel {
 	 * @see PDEInitialize.Type
 	 */
 	public final CLOption cloInit = new CLOption("init", InitType.UNIFORM.getKey(), CLOCategory.Model,
-			"--init <t>      type of initial configuration", new CLODelegate() {
+			null, new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {
 					// parsing must be 'outsourced' to ODE class to enable
 					// PDE models to override it and do their own initialization.
 					return ODE.this.parse(arg);
+				}
+
+				@Override
+				public String getDescription() {
+					String descr = "--init <t>      type of initial configuration:\n" + cloInit.getDescriptionKey()
+							+ "\n                with r, m indices of resident, mutant traits";
+					boolean noVacant = false;
+					for (Module<?> mod : species)
+						noVacant |= mod.getVacantIdx() < 0;
+					if (noVacant)
+						return descr.replace("[,v]", "");
+					return descr + "\n                and v frequency of vacant sites";
 				}
 			});
 

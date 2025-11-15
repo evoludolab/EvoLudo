@@ -32,6 +32,7 @@ package org.evoludo.simulator.models;
 
 import java.util.Arrays;
 
+import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
@@ -120,17 +121,38 @@ class ODEInitialize {
 		if (initargs == null || initargs.length < 1)
 			return false;
 		// initargs contains the index of the mutant (and resident) trait
+		int mutantType;
+		int residentType = -1;
+		int vacantType = pop.getVacantIdx();
+		double vacantFreq = 0.0;
 		int nt = pop.getNTraits();
-		int mutantType = (int) initargs[0];
-		int len = initargs.length;
-		int residentType;
-		if (len > 1)
-			residentType = (int) initargs[1];
-		else
-			residentType = (mutantType + 1) % nt;
+		switch (initargs.length) {
+			case 3:
+				// vacant frequency
+				if (vacantType < 0)
+					return false;
+				vacantFreq = Math.min(Math.max(initargs[2], 0.0), 1.0);
+				//$FALL-THROUGH$
+			case 2:
+				residentType = (int) initargs[1];
+				//$FALL-THROUGH$
+			case 1:
+				mutantType = (int) initargs[0];
+				if (residentType < 0)
+					residentType = (mutantType + 1) % nt;
+				break;
+			default:
+				return false;
+		}
+		// set all initial frequencies to zero
 		double[] popinit = new double[nt];
 		popinit[mutantType] = 1.0 / pop.getNPopulation();
-		popinit[residentType] = 1.0 - popinit[mutantType];
+		if (vacantType >= 0) {
+			popinit[vacantType] = vacantFreq;
+			popinit[residentType] = Math.max(1.0 - vacantFreq - popinit[mutantType], 0.0);
+		} else {
+			popinit[residentType] = 1.0 - popinit[mutantType];
+		}
 		appendY0(popinit, start);
 		return true;
 	}
@@ -220,7 +242,7 @@ class ODEInitialize {
 		 *
 		 * @see SDE
 		 */
-		MUTANT("mutant", "single mutant");
+		MUTANT("mutant", "single mutant, <m,r[,v]>");
 
 		/**
 		 * Key of initialization type. Used when parsing command line options.
