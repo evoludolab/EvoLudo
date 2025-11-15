@@ -345,31 +345,22 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 */
 	private int createGraphs() {
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
-		int nXLabels = 0;
-		for (Module<?> module : species) {
-			switch (type) {
-				case TRAIT:
-					nXLabels += addTraitGraphs(module);
-					break;
-				case FITNESS:
-					nXLabels += addFitnessGraphs(module);
-					break;
-				case DEGREE:
-					nXLabels += addDegreeGraphs(module);
-					break;
-				case STATISTICS_FIXATION_PROBABILITY:
-					nXLabels += addFixationProbabilityGraphs(module);
-					break;
-				case STATISTICS_FIXATION_TIME:
-					nXLabels += addFixationTimeGraphs(module);
-					break;
-				case STATISTICS_STATIONARY:
-					nXLabels += addStationaryGraphs(module);
-					break;
-				default:
-			}
+		switch (type) {
+			case TRAIT:
+				return addTraitGraphs(species);
+			case FITNESS:
+				return addFitnessGraphs(species);
+			case DEGREE:
+				return addDegreeGraphs(species);
+			case STATISTICS_FIXATION_PROBABILITY:
+				return addFixationProbabilityGraphs(species);
+			case STATISTICS_FIXATION_TIME:
+				return addFixationTimeGraphs(species);
+			case STATISTICS_STATIONARY:
+				return addStationaryGraphs(species);
+			default:
+				throw new IllegalArgumentException("Unknown data type: " + type);
 		}
-		return nXLabels;
 	}
 
 	/**
@@ -379,15 +370,17 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param module the module to consider
 	 * @return the number of x-label rows added
 	 */
-	private int addTraitGraphs(Module<?> module) {
+	private int addTraitGraphs(List<? extends Module<?>> species) {
 		int nXLabels = 0;
-		int nGraphs = module.getNTraits();
-		for (int n = 0; n < nGraphs; n++) {
-			HistoGraph graph = new HistoGraph(this, module, n);
-			wrapper.add(graph);
-			graphs.add(graph);
-			applyTraitStyle(graph, n, nGraphs);
-			nXLabels++;
+		for (Module<?> module : species) {
+			int nGraphs = module.getNTraits();
+			for (int n = 0; n < nGraphs; n++) {
+				HistoGraph graph = new HistoGraph(this, module, n);
+				wrapper.add(graph);
+				graphs.add(graph);
+				applyTraitStyle(graph, n, nGraphs);
+				nXLabels++;
+			}
 		}
 		return nXLabels;
 	}
@@ -398,24 +391,26 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param module the module to consider
 	 * @return the number of x-label rows added
 	 */
-	private int addFitnessGraphs(Module<?> module) {
+	private int addFitnessGraphs(List<? extends Module<?>> species) {
 		int nXLabels = 0;
-		int nTraits = (model.isContinuous() ? 1 : module.getNTraits());
-		int vacant = module.getVacantIdx();
-		int paneIdx = 0;
-		int nGraphs = nTraits;
-		if (vacant >= 0)
-			nGraphs--;
-		for (int n = 0; n < nTraits; n++) {
-			if (n == vacant)
-				continue;
-			HistoGraph graph = new HistoGraph(this, module, paneIdx);
-			wrapper.add(graph);
-			graphs.add(graph);
-			applyFitnessStyle(graph, paneIdx, nGraphs);
-			if (paneIdx == nGraphs - 1)
-				nXLabels++;
-			paneIdx++;
+		for (Module<?> module : species) {
+			int nTraits = (model.isContinuous() ? 1 : module.getNTraits());
+			int vacant = module.getVacantIdx();
+			int paneIdx = 0;
+			int nGraphs = nTraits;
+			if (vacant >= 0)
+				nGraphs--;
+			for (int n = 0; n < nTraits; n++) {
+				if (n == vacant)
+					continue;
+				HistoGraph graph = new HistoGraph(this, module, paneIdx);
+				wrapper.add(graph);
+				graphs.add(graph);
+				applyFitnessStyle(graph, paneIdx, nGraphs);
+				if (paneIdx == nGraphs - 1)
+					nXLabels++;
+				paneIdx++;
+			}
 		}
 		return nXLabels;
 	}
@@ -426,24 +421,26 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param module the module to consider
 	 * @return the number of x-label rows added
 	 */
-	private int addDegreeGraphs(Module<?> module) {
+	private int addDegreeGraphs(List<? extends Module<?>> species) {
 		Type mt = model.getType();
-		if (mt.isODE() || mt.isSDE()) {
-			HistoGraph graph = new HistoGraph(this, module, 0);
-			wrapper.add(graph);
-			graphs.add(graph);
-			return 0;
-		}
 		int nXLabels = 0;
-		int nHisto = getDegreeGraphs(module.getInteractionGeometry(), module.getCompetitionGeometry());
-		for (int n = 0; n < nHisto; n++) {
-			HistoGraph graph = new HistoGraph(this, module, n);
-			boolean bottomPane = (n == nHisto - 1);
-			wrapper.add(graph);
-			graphs.add(graph);
-			applyDegreeStyle(graph, n, nHisto);
-			if (bottomPane)
+		for (Module<?> module : species) {
+			if (mt.isODE() || mt.isSDE()) {
+				HistoGraph graph = new HistoGraph(this, module, 0);
+				wrapper.add(graph);
+				graphs.add(graph);
 				nXLabels++;
+			}
+			int nHisto = getDegreeGraphs(module.getInteractionGeometry(), module.getCompetitionGeometry());
+			for (int n = 0; n < nHisto; n++) {
+				HistoGraph graph = new HistoGraph(this, module, n);
+				boolean bottomPane = (n == nHisto - 1);
+				wrapper.add(graph);
+				graphs.add(graph);
+				applyDegreeStyle(graph, n, nHisto);
+				if (bottomPane)
+					nXLabels++;
+			}
 		}
 		return nXLabels;
 	}
@@ -454,27 +451,29 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param module the module to consider
 	 * @return the number of x-label rows added
 	 */
-	private int addFixationProbabilityGraphs(Module<?> module) {
+	private int addFixationProbabilityGraphs(List<? extends Module<?>> species) {
 		int nXLabels = 0;
-		int nTraits = module.getNTraits();
-		int nGraphs = nTraits;
-		int skip = -1;
-		int vacant = module.getVacantIdx();
-		// no graph for vacant trait if monostop
-		if (module.getVacantIdx() >= 0 && module instanceof Discrete && ((Discrete) module).getMonoStop()) {
-			nGraphs--;
-			skip = vacant;
-		}
-		for (int n = 0; n < nTraits; n++) {
-			if (n == skip)
-				continue;
-			HistoGraph graph = new HistoGraph(this, module, n);
-			graph.setNormalized(nTraits);
-			wrapper.add(graph);
-			graphs.add(graph);
-			applyFixationProbabilityStyle(graph, n, nGraphs);
-			if (n == nGraphs - 1)
-				nXLabels++;
+		for (Module<?> module : species) {
+			int nTraits = module.getNTraits();
+			int nGraphs = nTraits;
+			int skip = -1;
+			int vacant = module.getVacantIdx();
+			// no graph for vacant trait if monostop
+			if (module.getVacantIdx() >= 0 && module instanceof Discrete && ((Discrete) module).getMonoStop()) {
+				nGraphs--;
+				skip = vacant;
+			}
+			for (int n = 0; n < nTraits; n++) {
+				if (n == skip)
+					continue;
+				HistoGraph graph = new HistoGraph(this, module, n);
+				graph.setNormalized(nTraits);
+				wrapper.add(graph);
+				graphs.add(graph);
+				applyFixationProbabilityStyle(graph, n, nGraphs);
+				if (n == nGraphs - 1)
+					nXLabels++;
+			}
 		}
 		return nXLabels;
 	}
@@ -485,28 +484,30 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param module the module to consider
 	 * @return the number of x-label rows added
 	 */
-	private int addFixationTimeGraphs(Module<?> module) {
+	private int addFixationTimeGraphs(List<? extends Module<?>> species) {
 		int nXLabels = 0;
-		int nTraits = module.getNTraits();
-		int nGraphs = nTraits + 1; // +1 for absorption time histogram
-		int skip = -1;
-		int vacant = module.getVacantIdx();
-		// no graph for vacant trait if monostop
-		if (vacant >= 0 &&
-				module instanceof Discrete && ((Discrete) module).getMonoStop()) {
-			nGraphs--;
-			skip = vacant;
-		}
-		for (int n = 0; n <= nTraits; n++) {
-			if (n == skip)
-				continue;
-			HistoGraph graph = new HistoGraph(this, module, n);
-			graph.setNormalized(n + nTraits + 1);
-			wrapper.add(graph);
-			graphs.add(graph);
-			applyFixationTimeStyle(graph, n, nGraphs, false);
-			if (n == nGraphs - 1)
-				nXLabels++;
+		for (Module<?> module : species) {
+			int nTraits = module.getNTraits();
+			int nGraphs = nTraits + 1; // +1 for absorption time histogram
+			int skip = -1;
+			int vacant = module.getVacantIdx();
+			// no graph for vacant trait if monostop
+			if (vacant >= 0 &&
+					module instanceof Discrete && ((Discrete) module).getMonoStop()) {
+				nGraphs--;
+				skip = vacant;
+			}
+			for (int n = 0; n <= nTraits; n++) {
+				if (n == skip)
+					continue;
+				HistoGraph graph = new HistoGraph(this, module, n);
+				graph.setNormalized(n + nTraits + 1);
+				wrapper.add(graph);
+				graphs.add(graph);
+				applyFixationTimeStyle(graph, n, nGraphs, false);
+				if (n == nGraphs - 1)
+					nXLabels++;
+			}
 		}
 		return nXLabels;
 	}
@@ -517,18 +518,20 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param module the module to consider
 	 * @return the number of x-label rows added
 	 */
-	private int addStationaryGraphs(Module<?> module) {
+	private int addStationaryGraphs(List<? extends Module<?>> species) {
 		int nXLabels = 0;
-		int nTraits = module.getNTraits();
-		for (int n = 0; n < nTraits; n++) {
-			HistoGraph graph = new HistoGraph(this, module, n);
-			boolean bottomPane = (n == nTraits - 1);
-			graph.setNormalized(false);
-			wrapper.add(graph);
-			graphs.add(graph);
-			applyStationaryStyle(graph, n, nTraits);
-			if (bottomPane)
-				nXLabels++;
+		for (Module<?> module : species) {
+			int nTraits = module.getNTraits();
+			for (int n = 0; n < nTraits; n++) {
+				HistoGraph graph = new HistoGraph(this, module, n);
+				boolean bottomPane = (n == nTraits - 1);
+				graph.setNormalized(false);
+				wrapper.add(graph);
+				graphs.add(graph);
+				applyStationaryStyle(graph, n, nTraits);
+				if (bottomPane)
+					nXLabels++;
+			}
 		}
 		return nXLabels;
 	}
