@@ -773,7 +773,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		style.showXLabel = true;
 		style.showXTickLabels = true;
 		Module<?> module = graph.getModule();
-		int nNode = module.getNPopulation();
+		int nPop = module.getNPopulation();
 		if (model.getType().isDE()) {
 			if (model.isDensity()) {
 				style.xLabel = "density";
@@ -785,12 +785,10 @@ public class Histogram extends AbstractView<HistoGraph> {
 				style.xMax = 1.0;
 				style.percentX = true;
 			}
-			scale2bins = graph.getData()[0].length;
 		} else {
 			style.xLabel = "strategy count";
 			style.xMin = 0.0;
-			style.xMax = nNode;
-			scale2bins = 1.0 / binSize;
+			style.xMax = nPop;
 		}
 		Color[] colors = module.getTraitColors();
 		style.graphColor = ColorMapCSS.Color2Css(colors[n]);
@@ -869,18 +867,18 @@ public class Histogram extends AbstractView<HistoGraph> {
 					break;
 
 				case STATISTICS_FIXATION_PROBABILITY:
-					int nNode = (isODE ? 1 : module.getNPopulation());
+					int nPop = (isODE ? 1 : module.getNPopulation());
 					int maxBins = graph.getMaxBins();
-					if (maxBins < 0)
-						maxBins = HistoGraph.MAX_BINS;
+					if (maxBins <= 0)
+						maxBins = Math.min(nPop, HistoGraph.MAX_BINS);
 					if (data == null
 							|| data.length != nTraits + 1
-							|| nNode > maxBins
-							|| (nNode <= maxBins && data[0].length != nNode)) {
+							|| nPop > maxBins
+							|| (nPop <= maxBins && data[0].length != nPop)) {
 						binSize = 1;
-						int bins = nNode;
+						int bins = nPop;
 						while (bins > maxBins) {
-							bins = nNode / ++binSize;
+							bins = nPop / ++binSize;
 						}
 						// allocate memory for data if size changed
 						if (data == null || data.length != nTraits + 1 || data[0].length != bins)
@@ -897,7 +895,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 					break;
 
 				case STATISTICS_FIXATION_TIME:
-					nNode = module.getNPopulation();
+					nPop = module.getNPopulation();
 					maxBins = graph.getMaxBins();
 					nGraphs = nTraits + 1;
 					boolean doFixtimeDistr = doFixtimeDistr(module);
@@ -909,8 +907,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 						graph.setNormalized(false);
 						graph.setNormalized(-1);
 					} else {
-						if (data == null || data.length != 2 * (nGraphs) || data[0].length != nNode)
-							data = new double[2 * nGraphs][nNode];
+						if (data == null || data.length != 2 * (nGraphs) || data[0].length != nPop)
+							data = new double[2 * nGraphs][nPop];
 					}
 					graph.setData(data);
 					graph.enableAutoscaleYMenu(doFixtimeDistr);
@@ -922,12 +920,13 @@ public class Histogram extends AbstractView<HistoGraph> {
 					break;
 
 				case STATISTICS_STATIONARY:
-					nNode = module.getNPopulation();
+					nPop = module.getNPopulation();
 					// determine the number of bins with maximum of MAX_BINS
-					binSize = (nNode + 1) / HistoGraph.MAX_BINS + 1;
-					int nBins = (nNode + 1) / binSize;
+					binSize = (nPop + 1) / HistoGraph.MAX_BINS + 1;
+					int nBins = (nPop + 1) / binSize;
 					if (data == null || data.length != nTraits || data[0].length != nBins)
 						data = new double[nTraits][nBins];
+					scale2bins = nBins;
 					graph.setData(data);
 					applyStationaryStyle(graph, idx, nTraits);
 					break;
@@ -1147,16 +1146,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 		double[] state = new double[nt];
 		model.getMeanTraits(state);
 		int idx = 0;
-		if (model.getType().isIBS()) {
-			for (HistoGraph sgraph : graphs) {
-				int nPop = sgraph.getModule().getNPopulation();
-				sgraph.addData((int) ((int) (state[idx++] * nPop + 0.5) * scale2bins));
-			}
-		} else {
-			for (HistoGraph sgraph : graphs) {
-				sgraph.addData((int) (state[idx++] * scale2bins));
-			}
-		}
+		for (HistoGraph graph : graphs)
+			graph.addData((int) (state[idx++] * scale2bins));
 	}
 
 	/**
