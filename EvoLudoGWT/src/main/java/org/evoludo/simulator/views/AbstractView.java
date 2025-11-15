@@ -48,6 +48,7 @@ import org.evoludo.simulator.Resources;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.MilestoneListener;
+import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.SampleListener;
 import org.evoludo.ui.ContextMenu;
@@ -309,6 +310,12 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		isActive = true;
 		for (G graph : graphs)
 			graph.activate();
+		if (!model.requestMode(getMode())) {
+			// this is should not happen because view should not be available
+			// if mode is not supported, see EvoLudoWeb#updateViews()
+			for (G graph : graphs)
+				graph.displayMessage("Mode '" + getMode() + "'' not supported");
+		}
 		update(true);
 		layoutComplete();
 	}
@@ -321,6 +328,15 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		isActive = false;
 		for (G graph : graphs)
 			graph.deactivate();
+	}
+
+	/**
+	 * Get the mode required by this view.
+	 * 
+	 * @return the mode required by this view
+	 */
+	Mode getMode() {
+		return Mode.DYNAMICS;
 	}
 
 	/**

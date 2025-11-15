@@ -49,6 +49,7 @@ import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.FixationData;
+import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Type;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
@@ -248,21 +249,13 @@ public class Histogram extends AbstractView<HistoGraph> {
 	}
 
 	@Override
-	public String getName() {
-		return type.toString();
+	public Mode getMode() {
+		return type.getMode();
 	}
 
 	@Override
-	public void activate() {
-		if (isActive)
-			return;
-		if (!model.requestMode(type.getMode())) {
-			// this is should not happen because view should not be available
-			// if mode is not supported, see EvoLudoWeb#updateViews()
-			for (HistoGraph graph : graphs)
-				graph.displayMessage("Mode '" + type.getMode() + "'' not supported");
-		}
-		super.activate();
+	public String getName() {
+		return type.toString();
 	}
 
 	@Override
