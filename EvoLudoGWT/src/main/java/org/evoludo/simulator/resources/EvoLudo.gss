@@ -57,7 +57,6 @@
 .evoludo-LineGraph, .evoludo-PopGraph2D, .evoludo-PopGraph3D, .evoludo-HistoGraph, .evoludo-S3Graph, .evoludo-ParaGraph {
 	padding: 0 2px;
 	cursor: crosshair;
-	display: inline-block;
 	box-sizing: border-box;
 	height: 100%;
 	width: 100%;
