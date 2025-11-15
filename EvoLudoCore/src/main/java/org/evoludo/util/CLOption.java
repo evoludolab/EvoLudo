@@ -510,15 +510,16 @@ public class CLOption implements Comparable<CLOption> {
 	}
 
 	private boolean parse(boolean isOptional) {
-		boolean isSet = isSet();
 		try {
 			if (isOptional)
-				return delegate.parse(getArg(), isSet);
-			return delegate.parse(getArg());
+				return delegate.parse(getArg(), isSet());
+			if (delegate.parse(getArg()))
+				return true;
+			return delegate.parse(getDefault());
 		} catch (Exception e) {
 			try {
 				if (isOptional)
-					return delegate.parse(getDefault(), isSet);
+					return delegate.parse(getDefault(), isSet());
 				return delegate.parse(getDefault());
 			} catch (Exception ex) {
 				return false;
