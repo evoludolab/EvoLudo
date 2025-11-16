@@ -4710,17 +4710,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		return mouseHitNode(hit, false);
 	}
 
-	// allows drawing of initial configurations - feature got retired; revive?
-	// /**
-	// *
-	// * @param hit
-	// * @param ref
-	// * @return
-	// */
-	// public boolean mouseHitNode(int hit, int ref) {
-	// return false;
-	// }
-
 	/**
 	 * Called from GUI if node/individual with index {@code idx} received a mouse
 	 * click or tap and indicates whether the {@code alt}-key had been pressed.

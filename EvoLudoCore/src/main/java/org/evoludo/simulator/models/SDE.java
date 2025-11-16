@@ -145,7 +145,6 @@ public class SDE extends ODE {
 			init();
 			initStatisticsSample();
 			update();
-			// debugCheck("next (new sample)");
 			return true;
 		}
 		return super.next();

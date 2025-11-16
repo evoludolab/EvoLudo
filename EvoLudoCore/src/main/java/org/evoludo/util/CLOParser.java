@@ -555,11 +555,6 @@ public class CLOParser {
 			logger.warning(msg);
 	}
 
-	// private void logDebug(String msg) {
-	// if (logger != null)
-	// logger.fine(msg);
-	// }
-
 	// UTILITY methods - for parsing command line arguments
 
 	/**

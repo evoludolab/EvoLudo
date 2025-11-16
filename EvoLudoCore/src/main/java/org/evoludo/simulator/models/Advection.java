@@ -341,6 +341,7 @@ public class Advection extends PDE {
 					int dim = nDim;
 					if (dependent >= 0)
 						dim--;
+					final String advto = "      towards j (aij>0, or away aij<0), with\n";
 					switch (dim) {
 						case 1:
 							// SINGLE DIM NOT TESTED!
@@ -349,12 +350,12 @@ public class Advection extends PDE {
 						case 2:
 							descr.append(
 									"--pdeA <a00,a01;a10,a11> 2x2 matrix for advection aij of type i\n")
-									.append("      towards j (aij>0, or away aij<0), with\n");
+									.append(advto);
 							break;
 						case 3:
 							descr.append(
 									"--pdeA <a00,...;a10,...;a20,...> 3x3 matrix for advection aij of type i\n")
-									.append("      towards j (aij>0, or away aij<0), with\n");
+									.append(advto);
 							break;
 						default:
 							int d1 = nDim - 1;
@@ -365,7 +366,7 @@ public class Advection extends PDE {
 									.append("x")
 									.append(d1)
 									.append(" advection aij of type i\n")
-									.append("      towards j (aij>0, or away aij<0), with\n");
+									.append(advto);
 					}
 					int idx = 0;
 					for (int n = 0; n < nDim; n++) {

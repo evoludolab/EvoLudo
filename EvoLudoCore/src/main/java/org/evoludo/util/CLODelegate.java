@@ -13,8 +13,8 @@ public interface CLODelegate {
 	 * <strong>Note:</strong> returning <code>false</code> triggers a warning about
 	 * which command line option failed to correctly parse. If the parser can
 	 * rectify the issue on the spot this is also acceptable. In that case the
-	 * method should return {@code true} and possibly log the fact that
-	 * parameters have been adjusted.
+	 * method should return {@code true} and possibly log the fact that parameters
+	 * have been adjusted.
 	 * 
 	 * @param isSet {@code true} if option was set on command line
 	 * @return {@code true} if parsing successful
@@ -34,8 +34,7 @@ public interface CLODelegate {
 	 * method should return {@code true} and possibly log the fact that
 	 * parameters have been adjusted.
 	 * 
-	 * @param arg       the argument for parsing by command line option
-	 * @param isDefault {@code true} if arg is default
+	 * @param arg the argument for parsing by command line option
 	 * @return {@code true} if parsing successful
 	 */
 	public default boolean parse(String arg) {
@@ -53,8 +52,8 @@ public interface CLODelegate {
 	 * method should return {@code true} and possibly log the fact that
 	 * parameters have been adjusted.
 	 * 
-	 * @param arg       the argument for parsing by command line option
-	 * @param isDefault {@code true} if arg is default
+	 * @param arg   the argument for parsing by command line option
+	 * @param isSet {@code true} if arg is set on commandline
 	 * @return {@code true} if parsing successful
 	 */
 	public default boolean parse(String arg, boolean isSet) {

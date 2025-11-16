@@ -392,7 +392,6 @@ public abstract class IBS extends Model {
 			}
 			initStatisticsSample();
 			update();
-			// debugCheck("next (new sample)");
 			return true;
 		}
 		// convergence only signaled without mutations
@@ -629,14 +628,12 @@ public abstract class IBS extends Model {
 				if (time < Double.POSITIVE_INFINITY)
 					time += RNGDistribution.Exponential.next(rng.getRNG(), dt / totRate);
 				totRate = checkConvergence();
-				if (converged)
-					return n;
 			} else if (dt < 0) {
 				// indicates extinction of a species
 				checkConvergence();
-				if (converged)
-					return n;
 			}
+			if (converged)
+				return n;
 		}
 		return nUpdates;
 	}

@@ -95,7 +95,6 @@ class PDEInitialize extends ODEInitialize {
 
 	public void init(double[][] density) {
 		Geometry space = pde.space;
-		// double[] y0 = pde.y0;
 		double[] y0 = new double[pde.nDim];
 		System.arraycopy(pde.y0, 0, y0, 0, pde.nDim);
 

@@ -1381,16 +1381,12 @@ public class PDE extends ODE {
 			for (Module<?> pop : species) {
 				Plist pplist = (Plist) plist.get(pop.getName());
 				if (!restoreGeometry(pplist)) {
-					// logger.log(Level.WARNING, "restore geometry in {0}-model failed ({1}).", new
-					// Object[] { type, pop.getName() });
 					logger.warning("restore geometry in " + type.getKey() + "-model failed (" + pop.getName() + ").");
 					success = false;
 				}
 			}
 		} else {
 			if (!restoreGeometry(plist)) {
-				// logger.log(Level.WARNING, "restore geometry in {0}-model failed.", new
-				// Object[] { type });
 				logger.warning("restore geometry in " + type.getKey() + "-model failed.");
 				success = false;
 			}

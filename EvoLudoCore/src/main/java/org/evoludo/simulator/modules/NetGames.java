@@ -370,20 +370,6 @@ public class NetGames extends Discrete implements Payoffs,
 				}
 			});
 
-	// public final CLOption cloSample = new CLOption("sample", Category.GUI,
-	// "0.01",
-	// "--sampling <s> probability for sampling random member of population",
-	// new CLOSetter() {
-	// @Override
-	// public void parse(String arg) {
-	// setRandomSampleProb(CLOParser.parseDouble(arg));
-	// }
-	// @Override
-	// public void report() {
-	// output.println("# sampling: "+ChHFormatter.format(getRandomSampleProb(), 6));
-	// }
-	// });
-
 	/**
 	 * Command line option to set the colors for altruists, fair players, and
 	 * egoists.
@@ -802,26 +788,32 @@ public class NetGames extends Discrete implements Payoffs,
 
 		@Override
 		public void resetScores() {
+			// updateFitnessMean always recalcuates scores from scratch
 		}
 
 		@Override
 		public void updateScores() {
+			// updateFitnessMean always recalcuates scores from scratch
 		}
 
 		@Override
 		public void resetTraits() {
+			// traits are unused and, instead, encoded in the network structure
 		}
 
 		@Override
 		public void prepareTraits() {
+			// traits are unused and, instead, encoded in the network structure
 		}
 
 		@Override
 		public void commitTraits() {
+			// traits are unused and, instead, encoded in the network structure
 		}
 
 		@Override
 		public void commitTraitAt(int index) {
+			// traits are unused and, instead, encoded in the network structure
 		}
 
 		@Override
@@ -836,22 +828,27 @@ public class NetGames extends Discrete implements Payoffs,
 
 		@Override
 		public void swapTraits(int a, int b) {
+			// traits are unused and, instead, encoded in the network structure
 		}
 
 		@Override
 		public void playPairGameAt(IBSGroup group) {
+			// each connection represent an act of cooperation, no other games played
 		}
 
 		@Override
 		public void playGroupGameAt(IBSGroup group) {
+			// each connection represent an act of cooperation, no other games played
 		}
 
 		@Override
 		public void playGameSyncAt(int idx) {
+			// each connection represent an act of cooperation, no other games played
 		}
 
 		@Override
 		public void yalpGroupGameAt(IBSGroup groupd) {
+			// each connection represent an act of cooperation, no other games played
 		}
 
 		@Override
