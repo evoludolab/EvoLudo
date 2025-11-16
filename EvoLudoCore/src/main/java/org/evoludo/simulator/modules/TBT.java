@@ -499,59 +499,7 @@ public class TBT extends Discrete implements Payoffs,
 			initMono(TBT.COOPERATE);
 			switch (interaction.getType()) {
 				case CUBE:
-					int l;
-					int mz;
-					if (nPopulation == 25000) {
-						l = 50;
-						mz = 5; // 10/2
-					} else {
-						l = (int) (Math.pow(nPopulation, 1.0 / 3.0) + 0.5);
-						mz = l / 2;
-					}
-					int l2 = l * l;
-					int m = l / 2;
-					double[] args = init.getArgs();
-					int type = ((args != null && args.length > 0) ? (int) args[0] : 0);
-					switch (type) {
-						default:
-						case 0:
-							if (l % 2 == 1) {
-								// odd dimensions (this excludes NOVA, hence mz=m)
-								// place single TBT.DEFECT in center
-								mid = m * (l2 + l + 1);
-								traitsCount[TBT.COOPERATE]--;
-								setTraitAt(mid, TBT.DEFECT);
-								traitsCount[TBT.DEFECT]++;
-							} else {
-								// even dimensions - place 2x2x2 cube of TBT.DEFECTors in center
-								for (int z = mz - 1; z <= mz; z++)
-									for (int y = m - 1; y <= m; y++)
-										for (int x = m - 1; x <= m; x++)
-											setTraitAt(z * l2 + y * l + x, TBT.DEFECT);
-								traitsCount[TBT.COOPERATE] -= 2 * 2 * 2;
-								traitsCount[TBT.DEFECT] += 2 * 2 * 2;
-							}
-							break;
-						case 1:
-							if (l % 2 == 1) {
-								// odd dimensions - place 3x3x3 cube of cooperators in center
-								for (int z = mz - 1; z <= mz + 1; z++)
-									for (int y = m - 1; y <= m + 1; y++)
-										for (int x = m - 1; x <= m + 1; x++)
-											setTraitAt(z * l2 + y * l + x, TBT.COOPERATE);
-								traitsCount[TBT.DEFECT] -= 3 * 3 * 3;
-								traitsCount[TBT.COOPERATE] += 3 * 3 * 3;
-							} else {
-								// even dimensions - place 4x4x4 cube of cooperators in center
-								for (int z = mz - 2; z <= mz + 1; z++)
-									for (int y = m - 2; y <= m + 1; y++)
-										for (int x = m - 2; x <= m + 1; x++)
-											setTraitAt(z * l2 + y * l + x, TBT.COOPERATE);
-								traitsCount[TBT.DEFECT] -= 4 * 4 * 4;
-								traitsCount[TBT.COOPERATE] += 4 * 4 * 4;
-							}
-							break;
-					}
+					initCubeKaleidoscope();
 					break;
 
 				case SQUARE_NEUMANN:
@@ -560,11 +508,10 @@ public class TBT extends Discrete implements Payoffs,
 				case SQUARE:
 				case HONEYCOMB:
 				case TRIANGULAR:
-					l = (int) Math.sqrt(nPopulation);
-					m = l / 2;
+					int l = (int) Math.sqrt(nPopulation);
+					int m = l / 2;
 					mid = m * (l + 1);
 					// $FALL-THROUGH$
-
 				case LINEAR:
 					if (mid < 0)
 						mid = nPopulation / 2;
@@ -577,6 +524,92 @@ public class TBT extends Discrete implements Payoffs,
 					// should never get here - check made sure of it.
 					throw new UnsupportedOperationException("geometry incompatible with kaleidoscopes!");
 			}
+		}
+
+		/**
+		 * Initialize kaleidoscope on cubic lattice.
+		 */
+		private void initCubeKaleidoscope() {
+			int l;
+			int lz;
+			if (nPopulation == 25000) {
+				l = 50;
+				lz = 10;
+			} else {
+				l = (int) (Math.pow(nPopulation, 1.0 / 3.0) + 0.5);
+				lz = l;
+			}
+			double[] args = init.getArgs();
+			int type = ((args != null && args.length > 0) ? (int) args[0] : 0);
+			switch (type) {
+				default:
+				case 0:
+					initCubeKaleidoscopeDinC(l, lz);
+					return;
+				case 1:
+					initCubeKaleidoscopeCinD(l, lz);
+					return;
+			}
+		}
+
+		/**
+		 * Initialize kaleidoscope on cubic lattice with defectors in center. If the
+		 * population size is {@code 25'000} then the NOVA settings are used (a cube
+		 * with dimensions {@code 50×50×10}).
+		 * 
+		 * @param l  the linear dimension of the cube
+		 * @param lz the linear dimension of the z-dimension
+		 */
+		private void initCubeKaleidoscopeDinC(int l, int lz) {
+			int m = l / 2;
+			int mz = lz / 2;
+			if (l % 2 == 1) {
+				// odd dimensions (this excludes NOVA, hence mz=m)
+				// place single TBT.DEFECT in center
+				int mid = m * ((l + 1) * l + 1);
+				traitsCount[TBT.COOPERATE]--;
+				setTraitAt(mid, TBT.DEFECT);
+				traitsCount[TBT.DEFECT]++;
+				return;
+			}
+			// even dimensions - place 2x2x2 cube of TBT.DEFECTors in center
+			for (int z = mz - 1; z <= mz; z++)
+				for (int y = m - 1; y <= m; y++)
+					for (int x = m - 1; x <= m; x++)
+						setTraitAt((z * l + y) * l + x, TBT.DEFECT);
+			traitsCount[TBT.COOPERATE] -= 2 * 2 * 2;
+			traitsCount[TBT.DEFECT] += 2 * 2 * 2;
+		}
+
+		/**
+		 * Initialize kaleidoscope on cubic lattice with cooperators in center. If the
+		 * population size is {@code 25'000} then the NOVA settings are used (a cube
+		 * with dimensions {@code 50×50×10}).
+		 * 
+		 * @param l  the linear dimension of the cube
+		 * @param lz the linear dimension of the cube in the z-dimension
+		 */
+		@SuppressWarnings("java:S3776") // nested for-loops clearer than refactoring
+		private void initCubeKaleidoscopeCinD(int l, int lz) {
+			int m = l / 2;
+			int mz = lz / 2;
+			if (l % 2 == 1) {
+				// odd dimensions - place 3x3x3 cube of cooperators in center
+				for (int z = mz - 1; z <= mz + 1; z++)
+					for (int y = m - 1; y <= m + 1; y++)
+						for (int x = m - 1; x <= m + 1; x++)
+							setTraitAt((z * l + y) * l + x, TBT.COOPERATE);
+				traitsCount[TBT.DEFECT] -= 3 * 3 * 3;
+				traitsCount[TBT.COOPERATE] += 3 * 3 * 3;
+				return;
+			}
+			// even dimensions - place 4x4x4 cube of cooperators in center
+			for (int z = mz - 2; z <= mz + 1; z++)
+				for (int y = m - 2; y <= m + 1; y++)
+					for (int x = m - 2; x <= m + 1; x++)
+						setTraitAt((z * l + y) * l + x, TBT.COOPERATE);
+			traitsCount[TBT.DEFECT] -= 4 * 4 * 4;
+			traitsCount[TBT.COOPERATE] += 4 * 4 * 4;
 		}
 	}
 }

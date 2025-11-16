@@ -278,14 +278,12 @@ public class CDL extends Discrete implements Payoffs,
 	public void groupScores(int[] traitCount, double[] traitScore) {
 		int x = traitCount[COOPERATE];
 		int y = traitCount[DEFECT];
-		// int z = count[LONER];
 		int n = x + y;
 
 		traitScore[LONER] = payLoner;
 		if (n < 2) {
 			// note: initInterest took care of adjusting payLoneXXX if public good is
-			// produced
-			// by a single individual
+			// produced by a single individual
 			traitScore[COOPERATE] = payLoneCoop;
 			traitScore[DEFECT] = payLoneDefect;
 			return;
@@ -740,8 +738,8 @@ public class CDL extends Discrete implements Payoffs,
 	 * Command line option to set the cost of cooperation, i.e. contributions to the
 	 * public good.
 	 */
-	public final CLOption cloCost = new CLOption("cost", "1", CLOCategory.Module,
-			"--cost <c>      cost of cooperation", new CLODelegate() {
+	public final CLOption cloCost = new CLOption("cost", "1", CLOCategory.Module, "--cost <c>      cost of cooperation",
+			new CLODelegate() {
 
 				/**
 				 * {@inheritDoc}
@@ -761,8 +759,8 @@ public class CDL extends Discrete implements Payoffs,
 	 * Command line option to set the payoff to loners that refuse to participate in
 	 * the public goods interaction.
 	 */
-	public final CLOption cloLoner = new CLOption("loner", "1", CLOCategory.Module,
-			"--loner <l>     loner payoff", new CLODelegate() {
+	public final CLOption cloLoner = new CLOption("loner", "1", CLOCategory.Module, "--loner <l>     loner payoff",
+			new CLODelegate() {
 
 				/**
 				 * {@inheritDoc}
@@ -925,47 +923,7 @@ public class CDL extends Discrete implements Payoffs,
 			int size;
 			switch (getInteractionGeometry().getType()) {
 				case CUBE:
-					int l;
-					int mz;
-					if (nPopulation == 25000) {
-						l = 50;
-						mz = 5; // 10/2
-					} else {
-						l = (int) (Math.pow(nPopulation, 1.0 / 3.0) + 0.5);
-						mz = l / 2;
-					}
-					int l2 = l * l;
-					int m = l / 2;
-					if (l % 2 == 0) { // even number of sites
-						// since NOVA has even numbers of pixels along each side, place a 4x4x4 cube of
-						// D's in the center
-						// and a 2x2x2 cube of loners within
-						for (int z = mz - 2; z < mz + 2; z++)
-							for (int y = m - 2; y < m + 2; y++)
-								for (int x = m - 2; x < m + 2; x++)
-									setTraitAt(z * l2 + y * l + x, CDL.DEFECT);
-						for (int z = mz - 1; z < mz + 1; z++)
-							for (int y = m - 1; y < m + 1; y++)
-								for (int x = m - 1; x < m + 1; x++)
-									setTraitAt(z * l2 + y * l + x, CDL.LONER);
-						traitsCount[CDL.LONER] += 2 * 2 * 2;
-						traitsCount[CDL.DEFECT] += 4 * 4 * 4 - 2 * 2 * 2;
-						traitsCount[CDL.COOPERATE] -= 4 * 4 * 4;
-					} else {
-						// odd number of sites - place 5x5x5 cube of D's in the center and a 3x3x3 cube
-						// of loners within
-						for (int z = mz - 2; z < mz + 3; z++)
-							for (int y = m - 2; y < m + 3; y++)
-								for (int x = m - 2; x < m + 3; x++)
-									setTraitAt(z * l2 + y * l + x, CDL.DEFECT);
-						for (int z = mz - 1; z < mz + 2; z++)
-							for (int y = m - 1; y < m + 2; y++)
-								for (int x = m - 1; x < m + 2; x++)
-									setTraitAt(z * l2 + y * l + x, CDL.LONER);
-						traitsCount[CDL.LONER] += 3 * 3 * 3;
-						traitsCount[CDL.DEFECT] += 5 * 5 * 5 - 3 * 3 * 3;
-						traitsCount[CDL.COOPERATE] -= 5 * 5 * 5;
-					}
+					initCubeKaleidoscope();
 					break;
 
 				case SQUARE_NEUMANN:
@@ -1063,6 +1021,50 @@ public class CDL extends Discrete implements Payoffs,
 				default:
 					// should never get here - check made sure of it.
 					throw new UnsupportedOperationException("geometry incompatible with kaleidoscopes!");
+			}
+		}
+
+		private void initCubeKaleidoscope() {
+			int l;
+			int mz;
+			if (nPopulation == 25000) {
+				l = 50;
+				mz = 5; // 10/2
+			} else {
+				l = (int) (Math.pow(nPopulation, 1.0 / 3.0) + 0.5);
+				mz = l / 2;
+			}
+			int l2 = l * l;
+			int m = l / 2;
+			if (l % 2 == 0) { // even number of sites
+				// since NOVA has even numbers of pixels along each side, place a 4x4x4 cube of
+				// D's in the center
+				// and a 2x2x2 cube of loners within
+				for (int z = mz - 2; z < mz + 2; z++)
+					for (int y = m - 2; y < m + 2; y++)
+						for (int x = m - 2; x < m + 2; x++)
+							setTraitAt(z * l2 + y * l + x, CDL.DEFECT);
+				for (int z = mz - 1; z < mz + 1; z++)
+					for (int y = m - 1; y < m + 1; y++)
+						for (int x = m - 1; x < m + 1; x++)
+							setTraitAt(z * l2 + y * l + x, CDL.LONER);
+				traitsCount[CDL.LONER] += 2 * 2 * 2;
+				traitsCount[CDL.DEFECT] += 4 * 4 * 4 - 2 * 2 * 2;
+				traitsCount[CDL.COOPERATE] -= 4 * 4 * 4;
+			} else {
+				// odd number of sites - place 5x5x5 cube of D's in the center and a 3x3x3 cube
+				// of loners within
+				for (int z = mz - 2; z < mz + 3; z++)
+					for (int y = m - 2; y < m + 3; y++)
+						for (int x = m - 2; x < m + 3; x++)
+							setTraitAt(z * l2 + y * l + x, CDL.DEFECT);
+				for (int z = mz - 1; z < mz + 2; z++)
+					for (int y = m - 1; y < m + 2; y++)
+						for (int x = m - 1; x < m + 2; x++)
+							setTraitAt(z * l2 + y * l + x, CDL.LONER);
+				traitsCount[CDL.LONER] += 3 * 3 * 3;
+				traitsCount[CDL.DEFECT] += 5 * 5 * 5 - 3 * 3 * 3;
+				traitsCount[CDL.COOPERATE] -= 5 * 5 * 5;
 			}
 		}
 	}
