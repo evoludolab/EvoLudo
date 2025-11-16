@@ -274,6 +274,11 @@ public abstract class IBS extends Model {
 				break;
 			}
 		}
+		if (mode == Mode.STATISTICS_SAMPLE && fixData == null)
+			fixData = new FixationData();
+		else
+			fixData = null;
+
 		nextSpeciesIdx = -1;
 		for (Module<?> mod : species) {
 			IBSPopulation<?, ?> pop = mod.getIBSPopulation();

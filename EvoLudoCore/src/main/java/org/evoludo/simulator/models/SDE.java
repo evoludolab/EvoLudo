@@ -135,6 +135,13 @@ public class SDE extends ODE {
 		// the presence of mutations).
 		converged = false;
 		connect = true;
+		if (mode == Mode.STATISTICS_SAMPLE && fixData == null) {
+			fixData = new FixationData();
+			// the index of the mutant trait is meaningless in SDE models
+			// but must be non-negative (otherwise indicates an invalid sample)
+			fixData.mutantTrait = 0;
+		} else
+			fixData = null;
 	}
 
 	@Override
