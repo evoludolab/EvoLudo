@@ -688,91 +688,15 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		// mytype and active refer to focal species, while interaction partners
 		// to opponent species
 		int mytype = getTraitAt(me);
-		if (module.isStatic()) {
-			// constant selection: simply choose active trait with highest payoff
-			double max = typeScores[mytype];
-			int newtype = mytype;
-			for (int n = 0; n < nTraits; n++) {
-				if (!active[n])
-					continue;
-				// note: if my payoff and highest payoff are tied, keep type
-				if (typeScores[n] > max) {
-					max = typeScores[n];
-					newtype = n;
-				}
-			}
-			if (newtype != mytype) {
-				traitsNext[me] = newtype + nTraits;
-				return true;
-			}
-			return false;
-		}
+		if (module.isStatic())
+			return staticBR(me);
 
 		// frequency dependent selection: determine active trait with highest payoff
-		if (competition.getType() == Geometry.Type.MEANFIELD) {
-			// well-mixed
-			System.arraycopy(opponent.traitsCount, 0, tmpCount, 0, nTraits);
-			if (interaction.isInterspecies()) {
-				// inter-species: focal individual not part of opponents but include it's
-				// counterpart in opponent population
-				if (module.isPairwise())
-					pairmodule.mixedScores(tmpCount, tmpTraitScore);
-				else
-					groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpTraitScore);
-			} else {
-				// intra-species: remove focal individual and evaluate performance
-				// of all active traits
-				tmpCount[mytype]--;
-				for (int n = 0; n < nTraits; n++) {
-					if (!active[n]) {
-						tmpTraitScore[n] = -Double.MAX_VALUE;
-						continue;
-					}
-					// add candidate trait to the mix
-					tmpCount[n]++;
-					if (module.isPairwise())
-						pairmodule.mixedScores(tmpCount, tmpScore);
-					else
-						groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpScore);
-					tmpTraitScore[n] = tmpScore[n];
-					tmpCount[n]--;
-				}
-			}
-		} else {
-			// structured
-			if (interaction.isInterspecies()) {
-				// inter-species: focal individual not part of opponents but include it's
-				// counterpart in opponent population
-				size = stripVacancies(group, size, tmpTraits, tmpGroup);
-				countTraits(tmpCount, tmpTraits, 0, size);
-				// RESOLUTION: instead if mytype is not VACANT add it to trait count
-				if (mytype != vacantIdx)
-					tmpCount[mytype]++;
-				if (module.isPairwise())
-					pairmodule.mixedScores(tmpCount, tmpTraitScore);
-				else
-					groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpTraitScore);
-			} else {
-				// intra-species: evaluate performance of focal individual for all active
-				// traits
-				size = stripVacancies(group, size, tmpTraits, tmpGroup);
-				countTraits(tmpCount, tmpTraits, 0, size);
-				for (int n = 0; n < nTraits; n++) {
-					if (!active[n]) {
-						tmpTraitScore[n] = -Double.MAX_VALUE;
-						continue;
-					}
-					// add candidate trait to the mix
-					tmpCount[n]++;
-					if (module.isPairwise())
-						pairmodule.mixedScores(tmpCount, tmpScore);
-					else
-						groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpScore);
-					tmpTraitScore[n] = tmpScore[n];
-					tmpCount[n]--;
-				}
-			}
-		}
+		if (competition.getType() == Geometry.Type.MEANFIELD)
+			wellMixedBR(me);
+		else
+			structuredBR(group, size);
+
 		double max = tmpTraitScore[mytype];
 		int newtype = mytype;
 		for (int n = 0; n < nTraits; n++) {
@@ -789,6 +713,87 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Best response update for static (i.e. constant selection) scenarios.
+	 * 
+	 * @param me the index of the focal individual
+	 * @return {@code true} if the trait changed
+	 */
+	private boolean staticBR(int me) {
+		// constant selection: simply choose active trait with highest payoff
+		int mytype = getTraitAt(me);
+		double max = typeScores[mytype];
+		int newtype = mytype;
+		for (int n = 0; n < nTraits; n++) {
+			if (!active[n] || n == vacantIdx)
+				continue;
+			// note: if my payoff and highest payoff are tied, keep type
+			if (typeScores[n] > max) {
+				max = typeScores[n];
+				newtype = n;
+			}
+		}
+		if (newtype != mytype) {
+			traitsNext[me] = newtype + nTraits;
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Best response update for well-mixed populations.
+	 * 
+	 * @param me the index of the focal individual
+	 */
+	private void wellMixedBR(int me) {
+		System.arraycopy(opponent.traitsCount, 0, tmpCount, 0, nTraits);
+		if (!interaction.isInterspecies()) {
+			// intra-species: remove focal individual
+			// inter-species: focal individual not part of opponent population
+			int mytype = getTraitAt(me);
+			tmpCount[mytype]--;
+		}
+		for (int n = 0; n < nTraits; n++) {
+			if (!active[n] || n == vacantIdx) {
+				tmpTraitScore[n] = -Double.MAX_VALUE;
+				continue;
+			}
+			// add candidate trait to the mix
+			tmpCount[n]++;
+			if (module.isPairwise())
+				pairmodule.mixedScores(tmpCount, tmpScore);
+			else
+				groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpScore);
+			tmpTraitScore[n] = tmpScore[n];
+			tmpCount[n]--;
+		}
+	}
+
+	/**
+	 * Best response update for structured populations.
+	 * 
+	 * @param group the group of individuals involved in the interaction
+	 * @param size  the size of the group
+	 */
+	private void structuredBR(int[] group, int size) {
+		size = stripVacancies(group, size, tmpTraits, tmpGroup);
+		countTraits(tmpCount, tmpTraits, 0, size);
+		for (int n = 0; n < nTraits; n++) {
+			if (!active[n] || n == vacantIdx) {
+				tmpTraitScore[n] = -Double.MAX_VALUE;
+				continue;
+			}
+			// add candidate trait to the mix
+			tmpCount[n]++;
+			if (module.isPairwise())
+				pairmodule.mixedScores(tmpCount, tmpScore);
+			else
+				groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpScore);
+			tmpTraitScore[n] = tmpScore[n];
+			tmpCount[n]--;
+		}
 	}
 
 	/**
