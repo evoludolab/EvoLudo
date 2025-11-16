@@ -1510,40 +1510,7 @@ public class EvoLudoWeb extends Composite
 		// process (emulated) ePub restrictions - adds console if possible
 		processEPubSettings();
 		List<AbstractView<?>> availableViews = new ArrayList<>(activeViews.values());
-		if (cloView.isSet()) {
-			// the initialView specification (name or index) may be followed by a space and
-			// a comma-separated list of view specific options
-			String[] iv = initialView.split(" ", 2);
-			// try to interpret first argument as name
-			String name = iv[0].replace('_', ' ').trim();
-			AbstractView<?> newView = null;
-			for (AbstractView<?> view : availableViews) {
-				if (view.getName().equals(name)) {
-					newView = view;
-					break;
-				}
-			}
-			if (newView == null) {
-				// try to interpret first argument as index
-				int idx = 0;
-				try {
-					idx = CLOParser.parseInteger(iv[0]);
-				} catch (NumberFormatException e) {
-					// the argument is not a number, ignore and pick first view
-					logger.warning("failed to set view '" + iv[0] + "' - using default.");
-				}
-				// Ensure idx is within bounds [1, av.length]
-				if (idx < 1)
-					idx = 1;
-				int size = availableViews.size();
-				if (idx > size)
-					idx = size;
-				if (!availableViews.isEmpty())
-					newView = availableViews.get(idx - 1);
-			}
-			guiState.view = newView;
-			guiState.args = iv.length > 1 ? iv[1].trim() : null;
-		}
+		processCLOView(availableViews);
 		if (guiState.view == null || !activeViews.containsValue(guiState.view)) {
 			// initial load and view not set (or not found)
 			// pick first available view (at least the console has to be in the list)
@@ -1596,39 +1563,87 @@ public class EvoLudoWeb extends Composite
 		activeView.parse(guiState.args);
 		// view needs to be activated to set the mode of the model
 		activeView.activate();
-		if (engine.cloSnap.isSet()) {
-			// --snap set
-			Model activeModel = engine.getModel();
-			double tStop = activeModel.getTimeStop();
-			double nSamples = activeModel.getNSamples();
-			switch (activeModel.getMode()) {
-				case DYNAMICS:
-				case STATISTICS_UPDATE:
-					double deltat = (tStop - activeModel.getTime()) * (activeModel.isTimeReversed() ? -1.0 : 1.0);
-					if (Double.isFinite(tStop) && deltat > 0.0) {
-						// run to specified time
-						if (Math.abs(deltat) < activeModel.getTimeStep())
-							activeModel.setTimeStep(deltat);
-						// start running - even without --run
-						engine.setSuspended(true);
-					}
-					if (nSamples > 0.0)
-						logger.warning("--samples found: wrong mode for statistics, use --view option.");
-					break;
-				case STATISTICS_SAMPLE:
-					// run to specified sample count
-					if (nSamples > activeModel.getNStatisticsSamples()) {
-						// start running - even without --run
-						engine.setSuspended(true);
-					}
-					if (Double.isFinite(tStop))
-						logger.warning("--timestop found: wrong mode for dynamics, use --view option.");
-					break;
-				default:
-			}
-		}
+		processCLOSnap();
 		if (activeView.hasLayout() && engine.isSuspended())
 			engine.run();
+	}
+
+	/**
+	 * Process the command line option for the initial view, {@link #cloView}, and
+	 * set the view accordingly. If the view specification is invalid, the
+	 * default view is used.
+	 * 
+	 * @param availableViews the list of available views
+	 */
+	private void processCLOView(List<AbstractView<?>> availableViews) {
+		if (!cloView.isSet())
+			return;
+		// the initialView specification (name or index) may be followed by a space and
+		// a comma-separated list of view specific options
+		String[] iv = initialView.split(" ", 2);
+		// try to interpret first argument as name
+		String name = iv[0].replace('_', ' ').trim();
+		AbstractView<?> newView = null;
+		for (AbstractView<?> view : availableViews) {
+			if (view.getName().equals(name)) {
+				newView = view;
+				break;
+			}
+		}
+		if (newView == null) {
+			// try to interpret first argument as index
+			int idx = 0;
+			try {
+				idx = CLOParser.parseInteger(iv[0]);
+			} catch (NumberFormatException e) {
+				// the argument is not a number, ignore and pick first view
+				logger.warning("failed to set view '" + iv[0] + "' - using default.");
+			}
+			// Ensure idx is within bounds [1, av.length]
+			idx = Math.min(Math.max(idx, 1), availableViews.size());
+			if (!availableViews.isEmpty())
+				newView = availableViews.get(idx - 1);
+		}
+		guiState.view = newView;
+		guiState.args = iv.length > 1 ? iv[1].trim() : null;
+	}
+
+	/**
+	 * Process the command line options for snap execution, {@link #cloSnap}, and
+	 * start the model accordingly.
+	 */
+	private void processCLOSnap() {
+		if (!engine.cloSnap.isSet())
+			return;
+		// --snap set
+		Model activeModel = engine.getModel();
+		double tStop = activeModel.getTimeStop();
+		double nSamples = activeModel.getNSamples();
+		switch (activeModel.getMode()) {
+			case DYNAMICS:
+			case STATISTICS_UPDATE:
+				double deltat = (tStop - activeModel.getTime()) * (activeModel.isTimeReversed() ? -1.0 : 1.0);
+				if (Double.isFinite(tStop) && deltat > 0.0) {
+					// run to specified time
+					if (Math.abs(deltat) < activeModel.getTimeStep())
+						activeModel.setTimeStep(deltat);
+					// start running - even without --run
+					engine.setSuspended(true);
+				}
+				if (nSamples > 0.0)
+					logger.warning("--samples found: wrong mode for statistics, use --view option.");
+				break;
+			case STATISTICS_SAMPLE:
+				// run to specified sample count
+				if (nSamples > activeModel.getNStatisticsSamples()) {
+					// start running - even without --run
+					engine.setSuspended(true);
+				}
+				if (Double.isFinite(tStop))
+					logger.warning("--timestop found: wrong mode for dynamics, use --view option.");
+				break;
+			default:
+		}
 	}
 
 	/**
