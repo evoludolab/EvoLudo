@@ -2942,24 +2942,35 @@ public class EvoLudoWeb extends Composite
 			}
 			if (console == null)
 				return;
-			String log = rec.getMessage();
-			int preBegin;
+
+			String lograw = rec.getMessage();
+			int preBegin = lograw.indexOf(TAG_PRE_OPEN);
+			if (preBegin < 0) {
+				// no <pre> tag found - simple encoding
+				console.log(rl, XMLCoder.encode(lograw));
+				return;
+			}
+			StringBuilder log = new StringBuilder();
 			int preEnd = 0;
+			int start = preBegin;
 			// encode all text inside <pre>...</pre> tags
-			while ((preBegin = log.indexOf(TAG_PRE_OPEN, preEnd)) >= 0) {
+			do {
 				preBegin += TAG_PRE_OPEN.length();
 				// preformatted component found, preserve formatting
-				preEnd = log.indexOf(TAG_PRE_CLOSE);
+				preEnd = lograw.indexOf(TAG_PRE_CLOSE);
 				if (preEnd < 0)
-					preEnd = log.length();
-				String pre = log.substring(preBegin, preEnd);
-				log = log.substring(0, preBegin) + XMLCoder.encode(pre)
-						+ log.substring(preEnd + TAG_PRE_CLOSE.length());
-			}
-			// TODO: check if HTML tags are allowed in epubs
-			// if (engine.isEPub)
-			// log = XMLCoder.encode(log);
-			console.log(rl, log);
+					preEnd = lograw.length();
+				String pre = lograw.substring(preBegin, preEnd);
+				log.append(lograw.substring(start, preBegin))
+						.append(XMLCoder.encode(pre));
+				String tail = lograw.substring(preEnd);
+				if (!tail.startsWith(TAG_PRE_CLOSE))
+					// append </pre> if missing
+					log.append(TAG_PRE_CLOSE);
+				log.append(tail);
+				start = preEnd + TAG_PRE_CLOSE.length();
+			} while ((preBegin = lograw.indexOf(TAG_PRE_OPEN, start)) >= 0);
+			console.log(rl, log.toString());
 		}
 
 		/**
