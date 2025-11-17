@@ -1539,7 +1539,6 @@ public class EvoLudoWeb extends Composite
 		// reset is required if module and/or model changed
 		Module<?> newModule = engine.getModule();
 		Model newModel = engine.getModel();
-		processCLOView();
 		if (newModule == null || newModule != guiState.module || newModel != guiState.model) {
 			engine.modelReset(true);
 			loadViews();
@@ -1558,15 +1557,13 @@ public class EvoLudoWeb extends Composite
 			// resume running if no reset was necessary or --run was provided
 			engine.setSuspended(guiState.resume || engine.isSuspended());
 		}
+		processCLOView();
 		if (guiState.view == null || !activeViews.containsValue(guiState.view)) {
 			// initial load and view not set (or not found)
 			// pick first available view (at least the console has to be in the list)
 			guiState.view = activeViews.values().iterator().next();
 		}
-		if (guiState.view != activeView && activeView != null)
-			activeView.deactivate();
-		activeView = guiState.view;
-		evoludoDeck.showWidget(activeView);
+		changeViewTo(guiState.view, true);
 		if (guiState.plist != null) {
 			Plist state = guiState.plist;
 			guiState.plist = null;
