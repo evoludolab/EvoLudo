@@ -135,13 +135,6 @@ public class SDE extends ODE {
 		// the presence of mutations).
 		converged = false;
 		connect = true;
-		if (mode == Mode.STATISTICS_SAMPLE && fixData == null) {
-			fixData = new FixationData();
-			// the index of the mutant trait is meaningless in SDE models
-			// but must be non-negative (otherwise indicates an invalid sample)
-			fixData.mutantTrait = 0;
-		} else
-			fixData = null;
 	}
 
 	@Override
@@ -155,6 +148,18 @@ public class SDE extends ODE {
 			return true;
 		}
 		return super.next();
+	}
+
+	@Override
+	public boolean setMode(Mode mode) {
+		if (mode == Mode.STATISTICS_SAMPLE && fixData == null) {
+			fixData = new FixationData();
+			// the index of the mutant trait is meaningless in SDE models
+			// but must be non-negative (otherwise indicates an invalid sample)
+			fixData.mutantTrait = 0;
+		} else
+			fixData = null;
+		return super.setMode(mode);
 	}
 
 	/**
