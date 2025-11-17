@@ -2367,10 +2367,10 @@ public class EvoLudoWeb extends Composite
 			evoludoDeck.remove(view);
 		oldViews.clear();
 
-		// update view selector
+		// update view selector - keep indices in sync with deck
 		evoludoViews.clear();
-		for (AbstractView<?> view : activeViews.values())
-			evoludoViews.addItem(view.getName());
+		for (Widget view : evoludoDeck)
+			evoludoViews.addItem(((AbstractView<?>) view).getName());
 	}
 
 	/**
@@ -2472,7 +2472,8 @@ public class EvoLudoWeb extends Composite
 		for (Widget widget : evoludoDeck)
 			if (widget == view)
 				return;
-		evoludoDeck.add(view);
+		// insert views before console to keep console at the end
+		evoludoDeck.insert(view, evoludoDeck.getWidgetIndex(viewConsole));
 	}
 
 	/**
