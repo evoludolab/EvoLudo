@@ -32,7 +32,6 @@ package org.evoludo.simulator.models;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
@@ -1426,6 +1425,22 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	public void isConsistent() {
 		if (nIssues != 0)
 			return;
+		if (vacantIdx < 0)
+			return;
+		int nPop = 0;
+		for (int n = 0; n < nPopulation; n++) {
+			if (getTraitAt(n) == vacantIdx)
+				continue;
+			nPop++;
+		}
+		if (getPopulationSize() != nPop)
+			logAccountingIssue("sum of trait types is ", nPop, getPopulationSize(), "");
+		super.isConsistent();
+	}
+
+	@Override
+	protected void checkConsistentFitness() {
+		super.checkConsistentFitness();
 		double checkScores = 0.0;
 		double[] checkAccuTypeScores = new double[nTraits];
 		int[] checkTraitCount = new int[nTraits];
@@ -1437,42 +1452,21 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			checkScores += scoren;
 			checkAccuTypeScores[traitn] += scoren;
 		}
-		int accTrait = 0;
 		double accScores = 0.0;
 		for (int n = 0; n < nTraits; n++) {
-			if (checkTraitCount[n] != traitsCount[n]) {
-				if (logger.isLoggable(Level.WARNING))
-					logger.warning("accounting issue: trait count of " + module.getTraitName(n) + " is "
-							+ checkTraitCount[n] + " but traitCount[" + n + "]="
-							+ traitsCount[n]);
-				nIssues += 1;
-			}
-			if (Math.abs(checkAccuTypeScores[n] - accuTypeScores[n]) > 1e-8) {
-				if (logger.isLoggable(Level.WARNING))
-					logger.warning("accounting issue: accumulated scores of trait " + module.getTraitName(n) + " is "
-							+ checkAccuTypeScores[n] + " but accuTypeScores[" + n + "]=" + accuTypeScores[n]);
-				nIssues += 1;
-			}
-			accTrait += traitsCount[n];
+			if (checkTraitCount[n] != traitsCount[n])
+				logAccountingIssue("trait count of " + module.getTraitName(n) + " is ", checkTraitCount[n],
+						traitsCount[n], "");
+			if (Math.abs(checkAccuTypeScores[n] - accuTypeScores[n]) > 1e-8)
+				logAccountingIssue("accumulated scores of trait " + module.getTraitName(n) + " are ",
+						checkAccuTypeScores[n], accuTypeScores[n], "");
 			if (n == vacantIdx)
 				continue;
 			accScores += accuTypeScores[n];
 		}
-		if (nPopulation != accTrait) {
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning(
-						"accounting issue: sum of trait types is " + accTrait + " but nPopulation=" + nPopulation);
-			nIssues += 1;
-		}
-		if (Math.abs(checkScores - accScores) > 1e-8) {
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("accounting issue: sum of scores is " + checkScores + " but accuTypeScores add up to "
-						+ accScores + " (" + Formatter.format(accuTypeScores, 8) + ")");
-			nIssues += 1;
-		}
-		// do not yet set isConsistent to false because this prevents the test in super
-		// to run
-		super.isConsistent();
+		if (Math.abs(checkScores - accScores) > 1e-8)
+			logAccountingIssue("sum of trait scores is ", checkScores, accScores,
+					" (" + Formatter.format(accuTypeScores, 8) + ")");
 	}
 
 	@Override

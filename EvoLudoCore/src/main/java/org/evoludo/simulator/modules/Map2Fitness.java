@@ -258,31 +258,31 @@ public class Map2Fitness {
 					int n = 0;
 					List<? extends Module<?>> species = module.getSpecies();
 					for (Module<?> mod : species) {
-						if (!(mod instanceof Payoffs))
-							continue;
-						Map2Fitness m2f = ((Payoffs) mod).getMap2Fitness();
-						if (m2f == null)
-							continue;
-						String m = map2fitnessspecies[n++ % map2fitnessspecies.length];
-						Map2Fitness.Map m2fm = (Map2Fitness.Map) clo.match(m);
-						if (m2fm == null)
-							return false;
-						m2f.setMap(m2fm);
-						// parse b and w, if present
-						String[] args = m.split("\\s+|=|,");
-						double b = 1.0;
-						double w = 1.0;
-						switch (args.length) {
-							case 3:
-								w = CLOParser.parseDouble(args[2]);
-								// $FALL-THROUGH$
-							case 2:
-								b = CLOParser.parseDouble(args[1]);
-								break;
-							default:
+						if (mod instanceof Payoffs) {
+							Map2Fitness m2f = ((Payoffs) mod).getMap2Fitness();
+							if (m2f == null)
+								continue;
+							String m = map2fitnessspecies[n++ % map2fitnessspecies.length];
+							Map2Fitness.Map m2fm = (Map2Fitness.Map) clo.match(m);
+							if (m2fm == null)
+								return false;
+							m2f.setMap(m2fm);
+							// parse b and w, if present
+							String[] args = m.split("\\s+|=|,");
+							double b = 1.0;
+							double w = 1.0;
+							switch (args.length) {
+								case 3:
+									w = CLOParser.parseDouble(args[2]);
+									// $FALL-THROUGH$
+								case 2:
+									b = CLOParser.parseDouble(args[1]);
+									break;
+								default:
+							}
+							m2f.setBaseline(b);
+							m2f.setSelection(w);
 						}
-						m2f.setBaseline(b);
-						m2f.setSelection(w);
 					}
 					return true;
 				}

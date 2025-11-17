@@ -3959,13 +3959,15 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// interaction.isConsistent();
 		// if (!interaction.interCompSame)
 		// competition.isConsistent();
+		if (nIssues > 0)
+			logger.warning(nIssues + " inconsistencies found @ " + engine.getModel().getUpdates());
 	}
 
 	/**
 	 * Check consistency of scores and fitness values for modules that implement
 	 * Payoffs.
 	 */
-	protected void checkConsistentFitness() {
+	void checkConsistentFitness() {
 		for (int n = 0; n < nPopulation; n++)
 			checkIndividualConsistency(n);
 
@@ -3978,9 +3980,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		} else {
 			checkNoAdjustScoresConsistency();
 		}
-
-		if (nIssues > 0)
-			logger.warning(nIssues + " inconsistencies found @ " + engine.getModel().getUpdates());
 	}
 
 	/**
@@ -4066,8 +4065,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			checkFitness += getFitnessAt(n);
 
 		if (Math.abs(sumFitness - checkFitness) > Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness)))
-			logAccountingIssue(sumFitnessStore, sumFitness, "(delta=" + Math.abs(sumFitness - checkFitness) + ", max="
-					+ Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness)) + ")");
+			logAccountingIssue("sum of fitness is ", sumFitnessStore, sumFitness,
+					"(delta=" + Math.abs(sumFitness - checkFitness) + ", max="
+							+ Combinatorics.pow(10, -11 + Functions.magnitude(sumFitness)) + ")");
 	}
 
 	/**
@@ -4115,37 +4115,84 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			logAccountingIssue(checkFitness, sumFitness);
 	}
 
-	private void logScoringIssue(int idx, double actual, String issue) {
+	/**
+	 * Log a scoring issue.
+	 * 
+	 * @param idx    the index of the individual
+	 * @param actual the actual score
+	 * @param issue  the issue description
+	 */
+	void logScoringIssue(int idx, double actual, String issue) {
 		if (logger.isLoggable(Level.WARNING))
 			logger.warning("score issue @ " + idx + ": score=" + actual + " " + issue);
 		nIssues++;
 	}
 
-	private void logScoringIssue(int idx, double actual, double expected) {
+	/**
+	 * Log a scoring issue.
+	 * 
+	 * @param idx      the index of the individual
+	 * @param actual   the actual score
+	 * @param expected the expected score
+	 */
+	void logScoringIssue(int idx, double actual, double expected) {
 		logScoringIssue(idx, actual, "instead of " + expected);
 	}
 
-	private void logMapIssue(int idx, double actual, double expected) {
+	/**
+	 * String for formatting log messages
+	 */
+	private static final String INSTEAD_OF = " instead of ";
+
+	/**
+	 * Log a mapping issue.
+	 * 
+	 * @param idx      the index of the individual
+	 * @param actual   the actual score
+	 * @param expected the expected score
+	 */
+	void logMapIssue(int idx, double actual, double expected) {
 		if (logger.isLoggable(Level.WARNING))
 			logger.warning("map issue @ " + idx + ": score=" + actual + " maps to " + map2fit.map(actual)
-					+ " instead of " + expected);
+					+ INSTEAD_OF + expected);
 		nIssues++;
 	}
 
-	private void logFitnessIssue(int idx, double actual, double expected) {
+	/**
+	 * Log a fitness issue.
+	 * 
+	 * @param idx      the index of the individual
+	 * @param actual   the actual fitness
+	 * @param expected the expected fitness
+	 */
+	void logFitnessIssue(int idx, double actual, double expected) {
 		if (logger.isLoggable(Level.WARNING))
-			logger.warning("fit issue @ " + idx + ": fitness=" + actual + " instead of " + expected);
+			logger.warning("fit issue @ " + idx + ": fitness=" + actual + INSTEAD_OF + expected);
 		nIssues++;
 	}
 
-	private void logAccountingIssue(double actual, double expected) {
-		logAccountingIssue(actual, expected, "");
+	/**
+	 * Log an accounting issue.
+	 * 
+	 * @param actual   the actual value
+	 * @param expected the expected value
+	 */
+	void logAccountingIssue(double actual, double expected) {
+		logAccountingIssue("sum of fitness is ", actual, expected, "");
 	}
 
-	private void logAccountingIssue(double actual, double expected, String issue) {
+	/**
+	 * Log an accounting issue.
+	 * 
+	 * @param descr    the description of the value
+	 * @param actual   the actual value
+	 * @param expected the expected value
+	 * @param issue    the issue description
+	 */
+	void logAccountingIssue(String descr, double actual, double expected, String issue) {
 		if (logger.isLoggable(Level.WARNING))
 			logger.warning(
-					"accounting issue: sum of fitness is " + actual + " instead of fitness " + expected + " " + issue);
+					"accounting issue: " + descr + actual + INSTEAD_OF + expected + " " + issue);
 		nIssues++;
 	}
 
