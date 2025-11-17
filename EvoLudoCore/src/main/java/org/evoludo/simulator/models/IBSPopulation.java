@@ -3368,65 +3368,20 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		map2fit = module.getMap2Fitness();
 		playerUpdate = module.getPlayerUpdate();
 
-		// check geometries: --geometry set structure, --geominter set interaction and
-		// --geomcomp set competition.
-		// now it is time to amalgamate. the more specific options --geominter,
-		// --geomcomp take precedence. structure
-		// is always available from parsing the default of cloGeometry. hence first
-		// check --geominter, --geomcomp.
-		IBS master = (IBS) engine.getModel();
 		Geometry structure = module.getGeometry();
-		if (interaction != null) {
-			if (competition != null) {
-				// NOTE: this is hackish because every population has its own cloGeometry
-				// parsers but only one will actually do the parsing...
-				if (structure != null) {
-					// --geometry was provided on command line
-					if (!interaction.equals(structure) && !master.cloGeometryInteraction.isSet()) {
-						interaction = structure;
-						doReset = true;
-					}
-					if (!competition.equals(structure) && !master.cloGeometryCompetition.isSet()) {
-						competition = structure;
-						doReset = true;
-					}
-					interaction.interCompSame = competition.interCompSame = interaction.equals(competition);
-				}
-				// both geometries set on command line OR parameters manually changed and
-				// applied - check if can be collapsed
-				// NOTE: assumes that same arguments imply same geometries. this precludes that
-				// interaction and competition are both random
-				// structures with otherwise identical parameters (e.g. random regular graphs of
-				// same degree but different realizations)
-				if (!interaction.isValid || !competition.isValid) {
-					interaction.interCompSame = competition.interCompSame = master.cloGeometryInteraction.getArg()
-							.equals(master.cloGeometryCompetition.getArg());
-				}
-			} else {
-				// competition not set - use --geometry (or its default for competition)
-				interaction.interCompSame = master.cloGeometryInteraction.getArg().equals(module.cloGeometry.getArg());
-				if (!interaction.interCompSame) {
-					competition = structure;
-					competition.interCompSame = false;
-				}
-			}
-		} else {
-			// interaction not set
-			if (competition != null) {
-				// competition set - use --geometry (or its default for interaction)
-				// NOTE: this is slightly different from above because competition knows
-				// nothing about potentially different opponents in
-				// inter-species interactions.
-				interaction = structure;
-				interaction.interCompSame = master.cloGeometryCompetition.getArg()
-						.equals(module.cloGeometry.getArg());
-			} else {
-				// neither geometry is set - e.g. initial launch with --geometry specified (or
-				// no geometry specifications at all)
-				interaction = structure;
-				interaction.interCompSame = true;
-			}
+		// --geometry provides sane defaults
+		IBS ibs = (IBS) engine.getModel();
+		if (!ibs.cloGeometryInteraction.isSet()) {
+			doReset |= (interaction != structure);
+			// use default for interaction
+			interaction = structure;
 		}
+		if (!ibs.cloGeometryCompetition.isSet()) {
+			doReset |= (competition != structure);
+			// use default for competition
+			competition = structure;
+		}
+		interaction.interCompSame = competition.interCompSame = (interaction.equals(competition));
 		// make sure competiton geometry is set
 		if (competition == null)
 			competition = interaction;

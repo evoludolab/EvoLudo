@@ -1506,22 +1506,21 @@ public class EvoLudoWeb extends Composite
 		guiState.view = activeView;
 		// parseCLO() does the heavy lifting and configures the GUI
 		guiState.issues = engine.parseCLO(this::configGUI);
-		updateViews();
-		// process (emulated) ePub restrictions - adds console if possible
-		processEPubSettings();
-		List<AbstractView<?>> availableViews = new ArrayList<>(activeViews.values());
-		processCLOView(availableViews);
-		if (guiState.view == null || !activeViews.containsValue(guiState.view)) {
-			// initial load and view not set (or not found)
-			// pick first available view (at least the console has to be in the list)
-			guiState.view = availableViews.get(0);
+		// clearing evoludoDeck calls onUnload on all views - keep them for now
+		// to allow recycling if module/model did not change; rely on presence of
+		// console to trigger configGUI() when ready
+		if (activeView == null) {
+			// initial load
+			viewConsole.load();
+			if (evoludoDeck.getWidgetCount() == 0)
+				evoludoDeck.add(viewConsole);
+			activeView = viewConsole;
+		} else if (activeView == viewConsole) {
+			// prevents triggering configGUI()
+			evoludoDeck.remove(viewConsole);
+			evoludoDeck.add(viewConsole);
 		}
-		if (guiState.view != activeView && activeView != null)
-			activeView.deactivate();
-		activeView = guiState.view;
-		evoludoDeck.showWidget(activeView);
-		// set selected item in view selector
-		evoludoViews.setSelectedIndex(evoludoDeck.getWidgetIndex(activeView));
+		evoludoDeck.showWidget(viewConsole);
 		if (guiState.issues > 1) {
 			// single issue is already displayed in status line
 			displayStatus("Multiple parsing problems (" + guiState.issues + ") - check log for details.",
@@ -1540,6 +1539,7 @@ public class EvoLudoWeb extends Composite
 		// reset is required if module and/or model changed
 		Module<?> newModule = engine.getModule();
 		Model newModel = engine.getModel();
+		processCLOView();
 		if (newModule == null || newModule != guiState.module || newModel != guiState.model) {
 			engine.modelReset(true);
 			loadViews();
@@ -1547,13 +1547,26 @@ public class EvoLudoWeb extends Composite
 			// been ready for notification)
 			engine.fireModelReset();
 		} else {
-			if (!engine.paramsDidChange())
+			boolean didReset = engine.paramsDidChange();
+			loadViews();
+			if (didReset) {
+				// need to notify updated set of views
+				engine.fireModelReset();
 				// do not resume execution if reset was required (unless --run was specified)
 				guiState.resume = false;
-			loadViews();
+			}
 			// resume running if no reset was necessary or --run was provided
 			engine.setSuspended(guiState.resume || engine.isSuspended());
 		}
+		if (guiState.view == null || !activeViews.containsValue(guiState.view)) {
+			// initial load and view not set (or not found)
+			// pick first available view (at least the console has to be in the list)
+			guiState.view = activeViews.values().iterator().next();
+		}
+		if (guiState.view != activeView && activeView != null)
+			activeView.deactivate();
+		activeView = guiState.view;
+		evoludoDeck.showWidget(activeView);
 		if (guiState.plist != null) {
 			Plist state = guiState.plist;
 			guiState.plist = null;
@@ -1575,9 +1588,10 @@ public class EvoLudoWeb extends Composite
 	 * 
 	 * @param availableViews the list of available views
 	 */
-	private void processCLOView(List<AbstractView<?>> availableViews) {
+	private void processCLOView() {
 		if (!cloView.isSet())
 			return;
+		List<AbstractView<?>> availableViews = new ArrayList<>(activeViews.values());
 		// the initialView specification (name or index) may be followed by a space and
 		// a comma-separated list of view specific options
 		String[] iv = initialView.split(" ", 2);
@@ -1657,6 +1671,7 @@ public class EvoLudoWeb extends Composite
 	 * of the active view are passed to all other views.
 	 */
 	private void loadViews() {
+		updateViews();
 		// set of available views may have changed (e.g. statistics)
 		int width = activeView.getOffsetWidth();
 		int height = activeView.getOffsetHeight();
@@ -2326,7 +2341,6 @@ public class EvoLudoWeb extends Composite
 	protected void updateViews() {
 		HashMap<String, AbstractView<?>> oldViews = activeViews;
 		activeViews = new HashMap<>();
-		evoludoDeck.clear();
 
 		Module<?> module = engine.getModule();
 		if (module == null) {
@@ -2350,7 +2364,7 @@ public class EvoLudoWeb extends Composite
 
 		// unload views that are no longer available
 		for (AbstractView<?> view : oldViews.values())
-			view.dispose();
+			evoludoDeck.remove(view);
 		oldViews.clear();
 
 		// update view selector
@@ -2455,6 +2469,9 @@ public class EvoLudoWeb extends Composite
 		if (oldViews.containsKey(name))
 			view = oldViews.remove(name);
 		activeViews.put(view.getName(), view);
+		for (Widget widget : evoludoDeck)
+			if (widget == view)
+				return;
 		evoludoDeck.add(view);
 	}
 
@@ -2827,12 +2844,8 @@ public class EvoLudoWeb extends Composite
 	 * are disabled (or enabled otherwise).
 	 */
 	protected void processEPubSettings() {
-		// TODO: check/resolve problem with console in ePubs - must be ok
-		// if properly XML encoded content
-		if (activeViews.put(viewConsole.getName(), viewConsole) == null) {
-			viewConsole.load();
-			evoludoViews.addItem(viewConsole.getName());
-		}
+		// TODO: check/resolve problem with console in ePubs - should be ok
+		// if content properly XML encoded...
 		// nonlinear content in Apple Books (i.e. all interactive labs) do not report
 		// as ePubs on iOS (at least for iPad) but as expected on macOS. On both
 		// platforms TextFields are disabled through shadow DOM.

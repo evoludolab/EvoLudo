@@ -214,10 +214,8 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		isLoaded = false;
 	}
 
-	/**
-	 * Dispose of view. Deregister listeners and free up resources.
-	 */
-	public void dispose() {
+	@Override
+	protected void onUnload() {
 		unload();
 		engine.removeMilestoneListener(this);
 		engine.removeChangeListener(this);
