@@ -32,7 +32,6 @@ package org.evoludo.simulator.models;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
@@ -102,17 +101,12 @@ public class IBSD extends IBS implements DModel {
 		// - mutant or temperature initialization
 		// - no vacant sites or monostop (otherwise extinction is the only absorbing
 		// state)
-		// - for well-mixed populations any frequency is acceptable
 		for (Module<?> mod : species) {
-			IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
-			Geometry inter = dpop.getInteractionGeometry();
-			boolean isWM = inter.getType().equals(Geometry.Type.MEANFIELD) &&
-					(inter.interCompSame ||
-							dpop.getCompetitionGeometry().getType().equals(Geometry.Type.MEANFIELD));
-			Init.Type itype = dpop.getInit().type;
-			if (!isWM && !(itype.equals(Init.Type.MUTANT) ||
+			Init.Type itype = ((IBSDPopulation) mod.getIBSPopulation()).getInit().type;
+			if ((itype.equals(Init.Type.MUTANT) ||
 					itype.equals(Init.Type.TEMPERATURE)))
-				return false;
+				continue;
+			return false;
 		}
 		return true;
 	}
