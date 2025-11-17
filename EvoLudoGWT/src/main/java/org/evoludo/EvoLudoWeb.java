@@ -2336,7 +2336,8 @@ public class EvoLudoWeb extends Composite
 		}
 
 		Model model = engine.getModel();
-		boolean isODESDE = isModelODESDE(model);
+		Type mt = model.getType();
+		boolean isODESDE = mt.isODE() || mt.isSDE();
 
 		// Populate views in separated concerns to reduce cognitive complexity
 		addStrategyViews(module, isODESDE, oldViews);
@@ -2356,29 +2357,6 @@ public class EvoLudoWeb extends Composite
 		evoludoViews.clear();
 		for (AbstractView<?> view : activeViews.values())
 			evoludoViews.addItem(view.getName());
-	}
-
-	/**
-	 * Helper method to determine whether the model represents an ODE or SDE.
-	 * <p>
-	 * Returns {@code true} when {@code model} is non-{@code null} and its
-	 * {@code Type}
-	 * indicates an ordinary differential equation (ODE) or a stochastic
-	 * differential
-	 * equation (SDE). If {@code model} is {@code null} the method returns
-	 * {@code false}.
-	 * </p>
-	 *
-	 * @param model the model to inspect, may be {@code null}
-	 * @return {@code true} if {@code model} is non-{@code null} and its type is ODE
-	 *         or SDE;
-	 *         {@code false} otherwise
-	 */
-	private boolean isModelODESDE(Model model) {
-		if (model == null)
-			return false;
-		Type mt = model.getType();
-		return mt.isODE() || mt.isSDE();
 	}
 
 	/**
@@ -2849,34 +2827,18 @@ public class EvoLudoWeb extends Composite
 	 * are disabled (or enabled otherwise).
 	 */
 	protected void processEPubSettings() {
+		// TODO: check/resolve problem with console in ePubs - must be ok
+		// if properly XML encoded content
+		if (activeViews.put(viewConsole.getName(), viewConsole) == null) {
+			viewConsole.load();
+			evoludoViews.addItem(viewConsole.getName());
+		}
 		// nonlinear content in Apple Books (i.e. all interactive labs) do not report
 		// as ePubs on iOS (at least for iPad) but as expected on macOS. On both
 		// platforms TextFields are disabled through shadow DOM.
 		boolean editCLO = !isEPub || ePub.standalone;
-		updateConsoleView(editCLO);
 		updateCLOControls(editCLO);
 		updateDropHandlers(editCLO);
-	}
-
-	private void updateConsoleView(boolean editCLO) {
-		if (editCLO) {
-			// ensure console is present
-			if (activeViews.put(viewConsole.getName(), viewConsole) == null) {
-				viewConsole.load();
-				evoludoViews.addItem(viewConsole.getName());
-			}
-			return;
-		}
-		// ensure console is absent
-		if (activeViews.remove(viewConsole.getName()) != null) {
-			viewConsole.unload();
-			for (int n = evoludoViews.getItemCount() - 1; n >= 0; n--) {
-				if (evoludoViews.getItemText(n).equals(viewConsole.getName())) {
-					evoludoViews.removeItem(n);
-					break;
-				}
-			}
-		}
 	}
 
 	private void updateCLOControls(boolean editCLO) {
