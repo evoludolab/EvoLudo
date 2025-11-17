@@ -494,14 +494,11 @@ public class SDE extends ODE {
 		if (nSpecies > 1)
 			return false;
 		Module<?> mod = engine.getModule();
-		if (!(mod instanceof HasHistogram.StatisticsProbability
+		// unlike structured populations any initialization is
+		// acceptable for sampling statistics
+		return (mod instanceof HasHistogram.StatisticsProbability
 				|| mod instanceof HasHistogram.StatisticsTime)
-				|| mod.getMutation().getProbability() > 0.0)
-			return false;
-		// sampling statistics also require:
-		// - mutant initialization (same as temperature in well-mixed populations)
-		// - convergence unaffected by vacant sites
-		return initType[0].equals(InitType.MUTANT);
+				&& mod.getMutation().getProbability() <= 0.0;
 	}
 
 	@Override
