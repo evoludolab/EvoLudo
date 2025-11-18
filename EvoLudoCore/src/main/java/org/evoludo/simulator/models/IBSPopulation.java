@@ -3398,29 +3398,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 								+ " - using random sampling of interaction partners!");
 		}
 
-		if ((module instanceof Payoffs) // best-response not an option with contact processes
-				&& !populationUpdate.isMoran()
-				&& !populationUpdate.getType().equals(PopulationUpdate.Type.ECOLOGY)) {
-			// Moran type updates ignore playerUpdate
-			if (competition.getType() == Geometry.Type.MEANFIELD && compGroup.isSampling(IBSGroup.SamplingType.ALL)
-					&& playerUpdate.getType() != PlayerUpdate.Type.BEST_RESPONSE) {
-				// 010320 using everyone as a reference in mean-field simulations is not
-				// feasible - except for best-response
-				// ecological updates are based on births and deaths rather than references
-				if (logger.isLoggable(Level.WARNING))
-					logger.warning("reference type (" + compGroup.getSampling()
-							+ ") unfeasible in well-mixed populations!");
-				compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
-			}
-			// best-response in well-mixed populations should skip sampling of references
-			if (competition.getType() == Geometry.Type.MEANFIELD
-					&& playerUpdate.getType() == PlayerUpdate.Type.BEST_RESPONSE) {
-				compGroup.setSampling(IBSGroup.SamplingType.NONE);
-			}
-		}
-		// in the original Moran process offspring can replace the parent
-		compGroup.setSelf(populationUpdate.isMoran() && competition.getType() == Geometry.Type.MEANFIELD);
-
 		// currently: if pop has interaction structure different from MEANFIELD its
 		// opponent population needs to be of the same size
 		if (module.getNPopulation() != opponent.getModule().getNPopulation()
@@ -3474,99 +3451,12 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			distrMigrants = new RNGDistribution.Geometric(rng.getRNG(), 1.0 - pMigration);
 		}
 
+		// check settings for modules implementing Payoffs
 		nMixedInter = -1;
-		if (module instanceof Payoffs) {
-			boolean ephemeralScores;
-			if (module.isStatic()) {
-				adjustScores = true;
-				playerScoring = ScoringType.RESET_ALWAYS;
-				ephemeralScores = false;
-			} else {
-				// check if adjustScores can be used - subclasses may have different opinions
-				adjustScores = doAdjustScores();
-				ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
-				if (!adjustScores && !playerScoreAveraged && !ephemeralScores) {
-					// non-adjustable and accumulated scores result in potentially unbounded payoffs
-					// - revert to averaged scores
-					setPlayerScoreAveraged(true);
-					logger.warning("accumulated scores may result in unbounded fitness - forcing averaged scores.");
-					adjustScores = doAdjustScores(); // should now be true
-				}
-			}
-
-			hasLookupTable = module.isStatic() || //
-					(adjustScores && interaction.getType() == Geometry.Type.MEANFIELD) || //
-					(ephemeralScores && interaction.getType() == Geometry.Type.MEANFIELD //
-							&& interGroup.isSampling(SamplingType.ALL));
-			if (hasLookupTable) {
-				// allocate memory for fitness lookup table
-				if (typeFitness == null || typeFitness.length != nTraits)
-					typeFitness = new double[nTraits];
-				if (module.isStatic()) {
-					// initialize lookup table for static modules
-					typeScores = staticmodule.getStaticScores();
-					for (int n = 0; n < nTraits; n++)
-						typeFitness[n] = map2fit.map(typeScores[n]);
-					maxEffScoreIdx = -1;
-				} else {
-					// allocate memory for score lookup table
-					if (typeScores == null || typeScores.length != nTraits)
-						typeScores = new double[nTraits];
-					// determine number of interactions in well-mixed populations with adjustScores
-					int oPop = opponent.getModule().getNPopulation();
-					if (interaction.isInterspecies()) {
-						// XXX check how to count the number of interactions for inter-species group
-						// interactions only max. population size is known at this point (if sizes can
-						// vary)
-						nMixedInter = oPop * nGroup;
-					} else {
-						// this can easily exceed the range of int's... would cause issues with
-						// accumulated payoffs; excluded in check()
-						// should not affect averaged payoffs. catch exception and set to MAX_VALUE
-						try {
-							nMixedInter = Combinatorics.combinations(oPop - 1, nGroup - 1);
-						} catch (ArithmeticException ae) {
-							// note: nMixedInter < 0 means no interactions (static modules)
-							nMixedInter = Integer.MAX_VALUE;
-						}
-					}
-				}
-				// with lookup tables scores, fitness and interaction arrays not needed
-				scores = null;
-				fitness = null;
-				interactions = null;
-				// allocate lookup tables
-				if (typeScores == null || typeScores.length != nTraits)
-					typeScores = new double[nTraits];
-				if (typeFitness == null || typeFitness.length != nTraits)
-					typeFitness = new double[nTraits];
-			} else {
-				// request reset if we had lookup tables before to allocate arrays scores,
-				// fitness
-				// and interaction
-				doReset |= (typeFitness != null || typeScores != null);
-				typeFitness = null;
-				typeScores = null;
-			}
-			if (!hasLookupTable || ephemeralScores) {
-				// emphemeral scores need both
-				if (scores == null || scores.length != nPopulation)
-					scores = new double[nPopulation];
-				if (fitness == null || fitness.length != nPopulation)
-					fitness = new double[nPopulation];
-				if (interactions == null || interactions.length != nPopulation)
-					interactions = new int[nPopulation];
-			}
-
-			// number of interactions can also be determined in structured populations with
-			// well-mixed demes
-			if (adjustScores && interaction.getType() == Geometry.Type.HIERARCHY && //
-					interaction.subgeometry.equals(Geometry.Type.MEANFIELD)) {
-				nMixedInter = interaction.hierarchy[interaction.hierarchy.length - 1]
-						- (interaction.isInterspecies() ? 0 : 1);
-			}
-		} else {
-			// module has no payoffs, e.g. contact process
+		if (module instanceof Payoffs)
+			doReset |= checkPayoffs(nGroup);
+		else {
+			// free up resources, module has no payoffs, e.g. contact process
 			adjustScores = false;
 			playerScoring = ScoringType.NONE;
 			scores = null;
@@ -3575,6 +3465,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			typeFitness = null;
 			typeScores = null;
 		}
+
 		if (tags == null || tags.length != nPopulation)
 			tags = new double[nPopulation];
 
@@ -3608,7 +3499,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				doReset = true;
 			}
 		}
-
 		return doReset;
 	}
 
@@ -3720,6 +3610,126 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			interaction.name = name + ": Interaction";
 			competition.name = name + ": Competition";
 		}
+	}
+
+	/**
+	 * Check settings for modules implementing Payoffs.
+	 * 
+	 * @param nGroup the interaction group size
+	 * @return {@code true} if reset is required
+	 */
+	boolean checkPayoffs(int nGroup) {
+		boolean doReset = false;
+		boolean ephemeralScores;
+		if (module.isStatic()) {
+			adjustScores = true;
+			playerScoring = ScoringType.RESET_ALWAYS;
+			ephemeralScores = false;
+		} else {
+			// check if adjustScores can be used - subclasses may have different opinions
+			adjustScores = doAdjustScores();
+			ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
+			if (!adjustScores && !playerScoreAveraged && !ephemeralScores) {
+				// non-adjustable and accumulated scores result in potentially unbounded payoffs
+				// - revert to averaged scores
+				setPlayerScoreAveraged(true);
+				logger.warning("accumulated scores may result in unbounded fitness - forcing averaged scores.");
+				adjustScores = doAdjustScores(); // should now be true
+			}
+		}
+
+		hasLookupTable = module.isStatic() || //
+				(adjustScores && interaction.getType() == Geometry.Type.MEANFIELD) || //
+				(ephemeralScores && interaction.getType() == Geometry.Type.MEANFIELD //
+						&& interGroup.isSampling(SamplingType.ALL));
+		if (hasLookupTable) {
+			// allocate memory for fitness lookup table
+			if (typeFitness == null || typeFitness.length != nTraits)
+				typeFitness = new double[nTraits];
+			if (module.isStatic()) {
+				// initialize lookup table for static modules
+				typeScores = staticmodule.getStaticScores();
+				for (int n = 0; n < nTraits; n++)
+					typeFitness[n] = map2fit.map(typeScores[n]);
+				maxEffScoreIdx = -1;
+			} else {
+				// allocate memory for score lookup table
+				if (typeScores == null || typeScores.length != nTraits)
+					typeScores = new double[nTraits];
+				// determine number of interactions in well-mixed populations with adjustScores
+				int oPop = opponent.getModule().getNPopulation();
+				if (interaction.isInterspecies()) {
+					// XXX check how to count the number of interactions for inter-species group
+					// interactions only max. population size is known at this point (if sizes can
+					// vary)
+					nMixedInter = oPop * nGroup;
+				} else {
+					// this can easily exceed the range of int's... would cause issues with
+					// accumulated payoffs; excluded in check()
+					// should not affect averaged payoffs. catch exception and set to MAX_VALUE
+					try {
+						nMixedInter = Combinatorics.combinations(oPop - 1, nGroup - 1);
+					} catch (ArithmeticException ae) {
+						// note: nMixedInter < 0 means no interactions (static modules)
+						nMixedInter = Integer.MAX_VALUE;
+					}
+				}
+			}
+			// with lookup tables scores, fitness and interaction arrays not needed
+			scores = null;
+			fitness = null;
+			interactions = null;
+			// allocate lookup tables
+			if (typeScores == null || typeScores.length != nTraits)
+				typeScores = new double[nTraits];
+			if (typeFitness == null || typeFitness.length != nTraits)
+				typeFitness = new double[nTraits];
+		} else {
+			// request reset if we had lookup tables before to allocate arrays scores,
+			// fitness
+			// and interaction
+			doReset |= (typeFitness != null || typeScores != null);
+			typeFitness = null;
+			typeScores = null;
+		}
+		if (!hasLookupTable || ephemeralScores) {
+			// emphemeral scores need both
+			if (scores == null || scores.length != nPopulation)
+				scores = new double[nPopulation];
+			if (fitness == null || fitness.length != nPopulation)
+				fitness = new double[nPopulation];
+			if (interactions == null || interactions.length != nPopulation)
+				interactions = new int[nPopulation];
+		}
+
+		// number of interactions can also be determined in structured populations with
+		// well-mixed demes
+		if (adjustScores && interaction.getType() == Geometry.Type.HIERARCHY && //
+				interaction.subgeometry.equals(Geometry.Type.MEANFIELD)) {
+			nMixedInter = interaction.hierarchy[interaction.hierarchy.length - 1]
+					- (interaction.isInterspecies() ? 0 : 1);
+		}
+		// best-response not an option with contact processes
+		if (!populationUpdate.isMoran()
+				&& !populationUpdate.getType().equals(PopulationUpdate.Type.ECOLOGY)) {
+			// Moran type updates ignore playerUpdate
+			if (competition.getType() == Geometry.Type.MEANFIELD && compGroup.isSampling(IBSGroup.SamplingType.ALL)
+					&& playerUpdate.getType() != PlayerUpdate.Type.BEST_RESPONSE) {
+				// 010320 using everyone as a reference in mean-field simulations is not
+				// feasible - except for best-response
+				// ecological updates are based on births and deaths rather than references
+				if (logger.isLoggable(Level.WARNING))
+					logger.warning("reference type (" + compGroup.getSampling()
+							+ ") unfeasible in well-mixed populations!");
+				compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+			}
+			// best-response in well-mixed populations should skip sampling of references
+			if (competition.getType() == Geometry.Type.MEANFIELD
+					&& playerUpdate.getType() == PlayerUpdate.Type.BEST_RESPONSE) {
+				compGroup.setSampling(IBSGroup.SamplingType.NONE);
+			}
+		}
+		return doReset;
 	}
 
 	/**
@@ -3836,35 +3846,12 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// unbounded for accumulated scores with random interactions (not adjustable)
 		updateMinMaxScores();
 
-		// check for specific population update types
-		if (populationUpdate.isMoran()) {
-			// avoid negative fitness for Moran type updates
-			if (minFitness < 0.0) {
-				if (logger.isLoggable(Level.WARNING))
-					logger.warning("Moran updates require fitness>=0 (score range [" + Formatter.format(minScore, 6)
-							+ ", " + Formatter.format(maxScore, 6) + "]; " + "fitness range ["
-							+ Formatter.format(minFitness, 6) + ", " + Formatter.format(maxFitness, 6) + "]).\n"
-							+ "Changed baseline fitness to " + map2fit.getBaseline()
-							+ (!map2fit.isMap(Map2Fitness.Map.STATIC) ? " with static payoff-to-fitness map" : ""));
-				// just change to something meaningful
-				map2fit.setMap(Map2Fitness.Map.STATIC);
-				map2fit.setBaseline(-minFitness);
-				updateMinMaxScores();
-				if (minFitness < 0.0) {
-					throw new IllegalStateException("Adjustment of selection failed... (minimal fitness: "
-							+ Formatter.format(minScore, 6) + " should be positive)");
-				}
-			}
-			// use referenceGroup for picking random neighbour in Moran process
-			// (birth-death)
-			// reason: referenceGroup properly deals with hierarchies
-			// future: pick parent to populate vacated site (death-birth, fitness dependent)
-			compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
-			compGroup.setNSamples(1);
-		}
+		// ensure positive fitness for Moran updates
+		resetMoran();
+
 		// avoid numerical overflow for strong selection (mainly applies to exponential
 		// payoff-to-fitness mapping)
-		if (maxFitness * nPopulation > Double.MAX_VALUE) {
+		if (maxFitness > Double.MAX_VALUE / nPopulation) {
 			double mScore = map2fit.invmap(Double.MAX_VALUE / nPopulation) * 0.99; // only go to 99% of maximum, just in
 																					// case
 			map2fit.setSelection(Functions.round(mScore / maxScore * map2fit.getSelection()));
@@ -3890,7 +3877,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		int maxGroup = Math.max(Math.max(interaction.maxIn, interaction.maxOut),
 				Math.max(competition.maxIn, competition.maxOut));
 		int nGroup = module.getNGroup();
-		maxGroup = Math.max(maxGroup, nGroup) + 1; // add 1 if focal should be part of group
+		maxGroup = Math.max(maxGroup, nGroup) + 1; // add 1 in case focal is part of group
 		if (groupScores == null || groupScores.length != maxGroup)
 			groupScores = new double[maxGroup]; // can hold scores for any group size!
 		if (smallScores == null || smallScores.length != maxGroup)
@@ -3898,24 +3885,71 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (cProbs == null || cProbs.length != maxGroup)
 			cProbs = new double[maxGroup]; // can hold groups of any size!
 
-		// number of interactions can be determined for ephemeral payoffs
-		// store in interactions array
-		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
-			if (interGroup.isSampling(SamplingType.ALL)) {
-				if (nGroup > 2) {
-					// single interaction with all members in neighbourhood
-					Arrays.fill(interactions, 1);
-				} else {
-					// pairwise interactions
-					if (interaction.isRegular)
-						Arrays.fill(interactions, (int) (interaction.connectivity + 0.5));
-					else
-						System.arraycopy(interaction.kin, 0, interactions, 0, interactions.length);
-				}
-			} else {
-				Arrays.fill(interactions, Combinatorics.combinations(interGroup.nSamples, nGroup - 1));
+		// initialize ephemeral interactions
+		resetEphemeral(nGroup);
+	}
+
+	/**
+	 * Ensure that Moran type population updates have non-negative fitness values.
+	 * Adjust the payoff-to-fitness mapping if necessary.
+	 */
+	void resetMoran() {
+		// check for specific population update types
+		if (!populationUpdate.isMoran())
+			return;
+		// avoid negative fitness for Moran type updates
+		if (minFitness < 0.0) {
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning("Moran updates require fitness>=0 (score range [" + Formatter.format(minScore, 6)
+						+ ", " + Formatter.format(maxScore, 6) + "]; " + "fitness range ["
+						+ Formatter.format(minFitness, 6) + ", " + Formatter.format(maxFitness, 6) + "]).\n"
+						+ "Changed baseline fitness to " + map2fit.getBaseline()
+						+ (!map2fit.isMap(Map2Fitness.Map.STATIC) ? " with static payoff-to-fitness map" : ""));
+			// just change to something meaningful
+			map2fit.setMap(Map2Fitness.Map.STATIC);
+			map2fit.setBaseline(-minFitness);
+			updateMinMaxScores();
+			if (minFitness < 0.0) {
+				throw new IllegalStateException("Adjustment of selection failed... (minimal fitness: "
+						+ Formatter.format(minScore, 6) + " should be positive)");
 			}
 		}
+		// use referenceGroup for picking random neighbour in Moran process
+		// (birth-death)
+		// reason: referenceGroup properly deals with hierarchies
+		// future: pick parent to populate vacated site (death-birth, fitness dependent)
+		compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+		compGroup.setNSamples(1);
+		// in the original Moran process offspring can replace the parent
+		compGroup.setSelf(competition.getType() == Geometry.Type.MEANFIELD);
+	}
+
+	/**
+	 * Precalculate the number of interactions for ephemeral payoffs and store in
+	 * the interactions array.
+	 * 
+	 * @param nGroup the group size
+	 */
+	void resetEphemeral(int nGroup) {
+		// number of interactions can be determined for ephemeral payoffs
+		// store in interactions array
+		if (!playerScoring.equals(ScoringType.EPHEMERAL))
+			return;
+
+		if (interGroup.isSampling(SamplingType.ALL)) {
+			if (nGroup > 2) {
+				// single interaction with all members in neighbourhood
+				Arrays.fill(interactions, 1);
+			} else {
+				// pairwise interactions
+				if (interaction.isRegular)
+					Arrays.fill(interactions, (int) (interaction.connectivity + 0.5));
+				else
+					System.arraycopy(interaction.kin, 0, interactions, 0, interactions.length);
+			}
+			return;
+		}
+		Arrays.fill(interactions, Combinatorics.combinations(interGroup.nSamples, nGroup - 1));
 	}
 
 	/**
