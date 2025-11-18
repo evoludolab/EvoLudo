@@ -1685,28 +1685,27 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		boolean doReset = super.check();
 
 		active = module.getActiveTraits();
-		if (optimizeMoran) {
-			// optimized Moran type processes are incompatible with mutations!
-			if (!populationUpdate.isMoran()) {
-				optimizeMoran = false;
-				logger.warning("optimizations require Moran-type updates - disabled.");
-				doReset = true;
-			} else if (mutation.getProbability() > 0.0) {
-				optimizeMoran = false;
-				logger.warning("optimized Moran-type updates are incompatible with mutations - disabled.");
-				doReset = true;
-			} else // no need to report both warnings
-					// optimized Moran type processes are incompatible with well mixed populations!
-			if (interaction.getType() == Geometry.Type.MEANFIELD ||
-					(interaction.getType() == Geometry.Type.HIERARCHY &&
-							interaction.subgeometry == Geometry.Type.MEANFIELD)) {
-				optimizeMoran = false;
-				logger.warning("optimized Moran-type updates are incompatible with mean-field geometry - disabled.");
-				doReset = true;
-			}
-		}
 
-		int nGroup = module.getNGroup();
+		// start allocating memory
+		if (traits == null || traits.length != nPopulation) {
+			traits = new int[nPopulation];
+			traitsNext = new int[nPopulation];
+		}
+		if (accuTypeScores == null || accuTypeScores.length != nTraits) {
+			accuTypeScores = new double[nTraits];
+			traitsCount = new int[nTraits];
+			initCount = new int[nTraits];
+			tmpCount = new int[nTraits];
+			tmpTraitScore = new double[nTraits];
+			// best-response may require temporary memory - this is peanuts
+			tmpScore = new double[nTraits];
+		}
+		return doReset;
+	}
+
+	@Override
+	boolean checkInteractions(int nGroup) {
+		boolean doReset = super.checkInteractions(nGroup);
 		if (interaction.getType() == Geometry.Type.MEANFIELD && !playerScoreAveraged && nGroup > 2) {
 			// check if interaction count exceeds integer range
 			try {
@@ -1720,41 +1719,32 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				setPlayerScoreAveraged(true);
 			}
 		}
+		return doReset;
+	}
 
-		// // note: if imitate population update is selected, scores cannot be adjusted
-		// for well-mixed populations....
-		// if( populationUpdateType==POPULATION_UPDATE_ASYNC_IMITATE &&
-		// (interaction.geometry==Geometry.MEANFIELD ||
-		// (interaction.geometry==Geometry.HIERARCHY &&
-		// interaction.subgeometry==Geometry.MEANFIELD)) &&
-		// interactionGroup.samplingType==Group.SAMPLING_ALL ) {
-		// setInteractionType(Group.SAMPLING_COUNT);
-		// logger.warning("using random sampling of interaction partners for imitation
-		// update in well-mixed populations!");
-		// // change of sampling may affect whether scores can be adjusted but reset
-		// takes care of this
-		// doReset = true;
-		// }
-		// // if imitation becomes obsolete the above check can be removed
-
-		// start allocating memory
-		if (traits == null || traits.length != nPopulation)
-			traits = new int[nPopulation];
-		if (traitsNext == null || traitsNext.length != nPopulation)
-			traitsNext = new int[nPopulation];
-		if (tmpCount == null || tmpCount.length != nTraits)
-			tmpCount = new int[nTraits];
-		if (tmpTraitScore == null || tmpTraitScore.length != nTraits)
-			tmpTraitScore = new double[nTraits];
-		if (accuTypeScores == null || accuTypeScores.length != nTraits)
-			accuTypeScores = new double[nTraits];
-		if (initCount == null || initCount.length != nTraits)
-			initCount = new int[nTraits];
-		if (traitsCount == null || traitsCount.length != nTraits)
-			traitsCount = new int[nTraits];
-		// best-response may require temporary memory - this is peanuts, just reserve it
-		if (tmpScore == null || tmpScore.length != nTraits)
-			tmpScore = new double[nTraits];
+	@Override
+	boolean checkOptimizations() {
+		boolean doReset = super.checkOptimizations();
+		if (!optimizeMoran)
+			return doReset;
+		// optimized Moran type processes are incompatible with mutations!
+		if (!populationUpdate.isMoran()) {
+			optimizeMoran = false;
+			logger.warning("optimizations require Moran-type updates - disabled.");
+			doReset = true;
+		} else if (mutation.getProbability() > 0.0) {
+			optimizeMoran = false;
+			logger.warning("optimized Moran-type updates are incompatible with mutations - disabled.");
+			doReset = true;
+		} else // no need to report both warnings
+				// optimized Moran type processes are incompatible with well mixed populations!
+		if (interaction.getType() == Geometry.Type.MEANFIELD ||
+				(interaction.getType() == Geometry.Type.HIERARCHY &&
+						interaction.subgeometry == Geometry.Type.MEANFIELD)) {
+			optimizeMoran = false;
+			logger.warning("optimized Moran-type updates are incompatible with mean-field geometry - disabled.");
+			doReset = true;
+		}
 		return doReset;
 	}
 
