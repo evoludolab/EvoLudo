@@ -265,12 +265,14 @@ public class Histogram extends AbstractView<HistoGraph> {
 			return false;
 		destroyGraphs();
 		degreeProcessed = false;
-		int nXLabels = createGraphs();
+		int nXLabels = createGraphs(nGraphs);
 		// arrange histograms vertically
 		gRows = nGraphs;
 		int width = 100 / gCols;
-		int xaxisdeco = 5; // estimate of height of x-axis decorations in %
-							// unfortunately GWT chokes on CSS calc()
+		// estimate of height of x-axis decorations in %
+		// unfortuanately GWT chokes on CSS calc()
+		// 1 unit each for tick labels and axis label
+		int xaxisdeco = 3;
 		int graphheight = (100 - nXLabels * xaxisdeco) / gRows;
 		int remainder = 100;
 		int idx = 0;
@@ -282,6 +284,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 			} else {
 				thisheight = graphheight;
 				if (graph.getStyle().showXLabel)
+					thisheight += xaxisdeco;
+				if (graph.getStyle().showXTickLabels)
 					thisheight += xaxisdeco;
 				remainder -= thisheight;
 			}
@@ -342,21 +346,21 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * 
 	 * @return the number of x-label rows created
 	 */
-	private int createGraphs() {
+	private int createGraphs(int nGraphs) {
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		switch (type) {
 			case TRAIT:
 				return addTraitGraphs(species);
 			case FITNESS:
-				return addFitnessGraphs(species);
+				return addFitnessGraphs(species, nGraphs);
 			case DEGREE:
-				return addDegreeGraphs(species);
+				return addDegreeGraphs(species, nGraphs);
 			case STATISTICS_FIXATION_PROBABILITY:
-				return addFixationProbabilityGraphs(species);
+				return addFixationProbabilityGraphs(species, nGraphs);
 			case STATISTICS_FIXATION_TIME:
-				return addFixationTimeGraphs(species);
+				return addFixationTimeGraphs(species, nGraphs);
 			case STATISTICS_STATIONARY:
-				return addStationaryGraphs(species);
+				return addStationaryGraphs(species, nGraphs);
 			default:
 				throw new IllegalArgumentException("Unknown data type: " + type);
 		}
@@ -377,6 +381,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 				HistoGraph graph = new HistoGraph(this, module, n);
 				wrapper.add(graph);
 				graphs.add(graph);
+				applyDefaultStyle(graph.getStyle());
 				applyTraitStyle(graph, n);
 				nXLabels++;
 			}
@@ -390,25 +395,23 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param species the list of modules to consider
 	 * @return the number of x-label rows added
 	 */
-	private int addFitnessGraphs(List<? extends Module<?>> species) {
+	private int addFitnessGraphs(List<? extends Module<?>> species, int nGraphs) {
 		int nXLabels = 0;
+		int idx = 0;
 		for (Module<?> module : species) {
 			int nTraits = (model.isContinuous() ? 1 : module.getNTraits());
 			int vacant = module.getVacantIdx();
-			int paneIdx = 0;
-			int nGraphs = nTraits;
-			if (vacant >= 0)
-				nGraphs--;
 			for (int n = 0; n < nTraits; n++) {
 				if (n == vacant)
 					continue;
-				HistoGraph graph = new HistoGraph(this, module, paneIdx);
+				HistoGraph graph = new HistoGraph(this, module, n);
 				wrapper.add(graph);
 				graphs.add(graph);
-				applyFitnessStyle(graph, paneIdx, nGraphs);
-				if (paneIdx == nGraphs - 1)
-					nXLabels++;
-				paneIdx++;
+				int xdeco = (n == (nTraits - 1) ? 1 : 0);
+				xdeco += (++idx == nGraphs) ? 1 : 0;
+				applyDefaultStyle(graph.getStyle());
+				applyFitnessStyle(graph, n, xdeco);
+				nXLabels += xdeco;
 			}
 		}
 		return nXLabels;
@@ -420,25 +423,28 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param species the list of modules to consider
 	 * @return the number of x-label rows added
 	 */
-	private int addDegreeGraphs(List<? extends Module<?>> species) {
+	private int addDegreeGraphs(List<? extends Module<?>> species, int nGraphs) {
 		Type mt = model.getType();
 		int nXLabels = 0;
+		int idx = 0;
 		for (Module<?> module : species) {
 			if (mt.isODE() || mt.isSDE()) {
 				HistoGraph graph = new HistoGraph(this, module, 0);
 				wrapper.add(graph);
 				graphs.add(graph);
 				nXLabels++;
+				continue;
 			}
 			int nHisto = getDegreeGraphs(module.getInteractionGeometry(), module.getCompetitionGeometry());
 			for (int n = 0; n < nHisto; n++) {
 				HistoGraph graph = new HistoGraph(this, module, n);
-				boolean bottomPane = (n == nHisto - 1);
 				wrapper.add(graph);
 				graphs.add(graph);
-				applyDegreeStyle(graph, n, nHisto);
-				if (bottomPane)
-					nXLabels++;
+				int xdeco = (n == (nHisto - 1) ? 1 : 0);
+				xdeco += (++idx == nGraphs) ? 1 : 0;
+				applyDefaultStyle(graph.getStyle());
+				applyDegreeStyle(graph, n, nHisto, xdeco);
+				nXLabels += xdeco;
 			}
 		}
 		return nXLabels;
@@ -450,18 +456,17 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param species the list of modules to consider
 	 * @return the number of x-label rows added
 	 */
-	private int addFixationProbabilityGraphs(List<? extends Module<?>> species) {
+	private int addFixationProbabilityGraphs(List<? extends Module<?>> species, int nGraphs) {
 		int nXLabels = 0;
+		int idx = 0;
 		for (Module<?> module : species) {
 			int nTraits = module.getNTraits();
-			int nGraphs = nTraits;
 			int skip = -1;
 			int vacant = module.getVacantIdx();
 			// no graph for vacant trait if monostop
-			if (module.getVacantIdx() >= 0 && module instanceof Discrete && ((Discrete) module).getMonoStop()) {
-				nGraphs--;
+			if (module.getVacantIdx() >= 0 && module instanceof Discrete && ((Discrete) module).getMonoStop())
 				skip = vacant;
-			}
+
 			for (int n = 0; n < nTraits; n++) {
 				if (n == skip)
 					continue;
@@ -469,9 +474,11 @@ public class Histogram extends AbstractView<HistoGraph> {
 				graph.setNormalized(nTraits);
 				wrapper.add(graph);
 				graphs.add(graph);
-				applyFixationProbabilityStyle(graph, n, nGraphs);
-				if (n == nGraphs - 1)
-					nXLabels++;
+				int xdeco = (n == (nTraits - 1) ? 1 : 0);
+				xdeco += (++idx == nGraphs) ? 1 : 0;
+				applyDefaultStyle(graph.getStyle());
+				applyFixationProbabilityStyle(graph, n, xdeco);
+				nXLabels += xdeco;
 			}
 		}
 		return nXLabels;
@@ -483,19 +490,18 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param species the list of modules to consider
 	 * @return the number of x-label rows added
 	 */
-	private int addFixationTimeGraphs(List<? extends Module<?>> species) {
+	private int addFixationTimeGraphs(List<? extends Module<?>> species, int nGraphs) {
 		int nXLabels = 0;
+		int idx = 0;
 		for (Module<?> module : species) {
 			int nTraits = module.getNTraits();
-			int nGraphs = nTraits + 1; // +1 for absorption time histogram
 			int skip = -1;
 			int vacant = module.getVacantIdx();
 			// no graph for vacant trait if monostop
 			if (vacant >= 0 &&
-					module instanceof Discrete && ((Discrete) module).getMonoStop()) {
-				nGraphs--;
+					module instanceof Discrete && ((Discrete) module).getMonoStop())
 				skip = vacant;
-			}
+
 			for (int n = 0; n <= nTraits; n++) {
 				if (n == skip)
 					continue;
@@ -503,9 +509,11 @@ public class Histogram extends AbstractView<HistoGraph> {
 				graph.setNormalized(n + nTraits + 1);
 				wrapper.add(graph);
 				graphs.add(graph);
-				applyFixationTimeStyle(graph, n, nGraphs, false);
-				if (n == nGraphs - 1)
-					nXLabels++;
+				int xdeco = (n == (nTraits - 1) ? 1 : 0);
+				xdeco += (++idx == nGraphs) ? 1 : 0;
+				applyDefaultStyle(graph.getStyle());
+				applyFixationTimeStyle(graph, n, xdeco, false);
+				nXLabels += xdeco;
 			}
 		}
 		return nXLabels;
@@ -517,54 +525,24 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param species the list of modules to consider
 	 * @return the number of x-label rows added
 	 */
-	private int addStationaryGraphs(List<? extends Module<?>> species) {
+	private int addStationaryGraphs(List<? extends Module<?>> species, int nGraphs) {
 		int nXLabels = 0;
+		int idx = 0;
 		for (Module<?> module : species) {
 			int nTraits = module.getNTraits();
 			for (int n = 0; n < nTraits; n++) {
 				HistoGraph graph = new HistoGraph(this, module, n);
-				boolean bottomPane = (n == nTraits - 1);
 				graph.setNormalized(false);
 				wrapper.add(graph);
 				graphs.add(graph);
-				applyStationaryStyle(graph, n, nTraits);
-				if (bottomPane)
-					nXLabels++;
+				int xdeco = (n == (nTraits - 1) ? 1 : 0);
+				xdeco += (++idx == nGraphs) ? 1 : 0;
+				applyDefaultStyle(graph.getStyle());
+				applyStationaryStyle(graph, n, xdeco);
+				nXLabels += xdeco;
 			}
 		}
 		return nXLabels;
-	}
-
-	/**
-	 * Apply style settings for trait histograms.
-	 * 
-	 * @param graph the graph to style
-	 * @param n     the index of the graph
-	 * @return {@code true} if hard reset is required
-	 */
-	private boolean applyTraitStyle(HistoGraph graph, int n) {
-		boolean hard = false;
-		GraphStyle style = graph.getStyle();
-		applyDefaultStyle(style);
-		style.showLabel = isMultispecies;
-		style.showXLabel = true;
-		style.showXTickLabels = true;
-		Continuous cmod = (Continuous) graph.getModule();
-		double min = cmod.getTraitMin()[n];
-		double max = cmod.getTraitMax()[n];
-		if (Math.abs(min - style.xMin) > 1e-6 || Math.abs(max - style.xMax) > 1e-6) {
-			style.xMin = min;
-			style.xMax = max;
-			hard = true;
-		}
-		style.yMin = 0.0;
-		style.yMax = 1.0;
-		style.xLabel = cmod.getTraitName(n);
-		Color[] colors = cmod.getTraitColors();
-		style.graphColor = ColorMapCSS.Color2Css(colors[n]);
-		if (isMultispecies)
-			style.label = cmod.getName() + ": " + cmod.getTraitName(n);
-		return hard;
 	}
 
 	/**
@@ -588,17 +566,49 @@ public class Histogram extends AbstractView<HistoGraph> {
 	}
 
 	/**
-	 * Apply style settings for fitness histograms.
+	 * Apply style settings for trait histograms.
 	 * 
-	 * @param graph   the graph to style
-	 * @param n       the index of the graph
-	 * @param nGraphs the total number of graphs
+	 * @param graph the graph to style
+	 * @param n     the index of the graph
 	 * @return {@code true} if hard reset is required
 	 */
-	private boolean applyFitnessStyle(HistoGraph graph, int n, int nGraphs) {
+	private boolean applyTraitStyle(HistoGraph graph, int n) {
 		boolean hard = false;
 		GraphStyle style = graph.getStyle();
-		applyDefaultStyle(style);
+		style.showLabel = isMultispecies;
+		style.showXLabel = true;
+		style.showXTickLabels = true;
+		Continuous cmod = (Continuous) graph.getModule();
+		double min = cmod.getTraitMin()[n];
+		double max = cmod.getTraitMax()[n];
+		if (Math.abs(min - style.xMin) > 1e-6 || Math.abs(max - style.xMax) > 1e-6) {
+			style.xMin = min;
+			style.xMax = max;
+			hard = true;
+		}
+		style.yMin = 0.0;
+		style.yMax = 1.0;
+		style.xLabel = cmod.getTraitName(n);
+		Color[] colors = cmod.getTraitColors();
+		style.graphColor = ColorMapCSS.Color2Css(colors[n]);
+		if (isMultispecies)
+			style.label = cmod.getName() + ": " + cmod.getTraitName(n);
+		return hard;
+	}
+
+	/**
+	 * Apply style settings for fitness histograms. The x-axis decorations are
+	 * determined by the {@code xdeco} parameter: {@code 0} no decorations,
+	 * {@code 1} tick labels only, {@code 2} x-label and tick labels.
+	 * 
+	 * @param graph the graph to style
+	 * @param n     the index of the graph
+	 * @param xdeco specify x-axis decorations
+	 * @return {@code true} if hard reset is required
+	 */
+	private boolean applyFitnessStyle(HistoGraph graph, int n, int xdeco) {
+		boolean hard = false;
+		GraphStyle style = graph.getStyle();
 		if (model.isDensity()) {
 			style.yLabel = "density";
 			style.percentY = false;
@@ -610,9 +620,10 @@ public class Histogram extends AbstractView<HistoGraph> {
 		}
 		style.autoscaleY = true;
 		style.xLabel = "payoffs";
-		boolean bottomPane = (n == nGraphs - 1);
-		style.showXLabel = bottomPane; // show only on bottom panel
-		style.showXTickLabels = bottomPane;
+		if (xdeco >= 0) {
+			style.showXLabel = (xdeco == 2); // show only on bottom panel
+			style.showXTickLabels = (xdeco >= 1);
+		}
 		if (model.isContinuous())
 			style.showLabel = isMultispecies;
 		else
@@ -662,11 +673,11 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param graph   the graph to style
 	 * @param n       the index of the graph
 	 * @param nGraphs the total number of graphs
+	 * @param bottom  whether this is the bottom graph
 	 */
-	private void applyDegreeStyle(HistoGraph graph, int n, int nGraphs) {
+	private void applyDegreeStyle(HistoGraph graph, int n, int nGraphs, int xdeco) {
 		Module<?> module = graph.getModule();
 		GraphStyle style = graph.getStyle();
-		applyDefaultStyle(style);
 		style.xLabel = "degree";
 
 		Geometry geom;
@@ -679,9 +690,14 @@ public class Histogram extends AbstractView<HistoGraph> {
 		}
 		String[] labels = getDegreeLabels(nGraphs, geom.isUndirected);
 		style.label = labels[n];
-		boolean bottomPane = (n == nGraphs - 1);
-		style.showXLabel = bottomPane;
-		style.showXTickLabels = bottomPane;
+		if (xdeco >= 0) {
+			style.showXLabel = (xdeco == 2); // show only on bottom panel
+			style.showXTickLabels = (xdeco >= 1);
+		}
+		if (model.isContinuous())
+			style.showLabel = isMultispecies;
+		else
+			style.showLabel = true;
 		style.graphColor = "#444";
 		style.yMin = 0.0;
 		style.yMax = 1.0;
@@ -695,20 +711,20 @@ public class Histogram extends AbstractView<HistoGraph> {
 	/**
 	 * Apply style settings for fixation probability histograms.
 	 * 
-	 * @param graph   the graph to style
-	 * @param n       the index of the graph
-	 * @param nGraphs the total number of graphs
+	 * @param graph  the graph to style
+	 * @param n      the index of the graph
+	 * @param bottom whether this is the bottom graph
 	 */
-	private void applyFixationProbabilityStyle(HistoGraph graph, int n, int nGraphs) {
+	private void applyFixationProbabilityStyle(HistoGraph graph, int n, int xdeco) {
 		GraphStyle style = graph.getStyle();
-		applyDefaultStyle(style);
 		style.yLabel = "probability";
 		style.autoscaleY = true;
 		style.xLabel = "node";
 		style.showLabel = true;
-		boolean bottomPane = (n == nGraphs - 1);
-		style.showXLabel = bottomPane; // show only on bottom panel
-		style.showXTickLabels = bottomPane;
+		if (xdeco >= 0) {
+			style.showXLabel = (xdeco == 2); // show only on bottom panel
+			style.showXTickLabels = (xdeco >= 1);
+		}
 		Module<?> module = graph.getModule();
 		style.yMin = 0.0;
 		style.yMax = 1.0;
@@ -723,24 +739,24 @@ public class Histogram extends AbstractView<HistoGraph> {
 	/**
 	 * Apply style settings for fixation time histograms.
 	 * 
-	 * @param graph   the graph to style
-	 * @param n       the index of the graph
-	 * @param nGraphs the total number of graphs
+	 * @param graph  the graph to style
+	 * @param n      the index of the graph
+	 * @param bottom whether this is the bottom graph
 	 */
-	private void applyFixationTimeStyle(HistoGraph graph, int n, int nGraphs, boolean isDistribution) {
+	private void applyFixationTimeStyle(HistoGraph graph, int n, int xdeco, boolean isDistribution) {
 		GraphStyle style = graph.getStyle();
-		applyDefaultStyle(style);
 		style.showLabel = true;
-		boolean bottomPane = (n == nGraphs - 1);
-		style.showXLabel = bottomPane; // show only on bottom panel
-		style.showXTickLabels = bottomPane;
+		if (xdeco >= 0) {
+			style.showXLabel = (xdeco == 2); // show only on bottom panel
+			style.showXTickLabels = (xdeco >= 1);
+		}
 		style.autoscaleY = true;
 		style.yMin = 0.0;
 		style.yMax = 1.0;
 		Module<?> module = graph.getModule();
 		int nPop = module.getNPopulation();
 		// last graph is for absorption times
-		if (bottomPane) {
+		if (xdeco >= 1) {
 			style.label = "Absorbtion";
 			style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
 		} else {
@@ -768,20 +784,19 @@ public class Histogram extends AbstractView<HistoGraph> {
 	/**
 	 * Apply style settings for stationary distribution histograms.
 	 * 
-	 * @param graph the graph to style
-	 * @param n     the index of the graph
+	 * @param graph  the graph to style
+	 * @param n      the index of the graph
+	 * @param bottom whether this is the bottom graph
 	 */
-	private void applyStationaryStyle(HistoGraph graph, int n, int nGraphs) {
+	private void applyStationaryStyle(HistoGraph graph, int n, int xdeco) {
 		GraphStyle style = graph.getStyle();
-		applyDefaultStyle(style);
 		style.yLabel = "visits";
 		style.autoscaleY = true;
 		style.showLabel = true;
-		style.showXLabel = true;
-		style.showXTickLabels = true;
-		boolean bottomPane = (n == nGraphs - 1);
-		style.showXLabel = bottomPane; // show only on bottom panel
-		style.showXTickLabels = bottomPane;
+		if (xdeco >= 0) {
+			style.showXLabel = (xdeco == 2); // show only on bottom panel
+			style.showXTickLabels = (xdeco >= 1);
+		}
 		Module<?> module = graph.getModule();
 		int nPop = module.getNPopulation();
 		if (model.getType().isDE()) {
@@ -895,7 +910,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			if (newPop || data == null || data.length != nTraits || data[0].length != HistoGraph.MAX_BINS)
 				data = new double[nTraits][HistoGraph.MAX_BINS];
 			graph.setData(data);
-			hard |= applyFitnessStyle(graph, idx, nTraits);
+			hard |= applyFitnessStyle(graph, idx, -1);
 			idx++;
 		}
 		return hard;
@@ -933,7 +948,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			if (data == null || data.length != rows || data[0].length != cols)
 				data = new double[rows][cols];
 			graph.setData(data);
-			applyDegreeStyle(graph, idx, rows);
+			applyDegreeStyle(graph, idx, rows, -1);
 			idx++;
 		}
 	}
@@ -967,11 +982,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 				data = new double[nTraits + 1][bins];
 			scale2bins = 1.0 / binSize;
 			graph.setData(data);
-			int nGraphs = nTraits;
-			// no graph for vacant trait if monostop
-			if (module.getVacantIdx() >= 0 && module instanceof Discrete && ((Discrete) module).getMonoStop())
-				nGraphs--;
-			applyFixationProbabilityStyle(graph, idx, nGraphs);
+			applyFixationProbabilityStyle(graph, idx, -1);
 			model.resetStatisticsSample();
 			idx++;
 		}
@@ -1008,7 +1019,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 					data = new double[2 * (nTraits + 1)][nPop];
 			}
 			graph.setData(data);
-			applyFixationTimeStyle(graph, idx, nTraits + 1, doFixtimeDistr);
+			applyFixationTimeStyle(graph, idx, -1, doFixtimeDistr);
 			model.resetStatisticsSample();
 			idx++;
 		}
@@ -1033,7 +1044,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 				data = new double[nTraits][HistoGraph.MAX_BINS];
 			scale2bins = nBins;
 			graph.setData(data);
-			applyStationaryStyle(graph, idx, nTraits);
+			applyStationaryStyle(graph, idx, -1);
 			idx++;
 		}
 	}
