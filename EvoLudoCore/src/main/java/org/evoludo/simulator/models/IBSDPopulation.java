@@ -2074,33 +2074,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			residentType = (mutantType + 1) % nTraits;
 		int loc;
 		if (vacantIdx >= 0) {
-			// if present the third argument indicates the frequency of vacant sites
-			// if not use estimate for carrying capacity
-			double monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2])
-					: 1.0 - estimateVacantFrequency(residentType));
-			if (residentType == vacantIdx && monoFreq < 1.0 - 1e-8) {
-				// problem encountered
-				init.type = Init.Type.UNIFORM;
-				logger.warning("review " + init.clo.getName() + //
-						" settings! - using '" + init.type.getKey() + "'.");
-				initUniform();
+			loc = initWithVacant(residentType);
+			if (loc < 0)
 				return -1;
-			}
-			// initialize monomorphic resident population at carrying capacity
-			// relax resident population to equilibrium configuration if requested
-			initMono(residentType, monoFreq);
-			// check if resident population went extinct or a single survivor
-			// check if resident population went extinct or only a single survivor
-			if (traitsCount[vacantIdx] >= nPopulation - 1)
-				return -1;
-			// change trait of random resident to a mutant
-			int idx = random0n(getPopulationSize());
-			loc = -1;
-			while (idx >= 0) {
-				if (isVacantAt(++loc))
-					continue;
-				idx--;
-			}
 		} else {
 			initMono(residentType, 1.0);
 			// change trait of random resident to a mutant
@@ -2109,6 +2085,44 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		setTraitAt(loc, mutantType);
 		traitsCount[residentType]--;
 		traitsCount[mutantType]++;
+		return loc;
+	}
+
+	/**
+	 * Initialize monomorphic resident population with vacant sites and return
+	 * location of a random resident to be changed to a mutant.
+	 * 
+	 * @param residentType the resident trait
+	 * @return the location of the mutant
+	 */
+	int initWithVacant(int residentType) {
+		// if present the third argument indicates the frequency of vacant sites
+		// if not use estimate for carrying capacity
+		double monoFreq = (init.args.length > 2 ? Math.max(0.0, 1.0 - init.args[2])
+				: 1.0 - estimateVacantFrequency(residentType));
+		if (residentType == vacantIdx && monoFreq < 1.0 - 1e-8) {
+			// problem encountered
+			init.type = Init.Type.UNIFORM;
+			logger.warning("review " + init.clo.getName() + //
+					" settings! - using '" + init.type.getKey() + "'.");
+			initUniform();
+			return -1;
+		}
+		// initialize monomorphic resident population at carrying capacity
+		// relax resident population to equilibrium configuration if requested
+		initMono(residentType, monoFreq);
+		// check if resident population went extinct or a single survivor
+		// check if resident population went extinct or only a single survivor
+		if (traitsCount[vacantIdx] >= nPopulation - 1)
+			return -1;
+		// change trait of random resident to a mutant
+		int idx = random0n(getPopulationSize());
+		int loc = -1;
+		while (idx >= 0) {
+			if (isVacantAt(++loc))
+				continue;
+			idx--;
+		}
 		return loc;
 	}
 
@@ -2180,6 +2194,8 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 * @see IBSD.Init.Type#KALEIDOSCOPE
 	 */
 	protected void initKaleidoscope() {
+		logger.warning("init 'kaleidoscope': not implemented - using 'uniform'.");
+		initUniform();
 	}
 
 	/**
@@ -2193,59 +2209,60 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		// only makes sense for 2D lattices at this point. if not, defaults to uniform
 		// random initialization (the only other inittype that doesn't require --init).
 		Geometry.Type type = interaction.getType();
-		if (interaction.interCompSame && (type == Geometry.Type.SQUARE ||
-				type == Geometry.Type.SQUARE_NEUMANN ||
-				type == Geometry.Type.SQUARE_MOORE ||
-				type == Geometry.Type.LINEAR)) {
-			Arrays.fill(traitsCount, 0);
-			int nActive = module.getNActive();
-			int[] nact = new int[nActive];
-			int idx = 0;
-			for (int n = 0; n < nTraits; n++) {
-				if (!active[n])
-					continue;
-				nact[idx++] = n;
-			}
-			// note: shift first strip by half a width to avoid having a boundary at the
-			// edge. also prevents losing one trait interface with fixed boundary
-			// conditions. procedure tested for 2, 3, 4, 5 traits
-			int nStripes = nActive + 2 * sum(2, nActive - 2);
-			int size = (interaction.getType() == Geometry.Type.LINEAR ? nPopulation
-					: (int) Math.sqrt(nPopulation));
-			int width = size / nStripes;
-			// make first strip wider
-			int width2 = (size - (nStripes - 1) * width) / 2;
-			fillStripe(0, width2, 0);
-			int offset = (nStripes - 1) * width + width2;
-			fillStripe(offset, size - offset, 0);
-			traitsCount[0] += width * size;
-			offset = width2;
-			// first all individual traits
-			for (int n = 1; n < nActive; n++) {
-				fillStripe(offset, width, nact[n]);
-				offset += width;
-			}
-			// second all trait pairs
-			int nPasses = Math.max(nActive - 2, 1);
-			int incr = 2;
-			while (incr <= nPasses) {
-				int trait1 = 0;
-				int trait2 = incr;
-				while (trait2 < nActive) {
-					fillStripe(offset, width, nact[trait1++]);
-					offset += width;
-					fillStripe(offset, width, nact[trait2++]);
-					offset += width;
-				}
-				incr++;
-			}
-			Arrays.fill(traitsCount, 0);
-			for (int n = 0; n < nPopulation; n++)
-				traitsCount[getTraitAt(n)]++;
+		if (!interaction.interCompSame
+				|| !(type == Geometry.Type.SQUARE
+						|| type == Geometry.Type.SQUARE_NEUMANN
+						|| type == Geometry.Type.SQUARE_MOORE
+						|| type == Geometry.Type.LINEAR)) {
+			logger.warning("init 'stripes': 2D lattice structures required - using 'uniform'.");
+			initUniform();
 			return;
 		}
-		logger.warning("init 'stripes': 2D lattice structures required - using 'uniform'.");
-		initUniform();
+		Arrays.fill(traitsCount, 0);
+		int nActive = module.getNActive();
+		int[] nact = new int[nActive];
+		int idx = 0;
+		for (int n = 0; n < nTraits; n++) {
+			if (!active[n])
+				continue;
+			nact[idx++] = n;
+		}
+		// note: shift first strip by half a width to avoid having a boundary at the
+		// edge. also prevents losing one trait interface with fixed boundary
+		// conditions. procedure tested for 2, 3, 4, 5 traits
+		int nStripes = nActive + 2 * sum(2, nActive - 2);
+		int size = (interaction.getType() == Geometry.Type.LINEAR ? nPopulation
+				: (int) Math.sqrt(nPopulation));
+		int width = size / nStripes;
+		// make first strip wider
+		int width2 = (size - (nStripes - 1) * width) / 2;
+		fillStripe(0, width2, 0);
+		int offset = (nStripes - 1) * width + width2;
+		fillStripe(offset, size - offset, 0);
+		traitsCount[0] += width * size;
+		offset = width2;
+		// first all individual traits
+		for (int n = 1; n < nActive; n++) {
+			fillStripe(offset, width, nact[n]);
+			offset += width;
+		}
+		// second all trait pairs
+		int nPasses = Math.max(nActive - 2, 1);
+		int incr = 2;
+		while (incr <= nPasses) {
+			int trait1 = 0;
+			int trait2 = incr;
+			while (trait2 < nActive) {
+				fillStripe(offset, width, nact[trait1++]);
+				offset += width;
+				fillStripe(offset, width, nact[trait2++]);
+				offset += width;
+			}
+			incr++;
+		}
+		Arrays.fill(traitsCount, 0);
+		for (int n = 0; n < nPopulation; n++)
+			traitsCount[getTraitAt(n)]++;
 	}
 
 	/**
