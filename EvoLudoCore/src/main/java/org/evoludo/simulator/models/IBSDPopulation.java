@@ -1105,19 +1105,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			return;
 		stripGroupVacancies(group, tmpTraits, tmpGroup);
 		countTraits(tmpCount, tmpTraits, 0, group.nSampled);
-		// for ephemeral scores calculate score of focal only
-		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
-			// isolated individual (note the bookkeeping above is overkill and can be
-			// optimized)
-			tmpCount[myType]++;
-			groupmodule.groupScores(tmpCount, tmpTraitScore);
-			if (ephemeralScores) {
-				resetScoreAt(me);
-				setScoreAt(me, tmpTraitScore[myType], 0);
-				return;
-			}
-			updateScoreAt(me, tmpTraitScore[myType], 0);
+			// isolated individual (surrounded by vacant sites) - reset score
+			playNoGameAt(me, myType);
 			return;
 		}
 
@@ -1126,53 +1116,98 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				// interact with all neighbors
 				int nGroup = module.getNGroup();
 				if (nGroup < group.nSampled + 1) {
-					// interact with part of group sequentially
-					double myScore = 0.0;
-					Arrays.fill(smallScores, 0, group.nSampled, 0.0);
-					for (int n = 0; n < group.nSampled; n++) {
-						Arrays.fill(tmpCount, 0);
-						for (int i = 0; i < nGroup - 1; i++)
-							tmpCount[tmpTraits[(n + i) % group.nSampled]]++;
-						tmpCount[myType]++;
-						groupmodule.groupScores(tmpCount, tmpTraitScore);
-						myScore += tmpTraitScore[myType];
-						if (ephemeralScores)
-							continue;
-						for (int i = 0; i < nGroup - 1; i++) {
-							int idx = (n + i) % group.nSampled;
-							smallScores[idx] += tmpTraitScore[tmpTraits[idx]];
-						}
-					}
-					if (ephemeralScores) {
-						resetScoreAt(me);
-						setScoreAt(me, myScore / group.nSampled, group.nSampled);
-						return;
-					}
-					updateScoreAt(me, myScore, group.nSampled);
-					for (int i = 0; i < group.nSampled; i++)
-						opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
+					playGroupSequentiallyAt(me, myType, group, nGroup);
 					return;
 				}
 				// interact with full group (random graphs or all neighbors)
-
-				//$FALL-THROUGH$
+				// $FALL-THROUGH$
 			case RANDOM:
 				// interact with sampled neighbors
-				tmpCount[myType]++;
-				groupmodule.groupScores(tmpCount, tmpTraitScore);
-				if (ephemeralScores) {
-					resetScoreAt(me);
-					setScoreAt(me, tmpTraitScore[myType], 1);
-					return;
-				}
-				updateScoreAt(me, tmpTraitScore[myType]);
-				for (int i = 0; i < group.nSampled; i++)
-					opponent.updateScoreAt(group.group[i], tmpTraitScore[tmpTraits[i]]);
+				playGroupOnceAt(me, myType, group);
 				return;
 
 			default:
 				throw new UnsupportedOperationException("Unknown interaction type (" + interGroup.getSampling() + ")");
 		}
+	}
+
+	/**
+	 * No game is played because the focal individual is isolated or all neighbors
+	 * are vacant.
+	 * 
+	 * @param me     the index of the focal individual
+	 * @param myType the trait type of the focal individual
+	 */
+	void playNoGameAt(int me, int myType) {
+		// isolated individual (note the bookkeeping above is overkill and can be
+		// optimized)
+		tmpCount[myType]++;
+		groupmodule.groupScores(tmpCount, tmpTraitScore);
+		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
+			resetScoreAt(me);
+			setScoreAt(me, tmpTraitScore[myType], 0);
+			return;
+		}
+		updateScoreAt(me, tmpTraitScore[myType], 0);
+	}
+
+	/**
+	 * Focal individual plays game sequentially with parts of the group.
+	 * 
+	 * @param me     the index of the focal individual
+	 * @param myType the trait type of the focal individual
+	 * @param group  the group involved in the game
+	 * @param nGroup the size of the group
+	 */
+	void playGroupSequentiallyAt(int me, int myType, IBSGroup group, int nGroup) {
+		// interact with part of group sequentially
+		double myScore = 0.0;
+		Arrays.fill(smallScores, 0, group.nSampled, 0.0);
+		// for ephemeral scores calculate score of focal only
+		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
+		for (int n = 0; n < group.nSampled; n++) {
+			Arrays.fill(tmpCount, 0);
+			for (int i = 0; i < nGroup - 1; i++)
+				tmpCount[tmpTraits[(n + i) % group.nSampled]]++;
+			tmpCount[myType]++;
+			groupmodule.groupScores(tmpCount, tmpTraitScore);
+			myScore += tmpTraitScore[myType];
+			if (ephemeralScores)
+				continue;
+			for (int i = 0; i < nGroup - 1; i++) {
+				int idx = (n + i) % group.nSampled;
+				smallScores[idx] += tmpTraitScore[tmpTraits[idx]];
+			}
+		}
+		if (ephemeralScores) {
+			resetScoreAt(me);
+			setScoreAt(me, myScore / group.nSampled, group.nSampled);
+			return;
+		}
+		updateScoreAt(me, myScore, group.nSampled);
+		for (int i = 0; i < group.nSampled; i++)
+			opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
+	}
+
+	/**
+	 * Focal individual plays game once with the entire group.
+	 * 
+	 * @param me     the index of the focal individual
+	 * @param myType the trait type of the focal individual
+	 * @param group  the group involved in the game
+	 */
+	void playGroupOnceAt(int me, int myType, IBSGroup group) {
+		tmpCount[myType]++;
+		groupmodule.groupScores(tmpCount, tmpTraitScore);
+		// for ephemeral scores calculate score of focal only
+		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
+			resetScoreAt(me);
+			setScoreAt(me, tmpTraitScore[myType], 1);
+			return;
+		}
+		updateScoreAt(me, tmpTraitScore[myType]);
+		for (int i = 0; i < group.nSampled; i++)
+			opponent.updateScoreAt(group.group[i], tmpTraitScore[tmpTraits[i]]);
 	}
 
 	@Override
@@ -1248,30 +1283,35 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		// adjusting game scores also requires that interactions are with all (other)
 		// members of the population
 		commitTraitAt(me);
-		if (interaction.isInterspecies()) {
-			if (opponent.getInteractionGeometry().getType() == Geometry.Type.MEANFIELD) {
-				// competition is well-mixed as well - adjust lookup table
-				updateMixedMeanScores();
+		adjustOpponentScoresAt(me);
+		// update opponent population in response to change of strategy of 'me'
+		updateMixedMeanScores();
+	}
+
+	void adjustOpponentScoresAt(int me) {
+		if (!interaction.isInterspecies())
+			return; // no adjustment needed for intra-species interactions
+
+		if (opponent.getInteractionGeometry().getType() == Geometry.Type.MEANFIELD) {
+			// competition is well-mixed as well - adjust lookup table
+			opponent.updateMixedMeanScores();
+		} else {
+			// XXX combinations of structured and unstructured populations require more
+			// attention
+			int newtrait = getTraitAt(me);
+			if (newtrait == vacantIdx) {
+				resetScoreAt(me);
 			} else {
-				// XXX combinations of structured and unstructured populations require more
-				// attention
-				int newtrait = getTraitAt(me);
-				if (newtrait == vacantIdx) {
-					resetScoreAt(me);
-				} else {
-					// update score of 'me' based on opponent population
-					// store scores for each type in traitScores (including 0.0 for VACANT)
-					int nGroup = module.getNGroup();
-					if (module.isPairwise())
-						pairmodule.mixedScores(opponent.traitsCount, tmpTraitScore);
-					else
-						groupmodule.mixedScores(opponent.traitsCount, nGroup, tmpTraitScore);
-					setScoreAt(me, tmpTraitScore[newtrait], nGroup * opponent.getPopulationSize());
-				}
+				// update score of 'me' based on opponent population
+				// store scores for each type in traitScores (including 0.0 for VACANT)
+				int nGroup = module.getNGroup();
+				if (module.isPairwise())
+					pairmodule.mixedScores(opponent.traitsCount, tmpTraitScore);
+				else
+					groupmodule.mixedScores(opponent.traitsCount, nGroup, tmpTraitScore);
+				setScoreAt(me, tmpTraitScore[newtrait], nGroup * opponent.getPopulationSize());
 			}
 		}
-		// update opponent population in response to change of strategy of 'me'
-		opponent.updateMixedMeanScores();
 	}
 
 	/**
