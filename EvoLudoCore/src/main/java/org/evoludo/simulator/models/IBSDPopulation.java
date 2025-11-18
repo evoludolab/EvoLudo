@@ -664,7 +664,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		if (hasLookupTable || //
 				(adjustScores && interaction.getType() == Geometry.Type.HIERARCHY //
 						&& interaction.subgeometry == Geometry.Type.MEANFIELD)) {
-			updateMixedMeanScores();
+			updateMixedScores();
 			return;
 		}
 		// original procedure
@@ -1285,7 +1285,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		commitTraitAt(me);
 		adjustOpponentScoresAt(me);
 		// update opponent population in response to change of strategy of 'me'
-		updateMixedMeanScores();
+		updateMixedScores();
 	}
 
 	void adjustOpponentScoresAt(int me) {
@@ -1294,7 +1294,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 
 		if (opponent.getInteractionGeometry().getType() == Geometry.Type.MEANFIELD) {
 			// competition is well-mixed as well - adjust lookup table
-			opponent.updateMixedMeanScores();
+			opponent.updateMixedScores();
 		} else {
 			// XXX combinations of structured and unstructured populations require more
 			// attention
@@ -1318,78 +1318,92 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 * Calculate scores in well-mixed populations as well as hierarchical structures
 	 * with well-mixed units.
 	 */
-	protected void updateMixedMeanScores() {
+	protected void updateMixedScores() {
 		// note that in well-mixed populations the distinction between accumulated and
 		// averaged payoffs is impossible (unless interactions are not with all other
 		// members) the following is strictly based on averaged payoffs as it is
 		// difficult to determine the number of interactions in the case of accumulated
 		// payoffs
 		switch (interaction.getType()) {
-			case HIERARCHY:
-				// XXX needs more attention for inter-species interactions
-				int unitSize = interaction.hierarchy[interaction.hierarchy.length - 1];
-				for (int unitStart = 0; unitStart < nPopulation; unitStart += unitSize) {
-					// count traits in unit
-					countTraits(tmpCount, traits, unitStart, unitSize);
-					// calculate scores in unit (return in traitScores)
-					if (module.isPairwise())
-						pairmodule.mixedScores(tmpCount, tmpTraitScore);
-					else
-						groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpTraitScore);
-					int uInter = nMixedInter;
-					if (vacantIdx >= 0)
-						uInter -= tmpCount[vacantIdx];
-					for (int n = unitStart; n < unitStart + unitSize; n++) {
-						int type = getTraitAt(n);
-						setScoreAt(n, tmpTraitScore[type], type == vacantIdx ? 0 : uInter);
-					}
-				}
-				setMaxEffScoreIdx();
+			case MEANFIELD:
+				updateMixedMeanfield();
 				break;
 
-			case MEANFIELD:
-				// store scores for each type in typeScores
-				if (module.isPairwise())
-					pairmodule.mixedScores(opponent.traitsCount, typeScores);
-				else
-					groupmodule.mixedScores(opponent.traitsCount, module.getNGroup(), typeScores);
-				double mxScore = -Double.MAX_VALUE;
-				int mxTrait = -Integer.MAX_VALUE;
-				sumFitness = 0.0;
-				for (int n = 0; n < nTraits; n++) {
-					if (n == vacantIdx) {
-						typeScores[n] = 0.0;
-						accuTypeScores[n] = Double.NaN;
-					}
-					int count = traitsCount[n];
-					if (count == 0) {
-						typeScores[n] = 0.0;
-						accuTypeScores[n] = 0.0;
-						typeFitness[n] = map2fit.map(0.0);
-						continue;
-					}
-					double score = typeScores[n];
-					if (score > mxScore) {
-						mxScore = score;
-						mxTrait = n;
-					}
-					accuTypeScores[n] = count * score;
-					double fit = map2fit.map(score);
-					typeFitness[n] = fit;
-					sumFitness += count * fit;
-				}
-				int idx = -1;
-				if (maxEffScoreIdx >= 0) {
-					while (getTraitAt(++idx) != mxTrait) {
-						// loop until found
-					}
-					maxEffScoreIdx = idx;
-				}
+			case HIERARCHY:
+				updateMixedHierarchy();
 				break;
 
 			default:
 				throw new UnsupportedOperationException("Invalid interaction geometry: " + interaction.getType());
 		}
+	}
+
+	/**
+	 * Calculate scores in well-mixed populations.
+	 */
+	void updateMixedMeanfield() {
+		// store scores for each type in typeScores
+		if (module.isPairwise())
+			pairmodule.mixedScores(opponent.traitsCount, typeScores);
+		else
+			groupmodule.mixedScores(opponent.traitsCount, module.getNGroup(), typeScores);
+		double mxScore = -Double.MAX_VALUE;
+		int mxTrait = -Integer.MAX_VALUE;
+		sumFitness = 0.0;
+		for (int n = 0; n < nTraits; n++) {
+			if (n == vacantIdx) {
+				typeScores[n] = 0.0;
+				accuTypeScores[n] = Double.NaN;
+			}
+			int count = traitsCount[n];
+			if (count == 0) {
+				typeScores[n] = 0.0;
+				accuTypeScores[n] = 0.0;
+				typeFitness[n] = map2fit.map(0.0);
+				continue;
+			}
+			double score = typeScores[n];
+			if (score > mxScore) {
+				mxScore = score;
+				mxTrait = n;
+			}
+			accuTypeScores[n] = count * score;
+			double fit = map2fit.map(score);
+			typeFitness[n] = fit;
+			sumFitness += count * fit;
+		}
+		int idx = -1;
+		if (maxEffScoreIdx >= 0) {
+			while (getTraitAt(++idx) != mxTrait) {
+				// loop until found
+			}
+			maxEffScoreIdx = idx;
+		}
+	}
+
+	/**
+	 * Calculate scores in hierarchical structures with well-mixed units.
+	 */
+	void updateMixedHierarchy() {
+		// XXX needs more attention for inter-species interactions
+		int unitSize = interaction.hierarchy[interaction.hierarchy.length - 1];
+		for (int unitStart = 0; unitStart < nPopulation; unitStart += unitSize) {
+			// count traits in unit
+			countTraits(tmpCount, traits, unitStart, unitSize);
+			// calculate scores in unit (return in traitScores)
+			if (module.isPairwise())
+				pairmodule.mixedScores(tmpCount, tmpTraitScore);
+			else
+				groupmodule.mixedScores(tmpCount, module.getNGroup(), tmpTraitScore);
+			int uInter = nMixedInter;
+			if (vacantIdx >= 0)
+				uInter -= tmpCount[vacantIdx];
+			for (int n = unitStart; n < unitStart + unitSize; n++) {
+				int type = getTraitAt(n);
+				setScoreAt(n, tmpTraitScore[type], type == vacantIdx ? 0 : uInter);
+			}
+		}
+		setMaxEffScoreIdx();
 	}
 
 	/**

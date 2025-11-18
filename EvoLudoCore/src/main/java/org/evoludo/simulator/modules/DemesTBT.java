@@ -470,7 +470,7 @@ public class DemesTBT extends TBT {
 		@Override
 		public void updateScores() {
 			if (adjustScores) {
-				updateMixedMeanScores();
+				updateMixedScores();
 				return;
 			}
 			// original procedure
@@ -491,7 +491,7 @@ public class DemesTBT extends TBT {
 				return;
 			}
 			commitTraitAt(me);
-			updateMixedMeanScores();
+			updateMixedScores();
 		}
 	}
 }

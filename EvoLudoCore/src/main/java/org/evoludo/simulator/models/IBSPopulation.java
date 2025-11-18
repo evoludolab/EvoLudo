@@ -586,7 +586,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 
 	/**
 	 * Optimization: Number of interactions in well-mixed populations for update
-	 * rules that take advantage of {@link IBSDPopulation#updateMixedMeanScores()}.
+	 * rules that take advantage of {@link IBSDPopulation#updateMixedScores()}.
 	 * {@code nMixedInter} is calculated ahead of time in {@link #check()}.
 	 */
 	protected int nMixedInter = -1;
