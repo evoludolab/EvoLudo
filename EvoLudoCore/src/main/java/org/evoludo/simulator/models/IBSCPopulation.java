@@ -69,12 +69,6 @@ public class IBSCPopulation extends IBSMCPopulation {
 	final HasIBS.CGroups cgroupmodule;
 
 	/**
-	 * Temporary storage for the traits of the focal individual. This deliberately
-	 * hides the array of the same name in {@code IBSMCPopulation}.
-	 */
-	double myTrait;
-
-	/**
 	 * Creates a population of individuals with a single continuous trait for IBS
 	 * simulations.
 	 * 
@@ -223,35 +217,14 @@ public class IBSCPopulation extends IBSMCPopulation {
 		for (int i = 0; i < size; i++)
 			tmpGroup[i] = opptraits[group.group[i]];
 		int me = group.focal;
-		myTrait = traits[me];
-		// for ephemeral scores calculate score of focal only
-		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 
 		switch (group.samplingType) {
 			// interact with all neighbors - interact repeatedly if nGroup<groupSize+1
 			case ALL:
+				// interact with all neighbors
 				int nGroup = module.getNGroup();
 				if (nGroup < group.nSampled + 1) {
-					// interact with part of group sequentially
-					double myScore = 0.0;
-					Arrays.fill(smallScores, 0, group.nSampled, 0.0);
-					for (int n = 0; n < group.nSampled; n++) {
-						for (int i = 0; i < nGroup - 1; i++)
-							smallTrait[i] = tmpGroup[(n + i) % group.nSampled];
-						myScore += cgroupmodule.groupScores(myTrait, smallTrait, nGroup - 1, groupScores);
-						if (ephemeralScores)
-							continue;
-						for (int i = 0; i < nGroup - 1; i++)
-							smallScores[(n + i) % group.nSampled] += groupScores[i];
-					}
-					if (ephemeralScores) {
-						resetScoreAt(me);
-						setScoreAt(me, myScore / group.nSampled, group.nSampled);
-						return;
-					}
-					updateScoreAt(me, myScore, group.nSampled);
-					for (int i = 0; i < group.nSampled; i++)
-						opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
+					playGroupSequentiallyAt(me, group, nGroup);
 					return;
 				}
 				// interact with full group (random graphs, all neighbors)
@@ -259,20 +232,52 @@ public class IBSCPopulation extends IBSMCPopulation {
 				//$FALL-THROUGH$
 			case RANDOM:
 				// interact with sampled neighbors
-				double myScore = cgroupmodule.groupScores(myTrait, tmpGroup, group.nSampled, groupScores);
-				if (ephemeralScores) {
-					resetScoreAt(me);
-					setScoreAt(me, myScore, 1);
-					return;
-				}
-				updateScoreAt(me, myScore);
-				for (int i = 0; i < group.nSampled; i++)
-					opponent.updateScoreAt(group.group[i], groupScores[i]);
+				playGroupOnceAt(me, group);
 				return;
 
 			default:
 				throw new UnsupportedOperationException("Unknown interaction type (" + interGroup.getSampling() + ")");
 		}
+	}
+
+	@Override
+	void playGroupSequentiallyAt(int me, IBSGroup group, int nGroup) {
+		// interact with part of group sequentially
+		double myScore = 0.0;
+		Arrays.fill(smallScores, 0, group.nSampled, 0.0);
+		// for ephemeral scores calculate score of focal only
+		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
+		for (int n = 0; n < group.nSampled; n++) {
+			for (int i = 0; i < nGroup - 1; i++)
+				smallTrait[i] = tmpGroup[(n + i) % group.nSampled];
+			myScore += cgroupmodule.groupScores(traits[me], smallTrait, nGroup - 1, groupScores);
+			if (ephemeralScores)
+				continue;
+			for (int i = 0; i < nGroup - 1; i++)
+				smallScores[(n + i) % group.nSampled] += groupScores[i];
+		}
+		if (ephemeralScores) {
+			resetScoreAt(me);
+			setScoreAt(me, myScore / group.nSampled, group.nSampled);
+			return;
+		}
+		updateScoreAt(me, myScore, group.nSampled);
+		for (int i = 0; i < group.nSampled; i++)
+			opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
+	}
+
+	@Override
+	void playGroupOnceAt(int me, IBSGroup group) {
+		// interact with full group (random graphs)
+		double myScore = cgroupmodule.groupScores(traits[me], tmpGroup, group.nSampled, groupScores);
+		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
+			resetScoreAt(me);
+			setScoreAt(me, myScore, 1);
+			return;
+		}
+		updateScoreAt(me, myScore);
+		for (int i = 0; i < group.nSampled; i++)
+			opponent.updateScoreAt(group.group[i], groupScores[i]);
 	}
 
 	/**
@@ -288,7 +293,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 			return;
 
 		double myScore;
-		myTrait = traits[group.focal];
+		double myTrait = traits[group.focal];
 		double[] opptraits = opponent.traits;
 		for (int i = 0; i < group.nSampled; i++)
 			tmpGroup[i] = opptraits[group.group[i]];
