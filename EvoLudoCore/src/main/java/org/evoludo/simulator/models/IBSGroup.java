@@ -441,39 +441,80 @@ public class IBSGroup {
 		nSampled = Math.min(nSamples, size);
 
 		if (nSampled == 1) {
-			if (self) {
-				group[0] = rng.random0n(size);
-				return;
-			}
-			int aPick = rng.random0n(size - 1);
-			if (aPick >= focal)
-				aPick++;
-			group[0] = aPick;
+			pickSingle(size);
 			return;
 		}
 
-		int n = 0;
+		if (self)
+			pickGroup(size);
+		else
+			pickGroup(size, focal);
+	}
+
+	/**
+	 * Pick a single random individual with indices {@code 0 - (size-1)}. The focal
+	 * individual is included if {@code self==true}.
+	 * 
+	 * @param size the upper bound of indices to pick (excluding)
+	 */
+	private void pickSingle(int size) {
 		if (self) {
-			nextpick: while (n < nSampled) {
-				int aPick = rng.random0n(size);
-				// sample without replacement
-				for (int i = 0; i < n; i++)
-					if (group[i] == aPick)
-						continue nextpick;
-				group[n++] = aPick;
-			}
+			group[0] = rng.random0n(size);
 			return;
 		}
+		int aPick = rng.random0n(size - 1);
+		if (aPick >= focal)
+			aPick++;
+		group[0] = aPick;
+	}
+
+	/**
+	 * Pick group of {@code nSampled} random individuals with indices
+	 * {@code 0 - (size-1)}. The focal individual is included.
+	 * 
+	 * @param size the upper bound of indices to pick (excluding)
+	 */
+	void pickGroup(int size) {
+		int n = 0;
+		while (n < nSampled) {
+			int aPick = rng.random0n(size);
+			// sample without replacement
+			boolean duplicate = false;
+			for (int i = 0; i < n; i++)
+				if (group[i] == aPick) {
+					duplicate = true;
+					break;
+				}
+			if (duplicate)
+				continue;
+			group[n++] = aPick;
+		}
+	}
+
+	/**
+	 * Pick group of {@code nSampled} random individuals with indices
+	 * {@code 0 - (size-1)}. The focal individual is excluded.
+	 * 
+	 * @param size  the upper bound of indices to pick (excluding)
+	 * @param focal the index of the individual to exclude
+	 */
+	void pickGroup(int size, int focal) {
 		// exclude focal
 		int max1 = size - 1;
-		nextpick: while (n < nSampled) {
+		int n = 0;
+		while (n < nSampled) {
 			int aPick = rng.random0n(max1);
 			if (aPick >= focal)
 				aPick++;
 			// sample without replacement
+			boolean duplicate = false;
 			for (int i = 0; i < n; i++)
-				if (group[i] == aPick)
-					continue nextpick;
+				if (group[i] == aPick) {
+					duplicate = true;
+					break;
+				}
+			if (duplicate)
+				continue;
 			group[n++] = aPick;
 		}
 	}
