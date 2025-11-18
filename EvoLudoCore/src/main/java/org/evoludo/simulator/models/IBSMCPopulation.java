@@ -537,14 +537,9 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	@Override
 	public void playGroupGameAt(IBSGroup group) {
 		int me = group.focal;
-		// for ephemeral scores calculate score of focal only
-		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
 		if (group.nSampled <= 0) {
-			if (ephemeralScores) {
-				resetScoreAt(me);
-				return;
-			}
-			updateScoreAt(me, 0.0);
+			// isolated individual
+			playNoGameAt(me);
 			return;
 		}
 		gatherPlayers(group);
@@ -554,48 +549,66 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 				// interact with all neighbors
 				int nGroup = module.getNGroup();
 				if (nGroup < group.nSampled + 1) {
-					// interact with part of group sequentially
-					double myScore = 0.0;
-					Arrays.fill(smallScores, 0, group.nSampled, 0.0);
-					for (int n = 0; n < group.nSampled; n++) {
-						for (int i = 0; i < nGroup - 1; i++)
-							System.arraycopy(tmpGroup, ((n + i) % group.nSampled) * nTraits, smallTrait, i * nTraits,
-									nTraits);
-						myScore += groupmodule.groupScores(myTraits, smallTrait, nGroup - 1, groupScores);
-						if (ephemeralScores)
-							continue;
-						for (int i = 0; i < nGroup - 1; i++)
-							smallScores[(n + i) % group.nSampled] += groupScores[i];
-					}
-					if (ephemeralScores) {
-						resetScoreAt(me);
-						setScoreAt(me, myScore / group.nSampled, group.nSampled);
-						return;
-					}
-					updateScoreAt(me, myScore, group.nSampled);
-					for (int i = 0; i < group.nSampled; i++)
-						opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
+					playGroupSequentiallyAt(me, group, nGroup);
 					return;
 				}
 				// interact with full group (random graphs, all neighbors)
-
-				//$FALL-THROUGH$
+				// $FALL-THROUGH$
 			case RANDOM:
 				// interact with sampled neighbors
-				double myScore = groupmodule.groupScores(myTraits, tmpGroup, group.nSampled, groupScores);
-				if (ephemeralScores) {
-					resetScoreAt(me);
-					setScoreAt(me, myScore, 1);
-					return;
-				}
-				updateScoreAt(me, myScore);
-				for (int i = 0; i < group.nSampled; i++)
-					opponent.updateScoreAt(group.group[i], groupScores[i]);
+				playGroupOnceAt(me, group);
 				return;
 
 			default:
 				throw new UnsupportedOperationException("Unknown interaction type (" + interGroup.getSampling() + ")");
 		}
+	}
+
+	void playNoGameAt(int me) {
+		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
+			resetScoreAt(me);
+			return;
+		}
+		updateScoreAt(me, 0.0);
+	}
+
+	void playGroupSequentiallyAt(int me, IBSGroup group, int nGroup) {
+		// interact with part of group sequentially
+		double myScore = 0.0;
+		Arrays.fill(smallScores, 0, group.nSampled, 0.0);
+		// for ephemeral scores calculate score of focal only
+		boolean ephemeralScores = playerScoring.equals(ScoringType.EPHEMERAL);
+		for (int n = 0; n < group.nSampled; n++) {
+			for (int i = 0; i < nGroup - 1; i++)
+				System.arraycopy(tmpGroup, ((n + i) % group.nSampled) * nTraits, smallTrait, i * nTraits,
+						nTraits);
+			myScore += groupmodule.groupScores(myTraits, smallTrait, nGroup - 1, groupScores);
+			if (ephemeralScores)
+				continue;
+			for (int i = 0; i < nGroup - 1; i++)
+				smallScores[(n + i) % group.nSampled] += groupScores[i];
+		}
+		if (ephemeralScores) {
+			resetScoreAt(me);
+			setScoreAt(me, myScore / group.nSampled, group.nSampled);
+			return;
+		}
+		updateScoreAt(me, myScore, group.nSampled);
+		for (int i = 0; i < group.nSampled; i++)
+			opponent.updateScoreAt(group.group[i], smallScores[i], nGroup - 1);
+	}
+
+	void playGroupOnceAt(int me, IBSGroup group) {
+		double myScore = groupmodule.groupScores(myTraits, tmpGroup, group.nSampled, groupScores);
+		// for ephemeral scores calculate score of focal only
+		if (playerScoring.equals(ScoringType.EPHEMERAL)) {
+			resetScoreAt(me);
+			setScoreAt(me, myScore, 1);
+			return;
+		}
+		updateScoreAt(me, myScore);
+		for (int i = 0; i < group.nSampled; i++)
+			opponent.updateScoreAt(group.group[i], groupScores[i]);
 	}
 
 	/**
@@ -989,43 +1002,60 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	@Override
 	public void init() {
 		super.init();
-		int mutidx = -1;
+		switch (init.type) {
+			default:
+			case UNIFORM:
+				initUniform();
+				break;
+			case MONO:
+				initMono();
+				break;
+			case GAUSSIAN:
+				initGaussian();
+				break;
+			case MUTANT:
+				initMutant();
+				break;
+		}
+	}
+
+	void initUniform() {
 		for (int s = 0; s < nTraits; s++) {
-			switch (init.type) {
-				default:
-				case UNIFORM:
-					for (int n = s; n < nPopulation * nTraits; n += nTraits)
-						traits[n] = random01();
-					break;
+			for (int n = s; n < nPopulation * nTraits; n += nTraits)
+				traits[n] = random01();
+		}
+	}
 
-				case MONO:
-					// initArgs contains monomorphic trait
-					double mono = Math.min(Math.max(init.args[s][0], traitRangeMin[s]), traitRangeMax[s]);
-					double scaledmono = (mono - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
-					for (int n = s; n < nPopulation * nTraits; n += nTraits)
-						traits[n] = scaledmono;
-					break;
+	void initMono() {
+		for (int s = 0; s < nTraits; s++) {
+			// initArgs contains monomorphic trait
+			double mono = Math.min(Math.max(init.args[s][0], traitRangeMin[s]), traitRangeMax[s]);
+			double scaledmono = (mono - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
+			for (int n = s; n < nPopulation * nTraits; n += nTraits)
+				traits[n] = scaledmono;
+		}
+	}
 
-				case GAUSSIAN:
-					double mean = Math.min(Math.max(init.args[s][0], traitRangeMin[s]), traitRangeMax[s]);
-					double sdev = Math.min(Math.max(init.args[s][1], traitRangeMin[s]), traitRangeMax[s]);
-					double scaledmean = (mean - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
-					double scaledsdev = sdev / (traitRangeMax[s] - traitRangeMin[s]);
-					for (int n = s; n < nPopulation * nTraits; n += nTraits)
-						traits[n] = Math.min(1.0, Math.max(0.0, randomGaussian(scaledmean, scaledsdev)));
-					break;
+	void initGaussian() {
+		for (int s = 0; s < nTraits; s++) {
+			double mean = Math.min(Math.max(init.args[s][0], traitRangeMin[s]), traitRangeMax[s]);
+			double sdev = Math.min(Math.max(init.args[s][1], traitRangeMin[s]), traitRangeMax[s]);
+			double scaledmean = (mean - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
+			double scaledsdev = sdev / (traitRangeMax[s] - traitRangeMin[s]);
+			for (int n = s; n < nPopulation * nTraits; n += nTraits)
+				traits[n] = Math.min(1.0, Math.max(0.0, randomGaussian(scaledmean, scaledsdev)));
+		}
+	}
 
-				case MUTANT:
-					double resident = Math.min(Math.max(init.args[s][0], traitRangeMin[s]), traitRangeMax[s]);
-					double scaledresident = (resident - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
-					for (int n = s; n < nPopulation * nTraits; n += nTraits)
-						traits[n] = scaledresident;
-					if (mutidx < 0)
-						mutidx = random0n(nPopulation);
-					double mut = Math.min(Math.max(init.args[s][1], traitRangeMin[s]), traitRangeMax[s]);
-					traits[mutidx] = (mut - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
-					break;
-			}
+	void initMutant() {
+		int mutidx = random0n(nPopulation);
+		for (int s = 0; s < nTraits; s++) {
+			double resident = Math.min(Math.max(init.args[s][0], traitRangeMin[s]), traitRangeMax[s]);
+			double scaledresident = (resident - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
+			for (int n = s; n < nPopulation * nTraits; n += nTraits)
+				traits[n] = scaledresident;
+			double mut = Math.min(Math.max(init.args[s][1], traitRangeMin[s]), traitRangeMax[s]);
+			traits[mutidx] = (mut - traitRangeMin[s]) / (traitRangeMax[s] - traitRangeMin[s]);
 		}
 	}
 
