@@ -243,6 +243,8 @@ public class IBSGroup {
 		return focal;
 	}
 
+	private static final int[] empty = new int[0];
+
 	/**
 	 * Picks an interaction/reference group for the focal individual {@code focal}
 	 * and the population structure {@code geom}. If the flag {@code out == true}
@@ -270,7 +272,7 @@ public class IBSGroup {
 				// XXX if nSampled == 0 updatePlayerAt aborts if no references found...
 				// pretend...
 				nSampled = 1;
-				return null;
+				return empty;
 
 			case ALL:
 				if (downstream) {
@@ -285,145 +287,13 @@ public class IBSGroup {
 			case RANDOM:
 				switch (geometry.getType()) {
 					case MEANFIELD:
-						pickRandom(geometry.size);
-						return group;
+						return pickRandom(geometry.size);
 
 					case HIERARCHY:
-						if (nSamples != 1) {
-							throw new UnsupportedOperationException(
-									"sampling of groups (≥2) in hierarchical structures not (yet) implemented!");
-						}
-						nSampled = 1;
-
-						int level = 0;
-						int maxLevel = geometry.hierarchy.length - 1;
-						int unitSize = geometry.hierarchy[maxLevel];
-						int levelSize = 1;
-						int exclSize = 1;
-						double prob = geometry.hierarchyweight;
-						if (prob > 0.0) {
-							if ((int) Math.rint(geometry.connectivity) == unitSize - 1) {
-								// if individuals are connected to all other members of the unit one hierarchy
-								// level is lost.
-								// this applies to well-mixed units as well as e.g. square lattices with moore
-								// neighbourhood and 3x3 units.
-								maxLevel--;
-								levelSize = unitSize;
-							}
-							double rand = rng.random01();
-							while (rand < prob && level <= maxLevel) {
-								exclSize = levelSize;
-								levelSize *= geometry.hierarchy[maxLevel - level];
-								level++;
-								prob *= geometry.hierarchyweight;
-							}
-						}
-						group = mem;
-						int model;
-						int levelStart;
-						int exclStart;
-						switch (geometry.subgeometry) {
-							case MEANFIELD:
-								if (level == 0) {
-									// pick random neighbour
-									if (downstream)
-										group[0] = geometry.out[focal][rng.random0n(geometry.kout[focal])];
-									else
-										group[0] = geometry.in[focal][rng.random0n(geometry.kin[focal])];
-									return group;
-								}
-								// with zero hierarchyweight levelSize is still 1 instead of unitSize
-								levelSize = Math.max(levelSize, unitSize);
-								// determine start of level
-								levelStart = (focal / levelSize) * levelSize;
-								// determine start of exclude level
-								exclStart = (focal / exclSize) * exclSize; // relative to level
-								// pick random individual in level, excluding focal unit
-								model = levelStart + rng.random0n(levelSize - exclSize);
-								if (model >= exclStart)
-									model += exclSize;
-								group[0] = model;
-								return group;
-
-							case SQUARE_NEUMANN:
-							case SQUARE_NEUMANN_2ND:
-							case SQUARE_MOORE:
-							case SQUARE:
-								if (level == 0) {
-									// pick random neighbour
-									if (downstream)
-										group[0] = geometry.out[focal][rng.random0n(geometry.kout[focal])];
-									else
-										group[0] = geometry.in[focal][rng.random0n(geometry.kin[focal])];
-									return group;
-								}
-								// determine start of focal level
-								int side = (int) Math.sqrt(geometry.size);
-								int levelSide = (int) Math.sqrt(levelSize);
-								int levelX = ((focal % side) / levelSide) * levelSide;
-								int levelY = ((focal / side) / levelSide) * levelSide;
-								levelStart = levelY * side + levelX;
-								// determine start of excluded level (relative to focal level)
-								int exclSide = (int) Math.sqrt(exclSize);
-								int exclX = ((focal % side) / exclSide) * exclSide;
-								int exclY = ((focal / side) / exclSide) * exclSide;
-								exclStart = (exclY - levelY) * levelSide + exclX - levelX;
-								// draw random individual in focal level, excluding lower level
-								model = rng.random0n(levelSize - exclSize);
-								for (int i = 0; i < exclSide; i++) {
-									if (model < exclStart)
-										break;
-									model += exclSide;
-									exclStart += levelSide;
-								}
-								// model now relative to levelStart. transform to population level
-								int modelX = model % levelSide;
-								int modelY = model / levelSide;
-								model = levelStart + modelY * side + modelX;
-								group[0] = model;
-								return group;
-
-							default:
-								throw new UnsupportedOperationException(
-										"hierachy geometry '" + geometry.subgeometry.getTitle() + "' not supported");
-						}
+						return pickRandomHierarchy(downstream);
 
 					default:
-						int[] src = (downstream ? geometry.out[focal] : geometry.in[focal]);
-						int len = (downstream ? geometry.kout[focal] : geometry.kin[focal]);
-						if (len <= nSamples) {
-							nSampled = len;
-							group = src;
-							return group;
-						}
-						group = mem;
-						nSampled = nSamples;
-						if (nSamples == 1) {
-							// optimization: single reference is commonly used and saves copying of all
-							// neighbors.
-							group[0] = src[rng.random0n(len)];
-							return group;
-						}
-						// make sure memory is sufficient for picking
-						if (group.length < len) {
-							mem = new int[len];
-							group = mem;
-						}
-						System.arraycopy(src, 0, group, 0, len);
-						if (nSamples > len / 2) {
-							for (int n = 0; n < len - nSamples; n++) {
-								int aRand = rng.random0n(len - n);
-								group[aRand] = group[len - n - 1];
-							}
-							return group;
-						}
-						for (int n = 0; n < nSamples; n++) {
-							int aRand = rng.random0n(len - n) + n;
-							int swap = group[n];
-							group[n] = group[aRand];
-							group[aRand] = swap;
-						}
-						return group;
+						return pickRandomStructured(downstream);
 				}
 			default:
 				throw new UnsupportedOperationException("Unknown group sampling (type: " + samplingType + ")!");
@@ -435,20 +305,215 @@ public class IBSGroup {
 	 * {@code 0 - (size-1)}. The focal individual is included if {@code self==true}.
 	 * 
 	 * @param size the maximum index to pick
+	 * @return the picked group
 	 */
-	private void pickRandom(int size) {
+	private int[] pickRandom(int size) {
 		group = mem;
 		nSampled = Math.min(nSamples, size);
 
 		if (nSampled == 1) {
 			pickSingle(size);
-			return;
+			return group;
 		}
 
 		if (self)
 			pickGroup(size);
 		else
 			pickGroup(size, focal);
+		return group;
+	}
+
+	/**
+	 * Pick group of {@code nSamples} random individual in structured populations
+	 * either from the outgoing (downstream) or incoming (upstream) neighbours.
+	 * 
+	 * @param downstream the flag to indicating sampling from ownstream
+	 * @return the picked group
+	 */
+	private int[] pickRandomStructured(boolean downstream) {
+		int[] src = (downstream ? geometry.out[focal] : geometry.in[focal]);
+		int len = (downstream ? geometry.kout[focal] : geometry.kin[focal]);
+		if (len <= nSamples) {
+			nSampled = len;
+			group = src;
+			return group;
+		}
+		group = mem;
+		nSampled = nSamples;
+		if (nSamples == 1) {
+			// optimization: single reference is commonly used and saves copying of all
+			// neighbors.
+			group[0] = src[rng.random0n(len)];
+			return group;
+		}
+		// make sure memory is sufficient for picking
+		if (group.length < len) {
+			mem = new int[len];
+			group = mem;
+		}
+		System.arraycopy(src, 0, group, 0, len);
+		if (nSamples > len / 2) {
+			for (int n = 0; n < len - nSamples; n++) {
+				int aRand = rng.random0n(len - n);
+				group[aRand] = group[len - n - 1];
+			}
+			return group;
+		}
+		for (int n = 0; n < nSamples; n++) {
+			int aRand = rng.random0n(len - n) + n;
+			int swap = group[n];
+			group[n] = group[aRand];
+			group[aRand] = swap;
+		}
+		return group;
+	}
+
+	/**
+	 * Pick group of {@code nSamples} random individual in hierarchical structures
+	 * either from the outgoing (downstream) or incoming (upstream) neighbours.
+	 * 
+	 * @param downstream the flag to indicating sampling from ownstream
+	 * @return the picked group
+	 */
+	private int[] pickRandomHierarchy(boolean downstream) {
+		if (nSamples != 1) {
+			throw new UnsupportedOperationException(
+					"sampling of groups (≥2) in hierarchical structures not (yet) implemented!");
+		}
+		nSampled = 1;
+
+		HierarchyUnit hu = new HierarchyUnit();
+		calcHierarchyUnit(hu);
+		group = mem;
+		switch (geometry.subgeometry) {
+			case MEANFIELD:
+				return pickHierarchyMean(hu, downstream);
+
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
+			case SQUARE:
+				return pickHierarchySquare(hu, downstream);
+
+			default:
+				throw new UnsupportedOperationException(
+						"hierachy geometry '" + geometry.subgeometry.getTitle() + "' not supported");
+		}
+	}
+
+	/**
+	 * Internal class to store hierarchy unit information.
+	 */
+	private class HierarchyUnit {
+		int level = 0;
+		int maxLevel = geometry.hierarchy.length - 1;
+		int unitSize = geometry.hierarchy[maxLevel];
+		int levelSize = 1;
+		int exclSize = 1;
+		double prob = geometry.hierarchyweight;
+	}
+
+	/**
+	 * Calculate hierarchy unit information.
+	 * 
+	 * @param hu the hierarchy unit
+	 */
+	private void calcHierarchyUnit(HierarchyUnit hu) {
+		if (hu.prob <= 0.0) {
+			// with zero hierarchyweight levelSize is unitSize
+			hu.levelSize = hu.unitSize;
+			return;
+		}
+
+		if ((int) Math.rint(geometry.connectivity) == hu.unitSize - 1) {
+			// if individuals are connected to all other members of the unit one hierarchy
+			// level is lost.
+			// this applies to well-mixed units as well as e.g. square lattices with moore
+			// neighbourhood and 3x3 units.
+			hu.maxLevel--;
+			hu.levelSize = hu.unitSize;
+		}
+		double rand = rng.random01();
+		while (rand < hu.prob && hu.level <= hu.maxLevel) {
+			hu.exclSize = hu.levelSize;
+			hu.levelSize *= geometry.hierarchy[hu.maxLevel - hu.level];
+			hu.level++;
+			hu.prob *= geometry.hierarchyweight;
+		}
+	}
+
+	/**
+	 * Pick a single random individual in hierarchical mean-field structure either
+	 * from the outgoing (downstream) or incoming (upstream) neighbours.
+	 * 
+	 * @param hu         the hierarchy unit
+	 * @param downstream the flag to indicating sampling from ownstream
+	 * @return the picked group
+	 */
+	private int[] pickHierarchyMean(HierarchyUnit hu, boolean downstream) {
+		if (hu.level == 0) {
+			// pick random neighbour
+			if (downstream)
+				group[0] = geometry.out[focal][rng.random0n(geometry.kout[focal])];
+			else
+				group[0] = geometry.in[focal][rng.random0n(geometry.kin[focal])];
+			return group;
+		}
+		// determine start of level
+		int levelStart = (focal / hu.levelSize) * hu.levelSize;
+		// determine start of exclude level
+		int exclStart = (focal / hu.exclSize) * hu.exclSize; // relative to level
+		// pick random individual in level, excluding focal unit
+		int model = levelStart + rng.random0n(hu.levelSize - hu.exclSize);
+		if (model >= exclStart)
+			model += hu.exclSize;
+		group[0] = model;
+		return group;
+	}
+
+	/**
+	 * Pick a single random individual in hierarchical square lattice structure
+	 * either
+	 * from the outgoing (downstream) or incoming (upstream) neighbours.
+	 * 
+	 * @param hu         the hierarchy unit
+	 * @param downstream the flag to indicating sampling from ownstream
+	 * @return the picked group
+	 */
+	private int[] pickHierarchySquare(HierarchyUnit hu, boolean downstream) {
+		if (hu.level == 0) {
+			// pick random neighbour
+			if (downstream)
+				group[0] = geometry.out[focal][rng.random0n(geometry.kout[focal])];
+			else
+				group[0] = geometry.in[focal][rng.random0n(geometry.kin[focal])];
+			return group;
+		}
+		// determine start of focal level
+		int side = (int) Math.sqrt(geometry.size);
+		int levelSide = (int) Math.sqrt(hu.levelSize);
+		int levelX = ((focal % side) / levelSide) * levelSide;
+		int levelY = ((focal / side) / levelSide) * levelSide;
+		int levelStart = levelY * side + levelX;
+		// determine start of excluded level (relative to focal level)
+		int exclSide = (int) Math.sqrt(hu.exclSize);
+		int exclX = ((focal % side) / exclSide) * exclSide;
+		int exclY = ((focal / side) / exclSide) * exclSide;
+		int exclStart = (exclY - levelY) * levelSide + exclX - levelX;
+		// draw random individual in focal level, excluding lower level
+		int model = rng.random0n(hu.levelSize - hu.exclSize);
+		for (int i = 0; i < exclSide; i++) {
+			if (model < exclStart)
+				break;
+			model += exclSide;
+			exclStart += levelSide;
+		}
+		// model now relative to levelStart. transform to population level
+		int modelX = model % levelSide;
+		int modelY = model / levelSide;
+		model = levelStart + modelY * side + modelX;
+		group[0] = model;
+		return group;
 	}
 
 	/**
