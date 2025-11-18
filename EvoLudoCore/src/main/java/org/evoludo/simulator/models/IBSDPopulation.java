@@ -1005,95 +1005,124 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		double oldScore = u2 * pairmodule.pairScores(oldType, tmpCount, tmpScore);
 		double newScore = u2 * pairmodule.pairScores(newType, tmpCount, tmpTraitScore);
 		if (newType == vacantIdx) {
-			double myScore = scores[me];
-			accuTypeScores[oldType] -= myScore;
-			scores[me] = 0.0;
-			interactions[me] = 0;
-			updateEffScoreRange(me, myScore, 0.0);
-			sumFitness -= fitness[me];
-			fitness[me] = 0.0;
-			// neighbors lost one interaction partner - adjust (outgoing) opponent's score
-			for (int n = 0; n < nOut; n++) {
-				int you = out[n];
+			// focal individual became vacant
+			adjustVacantScoreAt(me, oldType, out, nOut, in, nIn, u2);
+			return;
+		}
+		if (oldType == vacantIdx) {
+			// focal individual became occupied
+			updateScoreAt(me, newScore, u2 * nInter);
+			adjustOccupiedScoreAt(out, nOut, in, nIn, u2);
+			return;
+		}
+		// interaction count remains the same but old/newScore are accumulated
+		if (playerScoreAveraged && nInter > 0) {
+			double iInter = 1.0 / (u2 * nInter);
+			newScore *= iInter;
+			oldScore *= iInter;
+		}
+		// adjust score of focal player
+		adjustScoreAt(me, oldScore, newScore);
+		accuTypeScores[oldType] -= oldScore;
+		accuTypeScores[newType] += oldScore;
+		// adjust (outgoing) opponent's score
+		adjustNeighborScores(out, nOut, u2);
+		// same as !interaction.isUndirected because in != null implies directed graph
+		// (see above)
+		if (in != null) {
+			// adjust (incoming) opponent's score
+			adjustNeighborScores(in, nIn, 1);
+		}
+	}
+
+	/**
+	 * Adjust the score of a focal individual that became vacant.
+	 * 
+	 * @param me      the index of the focal individual
+	 * @param oldType the trait type of the focal individual before becoming vacant
+	 * @param out     the indices of outgoing neighbors
+	 * @param nOut    the number of outgoing neighbors
+	 * @param in      the indices of incoming neighbors
+	 * @param nIn     the number of incoming neighbors
+	 * @param u2      a scaling factor (2 for undirected, 1 for directed graphs)
+	 */
+	void adjustVacantScoreAt(int me, int oldType, int[] out, int nOut, int[] in, int nIn, int u2) {
+		double myScore = scores[me];
+		accuTypeScores[oldType] -= myScore;
+		scores[me] = 0.0;
+		interactions[me] = 0;
+		updateEffScoreRange(me, myScore, 0.0);
+		sumFitness -= fitness[me];
+		fitness[me] = 0.0;
+		// neighbors lost one interaction partner - adjust (outgoing) opponent's score
+		for (int n = 0; n < nOut; n++) {
+			int you = out[n];
+			int type = opponent.getTraitAt(you);
+			opponent.removeScoreAt(you, u2 * (tmpScore[type] - tmpTraitScore[type]), u2);
+		}
+		// same as !interaction.isUndirected because in != null implies directed graph
+		// (see above)
+		if (in != null) {
+			for (int n = 0; n < nIn; n++) {
+				int you = in[n];
 				int type = opponent.getTraitAt(you);
-				opponent.removeScoreAt(you, u2 * (tmpScore[type] - tmpTraitScore[type]), u2);
+				// adjust (incoming) opponent's score
+				opponent.removeScoreAt(you, tmpScore[type] - tmpTraitScore[type], 1);
 			}
-			// same as !interaction.isUndirected because in != null implies directed graph
-			// (see above)
-			if (in != null) {
-				for (int n = 0; n < nIn; n++) {
-					int you = in[n];
-					int type = opponent.getTraitAt(you);
-					// adjust (incoming) opponent's score
-					opponent.removeScoreAt(you, tmpScore[type] - tmpTraitScore[type], 1);
-				}
+		}
+	}
+
+	/**
+	 * Adjust the score of the neighbours of a focal individual that became
+	 * occupied.
+	 * 
+	 * @param out  the indices of outgoing neighbors
+	 * @param nOut the number of outgoing neighbors
+	 * @param in   the indices of incoming neighbors
+	 * @param nIn  the number of incoming neighbors
+	 * @param u2   a scaling factor (2 for undirected, 1 for directed graphs)
+	 */
+	void adjustOccupiedScoreAt(int[] out, int nOut, int[] in, int nIn, int u2) {
+		// neighbors gained one interaction partner - adjust (outgoing) opponent's score
+		for (int n = 0; n < nOut; n++) {
+			int you = out[n];
+			int type = opponent.getTraitAt(you);
+			opponent.updateScoreAt(you, u2 * (tmpTraitScore[type] - tmpScore[type]), u2);
+		}
+		// same as !interaction.isUndirected because in != null implies directed graph
+		// (see above)
+		if (in != null) {
+			for (int n = 0; n < nIn; n++) {
+				int you = in[n];
+				int type = opponent.getTraitAt(you);
+				// adjust (incoming) opponent's score
+				opponent.updateScoreAt(you, tmpTraitScore[type] - tmpScore[type], 1);
 			}
-		} else {
-			if (oldType == vacantIdx) {
-				updateScoreAt(me, newScore, u2 * nInter);
-				// neighbors gained one interaction partner - adjust (outgoing) opponent's score
-				for (int n = 0; n < nOut; n++) {
-					int you = out[n];
-					int type = opponent.getTraitAt(you);
-					opponent.updateScoreAt(you, u2 * (tmpTraitScore[type] - tmpScore[type]), u2);
-				}
-				// same as !interaction.isUndirected because in != null implies directed graph
-				// (see above)
-				if (in != null) {
-					for (int n = 0; n < nIn; n++) {
-						int you = in[n];
-						int type = opponent.getTraitAt(you);
-						// adjust (incoming) opponent's score
-						opponent.updateScoreAt(you, tmpTraitScore[type] - tmpScore[type], 1);
-					}
-				}
-			} else {
-				// interaction count remains the same but old/newScore are accumulated
-				if (playerScoreAveraged && nInter > 0) {
-					double iInter = 1.0 / (u2 * nInter);
-					newScore *= iInter;
-					oldScore *= iInter;
-				}
-				// adjust score of focal player
-				adjustScoreAt(me, oldScore, newScore);
-				accuTypeScores[oldType] -= oldScore;
-				accuTypeScores[newType] += oldScore;
-				// adjust (outgoing) opponent's score
-				for (int n = 0; n < nOut; n++) {
-					int you = out[n];
-					int type = opponent.getTraitAt(you);
-					if (type == vacantIdx)
-						continue;
-					newScore = tmpTraitScore[type];
-					oldScore = tmpScore[type];
-					if (playerScoreAveraged) {
-						double iInter = 1.0 / interactions[you];
-						newScore *= iInter;
-						oldScore *= iInter;
-					}
-					opponent.adjustScoreAt(you, u2 * (newScore - oldScore));
-				}
-				// same as !interaction.isUndirected because in != null implies directed graph
-				// (see above)
-				if (in != null) {
-					// adjust (incoming) opponent's score
-					for (int n = 0; n < nIn; n++) {
-						int you = in[n];
-						int type = opponent.getTraitAt(you);
-						if (type == vacantIdx)
-							continue;
-						newScore = tmpTraitScore[type];
-						oldScore = tmpScore[type];
-						if (playerScoreAveraged) {
-							double iInter = 1.0 / interactions[you];
-							newScore *= iInter;
-							oldScore *= iInter;
-						}
-						// u2 = 1 for directed structures
-						opponent.adjustScoreAt(you, newScore - oldScore);
-					}
-				}
+		}
+	}
+
+	/**
+	 * Adjust the scores of neighboring individuals after a focal individual changed
+	 * its trait.
+	 * 
+	 * @param neighbors  the indices of neighboring individuals
+	 * @param nNeighbors the number of neighboring individuals
+	 * @param u2         a scaling factor (2 for undirected, 1 for directed graphs)
+	 */
+	void adjustNeighborScores(int[] neighbors, int nNeighbors, int u2) {
+		for (int n = 0; n < nNeighbors; n++) {
+			int you = neighbors[n];
+			int type = opponent.getTraitAt(you);
+			if (type == vacantIdx)
+				continue;
+			double newScore = tmpTraitScore[type];
+			double oldScore = tmpScore[type];
+			if (playerScoreAveraged) {
+				double iInter = 1.0 / interactions[you];
+				newScore *= iInter;
+				oldScore *= iInter;
 			}
+			opponent.adjustScoreAt(you, u2 * (newScore - oldScore));
 		}
 	}
 
