@@ -3638,69 +3638,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			}
 		}
 
-		hasLookupTable = module.isStatic() || //
-				(adjustScores && interaction.getType() == Geometry.Type.MEANFIELD) || //
-				(ephemeralScores && interaction.getType() == Geometry.Type.MEANFIELD //
-						&& interGroup.isSampling(SamplingType.ALL));
-		if (hasLookupTable) {
-			// allocate memory for fitness lookup table
-			if (typeFitness == null || typeFitness.length != nTraits)
-				typeFitness = new double[nTraits];
-			if (module.isStatic()) {
-				// initialize lookup table for static modules
-				typeScores = staticmodule.getStaticScores();
-				for (int n = 0; n < nTraits; n++)
-					typeFitness[n] = map2fit.map(typeScores[n]);
-				maxEffScoreIdx = -1;
-			} else {
-				// allocate memory for score lookup table
-				if (typeScores == null || typeScores.length != nTraits)
-					typeScores = new double[nTraits];
-				// determine number of interactions in well-mixed populations with adjustScores
-				int oPop = opponent.getModule().getNPopulation();
-				if (interaction.isInterspecies()) {
-					// XXX check how to count the number of interactions for inter-species group
-					// interactions only max. population size is known at this point (if sizes can
-					// vary)
-					nMixedInter = oPop * nGroup;
-				} else {
-					// this can easily exceed the range of int's... would cause issues with
-					// accumulated payoffs; excluded in check()
-					// should not affect averaged payoffs. catch exception and set to MAX_VALUE
-					try {
-						nMixedInter = Combinatorics.combinations(oPop - 1, nGroup - 1);
-					} catch (ArithmeticException ae) {
-						// note: nMixedInter < 0 means no interactions (static modules)
-						nMixedInter = Integer.MAX_VALUE;
-					}
-				}
-			}
-			// with lookup tables scores, fitness and interaction arrays not needed
-			scores = null;
-			fitness = null;
-			interactions = null;
-			// allocate lookup tables
-			if (typeScores == null || typeScores.length != nTraits)
-				typeScores = new double[nTraits];
-			if (typeFitness == null || typeFitness.length != nTraits)
-				typeFitness = new double[nTraits];
-		} else {
-			// request reset if we had lookup tables before to allocate arrays scores,
-			// fitness
-			// and interaction
-			doReset |= (typeFitness != null || typeScores != null);
-			typeFitness = null;
-			typeScores = null;
-		}
-		if (!hasLookupTable || ephemeralScores) {
-			// emphemeral scores need both
-			if (scores == null || scores.length != nPopulation)
-				scores = new double[nPopulation];
-			if (fitness == null || fitness.length != nPopulation)
-				fitness = new double[nPopulation];
-			if (interactions == null || interactions.length != nPopulation)
-				interactions = new int[nPopulation];
-		}
+		// check if lookup tables can be used
+		doReset |= checkLookupTable(nGroup, ephemeralScores);
 
 		// number of interactions can also be determined in structured populations with
 		// well-mixed demes
@@ -3730,6 +3669,97 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			}
 		}
 		return doReset;
+	}
+
+	/**
+	 * Check whether lookup tables for scores and fitness can be used. Free memory
+	 * if possible and request a reset if the use of lookup tables has changed.
+	 * 
+	 * @param nGroup          the interaction group size
+	 * @param ephemeralScores the flag for ephemeral scores
+	 * @return {@code true} if reset is required
+	 */
+	boolean checkLookupTable(int nGroup, boolean ephemeralScores) {
+		hasLookupTable = module.isStatic() || //
+				(adjustScores && interaction.getType() == Geometry.Type.MEANFIELD) || //
+				(ephemeralScores && interaction.getType() == Geometry.Type.MEANFIELD //
+						&& interGroup.isSampling(SamplingType.ALL));
+
+		if (!hasLookupTable || ephemeralScores)
+			return checkNoLookupTable(ephemeralScores);
+
+		// allocate memory for fitness lookup table
+		if (typeFitness == null || typeFitness.length != nTraits)
+			typeFitness = new double[nTraits];
+		if (module.isStatic()) {
+			// initialize lookup table for static modules
+			typeScores = staticmodule.getStaticScores();
+			for (int n = 0; n < nTraits; n++)
+				typeFitness[n] = map2fit.map(typeScores[n]);
+			maxEffScoreIdx = -1;
+		} else {
+			// allocate memory for score lookup table
+			if (typeScores == null || typeScores.length != nTraits)
+				typeScores = new double[nTraits];
+			nMixedInter = getNMixedInteractions(nGroup);
+		}
+		// with lookup tables scores, fitness and interaction arrays not needed
+		scores = null;
+		fitness = null;
+		interactions = null;
+		return false;
+	}
+
+	/**
+	 * Free memory used for lookup tables and allocate arrays for scores, fitness
+	 * and interactions. Returns {@code true} if reset is required.
+	 * 
+	 * @param ephemeralScores the flag for ephemeral scores
+	 * @return {@code true} if reset is required
+	 */
+	boolean checkNoLookupTable(boolean ephemeralScores) {
+		// ephemeral scores need both (except in well-mixed populations)
+		if (scores == null || scores.length != nPopulation)
+			scores = new double[nPopulation];
+		if (fitness == null || fitness.length != nPopulation)
+			fitness = new double[nPopulation];
+		if (interactions == null || interactions.length != nPopulation)
+			interactions = new int[nPopulation];
+		if (ephemeralScores)
+			return false;
+		// request reset if we had lookup tables before to allocate arrays scores,
+		// fitness and interaction
+		boolean doReset = (typeFitness != null || typeScores != null);
+		typeFitness = null;
+		typeScores = null;
+		return doReset;
+	}
+
+	/**
+	 * Determine the number of interactions in well-mixed populations with
+	 * lookup tables.
+	 * 
+	 * @param nGroup the interaction group size
+	 * @return the number of interactions
+	 */
+	int getNMixedInteractions(int nGroup) {
+		// determine number of interactions in well-mixed populations with adjustScores
+		int oPop = opponent.getModule().getNPopulation();
+		if (interaction.isInterspecies()) {
+			// XXX check how to count the number of interactions for inter-species group
+			// interactions only max. population size is known at this point (if sizes can
+			// vary)
+			return oPop * nGroup;
+		}
+		// this can easily exceed the range of int's... would cause issues with
+		// accumulated payoffs; excluded in check()
+		// should not affect averaged payoffs. catch exception and set to MAX_VALUE
+		try {
+			return Combinatorics.combinations(oPop - 1, nGroup - 1);
+		} catch (ArithmeticException ae) {
+			// note: nMixedInter < 0 means no interactions (static modules)
+			return Integer.MAX_VALUE;
+		}
 	}
 
 	/**
