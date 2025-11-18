@@ -3368,109 +3368,23 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		map2fit = module.getMap2Fitness();
 		playerUpdate = module.getPlayerUpdate();
 
-		Geometry structure = module.getGeometry();
-		// --geometry provides sane defaults
-		IBS ibs = (IBS) engine.getModel();
-		if (!ibs.cloGeometryInteraction.isSet()) {
-			doReset |= (interaction != structure);
-			// use default for interaction
-			interaction = structure;
-		}
-		if (!ibs.cloGeometryCompetition.isSet()) {
-			doReset |= (competition != structure);
-			// use default for competition
-			competition = structure;
-		}
-		interaction.interCompSame = competition.interCompSame = (interaction.equals(competition));
-		// make sure competiton geometry is set
-		if (competition == null)
-			competition = interaction;
-		interGroup.setGeometry(interaction);
-		compGroup.setGeometry(competition);
-		// set adding of links to geometries
-		if (pAddwire != null) {
-			double prev = interaction.pAddwire;
-			interaction.pAddwire = pAddwire[0];
-			doReset |= (Math.abs(prev - interaction.pAddwire) > 1e-8);
-			if (competition != null) {
-				prev = competition.pAddwire;
-				competition.pAddwire = pAddwire[1];
-				doReset |= (Math.abs(prev - competition.pAddwire) > 1e-8);
-			}
-		}
-		// set rewiring of links in geometries
-		if (pRewire != null) {
-			double prev = interaction.pRewire;
-			interaction.pRewire = pRewire[0];
-			doReset |= (Math.abs(prev - interaction.pRewire) > 1e-8);
-			if (competition != null) {
-				prev = competition.pRewire;
-				competition.pRewire = pRewire[1];
-				doReset |= (Math.abs(prev - competition.pRewire) > 1e-8);
-			}
-		}
-		// set names of geometries
-		String name = module.getName();
-		if (interaction.interCompSame) {
-			if (name.isEmpty())
-				interaction.name = "Structure";
-			else
-				interaction.name = name + ": Structure";
-		} else {
-			if (Geometry.displayUniqueGeometry(interaction, competition)) {
-				if (name.isEmpty())
-					interaction.name = competition.name = "Structure";
-				else
-					interaction.name = competition.name = name + ": Structure";
-			} else {
-				if (name.isEmpty()) {
-					interaction.name = "Interaction";
-					competition.name = "Competition";
-				} else {
-					interaction.name = name + ": Interaction";
-					competition.name = name + ": Competition";
-				}
-			}
-		}
+		doReset |= checkGeometry();
 		// Note: now that interaction and competition are set, we still cannot set
 		// structure to null because of subsequent CLO parsing
-
-		// check geometries
-		// Warning: there is a small chance that the interaction and competition
-		// geometries require different population sizes, which does not make sense
-		// and would most likely result in a never ending initialization loop...
-		interaction.size = nPopulation;
-		doReset |= interaction.check();
-		if (competition != null) {
-			module.setNPopulation(interaction.size);
-			nPopulation = interaction.size; // keep local copy in sync
-			competition.size = nPopulation;
-			doReset |= competition.check();
-			if (competition.size != nPopulation) {
-				// try checking interaction geometry again
-				interaction.size = competition.size;
-				if (interaction.check())
-					logger.severe("incompatible interaction and competition geometries!");
-			}
-		}
-		// population structure may require special population sizes
-		module.setNPopulation(interaction.size);
-		nPopulation = interaction.size; // keep local copy in sync
 
 		// check sampling in special geometries
 		int nGroup = module.getNGroup();
 		if (interaction.getType() == Geometry.Type.SQUARE && interaction.isRegular && interaction.connectivity > 8 &&
 				interGroup.isSampling(IBSGroup.SamplingType.ALL) && nGroup > 2 && nGroup < 9) {
-			// if count > 8 then the interaction pattern Group.SAMPLING_ALL with a group
-			// size between 2 and 8
-			// (excluding boundaries is not allowed because this pattern requires a
-			// particular (internal)
-			// arrangement of the neighbors.
+			// if connectivity > 8 then the interaction pattern Group.SAMPLING_ALL with a
+			// group size between 2 and 8 (excluding boundaries is not allowed because this
+			// pattern requires a particular (internal) arrangement of the neighbors.
 			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 			if (logger.isLoggable(Level.WARNING))
 				logger.warning(
-						"square " + name + " geometry has incompatible interaction pattern and neighborhood size" +
-								" - using random sampling of interaction partners!");
+						"square " + interaction.name
+								+ " geometry has incompatible interaction pattern and neighborhood size"
+								+ " - using random sampling of interaction partners!");
 		}
 		if (interaction.getType() == Geometry.Type.CUBE && interGroup.isSampling(IBSGroup.SamplingType.ALL) &&
 				nGroup > 2 && nGroup <= interaction.connectivity) {
@@ -3479,17 +3393,16 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 			if (logger.isLoggable(Level.WARNING))
 				logger.warning(
-						"cubic " + name + " geometry has incompatible interaction pattern and neighborhood size" +
-								" - using random sampling of interaction partners!");
+						"cubic " + interaction.name
+								+ " geometry has incompatible interaction pattern and neighborhood size"
+								+ " - using random sampling of interaction partners!");
 		}
 
-		// check competition geometry (may still be undefined at this point)
-		Geometry compgeom = (competition != null ? competition : interaction);
 		if ((module instanceof Payoffs) // best-response not an option with contact processes
 				&& !populationUpdate.isMoran()
 				&& !populationUpdate.getType().equals(PopulationUpdate.Type.ECOLOGY)) {
 			// Moran type updates ignore playerUpdate
-			if (compgeom.getType() == Geometry.Type.MEANFIELD && compGroup.isSampling(IBSGroup.SamplingType.ALL)
+			if (competition.getType() == Geometry.Type.MEANFIELD && compGroup.isSampling(IBSGroup.SamplingType.ALL)
 					&& playerUpdate.getType() != PlayerUpdate.Type.BEST_RESPONSE) {
 				// 010320 using everyone as a reference in mean-field simulations is not
 				// feasible - except for best-response
@@ -3500,13 +3413,13 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 			}
 			// best-response in well-mixed populations should skip sampling of references
-			if (compgeom.getType() == Geometry.Type.MEANFIELD
+			if (competition.getType() == Geometry.Type.MEANFIELD
 					&& playerUpdate.getType() == PlayerUpdate.Type.BEST_RESPONSE) {
 				compGroup.setSampling(IBSGroup.SamplingType.NONE);
 			}
 		}
 		// in the original Moran process offspring can replace the parent
-		compGroup.setSelf(populationUpdate.isMoran() && compgeom.getType() == Geometry.Type.MEANFIELD);
+		compGroup.setSelf(populationUpdate.isMoran() && competition.getType() == Geometry.Type.MEANFIELD);
 
 		// currently: if pop has interaction structure different from MEANFIELD its
 		// opponent population needs to be of the same size
@@ -3697,6 +3610,116 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		}
 
 		return doReset;
+	}
+
+	/**
+	 * Check the interaction and competition geometries for consistency and adjust
+	 * if
+	 * necessary (and feasible).
+	 * 
+	 * @return {@code true} if reset is required
+	 */
+	boolean checkGeometry() {
+		boolean doReset = false;
+		// --geometry provides sane defaults
+		Geometry structure = module.getGeometry();
+		IBS ibs = (IBS) engine.getModel();
+		if (!ibs.cloGeometryInteraction.isSet()) {
+			doReset |= (interaction != structure);
+			// use default for interaction
+			interaction = structure;
+		}
+		if (!ibs.cloGeometryCompetition.isSet()) {
+			doReset |= (competition != structure);
+			// use default for competition
+			competition = structure;
+		}
+		interaction.interCompSame = competition.interCompSame = (interaction.equals(competition));
+		interGroup.setGeometry(interaction);
+		compGroup.setGeometry(competition);
+
+		// rewire geometries if requested
+		doReset |= checkGeometryRewire();
+
+		// set names of geometries
+		setGeometryNames();
+
+		// check geometries
+		// Warning: there is a small chance that the interaction and competition
+		// geometries require different population sizes, which does not make sense
+		// and would most likely result in a never ending initialization loop...
+		interaction.size = nPopulation;
+		doReset |= interaction.check();
+		if (!interaction.interCompSame) {
+			module.setNPopulation(interaction.size);
+			nPopulation = interaction.size; // keep local copy in sync
+			competition.size = nPopulation;
+			doReset |= competition.check();
+			if (competition.size != nPopulation) {
+				// try checking interaction geometry again
+				interaction.size = competition.size;
+				if (interaction.check())
+					logger.severe("incompatible interaction and competition geometries!");
+			}
+		}
+		// population structure may require special population sizes
+		module.setNPopulation(interaction.size);
+		nPopulation = interaction.size; // keep local copy in sync
+		return doReset;
+	}
+
+	/**
+	 * Rewire the interaction and competition geometries if requested.
+	 * 
+	 * @return {@code true} if rewiring changed
+	 */
+	boolean checkGeometryRewire() {
+		boolean doReset = false;
+		// set adding of links to geometries
+		if (pAddwire != null) {
+			double prev = interaction.pAddwire;
+			interaction.pAddwire = pAddwire[0];
+			doReset |= (Math.abs(prev - interaction.pAddwire) > 1e-8);
+			if (!interaction.interCompSame) {
+				prev = competition.pAddwire;
+				competition.pAddwire = pAddwire[1];
+				doReset |= (Math.abs(prev - competition.pAddwire) > 1e-8);
+			}
+		}
+		// set rewiring of links in geometries
+		if (pRewire != null) {
+			double prev = interaction.pRewire;
+			interaction.pRewire = pRewire[0];
+			doReset |= (Math.abs(prev - interaction.pRewire) > 1e-8);
+			if (!interaction.interCompSame) {
+				prev = competition.pRewire;
+				competition.pRewire = pRewire[1];
+				doReset |= (Math.abs(prev - competition.pRewire) > 1e-8);
+			}
+		}
+		return doReset;
+	}
+
+	/**
+	 * Set the names of the interaction and competition geometries based on the
+	 * module name and whether the geometries are the same or different.
+	 */
+	void setGeometryNames() {
+		String name = module.getName();
+		if (interaction.interCompSame || Geometry.displayUniqueGeometry(interaction, competition)) {
+			if (name.isEmpty())
+				interaction.name = competition.name = "Structure";
+			else
+				interaction.name = competition.name = name + ": Structure";
+			return;
+		}
+		if (name.isEmpty()) {
+			interaction.name = "Interaction";
+			competition.name = "Competition";
+		} else {
+			interaction.name = name + ": Interaction";
+			competition.name = name + ": Competition";
+		}
 	}
 
 	/**
