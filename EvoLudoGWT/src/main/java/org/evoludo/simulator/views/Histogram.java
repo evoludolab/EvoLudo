@@ -527,7 +527,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 				graph.setNormalized(false);
 				wrapper.add(graph);
 				graphs.add(graph);
-				applyStationaryStyle(graph, n);
+				applyStationaryStyle(graph, n, nTraits);
 				if (bottomPane)
 					nXLabels++;
 			}
@@ -771,7 +771,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param graph the graph to style
 	 * @param n     the index of the graph
 	 */
-	private void applyStationaryStyle(HistoGraph graph, int n) {
+	private void applyStationaryStyle(HistoGraph graph, int n, int nGraphs) {
 		GraphStyle style = graph.getStyle();
 		applyDefaultStyle(style);
 		style.yLabel = "visits";
@@ -779,6 +779,9 @@ public class Histogram extends AbstractView<HistoGraph> {
 		style.showLabel = true;
 		style.showXLabel = true;
 		style.showXTickLabels = true;
+		boolean bottomPane = (n == nGraphs - 1);
+		style.showXLabel = bottomPane; // show only on bottom panel
+		style.showXTickLabels = bottomPane;
 		Module<?> module = graph.getModule();
 		int nPop = module.getNPopulation();
 		if (model.getType().isDE()) {
@@ -989,7 +992,6 @@ public class Histogram extends AbstractView<HistoGraph> {
 			if (newPop)
 				data = graph.getData();
 			int nTraits = module.getNTraits();
-			int nPop = module.getNPopulation();
 			boolean doFixtimeDistr = doFixtimeDistr(module);
 			if (doFixtimeDistr) {
 				int maxBins = graph.getMaxBins();
@@ -1000,6 +1002,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 				graph.setNormalized(false);
 				graph.setNormalized(-1);
 			} else {
+				// doFixtimeDistr is responsible that nPop > HistoGraph.MAX_BINS cannot happen
+				int nPop = module.getNPopulation();
 				if (data == null || data.length != 2 * (nTraits + 1) || data[0].length != nPop)
 					data = new double[2 * (nTraits + 1)][nPop];
 			}
@@ -1024,10 +1028,12 @@ public class Histogram extends AbstractView<HistoGraph> {
 			if (newPop)
 				data = graph.getData();
 			int nTraits = module.getNTraits();
+			int nBins = Math.min(module.getNPopulation(), graph.getMaxBins());
 			if (data == null || data.length != nTraits || data[0].length != HistoGraph.MAX_BINS)
 				data = new double[nTraits][HistoGraph.MAX_BINS];
+			scale2bins = nBins;
 			graph.setData(data);
-			applyStationaryStyle(graph, idx);
+			applyStationaryStyle(graph, idx, nTraits);
 			idx++;
 		}
 	}
