@@ -3372,91 +3372,18 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// Note: now that interaction and competition are set, we still cannot set
 		// structure to null because of subsequent CLO parsing
 
-		// check sampling in special geometries
 		int nGroup = module.getNGroup();
-		if (interaction.getType() == Geometry.Type.SQUARE && interaction.isRegular && interaction.connectivity > 8 &&
-				interGroup.isSampling(IBSGroup.SamplingType.ALL) && nGroup > 2 && nGroup < 9) {
-			// if connectivity > 8 then the interaction pattern Group.SAMPLING_ALL with a
-			// group size between 2 and 8 (excluding boundaries is not allowed because this
-			// pattern requires a particular (internal) arrangement of the neighbors.
-			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning(
-						"square " + interaction.name
-								+ " geometry has incompatible interaction pattern and neighborhood size"
-								+ " - using random sampling of interaction partners!");
-		}
-		if (interaction.getType() == Geometry.Type.CUBE && interGroup.isSampling(IBSGroup.SamplingType.ALL) &&
-				nGroup > 2 && nGroup <= interaction.connectivity) {
-			// Group.SAMPLING_ALL only works with pairwise interactions or all neighbors
-			// restrictions do not apply for PDE's
-			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning(
-						"cubic " + interaction.name
-								+ " geometry has incompatible interaction pattern and neighborhood size"
-								+ " - using random sampling of interaction partners!");
-		}
+		doReset |= checkInteractions(nGroup);
 
-		// currently: if pop has interaction structure different from MEANFIELD its
-		// opponent population needs to be of the same size
-		if (module.getNPopulation() != opponent.getModule().getNPopulation()
-				&& opponent.getInteractionGeometry() != null // opponent geometry may not yet be initialized
-																// check will be repeated for opponent
-				&& (getInteractionGeometry().getType() != Geometry.Type.MEANFIELD
-						|| opponent.getInteractionGeometry().getType() != Geometry.Type.MEANFIELD)) {
-			// at least for now, both populations need to be of the same size - except for
-			// well-mixed populations
-			logger.warning(
-					"inter-species interactions with populations of different size limited to well-mixed structures"
-							+ " - well-mixed structure forced!");
-			getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
-			opponent.getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
-			doReset = true;
-		}
-		// combinations of unstructured and structured populations in inter-species
-		// interactions require more attention. exclude for now.
-		if (getInteractionGeometry().isInterspecies() && opponent.getInteractionGeometry() != null &&
-				(getInteractionGeometry().getType() != opponent.getInteractionGeometry().getType()) &&
-				(getInteractionGeometry().getType() == Geometry.Type.MEANFIELD ||
-						opponent.getInteractionGeometry().getType() == Geometry.Type.MEANFIELD)) {
-			// opponent not yet ready; check will be repeated for opponent
-			logger.warning(
-					"interspecies interactions combining well-mixed and structured populations not (yet) tested"
-							+ " - well-mixed structure forced!");
-			getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
-			opponent.getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
-			doReset = true;
-		}
-
-		if (pMigration < 1e-10)
-			setMigrationType(MigrationType.NONE);
-		if (migrationType != MigrationType.NONE && pMigration > 0.0) {
-			if (!interaction.isUndirected) {
-				logger.warning("no migration on directed graphs!");
-				setMigrationType(MigrationType.NONE);
-			} else if (!interaction.interCompSame) {
-				logger.warning("no migration on graphs with different interaction and competition neighborhoods!");
-				setMigrationType(MigrationType.NONE);
-			} else if (interaction.getType() == Geometry.Type.MEANFIELD) {
-				logger.warning("no migration in well-mixed populations!");
-				setMigrationType(MigrationType.NONE);
-			}
-		}
-		if (migrationType == MigrationType.NONE)
-			setMigrationProb(0.0);
-		else {
-			// need to get new instance to make sure potential changes in pMigration are
-			// reflected
-			distrMigrants = new RNGDistribution.Geometric(rng.getRNG(), 1.0 - pMigration);
-		}
+		// check consistency of migration settings
+		checkMigration();
 
 		// check settings for modules implementing Payoffs
-		nMixedInter = -1;
 		if (module instanceof Payoffs)
 			doReset |= checkPayoffs(nGroup);
 		else {
 			// free up resources, module has no payoffs, e.g. contact process
+			nMixedInter = -1;
 			adjustScores = false;
 			playerScoring = ScoringType.NONE;
 			scores = null;
@@ -3476,30 +3403,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (vacantIdx >= 0 && nGroup > 2)
 			logger.warning("group interactions with vacant sites have NOT been tested...");
 
-		if (optimizeHomo) {
-			if (populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY) {
-				optimizeHomo = false;
-				logger.warning(
-						"optimizations for homogeneous states disabled (incompatible with variable population sizes).");
-				doReset = true;
-			}
-			double pMutation = mutation.getProbability();
-			if (pMutation <= 0.0) {
-				optimizeHomo = false;
-				logger.warning("optimizations for homogeneous states disabled (small mutations required).");
-				doReset = true;
-			}
-			if (pMutation < 0.0 || pMutation > 0.1 * nPopulation) {
-				if (logger.isLoggable(Level.WARNING))
-					logger.warning(
-							"optimizations for homogeneous states not recommended (mutations in [0, "
-									+ (0.1 / nPopulation)
-									+ ") recommended, now " + Formatter.format(pMutation, 4)
-									+ ", proceeding)");
-				doReset = true;
-			}
-		}
-		return doReset;
+		return doReset || checkOptimizations();
 	}
 
 	/**
@@ -3613,6 +3517,91 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
+	 * Check consistency of migration settings and adjust if necessary (and
+	 * feasible).
+	 */
+	void checkMigration() {
+		if (pMigration < 1e-10 || migrationType == MigrationType.NONE) {
+			setMigrationType(MigrationType.NONE);
+			setMigrationProb(0.0);
+			distrMigrants = null;
+			return;
+		}
+		if (!interaction.isUndirected) {
+			logger.warning("no migration on directed graphs!");
+			setMigrationType(MigrationType.NONE);
+		} else if (!interaction.interCompSame) {
+			logger.warning("no migration on graphs with different interaction and competition neighborhoods!");
+			setMigrationType(MigrationType.NONE);
+		} else if (interaction.getType() == Geometry.Type.MEANFIELD) {
+			logger.warning("no migration in well-mixed populations!");
+			setMigrationType(MigrationType.NONE);
+		}
+		// new instance to ensure potential changes in pMigration are reflected
+		distrMigrants = new RNGDistribution.Geometric(rng.getRNG(), 1.0 - pMigration);
+	}
+
+	boolean checkInteractions(int nGroup) {
+		boolean doReset = false;
+		// check sampling in special geometries
+		if (interaction.getType() == Geometry.Type.SQUARE && interaction.isRegular && interaction.connectivity > 8 &&
+				interGroup.isSampling(IBSGroup.SamplingType.ALL) && nGroup > 2 && nGroup < 9) {
+			// if connectivity > 8 then the interaction pattern Group.SAMPLING_ALL with a
+			// group size between 2 and 8 (excluding boundaries is not allowed because this
+			// pattern requires a particular (internal) arrangement of the neighbors.
+			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning(
+						"square " + interaction.name
+								+ " geometry has incompatible interaction pattern and neighborhood size"
+								+ " - using random sampling of interaction partners!");
+		}
+		if (interaction.getType() == Geometry.Type.CUBE && interGroup.isSampling(IBSGroup.SamplingType.ALL) &&
+				nGroup > 2 && nGroup <= interaction.connectivity) {
+			// Group.SAMPLING_ALL only works with pairwise interactions or all neighbors
+			// restrictions do not apply for PDE's
+			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning(
+						"cubic " + interaction.name
+								+ " geometry has incompatible interaction pattern and neighborhood size"
+								+ " - using random sampling of interaction partners!");
+		}
+
+		// currently: if pop has interaction structure different from MEANFIELD its
+		// opponent population needs to be of the same size
+		if (module.getNPopulation() != opponent.getModule().getNPopulation()
+				&& opponent.getInteractionGeometry() != null // opponent geometry may not yet be initialized
+																// check will be repeated for opponent
+				&& (getInteractionGeometry().getType() != Geometry.Type.MEANFIELD
+						|| opponent.getInteractionGeometry().getType() != Geometry.Type.MEANFIELD)) {
+			// at least for now, both populations need to be of the same size - except for
+			// well-mixed populations
+			logger.warning(
+					"inter-species interactions with populations of different size limited to well-mixed structures"
+							+ " - well-mixed structure forced!");
+			getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
+			opponent.getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
+			doReset = true;
+		}
+		// combinations of unstructured and structured populations in inter-species
+		// interactions require more attention. exclude for now.
+		if (getInteractionGeometry().isInterspecies() && opponent.getInteractionGeometry() != null &&
+				(getInteractionGeometry().getType() != opponent.getInteractionGeometry().getType()) &&
+				(getInteractionGeometry().getType() == Geometry.Type.MEANFIELD ||
+						opponent.getInteractionGeometry().getType() == Geometry.Type.MEANFIELD)) {
+			// opponent not yet ready; check will be repeated for opponent
+			logger.warning(
+					"interspecies interactions combining well-mixed and structured populations not (yet) tested"
+							+ " - well-mixed structure forced!");
+			getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
+			opponent.getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
+			doReset = true;
+		}
+		return doReset;
+	}
+
+	/**
 	 * Check settings for modules implementing Payoffs.
 	 * 
 	 * @param nGroup the interaction group size
@@ -3648,26 +3637,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			nMixedInter = interaction.hierarchy[interaction.hierarchy.length - 1]
 					- (interaction.isInterspecies() ? 0 : 1);
 		}
-		// best-response not an option with contact processes
-		if (!populationUpdate.isMoran()
-				&& !populationUpdate.getType().equals(PopulationUpdate.Type.ECOLOGY)) {
-			// Moran type updates ignore playerUpdate
-			if (competition.getType() == Geometry.Type.MEANFIELD && compGroup.isSampling(IBSGroup.SamplingType.ALL)
-					&& playerUpdate.getType() != PlayerUpdate.Type.BEST_RESPONSE) {
-				// 010320 using everyone as a reference in mean-field simulations is not
-				// feasible - except for best-response
-				// ecological updates are based on births and deaths rather than references
-				if (logger.isLoggable(Level.WARNING))
-					logger.warning("reference type (" + compGroup.getSampling()
-							+ ") unfeasible in well-mixed populations!");
-				compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
-			}
-			// best-response in well-mixed populations should skip sampling of references
-			if (competition.getType() == Geometry.Type.MEANFIELD
-					&& playerUpdate.getType() == PlayerUpdate.Type.BEST_RESPONSE) {
-				compGroup.setSampling(IBSGroup.SamplingType.NONE);
-			}
-		}
+		checkCompSampling();
 		return doReset;
 	}
 
@@ -3697,6 +3667,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			for (int n = 0; n < nTraits; n++)
 				typeFitness[n] = map2fit.map(typeScores[n]);
 			maxEffScoreIdx = -1;
+			nMixedInter = -1;
 		} else {
 			// allocate memory for score lookup table
 			if (typeScores == null || typeScores.length != nTraits)
@@ -3718,6 +3689,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @return {@code true} if reset is required
 	 */
 	boolean checkNoLookupTable(boolean ephemeralScores) {
+		nMixedInter = -1;
 		// ephemeral scores need both (except in well-mixed populations)
 		if (scores == null || scores.length != nPopulation)
 			scores = new double[nPopulation];
@@ -3760,6 +3732,62 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			// note: nMixedInter < 0 means no interactions (static modules)
 			return Integer.MAX_VALUE;
 		}
+	}
+
+	void checkCompSampling() {
+		// Moran type and ecological updates ignore playerUpdate
+		if (populationUpdate.isMoran()
+				|| populationUpdate.getType().equals(PopulationUpdate.Type.ECOLOGY)
+				|| competition.getType() != Geometry.Type.MEANFIELD)
+			return;
+
+		// best-response in well-mixed populations should skip sampling of references
+		if (playerUpdate.getType() == PlayerUpdate.Type.BEST_RESPONSE) {
+			compGroup.setSampling(IBSGroup.SamplingType.NONE);
+		} else if (compGroup.isSampling(IBSGroup.SamplingType.ALL)) {
+			// 010320 using everyone as a reference in mean-field simulations is not
+			// feasible - except for best-response
+			// ecological updates are based on births and deaths rather than references
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning("reference type (" + compGroup.getSampling()
+						+ ") unfeasible in well-mixed populations!");
+			compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
+		}
+	}
+
+	/**
+	 * Check whether optimizations for homogeneous states can be used. Disable if
+	 * necessary (and log warnings).
+	 * 
+	 * @return {@code true} if reset is required
+	 */
+	boolean checkOptimizations() {
+		if (!optimizeHomo)
+			return false;
+
+		boolean doReset = false;
+		if (populationUpdate.getType() == PopulationUpdate.Type.ECOLOGY) {
+			optimizeHomo = false;
+			logger.warning(
+					"optimizations for homogeneous states disabled (incompatible with variable population sizes).");
+			doReset = true;
+		}
+		double pMutation = mutation.getProbability();
+		if (pMutation <= 0.0) {
+			optimizeHomo = false;
+			logger.warning("optimizations for homogeneous states disabled (small mutations required).");
+			doReset = true;
+		}
+		if (pMutation < 0.0 || pMutation > 0.1 * nPopulation) {
+			if (logger.isLoggable(Level.WARNING))
+				logger.warning(
+						"optimizations for homogeneous states not recommended (mutations in [0, "
+								+ (0.1 / nPopulation)
+								+ ") recommended, now " + Formatter.format(pMutation, 4)
+								+ ", proceeding)");
+			doReset = true;
+		}
+		return doReset;
 	}
 
 	/**
