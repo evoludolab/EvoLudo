@@ -62,6 +62,10 @@
 	width: 100%;
 }
 
+.evoludo-PopGraph2D, .evoludo-PopGraph3D {
+	display: inline-grid;
+}
+
 .evoludo-LineGraph:focus, .evoludo-PopGraph2D:focus, .evoludo-PopGraph3D:focus, .evoludo-HistoGraph:focus, .evoludo-S3Graph:focus, .evoludo-ParaGraph:focus {
 	outline: none;
 	-webkit-tap-highlight-color: rgba(255, 255, 255, 0);
