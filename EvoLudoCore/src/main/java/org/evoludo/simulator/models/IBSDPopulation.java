@@ -1487,15 +1487,17 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 
 	@Override
 	public boolean checkConvergence() {
-		if (!super.checkConvergence())
-			return false;
-		// population is monomorphic, no mutations and no optimizations for homogeneous
-		// states
-		if (getPopulationSize() == 0 || vacantIdx < 0 || module.getMonoStop())
-			// extinct
+		if (getPopulationSize() == 0)
+			// extinction trumps everything
 			return true;
 		// death rate zero and no vacant sites
-		return (module.getDeathRate() <= 0.0 && traitsCount[vacantIdx] == 0);
+		if (!super.checkConvergence())
+			return false;
+		// monomorphic, no mutations and no optimizations for homogeneous states
+		// monomporhic stop requested or death rate zero and no vacant sites available
+		return (module.getMonoStop()
+				|| vacantIdx < 0 // no vacant sites
+				|| (module.getDeathRate() <= 0.0 && traitsCount[vacantIdx] == 0));
 	}
 
 	@Override
