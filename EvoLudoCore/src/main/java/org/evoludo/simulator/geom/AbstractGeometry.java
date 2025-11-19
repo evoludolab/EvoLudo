@@ -66,6 +66,8 @@ public abstract class AbstractGeometry {
 		switch (type) {
 			case MEANFIELD:
 				return new WellmixedGeometry(engine);
+			case COMPLETE:
+				return new CompleteGeometry(engine);
 			default:
 				throw new UnsupportedOperationException("Geometry type '" + type + "' is not implemented yet.");
 		}
