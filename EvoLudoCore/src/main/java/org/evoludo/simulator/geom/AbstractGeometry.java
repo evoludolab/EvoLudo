@@ -90,6 +90,8 @@ public abstract class AbstractGeometry {
 				return new WheelGeometry(engine);
 			case FRUCHT:
 				return new FruchtGeometry(engine);
+			case STRONG_AMPLIFIER:
+				return new StrongAmplifierGeometry(engine);
 			case TIETZE:
 				return new TietzeGeometry(engine);
 			case FRANKLIN:
@@ -678,6 +680,27 @@ public abstract class AbstractGeometry {
 				return;
 			}
 		}
+	}
+
+	protected void removeLinkAt(int from, int to) {
+		removeInLink(from, to);
+		removeOutLink(from, to);
+	}
+
+	protected boolean isNeighborOf(int focal, int check) {
+		if (out == null)
+			return false;
+		int[] neighs = out[focal];
+		int len = kout[focal];
+		for (int i = 0; i < len; i++)
+			if (neighs[i] == check)
+				return true;
+		return false;
+	}
+
+	protected void removeEdgeAt(int from, int to) {
+		removeLinkAt(from, to);
+		removeLinkAt(to, from);
 	}
 
 	/**

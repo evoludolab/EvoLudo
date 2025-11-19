@@ -286,7 +286,7 @@ public enum Type implements CLOption.Key {
 	/**
 	 * Strong (undirected) amplifier.
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryAmplifier()
+	 * @see StrongAmplifierGeometry#init()
 	 */
 	STRONG_AMPLIFIER("+", "strong (undirected) amplifier"),
 
@@ -518,6 +518,9 @@ public enum Type implements CLOption.Key {
 				break;
 			case FRUCHT:
 				((FruchtGeometry) geometry).parse(spec);
+				break;
+			case STRONG_AMPLIFIER:
+				((StrongAmplifierGeometry) geometry).parse(spec);
 				break;
 			case TIETZE:
 				((TietzeGeometry) geometry).parse(spec);
