@@ -509,6 +509,9 @@ public enum Type implements CLOption.Key {
 			case CUBE:
 				((CubicGeometry) geometry).parse(spec);
 				break;
+			case STAR:
+				((StarGeometry) geometry).parse(spec);
+				break;
 			case SQUARE:
 			case SQUARE_NEUMANN:
 			case SQUARE_NEUMANN_2ND:

@@ -81,6 +81,8 @@ public abstract class AbstractGeometry {
 				return new SquareGeometry(engine, type);
 			case CUBE:
 				return new CubicGeometry(engine);
+			case STAR:
+				return new StarGeometry(engine);
 			default:
 				throw new UnsupportedOperationException("Geometry type '" + type + "' is not implemented yet.");
 		}
