@@ -68,6 +68,8 @@ public abstract class AbstractGeometry {
 				return new WellmixedGeometry(engine);
 			case COMPLETE:
 				return new CompleteGeometry(engine);
+			case LINEAR:
+				return new LinearGeometry(engine);
 			default:
 				throw new UnsupportedOperationException("Geometry type '" + type + "' is not implemented yet.");
 		}
@@ -464,6 +466,69 @@ public abstract class AbstractGeometry {
 				isGraphConnected(nn, check);
 		}
 		return ArrayMath.max(check);
+	}
+
+	/**
+	 * Gets the opponent of the population represented by this geometry.
+	 */
+	public IBSPopulation<?, ?> getOpponent() {
+		return opponent;
+	}
+
+	/**
+	 * @return {@code true} if this geometry links two different populations.
+	 */
+	protected boolean isInterspecies() {
+		return population != opponent;
+	}
+
+	/**
+	 * Add undirected edge by inserting links in both directions.
+	 */
+	public void addEdgeAt(int from, int to) {
+		addLinkAt(from, to);
+		addLinkAt(to, from);
+	}
+
+	/**
+	 * Add a directed link from {@code from} to {@code to}, allocating storage as
+	 * needed.
+	 */
+	public void addLinkAt(int from, int to) {
+		int[] mem = out[from];
+		int max = mem.length;
+		int ko = kout[from];
+		if (max <= ko) {
+			int[] newmem = new int[max + 10];
+			if (max > 0)
+				System.arraycopy(mem, 0, newmem, 0, max);
+			out[from] = newmem;
+			mem = newmem;
+		}
+		mem[ko] = to;
+		kout[from]++;
+		ko++;
+		if (ko > maxOut)
+			maxOut = ko;
+
+		mem = in[to];
+		max = mem.length;
+		int ki = kin[to];
+		if (max <= ki) {
+			int[] newmem = new int[max + 10];
+			if (max > 0)
+				System.arraycopy(mem, 0, newmem, 0, max);
+			in[to] = newmem;
+			mem = newmem;
+		}
+		mem[ki] = from;
+		kin[to]++;
+		ki++;
+		if (ki > maxIn)
+			maxIn = ki;
+		maxTot = Math.max(maxTot, ko + kin[from]);
+		maxTot = Math.max(maxTot, kout[to] + ki);
+		evaluated = false;
 	}
 
 	/**
