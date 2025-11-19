@@ -271,7 +271,7 @@ public enum Type implements CLOption.Key {
 	 * Superstar graph (single hub, petals). {@code S<p[,k]>} superstar graph with
 	 * {@code p} petals and amplification {@code k}.
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometrySuperstar()
+	 * @see SuperstarGeometry#init()
 	 */
 	SUPER_STAR("S", "super-star (single hub, petals)",
 			"S<p[,a]> super-star, p petals [1], a amplify [3]"),
@@ -509,6 +509,9 @@ public enum Type implements CLOption.Key {
 				break;
 			case STAR:
 				((StarGeometry) geometry).parse(spec);
+				break;
+			case SUPER_STAR:
+				((SuperstarGeometry) geometry).parse(spec);
 				break;
 			case WHEEL:
 				((WheelGeometry) geometry).parse(spec);

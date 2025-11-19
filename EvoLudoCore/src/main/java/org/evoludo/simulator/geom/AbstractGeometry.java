@@ -84,6 +84,8 @@ public abstract class AbstractGeometry {
 				return new CubicGeometry(engine);
 			case STAR:
 				return new StarGeometry(engine);
+			case SUPER_STAR:
+				return new SuperstarGeometry(engine);
 			case WHEEL:
 				return new WheelGeometry(engine);
 			case FRUCHT:
