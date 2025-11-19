@@ -74,6 +74,11 @@ public abstract class AbstractGeometry {
 				return new TriangularGeometry(engine);
 			case HONEYCOMB:
 				return new HoneycombGeometry(engine);
+			case SQUARE:
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
+				return new SquareGeometry(engine, type);
 			default:
 				throw new UnsupportedOperationException("Geometry type '" + type + "' is not implemented yet.");
 		}
@@ -527,6 +532,64 @@ public abstract class AbstractGeometry {
 		maxTot = Math.max(maxTot, ko + kin[from]);
 		maxTot = Math.max(maxTot, kout[to] + ki);
 		evaluated = false;
+	}
+
+	/**
+	 * Remove all outgoing links from node {@code idx}.
+	 */
+	public void clearLinksFrom(int idx) {
+		int len = kout[idx];
+		int[] neigh = out[idx];
+		for (int i = 0; i < len; i++)
+			removeInLink(idx, neigh[i]);
+		kout[idx] = 0;
+		minOut = 0;
+		evaluated = false;
+	}
+
+	/**
+	 * Remove all incoming links to node {@code idx}.
+	 */
+	public void clearLinksTo(int idx) {
+		int len = kin[idx];
+		int[] neigh = in[idx];
+		for (int i = 0; i < len; i++)
+			removeOutLink(neigh[i], idx);
+		kin[idx] = 0;
+		minIn = 0;
+		evaluated = false;
+	}
+
+	private void removeInLink(int from, int to) {
+		int[] mem = in[to];
+		int k = kin[to];
+		for (int i = 0; i < k; i++) {
+			if (mem[i] == from) {
+				if (i < k - 1)
+					System.arraycopy(mem, i + 1, mem, i, k - 1 - i);
+				kin[to]--;
+				if (k - 1 < minIn)
+					minIn = k - 1;
+				evaluated = false;
+				return;
+			}
+		}
+	}
+
+	private void removeOutLink(int from, int to) {
+		int[] mem = out[from];
+		int k = kout[from];
+		for (int i = 0; i < k; i++) {
+			if (mem[i] == to) {
+				if (i < k - 1)
+					System.arraycopy(mem, i + 1, mem, i, k - 1 - i);
+				kout[from]--;
+				if (k - 1 < minOut)
+					minOut = k - 1;
+				evaluated = false;
+				return;
+			}
+		}
 	}
 
 	/**

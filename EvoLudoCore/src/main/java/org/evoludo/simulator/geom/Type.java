@@ -506,6 +506,12 @@ public enum Type implements CLOption.Key {
 			case HONEYCOMB:
 				((HoneycombGeometry) geometry).parse(spec);
 				break;
+			case SQUARE:
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
+				((SquareGeometry) geometry).parse(spec);
+				break;
 			default:
 				throw new UnsupportedOperationException(
 						"Parsing for geometry '" + type + "' is not yet implemented in the new architecture.");
