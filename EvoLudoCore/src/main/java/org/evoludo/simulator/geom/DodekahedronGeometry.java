@@ -44,4 +44,11 @@ public class DodekahedronGeometry extends AbstractGeometry {
 		addEdgeAt(17, 1);
 		addEdgeAt(19, 3);
 	}
+
+	@Override
+	protected boolean checkSettings() {
+		boolean doReset = enforceSize(20);
+		connectivity = 3.0;
+		return doReset;
+	}
 }

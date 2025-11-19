@@ -42,4 +42,11 @@ public class DesarguesGeometry extends AbstractGeometry {
 		addEdgeAt(10, 15);
 		addEdgeAt(14, 19);
 	}
+
+	@Override
+	protected boolean checkSettings() {
+		boolean doReset = enforceSize(20);
+		connectivity = 3.0;
+		return doReset;
+	}
 }

@@ -216,4 +216,35 @@ public class CubicGeometry extends AbstractLattice {
 		}
 		isRegular = !fixedBoundary;
 	}
+
+	@Override
+	protected boolean checkSettings() {
+		boolean doReset = false;
+		int range;
+		if (size != 25000) {
+			int side = Math.max((int) Math.floor(Math.pow(size, 1.0 / 3.0) + 0.5), 2);
+			int side3 = side * side * side;
+			if (setSize(side3)) {
+				if (engine.getModule().cloNPopulation.isSet())
+					warn("requires integer cube size - using " + size + "!");
+				doReset = true;
+			}
+			range = Math.min(side / 2,
+					Math.max(1, (int) (Math.pow(connectivity + 1.5, 1.0 / 3.0) / 2.0)));
+		} else {
+			range = Math.min(4, Math.max(1, (int) (Math.pow(connectivity + 1.5, 1.0 / 3.0) / 2.0)));
+		}
+		int count = (2 * range + 1) * (2 * range + 1) * (2 * range + 1) - 1;
+		boolean invalid = (Math.abs(count - connectivity) > 1e-8 && Math.abs(6.0 - connectivity) > 1e-8
+				&& Math.abs(1.0 - connectivity) > 1e-8)
+				|| (Math.abs(1.0 - connectivity) < 1e-8 && !isInterspecies());
+		if (invalid) {
+			connectivity = count;
+			if (connectivity >= size)
+				connectivity = 6;
+			warn("has invalid connectivity - using " + (int) connectivity + "!");
+			doReset = true;
+		}
+		return doReset;
+	}
 }

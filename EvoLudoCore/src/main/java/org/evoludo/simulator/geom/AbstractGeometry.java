@@ -31,15 +31,16 @@
 package org.evoludo.simulator.geom;
 
 import java.util.Arrays;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.Network3D;
-import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.util.Formatter;
 
 /**
  * Abstract base class for future geometry implementations. The original
@@ -342,6 +343,71 @@ public abstract class AbstractGeometry {
 
 	public int getSize() {
 		return size;
+	}
+
+	/**
+	 * Validate geometry parameters and adjust infeasible settings.
+	 *
+	 * @return {@code true} if adjustments require a reset
+	 */
+	public boolean check() {
+		boolean doReset = checkSettings();
+		validateRewiring();
+		return doReset;
+	}
+
+	/**
+	 * Hook for subclasses to implement geometry specific checks.
+	 */
+	protected boolean checkSettings() {
+		return false;
+	}
+
+	private void validateRewiring() {
+		if (pRewire <= 0.0)
+			return;
+		int rounded = (int) (connectivity + 1e-6);
+		switch (rounded) {
+			case 0:
+			case 1:
+				warn("rewiring needs higher connectivity (should be >3 instead of "
+						+ Formatter.format(connectivity, 2) + ") - ignored");
+				pRewire = 0.0;
+				break;
+			case 2:
+				warn("consider higher connectivity for rewiring (should be >3 instead of "
+						+ Formatter.format(connectivity, 2) + ")");
+				break;
+			default:
+		}
+		if (connectivity > size - 2) {
+			warn("complete graph, rewiring impossible - ignored");
+			pRewire = 0.0;
+		} else if (connectivity > size / 2) {
+			warn("consider lower connectivity for rewiring ("
+					+ Formatter.format(connectivity, 2) + ")");
+		}
+	}
+
+	protected boolean enforceSize(int requiredSize) {
+		if (setSize(requiredSize)) {
+			if (engine.getModule().cloNPopulation.isSet())
+				warn("requires size " + requiredSize + "!");
+			return true;
+		}
+		return false;
+	}
+
+	protected void warn(String message) {
+		if (logger.isLoggable(Level.WARNING))
+			logger.warning(getLabel() + message);
+	}
+
+	protected String getLabel() {
+		String label = getName();
+		if (label == null)
+			return type.name() + ": ";
+		return label + " - " + type.name() + ": ";
 	}
 
 	/**

@@ -34,7 +34,8 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
 
 /**
- * Geometry implementation for complete graphs where every node connects to every
+ * Geometry implementation for complete graphs where every node connects to
+ * every
  * other node.
  */
 public class CompleteGeometry extends AbstractGeometry {
@@ -52,6 +53,17 @@ public class CompleteGeometry extends AbstractGeometry {
 	public CompleteGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 		setType(Type.COMPLETE);
+	}
+
+	@Override
+	protected boolean checkSettings() {
+		connectivity = Math.max(0, size - 1);
+		if (pRewire > 0.0 || pAddwire > 0.0) {
+			warn("cannot add or rewire links - ignored!");
+			pRewire = 0.0;
+			pAddwire = 0.0;
+		}
+		return false;
 	}
 
 	@Override

@@ -117,4 +117,23 @@ public class LinearGeometry extends AbstractLattice {
 	public int getLinearAsymmetry() {
 		return linearAsymmetry;
 	}
+
+	@Override
+	protected boolean checkSettings() {
+		boolean doReset = false;
+		connectivity = Math.max(1, Math.rint(connectivity));
+		boolean invalidConn = (Math.abs(1.0 - connectivity) < 1e-8 && (!isInterspecies() && linearAsymmetry == 0))
+				|| ((int) (connectivity + 0.5) % 2 == 1 && linearAsymmetry == 0) || connectivity >= size;
+		if (invalidConn) {
+			double newConn = Math.min(Math.max(2, connectivity + 1), size - 1 - (size - 1) % 2);
+			connectivity = newConn;
+			warn("requires even integer number of neighbors - using " + (int) connectivity + "!");
+			doReset = true;
+		}
+		if (pRewire > 0.0 && connectivity < 2.0 + 1.0 / size) {
+			warn("cannot rewire links for '" + type + "' - ignored!");
+			pRewire = 0.0;
+		}
+		return doReset;
+	}
 }

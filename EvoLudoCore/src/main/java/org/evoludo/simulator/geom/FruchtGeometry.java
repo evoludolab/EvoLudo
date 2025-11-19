@@ -58,6 +58,13 @@ public class FruchtGeometry extends AbstractGeometry {
 	}
 
 	@Override
+	protected boolean checkSettings() {
+		boolean doReset = enforceSize(12);
+		connectivity = 3.0;
+		return doReset;
+	}
+
+	@Override
 	public void init() {
 		if (size != 12)
 			throw new IllegalStateException("Frucht graph requires size 12");

@@ -547,4 +547,35 @@ public class SquareGeometry extends AbstractLattice {
 		}
 		isRegular = false;
 	}
+
+	@Override
+	protected boolean checkSettings() {
+		boolean doReset = false;
+		if (variant == Type.SQUARE_MOORE)
+			connectivity = 8;
+		if (variant == Type.SQUARE_NEUMANN || variant == Type.SQUARE_NEUMANN_2ND)
+			connectivity = Math.max(connectivity, 4);
+		int side = (int) Math.floor(Math.sqrt(size) + 0.5);
+		if (variant == Type.SQUARE_NEUMANN_2ND)
+			side = (side + 1) / 2 * 2;
+		int side2 = side * side;
+		if (setSize(side2)) {
+			if (engine.getModule().cloNPopulation.isSet())
+				warn("requires even integer square size - using " + size + "!");
+			doReset = true;
+		}
+		int range = Math.min(side / 2, Math.max(1, (int) (Math.sqrt(connectivity + 1.5) / 2.0)));
+		int count = (2 * range + 1) * (2 * range + 1) - 1;
+		boolean invalid = (Math.abs(count - connectivity) > 1e-8 && Math.abs(4.0 - connectivity) > 1e-8
+				&& Math.abs(1.0 - connectivity) > 1e-8)
+				|| (Math.abs(1.0 - connectivity) < 1e-8 && !isInterspecies());
+		if (invalid) {
+			connectivity = count;
+			if (connectivity >= size)
+				connectivity = 4;
+			warn("has invalid connectivity - using " + (int) connectivity + "!");
+			doReset = true;
+		}
+		return doReset;
+	}
 }

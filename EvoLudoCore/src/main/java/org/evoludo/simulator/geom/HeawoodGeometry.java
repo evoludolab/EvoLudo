@@ -41,4 +41,11 @@ public class HeawoodGeometry extends AbstractGeometry {
 		addEdgeAt(10, 1);
 		addEdgeAt(12, 3);
 	}
+
+	@Override
+	protected boolean checkSettings() {
+		boolean doReset = enforceSize(14);
+		connectivity = 3.0;
+		return doReset;
+	}
 }

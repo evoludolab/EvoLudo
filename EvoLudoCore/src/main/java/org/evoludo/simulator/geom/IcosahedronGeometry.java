@@ -51,4 +51,11 @@ public class IcosahedronGeometry extends AbstractGeometry {
 		addEdgeAt(7, 11);
 		addEdgeAt(9, 11);
 	}
+
+	@Override
+	protected boolean checkSettings() {
+		boolean doReset = enforceSize(12);
+		connectivity = 5.0;
+		return doReset;
+	}
 }

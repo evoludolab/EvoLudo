@@ -144,4 +144,26 @@ public class TriangularGeometry extends AbstractLattice {
 		}
 		isValid = true;
 	}
+
+	@Override
+	protected boolean checkSettings() {
+		boolean doReset = false;
+		int side = (int) Math.floor(Math.sqrt(size) + 0.5);
+		int side2 = side * side;
+		if (size != side2 || (side % 2) == 1) {
+			side += side % 2;
+			side2 = side * side;
+			if (setSize(side2)) {
+				if (engine.getModule().cloNPopulation.isSet())
+					warn("requires even integer square size - using " + size + "!");
+				doReset = true;
+			}
+		}
+		if ((Math.abs(connectivity - 3) > 1e-8 && Math.abs(1.0 - connectivity) > 1e-8)
+				|| (Math.abs(1.0 - connectivity) < 1e-8 && !isInterspecies())) {
+			connectivity = 3;
+			warn("requires connectivity 3!");
+		}
+		return doReset;
+	}
 }

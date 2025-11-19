@@ -75,4 +75,10 @@ public class WheelGeometry extends AbstractGeometry {
 		}
 		isValid = true;
 	}
+
+	@Override
+	protected boolean checkSettings() {
+		connectivity = 4.0 * (size - 1) / size;
+		return false;
+	}
 }

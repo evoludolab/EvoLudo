@@ -39,4 +39,11 @@ public class FranklinGeometry extends AbstractGeometry {
 		addEdgeAt(4, 11);
 		addEdgeAt(5, 10);
 	}
+
+	@Override
+	protected boolean checkSettings() {
+		boolean doReset = enforceSize(12);
+		connectivity = 3.0;
+		return doReset;
+	}
 }

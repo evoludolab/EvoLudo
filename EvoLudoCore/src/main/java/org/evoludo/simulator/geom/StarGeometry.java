@@ -58,6 +58,16 @@ public class StarGeometry extends AbstractGeometry {
 	}
 
 	@Override
+	protected boolean checkSettings() {
+		connectivity = 2.0 * (size - 1) / size;
+		if (pRewire > 0.0) {
+			warn("cannot rewire links - ignored!");
+			pRewire = 0.0;
+		}
+		return false;
+	}
+
+	@Override
 	public void init() {
 		if (size <= 0)
 			throw new IllegalStateException("size must be set before initializing a star geometry");

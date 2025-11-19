@@ -39,4 +39,11 @@ public class TietzeGeometry extends AbstractGeometry {
 		addEdgeAt(5, 11);
 		addEdgeAt(9, 11);
 	}
+
+	@Override
+	protected boolean checkSettings() {
+		boolean doReset = enforceSize(12);
+		connectivity = 3.0;
+		return doReset;
+	}
 }
