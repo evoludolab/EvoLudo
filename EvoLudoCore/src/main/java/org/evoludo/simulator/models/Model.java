@@ -1043,12 +1043,15 @@ public abstract class Model implements CLOProvider {
 	 * @return elapsed time as string
 	 */
 	public String getCounter() {
+		if (mode == Mode.DYNAMICS)
+			return "Time: " + Formatter.formatFix(getTime(), 2) + " ";
 		if (mode == Mode.STATISTICS_SAMPLE) {
 			int failed = getNStatisticsFailed();
 			return "Samples: " + getNStatisticsSamples() + (failed > 0 ? " (failed: " + failed + ")" : "");
 		}
-		double t = getTime();
-		return "Time: " + Formatter.formatFix(t, 2) + " ";
+		if (mode == Mode.STATISTICS_UPDATE)
+			return "Samples: " + (int) (getUpdates() / getTimeStep()) + " ";
+		return "";
 	}
 
 	/**

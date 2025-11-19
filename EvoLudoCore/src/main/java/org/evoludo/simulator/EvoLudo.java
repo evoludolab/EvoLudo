@@ -1208,7 +1208,6 @@ public abstract class EvoLudo
 					i.modelChanged(action);
 				break;
 			case STOP: // stop requested (as opposed to simulations that stopped)
-				isRunning = false;
 				fireModelStopped();
 				break;
 			case INIT:
@@ -1243,7 +1242,8 @@ public abstract class EvoLudo
 				modelReset(true);
 			} else {
 				// stop running
-				isRunning = false;
+				if (isRunning)
+					fireModelStopped();
 			}
 		} else {
 			// mode unchanged

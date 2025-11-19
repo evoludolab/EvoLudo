@@ -361,7 +361,7 @@ public abstract class IBS extends Model {
 
 	@Override
 	public String getCounter() {
-		if (mode == Mode.STATISTICS_SAMPLE)
+		if (mode != Mode.DYNAMICS)
 			return super.getCounter();
 		String upd = "Updates: " + Formatter.format(getUpdates(), 2);
 		if (time < Double.POSITIVE_INFINITY)
