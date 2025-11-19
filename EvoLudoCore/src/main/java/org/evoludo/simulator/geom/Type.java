@@ -293,7 +293,7 @@ public enum Type implements CLOption.Key {
 	/**
 	 * Strong (undirected) suppressor.
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometrySuppressor()
+	 * @see StrongSuppressorGeometry#init()
 	 */
 	STRONG_SUPPRESSOR("-", "strong (undirected) suppressor"),
 
@@ -521,6 +521,9 @@ public enum Type implements CLOption.Key {
 				break;
 			case STRONG_AMPLIFIER:
 				((StrongAmplifierGeometry) geometry).parse(spec);
+				break;
+			case STRONG_SUPPRESSOR:
+				((StrongSuppressorGeometry) geometry).parse(spec);
 				break;
 			case TIETZE:
 				((TietzeGeometry) geometry).parse(spec);

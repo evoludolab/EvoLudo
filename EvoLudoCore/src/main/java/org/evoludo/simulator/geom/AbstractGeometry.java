@@ -92,6 +92,8 @@ public abstract class AbstractGeometry {
 				return new FruchtGeometry(engine);
 			case STRONG_AMPLIFIER:
 				return new StrongAmplifierGeometry(engine);
+			case STRONG_SUPPRESSOR:
+				return new StrongSuppressorGeometry(engine);
 			case TIETZE:
 				return new TietzeGeometry(engine);
 			case FRANKLIN:
