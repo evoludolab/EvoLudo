@@ -331,7 +331,7 @@ public enum Type implements CLOption.Key {
 	/**
 	 * Scale-free network. {@code f<d>} scale-free network with degree {@code d}.
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryScaleFreeBA()
+	 * @see BarabasiAlbertGeometry#init()
 	 */
 	SCALEFREE_BA("f", "scale-free graph (Barabasi & Albert)",
 			"f<n> scale-free graph, n avg. degree\n" + //
@@ -560,6 +560,9 @@ public enum Type implements CLOption.Key {
 				break;
 			case SCALEFREE:
 				((ScalefreeGeometry) geometry).parse(spec);
+				break;
+			case SCALEFREE_BA:
+				((BarabasiAlbertGeometry) geometry).parse(spec);
 				break;
 			default:
 				throw new UnsupportedOperationException(

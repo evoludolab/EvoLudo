@@ -114,6 +114,8 @@ public abstract class AbstractGeometry {
 				return new RandomDirectedGeometry(engine);
 			case SCALEFREE:
 				return new ScalefreeGeometry(engine);
+			case SCALEFREE_BA:
+				return new BarabasiAlbertGeometry(engine);
 			default:
 				throw new UnsupportedOperationException("Geometry type '" + type + "' is not implemented yet.");
 		}
