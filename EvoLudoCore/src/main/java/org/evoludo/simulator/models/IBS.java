@@ -481,7 +481,7 @@ public abstract class IBS extends Model {
 			for (Module<?> mod : species) {
 				IBSPopulation<?, ?> pop = mod.getIBSPopulation();
 				pop.prepareTraits();
-				dt = pop.step();
+				dt += pop.step();
 				pop.isConsistent();
 			}
 			// advance time and real time (if possible)
