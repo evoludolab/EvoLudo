@@ -83,6 +83,8 @@ public abstract class AbstractGeometry {
 				return new CubicGeometry(engine);
 			case STAR:
 				return new StarGeometry(engine);
+			case WHEEL:
+				return new WheelGeometry(engine);
 			default:
 				throw new UnsupportedOperationException("Geometry type '" + type + "' is not implemented yet.");
 		}
