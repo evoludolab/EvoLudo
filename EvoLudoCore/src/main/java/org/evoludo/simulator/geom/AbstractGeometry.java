@@ -116,6 +116,8 @@ public abstract class AbstractGeometry {
 				return new ScalefreeGeometry(engine);
 			case SCALEFREE_BA:
 				return new BarabasiAlbertGeometry(engine);
+			case SCALEFREE_KLEMM:
+				return new KlemmEguiluzGeometry(engine);
 			default:
 				throw new UnsupportedOperationException("Geometry type '" + type + "' is not implemented yet.");
 		}

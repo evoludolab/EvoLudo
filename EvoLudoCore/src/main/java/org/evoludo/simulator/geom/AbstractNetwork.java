@@ -32,6 +32,8 @@ package org.evoludo.simulator.geom;
 
 import java.util.Arrays;
 
+import org.evoludo.math.ArrayMath;
+import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
 
@@ -120,5 +122,98 @@ public abstract class AbstractNetwork extends AbstractGeometry {
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Rewire undirected links while keeping the graph connected.
+	 */
+	protected boolean rewireUndirected(double prob) {
+		if (!isUndirected || prob <= 0.0)
+			return false;
+		RNGDistribution rng = engine.getRNG();
+		int nLinks = (int) Math
+				.floor(ArrayMath.norm(kout) / 2 * Math.min(1.0, -Math.log(1.0 - prob)) + 0.5);
+		long done = 0;
+		while (done < nLinks) {
+			int first, len;
+			do {
+				first = rng.random0n(size);
+				len = kin[first];
+			} while (len <= 1 || len == size - 1);
+			int firstneigh = in[first][rng.random0n(len)];
+			int second;
+			do {
+				second = rng.random0n(size - 1);
+				if (second >= first)
+					second++;
+				len = kin[second];
+			} while (len <= 1 || len == size - 1);
+			int secondneigh = in[second][rng.random0n(len)];
+
+			if (!swapEdges(first, firstneigh, second, secondneigh))
+				continue;
+			if (!isGraphConnected()) {
+				swapEdges(first, firstneigh, second, secondneigh);
+				swapEdges(first, secondneigh, second, firstneigh);
+				continue;
+			}
+			done += 2;
+		}
+		return true;
+	}
+
+	/**
+	 * Swap undirected edges {@code a-an} and {@code b-bn}.
+	 */
+	private boolean swapEdges(int a, int an, int b, int bn) {
+		if (a == bn || b == an || an == bn)
+			return false;
+		if (isNeighborOf(a, bn) || isNeighborOf(b, an))
+			return false;
+
+		int[] aout = out[a];
+		int ai = -1;
+		while (aout[++ai] != an) {
+		}
+		aout[ai] = bn;
+		int[] bout = out[b];
+		int bi = -1;
+		while (bout[++bi] != bn) {
+		}
+		bout[bi] = an;
+
+		int[] ain = in[a];
+		ai = -1;
+		while (ain[++ai] != an) {
+		}
+		ain[ai] = bn;
+		int[] bin = in[b];
+		bi = -1;
+		while (bin[++bi] != bn) {
+		}
+		bin[bi] = an;
+
+		aout = out[an];
+		ai = -1;
+		while (aout[++ai] != a) {
+		}
+		aout[ai] = b;
+		bout = out[bn];
+		bi = -1;
+		while (bout[++bi] != b) {
+		}
+		bout[bi] = a;
+
+		ain = in[an];
+		ai = -1;
+		while (ain[++ai] != a) {
+		}
+		ain[ai] = b;
+		bin = in[bn];
+		bi = -1;
+		while (bin[++bi] != b) {
+		}
+		bin[bi] = a;
+		return true;
 	}
 }

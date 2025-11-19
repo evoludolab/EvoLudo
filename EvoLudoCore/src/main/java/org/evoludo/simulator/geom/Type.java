@@ -341,7 +341,7 @@ public enum Type implements CLOption.Key {
 	 * Scale-free network. {@code F<n[,p]>} scale-free network with degree {@code n}
 	 * and a fraction of {@code p} random links.
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryScaleFreeKlemm()
+	 * @see KlemmEguiluzGeometry#init()
 	 */
 	SCALEFREE_KLEMM("F", "scale-free, small world graph (Klemm & Eguiluz)",
 			"F<n[,p]> scale-free, small world graph\n" + //
@@ -563,6 +563,9 @@ public enum Type implements CLOption.Key {
 				break;
 			case SCALEFREE_BA:
 				((BarabasiAlbertGeometry) geometry).parse(spec);
+				break;
+			case SCALEFREE_KLEMM:
+				((KlemmEguiluzGeometry) geometry).parse(spec);
 				break;
 			default:
 				throw new UnsupportedOperationException(
