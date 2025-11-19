@@ -129,7 +129,7 @@ public enum Type implements CLOption.Key {
 	 * in the last level (smallest unit). The strength of interaction between levels
 	 * is {@code w}.
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryHierarchical()
+	 * @see HierarchicalGeometry#init()
 	 */
 	HIERARCHY("H", "hierarchical (meta-)populations",
 			"H[<g>[f]]<n1>[,<n2>[...,<nm>]]w<w> hierarchical\n"//
@@ -566,6 +566,9 @@ public enum Type implements CLOption.Key {
 				break;
 			case RANDOM_GRAPH_DIRECTED:
 				((RandomDirectedGeometry) geometry).parse(spec);
+				break;
+			case HIERARCHY:
+				((HierarchicalGeometry) geometry).parse(spec);
 				break;
 			case SCALEFREE:
 				((ScalefreeGeometry) geometry).parse(spec);

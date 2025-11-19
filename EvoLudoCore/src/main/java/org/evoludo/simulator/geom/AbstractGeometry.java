@@ -112,6 +112,8 @@ public abstract class AbstractGeometry {
 				return new RandomGeometry(engine);
 			case RANDOM_GRAPH_DIRECTED:
 				return new RandomDirectedGeometry(engine);
+			case HIERARCHY:
+				return new HierarchicalGeometry(engine);
 			case SCALEFREE:
 				return new ScalefreeGeometry(engine);
 			case SCALEFREE_BA:
