@@ -64,7 +64,7 @@ public abstract class AbstractGeometry {
 		if (type == null)
 			throw new IllegalArgumentException("type must not be null");
 		switch (type) {
-			case MEANFIELD:
+			case WELLMIXED:
 				return new WellmixedGeometry(engine);
 			case COMPLETE:
 				return new CompleteGeometry(engine);
@@ -135,7 +135,7 @@ public abstract class AbstractGeometry {
 	/**
 	 * Current geometry type handled by this instance.
 	 */
-	protected Type type = Type.MEANFIELD;
+	protected Type type = Type.WELLMIXED;
 
 	/**
 	 * The number of nodes in the graph.
@@ -342,7 +342,7 @@ public abstract class AbstractGeometry {
 		kin = null;
 		kout = null;
 		size = -1;
-		type = Type.MEANFIELD;
+		type = Type.WELLMIXED;
 		minIn = -1;
 		maxIn = -1;
 		avgIn = -1.0;
@@ -400,7 +400,7 @@ public abstract class AbstractGeometry {
 	public void evaluate() {
 		if (evaluated && !isDynamic)
 			return;
-		if (type == Type.MEANFIELD || kout == null || kin == null) {
+		if (type == Type.WELLMIXED || kout == null || kin == null) {
 			maxOut = 0;
 			maxIn = 0;
 			maxTot = 0;

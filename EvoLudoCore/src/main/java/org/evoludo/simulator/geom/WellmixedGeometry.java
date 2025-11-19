@@ -42,17 +42,17 @@ public class WellmixedGeometry extends AbstractGeometry {
 
 	public WellmixedGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.MEANFIELD);
+		setType(Type.WELLMIXED);
 	}
 
 	public WellmixedGeometry(EvoLudo engine, Module<?> module) {
 		super(engine, module);
-		setType(Type.MEANFIELD);
+		setType(Type.WELLMIXED);
 	}
 
 	public WellmixedGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
-		setType(Type.MEANFIELD);
+		setType(Type.WELLMIXED);
 	}
 
 	@Override

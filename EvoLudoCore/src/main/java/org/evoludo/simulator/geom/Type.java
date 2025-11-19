@@ -106,12 +106,12 @@ public enum Type implements CLOption.Key {
 	 * 
 	 * @see WellmixedGeometry#init()
 	 */
-	MEANFIELD("M", "mean-field/well-mixed population"),
+	WELLMIXED("M", "well-mixed population"),
 
 	/**
 	 * Complete graph, connectivity \(k=N-1\).
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryComplete()
+	 * @see CompleteGeometry#init()
 	 */
 	COMPLETE("c", "complete graph (k=N-1)"),
 
@@ -148,7 +148,7 @@ public enum Type implements CLOption.Key {
 	 * {@code l} neighbours to the left and {@code r} to the right. If {@code r} is
 	 * missing or {@code r==l} the neighbourhood is symmetric.
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryLinear()
+	 * @see LinearGeometry#init()
 	 */
 	LINEAR("l", "linear lattice, 1D", "l<l>[,<r>] linear lattice (l neighbourhood,\n"//
 			+ "                if r!=l asymmetric neighbourhood)"),
@@ -157,9 +157,8 @@ public enum Type implements CLOption.Key {
 	 * Square lattice (von Neumann neighbourhood). Four nearest neighbours (north,
 	 * east, south, west).
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometrySquare()
-	 * @see org.evoludo.simulator.Geometry#initGeometrySquareVonNeumann(int, int,
-	 *      int)
+	 * @see SquareGeometry#init()
+	 * @see SquareGeometry#initVonNeumann(int, int, int)
 	 */
 	SQUARE_NEUMANN("n", "square lattice (von Neumann)"),
 
@@ -167,9 +166,8 @@ public enum Type implements CLOption.Key {
 	 * Square lattice. Four second-nearest neighbours (north-east, north-west,
 	 * south-west, south-east).
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometrySquare()
-	 * @see org.evoludo.simulator.Geometry#initGeometrySquareVonNeumann2nd(int, int,
-	 *      int)
+	 * @see SquareGeometry#init()
+	 * @see SquareGeometry#initVonNeumann2nd(int, int, int)
 	 */
 	SQUARE_NEUMANN_2ND("n2", "square lattice, diagonal neighbours"),
 
@@ -177,8 +175,8 @@ public enum Type implements CLOption.Key {
 	 * Square lattice (Moore neighbourhood). Eight nearest neighbours (chess kings
 	 * moves).
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometrySquare()
-	 * @see org.evoludo.simulator.Geometry#initGeometrySquareMoore(int, int, int)
+	 * @see SquareGeometry#init()
+	 * @see SquareGeometry#initMoore(int, int, int)
 	 */
 	SQUARE_MOORE("m", "square lattice (Moore)"),
 
@@ -186,8 +184,8 @@ public enum Type implements CLOption.Key {
 	 * Square lattice, 2D. {@code N<n>} specifies a square lattice with {@code n}
 	 * neighbours, where {@code n} is {@code 3x3, 5x5...}.
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometrySquare()
-	 * @see org.evoludo.simulator.Geometry#initGeometrySquare(int, int, int)
+	 * @see SquareGeometry#init()
+	 * @see SquareGeometry#init(int, int, int)
 	 */
 	SQUARE("N", "square lattice, 2D", "N<k> square lattice (k=3x3, 5x5...)"),
 
@@ -195,21 +193,21 @@ public enum Type implements CLOption.Key {
 	 * Cubic lattice, 3D. {@code C<n>} cubic lattice with {@code n} neighbours,
 	 * where {@code n} is {@code 2+2+2, 3x3x3, 5x5x5...}.
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryCube()
+	 * @see CubicGeometry#init()
 	 */
 	CUBE("C", "cubic lattice, 3D", "C<k> cubic lattice (k=2+2+2, 3x3x3, 5x5x5...)"),
 
 	/**
 	 * Hexagonal (honeycomb) lattice, connectivity \(k=6\).
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryHexagonal()
+	 * @see HexagonalGeometry#init()
 	 */
 	HEXAGONAL("h", "hexagonal lattice (k=6)"),
 
 	/**
 	 * Triangular lattice, connectivity \(k=3\).
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryTriangular()
+	 * @see TriangularGeometry#init()
 	 */
 	TRIANGULAR("t", "triangular lattice (k=3)"),
 
@@ -265,7 +263,7 @@ public enum Type implements CLOption.Key {
 	/**
 	 * Star graph, connectivity \(k=2(N-1)/N\).
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryStar()
+	 * @see StarGeometry#init()
 	 */
 	STAR("s", "star (single hub)"),
 
@@ -281,7 +279,7 @@ public enum Type implements CLOption.Key {
 	/**
 	 * Wheel graph, connectivity \(k=4(N-1)/N\).
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryWheel()
+	 * @see WheelGeometry#init()
 	 */
 	WHEEL("w", "wheel (cycle, single hub)"),
 
@@ -494,7 +492,7 @@ public enum Type implements CLOption.Key {
 		AbstractGeometry geometry = AbstractGeometry.create(type, engine);
 		String spec = cli.substring(1);
 		switch (type) {
-			case MEANFIELD:
+			case WELLMIXED:
 			case COMPLETE:
 				break;
 			case LINEAR:
