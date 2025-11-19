@@ -58,7 +58,7 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 		setType(Type.SCALEFREE_KLEMM);
 	}
 
-	public void parse(String arg) {
+	public boolean parse(String arg) {
 		double[] values = CLOParser.parseVector(arg);
 		if (values.length == 0) {
 			connectivity = Math.max(2, (int) Math.round(connectivity > 0 ? connectivity : 2.0));
@@ -73,6 +73,7 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 			pRewire = 0.0;
 			pAddwire = 0.0;
 		}
+		return true;
 	}
 
 	private double clampProbability(double value) {

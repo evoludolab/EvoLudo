@@ -55,14 +55,15 @@ public class BarabasiAlbertGeometry extends AbstractNetwork {
 		setType(Type.SCALEFREE_BA);
 	}
 
-	public void parse(String arg) {
+	public boolean parse(String arg) {
 		if (arg == null || arg.isEmpty()) {
 			if (connectivity < 2)
 				connectivity = 2;
 			warn("requires connectivity argument - using " + (int) connectivity + ".");
-			return;
+			return true;
 		}
 		connectivity = Math.max(2, Integer.parseInt(arg));
+		return true;
 	}
 
 	@Override

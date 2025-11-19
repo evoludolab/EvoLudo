@@ -483,15 +483,15 @@ public enum Type implements CLOption.Key {
 	}
 
 	/**
-	 * Parse {@code cli} and instantiate the requested geometry. Currently only the
-	 * geometries that have been extracted (mean-field, complete, linear) are
-	 * supported.
+	 * Instantiate the requested geometry based on {@code cli}. Parsing of geometry
+	 * specific arguments is left to the created instance via
+	 * {@link AbstractGeometry#parse(String)}.
 	 * 
 	 * @param engine the EvoLudo engine providing module/CLI metadata
 	 * @param cli    the command line style geometry descriptor
-	 * @return the configured geometry
+	 * @return the instantiated geometry (arguments not yet parsed)
 	 */
-	public static AbstractGeometry parse(EvoLudo engine, String cli) {
+	public static AbstractGeometry create(EvoLudo engine, String cli) {
 		if (engine == null)
 			throw new IllegalArgumentException("engine must not be null");
 		if (cli == null || cli.isEmpty())
@@ -499,90 +499,8 @@ public enum Type implements CLOption.Key {
 		CLOption clo = engine.getModule().cloGeometry;
 		Type type = (Type) clo.match(cli);
 		AbstractGeometry geometry = AbstractGeometry.create(type, engine);
-		String spec = cli.substring(1);
-		switch (type) {
-			case WELLMIXED:
-			case COMPLETE:
-				break;
-			case LINEAR:
-				((LinearGeometry) geometry).parse(spec);
-				break;
-			case TRIANGULAR:
-				((TriangularGeometry) geometry).parse(spec);
-				break;
-			case HEXAGONAL:
-				((HexagonalGeometry) geometry).parse(spec);
-				break;
-			case CUBE:
-				((CubicGeometry) geometry).parse(spec);
-				break;
-			case STAR:
-				((StarGeometry) geometry).parse(spec);
-				break;
-			case SUPER_STAR:
-				((SuperstarGeometry) geometry).parse(spec);
-				break;
-			case WHEEL:
-				((WheelGeometry) geometry).parse(spec);
-				break;
-			case FRUCHT:
-				((FruchtGeometry) geometry).parse(spec);
-				break;
-			case STRONG_AMPLIFIER:
-				((StrongAmplifierGeometry) geometry).parse(spec);
-				break;
-			case STRONG_SUPPRESSOR:
-				((StrongSuppressorGeometry) geometry).parse(spec);
-				break;
-			case TIETZE:
-				((TietzeGeometry) geometry).parse(spec);
-				break;
-			case FRANKLIN:
-				((FranklinGeometry) geometry).parse(spec);
-				break;
-			case HEAWOOD:
-				((HeawoodGeometry) geometry).parse(spec);
-				break;
-			case ICOSAHEDRON:
-				((IcosahedronGeometry) geometry).parse(spec);
-				break;
-			case DODEKAHEDRON:
-				((DodekahedronGeometry) geometry).parse(spec);
-				break;
-			case DESARGUES:
-				((DesarguesGeometry) geometry).parse(spec);
-				break;
-			case SQUARE:
-			case SQUARE_NEUMANN:
-			case SQUARE_NEUMANN_2ND:
-			case SQUARE_MOORE:
-				((SquareGeometry) geometry).parse(spec);
-				break;
-			case RANDOM_REGULAR_GRAPH:
-				((RandomRegularGeometry) geometry).parse(spec);
-				break;
-			case RANDOM_GRAPH:
-				((RandomGeometry) geometry).parse(spec);
-				break;
-			case RANDOM_GRAPH_DIRECTED:
-				((RandomDirectedGeometry) geometry).parse(spec);
-				break;
-			case HIERARCHY:
-				((HierarchicalGeometry) geometry).parse(spec);
-				break;
-			case SCALEFREE:
-				((ScalefreeGeometry) geometry).parse(spec);
-				break;
-			case SCALEFREE_BA:
-				((BarabasiAlbertGeometry) geometry).parse(spec);
-				break;
-			case SCALEFREE_KLEMM:
-				((KlemmEguiluzGeometry) geometry).parse(spec);
-				break;
-			default:
-				throw new UnsupportedOperationException(
-						"Parsing for geometry '" + type + "' is not yet implemented in the new architecture.");
-		}
+		String spec = cli.substring(Math.min(type.key.length(), cli.length()));
+		geometry.setSpecification(spec);
 		return geometry;
 	}
 

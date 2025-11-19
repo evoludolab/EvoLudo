@@ -24,9 +24,6 @@ public class StrongAmplifierGeometry extends AbstractGeometry {
 		setType(Type.STRONG_AMPLIFIER);
 	}
 
-	public void parse(String arg) {
-	}
-
 	@Override
 	public void init() {
 		isRewired = false;

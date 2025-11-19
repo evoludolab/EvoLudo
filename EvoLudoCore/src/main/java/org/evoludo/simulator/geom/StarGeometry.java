@@ -53,10 +53,6 @@ public class StarGeometry extends AbstractGeometry {
 		setType(Type.STAR);
 	}
 
-	public void parse(String arg) {
-		// no parameters to parse for star
-	}
-
 	@Override
 	protected boolean checkSettings() {
 		connectivity = 2.0 * (size - 1) / size;

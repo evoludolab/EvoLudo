@@ -63,7 +63,7 @@ public class HierarchicalGeometry extends AbstractLattice {
 		setType(Type.HIERARCHY);
 	}
 
-	public void parse(String arg) {
+	public boolean parse(String arg) {
 		String spec = arg == null ? "" : arg.trim();
 		subGeometry = Type.WELLMIXED;
 		fixedBoundary = false;
@@ -79,6 +79,7 @@ public class HierarchicalGeometry extends AbstractLattice {
 		rawHierarchy = CLOParser.parseIntVector(spec);
 		if (rawHierarchy.length == 0)
 			rawHierarchy = new int[] { 1 };
+		return true;
 	}
 
 	@Override

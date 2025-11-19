@@ -20,9 +20,6 @@ public class DodekahedronGeometry extends AbstractGeometry {
 		setType(Type.DODEKAHEDRON);
 	}
 
-	public void parse(String arg) {
-	}
-
 	@Override
 	public void init() {
 		isRewired = false;

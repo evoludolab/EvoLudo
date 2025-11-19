@@ -62,7 +62,7 @@ public class LinearGeometry extends AbstractLattice {
 	 * 
 	 * @param arg argument portion (without the geometry key or boundary flags)
 	 */
-	public void parse(String arg) {
+	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
 		int[] conn = CLOParser.parseIntVector(numeric);
 		if (conn.length > 2)
@@ -78,6 +78,7 @@ public class LinearGeometry extends AbstractLattice {
 			connectivity = Math.max(2, defaultConn);
 			setLinearAsymmetry(0);
 		}
+		return true;
 	}
 
 	@Override

@@ -57,7 +57,7 @@ public class SuperstarGeometry extends AbstractGeometry {
 		setType(Type.SUPER_STAR);
 	}
 
-	public void parse(String arg) {
+	public boolean parse(String arg) {
 		int[] values = CLOParser.parseIntVector(arg);
 		if (values.length > 0)
 			petals = Math.max(1, values[0]);
@@ -67,6 +67,7 @@ public class SuperstarGeometry extends AbstractGeometry {
 			petals = 1;
 		if (amplification <= 0)
 			amplification = 3;
+		return true;
 	}
 
 	@Override

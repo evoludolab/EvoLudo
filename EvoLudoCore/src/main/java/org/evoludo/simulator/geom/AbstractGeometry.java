@@ -163,6 +163,11 @@ public abstract class AbstractGeometry {
 	private Network3D network3D = null;
 
 	/**
+	 * Optional CLI specification used to configure this geometry.
+	 */
+	private String specification;
+
+	/**
 	 * Optional descriptive name.
 	 */
 	private String name;
@@ -349,6 +354,42 @@ public abstract class AbstractGeometry {
 		return network3D;
 	}
 
+	/**
+	 * Remember the CLI specification used to configure this geometry.
+	 */
+	public void setSpecification(String spec) {
+		this.specification = spec;
+	}
+
+	/**
+	 * @return the CLI specification string that configured this geometry, or {@code null}.
+	 */
+	public String getSpecification() {
+		return specification;
+	}
+
+	/**
+	 * Parse geometry-specific CLI options.
+	 *
+	 * @param spec the argument string without the geometry key
+	 * @return {@code true} if parsing succeeded, {@code false} if invalid
+	 */
+	public boolean parse(String spec) {
+		if (spec == null || spec.isEmpty())
+			return true;
+		warn("geometry '" + type + "' does not accept parameters - ignoring '" + spec + "'");
+		return false;
+	}
+
+	/**
+	 * Re-parse the stored specification string.
+	 *
+	 * @return {@code true} if parsing succeeded
+	 */
+	public boolean parse() {
+		return parse(specification);
+	}
+
 	public boolean setSize(int size) {
 		if (size <= 0 || this.size == size)
 			return false;
@@ -431,6 +472,7 @@ public abstract class AbstractGeometry {
 	public void reset() {
 		network2D = null;
 		network3D = null;
+		specification = null;
 		name = null;
 		in = null;
 		out = null;

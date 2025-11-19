@@ -57,7 +57,7 @@ public class HexagonalGeometry extends AbstractLattice {
 		setType(Type.HEXAGONAL);
 	}
 
-	public void parse(String arg) {
+	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
 		connectivity = CLOParser.parseInteger(numeric);
 		if (connectivity != 1 && connectivity != 6) {
@@ -66,6 +66,7 @@ public class HexagonalGeometry extends AbstractLattice {
 				logger.warning("invalid connectivity " + connectivity + " - using default k=6.");
 			connectivity = 6;
 		}
+		return true;
 	}
 
 	@Override

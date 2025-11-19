@@ -24,9 +24,10 @@ public class RandomRegularGeometry extends AbstractNetwork {
 		setType(Type.RANDOM_REGULAR_GRAPH);
 	}
 
-	public void parse(String arg) {
+	public boolean parse(String arg) {
 		if (arg != null && !arg.isEmpty())
 			connectivity = Math.max(2, Integer.parseInt(arg));
+		return true;
 	}
 
 	@Override

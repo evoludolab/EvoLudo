@@ -20,9 +20,6 @@ public class StrongSuppressorGeometry extends AbstractGeometry {
 		setType(Type.STRONG_SUPPRESSOR);
 	}
 
-	public void parse(String arg) {
-	}
-
 	@Override
 	public void init() {
 		isRewired = false;

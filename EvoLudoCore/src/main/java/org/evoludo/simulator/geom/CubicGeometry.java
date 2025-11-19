@@ -54,12 +54,13 @@ public class CubicGeometry extends AbstractLattice {
 		setType(Type.CUBE);
 	}
 
-	public void parse(String arg) {
+	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
 		connectivity = CLOParser.parseInteger(numeric);
 		if (connectivity != 1 && connectivity != 6) {
 			connectivity = Math.max(6, connectivity);
 		}
+		return true;
 	}
 
 	@Override

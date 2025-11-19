@@ -20,9 +20,6 @@ public class FranklinGeometry extends AbstractGeometry {
 		setType(Type.FRANKLIN);
 	}
 
-	public void parse(String arg) {
-	}
-
 	@Override
 	public void init() {
 		isRewired = false;

@@ -20,9 +20,6 @@ public class TietzeGeometry extends AbstractGeometry {
 		setType(Type.TIETZE);
 	}
 
-	public void parse(String arg) {
-	}
-
 	@Override
 	public void init() {
 		isRewired = false;

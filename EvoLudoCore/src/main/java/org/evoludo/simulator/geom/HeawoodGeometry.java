@@ -20,9 +20,6 @@ public class HeawoodGeometry extends AbstractGeometry {
 		setType(Type.HEAWOOD);
 	}
 
-	public void parse(String arg) {
-	}
-
 	@Override
 	public void init() {
 		isRewired = false;

@@ -54,10 +54,6 @@ public class WheelGeometry extends AbstractGeometry {
 		setType(Type.WHEEL);
 	}
 
-	public void parse(String arg) {
-		// no options
-	}
-
 	@Override
 	public void init() {
 		if (size <= 1)

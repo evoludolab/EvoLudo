@@ -20,9 +20,6 @@ public class DesarguesGeometry extends AbstractGeometry {
 		setType(Type.DESARGUES);
 	}
 
-	public void parse(String arg) {
-	}
-
 	@Override
 	public void init() {
 		isRewired = false;

@@ -53,10 +53,6 @@ public class FruchtGeometry extends AbstractGeometry {
 		setType(Type.FRUCHT);
 	}
 
-	public void parse(String arg) {
-		// no args
-	}
-
 	@Override
 	protected boolean checkSettings() {
 		boolean doReset = enforceSize(12);

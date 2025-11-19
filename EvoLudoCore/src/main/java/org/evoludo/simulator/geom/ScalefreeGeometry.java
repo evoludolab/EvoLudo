@@ -61,13 +61,13 @@ public class ScalefreeGeometry extends AbstractNetwork {
 		setType(Type.SCALEFREE);
 	}
 
-	public void parse(String arg) {
+	public boolean parse(String arg) {
 		double[] values = CLOParser.parseVector(arg);
 		if (values.length == 0) {
 			connectivity = Math.max(2, (int) Math.round(connectivity > 0 ? connectivity : 2.0));
 			sfExponent = -2.0;
 			warn("requires connectivity argument - using " + (int) connectivity + " and exponent -2.");
-			return;
+			return true;
 		}
 		connectivity = Math.max(2, (int) values[0]);
 		sfExponent = values.length >= 2 ? values[1] : -2.0;
@@ -76,6 +76,7 @@ public class ScalefreeGeometry extends AbstractNetwork {
 					+ " but must be < 0 - using -2.");
 			sfExponent = -2.0;
 		}
+		return true;
 	}
 
 	@Override

@@ -55,10 +55,11 @@ public class RandomDirectedGeometry extends AbstractGeometry {
 		setType(Type.RANDOM_GRAPH_DIRECTED);
 	}
 
-	public void parse(String arg) {
+	public boolean parse(String arg) {
 		if (arg == null || arg.isEmpty())
-			return;
+			return true;
 		connectivity = Math.max(2, Integer.parseInt(arg));
+		return true;
 	}
 
 	@Override

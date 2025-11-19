@@ -20,9 +20,6 @@ public class IcosahedronGeometry extends AbstractGeometry {
 		setType(Type.ICOSAHEDRON);
 	}
 
-	public void parse(String arg) {
-	}
-
 	@Override
 	public void init() {
 		isRewired = false;

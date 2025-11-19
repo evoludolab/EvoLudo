@@ -62,7 +62,7 @@ public class SquareGeometry extends AbstractLattice {
 		setType(variant);
 	}
 
-	public void parse(String arg) {
+	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
 		switch (variant) {
 			case SQUARE:
@@ -83,6 +83,7 @@ public class SquareGeometry extends AbstractLattice {
 			default:
 				throw new IllegalStateException("Unsupported square variant: " + variant);
 		}
+		return true;
 	}
 
 	private void warnIfConnectivityProvided(String numeric) {
