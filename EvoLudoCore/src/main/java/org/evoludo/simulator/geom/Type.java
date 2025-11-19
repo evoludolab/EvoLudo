@@ -474,4 +474,40 @@ public enum Type implements CLOption.Key {
 	public String toString() {
 		return key + ": " + title;
 	}
+
+	/**
+	 * Parse {@code cli} and instantiate the requested geometry. Currently only the
+	 * geometries that have been extracted (mean-field, complete, linear) are
+	 * supported.
+	 * 
+	 * @param engine the EvoLudo engine providing module/CLI metadata
+	 * @param cli    the command line style geometry descriptor
+	 * @return the configured geometry
+	 */
+	public static AbstractGeometry parse(EvoLudo engine, String cli) {
+		if (engine == null)
+			throw new IllegalArgumentException("engine must not be null");
+		if (cli == null || cli.isEmpty())
+			throw new IllegalArgumentException("geometry specification must not be empty");
+		CLOption clo = engine.getModule().cloGeometry;
+		Type type = (Type) clo.match(cli);
+		AbstractGeometry geometry = AbstractGeometry.create(type, engine);
+		String spec = cli.substring(1);
+		switch (type) {
+			case MEANFIELD:
+			case COMPLETE:
+				break;
+			case LINEAR:
+				((LinearGeometry) geometry).parse(spec);
+				break;
+			default:
+				throw new UnsupportedOperationException(
+						"Parsing for geometry '" + type + "' is not yet implemented in the new architecture.");
+		}
+		return geometry;
+	}
+
+	public static boolean isFixedBoundaryToken(char ch) {
+		return ch == 'f' || ch == 'F';
+	}
 }

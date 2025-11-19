@@ -32,6 +32,7 @@ package org.evoludo.simulator.geom;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.util.CLOParser;
 
 /**
  * Linear (1D lattice) geometry that supports asymmetric neighbourhoods and
@@ -54,6 +55,46 @@ public class LinearGeometry extends AbstractGeometry {
 	public LinearGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 		setType(Type.LINEAR);
+	}
+
+	/**
+	 * Configure the linear geometry from a CLI argument string.
+	 * 
+	 * @param arg argument portion (without the geometry key or boundary flags)
+	 */
+	public void parse(String arg) {
+		String numeric = stripBoundary(arg);
+		int[] conn = CLOParser.parseIntVector(numeric);
+		if (conn.length > 2)
+			logger.warning("too many arguments for linear geometry.");
+		if (conn.length >= 2) {
+			connectivity = Math.max(2, conn[0] + conn[1]);
+			setLinearAsymmetry(conn[0] - conn[1]);
+		} else if (conn.length == 1) {
+			connectivity = Math.max(2, conn[0]);
+			setLinearAsymmetry(0);
+		} else {
+			int defaultConn = connectivity > 0 ? (int) connectivity : 2;
+			connectivity = Math.max(2, defaultConn);
+			setLinearAsymmetry(0);
+		}
+	}
+
+	private String stripBoundary(String spec) {
+		if (spec == null || spec.isEmpty())
+			return "";
+		String working = spec;
+		boolean fixed = false;
+		if (Type.isFixedBoundaryToken(working.charAt(0))) {
+			fixed = true;
+			working = working.substring(1);
+		}
+		if (!working.isEmpty() && Type.isFixedBoundaryToken(working.charAt(working.length() - 1))) {
+			fixed = true;
+			working = working.substring(0, working.length() - 1);
+		}
+		this.fixedBoundary = fixed;
+		return working;
 	}
 
 	@Override
