@@ -599,6 +599,8 @@ public class CLOParser {
 	 * @return <code>int</code> representation of <code>aDim</code>
 	 */
 	public static int parseDim(String aDim) {
+		if (aDim == null || aDim.isEmpty())
+			return 0;
 		int idx = (aDim.toLowerCase()).indexOf('x');
 		if (idx >= 0) {
 			int size = parseInteger(aDim.substring(0, idx));
@@ -617,7 +619,7 @@ public class CLOParser {
 	 * @see Integer#parseInt(String)
 	 */
 	public static int parseInteger(String anInteger) {
-		if (anInteger == null)
+		if (anInteger == null || anInteger.isEmpty())
 			return 0;
 		return Integer.parseInt(anInteger);
 	}
@@ -632,7 +634,7 @@ public class CLOParser {
 	 * @see Long#parseLong(String)
 	 */
 	public static long parseLong(String aLong) {
-		if (aLong == null)
+		if (aLong == null || aLong.isEmpty())
 			return 0;
 		return Long.parseLong(aLong);
 	}
@@ -677,7 +679,7 @@ public class CLOParser {
 	 * @see Boolean#parseBoolean(String)
 	 */
 	public static boolean[] parseBoolVector(String aVector) {
-		if (aVector == null)
+		if (aVector == null || aVector.isEmpty())
 			return new boolean[0];
 		aVector = aVector.trim();
 		if (aVector.isEmpty())
@@ -721,10 +723,7 @@ public class CLOParser {
 	 * @see Integer#parseInt(String)
 	 */
 	public static int[] parseIntVector(String aVector, String separator) {
-		if (aVector == null)
-			return new int[0];
-		aVector = aVector.trim();
-		if (aVector.isEmpty())
+		if (aVector == null || aVector.isEmpty())
 			return new int[0];
 
 		String[] entries = aVector.split(separator);
@@ -771,10 +770,7 @@ public class CLOParser {
 	 * @see Double#parseDouble(String)
 	 */
 	public static double[] parseVector(String aVector, String separator) {
-		if (aVector == null)
-			return new double[0];
-		aVector = aVector.trim();
-		if (aVector.isEmpty())
+		if (aVector == null || aVector.isEmpty())
 			return new double[0];
 
 		String[] entries = aVector.split(separator);
@@ -804,10 +800,7 @@ public class CLOParser {
 	 * @see #parseVector(String)
 	 */
 	public static int[][] parseIntMatrix(String aMatrix) {
-		if (aMatrix == null)
-			return new int[0][0];
-		aMatrix = aMatrix.trim();
-		if (aMatrix.isEmpty())
+		if (aMatrix == null || aMatrix.isEmpty())
 			return new int[0][0];
 
 		String[] entries = aMatrix.split(MATRIX_DELIMITER);
@@ -835,10 +828,7 @@ public class CLOParser {
 	 * @see #parseVector(String)
 	 */
 	public static double[][] parseMatrix(String aMatrix) {
-		if (aMatrix == null)
-			return new double[0][0];
-		aMatrix = aMatrix.trim();
-		if (aMatrix.isEmpty())
+		if (aMatrix == null || aMatrix.isEmpty())
 			return new double[0][0];
 
 		String[] entries = aMatrix.split(MATRIX_DELIMITER);
@@ -895,15 +885,13 @@ public class CLOParser {
 	 *         empty or a malformed string.
 	 */
 	public static Color parseColor(String aColor) {
-		if (aColor == null)
+		if (aColor == null || aColor.isEmpty())
 			return null;
-		aColor = aColor.trim().toLowerCase();
-		int len = aColor.length();
-		if (len == 0)
-			return null;
+		aColor = aColor.toLowerCase();
 		Color color = COLOR_KEYS.get(aColor);
 		if (color != null)
 			return color;
+		int len = aColor.length();
 		if (aColor.charAt(0) != '(' || aColor.charAt(len - 1) != ')')
 			return null;
 		// try (r, g, b) or (r, g, b, a)
