@@ -108,6 +108,10 @@ public abstract class AbstractGeometry {
 				return new DesarguesGeometry(engine);
 			case RANDOM_REGULAR_GRAPH:
 				return new RandomRegularGeometry(engine);
+			case RANDOM_GRAPH:
+				return new RandomGeometry(engine);
+			case RANDOM_GRAPH_DIRECTED:
+				return new RandomDirectedGeometry(engine);
 			default:
 				throw new UnsupportedOperationException("Geometry type '" + type + "' is not implemented yet.");
 		}

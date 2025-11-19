@@ -308,14 +308,14 @@ public enum Type implements CLOption.Key {
 	/**
 	 * Random graph. {@code R<d>} random graph with degree {@code d}.
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryRandomGraph()
+	 * @see RandomGeometry#init()
 	 */
 	RANDOM_GRAPH("R", "random graph", "R<d> random graph, d degree [2]"),
 
 	/**
 	 * Directed random graph. {@code D<d>} random graph with degree {@code d}.
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryRandomGraphDirected()
+	 * @see RandomDirectedGeometry#init()
 	 */
 	RANDOM_GRAPH_DIRECTED("D", "random graph (directed)",
 			"D<d> directed random graph, d degree [2]"),
@@ -551,6 +551,12 @@ public enum Type implements CLOption.Key {
 				break;
 			case RANDOM_REGULAR_GRAPH:
 				((RandomRegularGeometry) geometry).parse(spec);
+				break;
+			case RANDOM_GRAPH:
+				((RandomGeometry) geometry).parse(spec);
+				break;
+			case RANDOM_GRAPH_DIRECTED:
+				((RandomDirectedGeometry) geometry).parse(spec);
 				break;
 			default:
 				throw new UnsupportedOperationException(
