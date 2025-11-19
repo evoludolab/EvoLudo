@@ -87,6 +87,18 @@ public abstract class AbstractGeometry {
 				return new WheelGeometry(engine);
 			case FRUCHT:
 				return new FruchtGeometry(engine);
+			case TIETZE:
+				return new TietzeGeometry(engine);
+			case FRANKLIN:
+				return new FranklinGeometry(engine);
+			case HEAWOOD:
+				return new HeawoodGeometry(engine);
+			case ICOSAHEDRON:
+				return new IcosahedronGeometry(engine);
+			case DODEKAHEDRON:
+				return new DodekahedronGeometry(engine);
+			case DESARGUES:
+				return new DesarguesGeometry(engine);
 			default:
 				throw new UnsupportedOperationException("Geometry type '" + type + "' is not implemented yet.");
 		}

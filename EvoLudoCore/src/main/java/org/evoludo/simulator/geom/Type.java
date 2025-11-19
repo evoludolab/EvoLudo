@@ -221,42 +221,42 @@ public enum Type implements CLOption.Key {
 	/**
 	 * Tietze's graph, size \(N=12\), connectivity \(k=3\).
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryTietzeGraph()
+	 * @see TietzeGeometry#init()
 	 */
 	TIETZE("1", "Tietze graph (N=12, k=3)"),
 
 	/**
 	 * Franklin graph, size \(N=12\), connectivity \(k=3\).
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryFranklinGraph()
+	 * @see FranklinGeometry#init()
 	 */
 	FRANKLIN("2", "Franklin graph (N=12, k=3)"),
 
 	/**
 	 * Heawood graph, size \(N=14\), connectivity \(k=3\).
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryHeawoodGraph()
+	 * @see HeawoodGeometry#init()
 	 */
 	HEAWOOD("3", "Heawood graph (N=14, k=3)"),
 
 	/**
 	 * Icosahedron graph, size \(N=12\), connectivity \(k=5\).
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryIcosahedronGraph()
+	 * @see IcosahedronGeometry#init()
 	 */
 	ICOSAHEDRON("4", "Icosahedron graph (N=12, k=5)"),
 
 	/**
 	 * Dodekahedron graph, size \(N=20\), connectivity \(k=3\).
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryDodekahedronGraph()
+	 * @see DodekahedronGeometry#init()
 	 */
 	DODEKAHEDRON("5", "Dodekahedron graph (N=20, k=3)"),
 
 	/**
 	 * Desargues graph, size \(N=20\), connectivity \(k=3\).
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryDesarguesGraph()
+	 * @see DesarguesGeometry#init()
 	 */
 	DESARGUES("6", "Desargues graph (N=20, k=3)"),
 
@@ -515,6 +515,24 @@ public enum Type implements CLOption.Key {
 				break;
 			case FRUCHT:
 				((FruchtGeometry) geometry).parse(spec);
+				break;
+			case TIETZE:
+				((TietzeGeometry) geometry).parse(spec);
+				break;
+			case FRANKLIN:
+				((FranklinGeometry) geometry).parse(spec);
+				break;
+			case HEAWOOD:
+				((HeawoodGeometry) geometry).parse(spec);
+				break;
+			case ICOSAHEDRON:
+				((IcosahedronGeometry) geometry).parse(spec);
+				break;
+			case DODEKAHEDRON:
+				((DodekahedronGeometry) geometry).parse(spec);
+				break;
+			case DESARGUES:
+				((DesarguesGeometry) geometry).parse(spec);
 				break;
 			case SQUARE:
 			case SQUARE_NEUMANN:
