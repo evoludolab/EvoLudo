@@ -323,7 +323,7 @@ public enum Type implements CLOption.Key {
 	/**
 	 * Scale-free network. {@code p<e>} scale-free network with exponent {@code e}.
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryScaleFree()
+	 * @see ScalefreeGeometry#init()
 	 */
 	SCALEFREE("p", "scale-free graph", "p<e> scale-free graph following\n" +
 			"                degree distribution with exponent e [-2]"),
@@ -557,6 +557,9 @@ public enum Type implements CLOption.Key {
 				break;
 			case RANDOM_GRAPH_DIRECTED:
 				((RandomDirectedGeometry) geometry).parse(spec);
+				break;
+			case SCALEFREE:
+				((ScalefreeGeometry) geometry).parse(spec);
 				break;
 			default:
 				throw new UnsupportedOperationException(

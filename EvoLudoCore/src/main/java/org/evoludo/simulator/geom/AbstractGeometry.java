@@ -112,6 +112,8 @@ public abstract class AbstractGeometry {
 				return new RandomGeometry(engine);
 			case RANDOM_GRAPH_DIRECTED:
 				return new RandomDirectedGeometry(engine);
+			case SCALEFREE:
+				return new ScalefreeGeometry(engine);
 			default:
 				throw new UnsupportedOperationException("Geometry type '" + type + "' is not implemented yet.");
 		}
@@ -215,11 +217,6 @@ public abstract class AbstractGeometry {
 	 * Probability for adding new links.
 	 */
 	public double pAddwire = -1.0;
-
-	/**
-	 * The exponent for scale-free networks (placeholder for future extractions).
-	 */
-	public double sfExponent = -2.0;
 
 	/**
 	 * {@code true} if the network structure is ephemeral.
