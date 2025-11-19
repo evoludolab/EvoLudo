@@ -72,6 +72,8 @@ public abstract class AbstractGeometry {
 				return new LinearGeometry(engine);
 			case TRIANGULAR:
 				return new TriangularGeometry(engine);
+			case HONEYCOMB:
+				return new HoneycombGeometry(engine);
 			default:
 				throw new UnsupportedOperationException("Geometry type '" + type + "' is not implemented yet.");
 		}
