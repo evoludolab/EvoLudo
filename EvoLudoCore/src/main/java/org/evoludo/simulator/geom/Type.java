@@ -300,7 +300,7 @@ public enum Type implements CLOption.Key {
 	/**
 	 * Random regular graph.
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryRandomRegularGraph()
+	 * @see RandomRegularGeometry#init()
 	 */
 	RANDOM_REGULAR_GRAPH("r", "random regular graph",
 			"r<d> random regular graph, d degree [2]"),
@@ -548,6 +548,9 @@ public enum Type implements CLOption.Key {
 			case SQUARE_NEUMANN_2ND:
 			case SQUARE_MOORE:
 				((SquareGeometry) geometry).parse(spec);
+				break;
+			case RANDOM_REGULAR_GRAPH:
+				((RandomRegularGeometry) geometry).parse(spec);
 				break;
 			default:
 				throw new UnsupportedOperationException(

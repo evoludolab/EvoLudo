@@ -106,6 +106,8 @@ public abstract class AbstractGeometry {
 				return new DodekahedronGeometry(engine);
 			case DESARGUES:
 				return new DesarguesGeometry(engine);
+			case RANDOM_REGULAR_GRAPH:
+				return new RandomRegularGeometry(engine);
 			default:
 				throw new UnsupportedOperationException("Geometry type '" + type + "' is not implemented yet.");
 		}
