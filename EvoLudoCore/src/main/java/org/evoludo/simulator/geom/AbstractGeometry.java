@@ -128,11 +128,6 @@ public abstract class AbstractGeometry {
 	protected int size = -1;
 
 	/**
-	 * Flag indicating whether boundaries are fixed or periodic (default).
-	 */
-	public boolean fixedBoundary = false;
-
-	/**
 	 * Flag indicating whether the network structure is undirected.
 	 */
 	protected boolean isUndirected = true;
@@ -333,7 +328,6 @@ public abstract class AbstractGeometry {
 		kout = null;
 		size = -1;
 		type = Type.MEANFIELD;
-		fixedBoundary = false;
 		minIn = -1;
 		maxIn = -1;
 		avgIn = -1.0;

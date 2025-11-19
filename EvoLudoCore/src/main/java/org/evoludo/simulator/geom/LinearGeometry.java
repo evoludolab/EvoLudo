@@ -38,7 +38,7 @@ import org.evoludo.util.CLOParser;
  * Linear (1D lattice) geometry that supports asymmetric neighbourhoods and
  * optional fixed boundaries.
  */
-public class LinearGeometry extends AbstractGeometry {
+public class LinearGeometry extends AbstractLattice {
 
 	private int linearAsymmetry = 0;
 
@@ -78,23 +78,6 @@ public class LinearGeometry extends AbstractGeometry {
 			connectivity = Math.max(2, defaultConn);
 			setLinearAsymmetry(0);
 		}
-	}
-
-	private String stripBoundary(String spec) {
-		if (spec == null || spec.isEmpty())
-			return "";
-		String working = spec;
-		boolean fixed = false;
-		if (Type.isFixedBoundaryToken(working.charAt(0))) {
-			fixed = true;
-			working = working.substring(1);
-		}
-		if (!working.isEmpty() && Type.isFixedBoundaryToken(working.charAt(working.length() - 1))) {
-			fixed = true;
-			working = working.substring(0, working.length() - 1);
-		}
-		this.fixedBoundary = fixed;
-		return working;
 	}
 
 	@Override
