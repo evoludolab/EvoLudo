@@ -40,21 +40,21 @@ import org.evoludo.util.CLOParser;
 /**
  * Honeycomb/hexagonal lattice geometry with optional fixed boundaries.
  */
-public class HoneycombGeometry extends AbstractLattice {
+public class HexagonalGeometry extends AbstractLattice {
 
-	public HoneycombGeometry(EvoLudo engine) {
+	public HexagonalGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.HONEYCOMB);
+		setType(Type.HEXAGONAL);
 	}
 
-	public HoneycombGeometry(EvoLudo engine, Module<?> module) {
+	public HexagonalGeometry(EvoLudo engine, Module<?> module) {
 		super(engine, module);
-		setType(Type.HONEYCOMB);
+		setType(Type.HEXAGONAL);
 	}
 
-	public HoneycombGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
+	public HexagonalGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
-		setType(Type.HONEYCOMB);
+		setType(Type.HEXAGONAL);
 	}
 
 	public void parse(String arg) {

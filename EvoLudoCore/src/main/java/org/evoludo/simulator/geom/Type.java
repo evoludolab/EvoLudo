@@ -202,9 +202,9 @@ public enum Type implements CLOption.Key {
 	/**
 	 * Hexagonal (honeycomb) lattice, connectivity \(k=6\).
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryHoneycomb()
+	 * @see org.evoludo.simulator.Geometry#initGeometryHexagonal()
 	 */
-	HONEYCOMB("h", "honeycomb lattice (k=6)"),
+	HEXAGONAL("h", "hexagonal lattice (k=6)"),
 
 	/**
 	 * Triangular lattice, connectivity \(k=3\).
@@ -461,7 +461,7 @@ public enum Type implements CLOption.Key {
 			case SQUARE_MOORE:
 			case SQUARE_NEUMANN:
 			case SQUARE_NEUMANN_2ND:
-			case HONEYCOMB:
+			case HEXAGONAL:
 			case TRIANGULAR:
 			case CUBE:
 				return true;
@@ -503,8 +503,8 @@ public enum Type implements CLOption.Key {
 			case TRIANGULAR:
 				((TriangularGeometry) geometry).parse(spec);
 				break;
-			case HONEYCOMB:
-				((HoneycombGeometry) geometry).parse(spec);
+			case HEXAGONAL:
+				((HexagonalGeometry) geometry).parse(spec);
 				break;
 			case CUBE:
 				((CubicGeometry) geometry).parse(spec);

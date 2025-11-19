@@ -72,8 +72,8 @@ public abstract class AbstractGeometry {
 				return new LinearGeometry(engine);
 			case TRIANGULAR:
 				return new TriangularGeometry(engine);
-			case HONEYCOMB:
-				return new HoneycombGeometry(engine);
+			case HEXAGONAL:
+				return new HexagonalGeometry(engine);
 			case SQUARE:
 			case SQUARE_NEUMANN:
 			case SQUARE_NEUMANN_2ND:
