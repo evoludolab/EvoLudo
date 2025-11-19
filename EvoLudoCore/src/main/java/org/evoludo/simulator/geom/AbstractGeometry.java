@@ -85,6 +85,8 @@ public abstract class AbstractGeometry {
 				return new StarGeometry(engine);
 			case WHEEL:
 				return new WheelGeometry(engine);
+			case FRUCHT:
+				return new FruchtGeometry(engine);
 			default:
 				throw new UnsupportedOperationException("Geometry type '" + type + "' is not implemented yet.");
 		}

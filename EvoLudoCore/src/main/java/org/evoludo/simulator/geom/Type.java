@@ -214,7 +214,7 @@ public enum Type implements CLOption.Key {
 	/**
 	 * Frucht graph, size \(N=12\), connectivity \(k=3\).
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryFruchtGraph()
+	 * @see FruchtGeometry#init()
 	 */
 	FRUCHT("0", "Frucht graph (N=12, k=3)"),
 
@@ -512,6 +512,9 @@ public enum Type implements CLOption.Key {
 				break;
 			case WHEEL:
 				((WheelGeometry) geometry).parse(spec);
+				break;
+			case FRUCHT:
+				((FruchtGeometry) geometry).parse(spec);
 				break;
 			case SQUARE:
 			case SQUARE_NEUMANN:
