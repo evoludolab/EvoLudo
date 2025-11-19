@@ -356,17 +356,26 @@ public enum Type implements CLOption.Key {
 
 	/**
 	 * Placeholder for empty geometry. Not user selectable.
+	 *
+	 * @deprecated temporary legacy sentinel; remove once legacy Geometry is gone
 	 */
+	@Deprecated
 	VOID("-1", "void geometry"),
 
 	/**
 	 * Placeholder for generic geometry. Not user selectable.
+	 *
+	 * @deprecated temporary legacy sentinel; remove once legacy Geometry is gone
 	 */
+	@Deprecated
 	GENERIC("-2", "generic geometry"),
 
 	/**
 	 * Placeholder for invalid geometry. Not user selectable.
+	 *
+	 * @deprecated temporary legacy sentinel; remove once legacy Geometry is gone
 	 */
+	@Deprecated
 	INVALID("-3", "invalid geometry");
 
 	/**
