@@ -500,6 +500,9 @@ public enum Type implements CLOption.Key {
 			case LINEAR:
 				((LinearGeometry) geometry).parse(spec);
 				break;
+			case TRIANGULAR:
+				((TriangularGeometry) geometry).parse(spec);
+				break;
 			default:
 				throw new UnsupportedOperationException(
 						"Parsing for geometry '" + type + "' is not yet implemented in the new architecture.");

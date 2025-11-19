@@ -70,6 +70,8 @@ public abstract class AbstractGeometry {
 				return new CompleteGeometry(engine);
 			case LINEAR:
 				return new LinearGeometry(engine);
+			case TRIANGULAR:
+				return new TriangularGeometry(engine);
 			default:
 				throw new UnsupportedOperationException("Geometry type '" + type + "' is not implemented yet.");
 		}
