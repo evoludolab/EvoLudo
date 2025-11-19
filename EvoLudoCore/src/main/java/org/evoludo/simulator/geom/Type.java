@@ -506,6 +506,9 @@ public enum Type implements CLOption.Key {
 			case HONEYCOMB:
 				((HoneycombGeometry) geometry).parse(spec);
 				break;
+			case CUBE:
+				((CubicGeometry) geometry).parse(spec);
+				break;
 			case SQUARE:
 			case SQUARE_NEUMANN:
 			case SQUARE_NEUMANN_2ND:

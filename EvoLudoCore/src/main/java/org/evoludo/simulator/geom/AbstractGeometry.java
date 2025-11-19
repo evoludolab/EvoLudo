@@ -79,6 +79,8 @@ public abstract class AbstractGeometry {
 			case SQUARE_NEUMANN_2ND:
 			case SQUARE_MOORE:
 				return new SquareGeometry(engine, type);
+			case CUBE:
+				return new CubicGeometry(engine);
 			default:
 				throw new UnsupportedOperationException("Geometry type '" + type + "' is not implemented yet.");
 		}
