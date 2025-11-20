@@ -124,6 +124,8 @@ public abstract class AbstractGeometry {
 				return new BarabasiAlbertGeometry(engine);
 			case SCALEFREE_KLEMM:
 				return new KlemmEguiluzGeometry(engine);
+			case DYNAMIC:
+				return new DynamicGeometry(engine);
 			default:
 				throw new UnsupportedOperationException("Geometry type '" + type + "' is not implemented yet.");
 		}
