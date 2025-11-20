@@ -34,6 +34,11 @@ import org.evoludo.simulator.EvoLudo;
 
 public class DynamicGeometry extends AbstractGeometry {
 
+	/**
+	 * Create a dynamic geometry placeholder controlled by the provided engine.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 */
 	public DynamicGeometry(EvoLudo engine) {
 		super(engine);
 		setType(Type.DYNAMIC);

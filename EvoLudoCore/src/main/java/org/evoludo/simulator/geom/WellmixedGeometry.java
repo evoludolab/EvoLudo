@@ -31,7 +31,6 @@
 package org.evoludo.simulator.geom;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 
 /**
  * Geometry implementation for well-mixed (mean-field) populations. Serves as an
@@ -40,31 +39,13 @@ import org.evoludo.simulator.modules.Module;
  */
 public class WellmixedGeometry extends AbstractGeometry {
 
-	public WellmixedGeometry(EvoLudo engine) {
-		super(engine);
-		setType(Type.WELLMIXED);
-	}
-
 	/**
-	 * Create a well-mixed geometry for the provided module.
+	 * Create a well-mixed (mean-field) geometry tied to the supplied engine.
 	 *
 	 * @param engine EvoLudo pacemaker
-	 * @param module owning module
 	 */
-	public WellmixedGeometry(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-		setType(Type.WELLMIXED);
-	}
-
-	/**
-	 * Create a well-mixed geometry for the specified populations.
-	 *
-	 * @param engine    EvoLudo pacemaker
-	 * @param popModule focal population module
-	 * @param oppModule opponent population module
-	 */
-	public WellmixedGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
+	public WellmixedGeometry(EvoLudo engine) {
+		super(engine);
 		setType(Type.WELLMIXED);
 	}
 

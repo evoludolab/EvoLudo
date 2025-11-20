@@ -34,7 +34,6 @@ import java.util.Arrays;
 
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.Formatter;
 
@@ -56,29 +55,6 @@ public class ScalefreeGeometry extends AbstractNetwork {
 	 */
 	public ScalefreeGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.SCALEFREE);
-	}
-
-	/**
-	 * Create a scale-free geometry for the provided module.
-	 *
-	 * @param engine EvoLudo pacemaker
-	 * @param module owning module
-	 */
-	public ScalefreeGeometry(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-		setType(Type.SCALEFREE);
-	}
-
-	/**
-	 * Create a scale-free geometry for the specified populations.
-	 *
-	 * @param engine    EvoLudo pacemaker
-	 * @param popModule focal population module
-	 * @param oppModule opponent population module
-	 */
-	public ScalefreeGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
 		setType(Type.SCALEFREE);
 	}
 

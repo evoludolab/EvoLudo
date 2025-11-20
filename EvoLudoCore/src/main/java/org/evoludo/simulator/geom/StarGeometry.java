@@ -31,7 +31,6 @@
 package org.evoludo.simulator.geom;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 
 /**
  * Star geometry with node 0 as the hub connected to all leaves.
@@ -45,29 +44,6 @@ public class StarGeometry extends AbstractGeometry {
 	 */
 	public StarGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.STAR);
-	}
-
-	/**
-	 * Create a star geometry for the provided module.
-	 *
-	 * @param engine EvoLudo pacemaker
-	 * @param module owning module
-	 */
-	public StarGeometry(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-		setType(Type.STAR);
-	}
-
-	/**
-	 * Create a star geometry for the specified populations.
-	 *
-	 * @param engine    EvoLudo pacemaker
-	 * @param popModule focal population module
-	 * @param oppModule opponent population module
-	 */
-	public StarGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
 		setType(Type.STAR);
 	}
 

@@ -32,7 +32,6 @@ package org.evoludo.simulator.geom;
 
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 
 /**
@@ -46,31 +45,13 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 
 	private double klemmProbability = 0.0;
 
-	public KlemmEguiluzGeometry(EvoLudo engine) {
-		super(engine);
-		setType(Type.SCALEFREE_KLEMM);
-	}
-
 	/**
-	 * Create a Klemm-Eguíluz geometry for the provided module.
+	 * Create a Klemm-Eguíluz small-world geometry managed by the supplied engine.
 	 *
 	 * @param engine EvoLudo pacemaker
-	 * @param module owning module
 	 */
-	public KlemmEguiluzGeometry(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-		setType(Type.SCALEFREE_KLEMM);
-	}
-
-	/**
-	 * Create a Klemm-Eguíluz geometry for the specified populations.
-	 *
-	 * @param engine    EvoLudo pacemaker
-	 * @param popModule focal population module
-	 * @param oppModule opponent population module
-	 */
-	public KlemmEguiluzGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
+	public KlemmEguiluzGeometry(EvoLudo engine) {
+		super(engine);
 		setType(Type.SCALEFREE_KLEMM);
 	}
 

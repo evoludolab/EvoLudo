@@ -35,7 +35,6 @@ import java.util.Arrays;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 
 /**
  * Base class for geometries constructed from specific degree distributions.
@@ -49,27 +48,6 @@ public abstract class AbstractNetwork extends AbstractGeometry {
 	 */
 	protected AbstractNetwork(EvoLudo engine) {
 		super(engine);
-	}
-
-	/**
-	 * Create a network-backed geometry for an intra-specific module.
-	 *
-	 * @param engine the EvoLudo pacemaker
-	 * @param module the module providing the population context
-	 */
-	protected AbstractNetwork(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-	}
-
-	/**
-	 * Create a network-backed geometry for the specified populations.
-	 *
-	 * @param engine    the EvoLudo pacemaker
-	 * @param popModule the focal population module
-	 * @param oppModule the opponent population module
-	 */
-	protected AbstractNetwork(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
 	}
 
 	/**

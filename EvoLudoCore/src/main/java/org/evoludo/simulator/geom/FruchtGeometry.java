@@ -31,7 +31,6 @@
 package org.evoludo.simulator.geom;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 
 /**
  * Frucht graph implementation.
@@ -41,31 +40,13 @@ import org.evoludo.simulator.modules.Module;
  */
 public class FruchtGeometry extends AbstractGeometry {
 
-	public FruchtGeometry(EvoLudo engine) {
-		super(engine);
-		setType(Type.FRUCHT);
-	}
-
 	/**
-	 * Create a Frucht-graph geometry for the provided module.
+	 * Create a Frucht-graph geometry coordinated by the supplied engine.
 	 *
 	 * @param engine EvoLudo pacemaker
-	 * @param module owning module
 	 */
-	public FruchtGeometry(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-		setType(Type.FRUCHT);
-	}
-
-	/**
-	 * Create a Frucht-graph geometry for the specified populations.
-	 *
-	 * @param engine    EvoLudo pacemaker
-	 * @param popModule focal population module
-	 * @param oppModule opponent population module
-	 */
-	public FruchtGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
+	public FruchtGeometry(EvoLudo engine) {
+		super(engine);
 		setType(Type.FRUCHT);
 	}
 

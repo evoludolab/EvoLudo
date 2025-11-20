@@ -759,32 +759,33 @@ public class NetGames extends Discrete implements Payoffs,
 			ArrayMath.multiply(bins[1], 1.0 / nPopulation);
 		}
 
-		@Override
-		public boolean parseGeometry(Geometry geom, String arg) {
-			if (arg.equals("*")) {
-				geom.setType(Type.DYNAMIC);
-				return true;
-			}
-			return false;
-		}
+		// @Override
+		// public boolean parseGeometry(Geometry geom, String arg) {
+		// if (arg.equals("*")) {
+		// geom.setType(Type.DYNAMIC);
+		// return true;
+		// }
+		// return false;
+		// }
 
-		@Override
-		public boolean checkGeometry(Geometry geom) {
-			return geom.getType() == Type.DYNAMIC;
-		}
+		// @Override
+		// public boolean checkGeometry(Geometry geom) {
+		// return geom.getType() == Type.DYNAMIC;
+		// }
 
-		@Override
-		public boolean generateGeometry(Geometry geom) {
-			if (geom.getType() != Type.DYNAMIC)
-				throw new UnsupportedOperationException("Unknown geometry (" + geom.getType() + ")");
-			geom.isRewired = false;
-			geom.isUndirected = false;
-			geom.isRegular = false;
-			geom.isDynamic = true;
-			geom.interCompSame = true;
-			geom.alloc();
-			return true;
-		}
+		// @Override
+		// public boolean generateGeometry(Geometry geom) {
+		// if (geom.getType() != Type.DYNAMIC)
+		// throw new UnsupportedOperationException("Unknown geometry (" + geom.getType()
+		// + ")");
+		// geom.isRewired = false;
+		// geom.isUndirected = false;
+		// geom.isRegular = false;
+		// geom.isDynamic = true;
+		// geom.interCompSame = true;
+		// geom.alloc();
+		// return true;
+		// }
 
 		@Override
 		public void resetScores() {

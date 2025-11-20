@@ -31,7 +31,6 @@
 package org.evoludo.simulator.geom;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 
 /**
  * Triangular (hexagonal) lattice geometry supporting periodic or fixed
@@ -39,31 +38,13 @@ import org.evoludo.simulator.modules.Module;
  */
 public class TriangularGeometry extends AbstractLattice {
 
-	public TriangularGeometry(EvoLudo engine) {
-		super(engine);
-		setType(Type.TRIANGULAR);
-	}
-
 	/**
-	 * Create a triangular geometry for the provided module.
+	 * Create a triangular (hexagonal tiling) geometry linked to the given engine.
 	 *
 	 * @param engine EvoLudo pacemaker
-	 * @param module owning module
 	 */
-	public TriangularGeometry(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-		setType(Type.TRIANGULAR);
-	}
-
-	/**
-	 * Create a triangular geometry for interactions between two populations.
-	 *
-	 * @param engine    EvoLudo pacemaker
-	 * @param popModule focal population module
-	 * @param oppModule opponent population module
-	 */
-	public TriangularGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
+	public TriangularGeometry(EvoLudo engine) {
+		super(engine);
 		setType(Type.TRIANGULAR);
 	}
 

@@ -32,7 +32,6 @@ package org.evoludo.simulator.geom;
 
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 
 /**
  * Scale-free network following the Barabási &amp; Albert preferential
@@ -47,29 +46,6 @@ public class BarabasiAlbertGeometry extends AbstractNetwork {
 	 */
 	public BarabasiAlbertGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.SCALEFREE_BA);
-	}
-
-	/**
-	 * Create a Barabási-Albert geometry for the provided module.
-	 *
-	 * @param engine EvoLudo pacemaker
-	 * @param module owning module
-	 */
-	public BarabasiAlbertGeometry(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-		setType(Type.SCALEFREE_BA);
-	}
-
-	/**
-	 * Create a Barabási-Albert geometry for interactions between two modules.
-	 *
-	 * @param engine    EvoLudo pacemaker
-	 * @param popModule focal population module
-	 * @param oppModule opponent population module
-	 */
-	public BarabasiAlbertGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
 		setType(Type.SCALEFREE_BA);
 	}
 

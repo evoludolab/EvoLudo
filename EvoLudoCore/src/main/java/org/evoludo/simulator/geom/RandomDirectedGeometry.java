@@ -32,7 +32,6 @@ package org.evoludo.simulator.geom;
 
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 
 /**
  * Random directed graph geometry that wires a spanning tree first to ensure
@@ -40,31 +39,13 @@ import org.evoludo.simulator.modules.Module;
  */
 public class RandomDirectedGeometry extends AbstractGeometry {
 
-	public RandomDirectedGeometry(EvoLudo engine) {
-		super(engine);
-		setType(Type.RANDOM_GRAPH_DIRECTED);
-	}
-
 	/**
-	 * Create a random directed geometry for the provided module.
+	 * Create a directed random-graph geometry controlled by the provided engine.
 	 *
 	 * @param engine EvoLudo pacemaker
-	 * @param module owning module
 	 */
-	public RandomDirectedGeometry(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-		setType(Type.RANDOM_GRAPH_DIRECTED);
-	}
-
-	/**
-	 * Create a random directed geometry for the specified populations.
-	 *
-	 * @param engine    EvoLudo pacemaker
-	 * @param popModule focal population module
-	 * @param oppModule opponent population module
-	 */
-	public RandomDirectedGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
+	public RandomDirectedGeometry(EvoLudo engine) {
+		super(engine);
 		setType(Type.RANDOM_GRAPH_DIRECTED);
 	}
 

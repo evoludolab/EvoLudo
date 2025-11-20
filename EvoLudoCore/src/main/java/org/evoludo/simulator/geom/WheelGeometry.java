@@ -31,7 +31,6 @@
 package org.evoludo.simulator.geom;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 
 /**
  * Wheel geometry: ring lattice plus central hub node 0 connected to every rim
@@ -39,31 +38,13 @@ import org.evoludo.simulator.modules.Module;
  */
 public class WheelGeometry extends AbstractGeometry {
 
-	public WheelGeometry(EvoLudo engine) {
-		super(engine);
-		setType(Type.WHEEL);
-	}
-
 	/**
-	 * Create a wheel geometry for the provided module.
+	 * Create a wheel (cycle with hub) geometry tied to the given engine.
 	 *
 	 * @param engine EvoLudo pacemaker
-	 * @param module owning module
 	 */
-	public WheelGeometry(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-		setType(Type.WHEEL);
-	}
-
-	/**
-	 * Create a wheel geometry for interactions between two populations.
-	 *
-	 * @param engine    EvoLudo pacemaker
-	 * @param popModule focal population module
-	 * @param oppModule opponent population module
-	 */
-	public WheelGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
+	public WheelGeometry(EvoLudo engine) {
+		super(engine);
 		setType(Type.WHEEL);
 	}
 

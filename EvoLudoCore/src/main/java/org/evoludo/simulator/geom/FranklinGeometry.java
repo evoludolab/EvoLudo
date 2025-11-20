@@ -1,7 +1,6 @@
 package org.evoludo.simulator.geom;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 
 /**
  * Geometry implementation for the Franklin graph (a 12-node cubic cage).
@@ -18,29 +17,6 @@ public class FranklinGeometry extends AbstractGeometry {
 	 */
 	public FranklinGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.FRANKLIN);
-	}
-
-	/**
-	 * Create a Franklin geometry for the provided module.
-	 *
-	 * @param engine EvoLudo pacemaker
-	 * @param module owning module
-	 */
-	public FranklinGeometry(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-		setType(Type.FRANKLIN);
-	}
-
-	/**
-	 * Create a Franklin geometry for the specified populations.
-	 *
-	 * @param engine    EvoLudo pacemaker
-	 * @param popModule focal population module
-	 * @param oppModule opponent population module
-	 */
-	public FranklinGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
 		setType(Type.FRANKLIN);
 	}
 

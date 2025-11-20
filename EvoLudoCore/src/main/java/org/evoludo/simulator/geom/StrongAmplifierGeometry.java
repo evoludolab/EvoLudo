@@ -2,7 +2,6 @@ package org.evoludo.simulator.geom;
 
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 
 /**
  * Strong undirected amplifier graph based on Giakkoupis (2016).
@@ -19,29 +18,6 @@ public class StrongAmplifierGeometry extends AbstractGeometry {
 	 */
 	public StrongAmplifierGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.STRONG_AMPLIFIER);
-	}
-
-	/**
-	 * Create a strong amplifier geometry for the provided module.
-	 *
-	 * @param engine EvoLudo pacemaker
-	 * @param module owning module
-	 */
-	public StrongAmplifierGeometry(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-		setType(Type.STRONG_AMPLIFIER);
-	}
-
-	/**
-	 * Create a strong amplifier geometry for the specified populations.
-	 *
-	 * @param engine    EvoLudo pacemaker
-	 * @param popModule focal population module
-	 * @param oppModule opponent population module
-	 */
-	public StrongAmplifierGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
 		setType(Type.STRONG_AMPLIFIER);
 	}
 

@@ -31,7 +31,6 @@
 package org.evoludo.simulator.geom;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 
 /**
  * Geometry implementation for complete graphs where every node connects to
@@ -49,29 +48,6 @@ public class CompleteGeometry extends AbstractGeometry {
 	 */
 	public CompleteGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.COMPLETE);
-	}
-
-	/**
-	 * Create a complete-graph geometry for the provided module.
-	 *
-	 * @param engine EvoLudo pacemaker
-	 * @param module owning module
-	 */
-	public CompleteGeometry(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-		setType(Type.COMPLETE);
-	}
-
-	/**
-	 * Create a complete-graph geometry for the specified populations.
-	 *
-	 * @param engine    EvoLudo pacemaker
-	 * @param popModule focal population module
-	 * @param oppModule opponent population module
-	 */
-	public CompleteGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
 		setType(Type.COMPLETE);
 	}
 

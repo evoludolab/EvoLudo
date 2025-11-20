@@ -34,7 +34,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 
 /**
  * Square lattice implementations covering von Neumann, second-neighbour, Moore
@@ -55,33 +54,6 @@ public class SquareGeometry extends AbstractLattice {
 	 */
 	public SquareGeometry(EvoLudo engine, Type variant) {
 		super(engine);
-		this.variant = variant;
-		setType(variant);
-	}
-
-	/**
-	 * Create a square lattice geometry for the provided module.
-	 *
-	 * @param engine  EvoLudo pacemaker
-	 * @param module  owning module
-	 * @param variant square lattice variant to instantiate
-	 */
-	public SquareGeometry(EvoLudo engine, Module<?> module, Type variant) {
-		super(engine, module);
-		this.variant = variant;
-		setType(variant);
-	}
-
-	/**
-	 * Create a square lattice geometry for interactions between two populations.
-	 *
-	 * @param engine    EvoLudo pacemaker
-	 * @param popModule focal population module
-	 * @param oppModule opponent population module
-	 * @param variant   square lattice variant to instantiate
-	 */
-	public SquareGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule, Type variant) {
-		super(engine, popModule, oppModule);
 		this.variant = variant;
 		setType(variant);
 	}

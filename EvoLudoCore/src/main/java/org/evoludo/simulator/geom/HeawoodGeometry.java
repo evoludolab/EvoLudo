@@ -1,7 +1,6 @@
 package org.evoludo.simulator.geom;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 
 /**
  * Geometry implementation for the Heawood graph (14-node cubic symmetric
@@ -19,29 +18,6 @@ public class HeawoodGeometry extends AbstractGeometry {
 	 */
 	public HeawoodGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.HEAWOOD);
-	}
-
-	/**
-	 * Create a Heawood geometry for the provided module.
-	 *
-	 * @param engine EvoLudo pacemaker
-	 * @param module owning module
-	 */
-	public HeawoodGeometry(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-		setType(Type.HEAWOOD);
-	}
-
-	/**
-	 * Create a Heawood geometry for the specified populations.
-	 *
-	 * @param engine    EvoLudo pacemaker
-	 * @param popModule focal population module
-	 * @param oppModule opponent population module
-	 */
-	public HeawoodGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
 		setType(Type.HEAWOOD);
 	}
 

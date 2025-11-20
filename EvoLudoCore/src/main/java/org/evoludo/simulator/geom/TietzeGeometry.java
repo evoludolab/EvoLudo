@@ -1,7 +1,6 @@
 package org.evoludo.simulator.geom;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 
 /**
  * Geometry implementation for the Tietze graph (a cubic 12-node graph).
@@ -18,29 +17,6 @@ public class TietzeGeometry extends AbstractGeometry {
 	 */
 	public TietzeGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.TIETZE);
-	}
-
-	/**
-	 * Create a Tietze geometry for the provided module.
-	 *
-	 * @param engine EvoLudo pacemaker
-	 * @param module owning module
-	 */
-	public TietzeGeometry(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-		setType(Type.TIETZE);
-	}
-
-	/**
-	 * Create a Tietze geometry for the specified populations.
-	 *
-	 * @param engine    EvoLudo pacemaker
-	 * @param popModule focal population module
-	 * @param oppModule opponent population module
-	 */
-	public TietzeGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
 		setType(Type.TIETZE);
 	}
 

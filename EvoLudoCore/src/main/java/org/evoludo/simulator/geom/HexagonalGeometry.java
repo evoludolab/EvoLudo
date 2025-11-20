@@ -34,7 +34,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 
 /**
@@ -49,29 +48,6 @@ public class HexagonalGeometry extends AbstractLattice {
 	 */
 	public HexagonalGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.HEXAGONAL);
-	}
-
-	/**
-	 * Create a hexagonal (honeycomb) geometry for the provided module.
-	 *
-	 * @param engine EvoLudo pacemaker
-	 * @param module owning module
-	 */
-	public HexagonalGeometry(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-		setType(Type.HEXAGONAL);
-	}
-
-	/**
-	 * Create a hexagonal geometry for the specified populations.
-	 *
-	 * @param engine    EvoLudo pacemaker
-	 * @param popModule focal population module
-	 * @param oppModule opponent population module
-	 */
-	public HexagonalGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
 		setType(Type.HEXAGONAL);
 	}
 

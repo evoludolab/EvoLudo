@@ -42,8 +42,6 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.Network3D;
-import org.evoludo.simulator.models.IBSPopulation;
-import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
@@ -146,17 +144,6 @@ public abstract class AbstractGeometry {
 	 * Logger for keeping track of and reporting events and issues.
 	 */
 	protected final Logger logger;
-
-	/**
-	 * The IBS population that has this geometry.
-	 */
-	protected IBSPopulation<?, ?> population;
-
-	/**
-	 * The IBS population representing the opponent. For intra-species interactions
-	 * {@code population==opponent} holds.
-	 */
-	protected IBSPopulation<?, ?> opponent;
 
 	/**
 	 * Local storage for the 2D representation of this graph.
@@ -315,32 +302,7 @@ public abstract class AbstractGeometry {
 	protected AbstractGeometry(EvoLudo engine) {
 		this.engine = engine;
 		this.logger = engine.getLogger();
-	}
-
-	/**
-	 * Create a geometry for an intra-specific module.
-	 *
-	 * @param engine the EvoLudo engine coordinating simulations
-	 * @param module the module providing the population context
-	 */
-	protected AbstractGeometry(EvoLudo engine, Module<?> module) {
-		this(engine, module, module);
-	}
-
-	/**
-	 * Create a geometry for a population and its opponent (possibly another
-	 * species).
-	 *
-	 * @param engine    the EvoLudo engine coordinating simulations
-	 * @param popModule the module for the focal population
-	 * @param oppModule the module for the opponent population
-	 */
-	protected AbstractGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		this(engine);
-		if (engine.getModel().getType().isIBS()) {
-			population = popModule.getIBSPopulation();
-			opponent = oppModule.getIBSPopulation();
-		}
+		// this(engine, false);
 	}
 
 	/**
@@ -780,17 +742,10 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
-	 * Gets the opponent of the population represented by this geometry.
-	 */
-	public IBSPopulation<?, ?> getOpponent() {
-		return opponent;
-	}
-
-	/**
 	 * @return {@code true} if this geometry links two different populations.
 	 */
 	protected boolean isInterspecies() {
-		return population != opponent;
+		return false;
 	}
 
 	/**
@@ -1516,8 +1471,8 @@ public abstract class AbstractGeometry {
 	@SuppressWarnings("all")
 	public AbstractGeometry clone() {
 		AbstractGeometry clone = AbstractGeometry.create(type, engine);
-		clone.population = population;
-		clone.opponent = opponent;
+		// clone.population = population;
+		// clone.opponent = opponent;
 		clone.specification = specification;
 		clone.name = name;
 		if (kin != null)

@@ -69,7 +69,8 @@ public class Geometry {
 	IBSPopulation<?, ?> population;
 
 	/**
-	 * The IBS population representing the opponent. For intra-species interactions
+	 * The IBS population representing the opponent. For intra-species
+	 * interactions
 	 * {@code population==opponent} holds.
 	 */
 	IBSPopulation<?, ?> opponent;
@@ -114,10 +115,10 @@ public class Geometry {
 	 */
 	public Geometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		this(engine);
-		if (engine.getModel().getType().isIBS()) {
-			population = popModule.getIBSPopulation();
-			opponent = oppModule.getIBSPopulation();
-		}
+		// if (engine.getModel().getType().isIBS()) {
+		// population = popModule.getIBSPopulation();
+		// opponent = oppModule.getIBSPopulation();
+		// }
 	}
 
 	/**
@@ -919,15 +920,16 @@ public class Geometry {
 	 */
 	public boolean isRewired = false;
 
-	/**
-	 * Gets the opponent of the population represented by this graph. For
-	 * intra-species models {@code this.opponent==this.population} holds.
-	 * 
-	 * @return the opponent population
-	 */
-	public IBSPopulation<?, ?> getOpponent() {
-		return opponent;
-	}
+	// /**
+	// * Gets the opponent of the population represented by this graph. For
+	// * intra-species models {@code this.opponent==this.population} holds.
+	// *
+	// * @return the opponent population
+	// */
+	// public IBSPopulation<?, ?> getOpponent() {
+	// //return engine.getModule().getOpponent().getIBSPopulation();
+	// return opponent;
+	// }
 
 	/**
 	 * Check if graph refers to inter-species model. For intra-species models
@@ -936,7 +938,8 @@ public class Geometry {
 	 * @return {@code true} for inter-species graphs.
 	 */
 	public boolean isInterspecies() {
-		return (population != opponent);
+		return engine.getModule().getNSpecies() > 1;
+		// return (population != opponent);
 	}
 
 	/**
@@ -1502,8 +1505,8 @@ public class Geometry {
 
 			default:
 				// last resort: try engine - maybe new implementations provide new geometries
-				if (!population.checkGeometry(this))
-					throw new UnsupportedOperationException("Unknown geometry");
+				// if (!population.checkGeometry(this))
+				throw new UnsupportedOperationException("Unknown geometry");
 		}
 		if (pRewire > 0.0) {
 			switch ((int) (connectivity + 1e-6)) {
@@ -1621,8 +1624,8 @@ public class Geometry {
 				break;
 			default:
 				// last resort: try engine - maybe new implementations provide new geometries
-				if (!population.generateGeometry(this))
-					throw new UnsupportedOperationException("Unknown geometry");
+				// if (!population.generateGeometry(this))
+				throw new UnsupportedOperationException("Unknown geometry");
 		}
 		isValid = true;
 		evaluated = false;
@@ -5354,10 +5357,11 @@ public class Geometry {
 			 * arg); break;
 			 */
 			default:
-				// last resort: try engine - maybe new implementations provide new geometries
-				if (!population.parseGeometry(this, cli))
-					geometry = Type.INVALID; // too few parameters, change to default geometry
-				break;
+				throw new IllegalArgumentException("unknown geometry type: " + geometry);
+			// // last resort: try engine - maybe new implementations provide new geometries
+			// if (!population.parseGeometry(this, cli))
+			// geometry = Type.INVALID; // too few parameters, change to default geometry
+			// break;
 		}
 
 		doReset |= (oldGeometry != geometry);

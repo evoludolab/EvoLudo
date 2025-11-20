@@ -3,7 +3,6 @@ package org.evoludo.simulator.geom;
 import java.util.Arrays;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 
 /**
  * Random regular graph geometry that repeatedly samples degree distributions
@@ -23,29 +22,6 @@ public class RandomRegularGeometry extends AbstractNetwork {
 	 */
 	public RandomRegularGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.RANDOM_REGULAR_GRAPH);
-	}
-
-	/**
-	 * Create a random regular geometry for the provided module.
-	 *
-	 * @param engine EvoLudo pacemaker
-	 * @param module owning module
-	 */
-	public RandomRegularGeometry(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-		setType(Type.RANDOM_REGULAR_GRAPH);
-	}
-
-	/**
-	 * Create a random regular geometry for the specified populations.
-	 *
-	 * @param engine    EvoLudo pacemaker
-	 * @param popModule focal population module
-	 * @param oppModule opponent population module
-	 */
-	public RandomRegularGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
 		setType(Type.RANDOM_REGULAR_GRAPH);
 	}
 

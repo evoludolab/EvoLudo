@@ -1,7 +1,6 @@
 package org.evoludo.simulator.geom;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 
 /**
  * Geometry implementation for the Desargues (Truncated Petersen) graph.
@@ -18,29 +17,6 @@ public class DesarguesGeometry extends AbstractGeometry {
 	 */
 	public DesarguesGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.DESARGUES);
-	}
-
-	/**
-	 * Create a Desargues geometry for the provided module.
-	 *
-	 * @param engine EvoLudo pacemaker
-	 * @param module owning module
-	 */
-	public DesarguesGeometry(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-		setType(Type.DESARGUES);
-	}
-
-	/**
-	 * Create a Desargues geometry for the specified populations.
-	 *
-	 * @param engine    EvoLudo pacemaker
-	 * @param popModule focal population module
-	 * @param oppModule opponent population module
-	 */
-	public DesarguesGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
 		setType(Type.DESARGUES);
 	}
 

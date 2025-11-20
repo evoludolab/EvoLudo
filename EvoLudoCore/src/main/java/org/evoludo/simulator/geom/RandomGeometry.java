@@ -32,7 +32,6 @@ package org.evoludo.simulator.geom;
 
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 
 /**
  * Random (undirected) graph geometry that ensures the generated network is
@@ -40,31 +39,14 @@ import org.evoludo.simulator.modules.Module;
  */
 public class RandomGeometry extends AbstractGeometry {
 
-	public RandomGeometry(EvoLudo engine) {
-		super(engine);
-		setType(Type.RANDOM_GRAPH);
-	}
-
 	/**
-	 * Create a random undirected geometry for the provided module.
+	 * Create an undirected random-graph geometry coordinated by the provided
+	 * engine.
 	 *
 	 * @param engine EvoLudo pacemaker
-	 * @param module owning module
 	 */
-	public RandomGeometry(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-		setType(Type.RANDOM_GRAPH);
-	}
-
-	/**
-	 * Create a random undirected geometry for the specified populations.
-	 *
-	 * @param engine    EvoLudo pacemaker
-	 * @param popModule focal population module
-	 * @param oppModule opponent population module
-	 */
-	public RandomGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
+	public RandomGeometry(EvoLudo engine) {
+		super(engine);
 		setType(Type.RANDOM_GRAPH);
 	}
 

@@ -4779,42 +4779,42 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		return playerScoreAveraged;
 	}
 
-	/**
-	 * Provide opportunity/hook for subclasses to introduce new geometries.
-	 * 
-	 * @param geom the current empty/uninitialized geometry
-	 * @param arg  the commandline argument
-	 * @return {@code true} if parsing was successful
-	 * 
-	 * @see Geometry#parse(String)
-	 */
-	public boolean parseGeometry(Geometry geom, String arg) {
-		return false;
-	}
+	// /**
+	// * Provide opportunity/hook for subclasses to introduce new geometries.
+	// *
+	// * @param geom the current empty/uninitialized geometry
+	// * @param arg the commandline argument
+	// * @return {@code true} if parsing was successful
+	// *
+	// * @see Geometry#parse(String)
+	// */
+	// public boolean parseGeometry(Geometry geom, String arg) {
+	// return false;
+	// }
 
-	/**
-	 * Provide opportunity/hook for subclasses to introduce new geometries.
-	 * 
-	 * @param geom the geometry to check
-	 * @return {@code true} if checks were successful
-	 * 
-	 * @see Geometry#check()
-	 */
-	public boolean checkGeometry(Geometry geom) {
-		return false;
-	}
+	// /**
+	// * Provide opportunity/hook for subclasses to introduce new geometries.
+	// *
+	// * @param geom the geometry to check
+	// * @return {@code true} if checks were successful
+	// *
+	// * @see Geometry#check()
+	// */
+	// public boolean checkGeometry(Geometry geom) {
+	// return false;
+	// }
 
-	/**
-	 * Provide opportunity/hook for subclasses to introduce new geometries.
-	 * 
-	 * @param geom the geometry to initialize
-	 * @return {@code true} if generation of structure was successful
-	 * 
-	 * @see Geometry#init()
-	 */
-	public boolean generateGeometry(Geometry geom) {
-		return false;
-	}
+	// /**
+	// * Provide opportunity/hook for subclasses to introduce new geometries.
+	// *
+	// * @param geom the geometry to initialize
+	// * @return {@code true} if generation of structure was successful
+	// *
+	// * @see Geometry#init()
+	// */
+	// public boolean generateGeometry(Geometry geom) {
+	// return false;
+	// }
 
 	/**
 	 * Called from GUI if node/individual with index {@code idx} received a mouse

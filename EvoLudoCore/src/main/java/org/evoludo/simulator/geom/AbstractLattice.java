@@ -31,7 +31,6 @@
 package org.evoludo.simulator.geom;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.modules.Module;
 
 /**
  * Base class for lattice-based geometries providing shared handling of fixed
@@ -53,25 +52,11 @@ public abstract class AbstractLattice extends AbstractGeometry {
 		super(engine);
 	}
 
-	/**
-	 * Create a lattice geometry scaffold for an intra-specific module.
-	 *
-	 * @param engine the EvoLudo pacemaker
-	 * @param module the owning module
-	 */
-	protected AbstractLattice(EvoLudo engine, Module<?> module) {
-		super(engine, module);
-	}
+	private boolean isInterspecies = false;
 
-	/**
-	 * Create a lattice geometry scaffold for the specified populations.
-	 *
-	 * @param engine    the EvoLudo pacemaker
-	 * @param popModule the focal population module
-	 * @param oppModule the opponent population module
-	 */
-	protected AbstractLattice(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
-		super(engine, popModule, oppModule);
+	@Override
+	public boolean isInterspecies() {
+		return isInterspecies;
 	}
 
 	/**
@@ -93,6 +78,11 @@ public abstract class AbstractLattice extends AbstractGeometry {
 	public void reset() {
 		super.reset();
 		fixedBoundary = false;
+	}
+
+	public void init(boolean isInterspecies) {
+		this.isInterspecies = isInterspecies;
+		init();
 	}
 
 	/**
