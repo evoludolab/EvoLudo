@@ -40,29 +40,48 @@ import org.evoludo.simulator.modules.Module;
  */
 public class BarabasiAlbertGeometry extends AbstractNetwork {
 
+	/**
+	 * Create a Barabási-Albert geometry tied to the given engine.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 */
 	public BarabasiAlbertGeometry(EvoLudo engine) {
 		super(engine);
 		setType(Type.SCALEFREE_BA);
 	}
 
+	/**
+	 * Create a Barabási-Albert geometry for the provided module.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 * @param module owning module
+	 */
 	public BarabasiAlbertGeometry(EvoLudo engine, Module<?> module) {
 		super(engine, module);
 		setType(Type.SCALEFREE_BA);
 	}
 
+	/**
+	 * Create a Barabási-Albert geometry for interactions between two modules.
+	 *
+	 * @param engine    EvoLudo pacemaker
+	 * @param popModule focal population module
+	 * @param oppModule opponent population module
+	 */
 	public BarabasiAlbertGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 		setType(Type.SCALEFREE_BA);
 	}
 
+	@Override
 	public boolean parse(String arg) {
 		if (arg == null || arg.isEmpty()) {
 			if (connectivity < 2)
 				connectivity = 2;
 			warn("requires connectivity argument - using " + (int) connectivity + ".");
-			return true;
+		} else {
+			connectivity = Math.max(2, Integer.parseInt(arg));
 		}
-		connectivity = Math.max(2, Integer.parseInt(arg));
 		return true;
 	}
 

@@ -42,26 +42,51 @@ import org.evoludo.simulator.modules.Module;
  */
 public class SquareGeometry extends AbstractLattice {
 
+	/**
+	 * The specific square lattice variant implemented by this instance.
+	 */
 	private final Type variant;
 
+	/**
+	 * Create a square lattice geometry tied to the given engine.
+	 *
+	 * @param engine  EvoLudo pacemaker
+	 * @param variant square lattice variant to instantiate
+	 */
 	public SquareGeometry(EvoLudo engine, Type variant) {
 		super(engine);
 		this.variant = variant;
 		setType(variant);
 	}
 
+	/**
+	 * Create a square lattice geometry for the provided module.
+	 *
+	 * @param engine  EvoLudo pacemaker
+	 * @param module  owning module
+	 * @param variant square lattice variant to instantiate
+	 */
 	public SquareGeometry(EvoLudo engine, Module<?> module, Type variant) {
 		super(engine, module);
 		this.variant = variant;
 		setType(variant);
 	}
 
+	/**
+	 * Create a square lattice geometry for interactions between two populations.
+	 *
+	 * @param engine    EvoLudo pacemaker
+	 * @param popModule focal population module
+	 * @param oppModule opponent population module
+	 * @param variant   square lattice variant to instantiate
+	 */
 	public SquareGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule, Type variant) {
 		super(engine, popModule, oppModule);
 		this.variant = variant;
 		setType(variant);
 	}
 
+	@Override
 	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
 		switch (variant) {
@@ -86,6 +111,12 @@ public class SquareGeometry extends AbstractLattice {
 		return true;
 	}
 
+	/**
+	 * Emit a warning if the user attempts to specify connectivity for a fixed
+	 * stencil.
+	 *
+	 * @param numeric connectivity string passed on the CLI
+	 */
 	private void warnIfConnectivityProvided(String numeric) {
 		if (numeric != null && !numeric.isEmpty()) {
 			Logger log = engine.getLogger();
@@ -140,6 +171,14 @@ public class SquareGeometry extends AbstractLattice {
 		isValid = true;
 	}
 
+	/**
+	 * Initialize a square lattice that only connects nodes to themselves (used
+	 * when connectivity equals one).
+	 *
+	 * @param side     side length of the (sub) lattice
+	 * @param fullside global side length
+	 * @param offset   index offset into the population
+	 */
 	private void initSquareSelf(int side, int fullside, int offset) {
 		for (int i = 0; i < side; i++) {
 			int x = offset + i * fullside;
@@ -150,6 +189,13 @@ public class SquareGeometry extends AbstractLattice {
 		}
 	}
 
+	/**
+	 * Initialize a square lattice with von Neumann connectivity.
+	 *
+	 * @param side     side length of the (sub) lattice
+	 * @param fullside global side length
+	 * @param offset   index offset into the population
+	 */
 	private void initSquareVonNeumann(int side, int fullside, int offset) {
 		boolean interspecies = isInterspecies();
 		for (int i = 0; i < side; i++) {
@@ -174,6 +220,14 @@ public class SquareGeometry extends AbstractLattice {
 		}
 	}
 
+	/**
+	 * Adjust von Neumann neighbourhoods when fixed boundaries are requested.
+	 *
+	 * @param side         side length of the (sub) lattice
+	 * @param fullside     global side length
+	 * @param offset       index offset into the population
+	 * @param interspecies {@code true} if self-links are required
+	 */
 	private void adjustNeumannBoundaries(int side, int fullside, int offset, boolean interspecies) {
 		int aPlayer = offset;
 		clearLinksFrom(aPlayer);
@@ -238,6 +292,13 @@ public class SquareGeometry extends AbstractLattice {
 		}
 	}
 
+	/**
+	 * Initialize a square lattice with second-neighbour von Neumann connectivity.
+	 *
+	 * @param side     side length of the (sub) lattice
+	 * @param fullside global side length
+	 * @param offset   index offset into the population
+	 */
 	private void initSquareVonNeumann2nd(int side, int fullside, int offset) {
 		boolean interspecies = isInterspecies();
 		for (int i = 0; i < side; i++) {
@@ -262,6 +323,14 @@ public class SquareGeometry extends AbstractLattice {
 		}
 	}
 
+	/**
+	 * Adjust second-neighbour von Neumann stencils along fixed boundaries.
+	 *
+	 * @param side         side length of the (sub) lattice
+	 * @param fullside     global side length
+	 * @param offset       index offset into the population
+	 * @param interspecies {@code true} if self-links are required
+	 */
 	private void adjustNeumannSecondBoundaries(int side, int fullside, int offset, boolean interspecies) {
 		int aPlayer = offset;
 		clearLinksFrom(aPlayer);
@@ -322,6 +391,13 @@ public class SquareGeometry extends AbstractLattice {
 		}
 	}
 
+	/**
+	 * Initialize a square lattice with Moore connectivity.
+	 *
+	 * @param side     side length of the (sub) lattice
+	 * @param fullside global side length
+	 * @param offset   index offset into the population
+	 */
 	private void initSquareMoore(int side, int fullside, int offset) {
 		boolean interspecies = isInterspecies();
 		for (int i = 0; i < side; i++) {
@@ -350,6 +426,14 @@ public class SquareGeometry extends AbstractLattice {
 		}
 	}
 
+	/**
+	 * Adjust Moore stencils along fixed boundaries.
+	 *
+	 * @param side         side length of the (sub) lattice
+	 * @param fullside     global side length
+	 * @param offset       index offset into the population
+	 * @param interspecies {@code true} if self-links are required
+	 */
 	private void adjustMooreBoundaries(int side, int fullside, int offset, boolean interspecies) {
 		int aPlayer = offset;
 		clearLinksFrom(aPlayer);
@@ -426,6 +510,13 @@ public class SquareGeometry extends AbstractLattice {
 		}
 	}
 
+	/**
+	 * Initialize a square lattice with arbitrary (odd) neighbourhood sizes.
+	 *
+	 * @param side     side length of the (sub) lattice
+	 * @param fullside global side length
+	 * @param offset   index offset into the population
+	 */
 	private void initSquare(int side, int fullside, int offset) {
 		boolean interspecies = isInterspecies();
 		int range = Math.min(side / 2, Math.max(1, (int) (Math.sqrt(connectivity + 1.5) / 2.0)));
@@ -451,6 +542,15 @@ public class SquareGeometry extends AbstractLattice {
 		}
 	}
 
+	/**
+	 * Adjust arbitrary-range neighbourhoods along fixed boundaries.
+	 *
+	 * @param range        interaction range
+	 * @param side         side length of the (sub) lattice
+	 * @param fullside     global side length
+	 * @param offset       index offset into the population
+	 * @param interspecies {@code true} if self-links are required
+	 */
 	private void adjustSquareBoundaries(int range, int side, int fullside, int offset, boolean interspecies) {
 		int aPlayer;
 		int bPlayer;

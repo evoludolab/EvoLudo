@@ -3,18 +3,43 @@ package org.evoludo.simulator.geom;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
 
+/**
+ * Geometry implementation for the strong suppressor graphs of Giakkoupis
+ * (2016).
+ * 
+ * @see <a href="https://doi.org/10.48550/arXiv.1611.01585">Giakkoupis (2016)
+ *      Amplifiers and Suppressors of Selection...</a>
+ */
 public class StrongSuppressorGeometry extends AbstractGeometry {
 
+	/**
+	 * Create a strong suppressor geometry tied to the given engine.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 */
 	public StrongSuppressorGeometry(EvoLudo engine) {
 		super(engine);
 		setType(Type.STRONG_SUPPRESSOR);
 	}
 
+	/**
+	 * Create a strong suppressor geometry for the provided module.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 * @param module owning module
+	 */
 	public StrongSuppressorGeometry(EvoLudo engine, Module<?> module) {
 		super(engine, module);
 		setType(Type.STRONG_SUPPRESSOR);
 	}
 
+	/**
+	 * Create a strong suppressor geometry for the specified populations.
+	 *
+	 * @param engine    EvoLudo pacemaker
+	 * @param popModule focal population module
+	 * @param oppModule opponent population module
+	 */
 	public StrongSuppressorGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 		setType(Type.STRONG_SUPPRESSOR);

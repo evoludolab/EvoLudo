@@ -46,23 +46,45 @@ public class HierarchicalGeometry extends AbstractLattice {
 	private Type subGeometry = Type.WELLMIXED;
 	private int[] rawHierarchy = new int[] { 1 };
 	private int[] hierarchy;
+	/**
+	 * Coupling strength between hierarchical levels.
+	 */
 	private double hierarchyWeight = 0.0;
 
+	/**
+	 * Create a hierarchical geometry tied to the given engine.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 */
 	public HierarchicalGeometry(EvoLudo engine) {
 		super(engine);
 		setType(Type.HIERARCHY);
 	}
 
+	/**
+	 * Create a hierarchical geometry for the provided module.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 * @param module owning module
+	 */
 	public HierarchicalGeometry(EvoLudo engine, Module<?> module) {
 		super(engine, module);
 		setType(Type.HIERARCHY);
 	}
 
+	/**
+	 * Create a hierarchical geometry for interactions between two populations.
+	 *
+	 * @param engine    EvoLudo pacemaker
+	 * @param popModule focal population module
+	 * @param oppModule opponent population module
+	 */
 	public HierarchicalGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 		setType(Type.HIERARCHY);
 	}
 
+	@Override
 	public boolean parse(String arg) {
 		String spec = arg == null ? "" : arg.trim();
 		subGeometry = Type.WELLMIXED;
@@ -91,14 +113,25 @@ public class HierarchicalGeometry extends AbstractLattice {
 		hierarchyWeight = 0.0;
 	}
 
+	/**
+	 * @return the geometry used within each hierarchy level (e.g. square or
+	 *         well-mixed)
+	 */
 	public Type getSubGeometry() {
 		return subGeometry;
 	}
 
+	/**
+	 * @return the weight applied to inter-level interactions
+	 */
 	public double getHierarchyWeight() {
 		return hierarchyWeight;
 	}
 
+	/**
+	 * @return a copy of the processed hierarchy definition (levels plus
+	 *         individuals per deme)
+	 */
 	public int[] getHierarchyLevels() {
 		if (hierarchy != null)
 			return Arrays.copyOf(hierarchy, hierarchy.length);
@@ -195,9 +228,7 @@ public class HierarchicalGeometry extends AbstractLattice {
 	}
 
 	/**
-	 * Generates hierarchical graphs composed of well-mixed or square-lattice
-	 * demes.
-	 *
+	 * {@inheritDoc}
 	 * <h3>Requirements/notes:</h3>
 	 * Only well-mixed (complete) or square lattice graphs are currently supported.
 	 */
@@ -213,6 +244,12 @@ public class HierarchicalGeometry extends AbstractLattice {
 		isValid = true;
 	}
 
+	/**
+	 * Parse and remove potential sub-geometry tokens from the specification.
+	 *
+	 * @param spec specification string
+	 * @return remainder string once sub-geometry/boundary tokens are consumed
+	 */
 	private String parseSubGeometry(String spec) {
 		if (spec.isEmpty())
 			return spec;
@@ -342,6 +379,14 @@ public class HierarchicalGeometry extends AbstractLattice {
 		}
 	}
 
+	/**
+	 * Initialize a square deme with von Neumann connectivity, optionally adjusting
+	 * for boundary conditions.
+	 *
+	 * @param sideLen  side length of the deme
+	 * @param fullside side length of the full lattice
+	 * @param offset   index offset of the deme
+	 */
 	private void initSquareVonNeumann(int sideLen, int fullside, int offset) {
 		boolean interspecies = isInterspecies();
 		for (int i = 0; i < sideLen; i++) {
@@ -364,6 +409,15 @@ public class HierarchicalGeometry extends AbstractLattice {
 			adjustNeumannBoundaries(sideLen, fullside, offset, interspecies);
 	}
 
+	/**
+	 * Adjust von Neumann neighbourhoods along fixed boundaries.
+	 *
+	 * @param sideLen      side length of the deme
+	 * @param fullside     side length of the full lattice
+	 * @param offset       index offset of the deme
+	 * @param interspecies {@code true} if interspecific interactions allow
+	 *                     self-links
+	 */
 	private void adjustNeumannBoundaries(int sideLen, int fullside, int offset, boolean interspecies) {
 		int player = offset;
 		clearLinksFrom(player);
@@ -429,6 +483,13 @@ public class HierarchicalGeometry extends AbstractLattice {
 		isRegular = false;
 	}
 
+	/**
+	 * Initialize a square deme with second-neighbour von Neumann connectivity.
+	 *
+	 * @param sideLen  side length of the deme
+	 * @param fullside side length of the full lattice
+	 * @param offset   index offset of the deme
+	 */
 	private void initSquareVonNeumann2nd(int sideLen, int fullside, int offset) {
 		boolean interspecies = isInterspecies();
 		for (int i = 0; i < sideLen; i++) {
@@ -451,6 +512,15 @@ public class HierarchicalGeometry extends AbstractLattice {
 			adjustNeumann2ndBoundaries(sideLen, fullside, offset, interspecies);
 	}
 
+	/**
+	 * Adjust second-neighbour von Neumann neighbourhoods along fixed boundaries.
+	 *
+	 * @param sideLen      side length of the deme
+	 * @param fullside     side length of the full lattice
+	 * @param offset       index offset of the deme
+	 * @param interspecies {@code true} if interspecific interactions allow
+	 *                     self-links
+	 */
 	private void adjustNeumann2ndBoundaries(int sideLen, int fullside, int offset, boolean interspecies) {
 		int player = offset;
 		clearLinksFrom(player);
@@ -508,6 +578,13 @@ public class HierarchicalGeometry extends AbstractLattice {
 		isRegular = false;
 	}
 
+	/**
+	 * Initialize a square deme with Moore connectivity.
+	 *
+	 * @param sideLen  side length of the deme
+	 * @param fullside side length of the full lattice
+	 * @param offset   index offset of the deme
+	 */
 	private void initSquareMoore(int sideLen, int fullside, int offset) {
 		boolean interspecies = isInterspecies();
 		for (int i = 0; i < sideLen; i++) {
@@ -534,6 +611,15 @@ public class HierarchicalGeometry extends AbstractLattice {
 			adjustMooreBoundaries(sideLen, fullside, offset, interspecies);
 	}
 
+	/**
+	 * Adjust Moore neighbourhoods along fixed boundaries.
+	 *
+	 * @param sideLen      side length of the deme
+	 * @param fullside     side length of the full lattice
+	 * @param offset       index offset of the deme
+	 * @param interspecies {@code true} if interspecific interactions allow
+	 *                     self-links
+	 */
 	private void adjustMooreBoundaries(int sideLen, int fullside, int offset, boolean interspecies) {
 		int player = offset;
 		clearLinksFrom(player);
@@ -611,6 +697,13 @@ public class HierarchicalGeometry extends AbstractLattice {
 		isRegular = false;
 	}
 
+	/**
+	 * Initialize a square deme for arbitrary (odd) neighbourhood sizes.
+	 *
+	 * @param sideLen  side length of the deme
+	 * @param fullside side length of the full lattice
+	 * @param offset   index offset of the deme
+	 */
 	private void initSquare(int sideLen, int fullside, int offset) {
 		boolean interspecies = isInterspecies();
 		int range = Math.min(sideLen / 2, Math.max(1, (int) (Math.sqrt(connectivity + 1.5) / 2.0)));
@@ -633,6 +726,16 @@ public class HierarchicalGeometry extends AbstractLattice {
 			adjustSquareBoundaries(sideLen, fullside, offset, interspecies, range);
 	}
 
+	/**
+	 * Adjust arbitrary-range square neighbourhoods along fixed boundaries.
+	 *
+	 * @param sideLen      side length of the deme
+	 * @param fullside     side length of the full lattice
+	 * @param offset       index offset of the deme
+	 * @param interspecies {@code true} if interspecific interactions allow
+	 *                     self-links
+	 * @param range        neighbour range
+	 */
 	private void adjustSquareBoundaries(int sideLen, int fullside, int offset, boolean interspecies, int range) {
 		int player = offset;
 		clearLinksFrom(player);
@@ -681,7 +784,10 @@ public class HierarchicalGeometry extends AbstractLattice {
 		isRegular = false;
 	}
 
+	@Override
 	public boolean isUnique() {
+		if (isRewired)
+			return true;
 		return subGeometry.isUnique();
 	}
 

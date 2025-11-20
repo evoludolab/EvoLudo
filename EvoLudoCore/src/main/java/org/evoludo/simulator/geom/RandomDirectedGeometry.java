@@ -45,23 +45,41 @@ public class RandomDirectedGeometry extends AbstractGeometry {
 		setType(Type.RANDOM_GRAPH_DIRECTED);
 	}
 
+	/**
+	 * Create a random directed geometry for the provided module.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 * @param module owning module
+	 */
 	public RandomDirectedGeometry(EvoLudo engine, Module<?> module) {
 		super(engine, module);
 		setType(Type.RANDOM_GRAPH_DIRECTED);
 	}
 
+	/**
+	 * Create a random directed geometry for the specified populations.
+	 *
+	 * @param engine    EvoLudo pacemaker
+	 * @param popModule focal population module
+	 * @param oppModule opponent population module
+	 */
 	public RandomDirectedGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 		setType(Type.RANDOM_GRAPH_DIRECTED);
 	}
 
+	@Override
 	public boolean parse(String arg) {
-		if (arg == null || arg.isEmpty())
-			return true;
-		connectivity = Math.max(2, Integer.parseInt(arg));
+		connectivity = 2.0;
+		if (arg != null && !arg.isEmpty())
+			connectivity = Math.max(2, Integer.parseInt(arg));
 		return true;
 	}
 
+	/**
+	 * Generates a connected directed random graph by first creating a spanning
+	 * tree and then adding remaining edges uniformly at random.
+	 */
 	@Override
 	public void init() {
 		if (size <= 0)

@@ -38,6 +38,9 @@ import org.evoludo.util.CLOParser;
 /**
  * Scale-free/small-world network following the Klemm &amp; Eguíluz growth
  * process.
+ *
+ * @see <a href="http://dx.doi.org/10.1103/PhysRevE.65.057102">Klemm &amp;
+ *      Eguíluz (2001) Phys. Rev. E 65, 057102</a>
  */
 public class KlemmEguiluzGeometry extends AbstractNetwork {
 
@@ -48,16 +51,30 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 		setType(Type.SCALEFREE_KLEMM);
 	}
 
+	/**
+	 * Create a Klemm-Eguíluz geometry for the provided module.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 * @param module owning module
+	 */
 	public KlemmEguiluzGeometry(EvoLudo engine, Module<?> module) {
 		super(engine, module);
 		setType(Type.SCALEFREE_KLEMM);
 	}
 
+	/**
+	 * Create a Klemm-Eguíluz geometry for the specified populations.
+	 *
+	 * @param engine    EvoLudo pacemaker
+	 * @param popModule focal population module
+	 * @param oppModule opponent population module
+	 */
 	public KlemmEguiluzGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 		setType(Type.SCALEFREE_KLEMM);
 	}
 
+	@Override
 	public boolean parse(String arg) {
 		double[] values = CLOParser.parseVector(arg);
 		if (values.length == 0) {
@@ -76,6 +93,12 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 		return true;
 	}
 
+	/**
+	 * Clamp the probability parameter into the range [0,1].
+	 *
+	 * @param value raw probability value
+	 * @return clamped probability
+	 */
 	private double clampProbability(double value) {
 		if (value < 0.0)
 			return 0.0;

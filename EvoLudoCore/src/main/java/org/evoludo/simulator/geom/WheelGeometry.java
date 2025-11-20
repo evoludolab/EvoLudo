@@ -44,11 +44,24 @@ public class WheelGeometry extends AbstractGeometry {
 		setType(Type.WHEEL);
 	}
 
+	/**
+	 * Create a wheel geometry for the provided module.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 * @param module owning module
+	 */
 	public WheelGeometry(EvoLudo engine, Module<?> module) {
 		super(engine, module);
 		setType(Type.WHEEL);
 	}
 
+	/**
+	 * Create a wheel geometry for interactions between two populations.
+	 *
+	 * @param engine    EvoLudo pacemaker
+	 * @param popModule focal population module
+	 * @param oppModule opponent population module
+	 */
 	public WheelGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 		setType(Type.WHEEL);

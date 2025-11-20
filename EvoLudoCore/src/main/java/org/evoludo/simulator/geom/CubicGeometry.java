@@ -39,21 +39,40 @@ import org.evoludo.util.CLOParser;
  */
 public class CubicGeometry extends AbstractLattice {
 
+	/**
+	 * Create a cubic-lattice geometry tied to the given engine.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 */
 	public CubicGeometry(EvoLudo engine) {
 		super(engine);
 		setType(Type.CUBE);
 	}
 
+	/**
+	 * Create a cubic-lattice geometry for the provided module.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 * @param module owning module
+	 */
 	public CubicGeometry(EvoLudo engine, Module<?> module) {
 		super(engine, module);
 		setType(Type.CUBE);
 	}
 
+	/**
+	 * Create a cubic-lattice geometry for the specified populations.
+	 *
+	 * @param engine    EvoLudo pacemaker
+	 * @param popModule focal population module
+	 * @param oppModule opponent population module
+	 */
 	public CubicGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 		setType(Type.CUBE);
 	}
 
+	@Override
 	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
 		connectivity = CLOParser.parseInteger(numeric);
@@ -98,6 +117,13 @@ public class CubicGeometry extends AbstractLattice {
 		isValid = true;
 	}
 
+	/**
+	 * Connect each node exclusively to itself (used when connectivity is 1).
+	 *
+	 * @param l  side length of the lattice
+	 * @param lz number of layers along the z-direction
+	 * @param l2 cached {@code l*l}
+	 */
 	private void initSelf(int l, int lz, int l2) {
 		for (int k = 0; k < lz; k++) {
 			int z = k * l2;
@@ -111,6 +137,14 @@ public class CubicGeometry extends AbstractLattice {
 		}
 	}
 
+	/**
+	 * Populate the lattice with von-Neumann (6-neighbour) connectivity, respecting
+	 * the configured boundary conditions.
+	 *
+	 * @param l  side length of the lattice
+	 * @param lz number of layers along the z-direction
+	 * @param l2 cached {@code l*l}
+	 */
 	private void initSixNeighbors(int l, int lz, int l2) {
 		boolean interspecies = isInterspecies();
 		if (fixedBoundary) {
@@ -171,6 +205,14 @@ public class CubicGeometry extends AbstractLattice {
 		isRegular = !fixedBoundary;
 	}
 
+	/**
+	 * Populate the lattice with a larger interaction range than the von-Neumann
+	 * stencil, optionally with toroidal wrapping.
+	 *
+	 * @param l  side length of the lattice
+	 * @param lz number of layers along the z-direction
+	 * @param l2 cached {@code l*l}
+	 */
 	private void initCubicRange(int l, int lz, int l2) {
 		boolean interspecies = isInterspecies();
 		int range = Math.min(l / 2, Math.max(1, (int) (Math.pow(connectivity + 1.5, 1.0 / 3.0) / 2.0)));

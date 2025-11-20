@@ -40,27 +40,55 @@ import org.evoludo.util.CLOParser;
  * with a reservoir of size {@code r} feeding into a linear chain of length
  * {@code k} that connects back to the hub. The structure implements a strong
  * directed evolutionary amplifier.
+ * 
+ * @see <a href="http://dx.doi.org/10.1038/nature03204">Lieberman, Hauert &
+ *      Nowak (2005) Nature 433:312-316</a>
  */
 public class SuperstarGeometry extends AbstractGeometry {
 
+	/**
+	 * Number of petals in the superstar structure.
+	 */
 	private int petals = 1;
+	/**
+	 * Amplification factor (length of the linear chain plus additional nodes).
+	 */
 	private int amplification = 3;
 
+	/**
+	 * Create a super-star geometry tied to the given engine.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 */
 	public SuperstarGeometry(EvoLudo engine) {
 		super(engine);
 		setType(Type.SUPER_STAR);
 	}
 
+	/**
+	 * Create a super-star geometry for the provided module.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 * @param module owning module
+	 */
 	public SuperstarGeometry(EvoLudo engine, Module<?> module) {
 		super(engine, module);
 		setType(Type.SUPER_STAR);
 	}
 
+	/**
+	 * Create a super-star geometry for the specified populations.
+	 *
+	 * @param engine    EvoLudo pacemaker
+	 * @param popModule focal population module
+	 * @param oppModule opponent population module
+	 */
 	public SuperstarGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 		setType(Type.SUPER_STAR);
 	}
 
+	@Override
 	public boolean parse(String arg) {
 		int[] values = CLOParser.parseIntVector(arg);
 		if (values.length > 0)

@@ -44,37 +44,59 @@ import org.evoludo.util.Formatter;
  */
 public class ScalefreeGeometry extends AbstractNetwork {
 
+	/**
+	 * Power-law exponent used when sampling the degree distribution.
+	 */
 	private double sfExponent = -2.0;
 
+	/**
+	 * Create a scale-free geometry tied to the given engine.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 */
 	public ScalefreeGeometry(EvoLudo engine) {
 		super(engine);
 		setType(Type.SCALEFREE);
 	}
 
+	/**
+	 * Create a scale-free geometry for the provided module.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 * @param module owning module
+	 */
 	public ScalefreeGeometry(EvoLudo engine, Module<?> module) {
 		super(engine, module);
 		setType(Type.SCALEFREE);
 	}
 
+	/**
+	 * Create a scale-free geometry for the specified populations.
+	 *
+	 * @param engine    EvoLudo pacemaker
+	 * @param popModule focal population module
+	 * @param oppModule opponent population module
+	 */
 	public ScalefreeGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 		setType(Type.SCALEFREE);
 	}
 
+	@Override
 	public boolean parse(String arg) {
 		double[] values = CLOParser.parseVector(arg);
 		if (values.length == 0) {
 			connectivity = Math.max(2, (int) Math.round(connectivity > 0 ? connectivity : 2.0));
 			sfExponent = -2.0;
 			warn("requires connectivity argument - using " + (int) connectivity + " and exponent -2.");
-			return true;
-		}
-		connectivity = Math.max(2, (int) values[0]);
-		sfExponent = values.length >= 2 ? values[1] : -2.0;
-		if (sfExponent >= 0.0) {
-			warn("exponent for scale-free graph is " + Formatter.format(sfExponent, 2)
-					+ " but must be < 0 - using -2.");
-			sfExponent = -2.0;
+		} else {
+			connectivity = Math.max(2, (int) values[0]);
+			sfExponent = values.length >= 2 ? values[1] : -2.0;
+			if (sfExponent >= 0.0) {
+				warn("exponent for scale-free graph is " + Formatter.format(sfExponent, 2)
+						+ " but must be < 0 - using -2.");
+				sfExponent = -2.0;
+			}
 		}
 		return true;
 	}
@@ -235,6 +257,13 @@ public class ScalefreeGeometry extends AbstractNetwork {
 		}
 	}
 
+	/**
+	 * Sample a degree from the given distribution.
+	 *
+	 * @param rng   random number generator
+	 * @param distr cumulative distribution of degrees
+	 * @return the sampled degree
+	 */
 	private int sampleDegree(RNGDistribution rng, double[] distr) {
 		double hit = rng.random01();
 		for (int i = 1; i < size - 1; i++) {
@@ -245,6 +274,13 @@ public class ScalefreeGeometry extends AbstractNetwork {
 		return 1;
 	}
 
+	/**
+	 * Swap two entries within an array.
+	 *
+	 * @param array array whose entries should be swapped
+	 * @param a     first index
+	 * @param b     second index
+	 */
 	private static void swap(int[] array, int a, int b) {
 		int tmp = array[a];
 		array[a] = array[b];

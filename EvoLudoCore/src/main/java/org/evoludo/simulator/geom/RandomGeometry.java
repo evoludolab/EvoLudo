@@ -45,20 +45,34 @@ public class RandomGeometry extends AbstractGeometry {
 		setType(Type.RANDOM_GRAPH);
 	}
 
+	/**
+	 * Create a random undirected geometry for the provided module.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 * @param module owning module
+	 */
 	public RandomGeometry(EvoLudo engine, Module<?> module) {
 		super(engine, module);
 		setType(Type.RANDOM_GRAPH);
 	}
 
+	/**
+	 * Create a random undirected geometry for the specified populations.
+	 *
+	 * @param engine    EvoLudo pacemaker
+	 * @param popModule focal population module
+	 * @param oppModule opponent population module
+	 */
 	public RandomGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 		setType(Type.RANDOM_GRAPH);
 	}
 
+	@Override
 	public boolean parse(String arg) {
-		if (arg == null || arg.isEmpty())
-			return true;
-		connectivity = Math.max(2, Integer.parseInt(arg));
+		connectivity = 2.0;
+		if (arg != null && !arg.isEmpty())
+			connectivity = Math.max(2, Integer.parseInt(arg));
 		return true;
 	}
 

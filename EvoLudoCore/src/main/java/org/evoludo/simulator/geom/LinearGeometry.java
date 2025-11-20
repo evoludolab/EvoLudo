@@ -47,21 +47,30 @@ public class LinearGeometry extends AbstractLattice {
 		setType(Type.LINEAR);
 	}
 
+	/**
+	 * Create a linear geometry for the provided module.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 * @param module owning module
+	 */
 	public LinearGeometry(EvoLudo engine, Module<?> module) {
 		super(engine, module);
 		setType(Type.LINEAR);
 	}
 
+	/**
+	 * Create a linear geometry for the specified populations.
+	 *
+	 * @param engine    EvoLudo pacemaker
+	 * @param popModule focal population module
+	 * @param oppModule opponent population module
+	 */
 	public LinearGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 		setType(Type.LINEAR);
 	}
 
-	/**
-	 * Configure the linear geometry from a CLI argument string.
-	 * 
-	 * @param arg argument portion (without the geometry key or boundary flags)
-	 */
+	@Override
 	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
 		int[] conn = CLOParser.parseIntVector(numeric);
@@ -123,10 +132,18 @@ public class LinearGeometry extends AbstractLattice {
 		linearAsymmetry = 0;
 	}
 
+	/**
+	 * Set the left-right neighbour difference.
+	 *
+	 * @param asymmetry positive values favour neighbours on the left
+	 */
 	public void setLinearAsymmetry(int asymmetry) {
 		this.linearAsymmetry = asymmetry;
 	}
 
+	/**
+	 * @return the left-right neighbour difference
+	 */
 	public int getLinearAsymmetry() {
 		return linearAsymmetry;
 	}

@@ -44,11 +44,24 @@ public class TriangularGeometry extends AbstractLattice {
 		setType(Type.TRIANGULAR);
 	}
 
+	/**
+	 * Create a triangular geometry for the provided module.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 * @param module owning module
+	 */
 	public TriangularGeometry(EvoLudo engine, Module<?> module) {
 		super(engine, module);
 		setType(Type.TRIANGULAR);
 	}
 
+	/**
+	 * Create a triangular geometry for interactions between two populations.
+	 *
+	 * @param engine    EvoLudo pacemaker
+	 * @param popModule focal population module
+	 * @param oppModule opponent population module
+	 */
 	public TriangularGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 		setType(Type.TRIANGULAR);

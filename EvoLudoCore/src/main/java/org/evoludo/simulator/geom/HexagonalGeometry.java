@@ -42,21 +42,40 @@ import org.evoludo.util.CLOParser;
  */
 public class HexagonalGeometry extends AbstractLattice {
 
+	/**
+	 * Create a hexagonal (honeycomb) geometry tied to the given engine.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 */
 	public HexagonalGeometry(EvoLudo engine) {
 		super(engine);
 		setType(Type.HEXAGONAL);
 	}
 
+	/**
+	 * Create a hexagonal (honeycomb) geometry for the provided module.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 * @param module owning module
+	 */
 	public HexagonalGeometry(EvoLudo engine, Module<?> module) {
 		super(engine, module);
 		setType(Type.HEXAGONAL);
 	}
 
+	/**
+	 * Create a hexagonal geometry for the specified populations.
+	 *
+	 * @param engine    EvoLudo pacemaker
+	 * @param popModule focal population module
+	 * @param oppModule opponent population module
+	 */
 	public HexagonalGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 		setType(Type.HEXAGONAL);
 	}
 
+	@Override
 	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
 		connectivity = CLOParser.parseInteger(numeric);
@@ -104,6 +123,9 @@ public class HexagonalGeometry extends AbstractLattice {
 		isValid = true;
 	}
 
+	/**
+	 * Initialize the lattice with self-links only (connectivity 1).
+	 */
 	private void initK1() {
 		int side = (int) Math.floor(Math.sqrt(size) + 0.5);
 		for (int i = 0; i < side; i++) {
@@ -116,6 +138,18 @@ public class HexagonalGeometry extends AbstractLattice {
 		isValid = true;
 	}
 
+	/**
+	 * Populate even-index rows for the hexagonal lattice, respecting boundary
+	 * conditions.
+	 *
+	 * @param side         side length of the lattice
+	 * @param interspecies {@code true} if interspecific interactions allow
+	 *                     self-links
+	 * @param x            offset for the current row
+	 * @param u            index offset for the row above
+	 * @param uNowrap      {@code true} if wrapping upward is allowed
+	 * @param d            index offset for the row below
+	 */
 	private void fillEvenIRows(int side, boolean interspecies, int x, int u, boolean uNowrap, int d) {
 		for (int j = 0; j < side; j++) {
 			int aPlayer = x + j;
@@ -137,6 +171,18 @@ public class HexagonalGeometry extends AbstractLattice {
 		}
 	}
 
+	/**
+	 * Populate odd-index rows for the hexagonal lattice, respecting boundary
+	 * conditions.
+	 *
+	 * @param side         side length of the lattice
+	 * @param interspecies {@code true} if interspecific interactions allow
+	 *                     self-links
+	 * @param x            offset for the current row
+	 * @param u            index offset for the row above
+	 * @param d            index offset for the row below
+	 * @param dNowrap      {@code true} if wrapping downward is allowed
+	 */
 	private void fillOddIRows(int side, boolean interspecies, int x, int u, int d, boolean dNowrap) {
 		for (int j = 0; j < side; j++) {
 			int aPlayer = x + j;

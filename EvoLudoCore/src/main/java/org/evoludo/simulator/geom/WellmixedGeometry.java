@@ -45,11 +45,24 @@ public class WellmixedGeometry extends AbstractGeometry {
 		setType(Type.WELLMIXED);
 	}
 
+	/**
+	 * Create a well-mixed geometry for the provided module.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 * @param module owning module
+	 */
 	public WellmixedGeometry(EvoLudo engine, Module<?> module) {
 		super(engine, module);
 		setType(Type.WELLMIXED);
 	}
 
+	/**
+	 * Create a well-mixed geometry for the specified populations.
+	 *
+	 * @param engine    EvoLudo pacemaker
+	 * @param popModule focal population module
+	 * @param oppModule opponent population module
+	 */
 	public WellmixedGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 		setType(Type.WELLMIXED);

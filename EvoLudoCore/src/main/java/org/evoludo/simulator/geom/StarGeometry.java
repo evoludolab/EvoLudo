@@ -38,16 +38,34 @@ import org.evoludo.simulator.modules.Module;
  */
 public class StarGeometry extends AbstractGeometry {
 
+	/**
+	 * Create a star geometry tied to the given engine.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 */
 	public StarGeometry(EvoLudo engine) {
 		super(engine);
 		setType(Type.STAR);
 	}
 
+	/**
+	 * Create a star geometry for the provided module.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 * @param module owning module
+	 */
 	public StarGeometry(EvoLudo engine, Module<?> module) {
 		super(engine, module);
 		setType(Type.STAR);
 	}
 
+	/**
+	 * Create a star geometry for the specified populations.
+	 *
+	 * @param engine    EvoLudo pacemaker
+	 * @param popModule focal population module
+	 * @param oppModule opponent population module
+	 */
 	public StarGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 		setType(Type.STAR);

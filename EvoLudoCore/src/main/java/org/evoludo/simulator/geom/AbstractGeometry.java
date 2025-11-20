@@ -305,15 +305,34 @@ public abstract class AbstractGeometry {
 	 */
 	public double avgTot = -1.0;
 
+	/**
+	 * Create a new geometry scaffold linked to the given pacemaker.
+	 *
+	 * @param engine the EvoLudo engine coordinating simulations
+	 */
 	protected AbstractGeometry(EvoLudo engine) {
 		this.engine = engine;
 		this.logger = engine.getLogger();
 	}
 
+	/**
+	 * Create a geometry for an intra-specific module.
+	 *
+	 * @param engine the EvoLudo engine coordinating simulations
+	 * @param module the module providing the population context
+	 */
 	protected AbstractGeometry(EvoLudo engine, Module<?> module) {
 		this(engine, module, module);
 	}
 
+	/**
+	 * Create a geometry for a population and its opponent (possibly another
+	 * species).
+	 *
+	 * @param engine    the EvoLudo engine coordinating simulations
+	 * @param popModule the module for the focal population
+	 * @param oppModule the module for the opponent population
+	 */
 	protected AbstractGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		this(engine);
 		if (engine.getModel().getType().isIBS()) {
@@ -322,10 +341,21 @@ public abstract class AbstractGeometry {
 		}
 	}
 
+	/**
+	 * Set a descriptive name for this geometry (used in UI/tooltips).
+	 *
+	 * @param name the human-readable name
+	 */
 	public void setName(String name) {
 		this.name = name;
 	}
 
+	/**
+	 * Retrieve the display name of the geometry (sans trailing structural suffixes
+	 * such as {@code ": Structure"}).
+	 *
+	 * @return the display name or the empty string for anonymous structures
+	 */
 	public String getName() {
 		if (name == null || name.equals("Structure"))
 			return "";
@@ -334,26 +364,50 @@ public abstract class AbstractGeometry {
 		return name;
 	}
 
+	/**
+	 * @return the current geometry {@link Type}
+	 */
 	public Type getType() {
 		return type;
 	}
 
+	/**
+	 * Update the geometry {@link Type}.
+	 *
+	 * @param type the new type
+	 */
 	protected void setType(Type type) {
 		this.type = type;
 	}
 
+	/**
+	 * Store the 2D network representation.
+	 *
+	 * @param net the 2D network
+	 */
 	public void setNetwork2D(Network2D net) {
 		network2D = net;
 	}
 
+	/**
+	 * @return the stored 2D network representation (may be {@code null})
+	 */
 	public Network2D getNetwork2D() {
 		return network2D;
 	}
 
+	/**
+	 * Store the 3D network representation.
+	 *
+	 * @param net the 3D network
+	 */
 	public void setNetwork3D(Network3D net) {
 		network3D = net;
 	}
 
+	/**
+	 * @return the stored 3D network representation (may be {@code null})
+	 */
 	public Network3D getNetwork3D() {
 		return network3D;
 	}
@@ -402,6 +456,8 @@ public abstract class AbstractGeometry {
 
 	/**
 	 * Remember the CLI specification used to configure this geometry.
+	 *
+	 * @param spec the CLI argument portion (may be {@code null})
 	 */
 	public void setSpecification(String spec) {
 		this.specification = spec;
@@ -409,7 +465,7 @@ public abstract class AbstractGeometry {
 
 	/**
 	 * @return the CLI specification string that configured this geometry, or
-	 *         {@code null}.
+	 *         {@code null}
 	 */
 	public String getSpecification() {
 		return specification;
@@ -437,6 +493,12 @@ public abstract class AbstractGeometry {
 		return parse(specification);
 	}
 
+	/**
+	 * Set the size of the network.
+	 *
+	 * @param size the desired number of nodes
+	 * @return {@code true} if the size changed (requiring a reset)
+	 */
 	public boolean setSize(int size) {
 		if (size <= 0 || this.size == size)
 			return false;
@@ -444,6 +506,9 @@ public abstract class AbstractGeometry {
 		return true;
 	}
 
+	/**
+	 * @return the number of nodes in the network
+	 */
 	public int getSize() {
 		return size;
 	}
@@ -461,11 +526,17 @@ public abstract class AbstractGeometry {
 
 	/**
 	 * Hook for subclasses to implement geometry specific checks.
+	 *
+	 * @return {@code true} if adjustments require a reset
 	 */
 	protected boolean checkSettings() {
 		return false;
 	}
 
+	/**
+	 * Ensure rewiring parameters are feasible for the current connectivity and
+	 * adjust them if needed.
+	 */
 	private void validateRewiring() {
 		if (pRewire <= 0.0)
 			return;
@@ -492,6 +563,12 @@ public abstract class AbstractGeometry {
 		}
 	}
 
+	/**
+	 * Ensure the geometry uses at least {@code requiredSize} nodes.
+	 *
+	 * @param requiredSize the minimum allowed size
+	 * @return {@code true} if enforcing the size changed the network
+	 */
 	protected boolean enforceSize(int requiredSize) {
 		if (setSize(requiredSize)) {
 			if (engine.getModule().cloNPopulation.isSet())
@@ -501,11 +578,21 @@ public abstract class AbstractGeometry {
 		return false;
 	}
 
+	/**
+	 * Log a warning message using the geometry-conditioned label.
+	 *
+	 * @param message the message to log
+	 */
 	protected void warn(String message) {
 		if (logger.isLoggable(Level.WARNING))
 			logger.warning(getLabel() + message);
 	}
 
+	/**
+	 * Compose a human readable prefix for log messages.
+	 *
+	 * @return the label to prepend to log output
+	 */
 	protected String getLabel() {
 		String label = getName();
 		if (label == null)
@@ -671,6 +758,13 @@ public abstract class AbstractGeometry {
 		return isGraphConnected(0, check);
 	}
 
+	/**
+	 * Depth-first traversal helper used to determine connectivity.
+	 *
+	 * @param node  node to visit
+	 * @param check bookkeeping array marking visited nodes
+	 * @return {@code true} if all nodes have been visited
+	 */
 	private boolean isGraphConnected(int node, boolean[] check) {
 		check[node] = true;
 		int[] neighs = out[node];

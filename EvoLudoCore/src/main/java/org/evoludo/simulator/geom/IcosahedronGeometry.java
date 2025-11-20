@@ -3,18 +3,39 @@ package org.evoludo.simulator.geom;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.modules.Module;
 
+/**
+ * Geometry implementation for the icosahedral graph (12 nodes, degree 5).
+ */
 public class IcosahedronGeometry extends AbstractGeometry {
 
+	/**
+	 * Create an icosahedral geometry tied to the given engine.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 */
 	public IcosahedronGeometry(EvoLudo engine) {
 		super(engine);
 		setType(Type.ICOSAHEDRON);
 	}
 
+	/**
+	 * Create an icosahedral geometry for the provided module.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 * @param module owning module
+	 */
 	public IcosahedronGeometry(EvoLudo engine, Module<?> module) {
 		super(engine, module);
 		setType(Type.ICOSAHEDRON);
 	}
 
+	/**
+	 * Create an icosahedral geometry for the specified populations.
+	 *
+	 * @param engine    EvoLudo pacemaker
+	 * @param popModule focal population module
+	 * @param oppModule opponent population module
+	 */
 	public IcosahedronGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 		setType(Type.ICOSAHEDRON);

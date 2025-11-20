@@ -6,19 +6,40 @@ import org.evoludo.simulator.modules.Module;
 
 /**
  * Strong undirected amplifier graph based on Giakkoupis (2016).
+ * 
+ * @see <a href="https://doi.org/10.48550/arXiv.1611.01585">Giakkoupis (2016)
+ *      Amplifiers and Suppressors of Selection...</a>
  */
 public class StrongAmplifierGeometry extends AbstractGeometry {
 
+	/**
+	 * Create a strong amplifier geometry tied to the given engine.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 */
 	public StrongAmplifierGeometry(EvoLudo engine) {
 		super(engine);
 		setType(Type.STRONG_AMPLIFIER);
 	}
 
+	/**
+	 * Create a strong amplifier geometry for the provided module.
+	 *
+	 * @param engine EvoLudo pacemaker
+	 * @param module owning module
+	 */
 	public StrongAmplifierGeometry(EvoLudo engine, Module<?> module) {
 		super(engine, module);
 		setType(Type.STRONG_AMPLIFIER);
 	}
 
+	/**
+	 * Create a strong amplifier geometry for the specified populations.
+	 *
+	 * @param engine    EvoLudo pacemaker
+	 * @param popModule focal population module
+	 * @param oppModule opponent population module
+	 */
 	public StrongAmplifierGeometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 		setType(Type.STRONG_AMPLIFIER);
@@ -81,6 +102,14 @@ public class StrongAmplifierGeometry extends AbstractGeometry {
 		return enforceSize(required);
 	}
 
+	/**
+	 * Initialise the random-regular core subgraph.
+	 *
+	 * @param rng    random number generator
+	 * @param start  first node index of the core
+	 * @param end    (exclusive) end index of the core
+	 * @param degree desired degree per node
+	 */
 	private void initRRGCore(RNGDistribution rng, int start, int end, int degree) {
 		int nTodo = end - start;
 		int nLinks = nTodo * degree;
@@ -148,6 +177,17 @@ public class StrongAmplifierGeometry extends AbstractGeometry {
 		}
 	}
 
+	/**
+	 * Attempt to rewire edges so that {@code nodeA} and {@code nodeB} can connect
+	 * without duplicating links.
+	 *
+	 * @param rng   random number generator
+	 * @param nodeA first node needing neighbours
+	 * @param nodeB second node needing neighbours
+	 * @param done  array of already satisfied nodes
+	 * @param nDone number of valid entries in {@code done}
+	 * @return {@code true} if rewiring succeeded
+	 */
 	private boolean rewireNeighbourEdge(RNGDistribution rng, int nodeA, int nodeB, int[] done, int nDone) {
 		int nodeC = done[rng.random0n(nDone)];
 		int nodeD = out[nodeC][rng.random0n(kout[nodeC])];

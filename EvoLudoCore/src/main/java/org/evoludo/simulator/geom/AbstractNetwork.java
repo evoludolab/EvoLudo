@@ -42,14 +42,32 @@ import org.evoludo.simulator.modules.Module;
  */
 public abstract class AbstractNetwork extends AbstractGeometry {
 
+	/**
+	 * Create a network-backed geometry for the provided engine.
+	 *
+	 * @param engine the EvoLudo pacemaker
+	 */
 	protected AbstractNetwork(EvoLudo engine) {
 		super(engine);
 	}
 
+	/**
+	 * Create a network-backed geometry for an intra-specific module.
+	 *
+	 * @param engine the EvoLudo pacemaker
+	 * @param module the module providing the population context
+	 */
 	protected AbstractNetwork(EvoLudo engine, Module<?> module) {
 		super(engine, module);
 	}
 
+	/**
+	 * Create a network-backed geometry for the specified populations.
+	 *
+	 * @param engine    the EvoLudo pacemaker
+	 * @param popModule the focal population module
+	 * @param oppModule the opponent population module
+	 */
 	protected AbstractNetwork(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 	}

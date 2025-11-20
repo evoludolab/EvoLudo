@@ -44,14 +44,32 @@ public abstract class AbstractLattice extends AbstractGeometry {
 	 */
 	protected boolean fixedBoundary = false;
 
+	/**
+	 * Create a lattice geometry scaffold for the given engine.
+	 *
+	 * @param engine the EvoLudo pacemaker
+	 */
 	protected AbstractLattice(EvoLudo engine) {
 		super(engine);
 	}
 
+	/**
+	 * Create a lattice geometry scaffold for an intra-specific module.
+	 *
+	 * @param engine the EvoLudo pacemaker
+	 * @param module the owning module
+	 */
 	protected AbstractLattice(EvoLudo engine, Module<?> module) {
 		super(engine, module);
 	}
 
+	/**
+	 * Create a lattice geometry scaffold for the specified populations.
+	 *
+	 * @param engine    the EvoLudo pacemaker
+	 * @param popModule the focal population module
+	 * @param oppModule the opponent population module
+	 */
 	protected AbstractLattice(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		super(engine, popModule, oppModule);
 	}
