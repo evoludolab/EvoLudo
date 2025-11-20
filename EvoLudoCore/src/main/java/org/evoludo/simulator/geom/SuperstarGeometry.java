@@ -112,4 +112,12 @@ public class SuperstarGeometry extends AbstractGeometry {
 		isRegular = false;
 		return doReset;
 	}
+
+	@Override
+	public SuperstarGeometry clone() {
+		SuperstarGeometry clone = (SuperstarGeometry) super.clone();
+		clone.petals = petals;
+		clone.amplification = amplification;
+		return clone;
+	}
 }

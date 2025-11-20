@@ -265,4 +265,11 @@ public class ScalefreeGeometry extends AbstractNetwork {
 		}
 		return reset;
 	}
+
+	@Override
+	public ScalefreeGeometry clone() {
+		ScalefreeGeometry clone = (ScalefreeGeometry) super.clone();
+		clone.sfExponent = sfExponent;
+		return clone;
+	}
 }

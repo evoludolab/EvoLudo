@@ -507,4 +507,59 @@ public enum Type implements CLOption.Key {
 	public static boolean isFixedBoundaryToken(char ch) {
 		return ch == 'f' || ch == 'F';
 	}
+
+	/**
+	 * Helper method to check uniqueness of the geometry {@code geo}.
+	 * 
+	 * <h3>Requirements/notes:</h3>
+	 * Hierarchical geometries require recursive checks of uniqueness.
+	 * 
+	 * @param geo the geometry to be checked for uniqueness
+	 * @return {@code true} if geometry is unique
+	 */
+	public boolean isUnique() {
+		switch (this) {
+			// non-unique geometries
+			case WELLMIXED: // mean field
+			case COMPLETE: // complete graph
+			case LINEAR: // linear
+			case SQUARE_NEUMANN: // von neumann
+			case SQUARE_MOORE: // moore
+			case SQUARE: // square, larger neighborhood
+			case CUBE: // cubic, larger neighborhood
+			case HEXAGONAL: // hexagonal
+			case TRIANGULAR: // triangular
+			case FRUCHT: // Frucht graph
+			case TIETZE: // Tietze graph
+			case FRANKLIN: // Franklin graph
+			case HEAWOOD: // Heawood graph
+			case DODEKAHEDRON: // Dodekahedron graph
+			case DESARGUES: // Desargues graph
+			case ICOSAHEDRON: // Icosahedron graph
+				// some suppressors are non-unique
+				// some amplifiers are non-unique
+			case STAR: // star
+			case WHEEL: // wheel - cycle (k=2) with single hub (k=N-1)
+			case SUPER_STAR: // super-star
+				return false;
+
+			// hierarchies of random regular graphs or similar would be unique
+			case HIERARCHY: // deme structured, hierarchical graph
+				throw new UnsupportedOperationException(
+						"check uniqueness of sub-geometries instead!");
+
+			// unique graphs
+			case RANDOM_REGULAR_GRAPH: // random regular graph
+			case RANDOM_GRAPH: // random graph
+			case RANDOM_GRAPH_DIRECTED: // random graph directed
+			case STRONG_AMPLIFIER: // strong amplifier
+			case STRONG_SUPPRESSOR: // strong suppressor
+			case SCALEFREE_BA: // scale-free network - barabasi & albert
+			case SCALEFREE_KLEMM: // scale-free network - klemm
+			case SCALEFREE: // scale-free network - uncorrelated, from degree distribution
+				// for unknown graphs simply assume is unique
+			default:
+				return true;
+		}
+	}
 }

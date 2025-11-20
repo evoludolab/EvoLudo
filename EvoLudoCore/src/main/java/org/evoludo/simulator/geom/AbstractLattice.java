@@ -97,4 +97,11 @@ public abstract class AbstractLattice extends AbstractGeometry {
 		this.fixedBoundary = fixed;
 		return working;
 	}
+
+	@Override
+	public AbstractLattice clone() {
+		AbstractLattice clone = (AbstractLattice) super.clone();
+		clone.fixedBoundary = fixedBoundary;
+		return clone;
+	}
 }

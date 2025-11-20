@@ -248,8 +248,8 @@ public class HierarchicalGeometry extends AbstractLattice {
 					initHierarchySquare(start, end);
 					return;
 				case WELLMIXED:
-			case COMPLETE:
-			default:
+				case COMPLETE:
+				default:
 					initHierarchyMeanfield(start, end);
 					return;
 			}
@@ -654,5 +654,20 @@ public class HierarchicalGeometry extends AbstractLattice {
 			}
 		}
 		isRegular = false;
+	}
+
+	public boolean isUnique() {
+		return subGeometry.isUnique();
+	}
+
+	@Override
+	public HierarchicalGeometry clone() {
+		HierarchicalGeometry clone = (HierarchicalGeometry) super.clone();
+		if (rawHierarchy != null)
+			clone.rawHierarchy = Arrays.copyOf(rawHierarchy, rawHierarchy.length);
+		if (hierarchy != null)
+			clone.hierarchy = Arrays.copyOf(hierarchy, hierarchy.length);
+		clone.hierarchyWeight = hierarchyWeight;
+		return clone;
 	}
 }

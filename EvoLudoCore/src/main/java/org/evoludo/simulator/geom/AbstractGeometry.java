@@ -30,17 +30,23 @@
 
 package org.evoludo.simulator.geom;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.evoludo.math.ArrayMath;
+import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.Network3D;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.util.CLOption;
 import org.evoludo.util.Formatter;
+import org.evoludo.util.Plist;
 
 /**
  * Abstract base class for future geometry implementations. The original
@@ -355,6 +361,30 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
+	 * Checks whether a single graphical representation suffices for the interaction
+	 * and competition geometries.
+	 *
+	 * @param interaction the interaction geometry (required)
+	 * @param competition the competition geometry (optional)
+	 * @return {@code true} if a single representation can be reused for both
+	 *         structures
+	 */
+	public static boolean displaySingleGeometry(AbstractGeometry interaction, AbstractGeometry competition) {
+		if (interaction == null)
+			throw new IllegalArgumentException("interaction geometry must not be null");
+		Type interactionType = interaction.getType();
+		if (interaction.isLattice()) {
+			if (competition == null)
+				return interaction.interCompSame;
+			Type competitionType = competition.getType();
+			if (interactionType.isSquareLattice() && competitionType.isSquareLattice())
+				return true;
+			return competitionType == interactionType;
+		}
+		return interaction.interCompSame;
+	}
+
+	/**
 	 * Remember the CLI specification used to configure this geometry.
 	 */
 	public void setSpecification(String spec) {
@@ -362,7 +392,8 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
-	 * @return the CLI specification string that configured this geometry, or {@code null}.
+	 * @return the CLI specification string that configured this geometry, or
+	 *         {@code null}.
 	 */
 	public String getSpecification() {
 		return specification;
@@ -556,7 +587,9 @@ public abstract class AbstractGeometry {
 		minOut = Integer.MAX_VALUE;
 		minIn = Integer.MAX_VALUE;
 		minTot = Integer.MAX_VALUE;
-		long sumin = 0, sumout = 0, sumtot = 0;
+		long sumin = 0;
+		long sumout = 0;
+		long sumtot = 0;
 		for (int n = 0; n < size; n++) {
 			int lout = kout[n];
 			maxOut = Math.max(maxOut, lout);
@@ -587,6 +620,26 @@ public abstract class AbstractGeometry {
 		if (isRewired)
 			return false;
 		return type.isLattice();
+	}
+
+	/**
+	 * Check if current geometry unique. Only unique geomteries need to be encoded.
+	 * 
+	 * <h3>Requirements/notes:</h3>
+	 * <ol>
+	 * <li>Lattices etc. are not unique because they can be identically recreated.
+	 * <li>Complete graphs, stars, wheels, etc. are not unique.
+	 * <li>All geometries involving random elements are unique.
+	 * <li>All rewired geometries are unique.
+	 * <li>Hierarchical geometries require recursive checks of uniqueness.
+	 * </ol>
+	 *
+	 * @return {@code true} if geometry is unique
+	 */
+	public boolean isUnique() {
+		if (isRewired)
+			return true;
+		return type.isUnique();
 	}
 
 	/**
@@ -626,6 +679,342 @@ public abstract class AbstractGeometry {
 	 */
 	protected boolean isInterspecies() {
 		return population != opponent;
+	}
+
+	/**
+	 * Add/rewire directed and undirected random links.
+	 *
+	 * <h3>Requirements/notes:</h3>
+	 * None.
+	 * 
+	 * @see #rewireUndirected(double)
+	 * @see #rewireDirected()
+	 */
+	public void rewire() {
+
+		if (isUndirected) {
+			isRewired = rewireUndirected(pRewire);
+			if (pAddwire > 0.0) {
+				addUndirected();
+				isRegular = false;
+				isRewired = true;
+			}
+			return;
+		}
+		// graph is directed
+		if (pRewire > 0.0) {
+			rewireDirected();
+			isRewired = true;
+		}
+		if (pAddwire > 0.0) {
+			addDirected();
+			isRegular = false;
+			isRewired = true;
+		}
+	}
+
+	/**
+	 * Rewire undirected links.
+	 *
+	 * <h3>Requirements/notes:</h3>
+	 * <ol>
+	 * <li>Requires an undirected graph.
+	 * <li>Rewiring preserves connectivity of all nodes.
+	 * <li>Resulting graph obviously remains undirected.
+	 * <li>The number of rewired links is \(N_\text{rewired}=\min {N_\text{links},
+	 * N_\text{links} \log(1-p_\text{undir})}\), i.e. at most the number undirected
+	 * links in the graph. Thus, at most an expected fraction of \(1-1/e\) (or
+	 * \(~63%\)) of original links get rewired.
+	 * </ol>
+	 * 
+	 * @param prob the probability of rewiring an undirected link
+	 * @return {@code true} if geometry rewired
+	 */
+	protected boolean rewireUndirected(double prob) {
+		if (!isUndirected || prob <= 0.0)
+			return false;
+		RNGDistribution rng = engine.getRNG();
+		int nLinks = (int) Math
+				.floor(ArrayMath.norm(kout) * 0.5 * Math.min(1.0, -Math.log(1.0 - prob)) + 0.5);
+		long done = 0;
+		while (done < nLinks) {
+			int first;
+			int len;
+			do {
+				first = rng.random0n(size);
+				len = kin[first];
+			} while (len <= 1 || len == size - 1);
+			int firstneigh = in[first][rng.random0n(len)];
+			int second;
+			do {
+				second = rng.random0n(size - 1);
+				if (second >= first)
+					second++;
+				len = kin[second];
+			} while (len <= 1 || len == size - 1);
+			int secondneigh = in[second][rng.random0n(len)];
+
+			if (!swapEdges(first, firstneigh, second, secondneigh))
+				continue;
+			if (!isGraphConnected()) {
+				swapEdges(first, firstneigh, second, secondneigh);
+				swapEdges(first, secondneigh, second, firstneigh);
+				continue;
+			}
+			done += 2;
+		}
+		return true;
+	}
+
+	/**
+	 * Swap undirected edges {@code a-an} and {@code b-bn}.
+	 */
+	private boolean swapEdges(int a, int an, int b, int bn) {
+		if (a == bn || b == an || an == bn)
+			return false;
+		if (isNeighborOf(a, bn) || isNeighborOf(b, an))
+			return false;
+
+		int[] aout = out[a];
+		int ai = -1;
+		while (aout[++ai] != an) {
+		}
+		aout[ai] = bn;
+		int[] bout = out[b];
+		int bi = -1;
+		while (bout[++bi] != bn) {
+		}
+		bout[bi] = an;
+
+		int[] ain = in[a];
+		ai = -1;
+		while (ain[++ai] != an) {
+		}
+		ain[ai] = bn;
+		int[] bin = in[b];
+		bi = -1;
+		while (bin[++bi] != bn) {
+		}
+		bin[bi] = an;
+
+		aout = out[an];
+		ai = -1;
+		while (aout[++ai] != a) {
+		}
+		aout[ai] = b;
+		bout = out[bn];
+		bi = -1;
+		while (bout[++bi] != b) {
+		}
+		bout[bi] = a;
+
+		ain = in[an];
+		ai = -1;
+		while (ain[++ai] != a) {
+		}
+		ain[ai] = b;
+		bin = in[bn];
+		bi = -1;
+		while (bin[++bi] != b) {
+		}
+		bin[bi] = a;
+		return true;
+	}
+
+	/**
+	 * Add undirected links.
+	 *
+	 * <h3>Requirements/notes:</h3>
+	 * The number of links added is \(N_\text{add}=N_\text{links}
+	 * p_\text{undir}\).
+	 * 
+	 * @return {@code true} if adding of undirected links successfult
+	 */
+	public boolean addUndirected() {
+		// retrieve the shared RNG to ensure reproducibility of results
+		RNGDistribution rng = engine.getRNG();
+
+		// long nLinks =
+		// (long)Math.floor(-linkCount(geom)/2.0*Math.log(1.0-geom.pUndirLinks)+0.5);
+		// long nLinks =
+		// (long)Math.floor(-(int)(geom.avgOut*size+0.5)/2.0*Math.log(1.0-geom.pUndirLinks)+0.5);
+		// add at most the number of links already present in the system
+		int nLinks = (int) Math.floor(avgOut * size * pAddwire / 2.0 + 0.5);
+		int from, to;
+		while (nLinks > 0) {
+			from = rng.random0n(size);
+			to = rng.random0n(size - 1);
+			if (to >= from)
+				to++; // avoid self-connections
+			if (isNeighborOf(from, to))
+				continue; // avoid double connections
+			addEdgeAt(from, to);
+			nLinks--;
+		}
+		return true;
+	}
+
+	/**
+	 * Rewire directed links.
+	 *
+	 * <h3>Requirements/notes:</h3>
+	 * <ol>
+	 * <li>Only undirected graphs are guaranteed to remain connected.
+	 * <li>Resulting graph is obviously directed (even if original was undirected).
+	 * <li>Rewiring preserves connectivity of all nodes (both inlinks
+	 * and outlinks).
+	 * <li>The number of rewired links is \(N_\text{rewired}=\min {N_\text{links},
+	 * N_\text{links} \log(1-p_\text{dir})}\), i.e. at most the number directed
+	 * links in the graph. Thus, at most an expected fraction of \(1-1/e\) (or
+	 * \(~63%\)) of original links get rewired.
+	 * <li>ToDo: Rewrite similar to rewireUndirected().
+	 * </ol>
+	 * 
+	 * @return {@code true} if rewiring succeeded
+	 */
+	public boolean rewireDirected() {
+		// retrieve the shared RNG to ensure reproducibility of structures
+		RNGDistribution rng = engine.getRNG();
+
+		// make sure the right fraction of original links is replaced!
+		// long nLinks = (long)Math.floor(-linkCount()*Math.log(1.0-pDirLinks)+0.5);
+		// it should not matter whether we use avgOut or avgIn - check!
+		// long nLinks =
+		// (long)Math.floor(-(int)(avgOut*size+0.5)*Math.log(1.0-pDirLinks)+0.5);
+		// rewire at most the number of directed links present in the system
+		// (corresponds to a fraction of 1-1/e (~63%) of links rewired)
+		int nLinks = (int) Math.floor((int) (avgOut * size + 0.5) * Math.min(1.0, -Math.log(1.0 - pRewire)) + 0.5);
+		int done = 0;
+		int last = -1, prev, from, to = -1, len, neigh;
+		isUndirected = false;
+		do {
+			// draw first node - avoid sources (nodes without inlinks) and fully connected
+			// nodes
+			do {
+				last = rng.random0n(size);
+				len = kin[last];
+			} while (len == 0 || len == size - 1);
+			neigh = len == 1 ? 0 : rng.random0n(len);
+			from = in[last][neigh]; // link used to come from here
+			// note that 'from' must have at least one outlink to 'last'.
+			if (kout[from] == size - 1)
+				continue; // already linked to everybody else
+			// draw random node 'to' that is not a neighbor of 'from' (avoid double
+			// connections)
+			// in addition, 'to' must not be a source
+			do {
+				to = rng.random0n(size - 1);
+				if (to >= from)
+					to++;
+			} while (isNeighborOf(from, to) || kin[to] == 0);
+			// 'from' -> 'last' rewired to 'from' -> 'to'
+			rewireLinkAt(from, to, last);
+			done++;
+
+			// rewiring is tricky if there are few highly connected hubs and many nodes with
+			// few (single) connections
+			// the following may still get stuck...
+			while (done < nLinks) {
+				// 'to' just got a new inlink -> len>1
+				len = kin[to];
+				// draw random neighbor of 'to' but exclude newly drawn link
+				neigh = (len - 1) == 1 ? 0 : rng.random0n(len - 1);
+				from = in[to][neigh]; // link used to come from here
+				// is 'from' already linked to everyone else?
+				if (kout[from] == size - 1) {
+					// are there other feasible neighbors?
+					for (int n = 0; n < len - 1; n++)
+						if (kout[in[to][n]] < size - 1)
+							continue; // there is hope...
+					// this looks bad - try node we just came from
+					if (kout[in[to][len - 1]] == size - 1) {
+						throw new IllegalStateException("Rewiring troubles - giving up...");
+					}
+					// let's go back - can this fail?
+					from = in[to][len - 1];
+				}
+				prev = to;
+				// draw random node 'to' that is not a neighbor of 'from' (avoid double
+				// connections)
+				// in addition, 'to' must not be a source
+				do {
+					to = rng.random0n(size - 1);
+					if (to >= from)
+						to++;
+				} while (isNeighborOf(from, to) || kin[to] == 0);
+				// 'from' -> 'prev' rewired to 'from' -> 'to'
+				rewireLinkAt(from, to, prev);
+				done++;
+				if (to == last)
+					break;
+			}
+		} while (nLinks - done > 1); // this accounts for the last link(s)
+
+		// if 'from' happens to be the origin we are done
+		if (to == last)
+			return true;
+
+		// draw last link from origin to next, if they are already neighbors,
+		// then rewire additional links to preserve connectivity
+		while (isNeighborOf(last, to)) {
+			// 'to' just got a new inlink -> len>1
+			len = kin[to];
+			// draw random neighbor of 'to' but exclude newly drawn link
+			neigh = (len - 1) == 1 ? 0 : rng.random0n(len - 1);
+			from = in[to][neigh]; // link used to come from here
+			if (kout[from] == size - 1)
+				continue; // already linked to everybody else
+			prev = to;
+			// draw random node 'to' that is not a neighbor of 'from' (avoid double
+			// connections)
+			// in addition, 'to' must not be a source
+			do {
+				to = rng.random0n(size - 1);
+				if (to >= from)
+					to++;
+			} while (isNeighborOf(from, to) || kin[to] == 0);
+			rewireLinkAt(from, to, prev);
+		}
+		// 'to' just got a new inlink -> len>1
+		len = kin[to];
+		// draw random neighbor of 'to' but exclude last drawn link
+		neigh = (len - 1) == 1 ? 0 : rng.random0n(len - 1);
+		rewireLinkAt(to, last, in[to][neigh]);
+		return true;
+	}
+
+	/**
+	 * Add directed links to network.
+	 *
+	 * <h3>Requirements/notes:</h3>
+	 * The number of links added is \(N_\text{add}=N_\text{links}
+	 * p_\text{dir}\).
+	 * 
+	 * @return {@code true} if adding links succeeded
+	 */
+	public boolean addDirected() {
+		// retrieve the shared RNG to ensure reproducibility of results
+		RNGDistribution rng = engine.getRNG();
+
+		// long nLinks =
+		// (long)Math.floor(-linkCount(geom)*Math.log(1.0-geom.pDirLinks)+0.5);
+		// long nLinks =
+		// (long)Math.floor(-(int)(geom.avgOut*size+0.5)*Math.log(1.0-geom.pDirLinks)+0.5);
+		// add at most the number of directed links already present in the system
+		int nLinks = (int) Math.floor(avgOut * size * pAddwire + 0.5);
+		int from;
+		int to;
+		while (nLinks > 0) {
+			from = rng.random0n(size);
+			to = rng.random0n(size - 1);
+			if (to >= from)
+				to++; // avoid self-connections
+			if (isNeighborOf(from, to))
+				continue; // avoid double connections
+			addLinkAt(from, to);
+			nLinks--;
+		}
+		return true;
 	}
 
 	/**
@@ -735,6 +1124,43 @@ public abstract class AbstractGeometry {
 		}
 	}
 
+	/**
+	 * Rewire directed link from node <code>from</code> to node <code>prev</code> to
+	 * node <code>to</code>.
+	 * 
+	 * <h3>Requirements/notes:</h3>
+	 * Geometry needs to be re-evaluated when done with all manipulations.
+	 * 
+	 * @param from the index of the first node
+	 * @param to   the index of the second node
+	 * @param prev the index of the second node
+	 * 
+	 * @see #evaluate()
+	 */
+	public void rewireLinkAt(int from, int to, int prev) {
+		removeLinkAt(from, prev);
+		addLinkAt(from, to);
+	}
+
+	/**
+	 * Rewire edge (undirected link) from node <code>from</code> to node
+	 * <code>prev</code> to node <code>to</code>.
+	 * 
+	 * <h3>Requirements/notes:</h3>
+	 * Geometry needs to be re-evaluated when done with all manipulations.
+	 * 
+	 * @param from the index of the first node
+	 * @param to   the index of the second node
+	 * @param prev the index of the second node
+	 * 
+	 * @see #evaluate()
+	 */
+	public void rewireEdgeAt(int from, int to, int prev) {
+		rewireLinkAt(from, to, prev);
+		removeLinkAt(prev, from);
+		addLinkAt(to, from);
+	}
+
 	protected void removeLinkAt(int from, int to) {
 		removeInLink(from, to);
 		removeOutLink(from, to);
@@ -761,4 +1187,314 @@ public abstract class AbstractGeometry {
 	 */
 	public abstract void init();
 
+	/**
+	 * Get the usage description for the command line option
+	 * <code>--geometry</code>.
+	 * 
+	 * @return the usage description
+	 */
+	public String usage() {
+		CLOption clo = engine.getModule().cloGeometry;
+		boolean fixedBoundariesAvailable = (clo.isValidKey(Type.LINEAR) || clo.isValidKey(Type.SQUARE)
+				|| clo.isValidKey(Type.CUBE)
+				|| clo.isValidKey(Type.HEXAGONAL) || clo.isValidKey(Type.TRIANGULAR));
+		String descr = "--geometry <>   geometry " //
+				+ (engine.getModel().getType().isIBS() ? "- interaction==competition\n" : "\n") //
+				+ "      argument: <g><k>" //
+				+ (fixedBoundariesAvailable ? "[f|F]" : "") + " (g type, k neighbours)\n" //
+				+ clo.getDescriptionKey() + "\n      further specifications:" //
+				+ (fixedBoundariesAvailable ? "\n           f|F: fixed lattice boundaries (default periodic)" : "");
+		return descr;
+	}
+
+	/**
+	 * Check consistency of links.
+	 *
+	 * <h3>Requirements/notes:</h3>
+	 * <ol>
+	 * <li>Self connections are unacceptable.
+	 * <li>Double links between nodes are unacceptable.
+	 * <li>For undirected networks every outgoing link must correspond to an
+	 * incoming link.
+	 * <li>ToDo: "self-connections" are acceptable for inter-species interactions.
+	 * </ol>
+	 * 
+	 * @return {@code true} if check succeeded
+	 */
+	public boolean isConsistent() {
+		boolean ok = true;
+		boolean allOk = true;
+
+		logger.fine("Checking multiple out-connections... ");
+		for (int i = 0; i < size; i++) {
+			// double connections 'out'
+			int nout = kout[i];
+			for (int j = 0; j < nout; j++) {
+				int idx = out[i][j];
+				for (int k = j + 1; k < nout; k++)
+					if (out[i][k] == idx) {
+						ok = false;
+						logger.fine("Node " + i + " has double out-connection with node " + idx);
+					}
+			}
+		}
+		logger.fine("Multiple out-connections check: " + (ok ? "success!" : "failed!"));
+		allOk &= ok;
+		ok = true;
+		logger.fine("Checking multiple in-connections... ");
+		for (int i = 0; i < size; i++) {
+			// double connections 'in'
+			int nin = kin[i];
+			for (int j = 0; j < nin; j++) {
+				int idx = in[i][j];
+				for (int k = j + 1; k < nin; k++)
+					if (in[i][k] == idx) {
+						ok = false;
+						logger.fine("Node " + i + " has double in-connection with node " + idx);
+					}
+			}
+		}
+		logger.fine("Multiple in-connections check: " + (ok ? "success!" : "failed!"));
+		allOk &= ok;
+		ok = true;
+		logger.fine("Checking consistency of in-, out-connections... ");
+		for (int i = 0; i < size; i++) {
+			// each 'out' connection must be balanced by an 'in' connection
+			int[] outi = out[i];
+			int nout = kout[i];
+			nextlink: for (int j = 0; j < nout; j++) {
+				int[] ini = in[outi[j]];
+				int nin = kin[outi[j]];
+				for (int k = 0; k < nin; k++)
+					if (ini[k] == i)
+						continue nextlink;
+				ok = false;
+				logger.fine("Node " + i + " has 'out'-link to node " + outi[j]
+						+ ", but there is no corresponding 'in'-link");
+			}
+		}
+		logger.fine("Consistency of in-, out-connections check: " + (ok ? "success!" : "failed!"));
+		allOk &= ok;
+		ok = true;
+		logger.fine("Checking for loops (self-connections) in in-, out-connections... ");
+		for (int i = 0; i < size; i++) {
+			// report loops
+			int[] outi = out[i];
+			int nout = kout[i];
+			for (int j = 0; j < nout; j++) {
+				if (outi[j] == i) {
+					ok = false;
+					logger.fine("Node " + i + " has loop in 'out'-connections");
+				}
+			}
+			int[] ini = in[i];
+			int nin = kin[i];
+			for (int j = 0; j < nin; j++) {
+				if (ini[j] == i) {
+					ok = false;
+					logger.fine("Node " + i + " has loop in 'in'-connections");
+				}
+			}
+		}
+		logger.fine("Self-connections check: " + (ok ? "success!" : "failed!"));
+		allOk &= ok;
+		ok = true;
+		if (isRegular) {
+			logger.fine("Checking regularity... ");
+			int nout = minOut;
+			int nin = minIn;
+			for (int i = 0; i < size; i++) {
+				if (kout[i] != nout) {
+					ok = false;
+					logger.fine("Node " + i + " has wrong 'out'-link count - " + kout[i] + " instead of " + nout);
+				}
+				if (kin[i] != nin) {
+					ok = false;
+					logger.fine("Node " + i + " has wrong 'in'-link count - " + kin[i] + " instead of " + nin);
+				}
+			}
+			logger.fine("Regularity check: " + (ok ? "success!" : "failed!"));
+			allOk &= ok;
+			ok = true;
+		}
+		if (isUndirected) {
+			logger.fine("Checking undirected structure... ");
+			for (int i = 0; i < size; i++) {
+				// each connection must go both ways
+				int[] outa = out[i];
+				int nouta = kout[i];
+				nextout: for (int j = 0; j < nouta; j++) {
+					int[] outb = out[outa[j]];
+					int noutb = kout[outa[j]];
+					for (int k = 0; k < noutb; k++)
+						if (outb[k] == i)
+							continue nextout;
+					ok = false;
+					logger.fine("Node " + i + " has 'out'-link to node " + outa[j] + ", but not vice versa");
+				}
+				int[] ina = in[i];
+				int nina = kin[i];
+				nextin: for (int j = 0; j < nina; j++) {
+					int[] inb = in[ina[j]];
+					int ninb = kin[ina[j]];
+					for (int k = 0; k < ninb; k++)
+						if (inb[k] == i)
+							continue nextin;
+					ok = false;
+					logger.fine("Node " + i + " has 'in'-link to node " + ina[j] + ", but not vice versa");
+				}
+			}
+			logger.fine("Undirected structure check: " + (ok ? "success!" : "failed!"));
+			allOk &= ok;
+		}
+		return allOk;
+	}
+
+	/**
+	 * Clone geometry.
+	 * 
+	 * <h3>Requirements/notes:</h3>
+	 * <ol>
+	 * <li>Overrides {@link java.lang.Object#clone() clone()} in
+	 * {@link java.lang.Object} but conflicts with GWT's aversion to
+	 * clone()ing...</li>
+	 * <li>Remove <code>@SuppressWarnings("all")</code> to ensure that no other
+	 * issues crept in when modifying method.</li>
+	 * </ol>
+	 * 
+	 * @return clone of geometry
+	 */
+	// @Override
+	@SuppressWarnings("all")
+	public AbstractGeometry clone() {
+		AbstractGeometry clone = AbstractGeometry.create(type, engine);
+		clone.population = population;
+		clone.opponent = opponent;
+		clone.specification = specification;
+		clone.name = name;
+		if (kin != null)
+			clone.kin = Arrays.copyOf(kin, kin.length);
+		if (kout != null)
+			clone.kout = Arrays.copyOf(kout, kout.length);
+		if (in != null) {
+			clone.in = Arrays.copyOf(in, in.length);
+			for (int i = 0; i < in.length; i++)
+				clone.in[i] = Arrays.copyOf(in[i], in[i].length);
+		}
+		if (out != null) {
+			clone.out = Arrays.copyOf(out, out.length);
+			for (int i = 0; i < out.length; i++)
+				clone.out[i] = Arrays.copyOf(out[i], out[i].length);
+		}
+		clone.size = size;
+		clone.type = type;
+		clone.minIn = minIn;
+		clone.maxIn = maxIn;
+		clone.avgIn = avgIn;
+		clone.minOut = minOut;
+		clone.maxOut = maxOut;
+		clone.avgOut = avgOut;
+		clone.minTot = minTot;
+		clone.maxTot = maxTot;
+		clone.avgTot = avgTot;
+		clone.connectivity = connectivity;
+		clone.pRewire = pRewire;
+		clone.pAddwire = pAddwire;
+		clone.isUndirected = isUndirected;
+		clone.isRewired = isRewired;
+		clone.interCompSame = interCompSame;
+		clone.isDynamic = isDynamic;
+		clone.isRegular = isRegular;
+		clone.isValid = isValid;
+		return clone;
+	}
+
+	/**
+	 * Check if {@code this} Geometry and {@code geo} refer to the same structures.
+	 * Different realizations of random structures, such as random regular graphs,
+	 * are considered equal as long as their characteristic parameters are the same.
+	 *
+	 * @param obj the geometry to compare to.
+	 * @return {@code true} if the structures are the same
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == this)
+			return true;
+		if (!(obj instanceof AbstractGeometry))
+			return false;
+		AbstractGeometry geo = (AbstractGeometry) obj;
+		if (geo.type != type)
+			return false;
+		if (geo.size != size)
+			return false;
+		return Math.abs(geo.connectivity - connectivity) <= 1e-6;
+	}
+
+	/**
+	 * Encode geometry as a plist string fragment.
+	 *
+	 * @return the geometry encoded as a plist
+	 * 
+	 * @see #decodeGeometry(Plist)
+	 * @see Plist
+	 */
+	public String encodeGeometry() {
+		StringBuilder plist = new StringBuilder();
+		plist.append(Plist.encodeKey("Name", type.getTitle()));
+		plist.append(Plist.encodeKey("Code", type.getKey()));
+		if (isUnique()) {
+			// encode geometry
+			plist.append("<key>Graph</key>\n<dict>\n");
+			// note: in[] and kin[] will be reconstructed on restore
+			for (int n = 0; n < size; n++)
+				plist.append(Plist.encodeKey(Integer.toString(n), out[n], kout[n]));
+			plist.append("</dict>\n");
+		}
+		return plist.toString();
+	}
+
+	/**
+	 * Decode the geometry from the plist. The structure is encoded in map which
+	 * provides array of neighbor indices for each individual index.
+	 * 
+	 * <h3>Requirements/notes:</h3>
+	 * The population (including its geometry/geometries) must already have been
+	 * initialized. This only restores a particular (unique) geometry.
+	 * 
+	 * @param plist the plist encoding the geometry
+	 * 
+	 * @see #encodeGeometry()
+	 */
+	public void decodeGeometry(Plist plist) {
+		if (!isUnique())
+			return;
+		// decode geometry
+		Plist graph = (Plist) plist.get("Graph");
+		ArrayList<List<Integer>> outlinks = new ArrayList<>(size);
+		ArrayList<ArrayList<Integer>> inlinks = new ArrayList<>(size);
+		final List<Integer> placeholder = new ArrayList<>();
+		for (int n = 0; n < size; n++) {
+			outlinks.add(placeholder);
+			inlinks.add(new ArrayList<>());
+		}
+		for (Iterator<String> i = graph.keySet().iterator(); i.hasNext();) {
+			String idxs = i.next();
+			int idx = Integer.parseInt(idxs);
+			@SuppressWarnings("unchecked")
+			List<Integer> neighs = (List<Integer>) graph.get(idxs);
+			out[idx] = Plist.list2int(neighs);
+			kout[idx] = out[idx].length;
+			// each outlink is someone else's inlink; process links from i to j
+			for (Iterator<Integer> j = neighs.iterator(); j.hasNext();)
+				inlinks.get(j.next()).add(idx);
+		}
+		// outlinks already in place; finish inlinks
+		for (int n = 0; n < size; n++) {
+			in[n] = Plist.list2int(inlinks.get(n));
+			kin[n] = in[n].length;
+		}
+		// finish
+		evaluate();
+	}
 }
