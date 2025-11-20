@@ -62,6 +62,10 @@ public class RandomGeometry extends AbstractGeometry {
 		return true;
 	}
 
+	/**
+	 * Generates a connected undirected random graph. Ensures connectivity by
+	 * first building a spanning tree and then sprinkling additional random edges.
+	 */
 	@Override
 	public void init() {
 		if (size <= 0)

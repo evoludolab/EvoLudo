@@ -20,6 +20,13 @@ public class FranklinGeometry extends AbstractGeometry {
 		setType(Type.FRANKLIN);
 	}
 
+	/**
+	 * Generates the Franklin graph, a cubic cage with \(12\) nodes discovered by
+	 * Philip Franklin.
+	 *
+	 * @see <a href="https://en.wikipedia.org/wiki/Franklin_graph">Wikipedia:
+	 *      Franklin graph</a>
+	 */
 	@Override
 	public void init() {
 		isRewired = false;

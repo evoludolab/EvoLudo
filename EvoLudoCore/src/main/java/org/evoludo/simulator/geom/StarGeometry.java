@@ -63,6 +63,11 @@ public class StarGeometry extends AbstractGeometry {
 		return false;
 	}
 
+	/**
+	 * Generates a star geometry with a hub in the middle that is connected to all
+	 * other nodes (leaves). The star structure is the simplest undirected
+	 * evolutionary amplifier. Node {@code 0} acts as the hub.
+	 */
 	@Override
 	public void init() {
 		if (size <= 0)

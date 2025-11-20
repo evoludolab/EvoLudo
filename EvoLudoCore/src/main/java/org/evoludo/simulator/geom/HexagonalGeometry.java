@@ -69,6 +69,11 @@ public class HexagonalGeometry extends AbstractLattice {
 		return true;
 	}
 
+	/**
+	 * Generates a hexagonal (honeycomb) regular lattice with degree \(6\) (or
+	 * optional self-links when connectivity is set to {@code 1}). Fixed boundaries
+	 * truncate neighbours; periodic boundaries wrap the lattice.
+	 */
 	@Override
 	public void init() {
 		if (size <= 0)

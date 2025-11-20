@@ -63,6 +63,11 @@ public class CubicGeometry extends AbstractLattice {
 		return true;
 	}
 
+	/**
+	 * Generates a cubic (3D) regular lattice. Supports von-Neumann style
+	 * connectivity \(k=6\) as well as larger interaction ranges and optional
+	 * fixed boundaries.
+	 */
 	@Override
 	public void init() {
 		if (size <= 0)

@@ -60,6 +60,14 @@ public class FruchtGeometry extends AbstractGeometry {
 		return doReset;
 	}
 
+	/**
+	 * Generates the Frucht graph, the smallest regular graph without any
+	 * symmetries (a cubic graph with \(12\) nodes and no automorphisms apart from
+	 * the identity).
+	 *
+	 * @see <a href="https://en.wikipedia.org/wiki/Frucht_graph">Wikipedia: Frucht
+	 *      graph</a>
+	 */
 	@Override
 	public void init() {
 		if (size != 12)

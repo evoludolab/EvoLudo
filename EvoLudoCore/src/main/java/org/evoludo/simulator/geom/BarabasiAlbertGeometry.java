@@ -66,6 +66,10 @@ public class BarabasiAlbertGeometry extends AbstractNetwork {
 		return true;
 	}
 
+	/**
+	 * Generates a connected undirected scale-free network following the
+	 * Barabási–Albert preferential attachment model.
+	 */
 	@Override
 	public void init() {
 		if (size <= 0)

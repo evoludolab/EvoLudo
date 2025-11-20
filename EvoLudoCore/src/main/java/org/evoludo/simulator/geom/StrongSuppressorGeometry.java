@@ -20,6 +20,15 @@ public class StrongSuppressorGeometry extends AbstractGeometry {
 		setType(Type.STRONG_SUPPRESSOR);
 	}
 
+	/**
+	 * Generates a strong undirected suppressor of selection. Population size obeys
+	 * \(N=n^2(1+n(1+n))=n^2+n^3+n^4\) for integer \(n\) with three node types
+	 * \(U=n^3\), \(V=n^4\) and \(W=n^2\). Each node in \(V\) connects to one node
+	 * in \(U\) and to all nodes in \(W\).
+	 *
+	 * @see <a href="https://doi.org/10.48550/arXiv.1611.01585">Giakkoupis (2016)
+	 *      Amplifiers and Suppressors of Selection...</a>
+	 */
 	@Override
 	public void init() {
 		isRewired = false;

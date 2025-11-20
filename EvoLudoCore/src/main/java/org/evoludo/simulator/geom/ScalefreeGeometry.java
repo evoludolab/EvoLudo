@@ -79,6 +79,10 @@ public class ScalefreeGeometry extends AbstractNetwork {
 		return true;
 	}
 
+	/**
+	 * Generates a connected undirected scale-free network by sampling degrees from
+	 * a power-law distribution and then constructing a matching graph.
+	 */
 	@Override
 	public void init() {
 		if (size <= 0)

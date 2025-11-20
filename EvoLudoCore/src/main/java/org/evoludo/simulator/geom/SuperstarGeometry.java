@@ -35,7 +35,11 @@ import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 
 /**
- * Directed super-star geometry with configurable petals and amplification.
+ * Directed super-star geometry with configurable petals and amplification. A
+ * super-star consists of a central hub surrounded by {@code p} petals, each
+ * with a reservoir of size {@code r} feeding into a linear chain of length
+ * {@code k} that connects back to the hub. The structure implements a strong
+ * directed evolutionary amplifier.
  */
 public class SuperstarGeometry extends AbstractGeometry {
 
@@ -70,6 +74,21 @@ public class SuperstarGeometry extends AbstractGeometry {
 		return true;
 	}
 
+	/**
+	 * Generates a superstar geometry, i.e. a strong directed amplifier of
+	 * selection. Reservoir nodes within each petal connect to the hub via a linear
+	 * chain while the hub connects back to all reservoir nodes.
+	 *
+	 * <h3>Requirements/notes:</h3>
+	 * <ol>
+	 * <li>Population size \(N=(r+k-1)p+1\) with \(r,k,p\) integer.
+	 * <li>Strong amplification requires \(r\gg k,p\).
+	 * <li>Node {@code 0} is the hub.
+	 * </ol>
+	 *
+	 * @see <a href="http://dx.doi.org/10.1038/nature03204">Lieberman, Hauert &
+	 *      Nowak (2005) Nature 433:312-316</a>
+	 */
 	@Override
 	public void init() {
 		if (size <= 0)

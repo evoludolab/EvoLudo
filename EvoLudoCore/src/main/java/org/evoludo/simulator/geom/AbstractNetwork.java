@@ -54,6 +54,22 @@ public abstract class AbstractNetwork extends AbstractGeometry {
 		super(engine, popModule, oppModule);
 	}
 
+	/**
+	 * Utility method to generate a network that realises the requested degree
+	 * sequence.
+	 *
+	 * <h3>Requirements/notes:</h3>
+	 * <ol>
+	 * <li>The {@code degree} array is expected to be sorted in descending order.
+	 * <li>During construction, already connected pairs are rewired via
+	 * {@link #rewireNeighbourEdge(int, int, int[], int)} to avoid multiple edges.
+	 * <li>If a single node remains unmatched, the method attempts to break one of
+	 * the existing links and reconnect both endpoints to that final node.
+	 * </ol>
+	 *
+	 * @param degree the degree (outgoing link count) requested for every node
+	 * @return {@code true} if a matching graph was constructed successfully
+	 */
 	protected boolean initGeometryDegreeDistr(int[] degree) {
 		int todo;
 		int[] core = new int[size];
@@ -104,6 +120,17 @@ public abstract class AbstractNetwork extends AbstractGeometry {
 		return true;
 	}
 
+	/**
+	 * Attempt to rewire existing edges so that nodes {@code nodeA} and
+	 * {@code nodeB} can gain additional neighbours without introducing duplicate
+	 * links.
+	 *
+	 * @param nodeA the first node that still needs neighbours
+	 * @param nodeB the second node that still needs neighbours
+	 * @param done  the pool of nodes whose desired degrees are already satisfied
+	 * @param nDone the number of valid entries in {@code done}
+	 * @return {@code true} if rewiring succeeded
+	 */
 	private boolean rewireNeighbourEdge(int nodeA, int nodeB, int[] done, int nDone) {
 		if (nDone <= 0)
 			return false;
@@ -126,6 +153,21 @@ public abstract class AbstractNetwork extends AbstractGeometry {
 
 	/**
 	 * Rewire undirected links while keeping the graph connected.
+	 *
+	 * <h3>Requirements/notes:</h3>
+	 * <ol>
+	 * <li>Only applicable to undirected graphs.
+	 * <li>Rewiring preserves connectivity of all nodes and the graph remains
+	 * undirected.
+	 * <li>The number of rewired links is
+	 * \(N_\text{rewired}=\min(N_\text{links},
+	 * N_\text{links} \log(1-p_\text{undir}))\), i.e. at most the number of
+	 * existing undirected links. Thus at most an expected fraction of \(1-1/e\)
+	 * (≈63%) of the original links get rewired.
+	 * </ol>
+	 *
+	 * @param prob probability of rewiring any particular undirected link
+	 * @return {@code true} if rewiring was performed
 	 */
 	protected boolean rewireUndirected(double prob) {
 		if (!isUndirected || prob <= 0.0)
@@ -163,7 +205,19 @@ public abstract class AbstractNetwork extends AbstractGeometry {
 	}
 
 	/**
-	 * Swap undirected edges {@code a-an} and {@code b-bn}.
+	 * Utility method to swap edges (undirected links) between nodes: change link
+	 * {@code a-an} to {@code a-bn} and {@code b-bn} to {@code b-an}.
+	 *
+	 * <h3>Requirements/notes:</h3>
+	 * Equivalent to invoking {@code rewireEdgeAt(a, bn, an);} followed by
+	 * {@code rewireEdgeAt(b, an, bn);} but avoids the additional allocations of
+	 * those helper methods.
+	 *
+	 * @param a  the first node
+	 * @param an the neighbour of {@code a} to replace
+	 * @param b  the second node
+	 * @param bn the neighbour of {@code b} to replace
+	 * @return {@code true} if the swap succeeded
 	 */
 	private boolean swapEdges(int a, int an, int b, int bn) {
 		if (a == bn || b == an || an == bn)

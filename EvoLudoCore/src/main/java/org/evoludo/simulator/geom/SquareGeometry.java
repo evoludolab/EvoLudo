@@ -94,6 +94,20 @@ public class SquareGeometry extends AbstractLattice {
 		}
 	}
 
+	/**
+	 * Generates square regular lattices (von Neumann, second-neighbour,
+	 * Moore, or larger neighbourhood variants).
+	 *
+	 * <h3>Requirements/notes:</h3>
+	 * <ol>
+	 * <li>Population size must be a perfect square \(N=n^2\).
+	 * <li>Admissible connectivities are \(4\) (von Neumann) or
+	 * \((2m+1)^2-1\) for Moore-type stencils.
+	 * <li>Inter-species interactions add the focal node as a neighbour and allow
+	 * connectivity \(1\).
+	 * <li>Boundaries are periodic by default but can be fixed.</li>
+	 * </ol>
+	 */
 	@Override
 	public void init() {
 		if (size <= 0)

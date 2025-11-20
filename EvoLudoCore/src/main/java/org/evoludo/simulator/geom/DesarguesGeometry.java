@@ -20,6 +20,13 @@ public class DesarguesGeometry extends AbstractGeometry {
 		setType(Type.DESARGUES);
 	}
 
+	/**
+	 * Generates the Desargues graph (also known as the Truncated Petersen graph),
+	 * a symmetric cubic graph with \(20\) nodes.
+	 *
+	 * @see <a href="https://en.wikipedia.org/wiki/Desargues_graph">Wikipedia:
+	 *      Desargues graph</a>
+	 */
 	@Override
 	public void init() {
 		isRewired = false;

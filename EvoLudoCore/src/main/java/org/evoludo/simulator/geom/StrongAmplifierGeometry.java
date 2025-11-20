@@ -24,6 +24,17 @@ public class StrongAmplifierGeometry extends AbstractGeometry {
 		setType(Type.STRONG_AMPLIFIER);
 	}
 
+	/**
+	 * Generates a strong undirected amplifier of selection as described by
+	 * Giakkoupis (2016). Population size satisfies
+	 * \(N=n^3+(1+a)n^2\) with integer \(n\) and suitable \(a\geq 5\) and comprises
+	 * three node types \(U=n^3\), \(V=n^2\) and \(W=N-U-V\). Nodes in \(U\) are
+	 * leaves attached to nodes in \(V\) while nodes in \(V\) connect to \(n^2\)
+	 * nodes in the regular core \(W\).
+	 *
+	 * @see <a href="https://doi.org/10.48550/arXiv.1611.01585">Giakkoupis (2016)
+	 *      Amplifiers and Suppressors of Selection...</a>
+	 */
 	@Override
 	public void init() {
 		isRewired = false;

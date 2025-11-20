@@ -84,6 +84,15 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 		return value;
 	}
 
+	/**
+	 * Generates a connected undirected scale-free/small-world network following
+	 * the Klemm &amp; Eguíluz growth process. Effective connectivity approaches
+	 * \(k(N-1)/N\) and the final structure can be rewired (with probability
+	 * {@code klemmProbability}) to add small-world shortcuts.
+	 *
+	 * @see <a href="http://dx.doi.org/10.1103/PhysRevE.65.057102">Klemm &amp;
+	 *      Eguíluz (2001) Phys. Rev. E 65, 057102</a>
+	 */
 	@Override
 	public void init() {
 		if (size <= 0)

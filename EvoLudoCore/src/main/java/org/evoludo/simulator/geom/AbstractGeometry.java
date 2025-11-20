@@ -49,14 +49,12 @@ import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
 /**
- * Abstract base class for future geometry implementations. The original
- * {@link org.evoludo.simulator.Geometry} remains untouched so existing builds
- * stay functional while the refactor progresses.
- *
- * <p>
- * This class currently contains only the core state and helper methods that are
- * required by {@link WellmixedGeometry}. Additional behaviour will be migrated
- * from {@code Geometry} as further geometries are extracted.
+ * Consolidated implementation of the population interaction and competition
+ * structures historically provided by {@link org.evoludo.simulator.Geometry}.
+ * Instances of {@code AbstractGeometry} describe neighbourhood graphs for IBS
+ * populations and expose the utilities required by concrete geometries (see
+ * {@link Type}). Both interaction and competition graphs share the same data
+ * model and can therefore reuse the helpers defined here.
  */
 public abstract class AbstractGeometry {
 
@@ -361,8 +359,26 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
-	 * Checks whether a single graphical representation suffices for the interaction
-	 * and competition geometries.
+	 * Checks whether a single graphical representation can be used for the
+	 * interaction and competition graphs. Two distinct graphical representations
+	 * are generally required if the two graphs differ but not if they both refer to
+	 * the same lattice structure even if connectivities or boundary conditions are
+	 * different.
+	 *
+	 * <h3>Examples:</h3>
+	 * A single graphical representation is adequate:
+	 * <ol>
+	 * <li>if the interaction and competition graphs are identical,
+	 * <li>if both the interaction and competition graphs are lattices, even if the
+	 * boundary conditions or the connectivities are different,
+	 * <li>but not if the interaction and competition graphs are separate instances
+	 * of the same random structure, e.g. random regular graphs.
+	 * </ol>
+	 * <h3>Requirements/notes:</h3>
+	 * <ol>
+	 * <li>Tooltips need to be careful to report the different graphs and
+	 * neighborhoods properly.
+	 * </ol>
 	 *
 	 * @param interaction the interaction geometry (required)
 	 * @param competition the competition geometry (optional)
@@ -1018,7 +1034,10 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
-	 * Add undirected edge by inserting links in both directions.
+	 * Add edge (undirected link) by inserting a pair of directed links.
+	 *
+	 * @param from the index of the first node
+	 * @param to   the index of the second node
 	 */
 	public void addEdgeAt(int from, int to) {
 		addLinkAt(from, to);
@@ -1028,6 +1047,13 @@ public abstract class AbstractGeometry {
 	/**
 	 * Add a directed link from {@code from} to {@code to}, allocating storage as
 	 * needed.
+	 *
+	 * <h3>Requirements/notes:</h3>
+	 * <ol>
+	 * <li>Allocates additional memory for adjacency lists as needed.</li>
+	 * <li>Marks the geometry as requiring {@link #evaluate()} before statistics
+	 * such as {@code minIn} or {@code avgOut} are used again.</li>
+	 * </ol>
 	 */
 	public void addLinkAt(int from, int to) {
 		int[] mem = out[from];
@@ -1067,7 +1093,36 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
-	 * Remove all outgoing links from node {@code idx}.
+	 * Remove edge (undirected link) from {@code from} to {@code to}. The
+	 * convenience method simply removes the directed link in both directions.
+	 * {@code maxIn}, {@code maxOut} and {@code maxTot} are not updated.
+	 *
+	 * @param from the index of the first node
+	 * @param to   the index of the second node
+	 *
+	 * @see #evaluate()
+	 */
+	protected void removeEdgeAt(int from, int to) {
+		removeLinkAt(from, to);
+		removeLinkAt(to, from);
+	}
+
+	/**
+	 * Remove a directed link from node {@code from} to node {@code to}. Statistics
+	 * are not updated immediately; call {@link #evaluate()} when finished with a
+	 * batch of edits.
+	 *
+	 * @param from the index of the first node
+	 * @param to   the index of the second node
+	 */
+	protected void removeLinkAt(int from, int to) {
+		removeInLink(from, to);
+		removeOutLink(from, to);
+	}
+
+	/**
+	 * Remove all outgoing links from node {@code idx}. Memory is retained for
+	 * potential reuse.
 	 */
 	public void clearLinksFrom(int idx) {
 		int len = kout[idx];
@@ -1080,7 +1135,8 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
-	 * Remove all incoming links to node {@code idx}.
+	 * Remove all incoming links to node {@code idx}. Memory is retained for
+	 * potential reuse.
 	 */
 	public void clearLinksTo(int idx) {
 		int len = kin[idx];
@@ -1092,6 +1148,10 @@ public abstract class AbstractGeometry {
 		evaluated = false;
 	}
 
+	/**
+	 * Remove an incoming link (directed) to node {@code to} from node
+	 * {@code from}. Does not shrink the backing arrays.
+	 */
 	private void removeInLink(int from, int to) {
 		int[] mem = in[to];
 		int k = kin[to];
@@ -1108,6 +1168,10 @@ public abstract class AbstractGeometry {
 		}
 	}
 
+	/**
+	 * Remove an outgoing link (directed) from node {@code from} to node
+	 * {@code to}. Does not shrink the backing arrays.
+	 */
 	private void removeOutLink(int from, int to) {
 		int[] mem = out[from];
 		int k = kout[from];
@@ -1125,17 +1189,13 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
-	 * Rewire directed link from node <code>from</code> to node <code>prev</code> to
-	 * node <code>to</code>.
-	 * 
-	 * <h3>Requirements/notes:</h3>
-	 * Geometry needs to be re-evaluated when done with all manipulations.
-	 * 
-	 * @param from the index of the first node
-	 * @param to   the index of the second node
-	 * @param prev the index of the second node
-	 * 
-	 * @see #evaluate()
+	 * Rewire a directed link so that an edge formerly connecting {@code from} to
+	 * {@code prev} now connects to {@code to}. Statistics are not updated until
+	 * {@link #evaluate()} is called.
+	 *
+	 * @param from the node whose outgoing link should change
+	 * @param to   the new neighbour
+	 * @param prev the previous neighbour to disconnect
 	 */
 	public void rewireLinkAt(int from, int to, int prev) {
 		removeLinkAt(from, prev);
@@ -1143,29 +1203,26 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
-	 * Rewire edge (undirected link) from node <code>from</code> to node
-	 * <code>prev</code> to node <code>to</code>.
-	 * 
-	 * <h3>Requirements/notes:</h3>
-	 * Geometry needs to be re-evaluated when done with all manipulations.
-	 * 
-	 * @param from the index of the first node
-	 * @param to   the index of the second node
-	 * @param prev the index of the second node
-	 * 
-	 * @see #evaluate()
+	 * Rewire an undirected edge so that an edge formerly connecting {@code from}
+	 * and {@code prev} now connects {@code from} and {@code to}.
+	 *
+	 * @param from the node whose neighbour should change
+	 * @param to   the new neighbour
+	 * @param prev the previous neighbour to disconnect
 	 */
 	public void rewireEdgeAt(int from, int to, int prev) {
 		rewireLinkAt(from, to, prev);
-		removeLinkAt(prev, from);
-		addLinkAt(to, from);
+		rewireLinkAt(to, from, prev);
 	}
 
-	protected void removeLinkAt(int from, int to) {
-		removeInLink(from, to);
-		removeOutLink(from, to);
-	}
-
+	/**
+	 * Check whether {@code check} is currently a neighbour of {@code focal}.
+	 *
+	 * @param focal the node whose adjacency list to scan
+	 * @param check the node to test for adjacency
+	 * @return {@code true} if {@code check} occurs among {@code focal}'s outgoing
+	 *         links
+	 */
 	protected boolean isNeighborOf(int focal, int check) {
 		if (out == null)
 			return false;
@@ -1175,11 +1232,6 @@ public abstract class AbstractGeometry {
 			if (neighs[i] == check)
 				return true;
 		return false;
-	}
-
-	protected void removeEdgeAt(int from, int to) {
-		removeLinkAt(from, to);
-		removeLinkAt(to, from);
 	}
 
 	/**
@@ -1410,7 +1462,7 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
-	 * Check if {@code this} Geometry and {@code geo} refer to the same structures.
+	 * Check if {@code this} geometry and {@code obj} refer to the same structures.
 	 * Different realizations of random structures, such as random regular graphs,
 	 * are considered equal as long as their characteristic parameters are the same.
 	 *

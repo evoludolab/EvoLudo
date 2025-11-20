@@ -20,6 +20,12 @@ public class DodekahedronGeometry extends AbstractGeometry {
 		setType(Type.DODEKAHEDRON);
 	}
 
+	/**
+	 * Generates a dodecahedron graph: a cubic symmetric graph with \(20\) nodes.
+	 *
+	 * @see <a href="https://en.wikipedia.org/wiki/Dodecahedral_graph">Wikipedia:
+	 *      Dodecahedral graph</a>
+	 */
 	@Override
 	public void init() {
 		isRewired = false;

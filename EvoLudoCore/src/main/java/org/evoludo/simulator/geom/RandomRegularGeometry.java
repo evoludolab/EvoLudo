@@ -30,6 +30,10 @@ public class RandomRegularGeometry extends AbstractNetwork {
 		return true;
 	}
 
+	/**
+	 * Generates a connected undirected random regular graph with degree equal to
+	 * the requested connectivity, retrying construction if necessary.
+	 */
 	@Override
 	public void init() {
 		isRegular = true;

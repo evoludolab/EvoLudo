@@ -20,6 +20,13 @@ public class TietzeGeometry extends AbstractGeometry {
 		setType(Type.TIETZE);
 	}
 
+	/**
+	 * Generates Tietze's graph, a cubic graph with \(12\) nodes and automorphisms
+	 * corresponding to the symmetries of a hexagon.
+	 *
+	 * @see <a href="https://en.wikipedia.org/wiki/Tietze's_graph">Wikipedia:
+	 *      Tietze's graph</a>
+	 */
 	@Override
 	public void init() {
 		isRewired = false;

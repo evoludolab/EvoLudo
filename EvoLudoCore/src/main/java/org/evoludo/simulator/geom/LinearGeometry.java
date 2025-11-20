@@ -81,6 +81,18 @@ public class LinearGeometry extends AbstractLattice {
 		return true;
 	}
 
+	/**
+	 * Generates a linear chain (1D lattice). With asymmetric neighbours and fixed
+	 * boundaries this represents the simplest suppressor of selection.
+	 *
+	 * <h3>Requirements/notes:</h3>
+	 * <ol>
+	 * <li>Supports different numbers of neighbours to the left and right.
+	 * <li>For inter-species interactions connectivities are incremented by one and
+	 * a connectivity of {@code 1} is admissible.
+	 * <li>Boundaries can be fixed or periodic (default).
+	 * </ol>
+	 */
 	@Override
 	public void init() {
 		if (size <= 0)

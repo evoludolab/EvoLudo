@@ -20,6 +20,13 @@ public class IcosahedronGeometry extends AbstractGeometry {
 		setType(Type.ICOSAHEDRON);
 	}
 
+	/**
+	 * Generates an icosahedron graph: a symmetric graph with \(12\) nodes and
+	 * degree \(5\).
+	 *
+	 * @see <a href="https://en.wikipedia.org/wiki/Icosahedron_graph">Wikipedia:
+	 *      Icosahedron graph</a>
+	 */
 	@Override
 	public void init() {
 		isRewired = false;

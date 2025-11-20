@@ -68,6 +68,11 @@ public class TriangularGeometry extends AbstractLattice {
 		return true;
 	}
 
+	/**
+	 * Generates a triangular regular lattice (degree \(3\))—sometimes called a
+	 * hexagonal tiling when interpreted as dual to the honeycomb lattice. Supports
+	 * optional self-links (connectivity {@code 1}) and fixed boundaries.
+	 */
 	@Override
 	public void init() {
 		if (size <= 0)

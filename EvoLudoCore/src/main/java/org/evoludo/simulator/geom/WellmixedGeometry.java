@@ -55,6 +55,13 @@ public class WellmixedGeometry extends AbstractGeometry {
 		setType(Type.WELLMIXED);
 	}
 
+	/**
+	 * Generates a well-mixed graph, also termed mean-field network or unstructured
+	 * population. In the limit of large population sizes the results of IBS
+	 * simulations must converge to those of the corresponding deterministic
+	 * dynamical equations (ODEs) or, with mutations, the stochastic dynamical
+	 * equations (SDEs).
+	 */
 	@Override
 	public void init() {
 		isRewired = false;

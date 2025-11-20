@@ -54,6 +54,14 @@ public class WheelGeometry extends AbstractGeometry {
 		setType(Type.WHEEL);
 	}
 
+	/**
+	 * Generates a wheel geometry, i.e. a ring (periodic 1D lattice) with a hub in
+	 * the middle that connects to all rim nodes (resembling spokes). The wheel is
+	 * an undirected evolutionary amplifier albeit weaker than the star. Node
+	 * {@code 0} is the hub.
+	 *
+	 * @see StarGeometry
+	 */
 	@Override
 	public void init() {
 		if (size <= 1)

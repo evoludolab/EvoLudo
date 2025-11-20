@@ -66,6 +66,15 @@ public class CompleteGeometry extends AbstractGeometry {
 		return false;
 	}
 
+	/**
+	 * Generates a complete graph where every node is connected to every other
+	 * node. This mirrors well-mixed (unstructured) populations with the exception
+	 * that the focal node itself can be excluded from replacement (e.g. Moran
+	 * birth-death updates) while still retaining explicit neighbourhoods.
+	 *
+	 * @see <a href="https://en.wikipedia.org/wiki/Complete_graph">Wikipedia:
+	 *      Complete graph</a>
+	 */
 	@Override
 	public void init() {
 		if (size <= 0)

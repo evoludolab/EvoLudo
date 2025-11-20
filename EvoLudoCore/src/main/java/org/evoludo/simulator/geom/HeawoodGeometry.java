@@ -20,6 +20,13 @@ public class HeawoodGeometry extends AbstractGeometry {
 		setType(Type.HEAWOOD);
 	}
 
+	/**
+	 * Generates the Heawood graph, a cubic symmetric graph with \(14\) nodes that
+	 * is the point-line incidence graph of the Fano plane.
+	 *
+	 * @see <a href="https://en.wikipedia.org/wiki/Heawood_graph">Wikipedia:
+	 *      Heawood graph</a>
+	 */
 	@Override
 	public void init() {
 		isRewired = false;

@@ -194,6 +194,13 @@ public class HierarchicalGeometry extends AbstractLattice {
 		return reset;
 	}
 
+	/**
+	 * Generates hierarchical graphs composed of well-mixed or square-lattice
+	 * demes.
+	 *
+	 * <h3>Requirements/notes:</h3>
+	 * Only well-mixed (complete) or square lattice graphs are currently supported.
+	 */
 	@Override
 	public void init() {
 		if (hierarchy == null || hierarchy.length == 0)
@@ -236,6 +243,12 @@ public class HierarchicalGeometry extends AbstractLattice {
 		}
 	}
 
+	/**
+	 * Utility method to generate hierarchical graphs.
+	 *
+	 * @param level the hierarchical level
+	 * @param start the index of the first node to process
+	 */
 	private void initHierarchy(int level, int start) {
 		if (level == hierarchy.length - 1) {
 			int nIndiv = hierarchy[level];
@@ -282,6 +295,12 @@ public class HierarchicalGeometry extends AbstractLattice {
 		}
 	}
 
+	/**
+	 * Utility method to generate hierarchical well-mixed subpopulations (demes).
+	 *
+	 * @param start the index of the first node to process
+	 * @param end   the index of the last node to process
+	 */
 	private void initHierarchyMeanfield(int start, int end) {
 		int nIndiv = end - start;
 		int nIndiv1 = Math.max(0, nIndiv - 1);
@@ -296,6 +315,12 @@ public class HierarchicalGeometry extends AbstractLattice {
 		}
 	}
 
+	/**
+	 * Utility method to generate hierarchical square-lattice demes.
+	 *
+	 * @param start the index of the first node to process
+	 * @param end   the index of the last node to process
+	 */
 	private void initHierarchySquare(int start, int end) {
 		int nIndiv = end - start;
 		int demeSide = (int) Math.sqrt(nIndiv);
