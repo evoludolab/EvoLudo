@@ -129,7 +129,7 @@ public class Network3DGWT extends Network3D {
 		}
 		ArrayList<Vector3> lines;
 		ArrayList<Color> colors = null;
-		if (geometry.isUndirected()) {
+		if (geometry.isUndirected) {
 			// draw undirected links
 			if (fLinks >= 1.0) {
 				// draw all links

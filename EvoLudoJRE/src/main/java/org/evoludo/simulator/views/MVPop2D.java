@@ -357,7 +357,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 	public String getInfoAt(Network2D network, int node, int tag) {
 		if (node < 0)
 			return null;
-		int nNodes = network.getGeometry().getSize();
+		int nNodes = network.getGeometry().size;
 
 		// String toolTip, struct = "";
 		String toolTip;
@@ -383,7 +383,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 						+ model.getFitnessNameAt(tag, node);
 				toolTip = "<html><i>Node:</i> " + node + names + density + fitness;
 				Geometry diffusion = ((PDE) model).getGeometry();
-				if (diffusion.isUndirected())
+				if (diffusion.isUndirected)
 					toolTip += "<br><i>Connections:</i> " + formatStructureAt(node, diffusion.out, diffusion.kout);
 				else
 					toolTip += "<br><i>Links to:</i>  " + formatStructureAt(node, diffusion.out, diffusion.kout) +
@@ -408,7 +408,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 						(count < 0 ? ""
 								: "<br><i>Interactions:</i> " + (count == Integer.MAX_VALUE ? "all" : "" + count));
 				Geometry intergeom = module.getInteractionGeometry();
-				if (intergeom.isUndirected())
+				if (intergeom.isUndirected)
 					toolTip += "<br><i>Neighbors:</i> " + formatStructureAt(node, intergeom.out, intergeom.kout);
 				// useful for debugging geometry - Geometry.checkConnections should be able to
 				// catch such problems
@@ -416,9 +416,9 @@ public class MVPop2D extends MVAbstract implements PopListener {
 				else
 					toolTip += "<br><i>Links to:</i>  " + formatStructureAt(node, intergeom.out, intergeom.kout) +
 							"<br><i>Link here:</i> " + formatStructureAt(node, intergeom.in, intergeom.kin);
-				if (!intergeom.isSingle()) {
+				if (!intergeom.interCompSame) {
 					Geometry compgeom = module.getCompetitionGeometry();
-					if (compgeom.isUndirected())
+					if (compgeom.isUndirected)
 						toolTip += "<br><i>Competitors:</i> " + formatStructureAt(node, compgeom.out, compgeom.kout);
 					else
 						toolTip += "<br><i>Competes for:</i>  " + formatStructureAt(node, compgeom.out, compgeom.kout) +

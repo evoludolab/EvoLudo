@@ -87,7 +87,7 @@ public class MVC2Distr extends MVAbstract implements PopListener {
 		// requires exactly 2 traits
 		Geometry geometry = new Geometry(engine);
 		geometry.setType(Geometry.Type.SQUARE);
-		geometry.setSize(HistoGraph.HISTO_BINS * HistoGraph.HISTO_BINS);
+		geometry.size = HistoGraph.HISTO_BINS * HistoGraph.HISTO_BINS;
 		graph = new PopGraph2D(this, geometry, module);
 		GraphAxis x = graph.getXAxis();
 		x.label = module.getTraitName(0);

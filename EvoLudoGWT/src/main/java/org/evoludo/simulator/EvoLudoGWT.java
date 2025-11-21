@@ -371,7 +371,7 @@ public class EvoLudoGWT extends EvoLudo {
 			PDE pde = (PDE) activeModel;
 			symDiffMenu.setChecked(pde.isSymmetric());
 			Geometry space = pde.getGeometry();
-			symDiffMenu.setEnabled(space.isRegular() || space.isLattice());
+			symDiffMenu.setEnabled(space.isRegular || space.isLattice());
 		}
 		// process fullscreen context menu
 		if (NativeJS.isFullscreenSupported()) {

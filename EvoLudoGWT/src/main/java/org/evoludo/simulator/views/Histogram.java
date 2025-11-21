@@ -688,7 +688,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 			geom = module.getInteractionGeometry();
 			comp = module.getCompetitionGeometry();
 		}
-		String[] labels = getDegreeLabels(nGraphs, geom.isUndirected());
+		String[] labels = getDegreeLabels(nGraphs, geom.isUndirected);
 		style.label = labels[n];
 		if (xdeco >= 0) {
 			style.showXLabel = (xdeco == 2); // show only on bottom panel
@@ -702,7 +702,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		style.yMin = 0.0;
 		style.yMax = 1.0;
 		style.xMin = 0.0;
-		if (geom.isUndirected())
+		if (geom.isUndirected)
 			style.xMax = maxDegree(Math.max(geom.maxOut, comp.maxOut));
 		else
 			style.xMax = maxDegree(Math.max(geom.maxTot, comp.maxTot));
@@ -1211,12 +1211,12 @@ public class Histogram extends AbstractView<HistoGraph> {
 		if (mt.isPDE()) {
 			Geometry inter = module.getGeometry();
 			inter = (inter == null ? module.getInteractionGeometry() : inter);
-			if (inter.isRegular()) {
+			if (inter.isRegular) {
 				graph.displayMessage("PDE model: regular structure with degree "
-						+ (int) (inter.getConnectivity() + 0.5) + ".");
+						+ (int) (inter.connectivity + 0.5) + ".");
 			} else if (inter.isLattice()) {
 				graph.displayMessage("PDE model: lattice structure with degree "
-						+ (int) (inter.getConnectivity() + 0.5) +
+						+ (int) (inter.connectivity + 0.5) +
 						(inter.fixedBoundary ? " (fixed" : " (periodic") + " boundaries).");
 			}
 		} else {
@@ -1232,7 +1232,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 */
 	private double[][] ensureDegreeData(HistoGraph graph, Geometry inter, Geometry comp, double[][] data) {
 		int bincount;
-		if (inter.isUndirected())
+		if (inter.isUndirected)
 			bincount = maxDegree(Math.max(inter.maxOut, comp.maxOut));
 		else
 			bincount = maxDegree(Math.max(inter.maxTot, comp.maxTot));
@@ -1455,13 +1455,13 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param comp  the competition graph
 	 */
 	private void getDegreeHistogramData(double[][] data, Geometry inter, Geometry comp) {
-		int kmax = maxDegree(inter.isUndirected() ? inter.maxOut : inter.maxTot);
+		int kmax = maxDegree(inter.isUndirected ? inter.maxOut : inter.maxTot);
 		if (inter != comp)
-			kmax = Math.max(kmax, maxDegree(comp.isUndirected() ? comp.maxOut : comp.maxTot));
+			kmax = Math.max(kmax, maxDegree(comp.isUndirected ? comp.maxOut : comp.maxTot));
 		double ibinwidth = (double) data[0].length / (kmax + 1);
 		getDegreeHistogramData(data, inter, 0, ibinwidth);
 		if (inter != comp)
-			getDegreeHistogramData(data, comp, inter.isUndirected() ? 1 : 3, ibinwidth);
+			getDegreeHistogramData(data, comp, inter.isUndirected ? 1 : 3, ibinwidth);
 		degreeProcessed = true;
 	}
 
@@ -1474,12 +1474,12 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param ibinwidth the scaling factor to map degrees to bins
 	 */
 	private void getDegreeHistogramData(double[][] data, Geometry geometry, int idx, double ibinwidth) {
-		if (geometry.isUndirected()) {
+		if (geometry.isUndirected) {
 			double[] dataio = data[idx];
 			Arrays.fill(dataio, 0.0);
-			for (int i = 0; i < geometry.getSize(); i++)
+			for (int i = 0; i < geometry.size; i++)
 				dataio[(int) (geometry.kin[i] * ibinwidth)]++;
-			ArrayMath.multiply(dataio, 1.0 / geometry.getSize());
+			ArrayMath.multiply(dataio, 1.0 / geometry.size);
 			return;
 		}
 		double[] datao = data[idx];
@@ -1488,14 +1488,14 @@ public class Histogram extends AbstractView<HistoGraph> {
 		Arrays.fill(datao, 0.0);
 		Arrays.fill(datai, 0.0);
 		Arrays.fill(datat, 0.0);
-		for (int i = 0; i < geometry.getSize(); i++) {
+		for (int i = 0; i < geometry.size; i++) {
 			int kin = geometry.kin[i];
 			int kout = geometry.kout[i];
 			datao[(int) (kout * ibinwidth)]++;
 			datai[(int) (kin * ibinwidth)]++;
 			datat[(int) ((kin + kout) * ibinwidth)]++;
 		}
-		double norm = 1.0 / geometry.getSize();
+		double norm = 1.0 / geometry.size;
 		ArrayMath.multiply(datao, norm);
 		ArrayMath.multiply(datai, norm);
 		ArrayMath.multiply(datat, norm);
@@ -1513,11 +1513,11 @@ public class Histogram extends AbstractView<HistoGraph> {
 		if (inter == null)
 			return 1;
 		int nGraphs = 1;
-		if (!inter.isUndirected())
+		if (!inter.isUndirected)
 			nGraphs += 2;
 		if (comp != inter) {
 			nGraphs += 1;
-			if (!comp.isUndirected())
+			if (!comp.isUndirected)
 				nGraphs += 2;
 		}
 		return nGraphs;
@@ -1535,11 +1535,11 @@ public class Histogram extends AbstractView<HistoGraph> {
 		if (inter == null)
 			return 0;
 		int nBins = maxDegree(inter.maxOut);
-		if (!inter.isUndirected())
+		if (!inter.isUndirected)
 			nBins = Math.max(maxDegree(inter.maxTot) + 1, nBins);
 		if (comp != inter)
 			nBins = Math.max(maxDegree(comp.maxOut) + 1, nBins);
-		if (!comp.isUndirected())
+		if (!comp.isUndirected)
 			nBins = Math.max(maxDegree(comp.maxTot) + 1, nBins);
 		return Math.max(2, Math.min(nBins, HistoGraph.MAX_BINS));
 	}

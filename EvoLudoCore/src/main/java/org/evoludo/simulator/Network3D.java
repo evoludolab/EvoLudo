@@ -129,7 +129,7 @@ public abstract class Network3D extends Network<Node3D> {
 	public double relax(int nodeidx, double dt) {
 		double energy = repulsion(nodeidx);
 		energy += attraction(nodeidx);
-		repulsion.scale(1.0 / geometry.getSize());
+		repulsion.scale(1.0 / geometry.size);
 		repulsion.add(attraction);
 		// final double delta = repulsion.length();
 		// // empirical constant - choose as big as possible to speed things up but
@@ -188,7 +188,7 @@ public abstract class Network3D extends Network<Node3D> {
 			// dist="+(dist*IR)+", ("+(distadj*IR)+"), potential="+potential);
 			attraction.add(vec);
 		}
-		if (geometry.isUndirected()) {
+		if (geometry.isUndirected) {
 			if (nOut == 0)
 				return 0.0;
 			attraction.scale(1.0 / nOut);

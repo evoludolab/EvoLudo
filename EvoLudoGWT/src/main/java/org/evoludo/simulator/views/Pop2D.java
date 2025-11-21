@@ -282,13 +282,13 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		Geometry geometry = graph.getGeometry();
 		GraphStyle style = graph.getStyle();
 
-		if (geometry.isType(Geometry.Type.LINEAR)) {
+		if (geometry.getType() == Geometry.Type.LINEAR) {
 			// frame, ticks, labels needed
 			style.xLabel = "nodes";
 			style.showXLabel = true;
 			style.showXTickLabels = true;
 			style.xMin = 0;
-			style.xMax = geometry.getSize();
+			style.xMax = geometry.size;
 			style.yLabel = "time";
 			double rFreq = model.getTimeStep();
 			// if report frequency did not change, we're done

@@ -140,7 +140,7 @@ public abstract class Network2D extends Network<Node2D> {
 		energy += attraction(nodeidx);
 		// save current position and energies
 		// lastPos.set(pos);
-		repulsion.scale(1.0 / geometry.getSize());
+		repulsion.scale(1.0 / geometry.size);
 		repulsion.add(attraction);
 		// double delta = Math.min(repulsion.length(), R*0.01);
 		double delta = Math.min(dt / repulsion.length(), dt);
@@ -220,7 +220,7 @@ public abstract class Network2D extends Network<Node2D> {
 			npot += vec.length2() * IR2;
 			attraction.add(vec);
 		}
-		if (geometry.isUndirected()) {
+		if (geometry.isUndirected) {
 			if (nOut == 0)
 				return 0.0;
 			attraction.scale(1.0 / nOut);
@@ -304,7 +304,7 @@ public abstract class Network2D extends Network<Node2D> {
 			engine.getLogger().warning("Too many links to draw - skipping!");
 			return;
 		}
-		if (geometry.isUndirected()) {
+		if (geometry.isUndirected) {
 			if (fLinks >= 1.0) {
 				// draw all links
 				for (int n = 0; n < nNodes; n++) {

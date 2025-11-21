@@ -193,7 +193,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 			Geometry igeom = module.getInteractionGeometry();
 			Geometry cgeom = module.getCompetitionGeometry();
 			Geometry geo = inter ? igeom : cgeom;
-			if (!igeom.isSingle() && Geometry.displayUniqueGeometry(igeom, cgeom))
+			if (!igeom.interCompSame && Geometry.displayUniqueGeometry(igeom, cgeom))
 				// different geometries but only one graph - pick competition.
 				// note: this is not a proper solution but fits the requirements of
 				// the competition with second nearest neighbours
@@ -286,7 +286,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		@SuppressWarnings("unchecked")
 		G graph = (G) agraph;
 		Geometry geometry = graph.getGeometry();
-		int nNodes = geometry.getSize();
+		int nNodes = geometry.size;
 		Module<?> module = graph.getModule();
 		StringBuilder tip = new StringBuilder(TABLE_STYLE);
 		if (module.getNSpecies() > 1)
@@ -345,7 +345,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		}
 
 		// competition neighbours and opponent competition traits
-		if (!intergeom.isSingle()) {
+		if (!intergeom.interCompSame) {
 			Geometry compgeom = module.getCompetitionGeometry();
 			appendCompNeighborsAt(node, compgeom, tip);
 			G oppCompGraph = getOppCompGraph(graph);
@@ -572,7 +572,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		appendPDETraitTip(node, module, graph, tip);
 		appendPDEFitnessTip(node, module, graph, tip);
 
-		if (geometry.isUndirected())
+		if (geometry.isUndirected)
 			appendNeighbors("Connections", geometry.out[node], geometry.kout[node], tip);
 		else {
 			// useful for debugging geometry - Geometry.checkConnections should be able to
@@ -673,9 +673,9 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 * @return the updated StringBuilder
 	 */
 	private static StringBuilder appendInterNeighborsAt(int node, Geometry geom, StringBuilder tip) {
-		if (geom.isUndirected()) {
+		if (geom.isUndirected) {
 			// well-mixed is by definition undirected
-			if (geom.getType().equals(Geometry.Type.WELLMIXED)) {
+			if (geom.getType().equals(Geometry.Type.MEANFIELD)) {
 				tip.append(TABLE_ROW_START)
 						.append("Neighbours")
 						.append(TABLE_CELL_NEXT)
@@ -701,9 +701,9 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 * @return the updated StringBuilder
 	 */
 	private static StringBuilder appendCompNeighborsAt(int node, Geometry geom, StringBuilder tip) {
-		if (geom.isUndirected()) {
+		if (geom.isUndirected) {
 			// well-mixed is by definition undirected
-			if (geom.getType().equals(Geometry.Type.WELLMIXED)) {
+			if (geom.getType().equals(Geometry.Type.MEANFIELD)) {
 				tip.append(TABLE_ROW_START)
 						.append("Competitors")
 						.append(TABLE_CELL_NEXT)

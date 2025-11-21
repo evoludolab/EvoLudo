@@ -141,7 +141,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 
 	/**
 	 * The number of nodes in the network. Convenience variable. This must remain in
-	 * sync with {@code geometry.getSize()} and {@code nodes.length}.
+	 * sync with {@code geometry.size} and {@code nodes.length}.
 	 */
 	protected int nNodes = 0;
 
@@ -275,7 +275,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 		if (snapTimeout > 0)
 			layoutTimeout = snapTimeout;
 
-		nNodes = geometry.getSize();
+		nNodes = geometry.size;
 		Geometry.Type type = geometry.getType();
 		if (type == Geometry.Type.HIERARCHY)
 			type = geometry.subgeometry;
@@ -292,13 +292,13 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 				setStatus(Status.NO_LAYOUT);
 				nLinks = 0;
 				break;
-			case WELLMIXED:
+			case MEANFIELD:
 				nLinks = 0;
 				setStatus(Status.NEEDS_LAYOUT);
 				break;
 			default:
 				nLinks = ArrayMath.norm(geometry.kout);
-				if (geometry.isUndirected())
+				if (geometry.isUndirected)
 					nLinks /= 2;
 				setStatus(Status.NEEDS_LAYOUT);
 		}
@@ -323,7 +323,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 		isRunning = true;
 		prevPotential = 0.0;
 		prevAdjust = 1.0;
-		nNodes = geometry.getSize();
+		nNodes = geometry.size;
 		norm = 1.0 / (nNodes * nNodes);
 		listener.layoutUpdate(0.0);
 		boolean needsLayout = status.equals(Status.NEEDS_LAYOUT);
@@ -343,19 +343,19 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 			initNodes(pnorm, nnorm, unitradius);
 		}
 		nLinks = ArrayMath.norm(geometry.kout);
-		if (geometry.isUndirected())
+		if (geometry.isUndirected)
 			nLinks /= 2;
 		// check geometries and limit number of links to draw
 		switch (geometry.getType()) {
 			case HIERARCHY:
 				// don't draw links for well-mixed hierarchical structures
-				if (geometry.subgeometry.equals(Geometry.Type.WELLMIXED))
+				if (geometry.subgeometry.equals(Geometry.Type.MEANFIELD))
 					fLinks = 0.0;
 				// should not get here for subgeometry SQUARE
 				break;
 			case COMPLETE:
 				// skip drawing links for complete graphs exceeding 100 nodes
-				if (geometry.getSize() > 100)
+				if (geometry.size > 100)
 					fLinks = 0.0;
 				break;
 			default:
@@ -548,7 +548,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	 * @return the status of the layouting process
 	 */
 	public Status getStatus() {
-		if (geometry.isType(Geometry.Type.DYNAMIC) && status == Status.HAS_LAYOUT
+		if (geometry.getType() == Geometry.Type.DYNAMIC && status == Status.HAS_LAYOUT
 				&& Math.abs(engine.getModel().getUpdates() - timestamp) > 1e-8)
 			status = Status.ADJUST_LAYOUT;
 		return status;

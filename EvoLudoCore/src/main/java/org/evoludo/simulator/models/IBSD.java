@@ -106,9 +106,9 @@ public class IBSD extends IBS implements DModel {
 		for (Module<?> mod : species) {
 			IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
 			Geometry inter = dpop.getInteractionGeometry();
-			boolean isWM = inter.getType().equals(Geometry.Type.WELLMIXED) &&
-					(inter.isSingle() ||
-							dpop.getCompetitionGeometry().getType().equals(Geometry.Type.WELLMIXED));
+			boolean isWM = inter.getType().equals(Geometry.Type.MEANFIELD) &&
+					(inter.interCompSame ||
+							dpop.getCompetitionGeometry().getType().equals(Geometry.Type.MEANFIELD));
 			Init.Type itype = dpop.getInit().type;
 			if (!isWM && !(itype.equals(Init.Type.MUTANT) ||
 					itype.equals(Init.Type.TEMPERATURE)))
