@@ -65,18 +65,6 @@ public class Geometry {
 	EvoLudo engine;
 
 	/**
-	 * The IBS population that has this geometry.
-	 */
-	IBSPopulation<?, ?> population;
-
-	/**
-	 * The IBS population representing the opponent. For intra-species
-	 * interactions
-	 * {@code population==opponent} holds.
-	 */
-	IBSPopulation<?, ?> opponent;
-
-	/**
 	 * Logger for keeping track of and reporting events and issues.
 	 */
 	Logger logger;
@@ -116,10 +104,6 @@ public class Geometry {
 	 */
 	public Geometry(EvoLudo engine, Module<?> popModule, Module<?> oppModule) {
 		this(engine);
-		// if (engine.getModel().getType().isIBS()) {
-		// population = popModule.getIBSPopulation();
-		// opponent = oppModule.getIBSPopulation();
-		// }
 	}
 
 	/**
@@ -5177,60 +5161,20 @@ public class Geometry {
 	}
 
 	/**
-	 * Derive interaction geometry from current (competition) geometry. This is
-	 * only possible if {@link #isSingle()} is {@code true}. Returns {@code null}
-	 * otherwise.
-	 * <p>
-	 * If {@code opp==population} then it is an intra-species interaction, which
-	 * allows to simply return {@code this}, i.e. no cloning etc. required.
-	 * Otherwise the geometry is cloned, the {@code opponent} set and 'self-loops'
-	 * added for interactions with individuals in the same location.
+	 * * Derives competition geometry from current (interaction) geometry for
+	 * inter-species interactions with {@code interCompSame == true}. This clones
+	 * the interaction geometry and simply removes links to self, which corresponds
+	 * to interactions with individuals at the same location in the other species.
 	 *
-	 * @param opp the population of interaction partners
-	 * @return the derived interaction geometry or {@code null} if it cannot be
-	 *         derived
-	 */
-	public Geometry deriveInteractionGeometry(IBSPopulation<?, ?> opp) {
-		// this is competition geometry (hence population==opponent)
-		if (!isSingle())
-			return null; // impossible to derive interaction geometry
-		// intra-species interactions: nothing to derive - use same geometry
-		if (population == opp)
-			return this;
-		Geometry interaction = clone();
-		interaction.opponent = opp;
-		// add interactions with individual in same location
-		for (int n = 0; n < size; n++)
-			interaction.addLinkAt(n, n);
-		interaction.evaluate();
-		return interaction;
-	}
-
-	/**
-	 * Derive competition geometry from current (interaction) geometry. This is
-	 * only possible if {@link #isSingle()} is {@code true}. Returns {@code null}
-	 * otherwise.
-	 * <p>
-	 * If {@code opp==population} then it is an intra-species interaction, which
-	 * allows to simply return {@code this}, i.e. no cloning etc. required.
-	 * Otherwise the geometry is cloned, the {@code opponent}, the opponent set and
-	 * 'self-loops' removed.
-	 *
-	 * @return the derived interaction geometry or {@code null} if it cannot be
-	 *         derived
+	 * @return the derived competition geometry
 	 */
 	public Geometry deriveCompetitionGeometry() {
-		// this is interaction geometry (hence population!=opponent for inter-species
-		// interactions)
-		if (!isSingle())
-			return null; // impossible to derive competition geometry
-		// intra-species interactions: nothing to derive - use same geometry
-		if (population == opponent)
-			return this;
+		if (!interCompSame)
+			throw new IllegalStateException(
+					"Cannot derive competition geometry when interCompSame == false.");
 		Geometry competition = clone();
-		competition.opponent = population;
-		// add interactions with individual in same location
-		if (competition.geometry != Type.WELLMIXED)
+		// remove competition with self
+		if (!competition.isType(Type.WELLMIXED))
 			for (int n = 0; n < size; n++)
 				competition.removeLinkAt(n, n);
 		competition.evaluate();
@@ -5457,11 +5401,10 @@ public class Geometry {
 			 * arg); break;
 			 */
 			default:
-				throw new IllegalArgumentException("unknown geometry type: " + geometry);
-			// // last resort: try engine - maybe new implementations provide new geometries
-			// if (!population.parseGeometry(this, cli))
-			// geometry = Type.INVALID; // too few parameters, change to default geometry
-			// break;
+				// last resort: try engine - maybe new implementations provide new geometries
+				// if (!population.parseGeometry(this, cli))
+				geometry = Type.INVALID; // too few parameters, change to default geometry
+				break;
 		}
 
 		doReset |= (oldGeometry != geometry);
@@ -5508,8 +5451,7 @@ public class Geometry {
 	// @Override
 	@SuppressWarnings("all")
 	public Geometry clone() {
-		Geometry clone = new Geometry(engine, (population != null ? population.getModule() : null),
-				(opponent != null ? opponent.getModule() : null));
+		Geometry clone = new Geometry(engine);
 		clone.name = name;
 		if (kin != null)
 			clone.kin = Arrays.copyOf(kin, kin.length);

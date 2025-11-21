@@ -3926,7 +3926,12 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		}
 
 		if (interaction.isSingle()) {
-			competition = interaction.deriveCompetitionGeometry();
+			if (opponent != this) {
+				// interspecies interaction
+				competition = interaction.deriveCompetitionGeometry();
+			} else {
+				competition = interaction;
+			}
 		} else {
 			competition.init();
 			competition.rewire();
@@ -4002,7 +4007,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				Arrays.fill(interactions, 1);
 			} else {
 				// pairwise interactions
-		if (interaction.isRegular())
+				if (interaction.isRegular())
 					Arrays.fill(interactions, (int) (interaction.getConnectivity() + 0.5));
 				else
 					System.arraycopy(interaction.kin, 0, interactions, 0, interactions.length);

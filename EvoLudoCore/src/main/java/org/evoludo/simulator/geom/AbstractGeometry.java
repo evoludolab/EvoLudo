@@ -40,6 +40,7 @@ import java.util.logging.Logger;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.Network3D;
 import org.evoludo.util.CLOption;
@@ -127,6 +128,27 @@ public abstract class AbstractGeometry {
 			default:
 				throw new UnsupportedOperationException("Geometry type '" + type + "' is not implemented yet.");
 		}
+	}
+
+	/**
+	 * Derive competition geometry from current (interaction) geometry for
+	 * inter-species interactions with {@code interCompSame == true}. This clones
+	 * the interaction geometry and simply removes links to self, which corresponds
+	 * to interactions with individuals at the same location in the other species.
+	 *
+	 * @return the derived competition geometry
+	 */
+	public AbstractGeometry deriveCompetitionGeometry() {
+		if (!interCompSame)
+			throw new IllegalStateException(
+					"Cannot derive competition geometry when interCompSame == false.");
+		AbstractGeometry competition = clone();
+		// remove competition with self
+		if (competition.getType() == Type.WELLMIXED)
+			for (int n = 0; n < size; n++)
+				competition.removeLinkAt(n, n);
+		competition.evaluate();
+		return competition;
 	}
 
 	/**
