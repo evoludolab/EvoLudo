@@ -334,7 +334,7 @@ public class PDE extends ODE {
 			engine.loadModel(Type.ODE);
 			return true;
 		}
-		if (space.getType() == Geometry.Type.MEANFIELD || space.getType() == Geometry.Type.COMPLETE) {
+		if (space.isType(Geometry.Type.WELLMIXED) || space.isType(Geometry.Type.COMPLETE)) {
 			logger.warning("unstructured population - reverting to ODE.");
 			engine.loadModel(Type.ODE);
 			return true;
@@ -372,20 +372,20 @@ public class PDE extends ODE {
 	@Override
 	public void reset() {
 		super.reset();
-		if (space.getType() == Geometry.Type.MEANFIELD)
+		if (space.isType(Geometry.Type.WELLMIXED))
 			return;
 		space.init();
 
-		if (density == null || density.length != space.size || density[0].length != nDim) {
-			density = new double[space.size][nDim];
-			next = new double[space.size][nDim];
+		if (density == null || density.length != space.getSize() || density[0].length != nDim) {
+			density = new double[space.getSize()][nDim];
+			next = new double[space.getSize()][nDim];
 			minDensity = new double[nDim];
 			maxDensity = new double[nDim];
 			meanDensity = new double[nDim];
 		}
 		if (module instanceof Payoffs
-				&& (fitness == null || fitness.length != space.size || fitness[0].length != nDim)) {
-			fitness = new double[space.size][nDim];
+				&& (fitness == null || fitness.length != space.getSize() || fitness[0].length != nDim)) {
+			fitness = new double[space.getSize()][nDim];
 			minFitness = new double[nDim];
 			maxFitness = new double[nDim];
 			meanFitness = new double[nDim];
@@ -513,7 +513,7 @@ public class PDE extends ODE {
 	 * Normalizes the mean fitnesses after the reaction step is complete.
 	 */
 	public synchronized void normalizeMeanFitness() {
-		ArrayMath.multiply(meanFitness, 1.0 / space.size);
+		ArrayMath.multiply(meanFitness, 1.0 / space.getSize());
 	}
 
 	/**
@@ -640,7 +640,7 @@ public class PDE extends ODE {
 	 */
 	public synchronized void setDensity() {
 		resetDensity();
-		for (int n = 0; n < space.size; n++)
+		for (int n = 0; n < space.getSize(); n++)
 			minmaxmean(density[n], minDensity, maxDensity, meanDensity);
 		normalizeMeanDensity();
 	}
@@ -665,7 +665,7 @@ public class PDE extends ODE {
 	 * Normalizes the mean density after the diffusion step is complete.
 	 */
 	public synchronized void normalizeMeanDensity() {
-		ArrayMath.multiply(meanDensity, 1.0 / space.size);
+		ArrayMath.multiply(meanDensity, 1.0 / space.getSize());
 	}
 
 	@Override
@@ -1165,9 +1165,9 @@ public class PDE extends ODE {
 	double calcInvDeltaX() {
 		switch (space.getType()) {
 			case CUBE:
-				return Math.pow(space.size, 1.0 / 3.0) / linext;
+				return Math.pow(space.getSize(), 1.0 / 3.0) / linext;
 			case LINEAR:
-				return space.size / linext;
+				return space.getSize() / linext;
 			case SQUARE_NEUMANN:
 			case SQUARE_NEUMANN_2ND:
 			case SQUARE_MOORE:
@@ -1175,7 +1175,7 @@ public class PDE extends ODE {
 			case TRIANGULAR:
 			case HONEYCOMB:
 			default:
-				return Math.sqrt(space.size) / linext;
+				return Math.sqrt(space.getSize()) / linext;
 		}
 	}
 
@@ -1429,9 +1429,9 @@ public class PDE extends ODE {
 	public boolean restoreTraits(Plist plist) {
 		@SuppressWarnings("unchecked")
 		List<List<Double>> state = (List<List<Double>>) plist.get("Density");
-		if (state == null || state.size() != space.size || state.get(0) == null || state.get(0).size() != nDim)
+		if (state == null || state.size() != space.getSize() || state.get(0) == null || state.get(0).size() != nDim)
 			return false;
-		for (int n = 0; n < space.size; n++) {
+		for (int n = 0; n < space.getSize(); n++) {
 			List<Double> cell = state.get(n);
 			double[] dcell = density[n];
 			for (int i = 0; i < nDim; i++)
@@ -1449,9 +1449,9 @@ public class PDE extends ODE {
 	public boolean restoreFitness(Plist plist) {
 		@SuppressWarnings("unchecked")
 		List<List<Double>> fit = (List<List<Double>>) plist.get("Fitness");
-		if (fit == null || fit.size() != space.size || fit.get(0) == null || fit.get(0).size() != nDim)
+		if (fit == null || fit.size() != space.getSize() || fit.get(0) == null || fit.get(0).size() != nDim)
 			return false;
-		for (int n = 0; n < space.size; n++) {
+		for (int n = 0; n < space.getSize(); n++) {
 			List<Double> cell = fit.get(n);
 			double[] fcell = fitness[n];
 			for (int i = 0; i < nDim; i++)

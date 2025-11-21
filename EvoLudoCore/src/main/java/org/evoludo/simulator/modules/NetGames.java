@@ -770,19 +770,19 @@ public class NetGames extends Discrete implements Payoffs,
 
 		// @Override
 		// public boolean checkGeometry(Geometry geom) {
-		// return geom.getType() == Type.DYNAMIC;
+		// return geom.isType(Type.DYNAMIC);
 		// }
 
 		// @Override
 		// public boolean generateGeometry(Geometry geom) {
-		// if (geom.getType() != Type.DYNAMIC)
+		// if (!geom.isType(Type.DYNAMIC))
 		// throw new UnsupportedOperationException("Unknown geometry (" + geom.getType()
 		// + ")");
 		// geom.isRewired = false;
-		// geom.isUndirected = false;
+		// geometry would be marked as directed here
 		// geom.isRegular = false;
 		// geom.isDynamic = true;
-		// geom.interCompSame = true;
+		// geom.setSingle(true);
 		// geom.alloc();
 		// return true;
 		// }

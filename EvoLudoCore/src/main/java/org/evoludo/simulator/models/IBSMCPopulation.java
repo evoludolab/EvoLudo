@@ -407,9 +407,9 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 			default:
 				// if resetting scores after every update, scores can be adjusted
 				// when interacting all neighbours but not in well-mixed populations
-				if (interaction.getType() == Geometry.Type.MEANFIELD || //
-						(interaction.getType() == Geometry.Type.HIERARCHY && //
-								interaction.subgeometry == Geometry.Type.MEANFIELD))
+				if (interaction.isType(Geometry.Type.WELLMIXED) || //
+						(interaction.isType(Geometry.Type.HIERARCHY) && //
+								interaction.subgeometry == Geometry.Type.WELLMIXED))
 					return false;
 				return interGroup.isSampling(IBSGroup.SamplingType.ALL);
 		}
@@ -486,7 +486,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		for (int n = 0; n < nOut; n++)
 			System.arraycopy(opptraits, out[n] * oppntraits, tmpGroup, n * oppntraits, oppntraits);
 		int u2 = 2;
-		if (!interaction.isUndirected) {
+		if (!interaction.isUndirected()) {
 			// directed graph, count in-neighbors
 			u2 = 1;
 			nIn = interaction.kin[me];
@@ -514,7 +514,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 				diff = u2 * diff / interactions[you];
 			opponent.adjustScoreAt(you, diff);
 		}
-		// same as !interaction.isUndirected because in != null implies directed graph
+		// same as !interaction.isUndirected() because in != null implies directed graph
 		// (see above)
 		if (in != null) {
 			for (int n = 0; n < nIn; n++) {
@@ -946,7 +946,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		traitRangeMax = module.getTraitMax();
 
 		// check interaction geometry
-		if (interaction.getType() == Geometry.Type.MEANFIELD && interGroup.isSampling(IBSGroup.SamplingType.ALL)) {
+		if (interaction.isType(Geometry.Type.WELLMIXED) && interGroup.isSampling(IBSGroup.SamplingType.ALL)) {
 			// interacting with everyone in mean-field simulations is not feasible - except
 			// for discrete traits
 			logger.warning(

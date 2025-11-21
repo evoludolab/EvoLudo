@@ -41,6 +41,7 @@ import java.util.logging.Logger;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.math.RNGDistribution;
+import org.evoludo.simulator.geom.WellmixedGeometry;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.modules.Module;
@@ -164,6 +165,16 @@ public class Geometry {
 	}
 
 	/**
+	 * Check whether this geometry is of the requested {@link Type}.
+	 *
+	 * @param type the geometry type to compare to
+	 * @return {@code true} if this geometry reports the provided type
+	 */
+	public boolean isType(Type type) {
+		return getType() == type;
+	}
+
+	/**
 	 * Set the type of this geometry.
 	 * 
 	 * @param type the type of this geometry
@@ -233,14 +244,14 @@ public class Geometry {
 	/**
 	 * The geometry of the graph.
 	 */
-	private Type geometry = Type.MEANFIELD;
+	private Type geometry = Type.WELLMIXED;
 
 	/**
 	 * Only used for hierarchical geometries to specify the geometry of each level.
 	 * 
 	 * @see #initGeometryHierarchical()
 	 */
-	public Type subgeometry = Type.MEANFIELD;
+	public Type subgeometry = Type.WELLMIXED;
 
 	/**
 	 * The types of graph geometries. Currently available graph geometries are:
@@ -313,7 +324,7 @@ public class Geometry {
 		 * 
 		 * @see Geometry#initGeometryMeanField()
 		 */
-		MEANFIELD("M", "mean-field/well-mixed population"),
+		WELLMIXED("M", "well-mixed population"),
 
 		/**
 		 * Complete graph, connectivity \(k=N-1\).
@@ -736,7 +747,7 @@ public class Geometry {
 	/**
 	 * The number of nodes in the graph.
 	 */
-	public int size = -1;
+	int size = -1;
 
 	/**
 	 * Sets the number of nodes in the graph to {@code size}. This affects memory
@@ -750,6 +761,13 @@ public class Geometry {
 			return false; // no change
 		this.size = size;
 		return true;
+	}
+
+	/**
+	 * @return the number of nodes represented by this geometry
+	 */
+	public int getSize() {
+		return size;
 	}
 
 	/**
@@ -859,21 +877,21 @@ public class Geometry {
 	 * 
 	 * @see #initGeometrySuperstar()
 	 */
-	public int superstar_petals = -1;
+	int superstar_petals = -1;
 
 	/**
 	 * The chain length in superstars.
 	 * 
 	 * @see #initGeometrySuperstar()
 	 */
-	public int superstar_amplification = -1;
+	int superstar_amplification = -1;
 
 	/**
 	 * The exponent in scale-free networks.
 	 * 
 	 * @see #initGeometryScaleFree()
 	 */
-	public double sfExponent = -2.0;
+	double sfExponent = -2.0;
 
 	/**
 	 * The probability for adding links adjust small-world properties of
@@ -881,44 +899,101 @@ public class Geometry {
 	 * 
 	 * @see #initGeometryScaleFreeKlemm()
 	 */
-	public double pKlemm = -2.0;
+	double pKlemm = -2.0;
 
 	/**
 	 * The difference between the number of neighbours on the left and the right in
 	 * linear, 1D lattices.
 	 */
-	public int linearAsymmetry = 0;
+	int linearAsymmetry = 0;
 
 	/**
 	 * The degree or connectivity of the graph or (average) number of neighbours.
 	 */
-	public double connectivity = -1.0;
+	double connectivity = -1.0;
+
+	/**
+	 * @return the current connectivity request
+	 */
+	public double getConnectivity() {
+		return connectivity;
+	}
+
+	/**
+	 * Update the requested connectivity.
+	 *
+	 * @param value the new connectivity
+	 */
+	public void setConnectivity(double value) {
+		this.connectivity = value;
+	}
 
 	/**
 	 * Fraction of undirected links to add or rewire.
-	 * 
+	 *
 	 * @see #rewireUndirected(double)
 	 * @see #addUndirected()
 	 */
-	public double pRewire = -1.0;
+	double pRewire = -1.0;
 
 	/**
 	 * Fraction of directed links to add or rewire.
-	 * 
+	 *
 	 * @see #rewireDirected()
 	 * @see #addDirected()
 	 */
-	public double pAddwire = -1.0;
+	double pAddwire = -1.0;
+
+	/**
+	 * @return the fraction of undirected links to rewire or add
+	 */
+	public double getRewire() {
+		return pRewire;
+	}
+
+	/**
+	 * Update the rewiring fraction for undirected links.
+	 *
+	 * @param value rewiring probability
+	 */
+	public void setRewire(double value) {
+		pRewire = value;
+	}
+
+	/**
+	 * @return the fraction of directed links to add/rewire
+	 */
+	public double getAddwire() {
+		return pAddwire;
+	}
+
+	/**
+	 * Update the probability of adding directed links.
+	 *
+	 * @param value probability to use
+	 */
+	public void setAddwire(double value) {
+		pAddwire = value;
+	}
 
 	/**
 	 * {@code true} if the graph is undirected.
 	 */
-	public boolean isUndirected = true;
+	boolean isUndirected = true;
+
+	/**
+	 * Check whether the geometry is undirected (contains no directed links).
+	 *
+	 * @return {@code true} if the geometry is undirected
+	 */
+	public boolean isUndirected() {
+		return isUndirected;
+	}
 
 	/**
 	 * {@code true} if the graph includes rewired edges or links.
 	 */
-	public boolean isRewired = false;
+	boolean isRewired = false;
 
 	// /**
 	// * Gets the opponent of the population represented by this graph. For
@@ -945,7 +1020,25 @@ public class Geometry {
 	/**
 	 * {@code true} if the interaction and competition graphs are the same.
 	 */
-	public boolean interCompSame = true;
+	private boolean interCompSame = true;
+
+	/**
+	 * @return {@code true} if a single geometry suffices for both interaction and
+	 *         competition graphs
+	 */
+	public boolean isSingle() {
+		return interCompSame;
+	}
+
+	/**
+	 * Flag whether a single geometry should be used for interaction and
+	 * competition.
+	 *
+	 * @param single {@code true} if both graphs share the same structure
+	 */
+	public void setSingle(boolean single) {
+		this.interCompSame = single;
+	}
 
 	/**
 	 * Checks whether a single graphical representation can be used for the
@@ -983,13 +1076,13 @@ public class Geometry {
 			// lattice interaction geometry - return true if competition geometry is the
 			// same (regardless of connectivity)
 			if (comp == null)
-				return inter.interCompSame;
+				return inter.isSingle();
 			// if both are square lattices a unique geometry is good enough
 			if (geometry.isSquareLattice() && comp.geometry.isSquareLattice())
 				return true;
 			return (comp.geometry == geometry);
 		}
-		return inter.interCompSame;
+		return inter.isSingle();
 	}
 
 	/**
@@ -1015,7 +1108,14 @@ public class Geometry {
 	 * {@code true} if the network structure is regular (all nodes have the same
 	 * number of neighbours).
 	 */
-	public boolean isRegular = false;
+	boolean isRegular = false;
+
+	/**
+	 * @return {@code true} if each node has identical degree
+	 */
+	public boolean isRegular() {
+		return isRegular;
+	}
 
 	/**
 	 * {@code true} if the network structure has been successfully initialized.
@@ -1040,7 +1140,7 @@ public class Geometry {
 		kin = null;
 		kout = null;
 		size = -1;
-		geometry = Type.MEANFIELD;
+		geometry = Type.WELLMIXED;
 		fixedBoundary = false;
 		minIn = -1;
 		maxIn = -1;
@@ -1061,7 +1161,7 @@ public class Geometry {
 		pAddwire = -1.0;
 		isUndirected = true;
 		isRewired = false;
-		interCompSame = true;
+		setSingle(true);
 		isDynamic = false;
 		isRegular = false;
 		isValid = false;
@@ -1140,7 +1240,7 @@ public class Geometry {
 					// no hierarchies remain
 					// if subgeometry complete, well-mixed or structured with hierarchyweight==0
 					// fall back on subgeometry
-					if (subgeometry == Type.MEANFIELD || subgeometry == Type.COMPLETE || hierarchyweight <= 0.0) {
+					if (subgeometry == Type.WELLMIXED || subgeometry == Type.COMPLETE || hierarchyweight <= 0.0) {
 						geometry = subgeometry;
 						if (logger.isLoggable(Level.WARNING))
 							logger.warning("hierarchies must encompass ≥2 levels - collapsed to geometry '"
@@ -1204,9 +1304,9 @@ public class Geometry {
 						//$FALL-THROUGH$
 					case COMPLETE:
 						// avoid distinctions between MEANFIELD and COMPLETE graphs for subgeometries
-						subgeometry = Type.MEANFIELD;
+						subgeometry = Type.WELLMIXED;
 						//$FALL-THROUGH$
-					case MEANFIELD:
+					case WELLMIXED:
 						for (int i = 0; i < nHierarchy; i++)
 							prod *= hierarchy[i];
 						nIndiv = Math.max(2, size / prod); // at least two individuals per deme
@@ -1464,7 +1564,7 @@ public class Geometry {
 				}
 				connectivity = 3.0;
 				break;
-			case MEANFIELD:
+			case WELLMIXED:
 				superstar_amplification = 1;
 				//$FALL-THROUGH$
 			case RANDOM_GRAPH:
@@ -1541,7 +1641,7 @@ public class Geometry {
 	 */
 	public void init() {
 		switch (geometry) {
-			case MEANFIELD:
+			case WELLMIXED:
 				initGeometryMeanField();
 				break;
 			case COMPLETE:
@@ -1651,7 +1751,7 @@ public class Geometry {
 					break;
 				}
 				//$FALL-THROUGH$
-			case MEANFIELD:
+			case WELLMIXED:
 			case COMPLETE:
 			case STAR:
 			case WHEEL:
@@ -1767,7 +1867,7 @@ public class Geometry {
 				case SQUARE:
 					initGeometryHierarchySquare(start, end);
 					return;
-				case MEANFIELD:
+				case WELLMIXED:
 				case COMPLETE:
 				default:
 					initGeometryHierarchyMeanfield(start, end);
@@ -1791,7 +1891,7 @@ public class Geometry {
 					}
 				}
 				break;
-			case MEANFIELD:
+			case WELLMIXED:
 			case COMPLETE:
 			default:
 				hskip = 1;
@@ -4456,7 +4556,7 @@ public class Geometry {
 	 *
 	 * <h3>Requirements/notes:</h3>
 	 * <ol>
-	 * <li>For {@link Type#MEANFIELD} geometries all quantities are set to zero.
+	 * <li>For {@link Type#WELLMIXED} geometries all quantities are set to zero.
 	 * <li>Dynamic graphs are always evaluated because all quantities are ephemeral.
 	 * </ol>
 	 */
@@ -4465,7 +4565,7 @@ public class Geometry {
 			return;
 
 		// determine minimum, maximum and average connectivities
-		if (geometry == Type.MEANFIELD || kout == null || kin == null) {
+		if (geometry == Type.WELLMIXED || kout == null || kin == null) {
 			maxOut = 0;
 			maxIn = 0;
 			maxTot = 0;
@@ -5078,7 +5178,7 @@ public class Geometry {
 
 	/**
 	 * Derive interaction geometry from current (competition) geometry. This is
-	 * only possible if {@code interCompSame} is {@code true}. Returns {@code null}
+	 * only possible if {@link #isSingle()} is {@code true}. Returns {@code null}
 	 * otherwise.
 	 * <p>
 	 * If {@code opp==population} then it is an intra-species interaction, which
@@ -5092,7 +5192,7 @@ public class Geometry {
 	 */
 	public Geometry deriveInteractionGeometry(IBSPopulation<?, ?> opp) {
 		// this is competition geometry (hence population==opponent)
-		if (!interCompSame)
+		if (!isSingle())
 			return null; // impossible to derive interaction geometry
 		// intra-species interactions: nothing to derive - use same geometry
 		if (population == opp)
@@ -5108,7 +5208,7 @@ public class Geometry {
 
 	/**
 	 * Derive competition geometry from current (interaction) geometry. This is
-	 * only possible if {@code interCompSame} is {@code true}. Returns {@code null}
+	 * only possible if {@link #isSingle()} is {@code true}. Returns {@code null}
 	 * otherwise.
 	 * <p>
 	 * If {@code opp==population} then it is an intra-species interaction, which
@@ -5122,7 +5222,7 @@ public class Geometry {
 	public Geometry deriveCompetitionGeometry() {
 		// this is interaction geometry (hence population!=opponent for inter-species
 		// interactions)
-		if (!interCompSame)
+		if (!isSingle())
 			return null; // impossible to derive competition geometry
 		// intra-species interactions: nothing to derive - use same geometry
 		if (population == opponent)
@@ -5130,7 +5230,7 @@ public class Geometry {
 		Geometry competition = clone();
 		competition.opponent = population;
 		// add interactions with individual in same location
-		if (competition.geometry != Type.MEANFIELD)
+		if (competition.geometry != Type.WELLMIXED)
 			for (int n = 0; n < size; n++)
 				competition.removeLinkAt(n, n);
 		competition.evaluate();
@@ -5177,12 +5277,12 @@ public class Geometry {
 		Type oldSubGeometry = subgeometry;
 		subgeometry = Type.VOID;
 		switch (geometry) {
-			case MEANFIELD: // mean field
+			case WELLMIXED: // mean field
 				break;
 			case COMPLETE: // complete graph
 				break;
 			case HIERARCHY: // deme structured, hierarchical graph
-				subgeometry = Type.MEANFIELD;
+				subgeometry = Type.WELLMIXED;
 				if (!Character.isDigit(sub.charAt(0))) {
 					// check for geometry of hierarchies
 					// note: we could allow for different geometries at different levels but seems
@@ -5446,11 +5546,11 @@ public class Geometry {
 		clone.superstar_amplification = superstar_amplification;
 		clone.sfExponent = sfExponent;
 		clone.connectivity = connectivity;
-		clone.pRewire = pRewire;
-		clone.pAddwire = pAddwire;
+		clone.setRewire(pRewire);
+		clone.setAddwire(pAddwire);
 		clone.isUndirected = isUndirected;
 		clone.isRewired = isRewired;
-		clone.interCompSame = interCompSame;
+		clone.setSingle(isSingle());
 		clone.isDynamic = isDynamic;
 		clone.isRegular = isRegular;
 		clone.isValid = isValid;
@@ -5580,7 +5680,7 @@ public class Geometry {
 	private boolean isUniqueGeometry(Type geo) {
 		switch (geo) {
 			// non-unique geometries
-			case MEANFIELD: // mean field
+			case WELLMIXED: // mean field
 			case COMPLETE: // complete graph
 			case LINEAR: // linear
 			case SQUARE_NEUMANN: // von neumann

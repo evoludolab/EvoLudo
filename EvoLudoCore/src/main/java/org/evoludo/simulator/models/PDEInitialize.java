@@ -49,7 +49,7 @@ import org.evoludo.util.CLOption;
  *
  * <h3>Concepts and inputs</h3>
  * <ul>
- * <li><b>density</b> - destination array of shape [space.size][nDim]; each
+ * <li><b>density</b> - destination array of shape [space.getSize()][nDim]; each
  * row receives the initial density vector for a spatial location.</li>
  * <li><b>y0</b> - baseline initial state vector (peak or default densities)
  * used for the selected initialization pattern.</li>
@@ -120,17 +120,17 @@ class PDEInitialize extends ODEInitialize {
 
 	private void initUniform(double[][] density, double[] y0, Geometry space) {
 		int nDim = y0.length;
-		for (int n = 0; n < space.size; n++)
+		for (int n = 0; n < space.getSize(); n++)
 			System.arraycopy(y0, 0, density[n], 0, nDim);
 	}
 
 	private void initPerturbation(double[][] density, double[] y0, Geometry space) {
 		int nDim = y0.length;
-		for (int n = 0; n < space.size; n++)
+		for (int n = 0; n < space.getSize(); n++)
 			System.arraycopy(pde.background, 0, density[n], 0, nDim);
 		switch (space.getType()) {
 			case CUBE: {
-				int l = (int) (Math.pow(space.size, 1.0 / 3.0) + 0.5);
+				int l = (int) (Math.pow(space.getSize(), 1.0 / 3.0) + 0.5);
 				System.arraycopy(y0, 0, density[(l * l + l + 1) * l / 2], 0, nDim);
 				break;
 			}
@@ -139,18 +139,18 @@ class PDEInitialize extends ODEInitialize {
 			case SQUARE:
 			case TRIANGULAR:
 			case HONEYCOMB: {
-				int l = (int) (Math.sqrt(space.size) + 0.5);
+				int l = (int) (Math.sqrt(space.getSize()) + 0.5);
 				System.arraycopy(y0, 0, density[(l + 1) * l / 2], 0, nDim);
 				break;
 			}
 			default:
-				System.arraycopy(y0, 0, density[space.size / 2], 0, nDim);
+				System.arraycopy(y0, 0, density[space.getSize() / 2], 0, nDim);
 		}
 	}
 
 	private void initRandom(double[][] density, double[] y0, Geometry space) {
 		int nDim = y0.length;
-		for (int n = 0; n < space.size; n++) {
+		for (int n = 0; n < space.getSize(); n++) {
 			double[] ds = density[n]; // ds is only a short-cut - data written to density[]
 			for (int i = 0; i < nDim; i++)
 				ds[i] = pde.rng.random01() * y0[i];
@@ -178,8 +178,8 @@ class PDEInitialize extends ODEInitialize {
 	private void initFunction3D(double[][] density, double[] y0, Geometry space) {
 		int l = 50;
 		int lz = 10;
-		if (space.size != 25000) { // not NOVA dimensions
-			l = (int) (Math.pow(space.size, 1.0 / 3.0) + 0.5);
+		if (space.getSize() != 25000) { // not NOVA dimensions
+			l = (int) (Math.pow(space.getSize(), 1.0 / 3.0) + 0.5);
 			lz = l;
 		}
 		for (int z = 0; z < lz; z++)
@@ -192,8 +192,8 @@ class PDEInitialize extends ODEInitialize {
 	 * Initialization for LINEAR geometry extracted to reduce cognitive complexity.
 	 */
 	private void initFunction1D(double[][] density, double[] y0, Geometry space) {
-		for (int x = 0; x < space.size; x++)
-			apply(x, space.size, y0, density);
+		for (int x = 0; x < space.getSize(); x++)
+			apply(x, space.getSize(), y0, density);
 	}
 
 	/**
@@ -201,7 +201,7 @@ class PDEInitialize extends ODEInitialize {
 	 * to reduce cognitive complexity.
 	 */
 	private void initFunction2D(double[][] density, double[] y0, Geometry space) {
-		int l = (int) (Math.sqrt(space.size) + 0.5);
+		int l = (int) (Math.sqrt(space.getSize()) + 0.5);
 		for (int y = 0; y < l; y++)
 			for (int x = 0; x < l; x++)
 				apply(x, y, l, y0, density);

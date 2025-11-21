@@ -161,7 +161,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 		for (int n = 0; n < nOut; n++)
 			tmpGroup[n] = opptraits[out[n]];
 		int u2 = 2;
-		if (!interaction.isUndirected) {
+		if (!interaction.isUndirected()) {
 			// directed graph, count in-neighbors
 			u2 = 1;
 			nIn = interaction.kin[me];
@@ -186,7 +186,7 @@ public class IBSCPopulation extends IBSMCPopulation {
 				diff = u2 * diff / interactions[you];
 			opponent.adjustScoreAt(you, diff);
 		}
-		// same as !interaction.isUndirected because in != null implies directed graph
+		// same as !interaction.isUndirected() because in != null implies directed graph
 		// (see above)
 		if (in != null) {
 			for (int n = 0; n < nIn; n++) {

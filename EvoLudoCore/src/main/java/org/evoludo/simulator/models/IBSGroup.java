@@ -286,8 +286,8 @@ public class IBSGroup {
 
 			case RANDOM:
 				switch (geometry.getType()) {
-					case MEANFIELD:
-						return pickRandom(geometry.size);
+					case WELLMIXED:
+						return pickRandom(geometry.getSize());
 
 					case HIERARCHY:
 						return pickRandomHierarchy(downstream);
@@ -386,7 +386,7 @@ public class IBSGroup {
 		calcHierarchyUnit(hu);
 		group = mem;
 		switch (geometry.subgeometry) {
-			case MEANFIELD:
+			case WELLMIXED:
 				return pickHierarchyMean(hu, downstream);
 
 			case SQUARE_NEUMANN:
@@ -425,7 +425,7 @@ public class IBSGroup {
 			return;
 		}
 
-		if ((int) Math.rint(geometry.connectivity) == hu.unitSize - 1) {
+		if ((int) Math.rint(geometry.getConnectivity()) == hu.unitSize - 1) {
 			// if individuals are connected to all other members of the unit one hierarchy
 			// level is lost.
 			// this applies to well-mixed units as well as e.g. square lattices with moore
@@ -490,7 +490,7 @@ public class IBSGroup {
 			return group;
 		}
 		// determine start of focal level
-		int side = (int) Math.sqrt(geometry.size);
+		int side = (int) Math.sqrt(geometry.getSize());
 		int levelSide = (int) Math.sqrt(hu.levelSize);
 		int levelX = ((focal % side) / levelSide) * levelSide;
 		int levelY = ((focal / side) / levelSide) * levelSide;

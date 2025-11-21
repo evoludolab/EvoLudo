@@ -161,30 +161,17 @@ public abstract class AbstractGeometry {
 	private String specification;
 
 	/**
-	 * Optional descriptive name.
-	 */
-	private String name;
-
-	/**
-	 * Current geometry type handled by this instance.
-	 */
-	protected Type type = Type.WELLMIXED;
-
-	/**
-	 * The number of nodes in the graph.
-	 */
-	protected int size = -1;
-
-	/**
-	 * Flag indicating whether the network structure is undirected.
-	 */
-	protected boolean isUndirected = true;
-
-	/**
 	 * {@code true} if the network structure is regular (all nodes have the same
 	 * number of neighbours).
 	 */
-	public boolean isRegular = false;
+	boolean isRegular = false;
+
+	/**
+	 * @return {@code true} if every node has the same number of neighbours
+	 */
+	public boolean isRegular() {
+		return isRegular;
+	}
 
 	/**
 	 * {@code true} if rewiring should be applied.
@@ -205,22 +192,86 @@ public abstract class AbstractGeometry {
 	 * Convenience flag denoting whether intra- and interspecific competitions are
 	 * identical.
 	 */
-	public boolean interCompSame = true;
+	boolean interCompSame = true;
+
+	/**
+	 * @return {@code true} if interaction and competition share the same geometry
+	 */
+	public boolean isSingle() {
+		return interCompSame;
+	}
+
+	/**
+	 * Set whether the interaction and competition geometries are identical.
+	 *
+	 * @param single {@code true} if both use the same structure
+	 */
+	public void setSingle(boolean single) {
+		this.interCompSame = single;
+	}
 
 	/**
 	 * Connectivity (average number of neighbors).
 	 */
-	public double connectivity = -1.0;
+	double connectivity = -1.0;
+
+	/**
+	 * @return the mean number of neighbours requested for this geometry
+	 */
+	public double getConnectivity() {
+		return connectivity;
+	}
+
+	/**
+	 * Set the desired connectivity.
+	 *
+	 * @param value the new connectivity
+	 */
+	public void setConnectivity(double value) {
+		this.connectivity = value;
+	}
 
 	/**
 	 * Probability for rewiring.
 	 */
-	public double pRewire = -1.0;
+	double pRewire = -1.0;
 
 	/**
 	 * Probability for adding new links.
 	 */
-	public double pAddwire = -1.0;
+	double pAddwire = -1.0;
+
+	/**
+	 * @return the current rewiring probability
+	 */
+	public double getRewire() {
+		return pRewire;
+	}
+
+	/**
+	 * Update the rewiring probability.
+	 *
+	 * @param value probability to use when rewiring
+	 */
+	public void setRewire(double value) {
+		pRewire = value;
+	}
+
+	/**
+	 * @return the current probability of adding links
+	 */
+	public double getAddwire() {
+		return pAddwire;
+	}
+
+	/**
+	 * Update the probability of adding links.
+	 *
+	 * @param value probability to use when adding new links
+	 */
+	public void setAddwire(double value) {
+		pAddwire = value;
+	}
 
 	/**
 	 * {@code true} if the network structure is ephemeral.
@@ -306,6 +357,11 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
+	 * Optional descriptive name.
+	 */
+	String name;
+
+	/**
 	 * Set a descriptive name for this geometry (used in UI/tooltips).
 	 *
 	 * @param name the human-readable name
@@ -329,6 +385,11 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
+	 * Current geometry type handled by this instance.
+	 */
+	Type type = Type.WELLMIXED;
+
+	/**
 	 * @return the current geometry {@link Type}
 	 */
 	public Type getType() {
@@ -342,6 +403,56 @@ public abstract class AbstractGeometry {
 	 */
 	protected void setType(Type type) {
 		this.type = type;
+	}
+
+	/**
+	 * Check whether this geometry is of the specified type.
+	 * 
+	 * @param t the type to check
+	 * @return {@code true} if this geometry is of the specified type
+	 */
+	public boolean isType(Type t) {
+		return this.type == t;
+	}
+
+	/**
+	 * The number of nodes in the graph.
+	 */
+	int size = -1;
+
+	/**
+	 * Set the size of the network.
+	 *
+	 * @param size the desired number of nodes
+	 * @return {@code true} if the size changed (requiring a reset)
+	 */
+	public boolean setSize(int size) {
+		if (size <= 0 || this.size == size)
+			return false;
+		this.size = size;
+		return true;
+	}
+
+	/**
+	 * @return the number of nodes in the network
+	 */
+	public int getSize() {
+		return size;
+	}
+
+	/**
+	 * Flag indicating whether the network structure is undirected.
+	 */
+	boolean isUndirected = true;
+
+	/**
+	 * Check whether the network structure is undirected, i.e. does not include any
+	 * directed links.
+	 * 
+	 * @return {@code true} if the network is undirected
+	 */
+	public boolean isUndirected() {
+		return isUndirected;
 	}
 
 	/**
@@ -409,13 +520,13 @@ public abstract class AbstractGeometry {
 		Type interactionType = interaction.getType();
 		if (interaction.isLattice()) {
 			if (competition == null)
-				return interaction.interCompSame;
+				return interaction.isSingle();
 			Type competitionType = competition.getType();
 			if (interactionType.isSquareLattice() && competitionType.isSquareLattice())
 				return true;
 			return competitionType == interactionType;
 		}
-		return interaction.interCompSame;
+		return interaction.isSingle();
 	}
 
 	/**
@@ -455,26 +566,6 @@ public abstract class AbstractGeometry {
 	 */
 	public boolean parse() {
 		return parse(specification);
-	}
-
-	/**
-	 * Set the size of the network.
-	 *
-	 * @param size the desired number of nodes
-	 * @return {@code true} if the size changed (requiring a reset)
-	 */
-	public boolean setSize(int size) {
-		if (size <= 0 || this.size == size)
-			return false;
-		this.size = size;
-		return true;
-	}
-
-	/**
-	 * @return the number of nodes in the network
-	 */
-	public int getSize() {
-		return size;
 	}
 
 	/**
@@ -592,7 +683,7 @@ public abstract class AbstractGeometry {
 		pAddwire = -1.0;
 		isUndirected = true;
 		isRewired = false;
-		interCompSame = true;
+		setSingle(true);
 		isDynamic = false;
 		isRegular = false;
 		isValid = false;
@@ -1501,11 +1592,11 @@ public abstract class AbstractGeometry {
 		clone.maxTot = maxTot;
 		clone.avgTot = avgTot;
 		clone.connectivity = connectivity;
-		clone.pRewire = pRewire;
-		clone.pAddwire = pAddwire;
+		clone.setRewire(pRewire);
+		clone.setAddwire(pAddwire);
 		clone.isUndirected = isUndirected;
 		clone.isRewired = isRewired;
-		clone.interCompSame = interCompSame;
+		clone.setSingle(isSingle());
 		clone.isDynamic = isDynamic;
 		clone.isRegular = isRegular;
 		clone.isValid = isValid;

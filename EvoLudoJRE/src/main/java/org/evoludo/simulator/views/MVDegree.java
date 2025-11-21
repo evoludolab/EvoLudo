@@ -113,7 +113,7 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 		isStatic = !geometry.isDynamic;
 		if (graphs.isEmpty())
 			addGraph(K_OUT);
-		if (isDirected == geometry.isUndirected) {
+		if (isDirected == geometry.isUndirected()) {
 			// graph changed from directed to undirected or vice versa
 			if (isDirected) {
 				// was directed: 3 views present - disable two
@@ -133,7 +133,7 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 				for (int n = 0; n < 3; n++)
 					graphs.get(n).setSize(0, 0);
 			}
-			isDirected = !geometry.isUndirected;
+			isDirected = !geometry.isUndirected();
 			clear = true;
 		}
 		// NOTE: reset triggers a call to getData - above ensures that everything is

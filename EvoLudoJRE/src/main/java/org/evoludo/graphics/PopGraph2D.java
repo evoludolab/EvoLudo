@@ -153,7 +153,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 				return;
 			default:
 		}
-		if (geometry.getType() == Geometry.Type.CUBE || geometry.getType() == Geometry.Type.VOID) {
+		if (geometry.isType(Geometry.Type.CUBE) || geometry.isType(Geometry.Type.VOID)) {
 			setMessage("No representation for geometry!");
 			return;
 		}
@@ -221,8 +221,8 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 			network.reset();
 		allocColors();
 		int node = controller.getLocalNode();
-		if (node < 0 || node >= geometry.size)
-			controller.setLocalNode(geometry.size / 2);
+		if (node < 0 || node >= geometry.getSize())
+			controller.setLocalNode(geometry.getSize() / 2);
 		infonode = -1;
 		completed = 0.0;
 
@@ -401,8 +401,8 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	boolean hasAnimatedLayout() {
 		if (!animate)
 			return false;
-		return (geometry.size <= MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT
-				&& (int) (geometry.avgTot * geometry.size) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
+		return (geometry.getSize() <= MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT
+				&& (int) (geometry.avgTot * geometry.getSize()) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
 	}
 
 	public void setAnimateLayout(boolean animate) {
@@ -418,10 +418,10 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	}
 
 	protected void allocColors() {
-		if (geometry.size <= 0)
+		if (geometry.getSize() <= 0)
 			return;
-		if (colors == null || colors.length != geometry.size)
-			colors = new Color[geometry.size];
+		if (colors == null || colors.length != geometry.getSize())
+			colors = new Color[geometry.getSize()];
 	}
 
 	// allow sublcasses to handle resetting the zoom differently (e.g. PopGraph3D
@@ -471,10 +471,10 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		int side;
 
 		Geometry.Type type = geometry.getType();
-		isHierarchy = geometry.getType() == Geometry.Type.HIERARCHY;
+		isHierarchy = geometry.isType(Geometry.Type.HIERARCHY);
 		if (isHierarchy)
 			type = geometry.subgeometry;
-		if (!isHierarchy || geometry.getType() != Geometry.Type.SQUARE)
+		if (!isHierarchy || !geometry.isType(Geometry.Type.SQUARE))
 			hPeriods = null;
 		// geometries that have special/fixed layout
 		switch (type) {
@@ -486,7 +486,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 			case SQUARE_NEUMANN_2ND:
 			case SQUARE_MOORE:
 			case SQUARE:
-				side = (int) (Math.sqrt(geometry.size) + 0.5);
+				side = (int) (Math.sqrt(geometry.getSize()) + 0.5);
 				// for hierarchical structures add gap between units
 				hierarchyGap = 0;
 				if (isHierarchy) {
@@ -509,7 +509,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 				break;
 
 			case TRIANGULAR:
-				side = (int) (Math.sqrt(geometry.size) + 0.5);
+				side = (int) (Math.sqrt(geometry.getSize()) + 0.5);
 				dw2 = width / (side + 1);
 				width = dw2 * (side + 1);
 				dw = 2 * dw2;
@@ -518,7 +518,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 				break;
 
 			case HONEYCOMB:
-				side = (int) (Math.sqrt(geometry.size) + 0.5);
+				side = (int) (Math.sqrt(geometry.getSize()) + 0.5);
 				dw2 = width / (2 * side + 1);
 				width = dw2 * (2 * side + 1);
 				dw = 2 * dw2;
@@ -528,7 +528,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 				break;
 
 			case LINEAR:
-				side = geometry.size;
+				side = geometry.getSize();
 				dw = width / side;
 				if (dw < 1)
 					break;
@@ -557,7 +557,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 
 	@Override
 	public void next(boolean isActive, boolean updateGUI) {
-		if (isActive && geometry != null && geometry.getType() == Geometry.Type.DYNAMIC)
+		if (isActive && geometry != null && geometry.isType(Geometry.Type.DYNAMIC))
 			// invalidate time stamp
 			timestamp = -Double.MAX_VALUE;
 		super.next(isActive, updateGUI);
@@ -568,7 +568,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		if (geometry == null) // ODE/SDE models
 			return;
 		int id = module.getID();
-		boolean isDynamic = geometry.getType() == Geometry.Type.DYNAMIC;
+		boolean isDynamic = geometry.isType(Geometry.Type.DYNAMIC);
 		if (isDynamic) {
 			if (timestamp < network.getTimestamp()) {
 				// time stamp expired - get data
@@ -753,7 +753,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 			case LINEAR:
 				return SNAPSHOT_PNG;
 
-			case MEANFIELD:
+			case WELLMIXED:
 			case COMPLETE:
 			case WHEEL:
 			case STAR:
@@ -778,7 +778,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		int row, side, dw, dw2, dh, dh3, xshift, yshift;
 		int width = canvasRect.width;
 		int height = canvasRect.height;
-		int nNodes = geometry.size;
+		int nNodes = geometry.getSize();
 		double scale;
 		Rectangle bounds = new Rectangle();
 		@SuppressWarnings("hiding")
@@ -1063,7 +1063,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		int side, dw, dw2, dh, dh3;
 		int width = canvasRect.width;
 		int height = canvasRect.height;
-		int nNodes = geometry.size;
+		int nNodes = geometry.getSize();
 		x -= canvasRect.x;
 		y -= canvasRect.y;
 

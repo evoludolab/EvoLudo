@@ -377,7 +377,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 */
 	boolean hasStaticLayout() {
 		return (geometry.isLattice()
-				|| geometry.getType() == Geometry.Type.HIERARCHY && geometry.subgeometry.isLattice());
+				|| geometry.isType(Geometry.Type.HIERARCHY) && geometry.subgeometry.isLattice());
 	}
 
 	/**
@@ -388,8 +388,8 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	boolean hasAnimatedLayout() {
 		if (!animate)
 			return false;
-		return (geometry.size <= MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT
-				&& (int) (geometry.avgTot * geometry.size) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
+		return (geometry.getSize() <= MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT
+				&& (int) (geometry.avgTot * geometry.getSize()) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
 	}
 
 	/**
@@ -691,7 +691,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 			return;
 		}
 		int debugNode = findNodeAt(x, y);
-		if (debugNode >= 0 && debugNode < geometry.size) {
+		if (debugNode >= 0 && debugNode < geometry.getSize()) {
 			if (debugSubmenu == null) {
 				debugSubmenu = new ContextMenu(menu);
 				debugNodeMenu = new ContextMenuItem("Update node @ -",
