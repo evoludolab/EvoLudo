@@ -227,10 +227,10 @@ public abstract class IBS extends Model {
 			if (anyUnique)
 				continue;
 			Geometry geom = pop.getInteractionGeometry();
-			anyUnique |= geom.isUniqueGeometry();
+			anyUnique |= geom.isUnique();
 			if (!geom.isSingle()) {
 				geom = pop.getCompetitionGeometry();
-				anyUnique |= geom.isUniqueGeometry();
+				anyUnique |= geom.isUnique();
 			}
 		}
 		// make sure all populations use same update scheme

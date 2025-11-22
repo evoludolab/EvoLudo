@@ -138,7 +138,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		super.modelChanged(action);
 		if (action == PendingAction.CHANGE_MODE) {
 			for (G graph : graphs) {
-				if (graph.getGeometry().isUniqueGeometry())
+				if (graph.getGeometry().isUnique())
 					graph.invalidate();
 			}
 		}

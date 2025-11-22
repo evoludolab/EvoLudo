@@ -30,7 +30,6 @@
 
 package org.evoludo.simulator;
 
-import org.evoludo.simulator.geom.GeometryType;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,8 +41,7 @@ import java.util.logging.Logger;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.math.RNGDistribution;
-import org.evoludo.simulator.models.IBS;
-import org.evoludo.simulator.models.IBSPopulation;
+import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -5540,7 +5538,7 @@ public class Geometry {
 		// plist.append(Plist.encodeKey("Code", code));
 		// no need to explicitly encode geometries that can be easily and unambiguously
 		// re-generated
-		if (isUniqueGeometry()) {
+		if (isUnique()) {
 			// encode geometry
 			plist.append("<key>Graph</key>\n<dict>\n");
 			// note: in[] and kin[] will be reconstructed on restore
@@ -5564,7 +5562,7 @@ public class Geometry {
 	 * @see #encodeGeometry()
 	 */
 	public void decodeGeometry(Plist plist) {
-		if (!isUniqueGeometry())
+		if (!isUnique())
 			return;
 		// decode geometry
 		Plist graph = (Plist) plist.get("Graph");
@@ -5606,7 +5604,7 @@ public class Geometry {
 	 *
 	 * @return {@code true} if geometry is unique
 	 */
-	public boolean isUniqueGeometry() {
+	public boolean isUnique() {
 		return isUniqueGeometry(geometry);
 	}
 
