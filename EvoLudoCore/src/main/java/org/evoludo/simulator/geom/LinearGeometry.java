@@ -48,7 +48,7 @@ public class LinearGeometry extends AbstractLattice {
 	 */
 	public LinearGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.LINEAR);
+		setType(GeometryType.LINEAR);
 	}
 
 	@Override

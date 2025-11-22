@@ -17,7 +17,7 @@ public class DesarguesGeometry extends AbstractGeometry {
 	 */
 	public DesarguesGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.DESARGUES);
+		setType(GeometryType.DESARGUES);
 	}
 
 	/**

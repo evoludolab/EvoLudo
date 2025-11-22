@@ -45,7 +45,7 @@ public class CubicGeometry extends AbstractLattice {
 	 */
 	public CubicGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.CUBE);
+		setType(GeometryType.CUBE);
 	}
 
 	@Override

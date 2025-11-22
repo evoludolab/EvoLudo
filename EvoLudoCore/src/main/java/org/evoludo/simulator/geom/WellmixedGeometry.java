@@ -46,7 +46,7 @@ public class WellmixedGeometry extends AbstractGeometry {
 	 */
 	public WellmixedGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.WELLMIXED);
+		setType(GeometryType.WELLMIXED);
 	}
 
 	/**

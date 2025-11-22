@@ -17,7 +17,7 @@ public class DodekahedronGeometry extends AbstractGeometry {
 	 */
 	public DodekahedronGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.DODEKAHEDRON);
+		setType(GeometryType.DODEKAHEDRON);
 	}
 
 	/**

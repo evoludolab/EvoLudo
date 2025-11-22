@@ -42,7 +42,7 @@ import org.evoludo.util.Formatter;
  */
 public class HierarchicalGeometry extends AbstractLattice {
 
-	private Type subGeometry = Type.WELLMIXED;
+	private GeometryType subGeometry = GeometryType.WELLMIXED;
 	private int[] rawHierarchy = new int[] { 1 };
 	private int[] hierarchy;
 	/**
@@ -57,13 +57,13 @@ public class HierarchicalGeometry extends AbstractLattice {
 	 */
 	public HierarchicalGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.HIERARCHY);
+		setType(GeometryType.HIERARCHY);
 	}
 
 	@Override
 	public boolean parse(String arg) {
 		String spec = arg == null ? "" : arg.trim();
-		subGeometry = Type.WELLMIXED;
+		subGeometry = GeometryType.WELLMIXED;
 		fixedBoundary = false;
 		spec = parseSubGeometry(spec);
 		spec = stripBoundary(spec);
@@ -83,7 +83,7 @@ public class HierarchicalGeometry extends AbstractLattice {
 	@Override
 	public void reset() {
 		super.reset();
-		subGeometry = Type.WELLMIXED;
+		subGeometry = GeometryType.WELLMIXED;
 		rawHierarchy = new int[] { 1 };
 		hierarchy = null;
 		hierarchyWeight = 0.0;
@@ -93,7 +93,7 @@ public class HierarchicalGeometry extends AbstractLattice {
 	 * @return the geometry used within each hierarchy level (e.g. square or
 	 *         well-mixed)
 	 */
-	public Type getSubGeometry() {
+	public GeometryType getSubGeometry() {
 		return subGeometry;
 	}
 
@@ -175,7 +175,7 @@ public class HierarchicalGeometry extends AbstractLattice {
 				}
 				break;
 			case COMPLETE:
-				subGeometry = Type.WELLMIXED;
+				subGeometry = GeometryType.WELLMIXED;
 				//$FALL-THROUGH$
 			case WELLMIXED:
 			default:
@@ -183,9 +183,9 @@ public class HierarchicalGeometry extends AbstractLattice {
 					prod *= hierarchy[i];
 				nIndiv = Math.max(2, size > 0 ? size / Math.max(1, prod) : 2);
 				connectivity = Math.max(0, nIndiv - 1);
-				if (subGeometry != Type.WELLMIXED) {
+				if (subGeometry != GeometryType.WELLMIXED) {
 					warn("subgeometry '" + subGeometry + "' not supported - using well-mixed demes.");
-					subGeometry = Type.WELLMIXED;
+					subGeometry = GeometryType.WELLMIXED;
 					reset = true;
 				}
 				break;
@@ -230,26 +230,26 @@ public class HierarchicalGeometry extends AbstractLattice {
 		if (spec.isEmpty())
 			return spec;
 		if (spec.startsWith("n2")) {
-			subGeometry = Type.SQUARE_NEUMANN_2ND;
+			subGeometry = GeometryType.SQUARE_NEUMANN_2ND;
 			return spec.substring(2);
 		}
 		char key = spec.charAt(0);
 		switch (key) {
 			case 'n':
-				subGeometry = Type.SQUARE_NEUMANN;
+				subGeometry = GeometryType.SQUARE_NEUMANN;
 				return spec.substring(1);
 			case 'm':
-				subGeometry = Type.SQUARE_MOORE;
+				subGeometry = GeometryType.SQUARE_MOORE;
 				return spec.substring(1);
 			case 'N':
-				subGeometry = Type.SQUARE;
+				subGeometry = GeometryType.SQUARE;
 				return spec.substring(1);
 			case 'C':
 			case 'c':
-				subGeometry = Type.COMPLETE;
+				subGeometry = GeometryType.COMPLETE;
 				return spec.substring(1);
 			case 'M':
-				subGeometry = Type.WELLMIXED;
+				subGeometry = GeometryType.WELLMIXED;
 				return spec.substring(1);
 			default:
 				return spec;

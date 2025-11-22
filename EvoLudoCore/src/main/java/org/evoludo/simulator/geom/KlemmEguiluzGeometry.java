@@ -52,7 +52,7 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 	 */
 	public KlemmEguiluzGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.SCALEFREE_KLEMM);
+		setType(GeometryType.SCALEFREE_KLEMM);
 	}
 
 	@Override

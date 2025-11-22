@@ -48,7 +48,7 @@ public class CompleteGeometry extends AbstractGeometry {
 	 */
 	public CompleteGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.COMPLETE);
+		setType(GeometryType.COMPLETE);
 	}
 
 	@Override

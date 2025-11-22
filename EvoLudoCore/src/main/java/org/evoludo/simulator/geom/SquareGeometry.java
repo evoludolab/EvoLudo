@@ -44,7 +44,7 @@ public class SquareGeometry extends AbstractLattice {
 	/**
 	 * The specific square lattice variant implemented by this instance.
 	 */
-	private final Type variant;
+	private final GeometryType variant;
 
 	/**
 	 * Create a square lattice geometry tied to the given engine.
@@ -52,7 +52,7 @@ public class SquareGeometry extends AbstractLattice {
 	 * @param engine  EvoLudo pacemaker
 	 * @param variant square lattice variant to instantiate
 	 */
-	public SquareGeometry(EvoLudo engine, Type variant) {
+	public SquareGeometry(EvoLudo engine, GeometryType variant) {
 		super(engine);
 		this.variant = variant;
 		setType(variant);
@@ -638,12 +638,12 @@ public class SquareGeometry extends AbstractLattice {
 	@Override
 	protected boolean checkSettings() {
 		boolean doReset = false;
-		if (variant == Type.SQUARE_MOORE)
+		if (variant == GeometryType.SQUARE_MOORE)
 			connectivity = 8;
-		if (variant == Type.SQUARE_NEUMANN || variant == Type.SQUARE_NEUMANN_2ND)
+		if (variant == GeometryType.SQUARE_NEUMANN || variant == GeometryType.SQUARE_NEUMANN_2ND)
 			connectivity = Math.max(connectivity, 4);
 		int side = (int) Math.floor(Math.sqrt(size) + 0.5);
-		if (variant == Type.SQUARE_NEUMANN_2ND)
+		if (variant == GeometryType.SQUARE_NEUMANN_2ND)
 			side = (side + 1) / 2 * 2;
 		int side2 = side * side;
 		if (setSize(side2)) {

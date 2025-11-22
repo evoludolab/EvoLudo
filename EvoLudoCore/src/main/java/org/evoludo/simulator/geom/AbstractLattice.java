@@ -94,11 +94,11 @@ public abstract class AbstractLattice extends AbstractGeometry {
 			return "";
 		String working = spec;
 		boolean fixed = false;
-		if (Type.isFixedBoundaryToken(working.charAt(0))) {
+		if (GeometryType.isFixedBoundaryToken(working.charAt(0))) {
 			fixed = true;
 			working = working.substring(1);
 		}
-		if (!working.isEmpty() && Type.isFixedBoundaryToken(working.charAt(working.length() - 1))) {
+		if (!working.isEmpty() && GeometryType.isFixedBoundaryToken(working.charAt(working.length() - 1))) {
 			fixed = true;
 			working = working.substring(0, working.length() - 1);
 		}

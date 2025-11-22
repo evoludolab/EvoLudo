@@ -44,7 +44,7 @@ public class StarGeometry extends AbstractGeometry {
 	 */
 	public StarGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.STAR);
+		setType(GeometryType.STAR);
 	}
 
 	@Override

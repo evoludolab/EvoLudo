@@ -46,7 +46,7 @@ public class RandomDirectedGeometry extends AbstractGeometry {
 	 */
 	public RandomDirectedGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.RANDOM_GRAPH_DIRECTED);
+		setType(GeometryType.RANDOM_GRAPH_DIRECTED);
 	}
 
 	@Override

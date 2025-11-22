@@ -45,7 +45,7 @@ public class WheelGeometry extends AbstractGeometry {
 	 */
 	public WheelGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.WHEEL);
+		setType(GeometryType.WHEEL);
 	}
 
 	/**

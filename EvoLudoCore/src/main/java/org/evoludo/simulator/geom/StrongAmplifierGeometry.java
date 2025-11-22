@@ -18,7 +18,7 @@ public class StrongAmplifierGeometry extends AbstractGeometry {
 	 */
 	public StrongAmplifierGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.STRONG_AMPLIFIER);
+		setType(GeometryType.STRONG_AMPLIFIER);
 	}
 
 	/**

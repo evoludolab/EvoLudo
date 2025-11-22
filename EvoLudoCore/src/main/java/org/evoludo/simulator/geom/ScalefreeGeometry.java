@@ -55,7 +55,7 @@ public class ScalefreeGeometry extends AbstractNetwork {
 	 */
 	public ScalefreeGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.SCALEFREE);
+		setType(GeometryType.SCALEFREE);
 	}
 
 	@Override

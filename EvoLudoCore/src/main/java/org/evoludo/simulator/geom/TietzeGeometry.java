@@ -17,7 +17,7 @@ public class TietzeGeometry extends AbstractGeometry {
 	 */
 	public TietzeGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.TIETZE);
+		setType(GeometryType.TIETZE);
 	}
 
 	/**

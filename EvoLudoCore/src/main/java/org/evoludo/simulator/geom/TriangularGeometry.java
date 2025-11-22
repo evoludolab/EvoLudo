@@ -45,7 +45,7 @@ public class TriangularGeometry extends AbstractLattice {
 	 */
 	public TriangularGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.TRIANGULAR);
+		setType(GeometryType.TRIANGULAR);
 	}
 
 	/**

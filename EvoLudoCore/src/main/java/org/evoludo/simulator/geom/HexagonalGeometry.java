@@ -48,7 +48,7 @@ public class HexagonalGeometry extends AbstractLattice {
 	 */
 	public HexagonalGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.HEXAGONAL);
+		setType(GeometryType.HEXAGONAL);
 	}
 
 	@Override

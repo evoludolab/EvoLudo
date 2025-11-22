@@ -17,7 +17,7 @@ public class FranklinGeometry extends AbstractGeometry {
 	 */
 	public FranklinGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.FRANKLIN);
+		setType(GeometryType.FRANKLIN);
 	}
 
 	/**

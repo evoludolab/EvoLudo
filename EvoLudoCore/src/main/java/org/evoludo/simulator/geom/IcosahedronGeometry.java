@@ -14,7 +14,7 @@ public class IcosahedronGeometry extends AbstractGeometry {
 	 */
 	public IcosahedronGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.ICOSAHEDRON);
+		setType(GeometryType.ICOSAHEDRON);
 	}
 
 	/**

@@ -41,7 +41,7 @@ public class DynamicGeometry extends AbstractGeometry {
 	 */
 	public DynamicGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.DYNAMIC);
+		setType(GeometryType.DYNAMIC);
 	}
 
 	@Override

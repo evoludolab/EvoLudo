@@ -47,7 +47,7 @@ public class RandomGeometry extends AbstractGeometry {
 	 */
 	public RandomGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.RANDOM_GRAPH);
+		setType(GeometryType.RANDOM_GRAPH);
 	}
 
 	@Override

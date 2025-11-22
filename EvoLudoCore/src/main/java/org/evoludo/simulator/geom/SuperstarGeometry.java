@@ -61,7 +61,7 @@ public class SuperstarGeometry extends AbstractGeometry {
 	 */
 	public SuperstarGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.SUPER_STAR);
+		setType(GeometryType.SUPER_STAR);
 	}
 
 	@Override

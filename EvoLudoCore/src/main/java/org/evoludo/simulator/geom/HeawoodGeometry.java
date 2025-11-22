@@ -18,7 +18,7 @@ public class HeawoodGeometry extends AbstractGeometry {
 	 */
 	public HeawoodGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.HEAWOOD);
+		setType(GeometryType.HEAWOOD);
 	}
 
 	/**

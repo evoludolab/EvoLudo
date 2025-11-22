@@ -47,7 +47,7 @@ public class FruchtGeometry extends AbstractGeometry {
 	 */
 	public FruchtGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.FRUCHT);
+		setType(GeometryType.FRUCHT);
 	}
 
 	@Override

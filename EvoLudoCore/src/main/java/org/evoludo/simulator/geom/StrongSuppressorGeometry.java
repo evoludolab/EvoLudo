@@ -18,7 +18,7 @@ public class StrongSuppressorGeometry extends AbstractGeometry {
 	 */
 	public StrongSuppressorGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.STRONG_SUPPRESSOR);
+		setType(GeometryType.STRONG_SUPPRESSOR);
 	}
 
 	/**

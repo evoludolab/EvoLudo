@@ -46,7 +46,7 @@ public class BarabasiAlbertGeometry extends AbstractNetwork {
 	 */
 	public BarabasiAlbertGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.SCALEFREE_BA);
+		setType(GeometryType.SCALEFREE_BA);
 	}
 
 	@Override

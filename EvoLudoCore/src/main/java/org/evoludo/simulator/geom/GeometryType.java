@@ -100,7 +100,7 @@ import org.evoludo.util.CLOption;
  * <dd>scale-free graph, Klemm &amp; Eguiluz</dd>
  * </dl>
  */
-public enum Type implements CLOption.Key {
+public enum GeometryType implements CLOption.Key {
 	/**
 	 * Mean-field/well-mixed population.
 	 * 
@@ -407,7 +407,7 @@ public enum Type implements CLOption.Key {
 	 * @param key   identifier for parsing of command line option
 	 * @param title the summary of geometry for GUI and help display
 	 */
-	Type(String key, String title) {
+	GeometryType(String key, String title) {
 		this(key, title, null);
 	}
 
@@ -418,7 +418,7 @@ public enum Type implements CLOption.Key {
 	 * @param title       the summary of the geometry for GUI and help display
 	 * @param description the optional description of geometry
 	 */
-	Type(String key, String title, String description) {
+	GeometryType(String key, String title, String description) {
 		this.key = key;
 		this.title = title;
 		this.description = description;
@@ -497,7 +497,7 @@ public enum Type implements CLOption.Key {
 		if (cli == null || cli.isEmpty())
 			throw new IllegalArgumentException("geometry specification must not be empty");
 		CLOption clo = engine.getModule().cloGeometry;
-		Type type = (Type) clo.match(cli);
+		GeometryType type = (GeometryType) clo.match(cli);
 		AbstractGeometry geometry = AbstractGeometry.create(type, engine);
 		String spec = cli.substring(Math.min(type.key.length(), cli.length()));
 		geometry.setSpecification(spec);

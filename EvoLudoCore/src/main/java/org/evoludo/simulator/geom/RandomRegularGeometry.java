@@ -22,7 +22,7 @@ public class RandomRegularGeometry extends AbstractNetwork {
 	 */
 	public RandomRegularGeometry(EvoLudo engine) {
 		super(engine);
-		setType(Type.RANDOM_REGULAR_GRAPH);
+		setType(GeometryType.RANDOM_REGULAR_GRAPH);
 	}
 
 	@Override

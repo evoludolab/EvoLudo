@@ -51,7 +51,8 @@ import org.evoludo.util.Plist;
  * structures historically provided by {@link org.evoludo.simulator.Geometry}.
  * Instances of {@code AbstractGeometry} describe neighbourhood graphs for IBS
  * populations and expose the utilities required by concrete geometries (see
- * {@link Type}). Both interaction and competition graphs share the same data
+ * {@link GeometryType}). Both interaction and competition graphs share the same
+ * data
  * model and can therefore reuse the helpers defined here.
  */
 public abstract class AbstractGeometry {
@@ -63,7 +64,7 @@ public abstract class AbstractGeometry {
 	 * @param engine pacemaker used by the geometry
 	 * @return the instantiated geometry
 	 */
-	public static AbstractGeometry create(Type type, EvoLudo engine) {
+	public static AbstractGeometry create(GeometryType type, EvoLudo engine) {
 		if (type == null)
 			throw new IllegalArgumentException("type must not be null");
 		switch (type) {
@@ -143,7 +144,7 @@ public abstract class AbstractGeometry {
 					"Cannot derive competition geometry when isSingle == false.");
 		AbstractGeometry competition = clone();
 		// remove competition with self
-		if (competition.isType(Type.WELLMIXED))
+		if (competition.isType(GeometryType.WELLMIXED))
 			for (int n = 0; n < size; n++)
 				competition.removeLinkAt(n, n);
 		competition.evaluate();
@@ -189,7 +190,7 @@ public abstract class AbstractGeometry {
 	/**
 	 * Current geometry type handled by this instance.
 	 */
-	Type type = Type.WELLMIXED;
+	GeometryType type = GeometryType.WELLMIXED;
 
 	/**
 	 * The number of nodes in the graph.
@@ -345,18 +346,18 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
-	 * @return the current geometry {@link Type}
+	 * @return the current geometry {@link GeometryType}
 	 */
-	public Type getType() {
+	public GeometryType getType() {
 		return type;
 	}
 
 	/**
-	 * Update the geometry {@link Type}.
+	 * Update the geometry {@link GeometryType}.
 	 *
 	 * @param type the new type
 	 */
-	protected void setType(Type type) {
+	protected void setType(GeometryType type) {
 		this.type = type;
 	}
 
@@ -422,11 +423,11 @@ public abstract class AbstractGeometry {
 	public static boolean displaySingleGeometry(AbstractGeometry interaction, AbstractGeometry competition) {
 		if (interaction == null)
 			throw new IllegalArgumentException("interaction geometry must not be null");
-		Type interactionType = interaction.getType();
+		GeometryType interactionType = interaction.getType();
 		if (interaction.isLattice()) {
 			if (competition == null)
 				return interaction.isSingle();
-			Type competitionType = competition.getType();
+			GeometryType competitionType = competition.getType();
 			if (interactionType.isSquareLattice() && competitionType.isSquareLattice())
 				return true;
 			return competitionType == interactionType;
@@ -499,7 +500,7 @@ public abstract class AbstractGeometry {
 	 * @param type the type to compare to
 	 * @return {@code true} if {@link #getType()} matches {@code type}
 	 */
-	public boolean isType(Type type) {
+	public boolean isType(GeometryType type) {
 		return getType() == type;
 	}
 
@@ -691,7 +692,7 @@ public abstract class AbstractGeometry {
 		kin = null;
 		kout = null;
 		size = -1;
-		type = Type.WELLMIXED;
+		type = GeometryType.WELLMIXED;
 		minIn = -1;
 		maxIn = -1;
 		avgIn = -1.0;
@@ -746,9 +747,9 @@ public abstract class AbstractGeometry {
 	 * as {@code minIn, maxOut, avgTot} etc.
 	 */
 	public void evaluate() {
-		if (evaluated && !isType(Type.DYNAMIC))
+		if (evaluated && !isType(GeometryType.DYNAMIC))
 			return;
-		if (type == Type.WELLMIXED || kout == null || kin == null) {
+		if (type == GeometryType.WELLMIXED || kout == null || kin == null) {
 			maxOut = 0;
 			maxIn = 0;
 			maxTot = 0;
@@ -1411,9 +1412,9 @@ public abstract class AbstractGeometry {
 	 */
 	public String usage() {
 		CLOption clo = engine.getModule().cloGeometry;
-		boolean fixedBoundariesAvailable = (clo.isValidKey(Type.LINEAR) || clo.isValidKey(Type.SQUARE)
-				|| clo.isValidKey(Type.CUBE)
-				|| clo.isValidKey(Type.HEXAGONAL) || clo.isValidKey(Type.TRIANGULAR));
+		boolean fixedBoundariesAvailable = (clo.isValidKey(GeometryType.LINEAR) || clo.isValidKey(GeometryType.SQUARE)
+				|| clo.isValidKey(GeometryType.CUBE)
+				|| clo.isValidKey(GeometryType.HEXAGONAL) || clo.isValidKey(GeometryType.TRIANGULAR));
 		String descr = "--geometry <>   geometry " //
 				+ (engine.getModel().getType().isIBS() ? "- interaction==competition\n" : "\n") //
 				+ "      argument: <g><k>" //
