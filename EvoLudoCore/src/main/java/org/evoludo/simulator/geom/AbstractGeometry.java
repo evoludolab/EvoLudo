@@ -220,7 +220,7 @@ public abstract class AbstractGeometry {
 	/**
 	 * {@code true} if the network structure has been successfully initialized.
 	 */
-	public boolean isValid = false;
+	boolean isValid = false;
 
 	/**
 	 * Convenience flag denoting whether intra- and interspecific competitions are
@@ -231,7 +231,7 @@ public abstract class AbstractGeometry {
 	/**
 	 * Connectivity (average number of neighbors).
 	 */
-	public double connectivity = -1.0;
+	double connectivity = -1.0;
 
 	/**
 	 * Probability for rewiring.
@@ -528,6 +528,22 @@ public abstract class AbstractGeometry {
 	 */
 	public double getAddwire() {
 		return pAddwire;
+	}
+
+	/**
+	 * Sets the connectivity (average number of neighbors).
+	 *
+	 * @param connectivity average degree
+	 */
+	public void setConnectivity(double connectivity) {
+		this.connectivity = connectivity;
+	}
+
+	/**
+	 * @return the current connectivity (average degree)
+	 */
+	public double getConnectivity() {
+		return connectivity;
 	}
 
 	/**

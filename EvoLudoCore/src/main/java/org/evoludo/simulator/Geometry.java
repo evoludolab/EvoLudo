@@ -885,7 +885,7 @@ public class Geometry {
 	/**
 	 * The degree or connectivity of the graph or (average) number of neighbours.
 	 */
-	public double connectivity = -1.0;
+	protected double connectivity = -1.0;
 
 	/**
 	 * Fraction of undirected links to add or rewire.
@@ -965,6 +965,22 @@ public class Geometry {
 	 */
 	public double getAddwire() {
 		return pAddwire;
+	}
+
+	/**
+	 * Sets the (average) connectivity of the graph.
+	 *
+	 * @param connectivity average number of neighbours
+	 */
+	public void setConnectivity(double connectivity) {
+		this.connectivity = connectivity;
+	}
+
+	/**
+	 * @return the current (average) connectivity
+	 */
+	public double getConnectivity() {
+		return connectivity;
 	}
 
 	/**

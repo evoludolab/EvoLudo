@@ -425,7 +425,7 @@ public class IBSGroup {
 			return;
 		}
 
-		if ((int) Math.rint(geometry.connectivity) == hu.unitSize - 1) {
+		if ((int) Math.rint(geometry.getConnectivity()) == hu.unitSize - 1) {
 			// if individuals are connected to all other members of the unit one hierarchy
 			// level is lost.
 			// this applies to well-mixed units as well as e.g. square lattices with moore

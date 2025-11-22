@@ -312,7 +312,7 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 			geometry.setSize(MAX_BINS);
 		} else {
 			geometry.setType(Geometry.Type.SQUARE);
-			geometry.connectivity = 4;
+			geometry.setConnectivity(4);
 			geometry.setSize(MAX_BINS * MAX_BINS);
 		}
 		if (bins == null || bins.length != geometry.getSize())

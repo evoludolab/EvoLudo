@@ -3549,7 +3549,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	boolean checkInteractions(int nGroup) {
 		boolean doReset = false;
 		// check sampling in special geometries
-		if (interaction.getType() == Geometry.Type.SQUARE && interaction.isRegular() && interaction.connectivity > 8 &&
+		if (interaction.getType() == Geometry.Type.SQUARE && interaction.isRegular() && interaction.getConnectivity() > 8 &&
 				interGroup.isSampling(IBSGroup.SamplingType.ALL) && nGroup > 2 && nGroup < 9) {
 			// if connectivity > 8 then the interaction pattern Group.SAMPLING_ALL with a
 			// group size between 2 and 8 (excluding boundaries is not allowed because this
@@ -3562,7 +3562,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 								+ " - using random sampling of interaction partners!");
 		}
 		if (interaction.getType() == Geometry.Type.CUBE && interGroup.isSampling(IBSGroup.SamplingType.ALL) &&
-				nGroup > 2 && nGroup <= interaction.connectivity) {
+				nGroup > 2 && nGroup <= interaction.getConnectivity()) {
 			// Group.SAMPLING_ALL only works with pairwise interactions or all neighbors
 			// restrictions do not apply for PDE's
 			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
@@ -4011,7 +4011,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			} else {
 				// pairwise interactions
 				if (interaction.isRegular())
-					Arrays.fill(interactions, (int) (interaction.connectivity + 0.5));
+					Arrays.fill(interactions, (int) (interaction.getConnectivity() + 0.5));
 				else
 					System.arraycopy(interaction.kin, 0, interactions, 0, interactions.length);
 			}

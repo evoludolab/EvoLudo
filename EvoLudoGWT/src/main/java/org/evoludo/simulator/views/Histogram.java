@@ -1213,10 +1213,10 @@ public class Histogram extends AbstractView<HistoGraph> {
 			inter = (inter == null ? module.getInteractionGeometry() : inter);
 			if (inter.isRegular()) {
 				graph.displayMessage("PDE model: regular structure with degree "
-						+ (int) (inter.connectivity + 0.5) + ".");
+						+ (int) (inter.getConnectivity() + 0.5) + ".");
 			} else if (inter.isLattice()) {
 				graph.displayMessage("PDE model: lattice structure with degree "
-						+ (int) (inter.connectivity + 0.5) +
+						+ (int) (inter.getConnectivity() + 0.5) +
 						(inter.fixedBoundary ? " (fixed" : " (periodic") + " boundaries).");
 			}
 		} else {
