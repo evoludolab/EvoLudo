@@ -69,7 +69,7 @@ public class SDE extends ODE {
 	 */
 	public SDE(EvoLudo engine) {
 		super(engine);
-		type = Type.SDE;
+		type = ModelType.SDE;
 	}
 
 	@Override
@@ -94,14 +94,14 @@ public class SDE extends ODE {
 					continue;
 				// multiple traits implies evolutionary module - revert to ODE
 				logger.warning("SDE model for multi-species modules requires single trait - revert to ODE.");
-				engine.loadModel(Type.ODE);
+				engine.loadModel(ModelType.ODE);
 				return true;
 			}
 		} else {
 			// single species module requires dependent trait
 			if (((HasDE) module).getDependent() < 0) {
 				logger.warning("SDE model requires dependent trait - revert to ODE.");
-				engine.loadModel(Type.ODE);
+				engine.loadModel(ModelType.ODE);
 				return true;
 			}
 		}
@@ -113,7 +113,7 @@ public class SDE extends ODE {
 		if (!getClass().getSuperclass().equals(SDE.class) && (dim < 1 || dim > 2)) {
 			logger.warning(getClass().getSimpleName()
 					+ " - max. 3 traits incl. dependent - revert to ODE (use SDEN).");
-			engine.loadModel(Type.ODE);
+			engine.loadModel(ModelType.ODE);
 			return true;
 		}
 		if (isAdjustedDynamics) {

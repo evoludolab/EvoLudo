@@ -41,7 +41,7 @@ import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.models.RungeKutta;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
@@ -324,7 +324,7 @@ public class SIR extends Discrete implements HasIBS, HasDE.ODE, HasDE.SDE, HasDE
 	}
 
 	@Override
-	public Model createModel(Type type) {
+	public Model createModel(ModelType type) {
 		if (model != null && model.getType().isType(type))
 			return model;
 		switch (type) {

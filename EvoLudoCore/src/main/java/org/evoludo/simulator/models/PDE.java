@@ -290,7 +290,7 @@ public class PDE extends ODE {
 	 */
 	public PDE(EvoLudo engine) {
 		super(engine);
-		type = Type.PDERD;
+		type = ModelType.PDERD;
 		initializer = new PDEInitialize(this);
 	}
 
@@ -331,12 +331,12 @@ public class PDE extends ODE {
 		boolean doReset = false;
 		if (species.size() > 1) {
 			logger.warning("PDE model for inter-species interactions not (yet?) implemented - reverting to ODE.");
-			engine.loadModel(Type.ODE);
+			engine.loadModel(ModelType.ODE);
 			return true;
 		}
 		if (space.isType(Geometry.Type.WELLMIXED) || space.isType(Geometry.Type.COMPLETE)) {
 			logger.warning("unstructured population - reverting to ODE.");
-			engine.loadModel(Type.ODE);
+			engine.loadModel(ModelType.ODE);
 			return true;
 		}
 		doReset |= space.setSize(discretization);

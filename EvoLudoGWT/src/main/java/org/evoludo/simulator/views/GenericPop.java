@@ -45,7 +45,7 @@ import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.PDE;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
@@ -187,7 +187,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 *              competition geometry
 	 */
 	void setGraphGeometry(GenericPopGraph<T, N> graph, boolean inter) {
-		Type mt = model.getType();
+		ModelType mt = model.getType();
 		if (mt.isIBS()) {
 			Module<?> module = graph.getModule();
 			Geometry igeom = module.getInteractionGeometry();
@@ -218,7 +218,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 
 	@Override
 	public void update(boolean force) {
-		Type mt = model.getType();
+		ModelType mt = model.getType();
 		if (mt.isIBS() || mt.isPDE()) {
 			// always read data - some nodes may have changed due to user actions
 			double newtime = model.getUpdates();
@@ -276,7 +276,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 
 	@Override
 	public void mouseHitNode(int id, int node, boolean alt) {
-		Type mt = model.getType();
+		ModelType mt = model.getType();
 		if (mt.isIBS())
 			((IBS) model).mouseHitNode(id, node, alt);
 	}
@@ -296,7 +296,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 					.append(module.getName())
 					.append(TABLE_ROW_END);
 
-		Type mt = model.getType();
+		ModelType mt = model.getType();
 		// Delegate heavy logic to dedicated helpers to reduce cognitive complexity
 		if (mt.isIBS())
 			return tooltipForIBS(node, nNodes, module, graph, tip);

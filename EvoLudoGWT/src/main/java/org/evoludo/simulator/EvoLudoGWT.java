@@ -39,7 +39,7 @@ import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.PDESupervisorGWT;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
@@ -346,7 +346,7 @@ public class EvoLudoGWT extends EvoLudo {
 	 * @param menu the context menu where entries can be added
 	 */
 	public void populateContextMenu(ContextMenu menu) {
-		Type mt = activeModel.getType();
+		ModelType mt = activeModel.getType();
 		if (mt.isODE() || mt.isSDE()) {
 			// add time reverse context menu
 			if (timeReverseMenu == null) {

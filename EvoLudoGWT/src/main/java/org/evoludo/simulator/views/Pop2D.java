@@ -45,7 +45,7 @@ import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model.HasDE;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Map2Fitness;
@@ -166,7 +166,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 
 	@Override
 	protected boolean allocateGraphs() {
-		Type mt = model.getType();
+		ModelType mt = model.getType();
 		if (mt.isIBS())
 			return allocateIBSGraphs();
 

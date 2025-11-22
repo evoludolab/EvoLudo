@@ -42,7 +42,7 @@ import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.RungeKutta;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.views.BasicTooltipProvider;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasS3;
@@ -599,7 +599,7 @@ public class ATBT extends TBT implements HasS3, HasPhase2D {
 	}
 
 	@Override
-	public Model createModel(Type type) {
+	public Model createModel(ModelType type) {
 		if (!type.isODE())
 			return super.createModel(type);
 		if (model != null && model.getType().isODE())

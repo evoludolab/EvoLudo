@@ -143,7 +143,7 @@ public abstract class IBS extends Model {
 	 */
 	protected IBS(EvoLudo engine) {
 		super(engine);
-		type = Type.IBS;
+		type = ModelType.IBS;
 	}
 
 	/**

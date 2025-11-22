@@ -55,7 +55,7 @@ import org.evoludo.simulator.models.ODE;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.RungeKutta;
 import org.evoludo.simulator.models.SDE;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
 import org.evoludo.util.CLODelegate;
@@ -226,15 +226,15 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * 
 	 * @see EvoLudo#getRNG()
 	 */
-	public Model createModel(Type type) {
+	public Model createModel(ModelType type) {
 		if (model != null && model.getType() == type)
 			return model;
 		// default for ODE is RK5, if available
-		if (type == Type.ODE && this instanceof HasDE.RK5)
-			type = Type.RK5;
+		if (type == ModelType.ODE && this instanceof HasDE.RK5)
+			type = ModelType.RK5;
 		// default for PDE is PDERD, if available
-		else if (type == Type.PDE && this instanceof HasDE.PDERD)
-			type = Type.PDERD;
+		else if (type == ModelType.PDE && this instanceof HasDE.PDERD)
+			type = ModelType.PDERD;
 		// return default model for type
 		switch (type) {
 			case IBS:
@@ -468,25 +468,25 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * 
 	 * @return the array of supported Model types
 	 */
-	public Type[] getModelTypes() {
-		ArrayList<Type> types = new ArrayList<>();
+	public ModelType[] getModelTypes() {
+		ArrayList<ModelType> types = new ArrayList<>();
 		if (this instanceof HasIBS)
-			types.add(Type.IBS);
+			types.add(ModelType.IBS);
 		if (this instanceof HasDE.ODE)
-			types.add(Type.ODE);
+			types.add(ModelType.ODE);
 		if (this instanceof HasDE.RK5)
-			types.add(Type.RK5);
+			types.add(ModelType.RK5);
 		if (this instanceof HasDE.EM)
-			types.add(Type.EM);
+			types.add(ModelType.EM);
 		if (this instanceof HasDE.SDE)
-			types.add(Type.SDE);
+			types.add(ModelType.SDE);
 		if (this instanceof HasDE.PDE)
-			types.add(Type.PDE);
+			types.add(ModelType.PDE);
 		if (this instanceof HasDE.PDERD)
-			types.add(Type.PDERD);
+			types.add(ModelType.PDERD);
 		if (this instanceof HasDE.PDEADV)
-			types.add(Type.PDEADV);
-		return types.toArray(new Type[0]);
+			types.add(ModelType.PDEADV);
+		return types.toArray(new ModelType[0]);
 	}
 
 	/**

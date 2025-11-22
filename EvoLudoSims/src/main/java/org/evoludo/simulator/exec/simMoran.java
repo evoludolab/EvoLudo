@@ -37,7 +37,7 @@ import org.evoludo.math.Distributions;
 import org.evoludo.simulator.EvoLudoJRE;
 import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.models.Mode;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Moran;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
@@ -87,8 +87,8 @@ public class simMoran extends Moran {
 	}
 
 	@Override
-	public Type[] getModelTypes() {
-		return new Type[] { Type.IBS, Type.SDE };
+	public ModelType[] getModelTypes() {
+		return new ModelType[] { ModelType.IBS, ModelType.SDE };
 	}
 
 	@Override

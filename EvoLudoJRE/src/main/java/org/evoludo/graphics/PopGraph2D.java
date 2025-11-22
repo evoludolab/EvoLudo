@@ -64,7 +64,7 @@ import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
 
@@ -143,7 +143,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 
 	// this is up-to-date after call to controller.initData()
 	protected void checkGraph() {
-		org.evoludo.simulator.models.Type model = controller.getEngine().getModel().getType();
+		org.evoludo.simulator.models.ModelType model = controller.getEngine().getModel().getType();
 		switch (model) {
 			case ODE:
 				setMessage("No view available (ODE Solver)");
@@ -635,7 +635,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	@Override
 	protected boolean mouseDrag(Point loc, int mode, int stage) {
 		Model model = controller.getEngine().getModel();
-		Type mt = model.getType();
+		ModelType mt = model.getType();
 
 		switch (mode) {
 			case MOUSE_GRAB:

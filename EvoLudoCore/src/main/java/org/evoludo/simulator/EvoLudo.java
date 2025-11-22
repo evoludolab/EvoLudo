@@ -53,7 +53,7 @@ import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.SampleListener;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.ATBT;
 import org.evoludo.simulator.modules.CDL;
 import org.evoludo.simulator.modules.CDLP;
@@ -272,7 +272,7 @@ public abstract class EvoLudo
 	 *
 	 * @param type the type of {@link Model} to load
 	 */
-	public void loadModel(Type type) {
+	public void loadModel(ModelType type) {
 		if (activeModel != null && activeModel.getType() == type) {
 			// model already loaded
 			return;
@@ -462,9 +462,9 @@ public abstract class EvoLudo
 		boolean doReset = false;
 		for (Module<?> mod : activeModule.getSpecies())
 			doReset |= mod.check();
-		Type type = activeModel.getType();
+		ModelType type = activeModel.getType();
 		doReset |= activeModel.check();
-		Type newtype = activeModel.getType();
+		ModelType newtype = activeModel.getType();
 		if (newtype != type) {
 			// model type changed; update model type in clo and parse again
 			String[] splitclo = getSplitCLO();
@@ -1565,7 +1565,7 @@ public abstract class EvoLudo
 
 		// determine feasible --model options for given module
 		cloModel.clearKeys();
-		Type[] mt = activeModule.getModelTypes();
+		ModelType[] mt = activeModule.getModelTypes();
 		cloModel.addKeys(mt);
 
 		// handle model option
@@ -1647,8 +1647,8 @@ public abstract class EvoLudo
 				logger.severe("No model found!");
 			return helpCLO;
 		}
-		Type defaulttype = (Type) cloModel.match(cloModel.getDefault());
-		Type type = null;
+		ModelType defaulttype = (ModelType) cloModel.match(cloModel.getDefault());
+		ModelType type = null;
 		for (int i = 0; i < cloarray.length; i++) {
 			String param = cloarray[i];
 			if (!param.startsWith(modelName))
@@ -1662,7 +1662,7 @@ public abstract class EvoLudo
 					logger.warning("model key missing - use default type " + type.getKey() + ".");
 				break;
 			}
-			type = Type.parse(newModel);
+			type = ModelType.parse(newModel);
 			if (type == null || !keys.contains(type)) {
 				if (activeModel != null) {
 					type = activeModel.getType();
@@ -1824,9 +1824,9 @@ public abstract class EvoLudo
 			});
 
 	/**
-	 * Command line option to set the type of model (see {@link Type}).
+	 * Command line option to set the type of model (see {@link ModelType}).
 	 */
-	public final CLOption cloModel = new CLOption("model", Type.IBS.getKey(), CLOCategory.Module,
+	public final CLOption cloModel = new CLOption("model", ModelType.IBS.getKey(), CLOCategory.Module,
 			"--model <m>     model type", new CLODelegate() {
 				@Override
 				public boolean parse(String arg) {

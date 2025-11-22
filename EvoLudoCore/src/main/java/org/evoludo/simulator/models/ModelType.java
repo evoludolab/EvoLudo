@@ -45,7 +45,7 @@ import org.evoludo.util.CLOption;
  * <dd>partial differential equations</dd>
  * </dl>
  */
-public enum Type implements CLOption.Key {
+public enum ModelType implements CLOption.Key {
 	/**
 	 * Individual based simulation model.
 	 */
@@ -102,7 +102,7 @@ public enum Type implements CLOption.Key {
 	 * @param key   the identifying key of the model
 	 * @param title the title/description of the model
 	 */
-	Type(String key, String title) {
+	ModelType(String key, String title) {
 		this.key = key;
 		this.title = title;
 	}
@@ -113,10 +113,10 @@ public enum Type implements CLOption.Key {
 	 * @param arg the string to match with a model type
 	 * @return the best matching model type
 	 */
-	public static Type parse(String arg) {
+	public static ModelType parse(String arg) {
 		int best = 0;
-		Type match = null;
-		for (Type t : values()) {
+		ModelType match = null;
+		for (ModelType t : values()) {
 			int diff = CLOption.differAt(arg, t.key);
 			if (diff > best) {
 				best = diff;
@@ -135,7 +135,7 @@ public enum Type implements CLOption.Key {
 	 * @return {@code true} if this model type is the same as the given type,
 	 *         {@code false} otherwise
 	 */
-	public boolean isType(Type type) {
+	public boolean isType(ModelType type) {
 		if (this == type)
 			return true;
 		if (type.isODE())

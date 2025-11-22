@@ -329,7 +329,7 @@ public class ODE extends Model implements DModel {
 	 */
 	public ODE(EvoLudo engine) {
 		super(engine);
-		type = Type.EM;
+		type = ModelType.EM;
 		initializer = new ODEInitialize(this);
 	}
 

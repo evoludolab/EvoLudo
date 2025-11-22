@@ -66,7 +66,7 @@ import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.PDE;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.Formatter;
@@ -169,7 +169,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 	public void initColor(int tag) {
 		Color[] tColors = module.getTraitColors();
 		Model model = engine.getModel();
-		Type mt = model.getType();
+		ModelType mt = model.getType();
 		switch (type) {
 			case DSTRAT:
 				if (mt.isPDE()) {

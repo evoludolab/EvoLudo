@@ -39,7 +39,7 @@ import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.models.RungeKutta;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Features.Multispecies;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPhase2D;
@@ -273,7 +273,7 @@ public class LV extends Discrete implements HasDE.ODE, HasDE.SDE, HasDE.DualDyna
 	}
 
 	@Override
-	public Model createModel(Type type) {
+	public Model createModel(ModelType type) {
 		switch (type) {
 			case ODE:
 				if (model != null && model.getType().isODE())

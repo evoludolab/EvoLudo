@@ -50,7 +50,7 @@ import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.models.Mode;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Continuous;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Module;
@@ -424,7 +424,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @return the number of x-label rows added
 	 */
 	private int addDegreeGraphs(List<? extends Module<?>> species, int nGraphs) {
-		Type mt = model.getType();
+		ModelType mt = model.getType();
 		int nXLabels = 0;
 		int idx = 0;
 		for (Module<?> module : species) {
@@ -923,7 +923,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 		Module<?> oldmod = null;
 		double[][] data = null;
 		int idx = 0;
-		Type mt = model.getType();
+		ModelType mt = model.getType();
 		boolean isOSDE = mt.isODE() || mt.isSDE();
 		boolean isPDE = mt.isPDE();
 		for (HistoGraph graph : graphs) {
@@ -1177,7 +1177,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 */
 	private void updateDegree() {
 		double[][] data = null;
-		Type mt = model.getType();
+		ModelType mt = model.getType();
 		for (HistoGraph graph : graphs) {
 			Module<?> module = graph.getModule();
 			Geometry inter = module.getInteractionGeometry();
@@ -1207,7 +1207,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * Handle messaging for DE/PDE models; returns true if a message was set on the
 	 * graph and further processing should be skipped.
 	 */
-	private boolean handleDEGraph(HistoGraph graph, Type mt, Module<?> module) {
+	private boolean handleDEGraph(HistoGraph graph, ModelType mt, Module<?> module) {
 		if (mt.isPDE()) {
 			Geometry inter = module.getGeometry();
 			inter = (inter == null ? module.getInteractionGeometry() : inter);

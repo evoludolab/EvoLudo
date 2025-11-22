@@ -41,7 +41,7 @@ import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.MilestoneListener;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.Formatter;
@@ -78,8 +78,8 @@ public class DemesTBT extends TBT {
 	 * Currently only IBS models are supported even though super supports more.
 	 */
 	@Override
-	public Type[] getModelTypes() {
-		return new Type[] { Type.IBS };
+	public ModelType[] getModelTypes() {
+		return new ModelType[] { ModelType.IBS };
 	}
 
 	@Override

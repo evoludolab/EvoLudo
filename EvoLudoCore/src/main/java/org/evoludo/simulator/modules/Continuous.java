@@ -38,7 +38,7 @@ import java.util.logging.Level;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.models.IBSC;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -137,7 +137,7 @@ public abstract class Continuous extends Module<Continuous> {
 	}
 
 	@Override
-	public Model createModel(Type type) {
+	public Model createModel(ModelType type) {
 		Model mod = super.createModel(type);
 		if (mod != null)
 			return mod;

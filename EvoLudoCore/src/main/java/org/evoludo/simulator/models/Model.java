@@ -622,7 +622,7 @@ public abstract class Model implements CLOProvider {
 
 	/**
 	 * Advance model by one step. The details of what happens during one step
-	 * depends on the models {@link Type} as well as its {@link Mode}.
+	 * depends on the models {@link ModelType} as well as its {@link Mode}.
 	 * 
 	 * @return <code>true</code> if <code>next()</code> can be called again.
 	 *         Typically <code>false</code> is returned if the model requires
@@ -669,7 +669,7 @@ public abstract class Model implements CLOProvider {
 			next();
 			timeStep = rf;
 			isRelaxing = false;
-			if (type == Type.IBS) {
+			if (type == ModelType.IBS) {
 				// reset traits after relaxation in IBS models
 				for (Module<?> mod : species) {
 					IBSPopulation<?, ?> pop = mod.getIBSPopulation();
@@ -928,14 +928,14 @@ public abstract class Model implements CLOProvider {
 	/**
 	 * The type of the model: IBS, ODE, SDE, or PDE.
 	 */
-	Type type;
+	ModelType type;
 
 	/**
 	 * Gets the type of the model.
 	 * 
 	 * @return the type of the model
 	 */
-	public Type getType() {
+	public ModelType getType() {
 		return type;
 	}
 

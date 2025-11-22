@@ -37,7 +37,7 @@ import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.models.SDEN;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
@@ -285,7 +285,7 @@ public class Traits extends Discrete implements Payoffs,
 	}
 
 	@Override
-	public Model createModel(Type type) {
+	public Model createModel(ModelType type) {
 		if (!type.isSDE())
 			return super.createModel(type);
 		if (model != null && model.getType().isSDE())

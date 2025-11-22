@@ -49,7 +49,7 @@ import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.SampleListener;
-import org.evoludo.simulator.models.Type;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.Console;
@@ -2347,7 +2347,7 @@ public class EvoLudoWeb extends Composite
 		}
 
 		Model model = engine.getModel();
-		Type mt = model.getType();
+		ModelType mt = model.getType();
 		boolean isODESDE = mt.isODE() || mt.isSDE();
 
 		// Populate views in separated concerns to reduce cognitive complexity

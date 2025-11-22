@@ -100,7 +100,7 @@ public class Advection extends PDE {
 	 */
 	public Advection(EvoLudo engine) {
 		super(engine);
-		type = Type.PDEADV;
+		type = ModelType.PDEADV;
 	}
 
 	// DEBUG - uncomment to disable reactions.
