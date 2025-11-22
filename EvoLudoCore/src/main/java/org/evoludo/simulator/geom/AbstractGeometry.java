@@ -244,11 +244,6 @@ public abstract class AbstractGeometry {
 	double pAddwire = -1.0;
 
 	/**
-	 * {@code true} if the network structure is ephemeral.
-	 */
-	public boolean isDynamic = false;
-
-	/**
 	 * The array storing the neighbourhood of each node by listing the indices of
 	 * nodes that connect to this one.
 	 */
@@ -712,7 +707,6 @@ public abstract class AbstractGeometry {
 		isUndirected = true;
 		isRewired = false;
 		isSingle = true;
-		isDynamic = false;
 		isRegular = false;
 		isValid = false;
 		evaluated = false;
@@ -752,7 +746,7 @@ public abstract class AbstractGeometry {
 	 * as {@code minIn, maxOut, avgTot} etc.
 	 */
 	public void evaluate() {
-		if (evaluated && !isDynamic)
+		if (evaluated && !isType(Type.DYNAMIC))
 			return;
 		if (type == Type.WELLMIXED || kout == null || kin == null) {
 			maxOut = 0;
@@ -1625,7 +1619,6 @@ public abstract class AbstractGeometry {
 		clone.isUndirected = isUndirected;
 		clone.isRewired = isRewired;
 		clone.isSingle = isSingle;
-		clone.isDynamic = isDynamic;
 		clone.isRegular = isRegular;
 		clone.isValid = isValid;
 		return clone;

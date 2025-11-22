@@ -49,7 +49,6 @@ public class DynamicGeometry extends AbstractGeometry {
 		isRewired = false;
 		isUndirected = false;
 		isRegular = false;
-		isDynamic = true;
 		isSingle = true;
 		alloc();
 	}

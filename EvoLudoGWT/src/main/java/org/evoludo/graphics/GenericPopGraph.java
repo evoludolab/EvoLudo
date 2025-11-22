@@ -350,7 +350,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	public void update(boolean isNext) {
 		if (!view.isActive() || noGraph || hasMessage)
 			return;
-		if (invalidated || (isNext && geometry.isDynamic)) {
+		if (invalidated || (isNext && geometry.isType(Geometry.Type.DYNAMIC))) {
 			// defer layouting to allow 3D view to be up and running
 			Scheduler.get().scheduleDeferred(() -> {
 				if (hasStaticLayout()) {
@@ -436,7 +436,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 * @see #hasStaticLayout()
 	 */
 	protected void layoutNetwork() {
-		if (!network.isStatus(Status.HAS_LAYOUT) || geometry.isDynamic)
+		if (!network.isStatus(Status.HAS_LAYOUT) || geometry.isType(Geometry.Type.DYNAMIC))
 			network.doLayout(this);
 		network.finishLayout();
 		drawNetwork();

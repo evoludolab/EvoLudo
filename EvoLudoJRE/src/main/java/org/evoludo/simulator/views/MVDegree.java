@@ -110,7 +110,7 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 				geometry = module.getInteractionGeometry();
 				break;
 		}
-		isStatic = !geometry.isDynamic;
+		isStatic = !geometry.isType(Geometry.Type.DYNAMIC);
 		if (graphs.isEmpty())
 			addGraph(K_OUT);
 		if (isDirected == geometry.isUndirected()) {

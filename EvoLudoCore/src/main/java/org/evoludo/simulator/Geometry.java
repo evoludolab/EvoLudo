@@ -1096,11 +1096,6 @@ public class Geometry {
 	}
 
 	/**
-	 * {@code true} if the network structure is ephemeral.
-	 */
-	public boolean isDynamic = false;
-
-	/**
 	 * {@code true} if the network structure is regular (all nodes have the same
 	 * number of neighbours).
 	 */
@@ -1151,7 +1146,6 @@ public class Geometry {
 		isUndirected = true;
 		isRewired = false;
 		isSingle = true;
-		isDynamic = false;
 		isRegular = false;
 		isValid = false;
 	}
@@ -3956,7 +3950,7 @@ public class Geometry {
 		for (int n = 0; n < todo; n++)
 			core[n] = n;
 
-		if (!isDynamic) {
+		if (!isType(Type.DYNAMIC)) {
 			// ensure connectedness for static graphs; exclude leaves for this stage
 			// recall degree's are sorted in descending order
 			int leafIdx = -1;
@@ -4550,7 +4544,7 @@ public class Geometry {
 	 * </ol>
 	 */
 	public void evaluate() {
-		if (evaluated && !isDynamic)
+		if (evaluated && !isType(Type.DYNAMIC))
 			return;
 
 		// determine minimum, maximum and average connectivities
@@ -5498,7 +5492,6 @@ public class Geometry {
 		clone.isUndirected = isUndirected;
 		clone.isRewired = isRewired;
 		clone.isSingle = isSingle;
-		clone.isDynamic = isDynamic;
 		clone.isRegular = isRegular;
 		clone.isValid = isValid;
 		return clone;

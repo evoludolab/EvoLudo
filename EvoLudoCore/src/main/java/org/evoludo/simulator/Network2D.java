@@ -252,7 +252,7 @@ public abstract class Network2D extends Network<Node2D> {
 
 	@Override
 	public void finishLayout() {
-		if (geometry.isDynamic) {
+		if (geometry.isType(Geometry.Type.DYNAMIC)) {
 			// on dynamic networks radius needs to be set as well
 			// the radius of the nodes is scaled by their degree
 			int kin;

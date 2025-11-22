@@ -338,7 +338,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 
 		// make sure min/max/avg are up to date
 		if (needsLayout) {
-			if (geometry.isDynamic)
+			if (geometry.isType(Geometry.Type.DYNAMIC))
 				geometry.evaluate();
 			initNodes(pnorm, nnorm, unitradius);
 		}

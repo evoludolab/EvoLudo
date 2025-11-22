@@ -1184,8 +1184,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 			Geometry comp = module.getCompetitionGeometry();
 
 			boolean needsUpdate = !degreeProcessed
-					|| (inter != null && inter.isDynamic)
-					|| (comp != null && comp.isDynamic);
+					|| (inter != null && inter.isType(Geometry.Type.DYNAMIC))
+					|| (comp != null && comp.isType(Geometry.Type.DYNAMIC));
 
 			double[][] graphdata = graph.getData();
 			if ((mt.isDE() && handleDEGraph(graph, mt, module))
