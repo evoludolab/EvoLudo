@@ -1373,7 +1373,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			return pickNeutralNeighbourAt(me, withSelf);
 
 		// mean-field
-		if (competition.getType() == Geometry.Type.MEANFIELD) {
+		if (competition.isType(Geometry.Type.MEANFIELD)) {
 			debugNModels = 0;
 			if (withSelf)
 				return pickFitFocalIndividual();
@@ -1527,7 +1527,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @return the index of a neighbour
 	 */
 	private int pickNeutralNeighbourAt(int me, boolean withSelf) {
-		if (competition.getType() == Geometry.Type.MEANFIELD) {
+		if (competition.isType(Geometry.Type.MEANFIELD)) {
 			debugNModels = 0;
 			if (withSelf)
 				return pickFocalIndividual();
@@ -1559,7 +1559,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	public int pickNeighborSiteAt(int me) {
 		// mean-field
-		if (competition.getType() == Geometry.Type.MEANFIELD)
+		if (competition.isType(Geometry.Type.MEANFIELD))
 			return pickFocalSite(me);
 
 		debugModels = competition.out[me];
@@ -2511,7 +2511,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	protected void updatePlayerMoranBirthDeathAt(int parent) {
 		debugFocal = parent;
-		if (competition.getType() == Geometry.Type.MEANFIELD) {
+		if (competition.isType(Geometry.Type.MEANFIELD)) {
 			debugModel = pickFocalIndividual();
 			debugNModels = 0;
 		} else
@@ -3540,7 +3540,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		} else if (!interaction.isSingle()) {
 			logger.warning("no migration on graphs with different interaction and competition neighborhoods!");
 			setMigrationType(MigrationType.NONE);
-		} else if (interaction.getType() == Geometry.Type.MEANFIELD) {
+		} else if (interaction.isType(Geometry.Type.MEANFIELD)) {
 			logger.warning("no migration in well-mixed populations!");
 			setMigrationType(MigrationType.NONE);
 		}
@@ -3551,7 +3551,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	boolean checkInteractions(int nGroup) {
 		boolean doReset = false;
 		// check sampling in special geometries
-		if (interaction.getType() == Geometry.Type.SQUARE && interaction.isRegular() && interaction.getConnectivity() > 8 &&
+		if (interaction.isType(Geometry.Type.SQUARE) && interaction.isRegular() && interaction.getConnectivity() > 8 &&
 				interGroup.isSampling(IBSGroup.SamplingType.ALL) && nGroup > 2 && nGroup < 9) {
 			// if connectivity > 8 then the interaction pattern Group.SAMPLING_ALL with a
 			// group size between 2 and 8 (excluding boundaries is not allowed because this
@@ -3563,7 +3563,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 								+ " geometry has incompatible interaction pattern and neighborhood size"
 								+ " - using random sampling of interaction partners!");
 		}
-		if (interaction.getType() == Geometry.Type.CUBE && interGroup.isSampling(IBSGroup.SamplingType.ALL) &&
+		if (interaction.isType(Geometry.Type.CUBE) && interGroup.isSampling(IBSGroup.SamplingType.ALL) &&
 				nGroup > 2 && nGroup <= interaction.getConnectivity()) {
 			// Group.SAMPLING_ALL only works with pairwise interactions or all neighbors
 			// restrictions do not apply for PDE's
@@ -3580,8 +3580,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (module.getNPopulation() != opponent.getModule().getNPopulation()
 				&& opponent.getInteractionGeometry() != null // opponent geometry may not yet be initialized
 																// check will be repeated for opponent
-				&& (getInteractionGeometry().getType() != Geometry.Type.MEANFIELD
-						|| opponent.getInteractionGeometry().getType() != Geometry.Type.MEANFIELD)) {
+				&& (!getInteractionGeometry().isType(Geometry.Type.MEANFIELD)
+						|| !opponent.getInteractionGeometry().isType(Geometry.Type.MEANFIELD))) {
 			// at least for now, both populations need to be of the same size - except for
 			// well-mixed populations
 			logger.warning(
@@ -3595,8 +3595,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// interactions require more attention. exclude for now.
 		if (getInteractionGeometry().isInterspecies() && opponent.getInteractionGeometry() != null &&
 				(getInteractionGeometry().getType() != opponent.getInteractionGeometry().getType()) &&
-				(getInteractionGeometry().getType() == Geometry.Type.MEANFIELD ||
-						opponent.getInteractionGeometry().getType() == Geometry.Type.MEANFIELD)) {
+				(getInteractionGeometry().isType(Geometry.Type.MEANFIELD) ||
+						opponent.getInteractionGeometry().isType(Geometry.Type.MEANFIELD))) {
 			// opponent not yet ready; check will be repeated for opponent
 			logger.warning(
 					"interspecies interactions combining well-mixed and structured populations not (yet) tested"
@@ -3639,7 +3639,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 
 		// number of interactions can also be determined in structured populations with
 		// well-mixed demes
-		if (adjustScores && interaction.getType() == Geometry.Type.HIERARCHY && //
+		if (adjustScores && interaction.isType(Geometry.Type.HIERARCHY) && //
 				interaction.subgeometry.equals(Geometry.Type.MEANFIELD)) {
 			nMixedInter = interaction.hierarchy[interaction.hierarchy.length - 1]
 					- (interaction.isInterspecies() ? 0 : 1);
@@ -3658,8 +3658,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	boolean checkLookupTable(int nGroup, boolean ephemeralScores) {
 		hasLookupTable = module.isStatic() || //
-				(adjustScores && interaction.getType() == Geometry.Type.MEANFIELD) || //
-				(ephemeralScores && interaction.getType() == Geometry.Type.MEANFIELD //
+				(adjustScores && interaction.isType(Geometry.Type.MEANFIELD)) || //
+				(ephemeralScores && interaction.isType(Geometry.Type.MEANFIELD) //
 						&& interGroup.isSampling(SamplingType.ALL));
 
 		if (!hasLookupTable || ephemeralScores)
@@ -3991,7 +3991,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 		compGroup.setNSamples(1);
 		// in the original Moran process offspring can replace the parent
-		compGroup.setSelf(competition.getType() == Geometry.Type.MEANFIELD);
+		compGroup.setSelf(competition.isType(Geometry.Type.MEANFIELD));
 	}
 
 	/**

@@ -282,7 +282,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		Geometry geometry = graph.getGeometry();
 		GraphStyle style = graph.getStyle();
 
-		if (geometry.getType() == Geometry.Type.LINEAR) {
+		if (geometry.isType(Geometry.Type.LINEAR)) {
 			// frame, ticks, labels needed
 			style.xLabel = "nodes";
 			style.showXLabel = true;

@@ -377,7 +377,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 */
 	boolean hasStaticLayout() {
 		return (geometry.isLattice()
-				|| geometry.getType() == Geometry.Type.HIERARCHY && geometry.subgeometry.isLattice());
+				|| geometry.isType(Geometry.Type.HIERARCHY) && geometry.subgeometry.isLattice());
 	}
 
 	/**

@@ -204,7 +204,7 @@ public class DemesTBT extends TBT {
 			optimizeMigration = optimizeHomo;
 			boolean doReset = super.check();
 			nTraits = module.getNTraits();
-			if (!(interaction.getType() == Geometry.Type.MEANFIELD || (interaction.getType() == Geometry.Type.HIERARCHY
+			if (!(interaction.isType(Geometry.Type.MEANFIELD) || (interaction.isType(Geometry.Type.HIERARCHY)
 					&& interaction.subgeometry == Geometry.Type.MEANFIELD && interaction.hierarchy.length == 2))) {
 				// the only acceptable geometries are well-mixed and hierarchical structures
 				// with two levels of well-mixed demes
@@ -216,7 +216,7 @@ public class DemesTBT extends TBT {
 			sizeDemes = nPopulation;
 			if (pure == null || pure.length != nTraits)
 				pure = new double[nTraits];
-			if (interaction.getType() == Geometry.Type.HIERARCHY) {
+			if (interaction.isType(Geometry.Type.HIERARCHY)) {
 				nDemes = interaction.hierarchy[0];
 				sizeDemes = interaction.hierarchy[1];
 			}

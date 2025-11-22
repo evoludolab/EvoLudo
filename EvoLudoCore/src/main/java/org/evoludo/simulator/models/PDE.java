@@ -334,7 +334,7 @@ public class PDE extends ODE {
 			engine.loadModel(Type.ODE);
 			return true;
 		}
-		if (space.getType() == Geometry.Type.MEANFIELD || space.getType() == Geometry.Type.COMPLETE) {
+		if (space.isType(Geometry.Type.MEANFIELD) || space.isType(Geometry.Type.COMPLETE)) {
 			logger.warning("unstructured population - reverting to ODE.");
 			engine.loadModel(Type.ODE);
 			return true;
@@ -372,7 +372,7 @@ public class PDE extends ODE {
 	@Override
 	public void reset() {
 		super.reset();
-		if (space.getType() == Geometry.Type.MEANFIELD)
+		if (space.isType(Geometry.Type.MEANFIELD))
 			return;
 		space.init();
 

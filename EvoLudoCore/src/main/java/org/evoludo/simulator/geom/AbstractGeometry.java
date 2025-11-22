@@ -143,7 +143,7 @@ public abstract class AbstractGeometry {
 					"Cannot derive competition geometry when isSingle == false.");
 		AbstractGeometry competition = clone();
 		// remove competition with self
-		if (competition.getType() == Type.WELLMIXED)
+		if (competition.isType(Type.WELLMIXED))
 			for (int n = 0; n < size; n++)
 				competition.removeLinkAt(n, n);
 		competition.evaluate();
@@ -496,6 +496,16 @@ public abstract class AbstractGeometry {
 	 */
 	public int getSize() {
 		return size;
+	}
+
+	/**
+	 * Convenience helper to check the geometry type.
+	 *
+	 * @param type the type to compare to
+	 * @return {@code true} if {@link #getType()} matches {@code type}
+	 */
+	public boolean isType(Type type) {
+		return getType() == type;
 	}
 
 	/**

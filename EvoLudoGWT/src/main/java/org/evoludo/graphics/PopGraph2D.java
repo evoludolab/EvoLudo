@@ -217,7 +217,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	public void setGeometry(Geometry geometry) {
 		super.setGeometry(geometry);
 		int size = geometry.getSize();
-		if (geometry.getType() == Geometry.Type.LINEAR && size <= MAX_LINEAR_SIZE) {
+		if (geometry.isType(Geometry.Type.LINEAR) && size <= MAX_LINEAR_SIZE) {
 			// linear graphs maintain history; allocate generously
 			if (buffer == null)
 				buffer = new RingBuffer<String[]>(2 * MAX_LINEAR_SIZE);

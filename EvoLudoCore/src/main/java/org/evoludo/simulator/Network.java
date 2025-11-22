@@ -548,7 +548,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	 * @return the status of the layouting process
 	 */
 	public Status getStatus() {
-		if (geometry.getType() == Geometry.Type.DYNAMIC && status == Status.HAS_LAYOUT
+		if (geometry.isType(Geometry.Type.DYNAMIC) && status == Status.HAS_LAYOUT
 				&& Math.abs(engine.getModel().getUpdates() - timestamp) > 1e-8)
 			status = Status.ADJUST_LAYOUT;
 		return status;

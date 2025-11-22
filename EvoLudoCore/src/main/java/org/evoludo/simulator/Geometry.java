@@ -148,6 +148,16 @@ public class Geometry {
 	}
 
 	/**
+	 * Convenience helper to compare the geometry type.
+	 *
+	 * @param type the type to compare against
+	 * @return {@code true} if {@link #getType()} matches {@code type}
+	 */
+	public boolean isType(Type type) {
+		return getType() == type;
+	}
+
+	/**
 	 * Set the type of this geometry.
 	 * 
 	 * @param type the type of this geometry

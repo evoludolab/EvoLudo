@@ -153,7 +153,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 				return;
 			default:
 		}
-		if (geometry.getType() == Geometry.Type.CUBE || geometry.getType() == Geometry.Type.VOID) {
+		if (geometry.isType(Geometry.Type.CUBE) || geometry.isType(Geometry.Type.VOID)) {
 			setMessage("No representation for geometry!");
 			return;
 		}
@@ -472,7 +472,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		int side;
 
 		Geometry.Type type = geometry.getType();
-		isHierarchy = geometry.getType() == Geometry.Type.HIERARCHY;
+		isHierarchy = geometry.isType(Geometry.Type.HIERARCHY);
 		if (isHierarchy)
 			type = geometry.subgeometry;
 		if (!isHierarchy || geometry.getType() != Geometry.Type.SQUARE)
@@ -558,7 +558,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 
 	@Override
 	public void next(boolean isActive, boolean updateGUI) {
-		if (isActive && geometry != null && geometry.getType() == Geometry.Type.DYNAMIC)
+		if (isActive && geometry != null && geometry.isType(Geometry.Type.DYNAMIC))
 			// invalidate time stamp
 			timestamp = -Double.MAX_VALUE;
 		super.next(isActive, updateGUI);
@@ -569,7 +569,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		if (geometry == null) // ODE/SDE models
 			return;
 		int id = module.getID();
-		boolean isDynamic = geometry.getType() == Geometry.Type.DYNAMIC;
+		boolean isDynamic = geometry.isType(Geometry.Type.DYNAMIC);
 		if (isDynamic) {
 			if (timestamp < network.getTimestamp()) {
 				// time stamp expired - get data
