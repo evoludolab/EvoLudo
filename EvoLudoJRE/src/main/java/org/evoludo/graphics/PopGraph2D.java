@@ -63,6 +63,7 @@ import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Module;
@@ -143,7 +144,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 
 	// this is up-to-date after call to controller.initData()
 	protected void checkGraph() {
-		org.evoludo.simulator.models.ModelType model = controller.getEngine().getModel().getType();
+		ModelType model = controller.getEngine().getModel().getType();
 		switch (model) {
 			case ODE:
 				setMessage("No view available (ODE Solver)");
@@ -153,7 +154,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 				return;
 			default:
 		}
-		if (geometry.isType(Geometry.Type.CUBE) || geometry.isType(Geometry.Type.VOID)) {
+		if (geometry.isType(GeometryType.CUBE) || geometry.isType(GeometryType.VOID)) {
 			setMessage("No representation for geometry!");
 			return;
 		}
@@ -471,11 +472,11 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		int height = canvas.height;
 		int side;
 
-		Geometry.Type type = geometry.getType();
-		isHierarchy = geometry.isType(Geometry.Type.HIERARCHY);
+		GeometryType type = geometry.getType();
+		isHierarchy = geometry.isType(GeometryType.HIERARCHY);
 		if (isHierarchy)
 			type = geometry.subgeometry;
-		if (!isHierarchy || geometry.getType() != Geometry.Type.SQUARE)
+		if (!isHierarchy || geometry.getType() != GeometryType.SQUARE)
 			hPeriods = null;
 		// geometries that have special/fixed layout
 		switch (type) {
@@ -558,7 +559,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 
 	@Override
 	public void next(boolean isActive, boolean updateGUI) {
-		if (isActive && geometry != null && geometry.isType(Geometry.Type.DYNAMIC))
+		if (isActive && geometry != null && geometry.isType(GeometryType.DYNAMIC))
 			// invalidate time stamp
 			timestamp = -Double.MAX_VALUE;
 		super.next(isActive, updateGUI);
@@ -569,7 +570,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		if (geometry == null) // ODE/SDE models
 			return;
 		int id = module.getID();
-		boolean isDynamic = geometry.isType(Geometry.Type.DYNAMIC);
+		boolean isDynamic = geometry.isType(GeometryType.DYNAMIC);
 		if (isDynamic) {
 			if (timestamp < network.getTimestamp()) {
 				// time stamp expired - get data
@@ -737,7 +738,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	@Override
 	protected int getSnapshotFormat() {
 		// most appropriate format depends on what is displayed
-		Geometry.Type type = geometry.getType();
+		GeometryType type = geometry.getType();
 		if (isHierarchy)
 			type = geometry.subgeometry;
 		switch (type) {
@@ -787,7 +788,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		AffineTransform at;
 		Ellipse2D circle;
 
-		Geometry.Type type = geometry.getType();
+		GeometryType type = geometry.getType();
 		if (isHierarchy)
 			type = geometry.subgeometry;
 		// this is a hack but it does the trick when hot swapping models...

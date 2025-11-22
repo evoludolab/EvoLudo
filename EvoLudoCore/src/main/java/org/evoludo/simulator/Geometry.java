@@ -30,6 +30,7 @@
 
 package org.evoludo.simulator;
 
+import org.evoludo.simulator.geom.GeometryType;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -141,9 +142,9 @@ public class Geometry {
 	 * 
 	 * @return the type of this geometry
 	 */
-	public Type getType() {
+	public GeometryType getType() {
 		if (isRewired)
-			return Type.GENERIC;
+			return GeometryType.GENERIC;
 		return geometry;
 	}
 
@@ -153,7 +154,7 @@ public class Geometry {
 	 * @param type the type to compare against
 	 * @return {@code true} if {@link #getType()} matches {@code type}
 	 */
-	public boolean isType(Type type) {
+	public boolean isType(GeometryType type) {
 		return getType() == type;
 	}
 
@@ -162,7 +163,7 @@ public class Geometry {
 	 * 
 	 * @param type the type of this geometry
 	 */
-	public void setType(Type type) {
+	public void setType(GeometryType type) {
 		geometry = type;
 	}
 
@@ -227,14 +228,14 @@ public class Geometry {
 	/**
 	 * The geometry of the graph.
 	 */
-	private Type geometry = Type.WELLMIXED;
+	private GeometryType geometry = GeometryType.WELLMIXED;
 
 	/**
 	 * Only used for hierarchical geometries to specify the geometry of each level.
 	 * 
 	 * @see #initGeometryHierarchical()
 	 */
-	public Type subgeometry = Type.WELLMIXED;
+	public GeometryType subgeometry = GeometryType.WELLMIXED;
 
 	/**
 	 * The types of graph geometries. Currently available graph geometries are:
@@ -1067,7 +1068,7 @@ public class Geometry {
 	 * @see #displayUniqueGeometry(Geometry, Geometry)
 	 */
 	public static boolean displayUniqueGeometry(Geometry inter, Geometry comp) {
-		Type geometry = inter.geometry;
+		GeometryType geometry = inter.geometry;
 		if (inter.isLattice()) {
 			// lattice interaction geometry - return true if competition geometry is the
 			// same (regardless of connectivity)
@@ -1124,7 +1125,7 @@ public class Geometry {
 		kin = null;
 		kout = null;
 		size = -1;
-		geometry = Type.WELLMIXED;
+		geometry = GeometryType.WELLMIXED;
 		fixedBoundary = false;
 		minIn = -1;
 		maxIn = -1;
@@ -1223,7 +1224,8 @@ public class Geometry {
 					// no hierarchies remain
 					// if subgeometry complete, well-mixed or structured with hierarchyweight==0
 					// fall back on subgeometry
-					if (subgeometry == Type.WELLMIXED || subgeometry == Type.COMPLETE || hierarchyweight <= 0.0) {
+					if (subgeometry == GeometryType.WELLMIXED || subgeometry == GeometryType.COMPLETE
+							|| hierarchyweight <= 0.0) {
 						geometry = subgeometry;
 						if (logger.isLoggable(Level.WARNING))
 							logger.warning("hierarchies must encompass ≥2 levels - collapsed to geometry '"
@@ -1287,7 +1289,7 @@ public class Geometry {
 						//$FALL-THROUGH$
 					case COMPLETE:
 						// avoid distinctions between MEANFIELD and COMPLETE graphs for subgeometries
-						subgeometry = Type.WELLMIXED;
+						subgeometry = GeometryType.WELLMIXED;
 						//$FALL-THROUGH$
 					case WELLMIXED:
 						for (int i = 0; i < nHierarchy; i++)
@@ -1390,7 +1392,7 @@ public class Geometry {
 			case SQUARE:
 				// check population size
 				side = (int) Math.floor(Math.sqrt(size) + 0.5);
-				if (geometry == Type.SQUARE_NEUMANN_2ND)
+				if (geometry == GeometryType.SQUARE_NEUMANN_2ND)
 					side = (side + 1) / 2 * 2; // make sure side is even
 				side2 = side * side;
 				if (setSize(side2)) {
@@ -1559,7 +1561,7 @@ public class Geometry {
 				if (sfExponent >= 0.0) {
 					logger.warning("Exponent for scale-free graph is " + Formatter.format(connectivity, 2)
 							+ " but must be <0. Resorting to random graph.");
-					geometry = Type.RANDOM_GRAPH;
+					geometry = GeometryType.RANDOM_GRAPH;
 					return check();
 				}
 				// check connectivity
@@ -1618,7 +1620,7 @@ public class Geometry {
 	 * Entry point to initialize the network structure according to the given
 	 * parameters.
 	 * 
-	 * @see Geometry.Type
+	 * @see GeometryType
 	 * @see #parse(String)
 	 * @see #check()
 	 */
@@ -3703,7 +3705,7 @@ public class Geometry {
 			size = mysize;
 			check();
 			init();
-			logger.severe("initGeometryRandomRegularGraph failed - giving up (revert to " + geometry.title + ").");
+			logger.severe("initGeometryRandomRegularGraph failed - giving up (revert to " + geometry.getTitle() + ").");
 			return;
 		}
 	}
@@ -3950,7 +3952,7 @@ public class Geometry {
 		for (int n = 0; n < todo; n++)
 			core[n] = n;
 
-		if (!isType(Type.DYNAMIC)) {
+		if (!isType(GeometryType.DYNAMIC)) {
 			// ensure connectedness for static graphs; exclude leaves for this stage
 			// recall degree's are sorted in descending order
 			int leafIdx = -1;
@@ -4544,11 +4546,11 @@ public class Geometry {
 	 * </ol>
 	 */
 	public void evaluate() {
-		if (evaluated && !isType(Type.DYNAMIC))
+		if (evaluated && !isType(GeometryType.DYNAMIC))
 			return;
 
 		// determine minimum, maximum and average connectivities
-		if (geometry == Type.WELLMIXED || kout == null || kin == null) {
+		if (geometry == GeometryType.WELLMIXED || kout == null || kin == null) {
 			maxOut = 0;
 			maxIn = 0;
 			maxTot = 0;
@@ -5173,7 +5175,7 @@ public class Geometry {
 					"Cannot derive competition geometry when isSingle == false.");
 		Geometry competition = clone();
 		// remove competition with self
-		if (competition.getType() != Type.WELLMIXED)
+		if (competition.getType() != GeometryType.WELLMIXED)
 			for (int n = 0; n < size; n++)
 				competition.removeLinkAt(n, n);
 		competition.evaluate();
@@ -5191,9 +5193,9 @@ public class Geometry {
 	 */
 	public boolean parse(String cli) {
 		boolean doReset = false;
-		Type oldGeometry = geometry;
+		GeometryType oldGeometry = geometry;
 		CLOption clo = engine.getModule().cloGeometry;
-		geometry = (Type) clo.match(cli);
+		geometry = (GeometryType) clo.match(cli);
 		String sub = cli.substring(1);
 		boolean oldFixedBoundary = fixedBoundary;
 		fixedBoundary = false;
@@ -5217,21 +5219,21 @@ public class Geometry {
 		int[] ivec;
 		double[] dvec;
 		double oldConnectivity = connectivity;
-		Type oldSubGeometry = subgeometry;
-		subgeometry = Type.VOID;
+		GeometryType oldSubGeometry = subgeometry;
+		subgeometry = GeometryType.VOID;
 		switch (geometry) {
 			case WELLMIXED: // mean field
 				break;
 			case COMPLETE: // complete graph
 				break;
 			case HIERARCHY: // deme structured, hierarchical graph
-				subgeometry = Type.WELLMIXED;
+				subgeometry = GeometryType.WELLMIXED;
 				if (!Character.isDigit(sub.charAt(0))) {
 					// check for geometry of hierarchies
 					// note: we could allow for different geometries at different levels but seems
 					// bit overkill - needs good reasons to implement! (e.g. well-mixed demes
 					// in spatial arrangement would make sense)
-					subgeometry = (Type) clo.match(sub);
+					subgeometry = (GeometryType) clo.match(sub);
 					sub = sub.substring(1);
 					// check once more for fixed boundaries
 					if (sub.charAt(0) == 'f' || sub.charAt(0) == 'F') {
@@ -5340,7 +5342,7 @@ public class Geometry {
 						superstar_petals = ivec[0];
 						break;
 					case 0:
-						geometry = Type.INVALID; // too few parameters, change to default geometry
+						geometry = GeometryType.INVALID; // too few parameters, change to default geometry
 				}
 				doReset |= (oldPetalsAmplification != superstar_amplification);
 				doReset |= (oldPetalsCount != superstar_petals);
@@ -5374,7 +5376,7 @@ public class Geometry {
 						connectivity = Math.max(2, (int) dvec[0]);
 						break;
 					case 0:
-						geometry = Type.INVALID; // too few parameters, change to default geometry
+						geometry = GeometryType.INVALID; // too few parameters, change to default geometry
 				}
 				break;
 			case SCALEFREE: // scale-free network - uncorrelated, from degree distribution
@@ -5390,7 +5392,7 @@ public class Geometry {
 						connectivity = Math.max(2, (int) dvec[0]);
 						break;
 					case 0:
-						geometry = Type.INVALID; // too few parameters, change to default geometry
+						geometry = GeometryType.INVALID; // too few parameters, change to default geometry
 				}
 				doReset |= (oldSfExponent != sfExponent);
 				break;
@@ -5402,7 +5404,7 @@ public class Geometry {
 			default:
 				// last resort: try engine - maybe new implementations provide new geometries
 				// if (!population.parseGeometry(this, cli))
-				geometry = Type.INVALID; // too few parameters, change to default geometry
+				geometry = GeometryType.INVALID; // too few parameters, change to default geometry
 				break;
 		}
 
@@ -5617,7 +5619,7 @@ public class Geometry {
 	 * @param geo the geometry to be checked for uniqueness
 	 * @return {@code true} if geometry is unique
 	 */
-	private boolean isUniqueGeometry(Type geo) {
+	private boolean isUniqueGeometry(GeometryType geo) {
 		switch (geo) {
 			// non-unique geometries
 			case WELLMIXED: // mean field

@@ -42,10 +42,11 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
+import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBS;
-import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.ModelType;
+import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
@@ -675,7 +676,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	private static StringBuilder appendInterNeighborsAt(int node, Geometry geom, StringBuilder tip) {
 		if (geom.isUndirected()) {
 			// well-mixed is by definition undirected
-			if (geom.getType().equals(Geometry.Type.WELLMIXED)) {
+			if (geom.getType().equals(GeometryType.WELLMIXED)) {
 				tip.append(TABLE_ROW_START)
 						.append("Neighbours")
 						.append(TABLE_CELL_NEXT)
@@ -703,7 +704,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	private static StringBuilder appendCompNeighborsAt(int node, Geometry geom, StringBuilder tip) {
 		if (geom.isUndirected()) {
 			// well-mixed is by definition undirected
-			if (geom.getType().equals(Geometry.Type.WELLMIXED)) {
+			if (geom.getType().equals(GeometryType.WELLMIXED)) {
 				tip.append(TABLE_ROW_START)
 						.append("Competitors")
 						.append(TABLE_CELL_NEXT)

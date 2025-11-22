@@ -30,6 +30,7 @@
 
 package org.evoludo.simulator.models;
 
+import org.evoludo.simulator.geom.GeometryType;
 import java.util.Arrays;
 import java.util.List;
 
@@ -662,8 +663,8 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		// populations as long as demes are well-mixed (although lookup tables are
 		// possible but not (yet) implemented.
 		if (hasLookupTable || //
-				(adjustScores && interaction.isType(Geometry.Type.HIERARCHY) //
-						&& interaction.subgeometry == Geometry.Type.WELLMIXED)) {
+				(adjustScores && interaction.isType(GeometryType.HIERARCHY) //
+						&& interaction.subgeometry == GeometryType.WELLMIXED)) {
 			updateMixedScores();
 			return;
 		}
@@ -675,7 +676,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 * {@inheritDoc}
 	 * <p>
 	 * <strong>Note:</strong> Takes composition of entire population into account
-	 * for {@code Geometry.Type#MEANFIELD} but only the reference neighborhood in
+	 * for {@code GeometryType#MEANFIELD} but only the reference neighborhood in
 	 * structured populations.
 	 */
 	@Override
@@ -691,7 +692,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			return staticBR(me);
 
 		// frequency dependent selection: determine active trait with highest payoff
-		if (competition.isType(Geometry.Type.WELLMIXED))
+		if (competition.isType(GeometryType.WELLMIXED))
 			wellMixedBR(me);
 		else
 			structuredBR(group, size);
@@ -1301,9 +1302,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		}
 		// check if original procedure works
 		if (module.isStatic() || //
-				(interaction.getType() != Geometry.Type.WELLMIXED && //
-						interaction.getType() != Geometry.Type.HIERARCHY && //
-						interaction.subgeometry != Geometry.Type.WELLMIXED)) {
+				(interaction.getType() != GeometryType.WELLMIXED && //
+						interaction.getType() != GeometryType.HIERARCHY && //
+						interaction.subgeometry != GeometryType.WELLMIXED)) {
 			super.adjustGameScoresAt(me);
 			return;
 		}
@@ -1321,7 +1322,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		if (!interaction.isInterspecies())
 			return; // no adjustment needed for intra-species interactions
 
-		if (opponent.getInteractionGeometry().isType(Geometry.Type.WELLMIXED)) {
+		if (opponent.getInteractionGeometry().isType(GeometryType.WELLMIXED)) {
 			// competition is well-mixed as well - adjust lookup table
 			opponent.updateMixedScores();
 		} else {
@@ -1789,7 +1790,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	@Override
 	boolean checkInteractions(int nGroup) {
 		boolean doReset = super.checkInteractions(nGroup);
-		if (interaction.isType(Geometry.Type.WELLMIXED) && !playerScoreAveraged && nGroup > 2) {
+		if (interaction.isType(GeometryType.WELLMIXED) && !playerScoreAveraged && nGroup > 2) {
 			// check if interaction count exceeds integer range
 			try {
 				int nPop = opponent.getModule().getNPopulation();
@@ -1821,9 +1822,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			doReset = true;
 		} else // no need to report both warnings
 				// optimized Moran type processes are incompatible with well mixed populations!
-		if (interaction.isType(Geometry.Type.WELLMIXED) ||
-				(interaction.isType(Geometry.Type.HIERARCHY) &&
-						interaction.subgeometry == Geometry.Type.WELLMIXED)) {
+		if (interaction.isType(GeometryType.WELLMIXED) ||
+				(interaction.isType(GeometryType.HIERARCHY) &&
+						interaction.subgeometry == GeometryType.WELLMIXED)) {
 			optimizeMoran = false;
 			logger.warning("optimized Moran-type updates are incompatible with mean-field geometry - disabled.");
 			doReset = true;
@@ -1992,7 +1993,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		double d = module.getDeathRate();
 		double fit = map2fit.map(module.getMonoPayoff(type % nTraits));
 		Geometry geometry = module.getGeometry();
-		if (geometry.isType(Geometry.Type.WELLMIXED))
+		if (geometry.isType(GeometryType.WELLMIXED))
 			// carrying capacity is 1.0 - d / fit
 			return d / fit;
 		double k1 = geometry.avgOut - 1.0;
@@ -2208,12 +2209,12 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	protected void initStripes() {
 		// only makes sense for 2D lattices at this point. if not, defaults to uniform
 		// random initialization (the only other inittype that doesn't require --init).
-		Geometry.Type type = interaction.getType();
+		GeometryType type = interaction.getType();
 		if (!interaction.isSingle()
-				|| !(type == Geometry.Type.SQUARE
-						|| type == Geometry.Type.SQUARE_NEUMANN
-						|| type == Geometry.Type.SQUARE_MOORE
-						|| type == Geometry.Type.LINEAR)) {
+				|| !(type == GeometryType.SQUARE
+						|| type == GeometryType.SQUARE_NEUMANN
+						|| type == GeometryType.SQUARE_MOORE
+						|| type == GeometryType.LINEAR)) {
 			logger.warning("init 'stripes': 2D lattice structures required - using 'uniform'.");
 			initUniform();
 			return;
@@ -2231,7 +2232,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		// edge. also prevents losing one trait interface with fixed boundary
 		// conditions. procedure tested for 2, 3, 4, 5 traits
 		int nStripes = nActive + 2 * sum(2, nActive - 2);
-		int size = (interaction.isType(Geometry.Type.LINEAR) ? nPopulation
+		int size = (interaction.isType(GeometryType.LINEAR) ? nPopulation
 				: (int) Math.sqrt(nPopulation));
 		int width = size / nStripes;
 		// make first strip wider

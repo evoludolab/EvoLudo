@@ -42,6 +42,7 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.modules.Continuous;
@@ -308,10 +309,10 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		// we really want this...
 		// geometry.name = module.getTraitName(n);
 		if (nTraits == 1) {
-			geometry.setType(Geometry.Type.LINEAR);
+			geometry.setType(GeometryType.LINEAR);
 			geometry.setSize(MAX_BINS);
 		} else {
-			geometry.setType(Geometry.Type.SQUARE);
+			geometry.setType(GeometryType.SQUARE);
 			geometry.setConnectivity(4);
 			geometry.setSize(MAX_BINS * MAX_BINS);
 		}

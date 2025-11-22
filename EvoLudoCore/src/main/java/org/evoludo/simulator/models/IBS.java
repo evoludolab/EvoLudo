@@ -30,6 +30,7 @@
 
 package org.evoludo.simulator.models;
 
+import org.evoludo.simulator.geom.GeometryType;
 import java.util.logging.Level;
 
 import org.evoludo.math.RNGDistribution;
@@ -1243,7 +1244,7 @@ public abstract class IBS extends Model {
 	 * Command line option to set the interaction geometry. This overrides the
 	 * {@link Module#cloGeometry} settings.
 	 * 
-	 * @see Geometry.Type
+	 * @see GeometryType
 	 * @see #cloGeometryCompetition
 	 * @see Module#cloGeometry
 	 */
@@ -1287,7 +1288,7 @@ public abstract class IBS extends Model {
 	 * Command line option to set the competition geometry. This overrides the
 	 * {@link Module#cloGeometry} settings.
 	 * 
-	 * @see Geometry.Type
+	 * @see GeometryType
 	 * @see #cloGeometryInteraction
 	 * @see Module#cloGeometry
 	 */

@@ -36,8 +36,7 @@ import java.util.Arrays;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
-import org.evoludo.simulator.Geometry.Type;
+import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.IBSGroup;
 import org.evoludo.simulator.models.Model.HasIBS;
@@ -46,10 +45,10 @@ import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 
 /**
@@ -431,8 +430,8 @@ public class NetGames extends Discrete implements Payoffs,
 				"mutation", "fitnessmap" });
 
 		cloGeometry.clearKeys();
-		cloGeometry.addKey(Type.DYNAMIC);
-		cloGeometry.setDefault(Type.DYNAMIC.getKey());
+		cloGeometry.addKey(GeometryType.DYNAMIC);
+		cloGeometry.setDefault(GeometryType.DYNAMIC.getKey());
 		// parse default (and only option) for geometry
 		cloGeometry.parse();
 
@@ -781,7 +780,7 @@ public class NetGames extends Discrete implements Payoffs,
 		// geom.isRewired = false;
 		// geom.isUndirected = false;
 		// geom.isRegular = false;
-		// geom.setType(Geometry.Type.DYNAMIC);
+		// geom.setType(GeometryType.DYNAMIC);
 		// geom.setSingle(true);
 		// geom.alloc();
 		// return true;

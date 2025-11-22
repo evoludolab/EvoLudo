@@ -36,7 +36,7 @@ import java.util.Arrays;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
@@ -47,10 +47,10 @@ import org.evoludo.simulator.views.HasHistogram;
 import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 
 /**
@@ -157,7 +157,7 @@ public class TBT extends Discrete implements Payoffs,
 	@Override
 	public String getTraitName(int idx) {
 		String idxname = super.getTraitName(idx % nTraits);
-		if (competition == null || competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+		if (competition == null || competition.getType() != GeometryType.SQUARE_NEUMANN_2ND)
 			return idxname;
 		if (idx >= nTraits)
 			return idxname + " (2nd)";
@@ -168,7 +168,7 @@ public class TBT extends Discrete implements Payoffs,
 	public Color[] getMeanColors() {
 		Color[] colors = super.getMeanColors();
 		// not all models entertain competition geometries, e.g. ODE/SDE
-		if (competition == null || competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+		if (competition == null || competition.getType() != GeometryType.SQUARE_NEUMANN_2ND)
 			return colors;
 		Color[] color2nd = new Color[2 * nTraits];
 		for (int n = 0; n < nTraits; n++) {
@@ -322,7 +322,7 @@ public class TBT extends Discrete implements Payoffs,
 			clo.addKey(Init.Type.KALEIDOSCOPE);
 		}
 		// handling of 2nd neighbours in von Neumann lattice implemented
-		cloGeometry.addKey(Geometry.Type.SQUARE_NEUMANN_2ND);
+		cloGeometry.addKey(GeometryType.SQUARE_NEUMANN_2ND);
 	}
 
 	@Override
@@ -333,7 +333,7 @@ public class TBT extends Discrete implements Payoffs,
 	/**
 	 * The extension for IBS simulations specific to populations engaging in
 	 * {@code 2×2} games. This extension implements customizations for
-	 * {@code Geometry.Type.SQUARE_NEUMANN_2ND} as well as specific initial
+	 * {@code GeometryType.SQUARE_NEUMANN_2ND} as well as specific initial
 	 * conditions that give rise to fascinating evolutionary kaleidoscopes for
 	 * deterministic updating.
 	 */
@@ -351,13 +351,13 @@ public class TBT extends Discrete implements Payoffs,
 
 		/**
 		 * The trait frequencies for the two sublattices for
-		 * {@code Geometry.Type.SQUARE_NEUMANN_2ND}.
+		 * {@code GeometryType.SQUARE_NEUMANN_2ND}.
 		 */
 		double[] tsTraits;
 
 		/**
 		 * The trait fitnesses for the two sublattices for
-		 * {@code Geometry.Type.SQUARE_NEUMANN_2ND}.
+		 * {@code GeometryType.SQUARE_NEUMANN_2ND}.
 		 */
 		double[] tsFits;
 
@@ -374,7 +374,7 @@ public class TBT extends Discrete implements Payoffs,
 		@Override
 		public boolean check() {
 			boolean doReset = super.check();
-			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
+			if (competition.getType() != GeometryType.SQUARE_NEUMANN_2ND) {
 				tsTraits = null;
 				tsFits = null;
 			} else {
@@ -388,7 +388,7 @@ public class TBT extends Discrete implements Payoffs,
 
 		@Override
 		public String getTraitNameAt(int idx) {
-			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+			if (competition.getType() != GeometryType.SQUARE_NEUMANN_2ND)
 				return super.getTraitNameAt(idx);
 			int side = (int) Math.sqrt(nPopulation);
 			int trait = getTraitAt(idx);
@@ -399,7 +399,7 @@ public class TBT extends Discrete implements Payoffs,
 
 		@Override
 		public int getNMean() {
-			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+			if (competition.getType() != GeometryType.SQUARE_NEUMANN_2ND)
 				return super.getNMean();
 			return 2 * nTraits;
 		}
@@ -408,7 +408,7 @@ public class TBT extends Discrete implements Payoffs,
 		public double[] getMeanTraits(double[] mean) {
 			// SQUARE_NEUMANN_2ND geometry for competition results in two disjoint
 			// sublattices; report trait frequencies in each sublattice separately
-			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
+			if (competition.getType() != GeometryType.SQUARE_NEUMANN_2ND) {
 				return super.getMeanTraits(mean);
 			}
 
@@ -439,7 +439,7 @@ public class TBT extends Discrete implements Payoffs,
 		public double[] getMeanFitness(double[] mean) {
 			// SQUARE_NEUMANN_2ND geometry for competition results in two disjoint
 			// sublattices; report trait frequencies in each sublattice separately
-			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND) {
+			if (competition.getType() != GeometryType.SQUARE_NEUMANN_2ND) {
 				return super.getMeanFitness(mean);
 			}
 
@@ -471,7 +471,7 @@ public class TBT extends Discrete implements Payoffs,
 
 		@Override
 		public String getStatus() {
-			if (competition.getType() != Geometry.Type.SQUARE_NEUMANN_2ND)
+			if (competition.getType() != GeometryType.SQUARE_NEUMANN_2ND)
 				return super.getStatus();
 
 			getMeanTraits(tsTraits);

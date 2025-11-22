@@ -34,6 +34,7 @@ import org.evoludo.geom.Node2D;
 import org.evoludo.geom.Path2D;
 import org.evoludo.geom.Point2D;
 import org.evoludo.geom.Vector2D;
+import org.evoludo.simulator.geom.GeometryType;
 
 /**
  * Graphical representation of generic population geometries in 2D. A network
@@ -252,7 +253,7 @@ public abstract class Network2D extends Network<Node2D> {
 
 	@Override
 	public void finishLayout() {
-		if (geometry.isType(Geometry.Type.DYNAMIC)) {
+		if (geometry.isType(GeometryType.DYNAMIC)) {
 			// on dynamic networks radius needs to be set as well
 			// the radius of the nodes is scaled by their degree
 			int kin;

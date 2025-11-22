@@ -74,9 +74,9 @@ import org.evoludo.simulator.modules.Module;
  * 
  * @see org.evoludo.simulator.views.AbstractView
  * @see org.evoludo.simulator.views.LineGraph
- * @see org.evoludo.simulator.model.Data
- * @see org.evoludo.simulator.model.DModel
- * @see org.evoludo.simulator.model.IBSC
+ * @see org.evoludo.simulator.models.Data
+ * @see org.evoludo.simulator.models.DModel
+ * @see org.evoludo.simulator.models.IBSC
  */
 public class Mean extends AbstractView<LineGraph> implements Shifter, Zoomer {
 

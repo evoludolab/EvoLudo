@@ -35,6 +35,7 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
+import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.ui.ContextMenu;
@@ -350,7 +351,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	public void update(boolean isNext) {
 		if (!view.isActive() || noGraph || hasMessage)
 			return;
-		if (invalidated || (isNext && geometry.isType(Geometry.Type.DYNAMIC))) {
+		if (invalidated || (isNext && geometry.isType(GeometryType.DYNAMIC))) {
 			// defer layouting to allow 3D view to be up and running
 			Scheduler.get().scheduleDeferred(() -> {
 				if (hasStaticLayout()) {
@@ -377,7 +378,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 */
 	boolean hasStaticLayout() {
 		return (geometry.isLattice()
-				|| geometry.isType(Geometry.Type.HIERARCHY) && geometry.subgeometry.isLattice());
+				|| geometry.isType(GeometryType.HIERARCHY) && geometry.subgeometry.isLattice());
 	}
 
 	/**
@@ -436,7 +437,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 * @see #hasStaticLayout()
 	 */
 	protected void layoutNetwork() {
-		if (!network.isStatus(Status.HAS_LAYOUT) || geometry.isType(Geometry.Type.DYNAMIC))
+		if (!network.isStatus(Status.HAS_LAYOUT) || geometry.isType(GeometryType.DYNAMIC))
 			network.doLayout(this);
 		network.finishLayout();
 		drawNetwork();

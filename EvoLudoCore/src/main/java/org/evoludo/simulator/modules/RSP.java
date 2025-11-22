@@ -34,7 +34,7 @@ import java.awt.Color;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
@@ -46,10 +46,10 @@ import org.evoludo.simulator.views.HasMean;
 import org.evoludo.simulator.views.HasPop2D;
 import org.evoludo.simulator.views.HasPop3D;
 import org.evoludo.simulator.views.HasS3;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOCategory;
 
 /**
  * Cyclical dynamics of the rock-scissors-paper game. A game that children,
@@ -282,8 +282,8 @@ public class RSP extends Discrete implements Payoffs,
 		@Override
 		protected void initKaleidoscope() {
 			// kaleidoscopes only available for some geometries
-			if (!(interaction.isType(Geometry.Type.SQUARE) || interaction.isType(Geometry.Type.SQUARE_MOORE)
-					|| interaction.isType(Geometry.Type.SQUARE_NEUMANN))) {
+			if (!(interaction.isType(GeometryType.SQUARE) || interaction.isType(GeometryType.SQUARE_MOORE)
+					|| interaction.isType(GeometryType.SQUARE_NEUMANN))) {
 				logger.warning("kaleidoscopes require square lattices - using uniform initialization.");
 				initUniform();
 				return;

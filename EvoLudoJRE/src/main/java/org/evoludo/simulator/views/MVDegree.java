@@ -49,6 +49,7 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.GeometryType;
 
 public class MVDegree extends MVAbstract implements HistoGraphListener {
 
@@ -110,7 +111,7 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 				geometry = module.getInteractionGeometry();
 				break;
 		}
-		isStatic = !geometry.isType(Geometry.Type.DYNAMIC);
+		isStatic = !geometry.isType(GeometryType.DYNAMIC);
 		if (graphs.isEmpty())
 			addGraph(K_OUT);
 		if (isDirected == geometry.isUndirected()) {

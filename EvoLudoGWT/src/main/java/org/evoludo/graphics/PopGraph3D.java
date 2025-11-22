@@ -36,9 +36,9 @@ import java.util.List;
 
 import org.evoludo.geom.Node3D;
 import org.evoludo.simulator.ColorMap3D;
-import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network3D;
+import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.Pop3D;
 import org.evoludo.ui.TrackballControls;
@@ -241,8 +241,8 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 
 	@Override
 	protected void drawLattice() {
-		Geometry.Type type = geometry.getType();
-		boolean isHierarchy = (type == Geometry.Type.HIERARCHY);
+		GeometryType type = geometry.getType();
+		boolean isHierarchy = (type == GeometryType.HIERARCHY);
 		if (isHierarchy)
 			type = geometry.subgeometry;
 		// geometries that have special/fixed layout

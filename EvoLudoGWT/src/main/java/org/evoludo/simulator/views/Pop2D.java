@@ -41,6 +41,7 @@ import org.evoludo.simulator.EvoLudo.ColorModelType;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
@@ -282,7 +283,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		Geometry geometry = graph.getGeometry();
 		GraphStyle style = graph.getStyle();
 
-		if (geometry.isType(Geometry.Type.LINEAR)) {
+		if (geometry.isType(GeometryType.LINEAR)) {
 			// frame, ticks, labels needed
 			style.xLabel = "nodes";
 			style.showXLabel = true;

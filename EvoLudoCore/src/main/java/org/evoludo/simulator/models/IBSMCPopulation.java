@@ -36,7 +36,7 @@ import java.util.List;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSC.Init;
 import org.evoludo.simulator.models.Model.HasIBS;
@@ -407,9 +407,9 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 			default:
 				// if resetting scores after every update, scores can be adjusted
 				// when interacting all neighbours but not in well-mixed populations
-				if (interaction.isType(Geometry.Type.WELLMIXED) || //
-						(interaction.isType(Geometry.Type.HIERARCHY) && //
-								interaction.subgeometry == Geometry.Type.WELLMIXED))
+				if (interaction.isType(GeometryType.WELLMIXED) || //
+						(interaction.isType(GeometryType.HIERARCHY) && //
+								interaction.subgeometry == GeometryType.WELLMIXED))
 					return false;
 				return interGroup.isSampling(IBSGroup.SamplingType.ALL);
 		}
@@ -946,7 +946,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		traitRangeMax = module.getTraitMax();
 
 		// check interaction geometry
-		if (interaction.isType(Geometry.Type.WELLMIXED) && interGroup.isSampling(IBSGroup.SamplingType.ALL)) {
+		if (interaction.isType(GeometryType.WELLMIXED) && interGroup.isSampling(IBSGroup.SamplingType.ALL)) {
 			// interacting with everyone in mean-field simulations is not feasible - except
 			// for discrete traits
 			logger.warning(

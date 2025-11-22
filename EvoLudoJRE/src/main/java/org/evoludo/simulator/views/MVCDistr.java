@@ -30,6 +30,7 @@
 
 package org.evoludo.simulator.views;
 
+import org.evoludo.simulator.geom.GeometryType;
 import java.awt.Color;
 import java.text.DecimalFormat;
 
@@ -184,7 +185,7 @@ public class MVCDistr extends MVAbstract implements PopListener {
 		Model model = engine.getModel();
 		for (int n = 0; n < nData; n++) {
 			Geometry geometry = new Geometry(engine);
-			geometry.setType(Geometry.Type.LINEAR);
+			geometry.setType(GeometryType.LINEAR);
 			geometry.setSize(HistoGraph.HISTO_BINS);
 			PopGraph2D graph = new PopGraph2D(this, geometry, module);
 			bins[n] = new double[HistoGraph.HISTO_BINS];

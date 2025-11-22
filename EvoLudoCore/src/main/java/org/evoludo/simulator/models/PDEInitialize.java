@@ -30,6 +30,7 @@
 
 package org.evoludo.simulator.models;
 
+import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
@@ -212,7 +213,7 @@ class PDEInitialize extends ODEInitialize {
 	}
 
 	/**
-	 * Applies the initialization for {@link Geometry.Type#LINEAR}.
+	 * Applies the initialization for {@link GeometryType#LINEAR}.
 	 * 
 	 * @param x    the x coordinate
 	 * @param y0   the initial state
@@ -245,7 +246,7 @@ class PDEInitialize extends ODEInitialize {
 	}
 
 	/**
-	 * Applies the initialization for {@link Geometry.Type#SQUARE} and variants.
+	 * Applies the initialization for {@link GeometryType#SQUARE} and variants.
 	 * 
 	 * @param x    the x coordinate
 	 * @param y    the y coordinate
@@ -287,7 +288,7 @@ class PDEInitialize extends ODEInitialize {
 	}
 
 	/**
-	 * Applies the initialization for {@link Geometry.Type#CUBE}.
+	 * Applies the initialization for {@link GeometryType#CUBE}.
 	 * 
 	 * @param x    the x coordinate
 	 * @param y    the y coordinate

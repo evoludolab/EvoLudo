@@ -45,6 +45,7 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
@@ -1184,8 +1185,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 			Geometry comp = module.getCompetitionGeometry();
 
 			boolean needsUpdate = !degreeProcessed
-					|| (inter != null && inter.isType(Geometry.Type.DYNAMIC))
-					|| (comp != null && comp.isType(Geometry.Type.DYNAMIC));
+					|| (inter != null && inter.isType(GeometryType.DYNAMIC))
+					|| (comp != null && comp.isType(GeometryType.DYNAMIC));
 
 			double[][] graphdata = graph.getData();
 			if ((mt.isDE() && handleDEGraph(graph, mt, module))

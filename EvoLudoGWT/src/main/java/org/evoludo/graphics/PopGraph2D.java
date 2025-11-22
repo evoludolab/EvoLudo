@@ -40,6 +40,7 @@ import org.evoludo.graphics.AbstractGraph.Shifting;
 import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.util.RingBuffer;
@@ -217,7 +218,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	public void setGeometry(Geometry geometry) {
 		super.setGeometry(geometry);
 		int size = geometry.getSize();
-		if (geometry.isType(Geometry.Type.LINEAR) && size <= MAX_LINEAR_SIZE) {
+		if (geometry.isType(GeometryType.LINEAR) && size <= MAX_LINEAR_SIZE) {
 			// linear graphs maintain history; allocate generously
 			if (buffer == null)
 				buffer = new RingBuffer<String[]>(2 * MAX_LINEAR_SIZE);
@@ -280,7 +281,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		if (!prepCanvas())
 			return;
 		invalidated = false;
-		Geometry.Type type = geometry.getType();
+		GeometryType type = geometry.getType();
 		if (isHierarchy)
 			type = geometry.subgeometry;
 
@@ -600,8 +601,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		dh = 0;
 		dR = 0.0;
 
-		Geometry.Type type = geometry.getType();
-		isHierarchy = (type == Geometry.Type.HIERARCHY);
+		GeometryType type = geometry.getType();
+		isHierarchy = (type == GeometryType.HIERARCHY);
 		if (isHierarchy)
 			type = geometry.subgeometry;
 		if (!isHierarchy || !type.isSquareLattice())
@@ -650,7 +651,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 * 
 	 * @param type the geometry type
 	 */
-	private void handleNoRepresentation(Geometry.Type type) {
+	private void handleNoRepresentation(GeometryType type) {
 		buffer = null;
 		data = null;
 		noGraph = true;
@@ -836,7 +837,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		int sx = (int) ((viewCorner.getX() + x - bounds.getX()) / zoomFactor + 0.5);
 		int sy = (int) ((viewCorner.getY() + y - bounds.getY()) / zoomFactor + 0.5);
 
-		Geometry.Type type = geometry.getType();
+		GeometryType type = geometry.getType();
 		if (isHierarchy)
 			type = geometry.subgeometry;
 

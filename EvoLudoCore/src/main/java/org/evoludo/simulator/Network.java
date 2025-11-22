@@ -37,6 +37,7 @@ import java.util.Iterator;
 import org.evoludo.geom.Node;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
+import org.evoludo.simulator.geom.GeometryType;
 
 /**
  * Abstract graphical representation for generic population geometries. A
@@ -276,8 +277,8 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 			layoutTimeout = snapTimeout;
 
 		nNodes = geometry.getSize();
-		Geometry.Type type = geometry.getType();
-		if (type == Geometry.Type.HIERARCHY)
+		GeometryType type = geometry.getType();
+		if (type == GeometryType.HIERARCHY)
 			type = geometry.subgeometry;
 		// geometries that have special/fixed layout
 		switch (type) {
@@ -338,7 +339,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 
 		// make sure min/max/avg are up to date
 		if (needsLayout) {
-			if (geometry.isType(Geometry.Type.DYNAMIC))
+			if (geometry.isType(GeometryType.DYNAMIC))
 				geometry.evaluate();
 			initNodes(pnorm, nnorm, unitradius);
 		}
@@ -349,7 +350,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 		switch (geometry.getType()) {
 			case HIERARCHY:
 				// don't draw links for well-mixed hierarchical structures
-				if (geometry.subgeometry.equals(Geometry.Type.WELLMIXED))
+				if (geometry.subgeometry.equals(GeometryType.WELLMIXED))
 					fLinks = 0.0;
 				// should not get here for subgeometry SQUARE
 				break;
@@ -548,7 +549,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	 * @return the status of the layouting process
 	 */
 	public Status getStatus() {
-		if (geometry.isType(Geometry.Type.DYNAMIC) && status == Status.HAS_LAYOUT
+		if (geometry.isType(GeometryType.DYNAMIC) && status == Status.HAS_LAYOUT
 				&& Math.abs(engine.getModel().getUpdates() - timestamp) > 1e-8)
 			status = Status.ADJUST_LAYOUT;
 		return status;

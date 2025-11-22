@@ -34,7 +34,7 @@ import java.util.Arrays;
 
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBS.MigrationType;
 import org.evoludo.simulator.models.IBSD;
@@ -112,7 +112,7 @@ public class DemesTBT extends TBT {
 		parser.removeCLO(new String[] { "geominter", "geomcomp" });
 
 		cloGeometry.clearKeys();
-		cloGeometry.addKey(Geometry.Type.HIERARCHY);
+		cloGeometry.addKey(GeometryType.HIERARCHY);
 		cloGeometry.setDefault("H1"); // equivalent to well-mixed
 
 		// PLAYER_UPDATE_BEST_REPLY requires avgScores which is not (yet? how?)
@@ -204,19 +204,19 @@ public class DemesTBT extends TBT {
 			optimizeMigration = optimizeHomo;
 			boolean doReset = super.check();
 			nTraits = module.getNTraits();
-			if (!(interaction.isType(Geometry.Type.WELLMIXED) || (interaction.isType(Geometry.Type.HIERARCHY)
-					&& interaction.subgeometry == Geometry.Type.WELLMIXED && interaction.hierarchy.length == 2))) {
+			if (!(interaction.isType(GeometryType.WELLMIXED) || (interaction.isType(GeometryType.HIERARCHY)
+					&& interaction.subgeometry == GeometryType.WELLMIXED && interaction.hierarchy.length == 2))) {
 				// the only acceptable geometries are well-mixed and hierarchical structures
 				// with two levels of well-mixed demes
 				logger.severe("invalid geometry - forcing well-mixed population (single deme)!");
-				interaction.setType(Geometry.Type.WELLMIXED);
+				interaction.setType(GeometryType.WELLMIXED);
 				doReset = true;
 			}
 			nDemes = 1;
 			sizeDemes = nPopulation;
 			if (pure == null || pure.length != nTraits)
 				pure = new double[nTraits];
-			if (interaction.isType(Geometry.Type.HIERARCHY)) {
+			if (interaction.isType(GeometryType.HIERARCHY)) {
 				nDemes = interaction.hierarchy[0];
 				sizeDemes = interaction.hierarchy[1];
 			}
@@ -229,7 +229,7 @@ public class DemesTBT extends TBT {
 			}
 			if (nDemes > 1 && !adjustScores) {
 				logger.severe("invalid sampling - forcing well-mixed population (single deme)!");
-				interaction.setType(Geometry.Type.WELLMIXED);
+				interaction.setType(GeometryType.WELLMIXED);
 				doReset = true;
 			}
 			if (optimizeMigration) {

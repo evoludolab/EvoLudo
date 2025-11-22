@@ -30,6 +30,7 @@
 
 package org.evoludo.simulator.models;
 
+import org.evoludo.simulator.geom.GeometryType;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -334,7 +335,7 @@ public class PDE extends ODE {
 			engine.loadModel(ModelType.ODE);
 			return true;
 		}
-		if (space.isType(Geometry.Type.WELLMIXED) || space.isType(Geometry.Type.COMPLETE)) {
+		if (space.isType(GeometryType.WELLMIXED) || space.isType(GeometryType.COMPLETE)) {
 			logger.warning("unstructured population - reverting to ODE.");
 			engine.loadModel(ModelType.ODE);
 			return true;
@@ -372,7 +373,7 @@ public class PDE extends ODE {
 	@Override
 	public void reset() {
 		super.reset();
-		if (space.isType(Geometry.Type.WELLMIXED))
+		if (space.isType(GeometryType.WELLMIXED))
 			return;
 		space.init();
 

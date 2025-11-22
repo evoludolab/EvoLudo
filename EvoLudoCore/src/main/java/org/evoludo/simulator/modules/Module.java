@@ -42,6 +42,7 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.models.Advection;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBS;
@@ -51,18 +52,18 @@ import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.ODE;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.RungeKutta;
 import org.evoludo.simulator.models.SDE;
-import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.views.HasPhase2D;
 import org.evoludo.simulator.views.HasPhase2D.Data2Phase;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOCategory;
 
 /**
  * Parent class of all EvoLudo modules.
@@ -1639,10 +1640,10 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 		}
 		// geometry option only acceptable for IBS and PDE models
 		if (model instanceof IBS || model instanceof PDE) {
-			cloGeometry.addKeys(Geometry.Type.values());
+			cloGeometry.addKeys(GeometryType.values());
 			// by default remove DYNAMIC and SQUARE_NEUMANN_2ND geometries
-			cloGeometry.removeKey(Geometry.Type.DYNAMIC);
-			cloGeometry.removeKey(Geometry.Type.SQUARE_NEUMANN_2ND);
+			cloGeometry.removeKey(GeometryType.DYNAMIC);
+			cloGeometry.removeKey(GeometryType.SQUARE_NEUMANN_2ND);
 			parser.addCLO(cloGeometry);
 		}
 	}

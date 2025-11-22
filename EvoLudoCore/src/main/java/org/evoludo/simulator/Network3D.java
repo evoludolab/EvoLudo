@@ -32,6 +32,7 @@ package org.evoludo.simulator;
 
 import org.evoludo.geom.Node3D;
 import org.evoludo.geom.Vector3D;
+import org.evoludo.simulator.geom.GeometryType;
 
 /**
  * Graphical representation of generic population geometries in 3D. A network
@@ -231,7 +232,7 @@ public abstract class Network3D extends Network<Node3D> {
 		for (Node3D node : nodes)
 			com.shift(node);
 		com.scale(-1.0 / nNodes);
-		if (geometry.isType(Geometry.Type.DYNAMIC)) {
+		if (geometry.isType(GeometryType.DYNAMIC)) {
 			// need to set radius as well in dynamic networks
 			int krange = geometry.maxTot - geometry.minTot;
 			double invRange = krange > 0 ? 1.0 / krange : 1.0;
