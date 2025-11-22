@@ -984,6 +984,22 @@ public class Geometry {
 	}
 
 	/**
+	 * Sets whether the interaction and competition geometries are identical.
+	 *
+	 * @param single {@code true} if a single geometry is sufficient
+	 */
+	public void setSingle(boolean single) {
+		isSingle = single;
+	}
+
+	/**
+	 * @return {@code true} if interaction and competition geometries are identical
+	 */
+	public boolean isSingle() {
+		return isSingle;
+	}
+
+	/**
 	 * @return {@code true} if the graph is undirected.
 	 */
 	public boolean isUndirected() {
@@ -1001,7 +1017,7 @@ public class Geometry {
 	/**
 	 * {@code true} if the interaction and competition graphs are the same.
 	 */
-	public boolean interCompSame = true;
+	private boolean isSingle = true;
 
 	/**
 	 * Checks whether a single graphical representation can be used for the
@@ -1039,13 +1055,13 @@ public class Geometry {
 			// lattice interaction geometry - return true if competition geometry is the
 			// same (regardless of connectivity)
 			if (comp == null)
-				return inter.interCompSame;
+				return inter.isSingle();
 			// if both are square lattices a unique geometry is good enough
 			if (geometry.isSquareLattice() && comp.geometry.isSquareLattice())
 				return true;
 			return (comp.geometry == geometry);
 		}
-		return inter.interCompSame;
+		return inter.isSingle();
 	}
 
 	/**
@@ -1117,7 +1133,7 @@ public class Geometry {
 		pAddwire = -1.0;
 		isUndirected = true;
 		isRewired = false;
-		interCompSame = true;
+		isSingle = true;
 		isDynamic = false;
 		isRegular = false;
 		isValid = false;
@@ -5134,16 +5150,16 @@ public class Geometry {
 
 	/**
 	 * Derives competition geometry from current (interaction) geometry for
-	 * inter-species interactions with {@code interCompSame == true}. This clones
+	 * inter-species interactions with {@code isSingle == true}. This clones
 	 * the interaction geometry and simply removes links to self, which corresponds
 	 * to interactions with individuals at the same location in the other species.
 	 *
 	 * @return the derived competition geometry
 	 */
 	public Geometry deriveCompetitionGeometry() {
-		if (!interCompSame)
+		if (!isSingle)
 			throw new IllegalStateException(
-					"Cannot derive competition geometry when interCompSame == false.");
+					"Cannot derive competition geometry when isSingle == false.");
 		Geometry competition = clone();
 		// remove competition with self
 		if (competition.getType() != Type.MEANFIELD)
@@ -5464,7 +5480,7 @@ public class Geometry {
 		clone.pAddwire = pAddwire;
 		clone.isUndirected = isUndirected;
 		clone.isRewired = isRewired;
-		clone.interCompSame = interCompSame;
+		clone.isSingle = isSingle;
 		clone.isDynamic = isDynamic;
 		clone.isRegular = isRegular;
 		clone.isValid = isValid;

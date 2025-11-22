@@ -50,7 +50,7 @@ public class DynamicGeometry extends AbstractGeometry {
 		isUndirected = false;
 		isRegular = false;
 		isDynamic = true;
-		interCompSame = true;
+		isSingle = true;
 		alloc();
 	}
 }

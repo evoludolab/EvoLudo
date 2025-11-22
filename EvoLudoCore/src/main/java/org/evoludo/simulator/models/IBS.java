@@ -227,7 +227,7 @@ public abstract class IBS extends Model {
 				continue;
 			Geometry geom = pop.getInteractionGeometry();
 			anyUnique |= geom.isUniqueGeometry();
-			if (!geom.interCompSame) {
+			if (!geom.isSingle()) {
 				geom = pop.getCompetitionGeometry();
 				anyUnique |= geom.isUniqueGeometry();
 			}

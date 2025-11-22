@@ -3428,7 +3428,9 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			// use default for competition
 			competition = structure;
 		}
-		interaction.interCompSame = competition.interCompSame = (interaction.equals(competition));
+		boolean sameGeometry = interaction.equals(competition);
+		interaction.setSingle(sameGeometry);
+		competition.setSingle(sameGeometry);
 		interGroup.setGeometry(interaction);
 		compGroup.setGeometry(competition);
 
@@ -3444,7 +3446,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// and would most likely result in a never ending initialization loop...
 		doReset |= interaction.setSize(nPopulation);
 		doReset |= interaction.check();
-		if (!interaction.interCompSame) {
+		if (!interaction.isSingle()) {
 			module.setNPopulation(interaction.getSize());
 			nPopulation = interaction.getSize(); // keep local copy in sync
 			doReset |= competition.setSize(nPopulation);
@@ -3476,7 +3478,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			double prev = interaction.getAddwire();
 			interaction.setAddwire(next);
 			doReset |= (Math.abs(prev - next) > 1e-8);
-			if (!interaction.interCompSame) {
+			if (!interaction.isSingle()) {
 				next = pAddwire[1];
 				prev = competition.getAddwire();
 				competition.setAddwire(next);
@@ -3489,7 +3491,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			double prev = interaction.getRewire();
 			interaction.setRewire(next);
 			doReset |= (Math.abs(prev - next) > 1e-8);
-			if (!interaction.interCompSame) {
+			if (!interaction.isSingle()) {
 				next = pRewire[1];
 				prev = competition.getRewire();
 				competition.setRewire(next);
@@ -3505,7 +3507,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	void setGeometryNames() {
 		String name = module.getName();
-		if (interaction.interCompSame || Geometry.displayUniqueGeometry(interaction, competition)) {
+		if (interaction.isSingle() || Geometry.displayUniqueGeometry(interaction, competition)) {
 			if (name.isEmpty())
 				interaction.name = competition.name = "Structure";
 			else
@@ -3535,7 +3537,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (!interaction.isUndirected()) {
 			logger.warning("no migration on directed graphs!");
 			setMigrationType(MigrationType.NONE);
-		} else if (!interaction.interCompSame) {
+		} else if (!interaction.isSingle()) {
 			logger.warning("no migration on graphs with different interaction and competition neighborhoods!");
 			setMigrationType(MigrationType.NONE);
 		} else if (interaction.getType() == Geometry.Type.MEANFIELD) {
@@ -3928,7 +3930,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			updateMinMaxScores();
 		}
 
-		if (interaction.interCompSame) {
+		if (interaction.isSingle()) {
 			if (opponent != this) {
 				// interspecies interaction
 				competition = interaction.deriveCompetitionGeometry();
@@ -4082,7 +4084,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			checkConsistentFitness();
 		// TODO consistency checks for geometries & interactions
 		// interaction.isConsistent();
-		// if (!interaction.interCompSame)
+		// if (!interaction.isSingle())
 		// competition.isConsistent();
 		if (nIssues > 0)
 			logger.warning(nIssues + " inconsistencies found @ " + engine.getModel().getUpdates());
@@ -4963,7 +4965,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 						"<dict>\n");
 		plist.append(interaction.encodeGeometry());
 		plist.append("</dict>\n");
-		if (interaction.interCompSame)
+		if (interaction.isSingle())
 			return;
 		plist.append(
 				"<key>" + competition.name + "</key>\n" +
@@ -4986,7 +4988,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (igeo == null)
 			return false;
 		interaction.decodeGeometry(igeo);
-		if (interaction.interCompSame) {
+		if (interaction.isSingle()) {
 			competition = interaction.deriveCompetitionGeometry();
 			return true;
 		}

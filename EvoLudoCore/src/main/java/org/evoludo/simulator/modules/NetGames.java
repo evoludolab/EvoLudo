@@ -782,7 +782,7 @@ public class NetGames extends Discrete implements Payoffs,
 		// geom.isUndirected = false;
 		// geom.isRegular = false;
 		// geom.isDynamic = true;
-		// geom.interCompSame = true;
+		// geom.setSingle(true);
 		// geom.alloc();
 		// return true;
 		// }

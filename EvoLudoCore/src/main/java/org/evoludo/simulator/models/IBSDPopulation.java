@@ -2209,7 +2209,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		// only makes sense for 2D lattices at this point. if not, defaults to uniform
 		// random initialization (the only other inittype that doesn't require --init).
 		Geometry.Type type = interaction.getType();
-		if (!interaction.interCompSame
+		if (!interaction.isSingle()
 				|| !(type == Geometry.Type.SQUARE
 						|| type == Geometry.Type.SQUARE_NEUMANN
 						|| type == Geometry.Type.SQUARE_MOORE

@@ -416,7 +416,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 				else
 					toolTip += "<br><i>Links to:</i>  " + formatStructureAt(node, intergeom.out, intergeom.kout) +
 							"<br><i>Link here:</i> " + formatStructureAt(node, intergeom.in, intergeom.kin);
-				if (!intergeom.interCompSame) {
+				if (!intergeom.isSingle()) {
 					Geometry compgeom = module.getCompetitionGeometry();
 					if (compgeom.isUndirected())
 						toolTip += "<br><i>Competitors:</i> " + formatStructureAt(node, compgeom.out, compgeom.kout);

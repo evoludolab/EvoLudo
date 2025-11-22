@@ -131,16 +131,16 @@ public abstract class AbstractGeometry {
 
 	/**
 	 * Derive competition geometry from current (interaction) geometry for
-	 * inter-species interactions with {@code interCompSame == true}. This clones
+	 * inter-species interactions with {@code isSingle == true}. This clones
 	 * the interaction geometry and simply removes links to self, which corresponds
 	 * to interactions with individuals at the same location in the other species.
 	 *
 	 * @return the derived competition geometry
 	 */
 	public AbstractGeometry deriveCompetitionGeometry() {
-		if (!interCompSame)
+		if (!isSingle)
 			throw new IllegalStateException(
-					"Cannot derive competition geometry when interCompSame == false.");
+					"Cannot derive competition geometry when isSingle == false.");
 		AbstractGeometry competition = clone();
 		// remove competition with self
 		if (competition.getType() == Type.WELLMIXED)
@@ -226,7 +226,7 @@ public abstract class AbstractGeometry {
 	 * Convenience flag denoting whether intra- and interspecific competitions are
 	 * identical.
 	 */
-	public boolean interCompSame = true;
+	boolean isSingle = true;
 
 	/**
 	 * Connectivity (average number of neighbors).
@@ -430,13 +430,13 @@ public abstract class AbstractGeometry {
 		Type interactionType = interaction.getType();
 		if (interaction.isLattice()) {
 			if (competition == null)
-				return interaction.interCompSame;
+				return interaction.isSingle();
 			Type competitionType = competition.getType();
 			if (interactionType.isSquareLattice() && competitionType.isSquareLattice())
 				return true;
 			return competitionType == interactionType;
 		}
-		return interaction.interCompSame;
+		return interaction.isSingle();
 	}
 
 	/**
@@ -528,6 +528,24 @@ public abstract class AbstractGeometry {
 	 */
 	public double getAddwire() {
 		return pAddwire;
+	}
+
+	/**
+	 * Sets whether a single geometry is used for both interaction and competition
+	 * graphs.
+	 *
+	 * @param single {@code true} if both graphs are identical
+	 */
+	public void setSingle(boolean single) {
+		isSingle = single;
+	}
+
+	/**
+	 * @return {@code true} if a single geometry suffices for interaction and
+	 *         competition structures
+	 */
+	public boolean isSingle() {
+		return isSingle;
 	}
 
 	/**
@@ -676,7 +694,7 @@ public abstract class AbstractGeometry {
 		pAddwire = -1.0;
 		isUndirected = true;
 		isRewired = false;
-		interCompSame = true;
+		isSingle = true;
 		isDynamic = false;
 		isRegular = false;
 		isValid = false;
@@ -1589,7 +1607,7 @@ public abstract class AbstractGeometry {
 		clone.pAddwire = pAddwire;
 		clone.isUndirected = isUndirected;
 		clone.isRewired = isRewired;
-		clone.interCompSame = interCompSame;
+		clone.isSingle = isSingle;
 		clone.isDynamic = isDynamic;
 		clone.isRegular = isRegular;
 		clone.isValid = isValid;

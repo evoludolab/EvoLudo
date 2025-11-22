@@ -193,7 +193,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 			Geometry igeom = module.getInteractionGeometry();
 			Geometry cgeom = module.getCompetitionGeometry();
 			Geometry geo = inter ? igeom : cgeom;
-			if (!igeom.interCompSame && Geometry.displayUniqueGeometry(igeom, cgeom))
+			if (!igeom.isSingle() && Geometry.displayUniqueGeometry(igeom, cgeom))
 				// different geometries but only one graph - pick competition.
 				// note: this is not a proper solution but fits the requirements of
 				// the competition with second nearest neighbours
@@ -345,7 +345,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		}
 
 		// competition neighbours and opponent competition traits
-		if (!intergeom.interCompSame) {
+		if (!intergeom.isSingle()) {
 			Geometry compgeom = module.getCompetitionGeometry();
 			appendCompNeighborsAt(node, compgeom, tip);
 			G oppCompGraph = getOppCompGraph(graph);
