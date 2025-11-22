@@ -990,7 +990,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		for (int n = 0; n < nOut; n++)
 			tmpCount[opponent.getTraitAt(out[n])]++;
 		int u2 = 2;
-		if (!interaction.isUndirected) {
+		if (!interaction.isUndirected()) {
 			// directed graph, count in-neighbors
 			u2 = 1;
 			nIn = interaction.kin[me];
@@ -1027,7 +1027,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		accuTypeScores[newType] += oldScore;
 		// adjust (outgoing) opponent's score
 		adjustNeighborScores(out, nOut, u2);
-		// same as !interaction.isUndirected because in != null implies directed graph
+		// same as !interaction.isUndirected() because in != null implies directed graph
 		// (see above)
 		if (in != null) {
 			// adjust (incoming) opponent's score
@@ -1060,7 +1060,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			int type = opponent.getTraitAt(you);
 			opponent.removeScoreAt(you, u2 * (tmpScore[type] - tmpTraitScore[type]), u2);
 		}
-		// same as !interaction.isUndirected because in != null implies directed graph
+		// same as !interaction.isUndirected() because in != null implies directed graph
 		// (see above)
 		if (in != null) {
 			for (int n = 0; n < nIn; n++) {
@@ -1089,7 +1089,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			int type = opponent.getTraitAt(you);
 			opponent.updateScoreAt(you, u2 * (tmpTraitScore[type] - tmpScore[type]), u2);
 		}
-		// same as !interaction.isUndirected because in != null implies directed graph
+		// same as !interaction.isUndirected() because in != null implies directed graph
 		// (see above)
 		if (in != null) {
 			for (int n = 0; n < nIn; n++) {
@@ -1621,7 +1621,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		// for accumulated payoffs this makes only sense with adjustScores, without
 		// VACANT and for regular interaction geometries otherwise individuals may
 		// have different scores even in homogeneous populations
-		if (!playerScoreAveraged && (vacantIdx >= 0 || !interaction.isRegular))
+		if (!playerScoreAveraged && (vacantIdx >= 0 || !interaction.isRegular()))
 			return Double.NaN;
 		// averaged scores or regular interaction geometries without vacant sites
 		double mono = module.getMonoPayoff(type % nTraits);
@@ -2137,7 +2137,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 */
 	protected int initTemperature() {
 		int mutant = initMutant();
-		if (interaction.isRegular || mutant < 0)
+		if (interaction.isRegular() || mutant < 0)
 			return mutant;
 		int mutantType = getTraitAt(mutant);
 		int residentType = (int) init.args[1];

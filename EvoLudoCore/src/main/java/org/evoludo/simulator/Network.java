@@ -298,7 +298,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 				break;
 			default:
 				nLinks = ArrayMath.norm(geometry.kout);
-				if (geometry.isUndirected)
+				if (geometry.isUndirected())
 					nLinks /= 2;
 				setStatus(Status.NEEDS_LAYOUT);
 		}
@@ -343,7 +343,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 			initNodes(pnorm, nnorm, unitradius);
 		}
 		nLinks = ArrayMath.norm(geometry.kout);
-		if (geometry.isUndirected)
+		if (geometry.isUndirected())
 			nLinks /= 2;
 		// check geometries and limit number of links to draw
 		switch (geometry.getType()) {

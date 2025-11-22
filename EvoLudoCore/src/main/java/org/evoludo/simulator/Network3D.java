@@ -188,7 +188,7 @@ public abstract class Network3D extends Network<Node3D> {
 			// dist="+(dist*IR)+", ("+(distadj*IR)+"), potential="+potential);
 			attraction.add(vec);
 		}
-		if (geometry.isUndirected) {
+		if (geometry.isUndirected()) {
 			if (nOut == 0)
 				return 0.0;
 			attraction.scale(1.0 / nOut);

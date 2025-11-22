@@ -498,7 +498,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 				// XXX linewidth is ignored...
 				linkstyle.setLinewidth(2);
 			}
-			linkstyle.setColor(geometry.isUndirected ? ColorMap3D.UNDIRECTED : ColorMap3D.DIRECTED);
+			linkstyle.setColor(geometry.isUndirected() ? ColorMap3D.UNDIRECTED : ColorMap3D.DIRECTED);
 			linkstyle.setVertexColors(Material.COLORS.VERTEX);
 			Line links = new Line(lines, linkstyle, MODE.PIECES);
 			links.setMatrixAutoUpdate(false);

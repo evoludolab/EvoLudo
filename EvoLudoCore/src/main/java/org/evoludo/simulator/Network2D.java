@@ -220,7 +220,7 @@ public abstract class Network2D extends Network<Node2D> {
 			npot += vec.length2() * IR2;
 			attraction.add(vec);
 		}
-		if (geometry.isUndirected) {
+		if (geometry.isUndirected()) {
 			if (nOut == 0)
 				return 0.0;
 			attraction.scale(1.0 / nOut);
@@ -304,7 +304,7 @@ public abstract class Network2D extends Network<Node2D> {
 			engine.getLogger().warning("Too many links to draw - skipping!");
 			return;
 		}
-		if (geometry.isUndirected) {
+		if (geometry.isUndirected()) {
 			if (fLinks >= 1.0) {
 				// draw all links
 				for (int n = 0; n < nNodes; n++) {

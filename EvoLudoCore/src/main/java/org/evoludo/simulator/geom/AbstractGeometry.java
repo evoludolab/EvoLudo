@@ -40,7 +40,6 @@ import java.util.logging.Logger;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.Network3D;
 import org.evoludo.util.CLOption;
@@ -155,27 +154,27 @@ public abstract class AbstractGeometry {
 	 * Empty link arrays used for well-mixed geometries and while allocating
 	 * networks lazily.
 	 */
-	protected static final int[] EMPTY_LINKS = new int[0];
+	static final int[] EMPTY_LINKS = new int[0];
 
 	/**
 	 * The pacemaker of all models. Interface with the outside world.
 	 */
-	protected final EvoLudo engine;
+	final EvoLudo engine;
 
 	/**
 	 * Logger for keeping track of and reporting events and issues.
 	 */
-	protected final Logger logger;
+	final Logger logger;
 
 	/**
 	 * Local storage for the 2D representation of this graph.
 	 */
-	private Network2D network2D = null;
+	Network2D network2D = null;
 
 	/**
 	 * Local storage for the 3D representation of this graph.
 	 */
-	private Network3D network3D = null;
+	Network3D network3D = null;
 
 	/**
 	 * Optional CLI specification used to configure this geometry.
@@ -185,28 +184,28 @@ public abstract class AbstractGeometry {
 	/**
 	 * Optional descriptive name.
 	 */
-	private String name;
+	String name;
 
 	/**
 	 * Current geometry type handled by this instance.
 	 */
-	protected Type type = Type.WELLMIXED;
+	Type type = Type.WELLMIXED;
 
 	/**
 	 * The number of nodes in the graph.
 	 */
-	protected int size = -1;
+	int size = -1;
 
 	/**
 	 * Flag indicating whether the network structure is undirected.
 	 */
-	protected boolean isUndirected = true;
+	boolean isUndirected = true;
 
 	/**
 	 * {@code true} if the network structure is regular (all nodes have the same
 	 * number of neighbours).
 	 */
-	public boolean isRegular = false;
+	boolean isRegular = false;
 
 	/**
 	 * {@code true} if rewiring should be applied.
@@ -497,6 +496,21 @@ public abstract class AbstractGeometry {
 	 */
 	public int getSize() {
 		return size;
+	}
+
+	/**
+	 * @return {@code true} if this geometry is undirected.
+	 */
+	public boolean isUndirected() {
+		return isUndirected;
+	}
+
+	/**
+	 * @return {@code true} if this geometry is regular (all nodes have identical
+	 *         degree).
+	 */
+	public boolean isRegular() {
+		return isRegular;
 	}
 
 	/**

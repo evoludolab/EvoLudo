@@ -1671,7 +1671,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			interGroup.pickAt(me, true);
 			playPairGameAt(interGroup);
 			// if undirected, we are done
-			if (interaction.isUndirected)
+			if (interaction.isUndirected())
 				return;
 
 			// directed graph - additionally/separately interact with in-neighbors
@@ -1681,7 +1681,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			interGroup.pickAt(me, true);
 			playGroupGameAt(interGroup);
 			// if undirected, we are done
-			if (interaction.isUndirected)
+			if (interaction.isUndirected())
 				return;
 			// directed graph - additionally/separately interact with in-neighbors
 			interGroup.pickAt(me, false);
@@ -1730,7 +1730,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		}
 		// any graph - interact with out-neighbors
 		// same as earlier approach to undirected graphs
-		if (interaction.isUndirected) {
+		if (interaction.isUndirected()) {
 			// undirected graph - same as earlier approach
 			// remove old scores
 			int[] neigh = interaction.out[me];
@@ -3397,7 +3397,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			tags = new double[nPopulation];
 
 		// check for scenarios that are untested or work in progress
-		if (!interaction.isUndirected && !module.isStatic())
+		if (!interaction.isUndirected() && !module.isStatic())
 			logger.warning("interactions on directed graphs have received very limited testing...");
 
 		if (vacantIdx >= 0 && nGroup > 2)
@@ -3528,7 +3528,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			distrMigrants = null;
 			return;
 		}
-		if (!interaction.isUndirected) {
+		if (!interaction.isUndirected()) {
 			logger.warning("no migration on directed graphs!");
 			setMigrationType(MigrationType.NONE);
 		} else if (!interaction.interCompSame) {
@@ -3545,7 +3545,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	boolean checkInteractions(int nGroup) {
 		boolean doReset = false;
 		// check sampling in special geometries
-		if (interaction.getType() == Geometry.Type.SQUARE && interaction.isRegular && interaction.connectivity > 8 &&
+		if (interaction.getType() == Geometry.Type.SQUARE && interaction.isRegular() && interaction.connectivity > 8 &&
 				interGroup.isSampling(IBSGroup.SamplingType.ALL) && nGroup > 2 && nGroup < 9) {
 			// if connectivity > 8 then the interaction pattern Group.SAMPLING_ALL with a
 			// group size between 2 and 8 (excluding boundaries is not allowed because this
@@ -4006,7 +4006,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 				Arrays.fill(interactions, 1);
 			} else {
 				// pairwise interactions
-				if (interaction.isRegular)
+				if (interaction.isRegular())
 					Arrays.fill(interactions, (int) (interaction.connectivity + 0.5));
 				else
 					System.arraycopy(interaction.kin, 0, interactions, 0, interactions.length);

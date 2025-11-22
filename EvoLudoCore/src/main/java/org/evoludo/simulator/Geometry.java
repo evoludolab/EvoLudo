@@ -906,7 +906,7 @@ public class Geometry {
 	/**
 	 * {@code true} if the graph is undirected.
 	 */
-	public boolean isUndirected = true;
+	protected boolean isUndirected = true;
 
 	/**
 	 * {@code true} if the graph includes rewired edges or links.
@@ -933,6 +933,21 @@ public class Geometry {
 	public boolean isInterspecies() {
 		return engine.getModule().getNSpecies() > 1;
 		// return (population != opponent);
+	}
+
+	/**
+	 * @return {@code true} if the graph is undirected.
+	 */
+	public boolean isUndirected() {
+		return isUndirected;
+	}
+
+	/**
+	 * @return {@code true} if the network structure is regular (all nodes have the
+	 *         same number of neighbours).
+	 */
+	public boolean isRegular() {
+		return isRegular;
 	}
 
 	/**
@@ -1008,7 +1023,7 @@ public class Geometry {
 	 * {@code true} if the network structure is regular (all nodes have the same
 	 * number of neighbours).
 	 */
-	public boolean isRegular = false;
+	protected boolean isRegular = false;
 
 	/**
 	 * {@code true} if the network structure has been successfully initialized.

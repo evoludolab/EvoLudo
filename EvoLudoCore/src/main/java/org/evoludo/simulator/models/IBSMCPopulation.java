@@ -486,7 +486,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 		for (int n = 0; n < nOut; n++)
 			System.arraycopy(opptraits, out[n] * oppntraits, tmpGroup, n * oppntraits, oppntraits);
 		int u2 = 2;
-		if (!interaction.isUndirected) {
+		if (!interaction.isUndirected()) {
 			// directed graph, count in-neighbors
 			u2 = 1;
 			nIn = interaction.kin[me];
@@ -514,7 +514,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 				diff = u2 * diff / interactions[you];
 			opponent.adjustScoreAt(you, diff);
 		}
-		// same as !interaction.isUndirected because in != null implies directed graph
+		// same as !interaction.isUndirected() because in != null implies directed graph
 		// (see above)
 		if (in != null) {
 			for (int n = 0; n < nIn; n++) {

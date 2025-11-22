@@ -572,7 +572,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		appendPDETraitTip(node, module, graph, tip);
 		appendPDEFitnessTip(node, module, graph, tip);
 
-		if (geometry.isUndirected)
+		if (geometry.isUndirected())
 			appendNeighbors("Connections", geometry.out[node], geometry.kout[node], tip);
 		else {
 			// useful for debugging geometry - Geometry.checkConnections should be able to
@@ -673,7 +673,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 * @return the updated StringBuilder
 	 */
 	private static StringBuilder appendInterNeighborsAt(int node, Geometry geom, StringBuilder tip) {
-		if (geom.isUndirected) {
+		if (geom.isUndirected()) {
 			// well-mixed is by definition undirected
 			if (geom.getType().equals(Geometry.Type.MEANFIELD)) {
 				tip.append(TABLE_ROW_START)
@@ -701,7 +701,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 * @return the updated StringBuilder
 	 */
 	private static StringBuilder appendCompNeighborsAt(int node, Geometry geom, StringBuilder tip) {
-		if (geom.isUndirected) {
+		if (geom.isUndirected()) {
 			// well-mixed is by definition undirected
 			if (geom.getType().equals(Geometry.Type.MEANFIELD)) {
 				tip.append(TABLE_ROW_START)
