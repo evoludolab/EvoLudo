@@ -140,7 +140,7 @@ public abstract class Network2D extends Network<Node2D> {
 		energy += attraction(nodeidx);
 		// save current position and energies
 		// lastPos.set(pos);
-		repulsion.scale(1.0 / geometry.size);
+		repulsion.scale(1.0 / geometry.getSize());
 		repulsion.add(attraction);
 		// double delta = Math.min(repulsion.length(), R*0.01);
 		double delta = Math.min(dt / repulsion.length(), dt);

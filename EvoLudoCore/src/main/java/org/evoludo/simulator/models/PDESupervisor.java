@@ -83,7 +83,7 @@ public class PDESupervisor {
 	 * Reset supervisor and update settings.
 	 */
 	public void reset() {
-		nUnits = charge.getGeometry().size;
+		nUnits = charge.getGeometry().getSize();
 	}
 
 	/**

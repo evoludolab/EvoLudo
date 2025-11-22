@@ -720,7 +720,7 @@ public class Geometry {
 	/**
 	 * The number of nodes in the graph.
 	 */
-	public int size = -1;
+	protected int size = -1;
 
 	/**
 	 * Sets the number of nodes in the graph to {@code size}. This affects memory
@@ -734,6 +734,15 @@ public class Geometry {
 			return false; // no change
 		this.size = size;
 		return true;
+	}
+
+	/**
+	 * Returns the number of nodes currently configured for this geometry.
+	 * 
+	 * @return the population size
+	 */
+	public int getSize() {
+		return size;
 	}
 
 	/**

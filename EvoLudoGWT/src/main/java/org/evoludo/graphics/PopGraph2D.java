@@ -216,7 +216,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	@Override
 	public void setGeometry(Geometry geometry) {
 		super.setGeometry(geometry);
-		int size = geometry.size;
+		int size = geometry.getSize();
 		if (geometry.getType() == Geometry.Type.LINEAR && size <= MAX_LINEAR_SIZE) {
 			// linear graphs maintain history; allocate generously
 			if (buffer == null)
@@ -232,8 +232,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	public void activate() {
 		super.activate();
 		// lazy allocation of memory for colors
-		if (!hasMessage && (data == null || data.length != geometry.size))
-			data = new String[geometry.size];
+		if (!hasMessage && (data == null || data.length != geometry.getSize()))
+			data = new String[geometry.getSize()];
 	}
 
 	@Override
@@ -460,7 +460,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		while (it.hasNext() && nSteps-- > 0) {
 			int xshift = 0;
 			String[] state = it.next();
-			for (int n = 0; n < geometry.size; n++) {
+			for (int n = 0; n < geometry.getSize(); n++) {
 				g.setFillStyle(state[n]);
 				fillRect(xshift, yshift, dw, dh);
 				xshift += dw;
@@ -475,7 +475,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		if (!prepCanvas())
 			return;
 		invalidated = false;
-		int nNodes = geometry.size;
+		int nNodes = geometry.getSize();
 		// scale universe
 		double r = network.getRadius();
 		double su = bounds.getWidth() / (r + r); // same as height in this case
@@ -640,8 +640,8 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			noGraph = true;
 			displayMessage("Population size to large!");
 		} else {
-			if (view.isActive() && (data == null || data.length != geometry.size))
-				data = new String[geometry.size];
+			if (view.isActive() && (data == null || data.length != geometry.getSize()))
+				data = new String[geometry.getSize()];
 		}
 	}
 
@@ -665,7 +665,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	private void handleTriangular(int width, int height) {
 		buffer = null;
-		side = (int) (Math.sqrt(geometry.size) + 0.5);
+		side = (int) (Math.sqrt(geometry.getSize()) + 0.5);
 		int diameter = Math.min(width, height);
 		dw2 = diameter / (side + 3);
 		int bWidth = dw2 * (side + 1);
@@ -690,7 +690,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	private void handleHoneycomb(int width, int height) {
 		buffer = null;
-		side = (int) (Math.sqrt(geometry.size) + 0.5);
+		side = (int) (Math.sqrt(geometry.getSize()) + 0.5);
 		int diameter = Math.min(width, height);
 		dw2 = diameter / (2 * side + 1);
 		int bWidth = dw2 * (2 * side + 1);
@@ -724,7 +724,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			bounds.set(style.minPadding, style.minPadding, bWidth, bHeight);
 		}
 
-		side = (int) (Math.sqrt(geometry.size) + 0.5);
+		side = (int) (Math.sqrt(geometry.getSize()) + 0.5);
 
 		int gap = 0;
 		if (isHierarchy) {
@@ -763,7 +763,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	 */
 	private void handleLinear(int width, int height) {
 		int bWidth = (int) bounds.getWidth();
-		dw = bWidth / geometry.size;
+		dw = bWidth / geometry.getSize();
 		int bHeight = (int) bounds.getHeight();
 		dh = dw;
 		int steps = (dh == 0) ? 0 : bHeight / dh;
@@ -771,7 +771,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			bounds.setSize(width, height);
 			return;
 		}
-		int adjw = dw * geometry.size;
+		int adjw = dw * geometry.getSize();
 		int adjh = bHeight - (bHeight % dh);
 		int dx = (bWidth - adjw) / 2;
 		int dy = (bHeight - adjh) / 2;
@@ -793,7 +793,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	private void handleNetwork(int width, int height) {
 		int diameter = Math.min(width, height);
 		int radius = diameter / 2;
-		dR = Math.sqrt(radius * radius * 2.0 / geometry.size);
+		dR = Math.sqrt(radius * radius * 2.0 / geometry.getSize());
 		if (dR < MIN_DR) {
 			bounds.setSize(width, height);
 			return;
@@ -958,7 +958,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	private int findLinearNode(int x, int y) {
 		int c = x / dw;
 		int r = y / dh;
-		return r * geometry.size + c;
+		return r * geometry.getSize() + c;
 	}
 
 	private int findNetworkNode(int sx, int sy) {

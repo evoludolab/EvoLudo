@@ -141,7 +141,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 
 	/**
 	 * The number of nodes in the network. Convenience variable. This must remain in
-	 * sync with {@code geometry.size} and {@code nodes.length}.
+	 * sync with {@code geometry.getSize()} and {@code nodes.length}.
 	 */
 	protected int nNodes = 0;
 
@@ -275,7 +275,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 		if (snapTimeout > 0)
 			layoutTimeout = snapTimeout;
 
-		nNodes = geometry.size;
+		nNodes = geometry.getSize();
 		Geometry.Type type = geometry.getType();
 		if (type == Geometry.Type.HIERARCHY)
 			type = geometry.subgeometry;
@@ -323,7 +323,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 		isRunning = true;
 		prevPotential = 0.0;
 		prevAdjust = 1.0;
-		nNodes = geometry.size;
+		nNodes = geometry.getSize();
 		norm = 1.0 / (nNodes * nNodes);
 		listener.layoutUpdate(0.0);
 		boolean needsLayout = status.equals(Status.NEEDS_LAYOUT);
@@ -355,7 +355,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 				break;
 			case COMPLETE:
 				// skip drawing links for complete graphs exceeding 100 nodes
-				if (geometry.size > 100)
+				if (geometry.getSize() > 100)
 					fLinks = 0.0;
 				break;
 			default:

@@ -286,7 +286,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		@SuppressWarnings("unchecked")
 		G graph = (G) agraph;
 		Geometry geometry = graph.getGeometry();
-		int nNodes = geometry.size;
+		int nNodes = geometry.getSize();
 		Module<?> module = graph.getModule();
 		StringBuilder tip = new StringBuilder(TABLE_STYLE);
 		if (module.getNSpecies() > 1)

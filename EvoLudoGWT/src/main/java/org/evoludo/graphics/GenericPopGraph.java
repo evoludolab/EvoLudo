@@ -388,8 +388,9 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	boolean hasAnimatedLayout() {
 		if (!animate)
 			return false;
-		return (geometry.size <= MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT
-				&& (int) (geometry.avgTot * geometry.size) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
+		int nodeCount = geometry.getSize();
+		return (nodeCount <= MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT
+				&& (int) (geometry.avgTot * nodeCount) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
 	}
 
 	/**
@@ -691,7 +692,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 			return;
 		}
 		int debugNode = findNodeAt(x, y);
-		if (debugNode >= 0 && debugNode < geometry.size) {
+		if (debugNode >= 0 && debugNode < geometry.getSize()) {
 			if (debugSubmenu == null) {
 				debugSubmenu = new ContextMenu(menu);
 				debugNodeMenu = new ContextMenuItem("Update node @ -",

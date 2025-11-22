@@ -1474,12 +1474,13 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param ibinwidth the scaling factor to map degrees to bins
 	 */
 	private void getDegreeHistogramData(double[][] data, Geometry geometry, int idx, double ibinwidth) {
+		int nodeCount = geometry.getSize();
 		if (geometry.isUndirected) {
 			double[] dataio = data[idx];
 			Arrays.fill(dataio, 0.0);
-			for (int i = 0; i < geometry.size; i++)
+			for (int i = 0; i < nodeCount; i++)
 				dataio[(int) (geometry.kin[i] * ibinwidth)]++;
-			ArrayMath.multiply(dataio, 1.0 / geometry.size);
+			ArrayMath.multiply(dataio, 1.0 / nodeCount);
 			return;
 		}
 		double[] datao = data[idx];
@@ -1488,14 +1489,14 @@ public class Histogram extends AbstractView<HistoGraph> {
 		Arrays.fill(datao, 0.0);
 		Arrays.fill(datai, 0.0);
 		Arrays.fill(datat, 0.0);
-		for (int i = 0; i < geometry.size; i++) {
+		for (int i = 0; i < nodeCount; i++) {
 			int kin = geometry.kin[i];
 			int kout = geometry.kout[i];
 			datao[(int) (kout * ibinwidth)]++;
 			datai[(int) (kin * ibinwidth)]++;
 			datat[(int) ((kin + kout) * ibinwidth)]++;
 		}
-		double norm = 1.0 / geometry.size;
+		double norm = 1.0 / nodeCount;
 		ArrayMath.multiply(datao, norm);
 		ArrayMath.multiply(datai, norm);
 		ArrayMath.multiply(datat, norm);

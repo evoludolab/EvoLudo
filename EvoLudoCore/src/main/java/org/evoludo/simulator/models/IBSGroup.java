@@ -287,7 +287,7 @@ public class IBSGroup {
 			case RANDOM:
 				switch (geometry.getType()) {
 					case MEANFIELD:
-						return pickRandom(geometry.size);
+						return pickRandom(geometry.getSize());
 
 					case HIERARCHY:
 						return pickRandomHierarchy(downstream);
@@ -490,7 +490,7 @@ public class IBSGroup {
 			return group;
 		}
 		// determine start of focal level
-		int side = (int) Math.sqrt(geometry.size);
+		int side = (int) Math.sqrt(geometry.getSize());
 		int levelSide = (int) Math.sqrt(hu.levelSize);
 		int levelX = ((focal % side) / levelSide) * levelSide;
 		int levelY = ((focal / side) / levelSide) * levelSide;

@@ -3442,23 +3442,24 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// Warning: there is a small chance that the interaction and competition
 		// geometries require different population sizes, which does not make sense
 		// and would most likely result in a never ending initialization loop...
-		interaction.size = nPopulation;
+		doReset |= interaction.setSize(nPopulation);
 		doReset |= interaction.check();
 		if (!interaction.interCompSame) {
-			module.setNPopulation(interaction.size);
-			nPopulation = interaction.size; // keep local copy in sync
-			competition.size = nPopulation;
+			module.setNPopulation(interaction.getSize());
+			nPopulation = interaction.getSize(); // keep local copy in sync
+			doReset |= competition.setSize(nPopulation);
 			doReset |= competition.check();
-			if (competition.size != nPopulation) {
+			if (competition.getSize() != nPopulation) {
 				// try checking interaction geometry again
-				interaction.size = competition.size;
-				if (interaction.check())
+				doReset |= interaction.setSize(competition.getSize());
+				if (interaction.check()) {
 					logger.severe("incompatible interaction and competition geometries!");
+				}
 			}
 		}
 		// population structure may require special population sizes
-		module.setNPopulation(interaction.size);
-		nPopulation = interaction.size; // keep local copy in sync
+		module.setNPopulation(interaction.getSize());
+		nPopulation = interaction.getSize(); // keep local copy in sync
 		return doReset;
 	}
 

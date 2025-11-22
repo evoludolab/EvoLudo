@@ -357,7 +357,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 	public String getInfoAt(Network2D network, int node, int tag) {
 		if (node < 0)
 			return null;
-		int nNodes = network.getGeometry().size;
+		int nNodes = network.getGeometry().getSize();
 
 		// String toolTip, struct = "";
 		String toolTip;

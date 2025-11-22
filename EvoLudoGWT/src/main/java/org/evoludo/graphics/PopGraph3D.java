@@ -208,8 +208,8 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		super.activate();
 		// lazy allocation of memory for colors
 		// ok to allocate data only here because no 3D view has history
-		if (geometry != null && (data == null || data.length != geometry.size)) {
-			data = new MeshLambertMaterial[geometry.size];
+		if (geometry != null && (data == null || data.length != geometry.getSize())) {
+			data = new MeshLambertMaterial[geometry.getSize()];
 			// allocate one entry to be able to deduce the type of the array
 			// in generic methods (see e.g. getLeafColor(...) in NetDyn)
 			data[0] = new MeshLambertMaterial();
@@ -251,11 +251,11 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 				int side;
 				int zdim;
 				// NOVA settings
-				if (geometry.size == 25000) {
+				if (geometry.getSize() == 25000) {
 					zdim = 10;
 					side = 50;
 				} else {
-					side = (int) (Math.pow(geometry.size, 1.0 / 3.0) + 0.5);
+					side = (int) (Math.pow(geometry.getSize(), 1.0 / 3.0) + 0.5);
 					zdim = side;
 				}
 				double incr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
@@ -283,7 +283,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			case SQUARE_NEUMANN:
 			case SQUARE_MOORE:
 			case SQUARE:
-				side = (int) Math.sqrt(geometry.size); // data.size does not seem to be set at this point
+				side = (int) Math.sqrt(geometry.getSize()); // data.size does not seem to be set at this point
 				incr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
 				radius = Math.max(1.0, incr * 0.4);
 				shift = (side - 1) * 0.5 * incr;
@@ -331,7 +331,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 				}
 				break;
 			case SQUARE_NEUMANN_2ND:
-				side = (int) Math.sqrt(geometry.size); // data.size does not seem to be set at this point
+				side = (int) Math.sqrt(geometry.getSize()); // data.size does not seem to be set at this point
 				incr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
 				radius = Math.max(1.0, incr * 0.4);
 				shift = (side - 1) * 0.5 * incr;
@@ -353,7 +353,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 				}
 				break;
 			case HONEYCOMB:
-				side = (int) Math.sqrt(geometry.size); // data.size does not seem to be set at this point
+				side = (int) Math.sqrt(geometry.getSize()); // data.size does not seem to be set at this point
 				double hincr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
 				double hincr2 = hincr * 0.5;
 				double vincr = hincr * 0.5 * Math.sqrt(3.0);
@@ -374,7 +374,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 				}
 				break;
 			case TRIANGULAR:
-				side = (int) Math.sqrt(geometry.size); // data.size does not seem to be set at this point
+				side = (int) Math.sqrt(geometry.getSize()); // data.size does not seem to be set at this point
 				int size2 = side / 2;
 				vincr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
 				double vincr2 = vincr * 0.5;
@@ -427,12 +427,13 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 	protected void initUniverse(thothbot.parallax.core.shared.core.Geometry unit) {
 		spheres.clear();
 		// allocate elements of universe - place them later
-		// NOTE: must rely on geometry.size (instead of network.nNodes) because network
+		// NOTE: must rely on geometry.getSize() (instead of network.nNodes) because
+		// network
 		// may not yet have been properly
 		// synchronized (Network.doLayoutPrep will take care of this)
 		// No need to check whether network is null because ODE/SDE models
 		// would never get here.
-		for (int k = 0; k < geometry.size; k++) {
+		for (int k = 0; k < geometry.getSize(); k++) {
 			Mesh mesh = new Mesh(unit);
 			mesh.setMaterial(data[k]);
 			mesh.setName(Integer.toString(k));
