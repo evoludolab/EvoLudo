@@ -286,7 +286,7 @@ public class IBSGroup {
 
 			case RANDOM:
 				switch (geometry.getType()) {
-					case MEANFIELD:
+					case WELLMIXED:
 						return pickRandom(geometry.getSize());
 
 					case HIERARCHY:
@@ -386,7 +386,7 @@ public class IBSGroup {
 		calcHierarchyUnit(hu);
 		group = mem;
 		switch (geometry.subgeometry) {
-			case MEANFIELD:
+			case WELLMIXED:
 				return pickHierarchyMean(hu, downstream);
 
 			case SQUARE_NEUMANN:

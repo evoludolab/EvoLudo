@@ -204,12 +204,12 @@ public class DemesTBT extends TBT {
 			optimizeMigration = optimizeHomo;
 			boolean doReset = super.check();
 			nTraits = module.getNTraits();
-			if (!(interaction.isType(Geometry.Type.MEANFIELD) || (interaction.isType(Geometry.Type.HIERARCHY)
-					&& interaction.subgeometry == Geometry.Type.MEANFIELD && interaction.hierarchy.length == 2))) {
+			if (!(interaction.isType(Geometry.Type.WELLMIXED) || (interaction.isType(Geometry.Type.HIERARCHY)
+					&& interaction.subgeometry == Geometry.Type.WELLMIXED && interaction.hierarchy.length == 2))) {
 				// the only acceptable geometries are well-mixed and hierarchical structures
 				// with two levels of well-mixed demes
 				logger.severe("invalid geometry - forcing well-mixed population (single deme)!");
-				interaction.setType(Geometry.Type.MEANFIELD);
+				interaction.setType(Geometry.Type.WELLMIXED);
 				doReset = true;
 			}
 			nDemes = 1;
@@ -229,7 +229,7 @@ public class DemesTBT extends TBT {
 			}
 			if (nDemes > 1 && !adjustScores) {
 				logger.severe("invalid sampling - forcing well-mixed population (single deme)!");
-				interaction.setType(Geometry.Type.MEANFIELD);
+				interaction.setType(Geometry.Type.WELLMIXED);
 				doReset = true;
 			}
 			if (optimizeMigration) {

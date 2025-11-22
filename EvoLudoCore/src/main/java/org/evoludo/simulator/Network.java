@@ -292,7 +292,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 				setStatus(Status.NO_LAYOUT);
 				nLinks = 0;
 				break;
-			case MEANFIELD:
+			case WELLMIXED:
 				nLinks = 0;
 				setStatus(Status.NEEDS_LAYOUT);
 				break;
@@ -349,7 +349,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 		switch (geometry.getType()) {
 			case HIERARCHY:
 				// don't draw links for well-mixed hierarchical structures
-				if (geometry.subgeometry.equals(Geometry.Type.MEANFIELD))
+				if (geometry.subgeometry.equals(Geometry.Type.WELLMIXED))
 					fLinks = 0.0;
 				// should not get here for subgeometry SQUARE
 				break;

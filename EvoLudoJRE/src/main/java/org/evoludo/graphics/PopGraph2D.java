@@ -754,7 +754,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 			case LINEAR:
 				return SNAPSHOT_PNG;
 
-			case MEANFIELD:
+			case WELLMIXED:
 			case COMPLETE:
 			case WHEEL:
 			case STAR:

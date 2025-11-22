@@ -621,7 +621,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * <li>Adjusting scores is only feasible if all individuals have a fixed number
 	 * of interactions. For example, if all individuals always interact with all
 	 * their neighbours, see {@link IBSGroup.SamplingType#ALL}. The only exception
-	 * are well-mixed populations, {@link Geometry.Type#MEANFIELD}. With continuous
+	 * are well-mixed populations, {@link Geometry.Type#WELLMIXED}. With continuous
 	 * traits all possible encounters would need to be considered, which is
 	 * computationally not feasible. In contrast, for discrete traits separate
 	 * calculations to determine the scores of each trait type are possible.
@@ -1373,7 +1373,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			return pickNeutralNeighbourAt(me, withSelf);
 
 		// mean-field
-		if (competition.isType(Geometry.Type.MEANFIELD)) {
+		if (competition.isType(Geometry.Type.WELLMIXED)) {
 			debugNModels = 0;
 			if (withSelf)
 				return pickFitFocalIndividual();
@@ -1527,7 +1527,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @return the index of a neighbour
 	 */
 	private int pickNeutralNeighbourAt(int me, boolean withSelf) {
-		if (competition.isType(Geometry.Type.MEANFIELD)) {
+		if (competition.isType(Geometry.Type.WELLMIXED)) {
 			debugNModels = 0;
 			if (withSelf)
 				return pickFocalIndividual();
@@ -1559,7 +1559,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	public int pickNeighborSiteAt(int me) {
 		// mean-field
-		if (competition.isType(Geometry.Type.MEANFIELD))
+		if (competition.isType(Geometry.Type.WELLMIXED))
 			return pickFocalSite(me);
 
 		debugModels = competition.out[me];
@@ -1697,7 +1697,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * <ol>
 	 * <li>This optimized method is only applicable if
 	 * {@link IBSGroup.SamplingType#ALL}
-	 * is true and not {@link Geometry.Type#MEANFIELD}, i.e. if the interaction
+	 * is true and not {@link Geometry.Type#WELLMIXED}, i.e. if the interaction
 	 * group includes all neighbors but not all other members of the population.
 	 * <li>For pairwise interactions more efficient approaches are possible but
 	 * those require direct access to the trait and are hence delegated to
@@ -2511,7 +2511,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	protected void updatePlayerMoranBirthDeathAt(int parent) {
 		debugFocal = parent;
-		if (competition.isType(Geometry.Type.MEANFIELD)) {
+		if (competition.isType(Geometry.Type.WELLMIXED)) {
 			debugModel = pickFocalIndividual();
 			debugNModels = 0;
 		} else
@@ -3540,7 +3540,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		} else if (!interaction.isSingle()) {
 			logger.warning("no migration on graphs with different interaction and competition neighborhoods!");
 			setMigrationType(MigrationType.NONE);
-		} else if (interaction.isType(Geometry.Type.MEANFIELD)) {
+		} else if (interaction.isType(Geometry.Type.WELLMIXED)) {
 			logger.warning("no migration in well-mixed populations!");
 			setMigrationType(MigrationType.NONE);
 		}
@@ -3580,29 +3580,29 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (module.getNPopulation() != opponent.getModule().getNPopulation()
 				&& opponent.getInteractionGeometry() != null // opponent geometry may not yet be initialized
 																// check will be repeated for opponent
-				&& (!getInteractionGeometry().isType(Geometry.Type.MEANFIELD)
-						|| !opponent.getInteractionGeometry().isType(Geometry.Type.MEANFIELD))) {
+				&& (!getInteractionGeometry().isType(Geometry.Type.WELLMIXED)
+						|| !opponent.getInteractionGeometry().isType(Geometry.Type.WELLMIXED))) {
 			// at least for now, both populations need to be of the same size - except for
 			// well-mixed populations
 			logger.warning(
 					"inter-species interactions with populations of different size limited to well-mixed structures"
 							+ " - well-mixed structure forced!");
-			getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
-			opponent.getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
+			getInteractionGeometry().setType(Geometry.Type.WELLMIXED);
+			opponent.getInteractionGeometry().setType(Geometry.Type.WELLMIXED);
 			doReset = true;
 		}
 		// combinations of unstructured and structured populations in inter-species
 		// interactions require more attention. exclude for now.
 		if (getInteractionGeometry().isInterspecies() && opponent.getInteractionGeometry() != null &&
 				(getInteractionGeometry().getType() != opponent.getInteractionGeometry().getType()) &&
-				(getInteractionGeometry().isType(Geometry.Type.MEANFIELD) ||
-						opponent.getInteractionGeometry().isType(Geometry.Type.MEANFIELD))) {
+				(getInteractionGeometry().isType(Geometry.Type.WELLMIXED) ||
+						opponent.getInteractionGeometry().isType(Geometry.Type.WELLMIXED))) {
 			// opponent not yet ready; check will be repeated for opponent
 			logger.warning(
 					"interspecies interactions combining well-mixed and structured populations not (yet) tested"
 							+ " - well-mixed structure forced!");
-			getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
-			opponent.getInteractionGeometry().setType(Geometry.Type.MEANFIELD);
+			getInteractionGeometry().setType(Geometry.Type.WELLMIXED);
+			opponent.getInteractionGeometry().setType(Geometry.Type.WELLMIXED);
 			doReset = true;
 		}
 		return doReset;
@@ -3640,7 +3640,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// number of interactions can also be determined in structured populations with
 		// well-mixed demes
 		if (adjustScores && interaction.isType(Geometry.Type.HIERARCHY) && //
-				interaction.subgeometry.equals(Geometry.Type.MEANFIELD)) {
+				interaction.subgeometry.equals(Geometry.Type.WELLMIXED)) {
 			nMixedInter = interaction.hierarchy[interaction.hierarchy.length - 1]
 					- (interaction.isInterspecies() ? 0 : 1);
 		}
@@ -3658,8 +3658,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	boolean checkLookupTable(int nGroup, boolean ephemeralScores) {
 		hasLookupTable = module.isStatic() || //
-				(adjustScores && interaction.isType(Geometry.Type.MEANFIELD)) || //
-				(ephemeralScores && interaction.isType(Geometry.Type.MEANFIELD) //
+				(adjustScores && interaction.isType(Geometry.Type.WELLMIXED)) || //
+				(ephemeralScores && interaction.isType(Geometry.Type.WELLMIXED) //
 						&& interGroup.isSampling(SamplingType.ALL));
 
 		if (!hasLookupTable || ephemeralScores)
@@ -3745,7 +3745,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// Moran type and ecological updates ignore playerUpdate
 		if (populationUpdate.isMoran()
 				|| populationUpdate.getType().equals(PopulationUpdate.Type.ECOLOGY)
-				|| competition.getType() != Geometry.Type.MEANFIELD)
+				|| competition.getType() != Geometry.Type.WELLMIXED)
 			return;
 
 		// best-response in well-mixed populations should skip sampling of references
@@ -3991,7 +3991,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		compGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 		compGroup.setNSamples(1);
 		// in the original Moran process offspring can replace the parent
-		compGroup.setSelf(competition.isType(Geometry.Type.MEANFIELD));
+		compGroup.setSelf(competition.isType(Geometry.Type.WELLMIXED));
 	}
 
 	/**

@@ -663,7 +663,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		// possible but not (yet) implemented.
 		if (hasLookupTable || //
 				(adjustScores && interaction.isType(Geometry.Type.HIERARCHY) //
-						&& interaction.subgeometry == Geometry.Type.MEANFIELD)) {
+						&& interaction.subgeometry == Geometry.Type.WELLMIXED)) {
 			updateMixedScores();
 			return;
 		}
@@ -691,7 +691,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			return staticBR(me);
 
 		// frequency dependent selection: determine active trait with highest payoff
-		if (competition.isType(Geometry.Type.MEANFIELD))
+		if (competition.isType(Geometry.Type.WELLMIXED))
 			wellMixedBR(me);
 		else
 			structuredBR(group, size);
@@ -1301,9 +1301,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		}
 		// check if original procedure works
 		if (module.isStatic() || //
-				(interaction.getType() != Geometry.Type.MEANFIELD && //
+				(interaction.getType() != Geometry.Type.WELLMIXED && //
 						interaction.getType() != Geometry.Type.HIERARCHY && //
-						interaction.subgeometry != Geometry.Type.MEANFIELD)) {
+						interaction.subgeometry != Geometry.Type.WELLMIXED)) {
 			super.adjustGameScoresAt(me);
 			return;
 		}
@@ -1321,7 +1321,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		if (!interaction.isInterspecies())
 			return; // no adjustment needed for intra-species interactions
 
-		if (opponent.getInteractionGeometry().isType(Geometry.Type.MEANFIELD)) {
+		if (opponent.getInteractionGeometry().isType(Geometry.Type.WELLMIXED)) {
 			// competition is well-mixed as well - adjust lookup table
 			opponent.updateMixedScores();
 		} else {
@@ -1354,7 +1354,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		// difficult to determine the number of interactions in the case of accumulated
 		// payoffs
 		switch (interaction.getType()) {
-			case MEANFIELD:
+			case WELLMIXED:
 				updateMixedMeanfield();
 				break;
 
@@ -1789,7 +1789,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	@Override
 	boolean checkInteractions(int nGroup) {
 		boolean doReset = super.checkInteractions(nGroup);
-		if (interaction.isType(Geometry.Type.MEANFIELD) && !playerScoreAveraged && nGroup > 2) {
+		if (interaction.isType(Geometry.Type.WELLMIXED) && !playerScoreAveraged && nGroup > 2) {
 			// check if interaction count exceeds integer range
 			try {
 				int nPop = opponent.getModule().getNPopulation();
@@ -1821,9 +1821,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 			doReset = true;
 		} else // no need to report both warnings
 				// optimized Moran type processes are incompatible with well mixed populations!
-		if (interaction.isType(Geometry.Type.MEANFIELD) ||
+		if (interaction.isType(Geometry.Type.WELLMIXED) ||
 				(interaction.isType(Geometry.Type.HIERARCHY) &&
-						interaction.subgeometry == Geometry.Type.MEANFIELD)) {
+						interaction.subgeometry == Geometry.Type.WELLMIXED)) {
 			optimizeMoran = false;
 			logger.warning("optimized Moran-type updates are incompatible with mean-field geometry - disabled.");
 			doReset = true;
@@ -1992,7 +1992,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		double d = module.getDeathRate();
 		double fit = map2fit.map(module.getMonoPayoff(type % nTraits));
 		Geometry geometry = module.getGeometry();
-		if (geometry.isType(Geometry.Type.MEANFIELD))
+		if (geometry.isType(Geometry.Type.WELLMIXED))
 			// carrying capacity is 1.0 - d / fit
 			return d / fit;
 		double k1 = geometry.avgOut - 1.0;

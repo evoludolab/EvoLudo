@@ -675,7 +675,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	private static StringBuilder appendInterNeighborsAt(int node, Geometry geom, StringBuilder tip) {
 		if (geom.isUndirected()) {
 			// well-mixed is by definition undirected
-			if (geom.getType().equals(Geometry.Type.MEANFIELD)) {
+			if (geom.getType().equals(Geometry.Type.WELLMIXED)) {
 				tip.append(TABLE_ROW_START)
 						.append("Neighbours")
 						.append(TABLE_CELL_NEXT)
@@ -703,7 +703,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	private static StringBuilder appendCompNeighborsAt(int node, Geometry geom, StringBuilder tip) {
 		if (geom.isUndirected()) {
 			// well-mixed is by definition undirected
-			if (geom.getType().equals(Geometry.Type.MEANFIELD)) {
+			if (geom.getType().equals(Geometry.Type.WELLMIXED)) {
 				tip.append(TABLE_ROW_START)
 						.append("Competitors")
 						.append(TABLE_CELL_NEXT)

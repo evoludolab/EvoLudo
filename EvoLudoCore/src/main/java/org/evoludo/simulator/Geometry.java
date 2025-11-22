@@ -227,14 +227,14 @@ public class Geometry {
 	/**
 	 * The geometry of the graph.
 	 */
-	private Type geometry = Type.MEANFIELD;
+	private Type geometry = Type.WELLMIXED;
 
 	/**
 	 * Only used for hierarchical geometries to specify the geometry of each level.
 	 * 
 	 * @see #initGeometryHierarchical()
 	 */
-	public Type subgeometry = Type.MEANFIELD;
+	public Type subgeometry = Type.WELLMIXED;
 
 	/**
 	 * The types of graph geometries. Currently available graph geometries are:
@@ -307,7 +307,7 @@ public class Geometry {
 		 * 
 		 * @see Geometry#initGeometryMeanField()
 		 */
-		MEANFIELD("M", "mean-field/well-mixed population"),
+		WELLMIXED("M", "mean-field/well-mixed population"),
 
 		/**
 		 * Complete graph, connectivity \(k=N-1\).
@@ -1124,7 +1124,7 @@ public class Geometry {
 		kin = null;
 		kout = null;
 		size = -1;
-		geometry = Type.MEANFIELD;
+		geometry = Type.WELLMIXED;
 		fixedBoundary = false;
 		minIn = -1;
 		maxIn = -1;
@@ -1223,7 +1223,7 @@ public class Geometry {
 					// no hierarchies remain
 					// if subgeometry complete, well-mixed or structured with hierarchyweight==0
 					// fall back on subgeometry
-					if (subgeometry == Type.MEANFIELD || subgeometry == Type.COMPLETE || hierarchyweight <= 0.0) {
+					if (subgeometry == Type.WELLMIXED || subgeometry == Type.COMPLETE || hierarchyweight <= 0.0) {
 						geometry = subgeometry;
 						if (logger.isLoggable(Level.WARNING))
 							logger.warning("hierarchies must encompass ≥2 levels - collapsed to geometry '"
@@ -1287,9 +1287,9 @@ public class Geometry {
 						//$FALL-THROUGH$
 					case COMPLETE:
 						// avoid distinctions between MEANFIELD and COMPLETE graphs for subgeometries
-						subgeometry = Type.MEANFIELD;
+						subgeometry = Type.WELLMIXED;
 						//$FALL-THROUGH$
-					case MEANFIELD:
+					case WELLMIXED:
 						for (int i = 0; i < nHierarchy; i++)
 							prod *= hierarchy[i];
 						nIndiv = Math.max(2, size / prod); // at least two individuals per deme
@@ -1547,7 +1547,7 @@ public class Geometry {
 				}
 				connectivity = 3.0;
 				break;
-			case MEANFIELD:
+			case WELLMIXED:
 				superstar_amplification = 1;
 				//$FALL-THROUGH$
 			case RANDOM_GRAPH:
@@ -1624,7 +1624,7 @@ public class Geometry {
 	 */
 	public void init() {
 		switch (geometry) {
-			case MEANFIELD:
+			case WELLMIXED:
 				initGeometryMeanField();
 				break;
 			case COMPLETE:
@@ -1734,7 +1734,7 @@ public class Geometry {
 					break;
 				}
 				//$FALL-THROUGH$
-			case MEANFIELD:
+			case WELLMIXED:
 			case COMPLETE:
 			case STAR:
 			case WHEEL:
@@ -1850,7 +1850,7 @@ public class Geometry {
 				case SQUARE:
 					initGeometryHierarchySquare(start, end);
 					return;
-				case MEANFIELD:
+				case WELLMIXED:
 				case COMPLETE:
 				default:
 					initGeometryHierarchyMeanfield(start, end);
@@ -1874,7 +1874,7 @@ public class Geometry {
 					}
 				}
 				break;
-			case MEANFIELD:
+			case WELLMIXED:
 			case COMPLETE:
 			default:
 				hskip = 1;
@@ -4539,7 +4539,7 @@ public class Geometry {
 	 *
 	 * <h3>Requirements/notes:</h3>
 	 * <ol>
-	 * <li>For {@link Type#MEANFIELD} geometries all quantities are set to zero.
+	 * <li>For {@link Type#WELLMIXED} geometries all quantities are set to zero.
 	 * <li>Dynamic graphs are always evaluated because all quantities are ephemeral.
 	 * </ol>
 	 */
@@ -4548,7 +4548,7 @@ public class Geometry {
 			return;
 
 		// determine minimum, maximum and average connectivities
-		if (geometry == Type.MEANFIELD || kout == null || kin == null) {
+		if (geometry == Type.WELLMIXED || kout == null || kin == null) {
 			maxOut = 0;
 			maxIn = 0;
 			maxTot = 0;
@@ -5173,7 +5173,7 @@ public class Geometry {
 					"Cannot derive competition geometry when isSingle == false.");
 		Geometry competition = clone();
 		// remove competition with self
-		if (competition.getType() != Type.MEANFIELD)
+		if (competition.getType() != Type.WELLMIXED)
 			for (int n = 0; n < size; n++)
 				competition.removeLinkAt(n, n);
 		competition.evaluate();
@@ -5220,12 +5220,12 @@ public class Geometry {
 		Type oldSubGeometry = subgeometry;
 		subgeometry = Type.VOID;
 		switch (geometry) {
-			case MEANFIELD: // mean field
+			case WELLMIXED: // mean field
 				break;
 			case COMPLETE: // complete graph
 				break;
 			case HIERARCHY: // deme structured, hierarchical graph
-				subgeometry = Type.MEANFIELD;
+				subgeometry = Type.WELLMIXED;
 				if (!Character.isDigit(sub.charAt(0))) {
 					// check for geometry of hierarchies
 					// note: we could allow for different geometries at different levels but seems
@@ -5620,7 +5620,7 @@ public class Geometry {
 	private boolean isUniqueGeometry(Type geo) {
 		switch (geo) {
 			// non-unique geometries
-			case MEANFIELD: // mean field
+			case WELLMIXED: // mean field
 			case COMPLETE: // complete graph
 			case LINEAR: // linear
 			case SQUARE_NEUMANN: // von neumann
