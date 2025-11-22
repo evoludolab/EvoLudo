@@ -236,12 +236,12 @@ public abstract class AbstractGeometry {
 	/**
 	 * Probability for rewiring.
 	 */
-	public double pRewire = -1.0;
+	double pRewire = -1.0;
 
 	/**
 	 * Probability for adding new links.
 	 */
-	public double pAddwire = -1.0;
+	double pAddwire = -1.0;
 
 	/**
 	 * {@code true} if the network structure is ephemeral.
@@ -496,6 +496,38 @@ public abstract class AbstractGeometry {
 	 */
 	public int getSize() {
 		return size;
+	}
+
+	/**
+	 * Sets the probability for rewiring existing links.
+	 *
+	 * @param probability rewiring probability
+	 */
+	public void setRewire(double probability) {
+		pRewire = probability;
+	}
+
+	/**
+	 * @return the rewiring probability
+	 */
+	public double getRewire() {
+		return pRewire;
+	}
+
+	/**
+	 * Sets the probability for adding links to the network.
+	 *
+	 * @param probability link-addition probability
+	 */
+	public void setAddwire(double probability) {
+		pAddwire = probability;
+	}
+
+	/**
+	 * @return the link-addition probability
+	 */
+	public double getAddwire() {
+		return pAddwire;
 	}
 
 	/**

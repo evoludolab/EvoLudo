@@ -3472,24 +3472,28 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		boolean doReset = false;
 		// set adding of links to geometries
 		if (pAddwire != null) {
-			double prev = interaction.pAddwire;
-			interaction.pAddwire = pAddwire[0];
-			doReset |= (Math.abs(prev - interaction.pAddwire) > 1e-8);
+			double next = pAddwire[0];
+			double prev = interaction.getAddwire();
+			interaction.setAddwire(next);
+			doReset |= (Math.abs(prev - next) > 1e-8);
 			if (!interaction.interCompSame) {
-				prev = competition.pAddwire;
-				competition.pAddwire = pAddwire[1];
-				doReset |= (Math.abs(prev - competition.pAddwire) > 1e-8);
+				next = pAddwire[1];
+				prev = competition.getAddwire();
+				competition.setAddwire(next);
+				doReset |= (Math.abs(prev - next) > 1e-8);
 			}
 		}
 		// set rewiring of links in geometries
 		if (pRewire != null) {
-			double prev = interaction.pRewire;
-			interaction.pRewire = pRewire[0];
-			doReset |= (Math.abs(prev - interaction.pRewire) > 1e-8);
+			double next = pRewire[0];
+			double prev = interaction.getRewire();
+			interaction.setRewire(next);
+			doReset |= (Math.abs(prev - next) > 1e-8);
 			if (!interaction.interCompSame) {
-				prev = competition.pRewire;
-				competition.pRewire = pRewire[1];
-				doReset |= (Math.abs(prev - competition.pRewire) > 1e-8);
+				next = pRewire[1];
+				prev = competition.getRewire();
+				competition.setRewire(next);
+				doReset |= (Math.abs(prev - next) > 1e-8);
 			}
 		}
 		return doReset;

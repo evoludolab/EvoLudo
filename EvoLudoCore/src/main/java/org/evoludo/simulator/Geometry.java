@@ -893,7 +893,7 @@ public class Geometry {
 	 * @see #rewireUndirected(double)
 	 * @see #addUndirected()
 	 */
-	public double pRewire = -1.0;
+	protected double pRewire = -1.0;
 
 	/**
 	 * Fraction of directed links to add or rewire.
@@ -901,7 +901,7 @@ public class Geometry {
 	 * @see #rewireDirected()
 	 * @see #addDirected()
 	 */
-	public double pAddwire = -1.0;
+	protected double pAddwire = -1.0;
 
 	/**
 	 * {@code true} if the graph is undirected.
@@ -933,6 +933,38 @@ public class Geometry {
 	public boolean isInterspecies() {
 		return engine.getModule().getNSpecies() > 1;
 		// return (population != opponent);
+	}
+
+	/**
+	 * Sets the probability for rewiring undirected links.
+	 *
+	 * @param probability rewiring probability
+	 */
+	public void setRewire(double probability) {
+		pRewire = probability;
+	}
+
+	/**
+	 * @return the rewiring probability for undirected links
+	 */
+	public double getRewire() {
+		return pRewire;
+	}
+
+	/**
+	 * Sets the probability for adding links.
+	 *
+	 * @param probability link-addition probability
+	 */
+	public void setAddwire(double probability) {
+		pAddwire = probability;
+	}
+
+	/**
+	 * @return the probability for adding links
+	 */
+	public double getAddwire() {
+		return pAddwire;
 	}
 
 	/**
