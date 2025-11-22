@@ -506,7 +506,7 @@ public class TBT extends Discrete implements Payoffs,
 				case SQUARE_NEUMANN_2ND:
 				case SQUARE_MOORE:
 				case SQUARE:
-				case HONEYCOMB:
+				case HEXAGONAL:
 				case TRIANGULAR:
 					int l = (int) Math.sqrt(nPopulation);
 					int m = l / 2;

@@ -232,7 +232,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		switch (geometry.getType()) {
 			case VOID:
 			case TRIANGULAR:
-			case HONEYCOMB:
+			case HEXAGONAL:
 			case SQUARE_NEUMANN:
 			case SQUARE_NEUMANN_2ND:
 			case SQUARE_MOORE:
@@ -518,7 +518,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 				height = dh * side;
 				break;
 
-			case HONEYCOMB:
+			case HEXAGONAL:
 				side = (int) (Math.sqrt(geometry.getSize()) + 0.5);
 				dw2 = width / (2 * side + 1);
 				width = dw2 * (2 * side + 1);
@@ -745,7 +745,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 				return SNAPSHOT_NONE;
 
 			case TRIANGULAR:
-			case HONEYCOMB:
+			case HEXAGONAL:
 			case SQUARE_NEUMANN:
 			case SQUARE_NEUMANN_2ND:
 			case SQUARE_MOORE:
@@ -852,7 +852,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 				tridown.translate(0, -side * dh);
 				break;
 
-			case HONEYCOMB:
+			case HEXAGONAL:
 				side = (int) (Math.sqrt(nNodes) + 0.5);
 				dw2 = width / (2 * side + 1);
 				bounds.width = dw2 * (2 * side + 1);
@@ -1087,7 +1087,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 					c--;
 				return r * side + c;
 
-			case HONEYCOMB:
+			case HEXAGONAL:
 				side = (int) (Math.sqrt(nNodes) + 0.5);
 				dw2 = width / (2 * side + 1);
 				dw = 2 * dw2;

@@ -352,7 +352,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 					posj += incr;
 				}
 				break;
-			case HONEYCOMB:
+			case HEXAGONAL:
 				side = (int) Math.sqrt(geometry.getSize()); // data.size does not seem to be set at this point
 				double hincr = (Network3D.UNIVERSE_RADIUS + Network3D.UNIVERSE_RADIUS) / side;
 				double hincr2 = hincr * 0.5;

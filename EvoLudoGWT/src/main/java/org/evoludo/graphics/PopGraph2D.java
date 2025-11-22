@@ -288,7 +288,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			case TRIANGULAR:
 				drawTriangular();
 				break;
-			case HONEYCOMB:
+			case HEXAGONAL:
 				drawHoneycomb();
 				break;
 			case SQUARE_NEUMANN:
@@ -616,7 +616,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 			case TRIANGULAR:
 				handleTriangular(width, height);
 				break;
-			case HONEYCOMB:
+			case HEXAGONAL:
 				handleHoneycomb(width, height);
 				break;
 			case SQUARE_NEUMANN:
@@ -846,7 +846,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				return FINDNODEAT_UNIMPLEMENTED;
 			case TRIANGULAR:
 				return findTriangularNode(sx, sy);
-			case HONEYCOMB:
+			case HEXAGONAL:
 				return findHoneycombNode(sx, sy);
 			case SQUARE_NEUMANN:
 			case SQUARE_NEUMANN_2ND:

@@ -403,7 +403,7 @@ public class Geometry {
 		 * 
 		 * @see Geometry#initGeometryHoneycomb()
 		 */
-		HONEYCOMB("h", "honeycomb lattice (k=6)"),
+		HEXAGONAL("h", "honeycomb lattice (k=6)"),
 
 		/**
 		 * Triangular lattice, connectivity \(k=3\).
@@ -667,7 +667,7 @@ public class Geometry {
 				case SQUARE_MOORE:
 				case SQUARE_NEUMANN:
 				case SQUARE_NEUMANN_2ND:
-				case HONEYCOMB:
+				case HEXAGONAL:
 				case TRIANGULAR:
 				case CUBE:
 					return true;
@@ -1442,7 +1442,7 @@ public class Geometry {
 					doReset = true;
 				}
 				break;
-			case HONEYCOMB:
+			case HEXAGONAL:
 				// check population size and set connectivity
 				side = (int) Math.floor(Math.sqrt(size) + 0.5);
 				side2 = side * side;
@@ -1660,7 +1660,7 @@ public class Geometry {
 			case CUBE:
 				initGeometryCube();
 				break;
-			case HONEYCOMB:
+			case HEXAGONAL:
 				initGeometryHoneycomb();
 				break;
 			case TRIANGULAR:
@@ -1743,7 +1743,7 @@ public class Geometry {
 			case SQUARE_MOORE:
 			case SQUARE:
 			case CUBE:
-			case HONEYCOMB:
+			case HEXAGONAL:
 			case TRIANGULAR:
 			case RANDOM_GRAPH:
 			case RANDOM_GRAPH_DIRECTED:
@@ -5290,7 +5290,7 @@ public class Geometry {
 					sub = "4"; // default
 				//$FALL-THROUGH$
 			case CUBE: // cubic, larger neighborhood
-			case HONEYCOMB: // hexagonal
+			case HEXAGONAL: // hexagonal
 				if (sub.length() < 1)
 					sub = "6"; // default
 				//$FALL-THROUGH$
@@ -5423,7 +5423,7 @@ public class Geometry {
 		CLOption clo = engine.getModule().cloGeometry;
 		boolean fixedBoundariesAvailable = (clo.isValidKey(Type.LINEAR) || clo.isValidKey(Type.SQUARE)
 				|| clo.isValidKey(Type.CUBE)
-				|| clo.isValidKey(Type.HONEYCOMB) || clo.isValidKey(Type.TRIANGULAR));
+				|| clo.isValidKey(Type.HEXAGONAL) || clo.isValidKey(Type.TRIANGULAR));
 		String descr = "--geometry <>   geometry " //
 				+ (engine.getModel().getType().isIBS() ? "- interaction==competition\n" : "\n") //
 				+ "      argument: <g><k>" //
@@ -5627,7 +5627,7 @@ public class Geometry {
 			case SQUARE_MOORE: // moore
 			case SQUARE: // square, larger neighborhood
 			case CUBE: // cubic, larger neighborhood
-			case HONEYCOMB: // hexagonal
+			case HEXAGONAL: // hexagonal
 			case TRIANGULAR: // triangular
 			case FRUCHT: // Frucht graph
 			case TIETZE: // Tietze graph

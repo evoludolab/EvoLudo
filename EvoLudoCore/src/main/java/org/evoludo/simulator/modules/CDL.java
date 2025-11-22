@@ -947,7 +947,7 @@ public class CDL extends Discrete implements Payoffs,
 					traitsCount[CDL.COOPERATE] -= 5 * 5;
 					break;
 
-				case HONEYCOMB:
+				case HEXAGONAL:
 					mid = (int) Math.floor(nPopulation + Math.sqrt(nPopulation) + 0.5) / 2;
 					size = (int) Math.floor(Math.sqrt(nPopulation) + 0.5);
 					setTraitAt(mid, CDL.LONER);

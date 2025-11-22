@@ -287,7 +287,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 			case SQUARE_MOORE:
 			case SQUARE:
 			case LINEAR:
-			case HONEYCOMB:
+			case HEXAGONAL:
 			case TRIANGULAR:
 				setStatus(Status.NO_LAYOUT);
 				nLinks = 0;

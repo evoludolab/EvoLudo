@@ -1175,7 +1175,7 @@ public class PDE extends ODE {
 			case SQUARE_MOORE:
 			case SQUARE:
 			case TRIANGULAR:
-			case HONEYCOMB:
+			case HEXAGONAL:
 			default:
 				return Math.sqrt(space.getSize()) / linext;
 		}

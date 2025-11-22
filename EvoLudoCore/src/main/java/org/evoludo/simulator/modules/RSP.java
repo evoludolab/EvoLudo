@@ -311,7 +311,7 @@ public class RSP extends Discrete implements Payoffs,
 					traitsCount[RSP.SCISSORS] += 5 * 20;
 					traitsCount[RSP.PAPER] += 5 * 20;
 					break;
-				case HONEYCOMB:
+				case HEXAGONAL:
 					break;
 				case TRIANGULAR:
 					break;

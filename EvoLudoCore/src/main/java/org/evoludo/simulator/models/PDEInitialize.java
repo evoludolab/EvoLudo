@@ -140,7 +140,7 @@ class PDEInitialize extends ODEInitialize {
 			case SQUARE_MOORE:
 			case SQUARE:
 			case TRIANGULAR:
-			case HONEYCOMB: {
+			case HEXAGONAL: {
 				int l = (int) (Math.sqrt(space.getSize()) + 0.5);
 				System.arraycopy(y0, 0, density[(l + 1) * l / 2], 0, nDim);
 				break;
