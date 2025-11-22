@@ -509,7 +509,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 				graph.setNormalized(n + nTraits + 1);
 				wrapper.add(graph);
 				graphs.add(graph);
-				int xdeco = (n == (nTraits - 1) ? 1 : 0);
+				int xdeco = (n == nTraits ? 1 : 0);
 				xdeco += (++idx == nGraphs) ? 1 : 0;
 				applyDefaultStyle(graph.getStyle());
 				applyFixationTimeStyle(graph, n, xdeco, false);
@@ -746,23 +746,23 @@ public class Histogram extends AbstractView<HistoGraph> {
 	private void applyFixationTimeStyle(HistoGraph graph, int n, int xdeco, boolean isDistribution) {
 		GraphStyle style = graph.getStyle();
 		style.showLabel = true;
-		if (xdeco >= 0) {
-			style.showXLabel = (xdeco == 2); // show only on bottom panel
-			style.showXTickLabels = (xdeco >= 1);
-		}
 		style.autoscaleY = true;
 		style.yMin = 0.0;
 		style.yMax = 1.0;
 		Module<?> module = graph.getModule();
 		int nPop = module.getNPopulation();
-		// last graph is for absorption times
-		if (xdeco >= 1) {
-			style.label = "Absorbtion";
-			style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
-		} else {
-			Color[] colors = module.getTraitColors();
-			style.label = module.getTraitName(n);
-			style.graphColor = ColorMapCSS.Color2Css(colors[n]);
+		if (xdeco >= 0) {
+			style.showXLabel = (xdeco == 2); // show only on bottom panel
+			if (xdeco >= 1) {
+				style.showXTickLabels = true;
+				// last graph is for absorption times
+				style.label = "Absorbtion";
+				style.graphColor = ColorMapCSS.Color2Css(Color.BLACK);
+			} else {
+				Color[] colors = module.getTraitColors();
+				style.label = module.getTraitName(n);
+				style.graphColor = ColorMapCSS.Color2Css(colors[n]);
+			}
 		}
 		if (isDistribution) {
 			style.xMin = 0.0;
