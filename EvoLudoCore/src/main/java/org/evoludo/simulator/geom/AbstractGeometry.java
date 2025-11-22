@@ -210,7 +210,7 @@ public abstract class AbstractGeometry {
 	/**
 	 * {@code true} if rewiring should be applied.
 	 */
-	public boolean isRewired = false;
+	boolean isRewired = false;
 
 	/**
 	 * {@code true} if geometry has been evaluated.
@@ -528,6 +528,13 @@ public abstract class AbstractGeometry {
 	 */
 	public double getAddwire() {
 		return pAddwire;
+	}
+
+	/**
+	 * @return {@code true} if the geometry has been rewired.
+	 */
+	public boolean isRewired() {
+		return isRewired;
 	}
 
 	/**

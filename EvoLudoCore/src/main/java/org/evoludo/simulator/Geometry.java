@@ -911,7 +911,7 @@ public class Geometry {
 	/**
 	 * {@code true} if the graph includes rewired edges or links.
 	 */
-	public boolean isRewired = false;
+	protected boolean isRewired = false;
 
 	// /**
 	// * Gets the opponent of the population represented by this graph. For
@@ -965,6 +965,13 @@ public class Geometry {
 	 */
 	public double getAddwire() {
 		return pAddwire;
+	}
+
+	/**
+	 * @return {@code true} if the geometry has been rewired.
+	 */
+	public boolean isRewired() {
+		return isRewired;
 	}
 
 	/**
