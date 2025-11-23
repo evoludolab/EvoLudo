@@ -1152,8 +1152,9 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 					boolean doReset = false;
 					int n = 0;
 					for (T pop : species) {
-						Geometry geom = pop.createGeometry();
-						doReset |= geom.parse(geomargs[n++ % geomargs.length]);
+						// Geometry geom = pop.createGeometry();
+						pop.structure = pop.createGeometry();
+						doReset |= pop.structure.parse(geomargs[n++ % geomargs.length]);
 					}
 					engine.requiresReset(doReset);
 					return true;

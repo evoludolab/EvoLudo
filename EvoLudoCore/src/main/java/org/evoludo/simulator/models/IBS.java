@@ -1272,11 +1272,10 @@ public abstract class IBS extends Model {
 						boolean doReset = false;
 						int n = 0;
 						for (Module<?> mod : species) {
-							// IBSPopulation<?, ?> pop = mod.getIBSPopulation();
-							// creates new interaction geometry if null or equal to getGeometry()
-							// Geometry geom = pop.createInteractionGeometry();
-							Geometry geom = new Geometry(engine, mod, mod.getOpponent());
-							doReset |= geom.parse(geomargs[n++ % geomargs.length]);
+							// creates new interaction geometry
+							IBSPopulation<?, ?> ibs = mod.getIBSPopulation();
+							ibs.interaction = new Geometry(engine, mod, mod.getOpponent());
+							doReset |= ibs.interaction.parse(geomargs[n++ % geomargs.length]);
 						}
 						engine.requiresReset(doReset);
 					}
@@ -1316,10 +1315,10 @@ public abstract class IBS extends Model {
 						boolean doReset = false;
 						int n = 0;
 						for (Module<?> mod : species) {
-							IBSPopulation<?, ?> pop = mod.getIBSPopulation();
-							// creates new competition geometry if null or equal to getGeometry()
-							Geometry geom = pop.createCompetitionGeometry();
-							doReset |= geom.parse(geomargs[n++ % geomargs.length]);
+							// creates new interaction geometry
+							IBSPopulation<?, ?> ibs = mod.getIBSPopulation();
+							ibs.competition = new Geometry(engine, mod, mod.getOpponent());
+							doReset |= ibs.competition.parse(geomargs[n++ % geomargs.length]);
 						}
 						engine.requiresReset(doReset);
 					}
