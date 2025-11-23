@@ -106,7 +106,8 @@ public enum GeometryType implements CLOption.Key {
 	 * 
 	 * @see WellmixedGeometry#init()
 	 */
-	WELLMIXED("M", "well-mixed population"),
+	WELLMIXED("M", "mean-field/well-mixed population"),
+	// WELLMIXED("M", "well-mixed population"),
 
 	/**
 	 * Complete graph, connectivity \(k=N-1\).
@@ -202,7 +203,8 @@ public enum GeometryType implements CLOption.Key {
 	 * 
 	 * @see HexagonalGeometry#init()
 	 */
-	HEXAGONAL("h", "hexagonal lattice (k=6)"),
+	HEXAGONAL("h", "honeycomb lattice (k=6)"),
+	// HEXAGONAL("h", "hexagonal lattice (k=6)"),
 
 	/**
 	 * Triangular lattice, connectivity \(k=3\).
