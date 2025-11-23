@@ -3576,9 +3576,11 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 								+ " - using random sampling of interaction partners!");
 		}
 
-		// currently: if pop has interaction structure different from MEANFIELD its
+		// currently: if pop has interaction structure different from WELLMIXED its
 		// opponent population needs to be of the same size
-		if (module.getNPopulation() != opponent.getModule().getNPopulation()
+		// IMPORTANT: the parameters of modules with higher ID may not yet been checked!
+		if (module.getOpponent().getID() < module.getID()
+				&& module.getNPopulation() != opponent.getModule().getNPopulation()
 				&& opponent.getInteractionGeometry() != null // opponent geometry may not yet be initialized
 																// check will be repeated for opponent
 				&& (!getInteractionGeometry().isType(GeometryType.WELLMIXED)
