@@ -1063,9 +1063,9 @@ public class Geometry {
 	 *         {@code false} if two separate graphical representations are required
 	 *         for the interaction and the competition graphs
 	 * 
-	 * @see #displayUniqueGeometry(Geometry, Geometry)
+	 * @see #displaySingle(Geometry, Geometry)
 	 */
-	public static boolean displayUniqueGeometry(Geometry inter, Geometry comp) {
+	public static boolean displaySingle(Geometry inter, Geometry comp) {
 		GeometryType geometry = inter.geometry;
 		if (inter.isLattice()) {
 			// lattice interaction geometry - return true if competition geometry is the
@@ -1088,10 +1088,10 @@ public class Geometry {
 	 *               check
 	 * @return {@code true} if a single graphical representation suffices
 	 * 
-	 * @see #displayUniqueGeometry(Geometry, Geometry)
+	 * @see #displaySingle(Geometry, Geometry)
 	 */
 	public static boolean displayUniqueGeometry(Module<?> module) {
-		return displayUniqueGeometry(module.getInteractionGeometry(), module.getCompetitionGeometry());
+		return displaySingle(module.getInteractionGeometry(), module.getCompetitionGeometry());
 	}
 
 	/**

@@ -190,18 +190,18 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		// link sets (could be difficult if one is a lattice...)
 		int nGraphs = 0;
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
-		for (Module<?> module : species)
-			nGraphs += Geometry.displayUniqueGeometry(module) ? 1 : 2;
+		for (Module<?> mod : species)
+			nGraphs += mod.getInteractionGeometry().isSingle() ? 1 : 2;
 
 		if (graphs.size() == nGraphs)
 			return false;
 		destroyGraphs();
-		for (Module<?> module : species) {
-			PopGraph2D graph = new PopGraph2D(this, module);
+		for (Module<?> mod : species) {
+			PopGraph2D graph = new PopGraph2D(this, mod);
 			wrapper.add(graph);
 			graphs.add(graph);
-			if (!Geometry.displayUniqueGeometry(module)) {
-				graph = new PopGraph2D(this, module);
+			if (!mod.getInteractionGeometry().isSingle()) {
+				graph = new PopGraph2D(this, mod);
 				wrapper.add(graph);
 				graphs.add(graph);
 				// arrange graphs horizontally

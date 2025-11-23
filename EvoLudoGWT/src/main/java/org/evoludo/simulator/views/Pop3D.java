@@ -185,19 +185,19 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		// link sets (could be difficult if one is a lattice...)
 		int nGraphs = 0;
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
-		for (Module<?> module : species)
-			nGraphs += Geometry.displayUniqueGeometry(module) ? 1 : 2;
+		for (Module<?> mod : species)
+			nGraphs += mod.getInteractionGeometry().isSingle() ? 1 : 2;
 
 		if (graphs.size() == nGraphs)
 			return false;
 
 		destroyGraphs();
-		for (Module<?> module : species) {
-			PopGraph3D graph = new PopGraph3D(this, module);
+		for (Module<?> mod : species) {
+			PopGraph3D graph = new PopGraph3D(this, mod);
 			wrapper.add(graph);
 			graphs.add(graph);
-			if (!Geometry.displayUniqueGeometry(module)) {
-				graph = new PopGraph3D(this, module);
+			if (!mod.getInteractionGeometry().isSingle()) {
+				graph = new PopGraph3D(this, mod);
 				wrapper.add(graph);
 				graphs.add(graph);
 				// arrange graphs horizontally

@@ -3508,7 +3508,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	void setGeometryNames() {
 		String name = module.getName();
-		if (interaction.isSingle() || Geometry.displayUniqueGeometry(interaction, competition)) {
+		if (interaction.isSingle() || Geometry.displaySingle(interaction, competition)) {
 			if (name.isEmpty())
 				interaction.name = competition.name = "Structure";
 			else

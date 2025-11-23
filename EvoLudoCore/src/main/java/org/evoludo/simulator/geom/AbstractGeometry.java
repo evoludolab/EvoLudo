@@ -420,7 +420,7 @@ public abstract class AbstractGeometry {
 	 * @return {@code true} if a single representation can be reused for both
 	 *         structures
 	 */
-	public static boolean displaySingleGeometry(AbstractGeometry interaction, AbstractGeometry competition) {
+	public static boolean displaySingle(AbstractGeometry interaction, AbstractGeometry competition) {
 		if (interaction == null)
 			throw new IllegalArgumentException("interaction geometry must not be null");
 		GeometryType interactionType = interaction.getType();
