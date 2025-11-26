@@ -58,7 +58,7 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapJRE;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoLab;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.DModel;
@@ -368,7 +368,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 
 			case PDE:
 				if (node >= nNodes) {
-					// this can only happen for Geometry.LINEAR
+					// this can only happen for AbstractGeometry.LINEAR
 					double t = (node / nNodes) * engine.getModel().getTimeStep();
 					if (network.getTimestamp() < t)
 						return null;
@@ -382,7 +382,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 				String fitness = "<br><i>Fitness:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</i> "
 						+ model.getFitnessNameAt(tag, node);
 				toolTip = "<html><i>Node:</i> " + node + names + density + fitness;
-				Geometry diffusion = ((PDE) model).getGeometry();
+				AbstractGeometry diffusion = ((PDE) model).getGeometry();
 				if (diffusion.isUndirected())
 					toolTip += "<br><i>Connections:</i> " + formatStructureAt(node, diffusion.out, diffusion.kout);
 				else
@@ -392,7 +392,7 @@ public class MVPop2D extends MVAbstract implements PopListener {
 
 			case IBS:
 				if (node >= nNodes) {
-					// this can only happen for Geometry.LINEAR
+					// this can only happen for AbstractGeometry.LINEAR
 					double t = (node / nNodes) * engine.getModel().getTimeStep();
 					if (network.getTimestamp() < t)
 						return null;
@@ -407,17 +407,17 @@ public class MVPop2D extends MVAbstract implements PopListener {
 						"<br><i>Fitness:</i> " + model.getFitnessNameAt(tag, node) +
 						(count < 0 ? ""
 								: "<br><i>Interactions:</i> " + (count == Integer.MAX_VALUE ? "all" : "" + count));
-				Geometry intergeom = module.getInteractionGeometry();
+				AbstractGeometry intergeom = module.getIBSPopulation().getInteractionGeometry();
 				if (intergeom.isUndirected())
 					toolTip += "<br><i>Neighbors:</i> " + formatStructureAt(node, intergeom.out, intergeom.kout);
-				// useful for debugging geometry - Geometry.checkConnections should be able to
-				// catch such problems
+				// useful for debugging geometry - AbstractGeometry.checkConnections should be
+				// able to catch such problems
 				// toolTip += "<br>in: "+formatStructureAt(node, data.in, data.kin);
 				else
 					toolTip += "<br><i>Links to:</i>  " + formatStructureAt(node, intergeom.out, intergeom.kout) +
 							"<br><i>Link here:</i> " + formatStructureAt(node, intergeom.in, intergeom.kin);
 				if (!intergeom.isSingle()) {
-					Geometry compgeom = module.getCompetitionGeometry();
+					AbstractGeometry compgeom = module.getIBSPopulation().getCompetitionGeometry();
 					if (compgeom.isUndirected())
 						toolTip += "<br><i>Competitors:</i> " + formatStructureAt(node, compgeom.out, compgeom.kout);
 					else

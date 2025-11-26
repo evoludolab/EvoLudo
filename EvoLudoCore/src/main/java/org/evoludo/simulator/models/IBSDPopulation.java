@@ -30,7 +30,6 @@
 
 package org.evoludo.simulator.models;
 
-import org.evoludo.simulator.geom.GeometryType;
 import java.util.Arrays;
 import java.util.List;
 
@@ -38,7 +37,9 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.AbstractGeometry;
+import org.evoludo.simulator.geom.GeometryType;
+import org.evoludo.simulator.geom.HierarchicalGeometry;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.Model.HasIBS;
@@ -664,7 +665,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		// possible but not (yet) implemented.
 		if (hasLookupTable || //
 				(adjustScores && interaction.isType(GeometryType.HIERARCHY) //
-						&& interaction.subgeometry == GeometryType.WELLMIXED)) {
+						&& ((HierarchicalGeometry) interaction).isSubtype(GeometryType.WELLMIXED))) {
 			updateMixedScores();
 			return;
 		}
@@ -876,8 +877,8 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 * Eliminate vacant sites from the assembled group.
 	 * <p>
 	 * <strong>Important:</strong> {@code group.group} is untouchable! It may be a
-	 * reference to {@code Geometry.out[group.focal]} and hence any changes would
-	 * actually alter the geometry!
+	 * reference to {@code AbstractGeometry.out[group.focal]} and hence any changes
+	 * would actually alter the geometry!
 	 *
 	 * @param group   the group which potentially includes references to vacant
 	 *                sites
@@ -1302,9 +1303,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		}
 		// check if original procedure works
 		if (module.isStatic() || //
-				(interaction.getType() != GeometryType.WELLMIXED && //
-						interaction.getType() != GeometryType.HIERARCHY && //
-						interaction.subgeometry != GeometryType.WELLMIXED)) {
+				(!interaction.isType(GeometryType.WELLMIXED)
+						&& (!interaction.isType(GeometryType.HIERARCHY) ||
+								!((HierarchicalGeometry) interaction).isSubtype(GeometryType.WELLMIXED)))) {
 			super.adjustGameScoresAt(me);
 			return;
 		}
@@ -1322,7 +1323,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		if (!interaction.isInterspecies())
 			return; // no adjustment needed for intra-species interactions
 
-		if (opponent.getInteractionGeometry().isType(GeometryType.WELLMIXED)) {
+		if (opponent.interaction.isType(GeometryType.WELLMIXED)) {
 			// competition is well-mixed as well - adjust lookup table
 			opponent.updateMixedScores();
 		} else {
@@ -1416,7 +1417,9 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	 */
 	void updateMixedHierarchy() {
 		// XXX needs more attention for inter-species interactions
-		int unitSize = interaction.hierarchy[interaction.hierarchy.length - 1];
+		HierarchicalGeometry hgeom = (HierarchicalGeometry) interaction;
+		int[] hierarchy = hgeom.getHierarchyLevels();
+		int unitSize = hierarchy[hierarchy.length - 1];
 		for (int unitStart = 0; unitStart < nPopulation; unitStart += unitSize) {
 			// count traits in unit
 			countTraits(tmpCount, traits, unitStart, unitSize);
@@ -1824,7 +1827,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 				// optimized Moran type processes are incompatible with well mixed populations!
 		if (interaction.isType(GeometryType.WELLMIXED) ||
 				(interaction.isType(GeometryType.HIERARCHY) &&
-						interaction.subgeometry == GeometryType.WELLMIXED)) {
+						((HierarchicalGeometry) interaction).isSubtype(GeometryType.WELLMIXED))) {
 			optimizeMoran = false;
 			logger.warning("optimized Moran-type updates are incompatible with mean-field geometry - disabled.");
 			doReset = true;
@@ -1992,7 +1995,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	private double estimateVacantFrequency(int type) {
 		double d = module.getDeathRate();
 		double fit = map2fit.map(module.getMonoPayoff(type % nTraits));
-		Geometry geometry = module.getGeometry();
+		AbstractGeometry geometry = module.getGeometry();
 		if (geometry.isType(GeometryType.WELLMIXED))
 			// carrying capacity is 1.0 - d / fit
 			return d / fit;

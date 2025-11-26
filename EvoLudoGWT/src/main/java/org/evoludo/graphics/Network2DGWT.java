@@ -31,7 +31,7 @@
 package org.evoludo.graphics;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.models.Model;
 
@@ -55,7 +55,7 @@ public class Network2DGWT extends Network2D {
 	 * @param engine   the pacemaker for running the model
 	 * @param geometry the structure of the population
 	 */
-	public Network2DGWT(EvoLudo engine, Geometry geometry) {
+	public Network2DGWT(EvoLudo engine, AbstractGeometry geometry) {
 		super(engine, geometry);
 	}
 

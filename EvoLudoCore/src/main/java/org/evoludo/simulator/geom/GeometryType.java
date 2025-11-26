@@ -352,14 +352,15 @@ public enum GeometryType implements CLOption.Key {
 	/**
 	 * Dynamically changing network structure.
 	 * 
-	 * @see org.evoludo.simulator.Geometry#initGeometryScaleFreeBA()
+	 * @see DynamicGeometry#init()
 	 */
 	DYNAMIC("*", "dynamic geometry"),
 
 	/**
 	 * Placeholder for empty geometry. Not user selectable.
 	 *
-	 * @deprecated temporary legacy sentinel; remove once legacy Geometry is gone
+	 * @deprecated temporary legacy sentinel; remove once legacy AbstractGeometry is
+	 *             gone
 	 */
 	@Deprecated
 	VOID("-1", "void geometry"),
@@ -367,7 +368,8 @@ public enum GeometryType implements CLOption.Key {
 	/**
 	 * Placeholder for generic geometry. Not user selectable.
 	 *
-	 * @deprecated temporary legacy sentinel; remove once legacy Geometry is gone
+	 * @deprecated temporary legacy sentinel; remove once legacy AbstractGeometry is
+	 *             gone
 	 */
 	@Deprecated
 	GENERIC("-2", "generic geometry"),
@@ -375,7 +377,8 @@ public enum GeometryType implements CLOption.Key {
 	/**
 	 * Placeholder for invalid geometry. Not user selectable.
 	 *
-	 * @deprecated temporary legacy sentinel; remove once legacy Geometry is gone
+	 * @deprecated temporary legacy sentinel; remove once legacy AbstractGeometry is
+	 *             gone
 	 */
 	@Deprecated
 	INVALID("-3", "invalid geometry");

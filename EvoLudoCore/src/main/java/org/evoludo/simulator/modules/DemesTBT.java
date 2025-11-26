@@ -34,7 +34,9 @@ import java.util.Arrays;
 
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.geom.GeometryType;
+import org.evoludo.simulator.geom.HierarchicalGeometry;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBS.MigrationType;
 import org.evoludo.simulator.models.IBSD;
@@ -78,6 +80,7 @@ public class DemesTBT extends TBT {
 	 * Currently only IBS models are supported even though super supports more.
 	 */
 	@Override
+
 	public ModelType[] getModelTypes() {
 		return new ModelType[] { ModelType.IBS };
 	}
@@ -205,11 +208,12 @@ public class DemesTBT extends TBT {
 			boolean doReset = super.check();
 			nTraits = module.getNTraits();
 			if (!(interaction.isType(GeometryType.WELLMIXED) || (interaction.isType(GeometryType.HIERARCHY)
-					&& interaction.subgeometry == GeometryType.WELLMIXED && interaction.hierarchy.length == 2))) {
+					&& ((HierarchicalGeometry) interaction).isSubtype(GeometryType.WELLMIXED)
+					&& ((HierarchicalGeometry) interaction).getHierarchyLevels().length == 2))) {
 				// the only acceptable geometries are well-mixed and hierarchical structures
 				// with two levels of well-mixed demes
 				logger.severe("invalid geometry - forcing well-mixed population (single deme)!");
-				interaction.setType(GeometryType.WELLMIXED);
+				interaction = AbstractGeometry.create(GeometryType.WELLMIXED, engine);
 				doReset = true;
 			}
 			nDemes = 1;
@@ -217,8 +221,9 @@ public class DemesTBT extends TBT {
 			if (pure == null || pure.length != nTraits)
 				pure = new double[nTraits];
 			if (interaction.isType(GeometryType.HIERARCHY)) {
-				nDemes = interaction.hierarchy[0];
-				sizeDemes = interaction.hierarchy[1];
+				int[] hierarchy = ((HierarchicalGeometry) interaction).getHierarchyLevels();
+				nDemes = hierarchy[0];
+				sizeDemes = hierarchy[1];
 			}
 			if (demeTypeCount == null || demeTypeCount.length != nDemes)
 				demeTypeCount = new int[nDemes][nTraits];
@@ -229,7 +234,7 @@ public class DemesTBT extends TBT {
 			}
 			if (nDemes > 1 && !adjustScores) {
 				logger.severe("invalid sampling - forcing well-mixed population (single deme)!");
-				interaction.setType(GeometryType.WELLMIXED);
+				interaction = AbstractGeometry.create(GeometryType.WELLMIXED, engine);
 				doReset = true;
 			}
 			if (optimizeMigration) {

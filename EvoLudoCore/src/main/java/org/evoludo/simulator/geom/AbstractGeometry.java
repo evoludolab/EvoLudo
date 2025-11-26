@@ -317,7 +317,6 @@ public abstract class AbstractGeometry {
 	protected AbstractGeometry(EvoLudo engine) {
 		this.engine = engine;
 		this.logger = engine.getLogger();
-		// this(engine, false);
 	}
 
 	/**
@@ -372,6 +371,8 @@ public abstract class AbstractGeometry {
 	 * @return the stored 2D network representation (may be {@code null})
 	 */
 	public Network2D getNetwork2D() {
+		if (network2D == null)
+			network2D = engine.createNetwork2D(this);
 		return network2D;
 	}
 
@@ -388,6 +389,8 @@ public abstract class AbstractGeometry {
 	 * @return the stored 3D network representation (may be {@code null})
 	 */
 	public Network3D getNetwork3D() {
+		if (network3D == null)
+			network3D = engine.createNetwork3D(this);
 		return network3D;
 	}
 
@@ -456,7 +459,7 @@ public abstract class AbstractGeometry {
 	 * @param spec the argument string without the geometry key
 	 * @return {@code true} if parsing succeeded, {@code false} if invalid
 	 */
-	public boolean parse(String spec) {
+	boolean parse(String spec) {
 		if (spec == null || spec.isEmpty())
 			return true;
 		warn("geometry '" + type + "' does not accept parameters - ignoring '" + spec + "'");
@@ -856,7 +859,7 @@ public abstract class AbstractGeometry {
 	/**
 	 * @return {@code true} if this geometry links two different populations.
 	 */
-	protected boolean isInterspecies() {
+	public boolean isInterspecies() {
 		return false;
 	}
 
@@ -1265,7 +1268,7 @@ public abstract class AbstractGeometry {
 	 *
 	 * @see #evaluate()
 	 */
-	protected void removeEdgeAt(int from, int to) {
+	public void removeEdgeAt(int from, int to) {
 		removeLinkAt(from, to);
 		removeLinkAt(to, from);
 	}
@@ -1278,7 +1281,7 @@ public abstract class AbstractGeometry {
 	 * @param from the index of the first node
 	 * @param to   the index of the second node
 	 */
-	protected void removeLinkAt(int from, int to) {
+	public void removeLinkAt(int from, int to) {
 		removeInLink(from, to);
 		removeOutLink(from, to);
 	}
@@ -1386,7 +1389,7 @@ public abstract class AbstractGeometry {
 	 * @return {@code true} if {@code check} occurs among {@code focal}'s outgoing
 	 *         links
 	 */
-	protected boolean isNeighborOf(int focal, int check) {
+	public boolean isNeighborOf(int focal, int check) {
 		if (out == null)
 			return false;
 		int[] neighs = out[focal];

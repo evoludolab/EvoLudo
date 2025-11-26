@@ -37,7 +37,10 @@ import java.util.Iterator;
 import org.evoludo.geom.Node;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
+import org.evoludo.simulator.Network.LayoutListener;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.geom.GeometryType;
+import org.evoludo.simulator.geom.HierarchicalGeometry;
 
 /**
  * Abstract graphical representation for generic population geometries. A
@@ -168,7 +171,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	/**
 	 * The structure of the population.
 	 */
-	protected Geometry geometry;
+	protected AbstractGeometry geometry;
 
 	/**
 	 * The timestamp of the last time the layouting process has completed.
@@ -246,7 +249,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	 * @param engine   the pacemaker for running the model
 	 * @param geometry the structure of the population
 	 */
-	protected Network(EvoLudo engine, Geometry geometry) {
+	protected Network(EvoLudo engine, AbstractGeometry geometry) {
 		this.engine = engine;
 		this.geometry = geometry;
 		this.status = (geometry.isLattice() ? Status.NO_LAYOUT : Status.NEEDS_LAYOUT);
@@ -279,7 +282,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 		nNodes = geometry.getSize();
 		GeometryType type = geometry.getType();
 		if (type == GeometryType.HIERARCHY)
-			type = geometry.subgeometry;
+			type = ((HierarchicalGeometry) geometry).getSubType();
 		// geometries that have special/fixed layout
 		switch (type) {
 			case CUBE:
@@ -350,7 +353,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 		switch (geometry.getType()) {
 			case HIERARCHY:
 				// don't draw links for well-mixed hierarchical structures
-				if (geometry.subgeometry.equals(GeometryType.WELLMIXED))
+				if (((HierarchicalGeometry) geometry).isSubtype(GeometryType.WELLMIXED))
 					fLinks = 0.0;
 				// should not get here for subgeometry SQUARE
 				break;
@@ -475,7 +478,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 	 * 
 	 * @return the backing geometry
 	 */
-	public Geometry getGeometry() {
+	public AbstractGeometry getGeometry() {
 		return geometry;
 	}
 

@@ -33,7 +33,7 @@ package org.evoludo.simulator.models;
 import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
@@ -106,10 +106,10 @@ public class IBSD extends IBS implements DModel {
 		// - for well-mixed populations any frequency is acceptable
 		for (Module<?> mod : species) {
 			IBSDPopulation dpop = (IBSDPopulation) mod.getIBSPopulation();
-			Geometry inter = dpop.getInteractionGeometry();
-			boolean isWM = inter.getType().equals(GeometryType.WELLMIXED) &&
-					(inter.isSingle() ||
-							dpop.getCompetitionGeometry().getType().equals(GeometryType.WELLMIXED));
+			AbstractGeometry inter = dpop.interaction;
+			boolean isWM = inter.isType(GeometryType.WELLMIXED)
+					&& (inter.isSingle()
+							|| dpop.competition.isType(GeometryType.WELLMIXED));
 			Init.Type itype = dpop.getInit().type;
 			if (!isWM && !(itype.equals(Init.Type.MUTANT) ||
 					itype.equals(Init.Type.TEMPERATURE)))

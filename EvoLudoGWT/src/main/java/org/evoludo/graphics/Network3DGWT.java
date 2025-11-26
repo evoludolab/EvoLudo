@@ -35,7 +35,7 @@ import java.util.ArrayList;
 import org.evoludo.geom.Node3D;
 import org.evoludo.simulator.ColorMap3D;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.Network3D;
 
 import com.google.gwt.core.client.Duration;
@@ -74,7 +74,7 @@ public class Network3DGWT extends Network3D {
 	 * @param engine   the pacemaker for running the model
 	 * @param geometry the structure of the population
 	 */
-	public Network3DGWT(EvoLudo engine, Geometry geometry) {
+	public Network3DGWT(EvoLudo engine, AbstractGeometry geometry) {
 		super(engine, geometry);
 	}
 

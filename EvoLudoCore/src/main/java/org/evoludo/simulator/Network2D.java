@@ -34,6 +34,7 @@ import org.evoludo.geom.Node2D;
 import org.evoludo.geom.Path2D;
 import org.evoludo.geom.Point2D;
 import org.evoludo.geom.Vector2D;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.geom.GeometryType;
 
 /**
@@ -55,7 +56,7 @@ public abstract class Network2D extends Network<Node2D> {
 	 * @param engine   the pacemaker for running the model
 	 * @param geometry the structure of the population
 	 */
-	protected Network2D(EvoLudo engine, Geometry geometry) {
+	protected Network2D(EvoLudo engine, AbstractGeometry geometry) {
 		// network is shared between different graphs - cannot set listener here!
 		super(engine, geometry);
 		accuracy = 1e-4;

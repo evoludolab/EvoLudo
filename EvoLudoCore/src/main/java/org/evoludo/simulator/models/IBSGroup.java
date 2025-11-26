@@ -32,7 +32,8 @@ package org.evoludo.simulator.models;
 
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.AbstractGeometry;
+import org.evoludo.simulator.geom.HierarchicalGeometry;
 import org.evoludo.util.CLOption;
 
 /**
@@ -50,7 +51,7 @@ public class IBSGroup {
 	/**
 	 * The geometry associated with this group.
 	 */
-	Geometry geometry;
+	AbstractGeometry geometry;
 
 	/**
 	 * Storage for selected interaction or reference groups.
@@ -96,7 +97,7 @@ public class IBSGroup {
 	 * 
 	 * @param geometry the geometry associated with group
 	 */
-	public void setGeometry(Geometry geometry) {
+	public void setGeometry(AbstractGeometry geometry) {
 		this.geometry = geometry;
 	}
 
@@ -385,7 +386,8 @@ public class IBSGroup {
 		HierarchyUnit hu = new HierarchyUnit();
 		calcHierarchyUnit(hu);
 		group = mem;
-		switch (geometry.subgeometry) {
+		HierarchicalGeometry hgeom = (HierarchicalGeometry) geometry;
+		switch (hgeom.getSubType()) {
 			case WELLMIXED:
 				return pickHierarchyMean(hu, downstream);
 
@@ -397,7 +399,7 @@ public class IBSGroup {
 
 			default:
 				throw new UnsupportedOperationException(
-						"hierachy geometry '" + geometry.subgeometry.getTitle() + "' not supported");
+						"hierachy geometry '" + hgeom.getSubType().getTitle() + "' not supported");
 		}
 	}
 
@@ -405,12 +407,13 @@ public class IBSGroup {
 	 * Internal class to store hierarchy unit information.
 	 */
 	private class HierarchyUnit {
+		HierarchicalGeometry hgeom = (HierarchicalGeometry) geometry;
 		int level = 0;
-		int maxLevel = geometry.hierarchy.length - 1;
-		int unitSize = geometry.hierarchy[maxLevel];
+		int maxLevel = hgeom.getHierarchyLevels().length - 1;
+		int unitSize = hgeom.getHierarchyLevels()[maxLevel];
 		int levelSize = 1;
 		int exclSize = 1;
-		double prob = geometry.hierarchyweight;
+		double prob = hgeom.getHierarchyWeight();
 	}
 
 	/**
@@ -434,11 +437,14 @@ public class IBSGroup {
 			hu.levelSize = hu.unitSize;
 		}
 		double rand = rng.random01();
+		HierarchicalGeometry hgeom = (HierarchicalGeometry) geometry;
+		int[] hierarchy = hgeom.getHierarchyLevels();
+		double weight = hgeom.getHierarchyWeight();
 		while (rand < hu.prob && hu.level <= hu.maxLevel) {
 			hu.exclSize = hu.levelSize;
-			hu.levelSize *= geometry.hierarchy[hu.maxLevel - hu.level];
+			hu.levelSize *= hierarchy[hu.maxLevel - hu.level];
 			hu.level++;
-			hu.prob *= geometry.hierarchyweight;
+			hu.prob *= weight;
 		}
 	}
 
@@ -661,7 +667,7 @@ public class IBSGroup {
 	// * @param idx
 	// * @param geom
 	// */
-	// public void pickFitAt(int idx, Geometry geom) {
+	// public void pickFitAt(int idx, AbstractGeometry geom) {
 	// pickFitAt(idx, geom, useOut);
 	// }
 
@@ -671,7 +677,7 @@ public class IBSGroup {
 	// * @param geom
 	// * @param out
 	// */
-	// public void pickFitAt(int me, Geometry geom, boolean out) {
+	// public void pickFitAt(int me, AbstractGeometry geom, boolean out) {
 	// focal = me;
 	// // IMPORTANT: setting group=src saves copying of 'src' but requires that
 	// 'group' is NEVER manipulated
@@ -696,11 +702,11 @@ public class IBSGroup {
 	//
 	// case SAMPLING_COUNT:
 	// switch( geom.geometry ) {
-	// case Geometry.MEANFIELD:
+	// case AbstractGeometry.MEANFIELD:
 	// pickRandom(focal, geom.size);
 	// break;
 	//
-	// case Geometry.HIERARCHY:
+	// case AbstractGeometry.HIERARCHY:
 	// if( defaultsize!=1 ) {
 	// throw new Error("sampling of groups (≥2) in hierarchical structures not (yet)
 	// implemented!");
@@ -733,7 +739,7 @@ public class IBSGroup {
 	// int model;
 	// int levelStart, exclStart;
 	// switch( geom.subgeometry ) {
-	// case Geometry.MEANFIELD:
+	// case AbstractGeometry.MEANFIELD:
 	// // determine start of level
 	// levelStart = (focal/levelSize)*levelSize;
 	// // determine start of exclude level
@@ -744,7 +750,7 @@ public class IBSGroup {
 	// group[0] = model;
 	// return;
 	//
-	// case Geometry.SQUARE:
+	// case AbstractGeometry.SQUARE:
 	// if( level==0 ) {
 	// // pick random neighbour
 	// if( out )

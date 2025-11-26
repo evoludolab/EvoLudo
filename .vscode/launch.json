@@ -17,6 +17,7 @@
             "sourceMapPathOverrides": {
                 "http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/simulator/EvoLudo.java": "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/EvoLudo.java",
                 "http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/simulator/models/PDESupervisorGWT.java": "${workspaceFolder}/EvoLudoGWT/src/main/java/org/evoludo/simulator/models/PDESupervisorGWT.java",
+                "http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/simulator/geom/*": "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/geom/*",
                 "http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/simulator/models/*": "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/models/*",
                 "http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/simulator/modules/*": "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/modules/*",
                 "http://localhost:9876/sourcemaps/evoludoweb/org/evoludo/simulator/views/BasicTooltipProvider.java": "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/views/BasicTooltipProvider.java",
@@ -54,6 +55,7 @@
             "sourceMapPathOverrides": {
                 "http://10.0.0.10:9876/sourcemaps/evoludoweb/org/evoludo/simulator/EvoLudo.java": "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/EvoLudo.java",
                 "http://10.0.0.10:9876/sourcemaps/evoludoweb/org/evoludo/simulator/models/PDESupervisorGWT.java": "${workspaceFolder}/EvoLudoGWT/src/main/java/org/evoludo/simulator/models/PDESupervisorGWT.java",
+                "http://10.0.0.10:9876/sourcemaps/evoludoweb/org/evoludo/simulator/geom/*": "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/geom/*",
                 "http://10.0.0.10:9876/sourcemaps/evoludoweb/org/evoludo/simulator/models/*": "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/models/*",
                 "http://10.0.0.10:9876/sourcemaps/evoludoweb/org/evoludo/simulator/modules/*": "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/modules/*",
                 "http://10.0.0.10:9876/sourcemaps/evoludoweb/org/evoludo/simulator/views/BasicTooltipProvider.java": "${workspaceFolder}/EvoLudoCore/src/main/java/org/evoludo/simulator/views/BasicTooltipProvider.java",

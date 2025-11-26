@@ -59,11 +59,12 @@ import org.evoludo.geom.Node2D;
 import org.evoludo.geom.Path2D;
 import org.evoludo.geom.PathIterator;
 import org.evoludo.geom.Point2D;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.geom.GeometryType;
+import org.evoludo.simulator.geom.HierarchicalGeometry;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Module;
@@ -90,7 +91,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	static final int MAX_ANIMATE_LAYOUT_LINKS_DEFAULT = 5000;
 
 	protected boolean animate = true;
-	protected Geometry geometry;
+	protected AbstractGeometry geometry;
 	protected Color[] colors;
 
 	double scaleX = 1.0, scaleY = 1.0;
@@ -110,7 +111,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	protected static final String MENU_LINK_ALL = "100";
 	protected static final int MAX_LINK_COUNT = 10000;
 
-	public PopGraph2D(PopListener controller, Geometry geometry, Module<?> module) {
+	public PopGraph2D(PopListener controller, AbstractGeometry geometry, Module<?> module) {
 		super(controller, module);
 		this.geometry = geometry;
 
@@ -475,7 +476,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		GeometryType type = geometry.getType();
 		isHierarchy = geometry.isType(GeometryType.HIERARCHY);
 		if (isHierarchy)
-			type = geometry.subgeometry;
+			type = ((HierarchicalGeometry) geometry).getSubType();
 		if (!isHierarchy || geometry.getType() != GeometryType.SQUARE)
 			hPeriods = null;
 		// geometries that have special/fixed layout
@@ -492,13 +493,14 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 				// for hierarchical structures add gap between units
 				hierarchyGap = 0;
 				if (isHierarchy) {
-					hLevels = geometry.hierarchy.length - 1;
+					int[] hierarchy = ((HierarchicalGeometry) geometry).getHierarchyLevels();
+					hLevels = hierarchy.length - 1;
 					if (hPeriods == null || hPeriods.length != hLevels)
 						hPeriods = new int[hLevels];
-					hPeriods[0] = (int) Math.sqrt(geometry.hierarchy[hLevels]);
+					hPeriods[0] = (int) Math.sqrt(hierarchy[hLevels]);
 					hierarchyGap = side / hPeriods[0] - 1;
 					for (int i = 1; i < hLevels; i++) {
-						hPeriods[i] = hPeriods[i - 1] * (int) Math.sqrt(geometry.hierarchy[hLevels - i]);
+						hPeriods[i] = hPeriods[i - 1] * (int) Math.sqrt(hierarchy[hLevels - i]);
 						hierarchyGap += side / hPeriods[i] - 1;
 					}
 					hierarchyGap *= HIERARCHY_GAP;
@@ -740,7 +742,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		// most appropriate format depends on what is displayed
 		GeometryType type = geometry.getType();
 		if (isHierarchy)
-			type = geometry.subgeometry;
+			type = ((HierarchicalGeometry) geometry).getSubType();
 		switch (type) {
 			case VOID:
 				return SNAPSHOT_NONE;
@@ -790,7 +792,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 
 		GeometryType type = geometry.getType();
 		if (isHierarchy)
-			type = geometry.subgeometry;
+			type = ((HierarchicalGeometry) geometry).getSubType();
 		// this is a hack but it does the trick when hot swapping models...
 		if (width < 0)
 			width = frame.getWidth();
@@ -963,12 +965,12 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 				}
 				break;
 
-			// case Geometry.WHEEL:
-			// case Geometry.STAR:
-			// case Geometry.MEANFIELD:
-			// case Geometry.COMPLETE:
-			// case Geometry.PETALS:
-			// case Geometry.DYNAMIC:
+			// case WHEEL:
+			// case STAR:
+			// case WELLMIXED:
+			// case COMPLETE:
+			// case PETALS:
+			// case DYNAMIC:
 			default:
 				// draw nodes
 				at = g.getTransform();

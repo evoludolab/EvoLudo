@@ -48,7 +48,7 @@ import org.evoludo.graphics.HistoGraphListener;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudoLab;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.geom.GeometryType;
 
 public class MVDegree extends MVAbstract implements HistoGraphListener {
@@ -97,7 +97,7 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 
 	@Override
 	public void reset(boolean clear) {
-		Geometry geometry;
+		AbstractGeometry geometry;
 		switch (engine.getModel().getType()) {
 			case ODE:
 			case SDE:
@@ -108,7 +108,7 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 				break;
 			case IBS:
 			default:
-				geometry = module.getInteractionGeometry();
+				geometry = module.getIBSPopulation().getInteractionGeometry();
 				break;
 		}
 		isStatic = !geometry.isType(GeometryType.DYNAMIC);
@@ -321,8 +321,10 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 		boolean changed = false;
 		// System.out.println("MVDegree - getData: tag="+tag);
 		if (data.timestamp < 0.0 || (now - data.timestamp > 1e-10 && !isStatic)) {
-			Geometry geometry = module.getInteractionGeometry();
-			if (geometry == null)
+			AbstractGeometry geometry;
+			if (engine.getModel().getType().isIBS())
+				geometry = module.getIBSPopulation().getInteractionGeometry();
+			else
 				geometry = module.getGeometry();
 
 			switch (tag) {

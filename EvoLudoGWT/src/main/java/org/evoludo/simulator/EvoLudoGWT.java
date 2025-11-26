@@ -34,6 +34,7 @@ import org.evoludo.EvoLudoWeb;
 import org.evoludo.graphics.Network2DGWT;
 import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.math.ArrayMath;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.PDE;
@@ -298,12 +299,12 @@ public class EvoLudoGWT extends EvoLudo {
 	}
 
 	@Override
-	public Network2D createNetwork2D(Geometry geometry) {
+	public Network2D createNetwork2D(AbstractGeometry geometry) {
 		return new Network2DGWT(this, geometry);
 	}
 
 	@Override
-	public Network3D createNetwork3D(Geometry geometry) {
+	public Network3D createNetwork3D(AbstractGeometry geometry) {
 		return new Network3DGWT(this, geometry);
 	}
 
@@ -370,7 +371,7 @@ public class EvoLudoGWT extends EvoLudo {
 			menu.add(symDiffMenu);
 			PDE pde = (PDE) activeModel;
 			symDiffMenu.setChecked(pde.isSymmetric());
-			Geometry space = pde.getGeometry();
+			AbstractGeometry space = pde.getGeometry();
 			symDiffMenu.setEnabled(space.isRegular() || space.isLattice());
 		}
 		// process fullscreen context menu

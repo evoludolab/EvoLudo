@@ -39,9 +39,9 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
-import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.IBS;
@@ -191,10 +191,10 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		ModelType mt = model.getType();
 		if (mt.isIBS()) {
 			Module<?> module = graph.getModule();
-			Geometry igeom = module.getInteractionGeometry();
-			Geometry cgeom = module.getCompetitionGeometry();
-			Geometry geo = inter ? igeom : cgeom;
-			if (!igeom.isSingle() && Geometry.displaySingle(igeom, cgeom))
+			AbstractGeometry igeom = module.getIBSPopulation().getInteractionGeometry();
+			AbstractGeometry cgeom = module.getIBSPopulation().getCompetitionGeometry();
+			AbstractGeometry geo = inter ? igeom : cgeom;
+			if (!igeom.isSingle() && AbstractGeometry.displaySingle(igeom, cgeom))
 				// different geometries but only one graph - pick competition.
 				// note: this is not a proper solution but fits the requirements of
 				// the competition with second nearest neighbours
@@ -286,7 +286,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	public String getTooltipAt(AbstractGraph<?> agraph, int node) {
 		@SuppressWarnings("unchecked")
 		G graph = (G) agraph;
-		Geometry geometry = graph.getGeometry();
+		AbstractGeometry geometry = graph.getGeometry();
 		int nNodes = geometry.getSize();
 		Module<?> module = graph.getModule();
 		StringBuilder tip = new StringBuilder(TABLE_STYLE);
@@ -336,7 +336,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		appendFitnessTip(node, module, tip);
 
 		// in multi-species modules this points to the other species
-		Geometry intergeom = module.getInteractionGeometry();
+		AbstractGeometry intergeom = module.getIBSPopulation().getInteractionGeometry();
 		appendInterNeighborsAt(node, intergeom, tip);
 		if (intergeom.isInterspecies()) {
 			// in inter-species interactions, show traits of other species
@@ -347,7 +347,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 
 		// competition neighbours and opponent competition traits
 		if (!intergeom.isSingle()) {
-			Geometry compgeom = module.getCompetitionGeometry();
+			AbstractGeometry compgeom = module.getIBSPopulation().getCompetitionGeometry();
 			appendCompNeighborsAt(node, compgeom, tip);
 			G oppCompGraph = getOppCompGraph(graph);
 			if (oppCompGraph != null)
@@ -364,7 +364,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 * @param tip    the StringBuilder to append to
 	 */
 	private void appendLinearTip(int node, int nNodes, StringBuilder tip) {
-		// this can only happen for Geometry.LINEAR
+		// this can only happen for AbstractGeometry.LINEAR
 		int idx = node / nNodes;
 		node %= nNodes;
 		double t = idx * model.getTimeStep();
@@ -560,7 +560,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 * @param graph    the graph
 	 * @param tip      the StringBuilder to append to
 	 */
-	private String tooltipForPDE(int node, int nNodes, Geometry geometry, Module<?> module, G graph,
+	private String tooltipForPDE(int node, int nNodes, AbstractGeometry geometry, Module<?> module, G graph,
 			StringBuilder tip) {
 		tip.append(TABLE_ROW_START).append("Node").append(TABLE_CELL_NEXT);
 
@@ -576,8 +576,8 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 		if (geometry.isUndirected())
 			appendNeighbors("Connections", geometry.out[node], geometry.kout[node], tip);
 		else {
-			// useful for debugging geometry - Geometry.checkConnections should be able to
-			// catch such problems
+			// useful for debugging geometry - AbstractGeometry.checkConnections should be
+			// able to catch such problems
 			appendNeighbors("Links for", geometry.out[node], geometry.kout[node], tip);
 			appendNeighbors("Link here", geometry.in[node], geometry.kin[node], tip);
 		}
@@ -594,7 +594,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	private G getOppInterGraph(G graph) {
 		Module<?> module = graph.getModule();
 		Module<?> opponent = module.getOpponent();
-		Geometry oppInter = opponent.getInteractionGeometry();
+		AbstractGeometry oppInter = opponent.getIBSPopulation().getInteractionGeometry();
 		for (G oppGraph : graphs) {
 			if (oppGraph == graph)
 				continue;
@@ -602,7 +602,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 			// XXX this should work but somehow the pointers are different even though the
 			// objects appear to be the same...
 			// if (oppModule == opponent && oppGraph.getGeometry() == oppInter)
-			if (oppModule == opponent && oppGraph.getGeometry().name.equals(oppInter.name))
+			if (oppModule == opponent && oppGraph.getGeometry().getName().equals(oppInter.getName()))
 				return oppGraph;
 		}
 		return null;
@@ -618,7 +618,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	private G getOppCompGraph(G graph) {
 		Module<?> module = graph.getModule();
 		Module<?> opponent = module.getOpponent();
-		Geometry oppComp = opponent.getCompetitionGeometry();
+		AbstractGeometry oppComp = opponent.getIBSPopulation().getCompetitionGeometry();
 		for (G oppGraph : graphs) {
 			if (oppGraph == graph)
 				continue;
@@ -626,7 +626,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 			// this should work but somehow the pointers are different even though the
 			// objects appear to be the same...
 			// if (oppModule == opponent && oppGraph.getGeometry() == oppComp)
-			if (oppModule == opponent && oppGraph.getGeometry().name.equals(oppComp.name))
+			if (oppModule == opponent && oppGraph.getGeometry().getName().equals(oppComp.getName()))
 				return oppGraph;
 		}
 		return null;
@@ -641,7 +641,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 * @param tip   the StringBuilder to append to
 	 * @return the updated StringBuilder
 	 */
-	private StringBuilder appendOppTraitsAt(int node, Geometry geom, G graph, StringBuilder tip) {
+	private StringBuilder appendOppTraitsAt(int node, AbstractGeometry geom, G graph, StringBuilder tip) {
 		tip.append(TABLE_ROW_START)
 				.append(graph.getGeometry().getName())
 				.append(TABLE_CELL_NEXT);
@@ -673,7 +673,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 * @param tip  the StringBuilder to append to
 	 * @return the updated StringBuilder
 	 */
-	private static StringBuilder appendInterNeighborsAt(int node, Geometry geom, StringBuilder tip) {
+	private static StringBuilder appendInterNeighborsAt(int node, AbstractGeometry geom, StringBuilder tip) {
 		if (geom.isUndirected()) {
 			// well-mixed is by definition undirected
 			if (geom.getType().equals(GeometryType.WELLMIXED)) {
@@ -685,8 +685,8 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 			} else
 				appendNeighbors("Neighbours", geom.out[node], geom.kout[node], tip);
 		} else {
-			// useful for debugging geometry - Geometry.checkConnections should be able to
-			// catch such problems
+			// useful for debugging geometry - AbstractGeometry.checkConnections should be
+			// able to catch such problems
 			appendNeighbors("Links to", geom.out[node], geom.kout[node], tip);
 			appendNeighbors("Link here", geom.in[node], geom.kin[node], tip);
 		}
@@ -701,7 +701,7 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 * @param tip  the StringBuilder to append to
 	 * @return the updated StringBuilder
 	 */
-	private static StringBuilder appendCompNeighborsAt(int node, Geometry geom, StringBuilder tip) {
+	private static StringBuilder appendCompNeighborsAt(int node, AbstractGeometry geom, StringBuilder tip) {
 		if (geom.isUndirected()) {
 			// well-mixed is by definition undirected
 			if (geom.getType().equals(GeometryType.WELLMIXED)) {
@@ -713,8 +713,8 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 			} else
 				appendNeighbors("Competitors", geom.out[node], geom.kout[node], tip);
 		} else {
-			// useful for debugging geometry - Geometry.checkConnections should be able to
-			// catch such problems
+			// useful for debugging geometry - AbstractGeometry.checkConnections should be
+			// able to catch such problems
 			appendNeighbors("Competes for", geom.out[node], geom.kout[node], tip);
 			appendNeighbors("Compete here", geom.in[node], geom.kin[node], tip);
 		}

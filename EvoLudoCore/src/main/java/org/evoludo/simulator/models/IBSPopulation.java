@@ -43,16 +43,17 @@ import org.evoludo.math.Functions;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.AbstractGeometry;
+import org.evoludo.simulator.geom.HierarchicalGeometry;
 import org.evoludo.simulator.models.IBS.MigrationType;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSGroup.SamplingType;
+import org.evoludo.simulator.modules.Features;
+import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.modules.Mutation;
 import org.evoludo.simulator.modules.PlayerUpdate;
-import org.evoludo.simulator.modules.Features;
-import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -414,7 +415,16 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	/**
 	 * The geometry of the interaction graph.
 	 */
-	protected Geometry interaction;
+	protected AbstractGeometry interaction;
+
+	/**
+	 * Gets the interaction geometry.
+	 * 
+	 * @return the interaction geometry
+	 */
+	public AbstractGeometry getInteractionGeometry() {
+		return interaction;
+	}
 
 	/**
 	 * Reference to the interaction group.
@@ -433,7 +443,16 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	/**
 	 * The geometry of the competition graph.
 	 */
-	protected Geometry competition;
+	protected AbstractGeometry competition;
+
+	/**
+	 * Gets the competition geometry.
+	 * 
+	 * @return the competition geometry
+	 */
+	public AbstractGeometry getCompetitionGeometry() {
+		return competition;
+	}
 
 	/**
 	 * Reference to the competition/reference/model group.
@@ -3417,7 +3436,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	boolean checkGeometry() {
 		boolean doReset = false;
 		// --geometry provides sane defaults
-		Geometry structure = module.getGeometry();
+		AbstractGeometry structure = module.getGeometry();
 		IBS ibs = (IBS) engine.getModel();
 		if (!ibs.cloGeometryInteraction.isSet()) {
 			doReset |= (interaction != structure);
@@ -3508,19 +3527,19 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	void setGeometryNames() {
 		String name = module.getName();
-		if (interaction.isSingle() || Geometry.displaySingle(interaction, competition)) {
-			if (name.isEmpty())
-				interaction.name = competition.name = "Structure";
-			else
-				interaction.name = competition.name = name + ": Structure";
+		if (interaction.isSingle() || AbstractGeometry.displaySingle(interaction, competition)) {
+			if (!name.isEmpty())
+				name = name + ": Structure";
+			interaction.setName(name);
+			competition.setName(name);
 			return;
 		}
 		if (name.isEmpty()) {
-			interaction.name = "Interaction";
-			competition.name = "Competition";
+			interaction.setName(name);
+			competition.setName(name);
 		} else {
-			interaction.name = name + ": Interaction";
-			competition.name = name + ": Competition";
+			interaction.setName(name + ": Interaction");
+			competition.setName(name + ": Competition");
 		}
 	}
 
@@ -3560,7 +3579,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 			if (logger.isLoggable(Level.WARNING))
 				logger.warning(
-						"square " + interaction.name
+						"square " + interaction.getName()
 								+ " geometry has incompatible interaction pattern and neighborhood size"
 								+ " - using random sampling of interaction partners!");
 		}
@@ -3571,7 +3590,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			interGroup.setSampling(IBSGroup.SamplingType.RANDOM);
 			if (logger.isLoggable(Level.WARNING))
 				logger.warning(
-						"cubic " + interaction.name
+						"cubic " + interaction.getName()
 								+ " geometry has incompatible interaction pattern and neighborhood size"
 								+ " - using random sampling of interaction partners!");
 		}
@@ -3581,31 +3600,31 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// IMPORTANT: the parameters of modules with higher ID may not yet been checked!
 		if (module.getOpponent().getID() < module.getID()
 				&& module.getNPopulation() != opponent.getModule().getNPopulation()
-				&& opponent.getInteractionGeometry() != null // opponent geometry may not yet be initialized
-																// check will be repeated for opponent
-				&& (!getInteractionGeometry().isType(GeometryType.WELLMIXED)
-						|| !opponent.getInteractionGeometry().isType(GeometryType.WELLMIXED))) {
+				&& opponent.interaction != null // opponent geometry may not yet be initialized
+												// check will be repeated for opponent
+				&& (!interaction.isType(GeometryType.WELLMIXED)
+						|| !opponent.interaction.isType(GeometryType.WELLMIXED))) {
 			// at least for now, both populations need to be of the same size - except for
 			// well-mixed populations
 			logger.warning(
 					"inter-species interactions with populations of different size limited to well-mixed structures"
 							+ " - well-mixed structure forced!");
-			getInteractionGeometry().setType(GeometryType.WELLMIXED);
-			opponent.getInteractionGeometry().setType(GeometryType.WELLMIXED);
+			interaction = AbstractGeometry.create(GeometryType.WELLMIXED, engine);
+			opponent.interaction = AbstractGeometry.create(GeometryType.WELLMIXED, engine);
 			doReset = true;
 		}
 		// combinations of unstructured and structured populations in inter-species
 		// interactions require more attention. exclude for now.
-		if (getInteractionGeometry().isInterspecies() && opponent.getInteractionGeometry() != null &&
-				(getInteractionGeometry().getType() != opponent.getInteractionGeometry().getType()) &&
-				(getInteractionGeometry().isType(GeometryType.WELLMIXED) ||
-						opponent.getInteractionGeometry().isType(GeometryType.WELLMIXED))) {
+		if (interaction.isInterspecies() && opponent.interaction != null &&
+				(interaction.getType() != opponent.interaction.getType()) &&
+				(interaction.isType(GeometryType.WELLMIXED) ||
+						opponent.interaction.isType(GeometryType.WELLMIXED))) {
 			// opponent not yet ready; check will be repeated for opponent
 			logger.warning(
 					"interspecies interactions combining well-mixed and structured populations not (yet) tested"
 							+ " - well-mixed structure forced!");
-			getInteractionGeometry().setType(GeometryType.WELLMIXED);
-			opponent.getInteractionGeometry().setType(GeometryType.WELLMIXED);
+			interaction = AbstractGeometry.create(GeometryType.WELLMIXED, engine);
+			opponent.interaction = AbstractGeometry.create(GeometryType.WELLMIXED, engine);
 			doReset = true;
 		}
 		return doReset;
@@ -3643,8 +3662,10 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// number of interactions can also be determined in structured populations with
 		// well-mixed demes
 		if (adjustScores && interaction.isType(GeometryType.HIERARCHY) && //
-				interaction.subgeometry.equals(GeometryType.WELLMIXED)) {
-			nMixedInter = interaction.hierarchy[interaction.hierarchy.length - 1]
+				((HierarchicalGeometry) interaction).isSubtype(GeometryType.WELLMIXED)) {
+			HierarchicalGeometry hgeom = (HierarchicalGeometry) interaction;
+			int[] hierarchy = hgeom.getHierarchyLevels();
+			nMixedInter = hierarchy[hierarchy.length - 1]
 					- (interaction.isInterspecies() ? 0 : 1);
 		}
 		checkCompSampling();
@@ -3748,7 +3769,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		// Moran type and ecological updates ignore playerUpdate
 		if (populationUpdate.isMoran()
 				|| populationUpdate.getType().equals(PopulationUpdate.Type.ECOLOGY)
-				|| competition.getType() != GeometryType.WELLMIXED)
+				|| !competition.isType(GeometryType.WELLMIXED))
 			return;
 
 		// best-response in well-mixed populations should skip sampling of references
@@ -3804,7 +3825,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * The array containing the probabilities for rewiring links of the interaction
 	 * and competition graphs.
 	 * 
-	 * @see Geometry#rewire()
+	 * @see AbstractGeometry#rewire()
 	 */
 	protected double[] pRewire;
 
@@ -3834,7 +3855,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * The array containing the probabilities for adding links to the interaction
 	 * and competition graphs.
 	 * 
-	 * @see Geometry#rewire()
+	 * @see AbstractGeometry#rewire()
 	 */
 	protected double[] pAddwire;
 
@@ -3873,7 +3894,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * <dt>Group.SAMPLING_ALL</dt>
 	 * <dd>individuals need to be interacting with all their neighbours (not just a
 	 * randomly selected subset).</dd>
-	 * <dt>Geometry.MEANFIELD</dt>
+	 * <dt>AbstractGeometry.MEANFIELD</dt>
 	 * <dd>interactions with everyone are not feasible (impossible to model
 	 * efficiently), in general, for unstructured populations (subclasses can do
 	 * better, e.g. for discrete trait it is possible, see
@@ -3945,7 +3966,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			competition.rewire();
 			competition.evaluate();
 		}
-		module.setGeometries(interaction, competition);
 		// determine maximum reasonable group size
 		int maxGroup = Math.max(Math.max(interaction.maxIn, interaction.maxOut),
 				Math.max(competition.maxIn, competition.maxOut));
@@ -4714,46 +4734,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	}
 
 	/**
-	 * Gets the structure of interactions.
-	 * 
-	 * @return the interaction structure
-	 */
-	public Geometry getInteractionGeometry() {
-		return interaction;
-	}
-
-	/**
-	 * Creates a new instance of the interaction structure, if needed.
-	 * 
-	 * @return the interaction structure
-	 */
-	public Geometry createInteractionGeometry() {
-		if (interaction == null || interaction == module.getGeometry())
-			interaction = new Geometry(engine, module, opponent.getModule());
-		return interaction;
-	}
-
-	/**
-	 * Gets the structure of competition or imitations.
-	 * 
-	 * @return the competition structure
-	 */
-	public Geometry getCompetitionGeometry() {
-		return competition;
-	}
-
-	/**
-	 * Creates a new instance of the competition or imitation structure, if needed.
-	 * 
-	 * @return the competition structure
-	 */
-	public Geometry createCompetitionGeometry() {
-		if (competition == null || competition == module.getGeometry())
-			competition = new Geometry(engine, module);
-		return competition;
-	}
-
-	/**
 	 * Sets the type for managing scores of individuals.
 	 * 
 	 * @param type the type for managing scores
@@ -4793,43 +4773,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	public boolean getPlayerScoreAveraged() {
 		return playerScoreAveraged;
 	}
-
-	// /**
-	// * Provide opportunity/hook for subclasses to introduce new geometries.
-	// *
-	// * @param geom the current empty/uninitialized geometry
-	// * @param arg the commandline argument
-	// * @return {@code true} if parsing was successful
-	// *
-	// * @see Geometry#parse(String)
-	// */
-	// public boolean parseGeometry(Geometry geom, String arg) {
-	// return false;
-	// }
-
-	// /**
-	// * Provide opportunity/hook for subclasses to introduce new geometries.
-	// *
-	// * @param geom the geometry to check
-	// * @return {@code true} if checks were successful
-	// *
-	// * @see Geometry#check()
-	// */
-	// public boolean checkGeometry(Geometry geom) {
-	// return false;
-	// }
-
-	// /**
-	// * Provide opportunity/hook for subclasses to introduce new geometries.
-	// *
-	// * @param geom the geometry to initialize
-	// * @return {@code true} if generation of structure was successful
-	// *
-	// * @see Geometry#init()
-	// */
-	// public boolean generateGeometry(Geometry geom) {
-	// return false;
-	// }
 
 	/**
 	 * Called from GUI if node/individual with index {@code idx} received a mouse
@@ -4964,14 +4907,14 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	public void encodeGeometry(StringBuilder plist) {
 		plist.append(
-				"<key>" + interaction.name + "</key>\n" +
+				"<key>" + interaction.getName() + "</key>\n" +
 						"<dict>\n");
 		plist.append(interaction.encodeGeometry());
 		plist.append("</dict>\n");
 		if (interaction.isSingle())
 			return;
 		plist.append(
-				"<key>" + competition.name + "</key>\n" +
+				"<key>" + competition.getName() + "</key>\n" +
 						"<dict>\n");
 		plist.append(competition.encodeGeometry());
 		plist.append("</dict>\n");
@@ -4987,7 +4930,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @see Model#restoreState(Plist)
 	 */
 	public boolean restoreGeometry(Plist plist) {
-		Plist igeo = (Plist) plist.get(interaction.name);
+		Plist igeo = (Plist) plist.get(interaction.getName());
 		if (igeo == null)
 			return false;
 		interaction.decodeGeometry(igeo);
@@ -4995,7 +4938,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			competition = interaction.deriveCompetitionGeometry();
 			return true;
 		}
-		Plist rgeo = (Plist) plist.get(competition.name);
+		Plist rgeo = (Plist) plist.get(competition.getName());
 		if (rgeo == null)
 			return false;
 		competition.decodeGeometry(rgeo);

@@ -39,7 +39,7 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Distributions;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoJRE;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.models.IBSC.Init;
 import org.evoludo.simulator.models.IBSCPopulation;
 import org.evoludo.simulator.modules.CSD;
@@ -794,7 +794,7 @@ public class scanCSD extends CSD {
 	 * @return the file for the snapshot
 	 */
 	protected File openSnapshot(String ext) {
-		Geometry geom = getGeometry();
+		AbstractGeometry geom = getGeometry();
 		// use name of out file as prefix for snapshot - not easily accessible,
 		// postponed
 		String pre = "snap-g" + geom.getType().getKey() + (int) (geom.getConnectivity()) + "-t"

@@ -41,7 +41,7 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.Data;
@@ -110,7 +110,8 @@ import com.google.gwt.user.client.Command;
  * <li>{@link CModel} — queried for 1D/2D trait histogram data.</li>
  * <li>{@link Continuous} — module type that exposes trait names and min/max
  * ranges.</li>
- * <li>{@link Geometry} — describes graph layout (LINEAR or SQUARE) and required
+ * <li>{@link AbstractGeometry} — describes graph layout (LINEAR or SQUARE) and
+ * required
  * storage size.</li>
  * </ul>
  *
@@ -118,11 +119,6 @@ import com.google.gwt.user.client.Command;
  * Histogram data are copied into the shared bins buffer and immediately applied
  * to the graph's data arrays. This avoids repeated allocations but means that
  * graphs cannot retain history independently.
- *
- * @see PopGraph2D
- * @see CModel#get2DTraitHistogramData(int, double[], int, int)
- * @see Continuous
- * @see Geometry
  * 
  * @author Christoph Hauert
  */
@@ -303,16 +299,16 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 	 * @param nTraits the number of traits
 	 * @return the geometry
 	 */
-	private Geometry createGeometry(int nTraits) {
-		Geometry geometry = new Geometry(engine);
+	private AbstractGeometry createGeometry(int nTraits) {
+		AbstractGeometry geometry;
 		// adding a geometry name will display a label on the graph - not sure whether
 		// we really want this...
 		// geometry.name = module.getTraitName(n);
 		if (nTraits == 1) {
-			geometry.setType(GeometryType.LINEAR);
+			geometry = AbstractGeometry.create(GeometryType.LINEAR, engine);
 			geometry.setSize(MAX_BINS);
 		} else {
-			geometry.setType(GeometryType.SQUARE);
+			geometry = AbstractGeometry.create(GeometryType.SQUARE, engine);
 			geometry.setConnectivity(4);
 			geometry.setSize(MAX_BINS * MAX_BINS);
 		}

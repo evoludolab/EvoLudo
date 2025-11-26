@@ -36,7 +36,7 @@ import java.util.logging.Level;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
@@ -226,10 +226,10 @@ public abstract class IBS extends Model {
 			isSynchronous |= pop.getPopulationUpdate().isSynchronous();
 			if (anyUnique)
 				continue;
-			Geometry geom = pop.getInteractionGeometry();
+			AbstractGeometry geom = pop.interaction;
 			anyUnique |= geom.isUnique();
 			if (!geom.isSingle()) {
-				geom = pop.getCompetitionGeometry();
+				geom = pop.competition;
 				anyUnique |= geom.isUnique();
 			}
 		}
@@ -1275,8 +1275,8 @@ public abstract class IBS extends Model {
 						for (Module<?> mod : species) {
 							// creates new interaction geometry
 							IBSPopulation<?, ?> ibs = mod.getIBSPopulation();
-							ibs.interaction = new Geometry(engine, mod, mod.getOpponent());
-							doReset |= ibs.interaction.parse(geomargs[n++ % geomargs.length]);
+							ibs.interaction = GeometryType.create(engine, geomargs[n % geomargs.length]);
+							doReset |= ibs.interaction.parse();
 						}
 						engine.requiresReset(doReset);
 					}
@@ -1316,10 +1316,10 @@ public abstract class IBS extends Model {
 						boolean doReset = false;
 						int n = 0;
 						for (Module<?> mod : species) {
-							// creates new interaction geometry
+							// creates new competition geometry
 							IBSPopulation<?, ?> ibs = mod.getIBSPopulation();
-							ibs.competition = new Geometry(engine, mod, mod.getOpponent());
-							doReset |= ibs.competition.parse(geomargs[n++ % geomargs.length]);
+							ibs.competition = GeometryType.create(engine, geomargs[n % geomargs.length]);
+							doReset |= ibs.competition.parse();
 						}
 						engine.requiresReset(doReset);
 					}

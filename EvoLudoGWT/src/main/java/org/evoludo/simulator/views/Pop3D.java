@@ -39,7 +39,7 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMap3D;
 import org.evoludo.simulator.EvoLudo.ColorModelType;
 import org.evoludo.simulator.EvoLudoGWT;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
@@ -107,8 +107,8 @@ import thothbot.parallax.core.shared.materials.MeshLambertMaterial;
  * <li>Pop3D is constructed with an {@link EvoLudoGWT} engine and a {@link Data}
  * type describing the quantity to visualize.</li>
  * <li>The class delegates per-module visualization to {@code PopGraph3D} and
- * relies on {@link Module}, {@link Geometry} and {@link ColorMap} helpers to
- * retrieve state and styling information.</li>
+ * relies on {@link Module}, {@link AbstractGeometry} and {@link ColorMap}
+ * helpers to retrieve state and styling information.</li>
  * <li>Callers should drive reset/update lifecycles from the UI thread that owns
  * the GWT/WebGL canvas; Pop3D assumes single-threaded interactions.</li>
  * </ul>
@@ -140,7 +140,7 @@ import thothbot.parallax.core.shared.materials.MeshLambertMaterial;
  * 
  * @see PopGraph3D
  * @see GenericPop
- * @see Geometry
+ * @see AbstractGeometry
  * @see ColorMap
  * @see EvoLudoGWT
  * @see Network3DGWT
@@ -186,7 +186,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 		int nGraphs = 0;
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		for (Module<?> mod : species)
-			nGraphs += mod.getInteractionGeometry().isSingle() ? 1 : 2;
+			nGraphs += mod.getIBSPopulation().getInteractionGeometry().isSingle() ? 1 : 2;
 
 		if (graphs.size() == nGraphs)
 			return false;
@@ -196,7 +196,7 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 			PopGraph3D graph = new PopGraph3D(this, mod);
 			wrapper.add(graph);
 			graphs.add(graph);
-			if (!mod.getInteractionGeometry().isSingle()) {
+			if (!mod.getIBSPopulation().getInteractionGeometry().isSingle()) {
 				graph = new PopGraph3D(this, mod);
 				wrapper.add(graph);
 				graphs.add(graph);

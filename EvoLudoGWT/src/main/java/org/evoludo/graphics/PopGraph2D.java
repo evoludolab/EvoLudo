@@ -37,10 +37,11 @@ import org.evoludo.geom.Node2D;
 import org.evoludo.geom.Path2D;
 import org.evoludo.geom.Point2D;
 import org.evoludo.graphics.AbstractGraph.Shifting;
-import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.geom.GeometryType;
+import org.evoludo.simulator.geom.HierarchicalGeometry;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.util.RingBuffer;
@@ -215,7 +216,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 	public static final int MAX_LINEAR_SIZE = 500;
 
 	@Override
-	public void setGeometry(Geometry geometry) {
+	public void setGeometry(AbstractGeometry geometry) {
 		super.setGeometry(geometry);
 		int size = geometry.getSize();
 		if (geometry.isType(GeometryType.LINEAR) && size <= MAX_LINEAR_SIZE) {
@@ -283,7 +284,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		invalidated = false;
 		GeometryType type = geometry.getType();
 		if (isHierarchy)
-			type = geometry.subgeometry;
+			type = ((HierarchicalGeometry) geometry).getSubType();
 
 		switch (type) {
 			case TRIANGULAR:
@@ -604,7 +605,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		GeometryType type = geometry.getType();
 		isHierarchy = (type == GeometryType.HIERARCHY);
 		if (isHierarchy)
-			type = geometry.subgeometry;
+			type = ((HierarchicalGeometry) geometry).getSubType();
 		if (!isHierarchy || !type.isSquareLattice())
 			hPeriods = null;
 
@@ -729,13 +730,15 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 		int gap = 0;
 		if (isHierarchy) {
-			hLevels = geometry.hierarchy.length - 1;
+			// compute hierarchy levels and periods
+			int[] hierarchy = ((HierarchicalGeometry) geometry).getHierarchyLevels();
+			hLevels = hierarchy.length - 1;
 			if (hPeriods == null || hPeriods.length != hLevels)
 				hPeriods = new int[hLevels];
-			hPeriods[0] = (int) Math.sqrt(geometry.hierarchy[hLevels]);
+			hPeriods[0] = (int) Math.sqrt(hierarchy[hLevels]);
 			gap = side / hPeriods[0] - 1;
 			for (int i = 1; i < hLevels; i++) {
-				hPeriods[i] = hPeriods[i - 1] * (int) Math.sqrt(geometry.hierarchy[hLevels - i]);
+				hPeriods[i] = hPeriods[i - 1] * (int) Math.sqrt(hierarchy[hLevels - i]);
 				gap += side / hPeriods[i] - 1;
 			}
 			gap *= HIERARCHY_GAP;
@@ -839,7 +842,7 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 
 		GeometryType type = geometry.getType();
 		if (isHierarchy)
-			type = geometry.subgeometry;
+			type = ((HierarchicalGeometry) geometry).getSubType();
 
 		switch (type) {
 			// 3D views must deal with this

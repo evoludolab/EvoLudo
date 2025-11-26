@@ -39,6 +39,7 @@ public class RandomRegularGeometry extends AbstractNetwork {
 	@Override
 	public void init() {
 		isRegular = true;
+		alloc();
 		int[] degrees = new int[size];
 		Arrays.fill(degrees, (int) connectivity);
 		int trials = 0;

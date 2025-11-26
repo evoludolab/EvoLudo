@@ -43,6 +43,7 @@ import java.util.logging.Logger;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.MersenneTwister;
 import org.evoludo.math.RNGDistribution;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.IBSPopulation;
@@ -243,7 +244,7 @@ public abstract class EvoLudo
 	 * @param geometry the geometry backing the 2D network
 	 * @return new instance of a 2D network
 	 */
-	public abstract Network2D createNetwork2D(Geometry geometry);
+	public abstract Network2D createNetwork2D(AbstractGeometry geometry);
 
 	/**
 	 * Generate 3D network. This is the factory method to provide different
@@ -258,7 +259,7 @@ public abstract class EvoLudo
 	 * @param geometry the geometry backing the 3D network
 	 * @return new instance of a 3D network
 	 */
-	public abstract Network3D createNetwork3D(Geometry geometry);
+	public abstract Network3D createNetwork3D(AbstractGeometry geometry);
 
 	/**
 	 * The active model

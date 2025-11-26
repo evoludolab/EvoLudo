@@ -911,7 +911,7 @@ public class CDL extends Discrete implements Payoffs,
 		@Override
 		protected void initKaleidoscope() {
 			// kaleidoscopes only available for lattice geometries
-			if (!getInteractionGeometry().isLattice()) {
+			if (!interaction.isLattice()) {
 				logger.warning("kaleidoscopes require lattices - using default initialization.");
 				initUniform();
 				return;
@@ -921,7 +921,7 @@ public class CDL extends Discrete implements Payoffs,
 			int c;
 			int mid;
 			int size;
-			switch (getInteractionGeometry().getType()) {
+			switch (interaction.getType()) {
 				case CUBE:
 					initCubeKaleidoscope();
 					break;

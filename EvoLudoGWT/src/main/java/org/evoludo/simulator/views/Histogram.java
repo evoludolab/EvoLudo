@@ -44,12 +44,14 @@ import org.evoludo.math.Functions;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.FixationData;
+import org.evoludo.simulator.models.IBS;
+import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Continuous;
@@ -186,23 +188,13 @@ import com.google.gwt.core.client.Duration;
  * {@code STATISTICS_STATIONARY} to
  * reset accumulated stationary counts.</li>
  * </ul>
- *
- * <p>
- * Threading and performance:
- * </p>
- * <ul>
- * <li>All UI interactions (graph creation, painting) are expected to happen on
- * the UI thread provided by the hosting environment (GWT). Methods that
- * query the model should be invoked in a thread-safe manner as required by
- * the simulation engine.</li>
- * </ul>
  * 
  * @author Christoph Hauert
  *
  * @see HistoGraph
  * @see EvoLudoGWT
  * @see Module
- * @see Geometry
+ * @see AbstractGeometry
  * @see GraphStyle
  */
 public class Histogram extends AbstractView<HistoGraph> {
@@ -320,7 +312,13 @@ public class Histogram extends AbstractView<HistoGraph> {
 					}
 					break;
 				case DEGREE:
-					nGraphs += getDegreeGraphs(mod.getInteractionGeometry(), mod.getCompetitionGeometry());
+					if (model.getType().isIBS()) {
+						IBSPopulation<?, ?> ibspop = mod.getIBSPopulation();
+						nGraphs += getDegreeGraphs(ibspop.getInteractionGeometry(), ibspop.getCompetitionGeometry());
+					} else {
+						// for non-IBS models just one degree graph
+						nGraphs++;
+					}
 					break;
 				case STATISTICS_STATIONARY:
 					nGraphs += nTraits;
@@ -436,7 +434,11 @@ public class Histogram extends AbstractView<HistoGraph> {
 				nXLabels++;
 				continue;
 			}
-			int nHisto = getDegreeGraphs(module.getInteractionGeometry(), module.getCompetitionGeometry());
+			int nHisto = 1;
+			if (mt.isIBS()) {
+				IBSPopulation<?, ?> ibspop = module.getIBSPopulation();
+				nHisto = getDegreeGraphs(ibspop.getInteractionGeometry(), ibspop.getCompetitionGeometry());
+			}
 			for (int n = 0; n < nHisto; n++) {
 				HistoGraph graph = new HistoGraph(this, module, n);
 				wrapper.add(graph);
@@ -681,13 +683,14 @@ public class Histogram extends AbstractView<HistoGraph> {
 		GraphStyle style = graph.getStyle();
 		style.xLabel = "degree";
 
-		Geometry geom;
-		Geometry comp;
+		AbstractGeometry geom;
+		AbstractGeometry comp;
 		if (model.getType().isPDE()) {
 			geom = comp = module.getGeometry();
 		} else {
-			geom = module.getInteractionGeometry();
-			comp = module.getCompetitionGeometry();
+			IBSPopulation<?, ?> ibspop = module.getIBSPopulation();
+			geom = ibspop.getInteractionGeometry();
+			comp = ibspop.getCompetitionGeometry();
 		}
 		String[] labels = getDegreeLabels(nGraphs, geom.isUndirected());
 		style.label = labels[n];
@@ -936,13 +939,14 @@ public class Histogram extends AbstractView<HistoGraph> {
 				graph.setData(null);
 				continue;
 			}
-			Geometry inter;
-			Geometry comp;
+			AbstractGeometry inter;
+			AbstractGeometry comp;
 			if (isPDE) {
 				inter = comp = module.getGeometry();
 			} else {
-				inter = module.getInteractionGeometry();
-				comp = module.getCompetitionGeometry();
+				IBSPopulation<?, ?> ibspop = module.getIBSPopulation();
+				inter = ibspop.getInteractionGeometry();
+				comp = ibspop.getCompetitionGeometry();
 			}
 			int rows = getDegreeGraphs(inter, comp);
 			int cols = getDegreeBins(inter, comp);
@@ -1181,8 +1185,9 @@ public class Histogram extends AbstractView<HistoGraph> {
 		ModelType mt = model.getType();
 		for (HistoGraph graph : graphs) {
 			Module<?> module = graph.getModule();
-			Geometry inter = module.getInteractionGeometry();
-			Geometry comp = module.getCompetitionGeometry();
+			IBSPopulation<?, ?> ibspop = module.getIBSPopulation();
+			AbstractGeometry inter = ibspop.getInteractionGeometry();
+			AbstractGeometry comp = ibspop.getCompetitionGeometry();
 
 			boolean needsUpdate = !degreeProcessed
 					|| (inter != null && inter.isType(GeometryType.DYNAMIC))
@@ -1210,15 +1215,14 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 */
 	private boolean handleDEGraph(HistoGraph graph, ModelType mt, Module<?> module) {
 		if (mt.isPDE()) {
-			Geometry inter = module.getGeometry();
-			inter = (inter == null ? module.getInteractionGeometry() : inter);
+			AbstractGeometry inter = module.getGeometry();
 			if (inter.isRegular()) {
 				graph.displayMessage("PDE model: regular structure with degree "
 						+ (int) (inter.getConnectivity() + 0.5) + ".");
 			} else if (inter.isLattice()) {
 				graph.displayMessage("PDE model: lattice structure with degree "
 						+ (int) (inter.getConnectivity() + 0.5) +
-						(inter.fixedBoundary ? " (fixed" : " (periodic") + " boundaries).");
+						(inter.isRegular() ? " (periodic)" : " (fixed)") + " boundaries).");
 			}
 		} else {
 			graph.displayMessage(model.getType().getKey() + " model: well-mixed population.");
@@ -1231,7 +1235,8 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * interaction/competition geometries, update the histogram data and set axis
 	 * limits on the graph; returns the (possibly new) data buffer.
 	 */
-	private double[][] ensureDegreeData(HistoGraph graph, Geometry inter, Geometry comp, double[][] data) {
+	private double[][] ensureDegreeData(HistoGraph graph, AbstractGeometry inter, AbstractGeometry comp,
+			double[][] data) {
 		int bincount;
 		if (inter.isUndirected())
 			bincount = maxDegree(Math.max(inter.maxOut, comp.maxOut));
@@ -1455,7 +1460,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param inter the interaction graph
 	 * @param comp  the competition graph
 	 */
-	private void getDegreeHistogramData(double[][] data, Geometry inter, Geometry comp) {
+	private void getDegreeHistogramData(double[][] data, AbstractGeometry inter, AbstractGeometry comp) {
 		int kmax = maxDegree(inter.isUndirected() ? inter.maxOut : inter.maxTot);
 		if (inter != comp)
 			kmax = Math.max(kmax, maxDegree(comp.isUndirected() ? comp.maxOut : comp.maxTot));
@@ -1474,7 +1479,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param idx       the index for placing the histogram data
 	 * @param ibinwidth the scaling factor to map degrees to bins
 	 */
-	private void getDegreeHistogramData(double[][] data, Geometry geometry, int idx, double ibinwidth) {
+	private void getDegreeHistogramData(double[][] data, AbstractGeometry geometry, int idx, double ibinwidth) {
 		int nodeCount = geometry.getSize();
 		if (geometry.isUndirected()) {
 			double[] dataio = data[idx];
@@ -1511,7 +1516,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param comp  the competition geometry
 	 * @return the number of histograms required
 	 */
-	private int getDegreeGraphs(Geometry inter, Geometry comp) {
+	private int getDegreeGraphs(AbstractGeometry inter, AbstractGeometry comp) {
 		if (inter == null)
 			return 1;
 		int nGraphs = 1;
@@ -1533,7 +1538,7 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param comp  the competition geometry
 	 * @return the number of histograms required
 	 */
-	private int getDegreeBins(Geometry inter, Geometry comp) {
+	private int getDegreeBins(AbstractGeometry inter, AbstractGeometry comp) {
 		if (inter == null)
 			return 0;
 		int nBins = maxDegree(inter.maxOut);

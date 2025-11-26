@@ -33,9 +33,7 @@ package org.evoludo.simulator.geom;
 import org.evoludo.simulator.EvoLudo;
 
 /**
- * Geometry implementation for well-mixed (mean-field) populations. Serves as an
- * example for extracting the legacy {@link org.evoludo.simulator.Geometry}
- * monolith into dedicated subclasses.
+ * Geometry implementation for well-mixed (mean-field) populations.
  */
 public class WellmixedGeometry extends AbstractGeometry {
 
@@ -51,10 +49,9 @@ public class WellmixedGeometry extends AbstractGeometry {
 
 	/**
 	 * Generates a well-mixed graph, also termed mean-field network or unstructured
-	 * population. In the limit of large population sizes the results of IBS
-	 * simulations must converge to those of the corresponding deterministic
-	 * dynamical equations (ODEs) or, with mutations, the stochastic dynamical
-	 * equations (SDEs).
+	 * population. In the limit of large population sizes, the results of IBS
+	 * simulations must converge to those of the corresponding stochastic and
+	 * deterministic dynamical equations as produced by SDE and ODE models.
 	 */
 	@Override
 	public void init() {

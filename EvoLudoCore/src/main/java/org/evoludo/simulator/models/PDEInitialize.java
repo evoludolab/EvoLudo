@@ -33,7 +33,7 @@ package org.evoludo.simulator.models;
 import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.util.CLOption;
 
 /**
@@ -44,9 +44,9 @@ import org.evoludo.util.CLOption;
  * random, localized shapes, Gaussian, ring, etc.), a background density vector,
  * an optional dependent-component index and an RNG for randomized initial
  * configurations. It provides a single entry point {@code init(double[][],
- * double[], Geometry)} that fills a preallocated two‑dimensional density
- * array where each row corresponds to the state vector at a lattice site.
- * </p>
+ * double[], AbstractGeometry)} that fills a preallocated two‑dimensional
+ * density array where each row corresponds to the state vector at a lattice
+ * site.
  *
  * <h3>Concepts and inputs</h3>
  * <ul>
@@ -71,19 +71,17 @@ import org.evoludo.util.CLOption;
  * The chosen type determines how {@code y0} and {@code background} are applied
  * across the lattice: globally, randomly, locally (centered square/circle),
  * or using radially/gaussian-scaled profiles.
- * </p>
  *
  * <h3>Usage</h3>
  * <p>
  * Construct an instance with the desired {@link Type}, background vector,
  * dependent index and RNG (if needed), then call {@link #init(double[][],
- * double[], Geometry)} to populate the simulation density array prior to
- * starting integration or discrete updates.
- * </p>
+ * double[], AbstractGeometry)} to populate the simulation density array prior
+ * to starting integration or discrete updates.
  *
- * @see Geometry
+ * @see AbstractGeometry
  * @see Type
- * @see #init(double[][], double[], Geometry)
+ * @see #init(double[][], double[], AbstractGeometry)
  */
 class PDEInitialize extends ODEInitialize {
 
@@ -95,7 +93,7 @@ class PDEInitialize extends ODEInitialize {
 	}
 
 	public void init(double[][] density) {
-		Geometry space = pde.space;
+		AbstractGeometry space = pde.space;
 		double[] y0 = new double[pde.nDim];
 		System.arraycopy(pde.y0, 0, y0, 0, pde.nDim);
 
@@ -119,14 +117,14 @@ class PDEInitialize extends ODEInitialize {
 		}
 	}
 
-	private void initUniform(double[][] density, double[] y0, Geometry space) {
+	private void initUniform(double[][] density, double[] y0, AbstractGeometry space) {
 		int nDim = y0.length;
 		int nodeCount = space.getSize();
 		for (int n = 0; n < nodeCount; n++)
 			System.arraycopy(y0, 0, density[n], 0, nDim);
 	}
 
-	private void initPerturbation(double[][] density, double[] y0, Geometry space) {
+	private void initPerturbation(double[][] density, double[] y0, AbstractGeometry space) {
 		int nDim = y0.length;
 		int nodeCount = space.getSize();
 		for (int n = 0; n < nodeCount; n++)
@@ -151,7 +149,7 @@ class PDEInitialize extends ODEInitialize {
 		}
 	}
 
-	private void initRandom(double[][] density, double[] y0, Geometry space) {
+	private void initRandom(double[][] density, double[] y0, AbstractGeometry space) {
 		int nDim = y0.length;
 		int nodeCount = space.getSize();
 		for (int n = 0; n < nodeCount; n++) {
@@ -163,7 +161,7 @@ class PDEInitialize extends ODEInitialize {
 		}
 	}
 
-	private void initFunction(double[][] density, double[] y0, Geometry space) {
+	private void initFunction(double[][] density, double[] y0, AbstractGeometry space) {
 		switch (space.getType()) {
 			case CUBE:
 				initFunction3D(density, y0, space);
@@ -179,7 +177,7 @@ class PDEInitialize extends ODEInitialize {
 	/**
 	 * Initialization for CUBE geometry extracted to reduce cognitive complexity.
 	 */
-	private void initFunction3D(double[][] density, double[] y0, Geometry space) {
+	private void initFunction3D(double[][] density, double[] y0, AbstractGeometry space) {
 		int l = 50;
 		int lz = 10;
 		if (space.getSize() != 25000) { // not NOVA dimensions
@@ -195,7 +193,7 @@ class PDEInitialize extends ODEInitialize {
 	/**
 	 * Initialization for LINEAR geometry extracted to reduce cognitive complexity.
 	 */
-	private void initFunction1D(double[][] density, double[] y0, Geometry space) {
+	private void initFunction1D(double[][] density, double[] y0, AbstractGeometry space) {
 		int nodeCount = space.getSize();
 		for (int x = 0; x < nodeCount; x++)
 			apply(x, nodeCount, y0, density);
@@ -205,7 +203,7 @@ class PDEInitialize extends ODEInitialize {
 	 * Initialization for square/triangular/hexagonal lattice geometries extracted
 	 * to reduce cognitive complexity.
 	 */
-	private void initFunction2D(double[][] density, double[] y0, Geometry space) {
+	private void initFunction2D(double[][] density, double[] y0, AbstractGeometry space) {
 		int l = (int) (Math.sqrt(space.getSize()) + 0.5);
 		for (int y = 0; y < l; y++)
 			for (int x = 0; x < l; x++)

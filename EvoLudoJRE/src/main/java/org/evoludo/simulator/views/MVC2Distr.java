@@ -46,7 +46,7 @@ import org.evoludo.graphics.PopListener;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapJRE;
 import org.evoludo.simulator.EvoLudoLab;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.Network2D;
 import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.models.CModel;
@@ -86,8 +86,7 @@ public class MVC2Distr extends MVAbstract implements PopListener {
 		// of a dynamic approach
 		bins = new double[HistoGraph.HISTO_BINS * HistoGraph.HISTO_BINS];
 		// requires exactly 2 traits
-		Geometry geometry = new Geometry(engine);
-		geometry.setType(GeometryType.SQUARE);
+		AbstractGeometry geometry = AbstractGeometry.create(GeometryType.SQUARE, engine);
 		geometry.setSize(HistoGraph.HISTO_BINS * HistoGraph.HISTO_BINS);
 		graph = new PopGraph2D(this, geometry, module);
 		GraphAxis x = graph.getXAxis();

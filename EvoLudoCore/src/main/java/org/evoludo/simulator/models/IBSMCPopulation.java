@@ -37,6 +37,7 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.geom.GeometryType;
+import org.evoludo.simulator.geom.HierarchicalGeometry;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSC.Init;
 import org.evoludo.simulator.models.Model.HasIBS;
@@ -409,7 +410,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 				// when interacting all neighbours but not in well-mixed populations
 				if (interaction.isType(GeometryType.WELLMIXED) || //
 						(interaction.isType(GeometryType.HIERARCHY) && //
-								interaction.subgeometry == GeometryType.WELLMIXED))
+								((HierarchicalGeometry) interaction).isSubtype(GeometryType.WELLMIXED)))
 					return false;
 				return interGroup.isSampling(IBSGroup.SamplingType.ALL);
 		}
@@ -715,7 +716,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	 * @param trait1 the index of the first trait
 	 * @param trait2 the index of the second trait
 	 *
-	 * @see org.evoludo.simulator.Geometry#initGeometrySquare()
+	 * @see org.evoludo.simulator.geom.AbstractGeometry#initGeometrySquare()
 	 */
 	public void get2DTraitHistogramData(double[] bins, int trait1, int trait2) {
 		// clear bins

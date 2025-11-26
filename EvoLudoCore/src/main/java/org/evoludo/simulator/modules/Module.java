@@ -41,7 +41,7 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.models.Advection;
 import org.evoludo.simulator.models.ChangeListener;
@@ -401,8 +401,6 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 		if (this instanceof ChangeListener)
 			engine.removeChangeListener((ChangeListener) this);
 		ibspop = null;
-		interaction = null;
-		competition = null;
 		structure = null;
 	}
 
@@ -920,72 +918,15 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	/**
 	 * The geometry of population (interaction and competition graphs are the same)
 	 */
-	protected Geometry structure;
+	protected AbstractGeometry structure;
 
 	/**
 	 * Gets the geometry of the population.
 	 * 
 	 * @return the geometry of the population
 	 */
-	public Geometry getGeometry() {
+	public AbstractGeometry getGeometry() {
 		return structure;
-	}
-
-	/**
-	 * Opportunity to supply {@link Geometry}, in case interaction and competition
-	 * graphs are the same.
-	 * 
-	 * @return the new geometry
-	 */
-	public Geometry createGeometry() {
-		if (structure == null)
-			structure = new Geometry(engine, this, opponent);
-		return structure;
-	}
-
-	/**
-	 * The geometry of interaction structure
-	 */
-	protected Geometry interaction;
-
-	/**
-	 * The geometry of competition structure
-	 */
-	protected Geometry competition;
-
-	/**
-	 * Sets different geometries for interactions and competition.
-	 * 
-	 * @param interaction the geometry for interactions
-	 * @param competition the geometry for competition
-	 * 
-	 * @see Geometry
-	 */
-	public void setGeometries(Geometry interaction, Geometry competition) {
-		this.interaction = interaction;
-		this.competition = competition;
-	}
-
-	/**
-	 * Gets the interaction geometry.
-	 * 
-	 * @return the interaction geometry
-	 * 
-	 * @see Geometry
-	 */
-	public Geometry getInteractionGeometry() {
-		return interaction;
-	}
-
-	/**
-	 * Gets the competition geometry.
-	 * 
-	 * @return the competition geometry
-	 * 
-	 * @see Geometry
-	 */
-	public Geometry getCompetitionGeometry() {
-		return competition;
 	}
 
 	/**
@@ -1151,10 +1092,9 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 					String[] geomargs = arg.split(CLOParser.SPECIES_DELIMITER);
 					boolean doReset = false;
 					int n = 0;
-					for (T pop : species) {
-						// Geometry geom = pop.createGeometry();
-						pop.structure = pop.createGeometry();
-						doReset |= pop.structure.parse(geomargs[n++ % geomargs.length]);
+					for (T mod : species) {
+						mod.structure = GeometryType.create(engine, geomargs[n % geomargs.length]);
+						doReset |= mod.structure.parse();
 					}
 					engine.requiresReset(doReset);
 					return true;

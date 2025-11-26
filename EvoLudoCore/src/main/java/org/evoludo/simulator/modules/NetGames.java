@@ -165,29 +165,12 @@ public class NetGames extends Discrete implements Payoffs,
 
 	@Override
 	public double getMinPayoff() {
-		// interaction may still be undefined
-		if (interaction == null)
-			return -1.0;
-		interaction.evaluate();
-		double min = interaction.minIn - interaction.maxOut * ratio;
-		double max = interaction.maxIn - interaction.minOut * ratio;
-		if (Math.abs(max - min) < 1e-10)
-			return -1.0;
-		return min;
-
+		return getIBSPopulation().getMinScore();
 	}
 
 	@Override
 	public double getMaxPayoff() {
-		// interaction may still be undefined
-		if (interaction == null)
-			return 1.0;
-		interaction.evaluate();
-		double min = interaction.minIn - interaction.maxOut * ratio;
-		double max = interaction.maxIn - interaction.minOut * ratio;
-		if (Math.abs(max - min) < 1e-10)
-			return 1.0;
-		return max;
+		return getIBSPopulation().getMaxScore();
 	}
 
 	// @Override
@@ -759,7 +742,7 @@ public class NetGames extends Discrete implements Payoffs,
 		}
 
 		// @Override
-		// public boolean parseGeometry(Geometry geom, String arg) {
+		// public boolean parseGeometry(AbstractGeometry geom, String arg) {
 		// if (arg.equals("*")) {
 		// geom.setType(Type.DYNAMIC);
 		// return true;
@@ -768,12 +751,12 @@ public class NetGames extends Discrete implements Payoffs,
 		// }
 
 		// @Override
-		// public boolean checkGeometry(Geometry geom) {
+		// public boolean checkGeometry(AbstractGeometry geom) {
 		// return geom.isType(Type.DYNAMIC);
 		// }
 
 		// @Override
-		// public boolean generateGeometry(Geometry geom) {
+		// public boolean generateGeometry(AbstractGeometry geom) {
 		// if (geom.getType() != Type.DYNAMIC)
 		// throw new UnsupportedOperationException("Unknown geometry (" + geom.getType()
 		// + ")");
@@ -785,6 +768,32 @@ public class NetGames extends Discrete implements Payoffs,
 		// geom.alloc();
 		// return true;
 		// }
+
+		@Override
+		public double getMinScore() {
+			// interaction may still be undefined
+			if (interaction == null)
+				return -1.0;
+			interaction.evaluate();
+			double min = interaction.minIn - interaction.maxOut * ratio;
+			double max = interaction.maxIn - interaction.minOut * ratio;
+			if (Math.abs(max - min) < 1e-10)
+				return -1.0;
+			return min;
+		}
+
+		@Override
+		public double getMaxScore() {
+			// interaction may still be undefined
+			if (interaction == null)
+				return 1.0;
+			interaction.evaluate();
+			double min = interaction.minIn - interaction.maxOut * ratio;
+			double max = interaction.maxIn - interaction.minOut * ratio;
+			if (Math.abs(max - min) < 1e-10)
+				return 1.0;
+			return max;
+		}
 
 		@Override
 		public void resetScores() {

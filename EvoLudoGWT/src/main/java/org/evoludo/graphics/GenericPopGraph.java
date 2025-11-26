@@ -32,10 +32,11 @@ package org.evoludo.graphics;
 
 import org.evoludo.graphics.AbstractGraph.Zooming;
 import org.evoludo.simulator.ColorMap;
-import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.geom.GeometryType;
+import org.evoludo.simulator.geom.HierarchicalGeometry;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.ui.ContextMenu;
@@ -55,14 +56,14 @@ import com.google.gwt.user.client.ui.Label;
 
 /**
  * Abstract base class for visualizing a population as a graph. GenericPopGraph
- * ties a population Geometry to an optional Network representation and provides
- * common support for layouting, drawing, interaction and debugging for concrete
- * graph views (2D/3D, lattice or general network).
+ * ties a population AbstractGeometry to an optional Network representation and
+ * provides common support for layouting, drawing, interaction and debugging for
+ * concrete graph views (2D/3D, lattice or general network).
  *
  * <h3>Key responsibilities:</h3>
  * <ul>
- * <li>Manage the backing Geometry and its Network (if present). The network
- * may be null for models without spatial structure (e.g. ODE/SDE).</li>
+ * <li>Manage the backing AbstractGeometry and its Network (if present). The
+ * network may be null for models without spatial structure (e.g. ODE/SDE).</li>
  * <li>Coordinate layouting: static lattice layouts are drawn directly via
  * {@link #drawLattice()}; {@link #drawNetwork()} is used for dynamic/network
  * layouts which calls back via {@link Network.LayoutListener} and this class
@@ -91,10 +92,9 @@ import com.google.gwt.user.client.ui.Label;
  * non-animated or very large networks animation can be disabled using the
  * animate flag and size threshold constants.</li>
  * <li>{@link #layoutUpdate(double)} and {@link #layoutComplete()} are
- * synchronized and used by
- * the Network to report progress and completion. {@link #layoutNetwork()}
- * ensures
- * that a layout exists before calling {@link #drawNetwork()}.</li>
+ * synchronized and used by the Network to report progress and completion.
+ * {@link #layoutNetwork()} ensures that a layout exists before calling
+ * {@link #drawNetwork()}.</li>
  * <li>Touch handling distinguishes single tap, double tap, long press and
  * multi-touch gestures to support node selection, tooltip display,
  * pinching zoom and invoking node-specific actions.</li>
@@ -168,7 +168,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	/**
 	 * The structure of the population.
 	 */
-	protected Geometry geometry;
+	protected AbstractGeometry geometry;
 
 	/**
 	 * The network representation of the population structure or {@code null} if not
@@ -278,7 +278,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 * @param geometry the structure of the population
 	 */
 	@SuppressWarnings("unchecked")
-	public void setGeometry(Geometry geometry) {
+	public void setGeometry(AbstractGeometry geometry) {
 		this.geometry = geometry;
 		// geometry (and network) may be null for ODE or SDE models
 		if (geometry == null)
@@ -292,7 +292,7 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 * 
 	 * @return the structure of the population
 	 */
-	public Geometry getGeometry() {
+	public AbstractGeometry getGeometry() {
 		return geometry;
 	}
 
@@ -378,7 +378,8 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	 */
 	boolean hasStaticLayout() {
 		return (geometry.isLattice()
-				|| geometry.isType(GeometryType.HIERARCHY) && geometry.subgeometry.isLattice());
+				|| geometry.isType(GeometryType.HIERARCHY)
+						&& ((HierarchicalGeometry) geometry).getSubType().isLattice());
 	}
 
 	/**

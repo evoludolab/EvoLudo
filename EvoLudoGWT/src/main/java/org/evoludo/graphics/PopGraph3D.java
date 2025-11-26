@@ -39,6 +39,7 @@ import org.evoludo.simulator.ColorMap3D;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network3D;
 import org.evoludo.simulator.geom.GeometryType;
+import org.evoludo.simulator.geom.HierarchicalGeometry;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.Pop3D;
 import org.evoludo.ui.TrackballControls;
@@ -244,7 +245,7 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 		GeometryType type = geometry.getType();
 		boolean isHierarchy = (type == GeometryType.HIERARCHY);
 		if (isHierarchy)
-			type = geometry.subgeometry;
+			type = ((HierarchicalGeometry) geometry).getSubType();
 		// geometries that have special/fixed layout
 		switch (type) {
 			case CUBE:
@@ -292,12 +293,13 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 				final int HIERARCHY_GAP = 8; // unit gap in units?
 				// for hierarchical structures add gap between units
 				if (isHierarchy) {
-					hLevels = geometry.hierarchy.length - 1;
+					int[] hierarchy = ((HierarchicalGeometry) geometry).getHierarchyLevels();
+					hLevels = hierarchy.length - 1;
 					hPeriods = new int[hLevels];
-					hPeriods[0] = (int) Math.sqrt(geometry.hierarchy[hLevels]);
+					hPeriods[0] = (int) Math.sqrt(hierarchy[hLevels]);
 					int totGap = side / hPeriods[0] - 1;
 					for (int i = 1; i < hLevels; i++) {
-						hPeriods[i] = hPeriods[i - 1] * (int) Math.sqrt(geometry.hierarchy[hLevels - i]);
+						hPeriods[i] = hPeriods[i - 1] * (int) Math.sqrt(hierarchy[hLevels - i]);
 						totGap += side / hPeriods[i] - 1;
 					}
 					shift += totGap * HIERARCHY_GAP * 0.5;

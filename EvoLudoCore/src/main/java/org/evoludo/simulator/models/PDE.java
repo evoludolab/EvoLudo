@@ -39,14 +39,14 @@ import java.util.logging.Level;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.Geometry;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
@@ -79,9 +79,9 @@ public class PDE extends ODE {
 	protected PDESupervisor supervisor;
 
 	/**
-	 * Geometry representing the spatial dimensions of this PDE.
+	 * AbstractGeometry representing the spatial dimensions of this PDE.
 	 */
-	protected Geometry space;
+	protected AbstractGeometry space;
 
 	/**
 	 * Density distribution of traits as a 2D array. The first entry refers to the
@@ -297,10 +297,10 @@ public class PDE extends ODE {
 
 	/**
 	 * Gets the geometry representing the spatial structure of this PDE.
-	 * 
+	 *
 	 * @return the geometry of the PDE
 	 */
-	public Geometry getGeometry() {
+	public AbstractGeometry getGeometry() {
 		return space;
 	}
 
@@ -310,7 +310,7 @@ public class PDE extends ODE {
 		if (supervisor == null)
 			supervisor = engine.hirePDESupervisor(this);
 		module = engine.getModule();
-		space = module.createGeometry();
+		space = module.getGeometry();
 		sorting = (o1, o2) -> (int) Math.signum(o1[0] - o2[0]);
 	}
 
@@ -896,7 +896,7 @@ public class PDE extends ODE {
 	 * Sets whether symmetries should be preserved. Not all models may be able to
 	 * honour the request. For example {@link PDE} is only able to preserve
 	 * symmetries in the diffusion step if the
-	 * {@link Geometry#isLattice()} returns <code>true</code>.
+	 * {@link AbstractGeometry#isLattice()} returns <code>true</code>.
 	 *
 	 * @param symmetric the request to preserve symmetry
 	 */

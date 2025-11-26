@@ -53,6 +53,7 @@ import javax.swing.Timer;
 
 import org.evoludo.graphics.Network2DJRE;
 import org.evoludo.math.ArrayMath;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.models.IBS;
@@ -201,12 +202,12 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	}
 
 	@Override
-	public Network2D createNetwork2D(Geometry geometry) {
+	public Network2D createNetwork2D(AbstractGeometry geometry) {
 		return new Network2DJRE(this, geometry);
 	}
 
 	@Override
-	public Network3D createNetwork3D(Geometry geometry) {
+	public Network3D createNetwork3D(AbstractGeometry geometry) {
 		return null;
 	}
 

@@ -39,8 +39,8 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudo.ColorModelType;
 import org.evoludo.simulator.EvoLudoGWT;
-import org.evoludo.simulator.Geometry;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.DModel;
@@ -110,9 +110,8 @@ import org.evoludo.simulator.modules.Module;
  * controller)
  * and a Data enumeration indicating which quantity to display.</li>
  * <li>The class delegates per-module visualization logic to PopGraph2D and
- * relies on Module, {@code Geometry} and {@code ColorMap} helper classes to
- * query model
- * state and construct visual representations.</li>
+ * relies on Module, {@code AbstractGeometry} and {@code ColorMap} helper
+ * classes to query model state and construct visual representations.</li>
  * <li>Reset and update cycles should be invoked from the UI/event thread that
  * drives the GWT view lifecycle; {@code Pop2D} is not safe for concurrent
  * updates
@@ -137,7 +136,7 @@ import org.evoludo.simulator.modules.Module;
  * <h3>Limitations and assumptions</h3>
  * <ul>
  * <li>PDE mode is currently restricted to single-species.</li>
- * <li>Assumes modules provide geometry information via {@code Geometry}
+ * <li>Assumes modules provide geometry information via {@code AbstractGeometry}
  * instances and that {@code Module} implementations expose trait counts,
  * colors,
  * and PDE-dependent indices where applicable.</li>
@@ -147,7 +146,7 @@ import org.evoludo.simulator.modules.Module;
  * 
  * @see PopGraph2D
  * @see GenericPop
- * @see Geometry
+ * @see AbstractGeometry
  * @see ColorMap
  * @see EvoLudoGWT
  */
@@ -191,7 +190,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 		int nGraphs = 0;
 		List<? extends Module<?>> species = engine.getModule().getSpecies();
 		for (Module<?> mod : species)
-			nGraphs += mod.getInteractionGeometry().isSingle() ? 1 : 2;
+			nGraphs += mod.getIBSPopulation().getInteractionGeometry().isSingle() ? 1 : 2;
 
 		if (graphs.size() == nGraphs)
 			return false;
@@ -200,7 +199,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 			PopGraph2D graph = new PopGraph2D(this, mod);
 			wrapper.add(graph);
 			graphs.add(graph);
-			if (!mod.getInteractionGeometry().isSingle()) {
+			if (!mod.getIBSPopulation().getInteractionGeometry().isSingle()) {
 				graph = new PopGraph2D(this, mod);
 				wrapper.add(graph);
 				graphs.add(graph);
@@ -280,7 +279,7 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	 * change requires a hard reset (i.e. change of reporting frequency).
 	 */
 	private boolean configureGraph(PopGraph2D graph) {
-		Geometry geometry = graph.getGeometry();
+		AbstractGeometry geometry = graph.getGeometry();
 		GraphStyle style = graph.getStyle();
 
 		if (geometry.isType(GeometryType.LINEAR)) {
