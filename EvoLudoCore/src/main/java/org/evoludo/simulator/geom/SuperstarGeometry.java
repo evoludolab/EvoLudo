@@ -143,4 +143,22 @@ public class SuperstarGeometry extends AbstractGeometry {
 		clone.amplification = amplification;
 		return clone;
 	}
+
+	@Override
+	public int hashCode() {
+		int result = super.hashCode();
+		result = 31 * result + petals;
+		result = 31 * result + amplification;
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (!super.equals(obj))
+			return false;
+		SuperstarGeometry other = (SuperstarGeometry) obj;
+		return petals == other.petals && amplification == other.amplification;
+	}
 }

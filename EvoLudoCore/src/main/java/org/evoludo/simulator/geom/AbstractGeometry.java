@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -47,13 +48,10 @@ import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
 /**
- * Consolidated implementation of the population interaction and competition
- * structures historically provided by {@link org.evoludo.simulator.Geometry}.
- * Instances of {@code AbstractGeometry} describe neighbourhood graphs for IBS
- * populations and expose the utilities required by concrete geometries (see
- * {@link GeometryType}). Both interaction and competition graphs share the same
- * data
- * model and can therefore reuse the helpers defined here.
+ * Abstract implementation of the population interaction and competition
+ * structures. Instances of {@code AbstractGeometry} describe neighbourhood
+ * graphs for IBS, PDE's and graphical representations, such as trait
+ * distributions in 1D or 2D.
  */
 public abstract class AbstractGeometry {
 
@@ -1625,26 +1623,40 @@ public abstract class AbstractGeometry {
 		return clone;
 	}
 
-	/**
-	 * Check if {@code this} geometry and {@code obj} refer to the same structures.
-	 * Different realizations of random structures, such as random regular graphs,
-	 * are considered equal as long as their characteristic parameters are the same.
-	 *
-	 * @param obj the geometry to compare to.
-	 * @return {@code true} if the structures are the same
-	 */
+	@Override
+	public int hashCode() {
+		int result = Objects.hash(engine, specification, name, type, size, isUndirected, isRegular, isRewired, isSingle,
+				isValid, minIn, maxIn, avgIn, minOut, maxOut, avgOut, minTot, maxTot, avgTot, connectivity, pRewire,
+				pAddwire);
+		result = 31 * result + Arrays.hashCode(kin);
+		result = 31 * result + Arrays.hashCode(kout);
+		result = 31 * result + Arrays.deepHashCode(in);
+		result = 31 * result + Arrays.deepHashCode(out);
+		return result;
+	}
+
 	@Override
 	public boolean equals(Object obj) {
-		if (obj == this)
+		if (this == obj)
 			return true;
-		if (!(obj instanceof AbstractGeometry))
+		if (obj == null || getClass() != obj.getClass())
 			return false;
-		AbstractGeometry geo = (AbstractGeometry) obj;
-		if (geo.type != type)
-			return false;
-		if (geo.size != size)
-			return false;
-		return Math.abs(geo.connectivity - connectivity) <= 1e-6;
+		AbstractGeometry other = (AbstractGeometry) obj;
+		return size == other.size && isUndirected == other.isUndirected && isRegular == other.isRegular
+				&& isRewired == other.isRewired && isSingle == other.isSingle && isValid == other.isValid
+				&& minIn == other.minIn && maxIn == other.maxIn && Double.doubleToLongBits(avgIn) == Double
+						.doubleToLongBits(other.avgIn)
+				&& minOut == other.minOut && maxOut == other.maxOut && Double.doubleToLongBits(avgOut) == Double
+						.doubleToLongBits(other.avgOut)
+				&& minTot == other.minTot && maxTot == other.maxTot && Double.doubleToLongBits(avgTot) == Double
+						.doubleToLongBits(other.avgTot)
+				&& Double.doubleToLongBits(connectivity) == Double.doubleToLongBits(other.connectivity)
+				&& Double.doubleToLongBits(pRewire) == Double.doubleToLongBits(other.pRewire)
+				&& Double.doubleToLongBits(pAddwire) == Double.doubleToLongBits(other.pAddwire)
+				&& Objects.equals(engine, other.engine) && Objects.equals(specification, other.specification)
+				&& Objects.equals(name, other.name) && type == other.type && Arrays.equals(kin, other.kin)
+				&& Arrays.equals(kout, other.kout) && Arrays.deepEquals(in, other.in)
+				&& Arrays.deepEquals(out, other.out);
 	}
 
 	/**

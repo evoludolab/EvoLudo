@@ -770,11 +770,35 @@ public class HierarchicalGeometry extends AbstractLattice {
 	@Override
 	public HierarchicalGeometry clone() {
 		HierarchicalGeometry clone = (HierarchicalGeometry) super.clone();
+		clone.subGeometry = subGeometry;
 		if (rawHierarchy != null)
 			clone.rawHierarchy = Arrays.copyOf(rawHierarchy, rawHierarchy.length);
 		if (hierarchy != null)
 			clone.hierarchy = Arrays.copyOf(hierarchy, hierarchy.length);
 		clone.hierarchyWeight = hierarchyWeight;
 		return clone;
+	}
+
+	@Override
+	public int hashCode() {
+		int result = super.hashCode();
+		result = 31 * result + (subGeometry == null ? 0 : subGeometry.hashCode());
+		result = 31 * result + Arrays.hashCode(rawHierarchy);
+		result = 31 * result + Arrays.hashCode(hierarchy);
+		long temp = Double.doubleToLongBits(hierarchyWeight);
+		result = 31 * result + (int) (temp ^ (temp >>> 32));
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (!super.equals(obj))
+			return false;
+		HierarchicalGeometry other = (HierarchicalGeometry) obj;
+		return subGeometry == other.subGeometry && Arrays.equals(rawHierarchy, other.rawHierarchy)
+				&& Arrays.equals(hierarchy, other.hierarchy)
+				&& Double.doubleToLongBits(hierarchyWeight) == Double.doubleToLongBits(other.hierarchyWeight);
 	}
 }

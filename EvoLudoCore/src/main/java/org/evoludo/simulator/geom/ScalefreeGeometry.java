@@ -288,4 +288,22 @@ public class ScalefreeGeometry extends AbstractNetwork {
 		clone.sfExponent = sfExponent;
 		return clone;
 	}
+
+	@Override
+	public int hashCode() {
+		int result = super.hashCode();
+		long temp = Double.doubleToLongBits(sfExponent);
+		result = 31 * result + (int) (temp ^ (temp >>> 32));
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (!super.equals(obj))
+			return false;
+		ScalefreeGeometry other = (ScalefreeGeometry) obj;
+		return Double.doubleToLongBits(sfExponent) == Double.doubleToLongBits(other.sfExponent);
+	}
 }

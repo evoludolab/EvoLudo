@@ -110,6 +110,25 @@ public abstract class AbstractLattice extends AbstractGeometry {
 	public AbstractLattice clone() {
 		AbstractLattice clone = (AbstractLattice) super.clone();
 		clone.fixedBoundary = fixedBoundary;
+		clone.isInterspecies = isInterspecies;
 		return clone;
+	}
+
+	@Override
+	public int hashCode() {
+		int result = super.hashCode();
+		result = 31 * result + Boolean.hashCode(fixedBoundary);
+		result = 31 * result + Boolean.hashCode(isInterspecies);
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (!super.equals(obj))
+			return false;
+		AbstractLattice other = (AbstractLattice) obj;
+		return fixedBoundary == other.fixedBoundary && isInterspecies == other.isInterspecies;
 	}
 }
