@@ -34,16 +34,17 @@ import java.util.Arrays;
 
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.util.CLOParser;
+import org.evoludo.util.CLOption;
 import org.evoludo.util.Formatter;
 
 /**
- * Hierarchical meta-population structure that embeds either well-mixed or
+ * Hierarchical meta-population structure implementation. Embeds well-mixed or
  * square-lattice demes into recursive layers.
  */
 public class HierarchicalGeometry extends AbstractLattice {
 
-	private GeometryType subGeometry = GeometryType.WELLMIXED;
-	private int[] rawHierarchy = new int[] { 1 };
+	private GeometryType subType = GeometryType.WELLMIXED;
+	private int[] rawHierarchy;
 	private int[] hierarchy;
 	/**
 	 * Coupling strength between hierarchical levels.
@@ -63,19 +64,26 @@ public class HierarchicalGeometry extends AbstractLattice {
 	@Override
 	public boolean parse(String arg) {
 		String spec = arg == null ? "" : arg.trim();
-		subGeometry = GeometryType.WELLMIXED;
+		subType = GeometryType.WELLMIXED;
 		fixedBoundary = false;
-		spec = parseSubGeometry(spec);
-		spec = stripBoundary(spec);
-		int weightIdx = spec.lastIndexOf('w');
-		if (weightIdx >= 0) {
-			hierarchyWeight = CLOParser.parseDouble(spec.substring(weightIdx + 1));
-			spec = spec.substring(0, weightIdx);
-		} else {
-			hierarchyWeight = 0.0;
+		if (!spec.isEmpty() && !Character.isDigit(spec.charAt(0))) {
+			CLOption clo = engine.getModule().cloGeometry;
+			subType = (GeometryType) clo.match(spec);
+			spec = spec.substring(1);
+			if (!spec.isEmpty() && GeometryType.isFixedBoundaryToken(spec.charAt(0))) {
+				fixedBoundary = true;
+				spec = spec.substring(1);
+			}
 		}
-		rawHierarchy = CLOParser.parseIntVector(spec);
-		if (rawHierarchy.length == 0)
+		int weightIdx = spec.lastIndexOf('w');
+		if (weightIdx < 0) {
+			hierarchyWeight = 0.0;
+			rawHierarchy = CLOParser.parseIntVector(spec);
+		} else {
+			hierarchyWeight = CLOParser.parseDouble(spec.substring(weightIdx + 1));
+			rawHierarchy = CLOParser.parseIntVector(spec.substring(0, weightIdx));
+		}
+		if (rawHierarchy == null || rawHierarchy.length == 0)
 			rawHierarchy = new int[] { 1 };
 		return true;
 	}
@@ -83,18 +91,28 @@ public class HierarchicalGeometry extends AbstractLattice {
 	@Override
 	public void reset() {
 		super.reset();
-		subGeometry = GeometryType.WELLMIXED;
-		rawHierarchy = new int[] { 1 };
+		subType = GeometryType.WELLMIXED;
+		rawHierarchy = null;
 		hierarchy = null;
 		hierarchyWeight = 0.0;
+	}
+
+	/**
+	 * Check if the sub-geometry matches the given type.
+	 * 
+	 * @param type the geometry type to check against
+	 * @return {@code true} if the sub-geometry matches the given type
+	 */
+	public boolean isSubtype(GeometryType type) {
+		return subType == type;
 	}
 
 	/**
 	 * @return the geometry used within each hierarchy level (e.g. square or
 	 *         well-mixed)
 	 */
-	public GeometryType getSubGeometry() {
-		return subGeometry;
+	public GeometryType getSubType() {
+		return subType;
 	}
 
 	/**
@@ -111,9 +129,7 @@ public class HierarchicalGeometry extends AbstractLattice {
 	public int[] getHierarchyLevels() {
 		if (hierarchy != null)
 			return Arrays.copyOf(hierarchy, hierarchy.length);
-		int[] copy = Arrays.copyOf(rawHierarchy, rawHierarchy.length + 1);
-		copy[copy.length - 1] = size;
-		return copy;
+		return rawHierarchy == null ? new int[] { size } : Arrays.copyOf(rawHierarchy, rawHierarchy.length);
 	}
 
 	@Override
@@ -121,34 +137,38 @@ public class HierarchicalGeometry extends AbstractLattice {
 		boolean reset = false;
 		if (rawHierarchy == null || rawHierarchy.length == 0)
 			rawHierarchy = new int[] { 1 };
-		int[] processed = Arrays.copyOf(rawHierarchy, rawHierarchy.length);
-		int nHierarchy = 0;
-		for (int value : processed) {
-			if (value > 1)
-				processed[nHierarchy++] = value;
+		int nHierarchy = rawHierarchy.length;
+		for (int i = nHierarchy - 1; i >= 0; i--) {
+			if (rawHierarchy[i] <= 1) {
+				if (i < nHierarchy - 1)
+					System.arraycopy(rawHierarchy, i + 1, rawHierarchy, i, nHierarchy - i - 1);
+				nHierarchy--;
+			}
 		}
 		if (nHierarchy == 0) {
-			warn("hierarchies must encompass ≥2 levels - collapsed to single level.");
-			processed = new int[] { 1 };
+			rawHierarchy = new int[] { 1 };
 			nHierarchy = 1;
+			if (subType == GeometryType.WELLMIXED || subType == GeometryType.COMPLETE || hierarchyWeight <= 0.0)
+				warn("hierarchies must encompass ≥2 levels - collapsed to single level.");
 		} else if (nHierarchy != rawHierarchy.length) {
 			warn("hierarchy levels must include >1 units - hierarchies collapsed to " + (nHierarchy + 1) + " levels.");
-			processed = Arrays.copyOf(processed, nHierarchy);
 			reset = true;
-		} else {
-			processed = Arrays.copyOf(processed, nHierarchy);
 		}
-
-		hierarchy = new int[nHierarchy + 1];
-		System.arraycopy(processed, 0, hierarchy, 0, nHierarchy);
+		if (hierarchy == null || hierarchy.length != nHierarchy + 1)
+			hierarchy = new int[nHierarchy + 1];
+		System.arraycopy(rawHierarchy, 0, hierarchy, 0, nHierarchy);
 
 		int prod = 1;
-		double requestedConn = connectivity;
 		int nIndiv;
-		switch (subGeometry) {
+		connectivity = 0;
+		switch (subType) {
+			case SQUARE_MOORE:
+				connectivity = 8;
+				//$FALL-THROUGH$
 			case SQUARE_NEUMANN_2ND:
 			case SQUARE_NEUMANN:
-			case SQUARE_MOORE:
+				connectivity = Math.max(connectivity, 4);
+				//$FALL-THROUGH$
 			case SQUARE:
 				if (nHierarchy != 1 || hierarchy[0] != 1) {
 					for (int i = 0; i < nHierarchy; i++) {
@@ -157,37 +177,22 @@ public class HierarchicalGeometry extends AbstractLattice {
 						prod *= hierarchy[i];
 					}
 				}
-				int nPerDeme = size > 0 ? Math.max(1, size / Math.max(1, prod)) : 1;
-				int subside = (int) Math.sqrt(nPerDeme);
+				nIndiv = size > 0 ? size / Math.max(1, prod) : 0;
+				int subside = (int) Math.sqrt(nIndiv);
 				nIndiv = Math.max(9, subside * subside);
-				switch (subGeometry) {
-					case SQUARE_MOORE:
-						connectivity = 8;
-						break;
-					case SQUARE_NEUMANN:
-					case SQUARE_NEUMANN_2ND:
-						connectivity = Math.max(4, requestedConn > 0 ? requestedConn : 4);
-						break;
-					case SQUARE:
-					default:
-						connectivity = requestedConn > 0 ? requestedConn : 4;
-						break;
-				}
 				break;
+			default:
+				warn("subgeometry '" + subType + "' not supported - using well-mixed demes.");
+				reset = true;
+				//$FALL-THROUGH$
 			case COMPLETE:
-				subGeometry = GeometryType.WELLMIXED;
+				subType = GeometryType.WELLMIXED;
 				//$FALL-THROUGH$
 			case WELLMIXED:
-			default:
 				for (int i = 0; i < nHierarchy; i++)
 					prod *= hierarchy[i];
 				nIndiv = Math.max(2, size > 0 ? size / Math.max(1, prod) : 2);
 				connectivity = Math.max(0, nIndiv - 1);
-				if (subGeometry != GeometryType.WELLMIXED) {
-					warn("subgeometry '" + subGeometry + "' not supported - using well-mixed demes.");
-					subGeometry = GeometryType.WELLMIXED;
-					reset = true;
-				}
 				break;
 		}
 		hierarchy[nHierarchy] = nIndiv;
@@ -221,42 +226,6 @@ public class HierarchicalGeometry extends AbstractLattice {
 	}
 
 	/**
-	 * Parse and remove potential sub-geometry tokens from the specification.
-	 *
-	 * @param spec specification string
-	 * @return remainder string once sub-geometry/boundary tokens are consumed
-	 */
-	private String parseSubGeometry(String spec) {
-		if (spec.isEmpty())
-			return spec;
-		if (spec.startsWith("n2")) {
-			subGeometry = GeometryType.SQUARE_NEUMANN_2ND;
-			return spec.substring(2);
-		}
-		char key = spec.charAt(0);
-		switch (key) {
-			case 'n':
-				subGeometry = GeometryType.SQUARE_NEUMANN;
-				return spec.substring(1);
-			case 'm':
-				subGeometry = GeometryType.SQUARE_MOORE;
-				return spec.substring(1);
-			case 'N':
-				subGeometry = GeometryType.SQUARE;
-				return spec.substring(1);
-			case 'C':
-			case 'c':
-				subGeometry = GeometryType.COMPLETE;
-				return spec.substring(1);
-			case 'M':
-				subGeometry = GeometryType.WELLMIXED;
-				return spec.substring(1);
-			default:
-				return spec;
-		}
-	}
-
-	/**
 	 * Utility method to generate hierarchical graphs.
 	 *
 	 * @param level the hierarchical level
@@ -266,7 +235,7 @@ public class HierarchicalGeometry extends AbstractLattice {
 		if (level == hierarchy.length - 1) {
 			int nIndiv = hierarchy[level];
 			int end = start + nIndiv;
-			switch (subGeometry) {
+			switch (subType) {
 				case SQUARE_NEUMANN:
 				case SQUARE_NEUMANN_2ND:
 				case SQUARE_MOORE:
@@ -280,7 +249,7 @@ public class HierarchicalGeometry extends AbstractLattice {
 					return;
 			}
 		}
-		switch (subGeometry) {
+		switch (subType) {
 			case SQUARE_NEUMANN:
 			case SQUARE_NEUMANN_2ND:
 			case SQUARE_MOORE:
@@ -338,7 +307,7 @@ public class HierarchicalGeometry extends AbstractLattice {
 		int nIndiv = end - start;
 		int demeSide = (int) Math.sqrt(nIndiv);
 		int fullSide = (int) Math.sqrt(size);
-		switch (subGeometry) {
+		switch (subType) {
 			case SQUARE_NEUMANN:
 				initSquareVonNeumann(demeSide, fullSide, start);
 				break;
@@ -764,13 +733,13 @@ public class HierarchicalGeometry extends AbstractLattice {
 	public boolean isUnique() {
 		if (isRewired)
 			return true;
-		return subGeometry.isUnique();
+		return subType.isUnique();
 	}
 
 	@Override
 	public HierarchicalGeometry clone() {
 		HierarchicalGeometry clone = (HierarchicalGeometry) super.clone();
-		clone.subGeometry = subGeometry;
+		clone.subType = subType;
 		if (rawHierarchy != null)
 			clone.rawHierarchy = Arrays.copyOf(rawHierarchy, rawHierarchy.length);
 		if (hierarchy != null)
@@ -782,7 +751,7 @@ public class HierarchicalGeometry extends AbstractLattice {
 	@Override
 	public int hashCode() {
 		int result = super.hashCode();
-		result = 31 * result + (subGeometry == null ? 0 : subGeometry.hashCode());
+		result = 31 * result + (subType == null ? 0 : subType.hashCode());
 		result = 31 * result + Arrays.hashCode(rawHierarchy);
 		result = 31 * result + Arrays.hashCode(hierarchy);
 		long temp = Double.doubleToLongBits(hierarchyWeight);
@@ -797,7 +766,7 @@ public class HierarchicalGeometry extends AbstractLattice {
 		if (!super.equals(obj))
 			return false;
 		HierarchicalGeometry other = (HierarchicalGeometry) obj;
-		return subGeometry == other.subGeometry && Arrays.equals(rawHierarchy, other.rawHierarchy)
+		return subType == other.subType && Arrays.equals(rawHierarchy, other.rawHierarchy)
 				&& Arrays.equals(hierarchy, other.hierarchy)
 				&& Double.doubleToLongBits(hierarchyWeight) == Double.doubleToLongBits(other.hierarchyWeight);
 	}
