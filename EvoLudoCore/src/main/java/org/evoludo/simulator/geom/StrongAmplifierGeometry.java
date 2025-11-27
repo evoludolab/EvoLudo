@@ -91,13 +91,17 @@ public class StrongAmplifierGeometry extends AbstractGeometry {
 		int nLinks = nTodo * degree;
 		int[] todo = new int[nTodo];
 		for (int n = start; n < end; n++)
-			todo[n - start] = n;
+			todo[n] = n;
+
+		// ensure connectedness for static graphs
 		int[] active = new int[nTodo];
 		int[] done = new int[nTodo];
 		int nDone = 0;
 		int idxa = rng.random0n(nTodo);
 		active[0] = todo[idxa];
-		todo[idxa] = todo[--nTodo];
+		nTodo--;
+		if (idxa != nTodo)
+			System.arraycopy(todo, idxa + 1, todo, idxa, nTodo - idxa);
 		int nActive = 1;
 		while (nTodo > 0) {
 			idxa = rng.random0n(nActive);
@@ -107,49 +111,74 @@ public class StrongAmplifierGeometry extends AbstractGeometry {
 			addEdgeAt(nodea, nodeb);
 			if (kout[nodea] == degree) {
 				done[nDone++] = nodea;
-				active[idxa] = active[--nActive];
+				nActive--;
+				if (idxa != nActive)
+					System.arraycopy(active, idxa + 1, active, idxa, nActive - idxa);
 			}
+			// degree of nodeb not yet reached - add to active list
 			if (kout[nodeb] < degree)
 				active[nActive++] = nodeb;
-			todo[idxb] = todo[--nTodo];
+			// remove nodeb from core of unconnected nodes
+			nTodo--;
+			if (idxb != nTodo)
+				System.arraycopy(todo, idxb + 1, todo, idxb, nTodo - idxb);
 		}
+		// now we have a connected graph
 		todo = active;
 		nTodo = nActive;
 		nLinks -= 2 * (end - start - 1);
+
+		// ideally we should go from nTodo=2 to zero but a single node with a different
+		// degree is acceptable
 		while (nTodo > 1) {
 			int a = rng.random0n(nLinks);
 			int b = rng.random0n(nLinks - 1);
 			if (b >= a)
 				b++;
-			int idxNa = 0;
-			int nodeA = todo[idxNa];
-			a -= degree - kout[nodeA];
+
+			// identify nodes
+			idxa = 0;
+			int nodea = todo[idxa];
+			a -= degree - kout[nodea];
 			while (a >= 0) {
-				nodeA = todo[++idxNa];
-				a -= degree - kout[nodeA];
+				nodea = todo[++idxa];
+				a -= degree - kout[nodea];
 			}
-			int idxNb = 0;
-			int nodeB = todo[idxNb];
-			b -= degree - kout[nodeB];
+			int idxb = 0;
+			int nodeb = todo[idxb];
+			b -= degree - kout[nodeb];
 			while (b >= 0) {
-				nodeB = todo[++idxNb];
-				b -= degree - kout[nodeB];
+				nodeb = todo[++idxb];
+				b -= degree - kout[nodeb];
 			}
-			if (nodeA == nodeB)
+
+			if (nodea == nodeb)
 				continue;
-			if (isNeighborOf(nodeA, nodeB)) {
+			if (isNeighborOf(nodea, nodeb)) {
 				if (nDone < 1)
 					continue;
-				if (!rewireNeighbourEdge(rng, nodeA, nodeB, done, nDone))
+				if (!rewireNeighbourEdge(rng, nodea, nodeb, done, nDone))
+					// cross fingers and try again
 					continue;
 			} else {
-				addEdgeAt(nodeA, nodeB);
+				// A!=B and A-B are not connected
+				addEdgeAt(nodea, nodeb);
 			}
 			nLinks -= 2;
-			if (kout[nodeA] == degree)
-				todo[idxNa] = todo[--nTodo];
-			if (kout[nodeB] == degree)
-				todo[idxNb] = todo[--nTodo];
+			if (kout[nodea] == degree) {
+				done[nDone++] = nodea;
+				nTodo--;
+				if (idxa != nTodo)
+					System.arraycopy(todo, idxa + 1, todo, idxa, nTodo - idxa);
+				if (idxb > idxa)
+					idxb--;
+			}
+			if (kout[nodeb] == degree) {
+				done[nDone++] = nodeb;
+				nTodo--;
+				if (idxb != nTodo)
+					System.arraycopy(todo, idxb + 1, todo, idxb, nTodo - idxb);
+			}
 		}
 	}
 

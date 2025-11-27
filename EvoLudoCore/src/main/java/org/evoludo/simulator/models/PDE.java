@@ -310,7 +310,6 @@ public class PDE extends ODE {
 		if (supervisor == null)
 			supervisor = engine.hirePDESupervisor(this);
 		module = engine.getModule();
-		space = module.getGeometry();
 		sorting = (o1, o2) -> (int) Math.signum(o1[0] - o2[0]);
 	}
 
@@ -335,6 +334,7 @@ public class PDE extends ODE {
 			engine.loadModel(ModelType.ODE);
 			return true;
 		}
+		space = module.getGeometry();
 		if (space.isType(GeometryType.WELLMIXED) || space.isType(GeometryType.COMPLETE)) {
 			logger.warning("unstructured population - reverting to ODE.");
 			engine.loadModel(ModelType.ODE);

@@ -126,7 +126,6 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 			if (klemmProbability < 1e-8) {
 				for (int i = 0; i < nActive; i++) {
 					addEdgeAt(n, active[i]);
-					addEdgeAt(active[i], n);
 				}
 			} else {
 				for (int i = 0; i < nActive; i++) {
@@ -147,10 +146,8 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 							}
 						} while (randnode < 0 || isNeighborOf(n, randnode));
 						addEdgeAt(n, randnode);
-						addEdgeAt(randnode, n);
 					} else {
 						addEdgeAt(n, active[i]);
-						addEdgeAt(active[i], n);
 					}
 				}
 			}

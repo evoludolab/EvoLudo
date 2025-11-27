@@ -52,13 +52,6 @@ public abstract class AbstractLattice extends AbstractGeometry {
 		super(engine);
 	}
 
-	private boolean isInterspecies = false;
-
-	@Override
-	public boolean isInterspecies() {
-		return isInterspecies;
-	}
-
 	/**
 	 * @return {@code true} if the lattice uses fixed boundaries instead of periodic
 	 *         ones.
@@ -78,11 +71,6 @@ public abstract class AbstractLattice extends AbstractGeometry {
 	public void reset() {
 		super.reset();
 		fixedBoundary = false;
-	}
-
-	public void init(boolean isInterspecies) {
-		this.isInterspecies = isInterspecies;
-		init();
 	}
 
 	/**
@@ -110,7 +98,6 @@ public abstract class AbstractLattice extends AbstractGeometry {
 	public AbstractLattice clone() {
 		AbstractLattice clone = (AbstractLattice) super.clone();
 		clone.fixedBoundary = fixedBoundary;
-		clone.isInterspecies = isInterspecies;
 		return clone;
 	}
 
@@ -118,7 +105,6 @@ public abstract class AbstractLattice extends AbstractGeometry {
 	public int hashCode() {
 		int result = super.hashCode();
 		result = 31 * result + Boolean.hashCode(fixedBoundary);
-		result = 31 * result + Boolean.hashCode(isInterspecies);
 		return result;
 	}
 
@@ -129,6 +115,6 @@ public abstract class AbstractLattice extends AbstractGeometry {
 		if (!super.equals(obj))
 			return false;
 		AbstractLattice other = (AbstractLattice) obj;
-		return fixedBoundary == other.fixedBoundary && isInterspecies == other.isInterspecies;
+		return fixedBoundary == other.fixedBoundary;
 	}
 }

@@ -3528,15 +3528,17 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	void setGeometryNames() {
 		String name = module.getName();
 		if (interaction.isSingle() || AbstractGeometry.displaySingle(interaction, competition)) {
-			if (!name.isEmpty())
+			if (name.isEmpty())
+				name = "Structure";
+			else
 				name = name + ": Structure";
 			interaction.setName(name);
 			competition.setName(name);
 			return;
 		}
 		if (name.isEmpty()) {
-			interaction.setName(name);
-			competition.setName(name);
+			interaction.setName("Interaction");
+			competition.setName("Competition");
 		} else {
 			interaction.setName(name + ": Interaction");
 			competition.setName(name + ": Competition");
@@ -3570,6 +3572,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 
 	boolean checkInteractions(int nGroup) {
 		boolean doReset = false;
+		interaction.setInterspecies(opponent != this);
 		// check sampling in special geometries
 		if (interaction.isType(GeometryType.SQUARE) && interaction.isRegular() && interaction.getConnectivity() > 8 &&
 				interGroup.isSampling(IBSGroup.SamplingType.ALL) && nGroup > 2 && nGroup < 9) {
@@ -4907,14 +4910,14 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 */
 	public void encodeGeometry(StringBuilder plist) {
 		plist.append(
-				"<key>" + interaction.getName() + "</key>\n" +
+				"<key>" + interaction.getEncodeKey() + "</key>\n" +
 						"<dict>\n");
 		plist.append(interaction.encodeGeometry());
 		plist.append("</dict>\n");
 		if (interaction.isSingle())
 			return;
 		plist.append(
-				"<key>" + competition.getName() + "</key>\n" +
+				"<key>" + competition.getEncodeKey() + "</key>\n" +
 						"<dict>\n");
 		plist.append(competition.encodeGeometry());
 		plist.append("</dict>\n");
@@ -4930,7 +4933,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	 * @see Model#restoreState(Plist)
 	 */
 	public boolean restoreGeometry(Plist plist) {
-		Plist igeo = (Plist) plist.get(interaction.getName());
+		Plist igeo = (Plist) plist.get(interaction.getEncodeKey());
 		if (igeo == null)
 			return false;
 		interaction.decodeGeometry(igeo);
@@ -4938,7 +4941,7 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			competition = interaction.deriveCompetitionGeometry();
 			return true;
 		}
-		Plist rgeo = (Plist) plist.get(competition.getName());
+		Plist rgeo = (Plist) plist.get(competition.getEncodeKey());
 		if (rgeo == null)
 			return false;
 		competition.decodeGeometry(rgeo);

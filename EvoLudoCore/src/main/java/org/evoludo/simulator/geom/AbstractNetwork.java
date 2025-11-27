@@ -30,9 +30,6 @@
 
 package org.evoludo.simulator.geom;
 
-import java.util.Arrays;
-
-import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
 
@@ -40,6 +37,11 @@ import org.evoludo.simulator.EvoLudo;
  * Base class for geometries constructed from specific degree distributions.
  */
 public abstract class AbstractNetwork extends AbstractGeometry {
+
+	/**
+	 * Number of attempts before giving up on constructing the desired graph.
+	 */
+	static final int MAX_TRIALS = 10;
 
 	/**
 	 * Create a network-backed geometry for the provided engine.
@@ -67,28 +69,78 @@ public abstract class AbstractNetwork extends AbstractGeometry {
 	 * @return {@code true} if a matching graph was constructed successfully
 	 */
 	protected boolean initGeometryDegreeDistr(int[] degree) {
+		isRewired = false;
+		isUndirected = true;
+		alloc();
+
+		RNGDistribution rng = engine.getRNG();
 		int todo;
 		int[] core = new int[size];
 		int[] full = new int[size];
 		for (int n = 0; n < size; n++)
 			core[n] = n;
 		todo = size;
-		Arrays.fill(full, -1);
+
+		if (!isType(GeometryType.DYNAMIC)) {
+			// build a connected core first (excluding leaves)
+			int leafIdx = -1;
+			for (int i = size - 1; i >= 0; i--) {
+				if (degree[i] <= 1)
+					continue;
+				leafIdx = i + 1;
+				break;
+			}
+			todo = leafIdx;
+			int[] active = new int[size];
+			int idxa = rng.random0n(todo);
+			active[0] = core[idxa];
+			core[idxa] = core[--todo];
+			int nActive = 1;
+			int done = 0;
+			while (todo > 0) {
+				idxa = rng.random0n(nActive);
+				int nodea = active[idxa];
+				int idxb = rng.random0n(todo);
+				int nodeb = core[idxb];
+				addEdgeAt(nodea, nodeb);
+				if (kout[nodea] == degree[nodea]) {
+					full[done++] = nodea;
+					active[idxa] = active[--nActive];
+				}
+				if (kout[nodeb] == degree[nodeb])
+					full[done++] = nodeb;
+				else
+					active[nActive++] = nodeb;
+				core[idxb] = core[--todo];
+			}
+			if (leafIdx < size)
+				System.arraycopy(core, leafIdx, active, nActive, size - leafIdx);
+			core = active;
+			todo = nActive;
+		}
+
 		int escape = 0;
 		while (todo > 1) {
-			int idxa = engine.getRNG().random0n(todo);
+			int idxa = rng.random0n(todo);
 			int nodea = core[idxa];
-			int idxb = engine.getRNG().random0n(todo - 1);
+			int idxb = rng.random0n(todo - 1);
 			if (idxb >= idxa)
 				idxb++;
 			int nodeb = core[idxb];
+			boolean success = true;
 			if (isNeighborOf(nodea, nodeb)) {
-				if (!rewireNeighbourEdge(nodea, nodeb, full, size - todo))
-					continue;
-			} else
+				// avoid rewiring when nothing is in the connected set yet
+				if (todo == size || !rewireNeighbourEdge(nodea, nodeb, full, size - todo))
+					success = false;
+			} else {
 				addEdgeAt(nodea, nodeb);
-			if (++escape > 10)
-				return false;
+			}
+			if (!success) {
+				if (++escape > MAX_TRIALS)
+					return false;
+				continue;
+			}
+			escape = 0;
 			if (kout[nodea] == degree[nodea]) {
 				full[size - todo] = nodea;
 				core[idxa] = core[--todo];
@@ -102,9 +154,9 @@ public abstract class AbstractNetwork extends AbstractGeometry {
 		}
 		if (todo == 1) {
 			int nodea = core[0];
-			int idxc = engine.getRNG().random0n(size - 1);
+			int idxc = rng.random0n(size - 1);
 			int nodec = full[idxc];
-			int noded = out[nodec][engine.getRNG().random0n(kout[nodec])];
+			int noded = out[nodec][rng.random0n(kout[nodec])];
 			if (noded != nodea && !isNeighborOf(nodea, nodec) && !isNeighborOf(nodea, noded)) {
 				removeEdgeAt(nodec, noded);
 				addEdgeAt(nodea, nodec);
@@ -145,125 +197,5 @@ public abstract class AbstractNetwork extends AbstractGeometry {
 			return true;
 		}
 		return false;
-	}
-
-	/**
-	 * Rewire undirected links while keeping the graph connected.
-	 *
-	 * <h3>Requirements/notes:</h3>
-	 * <ol>
-	 * <li>Only applicable to undirected graphs.
-	 * <li>Rewiring preserves connectivity of all nodes and the graph remains
-	 * undirected.
-	 * <li>The number of rewired links is
-	 * \(N_\text{rewired}=\min(N_\text{links},
-	 * N_\text{links} \log(1-p_\text{undir}))\), i.e. at most the number of
-	 * existing undirected links. Thus at most an expected fraction of \(1-1/e\)
-	 * (≈63%) of the original links get rewired.
-	 * </ol>
-	 *
-	 * @param prob probability of rewiring any particular undirected link
-	 * @return {@code true} if rewiring was performed
-	 */
-	protected boolean rewireUndirected(double prob) {
-		if (!isUndirected || prob <= 0.0)
-			return false;
-		RNGDistribution rng = engine.getRNG();
-		int nLinks = (int) Math
-				.floor(ArrayMath.norm(kout) / 2 * Math.min(1.0, -Math.log(1.0 - prob)) + 0.5);
-		long done = 0;
-		while (done < nLinks) {
-			int first, len;
-			do {
-				first = rng.random0n(size);
-				len = kin[first];
-			} while (len <= 1 || len == size - 1);
-			int firstneigh = in[first][rng.random0n(len)];
-			int second;
-			do {
-				second = rng.random0n(size - 1);
-				if (second >= first)
-					second++;
-				len = kin[second];
-			} while (len <= 1 || len == size - 1);
-			int secondneigh = in[second][rng.random0n(len)];
-
-			if (!swapEdges(first, firstneigh, second, secondneigh))
-				continue;
-			if (!isGraphConnected()) {
-				swapEdges(first, firstneigh, second, secondneigh);
-				swapEdges(first, secondneigh, second, firstneigh);
-				continue;
-			}
-			done += 2;
-		}
-		return true;
-	}
-
-	/**
-	 * Utility method to swap edges (undirected links) between nodes: change link
-	 * {@code a-an} to {@code a-bn} and {@code b-bn} to {@code b-an}.
-	 *
-	 * <h3>Requirements/notes:</h3>
-	 * Equivalent to invoking {@code rewireEdgeAt(a, bn, an);} followed by
-	 * {@code rewireEdgeAt(b, an, bn);} but avoids the additional allocations of
-	 * those helper methods.
-	 *
-	 * @param a  the first node
-	 * @param an the neighbour of {@code a} to replace
-	 * @param b  the second node
-	 * @param bn the neighbour of {@code b} to replace
-	 * @return {@code true} if the swap succeeded
-	 */
-	private boolean swapEdges(int a, int an, int b, int bn) {
-		if (a == bn || b == an || an == bn)
-			return false;
-		if (isNeighborOf(a, bn) || isNeighborOf(b, an))
-			return false;
-
-		int[] aout = out[a];
-		int ai = -1;
-		while (aout[++ai] != an) {
-		}
-		aout[ai] = bn;
-		int[] bout = out[b];
-		int bi = -1;
-		while (bout[++bi] != bn) {
-		}
-		bout[bi] = an;
-
-		int[] ain = in[a];
-		ai = -1;
-		while (ain[++ai] != an) {
-		}
-		ain[ai] = bn;
-		int[] bin = in[b];
-		bi = -1;
-		while (bin[++bi] != bn) {
-		}
-		bin[bi] = an;
-
-		aout = out[an];
-		ai = -1;
-		while (aout[++ai] != a) {
-		}
-		aout[ai] = b;
-		bout = out[bn];
-		bi = -1;
-		while (bout[++bi] != b) {
-		}
-		bout[bi] = a;
-
-		ain = in[an];
-		ai = -1;
-		while (ain[++ai] != a) {
-		}
-		ain[ai] = b;
-		bin = in[bn];
-		bi = -1;
-		while (bin[++bi] != b) {
-		}
-		bin[bi] = a;
-		return true;
 	}
 }

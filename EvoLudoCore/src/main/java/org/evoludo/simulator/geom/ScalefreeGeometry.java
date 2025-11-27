@@ -224,7 +224,8 @@ public class ScalefreeGeometry extends AbstractNetwork {
 			for (int n = 0; n < size / 2; n++)
 				swap(degrees, n, size - n - 1);
 
-			for (int attempt = 0; attempt < 10; attempt++) {
+			alloc();
+			for (int attempt = 0; attempt < AbstractNetwork.MAX_TRIALS; attempt++) {
 				if (initGeometryDegreeDistr(degrees)) {
 					isValid = true;
 					return;

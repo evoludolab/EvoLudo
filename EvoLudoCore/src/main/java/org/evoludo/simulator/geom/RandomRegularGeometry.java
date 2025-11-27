@@ -11,11 +11,6 @@ import org.evoludo.simulator.EvoLudo;
 public class RandomRegularGeometry extends AbstractNetwork {
 
 	/**
-	 * Number of attempts before giving up on constructing the desired graph.
-	 */
-	private static final int MAX_TRIALS = 10;
-
-	/**
 	 * Create a random regular geometry tied to the given engine.
 	 *
 	 * @param engine EvoLudo pacemaker
@@ -39,13 +34,14 @@ public class RandomRegularGeometry extends AbstractNetwork {
 	@Override
 	public void init() {
 		isRegular = true;
-		alloc();
-		int[] degrees = new int[size];
+		final int[] degrees = new int[size];
 		Arrays.fill(degrees, (int) connectivity);
 		int trials = 0;
-		while (!initGeometryDegreeDistr(degrees) && ++trials < MAX_TRIALS)
-			;
-		if (trials >= MAX_TRIALS)
+		boolean success;
+		do {
+			success = initGeometryDegreeDistr(degrees);
+		} while (!success && ++trials < AbstractNetwork.MAX_TRIALS);
+		if (!success)
 			throw new IllegalStateException("Failed to construct random regular graph");
 	}
 

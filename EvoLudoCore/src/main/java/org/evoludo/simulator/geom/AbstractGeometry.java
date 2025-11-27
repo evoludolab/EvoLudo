@@ -142,7 +142,7 @@ public abstract class AbstractGeometry {
 					"Cannot derive competition geometry when isSingle == false.");
 		AbstractGeometry competition = clone();
 		// remove competition with self
-		if (competition.isType(GeometryType.WELLMIXED))
+		if (!competition.isType(GeometryType.WELLMIXED))
 			for (int n = 0; n < size; n++)
 				competition.removeLinkAt(n, n);
 		competition.evaluate();
@@ -210,6 +210,11 @@ public abstract class AbstractGeometry {
 	 * {@code true} if rewiring should be applied.
 	 */
 	boolean isRewired = false;
+
+	/**
+	 * {@code true} if this geometry links different species/populations.
+	 */
+	protected boolean isInterspecies = false;
 
 	/**
 	 * {@code true} if geometry has been evaluated.
@@ -317,6 +322,7 @@ public abstract class AbstractGeometry {
 	protected AbstractGeometry(EvoLudo engine) {
 		this.engine = engine;
 		this.logger = engine.getLogger();
+		this.isInterspecies = engine.getModule().getNSpecies() > 1;
 	}
 
 	/**
@@ -339,6 +345,17 @@ public abstract class AbstractGeometry {
 			return "";
 		if (name.endsWith(": Structure"))
 			return name.substring(0, name.length() - ": Structure".length());
+		return name;
+	}
+
+	/**
+	 * Retrieve the name of the key for storing geometry in plist.
+	 *
+	 * @return the plist key
+	 */
+	public String getEncodeKey() {
+		if (name == null || name.isEmpty())
+			return "Structure";
 		return name;
 	}
 
@@ -708,6 +725,7 @@ public abstract class AbstractGeometry {
 		pAddwire = -1.0;
 		isUndirected = true;
 		isRewired = false;
+		isInterspecies = false;
 		isSingle = true;
 		isRegular = false;
 		isValid = false;
@@ -860,7 +878,16 @@ public abstract class AbstractGeometry {
 	 * @return {@code true} if this geometry links two different populations.
 	 */
 	public boolean isInterspecies() {
-		return false;
+		return isInterspecies;
+	}
+
+	/**
+	 * Set whether this geometry links different populations.
+	 *
+	 * @param interspecies {@code true} for inter-species interactions
+	 */
+	public void setInterspecies(boolean interspecies) {
+		this.isInterspecies = interspecies;
 	}
 
 	/**
@@ -905,8 +932,11 @@ public abstract class AbstractGeometry {
 	 * <li>Resulting graph obviously remains undirected.
 	 * <li>The number of rewired links is \(N_\text{rewired}=\min {N_\text{links},
 	 * N_\text{links} \log(1-p_\text{undir})}\), i.e. at most the number undirected
-	 * links in the graph. Thus, at most an expected fraction of \(1-1/e\) (or
-	 * \(~63%\)) of original links get rewired.
+	 * links in the graph. Thus, the expected fraction of original links rewired at
+	 * most an \(1-1/e\) (or \(~63%\)).
+	 * <li>Any rewiring attempts that disconnect the graph are reverted (but still
+	 * count towards the number of rewired links to prevent deadlocks in graphs with
+	 * low connectivity).
 	 * </ol>
 	 * 
 	 * @param prob the probability of rewiring an undirected link
@@ -939,9 +969,9 @@ public abstract class AbstractGeometry {
 			if (!swapEdges(first, firstneigh, second, secondneigh))
 				continue;
 			if (!isGraphConnected()) {
+				// revert swap if graph got disconnected
 				swapEdges(first, firstneigh, second, secondneigh);
 				swapEdges(first, secondneigh, second, firstneigh);
-				continue;
 			}
 			done += 2;
 		}
@@ -949,9 +979,21 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
-	 * Swap undirected edges {@code a-an} and {@code b-bn}.
+	 * Utility method to swap edges (undirected links) between nodes: change link
+	 * {@code a-an} to {@code a-bn} and {@code b-bn} to {@code b-an}.
+	 *
+	 * <h3>Requirements/notes:</h3>
+	 * Equivalent to invoking {@code rewireEdgeAt(a, bn, an);} followed by
+	 * {@code rewireEdgeAt(b, an, bn);} but avoids the additional allocations of
+	 * those helper methods.
+	 *
+	 * @param a  the first node
+	 * @param an the neighbour of {@code a} to replace
+	 * @param b  the second node
+	 * @param bn the neighbour of {@code b} to replace
+	 * @return {@code true} if the swap succeeded
 	 */
-	private boolean swapEdges(int a, int an, int b, int bn) {
+	boolean swapEdges(int a, int an, int b, int bn) {
 		if (a == bn || b == an || an == bn)
 			return false;
 		if (isNeighborOf(a, bn) || isNeighborOf(b, an))
@@ -960,44 +1002,52 @@ public abstract class AbstractGeometry {
 		int[] aout = out[a];
 		int ai = -1;
 		while (aout[++ai] != an) {
+			// advance index until we locate 'an' in a's adjacency list
 		}
 		aout[ai] = bn;
 		int[] bout = out[b];
 		int bi = -1;
 		while (bout[++bi] != bn) {
+			// advance index until we locate 'bn' in b's adjacency list
 		}
 		bout[bi] = an;
 
 		int[] ain = in[a];
 		ai = -1;
 		while (ain[++ai] != an) {
+			// advance index until we locate 'an' in a's incoming list
 		}
 		ain[ai] = bn;
 		int[] bin = in[b];
 		bi = -1;
 		while (bin[++bi] != bn) {
+			// advance index until we locate 'bn' in b's incoming list
 		}
 		bin[bi] = an;
 
 		aout = out[an];
 		ai = -1;
 		while (aout[++ai] != a) {
+			// advance index until we locate 'a' in an's adjacency list
 		}
 		aout[ai] = b;
 		bout = out[bn];
 		bi = -1;
 		while (bout[++bi] != b) {
+			// advance index until we locate 'b' in bn's adjacency list
 		}
 		bout[bi] = a;
 
 		ain = in[an];
 		ai = -1;
 		while (ain[++ai] != a) {
+			// advance index until we locate 'a' in an's incoming list
 		}
 		ain[ai] = b;
 		bin = in[bn];
 		bi = -1;
 		while (bin[++bi] != b) {
+			// advance index until we locate 'b' in bn's incoming list
 		}
 		bin[bi] = a;
 		return true;
@@ -1620,6 +1670,7 @@ public abstract class AbstractGeometry {
 		clone.pAddwire = pAddwire;
 		clone.isUndirected = isUndirected;
 		clone.isRewired = isRewired;
+		clone.isInterspecies = isInterspecies;
 		clone.isSingle = isSingle;
 		clone.isRegular = isRegular;
 		clone.isValid = isValid;
@@ -1628,9 +1679,9 @@ public abstract class AbstractGeometry {
 
 	@Override
 	public int hashCode() {
-		int result = Objects.hash(engine, specification, name, type, size, isUndirected, isRegular, isRewired, isSingle,
-				isValid, minIn, maxIn, avgIn, minOut, maxOut, avgOut, minTot, maxTot, avgTot, connectivity, pRewire,
-				pAddwire);
+		int result = Objects.hash(engine, specification, name, type, size, isUndirected, isRegular, isRewired,
+				isInterspecies, isSingle, isValid, minIn, maxIn, avgIn, minOut, maxOut, avgOut, minTot, maxTot, avgTot,
+				connectivity, pRewire, pAddwire);
 		result = 31 * result + Arrays.hashCode(kin);
 		result = 31 * result + Arrays.hashCode(kout);
 		result = 31 * result + Arrays.deepHashCode(in);
@@ -1646,7 +1697,8 @@ public abstract class AbstractGeometry {
 			return false;
 		AbstractGeometry other = (AbstractGeometry) obj;
 		return size == other.size && isUndirected == other.isUndirected && isRegular == other.isRegular
-				&& isRewired == other.isRewired && isSingle == other.isSingle && isValid == other.isValid
+				&& isRewired == other.isRewired && isInterspecies == other.isInterspecies && isSingle == other.isSingle
+				&& isValid == other.isValid
 				&& minIn == other.minIn && maxIn == other.maxIn && Double.doubleToLongBits(avgIn) == Double
 						.doubleToLongBits(other.avgIn)
 				&& minOut == other.minOut && maxOut == other.maxOut && Double.doubleToLongBits(avgOut) == Double
