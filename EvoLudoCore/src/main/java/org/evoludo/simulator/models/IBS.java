@@ -343,8 +343,9 @@ public abstract class IBS extends Model {
 	 * @return {@code true} if all species have positive minimum fitness
 	 */
 	private boolean positiveMinFitness() {
-		for (int n = 0; n < nSpecies; n++) {
-			if (getMinFitness(n) <= 0.0)
+		for (Module<?> mod : species) {
+			if (!(mod instanceof Payoffs)
+					|| mod.getMap2Fitness().map(((Payoffs) mod).getMinPayoff()) <= 0.0)
 				return false;
 		}
 		return true;
