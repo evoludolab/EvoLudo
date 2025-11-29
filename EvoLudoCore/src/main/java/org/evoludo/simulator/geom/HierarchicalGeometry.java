@@ -32,6 +32,7 @@ package org.evoludo.simulator.geom;
 
 import java.util.Arrays;
 
+import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -43,9 +44,16 @@ import org.evoludo.util.Formatter;
  */
 public class HierarchicalGeometry extends AbstractLattice {
 
+	/**
+	 * The geometry of each hierarchical level.
+	 */
 	private GeometryType subType = GeometryType.WELLMIXED;
-	private int[] rawHierarchy;
+
+	/**
+	 * The number of units at each hierarchical level.
+	 */
 	private int[] hierarchy;
+
 	/**
 	 * Coupling strength between hierarchical levels.
 	 */
@@ -62,29 +70,8 @@ public class HierarchicalGeometry extends AbstractLattice {
 	}
 
 	@Override
-	public boolean parse(String arg) {
-		String spec = arg == null ? "" : arg.trim();
-		subType = GeometryType.WELLMIXED;
-		fixedBoundary = false;
-		if (!spec.isEmpty() && !Character.isDigit(spec.charAt(0))) {
-			CLOption clo = engine.getModule().cloGeometry;
-			subType = (GeometryType) clo.match(spec);
-			spec = spec.substring(1);
-			if (!spec.isEmpty() && GeometryType.isFixedBoundaryToken(spec.charAt(0))) {
-				fixedBoundary = true;
-				spec = spec.substring(1);
-			}
-		}
-		int weightIdx = spec.lastIndexOf('w');
-		if (weightIdx < 0) {
-			hierarchyWeight = 0.0;
-			rawHierarchy = CLOParser.parseIntVector(spec);
-		} else {
-			hierarchyWeight = CLOParser.parseDouble(spec.substring(weightIdx + 1));
-			rawHierarchy = CLOParser.parseIntVector(spec.substring(0, weightIdx));
-		}
-		if (rawHierarchy == null || rawHierarchy.length == 0)
-			rawHierarchy = new int[] { 1 };
+	boolean parse(String spec) {
+		// parsing is postponed to checkSettings()
 		return true;
 	}
 
@@ -92,7 +79,6 @@ public class HierarchicalGeometry extends AbstractLattice {
 	public void reset() {
 		super.reset();
 		subType = GeometryType.WELLMIXED;
-		rawHierarchy = null;
 		hierarchy = null;
 		hierarchyWeight = 0.0;
 	}
@@ -127,36 +113,30 @@ public class HierarchicalGeometry extends AbstractLattice {
 	 *         individuals per deme)
 	 */
 	public int[] getHierarchyLevels() {
-		if (hierarchy != null)
-			return Arrays.copyOf(hierarchy, hierarchy.length);
-		return rawHierarchy == null ? new int[] { size } : Arrays.copyOf(rawHierarchy, rawHierarchy.length);
+		return hierarchy;
 	}
 
 	@Override
 	protected boolean checkSettings() {
 		boolean reset = false;
-		if (rawHierarchy == null || rawHierarchy.length == 0)
-			rawHierarchy = new int[] { 1 };
-		int nHierarchy = rawHierarchy.length;
-		for (int i = nHierarchy - 1; i >= 0; i--) {
-			if (rawHierarchy[i] <= 1) {
-				if (i < nHierarchy - 1)
-					System.arraycopy(rawHierarchy, i + 1, rawHierarchy, i, nHierarchy - i - 1);
-				nHierarchy--;
-			}
+		parseHierarchy();
+		int nHierarchy = hierarchy.length;
+		for (int i = 0; i < nHierarchy; i++) {
+			// collapse hierarchies with single units
+			if (hierarchy[i] <= 1)
+				hierarchy = ArrayMath.drop(hierarchy, i);
 		}
 		if (nHierarchy == 0) {
-			rawHierarchy = new int[] { 1 };
-			nHierarchy = 1;
-			if (subType == GeometryType.WELLMIXED || subType == GeometryType.COMPLETE || hierarchyWeight <= 0.0)
-				warn("hierarchies must encompass ≥2 levels - collapsed to single level.");
-		} else if (nHierarchy != rawHierarchy.length) {
+			// hierarchy = new int[] { 1 };
+			warn("hierarchies must encompass ≥2 levels - reset to single level.");
+			setType(subType);
+			return true;
+		}
+		if (nHierarchy != hierarchy.length) {
 			warn("hierarchy levels must include >1 units - hierarchies collapsed to " + (nHierarchy + 1) + " levels.");
 			reset = true;
 		}
-		if (hierarchy == null || hierarchy.length != nHierarchy + 1)
-			hierarchy = new int[nHierarchy + 1];
-		System.arraycopy(rawHierarchy, 0, hierarchy, 0, nHierarchy);
+		nHierarchy = hierarchy.length;
 
 		int prod = 1;
 		int nIndiv;
@@ -740,8 +720,6 @@ public class HierarchicalGeometry extends AbstractLattice {
 	public HierarchicalGeometry clone() {
 		HierarchicalGeometry clone = (HierarchicalGeometry) super.clone();
 		clone.subType = subType;
-		if (rawHierarchy != null)
-			clone.rawHierarchy = Arrays.copyOf(rawHierarchy, rawHierarchy.length);
 		if (hierarchy != null)
 			clone.hierarchy = Arrays.copyOf(hierarchy, hierarchy.length);
 		clone.hierarchyWeight = hierarchyWeight;
@@ -752,7 +730,6 @@ public class HierarchicalGeometry extends AbstractLattice {
 	public int hashCode() {
 		int result = super.hashCode();
 		result = 31 * result + (subType == null ? 0 : subType.hashCode());
-		result = 31 * result + Arrays.hashCode(rawHierarchy);
 		result = 31 * result + Arrays.hashCode(hierarchy);
 		long temp = Double.doubleToLongBits(hierarchyWeight);
 		result = 31 * result + (int) (temp ^ (temp >>> 32));
@@ -766,8 +743,38 @@ public class HierarchicalGeometry extends AbstractLattice {
 		if (!super.equals(obj))
 			return false;
 		HierarchicalGeometry other = (HierarchicalGeometry) obj;
-		return subType == other.subType && Arrays.equals(rawHierarchy, other.rawHierarchy)
-				&& Arrays.equals(hierarchy, other.hierarchy)
+		return subType == other.subType && Arrays.equals(hierarchy, other.hierarchy)
 				&& Double.doubleToLongBits(hierarchyWeight) == Double.doubleToLongBits(other.hierarchyWeight);
+	}
+
+	/**
+	 * Parse the hierarchy-related CLI spec, updating subtype, boundary flag and
+	 * weight, and returning the raw hierarchy levels (without the computed leaf
+	 * size).
+	 *
+	 * @return the parsed hierarchy levels (never {@code null} or empty)
+	 */
+	private void parseHierarchy() {
+		subType = GeometryType.WELLMIXED;
+		fixedBoundary = false;
+
+		CLOption clo = engine.getModule().cloGeometry;
+		subType = (GeometryType) clo.match(specs);
+		String sspecs = specs.substring(1);
+		if (!sspecs.isEmpty() && GeometryType.isFixedBoundaryToken(sspecs.charAt(0))) {
+			fixedBoundary = true;
+			sspecs = sspecs.substring(1);
+		}
+		int weightIdx = sspecs.lastIndexOf('w');
+		String levels = sspecs;
+		if (weightIdx >= 0) {
+			hierarchyWeight = CLOParser.parseDouble(sspecs.substring(weightIdx + 1));
+			levels = sspecs.substring(0, weightIdx);
+		} else {
+			hierarchyWeight = 0.0;
+		}
+		hierarchy = CLOParser.parseIntVector(levels);
+		if (hierarchy == null || hierarchy.length == 0)
+			hierarchy = new int[] { 1 };
 	}
 }

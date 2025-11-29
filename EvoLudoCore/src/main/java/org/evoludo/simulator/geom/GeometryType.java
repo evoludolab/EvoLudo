@@ -505,7 +505,7 @@ public enum GeometryType implements CLOption.Key {
 		GeometryType type = (GeometryType) clo.match(cli);
 		AbstractGeometry geometry = AbstractGeometry.create(type, engine);
 		String spec = cli.substring(Math.min(type.key.length(), cli.length()));
-		geometry.setSpecification(spec);
+		geometry.setSpecs(spec);
 		return geometry;
 	}
 

@@ -178,7 +178,7 @@ public abstract class AbstractGeometry {
 	/**
 	 * Optional CLI specification used to configure this geometry.
 	 */
-	private String specification;
+	String specs;
 
 	/**
 	 * Optional descriptive name.
@@ -456,18 +456,18 @@ public abstract class AbstractGeometry {
 	/**
 	 * Remember the CLI specification used to configure this geometry.
 	 *
-	 * @param spec the CLI argument portion (may be {@code null})
+	 * @param specs the CLI argument portion (may be {@code null})
 	 */
-	public void setSpecification(String spec) {
-		this.specification = spec;
+	public void setSpecs(String specs) {
+		this.specs = specs;
 	}
 
 	/**
 	 * @return the CLI specification string that configured this geometry, or
 	 *         {@code null}
 	 */
-	public String getSpecification() {
-		return specification;
+	public String getSpecs() {
+		return specs;
 	}
 
 	/**
@@ -489,7 +489,7 @@ public abstract class AbstractGeometry {
 	 * @return {@code true} if parsing succeeded
 	 */
 	public boolean parse() {
-		return parse(specification);
+		return parse(specs);
 	}
 
 	/**
@@ -703,7 +703,7 @@ public abstract class AbstractGeometry {
 	public void reset() {
 		network2D = null;
 		network3D = null;
-		specification = null;
+		specs = null;
 		name = null;
 		in = null;
 		out = null;
@@ -1638,7 +1638,7 @@ public abstract class AbstractGeometry {
 		AbstractGeometry clone = AbstractGeometry.create(type, engine);
 		// clone.population = population;
 		// clone.opponent = opponent;
-		clone.specification = specification;
+		clone.specs = specs;
 		clone.name = name;
 		if (kin != null)
 			clone.kin = Arrays.copyOf(kin, kin.length);
@@ -1679,7 +1679,7 @@ public abstract class AbstractGeometry {
 
 	@Override
 	public int hashCode() {
-		int result = Objects.hash(engine, specification, name, type, size, isUndirected, isRegular, isRewired,
+		int result = Objects.hash(engine, specs, name, type, size, isUndirected, isRegular, isRewired,
 				isInterspecies, isSingle, isValid, minIn, maxIn, avgIn, minOut, maxOut, avgOut, minTot, maxTot, avgTot,
 				connectivity, pRewire, pAddwire);
 		result = 31 * result + Arrays.hashCode(kin);
@@ -1708,7 +1708,7 @@ public abstract class AbstractGeometry {
 				&& Double.doubleToLongBits(connectivity) == Double.doubleToLongBits(other.connectivity)
 				&& Double.doubleToLongBits(pRewire) == Double.doubleToLongBits(other.pRewire)
 				&& Double.doubleToLongBits(pAddwire) == Double.doubleToLongBits(other.pAddwire)
-				&& Objects.equals(engine, other.engine) && Objects.equals(specification, other.specification)
+				&& Objects.equals(engine, other.engine) && Objects.equals(specs, other.specs)
 				&& Objects.equals(name, other.name) && type == other.type && Arrays.equals(kin, other.kin)
 				&& Arrays.equals(kout, other.kout) && Arrays.deepEquals(in, other.in)
 				&& Arrays.deepEquals(out, other.out);
