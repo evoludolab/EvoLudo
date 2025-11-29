@@ -506,20 +506,6 @@ public class PopGraph3D extends GenericPopGraph<MeshLambertMaterial, Network3DGW
 			links.setMatrixAutoUpdate(false);
 			scene.add(links);
 		}
-		// // IMPORTANT: The following lines are crucial for Safari (desktop and
-		// iPadOS). Safari
-		// // requires special convincing to properly display lattices as well as
-		// animated networks.
-		// // Chrome, Firefox and Safari (iOS) are all fine. In those cases the
-		// following lines are
-		// // not needed but do no harm either.
-		// if (network.isStatus(Status.NO_LAYOUT) ||
-		// network.isStatus(Status.HAS_LAYOUT)) {
-		// int k = 0;
-		// for (Mesh sphere : spheres)
-		// sphere.setMaterial(colors[k++]);
-		// graph3DPanel.forceLayout();
-		// }
 	}
 
 	@Override

@@ -95,7 +95,8 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	protected AbstractGeometry geometry;
 	protected Color[] colors;
 
-	double scaleX = 1.0, scaleY = 1.0;
+	double scaleX = 1.0;
+	double scaleY = 1.0;
 	double fLinks = 1.0;
 
 	protected JCheckBoxMenuItem animateMenu = new JCheckBoxMenuItem("Animate layout");
@@ -156,7 +157,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 				return;
 			default:
 		}
-		if (geometry.isType(GeometryType.CUBE) || geometry.isType(GeometryType.VOID)) {
+		if (geometry.isType(GeometryType.CUBE)) {
 			setMessage("No representation for geometry!");
 			return;
 		}
@@ -233,7 +234,6 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		// enable/disable context menu items
 		animateMenu.setState(animate);
 		switch (geometry.getType()) {
-			case VOID:
 			case TRIANGULAR:
 			case HEXAGONAL:
 			case SQUARE_NEUMANN:
@@ -267,13 +267,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		hasHistory = false;
 		if (geometry == null)
 			return hasHistory;
-		switch (geometry.getType()) {
-			case LINEAR:
-				hasHistory = true;
-				break;
-			default:
-				break;
-		}
+		hasHistory = geometry.isType(GeometryType.LINEAR);
 		if (clearMenu != null)
 			clearMenu.setEnabled(hasHistory);
 		return hasHistory;
@@ -429,7 +423,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 			colors = new Color[geometry.getSize()];
 	}
 
-	// allow sublcasses to handle resetting the zoom differently (e.g. PopGraph3D
+	// allow subclasses to handle resetting the zoom differently (e.g. PopGraph3D
 	// should preserve the view position)
 	protected void zoom(boolean resetView) {
 		zoom();
@@ -656,7 +650,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 						refnode = findNodeAt(loc);
 						// clip mouse position relative to interior of canvas
 						mouse.setLocation(loc.x - canvas.x, loc.y - canvas.y);
-						return !(refnode < 0);
+						return (refnode >= 0);
 
 					case MOUSE_DRAG_DRAW:
 						Node2D myNode = network.get(refnode);
@@ -694,7 +688,7 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 					case MOUSE_DRAG_START:
 						// set reference node but do not start drawing yet
 						refnode = findNodeAt(loc);
-						return !(refnode < 0);
+						return (refnode >= 0);
 
 					case MOUSE_DRAG_DRAW:
 						isMouseDrawing = true;
@@ -746,9 +740,6 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		if (isHierarchy)
 			type = ((HierarchicalGeometry) geometry).getSubType();
 		switch (type) {
-			case VOID:
-				return SNAPSHOT_NONE;
-
 			case TRIANGULAR:
 			case HEXAGONAL:
 			case SQUARE_NEUMANN:
@@ -765,7 +756,6 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 			case STAR:
 			case SUPER_STAR:
 			case DYNAMIC:
-			case GENERIC:
 				return SNAPSHOT_SVG;
 
 			default:
@@ -781,14 +771,19 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	}
 
 	public void drawNodes(Graphics2D g, Rectangle canvasRect, boolean force) {
-		int row, side, dw, dw2, dh, dh3, xshift, yshift;
+		int row;
+		int side;
+		int dw;
+		int dw2;
+		int dh;
+		int dh3;
+		int xshift;
+		int yshift;
 		int width = canvasRect.width;
 		int height = canvasRect.height;
 		int nNodes = geometry.getSize();
 		double scale;
 		Rectangle bounds = new Rectangle();
-		@SuppressWarnings("hiding")
-		Color[] colors = this.colors;
 		AffineTransform at;
 		Ellipse2D circle;
 
@@ -804,7 +799,6 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 		// geometries that have special/fixed layout
 		switch (type) {
 			case CUBE: // should not get here...
-			case VOID:
 				break;
 
 			case TRIANGULAR:

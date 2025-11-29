@@ -811,7 +811,10 @@ public abstract class AbstractGeometry {
 	public void rewire() {
 
 		if (isUndirected) {
-			isRewired = rewireUndirected(pRewire);
+			if (pRewire > 0.0) {
+				rewireUndirected(pRewire);
+				isRewired = true;
+			}
 			if (pAddwire > 0.0) {
 				addUndirected();
 				isRegular = false;
@@ -851,9 +854,7 @@ public abstract class AbstractGeometry {
 	 * @param prob the probability of rewiring an undirected link
 	 * @return {@code true} if geometry rewired
 	 */
-	protected boolean rewireUndirected(double prob) {
-		if (!isUndirected || prob <= 0.0)
-			return false;
+	protected void rewireUndirected(double prob) {
 		RNGDistribution rng = engine.getRNG();
 		int nLinks = (int) Math
 				.floor(ArrayMath.norm(kout) * 0.5 * Math.min(1.0, -Math.log(1.0 - prob)) + 0.5);
@@ -884,7 +885,6 @@ public abstract class AbstractGeometry {
 			}
 			done += 2;
 		}
-		return true;
 	}
 
 	/**
@@ -976,21 +976,18 @@ public abstract class AbstractGeometry {
 		RNGDistribution rng = engine.getRNG();
 		double avgOut = getFeatures().avgOut;
 
-		// long nLinks =
-		// (long)Math.floor(-linkCount(geom)/2.0*Math.log(1.0-geom.pUndirLinks)+0.5);
-		// long nLinks =
-		// (long)Math.floor(-(int)(geom.avgOut*size+0.5)/2.0*Math.log(1.0-geom.pUndirLinks)+0.5);
 		// add at most the number of links already present in the system
 		int nLinks = (int) Math.floor(avgOut * size * pAddwire / 2.0 + 0.5);
-		int from, to;
+		int nodea;
+		int nodeb;
 		while (nLinks > 0) {
-			from = rng.random0n(size);
-			to = rng.random0n(size - 1);
-			if (to >= from)
-				to++; // avoid self-connections
-			if (isNeighborOf(from, to))
+			nodea = rng.random0n(size);
+			nodeb = rng.random0n(size - 1);
+			if (nodeb >= nodea)
+				nodeb++; // avoid self-connections
+			if (isNeighborOf(nodea, nodeb))
 				continue; // avoid double connections
-			addEdgeAt(from, to);
+			addEdgeAt(nodea, nodeb);
 			nLinks--;
 		}
 		return true;
@@ -1020,15 +1017,16 @@ public abstract class AbstractGeometry {
 		double avgOut = getFeatures().avgOut;
 
 		// make sure the right fraction of original links is replaced!
-		// long nLinks = (long)Math.floor(-linkCount()*Math.log(1.0-pDirLinks)+0.5);
-		// it should not matter whether we use avgOut or avgIn - check!
-		// long nLinks =
-		// (long)Math.floor(-(int)(avgOut*size+0.5)*Math.log(1.0-pDirLinks)+0.5);
 		// rewire at most the number of directed links present in the system
 		// (corresponds to a fraction of 1-1/e (~63%) of links rewired)
 		int nLinks = (int) Math.floor((int) (avgOut * size + 0.5) * Math.min(1.0, -Math.log(1.0 - pRewire)) + 0.5);
 		int done = 0;
-		int last = -1, prev, from, to = -1, len, neigh;
+		int last = -1;
+		int prev;
+		int from;
+		int to = -1;
+		int len;
+		int neigh;
 		isUndirected = false;
 		do {
 			// draw first node - avoid sources (nodes without inlinks) and fully connected
@@ -1139,11 +1137,6 @@ public abstract class AbstractGeometry {
 		// retrieve the shared RNG to ensure reproducibility of results
 		RNGDistribution rng = engine.getRNG();
 		double avgOut = getFeatures().avgOut;
-
-		// long nLinks =
-		// (long)Math.floor(-linkCount(geom)*Math.log(1.0-geom.pDirLinks)+0.5);
-		// long nLinks =
-		// (long)Math.floor(-(int)(geom.avgOut*size+0.5)*Math.log(1.0-geom.pDirLinks)+0.5);
 		// add at most the number of directed links already present in the system
 		int nLinks = (int) Math.floor(avgOut * size * pAddwire + 0.5);
 		int from;
@@ -1164,12 +1157,12 @@ public abstract class AbstractGeometry {
 	/**
 	 * Add edge (undirected link) by inserting a pair of directed links.
 	 *
-	 * @param from the index of the first node
-	 * @param to   the index of the second node
+	 * @param nodea the index of the first node
+	 * @param nodeb the index of the second node
 	 */
-	public void addEdgeAt(int from, int to) {
-		addLinkAt(from, to);
-		addLinkAt(to, from);
+	public void addEdgeAt(int nodea, int nodeb) {
+		addLinkAt(nodea, nodeb);
+		addLinkAt(nodeb, nodea);
 	}
 
 	/**
@@ -1196,7 +1189,6 @@ public abstract class AbstractGeometry {
 		}
 		mem[ko] = to;
 		kout[from]++;
-		ko++;
 
 		mem = in[to];
 		max = mem.length;
@@ -1210,23 +1202,19 @@ public abstract class AbstractGeometry {
 		}
 		mem[ki] = from;
 		kin[to]++;
-		ki++;
 		features = null;
 	}
 
 	/**
-	 * Remove edge (undirected link) from {@code from} to {@code to}. The
+	 * Remove edge (undirected link) from {@code nodea} to {@code nodeb}. The
 	 * convenience method simply removes the directed link in both directions.
-	 * {@code maxIn}, {@code maxOut} and {@code maxTot} are not updated.
 	 *
-	 * @param from the index of the first node
-	 * @param to   the index of the second node
-	 *
-	 * @see #evaluate()
+	 * @param nodea the index of the first node
+	 * @param nodeb the index of the second node
 	 */
-	public void removeEdgeAt(int from, int to) {
-		removeLinkAt(from, to);
-		removeLinkAt(to, from);
+	public void removeEdgeAt(int nodea, int nodeb) {
+		removeLinkAt(nodea, nodeb);
+		removeLinkAt(nodeb, nodea);
 	}
 
 	/**
@@ -1319,16 +1307,16 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
-	 * Rewire an undirected edge so that an edge formerly connecting {@code from}
-	 * and {@code prev} now connects {@code from} and {@code to}.
+	 * Rewire an undirected edge so that an edge formerly connecting {@code focal}
+	 * and {@code oldneigh} now connects {@code focal} and {@code newneigh}.
 	 *
-	 * @param from the node whose neighbour should change
-	 * @param to   the new neighbour
-	 * @param prev the previous neighbour to disconnect
+	 * @param focal    the node whose neighbour should change
+	 * @param newneigh the new neighbour
+	 * @param oldneigh the previous neighbour to disconnect
 	 */
-	public void rewireEdgeAt(int from, int to, int prev) {
-		rewireLinkAt(from, to, prev);
-		rewireLinkAt(to, from, prev);
+	public void rewireEdgeAt(int focal, int newneigh, int oldneigh) {
+		rewireLinkAt(focal, newneigh, oldneigh);
+		rewireLinkAt(newneigh, focal, oldneigh);
 	}
 
 	/**
@@ -1366,13 +1354,12 @@ public abstract class AbstractGeometry {
 		boolean fixedBoundariesAvailable = (clo.isValidKey(GeometryType.LINEAR) || clo.isValidKey(GeometryType.SQUARE)
 				|| clo.isValidKey(GeometryType.CUBE)
 				|| clo.isValidKey(GeometryType.HEXAGONAL) || clo.isValidKey(GeometryType.TRIANGULAR));
-		String descr = "--geometry <>   geometry " //
+		return "--geometry <>   geometry " //
 				+ (engine.getModel().getType().isIBS() ? "- interaction==competition\n" : "\n") //
 				+ "      argument: <g><k>" //
 				+ (fixedBoundariesAvailable ? "[f|F]" : "") + " (g type, k neighbours)\n" //
 				+ clo.getDescriptionKey() + "\n      further specifications:" //
 				+ (fixedBoundariesAvailable ? "\n           f|F: fixed lattice boundaries (default periodic)" : "");
-		return descr;
 	}
 
 	/**
@@ -1384,48 +1371,65 @@ public abstract class AbstractGeometry {
 	 * <li>Double links between nodes are unacceptable.
 	 * <li>For undirected networks every outgoing link must correspond to an
 	 * incoming link.
-	 * <li>ToDo: "self-connections" are acceptable for inter-species interactions.
 	 * </ol>
 	 * 
 	 * @return {@code true} if check succeeded
 	 */
 	public boolean isConsistent() {
 		boolean ok = true;
-		boolean allOk = true;
+		ok &= checkMultiple(kin, in, "in");
+		ok &= checkMultiple(kout, out, "out");
+		ok &= checkInOut();
+		if (!isInterspecies)
+			ok &= checkSelfing();
 
-		logger.fine("Checking multiple out-connections... ");
-		for (int i = 0; i < size; i++) {
-			// double connections 'out'
-			int nout = kout[i];
-			for (int j = 0; j < nout; j++) {
-				int idx = out[i][j];
-				for (int k = j + 1; k < nout; k++)
-					if (out[i][k] == idx) {
-						ok = false;
-						logger.fine("Node " + i + " has double out-connection with node " + idx);
-					}
-			}
-		}
-		logger.fine("Multiple out-connections check: " + (ok ? "success!" : "failed!"));
-		allOk &= ok;
-		ok = true;
-		logger.fine("Checking multiple in-connections... ");
+		if (isRegular)
+			ok &= checkRegular();
+
+		if (isUndirected)
+			ok &= checkUndirected();
+
+		return ok;
+	}
+
+	/**
+	 * Check for multiple connections in the given links.
+	 * 
+	 * @param degree the degree of each node
+	 * @param links  the adjacency list
+	 * @param type   the type of connection ("in" or "out")
+	 * @return {@code true} if no multiple connections found
+	 */
+	@SuppressWarnings("java:S2629") // GWT does not support String.format()
+	private boolean checkMultiple(int[] degree, int[][] links, String type) {
+		logger.fine("Checking multiple " + type + "-connections... ");
+		boolean ok = true;
 		for (int i = 0; i < size; i++) {
 			// double connections 'in'
-			int nin = kin[i];
-			for (int j = 0; j < nin; j++) {
-				int idx = in[i][j];
-				for (int k = j + 1; k < nin; k++)
-					if (in[i][k] == idx) {
+			int k = degree[i];
+			for (int j = 0; j < k; j++) {
+				int idx = links[i][j];
+				for (int n = j + 1; n < k; n++)
+					if (links[i][n] == idx) {
 						ok = false;
-						logger.fine("Node " + i + " has double in-connection with node " + idx);
+						logger.fine("Node " + i + " has double " + type + "-connection with node " + idx);
 					}
 			}
 		}
-		logger.fine("Multiple in-connections check: " + (ok ? "success!" : "failed!"));
-		allOk &= ok;
-		ok = true;
+		logger.fine("Multiple " + type + "-connections check: " + (ok ? "success!" : "failed!"));
+		return ok;
+	}
+
+	/**
+	 * Check consistency of in- and out-connections. Every in-connection must be
+	 * balanced by a corresponding out-connection and vice versa.
+	 * 
+	 * @return {@code true} if all connections are consistent
+	 */
+	@SuppressWarnings("java:S2629") // GWT does not support String.format()
+	private boolean checkInOut() {
 		logger.fine("Checking consistency of in-, out-connections... ");
+		boolean ok = true;
 		for (int i = 0; i < size; i++) {
 			// each 'out' connection must be balanced by an 'in' connection
 			int[] outi = out[i];
@@ -1442,9 +1446,19 @@ public abstract class AbstractGeometry {
 			}
 		}
 		logger.fine("Consistency of in-, out-connections check: " + (ok ? "success!" : "failed!"));
-		allOk &= ok;
-		ok = true;
-		logger.fine("Checking for loops (self-connections) in in-, out-connections... ");
+		return ok;
+	}
+
+	/**
+	 * Check for self-connections (loops).
+	 * 
+	 * @return {@code true} if no self-connections found
+	 */
+	@SuppressWarnings("java:S2629") // GWT does not support String.format()
+	private boolean checkSelfing() {
+		// self-connections are only acceptable for inter-species interactions
+		logger.fine("Checking self-connections... ");
+		boolean ok = true;
 		for (int i = 0; i < size; i++) {
 			// report loops
 			int[] outi = out[i];
@@ -1465,58 +1479,72 @@ public abstract class AbstractGeometry {
 			}
 		}
 		logger.fine("Self-connections check: " + (ok ? "success!" : "failed!"));
-		allOk &= ok;
-		ok = true;
-		if (isRegular) {
-			logger.fine("Checking regularity... ");
-			GeometryFeatures f = getFeatures();
-			int nout = f.minOut;
-			int nin = f.minIn;
-			for (int i = 0; i < size; i++) {
-				if (kout[i] != nout) {
-					ok = false;
-					logger.fine("Node " + i + " has wrong 'out'-link count - " + kout[i] + " instead of " + nout);
-				}
-				if (kin[i] != nin) {
-					ok = false;
-					logger.fine("Node " + i + " has wrong 'in'-link count - " + kin[i] + " instead of " + nin);
-				}
+		return ok;
+	}
+
+	/**
+	 * Check regularity of the graph.
+	 * 
+	 * @return {@code true} if the graph is regular
+	 */
+	@SuppressWarnings("java:S2629") // GWT does not support String.format()
+	private boolean checkRegular() {
+		boolean ok = true;
+		logger.fine("Checking regularity... ");
+		GeometryFeatures f = getFeatures();
+		int nout = f.minOut;
+		int nin = f.minIn;
+		for (int i = 0; i < size; i++) {
+			if (kout[i] != nout) {
+				ok = false;
+				logger.fine("Node " + i + " has wrong 'out'-link count - " + kout[i] + " instead of " + nout);
 			}
-			logger.fine("Regularity check: " + (ok ? "success!" : "failed!"));
-			allOk &= ok;
-			ok = true;
-		}
-		if (isUndirected) {
-			logger.fine("Checking undirected structure... ");
-			for (int i = 0; i < size; i++) {
-				// each connection must go both ways
-				int[] outa = out[i];
-				int nouta = kout[i];
-				nextout: for (int j = 0; j < nouta; j++) {
-					int[] outb = out[outa[j]];
-					int noutb = kout[outa[j]];
-					for (int k = 0; k < noutb; k++)
-						if (outb[k] == i)
-							continue nextout;
-					ok = false;
-					logger.fine("Node " + i + " has 'out'-link to node " + outa[j] + ", but not vice versa");
-				}
-				int[] ina = in[i];
-				int nina = kin[i];
-				nextin: for (int j = 0; j < nina; j++) {
-					int[] inb = in[ina[j]];
-					int ninb = kin[ina[j]];
-					for (int k = 0; k < ninb; k++)
-						if (inb[k] == i)
-							continue nextin;
-					ok = false;
-					logger.fine("Node " + i + " has 'in'-link to node " + ina[j] + ", but not vice versa");
-				}
+			if (kin[i] != nin) {
+				ok = false;
+				logger.fine("Node " + i + " has wrong 'in'-link count - " + kin[i] + " instead of " + nin);
 			}
-			logger.fine("Undirected structure check: " + (ok ? "success!" : "failed!"));
-			allOk &= ok;
 		}
-		return allOk;
+		logger.fine("Regularity check: " + (ok ? "success!" : "failed!"));
+		return ok;
+	}
+
+	/**
+	 * Check undirected structure of the graph. Every outgoing link must be
+	 * balanced by a corresponding incoming link and vice versa.
+	 * 
+	 * @return {@code true} if the graph is undirected
+	 */
+	@SuppressWarnings("java:S2629") // GWT does not support String.format()
+	private boolean checkUndirected() {
+		logger.fine("Checking undirected structure... ");
+		boolean ok = true;
+		for (int i = 0; i < size; i++) {
+			// each connection must go both ways
+			int[] outa = out[i];
+			int nouta = kout[i];
+			nextout: for (int j = 0; j < nouta; j++) {
+				int[] outb = out[outa[j]];
+				int noutb = kout[outa[j]];
+				for (int k = 0; k < noutb; k++)
+					if (outb[k] == i)
+						continue nextout;
+				ok = false;
+				logger.fine("Node " + i + " has 'out'-link to node " + outa[j] + ", but not vice versa");
+			}
+			int[] ina = in[i];
+			int nina = kin[i];
+			nextin: for (int j = 0; j < nina; j++) {
+				int[] inb = in[ina[j]];
+				int ninb = kin[ina[j]];
+				for (int k = 0; k < ninb; k++)
+					if (inb[k] == i)
+						continue nextin;
+				ok = false;
+				logger.fine("Node " + i + " has 'in'-link to node " + ina[j] + ", but not vice versa");
+			}
+		}
+		logger.fine("Undirected structure check: " + (ok ? "success!" : "failed!"));
+		return ok;
 	}
 
 	/**
@@ -1537,8 +1565,6 @@ public abstract class AbstractGeometry {
 	@SuppressWarnings("all")
 	public AbstractGeometry clone() {
 		AbstractGeometry clone = AbstractGeometry.create(type, engine);
-		// clone.population = population;
-		// clone.opponent = opponent;
 		clone.specs = specs;
 		clone.name = name;
 		if (kin != null)
@@ -1640,13 +1666,10 @@ public abstract class AbstractGeometry {
 			return;
 		// decode geometry
 		Plist graph = (Plist) plist.get("Graph");
-		ArrayList<List<Integer>> outlinks = new ArrayList<>(size);
+		// every inlink is an outlink elsewhere
 		ArrayList<ArrayList<Integer>> inlinks = new ArrayList<>(size);
-		final List<Integer> placeholder = new ArrayList<>();
-		for (int n = 0; n < size; n++) {
-			outlinks.add(placeholder);
+		for (int n = 0; n < size; n++)
 			inlinks.add(new ArrayList<>());
-		}
 		for (Iterator<String> i = graph.keySet().iterator(); i.hasNext();) {
 			String idxs = i.next();
 			int idx = Integer.parseInt(idxs);

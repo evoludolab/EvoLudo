@@ -612,7 +612,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 		// dispatch to concise handlers for each geometry
 		switch (type) {
 			case CUBE:
-			case VOID:
 				handleNoRepresentation(type);
 				return;
 			case TRIANGULAR:
@@ -1091,7 +1090,6 @@ public class PopGraph2D extends GenericPopGraph<String, Network2D> implements Sh
 				mouseY = y;
 				break;
 			case 0: // no more touches remaining - reset values
-				// touchEndTime = Duration.currentTimeMillis();
 				hitNode = -1;
 				break;
 			default:

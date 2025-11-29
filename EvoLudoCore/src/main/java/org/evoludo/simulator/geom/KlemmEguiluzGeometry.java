@@ -43,7 +43,10 @@ import org.evoludo.util.CLOParser;
  */
 public class KlemmEguiluzGeometry extends AbstractNetwork {
 
-	private double klemmProbability = 0.0;
+	/**
+	 * Probability to rewire links to create small-world shortcuts.
+	 */
+	private double pSmallWorld = 0.0;
 
 	/**
 	 * Create a Klemm-Eguíluz small-world geometry managed by the supplied engine.
@@ -60,11 +63,11 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 		double[] values = CLOParser.parseVector(arg);
 		if (values.length == 0) {
 			connectivity = Math.max(2, (int) Math.round(connectivity > 0 ? connectivity : 2.0));
-			klemmProbability = 0.0;
+			pSmallWorld = 0.0;
 			warn("requires connectivity argument - using " + (int) connectivity + " and p=0.");
 		} else {
 			connectivity = Math.max(2, (int) values[0]);
-			klemmProbability = values.length >= 2 ? clampProbability(values[1]) : 0.0;
+			pSmallWorld = values.length >= 2 ? clampProbability(values[1]) : 0.0;
 		}
 		if (pRewire > 0.0 || pAddwire > 0.0) {
 			warn("adding or rewiring links not supported - ignoring requests.");
@@ -123,13 +126,13 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 				addEdgeAt(i, j);
 
 		nextnode: for (int n = nStart; n < size; n++) {
-			if (klemmProbability < 1e-8) {
+			if (pSmallWorld < 1e-8) {
 				for (int i = 0; i < nActive; i++) {
 					addEdgeAt(n, active[i]);
 				}
 			} else {
 				for (int i = 0; i < nActive; i++) {
-					if (klemmProbability > 1.0 - 1e-8 || rng.random01() < klemmProbability) {
+					if (pSmallWorld > 1.0 - 1e-8 || rng.random01() < pSmallWorld) {
 						int links = 0;
 						for (int j = 0; j < n; j++)
 							links += kout[j];
@@ -167,7 +170,24 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 			}
 			throw new IllegalStateException("Emergency in Klemm-Eguiluz network creation.");
 		}
-		rewireUndirected(klemmProbability);
+		rewireUndirected(pSmallWorld);
 		isValid = true;
+	}
+
+	@Override
+	public int hashCode() {
+		int result = super.hashCode();
+		result = 31 * result + Double.hashCode(pSmallWorld);
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (!super.equals(obj))
+			return false;
+		KlemmEguiluzGeometry other = (KlemmEguiluzGeometry) obj;
+		return pSmallWorld == other.pSmallWorld;
 	}
 }

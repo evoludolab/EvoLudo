@@ -354,34 +354,7 @@ public enum GeometryType implements CLOption.Key {
 	 * 
 	 * @see DynamicGeometry#init()
 	 */
-	DYNAMIC("*", "dynamic geometry"),
-
-	/**
-	 * Placeholder for empty geometry. Not user selectable.
-	 *
-	 * @deprecated temporary legacy sentinel; remove once legacy AbstractGeometry is
-	 *             gone
-	 */
-	@Deprecated
-	VOID("-1", "void geometry"),
-
-	/**
-	 * Placeholder for generic geometry. Not user selectable.
-	 *
-	 * @deprecated temporary legacy sentinel; remove once legacy AbstractGeometry is
-	 *             gone
-	 */
-	@Deprecated
-	GENERIC("-2", "generic geometry"),
-
-	/**
-	 * Placeholder for invalid geometry. Not user selectable.
-	 *
-	 * @deprecated temporary legacy sentinel; remove once legacy AbstractGeometry is
-	 *             gone
-	 */
-	@Deprecated
-	INVALID("-3", "invalid geometry");
+	DYNAMIC("*", "dynamic geometry");
 
 	/**
 	 * Key of geometry. Used for parsing command line options.
