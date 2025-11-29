@@ -35,6 +35,7 @@ import org.evoludo.geom.Path2D;
 import org.evoludo.geom.Point2D;
 import org.evoludo.geom.Vector2D;
 import org.evoludo.simulator.geom.AbstractGeometry;
+import org.evoludo.simulator.geom.GeometryFeatures;
 import org.evoludo.simulator.geom.GeometryType;
 
 /**
@@ -78,9 +79,10 @@ public abstract class Network2D extends Network<Node2D> {
 			for (int k = 0; k < nNodes; k++)
 				nodes[k] = new Node2D();
 		}
+		GeometryFeatures gFeats = geometry.getFeatures();
 		int kin = geometry.kin[0];
 		int kout = geometry.kout[0];
-		double diff = kout + kin - geometry.avgTot;
+		double diff = kout + kin - gFeats.avgTot;
 		double myr = unitradius * (1.0 + diff * (diff > 0.0 ? pnorm : nnorm));
 		nodes[0].set(0.0, 0.0, myr);
 		double scaledquake = 0.05 * radius;
@@ -90,7 +92,7 @@ public abstract class Network2D extends Network<Node2D> {
 			kin = geometry.kin[k];
 			kout = geometry.kout[k];
 			Node2D node = nodes[k];
-			diff = kout + kin - geometry.avgTot;
+			diff = kout + kin - gFeats.avgTot;
 			myr = unitradius * (1.0 + diff * (diff > 0.0 ? pnorm : nnorm));
 			double perturb = scaledquake * (rng.random01() - 0.5);
 			node.set(Math.sin(angle) + perturb, Math.cos(angle) + perturb, myr);
@@ -262,15 +264,17 @@ public abstract class Network2D extends Network<Node2D> {
 			double unitradius = Math.pow(0.8 / nNodes, 0.25);
 			double pnorm = 0.0;
 			double nnorm = 0.0;
-			if (geometry.minTot != geometry.maxTot) {
-				pnorm = 2.0 / (geometry.maxTot - geometry.avgTot); // maximal node size is 2+1 times the average
-				nnorm = 0.5 / (geometry.avgTot - geometry.minTot); // minimal node size is 0.5 of average
+			GeometryFeatures gFeats = geometry.getFeatures();
+			double avgTot = gFeats.avgTot;
+			if (gFeats.minTot != gFeats.maxTot) {
+				pnorm = 2.0 / (gFeats.maxTot - avgTot); // maximal node size is 2+1 times the average
+				nnorm = 0.5 / (avgTot - gFeats.minTot); // minimal node size is 0.5 of average
 			}
 			for (int k = 0; k < nNodes; k++) {
 				Node2D node = nodes[k];
 				kin = geometry.kin[k];
 				kout = geometry.kout[k];
-				double diff = kout + kin - geometry.avgTot;
+				double diff = kout + kin - avgTot;
 				double myr = unitradius * (1.0 + diff * (diff > 0.0 ? pnorm : nnorm));
 				node.setR(myr);
 			}

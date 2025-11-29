@@ -44,6 +44,7 @@ import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.geom.AbstractGeometry;
+import org.evoludo.simulator.geom.GeometryFeatures;
 import org.evoludo.simulator.geom.HierarchicalGeometry;
 import org.evoludo.simulator.models.IBS.MigrationType;
 import org.evoludo.simulator.models.IBS.ScoringType;
@@ -3299,7 +3300,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (playerScoreAveraged)
 			return min;
 		// accumulated payoffs
-		return processScore(min, (min < 0.0 ? interaction.maxOut : interaction.minOut));
+		GeometryFeatures features = interaction.getFeatures();
+		return processScore(min, (min < 0.0 ? features.maxOut : features.minOut));
 	}
 
 	/**
@@ -3313,7 +3315,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		if (playerScoreAveraged)
 			return max;
 		// accumulated payoffs
-		return processScore(max, (max < 0.0 ? interaction.minOut : interaction.maxOut));
+		GeometryFeatures features = interaction.getFeatures();
+		return processScore(max, (max < 0.0 ? features.minOut : features.maxOut));
 	}
 
 	/**
@@ -3931,7 +3934,6 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 	public synchronized void reset() {
 		interaction.init();
 		interaction.rewire();
-		interaction.evaluate();
 
 		// for accumulated payoffs the min and max scores can only be determined
 		// after the structure of the population is known. note scores are potentially
@@ -3967,11 +3969,12 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 		} else {
 			competition.init();
 			competition.rewire();
-			competition.evaluate();
 		}
 		// determine maximum reasonable group size
-		int maxGroup = Math.max(Math.max(interaction.maxIn, interaction.maxOut),
-				Math.max(competition.maxIn, competition.maxOut));
+		GeometryFeatures iFeats = interaction.getFeatures();
+		GeometryFeatures cFeats = competition.getFeatures();
+		int maxGroup = Math.max(Math.max(iFeats.maxIn, iFeats.maxOut),
+				Math.max(cFeats.maxIn, cFeats.maxOut));
 		int nGroup = module.getNGroup();
 		maxGroup = Math.max(maxGroup, nGroup) + 1; // add 1 in case focal is part of group
 		if (groupScores == null || groupScores.length != maxGroup)

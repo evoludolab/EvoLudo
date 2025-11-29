@@ -145,7 +145,6 @@ public abstract class AbstractGeometry {
 		if (!competition.isType(GeometryType.WELLMIXED))
 			for (int n = 0; n < size; n++)
 				competition.removeLinkAt(n, n);
-		competition.evaluate();
 		return competition;
 	}
 
@@ -217,9 +216,9 @@ public abstract class AbstractGeometry {
 	protected boolean isInterspecies = false;
 
 	/**
-	 * {@code true} if geometry has been evaluated.
+	 * Lazily computed summary statistics for the geometry.
 	 */
-	private boolean evaluated = false;
+	GeometryFeatures features = null;
 
 	/**
 	 * {@code true} if the network structure has been successfully initialized.
@@ -268,51 +267,6 @@ public abstract class AbstractGeometry {
 	 * The array storing the number of outgoing neighbours for each node.
 	 */
 	public int[] kout = null;
-
-	/**
-	 * The minimum number of incoming links.
-	 */
-	public int minIn = -1;
-
-	/**
-	 * The maximum number of incoming links.
-	 */
-	public int maxIn = -1;
-
-	/**
-	 * The average number of incoming links.
-	 */
-	public double avgIn = -1.0;
-
-	/**
-	 * The minimum number of outgoing links.
-	 */
-	public int minOut = -1;
-
-	/**
-	 * The maximum number of outgoing links.
-	 */
-	public int maxOut = -1;
-
-	/**
-	 * The average number of outgoing links.
-	 */
-	public double avgOut = -1.0;
-
-	/**
-	 * The minimum sum of incoming and outgoing links.
-	 */
-	public int minTot = -1;
-
-	/**
-	 * The maximum sum of incoming and outgoing links.
-	 */
-	public int maxTot = -1;
-
-	/**
-	 * The average sum of incoming and outgoing links.
-	 */
-	public double avgTot = -1.0;
 
 	/**
 	 * Create a new geometry scaffold linked to the given pacemaker.
@@ -705,21 +659,13 @@ public abstract class AbstractGeometry {
 		network3D = null;
 		specs = null;
 		name = null;
+		features = null;
 		in = null;
 		out = null;
 		kin = null;
 		kout = null;
 		size = -1;
 		type = GeometryType.WELLMIXED;
-		minIn = -1;
-		maxIn = -1;
-		avgIn = -1.0;
-		minOut = -1;
-		maxOut = -1;
-		avgOut = -1.0;
-		minTot = -1;
-		maxTot = -1;
-		avgTot = -1.0;
 		connectivity = -1.0;
 		pRewire = -1.0;
 		pAddwire = -1.0;
@@ -729,7 +675,6 @@ public abstract class AbstractGeometry {
 		isSingle = true;
 		isRegular = false;
 		isValid = false;
-		evaluated = false;
 	}
 
 	/**
@@ -758,56 +703,20 @@ public abstract class AbstractGeometry {
 		}
 		Arrays.fill(kin, 0);
 		Arrays.fill(kout, 0);
-		evaluated = false;
+		features = null;
 	}
 
 	/**
 	 * Evaluate geometry. Convenience method to set frequently used quantities such
 	 * as {@code minIn, maxOut, avgTot} etc.
 	 */
-	public void evaluate() {
-		if (evaluated && !isType(GeometryType.DYNAMIC))
-			return;
-		if (type == GeometryType.WELLMIXED || kout == null || kin == null) {
-			maxOut = 0;
-			maxIn = 0;
-			maxTot = 0;
-			minOut = 0;
-			minIn = 0;
-			minTot = 0;
-			avgOut = 0.0;
-			avgIn = 0.0;
-			avgTot = 0.0;
-			evaluated = true;
-			return;
+	public GeometryFeatures getFeatures() {
+		if (features == null) {
+			if (isType(GeometryType.DYNAMIC))
+				return new GeometryFeatures(this);
+			features = new GeometryFeatures(this);
 		}
-		maxOut = -1;
-		maxIn = -1;
-		maxTot = -1;
-		minOut = Integer.MAX_VALUE;
-		minIn = Integer.MAX_VALUE;
-		minTot = Integer.MAX_VALUE;
-		long sumin = 0;
-		long sumout = 0;
-		long sumtot = 0;
-		for (int n = 0; n < size; n++) {
-			int lout = kout[n];
-			maxOut = Math.max(maxOut, lout);
-			minOut = Math.min(minOut, lout);
-			sumout += lout;
-			int lin = kin[n];
-			maxIn = Math.max(maxIn, lin);
-			minIn = Math.min(minIn, lin);
-			sumin += lin;
-			int ltot = lout + lin;
-			maxTot = Math.max(maxTot, ltot);
-			minTot = Math.min(minTot, ltot);
-			sumtot += ltot;
-		}
-		avgOut = (double) sumout / (double) size;
-		avgIn = (double) sumin / (double) size;
-		avgTot = (double) sumtot / (double) size;
-		evaluated = true;
+		return features;
 	}
 
 	/**
@@ -1065,6 +974,7 @@ public abstract class AbstractGeometry {
 	public boolean addUndirected() {
 		// retrieve the shared RNG to ensure reproducibility of results
 		RNGDistribution rng = engine.getRNG();
+		double avgOut = getFeatures().avgOut;
 
 		// long nLinks =
 		// (long)Math.floor(-linkCount(geom)/2.0*Math.log(1.0-geom.pUndirLinks)+0.5);
@@ -1107,6 +1017,7 @@ public abstract class AbstractGeometry {
 	public boolean rewireDirected() {
 		// retrieve the shared RNG to ensure reproducibility of structures
 		RNGDistribution rng = engine.getRNG();
+		double avgOut = getFeatures().avgOut;
 
 		// make sure the right fraction of original links is replaced!
 		// long nLinks = (long)Math.floor(-linkCount()*Math.log(1.0-pDirLinks)+0.5);
@@ -1227,6 +1138,7 @@ public abstract class AbstractGeometry {
 	public boolean addDirected() {
 		// retrieve the shared RNG to ensure reproducibility of results
 		RNGDistribution rng = engine.getRNG();
+		double avgOut = getFeatures().avgOut;
 
 		// long nLinks =
 		// (long)Math.floor(-linkCount(geom)*Math.log(1.0-geom.pDirLinks)+0.5);
@@ -1285,8 +1197,6 @@ public abstract class AbstractGeometry {
 		mem[ko] = to;
 		kout[from]++;
 		ko++;
-		if (ko > maxOut)
-			maxOut = ko;
 
 		mem = in[to];
 		max = mem.length;
@@ -1301,11 +1211,7 @@ public abstract class AbstractGeometry {
 		mem[ki] = from;
 		kin[to]++;
 		ki++;
-		if (ki > maxIn)
-			maxIn = ki;
-		maxTot = Math.max(maxTot, ko + kin[from]);
-		maxTot = Math.max(maxTot, kout[to] + ki);
-		evaluated = false;
+		features = null;
 	}
 
 	/**
@@ -1346,8 +1252,7 @@ public abstract class AbstractGeometry {
 		for (int i = 0; i < len; i++)
 			removeInLink(idx, neigh[i]);
 		kout[idx] = 0;
-		minOut = 0;
-		evaluated = false;
+		features = null;
 	}
 
 	/**
@@ -1360,8 +1265,7 @@ public abstract class AbstractGeometry {
 		for (int i = 0; i < len; i++)
 			removeOutLink(neigh[i], idx);
 		kin[idx] = 0;
-		minIn = 0;
-		evaluated = false;
+		features = null;
 	}
 
 	/**
@@ -1376,9 +1280,7 @@ public abstract class AbstractGeometry {
 				if (i < k - 1)
 					System.arraycopy(mem, i + 1, mem, i, k - 1 - i);
 				kin[to]--;
-				if (k - 1 < minIn)
-					minIn = k - 1;
-				evaluated = false;
+				features = null;
 				return;
 			}
 		}
@@ -1396,9 +1298,7 @@ public abstract class AbstractGeometry {
 				if (i < k - 1)
 					System.arraycopy(mem, i + 1, mem, i, k - 1 - i);
 				kout[from]--;
-				if (k - 1 < minOut)
-					minOut = k - 1;
-				evaluated = false;
+				features = null;
 				return;
 			}
 		}
@@ -1569,8 +1469,9 @@ public abstract class AbstractGeometry {
 		ok = true;
 		if (isRegular) {
 			logger.fine("Checking regularity... ");
-			int nout = minOut;
-			int nin = minIn;
+			GeometryFeatures f = getFeatures();
+			int nout = f.minOut;
+			int nin = f.minIn;
 			for (int i = 0; i < size; i++) {
 				if (kout[i] != nout) {
 					ok = false;
@@ -1656,15 +1557,7 @@ public abstract class AbstractGeometry {
 		}
 		clone.size = size;
 		clone.type = type;
-		clone.minIn = minIn;
-		clone.maxIn = maxIn;
-		clone.avgIn = avgIn;
-		clone.minOut = minOut;
-		clone.maxOut = maxOut;
-		clone.avgOut = avgOut;
-		clone.minTot = minTot;
-		clone.maxTot = maxTot;
-		clone.avgTot = avgTot;
+		clone.features = features == null ? null : new GeometryFeatures(features);
 		clone.connectivity = connectivity;
 		clone.pRewire = pRewire;
 		clone.pAddwire = pAddwire;
@@ -1680,8 +1573,7 @@ public abstract class AbstractGeometry {
 	@Override
 	public int hashCode() {
 		int result = Objects.hash(engine, specs, name, type, size, isUndirected, isRegular, isRewired,
-				isInterspecies, isSingle, isValid, minIn, maxIn, avgIn, minOut, maxOut, avgOut, minTot, maxTot, avgTot,
-				connectivity, pRewire, pAddwire);
+				isInterspecies, isSingle, isValid, features, connectivity, pRewire, pAddwire);
 		result = 31 * result + Arrays.hashCode(kin);
 		result = 31 * result + Arrays.hashCode(kout);
 		result = 31 * result + Arrays.deepHashCode(in);
@@ -1698,13 +1590,7 @@ public abstract class AbstractGeometry {
 		AbstractGeometry other = (AbstractGeometry) obj;
 		return size == other.size && isUndirected == other.isUndirected && isRegular == other.isRegular
 				&& isRewired == other.isRewired && isInterspecies == other.isInterspecies && isSingle == other.isSingle
-				&& isValid == other.isValid
-				&& minIn == other.minIn && maxIn == other.maxIn && Double.doubleToLongBits(avgIn) == Double
-						.doubleToLongBits(other.avgIn)
-				&& minOut == other.minOut && maxOut == other.maxOut && Double.doubleToLongBits(avgOut) == Double
-						.doubleToLongBits(other.avgOut)
-				&& minTot == other.minTot && maxTot == other.maxTot && Double.doubleToLongBits(avgTot) == Double
-						.doubleToLongBits(other.avgTot)
+				&& isValid == other.isValid && Objects.equals(features, other.features)
 				&& Double.doubleToLongBits(connectivity) == Double.doubleToLongBits(other.connectivity)
 				&& Double.doubleToLongBits(pRewire) == Double.doubleToLongBits(other.pRewire)
 				&& Double.doubleToLongBits(pAddwire) == Double.doubleToLongBits(other.pAddwire)
@@ -1777,7 +1663,5 @@ public abstract class AbstractGeometry {
 			in[n] = Plist.list2int(inlinks.get(n));
 			kin[n] = in[n].length;
 		}
-		// finish
-		evaluate();
 	}
 }

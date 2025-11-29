@@ -37,8 +37,8 @@ import java.util.Iterator;
 import org.evoludo.geom.Node;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
-import org.evoludo.simulator.Network.LayoutListener;
 import org.evoludo.simulator.geom.AbstractGeometry;
+import org.evoludo.simulator.geom.GeometryFeatures;
 import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.geom.HierarchicalGeometry;
 
@@ -335,17 +335,15 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 		double unitradius = Math.pow(0.8 / nNodes, 0.25);
 		double pnorm = 0.0;
 		double nnorm = 0.0;
-		if (geometry.minTot != geometry.maxTot) {
-			pnorm = 2.0 / (geometry.maxTot - geometry.avgTot); // maximal node size is 2+1 times the average
-			nnorm = 0.5 / (geometry.avgTot - geometry.minTot); // minimal node size is 0.5 of average
+		GeometryFeatures gFeats = geometry.getFeatures();
+		if (gFeats.minTot != gFeats.maxTot) {
+			pnorm = 2.0 / (gFeats.maxTot - gFeats.avgTot); // maximal node size is 2+1 times the average
+			nnorm = 0.5 / (gFeats.avgTot - gFeats.minTot); // minimal node size is 0.5 of average
 		}
 
 		// make sure min/max/avg are up to date
-		if (needsLayout) {
-			if (geometry.isType(GeometryType.DYNAMIC))
-				geometry.evaluate();
+		if (needsLayout)
 			initNodes(pnorm, nnorm, unitradius);
-		}
 		nLinks = ArrayMath.norm(geometry.kout);
 		if (geometry.isUndirected())
 			nLinks /= 2;

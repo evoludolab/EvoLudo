@@ -40,6 +40,7 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.geom.AbstractGeometry;
+import org.evoludo.simulator.geom.GeometryFeatures;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
@@ -572,7 +573,8 @@ public class PDE extends ODE {
 	 */
 	private void diffuseSymmetric(int start, int end, double[] minDens, double[] maxDens, double[] meanDens) {
 		int[][] in = space.in;
-		double[][] sort = new double[space.maxIn][];
+		GeometryFeatures features = space.getFeatures();
+		double[][] sort = new double[features.maxIn][];
 		for (int n = start; n < end; n++) {
 			int[] neighs = in[n];
 			int nIn = space.kin[n];
@@ -1120,7 +1122,8 @@ public class PDE extends ODE {
 		double invdx = calcInvDeltaX();
 		double invdx2 = invdx * invdx;
 		double maxD = ArrayMath.max(diffcoeff) * invdx2;
-		int maxK = Math.max(space.maxOut, space.maxIn);
+		GeometryFeatures features = space.getFeatures();
+		int maxK = Math.max(features.maxOut, features.maxIn);
 		// threshold of 1 is much to aggressive - this means everyone in one site
 		// migrates! this can introduce artifacts!
 		if (dt < 1e-5 || maxK * maxD * dt > 0.5) {

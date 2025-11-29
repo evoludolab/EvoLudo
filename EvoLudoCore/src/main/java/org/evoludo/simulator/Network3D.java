@@ -33,6 +33,7 @@ package org.evoludo.simulator;
 import org.evoludo.geom.Node3D;
 import org.evoludo.geom.Vector3D;
 import org.evoludo.simulator.geom.AbstractGeometry;
+import org.evoludo.simulator.geom.GeometryFeatures;
 import org.evoludo.simulator.geom.GeometryType;
 
 /**
@@ -63,6 +64,8 @@ public abstract class Network3D extends Network<Node3D> {
 				nodes[k] = new Node3D();
 		}
 
+		GeometryFeatures gFeats = geometry.getFeatures();
+		double avgTot = gFeats.avgTot;
 		double dangle = Math.PI * (3.0 - Math.sqrt(5.0));
 		double angle = 0.0;
 		double dz = 2.0 / nNodes;
@@ -73,14 +76,14 @@ public abstract class Network3D extends Network<Node3D> {
 		// central hub is always node zero).
 		int kin = geometry.kin[0];
 		int kout = geometry.kout[0];
-		double diff = kout + kin - geometry.avgTot;
+		double diff = kout + kin - avgTot;
 		double myr = unitradius * (1.0 + diff * (diff > 0.0 ? pnorm : nnorm));
 		nodes[0].set(0.0, 0.0, 0.0, myr);
 		for (int k = 1; k < nNodes; k++) {
 			double r = (Math.sqrt(1.0 - z * z) + 0.1 * (rng.random01() - 0.5)) * UNIVERSE_RADIUS;
 			kin = geometry.kin[k];
 			kout = geometry.kout[k];
-			diff = kout + kin - geometry.avgTot;
+			diff = kout + kin - avgTot;
 			myr = unitradius * (1.0 + diff * (diff > 0.0 ? pnorm : nnorm));
 			nodes[k].set(r * Math.sin(angle), r * Math.cos(angle), z * UNIVERSE_RADIUS, myr);
 			z -= dz;
@@ -235,7 +238,9 @@ public abstract class Network3D extends Network<Node3D> {
 		com.scale(-1.0 / nNodes);
 		if (geometry.isType(GeometryType.DYNAMIC)) {
 			// need to set radius as well in dynamic networks
-			int krange = geometry.maxTot - geometry.minTot;
+			GeometryFeatures gFeats = geometry.getFeatures();
+			int minTot = gFeats.minTot;
+			int krange = gFeats.maxTot - minTot;
 			double invRange = krange > 0 ? 1.0 / krange : 1.0;
 			double unitradius = Math.max(1.0, Math.sqrt(0.6 / nNodes) * UNIVERSE_RADIUS) * 1.2;
 			for (int k = 0; k < nNodes; k++) {
@@ -243,7 +248,7 @@ public abstract class Network3D extends Network<Node3D> {
 				node.shift(com);
 				int kin = geometry.kin[k];
 				int kout = geometry.kout[k];
-				node.setR(unitradius * (0.5 + 2.5 * (kout + kin - geometry.minTot) * invRange));
+				node.setR(unitradius * (0.5 + 2.5 * (kout + kin - minTot) * invRange));
 			}
 		} else {
 			for (Node3D node : nodes) {

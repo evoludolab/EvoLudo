@@ -37,6 +37,7 @@ import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.geom.HierarchicalGeometry;
 import org.evoludo.simulator.geom.AbstractGeometry;
+import org.evoludo.simulator.geom.GeometryFeatures;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.ui.ContextMenu;
@@ -390,9 +391,10 @@ public abstract class GenericPopGraph<T, N extends Network<?>> extends AbstractG
 	boolean hasAnimatedLayout() {
 		if (!animate)
 			return false;
+		GeometryFeatures gFeats = geometry.getFeatures();
 		int nodeCount = geometry.getSize();
 		return (nodeCount <= MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT
-				&& (int) (geometry.avgTot * nodeCount) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
+				&& (int) (gFeats.avgTot * nodeCount) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
 	}
 
 	/**

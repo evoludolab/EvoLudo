@@ -49,6 +49,7 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudoLab;
 import org.evoludo.simulator.geom.AbstractGeometry;
+import org.evoludo.simulator.geom.GeometryFeatures;
 import org.evoludo.simulator.geom.GeometryType;
 
 public class MVDegree extends MVAbstract implements HistoGraphListener {
@@ -326,19 +327,20 @@ public class MVDegree extends MVAbstract implements HistoGraphListener {
 				geometry = module.getIBSPopulation().getInteractionGeometry();
 			else
 				geometry = module.getGeometry();
+			GeometryFeatures features = geometry.getFeatures();
 
 			switch (tag) {
 				// case K_OUT:
 				default:
-					changed = process(data, geometry.kout, geometry.maxOut);
+					changed = process(data, geometry.kout, features.maxOut);
 					break;
 
 				case K_IN:
-					changed = process(data, geometry.kin, geometry.maxIn);
+					changed = process(data, geometry.kin, features.maxIn);
 					break;
 
 				case K_TOT:
-					int kmax = kmax(geometry.maxTot);
+					int kmax = kmax(features.maxTot);
 					int b = Math.min(kmax, MAX_BINS);
 					if (kmax <= 100)
 						b++;

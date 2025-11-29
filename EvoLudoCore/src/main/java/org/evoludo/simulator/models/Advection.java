@@ -41,6 +41,7 @@ import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
+import org.evoludo.simulator.geom.GeometryFeatures;
 
 /**
  * Numerical integration of partial differential equations for
@@ -155,7 +156,8 @@ public class Advection extends PDE {
 	private void diffuseSymmetric(int start, int end, double[] minDens, double[] maxDens,
 			double[] meanDens, double[] delta, double[] adv) {
 		int[][] in = space.in;
-		double[][] sort = new double[space.maxIn][];
+		GeometryFeatures features = space.getFeatures();
+		double[][] sort = new double[features.maxIn][];
 		for (int n = start; n < end; n++) {
 			int[] neighs = in[n];
 			int nIn = space.kin[n];
@@ -297,7 +299,8 @@ public class Advection extends PDE {
 		// - try without but check whether densities remain in [0,1])
 		if (doAdvection) {
 			double maxA = Math.max(ArrayMath.max(advcoeff), Math.abs(ArrayMath.min(advcoeff))) * invdx2;
-			int maxK = Math.max(space.maxOut, space.maxIn);
+			GeometryFeatures features = space.getFeatures();
+			int maxK = Math.max(features.maxOut, features.maxIn);
 			// threshold of 1 is much to aggressive - this means everyone in one site
 			// migrates! this can introduce artifacts!
 			if (dt < 1e-5 || nDim * maxA * maxK * dt > 0.5) {

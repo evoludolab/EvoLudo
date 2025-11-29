@@ -38,6 +38,7 @@ import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.geom.AbstractGeometry;
+import org.evoludo.simulator.geom.GeometryFeatures;
 import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.geom.HierarchicalGeometry;
 import org.evoludo.simulator.models.IBS.ScoringType;
@@ -180,7 +181,8 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 	public synchronized void reset() {
 		super.reset();
 		if (optimizeMoran && populationUpdate.isMoran()) {
-			int nLinks = (int) (competition.avgOut * nPopulation + 0.5);
+			double avgOut = competition.getFeatures().avgOut;
+			int nLinks = (int) (avgOut * nPopulation + 0.5);
 			if (activeLinks == null || activeLinks.length != nLinks) {
 				activeLinks = new Link[nLinks];
 				for (int n = 0; n < nLinks; n++)
@@ -1632,7 +1634,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		if (playerScoreAveraged)
 			return mono;
 		// max/min doesn't matter; graph must be regular for accumulated scores
-		return processScore(mono, interaction.maxOut);
+		return processScore(mono, interaction.getFeatures().maxOut);
 	}
 
 	@Override
@@ -1999,7 +2001,7 @@ public class IBSDPopulation extends IBSPopulation<Discrete, IBSDPopulation> {
 		if (geometry.isType(GeometryType.WELLMIXED))
 			// carrying capacity is 1.0 - d / fit
 			return d / fit;
-		double k1 = geometry.avgOut - 1.0;
+		double k1 = geometry.getFeatures().avgOut - 1.0;
 		// carrying capacity on a k-regular graph is 1.0 - (k - 1) * d / (fit * (k - 1)
 		// - d)
 		return Math.min(Math.max(k1 * d / (fit * k1 - d), 0.0), 1.0);

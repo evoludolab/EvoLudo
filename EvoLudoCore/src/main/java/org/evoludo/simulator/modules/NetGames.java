@@ -36,6 +36,7 @@ import java.util.Arrays;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.geom.GeometryFeatures;
 import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.models.IBSDPopulation;
 import org.evoludo.simulator.models.IBSGroup;
@@ -657,9 +658,9 @@ public class NetGames extends Discrete implements Payoffs,
 
 		@Override
 		public double[] getMeanTraits(double[] mean) {
-			interaction.evaluate();
-			mean[0] = interaction.avgTot; // avg. activity
-			mean[1] = interaction.avgOut; // avg. cooperativity
+			GeometryFeatures gFeats = interaction.getFeatures();
+			mean[0] = gFeats.avgTot; // avg. activity
+			mean[1] = gFeats.avgOut; // avg. cooperativity
 			return mean;
 		}
 
@@ -774,9 +775,9 @@ public class NetGames extends Discrete implements Payoffs,
 			// interaction may still be undefined
 			if (interaction == null)
 				return -1.0;
-			interaction.evaluate();
-			double min = interaction.minIn - interaction.maxOut * ratio;
-			double max = interaction.maxIn - interaction.minOut * ratio;
+			GeometryFeatures gFeats = interaction.getFeatures();
+			double min = gFeats.minIn - gFeats.maxOut * ratio;
+			double max = gFeats.maxIn - gFeats.minOut * ratio;
 			if (Math.abs(max - min) < 1e-10)
 				return -1.0;
 			return min;
@@ -787,9 +788,9 @@ public class NetGames extends Discrete implements Payoffs,
 			// interaction may still be undefined
 			if (interaction == null)
 				return 1.0;
-			interaction.evaluate();
-			double min = interaction.minIn - interaction.maxOut * ratio;
-			double max = interaction.maxIn - interaction.minOut * ratio;
+			GeometryFeatures gFeats = interaction.getFeatures();
+			double min = gFeats.minIn - gFeats.maxOut * ratio;
+			double max = gFeats.maxIn - gFeats.minOut * ratio;
 			if (Math.abs(max - min) < 1e-10)
 				return 1.0;
 			return max;

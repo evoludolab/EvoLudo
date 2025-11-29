@@ -63,6 +63,7 @@ import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.Network;
 import org.evoludo.simulator.Network.Status;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.geom.GeometryFeatures;
 import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.geom.HierarchicalGeometry;
 import org.evoludo.simulator.models.Model;
@@ -403,9 +404,10 @@ public class PopGraph2D extends AbstractGraph implements Network.LayoutListener 
 	boolean hasAnimatedLayout() {
 		if (!animate)
 			return false;
+		GeometryFeatures gFeats = geometry.getFeatures();
 		int nodeCount = geometry.getSize();
 		return (nodeCount <= MAX_ANIMATE_LAYOUT_VERTICES_DEFAULT
-				&& (int) (geometry.avgTot * nodeCount) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
+				&& (int) (gFeats.avgTot * nodeCount) < 2 * MAX_ANIMATE_LAYOUT_LINKS_DEFAULT);
 	}
 
 	public void setAnimateLayout(boolean animate) {

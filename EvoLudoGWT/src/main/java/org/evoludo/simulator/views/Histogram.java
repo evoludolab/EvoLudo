@@ -45,12 +45,12 @@ import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.geom.AbstractGeometry;
+import org.evoludo.simulator.geom.GeometryFeatures;
 import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.DModel;
 import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.FixationData;
-import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.ModelType;
@@ -683,16 +683,16 @@ public class Histogram extends AbstractView<HistoGraph> {
 		GraphStyle style = graph.getStyle();
 		style.xLabel = "degree";
 
-		AbstractGeometry geom;
+		AbstractGeometry inter;
 		AbstractGeometry comp;
 		if (model.getType().isPDE()) {
-			geom = comp = module.getGeometry();
+			inter = comp = module.getGeometry();
 		} else {
 			IBSPopulation<?, ?> ibspop = module.getIBSPopulation();
-			geom = ibspop.getInteractionGeometry();
+			inter = ibspop.getInteractionGeometry();
 			comp = ibspop.getCompetitionGeometry();
 		}
-		String[] labels = getDegreeLabels(nGraphs, geom.isUndirected());
+		String[] labels = getDegreeLabels(nGraphs, inter.isUndirected());
 		style.label = labels[n];
 		if (xdeco >= 0) {
 			style.showXLabel = (xdeco == 2); // show only on bottom panel
@@ -706,10 +706,12 @@ public class Histogram extends AbstractView<HistoGraph> {
 		style.yMin = 0.0;
 		style.yMax = 1.0;
 		style.xMin = 0.0;
-		if (geom.isUndirected())
-			style.xMax = maxDegree(Math.max(geom.maxOut, comp.maxOut));
+		GeometryFeatures iFeats = inter.getFeatures();
+		GeometryFeatures cFeats = comp.getFeatures();
+		if (inter.isUndirected())
+			style.xMax = maxDegree(Math.max(iFeats.maxOut, cFeats.maxOut));
 		else
-			style.xMax = maxDegree(Math.max(geom.maxTot, comp.maxTot));
+			style.xMax = maxDegree(Math.max(iFeats.maxTot, cFeats.maxTot));
 	}
 
 	/**
@@ -1238,10 +1240,12 @@ public class Histogram extends AbstractView<HistoGraph> {
 	private double[][] ensureDegreeData(HistoGraph graph, AbstractGeometry inter, AbstractGeometry comp,
 			double[][] data) {
 		int bincount;
+		GeometryFeatures interFeatures = inter.getFeatures();
+		GeometryFeatures compFeatures = comp.getFeatures();
 		if (inter.isUndirected())
-			bincount = maxDegree(Math.max(inter.maxOut, comp.maxOut));
+			bincount = maxDegree(Math.max(interFeatures.maxOut, compFeatures.maxOut));
 		else
-			bincount = maxDegree(Math.max(inter.maxTot, comp.maxTot));
+			bincount = maxDegree(Math.max(interFeatures.maxTot, compFeatures.maxTot));
 		double min = 0.0;
 		double max = bincount;
 		bincount = Math.min(bincount, HistoGraph.MAX_BINS);
@@ -1461,9 +1465,12 @@ public class Histogram extends AbstractView<HistoGraph> {
 	 * @param comp  the competition graph
 	 */
 	private void getDegreeHistogramData(double[][] data, AbstractGeometry inter, AbstractGeometry comp) {
-		int kmax = maxDegree(inter.isUndirected() ? inter.maxOut : inter.maxTot);
+		GeometryFeatures interFeatures = inter.getFeatures();
+		GeometryFeatures compFeatures = comp.getFeatures();
+		int kmax = maxDegree(inter.isUndirected() ? interFeatures.maxOut : interFeatures.maxTot);
 		if (inter != comp)
-			kmax = Math.max(kmax, maxDegree(comp.isUndirected() ? comp.maxOut : comp.maxTot));
+			kmax = Math.max(kmax,
+					maxDegree(comp.isUndirected() ? compFeatures.maxOut : compFeatures.maxTot));
 		double ibinwidth = (double) data[0].length / (kmax + 1);
 		getDegreeHistogramData(data, inter, 0, ibinwidth);
 		if (inter != comp)
@@ -1541,13 +1548,15 @@ public class Histogram extends AbstractView<HistoGraph> {
 	private int getDegreeBins(AbstractGeometry inter, AbstractGeometry comp) {
 		if (inter == null)
 			return 0;
-		int nBins = maxDegree(inter.maxOut);
+		GeometryFeatures interFeatures = inter.getFeatures();
+		GeometryFeatures compFeatures = comp == null ? interFeatures : comp.getFeatures();
+		int nBins = maxDegree(interFeatures.maxOut);
 		if (!inter.isUndirected())
-			nBins = Math.max(maxDegree(inter.maxTot) + 1, nBins);
+			nBins = Math.max(maxDegree(interFeatures.maxTot) + 1, nBins);
 		if (comp != inter)
-			nBins = Math.max(maxDegree(comp.maxOut) + 1, nBins);
+			nBins = Math.max(maxDegree(compFeatures.maxOut) + 1, nBins);
 		if (!comp.isUndirected())
-			nBins = Math.max(maxDegree(comp.maxTot) + 1, nBins);
+			nBins = Math.max(maxDegree(compFeatures.maxTot) + 1, nBins);
 		return Math.max(2, Math.min(nBins, HistoGraph.MAX_BINS));
 	}
 
