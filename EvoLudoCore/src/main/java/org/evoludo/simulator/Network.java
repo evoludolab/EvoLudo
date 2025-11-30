@@ -699,8 +699,7 @@ public abstract class Network<N extends Node> extends AbstractList<N> implements
 		final int prime = 31;
 		int result = Integer.hashCode(nNodes);
 		result = prime * result + Integer.hashCode(nLinks);
-		long temp = Double.doubleToLongBits(radius);
-		result = prime * result + (int) (temp ^ (temp >>> 32));
+		result = 31 * result + Double.hashCode(radius);
 		result = prime * result + (geometry != null ? geometry.hashCode() : 0);
 		result = prime * result + Arrays.hashCode(nodes);
 		return result;

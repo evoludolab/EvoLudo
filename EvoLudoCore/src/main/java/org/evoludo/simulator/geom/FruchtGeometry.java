@@ -50,13 +50,6 @@ public class FruchtGeometry extends AbstractGeometry {
 		setType(GeometryType.FRUCHT);
 	}
 
-	@Override
-	protected boolean checkSettings() {
-		boolean doReset = enforceSize(12);
-		connectivity = 3.0;
-		return doReset;
-	}
-
 	/**
 	 * Generates the Frucht graph, the smallest regular graph without any
 	 * symmetries (a cubic graph with \(12\) nodes and no automorphisms apart from
@@ -93,5 +86,12 @@ public class FruchtGeometry extends AbstractGeometry {
 		addEdgeAt(9, 11);
 		addEdgeAt(10, 11);
 		isValid = true;
+	}
+
+	@Override
+	protected boolean checkSettings() {
+		boolean doReset = enforceSize(12);
+		connectivity = 3.0;
+		return doReset;
 	}
 }

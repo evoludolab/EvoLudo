@@ -731,8 +731,7 @@ public class HierarchicalGeometry extends AbstractLattice {
 		int result = super.hashCode();
 		result = 31 * result + (subType == null ? 0 : subType.hashCode());
 		result = 31 * result + Arrays.hashCode(hierarchy);
-		long temp = Double.doubleToLongBits(hierarchyWeight);
-		result = 31 * result + (int) (temp ^ (temp >>> 32));
+		result = 31 * result + Double.hashCode(hierarchyWeight);
 		return result;
 	}
 
@@ -744,7 +743,7 @@ public class HierarchicalGeometry extends AbstractLattice {
 			return false;
 		HierarchicalGeometry other = (HierarchicalGeometry) obj;
 		return subType == other.subType && Arrays.equals(hierarchy, other.hierarchy)
-				&& Double.doubleToLongBits(hierarchyWeight) == Double.doubleToLongBits(other.hierarchyWeight);
+				&& Double.compare(hierarchyWeight, other.hierarchyWeight) == 0;
 	}
 
 	/**

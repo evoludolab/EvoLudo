@@ -175,6 +175,13 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 	}
 
 	@Override
+	public KlemmEguiluzGeometry clone() {
+		KlemmEguiluzGeometry clone = (KlemmEguiluzGeometry) super.clone();
+		clone.pSmallWorld = pSmallWorld;
+		return clone;
+	}
+
+	@Override
 	public int hashCode() {
 		int result = super.hashCode();
 		result = 31 * result + Double.hashCode(pSmallWorld);
@@ -188,6 +195,6 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 		if (!super.equals(obj))
 			return false;
 		KlemmEguiluzGeometry other = (KlemmEguiluzGeometry) obj;
-		return pSmallWorld == other.pSmallWorld;
+		return Double.compare(pSmallWorld, other.pSmallWorld) == 0;
 	}
 }

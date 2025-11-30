@@ -136,7 +136,8 @@ public class LinearGeometry extends AbstractLattice {
 		boolean invalidConn = (Math.abs(1.0 - connectivity) < 1e-8 && (!isInterspecies() && linearAsymmetry == 0))
 				|| ((int) (connectivity + 0.5) % 2 == 1 && linearAsymmetry == 0) || connectivity >= size;
 		if (invalidConn) {
-			double newConn = Math.min(Math.max(2, connectivity + 1), size - 1 - (size - 1) % 2);
+			double size1 = size - 1.0;
+			double newConn = Math.min(Math.max(2, connectivity + 1), size1 - size1 % 2);
 			connectivity = newConn;
 			warn("requires even integer number of neighbors - using " + (int) connectivity + "!");
 			doReset = true;
@@ -146,5 +147,29 @@ public class LinearGeometry extends AbstractLattice {
 			pRewire = 0.0;
 		}
 		return doReset;
+	}
+
+	@Override
+	public LinearGeometry clone() {
+		LinearGeometry clone = (LinearGeometry) super.clone();
+		clone.linearAsymmetry = linearAsymmetry;
+		return clone;
+	}
+
+	@Override
+	public int hashCode() {
+		int result = super.hashCode();
+		result = 31 * result + Integer.hashCode(linearAsymmetry);
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (!super.equals(obj))
+			return false;
+		LinearGeometry other = (LinearGeometry) obj;
+		return Double.compare(linearAsymmetry, other.linearAsymmetry) == 0;
 	}
 }

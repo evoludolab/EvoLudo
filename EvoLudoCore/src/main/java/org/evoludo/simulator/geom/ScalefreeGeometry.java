@@ -125,9 +125,11 @@ public class ScalefreeGeometry extends AbstractNetwork {
 			for (int n = 1; n < size; n++)
 				distr[n] = x * distr[n] + lift;
 		} else {
-			double km = 0.0, pm = 0.0;
+			double km = 0.0;
+			double pm = 0.0;
 			int m = 1;
-			double sump = distr[1], sumpi = sump;
+			double sump = distr[1];
+			double sumpi = sump;
 			while (km < connectivity && m < size - 1) {
 				m++;
 				pm = distr[m];
@@ -293,8 +295,7 @@ public class ScalefreeGeometry extends AbstractNetwork {
 	@Override
 	public int hashCode() {
 		int result = super.hashCode();
-		long temp = Double.doubleToLongBits(sfExponent);
-		result = 31 * result + (int) (temp ^ (temp >>> 32));
+		result = 31 * result + Double.hashCode(sfExponent);
 		return result;
 	}
 
@@ -305,6 +306,6 @@ public class ScalefreeGeometry extends AbstractNetwork {
 		if (!super.equals(obj))
 			return false;
 		ScalefreeGeometry other = (ScalefreeGeometry) obj;
-		return Double.doubleToLongBits(sfExponent) == Double.doubleToLongBits(other.sfExponent);
+		return Double.compare(sfExponent, other.sfExponent) == 0;
 	}
 }
