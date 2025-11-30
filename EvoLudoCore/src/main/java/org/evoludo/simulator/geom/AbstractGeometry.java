@@ -76,11 +76,14 @@ public abstract class AbstractGeometry {
 				return new TriangularGeometry(engine);
 			case HEXAGONAL:
 				return new HexagonalGeometry(engine);
-			case SQUARE:
 			case SQUARE_NEUMANN:
+				return new VonNeumannGeometry(engine);
 			case SQUARE_NEUMANN_2ND:
+				return new SecondNeighbourGeometry(engine);
 			case SQUARE_MOORE:
-				return new SquareGeometry(engine, type);
+				return new MooreGeometry(engine);
+			case SQUARE:
+				return new SquareGeometry(engine);
 			case CUBE:
 				return new CubicGeometry(engine);
 			case STAR:

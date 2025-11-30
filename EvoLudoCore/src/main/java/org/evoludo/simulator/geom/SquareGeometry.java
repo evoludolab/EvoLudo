@@ -36,50 +36,28 @@ import java.util.logging.Logger;
 import org.evoludo.simulator.EvoLudo;
 
 /**
- * Square lattice implementations covering von Neumann, second-neighbour, Moore
- * and general neighbourhoods.
+ * Square lattice with arbitrary neighbourhood sizes. Provides shared helpers
+ * for square-based variants.
  */
 public class SquareGeometry extends AbstractLattice {
 
 	/**
-	 * The specific square lattice variant implemented by this instance.
-	 */
-	private final GeometryType variant;
-
-	/**
 	 * Create a square lattice geometry tied to the given engine.
 	 *
-	 * @param engine  EvoLudo pacemaker
-	 * @param variant square lattice variant to instantiate
+	 * @param engine EvoLudo pacemaker
 	 */
-	public SquareGeometry(EvoLudo engine, GeometryType variant) {
+	public SquareGeometry(EvoLudo engine) {
 		super(engine);
-		this.variant = variant;
-		setType(variant);
+		setType(GeometryType.SQUARE);
 	}
 
 	@Override
 	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
-		switch (variant) {
-			case SQUARE:
-				if (numeric == null || numeric.isEmpty())
-					connectivity = 4;
-				else
-					connectivity = Integer.parseInt(numeric);
-				break;
-			case SQUARE_NEUMANN:
-			case SQUARE_NEUMANN_2ND:
-				warnIfConnectivityProvided(numeric);
-				connectivity = 4;
-				break;
-			case SQUARE_MOORE:
-				warnIfConnectivityProvided(numeric);
-				connectivity = 8;
-				break;
-			default:
-				throw new IllegalStateException("Unsupported square variant: " + variant);
-		}
+		if (numeric == null || numeric.isEmpty())
+			connectivity = 4;
+		else
+			connectivity = Integer.parseInt(numeric);
 		return true;
 	}
 
@@ -89,17 +67,18 @@ public class SquareGeometry extends AbstractLattice {
 	 *
 	 * @param numeric connectivity string passed on the CLI
 	 */
-	private void warnIfConnectivityProvided(String numeric) {
+	protected void warnIfConnectivityProvided(String numeric) {
 		if (numeric != null && !numeric.isEmpty()) {
 			Logger log = engine.getLogger();
 			if (log.isLoggable(Level.WARNING))
-				log.warning("connectivity ignored for " + variant + " geometry");
+				log.warning("connectivity ignored for " + getType() + " geometry");
 		}
 	}
 
 	/**
-	 * Generates square regular lattices (von Neumann, second-neighbour,
-	 * Moore, or larger neighbourhood variants).
+	 * Generates square regular lattices with arbitrary neighbourhood sizes.
+	 * Variant-specific initializers for standard stencils are available to
+	 * subclasses.
 	 *
 	 * <h3>Requirements/notes:</h3>
 	 * <ol>
@@ -113,34 +92,27 @@ public class SquareGeometry extends AbstractLattice {
 	 */
 	@Override
 	public void init() {
+		int side = prepareSquareLattice();
+		if ((int) Math.rint(connectivity) == 1)
+			initSquareSelf(side, side, 0);
+		else
+			initSquare(side, side, 0);
+		isValid = true;
+	}
+
+	/**
+	 * Common setup for square geometries.
+	 *
+	 * @return the computed side length of the lattice
+	 */
+	protected int prepareSquareLattice() {
 		if (size <= 0)
 			throw new IllegalStateException("size must be set before initializing a square geometry");
 		isRewired = false;
 		isUndirected = true;
 		isRegular = true;
 		alloc();
-
-		int side = (int) Math.floor(Math.sqrt(size) + 0.5);
-		switch (variant) {
-			case SQUARE_NEUMANN:
-				initSquareVonNeumann(side, side, 0);
-				break;
-			case SQUARE_NEUMANN_2ND:
-				initSquareVonNeumann2nd(side, side, 0);
-				break;
-			case SQUARE_MOORE:
-				initSquareMoore(side, side, 0);
-				break;
-			case SQUARE:
-				if ((int) Math.rint(connectivity) == 1)
-					initSquareSelf(side, side, 0);
-				else
-					initSquare(side, side, 0);
-				break;
-			default:
-				throw new IllegalStateException("Unsupported square variant: " + variant);
-		}
-		isValid = true;
+		return (int) Math.floor(Math.sqrt(size) + 0.5);
 	}
 
 	/**
@@ -151,7 +123,7 @@ public class SquareGeometry extends AbstractLattice {
 	 * @param fullside global side length
 	 * @param offset   index offset into the population
 	 */
-	private void initSquareSelf(int side, int fullside, int offset) {
+	protected void initSquareSelf(int side, int fullside, int offset) {
 		for (int i = 0; i < side; i++) {
 			int x = offset + i * fullside;
 			for (int j = 0; j < side; j++) {
@@ -162,334 +134,13 @@ public class SquareGeometry extends AbstractLattice {
 	}
 
 	/**
-	 * Initialize a square lattice with von Neumann connectivity.
-	 *
-	 * @param side     side length of the (sub) lattice
-	 * @param fullside global side length
-	 * @param offset   index offset into the population
-	 */
-	private void initSquareVonNeumann(int side, int fullside, int offset) {
-		boolean interspecies = isInterspecies();
-		for (int i = 0; i < side; i++) {
-			int x = i * fullside;
-			int u = ((i - 1 + side) % side) * fullside;
-			int d = ((i + 1) % side) * fullside;
-			for (int j = 0; j < side; j++) {
-				int r = (j + 1) % side;
-				int l = (j - 1 + side) % side;
-				int aPlayer = offset + x + j;
-				if (interspecies)
-					addLinkAt(aPlayer, aPlayer);
-				addLinkAt(aPlayer, offset + u + j);
-				addLinkAt(aPlayer, offset + x + r);
-				addLinkAt(aPlayer, offset + d + j);
-				addLinkAt(aPlayer, offset + x + l);
-			}
-		}
-		if (fixedBoundary) {
-			adjustNeumannBoundaries(side, fullside, offset, interspecies);
-			isRegular = false;
-		}
-	}
-
-	/**
-	 * Adjust von Neumann neighbourhoods when fixed boundaries are requested.
-	 *
-	 * @param side         side length of the (sub) lattice
-	 * @param fullside     global side length
-	 * @param offset       index offset into the population
-	 * @param interspecies {@code true} if self-links are required
-	 */
-	private void adjustNeumannBoundaries(int side, int fullside, int offset, boolean interspecies) {
-		int aPlayer = offset;
-		clearLinksFrom(aPlayer);
-		if (interspecies)
-			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer + 1);
-		addLinkAt(aPlayer, aPlayer + fullside);
-
-		aPlayer = offset + side - 1;
-		clearLinksFrom(aPlayer);
-		if (interspecies)
-			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer - 1);
-		addLinkAt(aPlayer, aPlayer + fullside);
-
-		aPlayer = offset + (side - 1) * fullside;
-		clearLinksFrom(aPlayer);
-		if (interspecies)
-			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer + 1);
-		addLinkAt(aPlayer, aPlayer - fullside);
-
-		aPlayer = offset + (side - 1) * (fullside + 1);
-		clearLinksFrom(aPlayer);
-		if (interspecies)
-			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer - 1);
-		addLinkAt(aPlayer, aPlayer - fullside);
-
-		for (int i = 1; i < side - 1; i++) {
-			aPlayer = offset + i;
-			clearLinksFrom(aPlayer);
-			if (interspecies)
-				addLinkAt(aPlayer, aPlayer);
-			addLinkAt(aPlayer, aPlayer - 1);
-			addLinkAt(aPlayer, aPlayer + 1);
-			addLinkAt(aPlayer, aPlayer + fullside);
-
-			aPlayer = offset + (side - 1) * fullside + i;
-			clearLinksFrom(aPlayer);
-			if (interspecies)
-				addLinkAt(aPlayer, aPlayer);
-			addLinkAt(aPlayer, aPlayer - 1);
-			addLinkAt(aPlayer, aPlayer + 1);
-			addLinkAt(aPlayer, aPlayer - fullside);
-
-			aPlayer = offset + fullside * i;
-			clearLinksFrom(aPlayer);
-			if (interspecies)
-				addLinkAt(aPlayer, aPlayer);
-			addLinkAt(aPlayer, aPlayer + 1);
-			addLinkAt(aPlayer, aPlayer - fullside);
-			addLinkAt(aPlayer, aPlayer + fullside);
-
-			aPlayer = offset + fullside * i + side - 1;
-			clearLinksFrom(aPlayer);
-			if (interspecies)
-				addLinkAt(aPlayer, aPlayer);
-			addLinkAt(aPlayer, aPlayer - 1);
-			addLinkAt(aPlayer, aPlayer - fullside);
-			addLinkAt(aPlayer, aPlayer + fullside);
-		}
-	}
-
-	/**
-	 * Initialize a square lattice with second-neighbour von Neumann connectivity.
-	 *
-	 * @param side     side length of the (sub) lattice
-	 * @param fullside global side length
-	 * @param offset   index offset into the population
-	 */
-	private void initSquareVonNeumann2nd(int side, int fullside, int offset) {
-		boolean interspecies = isInterspecies();
-		for (int i = 0; i < side; i++) {
-			int x = i * fullside;
-			int u = ((i - 1 + side) % side) * fullside;
-			int d = ((i + 1) % side) * fullside;
-			for (int j = 0; j < side; j++) {
-				int r = (j + 1) % side;
-				int l = (j - 1 + side) % side;
-				int aPlayer = offset + x + j;
-				if (interspecies)
-					addLinkAt(aPlayer, aPlayer);
-				addLinkAt(aPlayer, offset + u + r);
-				addLinkAt(aPlayer, offset + u + l);
-				addLinkAt(aPlayer, offset + d + r);
-				addLinkAt(aPlayer, offset + d + l);
-			}
-		}
-		if (fixedBoundary) {
-			adjustNeumannSecondBoundaries(side, fullside, offset, interspecies);
-			isRegular = false;
-		}
-	}
-
-	/**
-	 * Adjust second-neighbour von Neumann stencils along fixed boundaries.
-	 *
-	 * @param side         side length of the (sub) lattice
-	 * @param fullside     global side length
-	 * @param offset       index offset into the population
-	 * @param interspecies {@code true} if self-links are required
-	 */
-	private void adjustNeumannSecondBoundaries(int side, int fullside, int offset, boolean interspecies) {
-		int aPlayer = offset;
-		clearLinksFrom(aPlayer);
-		if (interspecies)
-			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer + fullside);
-		addLinkAt(aPlayer, aPlayer + fullside + 1);
-
-		aPlayer = offset + side - 1;
-		clearLinksFrom(aPlayer);
-		if (interspecies)
-			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer + fullside);
-		addLinkAt(aPlayer, aPlayer + fullside - 1);
-
-		aPlayer = offset + (side - 1) * fullside;
-		clearLinksFrom(aPlayer);
-		if (interspecies)
-			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer - fullside);
-		addLinkAt(aPlayer, aPlayer - fullside + 1);
-
-		aPlayer = offset + (side - 1) * (fullside + 1);
-		clearLinksFrom(aPlayer);
-		if (interspecies)
-			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer - fullside);
-		addLinkAt(aPlayer, aPlayer - fullside - 1);
-
-		for (int i = 1; i < side - 1; i++) {
-			aPlayer = offset + i;
-			clearLinksFrom(aPlayer);
-			if (interspecies)
-				addLinkAt(aPlayer, aPlayer);
-			addLinkAt(aPlayer, aPlayer + fullside - 1);
-			addLinkAt(aPlayer, aPlayer + fullside + 1);
-
-			aPlayer = offset + (side - 1) * fullside + i;
-			clearLinksFrom(aPlayer);
-			if (interspecies)
-				addLinkAt(aPlayer, aPlayer);
-			addLinkAt(aPlayer, aPlayer - fullside - 1);
-			addLinkAt(aPlayer, aPlayer - fullside + 1);
-
-			aPlayer = offset + fullside * i;
-			clearLinksFrom(aPlayer);
-			if (interspecies)
-				addLinkAt(aPlayer, aPlayer);
-			addLinkAt(aPlayer, aPlayer - fullside + 1);
-			addLinkAt(aPlayer, aPlayer + fullside + 1);
-
-			aPlayer = offset + fullside * i + side - 1;
-			clearLinksFrom(aPlayer);
-			if (interspecies)
-				addLinkAt(aPlayer, aPlayer);
-			addLinkAt(aPlayer, aPlayer - fullside - 1);
-			addLinkAt(aPlayer, aPlayer + fullside - 1);
-		}
-	}
-
-	/**
-	 * Initialize a square lattice with Moore connectivity.
-	 *
-	 * @param side     side length of the (sub) lattice
-	 * @param fullside global side length
-	 * @param offset   index offset into the population
-	 */
-	private void initSquareMoore(int side, int fullside, int offset) {
-		boolean interspecies = isInterspecies();
-		for (int i = 0; i < side; i++) {
-			int x = i * fullside;
-			int u = ((i - 1 + side) % side) * fullside;
-			int d = ((i + 1) % side) * fullside;
-			for (int j = 0; j < side; j++) {
-				int r = (j + 1) % side;
-				int l = (j - 1 + side) % side;
-				int aPlayer = offset + x + j;
-				if (interspecies)
-					addLinkAt(aPlayer, aPlayer);
-				addLinkAt(aPlayer, offset + u + j);
-				addLinkAt(aPlayer, offset + u + r);
-				addLinkAt(aPlayer, offset + x + r);
-				addLinkAt(aPlayer, offset + d + r);
-				addLinkAt(aPlayer, offset + d + j);
-				addLinkAt(aPlayer, offset + d + l);
-				addLinkAt(aPlayer, offset + x + l);
-				addLinkAt(aPlayer, offset + u + l);
-			}
-		}
-		if (fixedBoundary) {
-			adjustMooreBoundaries(side, fullside, offset, interspecies);
-			isRegular = false;
-		}
-	}
-
-	/**
-	 * Adjust Moore stencils along fixed boundaries.
-	 *
-	 * @param side         side length of the (sub) lattice
-	 * @param fullside     global side length
-	 * @param offset       index offset into the population
-	 * @param interspecies {@code true} if self-links are required
-	 */
-	private void adjustMooreBoundaries(int side, int fullside, int offset, boolean interspecies) {
-		int aPlayer = offset;
-		clearLinksFrom(aPlayer);
-		if (interspecies)
-			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer + 1);
-		addLinkAt(aPlayer, aPlayer + fullside);
-		addLinkAt(aPlayer, aPlayer + fullside + 1);
-
-		aPlayer = offset + side - 1;
-		clearLinksFrom(aPlayer);
-		if (interspecies)
-			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer - 1);
-		addLinkAt(aPlayer, aPlayer + fullside);
-		addLinkAt(aPlayer, aPlayer + fullside - 1);
-
-		aPlayer = offset + (side - 1) * fullside;
-		clearLinksFrom(aPlayer);
-		if (interspecies)
-			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer + 1);
-		addLinkAt(aPlayer, aPlayer - fullside);
-		addLinkAt(aPlayer, aPlayer - fullside + 1);
-
-		aPlayer = offset + (side - 1) * (fullside + 1);
-		clearLinksFrom(aPlayer);
-		if (interspecies)
-			addLinkAt(aPlayer, aPlayer);
-		addLinkAt(aPlayer, aPlayer - 1);
-		addLinkAt(aPlayer, aPlayer - fullside);
-		addLinkAt(aPlayer, aPlayer - fullside - 1);
-
-		for (int i = 1; i < side - 1; i++) {
-			aPlayer = offset + i;
-			clearLinksFrom(aPlayer);
-			if (interspecies)
-				addLinkAt(aPlayer, aPlayer);
-			addLinkAt(aPlayer, aPlayer - 1);
-			addLinkAt(aPlayer, aPlayer + 1);
-			addLinkAt(aPlayer, aPlayer + fullside);
-			addLinkAt(aPlayer, aPlayer + fullside - 1);
-			addLinkAt(aPlayer, aPlayer + fullside + 1);
-
-			aPlayer = offset + (side - 1) * fullside + i;
-			clearLinksFrom(aPlayer);
-			if (interspecies)
-				addLinkAt(aPlayer, aPlayer);
-			addLinkAt(aPlayer, aPlayer - 1);
-			addLinkAt(aPlayer, aPlayer + 1);
-			addLinkAt(aPlayer, aPlayer - fullside);
-			addLinkAt(aPlayer, aPlayer - fullside - 1);
-			addLinkAt(aPlayer, aPlayer - fullside + 1);
-
-			aPlayer = offset + fullside * i;
-			clearLinksFrom(aPlayer);
-			if (interspecies)
-				addLinkAt(aPlayer, aPlayer);
-			addLinkAt(aPlayer, aPlayer + 1);
-			addLinkAt(aPlayer, aPlayer - fullside);
-			addLinkAt(aPlayer, aPlayer + fullside);
-			addLinkAt(aPlayer, aPlayer - fullside + 1);
-			addLinkAt(aPlayer, aPlayer + fullside + 1);
-
-			aPlayer = offset + fullside * i + side - 1;
-			clearLinksFrom(aPlayer);
-			if (interspecies)
-				addLinkAt(aPlayer, aPlayer);
-			addLinkAt(aPlayer, aPlayer - 1);
-			addLinkAt(aPlayer, aPlayer - fullside);
-			addLinkAt(aPlayer, aPlayer + fullside);
-			addLinkAt(aPlayer, aPlayer - fullside - 1);
-			addLinkAt(aPlayer, aPlayer + fullside - 1);
-		}
-	}
-
-	/**
 	 * Initialize a square lattice with arbitrary (odd) neighbourhood sizes.
 	 *
 	 * @param side     side length of the (sub) lattice
 	 * @param fullside global side length
 	 * @param offset   index offset into the population
 	 */
-	private void initSquare(int side, int fullside, int offset) {
+	protected void initSquare(int side, int fullside, int offset) {
 		boolean interspecies = isInterspecies();
 		int range = Math.min(side / 2, Math.max(1, (int) (Math.sqrt(connectivity + 1.5) / 2.0)));
 
@@ -509,7 +160,7 @@ public class SquareGeometry extends AbstractLattice {
 			}
 		}
 		if (fixedBoundary) {
-			adjustSquareBoundaries(range, side, fullside, offset, interspecies);
+			adjustBoundaries(range, side, fullside, offset, interspecies);
 			isRegular = false;
 		}
 	}
@@ -523,7 +174,7 @@ public class SquareGeometry extends AbstractLattice {
 	 * @param offset       index offset into the population
 	 * @param interspecies {@code true} if self-links are required
 	 */
-	private void adjustSquareBoundaries(int range, int side, int fullside, int offset, boolean interspecies) {
+	private void adjustBoundaries(int range, int side, int fullside, int offset, boolean interspecies) {
 		int aPlayer;
 		int bPlayer;
 		// top left
@@ -635,22 +286,32 @@ public class SquareGeometry extends AbstractLattice {
 		isRegular = false;
 	}
 
-	@Override
-	protected boolean checkSettings() {
+	/**
+	 * Enforce square lattice size and optionally even side lengths.
+	 *
+	 * @param requireEvenSide {@code true} if the side length must be even
+	 * @return {@code true} if the size had to be adjusted
+	 */
+	protected boolean ensureSquareSize(boolean requireEvenSide) {
 		boolean doReset = false;
-		if (variant == GeometryType.SQUARE_MOORE)
-			connectivity = 8;
-		if (variant == GeometryType.SQUARE_NEUMANN || variant == GeometryType.SQUARE_NEUMANN_2ND)
-			connectivity = Math.max(connectivity, 4);
 		int side = (int) Math.floor(Math.sqrt(size) + 0.5);
-		if (variant == GeometryType.SQUARE_NEUMANN_2ND)
+		if (requireEvenSide)
 			side = (side + 1) / 2 * 2;
 		int side2 = side * side;
 		if (setSize(side2)) {
-			if (engine.getModule().cloNPopulation.isSet())
-				warn("requires even integer square size - using " + size + "!");
+			if (engine.getModule().cloNPopulation.isSet()) {
+				String parity = requireEvenSide ? "even integer " : "integer ";
+				warn("requires " + parity + "square size - using " + size + "!");
+			}
 			doReset = true;
 		}
+		return doReset;
+	}
+
+	@Override
+	protected boolean checkSettings() {
+		boolean doReset = ensureSquareSize(false);
+		int side = (int) Math.floor(Math.sqrt(size) + 0.5);
 		int range = Math.min(side / 2, Math.max(1, (int) (Math.sqrt(connectivity + 1.5) / 2.0)));
 		int count = (2 * range + 1) * (2 * range + 1) - 1;
 		boolean invalid = (Math.abs(count - connectivity) > 1e-8 && Math.abs(4.0 - connectivity) > 1e-8

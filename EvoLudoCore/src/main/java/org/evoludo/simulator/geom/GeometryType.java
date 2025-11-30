@@ -158,8 +158,7 @@ public enum GeometryType implements CLOption.Key {
 	 * Square lattice (von Neumann neighbourhood). Four nearest neighbours (north,
 	 * east, south, west).
 	 * 
-	 * @see SquareGeometry#init()
-	 * @see SquareGeometry#initVonNeumann(int, int, int)
+	 * @see VonNeumannGeometry#init()
 	 */
 	SQUARE_NEUMANN("n", "square lattice (von Neumann)"),
 
@@ -167,8 +166,7 @@ public enum GeometryType implements CLOption.Key {
 	 * Square lattice. Four second-nearest neighbours (north-east, north-west,
 	 * south-west, south-east).
 	 * 
-	 * @see SquareGeometry#init()
-	 * @see SquareGeometry#initVonNeumann2nd(int, int, int)
+	 * @see SecondNeighbourGeometry#init()
 	 */
 	SQUARE_NEUMANN_2ND("n2", "square lattice, diagonal neighbours"),
 
@@ -176,8 +174,7 @@ public enum GeometryType implements CLOption.Key {
 	 * Square lattice (Moore neighbourhood). Eight nearest neighbours (chess kings
 	 * moves).
 	 * 
-	 * @see SquareGeometry#init()
-	 * @see SquareGeometry#initMoore(int, int, int)
+	 * @see MooreGeometry#init()
 	 */
 	SQUARE_MOORE("m", "square lattice (Moore)"),
 
@@ -186,7 +183,7 @@ public enum GeometryType implements CLOption.Key {
 	 * neighbours, where {@code n} is {@code 3x3, 5x5...}.
 	 * 
 	 * @see SquareGeometry#init()
-	 * @see SquareGeometry#init(int, int, int)
+	 * @see SquareGeometry#initSquare(int, int, int)
 	 */
 	SQUARE("N", "square lattice, 2D", "N<k> square lattice (k=3x3, 5x5...)"),
 
