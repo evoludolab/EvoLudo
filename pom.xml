@@ -35,7 +35,8 @@
     <evoludo.server>localhost</evoludo.server>
     <evoludo.startup>TestEvoLudo.html</evoludo.startup>
     <evoludo.jettyPort>8888</evoludo.jettyPort>
-    <evoludo.webappDirectory>${project.basedir}/src/main/webapp</evoludo.webappDirectory>
+    <evoludo.webappDirectory>${project.basedir}/EvoLudoGWT/src/main/webapp</evoludo.webappDirectory>
+    <evoludo.jetty.extraClasspath></evoludo.jetty.extraClasspath>
     <evoludo.commit default-value="unknown">${git.commit.id.describe}</evoludo.commit>
     <evoludo.build default-value="">${git.build.time}</evoludo.build>
     <evoludo.engineModule default-value="EvoLudoCore"></evoludo.engineModule>
@@ -339,6 +340,8 @@
       </activation>
       <properties>
         <evoludo.engineModule>EvoLudoCorePrivate</evoludo.engineModule>
+        <evoludo.jetty.extraClasspath>${project.basedir}/EvoLudoCorePrivate/target/classes/</evoludo.jetty.extraClasspath>
+        <evoludo.webappDirectory>${project.basedir}/EvoLudoGWTPrivate/src/main/webapp</evoludo.webappDirectory>
       </properties>
       <modules>
         <module>EvoLudoCorePrivate</module>
@@ -385,7 +388,9 @@
     <profile>
       <id>public</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <file>
+          <missing>EvoLudoCorePrivate/pom.xml</missing>
+        </file>
       </activation>
       <modules>
         <module>EvoLudoCore</module>

@@ -143,7 +143,7 @@
           <webApp>
             <extraClasspath>${basedir}/../EvoLudoCore/target/classes/</extraClasspath>
             <extraClasspath>${basedir}/../EvoLudoGWT/target/classes/</extraClasspath>
-            <extraClasspath>${basedir}/../EvoLudoCorePrivate/target/classes/</extraClasspath>
+            <extraClasspath>${evoludo.jetty.extraClasspath}</extraClasspath>
           </webApp>
           <contextXml>${basedir}/src/main/jettyconf/context.xml</contextXml>
         </configuration>
@@ -195,9 +195,6 @@
           <exists>../EvoLudoCorePrivate/pom.xml</exists>
         </file>
       </activation>
-      <properties>
-        <evoludo.webappDirectory>${project.basedir}/../EvoLudoGWTPrivate/src/main/webapp</evoludo.webappDirectory>
-      </properties>
       <dependencies>
         <dependency>
           <groupId>${project.groupId}</groupId>
@@ -226,7 +223,9 @@
     <profile>
       <id>public</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <file>
+          <missing>../EvoLudoCorePrivate/pom.xml</missing>
+        </file>
       </activation>
       <dependencies>
         <dependency>
