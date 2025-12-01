@@ -305,10 +305,10 @@ public class Distribution extends AbstractView<PopGraph2D> implements TooltipPro
 		// we really want this...
 		// geometry.name = module.getTraitName(n);
 		if (nTraits == 1) {
-			geometry = AbstractGeometry.create(GeometryType.LINEAR, engine);
+			geometry = AbstractGeometry.create(engine, GeometryType.LINEAR);
 			geometry.setSize(MAX_BINS);
 		} else {
-			geometry = AbstractGeometry.create(GeometryType.SQUARE, engine);
+			geometry = AbstractGeometry.create(engine, GeometryType.SQUARE);
 			geometry.setConnectivity(4);
 			geometry.setSize(MAX_BINS * MAX_BINS);
 		}

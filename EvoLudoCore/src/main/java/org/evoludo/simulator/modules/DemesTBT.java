@@ -213,7 +213,7 @@ public class DemesTBT extends TBT {
 				// the only acceptable geometries are well-mixed and hierarchical structures
 				// with two levels of well-mixed demes
 				logger.severe("invalid geometry - forcing well-mixed population (single deme)!");
-				interaction = AbstractGeometry.create(GeometryType.WELLMIXED, engine);
+				interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
 				doReset = true;
 			}
 			nDemes = 1;
@@ -234,7 +234,7 @@ public class DemesTBT extends TBT {
 			}
 			if (nDemes > 1 && !adjustScores) {
 				logger.severe("invalid sampling - forcing well-mixed population (single deme)!");
-				interaction = AbstractGeometry.create(GeometryType.WELLMIXED, engine);
+				interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
 				doReset = true;
 			}
 			if (optimizeMigration) {

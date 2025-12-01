@@ -458,27 +458,12 @@ public enum GeometryType implements CLOption.Key {
 	}
 
 	/**
-	 * Instantiate the requested geometry based on {@code cli}. Parsing of geometry
-	 * specific arguments is left to the created instance via
-	 * {@link AbstractGeometry#parse(String)}.
+	 * Helper method to check if the character {@code ch} indicates fixed
+	 * boundaries.
 	 * 
-	 * @param engine the EvoLudo engine providing module/CLI metadata
-	 * @param cli    the command line style geometry descriptor
-	 * @return the instantiated geometry (arguments not yet parsed)
+	 * @param ch the character to be checked
+	 * @return {@code true} if {@code ch} indicates fixed boundaries
 	 */
-	public static AbstractGeometry create(EvoLudo engine, String cli) {
-		if (engine == null)
-			throw new IllegalArgumentException("engine must not be null");
-		if (cli == null || cli.isEmpty())
-			throw new IllegalArgumentException("geometry specification must not be empty");
-		CLOption clo = engine.getModule().cloGeometry;
-		GeometryType type = (GeometryType) clo.match(cli);
-		AbstractGeometry geometry = AbstractGeometry.create(type, engine);
-		String spec = cli.substring(Math.min(type.key.length(), cli.length()));
-		geometry.setSpecs(spec);
-		return geometry;
-	}
-
 	public static boolean isFixedBoundaryToken(char ch) {
 		return ch == 'f' || ch == 'F';
 	}

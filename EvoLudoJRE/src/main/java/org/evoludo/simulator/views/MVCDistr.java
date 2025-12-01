@@ -184,7 +184,7 @@ public class MVCDistr extends MVAbstract implements PopListener {
 		double[] max = module.getTraitMax();
 		Model model = engine.getModel();
 		for (int n = 0; n < nData; n++) {
-			AbstractGeometry geometry = AbstractGeometry.create(GeometryType.LINEAR, engine);
+			AbstractGeometry geometry = AbstractGeometry.create(engine, GeometryType.LINEAR);
 			geometry.setSize(HistoGraph.HISTO_BINS);
 			PopGraph2D graph = new PopGraph2D(this, geometry, module);
 			bins[n] = new double[HistoGraph.HISTO_BINS];

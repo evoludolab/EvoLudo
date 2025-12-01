@@ -86,7 +86,7 @@ public class MVC2Distr extends MVAbstract implements PopListener {
 		// of a dynamic approach
 		bins = new double[HistoGraph.HISTO_BINS * HistoGraph.HISTO_BINS];
 		// requires exactly 2 traits
-		AbstractGeometry geometry = AbstractGeometry.create(GeometryType.SQUARE, engine);
+		AbstractGeometry geometry = AbstractGeometry.create(engine, GeometryType.SQUARE);
 		geometry.setSize(HistoGraph.HISTO_BINS * HistoGraph.HISTO_BINS);
 		graph = new PopGraph2D(this, geometry, module);
 		GraphAxis x = graph.getXAxis();

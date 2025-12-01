@@ -3615,8 +3615,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			logger.warning(
 					"inter-species interactions with populations of different size limited to well-mixed structures"
 							+ " - well-mixed structure forced!");
-			interaction = AbstractGeometry.create(GeometryType.WELLMIXED, engine);
-			opponent.interaction = AbstractGeometry.create(GeometryType.WELLMIXED, engine);
+			interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
+			opponent.interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
 			doReset = true;
 		}
 		// combinations of unstructured and structured populations in inter-species
@@ -3629,8 +3629,8 @@ public abstract class IBSPopulation<M extends Module<?>, P extends IBSPopulation
 			logger.warning(
 					"interspecies interactions combining well-mixed and structured populations not (yet) tested"
 							+ " - well-mixed structure forced!");
-			interaction = AbstractGeometry.create(GeometryType.WELLMIXED, engine);
-			opponent.interaction = AbstractGeometry.create(GeometryType.WELLMIXED, engine);
+			interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
+			opponent.interaction = AbstractGeometry.create(engine, GeometryType.WELLMIXED);
 			doReset = true;
 		}
 		return doReset;

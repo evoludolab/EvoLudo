@@ -56,13 +56,36 @@ import org.evoludo.util.Plist;
 public abstract class AbstractGeometry {
 
 	/**
+	 * Instantiate the requested geometry based on {@code cli}. Parsing of
+	 * geometry
+	 * specific arguments is left to the created instance via
+	 * {@link AbstractGeometry#parse(String)}.
+	 *
+	 * @param engine the EvoLudo engine providing module/CLI metadata
+	 * @param cli    the command line style geometry descriptor
+	 * @return the instantiated geometry (arguments not yet parsed)
+	 */
+	public static AbstractGeometry create(EvoLudo engine, String cli) {
+		if (engine == null)
+			throw new IllegalArgumentException("engine must not be null");
+		if (cli == null || cli.isEmpty())
+			throw new IllegalArgumentException("geometry specification must not be empty");
+		CLOption clo = engine.getModule().cloGeometry;
+		GeometryType type = (GeometryType) clo.match(cli);
+		AbstractGeometry geometry = AbstractGeometry.create(engine, type);
+		String spec = cli.substring(Math.min(type.key.length(), cli.length()));
+		geometry.specs = spec;
+		return geometry;
+	}
+
+	/**
 	 * Factory method for creating geometry instances by type.
 	 * 
 	 * @param type   geometry type to instantiate
 	 * @param engine pacemaker used by the geometry
 	 * @return the instantiated geometry
 	 */
-	public static AbstractGeometry create(GeometryType type, EvoLudo engine) {
+	public static AbstractGeometry create(EvoLudo engine, GeometryType type) {
 		if (type == null)
 			throw new IllegalArgumentException("type must not be null");
 		switch (type) {
@@ -408,15 +431,6 @@ public abstract class AbstractGeometry {
 			return competitionType == interactionType;
 		}
 		return interaction.isSingle();
-	}
-
-	/**
-	 * Remember the CLI specification used to configure this geometry.
-	 *
-	 * @param specs the CLI argument portion (may be {@code null})
-	 */
-	public void setSpecs(String specs) {
-		this.specs = specs;
 	}
 
 	/**
@@ -1543,7 +1557,7 @@ public abstract class AbstractGeometry {
 	// @Override
 	@SuppressWarnings("all")
 	public AbstractGeometry clone() {
-		AbstractGeometry clone = AbstractGeometry.create(type, engine);
+		AbstractGeometry clone = AbstractGeometry.create(engine, type);
 		clone.specs = specs;
 		clone.name = name;
 		if (kin != null)

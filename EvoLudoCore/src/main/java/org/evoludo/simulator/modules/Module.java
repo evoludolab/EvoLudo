@@ -1093,7 +1093,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 					boolean doReset = false;
 					int n = 0;
 					for (T mod : species) {
-						mod.structure = GeometryType.create(engine, geomargs[n % geomargs.length]);
+						mod.structure = AbstractGeometry.create(engine, geomargs[n % geomargs.length]);
 						doReset |= mod.structure.parse();
 					}
 					engine.requiresReset(doReset);
