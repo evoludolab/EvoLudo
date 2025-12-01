@@ -656,32 +656,6 @@ public abstract class AbstractGeometry {
 	}
 
 	/**
-	 * Reset the network structure and free the allocated memory.
-	 */
-	public void reset() {
-		network2D = null;
-		network3D = null;
-		specs = null;
-		name = null;
-		features = null;
-		in = null;
-		out = null;
-		kin = null;
-		kout = null;
-		size = -1;
-		type = GeometryType.WELLMIXED;
-		connectivity = -1.0;
-		pRewire = -1.0;
-		pAddwire = -1.0;
-		isUndirected = true;
-		isRewired = false;
-		isInterspecies = false;
-		isSingle = true;
-		isRegular = false;
-		isValid = false;
-	}
-
-	/**
 	 * Allocate the memory necessary to store the network structure.
 	 */
 	protected void alloc() {
@@ -707,6 +681,7 @@ public abstract class AbstractGeometry {
 		}
 		Arrays.fill(kin, 0);
 		Arrays.fill(kout, 0);
+		isValid = false;
 		features = null;
 	}
 

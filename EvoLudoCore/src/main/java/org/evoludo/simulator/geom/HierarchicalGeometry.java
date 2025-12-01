@@ -75,14 +75,6 @@ public class HierarchicalGeometry extends AbstractLattice {
 		return true;
 	}
 
-	@Override
-	public void reset() {
-		super.reset();
-		subType = GeometryType.WELLMIXED;
-		hierarchy = null;
-		hierarchyWeight = 0.0;
-	}
-
 	/**
 	 * Check if the sub-geometry matches the given type.
 	 * 

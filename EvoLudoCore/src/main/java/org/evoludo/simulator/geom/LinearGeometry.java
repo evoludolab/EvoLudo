@@ -106,12 +106,6 @@ public class LinearGeometry extends AbstractLattice {
 		isValid = true;
 	}
 
-	@Override
-	public void reset() {
-		super.reset();
-		linearAsymmetry = 0;
-	}
-
 	/**
 	 * Set the left-right neighbour difference.
 	 *

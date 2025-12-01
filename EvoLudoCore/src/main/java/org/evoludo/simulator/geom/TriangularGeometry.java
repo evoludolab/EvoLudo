@@ -52,6 +52,7 @@ public class TriangularGeometry extends AbstractLattice {
 	 * Configure the triangular geometry. Supports boundary flags and optional
 	 * explicit connectivity (defaults to 3).
 	 */
+	@Override
 	public boolean parse(String arg) {
 		String numeric = stripBoundary(arg);
 		if (numeric == null || numeric.isEmpty()) {

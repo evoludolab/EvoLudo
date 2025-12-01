@@ -67,12 +67,6 @@ public abstract class AbstractLattice extends AbstractGeometry {
 		this.fixedBoundary = fixedBoundary;
 	}
 
-	@Override
-	public void reset() {
-		super.reset();
-		fixedBoundary = false;
-	}
-
 	/**
 	 * Helper to strip {@code f|F} boundary markers from the argument string and
 	 * store the result on the instance.
