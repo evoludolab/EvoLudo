@@ -70,14 +70,12 @@ public class BarabasiAlbertGeometry extends AbstractNetwork {
 		if (size <= 0)
 			throw new IllegalStateException("size must be set before initializing a Barabasi-Albert geometry");
 		if (size == 1) {
-			alloc();
 			isValid = true;
 			return;
 		}
 		isRewired = false;
 		isUndirected = true;
 		isRegular = false;
-		alloc();
 
 		RNGDistribution rng = engine.getRNG();
 

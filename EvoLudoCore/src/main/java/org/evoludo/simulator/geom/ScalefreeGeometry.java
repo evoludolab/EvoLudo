@@ -86,7 +86,6 @@ public class ScalefreeGeometry extends AbstractNetwork {
 		if (size <= 0)
 			throw new IllegalStateException("size must be set before initializing a scale-free geometry");
 		if (size == 1) {
-			alloc();
 			isValid = true;
 			return;
 		}
@@ -226,7 +225,6 @@ public class ScalefreeGeometry extends AbstractNetwork {
 			for (int n = 0; n < size / 2; n++)
 				swap(degrees, n, size - n - 1);
 
-			alloc();
 			for (int attempt = 0; attempt < AbstractNetwork.MAX_TRIALS; attempt++) {
 				if (initGeometryDegreeDistr(degrees)) {
 					isValid = true;

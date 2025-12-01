@@ -71,7 +71,6 @@ public abstract class AbstractNetwork extends AbstractGeometry {
 	protected boolean initGeometryDegreeDistr(int[] degree) {
 		isRewired = false;
 		isUndirected = true;
-		alloc();
 
 		RNGDistribution rng = engine.getRNG();
 		int todo;

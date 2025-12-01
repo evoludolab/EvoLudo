@@ -58,7 +58,6 @@ public class WellmixedGeometry extends AbstractGeometry {
 		isRewired = false;
 		isUndirected = true;
 		isRegular = true;
-		alloc();
 		isValid = true;
 	}
 }

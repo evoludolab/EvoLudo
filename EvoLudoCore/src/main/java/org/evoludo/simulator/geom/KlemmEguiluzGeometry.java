@@ -105,14 +105,12 @@ public class KlemmEguiluzGeometry extends AbstractNetwork {
 		if (size <= 0)
 			throw new IllegalStateException("size must be set before initializing a Klemm-Eguiluz geometry");
 		if (size == 1) {
-			alloc();
 			isValid = true;
 			return;
 		}
 		isRewired = false;
 		isUndirected = true;
 		isRegular = false;
-		alloc();
 
 		RNGDistribution rng = engine.getRNG();
 		int nActive = Math.min((int) (connectivity / 2.0 + 0.5), size);

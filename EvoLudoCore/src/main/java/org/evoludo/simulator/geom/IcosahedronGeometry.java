@@ -29,7 +29,7 @@ public class IcosahedronGeometry extends AbstractGeometry {
 		isRewired = false;
 		isUndirected = true;
 		isRegular = true;
-		alloc();
+
 		for (int i = 1; i < size; i++)
 			addEdgeAt(i, i - 1);
 		addEdgeAt(0, 4);

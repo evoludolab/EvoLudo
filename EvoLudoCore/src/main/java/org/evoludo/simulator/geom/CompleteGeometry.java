@@ -80,7 +80,6 @@ public class CompleteGeometry extends AbstractGeometry {
 		isUndirected = true;
 		isRegular = true;
 		connectivity = size1;
-		alloc();
 
 		for (int n = 0; n < size; n++) {
 			int[] links = new int[size1];

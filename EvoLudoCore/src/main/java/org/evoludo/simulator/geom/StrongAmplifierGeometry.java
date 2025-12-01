@@ -37,7 +37,6 @@ public class StrongAmplifierGeometry extends AbstractGeometry {
 		isRewired = false;
 		isUndirected = true;
 		isRegular = false;
-		alloc();
 		RNGDistribution rng = engine.getRNG();
 		int unit13 = Math.max(5, (int) Math.pow(size / 4, 1.0 / 3.0));
 		int unit23 = unit13 * unit13;

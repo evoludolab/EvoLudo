@@ -65,7 +65,6 @@ public class FruchtGeometry extends AbstractGeometry {
 		isRewired = false;
 		isUndirected = true;
 		isRegular = true;
-		alloc();
 
 		addEdgeAt(0, 1);
 		addEdgeAt(1, 2);

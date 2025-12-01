@@ -376,7 +376,6 @@ public class PDE extends ODE {
 		super.reset();
 		if (space.isType(GeometryType.WELLMIXED))
 			return;
-		space.init();
 
 		int nodeCount = space.getSize();
 		if (density == null || density.length != nodeCount || density[0].length != nDim) {

@@ -31,7 +31,6 @@ public class DodekahedronGeometry extends AbstractGeometry {
 		isRewired = false;
 		isUndirected = true;
 		isRegular = true;
-		alloc();
 		for (int i = 0; i < size; i += 2) {
 			addEdgeAt(i, (size + i - 2) % size);
 			addEdgeAt(i, i + 1);

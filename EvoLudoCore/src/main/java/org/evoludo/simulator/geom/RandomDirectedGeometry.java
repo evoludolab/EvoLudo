@@ -68,7 +68,6 @@ public class RandomDirectedGeometry extends AbstractGeometry {
 		isRewired = false;
 		isUndirected = false;
 		isRegular = false;
-		alloc();
 		if (size == 1) {
 			isValid = true;
 			return;

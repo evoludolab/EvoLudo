@@ -100,7 +100,6 @@ public class SuperstarGeometry extends AbstractGeometry {
 		isRewired = false;
 		isUndirected = false;
 		isRegular = false;
-		alloc();
 
 		int pnodes = petals * (amplification - 2);
 		for (int i = pnodes + 1; i < size; i++) {

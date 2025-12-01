@@ -64,7 +64,6 @@ public class WheelGeometry extends AbstractGeometry {
 		isRewired = false;
 		isUndirected = true;
 		isRegular = false;
-		alloc();
 		for (int i = 0; i < size1; i++) {
 			addLinkAt(i + 1, (i - 1 + size1) % size1 + 1);
 			addLinkAt(i + 1, (i + 1 + size1) % size1 + 1);

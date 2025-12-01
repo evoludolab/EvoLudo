@@ -89,7 +89,6 @@ public class LinearGeometry extends AbstractLattice {
 			throw new IllegalStateException("size must be set before initializing a linear geometry");
 		isRewired = false;
 		isRegular = !fixedBoundary;
-		alloc();
 		boolean interspecies = isInterspecies();
 
 		int neighbors = (int) (connectivity + 0.5);

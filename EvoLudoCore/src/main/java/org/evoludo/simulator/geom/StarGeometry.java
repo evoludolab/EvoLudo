@@ -69,7 +69,6 @@ public class StarGeometry extends AbstractGeometry {
 		isRewired = false;
 		isUndirected = true;
 		isRegular = false;
-		alloc();
 
 		for (int i = 1; i < size; i++) {
 			addLinkAt(0, i);

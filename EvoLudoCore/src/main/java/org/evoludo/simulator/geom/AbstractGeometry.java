@@ -572,9 +572,10 @@ public abstract class AbstractGeometry {
 	 *
 	 * @return {@code true} if adjustments require a reset
 	 */
-	public boolean check() {
+	public final boolean check() {
 		boolean doReset = checkSettings();
 		validateRewiring();
+		alloc();
 		return doReset;
 	}
 

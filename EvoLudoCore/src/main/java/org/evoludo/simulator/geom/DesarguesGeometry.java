@@ -32,7 +32,6 @@ public class DesarguesGeometry extends AbstractGeometry {
 		isRewired = false;
 		isUndirected = true;
 		isRegular = true;
-		alloc();
 		for (int i = 0; i < size; i++)
 			addEdgeAt(i, (size + i - 1) % size);
 		addEdgeAt(0, 9);

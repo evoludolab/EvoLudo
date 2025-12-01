@@ -111,7 +111,6 @@ public class SquareGeometry extends AbstractLattice {
 		isRewired = false;
 		isUndirected = true;
 		isRegular = true;
-		alloc();
 		return (int) Math.floor(Math.sqrt(size) + 0.5);
 	}
 
