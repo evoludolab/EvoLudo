@@ -119,7 +119,6 @@ public class HierarchicalGeometry extends AbstractLattice {
 				hierarchy = ArrayMath.drop(hierarchy, i);
 		}
 		if (nHierarchy == 0) {
-			// hierarchy = new int[] { 1 };
 			warn("hierarchies must encompass ≥2 levels - reset to single level.");
 			setType(subType);
 			return true;
@@ -128,11 +127,23 @@ public class HierarchicalGeometry extends AbstractLattice {
 			warn("hierarchy levels must include >1 units - hierarchies collapsed to " + (nHierarchy + 1) + " levels.");
 			reset = true;
 		}
-		nHierarchy = hierarchy.length;
+		reset |= calcUnitSize();
+		return reset;
+	}
 
-		int prod = 1;
+	/**
+	 * Process the hierarchy specifications to calculate the number of units and the
+	 * size of each unit. On each level there must be at least 2 units for
+	 * well-mixed hierarchies and each unit must contain at least 2 individuals. For
+	 * hierarchies with square lattices each level must ahev at least 2x2 units with
+	 * at least 3x3 individuals each.
+	 * 
+	 * @return {@code true} if the size was adjusted and resetting is required
+	 */
+	private boolean calcUnitSize() {
 		int nIndiv;
 		connectivity = 0;
+		int nHierarchy = hierarchy.length;
 		switch (subType) {
 			case SQUARE_MOORE:
 				connectivity = 8;
@@ -142,42 +153,55 @@ public class HierarchicalGeometry extends AbstractLattice {
 				connectivity = Math.max(connectivity, 4);
 				//$FALL-THROUGH$
 			case SQUARE:
-				if (nHierarchy != 1 || hierarchy[0] != 1) {
-					for (int i = 0; i < nHierarchy; i++) {
-						int sqrt = (int) Math.sqrt(hierarchy[i]);
-						hierarchy[i] = Math.max(4, sqrt * sqrt);
-						prod *= hierarchy[i];
-					}
-				}
-				nIndiv = size > 0 ? size / Math.max(1, prod) : 0;
-				int subside = (int) Math.sqrt(nIndiv);
-				nIndiv = Math.max(9, subside * subside);
+				nIndiv = calcSquareUnit(nHierarchy);
 				break;
-			default:
-				warn("subgeometry '" + subType + "' not supported - using well-mixed demes.");
-				reset = true;
-				//$FALL-THROUGH$
 			case COMPLETE:
 				subType = GeometryType.WELLMIXED;
 				//$FALL-THROUGH$
 			case WELLMIXED:
+				int prod = 1;
 				for (int i = 0; i < nHierarchy; i++)
 					prod *= hierarchy[i];
-				nIndiv = Math.max(2, size > 0 ? size / Math.max(1, prod) : 2);
-				connectivity = Math.max(0, nIndiv - 1);
+				int nUnit = Math.max(2, size > 0 ? size / Math.max(1, prod) : 2);
+				hierarchy[nHierarchy] = nUnit;
+				connectivity = Math.max(0, nUnit - 1);
+				nIndiv = nUnit * prod;
 				break;
+			default:
+				throw new IllegalStateException("Unhandled sub-geometry type: " + subType);
 		}
-		hierarchy[nHierarchy] = nIndiv;
-
-		int requiredSize = prod * nIndiv;
-		if (requiredSize <= 0)
-			requiredSize = size;
-		if (setSize(requiredSize)) {
+		if (setSize(nIndiv)) {
 			if (engine.getModule().cloNPopulation.isSet())
 				warn("hierarchies " + Formatter.format(hierarchy) + " require population size " + size + "!");
-			reset = true;
+			return true;
 		}
-		return reset;
+		return false;
+	}
+
+	/**
+	 * Calculate the unit size for square-lattice hierarchies, adjusting each level
+	 * to a perfect square with at least 2x2 units with at least 3x3 individuals
+	 * each.
+	 * 
+	 * @param nHierarchy the number of hierarchy levels
+	 * @return the total size of the graph
+	 */
+	private int calcSquareUnit(int nHierarchy) {
+		int prod = 1;
+		if (nHierarchy != 1 || hierarchy[0] != 1) {
+			for (int i = 0; i < nHierarchy; i++) {
+				int sqrt = (int) Math.sqrt(hierarchy[i]);
+				int units = Math.max(4, sqrt * sqrt);
+				hierarchy[i] = units;
+				prod *= units;
+			}
+		}
+		int nUnit = Math.max(9, size / prod);
+		int subside = (int) Math.sqrt(nUnit);
+		nUnit = subside * subside;
+		connectivity = Math.min(nUnit - 1.0, connectivity);
+		hierarchy[nHierarchy] = nUnit;
+		return nUnit * prod;
 	}
 
 	/**
@@ -624,23 +648,41 @@ public class HierarchicalGeometry extends AbstractLattice {
 	private void initSquare(int sideLen, int fullside, int offset) {
 		boolean interspecies = isInterspecies();
 		int range = Math.min(sideLen / 2, Math.max(1, (int) (Math.sqrt(connectivity + 1.5) / 2.0)));
+
 		for (int i = 0; i < sideLen; i++) {
-			int x = i * fullside;
-			for (int j = 0; j < sideLen; j++) {
-				int player = offset + x + j;
-				for (int u = i - range; u <= i + range; u++) {
-					int row = offset + ((u + sideLen) % sideLen) * fullside;
-					for (int v = j - range; v <= j + range; v++) {
-						int neighbor = row + (v + sideLen) % sideLen;
-						if (player == neighbor && !interspecies)
-							continue;
-						addLinkAt(player, neighbor);
-					}
-				}
+			for (int j = 0; j < sideLen; j++)
+				addSquareNeighborhood(i, j, sideLen, fullside, offset, range, interspecies);
+		}
+
+		if (fixedBoundary)
+			adjustSquareBoundaries(sideLen, fullside, offset, range, interspecies);
+	}
+
+	/**
+	 * Add all neighbours for a player in the square deme.
+	 *
+	 * @param i            row index within the deme
+	 * @param j            column index within the deme
+	 * @param sideLen      side length of the deme
+	 * @param fullside     side length of the full lattice
+	 * @param offset       index offset of the deme
+	 * @param range        neighbour range
+	 * @param interspecies {@code true} if interspecific interactions allow
+	 *                     self-links
+	 */
+	private void addSquareNeighborhood(int i, int j, int sideLen, int fullside, int offset, int range,
+			boolean interspecies) {
+		int x = i * fullside;
+		int player = offset + x + j;
+		for (int u = i - range; u <= i + range; u++) {
+			int row = offset + ((u + sideLen) % sideLen) * fullside;
+			for (int v = j - range; v <= j + range; v++) {
+				int neighbor = row + (v + sideLen) % sideLen;
+				if (player == neighbor && !interspecies)
+					continue;
+				addLinkAt(player, neighbor);
 			}
 		}
-		if (fixedBoundary)
-			adjustSquareBoundaries(sideLen, fullside, offset, interspecies, range);
 	}
 
 	/**
@@ -653,52 +695,42 @@ public class HierarchicalGeometry extends AbstractLattice {
 	 *                     self-links
 	 * @param range        neighbour range
 	 */
-	private void adjustSquareBoundaries(int sideLen, int fullside, int offset, boolean interspecies, int range) {
+	private void adjustSquareBoundaries(int sideLen, int fullside, int offset, int range, boolean interspecies) {
 		int player = offset;
 		clearLinksFrom(player);
-		for (int u = 0; u <= range; u++) {
-			int r = player + u * fullside;
-			for (int v = 0; v <= range; v++) {
-				int neighbor = r + v;
-				if (player == neighbor && !interspecies)
-					continue;
-				addLinkAt(player, neighbor);
-			}
-		}
+		addBoundaryLinks(player, fullside, range, interspecies, +1, +1);
 		player = offset + sideLen - 1;
 		clearLinksFrom(player);
-		for (int u = 0; u <= range; u++) {
-			int r = player + u * fullside;
-			for (int v = 0; v <= range; v++) {
-				int neighbor = r - v;
-				if (player == neighbor && !interspecies)
-					continue;
-				addLinkAt(player, neighbor);
-			}
-		}
+		addBoundaryLinks(player, fullside, range, interspecies, +1, -1);
 		player = offset + (sideLen - 1) * fullside;
 		clearLinksFrom(player);
-		for (int u = 0; u <= range; u++) {
-			int r = player - u * fullside;
-			for (int v = 0; v <= range; v++) {
-				int neighbor = r + v;
-				if (player == neighbor && !interspecies)
-					continue;
-				addLinkAt(player, neighbor);
-			}
-		}
+		addBoundaryLinks(player, fullside, range, interspecies, -1, +1);
 		player = offset + (sideLen - 1) * (fullside + 1);
 		clearLinksFrom(player);
+		addBoundaryLinks(player, fullside, range, interspecies, -1, -1);
+		isRegular = false;
+	}
+
+	/**
+	 * Add links for a boundary player in a square deme.
+	 * 
+	 * @param player       the player at the boundary
+	 * @param fullside     the side length of the full lattice
+	 * @param range        the neighbour range
+	 * @param interspecies {@code true} for interspecific interactions
+	 * @param uStep        the step size in the u direction
+	 * @param vStep        the step size in the v direction
+	 */
+	private void addBoundaryLinks(int player, int fullside, int range, boolean interspecies, int uStep, int vStep) {
 		for (int u = 0; u <= range; u++) {
-			int r = player - u * fullside;
+			int r = player + u * uStep * fullside;
 			for (int v = 0; v <= range; v++) {
-				int neighbor = r - v;
+				int neighbor = r + v * vStep;
 				if (player == neighbor && !interspecies)
 					continue;
 				addLinkAt(player, neighbor);
 			}
 		}
-		isRegular = false;
 	}
 
 	@Override
@@ -751,6 +783,19 @@ public class HierarchicalGeometry extends AbstractLattice {
 
 		CLOption clo = engine.getModule().cloGeometry;
 		subType = (GeometryType) clo.match(specs);
+		switch (subType) {
+			case SQUARE_NEUMANN:
+			case SQUARE_NEUMANN_2ND:
+			case SQUARE_MOORE:
+			case SQUARE:
+			case WELLMIXED:
+			case COMPLETE:
+				break;
+			default:
+				warn("invalid sub-geometry for hierarchical structure: " + subType
+						+ " - reset to well-mixed.");
+				subType = GeometryType.WELLMIXED;
+		}
 		String sspecs = specs.substring(1);
 		if (!sspecs.isEmpty() && GeometryType.isFixedBoundaryToken(sspecs.charAt(0))) {
 			fixedBoundary = true;

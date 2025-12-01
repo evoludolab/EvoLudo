@@ -40,7 +40,7 @@ import org.evoludo.util.CLOParser;
  * {@code k} that connects back to the hub. The structure implements a strong
  * directed evolutionary amplifier.
  * 
- * @see <a href="http://dx.doi.org/10.1038/nature03204">Lieberman, Hauert &
+ * @see <a href="http://dx.doi.org/10.1038/nature03204">Lieberman, Hauert &amp;
  *      Nowak (2005) Nature 433:312-316</a>
  */
 public class SuperstarGeometry extends AbstractGeometry {
@@ -90,8 +90,8 @@ public class SuperstarGeometry extends AbstractGeometry {
 	 * <li>Node {@code 0} is the hub.
 	 * </ol>
 	 *
-	 * @see <a href="http://dx.doi.org/10.1038/nature03204">Lieberman, Hauert &
-	 *      Nowak (2005) Nature 433:312-316</a>
+	 * @see <a href="http://dx.doi.org/10.1038/nature03204">Lieberman, Hauert
+	 *      &amp; Nowak (2005) Nature 433:312-316</a>
 	 */
 	@Override
 	public void init() {

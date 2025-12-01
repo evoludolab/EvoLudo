@@ -77,17 +77,16 @@ public class CubicGeometry extends AbstractLattice {
 			l = 50;
 			lz = 10;
 		}
-		int l2 = l * l;
 
 		switch ((int) Math.rint(connectivity)) {
 			case 1:
-				initSelf(l, lz, l2);
+				initSelf(l, lz);
 				break;
 			case 6:
-				initSixNeighbors(l, lz, l2);
+				initSixNeighbors(l, lz);
 				break;
 			default:
-				initCubicRange(l, lz, l2);
+				initRange(l, lz);
 		}
 		isValid = true;
 	}
@@ -99,7 +98,8 @@ public class CubicGeometry extends AbstractLattice {
 	 * @param lz number of layers along the z-direction
 	 * @param l2 cached {@code l*l}
 	 */
-	private void initSelf(int l, int lz, int l2) {
+	private void initSelf(int l, int lz) {
+		int l2 = l * l;
 		for (int k = 0; k < lz; k++) {
 			int z = k * l2;
 			for (int i = 0; i < l; i++) {
@@ -120,64 +120,82 @@ public class CubicGeometry extends AbstractLattice {
 	 * @param lz number of layers along the z-direction
 	 * @param l2 cached {@code l*l}
 	 */
-	private void initSixNeighbors(int l, int lz, int l2) {
+	private void initSixNeighbors(int l, int lz) {
 		boolean interspecies = isInterspecies();
+		int l2 = l * l;
 		if (fixedBoundary) {
 			for (int k = 0; k < lz; k++) {
 				int z = k * l2;
-				int u = (k >= lz - 1) ? -1 : z + l2;
-				int d = (k > 0) ? z - l2 : -1;
-				for (int i = 0; i < l; i++) {
-					int x = i * l;
-					int n = (i > 0) ? x - l : -1;
-					int s = (i < l - 1) ? x + l : -1;
-					for (int j = 0; j < l; j++) {
-						int e = (j < l - 1) ? j + 1 : -1;
-						int w = (j > 0) ? j - 1 : -1;
-						int aPlayer = z + x + j;
-						if (interspecies)
-							addLinkAt(aPlayer, aPlayer);
-						if (n >= 0)
-							addLinkAt(aPlayer, z + n + j);
-						if (e >= 0)
-							addLinkAt(aPlayer, z + x + e);
-						if (s >= 0)
-							addLinkAt(aPlayer, z + s + j);
-						if (w >= 0)
-							addLinkAt(aPlayer, z + x + w);
-						if (u >= 0)
-							addLinkAt(aPlayer, u + x + j);
-						if (d >= 0)
-							addLinkAt(aPlayer, d + x + j);
-					}
-				}
+				int up = (k >= lz - 1) ? -1 : z + l2;
+				int down = (k > 0) ? z - l2 : -1;
+				addSixNeighborsFixed(interspecies, z, up, down, l);
 			}
 		} else {
 			for (int k = 0; k < lz; k++) {
 				int z = k * l2;
-				int u = ((k + 1) % lz) * l2;
-				int d = ((k - 1 + lz) % lz) * l2;
-				for (int i = 0; i < l; i++) {
-					int x = i * l;
-					int n = ((i - 1 + l) % l) * l;
-					int s = ((i + 1) % l) * l;
-					for (int j = 0; j < l; j++) {
-						int e = (j + 1) % l;
-						int w = (j - 1 + l) % l;
-						int aPlayer = z + x + j;
-						if (interspecies)
-							addLinkAt(aPlayer, aPlayer);
-						addLinkAt(aPlayer, z + n + j);
-						addLinkAt(aPlayer, z + x + e);
-						addLinkAt(aPlayer, z + s + j);
-						addLinkAt(aPlayer, z + x + w);
-						addLinkAt(aPlayer, u + x + j);
-						addLinkAt(aPlayer, d + x + j);
-					}
-				}
+				int up = ((k + 1) % lz) * l2;
+				int down = ((k - 1 + lz) % lz) * l2;
+				addSixNeighborsToroidal(interspecies, z, up, down, l);
 			}
 		}
 		isRegular = !fixedBoundary;
+	}
+
+	/**
+	 * Adds the six nearest-neighbors with fixed boundary conditions.
+	 */
+	private void addSixNeighborsFixed(boolean interspecies, int z, int up, int down, int l) {
+		for (int i = 0; i < l; i++) {
+			int x = i * l;
+			int north = x - l;
+			int south = (i < l - 1) ? x + l : -1;
+			for (int j = 0; j < l; j++) {
+				int east = (j < l - 1) ? j + 1 : -1;
+				int west = j - 1;
+				int aPlayer = z + x + j;
+				if (interspecies)
+					addLinkAt(aPlayer, aPlayer);
+				addNeighbor(aPlayer, z, north, j);
+				addNeighbor(aPlayer, z, x, east);
+				addNeighbor(aPlayer, z, south, j);
+				addNeighbor(aPlayer, z, x, west);
+				addNeighbor(aPlayer, up, x, j);
+				addNeighbor(aPlayer, down, x, j);
+			}
+		}
+	}
+
+	/**
+	 * Adds a neighbor if all indices are valid (non-negative).
+	 */
+	private void addNeighbor(int aPlayer, int z, int y, int x) {
+		if (z >= 0 && y >= 0 && x >= 0) {
+			addLinkAt(aPlayer, z + y + x);
+		}
+	}
+
+	/**
+	 * Adds the six nearest-neighbors with toroidal boundary conditions.
+	 */
+	private void addSixNeighborsToroidal(boolean interspecies, int z, int up, int down, int l) {
+		for (int i = 0; i < l; i++) {
+			int x = i * l;
+			int north = ((i - 1 + l) % l) * l;
+			int south = ((i + 1) % l) * l;
+			for (int j = 0; j < l; j++) {
+				int east = (j + 1) % l;
+				int west = (j - 1 + l) % l;
+				int aPlayer = z + x + j;
+				if (interspecies)
+					addLinkAt(aPlayer, aPlayer);
+				addLinkAt(aPlayer, z + north + j);
+				addLinkAt(aPlayer, z + x + east);
+				addLinkAt(aPlayer, z + south + j);
+				addLinkAt(aPlayer, z + x + west);
+				addLinkAt(aPlayer, up + x + j);
+				addLinkAt(aPlayer, down + x + j);
+			}
+		}
 	}
 
 	/**
@@ -188,56 +206,99 @@ public class CubicGeometry extends AbstractLattice {
 	 * @param lz number of layers along the z-direction
 	 * @param l2 cached {@code l*l}
 	 */
-	private void initCubicRange(int l, int lz, int l2) {
-		boolean interspecies = isInterspecies();
-		int range = Math.min(l / 2, Math.max(1, (int) (Math.pow(connectivity + 1.5, 1.0 / 3.0) / 2.0)));
+	private void initRange(int l, int lz) {
+		if (fixedBoundary)
+			initFixed(l, lz);
+		else
+			initToroidal(l, lz);
+		isRegular = !fixedBoundary;
+	}
 
-		if (fixedBoundary) {
-			for (int k = 0; k < lz; k++) {
-				int z = k * l2;
-				for (int i = 0; i < l; i++) {
-					int x = i * l;
-					for (int j = 0; j < l; j++) {
-						int aPlayer = z + x + j;
-						for (int kr = Math.max(0, k - range); kr <= Math.min(lz - 1, k + range); kr++) {
-							int zr = kr * l2;
-							for (int ir = Math.max(0, i - range); ir <= Math.min(l - 1, i + range); ir++) {
-								int yr = ir * l;
-								for (int jr = Math.max(0, j - range); jr <= Math.min(l - 1, j + range); jr++) {
-									int bPlayer = zr + yr + jr;
-									if (aPlayer == bPlayer && !interspecies)
-										continue;
-									addLinkAt(aPlayer, bPlayer);
-								}
-							}
-						}
-					}
-				}
-			}
-		} else {
-			for (int k = 0; k < lz; k++) {
-				int z = k * l2;
-				for (int i = 0; i < l; i++) {
-					int x = i * l;
-					for (int j = 0; j < l; j++) {
-						int aPlayer = z + x + j;
-						for (int kr = k - range; kr <= k + range; kr++) {
-							int zr = ((kr + lz) % lz) * l2;
-							for (int ir = i - range; ir <= i + range; ir++) {
-								int yr = ((ir + l) % l) * l;
-								for (int jr = j - range; jr <= j + range; jr++) {
-									int bPlayer = zr + yr + ((jr + l) % l);
-									if (aPlayer == bPlayer && !interspecies)
-										continue;
-									addLinkAt(aPlayer, bPlayer);
-								}
-							}
+	/**
+	 * Populate the lattice with a larger interaction range than the von-Neumann
+	 * stencil, with fixed boundaries.
+	 * 
+	 * @param l  side length of the lattice
+	 * @param lz number of layers along the z-direction
+	 * 
+	 * @see #initToroidal(int, int)
+	 */
+	private void initFixed(int l, int lz) {
+		boolean interspecies = isInterspecies();
+		int l2 = l * l;
+		int range = Math.min(l / 2, Math.max(1, (int) (Math.pow(connectivity + 1.5, 1.0 / 3.0) / 2.0)));
+		for (int k = 0; k < lz; k++) {
+			int z = k * l2;
+			for (int i = 0; i < l; i++) {
+				int x = i * l;
+				for (int j = 0; j < l; j++) {
+					int aPlayer = z + x + j;
+					int krmin = Math.max(0, k - range);
+					int krmax = Math.min(lz - 1, k + range);
+					int irmin = Math.max(0, i - range);
+					int irmax = Math.min(l - 1, i + range);
+					int jrmin = Math.max(0, j - range);
+					int jrmax = Math.min(l - 1, j + range);
+					for (int kr = krmin; kr <= krmax; kr++) {
+						int zr = kr * l2;
+						for (int ir = irmin; ir <= irmax; ir++) {
+							int yr = ir * l;
+							linkNeighboursAt(aPlayer, zr + yr, jrmin, jrmax, l, interspecies);
 						}
 					}
 				}
 			}
 		}
-		isRegular = !fixedBoundary;
+	}
+
+	/**
+	 * Populate the lattice with a larger interaction range than the von-Neumann
+	 * stencil, with toroidal wrapping.
+	 * 
+	 * @param l  side length of the lattice
+	 * @param lz number of layers along the z-direction
+	 * 
+	 * @see #initFixed(int, int)
+	 */
+	private void initToroidal(int l, int lz) {
+		boolean interspecies = isInterspecies();
+		int l2 = l * l;
+		int range = Math.min(l / 2, Math.max(1, (int) (Math.pow(connectivity + 1.5, 1.0 / 3.0) / 2.0)));
+		for (int k = 0; k < lz; k++) {
+			int z = k * l2;
+			for (int i = 0; i < l; i++) {
+				int x = i * l;
+				for (int j = 0; j < l; j++) {
+					int aPlayer = z + x + j;
+					for (int kr = k - range; kr <= k + range; kr++) {
+						int zr = ((kr + lz) % lz) * l2;
+						for (int ir = i - range; ir <= i + range; ir++) {
+							int yr = ((ir + l) % l) * l;
+							linkNeighboursAt(aPlayer, zr + yr, j - range, j + range, l, interspecies);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Links all neighbors in the specified range [min, max] around bOffset to aPlayer.
+	 * 
+	 * @param aPlayer    the player to link from
+	 * @param bOffset    the base offset for the target players
+	 * @param min        the minimum index offset
+	 * @param max        the maximum index offset
+	 * @param l          the side length of the lattice
+	 * @param interspecies whether to allow self-links
+	 */
+	private void linkNeighboursAt(int aPlayer, int bOffset, int min, int max, int l, boolean interspecies) {
+		for (int jr = min; jr <= max; jr++) {
+			int bPlayer = bOffset + ((jr + l) % l);
+			if (aPlayer == bPlayer && !interspecies)
+				continue;
+			addLinkAt(aPlayer, bPlayer);
+		}
 	}
 
 	@Override

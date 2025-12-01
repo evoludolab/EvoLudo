@@ -94,16 +94,7 @@ public class BarabasiAlbertGeometry extends AbstractNetwork {
 					nl += kout[myNeigh[j]];
 				int choices = Math.max(1, nLinks - nl);
 				int ndice = rng.random0n(choices);
-				int randnode = -1;
-				for (int j = 0; j < n; j++) {
-					if (isNeighborOf(n, j))
-						continue;
-					ndice -= kout[j];
-					if (ndice < 0) {
-						randnode = j;
-						break;
-					}
-				}
+				int randnode = pickPreferentialNode(n, ndice);
 				if (randnode < 0)
 					throw new IllegalStateException("Failed to attach node in Barabasi-Albert geometry");
 				addEdgeAt(n, randnode);
@@ -112,5 +103,23 @@ public class BarabasiAlbertGeometry extends AbstractNetwork {
 			nLinks += myLinks;
 		}
 		isValid = true;
+	}
+
+	/**
+	 * Picks a node according to preferential attachment.
+	 *
+	 * @param n     current node index
+	 * @param ndice random index for selection
+	 * @return selected node index
+	 */
+	private int pickPreferentialNode(int n, int ndice) {
+		for (int j = 0; j < n; j++) {
+			if (!isNeighborOf(n, j)) {
+				ndice -= kout[j];
+				if (ndice < 0)
+					return j;
+			}
+		}
+		return -1;
 	}
 }

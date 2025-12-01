@@ -100,7 +100,7 @@ import org.evoludo.util.Formatter;
  * <li>The {@link #paint(boolean)} method draws the histogram bars using the
  * current {@code style} (colors, frame, axis ranges). If
  * {@code style.autoscaleY} is enabled the graph will adapt {@code style.yMin}
- * and {@code.yMax} automatically based on the observed data values or the
+ * and {@code style.yMax} automatically based on the observed data values or the
  * configured normalization row.</li>
  * <li>When autoscaling normalized data the graph uses a fixed table of
  * thresholds (see the private {@code autoscale} matrix) to pick a convenient
@@ -696,7 +696,7 @@ public class HistoGraph extends AbstractGraph<double[]> implements BasicTooltipP
 	}
 
 	/**
-	 * Handle the case where yMax <= 1.0 by selecting an autoscale index and
+	 * Handle the case where {@code yMax <= 1.0} by selecting an autoscale index and
 	 * updating style.yMax; returns the number of y-levels to use.
 	 */
 	private int handleSmallYMax(double yMax) {

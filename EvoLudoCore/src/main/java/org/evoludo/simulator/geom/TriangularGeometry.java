@@ -78,69 +78,67 @@ public class TriangularGeometry extends AbstractLattice {
 		boolean interspecies = isInterspecies();
 
 		int side = (int) Math.floor(Math.sqrt(size) + 0.5);
-		switch ((int) Math.rint(connectivity)) {
-			case 1:
-				for (int i = 0; i < side; i++) {
-					int x = i * side;
-					for (int j = 0; j < side; j++) {
-						int aPlayer = x + j;
+		if ((int) Math.rint(connectivity) == 1) {
+			for (int i = 0; i < side; i++) {
+				int x = i * side;
+				for (int j = 0; j < side; j++) {
+					int aPlayer = x + j;
+					addLinkAt(aPlayer, aPlayer);
+				}
+			}
+		} else {
+			for (int i = 0; i < side; i += 2) {
+				int x = i * side;
+				int u = ((i - 1 + side) % side) * side;
+				boolean uNowrap = (i > 0);
+				int d = ((i + 1) % side) * side;
+				for (int j = 0; j < side; j += 2) {
+					int aPlayer = x + j;
+					if (interspecies)
 						addLinkAt(aPlayer, aPlayer);
-					}
-				}
-				break;
-			default:
-				for (int i = 0; i < side; i += 2) {
-					int x = i * side;
-					int u = ((i - 1 + side) % side) * side;
-					boolean uNowrap = (i > 0);
-					int d = ((i + 1) % side) * side;
-					for (int j = 0; j < side; j += 2) {
-						int aPlayer = x + j;
-						if (interspecies)
-							addLinkAt(aPlayer, aPlayer);
-						int r = j + 1;
-						addLinkAt(aPlayer, x + r);
-						int l = (j - 1 + side) % side;
-						if (!fixedBoundary || l < side - 1)
-							addLinkAt(aPlayer, x + l);
-						addLinkAt(aPlayer, d + j);
-						aPlayer = x + j + 1;
-						if (interspecies)
-							addLinkAt(aPlayer, aPlayer);
-						r = (r + 1) % side;
-						if (!fixedBoundary || r > 0)
-							addLinkAt(aPlayer, x + r);
-						l = j;
+					int r = j + 1;
+					addLinkAt(aPlayer, x + r);
+					int l = (j - 1 + side) % side;
+					if (!fixedBoundary || l < side - 1)
 						addLinkAt(aPlayer, x + l);
-						if (!fixedBoundary || uNowrap)
-							addLinkAt(aPlayer, u + j + 1);
-					}
-					x = d;
-					u = i * side;
-					d = ((i + 2) % side) * side;
-					boolean dNowrap = (i < side - 2);
-					for (int j = 0; j < side; j += 2) {
-						int aPlayer = x + j;
-						if (interspecies)
-							addLinkAt(aPlayer, aPlayer);
-						int r = j + 1;
+					addLinkAt(aPlayer, d + j);
+					aPlayer = x + j + 1;
+					if (interspecies)
+						addLinkAt(aPlayer, aPlayer);
+					r = (r + 1) % side;
+					if (!fixedBoundary || r > 0)
 						addLinkAt(aPlayer, x + r);
-						int l = (j - 1 + side) % side;
-						if (!fixedBoundary || l < side - 1)
-							addLinkAt(aPlayer, x + l);
-						addLinkAt(aPlayer, u + j);
-						aPlayer = x + j + 1;
-						if (interspecies)
-							addLinkAt(aPlayer, aPlayer);
-						r = (r + 1) % side;
-						if (!fixedBoundary || r > 0)
-							addLinkAt(aPlayer, x + r);
-						l = j;
-						addLinkAt(aPlayer, x + l);
-						if (!fixedBoundary || dNowrap)
-							addLinkAt(aPlayer, d + j + 1);
-					}
+					l = j;
+					addLinkAt(aPlayer, x + l);
+					if (!fixedBoundary || uNowrap)
+						addLinkAt(aPlayer, u + j + 1);
 				}
+				x = d;
+				u = i * side;
+				d = ((i + 2) % side) * side;
+				boolean dNowrap = (i < side - 2);
+				for (int j = 0; j < side; j += 2) {
+					int aPlayer = x + j;
+					if (interspecies)
+						addLinkAt(aPlayer, aPlayer);
+					int r = j + 1;
+					addLinkAt(aPlayer, x + r);
+					int l = (j - 1 + side) % side;
+					if (!fixedBoundary || l < side - 1)
+						addLinkAt(aPlayer, x + l);
+					addLinkAt(aPlayer, u + j);
+					aPlayer = x + j + 1;
+					if (interspecies)
+						addLinkAt(aPlayer, aPlayer);
+					r = (r + 1) % side;
+					if (!fixedBoundary || r > 0)
+						addLinkAt(aPlayer, x + r);
+					l = j;
+					addLinkAt(aPlayer, x + l);
+					if (!fixedBoundary || dNowrap)
+						addLinkAt(aPlayer, d + j + 1);
+				}
+			}
 		}
 		isValid = true;
 	}

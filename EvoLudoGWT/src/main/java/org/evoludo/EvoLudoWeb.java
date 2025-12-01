@@ -340,13 +340,14 @@ import com.google.gwt.user.client.ui.Widget;
  * save/restore state.</li>
  * </ol>
  *
- * @implSpec
- *           This class is designed to be a single, self-contained controller
- *           per DOM container element. It expects to run within the GWT
- *           environment and to co-operate with EvoLudoGWT, the Model/Module
- *           abstraction, and various AbstractView subclasses. It uses JSNI for
- *           some browser integration and therefore relies on the presence of
- *           the window object and typical browser DOM APIs.
+ * <p>
+ * <strong>Implementation notes:</strong> this class is designed to be a
+ * single, self-contained controller per DOM container element. It expects to
+ * run within the GWT environment and to co-operate with EvoLudoGWT, the
+ * Model/Module abstraction, and various AbstractView subclasses. It uses JSNI
+ * for some browser integration and therefore relies on the presence of the
+ * window object and typical browser DOM APIs.
+ * </p>
  *
  * @see EvoLudoGWT
  * @see AbstractView

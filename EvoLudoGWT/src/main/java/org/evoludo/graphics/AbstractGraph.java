@@ -127,7 +127,7 @@ import com.google.gwt.user.client.ui.Widget;
  * ContextMenu (for buffer size, log-scale and zoom actions). Subclasses
  * and the owning AbstractView can extend and populate the context menu.
  * </li>
- * <li>Maintain an optional RingBuffer<B> for historical data and provide a
+ * <li>Maintain an optional RingBuffer&lt;B&gt; for historical data and provide a
  * small context menu for configuring buffer capacity. Subclasses may
  * implement exporting of trajectory/history data when relevant.
  * </li>
@@ -198,7 +198,7 @@ import com.google.gwt.user.client.ui.Widget;
  * graph (hasMessage flag) to avoid conflicting updates.</li>
  * </ul>
  *
- * <h2>Canvas & scaling</h2>
+ * <h2>Canvas &amp; scaling</h2>
  * <p>
  * The canvas coordinate space is scaled by the detected device pixel ratio to
  * support crisp rendering on high-DPI displays. updateCanvas() sets both the
@@ -233,7 +233,7 @@ import com.google.gwt.user.client.ui.Widget;
  * frame and drawing methods to position elements consistently.
  * </p>
  *
- * <h2>History & buffering</h2>
+ * <h2>History &amp; buffering</h2>
  * <p>
  * When a RingBuffer&lt;B&gt; is present, hasHistory() returns true and a small
  * buffer-size submenu is added to the context menu to select capacities (5k,
@@ -258,7 +258,7 @@ import com.google.gwt.user.client.ui.Widget;
  * the message is cleared via clearMessage().
  * </p>
  *
- * <h2>Utilities & Helper classes</h2>
+ * <h2>Utilities &amp; Helper classes</h2>
  * <ul>
  * <li>MyContext2d — a thin subclass of Context2d that exposes setLineDash for
  * dashed lines.</li>

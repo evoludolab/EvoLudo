@@ -91,11 +91,11 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
  * draw nodes and links; supports manual node shifting</li>
  * </ul>
  *
- * <h3>Key Concepts & Fields</h3>
+ * <h3>Key Concepts &amp; Fields</h3>
  * <ul>
  * <li>data: a String[] holding per-node CSS color values used to paint each
  * cell/node.</li>
- * <li>buffer: an optional RingBuffer<String[]> used by linear geometry to
+ * <li>buffer: an optional RingBuffer&lt;String[]&gt; used by linear geometry to
  * retain previous states for history visualization. Capacity is based on
  * visible steps and MAX_LINEAR_SIZE.</li>
  * <li>Bounds and sizing: internal fields such as side, dw, dw2, dh, dh3 and
@@ -106,7 +106,7 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
  * hitDragged indicates whether a node is currently being dragged.</li>
  * </ul>
  *
- * <h3>Interaction & Events</h3>
+ * <h3>Interaction &amp; Events</h3>
  * <ul>
  * <li>Mouse Down: left-click resolves a node via findNodeAt and sets up
  * dragging
@@ -131,7 +131,7 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
  * zoom) and manages a saved graphics state so drawing is isolated.</li>
  * </ul>
  *
- * <h3>Sizing & Limits</h3>
+ * <h3>Sizing &amp; Limits</h3>
  * <ul>
  * <li>MIN_DW, MIN_DH and MIN_DR define minimum drawable dimensions; if elements
  * would be smaller than these thresholds, the graph is disabled and a
@@ -147,7 +147,7 @@ import com.google.gwt.event.dom.client.TouchMoveEvent;
  * populations or frequent updates. For linear geometries the history buffer
  * size is chosen to balance memory and visible steps; it is lazily allocated.
  *
- * <h3>Extensibility & Limitations</h3>
+ * <h3>Extensibility &amp; Limitations</h3>
  * <ul>
  * <li>3D geometries (CUBE) are not represented graphically in this class and
  * will display an informational message.</li>

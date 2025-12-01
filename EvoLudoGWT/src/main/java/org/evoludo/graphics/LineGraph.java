@@ -55,7 +55,7 @@ import com.google.gwt.core.client.Scheduler;
 
 /**
  * LineGraph visualizes time series data as one or more line plots inside a
- * resizable, pannable and zoomable canvas. It extends AbstractGraph<double[]>
+ * resizable, pannable and zoomable canvas. It extends AbstractGraph&lt;double[]&gt;
  * and implements interactions for shifting and zooming (Shifting, Zooming),
  * optional logarithmic y-axis scaling (HasLogScaleY) and provides tooltips
  * (BasicTooltipProvider).
@@ -135,7 +135,7 @@ import com.google.gwt.core.client.Scheduler;
  * <ul>
  * <li>steps: number of steps shown along the x-axis (clamped to [1,
  * buffer.capacity]).</li>
- * <li>buffer: RingBuffer<double[]> storing historical data arrays (time +
+ * <li>buffer: RingBuffer&lt;double[]&gt; storing historical data arrays (time +
  * values).</li>
  * <li>style: visual and interaction configuration (xMin/xMax/yMin/yMax,
  * xIncr, autoscaleY, logScaleY, markerSize, lineWidth, etc.).</li>

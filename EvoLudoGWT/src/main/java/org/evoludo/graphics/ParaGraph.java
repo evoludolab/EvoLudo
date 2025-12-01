@@ -75,7 +75,7 @@ import com.google.gwt.event.dom.client.TouchStartEvent;
  * <li>Handle special time values (NaN) and duplicate times: duplicate times
  * replace the last sample; NaN times mark new trajectory segments and update
  * the recorded initial state accordingly.</li>
- * <li>Map simulation state <-> phase coordinates using a {@link Data2Phase}
+ * <li>Map simulation state &lt;-&gt; phase coordinates using a {@link Data2Phase}
  * instance. If the mapper implements {@link BasicTooltipProvider} it will be
  * used as the tooltip provider for parametric tooltips.</li>
  * <li>Render the trajectory with optional start/end markers and custom markers.

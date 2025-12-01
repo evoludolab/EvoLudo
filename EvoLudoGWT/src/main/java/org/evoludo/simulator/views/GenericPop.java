@@ -78,7 +78,6 @@ import org.evoludo.util.Formatter;
  * <li>Forward mouse node-hit events to IBS models and handle a small set
  * of view-level keyboard shortcuts (e.g. 's' for shaking network layouts).</li>
  * </ul>
- * </p>
  *
  * @author Christoph Hauert
  * 

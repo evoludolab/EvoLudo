@@ -53,6 +53,7 @@ import org.evoludo.util.Plist;
  * graphs for IBS, PDE's and graphical representations, such as trait
  * distributions in 1D or 2D.
  */
+@SuppressWarnings("java:S2629") // GWT does not support String.format()
 public abstract class AbstractGeometry {
 
 	/**
@@ -1393,7 +1394,6 @@ public abstract class AbstractGeometry {
 	 * @param type   the type of connection ("in" or "out")
 	 * @return {@code true} if no multiple connections found
 	 */
-	@SuppressWarnings("java:S2629") // GWT does not support String.format()
 	private boolean checkMultiple(int[] degree, int[][] links, String type) {
 		logger.fine("Checking multiple " + type + "-connections... ");
 		boolean ok = true;
@@ -1419,7 +1419,6 @@ public abstract class AbstractGeometry {
 	 * 
 	 * @return {@code true} if all connections are consistent
 	 */
-	@SuppressWarnings("java:S2629") // GWT does not support String.format()
 	private boolean checkInOut() {
 		logger.fine("Checking consistency of in-, out-connections... ");
 		boolean ok = true;
@@ -1427,15 +1426,8 @@ public abstract class AbstractGeometry {
 			// each 'out' connection must be balanced by an 'in' connection
 			int[] outi = out[i];
 			int nout = kout[i];
-			nextlink: for (int j = 0; j < nout; j++) {
-				int[] ini = in[outi[j]];
-				int nin = kin[outi[j]];
-				for (int k = 0; k < nin; k++)
-					if (ini[k] == i)
-						continue nextlink;
-				ok = false;
-				logger.fine("Node " + i + " has 'out'-link to node " + outi[j]
-						+ ", but there is no corresponding 'in'-link");
+			for (int j = 0; j < nout; j++) {
+				ok &= hasNeigh(i, outi[j], in[outi[j]], kin[outi[j]], "out");
 			}
 		}
 		logger.fine("Consistency of in-, out-connections check: " + (ok ? "success!" : "failed!"));
@@ -1447,7 +1439,6 @@ public abstract class AbstractGeometry {
 	 * 
 	 * @return {@code true} if no self-connections found
 	 */
-	@SuppressWarnings("java:S2629") // GWT does not support String.format()
 	private boolean checkSelfing() {
 		// self-connections are only acceptable for inter-species interactions
 		logger.fine("Checking self-connections... ");
@@ -1480,7 +1471,6 @@ public abstract class AbstractGeometry {
 	 * 
 	 * @return {@code true} if the graph is regular
 	 */
-	@SuppressWarnings("java:S2629") // GWT does not support String.format()
 	private boolean checkRegular() {
 		boolean ok = true;
 		logger.fine("Checking regularity... ");
@@ -1507,7 +1497,6 @@ public abstract class AbstractGeometry {
 	 * 
 	 * @return {@code true} if the graph is undirected
 	 */
-	@SuppressWarnings("java:S2629") // GWT does not support String.format()
 	private boolean checkUndirected() {
 		logger.fine("Checking undirected structure... ");
 		boolean ok = true;
@@ -1515,29 +1504,27 @@ public abstract class AbstractGeometry {
 			// each connection must go both ways
 			int[] outa = out[i];
 			int nouta = kout[i];
-			nextout: for (int j = 0; j < nouta; j++) {
-				int[] outb = out[outa[j]];
-				int noutb = kout[outa[j]];
-				for (int k = 0; k < noutb; k++)
-					if (outb[k] == i)
-						continue nextout;
-				ok = false;
-				logger.fine("Node " + i + " has 'out'-link to node " + outa[j] + ", but not vice versa");
-			}
+			for (int j = 0; j < nouta; j++)
+				ok &= hasNeigh(i, outa[j], out[outa[j]], kout[outa[j]], "out");
+
 			int[] ina = in[i];
 			int nina = kin[i];
-			nextin: for (int j = 0; j < nina; j++) {
-				int[] inb = in[ina[j]];
-				int ninb = kin[ina[j]];
-				for (int k = 0; k < ninb; k++)
-					if (inb[k] == i)
-						continue nextin;
-				ok = false;
-				logger.fine("Node " + i + " has 'in'-link to node " + ina[j] + ", but not vice versa");
-			}
+			for (int j = 0; j < nina; j++)
+				ok &= hasNeigh(i, ina[j], in[ina[j]], kin[ina[j]], "in");
 		}
 		logger.fine("Undirected structure check: " + (ok ? "success!" : "failed!"));
 		return ok;
+	}
+
+	/**
+	 * Helper: check whether neighs contains src.
+	 */
+	private boolean hasNeigh(int src, int target, int[] neighs, int nNeigh, String dir) {
+		for (int k = 0; k < nNeigh; k++)
+			if (neighs[k] == src)
+				return true;
+		logger.fine("Node " + src + " has '" + dir + "'-link to node " + target + ", but not vice versa");
+		return false;
 	}
 
 	/**
