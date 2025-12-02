@@ -30,7 +30,6 @@
 
 package org.evoludo.simulator.views;
 
-import org.evoludo.simulator.geom.GeometryType;
 import java.awt.Color;
 import java.text.DecimalFormat;
 
@@ -46,8 +45,9 @@ import org.evoludo.graphics.PopListener;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapJRE;
 import org.evoludo.simulator.EvoLudoLab;
-import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.modules.Continuous;

@@ -34,9 +34,9 @@ import org.evoludo.geom.Node2D;
 import org.evoludo.geom.Path2D;
 import org.evoludo.geom.Point2D;
 import org.evoludo.geom.Vector2D;
-import org.evoludo.simulator.geom.AbstractGeometry;
-import org.evoludo.simulator.geom.GeometryFeatures;
-import org.evoludo.simulator.geom.GeometryType;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryFeatures;
+import org.evoludo.simulator.geometries.GeometryType;
 
 /**
  * Graphical representation of generic population geometries in 2D. A network

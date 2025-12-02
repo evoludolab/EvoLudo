@@ -36,8 +36,8 @@ import java.util.List;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.geom.GeometryType;
-import org.evoludo.simulator.geom.HierarchicalGeometry;
+import org.evoludo.simulator.geometries.GeometryType;
+import org.evoludo.simulator.geometries.HierarchicalGeometry;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSC.Init;
 import org.evoludo.simulator.models.Model.HasIBS;
@@ -716,7 +716,7 @@ public class IBSMCPopulation extends IBSPopulation<Continuous, IBSMCPopulation> 
 	 * @param trait1 the index of the first trait
 	 * @param trait2 the index of the second trait
 	 *
-	 * @see org.evoludo.simulator.geom.AbstractGeometry#initGeometrySquare()
+	 * @see org.evoludo.simulator.geometries.AbstractGeometry#initGeometrySquare()
 	 */
 	public void get2DTraitHistogramData(double[] bins, int trait1, int trait2) {
 		// clear bins

@@ -30,7 +30,6 @@
 
 package org.evoludo.simulator.models;
 
-import org.evoludo.simulator.geom.GeometryType;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -39,8 +38,9 @@ import java.util.logging.Level;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.geom.AbstractGeometry;
-import org.evoludo.simulator.geom.GeometryFeatures;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryFeatures;
+import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.modules.Features.Payoffs;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;

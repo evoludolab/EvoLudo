@@ -35,13 +35,13 @@ import java.util.logging.Level;
 
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.geometries.GeometryFeatures;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
-import org.evoludo.simulator.geom.GeometryFeatures;
 
 /**
  * Numerical integration of partial differential equations for

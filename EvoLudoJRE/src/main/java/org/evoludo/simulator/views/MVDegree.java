@@ -48,9 +48,9 @@ import org.evoludo.graphics.HistoGraphListener;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Combinatorics;
 import org.evoludo.simulator.EvoLudoLab;
-import org.evoludo.simulator.geom.AbstractGeometry;
-import org.evoludo.simulator.geom.GeometryFeatures;
-import org.evoludo.simulator.geom.GeometryType;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryFeatures;
+import org.evoludo.simulator.geometries.GeometryType;
 
 public class MVDegree extends MVAbstract implements HistoGraphListener {
 

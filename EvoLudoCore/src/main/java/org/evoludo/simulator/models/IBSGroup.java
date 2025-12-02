@@ -32,8 +32,8 @@ package org.evoludo.simulator.models;
 
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.geom.AbstractGeometry;
-import org.evoludo.simulator.geom.HierarchicalGeometry;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.HierarchicalGeometry;
 import org.evoludo.util.CLOption;
 
 /**

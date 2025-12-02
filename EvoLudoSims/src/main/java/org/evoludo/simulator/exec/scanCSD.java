@@ -39,7 +39,7 @@ import org.evoludo.math.ArrayMath;
 import org.evoludo.math.Distributions;
 import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoJRE;
-import org.evoludo.simulator.geom.AbstractGeometry;
+import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.models.IBSC.Init;
 import org.evoludo.simulator.models.IBSCPopulation;
 import org.evoludo.simulator.modules.CSD;

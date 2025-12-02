@@ -34,8 +34,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.geometries.AbstractGeometry;
 
 public class Network2DJRE extends Network2D implements Runnable {
 

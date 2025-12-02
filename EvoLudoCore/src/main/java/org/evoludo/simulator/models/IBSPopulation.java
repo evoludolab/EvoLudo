@@ -30,7 +30,6 @@
 
 package org.evoludo.simulator.models;
 
-import org.evoludo.simulator.geom.GeometryType;
 import java.awt.Color;
 import java.util.Arrays;
 import java.util.List;
@@ -43,9 +42,10 @@ import org.evoludo.math.Functions;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.geom.AbstractGeometry;
-import org.evoludo.simulator.geom.GeometryFeatures;
-import org.evoludo.simulator.geom.HierarchicalGeometry;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryFeatures;
+import org.evoludo.simulator.geometries.GeometryType;
+import org.evoludo.simulator.geometries.HierarchicalGeometry;
 import org.evoludo.simulator.models.IBS.MigrationType;
 import org.evoludo.simulator.models.IBS.ScoringType;
 import org.evoludo.simulator.models.IBSGroup.SamplingType;

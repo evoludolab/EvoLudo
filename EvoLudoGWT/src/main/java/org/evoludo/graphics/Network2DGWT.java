@@ -31,8 +31,8 @@
 package org.evoludo.graphics;
 
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.Network2D;
+import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.models.Model;
 
 import com.google.gwt.core.client.Duration;

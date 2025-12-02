@@ -34,9 +34,9 @@ import java.util.Arrays;
 
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.geom.AbstractGeometry;
-import org.evoludo.simulator.geom.GeometryType;
-import org.evoludo.simulator.geom.HierarchicalGeometry;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryType;
+import org.evoludo.simulator.geometries.HierarchicalGeometry;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBS.MigrationType;
 import org.evoludo.simulator.models.IBSD;

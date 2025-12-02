@@ -37,10 +37,10 @@ import java.util.Iterator;
 import org.evoludo.geom.Node;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.math.RNGDistribution;
-import org.evoludo.simulator.geom.AbstractGeometry;
-import org.evoludo.simulator.geom.GeometryFeatures;
-import org.evoludo.simulator.geom.GeometryType;
-import org.evoludo.simulator.geom.HierarchicalGeometry;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryFeatures;
+import org.evoludo.simulator.geometries.GeometryType;
+import org.evoludo.simulator.geometries.HierarchicalGeometry;
 
 /**
  * Abstract graphical representation for generic population geometries. A

@@ -103,7 +103,7 @@ public interface CModel {
 	 * @param trait1 the index of the first trait (horizontal axis)
 	 * @param trait2 the index of the second trait (vertical axis)
 	 * 
-	 * @see org.evoludo.simulator.geom.SquareGeometry
+	 * @see org.evoludo.simulator.geometries.SquareGeometry
 	 */
 	public void get2DTraitHistogramData(int id, double[] bins, int trait1, int trait2);
 }

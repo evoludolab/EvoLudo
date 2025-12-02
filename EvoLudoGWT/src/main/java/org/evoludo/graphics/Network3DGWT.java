@@ -35,8 +35,8 @@ import java.util.ArrayList;
 import org.evoludo.geom.Node3D;
 import org.evoludo.simulator.ColorMap3D;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.Network3D;
+import org.evoludo.simulator.geometries.AbstractGeometry;
 
 import com.google.gwt.core.client.Duration;
 import com.google.gwt.core.client.Scheduler;

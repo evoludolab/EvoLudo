@@ -30,10 +30,10 @@
 
 package org.evoludo.simulator.models;
 
-import org.evoludo.simulator.geom.GeometryType;
 import org.evoludo.math.ArrayMath;
 import org.evoludo.simulator.EvoLudo;
-import org.evoludo.simulator.geom.AbstractGeometry;
+import org.evoludo.simulator.geometries.AbstractGeometry;
+import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;

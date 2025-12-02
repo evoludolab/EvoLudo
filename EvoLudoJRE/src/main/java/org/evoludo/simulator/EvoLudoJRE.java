@@ -53,8 +53,8 @@ import javax.swing.Timer;
 
 import org.evoludo.graphics.Network2DJRE;
 import org.evoludo.math.ArrayMath;
-import org.evoludo.simulator.geom.AbstractGeometry;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
+import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.models.FixationData;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSC;
