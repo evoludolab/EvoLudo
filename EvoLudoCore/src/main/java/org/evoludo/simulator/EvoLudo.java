@@ -30,7 +30,6 @@
 
 package org.evoludo.simulator;
 
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -74,6 +73,7 @@ import org.evoludo.simulator.views.HasS3;
 import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOProvider;
+import org.evoludo.util.CLOption;
 import org.evoludo.util.Plist;
 
 /**
@@ -300,6 +300,9 @@ public abstract class EvoLudo
 	 * Controller for command line option parsing.
 	 */
 	protected final CLOController cloController = new CLOController(this);
+
+	public final CLOption cloSeed = cloController.cloSeed;
+	public final CLOption cloRun = cloController.cloRun;
 
 	/**
 	 * Controller for lifecycle listeners.
@@ -625,7 +628,7 @@ public abstract class EvoLudo
 	 * while parameters are being applied. If the changes do not require a reset of
 	 * the model the calculations are resumed after new parameters are applied. Also
 	 * used when command line options are set to immediately start running after
-	 * loading (see {@link #cloRun}).
+	 * loading (see {@link CLOController#cloRun}).
 	 */
 	protected boolean isSuspended = false;
 
@@ -725,6 +728,15 @@ public abstract class EvoLudo
 	}
 
 	/**
+	 * Access the module command line option.
+	 * 
+	 * @return the module option
+	 */
+	public CLOption getCloModuleOption() {
+		return cloController.cloModule;
+	}
+
+	/**
 	 * Add <code>module</code> to lookup table of modules using the module's key. If
 	 * a GUI is present, add GUI as a listener of <code>module</code> to get
 	 * notified about state changes.
@@ -734,7 +746,7 @@ public abstract class EvoLudo
 	public void addModule(Module<?> module) {
 		String key = module.getKey();
 		modules.put(key, module);
-		cloModule.addKey(key, module.getTitle());
+		cloController.addModuleKey(key, module.getTitle());
 	}
 
 	/**
@@ -1286,204 +1298,6 @@ public abstract class EvoLudo
 	public abstract void showHelp();
 
 	/**
-	 * Command line option to set module.
-	 */
-	public final CLOption cloModule = new CLOption("module", null, CLOCategory.Global,
-			"--module <m>    select module from:", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					// option gets special treatment
-					return true;
-				}
-			});
-
-	/**
-	 * Command line option to set the type of model (see {@link ModelType}).
-	 */
-	public final CLOption cloModel = new CLOption("model", ModelType.IBS.getKey(), CLOCategory.Module,
-			"--model <m>     model type", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					// option gets special treatment
-					return true;
-				}
-			});
-
-	/**
-	 * Command line option to set seed of random number generator.
-	 */
-	public final CLOption cloSeed = new CLOption("seed", "0", CLOption.Argument.OPTIONAL, CLOCategory.Model,
-			"--seed [<s>]    set random seed (0)", new CLODelegate() {
-				@Override
-				public boolean parse(String arg, boolean isSet) {
-					if (isSet)
-						rng.setSeed(Long.parseLong(arg));
-					else
-						rng.clearSeed();
-					return true;
-				}
-			});
-
-	/**
-	 * Command line option to request that the EvoLudo model immediately starts
-	 * running after loading.
-	 */
-	public final CLOption cloRun = new CLOption("run", CLOCategory.GUI,
-			"--run           simulations run after launch", new CLODelegate() {
-				@Override
-				public boolean parse(boolean isSet) {
-					// by default do not interfere - i.e. leave simulations running if possible
-					if (isSet)
-						setSuspended(true);
-					return true;
-				}
-			});
-
-	/**
-	 * Command line option to set the delay between subsequent updates.
-	 */
-	public final CLOption cloDelay = new CLOption("delay", "" + DELAY_INIT, CLOCategory.GUI,
-			"--delay <d>     delay between updates (d: delay in msec)", new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					setDelay(Integer.parseInt(arg));
-					return true;
-				}
-			});
-
-	/**
-	 * Command line option to set the color for trajectories. For example, this
-	 * affects the display in {@link org.evoludo.simulator.views.S3} or
-	 * {@link org.evoludo.simulator.views.Phase2D}.
-	 */
-	public final CLOption cloTrajectoryColor = new CLOption("trajcolor", "black", CLOCategory.GUI,
-			"--trajcolor <c>  color for trajectories\n"
-					+ "           <c>: color name or '(r,g,b[,a])' with r,g,b,a in [0-255]",
-			new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					Color color = CLOParser.parseColor(arg);
-					if (color == null)
-						return false;
-					activeModule.setTrajectoryColor(color);
-					return true;
-				}
-			});
-
-	/**
-	 * Command line option to set color scheme for coloring continuous traits.
-	 * 
-	 * @see ColorModelType
-	 */
-	public final CLOption cloTraitColorScheme = new CLOption("traitcolorscheme", "traits", CLOCategory.GUI,
-			"--traitcolorscheme <m>  color scheme for traits:", //
-			new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					setColorModelType((ColorModelType) cloTraitColorScheme.match(arg));
-					return true;
-				}
-			});
-
-	/**
-	 * Command line option to perform test of random number generator on launch.
-	 * This takes approximately 10-20 seconds. The test reports (1) whether the
-	 * generated sequence of random numbers is consistent with the reference
-	 * implementation of {@link MersenneTwister} and (2) the performance of
-	 * MersenneTwister compared to {@link java.util.Random}.
-	 */
-	public final CLOption cloRNG = new CLOption("testRNG", CLOCategory.Global,
-			"--testRNG       test random number generator", new CLODelegate() {
-				@Override
-				public boolean parse(boolean isSet) {
-					if (isSet) {
-						// test of RNG requested
-						logger.info("Testing MersenneTwister...");
-						int start = elapsedTimeMsec();
-						MersenneTwister.testCorrectness(logger);
-						MersenneTwister.testSpeed(logger, EvoLudo.this, 10000000);
-						int lap = elapsedTimeMsec();
-						logger.info("MersenneTwister tests done: " + ((lap - start) / 1000.0) + " sec.");
-						MersenneTwister mt = rng.getRNG();
-						RNGDistribution.Uniform.test(mt, logger, EvoLudo.this);
-						RNGDistribution.Exponential.test(mt, logger, EvoLudo.this);
-						RNGDistribution.Normal.test(mt, logger, EvoLudo.this);
-						RNGDistribution.Geometric.test(mt, logger, EvoLudo.this);
-						RNGDistribution.Binomial.test(mt, logger, EvoLudo.this);
-					}
-					return true;
-				}
-			});
-
-	/**
-	 * Command line option to set verbosity level of logging.
-	 */
-	public final CLOption cloVerbose = new CLOption("verbose", "info", CLOCategory.Global,
-			"--verbose <l>   level of verbosity with l one of\n" //
-					+ "                all, debug/finest, finer, fine, config,\n" //
-					+ "                info, warning, error, or none",
-			new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					String larg = arg.toLowerCase();
-					if ("all".startsWith(larg)) {
-						logger.setLevel(Level.ALL);
-						return true;
-					}
-					if ("debug".startsWith(larg)) {
-						logger.setLevel(Level.FINEST);
-						return true;
-					}
-					if ("finest".startsWith(larg)) {
-						logger.setLevel(Level.FINEST);
-						return true;
-					}
-					if ("finer".startsWith(larg)) {
-						logger.setLevel(Level.FINER);
-						return true;
-					}
-					if ("fine".startsWith(larg)) {
-						logger.setLevel(Level.FINE);
-						return true;
-					}
-					if ("debug".startsWith(larg)) {
-						logger.setLevel(Level.CONFIG);
-						return true;
-					}
-					if ("warning".startsWith(larg)) {
-						logger.setLevel(Level.WARNING);
-						return true;
-					}
-					if ("error".startsWith(larg) || "severe".startsWith(larg)) {
-						logger.setLevel(Level.SEVERE);
-						return true;
-					}
-					if ("none".startsWith(larg) || "off".startsWith(larg)) {
-						logger.setLevel(Level.OFF);
-						return true;
-					}
-					if ("info".startsWith(larg)) {
-						logger.setLevel(Level.INFO);
-						return true;
-					}
-					return false;
-				}
-			});
-
-	/**
-	 * Command line option to print help message for available command line options.
-	 */
-	public final CLOption cloHelp = new CLOption("help", CLOCategory.Global,
-			"--help          print this help screen", new CLODelegate() {
-				@Override
-				public boolean parse(boolean isSet) {
-					if (isSet)
-						showHelp();
-					return true;
-				}
-			});
-
-	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * <strong>Note:</strong> In contrast to other providers of command line
@@ -1516,7 +1330,7 @@ public abstract class EvoLudo
 	 * <dd>Default coloring type. Not user selectable.
 	 * </dl>
 	 * 
-	 * @see #cloTraitColorScheme
+	 * @see CLOController#cloTraitColorScheme
 	 */
 	public enum ColorModelType implements CLOption.Key {
 
@@ -1555,7 +1369,7 @@ public abstract class EvoLudo
 		 * @param key   the name of the color model
 		 * @param title the title of the color model
 		 * 
-		 * @see #cloTraitColorScheme
+		 * @see CLOController#cloTraitColorScheme
 		 */
 		ColorModelType(String key, String title) {
 			this.key = key;
@@ -1583,7 +1397,7 @@ public abstract class EvoLudo
 	 * 
 	 * @return the type of color model
 	 * 
-	 * @see #cloTraitColorScheme
+	 * @see CLOController#cloTraitColorScheme
 	 */
 	public ColorModelType getColorModelType() {
 		return colorModelType;
@@ -1595,7 +1409,7 @@ public abstract class EvoLudo
 	 * 
 	 * @param colorModelType the new type of color model
 	 * 
-	 * @see #cloTraitColorScheme
+	 * @see CLOController#cloTraitColorScheme
 	 */
 	public void setColorModelType(ColorModelType colorModelType) {
 		if (colorModelType == null)
