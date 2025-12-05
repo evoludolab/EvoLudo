@@ -32,14 +32,12 @@ package org.evoludo.simulator;
 
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.evoludo.math.ArrayMath;
 import org.evoludo.math.MersenneTwister;
 import org.evoludo.math.RNGDistribution;
 import org.evoludo.simulator.geometries.AbstractGeometry;
@@ -48,7 +46,6 @@ import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDESupervisor;
@@ -76,10 +73,7 @@ import org.evoludo.simulator.views.HasPop3D;
 import org.evoludo.simulator.views.HasS3;
 import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
-import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
-import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOption.Key;
 import org.evoludo.util.Plist;
 
 /**
@@ -294,19 +288,18 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * The flag to indicate whether the module reqiuires a full reparsing of the
-	 * command line options.
-	 */
-	private boolean reparseCLO = false;
-
-	/**
 	 * Request full reparsing of the command line options. This is necessary if the
 	 * command line options have changed in a fundamental way, for example if the
 	 * number of traits in a module has changed.
 	 */
 	public void requestParseCLO() {
-		reparseCLO = true;
+		cloController.requestParseCLO();
 	}
+
+	/**
+	 * Controller for command line option parsing.
+	 */
+	protected final CLOController cloController = new CLOController(this);
 
 	/**
 	 * Controller for lifecycle listeners.
@@ -583,7 +576,7 @@ public abstract class EvoLudo
 	 * @return command line options
 	 */
 	public String getCLO() {
-		return clo;
+		return cloController.getCLO();
 	}
 
 	/**
@@ -593,12 +586,7 @@ public abstract class EvoLudo
 	 * @return array command line options and arguments
 	 */
 	public String[] getSplitCLO() {
-		// strip all whitespace at start and end
-		String[] args = clo.trim().split("\\s+--");
-		// strip '--' from first argument
-		if (args[0].startsWith("--"))
-			args[0] = args[0].substring(2);
-		return args;
+		return cloController.getSplitCLO();
 	}
 
 	/**
@@ -607,9 +595,7 @@ public abstract class EvoLudo
 	 * @param clo the new command line option string
 	 */
 	public void setCLO(String clo) {
-		if (clo == null)
-			clo = "";
-		this.clo = clo.trim();
+		cloController.setCLO(clo);
 	}
 
 	/**
@@ -1142,7 +1128,7 @@ public abstract class EvoLudo
 		String java = getJavaVersion();
 		if (java != null)
 			plist.append(Plist.encodeKey("JavaVersion", java));
-		plist.append(Plist.encodeKey("CLO", parser.getCLO()));
+		plist.append(Plist.encodeKey("CLO", cloController.getParserCLO()));
 		activeModel.encodeState(plist);
 		// the mersenne twister state is pretty long (and uninteresting) keep at end
 		plist.append("<key>RNG state</key>\n" + "<dict>\n" + (rng.getRNG().encodeState()) + "</dict>\n");
@@ -1219,22 +1205,13 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * The parser for command line options.
-	 */
-	protected CLOParser parser;
-
-	/**
 	 * Register <code>clo</code> as a provider of command line options. Initialize
 	 * command line parser if necessary.
 	 *
 	 * @param provider the option provider to add
 	 */
 	public void addCLOProvider(CLOProvider provider) {
-		if (provider == null)
-			return;
-		if (parser == null)
-			parser = new CLOParser(this);
-		parser.addCLOProvider(provider);
+		cloController.addCLOProvider(provider);
 	}
 
 	/**
@@ -1243,9 +1220,7 @@ public abstract class EvoLudo
 	 * @param provider the option provider to remove
 	 */
 	public void removeCLOProvider(CLOProvider provider) {
-		if (parser == null || provider == null)
-			return;
-		parser.removeCLOProvider(provider);
+		cloController.removeCLOProvider(provider);
 	}
 
 	/**
@@ -1269,167 +1244,7 @@ public abstract class EvoLudo
 	 *      EvoLudoGWT#preprocessCLO(String[])
 	 */
 	protected String[] preprocessCLO(String[] cloarray) {
-		// first, deal with --help option
-		boolean helpRequested = containsHelpOption(cloarray);
-
-		// handle module option (preprocessing requires module to be loaded early)
-		cloarray = handleModuleOption(cloarray, helpRequested);
-
-		// determine feasible --model options for given module
-		cloModel.clearKeys();
-		ModelType[] mt = activeModule.getModelTypes();
-		cloModel.addKeys(mt);
-
-		// handle model option
-		cloarray = handleModelOption(cloarray, helpRequested);
-
-		// handle verbose option early so parsing reports use desired logging level
-		cloarray = handleVerboseOption(cloarray);
-
-		return cloarray;
-	}
-
-	/**
-	 * Check whether the help option is present.
-	 * 
-	 * @param cloarray array of command line arguments
-	 * @return <code>true</code> if help option is present
-	 */
-	private boolean containsHelpOption(String[] cloarray) {
-		String helpName = cloHelp.getName();
-		for (String param : cloarray) {
-			if (param.startsWith(helpName))
-				return true;
-		}
-		return false;
-	}
-
-	/**
-	 * Handle the --module option. Returns modified cloarray or null to indicate
-	 * that helpCLO should be returned to caller.
-	 * 
-	 * @param cloarray      array of command line arguments
-	 * @param helpRequested <code>true</code> if help option was requested
-	 * @return possibly modified cloarray
-	 */
-	private String[] handleModuleOption(String[] cloarray, boolean helpRequested) {
-		String moduleParam = cloModule.getName();
-		CLOption.Key moduleKey = null;
-		String moduleName = "";
-		for (int i = 0; i < cloarray.length; i++) {
-			String param = cloarray[i];
-			if (!param.startsWith(moduleParam))
-				continue;
-			String[] moduleArgs = param.split("[\\s+,=]");
-			if (moduleArgs == null || moduleArgs.length < 2) {
-				if (!helpRequested)
-					logger.severe("module key missing");
-				return helpCLO;
-			}
-			moduleName = moduleArgs[1];
-			moduleKey = cloModule.match(moduleName);
-			// exact match required
-			if (moduleKey != null && !moduleKey.getKey().equals(moduleName))
-				moduleKey = null;
-			// remove the processed module option
-			cloarray = ArrayMath.drop(cloarray, i);
-			break;
-		}
-		if (moduleKey == null || !loadModule(moduleKey.getKey())) {
-			if (!helpRequested)
-				logger.severe("Use --module to load a module or --help for more information.");
-			return helpCLO;
-		}
-		return cloarray;
-	}
-
-	/**
-	 * Handle the --model option. Returns modified cloarray or null to indicate
-	 * that helpCLO should be returned to caller.
-	 * 
-	 * @param cloarray      array of command line arguments
-	 * @param helpRequested <code>true</code> if help option was requested
-	 * @return possibly modified cloarray
-	 */
-	private String[] handleModelOption(String[] cloarray, boolean helpRequested) {
-		String modelName = cloModel.getName();
-		Collection<Key> keys = cloModel.getKeys();
-		if (keys.isEmpty()) {
-			if (!helpRequested)
-				logger.severe("No model found!");
-			return helpCLO;
-		}
-		ModelType defaulttype = (ModelType) cloModel.match(cloModel.getDefault());
-		ModelType type = null;
-		for (int i = 0; i < cloarray.length; i++) {
-			String param = cloarray[i];
-			if (!param.startsWith(modelName))
-				continue;
-			String newModel = CLOption.stripKey(modelName, param).trim();
-			// remove model option
-			cloarray = ArrayMath.drop(cloarray, i);
-			if (newModel.isEmpty()) {
-				type = defaulttype;
-				if (!helpRequested)
-					logger.warning("model key missing - use default type " + type.getKey() + ".");
-				break;
-			}
-			type = ModelType.parse(newModel);
-			if (type == null || !keys.contains(type)) {
-				if (activeModel != null) {
-					type = activeModel.getType();
-					if (!helpRequested)
-						logger.warning(
-								"invalid model type " + newModel + " - keep current type " + type.getKey() + ".");
-				} else {
-					type = defaulttype;
-					if (!helpRequested)
-						logger.warning("invalid model type " + newModel + " - use default type " + type.getKey() + ".");
-				}
-			}
-			break;
-		}
-		if (type == null) {
-			type = defaulttype;
-			if (keys.size() > 1 && !defaulttype.getKey().equals(cloModel.getDefault()) && !helpRequested)
-				logger.warning("model type unspecified - use default type " + type.getKey() + ".");
-		}
-		// NOTE: currently models cannot be mix'n'matched between species
-		loadModel(type);
-		if (activeModel == null) {
-			if (!helpRequested)
-				logger.severe("model type '" + type.getKey() + "' not supported!");
-			return helpCLO;
-		}
-		return cloarray;
-	}
-
-	/**
-	 * Process the {@code --verbose} option early so that logging level is set for
-	 * subsequent parsing.
-	 * 
-	 * @param cloarray array of command line arguments
-	 * @return possibly modified cloarray
-	 */
-	private String[] handleVerboseOption(String[] cloarray) {
-		String verboseName = cloVerbose.getName();
-		for (int i = 0; i < cloarray.length; i++) {
-			String param = cloarray[i];
-			if (!param.startsWith(verboseName))
-				continue;
-			String verbosity = CLOption.stripKey(verboseName, param).trim();
-			if (verbosity.isEmpty()) {
-				logger.warning("verbose level missing - ignored.");
-				// remove verbose option
-				return ArrayMath.drop(cloarray, i);
-			}
-			// parse --verbose first to set logging level already for processing of command
-			// line arguments; gets processed again with all others but no harm in it
-			cloVerbose.setArg(verbosity);
-			cloVerbose.parse();
-			break;
-		}
-		return cloarray;
+		return cloController.preprocessCLO(cloarray);
 	}
 
 	/**
@@ -1440,7 +1255,7 @@ public abstract class EvoLudo
 	 * @see #parseCLO(String[])
 	 */
 	public int parseCLO() {
-		return parseCLO(getSplitCLO());
+		return cloController.parseCLO();
 	}
 
 	/**
@@ -1453,23 +1268,7 @@ public abstract class EvoLudo
 	 * @see CLOParser#parseCLO(String[])
 	 */
 	protected int parseCLO(String[] cloarray) {
-		parser.setLogger(logger);
-		cloarray = preprocessCLO(cloarray);
-		parser.initCLO();
-		// preprocessing removed (and possibly altered) --module and --model options
-		// add current settings back to cloarray
-		if (activeModule != null)
-			cloarray = ArrayMath.append(cloarray, cloModule.getName() + " " + activeModule.getKey());
-		if (activeModel != null)
-			cloarray = ArrayMath.append(cloarray, cloModel.getName() + " " + activeModel.getType().getKey());
-		int issues = parser.parseCLO(cloarray);
-		if (reparseCLO) {
-			// start again from scratch
-			reparseCLO = false;
-			parser.initCLO();
-			return parser.parseCLO(cloarray);
-		}
-		return issues;
+		return cloController.parseCLO(cloarray);
 	}
 
 	/**
@@ -1478,44 +1277,7 @@ public abstract class EvoLudo
 	 * @return the help string
 	 */
 	public String getCLOHelp() {
-		// list trait indices and names
-		String globalMsg = "List of command line options";
-		if (activeModule != null) {
-			globalMsg += " for module '" + activeModule.getKey() + "'";
-			if (activeModel != null) {
-				globalMsg += " and model '" + activeModel.getType().getKey() + "'";
-				CLOCategory.Model.setHeader("Options for model '" + activeModel.getType().getKey() + "'");
-			} else
-				globalMsg += " (select model for more options)";
-			globalMsg += "\n\nGlobal options:";
-
-			int idx = 0;
-			StringBuilder sb = new StringBuilder();
-			for (Module<?> mod : activeModule.getSpecies()) {
-				String name = mod.getName();
-				int namelen = name.length();
-				if (namelen > 0)
-					sb.append("\n       Species: ")
-							.append(name);
-				int nt = mod.getNTraits();
-				for (int n = 0; n < nt; n++) {
-					sb.append("\n             ")
-							.append(idx + n)
-							.append(": ")
-							.append(mod.getTraitName(n));
-					if (mod instanceof HasDE && ((HasDE) mod).getDependent() == n) {
-						sb.append(" (dependent)");
-					}
-				}
-				idx += nt;
-			}
-			String moduleMsg = sb.toString();
-			CLOCategory.Module.setHeader("Options for module '" + activeModule.getKey() //
-					+ "' with trait indices and names:" + moduleMsg);
-		} else
-			globalMsg += " (select module and model for more info):";
-		CLOCategory.Global.setHeader(globalMsg);
-		return parser.helpCLO(true);
+		return cloController.getCLOHelp();
 	}
 
 	/**
@@ -1722,43 +1484,15 @@ public abstract class EvoLudo
 			});
 
 	/**
-	 * Replacement command line option for serious parsing failures to display help
-	 * screen.
-	 */
-	public final String[] helpCLO = new String[] { cloHelp.getName() };
-
-	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * <strong>Note:</strong> In contrast to other providers of command line
-	 * options, the EvoLudo class maintains a reference to the parser
-	 * (<code>prsr</code> and <code>parser</code> must be identical).
+	 * options, the EvoLudo class delegates collection to the controller which
+	 * maintains the shared parser.
 	 */
 	@Override
 	public void collectCLO(CLOParser prsr) {
-		parser.addCLO(cloHelp);
-		parser.addCLO(cloVerbose);
-		if (!EvoLudo.isGWT)
-			// default verbosity if running as java application is warning
-			cloVerbose.setDefault("warning");
-		parser.addCLO(cloModule);
-		parser.addCLO(cloModel);
-		parser.addCLO(cloSeed);
-		parser.addCLO(cloRun);
-		parser.addCLO(cloDelay);
-		parser.addCLO(cloRNG);
-		// option for trait color schemes only makes sense for modules with multiple
-		// continuous traits that have 2D/3D visualizations
-		if (activeModel instanceof org.evoludo.simulator.models.CModel //
-				&& activeModule.getNTraits() > 1 //
-				&& (activeModule instanceof HasPop2D || activeModule instanceof HasPop3D)) {
-			parser.addCLO(cloTraitColorScheme);
-			cloTraitColorScheme.addKeys(ColorModelType.values());
-		}
-
-		// trajectory color settings used by phase plane and simplex plots
-		if (activeModule instanceof HasS3 || activeModule instanceof HasPhase2D)
-			parser.addCLO(cloTrajectoryColor);
+		cloController.collectCLO(prsr);
 	}
 
 	/**

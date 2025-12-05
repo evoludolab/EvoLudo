@@ -1034,7 +1034,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				// Mathematica or MATLAB
 				"! New Record" + "\n# " + activeModule.getTitle() + "\n# " + getVersion() + "\n# today:                "
 						+ (new Date().toString()));
-		output.println("# arguments:            " + parser.getCLO());
+		output.println("# arguments:            " + cloController.getParserCLO());
 		output.println("# data:");
 		output.flush();
 	}
@@ -1174,7 +1174,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 	 * @return <code>true</code> if <code>name</code> is an option.
 	 */
 	public boolean providesCLO(String name) {
-		return parser.providesCLO(name);
+		return cloController.providesCLO(name);
 	}
 
 	/**

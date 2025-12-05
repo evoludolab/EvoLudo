@@ -465,7 +465,7 @@ public class EvoLudoGWT extends EvoLudo {
 
 	@Override
 	public void collectCLO(CLOParser prsr) {
-		parser.addCLO(cloSnap);
+		prsr.addCLO(cloSnap);
 		super.collectCLO(prsr);
 	}
 }
