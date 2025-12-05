@@ -264,7 +264,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 			}
 			// if delay is more that APP_MIN_DELAY set timer
 			// if not don't bother with timer - run, run, run as fast as you can
-			if (delay > 1)
+			if (getDelay() > 1)
 				timer.start();
 			else
 				poke();
@@ -304,7 +304,7 @@ public class EvoLudoJRE extends EvoLudo implements Runnable {
 				continue;
 			}
 			// wait only if delay is more that APP_MIN_DELAY
-			isWaiting = (delay > 1);
+			isWaiting = (getDelay() > 1);
 		}
 	}
 

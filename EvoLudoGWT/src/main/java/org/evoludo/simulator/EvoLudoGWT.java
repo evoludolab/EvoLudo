@@ -157,7 +157,7 @@ public class EvoLudoGWT extends EvoLudo {
 			case DYNAMICS:
 				// start with an update not the delay
 				if (modelNext())
-					timer.scheduleRepeating(delay);
+					timer.scheduleRepeating(getDelay());
 				break;
 		}
 	}

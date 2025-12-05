@@ -47,14 +47,13 @@ import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.LifecycleListener;
-import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.SampleListener;
-import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.ATBT;
 import org.evoludo.simulator.modules.CDL;
 import org.evoludo.simulator.modules.CDLP;
@@ -81,7 +80,6 @@ import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.CLOption.Key;
-import org.evoludo.util.Formatter;
 import org.evoludo.util.Plist;
 
 /**
@@ -284,7 +282,7 @@ public abstract class EvoLudo
 	 * population size (see {@link IBSPopulation#nPopulation}) requires a reset to
 	 * (re)generate population geometries and initialize traits.
 	 */
-	private boolean resetRequested = true;
+	protected boolean resetRequested = true;
 
 	/**
 	 * Request reset the active model, e.g. after change of parameters.
@@ -316,6 +314,11 @@ public abstract class EvoLudo
 	protected final LifecycleController lifecycleController = new LifecycleController(this);
 
 	/**
+	 * Controller for run listeners.
+	 */
+	protected final RunController runController = new RunController(this);
+
+	/**
 	 * Add a lifecycle listener to the list of listeners that get notified when the
 	 * model reaches lifecycle milestones.
 	 * 
@@ -337,19 +340,13 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * List of listeners that are notified about model run state changes.
-	 */
-	protected List<RunListener> runListeners = new ArrayList<>();
-
-	/**
 	 * Add a run listener to the list of listeners that get notified about model run
 	 * state changes.
 	 * 
 	 * @param newListener the new run listener
 	 */
 	public void addRunListener(RunListener newListener) {
-		if (!runListeners.contains(newListener))
-			runListeners.add(0, newListener);
+		runController.addListener(newListener);
 	}
 
 	/**
@@ -359,7 +356,7 @@ public abstract class EvoLudo
 	 * @param obsoleteListener the listener to remove from list of run listeners
 	 */
 	public void removeRunListener(RunListener obsoleteListener) {
-		runListeners.remove(obsoleteListener);
+		runController.removeListener(obsoleteListener);
 	}
 
 	/**
@@ -475,7 +472,7 @@ public abstract class EvoLudo
 	 * Reset all populations and notify all listeners.
 	 */
 	public final void modelReset() {
-		modelReset(false);
+		runController.modelReset();
 	}
 
 	/**
@@ -486,30 +483,14 @@ public abstract class EvoLudo
 	 * @param quiet set to {@code true} to skip notifying listeners
 	 */
 	public final void modelReset(boolean quiet) {
-		if (activeModel == null)
-			return;
-		// reset random number generator if seed was specified
-		if (rng.isSeedSet())
-			rng.reset();
-		// check consistency of parameters in models
-		modelCheck();
-		for (Module<?> mod : activeModule.getSpecies())
-			mod.reset();
-		activeModel.reset();
-		resetRequested = false;
-		modelInit(true);
-		if (!quiet) {
-			// notify of reset
-			activeModel.resetStatisticsSample();
-			fireModelReset();
-		}
+		runController.modelReset(quiet);
 	}
 
 	/**
 	 * Initialize all populations and notify all listeners.
 	 */
 	public final void modelInit() {
-		modelInit(false);
+		runController.modelInit();
 	}
 
 	/**
@@ -520,74 +501,7 @@ public abstract class EvoLudo
 	 * @param quiet set to {@code true} to skip notifying listeners
 	 */
 	public final void modelInit(boolean quiet) {
-		for (Module<?> mod : activeModule.getSpecies())
-			mod.init();
-		activeModel.init();
-		activeModel.update();
-		resetCPUSample();
-		modelRelax(quiet);
-		if (!quiet) {
-			// notify of init
-			fireModelInit();
-		}
-	}
-
-	/**
-	 * Starting time of CPU sampling (negative if not sampling).
-	 */
-	double cpu;
-
-	/**
-	 * Mean time of CPU sampling.
-	 */
-	double cpuMean;
-
-	/**
-	 * Variance of time of CPU sampling.
-	 */
-	double cpuVar;
-
-	/**
-	 * Number of CPU time samples
-	 */
-	int cpuSamples;
-
-	/**
-	 * Resets sampling of CPU time.
-	 */
-	protected void resetCPUSample() {
-		cpu = -1.0;
-		cpuMean = cpuVar = 0.0;
-		cpuSamples = 0;
-	}
-
-	/**
-	 * Starts sampling CPU time.
-	 */
-	protected void startCPUSample() {
-		if (cpu < 0.0)
-			cpu = elapsedTimeMsec();
-	}
-
-	/**
-	 * Finish sampling CPU time.
-	 */
-	protected void endCPUSample() {
-		if (logger.isLoggable(Level.FINE)) {
-			double time = elapsedTimeMsec() - cpu;
-			cpuSamples++;
-			double incr = time - cpuMean;
-			cpuMean += incr / cpuSamples;
-			double incr2 = time - cpuMean;
-			cpuVar += incr * incr2;
-			cpu = -1.0;
-			// note: unloading a running simulation clears activeModel
-			if (activeModel == null)
-				return;
-			logger.fine("CPU time: " + time + " @ " + Formatter.format(activeModel.getUpdates(), 3) + ", mean  "
-					+ Formatter.formatFix(cpuMean, 2) + " +/- "
-					+ Formatter.formatFix(Math.sqrt(cpuVar / (cpuSamples - 1)), 2));
-		}
+		runController.modelInit(quiet);
 	}
 
 	/**
@@ -599,7 +513,7 @@ public abstract class EvoLudo
 	 * @see Model#relax()
 	 */
 	public final boolean modelRelax() {
-		return modelRelax(false);
+		return runController.modelRelax();
 	}
 
 	/**
@@ -612,16 +526,7 @@ public abstract class EvoLudo
 	 * @see Model#relax()
 	 */
 	public final boolean modelRelax(boolean quiet) {
-		if (activeModel.getTimeRelax() < 1.0)
-			return activeModel.hasConverged();
-		boolean converged = activeModel.relax();
-		if (!quiet) {
-			if (converged)
-				fireModelStopped();
-			else
-				fireModelRelaxed();
-		}
-		return converged;
+		return runController.modelRelax(quiet);
 	}
 
 	/**
@@ -632,15 +537,7 @@ public abstract class EvoLudo
 	 *         can be called again.
 	 */
 	public final boolean modelNext() {
-		startCPUSample();
-		// make sure model has not been unloaded
-		if (activeModel == null)
-			return false;
-		if (activeModel.useScheduling()) {
-			activeModel.next();
-			return true;
-		}
-		return modelNextDone(activeModel.next());
+		return runController.modelNext();
 	}
 
 	/**
@@ -654,17 +551,7 @@ public abstract class EvoLudo
 	 *         can be called again.
 	 */
 	public final boolean modelNextDone(boolean cont) {
-		if (doPrev) {
-			doPrev = false;
-			activeModel.setTimeReversed(!activeModel.isTimeReversed());
-		}
-		endCPUSample();
-		if (!cont) {
-			fireModelStopped();
-			return false;
-		}
-		fireModelChanged();
-		return true;
+		return runController.modelNextDone(cont);
 	}
 
 	/**
@@ -726,6 +613,28 @@ public abstract class EvoLudo
 	}
 
 	/**
+	 * Minimum delay between subsequent updates for speed slider
+	 * {@link org.evoludo.ui.Slider}
+	 */
+	public static final double DELAY_MIN = 1.0;
+
+	/**
+	 * Maximum delay between subsequent updates for speed slider
+	 * {@link org.evoludo.ui.Slider}
+	 */
+	public static final double DELAY_MAX = 10000.0;
+
+	/**
+	 * Initial delay between subsequent updates for speed slider
+	 * {@link org.evoludo.ui.Slider}
+	 */
+	public static final double DELAY_INIT = 100.0;
+	/**
+	 * Delay decrement for speed slider {@link org.evoludo.ui.Slider}
+	 */
+	protected static final double DELAY_INCR = 1.2;
+
+	/**
 	 * The flag to indicate whether running of the model is suspended. For example
 	 * while parameters are being applied. If the changes do not require a reset of
 	 * the model the calculations are resumed after new parameters are applied. Also
@@ -757,40 +666,12 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * Minimum delay between subsequent updates for speed slider
-	 * {@link org.evoludo.ui.Slider}
-	 */
-	public static final double DELAY_MIN = 1.0;
-
-	/**
-	 * Maximum delay between subsequent updates for speed slider
-	 * {@link org.evoludo.ui.Slider}
-	 */
-	public static final double DELAY_MAX = 10000.0;
-
-	/**
-	 * Initial delay between subsequent updates for speed slider
-	 * {@link org.evoludo.ui.Slider}
-	 */
-	public static final double DELAY_INIT = 100.0;
-
-	/**
-	 * Delay decrement for speed slider {@link org.evoludo.ui.Slider}
-	 */
-	private static final double DELAY_INCR = 1.2;
-
-	/**
-	 * Delay between subsequent updates in milliseconds when model is running.
-	 */
-	protected int delay = (int) DELAY_INIT;
-
-	/**
 	 * Set delay between subsequent updates.
 	 *
 	 * @param delay in milliseconds
 	 */
 	public void setDelay(int delay) {
-		this.delay = Math.min(Math.max(delay, (int) DELAY_MIN), (int) DELAY_MAX);
+		runController.setDelay(delay);
 	}
 
 	/**
@@ -799,27 +680,21 @@ public abstract class EvoLudo
 	 * @return the delay in milliseconds
 	 */
 	public int getDelay() {
-		return delay;
+		return runController.getDelay();
 	}
 
 	/**
 	 * Increase delay between subsequent updates by fixed factor.
 	 */
 	public void increaseDelay() {
-		int newdelay = delay;
-		newdelay = (int) (newdelay * DELAY_INCR);
-		if (newdelay == delay)
-			newdelay++;
-		setDelay(Math.min(newdelay, (int) DELAY_MAX));
+		runController.increaseDelay();
 	}
 
 	/**
 	 * Decrease delay between subsequent updates by fixed factor.
 	 */
 	public void decreaseDelay() {
-		int newdelay = delay;
-		newdelay = (int) (newdelay / DELAY_INCR);
-		setDelay(Math.max(newdelay, (int) DELAY_MIN));
+		runController.decreaseDelay();
 	}
 
 	/**
@@ -909,8 +784,7 @@ public abstract class EvoLudo
 	 * Requests halting of a running {@link Model} on the next opportunity.
 	 */
 	public void stop() {
-		if (isRunning)
-			requestAction(PendingAction.STOP);
+		runController.stop();
 	}
 
 	/**
@@ -929,36 +803,20 @@ public abstract class EvoLudo
 	 * is completed to prevent unexpected side effects.
 	 */
 	public void startStop() {
-		if (isRunning) {
-			requestAction(PendingAction.STOP);
-			return;
-		}
-		if (activeModel.getMode() == Mode.STATISTICS_SAMPLE) {
-			fireModelRunning();
-			next();
-		} else {
-			isSuspended = true;
-			run();
-		}
+		runController.startStop();
 	}
 
 	/**
 	 * Flag to indicate if a backstep is in progress.
 	 */
-	private boolean doPrev = false;
+	// maintained in RunController
 
 	/**
 	 * Attempts to backtrack a single step of the EvoLudo model. Called when
 	 * pressing the 'Prev' button, the 'p' or 'left-arrow' key.
 	 */
 	public void prev() {
-		// requires that model permits time reversal and not in statistics mode
-		if (!activeModel.permitsTimeReversal() || activeModel.getMode() != Mode.DYNAMICS)
-			return;
-		activeModel.setTimeReversed(!activeModel.isTimeReversed());
-		doPrev = true;
-		// next may return immediately - must reverse time again in modelNextDone()!
-		next();
+		runController.prev();
 	}
 
 	/**
@@ -966,13 +824,7 @@ public abstract class EvoLudo
 	 * the 'Debug' button or 'D' key.
 	 */
 	public void debug() {
-		if (!activeModel.permitsDebugStep())
-			return;
-		// temporarily change to finer logging level for debugging
-		Level logLevel = logger.getLevel();
-		logger.setLevel(Level.ALL);
-		activeModel.debugStep();
-		logger.setLevel(logLevel);
+		runController.debug();
 	}
 
 	/**
@@ -998,7 +850,7 @@ public abstract class EvoLudo
 	 * @param action the action requested
 	 */
 	public synchronized void requestAction(PendingAction action) {
-		requestAction(action, !isRunning);
+		runController.requestAction(action);
 	}
 
 	/**
@@ -1010,12 +862,7 @@ public abstract class EvoLudo
 	 * @param now    <code>true</code> to processes action immediately
 	 */
 	public synchronized void requestAction(PendingAction action, boolean now) {
-		if (pendingAction != PendingAction.STOP)
-			pendingAction = action;
-		// if now process request immediately
-		if (now) {
-			processPendingAction();
-		}
+		runController.requestAction(action, now);
 	}
 
 	/**
@@ -1071,13 +918,7 @@ public abstract class EvoLudo
 	 * to run. Notifies all registered {@link RunListener}s.
 	 */
 	public synchronized void fireModelRunning() {
-		if (isRunning)
-			return;
-		isRunning = true;
-		isSuspended = false;
-		for (RunListener i : runListeners)
-			i.modelRunning();
-		logger.info("Model running");
+		runController.fireModelRunning();
 	}
 
 	/**
@@ -1098,6 +939,14 @@ public abstract class EvoLudo
 			case STATISTICS_SAMPLE:
 				break;
 		}
+	}
+
+	/**
+	 * Helper to process pending actions. Delegates to {@link RunController} but
+	 * exposed for subclasses that need to hook additional behavior.
+	 */
+	void processPendingAction() {
+		runController.processPendingAction();
 	}
 
 	/**
@@ -1131,73 +980,7 @@ public abstract class EvoLudo
 	 * @see RunListener
 	 */
 	public synchronized void fireSettingsChanged() {
-		for (RunListener i : runListeners)
-			i.modelSettings();
-	}
-
-	/**
-	 * Helper method for handling model changed events and processes pending
-	 * actions.
-	 * 
-	 * @see RunListener
-	 * @see PendingAction
-	 */
-	void processPendingAction() {
-		PendingAction action = pendingAction;
-		pendingAction = PendingAction.NONE;
-		switch (action) {
-			case CHANGE_MODE:
-				if (processChangeMode(action))
-					break;
-				//$FALL-THROUGH$
-			case NONE:
-				for (ChangeListener i : changeListeners)
-					i.modelChanged(action);
-				break;
-			case STOP: // stop requested (as opposed to simulations that stopped)
-				fireModelStopped();
-				break;
-			case INIT:
-				modelInit();
-				break;
-			case RESET:
-				modelReset();
-				break;
-			case SHUTDOWN:
-				if (isRunning) {
-					isRunning = false;
-					pendingAction = PendingAction.STOP;
-				}
-				unloadModule();
-				break;
-			default:
-		}
-	}
-
-	/**
-	 * Process change of mode request.
-	 * 
-	 * @param action the pending action
-	 * @return <code>true</code> if mode unchanged
-	 */
-	boolean processChangeMode(PendingAction action) {
-		Mode mode = action.getMode();
-		if (activeModel.setMode(mode)) {
-			// mode changed
-			if (mode == Mode.STATISTICS_SAMPLE) {
-				// do not notify listeners, preserve statistics
-				modelReset(true);
-			} else {
-				// stop running
-				if (isRunning)
-					fireModelStopped();
-			}
-		} else {
-			// mode unchanged
-			if (!isRunning || mode == Mode.STATISTICS_SAMPLE)
-				return true;
-		}
-		return false;
+		runController.fireSettingsChanged();
 	}
 
 	/**
@@ -1205,12 +988,7 @@ public abstract class EvoLudo
 	 * {@link RunListener}s.
 	 */
 	public synchronized void fireModelInit() {
-		if (activeModel.getMode() == Mode.DYNAMICS || !isRunning) {
-			isRunning = false;
-			for (RunListener i : runListeners)
-				i.modelDidInit();
-			logger.info("Model init");
-		}
+		runController.fireModelInit();
 	}
 
 	/**
@@ -1218,12 +996,7 @@ public abstract class EvoLudo
 	 * {@link RunListener}s.
 	 */
 	public synchronized void fireModelReset() {
-		isRunning = false;
-		if (activeModel == null)
-			return;
-		for (RunListener i : runListeners)
-			i.modelDidReset();
-		logger.info("Model reset");
+		runController.fireModelReset();
 	}
 
 	/**
@@ -1231,9 +1004,7 @@ public abstract class EvoLudo
 	 * {@link RunListener}s.
 	 */
 	public synchronized void fireModelRelaxed() {
-		for (RunListener i : runListeners)
-			i.modelRelaxed();
-		logger.info("Model relaxed");
+		runController.fireModelRelaxed();
 	}
 
 	/**
@@ -1242,13 +1013,7 @@ public abstract class EvoLudo
 	 * {@link RunListener}s.
 	 */
 	public synchronized void fireModelStopped() {
-		// model may already have been unloaded
-		if (activeModel == null)
-			return;
-		isRunning = false;
-		for (RunListener i : runListeners)
-			i.modelStopped();
-		logger.info("Model stopped");
+		runController.fireModelStopped();
 	}
 
 	/**
