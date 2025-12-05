@@ -42,8 +42,8 @@ import org.evoludo.simulator.models.IBS.MigrationType;
 import org.evoludo.simulator.models.IBSD;
 import org.evoludo.simulator.models.IBSD.Init;
 import org.evoludo.simulator.models.IBSDPopulation;
-import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.ModelType;
+import org.evoludo.simulator.models.RunListener;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.Formatter;
@@ -161,7 +161,7 @@ public class DemesTBT extends TBT {
 	 * Custom implemenation for individual based simulations in deme structured
 	 * populations.
 	 */
-	public class IBSPop extends TBT.IBSPop implements MilestoneListener, ChangeListener {
+	public class IBSPop extends TBT.IBSPop implements RunListener, ChangeListener {
 
 		/**
 		 * The distribution for migration events.

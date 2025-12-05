@@ -550,7 +550,7 @@ public abstract class Model implements CLOProvider {
 	/**
 	 * Milestone: Load this model and allocate resources (if applicable).
 	 * 
-	 * @see MilestoneListener#modelLoaded()
+	 * @see LifecycleListener#modelLoaded()
 	 */
 	public void load() {
 		rng = engine.getRNG();
@@ -562,7 +562,7 @@ public abstract class Model implements CLOProvider {
 	/**
 	 * Milestone: Unload this model and free resources (if applicable).
 	 * 
-	 * @see MilestoneListener#modelUnloaded()
+	 * @see LifecycleListener#modelUnloaded()
 	 */
 	public void unload() {
 		resetStatisticsSample();
@@ -587,7 +587,7 @@ public abstract class Model implements CLOProvider {
 	/**
 	 * Milestone: Reset this model
 	 * 
-	 * @see MilestoneListener#modelDidReset()
+	 * @see RunListener#modelDidReset()
 	 */
 	public void reset() {
 		resetState();
@@ -596,7 +596,7 @@ public abstract class Model implements CLOProvider {
 	/**
 	 * Milestone: Initialize this model
 	 * 
-	 * @see MilestoneListener#modelDidInit()
+	 * @see RunListener#modelDidInit()
 	 */
 	public void init() {
 		resetState();

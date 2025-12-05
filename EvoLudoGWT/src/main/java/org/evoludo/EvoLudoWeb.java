@@ -45,10 +45,11 @@ import org.evoludo.simulator.EvoLudoTrigger;
 import org.evoludo.simulator.Resources;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.Data;
-import org.evoludo.simulator.models.MilestoneListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.SampleListener;
+import org.evoludo.simulator.models.LifecycleListener;
+import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.AbstractView;
@@ -354,7 +355,7 @@ import com.google.gwt.user.client.ui.Widget;
  * @see Console
  */
 public class EvoLudoWeb extends Composite
-		implements HasFullscreenChangeHandlers, FullscreenChangeHandler, MilestoneListener, ChangeListener,
+		implements HasFullscreenChangeHandlers, FullscreenChangeHandler, LifecycleListener, RunListener, ChangeListener,
 		SampleListener, CLOProvider, EntryPoint {
 
 	/**
@@ -723,7 +724,8 @@ public class EvoLudoWeb extends Composite
 		engine = new EvoLudoGWT(this);
 		engine.loadModules();
 		engine.addCLOProvider(this);
-		engine.addMilestoneListener(this);
+		engine.addLifecycleListener(this);
+		engine.addRunListener(this);
 		engine.addSampleListener(this);
 		engine.addChangeListener(this);
 		engine.setCLO(evoludoCLO.getText().trim());

@@ -53,7 +53,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.evoludo.simulator.EvoLudoJRE;
-import org.evoludo.simulator.models.MilestoneListener;
+import org.evoludo.simulator.models.RunListener;
 import org.evoludo.util.Plist;
 import org.evoludo.util.PlistParser;
 
@@ -79,7 +79,7 @@ import org.evoludo.util.PlistParser;
  * 
  * @author Christoph Hauert
  */
-public class TestEvoLudo implements MilestoneListener {
+public class TestEvoLudo implements RunListener {
 
 	/**
 	 * List of keys to exclude from test case comparisons.
@@ -184,8 +184,8 @@ public class TestEvoLudo implements MilestoneListener {
 		engine = new EvoLudoJRE();
 		logger = engine.getLogger();
 		logger.setLevel(Level.ALL);
-		// register as Model.MilestoneListener to receive milestone notifications
-		engine.addMilestoneListener(this);
+		// register as RunListener to receive milestone notifications
+		engine.addRunListener(this);
 	}
 
 	/**

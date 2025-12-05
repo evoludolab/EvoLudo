@@ -31,13 +31,12 @@
 package org.evoludo.simulator.models;
 
 /**
- * All <code>MilestoneListener</code>'s get informed about milestones and state
- * changes of the core of EvoLudo modules. The implementation of all methods is
- * optional.
+ * {@code LifecycleListener}s are notified about loading and unloading events for
+ * modules and models. The implementation of all methods is optional.
  *
  * @author Christoph Hauert
  */
-public interface MilestoneListener {
+public interface LifecycleListener {
 
 	/**
 	 * Called when EvoLudo module finished loading.
@@ -67,43 +66,5 @@ public interface MilestoneListener {
 	 * Called when EvoLudo model is unloading.
 	 */
 	public default void modelUnloaded() {
-	}
-
-	/**
-	 * Called when the EvoLudo model starts running.
-	 */
-	public default void modelRunning() {
-	}
-
-	/**
-	 * Called after the EvoLudo model has relaxed.
-	 */
-	public default void modelRelaxed() {
-	}
-
-	/**
-	 * Called after a running EvoLudo model stopped because the model converged (or
-	 * reached an absorbing state).
-	 */
-	public default void modelStopped() {
-	}
-
-	/**
-	 * Called when the settings of the EvoLudo model changed but no reset was
-	 * necessary.
-	 */
-	public default void modelSettings() {
-	}
-
-	/**
-	 * Called after the EvoLudo model got re-initialized.
-	 */
-	public default void modelDidInit() {
-	}
-
-	/**
-	 * Called after the EvoLudo model was reset.
-	 */
-	public default void modelDidReset() {
 	}
 }

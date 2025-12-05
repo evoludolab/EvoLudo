@@ -47,12 +47,13 @@ import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.models.IBSPopulation;
-import org.evoludo.simulator.models.MilestoneListener;
+import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDESupervisor;
+import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.SampleListener;
 import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.ATBT;
@@ -269,7 +270,7 @@ public abstract class EvoLudo
 	/**
 	 * Set model type and loads the corresponding frameworks for individual based
 	 * simulations or numerical integration of ODE/SDE/PDE models. Notifies all
-	 * registered {@link MilestoneListener}'s of any changes.
+	 * registered {@link LifecycleListener}s of any changes.
 	 *
 	 * @param type the type of {@link Model} to load
 	 */
@@ -340,31 +341,56 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * List of engine listeners that get notified when the state of the population
-	 * changed, for example after population reset or completed an update step.
+	 * List of listeners for module/model load/unload lifecycle events.
 	 */
-	protected List<MilestoneListener> milestoneListeners = new ArrayList<>();
+	protected List<LifecycleListener> lifecycleListeners = new ArrayList<>();
 
 	/**
-	 * Add a milestone listener to the list of listeners that get notified when the
-	 * model reaches milestones.
+	 * Add a lifecycle listener to the list of listeners that get notified when the
+	 * model reaches lifecycle milestones.
 	 * 
-	 * @param newListener the new milestone listener
+	 * @param newListener the new lifecycle listener
 	 */
-	public void addMilestoneListener(MilestoneListener newListener) {
-		if (!milestoneListeners.contains(newListener))
-			milestoneListeners.add(0, newListener);
+	public void addLifecycleListener(LifecycleListener newListener) {
+		if (!lifecycleListeners.contains(newListener))
+			lifecycleListeners.add(0, newListener);
 	}
 
 	/**
-	 * Remove the milestone listener from the list of listeners that get notified
-	 * when the model reaches milestones.
+	 * Remove the lifecycle listener from the list of listeners that get notified
+	 * when the model reaches lifecycle milestones.
 	 * 
-	 * @param obsoleteListener the listener to remove from list of milestone
+	 * @param obsoleteListener the listener to remove from list of lifecycle
 	 *                         listeners
 	 */
-	public void removeMilestoneListener(MilestoneListener obsoleteListener) {
-		milestoneListeners.remove(obsoleteListener);
+	public void removeLifecycleListener(LifecycleListener obsoleteListener) {
+		lifecycleListeners.remove(obsoleteListener);
+	}
+
+	/**
+	 * List of listeners that are notified about model run state changes.
+	 */
+	protected List<RunListener> runListeners = new ArrayList<>();
+
+	/**
+	 * Add a run listener to the list of listeners that get notified about model run
+	 * state changes.
+	 * 
+	 * @param newListener the new run listener
+	 */
+	public void addRunListener(RunListener newListener) {
+		if (!runListeners.contains(newListener))
+			runListeners.add(0, newListener);
+	}
+
+	/**
+	 * Remove the run listener from the list of listeners that get notified when the
+	 * model run state changes.
+	 * 
+	 * @param obsoleteListener the listener to remove from list of run listeners
+	 */
+	public void removeRunListener(RunListener obsoleteListener) {
+		runListeners.remove(obsoleteListener);
 	}
 
 	/**
@@ -423,7 +449,7 @@ public abstract class EvoLudo
 
 	/**
 	 * Unload model framework. Notifies all registered
-	 * {@link MilestoneListener}'s.
+	 * {@link LifecycleListener}s.
 	 */
 	public void unloadModel() {
 		unloadModel(false);
@@ -431,7 +457,7 @@ public abstract class EvoLudo
 
 	/**
 	 * Unload model framework and, if requested, notifies all registered
-	 * {@link MilestoneListener}'s.
+	 * {@link LifecycleListener}s.
 	 * 
 	 * @param quiet set to {@code true} to skip notifying listeners
 	 */
@@ -1061,11 +1087,11 @@ public abstract class EvoLudo
 
 	/**
 	 * Called whenever a new module has finished loading. Notifies all registered
-	 * {@link MilestoneListener}s.
+	 * {@link LifecycleListener}s.
 	 */
 	public synchronized void fireModuleLoaded() {
 		pendingAction = PendingAction.NONE;
-		for (MilestoneListener i : milestoneListeners)
+		for (LifecycleListener i : lifecycleListeners)
 			i.moduleLoaded();
 		String authors = activeModule.getAuthors();
 		logger.info("Module loaded: " + activeModule.getTitle() + (authors == null ? "" : " by " + authors));
@@ -1073,10 +1099,10 @@ public abstract class EvoLudo
 
 	/**
 	 * Called whenever the current module has finished unloading. Notifies all
-	 * registered {@link MilestoneListener}s.
+	 * registered {@link LifecycleListener}s.
 	 */
 	public synchronized void fireModuleUnloaded() {
-		for (MilestoneListener i : milestoneListeners)
+		for (LifecycleListener i : lifecycleListeners)
 			i.moduleUnloaded();
 		if (activeModule != null)
 			logger.info("Module '" + activeModule.getTitle() + "' unloaded");
@@ -1086,35 +1112,35 @@ public abstract class EvoLudo
 	/**
 	 * Called after the state of the model has been restored either through
 	 * drag'n'drop with the GWT GUI or through the <code>--restore</code> command
-	 * line argument. Notifies all registered {@link MilestoneListener}s.
+	 * line argument. Notifies all registered {@link LifecycleListener}s.
 	 *
 	 * @see #restoreFromFile()
 	 * @see #restoreState(Plist)
 	 */
 	public synchronized void fireModuleRestored() {
-		for (MilestoneListener i : milestoneListeners)
+		for (LifecycleListener i : lifecycleListeners)
 			i.moduleRestored();
 		logger.info("Module restored");
 	}
 
 	/**
 	 * Called whenever a new model has finished loading. Notifies all registered
-	 * {@link MilestoneListener}s.
+	 * {@link LifecycleListener}s.
 	 */
 	public synchronized void fireModelLoaded() {
 		pendingAction = PendingAction.NONE;
-		for (MilestoneListener i : milestoneListeners)
+		for (LifecycleListener i : lifecycleListeners)
 			i.modelLoaded();
 		logger.info("Model '" + activeModel.getType() + "' loaded");
 	}
 
 	/**
 	 * Called whenever a new model has finished loading. Notifies all registered
-	 * {@link MilestoneListener}s.
+	 * {@link LifecycleListener}s.
 	 */
 	public synchronized void fireModelUnloaded() {
 		pendingAction = PendingAction.NONE;
-		for (MilestoneListener i : milestoneListeners)
+		for (LifecycleListener i : lifecycleListeners)
 			i.modelUnloaded();
 		if (activeModel != null)
 			logger.info("Model '" + activeModel.getType() + "' unloaded");
@@ -1122,14 +1148,14 @@ public abstract class EvoLudo
 
 	/**
 	 * Called whenever the model starts its calculations. Fires only when starting
-	 * to run. Notifies all registered {@link MilestoneListener}s.
+	 * to run. Notifies all registered {@link RunListener}s.
 	 */
 	public synchronized void fireModelRunning() {
 		if (isRunning)
 			return;
 		isRunning = true;
 		isSuspended = false;
-		for (MilestoneListener i : milestoneListeners)
+		for (RunListener i : runListeners)
 			i.modelRunning();
 		logger.info("Model running");
 	}
@@ -1137,9 +1163,9 @@ public abstract class EvoLudo
 	/**
 	 * Called whenever the state of the model has changed. For example, to
 	 * trigger the update of the state displayed in the GUI. Processes pending
-	 * actions and notifies all registered {@code Model.MilestoneListener}s.
+	 * actions and notifies all registered {@code RunListener}s.
 	 * 
-	 * @see MilestoneListener
+	 * @see RunListener
 	 * @see PendingAction
 	 */
 	public synchronized void fireModelChanged() {
@@ -1157,7 +1183,7 @@ public abstract class EvoLudo
 	/**
 	 * Called after the population has reached an absorbing state (or has converged
 	 * to an equilibrium state). Notifies all registered
-	 * {@link MilestoneListener}s.
+	 * {@link RunListener}s.
 	 * 
 	 * @param success <code>true</code> if sample completed successfully
 	 * @return <code>true</code> to continue with next sample
@@ -1180,12 +1206,12 @@ public abstract class EvoLudo
 	/**
 	 * Called whenever the settings of the model have changed. For example, to
 	 * trigger the range of values or markers in the GUI. Notifies all registered
-	 * {@link MilestoneListener}s.
+	 * {@link RunListener}s.
 	 * 
-	 * @see MilestoneListener
+	 * @see RunListener
 	 */
 	public synchronized void fireSettingsChanged() {
-		for (MilestoneListener i : milestoneListeners)
+		for (RunListener i : runListeners)
 			i.modelSettings();
 	}
 
@@ -1193,7 +1219,7 @@ public abstract class EvoLudo
 	 * Helper method for handling model changed events and processes pending
 	 * actions.
 	 * 
-	 * @see MilestoneListener
+	 * @see RunListener
 	 * @see PendingAction
 	 */
 	void processPendingAction() {
@@ -1256,12 +1282,12 @@ public abstract class EvoLudo
 
 	/**
 	 * Called after the model has been re-initialized. Notifies all registered
-	 * {@link MilestoneListener}s.
+	 * {@link RunListener}s.
 	 */
 	public synchronized void fireModelInit() {
 		if (activeModel.getMode() == Mode.DYNAMICS || !isRunning) {
 			isRunning = false;
-			for (MilestoneListener i : milestoneListeners)
+			for (RunListener i : runListeners)
 				i.modelDidInit();
 			logger.info("Model init");
 		}
@@ -1269,23 +1295,23 @@ public abstract class EvoLudo
 
 	/**
 	 * Called after the model has been reset. Notifies all registered
-	 * {@link MilestoneListener}s.
+	 * {@link RunListener}s.
 	 */
 	public synchronized void fireModelReset() {
 		isRunning = false;
 		if (activeModel == null)
 			return;
-		for (MilestoneListener i : milestoneListeners)
+		for (RunListener i : runListeners)
 			i.modelDidReset();
 		logger.info("Model reset");
 	}
 
 	/**
 	 * Called after the model completed its relaxation. Notifies all registered
-	 * {@link MilestoneListener}s.
+	 * {@link RunListener}s.
 	 */
 	public synchronized void fireModelRelaxed() {
-		for (MilestoneListener i : milestoneListeners)
+		for (RunListener i : runListeners)
 			i.modelRelaxed();
 		logger.info("Model relaxed");
 	}
@@ -1293,14 +1319,14 @@ public abstract class EvoLudo
 	/**
 	 * Called after the population has reached an absorbing state (or has converged
 	 * to an equilibrium state). Notifies all registered
-	 * {@link MilestoneListener}s.
+	 * {@link RunListener}s.
 	 */
 	public synchronized void fireModelStopped() {
 		// model may already have been unloaded
 		if (activeModel == null)
 			return;
 		isRunning = false;
-		for (MilestoneListener i : milestoneListeners)
+		for (RunListener i : runListeners)
 			i.modelStopped();
 		logger.info("Model stopped");
 	}

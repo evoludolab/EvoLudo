@@ -48,11 +48,12 @@ import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.IBS;
 import org.evoludo.simulator.models.IBSPopulation;
 import org.evoludo.simulator.models.Markers;
-import org.evoludo.simulator.models.MilestoneListener;
+import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.Model.HasIBS;
 import org.evoludo.simulator.models.ModelType;
+import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.ODE;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.RungeKutta;
@@ -72,7 +73,8 @@ import org.evoludo.util.CLOption;
  * 
  * @author Christoph Hauert
  */
-public abstract class Module<T extends Module<T>> implements Features, MilestoneListener, CLOProvider, Runnable {
+public abstract class Module<T extends Module<T>>
+		implements Features, LifecycleListener, RunListener, CLOProvider, Runnable {
 
 	/**
 	 * The name of the species. Mainly used in multi-species modules.
@@ -362,7 +364,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * Load new module and perform basic initializations.
 	 * 
 	 * @see EvoLudo#loadModule(String)
-	 * @see MilestoneListener#moduleLoaded()
+	 * @see LifecycleListener#moduleLoaded()
 	 */
 	public void load() {
 		if (this instanceof Payoffs) {
@@ -373,7 +375,8 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 		if (species == null)
 			species = new ArrayList<>();
 		engine.addCLOProvider(this);
-		engine.addMilestoneListener(this);
+		engine.addLifecycleListener(this);
+		engine.addRunListener(this);
 		if (this instanceof ChangeListener)
 			engine.addChangeListener((ChangeListener) this);
 	}
@@ -382,7 +385,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * Unload module and free all resources.
 	 * 
 	 * @see EvoLudo#unloadModule()
-	 * @see MilestoneListener#moduleUnloaded()
+	 * @see LifecycleListener#moduleUnloaded()
 	 */
 	@SuppressWarnings("unchecked")
 	public void unload() {
@@ -397,7 +400,8 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 		// will regenerate the other species.
 		opponent = (T) this;
 		engine.removeCLOProvider(this);
-		engine.removeMilestoneListener(this);
+		engine.removeLifecycleListener(this);
+		engine.removeRunListener(this);
 		if (this instanceof ChangeListener)
 			engine.removeChangeListener((ChangeListener) this);
 		ibspop = null;
@@ -431,7 +435,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * untouched and only initializes the traits.
 	 * 
 	 * @see EvoLudo#modelInit()
-	 * @see MilestoneListener#modelDidInit()
+	 * @see RunListener#modelDidInit()
 	 */
 	public void init() {
 	}
@@ -445,7 +449,7 @@ public abstract class Module<T extends Module<T>> implements Features, Milestone
 	 * untouched and only initializes the traits.
 	 * 
 	 * @see EvoLudo#modelReset()
-	 * @see MilestoneListener#modelDidReset()
+	 * @see RunListener#modelDidReset()
 	 */
 	public void reset() {
 	}

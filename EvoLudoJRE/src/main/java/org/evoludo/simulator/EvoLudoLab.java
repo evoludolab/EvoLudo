@@ -69,8 +69,9 @@ import javax.swing.SwingConstants;
 import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.ToggleAntiAliasingAction;
 import org.evoludo.simulator.models.ChangeListener;
-import org.evoludo.simulator.models.MilestoneListener;
+import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.HasDistribution;
 import org.evoludo.simulator.views.HasHistogram;
@@ -99,7 +100,7 @@ import org.evoludo.util.CLOCategory;
 import org.evoludo.util.Formatter;
 
 public class EvoLudoLab extends JFrame
-		implements MilestoneListener, ChangeListener, CLOProvider {
+		implements LifecycleListener, RunListener, ChangeListener, CLOProvider {
 
 	private static final long serialVersionUID = 20110423L;
 
@@ -147,7 +148,8 @@ public class EvoLudoLab extends JFrame
 			}
 		});
 		engine.addCLOProvider(this);
-		engine.addMilestoneListener(this);
+		engine.addLifecycleListener(this);
+		engine.addRunListener(this);
 		engine.addChangeListener(this);
 
 		BorderLayout layout = new BorderLayout();

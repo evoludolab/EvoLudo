@@ -47,9 +47,10 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.Resources;
 import org.evoludo.simulator.models.ChangeListener;
 import org.evoludo.simulator.models.Data;
-import org.evoludo.simulator.models.MilestoneListener;
+import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
+import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.SampleListener;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuItem;
@@ -78,7 +79,7 @@ import com.google.gwt.user.client.ui.RequiresResize;
  */
 public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 		implements RequiresResize, ProvidesResize,
-		MilestoneListener, SampleListener, ChangeListener {
+		LifecycleListener, RunListener, SampleListener, ChangeListener {
 
 	/**
 	 * The reference to the EvoLudo engine that manages the simulation.
@@ -180,7 +181,8 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	public boolean load() {
 		if (isLoaded)
 			return false;
-		engine.addMilestoneListener(this);
+		engine.addLifecycleListener(this);
+		engine.addRunListener(this);
 		engine.addChangeListener(this);
 		gRows = 1;
 		gCols = 1;
@@ -217,7 +219,8 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	@Override
 	protected void onUnload() {
 		unload();
-		engine.removeMilestoneListener(this);
+		engine.removeLifecycleListener(this);
+		engine.removeRunListener(this);
 		engine.removeChangeListener(this);
 		engine.removeSampleListener(this);
 	}
