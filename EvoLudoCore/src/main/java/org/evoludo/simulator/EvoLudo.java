@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -96,14 +95,6 @@ import org.evoludo.util.Plist;
  * input/output routines.
  * 
  * @author Christoph Hauert
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
  */
 public abstract class EvoLudo
 		implements CLOProvider, MersenneTwister.Chronometer {
@@ -275,28 +266,7 @@ public abstract class EvoLudo
 	 * @param type the type of {@link Model} to load
 	 */
 	public void loadModel(ModelType type) {
-		if (activeModel != null && activeModel.getType() == type) {
-			// model already loaded
-			return;
-		}
-		Model newModel = activeModule.createModel(type);
-		if (newModel == null) {
-			if (logger.isLoggable(Level.WARNING)) {
-				String msg = "model type '" + type + "' not supported.";
-				if (activeModel == null)
-					logger.warning(msg);
-				else
-					logger.warning(msg + " keeping '" + activeModel.getType() + "'.");
-			}
-			return;
-		}
-		// unload previous model first
-		unloadModel();
-		activeModel = newModel;
-		addCLOProvider(activeModel);
-		activeModule.setModel(activeModel);
-		activeModel.load();
-		fireModelLoaded();
+		lifecycleController.loadModel(type);
 	}
 
 	/**
@@ -341,9 +311,9 @@ public abstract class EvoLudo
 	}
 
 	/**
-	 * List of listeners for module/model load/unload lifecycle events.
+	 * Controller for lifecycle listeners.
 	 */
-	protected List<LifecycleListener> lifecycleListeners = new ArrayList<>();
+	protected final LifecycleController lifecycleController = new LifecycleController(this);
 
 	/**
 	 * Add a lifecycle listener to the list of listeners that get notified when the
@@ -352,8 +322,7 @@ public abstract class EvoLudo
 	 * @param newListener the new lifecycle listener
 	 */
 	public void addLifecycleListener(LifecycleListener newListener) {
-		if (!lifecycleListeners.contains(newListener))
-			lifecycleListeners.add(0, newListener);
+		lifecycleController.addListener(newListener);
 	}
 
 	/**
@@ -364,7 +333,7 @@ public abstract class EvoLudo
 	 *                         listeners
 	 */
 	public void removeLifecycleListener(LifecycleListener obsoleteListener) {
-		lifecycleListeners.remove(obsoleteListener);
+		lifecycleController.removeListener(obsoleteListener);
 	}
 
 	/**
@@ -452,7 +421,7 @@ public abstract class EvoLudo
 	 * {@link LifecycleListener}s.
 	 */
 	public void unloadModel() {
-		unloadModel(false);
+		lifecycleController.unloadModel();
 	}
 
 	/**
@@ -462,14 +431,7 @@ public abstract class EvoLudo
 	 * @param quiet set to {@code true} to skip notifying listeners
 	 */
 	public void unloadModel(boolean quiet) {
-		if (activeModel == null)
-			return;
-		// remove CLO parsers that are no longer needed
-		removeCLOProvider(activeModel);
-		activeModel.unload();
-		if (!quiet)
-			fireModelUnloaded();
-		activeModel = null;
+		lifecycleController.unloadModel(quiet);
 	}
 
 	/**
@@ -872,27 +834,7 @@ public abstract class EvoLudo
 	 *         present; true otherwise
 	 */
 	public boolean loadModule(String newModuleKey) {
-		Module<?> newModule = modules.get(newModuleKey);
-		if (newModule == null) {
-			if (activeModule == null)
-				return false;
-			if (logger.isLoggable(Level.WARNING))
-				logger.warning("module '" + newModuleKey + "' not found - keeping '" + activeModule.getKey() + "'.");
-			return true;
-		}
-		// check if newModule is different
-		if (activeModule != null) {
-			if (activeModule == newModule) {
-				return true;
-			}
-			unloadModule();
-		}
-		activeModule = newModule;
-		if (rng.isSeedSet())
-			rng.reset();
-		activeModule.load();
-		fireModuleLoaded();
-		return true;
+		return lifecycleController.loadModule(newModuleKey);
 	}
 
 	/**
@@ -904,16 +846,7 @@ public abstract class EvoLudo
 	 * GWT application.
 	 */
 	public void unloadModule() {
-		unloadModel(true);
-		if (activeModule != null) {
-			for (Iterator<? extends Module<?>> it = activeModule.getSpecies().iterator(); it.hasNext();) {
-				Module<?> mod = it.next();
-				mod.unload();
-				if (mod != activeModule)
-					it.remove();
-			}
-		}
-		fireModuleUnloaded();
+		lifecycleController.unloadModule();
 	}
 
 	/**
@@ -1091,10 +1024,7 @@ public abstract class EvoLudo
 	 */
 	public synchronized void fireModuleLoaded() {
 		pendingAction = PendingAction.NONE;
-		for (LifecycleListener i : lifecycleListeners)
-			i.moduleLoaded();
-		String authors = activeModule.getAuthors();
-		logger.info("Module loaded: " + activeModule.getTitle() + (authors == null ? "" : " by " + authors));
+		lifecycleController.fireModuleLoaded();
 	}
 
 	/**
@@ -1102,10 +1032,7 @@ public abstract class EvoLudo
 	 * registered {@link LifecycleListener}s.
 	 */
 	public synchronized void fireModuleUnloaded() {
-		for (LifecycleListener i : lifecycleListeners)
-			i.moduleUnloaded();
-		if (activeModule != null)
-			logger.info("Module '" + activeModule.getTitle() + "' unloaded");
+		lifecycleController.fireModuleUnloaded();
 		activeModule = null;
 	}
 
@@ -1118,9 +1045,7 @@ public abstract class EvoLudo
 	 * @see #restoreState(Plist)
 	 */
 	public synchronized void fireModuleRestored() {
-		for (LifecycleListener i : lifecycleListeners)
-			i.moduleRestored();
-		logger.info("Module restored");
+		lifecycleController.fireModuleRestored();
 	}
 
 	/**
@@ -1129,9 +1054,7 @@ public abstract class EvoLudo
 	 */
 	public synchronized void fireModelLoaded() {
 		pendingAction = PendingAction.NONE;
-		for (LifecycleListener i : lifecycleListeners)
-			i.modelLoaded();
-		logger.info("Model '" + activeModel.getType() + "' loaded");
+		lifecycleController.fireModelLoaded();
 	}
 
 	/**
@@ -1140,10 +1063,7 @@ public abstract class EvoLudo
 	 */
 	public synchronized void fireModelUnloaded() {
 		pendingAction = PendingAction.NONE;
-		for (LifecycleListener i : lifecycleListeners)
-			i.modelUnloaded();
-		if (activeModel != null)
-			logger.info("Model '" + activeModel.getType() + "' unloaded");
+		lifecycleController.fireModelUnloaded();
 	}
 
 	/**
