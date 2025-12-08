@@ -36,9 +36,12 @@ import java.util.Collections;
 import java.util.logging.Level;
 
 import org.evoludo.simulator.EvoLudo;
+import org.evoludo.simulator.models.CModel;
 import org.evoludo.simulator.models.IBSC;
 import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ModelType;
+import org.evoludo.simulator.views.HasPop2D;
+import org.evoludo.simulator.views.HasPop3D;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
@@ -51,6 +54,129 @@ import org.evoludo.util.Formatter;
  * @author Christoph Hauert
  */
 public abstract class Continuous extends Module<Continuous> {
+
+	/**
+	 * Coloring methods for multiple continuous traits. Enum on steroids. Currently
+	 * available coloring types are:
+	 * <dl>
+	 * <dt>traits
+	 * <dd>Each trait refers to a color channel. At most three traits for
+	 * <span style="color:red;">red</span>, <span style="color:green;">green</span>,
+	 * and <span style="color:blue;">blue</span> components. The brightness of the
+	 * color indicates the value of the continuous trait. This is the default.
+	 * <dt>distance
+	 * <dd>Color the traits according to their (Euclidian) distance from the origin
+	 * (heat map ranging from black and grey to yellow and red).
+	 * <dt>DEFAULT
+	 * <dd>Default coloring type. Not user selectable.
+	 * </dl>
+	 * 
+	 * @see #cloTraitColorScheme
+	 */
+	public enum ColorModelType implements CLOption.Key {
+
+		/**
+		 * Each trait refers to a color channel. At most three traits for
+		 * <span style="color:red;">red</span>, <span style="color:green;">green</span>,
+		 * and <span style="color:blue;">blue</span> components.
+		 */
+		TRAITS("traits", "each trait (&le;3) refers to color channel"), //
+
+		/**
+		 * Color the traits according to their (Euclidian) distance from the origin.
+		 */
+		DISTANCE("distance", "distance of traits from origin"), //
+
+		/**
+		 * Default coloring type. Not user selectable.
+		 */
+		DEFAULT("-default", "default coloring scheme");
+
+		/**
+		 * The name of the color model type.
+		 */
+		private final String key;
+
+		/**
+		 * Brief description of the color model type for help display.
+		 * 
+		 * @see EvoLudo#getCLOHelp()
+		 */
+		private final String title;
+
+		/**
+		 * Create a new color model type.
+		 * 
+		 * @param key   the name of the color model
+		 * @param title the title of the color model
+		 * 
+		 * @see #cloTraitColorScheme
+		 */
+		ColorModelType(String key, String title) {
+			this.key = key;
+			this.title = title;
+		}
+
+		@Override
+		public String getKey() {
+			return key;
+		}
+
+		@Override
+		public String getTitle() {
+			return title;
+		}
+
+		@Override
+		public String toString() {
+			return key + ": " + title;
+		}
+	}
+
+	/**
+	 * The coloring method type.
+	 */
+	protected ColorModelType colorModelType = ColorModelType.DEFAULT;
+
+	/**
+	 * Command line option to set color scheme for coloring continuous traits.
+	 * 
+	 * @see ColorModelType
+	 */
+	public final CLOption cloTraitColorScheme = new CLOption("traitcolorscheme", "traits", CLOCategory.GUI,
+			"--traitcolorscheme <m>  color scheme for traits:", //
+			new CLODelegate() {
+				@Override
+				public boolean parse(String arg) {
+					setColorModelType((ColorModelType) cloTraitColorScheme.match(arg));
+					return true;
+				}
+			});
+
+	/**
+	 * Get the type of color model for translating continuous traits into colors.
+	 * 
+	 * @return the type of color model
+	 * 
+	 * @see #cloTraitColorScheme
+	 */
+	public ColorModelType getColorModelType() {
+		return colorModelType;
+	}
+
+	/**
+	 * Set the type of the color model for translating continuous traits into
+	 * colors.
+	 * 
+	 * @param colorModelType the new type of color model
+	 * 
+	 * @see #cloTraitColorScheme
+	 */
+	public void setColorModelType(ColorModelType colorModelType) {
+		if (colorModelType == null)
+			return;
+		this.colorModelType = colorModelType;
+	}
 
 	/**
 	 * Shortcut for species.get(0) as long as continuous modules are restricted to a
@@ -1162,6 +1288,10 @@ public abstract class Continuous extends Module<Continuous> {
 		// // add option to disable traits if >=2 traits
 		// if (nTraits > 1)
 		// parser.addCLO(cloTraitDisable);
+		if (model instanceof CModel && nTraits > 1 && (this instanceof HasPop2D || this instanceof HasPop3D)) {
+			cloTraitColorScheme.addKeys(ColorModelType.values());
+			parser.addCLO(cloTraitColorScheme);
+		}
 		parser.addCLO(mutation.clo);
 	}
 

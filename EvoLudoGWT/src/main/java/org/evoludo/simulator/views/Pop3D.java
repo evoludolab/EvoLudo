@@ -37,7 +37,6 @@ import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.graphics.PopGraph3D;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMap3D;
-import org.evoludo.simulator.EvoLudo.ColorModelType;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.models.CModel;
@@ -46,6 +45,7 @@ import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Continuous;
+import org.evoludo.simulator.modules.Continuous.ColorModelType;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
@@ -288,7 +288,9 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 	 * Helper for continuous trait color maps.
 	 */
 	private ColorMap<MeshLambertMaterial> createTraitColorMapContinuous(Module<?> module) {
-		ColorModelType cmt = engine.getColorModelType();
+		ColorModelType cmt = ColorModelType.DEFAULT;
+		if (module instanceof Continuous)
+			cmt = ((Continuous) module).getColorModelType();
 		int nTraits = module.getNTraits();
 		if (cmt == ColorModelType.DISTANCE) {
 			return new ColorMap3D.Gradient1D(new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
@@ -303,13 +305,14 @@ public class Pop3D extends GenericPop<MeshLambertMaterial, Network3DGWT, PopGrap
 				Color[] primaries = new Color[nTraits];
 				System.arraycopy(module.getTraitColors(), 0, primaries, 0, nTraits);
 				// prefer ND gradient but force distance coloring if not supported
-				if (engine.getColorModelType() == ColorModelType.DISTANCE)
+				if (cmt == ColorModelType.DISTANCE)
 					return new ColorMap3D.Gradient1D(
 							new Color[] { Color.BLACK, Color.GRAY, Color.YELLOW, Color.RED }, 500);
 				// warn and switch to distance coloring (only once is ideal, handled by
 				// engine/logger upstream)
 				logger.warning("display of >2 continuous traits not (yet) implemented - coloring trait distance");
-				engine.setColorModelType(ColorModelType.DISTANCE);
+				if (module instanceof Continuous)
+					((Continuous) module).setColorModelType(ColorModelType.DISTANCE);
 				return new ColorMap3D.GradientND(primaries);
 		}
 	}

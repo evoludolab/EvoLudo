@@ -37,7 +37,6 @@ import org.evoludo.graphics.GraphStyle;
 import org.evoludo.graphics.PopGraph2D;
 import org.evoludo.simulator.ColorMap;
 import org.evoludo.simulator.ColorMapCSS;
-import org.evoludo.simulator.EvoLudo.ColorModelType;
 import org.evoludo.simulator.geometries.AbstractGeometry;
 import org.evoludo.simulator.geometries.GeometryType;
 import org.evoludo.simulator.EvoLudoGWT;
@@ -48,6 +47,7 @@ import org.evoludo.simulator.models.Data;
 import org.evoludo.simulator.models.Model.HasDE;
 import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Continuous;
+import org.evoludo.simulator.modules.Continuous.ColorModelType;
 import org.evoludo.simulator.modules.Discrete;
 import org.evoludo.simulator.modules.Map2Fitness;
 import org.evoludo.simulator.modules.Module;
@@ -349,7 +349,9 @@ public class Pop2D extends GenericPop<String, Network2D, PopGraph2D> {
 	 * Helper for continuous trait color maps.
 	 */
 	private ColorMap<String> createTraitColorMapContinuous(Module<?> module) {
-		ColorModelType cmt = engine.getColorModelType();
+		ColorModelType cmt = ColorModelType.DEFAULT;
+		if (module instanceof Continuous)
+			cmt = ((Continuous) module).getColorModelType();
 		int nTraits = module.getNTraits();
 		if (cmt == ColorModelType.DISTANCE) {
 			return new ColorMapCSS.Gradient1D(

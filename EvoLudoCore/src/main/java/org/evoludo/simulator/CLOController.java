@@ -39,8 +39,6 @@ import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.views.HasPhase2D;
-import org.evoludo.simulator.views.HasPop2D;
-import org.evoludo.simulator.views.HasPop3D;
 import org.evoludo.simulator.views.HasS3;
 import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
@@ -142,21 +140,6 @@ public class CLOController {
 					if (color == null)
 						return false;
 					engine.getModule().setTrajectoryColor(color);
-					return true;
-				}
-			});
-
-	/**
-	 * Command line option to set color scheme for coloring continuous traits.
-	 * 
-	 * @see EvoLudo.ColorModelType
-	 */
-	public final CLOption cloTraitColorScheme = new CLOption("traitcolorscheme", "traits", CLOCategory.GUI,
-			"--traitcolorscheme <m>  color scheme for traits:", //
-			new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					engine.setColorModelType((EvoLudo.ColorModelType) cloTraitColorScheme.match(arg));
 					return true;
 				}
 			});
@@ -502,16 +485,7 @@ public class CLOController {
 		prsr.addCLO(cloSeed);
 		prsr.addCLO(cloRun);
 		prsr.addCLO(cloDelay);
-		// option for trait color schemes only makes sense for modules with multiple
-		// continuous traits that have 2D/3D visualizations
 		Module<?> module = engine.getModule();
-		Model activeModel = engine.getModel();
-		if (activeModel instanceof org.evoludo.simulator.models.CModel //
-				&& module.getNTraits() > 1 //
-				&& (module instanceof HasPop2D || module instanceof HasPop3D)) {
-			prsr.addCLO(cloTraitColorScheme);
-			cloTraitColorScheme.addKeys(EvoLudo.ColorModelType.values());
-		}
 
 		// trajectory color settings used by phase plane and simplex plots
 		if (module instanceof HasS3 || module instanceof HasPhase2D)
