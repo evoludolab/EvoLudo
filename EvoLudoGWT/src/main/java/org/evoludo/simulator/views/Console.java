@@ -258,7 +258,7 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 	 * </dl>
 	 */
 	@Override
-	public boolean keyUpHandler(String key) {
+	public boolean onKeyUp(String key) {
 		switch (key) {
 			case "Backspace":
 			case "Delete":
@@ -269,7 +269,7 @@ public class Console extends AbstractView<AbstractGraph<?>> implements ContextMe
 				return true;
 			default:
 		}
-		return super.keyUpHandler(key);
+		return super.onKeyUp(key);
 	}
 
 	/**

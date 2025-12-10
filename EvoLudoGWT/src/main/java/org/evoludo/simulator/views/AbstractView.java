@@ -578,9 +578,9 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * @param key the code of the pressed key
 	 * @return {@code true} if the key was handled
 	 * 
-	 * @see org.evoludo.EvoLudoWeb#keyDownHandler(String)
+	 * @see org.evoludo.EvoLudoWeb#onKeyDown(String)
 	 */
-	public boolean keyDownHandler(String key) {
+	public boolean onKeyDown(String key) {
 		return false;
 	}
 
@@ -608,7 +608,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	 * @param key the code of the released key
 	 * @return {@code true} if the key was handled
 	 */
-	public boolean keyUpHandler(String key) {
+	public boolean onKeyUp(String key) {
 		switch (key) {
 			case "S":
 				// save svg snapshot (if supported)

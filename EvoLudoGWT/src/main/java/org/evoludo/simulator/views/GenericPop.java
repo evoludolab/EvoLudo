@@ -265,13 +265,13 @@ public abstract class GenericPop<T, N extends Network<?>, G extends GenericPopGr
 	 * @see Network#shake(org.evoludo.simulator.Network.LayoutListener, double)
 	 */
 	@Override
-	public boolean keyDownHandler(String key) {
+	public boolean onKeyDown(String key) {
 		if ("s".equals(key)) {
 			for (G graph : graphs)
 				graph.getNetwork().shake(graph, 0.05);
 			return true;
 		}
-		return super.keyDownHandler(key);
+		return super.onKeyDown(key);
 	}
 
 	@Override

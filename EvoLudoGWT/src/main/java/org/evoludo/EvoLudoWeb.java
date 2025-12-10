@@ -52,6 +52,7 @@ import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.ui.KeyHandler;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.Console;
 import org.evoludo.simulator.views.Distribution;
@@ -201,12 +202,11 @@ import com.google.gwt.user.client.ui.Widget;
  *
  * <h3>Input Handling and Shortcuts</h3>
  * <p>
- * Global keyboard handling is implemented to allow reliable shortcuts that
- * control the engine and UI. Shortcuts are split into keyDownHandler (for
- * repeatable actions like stepping or changing speed) and keyUpHandler (for
- * non-repeatable actions like start/stop, toggling settings, view selection,
- * and export). The class additionally exposes JSNI routines to add/remove
- * window-level listeners that delegate to these handlers. Touch interaction
+ * Global keyboard handling is implemented through {@link KeyHandler} to
+ * provide reliable shortcuts that control the engine and UI. The controller
+ * distinguishes between repeating actions (handled on key down) and
+ * non-repeating actions (handled on key up) while JSNI routines install
+ * window-level listeners that delegate to the controller. Touch interaction
  * variants are supported for critical controls (Start/Stop, Init/Reset,
  * Settings).
  * </p>
@@ -419,6 +419,11 @@ public class EvoLudoWeb extends Composite
 	 * Controller. Manages the interface with the outside world.
 	 */
 	EvoLudoGWT engine;
+
+	/**
+	 * Helper that centralizes keyboard handling.
+	 */
+	private final KeyHandler keyController = new KeyHandler(this);
 
 	/**
 	 * Logger for keeping track of and reporting events and issues.
@@ -789,31 +794,16 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void moduleLoaded() {
-		// assume that some kind of keys are always present, i.e. always add listener
-		// for e.g. 'Alt' but key shortcuts only if not ePub
-		addKeyListener(this);
-		if (popup != null)
-			setKeyListener(this);
+		keyController.register();
 	}
 
 	@Override
 	public void moduleUnloaded() {
 		activeView = null;
 		evoludoViews.setSelectedIndex(-1);
-		removeKeyListener(this);
-		if (keyListener == this)
-			setKeyListener(null);
 		// clear settings
 		evoludoCLO.setText("");
-	}
-
-	/**
-	 * Set the key listener for the EvoLudoWeb instance.
-	 * 
-	 * @param keyListener the key listener
-	 */
-	static void setKeyListener(EvoLudoWeb keyListener) {
-		EvoLudoWeb.keyListener = keyListener;
+		keyController.unregister();
 	}
 
 	@Override
@@ -1034,6 +1024,37 @@ public class EvoLudoWeb extends Composite
 		updateGUI();
 	}
 
+	/** @return a fresh list of all active views (console included). */
+	public List<AbstractView<?>> getActiveViews() {
+		return new ArrayList<>(activeViews.values());
+	}
+
+	/** @return the currently active view. */
+	public AbstractView<?> getActiveView() {
+		return activeView;
+	}
+
+	/** @return the index of the active view inside the deck or {@code -1}. */
+	public int getActiveViewIndex() {
+		if (activeView == null)
+			return -1;
+		return evoludoDeck.getWidgetIndex(activeView);
+	}
+
+	/** @return the last stored index for a non-console view. */
+	public int getStoredViewIndex() {
+		return viewIdx;
+	}
+
+	/**
+	 * Switches to the provided view.
+	 *
+	 * @param view the new view to display
+	 */
+	public void changeView(AbstractView<?> view) {
+		changeViewTo(view);
+	}
+
 	/**
 	 * Panel containing all the canvas elements to display the EvoLudo model's data.
 	 * Only one is shown at any time, selected by {@link #evoludoViews}.
@@ -1186,13 +1207,70 @@ public class EvoLudoWeb extends Composite
 	 * Helper method to toggle the visibility of {@link #evoludoCLOPanel} to view or
 	 * modify the parameter settings.
 	 */
-	void toggleSettings() {
+	public void toggleSettings() {
 		// toggle visibility of field for command line parameters
 		evoludoCLOPanel.setVisible(!evoludoCLOPanel.isVisible());
 		Scheduler.get().scheduleDeferred(() -> {
 			evoludoLayout.onResize();
 			NativeJS.focusOn(evoludoCLO.getElement());
 		});
+	}
+
+	/**
+	 * @return the DOM element that backs the CLO label
+	 */
+	public Element getCLOElement() {
+		return evoludoCLO.getElement();
+	}
+
+	/** Applies the text currently in the CLO field to the engine. */
+	public void applyCLOFromField() {
+		engine.setCLO(evoludoCLO.getText().replace((char) 160, ' '));
+		applyCLO();
+	}
+
+	/** @return {@code true} when this lab is displayed as a standalone ePub. */
+	public boolean isEPubStandalone() {
+		return ePub.standalone;
+	}
+
+	/** @return {@code true} when running inside an ePub reader. */
+	public boolean isEPub() {
+		return isEPub;
+	}
+
+	/** @return {@code true} when the CLO panel is visible in the GUI. */
+	public boolean isCLOPanelVisible() {
+		return evoludoCLOPanel.isVisible();
+	}
+
+	/** Closes any attached popup lab, returning {@code true} if one was closed. */
+	public boolean closePopup() {
+		if (popup != null && popup.isAttached()) {
+			popup.close();
+			return true;
+		}
+		return false;
+	}
+
+	/** @return {@code true} if this lab owns a popup overlay. */
+	public boolean hasPopup() {
+		return popup != null;
+	}
+
+	/** @return the engine that runs this GUI. */
+	public EvoLudoGWT getEngine() {
+		return engine;
+	}
+
+	/** Syncs the delay slider with the engine's current delay. */
+	public void syncDelaySlider() {
+		evoludoSlider.setValue(engine.getDelay());
+	}
+
+	/** Refreshes the key labels to match the current modifier state. */
+	public void refreshKeyLabels() {
+		updateKeys();
 	}
 
 	/**
@@ -1207,9 +1285,6 @@ public class EvoLudoWeb extends Composite
 	 * to <code>Init</code> after it is released.
 	 *
 	 * @param event the ClickEvent that was fired
-	 * 
-	 * @see #keyDownHandler(String)
-	 * @see #keyUpHandler(String)
 	 */
 	@UiHandler("evoludoInitReset")
 	public void onInitResetClick(ClickEvent event) {
@@ -1226,8 +1301,7 @@ public class EvoLudoWeb extends Composite
 		@Override
 		public void run() {
 			// show alt-button labels
-			isAltDown = true;
-			updateKeys();
+			keyController.showAltModeFromTouch();
 		}
 	};
 
@@ -1264,15 +1338,14 @@ public class EvoLudoWeb extends Composite
 	public void onInitResetTouchEnd(TouchEndEvent event) {
 		showAltTouchTimer.cancel();
 		initReset();
-		isAltDown = false;
-		updateKeys();
+		keyController.hideAltModeFromTouch();
 	}
 
 	/**
 	 * Initialize or reset EvoLudo model. If model is running wait until next update
 	 * is completed to prevent unexpected side effects.
 	 */
-	protected void initReset() {
+	public void initReset() {
 		String action = evoludoInitReset.getText();
 		displayStatus(action + " pending. Waiting for engine to stop...");
 		displayStatusThresholdLevel = Level.ALL.intValue();
@@ -1357,8 +1430,7 @@ public class EvoLudoWeb extends Composite
 	public void onStepTouchEnd(TouchEndEvent event) {
 		showAltTouchTimer.cancel();
 		prevNextDebug();
-		isAltDown = false;
-		updateKeys();
+		keyController.hideAltModeFromTouch();
 	}
 
 	/**
@@ -1912,358 +1984,6 @@ public class EvoLudoWeb extends Composite
 	private int viewIdx = 0;
 
 	/**
-	 * Key value for the {@code Alt} key.
-	 */
-	static final String KEY_ALT = "Alt";
-
-	/**
-	 * Key value for the {@code Shift} key.
-	 */
-	static final String KEY_SHIFT = "Shift";
-
-	/**
-	 * Key value for the {@code Enter} key.
-	 */
-	static final String KEY_ENTER = "Enter";
-
-	/**
-	 * Key value for the {@code Escape} key.
-	 */
-	static final String KEY_ESCAPE = "Escape";
-
-	/**
-	 * Key value for the {@code Backspace} key.
-	 */
-	static final String KEY_BACKSPACE = "Backspace";
-
-	/**
-	 * Key value for the {@code Delete} key.
-	 */
-	static final String KEY_DELETE = "Delete";
-
-	/**
-	 * Process {@code keyup} events to allow for <em>non-repeating</em> keyboard
-	 * shortcuts. Use for events where repeating does not make sense, such as
-	 * stopping a model or changing views. For repeating events, such as advancing
-	 * the model by a single step, see {@link #keyDownHandler(String)}. The set of
-	 * keys handled by {@code keyUpHandler} and {@code keyDownHandler} should be
-	 * disjoint.
-	 * 
-	 * <h3>Implementation Notes:</h3>
-	 * <ul>
-	 * <li>{@code keyup} events are ignored if:
-	 * <ol>
-	 * <li>this EvoLudo model is not visible.
-	 * <li>the command line options field {@link #evoludoCLO} has the focus. With
-	 * the exception of {@code Shift-Enter} to apply the new settings to the model.
-	 * <li>in an ePub, except when on a standalone page.
-	 * </ol>
-	 * <li>{@code keyup} events do not propagate further ({@code stopPropagation()}
-	 * is always called).
-	 * <li>returning {@code true} also prevents default behaviour (calls
-	 * {@code preventDefault()}).
-	 * </ul>
-	 * {@code keyup} events are ignored if:
-	 * <ul>
-	 * <li>this EvoLudo model is not visible.
-	 * <li>the command line options field {@link #evoludoCLO} has the focus. With
-	 * the
-	 * exception of {@code Shift-Enter}, which applies the new settings to the
-	 * model.
-	 * <li>when shown in an ePub, except when on a standalone page.
-	 * <li>{@code keydown} event does not propagate further.
-	 * <li>returning {@code true} also prevents default behaviour.
-	 * </ul>
-	 * <p>
-	 * Global shortcuts provided for the following keys:
-	 * <dl>
-	 * <dt>{@code Alt}</dt>
-	 * <dd>Toggles the mode for some buttons. For example to switch between
-	 * {@code Init} and {@code Reset}.</dd>
-	 * <dt>{@code Shift}</dt>
-	 * <dd>Toggles the mode for some keys, see {@code Enter} below for an
-	 * example.</dd>
-	 * <dt>{@code 0}</dt>
-	 * <dd>Toggles the visibility of the field to view and modify parameter
-	 * settings.</dd>
-	 * <dt>{@code 1-9}</dt>
-	 * <dd>Quick view selector. Switches to data view with the selected index if it
-	 * exists. {@code 1} is the first view etc.</dd>
-	 * <dt>{@code Enter, Space}</dt>
-	 * <dd>Starts (or stops) the current model. Note, {@code Shift-Enter} applies
-	 * the new parameter settings if the field is visible and has the keyboard
-	 * focus. Same as pressing the {@code Apply}-button.</dd>
-	 * <dt>{@code Escape}</dt>
-	 * <dd>Implements several functions depending on context:
-	 * <ol>
-	 * <li>Ignored in ePub.
-	 * <li>Closes current EvoLudo simulation if running in a {@link EvoLudoTrigger}
-	 * popup panel.
-	 * <li>Stops any running model.
-	 * <li>Initializes a model that is not running. Note, resets the model if
-	 * {@code Alt} is pressed.
-	 * </ol>
-	 * </dd>
-	 * <dt>{@code Backspace, Delete}</dt>
-	 * <dd>Stops running models and initializes (resets if {@code Alt} is pressed)
-	 * stopped models.</dd>
-	 * <dt>{@code E}</dt>
-	 * <dd>Export the current state of the model (as a modified {@code plist}).
-	 * Ignored if model is running and in ePubs.</dd>
-	 * <dt>{@code H}</dt>
-	 * <dd>Show the help screen with brief descriptions of all parameters in the
-	 * console view.</dd>
-	 * </dl>
-	 *
-	 * @param key the string value of the released key
-	 * @return {@code true} if key has been handled
-	 * 
-	 * @see #keyDownHandler(String)
-	 * @see <a href=
-	 *      "https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values">Mozilla
-	 *      Key Values</a>
-	 * @see AbstractView#keyUpHandler(String) AbstractView.keyUpHandler(String) and
-	 *      implementing classes for further keys that may be handled by the current
-	 *      view
-	 */
-	public boolean keyUpHandler(String key) {
-		// check if lab is visible
-		if (!isShowing())
-			return false;
-		// process modifiers
-		if (key.equals(KEY_ALT)) {
-			// alt-key does not count as handled
-			isAltDown = false;
-			updateKeys();
-		}
-		if (key.equals(KEY_SHIFT))
-			// shift-key does not count as handled
-			isShiftDown = false;
-		if (isEPub && !ePub.standalone)
-			// in ePub text flow only "Alt" key is acceptable and does not count as handled
-			return false;
-		boolean cloActive = NativeJS.isElementActive(evoludoCLO.getElement());
-		if (cloActive) {
-			// focus is on command line options ignore keypress
-			// except Shift-Enter, which applies the new settings
-			if (isShiftDown && key.equals(KEY_ENTER)) {
-				engine.setCLO(evoludoCLO.getText().replace((char) 160, ' '));
-				applyCLO();
-				return true;
-			}
-			// escape closes the settings field
-			if (!key.equals(KEY_ESCAPE))
-				return false;
-		}
-		// activeView may wish to handle key
-		if (activeView.keyUpHandler(key))
-			return true;
-		switch (key) {
-			case "0":
-				// toggle settings
-				toggleSettings();
-				break;
-			case "1":
-			case "2":
-			case "3":
-			case "4":
-			case "5":
-			case "6":
-			case "7":
-			case "8":
-			case "9":
-				// quick view selector
-				java.util.List<AbstractView<?>> allviews = new java.util.ArrayList<>(activeViews.values());
-				int idx = CLOParser.parseInteger(key);
-				if (idx <= allviews.size())
-					changeViewTo(allviews.get(idx - 1));
-				break;
-			case "c":
-				// toggle console
-				allviews = new java.util.ArrayList<>(activeViews.values());
-				if (evoludoDeck.getWidgetIndex(activeView) == allviews.size() - 1)
-					// console is active, switch to previous view
-					changeViewTo(allviews.get(viewIdx));
-				else
-					// switch to console
-					changeViewTo(allviews.get(allviews.size() - 1));
-				break;
-			case KEY_ENTER:
-			case " ":
-				// start/stop simulation
-				engine.startStop();
-				break;
-			case KEY_ESCAPE:
-				// ignore "Escape" for ePubs
-				if (isEPub)
-					return false;
-				// stop running simulation
-				if (engine.isRunning()) {
-					engine.stop();
-					break;
-				}
-				if (evoludoCLOPanel.isVisible()) {
-					toggleSettings();
-					break;
-				}
-				// NOTE: non-printing keys (such as modifiers, delete, or escape) do not fire
-				// 'keypress' event! only 'keydown' and 'keyup'.
-				// - close overlay (if showing)
-				// - stop simulations (if running)
-				// - init/reset (if not running)
-				if (popup != null && popup.isAttached()) {
-					popup.close();
-					break;
-				}
-				//$FALL-THROUGH$
-			case KEY_BACKSPACE:
-			case KEY_DELETE:
-				// stop running simulation; init/reset if not running
-				if (engine.isRunning())
-					engine.stop();
-				else
-					initReset();
-				break;
-			case "E":
-				// export state (suppress in ePub's)
-				if (isEPub || engine.isRunning())
-					return false;
-				engine.exportState();
-				break;
-			case "F":
-				// toggle fullscreen (if supported)
-				if (!NativeJS.isFullscreenSupported())
-					return false;
-				engine.setFullscreen(!NativeJS.isFullscreen());
-				break;
-			case "H":
-				// show help panel
-				showHelp();
-				break;
-			default:
-				return false;
-		}
-		return true;
-	}
-
-	/**
-	 * Process {@code keydown} events to allow for <em>repeating</em> keyboard
-	 * shortcuts. Use for events where repeating does make sense, such as advancing
-	 * a model by a single step or changing the speed of the model execution by
-	 * adjusting the delay between subsequent updates. For non-repeating events,
-	 * such starting or stopping the model or changing the view, see
-	 * {@link #keyUpHandler(String)}. The set of keys handled by
-	 * {@code keyUpHandler} and {@code keyDownHandler} should be disjoint.
-	 * 
-	 * <h3>Implementation Notes:</h3>
-	 * <ul>
-	 * <li>{@code keydown} events are ignored if:
-	 * <ol>
-	 * <li>this EvoLudo model is not visible.
-	 * <li>in an ePub, except when on a standalone page.
-	 * </ol>
-	 * <li>{@code keydown} events do not propagate further
-	 * ({@code stopPropagation()} is always called).
-	 * <li>returning {@code true} also prevents default behaviour (calls
-	 * {@code preventDefault()}).
-	 * </ul>
-	 * <p>
-	 * Global shortcuts provided for the following keys:
-	 * <dl>
-	 * <dt>{@code Alt}</dt>
-	 * <dd>Toggles the mode for some buttons. For example to switch between
-	 * {@code Init} and {@code Reset}.</dd>
-	 * <dt>{@code Shift}</dt>
-	 * <dd>Toggles the mode for some keys, see {@code Enter} below for an
-	 * example.</dd>
-	 * <dt>{@code ArrowRight, n}</dt>
-	 * <dd>Advance the model by a single step. Same as pressing the
-	 * {@code Step}-button.</dd>
-	 * <dt>{@code +, =}</dt>
-	 * <dd>Increase the speed of the model execution. Decrease the delay between
-	 * updates. Moves the speed-slider to the right.</dd>
-	 * <dt>{@code -}</dt>
-	 * <dd>Decrease the speed of the model execution. Increase the delay between
-	 * updates. Moves the speed-slider to the right.</dd>
-	 * </dl>
-	 *
-	 * @param key the string value of the pressed key
-	 * @return {@code true} if key has been handled
-	 * 
-	 * @see <a href=
-	 *      "https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values">Mozilla
-	 *      Key Values</a>
-	 * @see AbstractView#keyDownHandler(String) AbstractView.keyDownHandler(String)
-	 *      and implementing classes for further keys that may be handled by the
-	 *      current view
-	 */
-	public boolean keyDownHandler(String key) {
-		// check if lab is visible
-		if (!isShowing())
-			return false;
-		if (key.equals(KEY_ALT)) {
-			// alt-key does not count as handled
-			isAltDown = true;
-			updateKeys();
-		}
-		if (key.equals(KEY_SHIFT))
-			// shift-key does not count as handled
-			isShiftDown = true;
-		boolean cloActive = NativeJS.isElementActive(evoludoCLO.getElement());
-		if (cloActive)
-			// focus is on command line options ignore keypress
-			return false;
-		// activeView may wish to handle key
-		if (activeView.keyDownHandler(key))
-			return true;
-		// activeView did not handle key
-		switch (key) {
-			case "ArrowRight":
-			case "n":
-				// advance single step
-				engine.next();
-				break;
-			case "ArrowLeft":
-			case "p":
-				// backtrack single step (if model allows it)
-				engine.prev();
-				break;
-			case "D":
-				// perform single, verbose debug step
-				engine.debug();
-				break;
-			case "+":
-			case "=":
-				// increase speed
-				engine.decreaseDelay();
-				evoludoSlider.setValue(engine.getDelay());
-				break;
-			case "-":
-				// decrease speed
-				engine.increaseDelay();
-				evoludoSlider.setValue(engine.getDelay());
-				break;
-			// prevent side effects for special keys
-			case KEY_ENTER:
-				// case " ": // spacebar
-				return true;
-			default:
-				return false;
-		}
-		return true;
-	}
-
-	/**
-	 * The helper variable to indicate whether the Shift key is pressed.
-	 */
-	private boolean isShiftDown = false;
-
-	/**
-	 * The helper variable to indicate whether the Alt key is pressed.
-	 */
-	private boolean isAltDown = false;
-
-	/**
 	 * The Alt-key toggles the button labels for controlling the EvoLudo lab.
 	 */
 	private void updateKeys() {
@@ -2277,7 +1997,7 @@ public class EvoLudoWeb extends Composite
 			evoludoStep.setTitle("Calculate single sample");
 			return;
 		}
-		if (isAltDown) {
+		if (keyController.isAltDown()) {
 			evoludoInitReset.setText(BUTTON_RESET);
 			evoludoInitReset.setTitle("Initialize population and regenerate structure");
 			if (engine.getModel().permitsTimeReversal()) {
@@ -2621,80 +2341,6 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
-	 * JSNI method: add global key event listeners for 'keydown', 'keyup', and
-	 * 'keypress' events. All listeners are stored in the map
-	 * <code>window.EvoLudoUtils.keyListeners</code>, which links listener functions
-	 * to their respective controllers. The key handlers exposed through GWT appear
-	 * to be more restricted and often lose focus. This somewhat brute force
-	 * approach result in a much better GUI experience.
-	 *
-	 * @param evoludo GUI controller that handles the key events
-	 */
-	private final native void addKeyListener(EvoLudoWeb evoludo) /*-{
-		// store key listener helpers in $wnd.EvoLudoUtils
-		if (!$wnd.EvoLudoUtils) {
-			$wnd.EvoLudoUtils = new Object();
-			$wnd.EvoLudoUtils.keyListeners = new Map();
-		}
-		var id = evoludo.@org.evoludo.EvoLudoWeb::elementID;
-		// check if key listeners already added
-		if (!$wnd.EvoLudoUtils.keyListeners.get('keydown-' + id)) {
-			$wnd.EvoLudoUtils.keyListeners
-					.set(
-							'keydown-' + id,
-							function(event) {
-								// console.log("event "+event.type+", key "+event.key+", code "+event.code);
-								if (evoludo.@org.evoludo.EvoLudoWeb::keyDownHandler(Ljava/lang/String;)(event.key)) {
-									event.preventDefault();
-								}
-								event.stopPropagation();
-							});
-			$wnd.EvoLudoUtils.keyListeners
-					.set(
-							'keyup-' + id,
-							function(event) {
-								// console.log("event "+event.type+", key "+event.key+", code "+event.code);
-								if (evoludo.@org.evoludo.EvoLudoWeb::keyUpHandler(Ljava/lang/String;)(event.key)) {
-									event.preventDefault();
-								}
-								event.stopPropagation();
-							});
-		}
-		$wnd.addEventListener('keydown', $wnd.EvoLudoUtils.keyListeners
-				.get('keydown-' + id), true);
-		$wnd.addEventListener('keyup', $wnd.EvoLudoUtils.keyListeners
-				.get('keyup-' + id), true);
-	}-*/;
-
-	/**
-	 * JSNI method: remove all key event listeners that were registered for
-	 * <code>evoludo</code>.
-	 *
-	 * @param evoludo GUI controller that handles the key events
-	 */
-	private final native void removeKeyListener(EvoLudoWeb evoludo) /*-{
-		if (!$wnd.EvoLudoUtils)
-			return;
-		var id = evoludo.@org.evoludo.EvoLudoWeb::elementID;
-		var key = $wnd.EvoLudoUtils.keyListeners.get('keydown-' + id);
-		if (key)
-			$wnd.removeEventListener('keydown', key, true);
-		key = $wnd.EvoLudoUtils.keyListeners.get('keyup-' + id);
-		if (key)
-			$wnd.removeEventListener('keyup', key, true);
-		key = $wnd.EvoLudoUtils.keyListeners.get('keypress-' + id);
-		if (key)
-			$wnd.removeEventListener('keypress', key, true);
-	}-*/;
-
-	/**
-	 * Popup EvoLudo models (see {@link EvoLudoTrigger}) should attract all keyboard
-	 * events. This is achieved by setting <code>keyListener</code> to the popup
-	 * model.
-	 */
-	private static EvoLudoWeb keyListener = null;
-
-	/**
 	 * Expose method for creating EvoLudo labs (EvoLudoWeb objects) to javascript
 	 *
 	 * @param id  the ID of element for EvoLudo lab
@@ -2742,9 +2388,8 @@ public class EvoLudoWeb extends Composite
 	 * iBooks when requesting full screen.</li>
 	 * <li>If two EvoLudo models are simultaneously visible it is undefined which
 	 * lab receives the 'keypress'</li>
-	 * <li>Popup EvoLudo models acquire all key events (through the static
-	 * {@link #keyListener}), regardless of whether other models are displayed
-	 * underneath.</li>
+	 * <li>Popup EvoLudo models acquire all key events by activating their
+	 * {@link org.evoludo.simulator.ui.KeyHandler}.</li>
 	 * </ol>
 	 *
 	 * @return <code>true</code> if lab is visible on screen
@@ -2753,10 +2398,8 @@ public class EvoLudoWeb extends Composite
 		// skip test in ePubs - always evaluates to true...
 		if (isEPub)
 			return true;
-		if (keyListener != null)
-			// with key listener no further test necessary; return true if we are the
-			// listener.
-			return keyListener == this;
+		if (keyController.isActive())
+			return true;
 		// this works in browser but not in iBooks; Window always returns the entire
 		// document (0, 0, fullwidth, fullheight)
 		Rectangle2D view = new Rectangle2D(Window.getScrollLeft(), Window.getScrollTop(), Window.getClientWidth(),
