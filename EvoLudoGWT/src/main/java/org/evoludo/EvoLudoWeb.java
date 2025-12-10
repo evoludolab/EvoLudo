@@ -2603,7 +2603,12 @@ public class EvoLudoWeb extends Composite
 	public HandlerRegistration addFullscreenChangeHandler(FullscreenChangeHandler handler) {
 		String eventname = NativeJS.fullscreenChangeEventName();
 		NativeJS.addFullscreenChangeHandler(eventname, handler);
-		return (HandlerRegistration) () -> NativeJS.removeFullscreenChangeHandler(eventname, handler);
+		return new HandlerRegistration() {
+			@Override
+			public void removeHandler() {
+				NativeJS.removeFullscreenChangeHandler(eventname, handler);
+			}
+		};
 	}
 
 	// note: works in Safari and Chrome; some weird scaling issues remain with
