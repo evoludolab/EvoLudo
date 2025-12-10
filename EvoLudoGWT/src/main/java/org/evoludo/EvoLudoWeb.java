@@ -506,7 +506,6 @@ public class EvoLudoWeb extends Composite
 	 */
 	private EvoLudoWeb() {
 		super();
-		isWebGLSupported = false;
 	}
 
 	/**
@@ -550,12 +549,8 @@ public class EvoLudoWeb extends Composite
 		if (Canvas.createIfSupported() == null) {
 			Label canvasError = new Label("ERROR: no HTML5 canvas available!\ntry another browser!");
 			evoludoDeck.add(canvasError);
-			isWebGLSupported = false;
 			return;
 		}
-		// canvas is supported, now check if WebGL is supported as well
-		isWebGLSupported = NativeJS.isWebGLSupported();
-
 		// set command line options
 		evoludoCLO.getElement().setAttribute("contenteditable", "true");
 		evoludoCLO.setText(clo != null ? clo : "");
@@ -2385,7 +2380,7 @@ public class EvoLudoWeb extends Composite
 	private void addStrategyViews(Module<?> module, boolean isODESDE, HashMap<String, AbstractView<?>> oldViews) {
 		if (module instanceof HasPop2D.Traits && !isODESDE)
 			addView(new Pop2D(engine, Data.TRAIT), oldViews);
-		if (isWebGLSupported && module instanceof HasPop3D.Traits && !isODESDE)
+		if (NativeJS.isWebGLSupported() && module instanceof HasPop3D.Traits && !isODESDE)
 			addView(new Pop3D(engine, Data.TRAIT), oldViews);
 		if (module instanceof HasPhase2D)
 			addView(new Phase2D(engine), oldViews);
@@ -2411,7 +2406,7 @@ public class EvoLudoWeb extends Composite
 	private void addFitnessViews(Module<?> module, boolean isODESDE, HashMap<String, AbstractView<?>> oldViews) {
 		if (module instanceof HasPop2D.Fitness && !isODESDE)
 			addView(new Pop2D(engine, Data.FITNESS), oldViews);
-		if (isWebGLSupported && module instanceof HasPop3D.Fitness && !isODESDE)
+		if (NativeJS.isWebGLSupported() && module instanceof HasPop3D.Fitness && !isODESDE)
 			addView(new Pop3D(engine, Data.FITNESS), oldViews);
 		if (module instanceof HasMean.Fitness)
 			addView(new Mean(engine, Data.FITNESS), oldViews);
@@ -2913,12 +2908,6 @@ public class EvoLudoWeb extends Composite
 		}
 		logger.info(sb.toString());
 	}
-
-	/**
-	 * Indicator whether display system supports WebGL to display population
-	 * structures in 3D.
-	 */
-	private final boolean isWebGLSupported;
 
 	/**
 	 * Custom handler for logging system. Redirects notifications to EvoLudo console
