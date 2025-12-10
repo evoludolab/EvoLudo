@@ -395,31 +395,59 @@ public class KeyHandler {
 	public boolean onKeyUp(String key) {
 		if (!gui.isShowing())
 			return false;
+		updateModifierStates(key);
+		if (gui.isEPub() && !gui.isEPubStandalone())
+			return false;
+		if (handleCLOActiveKeys(key))
+			return true;
+		AbstractView<?> activeView = gui.getActiveView();
+		if (activeView != null && activeView.onKeyUp(key))
+			return true;
+		return handleGlobalKeys(key);
+	}
+
+	/**
+	 * Updates the modifier key states when keys are released.
+	 * 
+	 * @param key the released key
+	 */
+	private void updateModifierStates(String key) {
 		if (key.equals(KEY_ALT)) {
 			isAltDown = false;
 			gui.refreshKeyLabels();
 		}
 		if (key.equals(KEY_SHIFT))
 			isShiftDown = false;
-		if (gui.isEPub() && !gui.isEPubStandalone())
-			return false;
+	}
+
+	/**
+	 * Handles key events when the command line options field is active.
+	 * 
+	 * @param key the released key
+	 * @return {@code true} if key has been handled
+	 */
+	private boolean handleCLOActiveKeys(String key) {
 		boolean cloActive = NativeJS.isElementActive(gui.getCLOElement());
-		if (cloActive) {
-			if (isShiftDown && key.equals(KEY_ENTER)) {
-				gui.applyCLOFromField();
-				return true;
-			}
-			if (!key.equals(KEY_ESCAPE))
-				return false;
-		}
-		EvoLudoGWT engine = gui.getEngine();
-		AbstractView<?> activeView = gui.getActiveView();
-		if (activeView != null && activeView.onKeyUp(key))
+		if (!cloActive)
+			return false;
+		if (isShiftDown && key.equals(KEY_ENTER)) {
+			gui.applyCLOFromField();
 			return true;
+		}
+		return !key.equals(KEY_ESCAPE);
+	}
+
+	/**
+	 * Handles global key events.
+	 * 
+	 * @param key the released key
+	 * @return {@code true} if key has been handled
+	 */
+	private boolean handleGlobalKeys(String key) {
 		switch (key) {
 			case "0":
 				gui.toggleSettings();
-				break;
+				return true;
 			case "1":
 			case "2":
 			case "3":
@@ -428,73 +456,129 @@ public class KeyHandler {
 			case "6":
 			case "7":
 			case "8":
-			case "9": {
-				List<AbstractView<?>> views = gui.getActiveViews();
-				int idx = CLOParser.parseInteger(key);
-				if (idx <= views.size())
-					gui.changeView(views.get(idx - 1));
-				break;
-			}
-			case "c": {
-				List<AbstractView<?>> views = gui.getActiveViews();
-				int consoleIdx = views.size() - 1;
-				if (consoleIdx < 0)
-					return false;
-				if (gui.getActiveViewIndex() == consoleIdx) {
-					int storedIdx = gui.getStoredViewIndex();
-					if (storedIdx >= 0 && storedIdx < views.size())
-						gui.changeView(views.get(storedIdx));
-				} else {
-					gui.changeView(views.get(consoleIdx));
-				}
-				break;
-			}
+			case "9":
+				return handleNumericViewSwitch(key);
+			case "c":
+				return handleConsoleToggle();
 			case KEY_ENTER:
 			case " ":
 				gui.getEngine().startStop();
-				break;
+				return true;
 			case KEY_ESCAPE:
-				if (gui.isEPub())
-					return false;
-				if (engine.isRunning()) {
-					engine.stop();
-					break;
-				}
-				if (gui.isCLOPanelVisible()) {
-					gui.toggleSettings();
-					break;
-				}
-				if (gui.closePopup())
-					break;
-				//$FALL-THROUGH$
+				return handleEscapeKey();
 			case KEY_BACKSPACE:
 			case KEY_DELETE:
-				if (engine.isRunning())
-					engine.stop();
-				else
-					gui.initReset();
-				break;
+				return handleDeleteKeys();
 			case "E":
-				if (gui.isEPub() || engine.isRunning())
-					return false;
-				engine.exportState();
-				break;
+				return handleExport();
 			case "F":
-				if (!NativeJS.isFullscreenSupported())
-					return false;
-				engine = gui.getEngine();
-				engine.setFullscreen(!NativeJS.isFullscreen());
-				break;
+				return handleFullscreen();
 			case "H":
 				gui.showHelp();
-				break;
+				return true;
 			default:
 				return false;
+		}
+	}
+
+	/**
+	 * Handles numeric view switching for keys 1-9.
+	 * 
+	 * @param key the released key
+	 * @return {@code true} if key has been handled
+	 */
+	private boolean handleNumericViewSwitch(String key) {
+		List<AbstractView<?>> views = gui.getActiveViews();
+		int idx = CLOParser.parseInteger(key);
+		if (idx <= views.size())
+			gui.changeView(views.get(idx - 1));
+		return true;
+	}
+
+	/**
+	 * Handles toggling the console view.
+	 * 
+	 * @return {@code true} if key has been handled
+	 */
+	private boolean handleConsoleToggle() {
+		List<AbstractView<?>> views = gui.getActiveViews();
+		int consoleIdx = views.size() - 1;
+		if (consoleIdx < 0)
+			return false;
+		if (gui.getActiveViewIndex() == consoleIdx) {
+			int storedIdx = gui.getStoredViewIndex();
+			if (storedIdx >= 0 && storedIdx < views.size())
+				gui.changeView(views.get(storedIdx));
+		} else {
+			gui.changeView(views.get(consoleIdx));
 		}
 		return true;
 	}
 
-	/** Installs JS listeners that route keyboard events to all controllers. */
+	/**
+	 * Handles the Escape key functionality.
+	 * 
+	 * @return {@code true} if key has been handled
+	 */
+	private boolean handleEscapeKey() {
+		if (gui.isEPub())
+			return false;
+		EvoLudoGWT engine = gui.getEngine();
+		if (engine.isRunning()) {
+			engine.stop();
+			return true;
+		}
+		if (gui.isCLOPanelVisible()) {
+			gui.toggleSettings();
+			return true;
+		}
+		if (gui.closePopup())
+			return true;
+		gui.initReset();
+		return true;
+	}
+
+	/**
+	 * Handles the Delete and Backspace key functionality.
+	 * 
+	 * @return {@code true} if key has been handled
+	 */
+	private boolean handleDeleteKeys() {
+		EvoLudoGWT engine = gui.getEngine();
+		if (engine.isRunning())
+			engine.stop();
+		else
+			gui.initReset();
+		return true;
+	}
+
+	/**
+	 * Handles exporting the current model state.
+	 * 
+	 * @return {@code true} if key has been handled
+	 */
+	private boolean handleExport() {
+		if (gui.isEPub() || gui.getEngine().isRunning())
+			return false;
+		gui.getEngine().exportState();
+		return true;
+	}
+
+	/**
+	 * Handles toggling fullscreen mode.
+	 * 
+	 * @return {@code true} if key has been handled
+	 */
+	private boolean handleFullscreen() {
+		if (!NativeJS.isFullscreenSupported())
+			return false;
+		gui.getEngine().setFullscreen(!NativeJS.isFullscreen());
+		return true;
+	}
+
+	/**
+	 * Installs JS listeners that route keyboard events to all controllers.
+	 */
 	private static native void addGlobalKeyListeners() /*-{
 		if (!$wnd.EvoLudoUtils) {
 			$wnd.EvoLudoUtils = {};
