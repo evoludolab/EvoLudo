@@ -116,7 +116,7 @@
             <arg>-optimize</arg>
             <arg>${gwt.optimize}</arg>
           </compilerArgs>
-          <webappDirectory>${evoludo.webappDirectory}</webappDirectory>
+          <webappDirectory>${project.build.directory}/${project.build.finalName}</webappDirectory>
         </configuration>
         <executions>
           <execution>
@@ -141,9 +141,9 @@
         <configuration>
           <scanIntervalSeconds>1</scanIntervalSeconds>
           <webApp>
+            <extraClasspath>${evoludo.jetty.extraClasspath}</extraClasspath>
             <extraClasspath>${basedir}/../EvoLudoCore/target/classes/</extraClasspath>
             <extraClasspath>${basedir}/../EvoLudoGWT/target/classes/</extraClasspath>
-            <extraClasspath>${evoludo.jetty.extraClasspath}</extraClasspath>
           </webApp>
           <contextXml>${basedir}/src/main/jettyconf/context.xml</contextXml>
         </configuration>
