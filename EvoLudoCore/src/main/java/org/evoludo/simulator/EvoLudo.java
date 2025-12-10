@@ -65,12 +65,7 @@ import org.evoludo.simulator.modules.NetGames;
 import org.evoludo.simulator.modules.RSP;
 import org.evoludo.simulator.modules.SIR;
 import org.evoludo.simulator.modules.TBT;
-import org.evoludo.simulator.views.HasPhase2D;
-import org.evoludo.simulator.views.HasPop2D;
-import org.evoludo.simulator.views.HasPop3D;
-import org.evoludo.simulator.views.HasS3;
-import org.evoludo.util.CLOCategory;
-import org.evoludo.util.CLODelegate;
+import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOProvider;
 import org.evoludo.util.CLOption;
 import org.evoludo.util.Plist;
@@ -1259,11 +1254,6 @@ public abstract class EvoLudo
 		cloController.collectCLO(prsr);
 	}
 
-	/**
-	 * Get the type of color model for translating continuous traits into colors.
-	 * 
-	 * @return the type of color model
-	 * 
 	/**
 	 * Report error and stop model execution, if running.
 	 * <p>
