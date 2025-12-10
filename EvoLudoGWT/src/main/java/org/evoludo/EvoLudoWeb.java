@@ -30,8 +30,6 @@
 
 package org.evoludo;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -44,31 +42,16 @@ import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.EvoLudoTrigger;
 import org.evoludo.simulator.Resources;
 import org.evoludo.simulator.models.ChangeListener;
-import org.evoludo.simulator.models.Data;
+import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.SampleListener;
-import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.RunListener;
-import org.evoludo.simulator.models.ModelType;
+import org.evoludo.simulator.models.SampleListener;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.ui.KeyHandler;
+import org.evoludo.simulator.ui.ViewController;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.Console;
-import org.evoludo.simulator.views.Distribution;
-import org.evoludo.simulator.views.HasDistribution;
-import org.evoludo.simulator.views.HasHistogram;
-import org.evoludo.simulator.views.HasMean;
-import org.evoludo.simulator.views.HasPhase2D;
-import org.evoludo.simulator.views.HasPop2D;
-import org.evoludo.simulator.views.HasPop3D;
-import org.evoludo.simulator.views.HasS3;
-import org.evoludo.simulator.views.Histogram;
-import org.evoludo.simulator.views.Mean;
-import org.evoludo.simulator.views.Phase2D;
-import org.evoludo.simulator.views.Pop2D;
-import org.evoludo.simulator.views.Pop3D;
-import org.evoludo.simulator.views.S3;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.FullscreenChangeEvent;
 import org.evoludo.ui.FullscreenChangeHandler;
@@ -192,12 +175,12 @@ import com.google.gwt.user.client.ui.Widget;
  *
  * <h3>Views and Display</h3>
  * <p>
- * EvoLudoWeb keeps a map of active views (activeViews) and a DeckLayoutPanel
- * (evoludoDeck) that displays exactly one view at a time. Views are created or
- * reused based on module capabilities and model type. Views are responsible for
- * rendering, while EvoLudoWeb orchestrates loading, sizing, activation,
- * deactivation, and disposal. The Console view is treated specially and may be
- * omitted in restricted ePub modes.
+ * EvoLudoWeb keeps a DeckLayoutPanel (evoludoDeck) that displays exactly one
+ * view at a time, while {@link ViewController} manages the available views and
+ * selection state. Views are created or reused based on module capabilities and
+ * model type. Views are responsible for rendering, while EvoLudoWeb orchestrates
+ * loading, sizing, activation, deactivation, and disposal. The Console view is
+ * treated specially and may be omitted in restricted ePub modes.
  * </p>
  *
  * <h3>Input Handling and Shortcuts</h3>
@@ -462,21 +445,9 @@ public class EvoLudoWeb extends Composite
 	String elementID = "EvoLudoWeb";
 
 	/**
-	 * Look-up table for active views. This is the selection shown in
-	 * {@link #evoludoViews}.
+	 * Controller managing all data views and the {@link #evoludoDeck}.
 	 */
-	HashMap<String, AbstractView<?>> activeViews = new HashMap<>();
-
-	/**
-	 * By default the first data view is shown. In general this shows the strategies
-	 * in the (structured) population in 2D.
-	 */
-	private String initialView = "1";
-
-	/**
-	 * Currently visible view
-	 */
-	AbstractView<?> activeView;
+	private ViewController viewController;
 
 	/**
 	 * The transparent backdrop of popup EvoLudo labs is stored here to reuse.
@@ -698,6 +669,7 @@ public class EvoLudoWeb extends Composite
 		setupEngine();
 		setupLogger(engine);
 		setupConsole(logger);
+		ensureViewController();
 
 		// now evoludoPanel is attached and we can set the grandparent as the
 		// fullscreen element
@@ -767,6 +739,18 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
+	 * Lazily create the {@link ViewController} and its dependencies.
+	 */
+	private void ensureViewController() {
+		if (viewController != null)
+			return;
+		setupEngine();
+		setupLogger(engine);
+		setupConsole(logger);
+		viewController = new ViewController(engine, evoludoDeck, evoludoViews, viewConsole, this::updateGUI);
+	}
+
+	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * Called when unloading GWT application. Housekeeping routine to clean up and
@@ -799,8 +783,8 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void moduleUnloaded() {
-		activeView = null;
-		evoludoViews.setSelectedIndex(-1);
+		ensureViewController();
+		viewController.resetSelection();
 		// clear settings
 		evoludoCLO.setText("");
 		keyController.unregister();
@@ -814,8 +798,8 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelUnloaded() {
-		activeView = null;
-		evoludoViews.setSelectedIndex(-1);
+		ensureViewController();
+		viewController.resetSelection();
 	}
 
 	@Override
@@ -913,9 +897,13 @@ public class EvoLudoWeb extends Composite
 	 * Helper method to update status of GUI.
 	 */
 	private void updateStatus() {
+		ensureViewController();
 		Model model = engine.getModel();
 		// do not force retrieving status if engine is running
-		String s = activeView.getStatus(!engine.isRunning());
+		AbstractView<?> view = viewController.getActiveView();
+		if (view == null)
+			return;
+		String s = view.getStatus(!engine.isRunning());
 		if (s == null)
 			s = model.getStatus();
 		displayStatus(s);
@@ -974,7 +962,8 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoViews")
 	public void onViewChange(ChangeEvent event) {
-		changeViewTo(activeViews.get(evoludoViews.getSelectedItemText()));
+		ensureViewController();
+		changeViewTo(viewController.getViewByName(evoludoViews.getSelectedItemText()));
 		evoludoViews.setFocus(false);
 	}
 
@@ -982,7 +971,7 @@ public class EvoLudoWeb extends Composite
 	 * Change view of EvoLudo model data. This helper method is called when the user
 	 * selects a new view with the popup list {@link #evoludoViews} or when a
 	 * particular view is requested through command line options (see
-	 * {@link #cloView}).
+	 * {@link ViewController#getCloView()}).
 	 * 
 	 * @param newView new view of model data to display
 	 */
@@ -994,7 +983,8 @@ public class EvoLudoWeb extends Composite
 	 * Change view of EvoLudo model data. This helper method is called when the user
 	 * selects a new view with the popup list {@link #evoludoViews} or when a
 	 * particular view is requested through command line options (see
-	 * {@link #cloView}). The view is re-activated if {@code force} is {@code true}
+	 * {@link ViewController#getCloView()}). The view is re-activated if
+	 * {@code force} is {@code true}
 	 * and activation is skipped if the view didn't change and {@code force} is
 	 * {@code false}.
 	 *
@@ -1003,47 +993,32 @@ public class EvoLudoWeb extends Composite
 	 *                change
 	 */
 	protected void changeViewTo(AbstractView<?> newView, boolean force) {
-		if (!force && newView == activeView)
-			return;
-
-		if (activeView != null)
-			activeView.deactivate();
-		// initially activeView would otherwise be null, which causes troubles if mouse
-		// is on canvas triggering events...
-		activeView = newView;
-		evoludoDeck.showWidget(activeView);
-		// set selected item in view selector
-		int activeIdx = evoludoDeck.getWidgetIndex(activeView);
-		evoludoViews.setSelectedIndex(activeIdx);
-		// save index of view if not console
-		if (activeIdx != activeViews.size() - 1)
-			viewIdx = activeIdx;
-		// adding a new widget can cause a flurry of activities; wait until they subside
-		// before activation
-		Scheduler.get().scheduleDeferred(() -> activeView.activate());
-		updateGUI();
+		ensureViewController();
+		viewController.changeViewTo(newView, force);
 	}
 
 	/** @return a fresh list of all active views (console included). */
 	public List<AbstractView<?>> getActiveViews() {
-		return new ArrayList<>(activeViews.values());
+		ensureViewController();
+		return viewController.getActiveViews();
 	}
 
 	/** @return the currently active view. */
 	public AbstractView<?> getActiveView() {
-		return activeView;
+		ensureViewController();
+		return viewController.getActiveView();
 	}
 
 	/** @return the index of the active view inside the deck or {@code -1}. */
 	public int getActiveViewIndex() {
-		if (activeView == null)
-			return -1;
-		return evoludoDeck.getWidgetIndex(activeView);
+		ensureViewController();
+		return viewController.getActiveViewIndex();
 	}
 
 	/** @return the last stored index for a non-console view. */
 	public int getStoredViewIndex() {
-		return viewIdx;
+		ensureViewController();
+		return viewController.getStoredViewIndex();
 	}
 
 	/**
@@ -1564,6 +1539,7 @@ public class EvoLudoWeb extends Composite
 	 * data views as appropriate.
 	 */
 	public void applyCLO() {
+		ensureViewController();
 		if (engine.isRunning()) {
 			logger.warning("Cannot apply parameters while engine is running.");
 			return;
@@ -1573,24 +1549,13 @@ public class EvoLudoWeb extends Composite
 		engine.setSuspended(false);
 		guiState.model = engine.getModel();
 		guiState.module = engine.getModule();
-		guiState.view = activeView;
+		guiState.view = viewController.getActiveView();
 		// parseCLO() does the heavy lifting and configures the GUI
 		guiState.issues = engine.parseCLO(this::configGUI);
 		// clearing evoludoDeck calls onUnload on all views - keep them for now
 		// to allow recycling if module/model did not change; rely on presence of
 		// console to trigger configGUI() when ready
-		if (activeView == null) {
-			// initial load
-			viewConsole.load();
-			if (evoludoDeck.getWidgetCount() == 0)
-				evoludoDeck.add(viewConsole);
-			activeView = viewConsole;
-		} else if (activeView == viewConsole) {
-			// prevents triggering configGUI()
-			evoludoDeck.remove(viewConsole);
-			evoludoDeck.add(viewConsole);
-		}
-		evoludoDeck.showWidget(viewConsole);
+		viewController.prepareForCLO();
 		if (guiState.issues > 1) {
 			// single issue is already displayed in status line
 			displayStatus("Multiple parsing problems (" + guiState.issues + ") - check log for details.",
@@ -1609,7 +1574,8 @@ public class EvoLudoWeb extends Composite
 		// reset is required if module and/or model changed
 		Module<?> newModule = engine.getModule();
 		Model newModel = engine.getModel();
-		if (newModule == null || newModule != guiState.module || newModel != guiState.model) {
+		boolean moduleChanged = (newModule == null || newModule != guiState.module || newModel != guiState.model);
+		if (moduleChanged) {
 			engine.modelReset(true);
 			loadViews();
 			// notify of reset (reset above was quiet because views may not have
@@ -1628,65 +1594,45 @@ public class EvoLudoWeb extends Composite
 			engine.setSuspended(guiState.resume || engine.isSuspended());
 		}
 		processCLOView();
-		if (guiState.view == null || !activeViews.containsValue(guiState.view)) {
+		if (moduleChanged && !viewController.isInitialViewSet()
+				&& guiState.view == viewController.getConsoleView())
+			guiState.view = null;
+		if (guiState.view == null || !viewController.containsView(guiState.view)) {
 			// initial load and view not set (or not found)
 			// pick first available view (at least the console has to be in the list)
-			guiState.view = activeViews.values().iterator().next();
+			guiState.view = viewController.getFirstView();
 		}
-		changeViewTo(guiState.view, true);
+		if (guiState.view != null)
+			changeViewTo(guiState.view, true);
 		if (guiState.plist != null) {
 			Plist state = guiState.plist;
 			guiState.plist = null;
 			displayStatus("Restoring state...");
 			engine.restoreState(state);
 		}
-		activeView.parse(guiState.args);
-		// view needs to be activated to set the mode of the model
-		activeView.activate();
+		AbstractView<?> currentView = viewController.getActiveView();
+		if (currentView != null) {
+			currentView.parse(guiState.args);
+			// view needs to be activated to set the mode of the model
+			currentView.activate();
+		}
 		processCLOSnap();
-		if (activeView.hasLayout() && engine.isSuspended())
+		if (currentView != null && currentView.hasLayout() && engine.isSuspended())
 			engine.run();
 	}
 
 	/**
-	 * Process the command line option for the initial view, {@link #cloView}, and
-	 * set the view accordingly. If the view specification is invalid, the
-	 * default view is used.
-	 * 
-	 * @param availableViews the list of available views
+	 * Process the command line option for the initial view (see
+	 * {@link ViewController#getCloView()}) and set the view accordingly. If the
+	 * view specification is invalid, the default view is used.
 	 */
 	private void processCLOView() {
-		if (!cloView.isSet())
+		ensureViewController();
+		ViewController.ViewSelection selection = viewController.resolveInitialView(logger);
+		if (selection == null)
 			return;
-		List<AbstractView<?>> availableViews = new ArrayList<>(activeViews.values());
-		// the initialView specification (name or index) may be followed by a space and
-		// a comma-separated list of view specific options
-		String[] iv = initialView.split(" ", 2);
-		// try to interpret first argument as name
-		String name = iv[0].replace('_', ' ').trim();
-		AbstractView<?> newView = null;
-		for (AbstractView<?> view : availableViews) {
-			if (view.getName().equals(name)) {
-				newView = view;
-				break;
-			}
-		}
-		if (newView == null) {
-			// try to interpret first argument as index
-			int idx = 0;
-			try {
-				idx = CLOParser.parseInteger(iv[0]);
-			} catch (NumberFormatException e) {
-				// the argument is not a number, ignore and pick first view
-				logger.warning("failed to set view '" + iv[0] + "' - using default.");
-			}
-			// Ensure idx is within bounds [1, av.length]
-			idx = Math.min(Math.max(idx, 1), availableViews.size());
-			if (!availableViews.isEmpty())
-				newView = availableViews.get(idx - 1);
-		}
-		guiState.view = newView;
-		guiState.args = iv.length > 1 ? iv[1].trim() : null;
+		guiState.view = selection.getView();
+		guiState.args = selection.getArgs();
 	}
 
 	/**
@@ -1738,13 +1684,18 @@ public class EvoLudoWeb extends Composite
 	 * of the active view are passed to all other views.
 	 */
 	private void loadViews() {
-		updateViews();
-		// set of available views may have changed (e.g. statistics)
-		int width = activeView.getOffsetWidth();
-		int height = activeView.getOffsetHeight();
-		for (AbstractView<?> view : activeViews.values()) {
+		ensureViewController();
+		viewController.refreshViews();
+		AbstractView<?> anchorView = viewController.getActiveView();
+		if (anchorView == null)
+			anchorView = viewController.getFirstView();
+		if (anchorView == null)
+			return;
+		int width = anchorView.getOffsetWidth();
+		int height = anchorView.getOffsetHeight();
+		for (AbstractView<?> view : viewController.getActiveViews()) {
 			boolean loaded = view.load();
-			if (view != activeView)
+			if (view != anchorView)
 				view.setBounds(width, height);
 			if (loaded)
 				view.reset(false);
@@ -1978,12 +1929,6 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
-	 * The index of the currently active view in the {@code activeViews} list (and
-	 * the {@link #evoludoDeck} widget).
-	 */
-	private int viewIdx = 0;
-
-	/**
 	 * The Alt-key toggles the button labels for controlling the EvoLudo lab.
 	 */
 	private void updateKeys() {
@@ -2033,9 +1978,13 @@ public class EvoLudoWeb extends Composite
 	 *      capture-website-cli</a>
 	 */
 	public void snapshotReady() {
+		ensureViewController();
 		if (snapmarker != null)
 			return;
-		activeView.update(true);
+		AbstractView<?> view = viewController.getActiveView();
+		if (view == null)
+			return;
+		view.update(true);
 		// make sure GUI is in stopped state before taking the snapshot
 		updateGUI();
 		// add div to DOM to signal completion of layout for capture-website
@@ -2043,183 +1992,6 @@ public class EvoLudoWeb extends Composite
 		snapmarker.setId("snapshot-ready");
 		Document.get().getBody().appendChild(snapmarker);
 	}
-
-	/**
-	 * Each EvoLudo model may entertain its own selection of views to visualize its
-	 * data. Re-use currently active views if possible otherwise instantiate
-	 * suitable views based on the features of the current model. Update the view
-	 * selector accordingly.
-	 * <p>
-	 * <strong>Note:</strong> the console view is dealt with elsewhere (see
-	 * {@link #processEPubSettings}).
-	 */
-	protected void updateViews() {
-		HashMap<String, AbstractView<?>> oldViews = activeViews;
-		activeViews = new HashMap<>();
-
-		Module<?> module = engine.getModule();
-		if (module == null) {
-			// no module loaded; show console only
-			addView(viewConsole, oldViews);
-			return;
-		}
-
-		Model model = engine.getModel();
-		ModelType mt = model.getType();
-		boolean isODESDE = mt.isODE() || mt.isSDE();
-
-		// Populate views in separated concerns to reduce cognitive complexity
-		addStrategyViews(module, isODESDE, oldViews);
-		addFitnessViews(module, isODESDE, oldViews);
-		addStructureViews(module, isODESDE, oldViews);
-		addStatisticsViews(module, model, oldViews);
-
-		// add console
-		addView(viewConsole, oldViews);
-
-		// unload views that are no longer available
-		for (AbstractView<?> view : oldViews.values())
-			evoludoDeck.remove(view);
-		oldViews.clear();
-
-		// update view selector - keep indices in sync with deck
-		evoludoViews.clear();
-		for (Widget view : evoludoDeck)
-			evoludoViews.addItem(((AbstractView<?>) view).getName());
-	}
-
-	/**
-	 * Helper method to add strategy related views to the application based on the
-	 * features of the current module and model settings.
-	 * 
-	 * @param module   the module to inspect
-	 * @param isODESDE whether the current model is an ODE or SDE
-	 * @param oldViews map of existing views keyed by identifier; used to preserve
-	 *                 or replace prior view instances
-	 */
-	private void addStrategyViews(Module<?> module, boolean isODESDE, HashMap<String, AbstractView<?>> oldViews) {
-		if (module instanceof HasPop2D.Traits && !isODESDE)
-			addView(new Pop2D(engine, Data.TRAIT), oldViews);
-		if (NativeJS.isWebGLSupported() && module instanceof HasPop3D.Traits && !isODESDE)
-			addView(new Pop3D(engine, Data.TRAIT), oldViews);
-		if (module instanceof HasPhase2D)
-			addView(new Phase2D(engine), oldViews);
-		if (module instanceof HasMean.Traits)
-			addView(new Mean(engine, Data.TRAIT), oldViews);
-		if (module instanceof HasS3)
-			addView(new S3(engine), oldViews);
-		if (module instanceof HasHistogram.Strategy)
-			addView(new Histogram(engine, Data.TRAIT), oldViews);
-		if (module instanceof HasDistribution.Strategy)
-			addView(new Distribution(engine, Data.TRAIT), oldViews);
-	}
-
-	/**
-	 * Helper method to add fitness related views to the application based on the
-	 * features of the current module and model settings.
-	 * 
-	 * @param module   the module to inspect
-	 * @param isODESDE whether the current model is an ODE or SDE
-	 * @param oldViews map of existing views keyed by identifier; used to preserve
-	 *                 or replace prior view instances
-	 */
-	private void addFitnessViews(Module<?> module, boolean isODESDE, HashMap<String, AbstractView<?>> oldViews) {
-		if (module instanceof HasPop2D.Fitness && !isODESDE)
-			addView(new Pop2D(engine, Data.FITNESS), oldViews);
-		if (NativeJS.isWebGLSupported() && module instanceof HasPop3D.Fitness && !isODESDE)
-			addView(new Pop3D(engine, Data.FITNESS), oldViews);
-		if (module instanceof HasMean.Fitness)
-			addView(new Mean(engine, Data.FITNESS), oldViews);
-		if (module instanceof HasHistogram.Fitness)
-			addView(new Histogram(engine, Data.FITNESS), oldViews);
-	}
-
-	// Helper: add structure related views
-	/**
-	 * Helper method to add structure related views to the application based on the
-	 * features of the current module and model settings.
-	 * 
-	 * @param module   the module to inspect
-	 * @param isODESDE whether the current model is an ODE or SDE
-	 * @param oldViews map of existing views keyed by identifier; used to preserve
-	 *                 or replace prior view instances
-	 */
-	private void addStructureViews(Module<?> module, boolean isODESDE, HashMap<String, AbstractView<?>> oldViews) {
-		if (module instanceof HasHistogram.Degree && !isODESDE)
-			addView(new Histogram(engine, Data.DEGREE), oldViews);
-	}
-
-	/**
-	 * Helper method to add statistics related views to the application based on the
-	 * features of the current module and model settings.
-	 * 
-	 * @param module   the module to inspect
-	 * @param model    the model to inspect
-	 * @param oldViews map of existing views keyed by identifier; used to preserve
-	 *                 or replace prior view instances
-	 */
-	private void addStatisticsViews(Module<?> module, Model model, HashMap<String, AbstractView<?>> oldViews) {
-		if (model != null && model.permitsMode(Mode.STATISTICS_SAMPLE)) {
-			if (module instanceof HasHistogram.StatisticsProbability)
-				addView(new Histogram(engine, Data.STATISTICS_FIXATION_PROBABILITY), oldViews);
-			if (module instanceof HasHistogram.StatisticsTime)
-				addView(new Histogram(engine, Data.STATISTICS_FIXATION_TIME), oldViews);
-		}
-		if (model != null && model.permitsMode(Mode.STATISTICS_UPDATE)
-				&& module instanceof HasHistogram.StatisticsStationary) {
-			addView(new Histogram(engine, Data.STATISTICS_STATIONARY), oldViews);
-		}
-	}
-
-	/**
-	 * Helper method to add <code>view</code> to list of active views
-	 * <code>activeViews</code>. If a view with the same name already exists in
-	 * <code>oldViews</code> it is reused.
-	 *
-	 * @param view     to add to active list
-	 * @param oldViews list of current views
-	 */
-	private void addView(AbstractView<?> view, HashMap<String, AbstractView<?>> oldViews) {
-		String name = view.getName();
-		if (oldViews.containsKey(name))
-			view = oldViews.remove(name);
-		activeViews.put(view.getName(), view);
-		for (Widget widget : evoludoDeck)
-			if (widget == view)
-				return;
-		// insert views before console to keep console at the end
-		evoludoDeck.insert(view, evoludoDeck.getWidgetIndex(viewConsole));
-	}
-
-	/**
-	 * Command line option to set the data view displayed in the GUI.
-	 */
-	public final CLOption cloView = new CLOption("view", "1", CLOCategory.GUI, null, new CLODelegate() {
-		/**
-		 * {@inheritDoc}
-		 * <p>
-		 * Set the initial view of the lab to {@code arg}. The view can be specified as
-		 * an index referring to the list of available data views or as the title of the
-		 * data view with spaces replaced by underscores, '_'.
-		 */
-		@Override
-		public boolean parse(String arg) {
-			initialView = arg;
-			return true;
-		}
-
-		@Override
-		public String getDescription() {
-			StringBuilder descr = new StringBuilder("--view <v>      select view (v: index or title)");
-			int idx = 1;
-			for (AbstractView<?> view : activeViews.values()) {
-				String keycode = "              " + (idx++) + ": ";
-				int len = keycode.length();
-				descr.append("\n").append(keycode.substring(len - 16, len)).append(view.getName());
-			}
-			return descr.toString();
-		}
-	});
 
 	/**
 	 * Command line option to set the size of the GUI or enter fullscreen.
@@ -2295,8 +2067,9 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void collectCLO(CLOParser parser) {
+		ensureViewController();
 		parser.addCLO(cloEmulate);
-		parser.addCLO(cloView);
+		parser.addCLO(viewController.getCloView());
 		parser.addCLO(cloSize);
 	}
 
