@@ -74,7 +74,9 @@ public class StateEncoder {
 		String java = engine.getJavaVersion();
 		if (java != null)
 			plist.append(Plist.encodeKey("JavaVersion", java));
-		plist.append(Plist.encodeKey("CLO", engine.cloController.getParserCLO()));
+		String clo = engine.cloController.getParserCLO();
+		clo = clo.replaceAll("--run *", "");
+		plist.append(Plist.encodeKey("CLO", clo));
 		engine.activeModel.encodeState(plist);
 		// the mersenne twister state is pretty long (and uninteresting) keep at end
 		plist.append("<key>RNG state</key>\n" + "<dict>\n" + (engine.rng.getRNG().encodeState()) + "</dict>\n");
