@@ -778,11 +778,9 @@ public class HierarchicalGeometry extends AbstractLattice {
 	 * @return the parsed hierarchy levels (never {@code null} or empty)
 	 */
 	private void parseHierarchy() {
-		subType = GeometryType.WELLMIXED;
-		fixedBoundary = false;
-
 		CLOption clo = engine.getModule().cloGeometry;
 		subType = (GeometryType) clo.match(specs);
+		subType = (subType == null ? GeometryType.WELLMIXED : subType);
 		switch (subType) {
 			case SQUARE_NEUMANN:
 			case SQUARE_NEUMANN_2ND:
@@ -796,16 +794,17 @@ public class HierarchicalGeometry extends AbstractLattice {
 						+ " - reset to well-mixed.");
 				subType = GeometryType.WELLMIXED;
 		}
-		String sspecs = specs.substring(1);
-		if (!sspecs.isEmpty() && GeometryType.isFixedBoundaryToken(sspecs.charAt(0))) {
+		specs = CLOption.stripKey(subType, specs);
+		fixedBoundary = false;
+		if (!specs.isEmpty() && GeometryType.isFixedBoundaryToken(specs.charAt(0))) {
 			fixedBoundary = true;
-			sspecs = sspecs.substring(1);
+			specs = specs.substring(1);
 		}
-		int weightIdx = sspecs.lastIndexOf('w');
-		String levels = sspecs;
+		int weightIdx = specs.lastIndexOf('w');
+		String levels = specs;
 		if (weightIdx >= 0) {
-			hierarchyWeight = CLOParser.parseDouble(sspecs.substring(weightIdx + 1));
-			levels = sspecs.substring(0, weightIdx);
+			hierarchyWeight = CLOParser.parseDouble(specs.substring(weightIdx + 1));
+			levels = specs.substring(0, weightIdx);
 		} else {
 			hierarchyWeight = 0.0;
 		}
