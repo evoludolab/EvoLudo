@@ -178,9 +178,10 @@ import com.google.gwt.user.client.ui.Widget;
  * EvoLudoWeb keeps a DeckLayoutPanel (evoludoDeck) that displays exactly one
  * view at a time, while {@link ViewController} manages the available views and
  * selection state. Views are created or reused based on module capabilities and
- * model type. Views are responsible for rendering, while EvoLudoWeb orchestrates
- * loading, sizing, activation, deactivation, and disposal. The Console view is
- * treated specially and may be omitted in restricted ePub modes.
+ * model type. Views are responsible for rendering, while EvoLudoWeb
+ * orchestrates loading, sizing, activation, deactivation, and disposal. The
+ * Console view is treated specially and may be omitted in restricted ePub
+ * modes.
  * </p>
  *
  * <h3>Input Handling and Shortcuts</h3>
@@ -1609,6 +1610,7 @@ public class EvoLudoWeb extends Composite
 			guiState.plist = null;
 			displayStatus("Restoring state...");
 			engine.restoreState(state);
+			updateCounter();
 		}
 		AbstractView<?> currentView = viewController.getActiveView();
 		if (currentView != null) {
@@ -1701,6 +1703,7 @@ public class EvoLudoWeb extends Composite
 				view.reset(false);
 		}
 		evoludoLayout.onResize();
+		updateDropHandlers();
 	}
 
 	/**
@@ -1901,11 +1904,12 @@ public class EvoLudoWeb extends Composite
 	 */
 	public void restoreFromString(String filename, String content) {
 		Plist parsed = PlistParser.parse(content);
-		if (parsed == null) {
+		if (parsed == null || !parsed.containsKey("CLO")) {
 			if (logger.isLoggable(Level.SEVERE))
 				logger.severe("failed to parse contents of file '" + filename + "'.");
 			return;
 		}
+		engine.unloadModule();
 		engine.setCLO((String) (parsed.get("CLO")));
 		guiState.plist = parsed;
 		applyCLO();
@@ -2268,7 +2272,8 @@ public class EvoLudoWeb extends Composite
 		// platforms TextFields are disabled through shadow DOM.
 		boolean editCLO = !isEPub || ePub.standalone;
 		updateCLOControls(editCLO);
-		updateDropHandlers(editCLO);
+		if (editCLO)
+			updateDropHandlers();
 	}
 
 	private void updateCLOControls(boolean editCLO) {
@@ -2282,9 +2287,7 @@ public class EvoLudoWeb extends Composite
 		logEvoHandler.setLevel(editCLO ? logger.getLevel() : Level.OFF);
 	}
 
-	private void updateDropHandlers(boolean editCLO) {
-		if (!editCLO)
-			return;
+	private void updateDropHandlers() {
 		if (dragEnterHandler == null)
 			dragEnterHandler = addDomHandler((DragEnterEvent event) -> {
 				if (engine.isRunning()) {

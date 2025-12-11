@@ -350,19 +350,22 @@ public class NativeJS {
 		if (files.length != 1)
 			return;
 		var file = files[0];
+		var restoreState = $entry(function(name, content) {
+			gui.@org.evoludo.EvoLudoWeb::restoreFromString(Ljava/lang/String;Ljava/lang/String;)(name, content);
+		});
 		// first try as compressed data
 		JSZip.loadAsync(file)
 			.then(function(zip) {
 				zip.forEach(function (relativePath, zipEntry) {
 					zip.file(zipEntry.name).async("string").then(function (data) {
-						gui.@org.evoludo.EvoLudoWeb::restoreFromString(Ljava/lang/String;Ljava/lang/String;)(zipEntry.name, data);
+						restoreState(zipEntry.name, data);
 					});
 				});
 			}, function (e) {
 				// file is not compressed; try as plain plist file
 				var reader = new FileReader();
 				reader.onload = function(e) {
-					gui.@org.evoludo.EvoLudoWeb::restoreFromString(Ljava/lang/String;Ljava/lang/String;)(file.name, e.target.result);
+					restoreState(file.name, e.target.result);
 				}
 				reader.readAsText(file);
 			});
