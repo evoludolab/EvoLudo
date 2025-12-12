@@ -759,7 +759,7 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelRunning() {
-		settingsController.onModelRunning(this);
+		SettingsController.onModelRunning(this);
 		displayStatusThresholdLevel = Level.ALL.intValue();
 		updateGUI();
 	}
@@ -791,7 +791,7 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelStopped() {
-		settingsController.onModelStopped(this);
+		SettingsController.onModelStopped(this);
 		updateGUI();
 	}
 
@@ -940,24 +940,31 @@ public class EvoLudoWeb extends Composite
 		viewController.changeViewTo(newView, force);
 	}
 
-	/** @return a fresh list of all active views (console included). */
+	/**
+	 * Return the list of all active views.
+	 * 
+	 * @return the list of all active views (console included)
+	 */
 	public List<AbstractView<?>> getActiveViews() {
 		return viewController.getActiveViews();
 	}
 
-	/** @return the currently active view. */
+	/**
+	 * Return the currently active view.
+	 * 
+	 * @return the active view.
+	 */
 	public AbstractView<?> getActiveView() {
 		return viewController.getActiveView();
 	}
 
-	/** @return the index of the active view inside the deck or {@code -1}. */
+	/**
+	 * Return the index of the currently active view in the list of active views.
+	 * 
+	 * @return the index of the active view inside the deck or {@code -1}.
+	 */
 	public int getActiveViewIndex() {
 		return viewController.getActiveViewIndex();
-	}
-
-	/** @return the last stored index for a non-console view. */
-	public int getStoredViewIndex() {
-		return viewController.getStoredViewIndex();
 	}
 
 	/**

@@ -45,47 +45,80 @@ import org.evoludo.util.NativeJS;
  */
 public class KeyHandler {
 
-	/** The EvoLudoWeb instance that owns this controller. */
+	/**
+	 * The EvoLudoWeb instance that owns this controller.
+	 */
 	private final EvoLudoWeb gui;
 
-	/** Tracks whether the Alt modifier is currently pressed. */
+	/**
+	 * Tracks whether the Alt modifier is currently pressed.
+	 */
 	private boolean isAltDown = false;
 
-	/** Tracks whether the Shift modifier is currently pressed. */
+	/**
+	 * Tracks whether the Shift modifier is currently pressed.
+	 */
 	private boolean isShiftDown = false;
 
-	/** String value emitted when the Alt key is pressed. */
+	/**
+	 * String value emitted when the Alt key is pressed.
+	 */
 	public static final String KEY_ALT = "Alt";
 
-	/** String value emitted when the Shift key is pressed. */
+	/**
+	 * String value emitted when the Shift key is pressed.
+	 */
 	public static final String KEY_SHIFT = "Shift";
 
-	/** String value emitted when the Enter key is pressed. */
+	/**
+	 * String value emitted when the Enter key is pressed.
+	 */
 	public static final String KEY_ENTER = "Enter";
 
-	/** String value emitted when the Escape key is pressed. */
+	/**
+	 * String value emitted when the Escape key is pressed.
+	 */
 	public static final String KEY_ESCAPE = "Escape";
 
-	/** String value emitted when the Backspace key is pressed. */
+	/**
+	 * String value emitted when the Backspace key is pressed.
+	 */
 	public static final String KEY_BACKSPACE = "Backspace";
 
-	/** String value emitted when the Delete key is pressed. */
+	/**
+	 * String value emitted when the Delete key is pressed.
+	 */
 	public static final String KEY_DELETE = "Delete";
 
-	/** Controller that currently has priority (typically the popup lab). */
+	/**
+	 * Controller that currently has priority (typically the popup lab).
+	 */
 	private static KeyHandler active;
 
-	/** All handlers that have requested global registration. */
+	/**
+	 * All handlers that have requested global registration.
+	 */
 	private static final List<KeyHandler> keyHandlers = new ArrayList<>();
 
-	/** Number of handlers that have requested registration. */
+	/**
+	 * Number of handlers that have requested registration.
+	 */
 	private static int registrationCount = 0;
 
-	/** Tracks whether the global JS listeners have been installed. */
+	/**
+	 * Tracks whether the global JS listeners have been installed.
+	 */
 	private static boolean listenersInstalled = false;
 
-	/** Indicates whether this controller has been registered globally. */
+	/**
+	 * Indicates whether this controller has been registered globally.
+	 */
 	private boolean registered = false;
+
+	/**
+	 * Index of previously active view before switching to console view.
+	 */
+	private int toggleIdx = -1;
 
 	/**
 	 * Initializes the key event handler.
@@ -506,10 +539,10 @@ public class KeyHandler {
 		if (consoleIdx < 0)
 			return false;
 		if (gui.getActiveViewIndex() == consoleIdx) {
-			int storedIdx = gui.getStoredViewIndex();
-			if (storedIdx >= 0 && storedIdx < views.size())
-				gui.changeView(views.get(storedIdx));
+			if (toggleIdx >= 0 && toggleIdx < views.size())
+				gui.changeView(views.get(toggleIdx));
 		} else {
+			toggleIdx = gui.getActiveViewIndex();
 			gui.changeView(views.get(consoleIdx));
 		}
 		return true;

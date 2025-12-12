@@ -76,36 +76,52 @@ import com.google.gwt.user.client.ui.Widget;
  * <code>--view</code> CLO, and switching between views while ensuring proper
  * activation/deactivation.
  */
+@SuppressWarnings("java:S1452") // views have unknown generic parameters
 public class ViewController {
 
-	/** EvoLudo engine powering the views. */
+	/**
+	 * EvoLudo engine powering the views.
+	 */
 	private final EvoLudoGWT engine;
 
-	/** Deck widget hosting the views. */
+	/**
+	 * Deck widget hosting the views.
+	 */
 	private final DeckLayoutPanel deck;
 
-	/** List box controlling the active view selection. */
+	/**
+	 * List box controlling the active view selection.
+	 */
 	private final ListBox selector;
 
-	/** Console view that is always present. */
+	/**
+	 * Console view that is always present.
+	 */
 	private final Console console;
 
-	/** Callback invoked whenever the view changes. */
+	/**
+	 * Callback invoked whenever the view changes.
+	 */
 	private final Runnable onViewChanged;
 
-	/** Registry of active views keyed by name. */
+	/**
+	 * Registry of active views keyed by name.
+	 */
 	private Map<String, AbstractView<?>> activeViews = new HashMap<>();
 
-	/** Currently active view. */
+	/**
+	 * Currently active view.
+	 */
 	private AbstractView<?> activeView;
 
-	/** Stored index referencing the last non-console view. */
-	private int storedViewIdx = 0;
-
-	/** Initial view specification (index or name with optional args). */
+	/**
+	 * Initial view specification (index or name with optional args).
+	 */
 	private String initialView = "1";
 
-	/** CLO option controlling the initial view selection. */
+	/**
+	 * CLO option controlling the initial view selection.
+	 */
 	private final CLOption cloView = new CLOption("view", "1", CLOCategory.GUI, null, new CLODelegate() {
 		@Override
 		public boolean parse(String arg) {
@@ -193,15 +209,6 @@ public class ViewController {
 	}
 
 	/**
-	 * Returns the last stored index pointing to a non-console view.
-	 *
-	 * @return remembered deck index for standard views
-	 */
-	public int getStoredViewIndex() {
-		return storedViewIdx;
-	}
-
-	/**
 	 * Provides a snapshot of all active views, including the console.
 	 *
 	 * @return list of active views
@@ -237,6 +244,7 @@ public class ViewController {
 	 * @param name view name
 	 * @return matching view or {@code null} if absent
 	 */
+	@SuppressWarnings("java:S1452") // views have unknown generic parameters
 	public AbstractView<?> getViewByName(String name) {
 		return activeViews.get(name);
 	}
@@ -337,8 +345,6 @@ public class ViewController {
 		deck.showWidget(activeView);
 		int activeIdx = deck.getWidgetIndex(activeView);
 		selector.setSelectedIndex(activeIdx);
-		if (activeIdx != activeViews.size() - 1)
-			storedViewIdx = activeIdx;
 		Scheduler.get().scheduleDeferred(() -> activeView.activate());
 		if (onViewChanged != null)
 			onViewChanged.run();
