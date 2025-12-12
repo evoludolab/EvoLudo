@@ -48,6 +48,7 @@ import org.evoludo.simulator.models.Model;
 import org.evoludo.simulator.models.RunListener;
 import org.evoludo.simulator.models.SampleListener;
 import org.evoludo.simulator.modules.Module;
+import org.evoludo.simulator.ui.SettingsController;
 import org.evoludo.simulator.ui.KeyHandler;
 import org.evoludo.simulator.ui.ViewController;
 import org.evoludo.simulator.views.AbstractView;
@@ -359,45 +360,9 @@ public class EvoLudoWeb extends Composite
 	protected double updatetime = -1.0;
 
 	/**
-	 * Collection of ePub specific settings
+	 * Controller for ePub specific behaviour and emulation.
 	 */
-	static class EPub {
-		/**
-		 * <code>true</code> if standalone EvoLudo lab in ePub
-		 */
-		boolean standalone;
-
-		/**
-		 * <code>true</code> if ePub has mouse device
-		 */
-		boolean hasMouse;
-
-		/**
-		 * <code>true</code> if ePub has touch device
-		 */
-		boolean hasTouch;
-
-		/**
-		 * <code>true</code> if ePub has keyboard device
-		 */
-		boolean hasKeys;
-
-		/**
-		 * Reference to running engine in ePubs (to conserve resources only one lab can
-		 * be running at a time)
-		 */
-		EvoLudoWeb runningEPub;
-	}
-
-	/**
-	 * ePub settings
-	 */
-	static EPub ePub = new EPub();
-
-	/**
-	 * Flag indicating whether this lab is running in an ePub reader.
-	 */
-	private boolean isEPub = false;
+	private SettingsController settingsController;
 
 	/**
 	 * Controller. Manages the interface with the outside world.
@@ -667,12 +632,14 @@ public class EvoLudoWeb extends Composite
 	@Override
 	public void onLoad() {
 		super.onLoad();
+		boolean runningInEPub = NativeJS.getEPubReader() != null;
+		settingsController = new SettingsController(runningInEPub, evoludoCLO, evoludoApply, evoludoDefault,
+				evoludoHelp,
+				evoludoSettings);
 		setupEngine();
-		setupLogger(engine);
+		setupLogger(engine, runningInEPub);
 		setupConsole(logger);
-		setupEngine();
-		setupLogger(engine);
-		setupConsole(logger);
+		logFeatures();
 		viewController = new ViewController(engine, evoludoDeck, evoludoViews, viewConsole, this::updateGUI);
 
 		// now evoludoPanel is attached and we can set the grandparent as the
@@ -712,7 +679,7 @@ public class EvoLudoWeb extends Composite
 	 * 
 	 * @param engine the EvoLudo engine
 	 */
-	private void setupLogger(EvoLudoGWT engine) {
+	private void setupLogger(EvoLudoGWT engine, boolean runningInEPub) {
 		if (logger != null)
 			return;
 		logger = engine.getLogger();
@@ -720,9 +687,8 @@ public class EvoLudoWeb extends Composite
 		// note: log handler needs to know whether this is an ePub (regardless of any
 		// feature declarations with --gui) to make sure log is properly XML encoded (if
 		// needed).
-		isEPub = NativeJS.getEPubReader() != null;
 		ConsoleLogHandler logHandler = new ConsoleLogHandler();
-		logHandler.setFormatter(new XMLLogFormatter(true, isEPub || NativeJS.isHTML()));
+		logHandler.setFormatter(new XMLLogFormatter(true, runningInEPub || NativeJS.isHTML()));
 		logger.addHandler(logHandler);
 	}
 
@@ -739,7 +705,6 @@ public class EvoLudoWeb extends Composite
 		logger.addHandler(logEvoHandler);
 		logger.setLevel(Level.INFO);
 		logger.info(engine.getVersion());
-		logFeatures();
 	}
 
 	/**
@@ -794,11 +759,7 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelRunning() {
-		if (isEPub) {
-			if (ePub.runningEPub != null)
-				throw new IllegalStateException("Another ePub lab is already running!");
-			ePub.runningEPub = this;
-		}
+		settingsController.onModelRunning(this);
 		displayStatusThresholdLevel = Level.ALL.intValue();
 		updateGUI();
 	}
@@ -830,12 +791,7 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelStopped() {
-		if (isEPub) {
-			if (ePub.runningEPub == null)
-				throw new IllegalStateException("Running ePub lab not found!");
-			if (ePub.runningEPub == this)
-				ePub.runningEPub = null;
-		}
+		settingsController.onModelStopped(this);
 		updateGUI();
 	}
 
@@ -1104,21 +1060,6 @@ public class EvoLudoWeb extends Composite
 	static final String BUTTON_HELP = "Help";
 
 	/**
-	 * Label of button to apply parameter settings.
-	 */
-	static final String BUTTON_APPLY = "Apply";
-
-	/**
-	 * Label of button to run in standalone mode.
-	 */
-	static final String BUTTON_STANDALONE = "Standalone";
-
-	/**
-	 * Label of button to reset to default parameter settings.
-	 */
-	static final String BUTTON_DEFAULT = "Default";
-
-	/**
 	 * 'Settings' button
 	 */
 	@UiField
@@ -1181,28 +1122,46 @@ public class EvoLudoWeb extends Composite
 		return evoludoCLO.getElement();
 	}
 
-	/** Applies the text currently in the CLO field to the engine. */
+	/**
+	 * Applies the text currently in the CLO field to the engine.
+	 */
 	public void applyCLOFromField() {
 		engine.setCLO(evoludoCLO.getText().replace((char) 160, ' '));
 		applyCLO();
 	}
 
-	/** @return {@code true} when this lab is displayed as a standalone ePub. */
+	/**
+	 * Check if this lab is displayed as standalone page in ePub.
+	 * 
+	 * @return {@code true} if a standalone
+	 */
 	public boolean isEPubStandalone() {
-		return ePub.standalone;
+		return settingsController.isStandalone();
 	}
 
-	/** @return {@code true} when running inside an ePub reader. */
+	/**
+	 * Check if this lab is running inside an ePub reader.
+	 * 
+	 * @return {@code true} when running inside an ePub reader.
+	 */
 	public boolean isEPub() {
-		return isEPub;
+		return settingsController.isEPub();
 	}
 
-	/** @return {@code true} when the CLO panel is visible in the GUI. */
+	/**
+	 * Check if the CLO settings panel is visible in the GUI.
+	 * 
+	 * @return {@code true} if settings panel visible
+	 */
 	public boolean isCLOPanelVisible() {
 		return evoludoCLOPanel.isVisible();
 	}
 
-	/** Closes any attached popup lab, returning {@code true} if one was closed. */
+	/**
+	 * Closes the overlay containing this EvoLudo lab, if any.
+	 * 
+	 * @return {@code true} if lab was closed
+	 */
 	public boolean closePopup() {
 		if (popup != null && popup.isAttached()) {
 			popup.close();
@@ -1211,24 +1170,29 @@ public class EvoLudoWeb extends Composite
 		return false;
 	}
 
-	/** @return {@code true} if this lab owns a popup overlay. */
+	/**
+	 * Check if this lab owns a popup overlay.
+	 * 
+	 * @return {@code true} if lab shown on overlay
+	 */
 	public boolean hasPopup() {
 		return popup != null;
 	}
 
-	/** @return the engine that runs this GUI. */
+	/**
+	 * Return the engine that controls the EvoLudo modules.
+	 * 
+	 * @return the engine
+	 */
 	public EvoLudoGWT getEngine() {
 		return engine;
 	}
 
-	/** Syncs the delay slider with the engine's current delay. */
+	/**
+	 * Syncs the delay slider with the engine's current delay.
+	 */
 	public void syncDelaySlider() {
 		evoludoSlider.setValue(engine.getDelay());
-	}
-
-	/** Refreshes the key labels to match the current modifier state. */
-	public void refreshKeyLabels() {
-		updateKeys();
 	}
 
 	/**
@@ -1450,7 +1414,7 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoApply")
 	public void onApplyClick(ClickEvent event) {
-		if (evoludoApply.getText().equals(BUTTON_APPLY)) {
+		if (evoludoApply.getText().equals(SettingsController.BUTTON_APPLY)) {
 			engine.setCLO(evoludoCLO.getText().replace((char) 160, ' '));
 			applyCLO();
 			return;
@@ -1896,7 +1860,7 @@ public class EvoLudoWeb extends Composite
 	/**
 	 * The Alt-key toggles the button labels for controlling the EvoLudo lab.
 	 */
-	private void updateKeys() {
+	public void updateKeys() {
 		Model model = engine.getModel();
 		boolean statistics = (model != null && model.getMode() == Mode.STATISTICS_SAMPLE);
 		// only 'reset' in statistics mode
@@ -1985,72 +1949,11 @@ public class EvoLudoWeb extends Composite
 				}
 			});
 
-	/**
-	 * Command line option to mimic ePub modes and to disable device capabilities.
-	 * <p>
-	 * <strong>Note:</strong> for development/debugging only; should be disabled in
-	 * production
-	 */
-	public final CLOption cloEmulate = new CLOption("emulate", null, CLOCategory.GUI,
-			"--emulate <f1[,f2[...]]> list of GUI features to emulate:\n"
-					+ "          epub: enable ePub mode\n"
-					+ "    standalone: standalone ePub mode\n"
-					+ "        nokeys: disable key events (if available)\n"
-					+ "       nomouse: disable mouse events (if available)\n"
-					+ "       notouch: disable touch events (if available)",
-			new CLODelegate() {
-				@Override
-				public boolean parse(String arg) {
-					// set/reset defaults
-					detectGUIFeatures();
-					if (arg != null) {
-						// simulate ePub mode
-						if (arg.contains("epub"))
-							isEPub = true;
-						// simulate standalone lab in ePub
-						if (arg.contains("standalone")) {
-							ePub.standalone = true;
-							isEPub = true;
-							ePub.hasKeys = NativeJS.hasKeys();
-							ePub.hasMouse = NativeJS.hasMouse();
-							ePub.hasTouch = NativeJS.hasTouch();
-						}
-						// disable keys (if available)
-						if (ePub.hasKeys && arg.contains("nokeys"))
-							ePub.hasKeys = false;
-						// disable mouse (if available)
-						if (ePub.hasMouse && arg.contains("nomouse"))
-							ePub.hasMouse = false;
-						// disable touch (if available)
-						if (ePub.hasTouch && arg.contains("notouch"))
-							ePub.hasTouch = false;
-					}
-					return true;
-				}
-			});
-
 	@Override
 	public void collectCLO(CLOParser parser) {
-		parser.addCLO(cloEmulate);
+		parser.addCLO(settingsController.getCloEmulate());
 		parser.addCLO(viewController.getCloView());
 		parser.addCLO(cloSize);
-	}
-
-	/**
-	 * Use JSNI helper methods to query and detect features of the execution
-	 * environment.
-	 *
-	 * @see NativeJS#ePubReaderHasFeature(String)
-	 */
-	public static void detectGUIFeatures() {
-		// IMPORTANT: ibooks (desktop) returns ePubReader for standalone pages as well,
-		// i.e. isEPub is true
-		// however, ibooks (ios) does not report as an ePubReader for standalone pages,
-		// i.e. isEPub is false
-		ePub.standalone = (Document.get().getElementById("evoludo-standalone") != null);
-		ePub.hasKeys = NativeJS.ePubReaderHasFeature("keyboard-events");
-		ePub.hasMouse = NativeJS.ePubReaderHasFeature("mouse-events");
-		ePub.hasTouch = NativeJS.ePubReaderHasFeature("touch-events");
 	}
 
 	@Override
@@ -2132,7 +2035,7 @@ public class EvoLudoWeb extends Composite
 	 */
 	public boolean isShowing() {
 		// skip test in ePubs - always evaluates to true...
-		if (isEPub)
+		if (settingsController.isEPub())
 			return true;
 		if (keyController.isActive())
 			return true;
@@ -2229,21 +2132,9 @@ public class EvoLudoWeb extends Composite
 		// nonlinear content in Apple Books (i.e. all interactive labs) do not report
 		// as ePubs on iOS (at least for iPad) but as expected on macOS. On both
 		// platforms TextFields are disabled through shadow DOM.
-		boolean editCLO = !isEPub || ePub.standalone;
-		updateCLOControls(editCLO);
-		if (editCLO)
-			updateDropHandlers();
-	}
-
-	private void updateCLOControls(boolean editCLO) {
-		evoludoCLO.setTitle(editCLO ? "Specify simulation parameters"
-				: "Current simulation parameters (open standalone lab to modify)");
-		evoludoApply.setText(editCLO ? BUTTON_APPLY : BUTTON_STANDALONE);
-		evoludoApply.setTitle(editCLO ? "Apply parameters" : "Open standalone lab");
-		evoludoDefault.setEnabled(editCLO);
-		evoludoHelp.setEnabled(editCLO);
-		evoludoSettings.setTitle(editCLO ? "Change simulation parameters" : "Review simulation parameters");
-		logEvoHandler.setLevel(editCLO ? logger.getLevel() : Level.OFF);
+		boolean editCLO = settingsController.applyUiToggles(this::updateDropHandlers);
+		if (logEvoHandler != null)
+			logEvoHandler.setLevel(editCLO ? logger.getLevel() : Level.OFF);
 	}
 
 	private void updateDropHandlers() {
@@ -2279,9 +2170,9 @@ public class EvoLudoWeb extends Composite
 		sb.append(NativeJS.hasTouch() ? "touch " : "");
 		if (NativeJS.isEPub()) {
 			sb.append("ePub (");
-			sb.append(ePub.hasKeys ? "keyboard " : "");
-			sb.append(ePub.hasMouse ? "mouse " : "");
-			sb.append(ePub.hasTouch ? "touch " : "");
+			sb.append(settingsController.hasKeys() ? "keyboard " : "");
+			sb.append(settingsController.hasMouse() ? "mouse " : "");
+			sb.append(settingsController.hasTouch() ? "touch " : "");
 			sb.append(")");
 		}
 		logger.info(sb.toString());

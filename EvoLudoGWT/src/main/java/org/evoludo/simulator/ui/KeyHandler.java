@@ -162,13 +162,13 @@ public class KeyHandler {
 	 */
 	public void showAltModeFromTouch() {
 		isAltDown = true;
-		gui.refreshKeyLabels();
+		gui.updateKeys();
 	}
 
 	/** Hides the touch-activated Alt mode and restores the original labels. */
 	public void hideAltModeFromTouch() {
 		isAltDown = false;
-		gui.refreshKeyLabels();
+		gui.updateKeys();
 	}
 
 	/**
@@ -268,7 +268,7 @@ public class KeyHandler {
 			return false;
 		if (key.equals(KEY_ALT)) {
 			isAltDown = true;
-			gui.refreshKeyLabels();
+			gui.updateKeys();
 		}
 		if (key.equals(KEY_SHIFT))
 			isShiftDown = true;
@@ -414,7 +414,7 @@ public class KeyHandler {
 	private void updateModifierStates(String key) {
 		if (key.equals(KEY_ALT)) {
 			isAltDown = false;
-			gui.refreshKeyLabels();
+			gui.updateKeys();
 		}
 		if (key.equals(KEY_SHIFT))
 			isShiftDown = false;
