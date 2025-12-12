@@ -34,20 +34,19 @@ import org.evoludo.EvoLudoWeb;
 import org.evoludo.graphics.Network2DGWT;
 import org.evoludo.graphics.Network3DGWT;
 import org.evoludo.math.ArrayMath;
-import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.geometries.AbstractGeometry;
-import org.evoludo.simulator.models.Mode;
+import org.evoludo.simulator.models.ChangeListener.PendingAction;
+import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.models.PDE;
 import org.evoludo.simulator.models.PDESupervisor;
 import org.evoludo.simulator.models.PDESupervisorGWT;
-import org.evoludo.simulator.models.ModelType;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.ui.ContextMenu;
 import org.evoludo.ui.ContextMenuCheckBoxItem;
+import org.evoludo.util.CLOCategory;
 import org.evoludo.util.CLODelegate;
 import org.evoludo.util.CLOParser;
 import org.evoludo.util.CLOption;
-import org.evoludo.util.CLOCategory;
 import org.evoludo.util.NativeJS;
 
 import com.google.gwt.core.client.Duration;
@@ -236,15 +235,6 @@ public class EvoLudoGWT extends EvoLudo {
 			// take snapshot
 			gui.snapshotReady();
 		}
-	}
-
-	@Override
-	void processPendingAction() {
-		boolean updateGUI = (pendingAction == PendingAction.STOP
-				&& activeModel != null && activeModel.getMode() == Mode.STATISTICS_SAMPLE);
-		super.processPendingAction();
-		if (updateGUI)
-			gui.modelStopped();
 	}
 
 	/**
