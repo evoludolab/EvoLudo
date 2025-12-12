@@ -39,6 +39,8 @@ public class RandomRegularGeometry extends AbstractNetwork {
 		int trials = 0;
 		boolean success;
 		do {
+			// start from a clean slate each time the random construction is retried
+			alloc();
 			success = initGeometryDegreeDistr(degrees);
 		} while (!success && ++trials < AbstractNetwork.MAX_TRIALS);
 		if (!success)
