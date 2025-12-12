@@ -233,14 +233,22 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	String options;
 
 	/**
+	 * Set the options string for this view.
+	 * 
+	 * @param options the options string
+	 */
+	public void setOptions(String options) {
+		this.options = options;
+	}
+
+	/**
 	 * Parse the arguments {@code args} provided to this view. The default
 	 * implementation simply passes {@code args} to all its {@code graphs}.
 	 * 
 	 * @param args the arguments to parse
 	 * @return {@code true} if the arguments were successfully parsed
 	 */
-	public boolean parse(String args) {
-		options = args;
+	public boolean parse() {
 		if (options == null)
 			return true;
 		boolean ok = true;
@@ -398,7 +406,7 @@ public abstract class AbstractView<G extends AbstractGraph<?>> extends Composite
 	@Override
 	public void modelDidReset() {
 		reset(true);
-		parse(options);
+		parse();
 	}
 
 	/**

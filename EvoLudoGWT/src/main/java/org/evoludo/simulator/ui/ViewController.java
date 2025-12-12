@@ -350,10 +350,12 @@ public class ViewController {
 	 * view.
 	 *
 	 * @param logger logger for diagnostics (optional)
-	 * @return selection describing the requested view or {@code null} if the option
-	 *         was not provided
+	 * @return the initial view or {@code null} if the {@code --view} option was not
+	 *         provided
+	 * 
+	 * @see #cloView
 	 */
-	public ViewSelection resolveInitialView(Logger logger) {
+	public AbstractView<?> resolveInitialView(Logger logger) {
 		if (!cloView.isSet())
 			return null;
 
@@ -380,8 +382,8 @@ public class ViewController {
 			idx = Math.min(Math.max(idx, 1), availableViews.size());
 			newView = availableViews.get(idx - 1);
 		}
-		String args = iv.length > 1 ? iv[1].trim() : null;
-		return new ViewSelection(newView, args);
+		newView.setOptions(iv.length > 1 ? iv[1].trim() : null);
+		return newView;
 	}
 
 	/**
@@ -487,42 +489,5 @@ public class ViewController {
 		selector.clear();
 		for (Widget view : deck)
 			selector.addItem(((AbstractView<?>) view).getName());
-	}
-
-	/**
-	 * Encapsulates a resolved view selection from the {@code --view} CLO.
-	 */
-	public static class ViewSelection {
-		private final AbstractView<?> view;
-		private final String args;
-
-		/**
-		 * Creates a selection wrapper.
-		 *
-		 * @param view selected view
-		 * @param args optional view-specific arguments
-		 */
-		public ViewSelection(AbstractView<?> view, String args) {
-			this.view = view;
-			this.args = args;
-		}
-
-		/**
-		 * Returns the selected view.
-		 *
-		 * @return selected view
-		 */
-		public AbstractView<?> getView() {
-			return view;
-		}
-
-		/**
-		 * Returns the optional arguments parsed from the CLO.
-		 *
-		 * @return optional arguments (may be {@code null})
-		 */
-		public String getArgs() {
-			return args;
-		}
 	}
 }

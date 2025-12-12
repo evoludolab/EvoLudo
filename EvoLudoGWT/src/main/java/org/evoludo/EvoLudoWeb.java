@@ -1495,11 +1495,6 @@ public class EvoLudoWeb extends Composite
 		AbstractView<?> view;
 
 		/**
-		 * The arguments for theactive view.
-		 */
-		String args;
-
-		/**
 		 * The flag to indicate whether to resume execution of the model.
 		 */
 		boolean resume;
@@ -1575,7 +1570,7 @@ public class EvoLudoWeb extends Composite
 			// resume running if no reset was necessary or --run was provided
 			engine.setSuspended(guiState.resume || engine.isSuspended());
 		}
-		processCLOView();
+		guiState.view = viewController.resolveInitialView(logger);
 		if (moduleChanged && !viewController.isInitialViewSet()
 				&& guiState.view == viewController.getConsoleView())
 			guiState.view = null;
@@ -1595,27 +1590,13 @@ public class EvoLudoWeb extends Composite
 		}
 		AbstractView<?> currentView = viewController.getActiveView();
 		if (currentView != null) {
-			currentView.parse(guiState.args);
+			currentView.parse();
 			// view needs to be activated to set the mode of the model
 			currentView.activate();
 		}
 		processCLOSnap();
 		if (currentView != null && currentView.hasLayout() && engine.isSuspended())
 			engine.run();
-	}
-
-	/**
-	 * Process the command line option for the initial view (see
-	 * {@link ViewController#getCloView()}) and set the view accordingly. If the
-	 * view specification is invalid, the default view is used.
-	 */
-	private void processCLOView() {
-		ensureViewController();
-		ViewController.ViewSelection selection = viewController.resolveInitialView(logger);
-		if (selection == null)
-			return;
-		guiState.view = selection.getView();
-		guiState.args = selection.getArgs();
 	}
 
 	/**
