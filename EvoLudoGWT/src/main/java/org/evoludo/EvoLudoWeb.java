@@ -670,7 +670,10 @@ public class EvoLudoWeb extends Composite
 		setupEngine();
 		setupLogger(engine);
 		setupConsole(logger);
-		ensureViewController();
+		setupEngine();
+		setupLogger(engine);
+		setupConsole(logger);
+		viewController = new ViewController(engine, evoludoDeck, evoludoViews, viewConsole, this::updateGUI);
 
 		// now evoludoPanel is attached and we can set the grandparent as the
 		// fullscreen element
@@ -740,18 +743,6 @@ public class EvoLudoWeb extends Composite
 	}
 
 	/**
-	 * Lazily create the {@link ViewController} and its dependencies.
-	 */
-	private void ensureViewController() {
-		if (viewController != null)
-			return;
-		setupEngine();
-		setupLogger(engine);
-		setupConsole(logger);
-		viewController = new ViewController(engine, evoludoDeck, evoludoViews, viewConsole, this::updateGUI);
-	}
-
-	/**
 	 * {@inheritDoc}
 	 * <p>
 	 * Called when unloading GWT application. Housekeeping routine to clean up and
@@ -784,7 +775,6 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void moduleUnloaded() {
-		ensureViewController();
 		viewController.resetSelection();
 		// clear settings
 		evoludoCLO.setText("");
@@ -799,7 +789,6 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void modelUnloaded() {
-		ensureViewController();
 		viewController.resetSelection();
 	}
 
@@ -898,7 +887,6 @@ public class EvoLudoWeb extends Composite
 	 * Helper method to update status of GUI.
 	 */
 	private void updateStatus() {
-		ensureViewController();
 		Model model = engine.getModel();
 		// do not force retrieving status if engine is running
 		AbstractView<?> view = viewController.getActiveView();
@@ -963,7 +951,6 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoViews")
 	public void onViewChange(ChangeEvent event) {
-		ensureViewController();
 		changeViewTo(viewController.getViewByName(evoludoViews.getSelectedItemText()));
 		evoludoViews.setFocus(false);
 	}
@@ -994,31 +981,26 @@ public class EvoLudoWeb extends Composite
 	 *                change
 	 */
 	protected void changeViewTo(AbstractView<?> newView, boolean force) {
-		ensureViewController();
 		viewController.changeViewTo(newView, force);
 	}
 
 	/** @return a fresh list of all active views (console included). */
 	public List<AbstractView<?>> getActiveViews() {
-		ensureViewController();
 		return viewController.getActiveViews();
 	}
 
 	/** @return the currently active view. */
 	public AbstractView<?> getActiveView() {
-		ensureViewController();
 		return viewController.getActiveView();
 	}
 
 	/** @return the index of the active view inside the deck or {@code -1}. */
 	public int getActiveViewIndex() {
-		ensureViewController();
 		return viewController.getActiveViewIndex();
 	}
 
 	/** @return the last stored index for a non-console view. */
 	public int getStoredViewIndex() {
-		ensureViewController();
 		return viewController.getStoredViewIndex();
 	}
 
@@ -1540,7 +1522,6 @@ public class EvoLudoWeb extends Composite
 	 * data views as appropriate.
 	 */
 	public void applyCLO() {
-		ensureViewController();
 		if (engine.isRunning()) {
 			logger.warning("Cannot apply parameters while engine is running.");
 			return;
@@ -1686,7 +1667,6 @@ public class EvoLudoWeb extends Composite
 	 * of the active view are passed to all other views.
 	 */
 	private void loadViews() {
-		ensureViewController();
 		viewController.refreshViews();
 		AbstractView<?> anchorView = viewController.getActiveView();
 		if (anchorView == null)
@@ -1982,7 +1962,6 @@ public class EvoLudoWeb extends Composite
 	 *      capture-website-cli</a>
 	 */
 	public void snapshotReady() {
-		ensureViewController();
 		if (snapmarker != null)
 			return;
 		AbstractView<?> view = viewController.getActiveView();
@@ -2071,7 +2050,6 @@ public class EvoLudoWeb extends Composite
 
 	@Override
 	public void collectCLO(CLOParser parser) {
-		ensureViewController();
 		parser.addCLO(cloEmulate);
 		parser.addCLO(viewController.getCloView());
 		parser.addCLO(cloSize);
