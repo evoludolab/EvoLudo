@@ -41,17 +41,15 @@ import org.evoludo.simulator.EvoLudo;
 import org.evoludo.simulator.EvoLudoGWT;
 import org.evoludo.simulator.EvoLudoTrigger;
 import org.evoludo.simulator.Resources;
-import org.evoludo.simulator.models.ChangeListener;
-import org.evoludo.simulator.models.LifecycleListener;
 import org.evoludo.simulator.models.Mode;
 import org.evoludo.simulator.models.Model;
-import org.evoludo.simulator.models.RunListener;
-import org.evoludo.simulator.models.SampleListener;
+import org.evoludo.simulator.models.ChangeListener.PendingAction;
 import org.evoludo.simulator.modules.Module;
 import org.evoludo.simulator.ui.SettingsController;
 import org.evoludo.simulator.ui.FSController;
 import org.evoludo.simulator.ui.KeyHandler;
 import org.evoludo.simulator.ui.ViewController;
+import org.evoludo.simulator.ui.WebListener;
 import org.evoludo.simulator.views.AbstractView;
 import org.evoludo.simulator.views.Console;
 import org.evoludo.ui.ContextMenu;
@@ -335,8 +333,7 @@ import com.google.gwt.user.client.ui.Widget;
  * @see Console
  */
 public class EvoLudoWeb extends Composite
-		implements LifecycleListener, RunListener, ChangeListener,
-		SampleListener, CLOProvider, EntryPoint {
+		implements CLOProvider, EntryPoint {
 
 	/**
 	 * GWT magic to define GUI elements (see {@literal EvoLudoWeb.ui.xml}).
@@ -399,6 +396,11 @@ public class EvoLudoWeb extends Composite
 	 * Controller managing all data views and the {@link #evoludoDeck}.
 	 */
 	private ViewController viewController;
+
+	/**
+	 * Controller managing Lifecycle, Run, Sample, and Change events.
+	 */
+	WebListener webListener;
 
 	/**
 	 * The transparent backdrop of popup EvoLudo labs is stored here to reuse.
@@ -621,13 +623,13 @@ public class EvoLudoWeb extends Composite
 		super.onLoad();
 		boolean runningInEPub = NativeJS.getEPubReader() != null;
 		settingsController = new SettingsController(runningInEPub, evoludoCLO, evoludoApply, evoludoDefault,
-				evoludoHelp,
-				evoludoSettings);
+				evoludoHelp, evoludoSettings);
 		setupEngine();
 		setupLogger(engine, runningInEPub);
 		setupConsole(logger);
 		logFeatures();
 		viewController = new ViewController(engine, evoludoDeck, evoludoViews, viewConsole, this::updateGUI);
+		webListener = new WebListener(this, engine, keyController);
 
 		// now evoludoPanel is attached and we can set the grandparent as the
 		// fullscreen element
@@ -653,11 +655,22 @@ public class EvoLudoWeb extends Composite
 		engine = new EvoLudoGWT(this);
 		engine.loadModules();
 		engine.addCLOProvider(this);
-		engine.addLifecycleListener(this);
-		engine.addRunListener(this);
-		engine.addSampleListener(this);
-		engine.addChangeListener(this);
 		engine.setCLO(evoludoCLO.getText().trim());
+	}
+
+	/**
+	 * 
+	 */
+	public void resetViewSelection() {
+		viewController.resetSelection();
+	}
+
+	public void clearCommandLineOptions() {
+		evoludoCLO.setText("");
+	}
+
+	public void resetStatusThreshold() {
+		displayStatusThresholdLevel = Level.ALL.intValue();
 	}
 
 	/**
@@ -716,96 +729,14 @@ public class EvoLudoWeb extends Composite
 		engine.setCLO(null);
 		engine.requestAction(PendingAction.SHUTDOWN, true);
 		viewConsole.clearLog();
+		webListener.unload();
 		super.onUnload();
-	}
-
-	@Override
-	public void moduleLoaded() {
-		keyController.register();
-	}
-
-	@Override
-	public void moduleUnloaded() {
-		viewController.resetSelection();
-		// clear settings
-		evoludoCLO.setText("");
-		keyController.unregister();
-	}
-
-	@Override
-	public void moduleRestored() {
-		displayStatusThresholdLevel = Level.ALL.intValue();
-		displayStatus("State successfully restored.");
-	}
-
-	@Override
-	public void modelUnloaded() {
-		viewController.resetSelection();
-	}
-
-	@Override
-	public void modelRunning() {
-		SettingsController.onModelRunning(this);
-		displayStatusThresholdLevel = Level.ALL.intValue();
-		updateGUI();
-	}
-
-	@Override
-	public void modelChanged(PendingAction action) {
-		switch (action) {
-			case CHANGE_MODE:
-				// reset threshold for status messages after mode change
-				displayStatusThresholdLevel = Level.ALL.intValue();
-				//$FALL-THROUGH$
-			case NONE:
-				updateStatus();
-				updateCounter();
-				break;
-			default:
-				// includes SHUTDOWN, RESET, INIT, STOP, MODE
-		}
-		if (!engine.isRunning())
-			updateGUI();
-	}
-
-	@Override
-	public void modelSample(boolean success) {
-		if (success)
-			updateStatus();
-		updateCounter();
-	}
-
-	@Override
-	public void modelStopped() {
-		SettingsController.onModelStopped(this);
-		updateGUI();
-	}
-
-	@Override
-	public void modelDidInit() {
-		updateGUI();
-	}
-
-	@Override
-	public void modelSettings() {
-		updateGUI();
-	}
-
-	@Override
-	public void modelDidReset() {
-		updateGUI();
-		// show version after reset but do not overwrite warnings and errors`
-		displayStatus(engine.getVersion(), Level.INFO.intValue() + 1);
-		if (snapmarker != null)
-			Document.get().getBody().removeChild(snapmarker);
-		// reset threshold for status messages after reset
-		displayStatusThresholdLevel = Level.ALL.intValue();
 	}
 
 	/**
 	 * Update GUI for running/stopped model.
 	 */
-	private void updateGUI() {
+	public void updateGUI() {
 		boolean stopped = !engine.isRunning();
 		evoludoStartStop.setText(stopped ? BUTTON_START : BUTTON_STOP);
 		evoludoStep.setEnabled(stopped);
@@ -828,7 +759,7 @@ public class EvoLudoWeb extends Composite
 	/**
 	 * Helper method to update status of GUI.
 	 */
-	private void updateStatus() {
+	public void updateStatus() {
 		Model model = engine.getModel();
 		// do not force retrieving status if engine is running
 		AbstractView<?> view = viewController.getActiveView();
@@ -844,7 +775,7 @@ public class EvoLudoWeb extends Composite
 	/**
 	 * Helper method to update counter of GUI.
 	 */
-	private void updateCounter() {
+	public void updateCounter() {
 		evoludoTime.setText(engine.getModel().getCounter());
 	}
 
@@ -931,6 +862,7 @@ public class EvoLudoWeb extends Composite
 	 * 
 	 * @return the list of all active views (console included)
 	 */
+	@SuppressWarnings("java:S1452") // views have unknown generic parameters
 	public List<AbstractView<?>> getActiveViews() {
 		return viewController.getActiveViews();
 	}
@@ -940,6 +872,7 @@ public class EvoLudoWeb extends Composite
 	 * 
 	 * @return the active view.
 	 */
+	@SuppressWarnings("java:S1452") // views have unknown generic parameters
 	public AbstractView<?> getActiveView() {
 		return viewController.getActiveView();
 	}
@@ -1912,6 +1845,13 @@ public class EvoLudoWeb extends Composite
 		snapmarker = Document.get().createDivElement();
 		snapmarker.setId("snapshot-ready");
 		Document.get().getBody().appendChild(snapmarker);
+	}
+
+	public void clearSnapshotMarker() {
+		if (snapmarker == null)
+			return;
+		Document.get().getBody().removeChild(snapmarker);
+		snapmarker = null;
 	}
 
 	@Override

@@ -156,6 +156,16 @@ public class SettingsController {
 				}
 			});
 
+	/**
+	 * Creates a new settings controller.
+	 * 
+	 * @param isEPub         the flag to indicate whether running in an ePub reader
+	 * @param cloField       the command-line option field
+	 * @param applyButton    the apply button
+	 * @param defaultButton  the default button
+	 * @param helpButton     the help button
+	 * @param settingsButton the settings button
+	 */
 	public SettingsController(boolean isEPub, Label cloField, Button applyButton, Button defaultButton,
 			Button helpButton,
 			Button settingsButton) {
