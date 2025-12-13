@@ -1501,33 +1501,53 @@ public class EvoLudoWeb extends Composite
 			return;
 		// --snap set
 		Model activeModel = engine.getModel();
-		double tStop = activeModel.getTimeStop();
-		double nSamples = activeModel.getNSamples();
 		switch (activeModel.getMode()) {
 			case DYNAMICS:
 			case STATISTICS_UPDATE:
-				double deltat = (tStop - activeModel.getTime()) * (activeModel.isTimeReversed() ? -1.0 : 1.0);
-				if (Double.isFinite(tStop) && deltat > 0.0) {
-					// run to specified time
-					if (Math.abs(deltat) < activeModel.getTimeStep())
-						activeModel.setTimeStep(deltat);
-					// start running - even without --run
-					engine.setSuspended(true);
-				}
-				if (nSamples > 0.0)
-					logger.warning("--samples found: wrong mode for statistics, use --view option.");
+				snapDynamics(activeModel);
 				break;
 			case STATISTICS_SAMPLE:
-				// run to specified sample count
-				if (nSamples > activeModel.getNStatisticsSamples()) {
-					// start running - even without --run
-					engine.setSuspended(true);
-				}
-				if (Double.isFinite(tStop))
-					logger.warning("--timestop found: wrong mode for dynamics, use --view option.");
+				snapSamples(activeModel);
 				break;
 			default:
 		}
+	}
+
+	/**
+	 * Helper method to process snap for dynamics mode.
+	 * 
+	 * @param activeModel the active model
+	 */
+	private void snapDynamics(Model activeModel) {
+		double tStop = activeModel.getTimeStop();
+		double nSamples = activeModel.getNSamples();
+		double deltat = (tStop - activeModel.getTime()) * (activeModel.isTimeReversed() ? -1.0 : 1.0);
+		if (Double.isFinite(tStop) && deltat > 0.0) {
+			// run to specified time
+			if (Math.abs(deltat) < activeModel.getTimeStep())
+				activeModel.setTimeStep(deltat);
+			// start running - even without --run
+			engine.setSuspended(true);
+		}
+		if (nSamples > 0.0)
+			logger.warning("--samples found: wrong mode for statistics, use --view option.");
+	}
+
+	/**
+	 * Helper method to process snap for statistics sample mode.
+	 * 
+	 * @param activeModel the active model
+	 */
+	private void snapSamples(Model activeModel) {
+		double tStop = activeModel.getTimeStop();
+		double nSamples = activeModel.getNSamples();
+		// run to specified sample count
+		if (nSamples > activeModel.getNStatisticsSamples()) {
+			// start running - even without --run
+			engine.setSuspended(true);
+		}
+		if (Double.isFinite(tStop))
+			logger.warning("--timestop found: wrong mode for dynamics, use --view option.");
 	}
 
 	/**
