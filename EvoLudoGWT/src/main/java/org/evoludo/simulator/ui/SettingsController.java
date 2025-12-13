@@ -53,6 +53,9 @@ public class SettingsController {
 	 */
 	private static final class Settings {
 
+		/** {@code true} if the lab runs in an ePub reader. */
+		boolean isEPub;
+
 		/** {@code true} if the lab runs on a standalone ePub page. */
 		boolean standalone;
 
@@ -87,11 +90,6 @@ public class SettingsController {
 	 * run at a time to avoid exhausting reader resources.
 	 */
 	private static EvoLudoWeb runningLab;
-
-	/**
-	 * Flag indicating whether the hosting environment is an ePub reader.
-	 */
-	private boolean isEPub;
 
 	/**
 	 * Label displaying the current command-line options.
@@ -137,10 +135,10 @@ public class SettingsController {
 					detectFeatures();
 					if (arg != null) {
 						if (arg.contains("epub"))
-							isEPub = true;
+							SETTINGS.isEPub = true;
 						if (arg.contains("standalone")) {
 							SETTINGS.standalone = true;
-							isEPub = true;
+							SETTINGS.isEPub = true;
 							SETTINGS.hasKeys = NativeJS.hasKeys();
 							SETTINGS.hasMouse = NativeJS.hasMouse();
 							SETTINGS.hasTouch = NativeJS.hasTouch();
@@ -166,16 +164,15 @@ public class SettingsController {
 	 * @param helpButton     the help button
 	 * @param settingsButton the settings button
 	 */
-	public SettingsController(boolean isEPub, Label cloField, Button applyButton, Button defaultButton,
+	public SettingsController(Label cloField, Button applyButton, Button defaultButton,
 			Button helpButton,
 			Button settingsButton) {
-		this.isEPub = isEPub;
 		this.cloField = cloField;
 		this.applyButton = applyButton;
 		this.defaultButton = defaultButton;
 		this.helpButton = helpButton;
 		this.settingsButton = settingsButton;
-		if (isEPub)
+		if (NativeJS.getEPubReader() != null)
 			detectFeatures();
 	}
 
@@ -196,7 +193,7 @@ public class SettingsController {
 	 * @param dropHandlerRegistrar callback that installs drag-and-drop handlers
 	 */
 	public boolean applyUiToggles(Runnable dropHandlerRegistrar) {
-		boolean editCLO = !isEPub || SETTINGS.standalone;
+		boolean editCLO = !SETTINGS.isEPub || SETTINGS.standalone;
 		updateCLOControls(editCLO);
 		if (editCLO && dropHandlerRegistrar != null)
 			dropHandlerRegistrar.run();
@@ -209,7 +206,7 @@ public class SettingsController {
 	 * @return {@code true} when running in an ePub context
 	 */
 	public boolean isEPub() {
-		return isEPub;
+		return SETTINGS.isEPub;
 	}
 
 	/**
@@ -254,6 +251,7 @@ public class SettingsController {
 	 * settings accordingly.
 	 */
 	private void detectFeatures() {
+		SETTINGS.isEPub = (NativeJS.getEPubReader() != null);
 		SETTINGS.standalone = (Document.get().getElementById("evoludo-standalone") != null);
 		SETTINGS.hasKeys = NativeJS.ePubReaderHasFeature("keyboard-events");
 		SETTINGS.hasMouse = NativeJS.ePubReaderHasFeature("mouse-events");
@@ -277,13 +275,23 @@ public class SettingsController {
 	}
 
 	/**
+	 * Reports whether no other ePub lab is currently running, allowing this lab to
+	 * start execution.
+	 * 
+	 * @return {@code true} when no other ePub lab is running
+	 */
+	public static boolean isReady() {
+		return !SETTINGS.isEPub || runningLab == null;
+	}
+
+	/**
 	 * Marks the supplied lab as the currently running ePub instance. Only a single
 	 * lab may run at once.
 	 *
 	 * @param lab running lab instance
 	 */
 	public static void onModelRunning(EvoLudoWeb lab) {
-		if (runningLab != null && runningLab != lab)
+		if (SETTINGS.isEPub && runningLab != null && runningLab != lab)
 			throw new IllegalStateException("Another ePub lab is already running!");
 		runningLab = lab;
 	}
@@ -294,8 +302,8 @@ public class SettingsController {
 	 * @param lab lab that just stopped
 	 */
 	public static void onModelStopped(EvoLudoWeb lab) {
-		if (runningLab == null)
-			throw new IllegalStateException("Running ePub lab not found!");
+		if (!SETTINGS.isEPub)
+			return;
 		if (runningLab == lab)
 			runningLab = null;
 	}

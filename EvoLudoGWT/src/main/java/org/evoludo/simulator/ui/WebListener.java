@@ -85,6 +85,7 @@ public class WebListener implements LifecycleListener, RunListener, ChangeListen
 		engine.removeRunListener(this);
 		engine.removeSampleListener(this);
 		engine.removeChangeListener(this);
+		SettingsController.onModelStopped(gui);
 	}
 
 	@Override
@@ -96,6 +97,7 @@ public class WebListener implements LifecycleListener, RunListener, ChangeListen
 	public void moduleUnloaded() {
 		gui.resetViewSelection();
 		gui.clearCommandLineOptions();
+		SettingsController.onModelStopped(gui);
 		keyController.unregister();
 	}
 
@@ -107,6 +109,7 @@ public class WebListener implements LifecycleListener, RunListener, ChangeListen
 
 	@Override
 	public void modelUnloaded() {
+		SettingsController.onModelStopped(gui);
 		gui.resetViewSelection();
 	}
 

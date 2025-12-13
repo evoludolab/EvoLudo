@@ -621,11 +621,10 @@ public class EvoLudoWeb extends Composite
 	@Override
 	public void onLoad() {
 		super.onLoad();
-		boolean runningInEPub = NativeJS.getEPubReader() != null;
-		settingsController = new SettingsController(runningInEPub, evoludoCLO, evoludoApply, evoludoDefault,
+		settingsController = new SettingsController(evoludoCLO, evoludoApply, evoludoDefault,
 				evoludoHelp, evoludoSettings);
 		setupEngine();
-		setupLogger(engine, runningInEPub);
+		setupLogger(engine);
 		setupConsole(logger);
 		logFeatures();
 		viewController = new ViewController(engine, evoludoDeck, evoludoViews, viewConsole, this::updateGUI);
@@ -678,7 +677,7 @@ public class EvoLudoWeb extends Composite
 	 * 
 	 * @param engine the EvoLudo engine
 	 */
-	private void setupLogger(EvoLudoGWT engine, boolean runningInEPub) {
+	private void setupLogger(EvoLudoGWT engine) {
 		if (logger != null)
 			return;
 		logger = engine.getLogger();
@@ -687,7 +686,8 @@ public class EvoLudoWeb extends Composite
 		// feature declarations with --gui) to make sure log is properly XML encoded (if
 		// needed).
 		ConsoleLogHandler logHandler = new ConsoleLogHandler();
-		logHandler.setFormatter(new XMLLogFormatter(true, runningInEPub || NativeJS.isHTML()));
+		logHandler.setFormatter(new XMLLogFormatter(true,
+				(NativeJS.getEPubReader() != null) || NativeJS.isHTML()));
 		logger.addHandler(logHandler);
 	}
 
@@ -1214,7 +1214,10 @@ public class EvoLudoWeb extends Composite
 	 */
 	@UiHandler("evoludoStartStop")
 	public void onStartStopClick(ClickEvent event) {
-		engine.startStop();
+		if (engine.isRunning() || SettingsController.isReady())
+			engine.startStop();
+		else
+			logger.warning("another EvoLudo instance is already running!");
 	}
 
 	/**
